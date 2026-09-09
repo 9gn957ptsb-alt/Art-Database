@@ -6,7 +6,9 @@ A searchable database of artworks, seeded from ~4,000 saved works on
 
 ## Status
 
-Import tooling is ready. It cannot run until the Artsy API is reachable — see setup below.
+The Artsy import has run: `data/artsy_saves_raw.json` holds 4,969 raw saved-artwork
+records fetched via `scripts/fetch_artsy_saves.py`. Normalising that raw data into the
+searchable database is the next step.
 
 ## Why the setup is fiddly
 
