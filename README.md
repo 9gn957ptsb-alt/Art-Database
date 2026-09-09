@@ -139,10 +139,9 @@ Endpoint and header names were read from Artsy's open-source GraphQL API,
 
 ## The browser page
 
-`artifact/color-middling.html` is a single self-contained page for browsing the whole
-collection — search, hue/category/for-sale filters, five sort orders, and a hue-ordered
-spectrum of every work that doubles as a filter control. Rebuild it after a fresh
-normalize with:
+`artifact/color-middling.html` is a single self-contained page: a search engine over the
+whole collection, plus hue/category/for-sale facets and a hue-ordered spectrum of every
+work that doubles as a filter control. Rebuild it after a fresh normalize with:
 
 ```bash
 python3 scripts/build_artifact.py
@@ -150,7 +149,35 @@ python3 scripts/build_artifact.py
 
 The build injects a compact JSON payload from `data/artworks.db` into
 `artifact/index.template.html`. Edit the template, never the built file — a rebuild
-overwrites it. At ~5,000 works the page is about 1.2MB.
+overwrites it. At ~5,000 works the page is about 1.4MB.
+
+### Search
+
+The page builds an in-memory inverted index over title, artist and co-artists,
+nationality, artist life dates, medium, category, gallery and date, and ranks with
+weighted TF-IDF (artist outweighs title outweighs medium). Queries are ANDed, the last
+word is prefix-matched as you type, and searches land in 1–3ms.
+
+```
+cezanne                     accent-folded; finds Cézanne
+spanish                     nationality is indexed, so this finds Picasso, Dalí, Miró
+artist:twombly              scope with artist: title: medium: category: gallery:
+                            nationality: or year:
+year:1960-1970              range or single year, matched against the work's date
+"blue nude"                 quoted phrases must appear intact
+lithograph title:untitled   scoped and unscoped terms combine
+```
+
+Two things worth knowing if you touch the ranking:
+
+- **Accent folding is not optional here.** 87 of the 1,231 artists carry diacritics
+  (Cézanne, Miró, Dürer, Kertész) and nobody types them, so `fold()` strips combining
+  marks before both indexing and querying.
+- **Spelling correction weighs frequency against edit distance**, rather than letting
+  the nearest ring win outright. `picaso` sits one edit from both Picasso (217 works)
+  and the one-off José Picayo; `turel` sits *two* edits from Turrell (35 works) but one
+  from a junk token. Candidates are ranked by `df / distance²`, which gets both right —
+  ranking by edit distance alone gets both wrong.
 
 ### Why it draws colors instead of thumbnails
 

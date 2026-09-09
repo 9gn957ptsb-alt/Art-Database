@@ -45,12 +45,37 @@ FIELDS = [
 ]
 
 
+def load_artist_meta(conn):
+    """Per artwork: co-artist names, nationalities and life dates.
+
+    All three feed the page's search index — nationality especially, since it's
+    populated for ~95% of artist rows and is otherwise unsearchable (it's the only
+    way "spanish" finds the Picassos, Dalis and Miros).
+    """
+    meta = {}
+    for row in conn.execute(
+        """SELECT artwork_id, position, artist_name, nationality, years
+           FROM artwork_artists ORDER BY artwork_id, position"""
+    ):
+        entry = meta.setdefault(row["artwork_id"], {"extra": [], "nat": [], "years": None})
+        # Position 0 is already on the artworks row; only co-artists need carrying.
+        if row["position"] > 0 and row["artist_name"]:
+            entry["extra"].append(row["artist_name"])
+        if row["nationality"] and row["nationality"] not in entry["nat"]:
+            entry["nat"].append(row["nationality"])
+        if row["position"] == 0:
+            entry["years"] = row["years"]
+    return meta
+
+
 def load_records(conn):
     colors = {}
     for row in conn.execute(
         "SELECT artwork_id, hex FROM artwork_colors ORDER BY artwork_id, position"
     ):
         colors.setdefault(row["artwork_id"], []).append(row["hex"])
+
+    meta = load_artist_meta(conn)
 
     records = []
     for row in conn.execute(
@@ -59,7 +84,11 @@ def load_records(conn):
         record = [row[field] for field in FIELDS]
         # Trim the timestamp to a year; nothing in the page shows finer than that.
         record[-1] = (row["last_saved_at"] or "")[:4] or None
+        entry = meta.get(row["id"], {})
         record.append(colors.get(row["id"], []))
+        record.append(", ".join(entry.get("extra") or []) or None)
+        record.append(", ".join(entry.get("nat") or []) or None)
+        record.append(entry.get("years") or None)
         records.append(record)
     return records
 
@@ -78,7 +107,8 @@ def main():
         conn.close()
 
     payload = json.dumps(
-        {"fields": FIELDS + ["colors"], "records": records},
+        {"fields": FIELDS + ["colors", "extra_artists", "nationality", "artist_years"],
+         "records": records},
         separators=(",", ":"),
         ensure_ascii=False,
     )

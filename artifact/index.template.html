@@ -15,6 +15,8 @@
     --rule-strong: #b6bec6;
     --field: #ffffff;
     --invert-ink: #f4f6f7;
+    --mark: #dfe3e7;
+    --shadow: 0 6px 24px rgb(20 24 28 / 0.14);
 
     --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -35,6 +37,8 @@
       --rule-strong: #3a4046;
       --field: #101215;
       --invert-ink: #15171a;
+      --mark: #343c44;
+      --shadow: 0 6px 24px rgb(0 0 0 / 0.5);
     }
   }
 
@@ -48,6 +52,8 @@
     --rule-strong: #3a4046;
     --field: #101215;
     --invert-ink: #15171a;
+    --mark: #343c44;
+    --shadow: 0 6px 24px rgb(0 0 0 / 0.5);
   }
 
   * { box-sizing: border-box; }
@@ -68,14 +74,19 @@
     padding-block: clamp(2rem, 5vw, 3.5rem) 4rem;
   }
 
+  mark {
+    background: var(--mark);
+    color: var(--ink);
+    border-radius: 1px;
+    padding: 0 0.1em;
+  }
+
   /* ---------- masthead ---------- */
 
   .masthead {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    padding-bottom: 1.75rem;
-    border-bottom: 1px solid var(--rule);
   }
 
   .wordmark {
@@ -107,6 +118,145 @@
 
   .stat-n { font-weight: 500; }
   .stat-l { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ---------- search ---------- */
+
+  .searchbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-block: 2rem 0;
+  }
+
+  .search-field { position: relative; }
+
+  .search {
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.85rem 5.5rem 0.85rem 1rem;
+  }
+
+  .search::placeholder { color: var(--muted); }
+  .search::-webkit-search-cancel-button { display: none; }
+
+  .search:focus-visible, .select:focus-visible, .chip:focus-visible,
+  .more:focus-visible, .hint:focus-visible, .work-link:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+
+  .search-slash {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 0.1rem 0.35rem;
+    pointer-events: none;
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+    line-height: 1;
+  }
+
+  .search-clear:hover { color: var(--ink); }
+
+  .suggest {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: var(--card);
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .suggest-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+
+  .suggest-item + .suggest-item { border-top: 1px solid var(--rule); }
+  .suggest-item[aria-selected="true"] { background: var(--ink); color: var(--invert-ink); }
+  .suggest-item[aria-selected="true"] .suggest-kind,
+  .suggest-item[aria-selected="true"] .suggest-n { color: var(--invert-ink); opacity: 0.7; }
+
+  .suggest-kind {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+
+  .suggest-n { font-family: var(--mono); font-size: 0.6875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .suggest-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .resultline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 1rem;
+    min-height: 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  .resultline b { font-weight: 500; color: var(--ink); }
+
+  .hints { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: baseline; }
+
+  .hints-label {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .hint {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px dashed var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.15rem 0.4rem;
+    cursor: pointer;
+  }
+
+  .hint:hover { color: var(--ink); border-color: var(--ink); border-style: solid; }
 
   /* ---------- spectrum ---------- */
 
@@ -149,7 +299,7 @@
   .readout-text em { font-style: italic; color: var(--ink); }
   .readout-text b { font-weight: 500; color: var(--ink); }
 
-  /* ---------- controls ---------- */
+  /* ---------- facets ---------- */
 
   .controls {
     display: flex;
@@ -167,24 +317,6 @@
     gap: 0.625rem;
   }
 
-  .search {
-    flex: 1 1 260px;
-    min-width: 0;
-    font-family: var(--sans);
-    font-size: 0.875rem;
-    color: var(--ink);
-    background: var(--field);
-    border: 1px solid var(--rule-strong);
-    border-radius: 2px;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .search::placeholder { color: var(--muted); }
-  .search:focus-visible, .select:focus-visible, .chip:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 1px;
-  }
-
   .select {
     font-family: var(--mono);
     font-size: 0.75rem;
@@ -193,6 +325,7 @@
     border: 1px solid var(--rule-strong);
     border-radius: 2px;
     padding: 0.5rem 0.6rem;
+    margin-left: auto;
   }
 
   .chip {
@@ -221,14 +354,6 @@
 
   .chip .n { font-variant-numeric: tabular-nums; opacity: 0.65; }
   .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-
-  .count {
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--muted);
-    margin-left: auto;
-  }
 
   /* ---------- grid ---------- */
 
@@ -276,6 +401,8 @@
     letter-spacing: 0.08em;
   }
 
+  .work-artist .nat { color: var(--muted); }
+
   .work-title {
     font-size: 0.9375rem;
     font-weight: 400;
@@ -319,7 +446,6 @@
 
   .work-link { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--rule-strong); }
   .work-link:hover { color: var(--ink); border-color: var(--ink); }
-  .work-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
   /* ---------- foot ---------- */
 
@@ -339,12 +465,19 @@
   }
 
   .more:hover { border-color: var(--ink); }
-  .more:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
-  .empty {
-    padding: 4rem 0;
-    text-align: center;
-    color: var(--muted);
+  .empty { padding: 3.5rem 0; text-align: center; color: var(--muted); }
+  .empty b { color: var(--ink); font-weight: 500; }
+
+  .didyoumean {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--ink);
+    color: var(--ink);
+    font: inherit;
+    font-style: italic;
+    cursor: pointer;
+    padding: 0;
   }
 
   .colophon {
@@ -356,13 +489,19 @@
     max-width: var(--measure);
   }
 
-  .colophon a { color: var(--ink); }
+  .colophon code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    color: var(--ink);
+  }
 
   @media (max-width: 560px) {
     .ribbon { height: 96px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem 0.875rem; }
     .work-plate { height: 140px; }
-    .count { margin-left: 0; width: 100%; }
+    .select { margin-left: 0; }
+    .search { font-size: 1rem; padding-right: 2.75rem; }
+    .search-slash { display: none; }
   }
 </style>
 
@@ -370,12 +509,32 @@
   <header class="masthead">
     <h1 class="wordmark">Color Middling</h1>
     <p class="standfirst">
-      Every artwork saved to one Artsy account, read as color. Thumbnails can't load
-      here, so each work is drawn from the three dominant colors Artsy extracted from
-      it, at the true proportions of the object itself.
+      A search engine for every artwork saved to one Artsy account. Thumbnails can't
+      load here, so each work is drawn from the three dominant colors Artsy extracted
+      from it, at the true proportions of the object itself.
     </p>
     <div class="stats" id="stats"></div>
   </header>
+
+  <section class="searchbar">
+    <div class="search-field">
+      <input class="search" id="search" type="search" autocomplete="off" spellcheck="false"
+             aria-label="Search the collection" aria-expanded="false" aria-autocomplete="list">
+      <kbd class="search-slash" id="slash">/</kbd>
+      <button class="search-clear" id="clear" type="button" aria-label="Clear search" hidden>✕</button>
+      <div class="suggest" id="suggest" role="listbox" hidden></div>
+    </div>
+    <div class="resultline" id="resultline"></div>
+    <div class="hints">
+      <span class="hints-label">Try</span>
+      <button class="hint" type="button" data-q="cezanne">cezanne</button>
+      <button class="hint" type="button" data-q="spanish">spanish</button>
+      <button class="hint" type="button" data-q="artist:twombly">artist:twombly</button>
+      <button class="hint" type="button" data-q="year:1960-1970">year:1960-1970</button>
+      <button class="hint" type="button" data-q="&quot;blue nude&quot;">"blue nude"</button>
+      <button class="hint" type="button" data-q="lithograph title:untitled">lithograph title:untitled</button>
+    </div>
+  </section>
 
   <section class="spectrum">
     <p class="label">The collection by hue</p>
@@ -384,20 +543,19 @@
   </section>
 
   <section class="controls">
+    <div class="control-row" id="hues" role="group" aria-label="Filter by dominant hue"></div>
+    <div class="control-row" id="cats" role="group" aria-label="Filter by category"></div>
     <div class="control-row">
-      <input class="search" id="search" type="search" placeholder="Search title, artist, medium, gallery…" aria-label="Search the collection">
+      <button class="chip" id="forsale" type="button" aria-pressed="false">For sale <span class="n" id="forsale-n"></span></button>
       <select class="select" id="sort" aria-label="Sort order">
+        <option value="relevance">Best match</option>
         <option value="saved">Recently saved</option>
         <option value="artist">Artist A–Z</option>
         <option value="newest">Work date, newest</option>
         <option value="oldest">Work date, oldest</option>
         <option value="hue">Hue</option>
       </select>
-      <button class="chip" id="forsale" type="button" aria-pressed="false">For sale <span class="n" id="forsale-n"></span></button>
     </div>
-    <div class="control-row" id="hues" role="group" aria-label="Filter by dominant hue"></div>
-    <div class="control-row" id="cats" role="group" aria-label="Filter by category"></div>
-    <div class="control-row"><span class="count" id="count"></span></div>
   </section>
 
   <div class="grid" id="grid"></div>
@@ -406,10 +564,14 @@
 
   <footer class="colophon">
     <p>
-      4,969 works fetched from the Artsy API, normalized into SQLite, and rendered from
-      <code>dominant_colors</code> plus <code>width_cm</code>/<code>height_cm</code>.
-      Titles follow catalogue convention: <em>italic</em>, with <span class="mono">n.d.</span>
-      where the work carries no date. Each entry links out to its page on Artsy.
+      Every field is indexed: title, artist and co-artists, nationality, artist dates,
+      medium, category, gallery and year. Accents are folded, so <code>cezanne</code>
+      finds Cézanne and <code>durer</code> finds Dürer; misspellings fall back to the
+      nearest indexed word. Scope a term with <code>artist:</code>, <code>title:</code>,
+      <code>medium:</code>, <code>category:</code>, <code>gallery:</code>,
+      <code>nationality:</code> or <code>year:</code>, and quote an
+      <code>"exact phrase"</code>. Titles follow catalogue convention: italic, with
+      <code>n.d.</code> where the work carries no date.
     </p>
   </footer>
 </div>
@@ -423,6 +585,25 @@
   var raw = JSON.parse(document.getElementById("data").textContent);
   var F = {};
   raw.fields.forEach(function (name, i) { F[name] = i; });
+
+  // ---------- text ----------
+
+  // Fold diacritics so "cezanne" reaches Cézanne and "durer" reaches Dürer — 87 of
+  // this collection's 1,231 artists carry accents that nobody types.
+  function fold(s) {
+    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
+  function tokenize(s) {
+    return fold(s).match(/[a-z0-9]+/g) || [];
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function fmt(n) { return n.toLocaleString("en-US"); }
 
   // ---------- color ----------
 
@@ -445,7 +626,6 @@
     return [h, s, l];
   }
 
-  // Bins named for what a viewer would call them, not for pigment families.
   var HUE_BINS = [
     { key: "neutral", name: "Neutral", swatch: "#9aa0a6" },
     { key: "earth", name: "Earth", swatch: "#9c7c52" },
@@ -478,26 +658,30 @@
 
   var works = raw.records.map(function (r) {
     var colors = r[F.colors] || [];
-    var rep = null, repSat = -1, repHsl = [0, 0, 0.5];
+    var repSat = -1, repHsl = [0, 0, 0.5];
     colors.forEach(function (hex) {
       var hsl = rgbToHsl(hexToRgb(hex));
-      if (hsl[1] > repSat) { repSat = hsl[1]; rep = hex; repHsl = hsl; }
+      if (hsl[1] > repSat) { repSat = hsl[1]; repHsl = hsl; }
     });
-    var dateStr = r[F.date] || "";
+    // Some records carry punctuation-only dates ("."); those are undated, not dated.
+    var dateStr = (r[F.date] || "").trim();
+    if (!/[0-9a-z]/i.test(dateStr)) dateStr = "";
     var m = dateStr.match(YEAR);
     var w = r[F.width_cm], h = r[F.height_cm];
-    var ratio = (w && h) ? Math.min(2, Math.max(0.5, w / h)) : 1;
 
     return {
       id: r[F.id],
       title: r[F.title] || "Untitled",
       artist: r[F.artist_name] || "Unknown artist",
+      extraArtists: r[F.extra_artists] || "",
+      nationality: r[F.nationality] || "",
+      artistYears: r[F.artist_years] || "",
       date: dateStr,
       year: m ? parseInt(m[1], 10) : null,
       category: r[F.category] || "Uncategorized",
       medium: r[F.medium] || "",
       dims: r[F.dimensions_cm] || "",
-      ratio: ratio,
+      ratio: (w && h) ? Math.min(2, Math.max(0.5, w / h)) : 1,
       partner: r[F.partner_name] || "",
       price: r[F.price_display] || "",
       forsale: !!r[F.forsale],
@@ -509,47 +693,325 @@
       // both ends of a raw 0–360 hue together at one end of the ribbon.
       hkey: (repHsl[0] + 15) % 360,
       sat: repSat < 0 ? 0 : repSat,
-      light: repHsl[2],
-      hay: ""
+      light: repHsl[2]
     };
   });
 
-  works.forEach(function (w) {
-    w.hay = (w.title + " " + w.artist + " " + w.medium + " " + w.category + " " + w.partner + " " + w.date).toLowerCase();
-  });
+  var N = works.length;
 
-  // Ribbon order: neutrals first by lightness, then chromatic around the wheel.
   var spectrum = works.slice().sort(function (a, b) {
     var ga = a.sat < 0.12 ? 0 : 1, gb = b.sat < 0.12 ? 0 : 1;
     if (ga !== gb) return ga - gb;
     return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
   });
 
+  // ---------- search index ----------
+
+  // Field weights: who made it outranks what it's called, which outranks what it's
+  // made of. Nationality sits high because it's the only handle on "spanish".
+  var SEARCH_FIELDS = [
+    { key: "artist", weight: 9, get: function (w) { return w.artist + " " + w.extraArtists; } },
+    { key: "title", weight: 6, get: function (w) { return w.title; } },
+    { key: "nationality", weight: 3, get: function (w) { return w.nationality; } },
+    { key: "category", weight: 2.5, get: function (w) { return w.category; } },
+    { key: "date", weight: 2, get: function (w) { return w.date + " " + w.artistYears; } },
+    { key: "medium", weight: 1.5, get: function (w) { return w.medium; } },
+    { key: "gallery", weight: 1.5, get: function (w) { return w.partner; } }
+  ];
+
+  var FIELD_ALIAS = {
+    artist: "artist", artists: "artist", by: "artist",
+    title: "title", name: "title",
+    nationality: "nationality", country: "nationality",
+    category: "category", type: "category",
+    medium: "medium", material: "medium",
+    gallery: "gallery", partner: "gallery",
+    date: "date"
+  };
+
+  var FIELD_BIT = {};
+  SEARCH_FIELDS.forEach(function (f, i) { FIELD_BIT[f.key] = 1 << i; });
+
+  var index = null, vocab = null;
+
+  function buildIndex() {
+    var tmp = new Map();
+
+    works.forEach(function (w, docId) {
+      var perTerm = new Map();
+      w.ft = {};
+
+      SEARCH_FIELDS.forEach(function (f) {
+        var text = f.get(w) || "";
+        w.ft[f.key] = fold(text);
+        var toks = tokenize(text);
+        for (var i = 0; i < toks.length; i++) {
+          var entry = perTerm.get(toks[i]);
+          if (!entry) { entry = { w: 0, m: 0 }; perTerm.set(toks[i], entry); }
+          entry.w += f.weight;
+          entry.m |= FIELD_BIT[f.key];
+        }
+      });
+
+      perTerm.forEach(function (entry, term) {
+        var post = tmp.get(term);
+        if (!post) { post = { d: [], w: [], m: [] }; tmp.set(term, post); }
+        post.d.push(docId);
+        post.w.push(entry.w);
+        post.m.push(entry.m);
+      });
+    });
+
+    index = new Map();
+    tmp.forEach(function (post, term) {
+      index.set(term, {
+        d: Int32Array.from(post.d),
+        w: Float32Array.from(post.w),
+        m: Uint8Array.from(post.m),
+        idf: Math.log(1 + N / post.d.length)
+      });
+    });
+
+    vocab = Array.from(index.keys()).sort();
+  }
+
+  function ensureIndex() { if (!index) buildIndex(); }
+
+  function prefixTerms(p, cap) {
+    var lo = 0, hi = vocab.length;
+    while (lo < hi) { var mid = (lo + hi) >> 1; if (vocab[mid] < p) lo = mid + 1; else hi = mid; }
+    var out = [];
+    for (var i = lo; i < vocab.length && vocab[i].lastIndexOf(p, 0) === 0; i++) {
+      out.push(vocab[i]);
+      if (out.length >= cap) break;
+    }
+    return out;
+  }
+
+  // Levenshtein distance, abandoned as soon as it exceeds max.
+  function distance(a, b, max) {
+    var la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > max) return max + 1;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= lb; j++) prev[j] = j;
+    for (i = 1; i <= la; i++) {
+      cur[0] = i;
+      var best = i;
+      for (j = 1; j <= lb; j++) {
+        var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        if (cur[j] < best) best = cur[j];
+      }
+      if (best > max) return max + 1;
+      var swap = prev; prev = cur; cur = swap;
+    }
+    return prev[lb];
+  }
+
+  // Spelling correction. Edit distance alone picks badly here: "picaso" sits one edit
+  // from both Picasso (217 works) and the one-off José Picayo, and "turel" sits two
+  // edits from Turrell (35 works) but one from a junk token. So candidates compete on
+  // frequency discounted by distance, rather than the nearer ring winning outright.
+  function fuzzyTerms(t) {
+    if (t.length < 4) return [];
+    var max = t.length >= 5 ? 2 : 1;
+    var out = [];
+    for (var i = 0; i < vocab.length; i++) {
+      var v = vocab[i];
+      if (Math.abs(v.length - t.length) > max) continue;
+      var d = distance(v, t, max);
+      if (d < 1 || d > max) continue;
+      var df = index.get(v).d.length;
+      out.push({ t: v, d: d, df: df, rank: df / (d * d) });
+    }
+    out.sort(function (a, b) { return b.rank - a.rank; });
+    return out.slice(0, 5);
+  }
+
+  function parseYearRange(v) {
+    var m = /^(\d{3,4})\s*[-–]\s*(\d{3,4})$/.exec(v);
+    if (m) return { from: +m[1], to: +m[2] };
+    if (/^\d{3,4}$/.test(v)) return { from: +v, to: +v };
+    return null;
+  }
+
+  var QUERY_RE = /(\w+):"([^"]*)"|(\w+):(\S+)|"([^"]*)"|(\S+)/g;
+
+  function parseQuery(q) {
+    var terms = [], phrases = [], year = null, m;
+    QUERY_RE.lastIndex = 0;
+
+    while ((m = QUERY_RE.exec(q)) !== null) {
+      var rawField = m[1] || m[3] || null;
+      var value = m[2] !== undefined ? m[2]
+        : m[4] !== undefined ? m[4]
+        : m[5] !== undefined ? m[5] : m[6];
+      if (value === undefined || !value.trim()) continue;
+
+      var quoted = m[2] !== undefined || m[5] !== undefined;
+      var field = null;
+
+      if (rawField) {
+        var key = rawField.toLowerCase();
+        if (key === "year") {
+          var range = parseYearRange(value);
+          if (range) { year = range; continue; }
+          field = "date";
+        } else if (FIELD_ALIAS[key]) {
+          field = FIELD_ALIAS[key];
+        } else {
+          // Not a field we know — treat the whole "word:word" as literal text.
+          value = m[0];
+        }
+      }
+
+      var toks = tokenize(value);
+      if (!toks.length) continue;
+      if (quoted && toks.length > 1) phrases.push({ field: field, text: toks.join(" ") });
+      toks.forEach(function (t) { terms.push({ text: t, field: field }); });
+    }
+
+    return { terms: terms, phrases: phrases, year: year };
+  }
+
+  function expand(term, isLast) {
+    var exact = index.get(term.text);
+    var hits = [];
+    if (exact) hits.push({ post: exact, quality: 1 });
+
+    if (isLast || !exact) {
+      prefixTerms(term.text, 60).forEach(function (t) {
+        if (t !== term.text) hits.push({ post: index.get(t), quality: 0.6 });
+      });
+    }
+    if (!hits.length) {
+      var near = fuzzyTerms(term.text);
+      if (near.length) {
+        // Scale each correction against the best-ranked one, so a rare near-miss
+        // can't outscore the obvious fix on the strength of its rarity alone.
+        var top = near[0].rank;
+        near.forEach(function (c) {
+          hits.push({
+            post: index.get(c.t),
+            quality: (c.d === 1 ? 0.45 : 0.3) * Math.max(0.12, c.rank / top)
+          });
+        });
+      }
+    }
+    return hits;
+  }
+
+  function search(parsed) {
+    ensureIndex();
+
+    var required = parsed.terms.length;
+    var scores = new Float64Array(N);
+    var matched = new Uint8Array(N);
+    var best = new Float64Array(N);
+
+    parsed.terms.forEach(function (term, ti) {
+      var isLast = ti === required - 1;
+      var bit = term.field ? FIELD_BIT[term.field] : 0;
+      best.fill(0);
+
+      expand(term, isLast).forEach(function (hit) {
+        var post = hit.post;
+        if (!post) return;
+        for (var i = 0; i < post.d.length; i++) {
+          if (bit && !(post.m[i] & bit)) continue;
+          var s = post.idf * (bit ? 4 : post.w[i]) * hit.quality;
+          if (s > best[post.d[i]]) best[post.d[i]] = s;
+        }
+      });
+
+      for (var d = 0; d < N; d++) {
+        if (best[d] > 0) { scores[d] += best[d]; matched[d]++; }
+      }
+    });
+
+    var out = [];
+    for (var d = 0; d < N; d++) {
+      if (matched[d] !== required) continue;
+      var w = works[d];
+
+      if (parsed.year && (w.year === null || w.year < parsed.year.from || w.year > parsed.year.to)) continue;
+
+      var ok = true;
+      for (var p = 0; p < parsed.phrases.length; p++) {
+        var ph = parsed.phrases[p];
+        if (ph.field) {
+          if ((w.ft[ph.field] || "").indexOf(ph.text) === -1) { ok = false; break; }
+        } else {
+          var anywhere = false;
+          for (var k = 0; k < SEARCH_FIELDS.length; k++) {
+            if ((w.ft[SEARCH_FIELDS[k].key] || "").indexOf(ph.text) !== -1) { anywhere = true; break; }
+          }
+          if (!anywhere) { ok = false; break; }
+        }
+      }
+      if (!ok) continue;
+
+      w.score = scores[d];
+      out.push(w);
+    }
+
+    // A year-only query ("year:1960-1970") has no terms to match, so collect directly.
+    if (!required && parsed.year) {
+      out = works.filter(function (w) {
+        return w.year !== null && w.year >= parsed.year.from && w.year <= parsed.year.to;
+      });
+      out.forEach(function (w) { w.score = 1; });
+    }
+
+    return out;
+  }
+
+  // ---------- highlighting ----------
+
+  var WORD_RE = /[0-9A-Za-z\u00c0-\u024f]+/g;
+
+  function highlight(text, terms) {
+    if (!terms.length) return esc(text);
+    var out = "", last = 0, m;
+    WORD_RE.lastIndex = 0;
+    while ((m = WORD_RE.exec(text)) !== null) {
+      out += esc(text.slice(last, m.index));
+      var word = m[0], f = fold(word), hit = false;
+      for (var i = 0; i < terms.length; i++) {
+        var t = terms[i];
+        if (f === t || (t.length >= 3 && f.lastIndexOf(t, 0) === 0)) { hit = true; break; }
+      }
+      out += hit ? "<mark>" + esc(word) + "</mark>" : esc(word);
+      last = m.index + word.length;
+    }
+    return out + esc(text.slice(last));
+  }
+
   // ---------- stats ----------
 
   var artistCount = new Set(works.filter(function (w) { return w.artist !== "Unknown artist"; })
     .map(function (w) { return w.artist; })).size;
-  var galleryCount = new Set(works.filter(function (w) { return w.partner; }).map(function (w) { return w.partner; })).size;
+  var galleryCount = new Set(works.filter(function (w) { return w.partner; })
+    .map(function (w) { return w.partner; })).size;
   var years = works.filter(function (w) { return w.year; }).map(function (w) { return w.year; });
-  var savedYears = works.filter(function (w) { return w.saved; }).map(function (w) { return w.saved; }).sort();
-
-  function fmt(n) { return n.toLocaleString("en-US"); }
+  var savedYears = works.filter(function (w) { return w.saved; })
+    .map(function (w) { return w.saved; }).sort();
 
   function stat(n, label) {
     return '<span><span class="stat-n">' + n + '</span> <span class="stat-l">' + label + '</span></span>';
   }
 
   document.getElementById("stats").innerHTML = [
-    stat(fmt(works.length), "works"),
+    stat(fmt(N), "works"),
     stat(fmt(artistCount), "artists"),
     stat(fmt(galleryCount), "galleries"),
     stat(Math.min.apply(null, years) + "–" + Math.max.apply(null, years), "made"),
     stat(savedYears[0] + "–" + savedYears[savedYears.length - 1], "saved")
   ].join("");
 
-  // ---------- filter chips ----------
+  // ---------- facets ----------
 
-  var state = { q: "", bin: null, cat: null, forsale: false, sort: "saved" };
+  var state = { q: "", bin: null, cat: null, forsale: false, sort: "relevance", sortLocked: false };
 
   var binCounts = {};
   works.forEach(function (w) { binCounts[w.bin] = (binCounts[w.bin] || 0) + 1; });
@@ -561,10 +1023,6 @@
       ' <span class="n">' + fmt(binCounts[b.key]) + '</span></button>';
   }).join("");
 
-  var catCounts = {};
-  works.forEach(function (w) { catCounts[w.category] = (catCounts[w.category] || 0) + 1; });
-  var cats = Object.keys(catCounts).sort(function (a, b) { return catCounts[b] - catCounts[a]; }).slice(0, 10);
-
   // Artsy's own category strings, shortened to what the trade actually calls them.
   var CAT_LABELS = {
     "Drawing, Collage or other Work on Paper": "Works on Paper",
@@ -572,34 +1030,88 @@
     "Ephemera or Merchandise": "Ephemera"
   };
 
+  var catCounts = {};
+  works.forEach(function (w) { catCounts[w.category] = (catCounts[w.category] || 0) + 1; });
+  var cats = Object.keys(catCounts).sort(function (a, b) { return catCounts[b] - catCounts[a]; }).slice(0, 10);
+
   var catsEl = document.getElementById("cats");
   catsEl.innerHTML = cats.map(function (c) {
-    return '<button class="chip" type="button" data-cat="' + c.replace(/"/g, "&quot;") + '" aria-pressed="false">' +
+    return '<button class="chip" type="button" data-cat="' + esc(c) + '" aria-pressed="false">' +
       esc(CAT_LABELS[c] || c) + ' <span class="n">' + fmt(catCounts[c]) + '</span></button>';
   }).join("");
 
-  document.getElementById("forsale-n").textContent = fmt(works.filter(function (w) { return w.forsale; }).length);
+  document.getElementById("forsale-n").textContent =
+    fmt(works.filter(function (w) { return w.forsale; }).length);
+
+  // ---------- suggestions ----------
+
+  var artistCounts = {}, natCounts = {};
+  works.forEach(function (w) {
+    if (w.artist !== "Unknown artist") artistCounts[w.artist] = (artistCounts[w.artist] || 0) + 1;
+    if (w.nationality) natCounts[w.nationality] = (natCounts[w.nationality] || 0) + 1;
+  });
+
+  function suggestPool(map, kind, field) {
+    return Object.keys(map).map(function (name) {
+      return { label: name, folded: fold(name), n: map[name], kind: kind, field: field };
+    });
+  }
+
+  var POOL = suggestPool(artistCounts, "Artist", "artist")
+    .concat(suggestPool(natCounts, "Nationality", "nationality"))
+    .concat(Object.keys(catCounts).map(function (c) {
+      return { label: CAT_LABELS[c] || c, query: c, folded: fold(c), n: catCounts[c], kind: "Category", field: "category" };
+    }));
+
+  function suggestionsFor(q) {
+    var f = fold(q).trim();
+    if (f.length < 2) return [];
+    var starts = [], contains = [];
+    for (var i = 0; i < POOL.length; i++) {
+      var item = POOL[i];
+      var at = item.folded.indexOf(f);
+      if (at === 0) starts.push(item);
+      else if (at > 0) contains.push(item);
+      if (starts.length > 40) break;
+    }
+    var byCount = function (a, b) { return b.n - a.n; };
+    starts.sort(byCount);
+    contains.sort(byCount);
+    return starts.concat(contains).slice(0, 7);
+  }
 
   // ---------- filtering ----------
 
   var visible = works;
+  var activeTerms = [];
+  var lastMs = 0;
 
   function applyFilters() {
-    var q = state.q.trim().toLowerCase();
-    var terms = q ? q.split(/\s+/) : [];
+    var t0 = performance.now();
+    var q = state.q.trim();
+    var parsed = q ? parseQuery(q) : null;
+    var hasQuery = !!(parsed && (parsed.terms.length || parsed.year));
 
-    visible = works.filter(function (w) {
+    var pool;
+    if (hasQuery) {
+      pool = search(parsed);
+      activeTerms = parsed.terms.map(function (t) { return t.text; });
+    } else {
+      pool = works;
+      activeTerms = [];
+    }
+
+    visible = pool.filter(function (w) {
       if (state.bin && w.bin !== state.bin) return false;
       if (state.cat && w.category !== state.cat) return false;
       if (state.forsale && !w.forsale) return false;
-      for (var i = 0; i < terms.length; i++) {
-        if (w.hay.indexOf(terms[i]) === -1) return false;
-      }
       return true;
     });
 
     var s = state.sort;
+    if (s === "relevance" && !hasQuery) s = "saved";
     visible.sort(function (a, b) {
+      if (s === "relevance") return (b.score || 0) - (a.score || 0) || a.artist.localeCompare(b.artist);
       if (s === "artist") return a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title);
       if (s === "newest") return (b.year || -9999) - (a.year || -9999);
       if (s === "oldest") return (a.year || 9999) - (b.year || 9999);
@@ -611,19 +1123,48 @@
       return (b.saved || "").localeCompare(a.saved || "");
     });
 
+    lastMs = performance.now() - t0;
+
     shown = 0;
-    document.getElementById("grid").innerHTML = "";
+    gridEl.innerHTML = "";
     renderMore();
-
-    var filtered = visible.length !== works.length;
-    document.getElementById("count").textContent =
-      filtered ? fmt(visible.length) + " of " + fmt(works.length) + " works" : fmt(works.length) + " works";
-
-    document.getElementById("empty").innerHTML = visible.length
-      ? ""
-      : '<p class="empty">Nothing matches those filters.</p>';
-
+    renderResultLine(hasQuery, q);
     drawRibbon();
+  }
+
+  function renderResultLine(hasQuery, q) {
+    var line = document.getElementById("resultline");
+    var emptyEl = document.getElementById("empty");
+    var facets = state.bin || state.cat || state.forsale;
+
+    if (!hasQuery && !facets) {
+      line.innerHTML = "<span><b>" + fmt(N) + "</b> works indexed</span>";
+      emptyEl.innerHTML = "";
+      return;
+    }
+
+    var parts = ["<span><b>" + fmt(visible.length) + "</b> of " + fmt(N) + " works</span>"];
+    if (hasQuery) parts.push("<span>" + lastMs.toFixed(lastMs < 10 ? 1 : 0) + " ms</span>");
+    line.innerHTML = parts.join("");
+
+    if (visible.length) { emptyEl.innerHTML = ""; return; }
+
+    // Nothing matched: offer the nearest indexed word rather than a dead end.
+    var alt = "";
+    if (hasQuery) {
+      ensureIndex();
+      var toks = tokenize(q);
+      for (var i = 0; i < toks.length && !alt; i++) {
+        if (index.get(toks[i])) continue;
+        var near = (fuzzyTerms(toks[i])[0] || {}).t ||
+          prefixTerms(toks[i].slice(0, Math.max(3, toks[i].length - 2)), 1)[0];
+        if (near) alt = q.replace(new RegExp(toks[i], "i"), near);
+      }
+    }
+
+    emptyEl.innerHTML = '<p class="empty">No works match <b>' + esc(q || "those filters") + "</b>." +
+      (alt ? ' Did you mean <button class="didyoumean" type="button" data-q="' + esc(alt) + '">' + esc(alt) + "</button>?" : "") +
+      "</p>";
   }
 
   // ---------- grid ----------
@@ -632,10 +1173,6 @@
   var shown = 0;
   var gridEl = document.getElementById("grid");
   var moreEl = document.getElementById("more");
-
-  function esc(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
 
   function tileHtml(w) {
     var weights = [56, 22, 22];
@@ -646,18 +1183,23 @@
   }
 
   function workHtml(w) {
-    var year = w.date ? esc(w.date) : "n.d.";
+    var t = activeTerms;
+    var year = w.date ? highlight(w.date, t) : "n.d.";
     var right = w.price ? '<span class="work-price">' + esc(w.price) + "</span>"
       : (w.forsale ? '<span class="work-price">For sale</span>' : "");
+    var artistLine = highlight(w.artist, t) +
+      (w.nationality ? ' <span class="nat">· ' + highlight(w.nationality, t) + "</span>" : "");
+
     return '<article class="work">' +
       '<div class="work-plate">' + tileHtml(w) + "</div>" +
       '<div class="work-meta">' +
-        '<div class="work-artist">' + esc(w.artist) + "</div>" +
-        '<h3 class="work-title"><em>' + esc(w.title) + '</em>, <span class="year">' + year + "</span></h3>" +
-        (w.medium ? '<div class="work-spec">' + esc(w.medium) + "</div>" : "") +
+        '<div class="work-artist">' + artistLine + "</div>" +
+        '<h3 class="work-title"><em>' + highlight(w.title, t) + '</em>, <span class="year">' + year + "</span></h3>" +
+        (w.medium ? '<div class="work-spec">' + highlight(w.medium, t) + "</div>" : "") +
         (w.dims ? '<div class="work-dims">' + esc(w.dims) + "</div>" : "") +
         '<div class="work-foot"><span class="work-cat">' + esc(CAT_LABELS[w.category] || w.category) + "</span>" + right + "</div>" +
-        '<div class="work-foot"><a class="work-link" href="https://www.artsy.net/artwork/' + esc(w.id) + '" target="_blank" rel="noopener noreferrer">View on Artsy</a></div>' +
+        '<div class="work-foot"><a class="work-link" href="https://www.artsy.net/artwork/' + esc(w.id) +
+          '" target="_blank" rel="noopener noreferrer">View on Artsy</a></div>' +
       "</div></article>";
   }
 
@@ -693,15 +1235,15 @@
     canvas.height = Math.round(rect.height * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    var W = rect.width, H = rect.height, N = spectrum.length;
-    var step = W / N;
+    var W = rect.width, H = rect.height, n = spectrum.length;
+    var step = W / n;
 
     ctx.fillStyle = paperColor();
     ctx.fillRect(0, 0, W, H);
 
-    // When a filter is active, non-matching works fade back so the filtered set
+    // With a query or facet active, everything else fades back so the result set
     // reads as a position within the collection's whole color range.
-    var filtered = visible.length !== works.length;
+    var filtered = visible.length !== N;
     var inSet = null;
     if (filtered) {
       inSet = new Set();
@@ -709,7 +1251,7 @@
     }
 
     var weights = [0.56, 0.22, 0.22];
-    for (var i = 0; i < N; i++) {
+    for (var i = 0; i < n; i++) {
       var w = spectrum[i];
       var x = i * step;
       ctx.globalAlpha = (!filtered || inSet.has(w.id)) ? 1 : 0.1;
@@ -752,8 +1294,7 @@
 
   canvas.addEventListener("click", function (e) {
     var w = workAt(e.clientX);
-    if (!w) return;
-    setBin(state.bin === w.bin ? null : w.bin);
+    if (w) setBin(state.bin === w.bin ? null : w.bin);
   });
 
   function setBin(bin) {
@@ -764,13 +1305,117 @@
     applyFilters();
   }
 
-  // ---------- events ----------
+  // ---------- search UI ----------
 
   var searchEl = document.getElementById("search");
-  searchEl.addEventListener("input", function () { state.q = searchEl.value; applyFilters(); });
+  var suggestEl = document.getElementById("suggest");
+  var clearEl = document.getElementById("clear");
+  var slashEl = document.getElementById("slash");
+  var sortEl = document.getElementById("sort");
+  var suggestions = [], cursor = -1;
 
-  document.getElementById("sort").addEventListener("change", function (e) {
+  searchEl.placeholder = "Search " + fmt(N) + " works by title, artist, medium, gallery…";
+
+  function closeSuggest() {
+    suggestions = [];
+    cursor = -1;
+    suggestEl.hidden = true;
+    searchEl.setAttribute("aria-expanded", "false");
+  }
+
+  function renderSuggest() {
+    if (!suggestions.length) { closeSuggest(); return; }
+    suggestEl.innerHTML = suggestions.map(function (s, i) {
+      return '<div class="suggest-item" role="option" data-i="' + i + '" aria-selected="' + (i === cursor) + '">' +
+        '<span class="suggest-label">' + esc(s.label) + "</span>" +
+        '<span class="suggest-kind">' + s.kind + "</span>" +
+        '<span class="suggest-n">' + fmt(s.n) + "</span></div>";
+    }).join("");
+    suggestEl.hidden = false;
+    searchEl.setAttribute("aria-expanded", "true");
+  }
+
+  function acceptSuggestion(i) {
+    var s = suggestions[i];
+    if (!s) return;
+    setQuery(s.field + ':"' + (s.query || s.label) + '"');
+    closeSuggest();
+  }
+
+  function setQuery(q) {
+    state.q = q;
+    searchEl.value = q;
+    clearEl.hidden = !q;
+    slashEl.hidden = !!q;
+    if (!state.sortLocked) {
+      state.sort = q.trim() ? "relevance" : "saved";
+      sortEl.value = state.sort;
+    }
+    applyFilters();
+  }
+
+  searchEl.addEventListener("input", function () {
+    state.q = searchEl.value;
+    clearEl.hidden = !state.q;
+    slashEl.hidden = !!state.q;
+    if (!state.sortLocked) {
+      state.sort = state.q.trim() ? "relevance" : "saved";
+      sortEl.value = state.sort;
+    }
+    // Suggest on the last word only, and not while a field scope is being typed.
+    var tail = state.q.split(/\s+/).pop() || "";
+    suggestions = tail.indexOf(":") === -1 ? suggestionsFor(tail) : [];
+    cursor = -1;
+    renderSuggest();
+    applyFilters();
+  });
+
+  searchEl.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown" && suggestions.length) {
+      e.preventDefault(); cursor = (cursor + 1) % suggestions.length; renderSuggest();
+    } else if (e.key === "ArrowUp" && suggestions.length) {
+      e.preventDefault(); cursor = (cursor - 1 + suggestions.length) % suggestions.length; renderSuggest();
+    } else if (e.key === "Enter") {
+      if (cursor >= 0) { e.preventDefault(); acceptSuggestion(cursor); } else closeSuggest();
+    } else if (e.key === "Escape") {
+      if (!suggestEl.hidden) closeSuggest();
+      else setQuery("");
+    }
+  });
+
+  searchEl.addEventListener("blur", function () { setTimeout(closeSuggest, 120); });
+
+  suggestEl.addEventListener("mousedown", function (e) {
+    var item = e.target.closest(".suggest-item");
+    if (item) { e.preventDefault(); acceptSuggestion(+item.dataset.i); }
+  });
+
+  clearEl.addEventListener("click", function () { setQuery(""); searchEl.focus(); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "select" || tag === "textarea") return;
+    e.preventDefault();
+    searchEl.focus();
+    searchEl.select();
+  });
+
+  document.querySelector(".hints").addEventListener("click", function (e) {
+    var hint = e.target.closest(".hint");
+    if (hint) { setQuery(hint.dataset.q); searchEl.focus(); }
+  });
+
+  document.getElementById("empty").addEventListener("click", function (e) {
+    var btn = e.target.closest(".didyoumean");
+    if (btn) setQuery(btn.dataset.q);
+  });
+
+  // ---------- facet events ----------
+
+  sortEl.addEventListener("change", function (e) {
     state.sort = e.target.value;
+    state.sortLocked = true;
     applyFilters();
   });
 
@@ -810,6 +1455,11 @@
     attributes: true, attributeFilter: ["data-theme"]
   });
 
+  sortEl.value = "saved";
+  state.sort = "saved";
   applyFilters();
+
+  // Warm the index once the first paint is done, so the first keystroke is instant.
+  (window.requestIdleCallback || function (fn) { setTimeout(fn, 200); })(ensureIndex);
 })();
 </script>
