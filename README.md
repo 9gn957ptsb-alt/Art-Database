@@ -20,6 +20,10 @@ The token is stored as an **environment API credential**, not in this repo and n
 Anthropic's agent proxy attaches it to requests *after they leave the session*, so the token
 never enters Claude's context. `scripts/fetch_artsy_saves.py` sends no token of its own.
 
+`data/*.json` is tracked with **Git LFS** (GitHub warns above ~50MB for a plain git blob, and
+the raw saves file is ~57MB). Pushing an LFS-tracked file needs `lfs.github.com` reachable in
+addition to `github.com` — see step 4 below.
+
 ## Setup
 
 ### 1. Get an Artsy user access token
@@ -38,8 +42,11 @@ At [claude.ai/code](https://claude.ai/code), select the cloud icon showing the e
 name in the row above the message box. There is no settings page or direct URL.
 
 1. **Add cloud environment** → name it `Artsy` → **Network access: Custom** → **Allowed
-   domains**: `api.artsy.net` and `artsy.net` → check **Also include default list of common
-   package managers** → **Create environment**.
+   domains**: `api.artsy.net`, `artsy.net`, `github.com`, and `lfs.github.com` → check **Also
+   include default list of common package managers** → **Create environment**. `github.com`
+   and `lfs.github.com` are needed to push commits and the LFS-tracked data file (step 4) —
+   easy to miss since plain `git push`/`pull` can work without them but an LFS object upload
+   cannot.
 2. Reopen it for editing (hover → gear icon). API credentials can only be added when editing
    an environment that already exists, not in the creation dialog.
 3. **API credentials** → **Add credential**:
@@ -65,6 +72,23 @@ python3 scripts/fetch_artsy_saves.py           # full run, ~40 pages
 `--probe` is worth running first: it prints one record's real field names so normalisation is
 based on the actual payload rather than assumptions. Output lands in
 `data/artsy_saves_raw.json`.
+
+### 4. Push the result (Git LFS)
+
+`data/*.json` is tracked via Git LFS (see `.gitattributes`), so `git add`/`git commit` produce
+a small pointer file locally but `git push` also needs to upload the real object to
+`lfs.github.com`. That call goes through the environment's general egress proxy — unlike a
+plain `git push`/`pull` to `github.com`, which Anthropic's proxy handles separately via
+credential injection and can succeed even when `github.com` isn't on the environment's allowed
+list. If `lfs.github.com` isn't allowed, the push fails partway with something like:
+
+```
+Post "https://lfs.github.com/<owner>/<repo>/objects/<oid>/verify": Forbidden
+```
+
+Fix: add `lfs.github.com` (and `github.com`, to be safe) to the environment's allowed domains
+per step 2, then start a **new** session — environment config is only read at session startup,
+so a session already running when the domain list changes can't pick it up.
 
 ## API reference
 
