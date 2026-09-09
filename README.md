@@ -7,8 +7,10 @@ A searchable database of artworks, seeded from ~4,000 saved works on
 ## Status
 
 The Artsy import has run: `data/artsy_saves_raw.json` holds 4,969 raw saved-artwork
-records fetched via `scripts/fetch_artsy_saves.py`. Normalising that raw data into the
-searchable database is the next step.
+records fetched via `scripts/fetch_artsy_saves.py`. That raw data has been normalized
+into `data/artworks.db`, a searchable SQLite database, via
+`scripts/normalize_artsy_saves.py`. Museum-visit photos and a real UI on top of the
+database are still to come.
 
 ## Why the setup is fiddly
 
@@ -89,6 +91,39 @@ Post "https://lfs.github.com/<owner>/<repo>/objects/<oid>/verify": Forbidden
 Fix: add `lfs.github.com` (and `github.com`, to be safe) to the environment's allowed domains
 per step 2, then start a **new** session — environment config is only read at session startup,
 so a session already running when the domain list changes can't pick it up.
+
+## The database
+
+`data/artworks.db` is a plain SQLite file, generated from the raw dump by
+`scripts/normalize_artsy_saves.py`. Rebuild it (e.g. after a fresh fetch) with:
+
+```bash
+python3 scripts/normalize_artsy_saves.py
+```
+
+It's an ordinary SQLite database — open it with any SQLite client (`sqlite3
+data/artworks.db`, DB Browser for SQLite, a Python `sqlite3` connection, etc.) — with:
+
+- **`artworks`** — one row per saved piece: title, primary artist/partner, category,
+  medium, date, dimensions, price/availability, a representative image URL, the Artsy
+  URL, and save/publish timestamps. Indexed on artist name, category, for-sale, and
+  save date.
+- **`artwork_artists`** — one row per (artwork, artist), for pieces with more than one
+  artist/maker.
+- **`artwork_colors`** — one row per (artwork, dominant color), hex plus decoded RGB, so
+  the collection can be browsed or filtered by color.
+- **`artworks_fts`** — an FTS5 full-text index over title, artist names, medium,
+  category, partner, and blurb.
+
+`scripts/search_artworks.py` is a small CLI over the database, mainly to prove it
+works — a real UI is still to come:
+
+```bash
+python3 scripts/search_artworks.py "heart"                  # full-text search
+python3 scripts/search_artworks.py --artist "Rudy Autio"
+python3 scripts/search_artworks.py --category Painting --forsale
+python3 scripts/search_artworks.py --color "#3a6ea5" --color-tolerance 40
+```
 
 ## API reference
 
