@@ -1,0 +1,4323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Color Middling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C1D21;
+    --ink-soft:#6B6F76;
+    --hair:rgba(28,29,33,0.12);
+    --cyan-mark:#0FA3B1;
+    --magenta-mark:#B1338C;
+    --radius: 20px;
+    --radius-pill: 999px;
+    --glass-bg: rgba(255,255,255,0.50);
+    --glass-bg-strong: rgba(255,255,255,0.68);
+    --glass-border: rgba(255,255,255,0.75);
+    --glass-shadow: 0 8px 32px rgba(31,38,60,0.14), inset 0 1px 0 rgba(255,255,255,0.55);
+    --glass-blur: blur(22px) saturate(180%);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+    background:linear-gradient(180deg, #F4F2ED 0%, #ECE9E2 100%);
+  }
+  .wrap{
+    max-width:880px;
+    margin:0 auto;
+    padding:40px 20px 80px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom:24px;
+  }
+  h1{
+    font-family:'Jost',sans-serif;
+    font-weight:300;
+    font-size:32px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    margin:0;
+    line-height:1;
+    padding-left:0.3em;
+  }
+
+  /* glass panel base — shared by every floating control group */
+  .import-row,
+  .mode-row,
+  .view-row{
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    box-shadow:var(--glass-shadow);
+  }
+
+  .import-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    padding:14px 18px;
+    text-align:center;
+  }
+  .btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:rgba(28,29,33,0.9);
+    color:#fff;
+    border:none;
+    padding:11px 20px;
+    border-radius:var(--radius-pill);
+    cursor:pointer;
+    box-shadow:0 4px 14px rgba(28,29,33,0.22), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease, background .15s ease;
+  }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(28,29,33,0.28), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .btn:active{ transform:translateY(0); opacity:.85; }
+  .btn-import{
+    font-family:'Jost',sans-serif;
+    font-weight:400;
+    letter-spacing:0.2em;
+  }
+  label.btn-import{
+    font-size:14px;
+    padding:12px 26px;
+  }
+  .btn:focus-visible{ outline:2px solid var(--cyan-mark); outline-offset:3px; }
+  .btn:disabled{ opacity:0.5; cursor:default; transform:none !important; }
+  .btn.ghost{
+    background:rgba(255,255,255,0.45);
+    backdrop-filter:blur(14px) saturate(160%);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);
+    color:var(--ink);
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:0 2px 10px rgba(31,38,60,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .btn.ghost:hover{ background:rgba(255,255,255,0.62); box-shadow:0 4px 14px rgba(31,38,60,0.14), inset 0 1px 0 rgba(255,255,255,0.7); }
+  input[type=file]{display:none;}
+
+  .status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .status .dot{
+    display:inline-block;
+    width:6px;height:6px;
+    border-radius:50%;
+    margin-right:7px;
+    background:var(--cyan-mark);
+    position:relative;
+    top:-1px;
+    box-shadow:0 0 6px rgba(15,163,177,0.7);
+  }
+
+  .mode-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    padding:14px 18px;
+  }
+  .mode-row label.field-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  select{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    background:rgba(255,255,255,0.55);
+    backdrop-filter:blur(14px) saturate(160%);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);
+    color:var(--ink);
+    border:1px solid rgba(255,255,255,0.75);
+    border-radius:12px;
+    padding:9px 12px;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(31,38,60,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  input[type=number]{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    background:rgba(255,255,255,0.55);
+    backdrop-filter:blur(14px) saturate(160%);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);
+    color:var(--ink);
+    border:1px solid rgba(255,255,255,0.75);
+    border-radius:12px;
+    padding:8px 8px;
+    width:56px;
+    box-shadow:0 2px 8px rgba(31,38,60,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+
+  .stage{
+    border-top:1px solid rgba(255,255,255,0.5);
+    border-bottom:1px solid rgba(255,255,255,0.5);
+    background:
+      linear-gradient(45deg, rgba(255,255,255,0.35) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255,255,255,0.35) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.35) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.35) 75%),
+      linear-gradient(180deg, #DCE8F0, #EFE6DC);
+    background-size:16px 16px, 16px 16px, 16px 16px, 16px 16px, 100% 100%;
+    background-position:0 0, 0 8px, 8px -8px, -8px 0px, 0 0;
+    height:80vh;
+    min-height:320px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    width:100vw;
+    left:50%;
+    right:50%;
+    margin-left:-50vw;
+    margin-right:-50vw;
+    border-radius:0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .stage.empty::after{
+    content:"Import an image to begin";
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:.04em;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    white-space:nowrap;
+  }
+  .stage.empty.hasfile::after{ content: ""; }
+  #displayCanvas{
+    display:block;
+    width:100%;
+    height:100%;
+    cursor:crosshair;
+    touch-action:none;
+  }
+
+  .view-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    padding:12px 18px;
+  }
+  .view-row .btn.icon{
+    width:38px;
+    padding:9px 0;
+    text-align:center;
+    font-size:15px;
+    line-height:1;
+  }
+  .view-row .zoom-readout{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    min-width:42px;
+    text-align:center;
+  }
+  .view-row .zoom-readout.snapped{
+    color:var(--cyan-mark);
+    font-weight:600;
+  }
+  .view-row .divider{
+    width:1px;
+    align-self:stretch;
+    background:rgba(28,29,33,0.14);
+    margin:0 2px;
+  }
+
+  #swatchM{ cursor:default; transition: outline .15s ease, box-shadow .15s ease; outline:3px solid transparent; outline-offset:3px; }
+  #swatchM.pickable{ cursor:pointer; }
+  #swatchM.armed{ outline-color: var(--cyan-mark); box-shadow:0 0 0 6px rgba(15,163,177,0.18); }
+
+  .equation{
+    margin-top:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .chip{ text-align:center; position:relative; }
+  .chip .swatch{ padding:0; display:block; }
+  .swatch{
+    width:88px;height:88px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,0.6);
+    box-shadow:0 4px 14px rgba(31,38,60,0.14), inset 0 1px 0 rgba(255,255,255,0.4);
+    cursor:pointer;
+    outline:3px solid transparent;
+    outline-offset:3px;
+    touch-action:none;
+    transition:transform .15s ease, box-shadow .15s ease, outline-color .15s ease;
+  }
+  .swatch:hover{ transform:translateY(-1px); }
+  .swatch.placeholder{
+    background:repeating-linear-gradient(135deg, rgba(28,29,33,0.10), rgba(28,29,33,0.10) 2px, transparent 2px, transparent 8px);
+    border:1px dashed rgba(28,29,33,0.28);
+    box-shadow:none;
+  }
+  /* the slot currently waiting for a sample */
+  .swatch.selected{
+    outline-color:var(--cyan-mark);
+    border-style:solid;
+    box-shadow:0 0 0 6px rgba(15,163,177,0.16);
+    animation:slotPulse 1.6s ease-in-out infinite;
+  }
+  .chip.has-value .swatch:not(.selected){ cursor:grab; }
+  .swatch.dragging{
+    cursor:grabbing;
+    z-index:80;
+    box-shadow:0 14px 34px rgba(31,38,60,0.32), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .swatch.drop-target{
+    outline-color:var(--magenta-mark);
+    outline-style:dashed;
+    box-shadow:0 0 0 6px rgba(177,51,140,0.18);
+  }
+  @keyframes slotPulse{
+    0%,100%{ box-shadow:0 0 0 6px rgba(15,163,177,0.16); }
+    50%{ box-shadow:0 0 0 10px rgba(15,163,177,0.08); }
+  }
+  /* a slot whose value the tool worked out rather than sampled */
+  .chip.solved .swatch{
+    border:2px solid var(--magenta-mark);
+  }
+  .chip.solved .chip-label::after{
+    content:" · solved";
+    color:var(--magenta-mark);
+  }
+  .slot-clear{
+    position:absolute;
+    top:-6px;
+    right:-6px;
+    width:22px;height:22px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,0.8);
+    background:rgba(28,29,33,0.85);
+    color:#fff;
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    display:none;
+    padding:0;
+    box-shadow:0 2px 8px rgba(31,38,60,0.24);
+  }
+  .chip.has-value .slot-clear{ display:block; }
+  .chip.middle .slot-clear{ right:14px; }
+  .chip.middle .swatch{
+    width:128px;height:128px;
+    border-radius:26px;
+    box-shadow:0 10px 30px rgba(31,38,60,0.22), inset 0 1px 0 rgba(255,255,255,0.5);
+    border:1px solid rgba(255,255,255,0.7);
+  }
+  .chip-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-top:9px;
+  }
+  .chip-hex{ font-family:'JetBrains Mono',monospace; font-size:12px; margin-top:2px; }
+  .chip-actions{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:14px;
+  }
+  .btn.small{
+    font-size:10.5px;
+    padding:8px 16px;
+  }
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(20,22,30,0.38);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:1000;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:var(--glass-bg-strong);
+    backdrop-filter:blur(34px) saturate(180%);
+    -webkit-backdrop-filter:blur(34px) saturate(180%);
+    border:1px solid var(--glass-border);
+    border-radius:28px;
+    padding:24px;
+    max-width:520px;
+    width:100%;
+    max-height:88vh;
+    overflow:auto;
+    text-align:center;
+    position:relative;
+    box-shadow:0 24px 70px rgba(20,22,30,0.28), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .modal-close{
+    position:absolute;
+    top:6px;
+    right:10px;
+    background:none;
+    border:none;
+    font-size:26px;
+    line-height:1;
+    color:var(--ink-soft);
+    cursor:pointer;
+    padding:6px;
+  }
+  .modal-instructions{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    margin:8px 0 16px;
+    padding-right:20px;
+  }
+  #exportImg{
+    max-width:100%;
+    height:auto;
+    display:block;
+    margin:0 auto;
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:14px;
+  }
+  #downloadLink{
+    display:inline-block;
+    text-decoration:none;
+    margin-top:16px;
+  }
+  .operator{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    padding-bottom:24px;
+    text-align:center;
+    max-width:90px;
+  }
+  .operator .sym{ font-family:'Fraunces',serif; font-size:24px; display:block; color:var(--ink); }
+
+  .spec{
+    margin:36px auto 0;
+    max-width:460px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    box-shadow:var(--glass-shadow);
+    padding:20px 24px;
+  }
+  .spec-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .spec-title .m{color:var(--magenta-mark);}
+  .spec-title .c{color:var(--cyan-mark);}
+  .spec-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px solid rgba(28,29,33,0.10);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .spec-row:last-child{border-bottom:none;}
+  .spec-row .k{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+  .spec-row .v{ font-size:15px; font-weight:500; }
+  .cmyk-bars{ display:flex; gap:10px; margin-top:4px; }
+  .cmyk-bar{ flex:1; font-family:'JetBrains Mono',monospace; }
+  .cmyk-bar .label{ font-size:10px; letter-spacing:.1em; color:var(--ink-soft); margin-bottom:5px; }
+  .cmyk-bar .track{ height:5px; background:rgba(28,29,33,0.08); border-radius:3px; overflow:hidden; }
+  .cmyk-bar .fill{ height:100%; }
+  .cmyk-bar .num{ font-size:12px; margin-top:5px; }
+
+  .delta-note{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    padding:10px 0 0;
+  }
+  .delta-vals{
+    display:flex;
+    gap:16px;
+    margin-top:8px;
+  }
+  .delta-vals div{ font-size:12.5px; color:var(--ink); }
+  .delta-vals span{ color:var(--ink-soft); font-size:10px; display:block; }
+
+  footer.note{
+    margin-top:28px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    max-width:460px;
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+  }
+
+  .palette{
+    margin:28px auto 0;
+    max-width:620px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    box-shadow:var(--glass-shadow);
+    padding:22px 26px;
+  }
+  .palette-head{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+    margin-bottom:12px;
+  }
+  .palette-title{
+    font-family:'Jost',sans-serif;
+    font-weight:400;
+    font-size:15px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--ink);
+    text-align:center;
+  }
+  .history-controls{
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    gap:6px;
+  }
+  /* tools sit on their own row so they always fit the panel width */
+  .palette-tools{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .palette-tools .btn{ flex:0 1 auto; }
+  .icon-btn{
+    width:34px;
+    height:34px;
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:rgba(255,255,255,0.45);
+    backdrop-filter:blur(14px) saturate(160%);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:0 2px 10px rgba(31,38,60,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease, opacity .15s ease;
+  }
+  .icon-btn svg{
+    width:20px;
+    height:20px;
+    fill:none;
+    stroke:var(--ink);
+    stroke-width:2.1;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .icon-btn:hover:not(:disabled){ background:rgba(255,255,255,0.68); transform:translateY(-1px); }
+  .icon-btn:active:not(:disabled){ transform:translateY(0); }
+  .icon-btn:disabled{ opacity:0.3; cursor:default; }
+  .palette-info{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    line-height:1.6;
+    margin-bottom:14px;
+  }
+  .palette-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .pal-chip{
+    flex:0 0 auto;
+    width:74px;
+    text-align:center;
+  }
+  .pal-sw{
+    width:74px;
+    height:56px;
+    padding:0;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.6);
+    box-shadow:0 3px 10px rgba(31,38,60,0.18), inset 0 1px 0 rgba(255,255,255,0.45);
+    cursor:pointer;
+    display:block;
+    outline:3px solid transparent;
+    outline-offset:3px;
+    transition:transform .15s ease, box-shadow .15s ease, outline-color .15s ease;
+  }
+  .pal-sw:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(31,38,60,0.24); }
+  .pal-sw.armed{
+    outline-color:var(--cyan-mark);
+    box-shadow:0 0 0 6px rgba(15,163,177,0.18), 0 3px 10px rgba(31,38,60,0.18);
+  }
+  .pal-sw.merge-src{
+    outline-color:var(--magenta-mark);
+    outline-style:dashed;
+    box-shadow:0 0 0 6px rgba(177,51,140,0.18), 0 3px 10px rgba(31,38,60,0.18);
+  }
+  .palette.merging .pal-sw{ cursor:crosshair; }
+  .palette.merging .pal-hex{ pointer-events:none; opacity:0.55; }
+  .pal-sw.out-of-gamut{
+    border:1px solid rgba(214,80,40,0.85);
+  }
+  .gamut-badge{
+    position:absolute;
+    top:-5px; right:-5px;
+    width:17px; height:17px;
+    border-radius:50%;
+    background:#D65028;
+    color:#fff;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    line-height:17px;
+    text-align:center;
+    box-shadow:0 2px 6px rgba(31,38,60,0.28);
+    cursor:help;
+  }
+  .gamut-warn{
+    display:block;
+    margin-top:6px;
+    color:#A33C1E;
+    line-height:1.6;
+  }
+  .pal-hex{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-top:5px;
+    cursor:pointer;
+    letter-spacing:.01em;
+  }
+  .pal-hex:hover{ color:var(--ink); text-decoration:underline; }
+  .pal-hex.copied{ color:var(--cyan-mark); }
+  .refine{
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid rgba(28,29,33,0.12);
+  }
+  .refine-lead{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .refine-lead b{ color:var(--ink); }
+  .scheme{
+    border:1px solid rgba(255,255,255,0.6);
+    background:rgba(255,255,255,0.34);
+    border-radius:16px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    box-shadow:0 2px 10px rgba(31,38,60,0.08), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .scheme-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:4px;
+  }
+  .alt-controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .alt-controls label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .alt-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .alt-card{
+    flex:1 1 calc(50% - 7px);
+    min-width:140px;
+    max-width:none;
+    border:1px solid rgba(255,255,255,0.6);
+    background:rgba(255,255,255,0.34);
+    border-radius:14px;
+    padding:8px;
+    box-shadow:0 2px 10px rgba(31,38,60,0.08), inset 0 1px 0 rgba(255,255,255,0.5);
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .alt-card:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(31,38,60,0.16); }
+  .alt-card img{
+    width:100%;
+    display:block;
+    border-radius:9px;
+    background:#fff;
+  }
+  .alt-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:6px;
+  }
+  .alt-swatches{
+    display:flex;
+    gap:3px;
+    justify-content:center;
+    margin-top:5px;
+  }
+  .alt-dot{
+    width:13px; height:13px;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,0.7);
+  }
+  .alt-dot.fixed{ outline:1.5px solid var(--cyan-mark); outline-offset:1px; }
+
+  .plot-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:12px;
+  }
+  #plotCanvas{
+    width:100%;
+    max-width:460px;
+    height:auto;
+    border-radius:14px;
+    background:rgba(255,255,255,0.4);
+    border:1px solid rgba(255,255,255,0.6);
+    box-shadow:0 3px 14px rgba(31,38,60,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .plot-controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:12px;
+  }
+  .plot-controls label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .plot-controls input[type=range]{ width:190px; accent-color:var(--cyan-mark); }
+  .plot-readout{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink);
+    min-width:38px;
+  }
+  .plot-legend{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .plot-legend .key{
+    display:inline-block;
+    width:22px;
+    border-top:2px solid;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+
+  .scheme-active{
+    border-color:rgba(15,163,177,0.55);
+    box-shadow:0 0 0 3px rgba(15,163,177,0.14), 0 2px 10px rgba(31,38,60,0.08);
+  }
+  .scheme-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    letter-spacing:0.1em;
+    color:var(--cyan-mark);
+    border:1px solid rgba(15,163,177,0.5);
+    border-radius:999px;
+    padding:2px 7px;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+  .scheme-name{
+    font-family:'Jost',sans-serif;
+    font-weight:400;
+    font-size:14px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+  }
+  .scheme-fit{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .scheme-note{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .swap-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 0;
+    border-top:1px solid rgba(28,29,33,0.08);
+    flex-wrap:wrap;
+  }
+  .swap-chip{
+    width:30px; height:30px;
+    border-radius:9px;
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:0 2px 6px rgba(31,38,60,0.16);
+    flex:0 0 auto;
+  }
+  .swap-arrow{ color:var(--ink-soft); font-size:12px; }
+  .swap-text{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    line-height:1.55;
+    color:var(--ink-soft);
+    flex:1 1 190px;
+    min-width:170px;
+  }
+  .swap-text b{ color:var(--ink); }
+  .scheme-actions{ margin-top:10px; display:flex; gap:8px; }
+  .scheme-hold{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    padding:6px 0 0;
+  }
+
+  .pal-share{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+
+  .reference{
+    margin:28px auto 0;
+    max-width:620px;
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    box-shadow:var(--glass-shadow);
+    padding:22px 26px;
+  }
+  .reference-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:20px;
+  }
+  .ref-group{ margin-bottom:22px; }
+  .ref-group:last-child{ margin-bottom:0; }
+  .ref-group h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:16px;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  .ref-group ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  .ref-group li{
+    display:flex;
+    gap:14px;
+    padding:8px 0;
+    border-bottom:1px solid rgba(28,29,33,0.10);
+    font-size:12.5px;
+    line-height:1.5;
+  }
+  .ref-group li:last-child{ border-bottom:none; }
+  .ref-group li .mname{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--ink);
+    letter-spacing:.01em;
+  }
+  .ref-group li .mdesc{ color:var(--ink-soft); }
+  .ref-group li .mswatch{
+    flex:0 0 52px;
+    width:52px;
+    height:52px;
+    padding:0;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.6);
+    box-shadow:0 3px 10px rgba(31,38,60,0.18), inset 0 1px 0 rgba(255,255,255,0.45);
+    margin-top:1px;
+    cursor:default;
+    outline:3px solid transparent;
+    outline-offset:3px;
+    transition:transform .15s ease, box-shadow .15s ease, outline-color .15s ease;
+  }
+  .ref-group li .mswatch.pickable{ cursor:pointer; }
+  .ref-group li .mswatch.pickable:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 16px rgba(31,38,60,0.24), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .ref-group li .mswatch.armed{
+    outline-color:var(--cyan-mark);
+    box-shadow:0 0 0 6px rgba(15,163,177,0.18), 0 3px 10px rgba(31,38,60,0.18);
+  }
+  .ref-group li .mswatch.empty{
+    background:repeating-linear-gradient(135deg, rgba(28,29,33,0.10), rgba(28,29,33,0.10) 2px, transparent 2px, transparent 6px);
+    border:1px dashed rgba(28,29,33,0.22);
+    box-shadow:none;
+  }
+  .ref-group li .mmeta{
+    flex:0 0 108px;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .ref-group li .mhex{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:.02em;
+  }
+
+  /* Color C is optional — dim it until it's actually sampled */
+  #chipC.inactive, #operatorC.inactive{ opacity:0.42; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+
+  @media (max-width: 560px){
+    .equation{ gap:10px; }
+    .swatch{ width:68px; height:68px; border-radius:15px; }
+    .chip.middle .swatch{ width:100px; height:100px; border-radius:21px; }
+    .operator{ max-width:64px; padding-bottom:20px; font-size:10px; }
+    .operator .sym{ font-size:20px; }
+    .wrap{ padding-left:14px; padding-right:14px; }
+    .spec, .reference{ padding-left:18px; padding-right:18px; }
+    .ref-group li{ flex-wrap:wrap; gap:12px; }
+    .ref-group li .mmeta{ flex:1 1 auto; }
+    .ref-group li .mdesc{ flex:1 1 100%; }
+    h1{ font-size:28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Color Middling</h1>
+  </header>
+
+  <div class="import-row">
+    <label class="btn btn-import" for="fileInput">Import Image</label>
+    <input type="file" id="fileInput" accept="image/*">
+    <span class="status" id="statusText" hidden><span class="dot"></span>waiting for image</span>
+  </div>
+
+
+  <div class="view-row">
+    <button class="btn ghost small btn-import" id="resetViewBtn">Reset View</button>
+    <button class="btn small btn-import" id="exportBtn">Export Image</button>
+    <span class="zoom-readout" id="zoomReadout" hidden>100%</span>
+    <span class="zoom-readout" id="rotationReadout" hidden>0°</span>
+  </div>
+
+  <div class="stage empty" id="stage">
+    <canvas id="displayCanvas"></canvas>
+  </div>
+
+  <div class="mode-row">
+    <label class="field-label" for="modeSelect">Blend Mode</label>
+    <select id="modeSelect">
+      <optgroup label="Normal">
+        <option value="average" selected>Average (linear midpoint)</option>
+      </optgroup>
+      <optgroup label="Darken">
+        <option value="multiply">Multiply</option>
+        <option value="darken">Darken</option>
+        <option value="colorBurn">Color Burn</option>
+        <option value="linearBurn">Linear Burn</option>
+        <option value="darkerColor">Darker Color</option>
+      </optgroup>
+      <optgroup label="Lighten">
+        <option value="add">Add</option>
+        <option value="lighten">Lighten</option>
+        <option value="screen">Screen</option>
+        <option value="colorDodge">Color Dodge</option>
+        <option value="lighterColor">Lighter Color</option>
+        <option value="glow">Glow</option>
+      </optgroup>
+      <optgroup label="Contrast">
+        <option value="overlay">Overlay</option>
+        <option value="softLight">Soft Light</option>
+        <option value="hardLight">Hard Light</option>
+        <option value="vividLight">Vivid Light</option>
+        <option value="linearLight">Linear Light</option>
+        <option value="pinLight">Pin Light</option>
+        <option value="hardMix">Hard Mix</option>
+      </optgroup>
+      <optgroup label="Comparative">
+        <option value="difference">Difference</option>
+        <option value="exclusion">Exclusion</option>
+        <option value="subtract">Subtract</option>
+        <option value="divide">Divide</option>
+      </optgroup>
+      <optgroup label="HSL">
+        <option value="hue">Hue</option>
+        <option value="saturation">Saturation</option>
+        <option value="color">Color</option>
+        <option value="luminosity">Luminosity</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="equation">
+    <div class="chip" id="chipA">
+      <button type="button" class="swatch placeholder" id="swatchA" aria-label="Color A slot"></button>
+      <button type="button" class="slot-clear" data-slot="A" aria-label="Clear Color A">&times;</button>
+      <div class="chip-label">Color A</div>
+      <div class="chip-hex" id="hexA">—</div>
+    </div>
+    <div class="operator"><span class="sym">+</span><span id="modeLabel">average</span></div>
+    <div class="chip" id="chipB">
+      <button type="button" class="swatch placeholder" id="swatchB" aria-label="Color B slot"></button>
+      <button type="button" class="slot-clear" data-slot="B" aria-label="Clear Color B">&times;</button>
+      <div class="chip-label">Color B</div>
+      <div class="chip-hex" id="hexB">—</div>
+    </div>
+    <div class="operator" id="operatorC"><span class="sym">+</span><span>optional</span></div>
+    <div class="chip" id="chipC">
+      <button type="button" class="swatch placeholder" id="swatchC" aria-label="Color C slot"></button>
+      <button type="button" class="slot-clear" data-slot="C" aria-label="Clear Color C">&times;</button>
+      <div class="chip-label">Color C</div>
+      <div class="chip-hex" id="hexC">—</div>
+    </div>
+    <div class="operator"><span class="sym">=</span></div>
+    <div class="chip middle" id="chipM">
+      <button type="button" class="swatch placeholder" id="swatchM" aria-label="Result slot"></button>
+      <button type="button" class="slot-clear" data-slot="M" aria-label="Clear result">&times;</button>
+      <div class="chip-label">Middle Color</div>
+      <div class="chip-hex" id="hexM">—</div>
+      <div class="chip-actions">
+        <button class="btn ghost small btn-import" id="resetBtn">Reset Points</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div class="spec-title"><span class="c">◑</span>Middle Color Spec<span class="m">◐</span></div>
+    <div class="spec-row"><span class="k">Blend Mode</span><span class="v" id="specMode">Average</span></div>
+    <div class="spec-row"><span class="k">Hex</span><span class="v" id="specHex">—</span></div>
+    <div class="spec-row"><span class="k">Hue</span><span class="v" id="specHue">—</span></div>
+    <div class="spec-row"><span class="k">Gray Value</span><span class="v" id="specGray">—</span></div>
+    <div class="spec-row" style="display:block;">
+      <div class="k" style="margin-bottom:8px;">CMYK</div>
+      <div class="cmyk-bars">
+        <div class="cmyk-bar">
+          <div class="label">C</div>
+          <div class="track"><div class="fill" id="barC" style="width:0%;background:#0FA3B1;"></div></div>
+          <div class="num" id="numC">0%</div>
+        </div>
+        <div class="cmyk-bar">
+          <div class="label">M</div>
+          <div class="track"><div class="fill" id="barM" style="width:0%;background:#B1338C;"></div></div>
+          <div class="num" id="numM">0%</div>
+        </div>
+        <div class="cmyk-bar">
+          <div class="label">Y</div>
+          <div class="track"><div class="fill" id="barY" style="width:0%;background:#D8C11A;"></div></div>
+          <div class="num" id="numY">0%</div>
+        </div>
+        <div class="cmyk-bar">
+          <div class="label">K</div>
+          <div class="track"><div class="fill" id="barK" style="width:0%;background:#1E1D19;"></div></div>
+          <div class="num" id="numK">0%</div>
+        </div>
+      </div>
+    </div>
+    <div id="deltaSection" class="delta-note">
+      <div>Offset vector ±d — add to A to reach M, add again to reach B. Subtract to go the other way.</div>
+      <div class="delta-vals" id="deltaVals">
+        <div><span>Δr</span>0</div>
+        <div><span>Δg</span>0</div>
+        <div><span>Δb</span>0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="palette">
+    <div class="palette-head">
+      <div class="history-controls">
+        <button class="icon-btn" id="undoBtn" title="Undo" aria-label="Undo" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M13 5 L8.5 9.5 L13 14" />
+            <path d="M8.5 9.5 H15.5 a4.5 4.5 0 0 1 0 9 H10" />
+          </svg>
+        </button>
+        <button class="icon-btn" id="redoBtn" title="Redo" aria-label="Redo" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5 L15.5 9.5 L11 14" />
+            <path d="M15.5 9.5 H8.5 a4.5 4.5 0 0 0 0 9 H14" />
+          </svg>
+        </button>
+      </div>
+      <div class="palette-title">Palette</div>
+    </div>
+    <div class="palette-tools">
+      <button class="btn ghost small btn-import" id="mergeBtn">Merge Colors</button>
+      <button class="btn ghost small btn-import" id="plotBtn">Chromaticity Plot</button>
+      <button class="btn ghost small btn-import" id="gamutFixBtn" hidden>Bring Into Gamut</button>
+      <button class="btn ghost small btn-import" id="altBtn">Alternatives</button>
+      <button class="btn ghost small btn-import" id="refineBtn">Refine Palette</button>
+      <button class="btn ghost small btn-import" id="sampleMapBtn">Show Sample Map</button>
+    </div>
+    <div class="palette-info" id="paletteInfo">Import an image to extract its palette.</div>
+    <div class="palette-grid" id="paletteGrid"></div>
+    <div class="refine" id="altPanel" hidden></div>
+    <div class="refine" id="plotPanel" hidden>
+      <div class="refine-lead" id="plotLead"></div>
+      <div class="plot-wrap">
+        <canvas id="plotCanvas" width="460" height="460"></canvas>
+      </div>
+      <div class="plot-controls">
+        <label for="plotL">Lightness slice</label>
+        <input type="range" id="plotL" min="4" max="96" value="60">
+        <span class="plot-readout" id="plotLVal">60%</span>
+      </div>
+      <div class="plot-legend" id="plotLegend"></div>
+    </div>
+    <div class="refine" id="refinePanel" hidden></div>
+  </div>
+
+  <div class="reference">
+    <div class="reference-title">Blend Mode Reference</div>
+
+    <div class="ref-group">
+      <h3>Normal</h3>
+      <ul>
+        <li><span class="mname">Average</span><span class="mdesc">Equal-weight mean of every sampled color. With two colors it's the exact midpoint, so ±d moves you cleanly between all three values.</span></li>
+      </ul>
+    </div>
+
+    <div class="ref-group">
+      <h3>Darken</h3>
+      <ul>
+        <li><span class="mname">Multiply</span><span class="mdesc">Multiplies channel values. Always darkens or holds — result is never lighter than either color. White has no effect; black always wins.</span></li>
+        <li><span class="mname">Darken</span><span class="mdesc">Keeps whichever channel value is lower, base or blend, comparing R, G, and B independently.</span></li>
+        <li><span class="mname">Color Burn</span><span class="mdesc">Darkens the base to reflect the blend color, increasing contrast in the shadows. Steeper and darker than Multiply.</span></li>
+        <li><span class="mname">Linear Burn</span><span class="mdesc">Adds the two colors and subtracts white. Darkens more uniformly than Color Burn, with less contrast build-up.</span></li>
+        <li><span class="mname">Darker Color</span><span class="mdesc">Compares overall brightness of the two whole colors (not per channel) and keeps the darker one intact.</span></li>
+      </ul>
+    </div>
+
+    <div class="ref-group">
+      <h3>Lighten</h3>
+      <ul>
+        <li><span class="mname">Add</span><span class="mdesc">Sums the channel values (Linear Dodge). Always lightens or holds; clips to white once channels sum past max.</span></li>
+        <li><span class="mname">Lighten</span><span class="mdesc">Keeps whichever channel value is higher, base or blend — the mirror of Darken.</span></li>
+        <li><span class="mname">Screen</span><span class="mdesc">Inverts both colors, multiplies, then inverts again. Always lightens, more gently than Add — never fully clips.</span></li>
+        <li><span class="mname">Color Dodge</span><span class="mdesc">Brightens the base to reflect the blend color, boosting contrast in the highlights. Steeper than Screen.</span></li>
+        <li><span class="mname">Lighter Color</span><span class="mdesc">Compares overall brightness of the two whole colors and keeps the lighter one intact.</span></li>
+        <li><span class="mname">Glow</span><span class="mdesc">Like Color Dodge with the two colors' roles reversed — the blend color drives how much the base blooms outward.</span></li>
+      </ul>
+    </div>
+
+    <div class="ref-group">
+      <h3>Contrast</h3>
+      <ul>
+        <li><span class="mname">Overlay</span><span class="mdesc">Multiplies dark areas of the base and Screens light areas, using the base color to decide which. Punches up existing contrast.</span></li>
+        <li><span class="mname">Soft Light</span><span class="mdesc">A gentler Overlay — dodges or burns the base slightly depending on the blend, like light falling through tracing paper.</span></li>
+        <li><span class="mname">Hard Light</span><span class="mdesc">Overlay with the two colors' roles swapped — the blend color now decides whether to Multiply or Screen.</span></li>
+        <li><span class="mname">Vivid Light</span><span class="mdesc">Color Burn or Color Dodge depending on the blend value, for a harsher, more saturated version of Hard Light.</span></li>
+        <li><span class="mname">Linear Light</span><span class="mdesc">Linear Burn or Linear Dodge depending on the blend value — a straight-line version of Vivid Light.</span></li>
+        <li><span class="mname">Pin Light</span><span class="mdesc">Darken or Lighten depending on the blend value. Replaces pixels outright rather than blending them smoothly.</span></li>
+        <li><span class="mname">Hard Mix</span><span class="mdesc">Vivid Light pushed to its extremes — every channel snaps fully on or off, producing flat, posterized color.</span></li>
+      </ul>
+    </div>
+
+    <div class="ref-group">
+      <h3>Comparative</h3>
+      <ul>
+        <li><span class="mname">Difference</span><span class="mdesc">Subtracts one color from the other and keeps the absolute value. Identical colors go to black.</span></li>
+        <li><span class="mname">Exclusion</span><span class="mdesc">Like Difference but lower contrast — mid-tones land closer to gray instead of a hard black.</span></li>
+        <li><span class="mname">Subtract</span><span class="mdesc">Subtracts the blend color from the base and clips at black. Directional and order-sensitive.</span></li>
+        <li><span class="mname">Divide</span><span class="mdesc">Divides base by blend. Matching or lighter blend values push the result toward white fast.</span></li>
+      </ul>
+    </div>
+
+    <div class="ref-group">
+      <h3>HSL</h3>
+      <ul>
+        <li><span class="mname">Hue</span><span class="mdesc">Takes the blend color's hue, keeps the base color's saturation and lightness.</span></li>
+        <li><span class="mname">Saturation</span><span class="mdesc">Takes the blend color's saturation, keeps the base color's hue and lightness.</span></li>
+        <li><span class="mname">Color</span><span class="mdesc">Takes the blend color's hue and saturation, keeps only the base color's lightness. Good for recoloring while preserving shading.</span></li>
+        <li><span class="mname">Luminosity</span><span class="mdesc">Takes the blend color's lightness, keeps the base color's hue and saturation — the inverse of Color.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <p class="modal-instructions">Press and hold the image, then choose <b>"Add to Photos"</b> (or "Save Image") to save it to your camera roll.</p>
+      <div class="modal-instructions" id="exportInfo" style="padding-right:0;"></div>
+      <img id="exportImg" alt="Color Middling export">
+      <button type="button" id="downloadLink" class="btn small" hidden>Download</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+
+// Model canvas: the true composition (image + fills), off-DOM, unaffected by view.
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+// Display canvas: what's on screen, rendered through the current pan/zoom/rotate.
+const displayCanvas = document.getElementById('displayCanvas');
+const dctx = displayCanvas.getContext('2d');
+
+const stage = document.getElementById('stage');
+const statusText = document.getElementById('statusText');
+const resetBtn = document.getElementById('resetBtn');
+const exportBtn = document.getElementById('exportBtn');
+const exportModal = document.getElementById('exportModal');
+const exportImg = document.getElementById('exportImg');
+const downloadLink = document.getElementById('downloadLink');
+const modalClose = document.getElementById('modalClose');
+let pendingExportBlob = null;
+let pendingExportName = 'color-middling-export.png';
+let downloadsCap = null;
+if(window.claude && window.claude.use){
+  window.claude.use('downloads').then(cap => {
+    downloadsCap = cap;
+    if(cap && pendingExportBlob) downloadLink.hidden = false;
+  }).catch(() => {});
+}
+downloadLink.addEventListener('click', () => {
+  if(!downloadsCap || !pendingExportBlob) return;
+  downloadLink.disabled = true;
+  downloadsCap.save({ filename: pendingExportName, data: pendingExportBlob })
+    .then(() => setStatus('saved <b>' + pendingExportName + '</b>'))
+    .catch(err => {
+      if(err && err.code === 'declined') setStatus('save cancelled');
+      else setStatus('couldn’t save the file — try the press-and-hold method on the image above');
+    })
+    .finally(() => { downloadLink.disabled = false; });
+});
+const modeSelect = document.getElementById('modeSelect');
+const modeLabel = document.getElementById('modeLabel');
+const FILL_TOLERANCE = 25;
+const swatchM = document.getElementById('swatchM');
+const resetViewBtn = document.getElementById('resetViewBtn');
+const zoomReadout = document.getElementById('zoomReadout');
+const rotationReadout = document.getElementById('rotationReadout');
+
+let img = null;
+let colorA = null;
+let colorB = null;
+let colorC = null;
+let colorM = null;   // user-sampled target, when the result is the known term
+let points = [];
+let fillArmed = false;
+// When a fill is armed we also track which blend mode it came from, and whether
+// it was armed from the main swatch (follows the mode selector) or from a
+// specific reference thumbnail (pinned to that one mode).
+let armedMode = null;
+let armedPinned = false;
+let armedSlot = null;   // which equation slot (if any) supplied the armed color
+let armedColor = null;  // the exact color that was armed
+let armedLiteral = false; // true when the armed color is a raw sample, not derived from the equation
+let appliedFills = [];
+// Which slot in the equation is the unknown:
+//   'result' → A ∘ B = ?        (normal)
+//   'blend'  → A ∘ ? = target   (unknown sits on top)
+//   'base'   → ? ∘ A = target   (unknown sits underneath)
+// Every term in the equation is a slot the user can aim at. Whichever of
+// A / B / M is left empty becomes the unknown the tool works out.
+let selectedSlot = null;        // slot awaiting the next canvas tap
+let setOrder = [];              // order A/B/M were filled, so we know what to evict
+
+// ---- view state (pan / zoom / rotate of the display, independent of the model) ----
+let viewScale = 1;
+let viewFitScale = 1;
+let viewRotation = 0; // radians — snapped display/interaction value, derived from rawRotation
+let rawRotation = 0; // radians — true continuous accumulation, never snapped, prevents a sticky trap
+let viewPanX = 0;
+let viewPanY = 0;
+const dpr = Math.max(1, window.devicePixelRatio || 1);
+const SNAP_THRESHOLD = 5 * Math.PI / 180;
+const QUARTER_TURN = Math.PI / 2;
+
+function colorsEqual(a, b){ return !!a && !!b && a.r===b.r && a.g===b.g && a.b===b.b; }
+function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+
+function setStatus(msg){ statusText.innerHTML = '<span class="dot"></span>' + msg; }
+
+function snapRotation(rot){
+  const nearest = Math.round(rot / QUARTER_TURN) * QUARTER_TURN;
+  return Math.abs(rot - nearest) <= SNAP_THRESHOLD ? nearest : rot;
+}
+
+function sizeStageToViewport(){
+  const rect = stage.getBoundingClientRect();
+  const offsetTop = rect.top + window.scrollY;
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  const fillRemaining = vh - offsetTop - 12;
+  const minFloor = vh * 0.85;
+  stage.style.height = Math.max(320, minFloor, fillRemaining) + 'px';
+}
+
+function fitView(){
+  if(!img) return;
+  const cw = displayCanvas.clientWidth, ch = displayCanvas.clientHeight;
+  viewFitScale = Math.min(cw / canvas.width, ch / canvas.height) * 0.9;
+  viewScale = viewFitScale;
+  rawRotation = 0;
+  viewRotation = 0;
+  viewPanX = 0;
+  viewPanY = 0;
+}
+
+function updateZoomReadout(){
+  zoomReadout.textContent = Math.round((viewScale / (viewFitScale || 1)) * 100) + '%';
+}
+
+function updateRotationReadout(){
+  const deg = Math.round((((viewRotation * 180/Math.PI) % 360) + 360) % 360);
+  rotationReadout.textContent = deg + '°';
+  const isCardinal = (deg % 90 === 0);
+  rotationReadout.classList.toggle('snapped', isCardinal);
+}
+
+function screenToModel(sx, sy){
+  const cw = displayCanvas.clientWidth, ch = displayCanvas.clientHeight;
+  const dx = sx - (cw/2 + viewPanX);
+  const dy = sy - (ch/2 + viewPanY);
+  const cosR = Math.cos(-viewRotation), sinR = Math.sin(-viewRotation);
+  const rx = dx*cosR - dy*sinR;
+  const ry = dx*sinR + dy*cosR;
+  return { x: rx/viewScale + canvas.width/2, y: ry/viewScale + canvas.height/2 };
+}
+function modelToScreen(mx, my){
+  const cw = displayCanvas.clientWidth, ch = displayCanvas.clientHeight;
+  const lx = (mx - canvas.width/2) * viewScale;
+  const ly = (my - canvas.height/2) * viewScale;
+  const cosR = Math.cos(viewRotation), sinR = Math.sin(viewRotation);
+  const rx = lx*cosR - ly*sinR;
+  const ry = lx*sinR + ly*cosR;
+  return { x: cw/2 + viewPanX + rx, y: ch/2 + viewPanY + ry };
+}
+
+function redraw(){
+  const cw = displayCanvas.clientWidth, ch = displayCanvas.clientHeight;
+  const targetW = Math.round(cw * dpr), targetH = Math.round(ch * dpr);
+  if(displayCanvas.width !== targetW || displayCanvas.height !== targetH){
+    displayCanvas.width = targetW;
+    displayCanvas.height = targetH;
+  }
+  dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dctx.clearRect(0, 0, cw, ch);
+  if(!img) return;
+
+  dctx.save();
+  dctx.translate(cw/2 + viewPanX, ch/2 + viewPanY);
+  dctx.rotate(viewRotation);
+  dctx.scale(viewScale, viewScale);
+  dctx.translate(-canvas.width/2, -canvas.height/2);
+  dctx.drawImage(canvas, 0, 0);
+
+  drawSampleMap();
+
+  points.forEach(p => {
+    dctx.save();
+    dctx.strokeStyle = p.label === 'A' ? '#0FA3B1' : (p.label === 'B' ? '#B1338C' : '#D98324');
+    dctx.lineWidth = 2/viewScale;
+    const r = 8/viewScale, rc = 5/viewScale;
+    dctx.beginPath();
+    dctx.moveTo(p.x-r, p.y); dctx.lineTo(p.x+r, p.y);
+    dctx.moveTo(p.x, p.y-r); dctx.lineTo(p.x, p.y+r);
+    dctx.stroke();
+    dctx.beginPath();
+    dctx.arc(p.x, p.y, rc, 0, Math.PI*2);
+    dctx.stroke();
+    dctx.restore();
+  });
+  dctx.restore();
+}
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+
+  // Read the raw bytes first so the file's own print resolution can be
+  // recovered — canvas throws that metadata away.
+  const metaReader = new FileReader();
+  metaReader.onload = (mv) => {
+    try { srcDPI = readDPI(new Uint8Array(mv.target.result)); }
+    catch(err){ srcDPI = null; }
+  };
+  metaReader.readAsArrayBuffer(file);
+
+  srcName = (file.name || 'composition').replace(/\.[^.]+$/, '');
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const image = new Image();
+    image.onload = () => {
+      img = image;
+      // full-resolution original, kept aside for export
+      srcImage = image;
+      srcW = image.naturalWidth;
+      srcH = image.naturalHeight;
+      opLog = [];
+      invalidateRefineBaseline();
+      // the working copy stays small so fills remain instant
+      const maxW = 800;
+      const scale = Math.min(1, maxW / image.width);
+      canvas.width = image.width * scale;
+      canvas.height = image.height * scale;
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      mergeMode = false; mergeSourceHex = null; updateMergeBtn();
+      refineOpen = false;
+      plotOpen = false;
+      document.getElementById('plotPanel').hidden = true;
+      document.getElementById('plotBtn').textContent = 'Chromaticity Plot';
+      document.getElementById('plotBtn').classList.add('ghost');
+      altOpen = false; altFixedCount = 1; altVariants = [];
+      document.getElementById('altPanel').hidden = true;
+      document.getElementById('altBtn').textContent = 'Alternatives';
+      document.getElementById('altBtn').classList.add('ghost');
+      document.getElementById('refinePanel').hidden = true;
+      document.getElementById('refineBtn').textContent = 'Refine Palette';
+      document.getElementById('refineBtn').classList.add('ghost');
+      clearHistory();
+      extractPalette();   // read the source colors before any fill edits them
+      stage.classList.add('hasfile');
+      colorA = null; colorB = null; colorC = null; colorM = null; points = []; appliedFills = []; setOrder = []; selectedSlot = null;
+      clearArmed();
+      sizeStageToViewport();
+      fitView();
+      redraw();
+      updateZoomReadout();
+      updateRotationReadout();
+      updateChips();
+      setStatus('tap the image to set <b>Color A</b>, or tap a slot to choose');
+    };
+    image.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function handleTap(sx, sy){
+  if(!img) return;
+  const m = screenToModel(sx, sy);
+  const x = Math.round(m.x), y = Math.round(m.y);
+  if(x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+
+  if(fillArmed){
+    const mode = armedMode || modeSelect.value;
+    const mid = armedColor ? armedColor : computeMiddleFor(mode);
+    if(mid){
+      const covered = floodFill(ctx, canvas.width, canvas.height, x, y, mid, FILL_TOLERANCE);
+      recordOp(x, y, mid, FILL_TOLERANCE);
+      invalidateRefineBaseline();
+      // Drop any earlier fill whose anchor this one painted over, so a region
+      // never ends up with two competing records fighting on recolor.
+      if(covered){
+        appliedFills = appliedFills.filter(f => !covered[f.y * canvas.width + f.x]);
+      }
+      appliedFills.push({
+        x, y,
+        mode,
+        pinned: armedPinned,
+        slot: armedSlot,
+        literal: armedLiteral,
+        aColor: colorA ? {...colorA} : null,
+        bColor: colorB ? {...colorB} : null,
+        cColor: colorC ? {...colorC} : null,
+        mColor: colorM ? {...colorM} : null
+      });
+      setStatus('applied <b>' + toHex(mid) + '</b>' + (armedSlot ? '' : ' (' + modeNames[mode] + ')') + ' — click a swatch to load another');
+    }
+    clearArmed();
+    redraw();
+    return;
+  }
+
+  const pixel = ctx.getImageData(x, y, 1, 1).data;
+  const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] };
+
+  // Route the sample into whichever slot is aimed, or fall back to filling
+  // A then B then C in order.
+  let target = selectedSlot;
+  if(!target){
+    if(!colorA) target = 'A';
+    else if(!colorB && !colorM) target = 'B';
+    else if(!colorC && !colorM) target = 'C';
+    else target = 'A';
+  }
+
+  assignSlot(target, rgb, x, y);
+  selectedSlot = null;
+
+  const next = !colorA ? 'A' : (!colorB && !colorM ? 'B' : null);
+  if(next) setStatus('tap the image to set <b>' + SLOT_LABEL[next] + '</b>, or tap a slot to choose');
+  else setStatus('equation resolved — click a swatch to load a color, then tap a region to apply it');
+
+  redraw();
+  updateChips();
+}
+
+// Write a sampled color into a slot. A, B and M are mutually constraining: with
+// all three filled there'd be nothing left to solve, so the oldest gives way.
+function assignSlot(name, rgb, x, y){
+  setSlot(name, rgb);
+  points = points.filter(p => p.label !== name);
+  points.push({x, y, rgb, label:name});
+
+  if(name !== 'C'){
+    setOrder = setOrder.filter(n => n !== name);
+    setOrder.push(name);
+    while(setOrder.length > 2){
+      const evicted = setOrder.shift();
+      setSlot(evicted, null);
+      points = points.filter(p => p.label !== evicted);
+    }
+  }
+}
+
+// ---- pointer-based navigation: 1 finger taps, 2 fingers pan/zoom/rotate ----
+const activePointers = new Map();
+let gestureFrame = null;
+let tapCandidate = null;
+
+function pointerPos(e){
+  const rect = displayCanvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+function gestureFromPoints(p1, p2){
+  return {
+    mid: { x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2 },
+    dist: Math.hypot(p2.x-p1.x, p2.y-p1.y),
+    angle: Math.atan2(p2.y-p1.y, p2.x-p1.x)
+  };
+}
+
+displayCanvas.addEventListener('pointerdown', (e) => {
+  if(!img) return;
+  try { displayCanvas.setPointerCapture(e.pointerId); } catch(err) {}
+  const pos = pointerPos(e);
+  activePointers.set(e.pointerId, pos);
+
+  if(activePointers.size === 1){
+    tapCandidate = { pointerId: e.pointerId, startX: pos.x, startY: pos.y, startTime: Date.now() };
+  } else {
+    tapCandidate = null;
+  }
+  if(activePointers.size === 2){
+    const pts = Array.from(activePointers.values());
+    gestureFrame = gestureFromPoints(pts[0], pts[1]);
+  }
+}, { passive:false });
+
+displayCanvas.addEventListener('pointermove', (e) => {
+  if(!activePointers.has(e.pointerId)) return;
+  const pos = pointerPos(e);
+  activePointers.set(e.pointerId, pos);
+
+  if(activePointers.size === 2){
+    e.preventDefault();
+    const pts = Array.from(activePointers.values());
+    const frame = gestureFromPoints(pts[0], pts[1]);
+    if(gestureFrame){
+      const anchorModel = screenToModel(gestureFrame.mid.x, gestureFrame.mid.y);
+      viewScale = clamp(viewScale * (frame.dist / gestureFrame.dist), 0.08, 12);
+      rawRotation += (frame.angle - gestureFrame.angle);
+      viewRotation = snapRotation(rawRotation);
+      const projected = modelToScreen(anchorModel.x, anchorModel.y);
+      viewPanX += frame.mid.x - projected.x;
+      viewPanY += frame.mid.y - projected.y;
+      redraw();
+      updateZoomReadout();
+      updateRotationReadout();
+    }
+    gestureFrame = frame;
+  } else if(activePointers.size === 1 && tapCandidate && tapCandidate.pointerId === e.pointerId){
+    const dx = pos.x - tapCandidate.startX, dy = pos.y - tapCandidate.startY;
+    if(Math.hypot(dx, dy) > 8) tapCandidate = null;
+  }
+}, { passive:false });
+
+function endPointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size < 2) gestureFrame = null;
+  if(tapCandidate && tapCandidate.pointerId === e.pointerId){
+    if(Date.now() - tapCandidate.startTime < 600){
+      handleTap(tapCandidate.startX, tapCandidate.startY);
+    }
+    tapCandidate = null;
+  }
+}
+displayCanvas.addEventListener('pointerup', endPointer);
+displayCanvas.addEventListener('pointercancel', endPointer);
+
+displayCanvas.addEventListener('wheel', (e) => {
+  if(!img) return;
+  e.preventDefault();
+  const pos = pointerPos(e);
+  const anchorModel = screenToModel(pos.x, pos.y);
+  const factor = Math.pow(1.0015, -e.deltaY);
+  viewScale = clamp(viewScale * factor, 0.08, 12);
+  const projected = modelToScreen(anchorModel.x, anchorModel.y);
+  viewPanX += pos.x - projected.x;
+  viewPanY += pos.y - projected.y;
+  redraw();
+  updateZoomReadout();
+}, { passive:false });
+
+resetViewBtn.addEventListener('click', () => {
+  if(!img) return;
+  fitView();
+  redraw();
+  updateZoomReadout();
+  updateRotationReadout();
+});
+
+window.addEventListener('resize', () => {
+  sizeStageToViewport();
+  if(img) redraw();
+});
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => {
+    sizeStageToViewport();
+    if(img) redraw();
+  });
+}
+
+function clearArmed(){
+  fillArmed = false;
+  armedMode = null;
+  armedPinned = false;
+  armedSlot = null;
+  armedColor = null;
+  armedLiteral = false;
+  const hadPaletteFocus = !!armedPaletteHex;
+  armedPaletteHex = null;
+  document.querySelectorAll('.pal-sw.armed').forEach(el => el.classList.remove('armed'));
+  if(hadPaletteFocus && showSampleMap && typeof redraw === 'function') redraw();
+  ['A','B','C','M'].forEach(n => {
+    const el = document.getElementById('swatch' + n);
+    if(el) el.classList.remove('armed');
+  });
+  swatchM.classList.remove('armed');
+  Object.keys(refSwatches).forEach(k => refSwatches[k].classList.remove('armed'));
+}
+
+// Arm the color held in a specific equation slot.
+function armSlotFill(name, color, el){
+  clearArmed();
+  fillArmed = true;
+  armedSlot = name;
+  armedColor = {...color};
+  armedMode = modeSelect.value;
+  // A slot's color stays live-linked (recomputed on future edits) only when it's
+  // something the equation derived — the result, or a term it solved for.
+  // A raw sampled color never changes on its own, so painting it is literal —
+  // recolorLiveFills should never touch it.
+  const eq = resolveFor(modeSelect.value);
+  const derived = (name === 'M') || (eq.solved === name);
+  armedLiteral = !derived;
+  armedPinned = false;
+  el.classList.add('armed');
+  setStatus('<b>' + SLOT_LABEL[name] + '</b> ' + toHex(color) + ' loaded — tap a region to apply it');
+}
+
+function armFill(mode, pinned, sourceEl){
+  clearArmed();
+  fillArmed = true;
+  armedMode = mode;
+  armedPinned = pinned;
+  Object.keys(refSwatches).forEach(k => refSwatches[k].classList.remove('armed'));
+  if(sourceEl) sourceEl.classList.add('armed');
+  const c = computeMiddleFor(mode);
+  setStatus('<b>' + modeNames[mode] + '</b> ' + (c ? toHex(c) : '') + ' loaded — tap a region on the image to apply it');
+}
+
+const SLOT_LABEL = { A:'Color A', B:'Color B', C:'Color C', M:'the result' };
+
+function selectSlot(name){
+  selectedSlot = name;
+  clearArmed();
+  updateChips();
+  setStatus('tap the image to set <b>' + SLOT_LABEL[name] + '</b>');
+}
+
+// Clicking a slot: empty slots become the sampling target; filled slots load
+// their color for applying to the canvas. Suppressed if the same interaction
+// just completed a drag reorder instead of a tap.
+['A','B','C','M'].forEach(name => {
+  const sw = document.getElementById('swatch' + name);
+  sw.addEventListener('click', () => {
+    if(justDragged){ justDragged = false; return; }
+    if(!img){ setStatus('import an image first'); return; }
+    const r = resolveFor(modeSelect.value);
+    const shown = name === 'A' ? r.A : name === 'B' ? r.B : name === 'C' ? r.C : r.M;
+
+    if(selectedSlot === name){       // tapping the armed slot again cancels
+      selectedSlot = null;
+      updateChips();
+      setStatus('cancelled — tap a slot to choose what to sample');
+      return;
+    }
+    if(!shown){                      // empty slot -> aim the next sample here
+      selectSlot(name);
+      return;
+    }
+    // slot shows a color (sampled or solved) -> load it for applying
+    if(fillArmed && armedSlot === name){
+      clearArmed();
+      setStatus('cancelled — click a swatch to load it again');
+      return;
+    }
+    armSlotFill(name, shown, sw);
+  });
+});
+
+// ---- press-and-hold drag reordering of sampled colors ------------------
+// Swap two already-sampled A/B/C colors by holding a swatch and dragging it
+// onto another. Only real sampled values are draggable — a slot the tool is
+// currently solving for (shown but not stored) isn't a valid drag source or
+// target, since there's nothing concrete there to swap.
+let justDragged = false;
+let dragState = null; // { name, sw, startX, startY, dragging, targetName }
+const DRAG_HOLD_MS = 320;
+const DRAG_MOVE_CANCEL = 8;
+
+function reorderableSlots(){
+  return colorM ? [] : ['A','B','C'].filter(n => slotValue(n));
+}
+
+function swapSlots(nameX, nameY){
+  if(nameX === nameY) return;
+  const oldA = colorA, oldB = colorB, oldC = colorC;
+  const vx = slotValue(nameX), vy = slotValue(nameY);
+  setSlot(nameX, vy);
+  setSlot(nameY, vx);
+
+  points.forEach(p => {
+    if(p.label === nameX) p.label = nameY;
+    else if(p.label === nameY) p.label = nameX;
+  });
+  setOrder = setOrder.map(n => n === nameX ? nameY : (n === nameY ? nameX : n));
+
+  // Any fill still tracking the pre-swap A/B/C combination should keep
+  // tracking correctly under the new arrangement, just like a mode change.
+  appliedFills.forEach(f => {
+    if(sameSource(f.aColor, oldA) && sameSource(f.bColor, oldB) && sameSource(f.cColor, oldC)){
+      const pick = n => (n === nameX ? vy : n === nameY ? vx : (n === 'A' ? oldA : n === 'B' ? oldB : oldC));
+      const newA = pick('A'), newB = pick('B'), newC = pick('C');
+      f.aColor = newA ? {...newA} : null;
+      f.bColor = newB ? {...newB} : null;
+      f.cColor = newC ? {...newC} : null;
+    }
+  });
+
+  clearArmed();
+  redraw();
+  updateChips();
+  recolorLiveFills();
+  setStatus('swapped <b>' + SLOT_LABEL[nameX] + '</b> and <b>' + SLOT_LABEL[nameY] + '</b>');
+}
+
+function endDrag(commit){
+  if(!dragState) return;
+  const { name, sw, targetName } = dragState;
+  sw.classList.remove('dragging');
+  sw.style.transform = '';
+  sw.style.transition = 'transform .18s ease';
+  setTimeout(() => { sw.style.transition = ''; }, 200);
+  document.querySelectorAll('.chip .swatch.drop-target').forEach(el => el.classList.remove('drop-target'));
+  if(commit && targetName){
+    swapSlots(name, targetName);
+    justDragged = true;
+  }
+  dragState = null;
+}
+
+['A','B','C'].forEach(name => {
+  const sw = document.getElementById('swatch' + name);
+  let holdTimer = null;
+
+  sw.addEventListener('pointerdown', (e) => {
+    if(!slotValue(name) || colorM) return;   // nothing real to drag
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false;
+    holdTimer = setTimeout(() => {
+      if(moved) return;
+      dragState = { name, sw, startX, startY, targetName: null };
+      sw.classList.add('dragging');
+      sw.style.transition = 'none';
+      try{ sw.setPointerCapture(e.pointerId); }catch(err){}
+    }, DRAG_HOLD_MS);
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if(!dragState && Math.hypot(dx,dy) > DRAG_MOVE_CANCEL){
+        moved = true;
+        clearTimeout(holdTimer);
+        return;
+      }
+      if(!dragState) return;
+      ev.preventDefault();
+      sw.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(1.12)';
+
+      let hoverTarget = null;
+      reorderableSlots().forEach(other => {
+        if(other === name) return;
+        const el = document.getElementById('swatch' + other);
+        const r = el.getBoundingClientRect();
+        if(ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom){
+          hoverTarget = other;
+        }
+      });
+      dragState.targetName = hoverTarget;
+      document.querySelectorAll('.chip .swatch.drop-target').forEach(el => el.classList.remove('drop-target'));
+      if(hoverTarget) document.getElementById('swatch' + hoverTarget).classList.add('drop-target');
+    };
+
+    const onUp = () => {
+      clearTimeout(holdTimer);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      if(dragState) endDrag(true);
+    };
+    const onCancel = () => {
+      clearTimeout(holdTimer);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      if(dragState) endDrag(false);
+    };
+
+    window.addEventListener('pointermove', onMove, { passive:false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+  });
+});
+
+document.querySelectorAll('.slot-clear').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const name = btn.dataset.slot;
+    setSlot(name, null);
+    setOrder = setOrder.filter(n => n !== name);
+    points = points.filter(p => p.label !== name);
+    if(selectedSlot === name) selectedSlot = null;
+    clearArmed();
+    redraw();
+    updateChips();
+    setStatus(SLOT_LABEL[name] + ' cleared — tap a slot to choose what to sample');
+  });
+});
+
+resetBtn.addEventListener('click', () => {
+  colorA = null; colorB = null; colorC = null; colorM = null; points = []; setOrder = []; selectedSlot = null;
+  clearArmed();
+  redraw();
+  setStatus(img ? 'tap a slot to choose what to sample, or tap the image to set <b>Color A</b>' : 'waiting for image');
+  updateChips();
+});
+
+// Rebuild the composition at its original pixel dimensions by replaying every
+// recorded fill against the untouched source image. Nothing is upscaled — the
+// exported file is the source resolution with the edits applied at that scale.
+function buildFullResolution(){
+  // A print-size composition can exceed what a browser will allocate for a
+  // single canvas, so fall back to the largest workable size rather than
+  // silently handing back a blank file.
+  const attempts = [1];
+  const px = srcW * srcH;
+  const CAP = 40e6;
+  if(px > CAP) attempts.push(Math.sqrt(CAP / px));
+
+  for(const factor of attempts){
+    const w = Math.max(1, Math.round(srcW * factor));
+    const h = Math.max(1, Math.round(srcH * factor));
+    try{
+      const out = document.createElement('canvas');
+      out.width = w; out.height = h;
+      const octx = out.getContext('2d', { willReadFrequently: true });
+      if(!octx) continue;
+      octx.imageSmoothingEnabled = false;   // flat colour must not be resampled
+      octx.drawImage(srcImage, 0, 0, w, h);
+
+      // verify the browser actually gave us a usable surface at this size
+      const probe = octx.getImageData(w-1, h-1, 1, 1);
+      if(!probe) continue;
+
+      const sx = w / canvas.width, sy = h / canvas.height;
+      opLog.forEach(op => {
+        const fx = Math.min(w-1, Math.max(0, Math.round((op.x + 0.5) * sx)));
+        const fy = Math.min(h-1, Math.max(0, Math.round((op.y + 0.5) * sy)));
+        floodFill(octx, w, h, fx, fy, { r:op.r, g:op.g, b:op.b }, op.tolerance);
+      });
+      return { canvas: out, w, h, scaled: factor !== 1 };
+    }catch(err){
+      // try the next, smaller attempt
+    }
+  }
+  return null;
+}
+
+function describeExport(w, h){
+  const dpi = srcDPI;
+  const bits = [w + ' \u00d7 ' + h + ' px'];
+  if(dpi){
+    const inW = w/dpi, inH = h/dpi;
+    bits.push(Math.round(dpi) + ' DPI');
+    bits.push(inW.toFixed(2) + '\u2033 \u00d7 ' + inH.toFixed(2) + '\u2033');
+  } else {
+    bits.push('no DPI recorded in the source file');
+  }
+  return bits.join(' \u00b7 ');
+}
+
+exportBtn.addEventListener('click', () => {
+  if(!img){ setStatus('import an image before exporting'); return; }
+  setStatus('building full-resolution export\u2026');
+  exportBtn.disabled = true;
+
+  // let the status paint before the heavy replay begins
+  setTimeout(() => {
+    const built = buildFullResolution();
+    exportBtn.disabled = false;
+    if(!built){
+      setStatus('could not build the export at this size');
+      return;
+    }
+    const { canvas: out, w, h, scaled } = built;
+
+    out.toBlob(blob => {
+      if(!blob){ setStatus('export failed while encoding'); return; }
+      blob.arrayBuffer().then(ab => {
+        const bytes = pngWithDPI(ab, srcDPI);
+        const finalBlob = new Blob([bytes], { type: 'image/png' });
+        const url = URL.createObjectURL(finalBlob);
+        exportImg.src = url;
+        pendingExportBlob = finalBlob;
+        pendingExportName = srcName + '-middled.png';
+        downloadLink.hidden = !downloadsCap;
+        const info = document.getElementById('exportInfo');
+        if(info){
+          info.textContent = describeExport(w, h) +
+            (scaled ? ' \u2014 capped below the source size; this browser could not allocate the full canvas.' : '');
+        }
+        exportModal.classList.add('show');
+        setStatus('export ready \u2014 ' + describeExport(w, h));
+      });
+    }, 'image/png');
+  }, 30);
+});
+
+modalClose.addEventListener('click', () => exportModal.classList.remove('show'));
+exportModal.addEventListener('click', (e) => {
+  if(e.target === exportModal) exportModal.classList.remove('show');
+});
+
+modeSelect.addEventListener('change', () => { updateChips(); recolorLiveFills(); });
+function sameSource(stored, current){
+  if(!stored && !current) return true;
+  return colorsEqual(stored, current);
+}
+
+function recolorLiveFills(){
+  if(!computeMiddleFor(modeSelect.value)) return;
+  let changed = false;
+  appliedFills.forEach(f => {
+    if(f.literal) return;  // a raw sampled color has no equation to recompute
+    if(!(sameSource(f.aColor, colorA) && sameSource(f.bColor, colorB)
+      && sameSource(f.cColor, colorC) && sameSource(f.mColor, colorM))) return;
+    // A fill applied from a specific reference thumbnail stays pinned to that
+    // mode; one applied from the main swatch follows the mode selector.
+    const mode = f.pinned ? f.mode : modeSelect.value;
+    const c = computeMiddleFor(mode);
+    if(!c) return;
+    floodFill(ctx, canvas.width, canvas.height, f.x, f.y, c, 4);
+    recordOp(f.x, f.y, c, 4);
+    if(!f.pinned) f.mode = mode;
+    changed = true;
+  });
+  if(changed) redraw();
+}
+
+// Returns a Uint8Array mask of every pixel the fill covered, so callers can tell
+// which previously-recorded fills were painted over by this one.
+function floodFill(context, w, h, startX, startY, fillColor, tolerance){
+  if(startX < 0 || startX >= w || startY < 0 || startY >= h) return null;
+  const imageData = context.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const startIdx = (startY * w + startX) * 4;
+  const sr = data[startIdx], sg = data[startIdx+1], sb = data[startIdx+2];
+  const fr = fillColor.r, fg = fillColor.g, fb = fillColor.b;
+  const d0r = sr-fr, d0g = sg-fg, d0b = sb-fb;
+  const tol2 = tolerance*tolerance*3;
+  if(d0r*d0r + d0g*d0g + d0b*d0b === 0){
+    // Already the target color: still map the region so callers know its extent.
+    const same = new Uint8Array(w*h);
+    const st = [startX, startY];
+    while(st.length){
+      const y = st.pop(), x = st.pop();
+      if(x < 0 || x >= w || y < 0 || y >= h) continue;
+      const vi = y*w + x;
+      if(same[vi]) continue;
+      const ix = vi*4;
+      const ar = data[ix]-sr, ag = data[ix+1]-sg, ab = data[ix+2]-sb;
+      if(ar*ar + ag*ag + ab*ab > tol2) continue;
+      same[vi] = 1;
+      st.push(x+1, y, x-1, y, x, y+1, x, y-1);
+    }
+    return same;
+  }
+
+  const visited = new Uint8Array(w*h);
+  const stack = [startX, startY];
+  while(stack.length){
+    const y = stack.pop();
+    const x = stack.pop();
+    if(x < 0 || x >= w || y < 0 || y >= h) continue;
+    const vIdx = y*w + x;
+    if(visited[vIdx]) continue;
+    const idx = vIdx*4;
+    const dr = data[idx]-sr, dg = data[idx+1]-sg, db = data[idx+2]-sb;
+    if(dr*dr + dg*dg + db*db > tol2) continue;
+    visited[vIdx] = 1;
+    data[idx] = fr; data[idx+1] = fg; data[idx+2] = fb; data[idx+3] = 255;
+    stack.push(x+1, y, x-1, y, x, y+1, x, y-1);
+  }
+  context.putImageData(imageData, 0, 0);
+  return visited;
+}
+
+function toHex(rgb){
+  return '#' + [rgb.r, rgb.g, rgb.b].map(v => Math.round(v).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+// ---- palette -----------------------------------------------------------
+// Flat artwork paints each region as one exact RGB value, so the palette is
+// found by counting exact colors rather than sampling a smoothed downscale —
+// resampling invents thousands of blended edge values that match no real
+// region. Near-duplicates (anti-aliased fringe a few units off a true color)
+// fold into whichever stronger color they sit closest to.
+let palette = [];
+let regionLabels = null;   // per-pixel shape id from the last segmentation
+let regionW = 0, regionH = 0;
+const MERGE_DIST2 = 24*24;   // colours closer than this are the same colour
+
+function extractPalette(){
+  const w = canvas.width, h = canvas.height;
+  if(!w || !h){ palette = []; renderPalette(); return; }
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const n = w * h;
+
+  const lum = (r,g,b) => 0.299*r + 0.587*g + 0.114*b;
+  const LINE_LUM = 70;          // below this a pixel reads as line work
+  const REGION_TOL2 = 30*30;    // colour spread tolerated inside one flat region
+
+  // --- 1. barriers: the black line work (and anything transparent) ---------
+  // These are the walls that divide the composition into shapes.
+  const barrier = new Uint8Array(n);
+  for(let i = 0; i < n; i++){
+    const o = i*4;
+    if(d[o+3] < 10){ barrier[i] = 1; continue; }
+    if(lum(d[o], d[o+1], d[o+2]) < LINE_LUM) barrier[i] = 1;
+  }
+
+  // A dark area is only line work if it is *thin*. A large dark fill is a
+  // shape in its own right, so measure how deep each dark run goes and release
+  // anything too substantial to be a stroke back into the artwork.
+  const LINE_MAX_DEPTH = 4;   // half-width in px beyond which dark = shape
+  {
+    const bDist = new Int32Array(n).fill(-1);
+    const bq = new Int32Array(n);
+    let bh = 0, bt = 0;
+    for(let y = 0; y < h; y++){
+      for(let x = 0; x < w; x++){
+        const i = y*w + x;
+        if(!barrier[i]) continue;
+        let edge = (x === 0 || y === 0 || x === w-1 || y === h-1);
+        if(!edge){
+          if(!barrier[i-1] || !barrier[i+1] || !barrier[i-w] || !barrier[i+w]) edge = true;
+        }
+        if(edge){ bDist[i] = 0; bq[bt++] = i; }
+      }
+    }
+    while(bh < bt){
+      const i = bq[bh++];
+      const x = i % w, y = (i - x) / w;
+      const nd = bDist[i] + 1;
+      if(x > 0   && barrier[i-1] && bDist[i-1] === -1){ bDist[i-1] = nd; bq[bt++] = i-1; }
+      if(x < w-1 && barrier[i+1] && bDist[i+1] === -1){ bDist[i+1] = nd; bq[bt++] = i+1; }
+      if(y > 0   && barrier[i-w] && bDist[i-w] === -1){ bDist[i-w] = nd; bq[bt++] = i-w; }
+      if(y < h-1 && barrier[i+w] && bDist[i+w] === -1){ bDist[i+w] = nd; bq[bt++] = i+w; }
+    }
+    // per connected dark component, keep it as a barrier only if it stays thin
+    const seen = new Uint8Array(n);
+    const comp = new Int32Array(n);
+    for(let s0 = 0; s0 < n; s0++){
+      if(!barrier[s0] || seen[s0]) continue;
+      let cp = 0, maxDepth = 0;
+      comp[cp++] = s0; seen[s0] = 1;
+      const members = [];
+      for(let qi = 0; qi < cp; qi++){
+        const i = comp[qi];
+        members.push(i);
+        if(bDist[i] > maxDepth) maxDepth = bDist[i];
+        const x = i % w, y = (i - x) / w;
+        if(x > 0   && barrier[i-1] && !seen[i-1]){ seen[i-1] = 1; comp[cp++] = i-1; }
+        if(x < w-1 && barrier[i+1] && !seen[i+1]){ seen[i+1] = 1; comp[cp++] = i+1; }
+        if(y > 0   && barrier[i-w] && !seen[i-w]){ seen[i-w] = 1; comp[cp++] = i-w; }
+        if(y < h-1 && barrier[i+w] && !seen[i+w]){ seen[i+w] = 1; comp[cp++] = i+w; }
+      }
+      if(maxDepth > LINE_MAX_DEPTH){
+        // too thick to be a stroke — it is a dark shape, not a divider
+        for(const i of members){
+          const o = i*4;
+          if(d[o+3] >= 10) barrier[i] = 0;
+        }
+      }
+    }
+  }
+
+  // --- 2. flood fill each enclosed shape ----------------------------------
+  // Growth stops at a line and also where the colour changes, so two shapes
+  // that touch without a line between them still come out as separate regions.
+  const labels = new Int32Array(n).fill(-1);
+  const regions = [];   // {area, sumX, sumY, seedKey}
+  const stack = new Int32Array(n);
+
+  for(let start0 = 0; start0 < n; start0++){
+    if(barrier[start0] || labels[start0] !== -1) continue;
+    const id = regions.length;
+    const so = start0*4;
+    const sr = d[so], sg = d[so+1], sb = d[so+2];
+    let sp = 0;
+    stack[sp++] = start0;
+    labels[start0] = id;
+    let area = 0;
+    while(sp > 0){
+      const i = stack[--sp];
+      area++;
+      const x = i % w, y = (i - x) / w;
+      // 4-connectivity keeps diagonally-touching shapes distinct
+      if(x > 0)     tryPush(i-1);
+      if(x < w-1)   tryPush(i+1);
+      if(y > 0)     tryPush(i-w);
+      if(y < h-1)   tryPush(i+w);
+    }
+    regions.push({ area, id });
+
+    function tryPush(j){
+      if(barrier[j] || labels[j] !== -1) return;
+      const oo = j*4;
+      const dr = d[oo]-sr, dg = d[oo+1]-sg, db = d[oo+2]-sb;
+      if(dr*dr + dg*dg + db*db > REGION_TOL2) return;
+      labels[j] = id;
+      stack[sp++] = j;
+    }
+  }
+
+  if(!regions.length){ palette = []; renderPalette(); redraw(); return; }
+
+  // --- 3. find the deepest interior point of every shape ------------------
+  // A plain centroid can land outside a curved or hooked shape, so instead we
+  // measure how far each pixel sits from the nearest edge and take the
+  // furthest — the point most safely inside, whatever the shape's outline.
+  const dist = new Int32Array(n).fill(-1);
+  const queue = new Int32Array(n);
+  let qh = 0, qt = 0;
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const i = y*w + x;
+      const lb = labels[i];
+      if(lb === -1) continue;
+      let edge = (x === 0 || y === 0 || x === w-1 || y === h-1);
+      if(!edge){
+        if(labels[i-1] !== lb || labels[i+1] !== lb ||
+           labels[i-w] !== lb || labels[i+w] !== lb) edge = true;
+      }
+      if(edge){ dist[i] = 0; queue[qt++] = i; }
+    }
+  }
+  while(qh < qt){
+    const i = queue[qh++];
+    const x = i % w, y = (i - x) / w;
+    const nd = dist[i] + 1;
+    const lb = labels[i];
+    if(x > 0     && labels[i-1] === lb && dist[i-1] === -1){ dist[i-1] = nd; queue[qt++] = i-1; }
+    if(x < w-1   && labels[i+1] === lb && dist[i+1] === -1){ dist[i+1] = nd; queue[qt++] = i+1; }
+    if(y > 0     && labels[i-w] === lb && dist[i-w] === -1){ dist[i-w] = nd; queue[qt++] = i-w; }
+    if(y < h-1   && labels[i+w] === lb && dist[i+w] === -1){ dist[i+w] = nd; queue[qt++] = i+w; }
+  }
+
+  const best = new Int32Array(regions.length).fill(-1);
+  const bestDist = new Int32Array(regions.length).fill(-1);
+  for(let i = 0; i < n; i++){
+    const lb = labels[i];
+    if(lb === -1) continue;
+    if(dist[i] > bestDist[lb]){ bestDist[lb] = dist[i]; best[lb] = i; }
+  }
+
+  // --- 4. one sample per shape, taken at its centre ------------------------
+  const MIN_AREA = Math.max(24, n * 0.00015);
+  const entries = [];
+  regions.forEach(reg => {
+    if(reg.area < MIN_AREA) return;          // specks and stray fragments
+    const i = best[reg.id];
+    if(i < 0) return;
+    if(bestDist[reg.id] < 1) return;         // no genuine interior at all
+    const o = i*4;
+    entries.push({
+      r: d[o], g: d[o+1], b: d[o+2],
+      area: reg.area,
+      site: { x: i % w, y: Math.floor(i / w), depth: bestDist[reg.id] }
+    });
+  });
+
+  // --- 5. shapes sharing a colour become one palette entry ----------------
+  const finalPal = [];
+  entries.sort((a,b) => b.area - a.area).forEach(e => {
+    for(const p of finalPal){
+      const dr = e.r-p.r, dg = e.g-p.g, db = e.b-p.b;
+      if(dr*dr + dg*dg + db*db < MERGE_DIST2){
+        p.count += e.area;
+        p.sites.push(e.site);
+        return;
+      }
+    }
+    finalPal.push({ r:e.r, g:e.g, b:e.b, count:e.area, sites:[e.site] });
+  });
+
+  // Keep the region map: every later feature that needs to know which pixels
+  // form which shape can then work from it directly, instead of re-deriving
+  // the segmentation or flood filling repeatedly.
+  regionLabels = labels;
+  regionW = w; regionH = h;
+
+  palette = finalPal;
+  renderPalette();
+  if(refineOpen) renderRefine();
+  if(altOpen) renderAlternatives();
+  if(plotOpen) renderPlot();
+  redraw();
+}
+
+function paletteSorted(){
+  // group related colors together the way a printed swatch card would,
+  // with neutrals leading
+  return palette.slice().sort((a,b) => {
+    const ha = rgbToHue(a), hb = rgbToHue(b);
+    const na = ha === null, nb = hb === null;
+    if(na && !nb) return -1;
+    if(nb && !na) return 1;
+    if(na && nb) return rgbToGray(b) - rgbToGray(a);
+    if(Math.abs(ha - hb) > 1) return ha - hb;
+    return rgbToGray(b) - rgbToGray(a);
+  });
+}
+
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function renderPalette(){
+  const grid = document.getElementById('paletteGrid');
+  const info = document.getElementById('paletteInfo');
+  grid.innerHTML = '';
+  if(!palette.length){
+    info.textContent = 'Import an image to extract its palette.';
+    const gfb = document.getElementById('gamutFixBtn');
+    if(gfb) gfb.hidden = true;
+    return;
+  }
+  const sorted = paletteSorted();
+  const outOf = sorted.filter(c => !gamutCheck(c).inGamut);
+  const shapes = palette.reduce((s,c) => s + ((c.sites||[]).length), 0);
+  document.querySelector('.palette').classList.toggle('merging', mergeMode);
+  if(mergeMode){
+    info.innerHTML = mergeSourceHex
+      ? 'Replacing <b>' + mergeSourceHex + '</b> — tap the color to change it into.'
+      : 'Merge: tap the color you want to replace.';
+  } else {
+    info.innerHTML = sorted.length + ' colors from ' + shapes +
+      ' shapes — sampled at each shape\u2019s center. Tap a swatch to load it for filling, or tap its hex to copy.';
+    const gfb = document.getElementById('gamutFixBtn');
+    if(gfb) gfb.hidden = !outOf.length;
+    if(outOf.length){
+      info.innerHTML += '<br><span class="gamut-warn">' + outOf.length + ' color' +
+        (outOf.length === 1 ? '' : 's') + ' marked <b>!</b> sit outside the estimated print gamut — ' +
+        'they will shift when converted to CMYK. This is an estimate from standard process inks, ' +
+        'not a soft proof against your printer\u2019s profile.</span>';
+    }
+  }
+
+  sorted.forEach(c => {
+    const hex = toHex(c);
+    const chip = document.createElement('div');
+    chip.className = 'pal-chip';
+
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'pal-sw';
+    sw.style.background = hex;
+    sw.title = mergeMode
+      ? (mergeSourceHex ? hex + ' — merge ' + mergeSourceHex + ' into this' : hex + ' — pick as the color to replace')
+      : hex + ' — click to load for filling';
+    sw.setAttribute('aria-label', 'Palette color ' + hex);
+    if(mergeMode && mergeSourceHex === hex) sw.classList.add('merge-src');
+    sw.addEventListener('click', () => {
+      if(!img){ setStatus('import an image first'); return; }
+      if(mergeMode){ handleMergePick(c, hex); return; }
+      if(fillArmed && armedPaletteHex === hex){
+        clearArmed();
+        setStatus('cancelled — tap a swatch to load it again');
+        return;
+      }
+      armPaletteFill(c, hex, sw);
+    });
+
+    const g = gamutCheck(c);
+    if(!g.inGamut){
+      sw.classList.add('out-of-gamut');
+      const badge = document.createElement('span');
+      badge.className = 'gamut-badge';
+      badge.textContent = '!';
+      badge.title = hex + ' sits outside the estimated print gamut by ' +
+        Math.round(g.over*100) + '% of its chroma — nearest printable is ' + toHex(g.nearest);
+      chip.appendChild(badge);
+    }
+
+    const hx = document.createElement('div');
+    hx.className = 'pal-hex';
+    hx.textContent = hex;
+    hx.title = 'Copy ' + hex;
+    hx.addEventListener('click', () => {
+      copyText(hex);
+      hx.classList.add('copied');
+      const prev = hx.textContent;
+      hx.textContent = 'copied';
+      setTimeout(() => { hx.textContent = prev; hx.classList.remove('copied'); }, 900);
+    });
+
+    chip.style.position = 'relative';
+    chip.appendChild(sw);
+    chip.appendChild(hx);
+    grid.appendChild(chip);
+  });
+}
+
+// A palette color is a literal paint color — there's no equation behind it,
+// so a fill made from one is never recomputed on later mode or slot changes.
+let armedPaletteHex = null;
+function armPaletteFill(color, hex, el){
+  clearArmed();
+  fillArmed = true;
+  armedColor = { r:color.r, g:color.g, b:color.b };
+  armedLiteral = true;
+  armedPinned = false;
+  armedMode = modeSelect.value;
+  armedPaletteHex = hex;
+  el.classList.add('armed');
+  if(showSampleMap) redraw();   // narrow the map to just this color
+  setStatus('palette color <b>' + hex + '</b> loaded — tap a region to apply it');
+}
+
+function rgbToHue(rgb){
+  const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const d = max - min;
+  if(d === 0) return null;
+  let h;
+  if(max === r) h = ((g - b) / d) % 6;
+  else if(max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h = Math.round(h * 60);
+  if(h < 0) h += 360;
+  return h;
+}
+function rgbToGray(rgb){ return Math.round(0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b); }
+function rgbToCmyk(rgb){
+  const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+  const k = 1 - Math.max(r,g,b);
+  if(k >= 1) return {c:0,m:0,y:0,k:100};
+  const c = (1-r-k)/(1-k), m = (1-g-k)/(1-k), y = (1-b-k)/(1-k);
+  return { c: Math.round(c*100), m: Math.round(m*100), y: Math.round(y*100), k: Math.round(k*100) };
+}
+
+/* ---------- blend mode math (0-1 normalized) ---------- */
+function clamp01(x){ return Math.min(1, Math.max(0, x)); }
+
+function rgbToHslN(r,g,b){
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s; const l = (max+min)/2;
+  if(max===min){ h=0; s=0; }
+  else{
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    if(max===r) h = (g-b)/d + (g<b?6:0);
+    else if(max===g) h = (b-r)/d + 2;
+    else h = (r-g)/d + 4;
+    h/=6;
+  }
+  return {h,s,l};
+}
+function hslToRgbN(h,s,l){
+  if(s===0) return {r:l,g:l,b:l};
+  function hue2rgb(p,q,t){
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3-t)*6;
+    return p;
+  }
+  const q = l<0.5 ? l*(1+s) : l+s-l*s;
+  const p = 2*l-q;
+  return { r:hue2rgb(p,q,h+1/3), g:hue2rgb(p,q,h), b:hue2rgb(p,q,h-1/3) };
+}
+
+function colorBurnCh(base,blend){ return blend<=0 ? 0 : 1-Math.min(1,(1-base)/blend); }
+function colorDodgeCh(base,blend){ return blend>=1 ? 1 : Math.min(1, base/(1-blend)); }
+function softLightCh(base,blend){
+  if(blend<=0.5) return base - (1-2*blend)*base*(1-base);
+  const d = base<=0.25 ? ((16*base-12)*base+4)*base : Math.sqrt(base);
+  return base + (2*blend-1)*(d-base);
+}
+function overlayCh(base,blend){ return base<0.5 ? 2*base*blend : 1-2*(1-base)*(1-blend); }
+function hardLightCh(base,blend){ return blend<0.5 ? 2*base*blend : 1-2*(1-base)*(1-blend); }
+function vividLightCh(base,blend){ return blend<0.5 ? colorBurnCh(base,2*blend) : colorDodgeCh(base,2*(blend-0.5)); }
+function linearLightCh(base,blend){ return clamp01(base + 2*blend - 1); }
+function pinLightCh(base,blend){ return blend<0.5 ? Math.min(base,2*blend) : Math.max(base,2*(blend-0.5)); }
+function hardMixCh(base,blend){ return vividLightCh(base,blend) < 0.5 ? 0 : 1; }
+function glowCh(base,blend){ return blend>=1 ? 1 : Math.min(1, (base*base)/(1-blend)); }
+
+const perChannelModes = {
+  average: (a,b)=>(a+b)/2,
+  multiply: (a,b)=>a*b,
+  darken: (a,b)=>Math.min(a,b),
+  colorBurn: colorBurnCh,
+  linearBurn: (a,b)=>clamp01(a+b-1),
+  add: (a,b)=>clamp01(a+b),
+  lighten: (a,b)=>Math.max(a,b),
+  screen: (a,b)=>1-(1-a)*(1-b),
+  colorDodge: colorDodgeCh,
+  glow: glowCh,
+  overlay: overlayCh,
+  softLight: softLightCh,
+  hardLight: hardLightCh,
+  vividLight: vividLightCh,
+  linearLight: linearLightCh,
+  pinLight: pinLightCh,
+  hardMix: hardMixCh,
+  difference: (a,b)=>Math.abs(a-b),
+  exclusion: (a,b)=>a+b-2*a*b,
+  subtract: (a,b)=>clamp01(a-b),
+  divide: (a,b)=>b<=0 ? 1 : Math.min(1, a/b)
+};
+
+function blend(base, blend_, mode){
+  const br=base.r/255, bg=base.g/255, bb=base.b/255;
+  const tr=blend_.r/255, tg=blend_.g/255, tb=blend_.b/255;
+
+  if(mode === 'darkerColor'){
+    return rgbToGray(base) <= rgbToGray(blend_) ? {...base} : {...blend_};
+  }
+  if(mode === 'lighterColor'){
+    return rgbToGray(base) >= rgbToGray(blend_) ? {...base} : {...blend_};
+  }
+  if(['hue','saturation','color','luminosity'].includes(mode)){
+    const hslBase = rgbToHslN(br,bg,bb);
+    const hslBlend = rgbToHslN(tr,tg,tb);
+    let out;
+    if(mode==='hue') out = hslToRgbN(hslBlend.h, hslBase.s, hslBase.l);
+    else if(mode==='saturation') out = hslToRgbN(hslBase.h, hslBlend.s, hslBase.l);
+    else if(mode==='color') out = hslToRgbN(hslBlend.h, hslBlend.s, hslBase.l);
+    else out = hslToRgbN(hslBase.h, hslBase.s, hslBlend.l);
+    return { r: Math.round(clamp01(out.r)*255), g: Math.round(clamp01(out.g)*255), b: Math.round(clamp01(out.b)*255) };
+  }
+
+  const fn = perChannelModes[mode] || perChannelModes.average;
+  return {
+    r: Math.round(clamp01(fn(br,tr))*255),
+    g: Math.round(clamp01(fn(bg,tg))*255),
+    b: Math.round(clamp01(fn(bb,tb))*255)
+  };
+}
+
+const modeNames = {
+  average:'Average', multiply:'Multiply', darken:'Darken', colorBurn:'Color Burn', linearBurn:'Linear Burn',
+  darkerColor:'Darker Color', add:'Add', lighten:'Lighten', screen:'Screen', colorDodge:'Color Dodge',
+  lighterColor:'Lighter Color', glow:'Glow', overlay:'Overlay', softLight:'Soft Light', hardLight:'Hard Light',
+  vividLight:'Vivid Light', linearLight:'Linear Light', pinLight:'Pin Light', hardMix:'Hard Mix',
+  difference:'Difference', exclusion:'Exclusion', subtract:'Subtract', divide:'Divide',
+  hue:'Hue', saturation:'Saturation', color:'Color', luminosity:'Luminosity'
+};
+
+// ---- equation solving -------------------------------------------------
+// Normally we compute the result of A ∘ B. These solvers run the equation
+// backwards: given one operand and the desired result, find the operand that
+// would produce it. Per-channel modes are solved by exhaustive search over the
+// 256 possible channel values (exact and cheap); modes that mix channels
+// together are solved by a coarse-then-refine search in RGB space.
+function solveChannel(fn, knownVal, targetVal, solvingBase){
+  let best = 0, bestErr = Infinity;
+  for(let i = 0; i <= 255; i++){
+    const x = i/255;
+    const out = solvingBase ? fn(x, knownVal) : fn(knownVal, x);
+    const err = Math.abs(out - targetVal);
+    if(err < bestErr){ bestErr = err; best = i; if(err === 0) break; }
+  }
+  return best;
+}
+
+function solveGeneric(known, target, mode, solvingBase){
+  let best = {r:0,g:0,b:0}, bestErr = Infinity;
+  const errAt = (r,g,b) => {
+    const cand = {r,g,b};
+    const out = solvingBase ? blend(cand, known, mode) : blend(known, cand, mode);
+    const dr = out.r-target.r, dg = out.g-target.g, db = out.b-target.b;
+    return dr*dr + dg*dg + db*db;
+  };
+  for(let r = 0; r <= 255; r += 12)
+    for(let g = 0; g <= 255; g += 12)
+      for(let b = 0; b <= 255; b += 12){
+        const e = errAt(r,g,b);
+        if(e < bestErr){ bestErr = e; best = {r,g,b}; }
+      }
+  const lo = v => Math.max(0, v-12), hi = v => Math.min(255, v+12);
+  const c = best;
+  for(let r = lo(c.r); r <= hi(c.r); r++)
+    for(let g = lo(c.g); g <= hi(c.g); g++)
+      for(let b = lo(c.b); b <= hi(c.b); b++){
+        const e = errAt(r,g,b);
+        if(e < bestErr){ bestErr = e; best = {r,g,b}; }
+      }
+  return best;
+}
+
+// Solve for the missing operand. solvingBase=true means the unknown sits
+// underneath (we know the blend layer); false means the unknown sits on top.
+function solveOperand(known, target, mode, solvingBase){
+  if(!known || !target) return null;
+  const fn = perChannelModes[mode];
+  if(fn){
+    return {
+      r: solveChannel(fn, known.r/255, target.r/255, solvingBase),
+      g: solveChannel(fn, known.g/255, target.g/255, solvingBase),
+      b: solveChannel(fn, known.b/255, target.b/255, solvingBase)
+    };
+  }
+  return solveGeneric(known, target, mode, solvingBase);
+}
+
+// How closely does the solved operand actually reproduce the target? Many blend
+// modes discard information (Darken, Hard Mix, Lighter Color…), so an exact
+// inverse often doesn't exist — we report the residual rather than pretend.
+function solveResidual(known, solved, target, mode, solvingBase){
+  if(!solved) return Infinity;
+  const out = solvingBase ? blend(solved, known, mode) : blend(known, solved, mode);
+  return Math.max(
+    Math.abs(out.r - target.r),
+    Math.abs(out.g - target.g),
+    Math.abs(out.b - target.b)
+  );
+}
+
+function activeColors(){
+  const list = [colorA, colorB, colorC].filter(Boolean);
+  return list;
+}
+
+function slotValue(name){
+  return name === 'A' ? colorA : name === 'B' ? colorB : name === 'C' ? colorC : colorM;
+}
+function setSlot(name, val){
+  if(name === 'A') colorA = val;
+  else if(name === 'B') colorB = val;
+  else if(name === 'C') colorC = val;
+  else colorM = val;
+}
+
+// Work out the equation from whatever is filled in. If the result slot has been
+// sampled and one operand is missing, we run the blend backwards to find it;
+// otherwise we compute the result forwards.
+function resolveFor(mode){
+  const A = colorA, B = colorB, C = colorC, M = colorM;
+  if(M && A && !B) {
+    const s = solveOperand(A, M, mode, false);
+    return { A, B: s, C, M, solved: 'B', resid: solveResidual(A, s, M, mode, false) };
+  }
+  if(M && B && !A) {
+    const s = solveOperand(B, M, mode, true);
+    return { A: s, B, C, M, solved: 'A', resid: solveResidual(B, s, M, mode, true) };
+  }
+  const list = [A, B, C].filter(Boolean);
+  if(list.length < 2) return { A, B, C, M, solved: null, resid: 0 };
+  let computed;
+  if(mode === 'average'){
+    const n = list.length;
+    computed = {
+      r: Math.round(list.reduce((s,c)=>s+c.r,0)/n),
+      g: Math.round(list.reduce((s,c)=>s+c.g,0)/n),
+      b: Math.round(list.reduce((s,c)=>s+c.b,0)/n)
+    };
+  } else {
+    computed = list.reduce((acc, c) => blend(acc, c, mode));
+  }
+  return { A, B, C, M: M || computed, solved: M ? null : 'M', resid: 0 };
+}
+
+// The color this equation currently yields — the solved term, whichever it is.
+function computeMiddleFor(mode){
+  const r = resolveFor(mode);
+  if(!r.solved) return r.M || null;
+  return r.solved === 'M' ? r.M : (r.solved === 'A' ? r.A : r.B);
+}
+
+function residualFor(mode){
+  return resolveFor(mode).resid;
+}
+
+function computeMiddle(){
+  return computeMiddleFor(modeSelect.value);
+}
+
+// Build a lookup from displayed mode name -> mode key, then restructure each
+// reference row into [swatch][name + hex][description]. The swatch doubles as a
+// button: clicking it loads that mode's color for filling, pinned to that mode.
+const refSwatches = {};
+const refHexes = {};
+(function buildRefSwatches(){
+  const nameToKey = {};
+  Object.keys(modeNames).forEach(k => { nameToKey[modeNames[k].toLowerCase()] = k; });
+  document.querySelectorAll('.ref-group li').forEach(li => {
+    const nameEl = li.querySelector('.mname');
+    if(!nameEl) return;
+    const key = nameToKey[nameEl.textContent.trim().toLowerCase()];
+    if(!key) return;
+
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'mswatch empty';
+    sw.setAttribute('aria-label', 'Load ' + modeNames[key] + ' color');
+    sw.title = modeNames[key];
+
+    const meta = document.createElement('div');
+    meta.className = 'mmeta';
+    const hexEl = document.createElement('span');
+    hexEl.className = 'mhex';
+    hexEl.textContent = '—';
+    li.insertBefore(meta, nameEl);
+    meta.appendChild(nameEl);
+    meta.appendChild(hexEl);
+    li.insertBefore(sw, meta);
+
+    sw.addEventListener('click', () => {
+      if(!colorA || !colorB) return;
+      if(fillArmed && armedPinned && armedMode === key){
+        clearArmed();
+        setStatus('cancelled — click a swatch to load it again');
+        return;
+      }
+      armFill(key, true, sw);
+    });
+
+    refSwatches[key] = sw;
+    refHexes[key] = hexEl;
+  });
+})();
+
+function updateRefSwatches(){
+  const ready = !!(colorA && colorB);
+  Object.keys(refSwatches).forEach(key => {
+    const sw = refSwatches[key];
+    const hx = refHexes[key];
+    const c = ready ? computeMiddleFor(key) : null;
+    if(!c){
+      sw.classList.add('empty');
+      sw.classList.remove('pickable');
+      sw.style.background = '';
+      sw.title = modeNames[key];
+      hx.textContent = '—';
+      return;
+    }
+    const hex = toHex(c);
+    const approx = residualFor(key) > 1;
+    sw.classList.remove('empty');
+    sw.classList.add('pickable');
+    sw.style.background = hex;
+    sw.title = modeNames[key] + ' → ' + hex + (approx ? ' (closest fit)' : '') + ' — click to load';
+    hx.textContent = (approx ? '≈ ' : '') + hex;
+  });
+}
+
+// ---- source resolution & print metadata --------------------------------
+// The canvas we paint on is deliberately small so flood fills stay instant,
+// but that resolution must never reach the exported file. Instead every fill
+// is recorded as an operation and replayed against the original image at its
+// native pixel dimensions, so an export carries the full detail — and the
+// same physical size and DPI — that came in.
+let srcImage = null;      // the untouched imported bitmap
+let srcW = 0, srcH = 0;   // its true pixel dimensions
+let srcDPI = null;        // pulled from the file's own metadata when present
+let srcName = 'composition';
+let opLog = [];           // ordered fills, in model coordinates
+
+function recordOp(x, y, color, tolerance){
+  // A region repainted repeatedly (live recolor, successive merges) would
+  // otherwise pile up redundant operations; only the latest at a given point
+  // can survive the replay anyway.
+  opLog = opLog.filter(op => !(op.x === x && op.y === y));
+  opLog.push({ x, y, r:color.r, g:color.g, b:color.b, tolerance });
+}
+
+function crc32(buf){
+  let c, table = crc32.table;
+  if(!table){
+    table = crc32.table = new Uint32Array(256);
+    for(let i = 0; i < 256; i++){
+      c = i;
+      for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[i] = c >>> 0;
+    }
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// Read the physical resolution the file was authored at: PNG records it in a
+// pHYs chunk, JPEG in the JFIF density fields.
+function readDPI(bytes){
+  // PNG
+  if(bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50){
+    let p = 8;
+    while(p + 8 < bytes.length){
+      const len = (bytes[p]<<24 | bytes[p+1]<<16 | bytes[p+2]<<8 | bytes[p+3]) >>> 0;
+      const type = String.fromCharCode(bytes[p+4], bytes[p+5], bytes[p+6], bytes[p+7]);
+      if(type === 'pHYs'){
+        const d = p + 8;
+        const ppuX = (bytes[d]<<24 | bytes[d+1]<<16 | bytes[d+2]<<8 | bytes[d+3]) >>> 0;
+        const unit = bytes[d+8];
+        if(unit === 1 && ppuX > 0) return ppuX * 0.0254;   // pixels/metre -> DPI
+        return null;
+      }
+      if(type === 'IDAT' || type === 'IEND') break;
+      p += 12 + len;
+    }
+    return null;
+  }
+  // JPEG
+  if(bytes.length > 4 && bytes[0] === 0xFF && bytes[1] === 0xD8){
+    let p = 2;
+    while(p + 4 < bytes.length){
+      if(bytes[p] !== 0xFF) break;
+      const marker = bytes[p+1];
+      const len = (bytes[p+2]<<8) | bytes[p+3];
+      if(marker === 0xE0 && len >= 14){
+        const units = bytes[p+11];
+        const xd = (bytes[p+12]<<8) | bytes[p+13];
+        if(xd > 0){
+          if(units === 1) return xd;             // dots per inch
+          if(units === 2) return xd * 2.54;      // dots per cm
+        }
+        return null;
+      }
+      if(marker === 0xDA) break;
+      p += 2 + len;
+    }
+  }
+  return null;
+}
+
+// Canvas cannot write physical resolution, so splice a pHYs chunk into the
+// PNG ourselves — without it the file reports no DPI and opens at the wrong
+// physical size.
+function pngWithDPI(arrayBuffer, dpi){
+  const bytes = new Uint8Array(arrayBuffer);
+  if(!dpi || bytes[0] !== 0x89) return bytes;
+  const ppu = Math.round(dpi / 0.0254);          // pixels per metre
+
+  const chunk = new Uint8Array(21);
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9);                            // data length
+  chunk.set([0x70, 0x48, 0x59, 0x73], 4);        // 'pHYs'
+  dv.setUint32(8, ppu);
+  dv.setUint32(12, ppu);
+  chunk[16] = 1;                                 // unit = metre
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+
+  // strip any existing pHYs, then insert ours straight after IHDR
+  const out = [];
+  out.push(bytes.subarray(0, 8));
+  let p = 8, inserted = false;
+  while(p + 8 <= bytes.length){
+    const len = (bytes[p]<<24 | bytes[p+1]<<16 | bytes[p+2]<<8 | bytes[p+3]) >>> 0;
+    const type = String.fromCharCode(bytes[p+4], bytes[p+5], bytes[p+6], bytes[p+7]);
+    const end = p + 12 + len;
+    if(type !== 'pHYs') out.push(bytes.subarray(p, end));
+    if(type === 'IHDR' && !inserted){ out.push(chunk); inserted = true; }
+    p = end;
+    if(type === 'IEND') break;
+  }
+  let total = 0; out.forEach(a => total += a.length);
+  const merged = new Uint8Array(total);
+  let off = 0; out.forEach(a => { merged.set(a, off); off += a.length; });
+  return merged;
+}
+
+function updateChips(){
+  const mode = modeSelect.value;
+  modeLabel.textContent = modeNames[mode].toLowerCase();
+
+  const eq = resolveFor(mode);
+  const solving = !!eq.solved && eq.solved !== 'M';
+  const resid = eq.resid;
+  const exact = resid <= 1;
+  const ready = !!computeMiddleFor(mode);
+
+  document.getElementById('specMode').textContent =
+    modeNames[mode]
+    + (solving ? (exact ? ' · solved' : ' · closest fit') : (colorC ? ' · 3 colors' : ''))
+    ;
+
+  // Paint each slot from the resolved equation: sampled values show plainly,
+  // the one the tool worked out is marked as solved.
+  ['A','B','C','M'].forEach(name => {
+    const sw = document.getElementById('swatch' + name);
+    const hx = document.getElementById('hex' + name);
+    const chip = document.getElementById('chip' + name);
+    const sampled = slotValue(name);
+    const shown = name === 'A' ? eq.A : name === 'B' ? eq.B : name === 'C' ? eq.C : eq.M;
+    const isSolved = eq.solved === name;
+
+    chip.classList.toggle('solved', isSolved);
+    chip.classList.toggle('has-value', !!sampled);
+    sw.classList.toggle('selected', selectedSlot === name);
+
+    if(shown){
+      sw.classList.remove('placeholder');
+      sw.style.background = toHex(shown);
+      hx.textContent = (isSolved && !exact ? '≈ ' : '') + toHex(shown);
+    } else {
+      sw.classList.add('placeholder');
+      sw.style.background = '';
+      hx.textContent = '—';
+    }
+  });
+
+  const chipC = document.getElementById('chipC');
+  const operatorC = document.getElementById('operatorC');
+  const swM = document.getElementById('swatchM');
+  // A third operand only makes sense when computing the result forward.
+  const hideC = !!colorM;
+  chipC.style.display = hideC ? 'none' : '';
+  operatorC.style.display = hideC ? 'none' : '';
+  chipC.classList.toggle('inactive', !colorC);
+  operatorC.classList.toggle('inactive', !colorC);
+
+  const deltaSection = document.getElementById('deltaSection');
+
+  if(ready){
+    const mid = computeMiddleFor(mode);
+
+    const hue = rgbToHue(mid);
+    const gray = rgbToGray(mid);
+    const cmyk = rgbToCmyk(mid);
+
+    document.getElementById('specHex').textContent = toHex(mid);
+    document.getElementById('specHue').textContent = hue === null ? 'achromatic' : hue + '°';
+    document.getElementById('specGray').textContent = gray + ' / 255  (' + Math.round(gray/255*100) + '%)';
+
+    document.getElementById('barC').style.width = cmyk.c + '%';
+    document.getElementById('barM').style.width = cmyk.m + '%';
+    document.getElementById('barY').style.width = cmyk.y + '%';
+    document.getElementById('barK').style.width = cmyk.k + '%';
+    document.getElementById('numC').textContent = cmyk.c + '%';
+    document.getElementById('numM').textContent = cmyk.m + '%';
+    document.getElementById('numY').textContent = cmyk.y + '%';
+    document.getElementById('numK').textContent = cmyk.k + '%';
+
+    if(solving){
+      // Report how faithfully the solved operand reproduces the target, since
+      // lossy modes often have no exact inverse.
+      deltaSection.style.display = 'block';
+      const verdict = exact
+        ? 'Exact — feeding this back through ' + modeNames[mode] + ' reproduces the target.'
+        : 'No exact solution for ' + modeNames[mode] + ' with these colors. This is the closest fit; worst channel is off by ' + resid + '/255.';
+      deltaSection.querySelector('div').textContent = verdict;
+      document.getElementById('deltaVals').innerHTML = '';
+    } else if(mode === 'average' && !colorC && eq.A && eq.B){
+      // The ±d offset relationship only holds cleanly for two averaged colors.
+      deltaSection.style.display = 'block';
+      deltaSection.querySelector('div').textContent =
+        'Offset vector ±d — add to A to reach the middle, add again to reach B. Subtract to go the other way.';
+      const dr = Math.round((eq.B.r - eq.A.r)/2);
+      const dg = Math.round((eq.B.g - eq.A.g)/2);
+      const db = Math.round((eq.B.b - eq.A.b)/2);
+      document.getElementById('deltaVals').innerHTML =
+        '<div><span>&#916;r</span>' + (dr>=0?'+':'') + dr + '</div>' +
+        '<div><span>&#916;g</span>' + (dg>=0?'+':'') + dg + '</div>' +
+        '<div><span>&#916;b</span>' + (db>=0?'+':'') + db + '</div>';
+    } else {
+      deltaSection.style.display = 'none';
+    }
+  } else {
+    document.getElementById('specHex').textContent = '—';
+    document.getElementById('specHue').textContent = '—';
+    document.getElementById('specGray').textContent = '—';
+    ['C','M','Y','K'].forEach(ch => {
+      document.getElementById('bar'+ch).style.width = '0%';
+      document.getElementById('num'+ch).textContent = '0%';
+    });
+    deltaSection.style.display = 'none';
+  }
+
+  updateRefSwatches();
+}
+
+// ---- sample map --------------------------------------------------------
+// Draws a dot on every pixel the palette was actually read from, so the
+// extraction can be inspected rather than taken on faith. Runs inside the
+// canvas transform, so the dots track pan, zoom and rotation.
+let showSampleMap = false;
+
+function drawSampleMap(){
+  if(!showSampleMap || !img || !palette.length) return;
+  // With one sample per shape there are only a handful of points, so each is
+  // drawn as a target marker sitting at that shape's centre.
+  const focus = armedPaletteHex;
+  const s = 1/viewScale;
+
+  palette.forEach(c => {
+    const hex = toHex(c);
+    if(focus && hex !== focus) return;
+    (c.sites || []).forEach(p => {
+      const cx = p.x + 0.5, cy = p.y + 0.5;
+      // radius hints at how deep inside the shape the point sits, capped so a
+      // large region's marker doesn't swamp the artwork
+      const r = Math.max(5*s, Math.min((p.depth || 6) * 0.5, 26*s));
+      dctx.save();
+      dctx.lineWidth = 1.6*s;
+
+      dctx.beginPath();
+      dctx.arc(cx, cy, r, 0, Math.PI*2);
+      dctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      dctx.stroke();
+      dctx.beginPath();
+      dctx.arc(cx, cy, r - 1.6*s, 0, Math.PI*2);
+      dctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      dctx.stroke();
+
+      const arm = r + 7*s;
+      dctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      dctx.beginPath();
+      dctx.moveTo(cx - arm, cy); dctx.lineTo(cx - r, cy);
+      dctx.moveTo(cx + r, cy);   dctx.lineTo(cx + arm, cy);
+      dctx.moveTo(cx, cy - arm); dctx.lineTo(cx, cy - r);
+      dctx.moveTo(cx, cy + r);   dctx.lineTo(cx, cy + arm);
+      dctx.stroke();
+      dctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      dctx.lineWidth = 0.7*s;
+      dctx.stroke();
+
+      // the sampled colour itself, at the exact pixel that was read
+      dctx.beginPath();
+      dctx.arc(cx, cy, 3*s, 0, Math.PI*2);
+      dctx.fillStyle = hex;
+      dctx.fill();
+      dctx.lineWidth = 1.1*s;
+      dctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      dctx.stroke();
+      dctx.restore();
+    });
+  });
+}
+
+// ---- merge history -----------------------------------------------------
+// A merge repaints pixels, so it can't be reversed by recomputing — the
+// original colors are simply gone from the canvas. Each step therefore stores
+// a snapshot of the composition alongside the palette and fill records, so
+// undo restores all three together and they never drift out of step.
+const HISTORY_LIMIT = 24;
+let mergeHistory = [];
+let mergeFuture = [];
+
+function snapshotState(){
+  return {
+    image: ctx.getImageData(0, 0, canvas.width, canvas.height),
+    palette: JSON.parse(JSON.stringify(palette)),
+    fills: JSON.parse(JSON.stringify(appliedFills)),
+    ops: JSON.parse(JSON.stringify(opLog))
+  };
+}
+
+function restoreState(snap){
+  ctx.putImageData(snap.image, 0, 0);
+  palette = JSON.parse(JSON.stringify(snap.palette));
+  appliedFills = JSON.parse(JSON.stringify(snap.fills));
+  opLog = JSON.parse(JSON.stringify(snap.ops || []));
+  invalidateRefineBaseline();
+  clearArmed();
+  renderPalette();
+  if(refineOpen) renderRefine();
+  if(altOpen) renderAlternatives();
+  if(plotOpen) renderPlot();
+  redraw();
+  updateHistoryButtons();
+}
+
+function updateHistoryButtons(){
+  document.getElementById('undoBtn').disabled = mergeHistory.length === 0;
+  document.getElementById('redoBtn').disabled = mergeFuture.length === 0;
+}
+
+function pushHistory(){
+  mergeHistory.push(snapshotState());
+  if(mergeHistory.length > HISTORY_LIMIT) mergeHistory.shift();
+  mergeFuture = [];          // a new merge invalidates anything undone
+  updateHistoryButtons();
+}
+
+function clearHistory(){
+  mergeHistory = [];
+  mergeFuture = [];
+  updateHistoryButtons();
+}
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+  if(!mergeHistory.length) return;
+  if(mergeMode) exitMergeMode();
+  mergeFuture.push(snapshotState());
+  restoreState(mergeHistory.pop());
+  setStatus('undid merge — ' + palette.length + ' colors');
+});
+
+document.getElementById('redoBtn').addEventListener('click', () => {
+  if(!mergeFuture.length) return;
+  if(mergeMode) exitMergeMode();
+  mergeHistory.push(snapshotState());
+  restoreState(mergeFuture.pop());
+  setStatus('redid merge — ' + palette.length + ' colors');
+});
+
+// ---- merging color regions ---------------------------------------------
+// Pick a color to replace, then the color to replace it with. Every region
+// carrying the first color is repainted, and the two palette entries become
+// one. The repaint runs from each region's own center — the same flood fill
+// used everywhere else — so it follows the artwork's real boundaries instead
+// of swapping raw pixel values and leaving edges behind.
+let mergeMode = false;
+let mergeSourceHex = null;
+
+function updateMergeBtn(){
+  const btn = document.getElementById('mergeBtn');
+  btn.textContent = mergeMode ? 'Cancel Merge' : 'Merge Colors';
+  btn.classList.toggle('ghost', !mergeMode);
+}
+
+function exitMergeMode(msg){
+  mergeMode = false;
+  mergeSourceHex = null;
+  updateMergeBtn();
+  renderPalette();
+  if(msg) setStatus(msg);
+}
+
+function handleMergePick(color, hex){
+  if(!mergeSourceHex){
+    mergeSourceHex = hex;
+    renderPalette();
+    setStatus('replacing <b>' + hex + '</b> — now tap the color to change it into');
+    return;
+  }
+  if(hex === mergeSourceHex){         // tapping the same swatch cancels the pick
+    mergeSourceHex = null;
+    renderPalette();
+    setStatus('merge: tap the color you want to replace');
+    return;
+  }
+  mergeColors(mergeSourceHex, color, hex);
+}
+
+function mergeColors(srcHex, dstColor, dstHex){
+  const src = palette.find(c => toHex(c) === srcHex);
+  const dst = palette.find(c => toHex(c) === dstHex);
+  if(!src || !dst){ exitMergeMode('merge failed — that color is no longer in the palette'); return; }
+
+  pushHistory();   // snapshot before any pixels change
+
+  const sites = (src.sites || []).slice();
+  let regionsFilled = 0;
+  sites.forEach(site => {
+    const covered = floodFill(ctx, canvas.width, canvas.height, site.x, site.y, dstColor, FILL_TOLERANCE);
+    recordOp(site.x, site.y, dstColor, FILL_TOLERANCE);
+    invalidateRefineBaseline();
+    if(covered){
+      // anything previously painted inside this region is gone now
+      appliedFills = appliedFills.filter(f => !covered[f.y * canvas.width + f.x]);
+      regionsFilled++;
+    }
+  });
+
+  // fold the two palette entries together
+  dst.count += src.count;
+  dst.sites = (dst.sites || []).concat(sites);
+  palette = palette.filter(c => c !== src);
+
+  clearArmed();
+  redraw();
+  if(refineOpen) renderRefine();
+  exitMergeMode('merged <b>' + srcHex + '</b> into <b>' + dstHex + '</b> — ' +
+    regionsFilled + ' region' + (regionsFilled === 1 ? '' : 's') + ' repainted');
+}
+
+document.getElementById('mergeBtn').addEventListener('click', () => {
+  if(!palette.length){ setStatus('import an image first'); return; }
+  if(palette.length < 2){ setStatus('need at least two colors to merge'); return; }
+  if(mergeMode){ exitMergeMode('merge cancelled'); return; }
+  mergeMode = true;
+  mergeSourceHex = null;
+  clearArmed();
+  updateMergeBtn();
+  renderPalette();
+  setStatus('merge: tap the color you want to replace');
+});
+
+// ---- color harmony -----------------------------------------------------
+// The palette is ranked by how many regions each color occupies, so the
+// composition's own dominant color anchors every scheme. For each classical
+// relationship we work out where its partner hues fall, then look for the
+// existing color that already sits nearest each of those positions — the
+// suggestion is to nudge that color onto the exact relationship rather than
+// to introduce a color the composition never had. Saturation and lightness
+// are left alone so the value structure of the flat shapes survives intact.
+
+// ---- perceptual color space (Oklab / OKLCH) ----------------------------
+// HSL is convenient but it does not separate color the way vision does: two
+// colors at the same HSL lightness can look markedly different in weight —
+// a blue and a yellow at L=50% are not close. Rotating hue while "holding L"
+// therefore quietly wrecks the value structure a flat composition depends on.
+// Oklab is built for perceptual uniformity, so equal lightness really does
+// look like equal lightness, and a hue rotation leaves the value alone.
+
+function srgbToLinear(v){
+  v /= 255;
+  return v <= 0.04045 ? v/12.92 : Math.pow((v + 0.055)/1.055, 2.4);
+}
+function linearToSrgb(v){
+  const out = v <= 0.0031308 ? v*12.92 : 1.055*Math.pow(v, 1/2.4) - 0.055;
+  return out;
+}
+
+function rgbToOklab(c){
+  const r = srgbToLinear(c.r), g = srgbToLinear(c.g), b = srgbToLinear(c.b);
+  const l = 0.4122214708*r + 0.5363325363*g + 0.0514459929*b;
+  const m = 0.2119034982*r + 0.6806995451*g + 0.1073969566*b;
+  const s = 0.0883024619*r + 0.2817188376*g + 0.6299787005*b;
+  const l_ = Math.cbrt(l), m_ = Math.cbrt(m), s_ = Math.cbrt(s);
+  return {
+    L: 0.2104542553*l_ + 0.7936177850*m_ - 0.0040720468*s_,
+    a: 1.9779984951*l_ - 2.4285922050*m_ + 0.4505937099*s_,
+    b: 0.0259040371*l_ + 0.7827717662*m_ - 0.8086757660*s_
+  };
+}
+
+// Returns the raw (possibly out-of-range) linear result too, so callers can
+// tell whether a color actually fits inside sRGB.
+function oklabToRgbRaw(L, a, b){
+  const l_ = L + 0.3963377774*a + 0.2158037573*b;
+  const m_ = L - 0.1055613458*a - 0.0638541728*b;
+  const s_ = L - 0.0894841775*a - 1.2914855480*b;
+  const l = l_*l_*l_, m = m_*m_*m_, s = s_*s_*s_;
+  return {
+    r: linearToSrgb( 4.0767416621*l - 3.3077115913*m + 0.2309699292*s),
+    g: linearToSrgb(-1.2684380046*l + 2.6097574011*m - 0.3413193965*s),
+    b: linearToSrgb(-0.0041960863*l - 0.7034186147*m + 1.7076147010*s)
+  };
+}
+
+function inSrgb(v, eps){
+  const e = eps === undefined ? 0.0005 : eps;
+  return v.r >= -e && v.r <= 1+e && v.g >= -e && v.g <= 1+e && v.b >= -e && v.b <= 1+e;
+}
+
+function rgbToOklch(c){
+  const lab = rgbToOklab(c);
+  const C = Math.sqrt(lab.a*lab.a + lab.b*lab.b);
+  let h = Math.atan2(lab.b, lab.a) * 180/Math.PI;
+  if(h < 0) h += 360;
+  return { L: lab.L, C, h };
+}
+
+// Convert back, pulling chroma in until the color actually fits in sRGB —
+// rotating a hue at fixed chroma can otherwise land outside what a screen can
+// show, and naive clipping would shift the lightness as a side effect.
+function oklchToRgb(L, C, h){
+  const rad = h * Math.PI/180;
+  let lo = 0, hi = C, best = null;
+  const at = c => oklabToRgbRaw(L, Math.cos(rad)*c, Math.sin(rad)*c);
+
+  const full = at(C);
+  if(inSrgb(full)) best = full;
+  else {
+    for(let i = 0; i < 24; i++){
+      const mid = (lo + hi)/2;
+      const cand = at(mid);
+      if(inSrgb(cand)){ best = cand; lo = mid; } else hi = mid;
+    }
+    if(!best) best = at(0);
+  }
+  return {
+    r: Math.round(Math.min(255, Math.max(0, best.r*255))),
+    g: Math.round(Math.min(255, Math.max(0, best.g*255))),
+    b: Math.round(Math.min(255, Math.max(0, best.b*255)))
+  };
+}
+
+// ---- print gamut estimate ----------------------------------------------
+// Out-of-gamut colors have to be approximated on the way to CMYK, and no
+// algorithm does that perfectly, so it pays to know which colors will not
+// survive the trip before committing to a print.
+//
+// This models the gamut from process inks directly: the solid appearance of
+// standard cyan, magenta, yellow and black, combined multiplicatively in
+// reflectance the way overprinted transparent inks actually behave. Sampling
+// the ink space gives a cloud of printable colors, from which the maximum
+// reachable chroma at each hue and lightness is recorded.
+//
+// This is an ESTIMATE, not a soft proof. A true one needs an ICC profile for
+// the specific press, ink set and paper. It reliably catches the colors that
+// are obviously beyond print — saturated cyans, vivid violets, pure RGB
+// primaries — which is what it is for.
+const INK = {
+  c: { r:0,   g:174, b:239 },
+  m: { r:236, g:0,   b:140 },
+  y: { r:255, g:241, b:0   },
+  k: { r:35,  g:31,  b:32  },
+  paper: { r:255, g:255, b:255 }
+};
+
+let gamutTable = null;         // [hueBin][lightBin] -> max chroma
+const GAMUT_HUE_BINS = 72;     // 5 degrees
+const GAMUT_L_BINS = 24;
+
+function inkMix(cAmt, mAmt, yAmt, kAmt){
+  // Transparent inks filter the paper multiplicatively: each ink scales the
+  // reflectance it lets through, interpolated by how much ink is laid down.
+  const chan = key => {
+    let v = INK.paper[key] / 255;
+    v *= 1 - cAmt * (1 - INK.c[key]/255);
+    v *= 1 - mAmt * (1 - INK.m[key]/255);
+    v *= 1 - yAmt * (1 - INK.y[key]/255);
+    v *= 1 - kAmt * (1 - INK.k[key]/255);
+    return Math.round(Math.max(0, Math.min(1, v)) * 255);
+  };
+  return { r: chan('r'), g: chan('g'), b: chan('b') };
+}
+
+function buildGamutTable(){
+  if(gamutTable) return gamutTable;
+  gamutTable = Array.from({length: GAMUT_HUE_BINS}, () => new Float32Array(GAMUT_L_BINS));
+  const steps = 14, kSteps = 6;
+  for(let ci = 0; ci <= steps; ci++){
+    for(let mi = 0; mi <= steps; mi++){
+      for(let yi = 0; yi <= steps; yi++){
+        for(let ki = 0; ki <= kSteps; ki++){
+          const col = inkMix(ci/steps, mi/steps, yi/steps, ki/kSteps);
+          const o = rgbToOklch(col);
+          const hb = Math.min(GAMUT_HUE_BINS-1, Math.floor(o.h / (360/GAMUT_HUE_BINS)));
+          const lb = Math.min(GAMUT_L_BINS-1, Math.max(0, Math.floor(o.L * GAMUT_L_BINS)));
+          if(o.C > gamutTable[hb][lb]) gamutTable[hb][lb] = o.C;
+        }
+      }
+    }
+  }
+  return gamutTable;
+}
+
+// The gamut boundary is smooth, so a lookup reads the neighbourhood rather
+// than a single cell — otherwise sampling gaps in one bin would report a
+// printable color as unprintable.
+function maxPrintableChroma(h, L){
+  const t = buildGamutTable();
+  const hb = Math.min(GAMUT_HUE_BINS-1, Math.max(0, Math.floor(h / (360/GAMUT_HUE_BINS))));
+  const lb = Math.min(GAMUT_L_BINS-1, Math.max(0, Math.floor(L * GAMUT_L_BINS)));
+  let best = 0;
+  for(let dh = -1; dh <= 1; dh++){
+    for(let dl = -1; dl <= 1; dl++){
+      const h2 = (hb + dh + GAMUT_HUE_BINS) % GAMUT_HUE_BINS;
+      const l2 = lb + dl;
+      if(l2 < 0 || l2 >= GAMUT_L_BINS) continue;
+      if(t[h2][l2] > best) best = t[h2][l2];
+    }
+  }
+  return best;
+}
+
+// How far outside print does this color sit, and what is the nearest color
+// that would hold? Chroma is pulled in while hue and lightness are kept, which
+// is the standard way to bring a color into gamut without shifting its
+// identity or its place in the value structure.
+function gamutCheck(c){
+  const o = rgbToOklch(c);
+  const maxC = maxPrintableChroma(o.h, o.L);
+  const excess = o.C - maxC;
+  if(excess <= 0.004) return { inGamut:true, excess:0, nearest:null, C:o.C, maxC };
+  const nearest = oklchToRgb(o.L, maxC, o.h);
+  return {
+    inGamut: false,
+    excess,
+    // as a share of the chroma the color is asking for
+    over: o.C > 0 ? excess/o.C : 0,
+    nearest,
+    C: o.C, maxC
+  };
+}
+
+function rgbToHsl(c){
+  const r = c.r/255, g = c.g/255, b = c.b/255;
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+  const l = (mx+mn)/2;
+  let hh = 0, ss = 0;
+  if(mx !== mn){
+    const dd = mx - mn;
+    ss = l > 0.5 ? dd/(2-mx-mn) : dd/(mx+mn);
+    if(mx === r) hh = ((g-b)/dd + (g < b ? 6 : 0));
+    else if(mx === g) hh = ((b-r)/dd + 2);
+    else hh = ((r-g)/dd + 4);
+    hh /= 6;
+  }
+  // HSL saturation misreports near-whites and near-blacks as vivid, so carry
+  // the raw chroma too — that is what actually says whether a color has hue.
+  return { h: hh*360, s: ss, l, chroma: mx - mn };
+}
+
+function hslToRgb(h, s, l){
+  h = ((h % 360) + 360) % 360 / 360;
+  if(s === 0){ const v = Math.round(l*255); return { r:v, g:v, b:v }; }
+  const q = l < 0.5 ? l*(1+s) : l + s - l*s;
+  const p2 = 2*l - q;
+  const f = t => {
+    if(t < 0) t += 1; if(t > 1) t -= 1;
+    if(t < 1/6) return p2 + (q-p2)*6*t;
+    if(t < 1/2) return q;
+    if(t < 2/3) return p2 + (q-p2)*(2/3 - t)*6;
+    return p2;
+  };
+  return {
+    r: Math.round(f(h + 1/3)*255),
+    g: Math.round(f(h)*255),
+    b: Math.round(f(h - 1/3)*255)
+  };
+}
+
+function hueGap(a, b){
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+// Plain-language name, keyed to Oklab hue angles (which differ from HSL's).
+function hueName(h, chroma, L){
+  if(chroma < CHROMA_MIN) return L > 0.85 ? 'near-white' : (L < 0.3 ? 'near-black' : 'gray');
+  const names = [[20,'pink-red'],[45,'red'],[70,'orange'],[100,'amber'],[125,'yellow'],
+                 [150,'yellow-green'],[170,'green'],[205,'teal'],[240,'cyan'],[275,'blue'],
+                 [310,'indigo'],[340,'violet'],[360,'magenta']];
+  for(const [lim, nm] of names) if(h < lim) return nm;
+  return 'magenta';
+}
+
+// Oklab chroma, so the threshold means the same thing at every lightness.
+// HSL saturation would call a near-white like #FAF8F4 38% saturated and let
+// the paper stock drive the harmony.
+const CHROMA_MIN = 0.035;
+
+const HARMONY_SCHEMES = [
+  { key:'complementary',      name:'Complementary',       offsets:[180],
+    blurb:'one partner directly opposite the anchor — maximum contrast, two poles' },
+  { key:'splitComplementary', name:'Split Complementary', offsets:[150, 210],
+    blurb:'the two colors flanking the opposite — the contrast of complementary, less tension' },
+  { key:'analogous',          name:'Analogous',           offsets:[-30, 30],
+    blurb:'immediate neighbors of the anchor — quiet, closely related, low contrast' },
+  { key:'triadic',            name:'Triadic',             offsets:[120, 240],
+    blurb:'an even three-way split of the wheel — vivid but balanced' },
+  { key:'tetradic',           name:'Tetradic',            offsets:[60, 180, 240],
+    blurb:'two complementary pairs — the widest range, needs one color to dominate' }
+];
+
+function harmonySuggestions(source){
+  // Cards are normally measured from the baseline, so their numbers never drift
+  // just because another scheme happens to be applied right now. Passing a
+  // palette explicitly lets the applied card be re-measured against what is
+  // actually on the canvas, which is how it confirms the relationship landed.
+  const base = source || (refineBaseline ? refineBaseline.palette : palette);
+  if(base.length < 2) return { anchor:null, schemes:[] };
+
+  // frequency hierarchy: the color occupying the most regions leads.
+  const ranked = base.slice().sort((a,b) => {
+    const ra = (a.sites||[]).length, rb = (b.sites||[]).length;
+    if(rb !== ra) return rb - ra;
+    return b.count - a.count;     // area breaks a tie
+  });
+
+  const withHsl = ranked.map(c => ({ c, hsl: rgbToOklch(c) }));
+
+  // Choosing the anchor.
+  // Frequency decides who is *eligible*: only colors carrying a real share of
+  // the composition can anchor it. Among those, the anchor is the one whose hue
+  // is most reliable, because the anchor's only job is to supply a reference
+  // angle — a near-black or near-white has a hue in principle but barely one in
+  // practice, and relationships built on it are arbitrary.
+  //
+  // Reliability deliberately falls off at BOTH ends of the lightness range, not
+  // just the dark end. Favouring lighter colors would quietly push every
+  // composition lighter over repeated use; this is symmetric, so a dark
+  // saturated color anchors just as readily as a pale one.
+  //
+  // Worth stating plainly: this only selects a reference angle. No operation
+  // here alters lightness — a hue rotation holds L to within rounding — so the
+  // anchor choice cannot shift a composition lighter or darker either way.
+  const hueReliability = e => {
+    const L = e.hsl.L;
+    const endFalloff = 4 * L * (1 - L);   // 1 at mid lightness, 0 at either extreme
+    return e.hsl.C * endFalloff;
+  };
+
+  const maxRegions = Math.max(...withHsl.map(e => (e.c.sites||[]).length), 1);
+  const eligible = withHsl.filter(e =>
+    e.hsl.C >= CHROMA_MIN && (e.c.sites||[]).length >= maxRegions * 0.4
+  );
+  const pool = eligible.length ? eligible : withHsl.filter(e => e.hsl.C >= CHROMA_MIN);
+  if(!pool.length) return { anchor:null, schemes:[] };
+
+  let anchorEntry = pool[0];
+  pool.forEach(e => { if(hueReliability(e) > hueReliability(anchorEntry)) anchorEntry = e; });
+
+  // If the single most frequent color was passed over, say so rather than
+  // silently disagreeing with the hierarchy shown in the swatch list.
+  const mostFrequent = withHsl[0];
+  const passedOver = (mostFrequent !== anchorEntry &&
+    (mostFrequent.c.sites||[]).length > (anchorEntry.c.sites||[]).length)
+      ? mostFrequent : null;
+
+  const movable = withHsl.filter(e => e !== anchorEntry && e.hsl.C >= CHROMA_MIN);
+  if(!movable.length) return { anchor:anchorEntry, schemes:[] };
+
+  const schemes = HARMONY_SCHEMES.map(scheme => {
+    const targets = scheme.offsets.map(o => ((anchorEntry.hsl.h + o) % 360 + 360) % 360);
+    // hue angles below are Oklab angles, so the relationships are perceptual
+
+    // Pair each target hue with the existing color that already lies closest to
+    // it. Greedy on the smallest gap, so the most-justified move is locked in
+    // first and no color is claimed by two targets.
+    const pairs = [];
+    targets.forEach((t, ti) => movable.forEach(e => {
+      pairs.push({ ti, e, gap: hueGap(e.hsl.h, t) });
+    }));
+    pairs.sort((a,b) => a.gap - b.gap);
+
+    const usedTarget = new Set(), usedColor = new Set();
+    const assignments = [];
+    pairs.forEach(pr => {
+      if(usedTarget.has(pr.ti) || usedColor.has(pr.e)) return;
+      usedTarget.add(pr.ti); usedColor.add(pr.e);
+      const t = targets[pr.ti];
+      const from = pr.e.c;
+      // rotate hue only; perceived lightness and chroma are genuinely held
+      const to = oklchToRgb(pr.e.hsl.L, pr.e.hsl.C, t);
+      assignments.push({
+        from, to,
+        fromHex: toHex(from), toHex: toHex(to),
+        fromHue: pr.e.hsl.h, targetHue: t,
+        fromL: pr.e.hsl.L,
+        shift: pr.gap,
+        regions: (from.sites||[]).length,
+        offset: scheme.offsets[pr.ti],
+        name: hueName(pr.e.hsl.h, pr.e.hsl.C, pr.e.hsl.L)
+      });
+    });
+
+    // Weight by how much of the composition each move touches: shifting a color
+    // that fills many regions matters more than nudging an accent.
+    let wSum = 0, wShift = 0;
+    assignments.forEach(a => {
+      const wgt = Math.max(1, a.regions);
+      wSum += wgt; wShift += a.shift * wgt;
+    });
+    const meanShift = wSum ? wShift/wSum : 999;
+    const alreadyClose = assignments.filter(a => a.shift <= 20).length;
+
+    return {
+      ...scheme, targets, assignments, meanShift, alreadyClose,
+      // A hue shift of a degree or two is finer than 8-bit RGB can express, so
+      // the corrected color can round straight back to the original. What
+      // matters is whether the resulting pixel value actually differs — judging
+      // by angle alone offers an "apply" that could never change anything.
+      changed: assignments.filter(a => a.fromHex !== a.toHex)
+    };
+  }).filter(s => s.assignments.length);
+
+  // best fit first: the scheme the artwork is already closest to needs the
+  // least intervention, so it is the most defensible suggestion.
+  schemes.sort((a,b) => a.meanShift - b.meanShift);
+  return { anchor: anchorEntry, schemes, passedOver };
+}
+
+// ---- refine panel ------------------------------------------------------
+// Harmony schemes are mutually exclusive arrangements of the same wheel, so
+// they must never stack. Applying one on top of another would let two schemes
+// fight over the same color — split-complementary pulling a green to 129°,
+// triadic pulling it straight back to 159° — with each apply "undoing" the
+// last. Instead every scheme is measured against, and applied to, a fixed
+// baseline: the palette as it stood before any scheme was tried. Choosing a
+// different scheme swaps it in rather than layering on top.
+let refineOpen = false;
+let refineData = null;
+let refineBaseline = null;   // state before any scheme was applied
+let activeSchemeKey = null;  // which scheme is currently in effect
+
+function captureRefineBaseline(){
+  refineBaseline = {
+    image: ctx.getImageData(0, 0, canvas.width, canvas.height),
+    palette: JSON.parse(JSON.stringify(palette)),
+    fills: JSON.parse(JSON.stringify(appliedFills)),
+    ops: JSON.parse(JSON.stringify(opLog))
+  };
+  activeSchemeKey = null;
+}
+
+// Silently return to the baseline — no history entry, since this is the
+// interior of a single "apply" step rather than an edit of its own.
+function revertToBaseline(){
+  if(!refineBaseline) return;
+  ctx.putImageData(refineBaseline.image, 0, 0);
+  palette = JSON.parse(JSON.stringify(refineBaseline.palette));
+  appliedFills = JSON.parse(JSON.stringify(refineBaseline.fills));
+  opLog = JSON.parse(JSON.stringify(refineBaseline.ops));
+}
+
+// Any edit made outside the refine panel becomes the new starting point.
+function invalidateRefineBaseline(){
+  refineBaseline = null;
+  activeSchemeKey = null;
+}
+
+function renderRefine(){
+  const panel = document.getElementById('refinePanel');
+  panel.hidden = !refineOpen;
+  if(!refineOpen) return;
+
+  refineData = harmonySuggestions();
+  panel.innerHTML = '';
+
+  if(!refineData.anchor){
+    panel.innerHTML = '<div class="refine-lead">Not enough colored regions to build a harmony — ' +
+      'the palette needs at least two colors with actual hue.</div>';
+    return;
+  }
+
+  const a = refineData.anchor;
+  const aHex = toHex(a.c);
+  const lead = document.createElement('div');
+  lead.className = 'refine-lead';
+  const po = refineData.passedOver;
+  const anchorWhy = po
+    ? ' It is not the single most frequent — <b>' + toHex(po.c) + '</b> covers more regions (' +
+      (po.c.sites||[]).length + ') but is ' +
+      (po.hsl.C < CHROMA_MIN * 1.5
+        ? 'too near-neutral to carry a usable hue'
+        : 'too near ' + (po.hsl.L < 0.5 ? 'black' : 'white') + ' for its hue to read dependably') +
+      ', so it would anchor the relationships on an angle you can barely see. ' +
+      'Nothing here changes lightness, so this choice cannot push the composition lighter or darker.'
+    : '';
+
+  lead.innerHTML =
+    'Anchored on <b>' + aHex + '</b> — the ' + hueName(a.hsl.h, a.hsl.C, a.hsl.L) +
+    ' at <b>' + Math.round(a.hsl.h) + '\u00b0</b>, carrying ' +
+    (a.c.sites||[]).length + ' regions with the clearest hue of the frequent colors.' + anchorWhy +
+    ' Each scheme below keeps that color fixed and moves whichever ' +
+    'existing colors already sit nearest its partner hues, so a suggestion is always a nudge to ' +
+    'a color the composition already has. Hue angles are measured in <b>Oklab</b>, a ' +
+    'perceptually uniform space, so rotating a hue genuinely holds its perceived lightness — ' +
+    'in HSL it would not, and the value structure of the flat shapes would drift.<br><br>' +
+    'These schemes are <b>alternatives, not layers</b> — each is measured from the palette as it ' +
+    'stands here, and applying one replaces any other. Two schemes can want the same color in ' +
+    'different places, so stacking them would just trade it back and forth.';
+  panel.appendChild(lead);
+
+  // Once a scheme is in effect, re-measure it against what is actually on the
+  // canvas. Otherwise the card keeps reciting the pre-apply offsets and reads
+  // as though nothing happened — the relationship it just locked in would still
+  // be shown as pending.
+  const liveByKey = {};
+  if(activeSchemeKey){
+    const live = harmonySuggestions(palette);
+    live.schemes.forEach(s2 => { liveByKey[s2.key] = s2; });
+  }
+
+  refineData.schemes.forEach((schBase, idx) => {
+    const isActive = activeSchemeKey === schBase.key;
+    const sch = (isActive && liveByKey[schBase.key]) ? liveByKey[schBase.key] : schBase;
+    const card = document.createElement('div');
+    card.className = 'scheme' + (isActive ? ' scheme-active' : '');
+
+    const head = document.createElement('div');
+    head.className = 'scheme-head';
+    const exactNow = isActive && !sch.changed.length;
+    head.innerHTML = '<span class="scheme-name">' + sch.name +
+      (isActive ? ' <span class="scheme-tag">' + (exactNow ? 'in sync' : 'applied') + '</span>' : '') +
+      '</span>' +
+      '<span class="scheme-fit">' +
+      (isActive ? 'now: ' : '') + 'avg shift ' + Math.round(sch.meanShift) + '\u00b0 \u00b7 ' +
+      sch.alreadyClose + '/' + sch.assignments.length + ' already close</span>';
+    card.appendChild(head);
+
+    const note = document.createElement('div');
+    note.className = 'scheme-note';
+    note.textContent = sch.blurb + '.' +
+      (isActive ? (exactNow
+        ? '  Measured against the composition as it stands: every partner is now on its exact angle.'
+        : '  Measured against the composition as it stands.')
+        : '');
+    card.appendChild(note);
+
+    sch.assignments.forEach(as => {
+      const row = document.createElement('div');
+      row.className = 'swap-row';
+      const near = as.shift <= 20;
+      const noop = as.fromHex === as.toHex;
+      const tail = noop
+        ? ' \u2014 already on the relationship; the correction is smaller than one 8-bit step, so nothing would change.'
+        : (' Becomes <b>' + as.toHex + '</b>' +
+           (as.regions ? ' across ' + as.regions + ' region' + (as.regions===1?'':'s') : '') + '.');
+      row.innerHTML =
+        '<span class="swap-chip" style="background:' + as.fromHex + '"></span>' +
+        '<span class="swap-arrow">' + (noop ? '=' : '\u2192') + '</span>' +
+        '<span class="swap-chip" style="background:' + as.toHex + '"></span>' +
+        '<span class="swap-text">Your <b>' + as.fromHex + '</b> (' + as.name + ', ' +
+        Math.round(as.fromHue) + '\u00b0) sits <b>' + Math.round(as.shift) +
+        '\u00b0</b> from ' + offsetPhrase(as.offset) + ' of ' + aHex + ' at ' +
+        Math.round(as.targetHue) + '\u00b0' +
+        (noop ? '' : (near ? ' \u2014 already nearly there, so this is a small correction.'
+                           : ' \u2014 a wider move, so judge it against the artwork.')) +
+        tail + '</span>';
+      card.appendChild(row);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'scheme-actions';
+    if(isActive){
+      const off = document.createElement('button');
+      off.className = 'btn ghost small btn-import';
+      off.textContent = 'Remove';
+      off.addEventListener('click', () => {
+        pushHistory();
+        revertToBaseline();
+        activeSchemeKey = null;
+        clearArmed();
+        renderPalette();
+        redraw();
+        renderRefine();
+        setStatus('scheme removed — back to the palette as imported');
+      });
+      actions.appendChild(off);
+    }
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'btn ghost small btn-import';
+    applyBtn.textContent = isActive
+      ? (exactNow ? 'In sync' : 'Applied')
+      : (sch.changed.length ? 'Apply ' + sch.name + ' (' + sch.changed.length + ')'
+                            : 'Already exact');
+    applyBtn.disabled = isActive || !sch.changed.length;
+    applyBtn.addEventListener('click', () => applyScheme(idx));   // always the baseline version
+    actions.appendChild(applyBtn);
+    card.appendChild(actions);
+
+    panel.appendChild(card);
+  });
+}
+
+function offsetPhrase(off){
+  const o = ((off % 360) + 360) % 360;
+  if(o === 180) return 'the complement';
+  if(o === 150 || o === 210) return 'a split-complement';
+  if(o === 30 || o === 330) return 'an analogous neighbor';
+  if(o === 120 || o === 240) return 'a triadic partner';
+  if(o === 60) return 'a tetradic partner';
+  return 'the ' + o + '\u00b0 partner';
+}
+
+function applyScheme(idx){
+  const sch = refineData && refineData.schemes[idx];
+  if(!sch || !sch.changed.length) return;
+  if(!refineBaseline) captureRefineBaseline();
+
+  pushHistory();
+  // Drop whatever scheme is currently in effect before laying this one on, so
+  // schemes replace one another instead of compounding.
+  revertToBaseline();
+
+  let repainted = 0;
+  sch.changed.forEach(as => {
+    if(as.fromHex === as.toHex) return;   // nothing to paint
+    // find the live palette entry this suggestion refers to
+    const entry = palette.find(c => toHex(c) === as.fromHex);
+    if(!entry) return;
+    (entry.sites || []).forEach(site => {
+      const covered = floodFill(ctx, canvas.width, canvas.height, site.x, site.y, as.to, FILL_TOLERANCE);
+      recordOp(site.x, site.y, as.to, FILL_TOLERANCE);
+      if(covered){
+        appliedFills = appliedFills.filter(f => !covered[f.y * canvas.width + f.x]);
+        repainted++;
+      }
+    });
+    entry.r = as.to.r; entry.g = as.to.g; entry.b = as.to.b;
+  });
+
+  activeSchemeKey = sch.key;
+  clearArmed();
+  renderPalette();
+  redraw();
+  renderRefine();
+  setStatus('applied <b>' + sch.name + '</b> — ' + sch.changed.length +
+            ' color' + (sch.changed.length===1?'':'s') + ' shifted across ' +
+            repainted + ' region' + (repainted===1?'':'s') +
+            '. Choosing another scheme replaces it.');
+}
+
+document.getElementById('refineBtn').addEventListener('click', () => {
+  if(!palette.length){ setStatus('import an image first'); return; }
+  if(mergeMode) exitMergeMode();
+  refineOpen = !refineOpen;
+  if(refineOpen && !refineBaseline) captureRefineBaseline();
+  const btn = document.getElementById('refineBtn');
+  btn.textContent = refineOpen ? 'Hide Refine' : 'Refine Palette';
+  btn.classList.toggle('ghost', !refineOpen);
+  renderRefine();
+  if(refineOpen){
+    const n = refineData && refineData.schemes.length;
+    setStatus(n ? n + ' harmony options ranked by how little the artwork must change'
+                : 'not enough colored regions to build a harmony');
+  }
+});
+
+// ---- alternatives ------------------------------------------------------
+// Same palette, different distribution. The frequency hierarchy decides what
+// holds still: the colors carrying the most regions anchor the composition and
+// stay put, while everything below them trades places. Nothing is recolored —
+// each region simply receives a color the composition already contains, so an
+// alternative is a rearrangement rather than a new palette.
+let altOpen = false;
+let altFixedCount = 1;      // how many top-of-hierarchy colors stay put
+let altVariants = [];
+
+function hierarchyOrder(){
+  return palette.slice().sort((a,b) => {
+    const ra = (a.sites||[]).length, rb = (b.sites||[]).length;
+    if(rb !== ra) return rb - ra;
+    return b.count - a.count;
+  });
+}
+
+// Permutations where no color keeps its own regions — otherwise a "variant"
+// could come back identical to what is already on screen.
+function derangements(n, limit){
+  const out = [];
+  if(n < 2) return out;
+  // rotations are guaranteed derangements and give evenly-spread results
+  for(let shift = 1; shift < n && out.length < limit; shift++){
+    out.push(Array.from({length:n}, (_, i) => (i + shift) % n));
+  }
+  // pairwise swaps add variety once rotations run out (n >= 4 to stay deranged)
+  if(n >= 4){
+    for(let i = 0; i + 1 < n && out.length < limit; i += 2){
+      const p = Array.from({length:n}, (_, k) => k);
+      p[i] = i+1; p[i+1] = i;
+      for(let k = i+2; k + 1 < n; k += 2){ p[k] = k+1; p[k+1] = k; }
+      if(p.every((v, k) => v !== k) && !out.some(q => q.every((v,k) => v === p[k]))) out.push(p);
+    }
+  }
+  return out.slice(0, limit);
+}
+
+// Which shape does this site belong to?
+function regionIdAt(site){
+  if(!regionLabels) return -1;
+  const x = Math.min(regionW-1, Math.max(0, site.x));
+  const y = Math.min(regionH-1, Math.max(0, site.y));
+  return regionLabels[y*regionW + x];
+}
+
+function buildVariants(){
+  altVariants = [];
+  if(!regionLabels || palette.length < 2) return;
+
+  const order = hierarchyOrder();
+  const fixed = order.slice(0, Math.min(altFixedCount, order.length));
+  const movable = order.slice(Math.min(altFixedCount, order.length));
+  if(movable.length < 2) return;
+
+  const perms = derangements(movable.length, 6);
+  const baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  perms.forEach((perm, pi) => {
+    // regions belonging to movable[i] are taken over by movable[perm[i]]
+    const regionToColor = new Map();
+    movable.forEach((c, i) => {
+      const dest = movable[perm[i]];
+      (c.sites || []).forEach(site => {
+        const rid = regionIdAt(site);
+        if(rid >= 0) regionToColor.set(rid, dest);
+      });
+    });
+
+    altVariants.push({
+      label: describePerm(perm, pi),
+      perm, movable, fixed,
+      regionToColor,
+      preview: renderVariantPreview(baseImage, regionToColor)
+    });
+  });
+}
+
+function describePerm(perm, i){
+  const n = perm.length;
+  const isRotation = perm.every((v, k) => v === (k + (perm[0] - 0 + n) % n) % n);
+  if(isRotation){
+    const shift = perm[0];
+    return 'Shift ' + shift + (shift === 1 ? ' place' : ' places');
+  }
+  return 'Swap set ' + (i + 1);
+}
+
+// Paint a variant by remapping whole regions — no flood fill, no resampling,
+// so the preview is exactly what applying would produce.
+function remapImage(baseImage, regionToColor){
+  const out = new ImageData(
+    new Uint8ClampedArray(baseImage.data), baseImage.width, baseImage.height
+  );
+  const d = out.data;
+  const n = baseImage.width * baseImage.height;
+  for(let i = 0; i < n; i++){
+    const rid = regionLabels[i];
+    if(rid < 0) continue;
+    const c = regionToColor.get(rid);
+    if(!c) continue;
+    const o = i*4;
+    d[o] = c.r; d[o+1] = c.g; d[o+2] = c.b;
+  }
+  return out;
+}
+
+function renderVariantPreview(baseImage, regionToColor){
+  // Use the working canvas at its full size — that is the most detail
+  // available, and the card displays it at roughly a third of that, so it
+  // stays sharp on a retina screen instead of being blown up from a thumbnail.
+  const full = document.createElement('canvas');
+  full.width = baseImage.width; full.height = baseImage.height;
+  full.getContext('2d').putImageData(remapImage(baseImage, regionToColor), 0, 0);
+  return full.toDataURL('image/png');
+}
+
+function applyVariant(idx){
+  const v = altVariants[idx];
+  if(!v) return;
+
+  pushHistory();
+  invalidateRefineBaseline();
+
+  const base = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(remapImage(base, v.regionToColor), 0, 0);
+
+  // Record one operation per region so the export replays the same
+  // rearrangement at full resolution.
+  v.regionToColor.forEach((color, rid) => {
+    const site = findSiteForRegion(rid);
+    if(site) recordOp(site.x, site.y, color, FILL_TOLERANCE);
+  });
+
+  // the colors are unchanged; what moved is which regions each one owns
+  const inv = [];
+  v.perm.forEach((dest, i) => { inv[dest] = i; });
+  const oldSites = v.movable.map(c => (c.sites || []).slice());
+  const oldCounts = v.movable.map(c => c.count);
+  v.movable.forEach((c, j) => {
+    const from = inv[j];
+    c.sites = oldSites[from];
+    c.count = oldCounts[from];
+  });
+
+  appliedFills = [];        // painted regions no longer describe what is there
+  clearArmed();
+  renderPalette();
+  redraw();
+  renderAlternatives();
+  setStatus('applied alternative — <b>' + v.label + '</b>, ' +
+            v.movable.length + ' colors rearranged, ' +
+            v.fixed.length + ' held fixed');
+}
+
+function findSiteForRegion(rid){
+  for(const c of palette){
+    for(const s of (c.sites || [])){
+      if(regionIdAt(s) === rid) return s;
+    }
+  }
+  return null;
+}
+
+function renderAlternatives(){
+  const panel = document.getElementById('altPanel');
+  panel.hidden = !altOpen;
+  if(!altOpen) return;
+
+  buildVariants();
+  panel.innerHTML = '';
+
+  const order = hierarchyOrder();
+  const lead = document.createElement('div');
+  lead.className = 'refine-lead';
+  if(!altVariants.length){
+    lead.innerHTML = 'Needs at least two colors below the fixed ones to have anything to trade. ' +
+      'Lower the number held fixed, or work with a palette of more colors.';
+    panel.appendChild(lead);
+    buildAltControls(panel);
+    return;
+  }
+
+  const fixed = order.slice(0, altFixedCount).map(c => toHex(c)).join(', ');
+  lead.innerHTML =
+    'Same palette, redistributed. The top <b>' + altFixedCount + '</b> of the frequency ' +
+    'hierarchy (' + (fixed || 'none') + ') hold their regions, anchoring the composition; ' +
+    'everything below trades places. No color is altered — only which shapes it occupies.';
+  panel.appendChild(lead);
+  buildAltControls(panel);
+
+  const grid = document.createElement('div');
+  grid.className = 'alt-grid';
+  altVariants.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'alt-card';
+    card.title = 'Apply this arrangement';
+
+    const im = document.createElement('img');
+    im.src = v.preview;
+    im.alt = v.label;
+    card.appendChild(im);
+
+    const lab = document.createElement('div');
+    lab.className = 'alt-label';
+    lab.textContent = v.label;
+    card.appendChild(lab);
+
+    const dots = document.createElement('div');
+    dots.className = 'alt-swatches';
+    v.fixed.forEach(c => {
+      const dd = document.createElement('span');
+      dd.className = 'alt-dot fixed';
+      dd.style.background = toHex(c);
+      dd.title = toHex(c) + ' — held fixed';
+      dots.appendChild(dd);
+    });
+    v.movable.forEach(c => {
+      const dd = document.createElement('span');
+      dd.className = 'alt-dot';
+      dd.style.background = toHex(c);
+      dd.title = toHex(c) + ' — rearranged';
+      dots.appendChild(dd);
+    });
+    card.appendChild(dots);
+
+    card.addEventListener('click', () => applyVariant(i));
+    grid.appendChild(card);
+  });
+  panel.appendChild(grid);
+}
+
+function buildAltControls(panel){
+  const order = hierarchyOrder();
+  const row = document.createElement('div');
+  row.className = 'alt-controls';
+  const lab = document.createElement('label');
+  lab.textContent = 'Hold fixed';
+  row.appendChild(lab);
+
+  const sel = document.createElement('select');
+  const maxFixed = Math.max(0, order.length - 2);
+  for(let i = 0; i <= maxFixed; i++){
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i === 0 ? 'nothing — everything trades'
+                              : 'top ' + i + (i === 1 ? ' color' : ' colors');
+    if(i === altFixedCount) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', e => {
+    altFixedCount = parseInt(e.target.value, 10);
+    renderAlternatives();
+  });
+  row.appendChild(sel);
+  panel.appendChild(row);
+}
+
+// Pull every out-of-gamut color to the nearest printable color of the same
+// hue and lightness, repainting its regions the same way a merge does.
+document.getElementById('gamutFixBtn').addEventListener('click', () => {
+  const offenders = palette.filter(c => !gamutCheck(c).inGamut);
+  if(!offenders.length){ setStatus('every color is already inside the estimated print gamut'); return; }
+
+  pushHistory();
+  invalidateRefineBaseline();
+
+  let regions = 0;
+  offenders.forEach(entry => {
+    const g = gamutCheck(entry);
+    if(!g.nearest) return;
+    (entry.sites || []).forEach(site => {
+      const covered = floodFill(ctx, canvas.width, canvas.height, site.x, site.y, g.nearest, FILL_TOLERANCE);
+      recordOp(site.x, site.y, g.nearest, FILL_TOLERANCE);
+      if(covered){
+        appliedFills = appliedFills.filter(f => !covered[f.y * canvas.width + f.x]);
+        regions++;
+      }
+    });
+    entry.r = g.nearest.r; entry.g = g.nearest.g; entry.b = g.nearest.b;
+  });
+
+  clearArmed();
+  renderPalette();
+  redraw();
+  if(refineOpen) renderRefine();
+  if(altOpen) renderAlternatives();
+  if(plotOpen) renderPlot();
+  setStatus('brought ' + offenders.length + ' color' + (offenders.length===1?'':'s') +
+            ' into the estimated print gamut across ' + regions + ' region' + (regions===1?'':'s'));
+});
+
+document.getElementById('altBtn').addEventListener('click', () => {
+  if(!palette.length){ setStatus('import an image first'); return; }
+  if(mergeMode) exitMergeMode();
+  altOpen = !altOpen;
+  const btn = document.getElementById('altBtn');
+  btn.textContent = altOpen ? 'Hide Alternatives' : 'Alternatives';
+  btn.classList.toggle('ghost', !altOpen);
+  renderAlternatives();
+  if(altOpen){
+    setStatus(altVariants.length
+      ? altVariants.length + ' arrangements of the same palette — tap one to apply'
+      : 'not enough colors below the fixed ones to rearrange');
+  }
+});
+
+// ---- chromaticity plot -------------------------------------------------
+// One meaning of gamut is simply the set of colors present in an image, which
+// is exactly what this panel extracts — so the palette can be drawn as a map.
+// The plane is Oklab's a–b: angle is hue, distance from centre is chroma, and
+// equal distances look like equal differences, which is not true of an HSL
+// wheel. Both gamut boundaries are drawn for one lightness slice at a time,
+// because how much chroma is reachable depends heavily on how light a color is.
+let plotOpen = false;
+let plotL = 0.6;
+const PLOT_RANGE = 0.33;      // half-width of the a/b axes
+
+function drawChromaticityPlot(){
+  const cv = document.getElementById('plotCanvas');
+  if(!cv) return;
+  const g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const cx = W/2, cy = H/2;
+  const scale = (Math.min(W, H)/2 - 26) / PLOT_RANGE;
+
+  g.clearRect(0, 0, W, H);
+
+  // sRGB slice: every point that survives the round trip at this lightness
+  const img = g.createImageData(W, H);
+  const d = img.data;
+  for(let py = 0; py < H; py++){
+    const bb = (cy - py)/scale;
+    for(let px = 0; px < W; px++){
+      const aa = (px - cx)/scale;
+      const o = px*4 + py*W*4;
+      const lin = oklabToRgbRaw(plotL, aa, bb);
+      if(inSrgb(lin, 0)){
+        d[o]   = Math.round(Math.max(0, Math.min(1, lin.r))*255);
+        d[o+1] = Math.round(Math.max(0, Math.min(1, lin.g))*255);
+        d[o+2] = Math.round(Math.max(0, Math.min(1, lin.b))*255);
+        d[o+3] = 235;
+      } else {
+        d[o] = 246; d[o+1] = 244; d[o+2] = 239; d[o+3] = 255;
+      }
+    }
+  }
+  g.putImageData(img, 0, 0);
+
+  // chroma rings
+  g.save();
+  g.strokeStyle = 'rgba(28,29,33,0.20)';
+  g.lineWidth = 1;
+  g.setLineDash([3,4]);
+  [0.1, 0.2, 0.3].forEach(c => {
+    g.beginPath(); g.arc(cx, cy, c*scale, 0, Math.PI*2); g.stroke();
+  });
+  g.setLineDash([]);
+  g.strokeStyle = 'rgba(28,29,33,0.25)';
+  g.beginPath();
+  g.moveTo(cx - PLOT_RANGE*scale, cy); g.lineTo(cx + PLOT_RANGE*scale, cy);
+  g.moveTo(cx, cy - PLOT_RANGE*scale); g.lineTo(cx, cy + PLOT_RANGE*scale);
+  g.stroke();
+  g.restore();
+
+  // estimated print boundary at this lightness
+  // The table is binned, so the raw outline steps; a short moving average over
+  // hue restores the smooth curve the boundary actually has. This only affects
+  // how the line is drawn — the per-color test still reads the table directly.
+  const bPts = [];
+  for(let h = 0; h < 360; h += 2) bPts.push(maxPrintableChroma(h, plotL));
+  const smoothed = bPts.map((_, i) => {
+    let sum = 0, n = 0;
+    for(let k = -3; k <= 3; k++){
+      sum += bPts[(i + k + bPts.length) % bPts.length]; n++;
+    }
+    return sum/n;
+  });
+
+  g.save();
+  g.strokeStyle = '#D65028';
+  g.lineWidth = 2;
+  g.setLineDash([5,4]);
+  g.beginPath();
+  smoothed.forEach((c, i) => {
+    const rad = (i*2)*Math.PI/180;
+    const x = cx + Math.cos(rad)*c*scale;
+    const y = cy - Math.sin(rad)*c*scale;
+    if(i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  });
+  g.closePath();
+  g.stroke();
+  g.restore();
+
+  // the palette itself
+  const sorted = paletteSorted();
+  const maxRegions = Math.max(1, ...sorted.map(c => (c.sites||[]).length));
+  sorted.forEach(c => {
+    const o = rgbToOklch(c);
+    const rad = o.h*Math.PI/180;
+    const x = cx + Math.cos(rad)*o.C*scale;
+    const y = cy - Math.sin(rad)*o.C*scale;
+    const regions = (c.sites||[]).length;
+    // size carries the frequency hierarchy, so dominance is visible at a glance
+    const r = 5 + 9*Math.sqrt(regions/maxRegions);
+    const out = !gamutCheck(c).inGamut;
+
+    g.save();
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI*2);
+    g.fillStyle = toHex(c); g.fill();
+    g.lineWidth = 2.5;
+    g.strokeStyle = out ? '#D65028' : 'rgba(255,255,255,0.95)';
+    g.stroke();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(28,29,33,0.55)';
+    g.stroke();
+    // a tick back to the centre shows how far out the color sits
+    g.beginPath();
+    g.moveTo(cx + Math.cos(rad)*Math.max(0, o.C*scale - r - 2), cy - Math.sin(rad)*Math.max(0, o.C*scale - r - 2));
+    g.lineTo(cx, cy);
+    g.strokeStyle = 'rgba(28,29,33,0.16)';
+    g.stroke();
+    g.restore();
+  });
+
+  // hue labels around the rim
+  g.save();
+  g.font = '10px "JetBrains Mono", monospace';
+  g.fillStyle = 'rgba(28,29,33,0.5)';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  [[0,'0°'],[90,'90°'],[180,'180°'],[270,'270°']].forEach(([h, lab]) => {
+    const rad = h*Math.PI/180;
+    g.fillText(lab, cx + Math.cos(rad)*(PLOT_RANGE*scale + 14), cy - Math.sin(rad)*(PLOT_RANGE*scale + 14));
+  });
+  g.restore();
+}
+
+function renderPlot(){
+  const panel = document.getElementById('plotPanel');
+  panel.hidden = !plotOpen;
+  if(!plotOpen) return;
+
+  const lead = document.getElementById('plotLead');
+  const legend = document.getElementById('plotLegend');
+
+  if(!palette.length){
+    lead.textContent = 'Import an image to map its palette.';
+    legend.innerHTML = '';
+    return;
+  }
+
+  const sorted = paletteSorted();
+  const chromas = sorted.map(c => rgbToOklch(c).C);
+  const spread = Math.max(...chromas) - Math.min(...chromas);
+  const outCount = sorted.filter(c => !gamutCheck(c).inGamut).length;
+
+  lead.innerHTML =
+    'Your palette as its own gamut — the set of colors this composition actually contains, ' +
+    'plotted on the <b>Oklab a–b plane</b>: angle is hue, distance from centre is chroma. ' +
+    'Dot size follows the frequency hierarchy, so the colors carrying the composition read largest.';
+
+  legend.innerHTML =
+    '<span class="key" style="border-color:#D65028; border-style:dashed;"></span>' +
+    'estimated print gamut at this lightness &nbsp;·&nbsp; ' +
+    'colored field = what sRGB can show at this lightness &nbsp;·&nbsp; ' +
+    'dashed rings = chroma 0.1 / 0.2 / 0.3<br>' +
+    'Chroma spread across the palette: <b>' + spread.toFixed(3) + '</b>' +
+    (outCount ? ' &nbsp;·&nbsp; <b style="color:#A33C1E">' + outCount +
+      ' outside print</b> (ringed in red)' : ' &nbsp;·&nbsp; all colors printable') +
+    '<br>Both boundaries move with the slider because reachable chroma depends on lightness.';
+
+  drawChromaticityPlot();
+}
+
+document.getElementById('plotBtn').addEventListener('click', () => {
+  if(!palette.length){ setStatus('import an image first'); return; }
+  plotOpen = !plotOpen;
+  const btn = document.getElementById('plotBtn');
+  btn.textContent = plotOpen ? 'Hide Plot' : 'Chromaticity Plot';
+  btn.classList.toggle('ghost', !plotOpen);
+  if(plotOpen){
+    // open on the palette's own median lightness, where its colors actually live
+    const ls = palette.map(c => rgbToOklch(c).L).sort((a,b) => a-b);
+    plotL = ls[Math.floor(ls.length/2)] || 0.6;
+    const sl = document.getElementById('plotL');
+    sl.value = Math.round(plotL*100);
+    document.getElementById('plotLVal').textContent = Math.round(plotL*100) + '%';
+  }
+  renderPlot();
+});
+
+document.getElementById('plotL').addEventListener('input', e => {
+  plotL = parseInt(e.target.value, 10)/100;
+  document.getElementById('plotLVal').textContent = e.target.value + '%';
+  if(plotOpen) drawChromaticityPlot();
+});
+
+function updateSampleMapBtn(){
+  const btn = document.getElementById('sampleMapBtn');
+  btn.textContent = showSampleMap ? 'Hide Sample Map' : 'Show Sample Map';
+  btn.classList.toggle('ghost', !showSampleMap);
+}
+
+document.getElementById('sampleMapBtn').addEventListener('click', () => {
+  if(!palette.length){ setStatus('import an image first'); return; }
+  showSampleMap = !showSampleMap;
+  updateSampleMapBtn();
+  redraw();
+  if(showSampleMap){
+    const shown = palette.reduce((s,c) => s + ((c.sites||[]).length), 0);
+    setStatus('sample map on — ' + shown + ' shape centers across ' + palette.length +
+              ' colors. Load a swatch to isolate one.');
+  } else {
+    setStatus('sample map off');
+  }
+});
+
+
+updateChips();
+renderPalette();
+updateSampleMapBtn();
+updateMergeBtn();
+updateHistoryButtons();
+sizeStageToViewport();
+redraw();
+</script>
+</body>
+</html>
