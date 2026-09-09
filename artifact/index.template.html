@@ -1,0 +1,815 @@
+<title>Color Middling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  /* The page is deliberately achromatic. Every color you see belongs to an artwork. */
+  :root {
+    --paper: #eaecee;
+    --plate: #f6f7f8;
+    --card: #ffffff;
+    --ink: #15171a;
+    --muted: #6c747d;
+    --rule: #d2d7dc;
+    --rule-strong: #b6bec6;
+    --field: #ffffff;
+    --invert-ink: #f4f6f7;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --display: "Archivo", var(--sans);
+
+    --gutter: clamp(1rem, 4vw, 3.5rem);
+    --measure: 64ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121417;
+      --plate: #191c20;
+      --card: #1a1d21;
+      --ink: #e9ebee;
+      --muted: #8d959e;
+      --rule: #272c31;
+      --rule-strong: #3a4046;
+      --field: #101215;
+      --invert-ink: #15171a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #121417;
+    --plate: #191c20;
+    --card: #1a1d21;
+    --ink: #e9ebee;
+    --muted: #8d959e;
+    --rule: #272c31;
+    --rule-strong: #3a4046;
+    --field: #101215;
+    --invert-ink: #15171a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding-inline: var(--gutter);
+    padding-block: clamp(2rem, 5vw, 3.5rem) 4rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .wordmark {
+    font-family: var(--display);
+    font-variation-settings: "wdth" 118, "wght" 600;
+    font-size: clamp(2.1rem, 6.5vw, 4.25rem);
+    line-height: 0.95;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    max-width: var(--measure);
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2.25rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .stat-n { font-weight: 500; }
+  .stat-l { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* ---------- spectrum ---------- */
+
+  .label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .spectrum {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-block: 2.25rem;
+  }
+
+  .ribbon {
+    display: block;
+    width: 100%;
+    height: 132px;
+    cursor: crosshair;
+    touch-action: pan-y;
+    background: var(--plate);
+  }
+
+  .readout {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 1.75rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .readout-chips { display: flex; gap: 3px; flex: 0 0 auto; }
+  .readout-chips span { width: 13px; height: 13px; border-radius: 1px; }
+  .readout-text em { font-style: italic; color: var(--ink); }
+  .readout-text b { font-weight: 500; color: var(--ink); }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-block: 1.5rem;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .control-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .search {
+    flex: 1 1 260px;
+    min-width: 0;
+    font-family: var(--sans);
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .search::placeholder { color: var(--muted); }
+  .search:focus-visible, .select:focus-visible, .chip:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+
+  .select {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.34rem 0.6rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .chip:hover { color: var(--ink); border-color: var(--ink); }
+
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--invert-ink);
+  }
+
+  .chip .n { font-variant-numeric: tabular-nums; opacity: 0.65; }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+
+  .count {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* ---------- grid ---------- */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(186px, 1fr));
+    gap: 2rem 1.25rem;
+    padding-top: 2rem;
+    align-items: start;
+  }
+
+  .work { display: flex; flex-direction: column; gap: 0.7rem; }
+
+  .work-plate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 186px;
+    background: var(--plate);
+    padding: 0.75rem;
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.16);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tile { transition: transform 140ms ease; }
+    .work:hover .tile { transform: translateY(-2px); }
+  }
+
+  .tile span { display: block; width: 100%; }
+
+  .work-meta { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .work-artist {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .work-title {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .work-title em { font-style: italic; }
+  .work-title .year { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .work-spec {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .work-dims {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .work-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.15rem;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .work-cat { color: var(--muted); }
+  .work-price { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .work-link { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--rule-strong); }
+  .work-link:hover { color: var(--ink); border-color: var(--ink); }
+  .work-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  /* ---------- foot ---------- */
+
+  .more {
+    display: block;
+    margin: 2.5rem auto 0;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+  }
+
+  .more:hover { border-color: var(--ink); }
+  .more:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+  .empty {
+    padding: 4rem 0;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .colophon {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    max-width: var(--measure);
+  }
+
+  .colophon a { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .ribbon { height: 96px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem 0.875rem; }
+    .work-plate { height: 140px; }
+    .count { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1 class="wordmark">Color Middling</h1>
+    <p class="standfirst">
+      Every artwork saved to one Artsy account, read as color. Thumbnails can't load
+      here, so each work is drawn from the three dominant colors Artsy extracted from
+      it, at the true proportions of the object itself.
+    </p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="spectrum">
+    <p class="label">The collection by hue</p>
+    <canvas class="ribbon" id="ribbon" aria-label="Every saved artwork as a vertical strip of its three dominant colors, ordered from neutral to chromatic"></canvas>
+    <div class="readout" id="readout"></div>
+  </section>
+
+  <section class="controls">
+    <div class="control-row">
+      <input class="search" id="search" type="search" placeholder="Search title, artist, medium, gallery…" aria-label="Search the collection">
+      <select class="select" id="sort" aria-label="Sort order">
+        <option value="saved">Recently saved</option>
+        <option value="artist">Artist A–Z</option>
+        <option value="newest">Work date, newest</option>
+        <option value="oldest">Work date, oldest</option>
+        <option value="hue">Hue</option>
+      </select>
+      <button class="chip" id="forsale" type="button" aria-pressed="false">For sale <span class="n" id="forsale-n"></span></button>
+    </div>
+    <div class="control-row" id="hues" role="group" aria-label="Filter by dominant hue"></div>
+    <div class="control-row" id="cats" role="group" aria-label="Filter by category"></div>
+    <div class="control-row"><span class="count" id="count"></span></div>
+  </section>
+
+  <div class="grid" id="grid"></div>
+  <div id="empty"></div>
+  <button class="more" id="more" type="button" hidden>Load more</button>
+
+  <footer class="colophon">
+    <p>
+      4,969 works fetched from the Artsy API, normalized into SQLite, and rendered from
+      <code>dominant_colors</code> plus <code>width_cm</code>/<code>height_cm</code>.
+      Titles follow catalogue convention: <em>italic</em>, with <span class="mono">n.d.</span>
+      where the work carries no date. Each entry links out to its page on Artsy.
+    </p>
+  </footer>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var raw = JSON.parse(document.getElementById("data").textContent);
+  var F = {};
+  raw.fields.forEach(function (name, i) { F[name] = i; });
+
+  // ---------- color ----------
+
+  function hexToRgb(hex) {
+    var h = hex.charAt(0) === "#" ? hex.slice(1) : hex;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
+  function rgbToHsl(rgb) {
+    var r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var l = (max + min) / 2, d = max - min, h = 0, s = 0;
+    if (d !== 0) {
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+
+  // Bins named for what a viewer would call them, not for pigment families.
+  var HUE_BINS = [
+    { key: "neutral", name: "Neutral", swatch: "#9aa0a6" },
+    { key: "earth", name: "Earth", swatch: "#9c7c52" },
+    { key: "red", name: "Red", swatch: "#b23b34", from: 345, to: 15 },
+    { key: "orange", name: "Orange", swatch: "#c2703a", from: 15, to: 45 },
+    { key: "yellow", name: "Yellow", swatch: "#c9a63c", from: 45, to: 70 },
+    { key: "green", name: "Green", swatch: "#5c8a4a", from: 70, to: 160 },
+    { key: "teal", name: "Teal", swatch: "#3d8a8a", from: 160, to: 200 },
+    { key: "blue", name: "Blue", swatch: "#3a6ea5", from: 200, to: 255 },
+    { key: "violet", name: "Violet", swatch: "#6b5aa5", from: 255, to: 290 },
+    { key: "magenta", name: "Magenta", swatch: "#a4498a", from: 290, to: 345 }
+  ];
+
+  function hueBin(h, s) {
+    if (s < 0.12) return "neutral";
+    // Canvas, paper, ground and the earth pigments dominate a collection like this;
+    // filed as "orange" and "yellow" they swamp both bins and tell you nothing.
+    if (s < 0.38 && h >= 15 && h < 70) return "earth";
+    for (var i = 2; i < HUE_BINS.length; i++) {
+      var b = HUE_BINS[i];
+      if (b.from > b.to) { if (h >= b.from || h < b.to) return b.key; }
+      else if (h >= b.from && h < b.to) return b.key;
+    }
+    return "neutral";
+  }
+
+  var YEAR = /(1[0-9]{3}|20[0-9]{2})/;
+
+  // ---------- unpack ----------
+
+  var works = raw.records.map(function (r) {
+    var colors = r[F.colors] || [];
+    var rep = null, repSat = -1, repHsl = [0, 0, 0.5];
+    colors.forEach(function (hex) {
+      var hsl = rgbToHsl(hexToRgb(hex));
+      if (hsl[1] > repSat) { repSat = hsl[1]; rep = hex; repHsl = hsl; }
+    });
+    var dateStr = r[F.date] || "";
+    var m = dateStr.match(YEAR);
+    var w = r[F.width_cm], h = r[F.height_cm];
+    var ratio = (w && h) ? Math.min(2, Math.max(0.5, w / h)) : 1;
+
+    return {
+      id: r[F.id],
+      title: r[F.title] || "Untitled",
+      artist: r[F.artist_name] || "Unknown artist",
+      date: dateStr,
+      year: m ? parseInt(m[1], 10) : null,
+      category: r[F.category] || "Uncategorized",
+      medium: r[F.medium] || "",
+      dims: r[F.dimensions_cm] || "",
+      ratio: ratio,
+      partner: r[F.partner_name] || "",
+      price: r[F.price_display] || "",
+      forsale: !!r[F.forsale],
+      saved: r[F.last_saved_at] || "",
+      colors: colors.length ? colors : ["#9aa0a6"],
+      bin: colors.length ? hueBin(repHsl[0], repHsl[1]) : "neutral",
+      hue: repHsl[0],
+      // Rotated so the wheel starts just below red, keeping the reds that sit at
+      // both ends of a raw 0–360 hue together at one end of the ribbon.
+      hkey: (repHsl[0] + 15) % 360,
+      sat: repSat < 0 ? 0 : repSat,
+      light: repHsl[2],
+      hay: ""
+    };
+  });
+
+  works.forEach(function (w) {
+    w.hay = (w.title + " " + w.artist + " " + w.medium + " " + w.category + " " + w.partner + " " + w.date).toLowerCase();
+  });
+
+  // Ribbon order: neutrals first by lightness, then chromatic around the wheel.
+  var spectrum = works.slice().sort(function (a, b) {
+    var ga = a.sat < 0.12 ? 0 : 1, gb = b.sat < 0.12 ? 0 : 1;
+    if (ga !== gb) return ga - gb;
+    return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
+  });
+
+  // ---------- stats ----------
+
+  var artistCount = new Set(works.filter(function (w) { return w.artist !== "Unknown artist"; })
+    .map(function (w) { return w.artist; })).size;
+  var galleryCount = new Set(works.filter(function (w) { return w.partner; }).map(function (w) { return w.partner; })).size;
+  var years = works.filter(function (w) { return w.year; }).map(function (w) { return w.year; });
+  var savedYears = works.filter(function (w) { return w.saved; }).map(function (w) { return w.saved; }).sort();
+
+  function fmt(n) { return n.toLocaleString("en-US"); }
+
+  function stat(n, label) {
+    return '<span><span class="stat-n">' + n + '</span> <span class="stat-l">' + label + '</span></span>';
+  }
+
+  document.getElementById("stats").innerHTML = [
+    stat(fmt(works.length), "works"),
+    stat(fmt(artistCount), "artists"),
+    stat(fmt(galleryCount), "galleries"),
+    stat(Math.min.apply(null, years) + "–" + Math.max.apply(null, years), "made"),
+    stat(savedYears[0] + "–" + savedYears[savedYears.length - 1], "saved")
+  ].join("");
+
+  // ---------- filter chips ----------
+
+  var state = { q: "", bin: null, cat: null, forsale: false, sort: "saved" };
+
+  var binCounts = {};
+  works.forEach(function (w) { binCounts[w.bin] = (binCounts[w.bin] || 0) + 1; });
+
+  var huesEl = document.getElementById("hues");
+  huesEl.innerHTML = HUE_BINS.filter(function (b) { return binCounts[b.key]; }).map(function (b) {
+    return '<button class="chip" type="button" data-bin="' + b.key + '" aria-pressed="false">' +
+      '<span class="dot" style="background:' + b.swatch + '"></span>' + b.name +
+      ' <span class="n">' + fmt(binCounts[b.key]) + '</span></button>';
+  }).join("");
+
+  var catCounts = {};
+  works.forEach(function (w) { catCounts[w.category] = (catCounts[w.category] || 0) + 1; });
+  var cats = Object.keys(catCounts).sort(function (a, b) { return catCounts[b] - catCounts[a]; }).slice(0, 10);
+
+  // Artsy's own category strings, shortened to what the trade actually calls them.
+  var CAT_LABELS = {
+    "Drawing, Collage or other Work on Paper": "Works on Paper",
+    "Design/Decorative Art": "Decorative Art",
+    "Ephemera or Merchandise": "Ephemera"
+  };
+
+  var catsEl = document.getElementById("cats");
+  catsEl.innerHTML = cats.map(function (c) {
+    return '<button class="chip" type="button" data-cat="' + c.replace(/"/g, "&quot;") + '" aria-pressed="false">' +
+      esc(CAT_LABELS[c] || c) + ' <span class="n">' + fmt(catCounts[c]) + '</span></button>';
+  }).join("");
+
+  document.getElementById("forsale-n").textContent = fmt(works.filter(function (w) { return w.forsale; }).length);
+
+  // ---------- filtering ----------
+
+  var visible = works;
+
+  function applyFilters() {
+    var q = state.q.trim().toLowerCase();
+    var terms = q ? q.split(/\s+/) : [];
+
+    visible = works.filter(function (w) {
+      if (state.bin && w.bin !== state.bin) return false;
+      if (state.cat && w.category !== state.cat) return false;
+      if (state.forsale && !w.forsale) return false;
+      for (var i = 0; i < terms.length; i++) {
+        if (w.hay.indexOf(terms[i]) === -1) return false;
+      }
+      return true;
+    });
+
+    var s = state.sort;
+    visible.sort(function (a, b) {
+      if (s === "artist") return a.artist.localeCompare(b.artist) || a.title.localeCompare(b.title);
+      if (s === "newest") return (b.year || -9999) - (a.year || -9999);
+      if (s === "oldest") return (a.year || 9999) - (b.year || 9999);
+      if (s === "hue") {
+        var ga = a.sat < 0.12 ? 0 : 1, gb = b.sat < 0.12 ? 0 : 1;
+        if (ga !== gb) return ga - gb;
+        return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
+      }
+      return (b.saved || "").localeCompare(a.saved || "");
+    });
+
+    shown = 0;
+    document.getElementById("grid").innerHTML = "";
+    renderMore();
+
+    var filtered = visible.length !== works.length;
+    document.getElementById("count").textContent =
+      filtered ? fmt(visible.length) + " of " + fmt(works.length) + " works" : fmt(works.length) + " works";
+
+    document.getElementById("empty").innerHTML = visible.length
+      ? ""
+      : '<p class="empty">Nothing matches those filters.</p>';
+
+    drawRibbon();
+  }
+
+  // ---------- grid ----------
+
+  var PAGE = 96;
+  var shown = 0;
+  var gridEl = document.getElementById("grid");
+  var moreEl = document.getElementById("more");
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function tileHtml(w) {
+    var weights = [56, 22, 22];
+    var bands = w.colors.slice(0, 3).map(function (hex, i) {
+      return '<span style="background:' + esc(hex) + ';height:' + (w.colors.length > 1 ? weights[i] : 100) + '%"></span>';
+    }).join("");
+    return '<div class="tile" style="aspect-ratio:' + w.ratio.toFixed(3) + '">' + bands + "</div>";
+  }
+
+  function workHtml(w) {
+    var year = w.date ? esc(w.date) : "n.d.";
+    var right = w.price ? '<span class="work-price">' + esc(w.price) + "</span>"
+      : (w.forsale ? '<span class="work-price">For sale</span>' : "");
+    return '<article class="work">' +
+      '<div class="work-plate">' + tileHtml(w) + "</div>" +
+      '<div class="work-meta">' +
+        '<div class="work-artist">' + esc(w.artist) + "</div>" +
+        '<h3 class="work-title"><em>' + esc(w.title) + '</em>, <span class="year">' + year + "</span></h3>" +
+        (w.medium ? '<div class="work-spec">' + esc(w.medium) + "</div>" : "") +
+        (w.dims ? '<div class="work-dims">' + esc(w.dims) + "</div>" : "") +
+        '<div class="work-foot"><span class="work-cat">' + esc(CAT_LABELS[w.category] || w.category) + "</span>" + right + "</div>" +
+        '<div class="work-foot"><a class="work-link" href="https://www.artsy.net/artwork/' + esc(w.id) + '" target="_blank" rel="noopener noreferrer">View on Artsy</a></div>' +
+      "</div></article>";
+  }
+
+  function renderMore() {
+    var next = visible.slice(shown, shown + PAGE);
+    if (next.length) {
+      var frag = document.createElement("div");
+      frag.innerHTML = next.map(workHtml).join("");
+      while (frag.firstChild) gridEl.appendChild(frag.firstChild);
+      shown += next.length;
+    }
+    moreEl.hidden = shown >= visible.length;
+    moreEl.textContent = "Load more (" + fmt(Math.max(0, visible.length - shown)) + " left)";
+  }
+
+  moreEl.addEventListener("click", renderMore);
+
+  // ---------- ribbon ----------
+
+  var canvas = document.getElementById("ribbon");
+  var ctx = canvas.getContext("2d");
+  var readout = document.getElementById("readout");
+
+  function paperColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#eaecee";
+  }
+
+  function drawRibbon() {
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var W = rect.width, H = rect.height, N = spectrum.length;
+    var step = W / N;
+
+    ctx.fillStyle = paperColor();
+    ctx.fillRect(0, 0, W, H);
+
+    // When a filter is active, non-matching works fade back so the filtered set
+    // reads as a position within the collection's whole color range.
+    var filtered = visible.length !== works.length;
+    var inSet = null;
+    if (filtered) {
+      inSet = new Set();
+      visible.forEach(function (w) { inSet.add(w.id); });
+    }
+
+    var weights = [0.56, 0.22, 0.22];
+    for (var i = 0; i < N; i++) {
+      var w = spectrum[i];
+      var x = i * step;
+      ctx.globalAlpha = (!filtered || inSet.has(w.id)) ? 1 : 0.1;
+      var y = 0;
+      for (var c = 0; c < 3; c++) {
+        var hex = w.colors[Math.min(c, w.colors.length - 1)];
+        var bh = w.colors.length > 1 ? H * weights[c] : H;
+        ctx.fillStyle = hex;
+        ctx.fillRect(x, y, step + 0.6, bh + 0.5);
+        y += bh;
+        if (w.colors.length === 1) break;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function workAt(clientX) {
+    var rect = canvas.getBoundingClientRect();
+    var i = Math.floor(((clientX - rect.left) / rect.width) * spectrum.length);
+    return spectrum[Math.max(0, Math.min(spectrum.length - 1, i))];
+  }
+
+  var defaultReadout =
+    '<span class="readout-text">Ordered neutral to chromatic. Point at the band to identify a work; click to filter to that hue.</span>';
+
+  readout.innerHTML = defaultReadout;
+
+  canvas.addEventListener("pointermove", function (e) {
+    var w = workAt(e.clientX);
+    if (!w) return;
+    readout.innerHTML =
+      '<span class="readout-chips">' + w.colors.slice(0, 3).map(function (h) {
+        return '<span style="background:' + esc(h) + '"></span>';
+      }).join("") + "</span>" +
+      '<span class="readout-text"><em>' + esc(w.title) + "</em> · <b>" + esc(w.artist) + "</b> · " +
+      (w.date ? esc(w.date) : "n.d.") + " · " + esc(w.category) + "</span>";
+  });
+
+  canvas.addEventListener("pointerleave", function () { readout.innerHTML = defaultReadout; });
+
+  canvas.addEventListener("click", function (e) {
+    var w = workAt(e.clientX);
+    if (!w) return;
+    setBin(state.bin === w.bin ? null : w.bin);
+  });
+
+  function setBin(bin) {
+    state.bin = bin;
+    Array.prototype.forEach.call(huesEl.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.bin === bin));
+    });
+    applyFilters();
+  }
+
+  // ---------- events ----------
+
+  var searchEl = document.getElementById("search");
+  searchEl.addEventListener("input", function () { state.q = searchEl.value; applyFilters(); });
+
+  document.getElementById("sort").addEventListener("change", function (e) {
+    state.sort = e.target.value;
+    applyFilters();
+  });
+
+  huesEl.addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (chip) setBin(state.bin === chip.dataset.bin ? null : chip.dataset.bin);
+  });
+
+  catsEl.addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (!chip) return;
+    state.cat = state.cat === chip.dataset.cat ? null : chip.dataset.cat;
+    Array.prototype.forEach.call(catsEl.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.cat === state.cat));
+    });
+    applyFilters();
+  });
+
+  var forsaleEl = document.getElementById("forsale");
+  forsaleEl.addEventListener("click", function () {
+    state.forsale = !state.forsale;
+    forsaleEl.setAttribute("aria-pressed", String(state.forsale));
+    applyFilters();
+  });
+
+  var resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(drawRibbon, 120);
+  });
+
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mq.addEventListener) mq.addEventListener("change", drawRibbon);
+  }
+  new MutationObserver(drawRibbon).observe(document.documentElement, {
+    attributes: true, attributeFilter: ["data-theme"]
+  });
+
+  applyFilters();
+})();
+</script>

@@ -137,9 +137,31 @@ Endpoint and header names were read from Artsy's open-source GraphQL API,
 | App auth header | `X-XAPP-TOKEN` | `src/lib/apis/gravity.ts` |
 | GraphQL equivalent | `me { savedArtworksConnection }` — args `size`, `page`, `sort` (default `POSITION_DESC`), `private` | `src/schema/v2/me/savedArtworks.ts` |
 
-## Known constraint on the published artifact
+## The browser page
+
+`artifact/color-middling.html` is a single self-contained page for browsing the whole
+collection — search, hue/category/for-sale filters, five sort orders, and a hue-ordered
+spectrum of every work that doubles as a filter control. Rebuild it after a fresh
+normalize with:
+
+```bash
+python3 scripts/build_artifact.py
+```
+
+The build injects a compact JSON payload from `data/artworks.db` into
+`artifact/index.template.html`. Edit the template, never the built file — a rebuild
+overwrites it. At ~5,000 works the page is about 1.2MB.
+
+### Why it draws colors instead of thumbnails
 
 Published artifacts block external images under CSP, so Artsy's thumbnails cannot render
-inline, and embedding 4,000 images as data URIs would exceed the 16MB page limit. The
-database will be metadata plus a link out to Artsy per work. A plain HTML file in this repo
-has no such restriction if inline images matter more than a shareable link.
+inline, and embedding ~5,000 images as data URIs would exceed the 16MB page limit. Rather
+than settle for a text table, the page draws each work from its three `dominant_colors` at
+the true aspect ratio implied by `width_cm`/`height_cm`, and links out to Artsy per work.
+A plain HTML file opened locally has no such CSP restriction if inline thumbnails ever
+matter more than a shareable link.
+
+One thing worth knowing if you extend the hue filtering: this collection is heavily
+earth-toned, and binning strictly by hue angle files ~47% of it under "orange". The page
+splits low-saturation warm tones (saturation < 0.38, hue 15–70°) into a separate **Earth**
+bin to keep the filters meaningful.
