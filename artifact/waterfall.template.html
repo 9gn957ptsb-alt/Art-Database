@@ -207,10 +207,11 @@
   <header>
     <h1 class="wordmark">Colour Middling Falls</h1>
     <p class="standfirst">
-      Every colour in the collection, falling. The sheet opens on whites, drops through
-      the blues, and travels the whole hue wheel before arriving back at the crest — one
-      closed loop, no colour altered. Point at the water to hold it still; click any
-      block to open the work that colour came from.
+      A waterfall built entirely from the colours of the collection. The water travels
+      the whole hue wheel over one closed loop while the foam stays white, the way real
+      whitewater does. No colour is altered — every block is an exact hex from a saved
+      work. Point at the water to hold it still; click any block to open the work that
+      colour came from.
     </p>
   </header>
 
@@ -232,14 +233,22 @@
 
   <footer class="colophon">
     <p>
-      Built from <code>artwork_colors</code>: every block is an unaltered hex from one
-      saved work, so what you click is what the database holds. The fall itself comes
-      from ordering and motion, never from tinting — colours are laid into a ribbon of
-      <span id="cells"></span> cells ordered white → blue → around the hue wheel → back
-      to white, and the window scrolls down it and wraps. Each column slips against its
-      neighbours within a bounded range, which is what separates falling water from
-      confetti. Streaks are real colours swapped in: pale ones where the water runs dark,
-      dark ones where it runs pale, since white foam is invisible against ochre.
+      The waterfall is designed first — a plunging sheet, rock banks, a crest, whitewater
+      streaks and a churning plunge pool, as a field of target lightness — and then every
+      block is filled with the closest real colour from <code>artwork_colors</code>.
+      Colours and works repeat, which is what makes the match possible; nothing is ever
+      tinted, so what you click is what the database holds.
+    </p>
+    <p>
+      Three pools feed it, because a waterfall is not one material. <strong>Foam</strong>
+      draws from the collection's lightest colours and ignores the hue phase entirely —
+      real whitewater is white in any light, and that is what keeps the fall legible once
+      the water has drifted into the oranges. <strong>Rock</strong> draws from the darkest
+      colours and stays put; banks do not fall. <strong>Water</strong> draws from the
+      current hue band, which walks the whole journey over one loop. That band widens
+      itself whenever it cannot cover enough light-to-dark range — without that the sheet
+      washes out to a flat panel in the pale stretches.
+      <span id="cells"></span>
     </p>
   </footer>
 </div>
@@ -251,14 +260,15 @@
   "use strict";
 
   var D = JSON.parse(document.getElementById("wf").textContent);
-  var COLS = D.columns, ROWS = D.visibleRows, RIB = D.ribbonRows;
-  var ADV = D.baseAdvance, SLIP = 12;
+  var COLS = D.columns, ROWS = D.rows;
 
   var canvas = document.getElementById("fall");
   var ctx = canvas.getContext("2d");
   var inspect = document.getElementById("inspect");
   var meter = document.getElementById("meter");
-  document.getElementById("cells").textContent = (RIB * COLS).toLocaleString("en-US");
+  document.getElementById("cells").textContent =
+    D.palette.length.toLocaleString("en-US") + " distinct colours are on screen across the " +
+    "loop, drawn from " + D.artworks.length.toLocaleString("en-US") + " works.";
 
   // Blocks are sized to be comfortably clickable, which is the whole point of
   // pixelating: a 14px target you can actually hit while the sheet moves.
@@ -266,8 +276,13 @@
   var frame = 0, playing = true, holdOnHover = true, hover = null, raf = null, last = 0;
 
   function layout() {
-    var avail = Math.min(COLS * BLOCK, window.innerWidth - 48);
-    BLOCK = Math.max(8, Math.floor(avail / COLS));
+    // Size to height as well as width: the plunge pool is what makes the image read
+    // as a waterfall rather than a falling texture, so it must never sit below the
+    // fold. Blocks stay at 9px or more so they remain comfortable click targets.
+    var availW = Math.min(COLS * 15, window.innerWidth - 420);
+    if (window.innerWidth < 760) availW = window.innerWidth - 40;
+    var availH = window.innerHeight - 210;
+    BLOCK = Math.max(9, Math.min(15, Math.floor(availW / COLS), Math.floor(availH / ROWS)));
     canvas.width = COLS * BLOCK;
     canvas.height = ROWS * BLOCK;
     canvas.style.width = canvas.width + "px";
@@ -275,9 +290,7 @@
   }
 
   function cellIndex(col, row, f) {
-    var slip = (D.offsets[col] + D.speeds[col] * f) % SLIP;
-    var r = (ADV * f + row + slip) % RIB;
-    return D.grid[r * COLS + col];
+    return D.cells[f][row * COLS + col];
   }
 
   function draw() {

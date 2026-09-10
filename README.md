@@ -178,39 +178,44 @@ Two constraints drive the settings:
 
 ## The waterfall
 
-`scripts/build_waterfall.py` renders every colour in the collection as a looping pixel
-waterfall — `artifact/waterfall.gif` (8.4s, 120 frames) plus `data/waterfall.json`, which
-`artifact/waterfall.html` replays on a canvas with each block clickable through to its
-work on Artsy. A GIF cannot carry links, which is why the clickable version is a separate
-page running the same maths rather than an image map.
+`scripts/build_waterfall.py` renders the collection's colours as a looping waterfall.
+It writes `data/waterfall.json`, which `artifact/waterfall.html` replays on a canvas
+with every block clickable through to its work on Artsy. `--gif` also writes a
+non-interactive `artifact/waterfall.gif`; the canvas is the real deliverable, since a
+GIF cannot carry links.
 
 ```bash
 python3 scripts/build_waterfall.py
-python3 scripts/build_waterfall.py --preview 8   # PNG frames, no GIF
+python3 scripts/build_waterfall.py --preview 8   # PNG frames, no JSON
+python3 scripts/build_waterfall.py --gif
 ```
 
-**No colour is ever altered.** Every block is an exact hex from `artwork_colors`, so what
-you click is what the database holds; the water comes from ordering and motion alone.
+It is **palette-constrained rendering**: the waterfall is designed first — plunging
+sheet, rock banks, crest, whitewater streaks, churning plunge pool — as a field of
+target lightness, and then each block is filled with the closest real colour from
+`artwork_colors`. Colours and works repeat, which is what makes the match possible.
+**No colour is ever altered**, so every block still maps back to a work you can open.
 
-Three things make it read as water rather than noise, each found by looking at the output:
+Three pools feed it, because a waterfall is not one material:
 
-- **One cyclic journey.** Colours are ordered light neutrals (the crest) → darkening grey
-  → blue → around the wheel by decreasing hue → back to the pale end. The ribbon is
-  360 × 40 = 14,400 cells against 14,542 colours, so essentially the whole database
-  appears once per loop.
-- **Bounded slip.** Columns must fall at different rates or the sheet reads as a rigid
-  scrolling texture — but let them drift freely and column 0 sits in the whites while its
-  neighbour sits in the oranges, which is confetti, not water. Slip is capped at 12 rows
-  (~2% of the journey): visible motion, one colour family. The first attempt got this
-  wrong and looked like television static.
-- **Contrast-adaptive streaks.** Streaks are real colours swapped in, drawn pale where the
-  water runs dark and dark where it runs pale. Light foam is invisible against the cream
-  and ochre stretch, which is a third of this collection, so that stretch was flat until
-  the streaks learned to switch to the shadow pool.
+| Pool | Source | Behaviour |
+| --- | --- | --- |
+| Foam | lightest colours (L ≥ 0.72) | ignores the hue phase — real whitewater is white in any light, which is what keeps the fall legible once the water reaches the oranges |
+| Rock | darkest colours (L ≤ 0.25) | static in screen space; banks do not fall |
+| Water | the current hue band | walks the whole journey over one loop |
 
-The loop closes exactly: the sheet advances 3 rows per frame for 120 frames, which is one
-full ribbon, and every column's slip returns to its starting offset, so frame 120 is
-frame 0.
+Two things had to be found by looking at the render rather than reasoned about first:
+
+- **The band has to widen itself.** The journey is sorted by hue *then* lightness, so a
+  narrow window is narrow in both — ask it for a dark block and it hands back another
+  pale one, and the sheet washes out to a flat panel. The band now grows until it spans
+  0.46 of lightness range, from 363 colours up to ~3,343 in the palest stretches.
+- **An earlier ribbon-scrolling design failed outright.** Columns need different fall
+  rates or the sheet reads as rigid, but unbounded drift put one column in the whites and
+  its neighbour in the oranges — television static. Designing the image and then matching
+  colours to it replaced that approach entirely.
+
+Everything time-varying is periodic over the frame count, so the loop closes exactly.
 
 ## Keeping it in sync
 
