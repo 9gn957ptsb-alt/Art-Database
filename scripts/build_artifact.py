@@ -42,7 +42,7 @@ FIELDS = [
     "partner_name",
     "price_display",
     "forsale",
-    "last_saved_at",
+    "save_rank",
 ]
 
 
@@ -92,11 +92,9 @@ def load_records(conn):
 
     records = []
     for row in conn.execute(
-        f"SELECT {', '.join(FIELDS)} FROM artworks ORDER BY last_saved_at DESC"
+        f"SELECT {', '.join(FIELDS)} FROM artworks ORDER BY save_rank ASC"
     ):
         record = [row[field] for field in FIELDS]
-        # Trim the timestamp to a year; nothing in the page shows finer than that.
-        record[-1] = (row["last_saved_at"] or "")[:4] or None
         entry = meta.get(row["id"], {})
         record.append(colors.get(row["id"], []))
         record.append(", ".join(entry.get("extra") or []) or None)

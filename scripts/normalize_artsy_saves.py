@@ -7,7 +7,8 @@ indexed, full-text-searchable database of the same artworks.
 
 The database has three tables:
   - ``artworks``       one row per saved artwork, with the fields worth
-                        filtering or sorting on pulled up to top-level columns.
+                        filtering or sorting on pulled up to top-level columns,
+                        including ``save_rank`` (0 = most recently saved).
   - ``artwork_artists`` one row per (artwork, artist) pair, since some pieces
                         have multiple artists/cultural makers.
   - ``artwork_colors``  one row per (artwork, dominant color), since color is
@@ -33,6 +34,7 @@ DB_PATH = DATA_DIR / "artworks.db"
 SCHEMA = """
 CREATE TABLE artworks (
     id                     TEXT PRIMARY KEY,
+    save_rank              INTEGER,
     title                  TEXT,
     artist_name            TEXT,
     artist_id              TEXT,
@@ -68,6 +70,7 @@ CREATE INDEX idx_artworks_artist_name ON artworks(artist_name);
 CREATE INDEX idx_artworks_category ON artworks(category);
 CREATE INDEX idx_artworks_forsale ON artworks(forsale);
 CREATE INDEX idx_artworks_last_saved_at ON artworks(last_saved_at);
+CREATE INDEX idx_artworks_save_rank ON artworks(save_rank);
 
 CREATE TABLE artwork_artists (
     artwork_id  TEXT NOT NULL REFERENCES artworks(id),
@@ -167,7 +170,7 @@ def price_cents_range(record):
     return min(cents), max(cents)
 
 
-def normalize_record(record):
+def normalize_record(record, save_rank=None):
     """Flatten one raw Artsy record into the columns of the `artworks` table
     plus its related artists and colors."""
     artist = record.get("artist") or {}
@@ -179,6 +182,7 @@ def normalize_record(record):
     artwork_id = record.get("id")
     row = {
         "id": artwork_id,
+        "save_rank": save_rank,
         "title": record.get("title") or None,
         "artist_name": artist.get("name") or (artists[0]["name"] if artists else None),
         "artist_id": artist.get("id") or (artists[0].get("id") if artists else None),
@@ -251,11 +255,16 @@ def build_database(records, db_path):
 
         artwork_rows, artist_rows, color_rows, fts_rows = [], [], [], []
         skipped = 0
-        for record in records:
+        # The saves endpoint returns the collection oldest-first, so the raw dump is
+        # already in true save order. Rank 0 is the most recent save. The artwork's own
+        # last_saved_at cannot serve here: it records when *anyone* last saved the work
+        # (works with 30+ global saves all read as "today"), not when this account did.
+        total = len(records)
+        for position, record in enumerate(records):
             if not record.get("id"):
                 skipped += 1
                 continue
-            row, artists, colors = normalize_record(record)
+            row, artists, colors = normalize_record(record, save_rank=total - 1 - position)
             artwork_rows.append(row)
             artist_rows.extend(artists)
             color_rows.extend(colors)

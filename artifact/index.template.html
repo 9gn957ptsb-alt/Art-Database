@@ -549,9 +549,9 @@
   <header class="masthead">
     <h1 class="wordmark">Color Middling</h1>
     <p class="standfirst">
-      A search engine for every artwork saved to one Artsy account. Thumbnails can't
-      load here, so each work is drawn from the three dominant colors Artsy extracted
-      from it, at the true proportions of the object itself.
+      A search engine for every artwork saved to one Artsy account. Each work carries
+      the three dominant colors Artsy extracted from it, and those palettes are what
+      the arrangements below are built from.
     </p>
     <div class="stats" id="stats"></div>
   </header>
@@ -767,7 +767,9 @@
       partner: r[F.partner_name] || "",
       price: r[F.price_display] || "",
       forsale: !!r[F.forsale],
-      saved: r[F.last_saved_at] || "",
+      // Position in the account's own save order, 0 = most recent. Not derived from
+      // the artwork's last_saved_at, which counts saves by anyone at all.
+      saveRank: r[F.save_rank],
       colors: colors.length ? colors : ["#9aa0a6"],
       bin: colors.length ? hueBin(repHsl[0], repHsl[1]) : "neutral",
       hue: repHsl[0],
@@ -1075,8 +1077,7 @@
   var galleryCount = new Set(works.filter(function (w) { return w.partner; })
     .map(function (w) { return w.partner; })).size;
   var years = works.filter(function (w) { return w.year; }).map(function (w) { return w.year; });
-  var savedYears = works.filter(function (w) { return w.saved; })
-    .map(function (w) { return w.saved; }).sort();
+
 
   function stat(n, label) {
     return '<span><span class="stat-n">' + n + '</span> <span class="stat-l">' + label + '</span></span>';
@@ -1086,8 +1087,7 @@
     stat(fmt(N), "works"),
     stat(fmt(artistCount), "artists"),
     stat(fmt(galleryCount), "galleries"),
-    stat(Math.min.apply(null, years) + "–" + Math.max.apply(null, years), "made"),
-    stat(savedYears[0] + "–" + savedYears[savedYears.length - 1], "saved")
+    stat(Math.min.apply(null, years) + "–" + Math.max.apply(null, years), "made")
   ].join("");
 
   // ---------- facets ----------
@@ -1211,7 +1211,7 @@
         if (ga !== gb) return ga - gb;
         return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
       }
-      return (b.saved || "").localeCompare(a.saved || "");
+      return (a.saveRank || 0) - (b.saveRank || 0);
     });
 
     lastMs = performance.now() - t0;

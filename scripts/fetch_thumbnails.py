@@ -79,6 +79,8 @@ def main():
     parser.add_argument("--probe", action="store_true", help="only 40 works, then report sizing")
     parser.add_argument("--edge", type=int, default=88, help="longest edge in px (default 88)")
     parser.add_argument("--quality", type=int, default=58, help="WebP quality (default 58)")
+    parser.add_argument("--only-missing", action="store_true",
+                        help="keep existing thumbnails and fetch only what is absent")
     args = parser.parse_args()
 
     if not DB_PATH.exists():
@@ -92,6 +94,17 @@ def main():
 
     if args.probe:
         rows = rows[::max(1, len(rows) // 40)][:40]
+
+    # Incremental syncs re-run this for a handful of new works; re-downloading all
+    # 4,968 each time would be minutes of pointless traffic.
+    existing = {}
+    if args.only_missing and OUT.exists():
+        existing = json.loads(OUT.read_text())
+        rows = [(rid, url) for rid, url in rows if rid not in existing]
+        print(f"{len(existing)} already held; {len(rows)} to fetch")
+        if not rows:
+            print("Nothing missing.")
+            return
 
     thumbs, failures = {}, []
     with requests.Session() as session:
@@ -109,7 +122,7 @@ def main():
                 if i % 250 == 0 or i == len(futures):
                     print(f"  {i}/{len(futures)} ({len(failures)} failed)", flush=True)
 
-    if not thumbs:
+    if not thumbs and not existing:
         sys.exit(
             "Nothing downloaded. If this reports a refused proxy connection, add\n"
             "d32dm0rphc51dk.cloudfront.net to the environment's allowed domains.\n"
@@ -130,8 +143,10 @@ def main():
               f"{(projected + 1_400_000) / 1_000_000:.2f} MB page")
         return
 
-    OUT.write_text(json.dumps(thumbs, separators=(",", ":")))
-    print(f"Wrote {OUT}")
+    merged = dict(existing)
+    merged.update(thumbs)
+    OUT.write_text(json.dumps(merged, separators=(",", ":")))
+    print(f"Wrote {OUT} ({len(merged)} thumbnails)")
 
 
 if __name__ == "__main__":

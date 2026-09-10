@@ -176,6 +176,39 @@ Two constraints drive the settings:
   `d32dm0rphc51dk.cloudfront.net`, which is not `artsy.net`. Without it on the
   environment's allowed domains the fetch fails with a refused proxy connection.
 
+## Keeping it in sync
+
+Artsy publishes no webhook for saves, so this polls:
+
+```bash
+python3 scripts/sync_artsy_saves.py           # incremental
+python3 scripts/sync_artsy_saves.py --check   # report new saves, change nothing
+python3 scripts/sync_artsy_saves.py --full    # re-fetch everything (catches un-saves)
+```
+
+A run walks the collection newest-first, stops once it has seen 60 works it already
+holds (normally one page), then appends any new ones to the raw dump, re-normalizes,
+fetches thumbnails for only the new works, and rebuilds the page.
+
+A daily Routine runs this at 07:23 UTC in the `Artsy` cloud environment, commits and
+pushes anything new, and republishes the artifact. It stays silent on the usual "no new
+saves" outcome. Manage it in the claude.ai Routines UI.
+
+### Two ordering traps
+
+Both were found the hard way; the incremental logic depends on getting them right.
+
+- **`last_saved_at` is not this account's save time.** It records when *anyone* last
+  saved the work — every work with 30+ global saves reads as saved today, while works
+  nobody else saves average 2024. It cannot be used to find new saves, to sort by
+  recency, or to chart saving activity over time. The `save_rank` column carries the
+  real order instead (0 = most recent).
+- **The saves endpoint returns the collection oldest-first by default**, not
+  `POSITION_DESC` as Artsy's schema suggests. That is why the raw dump is in true save
+  order and `save_rank` can be derived from its position. `sort=-created_at` reverses it
+  for the incremental walk; `sort=-position` behaves the same. Anything else
+  (`saved_at`, `last_saved_at`) is rejected as an invalid parameter.
+
 ## API reference
 
 Endpoint and header names were read from Artsy's open-source GraphQL API,
