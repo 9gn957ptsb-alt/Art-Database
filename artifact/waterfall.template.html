@@ -1,0 +1,389 @@
+<title>Colour Middling Falls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --paper: #eaecee;
+    --plate: #f6f7f8;
+    --card: #ffffff;
+    --ink: #15171a;
+    --muted: #6c747d;
+    --rule: #d2d7dc;
+    --rule-strong: #b6bec6;
+    --invert-ink: #f4f6f7;
+    --shadow: 0 6px 24px rgb(20 24 28 / 0.16);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: "Archivo", var(--sans);
+    --gutter: clamp(1rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121417; --plate: #191c20; --card: #1a1d21;
+      --ink: #e9ebee; --muted: #8d959e; --rule: #272c31;
+      --rule-strong: #3a4046; --invert-ink: #15171a;
+      --shadow: 0 6px 24px rgb(0 0 0 / 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #121417; --plate: #191c20; --card: #1a1d21;
+    --ink: #e9ebee; --muted: #8d959e; --rule: #272c31;
+    --rule-strong: #3a4046; --invert-ink: #15171a;
+    --shadow: 0 6px 24px rgb(0 0 0 / 0.55);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-inline: var(--gutter);
+    padding-block: clamp(1.75rem, 4vw, 3rem) 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .wordmark {
+    font-family: var(--display);
+    font-variation-settings: "wdth" 118, "wght" 600;
+    font-size: clamp(1.9rem, 5.5vw, 3.25rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst { max-width: 62ch; color: var(--muted); margin: 0; }
+
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .fall-wrap { position: relative; flex: 0 0 auto; }
+
+  canvas {
+    display: block;
+    background: var(--plate);
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
+    box-shadow: var(--shadow);
+  }
+
+  .side {
+    flex: 1 1 280px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* The inspector holds its height so the layout doesn't jump as you sweep the fall. */
+  .inspect {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 12.5rem;
+  }
+
+  .swatch-row { display: flex; align-items: center; gap: 0.6rem; }
+
+  .swatch {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    border: 1px solid var(--rule-strong);
+  }
+
+  .swatch-hex {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+  }
+
+  .inspect-artist {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .inspect-title { font-size: 1rem; line-height: 1.35; margin: 0; }
+  .inspect-title em { font-style: italic; }
+
+  .inspect-hint { color: var(--muted); font-size: 0.8125rem; margin: 0; }
+
+  .go {
+    align-self: flex-start;
+    margin-top: auto;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--invert-ink);
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 0.45rem 0.85rem;
+    text-decoration: none;
+  }
+
+  .go:hover { opacity: 0.85; }
+  .go:focus-visible, .btn:focus-visible, canvas:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    padding: 0.34rem 0.6rem;
+    cursor: pointer;
+  }
+
+  .btn:hover { color: var(--ink); border-color: var(--ink); }
+  .btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--invert-ink); }
+
+  .meter {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+  }
+
+  .colophon {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    max-width: 68ch;
+  }
+
+  .colophon code { font-family: var(--mono); font-size: 0.9em; color: var(--ink); }
+
+  @media (max-width: 720px) {
+    .stage { flex-direction: column; }
+    .meter { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 class="wordmark">Colour Middling Falls</h1>
+    <p class="standfirst">
+      Every colour in the collection, falling. The sheet opens on whites, drops through
+      the blues, and travels the whole hue wheel before arriving back at the crest — one
+      closed loop, no colour altered. Point at the water to hold it still; click any
+      block to open the work that colour came from.
+    </p>
+  </header>
+
+  <div class="stage">
+    <div class="fall-wrap">
+      <canvas id="fall" tabindex="0" aria-label="A falling sheet of coloured blocks; each block is a dominant colour from one saved artwork"></canvas>
+    </div>
+
+    <div class="side">
+      <p class="label">Under the cursor</p>
+      <div class="inspect" id="inspect"></div>
+      <div class="controls">
+        <button class="btn" id="play" type="button" aria-pressed="true">Pause</button>
+        <button class="btn" id="freeze" type="button" aria-pressed="true">Hold on hover</button>
+        <span class="meter" id="meter"></span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="colophon">
+    <p>
+      Built from <code>artwork_colors</code>: every block is an unaltered hex from one
+      saved work, so what you click is what the database holds. The fall itself comes
+      from ordering and motion, never from tinting — colours are laid into a ribbon of
+      <span id="cells"></span> cells ordered white → blue → around the hue wheel → back
+      to white, and the window scrolls down it and wraps. Each column slips against its
+      neighbours within a bounded range, which is what separates falling water from
+      confetti. Streaks are real colours swapped in: pale ones where the water runs dark,
+      dark ones where it runs pale, since white foam is invisible against ochre.
+    </p>
+  </footer>
+</div>
+
+<script id="wf" type="application/json">__WATERFALL__</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var D = JSON.parse(document.getElementById("wf").textContent);
+  var COLS = D.columns, ROWS = D.visibleRows, RIB = D.ribbonRows;
+  var ADV = D.baseAdvance, SLIP = 12;
+
+  var canvas = document.getElementById("fall");
+  var ctx = canvas.getContext("2d");
+  var inspect = document.getElementById("inspect");
+  var meter = document.getElementById("meter");
+  document.getElementById("cells").textContent = (RIB * COLS).toLocaleString("en-US");
+
+  // Blocks are sized to be comfortably clickable, which is the whole point of
+  // pixelating: a 14px target you can actually hit while the sheet moves.
+  var BLOCK = 14;
+  var frame = 0, playing = true, holdOnHover = true, hover = null, raf = null, last = 0;
+
+  function layout() {
+    var avail = Math.min(COLS * BLOCK, window.innerWidth - 48);
+    BLOCK = Math.max(8, Math.floor(avail / COLS));
+    canvas.width = COLS * BLOCK;
+    canvas.height = ROWS * BLOCK;
+    canvas.style.width = canvas.width + "px";
+    canvas.style.height = canvas.height + "px";
+  }
+
+  function cellIndex(col, row, f) {
+    var slip = (D.offsets[col] + D.speeds[col] * f) % SLIP;
+    var r = (ADV * f + row + slip) % RIB;
+    return D.grid[r * COLS + col];
+  }
+
+  function draw() {
+    for (var row = 0; row < ROWS; row++) {
+      for (var col = 0; col < COLS; col++) {
+        ctx.fillStyle = D.palette[cellIndex(col, row, frame)][0];
+        ctx.fillRect(col * BLOCK, row * BLOCK, BLOCK, BLOCK);
+      }
+    }
+    if (hover) {
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(hover.col * BLOCK + 1, hover.row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(hover.col * BLOCK + 2.5, hover.row * BLOCK + 2.5, BLOCK - 5, BLOCK - 5);
+    }
+    meter.textContent = String(frame + 1).padStart(3, "0") + " / " + D.frames;
+  }
+
+  function moving() {
+    return playing && !(holdOnHover && hover);
+  }
+
+  function tick(ts) {
+    raf = requestAnimationFrame(tick);
+    if (!moving()) { last = ts; return; }
+    if (ts - last < D.frameMs) return;
+    last = ts;
+    frame = (frame + 1) % D.frames;
+    draw();
+  }
+
+  var EMPTY = '<p class="inspect-hint">Point at the water. It holds still while you aim, ' +
+              'so you can pick a single block out of the fall.</p>';
+
+  function showCell(col, row) {
+    var entry = D.palette[cellIndex(col, row, frame)];
+    var art = D.artworks[entry[1]];
+    inspect.innerHTML =
+      '<div class="swatch-row"><span class="swatch" style="background:' + entry[0] + '"></span>' +
+      '<span class="swatch-hex">' + entry[0] + "</span></div>" +
+      '<div class="inspect-artist">' + esc(art[2]) + "</div>" +
+      '<p class="inspect-title"><em>' + esc(art[1]) + "</em></p>" +
+      '<a class="go" href="https://www.artsy.net/artwork/' + esc(art[0]) +
+      '" target="_blank" rel="noopener noreferrer">Open on Artsy</a>';
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function at(e) {
+    var rect = canvas.getBoundingClientRect();
+    var col = Math.floor((e.clientX - rect.left) / (rect.width / COLS));
+    var row = Math.floor((e.clientY - rect.top) / (rect.height / ROWS));
+    if (col < 0 || row < 0 || col >= COLS || row >= ROWS) return null;
+    return { col: col, row: row };
+  }
+
+  canvas.addEventListener("pointermove", function (e) {
+    var cell = at(e);
+    if (!cell) return;
+    var changed = !hover || cell.col !== hover.col || cell.row !== hover.row;
+    hover = cell;
+    if (changed) { showCell(cell.col, cell.row); draw(); }
+  });
+
+  canvas.addEventListener("pointerleave", function () {
+    hover = null;
+    inspect.innerHTML = EMPTY;
+    draw();
+  });
+
+  canvas.addEventListener("click", function (e) {
+    var cell = at(e);
+    if (!cell) return;
+    var art = D.artworks[D.palette[cellIndex(cell.col, cell.row, frame)][1]];
+    window.open("https://www.artsy.net/artwork/" + art[0], "_blank", "noopener");
+  });
+
+  var playBtn = document.getElementById("play");
+  playBtn.addEventListener("click", function () {
+    playing = !playing;
+    playBtn.textContent = playing ? "Pause" : "Play";
+    playBtn.setAttribute("aria-pressed", String(playing));
+  });
+
+  var freezeBtn = document.getElementById("freeze");
+  freezeBtn.addEventListener("click", function () {
+    holdOnHover = !holdOnHover;
+    freezeBtn.setAttribute("aria-pressed", String(holdOnHover));
+  });
+
+  window.addEventListener("resize", function () { layout(); draw(); });
+
+  inspect.innerHTML = EMPTY;
+  layout();
+  draw();
+
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    playing = false;
+    playBtn.textContent = "Play";
+    playBtn.setAttribute("aria-pressed", "false");
+  }
+  raf = requestAnimationFrame(tick);
+})();
+</script>

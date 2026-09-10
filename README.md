@@ -176,6 +176,42 @@ Two constraints drive the settings:
   `d32dm0rphc51dk.cloudfront.net`, which is not `artsy.net`. Without it on the
   environment's allowed domains the fetch fails with a refused proxy connection.
 
+## The waterfall
+
+`scripts/build_waterfall.py` renders every colour in the collection as a looping pixel
+waterfall — `artifact/waterfall.gif` (8.4s, 120 frames) plus `data/waterfall.json`, which
+`artifact/waterfall.html` replays on a canvas with each block clickable through to its
+work on Artsy. A GIF cannot carry links, which is why the clickable version is a separate
+page running the same maths rather than an image map.
+
+```bash
+python3 scripts/build_waterfall.py
+python3 scripts/build_waterfall.py --preview 8   # PNG frames, no GIF
+```
+
+**No colour is ever altered.** Every block is an exact hex from `artwork_colors`, so what
+you click is what the database holds; the water comes from ordering and motion alone.
+
+Three things make it read as water rather than noise, each found by looking at the output:
+
+- **One cyclic journey.** Colours are ordered light neutrals (the crest) → darkening grey
+  → blue → around the wheel by decreasing hue → back to the pale end. The ribbon is
+  360 × 40 = 14,400 cells against 14,542 colours, so essentially the whole database
+  appears once per loop.
+- **Bounded slip.** Columns must fall at different rates or the sheet reads as a rigid
+  scrolling texture — but let them drift freely and column 0 sits in the whites while its
+  neighbour sits in the oranges, which is confetti, not water. Slip is capped at 12 rows
+  (~2% of the journey): visible motion, one colour family. The first attempt got this
+  wrong and looked like television static.
+- **Contrast-adaptive streaks.** Streaks are real colours swapped in, drawn pale where the
+  water runs dark and dark where it runs pale. Light foam is invisible against the cream
+  and ochre stretch, which is a third of this collection, so that stretch was flat until
+  the streaks learned to switch to the shadow pool.
+
+The loop closes exactly: the sheet advances 3 rows per frame for 120 frames, which is one
+full ribbon, and every column's slip returns to its starting offset, so frame 120 is
+frame 0.
+
 ## Keeping it in sync
 
 Artsy publishes no webhook for saves, so this polls:
