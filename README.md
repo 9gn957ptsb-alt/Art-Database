@@ -196,6 +196,16 @@ target lightness, and then each block is filled with the closest real colour fro
 `artwork_colors`. Colours and works repeat, which is what makes the match possible.
 **No colour is ever altered**, so every block still maps back to a work you can open.
 
+The composition follows reference photographs of real falls rather than an
+invented one: a narrow lip, a body that flares as it drops and breaks into discrete
+filaments, a luminous bloom where it lands, mist thickening toward the foot, and rock
+massing at the ledges — the fall as a silhouette against an atmosphere, not a
+full-bleed panel.
+
+**The water is white and the environment carries the hue.** That is what lets the loop
+travel the whole database while still reading as one waterfall: it looks like the same
+fall lit by changing light, rather than water that turns orange.
+
 Three pools feed it, because a waterfall is not one material:
 
 | Pool | Source | Behaviour |
@@ -210,10 +220,20 @@ Two things had to be found by looking at the render rather than reasoned about f
   narrow window is narrow in both — ask it for a dark block and it hands back another
   pale one, and the sheet washes out to a flat panel. The band now grows until it spans
   0.46 of lightness range, from 363 colours up to ~3,343 in the palest stretches.
+- **Matching on lightness alone speckles.** A wide band holds many hues at one
+  lightness, so neighbouring blocks landed on unrelated colours and the mist turned to
+  confetti. Selection now prefers the band's hue, with neutrals carrying a discounted
+  distance because grey haze belongs in any light.
+- **Filaments are not noise.** Per-column noise reads as static however it is tuned.
+  Water breaks into threads that hold together down the drop and spread apart as they
+  go, so each of the 30 strands keeps its own lip position, drift, width, gain and
+  scrolling intensity.
 - **An earlier ribbon-scrolling design failed outright.** Columns need different fall
   rates or the sheet reads as rigid, but unbounded drift put one column in the whites and
   its neighbour in the oranges — television static. Designing the image and then matching
   colours to it replaced that approach entirely.
+- **Hard boundaries show.** The rock ledge originally stopped at a fixed `ny`, drawing a
+  seam straight across the frame that no colour choice could hide; it now fades out.
 
 Everything time-varying is periodic over the frame count, so the loop closes exactly.
 

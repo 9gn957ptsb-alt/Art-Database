@@ -48,17 +48,22 @@ DB_PATH = ROOT / "data" / "artworks.db"
 GIF_PATH = ROOT / "artifact" / "waterfall.gif"
 JSON_PATH = ROOT / "data" / "waterfall.json"
 
-COLS = 40
-ROWS = 60
+COLS = 46
+ROWS = 64
 FRAMES = 96
 ADVANCE = 3                  # rows the sheet falls per frame
 WORLD = FRAMES * ADVANCE     # 288 — the falling texture's vertical period
 BLOCK = 8
 FRAME_MS = 70
 
-CREST_ROWS = 5               # water going over the lip
-POOL_ROWS = 13               # churning plunge pool, static in screen space
-MIST_ROWS = 9                # spray rising off the pool
+# Proportions taken from reference photographs of real falls: a narrow lip, a
+# body that flares as it drops, and a landing well above the frame's bottom edge
+# so the spray has somewhere to go.
+LIP_Y = 0.10                 # bottom of the lip band
+FOOT_Y = 0.76                # where the fall lands
+TOP_HALF = 0.19              # half-width at the lip
+FOOT_HALF = 0.31             # half-width at the foot
+STRANDS = 30                 # discrete filaments of water
 
 FOAM_MIN_L = 0.72
 ROCK_MAX_L = 0.25
@@ -103,15 +108,33 @@ class Pool:
     def __len__(self):
         return len(self.items)
 
-    def nearest(self, target, rng, spread=3):
-        """Closest match by lightness, chosen from a few candidates so that large
-        flat areas get texture instead of the same hex repeated."""
+    def nearest(self, target, rng, spread=4, hue_ref=None):
+        """Closest match by lightness, then by hue.
+
+        Matching on lightness alone speckles: a wide band holds many hues at the
+        same lightness, so neighbouring blocks land on unrelated colours and the
+        mist turns to confetti. Preferring the band's hue keeps large soft areas
+        reading as one atmosphere. Neutrals carry a discounted distance because
+        grey haze belongs in any light.
+        """
         if not self.items:
             return None
         i = bisect_left(self.keys, target)
         lo = max(0, i - spread)
         hi = min(len(self.items), i + spread + 1)
-        return self.items[rng.randrange(lo, hi)]
+        candidates = self.items[lo:hi]
+        if not candidates:
+            return None
+        if hue_ref is None:
+            return candidates[rng.randrange(len(candidates))]
+
+        def hue_distance(c):
+            d = abs(c["h"] - hue_ref) % 360
+            d = min(d, 360 - d)
+            return d * (1.0 if c["s"] >= 0.12 else 0.30)
+
+        candidates.sort(key=hue_distance)
+        return candidates[rng.randrange(min(len(candidates), 3))]
 
 
 def periodic_smooth(rng, length, octaves=(24, 8, 3), weights=(0.55, 0.3, 0.15)):
@@ -133,55 +156,123 @@ def periodic_smooth(rng, length, octaves=(24, 8, 3), weights=(0.55, 0.3, 0.15)):
 
 def build_fields(rng):
     """Every field here is periodic, which is what makes the loop seamless."""
-    # Whitewater streaks live in world space and scroll with the sheet.
-    streaks = [periodic_smooth(rng, WORLD) for _ in range(COLS)]
-    # Rock is screen space and static — banks do not fall.
+    # Water does not fall as a flat sheet; it breaks into filaments that hold
+    # together down the drop and spread apart as they go. Each strand keeps its
+    # own lip position, drift, width and brightness, and its own scrolling
+    # intensity — which is what reads as threads of water rather than noise.
+    strands = []
+    for i in range(STRANDS):
+        t = (i + 0.5) / STRANDS
+        strands.append({
+            "x0": t + rng.uniform(-0.02, 0.02),          # position across the lip
+            "drift": (t - 0.5) * rng.uniform(0.35, 0.95),  # diverges as it falls
+            "width": rng.uniform(0.010, 0.030),
+            "gain": rng.uniform(0.55, 1.0),
+            "noise": periodic_smooth(rng, WORLD, octaves=(30, 11, 4),
+                                     weights=(0.5, 0.32, 0.18)),
+        })
     rock = [periodic_smooth(rng, ROWS, octaves=(11, 4), weights=(0.6, 0.4))
             for _ in range(COLS)]
-    # The pool churns in place: periodic over frames, not over world rows.
-    pool = [[periodic_smooth(rng, FRAMES, octaves=(13, 5), weights=(0.6, 0.4))
-             for _ in range(POOL_ROWS)] for _ in range(COLS)]
-    return streaks, rock, pool
+    spray = [[periodic_smooth(rng, FRAMES, octaves=(13, 5), weights=(0.6, 0.4))
+              for _ in range(ROWS)] for _ in range(COLS)]
+    mist = [periodic_smooth(rng, FRAMES, octaves=(17, 6), weights=(0.6, 0.4))
+            for _ in range(COLS)]
+    return strands, rock, spray, mist
+
+
+def smoothstep(a, b, x):
+    t = max(0.0, min(1.0, (x - a) / (b - a) if b != a else 0.0))
+    return t * t * (3 - 2 * t)
+
+
+def fall_half_width(ny):
+    """Narrow at the lip, flaring toward the foot."""
+    t = smoothstep(LIP_Y, FOOT_Y, ny)
+    return TOP_HALF + (FOOT_HALF - TOP_HALF) * t
 
 
 def sheetness(nx, ny):
-    """1 inside the falling sheet, 0 on the banks. The fall widens as it drops."""
-    half = 0.30 + 0.13 * ny
+    """1 inside the falling water, 0 outside it, with a soft edge."""
+    half = fall_half_width(ny)
     d = abs(nx - 0.5) / half
-    return max(0.0, min(1.0, 1.45 - 1.45 * d))
+    return max(0.0, min(1.0, (1.0 - d) / 0.32))
 
 
-def target_lightness(col, row, frame, streaks, rock, pool):
+def target_lightness(col, row, frame, strands, rock, spray, mist):
+    """Compose the fall, layer by layer, as a target lightness in [0, 1].
+
+    Ordered the way the scene is built: ground, atmosphere, then water on top.
+    """
     nx = col / (COLS - 1)
     ny = row / (ROWS - 1)
     y_world = (row + frame * ADVANCE) % WORLD
 
-    s = sheetness(nx, ny)
-    water = 0.26 + 0.62 * streaks[col][y_world]
+    # 1. Background. Dim enough that white water reads as bright against it, and
+    #    it is here — not in the fall — that the collection's hue lives.
+    lightness = 0.30 - 0.07 * ny + 0.04 * rock[col][row]
 
-    # The lip: water thins and brightens as it goes over.
-    if row < CREST_ROWS:
-        water = min(1.0, water + 0.30 * (1 - row / CREST_ROWS))
+    # 2. Mist. A soft halo around the fall, thickening toward the foot where the
+    #    spray hangs. Every reference has this; without it the fall is a decal.
+    halo = math.exp(-((nx - 0.5) / 0.42) ** 2) * (0.18 + 0.82 * smoothstep(0.15, 0.9, ny))
+    lightness += 0.34 * halo * (0.75 + 0.25 * mist[col][frame])
 
-    rock_l = 0.08 + 0.15 * rock[col][row]
-    lightness = rock_l + (water - rock_l) * s
+    # 3. Rock. Dark ledges flanking the lip and massing in the bottom corners,
+    #    static in screen space — banks do not fall.
+    ledge = 0.0
+    if ny < LIP_Y * 2.4 and abs(nx - 0.5) > TOP_HALF * 1.25:
+        # Fade the ledge out downward. A hard vertical cutoff here drew a seam
+        # straight across the frame, which no amount of colour choice could hide.
+        ledge = (smoothstep(TOP_HALF * 1.25, TOP_HALF * 1.9, abs(nx - 0.5))
+                 * (1.0 - smoothstep(LIP_Y * 0.9, LIP_Y * 2.4, ny)))
+    if ny > 0.84:
+        ledge = max(ledge, smoothstep(0.30, 0.44, abs(nx - 0.5)) * smoothstep(0.84, 0.95, ny))
+    if ledge > 0:
+        rocky = 0.07 + 0.13 * rock[col][row]
+        lightness = lightness * (1 - ledge) + rocky * ledge
 
-    # Spray drifting up off the pool lifts everything just above it.
-    mist_top = ROWS - POOL_ROWS - MIST_ROWS
-    if mist_top <= row < ROWS - POOL_ROWS:
-        m = (row - mist_top) / MIST_ROWS
-        lightness += 0.26 * m * m
+    inside = sheetness(nx, ny)
 
-    # The plunge pool: bright, high-contrast churn that owns the bottom band
-    # regardless of what the sheet above it is doing.
-    if row >= ROWS - POOL_ROWS:
-        p = row - (ROWS - POOL_ROWS)
-        churn = pool[col][p][frame]
-        depth = p / max(1, POOL_ROWS - 1)
-        pool_l = 0.30 + 0.62 * churn
-        pool_l -= 0.22 * depth * (1 - churn)     # darkens into the pool's shadows
-        blend = min(1.0, 0.45 + 0.55 * (p / max(1, POOL_ROWS - 1)) + 0.3)
-        lightness = lightness * (1 - blend) + pool_l * blend
+    # 4. The lip. A bright horizontal band where the water goes over the edge,
+    #    denser and flatter than the fall beneath it.
+    if ny < LIP_Y and abs(nx - 0.5) < TOP_HALF * 1.12:
+        lip = smoothstep(TOP_HALF * 1.12, TOP_HALF * 0.5, abs(nx - 0.5))
+        lightness = max(lightness, (0.74 + 0.22 * strands[col % STRANDS]["noise"][y_world]) * lip)
+
+    # 5. Filaments. Each strand is a thread whose brightness scrolls down its own
+    #    length; they diverge as they drop, which is what separates falling water
+    #    from a scrolling texture.
+    if inside > 0 and ny > LIP_Y * 0.45:
+        drop = smoothstep(LIP_Y, FOOT_Y, ny)
+        water = 0.0
+        for st in strands:
+            xc = 0.5 + (st["x0"] - 0.5) * (2 * fall_half_width(ny)) + st["drift"] * drop * 0.12
+            w = st["width"] * (1.0 + 1.4 * drop)
+            d = abs(nx - xc) / w
+            if d >= 1.6:
+                continue
+            profile = math.exp(-d * d * 1.1)
+            flicker = st["noise"][(y_world + int(st["x0"] * 97)) % WORLD]
+            water = max(water, st["gain"] * profile * (0.45 + 0.55 * flicker))
+        # The body between filaments still carries water, just darker.
+        body = 0.30 + 0.22 * strands[col % STRANDS]["noise"][y_world]
+        wet = max(body, 0.34 + 0.62 * water)
+        # Water thins and gives way to spray as it nears the landing.
+        wet *= 1.0 - 0.25 * smoothstep(0.62, FOOT_Y, ny)
+        lightness = lightness * (1 - inside) + max(lightness, wet) * inside
+
+    # 6. The bloom at the foot. The brightest thing in the frame: where the fall
+    #    lands it detonates into light and spreads sideways.
+    bx = (nx - 0.5) / 0.46
+    by = (ny - (FOOT_Y + 0.05)) / 0.15
+    bloom = 1.0 - (bx * bx + by * by)
+    if bloom > 0:
+        churn = 0.72 + 0.28 * spray[col][row][frame]
+        lightness = max(lightness, (0.55 + 0.42 * bloom ** 0.55) * churn)
+
+    # 7. Spray sheeting outward along the base.
+    if ny > FOOT_Y:
+        run = smoothstep(FOOT_Y, 0.90, ny) * (1 - smoothstep(0.34, 0.5, abs(nx - 0.5)))
+        lightness = max(lightness, (0.42 + 0.46 * spray[col][row][frame]) * run)
 
     return max(0.0, min(1.0, lightness))
 
@@ -192,7 +283,7 @@ def render(colors, rng):
     rock_pool = Pool([c for c in ordered if c["l"] <= ROCK_MAX_L])
     print(f"pools — foam {len(foam)}, rock {len(rock_pool)}, journey {len(ordered)}")
 
-    streaks, rock, pool = build_fields(rng)
+    strands, rock, spray, mist = build_fields(rng)
     base_half = max(40, int(len(ordered) * BAND_FRACTION / 2))
 
     def water_band(centre):
@@ -220,21 +311,23 @@ def render(colors, rng):
         centre = int((f / FRAMES) * len(ordered))
         water, half = water_band(centre)
         widest = max(widest, half)
+        anchor = ordered[centre % len(ordered)]
+        hue_ref = anchor["h"] if anchor["s"] >= 0.12 else None
 
         grid = []
         for row in range(ROWS):
             for col in range(COLS):
-                t = target_lightness(col, row, f, streaks, rock, pool)
-                nx = col / (COLS - 1)
-                s = sheetness(nx, row / (ROWS - 1))
-                in_pool = row >= ROWS - POOL_ROWS
-
+                t = target_lightness(col, row, f, strands, rock, spray, mist)
+                # Foam is white in any light, so bright blocks ignore the hue
+                # phase entirely; the darkest blocks are rock; everything between
+                # is where the collection's colour actually shows.
                 if t >= FOAM_MIN_L and len(foam):
                     cell = foam.nearest(t, rng)
-                elif s <= 0.02 and not in_pool and len(rock_pool):
+                elif t <= ROCK_MAX_L and len(rock_pool):
                     cell = rock_pool.nearest(t, rng)
                 else:
-                    cell = water.nearest(t, rng) or foam.nearest(t, rng)
+                    cell = (water.nearest(t, rng, hue_ref=hue_ref)
+                            or foam.nearest(t, rng))
                 grid.append(cell)
         frames.append(grid)
     print(f"band half-width {base_half} -> up to {widest} to hold contrast")
