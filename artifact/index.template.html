@@ -285,14 +285,50 @@
     background: var(--plate);
   }
 
+  .shape-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+  }
+
   .readout {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    min-height: 1.75rem;
+    min-height: 2.5rem;
     font-size: 0.8125rem;
     color: var(--muted);
   }
+
+  .readout-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    background: var(--plate);
+    flex: 0 0 auto;
+  }
+
+  /* Thumbnail sits on the plate at the work's own proportions; the palette that
+     organizes every shape on this page runs as a swatch bar directly beneath it. */
+  .work-visual { display: flex; flex-direction: column; gap: 3px; }
+
+  .work-img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.16);
+  }
+
+  .work-strip {
+    display: flex;
+    width: 100%;
+    height: 6px;
+  }
+
+  .work-strip span { display: block; height: 100%; flex: 1 1 0; }
 
   .readout-chips { display: flex; gap: 3px; flex: 0 0 auto; }
   .readout-chips span { width: 13px; height: 13px; border-radius: 1px; }
@@ -537,13 +573,17 @@
   </section>
 
   <section class="spectrum">
-    <p class="label">The collection by hue</p>
+    <div class="shape-head">
+      <p class="label">Shapes of the collection</p>
+      <div class="control-row" id="shapes" role="group" aria-label="Choose an arrangement"></div>
+    </div>
     <canvas class="ribbon" id="ribbon" aria-label="Every saved artwork as a vertical strip of its three dominant colors, ordered from neutral to chromatic"></canvas>
     <div class="readout" id="readout"></div>
   </section>
 
   <section class="controls">
     <div class="control-row" id="hues" role="group" aria-label="Filter by dominant hue"></div>
+    <div class="control-row" id="chords" role="group" aria-label="Filter by palette chord"></div>
     <div class="control-row" id="cats" role="group" aria-label="Filter by category"></div>
     <div class="control-row">
       <button class="chip" id="forsale" type="button" aria-pressed="false">For sale <span class="n" id="forsale-n"></span></button>
@@ -652,17 +692,55 @@
     return "neutral";
   }
 
+  // ---------- chords ----------
+
+  // The three colors of a work also carry a relationship, not just three positions
+  // on the wheel. Naming that relationship gives the collection a second axis that
+  // has nothing to do with which hue dominates: how the palette is *built*.
+  var CHORDS = [
+    { key: "neutral", name: "Neutral", note: "no color carries real chroma" },
+    { key: "monochrome", name: "Monochrome", note: "one hue, varied in value" },
+    { key: "accent", name: "Accent", note: "a single color against neutrals" },
+    { key: "analogous", name: "Analogous", note: "neighbouring hues" },
+    { key: "split", name: "Split", note: "hues a wide step apart" },
+    { key: "complementary", name: "Complementary", note: "hues near opposite" }
+  ];
+
+  function arc(a, b) {
+    var d = Math.abs(a - b) % 360;
+    return Math.min(d, 360 - d);
+  }
+
+  function chordOf(hsls) {
+    var chromatic = hsls.filter(function (c) { return c[1] >= 0.15; });
+    if (!chromatic.length) return "neutral";
+    if (chromatic.length === 1) return "accent";
+    var spread = 0;
+    for (var i = 0; i < chromatic.length; i++) {
+      for (var j = i + 1; j < chromatic.length; j++) {
+        spread = Math.max(spread, arc(chromatic[i][0], chromatic[j][0]));
+      }
+    }
+    if (spread <= 25) return "monochrome";
+    if (spread <= 70) return "analogous";
+    if (spread >= 140) return "complementary";
+    return "split";
+  }
+
   var YEAR = /(1[0-9]{3}|20[0-9]{2})/;
 
   // ---------- unpack ----------
 
   var works = raw.records.map(function (r) {
     var colors = r[F.colors] || [];
+    var hsls = colors.map(function (hex) { return rgbToHsl(hexToRgb(hex)); });
     var repSat = -1, repHsl = [0, 0, 0.5];
-    colors.forEach(function (hex) {
-      var hsl = rgbToHsl(hexToRgb(hex));
+    hsls.forEach(function (hsl) {
       if (hsl[1] > repSat) { repSat = hsl[1]; repHsl = hsl; }
     });
+    var lights = hsls.map(function (c) { return c[2]; });
+    var value = lights.length ? lights.reduce(function (a, b) { return a + b; }, 0) / lights.length : 0.5;
+    var vrange = lights.length ? Math.max.apply(null, lights) - Math.min.apply(null, lights) : 0;
     // Some records carry punctuation-only dates ("."); those are undated, not dated.
     var dateStr = (r[F.date] || "").trim();
     if (!/[0-9a-z]/i.test(dateStr)) dateStr = "";
@@ -693,17 +771,16 @@
       // both ends of a raw 0–360 hue together at one end of the ribbon.
       hkey: (repHsl[0] + 15) % 360,
       sat: repSat < 0 ? 0 : repSat,
-      light: repHsl[2]
+      light: repHsl[2],
+      // How the palette is built, independent of which hue leads it.
+      chord: hsls.length ? chordOf(hsls) : "neutral",
+      value: value,
+      vrange: vrange,
+      thumb: r[F.thumb] || null
     };
   });
 
   var N = works.length;
-
-  var spectrum = works.slice().sort(function (a, b) {
-    var ga = a.sat < 0.12 ? 0 : 1, gb = b.sat < 0.12 ? 0 : 1;
-    if (ga !== gb) return ga - gb;
-    return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
-  });
 
   // ---------- search index ----------
 
@@ -1011,7 +1088,7 @@
 
   // ---------- facets ----------
 
-  var state = { q: "", bin: null, cat: null, forsale: false, sort: "relevance", sortLocked: false };
+  var state = { q: "", bin: null, chord: null, cat: null, forsale: false, sort: "relevance", sortLocked: false };
 
   var binCounts = {};
   works.forEach(function (w) { binCounts[w.bin] = (binCounts[w.bin] || 0) + 1; });
@@ -1021,6 +1098,15 @@
     return '<button class="chip" type="button" data-bin="' + b.key + '" aria-pressed="false">' +
       '<span class="dot" style="background:' + b.swatch + '"></span>' + b.name +
       ' <span class="n">' + fmt(binCounts[b.key]) + '</span></button>';
+  }).join("");
+
+  var chordCounts = {};
+  works.forEach(function (w) { chordCounts[w.chord] = (chordCounts[w.chord] || 0) + 1; });
+
+  var chordsEl = document.getElementById("chords");
+  chordsEl.innerHTML = CHORDS.filter(function (c) { return chordCounts[c.key]; }).map(function (c) {
+    return '<button class="chip" type="button" data-chord="' + c.key + '" aria-pressed="false" title="' +
+      esc(c.note) + '">' + c.name + ' <span class="n">' + fmt(chordCounts[c.key]) + '</span></button>';
   }).join("");
 
   // Artsy's own category strings, shortened to what the trade actually calls them.
@@ -1103,6 +1189,7 @@
 
     visible = pool.filter(function (w) {
       if (state.bin && w.bin !== state.bin) return false;
+      if (state.chord && w.chord !== state.chord) return false;
       if (state.cat && w.category !== state.cat) return false;
       if (state.forsale && !w.forsale) return false;
       return true;
@@ -1129,13 +1216,13 @@
     gridEl.innerHTML = "";
     renderMore();
     renderResultLine(hasQuery, q);
-    drawRibbon();
+    drawShape();
   }
 
   function renderResultLine(hasQuery, q) {
     var line = document.getElementById("resultline");
     var emptyEl = document.getElementById("empty");
-    var facets = state.bin || state.cat || state.forsale;
+    var facets = state.bin || state.chord || state.cat || state.forsale;
 
     if (!hasQuery && !facets) {
       line.innerHTML = "<span><b>" + fmt(N) + "</b> works indexed</span>";
@@ -1174,12 +1261,23 @@
   var gridEl = document.getElementById("grid");
   var moreEl = document.getElementById("more");
 
-  function tileHtml(w) {
-    var weights = [56, 22, 22];
-    var bands = w.colors.slice(0, 3).map(function (hex, i) {
-      return '<span style="background:' + esc(hex) + ';height:' + (w.colors.length > 1 ? weights[i] : 100) + '%"></span>';
-    }).join("");
-    return '<div class="tile" style="aspect-ratio:' + w.ratio.toFixed(3) + '">' + bands + "</div>";
+  function stripHtml(w) {
+    return '<div class="work-strip">' + w.colors.slice(0, 3).map(function (hex) {
+      return '<span style="background:' + esc(hex) + '"></span>';
+    }).join("") + "</div>";
+  }
+
+  function visualHtml(w) {
+    // With a thumbnail the plate shows the work itself; without one (or before the
+    // images are built in) the three dominant colors stand in for it.
+    var inner = w.thumb
+      ? '<img class="work-img" src="' + w.thumb + '" alt="" loading="lazy" decoding="async">'
+      : '<div class="tile" style="aspect-ratio:' + w.ratio.toFixed(3) + '">' +
+          w.colors.slice(0, 3).map(function (hex, i) {
+            return '<span style="background:' + esc(hex) + ';height:' +
+              (w.colors.length > 1 ? [56, 22, 22][i] : 100) + '%"></span>';
+          }).join("") + "</div>";
+    return '<div class="work-visual"><div class="work-plate">' + inner + "</div>" + stripHtml(w) + "</div>";
   }
 
   function workHtml(w) {
@@ -1191,7 +1289,7 @@
       (w.nationality ? ' <span class="nat">· ' + highlight(w.nationality, t) + "</span>" : "");
 
     return '<article class="work">' +
-      '<div class="work-plate">' + tileHtml(w) + "</div>" +
+      visualHtml(w) +
       '<div class="work-meta">' +
         '<div class="work-artist">' + artistLine + "</div>" +
         '<h3 class="work-title"><em>' + highlight(w.title, t) + '</em>, <span class="year">' + year + "</span></h3>" +
@@ -1217,29 +1315,194 @@
 
   moreEl.addEventListener("click", renderMore);
 
-  // ---------- ribbon ----------
+  // ---------- shapes ----------
+
+  // Five arrangements of the same 4,969 works, all derived from the palettes. Each
+  // shape is just a layout function returning a rect per work; one renderer draws
+  // them and one pick buffer resolves what the cursor is over, so adding a shape
+  // costs a layout function and nothing else.
+  var SHAPES = [
+    { key: "spectrum", name: "Spectrum", height: 132,
+      caption: "Every work as a strip of its three colors, ordered neutral to chromatic." },
+    { key: "wheel", name: "Wheel", height: 460,
+      caption: "Hue around the circle, chroma from centre to rim. Neutrals crowd the middle." },
+    { key: "field", name: "Value / chroma", height: 420,
+      caption: "Lightness up the vertical, chroma across the horizontal — the plane painters mix on." },
+    { key: "chords", name: "Chords", height: 340,
+      caption: "Grouped by how the palette is built, not by which hue leads it." },
+    { key: "artists", name: "Artists", height: 260,
+      caption: "One band per artist, artists ordered by the average hue of their work." }
+  ];
+
+  var shapeKey = "spectrum";
+
+  // Left gutter carries the LIGHT/DARK labels, bottom carries CHROMA.
+  var FIELD_PAD = { l: 58, r: 24, t: 22, b: 44 };
 
   var canvas = document.getElementById("ribbon");
   var ctx = canvas.getContext("2d");
   var readout = document.getElementById("readout");
+  var pick = document.createElement("canvas");
+  var pickCtx = pick.getContext("2d", { willReadFrequently: true });
+  var layout = [];
 
   function paperColor() {
     return getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#eaecee";
   }
 
-  function drawRibbon() {
+  function ruleColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--rule").trim() || "#d2d7dc";
+  }
+
+  function mutedColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--muted").trim() || "#6c747d";
+  }
+
+  var spectrumOrder = works.slice().sort(function (a, b) {
+    var ga = a.sat < 0.12 ? 0 : 1, gb = b.sat < 0.12 ? 0 : 1;
+    if (ga !== gb) return ga - gb;
+    return ga === 0 ? a.light - b.light : a.hkey - b.hkey;
+  });
+
+  var artistOrder = null;
+
+  function buildArtistOrder() {
+    var groups = {};
+    works.forEach(function (w) {
+      (groups[w.artist] = groups[w.artist] || []).push(w);
+    });
+    // Order artists by the mean hue of their chromatic works, neutral-only artists first.
+    var names = Object.keys(groups).sort(function (a, b) {
+      function key(name) {
+        var chromatic = groups[name].filter(function (w) { return w.sat >= 0.12; });
+        if (!chromatic.length) return -1;
+        return chromatic.reduce(function (s, w) { return s + w.hkey; }, 0) / chromatic.length;
+      }
+      return key(a) - key(b) || groups[b].length - groups[a].length;
+    });
+    artistOrder = [];
+    names.forEach(function (name) {
+      groups[name].sort(function (x, y) { return x.light - y.light; });
+      artistOrder = artistOrder.concat(groups[name]);
+    });
+  }
+
+  // Each layout returns [{w: work, x, y, width, height}] in CSS pixels.
+  function layoutFor(key, W, H) {
+    var out = [], i, n;
+
+    if (key === "spectrum") {
+      n = spectrumOrder.length;
+      var step = W / n;
+      for (i = 0; i < n; i++) {
+        out.push({ w: spectrumOrder[i], x: i * step, y: 0, width: step + 0.6, height: H });
+      }
+      return out;
+    }
+
+    if (key === "artists") {
+      if (!artistOrder) buildArtistOrder();
+      n = artistOrder.length;
+      var astep = W / n;
+      for (i = 0; i < n; i++) {
+        out.push({ w: artistOrder[i], x: i * astep, y: 0, width: astep + 0.6, height: H });
+      }
+      return out;
+    }
+
+    if (key === "wheel") {
+      var cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 14, dot = 5;
+      works.forEach(function (w) {
+        var ang = (w.hue - 90) * Math.PI / 180;
+        // Neutrals still get their (noisy) angle, but spread across the whole inner
+        // disc rather than collapsing onto the centre point — there are 1,173 of them.
+        var rad = (w.sat < 0.12
+          ? 0.02 + (w.sat / 0.12) * 0.16
+          : 0.18 + w.sat * 0.82) * R;
+        // Nudge along the spoke by lightness, so identical hues separate meaningfully.
+        rad += (w.value - 0.5) * 9;
+        out.push({
+          w: w,
+          x: cx + Math.cos(ang) * rad - dot / 2,
+          y: cy + Math.sin(ang) * rad - dot / 2,
+          width: dot, height: dot
+        });
+      });
+      return out;
+    }
+
+    if (key === "field") {
+      var P = FIELD_PAD, dot2 = 5;
+      var iw = W - P.l - P.r, ih = H - P.t - P.b;
+      works.forEach(function (w) {
+        out.push({
+          w: w,
+          x: P.l + w.sat * iw - dot2 / 2,
+          y: P.t + (1 - w.value) * ih - dot2 / 2,
+          width: dot2, height: dot2
+        });
+      });
+      return out;
+    }
+
+    if (key === "chords") {
+      var groups = {};
+      CHORDS.forEach(function (c) { groups[c.key] = []; });
+      works.forEach(function (w) { (groups[w.chord] || groups.neutral).push(w); });
+
+      var lanes = CHORDS.filter(function (c) { return groups[c.key].length; });
+      var gap = 14, top = 26;
+      var laneW = (W - gap * (lanes.length - 1)) / lanes.length;
+      var laneH = H - top;
+
+      lanes.forEach(function (c, li) {
+        var items = groups[c.key].slice().sort(function (a, b) { return a.hkey - b.hkey || a.light - b.light; });
+        // Pack each lane as a column-major grid sized to fill its lane.
+        var cols = Math.max(1, Math.round(Math.sqrt(items.length * laneW / laneH)));
+        var rows = Math.ceil(items.length / cols);
+        var cw = laneW / cols, ch = laneH / rows;
+        var x0 = li * (laneW + gap);
+        items.forEach(function (w, k) {
+          out.push({
+            w: w,
+            x: x0 + (k % cols) * cw,
+            y: top + Math.floor(k / cols) * ch,
+            width: cw + 0.5, height: ch + 0.5,
+            lane: c
+          });
+        });
+      });
+      out.lanes = lanes.map(function (c, li) {
+        return { c: c, x: li * (laneW + gap), width: laneW, n: groups[c.key].length };
+      });
+      return out;
+    }
+
+    return out;
+  }
+
+  function bandsOf(w) {
+    return w.colors.length > 1 ? [0.56, 0.22, 0.22] : [1];
+  }
+
+  function drawShape() {
     var rect = canvas.getBoundingClientRect();
     if (!rect.width) return;
     var dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var W = rect.width, H = rect.height;
 
-    var W = rect.width, H = rect.height, n = spectrum.length;
-    var step = W / n;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pick.width = Math.round(W);
+    pick.height = Math.round(H);
+    pickCtx.setTransform(1, 0, 0, 1, 0, 0);
 
     ctx.fillStyle = paperColor();
     ctx.fillRect(0, 0, W, H);
+    pickCtx.clearRect(0, 0, W, H);
+
+    layout = layoutFor(shapeKey, W, H);
 
     // With a query or facet active, everything else fades back so the result set
     // reads as a position within the collection's whole color range.
@@ -1250,51 +1513,108 @@
       visible.forEach(function (w) { inSet.add(w.id); });
     }
 
-    var weights = [0.56, 0.22, 0.22];
-    for (var i = 0; i < n; i++) {
-      var w = spectrum[i];
-      var x = i * step;
-      ctx.globalAlpha = (!filtered || inSet.has(w.id)) ? 1 : 0.1;
-      var y = 0;
-      for (var c = 0; c < 3; c++) {
-        var hex = w.colors[Math.min(c, w.colors.length - 1)];
-        var bh = w.colors.length > 1 ? H * weights[c] : H;
-        ctx.fillStyle = hex;
-        ctx.fillRect(x, y, step + 0.6, bh + 0.5);
+    drawShapeFurniture(W, H);
+
+    for (var i = 0; i < layout.length; i++) {
+      var it = layout[i], w = it.w;
+      var lit = !filtered || inSet.has(w.id);
+      ctx.globalAlpha = lit ? 1 : 0.08;
+
+      var weights = bandsOf(w), y = it.y;
+      for (var c = 0; c < weights.length; c++) {
+        var bh = it.height * weights[c];
+        ctx.fillStyle = w.colors[Math.min(c, w.colors.length - 1)];
+        ctx.fillRect(it.x, y, it.width, bh + (weights.length > 1 ? 0.5 : 0));
         y += bh;
-        if (w.colors.length === 1) break;
       }
+
+      // Index encoded as a color, so hover is an exact pixel read rather than a search.
+      pickCtx.fillStyle = "rgb(" + ((i >> 16) & 255) + "," + ((i >> 8) & 255) + "," + (i & 255) + ")";
+      pickCtx.fillRect(it.x, it.y, Math.max(1, it.width), Math.max(1, it.height));
     }
     ctx.globalAlpha = 1;
   }
 
-  function workAt(clientX) {
-    var rect = canvas.getBoundingClientRect();
-    var i = Math.floor(((clientX - rect.left) / rect.width) * spectrum.length);
-    return spectrum[Math.max(0, Math.min(spectrum.length - 1, i))];
+  function drawShapeFurniture(W, H) {
+    ctx.save();
+    ctx.font = '500 10px "IBM Plex Mono", monospace';
+    ctx.fillStyle = mutedColor();
+    ctx.strokeStyle = ruleColor();
+    ctx.lineWidth = 1;
+
+    if (shapeKey === "field") {
+      var P = FIELD_PAD;
+      ctx.strokeRect(P.l + 0.5, P.t + 0.5, W - P.l - P.r, H - P.t - P.b);
+      ctx.textAlign = "center";
+      ctx.fillText("CHROMA →", W / 2, H - P.b + 24);
+      ctx.textAlign = "right";
+      ctx.fillText("LIGHT", P.l - 10, P.t + 4);
+      ctx.fillText("DARK", P.l - 10, H - P.b + 4);
+      ctx.save();
+      ctx.translate(14, H / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText("VALUE", 0, 0);
+      ctx.restore();
+    } else if (shapeKey === "wheel") {
+      var cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 14;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.textAlign = "center";
+      var marks = [["RED", 0], ["YELLOW", 60], ["GREEN", 120], ["CYAN", 180], ["BLUE", 240], ["MAGENTA", 300]];
+      marks.forEach(function (m) {
+        var a = (m[1] - 90) * Math.PI / 180;
+        ctx.fillText(m[0], cx + Math.cos(a) * (R + 8), cy + Math.sin(a) * (R + 8) + 3);
+      });
+    } else if (shapeKey === "chords" && layout.lanes) {
+      ctx.textAlign = "left";
+      layout.lanes.forEach(function (l) {
+        ctx.fillText(l.c.name.toUpperCase() + "  " + fmt(l.n), l.x, 12);
+      });
+    }
+    ctx.restore();
   }
 
-  var defaultReadout =
-    '<span class="readout-text">Ordered neutral to chromatic. Point at the band to identify a work; click to filter to that hue.</span>';
+  function workAtPoint(clientX, clientY) {
+    var rect = canvas.getBoundingClientRect();
+    var x = Math.floor(clientX - rect.left), y = Math.floor(clientY - rect.top);
+    if (x < 0 || y < 0 || x >= pick.width || y >= pick.height) return null;
+    var d = pickCtx.getImageData(x, y, 1, 1).data;
+    if (!d[3]) return null;
+    var i = (d[0] << 16) | (d[1] << 8) | d[2];
+    return layout[i] ? layout[i].w : null;
+  }
 
-  readout.innerHTML = defaultReadout;
+  function shapeCaption() {
+    var s = SHAPES.filter(function (x) { return x.key === shapeKey; })[0];
+    return '<span class="readout-text">' + s.caption + " Click any mark to search that artist.</span>";
+  }
 
-  canvas.addEventListener("pointermove", function (e) {
-    var w = workAt(e.clientX);
-    if (!w) return;
+  function showReadout(w) {
     readout.innerHTML =
+      (w.thumb ? '<img class="readout-thumb" src="' + w.thumb + '" alt="">' : "") +
       '<span class="readout-chips">' + w.colors.slice(0, 3).map(function (h) {
         return '<span style="background:' + esc(h) + '"></span>';
       }).join("") + "</span>" +
       '<span class="readout-text"><em>' + esc(w.title) + "</em> · <b>" + esc(w.artist) + "</b> · " +
       (w.date ? esc(w.date) : "n.d.") + " · " + esc(w.category) + "</span>";
+  }
+
+  canvas.addEventListener("pointermove", function (e) {
+    var w = workAtPoint(e.clientX, e.clientY);
+    if (w) showReadout(w);
+    else readout.innerHTML = shapeCaption();
   });
 
-  canvas.addEventListener("pointerleave", function () { readout.innerHTML = defaultReadout; });
+  canvas.addEventListener("pointerleave", function () { readout.innerHTML = shapeCaption(); });
 
   canvas.addEventListener("click", function (e) {
-    var w = workAt(e.clientX);
-    if (w) setBin(state.bin === w.bin ? null : w.bin);
+    var w = workAtPoint(e.clientX, e.clientY);
+    if (w && w.artist !== "Unknown artist") setQuery('artist:"' + w.artist + '"');
   });
 
   function setBin(bin) {
@@ -1304,6 +1624,31 @@
     });
     applyFilters();
   }
+
+  var shapesEl = document.getElementById("shapes");
+  shapesEl.innerHTML = SHAPES.map(function (s) {
+    return '<button class="chip" type="button" data-shape="' + s.key + '" aria-pressed="' +
+      (s.key === shapeKey) + '">' + s.name + "</button>";
+  }).join("");
+
+  function setShape(key) {
+    shapeKey = key;
+    var s = SHAPES.filter(function (x) { return x.key === key; })[0];
+    canvas.style.height = s.height + "px";
+    Array.prototype.forEach.call(shapesEl.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.shape === key));
+    });
+    readout.innerHTML = shapeCaption();
+    drawShape();
+  }
+
+  shapesEl.addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (chip) setShape(chip.dataset.shape);
+  });
+
+  readout.innerHTML = shapeCaption();
+
 
   // ---------- search UI ----------
 
@@ -1434,6 +1779,16 @@
     applyFilters();
   });
 
+  chordsEl.addEventListener("click", function (e) {
+    var chip = e.target.closest(".chip");
+    if (!chip) return;
+    state.chord = state.chord === chip.dataset.chord ? null : chip.dataset.chord;
+    Array.prototype.forEach.call(chordsEl.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.chord === state.chord));
+    });
+    applyFilters();
+  });
+
   var forsaleEl = document.getElementById("forsale");
   forsaleEl.addEventListener("click", function () {
     state.forsale = !state.forsale;
@@ -1444,14 +1799,14 @@
   var resizeTimer;
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(drawRibbon, 120);
+    resizeTimer = setTimeout(drawShape, 120);
   });
 
   if (window.matchMedia) {
     var mq = window.matchMedia("(prefers-color-scheme: dark)");
-    if (mq.addEventListener) mq.addEventListener("change", drawRibbon);
+    if (mq.addEventListener) mq.addEventListener("change", drawShape);
   }
-  new MutationObserver(drawRibbon).observe(document.documentElement, {
+  new MutationObserver(drawShape).observe(document.documentElement, {
     attributes: true, attributeFilter: ["data-theme"]
   });
 

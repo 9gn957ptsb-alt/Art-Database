@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "artworks.db"
 TEMPLATE_PATH = ROOT / "artifact" / "index.template.html"
 OUT_PATH = ROOT / "artifact" / "color-middling.html"
+THUMBS_PATH = ROOT / "data" / "thumbs.json"
 
 PLACEHOLDER = "__DATA__"
 
@@ -68,6 +69,17 @@ def load_artist_meta(conn):
     return meta
 
 
+def load_thumbs():
+    """Inlined WebP data URIs from scripts/fetch_thumbnails.py, if it has been run.
+
+    Optional on purpose: the page falls back to rendering each work from its three
+    dominant colors, so it builds with or without the image set.
+    """
+    if not THUMBS_PATH.exists():
+        return {}
+    return json.loads(THUMBS_PATH.read_text())
+
+
 def load_records(conn):
     colors = {}
     for row in conn.execute(
@@ -76,6 +88,7 @@ def load_records(conn):
         colors.setdefault(row["artwork_id"], []).append(row["hex"])
 
     meta = load_artist_meta(conn)
+    thumbs = load_thumbs()
 
     records = []
     for row in conn.execute(
@@ -89,6 +102,7 @@ def load_records(conn):
         record.append(", ".join(entry.get("extra") or []) or None)
         record.append(", ".join(entry.get("nat") or []) or None)
         record.append(entry.get("years") or None)
+        record.append(thumbs.get(row["id"]))
         records.append(record)
     return records
 
@@ -107,7 +121,7 @@ def main():
         conn.close()
 
     payload = json.dumps(
-        {"fields": FIELDS + ["colors", "extra_artists", "nationality", "artist_years"],
+        {"fields": FIELDS + ["colors", "extra_artists", "nationality", "artist_years", "thumb"],
          "records": records},
         separators=(",", ":"),
         ensure_ascii=False,
@@ -121,7 +135,10 @@ def main():
 
     OUT_PATH.write_text(template.replace(PLACEHOLDER, payload))
 
-    print(f"Built {OUT_PATH} from {len(records)} artworks")
+    with_thumbs = sum(1 for r in records if r[-1])
+    print(f"Built {OUT_PATH} from {len(records)} artworks "
+          f"({with_thumbs} with thumbnails)" if with_thumbs
+          else f"Built {OUT_PATH} from {len(records)} artworks (no thumbnails yet)")
     print(f"Page size: {OUT_PATH.stat().st_size / 1_000_000:.2f} MB")
 
 

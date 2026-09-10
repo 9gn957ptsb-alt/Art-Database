@@ -125,6 +125,57 @@ python3 scripts/search_artworks.py --category Painting --forsale
 python3 scripts/search_artworks.py --color "#3a6ea5" --color-tolerance 40
 ```
 
+## Shapes
+
+The three dominant colors per work carry more than a hue ranking, so the page offers
+five arrangements of the same 4,969 records. Each is a layout function returning one
+rect per work; a shared renderer draws them and a shared pick buffer (the work's index
+encoded as an RGB value on an offscreen canvas) resolves what the cursor is over, so a
+new arrangement costs a layout function and nothing else.
+
+| Shape | Arrangement |
+| --- | --- |
+| Spectrum | every work as a strip, ordered neutral then around the hue wheel |
+| Wheel | hue as angle, chroma as radius; neutrals fill the inner disc |
+| Value / chroma | lightness against saturation — the plane painters mix on |
+| Chords | grouped by how the palette is built, not by which hue leads |
+| Artists | one contiguous band per artist, artists ordered by mean hue |
+
+**Chords** classify the *relationship* between a work's three colors rather than their
+positions, which turns out to be a second axis independent of the hue facets:
+
+| Chord | Test | Works |
+| --- | --- | --- |
+| Monochrome | chromatic hues within 25° | 1,747 |
+| Neutral | no color reaches 0.15 saturation | 1,173 |
+| Accent | exactly one color carries chroma | 1,144 |
+| Complementary | hues 140° or more apart | 378 |
+| Analogous | hues within 70° | 364 |
+| Split | the 70–140° middle ground | 163 |
+
+## Thumbnails
+
+`scripts/fetch_thumbnails.py` downloads each work's image, resizes it and writes
+`data/thumbs.json` as WebP data URIs, which `build_artifact.py` inlines. The page falls
+back to rendering a work from its three colors wherever a thumbnail is missing, so it
+builds with or without them.
+
+```bash
+python3 scripts/fetch_thumbnails.py --probe   # 40 works, projects the full page size
+python3 scripts/fetch_thumbnails.py           # all of them
+```
+
+Two constraints drive the settings:
+
+- **The images must ship inside the HTML.** Artifacts block external images under CSP,
+  so the CDN cannot be fetched at runtime. With a 16MB page limit, ~1.4MB of metadata
+  already spent, and base64 inflating every byte by 4/3, the budget is roughly 2KB per
+  work across 4,968 works — hence WebP at a small edge. Run `--probe` before a full
+  run; it projects the finished page size from a 40-work sample.
+- **The image CDN needs allowing.** Every image is on
+  `d32dm0rphc51dk.cloudfront.net`, which is not `artsy.net`. Without it on the
+  environment's allowed domains the fetch fails with a refused proxy connection.
+
 ## API reference
 
 Endpoint and header names were read from Artsy's open-source GraphQL API,
