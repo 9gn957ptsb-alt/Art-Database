@@ -314,10 +314,14 @@
      organizes every shape on this page runs as a swatch bar directly beneath it. */
   .work-visual { display: flex; flex-direction: column; gap: 3px; }
 
+  /* Thumbnails are small by necessity (the whole image set ships inside the page),
+     so scale them up to fill the plate rather than leaving a ragged grid of
+     different-sized stamps. Soft beats inconsistent at this size. */
   .work-img {
     display: block;
+    height: 100%;
+    width: auto;
     max-width: 100%;
-    max-height: 100%;
     object-fit: contain;
     box-shadow: 0 1px 3px rgb(0 0 0 / 0.16);
   }
