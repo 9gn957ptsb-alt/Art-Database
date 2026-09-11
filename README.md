@@ -176,6 +176,48 @@ Two constraints drive the settings:
   `d32dm0rphc51dk.cloudfront.net`, which is not `artsy.net`. Without it on the
   environment's allowed domains the fetch fails with a refused proxy connection.
 
+## One artifact
+
+Everything generated from the collection's colours lives in a **single published
+artifact**, and new objects are added to it rather than published separately —
+otherwise the artifacts gallery fills up with near-duplicates and stops being useful.
+
+```bash
+python3 scripts/build_theme.py        # themed objects  -> data/theme_ancient.json
+python3 scripts/build_waterfall.py    # abstract object -> data/waterfall.json
+python3 scripts/build_objects.py      # merge both      -> data/objects.json
+```
+
+`artifact/objects.template.html` + `data/objects.json` build `artifact/objects.html`,
+which is republished to the same artifact URL every time. Two object kinds share one
+renderer: `shimmer` (a still sprite whose palette breathes) and `frames` (a precomputed
+animation). Adding a theme means adding its objects to the merge, not a new page.
+
+### Feedback is the memory between objects
+
+The page declares the `db` capability, so aesthetic feedback is stored **with the
+artifact** rather than in a browser — which is the only reason it can be read back
+later. Each submission is a document in `feedback`:
+
+| Field | Meaning |
+| --- | --- |
+| `object`, `objectName`, `theme` | which object is being judged |
+| `rating` | 1–5, how much it lands |
+| `verdicts` | per-axis `up`/`down` over palette, silhouette, shading, detail, chunkiness, motion, colour drift, subject |
+| `note` | free text |
+| `at` | ISO timestamp |
+
+Read it back before designing the next object:
+
+```
+Artifact  action: read_db  url: <artifact url>  db_op: list  collection: feedback
+```
+
+Each object also ships a `built` record — its grid, its ramp, how many real colours
+backed each step, and what making it taught — shown on the page and carried in
+`data/objects.json`. Between that and the feedback rows, the next object starts from
+what the last ones established rather than from nothing.
+
 ## Themes
 
 `scripts/build_theme.py` builds pixel objects out of the collection's own colours.
