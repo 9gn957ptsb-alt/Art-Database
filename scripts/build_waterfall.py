@@ -381,6 +381,17 @@ def render(colors, rng, blue_mode=True):
         grid = []
         for row in range(ROWS):
             for col in range(COLS):
+                nx, ny = col / (COLS - 1), row / (ROWS - 1)
+                # No background. Only the water itself and its contour exist, so only
+                # the object is on screen and only the object is clickable.
+                bx, by = (nx - 0.5) / 0.46, (ny - (FOOT_Y + 0.05)) / 0.15
+                in_water = (sheetness(nx, ny) > 0.02 and ny > LIP_Y * 0.4) \
+                    or (bx * bx + by * by) < 1.0 \
+                    or (ny > FOOT_Y and abs(nx - 0.5) < 0.34) \
+                    or (ny < LIP_Y and abs(nx - 0.5) < TOP_HALF * 1.12)
+                if not in_water:
+                    grid.append(None)
+                    continue
                 t = target_lightness(col, row, f, strands, rock, spray, mist)
                 # Foam is white in any light, so bright blocks ignore the hue
                 # phase entirely; the darkest blocks are rock; everything between
@@ -432,6 +443,9 @@ def write_json(frames):
     for grid in frames:
         row = []
         for cell in grid:
+            if cell is None:
+                row.append(-1)
+                continue
             if cell["id"] not in artwork_index:
                 artwork_index[cell["id"]] = len(artworks)
                 artworks.append([cell["id"], cell["title"], cell["artist"]])
@@ -457,6 +471,8 @@ def to_image(grid):
     img = Image.new("RGB", (COLS, ROWS))
     px = img.load()
     for i, cell in enumerate(grid):
+        if cell is None:
+            continue
         h = cell["hex"]
         px[i % COLS, i // COLS] = (int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16))
     return img.resize((COLS * BLOCK, ROWS * BLOCK), Image.NEAREST)

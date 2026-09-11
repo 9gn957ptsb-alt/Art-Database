@@ -218,6 +218,36 @@ backed each step, and what making it taught — shown on the page and carried in
 `data/objects.json`. Between that and the feedback rows, the next object starts from
 what the last ones established rather than from nothing.
 
+## Pixel art rules these sprites follow
+
+Rewritten after the first objects came out gritty. Three faults, all structural, and
+all confirmed against pixel-art fundamentals rather than guessed at:
+
+- **Per-cell colour variation is grit.** Every cell used to pick its own
+  near-identical colour, so a region that should read as one flat shape was really
+  hundreds of slightly different ones. Cycling now happens at the **slot** level: a
+  whole region holds one colour and changes as one, the way sprite art animated water
+  and fire for decades.
+- **A ramp that only changes value reads as flat clip art.** Hue shifting — shadows
+  drifting cooler, highlights warmer — is most of what makes a ramp read as light on a
+  form. Every ramp here shifts hue as well as value.
+- **Procedural shapes produce gradients and orphan pixels.** Pixel art wants deliberate
+  clusters where every pixel belongs to a shape. Silhouettes are now authored as
+  explicit spans and the contour is traced from the silhouette boundary — computing an
+  outline per row stacks a dark band down every diagonal and buries the object.
+
+Also load-bearing: nothing is one pixel thick (a one-pixel leg reads as a speck), legs
+and handles run unbroken from the body, and **there are no backgrounds** — a hole is
+transparent, so only the object and its contour are drawn and only they are clickable.
+
+Sizes are small on purpose: 21 × 23, 19 × 20, 17 × 26. Every pixel is a decision, and
+repeated pixels referencing the same artwork are fine — flatness beats variety.
+
+```bash
+python3 scripts/build_sprites.py --preview   # PNGs of each sprite
+python3 scripts/build_sprites.py             # -> data/sprites.json
+```
+
 ## Themes
 
 `scripts/build_theme.py` builds pixel objects out of the collection's own colours.

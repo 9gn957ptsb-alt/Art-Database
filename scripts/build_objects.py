@@ -25,9 +25,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-THEME_PATH = ROOT / "data" / "theme_ancient.json"
+SPRITES_PATH = ROOT / "data" / "sprites.json"
+THUMBS_PATH = ROOT / "data" / "thumbs.json"
 FALL_PATH = ROOT / "data" / "waterfall.json"
 OUT_PATH = ROOT / "data" / "objects.json"
+
+THUMB_EDGE = 76
+THUMB_QUALITY = 52
 
 NOTES = {
     "amphora": "A storage jar in terracotta and black-figure. The body slip, shoulder and "
@@ -45,21 +49,19 @@ NOTES = {
 }
 
 BUILT = {
-    "amphora": {"grid": "30 × 42", "ramp": "papyrus, black-figure, umber, 4 terracotta steps, bone",
+    "amphora": {"grid": "21 × 23", "ramp": "papyrus, black-figure, umber, 4 terracotta steps, bone",
                 "backing": "22–563 real colours per ramp step",
-                "lessons": ["A narrow shading falloff splits a round form into a light half "
-                            "and a dark half with a seam down the middle."]},
-    "scarab": {"grid": "34 × 28", "ramp": "dark stone, outline, bronze, 4 gold steps, 2 lapis",
+                "lessons": ["A ramp that only changes value reads as flat clip art; the hue has to shift too — this shadow leans purple, the highlight leans warm ochre.",
+                            "Per-cell colour variation is grit. A whole region holds one colour and changes as one."]},
+    "scarab": {"grid": "19 × 20", "ramp": "dark stone, outline, bronze, 4 gold steps, 2 lapis",
                "backing": "27–64 real colours per ramp step",
-               "lessons": ["Blue is scarce here (8% of all colours), so it reads best as a "
-                           "small inlay accent rather than a field."]},
-    "column": {"grid": "26 × 46", "ramp": "dark ground, crack, 4 limestone steps, deep shadow",
+               "lessons": ["A beetle is widest high, at the pronotum. Widest in the middle reads as a lozenge.",
+                           "Legs must run unbroken from the body and be two pixels deep, or they read as specks."]},
+    "column": {"grid": "17 × 26", "ramp": "dark ground, crack, 4 limestone steps, deep shadow",
                "backing": "64 real colours per ramp step — the collection's deepest seam",
-               "lessons": ["The ground must silhouette: a background at the same value as the "
-                           "object turns it into stripes.",
-                           "Flutes need hard steps. A soft cylinder gradient at this "
-                           "resolution reads as blur, not carved stone."]},
-    "waterfall": {"grid": "32 × 44 × 96 frames", "ramp": "designed lightness field, not a ramp",
+               "lessons": ["The contour is traced from the silhouette, not computed per row — per-row outlines stack a dark band down every diagonal and bury the object.",
+                           "Flutes need hard steps. A gradient at this resolution reads as blur, not carved stone."]},
+    "waterfall": {"grid": "28 × 38 × 96 frames", "ramp": "designed lightness field, not a ramp",
                   "backing": "blues, cyans, teals (180–250°) plus every neutral",
                   "lessons": ["Foam must ignore the hue phase — white water is white in any light.",
                               "Hue penalty has to scale with saturation, or warm greys drag a "
@@ -70,44 +72,65 @@ BUILT = {
 
 def remap(src, artworks, artwork_index, palette, palette_index):
     """Fold one source file's local tables into the shared ones."""
-    local_palette = []
+    local = []
     for hex_color, art_i in src["palette"]:
         entry = src["artworks"][art_i]
         art_id = entry[0]
         if art_id not in artwork_index:
             artwork_index[art_id] = len(artworks)
-            # id, title, artist, thumbnail (may be absent in either source)
-            artworks.append([art_id, entry[1], entry[2], entry[3] if len(entry) > 3 else None])
-        elif len(entry) > 3 and entry[3] and not artworks[artwork_index[art_id]][3]:
-            artworks[artwork_index[art_id]][3] = entry[3]
+            artworks.append([art_id, entry[1], entry[2], None])
         key = (hex_color, art_id)
         if key not in palette_index:
             palette_index[key] = len(palette)
             palette.append([hex_color, artwork_index[art_id]])
-        local_palette.append(palette_index[key])
-    return local_palette
+        local.append(palette_index[key])
+    return local
+
+
+def attach_thumbs(artworks):
+    """Inline one small preview per work, shared across every object."""
+    if not THUMBS_PATH.exists():
+        print("no data/thumbs.json — previews will fall back to the colour swatch")
+        return 0
+    import base64, io
+    from PIL import Image
+    source = json.loads(THUMBS_PATH.read_text())
+    made = 0
+    for entry in artworks:
+        uri = source.get(entry[0])
+        if not uri or "," not in uri:
+            continue
+        try:
+            raw = base64.b64decode(uri.split(",", 1)[1])
+            img = Image.open(io.BytesIO(raw)).convert("RGB")
+            img.thumbnail((THUMB_EDGE, THUMB_EDGE), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format="WEBP", quality=THUMB_QUALITY, method=6)
+            entry[3] = "data:image/webp;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+            made += 1
+        except Exception:
+            continue
+    return made
 
 
 def main():
-    for path in (THEME_PATH, FALL_PATH):
+    for path in (SPRITES_PATH, FALL_PATH):
         if not path.exists():
             sys.exit(f"{path} not found — run its build script first.")
 
-    theme = json.loads(THEME_PATH.read_text())
+    sprites = json.loads(SPRITES_PATH.read_text())
     fall = json.loads(FALL_PATH.read_text())
 
     artworks, artwork_index, palette, palette_index = [], {}, [], {}
 
-    theme_map = remap(theme, artworks, artwork_index, palette, palette_index)
+    sprite_map = remap(sprites, artworks, artwork_index, palette, palette_index)
     ancient = []
-    for obj in theme["objects"]:
-        key = obj["name"].lower()
+    for obj in sprites["objects"]:
         ancient.append({
-            "key": key, "name": obj["name"], "kind": "shimmer",
-            "cols": obj["cols"], "rows": obj["rows"],
-            "grid": obj["grid"], "phases": obj["phases"],
-            "cycles": [[theme_map[i] for i in cyc] for cyc in obj["cycles"]],
-            "note": NOTES[key], "built": BUILT[key],
+            "key": obj["key"], "name": obj["name"], "kind": "sprite",
+            "cols": obj["cols"], "rows": obj["rows"], "grid": obj["grid"],
+            "cycles": [[sprite_map[i] for i in cyc] for cyc in obj["cycles"]],
+            "note": obj["note"], "built": BUILT[obj["key"]],
         })
 
     fall_map = remap(fall, artworks, artwork_index, palette, palette_index)
@@ -115,12 +138,16 @@ def main():
         "key": "waterfall", "name": "Waterfall", "kind": "frames",
         "cols": fall["columns"], "rows": fall["rows"],
         "frames": fall["frames"], "frameMs": fall["frameMs"],
-        "cells": [[fall_map[i] for i in frame] for frame in fall["cells"]],
+        # -1 is a hole: no background, so only the water is drawn and only the
+        # water is clickable.
+        "cells": [[(fall_map[i] if i >= 0 else -1) for i in frame] for frame in fall["cells"]],
         "note": NOTES["waterfall"], "built": BUILT["waterfall"],
     }
 
+    thumbs = attach_thumbs(artworks)
+
     payload = {
-        "cycleFrames": theme["cycleFrames"],
+        "cycleSteps": sprites["cycleSteps"],
         "artworks": artworks,
         "palette": palette,
         "themes": [
@@ -137,11 +164,9 @@ def main():
     }
 
     OUT_PATH.write_text(json.dumps(payload, separators=(",", ":")))
-    thumbs = sum(1 for a in artworks if a[3])
     print(f"Wrote {OUT_PATH} ({OUT_PATH.stat().st_size/1_000_000:.2f} MB)")
-    print(f"  {len(payload['themes'])} themes, "
-          f"{sum(len(t['objects']) for t in payload['themes'])} objects")
-    print(f"  {len(palette)} colours across {len(artworks)} works ({thumbs} with previews)")
+    print(f"  {sum(len(t['objects']) for t in payload['themes'])} objects, "
+          f"{len(palette)} colours across {len(artworks)} works ({thumbs} previews)")
 
 
 if __name__ == "__main__":
