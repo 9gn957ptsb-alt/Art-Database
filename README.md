@@ -176,7 +176,54 @@ Two constraints drive the settings:
   `d32dm0rphc51dk.cloudfront.net`, which is not `artsy.net`. Without it on the
   environment's allowed domains the fetch fails with a refused proxy connection.
 
+## Themes
+
+`scripts/build_theme.py` builds pixel objects out of the collection's own colours.
+The theme is chosen **by the data, not by taste** — counted before anything is drawn:
+
+| Ramp target | Colours available within tolerance |
+| --- | --- |
+| Limestone light | 778 |
+| Papyrus ground | 563 |
+| Black-figure black | 485 |
+| Terracotta mid | 49 |
+| Christmas bright red | 5 |
+| Christmas holly green | 2 |
+| Christmas pine | 1 |
+
+There is no pine green in this collection. An **Ancient** object can be built honestly
+from it — amphora, scarab, Doric column — where a Christmas one could only be faked.
+That is the rule for every future theme: count the palette first, and build what the
+collection can actually render.
+
+```bash
+python3 scripts/build_theme.py
+python3 scripts/build_theme.py --preview   # PNGs of each object, no JSON
+```
+
+Each object is authored as a designed ramp of slots, and **every slot is backed by
+dozens of near-identical real colours**. That keeps sprite-art flatness and hard edges
+while preserving identity per block: a flat-looking area is really dozens of separate
+artworks. Each cell walks its slot's cycle at its own phase, and neighbouring cells hold
+neighbouring phases, so the shimmer travels across a surface like firelight instead of
+sparkling at random. Ordering the cycle matters as much as choosing it — walked at
+random the same set strobes, walked smoothly it breathes.
+
+Three things had to be found by looking at the render:
+
+- **The ground has to silhouette.** The column's first background sat at the same value
+  as the stone, so it read as vertical stripes rather than a column.
+- **Flutes need hard steps.** A soft cylinder gradient at this resolution is a blurred
+  stripe, not carved stone.
+- **A narrow shading falloff crushes the shadow side into one slot**, splitting every
+  round form into a light half and a dark half with a seam down the middle.
+
 ## The waterfall
+
+Kept as the theme-less, abstract object — the one to reach for when a theme wants
+something that is a motion rather than a thing.
+
+
 
 `scripts/build_waterfall.py` renders the collection's colours as a looping waterfall.
 It writes `data/waterfall.json` — grid, palette and a small inlined preview image per

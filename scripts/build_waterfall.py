@@ -55,15 +55,29 @@ BLUE_HUES = (180, 250)
 THUMB_EDGE = 80              # the pop-out preview is small; the page carries them all
 THUMB_QUALITY = 52
 
-# Chunky on purpose: the blocks are the interface, so they have to be big enough
-# to press. Fewer, larger cells also means fewer, wider filaments.
-COLS = 32
-ROWS = 44
+# A designed ramp, the way a sprite artist picks a palette: eleven steps from an
+# outline black through blue-greys to foam white. Every block on screen resolves to
+# one of these eleven, which is what produces flat areas and hard edges instead of
+# per-pixel noise. Identity is kept separate from appearance — each slot is backed by
+# dozens of near-identical real colours, so a flat region is still dozens of
+# different artworks.
+RAMP = [
+    (22, 27, 36), (44, 54, 70), (68, 84, 104), (96, 116, 140), (126, 148, 172),
+    (156, 176, 196), (184, 201, 216), (206, 220, 232), (226, 236, 244),
+    (240, 246, 250), (252, 253, 255),
+]
+SLOT_MIN_CANDIDATES = 40     # widen a slot's tolerance until it has this many works
+
+# Sprite proportions: few, large cells. The blocks are both the picture and the
+# interface, so they have to read as deliberate pixels and be easy to press.
+COLS = 28
+ROWS = 38
 FRAMES = 96
-ADVANCE = 2                  # rows the sheet falls per frame
-WORLD = FRAMES * ADVANCE     # 192 — the falling texture's vertical period
-BLOCK = 10
-FRAME_MS = 130               # a slow fall reads as water; a fast one reads as noise
+ADVANCE = 1                  # one row per frame, like a piece falling on a grid
+WORLD = FRAMES * ADVANCE     # 96 — the falling texture's vertical period
+BLOCK = 12
+# NES Tetris drops a piece one cell per ~800ms at level 0. A tad faster than that.
+FRAME_MS = 620
 
 # Proportions taken from reference photographs of real falls: a narrow lip, a
 # body that flares as it drops, and a landing well above the frame's bottom edge
@@ -72,7 +86,7 @@ LIP_Y = 0.10                 # bottom of the lip band
 FOOT_Y = 0.76                # where the fall lands
 TOP_HALF = 0.19              # half-width at the lip
 FOOT_HALF = 0.31             # half-width at the foot
-STRANDS = 15                 # discrete filaments of water
+STRANDS = 10                 # discrete filaments of water
 
 FOAM_MIN_L = 0.72
 ROCK_MAX_L = 0.25
@@ -94,8 +108,9 @@ def load_colors(conn):
     out = []
     for hex_color, r, g, b, artwork_id, title, artist in rows:
         h, s, l = hsl(r, g, b)
-        out.append({"hex": hex_color, "h": h, "s": s, "l": l, "id": artwork_id,
-                    "title": title or "Untitled", "artist": artist or "Unknown artist"})
+        out.append({"hex": hex_color, "h": h, "s": s, "l": l, "rgb": (r, g, b),
+                    "id": artwork_id, "title": title or "Untitled",
+                    "artist": artist or "Unknown artist"})
     return out
 
 
@@ -113,6 +128,26 @@ def journey(colors):
     chromatic = sorted((c for c in colors if c["s"] >= 0.12),
                        key=lambda c: (((210 - c["h"]) % 360), c["l"]))
     return neutrals + chromatic
+
+
+def build_slots(colors, rng):
+    """Back each ramp step with real colours close enough to read as one flat tone."""
+    slots = []
+    for target in RAMP:
+        tol = 8
+        while True:
+            near = [c for c in colors
+                    if abs(c["rgb"][0] - target[0]) <= tol
+                    and abs(c["rgb"][1] - target[1]) <= tol
+                    and abs(c["rgb"][2] - target[2]) <= tol]
+            if len(near) >= SLOT_MIN_CANDIDATES or tol >= 60:
+                break
+            tol += 4
+        if not near:
+            near = sorted(colors, key=lambda c: sum(
+                (c["rgb"][i] - target[i]) ** 2 for i in range(3)))[:SLOT_MIN_CANDIDATES]
+        slots.append(near)
+    return slots
 
 
 class Pool:

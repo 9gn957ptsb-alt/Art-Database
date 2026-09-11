@@ -128,6 +128,11 @@
     background: var(--plate);
   }
 
+  /* display:flex on .peek outranks the user agent's [hidden] rule, so the panel
+     stayed on screen when hidden. The artifact host masks this with an !important
+     reset; the file should not depend on that. */
+  .peek[hidden] { display: none; }
+
   .peek-close {
     position: absolute;
     top: 0.25rem;

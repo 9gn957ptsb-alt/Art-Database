@@ -1,0 +1,433 @@
+<title>Ancient, In Your Colours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --paper: #e8e3d8;
+    --plate: #f3efe6;
+    --card: #fdfbf6;
+    --ink: #1c1713;
+    --muted: #6f6455;
+    --rule: #d4cbb9;
+    --rule-strong: #b8ab93;
+    --invert-ink: #f6f2e9;
+    --shadow: 0 6px 24px rgb(40 30 18 / 0.18);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: "Archivo", var(--sans);
+    --gutter: clamp(1rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16130f; --plate: #1e1a15; --card: #221d17;
+      --ink: #ece5d8; --muted: #9b8f7c; --rule: #322a22;
+      --rule-strong: #473c30; --invert-ink: #16130f;
+      --shadow: 0 6px 24px rgb(0 0 0 / 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16130f; --plate: #1e1a15; --card: #221d17;
+    --ink: #ece5d8; --muted: #9b8f7c; --rule: #322a22;
+    --rule-strong: #473c30; --invert-ink: #16130f;
+    --shadow: 0 6px 24px rgb(0 0 0 / 0.55);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-inline: var(--gutter);
+    padding-block: clamp(1.75rem, 4vw, 3rem) 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .wordmark {
+    font-family: var(--display);
+    font-variation-settings: "wdth" 112, "wght" 600;
+    font-size: clamp(1.9rem, 5.5vw, 3.1rem);
+    line-height: 0.98;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst { max-width: 64ch; color: var(--muted); margin: 0; }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .tab {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+  }
+
+  .tab:hover { color: var(--ink); border-color: var(--ink); }
+  .tab[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--invert-ink); }
+  .tab:focus-visible, canvas:focus-visible, .go:focus-visible, .peek-close:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; }
+  .obj-wrap { position: relative; flex: 0 0 auto; }
+
+  canvas {
+    display: block;
+    background: var(--plate);
+    cursor: pointer;
+    image-rendering: pixelated;
+    box-shadow: var(--shadow);
+  }
+
+  .side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .note {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 0.9rem 1rem;
+  }
+
+  .note p { margin: 0; }
+  .note p + p { margin-top: 0.6rem; }
+  .note .hint { color: var(--muted); font-size: 0.875rem; }
+
+  .peek {
+    position: absolute;
+    z-index: 20;
+    width: 200px;
+    background: var(--card);
+    border: 1px solid var(--rule-strong);
+    box-shadow: var(--shadow);
+    padding: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .peek img {
+    display: block;
+    width: 100%;
+    height: 124px;
+    object-fit: contain;
+    background: var(--plate);
+  }
+
+  /* display:flex on .peek outranks the user agent's [hidden] rule, so the panel
+     stayed on screen when hidden. The artifact host masks this with an !important
+     reset; the file should not depend on that. */
+  .peek[hidden] { display: none; }
+
+  .peek-close {
+    position: absolute;
+    top: 0.25rem; right: 0.35rem;
+    border: 0; background: transparent; color: var(--muted);
+    font-family: var(--mono); font-size: 0.8125rem;
+    cursor: pointer; line-height: 1; padding: 0.25rem;
+  }
+
+  .peek-close:hover { color: var(--ink); }
+
+  .swatch-row { display: flex; align-items: center; gap: 0.55rem; }
+  .swatch { width: 34px; height: 34px; flex: 0 0 auto; border: 1px solid var(--rule-strong); }
+  .swatch-hex { font-family: var(--mono); font-size: 0.75rem; text-transform: uppercase; }
+
+  .peek-artist {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .peek-title { font-size: 0.9375rem; line-height: 1.3; margin: 0; }
+  .peek-title em { font-style: italic; }
+
+  .go {
+    align-self: flex-start;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--invert-ink);
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    padding: 0.4rem 0.7rem;
+    text-decoration: none;
+  }
+
+  .go:hover { opacity: 0.86; }
+
+  .colophon {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    max-width: 70ch;
+  }
+
+  .colophon code { font-family: var(--mono); font-size: 0.9em; color: var(--ink); }
+
+  table { border-collapse: collapse; font-size: 0.8125rem; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.2rem 1.2rem 0.2rem 0; }
+  th { font-family: var(--mono); font-size: 0.625rem; text-transform: uppercase;
+       letter-spacing: 0.1em; color: var(--muted); font-weight: 400; }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 780px) {
+    .stage { flex-direction: column; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Theme one</p>
+    <h1 class="wordmark">Ancient, In Your Colours</h1>
+    <p class="standfirst">
+      Three objects built out of the collection itself. The theme was picked by the
+      colours rather than chosen first: this collection is a third terracotta, ochre and
+      umber, with deep reserves of bone and limestone, so ancient is what it can
+      actually render. Press and hold any block to see the work that colour came from.
+    </p>
+  </header>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Choose an object"></div>
+
+  <div class="stage">
+    <div class="obj-wrap">
+      <canvas id="obj" tabindex="0" aria-label="A pixel object built from the collection's colours"></canvas>
+      <div class="peek" id="peek" hidden></div>
+    </div>
+    <div class="side">
+      <div class="note" id="note"></div>
+      <div class="note">
+        <p class="hint">
+          Nothing here is tinted. Every block is an exact hex from a saved artwork, and
+          each one slowly walks its own cycle of near-identical colours — so the surface
+          breathes like firelight while the object holds still, and a flat-looking area
+          is really dozens of different works.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="colophon">
+    <p>
+      Why ancient and not Christmas: the palette was counted before anything was drawn.
+      Candidate colours in the collection within a close tolerance of each target —
+    </p>
+    <table>
+      <tr><th>Target</th><th>Colours available</th></tr>
+      <tr><td>Limestone light</td><td class="n">778</td></tr>
+      <tr><td>Papyrus ground</td><td class="n">563</td></tr>
+      <tr><td>Black-figure black</td><td class="n">485</td></tr>
+      <tr><td>Terracotta mid</td><td class="n">49</td></tr>
+      <tr><td>Christmas bright red</td><td class="n">5</td></tr>
+      <tr><td>Christmas holly green</td><td class="n">2</td></tr>
+      <tr><td>Christmas pine</td><td class="n">1</td></tr>
+    </table>
+    <p style="margin-top:0.8rem">
+      There is no pine green in this collection. An ancient object can be built honestly
+      from it; a Christmas one could only be faked.
+    </p>
+  </footer>
+</div>
+
+<script id="theme" type="application/json">__THEME__</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var D = JSON.parse(document.getElementById("theme").textContent);
+  var canvas = document.getElementById("obj");
+  var ctx = canvas.getContext("2d");
+  var peek = document.getElementById("peek");
+  var note = document.getElementById("note");
+  var tabs = document.getElementById("tabs");
+
+  var NOTES = {
+    Amphora: "A storage jar in terracotta and black-figure. The body slip, the shoulder " +
+             "and the foot are the collection's oranges and umbers; the figure band is its " +
+             "blacks; the lip and the meander are bone.",
+    Scarab: "A gold amulet with lapis inlay. Gold is the collection's ochres and yellows, " +
+            "and the inlay bands spend its small blue reserve — only 8% of the colours here " +
+            "are blue at all, so they are used as inlay rather than as a field.",
+    Column: "A weathered Doric shaft. Limestone is the collection's deepest seam: over 1,600 " +
+            "near-neutral greys, which is why the flutes can be cut in hard steps rather " +
+            "than blurred into a gradient."
+  };
+
+  var current = 0, step = 0, pinned = null, BLOCK = 12, raf = null, last = 0;
+  var STEP_MS = 190;   // how often the shimmer advances one colour
+
+  function obj() { return D.objects[current]; }
+
+  function layout() {
+    var o = obj();
+    var availW = Math.min(o.cols * 22, window.innerWidth - 420);
+    if (window.innerWidth < 820) availW = window.innerWidth - 40;
+    var availH = window.innerHeight - 300;
+    BLOCK = Math.max(8, Math.min(22, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
+    canvas.width = o.cols * BLOCK;
+    canvas.height = o.rows * BLOCK;
+    canvas.style.width = canvas.width + "px";
+    canvas.style.height = canvas.height + "px";
+  }
+
+  function entryAt(col, row) {
+    var o = obj();
+    var cycle = o.cycles[o.grid[row][col]];
+    var phase = o.phases[row][col];
+    return D.palette[cycle[(phase + step) % cycle.length]];
+  }
+
+  function draw() {
+    var o = obj();
+    for (var row = 0; row < o.rows; row++) {
+      for (var col = 0; col < o.cols; col++) {
+        ctx.fillStyle = entryAt(col, row)[0];
+        ctx.fillRect(col * BLOCK, row * BLOCK, BLOCK, BLOCK);
+      }
+    }
+    if (pinned) {
+      ctx.strokeStyle = "#fdfbf6";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pinned.col * BLOCK + 1, pinned.row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+      ctx.strokeStyle = "#1c1713";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pinned.col * BLOCK + 2.5, pinned.row * BLOCK + 2.5, BLOCK - 5, BLOCK - 5);
+    }
+  }
+
+  function tick(ts) {
+    raf = requestAnimationFrame(tick);
+    if (ts - last < STEP_MS) return;
+    last = ts;
+    step = (step + 1) % D.cycleFrames;
+    draw();
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function at(e) {
+    var rect = canvas.getBoundingClientRect();
+    var o = obj();
+    var col = Math.floor((e.clientX - rect.left) / (rect.width / o.cols));
+    var row = Math.floor((e.clientY - rect.top) / (rect.height / o.rows));
+    if (col < 0 || row < 0 || col >= o.cols || row >= o.rows) return null;
+    return { col: col, row: row };
+  }
+
+  function placePeek(row) {
+    if (window.innerWidth < 820) {
+      peek.style.position = "static";
+      peek.style.width = "100%";
+      return;
+    }
+    peek.style.position = "absolute";
+    peek.style.width = "200px";
+    peek.style.left = canvas.width + 14 + "px";
+    var want = row * BLOCK - 56;
+    var maxTop = Math.max(0, canvas.height - peek.offsetHeight);
+    peek.style.top = Math.max(0, Math.min(want, maxTop)) + "px";
+  }
+
+  function pin(cell) {
+    // Capture the colour at the moment of the press. The surface keeps shimmering,
+    // so a live reading would change under the finger.
+    var entry = entryAt(cell.col, cell.row);
+    var art = D.artworks[entry[1]];
+    pinned = cell;
+    peek.innerHTML =
+      '<button class="peek-close" type="button" aria-label="Close preview">✕</button>' +
+      (art[3] ? '<img src="' + art[3] + '" alt="">' : "") +
+      '<div class="swatch-row"><span class="swatch" style="background:' + entry[0] + '"></span>' +
+      '<span class="swatch-hex">' + entry[0] + "</span></div>" +
+      '<div class="peek-artist">' + esc(art[2]) + "</div>" +
+      '<p class="peek-title"><em>' + esc(art[1]) + "</em></p>" +
+      '<a class="go" href="https://www.artsy.net/artwork/' + esc(art[0]) +
+      '" target="_blank" rel="noopener noreferrer">Open on Artsy</a>';
+    peek.hidden = false;
+    placePeek(cell.row);
+    draw();
+  }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    var cell = at(e);
+    if (cell) { e.preventDefault(); pin(cell); }
+  });
+
+  peek.addEventListener("click", function (e) {
+    if (e.target.closest(".peek-close")) {
+      peek.hidden = true;
+      pinned = null;
+      draw();
+    }
+  });
+
+  function select(i) {
+    current = i;
+    pinned = null;
+    peek.hidden = true;
+    note.innerHTML = "<p>" + NOTES[obj().name] + "</p>";
+    Array.prototype.forEach.call(tabs.querySelectorAll(".tab"), function (t, k) {
+      t.setAttribute("aria-pressed", String(k === i));
+    });
+    layout();
+    draw();
+  }
+
+  tabs.innerHTML = D.objects.map(function (o, i) {
+    return '<button class="tab" type="button" data-i="' + i + '" aria-pressed="' +
+      (i === 0) + '">' + o.name + "</button>";
+  }).join("");
+
+  tabs.addEventListener("click", function (e) {
+    var tab = e.target.closest(".tab");
+    if (tab) select(+tab.dataset.i);
+  });
+
+  window.addEventListener("resize", function () {
+    layout();
+    if (pinned) placePeek(pinned.row);
+    draw();
+  });
+
+  select(0);
+  raf = requestAnimationFrame(tick);
+})();
+</script>
