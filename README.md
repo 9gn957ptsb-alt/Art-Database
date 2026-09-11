@@ -179,8 +179,11 @@ Two constraints drive the settings:
 ## The waterfall
 
 `scripts/build_waterfall.py` renders the collection's colours as a looping waterfall.
-It writes `data/waterfall.json`, which `artifact/waterfall.html` replays on a canvas
-with every block clickable through to its work on Artsy. `--gif` also writes a
+It writes `data/waterfall.json` — grid, palette and a small inlined preview image per
+work — which `artifact/waterfall.html` replays on a canvas. Press and hold any block
+and the work that colour came from pops out beside the fall, **while the water keeps
+running**: the block's identity is captured at the moment of the press, because the
+water under the cursor moves on and a live preview would just flicker. `--gif` also writes a
 non-interactive `artifact/waterfall.gif`; the canvas is the real deliverable, since a
 GIF cannot carry links.
 
@@ -201,6 +204,16 @@ invented one: a narrow lip, a body that flares as it drops and breaks into discr
 filaments, a luminous bloom where it lands, mist thickening toward the foot, and rock
 massing at the ledges — the fall as a silhouette against an atmosphere, not a
 full-bleed panel.
+
+Currently in **blue mode** (`--palette blue`, the default): blues, cyans, teals and
+every neutral — what a waterfall is actually made of. The hue anchor drifts gently
+through the blues across the loop rather than walking the full journey, because that
+journey is 83% neutral in this collection and walking it drags the whole scene
+grey-tan. `--palette full` opens it back to the whole wheel.
+
+The grid is deliberately coarse (32 × 44) and slow (130ms a frame, falling two rows
+at a time). The blocks are the interface — they have to be big enough to press, and a
+fast fall reads as noise rather than water.
 
 **The water is white and the environment carries the hue.** That is what lets the loop
 travel the whole database while still reading as one waterfall: it looks like the same
@@ -232,6 +245,9 @@ Two things had to be found by looking at the render rather than reasoned about f
   rates or the sheet reads as rigid, but unbounded drift put one column in the whites and
   its neighbour in the oranges — television static. Designing the image and then matching
   colours to it replaced that approach entirely.
+- **Hue penalty scales with saturation.** A true grey belongs in any light, but a warm
+  grey still reads warm, and enough of them turn a blue fall tan. The penalty is now
+  weighted by each colour's own saturation.
 - **Hard boundaries show.** The rock ledge originally stopped at a fixed `ny`, drawing a
   seam straight across the frame that no colour choice could hide; it now fades out.
 

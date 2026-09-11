@@ -105,7 +105,45 @@
     margin: 0;
   }
 
-  /* The inspector holds its height so the layout doesn't jump as you sweep the fall. */
+  /* The pop-out sits beside the fall, never over it — the water keeps running
+     underneath and you need to be able to watch it while the preview is up. */
+  .peek {
+    position: absolute;
+    z-index: 20;
+    width: 208px;
+    background: var(--card);
+    border: 1px solid var(--rule-strong);
+    box-shadow: var(--shadow);
+    padding: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .peek img {
+    display: block;
+    width: 100%;
+    height: 132px;
+    object-fit: contain;
+    background: var(--plate);
+  }
+
+  .peek-close {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.35rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+  }
+
+  .peek-close:hover { color: var(--ink); }
+
   .inspect {
     border: 1px solid var(--rule);
     background: var(--card);
@@ -113,7 +151,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    min-height: 12.5rem;
   }
 
   .swatch-row { display: flex; align-items: center; gap: 0.6rem; }
@@ -207,25 +244,29 @@
   <header>
     <h1 class="wordmark">Colour Middling Falls</h1>
     <p class="standfirst">
-      A waterfall built entirely from the colours of the collection. The water travels
-      the whole hue wheel over one closed loop while the foam stays white, the way real
-      whitewater does. No colour is altered — every block is an exact hex from a saved
-      work. Point at the water to hold it still; click any block to open the work that
-      colour came from.
+      A waterfall built entirely from the blues and whites of the collection. No colour
+      is altered — every block is an exact hex from a saved work. Press and hold any
+      block to see the work it came from; the water keeps falling while you look.
     </p>
   </header>
 
   <div class="stage">
     <div class="fall-wrap">
       <canvas id="fall" tabindex="0" aria-label="A falling sheet of coloured blocks; each block is a dominant colour from one saved artwork"></canvas>
+      <div class="peek" id="peek" hidden></div>
     </div>
 
     <div class="side">
-      <p class="label">Under the cursor</p>
-      <div class="inspect" id="inspect"></div>
+      <p class="label">Holding a pixel</p>
+      <div class="inspect">
+        <p class="inspect-hint">
+          Press and hold any block. The water keeps falling, and the work that block's
+          colour came from pops out beside the fall — thumbnail, artist, title and a way
+          through to Artsy. Press another block to move the preview; the fall never stops.
+        </p>
+      </div>
       <div class="controls">
         <button class="btn" id="play" type="button" aria-pressed="true">Pause</button>
-        <button class="btn" id="freeze" type="button" aria-pressed="true">Hold on hover</button>
         <span class="meter" id="meter"></span>
       </div>
     </div>
@@ -264,7 +305,7 @@
 
   var canvas = document.getElementById("fall");
   var ctx = canvas.getContext("2d");
-  var inspect = document.getElementById("inspect");
+  var peek = document.getElementById("peek");
   var meter = document.getElementById("meter");
   document.getElementById("cells").textContent =
     D.palette.length.toLocaleString("en-US") + " distinct colours are on screen across the " +
@@ -272,17 +313,17 @@
 
   // Blocks are sized to be comfortably clickable, which is the whole point of
   // pixelating: a 14px target you can actually hit while the sheet moves.
-  var BLOCK = 14;
-  var frame = 0, playing = true, holdOnHover = true, hover = null, raf = null, last = 0;
+  var BLOCK = 16;
+  var frame = 0, playing = true, pinned = null, raf = null, last = 0;
 
   function layout() {
     // Size to height as well as width: the plunge pool is what makes the image read
     // as a waterfall rather than a falling texture, so it must never sit below the
-    // fold. Blocks stay at 9px or more so they remain comfortable click targets.
-    var availW = Math.min(COLS * 15, window.innerWidth - 420);
-    if (window.innerWidth < 760) availW = window.innerWidth - 40;
-    var availH = window.innerHeight - 210;
-    BLOCK = Math.max(9, Math.min(15, Math.floor(availW / COLS), Math.floor(availH / ROWS)));
+    // fold. Blocks stay chunky — they are the interface, and you have to hit them.
+    var availW = Math.min(COLS * 20, window.innerWidth - 440);
+    if (window.innerWidth < 820) availW = window.innerWidth - 40;
+    var availH = window.innerHeight - 230;
+    BLOCK = Math.max(11, Math.min(20, Math.floor(availW / COLS), Math.floor(availH / ROWS)));
     canvas.width = COLS * BLOCK;
     canvas.height = ROWS * BLOCK;
     canvas.style.width = canvas.width + "px";
@@ -300,43 +341,27 @@
         ctx.fillRect(col * BLOCK, row * BLOCK, BLOCK, BLOCK);
       }
     }
-    if (hover) {
+    // Mark where the pinned block was taken from. The water under it has moved on,
+    // which is the point: the preview is of the colour you caught, not of whatever
+    // is falling through that spot now.
+    if (pinned) {
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
-      ctx.strokeRect(hover.col * BLOCK + 1, hover.row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
-      ctx.strokeStyle = "#000000";
+      ctx.strokeRect(pinned.col * BLOCK + 1, pinned.row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
+      ctx.strokeStyle = "#15171a";
       ctx.lineWidth = 1;
-      ctx.strokeRect(hover.col * BLOCK + 2.5, hover.row * BLOCK + 2.5, BLOCK - 5, BLOCK - 5);
+      ctx.strokeRect(pinned.col * BLOCK + 2.5, pinned.row * BLOCK + 2.5, BLOCK - 5, BLOCK - 5);
     }
     meter.textContent = String(frame + 1).padStart(3, "0") + " / " + D.frames;
   }
 
-  function moving() {
-    return playing && !(holdOnHover && hover);
-  }
-
   function tick(ts) {
     raf = requestAnimationFrame(tick);
-    if (!moving()) { last = ts; return; }
+    if (!playing) { last = ts; return; }
     if (ts - last < D.frameMs) return;
     last = ts;
     frame = (frame + 1) % D.frames;
     draw();
-  }
-
-  var EMPTY = '<p class="inspect-hint">Point at the water. It holds still while you aim, ' +
-              'so you can pick a single block out of the fall.</p>';
-
-  function showCell(col, row) {
-    var entry = D.palette[cellIndex(col, row, frame)];
-    var art = D.artworks[entry[1]];
-    inspect.innerHTML =
-      '<div class="swatch-row"><span class="swatch" style="background:' + entry[0] + '"></span>' +
-      '<span class="swatch-hex">' + entry[0] + "</span></div>" +
-      '<div class="inspect-artist">' + esc(art[2]) + "</div>" +
-      '<p class="inspect-title"><em>' + esc(art[1]) + "</em></p>" +
-      '<a class="go" href="https://www.artsy.net/artwork/' + esc(art[0]) +
-      '" target="_blank" rel="noopener noreferrer">Open on Artsy</a>';
   }
 
   function esc(s) {
@@ -352,25 +377,60 @@
     return { col: col, row: row };
   }
 
-  canvas.addEventListener("pointermove", function (e) {
-    var cell = at(e);
-    if (!cell) return;
-    var changed = !hover || cell.col !== hover.col || cell.row !== hover.row;
-    hover = cell;
-    if (changed) { showCell(cell.col, cell.row); draw(); }
-  });
+  function placePeek(row) {
+    // Beside the fall, vertically near the block you grabbed, clamped so it never
+    // runs off the top or bottom. Narrow screens drop it underneath instead.
+    var wrap = canvas.parentNode;
+    if (window.innerWidth < 820) {
+      peek.style.position = "static";
+      peek.style.width = "100%";
+      return;
+    }
+    peek.style.position = "absolute";
+    peek.style.width = "208px";
+    peek.style.left = canvas.width + 14 + "px";
+    var want = row * BLOCK - 60;
+    var maxTop = Math.max(0, canvas.height - peek.offsetHeight);
+    peek.style.top = Math.max(0, Math.min(want, maxTop)) + "px";
+  }
 
-  canvas.addEventListener("pointerleave", function () {
-    hover = null;
-    inspect.innerHTML = EMPTY;
+  function pin(cell) {
+    var entry = D.palette[cellIndex(cell.col, cell.row, frame)];
+    var art = D.artworks[entry[1]];
+    pinned = { col: cell.col, row: cell.row };
+
+    peek.innerHTML =
+      '<button class="peek-close" id="peek-close" type="button" aria-label="Close preview">✕</button>' +
+      (art[3] ? '<img src="' + art[3] + '" alt="">' : "") +
+      '<div class="swatch-row"><span class="swatch" style="background:' + entry[0] + '"></span>' +
+      '<span class="swatch-hex">' + entry[0] + "</span></div>" +
+      '<div class="inspect-artist">' + esc(art[2]) + "</div>" +
+      '<p class="inspect-title"><em>' + esc(art[1]) + "</em></p>" +
+      '<a class="go" href="https://www.artsy.net/artwork/' + esc(art[0]) +
+      '" target="_blank" rel="noopener noreferrer">Open on Artsy</a>';
+    peek.hidden = false;
+    placePeek(cell.row);
     draw();
+  }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    var cell = at(e);
+    if (cell) { e.preventDefault(); pin(cell); }
   });
 
-  canvas.addEventListener("click", function (e) {
-    var cell = at(e);
-    if (!cell) return;
-    var art = D.artworks[D.palette[cellIndex(cell.col, cell.row, frame)][1]];
-    window.open("https://www.artsy.net/artwork/" + art[0], "_blank", "noopener");
+  canvas.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      pin({ col: Math.floor(COLS / 2), row: Math.floor(ROWS / 2) });
+    }
+  });
+
+  peek.addEventListener("click", function (e) {
+    if (e.target.closest(".peek-close")) {
+      peek.hidden = true;
+      pinned = null;
+      draw();
+    }
   });
 
   var playBtn = document.getElementById("play");
@@ -380,15 +440,12 @@
     playBtn.setAttribute("aria-pressed", String(playing));
   });
 
-  var freezeBtn = document.getElementById("freeze");
-  freezeBtn.addEventListener("click", function () {
-    holdOnHover = !holdOnHover;
-    freezeBtn.setAttribute("aria-pressed", String(holdOnHover));
+  window.addEventListener("resize", function () {
+    layout();
+    if (pinned) placePeek(pinned.row);
+    draw();
   });
 
-  window.addEventListener("resize", function () { layout(); draw(); });
-
-  inspect.innerHTML = EMPTY;
   layout();
   draw();
 

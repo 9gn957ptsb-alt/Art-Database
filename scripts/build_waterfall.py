@@ -47,14 +47,23 @@ ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "artworks.db"
 GIF_PATH = ROOT / "artifact" / "waterfall.gif"
 JSON_PATH = ROOT / "data" / "waterfall.json"
+THUMBS_PATH = ROOT / "data" / "thumbs.json"
 
-COLS = 46
-ROWS = 64
+# Blue-and-white only for now: blues, cyans and teals plus every neutral, which is
+# what a waterfall is actually made of. --palette full opens it to the whole wheel.
+BLUE_HUES = (180, 250)
+THUMB_EDGE = 80              # the pop-out preview is small; the page carries them all
+THUMB_QUALITY = 52
+
+# Chunky on purpose: the blocks are the interface, so they have to be big enough
+# to press. Fewer, larger cells also means fewer, wider filaments.
+COLS = 32
+ROWS = 44
 FRAMES = 96
-ADVANCE = 3                  # rows the sheet falls per frame
-WORLD = FRAMES * ADVANCE     # 288 — the falling texture's vertical period
-BLOCK = 8
-FRAME_MS = 70
+ADVANCE = 2                  # rows the sheet falls per frame
+WORLD = FRAMES * ADVANCE     # 192 — the falling texture's vertical period
+BLOCK = 10
+FRAME_MS = 130               # a slow fall reads as water; a fast one reads as noise
 
 # Proportions taken from reference photographs of real falls: a narrow lip, a
 # body that flares as it drops, and a landing well above the frame's bottom edge
@@ -63,7 +72,7 @@ LIP_Y = 0.10                 # bottom of the lip band
 FOOT_Y = 0.76                # where the fall lands
 TOP_HALF = 0.19              # half-width at the lip
 FOOT_HALF = 0.31             # half-width at the foot
-STRANDS = 30                 # discrete filaments of water
+STRANDS = 15                 # discrete filaments of water
 
 FOAM_MIN_L = 0.72
 ROCK_MAX_L = 0.25
@@ -88,6 +97,14 @@ def load_colors(conn):
         out.append({"hex": hex_color, "h": h, "s": s, "l": l, "id": artwork_id,
                     "title": title or "Untitled", "artist": artist or "Unknown artist"})
     return out
+
+
+def restrict(colors, palette):
+    """Blue mode keeps blues, cyans, teals and all the neutrals."""
+    if palette == "full":
+        return colors
+    lo, hi = BLUE_HUES
+    return [c for c in colors if c["s"] < 0.12 or lo <= c["h"] <= hi]
 
 
 def journey(colors):
@@ -131,7 +148,11 @@ class Pool:
         def hue_distance(c):
             d = abs(c["h"] - hue_ref) % 360
             d = min(d, 360 - d)
-            return d * (1.0 if c["s"] >= 0.12 else 0.30)
+            # The less saturated a colour is, the less its hue matters — a true
+            # grey belongs in any light, but a warm grey still reads warm, and
+            # enough of them turn a blue fall tan.
+            weight = 1.0 if c["s"] >= 0.12 else max(0.12, c["s"] / 0.12)
+            return d * weight
 
         candidates.sort(key=hue_distance)
         return candidates[rng.randrange(min(len(candidates), 3))]
@@ -277,7 +298,7 @@ def target_lightness(col, row, frame, strands, rock, spray, mist):
     return max(0.0, min(1.0, lightness))
 
 
-def render(colors, rng):
+def render(colors, rng, blue_mode=True):
     ordered = journey(colors)
     foam = Pool([c for c in ordered if c["l"] >= FOAM_MIN_L])
     rock_pool = Pool([c for c in ordered if c["l"] <= ROCK_MAX_L])
@@ -305,14 +326,22 @@ def render(colors, rng):
             half = int(half * 1.7) + 30
 
     widest = 0
+    everything = Pool(ordered)
     frames = []
     for f in range(FRAMES):
-        # The water's hue band walks the whole journey over exactly one loop.
-        centre = int((f / FRAMES) * len(ordered))
-        water, half = water_band(centre)
-        widest = max(widest, half)
-        anchor = ordered[centre % len(ordered)]
-        hue_ref = anchor["h"] if anchor["s"] >= 0.12 else None
+        if blue_mode:
+            # Every colour stays available for contrast, and the hue anchor simply
+            # drifts through the blues. Walking a journey that is 83% neutral, as
+            # the full-wheel mode does, drags the whole scene grey-tan instead.
+            water = everything
+            hue_ref = 215.0 + 30.0 * math.sin(2 * math.pi * f / FRAMES)
+        else:
+            # The water's hue band walks the whole journey over exactly one loop.
+            centre = int((f / FRAMES) * len(ordered))
+            water, half = water_band(centre)
+            widest = max(widest, half)
+            anchor = ordered[centre % len(ordered)]
+            hue_ref = anchor["h"] if anchor["s"] >= 0.12 else None
 
         grid = []
         for row in range(ROWS):
@@ -330,8 +359,34 @@ def render(colors, rng):
                             or foam.nearest(t, rng))
                 grid.append(cell)
         frames.append(grid)
-    print(f"band half-width {base_half} -> up to {widest} to hold contrast")
+    if widest:
+        print(f"band half-width {base_half} -> up to {widest} to hold contrast")
     return frames
+
+
+def small_thumbs(ids):
+    """Re-encode the page's thumbnails smaller — this page shows one at a time and
+    carries every one of them, so the full-size set would be most of the payload."""
+    if not THUMBS_PATH.exists():
+        print("no data/thumbs.json; previews will fall back to the colour swatch")
+        return {}
+    import base64, io
+    source = json.loads(THUMBS_PATH.read_text())
+    out = {}
+    for artwork_id in ids:
+        uri = source.get(artwork_id)
+        if not uri or "," not in uri:
+            continue
+        try:
+            raw = base64.b64decode(uri.split(",", 1)[1])
+            img = Image.open(io.BytesIO(raw)).convert("RGB")
+            img.thumbnail((THUMB_EDGE, THUMB_EDGE), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format="WEBP", quality=THUMB_QUALITY, method=6)
+            out[artwork_id] = "data:image/webp;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        except Exception:
+            continue
+    return out
 
 
 def write_json(frames):
@@ -352,11 +407,15 @@ def write_json(frames):
             row.append(palette_index[key])
         out_frames.append(row)
 
+    thumbs = small_thumbs([a[0] for a in artworks])
+    for entry in artworks:
+        entry.append(thumbs.get(entry[0]))
+
     JSON_PATH.write_text(json.dumps({
         "columns": COLS, "rows": ROWS, "frames": FRAMES, "frameMs": FRAME_MS,
         "artworks": artworks, "palette": palette, "cells": out_frames,
     }, separators=(",", ":")))
-    return len(artworks), len(palette)
+    return len(artworks), len(palette), len(thumbs)
 
 
 def to_image(grid):
@@ -372,6 +431,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preview", type=int, default=0, help="write N PNG frames and stop")
     parser.add_argument("--gif", action="store_true", help="also write the non-interactive GIF")
+    parser.add_argument("--palette", choices=("blue", "full"), default="blue",
+                        help="blue: blues, cyans, teals and neutrals (default)")
     args = parser.parse_args()
 
     if not DB_PATH.exists():
@@ -384,8 +445,10 @@ def main():
         conn.close()
 
     rng = random.Random(SEED)
-    frames = render(colors, rng)
-    print(f"{len(colors)} colors -> {FRAMES} frames of {COLS}x{ROWS}")
+    pool = restrict(colors, args.palette)
+    print(f"palette '{args.palette}': {len(pool)} of {len(colors)} colors")
+    frames = render(pool, rng, blue_mode=args.palette == "blue")
+    print(f"{FRAMES} frames of {COLS}x{ROWS}")
 
     if args.preview:
         for i in range(args.preview):
@@ -393,9 +456,9 @@ def main():
         print(f"wrote {args.preview} preview frames")
         return
 
-    n_art, n_pal = write_json(frames)
+    n_art, n_pal, n_thumb = write_json(frames)
     print(f"Wrote {JSON_PATH} ({JSON_PATH.stat().st_size/1_000_000:.2f} MB, "
-          f"{n_pal} palette entries across {n_art} artworks)")
+          f"{n_pal} palette entries across {n_art} artworks, {n_thumb} previews)")
 
     if args.gif:
         images = [to_image(g) for g in frames]
