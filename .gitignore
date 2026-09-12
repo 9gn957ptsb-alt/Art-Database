@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Preview renders. Every builder writes these with --preview and they are
+# regenerable from the scripts, so they are output, not source.
+preview_*.png
