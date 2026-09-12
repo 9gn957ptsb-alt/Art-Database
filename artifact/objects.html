@@ -100,7 +100,25 @@
     outline-offset: 2px;
   }
 
-  .stage { display: flex; justify-content: center; align-items: flex-start; }
+  .stage {
+    display: flex; justify-content: center; align-items: flex-start;
+    touch-action: pan-y;      /* the whole stage turns, not just the object */
+    user-select: none; -webkit-user-select: none;
+  }
+
+  /* Which of the four isometric corners you are looking from. Tappable, so
+     turning never depends on a gesture the host might swallow. */
+  .facings { display: flex; gap: 0.55rem; justify-content: center; }
+  .facing {
+    width: 0.7rem; height: 0.7rem; padding: 0;
+    transform: rotate(45deg);
+    background: transparent;
+    border: 1px solid var(--rule-strong);
+    cursor: pointer;
+  }
+  .facing[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+  .facing:hover { border-color: var(--ink); }
+  .facing:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .obj-wrap { position: relative; flex: 0 0 auto; }
 
   canvas {
@@ -239,6 +257,8 @@
   </div>
 
   </div>
+
+  <div class="facings" id="facings" role="group" aria-label="Which corner the object is seen from"></div>
 
   <div class="stage">
     <div class="obj-wrap">
@@ -385,8 +405,15 @@
 
   function placePeek(row) {
     if (window.innerWidth < 860) {
-      peek.style.position = "static"; peek.style.width = "100%"; return;
+      // Fixed, not in the flow. As a static block it pushed the canvas down the
+      // moment it appeared, which moved the object out from under the finger.
+      peek.style.position = "fixed";
+      peek.style.left = "12px"; peek.style.right = "12px";
+      peek.style.bottom = "12px"; peek.style.top = "auto";
+      peek.style.width = "auto";
+      return;
     }
+    peek.style.right = "auto"; peek.style.bottom = "auto";
     peek.style.position = "absolute";
     peek.style.width = "200px";
     peek.style.left = canvas.width + 14 + "px";
@@ -418,46 +445,86 @@
 
   // Four facings, one per corner an isometric view can be taken from. Swiping
   // left walks round one way, right the other.
-  function turn(by) {
-    view = (view + by + 4) % 4;
+  var facingsEl = document.getElementById("facings");
+  facingsEl.innerHTML = [0, 1, 2, 3].map(function (i) {
+    return '<button class="facing" type="button" data-v="' + i +
+      '" aria-label="Corner ' + (i + 1) + '" aria-pressed="' + (i === 0) + '"></button>';
+  }).join("");
+  facingsEl.addEventListener("click", function (e) {
+    var f = e.target.closest(".facing");
+    if (f) faceTo(+f.dataset.v);
+  });
+
+  function markFacings() {
+    Array.prototype.forEach.call(facingsEl.querySelectorAll(".facing"), function (f) {
+      f.setAttribute("aria-pressed", String(+f.dataset.v === view));
+    });
+  }
+
+  function faceTo(v) {
+    view = (v + 4) % 4;
     pinned = null;
     peek.hidden = true;
+    markFacings();
     draw();
   }
 
-  var SWIPE = 34;          // px of travel before a press becomes a swipe
-  var drag = null;
+  function turn(by) { faceTo(view + by); }
 
-  canvas.addEventListener("pointerdown", function (e) {
-    drag = { x: e.clientX, y: e.clientY, swiping: false };
-    // The peek still opens on contact rather than on release, so a plain tap is
-    // as immediate as it was; a swipe takes it away again the moment the finger
-    // has travelled far enough to mean something else.
+  var SWIPE = 26;          // px of travel before a press becomes a swipe
+  var HOLD = 170;          // ms of stillness before a press becomes a preview
+  var drag = null, holdTimer = null;
+
+  function clearHold() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  }
+
+  var stage = document.querySelector(".stage");
+
+  stage.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    // Capture, so every move and release comes back here even once the finger
+    // has wandered off the canvas. Without it the gesture ends the moment the
+    // pointer crosses the edge, which on a small screen is most of them.
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+    drag = { x: e.clientX, y: e.clientY, id: e.pointerId, swiping: false, dir: 0 };
+    // The preview waits for stillness instead of opening on contact. Opening it
+    // immediately put a panel into the layout mid-gesture, which moved the
+    // canvas under the finger and killed the swipe before it could be read.
+    // Press and hold is also what it was always meant to be.
     var cell = at(e);
-    if (cell) { e.preventDefault(); pin(cell); }
-  });
-
-  canvas.addEventListener("pointermove", function (e) {
-    if (!drag || drag.swiping) return;
-    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    // Horizontal only, and only when it clearly beats the vertical component —
-    // otherwise a scroll that starts on the object would spin it.
-    if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      drag.swiping = true;
-      drag.dir = dx < 0 ? 1 : -1;
-      pinned = null;
-      peek.hidden = true;
-      draw();
+    clearHold();
+    if (cell) {
+      holdTimer = setTimeout(function () {
+        holdTimer = null;
+        if (drag && !drag.swiping) pin(cell);
+      }, HOLD);
     }
   });
 
-  function endDrag() {
-    if (drag && drag.swiping) turn(drag.dir);
+  stage.addEventListener("pointermove", function (e) {
+    if (!drag || drag.swiping || e.pointerId !== drag.id) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    // Horizontal only, and only when it clearly beats the vertical component,
+    // so a scroll that begins on the object does not spin it.
+    if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      drag.swiping = true;
+      drag.dir = dx < 0 ? 1 : -1;
+      clearHold();
+      if (pinned) { pinned = null; peek.hidden = true; draw(); }
+    }
+  });
+
+  function endDrag(e) {
+    if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.id)) return;
+    clearHold();
+    if (drag.swiping) turn(drag.dir);
     drag = null;
   }
-  canvas.addEventListener("pointerup", endDrag);
-  canvas.addEventListener("pointercancel", endDrag);
-  canvas.addEventListener("pointerleave", endDrag);
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+  // Deliberately no pointerleave handler: with capture it is not needed, and it
+  // used to fire on the layout shift the preview caused and cancel the swipe.
 
   canvas.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft") { e.preventDefault(); turn(1); }
@@ -484,6 +551,7 @@
     peek.hidden = true;
     step = 0;
     view = 0;
+    markFacings();
     var o = obj();
     Array.prototype.forEach.call(objectsEl.querySelectorAll(".tab"), function (t, k) {
       t.setAttribute("aria-pressed", String(k === i));

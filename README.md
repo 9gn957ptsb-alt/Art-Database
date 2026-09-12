@@ -274,11 +274,23 @@ outline does not change, but the shadow and the ruling of the tiles turn with th
 which is what a viewer walking round would see. One canvas is sized across all four
 views, so the object does not jump as it turns.
 
-Swipe and press-and-hold share the canvas. The preview still opens on contact rather
-than on release, so a tap is as immediate as it was; travelling 34px horizontally — and
-more horizontally than vertically, so a scroll that begins on the object does not spin
-it — takes the preview away and turns instead. `touch-action: pan-y` keeps vertical
-scrolling with the page.
+**Four diamonds above the object** say which corner you are looking from, and tapping one
+turns to it. That control exists because a gesture is not guaranteed to reach the page —
+an artifact runs inside a host that may claim horizontal swipes for itself — and because
+without it there is no way to tell a swipe that did nothing from a feature that is not
+there.
+
+The swipe listens on the whole **stage**, not on the canvas. The canvas is only as large
+as the object, so every pixel around it used to be dead to the gesture, which on a phone
+is most of the area a thumb lands on.
+
+Swipe and press-and-hold share that area without a mode. The preview opens after 170ms of
+stillness rather than on contact: opening it immediately put a panel into the layout
+mid-gesture, which moved the canvas under the finger. On a phone it is `position: fixed`
+for the same reason. A swipe is 26px of horizontal travel, and more horizontal than
+vertical, so a scroll that begins on the object does not spin it; `touch-action: pan-y`
+leaves vertical scrolling to the page, and the pointer is captured so the gesture
+survives leaving the element.
 
 ## Objects are organised by how much they move
 
