@@ -38,6 +38,7 @@ dimensions, availability.
 | 3 | Collage with Portraits | 2024 | — | — |
 | 4 | NYNY | 2025 | — | — |
 | 5 | HEY AMATEUR: COLLAGE | 2026 | — | — |
+| 6 | Boston, Spring 2026 | 2026 | — | — |
 
 Dimensions and images are deliberately empty. The photographs in `docs/images/`
 are placeholders, so nothing was uploaded to Wix Media yet — that happens once,
@@ -49,5 +50,4 @@ with the real documentation.
    the Harmony page structure is not writable through the REST API.
 2. Upload the real photographs to Wix Media and set each row's `image`.
 3. Fill in `dimensions`, the statement, and a real contact email.
-4. Add the sixth work.
-5. Remove **Wix Hotels**, which the site generator installed for no reason.
+4. Remove **Wix Hotels**, which the site generator installed for no reason.
