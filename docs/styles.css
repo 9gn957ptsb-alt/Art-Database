@@ -125,34 +125,35 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 
 .count { font-variant-numeric: tabular-nums; }
 
-/* ---- grid: masonry columns, images at their own aspect ratio ------------ */
+/* ---- grid --------------------------------------------------------------- */
 
 .grid {
-  columns: 4 17rem;
-  column-gap: 2rem;
-  padding-bottom: 1rem;
-}
-
-.work {
-  break-inside: avoid;
-  display: inline-block;
-  width: 100%;
-  margin: 0 0 2.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 2.75rem 2rem;
+  align-items: start;
 }
 
 .work figure { margin: 0; }
 
-/* An <img class="plate"> drops straight in where the placeholder sits. */
+/* An <img class="plate"> drops straight in where the placeholder sits. A real
+   image keeps its own proportions: height:auto is what lets it: the width/height
+   attributes are presentational hints, and a definite height would otherwise beat
+   aspect-ratio and stretch the plate. */
 .plate {
   display: block;
   width: 100%;
   max-width: 100%;
-  aspect-ratio: var(--ar, 4 / 5);
-  object-fit: cover;
+  height: auto;
   background: var(--plate);
 }
 
+/* Placeholders have no intrinsic size, so they get a ratio to stand in. */
 .plate--empty {
+  aspect-ratio: var(--ar, 3 / 4);
   display: grid;
   place-items: center;
   border: 1px dashed color-mix(in oklab, var(--ink-soft) 45%, transparent);
@@ -213,8 +214,7 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 
 @media (max-width: 34rem) {
   .masthead { padding-block: 2.5rem 2rem; }
-  .grid { column-gap: 1.25rem; }
-  .work { margin-bottom: 2rem; }
+  .grid { gap: 2rem 1.25rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
