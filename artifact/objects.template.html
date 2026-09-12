@@ -289,7 +289,6 @@
               "motion", "colour drift", "subject"];
 
   var themeIdx = 0, objIdx = 0, step = 0, pinned = null, BLOCK = 12, last = 0;
-  var frameCells = null;   // one composited descent frame, rebuilt when step moves
   var rating = 0, verdicts = {}, db = null, entries = [];
 
   function theme() { return D.themes[themeIdx]; }
@@ -309,58 +308,17 @@
     canvas.style.height = canvas.height + "px";
   }
 
-  function loopLength(o) { return o.kind === "sprite" ? D.cycleSteps : o.frames; }
-
-  // A descent object is stored as a program, not as pictures: a static part, a
-  // few sprites, and one track per falling body. Replaying it here is what makes
-  // the whole family cost its parameters instead of a grid per frame.
-  function descentCells(o, f) {
-    var cells = new Array(o.cols * o.rows), i;
-    for (i = 0; i < cells.length; i++) cells[i] = -1;
-    for (i = 0; i < o.static.length; i++) {
-      cells[o.static[i][1] * o.cols + o.static[i][0]] = o.static[i][2];
-    }
-    var n = o.shapes.length;
-    for (i = 0; i < o.tracks.length; i++) {
-      var t = o.tracks[i];
-      var y = Math.floor(((t.y0 + t.vy * f) % o.wrap) - o.margin);
-      var x = Math.round(t.x + t.amp * Math.sin(2 * Math.PI * (t.cyc * f / o.frames + t.ph)));
-      var shape = o.shapes[Math.floor(t.yaw * f * n / o.frames + t.yph) % n];
-      var tint = o.tints[t.tint];
-      for (var dy = 0; dy < shape.length; dy++) {
-        for (var dx = 0; dx < shape[dy].length; dx++) {
-          var rel = shape[dy][dx];
-          if (rel < 0) continue;
-          var cx = x + dx, cy = y + dy;
-          if (cx < 0 || cy < 0 || cx >= o.cols || cy >= o.rows) continue;
-          cells[cy * o.cols + cx] = tint[rel];
-        }
-      }
-    }
-    return cells;
-  }
-
-  // -1 is a hole. Returns null there, which keeps it unpainted and unclickable.
+  // Every object is the same kind now: a grid of REGION ids per frame, and one
+  // palette entry per region. A region is a contiguous patch of one ramp step —
+  // the thing the eye reads as a shape — and it carries one artwork for good.
+  // Colour used to be carried per ramp step and walked over time, so the whole
+  // picture held only as many works as the ramp had steps, and which work a
+  // patch meant changed while you looked at it. A link that moves is not a link.
+  // -1 is a hole: unpainted, and unclickable.
   function entryAt(col, row) {
-    var o = obj(), slot, cycle;
-    if (o.kind === "field") {
-      slot = o.cells[step % o.frames][row * o.cols + col];
-    } else if (o.kind === "descent") {
-      if (!frameCells) frameCells = descentCells(o, step % o.frames);
-      slot = frameCells[row * o.cols + col];
-    } else {
-      slot = o.grid[row][col];
-      if (slot < 0) return null;
-      // Cycling happens per SLOT, not per cell: a whole region holds one colour
-      // and changes as one. Per-cell variation made the first objects gritty.
-      cycle = o.cycles[slot];
-      return D.palette[cycle[step % cycle.length]];
-    }
-    if (slot < 0) return null;
-    // A moving object already changes every frame. Letting its colour change
-    // every frame too would be per-cell noise, so the palette walks slower.
-    cycle = o.cycles[slot];
-    return D.palette[cycle[Math.floor(step / 4) % cycle.length]];
+    var o = obj();
+    var region = o.cells[step % o.frames][row * o.cols + col];
+    return region < 0 ? null : D.palette[o.regions[region]];
   }
 
   function draw() {
@@ -389,8 +347,7 @@
     // which has the least motion of anything here, drifts slowest.
     if (ts - last < o.frameMs) return;
     last = ts;
-    step = (step + 1) % loopLength(o);
-    frameCells = null;
+    step = (step + 1) % o.frames;
     draw();
   }
 
@@ -465,7 +422,6 @@
     pinned = null;
     peek.hidden = true;
     step = 0;
-    frameCells = null;
     var o = obj();
     Array.prototype.forEach.call(objectsEl.querySelectorAll(".tab"), function (t, k) {
       t.setAttribute("aria-pressed", String(k === i));

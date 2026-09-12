@@ -23,10 +23,24 @@ How each family converts:
             depth; the leaves become bodies at real (x, y, z).
   bounce    A ball, which the motion axis declared and left empty.
 
-Output is slot grids plus per-slot colour cycles — the same shape the flat
-`field` objects already use — so the artifact renders them with the machinery
-it has. A still object's frames are its four quarter turns; a moving object's
-frames are its animation.
+Output is REGION grids. Every contiguous patch of one ramp step is found by
+connected-component labelling and given its own artwork, permanently.
+
+That is a change of unit. Colour used to be carried per ramp step, so every
+patch at the same step anywhere in the picture was the same work, and the whole
+picture only ever held as many works as the ramp had steps — eleven. A patch is
+the thing the eye actually reads as a shape, so a patch is what should carry an
+identity: the waterfall now holds hundreds of works instead of eleven, and
+pressing one reaches the work behind that shape rather than behind that tone.
+
+Each region draws from the colours nearest its own step, so the picture looks
+the same — with a little more variation between neighbouring patches, which is
+what real pigment does anyway. The link is fixed: one region, one work, no
+cycling. Colour no longer drifts over time, because a link that moves is not a
+link.
+
+A still object's frames are its four quarter turns; a moving object's frames are
+its animation.
 
 Writes data/iso.json.
 
@@ -342,6 +356,37 @@ def build_all():
     return objects
 
 
+def regions_of(grid, cols, rows):
+    """Label contiguous patches of equal ramp step — flood fill, 4-connected.
+
+    Four-connected rather than eight: patches that meet only at a corner are two
+    shapes to the eye, not one, and giving them one artwork between them would
+    link across a join nobody reads as joined.
+    """
+    label = [-1] * (cols * rows)
+    out = []
+    for start in range(cols * rows):
+        if grid[start] < 0 or label[start] >= 0:
+            continue
+        slot = grid[start]
+        idx = len(out)
+        stack, size = [start], 0
+        label[start] = idx
+        while stack:
+            i = stack.pop()
+            size += 1
+            x, y = i % cols, i // cols
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if nx < 0 or ny < 0 or nx >= cols or ny >= rows:
+                    continue
+                j = ny * cols + nx
+                if label[j] < 0 and grid[j] == slot:
+                    label[j] = idx
+                    stack.append(j)
+        out.append((slot, size))
+    return label, out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preview", action="store_true")
@@ -359,20 +404,19 @@ def main():
         used = sorted({s for g in grids for s in g if s >= 0})
         if used and (used[0] < 0 or used[-1] >= len(r)):
             sys.exit(f"{key}: uses slots {used[0]}..{used[-1]} but the ramp has {len(r)}")
-        cycles, tols = [], []
-        for target in r:
-            cycle, tol = slot_cycle(colors, target, SLOT_MIN, SLOT_MAX,
-                                    tol_start=12, tol_stop=96)
-            cycles.append(cycle)
-            tols.append(tol)
-        works = len({c["id"] for cyc in cycles for c in cyc})
-        print(f"  {name:16s} {cols:3d}x{rows:3d} x{len(grids):2d}  "
-              f"{len(r)} steps, {works} works")
+        # A deep pool of candidates per step, so adjacent patches of the same
+        # step land on different works instead of repeating every few regions.
+        pools = [slot_cycle(colors, target, SLOT_MIN, 160,
+                            tol_start=12, tol_stop=96)[0] for target in r]
 
-        packed = []
-        for cycle in cycles:
-            ids = []
-            for c in cycle:
+        labelled, region_colour, taken = [], [], [0] * len(r)
+        for g in grids:
+            label, found = regions_of(g, cols, rows)
+            base = len(region_colour)
+            for slot, _size in found:
+                pool = pools[slot]
+                c = pool[taken[slot] % len(pool)]
+                taken[slot] += 1
                 if c["id"] not in art_index:
                     art_index[c["id"]] = len(artworks)
                     artworks.append([c["id"], c["title"], c["artist"]])
@@ -380,15 +424,21 @@ def main():
                 if k2 not in pal_index:
                     pal_index[k2] = len(palette)
                     palette.append([c["hex"], art_index[c["id"]]])
-                ids.append(pal_index[k2])
-            packed.append(ids)
+                region_colour.append(pal_index[k2])
+            labelled.append([(base + v if v >= 0 else -1) for v in label])
+
+        works = len({region_colour[i] for i in range(len(region_colour))})
+        print(f"  {name:16s} {cols:3d}x{rows:3d} x{len(grids):2d}  "
+              f"{len(r):2d} steps, {len(region_colour):5d} regions")
         payload.append({"key": key, "name": name, "kind": "field",
                         "cols": cols, "rows": rows, "frames": len(grids),
-                        "frameMs": frame_ms, "cells": grids, "cycles": packed})
+                        "frameMs": frame_ms, "cells": labelled,
+                        "regions": region_colour})
 
     if args.preview:
         from PIL import Image
-        for obj, (_, _, _, r, _) in zip(payload, built):
+        pal = [tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h, _ in palette]
+        for obj in payload:
             B, C, R = 3, obj["cols"], obj["rows"]
             img = Image.new("RGB", (len(obj["cells"]) * C * B, R * B), (231, 228, 221))
             px = img.load()
@@ -397,7 +447,7 @@ def main():
                 for idx, s in enumerate(g):
                     if s < 0:
                         continue
-                    c = r[max(0, min(len(r) - 1, s))]
+                    c = pal[obj["regions"][s]]
                     x, y = idx % C, idx // C
                     for dy in range(B):
                         for dx in range(B):

@@ -186,6 +186,26 @@ python3 scripts/build_iso.py      # every object as a voxel model -> data/iso.js
 python3 scripts/build_objects.py  # merge -> data/objects.json + artifact/objects.html
 ```
 
+## One artwork per colour region
+
+Every contiguous patch of one ramp step is found by connected-component labelling and
+given **its own artwork, permanently**.
+
+That is a change of unit. Colour used to be carried per ramp step, so every patch at the
+same step anywhere in the picture was the same work, and a whole object only ever held
+as many works as its ramp had steps — eleven. A patch is the thing the eye reads as a
+shape, so a patch is what should carry an identity. The waterfall now holds 1,884
+regions instead of 11 tones, and pressing one reaches the work behind *that shape*
+rather than behind that tone.
+
+Regions are 4-connected, not 8: patches meeting only at a corner are two shapes to the
+eye, and one artwork across that join would link something nobody reads as joined.
+
+Each region draws from the colours nearest its own step, so the picture looks the same,
+with a little more variation between neighbouring patches — which is what real pigment
+does anyway. The link is **fixed**: one region, one work, no cycling. Colour no longer
+drifts over time, because a link that moves is not a link.
+
 ## Everything is isometric
 
 Objects are **voxel models**, projected by `scripts/iso.py`. A flat grid cannot survive
