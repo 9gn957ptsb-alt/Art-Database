@@ -44,7 +44,7 @@ dimensions, availability.
 | 3 | Collage with Portraits | 2024 | Collage | — | — |
 | 4 | NYNY | 2025 | Collage | — | — |
 | 5 | HEY AMATEUR: COLLAGE | 2026 | Collage | — | — |
-| 6 | Boston, Spring 2026 | 2026 | Collage | — | — |
+| 6 | Boston Spring | 2026 | Collage | — | — |
 
 Dimensions and images are deliberately empty. The photographs in `docs/images/`
 are placeholders, so nothing was uploaded to Wix Media yet — that happens once,
