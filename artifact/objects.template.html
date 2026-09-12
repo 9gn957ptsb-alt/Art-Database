@@ -76,19 +76,7 @@
     margin: 0;
   }
 
-  .wordmark {
-    font-family: var(--display);
-    font-variation-settings: "wdth" 112, "wght" 600;
-    font-size: clamp(1.8rem, 5vw, 2.9rem);
-    line-height: 1;
-    text-transform: uppercase;
-    margin: 0;
-    text-wrap: balance;
-  }
-
-  .standfirst { max-width: 66ch; color: var(--muted); margin: 0; }
-
-  .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: center; }
 
   .tab, .chip, .send {
     font-family: var(--mono);
@@ -112,50 +100,7 @@
     outline-offset: 2px;
   }
 
-  /* The motion/utility axis: every object placed by how much it moves, which
-     tracks how much it is for. Kin sit next to each other because they are
-     built and stored by the same machinery. */
-  .spectrum {
-    position: relative;
-    border: 1px solid var(--rule);
-    background: var(--card);
-    padding: 2.1rem 1rem 2.5rem;
-  }
-  .spectrum .axis {
-    position: absolute; left: 1rem; right: 1rem; top: 2rem;
-    height: 1px; background: var(--rule-strong);
-  }
-  .spectrum .band {
-    position: absolute; top: 1.55rem; height: 0.9rem;
-    border-left: 1px solid var(--rule-strong);
-  }
-  .spectrum .band span {
-    position: absolute; top: -1.35rem; left: 0;
-    font-family: var(--mono); font-size: 0.625rem;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--muted); white-space: nowrap;
-  }
-  .spectrum .band.reserved span { opacity: 0.5; }
-  .spectrum .dot {
-    position: absolute; top: 1.45rem;
-    width: 0.75rem; height: 0.75rem; padding: 0;
-    transform: translateX(-50%) rotate(45deg);
-    background: var(--rule-strong); border: 1px solid var(--ink);
-    cursor: pointer;
-  }
-  .spectrum .dot[aria-pressed="true"] { background: var(--ink); }
-  .spectrum .dot:hover { background: var(--ink); }
-  .spectrum .pin {
-    position: absolute; top: 2.6rem;
-    transform: translateX(-50%);
-    font-family: var(--mono); font-size: 0.625rem;
-    letter-spacing: 0.04em; color: var(--muted);
-    white-space: nowrap; pointer-events: none;
-  }
-  .spectrum .pin.on { color: var(--ink); }
-  @media (max-width: 760px) { .spectrum .pin { display: none; } }
-
-  .stage { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; }
+  .stage { display: flex; justify-content: center; align-items: flex-start; }
   .obj-wrap { position: relative; flex: 0 0 auto; }
 
   canvas {
@@ -171,15 +116,6 @@
   .panel { border: 1px solid var(--rule); background: var(--card); padding: 0.9rem 1rem; }
   .panel p { margin: 0; }
   .panel p + p { margin-top: 0.55rem; }
-  .panel .hint { color: var(--muted); font-size: 0.875rem; }
-
-  dl.built { margin: 0.5rem 0 0; font-size: 0.8125rem; }
-  dl.built dt {
-    font-family: var(--mono); font-size: 0.625rem; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--muted); margin-top: 0.5rem;
-  }
-  dl.built dd { margin: 0.1rem 0 0; }
-  dl.built ul { margin: 0.1rem 0 0; padding-left: 1.1rem; }
 
   /* ---------- press-and-hold preview ---------- */
 
@@ -288,41 +224,18 @@
   .entry-tag.down { color: var(--bad); border-color: var(--bad); }
   .entry-note { margin: 0.4rem 0 0; }
 
-  .colophon {
-    border-top: 1px solid var(--rule); padding-top: 1.25rem;
-    color: var(--muted); font-size: 0.8125rem; max-width: 72ch;
-  }
-  .colophon code { font-family: var(--mono); font-size: 0.9em; color: var(--ink); }
-
   @media (max-width: 820px) { .stage { flex-direction: column; } }
 </style>
 
 <div class="wrap">
-  <header>
-    <p class="eyebrow">One artifact, every object</p>
-    <h1 class="wordmark">Objects</h1>
-    <p class="standfirst">
-      Everything built out of the art collection's own colours lives here and nowhere
-      else — new objects are added to this page rather than published as new ones.
-      Nothing is tinted: every block is an exact hex from a saved artwork, so press and
-      hold any block to see the work it came from. Tell me what works at the bottom, and
-      the next object gets designed against that instead of from scratch.
-    </p>
-  </header>
-
   <div>
-    <p class="label" style="margin-bottom:0.45rem">Theme</p>
     <div class="row" id="themes" role="group" aria-label="Choose a theme"></div>
   </div>
 
   <div>
-    <p class="label" style="margin-bottom:0.45rem">Object</p>
     <div class="row" id="objects" role="group" aria-label="Choose an object"></div>
   </div>
 
-  <div>
-    <p class="label" style="margin-bottom:0.45rem">Motion, and the utility it tracks</p>
-    <div class="spectrum" id="spectrum"></div>
   </div>
 
   <div class="stage">
@@ -330,24 +243,10 @@
       <canvas id="obj" tabindex="0" aria-label="A pixel object built from the collection's colours"></canvas>
       <div class="peek" id="peek" hidden></div>
     </div>
-    <div class="side">
-      <div class="panel" id="note"></div>
-      <div class="panel">
-        <p class="label">How this one was built</p>
-        <dl class="built" id="built"></dl>
-      </div>
-    </div>
   </div>
 
   <section class="feedback">
-    <div>
-      <p class="label">Aesthetic feedback</p>
-      <p class="standfirst" style="margin-top:0.4rem">
-        This is the memory between objects. What you record here is stored with the
-        artifact, so I can read it back when building the next one — which of your
-        objects landed, which didn't, and on which axis.
-      </p>
-    </div>
+    <p class="label">Aesthetic feedback</p>
 
     <div class="fb-grid">
       <div class="fb-col">
@@ -372,19 +271,6 @@
     </div>
   </section>
 
-  <footer class="colophon">
-    <p>
-      Objects are generated by <code>scripts/build_sprites.py</code>,
-      <code>scripts/build_gerstner.py</code>, <code>scripts/build_falls.py</code> and
-      <code>scripts/build_leaves.py</code>, then merged into this one page by
-      <code>scripts/build_objects.py</code>. Where each sits on the axis above, and what
-      machinery it therefore shares with its kin, is declared once in
-      <code>scripts/motion.py</code>. Every slot in a designed ramp is backed by real
-      colours from the collection, and a whole region walks that cycle together, so a
-      surface breathes rather than sparkles. Feedback is stored in the artifact's own
-      database, not in your browser, which is what makes it readable later.
-    </p>
-  </footer>
 </div>
 
 <script id="payload" type="application/json">__OBJECTS__</script>
@@ -412,10 +298,10 @@
 
   function layout() {
     var o = obj();
-    var availW = Math.min(o.cols * 20, window.innerWidth - 440);
-    if (window.innerWidth < 860) availW = window.innerWidth - 40;
-    var availH = window.innerHeight - 450;   // header, both tab rows and the axis
-    BLOCK = Math.max(8, Math.min(20, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
+    var availW = Math.min(o.cols * 22, window.innerWidth - 120);
+    if (window.innerWidth < 640) availW = window.innerWidth - 40;
+    var availH = window.innerHeight - 230;   // the two tab rows
+    BLOCK = Math.max(8, Math.min(22, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
     canvas.width = o.cols * BLOCK;
     canvas.height = o.rows * BLOCK;
     canvas.style.width = canvas.width + "px";
@@ -567,79 +453,11 @@
 
   var themesEl = document.getElementById("themes");
   var objectsEl = document.getElementById("objects");
-  var noteEl = document.getElementById("note");
-  var builtEl = document.getElementById("built");
 
   themesEl.innerHTML = D.themes.map(function (t, i) {
     return '<button class="tab theme" type="button" data-i="' + i + '" aria-pressed="' +
       (i === 0) + '">' + esc(t.name) + "</button>";
   }).join("");
-
-  // ---------- the motion axis ----------
-
-  var spectrumEl = document.getElementById("spectrum");
-  var allObjects = [];
-  D.themes.forEach(function (t, ti) {
-    t.objects.forEach(function (o, oi) { allObjects.push({ o: o, ti: ti, oi: oi }); });
-  });
-  allObjects.sort(function (a, b) { return a.o.motion - b.o.motion; });
-  var keyOrder = {};
-  allObjects.forEach(function (e, i) { keyOrder[e.o.key] = i; });
-
-  function pct(m) { return (4 + m * 92) + "%"; }
-
-  spectrumEl.innerHTML =
-    '<div class="axis"></div>' +
-    D.families.map(function (f) {
-      return '<div class="band' + (f.reserved ? " reserved" : "") + '" style="left:' +
-        pct(f.motion) + '"><span>' + esc(f.name) +
-        (f.reserved ? " (empty)" : "") + "</span></div>";
-    }).join("") +
-    allObjects.map(function (e, i) {
-      // Three staggered rows: the low-motion objects crowd the left end of the
-      // axis, and one row of labels there would be unreadable.
-      var top = (2.55 + (i % 3) * 0.95) + "rem";
-      return '<button class="dot" type="button" data-k="' + i + '" style="left:' +
-        pct(e.o.motion) + '" aria-pressed="false"><span class="sr">' + esc(e.o.name) +
-        "</span></button>" +
-        '<span class="pin" data-k="' + i + '" style="left:' + pct(e.o.motion) +
-        ";top:" + top + '">' + esc(e.o.name) + "</span>";
-    }).join("");
-
-  spectrumEl.addEventListener("click", function (e) {
-    var dot = e.target.closest(".dot");
-    if (!dot) return;
-    var entry = allObjects[+dot.dataset.k];
-    if (entry.ti !== themeIdx) selectTheme(entry.ti);
-    selectObject(entry.oi);
-  });
-
-  function markAxis(o) {
-    var i = keyOrder[o.key];
-    Array.prototype.forEach.call(spectrumEl.querySelectorAll(".dot"), function (d) {
-      d.setAttribute("aria-pressed", String(+d.dataset.k === i));
-    });
-    Array.prototype.forEach.call(spectrumEl.querySelectorAll(".pin"), function (pn) {
-      pn.classList.toggle("on", +pn.dataset.k === i);
-    });
-  }
-
-  function renderBuilt(o) {
-    var b = o.built || {};
-    var html = "";
-    html += "<dt>Family</dt><dd>" + esc(o.familyName) + " &middot; motion " +
-      o.motion.toFixed(2) + ". " + esc(o.why) + "</dd>";
-    html += "<dt>Shares with " + (o.kin.length ? esc(o.kin.join(", ")) : "nothing yet") +
-      "</dt><dd>" + esc(o.shares) + "</dd>";
-    if (b.grid) html += "<dt>Grid</dt><dd>" + esc(b.grid) + "</dd>";
-    if (b.ramp) html += "<dt>Ramp</dt><dd>" + esc(b.ramp) + "</dd>";
-    if (b.backing) html += "<dt>Colours behind each step</dt><dd>" + esc(b.backing) + "</dd>";
-    if (b.lessons && b.lessons.length) {
-      html += "<dt>Learned making it</dt><dd><ul>" +
-        b.lessons.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></dd>";
-    }
-    builtEl.innerHTML = html;
-  }
 
   function selectObject(i) {
     objIdx = i;
@@ -648,11 +466,6 @@
     step = 0;
     frameCells = null;
     var o = obj();
-    noteEl.innerHTML = '<p class="label">' + esc(theme().name) + " · " + esc(o.name) +
-      "</p><p style='margin-top:0.4rem'>" + esc(o.note) + "</p>" +
-      '<p class="hint">' + esc(theme().blurb) + "</p>";
-    renderBuilt(o);
-    markAxis(o);
     Array.prototype.forEach.call(objectsEl.querySelectorAll(".tab"), function (t, k) {
       t.setAttribute("aria-pressed", String(k === i));
     });

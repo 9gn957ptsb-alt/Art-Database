@@ -75,9 +75,14 @@ FAMILIES = [
 
 # object key -> (family, its own position on the axis, why it sits there)
 PLACEMENTS = {
-    "colour-sound": ("panel", 0.04,
-                     "A painting. It is used by being looked at, so the only thing "
-                     "that moves is which real colour is standing in for each step."),
+    # Five panels, all paintings: used by being looked at, so the only thing that
+    # moves is which real colour is standing in for each step. They differ only
+    # in how much incident the eye has to travel over.
+    "colour-sound":   ("panel", 0.03, "Nested rings in a modular grid."),
+    "st-jaques":      ("panel", 0.06, "A lobed fan on a stem."),
+    "colour-fractal": ("panel", 0.05, "Discs inside discs inside discs."),
+    "spannungsbild":  ("panel", 0.02, "A field lit from four points."),
+    "chromorphose":   ("panel", 0.04, "Stacked bars, banded across the join."),
     "amphora":      ("vessel", 0.14, "Holds oil or wine, and does it by not moving."),
     "scarab":       ("vessel", 0.20, "Worn — it travels, but only because its wearer does."),
     "column":       ("vessel", 0.10, "Bears a roof. Enormous purpose, almost no movement."),

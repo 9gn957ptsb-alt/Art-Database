@@ -384,35 +384,64 @@ python3 scripts/build_leaves.py --preview 4
   stubs reads as a table, which is exactly what the first attempt looked like.
 - Edge-on, a leaf is still two pixels deep. At one pixel it reads as dust.
 
-## Abstract: Karl Gerstner's grammar
+## Abstract: five panels in Karl Gerstner's grammar
 
-`scripts/build_gerstner.py` builds a panel in the grammar read off five of his works:
-flat colour only, a modular grid subdivided systematically, nested concentric bands,
-few hues in even steps, self-similarity, and order by permutation rather than by eye.
+`scripts/build_abstract.py` builds one panel per composition. The grammar, read off
+the works: flat colour only — no shading, no gradient, no outline; a modular grid
+subdivided systematically; nested concentric bands; self-similarity; few hues in even
+steps; order by permutation rather than by eye.
 
-The construction is 27 × 27 — a 3 × 3 module of 9 × 9 tiles, each five nested squares,
-rotations laid out +3 across each row and +1 down each column so every tile is a
-different chord of the same nine colours and no neighbour repeats one.
-
-**The palette was chosen by what the collection can back, not by which Gerstner is
-most famous.** Counted before anything was drawn:
-
-| Gerstner anchor | Near matches in 14,542 dominant colours |
+| Panel | Construction |
 | --- | --- |
-| *St. Jaques* orange-red `#fd3502` | 3 |
-| *Colour Fractal* magenta `#ad53a0` | 24 |
-| *Spannungsbild* violet-blue `#54539f` | 25 |
-| *Colour sound* terracotta `#c86a58` | 46 |
-| *Colour sound* blue-grey `#7894b9` | 100 |
-| *Colour sound* pale lilac `#d9dae7` | 1,262 |
+| Colour Sound | Nested square rings in a 9 × 9 module of 2-pixel cells, arch carved out of the amber core |
+| St. Jaques | A lobed fan of nested bands on a stem — lobes are the radius modulated by angle, so the nesting stays exact |
+| Colour Fractal | True recursion: a disc holds four discs, each holding four discs, each holding four squares |
+| Spannungsbild | A violet field lit from four edge points, inside a black surround, around a near-black square |
+| Chromorphose | Stacked bars — black, a stepped grey ramp, cream — with a red block banded across the join |
+
+Palettes come from the works and are matched to the nearest real colours **however few
+there are**: the picture first, the census second. Some of it is out of reach, and the
+gap is worth stating plainly.
+
+| Reference colour | Near matches in 14,542 dominant colours (tol 16) |
+| --- | --- |
+| St. Jaques orange `#ff7901` | 0 |
+| Colour Fractal pink `#e692c8` | 2 |
+| Spannungsbild violet `#3d337e` | 2 |
+| Colour Sound amber `#dba553` | 28 |
+| St. Jaques dark frame `#522f18` | 166 |
+| Chromorphose cream `#e7dcb0` | 240 |
 
 His saturated work is out of reach here — 1.2% of these colours are violet or magenta
-against 33.8% earth. *Colour sound, extra version* (1977) is the one palette whose
-whole ramp this collection holds, every step backed by dozens of real works.
+against 33.8% earth — so the oranges and violets come out earthier than the originals.
 
-- This grammar forbids the shading the sprites depend on, so contrast has to come from
-  the ramp step alone. **Rings step by two, not one**: adjacent steps read as one
+What the panels settled:
+
+- **This grammar forbids the shading the sprites depend on**, so contrast has to come
+  from the ramp step alone. Rings step by two, not one: adjacent steps read as one
   colour at this size.
+- **Pull a ramp wider than the work's own when the collection cannot separate it.**
+  `#d3a0d5` and `#e692c8` both resolve to the same real mauves, so Colour Fractal's
+  middle rank of discs vanished into the disc holding it until the steps were spread.
+- **Leave room between a shape and its offset.** At radius 2.6 on a 2.9 offset the four
+  discs touch and the cluster reads as one square, which destroys the recursion the
+  whole panel is about.
+- **Let the ground show through the module's gutter.** Filling a modular grid solid
+  loses the grid and leaves a plain square.
+- **Draw a seam only where there is something to split** — drawn unconditionally, the
+  fan's seam shoots a spike out of the top of the composition.
+
+## Two categories
+
+**Formal** is anything with a recognisable form doing a recognisable thing — the
+amphora, scarab and column, plus the waterfall and the falling leaves. **Abstract** is
+the five panels, which are only themselves.
+
+The page carries no text beyond the category names, the object names and the aesthetic
+feedback. Everything that used to explain an object — its note, its build record, the
+motion axis, the colophon — lives here in the README and in `scripts/motion.py`
+instead. Press-and-hold still opens the work a block came from; that is the point of
+the pixels, not chrome.
 
 ## Keeping it in sync
 

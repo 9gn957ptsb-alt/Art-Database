@@ -29,7 +29,7 @@ how many real colours backed each step, and the decisions behind it. That record
 is what stops the next object from being designed blind, and it is read back
 alongside the viewer's feedback from the artifact's database.
 
-Reads data/sprites.json, data/gerstner.json, data/leaves.json and
+Reads data/sprites.json, data/abstract.json, data/leaves.json and
 data/falls.json; writes data/objects.json and, by injecting it into
 artifact/objects.template.html, the publishable artifact/objects.html.
 
@@ -46,7 +46,7 @@ from motion import FAMILIES, FAMILY_BY_KEY, PLACEMENTS, kin   # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SPRITES_PATH = ROOT / "data" / "sprites.json"
-GERSTNER_PATH = ROOT / "data" / "gerstner.json"
+ABSTRACT_PATH = ROOT / "data" / "abstract.json"
 LEAVES_PATH = ROOT / "data" / "leaves.json"
 FALL_PATH = ROOT / "data" / "falls.json"
 THUMBS_PATH = ROOT / "data" / "thumbs.json"
@@ -148,11 +148,11 @@ def attach_thumbs(artworks):
 
 
 def main():
-    paths = (SPRITES_PATH, GERSTNER_PATH, LEAVES_PATH, FALL_PATH)
+    paths = (SPRITES_PATH, ABSTRACT_PATH, LEAVES_PATH, FALL_PATH)
     for path in paths:
         if not path.exists():
             sys.exit(f"{path} not found — run its build script first.")
-    sprites, gerstner, leaves, fall = (json.loads(p.read_text()) for p in paths)
+    sprites, abstract, leaves, fall = (json.loads(p.read_text()) for p in paths)
 
     artworks, artwork_index, palette, palette_index = [], {}, [], {}
 
@@ -171,7 +171,7 @@ def main():
         return out
 
     ancient = sprite_objects(sprites, NOTES, BUILT)
-    panel = sprite_objects(gerstner)
+    panels = sprite_objects(abstract)
 
     fall_map = remap(fall, artworks, artwork_index, palette, palette_index)
     fall_src = fall["objects"][0]
@@ -207,16 +207,13 @@ def main():
         "palette": palette,
         "families": [{k: f[k] for k in ("key", "name", "motion", "utility", "shares")}
                      | {"reserved": bool(f.get("reserved"))} for f in FAMILIES],
+        # Two categories: things with a form, and panels that are only
+        # themselves. The waterfall and the leaves are formal — they are a
+        # recognisable thing doing a recognisable motion.
         "themes": [
-            {"key": "ancient", "name": "Ancient",
-             "blurb": "Chosen by the colours, not by taste. This collection holds 778 colours "
-                      "near limestone and 485 near black-figure black, against 1 near pine "
-                      "green — so ancient is what it can honestly render.",
-             "objects": ancient},
-            {"key": "abstract", "name": "Abstract",
-             "blurb": "Objects that answer to a system or to a physics rather than to a "
-                      "period — a constructed panel, and two things falling.",
-             "objects": panel + [waterfall, falling_leaves]},
+            {"key": "formal", "name": "Formal",
+             "objects": ancient + [waterfall, falling_leaves]},
+            {"key": "abstract", "name": "Abstract", "objects": panels},
         ],
     }
 
