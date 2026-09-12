@@ -1,4 +1,4 @@
-/* Color Middling — one stylesheet, no build step.
+/* Matthew Livingston — one stylesheet, no build step.
    Palette and scale live in the :root block; change them there, not inline. */
 
 :root {

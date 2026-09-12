@@ -16,7 +16,7 @@ docs/
 Cards follow Artsy's format, in Artsy's order:
 
 ```
-Color Middling              artist
+Matthew Livingston          artist
 Half Light, 2024            title (italic), year
 Oil on linen, 40 × 30 in    medium, dimensions
 Contact for price           availability
@@ -47,9 +47,8 @@ under the short columns. Update the count in the `Works` heading too.
 
 ## Still placeholder
 
-`Color Middling` (title, masthead, every card), `you@example.com`, `Studio in City`,
-the statement, and all eight captions. `grep -rn "example.com\|Color Middling" docs/`
-finds the first two.
+`you@example.com`, `Studio in City`, the statement, and all eight captions —
+titles, years, media and dimensions are invented. The name is real.
 
 ## Preview locally
 
