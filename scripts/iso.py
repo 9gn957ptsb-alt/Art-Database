@@ -176,7 +176,7 @@ def bounds(voxels):
     return min(xs), min(ys), max(xs), max(ys)
 
 
-def render(voxels, cols, rows, ox, oy, shadow=None, known_normals=None):
+def render(voxels, cols, rows, ox, oy, known_normals=None):
     """Rasterise a voxel model into a grid of ramp indices; -1 is a hole.
 
     `voxels` maps (x, y, z) -> (material, specular). Drawn back to front by
@@ -184,13 +184,6 @@ def render(voxels, cols, rows, ox, oy, shadow=None, known_normals=None):
     needed: the painter's order is exact for axis-aligned cubes on a grid.
     """
     grid = [-1] * (cols * rows)
-
-    if shadow:
-        for (sx, sy), slot in shadow:
-            w, h = AX * SCALE, AY * SCALE
-            fill_polygon(grid, [(sx + ox, sy + oy), (sx + w + ox, sy + h + oy),
-                                (sx + ox, sy + 2 * h + oy), (sx - w + ox, sy + h + oy)],
-                         slot, cols, rows)
 
     # Only three faces of a cube can ever face the viewer: +z, +x and +y.
     # Each is drawn only when nothing occupies the cell it faces. Drawing all
@@ -403,20 +396,57 @@ def _threshold(key):
     return ((h & 0xFFFF) / 65535.0)
 
 
-def ground_shadow(radius, height, centre=(0, 0), slot=0):
-    """A flat disc on the floor, shrinking as the object rises.
+def ground_plane(half, material=3, grid_every=4, z=-1, centre=(0, 0)):
+    """A square platform for the object to stand on, as real voxels.
 
-    The shadow is how height is read at all: in an axonometric projection,
-    rising and moving away produce the same pixels. Without it a bounce is
-    indistinguishable from sliding backwards.
+    In an axonometric projection there is no horizon and no convergence, so an
+    object drawn alone is not floating in space — it is nowhere, at no size, at
+    no height. The plane supplies all three: it sets the ground, it takes the
+    shadow, and its tiles are a ruler, which is the whole reason architectural
+    drawings are drawn this way.
+
+    Built from voxels one layer below the floor rather than painted in
+    afterwards, so it sorts in the painter's order with everything else and
+    needs no special case. A square in plan projects to a rhombus, which is the
+    conventional way to present an object on a base.
+
+    Every `grid_every` tiles the material steps down one, ruling the plane into
+    a lattice. A flat wash would read as a backdrop; a ruled plane reads as a
+    measured surface, and the tile count is directly countable off the drawing.
+    """
+    cx, cy = centre
+    out = {}
+    for x in range(-half, half + 1):
+        for y in range(-half, half + 1):
+            ruled = (x % grid_every == 0) or (y % grid_every == 0)
+            out[(x + cx, y + cy, z)] = (material - (1 if ruled else 0), False)
+    return out
+
+
+def cast_shadow(ground, radius, height, centre=(0, 0), darken=2, z=-1):
+    """Darken the ground tiles the object stands over.
+
+    Darkening the plane itself rather than floating a separate dark shape above
+    it: the shadow is an absence of light on a surface, and drawn as its own
+    object it slides out of register with the tiles underneath the moment
+    anything moves. Contact is what sells a bounce, and contact happens on the
+    plane or not at all.
     """
     cx, cy = centre
     r = max(0.8, radius * max(0.3, 1.0 - height * 0.05))
-    out, r2 = [], r * r
-    for x in range(-int(r) - 1, int(r) + 2):
-        for y in range(-int(r) - 1, int(r) + 2):
-            if x * x + y * y <= r2:
-                out.append((project(x + cx, y + cy, 0), slot))
+    soft = r + 1.0
+    out = dict(ground)
+    for x in range(int(cx - soft) - 1, int(cx + soft) + 2):
+        for y in range(int(cy - soft) - 1, int(cy + soft) + 2):
+            key = (x, y, z)
+            if key not in out:
+                continue
+            d = math.hypot(x - cx, y - cy)
+            if d > soft:
+                continue
+            material, spec = out[key]
+            # A penumbra one tile wide, so the edge is not a cut-out.
+            out[key] = (material - (darken if d <= r else max(1, darken - 1)), spec)
     return out
 
 

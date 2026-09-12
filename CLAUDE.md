@@ -11,6 +11,14 @@ Two things are standing decisions rather than preferences:
   per object.
 - **No text on the object page.** Category names, object names and the aesthetic feedback
   only. Notes, build records and provenance live in `README.md` and `scripts/motion.py`.
+- **Isometric objects stand on a ground plane.** This overrides the no-backgrounds rule,
+  and only for isometric work. A flat object needs no ground; an axonometric one does,
+  because there is no horizon and no convergence, so an object drawn alone has no height,
+  no size and no place. The plane is built as voxels one layer below the floor, ruled into
+  tiles so it also serves as a ruler, and it is what takes the cast shadow.
+- **True isometry, not the 2:1 games convention.** All three axes foreshorten equally;
+  edges run at exactly 30 degrees. See the header of `scripts/iso.py` for what that costs
+  and why it is worth it.
 
 ## "Add this to my notes"
 
