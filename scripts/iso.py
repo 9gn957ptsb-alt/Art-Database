@@ -6,14 +6,30 @@ impossible — a thing seen from a corner has three visible faces, and which fac
 a pixel belongs to decides its colour. So an object becomes a VOXEL MODEL, and
 the renderer projects it.
 
-Projection is 2:1 dimetric, which is what pixel art means by "isometric". True
-30-degree isometry puts edges at 1.732 px across per pixel down, and no integer
-step follows that line, so every edge frays into ragged stairs. 2:1 steps
-exactly two across for one down: unbroken edges at any size. The angle is
-26.565 degrees, not 30, and that is the right choice, not an approximation.
+Projection is TRUE ISOMETRY — the axes 120 degrees apart on screen, equally
+foreshortened, edges at 30 degrees from horizontal. This is a deliberate choice
+against the games convention, and it costs something real, so the reasoning is
+recorded here.
 
-    screen_x = (x - y) * HALF
-    screen_y = (x + y) * (HALF / 2) - z * ZSTEP
+Pixel art almost always uses 2:1 dimetric instead: 26.565 degrees, two pixels
+across per pixel down, which lands on integer steps and gives unbroken edges at
+any size. True isometry runs at sqrt(3):1 — 1.732 across per one down — and no
+integer step follows that line, so edges step irregularly (2, 2, 1, 2, 2, 1 ...)
+rather than evenly. At small sizes that reads as ragged.
+
+What it buys is that the drawing is *correct*. All three axes foreshorten by the
+same factor, so a measurement along x, y or z is the same length on the page and
+can be read off the drawing directly. That is what isometric projection is for
+in architecture, and it is not what a 2:1 grid gives you: 2:1 stretches the
+vertical axis by about 15% against the other two, so heights and plan distances
+are no longer to the same scale.
+
+    screen_x = (x - y) / sqrt(2) * SCALE
+    screen_y = ((x + y) / sqrt(6) - z * 2 / sqrt(6)) * SCALE
+
+Geometry is kept in floats end to end and rasterised with a sub-pixel scanline
+fill, so the irregular stepping is resolved honestly instead of being snapped to
+a grid that would reintroduce the dimetric error.
 
 Shading falls out of the projection for free, and it maps onto the existing
 palette machinery exactly. A voxel carries one material — an index into a ramp —
@@ -31,16 +47,18 @@ rasteriser, and the deformations that animation needs.
 
 import math
 
-# A voxel is HALF*2 pixels wide. The top face is HALF tall, the sides ZSTEP.
-# ZSTEP == HALF makes a voxel read as a cube rather than as a slab.
-#
-# HALF MUST BE EVEN. The rhombus needs its exact half-height, and at an odd HALF
-# integer division truncates it — 3//2 is 1 where the geometry wants 1.5. The
-# faces then fail to tile, and every gap between them is a hole straight through
-# to the back of the model. That was not visible on a cube, where neighbours
-# cover the gaps, and obvious on a sphere, which came out striped.
-HALF = 4
-ZSTEP = 4
+# One scale for all three axes, because that is what makes a projection
+# isometric. SCALE is the projected length of one voxel edge in pixels.
+SCALE = 4.0
+
+# The isometric basis, from a camera on the (1, 1, 1) diagonal.
+#   right = (1, -1, 0) / sqrt(2)      up = (-1, -1, 2) / sqrt(6)
+AX = 1.0 / math.sqrt(2)      # 0.70711  horizontal, per step in x (and -y)
+AY = 1.0 / math.sqrt(6)      # 0.40825  vertical, per step in x (and y)
+AZ = 2.0 / math.sqrt(6)      # 0.81650  vertical, per step in z
+# AX / AY = sqrt(3): the 30-degree edge. A cube's visible faces are three
+# congruent 60/120 rhombi, which is the signature of a true isometric cube and
+# the reason all three read as equal area.
 
 FACE_TOP, FACE_LEFT, FACE_RIGHT = 0, 1, 2
 
@@ -71,7 +89,7 @@ SHADE_RANGE = 2                   # ramp steps either side of the material tone
 
 def project(x, y, z):
     """Voxel coordinate to the screen position of its top-face apex."""
-    return (x - y) * HALF, (x + y) * (HALF / 2.0) - z * ZSTEP
+    return (x - y) * AX * SCALE, ((x + y) * AY - z * AZ) * SCALE
 
 
 def cube_faces(sx, sy):
@@ -81,7 +99,10 @@ def cube_faces(sx, sy):
     hanging off its lower edges. Coordinates are relative to the apex returned
     by `project`, which sits at the rhombus's top corner.
     """
-    w, h, d = HALF, HALF / 2.0, ZSTEP      # half-width, half-height, side depth
+    w = AX * SCALE          # half the cube's projected width
+    h = AY * SCALE          # vertical drop across half the top face
+    d = AZ * SCALE          # vertical drop down one cube edge
+    # Three congruent rhombi sharing the near vertical edge at (sx, sy + 2h).
     top = [(sx, sy), (sx + w, sy + h), (sx, sy + 2 * h), (sx - w, sy + h)]
     left = [(sx - w, sy + h), (sx, sy + 2 * h), (sx, sy + 2 * h + d), (sx - w, sy + h + d)]
     right = [(sx, sy + 2 * h), (sx + w, sy + h), (sx + w, sy + h + d), (sx, sy + 2 * h + d)]
@@ -146,11 +167,12 @@ def shade(normal):
 
 def bounds(voxels):
     """Screen extent of a voxel set, so a model can be centred in its frame."""
+    w, h, d = AX * SCALE, AY * SCALE, AZ * SCALE
     xs, ys = [], []
     for (x, y, z) in voxels:
         sx, sy = project(x, y, z)
-        xs += [sx - HALF, sx + HALF]
-        ys += [sy, sy + HALF + ZSTEP]
+        xs += [sx - w, sx + w]
+        ys += [sy, sy + 2 * h + d]
     return min(xs), min(ys), max(xs), max(ys)
 
 
@@ -165,9 +187,9 @@ def render(voxels, cols, rows, ox, oy, shadow=None, known_normals=None):
 
     if shadow:
         for (sx, sy), slot in shadow:
-            h = HALF / 2.0
-            fill_polygon(grid, [(sx + ox, sy + oy), (sx + HALF + ox, sy + h + oy),
-                                (sx + ox, sy + 2 * h + oy), (sx - HALF + ox, sy + h + oy)],
+            w, h = AX * SCALE, AY * SCALE
+            fill_polygon(grid, [(sx + ox, sy + oy), (sx + w + ox, sy + h + oy),
+                                (sx + ox, sy + 2 * h + oy), (sx - w + ox, sy + h + oy)],
                          slot, cols, rows)
 
     # Only three faces of a cube can ever face the viewer: +z, +x and +y.
