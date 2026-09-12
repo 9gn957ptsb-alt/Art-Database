@@ -27,14 +27,16 @@ Usage:
 """
 
 import argparse
-import colorsys
 import json
-import random
-import sqlite3
 import sys
 from pathlib import Path
 
 from PIL import Image
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Shared with every other object: one way of matching a ramp step against the
+# collection, so objects in different families still speak the same colour.
+from motion import open_colors, slot_cycle  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "artworks.db"
@@ -237,42 +239,6 @@ def check(rows, name):
     return width
 
 
-def hsl(r, g, b):
-    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
-    return h * 360, s, l
-
-
-def load_colors(conn):
-    rows = conn.execute(
-        """SELECT c.hex, c.r, c.g, c.b, c.artwork_id, a.title, a.artist_name
-           FROM artwork_colors c JOIN artworks a ON a.id = c.artwork_id"""
-    ).fetchall()
-    return [{"hex": h, "rgb": (r, g, b), "id": i, "title": t or "Untitled",
-             "artist": ar or "Unknown artist"} for h, r, g, b, i, t, ar in rows]
-
-
-def slot_cycle(colors, target, rng):
-    """Real colours close enough to the ramp step that a whole flat region can be
-    repainted with any of them without the shape appearing to change."""
-    tol = 10
-    near = []
-    while tol <= 56:
-        near = [c for c in colors
-                if abs(c["rgb"][0] - target[0]) <= tol
-                and abs(c["rgb"][1] - target[1]) <= tol
-                and abs(c["rgb"][2] - target[2]) <= tol]
-        if len(near) >= SLOT_MIN:
-            break
-        tol += 5
-    if not near:
-        near = sorted(colors, key=lambda c: sum((c["rgb"][i] - target[i]) ** 2
-                                                for i in range(3)))[:SLOT_MIN]
-    near.sort(key=lambda c: sum((c["rgb"][i] - target[i]) ** 2 for i in range(3)))
-    near = near[:SLOT_MAX]
-    # Ease out from the ramp target and back, so the cycle never jumps at the wrap.
-    return near[::2] + near[1::2][::-1], tol
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preview", action="store_true")
@@ -280,13 +246,8 @@ def main():
 
     if not DB_PATH.exists():
         sys.exit(f"{DB_PATH} not found.")
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        colors = load_colors(conn)
-    finally:
-        conn.close()
+    colors = open_colors(DB_PATH)
 
-    rng = random.Random(SEED)
     objects = []
     for key, name in SPRITES:
         ramp = RAMPS[key]
@@ -298,7 +259,7 @@ def main():
 
         cycles, tols = [], []
         for target in ramp:
-            cycle, tol = slot_cycle(colors, target, rng)
+            cycle, tol = slot_cycle(colors, target, SLOT_MIN, SLOT_MAX)
             cycles.append(cycle)
             tols.append(tol)
         print(f"  {name}: {width}x{len(grid)}, {len(ramp)} slots, "

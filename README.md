@@ -183,15 +183,52 @@ artifact**, and new objects are added to it rather than published separately —
 otherwise the artifacts gallery fills up with near-duplicates and stops being useful.
 
 ```bash
-python3 scripts/build_theme.py        # themed objects  -> data/theme_ancient.json
-python3 scripts/build_waterfall.py    # abstract object -> data/waterfall.json
-python3 scripts/build_objects.py      # merge both      -> data/objects.json
+python3 scripts/build_sprites.py    # ancient vessels -> data/sprites.json
+python3 scripts/build_gerstner.py   # abstract panel  -> data/gerstner.json
+python3 scripts/build_falls.py      # the waterfall   -> data/falls.json
+python3 scripts/build_leaves.py     # falling leaves  -> data/leaves.json
+python3 scripts/build_objects.py    # merge all four  -> data/objects.json
+                                    #                 -> artifact/objects.html
 ```
 
-`artifact/objects.template.html` + `data/objects.json` build `artifact/objects.html`,
-which is republished to the same artifact URL every time. Two object kinds share one
-renderer: `shimmer` (a still sprite whose palette breathes) and `frames` (a precomputed
-animation). Adding a theme means adding its objects to the merge, not a new page.
+`scripts/build_objects.py` writes both the payload and the page, which is republished
+to the same artifact URL every time. Adding an object means adding it to the merge,
+not a new page.
+
+## Objects are organised by how much they move
+
+Every object sits on one axis, declared once in `scripts/motion.py`: how much it moves,
+which tracks how much it is *for*. A painting barely moves because it has almost no
+utility beyond being looked at; a hammer moves a great deal because the swing is the
+whole point. Objects near each other on that axis need the same machinery.
+
+| Motion | Family | Members | Shares |
+| --- | --- | --- | --- |
+| 0.04 | Panel | Colour Sound | grid + per-slot colour cycles |
+| 0.18 | Vessel | Amphora, Scarab, Column | grid + per-slot colour cycles |
+| 0.62 | Descent | Waterfall, Falling Leaves | lightness pools, wrapping noise, gravity, drift |
+| 0.78 | Bounce | *(empty)* | the descent engine, plus a restitution arc |
+| 0.94 | Strike | *(empty)* | the descent engine, plus a pivot |
+
+Identity comes first. A painting used as a hammer is a clever thought, but for image
+generation what the object *is* governs how it is drawn, so the axis records the motion
+an object actually has, not the motion it could be put to.
+
+**This is how storage stays small.** Kin share build code, so a new object in an
+existing family is a spec rather than a second engine — and, more importantly, they
+share *stored form*:
+
+| | as stored | as the other family member is stored |
+| --- | --- | --- |
+| Falling Leaves | ~40 KB (34 tracks + 4 sprites) | ~2 MB as one grid per frame |
+| Waterfall | 231 KB (9 slot indices per block) | 2.06 MB as palette indices |
+
+Three renderer kinds carry all of it, and all three store *slots*, not colours,
+resolving them through the same per-slot cycles:
+
+- `sprite` — a still grid whose palette breathes. Panels and vessels.
+- `field` — one grid of slot indices per frame, for a continuous body with no parts.
+- `descent` — a program: sprites, a static part, one track per falling body.
 
 ### Feedback is the memory between objects
 
@@ -250,7 +287,7 @@ python3 scripts/build_sprites.py             # -> data/sprites.json
 
 ## Themes
 
-`scripts/build_theme.py` builds pixel objects out of the collection's own colours.
+`scripts/build_sprites.py` builds pixel objects out of the collection's own colours.
 The theme is chosen **by the data, not by taste** — counted before anything is drawn:
 
 | Ramp target | Colours available within tolerance |
@@ -269,8 +306,8 @@ That is the rule for every future theme: count the palette first, and build what
 collection can actually render.
 
 ```bash
-python3 scripts/build_theme.py
-python3 scripts/build_theme.py --preview   # PNGs of each object, no JSON
+python3 scripts/build_sprites.py
+python3 scripts/build_sprites.py --preview   # PNGs of each object, no JSON
 ```
 
 Each object is authored as a designed ramp of slots, and **every slot is backed by
@@ -292,85 +329,90 @@ Three things had to be found by looking at the render:
 
 ## The waterfall
 
-Kept as the theme-less, abstract object — the one to reach for when a theme wants
-something that is a motion rather than a thing.
-
-
-
-`scripts/build_waterfall.py` renders the collection's colours as a looping waterfall.
-It writes `data/waterfall.json` — grid, palette and a small inlined preview image per
-work — which `artifact/waterfall.html` replays on a canvas. Press and hold any block
-and the work that colour came from pops out beside the fall, **while the water keeps
-running**: the block's identity is captured at the moment of the press, because the
-water under the cursor moves on and a live preview would just flicker. `--gif` also writes a
-non-interactive `artifact/waterfall.gif`; the canvas is the real deliverable, since a
-GIF cannot carry links.
+Rebuilt against a cerulean reference, and the priority was inverted on request: the
+**picture comes first**, the census second. Nine slots are quantised straight off the
+reference — `#011432` through `#0057b3` and `#1da6f5` to white — and each is backed by
+the closest real colours in the collection, however few. Seventy-nine works stand in
+for the whole fall, where the earlier version put 1,609 on screen and let the palette
+drift with them.
 
 ```bash
-python3 scripts/build_waterfall.py
-python3 scripts/build_waterfall.py --preview 8   # PNG frames, no JSON
-python3 scripts/build_waterfall.py --gif
+python3 scripts/build_falls.py
+python3 scripts/build_falls.py --preview 4   # PNG frames, no JSON
 ```
 
-It is **palette-constrained rendering**: the waterfall is designed first — plunging
-sheet, rock banks, crest, whitewater streaks, churning plunge pool — as a field of
-target lightness, and then each block is filled with the closest real colour from
-`artwork_colors`. Colours and works repeat, which is what makes the match possible.
-**No colour is ever altered**, so every block still maps back to a work you can open.
+The composition is read off the reference: a sheet whose right edge runs diagonally
+from a high lip down to the foot, filaments running the length of the drop and
+diverging as they fall, a white detonation where it lands, and a banded pool across
+the bottom. No sky — the object and its contour are the whole of what exists and the
+whole of what is clickable.
 
-The composition follows reference photographs of real falls rather than an
-invented one: a narrow lip, a body that flares as it drops and breaks into discrete
-filaments, a luminous bloom where it lands, mist thickening toward the foot, and rock
-massing at the ledges — the fall as a silhouette against an atmosphere, not a
-full-bleed panel.
+What the rebuild settled:
 
-Currently in **blue mode** (`--palette blue`, the default): blues, cyans, teals and
-every neutral — what a waterfall is actually made of. The hue anchor drifts gently
-through the blues across the loop rather than walking the full journey, because that
-journey is 83% neutral in this collection and walking it drags the whole scene
-grey-tan. `--palette full` opens it back to the whole wheel.
+- **Matching every block to its own nearest real colour is what made it grit.** Nine
+  fixed slots, cycled as whole regions, is what reads as pixel art — and it is also
+  ten times smaller on disk.
+- **The image hangs on one diagonal.** White just inside the falling edge with a hard
+  navy contour on it is what makes that edge read as drawn rather than as the place
+  the picture stops. The contour is traced from the silhouette; testing a threshold
+  per block leaves it broken into specks wherever the diagonal steps sideways.
+- **Draw the sheet between two ramps, not as one gradient the filaments brighten.**
+  Brightening a mid-blue base only ever produces mid-blue; the reference's whole
+  character is white threads against deep navy.
+- **The pool is horizontal lines, not a gradient.** A soft pool under a hard-edged
+  fall reads as a mistake.
 
-The grid is deliberately coarse (32 × 44) and slow (130ms a frame, falling two rows
-at a time). The blocks are the interface — they have to be big enough to press, and a
-fast fall reads as noise rather than water.
+## Falling leaves
 
-**The water is white and the environment carries the hue.** That is what lets the loop
-travel the whole database while still reading as one waterfall: it looks like the same
-fall lit by changing light, rather than water that turns orange.
+The descent family's second member — the same motion with a different payload. Water
+is a sheet, so it is stored as pictures; leaves are bodies, so they are stored as a
+program and rebuilt on the fly. Autumn because the collection is 33.8% earth tones:
+rust and amber are the deepest colour it has.
 
-Three pools feed it, because a waterfall is not one material:
+```bash
+python3 scripts/build_leaves.py
+python3 scripts/build_leaves.py --preview 4
+```
 
-| Pool | Source | Behaviour |
-| --- | --- | --- |
-| Foam | lightest colours (L ≥ 0.72) | ignores the hue phase — real whitewater is white in any light, which is what keeps the fall legible once the water reaches the oranges |
-| Rock | darkest colours (L ≤ 0.25) | static in screen space; banks do not fall |
-| Water | the current hue band | walks the whole journey over one loop |
+- **A leaf holds one tint for the whole fall.** Letting the colour drift mid-air, the
+  way the sheet's hue band drifts, reads as a glitch rather than as a leaf.
+- **Every period has to divide the loop** — whole falls, whole sway cycles, whole
+  yaws. One leaf out of phase and the seam is the only thing you can see.
+- **Stratify the leaves across the columns.** Random x piles them on one side and
+  leaves the other empty, which reads as a spill rather than a fall.
+- **Draw the bough as a slope that tapers off-frame.** A horizontal limb with vertical
+  stubs reads as a table, which is exactly what the first attempt looked like.
+- Edge-on, a leaf is still two pixels deep. At one pixel it reads as dust.
 
-Two things had to be found by looking at the render rather than reasoned about first:
+## Abstract: Karl Gerstner's grammar
 
-- **The band has to widen itself.** The journey is sorted by hue *then* lightness, so a
-  narrow window is narrow in both — ask it for a dark block and it hands back another
-  pale one, and the sheet washes out to a flat panel. The band now grows until it spans
-  0.46 of lightness range, from 363 colours up to ~3,343 in the palest stretches.
-- **Matching on lightness alone speckles.** A wide band holds many hues at one
-  lightness, so neighbouring blocks landed on unrelated colours and the mist turned to
-  confetti. Selection now prefers the band's hue, with neutrals carrying a discounted
-  distance because grey haze belongs in any light.
-- **Filaments are not noise.** Per-column noise reads as static however it is tuned.
-  Water breaks into threads that hold together down the drop and spread apart as they
-  go, so each of the 30 strands keeps its own lip position, drift, width, gain and
-  scrolling intensity.
-- **An earlier ribbon-scrolling design failed outright.** Columns need different fall
-  rates or the sheet reads as rigid, but unbounded drift put one column in the whites and
-  its neighbour in the oranges — television static. Designing the image and then matching
-  colours to it replaced that approach entirely.
-- **Hue penalty scales with saturation.** A true grey belongs in any light, but a warm
-  grey still reads warm, and enough of them turn a blue fall tan. The penalty is now
-  weighted by each colour's own saturation.
-- **Hard boundaries show.** The rock ledge originally stopped at a fixed `ny`, drawing a
-  seam straight across the frame that no colour choice could hide; it now fades out.
+`scripts/build_gerstner.py` builds a panel in the grammar read off five of his works:
+flat colour only, a modular grid subdivided systematically, nested concentric bands,
+few hues in even steps, self-similarity, and order by permutation rather than by eye.
 
-Everything time-varying is periodic over the frame count, so the loop closes exactly.
+The construction is 27 × 27 — a 3 × 3 module of 9 × 9 tiles, each five nested squares,
+rotations laid out +3 across each row and +1 down each column so every tile is a
+different chord of the same nine colours and no neighbour repeats one.
+
+**The palette was chosen by what the collection can back, not by which Gerstner is
+most famous.** Counted before anything was drawn:
+
+| Gerstner anchor | Near matches in 14,542 dominant colours |
+| --- | --- |
+| *St. Jaques* orange-red `#fd3502` | 3 |
+| *Colour Fractal* magenta `#ad53a0` | 24 |
+| *Spannungsbild* violet-blue `#54539f` | 25 |
+| *Colour sound* terracotta `#c86a58` | 46 |
+| *Colour sound* blue-grey `#7894b9` | 100 |
+| *Colour sound* pale lilac `#d9dae7` | 1,262 |
+
+His saturated work is out of reach here — 1.2% of these colours are violet or magenta
+against 33.8% earth. *Colour sound, extra version* (1977) is the one palette whose
+whole ramp this collection holds, every step backed by dozens of real works.
+
+- This grammar forbids the shading the sprites depend on, so contrast has to come from
+  the ramp step alone. **Rings step by two, not one**: adjacent steps read as one
+  colour at this size.
 
 ## Keeping it in sync
 

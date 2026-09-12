@@ -1,20 +1,37 @@
 #!/usr/bin/env python3
 """Merge every generated object into one payload for the single artifact.
 
-One artifact holds every object, whatever its theme — new objects are added
-here and republished to the same URL rather than spawning another artifact.
+One artifact holds every object, whatever its theme — new objects are added here
+and republished to the same URL rather than spawning another artifact.
 
-Two kinds of object share one renderer:
-  * ``shimmer`` — a still sprite whose palette breathes. Each cell walks its
-    slot's cycle of near-identical real colours at its own phase.
-  * ``frames``  — a precomputed animation, one full grid per frame.
+Objects are filed two ways, and both go into the payload:
 
-Each object also carries a ``built`` record: the ramp it was designed against,
+  * by THEME, which is what the object is of — Ancient, Abstract;
+  * by FAMILY, which is how much it moves and therefore how it is stored. That
+    axis lives in scripts/motion.py: a painting barely moves because it has
+    almost no utility, a hammer moves a great deal because the swing is the whole
+    point, and objects that sit near each other on it need the same machinery.
+
+Three renderer kinds carry every object, one per family group:
+  * ``sprite``  — a still grid whose palette breathes. Each region walks its
+                  slot's cycle of near-identical real colours. Panels and vessels.
+  * ``field``   — one grid of slot indices per frame, for a continuous body that
+                  cannot be decomposed into parts. The waterfall.
+  * ``descent`` — a program: sprites, a static part, and one track per falling
+                  body, replayed by the renderer. Falling leaves, and whatever
+                  falls next, for the cost of its tracks alone.
+
+All three store slots, not colours, and resolve them through the same per-slot
+cycles — which is what keeps a flat region flat and the payload small.
+
+Each object also carries a ``built`` record — the ramp it was designed against,
 how many real colours backed each step, and the decisions behind it. That record
 is what stops the next object from being designed blind, and it is read back
 alongside the viewer's feedback from the artifact's database.
 
-Reads data/theme_ancient.json and data/waterfall.json; writes data/objects.json.
+Reads data/sprites.json, data/gerstner.json, data/leaves.json and
+data/falls.json; writes data/objects.json and, by injecting it into
+artifact/objects.template.html, the publishable artifact/objects.html.
 
 Usage:
     python3 scripts/build_objects.py
@@ -24,11 +41,19 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from motion import FAMILIES, FAMILY_BY_KEY, PLACEMENTS, kin   # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SPRITES_PATH = ROOT / "data" / "sprites.json"
+GERSTNER_PATH = ROOT / "data" / "gerstner.json"
+LEAVES_PATH = ROOT / "data" / "leaves.json"
+FALL_PATH = ROOT / "data" / "falls.json"
 THUMBS_PATH = ROOT / "data" / "thumbs.json"
-FALL_PATH = ROOT / "data" / "waterfall.json"
 OUT_PATH = ROOT / "data" / "objects.json"
+TEMPLATE_PATH = ROOT / "artifact" / "objects.template.html"
+PAGE_PATH = ROOT / "artifact" / "objects.html"
+PLACEHOLDER = "__OBJECTS__"
 
 THUMB_EDGE = 76
 THUMB_QUALITY = 52
@@ -43,31 +68,27 @@ NOTES = {
     "column": "A weathered Doric shaft. Limestone is the collection's deepest seam — over "
               "1,600 near-neutral greys — which is why the flutes are cut as hard steps "
               "instead of blurred into a gradient.",
-    "waterfall": "The theme-less one: a motion rather than a thing. Blues and whites only, "
-                 "falling a row at a time. Foam ignores the palette entirely, because real "
-                 "whitewater is white in any light.",
 }
 
 BUILT = {
-    "amphora": {"grid": "21 × 23", "ramp": "papyrus, black-figure, umber, 4 terracotta steps, bone",
-                "backing": "22–563 real colours per ramp step",
+    "amphora": {"grid": "21 x 23", "ramp": "papyrus, black-figure, umber, 4 terracotta steps, bone",
+                "backing": "22-563 real colours per ramp step",
                 "lessons": ["A ramp that only changes value reads as flat clip art; the hue has to shift too — this shadow leans purple, the highlight leans warm ochre.",
                             "Per-cell colour variation is grit. A whole region holds one colour and changes as one."]},
-    "scarab": {"grid": "19 × 20", "ramp": "dark stone, outline, bronze, 4 gold steps, 2 lapis",
-               "backing": "27–64 real colours per ramp step",
+    "scarab": {"grid": "19 x 20", "ramp": "dark stone, outline, bronze, 4 gold steps, 2 lapis",
+               "backing": "27-64 real colours per ramp step",
                "lessons": ["A beetle is widest high, at the pronotum. Widest in the middle reads as a lozenge.",
                            "Legs must run unbroken from the body and be two pixels deep, or they read as specks."]},
-    "column": {"grid": "17 × 26", "ramp": "dark ground, crack, 4 limestone steps, deep shadow",
+    "column": {"grid": "17 x 26", "ramp": "dark ground, crack, 4 limestone steps, deep shadow",
                "backing": "64 real colours per ramp step — the collection's deepest seam",
                "lessons": ["The contour is traced from the silhouette, not computed per row — per-row outlines stack a dark band down every diagonal and bury the object.",
                            "Flutes need hard steps. A gradient at this resolution reads as blur, not carved stone."]},
-    "waterfall": {"grid": "28 × 38 × 96 frames", "ramp": "designed lightness field, not a ramp",
-                  "backing": "blues, cyans, teals (180–250°) plus every neutral",
-                  "lessons": ["Foam must ignore the hue phase — white water is white in any light.",
-                              "Hue penalty has to scale with saturation, or warm greys drag a "
-                              "blue scene tan.",
-                              "Matching on lightness alone speckles; prefer the band's hue."]},
 }
+
+# A still object's colour drifts at a rate set by its place on the axis: the
+# panel, which has the least motion of anything here, drifts slowest.
+def sprite_interval(motion):
+    return int(max(600, min(1500, round(1500 * (1 - motion)))))
 
 
 def remap(src, artworks, artwork_index, palette, palette_index):
@@ -85,6 +106,19 @@ def remap(src, artworks, artwork_index, palette, palette_index):
             palette.append([hex_color, artwork_index[art_id]])
         local.append(palette_index[key])
     return local
+
+
+def place(obj):
+    """Attach the object's position on the motion/utility axis."""
+    family_key, motion, why = PLACEMENTS[obj["key"]]
+    family = FAMILY_BY_KEY[family_key]
+    obj["family"] = family_key
+    obj["familyName"] = family["name"]
+    obj["motion"] = motion
+    obj["why"] = why
+    obj["shares"] = family["shares"]
+    obj["kin"] = kin(obj["key"])
+    return obj
 
 
 def attach_thumbs(artworks):
@@ -114,35 +148,56 @@ def attach_thumbs(artworks):
 
 
 def main():
-    for path in (SPRITES_PATH, FALL_PATH):
+    paths = (SPRITES_PATH, GERSTNER_PATH, LEAVES_PATH, FALL_PATH)
+    for path in paths:
         if not path.exists():
             sys.exit(f"{path} not found — run its build script first.")
-
-    sprites = json.loads(SPRITES_PATH.read_text())
-    fall = json.loads(FALL_PATH.read_text())
+    sprites, gerstner, leaves, fall = (json.loads(p.read_text()) for p in paths)
 
     artworks, artwork_index, palette, palette_index = [], {}, [], {}
 
-    sprite_map = remap(sprites, artworks, artwork_index, palette, palette_index)
-    ancient = []
-    for obj in sprites["objects"]:
-        ancient.append({
-            "key": obj["key"], "name": obj["name"], "kind": "sprite",
-            "cols": obj["cols"], "rows": obj["rows"], "grid": obj["grid"],
-            "cycles": [[sprite_map[i] for i in cyc] for cyc in obj["cycles"]],
-            "note": obj["note"], "built": BUILT[obj["key"]],
-        })
+    def sprite_objects(src, notes=None, built=None):
+        local = remap(src, artworks, artwork_index, palette, palette_index)
+        out = []
+        for obj in src["objects"]:
+            out.append(place({
+                "key": obj["key"], "name": obj["name"], "kind": "sprite",
+                "cols": obj["cols"], "rows": obj["rows"], "grid": obj["grid"],
+                "cycles": [[local[i] for i in cyc] for cyc in obj["cycles"]],
+                "frameMs": sprite_interval(PLACEMENTS[obj["key"]][1]),
+                "note": obj.get("note") if notes is None else notes[obj["key"]],
+                "built": obj.get("built") if built is None else built[obj["key"]],
+            }))
+        return out
+
+    ancient = sprite_objects(sprites, NOTES, BUILT)
+    panel = sprite_objects(gerstner)
 
     fall_map = remap(fall, artworks, artwork_index, palette, palette_index)
-    waterfall = {
-        "key": "waterfall", "name": "Waterfall", "kind": "frames",
-        "cols": fall["columns"], "rows": fall["rows"],
-        "frames": fall["frames"], "frameMs": fall["frameMs"],
-        # -1 is a hole: no background, so only the water is drawn and only the
-        # water is clickable.
-        "cells": [[(fall_map[i] if i >= 0 else -1) for i in frame] for frame in fall["cells"]],
-        "note": NOTES["waterfall"], "built": BUILT["waterfall"],
-    }
+    fall_src = fall["objects"][0]
+    waterfall = place({
+        "key": "waterfall", "name": "Waterfall", "kind": "field",
+        "cols": fall_src["cols"], "rows": fall_src["rows"],
+        "frames": fall_src["frames"], "frameMs": fall_src["frameMs"],
+        # -1 is a hole: no sky, so only the water is drawn and only the water is
+        # clickable.
+        "cells": fall_src["cells"],
+        "cycles": [[fall_map[i] for i in cyc] for cyc in fall_src["cycles"]],
+        "note": fall_src["note"], "built": fall_src["built"],
+    })
+
+    leaf_map = remap(leaves, artworks, artwork_index, palette, palette_index)
+    leaf_src = leaves["objects"][0]
+    falling_leaves = place({
+        "key": "leaves", "name": "Falling Leaves", "kind": "descent",
+        "cols": leaf_src["cols"], "rows": leaf_src["rows"],
+        "frames": leaf_src["frames"], "frameMs": leaf_src["frameMs"],
+        "wrap": leaf_src["wrap"], "margin": leaf_src["margin"],
+        "shapes": leaf_src["shapes"], "tints": leaf_src["tints"],
+        "static": leaf_src["static"], "tracks": leaf_src["tracks"],
+        "cycles": [[leaf_map[i] for i in cyc] for cyc in leaf_src["cycles"]],
+        "note": leaf_src["note"], "built": leaf_src["built"],
+    })
 
     thumbs = attach_thumbs(artworks)
 
@@ -150,6 +205,8 @@ def main():
         "cycleSteps": sprites["cycleSteps"],
         "artworks": artworks,
         "palette": palette,
+        "families": [{k: f[k] for k in ("key", "name", "motion", "utility", "shares")}
+                     | {"reserved": bool(f.get("reserved"))} for f in FAMILIES],
         "themes": [
             {"key": "ancient", "name": "Ancient",
              "blurb": "Chosen by the colours, not by taste. This collection holds 778 colours "
@@ -157,16 +214,29 @@ def main():
                       "green — so ancient is what it can honestly render.",
              "objects": ancient},
             {"key": "abstract", "name": "Abstract",
-             "blurb": "Objects that are a motion rather than a thing. Kept apart from the "
-                      "themed ones because they answer to physics instead of to a period.",
-             "objects": [waterfall]},
+             "blurb": "Objects that answer to a system or to a physics rather than to a "
+                      "period — a constructed panel, and two things falling.",
+             "objects": panel + [waterfall, falling_leaves]},
         ],
     }
 
-    OUT_PATH.write_text(json.dumps(payload, separators=(",", ":")))
+    blob = json.dumps(payload, separators=(",", ":"))
+    OUT_PATH.write_text(blob)
     print(f"Wrote {OUT_PATH} ({OUT_PATH.stat().st_size/1_000_000:.2f} MB)")
+
+    template = TEMPLATE_PATH.read_text()
+    if PLACEHOLDER not in template:
+        sys.exit(f"{TEMPLATE_PATH} has no {PLACEHOLDER} placeholder.")
+    # Keep a literal </script> in the data from ending the host script element.
+    PAGE_PATH.write_text(template.replace(PLACEHOLDER, blob.replace("</", "<\\/")))
+    print(f"Wrote {PAGE_PATH} ({PAGE_PATH.stat().st_size/1_000_000:.2f} MB "
+          f"against a 16 MB limit)")
     print(f"  {sum(len(t['objects']) for t in payload['themes'])} objects, "
           f"{len(palette)} colours across {len(artworks)} works ({thumbs} previews)")
+    for family in FAMILIES:
+        members = [k for k, v in PLACEMENTS.items() if v[0] == family["key"]]
+        print(f"  {family['motion']:.2f} {family['name']:<8} "
+              f"{', '.join(members) if members else '(reserved)'}")
 
 
 if __name__ == "__main__":
