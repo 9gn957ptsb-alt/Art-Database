@@ -2,18 +2,21 @@
 
 Two things that will eventually meet:
 
-1. **The site** — `docs/`. A static artist website: portfolio first, plain HTML and CSS,
-   no build step. See [`docs/README.md`](docs/README.md) for how to edit and publish it.
+1. **The site** — `docs/`. A single-page artist portfolio: plain HTML and CSS, no build
+   step. See [`docs/README.md`](docs/README.md) for how to edit and publish it.
 2. **The art database** — a searchable database of artworks, seeded from ~4,000 saved works
    on [Artsy](https://www.artsy.net) and designed to grow over time. Museum-visit photos
-   (an artwork shot followed by its label shot) are a planned second source. Once it has
-   data it becomes a second section of the site, generated into static HTML.
+   (an artwork shot followed by its label shot) are a planned second source.
+
+The two stay separate: **no work from the Artsy database is exhibited on the site.** It is
+a private reference collection, not a section of the portfolio.
 
 The rest of this file covers the database half.
 
 ## Status
 
-The site is live-able but placeholder-filled — name, email and works still need replacing.
+The site stands up but is placeholder-filled — name, email, statement and all eight
+captions still need replacing.
 
 Database import tooling is ready. It cannot run until the Artsy API is reachable — see
 setup below.

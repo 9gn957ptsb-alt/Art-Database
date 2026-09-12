@@ -1,25 +1,37 @@
-/* Color Middling — base styles.
-   One file, no build step, no external fonts. Edit freely. */
+/* Color Middling — one stylesheet, no build step.
+   Palette and scale live in the :root block; change them there, not inline. */
 
 :root {
-  --ink: #1a1a1a;
-  --ink-soft: #5c5c5c;
-  --paper: #faf9f7;
-  --rule: #dcd8d2;
-  --accent: #7a4b2a;
-  --measure: 34rem;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --paper:     #f0f1ef;  /* cool gallery white */
+  --ink:       #16181a;
+  --ink-soft:  #6b7075;
+  --rule:      #d5d8d4;
+  --accent:    #41665f;  /* middled blue-green */
+  --plate:     #e4e6e3;
+
+  --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #ece9e4;
-    --ink-soft: #a29c94;
-    --paper: #141312;
-    --rule: #332f2b;
-    --accent: #c9895c;
+  :root:not([data-theme="light"]) {
+    --paper:    #121413;
+    --ink:      #e8e9e6;
+    --ink-soft: #90969a;
+    --rule:     #2b2e2d;
+    --accent:   #85aaa2;
+    --plate:    #1d201f;
   }
+}
+
+:root[data-theme="dark"] {
+  --paper:    #121413;
+  --ink:      #e8e9e6;
+  --ink-soft: #90969a;
+  --rule:     #2b2e2d;
+  --accent:   #85aaa2;
+  --plate:    #1d201f;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -28,131 +40,161 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  padding: 0 1.5rem;
+  padding-inline: 1.5rem;
+  padding-block: 0;
   background: var(--paper);
   color: var(--ink);
-  font: 400 1.0625rem/1.6 var(--serif);
+  font: 400 1rem/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-underline-offset: 0.18em; }
+
+:where(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.page {
+  max-width: 78rem;
+  margin: 0 auto;
 }
 
 /* ---- masthead ---------------------------------------------------------- */
 
 .masthead {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: 3rem 0 2rem;
-  border-bottom: 1px solid var(--rule);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.75rem 2rem;
+  padding-block: 3.5rem 2.5rem;
 }
 
 .masthead h1 {
   margin: 0;
-  font-size: 1.375rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  font-size: clamp(1.5rem, 1.15rem + 1.3vw, 2.125rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
 }
 
-.masthead h1 a { color: inherit; text-decoration: none; }
-
-nav {
-  margin-left: auto;
-  font: 400 0.875rem/1 var(--sans);
-  letter-spacing: 0.06em;
-  text-transform: lowercase;
-}
-
-nav a {
+.masthead p {
+  margin: 0.625rem 0 0;
+  max-width: 42ch;
+  font: 400 1.1875rem/1.45 var(--serif);
   color: var(--ink-soft);
-  text-decoration: none;
-  margin-left: 1.5rem;
 }
 
-nav a:first-child { margin-left: 0; }
-nav a:hover { color: var(--ink); }
-nav a[aria-current="page"] { color: var(--ink); border-bottom: 1px solid var(--accent); padding-bottom: 2px; }
+/* ---- section label ----------------------------------------------------- */
 
-/* ---- page -------------------------------------------------------------- */
-
-main {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding-block: 3rem 4rem;
-}
-
-main > p, main > h2 + p, .prose { max-width: var(--measure); }
-
-h2 {
-  font: 400 1.125rem/1.3 var(--sans);
-  letter-spacing: 0.08em;
+.label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-soft);
-  margin: 3.5rem 0 1.25rem;
 }
 
-main > h2:first-child { margin-top: 0; }
-
-a { color: var(--accent); text-underline-offset: 0.15em; }
-
-.lede {
-  font-size: 1.375rem;
-  line-height: 1.45;
-  margin: 0 0 2rem;
-  max-width: var(--measure);
+.label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
 }
 
-/* ---- work grid --------------------------------------------------------- */
+.count { font-variant-numeric: tabular-nums; }
 
-.works {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 2.5rem 2rem;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+/* ---- grid: masonry columns, images at their own aspect ratio ------------ */
+
+.grid {
+  columns: 4 17rem;
+  column-gap: 2rem;
+  padding-bottom: 1rem;
+}
+
+.work {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 2.75rem;
 }
 
 .work figure { margin: 0; }
 
-.work .plate {
+/* An <img class="plate"> drops straight in where the placeholder sits. */
+.plate {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
   max-width: 100%;
-  background: linear-gradient(160deg, var(--rule), var(--paper));
-  border: 1px solid var(--rule);
+  aspect-ratio: var(--ar, 4 / 5);
   object-fit: cover;
+  background: var(--plate);
 }
 
+.plate--empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in oklab, var(--ink-soft) 45%, transparent);
+  background:
+    linear-gradient(150deg, color-mix(in oklab, var(--accent) 7%, var(--plate)), var(--plate));
+}
+
+.plate--empty span {
+  font: 400 0.75rem/1 var(--mono);
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+/* ---- caption: Artsy's card order --------------------------------------- */
+
 .work figcaption {
-  margin-top: 0.75rem;
-  font-size: 0.9375rem;
+  margin-top: 0.875rem;
+  font-size: 0.875rem;
   line-height: 1.45;
 }
 
-.work .title { font-style: italic; }
-.work .meta { display: block; color: var(--ink-soft); font-size: 0.875rem; }
+.artist { font-weight: 500; }
 
-/* ---- footer ------------------------------------------------------------ */
-
-footer {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: 1.5rem 0 3rem;
-  border-top: 1px solid var(--rule);
-  font: 400 0.875rem/1.6 var(--sans);
+.work .title,
+.work .details,
+.work .price {
+  display: block;
   color: var(--ink-soft);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
 }
 
-footer a { color: inherit; }
+.work .title { font-family: var(--serif); font-size: 0.9375rem; }
+.work .title em { font-style: italic; }
+.work .price { margin-top: 0.375rem; color: var(--ink); }
 
-@media (max-width: 32rem) {
-  .masthead { padding-top: 2rem; }
-  nav { margin-left: 0; width: 100%; }
-  nav a:first-child { margin-left: 0; }
-  .lede { font-size: 1.1875rem; }
+/* ---- colophon ---------------------------------------------------------- */
+
+.colophon {
+  display: grid;
+  gap: 1.25rem 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  padding-block: 2rem 4rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+.colophon h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.colophon p { margin: 0 0 0.5rem; max-width: 40ch; }
+.colophon .statement { font: 400 1rem/1.55 var(--serif); color: var(--ink); }
+
+@media (max-width: 34rem) {
+  .masthead { padding-block: 2.5rem 2rem; }
+  .grid { column-gap: 1.25rem; }
+  .work { margin-bottom: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
