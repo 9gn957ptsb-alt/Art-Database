@@ -298,10 +298,25 @@
 
   function layout() {
     var o = obj();
-    var availW = Math.min(o.cols * 22, window.innerWidth - 120);
-    if (window.innerWidth < 640) availW = window.innerWidth - 40;
-    var availH = window.innerHeight - 230;   // the two tab rows
-    BLOCK = Math.max(8, Math.min(22, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
+    // A phone gets the full width less a gutter; a desktop is capped, because
+    // a wide object will otherwise take the whole window and the objects stop
+    // being comparable to each other at a glance.
+    var gutter = window.innerWidth < 640 ? 16 : 48;
+    var availW = Math.min(window.innerWidth - gutter * 2, 620);
+
+    // Measure where the stage actually starts instead of assuming the tab rows
+    // are one line each. On a phone they wrap to two or three, and a guessed
+    // offset is wrong by a whole row — which is how the object ended up taller
+    // than the screen. Walked up the offset chain so it does not depend on
+    // where the page happens to be scrolled.
+    var top = 0, el = canvas.parentNode;
+    while (el) { top += el.offsetTop; el = el.offsetParent; }
+    var availH = Math.max(200, window.innerHeight - top - 20);
+
+    // No lower bound. A minimum cell size overrides the fit: it was harmless
+    // when objects were 28 cells across and pushes a 136-cell one to over a
+    // thousand pixels. Small and whole beats large and cropped.
+    BLOCK = Math.max(1, Math.min(12, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
     canvas.width = o.cols * BLOCK;
     canvas.height = o.rows * BLOCK;
     canvas.style.width = canvas.width + "px";
