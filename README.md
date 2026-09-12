@@ -256,10 +256,29 @@ Five things this took to get right, each a real failure first:
   ground material set too high runs off the end of its band and renders in the next
   one — which is how the stone platform first came out navy.
 
-Quarter-turn rotation is free: a turn is a permutation of x and y, exact, with normals
-rotating along. A still object's four stored frames are its four facings. Hand-drawn
-isometric sprites have to author every facing separately; this is the one thing the
-engine gets that the games it is imitating had to pay for.
+### Turning the object
+
+Every object is stored at all **four facings** — the four corners an isometric view can
+be taken from. Swipe left or right on it, or use the arrow keys, to walk round it. A
+quarter turn is a permutation of x and y, exact, with the normals rotating along, so the
+shading stays correct and nothing is resampled. Hand-drawn isometric sprites have to
+author every facing separately; this is the one thing the engine gets that the games it
+imitates had to pay for.
+
+Views and frames are separate axes in the payload: `cells[view][frame]`. A still object
+has one frame per view, a moving one its whole animation at each, which is four times the
+grids for the three animated objects and the reason the payload is 4.3 MB rather than 1.
+
+The whole model turns — ground plane, shadow and all. The plane is a square so its
+outline does not change, but the shadow and the ruling of the tiles turn with the object,
+which is what a viewer walking round would see. One canvas is sized across all four
+views, so the object does not jump as it turns.
+
+Swipe and press-and-hold share the canvas. The preview still opens on contact rather
+than on release, so a tap is as immediate as it was; travelling 34px horizontally — and
+more horizontally than vertically, so a scroll that begins on the object does not spin
+it — takes the preview away and turns instead. `touch-action: pan-y` keeps vertical
+scrolling with the page.
 
 ## Objects are organised by how much they move
 

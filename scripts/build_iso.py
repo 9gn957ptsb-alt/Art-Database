@@ -39,8 +39,13 @@ what real pigment does anyway. The link is fixed: one region, one work, no
 cycling. Colour no longer drifts over time, because a link that moves is not a
 link.
 
-A still object's frames are its four quarter turns; a moving object's frames are
-its animation.
+Every object is stored at all FOUR facings — the four corners an isometric view
+can be taken from — because a quarter turn is a permutation of x and y and costs
+nothing to compute. Views and frames are separate axes: `cells[view][frame]`. A
+still object has one frame per view; a moving one has its whole animation at
+each. That is four times the grids for a moving object, and it is what lets the
+viewer walk around the thing instead of being stuck at the corner it was drawn
+from.
 
 Writes data/iso.json.
 
@@ -339,20 +344,26 @@ MOVING = [
 ]
 
 
+def four_views(frames):
+    """The same animation seen from each of the four isometric corners.
+
+    Rotating the finished model — ground plane, shadow and all — rather than the
+    object alone. The plane is a square, so turning it changes nothing about its
+    outline, but the shadow beneath the object and the ruling of the tiles turn
+    with it, which is what a viewer walking round would actually see.
+    """
+    return [[iso.rotate(m, turn, n) for m, n in frames] for turn in range(4)]
+
+
 def build_all():
     objects = []
     for key, name, make in STILL:
         vox, norm, r = make()
-        half = plan_half(vox)
-        # A still object's frames are its four quarter turns.
-        views = []
-        for turn in range(4):
-            turned, tn = iso.rotate(vox, turn, norm)
-            views.append(with_ground(turned, tn, half))
-        objects.append((key, name, views, r, 900))
+        objects.append((key, name, four_views([with_ground(vox, norm, plan_half(vox))]),
+                        r, 900))
     for key, name, make, ms in MOVING:
         frames, r = make()
-        objects.append((key, name, frames, r, ms))
+        objects.append((key, name, four_views(frames), r, ms))
     return objects
 
 
@@ -398,9 +409,13 @@ def main():
     colors = open_colors(DB_PATH)
     payload, artworks, art_index, palette, pal_index = [], [], {}, [], {}
 
-    for key, name, frames, r, frame_ms in built:
-        cols, rows, ox, oy = iso.frame_box([m for m, _ in frames], pad=2)
-        grids = [iso.render(m, cols, rows, ox, oy, known_normals=n) for m, n in frames]
+    for key, name, views, r, frame_ms in built:
+        # One canvas for every view, so the object does not jump size as it turns.
+        cols, rows, ox, oy = iso.frame_box(
+            [m for frames in views for m, _ in frames], pad=2)
+        grids_by_view = [[iso.render(m, cols, rows, ox, oy, known_normals=n)
+                          for m, n in frames] for frames in views]
+        grids = [g for view in grids_by_view for g in view]
         used = sorted({s for g in grids for s in g if s >= 0})
         if used and (used[0] < 0 or used[-1] >= len(r)):
             sys.exit(f"{key}: uses slots {used[0]}..{used[-1]} but the ramp has {len(r)}")
@@ -409,30 +424,34 @@ def main():
         pools = [slot_cycle(colors, target, SLOT_MIN, 160,
                             tol_start=12, tol_stop=96)[0] for target in r]
 
-        labelled, region_colour, taken = [], [], [0] * len(r)
-        for g in grids:
-            label, found = regions_of(g, cols, rows)
-            base = len(region_colour)
-            for slot, _size in found:
-                pool = pools[slot]
-                c = pool[taken[slot] % len(pool)]
-                taken[slot] += 1
-                if c["id"] not in art_index:
-                    art_index[c["id"]] = len(artworks)
-                    artworks.append([c["id"], c["title"], c["artist"]])
-                k2 = (c["hex"], c["id"])
-                if k2 not in pal_index:
-                    pal_index[k2] = len(palette)
-                    palette.append([c["hex"], art_index[c["id"]]])
-                region_colour.append(pal_index[k2])
-            labelled.append([(base + v if v >= 0 else -1) for v in label])
+        region_colour, taken = [], [0] * len(r)
+        labelled_views = []
+        for view in grids_by_view:
+            labelled = []
+            for g in view:
+                label, found = regions_of(g, cols, rows)
+                base = len(region_colour)
+                for slot, _size in found:
+                    pool = pools[slot]
+                    c = pool[taken[slot] % len(pool)]
+                    taken[slot] += 1
+                    if c["id"] not in art_index:
+                        art_index[c["id"]] = len(artworks)
+                        artworks.append([c["id"], c["title"], c["artist"]])
+                    k2 = (c["hex"], c["id"])
+                    if k2 not in pal_index:
+                        pal_index[k2] = len(palette)
+                        palette.append([c["hex"], art_index[c["id"]]])
+                    region_colour.append(pal_index[k2])
+                labelled.append([(base + v if v >= 0 else -1) for v in label])
+            labelled_views.append(labelled)
 
-        works = len({region_colour[i] for i in range(len(region_colour))})
-        print(f"  {name:16s} {cols:3d}x{rows:3d} x{len(grids):2d}  "
-              f"{len(r):2d} steps, {len(region_colour):5d} regions")
+        print(f"  {name:16s} {cols:3d}x{rows:3d}  4 views x{len(grids_by_view[0]):2d} "
+              f"frames, {len(r):2d} steps, {len(region_colour):5d} regions")
         payload.append({"key": key, "name": name, "kind": "field",
-                        "cols": cols, "rows": rows, "frames": len(grids),
-                        "frameMs": frame_ms, "cells": labelled,
+                        "cols": cols, "rows": rows, "views": 4,
+                        "frames": len(grids_by_view[0]),
+                        "frameMs": frame_ms, "cells": labelled_views,
                         "regions": region_colour})
 
     if args.preview:
@@ -440,9 +459,10 @@ def main():
         pal = [tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h, _ in palette]
         for obj in payload:
             B, C, R = 3, obj["cols"], obj["rows"]
-            img = Image.new("RGB", (len(obj["cells"]) * C * B, R * B), (231, 228, 221))
+            flat = [g for view in obj["cells"] for g in view]
+            img = Image.new("RGB", (len(flat) * C * B, R * B), (231, 228, 221))
             px = img.load()
-            for i, g in enumerate(obj["cells"]):
+            for i, g in enumerate(flat):
                 gx = i * C * B
                 for idx, s in enumerate(g):
                     if s < 0:

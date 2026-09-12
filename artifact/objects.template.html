@@ -106,8 +106,9 @@
   canvas {
     display: block;
     background: transparent;
-    cursor: pointer;
+    cursor: grab;
     image-rendering: pixelated;
+    touch-action: pan-y;   /* keep vertical scrolling, claim horizontal for turning */
     /* No drop shadow. Isometric objects carry their own ground plane, and a
        shadow under the canvas puts a second, rectangular ground behind it. */
   }
@@ -241,7 +242,7 @@
 
   <div class="stage">
     <div class="obj-wrap">
-      <canvas id="obj" tabindex="0" aria-label="A pixel object built from the collection's colours"></canvas>
+      <canvas id="obj" tabindex="0" aria-label="An isometric object built from the collection's colours. Swipe or use the left and right arrow keys to turn it."></canvas>
       <div class="peek" id="peek" hidden></div>
     </div>
   </div>
@@ -288,7 +289,7 @@
   var TAGS = ["palette", "silhouette", "shading", "detail", "chunkiness",
               "motion", "colour drift", "subject"];
 
-  var themeIdx = 0, objIdx = 0, step = 0, pinned = null, BLOCK = 12, last = 0;
+  var themeIdx = 0, objIdx = 0, step = 0, view = 0, pinned = null, BLOCK = 12, last = 0;
   var rating = 0, verdicts = {}, db = null, entries = [];
 
   function theme() { return D.themes[themeIdx]; }
@@ -332,7 +333,7 @@
   // -1 is a hole: unpainted, and unclickable.
   function entryAt(col, row) {
     var o = obj();
-    var region = o.cells[step % o.frames][row * o.cols + col];
+    var region = o.cells[view][step % o.frames][row * o.cols + col];
     return region < 0 ? null : D.palette[o.regions[region]];
   }
 
@@ -360,7 +361,7 @@
     var o = obj();
     // Every object's interval comes from where it sits on the axis. The panel,
     // which has the least motion of anything here, drifts slowest.
-    if (ts - last < o.frameMs) return;
+    if (o.frames <= 1 || ts - last < o.frameMs) return;
     last = ts;
     step = (step + 1) % o.frames;
     draw();
@@ -413,9 +414,54 @@
     draw();
   }
 
+  // ---------- turning the object ----------
+
+  // Four facings, one per corner an isometric view can be taken from. Swiping
+  // left walks round one way, right the other.
+  function turn(by) {
+    view = (view + by + 4) % 4;
+    pinned = null;
+    peek.hidden = true;
+    draw();
+  }
+
+  var SWIPE = 34;          // px of travel before a press becomes a swipe
+  var drag = null;
+
   canvas.addEventListener("pointerdown", function (e) {
+    drag = { x: e.clientX, y: e.clientY, swiping: false };
+    // The peek still opens on contact rather than on release, so a plain tap is
+    // as immediate as it was; a swipe takes it away again the moment the finger
+    // has travelled far enough to mean something else.
     var cell = at(e);
     if (cell) { e.preventDefault(); pin(cell); }
+  });
+
+  canvas.addEventListener("pointermove", function (e) {
+    if (!drag || drag.swiping) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    // Horizontal only, and only when it clearly beats the vertical component —
+    // otherwise a scroll that starts on the object would spin it.
+    if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      drag.swiping = true;
+      drag.dir = dx < 0 ? 1 : -1;
+      pinned = null;
+      peek.hidden = true;
+      draw();
+    }
+  });
+
+  function endDrag() {
+    if (drag && drag.swiping) turn(drag.dir);
+    drag = null;
+  }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+  canvas.addEventListener("pointerleave", endDrag);
+
+  canvas.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { e.preventDefault(); turn(1); }
+    if (e.key === "ArrowRight") { e.preventDefault(); turn(-1); }
   });
 
   peek.addEventListener("click", function (e) {
@@ -437,6 +483,7 @@
     pinned = null;
     peek.hidden = true;
     step = 0;
+    view = 0;
     var o = obj();
     Array.prototype.forEach.call(objectsEl.querySelectorAll(".tab"), function (t, k) {
       t.setAttribute("aria-pressed", String(k === i));
