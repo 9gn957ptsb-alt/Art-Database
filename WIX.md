@@ -23,22 +23,28 @@ Collection `Works`, read `ANYONE`, write `ADMIN`:
 | Availability | `availability` | TEXT |
 | Image | `image` | MEDIA_IMAGE |
 | Order | `sortOrder` | NUMBER |
+| Category | `category` | TEXT |
 
 `MEDIA_IMAGE`, not `IMAGE` — Harmony sites reject `IMAGE`.
+
+`category` separates bodies of work. All six current rows are `Collage`; paintings
+are coming and will be `Painting`. It exists so the page can later show the two as
+separate sections, or filter between them, without the rows being restructured once
+there are dozens of them.
 
 The caption order matches the reference page: artist, *title* and year, medium and
 dimensions, availability.
 
 ### Current rows
 
-| Order | Title | Year | Dimensions | Image |
-| --- | --- | --- | --- | --- |
-| 1 | Amadeus | 2025 | — | — |
-| 2 | i | 2024 | — | — |
-| 3 | Collage with Portraits | 2024 | — | — |
-| 4 | NYNY | 2025 | — | — |
-| 5 | HEY AMATEUR: COLLAGE | 2026 | — | — |
-| 6 | Boston, Spring 2026 | 2026 | — | — |
+| Order | Title | Year | Category | Dimensions | Image |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Amadeus | 2025 | Collage | — | — |
+| 2 | i | 2024 | Collage | — | — |
+| 3 | Collage with Portraits | 2024 | Collage | — | — |
+| 4 | NYNY | 2025 | Collage | — | — |
+| 5 | HEY AMATEUR: COLLAGE | 2026 | Collage | — | — |
+| 6 | Boston, Spring 2026 | 2026 | Collage | — | — |
 
 Dimensions and images are deliberately empty. The photographs in `docs/images/`
 are placeholders, so nothing was uploaded to Wix Media yet — that happens once,
@@ -51,3 +57,6 @@ with the real documentation.
 2. Upload the real photographs to Wix Media and set each row's `image`.
 3. Fill in `dimensions`, the statement, and a real contact email.
 4. Remove **Wix Hotels**, which the site generator installed for no reason.
+5. When paintings arrive: set their `category` to `Painting`, and change the
+   masthead line — it currently says the practice is collage, which will stop
+   being true.
