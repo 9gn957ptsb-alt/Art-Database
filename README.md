@@ -1,12 +1,22 @@
-# Art database
+# Color Middling
 
-A searchable database of artworks, seeded from ~4,000 saved works on
-[Artsy](https://www.artsy.net) and designed to grow over time. Museum-visit photos
-(an artwork shot followed by its label shot) are a planned second source.
+Two things that will eventually meet:
+
+1. **The site** — `docs/`. A static artist website: portfolio first, plain HTML and CSS,
+   no build step. See [`docs/README.md`](docs/README.md) for how to edit and publish it.
+2. **The art database** — a searchable database of artworks, seeded from ~4,000 saved works
+   on [Artsy](https://www.artsy.net) and designed to grow over time. Museum-visit photos
+   (an artwork shot followed by its label shot) are a planned second source. Once it has
+   data it becomes a second section of the site, generated into static HTML.
+
+The rest of this file covers the database half.
 
 ## Status
 
-Import tooling is ready. It cannot run until the Artsy API is reachable — see setup below.
+The site is live-able but placeholder-filled — name, email and works still need replacing.
+
+Database import tooling is ready. It cannot run until the Artsy API is reachable — see
+setup below.
 
 ## Why the setup is fiddly
 

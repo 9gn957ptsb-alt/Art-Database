@@ -1,0 +1,158 @@
+/* Color Middling — base styles.
+   One file, no build step, no external fonts. Edit freely. */
+
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #5c5c5c;
+  --paper: #faf9f7;
+  --rule: #dcd8d2;
+  --accent: #7a4b2a;
+  --measure: 34rem;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #ece9e4;
+    --ink-soft: #a29c94;
+    --paper: #141312;
+    --rule: #332f2b;
+    --accent: #c9895c;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 0 1.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--serif);
+}
+
+/* ---- masthead ---------------------------------------------------------- */
+
+.masthead {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 2rem;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.masthead h1 a { color: inherit; text-decoration: none; }
+
+nav {
+  margin-left: auto;
+  font: 400 0.875rem/1 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-left: 1.5rem;
+}
+
+nav a:first-child { margin-left: 0; }
+nav a:hover { color: var(--ink); }
+nav a[aria-current="page"] { color: var(--ink); border-bottom: 1px solid var(--accent); padding-bottom: 2px; }
+
+/* ---- page -------------------------------------------------------------- */
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding-block: 3rem 4rem;
+}
+
+main > p, main > h2 + p, .prose { max-width: var(--measure); }
+
+h2 {
+  font: 400 1.125rem/1.3 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 3.5rem 0 1.25rem;
+}
+
+main > h2:first-child { margin-top: 0; }
+
+a { color: var(--accent); text-underline-offset: 0.15em; }
+
+.lede {
+  font-size: 1.375rem;
+  line-height: 1.45;
+  margin: 0 0 2rem;
+  max-width: var(--measure);
+}
+
+/* ---- work grid --------------------------------------------------------- */
+
+.works {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2.5rem 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+
+.work figure { margin: 0; }
+
+.work .plate {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-width: 100%;
+  background: linear-gradient(160deg, var(--rule), var(--paper));
+  border: 1px solid var(--rule);
+  object-fit: cover;
+}
+
+.work figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.work .title { font-style: italic; }
+.work .meta { display: block; color: var(--ink-soft); font-size: 0.875rem; }
+
+/* ---- footer ------------------------------------------------------------ */
+
+footer {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+  border-top: 1px solid var(--rule);
+  font: 400 0.875rem/1.6 var(--sans);
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+footer a { color: inherit; }
+
+@media (max-width: 32rem) {
+  .masthead { padding-top: 2rem; }
+  nav { margin-left: 0; width: 100%; }
+  nav a:first-child { margin-left: 0; }
+  .lede { font-size: 1.1875rem; }
+}
