@@ -264,6 +264,11 @@ PANELS = [
 ]
 
 
+# The panel builders, reachable by key, so the isometric build can lift the same
+# compositions into the floor without duplicating a single construction.
+PANELS_BY_KEY = [(key, (lambda m=make: m())) for key, _name, make in PANELS]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preview", action="store_true")

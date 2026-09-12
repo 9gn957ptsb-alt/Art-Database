@@ -105,10 +105,11 @@
 
   canvas {
     display: block;
-    background: transparent;   /* the objects have no background; only they exist */
+    background: transparent;
     cursor: pointer;
     image-rendering: pixelated;
-    box-shadow: var(--shadow);
+    /* No drop shadow. Isometric objects carry their own ground plane, and a
+       shadow under the canvas puts a second, rectangular ground behind it. */
   }
 
   .side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 0.9rem; }

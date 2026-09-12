@@ -179,21 +179,67 @@ Two constraints drive the settings:
 ## One artifact
 
 Everything generated from the collection's colours lives in a **single published
-artifact**, and new objects are added to it rather than published separately —
-otherwise the artifacts gallery fills up with near-duplicates and stops being useful.
+artifact**, and new objects are added to it rather than published separately.
 
 ```bash
-python3 scripts/build_sprites.py    # ancient vessels -> data/sprites.json
-python3 scripts/build_gerstner.py   # abstract panel  -> data/gerstner.json
-python3 scripts/build_falls.py      # the waterfall   -> data/falls.json
-python3 scripts/build_leaves.py     # falling leaves  -> data/leaves.json
-python3 scripts/build_objects.py    # merge all four  -> data/objects.json
-                                    #                 -> artifact/objects.html
+python3 scripts/build_iso.py      # every object as a voxel model -> data/iso.json
+python3 scripts/build_objects.py  # merge -> data/objects.json + artifact/objects.html
 ```
 
-`scripts/build_objects.py` writes both the payload and the page, which is republished
-to the same artifact URL every time. Adding an object means adding it to the merge,
-not a new page.
+## Everything is isometric
+
+Objects are **voxel models**, projected by `scripts/iso.py`. A flat grid cannot survive
+the change: a thing seen from a corner has three visible faces, and which face a pixel
+belongs to decides its colour.
+
+The projection is **true isometry**, not the 2:1 dimetric that pixel art normally uses.
+All three axes foreshorten equally and edges run at exactly 30 degrees — verified, not
+assumed: the unit axes project to equal lengths and sit 120 degrees apart. It costs
+something real, because sqrt(3):1 lands on no integer step, so edges stair-step
+irregularly where 2:1 would be even. It buys a drawing that can be measured: a length
+along x, y or z is the same length on the page. 2:1 stretches the vertical about 15%
+against the other two, which is why every object came out subtly squat before.
+
+Objects stand on a **ruled ground plane**, which overrides the no-backgrounds rule for
+isometric work only. An axonometric projection has no horizon and no convergence, so an
+object drawn alone has no height, no size and nowhere to be. The plane is voxels one
+layer below the floor, so it sorts in the painter's order with everything else, and its
+tiles double as a ruler. The cast shadow darkens the plane's own tiles rather than
+floating a dark shape above them.
+
+How each family converted — nothing was redrawn in isometric:
+
+| Family | Conversion |
+| --- | --- |
+| Amphora, Column | Solids of revolution. They already *were* profiles — a half-width per row — so `revolve` lifts them at no cost. |
+| Scarab | Extruded under a dome from the flat sprite's own slot grid, so the wing-case seam, legs and lapis inlay come up with it. |
+| The five panels | Set into the floor as mosaics. They were always modular grids; standing them upright would foreshorten the composition into illegibility. |
+| Waterfall | A sheet shaped by height — narrow lip, flaring as it drops — landing in a spreading pool. |
+| Falling Leaves | Bodies at real (x, y, z), yawing as they fall. |
+| Bounce | New. A ball, filling the family the motion axis declared and left empty. |
+
+Five things this took to get right, each a real failure first:
+
+- **The projection's scale must be even, or the geometry must be float.** At an odd
+  half-width the rhombus half-height truncates, faces stop tiling, and every gap is a
+  hole through to the back of the model. Invisible on a cube, obvious on a sphere.
+- **Cull faces in exactly one place.** A shell pass before rendering deletes the interior
+  voxels the renderer needs as *occluders*, opening every back face through the front.
+- **Shade per voxel from the surface normal, not per face.** Face shading is right for a
+  cube and wrong for a curve: it combs a sphere into corduroy. Primitives that know their
+  analytic normal pass it in, because a neighbour-derived normal has only 26 directions
+  and bands a smooth body into patches.
+- **The light vector is world-space, not screen-space.** -x projects up-left and -y
+  up-right, so a light at (-1,-1,1) is straight overhead on screen and stripes the form
+  horizontally.
+- **A material must leave room for its own lighting.** A flat top face shades +2, so a
+  ground material set too high runs off the end of its band and renders in the next
+  one — which is how the stone platform first came out navy.
+
+Quarter-turn rotation is free: a turn is a permutation of x and y, exact, with normals
+rotating along. A still object's four stored frames are its four facings. Hand-drawn
+isometric sprites have to author every facing separately; this is the one thing the
+engine gets that the games it is imitating had to pay for.
 
 ## Objects are organised by how much they move
 
