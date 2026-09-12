@@ -295,6 +295,61 @@ def squash(voxels, sx=1.0, sy=1.0, sz=1.0, floor=0):
     return out
 
 
+def rotate(voxels, turns, known=None):
+    """Turn a model a quarter at a time about the vertical axis.
+
+    Final Fantasy Tactics' signature was a battlefield you could rotate through
+    four views, and in a voxel model that costs nothing: a quarter turn is a
+    permutation of x and y, exact at every step, with no resampling and nothing
+    to redraw. Hand-drawn isometric sprites cannot do this at all — each facing
+    has to be authored separately. It is the one thing this engine gets for free
+    that the games it is imitating had to pay for.
+
+    Normals rotate with the model, so analytic shading survives the turn.
+    """
+    turns %= 4
+    if turns == 0:
+        return dict(voxels), (dict(known) if known else None)
+
+    def spin(x, y):
+        for _ in range(turns):
+            x, y = -y, x
+        return x, y
+
+    out = {spin(x, y) + (z,): v for (x, y, z), v in voxels.items()}
+    spun = None
+    if known:
+        spun = {}
+        for (x, y, z), (nx, ny, nz) in known.items():
+            spun[spin(x, y) + (z,)] = spin(nx, ny) + (nz,)
+    return out, spun
+
+
+def contour(grid, cols, rows, slot=0):
+    """Darken every drawn cell that touches a hole.
+
+    Every isometric game on the reference list separates a body from the ground
+    with a hard dark edge — without one, a shaded form sitting on a shaded floor
+    has nothing to read its silhouette against. Traced from the rendered
+    silhouette, not computed per row: a per-row edge stacks a dark band down
+    every diagonal, which is the same mistake the flat sprites made.
+    """
+    edge = []
+    for y in range(rows):
+        for x in range(cols):
+            i = y * cols + x
+            if grid[i] < 0:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if nx < 0 or ny < 0 or nx >= cols or ny >= rows or grid[ny * cols + nx] < 0:
+                    edge.append(i)
+                    break
+    for i in edge:
+        grid[i] = slot
+    return grid
+
+
 def translate(voxels, dx=0, dy=0, dz=0):
     return {(x + dx, y + dy, z + dz): v for (x, y, z), v in voxels.items()}
 
