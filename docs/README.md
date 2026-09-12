@@ -13,42 +13,42 @@ docs/
 
 ## The work grid
 
+Works are data. `docs/works.json` holds them; `scripts/build_page.py` renders
+`docs/index.html` from it. Edit the JSON, re-run the script — don't hand-edit the
+HTML, it gets overwritten.
+
+```bash
+python3 scripts/build_page.py
+```
+
+The JSON mirrors the Wix `Works` collection (see the root `WIX.md`) so the two
+stay comparable. A work's `slug` is also its image filename: `docs/images/<slug>.jpg`.
+
 Cards follow Artsy's format, in Artsy's order:
 
 ```
 Matthew Livingston          artist
-Half Light, 2024            title (italic), year
-Oil on linen, 40 × 30 in    medium, dimensions
+Boston Spring, 2026         title (italic), year
+Collage                     medium, dimensions
 Contact for price           availability
+Collages are wired ...      note (collages only)
 ```
 
-The grid is CSS masonry (`columns`), so images keep their own aspect ratio instead
-of being cropped to a uniform box. All eight works are placeholders; each plate is
-labelled with the filename it expects.
+## Rotation
 
-**To fill one in:** drop the image in `images/`, then replace the placeholder
+Each collage carries a rotate button that turns its image a quarter turn per
+click, because the works are wired to hang in any of four orientations.
 
-```html
-<div class="plate plate--empty" style="--ar: 4 / 5;">…</div>
-```
+Two things make it work. The frame is square, so a portrait image sized to fit
+inside it still fits when turned ninety degrees — the grid never reflows and
+neighbouring cards don't move. And the image is absolutely positioned inside that
+frame: in normal flow it would stretch the frame to its own height, leaving the
+height indefinite, and a percentage `max-height` against an indefinite height
+resolves to `none` — the image then sizes to full width and rotating it spills
+into the next column.
 
-with
-
-```html
-<img class="plate" src="images/01.jpg" alt="Half Light, 2024">
-```
-
-A real image needs no `--ar` — it takes its own shape.
-
-**When adding or removing works,** note that CSS columns fill sequentially, so each
-adjacent pair of entries lands in the same column. Alternating tall and short keeps
-the columns ending at roughly the same height; a run of tall works leaves a void
-under the short columns. Update the count in the `Works` heading too.
-
-## Still placeholder
-
-`you@example.com`, `Studio in City`, the statement, and all eight captions —
-titles, years, media and dimensions are invented. The name is real.
+Rotation is per-image and resets on reload. Only works whose `category` is
+`Collage` get the control.
 
 ## Preview locally
 

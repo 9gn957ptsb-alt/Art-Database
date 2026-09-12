@@ -24,6 +24,7 @@ Collection `Works`, read `ANYONE`, write `ADMIN`:
 | Image | `image` | MEDIA_IMAGE |
 | Order | `sortOrder` | NUMBER |
 | Category | `category` | TEXT |
+| Note | `note` | TEXT |
 
 `MEDIA_IMAGE`, not `IMAGE` — Harmony sites reject `IMAGE`.
 
@@ -33,7 +34,11 @@ separate sections, or filter between them, without the rows being restructured o
 there are dozens of them.
 
 The caption order matches the reference page: artist, *title* and year, medium and
-dimensions, availability.
+dimensions, availability, then `note`.
+
+`note` carries the orientation line on every collage. It is the same string on all
+six rows rather than logic keyed off `category`, because a Wix repeater binds a
+field far more easily than it evaluates a condition.
 
 ### Current rows
 
@@ -57,6 +62,8 @@ with the real documentation.
 2. Upload the real photographs to Wix Media and set each row's `image`.
 3. Fill in `dimensions`, the statement, and a real contact email.
 4. Remove **Wix Hotels**, which the site generator installed for no reason.
-5. When paintings arrive: set their `category` to `Painting`, and change the
-   masthead line — it currently says the practice is collage, which will stop
-   being true.
+5. When paintings arrive: set their `category` to `Painting`, leave `note` empty,
+   and change the masthead line — it currently says the practice is collage,
+   which will stop being true.
+6. Image rotation is on the reference page only. Wix repeaters have no rotate
+   control, so on the live site it needs Velo enabled and custom code.

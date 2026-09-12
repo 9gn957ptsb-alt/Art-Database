@@ -1,0 +1,70 @@
+{
+  "artist": "Matthew Livingston",
+  "lede": "Collage — photographs, tickets, paper and tape.",
+  "liveSite": "https://mattlivs3.wixsite.com/matthew-livingston-a",
+  "notes": {
+    "Collage": "Collages are wired on the back of the frame for each orientation provided by the frame's shape."
+  },
+  "works": [
+    {
+      "slug": "amadeus",
+      "title": "Amadeus",
+      "year": 2025,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Collage of photographs, Polaroids, boarding passes and handwritten notes in a dense rectilinear grid"
+    },
+    {
+      "slug": "i",
+      "title": "i",
+      "year": 2024,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Collage in browns and blues with a dark central panel and a pale standing figure"
+    },
+    {
+      "slug": "collage-with-portraits",
+      "title": "Collage with Portraits",
+      "year": 2024,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Collage in three horizontal bands built from receipts, magazine pages and film strips"
+    },
+    {
+      "slug": "nyny",
+      "title": "NYNY",
+      "year": 2025,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Collage of Metropolitan Museum tickets, maps, playing cards, coins and handwriting"
+    },
+    {
+      "slug": "hey-amateur-collage",
+      "title": "HEY AMATEUR: COLLAGE",
+      "year": 2026,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Tall collage of photographs, tape lettering and painted fragments"
+    },
+    {
+      "slug": "boston-spring",
+      "title": "Boston Spring",
+      "year": 2026,
+      "medium": "Collage",
+      "dimensions": "",
+      "availability": "Contact for price",
+      "category": "Collage",
+      "alt": "Collage of Boston museum admission tickets, Polaroid film packaging, maps and dated instant photographs"
+    }
+  ]
+}
