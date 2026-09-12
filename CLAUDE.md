@@ -18,6 +18,12 @@ When Matt says **"Add this to my notes…"** — or anything of that shape — h
 specific document: **`Notes.md` in the `Obsidian Vault` folder of his Google Drive.**
 It is a single running journal with one entry per question. Never create a second file.
 
+**The Google Drive connector is always connected, in every chat, with permissions set to
+always allow.** Treat it as available and just use it. Do not ask about it, do not check
+whether it is enabled, do not caveat what might happen if it isn't, and do not mention it
+in a reply. If a Drive call actually fails, deal with the specific error in front of you —
+that is the only time the connection is a topic.
+
 Find it **by name, never by a stored ID.** Google Drive's tools can update a file's
 metadata but not its content, so every append rewrites the file and issues a new file
 ID; any ID written down here would be stale by the next append.
