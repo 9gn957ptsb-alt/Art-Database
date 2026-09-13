@@ -583,13 +583,17 @@
   stage.addEventListener("pointerdown", function (e) {
     e.preventDefault();
     try { stage.setPointerCapture(e.pointerId); } catch (err) {}
-    drag = { x: e.clientX, y: e.clientY, az: cam.az, el: cam.el, id: e.pointerId, moved: false };
     var reg = regionAt(e);
+    drag = { x: e.clientX, y: e.clientY, az: cam.az, el: cam.el,
+             id: e.pointerId, moved: false, reg: reg };
     clearHold();
     if (reg >= 0) {
+      // Held: open while the finger is still down, which is what a press and
+      // hold means and what the moving objects need, since the surface travels
+      // and the region under the cursor would otherwise have moved on.
       holdTimer = setTimeout(function () {
         holdTimer = null;
-        if (drag && !drag.moved) pin(reg);
+        if (drag && !drag.moved) { drag.pinned = true; pin(reg); }
       }, HOLD);
     }
   });
@@ -612,6 +616,10 @@
 
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.id)) return;
+    // A click is a press that ended before the hold elapsed. Without this the
+    // only way to reach an artwork was to hold deliberately — an ordinary mouse
+    // click is 80 to 120ms and never got there.
+    if (holdTimer && !drag.moved && drag.reg >= 0) pin(drag.reg);
     clearHold();
     drag = null;
   }

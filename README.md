@@ -294,8 +294,20 @@ the same work. Lighting is baked for the same reason it can be: the light is fix
 world, so how lit a face is does not depend on where the camera stands.
 
 The renderer rasterises by hand into an ImageData rather than using canvas paths, because
-it also fills a parallel buffer of region ids. That buffer is what press-and-hold reads,
-so picking is exact at any angle and costs nothing extra.
+it also fills a parallel buffer of region ids. That buffer is what a press reads, so
+picking is exact at any camera angle and costs nothing extra — the region under the
+cursor is looked up, never recomputed.
+
+**A click and a press both open the work.** A press opens it while the finger is still
+down, which is what the moving objects need, since their surface travels and the region
+under the cursor moves on. A click — released before the 170ms hold elapses — opens it on
+release. Without that second path the only way to reach an artwork was a deliberate hold:
+an ordinary mouse click is 80 to 120ms and never got there.
+
+Checked rather than assumed, on every publish: sixteen quick clicks across four objects
+and two camera angles all hit a region and produce a well-formed Artsy link, all 940
+referenced works are present in the saved collection, and no voxel points outside its
+object's region table.
 
 Elevation is clamped short of the poles: at the pole the azimuth stops meaning anything
 and the object spins on the spot instead of being orbited. The projection scale is taken
