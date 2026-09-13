@@ -67,3 +67,12 @@ with the real documentation.
    which will stop being true.
 6. Image rotation is on the reference page only. Wix repeaters have no rotate
    control, so on the live site it needs Velo enabled and custom code.
+7. Front page peels away on rotation — *"I want the front page to peel away upon
+   rotating the token object like your ducking into the shadows of a tree,
+   patterned in blues, upon escaping the beating light of day"*. Kept in the
+   artist's words; the image is the brief. Rotation stops being a per-work
+   control and becomes the page's own gesture: the front page gives way to
+   something cooler and dappled behind it, carried by light and shadow rather
+   than a slide or fade. Blocked until one thing is settled — **what the token
+   object is**. Today's rotate control is a small button per collage; this reads
+   as something singular and central that the visitor turns.
