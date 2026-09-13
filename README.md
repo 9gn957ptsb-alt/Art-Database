@@ -256,41 +256,51 @@ Five things this took to get right, each a real failure first:
   ground material set too high runs off the end of its band and renders in the next
   one — which is how the stone platform first came out navy.
 
-### Turning the object
+### A camera, not four pictures
 
-Every object is stored at all **four facings** — the four corners an isometric view can
-be taken from. Swipe left or right on it, or use the arrow keys, to walk round it. A
-quarter turn is a permutation of x and y, exact, with the normals rotating along, so the
-shading stays correct and nothing is resampled. Hand-drawn isometric sprites have to
-author every facing separately; this is the one thing the engine gets that the games it
-imitates had to pay for.
+The views were rasterised here and shipped as pictures — four fixed corners per object.
+That could not show these objects turning at all: the amphora, column, waterfall and ball
+are **solids of revolution**, so a quarter turn produces very nearly the same image, and
+four corners of a rotationally symmetric thing is four of the same picture.
 
-Views and frames are separate axes in the payload: `cells[view][frame]`. A still object
-has one frame per view, a moving one its whole animation at each, which is four times the
-grids for the three animated objects and the reason the payload is 4.3 MB rather than 1.
+So the geometry ships and the page projects it. Drag to orbit, or click a face, edge or
+corner of the **view cube** to fly there — twenty-six viewpoints, which is every way you
+can look at a cube squarely. The move is eased in and out rather than cut, because the
+point of moving between viewpoints is that the eye can follow it.
 
-The whole model turns — ground plane, shadow and all. The plane is a square so its
-outline does not change, but the shadow and the ruling of the tiles turn with the object,
-which is what a viewer walking round would see. One canvas is sized across all four
-views, so the object does not jump as it turns.
+```bash
+python3 scripts/export_voxels.py   # voxel models -> data/voxels.json
+python3 scripts/build_objects.py   # merge -> data/objects.json + artifact/objects.html
+```
 
-**Four diamonds above the object** say which corner you are looking from, and tapping one
-turns to it. That control exists because a gesture is not guaranteed to reach the page —
-an artifact runs inside a host that may claim horizontal swipes for itself — and because
-without it there is no way to tell a swipe that did nothing from a feature that is not
-there.
+Shipping geometry is **smaller**, not larger: 62,000 surface voxels against 5.41 MB of
+pre-rendered grids. The payload went from 5.41 MB to 1.92 MB while going from four
+viewpoints to any of them.
 
-The swipe listens on the whole **stage**, not on the canvas. The canvas is only as large
-as the object, so every pixel around it used to be dead to the gesture, which on a phone
-is most of the area a thumb lands on.
+Two things make that work.
 
-Swipe and press-and-hold share that area without a mode. The preview opens after 170ms of
-stillness rather than on contact: opening it immediately put a panel into the layout
-mid-gesture, which moved the canvas under the finger. On a phone it is `position: fixed`
-for the same reason. A swipe is 26px of horizontal travel, and more horizontal than
-vertical, so a scroll that begins on the object does not spin it; `touch-action: pan-y`
-leaves vertical scrolling to the page, and the pointer is captured so the gesture
-survives leaving the element.
+**Only surface voxels are sent**, each with a six-bit mask of which faces are exposed. A
+voxel walled in on all six sides can never be seen from any angle; a face with a
+neighbour against it can never be seen either. Sending the mask rather than the
+neighbours means the renderer never looks a neighbour up — it draws the exposed faces
+that happen to point at the camera. Interiors are 21–79% of these models.
+
+**Regions are computed in three dimensions.** A region used to be a connected patch of
+the *rendered image*, which was fine while the view was fixed and useless once it moves:
+the patches would be recomputed every frame and the work behind a shape would change as
+you turned it. A region is now a connected run of voxels at the same lit step — a
+property of the object, not of the camera. Turn it however you like; the same shape keeps
+the same work. Lighting is baked for the same reason it can be: the light is fixed in the
+world, so how lit a face is does not depend on where the camera stands.
+
+The renderer rasterises by hand into an ImageData rather than using canvas paths, because
+it also fills a parallel buffer of region ids. That buffer is what press-and-hold reads,
+so picking is exact at any angle and costs nothing extra.
+
+Elevation is clamped short of the poles: at the pole the azimuth stops meaning anything
+and the object spins on the spot instead of being orbited. The projection scale is taken
+from the widest the model gets over a full turn, so it neither overflows nor breathes as
+it rotates.
 
 ## Objects are organised by how much they move
 

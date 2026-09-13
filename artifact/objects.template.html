@@ -106,19 +106,15 @@
     user-select: none; -webkit-user-select: none;
   }
 
-  /* Which of the four isometric corners you are looking from. Tappable, so
-     turning never depends on a gesture the host might swallow. */
-  .facings { display: flex; gap: 0.55rem; justify-content: center; }
-  .facing {
-    width: 0.7rem; height: 0.7rem; padding: 0;
-    transform: rotate(45deg);
-    background: transparent;
-    border: 1px solid var(--rule-strong);
-    cursor: pointer;
-  }
-  .facing[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
-  .facing:hover { border-color: var(--ink); }
-  .facing:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  /* The view cube. Its faces, edges and corners are each a viewpoint: click one
+     and the camera flies there. It turns with the camera, so it is also the
+     readout for where you are standing. */
+  .cube { display: block; margin: 0 auto; touch-action: none; cursor: pointer; }
+  .cube polygon, .cube circle { transition: fill 120ms, stroke 120ms; }
+  .cube .zone { fill: transparent; stroke: none; cursor: pointer; }
+  .cube .zone:hover { fill: var(--ink); fill-opacity: 0.18; }
+  .cube .edge { stroke: var(--rule-strong); stroke-width: 1; fill: none; }
+  .cube .side { stroke: var(--rule-strong); stroke-width: 1; }
   .obj-wrap { position: relative; flex: 0 0 auto; }
 
   canvas {
@@ -258,7 +254,8 @@
 
   </div>
 
-  <div class="facings" id="facings" role="group" aria-label="Which corner the object is seen from"></div>
+  <svg class="cube" id="cube" width="104" height="104" viewBox="-54 -54 108 108"
+       role="group" aria-label="View cube: click a face, edge or corner to move the camera there"></svg>
 
   <div class="stage">
     <div class="obj-wrap">
@@ -309,82 +306,218 @@
   var TAGS = ["palette", "silhouette", "shading", "detail", "chunkiness",
               "motion", "colour drift", "subject"];
 
-  var themeIdx = 0, objIdx = 0, step = 0, view = 0, pinned = null, BLOCK = 12, last = 0;
+  var themeIdx = 0, objIdx = 0, step = 0, pinned = null, last = 0;
   var rating = 0, verdicts = {}, db = null, entries = [];
 
   function theme() { return D.themes[themeIdx]; }
   function obj() { return theme().objects[objIdx]; }
+  // ---------- the camera ----------
+  //
+  // The views used to be rasterised ahead of time, four corners per object. That
+  // could not show these objects turning at all: most of them are solids of
+  // revolution, so a quarter turn of an amphora is very nearly the same picture.
+  // The geometry ships instead and is projected here, which means any angle, and
+  // means moving between angles rather than cutting between them.
 
-  // ---------- rendering ----------
+  var ISO_EL = Math.asin(1 / Math.sqrt(3));    // 35.264 degrees: true isometry
+  var cam = { az: Math.PI / 4, el: ISO_EL };
+  var from = null, to = null, t0 = 0, TWEEN = 520;
+
+  function basis(c) {
+    var ca = Math.cos(c.az), sa = Math.sin(c.az);
+    var ce = Math.cos(c.el), se = Math.sin(c.el);
+    return {
+      // dir points from the scene toward the camera; a face is visible when its
+      // outward normal has a positive component along it.
+      dx: ce * ca, dy: ce * sa, dz: se,
+      rx: sa, ry: -ca, rz: 0,                        // screen right
+      ux: -ca * se, uy: -sa * se, uz: ce             // screen up
+    };
+  }
+
+  // At azimuth 45 and this elevation the projection is exactly the isometric one
+  // the objects were designed in: all three axes equally foreshortened, edges at
+  // 30 degrees. Every other angle is a real camera position, not an
+  // approximation of one.
+
+  var CORNER = [
+    [0, 0, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1],   // -x .. filled per axis below
+  ];
+
+  // The four corners of each face, in the DIRS order the exporter packed.
+  function faceQuad(x, y, z, f) {
+    switch (f) {
+      case 0: return [[x+1,y,z],[x+1,y+1,z],[x+1,y+1,z+1],[x+1,y,z+1]];   // +x
+      case 1: return [[x,y,z],[x,y,z+1],[x,y+1,z+1],[x,y+1,z]];           // -x
+      case 2: return [[x,y+1,z],[x,y+1,z+1],[x+1,y+1,z+1],[x+1,y+1,z]];   // +y
+      case 3: return [[x,y,z],[x+1,y,z],[x+1,y,z+1],[x,y,z+1]];           // -y
+      case 4: return [[x,y,z+1],[x+1,y,z+1],[x+1,y+1,z+1],[x,y+1,z+1]];   // +z
+      default: return [[x,y,z],[x,y+1,z],[x+1,y+1,z],[x+1,y,z]];          // -z
+    }
+  }
+
+  var scale = 3, ox = 0, oy = 0;
+
+  function fitCamera() {
+    // Size the projection from the model's own box at the current angle, but
+    // take the largest extent over a full turn so the object neither overflows
+    // nor breathes as it rotates.
+    var o = obj(), lo = o.lo, hi = o.hi, worst = 0, worstH = 0;
+    for (var a = 0; a < 16; a++) {
+      var b = basis({ az: a * Math.PI / 8, el: cam.el });
+      var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+      for (var i = 0; i < 8; i++) {
+        var px = (i & 1) ? hi[0] : lo[0], py = (i & 2) ? hi[1] : lo[1], pz = (i & 4) ? hi[2] : lo[2];
+        var sx = px * b.rx + py * b.ry + pz * b.rz;
+        var sy = -(px * b.ux + py * b.uy + pz * b.uz);
+        if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
+        if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+      }
+      worst = Math.max(worst, maxX - minX);
+      worstH = Math.max(worstH, maxY - minY);
+    }
+    scale = Math.max(1, Math.min(canvas.width / (worst + 2), canvas.height / (worstH + 2)));
+  }
+
+  var pick = null;          // region id per pixel, for press and hold
+
+  function render() {
+    var o = obj(), w = canvas.width, h = canvas.height;
+    if (!w || !h) return;
+    var img = ctx.createImageData(w, h);
+    var buf = new Uint32Array(img.data.buffer);
+    if (!pick || pick.length !== w * h) pick = new Int32Array(w * h);
+    pick.fill(-1);
+
+    var b = basis(cam);
+    var vox = o.vox[step % o.frames];
+    var cx = (o.lo[0] + o.hi[0]) / 2, cy = (o.lo[1] + o.hi[1]) / 2, cz = (o.lo[2] + o.hi[2]) / 2;
+    ox = w / 2; oy = h / 2;
+
+    // Gather every visible face with its depth, then paint far to near. A depth
+    // sort on face centroids is exact for axis-aligned cubes on a grid.
+    var faces = [], n = vox.length / 5 | 0;
+    for (var i = 0; i < n; i++) {
+      var x = vox[i*5], y = vox[i*5+1], z = vox[i*5+2], mask = vox[i*5+3], reg = vox[i*5+4];
+      for (var f = 0; f < 6; f++) {
+        if (!(mask & (1 << f))) continue;
+        var d = D.dirs[f];
+        if (d[0]*b.dx + d[1]*b.dy + d[2]*b.dz <= 0) continue;   // faces away
+        var q = faceQuad(x - cx, y - cy, z - cz, f), sx = [], sy = [], dep = 0;
+        for (var k = 0; k < 4; k++) {
+          var p = q[k];
+          sx.push((p[0]*b.rx + p[1]*b.ry + p[2]*b.rz) * scale + ox);
+          sy.push(-(p[0]*b.ux + p[1]*b.uy + p[2]*b.uz) * scale + oy);
+          dep += p[0]*b.dx + p[1]*b.dy + p[2]*b.dz;
+        }
+        faces.push({ d: dep, sx: sx, sy: sy, r: reg });
+      }
+    }
+    faces.sort(function (a, c) { return a.d - c.d; });
+
+    for (var fi = 0; fi < faces.length; fi++) {
+      var fa = faces[fi], hex = D.palette[o.regions[fa.r]][0];
+      var col = 0xff000000 |
+        (parseInt(hex.substr(5,2),16) << 16) |
+        (parseInt(hex.substr(3,2),16) << 8) |
+        parseInt(hex.substr(1,2),16);
+      fillQuad(buf, pick, w, h, fa.sx, fa.sy, col, fa.r);
+    }
+    ctx.putImageData(img, 0, 0);
+
+    if (pinned != null) outlineRegion(pinned);
+  }
+
+  // Scanline fill, half-open on the right edge. Adjacent faces share an edge,
+  // and filling both sides closed leaves a seam of whichever was drawn last
+  // running down every join in the model.
+  function fillQuad(buf, pk, w, h, sx, sy, col, reg) {
+    var y0 = Math.max(0, Math.floor(Math.min(sy[0], sy[1], sy[2], sy[3])));
+    var y1 = Math.min(h - 1, Math.ceil(Math.max(sy[0], sy[1], sy[2], sy[3])));
+    for (var y = y0; y <= y1; y++) {
+      var c = y + 0.5, xs = [];
+      for (var i = 0; i < 4; i++) {
+        var j = (i + 1) & 3, ay = sy[i], by = sy[j];
+        if ((ay <= c && c < by) || (by <= c && c < ay)) {
+          xs.push(sx[i] + (c - ay) / (by - ay) * (sx[j] - sx[i]));
+        }
+      }
+      if (xs.length < 2) continue;
+      xs.sort(function (a, b) { return a - b; });
+      for (var s = 0; s + 1 < xs.length; s += 2) {
+        var a = Math.max(0, Math.ceil(xs[s] - 0.5));
+        var e = Math.min(w - 1, Math.ceil(xs[s+1] - 0.5) - 1);
+        var row = y * w;
+        for (var x = a; x <= e; x++) { buf[row + x] = col; pk[row + x] = reg; }
+      }
+    }
+  }
+
+  // The pinned region is ringed rather than tinted, so the colour it stands for
+  // is still the colour you are looking at.
+  function outlineRegion(reg) {
+    var w = canvas.width, h = canvas.height;
+    ctx.fillStyle = "#fbfaf6";
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        if (pick[y * w + x] !== reg) continue;
+        if ((x > 0 && pick[y*w+x-1] === reg) && (x < w-1 && pick[y*w+x+1] === reg) &&
+            (y > 0 && pick[(y-1)*w+x] === reg) && (y < h-1 && pick[(y+1)*w+x] === reg)) continue;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
 
   function layout() {
-    var o = obj();
-    // A phone gets the full width less a gutter; a desktop is capped, because
-    // a wide object will otherwise take the whole window and the objects stop
-    // being comparable to each other at a glance.
     var gutter = window.innerWidth < 640 ? 16 : 48;
     var availW = Math.min(window.innerWidth - gutter * 2, 620);
-
-    // Measure where the stage actually starts instead of assuming the tab rows
-    // are one line each. On a phone they wrap to two or three, and a guessed
-    // offset is wrong by a whole row — which is how the object ended up taller
-    // than the screen. Walked up the offset chain so it does not depend on
-    // where the page happens to be scrolled.
     var top = 0, el = canvas.parentNode;
     while (el) { top += el.offsetTop; el = el.offsetParent; }
     var availH = Math.max(200, window.innerHeight - top - 20);
-
-    // No lower bound. A minimum cell size overrides the fit: it was harmless
-    // when objects were 28 cells across and pushes a 136-cell one to over a
-    // thousand pixels. Small and whole beats large and cropped.
-    BLOCK = Math.max(1, Math.min(12, Math.floor(availW / o.cols), Math.floor(availH / o.rows)));
-    canvas.width = o.cols * BLOCK;
-    canvas.height = o.rows * BLOCK;
+    var side = Math.max(160, Math.min(availW, availH, 460));
+    canvas.width = Math.round(side);
+    canvas.height = Math.round(side * 1.05);
     canvas.style.width = canvas.width + "px";
     canvas.style.height = canvas.height + "px";
+    fitCamera();
   }
 
-  // Every object is the same kind now: a grid of REGION ids per frame, and one
-  // palette entry per region. A region is a contiguous patch of one ramp step —
-  // the thing the eye reads as a shape — and it carries one artwork for good.
-  // Colour used to be carried per ramp step and walked over time, so the whole
-  // picture held only as many works as the ramp had steps, and which work a
-  // patch meant changed while you looked at it. A link that moves is not a link.
-  // -1 is a hole: unpainted, and unclickable.
-  function entryAt(col, row) {
-    var o = obj();
-    var region = o.cells[view][step % o.frames][row * o.cols + col];
-    return region < 0 ? null : D.palette[o.regions[region]];
+  // ---------- moving between viewpoints ----------
+
+  function shortest(a, b) {
+    // Take the near way round, so a turn never crosses the whole scene to reach
+    // a viewpoint a few degrees away.
+    var d = (b - a) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    return d;
   }
 
-  function draw() {
-    var o = obj();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (var row = 0; row < o.rows; row++) {
-      for (var col = 0; col < o.cols; col++) {
-        var e = entryAt(col, row);
-        if (!e) continue;
-        ctx.fillStyle = e[0];
-        ctx.fillRect(col * BLOCK, row * BLOCK, BLOCK, BLOCK);
-      }
-    }
-    if (pinned) {
-      ctx.strokeStyle = "#fbfaf6"; ctx.lineWidth = 2;
-      ctx.strokeRect(pinned.col * BLOCK + 1, pinned.row * BLOCK + 1, BLOCK - 2, BLOCK - 2);
-      ctx.strokeStyle = "#1b1815"; ctx.lineWidth = 1;
-      ctx.strokeRect(pinned.col * BLOCK + 2.5, pinned.row * BLOCK + 2.5, BLOCK - 5, BLOCK - 5);
-    }
+  function flyTo(az, el) {
+    from = { az: cam.az, el: cam.el };
+    to = { az: cam.az + shortest(cam.az, az), el: el };
+    t0 = performance.now();
+    pinned = null;
+    peek.hidden = true;
+  }
+
+  function tweenCamera(ts) {
+    if (!to) return false;
+    var u = Math.min(1, (ts - t0) / TWEEN);
+    // Ease in and out: a constant-speed turn starts and stops with a jolt, and
+    // the point of moving rather than cutting is that the eye can follow it.
+    var e = u < 0.5 ? 4*u*u*u : 1 - Math.pow(-2*u + 2, 3) / 2;
+    cam.az = from.az + (to.az - from.az) * e;
+    cam.el = from.el + (to.el - from.el) * e;
+    if (u >= 1) { to = null; cam.az = (cam.az + Math.PI*2) % (Math.PI*2); }
+    return true;
   }
 
   function tick(ts) {
     requestAnimationFrame(tick);
-    var o = obj();
-    // Every object's interval comes from where it sits on the axis. The panel,
-    // which has the least motion of anything here, drifts slowest.
-    if (o.frames <= 1 || ts - last < o.frameMs) return;
-    last = ts;
-    step = (step + 1) % o.frames;
-    draw();
+    var o = obj(), moved = tweenCamera(ts), advanced = false;
+    if (o.frames > 1 && ts - last >= o.frameMs) { last = ts; step = (step + 1) % o.frames; advanced = true; }
+    if (moved || advanced) { if (moved) markCube(); render(); }
   }
 
   // ---------- press and hold ----------
@@ -394,39 +527,33 @@
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  function at(e) {
-    var rect = canvas.getBoundingClientRect(), o = obj();
-    var col = Math.floor((e.clientX - rect.left) / (rect.width / o.cols));
-    var row = Math.floor((e.clientY - rect.top) / (rect.height / o.rows));
-    if (col < 0 || row < 0 || col >= o.cols || row >= o.rows) return null;
-    if (!entryAt(col, row)) return null;   // a hole is not part of the object
-    return { col: col, row: row };
+  function regionAt(e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = Math.floor((e.clientX - rect.left) / rect.width * canvas.width);
+    var y = Math.floor((e.clientY - rect.top) / rect.height * canvas.height);
+    if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height || !pick) return -1;
+    return pick[y * canvas.width + x];
   }
 
-  function placePeek(row) {
+  function placePeek() {
     if (window.innerWidth < 860) {
-      // Fixed, not in the flow. As a static block it pushed the canvas down the
-      // moment it appeared, which moved the object out from under the finger.
       peek.style.position = "fixed";
       peek.style.left = "12px"; peek.style.right = "12px";
-      peek.style.bottom = "12px"; peek.style.top = "auto";
-      peek.style.width = "auto";
+      peek.style.bottom = "12px"; peek.style.top = "auto"; peek.style.width = "auto";
       return;
     }
-    peek.style.right = "auto"; peek.style.bottom = "auto";
     peek.style.position = "absolute";
+    peek.style.right = "auto"; peek.style.bottom = "auto";
     peek.style.width = "200px";
     peek.style.left = canvas.width + 14 + "px";
-    var maxTop = Math.max(0, canvas.height - peek.offsetHeight);
-    peek.style.top = Math.max(0, Math.min(row * BLOCK - 56, maxTop)) + "px";
+    peek.style.top = "0px";
   }
 
-  function pin(cell) {
-    // Capture at the moment of the press: the surface keeps moving underneath.
-    var entry = entryAt(cell.col, cell.row);
+  function pin(reg) {
+    var entry = D.palette[obj().regions[reg]];
     if (!entry) return;
     var art = D.artworks[entry[1]];
-    pinned = cell;
+    pinned = reg;
     peek.innerHTML =
       '<button class="peek-close" type="button" aria-label="Close preview">✕</button>' +
       (art[3] ? '<img src="' + art[3] + '" alt="">' : "") +
@@ -437,102 +564,149 @@
       '<a class="go" href="https://www.artsy.net/artwork/' + esc(art[0]) +
       '" target="_blank" rel="noopener noreferrer">Open on Artsy</a>';
     peek.hidden = false;
-    placePeek(cell.row);
-    draw();
+    placePeek();
+    render();
   }
 
-  // ---------- turning the object ----------
-
-  // Four facings, one per corner an isometric view can be taken from. Swiping
-  // left walks round one way, right the other.
-  var facingsEl = document.getElementById("facings");
-  facingsEl.innerHTML = [0, 1, 2, 3].map(function (i) {
-    return '<button class="facing" type="button" data-v="' + i +
-      '" aria-label="Corner ' + (i + 1) + '" aria-pressed="' + (i === 0) + '"></button>';
-  }).join("");
-  facingsEl.addEventListener("click", function (e) {
-    var f = e.target.closest(".facing");
-    if (f) faceTo(+f.dataset.v);
+  peek.addEventListener("click", function (e) {
+    if (e.target.closest(".peek-close")) { peek.hidden = true; pinned = null; render(); }
   });
 
-  function markFacings() {
-    Array.prototype.forEach.call(facingsEl.querySelectorAll(".facing"), function (f) {
-      f.setAttribute("aria-pressed", String(+f.dataset.v === view));
-    });
-  }
-
-  function faceTo(v) {
-    view = (v + 4) % 4;
-    pinned = null;
-    peek.hidden = true;
-    markFacings();
-    draw();
-  }
-
-  function turn(by) { faceTo(view + by); }
-
-  var SWIPE = 26;          // px of travel before a press becomes a swipe
-  var HOLD = 170;          // ms of stillness before a press becomes a preview
-  var drag = null, holdTimer = null;
-
-  function clearHold() {
-    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-  }
+  // ---------- dragging the camera ----------
 
   var stage = document.querySelector(".stage");
+  var HOLD = 170, TURNS = 0.0075;      // radians of orbit per pixel dragged
+  var drag = null, holdTimer = null;
+
+  function clearHold() { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } }
 
   stage.addEventListener("pointerdown", function (e) {
     e.preventDefault();
-    // Capture, so every move and release comes back here even once the finger
-    // has wandered off the canvas. Without it the gesture ends the moment the
-    // pointer crosses the edge, which on a small screen is most of them.
     try { stage.setPointerCapture(e.pointerId); } catch (err) {}
-    drag = { x: e.clientX, y: e.clientY, id: e.pointerId, swiping: false, dir: 0 };
-    // The preview waits for stillness instead of opening on contact. Opening it
-    // immediately put a panel into the layout mid-gesture, which moved the
-    // canvas under the finger and killed the swipe before it could be read.
-    // Press and hold is also what it was always meant to be.
-    var cell = at(e);
+    drag = { x: e.clientX, y: e.clientY, az: cam.az, el: cam.el, id: e.pointerId, moved: false };
+    var reg = regionAt(e);
     clearHold();
-    if (cell) {
+    if (reg >= 0) {
       holdTimer = setTimeout(function () {
         holdTimer = null;
-        if (drag && !drag.swiping) pin(cell);
+        if (drag && !drag.moved) pin(reg);
       }, HOLD);
     }
   });
 
   stage.addEventListener("pointermove", function (e) {
-    if (!drag || drag.swiping || e.pointerId !== drag.id) return;
+    if (!drag || e.pointerId !== drag.id) return;
     var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    // Horizontal only, and only when it clearly beats the vertical component,
-    // so a scroll that begins on the object does not spin it.
-    if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      drag.swiping = true;
-      drag.dir = dx < 0 ? 1 : -1;
-      clearHold();
-      if (pinned) { pinned = null; peek.hidden = true; draw(); }
-    }
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 6) return;
+    drag.moved = true;
+    clearHold();
+    if (pinned != null) { pinned = null; peek.hidden = true; }
+    to = null;                                    // a drag overrides a flight
+    cam.az = drag.az - dx * TURNS;
+    // Clamped short of the poles: at the pole the azimuth stops meaning
+    // anything and the object spins on the spot instead of being orbited.
+    cam.el = Math.max(-1.35, Math.min(1.35, drag.el + dy * TURNS));
+    markCube();
+    render();
   });
 
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.id)) return;
     clearHold();
-    if (drag.swiping) turn(drag.dir);
     drag = null;
   }
   stage.addEventListener("pointerup", endDrag);
   stage.addEventListener("pointercancel", endDrag);
-  // Deliberately no pointerleave handler: with capture it is not needed, and it
-  // used to fire on the layout shift the preview caused and cancel the swipe.
 
-  canvas.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowLeft") { e.preventDefault(); turn(1); }
-    if (e.key === "ArrowRight") { e.preventDefault(); turn(-1); }
+  // ---------- the view cube ----------
+  //
+  // Twenty-six viewpoints, which is every way you can look at a cube squarely:
+  // six faces, twelve edges and eight corners. Clicking one flies the camera to
+  // it. The cube is drawn from the same camera as the object, so it is also the
+  // readout — it tells you where you are standing, not just where you can go.
+
+  var cubeEl = document.getElementById("cube");
+  var ZONES = [];
+  for (var zx = -1; zx <= 1; zx++)
+    for (var zy = -1; zy <= 1; zy++)
+      for (var zz = -1; zz <= 1; zz++)
+        if (zx || zy || zz) ZONES.push([zx, zy, zz]);
+
+  function zoneCamera(z) {
+    // The direction from the object to that feature of the cube, as an angle.
+    var el = Math.atan2(z[2], Math.hypot(z[0], z[1]) || 0.0001);
+    return { az: Math.atan2(z[1], z[0]), el: Math.max(-1.35, Math.min(1.35, el)) };
+  }
+
+  function projectCube(p, b, r) {
+    return [(p[0]*b.rx + p[1]*b.ry + p[2]*b.rz) * r,
+            -(p[0]*b.ux + p[1]*b.uy + p[2]*b.uz) * r];
+  }
+
+  function drawCube() {
+    var b = basis(cam), R = 21, parts = [];
+    // The three faces pointing at us, as the body of the cube.
+    var FACES = [
+      [[1,0,0],[[1,-1,-1],[1,1,-1],[1,1,1],[1,-1,1]]],
+      [[-1,0,0],[[-1,-1,-1],[-1,-1,1],[-1,1,1],[-1,1,-1]]],
+      [[0,1,0],[[-1,1,-1],[-1,1,1],[1,1,1],[1,1,-1]]],
+      [[0,-1,0],[[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,1]]],
+      [[0,0,1],[[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]]],
+      [[0,0,-1],[[-1,-1,-1],[-1,1,-1],[1,1,-1],[1,-1,-1]]]
+    ];
+    for (var i = 0; i < FACES.length; i++) {
+      var nrm = FACES[i][0];
+      var facing = nrm[0]*b.dx + nrm[1]*b.dy + nrm[2]*b.dz;
+      if (facing <= 0.01) continue;
+      var pts = FACES[i][1].map(function (c) { return projectCube(c, b, R); });
+      // Shaded by how squarely the face meets the camera, so the cube reads as
+      // a solid rather than as a wireframe.
+      var v = Math.round(210 - facing * 55);
+      parts.push('<polygon class="side" points="' +
+        pts.map(function (q) { return q[0].toFixed(1) + "," + q[1].toFixed(1); }).join(" ") +
+        '" fill="rgb(' + v + ',' + v + ',' + (v - 6) + ')"/>');
+    }
+    // A hit zone per feature, placed where that feature projects. Sized by kind:
+    // corners smallest, faces largest, so the easiest thing to hit is the
+    // commonest thing to want.
+    for (var k = 0; k < ZONES.length; k++) {
+      var z = ZONES[k];
+      if (z[0]*b.dx + z[1]*b.dy + z[2]*b.dz <= 0.05) continue;   // round the back
+      var rank = Math.abs(z[0]) + Math.abs(z[1]) + Math.abs(z[2]);
+      var at = projectCube([z[0]*1.02, z[1]*1.02, z[2]*1.02], b, R);
+      var rad = rank === 1 ? 9 : (rank === 2 ? 6 : 5);
+      var here = sameView(zoneCamera(z));
+      parts.push('<circle class="zone" data-z="' + k + '" cx="' + at[0].toFixed(1) +
+        '" cy="' + at[1].toFixed(1) + '" r="' + rad + '"' +
+        (here ? ' fill="var(--ink)" fill-opacity="0.55"' : '') +
+        '><title>' + (rank === 1 ? "Face" : rank === 2 ? "Edge" : "Corner") + '</title></circle>');
+    }
+    cubeEl.innerHTML = parts.join("");
+  }
+
+  function sameView(v) {
+    return Math.abs(shortest(cam.az, v.az)) < 0.06 && Math.abs(cam.el - v.el) < 0.06;
+  }
+
+  function markCube() { drawCube(); }
+
+  // A handle for driving the camera from a test, so a claim about what the
+  // views look like can be checked rather than asserted.
+  window.__setCam = function (az, el) { to = null; cam.az = az; cam.el = el; markCube(); render(); };
+
+  cubeEl.addEventListener("click", function (e) {
+    var z = e.target.closest(".zone");
+    if (!z) return;
+    var v = zoneCamera(ZONES[+z.dataset.z]);
+    flyTo(v.az, v.el);
   });
 
-  peek.addEventListener("click", function (e) {
-    if (e.target.closest(".peek-close")) { peek.hidden = true; pinned = null; draw(); }
+  canvas.addEventListener("keydown", function (e) {
+    var q = Math.PI / 4;
+    if (e.key === "ArrowLeft")  { e.preventDefault(); flyTo(cam.az - q, cam.el); }
+    if (e.key === "ArrowRight") { e.preventDefault(); flyTo(cam.az + q, cam.el); }
+    if (e.key === "ArrowUp")    { e.preventDefault(); flyTo(cam.az, Math.min(1.35, cam.el + q/2)); }
+    if (e.key === "ArrowDown")  { e.preventDefault(); flyTo(cam.az, Math.max(-1.35, cam.el - q/2)); }
   });
 
   // ---------- navigation ----------
@@ -550,8 +724,6 @@
     pinned = null;
     peek.hidden = true;
     step = 0;
-    view = 0;
-    markFacings();
     var o = obj();
     Array.prototype.forEach.call(objectsEl.querySelectorAll(".tab"), function (t, k) {
       t.setAttribute("aria-pressed", String(k === i));
@@ -560,7 +732,8 @@
     resetForm();
     renderLog();
     layout();
-    draw();
+    markCube();
+    render();
   }
 
   function selectTheme(i) {
@@ -587,7 +760,8 @@
   window.addEventListener("resize", function () {
     layout();
     if (pinned) placePeek(pinned.row);
-    draw();
+    layout();
+    render();
   });
 
   // ---------- feedback ----------

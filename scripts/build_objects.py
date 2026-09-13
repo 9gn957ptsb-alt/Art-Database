@@ -17,7 +17,7 @@ Objects are filed two ways, and both go into the payload:
   * by FAMILY, the motion/utility axis in scripts/motion.py, which decides how
     fast an object's colour drifts.
 
-Reads data/iso.json; writes data/objects.json and, by injecting it into
+Reads data/voxels.json; writes data/objects.json and, by injecting it into
 artifact/objects.template.html, the publishable artifact/objects.html.
 
 Usage:
@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from motion import FAMILIES, FAMILY_BY_KEY, PLACEMENTS, kin   # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-ISO_PATH = ROOT / "data" / "iso.json"
+ISO_PATH = ROOT / "data" / "voxels.json"
 THUMBS_PATH = ROOT / "data" / "thumbs.json"
 OUT_PATH = ROOT / "data" / "objects.json"
 TEMPLATE_PATH = ROOT / "artifact" / "objects.template.html"
@@ -85,7 +85,7 @@ def attach_thumbs(artworks):
 
 def main():
     if not ISO_PATH.exists():
-        sys.exit(f"{ISO_PATH} not found — run scripts/build_iso.py first.")
+        sys.exit(f"{ISO_PATH} not found — run scripts/export_voxels.py first.")
     src = json.loads(ISO_PATH.read_text())
 
     artworks = [[a[0], a[1], a[2], None] for a in src["artworks"]]
@@ -96,7 +96,7 @@ def main():
 
     thumbs = attach_thumbs(artworks)
     payload = {
-        "cycleSteps": src["cycleSteps"],
+        "dirs": src["dirs"],
         "artworks": artworks,
         "palette": src["palette"],
         "families": [{k: f[k] for k in ("key", "name", "motion", "utility", "shares")}
