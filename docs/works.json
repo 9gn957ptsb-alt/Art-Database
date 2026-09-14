@@ -1,7 +1,6 @@
 {
   "artist": "Matthew Livingston",
-  "lede": "Collage — photographs, tickets, paper and tape.",
-  "liveSite": "https://mattlivs3.wixsite.com/matthew-livingston-a",
+  "lede": "Collage \u2014 photographs, tickets, paper and tape.",
   "notes": {
     "Collage": "Collages are wired on the back of the frame for each orientation provided by the frame's shape."
   },
@@ -66,5 +65,7 @@
       "category": "Collage",
       "alt": "Collage of Boston museum admission tickets, Polaroid film packaging, maps and dated instant photographs"
     }
-  ]
+  ],
+  "statement": "STATEMENT \u2014 replace this line.",
+  "email": "REPLACE@EXAMPLE.COM"
 }

@@ -102,11 +102,6 @@ document.querySelectorAll(".rotate").forEach(function (button) {
 
 <div class="page">
 
-  <p class="live">
-    <span>Live site</span>
-    <a href="{e(d["liveSite"])}">mattlivs3.wixsite.com/matthew-livingston-a</a>
-  </p>
-
   <header class="masthead">
     <h1>{e(artist)}</h1>
     <p>{e(d["lede"])}</p>
@@ -122,21 +117,16 @@ document.querySelectorAll(".rotate").forEach(function (button) {
   <footer class="colophon">
     <div>
       <h2>Statement</h2>
-      <p class="statement">
-        Two or three sentences about what the work is after. Shorter than feels
-        comfortable — the collages carry the rest.
-      </p>
+      <p class="statement">{e(d["statement"])}</p>
     </div>
     <div>
       <h2>Contact</h2>
-      <p><a href="mailto:you@example.com">you@example.com</a></p>
+      <p><a href="mailto:{e(d["email"])}">{e(d["email"])}</a></p>
       <p>Studio visits by appointment.</p>
     </div>
     <div>
       <h2>Colophon</h2>
-      <p>Titles and years are the artist's. The photographs are temporary — studio
-         documentation standing in until the works are shot properly. Dimensions to
-         come.</p>
+      <p>Works are documented in the studio. Dimensions available on request.</p>
     </div>
   </footer>
 
