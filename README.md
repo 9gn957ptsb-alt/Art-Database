@@ -6,7 +6,7 @@ A searchable database of artworks, seeded from ~4,000 saved works on
 
 ## Status
 
-The Artsy import has run: `data/artsy_saves_raw.json` holds 4,969 raw saved-artwork
+The Artsy import has run: `data/artsy_saves_raw.json` holds 5,021 raw saved-artwork
 records fetched via `scripts/fetch_artsy_saves.py`. That raw data has been normalized
 into `data/artworks.db`, a searchable SQLite database, via
 `scripts/normalize_artsy_saves.py`. Museum-visit photos and a real UI on top of the
@@ -128,7 +128,7 @@ python3 scripts/search_artworks.py --color "#3a6ea5" --color-tolerance 40
 ## Shapes
 
 The three dominant colors per work carry more than a hue ranking, so the page offers
-five arrangements of the same 4,969 records. Each is a layout function returning one
+five arrangements of the same 5,021 records. Each is a layout function returning one
 rect per work; a shared renderer draws them and a shared pick buffer (the work's index
 encoded as an RGB value on an offscreen canvas) resolves what the cursor is over, so a
 new arrangement costs a layout function and nothing else.
@@ -564,21 +564,47 @@ the pixels, not chrome.
 
 ## Keeping it in sync
 
-Artsy publishes no webhook for saves, so this polls:
+Artsy publishes no webhook for saves, so this reconciles:
 
 ```bash
-python3 scripts/sync_artsy_saves.py           # incremental
-python3 scripts/sync_artsy_saves.py --check   # report new saves, change nothing
-python3 scripts/sync_artsy_saves.py --full    # re-fetch everything (catches un-saves)
+python3 scripts/sync_artsy_saves.py           # reconcile, repair, verify
+python3 scripts/sync_artsy_saves.py --check   # report drift, change nothing
+python3 scripts/sync_artsy_saves.py --full    # take Artsy's copy of every field
+python3 scripts/sync_artsy_saves.py --verify  # local consistency only, no network
 ```
 
-A run walks the collection newest-first, stops once it has seen 60 works it already
-holds (normally one page), then appends any new ones to the raw dump, re-normalizes,
-fetches thumbnails for only the new works, and rebuilds the page.
+A run walks the **whole** collection — all fifty-two pages, about half a minute —
+builds the complete set of saved ids, and diffs it against the raw dump in both
+directions. Missing saves are appended; works that are no longer saved are dropped.
+Then it rebuilds everything downstream in dependency order (database, thumbnails for
+the new works only, search page, voxels, objects page), re-derives the answer from
+disk, and **exits non-zero unless Artsy, the raw dump, the database and the objects
+page all agree.** A green run is checked, not assumed.
+
+It used to read one page and stop once sixty already-known works had gone by. That
+cutoff was a guess about how far out of order a save can land, and a save landing
+sixty-one deep was missed permanently with nothing to notice. Un-saves were invisible
+entirely: the script had no way to see an id leave. The first reconciling run found
+both — seventeen saves absent, and four works un-saved long ago still in the database.
+
+The saves endpoint returns a bare JSON list with no total-count field, so there is no
+cheap invariant to check instead. Completeness has to be walked.
+
+Two guards, because from here a truncated response and a mass un-save look identical:
+a page that re-serves records already seen aborts the walk **without writing
+anything**, and dropping more than a tenth of the collection in one run needs
+`--allow-shrink`. Records already held keep their bytes and their order, so a run that
+changes nothing writes nothing and the LFS objects stay put.
 
 A daily Routine runs this at 07:23 UTC in the `Artsy` cloud environment, commits and
-pushes anything new, and republishes the artifact. It stays silent on the usual "no new
-saves" outcome. Manage it in the claude.ai Routines UI.
+pushes anything that changed, and republishes both artifacts. It stays silent on the
+usual "already level" outcome, and reports loudly on a non-zero exit. Manage it in the
+claude.ai Routines UI.
+
+It is worth saying what went wrong there once, since the Routine reporting SUCCESS is
+not the same as the collection being current: it fired daily for days while pointed at
+a branch the project had moved off, delivering nothing the whole time. The exit code
+is now the only thing that says a run worked.
 
 ### Two ordering traps
 
@@ -592,7 +618,7 @@ Both were found the hard way; the incremental logic depends on getting them righ
 - **The saves endpoint returns the collection oldest-first by default**, not
   `POSITION_DESC` as Artsy's schema suggests. That is why the raw dump is in true save
   order and `save_rank` can be derived from its position. `sort=-created_at` reverses it
-  for the incremental walk; `sort=-position` behaves the same. Anything else
+  for the reconciling walk; `sort=-position` behaves the same. Anything else
   (`saved_at`, `last_saved_at`) is rejected as an invalid parameter.
 
 ## API reference

@@ -1,6 +1,6 @@
 # Colour Middling
 
-A searchable database of ~4,969 Artsy-saved artworks, and pixel objects generated from
+A searchable database of ~5,021 Artsy-saved artworks, and pixel objects generated from
 their dominant colours. See `README.md` for how the pipeline works, what each script
 does, and the rules the objects are built under.
 
@@ -16,6 +16,11 @@ Two things are standing decisions rather than preferences:
   because there is no horizon and no convergence, so an object drawn alone has no height,
   no size and no place. The plane is built as voxels one layer below the floor, ruled into
   tiles so it also serves as a ruler, and it is what takes the cast shadow.
+- **The sync reconciles; it never polls for what looks new.** Every run walks the whole
+  saves collection, diffs the complete id set both ways, and exits non-zero unless
+  Artsy, the raw dump, the database and the objects page agree. No heuristic cutoff,
+  no "probably caught it". If a change makes the sync cheaper by making it partial,
+  it is the wrong change.
 - **True isometry, not the 2:1 games convention.** All three axes foreshorten equally;
   edges run at exactly 30 degrees. See the header of `scripts/iso.py` for what that costs
   and why it is worth it.
