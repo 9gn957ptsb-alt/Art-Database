@@ -33,7 +33,9 @@ already declined or deferred in the same conversation.
 
 - Don't paste the artifact or site link on every update — say it's done. Keep
   publishing the updated artifact each time, just without the link.
-- The work photographs are placeholders until shot properly. Don't crop, retouch,
-  or upload them to Wix Media.
+- The work photographs are placeholders until shot properly. Don't crop or
+  retouch them. They are wanted on the live site as they are — but images cannot
+  be uploaded to Wix from a session (see `WIX.md`), so the artist uploads them by
+  hand and a session then matches them to rows.
 - Don't invent artwork metadata. Titles and years come from the artist;
   dimensions are blank until given.

@@ -36,6 +36,19 @@ there are dozens of them.
 The caption order matches the reference page: artist, *title* and year, medium and
 dimensions, availability, then `note`.
 
+### Writing text fields
+
+Patch text with a **plain** value:
+
+```json
+{"fieldPath": "medium", "action": "SET_FIELD", "setFieldOptions": {"value": "Collage"}}
+```
+
+The docs also show `{"value": {"stringValue": "Collage"}}`. That form stores the
+wrapper *literally* — the field comes back as an object, and a repeater bound to
+it renders nothing useful. All six rows were written that way once and had to be
+rewritten.
+
 `note` carries the orientation line on every collage. It is the same string on all
 six rows rather than logic keyed off `category`, because a Wix repeater binds a
 field far more easily than it evaluates a condition.
@@ -54,6 +67,21 @@ field far more easily than it evaluates a condition.
 Dimensions and images are deliberately empty. The photographs in `docs/images/`
 are placeholders, so nothing was uploaded to Wix Media yet — that happens once,
 with the real documentation.
+
+## Uploading images
+
+Not possible from a Claude Code session. All three routes are closed:
+
+- **Signed upload URL** (`site-media/v1/files/generate-upload-url`, then PUT the
+  bytes) — generating the URL works, but `upload.wixmp.com` is unreachable through
+  the session's proxy.
+- **Base64** via the upload tool — a 620px JPEG is ~50k tokens of base64 and gets
+  truncated before it can be sent. Six of them is neither reliable nor cheap.
+- **Public URL** for Wix to fetch — this repo is private and artifacts are private.
+
+So images go in by hand: drag the files into the Media Manager in the Wix
+dashboard. After that the rows can be filled from a session — list the media
+files, match them by filename, and patch each row's `image`.
 
 ## Still to do
 
