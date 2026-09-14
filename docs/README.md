@@ -69,16 +69,25 @@ Re-run it and re-publish after any edit.
 
 ## Publishing
 
-Repo **Settings → Pages → Source: Deploy from a branch**, branch `main`, folder
-`/docs`. For a custom domain, add a `CNAME` file here containing only the domain
-(e.g. `example.com`), then point DNS at GitHub:
+Deployed by `.github/workflows/pages.yml`, which uploads this folder to GitHub
+Pages on every push to the working branch.
+
+**Pages has to be switched on once by hand.** The workflow tries
+(`configure-pages` with `enablement: true`) and is refused —
+`Create Pages site failed. Error: Resource not accessible by integration` —
+because creating a Pages site is a repo-admin action the Actions token can't
+perform. Turn it on at **Settings → Pages → Source: GitHub Actions**, then re-run
+the workflow; every push deploys after that.
+
+The site then serves at `https://9gn957ptsb-alt.github.io/Color-Middling/`.
+
+For a custom domain, add a `CNAME` file in this folder containing only the domain,
+and point DNS at GitHub:
 
 | Record | Name | Value |
 | --- | --- | --- |
 | `A` | `@` | `185.199.108.153`, `.109.153`, `.110.153`, `.111.153` |
 | `CNAME` | `www` | `<user>.github.io` |
-
-Enable **Enforce HTTPS** once the certificate is issued (can take up to an hour).
 
 ## Next
 
