@@ -29,6 +29,10 @@ already declined or deferred in the same conversation.
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
+The live site's design is the one the Wix assistant built, not `docs/`. `docs/`
+is a reference for the works and their captions; it is not a target the Wix site
+is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
+
 ## Working preferences
 
 - Don't paste the artifact or site link on every update — say it's done. Keep

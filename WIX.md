@@ -83,11 +83,17 @@ So images go in by hand: drag the files into the Media Manager in the Wix
 dashboard. After that the rows can be filled from a session — list the media
 files, match them by filename, and patch each row's `image`.
 
-## Matching the reference design
+## Matching the reference design — SUPERSEDED
 
-The design import can't be used (see below), so the live site is matched by hand.
-Every value here is lifted from `docs/styles.css` — use them exactly; rounding to
-a tidy 4/8px grid is what makes an approximation look approximate.
+**The live site is no longer being matched to `docs/`.** On 14 Sep 2026 the
+artist chose the layout the Wix assistant built — the editorial table with large
+display headings, columns for medium, year, availability and collection status —
+as the design for the site. `docs/` is now a reference page that records the
+works and their captions, not a target the live site is steered toward.
+
+The spec below is kept because the palette and type values are still the source
+of truth for anything that *should* match, and because it is the only written
+record of the earlier direction. Do not work through it as a task list.
 
 ### Colour
 
@@ -163,7 +169,9 @@ broad strokes and misses the small numbers.
 
 ## Still to do
 
-0. **Fabricated content is live on the site.** The published page lists four
+0. **Fabricated content is live on the site.** *(Now the main blocker: the
+   chosen layout is the assistant's, so the only thing wrong with the live site
+   is what it says.)* The published page lists four
    artworks that are not the artist's — *Still Life*, *Horizon Line*,
    *Mixed Media*, *Geometric Form* — with invented media, years, collection
    statuses and exhibition history ("Featured in the Autumn Salon group
