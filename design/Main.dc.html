@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,wght@0,400;1,400&display=swap">
+  <style>
+    :root {
+      --paper: #f0f1ef;
+      --ink: #16181a;
+      --ink-soft: #6b7075;
+      --rule: #d5d8d4;
+      --accent: #41665f;
+      --plate: #e4e6e3;
+      --sans: "Archivo", Helvetica, Arial, sans-serif;
+      --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding-inline: 1.5rem;
+      background: var(--paper);
+      color: var(--ink);
+      font: 400 1rem/1.55 var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-underline-offset: 0.18em; }
+    .page { max-width: 78rem; margin: 0 auto; }
+    .masthead { padding-block: 2.75rem 2.5rem; }
+    .masthead h1 {
+      margin: 0;
+      font-size: 2.125rem;
+      font-weight: 500;
+      letter-spacing: -0.015em;
+    }
+    .masthead p {
+      margin: 0.625rem 0 0;
+      max-width: 42ch;
+      font: 400 1.1875rem/1.45 var(--serif);
+      color: var(--ink-soft);
+    }
+    .label {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 0 0 2rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .label::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+    .grid {
+      list-style: none;
+      margin: 0;
+      padding: 0 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 2.75rem 2rem;
+      align-items: start;
+    }
+    .work figure { margin: 0; }
+    .frame { position: relative; aspect-ratio: 1; }
+    .plate {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      background: var(--plate);
+    }
+    .work figcaption { margin-top: 0.875rem; font-size: 0.875rem; line-height: 1.45; }
+    .artist { font-weight: 500; }
+    .work .title, .work .details, .work .price { display: block; color: var(--ink-soft); }
+    .work .title { font-family: var(--serif); font-size: 0.9375rem; }
+    .work .title em { font-style: italic; }
+    .work .price { margin-top: 0.375rem; color: var(--ink); }
+    .work .note {
+      display: block;
+      margin-top: 0.5rem;
+      max-width: 34ch;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--ink-soft);
+    }
+    .colophon {
+      display: grid;
+      gap: 1.25rem 3rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding-block: 2rem 4rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.875rem;
+      color: var(--ink-soft);
+    }
+    .colophon h2 {
+      margin: 0 0 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .colophon p { margin: 0 0 0.5rem; max-width: 40ch; }
+    .colophon .statement { font: 400 1rem/1.55 var(--serif); color: var(--ink); }
+  </style>
+</helmet>
+<div class="page">
+
+  <header class="masthead">
+    <h1>Matthew Livingston</h1>
+    <p>Collage &mdash; photographs, tickets, paper and tape.</p>
+  </header>
+
+  <main>
+    <h2 class="label">Works <span>6</span></h2>
+    <ul class="grid">
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="amadeus.jpg" alt="Amadeus"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>Amadeus</em>, 2025</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="i.jpg" alt="i"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>i</em>, 2024</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="collage-with-portraits.jpg" alt="Collage with Portraits"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>Collage with Portraits</em>, 2024</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="nyny.jpg" alt="NYNY"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>NYNY</em>, 2025</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="hey-amateur-collage.jpg" alt="HEY AMATEUR: COLLAGE"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>HEY AMATEUR: COLLAGE</em>, 2026</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+      <li class="work">
+        <figure>
+          <div class="frame"><img class="plate" src="boston-spring.jpg" alt="Boston Spring"></div>
+          <figcaption>
+            <span class="artist">Matthew Livingston</span>
+            <span class="title"><em>Boston Spring</em>, 2026</span>
+            <span class="details">Collage</span>
+            <span class="price">Contact for price</span>
+            <span class="note">Collages are wired on the back of the frame for each orientation provided by the frame&rsquo;s shape.</span>
+          </figcaption>
+        </figure>
+      </li>
+    </ul>
+  </main>
+
+  <footer class="colophon">
+    <div>
+      <h2>Statement</h2>
+      <p class="statement">
+        Two or three sentences about what the work is after. Shorter than feels
+        comfortable &mdash; the collages carry the rest.
+      </p>
+    </div>
+    <div>
+      <h2>Contact</h2>
+      <p><a href="mailto:you@example.com">you@example.com</a></p>
+      <p>Studio visits by appointment.</p>
+    </div>
+    <div>
+      <h2>Colophon</h2>
+      <p>Titles and years are the artist&rsquo;s. The photographs are temporary &mdash;
+         studio documentation standing in until the works are shot properly.
+         Dimensions to come.</p>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+</body>
+</html>
