@@ -114,11 +114,12 @@ document.querySelectorAll(".rotate").forEach(function (button) {
     </ul>
   </main>
 
+  <section class="statement-block">
+    <h2 class="label">Statement</h2>
+    <p>{e(d["statement"])}</p>
+  </section>
+
   <footer class="colophon">
-    <div>
-      <h2>Statement</h2>
-      <p class="statement">{e(d["statement"])}</p>
-    </div>
     <div>
       <h2>Contact</h2>
       <p><a href="mailto:{e(d["email"])}">{e(d["email"])}</a></p>
