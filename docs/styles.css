@@ -234,9 +234,6 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 /* ---- colophon ---------------------------------------------------------- */
 
 .colophon {
-  display: grid;
-  gap: 1.25rem 3rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   max-width: 62ch;
   padding-block: 2rem 4rem;
   border-top: 1px solid var(--rule);
@@ -253,7 +250,7 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
   color: var(--ink-soft);
 }
 
-.colophon p { margin: 0 0 0.5rem; max-width: 40ch; }
+.colophon p { margin: 0; max-width: 40ch; }
 
 @media (max-width: 34rem) {
   .masthead { padding-block: 2.5rem 2rem; }

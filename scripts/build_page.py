@@ -122,11 +122,6 @@ document.querySelectorAll(".rotate").forEach(function (button) {
     <div>
       <h2>Contact</h2>
       <p><a href="mailto:{e(d["email"])}">{e(d["email"])}</a></p>
-      <p>Studio visits by appointment.</p>
-    </div>
-    <div>
-      <h2>Colophon</h2>
-      <p>Works are documented in the studio. Dimensions available on request.</p>
     </div>
   </footer>
 
