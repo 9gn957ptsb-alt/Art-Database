@@ -163,6 +163,21 @@ broad strokes and misses the small numbers.
 
 ## Still to do
 
+0. **Fabricated content is live on the site.** The published page lists four
+   artworks that are not the artist's — *Still Life*, *Horizon Line*,
+   *Mixed Media*, *Geometric Form* — with invented media, years, collection
+   statuses and exhibition history ("Featured in the Autumn Salon group
+   exhibition", "Acquired during the hallmark New York Solo Exhibition at
+   Metanoia"). The footer carries an invented artist statement describing the
+   practice as painting, and an invented address, `hello@mlivingston-art.com`.
+
+   None of it is in the CMS — `Works` holds only the six real collages. Aria
+   typed it into the page as static text, so the fix is in the editor: delete
+   those rows and the statement, and bind every element to the `Works` fields.
+   The connected dataset is also limited to 5 items where there are 6.
+
+   Deferred by the artist on 14 Sep 2026, knowing it is public.
+
 1. Connect the collection to a repeater on the home page. This is editor work:
    the Harmony page structure is not writable through the REST API.
 2. Upload the real photographs to Wix Media and set each row's `image`.
