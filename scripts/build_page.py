@@ -104,7 +104,6 @@ document.querySelectorAll(".rotate").forEach(function (button) {
 
   <header class="masthead">
     <h1>{e(artist)}</h1>
-    <p>{e(d["lede"])}</p>
   </header>
 
   <main>
