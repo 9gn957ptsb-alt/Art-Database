@@ -83,6 +83,84 @@ So images go in by hand: drag the files into the Media Manager in the Wix
 dashboard. After that the rows can be filled from a session — list the media
 files, match them by filename, and patch each row's `image`.
 
+## Matching the reference design
+
+The design import can't be used (see below), so the live site is matched by hand.
+Every value here is lifted from `docs/styles.css` — use them exactly; rounding to
+a tidy 4/8px grid is what makes an approximation look approximate.
+
+### Colour
+
+| Role | Hex |
+| --- | --- |
+| Page background | `#f0f1ef` |
+| Text | `#16181a` |
+| Secondary text — title, medium, note | `#6b7075` |
+| Hairline rules | `#d5d8d4` |
+| Links | `#41665f` |
+| Empty image box | `#e4e6e3` |
+
+A cool off-white, not cream. If Wix offers a "white" preset, it is the wrong white.
+
+### Type
+
+Two faces: **Archivo** (400 and 500) for everything structural, **Newsreader**
+(400 and 400 italic) for artwork titles and the statement.
+
+| Element | Face | Size | Other |
+| --- | --- | --- | --- |
+| Masthead name | Archivo 500 | 34px | letter-spacing −0.5px |
+| Lede | Newsreader 400 | 19px | line-height 1.45, `#6b7075`, max ~42 characters |
+| Section label (WORKS) | Archivo 500 | 12px | uppercase, letter-spacing 1.44px, `#6b7075` |
+| Artist line | Archivo 500 | 14px | `#16181a` |
+| Title line | Newsreader 400 *italic* | 15px | `#6b7075`; the year after the comma is NOT italic |
+| Medium line | Archivo 400 | 14px | `#6b7075` |
+| Price line | Archivo 400 | 14px | `#16181a`, 6px above it |
+| Note | Archivo 400 | 12px | line-height 1.4, `#6b7075`, max ~34 characters |
+| Colophon headings | Archivo 500 | 12px | uppercase, letter-spacing 1.44px, `#6b7075` |
+| Statement | Newsreader 400 | 16px | line-height 1.55, `#16181a` |
+
+Caption lines sit at line-height 1.45 — tight, stacked, no gaps between them
+except the 6px above the price and 8px above the note.
+
+If Wix's font list has neither face: substitute a neo-grotesque for Archivo
+(not Inter), and for Newsreader a serif with a true italic — Lora or EB Garamond
+are closest. Don't substitute a display serif; the titles are small text.
+
+### Layout
+
+- Content column max **1248px**, centred, **24px** side padding.
+- Masthead: **44px** above the name, **40px** below the lede; lede **10px** under
+  the name.
+- Section label: the word, then a **1px** `#d5d8d4` rule running to the right edge,
+  vertically centred on the text, **16px** gap. **32px** below it to the grid.
+- Grid: **4 columns** on desktop, **32px** between columns, **44px** between rows,
+  items aligned to the top (not stretched).
+- **Each image sits in a square box**, centred inside at its own proportions and
+  never cropped. This is the detail Wix will fight: its galleries crop to fill by
+  default. Use a repeater with an image element set to *fit*, not *fill*, on a
+  square container.
+- Caption starts **14px** under the image.
+- Colophon: **3 columns**, **48px** gap, a **1px** `#d5d8d4` rule above,
+  **32px** above the content and **64px** below.
+
+No rounded corners, no shadows, no gradients, anywhere.
+
+### Prompt for the Wix AI helper
+
+> Restyle the works page. Page background #f0f1ef, body text #16181a, secondary
+> text #6b7075, all rules 1px #d5d8d4, links #41665f. Use Archivo for headings and
+> caption text and Newsreader for artwork titles and the statement. The site name
+> is Archivo Medium 34px. Each work's image sits in a square container, fit not
+> fill, never cropped, four per row, 32px between columns and 44px between rows.
+> Under each image: artist name Archivo Medium 14px; then the title in Newsreader
+> italic 15px in #6b7075 with the year after a comma not italicised; then the
+> medium in Archivo 14px #6b7075; then the price line in Archivo 14px #16181a; then
+> the note in Archivo 12px #6b7075. No rounded corners, no shadows, no gradients.
+
+Run it once, then correct by hand against the table above — the helper gets the
+broad strokes and misses the small numbers.
+
 ## Still to do
 
 1. Connect the collection to a repeater on the home page. This is editor work:
@@ -95,7 +173,9 @@ files, match them by filename, and patch each row's `image`.
    which will stop being true.
 6. Image rotation is on the reference page only. Wix repeaters have no rotate
    control, so on the live site it needs Velo enabled and custom code.
-7. Front page peels away on rotation — *"I want the front page to peel away upon
+7. Rotation on the live site is off the table for now — it needs Velo and custom
+   code, and the design is being matched by hand instead.
+8. Front page peels away on rotation — *"I want the front page to peel away upon
    rotating the token object like your ducking into the shadows of a tree,
    patterned in blues, upon escaping the beating light of day"*. Kept in the
    artist's words; the image is the brief. Rotation stops being a per-work
