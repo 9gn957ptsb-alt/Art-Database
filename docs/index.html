@@ -161,6 +161,11 @@ document.querySelectorAll(".work").forEach(function (work) {
     turns = (turns + 1) % 4;
     apply();
   });
+
+  work.dataset.turns = "0";
+  var report = function () { work.dataset.turns = String(turns * 90); };
+  report();
+  button.addEventListener("click", report);
 });
 </script>
 </body>

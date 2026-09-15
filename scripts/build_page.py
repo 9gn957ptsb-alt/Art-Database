@@ -26,7 +26,7 @@ def e(s):
     return html.escape(str(s), quote=True)
 
 
-def card(w, artist, notes):
+def card(w, artist, notes, voting):
     """One work. Collages carry a rotate control because they are hung in any
     of four orientations; the note says so."""
     rotatable = w["category"] == "Collage"
@@ -44,6 +44,13 @@ def card(w, artist, notes):
             f'</svg></button>'
         )
 
+    vote_button = ""
+    if rotatable and voting:
+        vote_button = (
+            f'\n            <button class="vote" type="button"'
+            f' data-title="{e(w["title"])}">{e(voting["prompt"])}</button>'
+        )
+
     note_line = "".join(
         f'\n            <span class="note">{e(n)}</span>' for n in (notes if rotatable else [])
     )
@@ -57,10 +64,68 @@ def card(w, artist, notes):
             <span class="artist">{e(artist)}</span>
             <span class="title"><em>{e(w["title"])}</em>, {e(w["year"])}</span>
             <span class="details">{e(details)}</span>
-            <span class="price">{e(w["availability"])}</span>{note_line}
+            <span class="price">{e(w["availability"])}</span>{vote_button}{note_line}
           </figcaption>
         </figure>
       </li>"""
+
+
+def vote_script(voting):
+    """Submit the orientation a viewer chose to a Google Form.
+
+    Google Forms accepts a cross-origin POST but answers opaquely, so the reply
+    cannot be read: the button reports success optimistically. A viewer's choice
+    is remembered locally only to stop the same person voting twice on one work;
+    localStorage throws in some privacy modes, hence the try/catch.
+    """
+    if not voting:
+        return ""
+    return """
+<script>
+(function () {
+  var FORM = "%s";
+  var WORK_FIELD = "%s";
+  var ORIENTATION_FIELD = "%s";
+  var THANKS = "%s";
+  var STORE = "ml-orientation-vote:";
+
+  function remembered(title) {
+    try { return localStorage.getItem(STORE + title); } catch (e) { return null; }
+  }
+
+  document.querySelectorAll(".vote").forEach(function (button) {
+    var work = button.closest(".work");
+    var title = button.dataset.title;
+
+    if (remembered(title)) {
+      button.textContent = THANKS;
+      button.disabled = true;
+      return;
+    }
+
+    button.addEventListener("click", function () {
+      var body = new FormData();
+      body.append(WORK_FIELD, title);
+      body.append(ORIENTATION_FIELD, work.dataset.turns + " degrees");
+
+      fetch("https://docs.google.com/forms/d/e/" + FORM + "/formResponse", {
+        method: "POST",
+        mode: "no-cors",
+        body: body
+      }).catch(function () {});
+
+      button.textContent = THANKS;
+      button.disabled = true;
+      try { localStorage.setItem(STORE + title, work.dataset.turns); } catch (e) {}
+    });
+  });
+})();
+</script>""" % (
+        voting["formId"],
+        voting["workField"],
+        voting["orientationField"],
+        voting["thanks"],
+    )
 
 
 def build():
@@ -68,7 +133,9 @@ def build():
     artist, works = d["artist"], d["works"]
     notes = d.get("notes", {})
 
-    cards = "\n".join(card(w, artist, notes.get(w["category"], [])) for w in works)
+    vote = d.get("vote") or {}
+    voting = vote if vote.get("formId") else None
+    cards = "\n".join(card(w, artist, notes.get(w["category"], []), voting) for w in works)
     rotatable = any(w["category"] == "Collage" for w in works)
 
     script = ""
@@ -101,8 +168,13 @@ document.querySelectorAll(".work").forEach(function (work) {
     turns = (turns + 1) % 4;
     apply();
   });
+
+  work.dataset.turns = "0";
+  var report = function () { work.dataset.turns = String(turns * 90); };
+  report();
+  button.addEventListener("click", report);
 });
-</script>"""
+</script>""" + vote_script(voting)
 
     return f"""<!doctype html>
 <html lang="en">
