@@ -32,6 +32,7 @@
             <span class="title"><em>Amadeus</em>, 2025</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="Amadeus">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -48,6 +49,7 @@
             <span class="title"><em>i</em>, 2024</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="i">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -64,6 +66,7 @@
             <span class="title"><em>Collage with Portraits</em>, 2024</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="Collage with Portraits">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -80,6 +83,7 @@
             <span class="title"><em>NYNY</em>, 2025</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="NYNY">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -96,6 +100,7 @@
             <span class="title"><em>HEY AMATEUR: COLLAGE</em>, 2026</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="HEY AMATEUR: COLLAGE">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -112,6 +117,7 @@
             <span class="title"><em>Boston Spring</em>, 2026</span>
             <span class="details">Collage</span>
             <span class="price">Contact for price</span>
+            <button class="vote" type="button" data-title="Boston Spring">Prefer this orientation?</button>
             <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
             <span class="note">Image orientation is presented at random.</span>
           </figcaption>
@@ -167,6 +173,46 @@ document.querySelectorAll(".work").forEach(function (work) {
   report();
   button.addEventListener("click", report);
 });
+</script>
+<script>
+(function () {
+  var FORM = "1FAIpQLSfNvoqcBROel9ifOzOErGuGUBC0vp7k9Lf1Fn1uo1ww6AU-yw";
+  var WORK_FIELD = "entry.1314273606";
+  var ORIENTATION_FIELD = "entry.613371858";
+  var THANKS = "Recorded — thank you";
+  var STORE = "ml-orientation-vote:";
+
+  function remembered(title) {
+    try { return localStorage.getItem(STORE + title); } catch (e) { return null; }
+  }
+
+  document.querySelectorAll(".vote").forEach(function (button) {
+    var work = button.closest(".work");
+    var title = button.dataset.title;
+
+    if (remembered(title)) {
+      button.textContent = THANKS;
+      button.disabled = true;
+      return;
+    }
+
+    button.addEventListener("click", function () {
+      var body = new FormData();
+      body.append(WORK_FIELD, title);
+      body.append(ORIENTATION_FIELD, work.dataset.turns + " degrees");
+
+      fetch("https://docs.google.com/forms/d/e/" + FORM + "/formResponse", {
+        method: "POST",
+        mode: "no-cors",
+        body: body
+      }).catch(function () {});
+
+      button.textContent = THANKS;
+      button.disabled = true;
+      try { localStorage.setItem(STORE + title, work.dataset.turns); } catch (e) {}
+    });
+  });
+})();
 </script>
 </body>
 </html>
