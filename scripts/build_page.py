@@ -10,6 +10,7 @@ Usage:
 
 import html
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,6 +21,36 @@ OUT = ROOT / "docs" / "index.html"
 # to stay identical, both are generated from here so a change lands in both. When
 # v2 starts to diverge, drop it from TARGETS and hand-edit it from then on.
 V2 = ROOT / "docs" / "v2"
+
+
+NB = "\u00a0"  # binds a whole number to its fraction: "30 1/4" never splits
+
+
+def _inches(part):
+    """Parse a dimension like '30 1/4' or '23' into a number."""
+    s = part.replace(NB, " ").strip()
+    m = re.fullmatch(r"(?:(\d+)\s+)?(\d+)/(\d+)|(\d+)", s)
+    if not m:
+        raise ValueError(f"cannot read dimension {part!r}")
+    if m.group(4):
+        return float(m.group(4))
+    return float(m.group(1) or 0) + float(m.group(2)) / float(m.group(3))
+
+
+def check_dimensions(works):
+    """The collages hang in any orientation, so height and width mean nothing:
+    the longest side is always stated first. Enforced here because a wrong
+    order is invisible on the page — it just quietly misdescribes the work."""
+    for w in works:
+        dims = w.get("dimensions", "")
+        if not dims:
+            continue
+        first, second = dims.removesuffix(" in").split(" × ")
+        if _inches(first) < _inches(second):
+            raise SystemExit(
+                f"{w['title']}: dimensions are {dims.replace(NB, ' ')} — the longest "
+                f"side must come first, as the work has no fixed orientation."
+            )
 
 
 def e(s):
@@ -150,6 +181,7 @@ def build():
 
     vote = d.get("vote") or {}
     voting = vote if vote.get("formId") else None
+    check_dimensions(works)
     cards = "\n".join(card(w, artist, notes.get(w["category"], []), voting) for w in works)
     rotatable = any(w["category"] == "Collage" for w in works)
 

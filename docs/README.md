@@ -51,6 +51,19 @@ Contact for price           availability
 Collages are wired ...      note (collages only)
 ```
 
+## Dimensions
+
+**The longest side is stated first**, not height then width. The collages hang in
+any of four orientations, so they have no fixed way up and "height" and "width"
+would describe only how the work happened to be photographed.
+
+`scripts/build_page.py` enforces this: it parses the two measurements and refuses
+to build if the shorter one comes first, because a reversed pair is invisible on
+the page — it just quietly misdescribes the work.
+
+Whole numbers are bound to their fractions with a non-breaking space so `30 1/4`
+cannot split across a line.
+
 ## Rotation
 
 Each collage carries a rotate button that turns its image a quarter turn per
