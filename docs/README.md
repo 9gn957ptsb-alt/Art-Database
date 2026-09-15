@@ -24,9 +24,9 @@ They share `docs/images/` — v2 reaches it as `../images/`. Same photographs, n
 reason to carry a second copy. Give v2 its own folder if the two ever need
 different pictures.
 
-`scripts/build_page.py` renders **only** `/` from `works.json`. `v2/index.html`
-is hand-edited and will drift from it; re-point the generator at v2 if v2 becomes
-the real one.
+`scripts/build_page.py` renders **both** from `works.json`, so while the two are
+meant to match, one edit lands in both. When v2 starts to diverge, drop it from
+the generator's `write_all()` and hand-edit it from then on.
 
 ## The work grid
 

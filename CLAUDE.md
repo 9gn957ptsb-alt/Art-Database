@@ -21,7 +21,7 @@ already declined or deferred in the same conversation.
 | | |
 | --- | --- |
 | `docs/` | The live site, deployed to GitHub Pages by `.github/workflows/pages.yml`. |
-| `docs/v2/` | A duplicate to experiment in, served at `/v2/`. Hand-edited; the generator does not touch it. Shares `docs/images/`. |
+| `docs/v2/` | A working copy served at `/v2/`, generated alongside `/` so shared edits reach both. Shares `docs/images/`. |
 | `docs/works.json` | The works, as data. Edit this, not `index.html`. |
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |
@@ -31,8 +31,9 @@ already declined or deferred in the same conversation.
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
 The GitHub Pages site is the real one: <https://9gn957ptsb-alt.github.io/Color-Middling/>.
-Edit `/` only deliberately — it is the link the artist submits. Experiments go in
-`docs/v2/`.
+`/` is the link the artist is submitting to an open call; `v2` becomes the real
+site later. Until then both are kept identical and `scripts/build_page.py` writes
+both. Once v2 diverges, drop it from that script's `write_all()`.
 
 The live site's design is the one the Wix assistant built, not `docs/`. `docs/`
 is a reference for the works and their captions; it is not a target the Wix site

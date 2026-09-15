@@ -16,6 +16,11 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "docs" / "works.json"
 OUT = ROOT / "docs" / "index.html"
 
+# v2 is a working copy of the same page, served at /v2/. While the two are meant
+# to stay identical, both are generated from here so a change lands in both. When
+# v2 starts to diverge, drop it from TARGETS and hand-edit it from then on.
+V2 = ROOT / "docs" / "v2"
+
 
 def e(s):
     return html.escape(str(s), quote=True)
@@ -132,6 +137,20 @@ document.querySelectorAll(".rotate").forEach(function (button) {
 """
 
 
+def write_all():
+    html = build()
+    OUT.write_text(html)
+    written = [OUT]
+
+    if V2.is_dir():
+        # v2 sits one level down, so it reaches the shared images by going up.
+        (V2 / "index.html").write_text(html.replace('src="images/', 'src="../images/'))
+        (V2 / "styles.css").write_text((ROOT / "docs" / "styles.css").read_text())
+        written += [V2 / "index.html", V2 / "styles.css"]
+
+    return written
+
+
 if __name__ == "__main__":
-    OUT.write_text(build())
-    print(f"{OUT} ({OUT.stat().st_size:,} bytes)")
+    for f in write_all():
+        print(f"{f.relative_to(ROOT)} ({f.stat().st_size:,} bytes)")
