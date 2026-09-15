@@ -26,6 +26,14 @@ def build():
     fonts = re.findall(r'<link[^>]+fonts\.(?:googleapis|gstatic)\.com[^>]*>', html)
     body = re.search(r"<body[^>]*>(.*)</body>", html, re.S).group(1).strip()
 
+    # Artifacts block outbound fetch under their content-security policy, so a
+    # vote posted from here is swallowed with no error — and since the response
+    # was never readable, the button would still report success. Strip the
+    # control rather than ship one that silently records nothing. Voting belongs
+    # to the deployed site.
+    body = re.sub(r'\s*<button class="vote"[^>]*>.*?</button>', "", body, flags=re.S)
+    body = re.sub(r'\s*<script>\s*\(function \(\)[^<]*?var FORM =.*?</script>', "", body, flags=re.S)
+
     parts = [f"<title>{title}</title>"]
     parts += fonts
     parts.append(f"<style>\n{CSS.read_text().strip()}\n</style>")
