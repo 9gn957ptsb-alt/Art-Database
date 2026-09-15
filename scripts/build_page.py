@@ -26,7 +26,7 @@ def e(s):
     return html.escape(str(s), quote=True)
 
 
-def card(w, artist, note):
+def card(w, artist, notes):
     """One work. Collages carry a rotate control because they are hung in any
     of four orientations; the note says so."""
     rotatable = w["category"] == "Collage"
@@ -44,9 +44,9 @@ def card(w, artist, note):
             f'</svg></button>'
         )
 
-    note_line = ""
-    if rotatable and note:
-        note_line = f'\n            <span class="note">{e(note)}</span>'
+    note_line = "".join(
+        f'\n            <span class="note">{e(n)}</span>' for n in (notes if rotatable else [])
+    )
 
     return f"""      <li class="work">
         <figure>
@@ -68,25 +68,38 @@ def build():
     artist, works = d["artist"], d["works"]
     notes = d.get("notes", {})
 
-    cards = "\n".join(card(w, artist, notes.get(w["category"])) for w in works)
+    cards = "\n".join(card(w, artist, notes.get(w["category"], [])) for w in works)
     rotatable = any(w["category"] == "Collage" for w in works)
 
     script = ""
     if rotatable:
         script = """
 <script>
-// Collages hang in any of four orientations. Each rotate button turns its own
-// image a quarter turn; the square frame means every orientation fits without
-// the grid reflowing.
-document.querySelectorAll(".rotate").forEach(function (button) {
-  var image = button.parentElement.querySelector(".plate");
-  var turns = 0;
-  button.addEventListener("click", function () {
-    turns = (turns + 1) % 4;
+// Each collage hangs in any of four orientations, so the page opens each one at a
+// random quarter turn and the button steps through the rest. The first turn is
+// applied with the transition suppressed, otherwise every image visibly spins
+// once on load.
+document.querySelectorAll(".work").forEach(function (work) {
+  var image = work.querySelector(".plate");
+  var button = work.querySelector(".rotate");
+  if (!image || !button) return;
+
+  var turns = Math.floor(Math.random() * 4);
+
+  function apply() {
     image.style.transform = "rotate(" + turns * 90 + "deg)";
     button.setAttribute("aria-label",
-      "Rotate " + button.dataset.title + " a quarter turn clockwise" +
-      (turns ? " (currently turned " + turns * 90 + " degrees)" : ""));
+      "Rotate " + button.dataset.title + " a quarter turn clockwise (currently " +
+      turns * 90 + " degrees)");
+  }
+
+  image.style.transition = "none";
+  apply();
+  requestAnimationFrame(function () { image.style.transition = ""; });
+
+  button.addEventListener("click", function () {
+    turns = (turns + 1) % 4;
+    apply();
   });
 });
 </script>"""

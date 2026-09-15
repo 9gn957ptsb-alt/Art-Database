@@ -2,7 +2,10 @@
   "artist": "Matthew Livingston",
   "lede": "Collage — photographs, tickets, paper and tape.",
   "notes": {
-    "Collage": "Collages are wired on the back of the frame for each orientation provided by the frame's shape."
+    "Collage": [
+      "Collages are wired on the back of the frame for each orientation provided by the frame's shape.",
+      "Image orientation is presented at random."
+    ]
   },
   "works": [
     {
