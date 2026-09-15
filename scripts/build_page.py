@@ -80,7 +80,7 @@ def vote_script(voting):
     """
     if not voting:
         return ""
-    return """
+    return r"""
 <script>
 (function () {
   var FORM = "%s";
@@ -91,6 +91,21 @@ def vote_script(voting):
 
   function remembered(title) {
     try { return localStorage.getItem(STORE + title); } catch (e) { return null; }
+  }
+
+  // ?reset clears this browser's record of what it has voted on, so the same
+  // person can vote again — for testing. It touches nothing but this browser:
+  // responses already sent to the form are unaffected. The parameter is removed
+  // from the address bar afterwards so a refresh doesn't silently clear again.
+  if (/[?&]reset\b/.test(location.search)) {
+    try {
+      Object.keys(localStorage)
+        .filter(function (k) { return k.indexOf(STORE) === 0; })
+        .forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    if (history.replaceState) {
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
   }
 
   document.querySelectorAll(".vote").forEach(function (button) {

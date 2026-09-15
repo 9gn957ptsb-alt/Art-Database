@@ -94,7 +94,17 @@ Two consequences worth remembering:
 - A vote is remembered per browser, so one person can vote again from another
   device. Read the totals as a feel, not a tally.
 
+Adding `?reset` to the page's address clears **this browser's** record of what it
+has voted on, so the same person can vote again. It touches nothing else —
+responses already sent to the form are untouched, and other visitors are
+unaffected. The parameter removes itself from the address bar afterwards.
+
 Set `vote.formId` in `works.json` to empty to remove the control entirely.
+
+The voting JavaScript is emitted from a **raw** Python string in
+`scripts/build_page.py`. It has to be: in a plain string Python eats the
+backslash escapes meant for JavaScript, and `\b` silently became a backspace
+byte that broke the reset regex without any error.
 
 ## Preview locally
 
