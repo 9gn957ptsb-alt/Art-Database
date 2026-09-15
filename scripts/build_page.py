@@ -63,6 +63,8 @@ def card(w, artist, notes, voting):
     rotatable = w["category"] == "Collage"
 
     details = ", ".join(p for p in (w["medium"], w["dimensions"]) if p)
+    if w.get("unframed") and w["dimensions"]:
+        details += " (unframed)"
 
     control = ""
     if rotatable:
