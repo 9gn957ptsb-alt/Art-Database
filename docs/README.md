@@ -67,6 +67,35 @@ into the next column.
 Rotation is per-image and resets on reload. Only works whose `category` is
 `Collage` get the control.
 
+## Orientation voting
+
+Each collage opens at a random one of its four orientations. A viewer turns it to
+the one they prefer and confirms; the choice posts to a Google Form.
+
+**Orientations are numbered 1-4 against the photograph**, not against what the
+viewer happened to open on:
+
+| Number | Meaning |
+| --- | --- |
+| 1 | the image file as shot |
+| 2 | a quarter turn clockwise |
+| 3 | a half turn |
+| 4 | three quarters clockwise |
+
+So orientation 3 of *Amadeus* is the same picture for everyone, whichever
+orientation their page opened on. The randomness moves where a viewer starts, not
+what the number means.
+
+Two consequences worth remembering:
+
+- The numbers are meaningful only relative to the current photograph. **Re-shooting
+  a work in a different framing invalidates its existing votes**, because the same
+  number would then point at a different side.
+- A vote is remembered per browser, so one person can vote again from another
+  device. Read the totals as a feel, not a tally.
+
+Set `vote.formId` in `works.json` to empty to remove the control entirely.
+
 ## Preview locally
 
 ```bash

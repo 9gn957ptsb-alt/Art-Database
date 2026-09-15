@@ -152,11 +152,16 @@ document.querySelectorAll(".work").forEach(function (work) {
 
   var turns = Math.floor(Math.random() * 4);
 
+  // Orientations are numbered 1-4 against the photograph itself: 1 is the file
+  // as shot, 2 a quarter turn clockwise, and so on. The number therefore means
+  // the same thing for every viewer no matter which one they happened to open
+  // on, which degrees-from-here would not.
   function apply() {
     image.style.transform = "rotate(" + turns * 90 + "deg)";
+    work.dataset.orientation = String(turns + 1);
     button.setAttribute("aria-label",
-      "Rotate " + button.dataset.title + " a quarter turn clockwise (currently " +
-      turns * 90 + " degrees)");
+      "Rotate " + button.dataset.title +
+      " a quarter turn clockwise (showing orientation " + (turns + 1) + " of 4)");
   }
 
   image.style.transition = "none";
@@ -168,10 +173,6 @@ document.querySelectorAll(".work").forEach(function (work) {
     apply();
   });
 
-  work.dataset.turns = "0";
-  var report = function () { work.dataset.turns = String(turns * 90); };
-  report();
-  button.addEventListener("click", report);
 });
 </script>
 <script>
@@ -199,7 +200,7 @@ document.querySelectorAll(".work").forEach(function (work) {
     button.addEventListener("click", function () {
       var body = new FormData();
       body.append(WORK_FIELD, title);
-      body.append(ORIENTATION_FIELD, work.dataset.turns + " degrees");
+      body.append(ORIENTATION_FIELD, work.dataset.orientation);
 
       fetch("https://docs.google.com/forms/d/e/" + FORM + "/formResponse", {
         method: "POST",
@@ -209,7 +210,7 @@ document.querySelectorAll(".work").forEach(function (work) {
 
       button.textContent = THANKS;
       button.disabled = true;
-      try { localStorage.setItem(STORE + title, work.dataset.turns); } catch (e) {}
+      try { localStorage.setItem(STORE + title, work.dataset.orientation); } catch (e) {}
     });
   });
 })();
