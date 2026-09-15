@@ -5,11 +5,28 @@ browser and it works. GitHub Pages serves this folder as-is.
 
 ```
 docs/
-  index.html    masthead, work grid, colophon
-  styles.css    all styling (palette and type scale in the :root block)
-  images/       artwork images go here
+  index.html    the live portfolio — served at /
+  styles.css
+  works.json    the works, as data
+  images/       shared by both copies
+  v2/
+    index.html  a working copy — served at /v2/
+    styles.css
   .nojekyll     stop Pages from running Jekyll over the folder
 ```
+
+## Two copies
+
+`/` is the portfolio in use. `/v2/` is a duplicate to experiment in, so the live
+one stays stable while a redesign is in progress. Both deploy on every push.
+
+They share `docs/images/` — v2 reaches it as `../images/`. Same photographs, no
+reason to carry a second copy. Give v2 its own folder if the two ever need
+different pictures.
+
+`scripts/build_page.py` renders **only** `/` from `works.json`. `v2/index.html`
+is hand-edited and will drift from it; re-point the generator at v2 if v2 becomes
+the real one.
 
 ## The work grid
 
