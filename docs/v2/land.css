@@ -1,24 +1,27 @@
-/* The land — a world you turn, in a dark room, under one beam.
+/* The land — a world you turn.
 
-   The stage owns its own palette. The site's tokens still come from
-   styles.css and are used wherever the two meet (the panel of works, the
-   type), but the room itself is night, not paper. */
+   Nothing on the stage but the sphere, the words written on it and the
+   creature walking it. The stage owns its own palette; the site's tokens
+   still come from styles.css wherever the two meet, in the panel of works. */
 
 .land-body {
-  --stage:   #05070a;  /* the room */
-  --ocean:   #0a2c58;  /* the sphere, away from the light */
-  --shallow: #1d6ea8;  /* the sphere, where the beam lands */
-  --ground:  #c3d452;  /* the land on it */
+  /* Two ends of one axis: an off-white and the off-black opposite it. The
+     background is the first, barely there at the sphere's contour, giving way
+     to the second as it goes out. land.js paints that on the canvas, because
+     only it knows where the contour is. */
+  --off-white: 243, 241, 234;
+  --off-black: #0c0e14;
+
+  --ground:  #c3d452;  /* the land on the sphere */
   --ground-2:#6f9a3c;
-  --drift:   #dfe7dd;  /* the pale weather over it */
-  --lit:     #f2f4ef;  /* anything standing in the light */
+  --lit:     #f3f1ea;  /* anything written on it */
   --dim:     #8e9aa4;
-  --edge:    rgba(226, 236, 216, 0.35);
+  --edge:    rgba(243, 241, 234, 0.3);
 
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: var(--stage);
+  background: var(--off-black);
   color: var(--lit);
   font-family: var(--sans);
   overflow: hidden;
@@ -42,32 +45,6 @@
   width: 100%;
   height: 100%;
   display: block;
-}
-
-/* ---- the beam ---------------------------------------------------------- */
-
-/* One shaft from the roof down onto whatever is standing on top. land.js
-   moves and leans it to follow the creature. */
-.beam {
-  position: absolute;
-  top: -12vh;
-  left: 0;
-  width: 30vw;
-  max-width: 380px;
-  height: 78vh;
-  transform-origin: 50% 0;
-  pointer-events: none;
-  opacity: 0.85;
-  background:
-    linear-gradient(to bottom,
-      rgba(233, 243, 198, 0.34) 0%,
-      rgba(186, 220, 168, 0.20) 34%,
-      rgba(120, 182, 200, 0.10) 68%,
-      rgba(120, 182, 200, 0) 100%);
-  /* A shaft, not a rectangle: narrow at the lamp, wide where it lands. */
-  clip-path: polygon(46% 0%, 54% 0%, 92% 100%, 8% 100%);
-  filter: blur(7px);
-  mix-blend-mode: screen;
 }
 
 /* ---- the words --------------------------------------------------------- */
@@ -103,11 +80,11 @@
   border: 0;
   background: none;
   color: var(--lit);
-  font-family: var(--sans);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  /* Face and size are rolled by land.js and keep being re-rolled, so neither
+     is set here. The size eases between rolls rather than snapping. */
   line-height: 1.1;
   white-space: nowrap;
+  transition: font-size 900ms cubic-bezier(0.33, 0, 0.2, 1);
   text-shadow:
     0 0 14px rgba(5, 12, 20, 0.95),
     0 1px 3px rgba(5, 12, 20, 0.9);
@@ -147,8 +124,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 64px;
-  height: 48px;
+  width: 192px;
+  height: 144px;
   z-index: 60;
   cursor: pointer;
   pointer-events: auto;
@@ -311,67 +288,6 @@
   transition: transform 300ms cubic-bezier(0.4, 0, 1, 1), opacity 300ms ease-in;
   opacity: 0;
 }
-
-/* ---- the words around the stage ---------------------------------------- */
-
-.land-head {
-  position: absolute;
-  top: 0;
-  left: 0;
-  max-width: min(34rem, calc(100% - 48px));
-  padding: 32px 24px 0;
-  z-index: 90;
-  pointer-events: none;
-}
-
-.land-head h1 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--lit);
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.9);
-}
-
-.land-lede {
-  max-width: 34ch;
-  margin: 12px 0 0;
-  color: var(--dim);
-  font-family: var(--serif);
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
-}
-
-.land-foot {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 0 24px 20px;
-  z-index: 90;
-  font-size: 0.8125rem;
-  pointer-events: none;
-}
-
-.land-foot p { margin: 0; }
-.land-foot a { color: var(--lit); pointer-events: auto; }
-
-.land-drag {
-  color: var(--dim);
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: opacity 600ms ease;
-}
-
-.land-drag[data-spent="true"] { opacity: 0; }
 
 /* ---- the seam: what a word is standing on ------------------------------ */
 

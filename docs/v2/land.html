@@ -7,21 +7,19 @@
 <meta name="description" content="A world made of the words the collages are made of. Something grazes on it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Newsreader:ital,wght@0,400;1,400&display=swap">
+<!-- The words take a different face each time they are rolled, so the page
+     carries a spread of them: sans, serif, display, slab and typewriter. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600&family=Bebas+Neue&family=Courier+Prime:wght@400;700&family=DM+Serif+Display&family=Newsreader:ital,wght@0,400;1,400&family=Playfair+Display:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="land.css">
 </head>
 <body class="land-body">
 
-<!-- The stage. One dark room, one lit world in the middle of it. -->
+<!-- Nothing here but the world, what is written on it, and what walks on it. -->
 <div class="stage" id="stage">
 
-  <!-- The world itself: sphere, landmasses, ring, haze and the lights at the
-       far edge are all painted here, and turn together. -->
+  <!-- The sphere and its land. -->
   <canvas class="world" id="world"></canvas>
-
-  <!-- The beam. It falls from above onto whatever is standing on top. -->
-  <div class="beam" id="beam" aria-hidden="true"></div>
 
   <!-- Everything that stands ON the world is DOM, not canvas, so the words
        stay legible, focusable and clickable. land.js projects each one onto
@@ -30,7 +28,7 @@
     <p class="land-loading" id="land-loading">Turning the world&hellip;</p>
 
     <!-- The creature. It walks the surface and grazes on whatever word it
-         reaches; the world turns to keep it in the light. -->
+         reaches; the world turns to keep it facing you. -->
     <div class="creature" id="creature" hidden tabindex="0"
          role="button" aria-describedby="creature-help"
          aria-label="Grazing creature — hover or focus it to see what it turns up">
@@ -81,30 +79,17 @@
     </div>
   </div>
 
-  <header class="land-head">
-    <h1>Matthew Livingston</h1>
-    <p class="land-lede">
-      A world made of the words the collages are made of. Every word is standing
-      on the works that share it. Turn it, and something is grazing up there —
-      it will turn up colours to throw.
-    </p>
-  </header>
-
-  <footer class="land-foot">
-    <p><a href="index.html">The works</a></p>
-    <p class="land-drag" id="land-drag">Drag to turn the world</p>
-  </footer>
-
   <p class="visually-hidden" id="creature-help">
     Press and hold what it turns up to condense it into its three colours, then
     drag those colours onto the creature to repaint it. With a keyboard, press
     Enter on it to do both at once. Tab through the words to turn the world to
-    each in turn.
+    each in turn. Drag anywhere to turn the world by hand.
   </p>
 
 </div>
 
-<!-- What a word is standing on: the artist's own works. -->
+<!-- What a word is standing on: the artist's own works. Closed until a word
+     is opened, so the stage stays bare. -->
 <aside class="seam" id="seam" hidden aria-labelledby="seam-word">
   <button class="seam-close" id="seam-close" type="button" aria-label="Close">&times;</button>
   <h2 class="seam-word" id="seam-word"></h2>

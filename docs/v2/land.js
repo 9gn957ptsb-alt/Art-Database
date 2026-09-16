@@ -23,10 +23,8 @@
   var stage = document.getElementById("stage");
   var canvas = document.getElementById("world");
   var ctx = canvas.getContext("2d");
-  var beam = document.getElementById("beam");
   var land = document.getElementById("land");
   var loading = document.getElementById("land-loading");
-  var dragHint = document.getElementById("land-drag");
   var creature = document.getElementById("creature");
   var graze = document.getElementById("graze");
   var grazeCard = document.getElementById("graze-card");
@@ -40,6 +38,27 @@
   var seamCount = document.getElementById("seam-count");
   var seamList = document.getElementById("seam-list");
   var seamClose = document.getElementById("seam-close");
+
+  // The background: an off-white, barely there where it meets the sphere's
+  // contour, giving way to the off-black opposite it as it goes out.
+  var OFF_WHITE = "243, 241, 234";
+  var OFF_BLACK = "#0c0e14";
+
+  // The faces a word can be wearing. Each word keeps being re-rolled, so no
+  // word holds one for long.
+  var FACES = [
+    '"Anton", Impact, sans-serif',
+    '"Archivo", Helvetica, Arial, sans-serif',
+    '"Bebas Neue", Impact, sans-serif',
+    '"Courier Prime", Courier, monospace',
+    '"DM Serif Display", Georgia, serif',
+    '"Newsreader", Georgia, serif',
+    '"Playfair Display", Georgia, serif',
+    '"Space Mono", Menlo, monospace'
+  ];
+
+  var ROLL_MIN = 2400;   // how long a word keeps a face before taking another
+  var ROLL_MAX = 7600;
 
   var TAU = Math.PI * 2;
   var RAD = Math.PI / 180;
@@ -65,7 +84,6 @@
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
-  var lights = [];      // the far edge of the room
 
   var here = 0;         // which word the creature is standing on
   var offering = null;  // the token currently turned up
@@ -118,14 +136,9 @@
   /* ---- laying the world out --------------------------------------------- */
 
   /* Words are spread down a spiral from near the pole to below the equator,
-     which keeps them evenly spaced and all on the face the beam reaches. */
+     which keeps them evenly spaced and all on the face that is lit. */
   function survey() {
     var n = vocabulary.length;
-    var counts = vocabulary.map(function (v) { return v.works.length; });
-    var high = Math.max.apply(null, counts);
-    var low = Math.min.apply(null, counts);
-    var span = high - low || 1;
-
     var sinTop = Math.sin(LAT_TOP);
     var sinLow = Math.sin(LAT_LOW);
 
@@ -133,7 +146,6 @@
       var f = (i + 0.5) / n;
       ground.lat = Math.asin(sinTop - f * (sinTop - sinLow));
       ground.lon = (i * GOLDEN) % TAU;
-      ground.mass = (ground.works.length - low) / span;
     });
 
     // A landmass per work, sitting under that work's own words.
@@ -203,31 +215,57 @@
     cx = W / 2;
     cy = H * 0.42 + R;
 
-    // Type scales with the world, so a phone gets a legible globe.
-    vocabulary.forEach(function (ground) {
-      if (!ground.el) { return; }
-      var size = (R / 620) * (13 + ground.mass * 15);
-      ground.el.style.fontSize = Math.max(10.5, size).toFixed(2) + "px";
-    });
+    // Type scales with the world, so a phone gets a legible globe. Which
+    // face and how big relative to the rest is the word's own business.
+    dressAll();
 
-    lights = [];
-    var many = Math.round(W / 4);
-    for (var i = 0; i < many; i += 1) {
-      lights.push({
-        x: Math.random() * W,
-        y: H * 0.55 + Math.random() * H * 0.45,
-        r: 0.6 + Math.random() * 1.4,
-        phase: Math.random() * TAU
-      });
-    }
   }
+
+  /* ---- how a word is dressed --------------------------------------------- */
+
+  /* Every word wears a face and a size of its own, and keeps taking new ones
+     for as long as the page is open. Size is rolled rather than read off how
+     many works carry the word, so the count no longer shows in the type —
+     that is what the panel is for. */
+  function roll(ground) {
+    ground.face = FACES[Math.floor(Math.random() * FACES.length)];
+    ground.weight = Math.random() < 0.45 ? 700 : 400;
+    ground.factor = 0.55 + Math.random() * 1.85;
+    dress(ground);
+
+    if (still) { return; }   // one face, held, for anyone who asked for calm
+    ground.timer = window.setTimeout(function () { roll(ground); },
+      ROLL_MIN + Math.random() * (ROLL_MAX - ROLL_MIN));
+  }
+
+  function dress(ground) {
+    if (!ground.el || !ground.face) { return; }
+    var size = (R / 620) * 19 * ground.factor;
+    ground.el.style.fontFamily = ground.face;
+    ground.el.style.fontWeight = String(ground.weight);
+    ground.el.style.fontSize = Math.max(11, size).toFixed(2) + "px";
+  }
+
+  function dressAll() { vocabulary.forEach(dress); }
 
   /* ---- painting the world ------------------------------------------------ */
 
   function paint(now) {
     ctx.clearRect(0, 0, W, H);
 
-    // Where the beam lands, which is what the sphere is lit from.
+    // The room is nothing but the falling-off of the off-white. Its inner
+    // radius is R, so the gradient starts exactly on the sphere's contour.
+    ctx.fillStyle = OFF_BLACK;
+    ctx.fillRect(0, 0, W, H);
+
+    var out = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.6);
+    out.addColorStop(0, "rgba(" + OFF_WHITE + ", 0.17)");
+    out.addColorStop(0.42, "rgba(" + OFF_WHITE + ", 0.05)");
+    out.addColorStop(1, "rgba(" + OFF_WHITE + ", 0)");
+    ctx.fillStyle = out;
+    ctx.fillRect(0, 0, W, H);
+
+    // What the creature stands on is the brightest part of the sphere.
     var lit = project(beast.lat, beast.lon);
 
     ctx.save();
@@ -279,15 +317,15 @@
 
     // Limb darkening: the edge of a sphere turns away from every light.
     var limb = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R);
-    limb.addColorStop(0, "rgba(2, 8, 18, 0)");
-    limb.addColorStop(0.78, "rgba(2, 8, 18, 0.42)");
-    limb.addColorStop(1, "rgba(2, 8, 18, 0.9)");
+    limb.addColorStop(0, "rgba(12, 14, 20, 0)");
+    limb.addColorStop(0.78, "rgba(12, 14, 20, 0.42)");
+    limb.addColorStop(1, "rgba(12, 14, 20, 0.92)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
     ctx.restore();
 
-    // The thin bright edge where the sphere meets the room.
+    // The thin bright edge where the sphere ends.
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, TAU);
@@ -296,46 +334,6 @@
     ctx.stroke();
     ctx.restore();
 
-    // The ring, low down where the sphere meets the floor. Its width is the
-    // sphere's own silhouette at that height, so it sits on the surface
-    // instead of floating in front of it.
-    var ringY = H * 0.94;
-    var rise = cy - ringY;
-    var half = rise < R ? Math.sqrt(R * R - rise * rise) : 0;
-    if (half > 8) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(cx, ringY, half * 1.02, half * 0.15, 0, 0, TAU);
-      ctx.strokeStyle = "rgba(226, 238, 228, 0.38)";
-      ctx.lineWidth = Math.max(1, R * 0.0026);
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(226, 238, 228, 0.07)";
-      ctx.lineWidth = Math.max(4, R * 0.014);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Haze where it meets the floor.
-    var haze = ctx.createRadialGradient(
-      cx, cy - R * 0.06, R * 0.2, cx, cy - R * 0.06, R * 1.25);
-    haze.addColorStop(0, "rgba(150, 200, 190, 0.12)");
-    haze.addColorStop(0.7, "rgba(120, 170, 190, 0.05)");
-    haze.addColorStop(1, "rgba(120, 170, 190, 0)");
-    ctx.fillStyle = haze;
-    ctx.fillRect(0, 0, W, H);
-
-    // The room, out past the sphere: a crowd holding lights up, visible only
-    // where the world is not in the way.
-    lights.forEach(function (light) {
-      var dx = light.x - cx;
-      var dy = light.y - cy;
-      if (dx * dx + dy * dy < R * R) { return; }
-      var a = still ? 0.5 : 0.28 + 0.36 * (0.5 + 0.5 * Math.sin(now / 620 + light.phase));
-      ctx.beginPath();
-      ctx.arc(light.x, light.y, light.r, 0, TAU);
-      ctx.fillStyle = "rgba(255, 244, 214, " + a.toFixed(3) + ")";
-      ctx.fill();
-    });
   }
 
   /* ---- standing things on it --------------------------------------------- */
@@ -376,18 +374,6 @@
     creature.style.transform =
       "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
       " translate(-50%,-92%) scale(" + scale.toFixed(3) + ")";
-
-    // The beam hangs from the roof and aims at whatever is standing up there.
-    var lampX = cx;
-    var dx = p.x - lampX;
-    var dy = Math.max(60, p.y - (-H * 0.12));
-    var angle = Math.atan2(dx, dy) / RAD;
-    var width = beam.offsetWidth || 1;
-    var lampY = -H * 0.12;
-    beam.style.height = Math.round(Math.sqrt(dx * dx + (p.y - lampY) * (p.y - lampY))) + "px";
-    beam.style.transform =
-      "translateX(" + (lampX - width / 2).toFixed(1) + "px) rotate(" + angle.toFixed(2) + "deg)";
-    beam.style.opacity = p.z <= 0 ? "0.25" : "0.85";
 
     return p;
   }
@@ -655,7 +641,6 @@
     wanted = turning.spin - (dx / Math.max(R, 1)) * Math.PI;
     spin = wanted;
     freeUntil = performance.now() + FREE;
-    if (turning.moved > 12 && dragHint) { dragHint.dataset.spent = "true"; }
   });
 
   ["pointerup", "pointercancel"].forEach(function (name) {
@@ -777,6 +762,7 @@
       survey();
       grow();
       loading.remove();
+      vocabulary.forEach(function (ground) { roll(ground); });
       geometry();
 
       if (document.fonts && document.fonts.ready) {
