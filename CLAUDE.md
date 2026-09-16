@@ -26,7 +26,7 @@ already declined or deferred in the same conversation.
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |
 | `WIX.md` | The live Wix site: CMS schema, current rows, and the to-do list. |
-| `docs/v2/land.html` | **The land** — the words the works are made of, and what grazes on them. `land.css`, `land.js`, `land.json`. |
+| `docs/v2/land.html` | **The land** — the works' own words, and what grazes on them. `land.css`, `land.js`, `land.json`. |
 | `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
 | `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
 
@@ -62,5 +62,6 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
 - `data/` never gets committed. It is the artist's whole Artsy saved-works list
   and this repository is public. Only `docs/v2/land.json` — the distilled
   fraction `scripts/build_land.py` writes — belongs in git.
-- Artsy works appear on the land, credited to their own artists. They still do
-  not appear in the portfolio: that rule is unchanged everywhere else.
+- The land's words come from `terms` in `docs/works.json` and link to **his**
+  works. Artsy saves are only the token objects the creature turns up — three
+  colours to throw. No Artsy work is ever what a word stands on.

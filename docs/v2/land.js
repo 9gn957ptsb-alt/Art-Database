@@ -1,9 +1,15 @@
 /* The land.
 
-   land.json gives the words and, under each word, the works that share it.
-   This file grows the land from that, walks a creature across it, and lets an
-   artwork be condensed into the three colours it reduces to and thrown at the
-   creature to repaint it.
+   Two sources, and they do different jobs.
+
+   ../works.json is Matthew's. Its `terms` give the land its words, and a word
+   links to his works that share it — that is what the land is for.
+
+   land.json is the token supply, built from the Artsy saves. A token is one of
+   those works boiled down to the three colours it reduces to. The creature
+   turns one up as it grazes; hold it to condense it, throw it to repaint the
+   creature. Artsy works are tokens and nothing else — they are never what a
+   word links to.
 
    No build step and no dependencies: the page is served as it is written. */
 
@@ -29,63 +35,86 @@
   var STEP = 1600;      // how long a walk between two plots takes
   var GRAZE_MIN = 2600; // how long it stays with a word
   var GRAZE_MAX = 5200;
-  var HOLD = 380;       // press this long and the artwork condenses
+  var HOLD = 380;       // press this long and the token condenses
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  var data = null;
+  var supply = null;    // land.json — the tokens
+  var mine = null;      // works.json — the artist's works
+  var vocabulary = [];  // [{ word, works: [work, …] }], the land itself
   var plots = [];       // the rendered word cells, in document order
   var here = 0;         // which plot the creature is standing on
-  var offering = null;  // the work currently being grazed
+  var offering = null;  // the token currently turned up
   var walkTimer = null;
 
-  /* ---- reading the land ------------------------------------------------ */
+  /* ---- reading ---------------------------------------------------------- */
 
-  function thumb(work, cdn) {
-    return cdn + work.i + ".jpg";
+  function thumb(tok) {
+    return supply.cdn + tok.i + ".jpg";
   }
 
-  function artsy(work) {
-    return "https://www.artsy.net/artwork/" + work.s;
-  }
-
-  function line(work) {
+  function tokenLine(tok) {
     var bits = [];
-    if (work.a) { bits.push(work.a); }
-    if (work.y) { bits.push(work.y); }
+    if (tok.a) { bits.push(tok.a); }
+    if (tok.y) { bits.push(tok.y); }
     return bits.join(", ");
   }
 
-  /* ---- growing it ------------------------------------------------------ */
+  function workLine(work) {
+    var bits = [work.medium];
+    if (work.dimensions) {
+      bits.push(work.dimensions + (work.unframed ? " (unframed)" : ""));
+    }
+    return bits.filter(Boolean).join(", ");
+  }
+
+  /* The land's words, in the order the works introduce them. */
+  function readVocabulary() {
+    var order = [];
+    var held = {};
+
+    mine.works.forEach(function (work) {
+      (work.terms || []).forEach(function (term) {
+        if (!held[term]) {
+          held[term] = [];
+          order.push(term);
+        }
+        held[term].push(work);
+      });
+    });
+
+    return order.map(function (term) {
+      return { word: term, works: held[term] };
+    });
+  }
+
+  /* ---- growing it ------------------------------------------------------- */
 
   function grow() {
-    var counts = data.terms.map(function (t) { return t.n; });
-    var low = Math.min.apply(null, counts);
+    var counts = vocabulary.map(function (v) { return v.works.length; });
     var high = Math.max.apply(null, counts);
-
-    // Counts run from twenty to well over a thousand, so a straight scale
-    // would leave everything flat under 'paper'. Log gives the land relief.
-    var floor = Math.log(low);
-    var span = Math.log(high) - floor || 1;
+    var low = Math.min.apply(null, counts);
+    var span = high - low || 1;
 
     var fragment = document.createDocumentFragment();
 
-    data.terms.forEach(function (term, index) {
+    vocabulary.forEach(function (ground, index) {
+      var n = ground.works.length;
+
       var plot = document.createElement("button");
       plot.type = "button";
       plot.className = "plot";
-      plot.dataset.index = String(index);
       plot.setAttribute("aria-label",
-        term.w + " — " + term.n + (term.n === 1 ? " work" : " works"));
+        ground.word + " — " + n + (n === 1 ? " work" : " works"));
 
       var word = document.createElement("span");
       word.className = "plot-word";
-      word.style.setProperty("--mass", ((Math.log(term.n) - floor) / span).toFixed(3));
-      word.textContent = term.w;
+      word.style.setProperty("--mass", ((n - low) / span).toFixed(3));
+      word.textContent = ground.word;
 
       var count = document.createElement("span");
       count.className = "plot-count";
-      count.textContent = term.n;
+      count.textContent = n;
 
       plot.appendChild(word);
       plot.appendChild(count);
@@ -175,7 +204,7 @@
 
     walkTimer = window.setTimeout(function () {
       creature.dataset.grazing = "true";
-      offering = null;          // a new word means a new thing to offer
+      offering = null;          // new ground, something new to turn up
       if (!graze.hidden) { offer(); }
       walkTimer = window.setTimeout(walk, GRAZE_MIN + Math.random() * (GRAZE_MAX - GRAZE_MIN));
     }, still ? 1 : STEP);
@@ -187,21 +216,26 @@
     walkTimer = window.setTimeout(walk, GRAZE_MIN);
   }
 
-  /* ---- what it finds --------------------------------------------------- */
+  /* ---- what it turns up ------------------------------------------------- */
+
+  /* Where the word the creature is standing on is one an Artsy medium also
+     says — paper, photograph, tape — it turns up something that shares it.
+     Otherwise it turns up whatever is in the general supply. */
+  function pick() {
+    var ground = vocabulary[here];
+    var keys = (ground && supply.byTerm[ground.word]) || supply.pool;
+    if (!keys || !keys.length) { return null; }
+    return supply.tokens[keys[Math.floor(Math.random() * keys.length)]] || null;
+  }
 
   function offer() {
-    var term = data.terms[here];
-    if (!term || !term.k.length) { hideGraze(); return; }
-
-    if (!offering) {
-      offering = data.works[term.k[Math.floor(Math.random() * term.k.length)]];
-    }
+    if (!offering) { offering = pick(); }
     if (!offering) { hideGraze(); return; }
 
-    grazePlate.src = thumb(offering, data.cdn);
+    grazePlate.src = thumb(offering);
     grazePlate.alt = offering.t + (offering.a ? " by " + offering.a : "");
     grazeTitle.textContent = offering.t;
-    grazeMeta.textContent = line(offering);
+    grazeMeta.textContent = tokenLine(offering);
     grazeHint.textContent = "Hold to condense";
     delete graze.dataset.condensing;
 
@@ -228,13 +262,13 @@
   /* ---- condensing and throwing ----------------------------------------- */
 
   var holdTimer = null;
-  var carrying = null;   // the work whose colours are in hand
+  var carrying = null;   // the token whose colours are in hand
 
-  function condense(work, x, y) {
-    carrying = work;
-    token.style.setProperty("--t1", work.c[0]);
-    token.style.setProperty("--t2", work.c[1]);
-    token.style.setProperty("--t3", work.c[2]);
+  function condense(tok, x, y) {
+    carrying = tok;
+    token.style.setProperty("--t1", tok.c[0]);
+    token.style.setProperty("--t2", tok.c[1]);
+    token.style.setProperty("--t3", tok.c[2]);
     delete token.dataset.thrown;
     token.hidden = false;
     moveToken(x, y);
@@ -247,10 +281,10 @@
     token.style.top = Math.round(y - token.offsetHeight / 2) + "px";
   }
 
-  function wear(work) {
-    creature.style.setProperty("--c1", work.c[0]);
-    creature.style.setProperty("--c2", work.c[1]);
-    creature.style.setProperty("--c3", work.c[2]);
+  function wear(tok) {
+    creature.style.setProperty("--c1", tok.c[0]);
+    creature.style.setProperty("--c2", tok.c[1]);
+    creature.style.setProperty("--c3", tok.c[2]);
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 460);
   }
@@ -268,13 +302,12 @@
     if (landed(clientX, clientY)) {
       wear(carrying);
       token.hidden = true;
-      hideGraze();
     } else {
       token.dataset.thrown = "true";
       window.setTimeout(function () { token.hidden = true; }, 320);
-      hideGraze();
     }
 
+    hideGraze();
     carrying = null;
     resume();
   }
@@ -287,14 +320,14 @@
   grazeCard.addEventListener("pointerdown", function (event) {
     if (!offering) { return; }
     event.preventDefault();
-    var work = offering;
+    var tok = offering;
     var point = local(event);
 
     // Capture now, so the throw can carry the token past the card's own box.
     try { grazeCard.setPointerCapture(event.pointerId); } catch (e) {}
 
     holdTimer = window.setTimeout(function () {
-      condense(work, point.x, point.y);
+      condense(tok, point.x, point.y);
     }, HOLD);
   });
 
@@ -311,7 +344,7 @@
     });
   });
 
-  // Keyboard: Enter on the artwork condenses and applies it in one move.
+  // Keyboard: Enter on the token condenses and applies it in one move.
   grazeCard.tabIndex = 0;
   grazeCard.setAttribute("role", "button");
   grazeCard.addEventListener("keydown", function (event) {
@@ -323,7 +356,7 @@
     resume();
   });
 
-  /* ---- showing and hiding what it is grazing --------------------------- */
+  /* ---- showing and hiding what it turned up ---------------------------- */
 
   function show() { hold(); offer(); }
 
@@ -351,55 +384,43 @@
     }, 220);
   });
 
-  /* ---- what a word is standing on -------------------------------------- */
+  /* ---- what a word is standing on: the artist's works ------------------- */
 
   function openSeam(index) {
-    var term = data.terms[index];
-    if (!term) { return; }
+    var ground = vocabulary[index];
+    if (!ground) { return; }
 
-    seamWord.textContent = term.w;
-    seamCount.textContent =
-      term.n + (term.n === 1 ? " work" : " works") +
-      (term.k.length < term.n ? " — showing " + term.k.length : "");
+    seamWord.textContent = ground.word;
+    seamCount.textContent = ground.works.length +
+      (ground.works.length === 1 ? " work" : " works");
 
     seamList.textContent = "";
-    term.k.forEach(function (key) {
-      var work = data.works[key];
-      if (!work) { return; }
-
+    ground.works.forEach(function (work) {
       var item = document.createElement("li");
       item.className = "seam-item";
 
       var link = document.createElement("a");
-      link.href = artsy(work);
-      link.target = "_blank";
-      link.rel = "noopener";
+      link.href = "index.html#" + work.slug;
 
       var plate = document.createElement("img");
       plate.className = "seam-plate";
       plate.loading = "lazy";
-      plate.src = thumb(work, data.cdn);
-      plate.alt = work.t + (work.a ? " by " + work.a : "");
+      plate.src = "../images/" + work.slug + ".jpg";
+      plate.alt = work.alt + ".";
 
       var title = document.createElement("h3");
-      title.textContent = work.t;
+      title.textContent = work.title;
 
-      var meta = document.createElement("p");
-      meta.textContent = line(work);
+      var year = document.createElement("p");
+      year.textContent = work.year;
 
-      var colours = document.createElement("span");
-      colours.className = "seam-colours";
-      colours.setAttribute("aria-hidden", "true");
-      work.c.forEach(function (hex) {
-        var swatch = document.createElement("span");
-        swatch.style.background = hex;
-        colours.appendChild(swatch);
-      });
+      var detail = document.createElement("p");
+      detail.textContent = workLine(work);
 
       link.appendChild(plate);
       link.appendChild(title);
-      link.appendChild(meta);
-      link.appendChild(colours);
+      link.appendChild(year);
+      link.appendChild(detail);
       item.appendChild(link);
       seamList.appendChild(item);
     });
@@ -426,14 +447,22 @@
     }, 160);
   });
 
-  fetch("land.json")
-    .then(function (response) {
-      if (!response.ok) { throw new Error(response.status + " " + response.statusText); }
+  function read(url) {
+    return fetch(url).then(function (response) {
+      if (!response.ok) {
+        throw new Error(url + ": " + response.status + " " + response.statusText);
+      }
       return response.json();
-    })
-    .then(function (json) {
-      data = json;
-      if (!data.terms || !data.terms.length) { throw new Error("no terms"); }
+    });
+  }
+
+  Promise.all([read("../works.json"), read("land.json")])
+    .then(function (both) {
+      mine = both[0];
+      supply = both[1];
+
+      vocabulary = readVocabulary();
+      if (!vocabulary.length) { throw new Error("the works carry no terms"); }
 
       grow();
       // Archivo arrives after first paint and changes every width.

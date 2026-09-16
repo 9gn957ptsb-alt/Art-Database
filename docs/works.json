@@ -17,7 +17,15 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage of photographs, Polaroids, boarding passes and handwritten notes in a dense rectilinear grid",
-      "unframed": false
+      "unframed": false,
+      "terms": [
+        "collage",
+        "photograph",
+        "polaroid",
+        "boarding pass",
+        "handwriting",
+        "grid"
+      ]
     },
     {
       "slug": "i",
@@ -28,7 +36,12 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage in browns and blues with a dark central panel and a pale standing figure",
-      "unframed": false
+      "unframed": false,
+      "terms": [
+        "collage",
+        "panel",
+        "figure"
+      ]
     },
     {
       "slug": "collage-with-portraits",
@@ -39,7 +52,14 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage in three horizontal bands built from receipts, magazine pages and film strips",
-      "unframed": false
+      "unframed": false,
+      "terms": [
+        "collage",
+        "receipt",
+        "magazine",
+        "film strip",
+        "portrait"
+      ]
     },
     {
       "slug": "nyny",
@@ -50,7 +70,15 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage of Metropolitan Museum tickets, maps, playing cards, coins and handwriting",
-      "unframed": false
+      "unframed": false,
+      "terms": [
+        "collage",
+        "ticket",
+        "map",
+        "playing card",
+        "coin",
+        "handwriting"
+      ]
     },
     {
       "slug": "hey-amateur-collage",
@@ -61,7 +89,14 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Tall collage of photographs, tape lettering and paper fragments",
-      "unframed": true
+      "unframed": true,
+      "terms": [
+        "collage",
+        "photograph",
+        "tape",
+        "paper",
+        "lettering"
+      ]
     },
     {
       "slug": "boston-spring",
@@ -72,7 +107,15 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage of Boston museum admission tickets, Polaroid film packaging, maps and dated instant photographs",
-      "unframed": true
+      "unframed": true,
+      "terms": [
+        "collage",
+        "ticket",
+        "polaroid",
+        "map",
+        "photograph",
+        "packaging"
+      ]
     },
     {
       "slug": "game-boy-advance",
@@ -83,7 +126,15 @@
       "availability": "Contact for price",
       "category": "Collage",
       "alt": "Collage of Polaroids, watercolour washes, dated handwriting, a Game Boy Advance box panel and a sunset shoreline across the lower edge",
-      "unframed": true
+      "unframed": true,
+      "terms": [
+        "collage",
+        "polaroid",
+        "watercolour",
+        "handwriting",
+        "box",
+        "shoreline"
+      ]
     }
   ],
   "statement": "I am curious about what faculties are and how they pertain to the world. I explore the immediacy of visual perception through the colors and movements of abstraction. I practice this abstract perspective through collage, which I first developed through my process notebooks and modeling materials in architectural school. My collage practice has since evolved into one focusing on ordinary objects and how they come to reinforce perceptual forms relative to day to day activities. They can be seen as compressions of the spatial processions forming my identity. Furthermore, they are able to be as radically different from each other as the situations they are derived from—they do different things as they are about different sequences of events. My long term goal is to clarify why the very disciplinary boundaries and social shapes we practice reflect the very perceptual forms we look at them with.",
@@ -94,5 +145,6 @@
     "orientationField": "entry.613371858",
     "prompt": "Prefer this orientation?",
     "thanks": "Recorded — thank you"
-  }
+  },
+  "terms_note": "Provisional. Every term is one named in that work's own alt text — read off the photographs, not supplied by the artist. Replace with his own vocabulary when he gives it."
 }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Matthew Livingston — The Land</title>
-<meta name="description" content="A land made of the words artworks are made of. Something grazes on it.">
+<meta name="description" content="A land made of the words the collages are made of. Something grazes on it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Newsreader:ital,wght@0,400;1,400&display=swap">
@@ -18,15 +18,15 @@
   <header class="land-head">
     <h1>Matthew Livingston</h1>
     <p class="land-lede">
-      A land made of the words artworks are made of. Every word is standing on
-      the works that share it. Something is grazing here — follow it, and it
-      will show you what it finds.
+      A land made of the words the collages are made of. Every word is standing
+      on the works that share it — open one and it will show you them. Something
+      is grazing here too, turning up colours to throw at it.
     </p>
   </header>
 
   <main>
-    <!-- The land. Plots are written in by land.js from land.json; the
-         creature and everything it carries sit on top of the same box, so
+    <!-- The land. Plots are written in by land.js from the works' own terms;
+         the creature and everything it carries sit on top of the same box, so
          their coordinates are the land's own. -->
     <div class="land" id="land" aria-label="Words the works are made of">
       <p class="land-loading" id="land-loading">Growing the land&hellip;</p>
@@ -74,7 +74,8 @@
         <p class="graze-hint" id="graze-hint">Hold to condense</p>
       </div>
 
-      <!-- The condensed artwork: three colours, thrown at the creature. -->
+      <!-- The token object: an Artsy work condensed to its three colours,
+           thrown at the creature. -->
       <div class="token" id="token" hidden>
         <span class="token-band"></span>
         <span class="token-band"></span>
@@ -83,9 +84,9 @@
     </div>
 
     <p class="visually-hidden" id="creature-help">
-      Press and hold the artwork it offers to condense it into its three
-      colours, then drag those colours onto the creature to repaint it.
-      With a keyboard, press Enter on the artwork to do both at once.
+      Press and hold what it turns up to condense it into its three colours,
+      then drag those colours onto the creature to repaint it. With a keyboard,
+      press Enter on it to do both at once.
     </p>
   </main>
 

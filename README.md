@@ -8,15 +8,14 @@ Two things that will eventually meet:
    on [Artsy](https://www.artsy.net) and designed to grow over time. Museum-visit photos
    (an artwork shot followed by its label shot) are a planned second source.
 
-The two were kept apart: **no work from the Artsy database is exhibited as part of the
-portfolio.** That still holds for the works pages — the portfolio shows Matthew's collages
-and nothing else.
+The two stay separate: **no work from the Artsy database is exhibited on the site.** Every
+artwork the site shows as an artwork is Matthew's.
 
-**The land changes this in one specific place.** `docs/v2/land.html` is built on the saved
-works: a word from the land offers the artworks that share it, as thumbnails, and an
-artwork's three dominant colours are what gets thrown at the creature. They appear there as
-material the land is made of and are credited to their own artists, never as Matthew's work
-and never in the portfolio. Nothing else about the rule changes.
+The land (`docs/v2/land.html`) keeps that line. Its words are Matthew's, taken from the
+`terms` on his own works, and a word links to **his** works that share it. The Artsy saves
+are used for one thing only: the **token objects** — a saved work condensed into the three
+colours it reduces to, which the creature turns up and the visitor throws at it to repaint
+it. Artsy works are that token and nothing more. They are never what a word stands on.
 
 The rest of this file covers the database half.
 
@@ -92,9 +91,14 @@ publish his entire collecting history. Nothing derived from it should carry more
 page needs.
 
 `scripts/build_land.py` is the only thing that reads it. It writes `docs/v2/land.json`,
-which holds the material words and, per word, sixteen works with title, artist, year,
-three dominant colours and a thumbnail key — a small fraction of the dump, and the only
-part that is committed.
+the token supply: a couple of hundred saved works with title, artist, year, three dominant
+colours and a thumbnail key, indexed by the handful of Matthew's words an Artsy medium also
+says — paper, photograph, tape, watercolour — so the creature can turn up something that
+shares the ground it is standing on. It is a small fraction of the dump, and the only part
+that is committed.
+
+The land's words are not built here. They come from `terms` in `docs/works.json`, which is
+Matthew's own data; `build_land.py` reads them only to decide what to index.
 
 ```bash
 python3 scripts/build_land.py
