@@ -83,6 +83,19 @@ So images go in by hand: drag the files into the Media Manager in the Wix
 dashboard. After that the rows can be filled from a session — list the media
 files, match them by filename, and patch each row's `image`.
 
+## The land's shape — the table is SUPERSEDED
+
+The land on `/v2/` was first built as the editorial table below, used as flat
+terrain. On 16 Sep 2026 the artist replaced that reference: the land is now a
+globe you turn, after the stage Ye and Aus Taylor built for the Ye Live opening
+at SoFi Stadium on 1 Apr 2026 — a sphere rising out of the floor, one figure on
+top in a single beam, haze, a pale ring, the room's lights past its edge. The
+site's version is an interpretation of that idea, not a copy of the production:
+the sphere is made of the artist's own words and the figure on it is the
+grazing creature.
+
+Worked from five stills the artist supplied. No session has seen the video.
+
 ## Matching the reference design — SUPERSEDED
 
 **The live site is no longer being matched to `docs/`.** On 14 Sep 2026 the
