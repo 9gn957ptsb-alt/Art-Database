@@ -207,3 +207,9 @@ broad strokes and misses the small numbers.
    than a slide or fade. Blocked until one thing is settled — **what the token
    object is**. Today's rotate control is a small button per collage; this reads
    as something singular and central that the visitor turns.
+
+   *A candidate arrived on 16 Sep 2026.* The land (`docs/v2/land.html`) makes
+   one: an artwork held down until it condenses into the three colours it
+   reduces to, a single round thing the visitor already picks up and throws.
+   Turning it instead of throwing it is the same gesture. Not decided — the
+   artist has not said this is the token object.
