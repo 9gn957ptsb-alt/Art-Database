@@ -44,6 +44,10 @@
   var OFF_WHITE = "243, 241, 234";
   var OFF_BLACK = "#0c0e14";
 
+  // The sphere is washed on rather than painted over: its blues and greens
+  // are held at this much, so the gradient behind comes through them.
+  var GLOBE_ALPHA = 0.68;
+
   // The faces a word can be wearing. Each word keeps being re-rolled, so no
   // word holds one for long.
   var FACES = [
@@ -258,9 +262,14 @@
     ctx.fillStyle = OFF_BLACK;
     ctx.fillRect(0, 0, W, H);
 
-    var out = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.6);
-    out.addColorStop(0, "rgba(" + OFF_WHITE + ", 0.17)");
-    out.addColorStop(0.42, "rgba(" + OFF_WHITE + ", 0.05)");
+    // Brightest on the contour, falling away both outward into the room and
+    // inward under the sphere — so the translucent blues and greens have a
+    // gradient to pick up rather than a flat black.
+    var out = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
+    out.addColorStop(0, "rgba(" + OFF_WHITE + ", 0.015)");
+    out.addColorStop(0.44, "rgba(" + OFF_WHITE + ", 0.06)");
+    out.addColorStop(0.625, "rgba(" + OFF_WHITE + ", 0.19)");   // the contour
+    out.addColorStop(0.78, "rgba(" + OFF_WHITE + ", 0.05)");
     out.addColorStop(1, "rgba(" + OFF_WHITE + ", 0)");
     ctx.fillStyle = out;
     ctx.fillRect(0, 0, W, H);
@@ -272,6 +281,7 @@
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, TAU);
     ctx.clip();
+    ctx.globalAlpha = GLOBE_ALPHA;
 
     var base = ctx.createRadialGradient(
       lit.x, lit.y, R * 0.04, cx, cy, R * 1.2);
@@ -318,12 +328,12 @@
     // Limb darkening: the edge of a sphere turns away from every light.
     var limb = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R);
     limb.addColorStop(0, "rgba(12, 14, 20, 0)");
-    limb.addColorStop(0.78, "rgba(12, 14, 20, 0.42)");
-    limb.addColorStop(1, "rgba(12, 14, 20, 0.92)");
+    limb.addColorStop(0.78, "rgba(12, 14, 20, 0.26)");
+    limb.addColorStop(1, "rgba(12, 14, 20, 0.6)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
-    ctx.restore();
+    ctx.restore();   // drops the clip and the globe's alpha together
 
     // The thin bright edge where the sphere ends.
     ctx.save();
