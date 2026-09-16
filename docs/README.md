@@ -15,10 +15,14 @@ docs/
   .nojekyll     stop Pages from running Jekyll over the folder
 ```
 
-## Two copies
+## Two versions
 
-`/` is the portfolio in use. `/v2/` is a duplicate to experiment in, so the live
-one stays stable while a redesign is in progress. Both deploy on every push.
+- **Umbrella Portfolio 2026** — `docs/`, served at `/`. The fixed record of the
+  work as submitted to an open call in September 2026.
+- **Artist Website** — `docs/v2/`, served at `/v2/`. The site that continues from
+  there.
+
+Both deploy on every push.
 
 They share `docs/images/` — v2 reaches it as `../images/`. Same photographs, no
 reason to carry a second copy. Give v2 its own folder if the two ever need

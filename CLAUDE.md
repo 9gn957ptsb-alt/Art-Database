@@ -20,8 +20,8 @@ already declined or deferred in the same conversation.
 
 | | |
 | --- | --- |
-| `docs/` | The live site, deployed to GitHub Pages by `.github/workflows/pages.yml`. |
-| `docs/v2/` | The redesign, served at `/v2/`. Hand-edited — the generator does not write it. Shares `docs/images/`. |
+| `docs/` | **Umbrella Portfolio 2026** — served at `/`, deployed by `.github/workflows/pages.yml`. |
+| `docs/v2/` | **Artist Website** — the ongoing site, served at `/v2/`. Hand-edited; the generator does not write it. Shares `docs/images/`. |
 | `docs/works.json` | The works, as data. Edit this, not `index.html`. |
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |
@@ -31,9 +31,12 @@ already declined or deferred in the same conversation.
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
 The GitHub Pages site is the real one: <https://9gn957ptsb-alt.github.io/Color-Middling/>.
-`/` is the link the artist submitted to an open call and is **frozen** — change it
-only when asked. `docs/v2/` is the redesign in progress and is where work happens
-now.
+The two versions have names:
+
+- **Umbrella Portfolio 2026** (`docs/`, served at `/`) — the link submitted to an
+  open call. **Frozen**; change it only when asked.
+- **Artist Website** (`docs/v2/`, served at `/v2/`) — the site that carries on
+  from here, and where work happens now.
 
 The two were forked on 16 Sep 2026. `scripts/build_page.py` writes only `/`; do
 not point it at v2 again without saying so, as it would overwrite the redesign.
