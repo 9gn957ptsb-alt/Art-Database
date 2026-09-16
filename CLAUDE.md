@@ -26,7 +26,9 @@ already declined or deferred in the same conversation.
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |
 | `WIX.md` | The live Wix site: CMS schema, current rows, and the to-do list. |
-| `scripts/fetch_artsy_saves.py` | Unrelated — a private reference database, never shown on the site. |
+| `docs/v2/land.html` | **The land** — the words the works are made of, and what grazes on them. `land.css`, `land.js`, `land.json`. |
+| `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
+| `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
@@ -57,3 +59,8 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   hand and a session then matches them to rows.
 - Don't invent artwork metadata. Titles and years come from the artist;
   dimensions are blank until given.
+- `data/` never gets committed. It is the artist's whole Artsy saved-works list
+  and this repository is public. Only `docs/v2/land.json` — the distilled
+  fraction `scripts/build_land.py` writes — belongs in git.
+- Artsy works appear on the land, credited to their own artists. They still do
+  not appear in the portfolio: that rule is unchanged everywhere else.

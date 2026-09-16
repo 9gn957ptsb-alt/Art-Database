@@ -1,0 +1,469 @@
+/* The land — the table from the Wix editor, grown into terrain.
+   Palette and type come from styles.css; only the land lives here. */
+
+.land-body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* Matches .page in styles.css — body already carries the side gutter, so
+   adding one here would inset the land twice and cost it a column. */
+.land-page {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding-bottom: 96px;
+}
+
+/* The works page carries a link across to the land. */
+.masthead-link {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+}
+
+/* ---- the head ---------------------------------------------------------- */
+
+.land-head {
+  padding: 56px 0 32px;
+}
+
+.land-head h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.land-lede {
+  max-width: 46ch;
+  margin: 16px 0 0;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+/* ---- the land ---------------------------------------------------------- */
+
+/* A table first and terrain second: hairline rules, columns that hold their
+   line, words sitting in the cells like rows of stock. */
+.land {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+  margin-top: 8px;
+}
+
+.land-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 48px 16px;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.plot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 88px;
+  padding: 14px 16px 30px;
+  /* Without this a long word's own width props the column open and the land
+     drops to a single track on a phone; land.js shrinks the word to suit. */
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.plot:hover,
+.plot:focus-visible {
+  background: var(--plate);
+}
+
+.plot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Mass: a word standing on more works is bigger ground. land.js sets --mass
+   inline, 0 through 1, and then shrinks any word too long for its plot —
+   'chromogenic', 'screenprint' — so nothing breaks mid-word or runs into the
+   next column. A blanket size cap would flatten the relief instead. */
+.plot-word {
+  max-width: 100%;
+  font-size: calc(0.8125rem + var(--mass, 0) * 1.0625rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The count sits in the corner of the plot, out of the word's way. */
+.plot-count {
+  position: absolute;
+  left: 16px;
+  bottom: 10px;
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Where the creature is standing. */
+.plot[data-grazed="true"] {
+  background: var(--plate);
+}
+
+.plot[data-grazed="true"] .plot-word {
+  color: var(--accent);
+}
+
+/* ---- the creature ------------------------------------------------------ */
+
+.creature {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 48px;
+  z-index: 3;
+  cursor: pointer;
+  /* Movement is written into this by land.js; the transition is the walk. */
+  transition: transform 1600ms cubic-bezier(0.37, 0, 0.27, 1);
+  will-change: transform;
+}
+
+.creature svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+}
+
+/* The three colours the creature is wearing. They start as the page's own
+   and are replaced by whatever artwork gets thrown at it. */
+.creature {
+  --c1: var(--ink);
+  --c2: var(--ink-soft);
+  --c3: var(--accent);
+}
+
+.c-body  { fill: var(--c1); }
+.c-head  { fill: var(--c2); }
+.c-crest { fill: var(--c3); }
+.c-eye   { fill: var(--paper); }
+
+.c-body, .c-head, .c-crest {
+  transition: fill 520ms ease;
+}
+
+/* Grazing: the head dips. */
+.creature[data-grazing="true"] svg {
+  animation: graze 2200ms ease-in-out infinite;
+  transform-origin: 30% 80%;
+}
+
+@keyframes graze {
+  0%, 100% { transform: rotate(0deg); }
+  45%      { transform: rotate(9deg) translateY(2px); }
+  70%      { transform: rotate(9deg) translateY(2px); }
+}
+
+/* Facing. */
+.creature[data-facing="left"] svg { transform: scaleX(-1); }
+.creature[data-facing="left"][data-grazing="true"] svg { animation-name: graze-left; }
+
+@keyframes graze-left {
+  0%, 100% { transform: scaleX(-1) rotate(0deg); }
+  45%      { transform: scaleX(-1) rotate(9deg) translateY(2px); }
+  70%      { transform: scaleX(-1) rotate(9deg) translateY(2px); }
+}
+
+/* Struck by a thrown token. */
+.creature[data-struck="true"] svg { animation: struck 420ms ease-out; }
+
+@keyframes struck {
+  0%   { transform: translateY(0) scale(1); }
+  30%  { transform: translateY(-6px) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* ---- what it is grazing on --------------------------------------------- */
+
+.graze {
+  position: absolute;
+  z-index: 4;
+  width: 168px;
+  pointer-events: auto;
+  animation: surface 220ms ease-out;
+}
+
+@keyframes surface {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.graze-card {
+  margin: 0;
+  padding: 8px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.12);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.graze-plate {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--plate);
+  pointer-events: none;
+}
+
+.graze-card figcaption {
+  display: block;
+  margin-top: 8px;
+}
+
+.graze-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 0.8125rem;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.graze-meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.graze-hint {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 3px 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The hold: the card closes down onto its three colours. */
+.graze[data-condensing="true"] .graze-card {
+  transition: transform 420ms ease-in, opacity 420ms ease-in;
+  transform: scale(0.34);
+  opacity: 0;
+}
+
+/* ---- the token --------------------------------------------------------- */
+
+/* An artwork boiled down to the three colours it reduces to, held in the hand
+   and thrown at the creature. */
+.token {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
+  cursor: grabbing;
+  pointer-events: none;
+  animation: condense 240ms ease-out;
+}
+
+@keyframes condense {
+  from { transform: scale(1.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.token-band { flex: 1; }
+.token-band:nth-child(1) { background: var(--t1, #000); }
+.token-band:nth-child(2) { background: var(--t2, #000); }
+.token-band:nth-child(3) { background: var(--t3, #000); }
+
+.token[data-thrown="true"] {
+  transition: transform 300ms cubic-bezier(0.4, 0, 1, 1), opacity 300ms ease-in;
+  opacity: 0;
+}
+
+/* ---- the seam: what a word is standing on ------------------------------ */
+
+.seam {
+  position: fixed;
+  inset: auto 0 0 0;
+  max-height: 78vh;
+  overflow-y: auto;
+  padding: 24px 24px 40px;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.14);
+  z-index: 6;
+  animation: rise 260ms ease-out;
+}
+
+@keyframes rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@media (min-width: 900px) {
+  .seam {
+    inset: 0 0 0 auto;
+    width: 420px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+    box-shadow: -12px 0 40px rgb(0 0 0 / 0.14);
+    animation-name: slide;
+  }
+  @keyframes slide {
+    from { transform: translateX(16px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+}
+
+.seam-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 0;
+  color: var(--ink-soft);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.seam-close:hover { color: var(--ink); }
+
+.seam-word {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.seam-count {
+  margin: 4px 0 20px;
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.seam-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seam-item a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.seam-plate {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--plate);
+}
+
+.seam-item h3 {
+  margin: 8px 0 0;
+  font-family: var(--serif);
+  font-size: 0.875rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.seam-item p {
+  margin: 2px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.seam-colours {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.seam-colours span {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--rule);
+}
+
+.seam-item a:hover h3 { color: var(--accent); }
+
+/* ---- the foot ---------------------------------------------------------- */
+
+.land-foot {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+}
+
+.land-foot a { color: var(--accent); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A class that sets `display` outbids the browser's own [hidden] rule, so
+   say it here or hiding these does nothing. */
+.creature[hidden],
+.graze[hidden],
+.token[hidden],
+.seam[hidden] { display: none; }
+
+/* ---- stillness --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .creature { transition-duration: 1ms; }
+  .creature[data-grazing="true"] svg,
+  .creature[data-struck="true"] svg { animation: none; }
+  .graze, .token, .seam { animation: none; }
+  .graze[data-condensing="true"] .graze-card { transition-duration: 1ms; }
+}

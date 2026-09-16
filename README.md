@@ -8,8 +8,15 @@ Two things that will eventually meet:
    on [Artsy](https://www.artsy.net) and designed to grow over time. Museum-visit photos
    (an artwork shot followed by its label shot) are a planned second source.
 
-The two stay separate: **no work from the Artsy database is exhibited on the site.** It is
-a private reference collection, not a section of the portfolio.
+The two were kept apart: **no work from the Artsy database is exhibited as part of the
+portfolio.** That still holds for the works pages — the portfolio shows Matthew's collages
+and nothing else.
+
+**The land changes this in one specific place.** `docs/v2/land.html` is built on the saved
+works: a word from the land offers the artworks that share it, as thumbnails, and an
+artwork's three dominant colours are what gets thrown at the creature. They appear there as
+material the land is made of and are credited to their own artists, never as Matthew's work
+and never in the portfolio. Nothing else about the rule changes.
 
 The rest of this file covers the database half.
 
@@ -76,6 +83,25 @@ python3 scripts/fetch_artsy_saves.py           # full run, ~40 pages
 `--probe` is worth running first: it prints one record's real field names so normalisation is
 based on the actual payload rather than assumptions. Output lands in
 `data/artsy_saves_raw.json`.
+
+## The dump stays out of git
+
+`data/` is gitignored and must stay that way. The dump is Matthew's complete saved-works
+list — 5,018 records, 58MB — and **this repository is public**, so committing it would
+publish his entire collecting history. Nothing derived from it should carry more than a
+page needs.
+
+`scripts/build_land.py` is the only thing that reads it. It writes `docs/v2/land.json`,
+which holds the material words and, per word, sixteen works with title, artist, year,
+three dominant colours and a thumbnail key — a small fraction of the dump, and the only
+part that is committed.
+
+```bash
+python3 scripts/build_land.py
+```
+
+Run it wherever `data/artsy_saves_raw.json` is, then commit the regenerated
+`docs/v2/land.json`.
 
 ## API reference
 

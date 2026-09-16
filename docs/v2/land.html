@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matthew Livingston — The Land</title>
+<meta name="description" content="A land made of the words artworks are made of. Something grazes on it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Newsreader:ital,wght@0,400;1,400&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="land.css">
+</head>
+<body class="land-body">
+
+<div class="land-page">
+
+  <header class="land-head">
+    <h1>Matthew Livingston</h1>
+    <p class="land-lede">
+      A land made of the words artworks are made of. Every word is standing on
+      the works that share it. Something is grazing here — follow it, and it
+      will show you what it finds.
+    </p>
+  </header>
+
+  <main>
+    <!-- The land. Plots are written in by land.js from land.json; the
+         creature and everything it carries sit on top of the same box, so
+         their coordinates are the land's own. -->
+    <div class="land" id="land" aria-label="Words the works are made of">
+      <p class="land-loading" id="land-loading">Growing the land&hellip;</p>
+
+      <!-- The creature. It walks the land and grazes on whatever word it reaches. -->
+      <div class="creature" id="creature" hidden tabindex="0"
+           role="button" aria-describedby="creature-help"
+           aria-label="Grazing creature — hover or focus it to see what it is eating">
+        <!-- Drawn on a 16 × 12 grid of 4px pixels, so it stays a pixel object
+             at any size. Three groups, three colours — the three an artwork
+             reduces to. -->
+        <svg viewBox="0 0 64 48" aria-hidden="true" focusable="false">
+          <g class="c-body">
+            <rect x="12" y="20" width="40" height="16"/>  <!-- barrel -->
+            <rect x="4"  y="24" width="8"  height="8"/>   <!-- tail -->
+            <rect x="0"  y="28" width="4"  height="4"/>
+            <rect x="16" y="36" width="8"  height="8"/>   <!-- hind leg -->
+            <rect x="36" y="36" width="8"  height="8"/>   <!-- fore leg -->
+            <rect x="12" y="40" width="12" height="4"/>   <!-- feet -->
+            <rect x="32" y="40" width="12" height="4"/>
+          </g>
+          <g class="c-head">
+            <rect x="44" y="12" width="8"  height="16"/>  <!-- neck -->
+            <rect x="44" y="4"  width="16" height="12"/>  <!-- skull -->
+            <rect x="56" y="12" width="8"  height="4"/>   <!-- snout -->
+          </g>
+          <g class="c-crest">
+            <rect x="20" y="16" width="4" height="4"/>
+            <rect x="28" y="16" width="4" height="4"/>
+            <rect x="36" y="16" width="4" height="4"/>
+          </g>
+          <rect class="c-eye" x="52" y="8" width="4" height="4"/>
+        </svg>
+      </div>
+
+      <!-- What the creature is grazing on, offered on hover. -->
+      <div class="graze" id="graze" hidden>
+        <figure class="graze-card" id="graze-card">
+          <img class="graze-plate" id="graze-plate" alt="" draggable="false">
+          <figcaption>
+            <span class="graze-title" id="graze-title"></span>
+            <span class="graze-meta" id="graze-meta"></span>
+          </figcaption>
+        </figure>
+        <p class="graze-hint" id="graze-hint">Hold to condense</p>
+      </div>
+
+      <!-- The condensed artwork: three colours, thrown at the creature. -->
+      <div class="token" id="token" hidden>
+        <span class="token-band"></span>
+        <span class="token-band"></span>
+        <span class="token-band"></span>
+      </div>
+    </div>
+
+    <p class="visually-hidden" id="creature-help">
+      Press and hold the artwork it offers to condense it into its three
+      colours, then drag those colours onto the creature to repaint it.
+      With a keyboard, press Enter on the artwork to do both at once.
+    </p>
+  </main>
+
+  <!-- What a word is standing on. -->
+  <aside class="seam" id="seam" hidden aria-labelledby="seam-word">
+    <button class="seam-close" id="seam-close" type="button" aria-label="Close">&times;</button>
+    <h2 class="seam-word" id="seam-word"></h2>
+    <p class="seam-count" id="seam-count"></p>
+    <ul class="seam-list" id="seam-list"></ul>
+  </aside>
+
+  <footer class="land-foot">
+    <p><a href="index.html">The works</a></p>
+  </footer>
+
+</div>
+
+<script src="land.js"></script>
+</body>
+</html>
