@@ -17,10 +17,11 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "docs" / "works.json"
 OUT = ROOT / "docs" / "index.html"
 
-# v2 is a working copy of the same page, served at /v2/. While the two are meant
-# to stay identical, both are generated from here so a change lands in both. When
-# v2 starts to diverge, drop it from TARGETS and hand-edit it from then on.
-V2 = ROOT / "docs" / "v2"
+# docs/v2/ was generated from here while the two copies were meant to match.
+# They have now been forked: /docs/v2/ is hand-edited and is where the site is
+# being redesigned, while / stays as submitted to an open call. This script
+# writes only /. Do not point it at v2 again without saying so — it would
+# silently overwrite work.
 
 
 NB = "\u00a0"  # binds a whole number to its fraction: "30 1/4" never splits
@@ -273,17 +274,8 @@ document.querySelectorAll(".work").forEach(function (work) {
 
 
 def write_all():
-    html = build()
-    OUT.write_text(html)
-    written = [OUT]
-
-    if V2.is_dir():
-        # v2 sits one level down, so it reaches the shared images by going up.
-        (V2 / "index.html").write_text(html.replace('src="images/', 'src="../images/'))
-        (V2 / "styles.css").write_text((ROOT / "docs" / "styles.css").read_text())
-        written += [V2 / "index.html", V2 / "styles.css"]
-
-    return written
+    OUT.write_text(build())
+    return [OUT]
 
 
 if __name__ == "__main__":

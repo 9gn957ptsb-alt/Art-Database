@@ -24,9 +24,13 @@ They share `docs/images/` — v2 reaches it as `../images/`. Same photographs, n
 reason to carry a second copy. Give v2 its own folder if the two ever need
 different pictures.
 
-`scripts/build_page.py` renders **both** from `works.json`, so while the two are
-meant to match, one edit lands in both. When v2 starts to diverge, drop it from
-the generator's `write_all()` and hand-edit it from then on.
+**They are forked.** `scripts/build_page.py` renders only `/`. `docs/v2/` is
+hand-edited from here on — it is where the site is being redesigned, while `/`
+stays as it was submitted to an open call.
+
+That means a change to `works.json` (a new work, a corrected year) now reaches
+`/` only. Until the redesign lands, anything that should appear on both has to be
+made in both places.
 
 ## The work grid
 
