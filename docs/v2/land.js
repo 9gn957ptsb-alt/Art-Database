@@ -73,8 +73,10 @@
 
   // The sphere's middle sits well below the floor of the room, so the only
   // surface anyone can see is its crown. The words live there.
-  var LAT_TOP = 87 * RAD;
-  var LAT_LOW = 36 * RAD;
+  // Not right up to the pole: there every longitude is the same place, so
+  // words sent there cannot be separated sideways at all.
+  var LAT_TOP = 76 * RAD;
+  var LAT_LOW = 34 * RAD;
 
   var GRAZE_MIN = 2800;      // how long the creature stays with a word
   var GRAZE_MAX = 5600;
@@ -255,7 +257,7 @@
         for (var j = i + 1; j < vocabulary.length; j += 1) {
           var a = vocabulary[i];
           var b = vocabulary[j];
-          var squeeze = Math.max(0.18, Math.cos((a.lat + b.lat) / 2));
+          var squeeze = Math.max(0.08, Math.cos((a.lat + b.lat) / 2));
 
           var byLon = wrap(a.lon - b.lon) * squeeze;
           var byLat = a.lat - b.lat;
@@ -295,14 +297,38 @@
   function project(lat, lon) {
     var a = lon - spin;
     var cosLat = Math.cos(lat);
-    var x = cosLat * Math.sin(a);
+    var sinA = Math.sin(a);
+    var cosA = Math.cos(a);
+    var x = cosLat * sinA;
     var y = Math.sin(lat);
-    var z = cosLat * Math.cos(a);
+    var z = cosLat * cosA;
 
     var y2 = y * COS_T - z * SIN_T;
     var z2 = y * SIN_T + z * COS_T;
 
-    return { x: cx + x * R, y: cy - y2 * R, z: z2 };
+    // Which way the surface runs at this point, once projected — the
+    // direction a word lying on it would read along, and how far the surface
+    // is turned away from the viewer there. Dead ahead it is unturned and
+    // `squash` is 1; at the horizon the surface is edge-on and a word on it
+    // is compressed to the sine of the tilt, about 45 per cent.
+    var tx = cosA;
+    var ty = -sinA * SIN_T;
+
+    // Past a quarter turn the surface runs away from the viewer, and a word
+    // painted along it would be seen from behind — mirrored and upside down.
+    // Since the leaning is the point and the mirroring is unreadable, the
+    // direction is turned back so every word still reads left to right.
+    if (tx < 0) { tx = -tx; ty = -ty; }
+
+    var squash = Math.sqrt(tx * tx + ty * ty) || 1;
+
+    return {
+      x: cx + x * R,
+      y: cy - y2 * R,
+      z: z2,
+      lie: Math.atan2(ty, tx) / RAD,
+      squash: squash
+    };
   }
 
   function geometry() {
@@ -461,25 +487,32 @@
       var el = ground.el;
       var p = project(ground.lat, ground.lon);
 
-      // Turned away, or so far round the side that it would be cut in half by
-      // the edge of the room: either way it waits until the world brings it
-      // back rather than showing as a fragment.
-      if (p.z <= 0.26 || p.x < 36 || p.x > W - 36) {
+      // Turned away, or cut in half by the edge of the room. Words used to be
+      // dropped well before the horizon, because at full width they piled into
+      // each other there; now they lie down on the surface instead, so they
+      // can be carried all the way round.
+      if (p.z <= 0.05 || p.x < 14 || p.x > W - 14) {
         el.style.visibility = "hidden";
         el.dataset.behind = "true";
         return;
       }
 
-      var fade = 0.36 + 0.64 * Math.min(1, (p.z - 0.26) / 0.3);
+      var fade = 0.34 + 0.66 * Math.min(1, (p.z - 0.05) / 0.32);
       var scale = 0.64 + 0.36 * p.z;
 
       el.style.visibility = "visible";
       delete el.dataset.behind;
       el.style.opacity = fade.toFixed(3);
       el.style.zIndex = String(20 + Math.round(p.z * 30));
+      // Lie the word down on the sphere: turn it to follow the surface, then
+      // compress it along its own reading direction by however much the
+      // surface is foreshortened there. A word near the horizon is narrow and
+      // leaning, the way it would be if it were painted on.
       el.style.transform =
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
-        " translate(-50%,-50%) scale(" + scale.toFixed(3) + ")";
+        " translate(-50%,-50%)" +
+        " rotate(" + p.lie.toFixed(2) + "deg)" +
+        " scale(" + (scale * p.squash).toFixed(3) + "," + scale.toFixed(3) + ")";
     });
   }
 
