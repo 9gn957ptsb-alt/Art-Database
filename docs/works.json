@@ -19,12 +19,18 @@
       "alt": "Collage of photographs, Polaroids, boarding passes and handwritten notes in a dense rectilinear grid",
       "unframed": false,
       "terms": [
-        "collage",
-        "photograph",
         "polaroid",
+        "photograph",
         "boarding pass",
+        "barcode",
         "handwriting",
-        "grid"
+        "film strip",
+        "ticket",
+        "receipt",
+        "map",
+        "tape",
+        "cloud",
+        "price tag"
       ]
     },
     {
@@ -38,9 +44,17 @@
       "alt": "Collage in browns and blues with a dark central panel and a pale standing figure",
       "unframed": false,
       "terms": [
-        "collage",
-        "panel",
-        "figure"
+        "polaroid",
+        "kraft paper",
+        "handwriting",
+        "barcode",
+        "shipping label",
+        "paint",
+        "tape",
+        "magazine",
+        "foil",
+        "chain link",
+        "cardboard"
       ]
     },
     {
@@ -54,11 +68,17 @@
       "alt": "Collage in three horizontal bands built from receipts, magazine pages and film strips",
       "unframed": false,
       "terms": [
-        "collage",
+        "polaroid",
+        "film strip",
         "receipt",
         "magazine",
-        "film strip",
-        "portrait"
+        "handwriting",
+        "paint",
+        "tape",
+        "kraft paper",
+        "blueprint",
+        "barcode",
+        "foil"
       ]
     },
     {
@@ -72,12 +92,20 @@
       "alt": "Collage of Metropolitan Museum tickets, maps, playing cards, coins and handwriting",
       "unframed": false,
       "terms": [
-        "collage",
-        "ticket",
-        "map",
         "playing card",
         "coin",
-        "handwriting"
+        "ticket",
+        "map",
+        "handwriting",
+        "lined paper",
+        "qr code",
+        "street sign",
+        "pull tab",
+        "instant film",
+        "photograph",
+        "tape",
+        "barcode",
+        "receipt"
       ]
     },
     {
@@ -91,11 +119,17 @@
       "alt": "Tall collage of photographs, tape lettering and paper fragments",
       "unframed": true,
       "terms": [
-        "collage",
         "photograph",
+        "polaroid",
         "tape",
-        "paper",
-        "lettering"
+        "barcode",
+        "sticker",
+        "paint",
+        "book page",
+        "handwriting",
+        "sketch",
+        "blueprint",
+        "watercolour"
       ]
     },
     {
@@ -109,12 +143,20 @@
       "alt": "Collage of Boston museum admission tickets, Polaroid film packaging, maps and dated instant photographs",
       "unframed": true,
       "terms": [
-        "collage",
-        "ticket",
         "polaroid",
+        "ticket",
         "map",
-        "photograph",
-        "packaging"
+        "barcode",
+        "qr code",
+        "handwriting",
+        "instant film",
+        "paper bag",
+        "newspaper",
+        "postcard",
+        "paint",
+        "sculpture",
+        "coffee cup",
+        "sticker"
       ]
     },
     {
@@ -128,12 +170,19 @@
       "alt": "Collage of Polaroids, watercolour washes, dated handwriting, a Game Boy Advance box panel and a sunset shoreline across the lower edge",
       "unframed": true,
       "terms": [
-        "collage",
         "polaroid",
         "watercolour",
         "handwriting",
-        "box",
-        "shoreline"
+        "dog",
+        "shoreline",
+        "cloud",
+        "cardboard",
+        "book page",
+        "business card",
+        "photograph",
+        "tape",
+        "insect",
+        "sketch"
       ]
     }
   ],
@@ -146,5 +195,5 @@
     "prompt": "Prefer this orientation?",
     "thanks": "Recorded — thank you"
   },
-  "terms_note": "Provisional. Every term is one named in that work's own alt text — read off the photographs, not supplied by the artist. Replace with his own vocabulary when he gives it."
+  "terms_note": "Read off the photographs of the collages: the identifiable objects in each, named the same way across works so a common object gathers them. The artist's to correct — these are what a session could see, not what he says is there."
 }

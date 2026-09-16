@@ -51,8 +51,7 @@
   // are held at this much, so the gradient behind comes through them.
   var GLOBE_ALPHA = 0.68;
 
-  // The faces a word can be wearing. Each word keeps being re-rolled, so no
-  // word holds one for long.
+  // A word keeps whichever of these it is given, for good.
   var FACES = [
     '"Anton", Impact, sans-serif',
     '"Archivo", Helvetica, Arial, sans-serif',
@@ -63,9 +62,6 @@
     '"Playfair Display", Georgia, serif',
     '"Space Mono", Menlo, monospace'
   ];
-
-  var ROLL_MIN = 2400;   // how long a word keeps a face before taking another
-  var ROLL_MAX = 7600;
 
   var TAU = Math.PI * 2;
   var RAD = Math.PI / 180;
@@ -78,11 +74,10 @@
   // The sphere's middle sits well below the floor of the room, so the only
   // surface anyone can see is its crown. The words live there.
   var LAT_TOP = 87 * RAD;
-  var LAT_LOW = 41 * RAD;
+  var LAT_LOW = 36 * RAD;
 
   var GRAZE_MIN = 2800;      // how long the creature stays with a word
   var GRAZE_MAX = 5600;
-  var FREE = 6000;           // how long the world stays where you left it
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -103,11 +98,11 @@
 
   var spin = 0;         // the world's rotation
   var wanted = 0;       // where it is easing to
-  var freeUntil = 0;    // while the viewer is turning it, it follows nobody
   var beast = { lat: 0, lon: 0 };
   var goal = { lat: 0, lon: 0 };
 
   var W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
+  var fit = 1;          // how much every word comes down by so they all fit
 
   /* ---- reading ---------------------------------------------------------- */
 
@@ -147,10 +142,14 @@
 
   /* ---- laying the world out --------------------------------------------- */
 
-  /* Words are spread down a spiral from near the pole to below the equator,
-     which keeps them evenly spaced and all on the face that is lit. */
+  /* A spiral gives the words an even, unclustered start; relax() then pushes
+     apart whichever of them still overlap once their real sizes are known. */
   function survey() {
     var n = vocabulary.length;
+    var counts = vocabulary.map(function (v) { return v.works.length; });
+    var high = Math.max.apply(null, counts);
+    var low = Math.min.apply(null, counts);
+    var span = high - low || 1;
     var sinTop = Math.sin(LAT_TOP);
     var sinLow = Math.sin(LAT_LOW);
 
@@ -158,9 +157,49 @@
       var f = (i + 0.5) / n;
       ground.lat = Math.asin(sinTop - f * (sinTop - sinLow));
       ground.lon = (i * GOLDEN) % TAU;
+      ground.mass = (ground.works.length - low) / span;
     });
 
-    // A landmass per work, sitting under that work's own words.
+  }
+
+  /* Bring every longitude back into one turn. */
+  function wrap(a) {
+    while (a > Math.PI) { a -= TAU; }
+    while (a < -Math.PI) { a += TAU; }
+    return a;
+  }
+
+  /* How much room a word wants, as angles: half its width and half its height
+     on the sphere. Words are wide and short, which is the whole difficulty —
+     treating each as a circle big enough to contain it, as the first attempt
+     did, reserves several times the space it needs and leaves the crowd
+     unfixable however hard they are pushed apart. */
+  function room(ground) {
+    var w = ground.el ? ground.el.offsetWidth : 60;
+    var h = ground.el ? ground.el.offsetHeight : 20;
+    return {
+      x: (w / 2) / Math.max(R, 1) + 0.030,
+      y: (h / 2) / Math.max(R, 1) + 0.026
+    };
+  }
+
+  /* If the words genuinely cannot fit the band, bring them all down together
+     until they can, rather than letting relax() fight an impossible crowd.
+     Relative sizes are untouched, which is the part that carries meaning, and
+     it re-reckons itself if the artist adds more objects later. */
+  function fitToBand() {
+    var band = TAU * (Math.sin(LAT_TOP) - Math.sin(LAT_LOW));
+    var used = vocabulary.reduce(function (sum, ground) {
+      var box = room(ground);
+      return sum + 4 * box.x * box.y;
+    }, 0);
+    var have = band * 0.72;
+    return used <= have ? 1 : Math.sqrt(have / used);
+  }
+
+  /* Landmasses follow the words, so they are worked out after the words have
+     settled rather than where the spiral first put them. */
+  function remass() {
     masses = mine.works.map(function (work, i) {
       var own = vocabulary.filter(function (g) {
         return g.works.indexOf(work) !== -1;
@@ -193,6 +232,61 @@
     }
   }
 
+  /* Forty words, some of them very large, do not fit a spiral without running
+     into each other — the first pass had 'polaroid', 'photograph' and 'tape'
+     printed on top of one another. So they are pushed apart on the sphere
+     itself: each word is treated as a disc the size it actually measures on
+     screen, and any two that overlap slide away from each other along the
+     surface until they do not. Latitude is held inside the visible band, so
+     nothing is shoved over the horizon to make room. */
+  /* Push apart whichever words are printed on top of each other, on the
+     sphere itself, along whichever axis they overlap least — sideways if they
+     are shoulder to shoulder, up or down if they are stacked. Latitude is
+     held inside the visible band, so nothing is shoved over the horizon to
+     make room, and longitudes are squeezed by cos(lat) because near the pole
+     two very different longitudes are the same place on screen. */
+  function relax() {
+    var box = vocabulary.map(room);
+
+    for (var pass = 0; pass < 220; pass += 1) {
+      var shifted = false;
+
+      for (var i = 0; i < vocabulary.length; i += 1) {
+        for (var j = i + 1; j < vocabulary.length; j += 1) {
+          var a = vocabulary[i];
+          var b = vocabulary[j];
+          var squeeze = Math.max(0.18, Math.cos((a.lat + b.lat) / 2));
+
+          var byLon = wrap(a.lon - b.lon) * squeeze;
+          var byLat = a.lat - b.lat;
+          var wantX = box[i].x + box[j].x;
+          var wantY = box[i].y + box[j].y;
+          var intoX = wantX - Math.abs(byLon);
+          var intoY = wantY - Math.abs(byLat);
+          if (intoX <= 0 || intoY <= 0) { continue; }
+
+          shifted = true;
+          if (intoX / wantX < intoY / wantY) {
+            var sideways = (byLon >= 0 ? 1 : -1) * intoX * 0.25 / squeeze;
+            a.lon += sideways;
+            b.lon -= sideways;
+          } else {
+            var updown = (byLat >= 0 ? 1 : -1) * intoY * 0.25;
+            a.lat += updown;
+            b.lat -= updown;
+          }
+        }
+      }
+
+      vocabulary.forEach(function (ground) {
+        ground.lat = Math.max(LAT_LOW, Math.min(LAT_TOP, ground.lat));
+        ground.lon = wrap(ground.lon);
+      });
+
+      if (!shifted) { break; }
+    }
+  }
+
   /* ---- the projection ---------------------------------------------------- */
 
   /* Spin about the axis, then lean the pole toward the viewer. Returns screen
@@ -221,41 +315,47 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // The sphere rises out of the floor: it is wider than the room, its top
-    // sits a little under halfway down, and its middle is far below the
+    // sits about a third of the way down, and its middle is far below the
     // bottom edge — so what shows is the crown, curving away on both sides.
+    // The higher it sits the more surface shows, which is what makes room for
+    // forty words at this size.
     R = Math.max(W * 0.52, H * 0.42, 200);
     cx = W / 2;
-    cy = H * 0.42 + R;
+    cy = H * 0.32 + R;
 
     // Type scales with the world, so a phone gets a legible globe. Which
     // face and how big relative to the rest is the word's own business.
+    fit = 1;
+    dressAll();          // at full size, to find out how much room they want
+    fit = fitToBand();   // then all of them down by however much it takes
     dressAll();
+    relax();
+    remass();
 
   }
 
   /* ---- how a word is dressed --------------------------------------------- */
 
-  /* Every word wears a face and a size of its own, and keeps taking new ones
-     for as long as the page is open. Size is rolled rather than read off how
-     many works carry the word, so the count no longer shows in the type —
-     that is what the panel is for. */
+  /* Every word wears a face of its own, given once and kept. Its size is not
+     a matter of taste: it is how many of the collages that object turns up in,
+     so the world reads as what the works are made of most. */
   function roll(ground) {
+    // Once, at the start. A word's face never changes again: re-rolling it
+    // made the whole world twitch, and nothing here moves on its own now.
     ground.face = FACES[Math.floor(Math.random() * FACES.length)];
     ground.weight = Math.random() < 0.45 ? 700 : 400;
-    ground.factor = 0.55 + Math.random() * 1.85;
     dress(ground);
-
-    if (still) { return; }   // one face, held, for anyone who asked for calm
-    ground.timer = window.setTimeout(function () { roll(ground); },
-      ROLL_MIN + Math.random() * (ROLL_MAX - ROLL_MIN));
   }
 
   function dress(ground) {
     if (!ground.el || !ground.face) { return; }
-    var size = (R / 620) * 19 * ground.factor;
+    // How many collages carry the object decides how big its word is. The
+    // curve is flattened a little so the one-off things — the joker, the
+    // pull tab — are still legible rather than specks.
+    var size = (R / 620) * (15 + Math.pow(ground.mass, 0.62) * 44) * fit;
     ground.el.style.fontFamily = ground.face;
     ground.el.style.fontWeight = String(ground.weight);
-    ground.el.style.fontSize = Math.max(11, size).toFixed(2) + "px";
+    ground.el.style.fontSize = Math.max(13, size).toFixed(2) + "px";
   }
 
   function dressAll() { vocabulary.forEach(dress); }
@@ -364,13 +464,13 @@
       // Turned away, or so far round the side that it would be cut in half by
       // the edge of the room: either way it waits until the world brings it
       // back rather than showing as a fragment.
-      if (p.z <= 0.04 || p.x < 36 || p.x > W - 36) {
+      if (p.z <= 0.26 || p.x < 36 || p.x > W - 36) {
         el.style.visibility = "hidden";
         el.dataset.behind = "true";
         return;
       }
 
-      var fade = 0.36 + 0.64 * Math.min(1, (p.z - 0.04) / 0.3);
+      var fade = 0.36 + 0.64 * Math.min(1, (p.z - 0.26) / 0.3);
       var scale = 0.64 + 0.36 * p.z;
 
       el.style.visibility = "visible";
@@ -408,11 +508,9 @@
   var last = { x: 0 };
 
   function frame(now) {
-    // The world turns to keep the creature in the light, unless the viewer is
-    // turning it themselves.
-    if (now > freeUntil) {
-      wanted = beast.lon;
-    }
+    // The world only turns when it is turned: by a drag, or by tabbing to a
+    // word. It used to swing round to follow the creature, which meant every
+    // word on it was always drifting.
     spin += shortest(spin, wanted) * (still ? 1 : 0.055);
 
     // The creature crosses the surface toward the word it is heading for.
@@ -448,15 +546,25 @@
     goal.lon = ground.lon;
   }
 
+  /* Which words are on the near face right now. */
+  function facing() {
+    var out = [];
+    vocabulary.forEach(function (ground, i) {
+      var p = project(ground.lat, ground.lon);
+      if (p.z > 0.18 && p.x > 60 && p.x < W - 60) { out.push(i); }
+    });
+    return out;
+  }
+
   function walk() {
     delete creature.dataset.grazing;
 
-    // Wherever it goes next, it is somewhere else — the world is small enough
-    // that any word is a short walk.
-    var next = here;
-    while (next === here && vocabulary.length > 1) {
-      next = Math.floor(Math.random() * vocabulary.length);
-    }
+    // Since the world no longer swings round to follow it, it grazes only
+    // where it can still be seen; otherwise it would wander round the back.
+    var open = facing().filter(function (i) { return i !== here; });
+    var next = open.length
+      ? open[Math.floor(Math.random() * open.length)]
+      : here;
     standOn(next);
 
     walkTimer = window.setTimeout(function () {
@@ -816,7 +924,6 @@
     // A drag across the whole sphere turns it about half way round.
     wanted = turning.spin - (dx / Math.max(R, 1)) * Math.PI;
     spin = wanted;
-    freeUntil = performance.now() + FREE;
   });
 
   ["pointerup", "pointercancel"].forEach(function (name) {
@@ -832,6 +939,14 @@
   function openSeam(index) {
     var ground = vocabulary[index];
     if (!ground) { return; }
+
+    // Opening a word also sends the creature to stand on it.
+    hold();
+    standOn(index);
+    walkTimer = window.setTimeout(function () {
+      creature.dataset.grazing = "true";
+      walkTimer = window.setTimeout(walk, GRAZE_MAX);
+    }, still ? 1 : 1800);
 
     seamWord.textContent = ground.word;
     seamCount.textContent = ground.works.length +
@@ -902,7 +1017,6 @@
       // Tabbing to a word turns the world until it is facing you.
       el.addEventListener("focus", function () {
         wanted = ground.lon;
-        freeUntil = performance.now() + FREE;
       });
 
       ground.el = el;
