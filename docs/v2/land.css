@@ -344,10 +344,15 @@
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 0 22px rgba(233, 243, 198, 0.35), 0 8px 20px rgba(0, 0, 0, 0.6);
-  cursor: grabbing;
-  pointer-events: none;
+  /* It is a thing lying on the world, not a decoration: it can be pressed
+     and dragged until it is applied. */
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
   animation: condense 240ms ease-out;
 }
+
+.token:active { cursor: grabbing; }
 
 @keyframes condense {
   from { transform: scale(1.5); opacity: 0; }
@@ -358,11 +363,6 @@
 .token-band:nth-child(1) { background: var(--t1, #000); }
 .token-band:nth-child(2) { background: var(--t2, #000); }
 .token-band:nth-child(3) { background: var(--t3, #000); }
-
-.token[data-thrown="true"] {
-  transition: transform 300ms cubic-bezier(0.4, 0, 1, 1), opacity 300ms ease-in;
-  opacity: 0;
-}
 
 /* ---- the seam: what a word is standing on ------------------------------ */
 

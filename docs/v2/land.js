@@ -82,7 +82,6 @@
 
   var GRAZE_MIN = 2800;      // how long the creature stays with a word
   var GRAZE_MAX = 5600;
-  var HOLD = 380;            // press this long and the token condenses
   var FREE = 6000;           // how long the world stays where you left it
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -463,6 +462,7 @@
     walkTimer = window.setTimeout(function () {
       creature.dataset.grazing = "true";
       offering = null;          // new ground, something new to turn up
+      pressedOnce = false;
       if (!graze.hidden) { offer(); }
       walkTimer = window.setTimeout(
         walk, GRAZE_MIN + Math.random() * (GRAZE_MAX - GRAZE_MIN));
@@ -530,7 +530,7 @@
     grazePlate.alt = offering.t + (offering.a ? " by " + offering.a : "");
     grazeTitle.textContent = offering.t;
     grazeMeta.textContent = tokenLine(offering);
-    grazeHint.textContent = "Hold to condense";
+    grazeHint.textContent = "Press twice to take its palette";
     delete graze.dataset.condensing;
 
     graze.hidden = false;
@@ -544,19 +544,19 @@
 
   /* ---- condensing and throwing ------------------------------------------- */
 
-  var holdTimer = null;
-  var carrying = null;
+  var carrying = null;   // the palette in hand, once a double press has taken it
+  var dragging = null;   // { id, el } while that palette is being moved
+  var pressedOnce = false;  // whether the work on show has been pressed yet
 
   function condense(tok, x, y) {
     carrying = tok;
     token.style.setProperty("--t1", tok.c[0]);
     token.style.setProperty("--t2", tok.c[1]);
     token.style.setProperty("--t3", tok.c[2]);
-    delete token.dataset.thrown;
     token.hidden = false;
     moveToken(x, y);
     graze.dataset.condensing = "true";
-    grazeHint.textContent = "Throw it at the creature";
+    grazeHint.textContent = "Drag it onto the creature";
   }
 
   function moveToken(x, y) {
@@ -665,50 +665,114 @@
            y >= box.top - pad && y <= box.bottom + pad;
   }
 
-  function release(clientX, clientY) {
+  /* Nothing is put down until it is applied. A palette that misses the
+     creature stays where it was dropped, so it can be picked up and tried
+     again rather than having to be turned up from scratch. */
+  function applyAt(x, y) {
     if (!carrying) { return; }
+    if (!landedOn(x, y)) { return; }
 
-    if (landedOn(clientX, clientY)) {
-      wear(carrying);
-      token.hidden = true;
-    } else {
-      token.dataset.thrown = "true";
-      window.setTimeout(function () { token.hidden = true; }, 320);
-    }
-
-    hideGraze();
+    wear(carrying);
     carrying = null;
-    offering = null;    // thrown or dropped, it is spent: turn up another
+    offering = null;       // spent: the next press turns up something else
+    pressedOnce = false;
+    token.hidden = true;
+    hideGraze();
     resume();
   }
 
-  grazeCard.addEventListener("pointerdown", function (event) {
-    if (!offering) { return; }
-    event.preventDefault();
-    event.stopPropagation();          // this is a hold, not a turn of the world
-    var tok = offering;
-    var x = event.clientX;
-    var y = event.clientY;
+  /* Clear the hand and the card, and let the creature get back to grazing. */
+  function dismiss() {
+    carrying = null;
+    offering = null;
+    dragging = null;
+    pressedOnce = false;
+    token.hidden = true;
+    hideGraze();
+    resume();
+  }
 
-    // Capture now, so the throw can carry the token past the card's own box.
-    try { grazeCard.setPointerCapture(event.pointerId); } catch (e) {}
+  /* ---- the press model ---------------------------------------------------- */
 
-    holdTimer = window.setTimeout(function () { condense(tok, x, y); }, HOLD);
-  });
+  /* One press on the creature turns an artwork up, and it stays up — it used
+     to be tied to hover, and since the creature never stops moving it flicked
+     on and off under the pointer.
 
-  grazeCard.addEventListener("pointermove", function (event) {
-    if (!carrying) { return; }
+     A second press in quick succession takes that artwork's palette: it
+     condenses into the token, which is then in hand. From there a single
+     press drags it, and letting go over the creature applies it. */
+
+  function beginDrag(event, el) {
+    dragging = { id: event.pointerId, el: el };
+    try { el.setPointerCapture(event.pointerId); } catch (e) {}
+  }
+
+  function onDragMove(event) {
+    if (!dragging || event.pointerId !== dragging.id || !carrying) { return; }
     moveToken(event.clientX, event.clientY);
-  });
+  }
 
-  ["pointerup", "pointercancel"].forEach(function (name) {
-    grazeCard.addEventListener(name, function (event) {
-      window.clearTimeout(holdTimer);
-      release(event.clientX, event.clientY);
+  function onDragEnd(event) {
+    if (!dragging || event.pointerId !== dragging.id) { return; }
+    dragging = null;
+    applyAt(event.clientX, event.clientY);
+  }
+
+  function watchDrag(el) {
+    el.addEventListener("pointermove", onDragMove);
+    ["pointerup", "pointercancel"].forEach(function (name) {
+      el.addEventListener(name, onDragEnd);
     });
-  });
+  }
 
-  // Keyboard: Enter on the token condenses and applies it in one move.
+  /* The two presses of the double, without a stopwatch between them. Timing
+     the pair was the obvious way to read a double press and the wrong one:
+     the creature moves, so on touch the second tap lands somewhere else, and
+     any window tight enough to mean "double" is tight enough to miss. What
+     the second press means is decided by what is already up instead, so it
+     counts however long you take over it. */
+  function press(event) {
+    event.preventDefault();
+    event.stopPropagation();     // a press here is not a turn of the world
+    hold();                      // and the creature waits while you decide
+
+    if (carrying) {              // a palette already in hand: move it
+      beginDrag(event, event.currentTarget);
+      moveToken(event.clientX, event.clientY);
+      return;
+    }
+
+    if (offering && pressedOnce) {   // the second press: take its palette
+      condense(offering, event.clientX, event.clientY);
+      beginDrag(event, event.currentTarget);
+      return;
+    }
+
+    // The first press. On a mouse the work is usually already up, because
+    // moving onto the creature turns one up; counting that as the first press
+    // would make a single press apply a palette outright. So the press is
+    // counted, not the showing.
+    if (!offering) { offer(); }
+    pressedOnce = true;
+    grazeHint.textContent = "Press again to take its palette";
+  }
+
+  creature.addEventListener("pointerdown", press);
+  grazeCard.addEventListener("pointerdown", press);
+  watchDrag(creature);
+  watchDrag(grazeCard);
+
+  /* The palette itself, once it is lying there: press it to pick it up. */
+  token.addEventListener("pointerdown", function (event) {
+    if (!carrying) { return; }
+    event.preventDefault();
+    event.stopPropagation();
+    hold();
+    beginDrag(event, token);
+  });
+  watchDrag(token);
+
+  // Keyboard: Enter on the card takes the palette and applies it in one move.
   grazeCard.tabIndex = 0;
   grazeCard.setAttribute("role", "button");
   grazeCard.addEventListener("keydown", function (event) {
@@ -716,50 +780,30 @@
     event.preventDefault();
     if (!offering) { return; }
     wear(offering);
+    offering = null;
+    pressedOnce = false;
     hideGraze();
-    offering = null;    // spent, same as a throw
     resume();
   });
 
-  /* ---- showing and hiding what it turned up ------------------------------ */
+  /* ---- what it turned up stays up ---------------------------------------- */
 
+  /* Hovering or focusing still turns something up, but nothing takes it away
+     again on its own: it goes when it is applied, when the world is pressed,
+     or on Escape. That is what stopped the flicker. */
   function show() { hold(); offer(); }
 
   creature.addEventListener("pointerenter", show);
   creature.addEventListener("focus", show);
-  creature.addEventListener("pointerdown", function (event) {
-    event.stopPropagation();
-  });
-
-  creature.addEventListener("pointerleave", function () {
-    if (carrying) { return; }
-    window.setTimeout(function () {
-      if (!carrying && !graze.matches(":hover")) { hideGraze(); resume(); }
-    }, 220);
-  });
-
-  creature.addEventListener("blur", function () {
-    if (!carrying && !graze.contains(document.activeElement)) {
-      hideGraze();
-      resume();
-    }
-  });
-
-  graze.addEventListener("pointerleave", function () {
-    if (carrying) { return; }
-    window.setTimeout(function () {
-      if (!carrying && !creature.matches(":hover") && !graze.matches(":hover")) {
-        hideGraze();
-        resume();
-      }
-    }, 220);
-  });
 
   /* ---- turning it by hand ------------------------------------------------ */
 
   var turning = null;
 
   stage.addEventListener("pointerdown", function (event) {
+    // Only reaches here when the press missed the creature, the card and the
+    // token, all of which stop it. So: put down whatever was up.
+    if (offering || carrying) { dismiss(); }
     turning = { id: event.pointerId, x: event.clientX, spin: spin, moved: 0 };
     stage.dataset.turning = "true";
     try { stage.setPointerCapture(event.pointerId); } catch (e) {}
@@ -831,7 +875,9 @@
   seamClose.addEventListener("click", function () { seam.hidden = true; });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && !seam.hidden) { seam.hidden = true; }
+    if (event.key !== "Escape") { return; }
+    if (!seam.hidden) { seam.hidden = true; return; }
+    if (offering || carrying) { dismiss(); }
   });
 
   /* ---- growing it -------------------------------------------------------- */
