@@ -33,6 +33,9 @@
   var grazeMeta = document.getElementById("graze-meta");
   var grazeHint = document.getElementById("graze-hint");
   var token = document.getElementById("token");
+  var trace = document.getElementById("trace");
+  var traceTitle = document.getElementById("trace-title");
+  var traceMeta = document.getElementById("trace-meta");
   var seam = document.getElementById("seam");
   var seamWord = document.getElementById("seam-word");
   var seamCount = document.getElementById("seam-count");
@@ -89,8 +92,14 @@
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
 
+  var parts = [];       // the creature's twenty parts, each holding a colour
+  var stamp = 0;        // which throw painted a part, so the oldest go first
+  var PER_THROW = 3;    // parts repainted by one artwork — its three colours
+
   var here = 0;         // which word the creature is standing on
   var offering = null;  // the token currently turned up
+  var recent = [];      // what it has turned up lately, so it stops repeating
+  var RECALL = 14;      // how far back that memory goes
   var walkTimer = null;
 
   var spin = 0;         // the world's rotation
@@ -475,7 +484,32 @@
     var ground = vocabulary[here];
     var keys = (ground && supply.byTerm[ground.word]) || supply.pool;
     if (!keys || !keys.length) { return null; }
-    return supply.tokens[keys[Math.floor(Math.random() * keys.length)]] || null;
+
+    // A word's own shelf can be as short as a couple of works, so without a
+    // memory the creature turns up the same one over and over — which is what
+    // kept it wearing a single artwork. Try the word's shelf first, fall back
+    // to the whole supply, and only then allow a repeat.
+    var tok = fresh(keys) || fresh(supply.pool) ||
+      supply.tokens[keys[Math.floor(Math.random() * keys.length)]];
+    if (!tok) { return null; }
+
+    recent.push(tok.s);
+    if (recent.length > RECALL) { recent.shift(); }
+    return tok;
+  }
+
+  function fresh(keys) {
+    if (!keys || !keys.length) { return null; }
+    var order = keys.slice();
+    for (var i = order.length - 1; i > 0; i -= 1) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var swap = order[i]; order[i] = order[j]; order[j] = swap;
+    }
+    for (var k = 0; k < order.length; k += 1) {
+      var tok = supply.tokens[order[k]];
+      if (tok && recent.indexOf(tok.s) === -1) { return tok; }
+    }
+    return null;
   }
 
   function positionGraze(p) {
@@ -530,12 +564,98 @@
     token.style.top = Math.round(y - token.offsetHeight / 2) + "px";
   }
 
+  /* ---- what the creature is wearing -------------------------------------- */
+
+  /* The creature is twenty parts, not one coat. A throw repaints three of
+     them — the three painted longest ago, picked with a little slack so the
+     order is never quite the same — and each keeps hold of the artwork that
+     gave it its colour. Nothing is ever finished: every throw covers the
+     oldest three and pushes the rest further back, so the creature carries
+     six or seven works at a time and the walk through them has no end. */
+  function readParts() {
+    parts = [].slice.call(creature.querySelectorAll(".part")).map(function (el) {
+      return { el: el, name: el.dataset.part, token: null, at: 0 };
+    });
+  }
+
+  function stalest(n) {
+    var queue = parts.slice().sort(function (a, b) { return a.at - b.at; });
+    var pool = queue.slice(0, Math.min(queue.length, n + 5));
+    var out = [];
+    while (out.length < n && pool.length) {
+      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return out;
+  }
+
+  function wearPart(part, hex, tok) {
+    part.token = tok;
+    part.at = stamp;
+    part.el.style.fill = hex;
+    part.el.dataset.from = tok.s;
+    part.el.setAttribute("tabindex", "0");
+    part.el.setAttribute("role", "link");
+    part.el.setAttribute("aria-label",
+      part.name.replace("-", " ") + " — " + hex + ", from " + tok.t +
+      (tok.a ? " by " + tok.a : "") + ". Opens on Artsy.");
+
+    part.el.dataset.fresh = "true";
+    window.setTimeout(function () { delete part.el.dataset.fresh; }, 950);
+  }
+
   function wear(tok) {
-    creature.style.setProperty("--c1", tok.c[0]);
-    creature.style.setProperty("--c2", tok.c[1]);
-    creature.style.setProperty("--c3", tok.c[2]);
+    stamp += 1;
+    stalest(PER_THROW).forEach(function (part, i) {
+      wearPart(part, tok.c[i % tok.c.length], tok);
+    });
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 460);
+  }
+
+  /* ---- following a colour back ------------------------------------------- */
+
+  function showTrace(part) {
+    if (!part.token) { return; }
+    traceTitle.textContent = part.token.t;
+    traceMeta.textContent = tokenLine(part.token);
+    trace.hidden = false;
+
+    var box = part.el.getBoundingClientRect();
+    var w = trace.offsetWidth || 200;
+    var h = trace.offsetHeight || 64;
+    var x = Math.max(8, Math.min(box.left + box.width / 2 - w / 2, W - w - 8));
+    // Under the part, so it does not fight the card above the creature.
+    var y = box.bottom + 8;
+    if (y + h > H - 8) { y = Math.max(8, box.top - h - 8); }
+
+    trace.style.left = Math.round(x) + "px";
+    trace.style.top = Math.round(y) + "px";
+  }
+
+  function hideTrace() { trace.hidden = true; }
+
+  function follow(part) {
+    if (!part.token) { return; }
+    window.open("https://www.artsy.net/artwork/" + part.token.s, "_blank", "noopener");
+  }
+
+  function wireParts() {
+    parts.forEach(function (part) {
+      part.el.addEventListener("pointerenter", function () { showTrace(part); });
+      part.el.addEventListener("pointerleave", hideTrace);
+      part.el.addEventListener("focus", function () { showTrace(part); });
+      part.el.addEventListener("blur", hideTrace);
+      part.el.addEventListener("click", function (event) {
+        event.stopPropagation();
+        follow(part);
+      });
+      part.el.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") { return; }
+        event.preventDefault();
+        event.stopPropagation();
+        follow(part);
+      });
+    });
   }
 
   function landedOn(x, y) {
@@ -558,6 +678,7 @@
 
     hideGraze();
     carrying = null;
+    offering = null;    // thrown or dropped, it is spent: turn up another
     resume();
   }
 
@@ -596,6 +717,7 @@
     if (!offering) { return; }
     wear(offering);
     hideGraze();
+    offering = null;    // spent, same as a throw
     resume();
   });
 
@@ -780,6 +902,8 @@
       }
 
       creature.hidden = false;
+      readParts();
+      wireParts();
       var start = Math.floor(Math.random() * vocabulary.length);
       standOn(start);
       beast.lat = goal.lat;

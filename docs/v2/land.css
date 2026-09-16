@@ -131,11 +131,6 @@
   pointer-events: auto;
   will-change: transform;
 
-  /* The three colours it is wearing. They start as the world's own and are
-     replaced by whatever gets thrown at it. */
-  --c1: #10161c;
-  --c2: #2b3a44;
-  --c3: var(--ground);
 }
 
 .creature svg {
@@ -143,15 +138,95 @@
   width: 100%;
   height: 100%;
   shape-rendering: crispEdges;
-  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75));
+  /* Twenty parts in twenty unrelated colours would otherwise read as a heap
+     of squares. Four zero-blur drop-shadows trace one dark keyline around the
+     whole silhouette — around the union, not each part, so the form holds
+     together whatever lands on it. The last shadow is the depth. */
+  filter:
+    drop-shadow(2px 0 0 rgba(8, 10, 15, 0.92))
+    drop-shadow(-2px 0 0 rgba(8, 10, 15, 0.92))
+    drop-shadow(0 2px 0 rgba(8, 10, 15, 0.92))
+    drop-shadow(0 -2px 0 rgba(8, 10, 15, 0.92))
+    drop-shadow(0 3px 12px rgba(0, 0, 0, 0.8));
 }
 
-.c-body  { fill: var(--c1); }
-.c-head  { fill: var(--c2); }
-.c-crest { fill: var(--c3); }
-.c-eye   { fill: var(--lit); }
+/* Each part holds its own colour. These are what it wears before anything has
+   been thrown at it; after that land.js sets the fill per part, and the fill
+   is the only thing that says which artwork that part came from. */
+.part {
+  fill: #1a2029;
+  transition: fill 620ms ease;
+}
 
-.c-body, .c-head, .c-crest { transition: fill 520ms ease; }
+.part[data-part^="crest"]  { fill: #6f9a3c; }
+.part[data-part="belly"]   { fill: #232b35; }
+.part[data-part="skull"],
+.part[data-part="snout"],
+.part[data-part="jaw"],
+.part[data-part="neck-up"] { fill: #2b3a44; }
+.part[data-part$="leg"],
+.part[data-part$="foot"]   { fill: #141920; }
+
+.c-eye { fill: var(--lit); }
+
+/* A part that carries an artwork can be followed back to it. */
+.part[data-from] { cursor: pointer; }
+
+.part[data-from]:hover,
+.part[data-from]:focus-visible {
+  stroke: rgba(243, 241, 234, 0.85);
+  stroke-width: 2;
+  outline: none;
+}
+
+/* Just repainted — a part flares once so you can see where the throw landed. */
+.part[data-fresh="true"] { animation: took 900ms ease-out; }
+
+@keyframes took {
+  0%   { stroke: rgba(243, 241, 234, 0.95); stroke-width: 4; }
+  100% { stroke: rgba(243, 241, 234, 0);    stroke-width: 0; }
+}
+
+/* ---- where a colour came from ------------------------------------------ */
+
+.trace {
+  position: absolute;
+  z-index: 90;
+  max-width: 220px;
+  padding: 7px 9px;
+  background: rgba(10, 15, 21, 0.95);
+  border: 1px solid var(--edge);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  animation: surface 160ms ease-out;
+}
+
+.trace-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 0.8125rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--lit);
+}
+
+.trace-meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--dim);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.trace-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
 /* Grazing: the head dips. */
 .creature[data-grazing="true"] svg {
@@ -402,6 +477,7 @@
    say it here or hiding these does nothing. */
 .creature[hidden],
 .graze[hidden],
+.trace[hidden],
 .token[hidden],
 .seam[hidden] { display: none; }
 
@@ -422,7 +498,8 @@
 @media (prefers-reduced-motion: reduce) {
   .creature[data-grazing="true"] svg,
   .creature[data-struck="true"] svg { animation: none; }
-  .graze, .token, .seam { animation: none; }
+  .graze, .token, .seam, .trace { animation: none; }
+  .part[data-fresh="true"] { animation: none; }
   .graze[data-condensing="true"] .graze-card { transition-duration: 1ms; }
 }
 
