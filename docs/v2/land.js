@@ -42,26 +42,22 @@
   var seamList = document.getElementById("seam-list");
   var seamClose = document.getElementById("seam-close");
 
-  // The background: an off-white, barely there where it meets the sphere's
-  // contour, giving way to the off-black opposite it as it goes out.
-  var OFF_WHITE = "243, 241, 234";
-  var OFF_BLACK = "#0c0e14";
+  // The sky is pale, not black: a cool white overhead easing to the faintest
+  // warmth near the horizon, with the sphere set into it rather than against
+  // it. The old dark ground made every colour on the globe shout.
+  var SKY = ["#e9eaee", "#eff0f1", "#f2ece7", "#efe6e4", "#e6e5ec"];
+  var INK = "#1b1d24";
 
   // The sphere is washed on rather than painted over: its blues and greens
   // are held at this much, so the gradient behind comes through them.
   var GLOBE_ALPHA = 0.68;
 
-  // A word keeps whichever of these it is given, for good.
-  var FACES = [
-    '"Anton", Impact, sans-serif',
-    '"Archivo", Helvetica, Arial, sans-serif',
-    '"Bebas Neue", Impact, sans-serif',
-    '"Courier Prime", Courier, monospace',
-    '"DM Serif Display", Georgia, serif',
-    '"Newsreader", Georgia, serif',
-    '"Playfair Display", Georgia, serif',
-    '"Space Mono", Menlo, monospace'
-  ];
+  // One family, and the range of weights it comes in. What distinguishes one
+  // word from another is how many collages carry it — that sets the size, the
+  // weight and the tracking together, so the type is calibrated to the data
+  // instead of being dealt at random.
+  var FACE = '"Space Grotesk", "Archivo", Helvetica, Arial, sans-serif';
+  var WEIGHTS = [300, 400, 500, 600, 700];
 
   var TAU = Math.PI * 2;
   var RAD = Math.PI / 180;
@@ -392,16 +388,8 @@
   /* Every word wears a face of its own, given once and kept. Its size is not
      a matter of taste: it is how many of the collages that object turns up in,
      so the world reads as what the works are made of most. */
-  function roll(ground) {
-    // Once, at the start. A word's face never changes again: re-rolling it
-    // made the whole world twitch, and nothing here moves on its own now.
-    ground.face = FACES[Math.floor(Math.random() * FACES.length)];
-    ground.weight = Math.random() < 0.45 ? 700 : 400;
-    dress(ground);
-  }
-
   function dress(ground) {
-    if (!ground.el || !ground.face) { return; }
+    if (!ground.el) { return; }
     // How many collages carry the object decides how big its word is. The
     // curve is flattened a little so the one-off things — the joker, the
     // pull tab — are still legible rather than specks.
@@ -410,9 +398,14 @@
     // they went to 123px and the collisions trebled. Against the screen, a
     // wider globe is exactly what it should be: more surface, same type.
     var size = (Math.min(W, H) / 760) * (15 + Math.pow(ground.mass, 0.62) * 44) * fit;
-    ground.el.style.fontFamily = ground.face;
-    ground.el.style.fontWeight = String(ground.weight);
+    var set = Math.round(ground.mass * (WEIGHTS.length - 1));
+
+    ground.el.style.fontFamily = FACE;
+    ground.el.style.fontWeight = String(WEIGHTS[set]);
     ground.el.style.fontSize = Math.max(13, size).toFixed(2) + "px";
+    // Large type wants tighter tracking than small type. Letting one value
+    // serve both is what makes a word cloud look untended.
+    ground.el.style.letterSpacing = (-0.004 - ground.mass * 0.026).toFixed(4) + "em";
   }
 
   function dressAll() { vocabulary.forEach(dress); }
@@ -460,7 +453,7 @@
         vy: (Math.random() - 0.7) * force * 0.5,
         h: 0,
         vh: force * (0.5 + Math.random() * 0.9),
-        size: 2 + Math.random() * 4,
+        size: 2 + Math.random() * 2.5,
         tone: colours[Math.floor(Math.random() * colours.length)],
         life: 1
       });
@@ -486,18 +479,18 @@
       m.vx *= Math.pow(0.992, pace);
       m.vy *= Math.pow(0.992, pace);
 
-      m.vh -= 0.52 * pace;    // falls back toward the surface it came off
+      m.vh -= 0.68 * pace;    // falls back toward the surface it came off
       m.h += m.vh * pace;
       if (m.h <= 0) {         // and skips along it
         m.h = 0;
-        m.vh *= -0.46;
+        m.vh *= -0.3;
         m.vx *= 0.72;
         m.vy *= 0.72;
         m.life -= 0.12;
         if (Math.abs(m.vh) < 0.6) { m.life -= 0.3; }
       }
 
-      m.life -= 0.3 * dt;
+      m.life -= 0.55 * dt;
       if (m.life <= 0 || m.y - m.h > H + 120 || m.x < -120 || m.x > W + 120) {
         motes.splice(i, 1);
       }
@@ -551,38 +544,21 @@
 
     // The room is nothing but the falling-off of the off-white. Its inner
     // radius is R, so the gradient starts exactly on the sphere's contour.
-    ctx.fillStyle = OFF_BLACK;
-    ctx.fillRect(0, 0, W, H);
-
-    // The sky above the globe: a sunset and a sunrise in the same stretch,
-    // violet at the top through rose and orange to a warm line just above the
-    // contour. Kept low so it reads as weather on a dark sky rather than a
-    // poster — the words have to stay legible against it.
-    // It runs the full height, not just the strip above the globe: stopping it
-    // at the contour left a hard horizontal seam and a band of flat grey
-    // between the two. The globe is painted over it, so the sky simply
-    // carries on behind.
     var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0.00, "rgba(70, 48, 118, 0.52)");
-    sky.addColorStop(0.16, "rgba(132, 62, 136, 0.44)");
-    sky.addColorStop(0.30, "rgba(206, 80, 126, 0.38)");
-    sky.addColorStop(0.42, "rgba(236, 132, 84, 0.34)");
-    sky.addColorStop(0.54, "rgba(248, 198, 132, 0.28)");
-    sky.addColorStop(0.72, "rgba(180, 132, 150, 0.20)");
-    sky.addColorStop(1.00, "rgba(96, 74, 132, 0.16)");
+    sky.addColorStop(0.00, SKY[0]);
+    sky.addColorStop(0.34, SKY[1]);
+    sky.addColorStop(0.58, SKY[2]);
+    sky.addColorStop(0.80, SKY[3]);
+    sky.addColorStop(1.00, SKY[4]);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Brightest on the contour, falling away both outward into the room and
-    // inward under the sphere — so the translucent blues and greens have a
-    // gradient to pick up rather than a flat black.
-    var out = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
-    out.addColorStop(0, "rgba(" + OFF_WHITE + ", 0.015)");
-    out.addColorStop(0.44, "rgba(" + OFF_WHITE + ", 0.06)");
-    out.addColorStop(0.625, "rgba(" + OFF_WHITE + ", 0.19)");   // the contour
-    out.addColorStop(0.78, "rgba(" + OFF_WHITE + ", 0.05)");
-    out.addColorStop(1, "rgba(" + OFF_WHITE + ", 0)");
-    ctx.fillStyle = out;
+    // The sphere casts into the sky rather than glowing out of it: a soft
+    // shadow just beyond the contour, which is what seats it.
+    var seatShadow = ctx.createRadialGradient(cx, cy, R * 0.97, cx, cy, R * 1.12);
+    seatShadow.addColorStop(0, "rgba(40, 44, 66, 0.16)");
+    seatShadow.addColorStop(1, "rgba(40, 44, 66, 0)");
+    ctx.fillStyle = seatShadow;
     ctx.fillRect(0, 0, W, H);
 
     // What the creature stands on is the brightest part of the sphere.
@@ -612,8 +588,9 @@
       var ry = mass.size * R * (0.62 + 0.38 * p.z);
 
       var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(rx, ry));
-      g.addColorStop(0, "rgba(" + mass.tone + ", " + (0.98 * fade).toFixed(3) + ")");
-      g.addColorStop(0.5, "rgba(" + mass.tone + ", " + (0.74 * fade).toFixed(3) + ")");
+      g.addColorStop(0, "rgba(" + mass.tone + ", " + (0.92 * fade).toFixed(3) + ")");
+      g.addColorStop(0.66, "rgba(" + mass.tone + ", " + (0.80 * fade).toFixed(3) + ")");
+      g.addColorStop(0.88, "rgba(" + mass.tone + ", " + (0.30 * fade).toFixed(3) + ")");
       g.addColorStop(1, "rgba(" + mass.tone + ", 0)");
 
       ctx.save();
@@ -638,9 +615,9 @@
 
     // Limb darkening: the edge of a sphere turns away from every light.
     var limb = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R);
-    limb.addColorStop(0, "rgba(12, 14, 20, 0)");
-    limb.addColorStop(0.78, "rgba(12, 14, 20, 0.26)");
-    limb.addColorStop(1, "rgba(12, 14, 20, 0.6)");
+    limb.addColorStop(0, "rgba(28, 32, 54, 0)");
+    limb.addColorStop(0.72, "rgba(28, 32, 54, 0.14)");
+    limb.addColorStop(1, "rgba(28, 32, 54, 0.34)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
@@ -653,8 +630,8 @@
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, TAU);
-    ctx.strokeStyle = "rgba(190, 220, 235, 0.32)";
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
 
@@ -725,10 +702,10 @@
     // The world only turns when it is turned: by a drag, or by tabbing to a
     // word. It used to swing round to follow the creature, which meant every
     // word on it was always drifting.
-    spin += shortest(spin, wanted) * (still ? 1 : 0.055);
+    spin += shortest(spin, wanted) * (still ? 1 : 0.1);
 
     // The creature crosses the surface toward the word it is heading for.
-    var ease = still ? 1 : 0.055;
+    var ease = still ? 1 : 0.095;
     beast.lat += (goal.lat - beast.lat) * ease;
     beast.lon += shortest(beast.lon, goal.lon) * ease;
 
@@ -1292,7 +1269,6 @@
       survey();
       grow();
       loading.remove();
-      vocabulary.forEach(function (ground) { roll(ground); });
       geometry();
 
       if (document.fonts && document.fonts.ready) {
