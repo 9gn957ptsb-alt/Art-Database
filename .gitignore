@@ -3,3 +3,7 @@ __pycache__/
 .DS_Store
 build/
 data/
+
+# Screenshots from browser checks. They are written next to whatever the
+# test was run from; they are never part of the site.
+/*.png
