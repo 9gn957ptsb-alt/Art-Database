@@ -106,6 +106,7 @@
   var erupted = 0;      // when the ground last went up on its own
 
   var parts = [];       // the creature's twenty parts, each holding a colour
+  var spawns = [];      // what has grown off it and now stands on the world
   var stamp = 0;        // which throw painted a part, so the oldest go first
   var PER_THROW = 3;    // parts repainted by one artwork — its three colours
 
@@ -802,6 +803,7 @@
 
     paint(now);
     placeWords();
+    placeSpawns();
     var p = placeCreature();
     if (!graze.hidden) { positionGraze(p); }
 
@@ -971,10 +973,99 @@
      gave it its colour. Nothing is ever finished: every throw covers the
      oldest three and pushes the rest further back, so the creature carries
      six or seven works at a time and the walk through them has no end. */
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  /* Each part starts as one block and becomes a group, so its shape can be
+     rebuilt rather than merely recoloured. The block it began as is kept as
+     its home: everything it grows into is measured from there. */
   function readParts() {
-    parts = [].slice.call(creature.querySelectorAll(".part")).map(function (el) {
-      return { el: el, name: el.dataset.part, token: null, at: 0 };
+    parts = [].slice.call(creature.querySelectorAll("rect.part")).map(function (rect) {
+      var group = document.createElementNS(SVGNS, "g");
+      group.setAttribute("class", "part");
+      group.setAttribute("data-part", rect.getAttribute("data-part"));
+      rect.parentNode.insertBefore(group, rect);
+      rect.removeAttribute("class");
+      rect.removeAttribute("data-part");
+      group.appendChild(rect);
+
+      return {
+        el: group,
+        name: group.getAttribute("data-part"),
+        home: {
+          x: +rect.getAttribute("x"), y: +rect.getAttribute("y"),
+          w: +rect.getAttribute("width"), h: +rect.getAttribute("height")
+        },
+        token: null, at: 0, form: 0
+      };
     });
+  }
+
+  /* A small, repeatable source of randomness, so a given part and a given
+     artwork always grow the same shape. */
+  function seedFrom(text, salt) {
+    var n = salt * 2654435761;
+    for (var i = 0; i < text.length; i += 1) { n = (n * 31 + text.charCodeAt(i)) & 0x7fffffff; }
+    return function () {
+      n = (n * 1103515245 + 12345) & 0x7fffffff;
+      return n / 0x7fffffff;
+    };
+  }
+
+  function cell(into, x, y, w, h, tone) {
+    var r = document.createElementNS(SVGNS, "rect");
+    r.setAttribute("x", x.toFixed(2));
+    r.setAttribute("y", y.toFixed(2));
+    r.setAttribute("width", w.toFixed(2));
+    r.setAttribute("height", h.toFixed(2));
+    r.setAttribute("fill", tone);
+    into.appendChild(r);
+  }
+
+  /* The part does not just take a colour, it takes a shape. Each time an
+     artwork lands on it the block is rebuilt at a finer grain, loses a few
+     cells so its outline stops being a rectangle, and puts out buds past
+     where it used to end. Enough of those and it is no longer a block on an
+     animal — it is a small structure of its own, which is the point. */
+  function evolveShape(part, tok) {
+    var home = part.home;
+    var f = part.form;
+    var g = part.el;
+    var rnd = seedFrom(part.name + tok.s, f + 1);
+
+    while (g.firstChild) { g.removeChild(g.firstChild); }
+
+    // Capped, and deliberately. Left to run, the grid kept halving and the
+    // animal became a cloud of 52 specks with no silhouette left — evolution
+    // into noise, not into anything. The body stays legible; the growing into
+    // other things is what the shed figures are for.
+    // Sized by area, not by the shorter side. Taking the shorter side meant a
+    // long thin part like the belly, 60 by 8, still came out in twenty
+    // columns however hard the grain was capped — 54 cells in one part.
+    var grain = Math.min(f, 3);
+    var want = 3 + 3 * grain;                       // cells this part becomes
+    var step = Math.max(3, Math.sqrt((home.w * home.h) / want));
+    var cols = Math.max(1, Math.round(home.w / step));
+    var rows = Math.max(1, Math.round(home.h / step));
+    var cw = home.w / cols;
+    var ch = home.h / rows;
+
+    for (var r = 0; r < rows; r += 1) {
+      for (var c = 0; c < cols; c += 1) {
+        if (f > 0 && rnd() < 0.05 * Math.min(f, 2)) { continue; }   // a gap
+        cell(g, home.x + c * cw, home.y + r * ch, cw, ch,
+             tok.c[(r + c + f) % tok.c.length]);
+      }
+    }
+
+    // Two at most. Any more and twenty parts' worth of ragged edges add up
+    // to a blob with no animal left in it.
+    var buds = Math.min(2, f);
+    for (var i = 0; i < buds; i += 1) {
+      var side = Math.floor(rnd() * 4);
+      var bx = home.x + (side === 1 ? home.w : side === 3 ? -cw : rnd() * Math.max(0, home.w - cw));
+      var by = home.y + (side === 2 ? home.h : side === 0 ? -ch : rnd() * Math.max(0, home.h - ch));
+      cell(g, bx, by, cw, ch, tok.c[i % tok.c.length]);
+    }
   }
 
   function stalest(n) {
@@ -990,7 +1081,15 @@
   function wearPart(part, hex, tok) {
     part.token = tok;
     part.at = stamp;
+    part.form += 1;
     part.el.style.fill = hex;
+    evolveShape(part, tok);
+
+    // Grown past a block three times over, it lets something go: a figure of
+    // its own, in that work's colours, which steps off and stands on the
+    // world from then on.
+    if (part.form >= 3 && part.form % 3 === 0) { shed(part, tok); }
+
     part.el.dataset.from = tok.s;
     part.el.setAttribute("tabindex", "0");
     part.el.setAttribute("role", "link");
@@ -1020,15 +1119,96 @@
     kick(at.x, at.y, tok.c.concat(palette()), many, 6 + Math.min(stamp, 14) * 0.8, 2.2);
   }
 
+  /* ---- what grows off it --------------------------------------------------
+
+     A part that has evolved three times over stops being part of the animal.
+     It sheds a figure: a small pixel thing built out of that artwork's three
+     colours, mirrored down the middle so it reads as a creature rather than
+     as noise, and every one is different because the pattern comes from the
+     artwork's own id. It steps off onto the world, keeps its place there, and
+     leads back to the work it came from, the same as a colour on the animal
+     does. The animal is where things come from, not the only thing there is. */
+
+  function figure(tok) {
+    var n = 7;
+    var rnd = seedFrom(tok.s, 11);
+    var out = "";
+    for (var y = 0; y < n; y += 1) {
+      for (var x = 0; x < Math.ceil(n / 2); x += 1) {
+        if (rnd() > 0.52) { continue; }
+        var tone = tok.c[(x + y) % tok.c.length];
+        out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + tone + '"/>';
+        if (x !== n - 1 - x) {
+          out += '<rect x="' + (n - 1 - x) + '" y="' + y + '" width="1" height="1" fill="' + tone + '"/>';
+        }
+      }
+    }
+    return '<svg viewBox="0 0 ' + n + ' ' + n + '" aria-hidden="true" focusable="false">' +
+           out + "</svg>";
+  }
+
+  function shed(part, tok) {
+    if (spawns.length >= 40) { return; }        // the world holds so many
+
+    var el = document.createElement("div");
+    el.className = "spawn";
+    el.tabIndex = 0;
+    el.setAttribute("role", "link");
+    el.setAttribute("aria-label",
+      "A figure grown off the creature's " + part.name.replace("-", " ") +
+      ", from " + tok.t + (tok.a ? " by " + tok.a : "") + ". Opens on Artsy.");
+    el.innerHTML = figure(tok);
+
+    var born = {
+      el: el,
+      token: tok,
+      lat: Math.max(LAT_LOW, Math.min(LAT_TOP, beast.lat + (Math.random() - 0.5) * 0.24)),
+      lon: wrap(beast.lon + (Math.random() - 0.5) * 0.4)
+    };
+
+    el.addEventListener("pointerenter", function () { showTraceAt(tok, el); });
+    el.addEventListener("pointerleave", hideTrace);
+    el.addEventListener("focus", function () { showTraceAt(tok, el); });
+    el.addEventListener("blur", hideTrace);
+    el.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    el.addEventListener("click", function (e) {
+      e.stopPropagation();
+      window.open("https://www.artsy.net/artwork/" + tok.s, "_blank", "noopener");
+    });
+
+    spawns.push(born);
+    land.insertBefore(el, creature);
+  }
+
+  function placeSpawns() {
+    spawns.forEach(function (born) {
+      var p = project(born.lat, born.lon);
+      if (p.z <= 0.05 || p.x < 14 || p.x > W - 14) {
+        born.el.style.visibility = "hidden";
+        return;
+      }
+      var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
+      born.el.style.visibility = "visible";
+      born.el.style.opacity = (0.4 + 0.6 * Math.min(1, (p.z - 0.05) / 0.3)).toFixed(3);
+      born.el.style.transform =
+        "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
+        " translate(-50%,-85%) scale(" + scale.toFixed(3) + ")";
+    });
+  }
+
   /* ---- following a colour back ------------------------------------------- */
 
   function showTrace(part) {
     if (!part.token) { return; }
-    traceTitle.textContent = part.token.t;
-    traceMeta.textContent = tokenLine(part.token);
+    showTraceAt(part.token, part.el);
+  }
+
+  function showTraceAt(tok, el) {
+    traceTitle.textContent = tok.t;
+    traceMeta.textContent = tokenLine(tok);
     trace.hidden = false;
 
-    var box = part.el.getBoundingClientRect();
+    var box = el.getBoundingClientRect();
     var w = trace.offsetWidth || 200;
     var h = trace.offsetHeight || 64;
     var x = Math.max(8, Math.min(box.left + box.width / 2 - w / 2, W - w - 8));
