@@ -12,6 +12,42 @@
   --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---- the golden ratio, as the site's only scale -----------------------
+     phi = 1.618…  Nothing here is a round number chosen by hand: type,
+     spacing, measure and the page's own width are all whole powers or
+     whole roots of phi, so every size on the page is related to every
+     other one by the same ratio.
+
+     Type climbs by the cube root of phi (1.174), which makes every third
+     rung a full golden step: 0.618 (1/phi) — 1 — 1.618 (phi) —
+     2.618 (phi2). */
+  --t-1:  0.6180rem;   /*  9.9px   1/phi */
+  --t-2:  0.7256rem;   /* 11.6px */
+  --t-3:  0.8520rem;   /* 13.6px */
+  --t-4:  1.0000rem;   /* 16.0px  the body */
+  --t-5:  1.1740rem;   /* 18.8px */
+  --t-6:  1.3783rem;   /* 22.1px */
+  --t-7:  1.6180rem;   /* 25.9px  phi */
+  --t-9:  2.2300rem;   /* 35.7px */
+
+  /* Leading: phi for anything read in paragraphs, phi2 / 2 for the short
+     lines of a caption or a label. */
+  --lead:       1.618;
+  --lead-tight: 1.309;
+
+  /* Spacing, in whole steps of phi from 1rem out in both directions. */
+  --sp-1: 0.236rem;    /*  3.8px  1/phi3 */
+  --sp-2: 0.382rem;    /*  6.1px  1/phi2 */
+  --sp-3: 0.618rem;    /*  9.9px  1/phi  */
+  --sp-4: 1rem;        /* 16.0px */
+  --sp-5: 1.618rem;    /* 25.9px  phi    */
+  --sp-6: 2.618rem;    /* 41.9px  phi2   */
+  --sp-7: 4.236rem;    /* 67.8px  phi3   */
+
+  /* Two beats, a golden step and a half apart. */
+  --beat-1: 160ms;
+  --beat-3: 419ms;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,11 +76,11 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  padding-inline: 1.5rem;
+  padding-inline: var(--sp-5);
   padding-block: 0;
   background: var(--paper);
   color: var(--ink);
-  font: 400 1rem/1.55 var(--sans);
+  font: 400 var(--t-4)/var(--lead) var(--sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -56,7 +92,7 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 }
 
 .page {
-  max-width: 78rem;
+  max-width: 78rem;            /* 48.2rem x phi */
   margin: 0 auto;
 }
 
@@ -66,11 +102,11 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.75rem;
+  gap: var(--sp-3);
   margin: 0;
-  padding-block: 1.25rem;
+  padding-block: var(--sp-4);
   border-bottom: 1px solid var(--rule);
-  font-size: 0.8125rem;
+  font-size: var(--t-3);
 }
 
 .live span {
@@ -85,20 +121,20 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 /* ---- masthead ---------------------------------------------------------- */
 
 .masthead {
-  padding-block: 2.75rem 2.5rem;
+  padding-block: var(--sp-6) var(--sp-5);
 }
 
 .masthead h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 1.15rem + 1.3vw, 2.125rem);
+  font-size: clamp(var(--t-7), 1.15rem + 1.3vw, var(--t-9));
   font-weight: 500;
   letter-spacing: -0.015em;
 }
 
 .masthead p {
-  margin: 0.625rem 0 0;
-  max-width: 42ch;
-  font: 400 1.1875rem/1.45 var(--serif);
+  margin: var(--sp-3) 0 0;
+  max-width: 34ch;                  /* Fibonacci, like the rest */
+  font: 400 var(--t-5)/var(--lead-tight) var(--serif);
   color: var(--ink-soft);
 }
 
@@ -107,9 +143,9 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 .label {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin: 0 0 2rem;
-  font-size: 0.75rem;
+  gap: var(--sp-4);
+  margin: 0 0 var(--sp-5);
+  font-size: var(--t-2);
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -130,10 +166,10 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 .grid {
   list-style: none;
   margin: 0;
-  padding: 0 0 1rem;
+  padding: 0 0 var(--sp-4);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 2.75rem 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(14.56rem, 1fr));  /* 9rem x phi */
+  gap: var(--sp-6) var(--sp-5);
   align-items: start;
 }
 
@@ -163,7 +199,7 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
   width: auto;
   height: auto;
   background: var(--plate);
-  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition: transform var(--beat-3) cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 /* ---- rotate control ----------------------------------------------------- */
@@ -182,7 +218,7 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
   background: var(--paper);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: color 150ms, border-color 150ms;
+  transition: color var(--beat-1), border-color var(--beat-1);
 }
 
 .rotate svg { width: 0.9375rem; height: 0.9375rem; fill: currentColor; }
@@ -192,19 +228,19 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 /* ---- caption: Artsy's card order --------------------------------------- */
 
 .work figcaption {
-  margin-top: 0.875rem;
-  font-size: 0.875rem;
-  line-height: 1.45;
+  margin-top: var(--sp-4);
+  font-size: var(--t-3);
+  line-height: var(--lead-tight);
 }
 
 .artist { font-weight: 500; }
 
 .work .note {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: var(--sp-3);
   max-width: 34ch;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: var(--t-2);
+  line-height: var(--lead-tight);
   color: var(--ink-soft);
 }
 
@@ -215,23 +251,23 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
   color: var(--ink-soft);
 }
 
-.work .title { font-family: var(--serif); font-size: 0.9375rem; }
+.work .title { font-family: var(--serif); font-size: var(--t-4); }
 .work .title em { font-style: italic; }
-.work .price { margin-top: 0.375rem; color: var(--ink); }
+.work .price { margin-top: var(--sp-2); color: var(--ink); }
 
 /* ---- vote --------------------------------------------------------------- */
 
 .vote {
   display: inline-block;
-  margin-top: 0.5rem;
-  padding: 0.25rem 0.625rem;
+  margin-top: var(--sp-3);
+  padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--rule);
   background: transparent;
   color: var(--ink-soft);
-  font: 400 0.75rem/1.4 var(--sans);
+  font: 400 var(--t-2)/var(--lead-tight) var(--sans);
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: color 150ms, border-color 150ms;
+  transition: color var(--beat-1), border-color var(--beat-1);
 }
 
 .vote:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
@@ -240,12 +276,12 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 
 /* ---- statement --------------------------------------------------------- */
 
-.statement-block { padding-block: 1rem 3rem; }
+.statement-block { padding-block: var(--sp-4) var(--sp-6); }
 
 .statement-block p {
   margin: 0;
-  max-width: 62ch;
-  font: 400 1.0625rem/1.65 var(--serif);
+  max-width: 55ch;                  /* Fibonacci */
+  font: 400 var(--t-5)/var(--lead) var(--serif);
   color: var(--ink);
   text-wrap: pretty;
 }
@@ -253,27 +289,27 @@ a { color: var(--accent); text-underline-offset: 0.18em; }
 /* ---- colophon ---------------------------------------------------------- */
 
 .colophon {
-  max-width: 62ch;
-  padding-block: 2rem 4rem;
+  max-width: 55ch;
+  padding-block: var(--sp-5) var(--sp-7);
   border-top: 1px solid var(--rule);
-  font-size: 0.875rem;
+  font-size: var(--t-3);
   color: var(--ink-soft);
 }
 
 .colophon h2 {
-  margin: 0 0 0.5rem;
-  font-size: 0.75rem;
+  margin: 0 0 var(--sp-3);
+  font-size: var(--t-2);
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 
-.colophon p { margin: 0; max-width: 40ch; }
+.colophon p { margin: 0; max-width: 34ch; }
 
 @media (max-width: 34rem) {
-  .masthead { padding-block: 2.5rem 2rem; }
-  .grid { gap: 2rem 1.25rem; }
+  .masthead { padding-block: var(--sp-5) var(--sp-5); }
+  .grid { gap: var(--sp-5) var(--sp-4); }
 }
 
 @media (prefers-reduced-motion: reduce) {

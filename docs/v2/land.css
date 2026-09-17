@@ -18,6 +18,48 @@
   --lit:     #ffffff;
   --dim:     #6a6e7d;
 
+  /* ---- one measure, and it is the golden ratio -------------------------
+     Every width, gap, step of type and beat of animation below is a power
+     of phi away from its neighbours, so the page holds one proportion
+     instead of a heap of round numbers. phi = 1.618…, 1/phi = 0.618…,
+     1/phi2 = 0.382…, 1/phi3 = 0.236…
+
+     Widths. The card the creature offers is the unit; everything else is
+     that unit taken up or down by whole powers of phi. */
+  --unit:    168px;      /* the card */
+  --w-trace: 272px;      /* unit x phi    — a title needs the room */
+  --w-token:  64px;      /* unit / phi2   */
+  --w-spawn:  40px;      /* unit / phi3   */
+
+  /* Spacing is Fibonacci, which is phi written in whole pixels. */
+  --s-1:  3px;
+  --s-2:  5px;
+  --s-3:  8px;
+  --s-4: 13px;
+  --s-5: 21px;
+  --s-6: 34px;
+
+  /* Type climbs by the square root of phi (1.272) a step, so seven steps
+     span phi3 exactly: the smallest mono label is 8px, the panel's heading
+     34px, and 34 / 8 = 4.236 = phi3. */
+  --t-0: 0.5020rem;      /*  8.0px */
+  --t-1: 0.6387rem;      /* 10.2px */
+  --t-2: 0.8125rem;      /* 13.0px */
+  --t-3: 1.0337rem;      /* 16.5px */
+  --t-4: 1.3148rem;      /* 21.0px */
+  --t-5: 1.6725rem;      /* 26.8px */
+  --t-6: 2.1275rem;      /* 34.0px */
+  --lead: 1.309;         /* phi2 / 2 */
+
+  /* Beats. 160ms, then a phi step each time; the slowest is the grazing
+     dip at 1775ms, eleven times the quickest. */
+  --beat-1:  160ms;
+  --beat-2:  259ms;
+  --beat-3:  419ms;
+  --beat-4:  678ms;
+  --beat-5: 1097ms;
+  --beat-6: 1775ms;
+
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -60,11 +102,11 @@
 .land-loading {
   position: absolute;
   left: 50%;
-  top: 62%;
+  top: 61.8%;                /* 1/phi down the stage */
   margin: 0;
   transform: translate(-50%, -50%);
   color: var(--dim);
-  font-size: 0.875rem;
+  font-size: var(--t-2);
   pointer-events: none;
 }
 
@@ -76,7 +118,7 @@
   top: 0;
   display: block;
   margin: 0;
-  padding: 2px 6px;
+  padding: 2px var(--s-2);
   border: 0;
   background: none;
   /* Ink, not white. The globe is a shade off the sky now, so white type on it
@@ -151,7 +193,7 @@
      was most of why it read as mottled — without it, neighbouring cells of
      one colour merge into a single solid form, which is the whole point of
      building the thing out of cells. */
-  transition: fill 620ms ease;
+  transition: fill var(--beat-4) ease;
 }
 
 /* Before anything has been thrown at it, it wears the colours of the pixel
@@ -196,7 +238,7 @@
 }
 
 /* Just repainted — a part flares once so you can see where the throw landed. */
-.part[data-fresh="true"] { animation: took 900ms ease-out; }
+.part[data-fresh="true"] { animation: took var(--beat-5) ease-out; }
 
 @keyframes took {
   0%   { stroke: rgba(243, 241, 234, 0.95); stroke-width: 4; }
@@ -212,8 +254,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 46px;
-  height: 46px;
+  width: var(--w-spawn);
+  height: var(--w-spawn);
   z-index: 50;
   cursor: pointer;
   pointer-events: auto;
@@ -225,13 +267,13 @@
   width: 100%;
   height: 100%;
   shape-rendering: crispEdges;
-  filter: drop-shadow(0 2px 4px rgba(24, 26, 40, 0.35));
+  filter: drop-shadow(0 2px var(--s-2) rgba(24, 26, 40, 0.382));
 }
 
 .spawn:hover svg,
 .spawn:focus-visible svg {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9))
-          drop-shadow(0 2px 4px rgba(24, 26, 40, 0.35));
+  filter: drop-shadow(0 0 var(--s-1) rgba(255, 255, 255, 0.9))
+          drop-shadow(0 2px var(--s-2) rgba(24, 26, 40, 0.382));
   outline: none;
 }
 
@@ -240,21 +282,21 @@
 .trace {
   position: absolute;
   z-index: 90;
-  max-width: 220px;
-  padding: 7px 9px;
+  max-width: var(--w-trace);
+  padding: var(--s-2) var(--s-3);
   background: var(--card);
   border: 1px solid var(--edge);
-  box-shadow: 0 8px 24px rgba(24, 26, 40, 0.18);
+  box-shadow: 0 var(--s-3) var(--s-5) rgba(24, 26, 40, 0.146);
   pointer-events: none;
-  animation: surface 160ms ease-out;
+  animation: surface var(--beat-1) ease-out;
 }
 
 .trace-title {
   display: block;
   font-family: var(--serif);
-  font-size: 0.8125rem;
+  font-size: var(--t-2);
   font-style: italic;
-  line-height: 1.3;
+  line-height: var(--lead);
   color: var(--ink);
 }
 
@@ -262,23 +304,23 @@
   display: block;
   margin-top: 2px;
   color: var(--ink-dim);
-  font-size: 0.6875rem;
-  line-height: 1.3;
+  font-size: var(--t-1);
+  line-height: var(--lead);
 }
 
 .trace-hint {
   display: block;
-  margin-top: 5px;
+  margin-top: var(--s-2);
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 0.5625rem;
-  letter-spacing: 0.06em;
+  font-size: var(--t-0);
+  letter-spacing: 0.0618em;
   text-transform: uppercase;
 }
 
 /* Grazing: the head dips. */
 .creature[data-grazing="true"] svg {
-  animation: graze 2200ms ease-in-out infinite;
+  animation: graze var(--beat-6) ease-in-out infinite;
   transform-origin: 30% 80%;
 }
 
@@ -298,11 +340,11 @@
 }
 
 /* Struck by a thrown token. */
-.creature[data-struck="true"] svg { animation: struck 420ms ease-out; }
+.creature[data-struck="true"] svg { animation: struck var(--beat-3) ease-out; }
 
 @keyframes struck {
   0%   { transform: translateY(0) scale(1); }
-  30%  { transform: translateY(-6px) scale(1.08); }
+  30%  { transform: translateY(-8px) scale(1.09); }   /* 1 + 1/phi5 */
   100% { transform: translateY(0) scale(1); }
 }
 
@@ -311,23 +353,23 @@
 .graze {
   position: absolute;
   z-index: 70;
-  width: 168px;
+  width: var(--unit);
   pointer-events: auto;
-  animation: surface 220ms ease-out;
+  animation: surface var(--beat-2) ease-out;
 }
 
 @keyframes surface {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(var(--s-3)); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .graze-card {
   margin: 0;
-  padding: 8px;
+  padding: var(--s-3);
   background: var(--card);
   border: 1px solid var(--edge);
-  box-shadow: 0 10px 30px rgba(24, 26, 40, 0.18);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 var(--s-4) var(--s-6) rgba(24, 26, 40, 0.146);
+  backdrop-filter: blur(var(--s-3));
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -341,14 +383,14 @@
   pointer-events: none;
 }
 
-.graze-card figcaption { display: block; margin-top: 8px; }
+.graze-card figcaption { display: block; margin-top: var(--s-3); }
 
 .graze-title {
   display: block;
   font-family: var(--serif);
-  font-size: 0.8125rem;
+  font-size: var(--t-2);
   font-style: italic;
-  line-height: 1.3;
+  line-height: var(--lead);
   color: var(--ink);
 }
 
@@ -356,27 +398,27 @@
   display: block;
   margin-top: 2px;
   color: var(--ink-dim);
-  font-size: 0.6875rem;
-  line-height: 1.3;
+  font-size: var(--t-1);
+  line-height: var(--lead);
 }
 
 .graze-hint {
   display: inline-block;
-  margin: 6px 0 0;
-  padding: 3px 6px;
+  margin: var(--s-2) 0 0;
+  padding: var(--s-1) var(--s-2);
   background: var(--card);
   border: 1px solid var(--edge);
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.04em;
+  font-size: var(--t-1);
+  letter-spacing: 0.0382em;
   text-transform: uppercase;
 }
 
 /* The hold: the card closes down onto its three colours. */
 .graze[data-condensing="true"] .graze-card {
-  transition: transform 420ms ease-in, opacity 420ms ease-in;
-  transform: scale(0.34);
+  transition: transform var(--beat-3) ease-in, opacity var(--beat-3) ease-in;
+  transform: scale(0.382);   /* down onto 1/phi2 of itself */
   opacity: 0;
 }
 
@@ -386,24 +428,25 @@
   position: absolute;
   z-index: 80;
   display: flex;
-  width: 54px;
-  height: 54px;
+  width: var(--w-token);
+  height: var(--w-token);
   border: 1px solid var(--edge);
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 0 22px rgba(233, 243, 198, 0.35), 0 8px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 var(--s-5) rgba(233, 243, 198, 0.382),
+              0 var(--s-3) var(--s-5) rgba(0, 0, 0, 0.618);
   /* It is a thing lying on the world, not a decoration: it can be pressed
      and dragged until it is applied. */
   cursor: grab;
   pointer-events: auto;
   touch-action: none;
-  animation: condense 240ms ease-out;
+  animation: condense var(--beat-2) ease-out;
 }
 
 .token:active { cursor: grabbing; }
 
 @keyframes condense {
-  from { transform: scale(1.5); opacity: 0; }
+  from { transform: scale(1.618); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
 }
 
@@ -417,48 +460,49 @@
 .seam {
   position: fixed;
   inset: auto 0 0 0;
-  max-height: 76vh;
+  max-height: 76.4vh;                 /* twice 1/phi2 of the window */
   overflow-y: auto;
-  padding: 24px 24px 40px;
+  padding: var(--s-5) var(--s-5) var(--s-6);
   background: var(--card);
   border-top: 1px solid var(--edge);
-  box-shadow: 0 -12px 36px rgba(24, 26, 40, 0.16);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 calc(-1 * var(--s-4)) var(--s-6) rgba(24, 26, 40, 0.146);
+  backdrop-filter: blur(var(--s-4));
   z-index: 100;
-  animation: rise 260ms ease-out;
+  animation: rise var(--beat-2) ease-out;
 }
 
 @keyframes rise {
-  from { transform: translateY(16px); opacity: 0; }
+  from { transform: translateY(var(--s-4)); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
 }
 
 @media (min-width: 900px) {
   .seam {
     inset: 0 0 0 auto;
-    width: 420px;
+    width: clamp(20rem, 38.2vw, 34rem);   /* 1/phi2 of the window, held
+                                            between 20rem and 34rem */
     max-height: none;
     border-top: 0;
     border-left: 1px solid var(--edge);
-    box-shadow: -12px 0 36px rgba(24, 26, 40, 0.16);
+    box-shadow: calc(-1 * var(--s-4)) 0 var(--s-6) rgba(24, 26, 40, 0.146);
     animation-name: slide;
   }
   @keyframes slide {
-    from { transform: translateX(16px); opacity: 0; }
+    from { transform: translateX(var(--s-4)); opacity: 0; }
     to   { transform: translateX(0); opacity: 1; }
   }
 }
 
 .seam-close {
   position: absolute;
-  top: 12px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
+  top: var(--s-4);
+  right: var(--s-5);
+  width: var(--s-6);
+  height: var(--s-6);
   background: none;
   border: 0;
   color: var(--ink-dim);
-  font-size: 1.5rem;
+  font-size: var(--t-5);
   line-height: 1;
   cursor: pointer;
 }
@@ -468,22 +512,22 @@
 .seam-word {
   margin: 0;
   font-family: var(--serif);
-  font-size: 2rem;
+  font-size: var(--t-6);
   font-weight: 400;
   color: var(--ink);
 }
 
 .seam-count {
-  margin: 4px 0 20px;
+  margin: var(--s-1) 0 var(--s-5);
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 0.75rem;
+  font-size: var(--t-1);
 }
 
 .seam-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 20px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
+  gap: var(--s-5) var(--s-4);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -503,20 +547,20 @@
 }
 
 .seam-item h3 {
-  margin: 8px 0 0;
+  margin: var(--s-3) 0 0;
   font-family: var(--serif);
-  font-size: 0.875rem;
+  font-size: var(--t-2);
   font-style: italic;
   font-weight: 400;
-  line-height: 1.3;
+  line-height: var(--lead);
   color: var(--ink);
 }
 
 .seam-item p {
   margin: 2px 0 0;
   color: var(--ink-dim);
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: var(--t-1);
+  line-height: var(--lead);
 }
 
 .seam-item a:hover h3 { color: var(--ground); }
@@ -553,6 +597,6 @@
 
 /* The works page carries a link across to the land. */
 .masthead-link {
-  margin: 8px 0 0;
-  font-size: 0.875rem;
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-2);
 }

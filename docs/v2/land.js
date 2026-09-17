@@ -76,7 +76,15 @@
   // fixed: it is the lowest latitude still above the bottom of the screen.
   var LAT_LOW = 34 * RAD;
 
+  /* φ. The globe already sits by it — its contour meets the sides of the
+     screen at 1/φ up. From here it also sets the type scale, the timings, the
+     easing and the fades, so the proportions of the place agree with each
+     other instead of each being picked by hand. */
   var PHI = (1 + Math.sqrt(5)) / 2;   // 1.618…
+  var INV = 1 / PHI;                  // 0.618…
+  var INV2 = INV * INV;               // 0.382…
+  var INV3 = INV2 * INV;              // 0.236…
+  var INV5 = INV2 * INV3;             // 0.0902…
 
   // The land on the sphere, after the pixelled reference the artist gave:
   // hot pink, lime, orange, cream, cornflower and lavender.
@@ -90,8 +98,8 @@
     "176, 174, 180"
   ];
 
-  var GRAZE_MIN = 2800;      // how long the creature stays with a word
-  var GRAZE_MAX = 5600;
+  var GRAZE_MIN = 2600;                        // how long it stays with a word
+  var GRAZE_MAX = Math.round(2600 * PHI);      // …and at most, a golden step on
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -399,7 +407,11 @@
     // the globe simply scaled the words up with it and bought no room at all —
     // they went to 123px and the collisions trebled. Against the screen, a
     // wider globe is exactly what it should be: more surface, same type.
-    var size = (Math.min(W, H) / 760) * (15 + Math.pow(ground.mass, 0.62) * 44) * fit;
+    // The scale is φ³ end to end: the word carried by all seven collages is
+    // φ cubed — 4.236 times — the size of one carried by a single collage,
+    // and every step between is a power of φ.
+    var smallest = Math.min(W, H) / 53;
+    var size = smallest * Math.pow(PHI, ground.mass * 3) * fit;
     var set = Math.round(ground.mass * (WEIGHTS.length - 1));
 
     ground.el.style.fontFamily = FACE;
@@ -407,7 +419,9 @@
     ground.el.style.fontSize = Math.max(13, size).toFixed(2) + "px";
     // Large type wants tighter tracking than small type. Letting one value
     // serve both is what makes a word cloud look untended.
-    ground.el.style.letterSpacing = (-0.004 - ground.mass * 0.026).toFixed(4) + "em";
+    // Tracking tightens over the same run, from -1/φ⁹ to -1/φ⁵ of an em.
+    ground.el.style.letterSpacing =
+      (-Math.pow(INV, 9) - ground.mass * INV5).toFixed(4) + "em";
   }
 
   function dressAll() { vocabulary.forEach(dress); }
@@ -485,14 +499,14 @@
       m.h += m.vh * pace;
       if (m.h <= 0) {         // and skips along it
         m.h = 0;
-        m.vh *= -0.3;
+        m.vh *= -INV3;      // each skip a golden third of the last
         m.vx *= 0.72;
         m.vy *= 0.72;
         m.life -= 0.12;
         if (Math.abs(m.vh) < 0.6) { m.life -= 0.3; }
       }
 
-      m.life -= 0.55 * dt;
+      m.life -= INV * dt;
       if (m.life <= 0 || m.y - m.h > H + 120 || m.x < -120 || m.x > W + 120) {
         motes.splice(i, 1);
       }
@@ -547,11 +561,11 @@
     // The room is nothing but the falling-off of the off-white. Its inner
     // radius is R, so the gradient starts exactly on the sphere's contour.
     var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0.00, SKY[0]);
-    sky.addColorStop(0.34, SKY[1]);
-    sky.addColorStop(0.58, SKY[2]);
-    sky.addColorStop(0.80, SKY[3]);
-    sky.addColorStop(1.00, SKY[4]);
+    sky.addColorStop(0, SKY[0]);
+    sky.addColorStop(INV3, SKY[1]);          // 0.236
+    sky.addColorStop(INV2, SKY[2]);          // 0.382
+    sky.addColorStop(INV, SKY[3]);           // 0.618
+    sky.addColorStop(1, SKY[4]);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
@@ -740,7 +754,7 @@
 
       if (p.z > 0.2) { ground.shown = true; }
 
-      var fade = 0.34 + 0.66 * Math.min(1, (p.z - 0.05) / 0.32);
+      var fade = INV2 + INV * Math.min(1, (p.z - 0.05) / 0.32);
       var scale = 0.64 + 0.36 * p.z;
 
       el.style.visibility = "visible";
@@ -788,10 +802,10 @@
     // The world only turns when it is turned: by a drag, or by tabbing to a
     // word. It used to swing round to follow the creature, which meant every
     // word on it was always drifting.
-    spin += shortest(spin, wanted) * (still ? 1 : 0.1);
+    spin += shortest(spin, wanted) * (still ? 1 : INV5);
 
     // The creature crosses the surface toward the word it is heading for.
-    var ease = still ? 1 : 0.095;
+    var ease = still ? 1 : INV5;
     beast.lat += (goal.lat - beast.lat) * ease;
     beast.lon += shortest(beast.lon, goal.lon) * ease;
 
@@ -1111,7 +1125,7 @@
       (tok.a ? " by " + tok.a : "") + ". Opens on Artsy.");
 
     part.el.dataset.fresh = "true";
-    window.setTimeout(function () { delete part.el.dataset.fresh; }, 950);
+    window.setTimeout(function () { delete part.el.dataset.fresh; }, 1120);   /* past the 1097ms flare */
   }
 
   function wear(tok) {
@@ -1121,7 +1135,7 @@
     });
     repalette();
     creature.dataset.struck = "true";
-    window.setTimeout(function () { delete creature.dataset.struck; }, 460);
+    window.setTimeout(function () { delete creature.dataset.struck; }, 440);   /* past the 419ms jolt */
 
     // And it comes straight back out of the ground, in that work's colours
     // and every colour already on it. Each application throws more than the
@@ -1202,7 +1216,7 @@
       }
       var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
       born.el.style.visibility = "visible";
-      born.el.style.opacity = (0.4 + 0.6 * Math.min(1, (p.z - 0.05) / 0.3)).toFixed(3);
+      born.el.style.opacity = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.3)).toFixed(3);
       born.el.style.transform =
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
         " translate(-50%,-85%) scale(" + scale.toFixed(3) + ")";
