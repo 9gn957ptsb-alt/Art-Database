@@ -427,7 +427,7 @@
     dressAll();
     relax();
     remass();
-
+    weave();
   }
 
   /* ---- how a word is dressed --------------------------------------------- */
@@ -598,6 +598,206 @@
     kick(at.x, at.y, palette(), Math.min(40, 10 + d * 3), 5 + d * 0.4, 1.1);
   }
 
+  /* ---- the weave -----------------------------------------------------------
+
+     The surface of the world is a field of dots, after Dorothy Napangardi.
+
+     Her salt paintings — Mina Mina, the country she painted her whole life —
+     are built entirely out of fine dots laid in strands: two families of
+     lines crossing, gathering into ridges where they converge, parting to
+     leave dark blocks between them, so that a flat canvas reads as a salt pan
+     seen from above and shimmers as you move past it. Nothing in them is a
+     shape filled in. Everything is the dots, and the spaces the dots leave.
+
+     That is a way of making a surface out of exactly what this page is
+     already made of, so the sphere is woven now rather than shaded. Two
+     families of strands run over it, one down and one round, each warped so
+     they gather and part; runs of dots are dropped to leave the dark blocks;
+     and where a strand crosses a landmass it takes that mass's colour and
+     sits heavier, so the land is a thickening in the weave instead of a wash
+     laid over it. A pale dot among the dark ones every so often is what makes
+     it glitter when the world turns.
+
+     This is her way of building a surface, used on our own material. The
+     designs are hers and her country's, and none of them are here.
+
+     A hundred and thirty thousand dots is too many to hold as objects and far
+     too many to run trigonometry over. Every dot's sine and cosine are worked
+     out once, into typed arrays, and the turn of the world is then a pair of
+     multiplications each — no trigonometry per dot, per frame, ever. And
+     because the weave depends only on which way the world is facing, not on
+     where the light is, it keeps its own surface and is redrawn only when the
+     world is actually turned. */
+
+  var wSinLat = null, wCosLat = null, wSinLon = null, wCosLon = null;
+  var wSalt = null, wTone = null, wGain = null;
+  var wCount = 0;
+  var wTones = [];
+
+  var cloth = document.createElement("canvas");
+  var wctx = cloth.getContext("2d");
+  var woven = { spin: null, w: 0, h: 0, r: 0 };
+
+  function weave() {
+    var lat = [];
+    var lon = [];
+    var salt = [];
+
+    var rnd = seedFrom("mina mina", 3);
+
+    // Strands running down the world. Even steps in latitude are even steps
+    // along the surface, so these keep their spacing wherever they fall.
+    var strands = 420;
+    var down = 320;
+    for (var i = 0; i < strands; i += 1) {
+      var base = (i / strands) * TAU;
+      var wob = 0.05 + rnd() * 0.09;
+      var turns = 2 + Math.floor(rnd() * 4);
+      var gap = 19 + Math.floor(rnd() * 15);
+      var phase = Math.floor(rnd() * gap);
+      for (var s = 0; s <= down; s += 1) {
+        if (((s + phase) % gap) < 4) { continue; }         // a block of dark
+        var la = -1.55 + (s / down) * 3.1;
+        lat.push(la);
+        lon.push(wrap(base + wob * Math.sin(turns * la)));
+        salt.push((s + i) % 7 === 0 ? 1 : 0);
+      }
+    }
+
+    // Strands running round it. Even steps in longitude are shorter steps the
+    // nearer the pole, so these gather into a ridge toward the top of the
+    // world by themselves — which is the part of her surfaces that does the
+    // most work, and here it falls out of the geometry for nothing.
+    var rings = 240;
+    var round = 520;
+    for (var j = 0; j < rings; j += 1) {
+      var lat0 = -1.55 + ((j + 0.5) / rings) * 3.1;
+      var sway = 0.02 + rnd() * 0.05;
+      var beats = 3 + Math.floor(rnd() * 5);
+      var hole = 17 + Math.floor(rnd() * 17);
+      var off = Math.floor(rnd() * hole);
+      for (var t = 0; t < round; t += 1) {
+        if (((t + off) % hole) < 5) { continue; }
+        var lo = (t / round) * TAU;
+        lat.push(Math.max(-1.56, Math.min(1.56, lat0 + sway * Math.sin(beats * lo))));
+        lon.push(lo);
+        salt.push((t + j) % 8 === 0 ? 1 : 0);
+      }
+    }
+
+    wCount = lat.length;
+    wSinLat = new Float32Array(wCount);
+    wCosLat = new Float32Array(wCount);
+    wSinLon = new Float32Array(wCount);
+    wCosLon = new Float32Array(wCount);
+    wSalt = new Uint8Array(wCount);
+    wTone = new Uint8Array(wCount);
+    wGain = new Float32Array(wCount);
+
+    // Which land a dot falls on, and how far into it. Thirteen distance
+    // checks a dot, done once here rather than on every repaint.
+    wTones = masses.map(function (mass) { return mass.tone; });
+
+    for (var k = 0; k < wCount; k += 1) {
+      wSinLat[k] = Math.sin(lat[k]);
+      wCosLat[k] = Math.cos(lat[k]);
+      wSinLon[k] = Math.sin(lon[k]);
+      wCosLon[k] = Math.cos(lon[k]);
+      wSalt[k] = salt[k];
+
+      var best = 0;
+      var which = 0;
+      for (var m = 0; m < masses.length; m += 1) {
+        var mass = masses[m];
+        var dLat = lat[k] - mass.lat;
+        var dLon = wrap(lon[k] - mass.lon) * wCosLat[k];
+        var d = Math.sqrt(dLat * dLat + dLon * dLon);
+        var reach = mass.size * 3.4;
+        if (d >= reach) { continue; }
+        var near = 1 - d / reach;
+        if (near > best) { best = near; which = m + 1; }
+      }
+      wGain[k] = best;
+      wTone[k] = which;
+    }
+
+    woven.spin = null;      // it will have to be drawn again
+  }
+
+  function clothStale() {
+    // Woven loosely while the world is being turned by hand, and again in
+    // full the moment it is let go. Half the dots at speed is invisible, and
+    // it is the difference between turning the world and dragging it.
+    if (woven.loose && !turning) { return true; }
+    return woven.spin === null || Math.abs(woven.spin - spin) > 0.0015 ||
+           woven.w !== W || woven.h !== H || woven.r !== R;
+  }
+
+  /* The whole field, onto its own surface, in runs of one colour: a hundred
+     thousand dots is nothing, a hundred thousand changes of fillStyle is the
+     whole cost of having a surface at all. */
+  function drawCloth() {
+    if (cloth.width !== canvas.width || cloth.height !== canvas.height) {
+      cloth.width = canvas.width;
+      cloth.height = canvas.height;
+    }
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wctx.clearRect(0, 0, W, H);
+
+    var cosS = Math.cos(spin);
+    var sinS = Math.sin(spin);
+    var grain = Math.max(1, Math.round(R / 700));
+    var loose = turning ? 2 : 1;
+    var runs = {};
+
+    for (var k = 0; k < wCount; k += loose) {
+      // The same projection as everything else, with the trigonometry taken
+      // out: sin(lon - spin) and cos(lon - spin) from the angle-difference
+      // identities, over values worked out when the weave was made.
+      var sinA = wSinLon[k] * cosS - wCosLon[k] * sinS;
+      var cosA = wCosLon[k] * cosS + wSinLon[k] * sinS;
+      var y = wSinLat[k];
+      var z = wCosLat[k] * cosA;
+      var z2 = y * SIN_T + z * COS_T;
+      if (z2 <= 0.04) { continue; }
+
+      var px = cx + wCosLat[k] * sinA * R;
+      if (px < -12 || px > W + 12) { continue; }
+      var py = cy - (y * COS_T - z * SIN_T) * R;
+      if (py < -12 || py > H + 12) { continue; }
+
+      var lit = z2 > 0.54 ? 1 : (z2 - 0.04) * 2;
+      var gain = wGain[k];
+      var a = (0.09 + 0.26 * lit) * (1 + gain * 1.7);
+      var tone = wSalt[k] ? "255,255,255"
+               : (gain > 0.22 && wTone[k] ? wTones[wTone[k] - 1] : "27,29,36");
+      if (wSalt[k]) { a *= 0.7; }
+
+      var step = a < 0.04 ? 0 : Math.min(11, Math.round(a * 22));
+      if (!step) { continue; }
+      var key = tone + "|" + step;
+      var run = runs[key] || (runs[key] = []);
+      run.push(px, py);
+    }
+
+    Object.keys(runs).forEach(function (key) {
+      var cut = key.lastIndexOf("|");
+      wctx.fillStyle = "rgb(" + key.slice(0, cut) + ")";
+      wctx.globalAlpha = Number(key.slice(cut + 1)) / 22;
+      var run = runs[key];
+      for (var i = 0; i < run.length; i += 2) {
+        wctx.fillRect(run[i] | 0, run[i + 1] | 0, grain, grain);
+      }
+    });
+    wctx.globalAlpha = 1;
+
+    woven.spin = spin;
+    woven.loose = loose > 1;
+    woven.w = W;
+    woven.h = H;
+    woven.r = R;
+  }
+
   /* ---- painting the world ------------------------------------------------
 
      The sphere is six full-area gradients and one more for every landmass,
@@ -618,9 +818,9 @@
   var drawn = { x: -999, y: -999, w: 0, h: 0, r: 0, masses: -1 };
 
   function sphereStale(lit) {
-    return Math.abs(lit.x - drawn.x) > 2 || Math.abs(lit.y - drawn.y) > 2 ||
+    return Math.abs(lit.x - drawn.x) > 5 || Math.abs(lit.y - drawn.y) > 5 ||
            drawn.w !== W || drawn.h !== H || drawn.r !== R ||
-           drawn.masses !== masses.length;
+           drawn.masses !== masses.length || clothStale();
   }
 
   function drawSphere(lit) {
@@ -699,7 +899,9 @@
       var p = project(mass.lat, mass.lon);
       if (p.z <= 0.02) { return; }
 
-      var fade = Math.min(1, p.z * 1.5) * 0.62;
+      // A breath of colour under the weave, not the land itself. The land is
+      // what the dots do over it — see drawWeave below.
+      var fade = Math.min(1, p.z * 1.5) * 0.22;
       var rx = mass.size * R * (0.34 + 0.66 * p.z);
       var ry = mass.size * R * (0.62 + 0.38 * p.z);
 
@@ -736,6 +938,13 @@
     limb.addColorStop(1, "rgba(58, 64, 88, 0.09)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+    // The surface itself: dots, in strands, after Napangardi. Kept on its
+    // own canvas because it only changes when the world is turned, and laid
+    // over the light at full strength.
+    if (clothStale()) { drawCloth(); }
+    ctx.globalAlpha = 1;
+    ctx.drawImage(cloth, 0, 0, W, H);
 
     ctx.restore();   // drops the clip and the globe's alpha together
   }
@@ -1141,6 +1350,18 @@
     r.setAttribute("height", h.toFixed(2));
     r.setAttribute("fill", tone);
     into.appendChild(r);
+
+    // A bead of light in the corner of every cell. The world's surface is
+    // made of dots now (see the weave, above); this is the same idea at the
+    // grain of the thing standing on it, so a pixel is not a flat square of
+    // colour but a square with a dot of light caught in it.
+    var bead = document.createElementNS(SVGNS, "rect");
+    bead.setAttribute("x", (x + w * 0.22).toFixed(2));
+    bead.setAttribute("y", (y + h * 0.22).toFixed(2));
+    bead.setAttribute("width", (w * 0.28).toFixed(2));
+    bead.setAttribute("height", (h * 0.28).toFixed(2));
+    bead.setAttribute("fill", lift(tone, 0.42));
+    into.appendChild(bead);
   }
 
   /* The part does not just take a colour, it takes a shape. Each time an
@@ -1338,6 +1559,12 @@
       out += '<rect x="' + c[0] + '" y="' + c[1] +
              '" width="' + w + '" height="' + h +
              '" fill="' + c[2] + '"/>';
+      // The same bead of light the animal's own cells carry.
+      out += '<rect x="' + (c[0] + w * 0.22).toFixed(2) +
+             '" y="' + (c[1] + h * 0.22).toFixed(2) +
+             '" width="' + (w * 0.28).toFixed(2) +
+             '" height="' + (h * 0.28).toFixed(2) +
+             '" fill="' + lift(c[2], 0.42) + '"/>';
     });
     // The shadow is one flat group of offset cells under the figure. It reads
     // the same as a drop-shadow at this size and does not cost a filter.
@@ -2523,7 +2750,10 @@
   /* Pressing a player: if the cast for one of its scenes is standing, that
      scene goes up. Otherwise it says its own line and the rest ignore it. */
   function cue(born, now) {
-    if (playing) { return; }
+    // Mid-scene, a press is not dead: it takes the next line. Pressing a
+    // player while somebody is speaking used to do nothing at all, which
+    // reads as a broken control rather than as a rule.
+    if (playing) { playing.until = 0; return; }
     for (var i = 0; i < SCENES.length; i += 1) {
       var def = SCENES[i];
       if (def.cast.indexOf(born.role) < 0) { continue; }
