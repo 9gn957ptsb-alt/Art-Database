@@ -309,6 +309,52 @@
   outline-offset: 1px;
 }
 
+/* ---- what the players say ---------------------------------------------- */
+
+/* One card, moved to whoever is speaking. A card each would mean a card per
+   player standing idle on the world, and the point of a line is that only
+   one of them has it. */
+.say {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 95;
+  max-width: var(--w-trace);
+  padding: var(--s-2) var(--s-3);
+  background: var(--card);
+  border: 1px solid var(--edge);
+  box-shadow: 0 var(--s-3) var(--s-5) rgba(24, 26, 40, 0.146);
+  pointer-events: none;
+  animation: surface var(--beat-1) ease-out;
+}
+
+.say-who {
+  display: block;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.0618em;
+  text-transform: uppercase;
+}
+
+.say-line {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--serif);
+  font-size: var(--t-2);
+  font-style: italic;
+  line-height: var(--lead);
+  color: var(--ink);
+}
+
+/* On their marks, and whoever has the line. */
+.spawn[data-acting="true"] { z-index: 55; }
+
+.spawn[data-speaking="true"] {
+  outline: 1px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 1px;
+}
+
 /* ---- where a colour came from ------------------------------------------ */
 
 .trace {
@@ -603,6 +649,7 @@
 .graze[hidden],
 .trace[hidden],
 .token[hidden],
+.say[hidden],
 .seam[hidden] { display: none; }
 
 .visually-hidden {

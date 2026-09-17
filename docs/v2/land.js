@@ -37,6 +37,9 @@
   var traceTitle = document.getElementById("trace-title");
   var traceMeta = document.getElementById("trace-meta");
   var traceHint = document.getElementById("trace-hint");
+  var say = document.getElementById("say");
+  var sayWho = document.getElementById("say-who");
+  var sayLine = document.getElementById("say-line");
   var seam = document.getElementById("seam");
   var seamWord = document.getElementById("seam-word");
   var seamCount = document.getElementById("seam-count");
@@ -1105,6 +1108,7 @@
     var f = part.form;
     var g = part.el;
     var rnd = seedFrom(part.name + tok.s, f + 1);
+    var c = ramp(tok);      // the work's three, held apart — see ramp()
 
     while (g.firstChild) { g.removeChild(g.firstChild); }
 
@@ -1126,10 +1130,10 @@
     var ch = home.h / rows;
 
     for (var r = 0; r < rows; r += 1) {
-      for (var c = 0; c < cols; c += 1) {
+      for (var col = 0; col < cols; col += 1) {
         if (f > 1 && rnd() < 0.05 * Math.min(f, 2)) { continue; }   // a gap
-        cell(g, home.x + c * cw, home.y + r * ch, cw, ch,
-             tok.c[(r + c + f) % tok.c.length]);
+        cell(g, home.x + col * cw, home.y + r * ch, cw, ch,
+             c[(r + col + f) % 3]);
       }
     }
 
@@ -1147,7 +1151,7 @@
       var by = home.y + (side === 2 ? home.h
                        : side === 0 ? -fine
                        : rnd() * Math.max(0, home.h - fine));
-      var tone = tok.c[i % tok.c.length];
+      var tone = c[i % 3];
       part.fresh.push({ x: bx, y: by, tone: tone });
       cell(g, bx, by, fine, fine, tone);
     }
@@ -1186,7 +1190,7 @@
   function wear(tok) {
     stamp += 1;
     stalest(PER_THROW).forEach(function (part, i) {
-      wearPart(part, tok.c[i % tok.c.length], tok);
+      wearPart(part, ramp(tok)[i % 3], tok);
     });
     repalette();
 
@@ -1244,14 +1248,15 @@
      the same as the animal. A palette can be dropped on any of them instead
      of on the animal, which is how a thing is fed. */
 
-  var KINDS = ["hatchling", "coin", "egg", "gem", "tube", "tower"];
+  var KINDS = ["hatchling", "coin", "player", "egg", "gem", "tube", "tower"];
 
   /* How far along the world has to be before a kind can appear at all. */
-  var UNLOCK = { hatchling: 0, coin: 0, egg: 1, gem: 2, tube: 3, tower: 5 };
+  var UNLOCK = { hatchling: 0, coin: 0, player: 1, egg: 2, gem: 3, tube: 4, tower: 5 };
 
   var VERB = {
     hatchling: "press to call it along",
     coin: "press to collect it",
+    player: "press to cue a scene",
     egg: "press to crack it open",
     gem: "press to turn its colour",
     tube: "press it, then another, to pour",
@@ -1309,7 +1314,7 @@
   /* ---- the bestiary ------------------------------------------------------- */
 
   function drawHatchling(born) {
-    var c = born.token.c;
+    var c = ramp(born.token);
     var n = 5 + Math.min(born.tier, TIERS) * 2;        // 7, 9, 11 across
     var rnd = seedFrom(born.token.s, 11 + born.tier);
     var half = Math.ceil(n / 2);
@@ -1329,7 +1334,7 @@
   }
 
   function drawCoin(born) {
-    var c = born.token.c;
+    var c = ramp(born.token);
     var n = 5;
     var face = [
       "..x..",
@@ -1345,7 +1350,7 @@
   }
 
   function drawEgg(born) {
-    var c = born.token.c;
+    var c = ramp(born.token);
     var shell = [
       "..x..",
       ".xxx.",
@@ -1415,8 +1420,40 @@
 
   var DRAW = {
     hatchling: drawHatchling, coin: drawCoin, egg: drawEgg,
-    gem: drawGem, tube: drawTube, tower: drawTower
+    gem: drawGem, tube: drawTube, tower: drawTower,
+    player: function (born) { return drawPlayer(born); }
   };
+
+  /* A work's three colours, held apart so there is light in them.
+
+     Artsy's dominant colours are honest and they are nearly all mid-tone:
+     three browns, three greys. Three mid-tones next to each other is not a
+     figure, it is a smudge — which is what the company looked like. So the
+     three are sorted by how light they are and then pulled apart, the
+     lightest up and the darkest down, hue untouched. The work's colours are
+     still the work's colours; they are simply given the range a small shape
+     needs to read as a shape at all. The air, the light, the object: the
+     light was the part that was missing.
+
+     Worked out once per work and kept, because a figure is redrawn every
+     time it grows. */
+  var ramps = {};
+
+  function lumin(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) { return 0.5; }
+    var n = parseInt(m[1], 16);
+    return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) +
+            0.0722 * (n & 255)) / 255;
+  }
+
+  function ramp(tok) {
+    if (ramps[tok.s]) { return ramps[tok.s]; }
+    var c = tok.c.slice().sort(function (a, b) { return lumin(b) - lumin(a); });
+    while (c.length < 3) { c.push(c[0]); }
+    ramps[tok.s] = [lift(c[0], 0.42), c[1], lift(c[2], -0.36)];
+    return ramps[tok.s];
+  }
 
   /* A colour taken up toward white or down toward ink, for a facet or a
      lit window. */
@@ -1437,6 +1474,16 @@
   /* ---- putting one on the world ------------------------------------------- */
 
   function kindFor(tok) {
+    // The troupe fills before the rest multiplies: up to four players arrive
+    // over the first eight applications, which is enough for most of the
+    // scenes. After that a player is no likelier than anything else.
+    if (UNLOCK.player <= stamp) {
+      var standing = spawns.filter(function (born) {
+        return born.kind === "player";
+      }).length;
+      if (standing < Math.min(4, Math.floor(stamp / 2))) { return "player"; }
+    }
+
     var rnd = seedFrom(tok.s, 7);
     var want = Math.floor(rnd() * KINDS.length);
     while (want > 0 && UNLOCK[KINDS[want]] > stamp) { want -= 1; }
@@ -1445,12 +1492,15 @@
 
   function label(born) {
     var tok = born.token;
-    return "A " + born.kind + " grown off the creature, from " + tok.t +
+    return "A " + (born.role || born.kind) + " grown off the creature, from " + tok.t +
            (tok.a ? " by " + tok.a : "") + ". " + VERB[born.kind] +
            "; hold it, or press O, to open the work on Artsy.";
   }
 
   function redraw(born) {
+    // Whatever it has just become, if it is a player it needs a part before
+    // it can be drawn — and it keeps that part for good.
+    if (born.kind === "player" && !born.role) { born.role = roleFor(born.token); }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
     var u = unit();
@@ -1474,10 +1524,10 @@
       kind: kindFor(tok),
       tier: 1,
       crack: 0,
-      tone: tok.c[0],
+      tone: ramp(tok)[0],
       face: 0,
-      bands: [tok.c[0], bandOf(tok.c, 1), bandOf(tok.c, 2)],
-      stack: [{ tone: tok.c[0], token: tok }],
+      bands: [ramp(tok)[0], ramp(tok)[1], ramp(tok)[2]],
+      stack: [{ tone: ramp(tok)[1], token: tok }],
       following: false,
       held: false,
       to: null,
@@ -1498,6 +1548,7 @@
   }
 
   function banish(born) {
+    if (playing && playing.cast.indexOf(born) >= 0) { endScene(); }
     var at = spawns.indexOf(born);
     if (at >= 0) { spawns.splice(at, 1); }
     var inLine = train.indexOf(born);
@@ -1519,10 +1570,10 @@
     born.kind = open[(at + 1) % open.length];
     born.tier = 1;
     born.crack = 0;
-    born.bands = [born.token.c[0], bandOf(born.token.c, 1)];
+    born.bands = [ramp(born.token)[0], ramp(born.token)[1]];
     born.stack = [{ tone: born.tone, token: born.token }];
     born.face = 0;
-    born.tone = born.token.c[0];
+    born.tone = ramp(born.token)[0];
     redraw(born);
     burstAt(born);
   }
@@ -1605,8 +1656,8 @@
     if (born.kind === "gem") {
       // Counted, not looked up: a work whose colours repeat would have stuck
       // on the first one for ever, since indexOf always found the same index.
-      born.face = (born.face + 1) % born.token.c.length;
-      born.tone = born.token.c[born.face];
+      born.face = (born.face + 1) % 3;
+      born.tone = ramp(born.token)[born.face];
       redraw(born);
       var three = matched(born);
       if (three.length >= 3) {
@@ -1638,6 +1689,11 @@
       return;
     }
 
+    if (born.kind === "player") {
+      cue(born, performance.now());
+      return;
+    }
+
     if (born.kind === "tower") {
       standAt(born.lat, born.lon);
       resume();
@@ -1648,19 +1704,22 @@
   function feed(born, tok) {
     born.token = tok;
     if (born.kind === "tower") {
-      born.stack.push({ tone: tok.c[0], token: tok });
+      born.stack.push({ tone: ramp(tok)[1], token: tok });
       if (born.stack.length > 9) { born.stack.shift(); }
       redraw(born);
       burstAt(born, tok.c);
       return;
     }
     if (born.kind === "tube") {
-      if (born.bands.length < BANDS) { born.bands.push(tok.c[0]); }
+      if (born.bands.length < BANDS) { born.bands.push(ramp(tok)[0]); }
       redraw(born);
       burstAt(born, tok.c);
       return;
     }
-    if (born.kind === "gem") { born.tone = tok.c[0]; }
+    // A player keeps its part and is dressed again in the new work. The
+    // character survives the stroke; that is the whole idea of it.
+    if (born.kind === "player") { redraw(born); burstAt(born, tok.c); return; }
+    if (born.kind === "gem") { born.tone = ramp(tok)[0]; }
     if (born.kind === "egg") { born.crack += 1; }
     if (born.kind === "egg" && born.crack >= 3) { becomeNext(born); return; }
     enlarge(born);
@@ -1674,6 +1733,16 @@
     var dt = Math.min(0.05, (now - strolled) / 1000 || 0.016);
     strolled = now;
     var creep = dt * 1.6;
+
+    stepScene(now);
+
+    // Anyone on their mark walks to it and stays there until the curtain.
+    spawns.forEach(function (born) {
+      if (!born.acting || !born.mark) { return; }
+      born.lat += (born.mark.lat - born.lat) * Math.min(1, creep * 2.4);
+      born.lon = wrap(born.lon + shortest(born.lon, born.mark.lon) *
+                      Math.min(1, creep * 2.4));
+    });
 
     var dir = creature.dataset.facing === "left" ? 1 : -1;
     train.forEach(function (born, i) {
@@ -1689,7 +1758,7 @@
     if (still) { return; }
 
     spawns.forEach(function (born) {
-      if (born.following || born.kind === "tower") { return; }
+      if (born.following || born.acting || born.kind === "tower") { return; }
       // Whatever is under the pointer holds still. They are small, they
       // wander, and a target that drifts out from under a thumb halfway
       // through a press is not a target.
@@ -1715,7 +1784,7 @@
   function mingle() {
     for (var i = 0; i < spawns.length; i += 1) {
       var a = spawns[i];
-      if (a.kind === "tube" || a.kind === "tower") { continue; }
+      if (a.kind === "tube" || a.kind === "tower" || a.kind === "player") { continue; }
       for (var j = i + 1; j < spawns.length; j += 1) {
         var b = spawns[j];
         if (b.kind !== a.kind || b.tier !== a.tier) { continue; }
@@ -1742,7 +1811,9 @@
       // separate animation, so nothing here keeps the compositor awake.
       var t = strolled / 1000;
       var life = "";
-      if (still) { life = ""; }
+      if (born.acting) {
+        life = born.faces < 0 ? " scaleX(-1)" : "";
+      } else if (still) { life = ""; }
       else if (born.kind === "hatchling" || born.kind === "egg") {
         life = " translateY(" +
                (Math.sin(t * 1.7 + born.phase) * 3.4).toFixed(2) + "%)";
@@ -1760,6 +1831,7 @@
         " translate(-50%," + (born.kind === "tower" ? "-100%" : "-92%") +
         ") scale(" + scale.toFixed(3) + ")" + life;
     });
+    placeSay();
   }
 
   /* ---- reaching one of them ----------------------------------------------- */
@@ -1836,6 +1908,334 @@
       event.stopPropagation();
       playWith(born);
     });
+  }
+
+  /* ---- the troupe ----------------------------------------------------------
+
+     Not everything that grows off the animal has to be a game. Some of what
+     comes out of it are players, and players do what players do: they find
+     each other, take their marks, and act.
+
+     Cézanne would sit an hour over one stroke, because a stroke had to hold
+     the air, the light, the object, the composition, the character, the
+     outline and the style all at once. That is the rule this whole page is
+     built on and it is worth saying plainly where the characters come in: one
+     palette applied is one stroke, and a stroke here carries a colour, an
+     outline the animal did not have before, and — from here on — sometimes a
+     character. Not a colour first and a figure later. The same gesture, the
+     whole thing at once.
+
+     Which is also why a player is never finished. Feed it another palette and
+     it keeps its part and is dressed again in the new work's colours: the
+     character survives the stroke, the way it survives a new production.
+     Expressing what exists is an endless task.
+
+     Eight parts, cast off Romeo and Juliet, and cast toward a scene: whoever
+     is missing from the scene nearest to being ready is who arrives next, so
+     a troupe assembles rather than eight people who never share a stage. The
+     first four come quickly, over the first eight applications; after that a
+     player is no likelier than a tube or a gem. When a scene's cast is all
+     standing they walk to their marks and play it, and pressing any player
+     cues one if its cast is there. Alone, a player gives its aside instead.
+     The lines are Shakespeare's, which is to say they are everyone's. */
+
+  var ROLES = ["Chorus", "Romeo", "Juliet", "Mercutio",
+               "Tybalt", "Nurse", "Friar Laurence", "Benvolio"];
+
+  /* What each of them says when it is pressed and nobody else is ready. */
+  var ASIDE = {
+    "Chorus":         "Two households, both alike in dignity…",
+    "Romeo":          "He jests at scars that never felt a wound.",
+    "Juliet":         "My only love sprung from my only hate!",
+    "Mercutio":       "A plague o' both your houses!",
+    "Tybalt":         "Peace? I hate the word.",
+    "Nurse":          "My mistress is the sweetest lady.",
+    "Friar Laurence": "Wisely and slow; they stumble that run fast.",
+    "Benvolio":       "Part, fools! Put up your swords."
+  };
+
+  /* Seven rows across, eleven down, and every one of them drawn out of the
+     three colours of the work that cast it:
+       a  the costume       b  its trim        c  an accent
+       s  the face          k  ink                .  nothing  */
+  var PLAYER_ART = {
+    "Chorus": [
+      "..bbb..", "..bbb..", "..sss..", "..sss..", ".aaaaa.", ".aaaaa.",
+      ".aaaaa.", ".aaaaa.", ".aaaaa.", ".aaaaa.", ".b...b."
+    ],
+    "Romeo": [
+      "..bbb..", "..kkk..", "..sss..", "..sss..", "caaaaa.", "caaaaa.",
+      "caaaaa.", "caaa...", "..a.a..", "..a.a..", ".b...b."
+    ],
+    "Juliet": [
+      "..kkk..", ".kkkkk.", ".ksssk.", ".ksssk.", "..aaa..", ".aaaaa.",
+      ".aaaaa.", "aaaaaaa", "aaaaaaa", "bbbbbbb", "..c.c.."
+    ],
+    "Mercutio": [
+      "....c..", "..bbb..", "..sss..", "..sss..", ".acaca.", ".aaaaa.",
+      ".aaaaa.", "..aaa..", "..a.a..", "..a.a..", ".b...b."
+    ],
+    "Tybalt": [
+      "..kkk..", "..kkk..", "..sss..", "..sss..", ".aaaaab", ".aaaaab",
+      ".aaaaab", "..aaa..", "..a.a..", "..a.a..", ".b...b."
+    ],
+    "Nurse": [
+      ".bbbbb.", ".bbbbb.", "..sss..", "..sss..", ".aaaaa.", ".abbba.",
+      ".abbba.", "aabbbaa", "aabbbaa", "aaaaaaa", "..c.c.."
+    ],
+    "Friar Laurence": [
+      "..aaa..", ".aaaaa.", ".asssa.", ".asssa.", ".aaaaa.", ".aaaaa.",
+      "bbbbbbb", ".aaaaa.", ".aaaaa.", ".aaaaa.", ".aaaaa."
+    ],
+    "Benvolio": [
+      "..kkk..", "..kkk..", "..sss..", "..sss..", ".baaaa.", ".abaaa.",
+      ".aabaa.", "..aab..", "..a.a..", "..a.a..", ".b...b."
+    ]
+  };
+
+  function drawPlayer(born) {
+    var c = ramp(born.token);
+    var skin = lift(c[0], 0.3);
+    var tone = {
+      a: c[0], b: bandOf(c, 1), c: bandOf(c, 2), s: skin, k: lift(c[0], -0.55)
+    };
+    var art = PLAYER_ART[born.role] || PLAYER_ART.Chorus;
+    return { cols: 7, rows: 11, cells: stencil(art, function (x, y, ch) {
+      return tone[ch] || c[0];
+    }) };
+  }
+
+  /* Casting is toward a scene, not at random. Whoever is missing from
+     whichever scene is nearest to being ready gets cast next, so a troupe
+     assembles into something that can actually be played instead of
+     collecting eight people who never share a stage. The work still chooses
+     between the parts that would do — that is what the seed is for — and a
+     part already standing is never cast twice while an empty one is left. */
+  function roleFor(tok) {
+    var rnd = seedFrom(tok.s, 23);
+    var taken = {};
+    spawns.forEach(function (born) { if (born.role) { taken[born.role] = true; } });
+
+    var wanted = null;
+    var nearest = -1;
+    SCENES.forEach(function (def) {
+      var missing = def.cast.filter(function (role) { return !taken[role]; });
+      if (!missing.length) { return; }
+      var have = def.cast.length - missing.length;
+      if (have > nearest) { nearest = have; wanted = missing; }
+    });
+    if (wanted) { return wanted[Math.floor(rnd() * wanted.length) % wanted.length]; }
+
+    var at = Math.floor(rnd() * ROLES.length);
+    for (var i = 0; i < ROLES.length; i += 1) {
+      var role = ROLES[(at + i) % ROLES.length];
+      if (!taken[role]) { return role; }
+    }
+    return ROLES[at];
+  }
+
+  /* ---- the scenes ---------------------------------------------------------
+
+     Marks are given as an offset in latitude and longitude from the middle of
+     the stage, so they hold their places while the world turns and they read
+     as standing on the sphere rather than on the screen. Juliet's mark in the
+     balcony is simply higher up the world than Romeo's. */
+
+  var SCENES = [
+    { name: "Prologue",
+      cast: ["Chorus"],
+      marks: [[0, 0]],
+      beats: [
+        [0, "Two households, both alike in dignity,"],
+        [0, "In fair Verona, where we lay our scene,"],
+        [0, "A pair of star-cross'd lovers take their life."]
+      ] },
+
+    { name: "The meeting",
+      cast: ["Romeo", "Juliet"],
+      marks: [[0, -0.085], [0, 0.085]],
+      beats: [
+        [0, "If I profane with my unworthiest hand"],
+        [0, "This holy shrine, the gentle sin is this:"],
+        [1, "Good pilgrim, you do wrong your hand too much."],
+        [0, "Then move not while my prayer's effect I take."]
+      ] },
+
+    { name: "The balcony",
+      cast: ["Romeo", "Juliet"],
+      marks: [[-0.015, -0.1], [0.075, 0.07]],
+      beats: [
+        [0, "But soft! What light through yonder window breaks?"],
+        [0, "It is the east, and Juliet is the sun."],
+        [1, "O Romeo, Romeo, wherefore art thou Romeo?"],
+        [1, "Deny thy father and refuse thy name."],
+        [0, "I take thee at thy word."]
+      ] },
+
+    { name: "The quarrel",
+      cast: ["Benvolio", "Tybalt", "Mercutio"],
+      marks: [[0, 0], [0, 0.115], [0, -0.115]],
+      beats: [
+        [0, "Part, fools! Put up your swords."],
+        [1, "What, drawn, and talk of peace?"],
+        [2, "A plague o' both your houses! I am sped."]
+      ] },
+
+    { name: "The vial",
+      cast: ["Friar Laurence", "Juliet"],
+      marks: [[0, -0.085], [0, 0.085]],
+      beats: [
+        [0, "Take thou this vial, being then in bed,"],
+        [0, "And this distilling liquor drink thou off."],
+        [1, "Give me, give me! O, tell not me of fear!"]
+      ] },
+
+    { name: "The nurse",
+      cast: ["Nurse", "Juliet"],
+      marks: [[0, -0.085], [0, 0.085]],
+      beats: [
+        [1, "Now, good sweet Nurse — why look'st thou sad?"],
+        [0, "I am aweary. Give me leave awhile."],
+        [1, "How art thou out of breath, when thou hast breath?"]
+      ] },
+
+    { name: "The tomb",
+      cast: ["Romeo", "Juliet"],
+      marks: [[0, -0.07], [0, 0.07]],
+      beats: [
+        [0, "Here's to my love. Thus with a kiss I die."],
+        [1, "O happy dagger! This is thy sheath."]
+      ] }
+  ];
+
+  var playing = null;    // { def, cast, at, until, lat, lon }
+  var sceneAt = 0;       // which scene to try first, so they take turns
+  var curtain = 0;       // when the last scene came down
+  var REST = Math.round(2600 * PHI * 2);   // how long the stage stays empty
+
+  /* The middle of the near face, a golden third up the band of latitudes
+     anyone can see, which is where there is room to stand. */
+  function boards() {
+    return { lat: LAT_LOW + (LAT_TOP - LAT_LOW) * INV2, lon: wrap(spin) };
+  }
+
+  function players() {
+    return spawns.filter(function (born) { return born.kind === "player"; });
+  }
+
+  /* Everyone a scene needs, or nothing. */
+  function castFor(def) {
+    var free = players().filter(function (born) { return !born.acting; });
+    var out = [];
+    for (var i = 0; i < def.cast.length; i += 1) {
+      var want = def.cast[i];
+      var found = null;
+      for (var j = 0; j < free.length; j += 1) {
+        if (free[j].role === want && out.indexOf(free[j]) < 0) { found = free[j]; break; }
+      }
+      if (!found) { return null; }
+      out.push(found);
+    }
+    return out;
+  }
+
+  function dwell(line) {
+    return Math.max(1800, Math.min(4200, 1200 + line.length * 46));
+  }
+
+  function beginScene(def, cast, now) {
+    var at = boards();
+    playing = { def: def, cast: cast, at: -1, until: now, lat: at.lat, lon: at.lon };
+    cast.forEach(function (born, i) {
+      born.acting = true;
+      born.mark = { lat: at.lat + def.marks[i][0], lon: wrap(at.lon + def.marks[i][1]) };
+      born.faces = def.marks[i][1] > 0 ? -1 : 1;
+      born.el.dataset.acting = "true";
+    });
+  }
+
+  function endScene() {
+    if (!playing) { return; }
+    playing.cast.forEach(function (born) {
+      born.acting = false;
+      born.mark = null;
+      born.next = 0;                    // straight back to wandering
+      delete born.el.dataset.acting;
+      delete born.el.dataset.speaking;
+    });
+    playing = null;
+    say.hidden = true;
+  }
+
+  function stepScene(now) {
+    if (!playing) {
+      if (still || now - curtain < REST) { return; }
+      for (var i = 0; i < SCENES.length; i += 1) {
+        var def = SCENES[(sceneAt + i) % SCENES.length];
+        var cast = castFor(def);
+        if (cast) {
+          sceneAt = (sceneAt + i + 1) % SCENES.length;
+          beginScene(def, cast, now);
+          break;
+        }
+      }
+      return;
+    }
+
+    if (now < playing.until) { return; }
+
+    playing.at += 1;
+    if (playing.at >= playing.def.beats.length) {
+      curtain = now;
+      endScene();
+      return;
+    }
+
+    var line = playing.def.beats[playing.at];
+    var who = playing.cast[line[0]];
+    playing.cast.forEach(function (born) { delete born.el.dataset.speaking; });
+    who.el.dataset.speaking = "true";
+    sayWho.textContent = who.role;
+    sayLine.textContent = line[1];
+    say.hidden = false;
+    playing.until = now + dwell(line[1]);
+  }
+
+  /* The line stands over whoever is saying it. */
+  function placeSay() {
+    if (!playing || say.hidden) { return; }
+    var line = playing.def.beats[playing.at];
+    if (!line) { return; }
+    var who = playing.cast[line[0]];
+    var box = who.el.getBoundingClientRect();
+    if (!box.width) { return; }
+    var w = say.offsetWidth || 180;
+    var x = Math.max(8, Math.min(box.left + box.width / 2 - w / 2, W - w - 8));
+    var y = Math.max(8, box.top - (say.offsetHeight || 44) - 10);
+    say.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+
+  /* Pressing a player: if the cast for one of its scenes is standing, that
+     scene goes up. Otherwise it says its own line and the rest ignore it. */
+  function cue(born, now) {
+    if (playing) { return; }
+    for (var i = 0; i < SCENES.length; i += 1) {
+      var def = SCENES[i];
+      if (def.cast.indexOf(born.role) < 0) { continue; }
+      var cast = castFor(def);
+      if (cast) { beginScene(def, cast, now); return; }
+    }
+    // Alone, then. An aside is still a performance.
+    var at = boards();
+    playing = {
+      def: { name: "An aside", cast: [born.role], marks: [[0, 0]],
+             beats: [[0, ASIDE[born.role] || "…"]] },
+      cast: [born], at: -1, until: now, lat: at.lat, lon: at.lon
+    };
+    born.acting = true;
+    born.mark = { lat: born.lat, lon: born.lon };    // says it where it stands
+    born.faces = 1;
+    born.el.dataset.acting = "true";
   }
 
   /* ---- following a colour back ------------------------------------------- */
