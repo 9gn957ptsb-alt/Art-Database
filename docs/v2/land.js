@@ -76,7 +76,22 @@
   // Not right up to the pole: there every longitude is the same place, so
   // words sent there cannot be separated sideways at all.
   var LAT_TOP = 76 * RAD;
+  // The floor of the band is worked out from the geometry in geometry(), not
+  // fixed: it is the lowest latitude still above the bottom of the screen.
   var LAT_LOW = 34 * RAD;
+
+  var PHI = (1 + Math.sqrt(5)) / 2;   // 1.618…
+
+  // The land on the sphere, after the pixelled reference the artist gave:
+  // hot pink, lime, orange, cream, cornflower and lavender.
+  var LANDS = [
+    "236, 78, 152",
+    "176, 214, 84",
+    "247, 160, 74",
+    "248, 240, 214",
+    "108, 170, 230",
+    "150, 122, 216"
+  ];
 
   var GRAZE_MIN = 2800;      // how long the creature stays with a word
   var GRAZE_MAX = 5600;
@@ -87,6 +102,11 @@
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
+
+  var motes = [];       // everything the creature has thrown off, still in the air
+  var MOTES = 150;      // as much as the air will hold at once
+  var beat = 0;         // when the last frame was, so motes age in seconds
+  var erupted = 0;      // when the ground last went up on its own
 
   var parts = [];       // the creature's twenty parts, each holding a colour
   var stamp = 0;        // which throw painted a part, so the oldest go first
@@ -217,8 +237,8 @@
       return {
         lat: Math.asin(z / len),
         lon: Math.atan2(y / len, x / len),
-        size: 0.20 + 0.035 * own.length,
-        tone: i % 2 ? "111, 154, 60" : "195, 212, 82"
+        size: 0.11 + 0.016 * own.length,
+        tone: LANDS[i % LANDS.length]
       };
     });
 
@@ -228,8 +248,8 @@
       masses.push({
         lat: (24 + k * 3.5) * RAD,
         lon: (k * 2.4 + 0.7) % TAU,
-        size: 0.10 + (k % 3) * 0.035,
-        tone: k % 2 ? "195, 212, 82" : "111, 154, 60"
+        size: 0.055 + (k % 3) * 0.022,
+        tone: LANDS[(k + 3) % LANDS.length]
       });
     }
   }
@@ -340,14 +360,21 @@
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // The sphere rises out of the floor: it is wider than the room, its top
-    // sits about a third of the way down, and its middle is far below the
-    // bottom edge — so what shows is the crown, curving away on both sides.
-    // The higher it sits the more surface shows, which is what makes room for
-    // forty words at this size.
-    R = Math.max(W * 0.52, H * 0.42, 200);
+    // A wider sphere, set so its contour meets the left and right edges of
+    // the screen at the golden section — 1/φ of the way up, 0.618 — which is
+    // what gives the words their room: the visible surface goes up by about
+    // half again even though the band of latitudes on it is shallower.
+    R = Math.max(W * 0.90, H * 0.70, 240);
     cx = W / 2;
-    cy = H * 0.32 + R;
+    var flank = Math.sqrt(Math.max(1, R * R - cx * cx));
+    cy = H * (1 - 1 / PHI) + flank;
+
+    // Everything below this latitude is under the bottom of the screen. The
+    // projection makes it exact: a point is at height (cy - y) / R when
+    // sin(lat - tilt) equals it, so the lowest latitude worth placing a word
+    // on is the tilt plus that arcsine, with a little margin.
+    var sunk = Math.max(-1, Math.min(1, (cy - H) / R));
+    LAT_LOW = Math.min(LAT_TOP - 8 * RAD, TILT + Math.asin(sunk) + 2 * RAD);
 
     // Type scales with the world, so a phone gets a legible globe. Which
     // face and how big relative to the rest is the word's own business.
@@ -378,7 +405,11 @@
     // How many collages carry the object decides how big its word is. The
     // curve is flattened a little so the one-off things — the joker, the
     // pull tab — are still legible rather than specks.
-    var size = (R / 620) * (15 + Math.pow(ground.mass, 0.62) * 44) * fit;
+    // Measured against the screen, not against the sphere. Tied to R, widening
+    // the globe simply scaled the words up with it and bought no room at all —
+    // they went to 123px and the collisions trebled. Against the screen, a
+    // wider globe is exactly what it should be: more surface, same type.
+    var size = (Math.min(W, H) / 760) * (15 + Math.pow(ground.mass, 0.62) * 44) * fit;
     ground.el.style.fontFamily = ground.face;
     ground.el.style.fontWeight = String(ground.weight);
     ground.el.style.fontSize = Math.max(13, size).toFixed(2) + "px";
@@ -386,14 +417,160 @@
 
   function dressAll() { vocabulary.forEach(dress); }
 
+  /* ---- what it throws off -------------------------------------------------
+
+     The creature is the thing that changes, so it is never still: it kicks
+     the ground up as it walks, and every palette that goes on it comes back
+     out as a burst of that work's own colours. Both grow with how much it is
+     carrying — the fifth application throws far more than the first, and it
+     keeps climbing, so the longer anyone stays the more the world is in the
+     air. Past a few works the ground starts going up by itself.
+
+     Each mote drifts across the screen and bounces on its own height above
+     the surface, which is cheap and reads as dirt rather than as confetti
+     hanging in space. */
+
+  /* How far along it is. Grows without limit; nothing here ever finishes. */
+  function degree() { return stamp; }
+
+  /* Everything the creature is currently wearing, which is what it throws.
+     Worked out when it changes, not when it is asked: it was being rebuilt
+     out of the DOM on every footfall, which is most frames, and got dearer
+     with every part that took a colour. */
+  var worn = ["#ec4e98", "#b0d654", "#f8f0d6"];
+
+  function repalette() {
+    var out = [];
+    parts.forEach(function (part) {
+      if (part.token && part.el.style.fill) { out.push(part.el.style.fill); }
+    });
+    if (out.length) { worn = out; }
+  }
+
+  function palette() { return worn; }
+
+  function kick(x, y, colours, count, force, spread) {
+    if (still) { return; }
+    for (var i = 0; i < count; i += 1) {
+      var away = (Math.random() - 0.5) * spread;
+      motes.push({
+        x: x,
+        y: y,
+        vx: Math.sin(away) * force * (0.5 + Math.random()),
+        vy: (Math.random() - 0.7) * force * 0.5,
+        h: 0,
+        vh: force * (0.5 + Math.random() * 0.9),
+        size: 2 + Math.random() * 4,
+        tone: colours[Math.floor(Math.random() * colours.length)],
+        life: 1
+      });
+    }
+    if (motes.length > MOTES) { motes.splice(0, motes.length - MOTES); }
+  }
+
+  /* Motes age in seconds, not in frames. Counting frames looked the same
+     until the air got busy: a slower frame made every mote live longer in
+     real time, which left more of them in the air, which slowed the next
+     frame further. Four throws in, it had fallen from 34 frames a second
+     to two and was not coming back. */
+  function stir(now) {
+    var dt = Math.min(0.05, (now - beat) / 1000 || 0.016);
+    beat = now;
+    var pace = dt * 60;      // how many sixtieths of a second this frame took
+
+    for (var i = motes.length - 1; i >= 0; i -= 1) {
+      var m = motes[i];
+
+      m.x += m.vx * pace;
+      m.y += m.vy * pace;
+      m.vx *= Math.pow(0.992, pace);
+      m.vy *= Math.pow(0.992, pace);
+
+      m.vh -= 0.52 * pace;    // falls back toward the surface it came off
+      m.h += m.vh * pace;
+      if (m.h <= 0) {         // and skips along it
+        m.h = 0;
+        m.vh *= -0.46;
+        m.vx *= 0.72;
+        m.vy *= 0.72;
+        m.life -= 0.12;
+        if (Math.abs(m.vh) < 0.6) { m.life -= 0.3; }
+      }
+
+      m.life -= 0.3 * dt;
+      if (m.life <= 0 || m.y - m.h > H + 120 || m.x < -120 || m.x > W + 120) {
+        motes.splice(i, 1);
+      }
+    }
+  }
+
+  /* Drawn in runs of one colour and one opacity. Setting fillStyle from a
+     colour string and globalAlpha per mote meant a couple of thousand state
+     changes a frame, which was most of the cost of having any air at all. */
+  function drawMotes() {
+    if (!motes.length) { return; }
+
+    var runs = {};
+    motes.forEach(function (m) {
+      var step = Math.max(1, Math.min(4, Math.ceil(m.life * 4)));
+      var key = m.tone + "|" + step;
+      (runs[key] || (runs[key] = [])).push(m);
+    });
+
+    Object.keys(runs).forEach(function (key) {
+      var cut = key.lastIndexOf("|");
+      ctx.fillStyle = key.slice(0, cut);
+      ctx.globalAlpha = Number(key.slice(cut + 1)) / 4;
+      runs[key].forEach(function (m) {
+        ctx.fillRect(Math.round(m.x), Math.round(m.y - m.h), m.size, m.size);
+      });
+    });
+
+    ctx.globalAlpha = 1;
+  }
+
+  /* The ground going up on its own, once it is carrying enough to matter. */
+  function erupt(now) {
+    var d = degree();
+    if (still || d < 3 || now - erupted < Math.max(1400, 9000 - d * 700)) { return; }
+    erupted = now;
+
+    var ground = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+    if (!ground) { return; }
+    var at = project(ground.lat, ground.lon);
+    if (at.z <= 0.2) { return; }
+
+    kick(at.x, at.y, palette(), Math.min(40, 10 + d * 3), 5 + d * 0.4, 1.1);
+  }
+
   /* ---- painting the world ------------------------------------------------ */
 
   function paint(now) {
     ctx.clearRect(0, 0, W, H);
+    erupt(now);
 
     // The room is nothing but the falling-off of the off-white. Its inner
     // radius is R, so the gradient starts exactly on the sphere's contour.
     ctx.fillStyle = OFF_BLACK;
+    ctx.fillRect(0, 0, W, H);
+
+    // The sky above the globe: a sunset and a sunrise in the same stretch,
+    // violet at the top through rose and orange to a warm line just above the
+    // contour. Kept low so it reads as weather on a dark sky rather than a
+    // poster — the words have to stay legible against it.
+    // It runs the full height, not just the strip above the globe: stopping it
+    // at the contour left a hard horizontal seam and a band of flat grey
+    // between the two. The globe is painted over it, so the sky simply
+    // carries on behind.
+    var sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0.00, "rgba(70, 48, 118, 0.52)");
+    sky.addColorStop(0.16, "rgba(132, 62, 136, 0.44)");
+    sky.addColorStop(0.30, "rgba(206, 80, 126, 0.38)");
+    sky.addColorStop(0.42, "rgba(236, 132, 84, 0.34)");
+    sky.addColorStop(0.54, "rgba(248, 198, 132, 0.28)");
+    sky.addColorStop(0.72, "rgba(180, 132, 150, 0.20)");
+    sky.addColorStop(1.00, "rgba(96, 74, 132, 0.16)");
+    ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
     // Brightest on the contour, falling away both outward into the room and
@@ -419,10 +596,10 @@
 
     var base = ctx.createRadialGradient(
       lit.x, lit.y, R * 0.04, cx, cy, R * 1.2);
-    base.addColorStop(0, "#3f9fd0");
-    base.addColorStop(0.22, "#1d6ea8");
-    base.addColorStop(0.58, "#0d3f74");
-    base.addColorStop(1, "#04142c");
+    base.addColorStop(0, "#6fc3e8");
+    base.addColorStop(0.20, "#3f8fd4");
+    base.addColorStop(0.55, "#2b4f9e");
+    base.addColorStop(1, "#160f38");
     ctx.fillStyle = base;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
@@ -435,8 +612,8 @@
       var ry = mass.size * R * (0.62 + 0.38 * p.z);
 
       var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(rx, ry));
-      g.addColorStop(0, "rgba(" + mass.tone + ", " + (0.92 * fade).toFixed(3) + ")");
-      g.addColorStop(0.55, "rgba(" + mass.tone + ", " + (0.55 * fade).toFixed(3) + ")");
+      g.addColorStop(0, "rgba(" + mass.tone + ", " + (0.98 * fade).toFixed(3) + ")");
+      g.addColorStop(0.5, "rgba(" + mass.tone + ", " + (0.74 * fade).toFixed(3) + ")");
       g.addColorStop(1, "rgba(" + mass.tone + ", 0)");
 
       ctx.save();
@@ -453,9 +630,9 @@
     // The pale weather that drifts over it.
     var drift = ctx.createRadialGradient(
       lit.x, lit.y, R * 0.02, lit.x, lit.y, R * 0.5);
-    drift.addColorStop(0, "rgba(233, 240, 226, 0.34)");
-    drift.addColorStop(0.6, "rgba(233, 240, 226, 0.08)");
-    drift.addColorStop(1, "rgba(233, 240, 226, 0)");
+    drift.addColorStop(0, "rgba(248, 240, 214, 0.20)");
+    drift.addColorStop(0.6, "rgba(248, 222, 198, 0.05)");
+    drift.addColorStop(1, "rgba(248, 222, 198, 0)");
     ctx.fillStyle = drift;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
@@ -468,6 +645,9 @@
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
     ctx.restore();   // drops the clip and the globe's alpha together
+
+    stir(now);
+    drawMotes();
 
     // The thin bright edge where the sphere ends.
     ctx.save();
@@ -539,6 +719,7 @@
   }
 
   var last = { x: 0 };
+  var trod = { x: 0, y: 0, since: 0 };   // how far it has walked since it last kicked
 
   function frame(now) {
     // The world only turns when it is turned: by a drag, or by tabbing to a
@@ -561,6 +742,21 @@
     placeWords();
     var p = placeCreature();
     if (!graze.hidden) { positionGraze(p); }
+
+    // Nothing it does is weightless: walking turns the ground over behind it,
+    // and grazing keeps turning it over where it stands. Both get heavier the
+    // more it is carrying.
+    var gone = Math.sqrt((p.x - trod.x) * (p.x - trod.x) + (p.y - trod.y) * (p.y - trod.y));
+    var heft = 1 + Math.min(degree(), 16) * 0.55;
+    if (gone > 26) {
+      kick(p.x, p.y + creature.offsetHeight * 0.06, palette(),
+           Math.round(1 + heft), 1.6 + heft * 0.25, 1.5);
+      trod.x = p.x;
+      trod.y = p.y;
+    } else if (creature.dataset.grazing && now - trod.since > 620) {
+      trod.since = now;
+      kick(p.x, p.y, palette(), Math.round(heft), 1.1 + heft * 0.14, 2.4);
+    }
 
     requestAnimationFrame(frame);
   }
@@ -749,8 +945,17 @@
     stalest(PER_THROW).forEach(function (part, i) {
       wearPart(part, tok.c[i % tok.c.length], tok);
     });
+    repalette();
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 460);
+
+    // And it comes straight back out of the ground, in that work's colours
+    // and every colour already on it. Each application throws more than the
+    // last — the growth is geometric, so the fifth is a spray and the
+    // fifteenth takes the screen.
+    var at = project(beast.lat, beast.lon);
+    var many = Math.min(80, Math.round(12 * Math.pow(1.3, Math.min(stamp, 15))));
+    kick(at.x, at.y, tok.c.concat(palette()), many, 6 + Math.min(stamp, 14) * 0.8, 2.2);
   }
 
   /* ---- following a colour back ------------------------------------------- */
