@@ -613,6 +613,7 @@
 
     stir(now);
     drawMotes();
+    drawRing(now);
 
     // No line where the sphere ends. It used to be drawn in, and a drawn edge
     // is the one thing that stops a horizon being a horizon: the sphere simply
@@ -1257,6 +1258,7 @@
     hatchling: "press to call it along",
     coin: "press to collect it",
     player: "press to cue a scene",
+    set: "press to strike the scene",
     egg: "press to crack it open",
     gem: "press to turn its colour",
     tube: "press it, then another, to pour",
@@ -1421,8 +1423,12 @@
   var DRAW = {
     hatchling: drawHatchling, coin: drawCoin, egg: drawEgg,
     gem: drawGem, tube: drawTube, tower: drawTower,
-    player: function (born) { return drawPlayer(born); }
+    player: function (born) { return drawPlayer(born); },
+    set: function (born) { return drawSet(born); }
   };
+
+  /* Scenery stands over a figure, and a tower over a gem. */
+  var BIG = { set: 1.7, tower: 1.15 };
 
   /* A work's three colours, held apart so there is light in them.
 
@@ -1492,9 +1498,11 @@
 
   function label(born) {
     var tok = born.token;
-    return "A " + (born.role || born.kind) + " grown off the creature, from " + tok.t +
-           (tok.a ? " by " + tok.a : "") + ". " + VERB[born.kind] +
-           "; hold it, or press O, to open the work on Artsy.";
+    var what = born.kind === "set"
+      ? "A " + born.piece + ", built for the scene"
+      : "A " + (born.role || born.kind) + " grown off the creature";
+    return what + ", from " + tok.t + (tok.a ? " by " + tok.a : "") + ". " +
+           VERB[born.kind] + "; hold it, or press O, to open the work on Artsy.";
   }
 
   function redraw(born) {
@@ -1503,7 +1511,7 @@
     if (born.kind === "player" && !born.role) { born.role = roleFor(born.token); }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
-    var u = unit();
+    var u = unit() * (BIG[born.kind] || 1);
     born.el.style.width = (u * (made.cols + 1) / 7).toFixed(1) + "px";
     born.el.style.height = (u * (made.rows + 1) / 7).toFixed(1) + "px";
     born.el.dataset.kind = born.kind;
@@ -1689,6 +1697,13 @@
       return;
     }
 
+    if (born.kind === "set") {
+      curtain = performance.now();
+      endScene();
+      strike();
+      return;
+    }
+
     if (born.kind === "player") {
       cue(born, performance.now());
       return;
@@ -1718,7 +1733,11 @@
     }
     // A player keeps its part and is dressed again in the new work. The
     // character survives the stroke; that is the whole idea of it.
-    if (born.kind === "player") { redraw(born); burstAt(born, tok.c); return; }
+    if (born.kind === "player" || born.kind === "set") {
+      redraw(born);
+      burstAt(born, ramp(tok));
+      return;
+    }
     if (born.kind === "gem") { born.tone = ramp(tok)[0]; }
     if (born.kind === "egg") { born.crack += 1; }
     if (born.kind === "egg" && born.crack >= 3) { becomeNext(born); return; }
@@ -1735,6 +1754,7 @@
     var creep = dt * 1.6;
 
     stepScene(now);
+    stepSets(now);
 
     // Anyone on their mark walks to it and stays there until the curtain.
     spawns.forEach(function (born) {
@@ -1758,7 +1778,8 @@
     if (still) { return; }
 
     spawns.forEach(function (born) {
-      if (born.following || born.acting || born.kind === "tower") { return; }
+      if (born.following || born.acting ||
+          born.kind === "tower" || born.kind === "set") { return; }
       // Whatever is under the pointer holds still. They are small, they
       // wander, and a target that drifts out from under a thumb halfway
       // through a press is not a target.
@@ -1776,6 +1797,22 @@
     });
 
     if (now - mingled > 700) { mingled = now; mingle(); }
+    ferment(now);
+  }
+
+  /* The world keeps making things on its own once it has any colour in it at
+     all. Nothing here waits to be asked — it only waits to be squashed. */
+  var fermented = 0;
+  var FERMENT = Math.round(2600 * PHI * 2);     // a little under nine seconds
+
+  function ferment(now) {
+    if (still || !supply || !stamp) { return; }
+    if (now - fermented < FERMENT) { return; }
+    fermented = now;
+    if (spawns.length >= MAX_COMPANY) { return; }
+    var keys = supply.pool;
+    var tok = supply.tokens[keys[Math.floor(Math.random() * keys.length)]];
+    if (tok) { sprout(tok); }
   }
 
   /* Two of a kind that have wandered into each other become one bigger one.
@@ -1784,7 +1821,8 @@
   function mingle() {
     for (var i = 0; i < spawns.length; i += 1) {
       var a = spawns[i];
-      if (a.kind === "tube" || a.kind === "tower" || a.kind === "player") { continue; }
+      if (a.kind === "tube" || a.kind === "tower" ||
+          a.kind === "player" || a.kind === "set") { continue; }
       for (var j = i + 1; j < spawns.length; j += 1) {
         var b = spawns[j];
         if (b.kind !== a.kind || b.tier !== a.tier) { continue; }
@@ -1828,7 +1866,8 @@
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
         // A tower stands on its base; everything else is carried a little
         // above the ground it is standing on.
-        " translate(-50%," + (born.kind === "tower" ? "-100%" : "-92%") +
+        " translate(-50%," +
+        (born.kind === "tower" || born.kind === "set" ? "-100%" : "-92%") +
         ") scale(" + scale.toFixed(3) + ")" + life;
     });
     placeSay();
@@ -1907,6 +1946,104 @@
       event.preventDefault();
       event.stopPropagation();
       playWith(born);
+    });
+  }
+
+  /* ---- the sets ------------------------------------------------------------
+
+     A scene needs somewhere to happen. When one goes up its set is raised
+     first, a row of pixels at a time from the ground up, built out of the
+     colours of the works that cast the players standing in it — so the
+     balcony Juliet stands over is made of the same artwork she is. When the
+     scene ends the set is struck and goes back into the air.
+
+     A set piece is not something a palette turns up; it only exists while
+     its scene does. It can be fed, like anything else, and pressing one
+     strikes the whole scene it belongs to, which is the quickest way to
+     clear a stage you have finished with. */
+
+  var SET_ART = {
+    banner: [
+      "bbb", "aca", "aaa", "aca", "aaa", "aca", "aaa", ".a."
+    ],
+    balcony: [
+      "bbbbbbbbb",
+      "b.b.b.b.b",
+      "b.b.b.b.b",
+      "bbbbbbbbb",
+      "aaaaaaaaa",
+      "acaacaaca"
+    ],
+    wall: [
+      "aaaaaaa", "acaacaa", "aaaaaaa", "aacaaca", "aaaaaaa"
+    ],
+    well: [
+      "..b.b..", "..bbb..", "..b.b..", "aaaaaaa", "acaacaa", "aaaaaaa"
+    ],
+    table: [
+      "....c....", "...bcb...", "bbbbbbbbb", "a.......a", "a.......a"
+    ],
+    tomb: [
+      ".c.....c.", ".b.....b.", "bbbbbbbbb", "aaaaaaaaa", "acaaaaaca"
+    ],
+    torch: [
+      ".c.", "ccc", ".c.", ".b.", ".a.", ".a.", ".a."
+    ],
+    bench: [
+      "bbbbbbb", "a.....a", "a.....a", "aa...aa"
+    ]
+  };
+
+  function drawSet(born) {
+    var art = SET_ART[born.piece] || SET_ART.wall;
+    var c = ramp(born.token);
+    var tone = { a: c[1], b: c[0], c: c[2] };
+
+    // Built from the ground up: only the rows that have gone up so far.
+    var from = Math.max(0, art.length - Math.max(1, born.risen));
+    var shown = art.slice(from);
+    return { cols: art[0].length, rows: shown.length,
+             cells: stencil(shown, function (x, y, ch) { return tone[ch] || c[1]; }) };
+  }
+
+  function raise(def, cast, at) {
+    (def.set || []).forEach(function (item, i) {
+      var tok = cast[i % cast.length].token;
+      var el = document.createElement("div");
+      el.className = "spawn";
+      el.tabIndex = 0;
+      el.setAttribute("role", "button");
+
+      var born = {
+        el: el, token: tok, kind: "set", piece: item[0],
+        tier: 1, risen: 1, rose: 0, phase: 0, next: 0,
+        lat: at.lat + item[1], lon: wrap(at.lon + item[2])
+      };
+      redraw(born);
+      wireCompany(born);
+      spawns.push(born);
+      land.insertBefore(el, creature);
+    });
+  }
+
+  function strike() {
+    spawns.slice().forEach(function (born) {
+      if (born.kind !== "set") { return; }
+      burstAt(born, ramp(born.token));
+      banish(born);
+    });
+  }
+
+  /* A row every so often, so the set is seen to go up. */
+  function stepSets(now) {
+    spawns.forEach(function (born) {
+      if (born.kind !== "set") { return; }
+      var art = SET_ART[born.piece] || SET_ART.wall;
+      if (born.risen >= art.length) { return; }
+      if (now - born.rose < 130) { return; }
+      born.rose = now;
+      born.risen += 1;
+      redraw(born);
     });
   }
 
@@ -2044,6 +2181,7 @@
   var SCENES = [
     { name: "Prologue",
       cast: ["Chorus"],
+      set: [["banner", -0.005, -0.085], ["banner", -0.005, 0.085]],
       marks: [[0, 0]],
       beats: [
         [0, "Two households, both alike in dignity,"],
@@ -2053,6 +2191,8 @@
 
     { name: "The meeting",
       cast: ["Romeo", "Juliet"],
+      set: [["torch", 0.005, -0.15], ["torch", 0.005, 0.15],
+            ["bench", -0.035, 0]],
       marks: [[0, -0.085], [0, 0.085]],
       beats: [
         [0, "If I profane with my unworthiest hand"],
@@ -2063,6 +2203,7 @@
 
     { name: "The balcony",
       cast: ["Romeo", "Juliet"],
+      set: [["balcony", 0.05, 0.075], ["wall", -0.04, -0.1]],
       marks: [[-0.015, -0.1], [0.075, 0.07]],
       beats: [
         [0, "But soft! What light through yonder window breaks?"],
@@ -2074,6 +2215,7 @@
 
     { name: "The quarrel",
       cast: ["Benvolio", "Tybalt", "Mercutio"],
+      set: [["well", -0.035, 0]],
       marks: [[0, 0], [0, 0.115], [0, -0.115]],
       beats: [
         [0, "Part, fools! Put up your swords."],
@@ -2083,6 +2225,7 @@
 
     { name: "The vial",
       cast: ["Friar Laurence", "Juliet"],
+      set: [["table", -0.02, 0], ["torch", 0.01, -0.15]],
       marks: [[0, -0.085], [0, 0.085]],
       beats: [
         [0, "Take thou this vial, being then in bed,"],
@@ -2092,6 +2235,7 @@
 
     { name: "The nurse",
       cast: ["Nurse", "Juliet"],
+      set: [["bench", -0.035, 0], ["torch", 0.01, 0.15]],
       marks: [[0, -0.085], [0, 0.085]],
       beats: [
         [1, "Now, good sweet Nurse — why look'st thou sad?"],
@@ -2101,6 +2245,8 @@
 
     { name: "The tomb",
       cast: ["Romeo", "Juliet"],
+      set: [["tomb", -0.025, 0], ["torch", 0.005, -0.11],
+            ["torch", 0.005, 0.11]],
       marks: [[0, -0.07], [0, 0.07]],
       beats: [
         [0, "Here's to my love. Thus with a kiss I die."],
@@ -2146,6 +2292,7 @@
   function beginScene(def, cast, now) {
     var at = boards();
     playing = { def: def, cast: cast, at: -1, until: now, lat: at.lat, lon: at.lon };
+    raise(def, cast, at);
     cast.forEach(function (born, i) {
       born.acting = true;
       born.mark = { lat: at.lat + def.marks[i][0], lon: wrap(at.lon + def.marks[i][1]) };
@@ -2165,6 +2312,7 @@
     });
     playing = null;
     say.hidden = true;
+    strike();
   }
 
   function stepScene(now) {
@@ -2236,6 +2384,109 @@
     born.mark = { lat: born.lat, lon: born.lon };    // says it where it stands
     born.faces = 1;
     born.el.dataset.acting = "true";
+  }
+
+  /* ---- squashing ----------------------------------------------------------
+
+     The world builds up on its own now, so there has to be a way to put it
+     back down that is quicker than the building. Press and hold anywhere on
+     the ground and a ring opens under your thumb, growing while you hold it.
+     Let go and everything inside it is squashed: the pixels burst and go
+     into the air, and if there were two or more of them they come back down
+     as one egg, which is something else again. A scene caught in the ring
+     comes down with it, set and all.
+
+     Pressing rather than holding still turns the world, and a press that
+     moves is a turn, so nothing is lost by trying. The animal is never
+     squashed; it is the one thing on here that is not excess. */
+
+  var squashing = null;        // { id, x, y, since, ring }
+  var SQUASH_WAIT = 260;       // holding this long opens the ring
+  var SQUASH_MIN = 40;
+  var SQUASH_MAX = 300;
+
+  function squashRing(now) {
+    if (!squashing) { return 0; }
+    var held = now - squashing.since;
+    if (held < SQUASH_WAIT) { return 0; }
+    return Math.min(SQUASH_MAX, SQUASH_MIN + (held - SQUASH_WAIT) * 0.42);
+  }
+
+  function drawRing(now) {
+    var r = squashRing(now);
+    if (!r) { return; }
+    ctx.save();
+    ctx.strokeStyle = "rgba(27, 29, 36, 0.38)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.arc(squashing.x, squashing.y, r, 0, TAU);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.beginPath();
+    ctx.arc(squashing.x, squashing.y, r - 2, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function squash(x, y, r) {
+    var caught = [];
+    spawns.forEach(function (born) {
+      if (born.el.style.visibility === "hidden") { return; }
+      var p = project(born.lat, born.lon);
+      if (Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) <= r) {
+        caught.push(born);
+      }
+    });
+    if (!caught.length) { return; }
+
+    // A scene with any of it caught comes down whole, rather than losing one
+    // player and carrying on with a hole where they stood.
+    if (playing && caught.some(function (born) {
+      return born.kind === "set" || playing.cast.indexOf(born) >= 0;
+    })) {
+      curtain = performance.now();
+      endScene();
+      strike();
+      caught = caught.filter(function (born) { return spawns.indexOf(born) >= 0; });
+    }
+
+    var tones = [];
+    var keep = null;
+    caught.forEach(function (born) {
+      tones = tones.concat(ramp(born.token));
+      if (!keep) { keep = born.token; }
+      burstAt(born, ramp(born.token));
+      banish(born);
+    });
+
+    kick(x, y, tones.length ? tones : palette(), 30, 7, 2.6);
+
+    // Two or more of anything, squashed together, come back as one egg —
+    // which is to say as something else, once somebody opens it.
+    if (caught.length > 1 && keep) {
+      var born = sprout(keep);
+      if (born) {
+        born.kind = "egg";
+        born.crack = 0;
+        var at = unproject(x, y);
+        if (at) { born.lat = at.lat; born.lon = at.lon; }
+        redraw(born);
+      }
+    }
+  }
+
+  /* Where on the sphere a point on the screen is, if it is on it at all. */
+  function unproject(x, y) {
+    var dx = (x - cx) / R;
+    var dy = (cy - y) / R;
+    if (dx * dx + dy * dy > 1) { return null; }
+    var z2 = Math.sqrt(1 - dx * dx - dy * dy);
+    var yy = dy * COS_T + z2 * SIN_T;          // undo the lean
+    var zz = -dy * SIN_T + z2 * COS_T;
+    var lat = Math.asin(Math.max(-1, Math.min(1, yy)));
+    return { lat: lat, lon: wrap(Math.atan2(dx, zz) + spin) };
   }
 
   /* ---- following a colour back ------------------------------------------- */
@@ -2459,6 +2710,8 @@
     // token, all of which stop it. So: put down whatever was up.
     if (offering || carrying) { dismiss(); }
     turning = { id: event.pointerId, x: event.clientX, spin: spin, moved: 0 };
+    squashing = { id: event.pointerId, x: event.clientX, y: event.clientY,
+                  since: performance.now() };
     stage.dataset.turning = "true";
     try { stage.setPointerCapture(event.pointerId); } catch (e) {}
   });
@@ -2467,6 +2720,8 @@
     if (!turning || event.pointerId !== turning.id) { return; }
     var dx = event.clientX - turning.x;
     turning.moved = Math.max(turning.moved, Math.abs(dx));
+    // A press that moves is a turn, not a squash.
+    if (squashing && turning.moved > 8) { squashing = null; }
     // A drag across the whole sphere turns it about half way round.
     wanted = turning.spin - (dx / Math.max(R, 1)) * Math.PI;
     spin = wanted;
@@ -2477,6 +2732,13 @@
       if (!turning || event.pointerId !== turning.id) { return; }
       turning = null;
       delete stage.dataset.turning;
+
+      if (squashing && squashing.id === event.pointerId) {
+        var reach = squashRing(performance.now());
+        var where = squashing;
+        squashing = null;
+        if (reach) { squash(where.x, where.y, reach); }
+      }
     });
   });
 
@@ -2538,7 +2800,8 @@
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") { return; }
     if (!seam.hidden) { seam.hidden = true; return; }
-    if (offering || carrying) { dismiss(); }
+    if (offering || carrying) { dismiss(); return; }
+    if (playing) { curtain = performance.now(); endScene(); strike(); }
   });
 
   /* ---- growing it -------------------------------------------------------- */
