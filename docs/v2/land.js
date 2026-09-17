@@ -36,6 +36,7 @@
   var trace = document.getElementById("trace");
   var traceTitle = document.getElementById("trace-title");
   var traceMeta = document.getElementById("trace-meta");
+  var traceHint = document.getElementById("trace-hint");
   var seam = document.getElementById("seam");
   var seamWord = document.getElementById("seam-word");
   var seamCount = document.getElementById("seam-count");
@@ -456,7 +457,11 @@
     if (out.length) { worn = out; }
   }
 
-  function palette() { return worn; }
+  /* Colours picked up off the world — every coin the company leaves that
+     someone collects — ride along with whatever the animal is wearing. */
+  var gathered = [];
+
+  function palette() { return gathered.length ? worn.concat(gathered) : worn; }
 
   function kick(x, y, colours, count, force, spread) {
     if (still) { return; }
@@ -552,11 +557,67 @@
     kick(at.x, at.y, palette(), Math.min(40, 10 + d * 3), 5 + d * 0.4, 1.1);
   }
 
-  /* ---- painting the world ------------------------------------------------ */
+  /* ---- painting the world ------------------------------------------------
+
+     The sphere is six full-area gradients and one more for every landmass,
+     and its diameter is wider than the window — a little over twenty million
+     pixels of gradient. It used to be laid down again on every single frame,
+     which is what set the ceiling on everything else the page wanted to do:
+     wide open, nothing on it, it could not hold sixty frames a second.
+
+     Nothing about it changes from frame to frame except where the light is,
+     and the light follows the creature, which walks slowly. So it is drawn
+     once onto a surface of its own and copied from there, and only drawn
+     again when the light has actually moved, the world has been turned, or
+     the window has changed shape. What is left per frame is one copy and a
+     few hundred specks of dirt. */
+
+  var sphere = document.createElement("canvas");
+  var sctx = sphere.getContext("2d");
+  var drawn = { x: -999, y: -999, w: 0, h: 0, r: 0, masses: -1 };
+
+  function sphereStale(lit) {
+    return Math.abs(lit.x - drawn.x) > 2 || Math.abs(lit.y - drawn.y) > 2 ||
+           drawn.w !== W || drawn.h !== H || drawn.r !== R ||
+           drawn.masses !== masses.length;
+  }
+
+  function drawSphere(lit) {
+    if (sphere.width !== canvas.width || sphere.height !== canvas.height) {
+      sphere.width = canvas.width;
+      sphere.height = canvas.height;
+    }
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.clearRect(0, 0, W, H);
+    paintSphere(sctx, lit);
+    drawn.x = lit.x;
+    drawn.y = lit.y;
+    drawn.w = W;
+    drawn.h = H;
+    drawn.r = R;
+    drawn.masses = masses.length;
+  }
 
   function paint(now) {
-    ctx.clearRect(0, 0, W, H);
     erupt(now);
+
+    // What the creature stands on is the brightest part of the sphere.
+    var lit = project(beast.lat, beast.lon);
+    if (sphereStale(lit)) { drawSphere(lit); }
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(sphere, 0, 0, W, H);
+
+    stir(now);
+    drawMotes();
+
+    // No line where the sphere ends. It used to be drawn in, and a drawn edge
+    // is the one thing that stops a horizon being a horizon: the sphere simply
+    // ceases now, a shade off the sky it sits in.
+  }
+
+  /* Everything that makes the sphere, onto whichever surface is handed in. */
+  function paintSphere(ctx, lit) {
 
     // The room is nothing but the falling-off of the off-white. Its inner
     // radius is R, so the gradient starts exactly on the sphere's contour.
@@ -576,9 +637,6 @@
     seatShadow.addColorStop(1, "rgba(58, 64, 88, 0)");
     ctx.fillStyle = seatShadow;
     ctx.fillRect(0, 0, W, H);
-
-    // What the creature stands on is the brightest part of the sphere.
-    var lit = project(beast.lat, beast.lon);
 
     ctx.save();
     ctx.beginPath();
@@ -638,14 +696,6 @@
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
     ctx.restore();   // drops the clip and the globe's alpha together
-
-    stir(now);
-    drawMotes();
-
-    // No line where the sphere ends. It used to be drawn in, and a drawn edge
-    // is the one thing that stops a horizon being a horizon: the sphere simply
-    // ceases now, a shade off the sky it sits in.
-
   }
 
   /* ---- the blind side -----------------------------------------------------
@@ -817,6 +867,7 @@
 
     paint(now);
     placeWords();
+    stepCompany(now);
     placeSpawns();
     var p = placeCreature();
     if (!graze.hidden) { positionGraze(p); }
@@ -851,6 +902,15 @@
 
     goal.lat = ground.lat;
     goal.lon = ground.lon;
+  }
+
+  /* Somewhere on the surface that is not a word: a tower it is being sent
+     to, most often. */
+  function standAt(lat, lon) {
+    vocabulary.forEach(function (g) { delete g.el.dataset.grazed; });
+    here = -1;
+    goal.lat = lat;
+    goal.lon = lon;
   }
 
   /* Which words are on the near face right now. */
@@ -1112,11 +1172,6 @@
     part.el.style.fill = hex;
     evolveShape(part, tok);
 
-    // Grown past a block three times over, it lets something go: a figure of
-    // its own, in that work's colours, which steps off and stands on the
-    // world from then on.
-    if (part.form >= 3 && part.form % 3 === 0) { shed(part, tok); }
-
     part.el.dataset.from = tok.s;
     part.el.setAttribute("tabindex", "0");
     part.el.setAttribute("role", "link");
@@ -1134,6 +1189,14 @@
       wearPart(part, tok.c[i % tok.c.length], tok);
     });
     repalette();
+
+    // Every single application leaves something else standing on the world,
+    // and every third leaves two, so the company builds faster than the
+    // animal does and there is always something new to press. What arrives
+    // is decided in sprout(); see "the company" below.
+    sprout(tok);
+    if (stamp % 3 === 0) { sprout(tok); }
+
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 440);   /* past the 419ms jolt */
 
@@ -1146,65 +1209,523 @@
     kick(at.x, at.y, tok.c.concat(palette()), many, 6 + Math.min(stamp, 14) * 0.8, 2.2);
   }
 
-  /* ---- what grows off it --------------------------------------------------
+  /* ---- the company ---------------------------------------------------------
 
-     A part that has evolved three times over stops being part of the animal.
-     It sheds a figure: a small pixel thing built out of that artwork's three
-     colours, mirrored down the middle so it reads as a creature rather than
-     as noise, and every one is different because the pattern comes from the
-     artwork's own id. It steps off onto the world, keeps its place there, and
-     leads back to the work it came from, the same as a colour on the animal
-     does. The animal is where things come from, not the only thing there is. */
+     The animal is where things come from, not the only thing there is. Every
+     palette that lands on it leaves something else standing on the world: a
+     small pixel thing built out of that artwork's three colours, never twice
+     the same, because the pattern comes from the work's own id.
 
-  function figure(tok) {
-    var n = 7;
-    var rnd = seedFrom(tok.s, 11);
-    var out = "";
-    for (var y = 0; y < n; y += 1) {
-      for (var x = 0; x < Math.ceil(n / 2); x += 1) {
-        if (rnd() > 0.52) { continue; }
-        var tone = tok.c[(x + y) % tok.c.length];
-        out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + tone + '"/>';
-        if (x !== n - 1 - x) {
-          out += '<rect x="' + (n - 1 - x) + '" y="' + y + '" width="1" height="1" fill="' + tone + '"/>';
-        }
-      }
-    }
-    return '<svg viewBox="0 0 ' + n + ' ' + n + '" aria-hidden="true" focusable="false">' +
-           out + "</svg>";
+     What kind of thing it is, the work decides — the same work always wants
+     to be the same creature — but the world has to have got far enough along
+     for that kind to exist at all, so early on a work that wants to be a
+     tower arrives as a hatchling and the rarer kinds turn up later.
+
+     None of them are ornaments; each one is something to do. What they do is
+     roughly what the games at the top of the charts are made of, because
+     those games are nearly all made of colour and this world is nothing but
+     colour — sorting it, matching it, stacking it, collecting it:
+
+       hatchling  press it and it falls in behind the animal, or leaves the
+                  line again. A herd builds up behind you.
+       coin       press it and it is collected: its colour joins whatever the
+                  animal throws off from then on.
+       egg        press it three times and it breaks open into something else.
+       gem        press it and it turns to its next colour. Three of one
+                  colour standing close together burst, and leave a tower.
+       tube       press one, then another, and the top band pours across.
+                  A tube of a single colour is solved, and hatches.
+       tower      press it and the animal walks over. Every palette fed to a
+                  tower is another floor, and every floor keeps its work.
+
+     They wander, and two of a kind that meet merge into one bigger one.
+     Merged past the third size a thing stops being what it was and becomes
+     the next kind along, so nothing in the company has a final form either —
+     the same as the animal. A palette can be dropped on any of them instead
+     of on the animal, which is how a thing is fed. */
+
+  var KINDS = ["hatchling", "coin", "egg", "gem", "tube", "tower"];
+
+  /* How far along the world has to be before a kind can appear at all. */
+  var UNLOCK = { hatchling: 0, coin: 0, egg: 1, gem: 2, tube: 3, tower: 5 };
+
+  var VERB = {
+    hatchling: "press to call it along",
+    coin: "press to collect it",
+    egg: "press to crack it open",
+    gem: "press to turn its colour",
+    tube: "press it, then another, to pour",
+    tower: "press to send the animal over"
+  };
+
+  var MAX_COMPANY = 40;      // as many as the world holds at once
+  var BANDS = 4;             // how much a tube takes
+  var TIERS = 3;             // sizes a thing goes through before it changes kind
+
+  var train = [];            // what is walking behind the animal
+  var pouring = null;        // the tube waiting for somewhere to pour
+  var mingled = 0;           // when two of a kind were last seen to meet
+  var strolled = 0;          // when the company last took a step
+
+  function unit() {
+    var read = parseFloat(getComputedStyle(document.body)
+      .getPropertyValue("--w-spawn"));
+    return read || 40;
   }
 
-  function shed(part, tok) {
-    if (spawns.length >= 40) { return; }        // the world holds so many
+  function bandOf(list, i) { return list[i % list.length]; }
+
+  /* Every one of them is drawn the same way: a list of cells on a small grid,
+     which is the whole of the aesthetic and costs nothing to rebuild. */
+  function pixels(cols, rows, cells) {
+    var out = "";
+    var shade = "";
+    cells.forEach(function (c) {
+      var w = c[3] || 1;
+      var h = c[4] || 1;
+      shade += '<rect x="' + (c[0] + 0.4) + '" y="' + (c[1] + 0.4) +
+               '" width="' + w + '" height="' + h + '"/>';
+      out += '<rect x="' + c[0] + '" y="' + c[1] +
+             '" width="' + w + '" height="' + h +
+             '" fill="' + c[2] + '"/>';
+    });
+    // The shadow is one flat group of offset cells under the figure. It reads
+    // the same as a drop-shadow at this size and does not cost a filter.
+    return '<svg viewBox="0 0 ' + (cols + 1) + " " + (rows + 1) +
+           '" aria-hidden="true" focusable="false">' +
+           '<g fill="rgba(24,26,40,0.28)">' + shade + "</g>" + out + "</svg>";
+  }
+
+  function stencil(rows, tone) {
+    var cells = [];
+    rows.forEach(function (row, y) {
+      for (var x = 0; x < row.length; x += 1) {
+        if (row.charAt(x) !== ".") { cells.push([x, y, tone(x, y, row.charAt(x))]); }
+      }
+    });
+    return cells;
+  }
+
+  /* ---- the bestiary ------------------------------------------------------- */
+
+  function drawHatchling(born) {
+    var c = born.token.c;
+    var n = 5 + Math.min(born.tier, TIERS) * 2;        // 7, 9, 11 across
+    var rnd = seedFrom(born.token.s, 11 + born.tier);
+    var half = Math.ceil(n / 2);
+    var cells = [];
+    for (var y = 0; y < n; y += 1) {
+      for (var x = 0; x < half; x += 1) {
+        var solid = y > n * 0.28 && y < n * 0.78;      // a body that holds together
+        if (!solid && rnd() > 0.46) { continue; }
+        var tone = bandOf(c, x + y + born.tier);
+        cells.push([x, y, tone]);
+        if (x !== n - 1 - x) { cells.push([n - 1 - x, y, tone]); }
+      }
+    }
+    var eye = Math.max(1, Math.round(n * 0.3));
+    cells.push([1, eye, INK], [n - 2, eye, INK]);
+    return { cols: n, rows: n, cells: cells };
+  }
+
+  function drawCoin(born) {
+    var c = born.token.c;
+    var n = 5;
+    var face = [
+      "..x..",
+      ".xox.",
+      "xoooX",
+      ".xox.",
+      "..x.."
+    ];
+    var cells = stencil(face, function (x, y, ch) {
+      return ch === "o" ? bandOf(c, 1) : ch === "X" ? bandOf(c, 2) : bandOf(c, 0);
+    });
+    return { cols: n, rows: n, cells: cells };
+  }
+
+  function drawEgg(born) {
+    var c = born.token.c;
+    var shell = [
+      "..x..",
+      ".xxx.",
+      "xxxxx",
+      "xxxxx",
+      "xxxxx",
+      "xxxxx",
+      ".xxx."
+    ];
+    var cells = stencil(shell, function (x, y) { return bandOf(c, x + y); });
+    // Each press takes a bite out of it, in a zigzag, so it reads as breaking.
+    var breaks = [[[1, 3], [3, 4]], [[2, 2], [0, 4]], [[3, 2], [1, 5], [2, 5]]];
+    for (var i = 0; i < Math.min(born.crack, breaks.length); i += 1) {
+      breaks[i].forEach(function (gap) {
+        cells = cells.filter(function (cell) {
+          return !(cell[0] === gap[0] && cell[1] === gap[1]);
+        });
+      });
+    }
+    return { cols: 5, rows: 7, cells: cells };
+  }
+
+  function drawGem(born) {
+    var tone = born.tone || born.token.c[0];
+    var face = [
+      "..x..",
+      ".xox.",
+      "xoooX",
+      ".xXx.",
+      "..x.."
+    ];
+    var cells = stencil(face, function (x, y, ch) {
+      return ch === "o" ? lift(tone, 0.28) : ch === "X" ? lift(tone, -0.22) : tone;
+    });
+    return { cols: 5, rows: 5, cells: cells };
+  }
+
+  function drawTube(born) {
+    var glass = "#7f8593";                         // dark enough to read as a rim
+    var inside = "#f2f3f6";
+    var rows = BANDS * 2 + 2;
+    var cells = [[1, 0, inside, 3, rows - 1]];     // what it is holding nothing in
+    for (var y = 0; y < rows; y += 1) {            // the two walls
+      cells.push([0, y, glass], [4, y, glass]);
+    }
+    cells.push([1, rows - 1, glass, 3, 1]);        // and the bottom
+    born.bands.forEach(function (tone, i) {        // filled from the bottom up
+      var y = rows - 2 - i * 2;
+      cells.push([1, y - 1, tone, 3, 2]);
+    });
+    return { cols: 5, rows: rows, cells: cells };
+  }
+
+  function drawTower(born) {
+    var floors = born.stack.length || 1;
+    var rows = floors * 2 + 2;
+    var cells = [];
+    born.stack.forEach(function (floor, i) {
+      var y = rows - 3 - i * 2;
+      cells.push([0, y, floor.tone, 7, 2]);
+      cells.push([2, y, lift(floor.tone, 0.45)], [4, y, lift(floor.tone, 0.45)]);
+    });
+    if (!born.stack.length) { cells.push([0, rows - 3, born.token.c[0], 7, 2]); }
+    cells.push([0, rows - 1, "#9ea3ad", 7, 1]);    // the ground it stands on
+    return { cols: 7, rows: rows, cells: cells };
+  }
+
+  var DRAW = {
+    hatchling: drawHatchling, coin: drawCoin, egg: drawEgg,
+    gem: drawGem, tube: drawTube, tower: drawTower
+  };
+
+  /* A colour taken up toward white or down toward ink, for a facet or a
+     lit window. */
+  function lift(hex, by) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) { return hex; }
+    var n = parseInt(m[1], 16);
+    var out = [16, 8, 0].map(function (shift) {
+      var v = (n >> shift) & 255;
+      v = by >= 0 ? v + (255 - v) * by : v * (1 + by);
+      return Math.max(0, Math.min(255, Math.round(v)));
+    });
+    return "#" + out.map(function (v) {
+      return (v < 16 ? "0" : "") + v.toString(16);
+    }).join("");
+  }
+
+  /* ---- putting one on the world ------------------------------------------- */
+
+  function kindFor(tok) {
+    var rnd = seedFrom(tok.s, 7);
+    var want = Math.floor(rnd() * KINDS.length);
+    while (want > 0 && UNLOCK[KINDS[want]] > stamp) { want -= 1; }
+    return KINDS[want];
+  }
+
+  function label(born) {
+    var tok = born.token;
+    return "A " + born.kind + " grown off the creature, from " + tok.t +
+           (tok.a ? " by " + tok.a : "") + ". " + VERB[born.kind] +
+           "; hold it, or press O, to open the work on Artsy.";
+  }
+
+  function redraw(born) {
+    var made = DRAW[born.kind](born);
+    born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
+    var u = unit();
+    born.el.style.width = (u * (made.cols + 1) / 7).toFixed(1) + "px";
+    born.el.style.height = (u * (made.rows + 1) / 7).toFixed(1) + "px";
+    born.el.dataset.kind = born.kind;
+    born.el.setAttribute("aria-label", label(born));
+  }
+
+  function sprout(tok) {
+    if (spawns.length >= MAX_COMPANY) { return null; }
 
     var el = document.createElement("div");
     el.className = "spawn";
     el.tabIndex = 0;
-    el.setAttribute("role", "link");
-    el.setAttribute("aria-label",
-      "A figure grown off the creature's " + part.name.replace("-", " ") +
-      ", from " + tok.t + (tok.a ? " by " + tok.a : "") + ". Opens on Artsy.");
-    el.innerHTML = figure(tok);
+    el.setAttribute("role", "button");
 
     var born = {
       el: el,
       token: tok,
-      lat: Math.max(LAT_LOW, Math.min(LAT_TOP, beast.lat + (Math.random() - 0.5) * 0.24)),
-      lon: wrap(beast.lon + (Math.random() - 0.5) * 0.4)
+      kind: kindFor(tok),
+      tier: 1,
+      crack: 0,
+      tone: tok.c[0],
+      face: 0,
+      bands: [tok.c[0], bandOf(tok.c, 1), bandOf(tok.c, 2)],
+      stack: [{ tone: tok.c[0], token: tok }],
+      following: false,
+      held: false,
+      to: null,
+      next: 0,
+      phase: Math.random() * TAU,     // so they do not all breathe together
+      // Beside the animal, not under it: a thing born inside the animal's own
+      // outline cannot be pressed until it has wandered clear.
+      lat: Math.max(LAT_LOW, Math.min(LAT_TOP, beast.lat + (Math.random() - 0.5) * 0.2)),
+      lon: wrap(beast.lon + (Math.random() < 0.5 ? -1 : 1) *
+                (0.2 + Math.random() * 0.24))
     };
 
-    el.addEventListener("pointerenter", function () { showTraceAt(tok, el); });
-    el.addEventListener("pointerleave", hideTrace);
-    el.addEventListener("focus", function () { showTraceAt(tok, el); });
-    el.addEventListener("blur", hideTrace);
-    el.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
-    el.addEventListener("click", function (e) {
-      e.stopPropagation();
-      window.open("https://www.artsy.net/artwork/" + tok.s, "_blank", "noopener");
-    });
-
+    redraw(born);
+    wireCompany(born);
     spawns.push(born);
     land.insertBefore(el, creature);
+    return born;
+  }
+
+  function banish(born) {
+    var at = spawns.indexOf(born);
+    if (at >= 0) { spawns.splice(at, 1); }
+    var inLine = train.indexOf(born);
+    if (inLine >= 0) { train.splice(inLine, 1); }
+    if (pouring === born) { pouring = null; }
+    if (born.el.parentNode) { born.el.parentNode.removeChild(born.el); }
+  }
+
+  function burstAt(born, tones) {
+    var p = project(born.lat, born.lon);
+    kick(p.x, p.y, tones || born.token.c, 18, 5, 2.4);
+  }
+
+  /* ---- what pressing one does --------------------------------------------- */
+
+  function becomeNext(born) {
+    var open = KINDS.filter(function (k) { return UNLOCK[k] <= stamp; });
+    var at = open.indexOf(born.kind);
+    born.kind = open[(at + 1) % open.length];
+    born.tier = 1;
+    born.crack = 0;
+    born.bands = [born.token.c[0], bandOf(born.token.c, 1)];
+    born.stack = [{ tone: born.tone, token: born.token }];
+    born.face = 0;
+    born.tone = born.token.c[0];
+    redraw(born);
+    burstAt(born);
+  }
+
+  function enlarge(born) {
+    born.tier += 1;
+    if (born.tier > TIERS) { becomeNext(born); return; }
+    redraw(born);
+    burstAt(born);
+  }
+
+  /* Three gems of one colour standing close together. */
+  function matched(born) {
+    return spawns.filter(function (other) {
+      return other.kind === "gem" && other.tone === born.tone &&
+             apart(other, born) < 0.34;
+    });
+  }
+
+  function apart(a, b) {
+    var dlat = a.lat - b.lat;
+    var dlon = shortest(a.lon, b.lon) * Math.cos((a.lat + b.lat) / 2);
+    return Math.sqrt(dlat * dlat + dlon * dlon);
+  }
+
+  function pour(from, into) {
+    if (from === into || !from.bands.length) { return; }
+    var tone = from.bands[from.bands.length - 1];
+    var moved = 0;
+    while (from.bands.length && into.bands.length < BANDS &&
+           from.bands[from.bands.length - 1] === tone &&
+           (!into.bands.length || into.bands[into.bands.length - 1] === tone)) {
+      into.bands.push(from.bands.pop());
+      moved += 1;
+    }
+    redraw(from);
+    redraw(into);
+    if (!moved) { return; }
+    burstAt(into, [tone]);
+
+    // A tube of one colour, filled to the top, is solved: it hatches.
+    var solved = into.bands.length === BANDS && into.bands.every(function (b) {
+      return b === tone;
+    });
+    if (solved) {
+      into.kind = "hatchling";
+      into.tier = Math.min(TIERS, into.tier + 1);
+      redraw(into);
+      burstAt(into, [tone]);
+    }
+    if (!from.bands.length) { banish(from); }
+  }
+
+  function playWith(born) {
+    if (born.kind === "hatchling") {
+      born.following = !born.following;
+      if (born.following) { train.push(born); }
+      else { train.splice(train.indexOf(born), 1); }
+      born.el.dataset.following = born.following ? "true" : "";
+      burstAt(born);
+      return;
+    }
+
+    if (born.kind === "coin") {
+      gathered.push(born.token.c[0]);
+      if (gathered.length > 12) { gathered.shift(); }
+      burstAt(born, born.token.c);
+      banish(born);
+      return;
+    }
+
+    if (born.kind === "egg") {
+      born.crack += 1;
+      if (born.crack >= 3) { becomeNext(born); return; }
+      redraw(born);
+      burstAt(born);
+      return;
+    }
+
+    if (born.kind === "gem") {
+      // Counted, not looked up: a work whose colours repeat would have stuck
+      // on the first one for ever, since indexOf always found the same index.
+      born.face = (born.face + 1) % born.token.c.length;
+      born.tone = born.token.c[born.face];
+      redraw(born);
+      var three = matched(born);
+      if (three.length >= 3) {
+        var keep = three[0];
+        var stack = three.map(function (g) {
+          return { tone: g.tone, token: g.token };
+        });
+        three.slice(1).forEach(function (g) { burstAt(g, [g.tone]); banish(g); });
+        keep.kind = "tower";
+        keep.stack = stack;
+        redraw(keep);
+        burstAt(keep, [born.tone]);
+      }
+      return;
+    }
+
+    if (born.kind === "tube") {
+      if (pouring && pouring !== born) {
+        delete pouring.el.dataset.picked;
+        pour(pouring, born);
+        pouring = null;
+      } else if (pouring === born) {
+        delete born.el.dataset.picked;
+        pouring = null;
+      } else {
+        pouring = born;
+        born.el.dataset.picked = "true";
+      }
+      return;
+    }
+
+    if (born.kind === "tower") {
+      standAt(born.lat, born.lon);
+      resume();
+    }
+  }
+
+  /* A palette dropped on one of them instead of on the animal. */
+  function feed(born, tok) {
+    born.token = tok;
+    if (born.kind === "tower") {
+      born.stack.push({ tone: tok.c[0], token: tok });
+      if (born.stack.length > 9) { born.stack.shift(); }
+      redraw(born);
+      burstAt(born, tok.c);
+      return;
+    }
+    if (born.kind === "tube") {
+      if (born.bands.length < BANDS) { born.bands.push(tok.c[0]); }
+      redraw(born);
+      burstAt(born, tok.c);
+      return;
+    }
+    if (born.kind === "gem") { born.tone = tok.c[0]; }
+    if (born.kind === "egg") { born.crack += 1; }
+    if (born.kind === "egg" && born.crack >= 3) { becomeNext(born); return; }
+    enlarge(born);
+  }
+
+  /* ---- how they carry on by themselves ------------------------------------ */
+
+  function inBand(lat) { return Math.max(LAT_LOW, Math.min(LAT_TOP, lat)); }
+
+  function stepCompany(now) {
+    var dt = Math.min(0.05, (now - strolled) / 1000 || 0.016);
+    strolled = now;
+    var creep = dt * 1.6;
+
+    var dir = creature.dataset.facing === "left" ? 1 : -1;
+    train.forEach(function (born, i) {
+      var lat = inBand(beast.lat + (i % 2 ? 0.035 : -0.035));
+      var lon = wrap(beast.lon + dir * 0.06 * (i + 1));
+      born.lat += (lat - born.lat) * Math.min(1, creep * 3);
+      born.lon = wrap(born.lon + shortest(born.lon, lon) * Math.min(1, creep * 3));
+    });
+
+    // Asked for stillness, they stand where they were put. The line behind
+    // the animal still forms, because that is somewhere to be rather than
+    // something moving.
+    if (still) { return; }
+
+    spawns.forEach(function (born) {
+      if (born.following || born.kind === "tower") { return; }
+      // Whatever is under the pointer holds still. They are small, they
+      // wander, and a target that drifts out from under a thumb halfway
+      // through a press is not a target.
+      if (born.held || pouring === born) { return; }
+      if (now > born.next) {
+        born.next = now + 2400 + Math.random() * 5200;
+        born.to = {
+          lat: inBand(born.lat + (Math.random() - 0.5) * 0.16),
+          lon: wrap(born.lon + (Math.random() - 0.5) * 0.3)
+        };
+      }
+      if (!born.to) { return; }
+      born.lat += (born.to.lat - born.lat) * Math.min(1, creep);
+      born.lon = wrap(born.lon + shortest(born.lon, born.to.lon) * Math.min(1, creep));
+    });
+
+    if (now - mingled > 700) { mingled = now; mingle(); }
+  }
+
+  /* Two of a kind that have wandered into each other become one bigger one.
+     Tubes and towers are left out of it: a tube is poured and a tower is
+     stacked, and neither would be improved by merging. */
+  function mingle() {
+    for (var i = 0; i < spawns.length; i += 1) {
+      var a = spawns[i];
+      if (a.kind === "tube" || a.kind === "tower") { continue; }
+      for (var j = i + 1; j < spawns.length; j += 1) {
+        var b = spawns[j];
+        if (b.kind !== a.kind || b.tier !== a.tier) { continue; }
+        if (apart(a, b) > 0.06) { continue; }
+        burstAt(b, b.token.c);
+        banish(b);
+        enlarge(a);
+        return;                 // one meeting a sweep; there is no hurry
+      }
+    }
   }
 
   function placeSpawns() {
@@ -1215,11 +1736,105 @@
         return;
       }
       var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
+
+      // Whatever it does to show it is alive rides on this one transform: a
+      // hatchling breathes, a coin turns over on its edge. Nothing here is a
+      // separate animation, so nothing here keeps the compositor awake.
+      var t = strolled / 1000;
+      var life = "";
+      if (still) { life = ""; }
+      else if (born.kind === "hatchling" || born.kind === "egg") {
+        life = " translateY(" +
+               (Math.sin(t * 1.7 + born.phase) * 3.4).toFixed(2) + "%)";
+      } else if (born.kind === "coin") {
+        life = " scaleX(" +
+               Math.max(0.09, Math.abs(Math.cos(t * 1.1 + born.phase))).toFixed(3) + ")";
+      }
+
       born.el.style.visibility = "visible";
       born.el.style.opacity = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.3)).toFixed(3);
       born.el.style.transform =
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
-        " translate(-50%,-85%) scale(" + scale.toFixed(3) + ")";
+        // A tower stands on its base; everything else is carried a little
+        // above the ground it is standing on.
+        " translate(-50%," + (born.kind === "tower" ? "-100%" : "-92%") +
+        ") scale(" + scale.toFixed(3) + ")" + life;
+    });
+  }
+
+  /* ---- reaching one of them ----------------------------------------------- */
+
+  function hitCompany(x, y) {
+    for (var i = spawns.length - 1; i >= 0; i -= 1) {
+      var born = spawns[i];
+      if (born.el.style.visibility === "hidden") { continue; }
+      var box = born.el.getBoundingClientRect();
+      var pad = 10;
+      if (x >= box.left - pad && x <= box.right + pad &&
+          y >= box.top - pad && y <= box.bottom + pad) { return born; }
+    }
+    return null;
+  }
+
+  function openWork(born) {
+    window.open("https://www.artsy.net/artwork/" + born.token.s, "_blank", "noopener");
+  }
+
+  /* Pressing plays with it; holding it opens the work it came from, so the
+     press can mean something in the world and the work is still one gesture
+     away. */
+  function wireCompany(born) {
+    var held = null;
+    var opened = false;
+
+    born.el.addEventListener("pointerenter", function () {
+      born.held = true;
+      showTraceAt(born.token, born.el, VERB[born.kind]);
+    });
+    born.el.addEventListener("pointerleave", function () {
+      born.held = false;
+      hideTrace();
+    });
+    born.el.addEventListener("focus", function () {
+      born.held = true;
+      showTraceAt(born.token, born.el, VERB[born.kind]);
+    });
+    born.el.addEventListener("blur", function () {
+      born.held = false;
+      hideTrace();
+    });
+
+    born.el.addEventListener("pointerdown", function (event) {
+      event.stopPropagation();
+      opened = false;
+      held = window.setTimeout(function () {
+        opened = true;
+        openWork(born);
+      }, 550);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function (name) {
+      born.el.addEventListener(name, function () { window.clearTimeout(held); });
+    });
+
+    born.el.addEventListener("click", function (event) {
+      event.stopPropagation();
+      window.clearTimeout(held);
+      if (opened) { opened = false; return; }
+      playWith(born);
+    });
+
+    born.el.addEventListener("keydown", function (event) {
+      if (event.key === "o" || event.key === "O" ||
+          (event.key === "Enter" && event.shiftKey)) {
+        event.preventDefault();
+        event.stopPropagation();
+        openWork(born);
+        return;
+      }
+      if (event.key !== "Enter" && event.key !== " ") { return; }
+      event.preventDefault();
+      event.stopPropagation();
+      playWith(born);
     });
   }
 
@@ -1230,9 +1845,13 @@
     showTraceAt(part.token, part.el);
   }
 
-  function showTraceAt(tok, el) {
+  function showTraceAt(tok, el, hint) {
     traceTitle.textContent = tok.t;
     traceMeta.textContent = tokenLine(tok);
+    // On a colour worn by the animal the card is a way back to the work. On
+    // something the company has left standing, the press does something in
+    // the world instead, so the card says what, and how to reach the work.
+    traceHint.textContent = hint ? hint + " · hold to open on Artsy" : "Open on Artsy";
     trace.hidden = false;
 
     var box = el.getBoundingClientRect();
@@ -1285,6 +1904,26 @@
      again rather than having to be turned up from scratch. */
   function applyAt(x, y) {
     if (!carrying) { return; }
+
+    // The animal is not the only thing a palette can be fed to: anything the
+    // company has put on the world takes one as well, and grows by it. The
+    // animal gets first refusal on its own square though, or a thing that
+    // happened to be standing in front of it would intercept every throw.
+    var box = creature.getBoundingClientRect();
+    var onAnimal = x >= box.left && x <= box.right &&
+                   y >= box.top && y <= box.bottom;
+    var born = onAnimal ? null : hitCompany(x, y);
+    if (born) {
+      feed(born, carrying);
+      carrying = null;
+      offering = null;
+      pressedOnce = false;
+      token.hidden = true;
+      hideGraze();
+      resume();
+      return;
+    }
+
     if (!landedOn(x, y)) { return; }
 
     wear(carrying);
