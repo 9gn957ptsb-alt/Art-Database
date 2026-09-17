@@ -284,12 +284,12 @@
 /* ---- how the company reads --------------------------------------------
 
    Each one is drawn on its own small grid and land.js writes its width and
-   height in from that grid, so a tower is tall, a tube is narrow and a coin
-   is small; --w-spawn above is only the unit they are all measured from. */
+   height in from that grid, so a tower is tall and a tube is narrow;
+   --w-spawn above is only the unit they are all measured from. */
 
-/* A hatchling breathes and a coin turns over, and neither of those is a CSS
-   animation. Forty things each running their own infinite animation is forty
-   things the compositor has to keep awake for as long as the page is open;
+/* A hatchling breathes, and that is not a CSS animation. Forty things each
+   running their own infinite animation is forty things the compositor has to
+   keep awake for as long as the page is open;
    land.js already writes one transform per frame for every one of them, so
    the life is folded into that transform and costs nothing on top. The
    shadow below went the same way. */

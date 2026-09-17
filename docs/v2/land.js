@@ -60,8 +60,20 @@
   // word from another is how many collages carry it — that sets the size, the
   // weight and the tracking together, so the type is calibrated to the data
   // instead of being dealt at random.
-  var FACE = '"Space Grotesk", "Archivo", Helvetica, Arial, sans-serif';
-  var WEIGHTS = [300, 400, 500, 600, 700];
+  /* Five voices, from the things that only turn up once to the thing the
+     collages are mostly made of. A word keeps the one its mass gives it. */
+  var FACES = [
+    { face: '"Space Grotesk", "Archivo", Helvetica, Arial, sans-serif',
+      weight: 400 },
+    { face: '"Instrument Serif", "Newsreader", Georgia, serif',
+      weight: 400, slant: "italic" },
+    { face: '"Syne", "Archivo", Helvetica, Arial, sans-serif',
+      weight: 600 },
+    { face: '"Fraunces", "Newsreader", Georgia, serif',
+      weight: 700 },
+    { face: '"Syne", "Archivo", Helvetica, Arial, sans-serif',
+      weight: 800 }
+  ];
 
   var TAU = Math.PI * 2;
   var RAD = Math.PI / 180;
@@ -153,6 +165,14 @@
   }
 
   /* The world's words, in the order the works introduce them. */
+  /* Not everything read off the collages gets to stand on the world. The
+     globe carries what recurs — an object in two or more of them — and, on
+     top of that, the few single ones that are somebody rather than something:
+     the joker in the New York collage, the dog, the insect, the shoreline.
+     Forty words was a field of small type; this is half that, at several
+     times the size, which is what a word on a world should be. */
+  var ALONE = ["playing card", "dog", "insect", "shoreline"];
+
   function readVocabulary() {
     var order = [];
     var held = {};
@@ -167,7 +187,9 @@
       });
     });
 
-    return order.map(function (term) {
+    return order.filter(function (term) {
+      return held[term].length > 1 || ALONE.indexOf(term) >= 0;
+    }).map(function (term) {
       return { word: term, works: held[term] };
     });
   }
@@ -297,15 +319,26 @@
           var intoY = wantY - Math.abs(byLat);
           if (intoX <= 0 || intoY <= 0) { continue; }
 
+          // Who gives way. Splitting every correction down the middle meant
+          // a word in all seven collages was shoved about by one that turns
+          // up once, and with the sizes now eleven times apart the big ones
+          // could not find room at all. The heavier word barely moves and the
+          // light one goes round it, which is also the right hierarchy to
+          // look at: the world is mostly made of a few things.
+          var heftA = 1 + a.mass * 3;
+          var heftB = 1 + b.mass * 3;
+          var giveA = 2 * heftB / (heftA + heftB);
+          var giveB = 2 * heftA / (heftA + heftB);
+
           shifted = true;
           if (intoX / wantX < intoY / wantY) {
             var sideways = (byLon >= 0 ? 1 : -1) * intoX * 0.25 / squeeze;
-            a.lon += sideways;
-            b.lon -= sideways;
+            a.lon += sideways * giveA;
+            b.lon -= sideways * giveB;
           } else {
             var updown = (byLat >= 0 ? 1 : -1) * intoY * 0.25;
-            a.lat += updown;
-            b.lat -= updown;
+            a.lat += updown * giveA;
+            b.lat -= updown * giveB;
           }
         }
       }
@@ -411,15 +444,24 @@
     // the globe simply scaled the words up with it and bought no room at all —
     // they went to 123px and the collisions trebled. Against the screen, a
     // wider globe is exactly what it should be: more surface, same type.
-    // The scale is φ³ end to end: the word carried by all seven collages is
-    // φ cubed — 4.236 times — the size of one carried by a single collage,
-    // and every step between is a power of φ.
-    var smallest = Math.min(W, H) / 53;
-    var size = smallest * Math.pow(PHI, ground.mass * 3) * fit;
-    var set = Math.round(ground.mass * (WEIGHTS.length - 1));
+    // The scale is φ⁵ end to end now, not φ³: the word carried by all seven
+    // collages is eleven times the size of one carried by a single collage.
+    // With half as many words on the world there is the room for it, and the
+    // difference between a thing the work is made of and a thing that happens
+    // to be in it should be the difference between a headline and a footnote.
+    var smallest = Math.min(W, H) / 52;
+    var size = smallest * Math.pow(PHI, ground.mass * 5) * fit;
 
-    ground.el.style.fontFamily = FACE;
-    ground.el.style.fontWeight = String(WEIGHTS[set]);
+    // And a face of its own, up a ladder from quiet to loud. One family in
+    // five weights was legible and dull; five faces read as five different
+    // kinds of voice, and which voice a word gets is not a roll — it is how
+    // much of the work that object is.
+    var rung = FACES[Math.min(FACES.length - 1,
+                              Math.round(ground.mass * (FACES.length - 1)))];
+
+    ground.el.style.fontFamily = rung.face;
+    ground.el.style.fontWeight = String(rung.weight);
+    ground.el.style.fontStyle = rung.slant || "normal";
     ground.el.style.fontSize = Math.max(13, size).toFixed(2) + "px";
     // Large type wants tighter tracking than small type. Letting one value
     // serve both is what makes a word cloud look untended.
@@ -460,11 +502,7 @@
     if (out.length) { worn = out; }
   }
 
-  /* Colours picked up off the world — every coin the company leaves that
-     someone collects — ride along with whatever the animal is wearing. */
-  var gathered = [];
-
-  function palette() { return gathered.length ? worn.concat(gathered) : worn; }
+  function palette() { return worn; }
 
   function kick(x, y, colours, count, force, spread) {
     if (still) { return; }
@@ -808,7 +846,13 @@
 
       if (p.z > 0.2) { ground.shown = true; }
 
-      var fade = INV2 + INV * Math.min(1, (p.z - 0.05) / 0.32);
+      // Two things take a word down: going round the edge, and being turned
+      // away from you where it stands. The second is what `squash` measures —
+      // 1 dead ahead, about 0.45 at the limb where the surface is edge-on —
+      // so the more the roundness has distorted a word, the fainter it is.
+      // It is also what makes the crowding at the horizon stop shouting.
+      var fade = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.32)) *
+                 (0.45 + 0.55 * p.squash);
       var scale = 0.64 + 0.36 * p.z;
 
       el.style.visibility = "visible";
@@ -1233,15 +1277,16 @@
 
        hatchling  press it and it falls in behind the animal, or leaves the
                   line again. A herd builds up behind you.
-       coin       press it and it is collected: its colour joins whatever the
-                  animal throws off from then on.
+       player     press it and a scene goes up — see the troupe, below.
        egg        press it three times and it breaks open into something else.
-       gem        press it and it turns to its next colour. Three of one
-                  colour standing close together burst, and leave a tower.
        tube       press one, then another, and the top band pours across.
                   A tube of a single colour is solved, and hatches.
        tower      press it and the animal walks over. Every palette fed to a
                   tower is another floor, and every floor keeps its work.
+
+     There were two more, a coin and a gem, and they are gone: five cells
+     across is a speck, and a speck that can be pressed is a nuisance rather
+     than a character. Five kinds, each big enough to be somebody.
 
      They wander, and two of a kind that meet merge into one bigger one.
      Merged past the third size a thing stops being what it was and becomes
@@ -1249,23 +1294,21 @@
      the same as the animal. A palette can be dropped on any of them instead
      of on the animal, which is how a thing is fed. */
 
-  var KINDS = ["hatchling", "coin", "player", "egg", "gem", "tube", "tower"];
+  var KINDS = ["hatchling", "player", "egg", "tube", "tower"];
 
   /* How far along the world has to be before a kind can appear at all. */
-  var UNLOCK = { hatchling: 0, coin: 0, player: 1, egg: 2, gem: 3, tube: 4, tower: 5 };
+  var UNLOCK = { hatchling: 0, player: 1, egg: 2, tube: 3, tower: 4 };
 
   var VERB = {
     hatchling: "press to call it along",
-    coin: "press to collect it",
     player: "press to cue a scene",
     set: "press to strike the scene",
     egg: "press to crack it open",
-    gem: "press to turn its colour",
     tube: "press it, then another, to pour",
     tower: "press to send the animal over"
   };
 
-  var MAX_COMPANY = 40;      // as many as the world holds at once
+  var MAX_COMPANY = 24;      // as many as the world holds at once
   var BANDS = 4;             // how much a tube takes
   var TIERS = 3;             // sizes a thing goes through before it changes kind
 
@@ -1315,40 +1358,43 @@
 
   /* ---- the bestiary ------------------------------------------------------- */
 
+  /* A hatchling is a small four-legged thing facing the way the animal
+     faces, not a cloud of pixels. It used to be a mirrored random splat,
+     which at that size read as a sheep, or as nothing — the shape is fixed
+     now and only the colours and the trimmings come from the work, so the
+     company reads as a company. */
+  var BEAST_ART = [
+    "........a",
+    ".......aa",
+    "a......aa",
+    "aaaaaaaa.",
+    ".aaaaaaa.",
+    ".a.a.a.a.",
+    ".a.a.a.a."
+  ];
+
   function drawHatchling(born) {
     var c = ramp(born.token);
-    var n = 5 + Math.min(born.tier, TIERS) * 2;        // 7, 9, 11 across
-    var rnd = seedFrom(born.token.s, 11 + born.tier);
-    var half = Math.ceil(n / 2);
+    var rnd = seedFrom(born.token.s, 11);
+    var crest = rnd() > 0.5;
+    var tall = rnd() > 0.55;
     var cells = [];
-    for (var y = 0; y < n; y += 1) {
-      for (var x = 0; x < half; x += 1) {
-        var solid = y > n * 0.28 && y < n * 0.78;      // a body that holds together
-        if (!solid && rnd() > 0.46) { continue; }
-        var tone = bandOf(c, x + y + born.tier);
-        cells.push([x, y, tone]);
-        if (x !== n - 1 - x) { cells.push([n - 1 - x, y, tone]); }
-      }
-    }
-    var eye = Math.max(1, Math.round(n * 0.3));
-    cells.push([1, eye, INK], [n - 2, eye, INK]);
-    return { cols: n, rows: n, cells: cells };
-  }
 
-  function drawCoin(born) {
-    var c = ramp(born.token);
-    var n = 5;
-    var face = [
-      "..x..",
-      ".xox.",
-      "xoooX",
-      ".xox.",
-      "..x.."
-    ];
-    var cells = stencil(face, function (x, y, ch) {
-      return ch === "o" ? bandOf(c, 1) : ch === "X" ? bandOf(c, 2) : bandOf(c, 0);
+    BEAST_ART.forEach(function (row, y) {
+      for (var x = 0; x < row.length; x += 1) {
+        if (row.charAt(x) !== "a") { continue; }
+        cells.push([x, y + 1, bandOf(c, x + y + born.tier)]);
+      }
     });
-    return { cols: n, rows: n, cells: cells };
+    if (crest) {                       // plates along the back
+      [2, 4, 6].forEach(function (x) { cells.push([x, 2, bandOf(c, x)]); });
+    }
+    if (tall) {                        // or a neck instead
+      cells.push([7, 1, bandOf(c, 1)], [8, 1, bandOf(c, 2)]);
+    }
+    cells.push([7, 2, INK]);           // the eye
+
+    return { cols: 9, rows: BEAST_ART.length + 1, cells: cells };
   }
 
   function drawEgg(born) {
@@ -1373,21 +1419,6 @@
       });
     }
     return { cols: 5, rows: 7, cells: cells };
-  }
-
-  function drawGem(born) {
-    var tone = born.tone || born.token.c[0];
-    var face = [
-      "..x..",
-      ".xox.",
-      "xoooX",
-      ".xXx.",
-      "..x.."
-    ];
-    var cells = stencil(face, function (x, y, ch) {
-      return ch === "o" ? lift(tone, 0.28) : ch === "X" ? lift(tone, -0.22) : tone;
-    });
-    return { cols: 5, rows: 5, cells: cells };
   }
 
   function drawTube(born) {
@@ -1421,14 +1452,23 @@
   }
 
   var DRAW = {
-    hatchling: drawHatchling, coin: drawCoin, egg: drawEgg,
-    gem: drawGem, tube: drawTube, tower: drawTower,
+    hatchling: drawHatchling, egg: drawEgg, tube: drawTube, tower: drawTower,
     player: function (born) { return drawPlayer(born); },
     set: function (born) { return drawSet(born); }
   };
 
-  /* Scenery stands over a figure, and a tower over a gem. */
-  var BIG = { set: 1.7, tower: 1.15 };
+  /* Scenery stands over a figure. Everything else came up by 1 + 1/φ³ — the
+     small things on here read as specks rather than as characters, and a
+     speck that can be pressed is a nuisance, not a character. */
+  var BIG = { set: PHI };
+  var UP = 1 + INV3;                      // 1.236
+
+  /* Growing shows in how big a thing is, not in how many cells it has. */
+  function swell(born) {
+    return born.kind === "hatchling"
+      ? 1 + (Math.min(born.tier, TIERS) - 1) * INV3
+      : 1;
+  }
 
   /* A work's three colours, held apart so there is light in them.
 
@@ -1479,21 +1519,39 @@
 
   /* ---- putting one on the world ------------------------------------------- */
 
+  /* Eight on the stage at the outside, arriving over the first fourteen
+     applications. More than that and it stops being a company. */
+  function troupeFull() {
+    var standing = spawns.filter(function (born) {
+      return born.kind === "player";
+    }).length;
+    return standing >= Math.min(8, 1 + Math.floor(stamp / 2));
+  }
+
   function kindFor(tok) {
     // The troupe fills before the rest multiplies: up to four players arrive
     // over the first eight applications, which is enough for most of the
     // scenes. After that a player is no likelier than anything else.
-    if (UNLOCK.player <= stamp) {
-      var standing = spawns.filter(function (born) {
-        return born.kind === "player";
-      }).length;
-      if (standing < Math.min(4, Math.floor(stamp / 2))) { return "player"; }
-    }
+    if (UNLOCK.player <= stamp && !troupeFull()) { return "player"; }
+
+    var open = KINDS.filter(function (k) {
+      return UNLOCK[k] <= stamp && !(k === "player" && troupeFull());
+    });
+    if (!open.length) { return "hatchling"; }
+
+    // The work chooses, but only among the kinds the world is short of.
+    // Left to a straight roll it ran to eight tubes and one of everything
+    // else, which is a warehouse rather than a company.
+    var tally = {};
+    open.forEach(function (k) { tally[k] = 0; });
+    spawns.forEach(function (born) {
+      if (tally[born.kind] !== undefined) { tally[born.kind] += 1; }
+    });
+    var fewest = Math.min.apply(null, open.map(function (k) { return tally[k]; }));
+    var short = open.filter(function (k) { return tally[k] <= fewest; });
 
     var rnd = seedFrom(tok.s, 7);
-    var want = Math.floor(rnd() * KINDS.length);
-    while (want > 0 && UNLOCK[KINDS[want]] > stamp) { want -= 1; }
-    return KINDS[want];
+    return short[Math.floor(rnd() * short.length) % short.length];
   }
 
   function label(born) {
@@ -1511,14 +1569,14 @@
     if (born.kind === "player" && !born.role) { born.role = roleFor(born.token); }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
-    var u = unit() * (BIG[born.kind] || 1);
+    var u = unit() * (BIG[born.kind] || UP) * swell(born);
     born.el.style.width = (u * (made.cols + 1) / 7).toFixed(1) + "px";
     born.el.style.height = (u * (made.rows + 1) / 7).toFixed(1) + "px";
     born.el.dataset.kind = born.kind;
     born.el.setAttribute("aria-label", label(born));
   }
 
-  function sprout(tok) {
+  function sprout(tok, anywhere) {
     if (spawns.length >= MAX_COMPANY) { return null; }
 
     var el = document.createElement("div");
@@ -1541,11 +1599,18 @@
       to: null,
       next: 0,
       phase: Math.random() * TAU,     // so they do not all breathe together
-      // Beside the animal, not under it: a thing born inside the animal's own
-      // outline cannot be pressed until it has wandered clear.
-      lat: Math.max(LAT_LOW, Math.min(LAT_TOP, beast.lat + (Math.random() - 0.5) * 0.2)),
-      lon: wrap(beast.lon + (Math.random() < 0.5 ? -1 : 1) *
-                (0.2 + Math.random() * 0.24))
+      // Beside the animal, not under it — a thing born inside the animal's
+      // own outline cannot be pressed until it has wandered clear — and well
+      // beside it, because everything used to arrive in the same armful and
+      // stay there. What the world makes by itself is born anywhere at all.
+      lat: anywhere
+        ? LAT_LOW + Math.random() * (LAT_TOP - LAT_LOW)
+        : Math.max(LAT_LOW, Math.min(LAT_TOP,
+            beast.lat + (Math.random() - 0.5) * 0.3)),
+      lon: anywhere
+        ? Math.random() * TAU
+        : wrap(beast.lon + (Math.random() < 0.5 ? -1 : 1) *
+               (0.22 + Math.random() * 0.5))
     };
 
     redraw(born);
@@ -1574,6 +1639,13 @@
 
   function becomeNext(born) {
     var open = KINDS.filter(function (k) { return UNLOCK[k] <= stamp; });
+    // A troupe that is already full does not need an understudy: a thing
+    // growing past its third size skips the part and goes on to the next
+    // kind. Without this the company filled up with players, because every
+    // merge and every hatching could add one over the top of the cast.
+    if (troupeFull()) {
+      open = open.filter(function (k) { return k !== "player"; });
+    }
     var at = open.indexOf(born.kind);
     born.kind = open[(at + 1) % open.length];
     born.tier = 1;
@@ -1591,14 +1663,6 @@
     if (born.tier > TIERS) { becomeNext(born); return; }
     redraw(born);
     burstAt(born);
-  }
-
-  /* Three gems of one colour standing close together. */
-  function matched(born) {
-    return spawns.filter(function (other) {
-      return other.kind === "gem" && other.tone === born.tone &&
-             apart(other, born) < 0.34;
-    });
   }
 
   function apart(a, b) {
@@ -1645,40 +1709,11 @@
       return;
     }
 
-    if (born.kind === "coin") {
-      gathered.push(born.token.c[0]);
-      if (gathered.length > 12) { gathered.shift(); }
-      burstAt(born, born.token.c);
-      banish(born);
-      return;
-    }
-
     if (born.kind === "egg") {
       born.crack += 1;
       if (born.crack >= 3) { becomeNext(born); return; }
       redraw(born);
       burstAt(born);
-      return;
-    }
-
-    if (born.kind === "gem") {
-      // Counted, not looked up: a work whose colours repeat would have stuck
-      // on the first one for ever, since indexOf always found the same index.
-      born.face = (born.face + 1) % 3;
-      born.tone = ramp(born.token)[born.face];
-      redraw(born);
-      var three = matched(born);
-      if (three.length >= 3) {
-        var keep = three[0];
-        var stack = three.map(function (g) {
-          return { tone: g.tone, token: g.token };
-        });
-        three.slice(1).forEach(function (g) { burstAt(g, [g.tone]); banish(g); });
-        keep.kind = "tower";
-        keep.stack = stack;
-        redraw(keep);
-        burstAt(keep, [born.tone]);
-      }
       return;
     }
 
@@ -1738,7 +1773,6 @@
       burstAt(born, ramp(tok));
       return;
     }
-    if (born.kind === "gem") { born.tone = ramp(tok)[0]; }
     if (born.kind === "egg") { born.crack += 1; }
     if (born.kind === "egg" && born.crack >= 3) { becomeNext(born); return; }
     enlarge(born);
@@ -1787,8 +1821,8 @@
       if (now > born.next) {
         born.next = now + 2400 + Math.random() * 5200;
         born.to = {
-          lat: inBand(born.lat + (Math.random() - 0.5) * 0.16),
-          lon: wrap(born.lon + (Math.random() - 0.5) * 0.3)
+          lat: inBand(born.lat + (Math.random() - 0.5) * 0.24),
+          lon: wrap(born.lon + (Math.random() - 0.5) * 0.5)
         };
       }
       if (!born.to) { return; }
@@ -1803,7 +1837,7 @@
   /* The world keeps making things on its own once it has any colour in it at
      all. Nothing here waits to be asked — it only waits to be squashed. */
   var fermented = 0;
-  var FERMENT = Math.round(2600 * PHI * 2);     // a little under nine seconds
+  var FERMENT = Math.round(2600 * Math.pow(PHI, 3));   // about eleven seconds
 
   function ferment(now) {
     if (still || !supply || !stamp) { return; }
@@ -1812,7 +1846,7 @@
     if (spawns.length >= MAX_COMPANY) { return; }
     var keys = supply.pool;
     var tok = supply.tokens[keys[Math.floor(Math.random() * keys.length)]];
-    if (tok) { sprout(tok); }
+    if (tok) { sprout(tok, true); }
   }
 
   /* Two of a kind that have wandered into each other become one bigger one.
@@ -1845,8 +1879,8 @@
       var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
 
       // Whatever it does to show it is alive rides on this one transform: a
-      // hatchling breathes, a coin turns over on its edge. Nothing here is a
-      // separate animation, so nothing here keeps the compositor awake.
+      // hatchling breathes. Nothing here is a separate animation, so nothing
+      // here keeps the compositor awake.
       var t = strolled / 1000;
       var life = "";
       if (born.acting) {
@@ -1855,9 +1889,6 @@
       else if (born.kind === "hatchling" || born.kind === "egg") {
         life = " translateY(" +
                (Math.sin(t * 1.7 + born.phase) * 3.4).toFixed(2) + "%)";
-      } else if (born.kind === "coin") {
-        life = " scaleX(" +
-               Math.max(0.09, Math.abs(Math.cos(t * 1.1 + born.phase))).toFixed(3) + ")";
       }
 
       born.el.style.visibility = "visible";
@@ -1991,6 +2022,13 @@
     ],
     bench: [
       "bbbbbbb", "a.....a", "a.....a", "aa...aa"
+    ],
+    throne: [
+      ".bbbbb.", ".b...b.", ".b...b.", ".bbbbb.",
+      "caaaaac", ".a...a.", ".a...a."
+    ],
+    toadstool: [
+      "..ccc..", ".cbcbc.", "ccccccc", "..aaa..", "..aaa.."
     ]
   };
 
@@ -2067,28 +2105,39 @@
      character survives the stroke, the way it survives a new production.
      Expressing what exists is an endless task.
 
-     Eight parts, cast off Romeo and Juliet, and cast toward a scene: whoever
-     is missing from the scene nearest to being ready is who arrives next, so
-     a troupe assembles rather than eight people who never share a stage. The
-     first four come quickly, over the first eight applications; after that a
-     player is no likelier than a tube or a gem. When a scene's cast is all
-     standing they walk to their marks and play it, and pressing any player
-     cues one if its cast is there. Alone, a player gives its aside instead.
+     Twelve parts and sixteen scenes, out of six plays: Romeo and Juliet,
+     Hamlet, Macbeth, A Midsummer Night's Dream, The Tempest, As You Like It.
+     Half of the scenes are one person alone, which is deliberate — a
+     soliloquy needs nobody else to have turned up, so the repertory keeps
+     moving even when the troupe is small.
+
+     Casting is toward a scene: whoever is missing from the scene nearest to
+     being ready is who arrives next, so a troupe assembles rather than
+     twelve people who never share a stage. It fills to eight over the first
+     fourteen applications; after that a player is no likelier than a tube or
+     a tower. Whichever castable scene has waited longest is the one that
+     goes up, so the same two do not play over and over. Pressing any player
+     cues a scene its cast can fill; alone, it gives its aside instead.
      The lines are Shakespeare's, which is to say they are everyone's. */
 
-  var ROLES = ["Chorus", "Romeo", "Juliet", "Mercutio",
-               "Tybalt", "Nurse", "Friar Laurence", "Benvolio"];
+  var ROLES = ["Chorus", "Romeo", "Juliet", "Nurse", "Mercutio", "Tybalt",
+               "Hamlet", "Macbeth", "Lady Macbeth", "Puck", "Prospero",
+               "Jaques"];
 
   /* What each of them says when it is pressed and nobody else is ready. */
   var ASIDE = {
-    "Chorus":         "Two households, both alike in dignity…",
-    "Romeo":          "He jests at scars that never felt a wound.",
-    "Juliet":         "My only love sprung from my only hate!",
-    "Mercutio":       "A plague o' both your houses!",
-    "Tybalt":         "Peace? I hate the word.",
-    "Nurse":          "My mistress is the sweetest lady.",
-    "Friar Laurence": "Wisely and slow; they stumble that run fast.",
-    "Benvolio":       "Part, fools! Put up your swords."
+    "Chorus":       "Two households, both alike in dignity\u2026",
+    "Romeo":        "He jests at scars that never felt a wound.",
+    "Juliet":       "My only love sprung from my only hate!",
+    "Nurse":        "My mistress is the sweetest lady.",
+    "Mercutio":     "A plague o' both your houses!",
+    "Tybalt":       "Peace? I hate the word.",
+    "Hamlet":       "The rest is silence.",
+    "Macbeth":      "Out, out, brief candle!",
+    "Lady Macbeth": "What's done cannot be undone.",
+    "Puck":         "Lord, what fools these mortals be!",
+    "Prospero":     "We are such stuff as dreams are made on.",
+    "Jaques":       "All the world's a stage."
   };
 
   /* Seven rows across, eleven down, and every one of them drawn out of the
@@ -2108,6 +2157,10 @@
       "..kkk..", ".kkkkk.", ".ksssk.", ".ksssk.", "..aaa..", ".aaaaa.",
       ".aaaaa.", "aaaaaaa", "aaaaaaa", "bbbbbbb", "..c.c.."
     ],
+    "Nurse": [
+      ".bbbbb.", ".bbbbb.", "..sss..", "..sss..", ".aaaaa.", ".abbba.",
+      ".abbba.", "aabbbaa", "aabbbaa", "aaaaaaa", "..c.c.."
+    ],
     "Mercutio": [
       "....c..", "..bbb..", "..sss..", "..sss..", ".acaca.", ".aaaaa.",
       ".aaaaa.", "..aaa..", "..a.a..", "..a.a..", ".b...b."
@@ -2116,17 +2169,29 @@
       "..kkk..", "..kkk..", "..sss..", "..sss..", ".aaaaab", ".aaaaab",
       ".aaaaab", "..aaa..", "..a.a..", "..a.a..", ".b...b."
     ],
-    "Nurse": [
-      ".bbbbb.", ".bbbbb.", "..sss..", "..sss..", ".aaaaa.", ".abbba.",
-      ".abbba.", "aabbbaa", "aabbbaa", "aaaaaaa", "..c.c.."
+    "Hamlet": [
+      "..kkk..", "..kkk..", "..sss..", "..sss..", ".aaaaa.", "baaaaa.",
+      "baaaaa.", "..aaa..", "..a.a..", "..a.a..", ".k...k."
     ],
-    "Friar Laurence": [
-      "..aaa..", ".aaaaa.", ".asssa.", ".asssa.", ".aaaaa.", ".aaaaa.",
-      "bbbbbbb", ".aaaaa.", ".aaaaa.", ".aaaaa.", ".aaaaa."
+    "Macbeth": [
+      "b.b.b..", ".bbb...", "..sss..", "..sss..", ".aaaaa.", ".aaaaac",
+      ".aaaaac", "..aaac.", "..a.a..", "..a.a..", ".b...b."
     ],
-    "Benvolio": [
-      "..kkk..", "..kkk..", "..sss..", "..sss..", ".baaaa.", ".abaaa.",
-      ".aabaa.", "..aab..", "..a.a..", "..a.a..", ".b...b."
+    "Lady Macbeth": [
+      "..bbb..", ".kkkkk.", ".ksssk.", "..sss..", ".aaaaa.", "caaaaa.",
+      ".aaaaa.", "aaaaaaa", "aaaaaaa", "aaaaaaa", "bbbbbbb"
+    ],
+    "Puck": [
+      "c.....c", ".c...c.", "..sss..", "..sss..", ".aaaaa.", ".aaaaa.",
+      "..aaa..", "..a.a..", ".a...a.", ".b...b.", "......."
+    ],
+    "Prospero": [
+      "..aaa..", ".aaaaa.", ".asssa.", ".asssa.", ".aaaaa.", ".aaaaac",
+      "bbbbbbc", ".aaaaac", ".aaaaac", ".aaaaac", ".aaaaac"
+    ],
+    "Jaques": [
+      ".bbbbb.", "..bbb..", "..sss..", "..sss..", ".aaaaac", ".aaaaac",
+      ".aaaaac", "..aaa.c", "..a.a.c", "..a.a.c", ".b...bc"
     ]
   };
 
@@ -2158,8 +2223,12 @@
     SCENES.forEach(function (def) {
       var missing = def.cast.filter(function (role) { return !taken[role]; });
       if (!missing.length) { return; }
-      var have = def.cast.length - missing.length;
-      if (have > nearest) { nearest = have; wanted = missing; }
+      // A scene nobody has seen yet outranks one that has already played,
+      // and within that, the one closest to having its people. Counting
+      // heads alone kept casting the same play's understudies.
+      var score = (def.last ? 0 : 2) +
+                  (def.cast.length - missing.length) / def.cast.length;
+      if (score > nearest) { nearest = score; wanted = missing; }
     });
     if (wanted) { return wanted[Math.floor(rnd() * wanted.length) % wanted.length]; }
 
@@ -2178,22 +2247,38 @@
      as standing on the sphere rather than on the screen. Juliet's mark in the
      balcony is simply higher up the world than Romeo's. */
 
+  var SOLO = [[0, 0]];
+  var FACING = [[0, -0.085], [0, 0.085]];
+
+  /* Listed so the plays alternate. The world casts toward whichever
+     scene is nearest to being ready and works down the list, so a list
+     grouped by play would fill the stage with one play's people and
+     never reach the rest. Interleaved, the fourth player to arrive is
+     already from a fourth play. */
   var SCENES = [
-    { name: "Prologue",
-      cast: ["Chorus"],
+    { name: "Prologue", play: "Romeo and Juliet",
+      cast: ["Chorus"], marks: SOLO,
       set: [["banner", -0.005, -0.085], ["banner", -0.005, 0.085]],
-      marks: [[0, 0]],
       beats: [
         [0, "Two households, both alike in dignity,"],
         [0, "In fair Verona, where we lay our scene,"],
         [0, "A pair of star-cross'd lovers take their life."]
       ] },
 
-    { name: "The meeting",
-      cast: ["Romeo", "Juliet"],
+    { name: "To be", play: "Hamlet",
+      cast: ["Hamlet"], marks: SOLO,
+      set: [["bench", -0.035, 0], ["wall", -0.01, -0.16]],
+      beats: [
+        [0, "To be, or not to be: that is the question."],
+        [0, "Whether 'tis nobler in the mind to suffer"],
+        [0, "The slings and arrows of outrageous fortune,"],
+        [0, "Or to take arms against a sea of troubles."]
+      ] },
+
+    { name: "The meeting", play: "Romeo and Juliet",
+      cast: ["Romeo", "Juliet"], marks: FACING,
       set: [["torch", 0.005, -0.15], ["torch", 0.005, 0.15],
             ["bench", -0.035, 0]],
-      marks: [[0, -0.085], [0, 0.085]],
       beats: [
         [0, "If I profane with my unworthiest hand"],
         [0, "This holy shrine, the gentle sin is this:"],
@@ -2201,10 +2286,27 @@
         [0, "Then move not while my prayer's effect I take."]
       ] },
 
-    { name: "The balcony",
-      cast: ["Romeo", "Juliet"],
+    { name: "The dagger", play: "Macbeth",
+      cast: ["Macbeth"], marks: SOLO,
+      set: [["throne", -0.02, 0.1], ["torch", 0.005, -0.13]],
+      beats: [
+        [0, "Is this a dagger which I see before me,"],
+        [0, "The handle toward my hand? Come, let me clutch thee."],
+        [0, "I have thee not, and yet I see thee still."]
+      ] },
+
+    { name: "What fools", play: "A Midsummer Night's Dream",
+      cast: ["Puck"], marks: SOLO,
+      set: [["toadstool", -0.02, -0.1], ["toadstool", -0.03, 0.11]],
+      beats: [
+        [0, "Lord, what fools these mortals be!"],
+        [0, "I'll put a girdle round about the earth"],
+        [0, "In forty minutes."]
+      ] },
+
+    { name: "The balcony", play: "Romeo and Juliet",
+      cast: ["Romeo", "Juliet"], marks: [[-0.015, -0.1], [0.075, 0.07]],
       set: [["balcony", 0.05, 0.075], ["wall", -0.04, -0.1]],
-      marks: [[-0.015, -0.1], [0.075, 0.07]],
       beats: [
         [0, "But soft! What light through yonder window breaks?"],
         [0, "It is the east, and Juliet is the sun."],
@@ -2213,41 +2315,94 @@
         [0, "I take thee at thy word."]
       ] },
 
-    { name: "The quarrel",
-      cast: ["Benvolio", "Tybalt", "Mercutio"],
+    { name: "Our revels", play: "The Tempest",
+      cast: ["Prospero"], marks: SOLO,
+      set: [["wall", -0.03, 0.13], ["torch", 0.005, -0.13]],
+      beats: [
+        [0, "Our revels now are ended. These our actors,"],
+        [0, "As I foretold you, were all spirits and"],
+        [0, "Are melted into air, into thin air."],
+        [0, "We are such stuff as dreams are made on."]
+      ] },
+
+    { name: "All the world", play: "As You Like It",
+      cast: ["Jaques"], marks: SOLO,
+      set: [["bench", -0.035, 0.1], ["toadstool", -0.03, -0.12]],
+      beats: [
+        [0, "All the world's a stage,"],
+        [0, "And all the men and women merely players."],
+        [0, "They have their exits and their entrances."]
+      ] },
+
+    { name: "The quarrel", play: "Romeo and Juliet",
+      cast: ["Tybalt", "Mercutio"], marks: FACING,
       set: [["well", -0.035, 0]],
-      marks: [[0, 0], [0, 0.115], [0, -0.115]],
       beats: [
-        [0, "Part, fools! Put up your swords."],
-        [1, "What, drawn, and talk of peace?"],
-        [2, "A plague o' both your houses! I am sped."]
+        [0, "Mercutio, thou consort'st with Romeo."],
+        [1, "Consort? What, dost thou make us minstrels?"],
+        [0, "I am for you."],
+        [1, "A plague o' both your houses! I am sped."]
       ] },
 
-    { name: "The vial",
-      cast: ["Friar Laurence", "Juliet"],
-      set: [["table", -0.02, 0], ["torch", 0.01, -0.15]],
-      marks: [[0, -0.085], [0, 0.085]],
+    { name: "Tomorrow", play: "Macbeth",
+      cast: ["Macbeth"], marks: SOLO,
+      set: [["throne", -0.02, 0.1]],
       beats: [
-        [0, "Take thou this vial, being then in bed,"],
-        [0, "And this distilling liquor drink thou off."],
-        [1, "Give me, give me! O, tell not me of fear!"]
+        [0, "Tomorrow, and tomorrow, and tomorrow,"],
+        [0, "Creeps in this petty pace from day to day,"],
+        [0, "Out, out, brief candle! Life's but a walking shadow."]
       ] },
 
-    { name: "The nurse",
-      cast: ["Nurse", "Juliet"],
+    { name: "The spot", play: "Macbeth",
+      cast: ["Lady Macbeth"], marks: SOLO,
+      set: [["table", -0.025, 0], ["torch", 0.005, 0.14]],
+      beats: [
+        [0, "Out, damned spot! Out, I say!"],
+        [0, "Yet who would have thought the old man"],
+        [0, "to have had so much blood in him?"]
+      ] },
+
+    { name: "The nurse", play: "Romeo and Juliet",
+      cast: ["Nurse", "Juliet"], marks: FACING,
       set: [["bench", -0.035, 0], ["torch", 0.01, 0.15]],
-      marks: [[0, -0.085], [0, 0.085]],
       beats: [
-        [1, "Now, good sweet Nurse — why look'st thou sad?"],
+        [1, "Now, good sweet Nurse \u2014 why look'st thou sad?"],
         [0, "I am aweary. Give me leave awhile."],
         [1, "How art thou out of breath, when thou hast breath?"]
       ] },
 
-    { name: "The tomb",
-      cast: ["Romeo", "Juliet"],
+    { name: "Yorick", play: "Hamlet",
+      cast: ["Hamlet"], marks: SOLO,
+      set: [["tomb", -0.03, 0.06], ["torch", 0.005, -0.14]],
+      beats: [
+        [0, "Alas, poor Yorick! I knew him, Horatio:"],
+        [0, "A fellow of infinite jest, of most excellent fancy."],
+        [0, "Where be your gibes now?"]
+      ] },
+
+    { name: "If we shadows", play: "A Midsummer Night's Dream",
+      cast: ["Puck"], marks: SOLO,
+      set: [["toadstool", -0.025, 0.1]],
+      beats: [
+        [0, "If we shadows have offended,"],
+        [0, "Think but this, and all is mended:"],
+        [0, "That you have but slumber'd here."]
+      ] },
+
+    { name: "The sticking-place", play: "Macbeth",
+      cast: ["Macbeth", "Lady Macbeth"], marks: FACING,
+      set: [["throne", -0.02, 0.16], ["torch", 0.005, -0.16]],
+      beats: [
+        [0, "If we should fail?"],
+        [1, "We fail?"],
+        [1, "But screw your courage to the sticking-place,"],
+        [1, "And we'll not fail."]
+      ] },
+
+    { name: "The tomb", play: "Romeo and Juliet",
+      cast: ["Romeo", "Juliet"], marks: [[0, -0.07], [0, 0.07]],
       set: [["tomb", -0.025, 0], ["torch", 0.005, -0.11],
             ["torch", 0.005, 0.11]],
-      marks: [[0, -0.07], [0, 0.07]],
       beats: [
         [0, "Here's to my love. Thus with a kiss I die."],
         [1, "O happy dagger! This is thy sheath."]
@@ -2255,7 +2410,6 @@
   ];
 
   var playing = null;    // { def, cast, at, until, lat, lon }
-  var sceneAt = 0;       // which scene to try first, so they take turns
   var curtain = 0;       // when the last scene came down
   var REST = Math.round(2600 * PHI * 2);   // how long the stage stays empty
 
@@ -2318,15 +2472,18 @@
   function stepScene(now) {
     if (!playing) {
       if (still || now - curtain < REST) { return; }
+      // Whichever castable scene has waited longest goes up. Taking the
+      // next one round the list meant the same two played over and over,
+      // because the same two were the only ones whose people were standing.
+      var best = null;
+      var pick = null;
       for (var i = 0; i < SCENES.length; i += 1) {
-        var def = SCENES[(sceneAt + i) % SCENES.length];
+        var def = SCENES[i];
         var cast = castFor(def);
-        if (cast) {
-          sceneAt = (sceneAt + i + 1) % SCENES.length;
-          beginScene(def, cast, now);
-          break;
-        }
+        if (!cast) { continue; }
+        if (!best || (def.last || 0) < (best.last || 0)) { best = def; pick = cast; }
       }
+      if (best) { best.last = now; beginScene(best, pick, now); }
       return;
     }
 
@@ -2371,7 +2528,7 @@
       var def = SCENES[i];
       if (def.cast.indexOf(born.role) < 0) { continue; }
       var cast = castFor(def);
-      if (cast) { beginScene(def, cast, now); return; }
+      if (cast) { def.last = now; beginScene(def, cast, now); return; }
     }
     // Alone, then. An aside is still a performance.
     var at = boards();
