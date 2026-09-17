@@ -80,13 +80,14 @@
 
   // The land on the sphere, after the pixelled reference the artist gave:
   // hot pink, lime, orange, cream, cornflower and lavender.
+  // Barely there. The globe used to carry six saturated hues and shout over
+  // everything standing on it; it is ground now, and the colour belongs to the
+  // creature and to whatever gets thrown at it.
   var LANDS = [
-    "236, 78, 152",
-    "176, 214, 84",
-    "247, 160, 74",
-    "248, 240, 214",
-    "108, 170, 230",
-    "150, 122, 216"
+    "150, 160, 184",
+    "168, 172, 186",
+    "158, 168, 178",
+    "176, 174, 180"
   ];
 
   var GRAZE_MIN = 2800;      // how long the creature stays with a word
@@ -555,9 +556,9 @@
 
     // The sphere casts into the sky rather than glowing out of it: a soft
     // shadow just beyond the contour, which is what seats it.
-    var seatShadow = ctx.createRadialGradient(cx, cy, R * 0.97, cx, cy, R * 1.12);
-    seatShadow.addColorStop(0, "rgba(40, 44, 66, 0.16)");
-    seatShadow.addColorStop(1, "rgba(40, 44, 66, 0)");
+    var seatShadow = ctx.createRadialGradient(cx, cy, R * 0.99, cx, cy, R * 1.06);
+    seatShadow.addColorStop(0, "rgba(58, 64, 88, 0.045)");
+    seatShadow.addColorStop(1, "rgba(58, 64, 88, 0)");
     ctx.fillStyle = seatShadow;
     ctx.fillRect(0, 0, W, H);
 
@@ -572,10 +573,10 @@
 
     var base = ctx.createRadialGradient(
       lit.x, lit.y, R * 0.04, cx, cy, R * 1.2);
-    base.addColorStop(0, "#6fc3e8");
-    base.addColorStop(0.20, "#3f8fd4");
-    base.addColorStop(0.55, "#2b4f9e");
-    base.addColorStop(1, "#160f38");
+    base.addColorStop(0, "#eef0f3");
+    base.addColorStop(0.24, "#e4e7ed");
+    base.addColorStop(0.60, "#d8dce6");
+    base.addColorStop(1, "#c6ccda");
     ctx.fillStyle = base;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
@@ -583,7 +584,7 @@
       var p = project(mass.lat, mass.lon);
       if (p.z <= 0.02) { return; }
 
-      var fade = Math.min(1, p.z * 1.5);
+      var fade = Math.min(1, p.z * 1.5) * 0.62;
       var rx = mass.size * R * (0.34 + 0.66 * p.z);
       var ry = mass.size * R * (0.62 + 0.38 * p.z);
 
@@ -607,17 +608,17 @@
     // The pale weather that drifts over it.
     var drift = ctx.createRadialGradient(
       lit.x, lit.y, R * 0.02, lit.x, lit.y, R * 0.5);
-    drift.addColorStop(0, "rgba(248, 240, 214, 0.20)");
-    drift.addColorStop(0.6, "rgba(248, 222, 198, 0.05)");
-    drift.addColorStop(1, "rgba(248, 222, 198, 0)");
+    drift.addColorStop(0, "rgba(255, 255, 255, 0.28)");
+    drift.addColorStop(0.6, "rgba(255, 255, 255, 0.07)");
+    drift.addColorStop(1, "rgba(255, 255, 255, 0)");
     ctx.fillStyle = drift;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
     // Limb darkening: the edge of a sphere turns away from every light.
     var limb = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R);
-    limb.addColorStop(0, "rgba(28, 32, 54, 0)");
-    limb.addColorStop(0.72, "rgba(28, 32, 54, 0.14)");
-    limb.addColorStop(1, "rgba(28, 32, 54, 0.34)");
+    limb.addColorStop(0, "rgba(58, 64, 88, 0)");
+    limb.addColorStop(0.74, "rgba(58, 64, 88, 0.035)");
+    limb.addColorStop(1, "rgba(58, 64, 88, 0.09)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
@@ -626,15 +627,91 @@
     stir(now);
     drawMotes();
 
-    // The thin bright edge where the sphere ends.
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, TAU);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
+    // No line where the sphere ends. It used to be drawn in, and a drawn edge
+    // is the one thing that stops a horizon being a horizon: the sphere simply
+    // ceases now, a shade off the sky it sits in.
 
+  }
+
+  /* ---- the blind side -----------------------------------------------------
+
+     A sphere is an endless platform if you use the half of it nobody can see.
+     A word that has gone round the back is taken up and put down again
+     somewhere new on that far side, clear of whatever else is there, and comes
+     round in a place it has never been. Keep turning and the land is never
+     twice the same.
+
+     This is how it squares with nothing moving: every replanting happens on
+     the blind side, out of sight, and a word that can be seen is never
+     touched. The regeneration is real and it is also invisible. */
+
+  function blindSide() { return wrap(spin + Math.PI); }
+
+  /* Is this somewhere nobody can see, with room to spare?
+
+     Blindness here is not "round the back". With the pole leaning toward the
+     viewer and the words in a band from about 53 to 76 degrees, no word ever
+     gets properly behind the sphere — the deepest any of them reaches is
+     -0.18, so an earlier version of this that waited for -0.6 never replanted
+     anything at all. The blind side that actually exists is off the sides of
+     the screen: the globe is far wider than the room it is shown in, so a
+     great deal of its surface is out past the left and right edges at any
+     moment. That is where the regeneration happens. */
+  function outOfSight(lat, lon, margin) {
+    var p = project(lat, lon);
+    if (p.z <= -0.06) { return true; }              // as far back as it goes
+    return p.x < -margin || p.x > W + margin;       // or well off the side
+  }
+
+  /* Far enough out that a turn cannot swing it into view before it is ready. */
+  function blindMargin() { return Math.max(240, W * 0.34); }
+
+  function replant(ground) {
+    var wasLat = ground.lat;
+    var wasLon = ground.lon;
+
+    var away = blindSide();
+    ground.lat = LAT_LOW + Math.random() * (LAT_TOP - LAT_LOW);
+    ground.lon = wrap(away + (Math.random() - 0.5) * Math.PI * 0.8);
+
+    // Put it down clear of its new neighbours rather than on top of them —
+    // the same box separation the whole land was laid out with, for one word.
+    var mine = room(ground);
+    for (var pass = 0; pass < 50; pass += 1) {
+      var clear = true;
+      for (var i = 0; i < vocabulary.length; i += 1) {
+        var other = vocabulary[i];
+        if (other === ground) { continue; }
+        var box = room(other);
+        var squeeze = Math.max(0.18, Math.cos((ground.lat + other.lat) / 2));
+        var byLon = wrap(ground.lon - other.lon) * squeeze;
+        var byLat = ground.lat - other.lat;
+        var wantX = mine.x + box.x;
+        var wantY = mine.y + box.y;
+        var intoX = wantX - Math.abs(byLon);
+        var intoY = wantY - Math.abs(byLat);
+        if (intoX <= 0 || intoY <= 0) { continue; }
+
+        clear = false;
+        if (intoX / wantX < intoY / wantY) {
+          ground.lon = wrap(ground.lon + (byLon >= 0 ? 1 : -1) * intoX / squeeze);
+        } else {
+          ground.lat = Math.max(LAT_LOW, Math.min(LAT_TOP,
+            ground.lat + (byLat >= 0 ? 1 : -1) * intoY));
+        }
+      }
+      if (clear) { break; }
+    }
+
+    // If clearing its neighbours pushed it somewhere it could be seen, leave
+    // it where it was and try again next time it goes round. A word appearing
+    // out of nothing in front of someone is the one thing this must not do.
+    if (!outOfSight(ground.lat, ground.lon, blindMargin())) {
+      ground.lat = wasLat;
+      ground.lon = wasLon;
+      return false;
+    }
+    return true;
   }
 
   /* ---- standing things on it --------------------------------------------- */
@@ -651,8 +728,16 @@
       if (p.z <= 0.05 || p.x < 14 || p.x > W - 14) {
         el.style.visibility = "hidden";
         el.dataset.behind = "true";
+
+        // Well round the back, and it has had its turn in front: put it down
+        // somewhere new while nobody can see it happen.
+        if (ground.shown && outOfSight(ground.lat, ground.lon, blindMargin())) {
+          if (replant(ground)) { ground.shown = false; }
+        }
         return;
       }
+
+      if (p.z > 0.2) { ground.shown = true; }
 
       var fade = 0.34 + 0.66 * Math.min(1, (p.z - 0.05) / 0.32);
       var scale = 0.64 + 0.36 * p.z;
