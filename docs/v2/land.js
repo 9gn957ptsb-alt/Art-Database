@@ -1034,40 +1034,53 @@
 
     while (g.firstChild) { g.removeChild(g.firstChild); }
 
-    // Capped, and deliberately. Left to run, the grid kept halving and the
-    // animal became a cloud of 52 specks with no silhouette left — evolution
-    // into noise, not into anything. The body stays legible; the growing into
-    // other things is what the shed figures are for.
-    // Sized by area, not by the shorter side. Taking the shorter side meant a
-    // long thin part like the belly, 60 by 8, still came out in twenty
-    // columns however hard the grain was capped — 54 cells in one part.
-    var grain = Math.min(f, 3);
-    var want = 3 + 3 * grain;                       // cells this part becomes
-    var step = Math.max(3, Math.sqrt((home.w * home.h) / want));
-    var cols = Math.max(1, Math.round(home.w / step));
-    var rows = Math.max(1, Math.round(home.h / step));
+    // Two grains, and only two. The body is built at the established size and
+    // stays there — letting it keep halving turned the animal into a cloud of
+    // specks. Everything new arrives at half that, so fresh growth is legible
+    // as fresh: fine pixels accreting around coarse mass.
+    var coarse = Math.max(4, Math.sqrt((home.w * home.h) / 6));
+    var fine = coarse / 2;
+
+    // Whatever grew last time has settled, and is drawn at full size now.
+    part.grown = (part.grown || []).concat(part.fresh || []);
+    if (part.grown.length > 14) { part.grown = part.grown.slice(-14); }
+    part.fresh = [];
+
+    var cols = Math.max(1, Math.round(home.w / coarse));
+    var rows = Math.max(1, Math.round(home.h / coarse));
     var cw = home.w / cols;
     var ch = home.h / rows;
 
     for (var r = 0; r < rows; r += 1) {
       for (var c = 0; c < cols; c += 1) {
-        if (f > 0 && rnd() < 0.05 * Math.min(f, 2)) { continue; }   // a gap
+        if (f > 1 && rnd() < 0.05 * Math.min(f, 2)) { continue; }   // a gap
         cell(g, home.x + c * cw, home.y + r * ch, cw, ch,
              tok.c[(r + c + f) % tok.c.length]);
       }
     }
 
-    // Two at most. Any more and twenty parts' worth of ragged edges add up
-    // to a blob with no animal left in it.
-    var buds = Math.min(2, f);
+    part.grown.forEach(function (bit) {
+      cell(g, bit.x, bit.y, coarse, coarse, bit.tone);
+    });
+
+    // This round's growth, at the finer grain, put down against an edge.
+    var buds = Math.min(3, f);
     for (var i = 0; i < buds; i += 1) {
       var side = Math.floor(rnd() * 4);
-      var bx = home.x + (side === 1 ? home.w : side === 3 ? -cw : rnd() * Math.max(0, home.w - cw));
-      var by = home.y + (side === 2 ? home.h : side === 0 ? -ch : rnd() * Math.max(0, home.h - ch));
-      cell(g, bx, by, cw, ch, tok.c[i % tok.c.length]);
+      var bx = home.x + (side === 1 ? home.w
+                       : side === 3 ? -fine
+                       : rnd() * Math.max(0, home.w - fine));
+      var by = home.y + (side === 2 ? home.h
+                       : side === 0 ? -fine
+                       : rnd() * Math.max(0, home.h - fine));
+      var tone = tok.c[i % tok.c.length];
+      part.fresh.push({ x: bx, y: by, tone: tone });
+      cell(g, bx, by, fine, fine, tone);
     }
   }
 
+  /* The three parts painted longest ago, picked with a little slack so the
+     order is never quite the same. */
   function stalest(n) {
     var queue = parts.slice().sort(function (a, b) { return a.at - b.at; });
     var pool = queue.slice(0, Math.min(queue.length, n + 5));
