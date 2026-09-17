@@ -156,7 +156,7 @@ because creating a Pages site is a repo-admin action the Actions token can't
 perform. Turn it on at **Settings → Pages → Source: GitHub Actions**, then re-run
 the workflow; every push deploys after that.
 
-The site then serves at `https://9gn957ptsb-alt.github.io/Color-Middling/`.
+The site then serves at `https://9gn957ptsb-alt.github.io/Art-Database/`.
 
 For a custom domain, add a `CNAME` file in this folder containing only the domain,
 and point DNS at GitHub:

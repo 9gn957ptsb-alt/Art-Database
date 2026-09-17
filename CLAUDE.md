@@ -32,7 +32,15 @@ already declined or deferred in the same conversation.
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
-The GitHub Pages site is the real one: <https://9gn957ptsb-alt.github.io/Color-Middling/>.
+The GitHub Pages site is the real one: <https://9gn957ptsb-alt.github.io/Art-Database/>.
+
+**The repository was renamed** from `Color-Middling` to `Art-Database`. Git
+pushes to the old name still work, because GitHub redirects them — which is
+exactly why it went unnoticed — but Pages serves from the current name, so
+any link built from the old one is a 404. The working copy may still sit in a
+directory called `Color-Middling`; that means nothing. Build links from
+`Art-Database`, or better, read the URL out of the deploy: the pages workflow
+logs `Evaluated environment url:` on every run.
 The two versions have names:
 
 - **Umbrella Portfolio 2026** (`docs/`, served at `/`) — the link submitted to an
