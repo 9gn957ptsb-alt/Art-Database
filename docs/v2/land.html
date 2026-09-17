@@ -35,11 +35,16 @@
     <div class="creature" id="creature" hidden tabindex="0"
          role="button" aria-describedby="creature-help"
          aria-label="Grazing creature — hover or focus it to see what it turns up">
-      <!-- Drawn on a 32 × 24 grid of 4px pixels. Every rect below is a part
+      <!-- Laid out on a 32 × 24 grid of 4px cells. Every rect below is a part
            that holds its own colour and remembers which artwork gave it —
            twenty of them, so the creature carries many works at once instead
            of wearing one. land.js paints three per throw, always the three
-           painted longest ago, so it never settles. -->
+           painted longest ago, so it never settles.
+
+           These rects are the layout, not the drawing: land.js reads each one
+           for where its part stands and how big it is, then replaces it with
+           a block standing in isometry. The viewBox is rewritten from the
+           same grid, so nothing here needs to know about the projection. -->
       <svg viewBox="0 0 128 96" aria-hidden="true" focusable="false">
         <rect class="part" data-part="crest-1"    x="28" y="32" width="8"  height="8"/>
         <rect class="part" data-part="crest-2"    x="44" y="28" width="8"  height="12"/>

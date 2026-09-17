@@ -276,9 +276,9 @@
   height: 100%;
   shape-rendering: crispEdges;
   /* No drop-shadow. A filter gives every one of these its own render surface
-     and there can be forty on the world at once; the shadow is drawn into
-     the figure itself as offset cells instead, which is cheaper and truer to
-     a thing made of pixels anyway. */
+     and there can be forty on the world at once — and an isometric block
+     already carries its own light on three faces, so a shadow behind it only
+     put a second, flat figure under a solid one. */
 }
 
 /* ---- how the company reads --------------------------------------------

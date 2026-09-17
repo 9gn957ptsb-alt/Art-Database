@@ -1304,6 +1304,102 @@
      gave it its colour. Nothing is ever finished: every throw covers the
      oldest three and pushes the rest further back, so the creature carries
      six or seven works at a time and the walk through them has no end. */
+  /* ---- isometry ------------------------------------------------------------
+
+     Everything that grows off the animal — and the animal itself — is drawn
+     the way the objects in the Objects artifact are drawn: true isometry.
+
+     Not a faked three-quarter view. The camera sits at azimuth 45 and
+     elevation asin(1/root 3), 35.264 degrees, which is the one position where
+     all three axes are foreshortened equally and every edge of a cube lands
+     at 30 degrees from the horizontal. That projection comes out as two
+     numbers: across the screen a cube runs (x - y) times cos 30, and down it
+     runs (x + y) times a half, less its height. Nothing else is needed.
+
+     The figures were all drawn flat, on grids of cells, and they stay drawn
+     that way — a flat cell is simply extruded to a given depth and becomes a
+     block. So every silhouette already worked out here, the animal's twenty
+     parts, the hatchling, the players, the scenery, keeps its design and gains
+     a body.
+
+     Each block shows three faces, and they are painted from the back of the
+     scene forward: with the camera on the (1,1,1) corner, depth is x + y + z,
+     so sorting on that and painting in order is exact for cubes on a grid.
+
+     The one departure from the artifact: there the faces of a block are filled
+     flat, one colour for the whole region, because those objects fill a canvas
+     and the form reads from the silhouette alone. These are forty pixels
+     across on a turning globe, and a flat fill at that size collapses into a
+     blob, so the three faces are separated a little — the top lit, the two
+     sides stepped down. Same projection, same blocks, just enough light on
+     them to keep the form. */
+
+  var ISO_W = Math.cos(Math.PI / 6);      // 0.8660 across, per unit of x or y
+  var ISO_H = 0.5;                        // and half that down
+  var THICK = 3;                          // how deep a figure is, in its own cells
+  var BEAST_THICK = 14;                   // the animal's grid is four times finer
+
+  /* The top face, then the two that face the viewer. Order matters: the top
+     is drawn last within a block so it sits over its own sides. */
+  var FACE_LIFT = [-0.34, -0.14, 0.10];   // left, right, top
+
+  function isoU(x, y) { return (x - y) * ISO_W; }
+  function isoV(x, y, z) { return (x + y) * ISO_H - z; }
+
+  function corner(x, y, z) {
+    return isoU(x, y).toFixed(2) + "," + isoV(x, y, z).toFixed(2);
+  }
+
+  /* One block, as the three faces you can see of it. */
+  function block(x, y, z, w, d, h, tone) {
+    var x1 = x + w, y1 = y + d, z1 = z + h;
+    var faces = [
+      // the side facing down-left, at y1
+      [corner(x, y1, z), corner(x1, y1, z), corner(x1, y1, z1), corner(x, y1, z1)],
+      // the side facing down-right, at x1
+      [corner(x1, y, z), corner(x1, y1, z), corner(x1, y1, z1), corner(x1, y, z1)],
+      // and the top
+      [corner(x, y, z1), corner(x1, y, z1), corner(x1, y1, z1), corner(x, y1, z1)]
+    ];
+    var out = "";
+    for (var i = 0; i < 3; i += 1) {
+      out += '<polygon points="' + faces[i].join(" ") +
+             '" fill="' + lift(tone, FACE_LIFT[i]) + '"/>';
+    }
+    return out;
+  }
+
+  /* Far to near: with the camera on the (1,1,1) corner, depth is x + y + z. */
+  function stack(boxes, depth) {
+    var d = depth || THICK;
+    boxes.sort(function (a, b) {
+      return (a.x + a.z) - (b.x + b.z);
+    });
+    var out = "";
+    boxes.forEach(function (b) {
+      out += block(b.x, 0, b.z, b.w, d, b.h, b.tone);
+    });
+    return out;
+  }
+
+  /* What a grid of cells takes up once it is standing up and turned to the
+     corner — so a drawing can be given a box that fits it exactly. */
+  function isoBounds(cols, rows, depth) {
+    var d = depth || THICK;
+    return {
+      x: isoU(0, d),
+      y: isoV(0, 0, rows),
+      w: isoU(cols, 0) - isoU(0, d),
+      h: isoV(cols, d, 0) - isoV(0, 0, rows)
+    };
+  }
+
+  function viewBox(cols, rows, depth) {
+    var b = isoBounds(cols, rows, depth);
+    return b.x.toFixed(2) + " " + b.y.toFixed(2) + " " +
+           b.w.toFixed(2) + " " + b.h.toFixed(2);
+  }
+
   var SVGNS = "http://www.w3.org/2000/svg";
 
   /* Each part starts as one block and becomes a group, so its shape can be
@@ -1315,20 +1411,46 @@
       group.setAttribute("class", "part");
       group.setAttribute("data-part", rect.getAttribute("data-part"));
       rect.parentNode.insertBefore(group, rect);
-      rect.removeAttribute("class");
-      rect.removeAttribute("data-part");
-      group.appendChild(rect);
+
+      var home = {
+        x: +rect.getAttribute("x"), y: +rect.getAttribute("y"),
+        w: +rect.getAttribute("width"), h: +rect.getAttribute("height")
+      };
+      var tone = window.getComputedStyle(rect).fill || "#ec4e98";
+      rect.parentNode.removeChild(rect);
+
+      // Standing up from the off: the flat rect it was laid out as becomes
+      // one block, and every rebuild after this is blocks too.
+      group.innerHTML = block(home.x, 0, BEAST_GRID.rows - home.y - home.h,
+                              home.w, BEAST_THICK, home.h, tone);
 
       return {
-        el: group,
-        name: group.getAttribute("data-part"),
-        home: {
-          x: +rect.getAttribute("x"), y: +rect.getAttribute("y"),
-          w: +rect.getAttribute("width"), h: +rect.getAttribute("height")
-        },
+        el: group, name: group.getAttribute("data-part"), home: home,
         token: null, at: 0, form: 0
       };
     });
+
+    // The whole animal, seen from the corner, needs a box that fits it.
+    var svg = creature.querySelector("svg");
+    svg.setAttribute("viewBox",
+      viewBox(BEAST_GRID.cols, BEAST_GRID.rows, BEAST_THICK));
+
+    // And a footprint to match: an isometric animal is taller than a flat one
+    // and not as wide, because it leans away from you.
+    var fit = isoBounds(BEAST_GRID.cols, BEAST_GRID.rows, BEAST_THICK);
+    creature.style.width = "176px";
+    creature.style.height = (176 * fit.h / fit.w).toFixed(0) + "px";
+
+    var eye = creature.querySelector(".c-eye");
+    if (eye) {
+      var ex = +eye.getAttribute("x"), ey = +eye.getAttribute("y");
+      var ew = +eye.getAttribute("width"), eh = +eye.getAttribute("height");
+      var box = document.createElementNS(SVGNS, "g");
+      box.setAttribute("class", "c-eye");
+      box.innerHTML = block(ex, 0, BEAST_GRID.rows - ey - eh, ew,
+                            BEAST_THICK + 1.5, eh, "#241a33");
+      eye.parentNode.replaceChild(box, eye);
+    }
   }
 
   /* A small, repeatable source of randomness, so a given part and a given
@@ -1342,26 +1464,12 @@
     };
   }
 
-  function cell(into, x, y, w, h, tone) {
-    var r = document.createElementNS(SVGNS, "rect");
-    r.setAttribute("x", x.toFixed(2));
-    r.setAttribute("y", y.toFixed(2));
-    r.setAttribute("width", w.toFixed(2));
-    r.setAttribute("height", h.toFixed(2));
-    r.setAttribute("fill", tone);
-    into.appendChild(r);
+  /* The animal is drawn on a grid 128 across and 96 down. A cell on it
+     becomes a block the same way a cell of anything else does. */
+  var BEAST_GRID = { cols: 128, rows: 96 };
 
-    // A bead of light in the corner of every cell. The world's surface is
-    // made of dots now (see the weave, above); this is the same idea at the
-    // grain of the thing standing on it, so a pixel is not a flat square of
-    // colour but a square with a dot of light caught in it.
-    var bead = document.createElementNS(SVGNS, "rect");
-    bead.setAttribute("x", (x + w * 0.22).toFixed(2));
-    bead.setAttribute("y", (y + h * 0.22).toFixed(2));
-    bead.setAttribute("width", (w * 0.28).toFixed(2));
-    bead.setAttribute("height", (h * 0.28).toFixed(2));
-    bead.setAttribute("fill", lift(tone, 0.42));
-    into.appendChild(bead);
+  function cell(into, x, y, w, h, tone) {
+    into.push({ x: x, z: BEAST_GRID.rows - y - h, w: w, h: h, tone: tone });
   }
 
   /* The part does not just take a colour, it takes a shape. Each time an
@@ -1375,8 +1483,7 @@
     var g = part.el;
     var rnd = seedFrom(part.name + tok.s, f + 1);
     var c = ramp(tok);      // the work's three, held apart — see ramp()
-
-    while (g.firstChild) { g.removeChild(g.firstChild); }
+    var boxes = [];         // gathered, then sorted back to front by stack()
 
     // Two grains, and only two. The body is built at the established size and
     // stays there — letting it keep halving turned the animal into a cloud of
@@ -1398,13 +1505,13 @@
     for (var r = 0; r < rows; r += 1) {
       for (var col = 0; col < cols; col += 1) {
         if (f > 1 && rnd() < 0.05 * Math.min(f, 2)) { continue; }   // a gap
-        cell(g, home.x + col * cw, home.y + r * ch, cw, ch,
+        cell(boxes, home.x + col * cw, home.y + r * ch, cw, ch,
              c[(r + col + f) % 3]);
       }
     }
 
     part.grown.forEach(function (bit) {
-      cell(g, bit.x, bit.y, coarse, coarse, bit.tone);
+      cell(boxes, bit.x, bit.y, coarse, coarse, bit.tone);
     });
 
     // This round's growth, at the finer grain, put down against an edge.
@@ -1419,8 +1526,10 @@
                        : rnd() * Math.max(0, home.h - fine));
       var tone = c[i % 3];
       part.fresh.push({ x: bx, y: by, tone: tone });
-      cell(g, bx, by, fine, fine, tone);
+      cell(boxes, bx, by, fine, fine, tone);
     }
+
+    g.innerHTML = stack(boxes, BEAST_THICK);
   }
 
   /* The three parts painted longest ago, picked with a little slack so the
@@ -1549,28 +1658,18 @@
   /* Every one of them is drawn the same way: a list of cells on a small grid,
      which is the whole of the aesthetic and costs nothing to rebuild. */
   function pixels(cols, rows, cells) {
-    var out = "";
-    var shade = "";
-    cells.forEach(function (c) {
+    // Every flat cell becomes a block, standing up: the drawing's row 0 is the
+    // top of the figure, so it is the highest z.
+    var boxes = cells.map(function (c) {
       var w = c[3] || 1;
       var h = c[4] || 1;
-      shade += '<rect x="' + (c[0] + 0.4) + '" y="' + (c[1] + 0.4) +
-               '" width="' + w + '" height="' + h + '"/>';
-      out += '<rect x="' + c[0] + '" y="' + c[1] +
-             '" width="' + w + '" height="' + h +
-             '" fill="' + c[2] + '"/>';
-      // The same bead of light the animal's own cells carry.
-      out += '<rect x="' + (c[0] + w * 0.22).toFixed(2) +
-             '" y="' + (c[1] + h * 0.22).toFixed(2) +
-             '" width="' + (w * 0.28).toFixed(2) +
-             '" height="' + (h * 0.28).toFixed(2) +
-             '" fill="' + lift(c[2], 0.42) + '"/>';
+      return { x: c[0], z: rows - c[1] - h, w: w, h: h, tone: c[2] };
     });
-    // The shadow is one flat group of offset cells under the figure. It reads
-    // the same as a drop-shadow at this size and does not cost a filter.
-    return '<svg viewBox="0 0 ' + (cols + 1) + " " + (rows + 1) +
-           '" aria-hidden="true" focusable="false">' +
-           '<g fill="rgba(24,26,40,0.28)">' + shade + "</g>" + out + "</svg>";
+    // No drawn shadow any more. An isometric block carries its own light on
+    // three faces and sits on its own ground; a shadow offset behind it put a
+    // second, flat figure under a solid one.
+    return '<svg viewBox="' + viewBox(cols, rows) +
+           '" aria-hidden="true" focusable="false">' + stack(boxes) + "</svg>";
   }
 
   function stencil(rows, tone) {
@@ -1796,9 +1895,11 @@
     if (born.kind === "player" && !born.role) { born.role = roleFor(born.token); }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
+    var fit = isoBounds(made.cols, made.rows);
     var u = unit() * (BIG[born.kind] || UP) * swell(born);
-    born.el.style.width = (u * (made.cols + 1) / 7).toFixed(1) + "px";
-    born.el.style.height = (u * (made.rows + 1) / 7).toFixed(1) + "px";
+    var wide = u * fit.w / 7;
+    born.el.style.width = wide.toFixed(1) + "px";
+    born.el.style.height = (wide * fit.h / fit.w).toFixed(1) + "px";
     born.el.dataset.kind = born.kind;
     born.el.setAttribute("aria-label", label(born));
   }
