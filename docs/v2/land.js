@@ -1573,8 +1573,9 @@
     // and every third leaves two, so the company builds faster than the
     // animal does and there is always something new to press. What arrives
     // is decided in sprout(); see "the company" below.
-    sprout(tok);
-    if (stamp % 3 === 0) { sprout(tok); }
+    var gnd = underfoot();
+    sprout(tok, gnd);
+    if (stamp % 3 === 0) { sprout(tok, gnd); }
 
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 440);   /* past the 419ms jolt */
@@ -1625,9 +1626,6 @@
      of on the animal, which is how a thing is fed. */
 
   var KINDS = ["hatchling", "player", "egg", "tube", "tower"];
-
-  /* How far along the world has to be before a kind can appear at all. */
-  var UNLOCK = { hatchling: 0, player: 1, egg: 2, tube: 3, tower: 4 };
 
   var VERB = {
     hatchling: "press to call it along",
@@ -1699,9 +1697,16 @@
     ".a.a.a.a."
   ];
 
+  /* The seed for anything grown out of the ground is the word and the work
+     together, so the same object on the same word always comes up the same,
+     and the same work on a different word comes up differently. */
+  function grain(born, salt) {
+    return seedFrom((born.ground || "") + born.token.s, salt);
+  }
+
   function drawHatchling(born) {
     var c = ramp(born.token);
-    var rnd = seedFrom(born.token.s, 11);
+    var rnd = grain(born, 11);
     var crest = rnd() > 0.5;
     var tall = rnd() > 0.55;
     var cells = [];
@@ -1854,18 +1859,97 @@
     return standing >= Math.min(8, 1 + Math.floor(stamp / 2));
   }
 
-  function kindFor(tok) {
-    // The troupe fills before the rest multiplies: up to four players arrive
-    // over the first eight applications, which is enough for most of the
-    // scenes. After that a player is no likelier than anything else.
-    if (UNLOCK.player <= stamp && !troupeFull()) { return "player"; }
+  /* ---- what the ground grows ----------------------------------------------
+
+     The words on the world are the things the collages are made of, read off
+     the photographs one by one. Until now they were only somewhere to stand:
+     the animal grazed on a word, the word decided which saved work it turned
+     up, and after that the word had no further say in anything.
+
+     It decides everything now. Whatever grows does so out of the ground it is
+     standing on, and what the ground is made of is what grows:
+
+       things that stack          a tower, which is a stack of them
+         book page, cardboard, kraft paper, magazine, blueprint, ticket
+       things wound or banded     a tube, which holds bands of colour —
+                                  a barcode is one already, a map and a
+                                  receipt are rolled, film is run through
+         film strip, instant film, tape, foil, map, receipt, barcode
+       things that are alive      a hatchling
+         dog, insect, cloud, shoreline
+       things with somebody in them  a player, who has a part to say
+         handwriting, photograph, polaroid, sketch, playing card
+       marks that are not yet anything  an egg, which opens into something
+         paint, watercolour, sticker, qr code
+
+     Six, seven, four, five and four of the twenty-six: no group so much
+     bigger than the rest that the world fills up with one thing.
+
+     So the whole thing runs the other way round now. Press a word and the
+     animal walks to it; feed it a palette while it is standing there and that
+     word is what comes up out of the ground. The collages decide the cast.
+
+     Five of the words go further and cast a particular part, because those
+     five are already about somebody: handwriting is the hand that wrote it,
+     so it brings on the Chorus; a photograph is what is left of a person, so
+     it brings on Hamlet; a polaroid, Juliet; a sketch, Jaques, who watches
+     and describes; a playing card, Puck, for the joker in the New York
+     collage that started all of this. Which means the repertory is not a
+     lottery either — to get Hamlet on the world, walk the animal onto
+     `photograph` and feed it. */
+
+  var GROUND = {
+    // things that stack
+    "book page": "tower", "cardboard": "tower", "kraft paper": "tower",
+    "magazine": "tower", "blueprint": "tower", "ticket": "tower",
+
+    // things wound, rolled or run through in bands
+    "film strip": "tube", "instant film": "tube", "tape": "tube",
+    "foil": "tube", "map": "tube", "receipt": "tube", "barcode": "tube",
+
+    // things that are alive
+    "dog": "hatchling", "insect": "hatchling", "cloud": "hatchling",
+    "shoreline": "hatchling",
+
+    // things with somebody in them
+    "handwriting": "player", "photograph": "player", "polaroid": "player",
+    "sketch": "player", "playing card": "player",
+
+    // marks that are not yet anything
+    "paint": "egg", "watercolour": "egg", "sticker": "egg", "qr code": "egg"
+  };
+
+  /* The five words that are already about somebody. */
+  var CASTS = {
+    "handwriting": "Chorus",
+    "photograph": "Hamlet",
+    "polaroid": "Juliet",
+    "sketch": "Jaques",
+    "playing card": "Puck"
+  };
+
+  /* Where the animal is standing, which is the ground anything it throws off
+     grows out of. */
+  function underfoot() { return vocabulary[here] || null; }
+
+  function kindFor(tok, word) {
+    var wants = word && GROUND[word];
+
+    // The ground has the first word on it. A troupe that is already full is
+    // the one thing that overrules it: a sixth photograph cannot bring on a
+    // ninth player, so it brings on what the world is shortest of instead.
+    // The kinds used to be let in one at a time as the world went on, which
+    // was a way of making it vary before anything else did. The words vary by
+    // themselves, and a gate on top of them meant standing on `book page`
+    // could still hand you an egg, so the gate is gone.
+    if (wants && !(wants === "player" && troupeFull())) { return wants; }
 
     var open = KINDS.filter(function (k) {
-      return UNLOCK[k] <= stamp && !(k === "player" && troupeFull());
+      return !(k === "player" && troupeFull());
     });
     if (!open.length) { return "hatchling"; }
 
-    // The work chooses, but only among the kinds the world is short of.
+    // Failing that, the work chooses, among the kinds the world is short of.
     // Left to a straight roll it ran to eight tubes and one of everything
     // else, which is a warehouse rather than a company.
     var tally = {};
@@ -1884,15 +1968,19 @@
     var tok = born.token;
     var what = born.kind === "set"
       ? "A " + born.piece + ", built for the scene"
-      : "A " + (born.role || born.kind) + " grown off the creature";
-    return what + ", from " + tok.t + (tok.a ? " by " + tok.a : "") + ". " +
+      : "A " + (born.role || born.kind) +
+        (born.ground ? " grown on " + born.ground : " grown off the creature");
+    return what + ", in the colours of " + tok.t +
+           (tok.a ? " by " + tok.a : "") + ". " +
            VERB[born.kind] + "; hold it, or press O, to open the work on Artsy.";
   }
 
   function redraw(born) {
     // Whatever it has just become, if it is a player it needs a part before
     // it can be drawn — and it keeps that part for good.
-    if (born.kind === "player" && !born.role) { born.role = roleFor(born.token); }
+    if (born.kind === "player" && !born.role) {
+      born.role = roleFor(born.token, born.ground);
+    }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
     var fit = isoBounds(made.cols, made.rows);
@@ -1904,7 +1992,7 @@
     born.el.setAttribute("aria-label", label(born));
   }
 
-  function sprout(tok, anywhere) {
+  function sprout(tok, gnd, at) {
     if (spawns.length >= MAX_COMPANY) { return null; }
 
     var el = document.createElement("div");
@@ -1915,13 +2003,18 @@
     var born = {
       el: el,
       token: tok,
-      kind: kindFor(tok),
+      ground: gnd ? gnd.word : null,        // the word it came up out of
+      // and how many of the collages that word runs through, which is how
+      // much of the work it is. A thing grown on a word that is everywhere
+      // arrives with more of itself already built.
+      roots: gnd ? gnd.works.length : 1,
+      kind: kindFor(tok, gnd && gnd.word),
       tier: 1,
       crack: 0,
       tone: ramp(tok)[0],
       face: 0,
-      bands: [ramp(tok)[0], ramp(tok)[1], ramp(tok)[2]],
-      stack: [{ tone: ramp(tok)[1], token: tok }],
+      bands: [],
+      stack: [],
       following: false,
       held: false,
       to: null,
@@ -1930,16 +2023,26 @@
       // Beside the animal, not under it — a thing born inside the animal's
       // own outline cannot be pressed until it has wandered clear — and well
       // beside it, because everything used to arrive in the same armful and
-      // stay there. What the world makes by itself is born anywhere at all.
-      lat: anywhere
-        ? LAT_LOW + Math.random() * (LAT_TOP - LAT_LOW)
+      // stay there. What the world makes by itself comes up beside its own
+      // word instead, wherever on the sphere that word is standing.
+      lat: at
+        ? inBand(at.lat + (Math.random() - 0.5) * 0.14)
         : Math.max(LAT_LOW, Math.min(LAT_TOP,
             beast.lat + (Math.random() - 0.5) * 0.3)),
-      lon: anywhere
-        ? Math.random() * TAU
+      lon: at
+        ? wrap(at.lon + (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.2))
         : wrap(beast.lon + (Math.random() < 0.5 ? -1 : 1) *
                (0.22 + Math.random() * 0.5))
     };
+
+    // A tube comes up with a band for every collage its word is in, and a
+    // tower with a floor for each, so the deeper a thing runs through the
+    // work the more of it is standing there to begin with.
+    var deep = Math.max(1, Math.min(BANDS, born.roots));
+    for (var i = 0; i < deep; i += 1) {
+      born.bands.push(ramp(tok)[i % 3]);
+      born.stack.push({ tone: ramp(tok)[(i + 1) % 3], token: tok });
+    }
 
     redraw(born);
     wireCompany(born);
@@ -1965,8 +2068,10 @@
 
   /* ---- what pressing one does --------------------------------------------- */
 
+  /* The word decides what is born; growing past the third size is what moves
+     a thing on from there. */
   function becomeNext(born) {
-    var open = KINDS.filter(function (k) { return UNLOCK[k] <= stamp; });
+    var open = KINDS.slice();
     // A troupe that is already full does not need an understudy: a thing
     // growing past its third size skips the part and goes on to the next
     // kind. Without this the company filled up with players, because every
@@ -1978,8 +2083,13 @@
     born.kind = open[(at + 1) % open.length];
     born.tier = 1;
     born.crack = 0;
-    born.bands = [ramp(born.token)[0], ramp(born.token)[1]];
-    born.stack = [{ tone: born.tone, token: born.token }];
+    var deep = Math.max(1, Math.min(BANDS, born.roots || 1));
+    born.bands = [];
+    born.stack = [];
+    for (var i = 0; i < deep; i += 1) {
+      born.bands.push(ramp(born.token)[i % 3]);
+      born.stack.push({ tone: ramp(born.token)[(i + 1) % 3], token: born.token });
+    }
     born.face = 0;
     born.tone = ramp(born.token)[0];
     redraw(born);
@@ -2174,7 +2284,22 @@
     if (spawns.length >= MAX_COMPANY) { return; }
     var keys = supply.pool;
     var tok = supply.tokens[keys[Math.floor(Math.random() * keys.length)]];
-    if (tok) { sprout(tok, true); }
+
+    // Which word it comes up on. Once the ground decides what grows, players
+    // only arrive on the five words that are about somebody — and five words
+    // in twenty-six meant the troupe stopped filling and the plays stopped
+    // with it. So while there is room on the stage the world grows on those
+    // words by choice, and on any word at all once the troupe is full. It is
+    // still a word doing the casting either way.
+    var open = vocabulary;
+    if (!troupeFull() && Math.random() < 0.5) {
+      var casting = vocabulary.filter(function (g) {
+        return GROUND[g.word] === "player";
+      });
+      if (casting.length) { open = casting; }
+    }
+    var gnd = open[Math.floor(Math.random() * open.length)];
+    if (tok && gnd) { sprout(tok, gnd, gnd); }
   }
 
   /* Two of a kind that have wandered into each other become one bigger one.
@@ -2541,10 +2666,16 @@
      collecting eight people who never share a stage. The work still chooses
      between the parts that would do — that is what the seed is for — and a
      part already standing is never cast twice while an empty one is left. */
-  function roleFor(tok) {
+  function roleFor(tok, word) {
     var rnd = seedFrom(tok.s, 23);
     var taken = {};
     spawns.forEach(function (born) { if (born.role) { taken[born.role] = true; } });
+
+    // The ground casts, where the ground is already about somebody: the hand
+    // that wrote it, what is left of a person, the joker in the New York
+    // collage. Only if that part is already standing does the scene decide.
+    var cast = word && CASTS[word];
+    if (cast && !taken[cast]) { return cast; }
 
     var wanted = null;
     var nearest = -1;
@@ -2942,9 +3073,10 @@
 
     var tones = [];
     var keep = null;
+    var from = null;
     caught.forEach(function (born) {
       tones = tones.concat(ramp(born.token));
-      if (!keep) { keep = born.token; }
+      if (!keep) { keep = born.token; from = born; }
       burstAt(born, ramp(born.token));
       banish(born);
     });
@@ -2954,7 +3086,10 @@
     // Two or more of anything, squashed together, come back as one egg —
     // which is to say as something else, once somebody opens it.
     if (caught.length > 1 && keep) {
-      var born = sprout(keep);
+      // It keeps the ground the crowd was standing on: squashing a thing
+      // does not take it off the word it grew out of.
+      var born = sprout(keep, from && from.ground
+        ? { word: from.ground, works: { length: from.roots || 1 } } : null);
       if (born) {
         born.kind = "egg";
         born.crack = 0;
