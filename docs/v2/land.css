@@ -68,14 +68,32 @@
   font-family: var(--sans);
   overflow: hidden;
   overscroll-behavior: none;
+
+  /* A backstop for the moment before the stage exists, and for anywhere it
+     does not reach: pinch and pan as normal, but no zooming on a double tap.
+     Nearly everything on this page is worked by tapping it twice — the
+     creature, an egg, one tube and then another — and on a touch screen two
+     quick taps in the same place is the browser's own zoom gesture. */
+  touch-action: manipulation;
 }
 
 .stage {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  touch-action: none;       /* dragging turns the world, it does not scroll */
   cursor: grab;
+
+  /* Not `none`. The stage is fixed to all four edges, so it is the whole
+     screen, and `touch-action: none` on the whole screen tells the browser to
+     do nothing at all with touch there — including pinch. Zoom in anywhere
+     the stage does not cover (the panel of works, or the moment before this
+     stylesheet applies) and there is then no way back out: every pinch lands
+     on the stage and is swallowed. `pinch-zoom` keeps the one gesture that
+     has to keep working and still refuses the rest, so a one-finger drag
+     comes to us as a turn of the world rather than a scroll, and a double
+     tap does not zoom — which matters here, where half the things on the
+     world are worked by tapping them twice. */
+  touch-action: pinch-zoom;
 }
 
 .stage[data-turning="true"] { cursor: grabbing; }
@@ -546,6 +564,9 @@
   box-shadow: 0 calc(-1 * var(--s-4)) var(--s-6) rgba(24, 26, 40, 0.146);
   backdrop-filter: blur(var(--s-4));
   z-index: 100;
+  /* It scrolls, and it can be pinched, but it does not zoom on a double tap:
+     this panel is where the zooming was starting. */
+  touch-action: pan-y pinch-zoom;
   animation: rise var(--beat-2) ease-out;
 }
 

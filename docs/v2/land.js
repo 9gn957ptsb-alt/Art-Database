@@ -3329,6 +3329,16 @@
   var turning = null;
 
   stage.addEventListener("pointerdown", function (event) {
+    // A second finger down means the browser is being pinched, not that the
+    // world is being turned. Let go of the turn and the squash and leave the
+    // gesture to it, or the world spins while someone is trying to zoom.
+    if (turning && event.pointerId !== turning.id) {
+      turning = null;
+      squashing = null;
+      delete stage.dataset.turning;
+      return;
+    }
+
     // Only reaches here when the press missed the creature, the card and the
     // token, all of which stop it. So: put down whatever was up.
     if (offering || carrying) { dismiss(); }
