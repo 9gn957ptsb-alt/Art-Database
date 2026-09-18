@@ -637,6 +637,63 @@
      where the light is, it keeps its own surface and is redrawn only when the
      world is actually turned. */
 
+  /* ---- the Earth ----------------------------------------------------------
+
+     The globe is the Earth. Its shape comes from Natural Earth's 110m
+     coastlines, rasterised by scripts/build_earth.py into a bitmap of land
+     and sea — 512 by 256, about three quarters of a degree a cell — because
+     a hundred and thirty thousand dots cannot each be tested against a
+     hundred coastline polygons every time the world is turned. Its colour
+     still comes from the artist's works, as everything on here does: the
+     form is the Earth's, the palette is his.
+
+     Land is not a flat fill either. Every dot knows how far inland it is,
+     counted out of the mask when the weave is made, so the strands thicken
+     from the coast inward the way density does in a salt painting — the
+     middle of Asia is dense, an island is a thread. */
+
+  var earth = null;              // { w, h, bits } once it has loaded
+  var earthBits = null;
+
+  function readEarth(data) {
+    earth = data;
+    var raw = window.atob(data.bits);
+    earthBits = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i += 1) { earthBits[i] = raw.charCodeAt(i); }
+  }
+
+  function onLand(lat, lon) {
+    if (!earthBits) { return 0; }
+    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
+    var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
+    if (x < 0) { x += earth.w; }
+    if (y < 0) { y = 0; }
+    if (y >= earth.h) { y = earth.h - 1; }
+    var i = y * earth.w + x;
+    return (earthBits[i >> 3] >> (i & 7)) & 1;
+  }
+
+  /* How far into the land a point is: nought at sea, one well inland. Counted
+     by looking outward in rings rather than by a proper distance transform,
+     which is plenty at this size and costs nothing to write. */
+  function inland(lat, lon) {
+    if (!onLand(lat, lon)) { return 0; }
+    var step = Math.PI / earth.h;          // one cell of the mask, in radians
+    var hits = 0;
+    var tries = 0;
+    for (var ring = 1; ring <= 3; ring += 1) {
+      for (var a = 0; a < 8; a += 1) {
+        var th = a / 8 * TAU;
+        var dlat = Math.cos(th) * step * ring * 2;
+        var dlon = Math.sin(th) * step * ring * 2 /
+                   Math.max(0.2, Math.cos(lat));
+        tries += 1;
+        hits += onLand(lat + dlat, lon + dlon);
+      }
+    }
+    return tries ? hits / tries : 0;
+  }
+
   var wSinLat = null, wCosLat = null, wSinLon = null, wCosLon = null;
   var wSalt = null, wTone = null, wGain = null;
   var wCount = 0;
@@ -704,7 +761,16 @@
 
     // Which land a dot falls on, and how far into it. Thirteen distance
     // checks a dot, done once here rather than on every repaint.
-    wTones = masses.map(function (mass) { return mass.tone; });
+    // The land wears the works' colours, but taken well down toward ink: the
+    // tones are pale, and a pale dot on a pale sphere is not a coastline. The
+    // sea is left as bare ink at a fraction of the strength, so what reads
+    // first about this world is where the land is.
+    wTones = masses.map(function (mass) {
+      var c = mass.tone.split(",").map(Number);
+      return [Math.round(c[0] * 0.42 + 27 * 0.58),
+              Math.round(c[1] * 0.42 + 29 * 0.58),
+              Math.round(c[2] * 0.42 + 36 * 0.58)].join(",");
+    });
 
     for (var k = 0; k < wCount; k += 1) {
       wSinLat[k] = Math.sin(lat[k]);
@@ -713,19 +779,23 @@
       wCosLon[k] = Math.cos(lon[k]);
       wSalt[k] = salt[k];
 
-      var best = 0;
+      // Where it falls on the Earth, and how far into it. A dot at sea is
+      // bare ink; a dot on land wears the colour of whichever of the works
+      // lies nearest and sits heavier the further inland it is.
+      var deep = inland(lat[k], lon[k]);
+      wGain[k] = deep ? 0.25 + 0.75 * deep : 0;
+
       var which = 0;
-      for (var m = 0; m < masses.length; m += 1) {
-        var mass = masses[m];
-        var dLat = lat[k] - mass.lat;
-        var dLon = wrap(lon[k] - mass.lon) * wCosLat[k];
-        var d = Math.sqrt(dLat * dLat + dLon * dLon);
-        var reach = mass.size * 3.4;
-        if (d >= reach) { continue; }
-        var near = 1 - d / reach;
-        if (near > best) { best = near; which = m + 1; }
+      if (deep) {
+        var best = Infinity;
+        for (var m = 0; m < masses.length; m += 1) {
+          var mass = masses[m];
+          var dLat = lat[k] - mass.lat;
+          var dLon = wrap(lon[k] - mass.lon) * wCosLat[k];
+          var d = dLat * dLat + dLon * dLon;
+          if (d < best) { best = d; which = m + 1; }
+        }
       }
-      wGain[k] = best;
       wTone[k] = which;
     }
 
@@ -776,10 +846,23 @@
 
       var lit = z2 > 0.54 ? 1 : (z2 - 0.04) * 2;
       var gain = wGain[k];
-      var a = (0.09 + 0.26 * lit) * (1 + gain * 1.7);
-      var tone = wSalt[k] ? "255,255,255"
-               : (gain > 0.22 && wTone[k] ? wTones[wTone[k] - 1] : "27,29,36");
-      if (wSalt[k]) { a *= 0.7; }
+      var a, tone;
+
+      if (gain) {
+        // Land: the strands close up, and take the colour of whichever work
+        // lies nearest. The further inland, the heavier.
+        a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
+        tone = wSalt[k] ? "255,255,255"
+             : (wTone[k] ? wTones[wTone[k] - 1] : "27,29,36");
+        if (wSalt[k]) { a *= 0.8; }
+      } else {
+        // Sea: most of the strand is simply not there. An even field of dots
+        // over the whole sphere is a texture; open water between the land is
+        // what makes it the Earth.
+        if ((k & 3) !== 0) { continue; }
+        a = (0.035 + 0.075 * lit);
+        tone = wSalt[k] ? "255,255,255" : "27,29,36";
+      }
 
       var step = a < 0.04 ? 0 : Math.min(11, Math.round(a * 22));
       if (!step) { continue; }
@@ -4050,10 +4133,11 @@
     });
   }
 
-  Promise.all([read("../works.json"), read("land.json")])
-    .then(function (both) {
-      mine = both[0];
-      supply = both[1];
+  Promise.all([read("../works.json"), read("land.json"), read("earth.json")])
+    .then(function (all) {
+      mine = all[0];
+      supply = all[1];
+      readEarth(all[2]);
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }

@@ -29,6 +29,7 @@ already declined or deferred in the same conversation.
 | `docs/v2/land.html` | **The land** — a turnable world made of the works' own words, and what grazes on it. `land.css`, `land.js`, `land.json`. |
 | `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
 | `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
+| `scripts/build_earth.py` | Writes `docs/v2/earth.json` — the land mask the weave is shaped by. Natural Earth 110m, public domain; the download it works from goes to `data/`. |
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 
