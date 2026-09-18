@@ -1502,13 +1502,29 @@
            dots + "</pattern>";
   }
 
+  /* Colours near enough to each other share a pattern. Every work brings
+     three tones, every tone is lit three ways for its three faces and drawn
+     at two grains, so a page that has seen ten works wants a couple of
+     hundred patterns — and at ninety, which was the old ceiling, half the
+     company was falling back to flat colour without saying so. Rounding each
+     channel to the nearest twelfth of a step is invisible and collapses most
+     of that; the ceiling is higher as well. */
+  function nearTone(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) { return hex; }
+    var n = parseInt(m[1], 16);
+    return "#" + [16, 8, 0].map(function (shift) {
+      var v = Math.min(255, Math.round(((n >> shift) & 255) / 12) * 12);
+      return (v < 16 ? "0" : "") + v.toString(16);
+    }).join("");
+  }
+
   /* A fill for one face: the colour, with her grain over it. */
-  function grained(tone, face, tile) {
+  function grained(raw, face, tile) {
+    var tone = nearTone(raw);
     var key = tone + "|" + face + "|" + tile;
     if (grains[key]) { return "url(#" + grains[key] + ")"; }
-    // A cap, so a figure that has worn forty works does not carry forty times
-    // three patterns about with it. Past it, a face is simply its colour.
-    if (grainCount > 90) { return tone; }
+    if (grainCount > 260) { return raw; }
     var id = "g" + (grainCount += 1);
     grains[key] = id;
     grainDefs.push(grainTile(id, face, tile, tone));
@@ -1927,8 +1943,10 @@
 
   /* Scenery stands over a figure. Everything else came up by 1 + 1/φ³ — the
      small things on here read as specks rather than as characters, and a
-     speck that can be pressed is a nuisance, not a character. */
-  var BIG = { set: PHI };
+     speck that can be pressed is a nuisance, not a character. A player is
+     the exception the other way: at fifteen cells tall it came out taller
+     than the place it was standing in. */
+  var BIG = { set: PHI, player: 1 };
   var UP = 1 + INV3;                      // 1.236
 
   /* Growing shows in how big a thing is, not in how many cells it has. */
@@ -2631,15 +2649,30 @@
   }
 
   var FLAT = {
-    /* A plinth: the diamond of ground the whole thing stands on. It takes
-       the work's darkest tone, so that what is built on it reads against it
-       rather than disappearing into it — the ground is dark and the
-       architecture light, which is what makes an isometric tile read as a
-       tile at all. */
-    floor: function (o, x, y, w, d) {
-      put(o, x, y, 0, w, d, 0.8, 2);
-      put(o, x, y, 0.8, w, 1, 0.3, 1);             // a lit lip along the front
-      put(o, x, y, 0.8, 1, d, 0.3, 1);
+    /* The ground the whole thing stands on. It takes the work's darkest tone,
+       so that what is built on it reads against it rather than disappearing
+       into it — dark ground, light architecture, which is what makes an
+       isometric tile read as a tile at all.
+
+       It is not one box. A single slab gives a perfect rectangle, and a
+       perfect rectangle is a platform; in a sprite sheet the ground is a
+       chunky piece of land with its corners knocked off and its edge
+       uneven. So it is laid as two-unit clods, the border ones dropped a
+       little or missing altogether, which costs about fifty boxes and is
+       the difference between a stage and a place. */
+    floor: function (o, x, y, w, d, seed) {
+      var rnd = seedFrom("ground" + (seed || ""), 9);
+      for (var i = 0; i < w; i += 2) {
+        for (var j = 0; j < d; j += 2) {
+          var edge = Math.min(i, w - 2 - i, j, d - 2 - j) < 1.5;
+          if (edge && rnd() < 0.34) { continue; }        // a bite out of it
+          var drop = edge ? 0.3 : 0;
+          var lift = rnd() < 0.16 ? 0.25 : 0;            // and the odd tussock
+          put(o, x + i, y + j, -drop,
+              Math.min(2, w - i), Math.min(2, d - j),
+              0.8 + drop + lift, edge || rnd() < 0.22 ? 2 : 1);
+        }
+      }
     },
 
     /* A wall standing along the back of the floor, with its coping lit. */
@@ -2781,7 +2814,7 @@
 
   var PLACES = {
     "verona": function (o) {                 // a street: an arched wall, a well
-      FLAT.floor(o, 0, 0, 15, 13);
+      FLAT.floor(o, 0, 0, 15, 13, "verona");
       FLAT.wall(o, 1, 11.5, 1, 13, 5, true);
       FLAT.crown(o, 1, 11.5, 6.5, 13);
       FLAT.arch(o, 3, 11.4, 1, 5, 4.5);
@@ -2792,7 +2825,7 @@
     },
 
     "balcony": function (o) {                // a tower wall with a balcony
-      FLAT.floor(o, 0, 0, 13, 12);
+      FLAT.floor(o, 0, 0, 13, 12, "balcony");
       FLAT.wall(o, 1, 10.5, 1, 11, 10, false);
       FLAT.arch(o, 4.5, 10.4, 6.6, 4, 3.4);
       FLAT.balcony(o, 4, 8.2, 6, 5);
@@ -2801,7 +2834,7 @@
     },
 
     "tomb": function (o) {                   // steps down to a slab
-      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.floor(o, 0, 0, 14, 12, "tomb");
       FLAT.wall(o, 1, 10.5, 1, 12, 4.5, true);
       FLAT.steps(o, 4, 6.5, 1, 6, 4);
       FLAT.tomb(o, 4.5, 2.5, 1, 5, 3.4);
@@ -2810,7 +2843,7 @@
     },
 
     "battlement": function (o) {             // Elsinore, at night
-      FLAT.floor(o, 0, 0, 15, 11);
+      FLAT.floor(o, 0, 0, 15, 11, "battlement");
       FLAT.wall(o, 1, 9.5, 1, 13, 4, false);
       FLAT.crown(o, 1, 9.5, 5.5, 13);
       FLAT.side(o, 1, 2, 1, 7.5, 4, false);
@@ -2819,7 +2852,7 @@
     },
 
     "graveyard": function (o) {              // a mound, a stone, a skull
-      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.floor(o, 0, 0, 14, 12, "graveyard");
       FLAT.mound(o, 3, 6, 1, 6, 4);
       FLAT.mound(o, 9.5, 2.5, 1, 3.6, 3);
       FLAT.rock(o, 1, 2, 1, 2.4, 2.4, 1.2);
@@ -2828,7 +2861,7 @@
     },
 
     "hall": function (o) {                   // Dunsinane: a throne on a dais
-      FLAT.floor(o, 0, 0, 15, 13);
+      FLAT.floor(o, 0, 0, 15, 13, "hall");
       FLAT.wall(o, 1, 11.5, 1, 13, 7, false);
       FLAT.column(o, 2.4, 8.5, 1, 7);
       FLAT.column(o, 11, 8.5, 1, 7);
@@ -2840,7 +2873,7 @@
     },
 
     "chamber": function (o) {                // a basin on a stand, a candle
-      FLAT.floor(o, 0, 0, 13, 11);
+      FLAT.floor(o, 0, 0, 13, 11, "chamber");
       FLAT.wall(o, 1, 9.5, 1, 11, 6, true);
       FLAT.table(o, 4, 5.5, 1, 4.5, 3);
       put(o, 5.2, 6.4, 2.4, 2.2, 1.4, 0.8, 2);       // the basin
@@ -2849,7 +2882,7 @@
     },
 
     "wood": function (o) {                   // the Dream: toadstools and a log
-      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.floor(o, 0, 0, 14, 12, "wood");
       FLAT.log(o, 2.5, 4, 1, 7);
       FLAT.toadstool(o, 10, 7.5, 1, 3);
       FLAT.toadstool(o, 1.5, 8.5, 1, 2.2);
@@ -2858,7 +2891,7 @@
     },
 
     "island": function (o) {                 // the Tempest: a rock over water
-      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.floor(o, 0, 0, 14, 12, "island");
       FLAT.rock(o, 6.5, 6.5, 1, 6, 4.4, 3.4);
       FLAT.rock(o, 2, 8, 1, 3.4, 3, 1.8);
       FLAT.steps(o, 7.5, 3.5, 1, 3.4, 3);
@@ -2867,7 +2900,7 @@
     },
 
     "arden": function (o) {                  // As You Like It: a log and a tree
-      FLAT.floor(o, 0, 0, 13, 12);
+      FLAT.floor(o, 0, 0, 13, 12, "arden");
       FLAT.log(o, 2, 4.5, 1, 6);
       put(o, 9.5, 8, 1, 1.8, 1.8, 6, 1);             // the trunk
       put(o, 7.6, 6.2, 7, 5.6, 5.2, 1.6, 2);         // and what is on it
@@ -3046,70 +3079,94 @@
     "Jaques":       "All the world's a stage."
   };
 
-  /* Seven rows across, eleven down, and every one of them drawn out of the
+  /* Nine cells across, fifteen down, and every one of them drawn out of the
      three colours of the work that cast it:
-       a  the costume       b  its trim        c  an accent
-       s  the face          k  ink                .  nothing  */
+       a  the gown or the doublet      b  what is lit on it — trim, a crown,
+       c  a cloak, a shadow, a sword      a collar, a hem
+       s  the face                     k  ink: hair, boots
+       .  nothing
+
+     They were seven by eleven and read as a person-shaped smudge beside a
+     diorama. What makes a figure in a sprite sheet legible at this size is
+     not detail, it is silhouette: a crown breaks the line of a head, a cloak
+     falls wider than the body, a staff stands a cell clear of the arm. Every
+     one of these is meant to be told from the others at a glance, by outline
+     alone, before any colour arrives. */
   var PLAYER_ART = {
     "Chorus": [
-      "..bbb..", "..bbb..", "..sss..", "..sss..", ".aaaaa.", ".aaaaa.",
-      ".aaaaa.", ".aaaaa.", ".aaaaa.", ".aaaaa.", ".b...b."
+      "...bbb...", "..bbbbb..", "..bsssb..", "..bsssb..", "..bbbbb..",
+      ".aaaaaaa.", ".aaaaaaa.", ".aaaaaaa.", ".aaaaaaa.", ".aaaaaaa.",
+      "aaaaaaaaa", "aaaaaaaaa", "aaaaaaaaa", "bbbbbbbbb", "..k...k.."
     ],
     "Romeo": [
-      "..bbb..", "..kkk..", "..sss..", "..sss..", "caaaaa.", "caaaaa.",
-      "caaaaa.", "caaa...", "..a.a..", "..a.a..", ".b...b."
+      "...kkk...", "..kkkkk..", "..bsssb..", "...sss...", "..bbbbb..",
+      "ccaaaaab.", "ccaaaaab.", "ccaaaaa.b", "ccaaaaa.b", "cc.aaa..b",
+      "...a.a..b", "...a.a...", "...a.a...", "..kk.kk..", "........."
     ],
     "Juliet": [
-      "..kkk..", ".kkkkk.", ".ksssk.", ".ksssk.", "..aaa..", ".aaaaa.",
-      ".aaaaa.", "aaaaaaa", "aaaaaaa", "bbbbbbb", "..c.c.."
+      "..kkkkk..", ".kkkkkkk.", ".ksssssk.", ".ksssssk.", "..bbbbb..",
+      "..aaaaa..", ".aaaaaaa.", ".aaaaaaa.", "aaaaaaaaa", "aaaaaaaaa",
+      "aaaaaaaaa", "abbbbbbba", "aaaaaaaaa", "bbbbbbbbb", ".c.....c."
     ],
     "Nurse": [
-      ".bbbbb.", ".bbbbb.", "..sss..", "..sss..", ".aaaaa.", ".abbba.",
-      ".abbba.", "aabbbaa", "aabbbaa", "aaaaaaa", "..c.c.."
+      ".bbbbbbb.", ".bbbbbbb.", "..bsssb..", "...sss...", "..aaaaa..",
+      ".aaaaaaa.", ".abbbbba.", ".abbbbba.", "aabbbbbaa", "aabbbbbaa",
+      "aaaaaaaaa", "aaaaaaaaa", "aaaaaaaaa", "bbbbbbbbb", "..k...k.."
     ],
     "Mercutio": [
-      "....c..", "..bbb..", "..sss..", "..sss..", ".acaca.", ".aaaaa.",
-      ".aaaaa.", "..aaa..", "..a.a..", "..a.a..", ".b...b."
+      "......c..", "...bbb.c.", "..bbbbb..", "...sss...", "..bbbbb..",
+      ".caaaaac.", "bcaaaaacb", ".caaaaac.", "..aaaaa..", "..aaaaa..",
+      "..a...a..", "..a...a..", "..a...a..", "..kk.kk..", "........."
     ],
     "Tybalt": [
-      "..kkk..", "..kkk..", "..sss..", "..sss..", ".aaaaab", ".aaaaab",
-      ".aaaaab", "..aaa..", "..a.a..", "..a.a..", ".b...b."
+      "...kkk..b", "..kkkkk.b", "..bsssb.b", "...sss..b", "..bbbbb.b",
+      ".caaaaacb", ".caaaaac.", ".caaaaac.", "..aaaaa..", "..aaaaa..",
+      "..a...a..", "..a...a..", "..a...a..", "..kk.kk..", "........."
     ],
     "Hamlet": [
-      "..kkk..", "..kkk..", "..sss..", "..sss..", ".aaaaa.", "baaaaa.",
-      "baaaaa.", "..aaa..", "..a.a..", "..a.a..", ".k...k."
+      "...kkk...", "..kkkkk..", "..csssc..", "...sss...", "..ccccc..",
+      ".ccccccc.", "bccccccc.", "bccccccc.", ".ccccccc.", "..ccccc..",
+      "..c...c..", "..c...c..", "..c...c..", "..kk.kk..", "........."
     ],
     "Macbeth": [
-      "b.b.b..", ".bbb...", "..sss..", "..sss..", ".aaaaa.", ".aaaaac",
-      ".aaaaac", "..aaac.", "..a.a..", "..a.a..", ".b...b."
+      ".b.b.b...", "..bbb....", "..bsssb..", "...sss...", "..bbbbb..",
+      ".aaaaaacc", ".aaaaaacc", ".aaaaaacc", "..aaaaacc", "..aaaaacc",
+      "..a...acc", "..a...ac.", "..a...a..", "..kk.kk..", "........."
     ],
     "Lady Macbeth": [
-      "..bbb..", ".kkkkk.", ".ksssk.", "..sss..", ".aaaaa.", "caaaaa.",
-      ".aaaaa.", "aaaaaaa", "aaaaaaa", "aaaaaaa", "bbbbbbb"
+      "..kkkkk..", ".kkkkkkk.", "..ksssk..", "...sss...", "..bbbbb..",
+      "c.aaaaa..", "..aaaaa..", ".aaaaaaa.", ".aaaaaaa.", "aaaaaaaaa",
+      "aaaaaaaaa", "aaaaaaaaa", "abbbbbbba", "bbbbbbbbb", "........."
     ],
     "Puck": [
-      "c.....c", ".c...c.", "..sss..", "..sss..", ".aaaaa.", ".aaaaa.",
-      "..aaa..", "..a.a..", ".a...a.", ".b...b.", "......."
+      "..c...c..", "...c.c...", "..bsssb..", "...sss...", "..ababa..",
+      "cbabababc", "..ababa..", "..ababa..", "..aba....", "..a.a....",
+      ".a...a...", ".a...a...", ".k...k...", ".........", "........."
     ],
     "Prospero": [
-      "..aaa..", ".aaaaa.", ".asssa.", ".asssa.", ".aaaaa.", ".aaaaac",
-      "bbbbbbc", ".aaaaac", ".aaaaac", ".aaaaac", ".aaaaac"
+      "...aaa..b", "..aaaaa.b", "..asssa.b", "..asssa.b", "..aaaaa.b",
+      ".aaaaaa.b", ".aaaaaa.b", "bbbbbbb.b", ".aaaaaa.b", ".aaaaaa.b",
+      "aaaaaaa.b", "aaaaaaa.b", "aaaaaaa..", "bbbbbbb..", "........."
     ],
     "Jaques": [
-      ".bbbbb.", "..bbb..", "..sss..", "..sss..", ".aaaaac", ".aaaaac",
-      ".aaaaac", "..aaa.c", "..a.a.c", "..a.a.c", ".b...bc"
+      ".bbbbbbb.", "..bbbbb..", "..bsssb..", "...sss...", "..bbbbb.b",
+      ".caaaaacb", ".caaaaacb", ".caaaaacb", ".caaaaacb", "..aaaaa.b",
+      "..a...a.b", "..a...a.b", "..a...a..", "..kk.kk..", "........."
     ]
   };
 
   function drawPlayer(born) {
     var c = ramp(born.token);
-    var skin = lift(c[0], 0.3);
     var tone = {
-      a: c[0], b: bandOf(c, 1), c: bandOf(c, 2), s: skin, k: lift(c[0], -0.55)
+      a: c[1],                       // the gown takes the middle tone
+      b: c[0],                       // what is lit on it, the lightest
+      c: c[2],                       // a cloak or a shadow, the darkest
+      s: lift(c[0], 0.5),
+      k: lift(c[2], -0.4)
     };
     var art = PLAYER_ART[born.role] || PLAYER_ART.Chorus;
-    return { cols: 7, rows: 11, cells: stencil(art, function (x, y, ch) {
-      return tone[ch] || c[0];
+    return { cols: 9, rows: 15, cells: stencil(art, function (x, y, ch) {
+      return tone[ch] || c[1];
     }) };
   }
 
