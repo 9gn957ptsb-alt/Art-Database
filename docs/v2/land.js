@@ -1366,6 +1366,7 @@
      unit at about one and a half. */
   var TILE = 0.76;
   var BEAST_TILE = 2.8;
+  var SET_TILE = 0.42;                    // a diorama is drawn larger again
 
   /* The top face, then the two that face the viewer. Order matters: the top
      is drawn last within a block so it sits over its own sides. */
@@ -2122,9 +2123,13 @@
       born.role = roleFor(born.token, born.ground);
     }
     var made = DRAW[born.kind](born);
-    born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
+    // A diorama arrives drawn, because it is built out of boxes in three
+    // dimensions rather than a flat grid of cells extruded.
+    born.el.innerHTML = made.svg
+      ? made.svg
+      : pixels(made.cols, made.rows, made.cells);
     beastGrain();          // any new patterns it asked for, into the one defs
-    var fit = isoBounds(made.cols, made.rows);
+    var fit = made.fit || isoBounds(made.cols, made.rows);
     var u = unit() * (BIG[born.kind] || UP) * swell(born);
     var wide = u * fit.w / 7;
     born.el.style.width = wide.toFixed(1) + "px";
@@ -2596,86 +2601,374 @@
 
   /* ---- the sets ------------------------------------------------------------
 
-     A scene needs somewhere to happen. When one goes up its set is raised
-     first, a row of pixels at a time from the ground up, built out of the
-     colours of the works that cast the players standing in it — so the
-     balcony Juliet stands over is made of the same artwork she is. When the
-     scene ends the set is struck and goes back into the air.
+     A scene needs somewhere to happen, and somewhere is not three small props
+     standing in a row. Each play's place is built as one diorama on its own
+     plinth — a floor you can see the edge of, walls behind it, what the scene
+     needs in front — the way an isometric sprite sheet gives you a whole
+     castle on a diamond of ground rather than a castle-shaped object.
 
-     A set piece is not something a palette turns up; it only exists while
-     its scene does. It can be fed, like anything else, and pressing one
-     strikes the whole scene it belongs to, which is the quickest way to
-     clear a stage you have finished with. */
+     It is built out of boxes in three dimensions rather than a flat drawing
+     extruded, because a room has a floor at the bottom, walls at the back and
+     furniture in front of them, and a single slab cannot say that. Everything
+     else is as before: the same blocks, the same grain over them, the same
+     three tones out of the work that cast the lead, so the balcony Juliet
+     stands over is made of the same artwork she is. Stone takes the middle
+     tone, anything lit or trimmed the lightest, openings and shadow the
+     darkest.
 
-  var SET_ART = {
-    banner: [
-      "bbb", "aca", "aaa", "aca", "aaa", "aca", "aaa", ".a."
-    ],
-    balcony: [
-      "bbbbbbbbb",
-      "b.b.b.b.b",
-      "b.b.b.b.b",
-      "bbbbbbbbb",
-      "aaaaaaaaa",
-      "acaacaaca"
-    ],
-    wall: [
-      "aaaaaaa", "acaacaa", "aaaaaaa", "aacaaca", "aaaaaaa"
-    ],
-    well: [
-      "..b.b..", "..bbb..", "..b.b..", "aaaaaaa", "acaacaa", "aaaaaaa"
-    ],
-    table: [
-      "....c....", "...bcb...", "bbbbbbbbb", "a.......a", "a.......a"
-    ],
-    tomb: [
-      ".c.....c.", ".b.....b.", "bbbbbbbbb", "aaaaaaaaa", "acaaaaaca"
-    ],
-    torch: [
-      ".c.", "ccc", ".c.", ".b.", ".a.", ".a.", ".a."
-    ],
-    bench: [
-      "bbbbbbb", "a.....a", "a.....a", "aa...aa"
-    ],
-    throne: [
-      ".bbbbb.", ".b...b.", ".b...b.", ".bbbbb.",
-      "caaaaac", ".a...a.", ".a...a."
-    ],
-    toadstool: [
-      "..ccc..", ".cbcbc.", "ccccccc", "..aaa..", "..aaa.."
-    ]
-  };
+     Ten places for sixteen scenes, because a play's scenes mostly happen
+     somewhere the play has already been. They are composed out of a small
+     vocabulary of flats — a floor, a wall, an arch, a column, steps, a rail,
+     vines, a torch — so a set is a handful of lines rather than a hundred
+     boxes written out. */
 
-  function drawSet(born) {
-    var art = SET_ART[born.piece] || SET_ART.wall;
-    var c = ramp(born.token);
-    var tone = { a: c[1], b: c[0], c: c[2] };
+  /* Boxes are { x, y, z, w, d, h, t }: x runs right-and-down the screen, y
+     left-and-down, z up, and t is which of the work's three tones — 0 the
+     lightest, 1 the middle, 2 the darkest. */
 
-    // Built from the ground up: only the rows that have gone up so far.
-    var from = Math.max(0, art.length - Math.max(1, born.risen));
-    var shown = art.slice(from);
-    return { cols: art[0].length, rows: shown.length,
-             cells: stencil(shown, function (x, y, ch) { return tone[ch] || c[1]; }) };
+  function put(into, x, y, z, w, d, h, t) {
+    into.push({ x: x, y: y, z: z, w: w, d: d, h: h, t: t });
   }
 
-  function raise(def, cast, at) {
-    (def.set || []).forEach(function (item, i) {
-      var tok = cast[i % cast.length].token;
-      var el = document.createElement("div");
-      el.className = "spawn";
-      el.tabIndex = 0;
-      el.setAttribute("role", "button");
+  var FLAT = {
+    /* A plinth: the diamond of ground the whole thing stands on. It takes
+       the work's darkest tone, so that what is built on it reads against it
+       rather than disappearing into it — the ground is dark and the
+       architecture light, which is what makes an isometric tile read as a
+       tile at all. */
+    floor: function (o, x, y, w, d) {
+      put(o, x, y, 0, w, d, 0.8, 2);
+      put(o, x, y, 0.8, w, 1, 0.3, 1);             // a lit lip along the front
+      put(o, x, y, 0.8, 1, d, 0.3, 1);
+    },
 
-      var born = {
-        el: el, token: tok, kind: "set", piece: item[0],
-        tier: 1, risen: 1, rose: 0, phase: 0, next: 0,
-        lat: at.lat + item[1], lon: wrap(at.lon + item[2])
-      };
-      redraw(born);
-      wireCompany(born);
-      spawns.push(born);
-      land.insertBefore(el, creature);
+    /* A wall standing along the back of the floor, with its coping lit. */
+    wall: function (o, x, y, z, w, h, gap) {
+      put(o, x, y, z, w, 1.2, h, 1);
+      put(o, x, y, z + h, w, 1.2, 0.5, 0);
+      if (gap) {                                    // a window or a doorway
+        put(o, x + w * 0.42, y - 0.1, z + h * 0.35, w * 0.2, 1.4, h * 0.42, 2);
+      }
+    },
+
+    /* The same, running the other way. */
+    side: function (o, x, y, z, d, h, gap) {
+      put(o, x, y, z, 1.2, d, h, 1);
+      put(o, x, y, z + h, 1.2, d, 0.5, 0);
+      if (gap) {
+        put(o, x - 0.1, y + d * 0.42, z + h * 0.35, 1.4, d * 0.2, h * 0.42, 2);
+      }
+    },
+
+    /* Crenellations along the top of a wall. */
+    crown: function (o, x, y, z, w) {
+      for (var i = 0; i < w; i += 2) {
+        put(o, x + i, y, z, 1, 1.2, 1.1, 0);
+      }
+    },
+
+    /* A round arch: two piers and a lintel, with the opening dark behind. */
+    arch: function (o, x, y, z, w, h) {
+      put(o, x, y, z, 1.1, 1.2, h, 1);
+      put(o, x + w - 1.1, y, z, 1.1, 1.2, h, 1);
+      put(o, x, y, z + h, w, 1.2, 0.9, 0);
+      put(o, x + 1.1, y + 0.2, z, w - 2.2, 0.8, h, 2);
+    },
+
+    column: function (o, x, y, z, h) {
+      put(o, x, y, z, 1.3, 1.3, h, 1);
+      put(o, x - 0.25, y - 0.25, z + h, 1.8, 1.8, 0.7, 0);
+      put(o, x - 0.25, y - 0.25, z, 1.8, 1.8, 0.6, 0);
+    },
+
+    steps: function (o, x, y, z, w, n) {
+      for (var i = 0; i < n; i += 1) {
+        put(o, x, y + i, z + (n - 1 - i) * 0.9, w, 1, 0.9, i % 2 ? 1 : 0);
+      }
+    },
+
+    /* A balcony: a slab carried out from a wall, with a rail along it. */
+    balcony: function (o, x, y, z, w) {
+      put(o, x, y, z, w, 2.6, 0.7, 1);
+      put(o, x, y, z + 0.7, w, 0.5, 1.6, 0);
+      for (var i = 0; i < w; i += 1.6) {
+        put(o, x + i, y + 0.6, z + 0.7, 0.4, 0.4, 1.3, 0);
+      }
+      put(o, x, y, z + 2.3, w, 2.6, 0.4, 0);
+    },
+
+    rail: function (o, x, y, z, w) {
+      put(o, x, y, z + 1.2, w, 0.4, 0.4, 0);
+      for (var i = 0; i < w; i += 1.5) {
+        put(o, x + i, y, z, 0.4, 0.4, 1.2, 1);
+      }
+    },
+
+    /* Growth over stone: a scatter of small dark blocks. */
+    vine: function (o, x, y, z, w, h, seed) {
+      var rnd = seedFrom("vine" + seed, 5);
+      for (var i = 0; i < w * 2.2; i += 1) {
+        var vx = x + rnd() * w;
+        var vz = z + rnd() * h;
+        put(o, vx, y - 0.3, vz, 0.8, 0.5, 0.8, 2);
+      }
+    },
+
+    torch: function (o, x, y, z) {
+      put(o, x, y, z, 0.5, 0.5, 2.6, 1);
+      put(o, x - 0.35, y - 0.35, z + 2.6, 1.2, 1.2, 1.2, 0);
+    },
+
+    table: function (o, x, y, z, w, d) {
+      put(o, x, y, z + 1.8, w, d, 0.6, 0);
+      put(o, x + 0.3, y + 0.3, z, 0.6, 0.6, 1.8, 1);
+      put(o, x + w - 0.9, y + 0.3, z, 0.6, 0.6, 1.8, 1);
+      put(o, x + 0.3, y + d - 0.9, z, 0.6, 0.6, 1.8, 1);
+      put(o, x + w - 0.9, y + d - 0.9, z, 0.6, 0.6, 1.8, 1);
+    },
+
+    throne: function (o, x, y, z) {
+      put(o, x, y, z, 4, 4, 1.2, 1);                 // the dais
+      put(o, x + 0.6, y + 0.6, z + 1.2, 2.8, 2.8, 0.8, 0);
+      put(o, x + 0.6, y + 2.6, z + 2, 2.8, 0.8, 3.4, 1);
+      put(o, x + 0.6, y + 2.6, z + 5.4, 2.8, 0.8, 0.5, 0);
+    },
+
+    tomb: function (o, x, y, z, w, d) {
+      put(o, x, y, z, w, d, 1.4, 1);
+      put(o, x - 0.3, y - 0.3, z + 1.4, w + 0.6, d + 0.6, 0.6, 0);
+      put(o, x + 0.6, y + 0.6, z + 2, w - 1.2, d - 1.2, 0.4, 2);
+    },
+
+    cauldron: function (o, x, y, z) {
+      put(o, x, y, z, 3, 3, 0.5, 2);
+      put(o, x + 0.3, y + 0.3, z + 0.5, 2.4, 2.4, 1.8, 1);
+      put(o, x, y, z + 2.3, 3, 3, 0.5, 0);
+      put(o, x + 1, y + 1, z + 3, 1, 1, 1.4, 0);     // what is rising off it
+      put(o, x + 1.2, y + 1.2, z + 4.6, 0.7, 0.7, 1, 0);
+    },
+
+    /* A mound with a stone at its head. */
+    mound: function (o, x, y, z, w, d) {
+      put(o, x, y, z, w, d, 0.8, 1);
+      put(o, x + 0.8, y + 0.8, z + 0.8, w - 1.6, d - 1.6, 0.7, 0);
+      put(o, x + w * 0.35, y + d - 0.6, z + 1.5, w * 0.3, 0.6, 2.4, 1);
+    },
+
+    toadstool: function (o, x, y, z, s) {
+      put(o, x + s * 0.3, y + s * 0.3, z, s * 0.4, s * 0.4, s * 0.9, 0);
+      put(o, x, y, z + s * 0.9, s, s, s * 0.5, 2);
+      put(o, x + s * 0.2, y + s * 0.2, z + s * 1.4, s * 0.6, s * 0.6, s * 0.25, 0);
+    },
+
+    log: function (o, x, y, z, w) {
+      put(o, x, y, z, w, 1.6, 1.4, 1);
+      put(o, x, y, z + 1.4, w, 1.6, 0.4, 0);
+    },
+
+    rock: function (o, x, y, z, w, d, h) {
+      put(o, x, y, z, w, d, h, 1);
+      put(o, x + 0.5, y + 0.5, z + h, w - 1, d - 1, 0.6, 0);
+    }
+  };
+
+  /* ---- the places ---------------------------------------------------------
+
+     Ten of them for sixteen scenes. A play's scenes mostly happen somewhere
+     the play has already been, so the balcony is its own place but the
+     prologue, the meeting, the quarrel and the nurse all happen in the same
+     Verona street. */
+
+  var PLACES = {
+    "verona": function (o) {                 // a street: an arched wall, a well
+      FLAT.floor(o, 0, 0, 15, 13);
+      FLAT.wall(o, 1, 11.5, 1, 13, 5, true);
+      FLAT.crown(o, 1, 11.5, 6.5, 13);
+      FLAT.arch(o, 3, 11.4, 1, 5, 4.5);
+      FLAT.rock(o, 9.5, 5.5, 1, 3.4, 3.4, 1.6);
+      FLAT.rail(o, 9.8, 5.2, 2.6, 3);
+      FLAT.torch(o, 1.6, 10.4, 1);
+      FLAT.vine(o, 8, 11.4, 2, 5, 4.5, "verona");
+    },
+
+    "balcony": function (o) {                // a tower wall with a balcony
+      FLAT.floor(o, 0, 0, 13, 12);
+      FLAT.wall(o, 1, 10.5, 1, 11, 10, false);
+      FLAT.arch(o, 4.5, 10.4, 6.6, 4, 3.4);
+      FLAT.balcony(o, 4, 8.2, 6, 5);
+      FLAT.vine(o, 1.2, 10.4, 1, 10, 6, "balcony");
+      FLAT.torch(o, 1.8, 9.4, 1);
+    },
+
+    "tomb": function (o) {                   // steps down to a slab
+      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.wall(o, 1, 10.5, 1, 12, 4.5, true);
+      FLAT.steps(o, 4, 6.5, 1, 6, 4);
+      FLAT.tomb(o, 4.5, 2.5, 1, 5, 3.4);
+      FLAT.torch(o, 2.2, 3, 1);
+      FLAT.torch(o, 10.6, 3, 1);
+    },
+
+    "battlement": function (o) {             // Elsinore, at night
+      FLAT.floor(o, 0, 0, 15, 11);
+      FLAT.wall(o, 1, 9.5, 1, 13, 4, false);
+      FLAT.crown(o, 1, 9.5, 5.5, 13);
+      FLAT.side(o, 1, 2, 1, 7.5, 4, false);
+      FLAT.crown(o, 1, 2, 5.5, 2);
+      FLAT.torch(o, 12.4, 8.4, 1);
+    },
+
+    "graveyard": function (o) {              // a mound, a stone, a skull
+      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.mound(o, 3, 6, 1, 6, 4);
+      FLAT.mound(o, 9.5, 2.5, 1, 3.6, 3);
+      FLAT.rock(o, 1, 2, 1, 2.4, 2.4, 1.2);
+      put(o, 1.5, 2.5, 2.2, 1.4, 1.4, 1.2, 0);       // the skull on the stone
+      FLAT.vine(o, 2, 9.4, 1, 10, 1.4, "grave");
+    },
+
+    "hall": function (o) {                   // Dunsinane: a throne on a dais
+      FLAT.floor(o, 0, 0, 15, 13);
+      FLAT.wall(o, 1, 11.5, 1, 13, 7, false);
+      FLAT.column(o, 2.4, 8.5, 1, 7);
+      FLAT.column(o, 11, 8.5, 1, 7);
+      FLAT.throne(o, 5.5, 8.5, 1);
+      put(o, 3.6, 11.4, 4.5, 1.6, 0.5, 4.5, 2);      // banners on the wall
+      put(o, 9.8, 11.4, 4.5, 1.6, 0.5, 4.5, 2);
+      FLAT.torch(o, 1.8, 10.4, 1);
+      FLAT.torch(o, 12.6, 10.4, 1);
+    },
+
+    "chamber": function (o) {                // a basin on a stand, a candle
+      FLAT.floor(o, 0, 0, 13, 11);
+      FLAT.wall(o, 1, 9.5, 1, 11, 6, true);
+      FLAT.table(o, 4, 5.5, 1, 4.5, 3);
+      put(o, 5.2, 6.4, 2.4, 2.2, 1.4, 0.8, 2);       // the basin
+      FLAT.torch(o, 10.2, 8.4, 1);
+      FLAT.arch(o, 1.6, 9.4, 1, 3.4, 4);
+    },
+
+    "wood": function (o) {                   // the Dream: toadstools and a log
+      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.log(o, 2.5, 4, 1, 7);
+      FLAT.toadstool(o, 10, 7.5, 1, 3);
+      FLAT.toadstool(o, 1.5, 8.5, 1, 2.2);
+      FLAT.toadstool(o, 7.5, 9.5, 1, 1.6);
+      FLAT.vine(o, 1, 10.6, 1, 12, 3, "wood");
+    },
+
+    "island": function (o) {                 // the Tempest: a rock over water
+      FLAT.floor(o, 0, 0, 14, 12);
+      FLAT.rock(o, 6.5, 6.5, 1, 6, 4.4, 3.4);
+      FLAT.rock(o, 2, 8, 1, 3.4, 3, 1.8);
+      FLAT.steps(o, 7.5, 3.5, 1, 3.4, 3);
+      put(o, 9.4, 8, 4.4, 0.6, 0.6, 4.6, 0);         // the staff, set upright
+      FLAT.vine(o, 1, 11, 1, 12, 1.6, "island");
+    },
+
+    "arden": function (o) {                  // As You Like It: a log and a tree
+      FLAT.floor(o, 0, 0, 13, 12);
+      FLAT.log(o, 2, 4.5, 1, 6);
+      put(o, 9.5, 8, 1, 1.8, 1.8, 6, 1);             // the trunk
+      put(o, 7.6, 6.2, 7, 5.6, 5.2, 1.6, 2);         // and what is on it
+      put(o, 8.4, 7, 8.6, 4, 3.6, 1.2, 2);
+      FLAT.toadstool(o, 1.6, 9.5, 1, 1.8);
+    }
+  };
+
+  /* Which place each scene is played in. */
+  var SET_OF = {
+    "Prologue": "verona", "The meeting": "verona", "The quarrel": "verona",
+    "The nurse": "verona", "The balcony": "balcony", "The tomb": "tomb",
+    "To be": "battlement", "Yorick": "graveyard",
+    "The dagger": "hall", "Tomorrow": "hall", "The sticking-place": "hall",
+    "The spot": "chamber",
+    "What fools": "wood", "If we shadows": "wood",
+    "Our revels": "island", "All the world": "arden"
+  };
+
+  /* ---- drawing one -------------------------------------------------------- */
+
+  /* What a pile of boxes takes up once it is turned to the corner. */
+  function boxBounds(boxes) {
+    var xa = Infinity, xb = -Infinity, ya = Infinity, yb = -Infinity;
+    var za = Infinity, zb = -Infinity;
+    boxes.forEach(function (b) {
+      if (b.x < xa) { xa = b.x; }
+      if (b.x + b.w > xb) { xb = b.x + b.w; }
+      if (b.y < ya) { ya = b.y; }
+      if (b.y + b.d > yb) { yb = b.y + b.d; }
+      if (b.z < za) { za = b.z; }
+      if (b.z + b.h > zb) { zb = b.z + b.h; }
     });
+    if (xa === Infinity) { return { x: 0, y: 0, w: 1, h: 1 }; }
+    var u0 = isoU(xa, yb), u1 = isoU(xb, ya);
+    var v0 = isoV(xa, ya, zb), v1 = isoV(xb, yb, za);
+    return { x: u0, y: v0, w: u1 - u0, h: v1 - v0 };
+  }
+
+  /* Far to near, and every box carries its own depth — a floor is wide and
+     flat, a column is narrow and tall, and they have to be sorted against
+     each other properly or a wall is painted over what stands in front of it. */
+  function build(boxes, tones, tile) {
+    boxes.sort(function (a, b) {
+      return (a.x + a.y + a.z) - (b.x + b.y + b.z);
+    });
+    var out = "";
+    boxes.forEach(function (b) {
+      out += block(b.x, b.y, b.z, b.w, b.d, b.h, tones[b.t] || tones[1], tile);
+    });
+    return out;
+  }
+
+  function drawSet(born) {
+    var place = PLACES[born.piece] || PLACES.verona;
+    var all = [];
+    place(all);
+
+    // Built from the ground up: only what has risen so far.
+    var up = born.risen;
+    var boxes = all.filter(function (b) { return b.z < up; });
+    if (!boxes.length) { boxes = all.filter(function (b) { return b.z < 1.01; }); }
+
+    var fit = boxBounds(all);          // the finished size, so it does not grow
+    return {
+      fit: fit,
+      svg: '<svg viewBox="' + fit.x.toFixed(2) + " " + fit.y.toFixed(2) + " " +
+           fit.w.toFixed(2) + " " + fit.h.toFixed(2) +
+           '" aria-hidden="true" focusable="false">' +
+           build(boxes, ramp(born.token), SET_TILE) + "</svg>"
+    };
+  }
+
+  function placeHeight(piece) {
+    var all = [];
+    (PLACES[piece] || PLACES.verona)(all);
+    var top = 0;
+    all.forEach(function (b) { if (b.z + b.h > top) { top = b.z + b.h; } });
+    return top;
+  }
+
+  /* One diorama for the scene, set a little behind the marks so the players
+     stand in front of it rather than inside it. */
+  function raise(def, cast, at) {
+    var piece = SET_OF[def.name];
+    if (!piece) { return; }
+
+    var el = document.createElement("div");
+    el.className = "spawn";
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+
+    var born = {
+      el: el, token: cast[0].token, kind: "set", piece: piece,
+      tier: 1, risen: 1.2, rose: 0, phase: 0, next: 0,
+      lat: inBand(at.lat + 0.055), lon: at.lon
+    };
+    redraw(born);
+    wireCompany(born);
+    spawns.push(born);
+    land.insertBefore(el, creature);
   }
 
   function strike() {
@@ -2686,15 +2979,14 @@
     });
   }
 
-  /* A row every so often, so the set is seen to go up. */
+  /* It goes up a course at a time, so a scene is seen to be built. */
   function stepSets(now) {
     spawns.forEach(function (born) {
       if (born.kind !== "set") { return; }
-      var art = SET_ART[born.piece] || SET_ART.wall;
-      if (born.risen >= art.length) { return; }
-      if (now - born.rose < 130) { return; }
+      if (born.risen >= placeHeight(born.piece)) { return; }
+      if (now - born.rose < 110) { return; }
       born.rose = now;
-      born.risen += 1;
+      born.risen += 1.2;
       redraw(born);
     });
   }
@@ -2878,7 +3170,6 @@
   var SCENES = [
     { name: "Prologue", play: "Romeo and Juliet",
       cast: ["Chorus"], marks: SOLO,
-      set: [["banner", -0.005, -0.085], ["banner", -0.005, 0.085]],
       beats: [
         [0, "Two households, both alike in dignity,"],
         [0, "In fair Verona, where we lay our scene,"],
@@ -2887,7 +3178,6 @@
 
     { name: "To be", play: "Hamlet",
       cast: ["Hamlet"], marks: SOLO,
-      set: [["bench", -0.035, 0], ["wall", -0.01, -0.16]],
       beats: [
         [0, "To be, or not to be: that is the question."],
         [0, "Whether 'tis nobler in the mind to suffer"],
@@ -2897,8 +3187,6 @@
 
     { name: "The meeting", play: "Romeo and Juliet",
       cast: ["Romeo", "Juliet"], marks: FACING,
-      set: [["torch", 0.005, -0.15], ["torch", 0.005, 0.15],
-            ["bench", -0.035, 0]],
       beats: [
         [0, "If I profane with my unworthiest hand"],
         [0, "This holy shrine, the gentle sin is this:"],
@@ -2908,7 +3196,6 @@
 
     { name: "The dagger", play: "Macbeth",
       cast: ["Macbeth"], marks: SOLO,
-      set: [["throne", -0.02, 0.1], ["torch", 0.005, -0.13]],
       beats: [
         [0, "Is this a dagger which I see before me,"],
         [0, "The handle toward my hand? Come, let me clutch thee."],
@@ -2917,7 +3204,6 @@
 
     { name: "What fools", play: "A Midsummer Night's Dream",
       cast: ["Puck"], marks: SOLO,
-      set: [["toadstool", -0.02, -0.1], ["toadstool", -0.03, 0.11]],
       beats: [
         [0, "Lord, what fools these mortals be!"],
         [0, "I'll put a girdle round about the earth"],
@@ -2926,7 +3212,6 @@
 
     { name: "The balcony", play: "Romeo and Juliet",
       cast: ["Romeo", "Juliet"], marks: [[-0.015, -0.1], [0.075, 0.07]],
-      set: [["balcony", 0.05, 0.075], ["wall", -0.04, -0.1]],
       beats: [
         [0, "But soft! What light through yonder window breaks?"],
         [0, "It is the east, and Juliet is the sun."],
@@ -2937,7 +3222,6 @@
 
     { name: "Our revels", play: "The Tempest",
       cast: ["Prospero"], marks: SOLO,
-      set: [["wall", -0.03, 0.13], ["torch", 0.005, -0.13]],
       beats: [
         [0, "Our revels now are ended. These our actors,"],
         [0, "As I foretold you, were all spirits and"],
@@ -2947,7 +3231,6 @@
 
     { name: "All the world", play: "As You Like It",
       cast: ["Jaques"], marks: SOLO,
-      set: [["bench", -0.035, 0.1], ["toadstool", -0.03, -0.12]],
       beats: [
         [0, "All the world's a stage,"],
         [0, "And all the men and women merely players."],
@@ -2956,7 +3239,6 @@
 
     { name: "The quarrel", play: "Romeo and Juliet",
       cast: ["Tybalt", "Mercutio"], marks: FACING,
-      set: [["well", -0.035, 0]],
       beats: [
         [0, "Mercutio, thou consort'st with Romeo."],
         [1, "Consort? What, dost thou make us minstrels?"],
@@ -2966,7 +3248,6 @@
 
     { name: "Tomorrow", play: "Macbeth",
       cast: ["Macbeth"], marks: SOLO,
-      set: [["throne", -0.02, 0.1]],
       beats: [
         [0, "Tomorrow, and tomorrow, and tomorrow,"],
         [0, "Creeps in this petty pace from day to day,"],
@@ -2975,7 +3256,6 @@
 
     { name: "The spot", play: "Macbeth",
       cast: ["Lady Macbeth"], marks: SOLO,
-      set: [["table", -0.025, 0], ["torch", 0.005, 0.14]],
       beats: [
         [0, "Out, damned spot! Out, I say!"],
         [0, "Yet who would have thought the old man"],
@@ -2984,7 +3264,6 @@
 
     { name: "The nurse", play: "Romeo and Juliet",
       cast: ["Nurse", "Juliet"], marks: FACING,
-      set: [["bench", -0.035, 0], ["torch", 0.01, 0.15]],
       beats: [
         [1, "Now, good sweet Nurse \u2014 why look'st thou sad?"],
         [0, "I am aweary. Give me leave awhile."],
@@ -2993,7 +3272,6 @@
 
     { name: "Yorick", play: "Hamlet",
       cast: ["Hamlet"], marks: SOLO,
-      set: [["tomb", -0.03, 0.06], ["torch", 0.005, -0.14]],
       beats: [
         [0, "Alas, poor Yorick! I knew him, Horatio:"],
         [0, "A fellow of infinite jest, of most excellent fancy."],
@@ -3002,7 +3280,6 @@
 
     { name: "If we shadows", play: "A Midsummer Night's Dream",
       cast: ["Puck"], marks: SOLO,
-      set: [["toadstool", -0.025, 0.1]],
       beats: [
         [0, "If we shadows have offended,"],
         [0, "Think but this, and all is mended:"],
@@ -3011,7 +3288,6 @@
 
     { name: "The sticking-place", play: "Macbeth",
       cast: ["Macbeth", "Lady Macbeth"], marks: FACING,
-      set: [["throne", -0.02, 0.16], ["torch", 0.005, -0.16]],
       beats: [
         [0, "If we should fail?"],
         [1, "We fail?"],
@@ -3021,8 +3297,6 @@
 
     { name: "The tomb", play: "Romeo and Juliet",
       cast: ["Romeo", "Juliet"], marks: [[0, -0.07], [0, 0.07]],
-      set: [["tomb", -0.025, 0], ["torch", 0.005, -0.11],
-            ["torch", 0.005, 0.11]],
       beats: [
         [0, "Here's to my love. Thus with a kiss I die."],
         [1, "O happy dagger! This is thy sheath."]

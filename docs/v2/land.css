@@ -365,8 +365,9 @@
   color: var(--ink);
 }
 
-/* On their marks, and whoever has the line. */
+/* On their marks, and whoever has the line. The set stands behind them. */
 .spawn[data-acting="true"] { z-index: 55; }
+.spawn[data-kind="set"] { z-index: 40; }
 
 .spawn[data-speaking="true"] {
   outline: 1px solid rgba(255, 255, 255, 0.9);
