@@ -231,9 +231,17 @@
   function room(ground) {
     var w = ground.el ? ground.el.offsetWidth : 60;
     var h = ground.el ? ground.el.offsetHeight : 20;
+    // A word lies down on the sphere, so near the limb it is turned as far as
+    // eighty degrees from level and its footprint on the screen is nothing
+    // like the box it takes up in latitude and longitude. Keeping them apart
+    // by that box alone let the long ones lean into each other. So a word
+    // also reserves a share of its own length upward and downward — not the
+    // whole diagonal, which reserves so much that everything has to shrink to
+    // fit, but enough that a word the width of a headline has somewhere to
+    // lean.
     return {
       x: (w / 2) / Math.max(R, 1) + 0.030,
-      y: (h / 2) / Math.max(R, 1) + 0.026
+      y: (h / 2 + w * 0.17) / Math.max(R, 1) + 0.026
     };
   }
 
@@ -849,6 +857,7 @@
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(sphere, 0, 0, W, H);
 
+    drawStage(ctx, now);
     stir(now);
     drawMotes();
     drawRing(now);
@@ -993,8 +1002,9 @@
     // Put it down clear of its new neighbours rather than on top of them —
     // the same box separation the whole land was laid out with, for one word.
     var mine = room(ground);
+    var clear = false;
     for (var pass = 0; pass < 50; pass += 1) {
-      var clear = true;
+      clear = true;
       for (var i = 0; i < vocabulary.length; i += 1) {
         var other = vocabulary[i];
         if (other === ground) { continue; }
@@ -1017,6 +1027,17 @@
         }
       }
       if (clear) { break; }
+    }
+
+    // And if fifty passes did not get it clear, leave it where it was. It
+    // used to take the spot anyway: the separation was only ever a nudge per
+    // pass, so a word that could not find room simply came round the front
+    // sitting on top of its neighbour. Now a replanting that does not work
+    // does not happen, and it tries again next time round.
+    if (!clear) {
+      ground.lat = wasLat;
+      ground.lon = wasLon;
+      return false;
     }
 
     // If clearing its neighbours pushed it somewhere it could be seen, leave
@@ -1338,6 +1359,13 @@
   var ISO_H = 0.5;                        // and half that down
   var THICK = 3;                          // how deep a figure is, in its own cells
   var BEAST_THICK = 14;                   // the animal's grid is four times finer
+  /* The grain has to come out at about a pixel a dot, two pixels apart, or
+     it is either invisible or porridge — and the two grids are drawn at very
+     different scales, so they need different tiles to arrive at the same
+     dot. A figure's cell lands at about five pixels across, the animal's
+     unit at about one and a half. */
+  var TILE = 0.76;
+  var BEAST_TILE = 2.8;
 
   /* The top face, then the two that face the viewer. Order matters: the top
      is drawn last within a block so it sits over its own sides. */
@@ -1351,7 +1379,7 @@
   }
 
   /* One block, as the three faces you can see of it. */
-  function block(x, y, z, w, d, h, tone) {
+  function block(x, y, z, w, d, h, tone, tile) {
     var x1 = x + w, y1 = y + d, z1 = z + h;
     var faces = [
       // the side facing down-left, at y1
@@ -1363,21 +1391,22 @@
     ];
     var out = "";
     for (var i = 0; i < 3; i += 1) {
+      var face = lift(tone, FACE_LIFT[i]);
       out += '<polygon points="' + faces[i].join(" ") +
-             '" fill="' + lift(tone, FACE_LIFT[i]) + '"/>';
+             '" fill="' + (tile ? grained(face, i, tile) : face) + '"/>';
     }
     return out;
   }
 
   /* Far to near: with the camera on the (1,1,1) corner, depth is x + y + z. */
-  function stack(boxes, depth) {
+  function stack(boxes, depth, tile) {
     var d = depth || THICK;
     boxes.sort(function (a, b) {
       return (a.x + a.z) - (b.x + b.z);
     });
     var out = "";
     boxes.forEach(function (b) {
-      out += block(b.x, 0, b.z, b.w, d, b.h, b.tone);
+      out += block(b.x, 0, b.z, b.w, d, b.h, b.tone, tile);
     });
     return out;
   }
@@ -1398,6 +1427,111 @@
     var b = isoBounds(cols, rows, depth);
     return b.x.toFixed(2) + " " + b.y.toFixed(2) + " " +
            b.w.toFixed(2) + " " + b.h.toFixed(2);
+  }
+
+  /* ---- the grain on a block ------------------------------------------------
+
+     The world's surface is a field of dots in strands, after Napangardi. The
+     things standing on it were smooth, which made them look like objects laid
+     on a drawing rather than things that came out of it — so the faces of
+     every block are dotted too, in the same hand.
+
+     Which of her surfaces, is the question, because they are not all one
+     thing. The Mina Mina paintings are white dots on black in strands that
+     crowd and part; Karntakurlangu Jukurrpa is a lattice of dotted cells on
+     a warm brown; and Sandhill Country, a colour aquatint, is the one that
+     decided this: a terracotta ground with black dots running in strands
+     across it and pale pools opening between them, the dots swelling and
+     shrinking along their own line. Three tones, not two — a ground, a dark
+     mark, a pale pool — which is exactly what ramp() already gives us out of
+     a work's three colours.
+
+     None of it is drawn as extra shapes. A face is filled with a pattern
+     whose ground is the face's own colour and whose dots sit over it, and the
+     pattern is skewed onto that face's plane so the strands run along the
+     block's own edges rather than across the screen. There are three planes
+     and a handful of colours, so a figure needs a dozen patterns at most and
+     not one shape more than it had.
+
+     The projection gives the skews. A step along x moves (cos30, ½) on the
+     screen, along y (-cos30, ½), along z (0, -1); a face spans two of those,
+     and a pattern transform that maps the unit square onto that pair puts the
+     dots on the block. */
+
+  var GRAIN_FACE = [
+    // the side facing down-left: spans x and z
+    [ISO_W, ISO_H, 0, -1],
+    // the side facing down-right: spans y and z
+    [-ISO_W, ISO_H, 0, -1],
+    // and the top: spans x and y
+    [ISO_W, ISO_H, -ISO_W, ISO_H]
+  ];
+
+  var grains = {};          // "tone|face|tile" -> id
+  var grainDefs = [];
+  var grainCount = 0;
+
+  function grainTile(id, face, tile, tone) {
+    var m = GRAIN_FACE[face];
+    var t = tile.toFixed(3);
+    // Two rows of dots, staggered, so that skewed onto a face they run as
+    // strands rather than sitting on a grid — and the dots do not match:
+    // one heavier, one lighter, the way they swell and shrink along a line
+    // in Sandhill Country. A pale pool opens between them.
+    var dots = "";
+    var at = [[0.22, 0.26, 0.135, 0.34], [0.72, 0.26, 0.095, 0.24],
+              [0.47, 0.76, 0.125, 0.30], [0.97, 0.76, 0.085, 0.20]];
+    at.forEach(function (d) {
+      dots += '<circle cx="' + (d[0] * tile).toFixed(3) +
+              '" cy="' + (d[1] * tile).toFixed(3) +
+              '" r="' + (d[2] * tile).toFixed(3) +
+              '" fill="rgba(20,22,28,' + d[3] + ')"/>';
+    });
+    dots += '<ellipse cx="' + (0.62 * tile).toFixed(3) +
+            '" cy="' + (0.52 * tile).toFixed(3) +
+            '" rx="' + (0.20 * tile).toFixed(3) +
+            '" ry="' + (0.10 * tile).toFixed(3) +
+            '" fill="rgba(255,255,255,0.30)"/>';
+
+    return '<pattern id="' + id + '" patternUnits="userSpaceOnUse" ' +
+           'width="' + t + '" height="' + t + '" patternTransform="matrix(' +
+           m[0].toFixed(4) + "," + m[1].toFixed(4) + "," +
+           m[2].toFixed(4) + "," + m[3].toFixed(4) + ',0,0)">' +
+           '<rect width="' + t + '" height="' + t + '" fill="' + tone + '"/>' +
+           dots + "</pattern>";
+  }
+
+  /* A fill for one face: the colour, with her grain over it. */
+  function grained(tone, face, tile) {
+    var key = tone + "|" + face + "|" + tile;
+    if (grains[key]) { return "url(#" + grains[key] + ")"; }
+    // A cap, so a figure that has worn forty works does not carry forty times
+    // three patterns about with it. Past it, a face is simply its colour.
+    if (grainCount > 90) { return tone; }
+    var id = "g" + (grainCount += 1);
+    grains[key] = id;
+    grainDefs.push(grainTile(id, face, tile, tone));
+    return "url(#" + id + ")";
+  }
+
+  /* Whatever patterns have been asked for so far, ready to go in a <defs>.
+
+     They all live in one place — the animal's own drawing, which is on the
+     page from the start and never taken off it — and everything else on the
+     world points at them by name. A pattern held inside a figure would go
+     when that figure was squashed, and take every other figure's grain with
+     it. */
+  function beastGrain() {
+    var svg = creature.querySelector("svg");
+    if (!svg) { return; }
+    var defs = svg.querySelector("defs");
+    if (!defs) {
+      defs = document.createElementNS(SVGNS, "defs");
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    if (defs.childNodes.length !== grainDefs.length) {
+      defs.innerHTML = grainDefs.join("");
+    }
   }
 
   var SVGNS = "http://www.w3.org/2000/svg";
@@ -1422,7 +1556,7 @@
       // Standing up from the off: the flat rect it was laid out as becomes
       // one block, and every rebuild after this is blocks too.
       group.innerHTML = block(home.x, 0, BEAST_GRID.rows - home.y - home.h,
-                              home.w, BEAST_THICK, home.h, tone);
+                              home.w, BEAST_THICK, home.h, tone, BEAST_TILE);
 
       return {
         el: group, name: group.getAttribute("data-part"), home: home,
@@ -1441,6 +1575,8 @@
     creature.style.width = "176px";
     creature.style.height = (176 * fit.h / fit.w).toFixed(0) + "px";
 
+    beastGrain();
+
     var eye = creature.querySelector(".c-eye");
     if (eye) {
       var ex = +eye.getAttribute("x"), ey = +eye.getAttribute("y");
@@ -1448,7 +1584,7 @@
       var box = document.createElementNS(SVGNS, "g");
       box.setAttribute("class", "c-eye");
       box.innerHTML = block(ex, 0, BEAST_GRID.rows - ey - eh, ew,
-                            BEAST_THICK + 1.5, eh, "#241a33");
+                            BEAST_THICK + 1.5, eh, "#241a33", BEAST_TILE);
       eye.parentNode.replaceChild(box, eye);
     }
   }
@@ -1529,7 +1665,8 @@
       cell(boxes, bx, by, fine, fine, tone);
     }
 
-    g.innerHTML = stack(boxes, BEAST_THICK);
+    g.innerHTML = stack(boxes, BEAST_THICK, BEAST_TILE);
+    beastGrain();
   }
 
   /* The three parts painted longest ago, picked with a little slack so the
@@ -1569,13 +1706,11 @@
     });
     repalette();
 
-    // Every single application leaves something else standing on the world,
-    // and every third leaves two, so the company builds faster than the
-    // animal does and there is always something new to press. What arrives
-    // is decided in sprout(); see "the company" below.
-    var gnd = underfoot();
-    sprout(tok, gnd);
-    if (stamp % 3 === 0) { sprout(tok, gnd); }
+    // One thing per application, and only one. It used to leave two on every
+    // third throw as well, which filled the world faster than anyone could
+    // look at it. What arrives is decided by the ground it comes up out of;
+    // see "what the ground grows" below.
+    sprout(tok, underfoot());
 
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 440);   /* past the 419ms jolt */
@@ -1636,7 +1771,7 @@
     tower: "press to send the animal over"
   };
 
-  var MAX_COMPANY = 24;      // as many as the world holds at once
+  var MAX_COMPANY = 10;      // as many as the world holds at once
   var BANDS = 4;             // how much a tube takes
   var TIERS = 3;             // sizes a thing goes through before it changes kind
 
@@ -1667,7 +1802,8 @@
     // three faces and sits on its own ground; a shadow offset behind it put a
     // second, flat figure under a solid one.
     return '<svg viewBox="' + viewBox(cols, rows) +
-           '" aria-hidden="true" focusable="false">' + stack(boxes) + "</svg>";
+           '" aria-hidden="true" focusable="false">' +
+           stack(boxes, THICK, TILE) + "</svg>";
   }
 
   function stencil(rows, tone) {
@@ -1850,13 +1986,17 @@
 
   /* ---- putting one on the world ------------------------------------------- */
 
-  /* Eight on the stage at the outside, arriving over the first fourteen
-     applications. More than that and it stops being a company. */
+  /* Five on the stage at the outside, arriving over the first dozen
+     applications. It was eight, and eight was a crowd: a scene needs three
+     at most, every part standing is one more small thing to look at, and a
+     stage with five people on it is a company where one with eight is a
+     queue. Ten things on the whole world, likewise, where it was
+     twenty-four. */
   function troupeFull() {
     var standing = spawns.filter(function (born) {
       return born.kind === "player";
     }).length;
-    return standing >= Math.min(8, 1 + Math.floor(stamp / 2));
+    return standing >= Math.min(5, 1 + Math.floor(stamp / 3));
   }
 
   /* ---- what the ground grows ----------------------------------------------
@@ -1983,6 +2123,7 @@
     }
     var made = DRAW[born.kind](born);
     born.el.innerHTML = pixels(made.cols, made.rows, made.cells);
+    beastGrain();          // any new patterns it asked for, into the one defs
     var fit = isoBounds(made.cols, made.rows);
     var u = unit() * (BIG[born.kind] || UP) * swell(born);
     var wide = u * fit.w / 7;
@@ -2275,7 +2416,7 @@
   /* The world keeps making things on its own once it has any colour in it at
      all. Nothing here waits to be asked — it only waits to be squashed. */
   var fermented = 0;
-  var FERMENT = Math.round(2600 * Math.pow(PHI, 3));   // about eleven seconds
+  var FERMENT = Math.round(2600 * Math.pow(PHI, 4));   // about eighteen seconds
 
   function ferment(now) {
     if (still || !supply || !stamp) { return; }
@@ -2291,12 +2432,32 @@
     // with it. So while there is room on the stage the world grows on those
     // words by choice, and on any word at all once the troupe is full. It is
     // still a word doing the casting either way.
+    // Which word it comes up on. While there is room on the stage it favours
+    // the five words that are about somebody, half the time, or the troupe
+    // never fills. Otherwise it favours whatever the world has least of —
+    // ten things is a small company, and eight of them being tubes is not a
+    // company at all. Either way it is a word doing the choosing.
     var open = vocabulary;
-    if (!troupeFull() && Math.random() < 0.5) {
-      var casting = vocabulary.filter(function (g) {
-        return GROUND[g.word] === "player";
+    var casting = vocabulary.filter(function (g) {
+      return GROUND[g.word] === "player";
+    });
+
+    if (!troupeFull() && casting.length && Math.random() < 0.5) {
+      open = casting;
+    } else {
+      var tally = {};
+      KINDS.forEach(function (k) { tally[k] = 0; });
+      spawns.forEach(function (born) {
+        if (tally[born.kind] !== undefined) { tally[born.kind] += 1; }
       });
-      if (casting.length) { open = casting; }
+      var fewest = Math.min.apply(null, KINDS.filter(function (k) {
+        return !(k === "player" && troupeFull());
+      }).map(function (k) { return tally[k]; }));
+      var short = vocabulary.filter(function (g) {
+        var k = GROUND[g.word];
+        return k && tally[k] === fewest && !(k === "player" && troupeFull());
+      });
+      if (short.length) { open = short; }
     }
     var gnd = open[Math.floor(Math.random() * open.length)];
     if (tok && gnd) { sprout(tok, gnd, gnd); }
@@ -2904,7 +3065,8 @@
 
   function beginScene(def, cast, now) {
     var at = boards();
-    playing = { def: def, cast: cast, at: -1, until: now, lat: at.lat, lon: at.lon };
+    playing = { def: def, cast: cast, at: -1, until: now,
+                lat: at.lat, lon: at.lon, since: now };
     raise(def, cast, at);
     cast.forEach(function (born, i) {
       born.acting = true;
@@ -2965,6 +3127,77 @@
     playing.until = now + dwell(line[1]);
   }
 
+  /* ---- the ground a scene is played on -------------------------------------
+
+     Looking at more of her work than the one painting changed what this
+     could be. The Mina Mina canvases are white dots on black in strands that
+     crowd and part; Karntakurlangu Jukurrpa is a lattice of dotted cells over
+     a warm brown; Mina Mina Dreaming is nothing but horizontal strands, and
+     all its variation is in how far apart they run. But Sandhill Country, a
+     colour aquatint, is three-toned: a terracotta ground, black dots running
+     in strands across it that swell and shrink along their own line, and pale
+     pools opening between them.
+
+     Three tones is what a work here already has, sorted by lightness. So a
+     scene brings its own ground with it: when the players take their marks,
+     the world under them thickens into a patch of that — the strands in the
+     dark of the work that cast the lead, the pools in its lightest — and it
+     comes up over about a second, the way the set does. It is not a platform
+     drawn under them; it is the same surface the whole world is made of,
+     gathered where something is happening. Which is what density means in
+     her paintings: this is a place. */
+
+  function drawStage(ctx, now) {
+    if (!playing || !playing.cast.length || still) { return; }
+
+    var p = project(playing.lat, playing.lon);
+    if (p.z <= 0.08) { return; }
+
+    var up = Math.min(1, (now - (playing.since || now)) / 900);
+    if (up <= 0) { return; }
+
+    var tone = ramp(playing.cast[0].token);
+    var dark = tone[2];
+    var pale = tone[0];
+
+    var rx = R * 0.2 * (0.55 + 0.45 * p.z);
+    var ry = rx * 0.3;
+    var rows = 15;
+    var step = Math.max(3, Math.round(rx / 34));
+    var grain = Math.max(1, Math.round(R / 700));
+
+    ctx.save();
+    for (var j = -rows; j <= rows; j += 1) {
+      var t = j / rows;
+      var span = 1 - t * t;
+      if (span <= 0.02) { continue; }
+      var y = p.y + t * ry;
+      var half = rx * Math.sqrt(span);
+
+      // Every strand drifts a little, and they crowd toward the middle of the
+      // patch rather than lying evenly, which is what makes it read as a
+      // place rather than a disc.
+      var drift = Math.sin(j * 1.7 + playing.at) * ry * 0.06;
+      var thick = 0.35 + 0.65 * span;
+
+      for (var x = -half; x <= half; x += step) {
+        var edge = 1 - Math.abs(x) / (half + 0.001);
+        var a = up * thick * edge * 0.78;
+        if (a < 0.03) { continue; }
+
+        // The pale pools open between the strands, in runs rather than one
+        // dot at a time.
+        var pool = Math.sin(x * 0.07 + j * 2.3) > 0.72;
+        ctx.globalAlpha = Math.min(0.85, pool ? a * 1.45 : a);
+        ctx.fillStyle = pool ? pale : dark;
+        var big = (Math.round(x / step) + j) % 3 === 0 ? grain + 1 : grain;
+        ctx.fillRect(Math.round(p.x + x), Math.round(y + drift), big, big);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   /* The line stands over whoever is saying it. */
   function placeSay() {
     if (!playing || say.hidden) { return; }
@@ -2997,7 +3230,8 @@
     playing = {
       def: { name: "An aside", cast: [born.role], marks: [[0, 0]],
              beats: [[0, ASIDE[born.role] || "…"]] },
-      cast: [born], at: -1, until: now, lat: at.lat, lon: at.lon
+      cast: [born], at: -1, until: now,
+      lat: born.lat, lon: born.lon, since: now
     };
     born.acting = true;
     born.mark = { lat: born.lat, lon: born.lon };    // says it where it stands
