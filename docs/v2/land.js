@@ -1634,6 +1634,61 @@
     }
   }
 
+  /* ---- nothing snaps -------------------------------------------------------
+
+     Every drawing on here is rebuilt rather than animated: a palette goes on
+     and the part is drawn again, a shape grows and it is drawn again, a scene
+     goes up a course at a time and is drawn again each course. Rebuilt
+     drawings replaced the old one between two frames, which is a cut, and a
+     page of cuts reads as a slideshow however good each picture is.
+
+     So a drawing is never replaced. The new one is laid over the old one and
+     the old one dissolves under it, over about half a second on a curve with
+     a long tail. A palette going onto the animal is now something you watch
+     happen rather than something you notice has happened, and because every
+     redraw goes through here it costs nothing to say it once. */
+
+  var MELT = 678;          // --beat-4: the melt is on the same ladder as the rest
+
+  function dissolve(host, markup, svg, ms) {
+    var beat = ms || MELT;
+    // Everything already in there is the old drawing, whether it came through
+    // here or was laid down at the start; all of it goes, and it goes by
+    // fading rather than by being removed.
+    var was = [].slice.call(host.children);
+    var skin = svg
+      ? document.createElementNS(SVGNS, "g")
+      : document.createElement("div");
+    skin.setAttribute("class", "skin");
+    if (ms) { skin.style.transitionDuration = ms + "ms"; }
+    skin.innerHTML = markup;
+    host.appendChild(skin);
+
+    // On the next frame, so the browser has the old state to move from: a
+    // skin appended and lit in the same frame has nothing to travel from and
+    // arrives at full strength, which is the cut all this is here to avoid.
+    // Frames stop in a hidden tab, so a timer stands behind the frame: a
+    // drawing must never be left unlit, whichever of the two gets there.
+    var lit = false;
+    function light() {
+      if (lit) { return; }
+      lit = true;
+      skin.setAttribute("class", "skin on");
+      was.forEach(function (old) {
+        var cls = old.getAttribute("class") || "";
+        // Unlit: a skin at rest is transparent, so dropping "on" is the fade.
+        old.setAttribute("class", cls.replace(/(^|\s)on(\s|$)/, " ").trim());
+        old.setAttribute("data-melting", "true");
+        if (ms) { old.style.transitionDuration = ms + "ms"; }
+        window.setTimeout(function () {
+          if (old.parentNode) { old.parentNode.removeChild(old); }
+        }, beat + 60);
+      });
+    }
+    window.requestAnimationFrame(light);
+    window.setTimeout(light, 120);
+  }
+
   var SVGNS = "http://www.w3.org/2000/svg";
 
   /* Each part starts as one block and becomes a group, so its shape can be
@@ -1654,9 +1709,11 @@
       rect.parentNode.removeChild(rect);
 
       // Standing up from the off: the flat rect it was laid out as becomes
-      // one block, and every rebuild after this is blocks too.
-      group.innerHTML = block(home.x, 0, BEAST_GRID.rows - home.y - home.h,
-                              home.w, BEAST_THICK, home.h, tone, BEAST_TILE);
+      // one block, and every rebuild after this is blocks too. Through
+      // dissolve even here, so a part holds one skin from its first frame
+      // and every later redraw has a like thing to melt away.
+      dissolve(group, block(home.x, 0, BEAST_GRID.rows - home.y - home.h,
+                            home.w, BEAST_THICK, home.h, tone, BEAST_TILE), true);
 
       return {
         el: group, name: group.getAttribute("data-part"), home: home,
@@ -1765,7 +1822,7 @@
       cell(boxes, bx, by, fine, fine, tone);
     }
 
-    g.innerHTML = stack(boxes, BEAST_THICK, BEAST_TILE);
+    dissolve(g, stack(boxes, BEAST_THICK, BEAST_TILE), true);
     beastGrain();
   }
 
@@ -2218,6 +2275,10 @@
   }
 
   function redraw(born) {
+    // A diorama is redrawn every course as it goes up, so its melt is the
+    // short beat: on the long one four half-faded copies of the same walls
+    // stand inside each other and the whole thing goes grey while it rises.
+    var beat = born.kind === "set" ? 259 : MELT;
     // Whatever it has just become, if it is a player it needs a part before
     // it can be drawn — and it keeps that part for good.
     if (born.kind === "player" && !born.role) {
@@ -2226,9 +2287,9 @@
     var made = DRAW[born.kind](born);
     // A diorama arrives drawn, because it is built out of boxes in three
     // dimensions rather than a flat grid of cells extruded.
-    born.el.innerHTML = made.svg
+    dissolve(born.el, made.svg
       ? made.svg
-      : pixels(made.cols, made.rows, made.cells);
+      : pixels(made.cols, made.rows, made.cells), false, beat);
     beastGrain();          // any new patterns it asked for, into the one defs
     var fit = made.fit || isoBounds(made.cols, made.rows);
     var u = unit() * (BIG[born.kind] || UP) * swell(born);
@@ -2267,6 +2328,7 @@
       to: null,
       next: 0,
       phase: Math.random() * TAU,     // so they do not all breathe together
+      since: performance.now(),       // so it can rise rather than appear
       // Beside the animal, not under it — a thing born inside the animal's
       // own outline cannot be pressed until it has wandered clear — and well
       // beside it, because everything used to arrive in the same armful and
@@ -2305,7 +2367,23 @@
     var inLine = train.indexOf(born);
     if (inLine >= 0) { train.splice(inLine, 1); }
     if (pouring === born) { pouring = null; }
-    if (born.el.parentNode) { born.el.parentNode.removeChild(born.el); }
+
+    // Out of the world at once, so nothing else has to know about it, but not
+    // off the screen: it stops being placed each frame and melts where it
+    // stood. A thing that vanishes between two frames was never there.
+    var el = born.el;
+    if (!el.parentNode) { return; }
+    el.dataset.going = "true";
+    // placeSpawns has been setting opacity and transform inline every frame
+    // and has just stopped, so the melt has to be set inline too — a rule in
+    // the stylesheet would lose to the inline values left standing there.
+    el.style.transition = "opacity " + MELT + "ms cubic-bezier(0.22, 1, 0.36, 1)" +
+                          ", transform " + MELT + "ms cubic-bezier(0.22, 1, 0.36, 1)";
+    el.style.transform = (el.style.transform || "") + " scale(0.34)";
+    el.style.opacity = "0";
+    window.setTimeout(function () {
+      if (el.parentNode) { el.parentNode.removeChild(el); }
+    }, MELT + 60);
   }
 
   function burstAt(born, tones) {
@@ -2597,6 +2675,14 @@
         return;
       }
       var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
+
+      // Coming up: for the first three quarters of a second it is still on
+      // its way out of the ground, so it arrives rather than appears.
+      var age = (strolled - (born.since || 0)) / 1097;   // --beat-5
+      if (age < 1) {
+        var ease = age <= 0 ? 0 : 1 - Math.pow(1 - age, 3);
+        scale *= 0.45 + 0.55 * ease;
+      }
 
       // Whatever it does to show it is alive rides on this one transform: a
       // hatchling breathes. Nothing here is a separate animation, so nothing
@@ -3100,7 +3186,11 @@
     spawns.forEach(function (born) {
       if (born.kind !== "set") { return; }
       if (born.risen >= placeHeight(born.piece)) { return; }
-      if (now - born.rose < 110) { return; }
+      // On a beat the melt can carry: a course laid every 110ms put five
+      // half-faded copies of the same wall on top of each other. This way
+      // one course is still dissolving as the next arrives, which is what
+      // makes it read as rising rather than as a stack of redraws.
+      if (now - born.rose < 259) { return; }
       born.rose = now;
       born.risen += 1.2;
       redraw(born);

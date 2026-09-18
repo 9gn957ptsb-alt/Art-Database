@@ -286,6 +286,54 @@
   cursor: pointer;
   pointer-events: auto;
   will-change: transform;
+  /* land.js sets the box in pixels every time a figure grows or becomes
+     something else. Left alone that is a jump, so the box travels too, on the
+     same beat and the same curve as the skin dissolving inside it. */
+  transition: width var(--beat-4) cubic-bezier(0.22, 1, 0.36, 1),
+              height var(--beat-4) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- nothing snaps ------------------------------------------------------
+
+   Every drawing here is rebuilt rather than animated: a palette lands and the
+   part is drawn again, a set goes up a course at a time and is drawn again
+   each course. Replacing one drawing with the next between two frames is a
+   cut, and a page of cuts reads as a slideshow however good each picture is.
+
+   So land.js never replaces a drawing. It lays the new one over the old one
+   as a skin and lights it, and the old one — unlit, and marked melting —
+   goes out underneath it. The curve is slow in and very slow out, so the
+   change runs on past the eye instead of stopping in front of it. */
+
+.skin {
+  opacity: 0;
+  transition: opacity var(--beat-4) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.skin.on { opacity: 1; }
+
+/* The drawing that is on its way out. It keeps its place in the stacking
+   order until it is gone, but it stops being something you can press. */
+[data-melting="true"] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--beat-4) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A figure's skins are divs, so they have to be told to share the one box;
+   the creature's are SVG groups and already do. */
+.spawn > .skin {
+  position: absolute;
+  inset: 0;
+}
+
+/* Squashed, or wandered into something else and merged with it. It melts
+   where it stood rather than blinking out; land.js sets the transition
+   inline, because the transform and opacity it has been placed with each
+   frame are inline too. */
+.spawn[data-going="true"] {
+  pointer-events: none;
+  z-index: 30;
 }
 
 .spawn svg {
@@ -694,6 +742,9 @@
   .graze, .token, .seam, .trace { animation: none; }
   .part[data-fresh="true"] { animation: none; }
   .spawn svg { animation: none; }
+  .skin,
+  .spawn,
+  [data-melting="true"] { transition-duration: 1ms; }
   .graze[data-condensing="true"] .graze-card { transition-duration: 1ms; }
 }
 
