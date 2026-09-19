@@ -83,9 +83,47 @@
   var RAD = Math.PI / 180;
   var GOLDEN = Math.PI * (3 - Math.sqrt(5));  // the angle that spaces a spiral
 
-  var TILT = 27 * RAD;       // the north pole leans toward the viewer
-  var COS_T = Math.cos(TILT);
-  var SIN_T = Math.sin(TILT);
+  /* The world leans, and the lean is not fixed any more.
+
+     It used to be: the north pole tipped 27 degrees toward the viewer and
+     stayed there. The sphere is far wider than the window and sits low in
+     it, so what was on the screen was a cap from about fifty degrees north
+     to the pole — and every real place anybody wanted to stand in is south
+     of that. Washington is at thirty-nine, Blacksburg at thirty-seven,
+     Sydney at thirty-four the other way.
+
+     So the lean is a thing you can move. Drag sideways and the world turns
+     on its axis as it always did; drag up and down and it rolls the other
+     way, north and south, and any latitude on the Earth can be brought into
+     the window. The words keep the band they were laid out in — that is
+     worked out once, at the lean the world rests at — so they are where
+     they have always been and they simply go off the top of the screen when
+     you walk south of them. */
+  /* The lean it rests at. It used to be 27 degrees, which put the window on
+     a cap from fifty degrees north to the pole — beautiful, and empty of
+     everywhere anybody lives. At minus four the window is roughly eighteen
+     to seventy-six degrees north, which is where six of the seven collages
+     are, and the seventh is a long roll south. */
+  var TILT = -4 * RAD;
+  var tilt = TILT;           // and the lean it has now
+  var COS_T = Math.cos(tilt);
+  var SIN_T = Math.sin(tilt);
+  var LEAN_LOW = -86 * RAD;  // far enough south to stand in Sydney
+  var LEAN_TOP = 62 * RAD;
+
+  // How far below the lean a latitude sits when it is comfortably in the
+  // middle of the window: the visible band runs from about twenty degrees
+  // above the lean to the pole, so this is the middle of it.
+  var LOOK = 45 * RAD;
+
+  // How far a word lies over, wherever the world has been rolled to.
+  var LEAN_LOOK = Math.sin(27 * RAD);
+
+  function lean(to) {
+    tilt = Math.max(LEAN_LOW, Math.min(LEAN_TOP, to));
+    COS_T = Math.cos(tilt);
+    SIN_T = Math.sin(tilt);
+  }
 
   // The sphere's middle sits well below the floor of the room, so the only
   // surface anyone can see is its crown. The words live there.
@@ -165,6 +203,7 @@
   var place = null;              // the city we are down in, or null
   var flying = false;
   var flyFrom = 1, flyTo = 1, flyAt = 0;
+  var leanFrom = TILT, leanTo = TILT, leanWas = TILT;
   var focus = { lat: 0, lon: 0 };
   var cities = [];
   var fit = 1;          // how much every word comes down by so they all fit
@@ -325,115 +364,91 @@
     return out;
   }
 
-  var WASHED = 8;        // how many landmasses get a wash of colour under them
+  /* ---- where the works are ------------------------------------------------
+
+     The artist put them on the map himself, and these are the places he
+     named. They are real coordinates: the world leans far enough now to
+     reach any of them, which is what the leaning is for.
+
+     Five of the seven are within a few hundred miles of each other on the
+     east coast of America, so at the size the globe is drawn their marks
+     sit close together and their names would print on top of one another.
+     placeCities below gives the names out nearest-first and drops the ones
+     that would collide; the mark itself is always there to press. */
+
+  var WHERE = [
+    { slug: "amadeus",                where: "Sydney",        lat: -33.8688, lon: 151.2093 },
+    { slug: "collage-with-portraits", where: "Washington",    lat: 38.8899,  lon: -77.0091 },
+    { slug: "game-boy-advance",       where: "Washington",    lat: 38.9207,  lon: -77.0703 },
+    { slug: "nyny",                   where: "New York",      lat: 40.7128,  lon: -74.0060 },
+    { slug: "i",                      where: "San Francisco", lat: 37.7749,  lon: -122.4194 },
+    { slug: "boston-spring",          where: "Boston",        lat: 42.3601,  lon: -71.0589 },
+    { slug: "hey-amateur-collage",    where: "Blacksburg",    lat: 37.2296,  lon: -80.4139 }
+  ];
+
+  /* ---- and what the land wears --------------------------------------------
+
+     Each dot of land takes the colour of whichever of his places is nearest
+     it. Before, a whole landmass took one work, which was a good rule while
+     the works had no addresses; now that they have, the map divides itself
+     between them the way a map of anything does — by which one you are
+     closest to. Australia is all Amadeus. North America is shared out along
+     the coast between five collages, with a boundary running between each
+     pair of them, and the west of it belongs to San Francisco.
+
+     Colour is free here — the artist's ruling — so what is kept from each
+     collage is its hue, measured off its own photograph and then spread
+     around the wheel far enough that two neighbours can be told apart. */
+
+  var WASHED = 10;       // how many landmasses get a wash of colour under them
 
   function remass() {
-    inView();
-    var hues = workHues();
     masses = [];
+    if (!continents.length) { return; }
 
-    continents.forEach(function (land, rank) {
-      var work = mine.works[rank % mine.works.length];
-      var h = hues[work.slug];
-      masses[land.id - 1] = {
-        lat: land.lat,
-        lon: land.lon,
-        size: land.size,
-        slug: work.slug,
-        // Under the weave: a wash, pale, and only for the landmasses big
-        // enough to be worth one — a hundred and thirty radial gradients a
-        // repaint for a hundred and thirty islands is not worth one.
-        tone: rank < WASHED ? fromHsl(h, 0.30, 0.70).join(",") : null,
-        // And the strands themselves, which are what the land actually is.
-        ink: fromHsl(h, 0.46, 0.33).join(",")
+    continents.forEach(function (mass, rank) {
+      var at = nearestCity(mass.lat, mass.lon);
+      var city = cities[at - 1];
+      var hue = city ? city.hue : 0.09;
+      masses[mass.id - 1] = {
+        lat: mass.lat, lon: mass.lon, size: mass.size,
+        slug: city ? city.slug : null,
+        // A breath of colour under the weave, and only for the landmasses
+        // big enough to be worth a gradient of their own.
+        tone: rank < WASHED ? fromHsl(hue, 0.30, 0.70).join(",") : null,
+        ink: fromHsl(hue, 0.46, 0.33).join(",")
       };
     });
   }
 
-  /* ---- a city on every landmass -------------------------------------------
-
-     One city to a work, standing on that work's own continent — and standing
-     well inland on it, not on the coast and not at the pole, because a mark
-     on a coastline reads as part of the coastline. The whole of the mask
-     belonging to that landmass is walked and the point furthest from any
-     water wins, which puts them where cities are anyway: in the middle of
-     somewhere.
-
-     A city is the way down. Pressing one flies the view into it, and what
-     you find there is the creature and everything that grows off it. The
-     globe has none of that on it any more. */
-
-  function heart(mass) {
-    var w = earth.w, h = earth.h;
-    var best = null;
-    var mid = (LAT_LOW + LAT_TOP) / 2;
-    var band = Math.max(0.01, LAT_TOP - LAT_LOW);
-    for (var y = 0; y < h; y += 2) {
-      for (var x = 0; x < w; x += 2) {
-        if (earthOwner[y * w + x] !== mass.id) { continue; }
-        var lat = Math.PI / 2 - (y + 0.5) / h * Math.PI;
-        if (lat < LAT_LOW || lat > LAT_TOP) { continue; }
-        var lon = (x + 0.5) / w * TAU;
-        // Deep inland, and well within the part of the world that is on the
-        // screen: a city on the rim is a city nobody can press.
-        var score = inland(lat, lon) - Math.abs(lat - mid) / band * 0.8;
-        if (!best || score > best.score) {
-          best = { lat: lat, lon: lon, score: score };
-        }
+  /* Which of his places a point on the Earth is nearest. Chord length on the
+     unit sphere rather than great-circle distance: the ordering is the same
+     and there is no arccosine in it. */
+  function nearestCity(lat, lon) {
+    if (!cities.length) { return 0; }
+    var cl = Math.cos(lat), sl = Math.sin(lat);
+    var x = cl * Math.cos(lon), y = cl * Math.sin(lon), z = sl;
+    var best = -2, at = 0;
+    for (var i = 0; i < cities.length; i += 1) {
+      var c = cities[i];
+      if (c.ax === undefined) {
+        var ccl = Math.cos(c.lat);
+        c.ax = ccl * Math.cos(c.lon);
+        c.ay = ccl * Math.sin(c.lon);
+        c.az = Math.sin(c.lat);
       }
+      var dot = x * c.ax + y * c.ay + z * c.az;
+      if (dot > best) { best = dot; at = i; }
     }
-    return best || { lat: mass.lat, lon: mass.lon };
+    return at + 1;
   }
-
-  /* How much of each landmass is inside the band of latitudes that is
-     actually on the screen. The Earth's land is mostly nearer the equator
-     than this globe ever shows — the visible cap runs from about 34 degrees
-     to 76 — so ranking the continents by their whole size gave the seven
-     works Antarctica, Australia and South America, none of which anyone can
-     see. They are ranked by what is in view instead. */
-  function inView() {
-    var w = earth.w, h = earth.h;
-    var seen = {};
-    continents.forEach(function (mass) { mass.seen = 0; });
-    var byId = {};
-    continents.forEach(function (mass) { byId[mass.id] = mass; });
-    for (var y = 0; y < h; y += 1) {
-      var lat = Math.PI / 2 - (y + 0.5) / h * Math.PI;
-      if (lat < LAT_LOW || lat > LAT_TOP) { continue; }
-      for (var x = 0; x < w; x += 1) {
-        var id = earthOwner[y * w + x];
-        if (id && byId[id]) { byId[id].seen += 1; }
-      }
-    }
-    continents.sort(function (a, b) {
-      return (b.seen - a.seen) || (b.cells - a.cells);
-    });
-    return seen;
-  }
-
-  /* ---- and one that is not a collage --------------------------------------
-
-     A real place, at its real coordinates, because the artist was standing
-     in it: the Folger Shakespeare Library on East Capitol Street in
-     Washington. It is where the plays live now. Players are cast there and
-     nowhere else, and the scenes go up on its terrace, which is what a
-     Shakespeare library is for and also what stops four other cities each
-     running a company of actors nobody asked them for.
-
-     It is drawn from the building. Paul Cret's 1932 front is long, low and
-     white: a base course, a wall of Georgia marble with nine shallow
-     fluted pilasters, a bas-relief of a scene between each pair and a tall
-     narrow window over that, a plain cornice with the inscription band
-     along it, and a flat roof. The reading room end stands a little proud.
-     The west garden has Puck on his plinth. All of it in the same boxes the
-     dioramas are built from, because it is the same world. */
 
   var LANDMARKS = [{
     slug: "folger",
     title: "Folger Shakespeare Library",
     where: "East Capitol Street, Washington",
-    lat: 38.8890 * RAD,
-    lon: -77.0028 * RAD,
+    lat: 38.8890,
+    lon: -77.0028,
     stage: true,                    // the plays are cast and played here
     piece: "folger"
   }];
@@ -497,9 +512,12 @@
       if (city.el && city.el.parentNode) { city.el.parentNode.removeChild(city.el); }
     });
     cities = [];
-    if (!mine || !continents.length || !earthOwner) { return; }
+    if (!mine) { return; }
 
-    function raiseCity(city, order, real) {
+    var hues = workHues();
+    var order = 0;
+
+    function raiseCity(city, real) {
       var el = document.createElement("button");
       el.className = "city";
       el.type = "button";
@@ -507,11 +525,10 @@
       el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
                      '<span class="city-name"></span>';
       el.lastChild.textContent = city.title;
-      el.setAttribute("aria-label", real
-        ? "Go down to " + city.title + ", " + city.where
-        : "Go down into " + city.title + ", on its own landmass");
+      el.setAttribute("aria-label", "Go down to " + city.title + ", " + city.where);
 
       city.el = el;
+      city.name = el.lastChild;
       el.addEventListener("click", function () { goDown(city); });
       el.addEventListener("pointerdown", function (event) {
         // The stage takes the pointer on its way down, to turn the world
@@ -519,71 +536,125 @@
         // stage captures it the click never reaches the button at all.
         event.stopPropagation();
       });
-      el.addEventListener("focus", function () { wanted = city.lon; });
+      el.addEventListener("focus", function () {
+        // Bring it round and roll to it, without going down into it.
+        wanted = city.lon;
+        lean(city.lat - LOOK);
+      });
       cities.push(city);
       land.appendChild(el);
 
       // They come up one after another rather than all at once.
-      window.setTimeout(function () { el.dataset.up = "true"; }, 420 + order * 160);
+      order += 1;
+      var mine_ = order;
+      window.setTimeout(function () { el.dataset.up = "true"; }, 300 + mine_ * 150);
     }
 
-    mine.works.forEach(function (work, i) {
-      var mass = continents[i];
-      if (!mass) { return; }
-      var at = heart(mass);
+    // The collages, each in the place the artist put it.
+    WHERE.forEach(function (spot) {
+      var work = null;
+      mine.works.forEach(function (w) { if (w.slug === spot.slug) { work = w; } });
+      if (!work) { return; }
       raiseCity({
-        work: work, slug: work.slug, title: work.title,
-        lat: at.lat, lon: at.lon, mass: mass,
-        tone: masses[mass.id - 1] ? masses[mass.id - 1].ink : "27,29,36"
-      }, i, false);
+        work: work, slug: work.slug, title: work.title, where: spot.where,
+        lat: spot.lat * RAD, lon: wrap(spot.lon * RAD),
+        hue: hues[work.slug]
+      }, false);
     });
 
-    // And the places that are places. They stand where they stand — the
-    // coordinates are the building's, not a spot picked to suit the globe —
-    // and they take the colour of whatever landmass they are standing on.
-    LANDMARKS.forEach(function (mark, i) {
-      var lon = wrap(mark.lon);
-
-      // Its own latitude, if this globe reaches it. This one does not: the
-      // sphere is wider than the window and set low in it, so the part of
-      // the Earth on the screen is a cap from about fifty degrees north to
-      // the pole, and Washington is at thirty-nine. Rather than tilt the
-      // whole world over to reach one building, it keeps its own longitude
-      // and walks due north up that meridian until it is both in view and
-      // on dry land — the same continent, the same line, as far south as
-      // this world goes. Its real address is on the banner when you are
-      // standing in it.
-      var lat = Math.max(LAT_LOW + 0.09, Math.min(LAT_TOP - 0.12, mark.lat));
-      for (var step = 0; step < 60 && !onLand(lat, lon); step += 1) {
-        lat += 0.012;
-      }
-
-      var id = ownerAt(lat, lon);
-      var ground = masses[id - 1];
-      var city = {
+    // And the places that are places rather than collages.
+    LANDMARKS.forEach(function (mark) {
+      raiseCity({
         work: null, slug: mark.slug, title: mark.title, where: mark.where,
-        lat: lat, lon: lon, trueLat: mark.lat,
+        lat: mark.lat * RAD, lon: wrap(mark.lon * RAD),
         stage: mark.stage, piece: mark.piece, real: true,
-        tone: ground ? ground.ink : "27,29,36",
-        hue: ground ? toHsl(rgbHex(ground.ink.split(",").map(Number))).h : 0.09
-      };
-      raiseCity(city, mine.works.length + i, true);
+        // A library is stone. It takes the hue of whichever collage it is
+        // nearest — it stands four streets from two of them — and then
+        // almost none of it.
+        hue: hues[nearWork(mark)] || 0.09
+      }, true);
     });
   }
 
+  /* Which collage a landmark is standing nearest, by the places they are in. */
+  function nearWork(mark) {
+    var best = null, near = Infinity;
+    WHERE.forEach(function (spot) {
+      var dLat = (spot.lat - mark.lat) * RAD;
+      var dLon = (spot.lon - mark.lon) * RAD * Math.cos(mark.lat * RAD);
+      var d = dLat * dLat + dLon * dLon;
+      if (d < near) { near = d; best = spot.slug; }
+    });
+    return best;
+  }
+
   function placeCities() {
-    cities.forEach(function (city) {
+    /* Three of his places are in Washington — two collages and the library —
+       and at the size the globe is drawn they are the same three pixels. The
+       coordinates stay true; the marks are pushed apart on the screen until
+       each of them can be pressed, which is a few pixels of lie at a scale
+       where a few pixels is a mile. Names are then given out nearest the
+       middle first, and one that would print across a name already given up
+       is left off until the world moves. */
+    var MARK = 34;                      // how far apart two marks must sit
+    var out = [];
+
+    cities.forEach(function (city, i) {
       var p = project(city.lat, city.lon);
       var el = city.el;
       if (p.z <= 0.08 || p.x < 8 || p.x > W - 8 || p.y < 8 || p.y > H - 8) {
         el.style.visibility = "hidden";
         return;
       }
+      out.push({ city: city, z: p.z, x: p.x, y: p.y, turn: i });
+    });
+
+    for (var pass = 0; pass < 5; pass += 1) {
+      for (var a = 0; a < out.length; a += 1) {
+        for (var b = a + 1; b < out.length; b += 1) {
+          var one = out[a], two = out[b];
+          var dx = two.x - one.x, dy = two.y - one.y;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          if (d >= MARK) { continue; }
+          if (d < 0.2) {                 // exactly on top: pick a direction
+            var th = (one.turn * 2.4 + two.turn) % TAU;
+            dx = Math.cos(th); dy = Math.sin(th); d = 1;
+          }
+          var push = (MARK - d) / 2;
+          one.x -= dx / d * push; one.y -= dy / d * push;
+          two.x += dx / d * push; two.y += dy / d * push;
+        }
+      }
+    }
+
+    out.forEach(function (it) {
+      var el = it.city.el;
       el.style.visibility = "visible";
-      el.style.opacity = (INV2 + INV * Math.min(1, (p.z - 0.08) / 0.3)).toFixed(3);
+      el.style.opacity = (INV2 + INV * Math.min(1, (it.z - 0.08) / 0.3)).toFixed(3);
       el.style.transform =
-        "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
+        "translate(" + it.x.toFixed(1) + "px," + it.y.toFixed(1) + "px)" +
         " translate(0,-50%)";
+    });
+
+    out.sort(function (m, n) {
+      return (Math.abs(m.x - cx) + Math.abs(m.y - H * 0.5)) -
+             (Math.abs(n.x - cx) + Math.abs(n.y - H * 0.5));
+    });
+
+    var taken = [];
+    out.forEach(function (it) {
+      var wide = (it.city.name.offsetWidth || 90) + 18;
+      var clear = true;
+      for (var k = 0; k < taken.length; k += 1) {
+        var was = taken[k];
+        if (it.x < was.x + was.w && was.x < it.x + wide &&
+            it.y - 17 < was.y + 17 && was.y - 17 < it.y + 17) {
+          clear = false;
+          break;
+        }
+      }
+      if (clear) { taken.push({ x: it.x, y: it.y, w: wide }); }
+      it.city.name.style.visibility = clear ? "visible" : "hidden";
     });
   }
 
@@ -597,6 +668,11 @@
     focus.lat = city.lat;
     focus.lon = city.lon;
     wanted = city.lon;              // turn the world so the city faces you
+    // And roll it until the city's own latitude is the one facing you, which
+    // puts the place dead centre however far north or south it is.
+    leanWas = tilt;
+    leanFrom = tilt;
+    leanTo = city.lat;
     flyFrom = zoom;
     flyTo = CITY_ZOOM;
     flyAt = performance.now();
@@ -609,6 +685,9 @@
     if (flying || !place) { return; }
     hold();                         // the walk stops where it is
     hideGraze();
+    // Back out to the part of the world you were looking at when you went in.
+    leanFrom = tilt;
+    leanTo = leanWas;
     flyFrom = zoom;
     flyTo = 1;
     flyAt = performance.now();
@@ -757,7 +836,13 @@
     // `squash` is 1; at the horizon the surface is edge-on and a word on it
     // is compressed to the sine of the tilt, about 45 per cent.
     var tx = cosA;
-    var ty = -sinA * SIN_T;
+    // The lean is not taken from the lean the world happens to have. It is
+    // taken from the one it rests at, always. A word lying on the surface
+    // ought to follow the surface, and it does — but the amount of the tip
+    // that shows in it is proportional to the sine of the lean, so rolling
+    // the world south to stand in Washington flattened every word on it.
+    // The leaning is the point, so the words keep it at every latitude.
+    var ty = -sinA * LEAN_LOOK;
 
     // Past a quarter turn the surface runs away from the viewer, and a word
     // painted along it would be seen from behind — mirrored and upside down.
@@ -786,7 +871,9 @@
     cx = W / 2;
     var flank = Math.sqrt(Math.max(1, R * R - cx * cx));
     var orbit = H * (1 - 1 / PHI) + flank;
-    var ground = H * 0.62 + Math.sin(focus.lat - TILT) * R;
+    // Where the city is, at the lean we have now: dead centre once the lean
+    // has arrived at its latitude, and travelling there smoothly before.
+    var ground = H * 0.62 + Math.sin(focus.lat - tilt) * R;
     var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
     cy = orbit + (ground - orbit) * down;
   }
@@ -815,9 +902,18 @@
     // to, because the band is where the words live and the words are the
     // globe's.
     var flank = Math.sqrt(Math.max(1, baseR * baseR - cx * cx));
+    // At the resting lean, whatever the world is leaning at now.
     var sunk = Math.max(-1, Math.min(1,
       (H * (1 - 1 / PHI) + flank - H) / baseR));
-    LAT_LOW = Math.min(LAT_TOP - 8 * RAD, TILT + Math.asin(sunk) + 2 * RAD);
+    LAT_LOW = TILT + Math.asin(sunk) + 2 * RAD;
+
+    // And a band of the same width above it — twenty-seven degrees, which is
+    // what fills the window. It used to run to a fixed seventy-six degrees,
+    // which was the right top while the world rested tipped well over; now
+    // that it rests looking at the latitudes his places are in, a band up to
+    // the pole would spread twenty-six words over twice the ground and leave
+    // eight of them on the screen instead of sixteen.
+    LAT_TOP = LAT_LOW + 27 * RAD;
 
     reframe();
 
@@ -828,8 +924,8 @@
     fit = fitToBand();   // then all of them down by however much it takes
     dressAll();
     relax();
-    remass();
     found();
+    remass();
     weave(place ? { lat: place.lat, lon: place.lon } : null);
   }
 
@@ -1049,6 +1145,7 @@
 
   var earth = null;              // { w, h, bits } once it has loaded
   var earthBits = null;
+
   var earthOwner = null;         // a continent number per cell, 0 at sea
   var continents = [];           // biggest first
 
@@ -1058,6 +1155,17 @@
     earthBits = new Uint8Array(raw.length);
     for (var i = 0; i < raw.length; i += 1) { earthBits[i] = raw.charCodeAt(i); }
     mapLands();
+  }
+
+  function onLand(lat, lon) {
+    if (!earthBits) { return 0; }
+    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
+    var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
+    if (x < 0) { x += earth.w; }
+    if (y < 0) { y = 0; }
+    if (y >= earth.h) { y = earth.h - 1; }
+    var i = y * earth.w + x;
+    return (earthBits[i >> 3] >> (i & 7)) & 1;
   }
 
   /* Which land is which. The mask says land or sea; this says Africa. Every
@@ -1150,16 +1258,6 @@
     return earthOwner[y * earth.w + x];
   }
 
-  function onLand(lat, lon) {
-    if (!earthBits) { return 0; }
-    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
-    var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
-    if (x < 0) { x += earth.w; }
-    if (y < 0) { y = 0; }
-    if (y >= earth.h) { y = earth.h - 1; }
-    var i = y * earth.w + x;
-    return (earthBits[i >> 3] >> (i & 7)) & 1;
-  }
 
   /* How far into the land a point is: nought at sea, one well inland. Counted
      by looking outward in rings rather than by a proper distance transform,
@@ -1293,9 +1391,11 @@
       var deep = inland(lat[k], lon[k]);
       wGain[k] = deep ? 0.25 + 0.75 * deep : 0;
 
-      // Which land it is standing on, straight off the map — not whichever
-      // work happens to be nearest, which used to run Europe's colour over
-      // the sea into Africa.
+      // Which land it is standing on, straight off the map. What colour that
+      // land is was settled once, in remass, by which of his places is
+      // nearest it — so a boundary between two colours is a coastline rather
+      // than a line drawn halfway between two cities, which is what makes a
+      // continent read as one thing rather than a pastel patchwork.
       wTone[k] = deep ? ownerAt(lat[k], lon[k]) : 0;
     }
 
@@ -1754,6 +1854,7 @@
       var went = Math.min(1, (now - flyAt) / FLY);
       var easing = 1 - Math.pow(1 - went, 3);
       zoom = flyFrom + (flyTo - flyFrom) * easing;
+      lean(leanFrom + (leanTo - leanFrom) * easing);
       reframe();
       if (went >= 1) {
         flying = false;
@@ -4881,7 +4982,8 @@
     // Only reaches here when the press missed the creature, the card and the
     // token, all of which stop it. So: put down whatever was up.
     if (offering || carrying) { dismiss(); }
-    turning = { id: event.pointerId, x: event.clientX, spin: spin, moved: 0 };
+    turning = { id: event.pointerId, x: event.clientX, y: event.clientY,
+                spin: spin, lean: tilt, moved: 0 };
     squashing = { id: event.pointerId, x: event.clientX, y: event.clientY,
                   since: performance.now() };
     stage.dataset.turning = "true";
@@ -4895,12 +4997,16 @@
     // would only walk you off the edge of it.
     if (place) { return; }
     var dx = event.clientX - turning.x;
-    turning.moved = Math.max(turning.moved, Math.abs(dx));
+    var dy = event.clientY - turning.y;
+    turning.moved = Math.max(turning.moved, Math.abs(dx), Math.abs(dy));
     // A press that moves is a turn, not a squash.
     if (squashing && turning.moved > 8) { squashing = null; }
-    // A drag across the whole sphere turns it about half way round.
+    // A drag across the whole sphere turns it about half way round; a drag
+    // down it rolls it north, which is to say it pulls the world down and
+    // lets you see over the top of it.
     wanted = turning.spin - (dx / Math.max(R, 1)) * Math.PI;
     spin = wanted;
+    lean(turning.lean + (dy / Math.max(R, 1)) * Math.PI * 0.62);
   });
 
   ["pointerup", "pointercancel"].forEach(function (name) {
@@ -5066,11 +5172,16 @@
       wireParts();
       land.dataset.at = "globe";
 
-      // The world opens turned to whichever city is first, so there is
-      // somewhere to go rather than an ocean to look at.
-      var first = cities[0];
+      // The world opens looking at the library — the one place on it that is
+      // not a collage, and the one the plays are in — so there is somewhere
+      // to go rather than an ocean to look at.
+      var first = null;
+      cities.forEach(function (city) {
+        if (!first || city.stage) { first = city; }
+      });
       if (first) {
         spin = wanted = first.lon;
+        lean(first.lat - LOOK);
         beast.lat = goal.lat = first.lat;
         beast.lon = goal.lon = first.lon;
       } else {
