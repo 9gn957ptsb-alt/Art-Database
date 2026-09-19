@@ -30,6 +30,7 @@ already declined or deferred in the same conversation.
 | `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
 | `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
 | `scripts/build_earth.py` | Writes `docs/v2/earth.json` — the land mask the weave is shaped by. Natural Earth 110m, public domain; the download it works from goes to `data/`. |
+| `scripts/build_tones.py` | Writes `docs/v2/tones.json` — the colours measured off each collage's own photograph, which is what the continents wear. |
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.
 

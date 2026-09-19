@@ -1,0 +1,47 @@
+{
+ "note": "Colours measured off each collage's own photograph by scripts/build_tones.py. Not metadata \u2014 a measurement.",
+ "tones": {
+  "amadeus": [
+   "#a6866a",
+   "#d0cbc1",
+   "#67584b",
+   "#baa28c"
+  ],
+  "i": [
+   "#d7d7d7",
+   "#a28571",
+   "#69584f",
+   "#1f1f22"
+  ],
+  "collage-with-portraits": [
+   "#d9d3c9",
+   "#b2957b",
+   "#272525",
+   "#5a5148"
+  ],
+  "nyny": [
+   "#ced0d0",
+   "#af9377",
+   "#22272a",
+   "#3f4047"
+  ],
+  "hey-amateur-collage": [
+   "#945d26",
+   "#d5d3ce",
+   "#b07842",
+   "#918c82"
+  ],
+  "boston-spring": [
+   "#5c534b",
+   "#93887b",
+   "#33302e",
+   "#7b6d62"
+  ],
+  "game-boy-advance": [
+   "#a58a79",
+   "#d0cdbd",
+   "#865a32",
+   "#baad9b"
+  ]
+ }
+}

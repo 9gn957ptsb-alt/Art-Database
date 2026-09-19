@@ -102,17 +102,8 @@
   var INV3 = INV2 * INV;              // 0.236…
   var INV5 = INV2 * INV3;             // 0.0902…
 
-  // The land on the sphere, after the pixelled reference the artist gave:
-  // hot pink, lime, orange, cream, cornflower and lavender.
-  // Barely there. The globe used to carry six saturated hues and shout over
-  // everything standing on it; it is ground now, and the colour belongs to the
-  // creature and to whatever gets thrown at it.
-  var LANDS = [
-    "150, 160, 184",
-    "168, 172, 186",
-    "158, 168, 178",
-    "176, 174, 180"
-  ];
+  // The land's colour is not a constant any more. Each landmass wears the
+  // work it belongs to — see "a continent is a collage" below.
 
   var GRAZE_MIN = 2600;                        // how long it stays with a word
   var GRAZE_MAX = Math.round(2600 * PHI);      // …and at most, a golden step on
@@ -259,39 +250,73 @@
     return used <= have ? 1 : Math.sqrt(have / used);
   }
 
-  /* Landmasses follow the words, so they are worked out after the words have
-     settled rather than where the spiral first put them. */
-  function remass() {
-    masses = mine.works.map(function (work, i) {
-      var own = vocabulary.filter(function (g) {
-        return g.works.indexOf(work) !== -1;
-      });
-      var x = 0, y = 0, z = 0;
-      own.forEach(function (g) {
-        var weight = 1 / g.works.length;
-        x += Math.cos(g.lat) * Math.cos(g.lon) * weight;
-        y += Math.cos(g.lat) * Math.sin(g.lon) * weight;
-        z += Math.sin(g.lat) * weight;
-      });
-      var len = Math.sqrt(x * x + y * y + z * z) || 1;
+  /* ---- a continent is a collage -------------------------------------------
+
+     Each landmass on the Earth is one of his works, coast to coast. The
+     biggest goes to the first work, the next to the second, and round again
+     through the islands, so every work has ground somewhere and no work's
+     colour ever crosses a strait into another's.
+
+     The colours are measured off the photographs of the collages themselves
+     — scripts/build_tones.py — and then taken where they are wanted. Seven
+     collages shot in the same light give seven browns, and seven browns on
+     one globe is one brown, so what is kept from each is which of them is
+     the warmer and which the cooler; they are then spread around the wheel
+     far enough apart to be told from each other at the size a dot is. The
+     artist's ruling, and it unlocked this: any colour for any object
+     anywhere, so long as it works. */
+
+  var measured = {};     // tones.json — what came off the photographs
+
+  function readTones(data) {
+    measured = (data && data.tones) || {};
+  }
+
+  function workHues() {
+    var order = mine.works.map(function (work, i) {
+      var own = measured[work.slug] || [];
+      var lead = own.slice().sort(function (a, b) {
+        return toHsl(b).s - toHsl(a).s;
+      })[0];
+      var c = lead ? toHsl(lead) : null;
       return {
-        lat: Math.asin(z / len),
-        lon: Math.atan2(y / len, x / len),
-        size: 0.11 + 0.016 * own.length,
-        tone: LANDS[i % LANDS.length]
+        slug: work.slug,
+        at: i,
+        h: c && c.s > 0.04 ? c.h : (hash(work.slug) % 360) / 360
       };
     });
 
-    // Islands on the lower flanks. No word stands on them — they are there
-    // because a world is not all one continent.
-    for (var k = 0; k < 6; k += 1) {
-      masses.push({
-        lat: (24 + k * 3.5) * RAD,
-        lon: (k * 2.4 + 0.7) % TAU,
-        size: 0.055 + (k % 3) * 0.022,
-        tone: LANDS[(k + 3) % LANDS.length]
-      });
-    }
+    // Warmest first, then given the whole wheel between them.
+    var round = order.slice().sort(function (a, b) { return a.h - b.h; });
+    var out = {};
+    round.forEach(function (work, j) {
+      out[work.slug] = (round[0].h + j / round.length) % 1;
+    });
+    return out;
+  }
+
+  var WASHED = 8;        // how many landmasses get a wash of colour under them
+
+  function remass() {
+    var hues = workHues();
+    masses = [];
+
+    continents.forEach(function (land, rank) {
+      var work = mine.works[rank % mine.works.length];
+      var h = hues[work.slug];
+      masses[land.id - 1] = {
+        lat: land.lat,
+        lon: land.lon,
+        size: land.size,
+        slug: work.slug,
+        // Under the weave: a wash, pale, and only for the landmasses big
+        // enough to be worth one — a hundred and thirty radial gradients a
+        // repaint for a hundred and thirty islands is not worth one.
+        tone: rank < WASHED ? fromHsl(h, 0.30, 0.70).join(",") : null,
+        // And the strands themselves, which are what the land actually is.
+        ink: fromHsl(h, 0.46, 0.33).join(",")
+      };
+    });
   }
 
   /* Forty words, some of them very large, do not fit a spiral without running
@@ -654,12 +679,105 @@
 
   var earth = null;              // { w, h, bits } once it has loaded
   var earthBits = null;
+  var earthOwner = null;         // a continent number per cell, 0 at sea
+  var continents = [];           // biggest first
 
   function readEarth(data) {
     earth = data;
     var raw = window.atob(data.bits);
     earthBits = new Uint8Array(raw.length);
     for (var i = 0; i < raw.length; i += 1) { earthBits[i] = raw.charCodeAt(i); }
+    mapLands();
+  }
+
+  /* Which land is which. The mask says land or sea; this says Africa. Every
+     run of land joined to itself is one continent, found by flooding out
+     from each cell that has not been claimed yet — the map wraps at the
+     date line, so the flood does too, or Chukotka and Alaska would be two
+     halves of nothing.
+
+     What it is for: a continent is one of his collages. Not the nearest
+     work to a dot, which was what the land wore before and which bled one
+     work's colour across a strait into another's; a whole landmass, coast
+     to coast, in the colours of one work. */
+  function mapLands() {
+    var w = earth.w, h = earth.h, n = w * h;
+    earthOwner = new Uint8Array(n);
+    continents = [];
+
+    var stack = new Int32Array(n);
+    var cellLat = new Float64Array(h);
+    var cellCos = new Float64Array(h);
+    for (var y = 0; y < h; y += 1) {
+      cellLat[y] = Math.PI / 2 - (y + 0.5) / h * Math.PI;
+      cellCos[y] = Math.cos(cellLat[y]);
+    }
+
+    var id = 0;
+    for (var start = 0; start < n; start += 1) {
+      if (!(earthBits[start >> 3] >> (start & 7) & 1)) { continue; }
+      if (earthOwner[start]) { continue; }
+      if (id >= 250) { break; }          // the array only holds so many
+      id += 1;
+
+      var top = 0;
+      stack[top] = start;
+      top += 1;
+      earthOwner[start] = id;
+
+      var cells = 0, area = 0, sx = 0, sy = 0, sz = 0;
+      while (top) {
+        top -= 1;
+        var at = stack[top];
+        var ay = (at / w) | 0;
+        var ax = at - ay * w;
+        var lat = cellLat[ay];
+        var lon = (ax + 0.5) / w * TAU;
+        cells += 1;
+        area += cellCos[ay];
+        // Summed as points on the sphere, so the wrap takes care of itself.
+        sx += cellCos[ay] * Math.cos(lon);
+        sy += cellCos[ay] * Math.sin(lon);
+        sz += Math.sin(lat);
+
+        for (var side = 0; side < 4; side += 1) {
+          var nx = ax + (side === 0 ? 1 : side === 1 ? -1 : 0);
+          var ny = ay + (side === 2 ? 1 : side === 3 ? -1 : 0);
+          if (ny < 0 || ny >= h) { continue; }
+          if (nx < 0) { nx = w - 1; } else if (nx >= w) { nx = 0; }
+          var to = ny * w + nx;
+          if (earthOwner[to]) { continue; }
+          if (!(earthBits[to >> 3] >> (to & 7) & 1)) { continue; }
+          earthOwner[to] = id;
+          stack[top] = to;
+          top += 1;
+        }
+      }
+
+      var len = Math.sqrt(sx * sx + sy * sy + sz * sz) || 1;
+      // Its area on the sphere, turned into the radius of a circle of the
+      // same size — near enough for a wash of colour underneath it.
+      var steres = area * (TAU / w) * (Math.PI / h);
+      continents.push({
+        id: id,
+        cells: cells,
+        lat: Math.asin(Math.max(-1, Math.min(1, sz / len))),
+        lon: wrap(Math.atan2(sy, sx)),
+        size: Math.min(0.62, Math.sin(Math.sqrt(steres / Math.PI)))
+      });
+    }
+
+    continents.sort(function (a, b) { return b.cells - a.cells; });
+  }
+
+  function ownerAt(lat, lon) {
+    if (!earthOwner) { return 0; }
+    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
+    var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
+    if (x < 0) { x += earth.w; }
+    if (y < 0) { y = 0; }
+    if (y >= earth.h) { y = earth.h - 1; }
+    return earthOwner[y * earth.w + x];
   }
 
   function onLand(lat, lon) {
@@ -693,6 +811,10 @@
     }
     return tries ? hits / tries : 0;
   }
+
+  // Water. Near enough to ink to stay out of the way, far enough into blue
+  // to be water rather than a shadow.
+  var SEA = fromHsl(0.575, 0.26, 0.21).join(",");
 
   var wSinLat = null, wCosLat = null, wSinLon = null, wCosLon = null;
   var wSalt = null, wTone = null, wGain = null;
@@ -759,18 +881,10 @@
     wTone = new Uint8Array(wCount);
     wGain = new Float32Array(wCount);
 
-    // Which land a dot falls on, and how far into it. Thirteen distance
-    // checks a dot, done once here rather than on every repaint.
-    // The land wears the works' colours, but taken well down toward ink: the
-    // tones are pale, and a pale dot on a pale sphere is not a coastline. The
-    // sea is left as bare ink at a fraction of the strength, so what reads
-    // first about this world is where the land is.
-    wTones = masses.map(function (mass) {
-      var c = mass.tone.split(",").map(Number);
-      return [Math.round(c[0] * 0.42 + 27 * 0.58),
-              Math.round(c[1] * 0.42 + 29 * 0.58),
-              Math.round(c[2] * 0.42 + 36 * 0.58)].join(",");
-    });
+    // What each landmass is made of. No mixing toward ink here any more:
+    // the ink was a correction for colours that were pale by accident, and
+    // the colours are chosen now rather than inherited.
+    wTones = masses.map(function (mass) { return mass.ink; });
 
     for (var k = 0; k < wCount; k += 1) {
       wSinLat[k] = Math.sin(lat[k]);
@@ -785,18 +899,10 @@
       var deep = inland(lat[k], lon[k]);
       wGain[k] = deep ? 0.25 + 0.75 * deep : 0;
 
-      var which = 0;
-      if (deep) {
-        var best = Infinity;
-        for (var m = 0; m < masses.length; m += 1) {
-          var mass = masses[m];
-          var dLat = lat[k] - mass.lat;
-          var dLon = wrap(lon[k] - mass.lon) * wCosLat[k];
-          var d = dLat * dLat + dLon * dLon;
-          if (d < best) { best = d; which = m + 1; }
-        }
-      }
-      wTone[k] = which;
+      // Which land it is standing on, straight off the map — not whichever
+      // work happens to be nearest, which used to run Europe's colour over
+      // the sea into Africa.
+      wTone[k] = deep ? ownerAt(lat[k], lon[k]) : 0;
     }
 
     woven.spin = null;      // it will have to be drawn again
@@ -853,7 +959,7 @@
         // lies nearest. The further inland, the heavier.
         a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
         tone = wSalt[k] ? "255,255,255"
-             : (wTone[k] ? wTones[wTone[k] - 1] : "27,29,36");
+             : (wTone[k] && wTones[wTone[k] - 1] ? wTones[wTone[k] - 1] : SEA);
         if (wSalt[k]) { a *= 0.8; }
       } else {
         // Sea: most of the strand is simply not there. An even field of dots
@@ -861,7 +967,7 @@
         // what makes it the Earth.
         if ((k & 3) !== 0) { continue; }
         a = (0.035 + 0.075 * lit);
-        tone = wSalt[k] ? "255,255,255" : "27,29,36";
+        tone = wSalt[k] ? "255,255,255" : SEA;
       }
 
       var step = a < 0.04 ? 0 : Math.min(11, Math.round(a * 22));
@@ -988,6 +1094,7 @@
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
     masses.forEach(function (mass) {
+      if (!mass || !mass.tone) { return; }
       var p = project(mass.lat, mass.lon);
       if (p.z <= 0.02) { return; }
 
@@ -2111,6 +2218,76 @@
      time it grows. */
   var ramps = {};
 
+  /* ---- colour is free ------------------------------------------------------
+
+     The artist's word on this: any colour for any object anywhere, so long as
+     it works. That settles an argument the site kept having with itself. The
+     colours measured off a work are honest and they are nearly all the same
+     — seven collages photographed in the same light give seven browns, and
+     seven browns is one brown. So what is kept from a work is which colour it
+     is, not what value it came out at: the hue is the work's, and the
+     lightness and the strength are whatever the thing being drawn needs.
+
+     Everything below works in hue, strength and lightness, because those are
+     the three things that have to be argued about separately. */
+
+  function toHsl(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    var n = m ? parseInt(m[1], 16) : 0x808080;
+    var r = ((n >> 16) & 255) / 255;
+    var g = ((n >> 8) & 255) / 255;
+    var b = (n & 255) / 255;
+    var hi = Math.max(r, g, b), lo = Math.min(r, g, b);
+    var l = (hi + lo) / 2;
+    if (hi === lo) { return { h: 0, s: 0, l: l }; }
+    var d = hi - lo;
+    var sat = l > 0.5 ? d / (2 - hi - lo) : d / (hi + lo);
+    var h = hi === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6
+          : hi === g ? ((b - r) / d + 2) / 6
+          : ((r - g) / d + 4) / 6;
+    return { h: h, s: sat, l: l };
+  }
+
+  function chan(p, q, t) {
+    if (t < 0) { t += 1; }
+    if (t > 1) { t -= 1; }
+    if (t < 1 / 6) { return p + (q - p) * 6 * t; }
+    if (t < 1 / 2) { return q; }
+    if (t < 2 / 3) { return p + (q - p) * (2 / 3 - t) * 6; }
+    return p;
+  }
+
+  function fromHsl(h, s, l) {
+    h = ((h % 1) + 1) % 1;
+    s = Math.max(0, Math.min(1, s));
+    l = Math.max(0, Math.min(1, l));
+    if (!s) {
+      var v = Math.round(l * 255);
+      return [v, v, v];
+    }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    return [Math.round(chan(p, q, h + 1 / 3) * 255),
+            Math.round(chan(p, q, h) * 255),
+            Math.round(chan(p, q, h - 1 / 3) * 255)];
+  }
+
+  function rgbHex(rgb) {
+    return "#" + rgb.map(function (v) {
+      return (v < 16 ? "0" : "") + v.toString(16);
+    }).join("");
+  }
+
+  /* A colour kept as itself in hue and put where it is wanted in everything
+     else. A borrowed hue for the ones that have none: a grey's hue is
+     whatever rounding left behind, and forcing strength into it turns that
+     noise into a colour. */
+  function tune(from, want, floor, borrow) {
+    var c = toHsl(from);
+    var h = c.s < 0.1 && borrow !== undefined ? borrow : c.h;
+    return fromHsl(h, Math.max(floor, Math.min(0.72, c.s)), want);
+  }
+
   function lumin(hex) {
     var m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
     if (!m) { return 0.5; }
@@ -2123,8 +2300,29 @@
     if (ramps[tok.s]) { return ramps[tok.s]; }
     var c = tok.c.slice().sort(function (a, b) { return lumin(b) - lumin(a); });
     while (c.length < 3) { c.push(c[0]); }
-    ramps[tok.s] = [lift(c[0], 0.42), c[1], lift(c[2], -0.36)];
+
+    // The work's own hues, at three lightnesses that are certainly three.
+    // Lifting each colour a little from where it already was left plenty of
+    // works with three mid-tones still, which on an isometric block means no
+    // top, no left and no right — a silhouette in one colour.
+    var lead = c.slice().sort(function (a, b) {
+      return toHsl(b).s - toHsl(a).s;
+    })[0];
+    var borrow = toHsl(lead).s > 0.08 ? toHsl(lead).h : (hash(tok.s) % 360) / 360;
+
+    ramps[tok.s] = [rgbHex(tune(c[0], 0.80, 0.26, borrow)),
+                    rgbHex(tune(c[1], 0.54, 0.34, borrow)),
+                    rgbHex(tune(c[2], 0.25, 0.38, borrow))];
     return ramps[tok.s];
+  }
+
+  /* Something to hang a hue on when a work has none of its own. */
+  function hash(text) {
+    var n = 2166136261;
+    for (var i = 0; i < (text || "").length; i += 1) {
+      n = ((n ^ text.charCodeAt(i)) * 16777619) >>> 0;
+    }
+    return n;
   }
 
   /* A colour taken up toward white or down toward ink, for a facet or a
@@ -4223,11 +4421,13 @@
     });
   }
 
-  Promise.all([read("../works.json"), read("land.json"), read("earth.json")])
+  Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
+               read("tones.json")])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
       readEarth(all[2]);
+      readTones(all[3]);
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }
