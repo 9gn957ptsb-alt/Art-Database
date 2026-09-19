@@ -411,6 +411,87 @@
     return seen;
   }
 
+  /* ---- and one that is not a collage --------------------------------------
+
+     A real place, at its real coordinates, because the artist was standing
+     in it: the Folger Shakespeare Library on East Capitol Street in
+     Washington. It is where the plays live now. Players are cast there and
+     nowhere else, and the scenes go up on its terrace, which is what a
+     Shakespeare library is for and also what stops four other cities each
+     running a company of actors nobody asked them for.
+
+     It is drawn from the building. Paul Cret's 1932 front is long, low and
+     white: a base course, a wall of Georgia marble with nine shallow
+     fluted pilasters, a bas-relief of a scene between each pair and a tall
+     narrow window over that, a plain cornice with the inscription band
+     along it, and a flat roof. The reading room end stands a little proud.
+     The west garden has Puck on his plinth. All of it in the same boxes the
+     dioramas are built from, because it is the same world. */
+
+  var LANDMARKS = [{
+    slug: "folger",
+    title: "Folger Shakespeare Library",
+    where: "East Capitol Street, Washington",
+    lat: 38.8890 * RAD,
+    lon: -77.0028 * RAD,
+    stage: true,                    // the plays are cast and played here
+    piece: "folger"
+  }];
+
+  var BUILT = {
+    "folger": function (o) {
+      // The terrace it stands on.
+      FLAT.floor(o, 0, 0, 26, 15, "folger");
+
+      // A base course, and then the block: low and very long, which is the
+      // whole character of the thing.
+      put(o, 2, 8.5, 1, 22, 5.2, 1.0, 1);
+      put(o, 2.7, 9.1, 2.0, 20.6, 4.0, 5.0, 0);
+
+      // Nine pilasters along the north front, a relief panel between each
+      // pair, and the tall narrow window over that.
+      for (var i = 0; i < 9; i += 1) {
+        var px = 3.3 + i * 2.35;
+        put(o, px, 8.75, 2.0, 0.95, 0.5, 5.0, 0);
+        if (i < 8) {
+          put(o, px + 1.05, 8.95, 3.3, 1.3, 0.3, 1.7, 2);
+          put(o, px + 1.25, 8.95, 5.9, 0.9, 0.3, 1.0, 2);
+        }
+      }
+
+      // Cornice, inscription band, roof.
+      put(o, 2.3, 8.6, 7.0, 21.4, 4.9, 0.45, 1);
+      put(o, 2.5, 8.7, 7.45, 21.0, 4.7, 0.5, 0);
+      put(o, 2.9, 9.1, 7.95, 20.2, 3.9, 0.35, 1);
+
+      // The west door, and the steps down to the terrace.
+      put(o, 3.4, 8.55, 2.0, 2.2, 0.4, 3.6, 2);
+      FLAT.steps(o, 3.3, 5.9, 1, 2.4, 3);
+
+      // The reading room end, a little proud of the rest.
+      put(o, 20.4, 8.2, 1.6, 3.6, 5.6, 6.3, 0);
+      put(o, 20.2, 8.1, 7.9, 4.0, 5.8, 0.5, 1);
+
+      // The west garden: a low rail, and Puck on his plinth.
+      FLAT.rail(o, 1.8, 4.8, 1, 6);
+      put(o, 4.2, 2.4, 1, 1.8, 1.8, 1.1, 1);
+      put(o, 4.7, 2.9, 2.1, 0.8, 0.8, 1.1, 0);
+      put(o, 4.5, 3.1, 3.2, 1.2, 0.5, 0.5, 0);
+      FLAT.toadstool(o, 7.4, 3.2, 1, 1);
+      FLAT.toadstool(o, 9.0, 2.2, 1, 0.8);
+    }
+  };
+
+  /* Marble. The hue is the landmass's — the library stands on whichever
+     collage North America is wearing — and everything else about it is
+     stone: hardly any colour, and a long way between the lit face and the
+     shadowed one, which is what marble looks like in the sun. */
+  function stone(hue) {
+    return [rgbHex(fromHsl(hue, 0.08, 0.90)),
+            rgbHex(fromHsl(hue, 0.13, 0.66)),
+            rgbHex(fromHsl(hue, 0.20, 0.33))];
+  }
+
   function found() {
     cities.forEach(function (city) {
       if (city.el && city.el.parentNode) { city.el.parentNode.removeChild(city.el); }
@@ -418,24 +499,19 @@
     cities = [];
     if (!mine || !continents.length || !earthOwner) { return; }
 
-    mine.works.forEach(function (work, i) {
-      var mass = continents[i];
-      if (!mass) { return; }
-      var at = heart(mass);
-
+    function raiseCity(city, order, real) {
       var el = document.createElement("button");
       el.className = "city";
       el.type = "button";
+      el.dataset.kind = real ? "landmark" : "work";
       el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
                      '<span class="city-name"></span>';
-      el.lastChild.textContent = work.title;
-      el.setAttribute("aria-label",
-        "Go down into " + work.title + ", on its own landmass");
+      el.lastChild.textContent = city.title;
+      el.setAttribute("aria-label", real
+        ? "Go down to " + city.title + ", " + city.where
+        : "Go down into " + city.title + ", on its own landmass");
 
-      var city = {
-        el: el, work: work, lat: at.lat, lon: at.lon,
-        tone: masses[mass.id - 1] ? masses[mass.id - 1].ink : "27,29,36"
-      };
+      city.el = el;
       el.addEventListener("click", function () { goDown(city); });
       el.addEventListener("pointerdown", function (event) {
         // The stage takes the pointer on its way down, to turn the world
@@ -448,7 +524,50 @@
       land.appendChild(el);
 
       // They come up one after another rather than all at once.
-      window.setTimeout(function () { el.dataset.up = "true"; }, 420 + i * 160);
+      window.setTimeout(function () { el.dataset.up = "true"; }, 420 + order * 160);
+    }
+
+    mine.works.forEach(function (work, i) {
+      var mass = continents[i];
+      if (!mass) { return; }
+      var at = heart(mass);
+      raiseCity({
+        work: work, slug: work.slug, title: work.title,
+        lat: at.lat, lon: at.lon, mass: mass,
+        tone: masses[mass.id - 1] ? masses[mass.id - 1].ink : "27,29,36"
+      }, i, false);
+    });
+
+    // And the places that are places. They stand where they stand — the
+    // coordinates are the building's, not a spot picked to suit the globe —
+    // and they take the colour of whatever landmass they are standing on.
+    LANDMARKS.forEach(function (mark, i) {
+      var lon = wrap(mark.lon);
+
+      // Its own latitude, if this globe reaches it. This one does not: the
+      // sphere is wider than the window and set low in it, so the part of
+      // the Earth on the screen is a cap from about fifty degrees north to
+      // the pole, and Washington is at thirty-nine. Rather than tilt the
+      // whole world over to reach one building, it keeps its own longitude
+      // and walks due north up that meridian until it is both in view and
+      // on dry land — the same continent, the same line, as far south as
+      // this world goes. Its real address is on the banner when you are
+      // standing in it.
+      var lat = Math.max(LAT_LOW + 0.09, Math.min(LAT_TOP - 0.12, mark.lat));
+      for (var step = 0; step < 60 && !onLand(lat, lon); step += 1) {
+        lat += 0.012;
+      }
+
+      var id = ownerAt(lat, lon);
+      var ground = masses[id - 1];
+      var city = {
+        work: null, slug: mark.slug, title: mark.title, where: mark.where,
+        lat: lat, lon: lon, trueLat: mark.lat,
+        stage: mark.stage, piece: mark.piece, real: true,
+        tone: ground ? ground.ink : "27,29,36",
+        hue: ground ? toHsl(rgbHex(ground.ink.split(",").map(Number))).h : 0.09
+      };
+      raiseCity(city, mine.works.length + i, true);
     });
   }
 
@@ -500,7 +619,8 @@
   function arrive() {
     land.dataset.at = "city";
     banner.hidden = false;
-    bannerCity.textContent = place.work.title;
+    bannerCity.textContent = place.title;
+    bannerUnder.textContent = place.where || "";
     creature.hidden = false;
 
     beast.lat = goal.lat = place.lat;
@@ -509,7 +629,15 @@
     // The creature keeps to this work's own things: what it finds underfoot
     // here are the objects that collage is made of, and nothing else.
     weave({ lat: place.lat, lon: place.lon });
-    place.terms = termsOf(place.work);
+
+    // Whatever is built here is built once and stays built.
+    if (place.piece && !spawns.some(function (born) {
+      return born.kind === "house" && born.home === place.slug;
+    })) {
+      houseFor(place);
+    }
+
+    place.terms = termsOf(place);
     if (place.terms.length) { standOn(place.terms[0]); }
     creature.dataset.grazing = "true";
     resume();
@@ -529,9 +657,10 @@
     land.dataset.at = "globe";
   }
 
-  /* Which of the words on the globe are things this collage is made of. */
-  function termsOf(work) {
-    var want = work.terms || [];
+  /* Which of the words on the globe are things this collage is made of. A
+     place that is not a collage — the library — has all of them. */
+  function termsOf(city) {
+    var want = (city.work && city.work.terms) || [];
     var out = [];
     vocabulary.forEach(function (ground, i) {
       if (want.indexOf(ground.word) !== -1) { out.push(i); }
@@ -1697,7 +1826,8 @@
       // — they are the language of the whole world, and the ground is this
       // one place. So it finds a thing underfoot and wanders a little way
       // off with it, rather than crossing a continent to reach a word.
-      bannerUnder.textContent = "standing on " + ground.word;
+      bannerUnder.textContent = (place.where ? place.where + " · " : "") +
+                                "standing on " + ground.word;
       goal.lat = place.lat + (Math.random() - 0.5) * near(0.38);
       goal.lon = wrap(place.lon + (Math.random() - 0.5) * near(0.56));
       return;
@@ -1732,8 +1862,24 @@
     // Since the world no longer swings round to follow it, it grazes only
     // where it can still be seen; otherwise it would wander round the back.
     // In a city what it can reach is the work's own things instead.
-    var open = (place && place.terms ? place.terms : facing())
-      .filter(function (i) { return i !== here; });
+    var pool = place && place.terms ? place.terms : facing();
+
+    // At the library it grazes the five words that cast a part more often
+    // than chance. Its vocabulary there is the whole world's — a library has
+    // everything in it — and five words in twenty-six meant a company of
+    // two in sixteen throws, which cannot play a scene. Not too often
+    // either: those five words cast five fixed parts, and five fixed parts
+    // out of five different plays cannot play a scene between them. The rest
+    // of the time the casting is left to whichever scene is nearest having
+    // its people.
+    if (place && place.stage && !troupeFull() && Math.random() < 0.78) {
+      var casting = pool.filter(function (i) {
+        return vocabulary[i] && GROUND[vocabulary[i].word] === "player";
+      });
+      if (casting.length) { pool = casting; }
+    }
+
+    var open = pool.filter(function (i) { return i !== here; });
     var next = open.length
       ? open[Math.floor(Math.random() * open.length)]
       : here;
@@ -2522,7 +2668,8 @@
   var DRAW = {
     hatchling: drawHatchling, egg: drawEgg, tube: drawTube, tower: drawTower,
     player: function (born) { return drawPlayer(born); },
-    set: function (born) { return drawSet(born); }
+    set: function (born) { return drawSet(born); },
+    house: function (born) { return drawHouse(born); }
   };
 
   /* Scenery stands over a figure. Everything else came up by 1 + 1/φ³ — the
@@ -2530,7 +2677,7 @@
      speck that can be pressed is a nuisance, not a character. A player is
      the exception the other way: at fifteen cells tall it came out taller
      than the place it was standing in. */
-  var BIG = { set: PHI, player: 1 };
+  var BIG = { set: PHI, player: 1, house: PHI * 0.95 };
   var UP = 1 + INV3;                      // 1.236
 
   /* Growing shows in how big a thing is, not in how many cells it has. */
@@ -2688,8 +2835,10 @@
      twenty-four. */
   function company() {
     if (!place) { return []; }
-    var slug = place.work.slug;
-    return spawns.filter(function (born) { return born.home === slug; });
+    var slug = place.slug;
+    return spawns.filter(function (born) {
+      return born.home === slug && born.kind !== "house";
+    });
   }
 
   function troupeFull() {
@@ -2772,8 +2921,16 @@
      grows out of. */
   function underfoot() { return vocabulary[here] || null; }
 
+  /* The plays have somewhere to be now: the library. Players are cast there
+     and nowhere else, and the scenes go up on its terrace. Four other cities
+     each running a company of actors nobody asked for was most of what made
+     this too much to look at, and a Shakespeare library is the obvious place
+     for the one company there should be. */
+  function onStage() { return !!(place && place.stage); }
+
   function kindFor(tok, word) {
     var wants = word && GROUND[word];
+    if (wants === "player" && !onStage()) { wants = null; }
 
     // The ground has the first word on it. A troupe that is already full is
     // the one thing that overrules it: a sixth photograph cannot bring on a
@@ -2785,7 +2942,7 @@
     if (wants && !(wants === "player" && troupeFull())) { return wants; }
 
     var open = KINDS.filter(function (k) {
-      return !(k === "player" && troupeFull());
+      return !(k === "player" && (troupeFull() || !onStage()));
     });
     if (!open.length) { return "hatchling"; }
 
@@ -2805,6 +2962,10 @@
   }
 
   function label(born) {
+    if (born.kind === "house") {
+      return "The " + (born.piece === "folger" ? "Folger Shakespeare Library"
+                                               : born.piece) + ", standing here.";
+    }
     var tok = born.token;
     var what = born.kind === "set"
       ? "A " + born.piece + ", built for the scene"
@@ -2868,7 +3029,7 @@
       held: false,
       to: null,
       next: 0,
-      home: place ? place.work.slug : null,   // the city it grew in
+      home: place ? place.slug : null,        // the city it grew in
       phase: Math.random() * TAU,     // so they do not all breathe together
       since: performance.now(),       // so it can rise rather than appear
       // Beside the animal, not under it — a thing born inside the animal's
@@ -2943,7 +3104,7 @@
     // growing past its third size skips the part and goes on to the next
     // kind. Without this the company filled up with players, because every
     // merge and every hatching could add one over the top of the cast.
-    if (troupeFull()) {
+    if (troupeFull() || !onStage()) {
       open = open.filter(function (k) { return k !== "player"; });
     }
     var at = open.indexOf(born.kind);
@@ -3134,7 +3295,7 @@
     if (still) { return; }
 
     spawns.forEach(function (born) {
-      if (born.following || born.acting ||
+      if (born.following || born.acting || born.kind === "house" ||
           born.kind === "tower" || born.kind === "set") { return; }
       // Whatever is under the pointer holds still. They are small, they
       // wander, and a target that drifts out from under a thumb halfway
@@ -3190,7 +3351,7 @@
       return GROUND[g.word] === "player";
     });
 
-    if (!troupeFull() && casting.length && Math.random() < 0.5) {
+    if (onStage() && !troupeFull() && casting.length && Math.random() < 0.5) {
       open = casting;
     } else {
       var tally = {};
@@ -3199,11 +3360,12 @@
         if (tally[born.kind] !== undefined) { tally[born.kind] += 1; }
       });
       var fewest = Math.min.apply(null, KINDS.filter(function (k) {
-        return !(k === "player" && troupeFull());
+        return !(k === "player" && (troupeFull() || !onStage()));
       }).map(function (k) { return tally[k]; }));
       var short = mineHere.filter(function (g) {
         var k = GROUND[g.word];
-        return k && tally[k] === fewest && !(k === "player" && troupeFull());
+        return k && tally[k] === fewest &&
+               !(k === "player" && (troupeFull() || !onStage()));
       });
       if (short.length) { open = short; }
     }
@@ -3219,7 +3381,7 @@
   function mingle() {
     for (var i = 0; i < spawns.length; i += 1) {
       var a = spawns[i];
-      if (a.kind === "tube" || a.kind === "tower" ||
+      if (a.kind === "tube" || a.kind === "tower" || a.kind === "house" ||
           a.kind === "player" || a.kind === "set") { continue; }
       for (var j = i + 1; j < spawns.length; j += 1) {
         var b = spawns[j];
@@ -3237,7 +3399,7 @@
     spawns.forEach(function (born) {
       // What grew in one city stays in that city. Nothing follows you up to
       // the globe, and nothing you left behind is in the way somewhere else.
-      if (!place || born.home !== place.work.slug) {
+      if (!place || born.home !== place.slug) {
         born.el.style.visibility = "hidden";
         return;
       }
@@ -3276,13 +3438,15 @@
       // are. Down in a city the animal is nearly two feet of screen and it
       // used to sit over the whole company: anything behind it could not be
       // pressed, because its cells take the press and its box is enormous.
-      born.el.style.zIndex = String(depth(p.y) - (born.kind === "set" ? 8 : 0));
+      born.el.style.zIndex = String(depth(p.y) -
+        (born.kind === "set" ? 8 : born.kind === "house" ? 12 : 0));
       born.el.style.transform =
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
         // A tower stands on its base; everything else is carried a little
         // above the ground it is standing on.
         " translate(-50%," +
-        (born.kind === "tower" || born.kind === "set" ? "-100%" : "-92%") +
+        (born.kind === "tower" || born.kind === "set" ||
+         born.kind === "house" ? "-100%" : "-92%") +
         ") scale(" + scale.toFixed(3) + ")" + life;
     });
     placeSay();
@@ -3721,6 +3885,46 @@
     };
   }
 
+  /* A landmark. Not a set that rises and is struck: a building that is
+     standing there when you arrive and is still standing when you go. */
+  function drawHouse(born) {
+    var all = [];
+    var make = BUILT[born.piece];
+    if (make) { make(all); }
+    var fit = boxBounds(all);
+    return {
+      fit: fit,
+      svg: '<svg viewBox="' + fit.x.toFixed(2) + " " + fit.y.toFixed(2) + " " +
+           fit.w.toFixed(2) + " " + fit.h.toFixed(2) +
+           '" aria-hidden="true" focusable="false">' +
+           build(all, born.stone, SET_TILE) + "</svg>"
+    };
+  }
+
+  function houseFor(city) {
+    var el = document.createElement("div");
+    el.className = "spawn";
+
+    var born = {
+      el: el, token: null, kind: "house", piece: city.piece,
+      home: city.slug, stone: stone(city.hue === undefined ? 0.09 : city.hue),
+      tier: 1, crack: 0, bands: [], stack: [],
+      following: false, held: false, to: null, next: 0, phase: 0,
+      since: performance.now(),
+      // Set well back from where anything stands, so the company plays in
+      // front of it rather than inside it. The animal alone is half the
+      // height of the screen down here, so "behind" has to mean properly
+      // behind.
+      lat: city.lat + near(0.21),
+      lon: city.lon
+    };
+
+    redraw(born);
+    spawns.push(born);
+    land.insertBefore(el, creature);
+    return born;
+  }
+
   function placeHeight(piece) {
     var all = [];
     (PLACES[piece] || PLACES.verona)(all);
@@ -3930,13 +4134,20 @@
   function roleFor(tok, word) {
     var rnd = seedFrom(tok.s, 23);
     var taken = {};
-    spawns.forEach(function (born) { if (born.role) { taken[born.role] = true; } });
+    // Who is standing HERE. A part being played in another city is not
+    // spoken for in this one.
+    company().forEach(function (born) { if (born.role) { taken[born.role] = true; } });
 
     // The ground casts, where the ground is already about somebody: the hand
     // that wrote it, what is left of a person, the joker in the New York
-    // collage. Only if that part is already standing does the scene decide.
+    // collage. It casts the first two parts; after that the scene decides,
+    // because those five words cast five fixed parts out of five different
+    // plays and five people from five plays cannot play a scene between
+    // them — the company filled up and nothing was ever castable.
     var cast = word && CASTS[word];
-    if (cast && !taken[cast]) { return cast; }
+    var standing = 0;
+    company().forEach(function (born) { if (born.role) { standing += 1; } });
+    if (cast && !taken[cast] && standing < 2) { return cast; }
 
     var wanted = null;
     var nearest = -1;
@@ -4128,7 +4339,9 @@
   }
 
   function players() {
-    return spawns.filter(function (born) { return born.kind === "player"; });
+    // Only the ones standing here. A player left in another city is not in
+    // the wings, it is in another city.
+    return company().filter(function (born) { return born.kind === "player"; });
   }
 
   /* Everyone a scene needs, or nothing. */
@@ -4181,7 +4394,7 @@
 
   function stepScene(now) {
     if (!playing) {
-      if (still || now - curtain < REST) { return; }
+      if (still || !onStage() || now - curtain < REST) { return; }
       // Whichever castable scene has waited longest goes up. Taking the
       // next one round the list meant the same two played over and over,
       // because the same two were the only ones whose people were standing.
@@ -4378,6 +4591,7 @@
     var caught = [];
     spawns.forEach(function (born) {
       if (born.el.style.visibility === "hidden") { return; }
+      if (born.kind === "house") { return; }   // the building stays
       var p = project(born.lat, born.lon);
       if (Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) <= r) {
         caught.push(born);

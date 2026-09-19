@@ -228,6 +228,18 @@
 
 .city[data-up="true"] .city-dot { transform: scale(1); }
 
+/* A place that is a place rather than a collage: the library. Drawn as a
+   ring, so a real building on the Earth does not read as another work. */
+.city[data-kind="landmark"] .city-dot {
+  box-sizing: border-box;
+  width: var(--s-4);
+  height: var(--s-4);
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid var(--ink);
+}
+
+.city[data-kind="landmark"] .city-name { font-weight: 600; }
+
 .city-name {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
@@ -572,6 +584,14 @@
 /* On their marks, and whoever has the line. The set stands behind them. */
 .spawn[data-acting="true"] { z-index: 55; }
 .spawn[data-kind="set"] { z-index: 40; }
+
+/* A building is scenery. It stands behind everything, and it never takes a
+   press: it is the one thing here you are not meant to be able to pick up,
+   squash or set on fire. */
+.spawn[data-kind="house"] {
+  pointer-events: none;
+  cursor: default;
+}
 
 .spawn[data-speaking="true"] {
   outline: 1px solid rgba(255, 255, 255, 0.9);
