@@ -102,6 +102,18 @@
       <span class="say-line" id="say-line"></span>
     </div>
 
+    <!-- Where you are, once you have gone down into a city, and the way
+         back up to the world. Nothing on the globe itself. -->
+    <div class="banner" id="banner" hidden>
+      <button class="banner-back" id="banner-back" type="button">
+        <span aria-hidden="true">&larr;</span> The world
+      </button>
+      <p class="banner-where">
+        <span class="banner-city" id="banner-city"></span>
+        <span class="banner-under" id="banner-under"></span>
+      </p>
+    </div>
+
     <!-- The token object: a saved work condensed to its three colours,
          thrown at the creature. -->
     <div class="token" id="token" hidden>
@@ -112,7 +124,15 @@
   </div>
 
   <p class="visually-hidden" id="creature-help">
-    Press the creature to turn up a work; it stays up until you put it down.
+    There are two heights here. The globe is the view of the whole site: the
+    Earth, the words the collages are made of, and a city standing on every
+    landmass — one city to each collage, on its own continent, in its own
+    colours. Nothing happens up there. Press a city and the world grows until
+    that city is the ground under you, and everything that follows happens
+    down there. The back button, or Escape, brings you up again. What grows in
+    one city stays in that city.
+
+    Down in a city: press the creature to turn up a work; it stays up until you put it down.
     Press again to take that work's palette, then drag it onto the creature and
     let go to apply it. A palette that misses stays where it lands and can be
     picked up again. With a keyboard, press Enter on the card to do both at
@@ -122,7 +142,10 @@
     through the words to turn the world to the next of them; a word that has
     gone round the back is hidden, so tabbing reaches the ones on this face
     and the world brings more round as it turns. Drag anywhere to turn it by
-    hand. The world is the Earth: the weave closes up over land and opens over
+    hand. Down in a city the words are not shown — they are the language of
+    the whole world rather than of one place — but the creature still finds
+    the things that collage is made of underfoot, and the banner says which.
+    The world is the Earth: the weave closes up over land and opens over
     water, so the shapes you turn past are the real coastlines, and each
     landmass takes the colour of whichever collage falls nearest it.
 
@@ -130,8 +153,8 @@
     what it leaves is decided by the word the creature is standing on: things
     that stack grow a tower, things wound or banded grow a tube, things that
     are alive grow a hatchling, things with somebody in them grow a player
-    with a part to say, and a mark that is not yet anything grows an egg. So press a word to send the creature to it, feed it a palette while
-    it stands there, and the collage decides what comes up. Five of the words
+    with a part to say, and a mark that is not yet anything grows an egg. So feed it a palette while it stands on
+    something, and the collage decides what comes up. Five of the words
     cast a particular part as well — handwriting brings on the Chorus, a
     photograph Hamlet, a polaroid Juliet, a sketch Jaques, a playing card
     Puck. These are yours to play with. Press a hatchling and it walks behind the

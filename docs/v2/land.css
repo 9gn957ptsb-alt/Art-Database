@@ -173,6 +173,162 @@
    a word mid-turn fades rather than blinks. */
 .plot[data-behind="true"] { pointer-events: none; }
 
+/* ---- the cities ---------------------------------------------------------
+
+   The globe is the view of the whole site, and it is not where anything
+   happens. What happens is in the cities: one on each landmass, one for each
+   collage, and going down into one is what gets you the creature and
+   everything that grows off it. They come up out of the ground a little
+   after the world has settled, one after another. */
+
+.city {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-1) var(--s-2);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  /* Over the words. A city is a small mark and a word is a hundred and
+     eighty points of type lying across the same ground; underneath them a
+     city could not be pressed at all. Words are stacked by depth from 20 to
+     50 by land.js, so this clears the nearest of them. */
+  z-index: 52;
+  /* Up out of the ground, not merely faded in. */
+  opacity: 0;
+  transform-origin: 0 50%;
+  transition: opacity var(--beat-5) cubic-bezier(0.22, 1, 0.36, 1),
+              color var(--beat-3) ease;
+  will-change: transform, opacity;
+}
+
+.city[data-up="true"] { opacity: 1; }
+
+.city-dot {
+  width: var(--s-3);
+  height: var(--s-3);
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+  transform: scale(0.2);
+  transition: transform var(--beat-5) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.city[data-up="true"] .city-dot { transform: scale(1); }
+
+.city-name {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.city:hover,
+.city:focus-visible { color: #1b3a5c; }
+
+.city:hover .city-dot,
+.city:focus-visible .city-dot { transform: scale(1.5); }
+
+.city:focus-visible {
+  outline: 1px solid var(--edge);
+  outline-offset: 2px;
+}
+
+/* ---- the two heights ----------------------------------------------------
+
+   Up on the globe there is the world, its words and its cities, and nothing
+   else: no creature, no company, no scenes. Down in a city it is the other
+   way about — the globe is the ground you are standing on and the words are
+   the language of the whole world rather than of this one place. Neither is
+   torn down when you move between them; each simply stops being shown. */
+
+.land[data-at="city"] .plot,
+.land[data-at="flying"] .plot {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.land[data-at="city"] .city,
+.land[data-at="flying"] .city {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.land[data-at="globe"] .creature,
+.land[data-at="flying"] .creature,
+.land[data-at="globe"] .spawn,
+.land[data-at="flying"] .spawn,
+.land[data-at="globe"] .say,
+.land[data-at="flying"] .say {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Where you are, and the way back up. */
+.banner {
+  position: absolute;
+  left: var(--s-5);
+  top: var(--s-5);
+  z-index: 70;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  /* The corner of the ground is still the ground. Only the button itself
+     takes a press; what is written beside it does not stand in the way of
+     whatever has wandered up there. */
+  pointer-events: none;
+}
+
+.banner-back { pointer-events: auto; }
+
+.banner[hidden] { display: none; }
+
+.banner-back {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.banner-back:hover,
+.banner-back:focus-visible { background: #ffffff; }
+
+.banner-where {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.banner-city {
+  font-family: var(--serif, var(--sans));
+  font-size: var(--t-4);
+  line-height: 1.1;
+}
+
+.banner-under {
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-0);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+
 /* ---- the creature ------------------------------------------------------ */
 
 .creature {

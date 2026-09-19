@@ -41,6 +41,10 @@
   var sayWho = document.getElementById("say-who");
   var sayLine = document.getElementById("say-line");
   var seam = document.getElementById("seam");
+  var banner = document.getElementById("banner");
+  var bannerBack = document.getElementById("banner-back");
+  var bannerCity = document.getElementById("banner-city");
+  var bannerUnder = document.getElementById("banner-under");
   var seamWord = document.getElementById("seam-word");
   var seamCount = document.getElementById("seam-count");
   var seamList = document.getElementById("seam-list");
@@ -137,6 +141,32 @@
   var goal = { lat: 0, lon: 0 };
 
   var W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1;
+
+  /* ---- two heights --------------------------------------------------------
+
+     The globe is the view of the site: the Earth, the words the collages are
+     made of, and a city on every landmass. Nothing happens up there. What
+     happens is down in the cities — the creature, whatever grows off it, and
+     the scenes they play — and going down into one is what you press a city
+     to do.
+
+     They are not two pages. There is one world and one projection, and the
+     difference between them is how far away you are standing: the globe is
+     the sphere at the size of the window, a city is the same sphere seven
+     times bigger with that city under the middle of the screen, so what you
+     were looking at from orbit becomes the ground you are standing on. The
+     flight between them is the sphere growing, which is why it reads as
+     going down to a place rather than as opening another page. */
+
+  var baseR = 0;                 // the globe's own radius, before any zoom
+  var zoom = 1;                  // and how much of it we are standing in
+  var CITY_ZOOM = 7;
+  var FLY = 1097;                // --beat-5, the same as everything slow
+  var place = null;              // the city we are down in, or null
+  var flying = false;
+  var flyFrom = 1, flyTo = 1, flyAt = 0;
+  var focus = { lat: 0, lon: 0 };
+  var cities = [];
   var fit = 1;          // how much every word comes down by so they all fit
 
   /* ---- reading ---------------------------------------------------------- */
@@ -298,6 +328,7 @@
   var WASHED = 8;        // how many landmasses get a wash of colour under them
 
   function remass() {
+    inView();
     var hues = workHues();
     masses = [];
 
@@ -317,6 +348,195 @@
         ink: fromHsl(h, 0.46, 0.33).join(",")
       };
     });
+  }
+
+  /* ---- a city on every landmass -------------------------------------------
+
+     One city to a work, standing on that work's own continent — and standing
+     well inland on it, not on the coast and not at the pole, because a mark
+     on a coastline reads as part of the coastline. The whole of the mask
+     belonging to that landmass is walked and the point furthest from any
+     water wins, which puts them where cities are anyway: in the middle of
+     somewhere.
+
+     A city is the way down. Pressing one flies the view into it, and what
+     you find there is the creature and everything that grows off it. The
+     globe has none of that on it any more. */
+
+  function heart(mass) {
+    var w = earth.w, h = earth.h;
+    var best = null;
+    var mid = (LAT_LOW + LAT_TOP) / 2;
+    var band = Math.max(0.01, LAT_TOP - LAT_LOW);
+    for (var y = 0; y < h; y += 2) {
+      for (var x = 0; x < w; x += 2) {
+        if (earthOwner[y * w + x] !== mass.id) { continue; }
+        var lat = Math.PI / 2 - (y + 0.5) / h * Math.PI;
+        if (lat < LAT_LOW || lat > LAT_TOP) { continue; }
+        var lon = (x + 0.5) / w * TAU;
+        // Deep inland, and well within the part of the world that is on the
+        // screen: a city on the rim is a city nobody can press.
+        var score = inland(lat, lon) - Math.abs(lat - mid) / band * 0.8;
+        if (!best || score > best.score) {
+          best = { lat: lat, lon: lon, score: score };
+        }
+      }
+    }
+    return best || { lat: mass.lat, lon: mass.lon };
+  }
+
+  /* How much of each landmass is inside the band of latitudes that is
+     actually on the screen. The Earth's land is mostly nearer the equator
+     than this globe ever shows — the visible cap runs from about 34 degrees
+     to 76 — so ranking the continents by their whole size gave the seven
+     works Antarctica, Australia and South America, none of which anyone can
+     see. They are ranked by what is in view instead. */
+  function inView() {
+    var w = earth.w, h = earth.h;
+    var seen = {};
+    continents.forEach(function (mass) { mass.seen = 0; });
+    var byId = {};
+    continents.forEach(function (mass) { byId[mass.id] = mass; });
+    for (var y = 0; y < h; y += 1) {
+      var lat = Math.PI / 2 - (y + 0.5) / h * Math.PI;
+      if (lat < LAT_LOW || lat > LAT_TOP) { continue; }
+      for (var x = 0; x < w; x += 1) {
+        var id = earthOwner[y * w + x];
+        if (id && byId[id]) { byId[id].seen += 1; }
+      }
+    }
+    continents.sort(function (a, b) {
+      return (b.seen - a.seen) || (b.cells - a.cells);
+    });
+    return seen;
+  }
+
+  function found() {
+    cities.forEach(function (city) {
+      if (city.el && city.el.parentNode) { city.el.parentNode.removeChild(city.el); }
+    });
+    cities = [];
+    if (!mine || !continents.length || !earthOwner) { return; }
+
+    mine.works.forEach(function (work, i) {
+      var mass = continents[i];
+      if (!mass) { return; }
+      var at = heart(mass);
+
+      var el = document.createElement("button");
+      el.className = "city";
+      el.type = "button";
+      el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
+                     '<span class="city-name"></span>';
+      el.lastChild.textContent = work.title;
+      el.setAttribute("aria-label",
+        "Go down into " + work.title + ", on its own landmass");
+
+      var city = {
+        el: el, work: work, lat: at.lat, lon: at.lon,
+        tone: masses[mass.id - 1] ? masses[mass.id - 1].ink : "27,29,36"
+      };
+      el.addEventListener("click", function () { goDown(city); });
+      el.addEventListener("pointerdown", function (event) {
+        // The stage takes the pointer on its way down, to turn the world
+        // with; a press that lands on a city is not a turn, and if the
+        // stage captures it the click never reaches the button at all.
+        event.stopPropagation();
+      });
+      el.addEventListener("focus", function () { wanted = city.lon; });
+      cities.push(city);
+      land.appendChild(el);
+
+      // They come up one after another rather than all at once.
+      window.setTimeout(function () { el.dataset.up = "true"; }, 420 + i * 160);
+    });
+  }
+
+  function placeCities() {
+    cities.forEach(function (city) {
+      var p = project(city.lat, city.lon);
+      var el = city.el;
+      if (p.z <= 0.08 || p.x < 8 || p.x > W - 8 || p.y < 8 || p.y > H - 8) {
+        el.style.visibility = "hidden";
+        return;
+      }
+      el.style.visibility = "visible";
+      el.style.opacity = (INV2 + INV * Math.min(1, (p.z - 0.08) / 0.3)).toFixed(3);
+      el.style.transform =
+        "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
+        " translate(0,-50%)";
+    });
+  }
+
+  /* The flight. Nothing is torn down and nothing is built: the sphere grows
+     under you until the city you pressed is the ground you are standing on,
+     and shrinks back the same way. */
+
+  function goDown(city) {
+    if (flying || place) { return; }
+    place = city;
+    focus.lat = city.lat;
+    focus.lon = city.lon;
+    wanted = city.lon;              // turn the world so the city faces you
+    flyFrom = zoom;
+    flyTo = CITY_ZOOM;
+    flyAt = performance.now();
+    flying = true;
+    land.dataset.at = "flying";
+    hideGraze();
+  }
+
+  function comeUp() {
+    if (flying || !place) { return; }
+    hold();                         // the walk stops where it is
+    hideGraze();
+    flyFrom = zoom;
+    flyTo = 1;
+    flyAt = performance.now();
+    flying = true;
+    land.dataset.at = "flying";
+  }
+
+  function arrive() {
+    land.dataset.at = "city";
+    banner.hidden = false;
+    bannerCity.textContent = place.work.title;
+    creature.hidden = false;
+
+    beast.lat = goal.lat = place.lat;
+    beast.lon = goal.lon = place.lon;
+
+    // The creature keeps to this work's own things: what it finds underfoot
+    // here are the objects that collage is made of, and nothing else.
+    weave({ lat: place.lat, lon: place.lon });
+    place.terms = termsOf(place.work);
+    if (place.terms.length) { standOn(place.terms[0]); }
+    creature.dataset.grazing = "true";
+    resume();
+  }
+
+  function leave() {
+    endScene();
+    hold();
+    // Whatever was standing in that city stays in it. placeSpawns stops
+    // being called the moment we are off the ground, so they are put away
+    // here rather than left showing at wherever they last stood.
+    spawns.forEach(function (born) { born.el.style.visibility = "hidden"; });
+    place = null;
+    weave();
+    creature.hidden = true;
+    banner.hidden = true;
+    land.dataset.at = "globe";
+  }
+
+  /* Which of the words on the globe are things this collage is made of. */
+  function termsOf(work) {
+    var want = work.terms || [];
+    var out = [];
+    vocabulary.forEach(function (ground, i) {
+      if (want.indexOf(ground.word) !== -1) { out.push(i); }
+    });
+    return out.length ? out : vocabulary.map(function (g, i) { return i; });
   }
 
   /* Forty words, some of them very large, do not fit a spiral without running
@@ -427,6 +647,21 @@
     };
   }
 
+  /* Where the sphere sits and how big it is, for whatever height we are at.
+     At the globe its contour meets the sides of the screen at the golden
+     section; in a city the point you came down to is a little below the
+     middle, and everything between the two is a straight run from one
+     framing to the other so the flight has no corner in it. */
+  function reframe() {
+    R = baseR * zoom;
+    cx = W / 2;
+    var flank = Math.sqrt(Math.max(1, R * R - cx * cx));
+    var orbit = H * (1 - 1 / PHI) + flank;
+    var ground = H * 0.62 + Math.sin(focus.lat - TILT) * R;
+    var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+    cy = orbit + (ground - orbit) * down;
+  }
+
   function geometry() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = stage.clientWidth;
@@ -440,17 +675,22 @@
     // the screen at the golden section — 1/φ of the way up, 0.618 — which is
     // what gives the words their room: the visible surface goes up by about
     // half again even though the band of latitudes on it is shallower.
-    R = Math.max(W * 0.90, H * 0.70, 240);
+    baseR = Math.max(W * 0.90, H * 0.70, 240);
     cx = W / 2;
-    var flank = Math.sqrt(Math.max(1, R * R - cx * cx));
-    cy = H * (1 - 1 / PHI) + flank;
 
     // Everything below this latitude is under the bottom of the screen. The
     // projection makes it exact: a point is at height (cy - y) / R when
     // sin(lat - tilt) equals it, so the lowest latitude worth placing a word
-    // on is the tilt plus that arcsine, with a little margin.
-    var sunk = Math.max(-1, Math.min(1, (cy - H) / R));
+    // on is the tilt plus that arcsine, with a little margin. Worked out at
+    // the globe's own framing whatever height the view happens to be flown
+    // to, because the band is where the words live and the words are the
+    // globe's.
+    var flank = Math.sqrt(Math.max(1, baseR * baseR - cx * cx));
+    var sunk = Math.max(-1, Math.min(1,
+      (H * (1 - 1 / PHI) + flank - H) / baseR));
     LAT_LOW = Math.min(LAT_TOP - 8 * RAD, TILT + Math.asin(sunk) + 2 * RAD);
+
+    reframe();
 
     // Type scales with the world, so a phone gets a legible globe. Which
     // face and how big relative to the rest is the word's own business.
@@ -460,7 +700,8 @@
     dressAll();
     relax();
     remass();
-    weave();
+    found();
+    weave(place ? { lat: place.lat, lon: place.lon } : null);
   }
 
   /* ---- how a word is dressed --------------------------------------------- */
@@ -825,26 +1066,46 @@
   var wctx = cloth.getContext("2d");
   var woven = { spin: null, w: 0, h: 0, r: 0 };
 
-  function weave() {
+  /* The whole world, or one patch of it.
+
+     Magnifying the world's own weave seven times turned the ground of a city
+     into confetti: the same dots, seven times further apart and seven times
+     bigger. So a city gets a weave of its own — the same cloth, woven over
+     the patch of ground you can actually see, with every angle in it divided
+     by how far down you are. A strand is then the same width on the screen,
+     meanders the same distance and lies the same distance from its
+     neighbour as it does up on the globe. It is not a different surface; it
+     is the same surface, close to. */
+  function weave(at) {
     var lat = [];
     var lon = [];
     var salt = [];
 
     var rnd = seedFrom("mina mina", 3);
 
+    var k = at ? 1 / zoom : 1;                 // every angle, at this height
+    var spanLat = at ? 0.115 : 0;
+    var spanLon = at ? 0.115 / Math.max(0.2, Math.cos(at.lat)) : 0;
+
     // Strands running down the world. Even steps in latitude are even steps
     // along the surface, so these keep their spacing wherever they fall.
-    var strands = 420;
-    var down = 320;
+    var strands = at ? 150 : 420;
+    var down = at ? 150 : 320;
     for (var i = 0; i < strands; i += 1) {
-      var base = (i / strands) * TAU;
-      var wob = 0.05 + rnd() * 0.09;
-      var turns = 2 + Math.floor(rnd() * 4);
+      var base = at
+        ? at.lon - spanLon + (i / strands) * 2 * spanLon
+        : (i / strands) * TAU;
+      var wob = (0.05 + rnd() * 0.09) * k;
+      // Divided by k, so the meander keeps its wavelength on the screen
+      // rather than its wavelength on the sphere.
+      var turns = (2 + Math.floor(rnd() * 4)) / k;
       var gap = 19 + Math.floor(rnd() * 15);
       var phase = Math.floor(rnd() * gap);
       for (var s = 0; s <= down; s += 1) {
         if (((s + phase) % gap) < 4) { continue; }         // a block of dark
-        var la = -1.55 + (s / down) * 3.1;
+        var la = at
+          ? at.lat - spanLat + (s / down) * 2 * spanLat
+          : -1.55 + (s / down) * 3.1;
         lat.push(la);
         lon.push(wrap(base + wob * Math.sin(turns * la)));
         salt.push((s + i) % 7 === 0 ? 1 : 0);
@@ -855,19 +1116,23 @@
     // nearer the pole, so these gather into a ridge toward the top of the
     // world by themselves — which is the part of her surfaces that does the
     // most work, and here it falls out of the geometry for nothing.
-    var rings = 240;
-    var round = 520;
+    var rings = at ? 110 : 240;
+    var round = at ? 180 : 520;
     for (var j = 0; j < rings; j += 1) {
-      var lat0 = -1.55 + ((j + 0.5) / rings) * 3.1;
-      var sway = 0.02 + rnd() * 0.05;
-      var beats = 3 + Math.floor(rnd() * 5);
+      var lat0 = at
+        ? at.lat - spanLat + ((j + 0.5) / rings) * 2 * spanLat
+        : -1.55 + ((j + 0.5) / rings) * 3.1;
+      var sway = (0.02 + rnd() * 0.05) * k;
+      var beats = (3 + Math.floor(rnd() * 5)) / k;
       var hole = 17 + Math.floor(rnd() * 17);
       var off = Math.floor(rnd() * hole);
       for (var t = 0; t < round; t += 1) {
         if (((t + off) % hole) < 5) { continue; }
-        var lo = (t / round) * TAU;
+        var lo = at
+          ? at.lon - spanLon + (t / round) * 2 * spanLon
+          : (t / round) * TAU;
         lat.push(Math.max(-1.56, Math.min(1.56, lat0 + sway * Math.sin(beats * lo))));
-        lon.push(lo);
+        lon.push(wrap(lo));
         salt.push((t + j) % 8 === 0 ? 1 : 0);
       }
     }
@@ -930,7 +1195,10 @@
 
     var cosS = Math.cos(spin);
     var sinS = Math.sin(spin);
-    var grain = Math.max(1, Math.round(R / 700));
+    // Off the globe's own radius, not this one's: the cloth is rewoven at
+    // the right density for wherever we are standing, so a dot in it should
+    // still be the size a dot is.
+    var grain = Math.max(1, Math.round(baseR / 700));
     var loose = turning ? 2 : 1;
     var runs = {};
 
@@ -1012,10 +1280,15 @@
 
   var sphere = document.createElement("canvas");
   var sctx = sphere.getContext("2d");
-  var drawn = { x: -999, y: -999, w: 0, h: 0, r: 0, masses: -1 };
+  var drawn = { x: -999, y: -999, cx: 0, cy: 0, w: 0, h: 0, r: 0, masses: -1 };
 
   function sphereStale(lit) {
-    return Math.abs(lit.x - drawn.x) > 5 || Math.abs(lit.y - drawn.y) > 5 ||
+    // How far the light may drift before the sphere is worth painting again.
+    // In a city the same step of the creature carries the light seven times
+    // further across the screen, and at that size the gradients are so broad
+    // that nobody can see it move anyway.
+    var slack = 5 * Math.max(1, zoom * 0.7);
+    return Math.abs(lit.x - drawn.x) > slack || Math.abs(lit.y - drawn.y) > slack ||
            drawn.w !== W || drawn.h !== H || drawn.r !== R ||
            drawn.masses !== masses.length || clothStale();
   }
@@ -1030,6 +1303,8 @@
     paintSphere(sctx, lit);
     drawn.x = lit.x;
     drawn.y = lit.y;
+    drawn.cx = cx;
+    drawn.cy = cy;
     drawn.w = W;
     drawn.h = H;
     drawn.r = R;
@@ -1041,12 +1316,30 @@
 
     // What the creature stands on is the brightest part of the sphere.
     var lit = project(beast.lat, beast.lon);
-    if (sphereStale(lit)) { drawSphere(lit); }
+    if (!flying && sphereStale(lit)) { drawSphere(lit); }
 
     ctx.clearRect(0, 0, W, H);
-    ctx.drawImage(sphere, 0, 0, W, H);
 
-    drawStage(ctx, now);
+    if (flying && drawn.r) {
+      // Mid-flight the sphere is not painted again — a hundred thousand dots
+      // and seven gradients a frame is not a flight, it is a slideshow. The
+      // surface already drawn is magnified about the point being flown to,
+      // which is what magnifying actually looks like, and the real thing is
+      // laid down once on arrival.
+      var grew = R / drawn.r;
+      ctx.fillStyle = SKY[2];
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(grew, grew);
+      ctx.translate(-drawn.cx, -drawn.cy);
+      ctx.drawImage(sphere, 0, 0, W, H);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sphere, 0, 0, W, H);
+    }
+
+    if (place && !flying) { drawStage(ctx, now); }
     stir(now);
     drawMotes();
     drawRing(now);
@@ -1291,12 +1584,20 @@
     });
   }
 
+  /* Where a thing on the ground stands in the stack: further down the screen
+     is nearer the viewer. Forty to sixty-five, which leaves the words below
+     and the banner above. */
+  function depth(y) {
+    return 42 + Math.round(Math.max(0, Math.min(1, y / Math.max(1, H))) * 23);
+  }
+
   function placeCreature() {
     var p = project(beast.lat, beast.lon);
-    var near = 0.72 + 0.46 * Math.max(0, p.z);
-    var scale = near * Math.max(0.5, Math.min(1.15, R / 620));
+    var close = 0.72 + 0.46 * Math.max(0, p.z);
+    var scale = close * Math.max(0.5, Math.min(place ? 1.85 : 1.15, R / 620));
 
     creature.style.opacity = p.z <= 0 ? "0" : "1";
+    creature.style.zIndex = String(depth(p.y));
     creature.style.transform =
       "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
       " translate(-50%,-92%) scale(" + scale.toFixed(3) + ")";
@@ -1317,10 +1618,24 @@
   var trod = { x: 0, y: 0, since: 0 };   // how far it has walked since it last kicked
 
   function frame(now) {
+    // Going down into a city, or coming back up out of one. The sphere grows
+    // or shrinks and its framing travels with it; everything else on here is
+    // projected through the same two numbers and follows without being told.
+    if (flying) {
+      var went = Math.min(1, (now - flyAt) / FLY);
+      var easing = 1 - Math.pow(1 - went, 3);
+      zoom = flyFrom + (flyTo - flyFrom) * easing;
+      reframe();
+      if (went >= 1) {
+        flying = false;
+        if (flyTo > 1) { arrive(); } else { leave(); }
+      }
+    }
+
     // The world only turns when it is turned: by a drag, or by tabbing to a
     // word. It used to swing round to follow the creature, which meant every
     // word on it was always drifting.
-    spin += shortest(spin, wanted) * (still ? 1 : INV5);
+    spin += shortest(spin, wanted) * (still ? 1 : (flying ? 0.16 : INV5));
 
     // The creature crosses the surface toward the word it is heading for.
     var ease = still ? 1 : INV5;
@@ -1334,7 +1649,16 @@
     }
 
     paint(now);
-    placeWords();
+
+    // Up on the globe: the world, its words and its cities, and none of the
+    // rest of it — not hidden but not running, which is most of what this
+    // split is for. The words are left alone in a city too, because
+    // replanting them at seven times the size would churn the whole
+    // vocabulary every frame for something nobody can see.
+    if (!place) { placeWords(); }
+    if (!place || flying) { placeCities(); }
+    if (!place || flying) { requestAnimationFrame(frame); return; }
+
     stepCompany(now);
     placeSpawns();
     var p = placeCreature();
@@ -1368,6 +1692,17 @@
     ground.el.dataset.grazed = "true";
     here = index;
 
+    if (place) {
+      // Down in a city the words are not lying on the ground to be walked to
+      // — they are the language of the whole world, and the ground is this
+      // one place. So it finds a thing underfoot and wanders a little way
+      // off with it, rather than crossing a continent to reach a word.
+      bannerUnder.textContent = "standing on " + ground.word;
+      goal.lat = place.lat + (Math.random() - 0.5) * near(0.38);
+      goal.lon = wrap(place.lon + (Math.random() - 0.5) * near(0.56));
+      return;
+    }
+
     goal.lat = ground.lat;
     goal.lon = ground.lon;
   }
@@ -1396,7 +1731,9 @@
 
     // Since the world no longer swings round to follow it, it grazes only
     // where it can still be seen; otherwise it would wander round the back.
-    var open = facing().filter(function (i) { return i !== here; });
+    // In a city what it can reach is the work's own things instead.
+    var open = (place && place.terms ? place.terms : facing())
+      .filter(function (i) { return i !== here; });
     var next = open.length
       ? open[Math.floor(Math.random() * open.length)]
       : here;
@@ -2349,8 +2686,14 @@
      stage with five people on it is a company where one with eight is a
      queue. Ten things on the whole world, likewise, where it was
      twenty-four. */
+  function company() {
+    if (!place) { return []; }
+    var slug = place.work.slug;
+    return spawns.filter(function (born) { return born.home === slug; });
+  }
+
   function troupeFull() {
-    var standing = spawns.filter(function (born) {
+    var standing = company().filter(function (born) {
       return born.kind === "player";
     }).length;
     return standing >= Math.min(5, 1 + Math.floor(stamp / 3));
@@ -2499,7 +2842,7 @@
   }
 
   function sprout(tok, gnd, at) {
-    if (spawns.length >= MAX_COMPANY) { return null; }
+    if (place && company().length >= MAX_COMPANY) { return null; }
 
     var el = document.createElement("div");
     el.className = "spawn";
@@ -2525,6 +2868,7 @@
       held: false,
       to: null,
       next: 0,
+      home: place ? place.work.slug : null,   // the city it grew in
       phase: Math.random() * TAU,     // so they do not all breathe together
       since: performance.now(),       // so it can rise rather than appear
       // Beside the animal, not under it — a thing born inside the animal's
@@ -2533,13 +2877,13 @@
       // stay there. What the world makes by itself comes up beside its own
       // word instead, wherever on the sphere that word is standing.
       lat: at
-        ? inBand(at.lat + (Math.random() - 0.5) * 0.14)
-        : Math.max(LAT_LOW, Math.min(LAT_TOP,
-            beast.lat + (Math.random() - 0.5) * 0.3)),
+        ? inBand(at.lat + (Math.random() - 0.5) * near(0.14))
+        : inBand(beast.lat + (Math.random() - 0.5) * near(0.3)),
       lon: at
-        ? wrap(at.lon + (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.2))
+        ? wrap(at.lon + (Math.random() < 0.5 ? -1 : 1) *
+               near(0.1 + Math.random() * 0.2))
         : wrap(beast.lon + (Math.random() < 0.5 ? -1 : 1) *
-               (0.22 + Math.random() * 0.5))
+               near(0.22 + Math.random() * 0.5))
     };
 
     // A tube comes up with a band for every collage its word is in, and a
@@ -2741,7 +3085,24 @@
 
   /* ---- how they carry on by themselves ------------------------------------ */
 
-  function inBand(lat) { return Math.max(LAT_LOW, Math.min(LAT_TOP, lat)); }
+  /* Everything the company does is measured in radians on the sphere, and
+     every one of those numbers was picked by eye against the globe. Down in
+     a city the same sphere is seven times bigger, so the same radian is
+     seven times further across the screen: a wander became a march and two
+     things that should have met never came near each other. So each of them
+     is divided by how far down we are, and the world keeps its manners at
+     both heights. */
+  function near(rad) { return rad / zoom; }
+
+  function inBand(lat) {
+    // On the globe, the band the words live in. In a city, the ground you can
+    // see out of the window — clamping to the globe's band down there would
+    // fling everything that grows to the far north.
+    if (place) {
+      return Math.max(place.lat - near(0.6), Math.min(place.lat + near(0.6), lat));
+    }
+    return Math.max(LAT_LOW, Math.min(LAT_TOP, lat));
+  }
 
   function stepCompany(now) {
     var dt = Math.min(0.05, (now - strolled) / 1000 || 0.016);
@@ -2761,8 +3122,8 @@
 
     var dir = creature.dataset.facing === "left" ? 1 : -1;
     train.forEach(function (born, i) {
-      var lat = inBand(beast.lat + (i % 2 ? 0.035 : -0.035));
-      var lon = wrap(beast.lon + dir * 0.06 * (i + 1));
+      var lat = inBand(beast.lat + near(i % 2 ? 0.035 : -0.035));
+      var lon = wrap(beast.lon + dir * near(0.06) * (i + 1));
       born.lat += (lat - born.lat) * Math.min(1, creep * 3);
       born.lon = wrap(born.lon + shortest(born.lon, lon) * Math.min(1, creep * 3));
     });
@@ -2782,8 +3143,8 @@
       if (now > born.next) {
         born.next = now + 2400 + Math.random() * 5200;
         born.to = {
-          lat: inBand(born.lat + (Math.random() - 0.5) * 0.24),
-          lon: wrap(born.lon + (Math.random() - 0.5) * 0.5)
+          lat: inBand(born.lat + (Math.random() - 0.5) * near(0.24)),
+          lon: wrap(born.lon + (Math.random() - 0.5) * near(0.5))
         };
       }
       if (!born.to) { return; }
@@ -2801,10 +3162,10 @@
   var FERMENT = Math.round(2600 * Math.pow(PHI, 4));   // about eighteen seconds
 
   function ferment(now) {
-    if (still || !supply || !stamp) { return; }
+    if (still || !supply || !stamp || !place) { return; }
     if (now - fermented < FERMENT) { return; }
     fermented = now;
-    if (spawns.length >= MAX_COMPANY) { return; }
+    if (company().length >= MAX_COMPANY) { return; }
     var keys = supply.pool;
     var tok = supply.tokens[keys[Math.floor(Math.random() * keys.length)]];
 
@@ -2819,8 +3180,13 @@
     // never fills. Otherwise it favours whatever the world has least of —
     // ten things is a small company, and eight of them being tubes is not a
     // company at all. Either way it is a word doing the choosing.
-    var open = vocabulary;
-    var casting = vocabulary.filter(function (g) {
+    // Only this collage's own things, because this is its city.
+    var mineHere = (place.terms || []).map(function (i) { return vocabulary[i]; })
+      .filter(Boolean);
+    if (!mineHere.length) { mineHere = vocabulary; }
+
+    var open = mineHere;
+    var casting = mineHere.filter(function (g) {
       return GROUND[g.word] === "player";
     });
 
@@ -2829,20 +3195,22 @@
     } else {
       var tally = {};
       KINDS.forEach(function (k) { tally[k] = 0; });
-      spawns.forEach(function (born) {
+      company().forEach(function (born) {
         if (tally[born.kind] !== undefined) { tally[born.kind] += 1; }
       });
       var fewest = Math.min.apply(null, KINDS.filter(function (k) {
         return !(k === "player" && troupeFull());
       }).map(function (k) { return tally[k]; }));
-      var short = vocabulary.filter(function (g) {
+      var short = mineHere.filter(function (g) {
         var k = GROUND[g.word];
         return k && tally[k] === fewest && !(k === "player" && troupeFull());
       });
       if (short.length) { open = short; }
     }
     var gnd = open[Math.floor(Math.random() * open.length)];
-    if (tok && gnd) { sprout(tok, gnd, gnd); }
+    // The word it grows off is the collage's; where it comes up is here,
+    // beside the animal, because the word itself is away on the globe.
+    if (tok && gnd) { sprout(tok, gnd, { lat: beast.lat, lon: beast.lon }); }
   }
 
   /* Two of a kind that have wandered into each other become one bigger one.
@@ -2856,7 +3224,7 @@
       for (var j = i + 1; j < spawns.length; j += 1) {
         var b = spawns[j];
         if (b.kind !== a.kind || b.tier !== a.tier) { continue; }
-        if (apart(a, b) > 0.06) { continue; }
+        if (apart(a, b) > near(0.06)) { continue; }
         burstAt(b, b.token.c);
         banish(b);
         enlarge(a);
@@ -2867,12 +3235,19 @@
 
   function placeSpawns() {
     spawns.forEach(function (born) {
+      // What grew in one city stays in that city. Nothing follows you up to
+      // the globe, and nothing you left behind is in the way somewhere else.
+      if (!place || born.home !== place.work.slug) {
+        born.el.style.visibility = "hidden";
+        return;
+      }
       var p = project(born.lat, born.lon);
       if (p.z <= 0.05 || p.x < 14 || p.x > W - 14) {
         born.el.style.visibility = "hidden";
         return;
       }
-      var scale = (0.5 + 0.5 * p.z) * Math.max(0.5, Math.min(1.2, R / 1100));
+      var scale = (0.5 + 0.5 * p.z) *
+                  Math.max(0.5, Math.min(place ? 1.7 : 1.2, R / 1100));
 
       // Coming up: for the first three quarters of a second it is still on
       // its way out of the ground, so it arrives rather than appears.
@@ -2897,6 +3272,11 @@
 
       born.el.style.visibility = "visible";
       born.el.style.opacity = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.3)).toFixed(3);
+      // Who is in front of whom is where they are standing, not what they
+      // are. Down in a city the animal is nearly two feet of screen and it
+      // used to sit over the whole company: anything behind it could not be
+      // pressed, because its cells take the press and its box is enormous.
+      born.el.style.zIndex = String(depth(p.y) - (born.kind === "set" ? 8 : 0));
       born.el.style.transform =
         "translate(" + p.x.toFixed(1) + "px," + p.y.toFixed(1) + "px)" +
         // A tower stands on its base; everything else is carried a little
@@ -3363,7 +3743,7 @@
     var born = {
       el: el, token: cast[0].token, kind: "set", piece: piece,
       tier: 1, risen: 1.2, rose: 0, phase: 0, next: 0,
-      lat: inBand(at.lat + 0.055), lon: at.lon
+      lat: inBand(at.lat + near(0.055)), lon: at.lon
     };
     redraw(born);
     wireCompany(born);
@@ -3738,6 +4118,12 @@
   /* The middle of the near face, a golden third up the band of latitudes
      anyone can see, which is where there is room to stand. */
   function boards() {
+    // In a city the boards are the ground in front of you. On the globe they
+    // were a fixed latitude two fifths up the band, which is where they stay
+    // if there is ever a scene up there again.
+    if (place) {
+      return { lat: place.lat - near(0.1), lon: place.lon };
+    }
     return { lat: LAT_LOW + (LAT_TOP - LAT_LOW) * INV2, lon: wrap(spin) };
   }
 
@@ -3772,7 +4158,8 @@
     raise(def, cast, at);
     cast.forEach(function (born, i) {
       born.acting = true;
-      born.mark = { lat: at.lat + def.marks[i][0], lon: wrap(at.lon + def.marks[i][1]) };
+      born.mark = { lat: at.lat + near(def.marks[i][0]),
+                    lon: wrap(at.lon + near(def.marks[i][1])) };
       born.faces = def.marks[i][1] > 0 ? -1 : 1;
       born.el.dataset.acting = "true";
     });
@@ -3961,7 +4348,9 @@
   var SQUASH_MAX = 300;
 
   function squashRing(now) {
-    if (!squashing) { return 0; }
+    // Only down in a city. Up on the globe there is nothing to squash and a
+    // ring opening under the thumb would only be in the way of turning it.
+    if (!squashing || !place) { return 0; }
     var held = now - squashing.since;
     if (held < SQUASH_WAIT) { return 0; }
     return Math.min(SQUASH_MAX, SQUASH_MIN + (held - SQUASH_WAIT) * 0.42);
@@ -4287,6 +4676,10 @@
 
   stage.addEventListener("pointermove", function (event) {
     if (!turning || event.pointerId !== turning.id) { return; }
+    // The world is turned from up on the globe. Down in a city you are
+    // standing on one patch of ground, woven for that patch, and turning
+    // would only walk you off the edge of it.
+    if (place) { return; }
     var dx = event.clientX - turning.x;
     turning.moved = Math.max(turning.moved, Math.abs(dx));
     // A press that moves is a turn, not a squash.
@@ -4317,13 +4710,17 @@
     var ground = vocabulary[index];
     if (!ground) { return; }
 
-    // Opening a word also sends the creature to stand on it.
-    hold();
-    standOn(index);
-    walkTimer = window.setTimeout(function () {
-      creature.dataset.grazing = "true";
-      walkTimer = window.setTimeout(walk, GRAZE_MAX);
-    }, still ? 1 : 1800);
+    // Opening a word used to send the creature to stand on it as well. The
+    // creature is not up here any more, so on the globe a word is a word: it
+    // opens what it is written on, and nothing walks anywhere.
+    if (place) {
+      hold();
+      standOn(index);
+      walkTimer = window.setTimeout(function () {
+        creature.dataset.grazing = "true";
+        walkTimer = window.setTimeout(walk, GRAZE_MAX);
+      }, still ? 1 : 1800);
+    }
 
     seamWord.textContent = ground.word;
     seamCount.textContent = ground.works.length +
@@ -4366,11 +4763,18 @@
 
   seamClose.addEventListener("click", function () { seam.hidden = true; });
 
+  bannerBack.addEventListener("click", function () { comeUp(); });
+  banner.addEventListener("pointerdown", function (event) {
+    event.stopPropagation();      // the stage would take the pointer otherwise
+  });
+
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") { return; }
     if (!seam.hidden) { seam.hidden = true; return; }
     if (offering || carrying) { dismiss(); return; }
-    if (playing) { curtain = performance.now(); endScene(); strike(); }
+    if (playing) { curtain = performance.now(); endScene(); strike(); return; }
+    // Nothing else to put down: Escape is the way back up to the world.
+    comeUp();
   });
 
   /* ---- growing it -------------------------------------------------------- */
@@ -4441,20 +4845,34 @@
         document.fonts.ready.then(geometry);
       }
 
-      creature.hidden = false;
+      // The creature is not on the globe. It is waiting in the cities, and
+      // it is read and wired here so that going down into one shows it at
+      // once rather than building it on the way in.
       readParts();
       wireParts();
-      var start = Math.floor(Math.random() * vocabulary.length);
-      standOn(start);
-      beast.lat = goal.lat;
-      beast.lon = goal.lon;
-      spin = wanted = beast.lon;
-      creature.dataset.grazing = "true";
+      land.dataset.at = "globe";
+
+      // The world opens turned to whichever city is first, so there is
+      // somewhere to go rather than an ocean to look at.
+      var first = cities[0];
+      if (first) {
+        spin = wanted = first.lon;
+        beast.lat = goal.lat = first.lat;
+        beast.lon = goal.lon = first.lon;
+      } else {
+        var start = Math.floor(Math.random() * vocabulary.length);
+        standOn(start);
+        beast.lat = goal.lat;
+        beast.lon = goal.lon;
+        spin = wanted = beast.lon;
+      }
 
       requestAnimationFrame(frame);
-      walkTimer = window.setTimeout(walk, GRAZE_MIN);
     })
     .catch(function (error) {
+      // It may already have been taken out of the page by then, so the
+      // console is where this actually has to go.
       loading.textContent = "The world could not be read (" + error.message + ").";
+      window.console.error("the world did not come up:", error && error.stack);
     });
 })();
