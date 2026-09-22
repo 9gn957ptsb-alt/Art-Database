@@ -1771,14 +1771,13 @@
 
      Two more ways the globe is let go of, and both are the golden ratio.
 
-     The patches. Thirteen of them — a Fibonacci number — spread over the
-     sphere by the golden angle, the way seeds are spread in a sunflower, so
-     no two crowd and none are left out. Each is a soft region about a
-     radian across, fixed to the Earth and turning with it, and each fades
-     between 1/phi-squared and all the way there on a period of its own:
-     phi-cubed, phi to the fourth, fifth or sixth seconds, started a golden
-     angle apart. Neighbouring patches blend into each other, so what is
-     seen is large, slow weather of transparency moving over the world.
+     The patches. One for every word on the globe, centred where the word
+     lies — see wordPatches — so where the words are is where the
+     transparency comes and goes. Each fades between 1/phi-squared and all
+     the way there on a period of its own, between phi-cubed and
+     phi-to-the-sixth seconds, and neighbouring patches blend into each
+     other, so what is seen is large, slow weather of transparency moving
+     over the world, gathered round what it says.
 
      The pulse. Independent of all of that, a band of fading runs down the
      world from beyond the North Pole to beyond the South and begins again,
@@ -1793,22 +1792,40 @@
      about the Earth is kept until the world is turned; what changes every
      frame is thirteen numbers and a latitude. */
 
-  var PATCHES = 13;
   var VEIL = 8;                         // pixels of the screen to a cell
-  var PATCH_WIDE = 1 / PHI;             // radians, near enough: a patch is ~35 degrees
   var PULSE = Math.pow(PHI, 5) * 1000;  // 11.09 s, north to south
   var PULSE_WIDE = Math.PI / Math.pow(PHI, 4);
 
+  /* The patches are the words. Every word on the globe is the middle of a
+     patch of its own, fixed to wherever the word lies and moving when the
+     word is put down somewhere new; every point of the Earth belongs,
+     softly, to whichever words are nearest it, so the whole globe is shared
+     out between them. A word's patch is as big and as slow as the word:
+     the one carried by all seven collages holds the widest ground and
+     breathes over phi-to-the-sixth seconds; a word from a single collage a
+     small patch over phi-cubed. They start a golden angle apart, in the
+     order the collages introduce them. */
   var patches = [];
-  for (var pi_ = 0; pi_ < PATCHES; pi_ += 1) {
-    var pz = 1 - 2 * (pi_ + 0.5) / PATCHES;
-    var pr = Math.sqrt(1 - pz * pz);
-    var pa = pi_ * GOLDEN;
-    patches.push({
-      x: pr * Math.cos(pa), y: pr * Math.sin(pa), z: pz,
-      period: Math.pow(PHI, 3 + (pi_ % 4)) * 1000,
-      phase: pi_ * GOLDEN
+  var patchesAt = "";
+
+  function wordPatches() {
+    var key = vocabulary.map(function (g) {
+      return g.lat.toFixed(4) + "," + g.lon.toFixed(4);
+    }).join(";");
+    if (key === patchesAt) { return false; }
+    patchesAt = key;
+    patches = vocabulary.map(function (ground, i) {
+      var mass = Math.max(0, Math.min(1, ground.mass || 0));
+      var wide = (INV3 + INV2 * mass) * PHI;          // ~22 to ~57 degrees
+      var cl = Math.cos(ground.lat);
+      return {
+        x: cl * Math.cos(ground.lon), y: cl * Math.sin(ground.lon), z: Math.sin(ground.lat),
+        spread: 2 / (wide * wide),
+        period: Math.pow(PHI, 3 + 3 * mass) * 1000,
+        phase: i * GOLDEN
+      };
     });
+    return true;
   }
 
   var veilCanvas = document.createElement("canvas");
@@ -1830,10 +1847,13 @@
       veilImage = vctx.createImageData(mw, mh);
       veilLat = new Float32Array(mw * mh);
       veilIn = new Uint8Array(mw * mh);
-      veilWeights = new Float32Array(mw * mh * PATCHES);
     }
+    var P = patches.length;
+    if (!veilWeights || veilWeights.length !== mw * mh * P) {
+      veilWeights = new Float32Array(mw * mh * P);
+    }
+    var dots = new Float64Array(P);
     var cosS = Math.cos(spin), sinS = Math.sin(spin);
-    var spread = 2 / (PATCH_WIDE * PATCH_WIDE);
     for (var j = 0; j < mh; j += 1) {
       for (var i = 0; i < mw; i += 1) {
         var n = j * mw + i;
@@ -1850,15 +1870,22 @@
         var ex = z * cosS - X * sinS;
         var ey = X * cosS + z * sinS;
         veilLat[n] = Math.asin(Math.max(-1, Math.min(1, y)));
-        var sum = 0, base = n * PATCHES;
-        for (var p = 0; p < PATCHES; p += 1) {
+        // How near each word's patch this point is, as a log; then shared
+        // out, measured from the nearest so the far side of the world does
+        // not underflow to nobody's.
+        var sum = 0, base = n * P, top = -Infinity;
+        for (var p = 0; p < P; p += 1) {
           var pt = patches[p];
           var dot = ex * pt.x + ey * pt.y + y * pt.z;
-          var w = Math.exp((dot - 1) * spread);
+          dots[p] = (dot - 1) * pt.spread;
+          if (dots[p] > top) { top = dots[p]; }
+        }
+        for (p = 0; p < P; p += 1) {
+          var w = Math.exp(dots[p] - top);
           veilWeights[base + p] = w;
           sum += w;
         }
-        for (p = 0; p < PATCHES; p += 1) { veilWeights[base + p] /= (sum || 1); }
+        for (p = 0; p < P; p += 1) { veilWeights[base + p] /= (sum || 1); }
       }
     }
     veilSeen.spin = spin; veilSeen.tilt = tilt; veilSeen.cx = cx; veilSeen.cy = cy;
@@ -1866,6 +1893,7 @@
   }
 
   function veil(now) {
+    if (wordPatches()) { veilSeen.spin = null; }     // a word has moved
     // A turn of less than about a tenth of a degree moves no cell anywhere
     // that matters, and the world eases toward where it is going for ever.
     if (veilSeen.spin === null || Math.abs(veilSeen.spin - spin) > 0.0015 ||
@@ -1887,8 +1915,8 @@
     for (var n = 0; n < cells; n += 1) {
       var o = n * 4;
       if (!veilIn[n]) { data[o + 3] = 255; continue; }
-      var base = n * PATCHES, mix = 0;
-      for (var p = 0; p < PATCHES; p += 1) { mix += veilWeights[base + p] * amount[p]; }
+      var P = amount.length, base = n * P, mix = 0;
+      for (var p = 0; p < P; p += 1) { mix += veilWeights[base + p] * amount[p]; }
       var show = INV2 + (1 - INV2) * mix;
       var off = (veilLat[n] - at) / PULSE_WIDE;
       show *= 1 - deep * Math.exp(-off * off);
