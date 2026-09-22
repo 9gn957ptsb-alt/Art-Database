@@ -14,7 +14,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-PAGE = r"""<title>Collection Soil</title>
+PAGE = r"""<title>DIRT</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,500&display=swap">
 <style>
   :root {
@@ -62,7 +62,7 @@ PAGE = r"""<title>Collection Soil</title>
 
 <div class="wrap">
   <header>
-    <h1>Collection Soil</h1>
+    <h1>DIRT</h1>
     <p>Two hundred and twenty saved paintings, broken down to their colours and woven back into dirt. Each clod is one painting; the dark between the dots is one more.</p>
   </header>
   <div class="bench">
