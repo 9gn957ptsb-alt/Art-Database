@@ -99,3 +99,26 @@ centred where that painting is most like the colour it gave. It fetches the pain
 reproduces fragments of other artists' work, so it and the viewer are written to `dirt/private/`,
 which is gitignored. This repository is public, and the site's rule is that Artsy works appear only
 as their three-colour token.
+
+## DIRT tiles
+
+`soil_tiles.py` makes the tile view in DIRT: sixteen different collection-soil squares whose edges all
+line up (an edge-matched, or Wang, tile set). Each vertical edge has one of four colours and each horizontal
+edge one of four more. Each colour is a whole object from a painting that straddles the join:
+
+- Vertical joins carry faces, split down the middle: Dürer, the Mona Lisa, Velázquez's Juan de Pareja, and
+  Corot's young woman.
+- Horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's Doge's Palace, and Poussin's angel.
+
+A grid laid left to right and top to bottom takes, at each place, the tile whose west and north edges match
+what is already down, so any arrangement is continuous across every join. Inside the tiles, the biggest
+clods are centred on faces that OpenCV's Haar detector found and that were then checked by eye.
+`objects.json` records every object, its box in the painting, and the detections that were rejected.
+
+```bash
+python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/tiles/ (needs opencv-python-headless<4.13)
+python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
+```
+
+In colour mode the straddling objects use only their painting's three colours, ranked by lightness.
+All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.

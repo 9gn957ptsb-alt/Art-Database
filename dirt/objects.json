@@ -1,0 +1,97 @@
+{
+ "note": "Objects that straddle the DIRT tile edges. Faces were found with OpenCV's Haar face detector and checked by eye; the others were found by title and located by eye. Boxes are fractions of the painting's width and height: [x0, y0, x1, y1]. Vertical tile edges carry faces, split down the middle; horizontal edges carry the rest, split across. not_faces lists paintings where the detector fired on something that is not a face, checked by eye.",
+ "vertical": [
+  {
+   "id": "albrecht-durer-self-portrait",
+   "kind": "face",
+   "box": [
+    0.19,
+    0.03,
+    0.81,
+    0.51
+   ]
+  },
+  {
+   "id": "leonardo-da-vinci-epouse-de-francesco-del-giocondo-dite-mona-lisa-ou-la-joconde-wife-of-francesco-del-giocondo-called-mona-lisa-or-la-joconde",
+   "kind": "face",
+   "box": [
+    0.29,
+    0.17,
+    0.65,
+    0.46
+   ]
+  },
+  {
+   "id": "diego-velazquez-juan-de-pareja-1606-1670",
+   "kind": "face",
+   "box": [
+    0.23,
+    0.11,
+    0.65,
+    0.5
+   ]
+  },
+  {
+   "id": "jean-baptiste-camille-corot-young-woman-in-a-pink-skirt",
+   "kind": "face",
+   "box": [
+    0.29,
+    0.09,
+    0.7,
+    0.46
+   ]
+  }
+ ],
+ "horizontal": [
+  {
+   "id": "gustave-courbet-boats-on-a-beach-etretat",
+   "kind": "boat",
+   "box": [
+    0.12,
+    0.56,
+    0.68,
+    0.93
+   ]
+  },
+  {
+   "id": "vincent-van-gogh-bridge-at-arles-pont-de-langlois",
+   "kind": "bridge",
+   "box": [
+    0.08,
+    0.08,
+    0.92,
+    0.56
+   ]
+  },
+  {
+   "id": "claude-monet-the-doges-palace-le-palais-ducal",
+   "kind": "architecture",
+   "box": [
+    0.01,
+    0.12,
+    0.99,
+    0.56
+   ]
+  },
+  {
+   "id": "nicolas-poussin-the-assumption-of-the-virgin",
+   "kind": "angel",
+   "box": [
+    0.07,
+    0.6,
+    0.37,
+    0.84
+   ]
+  }
+ ],
+ "not_faces": [
+  "anders-leonard-zorn-naked-in-a-rocky-forest",
+  "bea-sarrias-aalto-studio-alvar-aalto-architect",
+  "eddie-martinez-untitled-559",
+  "mark-rothko-yellow-band",
+  "mark-rothko-yellow-band-1",
+  "pablo-picasso-mandoline-et-guitare",
+  "piet-mondrian-farmhouse-with-wash-on-the-line",
+  "wifredo-lam-la-reunion-1-groupe"
+ ]
+}
