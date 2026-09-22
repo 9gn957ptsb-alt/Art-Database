@@ -1,0 +1,350 @@
+<title>Dirt Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #dcdcd4;
+    --bench: #eceae3;
+    --ink: #1e201b;
+    --muted: #6b6d63;
+    --line: #c3c3b8;
+    --accent: #56652f;
+    --accent-ink: #f3f4ea;
+    --display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #161713; --bench: #20221c; --ink: #e4e3da; --muted: #9a9c8f;
+      --line: #34372d; --accent: #a9b86e; --accent-ink: #161713;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #161713; --bench: #20221c; --ink: #e4e3da; --muted: #9a9c8f;
+    --line: #34372d; --accent: #a9b86e; --accent-ink: #161713;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 13px/1.45 var(--mono);
+    padding: 20px 16px 32px;
+  }
+  .wrap { max-width: 1360px; margin: 0 auto; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+  h1 { font: 700 clamp(28px, 4vw, 40px)/1 var(--display); letter-spacing: -0.02em; margin: 0; }
+  header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .bench { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .bench { grid-template-columns: 1fr; } }
+
+  .controls { display: grid; gap: 14px; }
+  .group { background: var(--bench); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 10px; }
+  .group h2 { font: 700 15px/1.2 var(--display); margin: 0; letter-spacing: 0.01em; }
+  .row { display: grid; grid-template-columns: 78px 1fr auto; gap: 8px; align-items: center; }
+  .row label, .lbl { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .val { font-variant-numeric: tabular-nums; min-width: 3.5ch; text-align: right; color: var(--muted); }
+  select, input[type="number"], button {
+    font: inherit; color: var(--ink); background: var(--ground);
+    border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-width: 0;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 500; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; }
+  .check input { margin-top: 2px; flex: none; }
+  .inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* The layer stack reads top-down like soil strata: the last layer sits on top. */
+  .strata { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .stratum { background: var(--bench); padding: 10px 12px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
+  .stratum:first-child { border-top: 0; }
+  .stratum.off > :not(.head) { opacity: 0.4; }
+  .stratum .head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; }
+  .stratum .name { font: 700 14px/1 var(--display); }
+  .stratum .kind { color: var(--muted); font-size: 11px; }
+  .icon-btn { padding: 2px 7px; line-height: 1.2; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .params { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; padding-top: 8px; }
+  .params label { display: grid; gap: 2px; font-size: 11px; color: var(--muted); }
+
+  .stage { display: grid; gap: 10px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .viewport { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--bench); }
+  #view { display: block; width: 100%; height: auto; max-width: 100%; }
+  .status {
+    position: absolute; left: 10px; bottom: 10px; background: var(--bench); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; font-size: 11px;
+  }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .toolbar .inline label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .note { color: var(--muted); font-size: 12px; margin: 0; max-width: 70ch; }
+  textarea {
+    width: 100%; min-height: 120px; font: 11px/1.4 var(--mono); color: var(--ink); background: var(--ground);
+    border: 1px solid var(--line); border-radius: 4px; padding: 8px; resize: vertical;
+  }
+  code { font-family: var(--mono); background: var(--ground); padding: 0 3px; border-radius: 3px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Dirt Lab</h1>
+    <p>Stack generators of noise, cells, reaction–diffusion and random walks into layers of dirt. Tiles wrap seamlessly for repeating backgrounds.</p>
+  </header>
+
+  <div class="bench">
+    <div class="controls">
+      <section class="group" aria-labelledby="mix-h">
+        <h2 id="mix-h">Mix</h2>
+        <div class="row"><label for="preset">Preset</label><select id="preset"></select><span></span></div>
+        <div class="row"><label for="seed">Seed</label><input id="seed" type="number" min="0" step="1" value="1"><button id="reseed" class="icon-btn" title="Random seed">new</button></div>
+        <div class="row"><label for="amount">Dirtiness</label><input id="amount" type="range" min="0" max="1.5" step="0.05" value="1"><span class="val" id="amount-v">1.00</span></div>
+        <div class="row"><label for="size">Tile px</label>
+          <select id="size"><option>256</option><option selected>384</option><option>512</option><option>768</option></select><span></span></div>
+        <div class="row"><label for="tile">Seamless</label><span class="check"><input id="tile" type="checkbox" checked><span class="note">off = one framed image (needed for edge grime)</span></span><span></span></div>
+        <p class="note" id="preset-desc"></p>
+      </section>
+
+      <section class="group" aria-labelledby="layers-h">
+        <div class="inline" style="justify-content: space-between">
+          <h2 id="layers-h">Layers</h2>
+          <span class="inline"><select id="add-type" aria-label="Layer type to add"></select><button id="add">Add</button></span>
+        </div>
+        <p class="note">Top of the list is laid down first; lower layers sit on top of it.</p>
+        <div class="strata" id="strata"></div>
+      </section>
+
+      <section class="group" aria-labelledby="out-h">
+        <h2 id="out-h">Take it to the site</h2>
+        <p class="note">Copy this config, save it as <code>my-dirt.json</code> and run <code>node dirt/bake.mjs --config my-dirt.json --size 512</code> for a PNG tile, or pass it to <code>dirtOverlay(el, config)</code> in the browser.</p>
+        <textarea id="config" readonly spellcheck="false" aria-label="Current dirt config as JSON"></textarea>
+        <div class="inline"><button class="primary" id="copy">Copy config</button><span class="note" id="copy-msg" role="status"></span></div>
+      </section>
+    </div>
+
+    <div class="stage">
+      <div class="toolbar">
+        <span class="inline"><label for="backdrop">Over</label>
+          <select id="backdrop"><option value="painting">a painting</option><option value="paper">white paper</option><option value="charcoal">charcoal</option><option value="none">nothing (alpha)</option></select></span>
+        <span class="inline"><label for="pageblend">Page blend</label>
+          <select id="pageblend"><option>normal</option><option>multiply</option><option>screen</option><option>overlay</option><option>soft-light</option></select></span>
+        <span class="inline"><input id="seams" type="checkbox"><label for="seams">Show tile edges</label></span>
+      </div>
+      <div class="viewport">
+        <canvas id="view" width="1200" height="800" aria-label="Preview of the generated dirt"></canvas>
+        <div class="status" id="status" role="status">Rendering…</div>
+      </div>
+      <p class="note">Page blend is the CSS <code>mix-blend-mode</code> the overlay would use on the website; per-layer blends happen inside the dirt itself.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { generateDirt, PRESETS, LAYERS, BLEND_MODES } from './dirt.js';
+
+const $ = (id) => document.getElementById(id);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const LABELS = {
+  wash: 'Warped fBm wash', clumps: 'Worley clumps', cracks: 'Worley cracks', grit: 'Stamped grit',
+  stains: 'Ring stains', smudges: 'Fingerprint ridges', scratches: 'Random-walk scratches',
+  dust: 'Dust, haze & fibres', mold: 'Gray–Scott mould', edges: 'Edge build-up',
+};
+const RESERVED = new Set(['type', 'blend', 'opacity', 'relief', 'enabled', 'colors', 'color', 'fibreColors']);
+
+let state = { preset: 'potting-soil', layers: [], tile: true };
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  state.preset = name;
+  state.layers = clone(p.layers);
+  state.tile = p.tile ?? true;
+  $('tile').checked = state.tile;
+  $('preset-desc').textContent = p.description || '';
+  drawStrata();
+  schedule();
+}
+
+for (const name of Object.keys(PRESETS)) $('preset').add(new Option(name, name));
+for (const t of Object.keys(LAYERS)) $('add-type').add(new Option(t, t));
+
+function field(label, input) {
+  const l = document.createElement('label');
+  l.append(label, input);
+  return l;
+}
+
+function drawStrata() {
+  const root = $('strata');
+  root.replaceChildren();
+  state.layers.forEach((layer, i) => {
+    const el = document.createElement('div');
+    el.className = 'stratum' + (layer.enabled === false ? ' off' : '');
+
+    const head = document.createElement('div');
+    head.className = 'head';
+    const on = Object.assign(document.createElement('input'), { type: 'checkbox', checked: layer.enabled !== false, id: `on-${i}` });
+    on.setAttribute('aria-label', `Show ${layer.type} layer`);
+    on.onchange = () => { layer.enabled = on.checked; el.classList.toggle('off', !on.checked); schedule(); };
+    const title = document.createElement('div');
+    title.innerHTML = `<div class="name"></div><div class="kind"></div>`;
+    title.firstChild.textContent = layer.type;
+    title.lastChild.textContent = LABELS[layer.type] || '';
+    const up = Object.assign(document.createElement('button'), { className: 'icon-btn', textContent: '↑', title: 'Move earlier' });
+    up.disabled = i === 0;
+    up.onclick = () => { [state.layers[i - 1], state.layers[i]] = [state.layers[i], state.layers[i - 1]]; drawStrata(); schedule(); };
+    const del = Object.assign(document.createElement('button'), { className: 'icon-btn', textContent: '×', title: 'Remove layer' });
+    del.onclick = () => { state.layers.splice(i, 1); drawStrata(); schedule(); };
+    head.append(on, title, up, del);
+
+    const blend = document.createElement('select');
+    blend.id = `blend-${i}`;
+    for (const m of BLEND_MODES) blend.add(new Option(m, m, false, m === (layer.blend || 'normal')));
+    blend.onchange = () => { layer.blend = blend.value; schedule(); };
+
+    el.append(head, slider(`Opacity`, `op-${i}`, layer.opacity ?? 1, 0, 1, 0.05, (v) => (layer.opacity = v)),
+      slider(`Relief`, `rel-${i}`, layer.relief ?? 0, 0, 2, 0.1, (v) => (layer.relief = v)));
+    const br = document.createElement('div');
+    br.className = 'row';
+    br.append(Object.assign(document.createElement('label'), { htmlFor: blend.id, textContent: 'Blend' }), blend, document.createElement('span'));
+    el.append(br);
+
+    const numeric = Object.entries(layer).filter(([k, v]) => !RESERVED.has(k) && typeof v === 'number');
+    if (numeric.length) {
+      const d = document.createElement('details');
+      d.innerHTML = '<summary>Parameters</summary>';
+      const grid = document.createElement('div');
+      grid.className = 'params';
+      for (const [k, v] of numeric) {
+        const inp = Object.assign(document.createElement('input'), { type: 'number', value: v, step: 'any', id: `p-${i}-${k}` });
+        inp.onchange = () => { const n = parseFloat(inp.value); if (!Number.isNaN(n)) { layer[k] = n; schedule(); } };
+        grid.append(field(k, inp));
+      }
+      d.append(grid);
+      el.append(d);
+    }
+    root.append(el);
+  });
+}
+
+function slider(label, id, value, min, max, step, set) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  const inp = Object.assign(document.createElement('input'), { type: 'range', id, min, max, step, value });
+  const out = Object.assign(document.createElement('span'), { className: 'val', textContent: Number(value).toFixed(2) });
+  inp.oninput = () => { out.textContent = Number(inp.value).toFixed(2); set(Number(inp.value)); schedule(); };
+  row.append(Object.assign(document.createElement('label'), { htmlFor: id, textContent: label }), inp, out);
+  return row;
+}
+
+// A stand-in "artwork" so the dirt can be judged over something with colour and edges.
+function paintBackdrop(ctx, w, h, kind) {
+  ctx.globalCompositeOperation = 'source-over';
+  if (kind === 'none') {
+    const s = 16;
+    for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s) {
+      ctx.fillStyle = ((x + y) / s) % 2 ? '#cfcfcf' : '#f2f2f2';
+      ctx.fillRect(x, y, s, s);
+    }
+    return;
+  }
+  if (kind === 'paper') { ctx.fillStyle = '#f1eee6'; ctx.fillRect(0, 0, w, h); return; }
+  if (kind === 'charcoal') { ctx.fillStyle = '#2a2b2f'; ctx.fillRect(0, 0, w, h); return; }
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#2f5d7c'); g.addColorStop(0.55, '#d9a55b'); g.addColorStop(0.56, '#8b3b2a'); g.addColorStop(1, '#3a2418');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  const blobs = [['#e9d8a6', 0.72, 0.32, 0.16], ['#1b3a4b', 0.2, 0.75, 0.25], ['#c44536', 0.45, 0.62, 0.12], ['#f4f1de', 0.85, 0.8, 0.08]];
+  for (const [c, x, y, r] of blobs) {
+    const rg = ctx.createRadialGradient(x * w, y * h, 0, x * w, y * h, r * w);
+    rg.addColorStop(0, c); rg.addColorStop(1, c + '00');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, w, h);
+  }
+}
+
+const view = $('view');
+const vctx = view.getContext('2d');
+const tileCanvas = document.createElement('canvas');
+let timer = 0;
+let rendered = null;
+
+function config() {
+  return { seed: Number($('seed').value) || 0, amount: Number($('amount').value), tile: state.tile, layers: state.layers };
+}
+
+function schedule() {
+  $('config').value = JSON.stringify(config(), null, 2);
+  $('status').hidden = false;
+  $('status').textContent = 'Rendering…';
+  clearTimeout(timer);
+  // Let the status paint before the (synchronous) render blocks the thread.
+  timer = setTimeout(() => requestAnimationFrame(() => setTimeout(render, 0)), 220);
+}
+
+function render() {
+  const size = Number($('size').value);
+  const tile = state.tile;
+  const w = tile ? size : view.width;
+  const h = tile ? size : view.height;
+  const t0 = performance.now();
+  try {
+    const img = generateDirt({ ...config(), width: w, height: h });
+    tileCanvas.width = w; tileCanvas.height = h;
+    tileCanvas.getContext('2d').putImageData(new ImageData(img.data, w, h), 0, 0);
+    rendered = { w, h, tile };
+    compose();
+    $('status').textContent = `${w}×${h} · ${Math.round(performance.now() - t0)} ms`;
+  } catch (err) {
+    $('status').textContent = `Render failed: ${err.message}`;
+  }
+}
+
+function compose() {
+  if (!rendered) return;
+  const W = view.width, H = view.height;
+  paintBackdrop(vctx, W, H, $('backdrop').value);
+  vctx.globalCompositeOperation = $('pageblend').value === 'normal' ? 'source-over' : $('pageblend').value;
+  if (rendered.tile) {
+    vctx.fillStyle = vctx.createPattern(tileCanvas, 'repeat');
+    vctx.fillRect(0, 0, W, H);
+  } else {
+    vctx.drawImage(tileCanvas, 0, 0, W, H);
+  }
+  vctx.globalCompositeOperation = 'source-over';
+  if ($('seams').checked && rendered.tile) {
+    vctx.strokeStyle = 'rgba(255,60,120,0.8)';
+    vctx.setLineDash([6, 6]);
+    vctx.beginPath();
+    for (let x = rendered.w; x < W; x += rendered.w) { vctx.moveTo(x + 0.5, 0); vctx.lineTo(x + 0.5, H); }
+    for (let y = rendered.h; y < H; y += rendered.h) { vctx.moveTo(0, y + 0.5); vctx.lineTo(W, y + 0.5); }
+    vctx.stroke();
+    vctx.setLineDash([]);
+  }
+}
+
+$('preset').onchange = () => loadPreset($('preset').value);
+$('seed').onchange = schedule;
+$('reseed').onclick = () => { $('seed').value = Math.floor(Math.random() * 100000); schedule(); };
+$('amount').oninput = () => { $('amount-v').textContent = Number($('amount').value).toFixed(2); schedule(); };
+$('size').onchange = schedule;
+$('tile').onchange = () => { state.tile = $('tile').checked; schedule(); };
+$('backdrop').onchange = compose;
+$('pageblend').onchange = compose;
+$('seams').onchange = compose;
+$('add').onclick = () => { state.layers.push({ type: $('add-type').value, blend: 'normal', opacity: 0.8 }); drawStrata(); schedule(); };
+$('copy').onclick = async () => {
+  const text = $('config').value;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copy-msg').textContent = 'Copied';
+  } catch {
+    $('config').select();
+    $('copy-msg').textContent = 'Selected — press Ctrl/⌘+C';
+  }
+};
+
+$('preset').value = state.preset;
+loadPreset(state.preset);
+</script>
