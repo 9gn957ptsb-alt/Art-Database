@@ -22,6 +22,8 @@
 <div class="stage" id="stage">
 
   <!-- The sphere and its land. -->
+  <!-- The same globe, small and out of focus, under the sharp one. -->
+  <canvas class="world world-soft" id="world-soft" aria-hidden="true"></canvas>
   <canvas class="world" id="world"></canvas>
 
   <!-- Everything that stands ON the world is DOM, not canvas, so the words
@@ -198,7 +200,11 @@
     city returns you to exactly the view you went down from. The soil's
     dots are drawn finer than DIRT's own, and wherever a word lies the land
     thins out beneath it, so the words are read against a clearing rather
-    than competing with the ground.
+    than competing with the ground. The globe is gritty and soft as well as fine: specks
+    of soil's browns and a few pale grains are baked into it, and part of it
+    is laid down again out of focus. Both grow as you go down into a city,
+    where the ground is gravel in a haze of itself; and when a word is
+    opened, the world behind its collages leans in and goes out of focus.
 
     Every palette applied also leaves something standing on the world, and
     what it leaves is decided by the word the creature is standing on: things

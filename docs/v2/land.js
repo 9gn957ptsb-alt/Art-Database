@@ -1660,6 +1660,9 @@
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     sctx.clearRect(0, 0, W, H);
     paintSphere(sctx, lit);
+    // The grit is baked into the body of the globe when it is painted, not
+    // laid over it every frame; it only changes when the globe does.
+    grit(sctx, nearness());
     if (clothStale()) { drawCloth(); }
     drawn.x = lit.x;
     drawn.y = lit.y;
@@ -1678,8 +1681,9 @@
     var lit = project(beast.lat, beast.lon);
     if (!flying && sphereStale(lit)) { drawSphere(lit); }
 
+    // The room is the stage's own background now (land.css), so the canvas
+    // starts clear and only the globe is painted on it.
     ctx.clearRect(0, 0, W, H);
-    paintRoom(ctx);
 
     // The globe, and each family of its threads, each seen through by an
     // amount of its own that never settles — see flux().
@@ -1728,7 +1732,36 @@
     gctx.drawImage(veilCanvas, 0, 0, W, H);
     gctx.globalCompositeOperation = "source-over";
 
+    // Grit into it, then part of it laid down soft — both more the further
+    // down you are. See gritAndBlur.
+    var near = nearness();
+    var mist = INV2 + (INV - INV2) * near;          // how much of it is blurred
+    var shrink = Math.pow(INV, 2 + 2 * near);       // and how far
+    var sw = Math.max(1, Math.round(layer.width * shrink));
+    var sh = Math.max(1, Math.round(layer.height * shrink));
+    // Out of focus is out of focus: it is taken again every third frame,
+    // not every frame, and nobody can see the difference in a haze.
+    softTick = (softTick + 1) % 3;
+    if (soft.width !== sw || soft.height !== sh) { soft.width = sw; soft.height = sh; softTick = 0; }
+    if (!softTick || flying) {
+      // Small, and on a canvas of its own under this one: the browser
+      // stretches it back over the whole window itself, and a stretched
+      // small picture is the blur. The shadow that seats the globe is in
+      // here too, since it is only ever soft.
+      softCtx.setTransform(sw / W, 0, 0, sh / H, 0, 0);
+      softCtx.clearRect(0, 0, W, H);
+      softCtx.imageSmoothingEnabled = true;
+      seatShadow(softCtx, 1 / Math.max(mist, 0.1));
+      softCtx.drawImage(layer, 0, 0, W, H);
+    }
+    if (Math.abs(softShown - mist) > 0.004) {
+      softShown = mist;
+      soft.style.opacity = mist.toFixed(3);
+    }
+
+    ctx.globalAlpha = 1 - mist;
     ctx.drawImage(layer, 0, 0, W, H);
+    ctx.globalAlpha = 1;
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -1969,24 +2002,84 @@
     return any ? roomCells : null;
   }
 
-  /* The room the globe hangs in. Not faded with it: the globe fading is the
-     room showing through it. */
-  function paintRoom(ctx) {
-    var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, SKY[0]);
-    sky.addColorStop(INV3, SKY[1]);          // 0.236
-    sky.addColorStop(INV2, SKY[2]);          // 0.382
-    sky.addColorStop(INV, SKY[3]);           // 0.618
-    sky.addColorStop(1, SKY[4]);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
+  /* ---- grit and blur ------------------------------------------------------
 
-    // The sphere casts into the sky rather than glowing out of it: a soft
-    // shadow just beyond the contour, which is what seats it.
-    var seatShadow = ctx.createRadialGradient(cx, cy, R * 0.99, cx, cy, R * 1.06);
-    seatShadow.addColorStop(0, "rgba(58, 64, 88, 0.045)");
-    seatShadow.addColorStop(1, "rgba(58, 64, 88, 0)");
-    ctx.fillStyle = seatShadow;
+     The globe is finer than it was and it is also rougher, which is less of
+     a contradiction than it sounds: soil is both. Two things are done to it
+     after everything else, and both grow as you go down into a city.
+
+     Grit: a field of specks — dark crumbs in the soil's own browns, and a
+     few pale grains — laid only where the globe is, never on the sky. It is
+     baked into the body of the globe when that is painted, at 1/phi-squared
+     from orbit and all the way there on the ground, and its specks grow
+     by phi on the way down, so close to, the ground is gravel.
+
+     Blur: part of the globe is laid down a second time, out of focus — made
+     small and stretched back up, which is a blur that costs almost nothing.
+     From orbit 1/phi-squared of it is soft, shrunk to 1/phi-squared of its
+     size; on the ground 1/phi of it is soft, shrunk to 1/phi-to-the-fourth.
+     So the near ground has a depth of field, and the sharp dots sit in a
+     haze of themselves. */
+
+  var softTick = 0;
+
+  function nearness() {
+    return Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+  }
+
+  var soft = document.getElementById("world-soft");
+  var softShown = -1;
+  var softCtx = soft.getContext("2d");
+  var gritTile = null, gritPattern = null, gritFor = null;
+
+  function makeGrit() {
+    var size = 144;
+    var c = document.createElement("canvas");
+    c.width = c.height = size;
+    var g = c.getContext("2d");
+    var CRUMBS = ["42,29,20", "58,40,27", "31,22,16", "74,52,34", "96,70,46"];
+    var rnd = seedFrom("grit", 5);
+    for (var i = 0; i < size * size * 0.07; i += 1) {
+      var x = Math.floor(rnd() * size), y = Math.floor(rnd() * size);
+      var pale = rnd() < 0.12;
+      var d = rnd() < 0.2 ? 2 : 1;
+      g.fillStyle = pale ? "rgba(255,250,240," + (0.5 + 0.4 * rnd()).toFixed(2) + ")"
+                         : "rgba(" + CRUMBS[Math.floor(rnd() * CRUMBS.length)] + "," +
+                           (0.35 + 0.55 * rnd()).toFixed(2) + ")";
+      g.fillRect(x, y, d, d);
+    }
+    return c;
+  }
+
+  function grit(g, near) {
+    if (!gritTile) { gritTile = makeGrit(); }
+    if (gritFor !== g) { gritPattern = g.createPattern(gritTile, "repeat"); gritFor = g; }
+    if (!gritPattern) { return; }
+    var grain = 1 + (PHI - 1) * near;
+    // It turns with the world, so the gravel is on the ground rather than
+    // on the glass in front of it.
+    var slide = ((spin * R) % 144 + 144) % 144;
+    try {
+      gritPattern.setTransform(new DOMMatrix([grain, 0, 0, grain, -slide, 0]));
+    } catch (e) {}
+    g.save();
+    g.globalCompositeOperation = "source-atop";
+    g.globalAlpha = INV2 + (1 - INV2) * near;
+    g.fillStyle = gritPattern;
+    g.fillRect(0, 0, W, H);
+    g.restore();
+  }
+
+  /* The room the globe hangs in is the stage's background, in land.css —
+     the same five stops of the sky it always had. All that is drawn for it
+     here is the shadow just beyond the globe's contour, which is what seats
+     it, and that goes on the soft canvas, where it belongs. */
+  function seatShadow(ctx, boost) {
+    var a = Math.min(1, 0.045 * boost);
+    var g = ctx.createRadialGradient(cx, cy, R * 0.99, cx, cy, R * 1.06);
+    g.addColorStop(0, "rgba(58, 64, 88, " + a.toFixed(3) + ")");
+    g.addColorStop(1, "rgba(58, 64, 88, 0)");
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
@@ -2245,6 +2338,11 @@
   var trod = { x: 0, y: 0, since: 0 };   // how far it has walked since it last kicked
 
   function frame(now) {
+    // While collages are laid over it the world holds still: it is behind
+    // them, out of focus, and every frame spent on it is a frame the blur
+    // has to be worked out again for nothing.
+    if (deckMode && !flying) { requestAnimationFrame(frame); return; }
+
     // Going down into a city, or coming back up out of one. The sphere grows
     // or shrinks and its framing travels with it; everything else on here is
     // projected through the same two numbers and follows without being told.
@@ -5957,6 +6055,9 @@
     deckMode = mode;
     deckWord = mode === "word" ? vocabulary[index] : null;
     deck.dataset.mode = mode;
+    // A word's collages are laid over the world, and the world behind them
+    // goes out of focus, gritty and soft, as if you had leaned in to it.
+    document.body.dataset.deck = mode;
     deck.hidden = false;
     deck.scrollTop = 0;
     // A new table each time it is opened: what was on it is cleared off.
@@ -5973,6 +6074,7 @@
     deckMode = null;
     deckWord = null;
     deck.hidden = true;
+    delete document.body.dataset.deck;
     retire(poolOf(deckTable));
     switcher.textContent = "Collages";
     switcher.setAttribute("aria-expanded", "false");

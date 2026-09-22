@@ -98,6 +98,20 @@
 
 .stage[data-turning="true"] { cursor: grabbing; }
 
+/* The room: the sky the globe hangs in, off-white at the top easing to the
+   faintest warmth near the horizon. It used to be painted on the canvas
+   every frame; as a background it costs nothing. The stops are at the
+   golden sections. */
+.stage {
+  background: linear-gradient(180deg,
+    #e9eaee 0%, #eff0f1 23.6%, #f2ece7 38.2%, #efe6e4 61.8%, #e6e5ec 100%);
+}
+
+.world-soft {
+  pointer-events: none;
+  image-rendering: auto;
+}
+
 /* The sphere, its land, its ring and the lights at the far edge. */
 .world {
   position: absolute;
@@ -839,6 +853,17 @@
 
 .deck-close:hover,
 .deck-close:focus-visible { color: var(--ink); background: #ffffff; }
+
+/* Behind a word's collages the world goes out of focus: blur by
+   phi-cubed pixels, a little grain of contrast, and a slow lean in. */
+.stage {
+  transition: filter var(--beat-4) ease-out, transform var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.land-body[data-deck="word"] .stage {
+  filter: blur(4.236px) contrast(1.146) saturate(1.146);
+  transform: scale(1.0557);             /* phi to the 1/phi-to-the-fourth */
+}
 
 .here {
   position: fixed;
