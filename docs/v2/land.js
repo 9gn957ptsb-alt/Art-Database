@@ -969,6 +969,7 @@
      so the world reads as what the works are made of most. */
   function dress(ground) {
     if (!ground.el) { return; }
+    ground.pw = 0;                     // measured again next time it is placed
     // How many collages carry the object decides how big its word is. The
     // curve is flattened a little so the one-off things — the joker, the
     // pull tab — are still legible rather than specks.
@@ -1578,7 +1579,10 @@
           // coastline is where one gives way to the other.
           if (!gain && (k & 1)) { continue; }
           tone = wInks[wInk[k]];
-          dot = grain + size - 1;
+          // Finer than the soil's own dots: 1/phi of the size, snapped to
+          // whole device pixels, so on a sharp screen a small clod is a
+          // single hair of a pixel rather than a crumb.
+          dot = Math.max(1, Math.round((grain + size - 1) * INV * dpr)) / dpr;
           a = gain ? (0.5 + 0.5 * lit) * (0.72 + 0.28 * gain)
                    : (0.1 + 0.2 * lit);
         } else if (gain) {
@@ -1605,7 +1609,7 @@
         c.globalAlpha = Number(bits[1]) / 22;
         var run = runs[key];
         for (var i = 0; i < run.length; i += 2) {
-          c.fillRect(run[i] | 0, run[i + 1] | 0, d, d);
+          c.fillRect(Math.round(run[i] * dpr) / dpr, Math.round(run[i + 1] * dpr) / dpr, d, d);
         }
       });
       c.globalAlpha = 1;
@@ -1879,6 +1883,7 @@
     var deep = still ? 0 : 1 - INV2;
     var data = veilImage.data;
     var cells = veilIn.length;
+    var room = wordRoom();
     for (var n = 0; n < cells; n += 1) {
       var o = n * 4;
       if (!veilIn[n]) { data[o + 3] = 255; continue; }
@@ -1887,9 +1892,53 @@
       var show = INV2 + (1 - INV2) * mix;
       var off = (veilLat[n] - at) / PULSE_WIDE;
       show *= 1 - deep * Math.exp(-off * off);
+      if (room) { show *= room[n]; }
       data[o + 3] = Math.round(show * 255);
     }
     vctx.putImageData(veilImage, 0, 0);
+  }
+
+  /* Room for the words. The land is what the page is made of, but the words
+     are what it says, so where a word lies the land thins out under it: down
+     to 1/phi-cubed of itself inside the word's own outline, coming back to
+     full over a margin phi times the word's height, which is a clearing
+     rather than a hole. A word that is fading out clears less. */
+  var roomCells = null;
+
+  function wordRoom() {
+    if (place || !vocabulary.length) { return null; }
+    var mw = veilCanvas.width, mh = veilCanvas.height;
+    if (!roomCells || roomCells.length !== mw * mh) { roomCells = new Float32Array(mw * mh); }
+    roomCells.fill(1);
+    var any = false;
+    vocabulary.forEach(function (ground) {
+      var b = ground.box;
+      if (!b || !ground.el || ground.el.style.visibility === "hidden") { return; }
+      any = true;
+      var margin = b.ry * 2 * PHI;
+      var reach = Math.max(b.rx, b.ry) + margin;
+      var i0 = Math.max(0, Math.floor((b.x - reach) / VEIL));
+      var i1 = Math.min(mw - 1, Math.ceil((b.x + reach) / VEIL));
+      var j0 = Math.max(0, Math.floor((b.y - reach) / VEIL));
+      var j1 = Math.min(mh - 1, Math.ceil((b.y + reach) / VEIL));
+      var c = Math.cos(b.rot), s_ = Math.sin(b.rot);
+      var most = (1 - INV3) * Math.min(1, b.fade / INV);
+      for (var j = j0; j <= j1; j += 1) {
+        for (var i = i0; i <= i1; i += 1) {
+          var dx = (i + 0.5) * VEIL - b.x, dy = (j + 0.5) * VEIL - b.y;
+          // Into the word's own frame, then how far outside its outline.
+          var u = Math.max(0, Math.abs(dx * c + dy * s_) - b.rx);
+          var v = Math.max(0, Math.abs(-dx * s_ + dy * c) - b.ry);
+          var out = Math.sqrt(u * u + v * v) / margin;
+          if (out >= 1) { continue; }
+          var ease = 1 - out * out * (3 - 2 * out);      // smooth to nothing
+          var keep = 1 - most * ease;
+          var n = j * mw + i;
+          if (keep < roomCells[n]) { roomCells[n] = keep; }
+        }
+      }
+    });
+    return any ? roomCells : null;
   }
 
   /* The room the globe hangs in. Not faded with it: the globe fading is the
@@ -2085,6 +2134,7 @@
       // each other there; now they lie down on the surface instead, so they
       // can be carried all the way round.
       if (p.z <= 0.05 || p.x < 14 || p.x > W - 14) {
+        ground.box = null;
         el.style.visibility = "hidden";
         el.dataset.behind = "true";
 
@@ -2120,6 +2170,16 @@
         " translate(-50%,-50%)" +
         " rotate(" + p.lie.toFixed(2) + "deg)" +
         " scale(" + (scale * p.squash).toFixed(3) + "," + scale.toFixed(3) + ")";
+
+      // Where it lies, for the land to make room around it (see veil).
+      if (!ground.pw) { ground.pw = el.offsetWidth; ground.ph = el.offsetHeight; }
+      ground.box = {
+        x: p.x, y: p.y,
+        rx: ground.pw * scale * p.squash / 2,
+        ry: ground.ph * scale / 2,
+        rot: p.lie * RAD,
+        fade: fade
+      };
     });
   }
 
