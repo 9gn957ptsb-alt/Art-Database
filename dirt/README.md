@@ -73,3 +73,29 @@ bake tiles ahead of time for anything above the fold.
   `darken`, `lighten`), `opacity`, `relief`, `bump`, `enabled`, `colors`, plus the layer's own
   numbers (`scale`, `size`, `density`, `count`, `coverage`…). Sizes are in pixels. Counts are
   per 512×512 area, so larger tiles get proportionally more marks.
+
+## Collection soil
+
+`collection_soil.py` makes dirt out of the saved paintings themselves. It reads `artworks.db` (from the
+Artsy import branch), keeps paintings only, and weaves a chocolate-brown tile in the same dot hand as the
+globe on the artist website: square dots of 1–3px on a 3px grid, in two crossing families of warped strands,
+with dark blocks dropped out and cracks at the clod edges.
+
+- Every clod is one painting, wearing one of its three dominant colours from the chocolate range
+  (hue 16–36°, lightness 0.12–0.5). No painting is used twice.
+- The pale glints in a clod are the same painting's lightest warm colour.
+- The blacks, meaning the dark between the dots, are one near-black swatch from one more painting. They
+  are also written out as their own layer (`collection-soil-blacks.png`, with `collection-soil-dots.png`
+  as the dots alone), so something else can take their place later, such as words.
+- `out/collection-soil.json` records the painting behind every clod, plus a per-cell label map.
+
+```bash
+python3 dirt/collection_soil.py --db path/to/artworks.db --seed 7       # colour version + cutout version
+python3 dirt/build_soil_viewer.py                                       # hover-to-identify viewer
+```
+
+The **cutout version** uses the same clods, but each one is a pixelated window into its painting,
+centred where that painting is most like the colour it gave. It fetches the paintings' images and
+reproduces fragments of other artists' work, so it and the viewer are written to `dirt/private/`,
+which is gitignored. This repository is public, and the site's rule is that Artsy works appear only
+as their three-colour token.
