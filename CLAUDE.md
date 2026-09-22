@@ -26,8 +26,8 @@ already declined or deferred in the same conversation.
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |
 | `WIX.md` | The live Wix site: CMS schema, current rows, and the to-do list. |
-| `docs/v2/index.html` | **The land**, and the front page of the Artist Website — two heights. The globe is the view of the site: the Earth, the words, and the places the collages are in, each at its real coordinates (Sydney, Washington ×2, New York, San Francisco, Boston, Blacksburg) plus the Folger Shakespeare Library, which is a real building and where the plays are. Drag sideways to turn the world, up and down to roll it north or south. Pressing a city flies you down into it, and the creature, the company and the scenes are all down there. `land.css`, `land.js`, `land.json`. |
-| `docs/v2/works.html` | The works, as a page — every collage with its caption. The land's panels link into it. |
+| `docs/v2/index.html` | **The land**, and the front page of the Artist Website — two heights. The globe is the view of the site: the Earth, the words, and the places the collages are in, each at its real coordinates (Sydney, Washington ×2, New York, San Francisco, Boston, Blacksburg) plus the Folger Shakespeare Library, which is a real building and where the plays are. Drag sideways to turn the world, up and down to roll it north or south. Pressing a city flies you down into it, and the creature, the company and the scenes are all down there, with that city's collage laid out beside them. **The Artist Website is one page**: the collages are a view of it (the Collages switch, `#collages`), a word opens its collages over the globe, and pressing a collage flies to its city (`#<slug>`). Nothing links to another page. Every collage is dealt as separate pieces — photograph, title, place, details, price, notes, writings — to new random, non-overlapping positions on every press; the artist wants nothing shown the same way twice. `land.css`, `land.js`, `land.json`. |
+| `docs/v2/works.html` | Where the works page used to be. Forwards to `./#collages` (or `./#<slug>`), so links to it that were shared before still work. |
 | `docs/v2/land.html` | Where the land used to be. Forwards to `./`, so links to it that were shared before still work. |
 | `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
 | `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
@@ -69,6 +69,9 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   retouch them. They are wanted on the live site as they are — but images cannot
   be uploaded to Wix from a session (see `WIX.md`), so the artist uploads them by
   hand and a session then matches them to rows.
+- Writings about a collage — the artist's or anyone's — go in `writings` on that
+  work in `docs/works.json`, as `[{"text": "...", "by": "..."}]`. The Artist
+  Website deals them with the collage. There are none yet; never write them.
 - Don't invent artwork metadata. Titles and years come from the artist;
   dimensions are blank until given.
 - `data/` never gets committed. It is the artist's whole Artsy saved-works list

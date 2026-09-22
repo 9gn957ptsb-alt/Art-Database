@@ -109,7 +109,8 @@
         <span aria-hidden="true">&larr;</span> The world
       </button>
       <p class="banner-where">
-        <span class="banner-city" id="banner-city"></span>
+        <button class="banner-city" id="banner-city" type="button"
+                aria-controls="here"></button>
         <span class="banner-under" id="banner-under"></span>
       </p>
     </div>
@@ -137,6 +138,19 @@
     that city is the ground under you, and everything that follows happens
     down there. The back button, or Escape, brings you up again. What grows in
     one city stays in that city.
+
+    It is all one page. Going down into a city where a collage is lays that
+    collage out there — its photograph, its title and year, where it is,
+    what it is made of and how big, its price and its notes, each as a
+    separate thing — beside wherever the creature is standing. Press any of
+    them and they are all dealt again to new places, at new sizes and new
+    widths; nothing is laid out the same way twice. The turn button hangs it
+    a quarter turn round, and the vote records the way it is hung. Put it
+    away, or press the city's name in the corner to bring it back. The
+    Collages button in the other corner lays every collage out over the
+    world, with the statement and the address, dealt afresh each time; press
+    a photograph there and you are taken to its city. A word on the globe
+    does the same with the collages it is written on.
 
     One of the cities is not a collage but a real building: the Folger
     Shakespeare Library, on East Capitol Street in Washington. It is drawn
@@ -211,14 +225,20 @@
 
 </div>
 
-<!-- What a word is standing on: the artist's own works. Closed until a word
-     is opened, so the stage stays bare. -->
-<aside class="seam" id="seam" hidden aria-labelledby="seam-word">
-  <button class="seam-close" id="seam-close" type="button" aria-label="Close">&times;</button>
-  <h2 class="seam-word" id="seam-word"></h2>
-  <p class="seam-count" id="seam-count"></p>
-  <ul class="seam-list" id="seam-list"></ul>
-</aside>
+<!-- The collage a city is, laid out in that city. Its pieces are dealt to
+     new places every time anything is pressed. -->
+<div class="here" id="here" hidden aria-label="The collage here"></div>
+
+<!-- The collages, all of them or the ones a word is written on, laid out
+     over the world. Not another page: the same one, from another side. -->
+<section class="deck" id="deck" hidden aria-label="Collages">
+  <button class="deck-close" id="deck-close" type="button" aria-label="Back to the world">&times;</button>
+  <div class="deck-table" id="deck-table"></div>
+</section>
+
+<!-- Back and forth between the world and the collages. -->
+<button class="switch" id="switch" type="button" aria-controls="deck"
+        aria-expanded="false">Collages</button>
 
 <script src="land.js"></script>
 </body>

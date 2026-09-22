@@ -40,15 +40,10 @@
   var say = document.getElementById("say");
   var sayWho = document.getElementById("say-who");
   var sayLine = document.getElementById("say-line");
-  var seam = document.getElementById("seam");
   var banner = document.getElementById("banner");
   var bannerBack = document.getElementById("banner-back");
   var bannerCity = document.getElementById("banner-city");
   var bannerUnder = document.getElementById("banner-under");
-  var seamWord = document.getElementById("seam-word");
-  var seamCount = document.getElementById("seam-count");
-  var seamList = document.getElementById("seam-list");
-  var seamClose = document.getElementById("seam-close");
 
   // The sky is pale, not black: a cool white overhead easing to the faintest
   // warmth near the horizon, with the sphere set into it rather than against
@@ -679,12 +674,15 @@
     flying = true;
     land.dataset.at = "flying";
     hideGraze();
+    closeDeck();
   }
 
   function comeUp() {
     if (flying || !place) { return; }
     hold();                         // the walk stops where it is
     hideGraze();
+    hereShown = false;
+    dealHere();
     // Back out to the part of the world you were looking at when you went in.
     leanFrom = tilt;
     leanTo = leanWas;
@@ -700,7 +698,9 @@
     banner.hidden = false;
     bannerCity.textContent = place.title;
     bannerUnder.textContent = place.where || "";
+    bannerCity.disabled = !place.work;
     creature.hidden = false;
+    if (deckMode !== "all") { mark(place.slug); }
 
     beast.lat = goal.lat = place.lat;
     beast.lon = goal.lon = place.lon;
@@ -720,6 +720,12 @@
     if (place.terms.length) { standOn(place.terms[0]); }
     creature.dataset.grazing = "true";
     resume();
+
+    // And the collage this place is, laid out beside whatever is going on,
+    // once the creature has been put down and it is known where that is.
+    if (place.work) {
+      window.setTimeout(function () { if (place && !flying) { showHere(true); } }, 90);
+    }
   }
 
   function leave() {
@@ -734,6 +740,8 @@
     creature.hidden = true;
     banner.hidden = true;
     land.dataset.at = "globe";
+    showHere(false);
+    if (deckMode !== "all") { mark(""); }
   }
 
   /* Which of the words on the globe are things this collage is made of. A
@@ -1859,6 +1867,7 @@
       if (went >= 1) {
         flying = false;
         if (flyTo > 1) { arrive(); } else { leave(); }
+        onward();
       }
     }
 
@@ -5024,6 +5033,694 @@
     });
   });
 
+  /* ---- the collages, dealt ------------------------------------------------
+
+     The Artist Website is one page. There is no works page to be sent off
+     to: a collage is shown where it is — in its city, with the world grown
+     around it — or, all seven at once, laid out over the world when you ask
+     for the collages. A word does the same with the works it is written on.
+
+     Whichever it is, nothing is laid out the same way twice. Every collage
+     comes as separate things — its photograph, its title, where it is, what
+     it is made of and how big, its price, its notes, and whatever has been
+     written about it — and each of those is put down somewhere new every
+     time anything is pressed: the image at a new size, the words at new
+     places around it and at new widths, so they break on new lines. They
+     never land on each other. A thing that belongs to a collage lands next
+     to that collage, so it can still be read as its caption.
+
+     Writings are read from `writings` on a work in works.json — a list of
+     { "text": ..., "by": ... } — and are dealt exactly like the rest. None
+     are there yet; they are the artist's to add, and the page takes them as
+     soon as they are. */
+
+  var deck = document.getElementById("deck");
+  var deckTable = document.getElementById("deck-table");
+  var deckClose = document.getElementById("deck-close");
+  var hereLayer = document.getElementById("here");
+  var switcher = document.getElementById("switch");
+
+  var deckMode = null;         // "all", "word", or null when it is put away
+  var deckWord = null;         // the word it was opened on, for "word"
+  var hereShown = false;       // whether the collage in this city is out
+  var bound = null;            // a city to go down into once the flight ends
+  var turnsOf = {};            // quarter turns each collage is hung at
+  var aspectOf = {};           // width over height, once its photograph is read
+  var GAP = 13;                // --s-4: how close two things may come
+
+  function between(a, b) { return a + Math.random() * (b - a); }
+
+  function shuffled(list) {
+    var out = list.slice();
+    for (var i = out.length - 1; i > 0; i -= 1) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = out[i]; out[i] = out[j]; out[j] = t;
+    }
+    return out;
+  }
+
+  function clash(a, b, gap) {
+    return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap &&
+           a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+  }
+
+  function cityOf(slug) {
+    for (var i = 0; i < cities.length; i += 1) {
+      if (cities[i].slug === slug) { return cities[i]; }
+    }
+    return null;
+  }
+
+  function plateSrc(work) { return "../images/" + work.slug + ".jpg"; }
+
+  /* The photographs are read ahead, quietly, so that the first time one is
+     dealt its real shape is known and the box is cut to it. Until then a
+     box is three by four, which is what they all are today, and the image
+     is fitted inside it rather than stretched. */
+  function readAhead() {
+    (mine ? mine.works : []).forEach(function (work) {
+      var probe = new Image();
+      probe.decoding = "async";
+      probe.onload = function () {
+        if (probe.naturalWidth && probe.naturalHeight) {
+          aspectOf[work.slug] = probe.naturalWidth / probe.naturalHeight;
+        }
+      };
+      probe.src = plateSrc(work);
+    });
+  }
+
+  /* Each collage is hung in any of four orientations — the works page used
+     to open each at a random quarter turn, and the notes still say so — and
+     it is hung the same way until someone turns it. */
+  function turnsFor(slug) {
+    if (turnsOf[slug] === undefined) { turnsOf[slug] = Math.floor(Math.random() * 4); }
+    return turnsOf[slug];
+  }
+
+  /* ---- the orientation vote, carried over from the works page ---------- */
+
+  var VOTED = "ml-orientation-vote:";
+
+  function voted(title) {
+    try { return localStorage.getItem(VOTED + title); } catch (e) { return null; }
+  }
+
+  function vote(work) {
+    var v = mine.vote || {};
+    if (!v.formId) { return; }
+    var body = new FormData();
+    body.append(v.workField, work.title);
+    body.append(v.orientationField, String(turnsFor(work.slug) + 1));
+    fetch("https://docs.google.com/forms/d/e/" + v.formId + "/formResponse", {
+      method: "POST", mode: "no-cors", body: body
+    }).catch(function () {});
+    try { localStorage.setItem(VOTED + work.title, String(turnsFor(work.slug) + 1)); } catch (e) {}
+  }
+
+  /* ---- the pieces ------------------------------------------------------- */
+
+  /* A piece is kept from one deal to the next when the same thing is dealt
+     again, so pressing moves everything to its new place rather than
+     wiping the table and setting it again. */
+  function piece(host, pool, key, make) {
+    var el = pool.els[key];
+    if (!el) {
+      el = make();
+      el.dataset.key = key;
+      el.dataset.fresh = "true";
+      host.appendChild(el);
+      pool.els[key] = el;
+    }
+    pool.used[key] = true;
+    return el;
+  }
+
+  function textPiece(host, pool, key, cls, fill) {
+    var el = piece(host, pool, key, function () {
+      var p = document.createElement("p");
+      p.className = "deal-text " + cls;
+      return p;
+    });
+    fill(el);
+    return el;
+  }
+
+  /* One of the few ways a line of text can be set. Which one a piece gets is
+     dealt as well, along with how wide it may run. */
+  var VOICES = ["plain", "large", "small", "tall"];
+  var LONG = ["plain", "tall"];       // a paragraph is not set in capitals
+
+  function setText(el, narrow, wide, voices) {
+    voices = voices || VOICES;
+    el.dataset.voice = voices[Math.floor(Math.random() * voices.length)];
+    el.style.maxWidth = Math.round(between(narrow, wide)) + "px";
+    el.style.textAlign = ["left", "left", "right", "center"][Math.floor(Math.random() * 4)];
+  }
+
+  function measure(el) {
+    return { el: el, w: el.offsetWidth, h: el.offsetHeight };
+  }
+
+  /* What goes round a collage, in no order: the order is dealt. */
+  function captionOf(host, pool, work, city, opts) {
+    var out = [];
+    var room = Math.max(160, Math.min(W - 2 * GAP, 320));
+
+    out.push(textPiece(host, pool, work.slug + ":title", "deal-title", function (el) {
+      el.innerHTML = "<em></em>, <span></span>";
+      el.firstChild.textContent = work.title;
+      el.lastChild.textContent = work.year;
+      setText(el, 140, room);
+    }));
+
+    if (city && city.where) {
+      out.push(textPiece(host, pool, work.slug + ":where", "deal-where", function (el) {
+        el.textContent = city.where;
+        setText(el, 90, room);
+      }));
+    }
+
+    var line = workLine(work);
+    if (line) {
+      out.push(textPiece(host, pool, work.slug + ":detail", "deal-detail", function (el) {
+        el.textContent = line;
+        setText(el, 120, room);
+      }));
+    }
+
+    if (work.availability) {
+      out.push(textPiece(host, pool, work.slug + ":price", "deal-price", function (el) {
+        el.textContent = work.availability;
+        setText(el, 100, room);
+      }));
+    }
+
+    var notes = (mine.notes && mine.notes[work.category]) || [];
+    notes.forEach(function (note, i) {
+      out.push(textPiece(host, pool, work.slug + ":note" + i, "deal-note", function (el) {
+        el.textContent = note;
+        setText(el, 150, room, LONG);
+      }));
+    });
+
+    (work.writings || []).forEach(function (writing, i) {
+      out.push(textPiece(host, pool, work.slug + ":writing" + i, "deal-writing", function (el) {
+        el.textContent = "";
+        var said = document.createElement("span");
+        said.className = "deal-said";
+        said.textContent = writing.text || String(writing);
+        el.appendChild(said);
+        if (writing.by) {
+          var by = document.createElement("span");
+          by.className = "deal-by";
+          by.textContent = writing.by;
+          el.appendChild(by);
+        }
+        setText(el, 200, Math.max(room, Math.min(W - 2 * GAP, 420)), LONG);
+      }));
+    });
+
+    var v = mine.vote || {};
+    if (v.formId && work.category === "Collage" && opts.vote) {
+      var ballot = piece(host, pool, work.slug + ":vote", function () {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "deal-text deal-vote";
+        b.addEventListener("click", function (event) {
+          event.stopPropagation();
+          vote(work);
+          b.textContent = v.thanks || "Recorded";
+          b.disabled = true;
+        });
+        return b;
+      });
+      if (voted(work.title)) {
+        ballot.textContent = v.thanks || "Recorded";
+        ballot.disabled = true;
+      } else {
+        ballot.textContent = v.prompt || "Prefer this orientation?";
+      }
+      ballot.style.maxWidth = "";
+      out.push(ballot);
+    }
+
+    return out.map(measure);
+  }
+
+  /* The photograph, in a box cut to it at whatever quarter turn it is hung
+     at, with the control that turns it. */
+  function platePiece(host, pool, work, city, longSide, press) {
+    var el = piece(host, pool, work.slug + ":plate", function () {
+      var box = document.createElement("div");
+      box.className = "deal-plate";
+
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "deal-go";
+      var img = document.createElement("img");
+      img.alt = work.alt + ".";
+      img.draggable = false;
+      img.decoding = "async";
+      img.src = plateSrc(work);
+      img.addEventListener("load", function () {
+        if (img.naturalWidth && img.naturalHeight) {
+          aspectOf[work.slug] = img.naturalWidth / img.naturalHeight;
+        }
+      });
+      go.appendChild(img);
+      box.appendChild(go);
+
+      var turn = document.createElement("button");
+      turn.type = "button";
+      turn.className = "deal-turn";
+      turn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>';
+      turn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        turnsOf[work.slug] = (turnsFor(work.slug) + 1) % 4;
+        box.dataset.turned = "true";
+        redeal();
+      });
+      box.appendChild(turn);
+      return box;
+    });
+
+    // What pressing the photograph does is decided by where it is dealt:
+    // out on the table it takes you to its city; in its city it deals again.
+    var go = el.firstChild;
+    go.onclick = function (event) { event.stopPropagation(); press(); };
+    go.setAttribute("aria-label", city && deckMode
+      ? "Go to " + work.title + ", in " + city.where
+      : work.title + " — press to lay it out again");
+
+    var turns = turnsFor(work.slug);
+    var turn = el.lastChild;
+    turn.setAttribute("aria-label", "Turn " + work.title +
+      " a quarter turn clockwise (showing orientation " + (turns + 1) + " of 4)");
+
+    var a = aspectOf[work.slug] || 0.75;
+    var iw = a <= 1 ? longSide * a : longSide;
+    var ih = a <= 1 ? longSide : longSide / a;
+    var side = turns % 2 === 1;
+    var bw = side ? ih : iw, bh = side ? iw : ih;
+
+    el.style.width = bw.toFixed(1) + "px";
+    el.style.height = bh.toFixed(1) + "px";
+    var img = go.firstChild;
+    img.style.width = iw.toFixed(1) + "px";
+    img.style.height = ih.toFixed(1) + "px";
+    img.style.transform = "translate(-50%,-50%) rotate(" + turns * 90 + "deg)";
+    el.dataset.orientation = String(turns + 1);
+
+    return { el: el, w: bw, h: bh };
+  }
+
+  /* A collage and its caption, laid out as one group: the photograph first,
+     then each piece of the caption dropped at random somewhere round it, as
+     near as it will go without touching anything already down. */
+  function cluster(things, maxW, maxH) {
+    var head = things[0];
+    var placed = [{ x: 0, y: 0, w: head.w, h: head.h, el: head.el }];
+    // The group so far, which may not grow wider or taller than it is let.
+    var x0 = 0, y0 = 0, x1 = head.w, y1 = head.h;
+    maxW = maxW || Infinity;
+    maxH = maxH || Infinity;
+    for (var i = 1; i < things.length; i += 1) {
+      var t = things[i];
+      var reach = Math.min(head.w, head.h) * 0.22 + 8;
+      var spot = null;
+      for (var tries = 0; tries < 600 && !spot; tries += 1) {
+        if (tries && tries % 40 === 0) { reach += 18; }
+        var xlo = Math.max(-t.w - reach, x1 - maxW);
+        var xhi = Math.min(head.w + reach, x0 + maxW - t.w);
+        var ylo = Math.max(-t.h - reach, y1 - maxH);
+        var yhi = Math.min(head.h + reach, y0 + maxH - t.h);
+        if (xlo > xhi || ylo > yhi) { continue; }
+        var c = {
+          x: between(xlo, xhi),
+          y: between(ylo, yhi),
+          w: t.w, h: t.h, el: t.el
+        };
+        var ok = true;
+        for (var k = 0; k < placed.length && ok; k += 1) {
+          if (clash(c, placed[k], GAP * 0.62)) { ok = false; }
+        }
+        if (ok) { spot = c; }
+      }
+      if (!spot) {           // it will go underneath, then
+        spot = { x: x0, y: y1 + GAP, w: t.w, h: t.h, el: t.el };
+      }
+      placed.push(spot);
+      x0 = Math.min(x0, spot.x); y0 = Math.min(y0, spot.y);
+      x1 = Math.max(x1, spot.x + spot.w); y1 = Math.max(y1, spot.y + spot.h);
+    }
+    placed.forEach(function (p) { p.x -= x0; p.y -= y0; });
+    return { parts: placed, w: x1 - x0, h: y1 - y0 };
+  }
+
+  /* Groups dropped on the table at random, none on another, none on
+     anything the table has to keep clear. When they will not fit the table
+     is lengthened — it scrolls — unless it is not allowed to, and then
+     whatever does not fit is reported back so it can be made smaller. */
+  function scatter(groups, width, height, clear, grow) {
+    var down = clear.slice();
+    var tall = height;
+    if (grow) {
+      // Start with about a third more room than the pieces take up, so the table is
+      // loose but not a long walk.
+      var area = 0;
+      groups.forEach(function (it) { area += (it.w + GAP) * (it.h + GAP); });
+      tall = Math.max(height, area * 1.35 / width);
+    }
+    for (var g = 0; g < groups.length; g += 1) {
+      var it = groups[g];
+      var spot = null;
+      for (var tries = 0; tries < 900 && !spot; tries += 1) {
+        if (tries && tries % 60 === 0) {
+          if (!grow) { break; }
+          tall *= 1.05;
+        }
+        // Some things are kept to the first screen, so the table never
+        // opens on an empty stretch of itself.
+        var floor = it.first && tries < 450 ? Math.min(tall, height) : tall;
+        var c = {
+          x: between(GAP, Math.max(GAP, width - it.w - GAP)),
+          y: between(GAP, Math.max(GAP, floor - it.h - GAP)),
+          w: it.w, h: it.h
+        };
+        var ok = true;
+        for (var k = 0; k < down.length && ok; k += 1) {
+          if (clash(c, down[k], GAP)) { ok = false; }
+        }
+        if (ok) { spot = c; }
+      }
+      if (!spot) { return null; }
+      it.x = spot.x;
+      it.y = spot.y;
+      down.push(spot);
+    }
+    var low = 0;
+    groups.forEach(function (it) { low = Math.max(low, it.y + it.h); });
+    return Math.max(height, low + GAP * 2);
+  }
+
+  function setDown(groups) {
+    groups.forEach(function (it, n) {
+      it.parts.forEach(function (p, m) {
+        var el = p.el;
+        el.style.transform = "translate(" + (it.x + p.x).toFixed(1) + "px," +
+                                           (it.y + p.y).toFixed(1) + "px)";
+        if (el.dataset.fresh) {
+          // Things arriving come up where they land, one after another,
+          // rather than sliding in from the corner all at once.
+          el.getBoundingClientRect();
+          var wait = still ? 0 : Math.round(n * 70 + m * 40 + Math.random() * 90);
+          requestAnimationFrame(function () {
+            // Only the fade waits; a move never does, or pressing again
+            // soon after would leave some of it standing still.
+            el.style.transitionDelay = "0ms, 0ms, 0ms, " + wait + "ms";
+            delete el.dataset.fresh;
+            window.setTimeout(function () { el.style.transitionDelay = ""; },
+                              wait + 700);
+          });
+        }
+      });
+    });
+  }
+
+  /* Whatever was on the table and has not been dealt this time goes. */
+  function retire(pool) {
+    Object.keys(pool.els).forEach(function (key) {
+      if (pool.used[key]) { return; }
+      var el = pool.els[key];
+      if (el.parentNode) { el.parentNode.removeChild(el); }
+    });
+  }
+
+  function poolOf(host) {
+    var pool = { els: {}, used: {} };
+    Array.prototype.forEach.call(host.children, function (el) {
+      if (el.dataset.key) { pool.els[el.dataset.key] = el; }
+    });
+    return pool;
+  }
+
+  /* A group that is not a collage: a heading, the statement, the address. */
+  function loose(host, pool, key, cls, fill, narrow, wide, voices) {
+    var el = piece(host, pool, key, function () {
+      var p = document.createElement("div");
+      p.className = "deal-text " + cls;
+      return p;
+    });
+    fill(el);
+    setText(el, narrow, wide, voices);
+    var m = measure(el);
+    return { parts: [{ x: 0, y: 0, w: m.w, h: m.h, el: el }], w: m.w, h: m.h };
+  }
+
+  /* ---- the table: every collage, or the ones a word is written on ------- */
+
+  function dealTable() {
+    var host = deckTable;
+    var pool = poolOf(host);
+    var width = deck.clientWidth || W;
+    var height = deck.clientHeight || H;
+    var works, groups = [];
+
+    if (deckMode === "all") {
+      works = mine.works;
+      groups.push(loose(host, pool, "name", "deal-name", function (el) {
+        el.textContent = mine.artist || "";
+      }, 200, Math.min(width - 2 * GAP, 640)));
+      if (mine.lede) {
+        groups.push(loose(host, pool, "lede", "deal-lede", function (el) {
+          el.textContent = mine.lede;
+        }, 160, Math.min(width - 2 * GAP, 360)));
+      }
+      if (mine.statement) {
+        groups.push(loose(host, pool, "statement", "deal-statement", function (el) {
+          el.textContent = mine.statement;
+        }, Math.min(width - 2 * GAP, 300), Math.min(width - 2 * GAP, 560), LONG));
+      }
+      if (mine.email) {
+        groups.push(loose(host, pool, "email", "deal-email", function (el) {
+          el.textContent = "";
+          var a = document.createElement("a");
+          a.href = "mailto:" + mine.email;
+          a.textContent = mine.email;
+          a.addEventListener("click", function (event) { event.stopPropagation(); });
+          el.appendChild(a);
+        }, 120, 400));
+      }
+    } else {
+      var ground = deckWord;
+      works = ground.works;
+      groups.push(loose(host, pool, "word", "deal-word", function (el) {
+        el.textContent = ground.word;
+      }, 120, Math.min(width - 2 * GAP, 640)));
+      groups.push(loose(host, pool, "count", "deal-count", function (el) {
+        el.textContent = works.length + (works.length === 1 ? " work" : " works");
+      }, 60, 200));
+    }
+
+    // The close control, and the switch in the other corner, are kept clear.
+    var clear = [{ x: width - 64, y: 0, w: 64, h: 64 },
+                 { x: width - 180, y: 0, w: 180, h: 60 }];
+    var base = Math.min(width * 0.62, height * 0.5);
+
+    works.forEach(function (work) {
+      var city = cityOf(work.slug);
+      var long = base * between(0.62, 1);
+      var made = null;
+      for (var shrink = 0; shrink < 6; shrink += 1) {
+        var things = [platePiece(host, pool, work, city, long, function () {
+          visit(work.slug);
+        })].concat(captionOf(host, pool, work, city, { vote: true }));
+        made = cluster(things, width - 2 * GAP);
+        made.plate = true;
+        if (made.w <= width - 2 * GAP) { break; }
+        long *= 0.8;
+      }
+      groups.push(made);
+    });
+
+    // The name, or the word, and one collage, are on the first screen; the
+    // rest go anywhere.
+    var lead = groups.shift();
+    var rest = shuffled(groups);
+    var pick_ = null;
+    for (var q = 0; q < rest.length && !pick_; q += 1) {
+      if (rest[q].plate && lead.h + rest[q].h + 3 * GAP < height) { pick_ = rest.splice(q, 1)[0]; }
+    }
+    lead.first = true;
+    if (pick_) { pick_.first = true; }
+    groups = [lead].concat(pick_ ? [pick_] : [], rest);
+    retire(pool);
+    var tall = scatter(groups, width, height, clear, true) || height;
+    host.style.height = Math.round(tall) + "px";
+    setDown(groups);
+  }
+
+  function openDeck(mode, index) {
+    if (!mine) { return; }
+    deckMode = mode;
+    deckWord = mode === "word" ? vocabulary[index] : null;
+    deck.dataset.mode = mode;
+    deck.hidden = false;
+    deck.scrollTop = 0;
+    // A new table each time it is opened: what was on it is cleared off.
+    retire(poolOf(deckTable));
+    dealTable();
+    switcher.textContent = mode === "all" ? "The world" : "Collages";
+    switcher.setAttribute("aria-expanded", mode === "all" ? "true" : "false");
+    if (mode === "all") { mark("collages"); }
+    deckClose.focus();
+  }
+
+  function closeDeck() {
+    if (!deckMode) { return; }
+    var was = deckMode;
+    deckMode = null;
+    deckWord = null;
+    deck.hidden = true;
+    retire(poolOf(deckTable));
+    switcher.textContent = "Collages";
+    switcher.setAttribute("aria-expanded", "false");
+    if (was === "all") { mark(place ? place.slug : ""); }
+  }
+
+  /* ---- a collage in its own city ---------------------------------------- */
+
+  function dealHere() {
+    var host = hereLayer;
+    var pool = poolOf(host);
+    var work = place && place.work;
+    if (!work || !hereShown) { retire(pool); hereLayer.hidden = true; return; }
+    hereLayer.hidden = false;
+
+    // Keep clear of the banner, the switch, and wherever the creature is
+    // standing, so the collage lands beside what is going on rather than on
+    // top of it.
+    var clear = [{ x: W - 180, y: 0, w: 180, h: 60 }];
+    [banner, creature].forEach(function (el) {
+      if (!el || el.hidden) { return; }
+      var r = el.getBoundingClientRect();
+      if (!r.width) { return; }
+      var pad = el === creature ? 0 : 8;
+      clear.push({ x: r.left - pad, y: r.top - pad,
+                   w: r.width + 2 * pad, h: r.height + 2 * pad });
+    });
+
+    var long = Math.min(H * 0.64, W * 0.9) * between(0.84, 1.04);
+    var groups = null;
+    for (var attempt = 0; attempt < 12 && !groups; attempt += 1) {
+      var away = piece(host, pool, "away", function () {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "deal-text deal-away";
+        b.textContent = "Put it away";
+        b.addEventListener("click", function (event) {
+          event.stopPropagation();
+          showHere(false);
+        });
+        return b;
+      });
+      var things = [platePiece(host, pool, work, place, long, redeal)]
+        .concat(captionOf(host, pool, work, place, { vote: true }), [measure(away)]);
+      var made = cluster(things, W - 2 * GAP, H - 2 * GAP);
+      var fits = made.w <= W - 2 * GAP && made.h <= H - 2 * GAP;
+      // After a few tries it may go over the creature; it may not go off
+      // the screen.
+      if (fits && scatter([made], W, H, attempt < 4 ? clear : clear.slice(0, 1), false)) {
+        groups = [made];
+      } else {
+        long *= 0.92;
+      }
+    }
+    retire(pool);
+    if (groups) { setDown(groups); }
+  }
+
+  function showHere(on) {
+    hereShown = on;
+    dealHere();
+    bannerCity.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+
+  /* ---- going anywhere is going somewhere on this page ------------------- */
+
+  function mark(hash) {
+    if (!window.history || !history.replaceState) { return; }
+    try {
+      history.replaceState(null, "", location.pathname + location.search +
+                           (hash ? "#" + hash : ""));
+    } catch (e) {}
+  }
+
+  function visit(slug) {
+    var city = cityOf(slug);
+    if (!city) { return; }
+    closeDeck();
+    if (flying) { bound = city; return; }
+    if (place && place.slug === city.slug) { showHere(true); return; }
+    bound = city;
+    if (place) { comeUp(); } else { onward(); }
+  }
+
+  /* Called whenever a flight comes to rest: if somewhere else was asked
+     for on the way, carry on there. */
+  function onward() {
+    if (!bound) { return; }
+    if (place && place.slug !== bound.slug) { comeUp(); return; }
+    if (!place) { var to = bound; bound = null; goDown(to); return; }
+    bound = null;
+  }
+
+  function redeal() {
+    if (deckMode) { dealTable(); }
+    if (place && hereShown) { dealHere(); }
+  }
+
+  function followHash() {
+    var hash = decodeURIComponent((location.hash || "").slice(1));
+    if (!hash) { return; }
+    if (hash === "collages" || hash === "works") { openDeck("all"); return; }
+    if (cityOf(hash)) { visit(hash); }
+  }
+
+  window.addEventListener("hashchange", followHash);
+
+  deck.addEventListener("click", function (event) {
+    // Anything on the table that is not a control deals it again.
+    if (event.target.closest("a, button")) { return; }
+    dealTable();
+  });
+
+  hereLayer.addEventListener("click", function (event) {
+    if (event.target.closest("a, button")) { return; }
+    if (event.target !== hereLayer) { dealHere(); }
+  });
+
+  deckClose.addEventListener("click", function () { closeDeck(); });
+
+  switcher.addEventListener("click", function () {
+    if (deckMode === "all") { closeDeck(); } else { closeDeck(); openDeck("all"); }
+  });
+
+  bannerCity.addEventListener("click", function () {
+    if (!place || !place.work) { return; }
+    showHere(true);
+  });
+
+  hereLayer.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+
+  window.addEventListener("resize", function () {
+    window.clearTimeout(redealTimer);
+    redealTimer = window.setTimeout(redeal, 200);
+  });
+  var redealTimer = null;
+
   /* ---- what a word is standing on: the artist's works -------------------- */
 
   function openSeam(index) {
@@ -5042,46 +5739,9 @@
       }, still ? 1 : 1800);
     }
 
-    seamWord.textContent = ground.word;
-    seamCount.textContent = ground.works.length +
-      (ground.works.length === 1 ? " work" : " works");
-
-    seamList.textContent = "";
-    ground.works.forEach(function (work) {
-      var item = document.createElement("li");
-      item.className = "seam-item";
-
-      var link = document.createElement("a");
-      link.href = "works.html#" + work.slug;
-
-      var plate = document.createElement("img");
-      plate.className = "seam-plate";
-      plate.loading = "lazy";
-      plate.src = "../images/" + work.slug + ".jpg";
-      plate.alt = work.alt + ".";
-
-      var title = document.createElement("h3");
-      title.textContent = work.title;
-
-      var year = document.createElement("p");
-      year.textContent = work.year;
-
-      var detail = document.createElement("p");
-      detail.textContent = workLine(work);
-
-      link.appendChild(plate);
-      link.appendChild(title);
-      link.appendChild(year);
-      link.appendChild(detail);
-      item.appendChild(link);
-      seamList.appendChild(item);
-    });
-
-    seam.hidden = false;
-    seamClose.focus();
+    closeDeck();
+    openDeck("word", index);
   }
-
-  seamClose.addEventListener("click", function () { seam.hidden = true; });
 
   bannerBack.addEventListener("click", function () { comeUp(); });
   banner.addEventListener("pointerdown", function (event) {
@@ -5090,9 +5750,12 @@
 
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") { return; }
-    if (!seam.hidden) { seam.hidden = true; return; }
-    if (offering || carrying) { dismiss(); return; }
+    if (deckMode) { closeDeck(); return; }
+    // Only what can be seen is put down: a work the creature turned up a
+    // while ago and has since let go of is not in the way of anything.
+    if (!graze.hidden || carrying) { dismiss(); return; }
     if (playing) { curtain = performance.now(); endScene(); strike(); return; }
+    if (hereShown && place && place.work) { showHere(false); return; }
     // Nothing else to put down: Escape is the way back up to the world.
     comeUp();
   });
@@ -5193,6 +5856,11 @@
       }
 
       requestAnimationFrame(frame);
+
+      // A link can open the page on the collages, or in one of their
+      // cities: #collages, or #amadeus and the like.
+      followHash();
+      window.setTimeout(readAhead, 1200);
     })
     .catch(function (error) {
       // It may already have been taken out of the page by then, so the

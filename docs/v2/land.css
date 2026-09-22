@@ -328,10 +328,20 @@
 }
 
 .banner-city {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
   font-family: var(--serif, var(--sans));
   font-size: var(--t-4);
   line-height: 1.1;
+  pointer-events: auto;
+  cursor: pointer;
 }
+
+.banner-city:disabled { cursor: default; pointer-events: none; }
+.banner-city:not(:disabled):hover { text-decoration: underline; }
 
 .banner-under {
   font-family: var(--mono, var(--sans));
@@ -776,118 +786,247 @@
 .token-band:nth-child(2) { background: var(--t2, #000); }
 .token-band:nth-child(3) { background: var(--t3, #000); }
 
-/* ---- the seam: what a word is standing on ------------------------------ */
+/* ---- the collages, dealt ----------------------------------------------
 
-.seam {
+   Three layers, one set of pieces. The table (.deck) is laid over the world
+   when the collages are asked for, or a word is opened; it scrolls, because
+   the pieces are scattered over as much room as they need. The collage in a
+   city (.here) is laid straight onto the ground, and only its pieces take a
+   press. Every piece is absolutely placed by land.js and slides to wherever
+   it is dealt next. */
+
+.deck {
   position: fixed;
-  inset: auto 0 0 0;
-  max-height: 76.4vh;                 /* twice 1/phi2 of the window */
-  overflow-y: auto;
-  padding: var(--s-5) var(--s-5) var(--s-6);
-  background: var(--card);
-  border-top: 1px solid var(--edge);
-  box-shadow: 0 calc(-1 * var(--s-4)) var(--s-6) rgba(24, 26, 40, 0.146);
-  backdrop-filter: blur(var(--s-4));
+  inset: 0;
   z-index: 100;
-  /* It scrolls, and it can be pinched, but it does not zoom on a double tap:
-     this panel is where the zooming was starting. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Opaque: the collages are the other side of the page, not a veil over
+     the world. A word's works are laid over it, and let it show. */
+  background: #f6f5f2;
   touch-action: pan-y pinch-zoom;
-  animation: rise var(--beat-2) ease-out;
+  animation: open-deck var(--beat-3) ease-out;
 }
 
-@keyframes rise {
-  from { transform: translateY(var(--s-4)); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+.deck[data-mode="word"] { background: rgba(246, 245, 242, 0.9); }
+
+@keyframes open-deck {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-@media (min-width: 900px) {
-  .seam {
-    inset: 0 0 0 auto;
-    width: clamp(20rem, 38.2vw, 34rem);   /* 1/phi2 of the window, held
-                                            between 20rem and 34rem */
-    max-height: none;
-    border-top: 0;
-    border-left: 1px solid var(--edge);
-    box-shadow: calc(-1 * var(--s-4)) 0 var(--s-6) rgba(24, 26, 40, 0.146);
-    animation-name: slide;
-  }
-  @keyframes slide {
-    from { transform: translateX(var(--s-4)); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
-  }
+.deck-table {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
 }
 
-.seam-close {
-  position: absolute;
+.deck-close {
+  position: fixed;
   top: var(--s-4);
-  right: var(--s-5);
+  right: var(--s-4);
+  z-index: 2;
   width: var(--s-6);
   height: var(--s-6);
-  background: none;
   border: 0;
+  border-radius: 999px;
+  background: none;
   color: var(--ink-dim);
   font-size: var(--t-5);
   line-height: 1;
   cursor: pointer;
 }
 
-.seam-close:hover { color: var(--ink); }
+.deck-close:hover,
+.deck-close:focus-visible { color: var(--ink); background: #ffffff; }
 
-.seam-word {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: var(--t-6);
-  font-weight: 400;
-  color: var(--ink);
+.here {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
 }
 
-.seam-count {
-  margin: var(--s-1) 0 var(--s-5);
-  color: var(--ink-dim);
+.here > * { pointer-events: auto; }
+
+/* The way across, in the corner the banner does not use. */
+.switch {
+  position: fixed;
+  top: var(--s-5);
+  right: calc(var(--s-6) + var(--s-5));
+  z-index: 110;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
   font-family: var(--mono);
   font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
-.seam-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
-  gap: var(--s-5) var(--s-4);
+.switch:hover,
+.switch:focus-visible { background: #ffffff; }
+
+.deal-plate,
+.deal-text {
+  position: absolute;
+  left: 0;
+  top: 0;
   margin: 0;
+  transition:
+    transform var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    width var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    height var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity var(--beat-3) ease-out;
+}
+
+.deal-plate[data-fresh="true"],
+.deal-text[data-fresh="true"] {
+  opacity: 0;
+  transition: none;
+}
+
+.deal-plate {
+  overflow: visible;
+}
+
+.deal-go {
+  position: absolute;
+  inset: 0;
   padding: 0;
-  list-style: none;
-}
-
-.seam-item a {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.seam-plate {
-  display: block;
-  width: 100%;
-  height: auto;
+  border: 0;
   background: #e7e6e2;
+  cursor: pointer;
+  overflow: hidden;
 }
 
-.seam-item h3 {
-  margin: var(--s-3) 0 0;
-  font-family: var(--serif);
-  font-size: var(--t-2);
-  font-style: italic;
-  font-weight: 400;
-  line-height: var(--lead);
+.deal-go img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  object-fit: contain;
+  transition:
+    transform var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    width var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    height var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.deal-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.deal-turn {
+  position: absolute;
+  right: var(--s-2);
+  bottom: var(--s-2);
+  display: grid;
+  place-items: center;
+  width: var(--s-6);
+  height: var(--s-6);
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
   color: var(--ink);
+  cursor: pointer;
 }
 
-.seam-item p {
-  margin: 2px 0 0;
-  color: var(--ink-dim);
-  font-size: var(--t-1);
+.deal-turn svg { width: 16px; height: 16px; fill: currentColor; }
+.deal-turn:hover,
+.deal-turn:focus-visible { background: #ffffff; }
+
+/* Text. Width is set by land.js, per deal; so is which of four voices a
+   piece speaks in. */
+.deal-text {
+  width: max-content;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-2);
   line-height: var(--lead);
+  cursor: default;
 }
 
-.seam-item a:hover h3 { color: var(--ground); }
+.deal-text[data-voice="large"] {
+  font-family: var(--serif);
+  font-size: var(--t-5);
+  line-height: 1.12;
+}
+
+.deal-text[data-voice="small"] {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.deal-text[data-voice="tall"] {
+  font-family: var(--serif);
+  font-size: var(--t-4);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.deal-title[data-voice="plain"] { font-size: var(--t-3); }
+.deal-title em { font-style: italic; }
+.deal-text[data-voice="tall"] em { font-style: normal; }
+
+.deal-note,
+.deal-writing { color: var(--ink-dim); }
+.deal-note[data-voice="tall"] { font-size: var(--t-3); }
+
+.deal-said { display: block; }
+.deal-by {
+  display: block;
+  margin-top: var(--s-2);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deal-name,
+.deal-word {
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 7vw, 5.6rem) !important;
+  font-style: normal;
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  text-transform: none !important;
+  color: var(--ink) !important;
+}
+
+.deal-statement[data-voice="plain"] { font-size: var(--t-3); }
+.deal-statement[data-voice="tall"] { font-size: var(--t-4); }
+
+.deal-email a { color: inherit; }
+
+.deal-vote,
+.deal-away {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.deal-vote:disabled { cursor: default; opacity: 0.66; }
+.deal-vote:not(:disabled):hover,
+.deal-away:hover { background: #ffffff; }
+
+/* In a city the words stand on the ground, and need a ground of their own
+   to be read against whatever the land is wearing there. */
+.here .deal-text:not(.deal-vote):not(.deal-away) {
+  padding: var(--s-1) var(--s-2);
+  background: rgba(252, 251, 249, 0.86);
+}
 
 /* A class that sets `display` outbids the browser's own [hidden] rule, so
    say it here or hiding these does nothing. */
@@ -896,7 +1035,8 @@
 .trace[hidden],
 .token[hidden],
 .say[hidden],
-.seam[hidden] { display: none; }
+.deck[hidden],
+.here[hidden] { display: none; }
 
 .visually-hidden {
   position: absolute;
@@ -915,17 +1055,12 @@
 @media (prefers-reduced-motion: reduce) {
   .creature[data-grazing="true"] svg,
   .creature[data-struck="true"] svg { animation: none; }
-  .graze, .token, .seam, .trace { animation: none; }
+  .graze, .token, .deck, .trace { animation: none; }
+  .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }
   .part[data-fresh="true"] { animation: none; }
   .spawn svg { animation: none; }
   .skin,
   .spawn,
   [data-melting="true"] { transition-duration: 1ms; }
   .graze[data-condensing="true"] .graze-card { transition-duration: 1ms; }
-}
-
-/* The works page carries a link across to the land. */
-.masthead-link {
-  margin: var(--s-3) 0 0;
-  font-size: var(--t-2);
 }
