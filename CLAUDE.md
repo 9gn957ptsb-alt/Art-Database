@@ -32,6 +32,7 @@ already declined or deferred in the same conversation.
 | `scripts/build_land.py` | Writes `docs/v2/land.json` from the private Artsy dump. |
 | `scripts/fetch_artsy_saves.py` | Fetches that dump into `data/`, which is gitignored and stays that way — the repo is public. |
 | `scripts/build_earth.py` | Writes `docs/v2/earth.json` — the land mask the weave is shaped by. Natural Earth 110m, public domain; the download it works from goes to `data/`. |
+| `scripts/build_dirt.py` | Writes `docs/v2/dirt-land.png` and `docs/v2/dirt-sea.png` — one pixel a cell, colour and dot size only. The land is **DIRT** (the collection soil from the DIRT session, branch `claude/digital-dirt-layers-paiial`); the sea is the same soil woven again from the saved paintings' blues. The globe's threads show the soil through them, and the globe's body and each family of threads fade between 0.382 and 0.618 on golden-ratio periods. No titles or artists are written — the saved list stays private. |
 | `scripts/build_tones.py` | Writes `docs/v2/tones.json` — the colours measured off each collage's own photograph, which is what the continents wear. |
 
 `docs/` and the Wix site are separate. Changes to one do not reach the other.

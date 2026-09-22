@@ -1295,8 +1295,55 @@
   var wCount = 0;
   var wTones = [];
 
+  /* ---- DIRT ---------------------------------------------------------------
+
+     The land is DIRT — the collection soil made in its own session, where
+     every clod is one saved painting in one of its three dominant colours,
+     woven in this same dot hand. The sea is the same thing made again for
+     water, out of the blues of the saved paintings. scripts/build_dirt.py
+     writes both as a picture one pixel a cell: its colour the dot's colour,
+     its alpha the dot's size, nothing where the soil leaves a gap.
+
+     The weave decides where anything is seen at all. A dot of the weave
+     that falls on land looks up the soil under it and wears that cell —
+     colour, size, or nothing if the soil has a gap there — and a dot at sea
+     does the same with the sea. So the soil is only ever visible through
+     the threads: the silk is the transparency, and DIRT is what shows
+     through it. */
+
+  var dirt = { land: null, sea: null };
+  var DIRT_ROUND = 2;          // the tile goes round the world twice…
+  var DIRT_DOWN = 1;           // …and once from pole to pole
+
+  function readTile(url) {
+    return new Promise(function (done) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        var x = c.getContext("2d", { willReadFrequently: true });
+        x.drawImage(img, 0, 0);
+        done({ n: c.width, px: x.getImageData(0, 0, c.width, c.height).data });
+      };
+      // Without it the world is still woven, in the colours it had before.
+      img.onerror = function () { done(null); };
+      img.src = url;
+    });
+  }
+
+  function cellOf(n, a) { return ((Math.floor(a) % n) + n) % n; }
+
+  var wInk = null, wSize = null;
+  var wInks = [];              // "r,g,b" for every colour the soil uses
+  var wSplit = 0;              // where the strands down end and the round begin
+
+  // Two surfaces, one for each family of threads, so each can be seen
+  // through by its own amount.
   var cloth = document.createElement("canvas");
   var wctx = cloth.getContext("2d");
+  var cloth2 = document.createElement("canvas");
+  var wctx2 = cloth2.getContext("2d");
   var woven = { spin: null, w: 0, h: 0, r: 0 };
 
   /* The whole world, or one patch of it.
@@ -1345,6 +1392,8 @@
       }
     }
 
+    var split = lat.length;
+
     // Strands running round it. Even steps in longitude are shorter steps the
     // nearer the pole, so these gather into a ridge toward the top of the
     // world by themselves — which is the part of her surfaces that does the
@@ -1378,6 +1427,14 @@
     wSalt = new Uint8Array(wCount);
     wTone = new Uint8Array(wCount);
     wGain = new Float32Array(wCount);
+    wInk = new Uint16Array(wCount);
+    wSize = new Uint8Array(wCount);
+    wSplit = split;
+    wInks = [];
+    var inkAt = {};
+    // In a city the soil is read closer, by as much as the weave is, so a
+    // clod is the same size on the screen down there as it is from orbit.
+    var near_ = at ? zoom : 1;
 
     // What each landmass is made of. No mixing toward ink here any more:
     // the ink was a correction for colours that were pale by accident, and
@@ -1403,6 +1460,22 @@
       // than a line drawn halfway between two cities, which is what makes a
       // continent read as one thing rather than a pastel patchwork.
       wTone[k] = deep ? ownerAt(lat[k], lon[k]) : 0;
+
+      var tile = deep ? dirt.land : dirt.sea;
+      if (tile) {
+        var u = cellOf(tile.n, (lon[k] / TAU + 0.5) * DIRT_ROUND * tile.n * near_);
+        var v = cellOf(tile.n, (lat[k] / Math.PI + 0.5) * DIRT_DOWN * tile.n * near_);
+        var o = (v * tile.n + u) * 4;
+        var size = Math.round(tile.px[o + 3] / 85);
+        wSize[k] = size;
+        if (size) {
+          var rgb = tile.px[o] + "," + tile.px[o + 1] + "," + tile.px[o + 2];
+          if (inkAt[rgb] === undefined) { inkAt[rgb] = wInks.length; wInks.push(rgb); }
+          wInk[k] = inkAt[rgb];
+        }
+      } else {
+        wSize[k] = 255;          // no soil to read: woven as it was before
+      }
     }
 
     woven.spin = null;      // it will have to be drawn again
@@ -1421,12 +1494,12 @@
      thousand dots is nothing, a hundred thousand changes of fillStyle is the
      whole cost of having a surface at all. */
   function drawCloth() {
-    if (cloth.width !== canvas.width || cloth.height !== canvas.height) {
-      cloth.width = canvas.width;
-      cloth.height = canvas.height;
-    }
-    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    wctx.clearRect(0, 0, W, H);
+    [cloth, cloth2].forEach(function (c) {
+      if (c.width !== canvas.width || c.height !== canvas.height) {
+        c.width = canvas.width;
+        c.height = canvas.height;
+      }
+    });
 
     var cosS = Math.cos(spin);
     var sinS = Math.sin(spin);
@@ -1435,61 +1508,78 @@
     // still be the size a dot is.
     var grain = Math.max(1, Math.round(baseR / 700));
     var loose = turning ? 2 : 1;
-    var runs = {};
 
-    for (var k = 0; k < wCount; k += loose) {
-      // The same projection as everything else, with the trigonometry taken
-      // out: sin(lon - spin) and cos(lon - spin) from the angle-difference
-      // identities, over values worked out when the weave was made.
-      var sinA = wSinLon[k] * cosS - wCosLon[k] * sinS;
-      var cosA = wCosLon[k] * cosS + wSinLon[k] * sinS;
-      var y = wSinLat[k];
-      var z = wCosLat[k] * cosA;
-      var z2 = y * SIN_T + z * COS_T;
-      if (z2 <= 0.04) { continue; }
+    // The strands down onto one surface, the strands round onto the other.
+    [[wctx, 0, wSplit], [wctx2, wSplit, wCount]].forEach(function (family) {
+      var c = family[0];
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, W, H);
+      var runs = {};
 
-      var px = cx + wCosLat[k] * sinA * R;
-      if (px < -12 || px > W + 12) { continue; }
-      var py = cy - (y * COS_T - z * SIN_T) * R;
-      if (py < -12 || py > H + 12) { continue; }
+      for (var k = family[1]; k < family[2]; k += loose) {
+        var size = wSize[k];
+        if (!size) { continue; }          // the soil has a gap here
 
-      var lit = z2 > 0.54 ? 1 : (z2 - 0.04) * 2;
-      var gain = wGain[k];
-      var a, tone;
+        // The same projection as everything else, with the trigonometry
+        // taken out: sin(lon - spin) and cos(lon - spin) from the
+        // angle-difference identities, over values worked out when the
+        // weave was made.
+        var sinA = wSinLon[k] * cosS - wCosLon[k] * sinS;
+        var cosA = wCosLon[k] * cosS + wSinLon[k] * sinS;
+        var y = wSinLat[k];
+        var z = wCosLat[k] * cosA;
+        var z2 = y * SIN_T + z * COS_T;
+        if (z2 <= 0.04) { continue; }
 
-      if (gain) {
-        // Land: the strands close up, and take the colour of whichever work
-        // lies nearest. The further inland, the heavier.
-        a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
-        tone = wSalt[k] ? "255,255,255"
-             : (wTone[k] && wTones[wTone[k] - 1] ? wTones[wTone[k] - 1] : SEA);
-        if (wSalt[k]) { a *= 0.8; }
-      } else {
-        // Sea: most of the strand is simply not there. An even field of dots
-        // over the whole sphere is a texture; open water between the land is
-        // what makes it the Earth.
-        if ((k & 3) !== 0) { continue; }
-        a = (0.035 + 0.075 * lit);
-        tone = wSalt[k] ? "255,255,255" : SEA;
+        var px = cx + wCosLat[k] * sinA * R;
+        if (px < -12 || px > W + 12) { continue; }
+        var py = cy - (y * COS_T - z * SIN_T) * R;
+        if (py < -12 || py > H + 12) { continue; }
+
+        var lit = z2 > 0.54 ? 1 : (z2 - 0.04) * 2;
+        var gain = wGain[k];
+        var a, tone, dot = grain;
+
+        if (size !== 255) {
+          // DIRT: the soil's own colour, and its own dot size.
+          // The land is the soil, close-woven and heavy the further in it
+          // goes. The sea is its own soil, but only every other thread of
+          // it and lighter, so open water still reads as open and the
+          // coastline is where one gives way to the other.
+          if (!gain && (k & 1)) { continue; }
+          tone = wInks[wInk[k]];
+          dot = grain + size - 1;
+          a = gain ? (0.5 + 0.5 * lit) * (0.72 + 0.28 * gain)
+                   : (0.1 + 0.2 * lit);
+        } else if (gain) {
+          a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
+          tone = wSalt[k] ? "255,255,255"
+               : (wTone[k] && wTones[wTone[k] - 1] ? wTones[wTone[k] - 1] : SEA);
+        } else {
+          if ((k & 3) !== 0) { continue; }
+          a = (0.035 + 0.075 * lit);
+          tone = wSalt[k] ? "255,255,255" : SEA;
+        }
+
+        var step = a < 0.04 ? 0 : Math.min(21, Math.round(a * 22));
+        if (!step) { continue; }
+        var key = tone + "|" + step + "|" + dot;
+        var run = runs[key] || (runs[key] = []);
+        run.push(px, py);
       }
 
-      var step = a < 0.04 ? 0 : Math.min(11, Math.round(a * 22));
-      if (!step) { continue; }
-      var key = tone + "|" + step;
-      var run = runs[key] || (runs[key] = []);
-      run.push(px, py);
-    }
-
-    Object.keys(runs).forEach(function (key) {
-      var cut = key.lastIndexOf("|");
-      wctx.fillStyle = "rgb(" + key.slice(0, cut) + ")";
-      wctx.globalAlpha = Number(key.slice(cut + 1)) / 22;
-      var run = runs[key];
-      for (var i = 0; i < run.length; i += 2) {
-        wctx.fillRect(run[i] | 0, run[i + 1] | 0, grain, grain);
-      }
+      Object.keys(runs).forEach(function (key) {
+        var bits = key.split("|");
+        var d = Number(bits[2]);
+        c.fillStyle = "rgb(" + bits[0] + ")";
+        c.globalAlpha = Number(bits[1]) / 22;
+        var run = runs[key];
+        for (var i = 0; i < run.length; i += 2) {
+          c.fillRect(run[i] | 0, run[i + 1] | 0, d, d);
+        }
+      });
+      c.globalAlpha = 1;
     });
-    wctx.globalAlpha = 1;
 
     woven.spin = spin;
     woven.loose = loose > 1;
@@ -1536,6 +1626,7 @@
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     sctx.clearRect(0, 0, W, H);
     paintSphere(sctx, lit);
+    if (clothStale()) { drawCloth(); }
     drawn.x = lit.x;
     drawn.y = lit.y;
     drawn.cx = cx;
@@ -1554,7 +1645,15 @@
     if (!flying && sphereStale(lit)) { drawSphere(lit); }
 
     ctx.clearRect(0, 0, W, H);
+    paintRoom(ctx);
 
+    // The globe, and each family of its threads, each seen through by an
+    // amount of its own that never settles — see flux().
+    var body = flux(now, FLUX_BODY, 0);
+    var down = flux(now, FLUX_DOWN, GOLDEN);
+    var round = flux(now, FLUX_ROUND, 2 * GOLDEN);
+
+    ctx.save();
     if (flying && drawn.r) {
       // Mid-flight the sphere is not painted again — a hundred thousand dots
       // and seven gradients a frame is not a flight, it is a slideshow. The
@@ -1562,17 +1661,17 @@
       // which is what magnifying actually looks like, and the real thing is
       // laid down once on arrival.
       var grew = R / drawn.r;
-      ctx.fillStyle = SKY[2];
-      ctx.fillRect(0, 0, W, H);
-      ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(grew, grew);
       ctx.translate(-drawn.cx, -drawn.cy);
-      ctx.drawImage(sphere, 0, 0, W, H);
-      ctx.restore();
-    } else {
-      ctx.drawImage(sphere, 0, 0, W, H);
     }
+    ctx.globalAlpha = body;
+    ctx.drawImage(sphere, 0, 0, W, H);
+    ctx.globalAlpha = down;
+    ctx.drawImage(cloth, 0, 0, W, H);
+    ctx.globalAlpha = round;
+    ctx.drawImage(cloth2, 0, 0, W, H);
+    ctx.restore();
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -1584,11 +1683,36 @@
     // ceases now, a shade off the sky it sits in.
   }
 
-  /* Everything that makes the sphere, onto whichever surface is handed in. */
-  function paintSphere(ctx, lit) {
+  /* ---- how much of the globe is there -------------------------------------
 
-    // The room is nothing but the falling-off of the off-white. Its inner
-    // radius is R, so the gradient starts exactly on the sphere's contour.
+     The globe is not allowed to dominate. It is always partly see-through,
+     and how see-through is never still: it breathes between 1/phi-squared
+     and 1/phi — 0.382 and 0.618, the two halves of the golden cut — and
+     never outside them.
+
+     There are three of these breaths, and they are what make it silk. The
+     body of the sphere is one; each of the two families of threads is
+     another. They run on periods that are successive powers of phi — about
+     seven, eleven and eighteen seconds — and are set apart from each other
+     by the golden angle, so they drift in and out of step and never line up
+     the same way twice. When the threads running down are at their fullest
+     the ones running round are fading, and then the other way: that is
+     what shot silk does as it moves, the warp and the weft taking the light
+     in turn. */
+
+  var FLUX_BODY = Math.pow(PHI, 4) * 1000;     // 6.85 s
+  var FLUX_DOWN = Math.pow(PHI, 5) * 1000;     // 11.09 s
+  var FLUX_ROUND = Math.pow(PHI, 6) * 1000;    // 17.94 s
+
+  function flux(now, period, phase) {
+    var mid = (INV + INV2) / 2;                  // 0.5
+    if (still) { return mid; }
+    return mid + (INV - mid) * Math.sin(TAU * now / period + phase);
+  }
+
+  /* The room the globe hangs in. Not faded with it: the globe fading is the
+     room showing through it. */
+  function paintRoom(ctx) {
     var sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, SKY[0]);
     sky.addColorStop(INV3, SKY[1]);          // 0.236
@@ -1605,6 +1729,11 @@
     seatShadow.addColorStop(1, "rgba(58, 64, 88, 0)");
     ctx.fillStyle = seatShadow;
     ctx.fillRect(0, 0, W, H);
+  }
+
+  /* The body of the sphere, onto whichever surface is handed in. Its threads
+     are woven onto surfaces of their own, by drawCloth. */
+  function paintSphere(ctx, lit) {
 
     ctx.save();
     ctx.beginPath();
@@ -1665,13 +1794,6 @@
     limb.addColorStop(1, "rgba(58, 64, 88, 0.09)");
     ctx.fillStyle = limb;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-
-    // The surface itself: dots, in strands, after Napangardi. Kept on its
-    // own canvas because it only changes when the world is turned, and laid
-    // over the light at full strength.
-    if (clothStale()) { drawCloth(); }
-    ctx.globalAlpha = 1;
-    ctx.drawImage(cloth, 0, 0, W, H);
 
     ctx.restore();   // drops the clip and the globe's alpha together
   }
@@ -5805,12 +5927,14 @@
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
-               read("tones.json")])
+               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png")])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
       readEarth(all[2]);
       readTones(all[3]);
+      dirt.land = all[4];
+      dirt.sea = all[5];
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }
