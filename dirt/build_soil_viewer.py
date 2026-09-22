@@ -132,9 +132,20 @@ const byEdges = new Map(TS.tiles.map((t, i) => [t.west * 8 + t.north, i]));
 const tileImgs = { colour: [], cutout: [] }, tileLabels = [];
 let layout = [], selWork = null;
 const edgeNames = (list) => list.map((e) => `${e.artist}'s ${e.kind === "face" ? "face" : e.kind}`).join(", ");
-const TILE_CAP = `Tiles: sixteen different squares, laid so every edge matches. Faces sit across the vertical joins, split down the middle (${edgeNames(TS.edges.vertical)}); the horizontal joins carry ${edgeNames(TS.edges.horizontal)}.`;
+const TILE_CAP = `Tiles: ${TS.tiles.length} different squares, laid so every edge matches. Faces sit across the vertical joins, split down the middle (${edgeNames(TS.edges.vertical)}); the horizontal joins carry ${edgeNames(TS.edges.horizontal)}. Every square has shapes of its own coming up through it, and at each join a different share of the object sinks back into the dirt, so no two meetings are the same.`;
+const PHI = (1 + Math.sqrt(5)) / 2;
+// Per clod: 0 none, 1 a shard across a vertical join, 2 across a horizontal one; and a hash of its key.
+const shardAxis = TS.tiles.map((t) => Uint8Array.from(t.clods, (c) => (c[4] ? (c[4][0] === "v" ? 1 : 2) : 0)));
+const shardHash = TS.tiles.map((t) => Uint32Array.from(t.clods, (c) => (c[4] ? hash32(c[4]) : 0)));
+function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; }
+function unit(a, b) { let h = Math.imul(a ^ Math.imul(b, 2654435761), 1597334677); h ^= h >>> 15; h = Math.imul(h, 2246822519); h ^= h >>> 13; return (h >>> 0) / 4294967296; }
+let vSeeds = [], hSeeds = [];
 
 function deal() {
+  // Every join gets a seed of its own: it decides which of the object's shards sink there.
+  const seed = () => (Math.random() * 4294967296) >>> 0;
+  vSeeds = Array.from({ length: ROWS }, () => Array.from({ length: COLS + 1 }, seed));
+  hSeeds = Array.from({ length: ROWS + 1 }, () => Array.from({ length: COLS }, seed));
   // Left to right, top to bottom: each place takes the tile whose west and north edges match.
   layout = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -150,15 +161,22 @@ function drawGrid() {
   if (layout.some((t) => !tileImgs[mode][t] || !tileLabels[t])) return;
   gx.imageSmoothingEnabled = false;
   layout.forEach((t, k) => gx.drawImage(tileImgs[mode][t], (k % COLS) * TP, Math.floor(k / COLS) * TP));
-  if (selWork === null) return;
-  // Dim everything that is not the chosen painting, at one pixel a cell, then scale up.
+  // One pass at one pixel a cell, then scaled up: the shards that sink at this join (darkened to
+  // 1/phi^2 of their light) and, when a painting is chosen, everything else dimmed by 1/phi.
   const sc = shadeCv.getContext("2d"), im = sc.createImageData(COLS * N, ROWS * N);
+  const sinkA = Math.round(255 * (1 - TS.phi.sunk)), dimA = Math.round(255 / PHI);
   layout.forEach((t, k) => {
-    const lab = tileLabels[t], clods = TS.tiles[t].clods, ox = (k % COLS) * N, oy = Math.floor(k / COLS) * N;
+    const lab = tileLabels[t], clods = TS.tiles[t].clods, axis = shardAxis[t], hs = shardHash[t];
+    const r = Math.floor(k / COLS), c = k % COLS, ox = c * N, oy = r * N;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      if (clods[lab[y * N + x]][0] === selWork) continue;
+      const ci = lab[y * N + x];
+      let a = 0;
+      if (axis[ci] === 1 && unit(vSeeds[r][x < N / 2 ? c : c + 1], hs[ci]) < TS.phi.sink) a = sinkA;
+      else if (axis[ci] === 2 && unit(hSeeds[y < N / 2 ? r : r + 1][c], hs[ci]) < TS.phi.sink) a = sinkA;
+      if (selWork !== null && clods[ci][0] !== selWork) a = Math.max(a, dimA);
+      if (!a) continue;
       const j = ((oy + y) * COLS * N + ox + x) * 4;
-      im.data[j] = 15; im.data[j + 1] = 10; im.data[j + 2] = 7; im.data[j + 3] = 128;
+      im.data[j] = 15; im.data[j + 1] = 10; im.data[j + 2] = 7; im.data[j + 3] = a;
     }
   });
   sc.putImageData(im, 0, 0);
@@ -167,10 +185,12 @@ function drawGrid() {
 
 function showTileClod(t, ci) {
   const [wi, hex, glint, kind] = TS.tiles[t].clods[ci];
+  const how = kind && kind.split(":");
   const w = TS.works[wi];
   selWork = wi; sel = -1;
-  document.getElementById("c-label").textContent = kind && kind.startsWith("across:")
-    ? `Across a join · ${kind.slice(7)}` : kind === "face" ? "A clod centred on a face" : "A clod";
+  document.getElementById("c-label").textContent = !how ? "A clod"
+    : how[0] === "across" ? `Across a join · ${how[1]}`
+    : how[0] === "within" ? `Surfacing · ${how[1]}` : "A clod centred on a face";
   document.getElementById("c-sw").replaceChildren(...[hex, glint].filter(Boolean).map((h) => Object.assign(document.createElement("span"), { title: h, style: `background:${h}` })));
   document.getElementById("c-title").textContent = w.title || "Untitled";
   document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
@@ -279,7 +299,7 @@ def tile_set(folder):
             if w["id"] not in index:
                 index[w["id"]] = len(works)
                 works.append(w)
-            rows.append([index[w["id"]], c["hex"], c["glint"], c["kind"]])
+            rows.append([index[w["id"]], c["hex"], c["glint"], c["kind"], c.get("key")])
         t["clods"] = rows
         for mode in ("colour", "cutout"):
             t[mode] = data_uri(folder / f"{t['name']}-{mode}.webp")

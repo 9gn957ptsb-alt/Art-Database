@@ -1,5 +1,5 @@
 {
- "note": "Objects that straddle the DIRT tile edges. Faces were found with OpenCV's Haar face detector and checked by eye; the others were found by title and located by eye. Boxes are fractions of the painting's width and height: [x0, y0, x1, y1]. Vertical tile edges carry faces, split down the middle; horizontal edges carry the rest, split across. not_faces lists paintings where the detector fired on something that is not a face, checked by eye.",
+ "note": "Objects that straddle the DIRT tile edges. Faces were found with OpenCV's Haar face detector and checked by eye; the others were found by title and located by eye. Boxes are fractions of the painting's width and height: [x0, y0, x1, y1]. Vertical tile edges carry faces, split down the middle; horizontal edges carry the rest, split across. within lists shapes that surface inside single tiles (the detected faces surface there too); not_faces lists paintings where the detector fired on something that is not a face, checked by eye.",
  "vertical": [
   {
    "id": "albrecht-durer-self-portrait",
@@ -39,6 +39,16 @@
     0.09,
     0.7,
     0.46
+   ]
+  },
+  {
+   "id": "eugene-delacroix-self-portrait",
+   "kind": "face",
+   "box": [
+    0.24,
+    0.14,
+    0.76,
+    0.62
    ]
   }
  ],
@@ -82,6 +92,16 @@
     0.37,
     0.84
    ]
+  },
+  {
+   "id": "claude-monet-the-japanese-footbridge",
+   "kind": "bridge",
+   "box": [
+    0.0,
+    0.04,
+    1.0,
+    0.42
+   ]
   }
  ],
  "not_faces": [
@@ -93,5 +113,77 @@
   "pablo-picasso-mandoline-et-guitare",
   "piet-mondrian-farmhouse-with-wash-on-the-line",
   "wifredo-lam-la-reunion-1-groupe"
+ ],
+ "within": [
+  {
+   "id": "vincent-van-gogh-farmhouse-in-provence",
+   "kind": "architecture",
+   "box": [
+    0.0,
+    0.22,
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "id": "paul-cezanne-the-house-of-the-hanged-man",
+   "kind": "architecture",
+   "box": [
+    0.28,
+    0.28,
+    0.8,
+    0.62
+   ]
+  },
+  {
+   "id": "john-singer-sargent-the-bridge-of-sighs",
+   "kind": "bridge",
+   "box": [
+    0.03,
+    0.05,
+    0.6,
+    0.4
+   ]
+  },
+  {
+   "id": "leonardo-da-vinci-virgin-of-the-rocks",
+   "kind": "angel",
+   "box": [
+    0.6,
+    0.5,
+    0.97,
+    0.9
+   ]
+  },
+  {
+   "id": "christian-marsh-rialto-bridge-venice",
+   "kind": "boat",
+   "box": [
+    0.0,
+    0.68,
+    1.0,
+    0.97
+   ]
+  },
+  {
+   "id": "john-c-traynor-moored-boat",
+   "kind": "boat",
+   "box": [
+    0.15,
+    0.4,
+    0.65,
+    0.68
+   ]
+  },
+  {
+   "id": "nicolas-poussin-the-assumption-of-the-virgin",
+   "kind": "angel",
+   "box": [
+    0.25,
+    0.1,
+    0.8,
+    0.55
+   ]
+  }
  ]
 }

@@ -102,29 +102,38 @@ as their three-colour token.
 
 ## DIRT tiles
 
-`soil_tiles.py` makes the tile view in DIRT: sixteen different collection-soil squares whose edges all
-line up (an edge-matched, or Wang, tile set). Each vertical edge has one of four colours and each horizontal
-edge one of four more. Each colour is a whole object from a painting that straddles the join:
+`soil_tiles.py` makes the tile view in DIRT. It is a set of 25 different collection-soil squares whose edges all
+line up (an edge-matched, or Wang, tile set), and no two meetings look the same. Every number chosen for it comes
+from the golden ratio φ: a Fibonacci number or a power of φ.
 
-- Vertical joins carry faces, split down the middle: Dürer, the Mona Lisa, Velázquez's Juan de Pareja, and
-  Corot's young woman.
-- Horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's Doge's Palace, and Poussin's angel.
+- **Five objects on each kind of join.** Each vertical edge has one of five colours, and so does each horizontal
+  edge. Each colour is a whole object from a painting that straddles the join. The vertical joins carry faces
+  split down the middle: Dürer, the Mona Lisa, Velázquez's Juan de Pareja, Corot's young woman, and Delacroix.
+  The horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's Doge's Palace, Poussin's angel,
+  and Monet's Japanese footbridge. A grid laid left to right and top to bottom takes, at each place, the tile
+  whose west and north edges match, so any arrangement is continuous across every join.
+- **New shapes inside the tiles.** Every tile has one shape of its own coming up through its middle, or, with
+  a chance of 1/φ, two at the golden-section points. They are drawn from the hand-found shapes in
+  `objects.json` (`within`) and every checked face that is not on a join. Each is used once, so shapes keep
+  appearing that appear nowhere else.
+- **A different join every time.** Each time a grid is dealt, every join gets its own seed. At that join a
+  share φ⁻³ of the object's shards sinks back into the dirt, darkened to φ⁻² of its light. Both tiles
+  agree on which ones, so the object stays continuous, but it is never quite the same twice.
+- **Small corners.** The corners, the one soil every tile shares, are 21 cells, so the patch that repeats at
+  every grid point stays small.
 
-A grid laid left to right and top to bottom takes, at each place, the tile whose west and north edges match
-what is already down, so any arrangement is continuous across every join.
-
-The tiles are made in the same hand as the Cutouts view: 220 clods per source, the same weave, and the same
+The tiles are made in the same hand as the Cutouts view: 233 clods per source, the same weave, and the same
 windows onto each painting. An object is not pasted on. It lies under the clods, and the clods over it become
-shards carrying their piece of the picture. The shards have the same cracks and light as the other clods, and
-about one in eight stays plain soil, so the object comes up through the dirt in pieces. One ordinary clod in
-ten is centred on a face that OpenCV's Haar detector found and that was then checked by eye. It is shown with
-enough of its surroundings to stay a fragment.
-`objects.json` records every object, its box in the painting, and the detections that were rejected.
+shards carrying their piece of the picture. The shards have the same cracks and light as the other clods, and a
+share φ⁻⁴ stays plain soil, so the object comes up through the dirt in pieces. A share φ⁻⁵ of ordinary clods is
+centred on a face that OpenCV's Haar detector found and that was then checked by eye. It is shown with φ² of its
+size in context, so it stays a fragment. `objects.json` records every object, its box in the painting, and the
+detections that were rejected.
 
 ```bash
 python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/tiles/ (needs opencv-python-headless<4.13)
 python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
 ```
 
-In colour mode each shard of a straddling object is one flat colour from its painting's three, chosen by how light its piece of the picture is.
+In colour mode each shard of an object is one flat colour from its painting's three, chosen by how light its piece of the picture is.
 All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.

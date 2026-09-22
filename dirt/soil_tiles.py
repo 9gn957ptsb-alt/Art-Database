@@ -46,13 +46,16 @@ import collection_soil as cs  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 N, CELL, T = cs.N, cs.CELL, cs.T
-K = 4                 # edge colours per axis
-A, D = 16, 10         # strip half-width in cells, and how far it wanders; it swells round the object
-CZ = A + D + 4        # corner zone half-size (always wider than a strip near the corners)
-OBJ_HALF = 42         # the straddling objects' half-thickness across their edge
-CLODS = 220           # per source, as in the Cutouts view
-BURIED = 0.12         # share of an object's shards left as ordinary soil
-FACE_SHARE = 0.1      # share of ordinary clods centred on a face
+# Every number chosen here comes from the golden ratio: a Fibonacci number or a power of phi.
+PHI = (1 + 5 ** 0.5) / 2
+K = 5                           # edge colours per axis (Fibonacci), so 25 tiles
+A, D = 13, 8                    # strip half-width in cells, and how far it wanders (Fibonacci)
+CZ, CZ_WANDER = 21, 5           # corner zone half-size and wander (Fibonacci; A + D = 21)
+OBJ_HALF = round(N / PHI ** 4)  # the straddling objects' half-thickness across their edge (37)
+CLODS = 233                     # per source (Fibonacci), close to the Cutouts view's 220
+BURIED = PHI ** -4              # share of an object's shards left as ordinary soil (0.146)
+FACE_SHARE = PHI ** -5          # share of ordinary clods centred on a face (0.090)
+SECOND = 1 / PHI                # chance a tile has a second shape of its own surfacing (0.618)
 
 
 def rgb(h):
@@ -104,7 +107,7 @@ def detect_faces(works, images, out, not_faces):
 
 # ---- sources ------------------------------------------------------------------------------------
 
-def lay_object(lab, obj, cx, cy, wmax, hmax, rng):
+def lay_object(lab, obj, cx, cy, wmax, hmax, rng, taken=()):
     """Lay an object's image under the clods, centred at (cx, cy) on the periodic grid.
 
     The object is not carved out as one shape. The clods that fall mostly over it become shards of
@@ -120,11 +123,11 @@ def lay_object(lab, obj, cx, cy, wmax, hmax, rng):
     yy, xx = np.mgrid[0:N, 0:N].astype(float)
     u = cs.wrap(xx + 0.5 - cx) / (w / 2)
     v = cs.wrap(yy + 0.5 - cy) / (h / 2)
-    wob = 1 + 0.22 * (cs.field(rng, 4, 26) - 0.5)
+    wob = 1 + PHI ** -3 * (cs.field(rng, 5, 21) - 0.5)
     r = (np.abs(u) ** 3 + np.abs(v) ** 3) ** (1 / 3) / wob
     over = np.bincount(lab[r < 1], minlength=lab.max() + 1)
     total = np.bincount(lab.ravel(), minlength=lab.max() + 1)
-    candidates = np.nonzero(over > 0.5 * np.maximum(total, 1))[0]
+    candidates = np.array([i for i in np.nonzero(over > 0.5 * np.maximum(total, 1))[0] if i not in taken], int)
     shards = candidates[rng.random(len(candidates)) > BURIED]
     crop = img.crop((int(x0 * img.width), int(y0 * img.height), int(x1 * img.width), int(y1 * img.height)))
     pix = np.asarray(crop.resize((max(1, round(w)), max(1, round(h))), Image.BOX), float)
@@ -136,16 +139,22 @@ def lay_object(lab, obj, cx, cy, wmax, hmax, rng):
     return set(shards.tolist()), pix[py, px], zone
 
 
-def make_source(rng, pool, face_pool, images, obj=None, where=None):
+def make_source(rng, pool, face_pool, images, objs=(), name=""):
     """A periodic N×N soil: clods, weave, colour and cutout, with the same hand as the Cutouts view.
 
-    Optionally an object is laid under it (see lay_object) and its shards take their piece of it.
+    Objects can be laid under it (see lay_object) and their shards take their piece of them. Each is
+    (obj, (cx, cy, wmax, hmax), how): "across" for one that straddles a join, "within" for a shape
+    surfacing inside one tile. Only an "across" object widens the strip's zone.
     """
     lab, edge, ox, oy = cs.clods(rng, CLODS)
-    shards, obj_pix, zone = set(), None, np.zeros((N, N), bool)
-    if obj is not None:
-        cx, cy, wmax, hmax = where
-        shards, obj_pix, zone = lay_object(lab, obj, cx, cy, wmax, hmax, rng)
+    zone = np.zeros((N, N), bool)
+    owner = {}                                     # shard clod -> (object, its image, how)
+    for obj, where, how in objs:
+        got, pix, z = lay_object(lab, obj, *where, rng, taken=owner)
+        owner.update({i: (obj, pix, how) for i in got})
+        if how == "across":
+            zone |= z
+    shards = set(owner)
     size = cs.weave(rng, edge)
     shade = cs.relief(edge)
     sizes = np.bincount(lab.ravel(), minlength=CLODS)
@@ -178,7 +187,7 @@ def make_source(rng, pool, face_pool, images, obj=None, where=None):
         span = max(np.ptp(ox[cells]), np.ptp(oy[cells]), 4) + 1
         if p.get("face"):
             fx0, fy0, fx1, fy1 = p["face"]
-            fs = max((fx1 - fx0) * w, (fy1 - fy0) * h) * 2.4
+            fs = max((fx1 - fx0) * w, (fy1 - fy0) * h) * PHI ** 2
             px = max(0.5, fs / span)
             cy_, cx_ = (fy0 + fy1) / 2 * h, (fx0 + fx1) / 2 * w
         else:
@@ -193,18 +202,22 @@ def make_source(rng, pool, face_pool, images, obj=None, where=None):
                 acc += img[np.clip(ys + dy, 0, h - 1), np.clip(xs + dx, 0, w - 1)]
         colB[cells] = acc / 9
 
-    if shards:
-        work = obj["work"]
+    for obj, _, how in objs:
+        mine = [i for i, o in owner.items() if o[0] is obj]
+        if not mine:
+            continue
+        work, pix = obj["work"], owner[mine[0]][1]
         # Colour mode: each shard is one flat colour, chosen from the painting's own three by how
         # light its piece of the picture is — a clod like any other, in the object's colours.
         three = np.stack([rgb(c) for c in sorted(work["colors"], key=lambda c: lum(rgb(c)))])
-        means = {i: lum(obj_pix[lab == i]).mean() for i in shards}
+        means = {i: lum(pix[lab == i]).mean() for i in mine}
         cuts = np.quantile(list(means.values()), [1 / 3, 2 / 3])
-        for i in shards:
+        for i in mine:
             cells = lab == i
-            meta[i] = dict(work=work, hex=obj["hex"], glint=None, kind="across:" + obj["kind"])
+            meta[i] = dict(work=work, hex=obj["hex"], glint=None, kind=f"{how}:{obj['kind']}",
+                           key=f"{name}:{i}" if how == "across" else None)
             colA[cells] = three[min(int(np.digitize(means[i], cuts)), len(three) - 1)]
-            colB[cells] = obj_pix[cells]
+            colB[cells] = pix[cells]
 
     colA *= shade[..., None]
     colB *= shade[..., None]
@@ -220,7 +233,7 @@ def zones(srcs, west, east, north, south, a_fields, b_fields, corner_noise):
     idx = np.arange(N)
     dxe_i = np.minimum(idx, N - 1 - idx)                 # same value either side of an edge
     X, Y = np.meshgrid(dxe_i, dxe_i)                     # X = distance to vertical edge, Y to horizontal
-    cz = CZ + 6 * corner_noise[np.minimum(Y, N - 1), np.minimum(X, N - 1)]
+    cz = CZ + CZ_WANDER * corner_noise[np.minimum(Y, N - 1), np.minimum(X, N - 1)]
     corner = (X + 0.5 < cz) & (Y + 0.5 < cz)
     yy, xx = np.mgrid[0:N, 0:N]
     a = A + D * (2 * np.where(xx < N // 2, a_fields[west][yy, X], a_fields[east][yy, X]) - 1)
@@ -285,13 +298,33 @@ def main():
         w = by_id[o["id"]]
         return dict(o, work=w, img=images.get(w["image"], "large"), hex=w["colors"][0])
 
-    span = N - 2 * (CZ + 6) - 32                       # room along an edge between the corners
+    span = N - 2 * (CZ + CZ_WANDER) - 34               # room along an edge between the corners (Fibonacci margin)
     corner_src = make_source(rng, pool, face_pool, images)
-    vert = [make_source(rng, pool, face_pool, images, obj(o), (0, N / 2, 2 * OBJ_HALF, span)) for o in spec["vertical"]]
-    horiz = [make_source(rng, pool, face_pool, images, obj(o), (N / 2, 0, span, 2 * OBJ_HALF)) for o in spec["horizontal"]]
-    a_fields = [cs.field(rng, 5, 30) for _ in range(K)]
-    b_fields = [cs.field(rng, 5, 30) for _ in range(K)]
-    corner_noise = cs.field(rng, 8, 40)
+    vert = [make_source(rng, pool, face_pool, images, [(obj(o), (0, N / 2, 2 * OBJ_HALF, span), "across")], f"v{c}")
+            for c, o in enumerate(spec["vertical"][:K])]
+    horiz = [make_source(rng, pool, face_pool, images, [(obj(o), (N / 2, 0, span, 2 * OBJ_HALF), "across")], f"h{c}")
+             for c, o in enumerate(spec["horizontal"][:K])]
+
+    # Shapes that surface inside single tiles: the hand-found ones and every checked face that is
+    # not already on a join. Each is used once, so new shapes keep turning up across the set.
+    on_joins = {o["id"] for o in spec["vertical"] + spec["horizontal"]}
+    within = [dict(o) for o in spec["within"]]
+    g2, g1 = PHI ** -2, PHI ** -1
+    for wid, (x0, y0, x1, y1) in faces.items():
+        if wid in on_joins or wid not in by_id:
+            continue
+        fw, fh = x1 - x0, y1 - y0
+        within.append(dict(id=wid, kind="face", box=[max(0, x0 - fw * g2), max(0, y0 - fh * g1),
+                                                     min(1, x1 + fw * g2), min(1, y1 + fh * g1)]))
+    within = [within[i] for i in rng.permutation(len(within))]
+    print(f"{len(within)} shapes to surface inside tiles")
+    # Where they surface: the golden-section points of the tile, and how big: N/phi^4 alone, N/phi^5 as a pair.
+    lo, hi = N * g2, N * g1
+    one = [(N / 2, N / 2, 2 * N / PHI ** 4, 2 * N / PHI ** 4)]
+    two = [(lo, lo, 2 * N / PHI ** 5, 2 * N / PHI ** 5), (hi, hi, 2 * N / PHI ** 5, 2 * N / PHI ** 5)]
+    a_fields = [cs.field(rng, 5, 34) for _ in range(K)]
+    b_fields = [cs.field(rng, 5, 34) for _ in range(K)]
+    corner_noise = cs.field(rng, 8, 34)
 
     blacks = rgb(ground_hex).astype(np.uint8)
     tiles = []
@@ -299,7 +332,11 @@ def main():
         for north in range(K):
             east, south = int(rng.integers(K)), int(rng.integers(K))
             name = f"w{west}n{north}e{east}s{south}"
-            middle = make_source(rng, pool, face_pool, images)
+            places = two if rng.random() < SECOND else one
+            if rng.random() < PHI ** -2:
+                places = [(N - x, y, w_, h_) for x, y, w_, h_ in places]      # the other diagonal
+            mine = [(obj(within.pop()), p, "within") for p in places if within]
+            middle = make_source(rng, pool, face_pool, images, mine, f"m{len(tiles)}")
             srcs = [corner_src, vert[west], vert[east], horiz[north], horiz[south], middle]
             z = zones(srcs, west, east, north, south, a_fields, b_fields, corner_noise)
             t, gid = compose(z, srcs)
@@ -308,7 +345,7 @@ def main():
             clods = []
             for g in ids:
                 m = srcs[g // 1000]["meta"][g % 1000]
-                clods.append(dict(hex=m["hex"], glint=m["glint"], kind=m["kind"],
+                clods.append(dict(hex=m["hex"], glint=m["glint"], kind=m["kind"], key=m.get("key"),
                                   work={k_: m["work"][k_] for k_ in ("id", "title", "artist", "date", "url")},
                                   cells=int((gid == g).sum())))
             assert len(clods) < 65536, len(clods)
@@ -328,8 +365,9 @@ def main():
     manifest = dict(
         grid=N, cell=CELL, tile=T, colours=K,
         ground=dict(hex=ground_hex, work={k_: ground_work[k_] for k_ in ("id", "title", "artist", "date", "url")}),
-        edges=dict(vertical=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["vertical"]],
-                   horizontal=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["horizontal"]]),
+        edges=dict(vertical=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["vertical"][:K]],
+                   horizontal=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["horizontal"][:K]]),
+        phi=dict(sink=PHI ** -3, sunk=PHI ** -2),
         tiles=tiles,
     )
     (out / "tiles.json").write_text(json.dumps(manifest, ensure_ascii=False))
