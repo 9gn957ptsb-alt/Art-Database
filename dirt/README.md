@@ -111,8 +111,14 @@ edge one of four more. Each colour is a whole object from a painting that stradd
 - Horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's Doge's Palace, and Poussin's angel.
 
 A grid laid left to right and top to bottom takes, at each place, the tile whose west and north edges match
-what is already down, so any arrangement is continuous across every join. Inside the tiles, the biggest
-clods are centred on faces that OpenCV's Haar detector found and that were then checked by eye.
+what is already down, so any arrangement is continuous across every join.
+
+The tiles are made in the same hand as the Cutouts view: 220 clods per source, the same weave, and the same
+windows onto each painting. An object is not pasted on. It lies under the clods, and the clods over it become
+shards carrying their piece of the picture. The shards have the same cracks and light as the other clods, and
+about one in eight stays plain soil, so the object comes up through the dirt in pieces. One ordinary clod in
+ten is centred on a face that OpenCV's Haar detector found and that was then checked by eye. It is shown with
+enough of its surroundings to stay a fragment.
 `objects.json` records every object, its box in the painting, and the detections that were rejected.
 
 ```bash
@@ -120,5 +126,5 @@ python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/
 python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
 ```
 
-In colour mode the straddling objects use only their painting's three colours, ranked by lightness.
+In colour mode each shard of a straddling object is one flat colour from its painting's three, chosen by how light its piece of the picture is.
 All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.

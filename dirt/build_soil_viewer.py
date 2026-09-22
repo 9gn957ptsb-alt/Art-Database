@@ -201,8 +201,8 @@ const tilesReady = Promise.all(TS.tiles.map(async (t, i) => {
   c.width = N; c.height = N;
   const lc = c.getContext("2d");
   lc.drawImage(li, 0, 0);
-  const d = lc.getImageData(0, 0, N, N).data, lab = new Uint8Array(N * N);
-  for (let j = 0; j < N * N; j++) lab[j] = d[j * 4];
+  const d = lc.getImageData(0, 0, N, N).data, lab = new Uint16Array(N * N);
+  for (let j = 0; j < N * N; j++) lab[j] = d[j * 4] + 256 * d[j * 4 + 1];
   tileLabels[i] = lab;
 }));
 deal();

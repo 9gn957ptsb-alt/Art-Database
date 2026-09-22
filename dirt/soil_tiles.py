@@ -18,13 +18,15 @@ share:
   middle   a soil of the tile's own
 
 The zone boundaries depend only on things both sides of an edge agree on, and zones simply abut,
-clod against clod, so no frame shows. Clods are bigger than in the single tile, and where a clod's painting
-has a face in it (OpenCV's Haar detector, checked by eye; see objects.json), the clod's cutout is
-centred on that face, so the fragments read as things rather than patches of colour.
+clod against clod, so no frame shows. The soil is made in the same hand as the Cutouts view: the
+same clods, weave and windows. An object is not pasted on; it lies under the clods, and the clods
+over it become shards carrying their piece of it, with the same cracks, gaps and light as the rest,
+and some left as plain soil, so it surfaces through the dirt in pieces. Now and then an ordinary clod
+is centred on a face (OpenCV's Haar detector, checked by eye; see objects.json), seen with enough
+of its surroundings to stay a fragment.
 
-Colour mode keeps each clod to its painting's chocolate swatch. The eight straddling objects are
-drawn in colour mode with only their painting's three colours, ranked by lightness, so they stay
-legible without leaving the token. Everything this writes goes to dirt/private/, because the cutouts
+Colour mode keeps each clod to its painting's chocolate swatch; a shard of a straddling object is
+one flat colour from its painting's three, ranked by lightness. Everything this writes goes to dirt/private/, because the cutouts
 reproduce other artists' images.
 
     python3 dirt/soil_tiles.py --db path/to/artworks.db [--cache dir-of-medium-jpgs]
@@ -47,8 +49,10 @@ N, CELL, T = cs.N, cs.CELL, cs.T
 K = 4                 # edge colours per axis
 A, D = 16, 10         # strip half-width in cells, and how far it wanders; it swells round the object
 CZ = A + D + 4        # corner zone half-size (always wider than a strip near the corners)
-OBJ_HALF = 46         # the straddling objects' half-thickness across their edge
-CLODS = 130           # per source; fewer and bigger than the single tile's 220
+OBJ_HALF = 42         # the straddling objects' half-thickness across their edge
+CLODS = 220           # per source, as in the Cutouts view
+BURIED = 0.12         # share of an object's shards left as ordinary soil
+FACE_SHARE = 0.1      # share of ordinary clods centred on a face
 
 
 def rgb(h):
@@ -100,8 +104,14 @@ def detect_faces(works, images, out, not_faces):
 
 # ---- sources ------------------------------------------------------------------------------------
 
-def insert_object(lab, edge, obj, cx, cy, wmax, hmax, cid, rng):
-    """Carve an object clod centred at (cx, cy) on the periodic grid. Returns its cell mask."""
+def lay_object(lab, obj, cx, cy, wmax, hmax, rng):
+    """Lay an object's image under the clods, centred at (cx, cy) on the periodic grid.
+
+    The object is not carved out as one shape. The clods that fall mostly over it become shards of
+    it, each carrying its own piece of the picture, and about a fifth of them stay ordinary soil, so
+    the object comes up through the dirt in pieces rather than sitting on it. Returns the shard
+    clods, the image at one pixel a cell, and the zone the object's strip has to swell to take in.
+    """
     img = obj["img"]
     x0, y0, x1, y1 = obj["box"]
     ar = ((x1 - x0) * img.width) / ((y1 - y0) * img.height)
@@ -110,46 +120,54 @@ def insert_object(lab, edge, obj, cx, cy, wmax, hmax, cid, rng):
     yy, xx = np.mgrid[0:N, 0:N].astype(float)
     u = cs.wrap(xx + 0.5 - cx) / (w / 2)
     v = cs.wrap(yy + 0.5 - cy) / (h / 2)
-    wob = 1 + 0.22 * (cs.field(rng, 4, 26) - 0.5)       # a ragged, clod-like outline
+    wob = 1 + 0.22 * (cs.field(rng, 4, 26) - 0.5)
     r = (np.abs(u) ** 3 + np.abs(v) ** 3) ** (1 / 3) / wob
-    inside = r < 1
-    lab[inside] = cid
-    half = min(w, h) / 2
-    edge[inside] = (1 - r[inside]) * half
-    # The object's own image, resampled to one pixel a cell.
+    over = np.bincount(lab[r < 1], minlength=lab.max() + 1)
+    total = np.bincount(lab.ravel(), minlength=lab.max() + 1)
+    candidates = np.nonzero(over > 0.5 * np.maximum(total, 1))[0]
+    shards = candidates[rng.random(len(candidates)) > BURIED]
     crop = img.crop((int(x0 * img.width), int(y0 * img.height), int(x1 * img.width), int(y1 * img.height)))
     pix = np.asarray(crop.resize((max(1, round(w)), max(1, round(h))), Image.BOX), float)
+    lo, hi = np.percentile(pix, [2, 98])                   # stretch its levels, so a dark portrait reads
+    pix = np.clip((pix - lo) / max(hi - lo, 1) * 225 + 18, 0, 255)
     py = np.clip(((v + 1) / 2 * pix.shape[0]).astype(int), 0, pix.shape[0] - 1)
     px = np.clip(((u + 1) / 2 * pix.shape[1]).astype(int), 0, pix.shape[1] - 1)
-    return inside, pix[py, px], r < 1 + 4 / half
+    zone = np.isin(lab, candidates) | (r < 1)
+    return set(shards.tolist()), pix[py, px], zone
 
 
 def make_source(rng, pool, face_pool, images, obj=None, where=None):
-    """A periodic N×N soil: clods, weave, colour and cutout. Optionally with one object carved in."""
+    """A periodic N×N soil: clods, weave, colour and cutout, with the same hand as the Cutouts view.
+
+    Optionally an object is laid under it (see lay_object) and its shards take their piece of it.
+    """
     lab, edge, ox, oy = cs.clods(rng, CLODS)
-    k = CLODS
-    obj_mask = None
+    shards, obj_pix, zone = set(), None, np.zeros((N, N), bool)
     if obj is not None:
         cx, cy, wmax, hmax = where
-        obj_mask, obj_pix, obj_zone = insert_object(lab, edge, obj, cx, cy, wmax, hmax, k, rng)
-        k += 1
+        shards, obj_pix, zone = lay_object(lab, obj, cx, cy, wmax, hmax, rng)
     size = cs.weave(rng, edge)
     shade = cs.relief(edge)
-    sizes = np.bincount(lab.ravel(), minlength=k)
+    sizes = np.bincount(lab.ravel(), minlength=CLODS)
+    if shards:
+        # Shards keep the weave but hold their dots a little fuller, so the picture carries.
+        sh = np.isin(lab, list(shards)) & (edge >= 0.9)
+        size[sh & (size > 0)] = np.maximum(size[sh & (size > 0)], 2)
+        size[sh & (size == 0)] = 1
 
-    # Paintings: the biggest quarter of clods go to paintings with faces, centred on the face.
-    order = [i for i in np.argsort(-sizes[:CLODS]) if sizes[i] > 0]
-    n_face = len(order) // 4
+    # Paintings: now and then a clod is centred on a face, shown with its surroundings so it reads
+    # as a fragment; the rest are windows onto where their painting is most chocolate.
+    order = [i for i in rng.permutation(CLODS) if sizes[i] > 0 and i not in shards]
     faces = list(rng.permutation(len(face_pool)))
     chocs = list(rng.permutation(len(pool)))
-    meta = [None] * k
+    meta = [None] * CLODS
     colA = np.zeros((N, N, 3))
     colB = np.zeros((N, N, 3))
-    glint_col = np.zeros((k, 3))
-    has_glint = np.zeros(k, bool)
-    for rank, i in enumerate(order):
+    glint_col = np.zeros((CLODS, 3))
+    has_glint = np.zeros(CLODS, bool)
+    for i in order:
         cells = lab == i
-        p = face_pool[faces.pop()] if rank < n_face and faces else pool[chocs.pop()]
+        p = face_pool[faces.pop()] if faces and rng.random() < FACE_SHARE else pool[chocs.pop()]
         meta[i] = dict(work=p["work"], hex=p["hex"], glint=p["glint"], kind="face" if p.get("face") else None)
         colA[cells] = rgb(p["hex"])
         if p["glint"]:
@@ -160,7 +178,7 @@ def make_source(rng, pool, face_pool, images, obj=None, where=None):
         span = max(np.ptp(ox[cells]), np.ptp(oy[cells]), 4) + 1
         if p.get("face"):
             fx0, fy0, fx1, fy1 = p["face"]
-            fs = max((fx1 - fx0) * w, (fy1 - fy0) * h) * 1.25
+            fs = max((fx1 - fx0) * w, (fy1 - fy0) * h) * 2.4
             px = max(0.5, fs / span)
             cy_, cx_ = (fy0 + fy1) / 2 * h, (fx0 + fx1) / 2 * w
         else:
@@ -175,27 +193,23 @@ def make_source(rng, pool, face_pool, images, obj=None, where=None):
                 acc += img[np.clip(ys + dy, 0, h - 1), np.clip(xs + dx, 0, w - 1)]
         colB[cells] = acc / 9
 
+    if shards:
+        work = obj["work"]
+        # Colour mode: each shard is one flat colour, chosen from the painting's own three by how
+        # light its piece of the picture is — a clod like any other, in the object's colours.
+        three = np.stack([rgb(c) for c in sorted(work["colors"], key=lambda c: lum(rgb(c)))])
+        means = {i: lum(obj_pix[lab == i]).mean() for i in shards}
+        cuts = np.quantile(list(means.values()), [1 / 3, 2 / 3])
+        for i in shards:
+            cells = lab == i
+            meta[i] = dict(work=work, hex=obj["hex"], glint=None, kind="across:" + obj["kind"])
+            colA[cells] = three[min(int(np.digitize(means[i], cuts)), len(three) - 1)]
+            colB[cells] = obj_pix[cells]
+
     colA *= shade[..., None]
     colB *= shade[..., None]
     glint = (rng.random((N, N)) < 0.035) & (size > 0) & has_glint[lab]
     colA[glint] = glint_col[lab][glint]
-
-    if obj is not None:
-        i = CLODS
-        work = obj["work"]
-        meta[i] = dict(work=work, hex=obj["hex"], glint=None, kind="across:" + obj["kind"])
-        # Colour mode: the object in its painting's own three colours, ranked by lightness.
-        three = np.stack([rgb(c) for c in sorted(work["colors"], key=lambda c: lum(rgb(c)))])
-        L = lum(obj_pix)
-        cuts = np.quantile(L[obj_mask], [1 / 3, 2 / 3])
-        tone = np.digitize(L, cuts)
-        colA[obj_mask] = three[np.minimum(tone, len(three) - 1)][obj_mask]
-        colB[obj_mask] = obj_pix[obj_mask]
-        # Denser dots inside the object, so the picture is defined; toward its outline the ordinary
-        # weave takes over again, so it dissolves into the soil instead of sitting on it.
-        inner = obj_mask & (edge >= 4)
-        size[inner] = np.where(size[inner] >= 2, 3, 2)
-    zone = obj_zone if obj is not None else np.zeros((N, N), bool)
     return dict(lab=lab, size=size, colA=colA, colB=colB, meta=meta, zone=zone)
 
 
@@ -271,7 +285,7 @@ def main():
         w = by_id[o["id"]]
         return dict(o, work=w, img=images.get(w["image"], "large"), hex=w["colors"][0])
 
-    span = N - 2 * (CZ + 6) - 8                        # room along an edge between the corners
+    span = N - 2 * (CZ + 6) - 32                       # room along an edge between the corners
     corner_src = make_source(rng, pool, face_pool, images)
     vert = [make_source(rng, pool, face_pool, images, obj(o), (0, N / 2, 2 * OBJ_HALF, span)) for o in spec["vertical"]]
     horiz = [make_source(rng, pool, face_pool, images, obj(o), (N / 2, 0, span, 2 * OBJ_HALF)) for o in spec["horizontal"]]
@@ -297,14 +311,17 @@ def main():
                 clods.append(dict(hex=m["hex"], glint=m["glint"], kind=m["kind"],
                                   work={k_: m["work"][k_] for k_ in ("id", "title", "artist", "date", "url")},
                                   cells=int((gid == g).sum())))
-            assert len(clods) < 256, len(clods)
+            assert len(clods) < 65536, len(clods)
             for mode in ("colA", "colB"):
                 img = cs.paint(t["size"], np.clip(t[mode], 0, 255).astype(np.uint8))
                 img[img[..., 3] == 0, :3] = blacks
                 img[..., 3] = 255
                 Image.fromarray(img[..., :3]).save(out / f"{name}-{'colour' if mode == 'colA' else 'cutout'}.webp",
                                                     lossless=True, method=6)
-            Image.fromarray(local.reshape(N, N).astype(np.uint8), "L").save(out / f"{name}-labels.png", optimize=True)
+            # Clod numbers, low byte in red and high byte in green, so a browser canvas reads them exactly.
+            lab16 = local.reshape(N, N)
+            Image.fromarray(np.stack([lab16 & 255, lab16 >> 8, np.zeros_like(lab16)], -1).astype(np.uint8), "RGB").save(
+                out / f"{name}-labels.png", optimize=True)
             tiles.append(dict(name=name, west=west, north=north, east=east, south=south, clods=clods))
             print(name, len(clods), "clods")
 
