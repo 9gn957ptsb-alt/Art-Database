@@ -909,7 +909,9 @@
   }
 
   function geometry() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Every pixel the screen has, up to three to one — a phone's full
+    // density, and a 4K monitor's at two. It used to stop at two.
+    dpr = Math.min(window.devicePixelRatio || 1, 3, dprCap);
     W = stage.clientWidth;
     H = stage.clientHeight;
 
@@ -1735,7 +1737,7 @@
     // Grit into it, then part of it laid down soft — both more the further
     // down you are. See gritAndBlur.
     var near = nearness();
-    var mist = INV2 + (INV - INV2) * near;          // how much of it is blurred
+    var mist = INV3 + (INV - INV3) * near;          // how much of it is blurred
     var shrink = Math.pow(INV, 2 + 2 * near);       // and how far
     var sw = Math.max(1, Math.round(layer.width * shrink));
     var sh = Math.max(1, Math.round(layer.height * shrink));
@@ -1762,6 +1764,7 @@
     ctx.globalAlpha = 1 - mist;
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
+    placeGloss();
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -2028,6 +2031,9 @@
   }
 
   var soft = document.getElementById("world-soft");
+  var gloss = document.getElementById("world-gloss");
+  var glossCtx = gloss.getContext("2d");
+  var glossSeen = { cx: 0, cy: 0, r: 0, w: 0, h: 0, dpr: 0 };
   var softShown = -1;
   var softCtx = soft.getContext("2d");
   var gritTile = null, gritPattern = null, gritFor = null;
@@ -2068,6 +2074,117 @@
     g.fillStyle = gritPattern;
     g.fillRect(0, 0, W, H);
     g.restore();
+  }
+
+  /* ---- the clear coat -------------------------------------------------------
+
+     Finish. Everything under this is matte — dots, soil, grit, haze — and a
+     matte sphere reads as a model. What makes a surface look expensive is a
+     clear coat over it, lit in a studio: one hard hot spot where the key
+     light lands, a pair of long thin softbox strips beside it bent to the
+     curve of the body, a dark band where the coat turns away from the
+     light, and a knife-edge of reflected sky right at the rim.
+
+     All of it is drawn on a canvas of its own over the globe, only when the
+     globe moves on the screen, and the browser lays it on for free. It
+     belongs to the globe seen whole; on the way down into a city it lifts
+     off, and it comes back when you come up. */
+
+  function drawGloss() {
+    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (gloss.width !== pw || gloss.height !== ph) { gloss.width = pw; gloss.height = ph; }
+    var g = glossCtx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+
+    g.save();
+    g.beginPath();
+    g.arc(cx, cy, R, 0, TAU);
+    g.clip();
+
+    // Where the key light lands: a point of the sphere up and to the left,
+    // held a golden section down the part of the globe that is on the screen.
+    var top = Math.max(0, cy - R), bottom = Math.min(H, cy + R);
+    var hy = top + (bottom - top) * INV3;
+    var ny = Math.max(-0.98, Math.min(0.98, (cy - hy) / R));
+    var nx = -INV2 * Math.sqrt(1 - ny * ny);
+    var hx = cx + nx * R;
+
+    // The dark band where the coat turns from the light, and the edge of
+    // sky it reflects right at the rim — the two together are what make the
+    // contour crisp rather than soft.
+    var rim = g.createRadialGradient(cx, cy, R * 0.9, cx, cy, R);
+    rim.addColorStop(0, "rgba(20, 22, 30, 0)");
+    rim.addColorStop(0.55, "rgba(20, 22, 30, 0.07)");
+    rim.addColorStop(0.8, "rgba(20, 22, 30, 0)");
+    rim.addColorStop(0.9, "rgba(255, 255, 255, 0.55)");
+    rim.addColorStop(0.955, "rgba(255, 255, 255, 0.08)");
+    rim.addColorStop(1, "rgba(255, 255, 255, 0)");
+    g.fillStyle = rim;
+    g.fillRect(0, 0, W, H);
+
+    // The bloom round the hot spot, and the hot spot.
+    var bloom = g.createRadialGradient(hx, hy, 0, hx, hy, R * INV3);
+    bloom.addColorStop(0, "rgba(255, 255, 255, 0.34)");
+    bloom.addColorStop(INV2, "rgba(255, 255, 255, 0.08)");
+    bloom.addColorStop(1, "rgba(255, 255, 255, 0)");
+    g.fillStyle = bloom;
+    g.fillRect(0, 0, W, H);
+
+    var spot = g.createRadialGradient(hx, hy, 0, hx, hy, Math.max(6, R * 0.022));
+    spot.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+    spot.addColorStop(0.5, "rgba(255, 255, 255, 0.42)");
+    spot.addColorStop(1, "rgba(255, 255, 255, 0)");
+    g.fillStyle = spot;
+    g.fillRect(0, 0, W, H);
+
+    // Two softbox strips, long and thin, laid along the curve of the body
+    // through the hot spot: each is an arc of a circle concentric with the
+    // globe, so it bends exactly as the surface does.
+    var dist = Math.sqrt((hx - cx) * (hx - cx) + (hy - cy) * (hy - cy));
+    var at = Math.atan2(hy - cy, hx - cx);
+    [[-0.018, 0.5, 0.09], [0.02, 0.32, 0.06]].forEach(function (strip) {
+      var r = dist + strip[0] * R;
+      var sweep = strip[2] * Math.PI;
+      var band = g.createRadialGradient(cx, cy, r - R * 0.006, cx, cy, r + R * 0.006);
+      band.addColorStop(0, "rgba(255, 255, 255, 0)");
+      band.addColorStop(0.5, "rgba(255, 255, 255, " + strip[1] + ")");
+      band.addColorStop(1, "rgba(255, 255, 255, 0)");
+      g.save();
+      // Fade the ends of the strip out along its length.
+      var ends = g.createLinearGradient(
+        cx + Math.cos(at - sweep) * r, cy + Math.sin(at - sweep) * r,
+        cx + Math.cos(at + sweep) * r, cy + Math.sin(at + sweep) * r);
+      ends.addColorStop(0, "rgba(0,0,0,0)");
+      ends.addColorStop(0.5, "rgba(0,0,0,1)");
+      ends.addColorStop(1, "rgba(0,0,0,0)");
+      g.beginPath();
+      g.arc(cx, cy, r + R * 0.007, at - sweep, at + sweep);
+      g.arc(cx, cy, r - R * 0.007, at + sweep, at - sweep, true);
+      g.closePath();
+      g.clip();
+      g.fillStyle = band;
+      g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = "destination-in";
+      g.fillStyle = ends;
+      g.fillRect(0, 0, W, H);
+      g.restore();
+    });
+
+    g.restore();
+    glossSeen.cx = cx; glossSeen.cy = cy; glossSeen.r = R;
+    glossSeen.w = W; glossSeen.h = H; glossSeen.dpr = dpr;
+  }
+
+  function placeGloss() {
+    var whole = !place && !flying;
+    gloss.style.opacity = whole ? "1" : "0";
+    if (!whole) { return; }
+    if (Math.abs(glossSeen.cx - cx) > 0.5 || Math.abs(glossSeen.cy - cy) > 0.5 ||
+        Math.abs(glossSeen.r - R) > 0.5 || glossSeen.w !== W || glossSeen.h !== H ||
+        glossSeen.dpr !== dpr) {
+      drawGloss();
+    }
   }
 
   /* The room the globe hangs in is the stage's background, in land.css —
@@ -2337,7 +2454,32 @@
   var last = { x: 0 };
   var trod = { x: 0, y: 0, since: 0 };   // how far it has walked since it last kicked
 
+  /* As sharp as the screen can go, and as sharp as this machine can keep
+     up with. It starts at every pixel the screen has — up to three to one —
+     and watches itself: if it cannot hold about forty-five frames a second
+     over a couple of seconds of ordinary looking, it drops half a step of
+     density and looks again, down to one to one. It never climbs back, so
+     it settles rather than hunting. */
+  var dprCap = 3;
+  var pace = { from: 0, frames: 0 };
+
+  function sharpen(now) {
+    if (flying || deckMode || turning || document.hidden) { pace.from = 0; return; }
+    if (!pace.from) { pace.from = now; pace.frames = 0; return; }
+    pace.frames += 1;
+    var span = now - pace.from;
+    if (span < 2000) { return; }
+    var fps = pace.frames * 1000 / span;
+    pace.from = 0;
+    var have = Math.min(window.devicePixelRatio || 1, 3, dprCap);
+    if (fps < 45 && have > 1) {
+      dprCap = Math.max(1, have - 0.5);
+      geometry();
+    }
+  }
+
   function frame(now) {
+    sharpen(now);
     // While collages are laid over it the world holds still: it is behind
     // them, out of focus, and every frame spent on it is a frame the blur
     // has to be worked out again for nothing.

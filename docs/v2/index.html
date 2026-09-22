@@ -25,6 +25,8 @@
   <!-- The same globe, small and out of focus, under the sharp one. -->
   <canvas class="world world-soft" id="world-soft" aria-hidden="true"></canvas>
   <canvas class="world" id="world"></canvas>
+  <!-- The clear coat: highlights and the rim, over the globe. -->
+  <canvas class="world world-gloss" id="world-gloss" aria-hidden="true"></canvas>
 
   <!-- Everything that stands ON the world is DOM, not canvas, so the words
        stay legible, focusable and clickable. land.js projects each one onto
@@ -204,7 +206,13 @@
     of soil's browns and a few pale grains are baked into it, and part of it
     is laid down again out of focus. Both grow as you go down into a city,
     where the ground is gravel in a haze of itself; and when a word is
-    opened, the world behind its collages leans in and goes out of focus.
+    opened, the world behind its collages leans in and goes out of focus. Over the whole globe
+    lies a clear coat, lit as in a studio: a hard hot spot where the key
+    light lands, two long softbox strips bent to the curve, a dark band
+    where the coat turns away, and a knife-edge of sky at the rim. It lifts
+    off on the way down into a city. The page draws at every pixel the
+    screen has, up to three to one, and steps down only if the machine
+    cannot keep up.
 
     Every palette applied also leaves something standing on the world, and
     what it leaves is decided by the word the creature is standing on: things

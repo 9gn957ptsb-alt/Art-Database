@@ -112,6 +112,19 @@
   image-rendering: auto;
 }
 
+.world-gloss {
+  pointer-events: none;
+  transition: opacity var(--beat-3) ease-out;
+}
+
+/* Type drawn at the screen's own resolution, on the same grid as the dots. */
+.land-body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  font-kerning: normal;
+}
+
 /* The sphere, its land, its ring and the lights at the far edge. */
 .world {
   position: absolute;
