@@ -4,249 +4,222 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Matthew Livingston</title>
-<meta name="description" content="Collage — photographs, tickets, paper and tape.">
+<meta name="description" content="A world made of the words the collages are made of. Something grazes on it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,wght@0,400;1,400&display=swap">
+<!-- Five voices for the land, and which one a word gets is not a roll: it is
+     how many of the collages that object turns up in. A thing the work is
+     made of speaks in Fraunces or Syne at a hundred-odd pixels; a thing that
+     happens to be in one of them murmurs in Space Grotesk. Archivo and
+     Newsreader are the site's own, for everything that is not the world. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Fraunces:opsz,wght@9..144,400..900&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,wght@0,400;1,400&family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400..800&display=swap">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="land.css">
 </head>
-<body>
+<body class="land-body">
 
-<div class="page">
+<!-- Nothing here but the world, what is written on it, and what walks on it. -->
+<div class="stage" id="stage">
 
-  <header class="masthead">
-    <h1>Matthew Livingston</h1>
-    <p class="masthead-link"><a href="land.html">The land</a></p>
-  </header>
+  <!-- The sphere and its land. -->
+  <canvas class="world" id="world"></canvas>
 
-  <main>
-    <h2 class="label">Works <span class="count">7</span></h2>
-    <ul class="grid">
-      <li class="work" id="amadeus">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/amadeus.jpg" alt="Collage of photographs, Polaroids, boarding passes and handwritten notes in a dense rectilinear grid." loading="lazy">
-          <button class="rotate" type="button" data-title="Amadeus" aria-label="Rotate Amadeus a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>Amadeus</em>, 2025</span>
-            <span class="details">Collage, 30 1/4 × 23 1/4 in</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="Amadeus">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="i">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/i.jpg" alt="Collage in browns and blues with a dark central panel and a pale standing figure." loading="lazy">
-          <button class="rotate" type="button" data-title="i" aria-label="Rotate i a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>i</em>, 2024</span>
-            <span class="details">Collage, 25 3/8 × 17 3/8 in</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="i">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="collage-with-portraits">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/collage-with-portraits.jpg" alt="Collage in three horizontal bands built from receipts, magazine pages and film strips." loading="lazy">
-          <button class="rotate" type="button" data-title="Collage with Portraits" aria-label="Rotate Collage with Portraits a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>Collage with Portraits</em>, 2024</span>
-            <span class="details">Collage, 22 9/16 × 15 1/2 in</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="Collage with Portraits">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="nyny">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/nyny.jpg" alt="Collage of Metropolitan Museum tickets, maps, playing cards, coins and handwriting." loading="lazy">
-          <button class="rotate" type="button" data-title="NYNY" aria-label="Rotate NYNY a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>NYNY</em>, 2025</span>
-            <span class="details">Collage, 23 5/8 × 22 1/2 in</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="NYNY">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="hey-amateur-collage">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/hey-amateur-collage.jpg" alt="Tall collage of photographs, tape lettering and paper fragments." loading="lazy">
-          <button class="rotate" type="button" data-title="HEY AMATEUR: COLLAGE" aria-label="Rotate HEY AMATEUR: COLLAGE a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>HEY AMATEUR: COLLAGE</em>, 2026</span>
-            <span class="details">Collage, 20 5/8 × 9 in (unframed)</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="HEY AMATEUR: COLLAGE">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="boston-spring">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/boston-spring.jpg" alt="Collage of Boston museum admission tickets, Polaroid film packaging, maps and dated instant photographs." loading="lazy">
-          <button class="rotate" type="button" data-title="Boston Spring" aria-label="Rotate Boston Spring a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>Boston Spring</em>, 2026</span>
-            <span class="details">Collage, 30 1/4 × 23 in (unframed)</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="Boston Spring">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-      <li class="work" id="game-boy-advance">
-        <figure>
-          <div class="frame">
-          <img class="plate" src="../images/game-boy-advance.jpg" alt="Collage of Polaroids, watercolour washes, dated handwriting, a Game Boy Advance box panel and a sunset shoreline across the lower edge." loading="lazy">
-          <button class="rotate" type="button" data-title="GAME BOY ADVANCE" aria-label="Rotate GAME BOY ADVANCE a quarter turn clockwise"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-          </div>
-          <figcaption>
-            <span class="artist">Matthew Livingston</span>
-            <span class="title"><em>GAME BOY ADVANCE</em>, 2025</span>
-            <span class="details">Collage, 20 7/8 × 16 5/8 in (unframed)</span>
-            <span class="price">Contact for price</span>
-            <button class="vote" type="button" data-title="GAME BOY ADVANCE">Prefer this orientation?</button>
-            <span class="note">Each collage is wired on the back of its frame for every orientation its shape allows.</span>
-            <span class="note">Image orientation is presented at random.</span>
-          </figcaption>
-        </figure>
-      </li>
-    </ul>
-  </main>
+  <!-- Everything that stands ON the world is DOM, not canvas, so the words
+       stay legible, focusable and clickable. land.js projects each one onto
+       the sphere every frame. -->
+  <div class="land" id="land" aria-label="The words the collages are made of">
+    <p class="land-loading" id="land-loading">Turning the world&hellip;</p>
 
-  <section class="statement-block">
-    <h2 class="label">Statement</h2>
-    <p>I am curious about what faculties are and how they pertain to the world. I explore the immediacy of visual perception through the colors and movements of abstraction. I practice this abstract perspective through collage, which I first developed through my process notebooks and modeling materials in architectural school. My collage practice has since evolved into one focusing on ordinary objects and how they come to reinforce perceptual forms relative to day to day activities. They can be seen as compressions of the spatial processions forming my identity. Furthermore, they are able to be as radically different from each other as the situations they are derived from—they do different things as they are about different sequences of events. My long term goal is to clarify why the very disciplinary boundaries and social shapes we practice reflect the very perceptual forms we look at them with.</p>
-  </section>
+    <!-- The creature. It walks the surface and grazes on whatever word it
+         reaches; the world turns to keep it facing you. -->
+    <div class="creature" id="creature" hidden tabindex="0"
+         role="button" aria-describedby="creature-help"
+         aria-label="Grazing creature — hover or focus it to see what it turns up">
+      <!-- Laid out on a 32 × 24 grid of 4px cells. Every rect below is a part
+           that holds its own colour and remembers which artwork gave it —
+           twenty of them, so the creature carries many works at once instead
+           of wearing one. land.js paints three per throw, always the three
+           painted longest ago, so it never settles.
 
-  <footer class="colophon">
-    <div>
-      <h2>Contact</h2>
-      <p><a href="mailto:mattlivs3@gmail.com">mattlivs3@gmail.com</a></p>
+           These rects are the layout, not the drawing: land.js reads each one
+           for where its part stands and how big it is, then replaces it with
+           a block standing in isometry. The viewBox is rewritten from the
+           same grid, so nothing here needs to know about the projection. -->
+      <svg viewBox="0 0 128 96" aria-hidden="true" focusable="false">
+        <rect class="part" data-part="crest-1"    x="28" y="32" width="8"  height="8"/>
+        <rect class="part" data-part="crest-2"    x="44" y="28" width="8"  height="12"/>
+        <rect class="part" data-part="crest-3"    x="60" y="32" width="8"  height="8"/>
+        <rect class="part" data-part="crest-4"    x="76" y="28" width="8"  height="12"/>
+
+        <rect class="part" data-part="tail-tip"   x="0"  y="52" width="8"  height="4"/>
+        <rect class="part" data-part="tail-mid"   x="4"  y="48" width="12" height="8"/>
+        <rect class="part" data-part="tail-base"  x="12" y="44" width="16" height="16"/>
+
+        <rect class="part" data-part="hind-leg"   x="28" y="64" width="16" height="20"/>
+        <rect class="part" data-part="hind-foot"  x="20" y="84" width="28" height="8"/>
+        <rect class="part" data-part="fore-leg"   x="72" y="64" width="16" height="20"/>
+        <rect class="part" data-part="fore-foot"  x="64" y="84" width="28" height="8"/>
+
+        <rect class="part" data-part="haunch"     x="24" y="40" width="28" height="28"/>
+        <rect class="part" data-part="flank"      x="48" y="40" width="28" height="24"/>
+        <rect class="part" data-part="belly"      x="32" y="60" width="60" height="8"/>
+        <rect class="part" data-part="shoulder"   x="72" y="40" width="28" height="24"/>
+
+        <rect class="part" data-part="neck-low"   x="80" y="32" width="20" height="16"/>
+        <rect class="part" data-part="neck-up"    x="88" y="20" width="16" height="16"/>
+        <rect class="part" data-part="jaw"        x="96" y="20" width="24" height="4"/>
+        <rect class="part" data-part="skull"      x="96" y="4"  width="24" height="16"/>
+        <rect class="part" data-part="snout"      x="116" y="12" width="12" height="8"/>
+
+        <rect class="c-eye" x="108" y="8" width="4" height="4"/>
+      </svg>
     </div>
-  </footer>
+
+    <!-- What the creature turns up, offered on hover. -->
+    <div class="graze" id="graze" hidden>
+      <figure class="graze-card" id="graze-card">
+        <img class="graze-plate" id="graze-plate" alt="" draggable="false">
+        <figcaption>
+          <span class="graze-title" id="graze-title"></span>
+          <span class="graze-meta" id="graze-meta"></span>
+        </figcaption>
+      </figure>
+      <p class="graze-hint" id="graze-hint">Press again to take its palette</p>
+    </div>
+
+    <!-- A colour on the creature, and the artwork it came from. Every
+         painted part has one; this is how a walk of colour leads back. -->
+    <div class="trace" id="trace" hidden>
+      <span class="trace-title" id="trace-title"></span>
+      <span class="trace-meta" id="trace-meta"></span>
+      <span class="trace-hint" id="trace-hint">Open on Artsy</span>
+    </div>
+
+    <!-- A line, spoken by whoever is saying it. The players that grow off
+         the creature act out scenes; this is what they say. -->
+    <div class="say" id="say" hidden role="status" aria-live="polite">
+      <span class="say-who" id="say-who"></span>
+      <span class="say-line" id="say-line"></span>
+    </div>
+
+    <!-- Where you are, once you have gone down into a city, and the way
+         back up to the world. Nothing on the globe itself. -->
+    <div class="banner" id="banner" hidden>
+      <button class="banner-back" id="banner-back" type="button">
+        <span aria-hidden="true">&larr;</span> The world
+      </button>
+      <p class="banner-where">
+        <span class="banner-city" id="banner-city"></span>
+        <span class="banner-under" id="banner-under"></span>
+      </p>
+    </div>
+
+    <!-- The token object: a saved work condensed to its three colours,
+         thrown at the creature. -->
+    <div class="token" id="token" hidden>
+      <span class="token-band"></span>
+      <span class="token-band"></span>
+      <span class="token-band"></span>
+    </div>
+  </div>
+
+  <p class="visually-hidden" id="creature-help">
+    There are two heights here. The globe is the view of the whole site: the
+    Earth, the words the collages are made of, and the places the collages
+    are in — each one at its real coordinates, where the artist put it.
+    Amadeus is in Sydney, Collage with Portraits and GAME BOY ADVANCE in
+    Washington, NYNY in New York, i in San Francisco, Boston Spring in
+    Boston, HEY AMATEUR: COLLAGE in Blacksburg. Drag sideways to turn the
+    world and up or down to roll it north or south, which is how anywhere on
+    the Earth is reached. Every landmass takes the colour of whichever of
+    those places is nearest it, so the boundary between two colours is a
+    coastline. Nothing happens up there. Press a city and the world grows until
+    that city is the ground under you, and everything that follows happens
+    down there. The back button, or Escape, brings you up again. What grows in
+    one city stays in that city.
+
+    One of the cities is not a collage but a real building: the Folger
+    Shakespeare Library, on East Capitol Street in Washington. It is drawn
+    from the building — the long marble front, the nine pilasters with a
+    relief between each pair, the cornice, the reading room end, Puck in the
+    west garden — and it is where the plays are. Players are cast there and
+    nowhere else, and the scenes go up on its terrace. The other cities grow
+    towers, tubes, eggs and hatchlings, and are quiet. Three of the places
+    are within a few streets of each other in Washington; their marks are
+    pushed apart on the screen so each can be pressed, and their names are
+    given out nearest the middle first, so a name is left off rather than
+    printed across one already there.
+
+    Down in a city: press the creature to turn up a work; it stays up until you put it down.
+    Press again to take that work's palette, then drag it onto the creature and
+    let go to apply it. A palette that misses stays where it lands and can be
+    picked up again. With a keyboard, press Enter on the card to do both at
+    once, and Escape to put it down. Each throw repaints three of the creature's
+    twenty parts, so it carries several works at once; tab or hover onto a
+    painted part to hear which work gave it that colour, and open it. Tab
+    through the words to turn the world to the next of them; a word that has
+    gone round the back is hidden, so tabbing reaches the ones on this face
+    and the world brings more round as it turns. Drag anywhere to turn it by
+    hand. Down in a city the words are not shown — they are the language of
+    the whole world rather than of one place — but the creature still finds
+    the things that collage is made of underfoot, and the banner says which.
+    The world is the Earth: the weave closes up over land and opens over
+    water, so the shapes you turn past are the real coastlines, and each
+    landmass takes the colour of whichever collage falls nearest it.
+
+    Every palette applied also leaves something standing on the world, and
+    what it leaves is decided by the word the creature is standing on: things
+    that stack grow a tower, things wound or banded grow a tube, things that
+    are alive grow a hatchling, things with somebody in them grow a player
+    with a part to say, and a mark that is not yet anything grows an egg. So feed it a palette while it stands on
+    something, and the collage decides what comes up. The five words that
+    cast a part only cast one at the library. Five of the words
+    cast a particular part as well — handwriting brings on the Chorus, a
+    photograph Hamlet, a polaroid Juliet, a sketch Jaques, a playing card
+    Puck. These are yours to play with. Press a hatchling and it walks behind the
+    creature; press an egg three times to break it open; press one tube and
+    then another to pour the top band across, and a tube of a single colour
+    hatches; press a tower and the creature walks over to it. A palette can be dropped on any of them
+    instead of on the creature, which feeds it. Two of a kind that wander into
+    each other merge, and past the third size a thing becomes the next kind
+    along. Hold one, or press O with it focused, to open the work it came from
+    on Artsy.
+
+    Some of what grows off the creature are players — twelve parts and sixteen
+    scenes, out of Romeo and Juliet, Hamlet, Macbeth, A Midsummer Night's
+    Dream, The Tempest and As You Like It. When the cast a scene needs is
+    standing on the world they walk to their marks and act it out, a line at a
+    time, and whichever scene has waited longest is the one that goes up;
+    press any player to cue a scene, or to hear its own line if it is alone. A palette fed to a
+    player dresses it again in that work's colours and it keeps its part.
+    A scene builds its own place first, a course at a time — a diorama on its
+    own plinth, out of the colours of the works the players came from: a
+    Verona street with an arched wall and a well, a tower with a balcony over
+    it, steps down to a tomb, the battlement at Elsinore, a graveyard, the
+    hall at Dunsinane, a chamber, the wood, the island, the forest of Arden.
+    Ten places for sixteen scenes, because a play's scenes mostly happen
+    somewhere the play has already been. Pressing it, or Escape, strikes the
+    scene and takes the place down with it.
+
+    The world also keeps making things on its own, whether or not anything is
+    being thrown at the creature. To clear it, press and hold anywhere on the
+    ground: a ring opens under the press and grows while it is held, and
+    letting go squashes everything inside it — the pixels burst, and two or
+    more of them come back down as a single egg. A press that moves is a turn
+    of the world instead, so nothing is lost by trying.
+  </p>
 
 </div>
 
-<script>
-// Each collage hangs in any of four orientations, so the page opens each one at a
-// random quarter turn and the button steps through the rest. The first turn is
-// applied with the transition suppressed, otherwise every image visibly spins
-// once on load.
-document.querySelectorAll(".work").forEach(function (work) {
-  var image = work.querySelector(".plate");
-  var button = work.querySelector(".rotate");
-  if (!image || !button) return;
+<!-- What a word is standing on: the artist's own works. Closed until a word
+     is opened, so the stage stays bare. -->
+<aside class="seam" id="seam" hidden aria-labelledby="seam-word">
+  <button class="seam-close" id="seam-close" type="button" aria-label="Close">&times;</button>
+  <h2 class="seam-word" id="seam-word"></h2>
+  <p class="seam-count" id="seam-count"></p>
+  <ul class="seam-list" id="seam-list"></ul>
+</aside>
 
-  var turns = Math.floor(Math.random() * 4);
-
-  // Orientations are numbered 1-4 against the photograph itself: 1 is the file
-  // as shot, 2 a quarter turn clockwise, and so on. The number therefore means
-  // the same thing for every viewer no matter which one they happened to open
-  // on, which degrees-from-here would not.
-  function apply() {
-    image.style.transform = "rotate(" + turns * 90 + "deg)";
-    work.dataset.orientation = String(turns + 1);
-    button.setAttribute("aria-label",
-      "Rotate " + button.dataset.title +
-      " a quarter turn clockwise (showing orientation " + (turns + 1) + " of 4)");
-  }
-
-  image.style.transition = "none";
-  apply();
-  requestAnimationFrame(function () { image.style.transition = ""; });
-
-  button.addEventListener("click", function () {
-    turns = (turns + 1) % 4;
-    apply();
-  });
-
-});
-</script>
-<script>
-(function () {
-  var FORM = "1FAIpQLSfNvoqcBROel9ifOzOErGuGUBC0vp7k9Lf1Fn1uo1ww6AU-yw";
-  var WORK_FIELD = "entry.1314273606";
-  var ORIENTATION_FIELD = "entry.613371858";
-  var THANKS = "Recorded — thank you";
-  var STORE = "ml-orientation-vote:";
-
-  function remembered(title) {
-    try { return localStorage.getItem(STORE + title); } catch (e) { return null; }
-  }
-
-  // ?reset clears this browser's record of what it has voted on, so the same
-  // person can vote again — for testing. It touches nothing but this browser:
-  // responses already sent to the form are unaffected. The parameter is removed
-  // from the address bar afterwards so a refresh doesn't silently clear again.
-  if (/[?&]reset\b/.test(location.search)) {
-    try {
-      Object.keys(localStorage)
-        .filter(function (k) { return k.indexOf(STORE) === 0; })
-        .forEach(function (k) { localStorage.removeItem(k); });
-    } catch (e) {}
-    if (history.replaceState) {
-      history.replaceState(null, "", location.pathname + location.hash);
-    }
-  }
-
-  document.querySelectorAll(".vote").forEach(function (button) {
-    var work = button.closest(".work");
-    var title = button.dataset.title;
-
-    if (remembered(title)) {
-      button.textContent = THANKS;
-      button.disabled = true;
-      return;
-    }
-
-    button.addEventListener("click", function () {
-      var body = new FormData();
-      body.append(WORK_FIELD, title);
-      body.append(ORIENTATION_FIELD, work.dataset.orientation);
-
-      fetch("https://docs.google.com/forms/d/e/" + FORM + "/formResponse", {
-        method: "POST",
-        mode: "no-cors",
-        body: body
-      }).catch(function () {});
-
-      button.textContent = THANKS;
-      button.disabled = true;
-      try { localStorage.setItem(STORE + title, work.dataset.orientation); } catch (e) {}
-    });
-  });
-})();
-</script>
+<script src="land.js"></script>
 </body>
 </html>

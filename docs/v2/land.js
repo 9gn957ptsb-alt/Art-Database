@@ -5052,7 +5052,7 @@
       item.className = "seam-item";
 
       var link = document.createElement("a");
-      link.href = "index.html#" + work.slug;
+      link.href = "works.html#" + work.slug;
 
       var plate = document.createElement("img");
       plate.className = "seam-plate";
