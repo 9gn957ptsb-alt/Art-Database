@@ -700,7 +700,6 @@
     bannerUnder.textContent = place.where || "";
     bannerCity.disabled = !place.work;
     creature.hidden = false;
-    if (deckMode !== "all") { mark(place.slug); }
 
     beast.lat = goal.lat = place.lat;
     beast.lon = goal.lon = place.lon;
@@ -741,7 +740,6 @@
     banner.hidden = true;
     land.dataset.at = "globe";
     showHere(false);
-    if (deckMode !== "all") { mark(""); }
   }
 
   /* Which of the words on the globe are things this collage is made of. A
@@ -5574,7 +5572,6 @@
     dealTable();
     switcher.textContent = mode === "all" ? "The world" : "Collages";
     switcher.setAttribute("aria-expanded", mode === "all" ? "true" : "false");
-    if (mode === "all") { mark("collages"); }
     deckClose.focus();
   }
 
@@ -5587,7 +5584,6 @@
     retire(poolOf(deckTable));
     switcher.textContent = "Collages";
     switcher.setAttribute("aria-expanded", "false");
-    if (was === "all") { mark(place ? place.slug : ""); }
   }
 
   /* ---- a collage in its own city ---------------------------------------- */
@@ -5648,15 +5644,11 @@
     bannerCity.setAttribute("aria-pressed", on ? "true" : "false");
   }
 
-  /* ---- going anywhere is going somewhere on this page ------------------- */
+  /* ---- going anywhere is going somewhere on this page -------------------
 
-  function mark(hash) {
-    if (!window.history || !history.replaceState) { return; }
-    try {
-      history.replaceState(null, "", location.pathname + location.search +
-                           (hash ? "#" + hash : ""));
-    } catch (e) {}
-  }
+     The address never changes. There is one page and one link to it, and
+     wherever you go on it — a city, the collages — the address bar still
+     says the same thing. */
 
   function visit(slug) {
     var city = cityOf(slug);
@@ -5682,14 +5674,18 @@
     if (place && hereShown) { dealHere(); }
   }
 
+  /* An old link to the works page still arrives with a mark on the end of
+     it saying which collage it meant. It is honoured once, and then taken
+     off, so the address is the one link again. */
   function followHash() {
     var hash = decodeURIComponent((location.hash || "").slice(1));
     if (!hash) { return; }
+    if (window.history && history.replaceState) {
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    }
     if (hash === "collages" || hash === "works") { openDeck("all"); return; }
     if (cityOf(hash)) { visit(hash); }
   }
-
-  window.addEventListener("hashchange", followHash);
 
   deck.addEventListener("click", function (event) {
     // Anything on the table that is not a control deals it again.
@@ -5857,8 +5853,7 @@
 
       requestAnimationFrame(frame);
 
-      // A link can open the page on the collages, or in one of their
-      // cities: #collages, or #amadeus and the like.
+      // An old link to the works page, forwarded here.
       followHash();
       window.setTimeout(readAhead, 1200);
     })
