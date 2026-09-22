@@ -199,6 +199,7 @@
   var flying = false;
   var flyFrom = 1, flyTo = 1, flyAt = 0;
   var leanFrom = TILT, leanTo = TILT, leanWas = TILT;
+  var spinWas = 0;
   var focus = { lat: 0, lon: 0 };
   var cities = [];
   var fit = 1;          // how much every word comes down by so they all fit
@@ -532,7 +533,13 @@
         event.stopPropagation();
       });
       el.addEventListener("focus", function () {
-        // Bring it round and roll to it, without going down into it.
+        // Tabbed to: bring it round and roll to it, without going down into
+        // it. Not when it was pressed — a press focuses it too, a moment
+        // before the click, and turning the world then would lose the view
+        // that coming back up is meant to return to.
+        var keyed = true;
+        try { keyed = el.matches(":focus-visible"); } catch (e) {}
+        if (!keyed) { return; }
         wanted = city.lon;
         lean(city.lat - LOOK);
       });
@@ -662,10 +669,13 @@
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;
+    // The view you are leaving, kept to come back up to: how far the world
+    // was rolled, and which way round it was turned.
+    leanWas = tilt;
+    spinWas = wanted;
     wanted = city.lon;              // turn the world so the city faces you
     // And roll it until the city's own latitude is the one facing you, which
     // puts the place dead centre however far north or south it is.
-    leanWas = tilt;
     leanFrom = tilt;
     leanTo = city.lat;
     flyFrom = zoom;
@@ -686,6 +696,8 @@
     // Back out to the part of the world you were looking at when you went in.
     leanFrom = tilt;
     leanTo = leanWas;
+    // The same face of the world you were looking at before you went down.
+    wanted = spinWas;
     flyFrom = zoom;
     flyTo = 1;
     flyAt = performance.now();
@@ -872,15 +884,27 @@
      section; in a city the point you came down to is a little below the
      middle, and everything between the two is a straight run from one
      framing to the other so the flight has no corner in it. */
+  /* Where the globe sits, and how big it is, is dealt once each time the
+     page is opened: a size between 1/phi and the square root of phi of the
+     one it was designed at, and a nudge off centre of up to half of
+     1/phi-cubed of the window either way. Down in a city the framing is the
+     city's, and the nudge is flown out of on the way down. */
+  var seat = {
+    size: INV + Math.random() * (Math.sqrt(PHI) - INV),
+    dx: (Math.random() - 0.5) * INV3,
+    dy: (Math.random() - 0.5) * INV3
+  };
+
   function reframe() {
     R = baseR * zoom;
-    cx = W / 2;
-    var flank = Math.sqrt(Math.max(1, R * R - cx * cx));
-    var orbit = H * (1 - 1 / PHI) + flank;
+    var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+    var half = W / 2;
+    cx = half + seat.dx * W * (1 - down);
+    var flank = Math.sqrt(Math.max(1, R * R - half * half));
+    var orbit = H * (1 - 1 / PHI) + flank + seat.dy * H;
     // Where the city is, at the lean we have now: dead centre once the lean
     // has arrived at its latitude, and travelling there smoothly before.
     var ground = H * 0.62 + Math.sin(focus.lat - tilt) * R;
-    var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
     cy = orbit + (ground - orbit) * down;
   }
 
@@ -897,7 +921,7 @@
     // the screen at the golden section — 1/φ of the way up, 0.618 — which is
     // what gives the words their room: the visible surface goes up by about
     // half again even though the band of latitudes on it is shallower.
-    baseR = Math.max(W * 0.90, H * 0.70, 240);
+    baseR = Math.max(W * 0.90, H * 0.70, 240) * seat.size;
     cx = W / 2;
 
     // Everything below this latitude is under the bottom of the screen. The
@@ -909,8 +933,11 @@
     // globe's.
     var flank = Math.sqrt(Math.max(1, baseR * baseR - cx * cx));
     // At the resting lean, whatever the world is leaning at now.
-    var sunk = Math.max(-1, Math.min(1,
-      (H * (1 - 1 / PHI) + flank - H) / baseR));
+    // Kept above a little way south of the lean even when the globe is
+    // dealt small enough for all of its face to be on the screen, or the
+    // words would be sent to the far south to fill it.
+    var sunk = Math.max(-INV, Math.min(1,
+      (H * (1 - 1 / PHI) + flank + seat.dy * H - H) / baseR));
     LAT_LOW = TILT + Math.asin(sunk) + 2 * RAD;
 
     // And a band of the same width above it — twenty-seven degrees, which is
@@ -1369,7 +1396,10 @@
 
     // Strands running down the world. Even steps in latitude are even steps
     // along the surface, so these keep their spacing wherever they fall.
-    var strands = at ? 150 : 420;
+    // Half again and more: phi times the threads of before, because the
+    // globe is phi times more see-through than it was (see the patches), so
+    // there is as much more of the land and sea as there is less of each dot.
+    var strands = Math.round((at ? 150 : 420) * PHI);
     var down = at ? 150 : 320;
     for (var i = 0; i < strands; i += 1) {
       var base = at
@@ -1398,7 +1428,7 @@
     // nearer the pole, so these gather into a ridge toward the top of the
     // world by themselves — which is the part of her surfaces that does the
     // most work, and here it falls out of the geometry for nothing.
-    var rings = at ? 110 : 240;
+    var rings = Math.round((at ? 110 : 240) * PHI);
     var round = at ? 180 : 520;
     for (var j = 0; j < rings; j += 1) {
       var lat0 = at
@@ -1653,7 +1683,19 @@
     var down = flux(now, FLUX_DOWN, GOLDEN);
     var round = flux(now, FLUX_ROUND, 2 * GOLDEN);
 
-    ctx.save();
+    // Everything that is the globe goes onto a layer of its own first, so
+    // the patches and the pulse can be taken out of all of it at once.
+    if (layer.width !== canvas.width || layer.height !== canvas.height) {
+      layer.width = canvas.width;
+      layer.height = canvas.height;
+    }
+    var gctx = lctx;
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    gctx.globalCompositeOperation = "source-over";
+    gctx.globalAlpha = 1;
+    gctx.clearRect(0, 0, W, H);
+
+    gctx.save();
     if (flying && drawn.r) {
       // Mid-flight the sphere is not painted again — a hundred thousand dots
       // and seven gradients a frame is not a flight, it is a slideshow. The
@@ -1661,17 +1703,28 @@
       // which is what magnifying actually looks like, and the real thing is
       // laid down once on arrival.
       var grew = R / drawn.r;
-      ctx.translate(cx, cy);
-      ctx.scale(grew, grew);
-      ctx.translate(-drawn.cx, -drawn.cy);
+      gctx.translate(cx, cy);
+      gctx.scale(grew, grew);
+      gctx.translate(-drawn.cx, -drawn.cy);
     }
-    ctx.globalAlpha = body;
-    ctx.drawImage(sphere, 0, 0, W, H);
-    ctx.globalAlpha = down;
-    ctx.drawImage(cloth, 0, 0, W, H);
-    ctx.globalAlpha = round;
-    ctx.drawImage(cloth2, 0, 0, W, H);
-    ctx.restore();
+    gctx.globalAlpha = body;
+    gctx.drawImage(sphere, 0, 0, W, H);
+    gctx.globalAlpha = down;
+    gctx.drawImage(cloth, 0, 0, W, H);
+    gctx.globalAlpha = round;
+    gctx.drawImage(cloth2, 0, 0, W, H);
+    gctx.restore();
+
+    // The patches and the pulse, as a mask: kept where it is opaque, faded
+    // where it is not.
+    veil(now);
+    gctx.globalAlpha = 1;
+    gctx.globalCompositeOperation = "destination-in";
+    gctx.imageSmoothingEnabled = true;
+    gctx.drawImage(veilCanvas, 0, 0, W, H);
+    gctx.globalCompositeOperation = "source-over";
+
+    ctx.drawImage(layer, 0, 0, W, H);
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -1708,6 +1761,135 @@
     var mid = (INV + INV2) / 2;                  // 0.5
     if (still) { return mid; }
     return mid + (INV - mid) * Math.sin(TAU * now / period + phase);
+  }
+
+  /* ---- patches, and the pulse from pole to pole ---------------------------
+
+     Two more ways the globe is let go of, and both are the golden ratio.
+
+     The patches. Thirteen of them — a Fibonacci number — spread over the
+     sphere by the golden angle, the way seeds are spread in a sunflower, so
+     no two crowd and none are left out. Each is a soft region about a
+     radian across, fixed to the Earth and turning with it, and each fades
+     between 1/phi-squared and all the way there on a period of its own:
+     phi-cubed, phi to the fourth, fifth or sixth seconds, started a golden
+     angle apart. Neighbouring patches blend into each other, so what is
+     seen is large, slow weather of transparency moving over the world.
+
+     The pulse. Independent of all of that, a band of fading runs down the
+     world from beyond the North Pole to beyond the South and begins again,
+     every phi-to-the-fifth seconds — eleven. It is about 1/phi-to-the-fourth
+     of a half-turn wide, and at its deepest it leaves 1/phi-squared of the
+     globe showing. It follows the latitudes, not the screen, so it curves
+     over the sphere as a line of latitude does.
+
+     Both are worked out on a coarse grid — one cell to every eight pixels —
+     by running the projection backwards from each cell to the point of the
+     Earth under it, and laid over the globe as a mask. What the grid knows
+     about the Earth is kept until the world is turned; what changes every
+     frame is thirteen numbers and a latitude. */
+
+  var PATCHES = 13;
+  var VEIL = 8;                         // pixels of the screen to a cell
+  var PATCH_WIDE = 1 / PHI;             // radians, near enough: a patch is ~35 degrees
+  var PULSE = Math.pow(PHI, 5) * 1000;  // 11.09 s, north to south
+  var PULSE_WIDE = Math.PI / Math.pow(PHI, 4);
+
+  var patches = [];
+  for (var pi_ = 0; pi_ < PATCHES; pi_ += 1) {
+    var pz = 1 - 2 * (pi_ + 0.5) / PATCHES;
+    var pr = Math.sqrt(1 - pz * pz);
+    var pa = pi_ * GOLDEN;
+    patches.push({
+      x: pr * Math.cos(pa), y: pr * Math.sin(pa), z: pz,
+      period: Math.pow(PHI, 3 + (pi_ % 4)) * 1000,
+      phase: pi_ * GOLDEN
+    });
+  }
+
+  var veilCanvas = document.createElement("canvas");
+  var vctx = veilCanvas.getContext("2d");
+  var veilImage = null;
+  var veilSeen = { spin: null, tilt: null, cx: 0, cy: 0, r: 0, w: 0, h: 0 };
+  var veilLat = null, veilIn = null, veilWeights = null;
+  var layer = document.createElement("canvas");
+  var lctx = layer.getContext("2d");
+
+  /* Which point of the Earth is under each cell, and how much of each patch
+     is there. Only when the view has changed. */
+  function veilLook() {
+    var mw = Math.max(1, Math.ceil(W / VEIL));
+    var mh = Math.max(1, Math.ceil(H / VEIL));
+    if (veilCanvas.width !== mw || veilCanvas.height !== mh || !veilImage) {
+      veilCanvas.width = mw;
+      veilCanvas.height = mh;
+      veilImage = vctx.createImageData(mw, mh);
+      veilLat = new Float32Array(mw * mh);
+      veilIn = new Uint8Array(mw * mh);
+      veilWeights = new Float32Array(mw * mh * PATCHES);
+    }
+    var cosS = Math.cos(spin), sinS = Math.sin(spin);
+    var spread = 2 / (PATCH_WIDE * PATCH_WIDE);
+    for (var j = 0; j < mh; j += 1) {
+      for (var i = 0; i < mw; i += 1) {
+        var n = j * mw + i;
+        var X = ((i + 0.5) * VEIL - cx) / R;
+        var Y = (cy - (j + 0.5) * VEIL) / R;
+        var d2 = X * X + Y * Y;
+        if (d2 >= 1) { veilIn[n] = 0; continue; }
+        veilIn[n] = 1;
+        var Z = Math.sqrt(1 - d2);
+        // The lean, undone.
+        var y = Y * COS_T + Z * SIN_T;
+        var z = -Y * SIN_T + Z * COS_T;
+        // The spin, undone: this is the point in the Earth's own frame.
+        var ex = z * cosS - X * sinS;
+        var ey = X * cosS + z * sinS;
+        veilLat[n] = Math.asin(Math.max(-1, Math.min(1, y)));
+        var sum = 0, base = n * PATCHES;
+        for (var p = 0; p < PATCHES; p += 1) {
+          var pt = patches[p];
+          var dot = ex * pt.x + ey * pt.y + y * pt.z;
+          var w = Math.exp((dot - 1) * spread);
+          veilWeights[base + p] = w;
+          sum += w;
+        }
+        for (p = 0; p < PATCHES; p += 1) { veilWeights[base + p] /= (sum || 1); }
+      }
+    }
+    veilSeen.spin = spin; veilSeen.tilt = tilt; veilSeen.cx = cx; veilSeen.cy = cy;
+    veilSeen.r = R; veilSeen.w = W; veilSeen.h = H;
+  }
+
+  function veil(now) {
+    // A turn of less than about a tenth of a degree moves no cell anywhere
+    // that matters, and the world eases toward where it is going for ever.
+    if (veilSeen.spin === null || Math.abs(veilSeen.spin - spin) > 0.0015 ||
+        Math.abs(veilSeen.tilt - tilt) > 0.0015 || Math.abs(veilSeen.cx - cx) > 0.5 ||
+        Math.abs(veilSeen.cy - cy) > 0.5 || Math.abs(veilSeen.r - R) > 0.5 ||
+        veilSeen.w !== W || veilSeen.h !== H) {
+      veilLook();
+    }
+    var t = still ? 0 : now;
+    var amount = patches.map(function (pt) {
+      return 0.5 + 0.5 * Math.sin(TAU * t / pt.period + pt.phase);
+    });
+    var at = (Math.PI / 2 + 2 * PULSE_WIDE) -
+             (Math.PI + 4 * PULSE_WIDE) * ((t / PULSE) % 1);
+    var deep = still ? 0 : 1 - INV2;
+    var data = veilImage.data;
+    var cells = veilIn.length;
+    for (var n = 0; n < cells; n += 1) {
+      var o = n * 4;
+      if (!veilIn[n]) { data[o + 3] = 255; continue; }
+      var base = n * PATCHES, mix = 0;
+      for (var p = 0; p < PATCHES; p += 1) { mix += veilWeights[base + p] * amount[p]; }
+      var show = INV2 + (1 - INV2) * mix;
+      var off = (veilLat[n] - at) / PULSE_WIDE;
+      show *= 1 - deep * Math.exp(-off * off);
+      data[o + 3] = Math.round(show * 255);
+    }
+    vctx.putImageData(veilImage, 0, 0);
   }
 
   /* The room the globe hangs in. Not faded with it: the globe fading is the
