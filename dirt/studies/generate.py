@@ -9,9 +9,11 @@ Prompts live in prompts.json beside this file, in order of what DIRT needs most.
 made, up to --max, and writes each image and a line in log.jsonl (its prompt, model, size, date) to the study folder,
 which is private (dirt/private/studies/) and never committed.
 
-    OPENAI_API_KEY=... python3 dirt/studies/generate.py [--max 5] [--model gpt-image-1] [--quality medium]
+    python3 dirt/studies/generate.py [--max 5] [--model gpt-image-1] [--quality medium]
 
-The key is read from the environment only. The API bills per image.
+The OpenAI key is never in the session: it is stored as the environment's API credential for api.openai.com, and
+the environment's proxy adds it to each request on the way out. (Where the key is in OPENAI_API_KEY instead, as
+on a machine of your own, it is used from there.) The API bills per image.
 """
 
 import argparse
@@ -19,7 +21,6 @@ import base64
 import datetime
 import json
 import os
-import sys
 from pathlib import Path
 
 import requests
@@ -43,14 +44,13 @@ def main():
     ap.add_argument("--only", help="make this prompt id, even if made before")
     args = ap.parse_args()
     key = os.environ.get("OPENAI_API_KEY")
-    if not key:
-        sys.exit("OPENAI_API_KEY is not set in this environment")
+    headers = {"Authorization": f"Bearer {key}"} if key else {}          # else the environment's proxy adds it
     prompts = json.loads((HERE / "prompts.json").read_text())
     done = made()
     todo = [p for p in prompts if p["id"] == args.only] if args.only else [p for p in prompts if p["id"] not in done]
     OUT.mkdir(parents=True, exist_ok=True)
     for p in todo[: args.max]:
-        r = requests.post(API, headers={"Authorization": f"Bearer {key}"}, timeout=300,
+        r = requests.post(API, headers=headers, timeout=300,
                           json={"model": args.model, "prompt": p["prompt"], "size": args.size, "quality": args.quality, "n": 1})
         if r.status_code != 200:
             print(p["id"], "failed:", r.status_code, r.text[:500])
