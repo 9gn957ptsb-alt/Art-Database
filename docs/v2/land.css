@@ -83,17 +83,13 @@
   overflow: hidden;
   cursor: grab;
 
-  /* Not `none`. The stage is fixed to all four edges, so it is the whole
-     screen, and `touch-action: none` on the whole screen tells the browser to
-     do nothing at all with touch there — including pinch. Zoom in anywhere
-     the stage does not cover (the panel of works, or the moment before this
-     stylesheet applies) and there is then no way back out: every pinch lands
-     on the stage and is swallowed. `pinch-zoom` keeps the one gesture that
-     has to keep working and still refuses the rest, so a one-finger drag
-     comes to us as a turn of the world rather than a scroll, and a double
-     tap does not zoom — which matters here, where half the things on the
-     world are worked by tapping them twice. */
-  touch-action: pinch-zoom;
+  /* `none`: every touch on the stage is the page's own. One finger turns the
+     world (or, on the sky, carries it across), two fingers pinch it nearer
+     or further — the page does that itself now, so the browser is not also
+     asked to zoom the page under it. It used to be `pinch-zoom`, for the
+     sake of a way back out of a zoomed page; there is no page zoom to get
+     out of any more, since the pinch is the world's. */
+  touch-action: none;
 }
 
 .stage[data-turning="true"] { cursor: grabbing; }
@@ -131,6 +127,15 @@
 .hubble[hidden] { display: none; }
 .hubble svg { display: block; width: 100%; height: auto; }
 .hubble:focus-visible { outline: 1px solid var(--edge); outline-offset: 4px; }
+
+.burst {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 60;
+  pointer-events: none;
+}
 
 .world-gloss {
   pointer-events: none;

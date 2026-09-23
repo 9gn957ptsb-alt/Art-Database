@@ -1731,7 +1731,8 @@
     // it is the difference between turning the world and dragging it.
     if (woven.loose && !turning) { return true; }
     return woven.spin === null || Math.abs(woven.spin - spin) > 0.0015 ||
-           woven.w !== W || woven.h !== H || woven.r !== R;
+           woven.w !== W || woven.h !== H || woven.r !== R ||
+           Math.abs(woven.cx - cx) > 0.5 || Math.abs(woven.cy - cy) > 0.5;
   }
 
   /* The whole field, onto its own surface, in runs of one colour: a hundred
@@ -1835,6 +1836,8 @@
     woven.w = W;
     woven.h = H;
     woven.r = R;
+    woven.cx = cx;
+    woven.cy = cy;
   }
 
   /* ---- painting the world ------------------------------------------------
@@ -1864,6 +1867,7 @@
     var slack = 5 * Math.max(1, zoom * 0.7);
     return Math.abs(lit.x - drawn.x) > slack || Math.abs(lit.y - drawn.y) > slack ||
            drawn.w !== W || drawn.h !== H || drawn.r !== R ||
+           Math.abs(drawn.cx - cx) > 0.5 || Math.abs(drawn.cy - cy) > 0.5 ||
            drawn.masses !== masses.length || clothStale();
   }
 
@@ -1894,12 +1898,12 @@
 
     // What the creature stands on is the brightest part of the sphere.
     var lit = project(beast.lat, beast.lon);
-    if (!flying && !swing && sphereStale(lit)) { drawSphere(lit); }
+    if (!flying && !moving() && sphereStale(lit)) { drawSphere(lit); }
     // A swing magnifies what is drawn, and a world coming in from far off
     // grows six times over: past phi times, it is woven again at the size
     // it has got to, a few times on the way in, so it never goes to blocks.
-    if (swing && drawn.r && (R / drawn.r > PHI || R / drawn.r < INV) &&
-        now - swungAt > 90) {
+    if (moving() && drawn.r && (R / drawn.r > PHI || R / drawn.r < INV || !covered()) &&
+        now - swungAt > 60) {
       swungAt = now;
       drawSphere(lit);
       veilSeen.spin = null;
@@ -1931,7 +1935,7 @@
     gctx.clearRect(0, 0, W, H);
 
     gctx.save();
-    if ((flying || swing) && drawn.r) {
+    if ((flying || moving()) && drawn.r) {
       // Mid-flight the sphere is not painted again — a hundred thousand dots
       // and seven gradients a frame is not a flight, it is a slideshow. The
       // surface already drawn is magnified about the point being flown to,
@@ -1956,7 +1960,7 @@
     gctx.globalAlpha = 1;
     gctx.globalCompositeOperation = "destination-in";
     gctx.imageSmoothingEnabled = true;
-    if (swing && veilSeen.r) {
+    if (moving() && veilSeen.r) {
       // The mask is magnified with everything else while the world swings.
       gctx.save();
       gctx.translate(cx, cy);
@@ -2175,7 +2179,7 @@
         Math.abs(veilSeen.cy - cy) > 0.5 || Math.abs(veilSeen.r - R) > 0.5 ||
         veilSeen.w !== W || veilSeen.h !== H) {
       // Not while the world swings: the mask is magnified along with it.
-      if (!swing || veilSeen.spin === null) { veilLook(); }
+      if (!moving() || veilSeen.spin === null) { veilLook(); }
     }
     var t = still ? 0 : now;
     var amount = patches.map(function (pt) {
@@ -2209,7 +2213,7 @@
   var roomCells = null;
 
   function wordRoom() {
-    if (place || swing || !vocabulary.length) { return null; }
+    if (place || moving() || !vocabulary.length) { return null; }
     var mw = veilCanvas.width, mh = veilCanvas.height;
     if (!roomCells || roomCells.length !== mw * mh) { roomCells = new Float32Array(mw * mh); }
     roomCells.fill(1);
@@ -2338,17 +2342,89 @@
   var swungAt = 0;
   var nextSwing = 0;
   var lastTouch = 0;
+  var handledAt = -1e9;          // when the view was last pinched, scrolled or dragged
   var SWING_IDLE = Math.pow(PHI, 4) * 1000;      // 6.9 s of nobody doing anything
+  var SIZE_MOST = PHI * PHI;                     // as near as it can be brought: 2.6
+
+  var burst = document.getElementById("burst");
+  var burstCtx = burst.getContext("2d");
+
+  /* Anything that is moving the view right now: a swing, or a hand. While
+     it is, what is drawn is magnified rather than woven again. */
+  /* Does what was last drawn, magnified to where the world is now, still
+     cover the part of the window the world is in? When it stops doing so —
+     the world has grown or slid past the edge of the picture — it has to be
+     drawn again, or the picture's edge shows. */
+  function covered() {
+    var g = R / drawn.r;
+    var x0 = cx - drawn.cx * g, x1 = cx + (W - drawn.cx) * g;
+    var y0 = cy - drawn.cy * g, y1 = cy + (H - drawn.cy) * g;
+    var nx0 = Math.max(0, cx - R), nx1 = Math.min(W, cx + R);
+    var ny0 = Math.max(0, cy - R), ny1 = Math.min(H, cy + R);
+    return x0 <= nx0 + 1 && x1 >= nx1 - 1 && y0 <= ny0 + 1 && y1 >= ny1 - 1;
+  }
+
+  function moving() {
+    return !!swing || performance.now() - handledAt < 180;
+  }
 
   function swingWait() {
     return (Math.pow(PHI, 5) + Math.random() * (Math.pow(PHI, 7) - Math.pow(PHI, 5))) * 1000;
   }
 
-  function swingTo(to, dur, thrown) {
+  /* Never leave the world stranded. A big one keeps the middle of the
+     window well inside it, so there is always ground in front of you; a
+     small one keeps its near edge within reach of the middle. Whatever the
+     view does, there is always something to press, pinch or drag. */
+  function keepHold(t) {
+    var r = base0 * t.size;
+    var ox = W / 2 + t.dx * W, oy = orbitFor(r) + t.dy * H;
+    var sx = W / 2, sy = H / 2;
+    var ddx = ox - sx, ddy = oy - sy;
+    var d = Math.sqrt(ddx * ddx + ddy * ddy);
+    var most = r > Math.min(W, H) * 0.5 ? r * 0.72 : r + Math.min(W, H) * 0.28;
+    if (d > most && d > 0) {
+      ox = sx + ddx * most / d;
+      oy = sy + ddy * most / d;
+      t.dx = (ox - W / 2) / W;
+      t.dy = (oy - orbitFor(r)) / H;
+    }
+    return t;
+  }
+
+  function setSeat(t) {
+    seat.size = t.size; seat.dx = t.dx; seat.dy = t.dy;
+    baseR = base0 * seat.size;
+    reframe();
+  }
+
+  /* The seat that keeps a point of the screen over the same point of the
+     world while the world is made bigger or smaller: zooming about it. */
+  function seatAbout(px, py, size) {
+    var r1 = base0 * size;
+    var k = r1 / (base0 * seat.size);
+    var c1x = px - k * (px - cx), c1y = py - k * (py - cy);
+    return { size: size, dx: (c1x - W / 2) / W, dy: (c1y - orbitFor(r1)) / H };
+  }
+
+  /* Three ways to swing. A drift is the world changing distance on its own,
+     slow and even. A bounce is a tap on the sky: a spring, over and back.
+     A rocket is a press on a small world: it winds back, then fires —
+     the world blows up toward you with the air streaking past, a flash and
+     a ring going out, the whole view kicked in perspective and shaking as
+     it lands, and a little spring at the end. */
+  function swingTo(to, dur, kind) {
+    to = keepHold(to);
+    var rays = [];
+    for (var i = 0; i < 84; i += 1) {
+      rays.push({ a: Math.random() * TAU, len: 0.12 + Math.random() * 0.3,
+                  off: Math.random() * 0.35, w: 0.6 + Math.random() * 2.2,
+                  gold: Math.random() < 0.18 });
+    }
     swing = {
       from: { size: seat.size, dx: seat.dx, dy: seat.dy },
-      to: to, at: performance.now(), dur: still ? 1 : dur, thrown: thrown,
-      // Which way the view leans as it goes, dealt each time.
+      to: to, at: performance.now(), dur: still ? 1 : dur, kind: kind, last: 0,
+      rays: rays,
       lx: (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.random()),
       ly: (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.random())
     };
@@ -2356,39 +2432,113 @@
     stage.style.transition = "none";
   }
 
-  function outBack(t) {
-    var c = 1.70158 * INV * 2, d = c + 1;
-    return 1 + d * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
+  function inOut(t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); }
+
+  // A spring let go: shoots past, comes back, settles.
+  function spring(p, stiff, wobble) {
+    return 1 - Math.exp(-stiff * p) * Math.cos(wobble * p);
   }
 
-  function inOut(t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); }
+  var WIND = 0.14;                 // the share of a rocket spent winding back
 
   function stepSwing(now) {
     if (!swing) { return; }
     var t = Math.min(1, (now - swing.at) / swing.dur);
-    var e = swing.thrown ? outBack(t) : inOut(t);
+    var e, kick = 0, speed = 0;
+    if (swing.kind === "rocket") {
+      if (t < WIND) {
+        e = -0.09 * Math.sin(Math.PI / 2 * t / WIND);          // winding back
+      } else {
+        var q = (t - WIND) / (1 - WIND);
+        e = spring(q, 6.4, 10.5);
+        speed = Math.exp(-6.4 * q);                            // the thrust, dying
+        kick = q;
+      }
+    } else if (swing.kind === "bounce") {
+      e = spring(t, 5.2, 9);
+    } else {
+      e = inOut(t);
+    }
     var f = swing.from, g = swing.to;
-    seat.size = Math.exp(Math.log(f.size) + (Math.log(g.size) - Math.log(f.size)) * e);
-    seat.dx = f.dx + (g.dx - f.dx) * e;
-    seat.dy = f.dy + (g.dy - f.dy) * e;
-    baseR = base0 * seat.size;
-    reframe();
+    setSeat({
+      size: Math.exp(Math.log(f.size) + (Math.log(g.size) - Math.log(f.size)) * e),
+      dx: f.dx + (g.dx - f.dx) * e,
+      dy: f.dy + (g.dy - f.dy) * e
+    });
 
-    // The lean in perspective: out and back once and a little past, dying
-    // away to nothing at the end.
-    var amp = (swing.thrown ? 11 : 6) * (1 - t);
+    // The view in perspective. A drift leans gently; a bounce and a rocket
+    // are kicked hard and settle, and a rocket shakes as it lands.
+    var amp = (swing.kind === "drift" ? 6 : 12) * (1 - t);
     var wave = Math.sin(1.5 * Math.PI * t);
-    stage.style.transform =
-      "perspective(" + Math.round(Math.max(W, H) * PHI) + "px)" +
-      " rotateX(" + (amp * wave * swing.lx).toFixed(2) + "deg)" +
-      " rotateY(" + (amp * wave * swing.ly * INV).toFixed(2) + "deg)";
+    var tf = "perspective(" + Math.round(Math.max(W, H) * (swing.kind === "rocket" ? INV : PHI)) + "px)" +
+             " rotateX(" + (amp * wave * swing.lx).toFixed(2) + "deg)" +
+             " rotateY(" + (amp * wave * swing.ly * INV).toFixed(2) + "deg)";
+    if (swing.kind === "rocket" && kick > 0.18 && kick < 0.7) {
+      var shake = 5 * (1 - (kick - 0.18) / 0.52);
+      tf = "translate(" + ((Math.random() - 0.5) * shake).toFixed(1) + "px," +
+           ((Math.random() - 0.5) * shake).toFixed(1) + "px) " + tf;
+    }
+    stage.style.transform = tf;
+    // Motion blur while it is going fastest.
+    stage.style.filter = speed > 0.05 ? "blur(" + (speed * 6).toFixed(2) + "px)" : "";
+
+    drawBurst(swing, t, kick, speed);
 
     if (t >= 1) {
       swing = null;
       stage.style.transform = "";
+      stage.style.filter = "";
       stage.style.transition = "";
+      burstCtx.clearRect(0, 0, burst.width, burst.height);
       nextSwing = now + swingWait();
     }
+  }
+
+  /* The air going past: rays out of the middle of the window, a flash as
+     it fires, and a ring blowing outward. Only for a rocket. */
+  function drawBurst(sw, t, kick, speed) {
+    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (burst.width !== pw || burst.height !== ph) { burst.width = pw; burst.height = ph; }
+    var g = burstCtx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    if (sw.kind !== "rocket" || t < WIND || kick > 0.62) { return; }
+    var q = kick / 0.62;                 // 0 at the firing, 1 when the air has gone by
+    var fx = W / 2, fy = H * INV;        // where it is flying to
+    var D = Math.sqrt(W * W + H * H);
+
+    // The flash.
+    if (q < 0.22) {
+      var flash = g.createRadialGradient(fx, fy, 0, fx, fy, D * 0.7);
+      var fa = 0.42 * (1 - q / 0.22);
+      flash.addColorStop(0, "rgba(255,255,255," + fa.toFixed(3) + ")");
+      flash.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = flash;
+      g.fillRect(0, 0, W, H);
+    }
+
+    // The ring.
+    g.beginPath();
+    g.arc(fx, fy, D * 0.08 + D * 0.7 * Math.sqrt(q), 0, TAU);
+    g.strokeStyle = "rgba(255,255,255," + (0.55 * (1 - q)).toFixed(3) + ")";
+    g.lineWidth = 1 + 7 * (1 - q);
+    g.stroke();
+
+    // The streaks.
+    g.lineCap = "round";
+    sw.rays.forEach(function (ray) {
+      var r0 = D * (0.1 + ray.off + q * 0.9);
+      var r1 = r0 + D * ray.len * (0.4 + speed);
+      var ca = Math.cos(ray.a), sa = Math.sin(ray.a);
+      g.beginPath();
+      g.moveTo(fx + ca * r0, fy + sa * r0);
+      g.lineTo(fx + ca * r1, fy + sa * r1);
+      g.strokeStyle = ray.gold
+        ? "rgba(214,176,92," + (0.7 * (1 - q)).toFixed(3) + ")"
+        : "rgba(255,255,255," + (0.85 * (1 - q)).toFixed(3) + ")";
+      g.lineWidth = ray.w * (1 + speed);
+      g.stroke();
+    });
   }
 
   ["pointerdown", "keydown", "wheel"].forEach(function (name) {
@@ -2399,12 +2549,12 @@
   function autoSwing(now) {
     if (!nextSwing) { nextSwing = now + swingWait(); return; }
     if (swing || now < nextSwing) { return; }
-    if (place || flying || deckMode || turning || still || document.hidden ||
-        now - lastTouch < SWING_IDLE) {
+    if (place || flying || deckMode || turning || panning || pinch || still ||
+        document.hidden || now - lastTouch < SWING_IDLE) {
       nextSwing = now + 1500;           // try again shortly
       return;
     }
-    swingTo(dealSeat(), FLY * PHI * PHI, false);
+    swingTo(dealSeat(), FLY * PHI * PHI, "drift");
   }
 
   /* The point of the Earth under a point of the screen, or null off the
@@ -2419,7 +2569,7 @@
     return { lat: Math.asin(Math.max(-1, Math.min(1, yy))), lon: wrap(Math.atan2(X, zz) + spin) };
   }
 
-  /* A press on a small world brings it in, round the point pressed. */
+  /* A press on a small world fires it at you, round the point pressed. */
   function pressGlobe(x, y) {
     if (place || flying || swing || deckMode) { return false; }
     if (R > Math.min(W, H) * 0.5) { return false; }     // not small enough
@@ -2435,11 +2585,56 @@
       size: size,
       dx: (c1x - W / 2) / W,
       dy: (c1y - orbitFor(r1)) / H
-    }, FLY * PHI, true);
+    }, FLY * PHI, "rocket");
     return true;
   }
 
-  /* ---- the telescope --------------------------------------------------------
+  /* A tap on the empty sky bounces the view somewhere new — near or far —
+     which is also the way out of any view that has stopped being useful. */
+  function pressSky(x, y) {
+    if (place || flying || swing || deckMode) { return false; }
+    if (unproject(x, y)) { return false; }
+    swingTo(dealSeat(), FLY * PHI, "bounce");
+    return true;
+  }
+
+  /* ---- by hand: pinch, scroll, and dragging the sky --------------------
+
+     Up on the globe the view is yours to move as well as the world's. Two
+     fingers pinch it nearer or further, about the point between them; a
+     scroll wheel or a trackpad does the same about the pointer; dragging
+     on the sky, off the world, carries the world across it. Dragging on
+     the world still turns it. */
+
+  var panning = null;
+  var pinch = null;
+  var fingers = {};
+
+  function handle(t) {
+    setSeat(keepHold(t));
+    handledAt = performance.now();
+    lastTouch = handledAt;
+  }
+
+  function pinchState() {
+    var ids = Object.keys(fingers);
+    if (ids.length < 2) { return null; }
+    var a = fingers[ids[0]], b = fingers[ids[1]];
+    var dx = a.x - b.x, dy = a.y - b.y;
+    return { d: Math.max(20, Math.sqrt(dx * dx + dy * dy)),
+             x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  stage.addEventListener("wheel", function (event) {
+    if (place || flying || swing || deckMode) { return; }
+    event.preventDefault();
+    var step = event.ctrlKey ? 0.012 : 0.0016;         // a trackpad pinch comes as ctrl+wheel
+    var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST,
+      seat.size * Math.exp(-event.deltaY * step)));
+    handle(seatAbout(event.clientX, event.clientY, size));
+  }, { passive: false });
+
+  /* ---- the telescope ----  /* ---- the telescope --------------------------------------------------------
 
      Seen from far enough off, the Earth is a marble, and it has company:
      the Hubble Space Telescope, in orbit round it. It goes round once every
@@ -2599,7 +2794,7 @@
   }
 
   function placeGloss() {
-    var whole = !place && !flying && !swing;
+    var whole = !place && !flying && !moving();
     gloss.style.opacity = whole ? "1" : "0";
     if (!whole) { return; }
     if (Math.abs(glossSeen.cx - cx) > 0.5 || Math.abs(glossSeen.cy - cy) > 0.5 ||
@@ -2909,7 +3104,7 @@
   var pace = { from: 0, frames: 0 };
 
   function sharpen(now) {
-    if (flying || swing || deckMode || turning || document.hidden) { pace.from = 0; return; }
+    if (flying || moving() || deckMode || turning || document.hidden) { pace.from = 0; return; }
     if (!pace.from) { pace.from = now; pace.frames = 0; return; }
     pace.frames += 1;
     var span = now - pace.from;
@@ -6059,10 +6254,27 @@
     // A second finger down means the browser is being pinched, not that the
     // world is being turned. Let go of the turn and the squash and leave the
     // gesture to it, or the world spins while someone is trying to zoom.
-    if (turning && event.pointerId !== turning.id) {
+    fingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    if ((turning || panning) && Object.keys(fingers).length >= 2) {
       turning = null;
+      panning = null;
       squashing = null;
       delete stage.dataset.turning;
+      // Two fingers on the globe view pinch the world nearer or further.
+      if (!place && !flying && !swing) {
+        var at = pinchState();
+        pinch = { d: at.d, x: at.x, y: at.y, size: seat.size };
+      }
+      return;
+    }
+
+    // A press on the sky, off the world, carries the world across it.
+    if (!place && !flying && !swing && !unproject(event.clientX, event.clientY)) {
+      if (offering || carrying) { dismiss(); }
+      panning = { id: event.pointerId, x: event.clientX, y: event.clientY,
+                  dx: seat.dx, dy: seat.dy, moved: 0, at: performance.now() };
+      stage.dataset.turning = "true";
+      try { stage.setPointerCapture(event.pointerId); } catch (e) {}
       return;
     }
 
@@ -6078,6 +6290,32 @@
   });
 
   stage.addEventListener("pointermove", function (event) {
+    if (fingers[event.pointerId]) {
+      fingers[event.pointerId].x = event.clientX;
+      fingers[event.pointerId].y = event.clientY;
+    }
+    if (pinch) {
+      var now2 = pinchState();
+      if (now2) {
+        var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST, pinch.size * now2.d / pinch.d));
+        var t = seatAbout(now2.x, now2.y, size);
+        // And the pair of fingers drags it as it pinches.
+        t.dx += (now2.x - pinch.x) / W;
+        t.dy += (now2.y - pinch.y) / H;
+        pinch.x = now2.x; pinch.y = now2.y;
+        pinch.size = size; pinch.d = now2.d;
+        handle(t);
+      }
+      return;
+    }
+    if (panning && event.pointerId === panning.id) {
+      var mx = event.clientX - panning.x, my = event.clientY - panning.y;
+      panning.moved = Math.max(panning.moved, Math.abs(mx), Math.abs(my));
+      if (panning.moved > 6) {
+        handle({ size: seat.size, dx: panning.dx + mx / W, dy: panning.dy + my / H });
+      }
+      return;
+    }
     if (!turning || event.pointerId !== turning.id) { return; }
     // The world is turned from up on the globe. Down in a city you are
     // standing on one patch of ground, woven for that patch, and turning
@@ -6098,6 +6336,18 @@
 
   ["pointerup", "pointercancel"].forEach(function (name) {
     stage.addEventListener(name, function (event) {
+      delete fingers[event.pointerId];
+      if (pinch) {
+        if (Object.keys(fingers).length < 2) { pinch = null; delete stage.dataset.turning; }
+        return;
+      }
+      if (panning && event.pointerId === panning.id) {
+        var tap = panning.moved < 6 && performance.now() - panning.at < 450;
+        panning = null;
+        delete stage.dataset.turning;
+        if (tap && name === "pointerup") { pressSky(event.clientX, event.clientY); }
+        return;
+      }
       if (!turning || event.pointerId !== turning.id) { return; }
       var was = turning;
       turning = null;
