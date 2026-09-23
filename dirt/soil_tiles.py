@@ -1,33 +1,31 @@
 #!/usr/bin/env python3
-"""DIRT tiles: a set of different collection-soil squares whose edges all line up.
+"""DIRT's ground: the ingredients of an infinite plane of collection soil, assembled in the browser.
 
-This is an edge-matched (Wang) tile set. Every vertical tile edge has one of four colours and every
-horizontal edge one of four more, and each colour is a whole object from a painting that straddles
-the edge: a face split down its middle on the vertical edges, and a boat, a bridge, a building or an
-angel split across on the horizontal ones. A tile shows the half on its own side, and the
-neighbour that shares that edge colour shows the other half, so the object is continuous across
-the join. There are sixteen tiles, one for every pairing of west and north edge. Laying a grid left
-to right and top to bottom, each place takes the tile that matches the edges already down, so any
-arrangement lines up.
+The plane is a lattice of tiles whose edges always line up. Every vertical join on the lattice takes one
+of five colours and every horizontal join one of five more, decided by the join's own position, so the
+two tiles that share a join always agree on it. Each colour is a whole object from a painting that
+straddles the join: a face split down its middle on the vertical joins, and a boat, a bridge, a building,
+an angel or a footbridge split across on the horizontal ones. Any tile can be built anywhere, so the
+plane has no edge and no starting point.
 
-A tile is made of zones, and each zone takes its soil from a source that the tiles meeting there
-share:
+A tile is made of zones, and each zone takes its soil from a source that the tiles meeting there share:
 
-  corners  one universal soil, so the four tiles meeting at a point agree
-  edges    a soil per edge colour, carrying that colour's object across the join
-  middle   a soil of the tile's own
+  corners  one of three corner soils, chosen by the grid point, so the four tiles meeting there agree
+  joins    the soil of the join's colour, carrying that colour's object across the join
+  middle   one of 34 middle soils, chosen and sometimes mirrored by the tile's position, each with
+           shapes of its own surfacing through it
 
-The zone boundaries depend only on things both sides of an edge agree on, and zones simply abut,
-clod against clod, so no frame shows. The soil is made in the same hand as the Cutouts view: the
-same clods, weave and windows. An object is not pasted on; it lies under the clods, and the clods
-over it become shards carrying their piece of it, with the same cracks, gaps and light as the rest,
-and some left as plain soil, so it surfaces through the dirt in pieces. Now and then an ordinary clod
-is centred on a face (OpenCV's Haar detector, checked by eye; see objects.json), seen with enough
-of its surroundings to stay a fragment.
+The zone boundaries depend only on things both sides of a join agree on, and zones simply abut, clod
+against clod, so no frame shows. This script makes the sources and the fields that shape the zones, and
+writes them to dirt/private/plane/. build_soil_viewer.py puts them in the page, and the page assembles
+tiles from them as the viewer moves.
 
-Colour mode keeps each clod to its painting's chocolate swatch; a shard of a straddling object is
-one flat colour from its painting's three, ranked by lightness. Everything this writes goes to dirt/private/, because the cutouts
-reproduce other artists' images.
+The soil is made in the same hand as the Cutouts view: the same clods, weave and windows. An object is
+not pasted on. It lies under the clods, and the clods over it become shards carrying their piece of it,
+with the same cracks, gaps and light as the rest, and some left as plain soil, so it surfaces through
+the dirt in pieces. Now and then an ordinary clod is centred on a face (OpenCV's Haar detector, checked
+by eye; see objects.json), seen with enough of its surroundings to stay a fragment. Everything this
+writes goes to dirt/private/, because the cutouts reproduce other artists' images.
 
     python3 dirt/soil_tiles.py --db path/to/artworks.db [--cache dir-of-medium-jpgs]
 """
@@ -48,14 +46,16 @@ HERE = Path(__file__).resolve().parent
 N, CELL, T = cs.N, cs.CELL, cs.T
 # Every number chosen here comes from the golden ratio: a Fibonacci number or a power of phi.
 PHI = (1 + 5 ** 0.5) / 2
-K = 5                           # edge colours per axis (Fibonacci), so 25 tiles
+K = 5                           # join colours per axis (Fibonacci)
+CORNERS = 3                     # corner soils; every grid point takes one (Fibonacci)
+MIDDLES = 34                    # middle soils; every tile takes one, maybe mirrored (Fibonacci)
 A, D = 13, 8                    # strip half-width in cells, and how far it wanders (Fibonacci)
 CZ, CZ_WANDER = 21, 5           # corner zone half-size and wander (Fibonacci; A + D = 21)
 OBJ_HALF = round(N / PHI ** 4)  # the straddling objects' half-thickness across their edge (37)
 CLODS = 233                     # per source (Fibonacci), close to the Cutouts view's 220
 BURIED = PHI ** -4              # share of an object's shards left as ordinary soil (0.146)
 FACE_SHARE = PHI ** -5          # share of ordinary clods centred on a face (0.090)
-SECOND = 1 / PHI                # chance a tile has a second shape of its own surfacing (0.618)
+SECOND = 1 / PHI                # chance a middle soil has a second shape surfacing (0.618)
 
 
 def rgb(h):
@@ -226,42 +226,53 @@ def make_source(rng, pool, face_pool, images, objs=(), name=""):
     return dict(lab=lab, size=size, colA=colA, colB=colB, meta=meta, zone=zone)
 
 
-# ---- tiles --------------------------------------------------------------------------------------
+# ---- export -------------------------------------------------------------------------------------
 
-def zones(srcs, west, east, north, south, a_fields, b_fields, corner_noise):
-    """Per cell: which source it takes (0 corner, 1 west, 2 east, 3 north, 4 south, 5 middle)."""
-    idx = np.arange(N)
-    dxe_i = np.minimum(idx, N - 1 - idx)                 # same value either side of an edge
-    X, Y = np.meshgrid(dxe_i, dxe_i)                     # X = distance to vertical edge, Y to horizontal
-    cz = CZ + CZ_WANDER * corner_noise[np.minimum(Y, N - 1), np.minimum(X, N - 1)]
-    corner = (X + 0.5 < cz) & (Y + 0.5 < cz)
-    yy, xx = np.mgrid[0:N, 0:N]
-    a = A + D * (2 * np.where(xx < N // 2, a_fields[west][yy, X], a_fields[east][yy, X]) - 1)
-    b = A + D * (2 * np.where(yy < N // 2, b_fields[north][Y, xx], b_fields[south][Y, xx]) - 1)
-    # A strip is a thin wandering band that swells to take in its object whole.
-    v_obj = np.where(xx < N // 2, srcs[1]["zone"], srcs[2]["zone"])
-    h_obj = np.where(yy < N // 2, srcs[3]["zone"], srcs[4]["zone"])
-    z = np.full((N, N), 5)
-    hs = ~corner & ((Y + 0.5 < b) | h_obj)
-    vs = ~corner & ~hs & ((X + 0.5 < a) | v_obj)
-    z[vs & (xx < N // 2)] = 1
-    z[vs & (xx >= N // 2)] = 2
-    z[hs & (yy < N // 2)] = 3
-    z[hs & (yy >= N // 2)] = 4
-    z[corner] = 0
-    return z
+def export(out, kinds, sources, fields, blacks, ground, spec, by_id):
+    """Write each source as a colour image and a meta image, the fields as images, and a manifest."""
+    works, windex = [], {}
 
+    def ref(w):
+        if w["id"] not in windex:
+            windex[w["id"]] = len(works)
+            works.append({k: w[k] for k in ("id", "title", "artist", "date", "url")})
+        return windex[w["id"]]
 
-def compose(z, srcs):
-    """Take each cell from its zone's source. Zones simply abut, clod against clod."""
-    out = {key: np.zeros_like(srcs[0][key]) for key in ("size", "colA", "colB")}
-    gid = np.zeros((N, N), int)
-    for zi, s in enumerate(srcs):
-        m = z == zi
-        for key in out:
-            out[key][m] = s[key][m]
-        gid[m] = zi * 1000 + s["lab"][m]
-    return out, gid
+    entries = []
+    for sid, (kind, src) in enumerate(zip(kinds, sources)):
+        size = src["size"].astype(np.uint8)
+        col = np.clip(src["colB"], 0, 255).astype(np.uint8)
+        col[size == 0] = blacks                     # the gaps are ground; keeping them plain helps the file
+        Image.fromarray(col, "RGB").save(out / f"s{sid}-colour.webp", lossless=True, method=6)
+        lab = src["lab"].astype(np.uint16)
+        # Meta: clod number (low byte red, high byte green) and in blue the dot size plus, in bit 2,
+        # whether the cell is part of a straddling object's zone. A canvas reads these back exactly.
+        blue = (size & 3) | (src["zone"].astype(np.uint8) << 2)
+        Image.fromarray(np.stack([lab & 255, lab >> 8, blue], -1).astype(np.uint8), "RGB").save(
+            out / f"s{sid}-meta.png", optimize=True)
+        clods = [[ref(m["work"]), m["kind"], m.get("key")] if m else [-1, None, None] for m in src["meta"]]
+        entries.append(dict(kind=kind, clods=clods))
+
+    images = []
+    for g in range(0, len(fields), 3):
+        chans = [np.round(f * 255) for f in fields[g:g + 3]]
+        chans += [np.zeros((N, N))] * (3 - len(chans))
+        Image.fromarray(np.stack(chans, -1).astype(np.uint8), "RGB").save(out / f"fields-{g // 3}.png", optimize=True)
+        images.append(f"fields-{g // 3}.png")
+
+    ids = lambda kind: [i for i, k in enumerate(kinds) if k == kind]
+    manifest = dict(
+        grid=N, colours=K,
+        corners=ids("corner"), vertical=ids("vertical"), horizontal=ids("horizontal"), middles=ids("middle"),
+        zone=dict(A=A, D=D, CZ=CZ, CZ_WANDER=CZ_WANDER), fields=images,
+        ground=dict(hex=ground[1], work=ref(ground[0])),
+        edges=dict(vertical=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["vertical"][:K]],
+                   horizontal=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["horizontal"][:K]]),
+        phi=dict(sink=PHI ** -3, sunk=PHI ** -2),
+        works=works, sources=entries,
+    )
+    (out / "plane.json").write_text(json.dumps(manifest, ensure_ascii=False))
+    return out / "plane.json"
 
 
 def main():
@@ -269,7 +280,7 @@ def main():
     ap.add_argument("--db", required=True)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--cache", default=str(HERE / "private" / "cache"))
-    ap.add_argument("--out", default=str(HERE / "private" / "tiles"))
+    ap.add_argument("--out", default=str(HERE / "private" / "plane"))
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
     out = Path(args.out)
@@ -299,7 +310,7 @@ def main():
         return dict(o, work=w, img=images.get(w["image"], "large"), hex=w["colors"][0])
 
     span = N - 2 * (CZ + CZ_WANDER) - 34               # room along an edge between the corners (Fibonacci margin)
-    corner_src = make_source(rng, pool, face_pool, images)
+    corners = [make_source(rng, pool, face_pool, images) for _ in range(CORNERS)]
     vert = [make_source(rng, pool, face_pool, images, [(obj(o), (0, N / 2, 2 * OBJ_HALF, span), "across")], f"v{c}")
             for c, o in enumerate(spec["vertical"][:K])]
     horiz = [make_source(rng, pool, face_pool, images, [(obj(o), (N / 2, 0, span, 2 * OBJ_HALF), "across")], f"h{c}")
@@ -326,52 +337,20 @@ def main():
     b_fields = [cs.field(rng, 5, 34) for _ in range(K)]
     corner_noise = cs.field(rng, 8, 34)
 
-    blacks = rgb(ground_hex).astype(np.uint8)
-    tiles = []
-    for west in range(K):
-        for north in range(K):
-            east, south = int(rng.integers(K)), int(rng.integers(K))
-            name = f"w{west}n{north}e{east}s{south}"
-            places = two if rng.random() < SECOND else one
-            if rng.random() < PHI ** -2:
-                places = [(N - x, y, w_, h_) for x, y, w_, h_ in places]      # the other diagonal
-            mine = [(obj(within.pop()), p, "within") for p in places if within]
-            middle = make_source(rng, pool, face_pool, images, mine, f"m{len(tiles)}")
-            srcs = [corner_src, vert[west], vert[east], horiz[north], horiz[south], middle]
-            z = zones(srcs, west, east, north, south, a_fields, b_fields, corner_noise)
-            t, gid = compose(z, srcs)
-            # Local clod numbering for this tile, and who each clod came from.
-            ids, local = np.unique(gid, return_inverse=True)
-            clods = []
-            for g in ids:
-                m = srcs[g // 1000]["meta"][g % 1000]
-                clods.append(dict(hex=m["hex"], glint=m["glint"], kind=m["kind"], key=m.get("key"),
-                                  work={k_: m["work"][k_] for k_ in ("id", "title", "artist", "date", "url")},
-                                  cells=int((gid == g).sum())))
-            assert len(clods) < 65536, len(clods)
-            for mode in ("colA", "colB"):
-                img = cs.paint(t["size"], np.clip(t[mode], 0, 255).astype(np.uint8))
-                img[img[..., 3] == 0, :3] = blacks
-                img[..., 3] = 255
-                Image.fromarray(img[..., :3]).save(out / f"{name}-{'colour' if mode == 'colA' else 'cutout'}.webp",
-                                                    lossless=True, method=6)
-            # Clod numbers, low byte in red and high byte in green, so a browser canvas reads them exactly.
-            lab16 = local.reshape(N, N)
-            Image.fromarray(np.stack([lab16 & 255, lab16 >> 8, np.zeros_like(lab16)], -1).astype(np.uint8), "RGB").save(
-                out / f"{name}-labels.png", optimize=True)
-            tiles.append(dict(name=name, west=west, north=north, east=east, south=south, clods=clods))
-            print(name, len(clods), "clods")
+    middles = []
+    for m in range(MIDDLES):
+        places = two if rng.random() < SECOND else one
+        if rng.random() < PHI ** -2:
+            places = [(N - x, y, w_, h_) for x, y, w_, h_ in places]      # the other diagonal
+        mine = [(obj(within.pop()), p, "within") for p in places if within]
+        middles.append(make_source(rng, pool, face_pool, images, mine, f"m{m}"))
+        print(f"middle soil {m + 1} of {MIDDLES}: {len(mine)} shape(s) surfacing")
 
-    manifest = dict(
-        grid=N, cell=CELL, tile=T, colours=K,
-        ground=dict(hex=ground_hex, work={k_: ground_work[k_] for k_ in ("id", "title", "artist", "date", "url")}),
-        edges=dict(vertical=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["vertical"][:K]],
-                   horizontal=[dict(kind=o["kind"], id=o["id"], title=by_id[o["id"]]["title"], artist=by_id[o["id"]]["artist"]) for o in spec["horizontal"][:K]]),
-        phi=dict(sink=PHI ** -3, sunk=PHI ** -2),
-        tiles=tiles,
-    )
-    (out / "tiles.json").write_text(json.dumps(manifest, ensure_ascii=False))
-    print(out / "tiles.json")
+    kinds = ["corner"] * CORNERS + ["vertical"] * len(vert) + ["horizontal"] * len(horiz) + ["middle"] * len(middles)
+    blacks = rgb(ground_hex).astype(np.uint8)
+    path = export(out, kinds, corners + vert + horiz + middles, a_fields + b_fields + [corner_noise],
+                  blacks, (ground_work, ground_hex), spec, by_id)
+    print(path)
 
 
 if __name__ == "__main__":

@@ -100,78 +100,73 @@ reproduces fragments of other artists' work, so it and the viewer are written to
 which is gitignored. This repository is public, and the site's rule is that Artsy works appear only
 as their three-colour token.
 
-## DIRT tiles
+## DIRT: an endless plane
 
-`soil_tiles.py` makes the tile view in DIRT. It is a set of 25 different collection-soil squares whose edges all
-line up (an edge-matched, or Wang, tile set), and no two meetings look the same. Every number chosen for it comes
-from the golden ratio φ: a Fibonacci number or a power of φ.
+DIRT is an endless plane of collection soil to move through by swiping, with a trackpad, or with the arrow keys.
+A swipe glides on for a moment after you let go. New ground is grown as it comes into view, and returning to a
+place finds the same ground. Every number chosen for it comes from the golden ratio φ: a Fibonacci number or a
+power of φ.
 
-- **Five objects on each kind of join.** Each vertical edge has one of five colours, and so does each horizontal
-  edge. Each colour is a whole object from a painting that straddles the join. The vertical joins carry faces
-  split down the middle: Dürer, the Mona Lisa, Velázquez's Juan de Pareja, Corot's young woman, and Delacroix.
-  The horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's Doge's Palace, Poussin's angel,
-  and Monet's Japanese footbridge. A grid laid left to right and top to bottom takes, at each place, the tile
-  whose west and north edges match, so any arrangement is continuous across every join.
-- **New shapes inside the tiles.** Every tile has one shape of its own coming up through its middle, or, with
-  a chance of 1/φ, two at the golden-section points. They are drawn from the hand-found shapes in
-  `objects.json` (`within`) and every checked face that is not on a join. Each is used once, so shapes keep
-  appearing that appear nowhere else.
-- **A different join every time.** Each time a grid is dealt, every join gets its own seed. At that join a
-  share φ⁻³ of the object's shards sinks back into the dirt, darkened to φ⁻² of its light. Both tiles
-  agree on which ones, so the object stays continuous, but it is never quite the same twice.
-- **Small corners.** The corners, the one soil every tile shares, are 21 cells, so the patch that repeats at
-  every grid point stays small.
+**How the plane is built.** `soil_tiles.py` makes the plane's ingredients, and the page assembles tiles from
+them wherever the viewer goes, in a background worker so moving stays smooth.
 
-The tiles are made in the same hand as the Cutouts view: 233 clods per source, the same weave, and the same
-windows onto each painting. An object is not pasted on. It lies under the clods, and the clods over it become
-shards carrying their piece of the picture. The shards have the same cracks and light as the other clods, and a
-share φ⁻⁴ stays plain soil, so the object comes up through the dirt in pieces. A share φ⁻⁵ of ordinary clods is
-centred on a face that OpenCV's Haar detector found and that was then checked by eye. It is shown with φ² of its
-size in context, so it stays a fragment. `objects.json` records every object, its box in the painting, and the
-detections that were rejected.
+- **Joins decided by position.** Every vertical join on the plane takes one of five colours, and so does every
+  horizontal join. The colour comes from the join's own position, so the two tiles that share a join always
+  agree, and any tile can be built anywhere. Each colour is a whole object from a painting that straddles the join.
+  The vertical joins carry faces split down the middle: Dürer, the Mona Lisa, Velázquez's Juan de Pareja, Corot's
+  young woman, and Delacroix. The horizontal joins carry Courbet's boats, Van Gogh's bridge at Arles, Monet's
+  Doge's Palace, Poussin's angel, and Monet's Japanese footbridge.
+- **Tiles vary by position.** Each tile takes one of 34 middle soils, sometimes mirrored, and each shape
+  surfacing in one appears in no other. Each grid point takes one of 3 corner soils, which the four tiles meeting
+  there share.
+- **Joins vary by position.** At each join, a share of the object's shards sinks back into the dirt, darkened to
+  φ⁻² of its light. The share runs from φ⁻³ near calm ground to φ⁻¹ far out, and the join's own seed decides
+  which shards sink.
+- **Checked.** A test that assembled 300 random tile pairs up to a thousand tiles out found every one of 153,600
+  edge cells taking the same soil on both sides.
 
-```bash
-python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/tiles/ (needs opencv-python-headless<4.13)
-python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
-```
-
-DIRT is now only a field of these tiles and a Shuffle button (`build_soil_viewer.py`). Each Shuffle deals five
-by three tiles, picks a random origin and lays the tiles out from it in a spiral. The farther a place is from the
-origin, the more digital processes take hold of it, each switching on at a golden-ratio distance:
+**Calm islands and strange outskirts.** Calm ground lies in islands, one in each 1,597-cell square of the plane,
+each reaching about 610 cells (varied by φ^±½). The farther a place is from its nearest island, the more digital
+processes take hold of it:
 
 | From | What sets in |
 | --- | --- |
 | the start | more of each object's shards sink at its join, from φ⁻³ up to φ⁻¹ |
 | φ⁻³ | colours turn, by up to the golden angle (137.5°) |
 | φ⁻² | dots fuse into pixel blocks of 2, 3, 5, then 8 cells |
-| φ⁻² + φ⁻⁴ | rows tear sideways, like torn scanlines |
-| φ⁻¹ | columns pixel-sort by lightness into drips up to 21 cells long |
-| φ^-½ | the field folds into a five-fold kaleidoscope about the origin |
-| φ⁻² onward | **data pigment**: up to 1/φ of the dots come loose and fly as flocks, leaving dark pores behind |
+| φ⁻² + φ⁻⁴ | rows tear sideways in bands 5 rows tall and 233 cells long |
+| φ⁻¹ | columns pixel-sort by lightness into drips, within 21-cell segments fixed on the plane |
+| φ^-½ | the ground folds into a five-fold kaleidoscope about its island |
+| φ⁻² onward | **data pigment**: some of the dots come loose and fly as flocks, leaving dark pores behind |
 
-The data pigment takes flight as flocks, like starlings or a school of fish. Each loose dot is a bird (17,711
-at most) following three rules toward the neighbours it can see within 8 cells, heeding at most 13 of them:
+Everything is a function of position on the plane, so no seams show between tiles or between grown pieces of
+ground.
+
+**The flocks.** Each loose dot is a bird: up to 17,711 of them live around the view at any time, launched from the
+ground as it comes near and grounded again as it falls far behind. Each bird follows three rules toward the
+neighbours it can see within 8 cells, heeding at most 13 of them:
 
 - **Alignment:** fly as the others fly.
 - **Cohesion:** drift toward the middle of the flock.
 - **Separation:** keep a wingspan apart.
 
-Birds from the same painting are kin and pull φ times harder, so each painting's pigment tends to fly together.
-Three hawks hunt the far ground. They are never drawn. Each chases a bird of its choosing for a while, then turns
-to another, and any bird within 21 cells bolts away, up to φ times its normal top speed. The flock reads the bolt
-and turns, so the hawks are seen only in the splits, flashes and re-formings they cause. A slow current still runs
-underneath as a thermal to ride. The far ground is the flocks' sky: over the calm soil they turn back outward,
-harder the deeper they stray. Trails fade by φ⁻⁶ a frame. Hovering a bird names its painting. With reduced motion
-set, nothing takes flight.
+Birds from the same painting are kin and pull φ times harder. Three hawks hunt wherever the viewer is. They are
+never drawn: a bird within 21 cells of one bolts at up to φ times its top speed, and the flock turns with it. A
+slow current runs underneath as a thermal. Over calm ground the birds turn back outward, harder the deeper they
+stray. Trails fade by φ⁻⁶ a frame. With reduced motion set, nothing takes flight, new ground appears at once, and
+swipes do not glide.
 
-A similarity map of the paintings (laying clods out by how alike their paintings are, as Anadol does with
+**Naming and picking out.** Every cell remembers which painting it came from, however it was moved, so pointing
+anywhere names the saved painting underneath. A click or tap that does not move picks a painting out, darkening
+everything else. Clicking it again, pressing Escape, or pressing **Show all** brings the whole plane back.
+
+```bash
+python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/plane/ (needs opencv-python-headless<4.13)
+python3 dirt/build_soil_viewer.py                            # → dirt/private/collection-soil.html, the DIRT page
+```
+
+`objects.json` records every object, its box in the painting, and the face detections rejected by eye. All
+output is written to `dirt/private/`, because the cutouts reproduce other artists' images.
+
+A similarity map of the paintings (laying clods out by how alike their paintings are, as Refik Anadol does with
 his archives) is the plan for bigger globe terrains, not for DIRT.
-
-The processes run over the whole field, never over single tiles, so no joins show. Every cell remembers which
-painting it came from, so pointing anywhere names the saved painting underneath without darkening anything.
-Clicking or tapping a painting picks it out: everything else darkens, and it stays picked out while the
-pointer goes elsewhere, to the Artsy link for instance. Clicking it again, pressing Escape, or pressing
-**Show all** (which appears only while something is picked out) brings the whole field back without
-shuffling. The generator still writes
-a colour version of each tile, which the viewer does not use.
-All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.
