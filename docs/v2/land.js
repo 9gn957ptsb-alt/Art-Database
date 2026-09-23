@@ -2560,21 +2560,31 @@
      towards me"): in place of bodies nobody has seen, figures out of what he
      reads and loves — see S.figure in systems.js for who each one is. Only
      the metamorphosis changes, camel to lion to child and round again; the
-     rest stay themselves. COMPANY = false brings back the invented herd. */
+     rest stay themselves. COMPANY = false brings back the invented herd.
+
+     Sparingly (23 Sep 2026: "go a little bit easier"): one of them at a
+     time, one journey each, then the world is empty for a while before the
+     next comes. The metamorphosis makes its three journeys, camel, lion,
+     child, and goes; the camel comes back on its next turn. */
   var COMPANY = true;
-  var CAST = ["horse", "camel", "eagle", "road", "bat", "bat", "bat"];
-  var BECOMES = { camel: "lion", lion: "child", child: "camel" };
+  var CAST = ["horse", "camel", "eagle", "road", "bat"];
+  var BECOMES = { camel: "lion", lion: "child" };
+  var castTurn = Math.floor(Math.random() * CAST.length);
+  var castNext = 0;                  // when the next may come
+  var CAST_GAP = [34, 89];           // seconds of empty world between them (Fibonacci)
 
   function darkCities() {
     return cities.filter(function (c) { return darkAt(c.lat, c.lon) > 0.55; });
   }
   // Where a member of the company goes next, from where it is.
   function nextFor(kind, from) {
-    var others = cities.filter(function (c) { return c !== from; });
+    // never somewhere it is already standing (Washington has three places)
+    var here = toVec(from.lat, from.lon);
+    var others = cities.filter(function (c) { return dot3(toVec(c.lat, c.lon), here) < Math.cos(4 * RAD); });
     if (kind === "bat") {
       // only to where it is night; if nowhere else is, they stay and
       // circle the place they are
-      var dark = darkCities().filter(function (c) { return c !== from; });
+      var dark = darkCities().filter(function (c) { return others.indexOf(c) >= 0; });
       if (!dark.length) { return from; }
       others = dark;
     } else if (kind === "road") {
@@ -2622,10 +2632,13 @@
     if (!herd.length) {
       if (cities.length < 2) { return; }
       if (COMPANY && Systems.figure) {
-        CAST.forEach(function (k) {
-          var pool = k === "bat" && darkCities().length ? darkCities() : cities;
-          herd.push(newMember(k, pool[Math.floor(Math.random() * pool.length)], true));
-        });
+        if (!castNext) { castNext = now + 8000 + Math.random() * 13000; }
+        if (now < castNext) { return; }
+        var k = CAST[castTurn % CAST.length];
+        castTurn += 1;
+        var pool = k === "bat" ? darkCities() : cities;
+        if (!pool.length) { return; }
+        herd.push(newMember(k, pool[Math.floor(Math.random() * pool.length)], false));
       } else {
         Systems.GAITS.forEach(function (g) {
           herd.push(newBeast(g, cities[Math.floor(Math.random() * cities.length)], true));
@@ -2633,20 +2646,26 @@
       }
     }
     var scared = now - pointerAt.at < 1500;
+    if (COMPANY) {
+      herd = herd.filter(function (b) {
+        if (b.leaving && now - b.leaving > 1300) {
+          castNext = now + (CAST_GAP[0] + Math.random() * (CAST_GAP[1] - CAST_GAP[0])) * 1000;
+          return false;
+        }
+        return true;
+      });
+    }
     herd.forEach(function (b, n) {
+      if (b.leaving) { return; }
+      if (b.kind === "bat" && !b.until) { b.until = now + 21000 + Math.random() * 13000; }
+      if (b.kind === "bat" && now > b.until) { b.leaving = now; return; }
       var s = beastScale(b.spec);
       if (b.kind === "bat") {
         // Out only in the dark. Where the day has come, they are gone, and
         // they come out again wherever it is night.
         var night = darkAt(latOf(b.P), lonOf(b.P)) > 0.5;
         if (!night && !b.hidden) { b.hidden = true; b.gone = now; }
-        if (b.hidden) {
-          var dark = darkCities();
-          if (!dark.length || now - b.gone < 4000) { return; }
-          herd[n] = newMember("bat", dark[Math.floor(Math.random() * dark.length)], false);
-          herd[n].rest = Math.random() * 2;
-          return;
-        }
+        if (b.hidden) { b.leaving = now; return; }
       }
       var p = project(latOf(b.P), lonOf(b.P));
       if (scared && p.z > 0 && b.kind === "horse") {
@@ -2696,6 +2715,8 @@
           // Arriving, the spirit changes: camel, lion, child, and again.
           herd[n] = newMember(BECOMES[b.kind], b.to, false);
           if (at.z > 0.1) { pulse(at.x, at.y, [rgbHex(herd[n].spec.colour.map(Math.round)), LIGHT], 0.6, 140); }
+        } else if (b.kind && b.kind !== "bat") {
+          b.leaving = now;                                   // one journey, and gone
         } else if (b.kind) {
           var was = b.to;
           b.to = nextFor(b.kind, b.to);
@@ -2729,6 +2750,7 @@
     seen.forEach(function (it) {
       var b = it.b, sp = b.spec, s = beastScale(sp);
       var edge = Math.min(1, (it.p.z - 0.12) / 0.14), born = Math.min(1, (now - b.born) / 600);
+      if (b.leaving) { born = Math.min(born, Math.max(0, 1 - (now - b.leaving) / 1200)); }
       var a = Math.round(Math.min(edge, born) * 4) / 4 * fade;
       if (a <= 0) { return; }
       // Standing still, it stands on its feet (the first frame) — unless it
