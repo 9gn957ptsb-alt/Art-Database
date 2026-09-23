@@ -1058,6 +1058,109 @@ int changeAt(int kind, ivec2 c, float t0, float tb, vec2 O, uint seed, uint salt
 const int WORLDS[25] = int[25](13, 3, 9, 16, 7, 23, 14, 2, 19, 11, 20, 5, 10, 12, 8, 24, 15, 18, 4, 1, 21, 17, 6, 0, 22);
 int worldOf(int i, int j, int k) { return WORLDS[int(mod(float(i * 4 + j * 7 + (max(k, -1) + 1) * 9), 25.0))]; }
 
+// ---- meta forms: the artists as shades --------------------------------------------------------------------------
+// Each artist is one value, a shade from dark to light, as a painter's palette runs from its darkest to its lightest
+// (Ikeda's black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque,
+// Cezanne, Picasso, de Kooning, and Twombly's paper, lightest). Over the plane lie forms far larger than any passage:
+// orbs, vessels, vortices, faceted heads of planes, lit fields. Each passage takes the artist whose shade the form
+// has where the passage lies, so the forms are drawn in artists as a painting is drawn in values; and inside every
+// passage the form's shading carries on across the seams, so one light falls across all of them. The forms' edges are
+// drawn as one line through every world they cross. The light turns slowly, and as it turns, passages change hands.
+const int RANK_OF[25] = int[25](12, 12, 12, 12, 12, 1, 7, 2, 6, 0, 3, 8, 12, 3, 3, 8, 8, 1, 7, 0, 10, 11, 9, 4, 5);
+const int BY_RANK[25] = int[25](9, 19, 5, 17, 7, 10, 13, 14, 23, 24, 8, 6, 18, 11, 15, 16, 22, 20, 21, 0, 2, 3, 4, 12, 1);
+const int RSTART[14] = int[14](0, 2, 4, 5, 8, 9, 10, 11, 13, 16, 17, 18, 19, 25);
+// how light each world is as it draws itself, before it is set to its artist's shade
+const float NATL[25] = float[25](0.8, 0.2, 0.75, 0.88, 0.8, 0.12, 0.5, 0.3, 0.4, 0.08, 0.3, 0.55, 0.6, 0.65, 0.35, 0.72, 0.45, 0.6, 0.5, 0.9, 0.65, 0.72, 0.68, 0.42, 0.45);
+const float MB = 610.0;                                              // a meta form to a square this wide, overlapping its neighbours
+float shadeOf(int g) { return (float(RANK_OF[g]) + 0.5) / 13.0; }
+float metaLightAngle(float t) { return t * 6.2832 / 377.0; }         // the light goes round once in 377 seconds
+/** One meta form, of block b, at p: its value v there, its signed distance sd (outline where 0), how high it lies. */
+void metaForm(ivec2 b, vec2 p, float t, out float v, out float sd, out float prio, out float edge) {
+  uint h = h3(b.x, b.y, 4181u);
+  vec2 C = (vec2(b) + 0.5 + (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * P1) * MB;
+  float R = 144.0 + 233.0 * unit(mixh(h + 2u)), th = 6.2832 * unit(mixh(h + 3u)), la = metaLightAngle(t) + th;
+  vec2 q = p - C, L = vec2(cos(la), sin(la));
+  prio = unit(mixh(h + 4u));
+  int k = int(mixh(h + 5u) % 5u);
+  edge = 1e9;
+  float r = length(q);
+  if (k == 0) {                                                      // an orb, lit from the turning light
+    sd = r - R;
+    float z = sqrt(max(0.0, 1.0 - r * r / (R * R)));
+    v = clamp(0.5 + 0.48 * dot(vec3(q / R, z), normalize(vec3(L, 0.8))), 0.02, 0.98);
+  } else if (k == 1) {                                               // a vessel, as Morandi's: tall, rounded, lit from one side
+    mat2 m = mat2(cos(th * 0.1), sin(th * 0.1), -sin(th * 0.1), cos(th * 0.1));
+    vec2 u = m * q / vec2(0.5 * R, R);
+    float f = pow(pow(abs(u.x), 4.0) + pow(abs(u.y), 4.0), 0.25);
+    sd = (f - 1.0) * 0.5 * R;
+    float nx = clamp(u.x, -1.0, 1.0);
+    v = clamp(0.5 + 0.46 * (nx * L.x + sqrt(1.0 - nx * nx) * 0.6), 0.02, 0.98);
+  } else if (k == 2) {                                               // a vortex, as Turner's: no edge, a swept spiral
+    sd = r < R ? -1e9 : 1e9;
+    float a = atan(q.y, q.x);
+    v = 0.5 + 0.44 * sin(a + log(max(r, 1.0)) * 2.6 - t * 0.21 + th) * (1.0 - smoothstep(R * 0.6, R, r));
+    prio *= 0.5;                                                     // lies under the forms with edges
+  } else if (k == 3) {                                               // a head of planes, as Picasso's: lines through off-centre points
+    sd = r - R;
+    uint id = 0u;
+    for (int n = 0; n < 5; n++) {
+      uint hn = mixh(h + 10u + uint(n));
+      float an = 6.2832 * unit(hn);
+      vec2 o = (vec2(unit(mixh(hn + 1u)), unit(mixh(hn + 2u))) - 0.5) * R;
+      float dl = dot(q - o, vec2(-sin(an), cos(an)));
+      edge = min(edge, abs(dl));
+      if (dl > 0.0) id |= 1u << n;
+    }
+    v = clamp(0.5 + 0.45 * (unit(mixh(h ^ (id * 0x9e3779b9u))) * 2.0 - 1.0) + 0.1 * dot(q / R, L), 0.02, 0.98);
+  } else {                                                           // a lit field, as Turrell's: glowing toward its rim
+    vec2 e = abs(q) - vec2(R, R * P1);
+    sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0);
+    v = 0.14 + 0.8 * smoothstep(-R * P2, 0.0, sd) * (0.6 + 0.4 * (0.5 + 0.5 * dot(normalize(q + 1e-3), L)));
+  }
+  if (sd > 0.0) prio = -1.0;
+}
+/** The meta forms' value at p at time t (0 dark, 1 light), and how near an outline is (cells; big when none). */
+float metaAt(vec2 p, float t, out float line) {
+  ivec2 b0 = ivec2(floor(p / MB));
+  float best = -1.0, M = 0.5 + 0.34 * (vnoise(p, 610.0, 4187u) * 2.0 - 1.0), topSd = 1e9, topEdge = 1e9;
+  float shade = 1.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    float v, sd, pr, ed;
+    metaForm(b0 + ivec2(i, j), p, t, v, sd, pr, ed);
+    if (pr > best) { best = pr; M = v; topSd = sd; topEdge = ed; }
+  }
+  // outlines: the top form's, and any form's edge not under a higher one; and the shadows the solid forms cast
+  line = min(abs(topSd), topEdge);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    float v, sd, pr, ed;
+    metaForm(b0 + ivec2(i, j), p, t, v, sd, pr, ed);
+    uint h = h3(b0.x + i, b0.y + j, 4181u);
+    float prAll = unit(mixh(h + 4u));
+    if (sd > 0.0 && sd < 1e8 && prAll > best) line = min(line, sd);
+    int k = int(mixh(h + 5u) % 5u);
+    if (sd > 0.0 && (k == 0 || k == 1) && best < prAll) {
+      float la = metaLightAngle(t) + 6.2832 * unit(mixh(h + 3u)), R = 144.0 + 233.0 * unit(mixh(h + 2u));
+      float v2, sd2, pr2, ed2;
+      metaForm(b0 + ivec2(i, j), p + vec2(cos(la), sin(la)) * R * P3, t, v2, sd2, pr2, ed2);
+      if (sd2 < 0.0) shade = min(shade, P1 + P2 * smoothstep(-R * P3, 0.0, sd2));
+    }
+  }
+  return M * shade;
+}
+/** The world a passage takes at its change k: an artist whose shade is near the meta forms' value at its middle. */
+int shadedWorld(vec2 mid, int i, int j, int k, float tk) {
+  float line, M = metaAt(mid, tk, line);
+  uint h = h3(i, j, uint(max(k, -1) + 7));
+  int r = clamp(int(floor((M + (unit(h) - 0.5) * P2 / 1.3) * 13.0)), 0, 12);
+  return BY_RANK[RSTART[r] + int(mixh(h + 1u) % uint(RSTART[r + 1] - RSTART[r]))];
+}
+/** A colour set to its world's artist's shade, the meta forms' light running on through it. */
+vec3 toShade(vec3 col, int g, float M) {
+  float l = lum(col), T = 255.0 * (0.05 + 0.9 * mix(shadeOf(g), M, P1));
+  float nl = clamp(T + (l - 255.0 * NATL[g]) * P1, 0.0, 255.0);
+  return clamp(mix(col * (nl / max(l, 1.0)), col + (nl - l), 0.5), 0.0, 255.0);
+}
+
 /** A passage's colours at a cell, with its changes: which passage is c.e. */
 void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int kind, out State Sd) {
   gCov = 0.0;
@@ -1086,7 +1189,10 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   uint hk = mixh(seed ^ (uint(k) * 0x85ebca6bu));
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
   int gW0 = gGram, gW1 = gGram;
-  if (worlds) { gW0 = worldOf(int(m26.y), int(m26.z), k - 1); gW1 = worldOf(int(m26.y), int(m26.z), k); }
+  if (worlds) {
+    gW0 = shadedWorld(m25.xy, int(m26.y), int(m26.z), k - 1, first + float(k - 1) * tau);
+    gW1 = shadedWorld(m25.xy, int(m26.y), int(m26.z), k, first + float(k) * tau);
+  }
   gGram = gW1;
   State Sn = stateOf(seed, k);
   gGram = gW0;
@@ -1254,6 +1360,14 @@ void main() {
     }
   }
   if (art) c.e = c.en;
+  if (art && uForce == 99) {                                         // #g99: the meta forms alone, and each passage's shade
+    float ln, M = metaAt(cellP, uTime, ln);
+    vec4 m26 = entT(layer, c.e, 26);
+    float v = mix(shadeOf(shadedWorld(entT(layer, c.e, 25).xy, int(m26.y), int(m26.z), 0, uTime)), M, P1);
+    vec3 g = ln < 0.9 ? vec3(220.0, 60.0, 40.0) : vec3(255.0 * (0.05 + 0.9 * v));
+    outA = outB = vec4(g / 255.0, 1.0);
+    return;
+  }
   // The cell's passage, and where it lies near an edge, the passage beyond: one evaluation in a loop of one or two, so
   // the shader holds a single copy of it.
   bool seam = art && !emerge && c.eb != c.e && c.pe < 0.62;
@@ -1263,6 +1377,9 @@ void main() {
   uint s0 = 0u, s1 = 0u;
   State Sd, Sb;
   int sides = emerge ? 0 : seam ? 2 : 1;
+  // the meta forms' value here, and how near their outline
+  bool shaded = art && uForce < 0 && !emerge;
+  float metaLine = 1e9, metaM = shaded ? metaAt(vec2(cell) + 0.5, uTime, metaLine) : 0.5;
   for (int side = 0; side < sides; side++) {
     Cell cc = c;
     if (side == 1) cc.e = c.eb;
@@ -1270,6 +1387,7 @@ void main() {
     int kk;
     State ss;
     passageAt(layer, cc, cell, a, b, kk, ss);
+    if (shaded) { a = toShade(a, gGram, metaM); b = toShade(b, gGram, metaM); }
     if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
     else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
   }
@@ -1326,6 +1444,11 @@ void main() {
     // a colour the two share, stitched along the seam
     if (sharedD < 21.0 && chroma(sharedC) > 34.0 && abs(x) < 0.9 && fract((gP.x - gP.y) / 8.0) < 0.38) { PA = sharedC * 0.85; PB2 = sharedC * 0.85; }
     A = PA; B = PB2;
+  }
+  // the meta forms' outlines, one line through every world they cross: dark over light, light over dark
+  if (shaded && metaLine < 0.9) {
+    vec3 ink = lum(A) > 110.0 ? vec3(26.0, 24.0, 22.0) : vec3(242.0, 238.0, 226.0);
+    A = ink; B = mix(B, ink, P1);
   }
   if (sg.on) {
     vec2 d = cellP - sg.C;

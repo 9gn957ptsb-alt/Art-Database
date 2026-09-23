@@ -266,6 +266,28 @@ pixel, coarse at the core and finer outward, in colours born of the core's own c
 golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
 rings interfering, or a crystal of hexagons whose faces turn with the light.
 
+**Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
+a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
+black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque, Cézanne,
+Picasso, de Kooning, and Twombly's paper, the lightest (thirteen shades, evenly spaced). Over the plane lie forms far
+larger than any area, one to each 610-cell square and overlapping into their neighbours, 144 to 377 cells across:
+
+| meta form | drawn as |
+|---|---|
+| an orb | a sphere lit from the turning light, casting a shadow |
+| a vessel | tall and rounded, as Morandi's bottles, lit from one side, casting a shadow |
+| a vortex | a swept spiral with no edge, as Turner's, lying under the others |
+| a head of planes | five lines through off-centre points, as in the Picasso study, each facet its own value |
+| a lit field | a rectangle glowing toward its rim, as a Turrell room |
+
+Each area takes the artist whose shade the forms have where it lies, so the forms are drawn in artists as a
+painting is drawn in values: an orb's lit side is Twombly and de Kooning, its turning edge Cézanne and Braque, its
+shadow Turrell and Ikeda. Inside every area its colours are set to its artist's shade with the form's light
+running on through them, across the seams, so one light falls across many worlds; and each form's edge is drawn as
+one line through every world it crosses, dark over light and light over dark. The light goes round once in 377
+seconds; as it turns, the shading slides across the areas, and at each change an area passes to the artist whose
+shade now falls there. `#g99` shows the meta forms alone, each area in its shade.
+
 **The gesture.** Across the plane run long lines, one in every 610-cell band, that belong to no passage: each is one
 unbroken gesture taking the form of whatever world it passes through. It is crayon on paper, chalk on slate, a painted
 stem hung with drips among the blooms, and in the territories a string of rings, a cut, a chain of cells, a glowing
