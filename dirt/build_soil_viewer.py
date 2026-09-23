@@ -596,7 +596,8 @@ function habitats(x0, y0, hl, dd, off, oc, os, ow) {
 // watched; a chunk then sends what each cell is made of instead of its pixels. Three words a cell:
 //   its soil's colour (turned, before any palette), and its dot's size, stratum, crown colour and flags;
 //   its palette entry, its crown's entry, its depth in 255ths and its light in 127.5ths;
-//   the entry of the passage it lies nearer (not always its own, in an overspray), and how far into it, in 255ths.
+//   the entry of the passage it lies nearer (not always its own, in an overspray), how far into it, in 255ths, and
+//   the entry of the passage on the other side of that edge.
 // An entry is 32 texels: up to five palettes of five stops (the plane's one carries its stops' lightness), then
 // texel 25 its passage's middle, character, and painting or count of palettes, and texel 26 which palette it
 // wears, its passage's lattice square and its turn.
@@ -652,7 +653,7 @@ function chunk(ci, cj) {
   const s0 = Math.floor(y0 / SEG) * SEG, s1 = (Math.floor((y0 + N - 1) / SEG) + 1) * SEG, HH = s1 - s0;
   const oc = new Uint8Array(N * HH * 3), os = new Uint8Array(N * HH), ow = new Uint16Array(N * HH), dd = new Float32Array(N * HH);
   const pp = new Array(N * HH), ps = new Float32Array(N * HH), dk = new Uint8Array(N * HH);   // passage, its strength, drips
-  const pn = new Array(N * HH), pe = new Float32Array(N * HH);    // the nearer passage, and how far into it (for the GPU)
+  const pn = new Array(N * HH), pn2 = new Array(N * HH), pe = new Float32Array(N * HH);   // the two nearest passages, and how far into the nearer (for the GPU)
 
   // A. The forest over this ground, and a margin round it; and the passages' wandering edges, sampled
   //    every 8 cells on the plane's own grid and eased between.
@@ -676,7 +677,7 @@ function chunk(ci, cj) {
       nearestPassages(x + (WX[g] * (1 - tx) + WX[g + 1] * tx) * (1 - ty) + (WX[g + GW] * (1 - tx) + WX[g + GW + 1] * tx) * ty,
                       y + (WY[g] * (1 - tx) + WY[g + 1] * tx) * (1 - ty) + (WY[g + GW] * (1 - tx) + WY[g + GW + 1] * tx) * ty);
       const P = u3(x, y, 523) < 0.5 + 0.5 * PE * PE * (3 - 2 * PE) ? PA : PB, st = smooth(PHI ** -3, PHI ** -1, d);
-      pp[k] = P; ps[k] = st; pn[k] = PA; pe[k] = PE;
+      pp[k] = P; ps[k] = st; pn[k] = PA; pn2[k] = PB; pe[k] = PE;
       dk[k] = d >= (P.kind === DRIP ? PHI ** -3 : PHI ** -1) ? 1 : 0;
       // A mosaic passage fuses its dots as far as its depth allows, whatever stands over it; elsewhere the
       // forest sets how far they fuse.
@@ -731,7 +732,7 @@ function chunk(ci, cj) {
       work[c] = ow[k];
       let [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
       const P = pp[k], st = ps[k];
-      if (cells) { cells[3 * c] = cellWord(r, g, b, 0); cells[3 * c + 1] = cellWord2(ents.plane(P), d, light[c]); cells[3 * c + 2] = ents.plane(pn[k]) | (Math.round(pe[k] * 255) << 8); }
+      if (cells) { cells[3 * c] = cellWord(r, g, b, 0); cells[3 * c + 1] = cellWord2(ents.plane(P), d, light[c]); cells[3 * c + 2] = (ents.plane(pn[k]) | (Math.round(pe[k] * 255) << 8) | (ents.plane(pn2[k]) << 16)) >>> 0; }
       {
         // The passage's palette laid over this cell: the colour its lightness maps to, brought back to
         // that lightness, so the palette gives the hue and the ground keeps its lights and darks. Calm
@@ -804,7 +805,7 @@ const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
   : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
-                           art: /noart/.test(location.hash) ? null : ART });
+                           art: /noart/.test(location.hash) ? null : ART, works: PL.works });
 // Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
 // the rest into the paper rather than into the dark.
 const ON_PAPER = !!GLG && !/noart/.test(location.hash);

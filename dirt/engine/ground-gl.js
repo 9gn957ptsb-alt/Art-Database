@@ -54,7 +54,10 @@ uniform float uTime, uHold, uTurnAt;
 uniform vec2 uTurnO;
 uniform vec3 uGround;
 uniform sampler2D uArt;             // the artist's works as measured: paper, five inks darkest first, then roles
-uniform int uArtOn, uForce;         // uForce: one grammar everywhere, for looking at it (#g0 to #g4)
+uniform int uArtOn, uForce;
+uniform sampler2D uWorks;           // the collection: per painting its artist and year, then its three colours
+float gCov = 0.0;                   // the marks the last sheet painted here, and in what colour
+vec3 gMark = vec3(0);         // uForce: one grammar everywhere, for looking at it (#g0 to #g4)
 uniform ivec2 uGram[5];             // each grammar's works: first row, count
 vec2 gP;                            // the cell being painted, on the plane
 vec2 gMid;                          // the middle of its passage
@@ -72,6 +75,7 @@ const float DUR = 8.0, SPEED = 34.0;                                 // a change
 uint mixh(uint h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
 uint h3(int x, int y, uint s) { return mixh(uint(x) * 0x27d4eb2du ^ mixh(uint(y) * 0x165667b1u + s)); }
 float unit(uint h) { return float(h >> 8) * (1.0 / 16777216.0); }
+float chroma(vec3 c) { return max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b)); }
 float lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)); }
 float smoothUp(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 int fdiv(int a, int b) { return a >= 0 ? a / b : -((b - 1 - a) / b); }
@@ -83,7 +87,7 @@ mat3 turnOf(float t) {
 vec3 turnRGB(vec3 c, mat3 m) { return clamp(m * c, 0.0, 255.0); }
 vec3 satur(vec3 c) { float l = lum(c); return clamp(l + (c - l) * PHI, 0.0, 255.0); }
 
-struct Cell { vec3 soil; int s, L, ti, e, te, en; bool even, over; float d, light, pe; };
+struct Cell { vec3 soil; int s, L, ti, e, te, en, eb; bool even, over; float d, light, pe; };
 Cell cellAt(int layer, ivec2 lc) {
   uvec3 w = texelFetch(uCells, ivec3(lc, layer), 0).xyz;
   Cell c;
@@ -91,7 +95,7 @@ Cell cellAt(int layer, ivec2 lc) {
   uint f = w.x >> 24;
   c.s = int(f & 3u); c.L = int((f >> 2) & 3u); c.ti = int((f >> 4) & 3u); c.even = (f & 64u) != 0u; c.over = (f & 128u) != 0u;
   c.e = int(w.y & 255u); c.te = int((w.y >> 8) & 255u); c.d = float((w.y >> 16) & 255u) / 255.0; c.light = float(w.y >> 24) / 127.5;
-  c.en = int(w.z & 255u); c.pe = float((w.z >> 8) & 255u) / 255.0;
+  c.en = int(w.z & 255u); c.pe = float((w.z >> 8) & 255u) / 255.0; c.eb = int((w.z >> 16) & 255u);
   return c;
 }
 vec4 entT(int layer, int e, int t) { return texelFetch(uEnts, ivec3(t, e, layer), 0); }
@@ -502,6 +506,7 @@ void digital(int layer, Cell c, int g, out vec3 A, out vec3 B) {
 
 /** A sheet's colours at a cell: paper, dirt, and the marks of its grammar. */
 void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
+  gCov = 0.0;
   if (gGram >= 5) { digital(layer, c, gGram, A, B); return; }
   int w = S.w;
   vec2 p = gP;
@@ -569,12 +574,14 @@ void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
     float wc = writing(p, salt + 71u, dens * 0.35, 21.0, wi) * 0.8;   // pencil notes scrawled about the plates
     if (wc > cov) { cov = wc; col = wi == 0 ? artInk(w, 0) : artVivid(w, 0); }
   }
-  cov *= smoothstep(0.0, 0.35 + 0.2 * vnoise(p, 34.0, 71u), c.pe) * gGate;
+  cov *= gGate;
+  gCov = cov;
   if (cov <= 0.0) return;
   // a stroke's heart is solid; its edges catch only on the dirt's dots, as crayon catches on the tooth of paper,
   // and the dirt's own colour works into it
   vec3 m = g == 1 ? col * (0.85 + 0.15 * lum(c.soil) / 128.0) : mix(col, col * c.soil / 128.0, 0.18);
   float core = smoothstep(0.45, 0.75, cov);
+  gMark = m;
   A = mix(A, m, max(core, c.s > 0 ? cov : 0.0));
   B = mix(B, m, max(core, c.s == 3 ? cov * 0.8 : 0.0));
 }
@@ -736,19 +743,11 @@ int changeAt(int kind, ivec2 c, float t0, float tb, vec2 O, uint seed, uint salt
   return broken(progressAt(vec2(c) + 0.5, t0, tb, O, seed, dur, speed), kind, c, salt) ? 3 : 0;
 }
 
-layout(location = 0) out vec4 outA;
-layout(location = 1) out vec4 outB;
-void main() {
-  ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
-  outA = outB = vec4(uGround / 255.0, 1.0);
-  if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) return;
-  vec4 si = texelFetch(uSlots, sl, 0);
-  if (si.x < 0.5) return;
-  int layer = int(si.x) - 1;
-  Cell c = cellAt(layer, lc);
-  if (uEarth == 0 && uArtOn == 1) c.e = c.en;
+/** A passage's colours at a cell, with its changes: which passage is c.e. */
+void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int kind, out State Sd) {
+  gCov = 0.0;
   vec4 m25 = entT(layer, c.e, 25), m26 = entT(layer, c.e, 26);
-  int kind = int(m25.z);
+  kind = int(m25.z);
   uint seed = h3(int(m26.y), int(m26.z), 777u);
   gP = vec2(cell) + 0.5; gMid = m25.xy;
   gGram = kind == MOSAIC ? 0 : kind == NOCTURNE ? 1 : kind == SPRAY ? 2 : kind == WEAVE ? 3 : 4;
@@ -771,9 +770,8 @@ void main() {
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
   State Sn = stateOf(seed, k), So = stateOf(seed, k - 1);
   float pc = k < 0 || uHold > 0.5 ? 2.0 : progressAt(cp, t0, -1e9, O, seed, DUR, SPEED);
-  State Sd = So;                                                     // whichever holds the most of the cell now
+  Sd = So;                                                           // whichever holds the most of the cell now
   if (pc >= 0.5) Sd = Sn;
-  vec3 A, B;
   if (uEarth == 0 && uArtOn == 1 && pc > 0.0 && pc < 1.0) {
     // A sheet changes as the artist changes one: white gesso brushed over the old marks in long strokes, then the new
     // marks drawn in, sweeping across as a hand writes.
@@ -802,6 +800,53 @@ void main() {
     else if (at == 3) paint(layer, c, kind, Sn, A, B);
     else A = B = flatIn(layer, c, kind, Sn, tsel, at == 2);
   }
+}
+
+/** How near two of the collection's paintings are: by the same artist, near in years, or sharing a colour (shared). */
+float kinship(int a, int b, out vec3 shared, out float sharedD) {
+  vec4 ma = texelFetch(uWorks, ivec2(0, a), 0), mb = texelFetch(uWorks, ivec2(0, b), 0);
+  float r = ma.x == mb.x ? 1.0 : ma.y > 0.0 && mb.y > 0.0 ? 0.5 * exp(-abs(ma.y - mb.y) / 34.0) : 0.0;
+  sharedD = 1e9; shared = vec3(0);
+  for (int i = 1; i <= 3; i++) for (int j = 1; j <= 3; j++) {
+    vec3 ca = texelFetch(uWorks, ivec2(i, a), 0).rgb, cb = texelFetch(uWorks, ivec2(j, b), 0).rgb;
+    float d = distance(ca, cb);
+    if (d < sharedD) { sharedD = d; shared = (ca + cb) * 0.5; }
+  }
+  return max(r, 0.8 * clamp(1.0 - sharedD / 89.0, 0.0, 1.0));
+}
+
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+void main() {
+  ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
+  outA = outB = vec4(uGround / 255.0, 1.0);
+  if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) return;
+  vec4 si = texelFetch(uSlots, sl, 0);
+  if (si.x < 0.5) return;
+  int layer = int(si.x) - 1;
+  Cell c = cellAt(layer, lc);
+  bool art = uEarth == 0 && uArtOn == 1;
+  if (art) c.e = c.en;
+  // The cell's passage, and where it lies near an edge, the passage beyond: one evaluation in a loop of one or two, so
+  // the shader holds a single copy of it.
+  bool seam = art && c.eb != c.e && c.pe < 0.62;
+  vec3 A, B, Ab = vec3(0), Bb = vec3(0), mk0 = vec3(0), mk1 = vec3(0);
+  int kind, kb, g0 = 0, g1 = 0;
+  float cov0 = 0.0, cov1 = 0.0;
+  uint s0 = 0u, s1 = 0u;
+  State Sd, Sb;
+  int sides = seam ? 2 : 1;
+  for (int side = 0; side < sides; side++) {
+    Cell cc = c;
+    if (side == 1) cc.e = c.eb;
+    vec3 a, b;
+    int kk;
+    State ss;
+    passageAt(layer, cc, cell, a, b, kk, ss);
+    if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
+    else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
+  }
+  if (seam) { gGram = g0; gSeed = s0; gCov = cov0; gMark = mk0; gP = vec2(cell) + 0.5; gMid = entT(layer, c.e, 25).xy; }
   // Ground just grown comes in dot by dot; ground grown again for a new month, as the month sweeps over it.
   int prev = int(si.y) - 1;
   if (prev < 0) {
@@ -812,6 +857,48 @@ void main() {
     int at = changeAt(kind, cell, uTurnAt, si.z, uTurnO, 0u, mixh(uint(uTurnAt * 1000.0)), 2.0, 233.0, tsel);
     if (at == 0) { Cell o = cellAt(prev, lc); paint(prev, o, int(entT(prev, o.e, 25).z), Sd, A, B); }
     else if (at != 3) A = B = flatIn(layer, c, kind, Sd, tsel, at == 2);
+  }
+  // ---- the seams: where two passages meet, what they are to each other decides how -------------------------
+  // Paintings by one artist, near in years, or sharing a colour are kin, and their sheets run into each other across
+  // a wide band, the nearer the kinder, each one's marks carrying on over the edge in the other's hand. Strangers
+  // meet at a torn edge, the upper sheet casting a shadow on the lower. A colour the two share is stitched along the
+  // seam. And where paper meets a digital territory, the marks are the passage between them: near the seam a crayon
+  // stroke is a window onto the other world, and the stroke carries on into it in that world's own light.
+  if (seam) {
+    vec3 sharedC;
+    float sharedD, r = kinship(int(entT(layer, c.e, 25).w), int(entT(layer, c.eb, 25).w), sharedC, sharedD);
+    float db = c.pe * 55.0;                                          // cells to the seam
+    float x = s0 < s1 ? db : -db;                                  // across the seam, one way for both sides
+    float W = mix(1.5, 34.0, r), tear = (vnoise(gP, 3.0, 131u) - 0.5) * 5.0 * (1.0 - r) + (vnoise(gP, 13.0, 137u) - 0.5) * 8.0;
+    float xt = x + tear, dith = r * W * (unit(h3(cell.x, cell.y, 139u)) * 2.0 - 1.0) * (0.4 + 0.6 * vnoise(gP, 5.0, 149u));
+    bool ownSide = (xt > dith) == (x > 0.0);
+    vec3 PA = ownSide ? A : Ab, PB2 = ownSide ? B : Bb;
+    float covHere = ownSide ? cov0 : cov1, covThere = ownSide ? cov1 : cov0;
+    int gHere = ownSide ? g0 : g1, gThere = ownSide ? g1 : g0;
+    State Shere = Sb;
+    if (ownSide) Shere = Sd;
+    vec3 markThere = ownSide ? mk1 : mk0;
+    // strangers: the upper sheet (the one on the positive side) shadows the lower
+    if (xt < 0.0 && xt > -1.6 && r < 0.5) { PA *= mix(0.72, 1.0, r * 2.0); PB2 *= mix(0.72, 1.0, r * 2.0); }
+    bool dig0 = gHere >= 5, dig1 = gThere >= 5;
+    float ax = abs(xt), wc = mix(5.0, 34.0, r);
+    if (!dig0 && !dig1) {
+      // kin: the other sheet's marks carry on across, in this sheet's hand
+      if (covThere > 0.5 && covHere < 0.3 && ax < wc * (0.4 + 0.6 * unit(h3(cell.x >> 2, cell.y >> 2, 151u)))) {
+        vec3 hand = artVivid(Shere.w, 0);
+        PA = mix(PA, hand, 0.85); PB2 = mix(PB2, hand, 0.6);
+      }
+    } else if (dig0 != dig1) {
+      float paperCov = dig0 ? covThere : covHere;
+      vec3 digA = dig0 ? PA : (ownSide ? Ab : A);
+      if (paperCov > 0.5 && ax < 21.0 * (0.5 + 0.5 * unit(h3(cell.x >> 1, cell.y >> 1, 157u)))) {
+        if (!dig0) { PA = digA; PB2 = digA; }                           // on the paper: the stroke is a window onto the other world
+        else { vec3 lit = lum(digA) < 110.0 ? vec3(242.0, 240.0, 232.0) : vec3(18.0); PA = lit; PB2 = mix(PB2, lit, 0.6); }   // in it: the stroke in its light
+      }
+    }
+    // a colour the two share, stitched along the seam
+    if (sharedD < 21.0 && chroma(sharedC) > 34.0 && abs(x) < 0.9 && fract((gP.x - gP.y) / 8.0) < 0.38) { PA = sharedC * 0.85; PB2 = sharedC * 0.85; }
+    A = PA; B = PB2;
   }
   // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
   if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {
@@ -828,7 +915,7 @@ void main() {
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
  */
-function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
+function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works }) {
   const glcv = document.createElement("canvas");
   glcv.setAttribute("aria-hidden", "true");
   glcv.style.pointerEvents = "none";
@@ -905,6 +992,17 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
     gl.activeTexture(gl.TEXTURE6); tex(gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 8, Math.max(1, ws.length));
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 8, Math.max(1, ws.length), gl.RGBA, gl.FLOAT, ad);
+    // The collection, for the seams: each painting's artist and year, and its three colours.
+    const nw = Math.max(1, tokens.length), wd = new Float32Array(4 * nw * 4), artists = new Map();
+    tokens.forEach((cols, i) => {
+      const wk = (works || [])[i] || {}, who = wk.artist || "", yr = /\d{4}/.exec(wk.date || "");
+      if (!artists.has(who)) artists.set(who, who ? artists.size : -1 - i);
+      wd.set([artists.get(who), yr ? +yr[0] : 0, 0, 0], i * 16);
+      for (let n = 0; n < 3; n++) { const c = cols[Math.min(n, cols.length - 1)]; wd.set([c[0], c[1], c[2], 1], i * 16 + 4 + n * 4); }
+    });
+    gl.activeTexture(gl.TEXTURE7); tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 4, nw);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4, nw, gl.RGBA, gl.FLOAT, wd);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -913,12 +1011,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     gl.useProgram(cellProg);
-    gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6);
+    gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6); gl.uniform1i(U.uWorks, 7);
     gl.uniform1i(U.uNV, vivid.length);
     gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
     gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown

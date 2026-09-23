@@ -194,6 +194,19 @@ long translucent strokes, then the new marks are drawn in, sweeping across as a 
 his works of the same grammar. Add `#noart` to the address for the golden-angle colours below, and `#g0` to `#g4` to
 see one grammar everywhere.
 
+**Relations: the seams.** What DIRT makes that nothing else can is meaningful connection: every cell knows the saved
+painting it came from, so where two passages meet, the meeting can say what the two paintings are to each other. They
+are kin when by one artist, near in years (closer than 34 years or so), or sharing a colour; strangers otherwise.
+
+- Kin sheets run into each other across a band up to 34 cells wide, the kinder the wider, dithered in clumps, and
+  each one's marks carry on over the edge in the other sheet's hand.
+- Strangers meet at a torn edge, the upper sheet casting a thin shadow on the lower.
+- A strong colour the two paintings share (within 21 of each other, and not grey) is stitched along the seam.
+- Where paper meets a digital territory, the marks are the passage between worlds: near the seam a crayon stroke
+  becomes a window onto the territory, and on the other side the stroke carries on in the territory's own light.
+
+The cells carry both passages at every edge, and the GPU paints both there, in one loop, so the shader holds one copy.
+
 **After the digital animations.** A survey of the most remarkable digital animation (Ikeda, Universal Everything,
 Anadol, GMUNK, Fischinger, OReilly, Radiohead's PolyFauna, Quayola, the Austin Museum of Digital Art's archive) runs
 from painting given time, to images made by systems, to data. DIRT's geography already runs that way, from calm
