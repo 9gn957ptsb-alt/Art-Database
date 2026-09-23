@@ -521,6 +521,122 @@ void digital(int layer, Cell c, int g, out vec3 A, out vec3 B) {
     }
     col *= 0.94 + 0.08 * vnoise(vec2(gP.x + gP.y, gP.x - gP.y), 3.0, hp + 11u);   // brushwork, on the diagonal
     A = B = min(col, vec3(255.0));
+  } else if (g == 12) {
+    // Bacchus (Twombly, 2005): on raw cream canvas, huge looping strokes of alizarin, round and round, dripping.
+    vec3 col = vec3(236.0, 226.0, 204.0) * (0.97 + 0.05 * vnoise(p, 21.0, hp + 3u));
+    for (int n = 0; n < 9; n++) {
+      uint h = mixh(hp + 300u + uint(n));
+      vec2 o = (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * vec2(233.0, 144.0) + vec2(21.0 * sin(T * 0.1 + float(n)), 0.0);
+      vec2 d = rot(0.9 * (unit(mixh(h + 2u)) - 0.5)) * (q - o);
+      vec2 rr = vec2(34.0 + 55.0 * unit(mixh(h + 3u)), 21.0 + 34.0 * unit(mixh(h + 4u)));
+      float e = abs(length(d / rr) - 1.0) * min(rr.x, rr.y), w = 2.5 + 3.0 * unit(mixh(h + 5u)) * (0.6 + 0.4 * sin(atan(d.y, d.x) * 2.0));
+      vec3 red = mix(vec3(150.0, 20.0, 30.0), vec3(200.0, 60.0, 60.0), unit(mixh(h + 6u)));
+      if (e < w) col = mix(col, red, e < w - 1.0 ? 1.0 : 0.6);
+      // a drip from the bottom of each loop
+      vec2 bottom = o + rot(-0.9 * (unit(mixh(h + 2u)) - 0.5)) * vec2(0.0, rr.y);
+      float len = 34.0 + 89.0 * unit(mixh(h + 7u));
+      if (abs(q.x - bottom.x) < 1.3 && q.y > bottom.y && q.y < bottom.y + len) col = red;
+    }
+    A = B = col;
+  } else if (g == 13) {
+    // Ganzfeld (Turrell): the whole field one colour of light, no edge, no object, shifting slowly; a faint brightening
+    // at its heart, so the eye loses its depth.
+    float ph = T / 55.0 + unit(hp);
+    vec3 col = satur(satur(turnRGB(st[3], turnOf(ph * 1.3))));
+    col = mix(col, vec3(255.0), 0.12 + 0.1 * exp(-dot(q, q) / 40000.0));
+    A = B = min(col, vec3(255.0));
+  } else if (g == 14) {
+    // Skyspace (Turrell): a sharp-edged opening in a ceiling onto the sky, the ceiling lit around it by a hidden band of
+    // light that changes colour, so the sky beside it seems to change too.
+    float ph = T / 34.0 + unit(hp);
+    vec3 ceiling = satur(turnRGB(st[3], turnOf(ph))) * 0.9 + 20.0;
+    vec3 sky = mix(vec3(40.0, 70.0, 150.0), vec3(120.0, 170.0, 220.0), 0.5 + 0.5 * sin(T / 21.0 + unit(hp) * 6.28));
+    float r = length(q / vec2(1.0, 0.8));
+    vec3 col = ceiling * (0.75 + 0.35 * smoothstep(233.0, 60.0, r));
+    if (r < 55.0) col = sky;
+    else if (r < 57.0) col = vec3(250.0, 248.0, 240.0);             // the knife edge
+    A = B = min(col, vec3(255.0));
+  } else if (g == 15) {
+    // Papier collé (Braque, 1912): flat pieces of paper pasted on and drawn over in charcoal: faux-bois wallpaper,
+    // black paper, newsprint, and a guitar's sound hole and strings in charcoal lines.
+    vec3 col = vec3(222.0, 214.0, 196.0);
+    for (int n = 0; n < 5; n++) {
+      uint h = mixh(hp + 500u + uint(n));
+      vec2 o = (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * vec2(233.0, 144.0);
+      vec2 d = rot(0.5 * (unit(mixh(h + 2u)) - 0.5)) * (q - o), hs = vec2(21.0 + 55.0 * unit(mixh(h + 3u)), 21.0 + 55.0 * unit(mixh(h + 4u)));
+      if (abs(d.x) < hs.x && abs(d.y) < hs.y) {
+        int kind_ = int(mixh(h + 5u) % 3u);
+        if (kind_ == 0) col = mix(vec3(150.0, 100.0, 55.0), vec3(185.0, 135.0, 80.0), 0.5 + 0.5 * sin(d.y * 0.9 + 3.0 * sin(d.x * 0.05) + 2.0 * vnoise(d, 13.0, h)));   // faux bois
+        else if (kind_ == 1) col = vec3(30.0, 28.0, 26.0);
+        else col = mod(floor(d.y / 3.0), 2.0) < 1.0 && unit(h3(int(d.x / 2.0), int(d.y / 3.0), h)) < 0.6 ? vec3(110.0) : vec3(215.0, 212.0, 200.0);   // newsprint
+      }
+    }
+    // charcoal: the sound hole and strings, and a few straight lines
+    float rh = length(q - vec2(21.0, -8.0));
+    if (abs(rh - 21.0) < 1.2) col = vec3(25.0);
+    for (int n = 0; n < 4; n++) { float xs = -8.0 + float(n) * 5.0 + 21.0; if (abs(q.x - xs - q.y * 0.08) < 0.6 && abs(q.y) < 89.0) col = vec3(40.0); }
+    for (int n = 0; n < 3; n++) {
+      uint h = mixh(hp + 600u + uint(n));
+      vec2 dir = vec2(cos(6.2832 * unit(h)), sin(6.2832 * unit(h)));
+      if (abs(dot(q - (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * 144.0, vec2(-dir.y, dir.x))) < 0.7) col = vec3(35.0);
+    }
+    A = B = col;
+  } else if (g == 16) {
+    // The Birds (Braque, 1950s): on a flat field of colour, great simplified birds in black, outlined in white, gliding.
+    vec3 col = mix(st[2], vec3(lum(st[2])), 0.3) * 0.85;
+    for (int n = 0; n < 3; n++) {
+      uint h = mixh(hp + 700u + uint(n));
+      vec2 o = (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * vec2(233.0, 144.0);
+      o.x = mod(o.x + T * (8.0 + 8.0 * unit(mixh(h + 2u))) + 144.0, 377.0) - 188.0;
+      float sz = 21.0 + 21.0 * unit(mixh(h + 3u)), flap = 0.25 * sin(T * 1.3 + float(n));
+      vec2 d = (q - o) / sz;
+      float body = length(d / vec2(1.0, 0.28)) - 1.0;
+      vec2 wl = rot(-0.5 - flap) * (d - vec2(-0.1, 0.0)), wr = rot(0.5 + flap) * (d - vec2(-0.1, 0.0));
+      float wing = min(max(abs(wl.y) - 0.15 * (1.0 - wl.x), max(-wl.x, wl.x - 1.3)), max(abs(wr.y) - 0.15 * (1.0 - wr.x), max(-wr.x, wr.x - 1.3)));
+      float sd = min(body, wing * 3.0);
+      if (sd < 0.0) col = vec3(20.0);
+      else if (sd < 0.09) col = vec3(245.0);
+    }
+    A = B = col;
+  } else if (g == 17) {
+    // Radio Dynamics (Fischinger, 1942): squares within squares pulsing inward, a tunnel of colour, and a disc at its heart.
+    float d = max(abs(q.x), abs(q.y)) + 1.0, b = log(d) * 4.0 - T * 1.618;
+    int band = int(floor(b));
+    vec3 col = st[1 + int(mod(float(band), 3.0))] * 1.1;
+    if (fract(b) < 0.1) col = vec3(12.0);
+    if (length(q) < 13.0 + 5.0 * sin(T * 3.0)) col = vec3(245.0, 235.0, 200.0);
+    A = B = min(col, vec3(255.0));
+  } else if (g == 18) {
+    // Pleasant Places (Quayola): a landscape remade as brushstrokes laid by an algorithm, short strokes following a
+    // flow, each in the colour of the soil under it, lit.
+    vec3 col = mix(st[1], st[2], 0.5);
+    for (int L = 0; L < 2; L++) {
+      float G = L == 0 ? 8.0 : 5.0;
+      ivec2 sq = ivec2(floor(p / G));
+      for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        ivec2 qq = sq + ivec2(i, j);
+        uint h = h3(qq.x, qq.y, hp + uint(L) * 13u);
+        vec2 o = (vec2(qq) + vec2(unit(h), unit(mixh(h + 1u)))) * G;
+        float an = 6.2832 * vnoise(o, 89.0, hp + 5u) + 0.3 * sin(T * 0.3);
+        vec2 dir = vec2(cos(an), sin(an)), d = p - o;
+        float along = dot(d, dir), across = dot(d, vec2(-dir.y, dir.x));
+        if (abs(along) < 6.0 && abs(across) < 1.3) {
+          vec3 soil; int s_;
+          if (!soilAt(ivec2(o), soil, s_)) soil = c.soil;
+          col = satur(soil) * (0.85 + 0.35 * (0.5 + 0.5 * dot(dir, vec2(-0.7, -0.7)))) + 15.0;
+        }
+      }
+    }
+    A = B = min(col, vec3(255.0));
+  } else if (g == 19) {
+    // test pattern (Ikeda): the whole field in vertical bars of black and white whose widths are a binary code,
+    // scrolling fast, now and then thrown into its negative.
+    float x = p.x + T * 89.0 * (unit(hp) < 0.5 ? 1.0 : -1.0);
+    int col8 = int(floor(x / 2.0));
+    bool on = unit(h3(col8 / 4, int(floor(T * 3.0)) % 13, hp)) < 0.5 ? (col8 & 1) == 0 : (col8 & 3) == 0;
+    if (mod(floor(p.y / 89.0), 3.0) == 1.0) on = unit(h3(col8, int(floor(p.y / 89.0)), hp + 1u)) < 0.5;
+    if (unit(h3(int(floor(T * 1.618)), 0, hp + 2u)) < 0.1) on = !on;
+    A = B = on ? vec3(250.0) : vec3(4.0);
   } else {
     // Data: black, with barcodes, grids of dots, numerals of the collection's own numbers, a scanline, and now and
     // then the whole field thrown white.
@@ -825,6 +941,13 @@ int changeAt(int kind, ivec2 c, float t0, float tb, vec2 O, uint seed, uint salt
   return broken(progressAt(vec2(c) + 0.5, t0, tb, O, seed, dur, speed), kind, c, salt) ? 3 : 0;
 }
 
+// The worlds, ordered round a wheel so that neighbours on it are far apart: light, writing, data, cubism, life,
+// each followed by its opposite. Passages take their world from their place on a lattice colouring (a step east moves
+// 4 along the wheel, a step south 7), so every edge crosses into a distant world, and each change in time moves a
+// passage 9 further round.
+const int WORLDS[20] = int[20](13, 3, 9, 16, 7, 14, 2, 19, 11, 5, 10, 12, 8, 15, 18, 4, 1, 17, 6, 0);
+int worldOf(int i, int j, int k) { return WORLDS[int(mod(float(i * 4 + j * 7 + (max(k, -1) + 1) * 9), 20.0))]; }
+
 /** A passage's colours at a cell, with its changes: which passage is c.e. */
 void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int kind, out State Sd) {
   gCov = 0.0;
@@ -834,8 +957,10 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   gP = vec2(cell) + 0.5; gMid = m25.xy;
   gGram = kind == MOSAIC ? 0 : kind == NOCTURNE ? 1 : kind == SPRAY ? 2 : kind == WEAVE ? 3 : 4;
   // Out in the outskirts, a share of the passages leave the paper for a digital territory: more, the farther out.
+  // (Drawn after the artists, every passage has a world of its own instead: below.)
   float dm = entT(layer, c.e, 27).x;
-  if (unit(mixh(seed + 77u)) < smoothUp(P3, 1.0, dm) * P1) {
+  bool worlds = uEarth == 0 && uArtOn == 1 && uForce < 0;
+  if (!worlds && unit(mixh(seed + 77u)) < smoothUp(P3, 1.0, dm) * P1) {
     float r = unit(mixh(seed + 78u));
     gGram = dm < P1 ? (r < 0.25 ? 5 : r < 0.5 ? 6 : r < 0.75 ? 10 : 11) : dm < 1.0 - P3 ? (r < 0.34 ? 6 : r < 0.67 ? 7 : 8) : (r < 0.25 ? 7 : r < 0.5 ? 8 : 9);
     // now and then, the archive: a passage that turns through all the territories, one after another
@@ -850,7 +975,12 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   float t0 = first + float(k) * tau;
   uint hk = mixh(seed ^ (uint(k) * 0x85ebca6bu));
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
-  State Sn = stateOf(seed, k), So = stateOf(seed, k - 1);
+  int gW0 = gGram, gW1 = gGram;
+  if (worlds) { gW0 = worldOf(int(m26.y), int(m26.z), k - 1); gW1 = worldOf(int(m26.y), int(m26.z), k); }
+  gGram = gW1;
+  State Sn = stateOf(seed, k);
+  gGram = gW0;
+  State So = stateOf(seed, k - 1);
   float pc = k < 0 || uHold > 0.5 ? 2.0 : progressAt(cp, t0, -1e9, O, seed, DUR, SPEED);
   Sd = So;                                                           // whichever holds the most of the cell now
   if (pc >= 0.5) Sd = Sn;
@@ -861,27 +991,28 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
     vec3 gesso = vec3(240.0, 236.0, 226.0);
     gesso *= 0.96 + 0.06 * vnoise(vec2(gP.x / 21.0, gP.y), 2.0, hk + 2u);   // streaky, as a brush leaves it
     if (pc < 0.5) {
-      paint(layer, c, kind, So, A, B);
+      { gGram = gW0; paint(layer, c, kind, So, A, B); }
       float w = 0.8 * smoothstep(brush - 0.15, brush + 0.15, pc * 2.4) * (0.7 + 0.3 * vnoise(vec2(gP.x / 34.0, gP.y), 2.0, hk + 3u));
       A = mix(A, gesso, w); B = mix(B, gesso, w);
     } else {
       float q = (pc - 0.5) * 2.0, sweep = fract((gP.x + gP.y * 0.4) / 233.0);
       gGate = smoothstep(sweep - 0.05, sweep + 0.05, q * 1.2 - 0.1);
-      paint(layer, c, kind, Sn, A, B);
+      { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
       float w = 0.5 * (1.0 - smoothstep(0.2, 1.0, q)) * (0.7 + 0.3 * vnoise(vec2(gP.x / 34.0, gP.y), 2.0, hk + 3u));
       A = mix(A, gesso, w); B = mix(B, gesso, w);
       gGate = 1.0;
     }
   }
-  else if (pc >= 1.5) paint(layer, c, kind, Sn, A, B);
-  else if (pc <= -0.5) paint(layer, c, kind, So, A, B);
+  else if (pc >= 1.5) { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
+  else if (pc <= -0.5) { gGram = gW0; paint(layer, c, kind, So, A, B); }
   else {
     float tsel;
     int at = changeAt(kind, cell, t0, -1e9, O, seed, hk, DUR, SPEED, tsel);
-    if (at == 0) paint(layer, c, kind, So, A, B);
-    else if (at == 3) paint(layer, c, kind, Sn, A, B);
-    else A = B = flatIn(layer, c, kind, Sn, tsel, at == 2);
+    if (at == 0) { gGram = gW0; paint(layer, c, kind, So, A, B); }
+    else if (at == 3) { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
+    else { gGram = gW1; A = B = flatIn(layer, c, kind, Sn, tsel, at == 2); }
   }
+  gGram = pc >= 0.5 ? gW1 : gW0;
 }
 
 /** How near two of the collection's paintings are: by the same artist, near in years, or sharing a colour (shared). */

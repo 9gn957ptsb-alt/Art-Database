@@ -229,6 +229,23 @@ and **analytic cubism**, after Georges Braque (the ground seen from several view
 overlapping translucent planes, each showing the soil from a view of its own, in ochre, olive, grey and umber, sliding
 slowly into one another, each with a shadowed or lit edge).
 
+**A wheel of worlds.** Drawn after the artists, every passage has a world of its own, and neighbours are far apart:
+twenty worlds sit on a wheel ordered so that each is followed by its opposite (light, writing, data, cubism, life),
+and a passage takes its place on the wheel from its lattice square, a step east moving 4 round it and a step south 7,
+so every edge crosses into a distant world and one screen holds many. Each change in time moves a passage 9 further
+round. Beside the worlds above, each artist's other work has its own:
+
+| World | After |
+| --- | --- |
+| Bacchus: raw cream canvas, huge looping strokes of alizarin, dripping | Twombly, *Bacchus* (2005) |
+| Ganzfeld: the whole field one colour of light, no edge, shifting slowly | Turrell, the Ganzfelds |
+| Skyspace: a knife-edged opening onto the sky, in a ceiling lit by a hidden, changing light | Turrell, the Skyspaces |
+| papier collé: faux-bois paper, black paper, newsprint, and a guitar's sound hole and strings in charcoal | Braque, the papiers collés (1912) |
+| Birds: great simplified black birds, outlined in white, gliding over a flat field | Braque, *L'Oiseau et son nid* and the late Birds |
+| a tunnel of squares pulsing inward to a disc | Fischinger, *Radio Dynamics* (1942) |
+| brushstrokes laid by an algorithm along a flow, each in the colour of the soil under it | Quayola, *Pleasant Places* |
+| test pattern: full-field bars of a binary code, scrolling, now and then negative | Ikeda, *test pattern* |
+
 **The gesture.** Across the plane run long lines, one in every 610-cell band, that belong to no passage: each is one
 unbroken gesture taking the form of whatever world it passes through. It is crayon on paper, chalk on slate, a painted
 stem hung with drips among the blooms, and in the territories a string of rings, a cut, a chain of cells, a glowing
