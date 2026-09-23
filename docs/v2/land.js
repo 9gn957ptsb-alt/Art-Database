@@ -2678,6 +2678,9 @@
      other. Positions are kept as angles round the rim, so it keeps its
      spacing however near or far the world is. */
   var ARC = 1.25;
+  /* Off at the artist's request (23 Sep 2026: "too much"). The code stays,
+     like the creature's, and the Archive's Infinity monitor still plays it. */
+  var PROCESSION = false;
   function walkerScale(spec) {
     var want = Math.max(16, Math.min(46, R * 0.07));
     var k = Math.max(1, Math.round(want * dpr / Math.max(20, spec.fh * 0.85)));
@@ -2758,10 +2761,10 @@
     if (still || !cities.length) { return; }
     if (!place && !flying) {
       stepHerd(now, dt);
-      stepProcession(now, dt);
+      if (PROCESSION) { stepProcession(now, dt); }
     }
     drawHerd(now, fade);
-    drawProcession(now, fade);
+    if (PROCESSION) { drawProcession(now, fade); }
   }
 
   /* ---- how much of the globe is there -------------------------------------
