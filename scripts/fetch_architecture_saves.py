@@ -40,7 +40,8 @@ BASE = os.environ.get(
     "AA_BASE", "https://www.thearchitecturalauthority.com/api/account-data"
 )
 PATH = "Social/me/bookmarks"
-TOKEN_VAR = "AA_TOKEN"
+TOKEN_VAR = "AA_TOKEN"          # the access token (or the one the Network tab shows)
+ID_TOKEN_VAR = "AA_ID_TOKEN"    # optional: the id token, tried if the first is refused
 OUT = Path(__file__).resolve().parent.parent / "data" / "architecture_saves_raw.json"
 
 # The list may come back plain, wrapped, or paged; these are the keys the app's
@@ -49,9 +50,19 @@ LIST_KEYS = ["list", "List", "items", "Items", "bookmarks", "Bookmarks",
              "data", "Data", "results", "Results"]
 
 
-def token():
-    value = os.environ.get(TOKEN_VAR, "").strip()
-    if not value:
+def clean(value):
+    value = (value or "").strip().strip('"')
+    # Accept a bare token or one copied with its "Bearer " prefix.
+    return value[len("Bearer "):].strip() if value.lower().startswith("bearer ") else value
+
+
+def tokens():
+    """The tokens to try, in order. The site keeps two (an access token and an
+    id token); which one its API wants is not worth a round trip to find out,
+    since each change to the environment needs a new session."""
+    found = [(name, clean(os.environ.get(name))) for name in (TOKEN_VAR, ID_TOKEN_VAR)]
+    found = [(name, value) for name, value in found if value]
+    if not found:
         sys.exit(
             f"No {TOKEN_VAR} in the environment.\n"
             "Store the Architectural Authority token in the environment's settings "
@@ -59,8 +70,7 @@ def token():
             f"environment variable named {TOKEN_VAR}), then start a new session so it "
             "is picked up. Do not paste it into the chat."
         )
-    # Accept either a bare token or one the artist copied with its "Bearer " prefix.
-    return value[len("Bearer "):].strip() if value.lower().startswith("bearer ") else value
+    return found
 
 
 def unwrap(body):
@@ -77,7 +87,9 @@ def unwrap(body):
     return []
 
 
-def fetch(session, tok):
+def fetch(session, tok, last):
+    """GET the list with one token. Returns the body, or None if the token was
+    refused and there is another one to try."""
     url = f"{BASE}/{PATH}"
     try:
         response = session.get(url, headers={"Authorization": f"Bearer {tok}"}, timeout=60)
@@ -89,11 +101,15 @@ def fetch(session, tok):
             f"Detail: {exc}"
         )
 
+    if response.status_code in (401, 403) and not last:
+        return None
     if response.status_code in (401, 403):
         sys.exit(
-            f"The API returned {response.status_code}: the token was missing, wrong, or "
-            f"expired.\nRefresh {TOKEN_VAR} in the environment's settings from a fresh "
-            f"login and start a new session.\nBody: {response.text[:300]}"
+            f"The API returned {response.status_code} for every token given: they are "
+            f"wrong or have expired (these tokens usually last about an hour).\nCopy "
+            f"fresh ones into {TOKEN_VAR} (and {ID_TOKEN_VAR}) in the environment's "
+            f"settings, start a new session, and run this soon after.\n"
+            f"Body: {response.text[:300]}"
         )
     if response.status_code != 200:
         sys.exit(f"Unexpected {response.status_code} from {url}\nBody: {response.text[:300]}")
@@ -111,7 +127,13 @@ def main():
     args = parser.parse_args()
 
     session = requests.Session()
-    body = fetch(session, token())
+    order = tokens()
+    body = None
+    for i, (name, tok) in enumerate(order):
+        body = fetch(session, tok, last=(i == len(order) - 1))
+        if body is not None:
+            print(f"Accepted: {name}")
+            break
     saves = unwrap(body)
 
     if args.probe:
