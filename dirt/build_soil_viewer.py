@@ -56,11 +56,13 @@ plane back. The page embeds the cutouts, so it is written to dirt/private/ and n
 import argparse
 import base64
 import json
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-PAGE = r"""<title>DIRT</title>
+PAGE = r"""<meta charset="utf-8">
+<title>DIRT</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
 <style>
   :root {
@@ -251,6 +253,7 @@ function crownsNear(L, x, y, rad) {
   return out;
 }
 </script>
+<script id="earth-common">__EARTH_COMMON__</script>
 
 <script id="worker-src" type="text/plain">
 // ---- the worker: assembles tiles and grows processed ground, a tile-sized chunk at a time -------
@@ -714,6 +717,7 @@ onmessage = (e) => {
   }
 };
 </script>
+<script id="earth-worker" type="text/plain">__EARTH_WORKER__</script>
 
 <script>
 const PL = __PLANE__;
@@ -740,12 +744,16 @@ function pixels(img, w, h) {
 
 // Two workers where the device has the cores for them, each growing a chunk at a time.
 const workerUrl = URL.createObjectURL(new Blob(
-  [document.getElementById("common").textContent, "\n", document.getElementById("worker-src").textContent],
+  [document.getElementById("common").textContent, "\n", document.getElementById("earth-common").textContent, "\n",
+   document.getElementById("worker-src").textContent, "\n", document.getElementById("earth-worker").textContent],
   { type: "text/javascript" }));
 const workers = Array.from({ length: (navigator.hardwareConcurrency || 1) > 2 ? 2 : 1 }, () => ({ w: new Worker(workerUrl), ready: false, busy: 0 }));
 const chunks = new Map(), asked = new Set();
 const ck = (i, j) => (i + 32768) * 65536 + (j + 32768);
 let nextId = 1;
+// Whether a chunk that has come back is still wanted, and whether one held has gone stale: always and never,
+// until the Earth (which regrows its ground each month) says otherwise.
+let chunkWanted = (m) => true, chunkStale = (c) => false;
 
 for (const wk of workers) wk.w.onmessage = (e) => {
   const m = e.data;
@@ -754,11 +762,15 @@ for (const wk of workers) wk.w.onmessage = (e) => {
   wk.busy--;
   const k = ck(m.ci, m.cj);
   asked.delete(k);
+  if (!chunkWanted(m)) return;
   const c = document.createElement("canvas");
   c.width = c.height = N * R;
   c.getContext("2d").putImageData(new ImageData(m.px, N * R, N * R), 0, 0);
+  const old = chunks.get(k);                                      // the same ground in another month: it gives way
+  if (old && old.spawned) { despawn(old); despawnLife(old); }
   chunks.set(k, { i: m.ci, j: m.cj, canvas: c, work: m.work, dgrid: m.dgrid, birds: m.birds, hl: m.hl, sites: m.sites, glints: m.glints,
-                  born: performance.now(), id: nextId++, spawned: false, shade: null, shadeSel: null });
+                  born: performance.now(), id: nextId++, spawned: false, shade: null, shadeSel: null, prev: old ? old.canvas : null,
+                  wet: m.wet, sway: m.sway, crests: m.crests, coast: m.coast, sea: m.sea, leaves: m.leaves, month: m.month });
 };
 
 /** Decode the plane's ingredients into typed arrays for the worker. */
@@ -825,7 +837,7 @@ function wanted() {
 function tend(list) {
   const want = new Set(list.map((w) => w.k));
   for (const w of list) {
-    if (chunks.has(w.k) || asked.has(w.k)) continue;
+    if ((chunks.has(w.k) && !chunkStale(chunks.get(w.k))) || asked.has(w.k)) continue;
     const wk = workers.filter((o) => o.ready && o.busy < ASKING).sort((a, b) => a.busy - b.busy)[0];
     if (!wk) break;
     asked.add(w.k); wk.busy++; wk.w.postMessage({ type: "chunk", ci: w.i, cj: w.j });
@@ -1075,14 +1087,15 @@ function paletteOf(w, turn) {
 // The life layer: one pixel a cell over the ground, drawn afresh each frame. Each pixel remembers
 // the painting its creature wears, for naming.
 const lifeCv = document.createElement("canvas"), lifeCtx = lifeCv.getContext("2d");
-let lifeImg = null, lifePx = null, lifeW = null, lifeDirty = null, nDirty = 0;
+let lifeImg = null, lifePx = null, lifeW = null, lifeS = null, lifeDirty = null, nDirty = 0;
+let CUR_SP = -1;                                                // the species being drawn, where the Earth names one
 function sizeLife() {
   lifeCv.width = TW; lifeCv.height = TH;
   lifeImg = lifeCtx.createImageData(TW, TH); lifePx = lifeImg.data;
-  lifeW = new Int32Array(TW * TH).fill(-1); lifeDirty = new Int32Array(TW * TH); nDirty = 0;
+  lifeW = new Int32Array(TW * TH).fill(-1); lifeS = new Int32Array(TW * TH).fill(-1); lifeDirty = new Int32Array(TW * TH); nDirty = 0;
 }
 function clearLife() {
-  for (let d = 0; d < nDirty; d++) { const i = lifeDirty[d]; lifePx[i * 4 + 3] = 0; lifeW[i] = -1; }
+  for (let d = 0; d < nDirty; d++) { const i = lifeDirty[d]; lifePx[i * 4 + 3] = 0; lifeW[i] = -1; lifeS[i] = -1; }
   nDirty = 0;
 }
 /** Lay a pixel of life at (x, y) with opacity a, over whatever life is there already. */
@@ -1101,6 +1114,7 @@ function put(x, y, rgb, a, w) {
     lifePx[j + 3] = oa * 255;
   }
   if (a >= PHI ** -1 && w >= 0) lifeW[i] = w;
+  if (a >= PHI ** -1 && CUR_SP >= 0) lifeS[i] = CUR_SP;
 }
 /** A shadow at (x, y) with depth a: it darkens the life drawn there, or else the ground. */
 function shadowAt(x, y, a) {
@@ -1833,7 +1847,9 @@ function frame(now) {
     if (!c) continue;
     const px = Math.round((c.i * N - vx) * R), py = Math.round((c.j * N - vy) * R);
     if (px >= cv.width || py >= cv.height || px + T <= 0 || py + T <= 0) continue;
-    cx.globalAlpha = REDUCED ? 1 : Math.min(1, (now - c.born) / FADE);   // new ground comes in
+    const fade = REDUCED ? 1 : Math.min(1, (now - c.born) / FADE);         // new ground comes in
+    if (c.prev) { if (fade < 1) cx.drawImage(c.prev, px, py); else c.prev = null; }   // over the old, when there was one
+    cx.globalAlpha = fade;
     cx.drawImage(c.canvas, px, py);
     if (selWork !== null) cx.drawImage(shadeOf(c), px, py, T, T);
   }
@@ -1949,6 +1965,7 @@ document.addEventListener("keydown", (ev) => {
 });
 showAll.addEventListener("click", letGo);
 </script>
+<script id="earth-main">__EARTH_MAIN__</script>
 """
 
 
@@ -1967,17 +1984,31 @@ def plane(folder):
     return m
 
 
+def earth_scripts(atlas, priv):
+    """DIRT Earth's scripts, and its files beside the page (see dirt/earth/page_files.py)."""
+    sys.path.insert(0, str(HERE / "earth"))
+    import page_files
+    files = page_files.write(atlas, priv / "earth")
+    src = {n: (HERE / "earth" / "engine" / f"{n}.js").read_text().replace("</script", "<\\/script") for n in ("earth-common", "earth-worker", "earth-main")}
+    return src, files
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--private", default=str(HERE / "private"))
+    ap.add_argument("--earth", help="the Earth atlas's folder (dirt/earth/build_atlas.py --out), to build DIRT Earth into the page")
     args = ap.parse_args()
     priv = Path(args.private)
     pl = plane(priv / "plane")
+    src, files = earth_scripts(Path(args.earth), priv) if args.earth else ({}, [])
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
-                .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/")))
+                .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
+                .replace("__EARTH_COMMON__", src.get("earth-common", ""))
+                .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
+                .replace("__EARTH_MAIN__", src.get("earth-main", "")))
     target = priv / "collection-soil.html"
     target.write_text(page)
-    print(target, f"{len(page) / 1e6:.1f} MB")
+    print(target, f"{len(page) / 1e6:.1f} MB", f"and {len(files)} Earth files in {priv / 'earth'}" if files else "")
 
 
 if __name__ == "__main__":

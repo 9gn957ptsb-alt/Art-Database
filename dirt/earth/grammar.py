@@ -1,0 +1,820 @@
+#!/usr/bin/env python3
+"""DIRT Earth's grammar: for every kind of place on Earth, the shapes DIRT builds it from.
+
+DIRT's rainforest was built from shapes: crowns at three heights, each with its own life, from the ants on
+the floor to the eagle whose shadow crosses the canopy. This is the same grammar for every environment
+the atlas names: the vertical structure of its plants and the form of their crowns seen from above; the
+texture of its ground; how it turns through the year; its clouds and weather; its light and how far one
+sees; the colours it wears in each season; and its plants and animals, realm by realm, sorted by the
+height they live at and the behaviour DIRT gives them.
+
+The numbers keep to DIRT's rule: Fibonacci numbers and powers of the golden ratio. The species are
+examples that characterise each biome in each realm, as the biome is described by WWF / RESOLVE and in
+the standard ecology references; they are what DIRT draws and names, not a checklist. Where a realm has
+no species listed for a stratum or a kind, that stratum does not grow there and that kind does not live
+there ("*" stands for every realm).
+
+    python3 dirt/earth/grammar.py [--out dirt/earth/out]      # writes grammar.json beside the atlas
+"""
+
+import argparse
+import json
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+PHI = (1 + 5 ** 0.5) / 2
+p = lambda k: round(PHI ** k, 4)
+
+REALMS = ["Afrotropic", "Antarctica", "Australasia", "Indomalayan", "Nearctic", "Neotropic", "Oceania", "Palearctic"]
+
+# ---- the shapes of plants seen from above -------------------------------------------------------------
+CROWNS = {
+    "lobed": "a broadleaf crown: a low dome swelling in five lobes and eight smaller ones",
+    "cone": "a conifer seen from above: a steep point, bright on the sunward side, its skirts in shadow, star-edged with eight branches",
+    "umbrella": "a flat-topped crown, broad and thin, crisp-edged, standing high on a bare trunk, so its shadow lies far from it: an acacia",
+    "palm": "fronds radiating from a point: eight deep lobes",
+    "column": "a column with almost no crown: a cactus or a quiver tree, all shadow",
+    "tussock": "a clump of grass: a tiny, tight mound, many together",
+    "cushion": "a cushion plant or dwarf shrub: a low, dense, rounded mat",
+    "rosette": "a giant rosette on a stem: a star of thirteen leaves, as frailejones and giant lobelias",
+    "reed": "reeds and papyrus in water: fine, dense, leaning with the wind",
+    "mangrove": "a low, dense crown standing in water on its roots",
+}
+
+# ---- the textures of the ground -----------------------------------------------------------------------------
+GROUNDS = {
+    "litter": "the forest floor: leaf litter over dark soil",
+    "grass": "a sward of grass, fine strokes leaning with the wind, in waves when it blows",
+    "sand": "sand in dunes: ridges across the wind, gentle on the windward side, a sharp slip face in lee",
+    "pavement": "desert pavement: a scatter of pebbles over pale ground",
+    "salt": "a salt flat: white, cracked into polygons",
+    "polygons": "patterned ground of the permafrost: ice-wedge polygons",
+    "moss": "moss and lichen: soft mats, pale green and grey",
+    "scree": "bare rock, scree and boulders",
+    "ice": "ice: crevasses, and sastrugi carved by the wind",
+    "water": "open water between the plants: channels, pools, flood",
+    "mud": "tidal mud, laced with channels",
+}
+
+# ---- the kinds of life DIRT animates: a behaviour each, with species as its variants -----------------------
+KINDS = {
+    # already in DIRT's rainforest
+    "ants": "colonial foragers in columns between nest and food",
+    "mould": "slime mould or fungal network pouring from bright spots",
+    "frogs": "small hoppers that sit, hop and call in turn (frogs, lizards, mudskippers, crabs)",
+    "ferns": "fronds unrolling from fiddleheads",
+    "snakes": "a banded body winding along (snakes, slugs, and crocodilians in water)",
+    "fireflies": "lights that flash and fall into flashing as one",
+    "morphos": "butterflies: an erratic, bobbing, flashing flight",
+    "wind": "gusts crossing the crowns, turning leaves pale",
+    "blooms": "flowers opening florets by the golden angle",
+    "hummers": "hoverers that dart between flowers (hummingbirds, sunbirds, honeyeaters)",
+    "troops": "a group crossing the crowns in single file, leaping gaps (monkeys, squirrels, lemurs)",
+    "macaws": "pairs crossing high and fast between the tallest trees (parrots, hornbills, cockatoos)",
+    "eagles": "a raptor circling high, seen only as its shadow",
+    "flocks": "birds wheeling as one (the loose dots of DIRT's data pigment)",
+    # new for the rest of the Earth
+    "herds": "grazers moving together over open ground, grazing, then moving on in long files",
+    "hunters": "a predator or pack that shadows a herd and at times runs at it",
+    "colonies": "a crowd that stays put and seethes: termite mounds, prairie-dog towns, penguins, seals",
+    "swarms": "a dense, jittering cloud: mosquitoes, midges, locusts, bees, quelea",
+    "waders": "tall birds standing in shallow water, stepping and stabbing (flamingos, herons, storks)",
+    "vees": "migrating geese and cranes in V formations, in their seasons",
+    "soarers": "vultures and condors circling on thermals, their shadows below",
+    "schools": "fish that turn together and flash as they turn",
+    "whales": "a great body surfacing, blowing, and sinking again (whales, rays, turtles)",
+    "floes": "floes that drift and part: sea ice, or rafts of sargassum",
+    "grasswaves": "wind waves running through grass",
+    "dunes": "sand blowing off the dune crests",
+    "dust": "dust devils wandering over hot, dry ground",
+    "leaffall": "leaves turning and falling in autumn",
+    "fire": "a creeping line of flame through dry grass, leaving a black scar and trailing smoke",
+    "bioluminescence": "the sea sparkling where it is stirred, and in the dark",
+}
+
+# When a kind is about, from the month's conditions where it lives: its mean temperature (C), rain
+# (mm a day), snow cover (0-1), the season's phase (see PHASES), and the migration months.
+WHEN = {
+    "ants": {"temp_min": 8},
+    "mould": {"temp_min": 5, "snow_max": 0.2},
+    "frogs": {"temp_min": 10},
+    "ferns": {"temp_min": 3, "snow_max": 0.5},
+    "snakes": {"temp_min": 13},
+    "fireflies": {"temp_min": 15},
+    "morphos": {"temp_min": 12},
+    "blooms": {"temp_min": 5, "snow_max": 0.2, "phases": ["green", "fresh", "bloom"]},
+    "hummers": {"temp_min": 10},
+    "troops": {"temp_min": 0},
+    "herds": {"snow_max": 0.95},
+    "hunters": {"snow_max": 0.95},
+    "swarms": {"temp_min": 10},
+    "waders": {"temp_min": 0},
+    "vees": {"months": [2, 3, 4, 8, 9, 10]},
+    "soarers": {"temp_min": 5},
+    "schools": {"ice_max": 0.8},
+    "grasswaves": {"snow_max": 0.5},
+    "dunes": {"snow_max": 0.2},
+    "dust": {"rain_max": 1.0, "temp_min": 15},
+    "leaffall": {"phases": ["turning"]},
+    "fire": {"phases": ["dry"]},
+}
+
+# ---- how things turn through the year -------------------------------------------------------------------------
+PHENOLOGY = {
+    "evergreen": "green all year",
+    "deciduous": "leaves out in spring, full in summer, turning red and gold as the month's mean falls under 10 C, bare under 5 C",
+    "boreal": "the conifers green all year; the birch, aspen and larch among them turning gold in autumn and bare in winter",
+    "wet-dry": "green in the wet months, gold and leafless in the dry ones; flowering trees at the end of the dry season",
+    "mediterranean": "green through the wet winter, gold through the dry summer",
+    "tundra": "under snow most of the year; a short summer flush of green and tiny flowers",
+    "desert": "bare, blooming only after the rare wet month",
+    "ice": "white all year",
+    "grassland": "dormant and brown in the cold; greening in spring; gold where the summer is dry, green where it is wet",
+}
+# The phases a month can be in, and how each phenology reaches them.
+PHASES = {
+    "green": "in leaf",
+    "fresh": "the first leaves of spring, pale and bright",
+    "turning": "autumn colour",
+    "bare": "leafless in the cold",
+    "dry": "straw and gold in the dry season",
+    "bloom": "a desert in flower after rain",
+}
+PHASE_RULES = {
+    "evergreen": "always green",
+    "deciduous": "green from 10 C; fresh between 5 and 10 C while warming; turning between 5 and 10 C while cooling; bare under 5 C",
+    "boreal": "as deciduous, for the colour of the broadleaves among the conifers",
+    "wet-dry": "green with 3 mm of rain a day or more; dry under 1 mm; between, green if the next month is wetter, dry if not",
+    "mediterranean": "green with 1.5 mm of rain a day or more and a mean under 20 C; dry otherwise",
+    "tundra": "green above 3 C; bare otherwise",
+    "desert": "bloom when the month's rain is at least 1 mm a day and twice the year's mean; bare otherwise",
+    "ice": "always bare",
+    "grassland": "bare under 5 C; dry with under 1.5 mm of rain a day; fresh between 5 and 10 C while warming; green otherwise",
+}
+
+# ---- clouds seen from above, by regime ---------------------------------------------------------------------------
+CLOUD_SHAPES = {
+    "clear": {"shape": "no cloud; at most a contrail", "cover": 0, "g": 0, "r": [0, 0]},
+    "deep convection": {"shape": "towers 34-89 cells across with bubbling edges, anvils streaming downwind, rain shafts under", "cover": p(-1), "g": 233, "r": [34, 89]},
+    "trade cumulus": {"shape": "small puffs 5-13 cells across in streets along the wind, their shadows beside them", "cover": p(-2), "g": 34, "r": [5, 13]},
+    "stratocumulus deck": {"shape": "a closed-cell honeycomb sheet, cells 13-21 cells across, with pockets of open cells", "cover": 1 - p(-4), "g": 21, "r": [8, 13]},
+    "coastal fog": {"shape": "a smooth, low veil lying on the coast and in the valleys", "cover": p(-1), "g": 89, "r": [55, 89]},
+    "storm track": {"shape": "long curved frontal bands and comma-shaped storms, raining", "cover": 1 - p(-3), "g": 55, "r": [21, 55]},
+    "polar stratus": {"shape": "a near-uniform grey sheet, faintly textured", "cover": 1 - p(-4), "g": 55, "r": [34, 55]},
+    "orographic": {"shape": "caps on the summits, banners from them, and smooth lens-shaped wave clouds downwind", "cover": p(-2), "g": 89, "r": [13, 34]},
+    "cirrus": {"shape": "thin, fibrous streaks along the upper wind, half transparent", "cover": p(-2), "g": 89, "r": [34, 89]},
+    "fair cumulus": {"shape": "scattered cotton-ball puffs with crisp shadows", "cover": p(-2), "g": 55, "r": [8, 21]},
+    "broken": {"shape": "broken patches of cumulus and stratus", "cover": p(-1), "g": 55, "r": [13, 34]},
+}
+
+# ---- the colours each place wears --------------------------------------------------------------------------------
+# A look is three colours, dark to light: what the place looks like from above in that season. DIRT does
+# not paint with them. It finds, among the saved paintings, the ones whose three colours are nearest the
+# look's, and each passage of the place wears one of those, so every place wears the paintings closest to
+# its own colours and the palette stays the collection's.
+LOOKS = {
+    "rainforest": ["#0b2514", "#2e6a2c", "#93c04c"],
+    "dry forest": ["#1d3417", "#5a7a30", "#b0bb62"],
+    "dry forest, dry": ["#3a2a18", "#8c6a3c", "#cfae70"],
+    "tropical pines": ["#13271c", "#3d5c3a", "#95a76c"],
+    "temperate forest": ["#15301a", "#4b7b35", "#a9c96f"],
+    "temperate forest, fresh": ["#28461f", "#79a746", "#d8e9a2"],
+    "temperate forest, turning": ["#3b1c10", "#b3482a", "#e8b443"],
+    "temperate forest, bare": ["#2b2522", "#6d5e50", "#aa9c8a"],
+    "conifer forest": ["#0e2119", "#2f4b37", "#708b63"],
+    "taiga": ["#0f2019", "#35513b", "#8c9b71"],
+    "taiga, turning": ["#1a2618", "#7a6a2a", "#e0b840"],
+    "savanna": ["#2b3b19", "#7b8b39", "#c9c171"],
+    "savanna, dry": ["#4b3621", "#a1814b", "#e1c991"],
+    "grassland": ["#2f3b1d", "#7b8d43", "#c9c981"],
+    "grassland, dry": ["#3f3323", "#8d7751", "#d1bd8d"],
+    "wetland": ["#10292a", "#3b6b4b", "#a9b971"],
+    "wetland, dry": ["#2c2a1c", "#7a7446", "#c8b880"],
+    "montane": ["#2b2b23", "#6f6b4f", "#b9b18d"],
+    "tundra": ["#262a1a", "#6a6b3c", "#b9a971"],
+    "tundra, bare": ["#34291f", "#7b6751", "#b9a589"],
+    "mediterranean": ["#25311d", "#6b7b45", "#c1c18b"],
+    "mediterranean, dry": ["#3b3121", "#9b8553", "#ddc991"],
+    "desert": ["#6b4b2b", "#c19161", "#edd5a1"],
+    "desert, bloom": ["#5b4a2b", "#b1916b", "#e9c9c1"],
+    "mangrove": ["#0e251d", "#2f5337", "#7b8b53"],
+    "ice": ["#6b7b91", "#b9c9d9", "#f3f7fb"],
+    "snow": ["#7b8da1", "#c9d5e1", "#f7f9fb"],
+    "salt": ["#8b8b83", "#d1d1c9", "#fbfbf5"],
+    "rock": ["#3b2f29", "#8b7563", "#c9b59d"],
+    "lake": ["#0b1b1f", "#23454b", "#5b8189"],
+    "sea, tropical shallows": ["#0a3b4b", "#1b8b9b", "#7bd1c9"],
+    "sea, tropical": ["#061b3b", "#11417b", "#3b79b1"],
+    "sea, subtropical": ["#081d39", "#194b7b", "#4b87b1"],
+    "sea, temperate": ["#0b1f2b", "#2b4b5b", "#6b8b97"],
+    "sea, polar": ["#11212b", "#3b5361", "#8ba1ab"],
+    "sea, upwelling": ["#0b2b2b", "#2b6b5b", "#7ba991"],
+}
+LOOK_RULES = {
+    "land": "the biome's look for the month's phase, drawn toward the soil's own colour as far as the ground is bare",
+    "snow": "where snow lies, the snow look; glaciers, ice sheets, sea ice and frozen lakes wear ice",
+    "water": "lakes and rivers wear lake; the sea wears its warmth, the tropical shallows (reefs and shelf) their own, and upwelling its green",
+    "salt": "salt flats wear salt",
+    "matching": "paintings are ranked by the CIE Lab distance of their three colours, dark to light, to the look's; a passage wears one of the five nearest, by its own hash",
+}
+
+# ---- the biomes -----------------------------------------------------------------------------------------------------
+# strata: from lowest to highest; g lattice spacing and r reach in DIRT cells, height as a share of the tallest
+# emergent, cover the share of lattice squares holding a plant where the biome is typical, and its plants by
+# realm. A stratum marked "turns" changes colour with the seasons (the broadleaves among conifers).
+# life: kinds by the height they live at, each with its species by realm.
+
+def S(name, shape, g, r, lo, hi, cover, plants, turns=False):
+    return {"name": name, "shape": shape, "g": g, "r": r, "height": [round(lo, 4), round(hi, 4)], "cover": round(cover, 4),
+            "plants": plants, **({"turns": True} if turns else {})}
+
+
+BIOMES = {
+    1: {
+        "name": "Tropical & Subtropical Moist Broadleaf Forests", "family": "rainforest", "ground": "litter", "phenology": "evergreen",
+        "looks": {"green": "rainforest"}, "typical canopy m": 30,
+        "strata": [
+            S("understory", "lobed", 21, 13, p(-3), p(-2), p(-1), {
+                "Neotropic": ["heliconias", "understory palms", "cacao"], "Afrotropic": ["arrowroot thickets", "wild coffee"],
+                "Indomalayan": ["rattan palms", "wild gingers"], "Australasia": ["tree ferns", "pandanus"], "Oceania": ["tree ferns", "pandanus"]}),
+            S("canopy", "lobed", 55, 34, p(-1) - p(-4), p(-1) + p(-4), 1 - p(-3), {
+                "Neotropic": ["Brazil nut", "cecropia", "strangler fig", "big-leaf mahogany"], "Afrotropic": ["African mahogany", "iroko", "okoume"],
+                "Indomalayan": ["dipterocarps", "figs"], "Australasia": ["Queensland kauri", "figs"], "Oceania": ["breadfruit", "Pacific rosewood"]}),
+            S("emergents", "lobed", 233, 55, 1 - p(-4), 1, p(-1), {
+                "Neotropic": ["kapok"], "Afrotropic": ["moabi", "sapele"], "Indomalayan": ["tualang", "yellow meranti"],
+                "Australasia": ["klinki pine"], "Oceania": ["banyan"]}),
+        ],
+        "life": {
+            "floor": {
+                "ants": {"Neotropic": ["leafcutter ants", "army ants"], "Afrotropic": ["driver ants"], "Indomalayan": ["giant forest ants"],
+                         "Australasia": ["bull ants"], "Oceania": ["ants"]},
+                "frogs": {"Neotropic": ["poison dart frogs"], "Afrotropic": ["reed frogs"], "Indomalayan": ["Wallace's flying frogs"],
+                          "Australasia": ["green tree frogs"], "Oceania": ["geckos"]},
+                "ferns": {"Neotropic": ["maidenhair ferns"], "Afrotropic": ["forest ferns"], "Indomalayan": ["bird's-nest ferns"],
+                          "Australasia": ["king ferns"], "Oceania": ["ferns"]},
+                "mould": {"*": ["slime mould (Physarum)"]},
+            },
+            "understory": {
+                "snakes": {"Neotropic": ["coral snakes"], "Afrotropic": ["Gaboon vipers"], "Indomalayan": ["king cobras"],
+                           "Australasia": ["green pythons"], "Oceania": ["Pacific boas"]},
+                "fireflies": {"Neotropic": ["fireflies"], "Afrotropic": ["fireflies"], "Indomalayan": ["synchronous fireflies"],
+                              "Australasia": ["fireflies"], "Oceania": ["fireflies"]},
+                "morphos": {"Neotropic": ["blue morphos"], "Afrotropic": ["African giant swallowtails"], "Indomalayan": ["Rajah Brooke's birdwings"],
+                            "Australasia": ["Ulysses butterflies"], "Oceania": ["eggfly butterflies"]},
+            },
+            "crowns": {
+                "blooms": {"Neotropic": ["bromeliads and orchids"], "Afrotropic": ["African tulip trees"], "Indomalayan": ["orchids"],
+                           "Australasia": ["umbrella tree flowers"], "Oceania": ["hibiscus"]},
+                "hummers": {"Neotropic": ["hummingbirds"], "Afrotropic": ["sunbirds"], "Indomalayan": ["spiderhunters"],
+                            "Australasia": ["honeyeaters"], "Oceania": ["honeyeaters"]},
+                "troops": {"Neotropic": ["spider monkeys", "howler monkeys", "golden lion tamarins"], "Afrotropic": ["colobus monkeys", "chimpanzees", "lemurs"],
+                           "Indomalayan": ["gibbons", "orangutans"], "Australasia": ["tree kangaroos"]},
+                "wind": {"*": ["wind in the crowns"]},
+            },
+            "above": {
+                "macaws": {"Neotropic": ["scarlet macaws"], "Afrotropic": ["African grey parrots"], "Indomalayan": ["rhinoceros hornbills"],
+                           "Australasia": ["sulphur-crested cockatoos"], "Oceania": ["lorikeets"]},
+                "eagles": {"Neotropic": ["harpy eagle"], "Afrotropic": ["crowned eagle"], "Indomalayan": ["Philippine eagle"],
+                           "Australasia": ["New Guinea harpy eagle"], "Oceania": ["Fiji goshawk"]},
+                "flocks": {"Neotropic": ["parakeets"], "Afrotropic": ["green pigeons"], "Indomalayan": ["green pigeons"],
+                           "Australasia": ["rainbow lorikeets"], "Oceania": ["fruit doves"]},
+            },
+        },
+    },
+    2: {
+        "name": "Tropical & Subtropical Dry Broadleaf Forests", "family": "dry forest", "ground": "litter", "phenology": "wet-dry",
+        "looks": {"green": "dry forest", "dry": "dry forest, dry"}, "typical canopy m": 15,
+        "strata": [
+            S("thorn scrub", "lobed", 21, 8, p(-3), p(-2), p(-1), {
+                "Neotropic": ["acacia scrub"], "Indomalayan": ["lantana", "jujube"], "Afrotropic": ["spiny forest"], "Australasia": ["vine thicket"]}),
+            S("canopy", "lobed", 34, 21, p(-2), p(-1), 1 - p(-2), {
+                "Indomalayan": ["teak", "sal"], "Neotropic": ["guanacaste", "gumbo-limbo", "pink lapacho"], "Afrotropic": ["tamarind", "mopane"],
+                "Australasia": ["monsoon vine thicket"], "Oceania": ["sandalwood"]}),
+            S("emergents", "umbrella", 144, 34, p(-1), 1 - p(-3), p(-3), {
+                "Afrotropic": ["Grandidier's baobab"], "Neotropic": ["pochote"], "Indomalayan": ["red silk-cotton"]}),
+        ],
+        "life": {
+            "floor": {
+                "ants": {"*": ["ants"]},
+                "frogs": {"Neotropic": ["spiny-tailed iguanas"], "Indomalayan": ["garden lizards"], "Afrotropic": ["chameleons"], "Australasia": ["frilled lizards"]},
+            },
+            "understory": {
+                "snakes": {"Indomalayan": ["Indian cobras"], "Neotropic": ["boa constrictors"], "Afrotropic": ["Madagascar tree boas"]},
+                "morphos": {"Indomalayan": ["common Mormons"], "Neotropic": ["migrating sulphurs"], "Afrotropic": ["comet moths"]},
+                "herds": {"Indomalayan": ["chital", "gaur", "sambar"], "Neotropic": ["white-tailed deer", "collared peccaries"], "Afrotropic": ["bushpigs"]},
+                "hunters": {"Indomalayan": ["Bengal tiger", "leopard", "dholes"], "Neotropic": ["jaguar", "puma"], "Afrotropic": ["fossa"]},
+            },
+            "crowns": {
+                "blooms": {"Neotropic": ["pink lapacho in flower"], "Indomalayan": ["flame of the forest in flower"], "Afrotropic": ["baobab flowers"]},
+                "troops": {"Indomalayan": ["grey langurs", "rhesus macaques"], "Neotropic": ["white-faced capuchins"], "Afrotropic": ["Verreaux's sifakas"]},
+                "leaffall": {"*": ["leaves falling in the dry season"]},
+            },
+            "above": {
+                "soarers": {"Indomalayan": ["white-rumped vultures"], "Neotropic": ["black vultures"], "Afrotropic": ["yellow-billed kites"], "Australasia": ["black kites"]},
+                "flocks": {"Indomalayan": ["rose-ringed parakeets"], "Neotropic": ["orange-fronted parakeets"], "Afrotropic": ["vasa parrots"], "Australasia": ["red-tailed black cockatoos"]},
+            },
+        },
+    },
+    3: {
+        "name": "Tropical & Subtropical Coniferous Forests", "family": "tropical pines", "ground": "litter", "phenology": "evergreen",
+        "looks": {"green": "tropical pines"}, "typical canopy m": 20,
+        "strata": [
+            S("shrubs", "lobed", 21, 8, p(-3), p(-2), p(-2), {"Neotropic": ["manzanita", "oaks"], "Indomalayan": ["rhododendrons"]}),
+            S("pines", "cone", 21, 8, p(-1), 1 - p(-3), 1 - p(-3), {
+                "Neotropic": ["Montezuma pine", "Caribbean pine", "sacred fir (oyamel)"], "Indomalayan": ["Khasi pine", "chir pine"]}),
+        ],
+        "life": {
+            "floor": {"ants": {"*": ["ants"]}},
+            "understory": {
+                "morphos": {"Neotropic": ["monarch butterflies in their winter clusters"], "Indomalayan": ["swallowtails"]},
+                "herds": {"Neotropic": ["white-tailed deer"], "Indomalayan": ["goral"]},
+            },
+            "crowns": {"troops": {"Neotropic": ["Mexican grey squirrels"], "Indomalayan": ["Himalayan striped squirrels"]}, "wind": {"*": ["wind in the pines"]}},
+            "above": {
+                "soarers": {"Neotropic": ["turkey vultures"], "Indomalayan": ["Himalayan griffons"]},
+                "flocks": {"Neotropic": ["thick-billed parrots"], "Indomalayan": ["scarlet minivets"]},
+            },
+        },
+    },
+    4: {
+        "name": "Temperate Broadleaf & Mixed Forests", "family": "temperate forest", "ground": "litter", "phenology": "deciduous",
+        "looks": {"green": "temperate forest", "fresh": "temperate forest, fresh", "turning": "temperate forest, turning", "bare": "temperate forest, bare"},
+        "typical canopy m": 25,
+        "strata": [
+            S("shrubs", "lobed", 21, 8, p(-3), p(-2), p(-1), {
+                "Palearctic": ["hazel", "holly"], "Nearctic": ["dogwood", "mountain laurel"], "Australasia": ["tree ferns"], "Neotropic": ["chusquea bamboo"],
+                "Indomalayan": ["rhododendrons"]}),
+            S("canopy", "lobed", 55, 21, p(-1) - p(-4), p(-1) + p(-4), 1 - p(-3), {
+                "Palearctic": ["European beech", "pedunculate oak", "hornbeam", "maples"], "Nearctic": ["sugar maple", "white oak", "American beech", "tulip tree"],
+                "Australasia": ["southern beech"], "Neotropic": ["coigue (southern beech)"], "Indomalayan": ["oaks and chestnuts"]}),
+            S("tall trees", "lobed", 144, 34, 1 - p(-3), 1 - p(-4), p(-3), {
+                "Palearctic": ["ancient oaks"], "Nearctic": ["eastern white pine", "tulip tree"], "Australasia": ["kahikatea", "rimu"],
+                "Neotropic": ["alerce"], "Indomalayan": ["walnuts"]}),
+        ],
+        "life": {
+            "floor": {
+                "ants": {"*": ["wood ants"]},
+                "ferns": {"Palearctic": ["bracken"], "Nearctic": ["Christmas ferns"], "Australasia": ["crown ferns"], "Neotropic": ["ferns"], "Indomalayan": ["ferns"]},
+                "mould": {"*": ["slime mould"]},
+                "frogs": {"Palearctic": ["common frogs"], "Nearctic": ["spring peepers"], "Australasia": ["Hochstetter's frogs"], "Neotropic": ["Darwin's frogs"]},
+            },
+            "understory": {
+                "fireflies": {"Palearctic": ["glow-worms"], "Nearctic": ["fireflies"], "Indomalayan": ["fireflies"]},
+                "morphos": {"Palearctic": ["peacock butterflies"], "Nearctic": ["tiger swallowtails"], "Australasia": ["red admirals"], "Indomalayan": ["swallowtails"]},
+                "herds": {"Palearctic": ["red deer", "wild boar"], "Nearctic": ["white-tailed deer"], "Neotropic": ["pudu"], "Australasia": ["red deer"],
+                          "Indomalayan": ["sika deer"]},
+                "hunters": {"Palearctic": ["wolves", "red foxes"], "Nearctic": ["black bears", "coyotes"], "Neotropic": ["kodkod"]},
+                "snakes": {"Palearctic": ["adders"], "Nearctic": ["garter snakes"]},
+            },
+            "crowns": {
+                "blooms": {"Palearctic": ["cherry blossom"], "Nearctic": ["dogwood blossom"], "Australasia": ["southern rata"], "Indomalayan": ["magnolias"]},
+                "troops": {"Palearctic": ["red squirrels"], "Nearctic": ["grey squirrels"], "Australasia": ["brushtail possums"], "Neotropic": ["monito del monte"],
+                           "Indomalayan": ["Japanese macaques"]},
+                "leaffall": {"*": ["autumn leaves"]},
+                "wind": {"*": ["wind in the crowns"]},
+            },
+            "above": {
+                "flocks": {"Palearctic": ["starling murmurations"], "Nearctic": ["common grackles"], "Australasia": ["tui"], "Neotropic": ["austral parakeets"],
+                           "Indomalayan": ["azure-winged magpies"]},
+                "vees": {"Palearctic": ["greylag geese"], "Nearctic": ["Canada geese"], "Indomalayan": ["swan geese"]},
+                "eagles": {"Palearctic": ["white-tailed eagle"], "Nearctic": ["bald eagle"], "Australasia": ["swamp harrier"], "Neotropic": ["black-chested buzzard-eagle"],
+                           "Indomalayan": ["mountain hawk-eagle"]},
+            },
+        },
+    },
+    5: {
+        "name": "Temperate Conifer Forests", "family": "conifer forest", "ground": "moss", "phenology": "evergreen",
+        "looks": {"green": "conifer forest"}, "typical canopy m": 30,
+        "strata": [
+            S("ferns and shrubs", "lobed", 21, 8, p(-3), p(-2), p(-1), {"Nearctic": ["sword ferns", "salal"], "Palearctic": ["bilberry"], "Indomalayan": ["rhododendrons"]}),
+            S("conifers", "cone", 34, 13, p(-1), 1 - p(-3), 1 - p(-3), {
+                "Nearctic": ["Douglas fir", "western red cedar", "Sitka spruce", "ponderosa pine"],
+                "Palearctic": ["Norway spruce", "silver fir", "Scots pine", "deodar", "Japanese cedar"], "Indomalayan": ["Himalayan hemlock"]}),
+            S("giants", "cone", 144, 21, 1 - p(-4), 1, p(-3), {"Nearctic": ["coast redwood", "giant sequoia"], "Palearctic": ["ancient Japanese cedar"]}),
+        ],
+        "life": {
+            "floor": {
+                "ferns": {"Nearctic": ["sword ferns"], "Palearctic": ["lady ferns"], "Indomalayan": ["ferns"]},
+                "mould": {"*": ["slime mould"]},
+                "snakes": {"Nearctic": ["banana slugs", "rubber boas"], "Palearctic": ["Aesculapian snakes"]},
+            },
+            "understory": {
+                "herds": {"Nearctic": ["Roosevelt elk"], "Palearctic": ["red deer"], "Indomalayan": ["musk deer"]},
+                "hunters": {"Nearctic": ["black bears", "cougars"], "Palearctic": ["brown bears", "Eurasian lynx"], "Indomalayan": ["Asiatic black bears"]},
+            },
+            "crowns": {"troops": {"Nearctic": ["Douglas squirrels"], "Palearctic": ["red squirrels"], "Indomalayan": ["red pandas"]}, "wind": {"*": ["wind in the conifers"]}},
+            "above": {
+                "eagles": {"Nearctic": ["bald eagle"], "Palearctic": ["golden eagle"], "Indomalayan": ["golden eagle"]},
+                "flocks": {"Nearctic": ["crossbills"], "Palearctic": ["crossbills", "nutcrackers"], "Indomalayan": ["grosbeaks"]},
+            },
+        },
+    },
+    6: {
+        "name": "Boreal Forests/Taiga", "family": "taiga", "ground": "moss", "phenology": "boreal",
+        "looks": {"green": "taiga", "fresh": "taiga", "turning": "taiga, turning", "bare": "taiga"}, "typical canopy m": 12,
+        "strata": [
+            S("dwarf shrubs and bog", "cushion", 13, 5, p(-4), p(-3), p(-1), {"Nearctic": ["Labrador tea", "sphagnum bog"], "Palearctic": ["bilberry", "sphagnum bog"]}),
+            S("spruce and larch", "cone", 21, 8, p(-2), p(-1), 1 - p(-2), {
+                "Nearctic": ["black spruce", "white spruce", "tamarack", "jack pine"], "Palearctic": ["Siberian larch", "Siberian pine", "Scots pine", "Norway spruce"]}),
+            S("birch and aspen", "lobed", 89, 21, p(-2), p(-1), p(-3), {"Nearctic": ["paper birch", "trembling aspen"], "Palearctic": ["downy birch", "aspen"]}, turns=True),
+        ],
+        "life": {
+            "floor": {
+                "mould": {"*": ["slime mould"]},
+                "swarms": {"Nearctic": ["mosquitoes and blackflies"], "Palearctic": ["mosquitoes"]},
+                "frogs": {"Nearctic": ["wood frogs"], "Palearctic": ["moor frogs"]},
+            },
+            "understory": {
+                "herds": {"Nearctic": ["moose", "woodland caribou"], "Palearctic": ["elk (moose)", "reindeer"]},
+                "hunters": {"Nearctic": ["grey wolves", "Canada lynx"], "Palearctic": ["wolves", "Amur tiger", "brown bears"]},
+            },
+            "crowns": {"troops": {"Nearctic": ["red squirrels"], "Palearctic": ["red squirrels", "sable"]}, "leaffall": {"*": ["birch and larch turning gold"]}},
+            "above": {
+                "vees": {"Nearctic": ["sandhill cranes", "Canada geese"], "Palearctic": ["Siberian cranes", "bean geese"]},
+                "eagles": {"Nearctic": ["bald eagle"], "Palearctic": ["golden eagle"]},
+            },
+        },
+    },
+    7: {
+        "name": "Tropical & Subtropical Grasslands, Savannas & Shrublands", "family": "savanna", "ground": "grass", "phenology": "wet-dry",
+        "looks": {"green": "savanna", "dry": "savanna, dry"}, "typical canopy m": 5,
+        "strata": [
+            S("grass", "tussock", 5, 2, p(-5), p(-4), 1 - p(-4), {
+                "Afrotropic": ["red oat grass"], "Neotropic": ["cerrado grasses"], "Australasia": ["spinifex"], "Indomalayan": ["elephant grass"]}),
+            S("shrubs", "lobed", 34, 5, p(-4), p(-3), p(-3), {
+                "Afrotropic": ["whistling thorn"], "Neotropic": ["pequi"], "Australasia": ["wattles"], "Indomalayan": ["jujube"]}),
+            S("acacias and baobabs", "umbrella", 89, 21, p(-2), p(-1), p(-3), {
+                "Afrotropic": ["umbrella thorn acacia", "baobab", "yellow fever tree"], "Neotropic": ["pau-terra"], "Australasia": ["Darwin woollybutt"],
+                "Indomalayan": ["silk-cotton trees"]}),
+        ],
+        "life": {
+            "floor": {
+                "colonies": {"Afrotropic": ["termite mounds"], "Neotropic": ["termite mounds"], "Australasia": ["cathedral termite mounds"], "Indomalayan": ["termite mounds"]},
+                "grasswaves": {"*": ["wind in the grass"]},
+                "fire": {"Afrotropic": ["grass fire"], "Neotropic": ["cerrado fire"], "Australasia": ["grass fire, followed by fire-hawk kites"], "Indomalayan": ["grass fire"]},
+                "ants": {"*": ["ants"]},
+            },
+            "understory": {
+                "herds": {"Afrotropic": ["blue wildebeest", "plains zebra", "Thomson's gazelle", "African elephants", "giraffes", "Cape buffalo", "impala"],
+                          "Neotropic": ["capybara", "pampas deer", "greater rheas"], "Australasia": ["agile wallabies", "emus"],
+                          "Indomalayan": ["swamp deer", "Indian rhinoceros", "hog deer"]},
+                "hunters": {"Afrotropic": ["a lion pride", "cheetahs", "a spotted hyena clan", "African wild dogs"], "Neotropic": ["maned wolf", "jaguar"],
+                            "Australasia": ["dingoes"], "Indomalayan": ["Bengal tiger"]},
+            },
+            "crowns": {"blooms": {"Afrotropic": ["acacia blossom"], "Neotropic": ["ipe in flower"], "Australasia": ["grevilleas"], "Indomalayan": ["silk-cotton blossom"]}},
+            "above": {
+                "soarers": {"Afrotropic": ["white-backed vultures", "Rüppell's vultures"], "Neotropic": ["king vultures"], "Australasia": ["black kites"],
+                            "Indomalayan": ["red-headed vultures"]},
+                "swarms": {"Afrotropic": ["red-billed quelea", "desert locusts"], "Australasia": ["grasshoppers"], "Neotropic": ["locusts"], "Indomalayan": ["locusts"]},
+                "flocks": {"Afrotropic": ["weaverbirds"], "Neotropic": ["blue-and-yellow macaws"], "Australasia": ["galahs"], "Indomalayan": ["common mynas"]},
+            },
+        },
+    },
+    8: {
+        "name": "Temperate Grasslands, Savannas & Shrublands", "family": "grassland", "ground": "grass", "phenology": "grassland",
+        "looks": {"green": "grassland", "fresh": "grassland", "dry": "grassland, dry", "bare": "grassland, dry"}, "typical canopy m": 1,
+        "strata": [
+            S("grass", "tussock", 3, 1, p(-6), p(-5), 1 - p(-5), {
+                "Nearctic": ["big bluestem", "buffalo grass", "switchgrass"], "Palearctic": ["feather grass", "fescue"], "Neotropic": ["pampas grass", "coiron tussocks"],
+                "Australasia": ["tussock grass"], "Afrotropic": ["red grass"]}),
+            S("forbs and shrubs", "cushion", 21, 3, p(-5), p(-4), p(-3), {
+                "Nearctic": ["sunflowers", "coneflowers", "sagebrush"], "Palearctic": ["wormwood", "wild tulips"], "Neotropic": ["verbena", "calafate"],
+                "Australasia": ["everlasting daisies"], "Afrotropic": ["karoo bushes"]}),
+        ],
+        "life": {
+            "floor": {
+                "colonies": {"Nearctic": ["a prairie-dog town"], "Palearctic": ["bobak marmots", "sousliks"], "Neotropic": ["viscachas", "burrowing owls"],
+                             "Afrotropic": ["ground squirrels"]},
+                "grasswaves": {"*": ["wind in the grass"]},
+                "blooms": {"Nearctic": ["prairie wildflowers"], "Palearctic": ["wild tulips"], "Neotropic": ["verbena"], "Australasia": ["everlasting daisies"],
+                           "Afrotropic": ["daisies"]},
+                "fire": {"Nearctic": ["prairie fire"], "Neotropic": ["pampas fire"], "Australasia": ["grass fire"], "Afrotropic": ["veld fire"]},
+            },
+            "understory": {
+                "herds": {"Nearctic": ["American bison", "pronghorn"], "Palearctic": ["saiga", "Mongolian gazelles", "Przewalski's horses"],
+                          "Neotropic": ["guanacos", "pampas deer", "greater rheas"], "Australasia": ["eastern grey kangaroos"], "Afrotropic": ["springbok", "black wildebeest"]},
+                "hunters": {"Nearctic": ["coyotes", "grey wolves"], "Palearctic": ["wolves", "corsac foxes"], "Neotropic": ["pampas foxes", "puma"],
+                            "Afrotropic": ["black-backed jackals"]},
+            },
+            "above": {
+                "soarers": {"Nearctic": ["red-tailed hawks", "turkey vultures"], "Palearctic": ["steppe eagles", "cinereous vultures"], "Neotropic": ["chimango caracaras"],
+                            "Australasia": ["wedge-tailed eagles"], "Afrotropic": ["Cape vultures"]},
+                "vees": {"Nearctic": ["snow geese", "sandhill cranes"], "Palearctic": ["demoiselle cranes", "red-breasted geese"], "Neotropic": ["upland geese"]},
+                "flocks": {"Nearctic": ["red-winged blackbirds"], "Palearctic": ["rosy starlings"], "Neotropic": ["eared doves"], "Australasia": ["budgerigars"],
+                           "Afrotropic": ["larks"]},
+            },
+        },
+    },
+    9: {
+        "name": "Flooded Grasslands & Savannas", "family": "wetland", "ground": "water", "phenology": "wet-dry",
+        "looks": {"green": "wetland", "dry": "wetland, dry"}, "typical canopy m": 2,
+        "strata": [
+            S("reeds and papyrus", "reed", 5, 2, p(-5), p(-4), p(-1), {
+                "Afrotropic": ["papyrus", "reeds"], "Neotropic": ["water hyacinth", "giant water lily"], "Nearctic": ["sawgrass"], "Indomalayan": ["reeds"],
+                "Palearctic": ["reeds"], "Australasia": ["wild rice"]}),
+            S("islands of trees", "lobed", 89, 21, p(-2), p(-1), p(-3), {
+                "Afrotropic": ["jackalberry", "wild date palms"], "Neotropic": ["caranda palms", "piuva"], "Nearctic": ["bald cypress domes"],
+                "Indomalayan": ["tamarisks"], "Palearctic": ["willows"], "Australasia": ["paperbarks"]}),
+        ],
+        "life": {
+            "floor": {
+                "waders": {"Neotropic": ["jabirus", "roseate spoonbills"], "Afrotropic": ["shoebills", "African spoonbills"], "Nearctic": ["wood storks", "great egrets"],
+                           "Indomalayan": ["greater flamingos", "painted storks"], "Palearctic": ["grey herons", "greater flamingos"], "Australasia": ["brolgas"]},
+                "snakes": {"Neotropic": ["yacare caimans", "yellow anacondas"], "Afrotropic": ["Nile crocodiles"], "Nearctic": ["American alligators"],
+                           "Indomalayan": ["mugger crocodiles"], "Australasia": ["freshwater crocodiles"]},
+                "frogs": {"Neotropic": ["paradoxical frogs"], "Afrotropic": ["painted reed frogs"], "Nearctic": ["pig frogs"], "Indomalayan": ["frogs"],
+                          "Palearctic": ["marsh frogs"], "Australasia": ["frogs"]},
+                "schools": {"Neotropic": ["piranhas"], "Afrotropic": ["tigerfish"], "Nearctic": ["gar"], "Indomalayan": ["catfish"], "Palearctic": ["carp"],
+                            "Australasia": ["barramundi"]},
+            },
+            "understory": {
+                "herds": {"Neotropic": ["capybara", "marsh deer"], "Afrotropic": ["red lechwe", "hippopotamus", "sitatunga"], "Nearctic": ["white-tailed deer"],
+                          "Indomalayan": ["Indian wild ass"], "Australasia": ["water buffalo"]},
+                "swarms": {"*": ["mosquitoes"]},
+            },
+            "above": {
+                "flocks": {"Neotropic": ["hyacinth macaws"], "Afrotropic": ["open-billed storks"], "Nearctic": ["white ibises"], "Indomalayan": ["whistling ducks"],
+                           "Palearctic": ["pelicans"], "Australasia": ["magpie geese"]},
+                "eagles": {"Afrotropic": ["African fish eagle"], "Neotropic": ["snail kite"], "Nearctic": ["osprey"], "Indomalayan": ["Pallas's fish eagle"],
+                           "Palearctic": ["marsh harrier"], "Australasia": ["white-bellied sea eagle"]},
+            },
+        },
+    },
+    10: {
+        "name": "Montane Grasslands & Shrublands", "family": "montane", "ground": "scree", "phenology": "tundra",
+        "looks": {"green": "montane", "bare": "tundra, bare"}, "typical canopy m": 1,
+        "strata": [
+            S("cushions and tussocks", "cushion", 8, 2, p(-6), p(-5), 1 - p(-3), {
+                "Neotropic": ["ichu grass", "yareta cushions"], "Afrotropic": ["tussock grass", "everlastings"], "Palearctic": ["Kobresia meadows", "cushion plants"],
+                "Indomalayan": ["rhododendron scrub"], "Australasia": ["snow tussock"], "Nearctic": ["alpine sedges"]}),
+            S("giant rosettes", "rosette", 34, 5, p(-4), p(-3), p(-3), {
+                "Neotropic": ["frailejones", "Puya raimondii"], "Afrotropic": ["giant lobelias", "giant groundsels"]}),
+        ],
+        "life": {
+            "floor": {
+                "blooms": {"Neotropic": ["Puya in flower"], "Afrotropic": ["Erica flowers"], "Palearctic": ["edelweiss", "saussureas"], "Indomalayan": ["blue poppies"],
+                           "Australasia": ["mountain daisies"], "Nearctic": ["alpine forget-me-nots"]},
+                "colonies": {"Neotropic": ["viscachas"], "Palearctic": ["pikas", "marmots"], "Afrotropic": ["giant mole-rats"], "Indomalayan": ["pikas"], "Nearctic": ["marmots"]},
+                "waders": {"Neotropic": ["Andean and James's flamingos"], "Palearctic": ["black-necked cranes"]},
+            },
+            "understory": {
+                "herds": {"Neotropic": ["vicuñas", "llamas and alpacas"], "Afrotropic": ["geladas", "walia ibex"], "Palearctic": ["wild yak", "Tibetan antelope", "kiang"],
+                          "Indomalayan": ["blue sheep"], "Nearctic": ["mountain goats"], "Australasia": ["Himalayan tahr"]},
+                "hunters": {"Neotropic": ["Andean foxes", "puma"], "Afrotropic": ["Ethiopian wolves"], "Palearctic": ["snow leopard", "Tibetan wolves"],
+                            "Indomalayan": ["snow leopard"], "Nearctic": ["cougars"]},
+            },
+            "above": {
+                "soarers": {"Neotropic": ["Andean condors"], "Afrotropic": ["lammergeiers"], "Palearctic": ["Himalayan griffons", "lammergeiers"],
+                            "Indomalayan": ["Himalayan griffons"], "Nearctic": ["golden eagles"], "Australasia": ["keas"]},
+                "vees": {"Palearctic": ["bar-headed geese", "black-necked cranes"], "Neotropic": ["Andean geese"]},
+            },
+        },
+    },
+    11: {
+        "name": "Tundra", "family": "tundra", "ground": "polygons", "phenology": "tundra",
+        "looks": {"green": "tundra", "bare": "tundra, bare"}, "typical canopy m": 0.3,
+        "strata": [
+            S("lichen and moss", "cushion", 5, 2, p(-7), p(-6), 1 - p(-3), {
+                "Nearctic": ["reindeer lichen", "cotton grass", "sphagnum"], "Palearctic": ["reindeer lichen", "cotton grass", "sphagnum"],
+                "Antarctica": ["mosses and lichens"]}),
+            S("dwarf willow and birch", "cushion", 13, 3, p(-6), p(-5), p(-2), {"Nearctic": ["arctic willow", "dwarf birch"], "Palearctic": ["dwarf birch", "cloudberry"]}),
+        ],
+        "life": {
+            "floor": {
+                "blooms": {"Nearctic": ["purple saxifrage", "arctic poppies"], "Palearctic": ["arctic poppies", "cloudberry flowers"], "Antarctica": ["Antarctic pearlwort"]},
+                "colonies": {"Nearctic": ["lemmings"], "Palearctic": ["lemmings"], "Antarctica": ["Adelie penguins", "gentoo penguins"]},
+                "swarms": {"Nearctic": ["mosquitoes"], "Palearctic": ["mosquitoes"]},
+            },
+            "understory": {
+                "herds": {"Nearctic": ["caribou", "muskoxen"], "Palearctic": ["reindeer"]},
+                "hunters": {"Nearctic": ["arctic foxes", "grey wolves", "grizzly bears"], "Palearctic": ["arctic foxes", "wolves"]},
+            },
+            "above": {
+                "vees": {"Nearctic": ["snow geese"], "Palearctic": ["barnacle geese", "brent geese"]},
+                "eagles": {"Nearctic": ["snowy owl", "gyrfalcon"], "Palearctic": ["snowy owl", "rough-legged buzzard"], "Antarctica": ["south polar skua"]},
+                "flocks": {"Nearctic": ["snow buntings"], "Palearctic": ["snow buntings"], "Antarctica": ["snow petrels"]},
+            },
+        },
+    },
+    12: {
+        "name": "Mediterranean Forests, Woodlands & Scrub", "family": "mediterranean", "ground": "pavement", "phenology": "mediterranean",
+        "looks": {"green": "mediterranean", "dry": "mediterranean, dry"}, "typical canopy m": 6,
+        "strata": [
+            S("scrub (maquis, chaparral, fynbos, kwongan, matorral)", "cushion", 13, 5, p(-4), p(-3), 1 - p(-3), {
+                "Palearctic": ["lavender", "rosemary", "rockrose"], "Nearctic": ["chamise", "manzanita"], "Afrotropic": ["king protea", "restios", "ericas"],
+                "Australasia": ["banksias", "kangaroo paw"], "Neotropic": ["quillay", "boldo"]}),
+            S("oaks, olives, pines", "lobed", 55, 13, p(-2), p(-1), p(-2), {
+                "Palearctic": ["olive", "cork oak", "holm oak", "stone pine"], "Nearctic": ["coast live oak", "blue oak"], "Afrotropic": ["silver tree"],
+                "Australasia": ["jarrah", "marri"], "Neotropic": ["Chilean wine palm", "peumo"]}),
+        ],
+        "life": {
+            "floor": {
+                "blooms": {"Palearctic": ["poppies and orchids"], "Nearctic": ["California poppies"], "Afrotropic": ["proteas"], "Australasia": ["kangaroo paw"],
+                           "Neotropic": ["añañucas"]},
+                "frogs": {"Palearctic": ["ocellated lizards"], "Nearctic": ["fence lizards"], "Afrotropic": ["girdled lizards"], "Australasia": ["bobtail skinks"],
+                          "Neotropic": ["Liolaemus lizards"]},
+                "ants": {"*": ["harvester ants"], "Australasia": ["bull ants"]},
+            },
+            "understory": {
+                "herds": {"Palearctic": ["Iberian ibex", "mouflon"], "Nearctic": ["mule deer"], "Afrotropic": ["bontebok"], "Australasia": ["western grey kangaroos"],
+                          "Neotropic": ["guanacos"]},
+                "hunters": {"Palearctic": ["Iberian lynx"], "Nearctic": ["coyotes", "bobcats"], "Afrotropic": ["caracals"], "Australasia": ["dingoes"],
+                            "Neotropic": ["culpeo foxes"]},
+                "swarms": {"Palearctic": ["cicadas", "honey bees"], "Nearctic": ["honey bees"], "Afrotropic": ["Cape honey bees"], "Australasia": ["native bees"],
+                           "Neotropic": ["bees"]},
+                "fire": {"Palearctic": ["wildfire"], "Nearctic": ["chaparral fire"], "Australasia": ["bushfire"], "Afrotropic": ["fynbos fire"], "Neotropic": ["matorral fire"]},
+            },
+            "crowns": {
+                "hummers": {"Palearctic": ["hummingbird hawk-moths"], "Nearctic": ["Anna's hummingbirds"], "Afrotropic": ["orange-breasted sunbirds", "Cape sugarbirds"],
+                            "Australasia": ["honey possums", "wattlebirds"], "Neotropic": ["green-backed firecrowns"]},
+                "wind": {"*": ["wind in the scrub"]},
+            },
+            "above": {
+                "soarers": {"Palearctic": ["griffon vultures"], "Nearctic": ["California condors", "turkey vultures"], "Afrotropic": ["Cape vultures"],
+                            "Australasia": ["wedge-tailed eagles"], "Neotropic": ["Andean condors"]},
+                "eagles": {"Palearctic": ["Bonelli's eagle"], "Nearctic": ["golden eagle"], "Afrotropic": ["Verreaux's eagle"], "Australasia": ["wedge-tailed eagle"],
+                           "Neotropic": ["black-chested buzzard-eagle"]},
+                "flocks": {"Palearctic": ["bee-eaters"], "Nearctic": ["California quail"], "Australasia": ["Carnaby's black cockatoos"], "Afrotropic": ["Cape canaries"],
+                           "Neotropic": ["austral thrushes"]},
+            },
+        },
+    },
+    13: {
+        "name": "Deserts & Xeric Shrublands", "family": "desert", "ground": "sand", "phenology": "desert",
+        "looks": {"bare": "desert", "green": "desert", "bloom": "desert, bloom"}, "typical canopy m": 1,
+        "strata": [
+            S("desert shrubs", "cushion", 21, 3, p(-5), p(-4), p(-2), {
+                "Palearctic": ["saxaul", "tamarisk", "camelthorn"], "Nearctic": ["creosote bush", "sagebrush", "ocotillo"],
+                "Afrotropic": ["welwitschia", "!nara melon", "lithops"], "Australasia": ["spinifex", "saltbush", "mulga"], "Neotropic": ["tola shrubs"],
+                "Indomalayan": ["phog"]}),
+            S("cacti, Joshua trees, quiver trees", "column", 55, 2, p(-3), p(-2), p(-3), {
+                "Nearctic": ["saguaro", "Joshua tree", "organ pipe cactus"], "Afrotropic": ["quiver trees"], "Neotropic": ["cardon cactus", "copiapoa"],
+                "Palearctic": ["Euphorbia resinifera"], "Australasia": ["desert oaks"]}),
+        ],
+        "life": {
+            "floor": {
+                "dunes": {"*": ["sand blowing off the dunes"]},
+                "ants": {"Palearctic": ["Saharan silver ants"], "Nearctic": ["harvester ants"], "Afrotropic": ["fog-basking beetles"], "Australasia": ["honeypot ants"],
+                         "Neotropic": ["darkling beetles"], "Indomalayan": ["harvester ants"]},
+                "frogs": {"Palearctic": ["spiny-tailed lizards"], "Nearctic": ["desert horned lizards"], "Afrotropic": ["Namib web-footed geckos"],
+                          "Australasia": ["thorny devils"], "Neotropic": ["lava lizards"], "Indomalayan": ["spiny-tailed lizards"]},
+                "snakes": {"Palearctic": ["horned vipers"], "Nearctic": ["sidewinders"], "Afrotropic": ["Peringuey's adders"], "Australasia": ["inland taipans"],
+                           "Neotropic": ["Peruvian racers"], "Indomalayan": ["saw-scaled vipers"]},
+                "blooms": {"Nearctic": ["desert wildflowers after rain"], "Neotropic": ["the flowering desert"], "Afrotropic": ["Namaqualand daisies"],
+                           "Australasia": ["Sturt's desert pea"], "Palearctic": ["desert blooms after rain"], "Indomalayan": ["desert blooms after rain"]},
+                "colonies": {"Afrotropic": ["meerkats"], "Nearctic": ["kangaroo rats"], "Palearctic": ["great gerbils"], "Australasia": ["bilbies"]},
+            },
+            "understory": {
+                "herds": {"Palearctic": ["dromedaries", "addax", "dorcas gazelles"], "Nearctic": ["desert bighorn sheep", "pronghorn"], "Afrotropic": ["gemsbok", "springbok"],
+                          "Australasia": ["red kangaroos", "emus"], "Neotropic": ["guanacos"], "Indomalayan": ["blackbuck", "chinkara"]},
+                "hunters": {"Palearctic": ["fennec foxes", "golden jackals"], "Nearctic": ["coyotes"], "Afrotropic": ["brown hyenas", "black-backed jackals"],
+                            "Australasia": ["dingoes"], "Neotropic": ["culpeo foxes"], "Indomalayan": ["Indian wolves"]},
+                "dust": {"*": ["dust devils"]},
+            },
+            "above": {
+                "soarers": {"Palearctic": ["lappet-faced vultures"], "Nearctic": ["turkey vultures", "Harris's hawks"], "Afrotropic": ["lappet-faced vultures"],
+                            "Australasia": ["wedge-tailed eagles"], "Neotropic": ["turkey vultures"], "Indomalayan": ["Egyptian vultures"]},
+                "swarms": {"Palearctic": ["desert locusts"], "Australasia": ["budgerigar flocks"], "Afrotropic": ["desert locusts"], "Indomalayan": ["desert locusts"]},
+            },
+        },
+    },
+    14: {
+        "name": "Mangroves", "family": "mangrove", "ground": "mud", "phenology": "evergreen",
+        "looks": {"green": "mangrove"}, "typical canopy m": 10,
+        "strata": [
+            S("mangroves", "mangrove", 21, 13, p(-2), p(-1), 1 - p(-3), {
+                "Indomalayan": ["sundari", "Rhizophora", "nipa palm"], "Neotropic": ["red mangrove", "black mangrove"], "Australasia": ["grey mangrove"],
+                "Afrotropic": ["Rhizophora", "Avicennia"], "Nearctic": ["red mangrove"], "Oceania": ["Rhizophora"], "Palearctic": ["grey mangrove"]}),
+        ],
+        "life": {
+            "floor": {
+                "frogs": {"Indomalayan": ["mudskippers", "fiddler crabs"], "Neotropic": ["fiddler crabs", "mangrove crabs"], "Australasia": ["mudskippers", "mud crabs"],
+                          "Afrotropic": ["mudskippers", "fiddler crabs"], "*": ["fiddler crabs"]},
+                "schools": {"*": ["young fish among the roots"]},
+                "snakes": {"Indomalayan": ["estuarine crocodiles", "mangrove pit vipers"], "Neotropic": ["American crocodiles"], "Australasia": ["saltwater crocodiles"],
+                           "Afrotropic": ["Nile crocodiles"], "Nearctic": ["American crocodiles"]},
+            },
+            "crowns": {
+                "troops": {"Indomalayan": ["proboscis monkeys", "long-tailed macaques"], "Neotropic": ["white-faced capuchins"], "Afrotropic": ["vervet monkeys"]},
+                "hummers": {"Indomalayan": ["kingfishers"], "Neotropic": ["hummingbirds"], "Australasia": ["mangrove honeyeaters"], "*": ["kingfishers"]},
+            },
+            "above": {
+                "waders": {"Indomalayan": ["painted storks", "egrets"], "Neotropic": ["scarlet ibises", "roseate spoonbills"], "Australasia": ["royal spoonbills"],
+                           "Afrotropic": ["goliath herons"], "*": ["egrets"]},
+                "flocks": {"Neotropic": ["frigatebirds"], "Indomalayan": ["flying foxes at dusk"], "Australasia": ["flying foxes"], "*": ["egrets"]},
+            },
+        },
+    },
+    15: {
+        "name": "Rock & Ice", "family": "ice", "ground": "ice", "phenology": "ice",
+        "looks": {"bare": "ice"}, "typical canopy m": 0,
+        "strata": [],
+        "life": {
+            "floor": {"colonies": {"Antarctica": ["emperor penguins"]}},
+            "understory": {"hunters": {"Nearctic": ["a polar bear"], "Palearctic": ["a polar bear"]}},
+            "above": {
+                "flocks": {"Antarctica": ["snow petrels"], "Nearctic": ["ivory gulls"], "Palearctic": ["ivory gulls"]},
+                "vees": {"Palearctic": ["bar-headed geese crossing the Himalaya"]},
+                "soarers": {"Palearctic": ["lammergeiers"]},
+            },
+        },
+    },
+}
+
+# The sea, by the atlas's marine zones. Its species are by hemisphere: "north", "south", or "*" for both. A
+# zone with no look of its own wears its water's warmth (see LOOK_RULES).
+MARINE = {
+    "sea ice": {"ground": "ice", "look": "ice", "life": {
+        "floes": {"*": ["pack ice"]},
+        "colonies": {"north": ["walruses", "ringed seals"], "south": ["emperor penguins", "crabeater seals", "Weddell seals"]},
+        "whales": {"north": ["narwhals", "belugas", "bowhead whales"], "south": ["Antarctic minke whales", "orcas"]},
+        "hunters": {"north": ["polar bears"], "south": ["leopard seals"]},
+        "schools": {"north": ["Arctic cod"], "south": ["Antarctic krill"]}}},
+    "reef": {"ground": "water", "look": "sea, tropical shallows", "life": {
+        "schools": {"*": ["parrotfish", "fusiliers", "clownfish"]},
+        "snakes": {"*": ["sea snakes", "moray eels"]},
+        "whales": {"*": ["manta rays", "green turtles", "reef sharks"]},
+        "flocks": {"*": ["frigatebirds", "noddies"]}}},
+    "upwelling": {"ground": "water", "look": "sea, upwelling", "life": {
+        "schools": {"*": ["anchoveta and sardines in bait balls"]},
+        "whales": {"*": ["humpback whales", "blue whales"]},
+        "flocks": {"south": ["guanay cormorants", "boobies diving"], "north": ["pelicans", "gannets diving"]},
+        "colonies": {"*": ["sea lions"], "south": ["Humboldt penguins", "Cape fur seals"]},
+        "bioluminescence": {"*": ["plankton glowing"]}}},
+    "gyre": {"ground": "water", "look": "sea, tropical", "life": {
+        "schools": {"*": ["flying fish", "tuna"]},
+        "flocks": {"*": ["albatrosses", "shearwaters"]},
+        "floes": {"north": ["sargassum rafts"]},
+        "whales": {"*": ["sperm whales"]}}},
+    "shelf": {"ground": "water", "look": None, "life": {
+        "schools": {"north": ["herring", "cod"], "south": ["pilchards"], "*": ["mackerel"]},
+        "whales": {"*": ["dolphins", "grey whales"]},
+        "colonies": {"north": ["harbour seals", "gannets"], "south": ["fur seals"]},
+        "flocks": {"*": ["gulls", "gannets diving"]}}},
+    "slope": {"ground": "water", "look": None, "life": {
+        "whales": {"*": ["sperm whales", "orcas"]},
+        "schools": {"*": ["squid", "lanternfish rising at night"]},
+        "bioluminescence": {"*": ["lanternfish lights"]}}},
+    "abyss": {"ground": "water", "look": None, "life": {
+        "bioluminescence": {"*": ["the deep scattering layer rising at night"]},
+        "whales": {"*": ["sperm whales diving"]}}},
+    "trench": {"ground": "water", "look": None, "life": {"bioluminescence": {"*": ["hadal snailfish, unseen far below"]}}},
+}
+
+# ---- how the atlas's conditions shape a place's DIRT ----------------------------------------------------------------
+RULES = {
+    "where": "the plane is the Earth: a quarter-degree atlas cell is 233 cells of the plane, east is east, and the plane repeats the Earth every 360 degrees",
+    "edges": "where one place gives way to another, its edge wanders by up to 144 cells and is dithered across 13, as two sprayed colours meet",
+    "vegetation": "each stratum's cover is scaled by the place's canopy height over its biome's typical height, so farmland and cities thin the forest they stand in; grass and shrubs thin with aridity",
+    "season": "the month's mean temperature and rain set the phenology's phase; the month's snow cover whitens the ground by that share, in drifts",
+    "light": "the sun's noon elevation for the latitude and month sets how long shadows fall; where the sun does not rise, it is night, and above 60 degrees an aurora moves",
+    "relief": "the ground is shaded by the atlas's elevation, and roughened into ridges as far as its relief runs",
+    "clouds": "the month's cloud type sets the shapes, and its cloud amount how much of the sky they cover; their shadows fall on the ground",
+    "rain": "the month's rain (snowfall where the month's mean is below freezing) sets how hard it falls",
+    "view": "the view distance sets a veil of the sky's colour over the ground: the shorter the view, the thicker the veil",
+    "colour": "each place wears the saved paintings nearest its look (see LOOKS); nothing is painted in a colour the collection does not have",
+    "sea": "at sea the ground is water: its depth zone and warmth choose its look, swell runs with the wind, and marine life replaces the land's",
+}
+
+
+def species_index(g):
+    """Every species name once, for the engine to point at by number."""
+    names, seen = [], {}
+
+    def add(n):
+        if n not in seen:
+            seen[n] = len(names)
+            names.append(n)
+        return seen[n]
+
+    for b in g["biomes"].values():
+        for st in b["strata"]:
+            st["plants"] = {r: [add(n) for n in ns] for r, ns in st["plants"].items()}
+        for lvl in b["life"].values():
+            for kind, by in lvl.items():
+                lvl[kind] = {r: [add(n) for n in ns] for r, ns in by.items()}
+    for m in g["marine"].values():
+        for kind, by in m["life"].items():
+            m["life"][kind] = {r: [add(n) for n in ns] for r, ns in by.items()}
+    return names
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=str(HERE / "out"))
+    out = Path(ap.parse_args().out)
+    out.mkdir(parents=True, exist_ok=True)
+    g = {"realms": REALMS, "crowns": CROWNS, "grounds": GROUNDS, "kinds": KINDS, "when": WHEN, "phenology": PHENOLOGY, "phases": PHASES,
+         "phase_rules": PHASE_RULES, "cloud_shapes": CLOUD_SHAPES, "looks": LOOKS, "look_rules": LOOK_RULES,
+         "biomes": {str(k): v for k, v in BIOMES.items()}, "marine": MARINE, "rules": RULES}
+    g = json.loads(json.dumps(g))
+    # A copy for the engine, with every species a number into one list.
+    eng = json.loads(json.dumps(g))
+    eng["species"] = species_index(eng)
+    (out / "grammar.json").write_text(json.dumps(g, ensure_ascii=False, indent=1))
+    (out / "grammar-engine.json").write_text(json.dumps(eng, ensure_ascii=False, separators=(",", ":")))
+    print(out / "grammar.json", out / "grammar-engine.json", len(eng["species"]), "species")
+
+
+if __name__ == "__main__":
+    main()
