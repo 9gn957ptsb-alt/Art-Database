@@ -3808,7 +3808,19 @@
 
   /* ---- standing things on it --------------------------------------------- */
 
+  /* The words are off the globe (artist's request, 23 Sep 2026): up there
+     only what names a place is written. The words work at a collage's own
+     site instead — see "the reading". GLOBE_WORDS = true puts them back. */
+  var GLOBE_WORDS = false;
+
   function placeWords() {
+    if (!GLOBE_WORDS) {
+      vocabulary.forEach(function (ground) {
+        ground.box = null;
+        if (ground.el) { ground.el.style.visibility = "hidden"; ground.el.dataset.behind = "true"; }
+      });
+      return;
+    }
     vocabulary.forEach(function (ground) {
       var el = ground.el;
       var p = project(ground.lat, ground.lon);
@@ -9839,8 +9851,14 @@
     var host = hereLayer;
     var pool = poolOf(host);
     var work = place && place.work;
-    if (!work || !hereShown) { retire(pool); hereLayer.hidden = true; return; }
+    if (!work || !hereShown) { clearReading(); retire(pool); hereLayer.hidden = true; return; }
     hereLayer.hidden = false;
+    if (READING) {
+      // At its site a collage is read, not dealt (see "the reading").
+      retire(pool);
+      if (reading && reading.work === work) { layoutReading(); } else { readHere(work, place); }
+      return;
+    }
 
     // Keep clear of the banner, the corner, and wherever the creature is
     // standing, so the collage lands beside what is going on rather than on
@@ -9886,9 +9904,331 @@
   }
 
   function showHere(on) {
+    if (on && hereShown && reading) { clearReading(); }    // the banner's name reads it again
     hereShown = on;
     dealHere();
     bannerCity.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+
+  /* ---- the reading: a collage at its own site ---------------------------
+
+     The artist, 23 Sep 2026: the words that describe what the collages are
+     made of come off the globe and work once you are at a collage's site,
+     and the presentation of a collage "has to be very, very specific,
+     transformational, and elegant. Things don't have to move very fast …
+     timing is everything, and having the right word pop up at the right
+     time can be far more powerful than having all the words pop up at once."
+
+     So at its site a collage is not dealt. It is read, in an order:
+
+       the photograph, uncovered;
+       its title and year; then where it is; then what it is and how big;
+       then its price —
+
+     and then its words, one at a time, each given the room to itself for a
+     few seconds: first what only this collage has, then what it shares, the
+     most widely shared last. A word that other collages share shows them
+     under it, small; they are doors. Pressing a word keeps it and turns
+     the page towards it — the photograph steps back, the collages that
+     share the word come forward with their names — and pressing one of
+     those flies to it. There the word you came by is the first thing said,
+     so a visit can be a walk from collage to collage by what they are made
+     of. When all the words have had their turn they stay, small, in a
+     line, to be pressed again. The notes and the vote come last. */
+
+  var READING = true;                 // false: dealt at random, as before
+  var READ_BEAT = 1097;               // --beat-5
+  var WORD_HOLD = 4200;               // how long a word has the room to itself
+  var reading = null;                 // what is laid out at this site, and its clock
+  var cameBy = null;                  // the word a visit arrived by
+
+  function sharers(term, work) {
+    return mine.works.filter(function (w) {
+      return w !== work && (w.terms || []).indexOf(term) >= 0 && cityOf(w.slug);
+    });
+  }
+
+  function wordOrder(work, via) {
+    var list = (work.terms || []).slice().map(function (t, i) {
+      return { word: t, n: sharers(t, work).length, i: i };
+    });
+    list.sort(function (a, b) { return a.n - b.n || a.i - b.i; });
+    if (via) {
+      list = list.filter(function (x) { return x.word === via; })
+        .concat(list.filter(function (x) { return x.word !== via; }));
+    }
+    return list.map(function (x) { return x.word; });
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text !== undefined) { e.textContent = text; }
+    return e;
+  }
+
+  function clearReading() {
+    if (!reading) { return; }
+    reading.timers.forEach(function (t) { window.clearTimeout(t); });
+    if (reading.root.parentNode) { reading.root.parentNode.removeChild(reading.root); }
+    reading = null;
+  }
+
+  function later(fn, ms) {
+    var r = reading;
+    var t = window.setTimeout(function () { if (reading === r) { fn(); } }, still ? 0 : ms);
+    r.timers.push(t);
+  }
+
+  function reveal(node, ms) {
+    later(function () { node.dataset.on = "true"; }, ms);
+  }
+
+  function readHere(work, city) {
+    clearReading();
+    var via = cameBy;
+    cameBy = null;
+    var root = el("div", "read");
+    root.appendChild(el("div", "read-wash"));
+    var r = reading = { root: root, work: work, city: city, timers: [], held: null, n: 0 };
+    r.order = wordOrder(work, via);
+
+    // the photograph
+    var pool = { els: {}, used: {} };
+    var plate = platePiece(root, pool, work, city, 100, function () {
+      if (r.held) { release(); }
+    }).el;
+    plate.classList.add("read-plate");
+    r.plate = plate;
+
+    // the caption, a line at a time
+    var cap = el("div", "read-cap");
+    var title = el("h2", "read-title");
+    title.appendChild(el("em", "", work.title));
+    var year = el("span", "read-year", String(work.year || ""));
+    title.appendChild(year);
+    var where = el("p", "read-where", city.where || "");
+    var detail = el("p", "read-detail", workLine(work));
+    var price = el("p", "read-price", work.availability || "");
+    [title, where, detail, price].forEach(function (n) { cap.appendChild(n); });
+    var col = el("div", "read-col");
+    root.appendChild(col);
+    r.col = col;
+    col.appendChild(cap);
+
+    // the word that has the room, and the doors under it
+    var stageW = el("div", "read-stage");
+    stageW.setAttribute("aria-live", "polite");
+    col.appendChild(stageW);
+    r.stage = stageW;
+
+    // the words, once they have all had their turn
+    var line = el("div", "read-words");
+    line.setAttribute("aria-label", "What " + work.title + " is made of");
+    r.order.forEach(function (w) {
+      var b = el("button", "read-w", w);
+      b.type = "button";
+      b.addEventListener("click", function (event) { event.stopPropagation(); hold_(w); });
+      line.appendChild(b);
+    });
+    col.appendChild(line);
+    r.line = line;
+
+    // last, and quiet: the notes, the vote, putting it away
+    var foot = el("div", "read-foot");
+    ((mine.notes && mine.notes[work.category]) || []).forEach(function (t) {
+      foot.appendChild(el("p", "read-note", t));
+    });
+    (work.writings || []).forEach(function (wr) {
+      var q = el("p", "read-writing", wr.text || String(wr));
+      if (wr.by) { q.appendChild(el("span", "read-by", wr.by)); }
+      foot.appendChild(q);
+    });
+    var v = mine.vote || {};
+    var controls = el("div", "read-controls");
+    if (v.formId && work.category === "Collage") {
+      var ballot = el("button", "read-quiet", voted(work.title) ? (v.thanks || "Recorded") : (v.prompt || "Prefer this orientation?"));
+      ballot.type = "button";
+      ballot.disabled = !!voted(work.title);
+      ballot.addEventListener("click", function (event) {
+        event.stopPropagation();
+        vote(work);
+        ballot.textContent = v.thanks || "Recorded";
+        ballot.disabled = true;
+      });
+      controls.appendChild(ballot);
+    }
+    var away = el("button", "read-quiet", "Put it away");
+    away.type = "button";
+    away.addEventListener("click", function (event) { event.stopPropagation(); showHere(false); });
+    controls.appendChild(away);
+    foot.appendChild(controls);
+    col.appendChild(foot);
+    r.foot = foot;
+
+    hereLayer.appendChild(root);
+    plate.style.transition = "none";
+    layoutReading();
+    plate.getBoundingClientRect();
+    delete plate.dataset.fresh;
+    requestAnimationFrame(function () { plate.style.transition = ""; root.dataset.on = "true"; });
+
+    // the clock
+    if (!still) { pixelIn(plate, 0); }
+    plate.dataset.on = "true";
+    var t = via ? READ_BEAT * 1.4 : READ_BEAT;
+    if (via) { later(function () { say_(via, true); }, 420); }
+    reveal(title, t);
+    reveal(where, t + READ_BEAT * 0.7);
+    reveal(detail, t + READ_BEAT * 1.3);
+    if (work.availability) { reveal(price, t + READ_BEAT * 1.9); }
+    r.start = t + READ_BEAT * 3.2 + (via ? WORD_HOLD : 0);
+    r.n = via ? 1 : 0;
+    later(procession, r.start);
+  }
+
+  // The words go by one at a time, then settle into their line.
+  function procession() {
+    var r = reading;
+    if (!r || r.held) { return; }
+    if (r.n >= r.order.length) {
+      quiet();
+      r.line.dataset.on = "true";
+      reveal(r.foot, READ_BEAT);
+      return;
+    }
+    say_(r.order[r.n], false);
+    r.n += 1;
+    later(procession, WORD_HOLD + (r.order.length - r.n < 3 ? 600 : 0));
+  }
+
+  function quiet() {
+    var old = reading && reading.stage.firstChild;
+    if (!old) { return; }
+    old.dataset.on = "false";
+    window.setTimeout(function () { if (old.parentNode) { old.parentNode.removeChild(old); } }, 700);
+  }
+
+  // A word takes the room: the word, and under it whatever else it is in.
+  function say_(word, keep) {
+    var r = reading;
+    if (!r) { return; }
+    quiet();
+    var box = el("div", "read-said");
+    var w = el("p", "read-word", word);
+    box.appendChild(w);
+    var others = sharers(word, r.work);
+    if (others.length) {
+      var doors = el("div", "read-doors");
+      others.forEach(function (o, i) {
+        var c = cityOf(o.slug);
+        var d = el("button", "read-door");
+        d.type = "button";
+        d.setAttribute("aria-label", o.title + ", " + (c.where || "") + " — also " + word);
+        var img = el("img");
+        img.src = plateSrc(o);
+        img.alt = "";
+        img.decoding = "async";
+        d.appendChild(img);
+        d.appendChild(el("span", "read-door-t", o.title));
+        d.style.transitionDelay = (still ? 0 : 520 + i * 140) + "ms";
+        d.addEventListener("click", function (event) {
+          event.stopPropagation();
+          cameBy = word;
+          visit(o.slug);
+        });
+        doors.appendChild(d);
+      });
+      box.appendChild(doors);
+    } else {
+      box.appendChild(el("p", "read-only", "only here"));
+    }
+    r.stage.appendChild(box);
+    box.getBoundingClientRect();
+    requestAnimationFrame(function () { box.dataset.on = "true"; });
+    Array.prototype.forEach.call(r.line.children, function (b) {
+      b.setAttribute("aria-pressed", b.textContent === word && keep ? "true" : "false");
+    });
+    // the pixel light answers it, where it is said, in the collage's colour
+    var at = r.stage.getBoundingClientRect();
+    if (at.width && !still) { pulse(at.left + 30, at.top + 24, [cityTone(r.city), LIGHT], 0.35, 90); }
+  }
+
+  // Pressed, a word stays, and the collage steps back behind it.
+  function hold_(word) {
+    var r = reading;
+    if (!r) { return; }
+    if (r.held === word) { release(); return; }
+    r.held = word;
+    r.root.dataset.held = "true";
+    say_(word, true);
+  }
+
+  function release() {
+    var r = reading;
+    if (!r) { return; }
+    r.held = null;
+    delete r.root.dataset.held;
+    Array.prototype.forEach.call(r.line.children, function (b) { b.setAttribute("aria-pressed", "false"); });
+    quiet();
+    if (r.n < r.order.length) { later(procession, READ_BEAT); }
+  }
+
+  /* The composition: the photograph large on one side, the reading beside
+     it; on a narrow screen, one above the other. Which side is the
+     collage's own (it is always the same for the same collage), and the
+     photograph is as big as the room allows. */
+  function layoutReading() {
+    var r = reading;
+    if (!r) { return; }
+    var top = 84, pad = W < 640 ? 21 : 55;
+    var a = aspectOf[r.work.slug] || 0.75;
+    var turned = turnsFor(r.work.slug) % 2 === 1;
+    var shown = turned ? 1 / a : a;                   // width over height, as hung
+    var wide = W >= 760 && W > H * 0.9;
+    // A phone scrolls it, so it starts below the banner and never runs
+    // over it.
+    r.root.style.top = wide ? "0px" : "68px";
+    if (!wide) { top = 13; }
+    var colW = wide ? Math.min(380, Math.max(260, W * 0.3)) : W - 2 * pad;
+    var bw, bh;
+    if (wide) {
+      bh = Math.min(H - top - 55, (W - 3 * pad - colW) / shown);
+      bw = bh * shown;
+    } else {
+      bw = Math.min(W - 2 * pad, (H * 0.44) * shown);
+      bh = bw / shown;
+    }
+    var long = Math.max(bw, bh);
+    // platePiece sizes the box from its long side as the photograph is,
+    // before it is turned
+    var longUnturned = turned ? (a <= 1 ? bw : bh) : (a <= 1 ? bh : bw);
+    platePiece(r.root, { els: pool_(r), used: {} }, r.work, r.city, longUnturned || long, function () {
+      if (r.held) { release(); }
+    });
+    var side = hash2(r.work.slug.length, r.work.slug.charCodeAt(0)) < 0.5;
+    var px, py, cx0, cy0;
+    if (wide) {
+      var total = bw + pad + colW;
+      var left = Math.max(pad, (W - total) / 2);
+      py = top + Math.max(0, (H - top - 34 - bh) / 2);
+      if (side) { px = left; cx0 = left + bw + pad; } else { cx0 = left; px = left + colW + pad; }
+      cy0 = py;
+    } else {
+      px = (W - bw) / 2; py = top; cx0 = pad; cy0 = py + bh + 21;
+    }
+    r.plate.style.transform = "translate(" + px.toFixed(1) + "px," + py.toFixed(1) + "px)";
+    r.col.style.left = cx0.toFixed(1) + "px";
+    r.col.style.top = cy0.toFixed(1) + "px";
+    r.col.style.width = colW.toFixed(1) + "px";
+    r.root.dataset.shape = wide ? "wide" : "tall";
+    r.root.dataset.side = side ? "right" : "left";
+  }
+
+  function pool_(r) {
+    var o = {};
+    o[r.work.slug + ":plate"] = r.plate;
+    return o;
   }
 
   /* ---- going anywhere is going somewhere on this page -------------------
@@ -9942,6 +10282,7 @@
 
   hereLayer.addEventListener("click", function (event) {
     if (event.target.closest("a, button")) { return; }
+    if (READING) { return; }
     if (event.target !== hereLayer) { dealHere(); }
   });
 

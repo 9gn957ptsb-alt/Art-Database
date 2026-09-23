@@ -500,7 +500,7 @@
   position: absolute;
   left: var(--s-5);
   top: var(--s-5);
-  z-index: 70;
+  z-index: 85;                   /* over the reading, which washes the city beneath it */
   display: flex;
   align-items: baseline;
   gap: var(--s-4);
@@ -1588,3 +1588,254 @@
   transition: opacity 0.6s steps(5, end);
 }
 .primordial.is-gone { opacity: 0; }
+
+/* ---- the reading: a collage at its own site ------------------------------
+
+   Read, not dealt: the photograph large, a column beside it, and each line
+   brought up in its turn, slowly — out of focus into focus, never faster
+   than a beat-5. The city behind goes quiet under a wash while it is read. */
+
+.read {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;              /* a phone reads down past the fold */
+  overscroll-behavior: contain;
+}
+/* The wash is its own layer, and stops short of the banner (which lives in
+   another layer, under this one), so where you are and the way back stay
+   sharp. */
+.read-wash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(238, 238, 241, 0);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 68px, #000 104px);
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 68px, #000 104px);
+  transition: background var(--beat-6) ease, backdrop-filter var(--beat-6) ease;
+}
+.read[data-on="true"] .read-wash {
+  background: rgba(238, 238, 241, 0.58);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.read > *:not(.read-wash), .read-col > * { pointer-events: auto; }
+
+.read .read-plate {
+  box-shadow: 0 21px 55px -21px rgba(27, 29, 36, 0.38), 0 2px 8px -3px rgba(27, 29, 36, 0.18);
+  transition:
+    transform var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1),
+    width var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1),
+    height var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity var(--beat-6) ease,
+    filter var(--beat-6) ease;
+}
+.read[data-held="true"] .read-plate {
+  opacity: 0.34;
+  filter: saturate(0.4) blur(1.5px);
+}
+
+.read-col {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--s-6);
+  pointer-events: none;
+}
+
+/* Everything that is brought up is brought up the same way: from soft to
+   sharp, a little below where it settles. */
+.read-cap > *,
+.read-words,
+.read-foot {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(8px);
+  transition:
+    opacity var(--beat-6) ease,
+    filter var(--beat-6) ease,
+    transform var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-cap > [data-on="true"],
+.read-words[data-on="true"],
+.read-foot[data-on="true"] {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+.read-title {
+  margin: 0;
+  font-family: "Instrument Serif", var(--serif), serif;
+  font-weight: 400;
+  font-size: clamp(2.4rem, 4.4vw, 3.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.read-title em { font-style: italic; }
+.read-year {
+  margin-left: 0.5em;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.16em;
+  vertical-align: 0.9em;
+  color: var(--ink-dim);
+}
+.read-where {
+  margin: var(--s-4) 0 0;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.read-detail,
+.read-price {
+  margin: var(--s-3) 0 0;
+  font-family: var(--serif);
+  font-size: var(--t-3);
+  line-height: var(--lead);
+  color: var(--ink);
+}
+.read-price { margin-top: 0; font-style: italic; color: var(--ink-dim); }
+
+/* The word that has the room. */
+.read-stage {
+  position: relative;
+  min-height: 11.5rem;
+  margin-top: var(--s-6);
+}
+.read-said {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(10px);
+  transition:
+    opacity var(--beat-5) ease,
+    filter var(--beat-5) ease,
+    transform var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-said[data-on="true"] { opacity: 1; filter: none; transform: none; }
+.read-said[data-on="false"] { opacity: 0; filter: blur(4px); transform: translateY(-8px); }
+
+.read-word {
+  margin: 0;
+  font-family: "Instrument Serif", var(--serif), serif;
+  font-style: italic;
+  font-size: clamp(2.6rem, 5.2vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  transition: letter-spacing 2400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-said[data-on="true"] .read-word { letter-spacing: -0.01em; }
+
+.read-only {
+  margin: var(--s-4) 0 0;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.read-doors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+}
+.read-door {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--beat-5) ease, transform var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-said[data-on="true"] .read-door { opacity: 1; transform: none; }
+.read-door img {
+  display: block;
+  height: 3.2rem;
+  width: auto;
+  box-shadow: 0 6px 16px -8px rgba(27, 29, 36, 0.45);
+  transition: height var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-door-t {
+  margin-top: var(--s-2);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-1);
+  color: var(--ink-dim);
+  transition: color var(--beat-3) ease;
+}
+.read-door:hover .read-door-t,
+.read-door:focus-visible .read-door-t { color: var(--ink); }
+.read-door:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.read[data-held="true"] .read-door img { height: 6rem; }
+.read[data-held="true"] .read-door-t { font-size: var(--t-2); color: var(--ink); }
+
+/* All the words, once each has had its turn. */
+.read-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  margin-top: var(--s-5);
+}
+.read-w {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-3);
+  color: var(--ink-dim);
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.read-w:hover,
+.read-w:focus-visible,
+.read-w[aria-pressed="true"] { color: var(--ink); text-decoration: underline; }
+
+.read-foot { margin-top: var(--s-5); }
+.read-note,
+.read-writing {
+  margin: 0 0 var(--s-2);
+  font-family: var(--serif);
+  font-size: var(--t-2);
+  line-height: var(--lead);
+  color: var(--ink-dim);
+}
+.read-by { display: block; font-style: italic; }
+.read-controls { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-3); }
+.read-quiet {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.read-quiet:hover,
+.read-quiet:focus-visible { color: var(--ink); border-color: var(--ink-dim); }
+.read-quiet:disabled { cursor: default; opacity: 0.6; }
+
+.read[data-shape="tall"] .read-stage { min-height: 9rem; margin-top: var(--s-5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .read-wash, .read .read-plate, .read-cap > *, .read-words, .read-foot, .read-said, .read-word, .read-door { transition: none; }
+}
