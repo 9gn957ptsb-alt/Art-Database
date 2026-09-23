@@ -30,9 +30,6 @@ PAGE = r"""<title>DIRT</title>
   * { box-sizing: border-box; }
   body { background: var(--ground); color: var(--ink); font: 12px/1.5 var(--mono); padding: 22px 16px 40px; margin: 0; }
   .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
-  header { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; }
-  h1 { font: italic 500 clamp(30px, 4.4vw, 46px)/1 var(--serif); margin: 0; letter-spacing: -0.01em; }
-  header p { margin: 0; color: var(--muted); max-width: 66ch; }
   .bench { display: grid; grid-template-columns: minmax(0, 768px) minmax(260px, 1fr); gap: 22px; align-items: start; }
   @media (max-width: 900px) { .bench { grid-template-columns: 1fr; } }
   .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -45,26 +42,15 @@ PAGE = r"""<title>DIRT</title>
   .stage { display: grid; gap: 10px; }
   canvas { width: 100%; max-width: 768px; height: auto; image-rendering: pixelated; display: block; cursor: crosshair; touch-action: manipulation; }
   #grid { cursor: crosshair; }
-  .caption { color: var(--muted); margin: 0; max-width: 70ch; }
   aside { display: grid; gap: 18px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
-  .card { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; min-height: 180px; }
-  .label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
-  .swatches { display: flex; gap: 4px; }
-  .swatches span { width: 34px; height: 34px; display: block; }
+  .card { display: grid; gap: 6px; align-content: start; padding-top: 4px; }
   .title { font: italic 400 24px/1.15 var(--serif); margin: 0; text-wrap: balance; }
   .who { margin: 0; }
   .meta { color: var(--muted); margin: 0; font-variant-numeric: tabular-nums; }
   a { color: var(--ink); text-underline-offset: 3px; }
-  .index { display: grid; grid-template-columns: repeat(auto-fill, minmax(14px, 1fr)); gap: 2px; }
-  .index button { aspect-ratio: 1; border: 0; padding: 0; cursor: pointer; }
-  .index button.on { outline: 2px solid var(--ink); outline-offset: 1px; }
 </style>
 
 <div class="wrap">
-  <header>
-    <h1>DIRT</h1>
-    <p>Two hundred and twenty saved paintings, broken down to their colours and woven back into dirt. Each clod is one painting; the dark between the dots is one more.</p>
-  </header>
   <div class="bench">
     <div class="stage">
       <div class="tabs" role="group" aria-label="Version">
@@ -74,20 +60,12 @@ PAGE = r"""<title>DIRT</title>
       </div>
       <canvas id="soil" width="768" height="768" aria-label="The soil texture; hover or tap a clod to see its painting"></canvas>
       <canvas id="grid" width="2304" height="2304" hidden aria-label="Nine different tiles whose edges line up; hover or tap a clod to see its painting"></canvas>
-      <p class="caption" id="cap"></p>
     </div>
     <aside>
       <section class="card" aria-live="polite">
-        <span class="label" id="c-label">Hover a clod</span>
-        <div class="swatches" id="c-sw"></div>
-        <p class="title" id="c-title">Every clod is one painting.</p>
+        <p class="title" id="c-title"></p>
         <p class="who" id="c-who"></p>
-        <p class="meta" id="c-meta"></p>
         <p class="meta" id="c-link"></p>
-      </section>
-      <section style="display:grid; gap:8px">
-        <span class="label">All 220, darkest to lightest</span>
-        <div class="index" id="index"></div>
       </section>
     </aside>
   </div>
@@ -104,9 +82,6 @@ const mode = "cutout";
 let sel = -1, tiled = false;
 
 const cv = document.getElementById("soil"), cx = cv.getContext("2d");
-const CAP = {
-  cutout: "Cutouts: each clod is a pixelated window into its painting, centred where that painting is most like the colour it gave.",
-};
 
 function draw() {
   cx.imageSmoothingEnabled = false;
@@ -116,8 +91,6 @@ function draw() {
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++)
       if (labels[y * N + x] !== sel) cx.fillRect(x * CELL, y * CELL, CELL, CELL);
   }
-  const g = M.ground;
-  document.getElementById("cap").textContent = `${tiled ? TILE_CAP : CAP[mode]} The dark between the dots is ${g.hex}, from ${g.work.title || "Untitled"} by ${g.work.artist}.`;
   gv.hidden = !tiled; cv.hidden = tiled;
   document.getElementById("t-shuffle").hidden = !tiled;
   if (tiled) drawGrid();
@@ -130,8 +103,6 @@ const ROWS = 3, COLS = 3, TP = TS.tile;
 const byEdges = new Map(TS.tiles.map((t, i) => [t.west * 8 + t.north, i]));
 const tileImgs = { cutout: [] }, tileLabels = [];
 let layout = [], selWork = null;
-const edgeNames = (list) => list.map((e) => `${e.artist}'s ${e.kind === "face" ? "face" : e.kind}`).join(", ");
-const TILE_CAP = `Tiles: ${TS.tiles.length} different squares, laid so every edge matches. Faces sit across the vertical joins, split down the middle (${edgeNames(TS.edges.vertical)}); the horizontal joins carry ${edgeNames(TS.edges.horizontal)}. Every square has shapes of its own coming up through it, and at each join a different share of the object sinks back into the dirt, so no two meetings are the same.`;
 const PHI = (1 + Math.sqrt(5)) / 2;
 // Per clod: 0 none, 1 a shard across a vertical join, 2 across a horizontal one; and a hash of its key.
 const shardAxis = TS.tiles.map((t) => Uint8Array.from(t.clods, (c) => (c[4] ? (c[4][0] === "v" ? 1 : 2) : 0)));
@@ -184,18 +155,11 @@ function drawGrid() {
 
 function showTileClod(t, ci) {
   const [wi, hex, glint, kind] = TS.tiles[t].clods[ci];
-  const how = kind && kind.split(":");
   const w = TS.works[wi];
   selWork = wi; sel = -1;
-  document.getElementById("c-label").textContent = !how ? "A clod"
-    : how[0] === "across" ? `Across a join · ${how[1]}`
-    : how[0] === "within" ? `Surfacing · ${how[1]}` : "A clod centred on a face";
-  document.getElementById("c-sw").replaceChildren(...[hex, glint].filter(Boolean).map((h) => Object.assign(document.createElement("span"), { title: h, style: `background:${h}` })));
   document.getElementById("c-title").textContent = w.title || "Untitled";
   document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
-  document.getElementById("c-meta").textContent = glint ? `${hex} · glint ${glint}` : hex;
   document.getElementById("c-link").replaceChildren(Object.assign(document.createElement("a"), { href: w.url, target: "_blank", rel: "noopener", textContent: "See it on Artsy" }));
-  document.querySelectorAll(".index button").forEach((b) => b.classList.remove("on"));
   drawGrid();
 }
 
@@ -229,15 +193,10 @@ deal();
 function show(i) {
   sel = i;
   const c = M.clods[i], w = c.work;
-  document.getElementById("c-label").textContent = `Clod ${i + 1} · ${c.cells} cells`;
-  const sw = document.getElementById("c-sw");
-  sw.replaceChildren(...[c.hex, c.glint].filter(Boolean).map((h) => Object.assign(document.createElement("span"), { title: h, style: `background:${h}` })));
   document.getElementById("c-title").textContent = w.title || "Untitled";
   document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
-  document.getElementById("c-meta").textContent = c.glint ? `${c.hex} · glint ${c.glint}` : c.hex;
   const a = Object.assign(document.createElement("a"), { href: w.url, target: "_blank", rel: "noopener", textContent: "See it on Artsy" });
   document.getElementById("c-link").replaceChildren(a);
-  document.querySelectorAll(".index button").forEach((b) => b.classList.toggle("on", +b.dataset.i === i));
   draw();
 }
 
@@ -251,15 +210,6 @@ function pick(ev) {
 cv.addEventListener("pointermove", pick);
 cv.addEventListener("pointerdown", pick);
 
-const lum = (h) => { const n = parseInt(h.slice(1), 16); return 0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255); };
-const idx = document.getElementById("index");
-M.clods.map((c, i) => i).sort((a, b) => lum(M.clods[a].hex) - lum(M.clods[b].hex)).forEach((i) => {
-  const b = document.createElement("button");
-  b.dataset.i = i; b.style.background = M.clods[i].hex;
-  b.setAttribute("aria-label", `${M.clods[i].work.title} by ${M.clods[i].work.artist}`);
-  b.onclick = () => { if (tiled) setTile(false); show(i); };
-  idx.append(b);
-});
 
 function press(id, on) { document.getElementById(id).setAttribute("aria-pressed", on); }
 function setTile(on) {
