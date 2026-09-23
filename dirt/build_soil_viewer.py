@@ -593,9 +593,10 @@ function habitats(x0, y0, hl, dd, off, oc, os, ow) {
 
 // ---- what each cell is made of, for the page's GPU ------------------------------------------------
 // Where the page has WebGL2 it paints the ground itself, every frame, so that its colours can change as they are
-// watched; a chunk then sends what each cell is made of instead of its pixels. Two words a cell:
+// watched; a chunk then sends what each cell is made of instead of its pixels. Three words a cell:
 //   its soil's colour (turned, before any palette), and its dot's size, stratum, crown colour and flags;
-//   its palette entry, its crown's entry, its depth in 255ths and its light in 127.5ths.
+//   its palette entry, its crown's entry, its depth in 255ths and its light in 127.5ths;
+//   the entry of the passage it lies nearer (not always its own, in an overspray), and how far into it, in 255ths.
 // An entry is 32 texels: up to five palettes of five stops (the plane's one carries its stops' lightness), then
 // texel 25 its passage's middle, character, and painting or count of palettes, and texel 26 which palette it
 // wears, its passage's lattice square and its turn.
@@ -648,6 +649,7 @@ function chunk(ci, cj) {
   const s0 = Math.floor(y0 / SEG) * SEG, s1 = (Math.floor((y0 + N - 1) / SEG) + 1) * SEG, HH = s1 - s0;
   const oc = new Uint8Array(N * HH * 3), os = new Uint8Array(N * HH), ow = new Uint16Array(N * HH), dd = new Float32Array(N * HH);
   const pp = new Array(N * HH), ps = new Float32Array(N * HH), dk = new Uint8Array(N * HH);   // passage, its strength, drips
+  const pn = new Array(N * HH), pe = new Float32Array(N * HH);    // the nearer passage, and how far into it (for the GPU)
 
   // A. The forest over this ground, and a margin round it; and the passages' wandering edges, sampled
   //    every 8 cells on the plane's own grid and eased between.
@@ -671,7 +673,7 @@ function chunk(ci, cj) {
       nearestPassages(x + (WX[g] * (1 - tx) + WX[g + 1] * tx) * (1 - ty) + (WX[g + GW] * (1 - tx) + WX[g + GW + 1] * tx) * ty,
                       y + (WY[g] * (1 - tx) + WY[g + 1] * tx) * (1 - ty) + (WY[g + GW] * (1 - tx) + WY[g + GW + 1] * tx) * ty);
       const P = u3(x, y, 523) < 0.5 + 0.5 * PE * PE * (3 - 2 * PE) ? PA : PB, st = smooth(PHI ** -3, PHI ** -1, d);
-      pp[k] = P; ps[k] = st;
+      pp[k] = P; ps[k] = st; pn[k] = PA; pe[k] = PE;
       dk[k] = d >= (P.kind === DRIP ? PHI ** -3 : PHI ** -1) ? 1 : 0;
       // A mosaic passage fuses its dots as far as its depth allows, whatever stands over it; elsewhere the
       // forest sets how far they fuse.
@@ -716,7 +718,7 @@ function chunk(ci, cj) {
   // D. The colours turn by up to the golden angle; some dots come loose as birds and leave pores; what
   //    stays is lit by the forest and painted, two pixels a cell. A share of the dots on the canopy
   //    can catch the wind and show pale.
-  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 2) : null, ents = GLDATA ? entryTable() : null;
+  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 3) : null, ents = GLDATA ? entryTable() : null;
   if (px) for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
   const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], glints = [], off = (y0 - s0) * N, rgb = [0, 0, 0], gm = [0, 0, 0];
   for (let yy = 0; yy < N; yy++) {
@@ -726,7 +728,7 @@ function chunk(ci, cj) {
       work[c] = ow[k];
       let [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
       const P = pp[k], st = ps[k];
-      if (cells) { cells[2 * c] = cellWord(r, g, b, 0); cells[2 * c + 1] = cellWord2(ents.plane(P), d, light[c]); }
+      if (cells) { cells[3 * c] = cellWord(r, g, b, 0); cells[3 * c + 1] = cellWord2(ents.plane(P), d, light[c]); cells[3 * c + 2] = ents.plane(pn[k]) | (Math.round(pe[k] * 255) << 8); }
       {
         // The passage's palette laid over this cell: the colour its lightness maps to, brought back to
         // that lightness, so the palette gives the hue and the ground keeps its lights and darks. Calm
@@ -751,8 +753,8 @@ function chunk(ci, cj) {
       if (L) { const cr = fcs[fk[fk_]], tc = crownTint(cr), q = TINT[L]; pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q; }
       if (cells) {
         const cr = L ? fcs[fk[fk_]] : null;
-        cells[2 * c] |= (s | (L << 2) | ((cr ? cr.ti : 0) << 4)) << 24;
-        if (cr) cells[2 * c + 1] |= ents.plane(cr.tp) << 8;
+        cells[3 * c] |= (s | (L << 2) | ((cr ? cr.ti : 0) << 4)) << 24;
+        if (cr) cells[3 * c + 1] |= ents.plane(cr.tp) << 8;
         continue;
       }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
@@ -785,6 +787,7 @@ onmessage = (e) => {
 
 <script>
 const PL = __PLANE__;
+const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
 const TOKENS = PL.works.map((w) => w.colors.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))));   // each painting's colours
 const R = 2;                                                    // canvas pixels a cell
 const GROUND = [1, 3, 5].map((i) => parseInt(PL.ground.hex.slice(i, i + 2), 16));
@@ -797,7 +800,13 @@ const stage = document.getElementById("stage"), cv = document.getElementById("fi
 const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
-  : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash) });
+  : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
+                           art: /noart/.test(location.hash) ? null : ART });
+// Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
+// the rest into the paper rather than into the dark.
+const ON_PAPER = !!GLG && !/noart/.test(location.hash);
+const VEIL = ON_PAPER ? [236, 232, 222] : GROUND;
+if (ON_PAPER) document.documentElement.style.setProperty("--ground", "#1c1b19");
 
 function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; }
 function loadImage(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; }); }
@@ -1891,7 +1900,7 @@ function shadeOf(c) {
     for (let i = 0; i < N * N; i++) {
       if (c.work[i] === selWork) continue;
       const j = i * 4;
-      im.data[j] = GROUND[0]; im.data[j + 1] = GROUND[1]; im.data[j + 2] = GROUND[2]; im.data[j + 3] = a;
+      im.data[j] = VEIL[0]; im.data[j + 1] = VEIL[1]; im.data[j + 2] = VEIL[2]; im.data[j + 3] = a;
     }
     g.putImageData(im, 0, 0);
     c.shadeSel = selWork;
@@ -2078,6 +2087,7 @@ def main():
     gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
+                .replace("__ART__", (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))

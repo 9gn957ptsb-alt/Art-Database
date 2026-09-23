@@ -453,7 +453,7 @@ function earthChunk(ci, cj) {
 
   t1 = lap("drips", t1);
   // D. Each cell in its place's paintings, lit by the Earth over it, two pixels a cell.
-  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 2) : null, ents = GLDATA ? entryTable() : null;
+  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 3) : null, ents = GLDATA ? entryTable() : null;
   if (px) for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
   const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), wet = new Uint8Array(N * N), off = (y0 - s0) * N, gm = [0, 0, 0];
   const birds = [], glints = [], sway = [], crests = [], coast = [], sea = [], leaves = [];
@@ -469,7 +469,7 @@ function earthChunk(ci, cj) {
       if (crownHere[k] >= 0) plant[c] = ecs[crownHere[k]].plant;
       let r = oc[k * 3], g = oc[k * 3 + 1], b = oc[k * 3 + 2];
       const P = pp[k], st = ps[k], ent = passLook(P, lk[k]), even = EVEN.has(eG[fk]) || eSnowy[fk];
-      if (cells) { cells[2 * c] = cellWord(r, g, b, even ? 64 : 0); cells[2 * c + 1] = cellWord2(ents.earth(P, lk[k]), d, light[c]); }
+      if (cells) { cells[3 * c] = cellWord(r, g, b, even ? 64 : 0); cells[3 * c + 1] = cellWord2(ents.earth(P, lk[k]), d, light[c]); }
       {
         // The place's painting laid over the cell, the soil's lightness choosing where in it the cell falls: nearly all
         // the way on calm ground, all the way out in the outskirts. Nocturnes sink as in chunk().
@@ -519,7 +519,7 @@ function earthChunk(ci, cj) {
         }
       }
       if (eCrest[fk] && u3(x, y, 1013) < PHI ** -3 && crests.length < 5 * 987) crests.push(x + 0.5, y + 0.5, pr + (255 - pr) * PHI ** -2, pg + (255 - pg) * PHI ** -2, pb + (255 - pb) * PHI ** -2);
-      if (cells) { cells[2 * c] |= (s | ((cn >= 0 ? Math.max(1, L) : 0) << 2) | (ti << 4) | (over << 7)) << 24; cells[2 * c + 1] |= te << 8; continue; }
+      if (cells) { cells[3 * c] |= (s | ((cn >= 0 ? Math.max(1, L) : 0) << 2) | (ti << 4) | (over << 7)) << 24; cells[3 * c + 1] |= te << 8; continue; }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
         const j = ((yy * R + dy) * T + xx * R + dx) * 4;
         px[j] = pr * f; px[j + 1] = pg * f; px[j + 2] = pb * f;

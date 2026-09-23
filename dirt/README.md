@@ -26,6 +26,7 @@ grit, clumps and cracks read as physical matter rather than flat marks.
 - `bake.mjs`: writes PNGs from presets or a JSON config (its flags are listed at the top of the file).
 - `png.mjs`: minimal PNG encoder used by the baker.
 - `build_soil_viewer.py`, `engine/ground-gl.js`: DIRT's page (below), and its ground painted on the GPU.
+- `artists/`: the artists DIRT is drawn after, measured from their saved works (`measure.py`, `twombly.json`).
 - `playground.html`: the interactive Dirt Lab. Serve the folder (`npx serve dirt`) and open it; opening it as a `file://` URL
   won't work because ES modules need a server.
 - `out/`: sample 512px tiles of every preset, seed 1, transparent background.
@@ -163,7 +164,36 @@ The passages' edges wander up to 55 cells, smooth over 144. Where two passages m
 the other by chance, the likelier the nearer it lies, across a band 55 cells deep: an overspray, as where two
 sprayed colours meet. Clearings are sunlit, up to φ times as brightly at the heart of a calm island.
 
-**Colours that change.** Nearly every saved painting is brown, gold or rust, so a plane that wore their colours only
+**After Cy Twombly.** DIRT's ground is drawn after the artists saved in the art database, starting with Cy Twombly.
+[artists/measure.py](artists/measure.py) looks at each of his saved works (80 of the 95 are drawings, paintings and
+prints; the photographs are left out) and writes [artists/twombly.json](artists/twombly.json): each work's paper, up
+to five ink colours with their shares of the sheet, the share of the sheet it marks, and which grammar it belongs to.
+Only these numbers are kept; the images stay in a private cache. His marks cover a median 23% of the sheet (quartiles
+11% and 33%), so DIRT, which once covered its ground edge to edge in dots, is now mostly paper.
+
+Where the ground is painted on the GPU, the plane is one endless sheet. Its paper drifts slowly among his papers
+(bone, cream, a grey-white, a faint rose). Each passage is marked in one of his grammars, in the inks of one of his
+works of that grammar:
+
+| Character | Grammar | After |
+| --- | --- | --- |
+| weave | writing: in rows, a pen that loops as it goes, leaning right, pointed at the turns, two lines to a row in two inks, lifting between phrases | Roman Notes, Sarajevo, Three Notes from Salalah |
+| nocturne | a blackboard: slate brushed over the paper, and chalk writing, dense and fast | On the Bowery, the 1967 and 1970 blackboards |
+| spray | blooms in two rows through the passage: heads massed from thick dabs streaked like brush hair, over a dark heart, stems flung out, drips, splatter | Summer Madness, Pan, the Roses, Sets |
+| drip | a wash that runs down in streaks, with blooms dripping into it | Lepanto, Camino Real, Nine Discourses on Commodus |
+| mosaic | collage: the collection's soil printed pale as plates pasted on the sheet, a red box drawn beside some, pencil hatching under them and notes scrawled about | Natural History (the Mushrooms and Some Trees of Italy) |
+
+The collection is still the matter of it: a stroke catches only where the soil has a dot, as crayon catches on the
+tooth of paper (its heart is solid), the soil's colour works a little into every stroke, and the soil is rubbed
+faintly into the paper, more out in the outskirts. Calm ground is nearly clean paper. The page round the sheet is a
+graphite wall, and picking a painting out fades the rest into the paper.
+
+A sheet changes as he changed one, about every 55 seconds (times φ^±½): white gesso is brushed over the old marks in
+long translucent strokes, then the new marks are drawn in, sweeping across as a hand writes, in the inks of another of
+his works of the same grammar. Add `#noart` to the address for the golden-angle colours below, and `#g0` to `#g4` to
+see one grammar everywhere.
+
+**Colours that change** (with `#noart`). Nearly every saved painting is brown, gold or rust, so a plane that wore their colours only
 as they are would stay chocolate brown. Where the browser has WebGL2, the page paints the ground itself on the GPU
 ([engine/ground-gl.js](engine/ground-gl.js)), every frame, from what each cell is made of. The workers send each
 cell's soil colour, dot, passage, crown, depth and light instead of finished pixels, so the colours can change as
