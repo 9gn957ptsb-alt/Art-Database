@@ -28,6 +28,68 @@
   <!-- The clear coat: highlights and the rim, over the globe. -->
   <canvas class="world world-gloss" id="world-gloss" aria-hidden="true"></canvas>
 
+  <!-- The Hubble Space Telescope, in orbit round a world seen from far off.
+       Pressing it opens one of its own photographs. -->
+  <button class="hubble" id="hubble" type="button" hidden
+          aria-label="The Hubble Space Telescope — press to open one of its photographs">
+    <svg viewBox="0 0 260 130" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="hb-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fbfbfc"/>
+          <stop offset="0.28" stop-color="#e4e6ea"/>
+          <stop offset="0.55" stop-color="#b9bdc6"/>
+          <stop offset="0.82" stop-color="#8b909b"/>
+          <stop offset="1" stop-color="#d6d8dd"/>
+        </linearGradient>
+        <linearGradient id="hb-foil" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f4f4f2"/>
+          <stop offset="0.5" stop-color="#c9c7c2"/>
+          <stop offset="1" stop-color="#9e9b95"/>
+        </linearGradient>
+        <linearGradient id="hb-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f1d58a"/>
+          <stop offset="0.5" stop-color="#c79a3c"/>
+          <stop offset="1" stop-color="#8a6420"/>
+        </linearGradient>
+        <linearGradient id="hb-cell" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#3a4f8f"/>
+          <stop offset="0.5" stop-color="#1f2c5c"/>
+          <stop offset="1" stop-color="#121a3a"/>
+        </linearGradient>
+        <pattern id="hb-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+          <path d="M6 0H0V6" fill="none" stroke="#c7a24a" stroke-width="0.7" opacity="0.8"/>
+        </pattern>
+      </defs>
+      <!-- Solar wings, on their booms. -->
+      <path d="M96 60 L60 58 M166 60 L200 62" stroke="#8b909b" stroke-width="2"/>
+      <g transform="translate(18 18) skewY(4)">
+        <rect width="46" height="86" rx="1.5" fill="url(#hb-cell)" stroke="url(#hb-gold)" stroke-width="2.5"/>
+        <rect width="46" height="86" fill="url(#hb-grid)"/>
+        <rect x="21.5" width="3" height="86" fill="url(#hb-gold)"/>
+      </g>
+      <g transform="translate(196 22) skewY(-4)">
+        <rect width="46" height="86" rx="1.5" fill="url(#hb-cell)" stroke="url(#hb-gold)" stroke-width="2.5"/>
+        <rect width="46" height="86" fill="url(#hb-grid)"/>
+        <rect x="21.5" width="3" height="86" fill="url(#hb-gold)"/>
+      </g>
+      <!-- The aft shroud, wider, and the body forward of it. -->
+      <rect x="74" y="42" width="44" height="40" rx="6" fill="url(#hb-foil)" stroke="#7d818b" stroke-width="0.8"/>
+      <path d="M78 46 H114 M78 78 H114" stroke="#ffffff" stroke-width="0.8" opacity="0.6"/>
+      <rect x="112" y="46" width="78" height="32" rx="4" fill="url(#hb-body)" stroke="#7d818b" stroke-width="0.8"/>
+      <path d="M118 52 H184" stroke="#ffffff" stroke-width="1.6" opacity="0.85"/>
+      <path d="M140 46 V78 M164 46 V78" stroke="#8b909b" stroke-width="0.6" opacity="0.7"/>
+      <!-- The light shield, and its aperture door standing open. -->
+      <ellipse cx="190" cy="62" rx="5" ry="16" fill="#2a2e38" stroke="#7d818b" stroke-width="0.8"/>
+      <path d="M190 46 L214 30 L218 36 L193 49 Z" fill="url(#hb-body)" stroke="#7d818b" stroke-width="0.8"/>
+      <!-- High-gain antennas on their masts. -->
+      <path d="M130 46 L126 26 M154 78 L158 100" stroke="#8b909b" stroke-width="1.6"/>
+      <ellipse cx="126" cy="24" rx="9" ry="3.6" fill="url(#hb-body)" stroke="#7d818b" stroke-width="0.6"/>
+      <ellipse cx="158" cy="102" rx="9" ry="3.6" fill="url(#hb-body)" stroke="#7d818b" stroke-width="0.6"/>
+      <!-- A glint where the sun catches the body. -->
+      <circle cx="150" cy="52" r="1.6" fill="#ffffff"/>
+    </svg>
+  </button>
+
   <!-- Everything that stands ON the world is DOM, not canvas, so the words
        stay legible, focusable and clickable. land.js projects each one onto
        the sphere every frame. -->
@@ -96,7 +158,7 @@
     <div class="trace" id="trace" hidden>
       <span class="trace-title" id="trace-title"></span>
       <span class="trace-meta" id="trace-meta"></span>
-      <span class="trace-hint" id="trace-hint">Open on Artsy</span>
+      <span class="trace-hint" id="trace-hint">Open</span>
     </div>
 
     <!-- A line, spoken by whoever is saying it. The players that grow off
@@ -169,7 +231,9 @@
     given out nearest the middle first, so a name is left off rather than
     printed across one already there.
 
-    Down in a city: press the creature to turn up a work; it stays up until you put it down.
+    Down in a city: press the creature to turn up one of the Hubble Space
+    Telescope's photographs, read live from NASA's image library and boiled
+    down to the three colours it is most made of; it stays up until you put it down.
     Press again to take that work's palette, then drag it onto the creature and
     let go to apply it. A palette that misses stays where it lands and can be
     picked up again. With a keyboard, press Enter on the card to do both at
@@ -182,7 +246,9 @@
     hand. Down in a city the words are not shown — they are the language of
     the whole world rather than of one place — but the creature still finds
     the things that collage is made of underfoot, and the banner says which.
-    The world is the Earth, exactly: the land the threads thicken over is
+    Seen from far off, the Earth is a marble with company: the Hubble Space
+    Telescope, in orbit round it, passing in front and behind; press it to
+    open one of its photographs. The world is the Earth, exactly: the land the threads thicken over is
     Natural Earth's 50m outline at a quarter of a degree, with no line drawn
     round it — the land is its own edge. It does not stay at one distance:
     every so often, when nobody is doing anything, it swings nearer or
@@ -238,7 +304,7 @@
     instead of on the creature, which feeds it. Two of a kind that wander into
     each other merge, and past the third size a thing becomes the next kind
     along. Hold one, or press O with it focused, to open the work it came from
-    on Artsy.
+    at NASA.
 
     Some of what grows off the creature are players — twelve parts and sixteen
     scenes, out of Romeo and Juliet, Hamlet, Macbeth, A Midsummer Night's

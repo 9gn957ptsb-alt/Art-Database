@@ -112,6 +112,26 @@
   image-rendering: auto;
 }
 
+/* The telescope, in orbit round a world seen from far off. */
+.hubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 15;
+  width: 180px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 6px 10px rgba(24, 26, 40, 0.18));
+  transition: opacity var(--beat-4) ease-out;
+}
+.hubble[hidden] { display: none; }
+.hubble svg { display: block; width: 100%; height: auto; }
+.hubble:focus-visible { outline: 1px solid var(--edge); outline-offset: 4px; }
+
 .world-gloss {
   pointer-events: none;
   transition: opacity var(--beat-3) ease-out;

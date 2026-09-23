@@ -206,10 +206,143 @@
 
   /* ---- reading ---------------------------------------------------------- */
 
-  function thumb(tok) { return supply.cdn + tok.i + ".jpg"; }
+  function thumb(tok) { return tok.u || supply.cdn + tok.i + ".jpg"; }
+
+  // Where a token's picture lives, and what that place is called.
+  function tokenHref(tok) {
+    return tok.href || "https://www.artsy.net/artwork/" + tok.s;
+  }
+  function tokenHome(tok) { return tok.href ? "NASA" : "Artsy"; }
 
   function tokenLine(tok) {
     return [tok.a, tok.y].filter(Boolean).join(", ");
+  }
+
+  /* ---- Hubble ---------------------------------------------------------------
+
+     The colours the creature turns up and wears are the Hubble Space
+     Telescope's now, not saved paintings. Every token is one of Hubble's own
+     photographs — a galaxy, a nebula, a cluster — boiled down to the three
+     colours it is most made of, and it leads back to that photograph in
+     NASA's image library.
+
+     They are read live, in the visitor's browser, from NASA's public image
+     library (images-api.nasa.gov), which answers any page that asks. Each
+     photograph's colours are measured off its own thumbnail as it arrives:
+     the black of space is left out, so what is counted is the gas and the
+     stars, and the three strongest colours that are not too like each other
+     are its token. Until enough have been measured, and if NASA cannot be
+     reached at all, the creature carries on with the saved paintings it had
+     before. Nothing is stored and nothing is committed: the telescope is
+     asked afresh every visit. */
+
+  var HUBBLE_QUERIES = ["hubble galaxy", "hubble nebula", "hubble star cluster",
+                        "hubble space telescope image"];
+  var HUBBLE_NOT = /astronaut|servicing|sts-|shuttle|launch|crew|engineer|technician|clean ?room|mirror|mission|spacewalk|eva\b|logo|illustration|artist|concept|rendering|poster/i;
+  var hubble = { tokens: [], seen: {}, measuring: 0 };
+
+  function readHubble() {
+    if (!window.fetch) { return; }
+    HUBBLE_QUERIES.forEach(function (q, i) {
+      window.setTimeout(function () {
+        fetch("https://images-api.nasa.gov/search?media_type=image&q=" + encodeURIComponent(q))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var items = (d && d.collection && d.collection.items) || [];
+            items.forEach(function (item) {
+              var data = item.data && item.data[0];
+              var link = (item.links || []).filter(function (l) {
+                return l.render === "image" || /thumb|small|medium/i.test(l.href || "");
+              })[0];
+              if (!data || !link || !data.nasa_id || hubble.seen[data.nasa_id]) { return; }
+              var words = (data.title || "") + " " + (data.keywords || []).join(" ") +
+                          " " + (data.description || "").slice(0, 200);
+              if (HUBBLE_NOT.test(words)) { return; }
+              if (!/hubble|hst\b/i.test(words)) { return; }
+              hubble.seen[data.nasa_id] = true;
+              measureHubble({
+                s: data.nasa_id,
+                t: (data.title || "Untitled").replace(/\s+/g, " ").trim(),
+                a: "Hubble Space Telescope",
+                y: (data.date_created || "").slice(0, 4),
+                u: link.href.replace(/^http:/, "https:"),
+                href: "https://images.nasa.gov/details/" + encodeURIComponent(data.nasa_id)
+              });
+            });
+          })
+          .catch(function () {});
+      }, i * 400);
+    });
+  }
+
+  /* The three colours a photograph is most made of, leaving out the black. */
+  function measureHubble(tok) {
+    if (hubble.measuring > 6) {                  // a few at a time
+      window.setTimeout(function () { measureHubble(tok); }, 500);
+      return;
+    }
+    hubble.measuring += 1;
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.onload = function () {
+      hubble.measuring -= 1;
+      var colours = null;
+      try { colours = strongest(img); } catch (e) { colours = null; }
+      if (!colours) { return; }
+      tok.c = colours;
+      hubble.tokens.push(tok);
+      // Once there are enough of them, they are the supply.
+      if (hubble.tokens.length >= 12) {
+        supply = {
+          cdn: "",
+          tokens: hubble.tokens,
+          pool: hubble.tokens.map(function (t, i) { return i; }),
+          byTerm: {}
+        };
+      }
+    };
+    img.onerror = function () { hubble.measuring -= 1; };
+    img.src = tok.u;
+  }
+
+  function strongest(img) {
+    var n = 40;
+    var c = document.createElement("canvas");
+    c.width = c.height = n;
+    var g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0, n, n);
+    var px = g.getImageData(0, 0, n, n).data;      // throws if NASA will not share
+    var bins = {};
+    var lit = 0;
+    for (var i = 0; i < px.length; i += 4) {
+      var r = px[i], gr = px[i + 1], b = px[i + 2];
+      if (r + gr + b < 90) { continue; }             // the black of space
+      lit += 1;
+      var key = (r >> 5) + "," + (gr >> 5) + "," + (b >> 5);
+      var bin = bins[key] || (bins[key] = { n: 0, r: 0, g: 0, b: 0 });
+      bin.n += 1; bin.r += r; bin.g += gr; bin.b += b;
+    }
+    if (lit < n * n * 0.04) { return null; }         // nearly all black: nothing to take
+    var ranked = Object.keys(bins).map(function (k) {
+      var bin = bins[k];
+      return { n: bin.n, r: bin.r / bin.n, g: bin.g / bin.n, b: bin.b / bin.n };
+    }).sort(function (p, q) { return q.n - p.n; });
+    var chosen = [];
+    ranked.forEach(function (bin) {
+      if (chosen.length >= 3) { return; }
+      var apart = chosen.every(function (o) {
+        return Math.abs(o.r - bin.r) + Math.abs(o.g - bin.g) + Math.abs(o.b - bin.b) > 70;
+      });
+      if (apart) { chosen.push(bin); }
+    });
+    while (chosen.length < 3 && ranked.length) { chosen.push(ranked[chosen.length % ranked.length]); }
+    return chosen.map(function (o) {
+      return "#" + [o.r, o.g, o.b].map(function (v) {
+        var h = Math.round(v).toString(16);
+        return h.length < 2 ? "0" + h : h;
+      }).join("");
+    });
   }
 
   function workLine(work) {
@@ -1867,6 +2000,7 @@
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
     placeGloss();
+    placeHubble(now);
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -2304,6 +2438,65 @@
     }, FLY * PHI, true);
     return true;
   }
+
+  /* ---- the telescope --------------------------------------------------------
+
+     Seen from far enough off, the Earth is a marble, and it has company:
+     the Hubble Space Telescope, in orbit round it. It goes round once every
+     phi-to-the-seventh seconds — twenty-nine — on a tilted ring a third
+     again as wide as the world, passing in front of it and behind it; it
+     turns slowly as it goes, and it is as big as the world is small. It is
+     only there when the world is far off: as the Earth comes in, the
+     telescope is left behind. Pressing it opens one of its own photographs.
+     */
+
+  var scope = document.getElementById("hubble");
+  var ORBIT = Math.pow(PHI, 7) * 1000;
+  var scopeShown = false;
+
+  function placeHubble(now) {
+    var far = base0 * INV;                  // nearer than this, it is not there
+    var show = !place && !flying && R < far;
+    var fade = show ? Math.min(1, (far - R) / (far * INV2)) : 0;
+    if (!show || fade <= 0.01) {
+      if (scopeShown) { scope.hidden = true; scopeShown = false; }
+      return;
+    }
+    if (!scopeShown) { scope.hidden = false; scopeShown = true; }
+
+    var t = still ? 0.3 : now / ORBIT;
+    var a = TAU * t;
+    var ring = R * (1.34 + 0.06 * Math.sin(TAU * t * PHI));
+    var x = cx + Math.cos(a) * ring;
+    var y = cy + Math.sin(a) * ring * 0.36 - R * 0.22 * Math.cos(a * 0.5);
+    var front = Math.sin(a);                 // toward us when positive
+
+    // Hidden by the world as it passes behind it.
+    var seen = 1;
+    if (front < 0) {
+      var dx = x - cx, dy = y - cy;
+      var inside = Math.sqrt(dx * dx + dy * dy) / R;
+      seen = Math.max(0, Math.min(1, (inside - 0.86) / 0.22));
+    }
+    var size = Math.max(64, Math.min(200, R * 0.62)) * (0.84 + 0.16 * front);
+    var turn = Math.sin(TAU * t * 2.2) * 14;         // a slow tumble
+    var mirror = Math.cos(a + Math.PI / 2) < 0 ? -1 : 1;     // facing the way it goes
+    scope.style.width = size.toFixed(1) + "px";
+    scope.style.opacity = (fade * seen).toFixed(3);
+    scope.style.zIndex = front < 0 ? "1" : "15";
+    scope.style.pointerEvents = seen * fade > 0.3 ? "auto" : "none";
+    scope.style.transform =
+      "translate(" + (x - size / 2).toFixed(1) + "px," + (y - size * 0.25).toFixed(1) + "px)" +
+      " rotate(" + turn.toFixed(2) + "deg) scale(" + mirror + ",1)";
+  }
+
+  scope.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+  scope.addEventListener("click", function () {
+    var pool = hubble.tokens;
+    var href = pool.length ? pool[Math.floor(Math.random() * pool.length)].href
+                           : "https://images.nasa.gov/search?q=hubble&media=image";
+    window.open(href, "_blank", "noopener");
+  });
 
   /* ---- the clear coat -------------------------------------------------------
 
@@ -3434,7 +3627,7 @@
     part.el.setAttribute("role", "link");
     part.el.setAttribute("aria-label",
       part.name.replace("-", " ") + " — " + hex + ", from " + tok.t +
-      (tok.a ? " by " + tok.a : "") + ". Opens on Artsy.");
+      (tok.a ? " by " + tok.a : "") + ". Opens on " + tokenHome(tok) + ".");
 
     part.el.dataset.fresh = "true";
     window.setTimeout(function () { delete part.el.dataset.fresh; }, 1120);   /* past the 1097ms flare */
@@ -3967,7 +4160,7 @@
         (born.ground ? " grown on " + born.ground : " grown off the creature");
     return what + ", in the colours of " + tok.t +
            (tok.a ? " by " + tok.a : "") + ". " +
-           VERB[born.kind] + "; hold it, or press O, to open the work on Artsy.";
+           VERB[born.kind] + "; hold it, or press O, to open it on " + tokenHome(tok) + ".";
   }
 
   function redraw(born) {
@@ -4461,7 +4654,7 @@
   }
 
   function openWork(born) {
-    window.open("https://www.artsy.net/artwork/" + born.token.s, "_blank", "noopener");
+    window.open(tokenHref(born.token), "_blank", "noopener");
   }
 
   /* Pressing plays with it; holding it opens the work it came from, so the
@@ -5658,7 +5851,8 @@
     // On a colour worn by the animal the card is a way back to the work. On
     // something the company has left standing, the press does something in
     // the world instead, so the card says what, and how to reach the work.
-    traceHint.textContent = hint ? hint + " · hold to open on Artsy" : "Open on Artsy";
+    traceHint.textContent = hint ? hint + " · hold to open on " + tokenHome(tok)
+                                 : "Open on " + tokenHome(tok);
     trace.hidden = false;
 
     var box = el.getBoundingClientRect();
@@ -5677,7 +5871,7 @@
 
   function follow(part) {
     if (!part.token) { return; }
-    window.open("https://www.artsy.net/artwork/" + part.token.s, "_blank", "noopener");
+    window.open(tokenHref(part.token), "_blank", "noopener");
   }
 
   function wireParts() {
@@ -6749,6 +6943,8 @@
       // An old link to the works page, forwarded here.
       followHash();
       window.setTimeout(readAhead, 1200);
+      // And ask the telescope for its photographs.
+      readHubble();
     })
     .catch(function (error) {
       // It may already have been taken out of the page by then, so the

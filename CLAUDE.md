@@ -79,5 +79,13 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   and this repository is public. Only `docs/v2/land.json` — the distilled
   fraction `scripts/build_land.py` writes — belongs in git.
 - The land's words come from `terms` in `docs/works.json` and link to **his**
-  works. Artsy saves are only the token objects the creature turns up — three
-  colours to throw. No Artsy work is ever what a word stands on.
+  works. No Artsy work is ever what a word stands on.
+- The token objects the creature turns up — three colours to throw — are the
+  **Hubble Space Telescope's photographs** (artist's request, 23 Sep 2026),
+  read live in the visitor's browser from NASA's image library
+  (`images-api.nasa.gov`), colours measured off each thumbnail, each linking to
+  its `images.nasa.gov/details/<id>` page. The Artsy saves in `land.json` are
+  only the fallback while those load or if NASA can't be reached. NASA's hosts
+  are blocked from the session sandbox, so this can only be tested there
+  against a stand-in (`page.route`). A Hubble telescope orbits the globe in the
+  far views (`placeHubble`); pressing it opens one of its photographs.
