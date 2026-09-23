@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Raw API downloads: large and private to the account
+data/artsy_saves_raw.json
