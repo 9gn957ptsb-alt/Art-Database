@@ -126,6 +126,11 @@
 }
 .hubble[hidden] { display: none; }
 .hubble svg { display: block; width: 100%; height: auto; }
+.hubble .hb-blink { animation: hb-blink 1.618s steps(1, end) infinite; }
+@keyframes hb-blink {
+  0%, 61.8% { opacity: 0.15; }
+  62%, 100% { opacity: 1; }
+}
 .hubble:focus-visible { outline: 1px solid var(--edge); outline-offset: 4px; }
 
 .burst {
@@ -136,6 +141,8 @@
   z-index: 60;
   pointer-events: none;
 }
+
+.world-tiles { pointer-events: none; }
 
 .world-gloss {
   pointer-events: none;
@@ -713,10 +720,23 @@
   text-transform: uppercase;
 }
 
-/* Grazing: the head dips. */
+/* Grazing: the head dips — in held poses, like a sprite, not a glide. */
 .creature[data-grazing="true"] svg {
-  animation: graze var(--beat-6) ease-in-out infinite;
+  animation: graze var(--beat-6) steps(3, end) infinite;
   transform-origin: 30% 80%;
+}
+
+/* And it blinks: shut for a sixth of a second every phi-cubed seconds. */
+.creature .c-eye {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: blink 4.236s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%, 95%   { transform: scaleY(1); }
+  95.5%, 99% { transform: scaleY(0.18); }
+  100%      { transform: scaleY(1); }
 }
 
 @keyframes graze {
@@ -735,7 +755,7 @@
 }
 
 /* Struck by a thrown token. */
-.creature[data-struck="true"] svg { animation: struck var(--beat-3) ease-out; }
+.creature[data-struck="true"] svg { animation: struck var(--beat-3) steps(4, end); }
 
 @keyframes struck {
   0%   { transform: translateY(0) scale(1); }
@@ -937,10 +957,35 @@
     opacity var(--beat-3) ease-out;
 }
 
+/* A caption is written on in a stepped wipe, left to right, in eight
+   held frames — a sprite's way of arriving, not a fade's. */
+.deal-text {
+  /* Past the box on every side, so a word that overhangs it (a big one in
+     wide tracking does) is not cut off once it has been written on. */
+  clip-path: inset(-48px -100% -48px -48px);
+  transition:
+    transform var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    width var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    height var(--beat-4) cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity var(--beat-3) ease-out,
+    clip-path var(--beat-4) steps(8, end);
+}
+
 .deal-plate[data-fresh="true"],
 .deal-text[data-fresh="true"] {
   opacity: 0;
   transition: none;
+}
+
+.deal-text[data-fresh="true"] { clip-path: inset(-48px 100% -48px -48px); }
+
+.deal-veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .deal-plate {
@@ -1108,7 +1153,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .creature[data-grazing="true"] svg,
-  .creature[data-struck="true"] svg { animation: none; }
+  .creature[data-struck="true"] svg,
+  .creature .c-eye,
+  .hubble .hb-blink { animation: none; }
   .graze, .token, .deck, .trace { animation: none; }
   .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }
   .part[data-fresh="true"] { animation: none; }

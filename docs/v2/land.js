@@ -837,6 +837,8 @@
 
   function goDown(city) {
     if (flying || place) { return; }
+    var from = project(city.lat, city.lon);
+    pulse(from.x, from.y, [cityTone(city), LIGHT], 1, Math.max(W, H) * INV);
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;
@@ -878,6 +880,7 @@
 
   function arrive() {
     land.dataset.at = "city";
+    pulse(W / 2, H * 0.62, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV);
     banner.hidden = false;
     bannerCity.textContent = place.title;
     bannerUnder.textContent = place.where || "";
@@ -1315,11 +1318,218 @@
       ctx.fillStyle = key.slice(0, cut);
       ctx.globalAlpha = Number(key.slice(cut + 1)) / 4;
       runs[key].forEach(function (m) {
-        ctx.fillRect(Math.round(m.x), Math.round(m.y - m.h), m.size, m.size);
+        var sz = Math.max(2, Math.round(m.size));
+        ctx.fillRect(Math.round(m.x), Math.round(m.y - m.h), sz, sz);
       });
     });
 
     ctx.globalAlpha = 1;
+  }
+
+  /* ---- the tiles ------------------------------------------------------------
+
+     Pixel light, after the Ultracode band. Behind everything that stands on
+     the world there is a grid of square tiles — thirteen pixels a cell, the
+     Fibonacci number the spacing is built on, eleven of them lit and two
+     left dark, so the gaps are always there — that nobody sees until
+     something happens. Then the tiles light up round it and the light
+     rolls outward in waves: a square blob first, then a front that travels
+     with a ragged, stair-stepped edge, brightest at the leading edge and
+     dying away behind, and two echoes after it, each 1/phi of the one
+     before. Brightness comes in four steps, never in between, and the waves
+     move in held frames, twenty-four to the second, the way a sprite does.
+
+     Everything that used to happen smoothly now also lands like this: going
+     down into a city, arriving, opening a word, tapping the sky, firing a
+     small world, the creature turning a photograph up and putting it on,
+     things coming up out of the ground and being fed, the squash. And while
+     the creature grazes it keeps a slow beat of its own. */
+
+  var tilesCanvas = document.getElementById("tiles");
+  var tilesCtx = tilesCanvas.getContext("2d");
+  var CELL_PX = 13;                     // not TILE: that is the creature's iso unit
+  var LIGHT = "#5e52c7";                // the default light: Ultracode's lavender
+  var LEVELS = [0, 0.16, 0.3, 0.46, 0.64];
+  var waves = [];
+  var ringNow = null;          // the squash ring while it is held open
+  var tilesDirty = false;
+  var notes = [];
+  var lastBeat = 0;
+
+  function hash2(i, j) {
+    var n = (i * 73856093) ^ (j * 19349663);
+    n = (n ^ (n >>> 13)) * 1274126177;
+    return ((n ^ (n >>> 16)) >>> 0) % 1024 / 1024;
+  }
+
+  /* Light going out from a point, in the colours given, three rings deep. */
+  function pulse(x, y, tones, strength, reach) {
+    if (still || !isFinite(x) || !isFinite(y)) { return; }
+    tones = (tones && tones.length) ? tones : [LIGHT];
+    strength = strength === undefined ? 1 : strength;
+    reach = reach || Math.max(W, H) * INV2;
+    var now = performance.now();
+    [1, INV, INV2].forEach(function (k, i) {
+      waves.push({
+        x: x, y: y, at: now + i * 110,
+        tone: tones[i % tones.length],
+        strength: strength * k,
+        reach: reach * (1 - i * 0.12),
+        speed: reach / (FLY * 0.9)            // pixels a millisecond
+      });
+    });
+    if (waves.length > 36) { waves.splice(0, waves.length - 36); }
+  }
+
+  /* Sparks and notes: the square sparks fly out and fall, the notes float
+     up and drift, both in the colours given. */
+  var GLYPHS = [
+    ["...##.", "...#.#", "...#..", "...#..", ".###..", "####..", ".##..."],
+    [".#####", ".#...#", ".#...#", ".#...#", "##..##", "##..##"]
+  ];
+
+  function sparkle(x, y, tones, count) {
+    if (still || !isFinite(x) || !isFinite(y)) { return; }
+    tones = (tones && tones.length) ? tones : [LIGHT];
+    kick(x, y, tones, count || 14, 5.5, 2.6);
+    var n = Math.max(1, Math.round((count || 14) / 7));
+    for (var i = 0; i < n; i += 1) {
+      notes.push({
+        x: x + (Math.random() - 0.5) * 30, y: y - 10 - Math.random() * 12,
+        vx: (Math.random() - 0.5) * 0.5, vy: -(0.55 + Math.random() * 0.45),
+        glyph: GLYPHS[Math.floor(Math.random() * GLYPHS.length)],
+        tone: tones[Math.floor(Math.random() * tones.length)],
+        life: 1, at: performance.now() + i * 90
+      });
+    }
+    if (notes.length > 24) { notes.splice(0, notes.length - 24); }
+  }
+
+  function drawTiles(now) {
+    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (tilesCanvas.width !== pw || tilesCanvas.height !== ph) {
+      tilesCanvas.width = pw; tilesCanvas.height = ph; tilesDirty = true;
+    }
+    if (!waves.length && !notes.length && !tilesDirty) { return; }
+    var g = tilesCtx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    tilesDirty = false;
+
+    // Held frames: the light moves twenty-four times a second, not sixty.
+    var t = Math.floor(now / 42) * 42;
+    var runs = {};
+    var cols = Math.ceil(W / CELL_PX), rows = Math.ceil(H / CELL_PX);
+
+    for (var k = waves.length - 1; k >= 0; k -= 1) {
+      var w = waves[k];
+      var age = t - w.at;
+      if (age < 0) { continue; }
+      var life = w.reach / w.speed;
+      if (age > life) { waves.splice(k, 1); continue; }
+      var fade = 1 - age / life;
+      var r = age * w.speed;
+      var band = CELL_PX * 3.2;
+      var blob = age < 150 ? CELL_PX * 3.4 : 0;      // the square it starts as
+      var span = r + CELL_PX * 2;
+      var i0 = Math.max(0, Math.floor((w.x - span) / CELL_PX));
+      var i1 = Math.min(cols - 1, Math.ceil((w.x + span) / CELL_PX));
+      var j0 = Math.max(0, Math.floor((w.y - span) / CELL_PX));
+      var j1 = Math.min(rows - 1, Math.ceil((w.y + span) / CELL_PX));
+      for (var j = j0; j <= j1; j += 1) {
+        for (var i = i0; i <= i1; i += 1) {
+          var dx = Math.abs(i * CELL_PX + CELL_PX / 2 - w.x);
+          var dy = Math.abs(j * CELL_PX + CELL_PX / 2 - w.y);
+          // A square that has had its corners knocked off, and a ragged edge.
+          var d = 0.72 * Math.max(dx, dy) + 0.28 * Math.sqrt(dx * dx + dy * dy) +
+                  (hash2(i, j) - 0.5) * CELL_PX * 1.3;
+          var lit = 0;
+          if (d < blob) { lit = 1; }
+          var front = r - d;
+          if (front >= 0 && front < band) { lit = Math.max(lit, 1 - front / band); }
+          if (!lit) { continue; }
+          var level = Math.ceil(lit * w.strength * fade * 4);
+          if (level < 1) { continue; }
+          if (level > 4) { level = 4; }
+          var key = w.tone + "|" + level;
+          (runs[key] || (runs[key] = [])).push(i, j);
+        }
+      }
+    }
+
+    Object.keys(runs).forEach(function (key) {
+      var cut = key.lastIndexOf("|");
+      g.fillStyle = key.slice(0, cut);
+      g.globalAlpha = LEVELS[Number(key.slice(cut + 1))];
+      var run = runs[key];
+      for (var n = 0; n < run.length; n += 2) {
+        g.fillRect(run[n] * CELL_PX + 1, run[n + 1] * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+      }
+    });
+
+    // The squash ring, held open, as a ring of tiles that shimmers.
+    if (ringNow) {
+      var rg = ringNow;
+      var ri0 = Math.max(0, Math.floor((rg.x - rg.r - CELL_PX) / CELL_PX));
+      var ri1 = Math.min(cols - 1, Math.ceil((rg.x + rg.r + CELL_PX) / CELL_PX));
+      var rj0 = Math.max(0, Math.floor((rg.y - rg.r - CELL_PX) / CELL_PX));
+      var rj1 = Math.min(rows - 1, Math.ceil((rg.y + rg.r + CELL_PX) / CELL_PX));
+      var flick = Math.floor(t / 84) % 2;
+      g.fillStyle = LIGHT;
+      for (var rj = rj0; rj <= rj1; rj += 1) {
+        for (var ri = ri0; ri <= ri1; ri += 1) {
+          var ex = ri * CELL_PX + CELL_PX / 2 - rg.x, ey = rj * CELL_PX + CELL_PX / 2 - rg.y;
+          var off = Math.abs(Math.sqrt(ex * ex + ey * ey) - rg.r);
+          if (off > CELL_PX * 0.75) { continue; }
+          g.globalAlpha = LEVELS[((ri + rj + flick) % 2) ? 4 : 2];
+          g.fillRect(ri * CELL_PX + 1, rj * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+        }
+      }
+    }
+
+    // The notes, in held frames, on a two-pixel grid.
+    for (var q = notes.length - 1; q >= 0; q -= 1) {
+      var o = notes[q];
+      var a = t - o.at;
+      if (a < 0) { continue; }
+      var left = 1 - a / 1300;
+      if (left <= 0) { notes.splice(q, 1); continue; }
+      var nx = Math.round((o.x + o.vx * a / 16 + Math.sin(a / 260) * 4) / 2) * 2;
+      var ny = Math.round((o.y + o.vy * a / 16) / 2) * 2;
+      g.fillStyle = o.tone;
+      g.globalAlpha = Math.min(1, LEVELS[Math.max(1, Math.ceil(left * 4))] * 1.5);
+      o.glyph.forEach(function (row, yy) {
+        for (var xx = 0; xx < row.length; xx += 1) {
+          if (row.charAt(xx) === "#") { g.fillRect(nx + xx * 2, ny + yy * 2, 2, 2); }
+        }
+      });
+    }
+    g.globalAlpha = 1;
+    tilesDirty = waves.length > 0 || notes.length > 0 || !!ringNow;
+  }
+
+  /* The creature's own beat, while it grazes: every phi-squared seconds a
+     small pulse in the colours it is wearing, like the strum it is. */
+  function beatOf(now) {
+    if (!place || flying || still || !creature.dataset.grazing) { return; }
+    if (now - lastBeat < Math.pow(PHI, 2) * 1000) { return; }
+    lastBeat = now;
+    var r = creature.getBoundingClientRect();
+    if (!r.width) { return; }
+    pulse(r.left + r.width / 2, r.top + r.height * 0.6, palette(), 0.42, Math.max(W, H) * INV3);
+  }
+
+  function beastAt() {
+    var r = creature.getBoundingClientRect();
+    // Its head: where the notes come off, clear of its body, which stands
+    // over the light and would hide anything that started inside it.
+    var right = creature.dataset.facing !== "left";
+    return { x: r.left + r.width / 2, y: r.top + r.height * 0.55, ok: r.width > 0,
+             hx: r.left + r.width * (right ? 0.86 : 0.14), hy: r.top + r.height * 0.12 };
+  }
+
+  function cityTone(city) {
+    return rgbHex(fromHsl(city && city.hue !== undefined ? city.hue : 0.7, 0.55, 0.42));
   }
 
   /* The ground going up on its own, once it is carrying enough to matter. */
@@ -2010,6 +2220,8 @@
     stir(now);
     drawMotes();
     drawRing(now);
+    beatOf(now);
+    drawTiles(now);
 
     // No line where the sphere ends. It used to be drawn in, and a drawn edge
     // is the one thing that stops a horizon being a horizon: the sphere simply
@@ -2504,41 +2716,29 @@
     g.clearRect(0, 0, W, H);
     if (sw.kind !== "rocket" || t < WIND || kick > 0.62) { return; }
     var q = kick / 0.62;                 // 0 at the firing, 1 when the air has gone by
+    // Held frames, like everything else made of pixels here.
+    q = Math.floor(q * 18) / 18;
     var fx = W / 2, fy = H * INV;        // where it is flying to
     var D = Math.sqrt(W * W + H * H);
+    var P = 3;                           // the streaks are made of three-pixel squares
 
-    // The flash.
-    if (q < 0.22) {
-      var flash = g.createRadialGradient(fx, fy, 0, fx, fy, D * 0.7);
-      var fa = 0.42 * (1 - q / 0.22);
-      flash.addColorStop(0, "rgba(255,255,255," + fa.toFixed(3) + ")");
-      flash.addColorStop(1, "rgba(255,255,255,0)");
-      g.fillStyle = flash;
-      g.fillRect(0, 0, W, H);
-    }
-
-    // The ring.
-    g.beginPath();
-    g.arc(fx, fy, D * 0.08 + D * 0.7 * Math.sqrt(q), 0, TAU);
-    g.strokeStyle = "rgba(255,255,255," + (0.55 * (1 - q)).toFixed(3) + ")";
-    g.lineWidth = 1 + 7 * (1 - q);
-    g.stroke();
-
-    // The streaks.
-    g.lineCap = "round";
+    // The streaks: each a dotted line of square pixels on a three-pixel
+    // grid, rushing outward, thinning and fading in steps as the air goes by.
+    // (The ring and the light are the tiles' — pulse() fired them.)
     sw.rays.forEach(function (ray) {
       var r0 = D * (0.1 + ray.off + q * 0.9);
       var r1 = r0 + D * ray.len * (0.4 + speed);
       var ca = Math.cos(ray.a), sa = Math.sin(ray.a);
-      g.beginPath();
-      g.moveTo(fx + ca * r0, fy + sa * r0);
-      g.lineTo(fx + ca * r1, fy + sa * r1);
-      g.strokeStyle = ray.gold
-        ? "rgba(214,176,92," + (0.7 * (1 - q)).toFixed(3) + ")"
-        : "rgba(255,255,255," + (0.85 * (1 - q)).toFixed(3) + ")";
-      g.lineWidth = ray.w * (1 + speed);
-      g.stroke();
+      g.fillStyle = ray.gold ? "#d6b05c" : "#ffffff";
+      g.globalAlpha = LEVELS[Math.max(1, Math.ceil((1 - q) * 4))] * 2;
+      var size = ray.w * (1 + speed) > 2.4 ? P * 2 : P;
+      for (var rr = r0; rr < r1; rr += P * 2) {
+        var px = Math.round((fx + ca * rr) / P) * P;
+        var py = Math.round((fy + sa * rr) / P) * P;
+        g.fillRect(px, py, size, size);
+      }
     });
+    g.globalAlpha = 1;
   }
 
   ["pointerdown", "keydown", "wheel"].forEach(function (name) {
@@ -2557,18 +2757,6 @@
     swingTo(dealSeat(), FLY * PHI * PHI, "drift");
   }
 
-  /* The point of the Earth under a point of the screen, or null off the
-     globe. The projection run backwards. */
-  function unproject(x, y) {
-    var X = (x - cx) / R, Y = (cy - y) / R;
-    var d2 = X * X + Y * Y;
-    if (d2 >= 1) { return null; }
-    var Z = Math.sqrt(1 - d2);
-    var yy = Y * COS_T + Z * SIN_T;
-    var zz = -Y * SIN_T + Z * COS_T;
-    return { lat: Math.asin(Math.max(-1, Math.min(1, yy))), lon: wrap(Math.atan2(X, zz) + spin) };
-  }
-
   /* A press on a small world fires it at you, round the point pressed. */
   function pressGlobe(x, y) {
     if (place || flying || swing || deckMode) { return false; }
@@ -2581,6 +2769,8 @@
     // little above, where a big globe's land is.
     var tx = W / 2, ty = H * INV;
     var c1x = tx - k * (x - cx), c1y = ty - k * (y - cy);
+    pulse(x, y, [LIGHT, "#d6b05c", LIGHT], 1.3, Math.max(W, H) * 0.9);
+    sparkle(x, y, ["#d6b05c", LIGHT, "#ffffff"], 28);
     swingTo({
       size: size,
       dx: (c1x - W / 2) / W,
@@ -2594,6 +2784,7 @@
   function pressSky(x, y) {
     if (place || flying || swing || deckMode) { return false; }
     if (unproject(x, y)) { return false; }
+    pulse(x, y, [LIGHT], 0.8);
     swingTo(dealSeat(), FLY * PHI, "bounce");
     return true;
   }
@@ -3131,7 +3322,9 @@
     // or shrinks and its framing travels with it; everything else on here is
     // projected through the same two numbers and follows without being told.
     if (flying) {
-      var went = Math.min(1, (now - flyAt) / FLY);
+      // A frame's clock can read a few milliseconds before the press that
+      // started the flight; before its start the flight is at its start.
+      var went = Math.max(0, Math.min(1, (now - flyAt) / FLY));
       var easing = 1 - Math.pow(1 - went, 3);
       zoom = flyFrom + (flyTo - flyFrom) * easing;
       lean(leanFrom + (leanTo - leanFrom) * easing);
@@ -3341,6 +3534,15 @@
     grazeHint.textContent = "Press twice to take its palette";
     delete graze.dataset.condensing;
 
+    // Turning a photograph up is the strum: light out of the creature in
+    // the photograph's three colours, and sparks and notes going up.
+    if (graze.hidden) {
+      var b = beastAt();
+      if (b.ok && offering.c) {
+        pulse(b.x, b.y, offering.c, 1, Math.max(W, H) * INV2);
+        sparkle(b.hx, b.hy, offering.c, 16);
+      }
+    }
     graze.hidden = false;
     positionGraze(project(beast.lat, beast.lon));
   }
@@ -3843,6 +4045,11 @@
 
     creature.dataset.struck = "true";
     window.setTimeout(function () { delete creature.dataset.struck; }, 440);   /* past the 419ms jolt */
+    var bw = beastAt();
+    if (bw.ok) {
+      pulse(bw.x, bw.y, ramp(tok), 1.25, Math.max(W, H) * INV);
+      sparkle(bw.hx, bw.hy, ramp(tok), 26);
+    }
 
     // And it comes straight back out of the ground, in that work's colours
     // and every colour already on it. Each application throws more than the
@@ -4442,6 +4649,9 @@
     wireCompany(born);
     spawns.push(born);
     land.insertBefore(el, creature);
+    // It comes up out of the ground with a small burst of light.
+    var up = project(born.lat, born.lon);
+    if (up.z > 0) { pulse(up.x, up.y, ramp(tok), 0.6, Math.max(W, H) * INV3); }
     return born;
   }
 
@@ -4473,7 +4683,11 @@
 
   function burstAt(born, tones) {
     var p = project(born.lat, born.lon);
-    kick(p.x, p.y, tones || born.token.c, 18, 5, 2.4);
+    tones = tones || born.token.c;
+    kick(p.x, p.y, tones, 18, 5, 2.4);
+    // And the light goes out from it in tiles, in the same colours.
+    pulse(p.x, p.y, tones, 0.75, Math.max(W, H) * INV3);
+    sparkle(p.x, p.y, tones, 7);
   }
 
   /* ---- what pressing one does --------------------------------------------- */
@@ -5951,25 +6165,16 @@
     return Math.min(SQUASH_MAX, SQUASH_MIN + (held - SQUASH_WAIT) * 0.42);
   }
 
+  /* The ring opened under a held press. It is drawn as tiles now (see
+     drawTiles); all this does is say where it is. */
   function drawRing(now) {
     var r = squashRing(now);
-    if (!r) { return; }
-    ctx.save();
-    ctx.strokeStyle = "rgba(27, 29, 36, 0.38)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.arc(squashing.x, squashing.y, r, 0, TAU);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
-    ctx.beginPath();
-    ctx.arc(squashing.x, squashing.y, r - 2, 0, TAU);
-    ctx.stroke();
-    ctx.restore();
+    ringNow = r ? { x: squashing.x, y: squashing.y, r: r } : null;
+    if (r) { tilesDirty = true; }
   }
 
   function squash(x, y, r) {
+    pulse(x, y, [LIGHT], 1, r * PHI);
     var caught = [];
     spawns.forEach(function (born) {
       if (born.el.style.visibility === "hidden") { return; }
@@ -6773,10 +6978,11 @@
           // rather than sliding in from the corner all at once.
           el.getBoundingClientRect();
           var wait = still ? 0 : Math.round(n * 70 + m * 40 + Math.random() * 90);
+          if (el.classList.contains("deal-plate")) { pixelIn(el, wait); }
           requestAnimationFrame(function () {
-            // Only the fade waits; a move never does, or pressing again
-            // soon after would leave some of it standing still.
-            el.style.transitionDelay = "0ms, 0ms, 0ms, " + wait + "ms";
+            // Only the fade (and a caption's wipe) waits; a move never does,
+            // or pressing again soon after would leave some of it standing.
+            el.style.transitionDelay = "0ms, 0ms, 0ms, " + wait + "ms, " + wait + "ms";
             delete el.dataset.fresh;
             window.setTimeout(function () { el.style.transitionDelay = ""; },
                               wait + 700);
@@ -6784,6 +6990,60 @@
         }
       });
     });
+  }
+
+  /* A photograph arrives a tile at a time: it is covered by a grid of
+     nine-pixel tiles which come away in held frames, from one corner
+     outward with a ragged edge, the tile just going catching the light in
+     the lavender the rest of the pixel light is. */
+  function pixelIn(box, wait) {
+    if (still) { return; }
+    var w = box.offsetWidth, h = box.offsetHeight;
+    if (!w || !h) { return; }
+    var veil = document.createElement("canvas");
+    veil.className = "deal-veil";
+    veil.setAttribute("aria-hidden", "true");
+    var k = Math.min(window.devicePixelRatio || 1, 2);
+    veil.width = Math.round(w * k);
+    veil.height = Math.round(h * k);
+    box.appendChild(veil);
+    var g = veil.getContext("2d");
+    g.setTransform(k, 0, 0, k, 0, 0);
+    var cell = 9;
+    var cols = Math.ceil(w / cell), rows = Math.ceil(h / cell);
+    var ox = Math.random() < 0.5 ? 0 : cols, oy = Math.random() < 0.5 ? 0 : rows;
+    var far = Math.sqrt(cols * cols + rows * rows) || 1;
+    var order = new Float32Array(cols * rows);
+    for (var j = 0; j < rows; j += 1) {
+      for (var i = 0; i < cols; i += 1) {
+        var d = Math.sqrt((i - ox) * (i - ox) + (j - oy) * (j - oy)) / far;
+        order[j * cols + i] = 0.55 * d + 0.45 * hash2(i + 7, j + 11);
+      }
+    }
+    var start = performance.now() + wait, dur = 680;
+    function step(now) {
+      if (!veil.parentNode) { return; }
+      var q = Math.max(0, (now - start) / dur);
+      q = Math.floor(q * 20) / 20;                   // held frames
+      g.clearRect(0, 0, w, h);
+      for (var n = 0; n < order.length; n += 1) {
+        var th = order[n];
+        if (th <= q) { continue; }
+        var x = (n % cols) * cell, y = Math.floor(n / cols) * cell;
+        if (th <= q + 0.07) {
+          g.fillStyle = LIGHT;
+          g.globalAlpha = 0.72;
+        } else {
+          g.fillStyle = "#f3f1ee";
+          g.globalAlpha = 1;
+        }
+        g.fillRect(x, y, cell, cell);
+      }
+      g.globalAlpha = 1;
+      if (q >= 1.08) { veil.parentNode.removeChild(veil); return; }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   }
 
   /* Whatever was on the table and has not been dealt this time goes. */
@@ -7070,6 +7330,10 @@
       }, still ? 1 : 1800);
     }
 
+    if (ground.el) {
+      var wr = ground.el.getBoundingClientRect();
+      pulse(wr.left + wr.width / 2, wr.top + wr.height / 2, [LIGHT], 0.9);
+    }
     closeDeck();
     openDeck("word", index);
   }

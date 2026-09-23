@@ -27,6 +27,8 @@
   <canvas class="world" id="world"></canvas>
   <!-- The clear coat: highlights and the rim, over the globe. -->
   <canvas class="world world-gloss" id="world-gloss" aria-hidden="true"></canvas>
+  <!-- Pixel light: the grid of tiles that lights up in waves. -->
+  <canvas class="world world-tiles" id="tiles" aria-hidden="true"></canvas>
 
   <!-- The Hubble Space Telescope, in orbit round a world seen from far off.
        Pressing it opens one of its own photographs. -->
@@ -87,6 +89,8 @@
       <ellipse cx="158" cy="102" rx="9" ry="3.6" fill="url(#hb-body)" stroke="#7d818b" stroke-width="0.6"/>
       <!-- A glint where the sun catches the body. -->
       <circle cx="150" cy="52" r="1.6" fill="#ffffff"/>
+      <!-- Its running light, blinking in held frames. -->
+      <rect class="hb-blink" x="104" y="44" width="4" height="4" fill="#ff5a4e"/>
     </svg>
   </button>
 
