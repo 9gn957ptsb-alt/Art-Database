@@ -1021,6 +1021,30 @@
 }
 
 .deck[data-mode="word"] { background: rgba(246, 245, 242, 0.9); }
+.deck[data-mode="word"][data-dream="true"] { background: rgba(246, 245, 242, 0.42); }
+
+/* The collection dreamt, behind the deck (land.js, dream). */
+.dream {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.dream[hidden] { display: none; }
+
+/* The site's numbers in strips (land.js, dataSweep). */
+.datamatics {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 66;
+  pointer-events: none;
+}
 
 @keyframes open-deck {
   from { opacity: 0; }
@@ -1343,7 +1367,7 @@
   .creature[data-struck="true"] svg,
   .creature .c-eye,
   .hubble .hb-blink { animation: none; }
-  .trail, .sweep { display: none; }
+  .trail, .sweep, .datamatics, .dream { display: none; }
   .deal-text[data-enter], .deal-block, .deal-go[data-pointed] { animation: none; }
   .graze, .token, .deck, .trace { animation: none; }
   .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }

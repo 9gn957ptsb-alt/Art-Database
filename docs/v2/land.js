@@ -864,7 +864,7 @@
     land.dataset.at = "flying";
     hideGraze();
     closeDeck();
-    sweepCells(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9);
+    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9, from.y);
   }
 
   function comeUp() {
@@ -884,7 +884,7 @@
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    sweepCells(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], FLY * 0.9);
+    passage(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], FLY * 0.9);
   }
 
   function arrive() {
@@ -7455,6 +7455,141 @@
     }
   };
 
+  /* After the research the artist shared on 23 Sep 2026 (see systems.js):
+     four more ways for a photograph to come onto the table. */
+  function sampled(art, cols) {
+    var rows = Math.max(6, Math.round(cols * art.boxH / art.boxW));
+    return { cols: cols, rows: rows, data: Systems.sample(art.img, cols, rows, art.turn) };
+  }
+
+  function pixelCanvas(v, k) {
+    var c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(v.w / k));
+    c.height = Math.max(1, Math.round(v.h / k));
+    return c;
+  }
+
+  /* The colours the dreaming is made of: whatever is asked for first, then
+     the collection's, a few at a time. */
+  function dreamColours(first) {
+    var out = (first || []).slice();
+    var pool = (supply && supply.tokens) || [];
+    for (var i = 0; out.length < 8 && i < 60 && pool.length; i += 1) {
+      var tok = pool[Math.floor(Math.random() * pool.length)];
+      if (tok && tok.c && tok.c.length) { out.push(tok.c[Math.floor(Math.random() * tok.c.length)]); }
+    }
+    return out.length ? out : [LIGHT, GOLD, LILAC];
+  }
+
+  function workTones(box) {
+    var key = box.dataset.key || "";
+    var slug = key.split(":")[0];
+    return measured[slug] || [];
+  }
+
+  var MORE_ARRIVALS = {
+    // After Refik Anadol, Unsupervised: the collection's colours as a fluid
+    // that condenses into the photograph.
+    hallucination: function (box, wait) {
+      var fluid = null;
+      runVeil(box, wait, 1400, 28, function (v, q, art) {
+        if (!fluid) {
+          var c = document.createElement("canvas");
+          c.width = v.w;
+          c.height = v.h;
+          fluid = new Systems.Hallucination(c, dreamColours(workTones(box)), { cell: 3 });
+        }
+        fluid.step(1 / 18);
+        fluid.draw(v.g, v.w, v.h);
+        var e = Systems.smooth(q * 1.4 - 0.3);
+        if (e > 0) {
+          v.g.globalAlpha = Math.round(e * 6) / 6;
+          drawArt(v.g, art, v.w, v.h);
+          v.g.globalAlpha = 1;
+        }
+      }, { art: true });
+    },
+
+    // After GMUNK, Synapse Code: it arrives as geometry — its cells stood up
+    // as columns in the corner view — and lies down into itself.
+    synapse: function (box, wait) {
+      var s = null, small = null;
+      runVeil(box, wait, 1300, 26, function (v, q, art) {
+        if (!s) {
+          art.boxW = v.w; art.boxH = v.h;
+          s = sampled(art, 20);
+          small = pixelCanvas(v, 2);
+        }
+        if (!s.data) { drawArt(v.g, art, v.w, v.h); return; }
+        var sg = small.getContext("2d");
+        sg.clearRect(0, 0, small.width, small.height);
+        Systems.synapse(sg, s.data, s.cols, s.rows, small.width, small.height, 1 - q, (1 - q) * 1.6);
+        v.g.fillStyle = COVER;
+        v.g.fillRect(0, 0, v.w, v.h);
+        v.g.imageSmoothingEnabled = false;
+        v.g.drawImage(small, 0, 0, v.w, v.h);
+        if (q > 0.82) {
+          v.g.globalAlpha = Math.round((q - 0.82) / 0.18 * 4) / 4;
+          drawArt(v.g, art, v.w, v.h);
+          v.g.globalAlpha = 1;
+        }
+      }, { art: true });
+    },
+
+    // After Quayola: found again by triangles, a few big ones and then more
+    // and more, until they are the picture.
+    strata: function (box, wait) {
+      var stages = null, s = null, small = null;
+      runVeil(box, wait, 1200, 9, function (v, q, art) {
+        if (!stages) {
+          art.boxW = v.w; art.boxH = v.h;
+          s = sampled(art, 48);
+          stages = s.data ? Systems.strataStages(s.data, s.cols, s.rows, 8, Math.random() * 1e9 | 0) : [];
+          small = pixelCanvas(v, 2);
+        }
+        var n = Math.floor(q * 9);
+        if (n >= stages.length) { drawArt(v.g, art, v.w, v.h); return; }
+        var sg = small.getContext("2d");
+        var kx = small.width / s.cols, ky = small.height / s.rows;
+        sg.clearRect(0, 0, small.width, small.height);
+        stages[n].forEach(function (t) {
+          sg.fillStyle = t[3];
+          sg.beginPath();
+          sg.moveTo(t[0][0] * kx, t[0][1] * ky);
+          sg.lineTo(t[1][0] * kx, t[1][1] * ky);
+          sg.lineTo(t[2][0] * kx, t[2][1] * ky);
+          sg.closePath();
+          sg.fill();
+          if (n < 5) {
+            sg.strokeStyle = "rgba(20, 16, 24, " + (0.3 - n * 0.05).toFixed(2) + ")";
+            sg.lineWidth = 0.5;
+            sg.stroke();
+          }
+        });
+        v.g.imageSmoothingEnabled = false;
+        v.g.drawImage(small, 0, 0, v.w, v.h);
+      }, { art: true });
+    },
+
+    // After Universal Everything, Primordial: one cell, two, four... each in
+    // the colour of the picture where it is, until they are the picture.
+    primordial: function (box, wait) {
+      var stages = null;
+      runVeil(box, wait, 1300, 11, function (v, q, art) {
+        if (!stages) {
+          art.boxW = v.w; art.boxH = v.h;
+          var s = sampled(art, 64);
+          stages = s.data ? Systems.cellStages(s.data, s.cols, s.rows, 10, Math.random() * 1e9 | 0) : [];
+        }
+        var n = Math.floor(q * 11);
+        if (n >= stages.length) { drawArt(v.g, art, v.w, v.h); return; }
+        v.g.imageSmoothingEnabled = false;
+        v.g.drawImage(stages[n], 0, 0, v.w, v.h);
+      }, { art: true });
+    }
+  };
+  Object.keys(MORE_ARRIVALS).forEach(function (k) { ARRIVALS[k] = MORE_ARRIVALS[k]; });
+
   function bringIn(box, wait) {
     if (still) { return; }
     ARRIVALS[oneOf(Object.keys(ARRIVALS))](box, wait);
@@ -7507,6 +7642,46 @@
         mosaicFrame(v, art, across[Math.min(across.length - 1, Math.round(q * across.length))], small);
       }, { art: true, covered: false });
     }
+  };
+
+  // After GMUNK: pointed at, it stands up into geometry, its colours turning,
+  // and lies back down.
+  POINTED.synapse = function (box) {
+    var s = null, small = null;
+    runVeil(box, 0, 1000, 22, function (v, q, art) {
+      if (!s) {
+        art.boxW = v.w; art.boxH = v.h;
+        s = sampled(art, 20);
+        small = pixelCanvas(v, 2);
+      }
+      if (!s.data) { drawArt(v.g, art, v.w, v.h); return; }
+      var up = Math.sin(Math.PI * q);
+      var sg = small.getContext("2d");
+      sg.clearRect(0, 0, small.width, small.height);
+      Systems.synapse(sg, s.data, s.cols, s.rows, small.width, small.height, up, up * 2.4);
+      v.g.fillStyle = MOUNT;
+      v.g.fillRect(0, 0, v.w, v.h);
+      v.g.imageSmoothingEnabled = false;
+      v.g.drawImage(small, 0, 0, v.w, v.h);
+    }, { art: true, covered: false });
+  };
+
+  // After Refik Anadol: it melts into the collection's colours and comes back.
+  POINTED.melt = function (box) {
+    var fluid = null;
+    runVeil(box, 0, 1100, 22, function (v, q, art) {
+      if (!fluid) {
+        var c = document.createElement("canvas");
+        c.width = v.w;
+        c.height = v.h;
+        fluid = new Systems.Hallucination(c, dreamColours(workTones(box)), { cell: 3 });
+      }
+      fluid.step(1 / 18);
+      fluid.draw(v.g, v.w, v.h);
+      v.g.globalAlpha = Math.round((1 - Math.sin(Math.PI * q)) * 5) / 5;
+      drawArt(v.g, art, v.w, v.h);
+      v.g.globalAlpha = 1;
+    }, { art: true, covered: false });
   };
 
   function pointAt(box, go, event) {
@@ -7749,6 +7924,38 @@
     });
     g.globalAlpha = 1;
     requestAnimationFrame(drawSweep);
+  }
+
+  /* ---- datamatics ----------------------------------------------------------
+
+     After Ryoji Ikeda: the site's own numbers as the picture, in black and
+     white strips that open out of a line and close back into it. It is
+     dealt among the sweeps, going down, coming up, opening and closing. */
+  var dataCanvas = document.getElementById("datamatics");
+
+  function siteNumbers() {
+    var out = [];
+    (mine ? mine.works : []).forEach(function (w) {
+      out.push(w.slug, String(w.year || ""), w.dimensions || "", (measured[w.slug] || []).join(" "));
+    });
+    cities.forEach(function (c) {
+      out.push(c.lat.toFixed(4) + " " + c.lon.toFixed(4), c.slug || "");
+    });
+    vocabulary.forEach(function (g) { out.push(g.word + " " + (g.mass || 0).toFixed(3)); });
+    out.push(new Date().toISOString(), String(R.toFixed(2)), String(zoom.toFixed(3)));
+    return out.filter(Boolean);
+  }
+
+  function dataSweep(y) {
+    if (still || !dataCanvas || !window.Systems) { return false; }
+    Systems.datamatics(dataCanvas, siteNumbers(), { y: y, duration: 1100 });
+    return true;
+  }
+
+  /* A transition: one of the sweeps, or the numbers. */
+  function passage(from, tones, dur, y) {
+    if (Math.random() < 0.34 && dataSweep(y === undefined ? H / 2 : y)) { return; }
+    sweepCells(from, tones, dur);
   }
 
   /* ---- Magnetic Buttons ------------------------------------------------- */
@@ -8169,6 +8376,35 @@
     window.addEventListener("resize", function () { if (theatreOn) { layoutTheatre(); placeTheatreSay(); } });
   }
 
+  /* After Refik Anadol, Unsupervised: sometimes, behind a word's collages,
+     the world is not blurred but dreamt — the colours measured off those
+     collages and a handful of the collection's, carried round in a fluid
+     that never settles. Dealt, like everything: half the time it is the
+     world, out of focus, as before. */
+  var dreamCanvas = document.getElementById("dream");
+  var dreaming = null;
+
+  function dream(ground) {
+    if (dreaming) { dreaming.stop(); dreaming = null; }
+    if (!dreamCanvas) { return; }
+    if (!ground || still || !window.Systems) {
+      dreamCanvas.hidden = true;
+      delete deck.dataset.dream;
+      return;
+    }
+    var first = [];
+    (ground.works || []).forEach(function (w) {
+      if (w && w.slug) { first = first.concat(measured[w.slug] || []); }
+    });
+    dreamCanvas.hidden = false;
+    var k = Math.min(window.devicePixelRatio || 1, 2);
+    dreamCanvas.width = Math.round(W * k / 2);
+    dreamCanvas.height = Math.round(H * k / 2);
+    deck.dataset.dream = "true";
+    dreaming = new Systems.Hallucination(dreamCanvas, dreamColours(first.slice(0, 5)), { cell: 5 });
+    dreaming.start();
+  }
+
   /* ---- the table: every collage, or the ones a word is written on ------- */
 
   function dealTable() {
@@ -8266,7 +8502,8 @@
     retire(poolOf(deckTable));
     dealTable();
     deckClose.focus();
-    sweepCells(oneOf(["rows", "corner", "center"]), [LIGHT, LILAC, GOLD]);
+    dream(mode === "word" && Math.random() < 0.5 ? deckWord : null);
+    passage(oneOf(["rows", "corner", "center"]), [LIGHT, LILAC, GOLD]);
   }
 
   function closeDeck() {
@@ -8277,7 +8514,8 @@
     deck.hidden = true;
     delete document.body.dataset.deck;
     retire(poolOf(deckTable));
-    if (!flying) { sweepCells(oneOf(["rows", "corner"]), [LIGHT, LILAC]); }
+    dream(null);
+    if (!flying) { passage(oneOf(["rows", "corner"]), [LIGHT, LILAC]); }
   }
 
   /* ---- a collage in its own city ---------------------------------------- */
