@@ -222,6 +222,19 @@ golden angle:
 | from φ⁻¹ | the soil lifted into relief: rows of lines 5 cells apart, each lifted by the soil's lightness (smoothed over 8 cells) and rippling, nearer rows hiding those behind, light on black | GMUNK, *Synapse Code* |
 | from 1 − φ⁻³ | data: black, with barcodes, grids of dots and columns of numerals drawn from the collection's own numbers, changing on beats of 1/φ of a second, a scanline, and now and then the whole field thrown white | Ryoji Ikeda, *datamatics* |
 
+Two more territories stand nearest the islands, beside Fischinger and Quayola, after artists saved in the database:
+**light and space**, after James Turrell (a field of coloured light floating in another, no source, its edge
+dissolving into the one round it in a halo, the colours passing slowly, each into the next, as a Skyspace's sky does),
+and **analytic cubism**, after Georges Braque (the ground seen from several viewpoints at once, as three layers of
+overlapping translucent planes, each showing the soil from a view of its own, in ochre, olive, grey and umber, sliding
+slowly into one another, each with a shadowed or lit edge).
+
+**The gesture.** Across the plane run long lines, one in every 610-cell band, that belong to no passage: each is one
+unbroken gesture taking the form of whatever world it passes through. It is crayon on paper, chalk on slate, a painted
+stem hung with drips among the blooms, and in the territories a string of rings, a cut, a chain of cells, a glowing
+relief line, a barcode, a band of light, the edge of a plane. Following it, the eye crosses from world to world without
+a break.
+
 A φ⁻⁴ share of them are **the archive**, after the Austin Museum of Digital Art's collection of hundreds of works:
 a passage that turns through all five territories, one every 6.9 seconds. Over the plane an **artificial day and night**
 turns every 233 seconds, the ground dimming and cooling to φ⁻² at night, after Universal Everything's *Migrations*.

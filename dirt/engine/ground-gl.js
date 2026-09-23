@@ -479,6 +479,48 @@ void digital(int layer, Cell c, int g, out vec3 A, out vec3 B) {
       }
     }
     A = B = col;
+  } else if (g == 10) {
+    // Light and space: a field of coloured light floating in another, no source, its edge dissolving into the one
+    // round it, and the colours passing slowly, each field into the next, as a Skyspace's sky does at dusk.
+    float ph = T / 34.0 + unit(hp), f = fract(ph);
+    int n0 = int(floor(ph));
+    mat3 m0 = turnOf(float(n0) * GA), m1 = turnOf(float(n0 + 1) * GA);
+    vec3 inner = mix(satur(satur(turnRGB(st[2], m0))), satur(satur(turnRGB(st[2], m1))), smoothstep(0.0, 1.0, f));
+    vec3 outer = mix(satur(turnRGB(st[3], m0 * turnOf(2.4))), satur(turnRGB(st[3], m1 * turnOf(2.4))), smoothstep(0.0, 1.0, f));
+    vec2 hs = vec2(89.0, 55.0) * (1.0 + 0.05 * sin(T * 0.21));
+    vec2 d = abs(q) - hs;
+    float e = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+    vec3 col = mix(inner, outer, smoothstep(-21.0, 34.0, e)) + vec3(34.0) * exp(-abs(e - 6.0) / 8.0);   // a halo where they meet
+    col *= 1.0 + 0.03 * (lum(c.soil) / 128.0 - 1.0);                // the dirt, barely, as the grain of the light
+    A = B = min(col, vec3(255.0));
+  } else if (g == 11) {
+    // Analytic cubism: the ground seen from several viewpoints at once, as overlapping translucent planes, each plane
+    // showing the soil from a view of its own (shifted and turned), in ochre, olive, grey and umber, sliding slowly
+    // into one another; a dark edge and a lit edge to each plane.
+    vec3 earth = mix(vec3(lum(st[2])), st[2], 0.35) * vec3(1.05, 1.0, 0.8);
+    vec3 col = earth * 0.8;
+    for (int n = 0; n < 3; n++) {
+      uint hn = mixh(hp + uint(n) * 7919u);
+      float an = 0.6 * (unit(hn) - 0.5) + float(n) * 0.9, Gs = 34.0 + 34.0 * unit(mixh(hn + 1u));
+      vec2 r = rot(an) * (q + vec2(T * 0.8 * (unit(mixh(hn + 2u)) - 0.5), T * 0.5 * (unit(mixh(hn + 3u)) - 0.5)));
+      vec2 cellq = floor(r / Gs), fr = r / Gs - cellq;
+      uint hc = h3(int(cellq.x), int(cellq.y), hn);
+      vec2 nrm = vec2(cos(6.2832 * unit(hc)), sin(6.2832 * unit(hc)));
+      float side = dot(fr - 0.5, nrm) + 0.2 * (unit(mixh(hc + 1u)) - 0.5);
+      if (unit(mixh(hc + 2u)) < 0.6 && side > 0.0) {
+        vec3 soil; int s_;
+        vec2 view = vec2(21.0 * (unit(mixh(hc + 3u)) - 0.5), 21.0 * (unit(mixh(hc + 4u)) - 0.5));
+        if (!soilAt(ivec2(gP + view), soil, s_)) soil = c.soil;
+        float l = lum(soil) / 255.0;
+        vec3 tone = mix(st[1] * 0.6, st[3], l);
+        tone = mix(vec3(lum(tone)), tone, 0.4) * vec3(1.06, 1.0, 0.82) * (0.85 + 0.3 * unit(mixh(hc + 5u)));
+        col = mix(col, tone, 0.62);
+        float edge = min(abs(side) * Gs, min(min(fr.x, 1.0 - fr.x), min(fr.y, 1.0 - fr.y)) * Gs);
+        if (edge < 0.9) col *= unit(mixh(hc + 6u)) < 0.5 ? 0.55 : 1.35;   // an edge, in shadow or catching the light
+      }
+    }
+    col *= 0.94 + 0.08 * vnoise(vec2(gP.x + gP.y, gP.x - gP.y), 3.0, hp + 11u);   // brushwork, on the diagonal
+    A = B = min(col, vec3(255.0));
   } else {
     // Data: black, with barcodes, grids of dots, numerals of the collection's own numbers, a scanline, and now and
     // then the whole field thrown white.
@@ -586,12 +628,52 @@ void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
   B = mix(B, m, max(core, c.s == 3 ? cov * 0.8 : 0.0));
 }
 
+
+// ---- the gesture: one line through every world ---------------------------------------------------------
+// Across the plane run long lines, one in every 610-cell band, belonging to no passage: each is a single unbroken
+// gesture that takes the form of whatever world it is passing through. On paper it is crayon, on a blackboard chalk,
+// among the blooms a painted stem hung with drips; in the digital territories a ring of beads, a cut, a chain of
+// cells, a glowing relief line, a barcode, a band of light, the edge of a plane. Following it, the eye crosses from
+// one world into the next without a break: the relation drawn.
+void gesture(Cell c, State S, inout vec3 A, inout vec3 B) {
+  vec2 p = gP;
+  const float GAPY = 610.0;
+  int band = int(floor(p.y / GAPY + 0.5));
+  uint h = h3(band, 0, 991u);
+  float ph = 6.2832 * unit(h), ph2 = 6.2832 * unit(mixh(h + 1u));
+  float y = (float(band) + 0.2 * (unit(mixh(h + 2u)) - 0.5)) * GAPY + 144.0 * sin(p.x / 377.0 + ph) + 55.0 * sin(p.x / 144.0 + ph2) + 13.0 * sin(p.x / 34.0);
+  float dy = 144.0 / 377.0 * cos(p.x / 377.0 + ph) + 55.0 / 144.0 * cos(p.x / 144.0 + ph2) + 13.0 / 34.0 * cos(p.x / 34.0);
+  float d = abs(p.y - y) / sqrt(1.0 + dy * dy), g = float(gGram);
+  if (d > 34.0) return;
+  int G = gGram;
+  vec3 col = vec3(0);
+  float a = 0.0;
+  float grain = unit(h3(int(p.x), int(p.y), 997u));
+  if (G == 3 || G == 0) { a = step(d, 1.3) * (grain < 0.2 ? 0.4 : 1.0); col = G == 3 ? artInk(S.w, 0) : vec3(90.0); }        // crayon, pencil
+  else if (G == 1) { a = step(d, 1.4) * (grain < 0.3 ? 0.3 : 0.9); col = vec3(236.0, 234.0, 228.0); }                           // chalk
+  else if (G == 2 || G == 4) {                                                                                              // a painted stem, hung with drips
+    col = artVivid(S.w, 0);
+    a = step(d, 2.2);
+    float xs = floor(p.x / 21.0), below = p.y - y, len = 13.0 + 55.0 * unit(h3(int(xs), band, 993u));
+    if (abs(p.x - (xs + 0.5) * 21.0) < 1.2 && below > 0.0 && below < len) a = 1.0;
+    if (abs(p.x - (xs + 0.5) * 21.0) < 2.0 && abs(below - len) < 2.0) a = 1.0;
+  }
+  else if (G == 5) { float bead = abs(fract(p.x / 13.0) - 0.5) * 13.0; a = step(abs(length(vec2(bead, p.y - y)) - 3.0), 0.8) + step(d, 0.6); col = vec3(245.0, 235.0, 215.0); }   // beads and rings
+  else if (G == 6) { a = step(d, 0.8); col = vec3(245.0, 242.0, 234.0); }                                                   // a cut through the facets
+  else if (G == 7) { float cx = (floor(p.x / 13.0) + 0.5) * 13.0; a = step(abs(length(vec2(p.x - cx, p.y - y)) - 6.0), 0.9); col = vec3(150.0, 40.0, 90.0); }   // a chain of cells
+  else if (G == 8) { col = vec3(150.0, 240.0, 255.0); a = step(d, 1.0) + 0.6 * exp(-d / 3.0); }                            // a glowing relief line
+  else if (G == 9) { a = step(abs(p.y - y), 6.0) * step(unit(h3(int(p.x), band, 995u)), 0.5); col = vec3(245.0); }          // a barcode
+  else if (G == 10) { a = 0.35 * exp(-d / 13.0); col = vec3(255.0, 250.0, 240.0); }                                        // a band of light
+  else { a = step(d, 1.0); col = p.y > y ? vec3(60.0, 50.0, 35.0) : vec3(235.0, 220.0, 180.0); }                          // the edge of a plane
+  a = clamp(a, 0.0, 1.0);
+  A = mix(A, col, a); B = mix(B, col, a * (G == 8 || G == 10 ? 1.0 : 0.7));
+}
 /**
  * A cell's colours in a state: A for its top left pixel, where a small dot sits, and B for its other three. A dot
  * of size 3 fills the cell; a gap is all ground.
  */
 void paint(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
-  if (uEarth == 0 && uArtOn == 1) { sheet(layer, c, kind, S, A, B); return; }
+  if (uEarth == 0 && uArtOn == 1) { sheet(layer, c, kind, S, A, B); gesture(c, S, A, B); return; }
   vec3 st[5]; float at[5];
   paletteOf(layer, c.e, S, st, at);
   float stt = smoothUp(P3, P1, c.d);
@@ -755,9 +837,9 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   float dm = entT(layer, c.e, 27).x;
   if (unit(mixh(seed + 77u)) < smoothUp(P3, 1.0, dm) * P1) {
     float r = unit(mixh(seed + 78u));
-    gGram = dm < P1 ? (r < 0.5 ? 5 : 6) : dm < 1.0 - P3 ? (r < 0.34 ? 6 : r < 0.67 ? 7 : 8) : (r < 0.25 ? 7 : r < 0.5 ? 8 : 9);
+    gGram = dm < P1 ? (r < 0.25 ? 5 : r < 0.5 ? 6 : r < 0.75 ? 10 : 11) : dm < 1.0 - P3 ? (r < 0.34 ? 6 : r < 0.67 ? 7 : 8) : (r < 0.25 ? 7 : r < 0.5 ? 8 : 9);
     // now and then, the archive: a passage that turns through all the territories, one after another
-    if (unit(mixh(seed + 79u)) < P4) gGram = 5 + int(mod(floor((uTime + 21.0 * unit(seed)) / 6.854), 5.0));
+    if (unit(mixh(seed + 79u)) < P4) { int n = int(mod(floor((uTime + 21.0 * unit(seed)) / 6.854), 7.0)); gGram = n < 5 ? 5 + n : 5 + n; }
   }
   if (uForce >= 0) gGram = uForce;
   gSeed = seed;
@@ -1022,7 +1104,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
     gl.uniform1i(U.uArtOn, pending.artOn);
     gl.uniform2iv(U.uGram, pending.gram);
-    const forced = /(?:^|&)g([0-9])(?:&|$)/.exec(location.hash.slice(1));
+    const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);

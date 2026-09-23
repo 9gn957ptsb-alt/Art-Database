@@ -1,5 +1,25 @@
 [
  {
+  "id": "threads",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A sheet of warm cream paper scattered with small fragments of old paintings like pieces of soil, where one fragment has been touched and glows, and fine hand-drawn graphite and red crayon lines reach out from it to a dozen related fragments across the sheet, the lines looping and wavering like Twombly's pencil, the related fragments faintly lit, the rest of the sheet slightly dimmed. A map of kinship drawn by hand."
+ },
+ {
+  "id": "metamorphosis",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A single continuous gestural line crossing a long horizontal sheet from left to right and transforming as it travels: it begins as a looping blue wax-crayon handwriting stroke on cream paper, becomes the stem of a thick crimson painted flower, turns into a long drip of red paint, then as the paper gives way to black it becomes a sharp white barcode line, then a glowing cyan relief line over a data landscape, and ends as the membrane of pink living cells. One unbroken gesture, six worlds."
+ },
+ {
+  "id": "seam-kin",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. Two different drawings on off-white paper meeting along a wandering diagonal line: on the left looping blue crayon writing, on the right dripping crimson and yellow flower-like blooms. Where they meet they interpenetrate over a wide band, the blue writing continuing into the blooms' side but now drawn in crimson, the blooms' drips running across into the writing's side in blue, a thin row of stitches in a shared ochre along the seam. The meeting of the two is the most beautiful part of the image."
+ },
+ {
+  "id": "braque",
+  "prompt": "A still life after Georges Braque's analytic cubism, around 1911: a table, a guitar, a glass and a newspaper broken into overlapping translucent planes seen from several viewpoints at once, in ochre, grey, umber and olive, faceted, with passages where planes slide into one another, a few stencilled letters as fragments, brushwork visible, subtle diagonal light. Flat, dense, harmonious."
+ },
+ {
+  "id": "turrell",
+  "prompt": "A light-and-space installation after James Turrell, as a flat composition: a field of pure coloured light with no visible source, a soft rectangle of deep saturated violet floating in a larger field of glowing rose-orange, the edges between the colour fields dissolving gradually into each other so that you cannot tell where one ends, a subtle luminous halo, perfectly calm, immersive, the colour itself as the only object. Seen straight on, no room edges, no people."
+ },
+ {
   "id": "writing",
   "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide sheet of warm off-white paper scumbled with translucent white gesso in long horizontal brush strokes. Across it, rows of fast cursive handwriting that is not letters: continuous looping lines leaning hard to the right, loops tall and narrow and pointed at the turns, overlapping the rows above and below, in two inks, a deep blue-black wax crayon and a lighter cerulean crayon, the line pressing harder and softer, lifting between phrases. The crayon catches on the paper's tooth so the edges of every line are broken and granular. About a quarter of the sheet is marked."
  },
