@@ -218,27 +218,28 @@ float writing(vec2 p, uint salt, float dens, float row, out int ink) {
     uint hr = h3(r, 7, salt);
     for (int L = 0; L < 2; L++) {
       uint hl = mixh(hr + uint(L) * 977u);
-      float A = row * (0.3 + 0.25 * unit(hl)), B = row * (0.45 + 0.3 * unit(mixh(hl + 1u))), v = A * (0.35 + 0.3 * unit(mixh(hl + 2u)));
+      float A = row * (0.16 + 0.08 * unit(hl)), B = row * (0.26 + 0.1 * unit(mixh(hl + 1u))), v = A * (0.75 + 0.35 * unit(mixh(hl + 2u)));
       float y0 = (float(r) + 0.5) * row + (unit(mixh(hl + 3u)) - 0.5) * row * 0.25, ph = 6.2832 * unit(mixh(hl + 4u));
-      float lean = 1.0 + 0.5 * unit(mixh(hl + 5u));
+      float lean = 0.7 + 0.3 * unit(mixh(hl + 5u));
       vec2 q = vec2(p.x - (p.y - y0) * lean, p.y);                   // unlean the point into the pen's frame
       float t0 = (q.x - A * 1.25) / v, t1 = (q.x + A * 1.25) / v, dmin = 1e9, tb = 0.0;
       vec2 prev = vec2(0);
       for (int n = 0; n <= 22; n++) {
         float t = mix(t0, t1, float(n) / 22.0);
-        float sz = 0.35 + 1.1 * vnoise(vec2(t, float(r * 2 + L)), 3.0, salt + 8u), ang = t + ph;
+        float sz = 0.75 + 0.45 * vnoise(vec2(t, float(r * 2 + L)), 3.0, salt + 8u), ang = t + ph;
         float zig = unit(hl) < 0.3 ? asin(sin(ang)) * 0.6366 : sin(ang);   // some hands zigzag, sharp at the turns
         vec2 pt = vec2(v * t + A * sz * cos(ang), y0 + B * sz * zig + row * 0.1 * sin(t * 0.21 + ph));
         if (n > 0) { float d = segd(q, prev, pt); if (d < dmin) { dmin = d; tb = t; } }
         prev = pt;
       }
       // phrases: the pen is down for some turns and lifted for others
-      float phr = tb / 18.85 + 7.0 * unit(mixh(hl + 6u));
-      if (unit(h3(int(floor(phr)), r * 2 + L, salt + 5u)) > dens) continue;
-      float lift = smoothstep(0.0, 0.08, fract(phr)) * smoothstep(1.0, 0.9, fract(phr));   // the pen comes down, and lifts
+      float phr = tb / 55.0 + 7.0 * unit(mixh(hl + 6u));             // long phrases: the line runs on
+      if (unit(h3(int(floor(phr)), r * 2 + L, salt + 5u)) > min(1.0, dens * 1.3)) continue;
+      float lift = smoothstep(0.0, 0.03, fract(phr)) * smoothstep(1.0, 0.97, fract(phr));   // the pen comes down, and lifts
       float press = 0.45 + 0.55 * vnoise(vec2(tb * 3.0, float(r * 2 + L)), 5.0, salt + 6u);
       float w = (L == 0 ? 1.3 : 0.8) * (0.6 + 0.6 * press);
-      float cov = clamp(w + 0.5 - dmin, 0.0, 1.0) * (0.55 + 0.45 * press) * lift;
+      float grain = unit(h3(int(p.x), int(p.y), salt + 12u));          // crayon skipping on the paper's tooth
+      float cov = clamp(w + 0.5 - dmin, 0.0, 1.0) * (0.55 + 0.45 * press) * lift * (grain < 0.2 ? 0.35 : 1.0);
       if (cov > best) { best = cov; ink = L; }
     }
   }
@@ -266,8 +267,15 @@ float blooms(vec2 p, uint salt, float dens, float drip, out int ink) {
     if (r > R * 1.9 && (D.y < 0.0 || abs(D.x) > R)) continue;
     float cov = 0.0;
     int k = 0;
+    // the head: a full round mass of paint, rimmed irregularly
+    float a = atan(D.y, D.x), rim = R * 0.62 * (1.0 + 0.12 * sin(5.0 * a + 6.2832 * unit(mixh(h + 7u))) + 0.08 * sin(9.0 * a));
+    vec2 Dh = D + vec2(0.0, R * 0.3);
+    if (length(Dh) < rim) { cov = 1.0; k = vnoise(p, 5.0, h + 3u) < 0.45 ? 2 : 1; }
+    // one long drip from its foot, thinning to a bead
+    float dl = R * (2.2 + 1.4 * unit(mixh(h + 8u))), dx = D.x - R * 0.05 * sin(D.y * 0.05);
+    if (D.y > 0.0 && D.y < dl && abs(dx) < 1.6 - 0.8 * D.y / dl) { cov = 1.0; k = 1; }
+    if (abs(D.y - dl) < 1.8 && abs(dx) < 1.8) { cov = 1.0; k = 1; }
     // the heart: a dark knot
-    float a = atan(D.y, D.x);
     if (r < R * 0.3 * (1.0 + 0.3 * sin(3.0 * a + 6.2832 * unit(mixh(h + 4u))))) { cov = 1.0; k = 0; }
     // stems flung out from the heart, thick at the root
     for (int n = 0; n < 5; n++) {
@@ -506,14 +514,12 @@ void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
   int a0 = w0 < uGram[0].y ? w0 : w0 + uGram[1].y, a1 = w1 < uGram[0].y ? w1 : w1 + uGram[1].y;   // skip the blackboards
   vec3 paper = mix(artPaper(a0), artPaper(a1), smoothstep(0.0, 1.0, fract(drift)));
   if (gGram == 1) {
-    float brush = vnoise(vec2(p.x, p.y * 4.0), 21.0, 67u) * 0.03;
-    paper = mix(paper, artPaper(w), smoothstep(0.0 + brush, 0.02 + brush, c.pe));
+    paper = artPaper(w) * (0.97 + 0.06 * vnoise(vec2(p.x / 13.0, p.y), 3.0, 67u));   // slate, brushed evenly
   }
-  paper *= 1.0 + 0.05 * (vnoise(p, 55.0, 41u) - 0.5) + 0.03 * (vnoise(p, 8.0, 43u) - 0.5);
-  float gesso = smoothstep(0.55, 0.85, vnoise(vec2(p.x / 6.0, p.y), 13.0, 47u));   // white scumbled over, in long strokes
-  paper = mix(paper, max(paper, vec3(242.0, 238.0, 228.0)), gesso * 0.35);
+  if (gGram != 1) paper = mix(paper, vec3(240.0, 232.0, 212.0), 0.45);   // warm, even cream, as the studies' sheets are
+  paper *= 1.0 + 0.015 * (vnoise(p, 55.0, 41u) - 0.5) + 0.02 * (vnoise(vec2(p.x / 21.0, p.y), 1.5, 43u) - 0.5);   // a faint long grain
   // the collection's dirt: soft stains of it, rubbed in, more in the outskirts; its dots show only faintly
-  float rub = (0.03 + 0.12 * out_) * smoothstep(0.45, 0.9, vnoise(p, 89.0, 53u)) + 0.04 * out_;
+  float rub = (0.02 + 0.06 * out_) * smoothstep(0.55, 0.95, vnoise(p, 89.0, 53u)) + 0.02 * out_;
   vec3 stain = mix(paper, paper * mix(vec3(1.0), c.soil / 160.0, 0.6), rub * 3.0);
   paper = mix(paper, stain, 0.5);
   A = c.s > 0 ? mix(paper, paper * c.soil / 255.0, 0.06 + 0.1 * out_) : paper;
@@ -523,16 +529,25 @@ void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
   vec3 col = vec3(0);
   uint salt = uint(w) * 7919u + 3u;
   if (g == 3 || g == 1) {
-    cov = writing(p, salt, g == 1 ? min(1.0, dens * 1.4) : dens, g == 1 ? 21.0 : 34.0, ink);
-    if (g == 1) { int i2; cov = max(cov, 0.8 * writing(p + vec2(0.0, 10.0), salt + 99u, min(1.0, dens * 1.4), 21.0, i2)); }
+    cov = writing(p, salt, g == 1 ? 1.0 : dens, g == 1 ? 13.0 : 34.0, ink);
+    if (g == 1) cov *= 0.8;                                           // chalk: regular rows, a little rubbed
     col = g == 1 ? artInk(w, int(artRoles(w).z) - 1) : ink == 0 ? artInk(w, 0) : artVivid(w, 0);
     if (g == 1) col = max(col, paper + (255.0 - paper) * 0.55);      // chalk
   } else if (g == 2 || g == 4) {
     if (g == 4) {
-      vec3 wash = mix(paper, artVivid(w, 1), 0.3);
-      float run = smoothstep(0.35, 0.7, vnoise(vec2(p.x * 3.0, p.y / 8.0), 3.0, salt + 21u));   // it runs down in streaks
-      float fall = smoothstep(0.2, 0.75, vnoise(p, 144.0, salt + 22u));
-      paper = mix(paper, mix(wash, wash * 0.9, run), fall * smoothstep(0.0, 0.4, c.pe));
+      // Lepanto's sky: a watery blue over the upper sheet, running down in streaks that end in drips
+      vec2 qm = p - gMid;
+      float sky = smoothstep(80.0, -60.0, qm.y), col_ = p.x / 3.0, len = 34.0 + 89.0 * unit(h3(int(col_), 0, salt + 21u));
+      float streak = step(qm.y, -40.0 + len) * step(0.55, unit(h3(int(col_), 1, salt + 23u)));
+      vec3 blue = vec3(150.0, 196.0, 222.0) * (0.95 + 0.1 * vnoise(p, 13.0, salt + 22u));
+      paper = mix(paper, blue, max(sky, streak * 0.8) * 0.75 * smoothstep(0.0, 0.3, c.pe));
+      // bushes of colour, soft and bleeding, along the middle
+      float bush = smoothstep(0.45, 0.75, vnoise(p, 34.0, salt + 24u)) * smoothstep(-40.0, 0.0, qm.y) * smoothstep(90.0, 30.0, qm.y);
+      vec3 bc = mix(artVivid(w, 0), artVivid(w, 1), vnoise(p, 55.0, salt + 25u));
+      paper = mix(paper, bc, bush * 0.8 * smoothstep(0.0, 0.3, c.pe));
+      float bdrip = step(30.0, qm.y) * step(qm.y, 30.0 + 55.0 * unit(h3(int(col_), 2, salt + 26u))) * step(0.5, unit(h3(int(col_), 3, salt + 27u)))
+                  * smoothstep(0.4, 0.6, vnoise(vec2(p.x, gMid.y + 20.0), 34.0, salt + 24u));
+      paper = mix(paper, bc, bdrip * 0.7 * smoothstep(0.0, 0.3, c.pe));
       A = mix(A, paper, 0.9); B = mix(B, paper, 0.9);
     }
     cov = blooms(p, salt, dens * (g == 4 ? 1.0 : 0.8), g == 4 ? 6.0 : 1.6, ink);
