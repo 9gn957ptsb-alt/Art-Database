@@ -19,7 +19,6 @@ writes docs/v2/earth.json. The download is gitignored like everything else in
 data/; only the mask is committed.
 """
 
-import array
 import base64
 import json
 import pathlib
@@ -33,15 +32,6 @@ URL = ("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/"
 
 W, H = 1440, 720
 
-# The coastline itself, as lines, for the globe to draw crisply over the
-# weave: Natural Earth 50m again, simplified to within about five
-# kilometres, which is under a pixel at any size the globe is drawn.
-COAST_SOURCE = HERE / "data" / "ne_50m_coastline.geojson"
-COAST_OUT = HERE / "docs" / "v2" / "coast.json"
-COAST_URL = ("https://raw.githubusercontent.com/nvkelso/natural-earth-vector/"
-             "master/geojson/ne_50m_coastline.geojson")
-TOLERANCE = 0.05          # degrees
-BREAK = -32768            # between one line and the next
 
 
 def rings(geo):
@@ -96,70 +86,7 @@ def raster():
     return grid
 
 
-def simplify(points, tol):
-    """Douglas-Peucker, iteratively, in degrees."""
-    if len(points) < 3:
-        return points
-    keep = [False] * len(points)
-    keep[0] = keep[-1] = True
-    stack = [(0, len(points) - 1)]
-    while stack:
-        a, b = stack.pop()
-        ax, ay = points[a]
-        bx, by = points[b]
-        dx, dy = bx - ax, by - ay
-        norm = (dx * dx + dy * dy) ** 0.5 or 1e-12
-        far, at = -1.0, -1
-        for i in range(a + 1, b):
-            px, py = points[i]
-            d = abs(dy * (px - ax) - dx * (py - ay)) / norm
-            if d > far:
-                far, at = d, i
-        if far > tol and at > 0:
-            keep[at] = True
-            stack.append((a, at))
-            stack.append((at, b))
-    return [p for p, k in zip(points, keep) if k]
-
-
-def coast():
-    if not COAST_SOURCE.exists():
-        print("fetching", COAST_URL)
-        urllib.request.urlretrieve(COAST_URL, COAST_SOURCE)
-    geo = json.loads(COAST_SOURCE.read_text())
-    lines = []
-    for feature in geo["features"]:
-        shape = feature["geometry"]
-        parts = ([shape["coordinates"]] if shape["type"] == "LineString"
-                 else shape["coordinates"])
-        for line in parts:
-            thin = simplify([(p[0], p[1]) for p in line], TOLERANCE)
-            if len(thin) >= 2:
-                lines.append(thin)
-    packed = array.array("h")
-    count = 0
-    for line in lines:
-        for lon, lat in line:
-            packed.append(int(round(lon * 100)))
-            packed.append(int(round(lat * 100)))
-            count += 1
-        packed.append(BREAK)
-        packed.append(BREAK)
-    if packed.itemsize != 2:
-        raise SystemExit("need 16-bit shorts")
-    packed.byteswap() if array.array("h", [1]).tobytes()[0] == 0 else None
-    COAST_OUT.write_text(json.dumps({
-        "note": "Coastlines, from Natural Earth 50m (public domain), simplified "
-                "to %.2f degrees by scripts/build_earth.py. Little-endian int16 "
-                "pairs of (longitude, latitude) in hundredths of a degree; a pair "
-                "of %d ends a line." % (TOLERANCE, BREAK),
-        "points": base64.b64encode(packed.tobytes()).decode("ascii"),
-    }))
-    print("coast: %d lines, %d points, %d bytes" % (len(lines), count, COAST_OUT.stat().st_size))
-
-
 def main():
-    coast()
     grid = raster()
     packed = bytearray((W * H + 7) // 8)
     land = 0

@@ -691,6 +691,9 @@
       // "inherit", never "visible": a child set to visible stays visible
       // when its city is hidden, which left names hanging in the sky after
       // the place they belonged to had turned away.
+      // A world far off carries its dots and not its names; they come back
+      // as it comes in.
+      if (R < base0 * INV2) { side = null; }
       it.city.name.style.visibility = side ? "inherit" : "hidden";
     });
   }
@@ -924,19 +927,47 @@
      one it was designed at, and a nudge off centre of up to half of
      1/phi-cubed of the window either way. Down in a city the framing is the
      city's, and the nudge is flown out of on the way down. */
-  var seat = {
-    size: INV + Math.random() * (Math.sqrt(PHI) - INV),
-    dx: (Math.random() - 0.5) * INV3,
-    dy: (Math.random() - 0.5) * INV3
-  };
+  /* How near the Earth is. It is dealt from a wide range — from
+     1/phi-to-the-fourth of the size it was designed at, a small world far
+     off in the sky, to the square root of phi, a horizon wider than the
+     window — evenly on a logarithmic scale, so far and near come up as
+     often as each other. And it does not stay put: every so often, while
+     nobody is doing anything, it swings to another distance (see swing). */
+  var SIZE_FAR = Math.pow(INV, 4);          // 0.146
+  var SIZE_NEAR = Math.sqrt(PHI);           // 1.272
+  var base0 = 1;                            // the designed radius, for this window
+
+  function dealSeat() {
+    var lo = Math.log(SIZE_FAR), hi = Math.log(SIZE_NEAR);
+    var size = Math.exp(lo + Math.random() * (hi - lo));
+    // A small world can wander further across the sky than a big one.
+    var roam = size < INV ? INV2 : INV3;
+    return {
+      size: size,
+      dx: (Math.random() - 0.5) * roam,
+      dy: (Math.random() - 0.5) * roam
+    };
+  }
+
+  var seat = dealSeat();
+
+  /* Where the middle of the globe sits, up and down, for a given radius
+     when it is not nudged: a big globe is set so its contour meets the
+     sides of the window at the golden section, and a small one simply
+     hangs in the middle of the sky. The one gives way to the other where
+     they meet, so there is no jump between them. */
+  function orbitFor(r) {
+    var half = W / 2;
+    var flank = Math.sqrt(Math.max(1, r * r - half * half));
+    return Math.max(H * 0.5, H * (1 - 1 / PHI) + flank);
+  }
 
   function reframe() {
     R = baseR * zoom;
     var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
     var half = W / 2;
     cx = half + seat.dx * W * (1 - down);
-    var flank = Math.sqrt(Math.max(1, R * R - half * half));
-    var orbit = H * (1 - 1 / PHI) + flank + seat.dy * H;
+    var orbit = orbitFor(R) + seat.dy * H;
     // Where the city is, at the lean we have now: dead centre once the lean
     // has arrived at its latitude, and travelling there smoothly before.
     var ground = H * 0.62 + Math.sin(focus.lat - tilt) * R;
@@ -958,7 +989,8 @@
     // the screen at the golden section — 1/φ of the way up, 0.618 — which is
     // what gives the words their room: the visible surface goes up by about
     // half again even though the band of latitudes on it is shallower.
-    baseR = Math.max(W * 0.90, H * 0.70, 240) * seat.size;
+    base0 = Math.max(W * 0.90, H * 0.70, 240);
+    baseR = base0 * seat.size;
     cx = W / 2;
 
     // Everything below this latitude is under the bottom of the screen. The
@@ -968,13 +1000,16 @@
     // the globe's own framing whatever height the view happens to be flown
     // to, because the band is where the words live and the words are the
     // globe's.
-    var flank = Math.sqrt(Math.max(1, baseR * baseR - cx * cx));
+    // Worked out for the globe at the size it was designed at, whatever size
+    // it happens to be now: the words have one band to live in, and it does
+    // not move every time the world comes nearer or goes further off.
+    var flank = Math.sqrt(Math.max(1, base0 * base0 - cx * cx));
     // At the resting lean, whatever the world is leaning at now.
     // Kept above a little way south of the lean even when the globe is
     // dealt small enough for all of its face to be on the screen, or the
     // words would be sent to the far south to fill it.
     var sunk = Math.max(-INV, Math.min(1,
-      (H * (1 - 1 / PHI) + flank + seat.dy * H - H) / baseR));
+      (H * (1 - 1 / PHI) + flank - H) / base0));
     LAT_LOW = TILT + Math.asin(sunk) + 2 * RAD;
 
     // And a band of the same width above it — twenty-seven degrees, which is
@@ -1582,7 +1617,9 @@
     // Off the globe's own radius, not this one's: the cloth is rewoven at
     // the right density for wherever we are standing, so a dot in it should
     // still be the size a dot is.
-    var grain = Math.max(1, Math.round(baseR / 700));
+    // And it grows with the world: a near world is woven in bigger dots, so
+    // the land keeps its presence however close it comes.
+    var grain = Math.max(1, baseR / 440);
     var loose = turning ? 2 : 1;
 
     // The strands down onto one surface, the strands round onto the other.
@@ -1627,8 +1664,8 @@
           // Finer than the soil's own dots: 1/phi of the size, snapped to
           // whole device pixels, so on a sharp screen a small clod is a
           // single hair of a pixel rather than a crumb.
-          dot = Math.max(1, Math.round((grain + size - 1) * INV * dpr)) / dpr;
-          a = gain ? (0.5 + 0.5 * lit) * (0.72 + 0.28 * gain)
+          dot = Math.max(1, Math.round((grain + size - 1) * Math.sqrt(INV) * dpr)) / dpr;
+          a = gain ? (0.74 + 0.26 * lit) * (0.82 + 0.18 * gain)
                    : (0.1 + 0.2 * lit);
         } else if (gain) {
           a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
@@ -1724,7 +1761,16 @@
 
     // What the creature stands on is the brightest part of the sphere.
     var lit = project(beast.lat, beast.lon);
-    if (!flying && sphereStale(lit)) { drawSphere(lit); }
+    if (!flying && !swing && sphereStale(lit)) { drawSphere(lit); }
+    // A swing magnifies what is drawn, and a world coming in from far off
+    // grows six times over: past phi times, it is woven again at the size
+    // it has got to, a few times on the way in, so it never goes to blocks.
+    if (swing && drawn.r && (R / drawn.r > PHI || R / drawn.r < INV) &&
+        now - swungAt > 90) {
+      swungAt = now;
+      drawSphere(lit);
+      veilSeen.spin = null;
+    }
 
     // The room is the stage's own background now (land.css), so the canvas
     // starts clear and only the globe is painted on it.
@@ -1733,8 +1779,11 @@
     // The globe, and each family of its threads, each seen through by an
     // amount of its own that never settles — see flux().
     var body = flux(now, FLUX_BODY, 0);
-    var down = flux(now, FLUX_DOWN, GOLDEN);
-    var round = flux(now, FLUX_ROUND, 2 * GOLDEN);
+    // The threads, which carry the land, breathe higher up the scale than
+    // the body does — between 1/phi and all the way there — so the land
+    // has presence while the sphere under it stays glass.
+    var down = flux(now, FLUX_DOWN, GOLDEN, INV, 1);
+    var round = flux(now, FLUX_ROUND, 2 * GOLDEN, INV, 1);
 
     // Everything that is the globe goes onto a layer of its own first, so
     // the patches and the pulse can be taken out of all of it at once.
@@ -1749,7 +1798,7 @@
     gctx.clearRect(0, 0, W, H);
 
     gctx.save();
-    if (flying && drawn.r) {
+    if ((flying || swing) && drawn.r) {
       // Mid-flight the sphere is not painted again — a hundred thousand dots
       // and seven gradients a frame is not a flight, it is a slideshow. The
       // surface already drawn is magnified about the point being flown to,
@@ -1774,7 +1823,17 @@
     gctx.globalAlpha = 1;
     gctx.globalCompositeOperation = "destination-in";
     gctx.imageSmoothingEnabled = true;
-    gctx.drawImage(veilCanvas, 0, 0, W, H);
+    if (swing && veilSeen.r) {
+      // The mask is magnified with everything else while the world swings.
+      gctx.save();
+      gctx.translate(cx, cy);
+      gctx.scale(R / veilSeen.r, R / veilSeen.r);
+      gctx.translate(-veilSeen.cx, -veilSeen.cy);
+      gctx.drawImage(veilCanvas, 0, 0, W, H);
+      gctx.restore();
+    } else {
+      gctx.drawImage(veilCanvas, 0, 0, W, H);
+    }
     gctx.globalCompositeOperation = "source-over";
 
     // Grit into it, then part of it laid down soft — both more the further
@@ -1808,7 +1867,6 @@
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
     placeGloss();
-    placeCoast();
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -1841,10 +1899,12 @@
   var FLUX_DOWN = Math.pow(PHI, 5) * 1000;     // 11.09 s
   var FLUX_ROUND = Math.pow(PHI, 6) * 1000;    // 17.94 s
 
-  function flux(now, period, phase) {
-    var mid = (INV + INV2) / 2;                  // 0.5
+  function flux(now, period, phase, lo, hi) {
+    lo = lo === undefined ? INV2 : lo;
+    hi = hi === undefined ? INV : hi;
+    var mid = (lo + hi) / 2;
     if (still) { return mid; }
-    return mid + (INV - mid) * Math.sin(TAU * now / period + phase);
+    return mid + (hi - mid) * Math.sin(TAU * now / period + phase);
   }
 
   /* ---- patches, and the pulse from pole to pole ---------------------------
@@ -1980,7 +2040,8 @@
         Math.abs(veilSeen.tilt - tilt) > 0.0015 || Math.abs(veilSeen.cx - cx) > 0.5 ||
         Math.abs(veilSeen.cy - cy) > 0.5 || Math.abs(veilSeen.r - R) > 0.5 ||
         veilSeen.w !== W || veilSeen.h !== H) {
-      veilLook();
+      // Not while the world swings: the mask is magnified along with it.
+      if (!swing || veilSeen.spin === null) { veilLook(); }
     }
     var t = still ? 0 : now;
     var amount = patches.map(function (pt) {
@@ -2014,7 +2075,7 @@
   var roomCells = null;
 
   function wordRoom() {
-    if (place || !vocabulary.length) { return null; }
+    if (place || swing || !vocabulary.length) { return null; }
     var mw = veilCanvas.width, mh = veilCanvas.height;
     if (!roomCells || roomCells.length !== mw * mh) { roomCells = new Float32Array(mw * mh); }
     roomCells.fill(1);
@@ -2120,86 +2181,128 @@
     g.restore();
   }
 
-  /* ---- the coastline ------------------------------------------------------
+  /* ---- the swing -----------------------------------------------------------
 
-     The land shapes are the Earth's, exactly: Natural Earth's 50m
-     coastlines, simplified to within about five kilometres, drawn as one
-     fine line of ink over the weave. The weave shows where the land is by
-     how thick it is, and it breathes and fades and hazes; the line does
-     none of that. It is always there and always sharp, so whatever the
-     transparency is doing, the continents are the continents and every
-     city mark is standing on its own coast.
+     The Earth changes distance. Every eleven to twenty-nine seconds — phi to
+     the fifth to phi to the seventh — while nobody has touched anything for
+     a while and nobody is down in a city, it swings to a new distance and a
+     new place in the sky: sometimes a horizon, sometimes a small world far
+     off. And when it is small enough to be seen whole, pressing it brings it
+     in: the point pressed comes toward you and the world grows round it.
 
-     It has a canvas of its own, drawn again only when the world is turned,
-     rolled, resized or flown through. */
+     A swing is not a slide. The size is eased on a logarithmic scale, the
+     way a camera's zoom is, and a press overshoots and settles back, as a
+     thing thrown at you would. And the whole view swings in perspective as
+     it goes — leaning back and round in three dimensions and settling flat
+     again — so the world comes at you rather than merely getting bigger.
 
-  var coast = document.getElementById("world-coast");
-  var coastCtx = coast.getContext("2d");
-  var coastPts = null;          // sin/cos of lat and lon per point; NaN breaks a line
-  var coastSeen = { spin: null, tilt: 0, cx: 0, cy: 0, r: 0, w: 0, h: 0, dpr: 0 };
+     While it swings nothing is woven again: what is already drawn is
+     magnified, as it is on the way down into a city, and the real thing is
+     laid down the moment it comes to rest. */
 
-  function readCoast(data) {
-    if (!data || !data.points) { return; }
-    var raw = window.atob(data.points);
-    var n = raw.length >> 2;
-    var sLat = new Float32Array(n), cLat = new Float32Array(n);
-    var sLon = new Float32Array(n), cLon = new Float32Array(n);
-    var cut = new Uint8Array(n);
-    for (var i = 0; i < n; i += 1) {
-      var o = i * 4;
-      var lon = (raw.charCodeAt(o) | (raw.charCodeAt(o + 1) << 8)) << 16 >> 16;
-      var lat = (raw.charCodeAt(o + 2) | (raw.charCodeAt(o + 3) << 8)) << 16 >> 16;
-      if (lon === -32768) { cut[i] = 1; continue; }
-      var la = lat / 100 * RAD, lo = lon / 100 * RAD;
-      sLat[i] = Math.sin(la); cLat[i] = Math.cos(la);
-      sLon[i] = Math.sin(lo); cLon[i] = Math.cos(lo);
-    }
-    coastPts = { n: n, sLat: sLat, cLat: cLat, sLon: sLon, cLon: cLon, cut: cut };
+  var swing = null;
+  var swungAt = 0;
+  var nextSwing = 0;
+  var lastTouch = 0;
+  var SWING_IDLE = Math.pow(PHI, 4) * 1000;      // 6.9 s of nobody doing anything
+
+  function swingWait() {
+    return (Math.pow(PHI, 5) + Math.random() * (Math.pow(PHI, 7) - Math.pow(PHI, 5))) * 1000;
   }
 
-  function drawCoast() {
-    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
-    if (coast.width !== pw || coast.height !== ph) { coast.width = pw; coast.height = ph; }
-    var g = coastCtx;
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, W, H);
-    coastSeen.spin = spin; coastSeen.tilt = tilt; coastSeen.cx = cx; coastSeen.cy = cy;
-    coastSeen.r = R; coastSeen.w = W; coastSeen.h = H; coastSeen.dpr = dpr;
-    if (!coastPts) { return; }
-
-    var cosS = Math.cos(spin), sinS = Math.sin(spin);
-    var P = coastPts;
-    g.beginPath();
-    var open = false;
-    for (var i = 0; i < P.n; i += 1) {
-      if (P.cut[i]) { open = false; continue; }
-      var sinA = P.sLon[i] * cosS - P.cLon[i] * sinS;
-      var cosA = P.cLon[i] * cosS + P.sLon[i] * sinS;
-      var y = P.sLat[i];
-      var z = P.cLat[i] * cosA;
-      var z2 = y * SIN_T + z * COS_T;
-      if (z2 <= 0.02) { open = false; continue; }          // round the back
-      var px = cx + P.cLat[i] * sinA * R;
-      var py = cy - (y * COS_T - z * SIN_T) * R;
-      if (open) { g.lineTo(px, py); } else { g.moveTo(px, py); open = true; }
-    }
-    g.lineJoin = "round";
-    g.lineCap = "round";
-    // Finer than a pixel on a sharp screen, a pixel on an ordinary one, and a
-    // touch heavier close to, where the coast is the ground's edge.
-    var near = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
-    g.lineWidth = Math.max(1 / dpr, 0.75 + 0.6 * near);
-    g.strokeStyle = "rgba(38, 30, 24, " + (0.46 + 0.14 * near).toFixed(3) + ")";
-    g.stroke();
+  function swingTo(to, dur, thrown) {
+    swing = {
+      from: { size: seat.size, dx: seat.dx, dy: seat.dy },
+      to: to, at: performance.now(), dur: still ? 1 : dur, thrown: thrown,
+      // Which way the view leans as it goes, dealt each time.
+      lx: (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.random()),
+      ly: (Math.random() < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.random())
+    };
+    gloss.style.opacity = "0";
+    stage.style.transition = "none";
   }
 
-  function placeCoast() {
-    if (coastSeen.spin === null || Math.abs(coastSeen.spin - spin) > 0.0004 ||
-        Math.abs(coastSeen.tilt - tilt) > 0.0004 || Math.abs(coastSeen.cx - cx) > 0.3 ||
-        Math.abs(coastSeen.cy - cy) > 0.3 || Math.abs(coastSeen.r - R) > 0.3 ||
-        coastSeen.w !== W || coastSeen.h !== H || coastSeen.dpr !== dpr) {
-      drawCoast();
+  function outBack(t) {
+    var c = 1.70158 * INV * 2, d = c + 1;
+    return 1 + d * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
+  }
+
+  function inOut(t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); }
+
+  function stepSwing(now) {
+    if (!swing) { return; }
+    var t = Math.min(1, (now - swing.at) / swing.dur);
+    var e = swing.thrown ? outBack(t) : inOut(t);
+    var f = swing.from, g = swing.to;
+    seat.size = Math.exp(Math.log(f.size) + (Math.log(g.size) - Math.log(f.size)) * e);
+    seat.dx = f.dx + (g.dx - f.dx) * e;
+    seat.dy = f.dy + (g.dy - f.dy) * e;
+    baseR = base0 * seat.size;
+    reframe();
+
+    // The lean in perspective: out and back once and a little past, dying
+    // away to nothing at the end.
+    var amp = (swing.thrown ? 11 : 6) * (1 - t);
+    var wave = Math.sin(1.5 * Math.PI * t);
+    stage.style.transform =
+      "perspective(" + Math.round(Math.max(W, H) * PHI) + "px)" +
+      " rotateX(" + (amp * wave * swing.lx).toFixed(2) + "deg)" +
+      " rotateY(" + (amp * wave * swing.ly * INV).toFixed(2) + "deg)";
+
+    if (t >= 1) {
+      swing = null;
+      stage.style.transform = "";
+      stage.style.transition = "";
+      nextSwing = now + swingWait();
     }
+  }
+
+  ["pointerdown", "keydown", "wheel"].forEach(function (name) {
+    document.addEventListener(name, function () { lastTouch = performance.now(); },
+                              { capture: true, passive: true });
+  });
+
+  function autoSwing(now) {
+    if (!nextSwing) { nextSwing = now + swingWait(); return; }
+    if (swing || now < nextSwing) { return; }
+    if (place || flying || deckMode || turning || still || document.hidden ||
+        now - lastTouch < SWING_IDLE) {
+      nextSwing = now + 1500;           // try again shortly
+      return;
+    }
+    swingTo(dealSeat(), FLY * PHI * PHI, false);
+  }
+
+  /* The point of the Earth under a point of the screen, or null off the
+     globe. The projection run backwards. */
+  function unproject(x, y) {
+    var X = (x - cx) / R, Y = (cy - y) / R;
+    var d2 = X * X + Y * Y;
+    if (d2 >= 1) { return null; }
+    var Z = Math.sqrt(1 - d2);
+    var yy = Y * COS_T + Z * SIN_T;
+    var zz = -Y * SIN_T + Z * COS_T;
+    return { lat: Math.asin(Math.max(-1, Math.min(1, yy))), lon: wrap(Math.atan2(X, zz) + spin) };
+  }
+
+  /* A press on a small world brings it in, round the point pressed. */
+  function pressGlobe(x, y) {
+    if (place || flying || swing || deckMode) { return false; }
+    if (R > Math.min(W, H) * 0.5) { return false; }     // not small enough
+    if (!unproject(x, y)) { return false; }
+    var size = 1 + Math.random() * (SIZE_NEAR - 1);
+    var r1 = base0 * size;
+    var k = r1 / R;
+    // Where the point pressed should end up: the middle of the window, a
+    // little above, where a big globe's land is.
+    var tx = W / 2, ty = H * INV;
+    var c1x = tx - k * (x - cx), c1y = ty - k * (y - cy);
+    swingTo({
+      size: size,
+      dx: (c1x - W / 2) / W,
+      dy: (c1y - orbitFor(r1)) / H
+    }, FLY * PHI, true);
+    return true;
   }
 
   /* ---- the clear coat -------------------------------------------------------
@@ -2303,7 +2406,7 @@
   }
 
   function placeGloss() {
-    var whole = !place && !flying;
+    var whole = !place && !flying && !swing;
     gloss.style.opacity = whole ? "1" : "0";
     if (!whole) { return; }
     if (Math.abs(glossSeen.cx - cx) > 0.5 || Math.abs(glossSeen.cy - cy) > 0.5 ||
@@ -2519,7 +2622,15 @@
       // It is also what makes the crowding at the horizon stop shouting.
       var fade = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.32)) *
                  (0.45 + 0.55 * p.squash);
-      var scale = 0.64 + 0.36 * p.z;
+      // And they are as near as the world is: a small world far off carries
+      // small words, and the smallest of them are not written at all.
+      var far = Math.min(1, R / Math.max(1, base0));
+      var scale = (0.64 + 0.36 * p.z) * far;
+      if (ground.ph && ground.ph * scale < 9) {
+        ground.box = null;
+        el.style.visibility = "hidden";
+        return;
+      }
 
       // A word may lie right up to the rim but not over it into the sky:
       // it fades as its outline reaches the edge of the world, and is gone
@@ -2605,7 +2716,7 @@
   var pace = { from: 0, frames: 0 };
 
   function sharpen(now) {
-    if (flying || deckMode || turning || document.hidden) { pace.from = 0; return; }
+    if (flying || swing || deckMode || turning || document.hidden) { pace.from = 0; return; }
     if (!pace.from) { pace.from = now; pace.frames = 0; return; }
     pace.frames += 1;
     var span = now - pace.from;
@@ -2620,6 +2731,8 @@
   }
 
   function frame(now) {
+    autoSwing(now);
+    stepSwing(now);
     sharpen(now);
     // While collages are laid over it the world holds still: it is behind
     // them, out of focus, and every frame spent on it is a frame the blur
@@ -5763,7 +5876,7 @@
     // token, all of which stop it. So: put down whatever was up.
     if (offering || carrying) { dismiss(); }
     turning = { id: event.pointerId, x: event.clientX, y: event.clientY,
-                spin: spin, lean: tilt, moved: 0 };
+                spin: spin, lean: tilt, moved: 0, at: performance.now() };
     squashing = { id: event.pointerId, x: event.clientX, y: event.clientY,
                   since: performance.now() };
     stage.dataset.turning = "true";
@@ -5792,8 +5905,18 @@
   ["pointerup", "pointercancel"].forEach(function (name) {
     stage.addEventListener(name, function (event) {
       if (!turning || event.pointerId !== turning.id) { return; }
+      var was = turning;
       turning = null;
       delete stage.dataset.turning;
+
+      // A quick press that did not move, on a world small enough to be seen
+      // whole, brings it in.
+      if (name === "pointerup" && was.moved < 6 &&
+          performance.now() - was.at < 450 &&
+          pressGlobe(event.clientX, event.clientY)) {
+        squashing = null;
+        return;
+      }
 
       if (squashing && squashing.id === event.pointerId) {
         var reach = squashRing(performance.now());
@@ -6573,8 +6696,7 @@
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
-               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png"),
-               read("coast.json").catch(function () { return null; })])
+               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png")])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
@@ -6582,7 +6704,6 @@
       readTones(all[3]);
       dirt.land = all[4];
       dirt.sea = all[5];
-      readCoast(all[6]);
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }

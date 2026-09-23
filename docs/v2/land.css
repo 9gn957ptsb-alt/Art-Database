@@ -112,8 +112,6 @@
   image-rendering: auto;
 }
 
-.world-coast { pointer-events: none; }
-
 .world-gloss {
   pointer-events: none;
   transition: opacity var(--beat-3) ease-out;
