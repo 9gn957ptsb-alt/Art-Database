@@ -2231,6 +2231,7 @@
     ctx.globalAlpha = 1 - mist;
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
+    living(now);
     placeGloss();
     placeHubble(now);
 
@@ -2244,6 +2245,513 @@
     // No line where the sphere ends. It used to be drawn in, and a drawn edge
     // is the one thing that stops a horizon being a horizon: the sphere simply
     // ceases now, a shade off the sky it sits in.
+  }
+
+  /* ---- the living world ---------------------------------------------------
+
+     After the research the artist shared (23 Sep 2026): the world is not a
+     model of the Earth held still. It is lit by the real sun, as it is at
+     the moment it is looked at, so the night side is where night is and
+     the land there has its lights on. It has weather — cloud carried round
+     on the pattern the real winds make, trade winds and westerlies and
+     polar easterlies, with storms that flash at night — after Radiohead and
+     Universal Everything's PolyFauna. Animals nobody has seen migrate
+     between the places the collages are in, each moving the way a real
+     animal moves (see Systems.creature), after Universal Everything's
+     Migrations, and shy of the pointer. And a procession walks the rim of
+     the world that never ends and never repeats, every walker made up as
+     it steps over the horizon, after their Infinity.
+
+     Up on the globe only. None of it goes down into a city. */
+
+  var LIVING = !!(window.Systems && Systems.Noise);
+  var sun = { lat: 0, lon: 0, at: -1e9 };
+  var weatherCanvas = document.createElement("canvas");
+  var weatherCtx = weatherCanvas.getContext("2d");
+  var weatherImg = null;
+  var weatherSeen = { key: "", at: -1e9, block: 4 };
+  var CLOUD_W = 120, CLOUD_H = 60;
+  var clouds = null;
+  var skyNoise = LIVING ? new Systems.Noise((Math.random() * 1e9) | 0) : null;
+  var nightLights = null;
+  var storms = [];
+  var flashes = [];
+  var herd = [];
+  var walkers = [];
+  var walkerSeed = (Math.random() * 1e9) | 0;
+  var livingAt = 0;
+  var pointerAt = { x: -1e4, y: -1e4, at: -1e9 };
+  var NIGHT = [30, 26, 66], DUSK = [226, 150, 146];
+  var CLOUD_DAY = [253, 252, 250], CLOUD_NIGHT = [150, 146, 196];
+
+  window.addEventListener("pointermove", function (event) {
+    pointerAt.x = event.clientX; pointerAt.y = event.clientY; pointerAt.at = performance.now();
+  }, { passive: true });
+  window.addEventListener("pointerdown", function (event) {
+    pointerAt.x = event.clientX; pointerAt.y = event.clientY; pointerAt.at = performance.now();
+  }, { passive: true });
+
+  /* Where the sun is overhead, now: its declination from the date and its
+     longitude from the time (the low-precision solar position of the
+     Astronomical Almanac, good to a fraction of a degree). */
+  function sunNow(ms) {
+    var d = ms / 86400000 - 10957.5;                   // days from noon, 1 Jan 2000
+    var g = (357.529 + 0.98560028 * d) * RAD;
+    var q = 280.459 + 0.98564736 * d;
+    var L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD;
+    var e = (23.439 - 0.00000036 * d) * RAD;
+    var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
+    var gmst = (280.46061837 + 360.98564736629 * d) * RAD;
+    return { lat: Math.asin(Math.sin(e) * Math.sin(L)), lon: wrap(ra - gmst) };
+  }
+
+  // The sun, turned and leant with the world as it is on the screen now.
+  function sunView() {
+    var a = sun.lon - spin, cl = Math.cos(sun.lat);
+    var x = cl * Math.sin(a), y = Math.sin(sun.lat), z = cl * Math.cos(a);
+    return [x, y * COS_T - z * SIN_T, y * SIN_T + z * COS_T];
+  }
+
+  // How far into the night a place is: 0 in daylight, 1 in full dark.
+  function darkAt(lat, lon) {
+    var dot = Math.sin(lat) * Math.sin(sun.lat) + Math.cos(lat) * Math.cos(sun.lat) * Math.cos(lon - sun.lon);
+    return Math.max(0, Math.min(1, (0.03 - dot) / 0.15));
+  }
+
+  // The point of the surface under a point of the screen, or of the rim
+  // nearest it when it is off the world.
+  function surfaceAt(x, y) {
+    var nx = (x - cx) / R, ny = -(y - cy) / R, d2 = nx * nx + ny * ny;
+    if (d2 > 1) { var k = 1 / Math.sqrt(d2); nx *= k; ny *= k; d2 = 1; }
+    var nz = Math.sqrt(Math.max(0, 1 - d2));
+    var wy = ny * COS_T + nz * SIN_T, wz = -ny * SIN_T + nz * COS_T;
+    return { lat: Math.asin(Math.max(-1, Math.min(1, wy))), lon: wrap(Math.atan2(nx, wz) + spin) };
+  }
+
+  function toVec(lat, lon) {
+    var cl = Math.cos(lat);
+    return [cl * Math.sin(lon), Math.sin(lat), cl * Math.cos(lon)];
+  }
+  function norm3(v) {
+    var n = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) || 1;
+    return [v[0] / n, v[1] / n, v[2] / n];
+  }
+  function dot3(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function latOf(v) { return Math.asin(Math.max(-1, Math.min(1, v[1]))); }
+  function lonOf(v) { return Math.atan2(v[0], v[2]); }
+  // The way from p toward q, along the surface.
+  function toward(p, q) {
+    var k = dot3(p, q);
+    return norm3([q[0] - p[0] * k, q[1] - p[1] * k, q[2] - p[2] * k]);
+  }
+
+  /* The winds, as the Earth has them in three bands a hemisphere: from the
+     east near the equator, from the west in the middle latitudes, from the
+     east again near the poles. In radians of longitude a second — far
+     faster than the real ones, or nobody would see them move. */
+  function windAt(lat) { return Math.cos(4 * lat) * -0.55 * RAD; }
+
+  /* Where cloud gathers: along the equator, where the trade winds meet;
+     hardly at all over the subtropics, which is where the deserts are; and
+     thickly along the storm tracks of the fifties. */
+  function cloudBias(lat) {
+    var d = Math.abs(lat) / RAD;
+    return 0.13 * Math.exp(-Math.pow(d / 7, 2)) - 0.1 * Math.exp(-Math.pow((d - 24) / 8, 2)) +
+           0.09 * Math.exp(-Math.pow((d - 56) / 10, 2));
+  }
+
+  /* The cloud, a map of the whole world a few degrees to the cell. A field
+     of cloud carried by the winds is sheared by them into streaks if it is
+     carried for long, so two are carried, half a period apart, and each
+     gives way to a fresh one while the other is at its strongest. A quarter
+     of the rows is worked out each frame. */
+  var CLOUD_CARRY = 150;
+  function stepClouds(now) {
+    if (!clouds) {
+      clouds = { map: new Float32Array(CLOUD_W * CLOUD_H), row: 0 };
+      for (var k = 0; k < 4; k += 1) { stepClouds(now); }
+      return;
+    }
+    var t = (still ? 400 : now) / 1000;
+    var ph = (t / CLOUD_CARRY) % 1, ph2 = (ph + 0.5) % 1;
+    var n1 = Math.floor(t / CLOUD_CARRY), n2 = Math.floor(t / CLOUD_CARRY + 0.5);
+    var w1 = 1 - Math.abs(2 * ph - 1), w2 = 1 - w1;
+    var norm = 1 / Math.sqrt(w1 * w1 + w2 * w2);
+    var rows = CLOUD_H / 4, f = 2.2;
+    for (var j = clouds.row; j < clouds.row + rows; j += 1) {
+      var lat = (0.5 - (j + 0.5) / CLOUD_H) * Math.PI;
+      var cl = Math.cos(lat), sl = Math.sin(lat) * f;
+      var wind = windAt(lat) * CLOUD_CARRY, bias = cloudBias(lat);
+      for (var i = 0; i < CLOUD_W; i += 1) {
+        var lon = (i + 0.5) / CLOUD_W * TAU - Math.PI;
+        var a1 = lon - wind * ph, a2 = lon - wind * ph2;
+        var v1 = w1 > 0.01 ? skyNoise.fbm(cl * Math.cos(a1) * f + n1 * 17.3, sl, cl * Math.sin(a1) * f + t * 0.006, 3) : 0.5;
+        var v2 = w2 > 0.01 ? skyNoise.fbm(cl * Math.cos(a2) * f + n2 * 17.3, sl, cl * Math.sin(a2) * f + t * 0.006, 3) : 0.5;
+        var v = 0.5 + ((v1 - 0.5) * w1 + (v2 - 0.5) * w2) * norm;
+        var c = (v - (0.565 - bias)) / 0.15;
+        clouds.map[j * CLOUD_W + i] = c <= 0 ? 0 : c >= 1 ? 1 : c * c * (3 - 2 * c);
+      }
+    }
+    clouds.row = (clouds.row + rows) % CLOUD_H;
+  }
+
+  function cloudAt(lat, lon) {
+    var u = (wrap(lon) + Math.PI) / TAU * CLOUD_W - 0.5, v = (0.5 - lat / Math.PI) * CLOUD_H - 0.5;
+    var i0 = Math.floor(u), j0 = Math.max(0, Math.min(CLOUD_H - 2, Math.floor(v)));
+    var fu = u - i0, fv = Math.max(0, Math.min(1, v - j0));
+    var i1 = (i0 + 1 + CLOUD_W) % CLOUD_W;
+    i0 = (i0 + CLOUD_W) % CLOUD_W;
+    var m = clouds.map, a = m[j0 * CLOUD_W + i0], b = m[j0 * CLOUD_W + i1];
+    var c = m[(j0 + 1) * CLOUD_W + i0], d = m[(j0 + 1) * CLOUD_W + i1];
+    return (a + (b - a) * fu) * (1 - fv) + (c + (d - c) * fu) * fv;
+  }
+
+  /* Night and weather, worked out block by block over the disc — blocks a
+     few pixels across, so the terminator and the cloud are pixel art like
+     everything else — with each shade stepped and dithered. */
+  function drawWeather(now, fade) {
+    var block = Math.max(3, Math.min(9, Math.round(R / 64)));
+    var key = [spin.toFixed(4), tilt.toFixed(4), R.toFixed(1), cx.toFixed(1), cy.toFixed(1), W, H].join();
+    if (key !== weatherSeen.key || now - weatherSeen.at > 1000 / 12) {
+      weatherSeen.key = key;
+      weatherSeen.at = now;
+      weatherSeen.block = block;
+      var gw = Math.ceil(W / block), gh = Math.ceil(H / block);
+      if (weatherCanvas.width !== gw || weatherCanvas.height !== gh) {
+        weatherCanvas.width = gw;
+        weatherCanvas.height = gh;
+        weatherImg = weatherCtx.createImageData(gw, gh);
+      }
+      var d = weatherImg.data;
+      d.fill(0);
+      var sv = sunView();
+      var x0 = Math.max(0, Math.floor((cx - R) / block)), x1 = Math.min(gw - 1, Math.ceil((cx + R) / block));
+      var y0 = Math.max(0, Math.floor((cy - R) / block)), y1 = Math.min(gh - 1, Math.ceil((cy + R) / block));
+      storms.length = 0;
+      for (var j = y0; j <= y1; j += 1) {
+        var ny = -((j + 0.5) * block - cy) / R;
+        for (var i = x0; i <= x1; i += 1) {
+          var nx = ((i + 0.5) * block - cx) / R, d2 = nx * nx + ny * ny;
+          if (d2 >= 1) { continue; }
+          var nz = Math.sqrt(1 - d2);
+          var wy = ny * COS_T + nz * SIN_T, wz = -ny * SIN_T + nz * COS_T;
+          var lat = Math.asin(wy), lon = Math.atan2(nx, wz) + spin;
+          var lit = nx * sv[0] + ny * sv[1] + nz * sv[2];
+          var dither = BAYER[(j & 7) * 8 + (i & 7)] / 64;
+          var night = Math.max(0, Math.min(1, (0.03 - lit) / 0.15));
+          var nq = Math.min(3, Math.floor(night * 3 + dither)) / 3;
+          var dusk = Math.max(0, 1 - Math.abs(lit + 0.02) / 0.07);
+          var cloud = cloudAt(lat, lon);
+          var cq = Math.min(3, Math.floor(cloud * 3 + dither * 0.999)) / 3;
+          if (cloud > 0.9 && storms.length < 96) { storms.push(i, j); }
+          var an = Math.max(0.3 * nq, 0.16 * (dusk > 0.5 ? 1 : dusk > 0.2 ? 0.5 : 0));
+          var cn0 = nq > 0 ? NIGHT : DUSK;
+          var ac = cq * (0.58 - 0.3 * nq);
+          if (an <= 0 && ac <= 0) { continue; }
+          var cc0 = CLOUD_DAY[0] + (CLOUD_NIGHT[0] - CLOUD_DAY[0]) * nq;
+          var cc1 = CLOUD_DAY[1] + (CLOUD_NIGHT[1] - CLOUD_DAY[1]) * nq;
+          var cc2 = CLOUD_DAY[2] + (CLOUD_NIGHT[2] - CLOUD_DAY[2]) * nq;
+          var A = ac + an * (1 - ac);
+          var o = (j * gw + i) * 4;
+          d[o] = (cc0 * ac + cn0[0] * an * (1 - ac)) / A;
+          d[o + 1] = (cc1 * ac + cn0[1] * an * (1 - ac)) / A;
+          d[o + 2] = (cc2 * ac + cn0[2] * an * (1 - ac)) / A;
+          d[o + 3] = A * 255;
+        }
+      }
+      weatherCtx.putImageData(weatherImg, 0, 0);
+    }
+    block = weatherSeen.block;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(weatherCanvas, 0, 0, weatherCanvas.width * block, weatherCanvas.height * block);
+    ctx.restore();
+    return block;
+  }
+
+  /* The lights of the night side: settled land, in clusters, and brighter
+     where the words and the places are. */
+  function makeLights() {
+    nightLights = [];
+    var seeds = 0;
+    for (var tries = 0; seeds < 150 && tries < 20000; tries += 1) {
+      var lat = Math.asin(2 * Math.random() - 1), lon = Math.random() * TAU - Math.PI;
+      if (Math.abs(lat) > 70 * RAD || !onLand(lat, lon)) { continue; }
+      seeds += 1;
+      var n = 2 + Math.floor(Math.random() * 7);
+      for (var k = 0; k < n; k += 1) {
+        var la = lat + (Math.random() - 0.5) * 5 * RAD, lo = lon + (Math.random() - 0.5) * 7 * RAD;
+        if (onLand(la, lo)) {
+          nightLights.push({ lat: la, lon: lo, b: 0.3 + 0.7 * Math.pow(Math.random(), 2), k: Math.random() * TAU });
+        }
+      }
+    }
+    vocabulary.forEach(function (g) { nightLights.push({ lat: g.lat, lon: g.lon, b: 1, k: Math.random() * TAU }); });
+    cities.forEach(function (c) { nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true }); });
+  }
+
+  var LAMP = ["#7b5a2c", "#d9a64e", "#fff1c4"];
+  function drawLights(now, block, fade) {
+    if (!nightLights) { if (earthBits && cities.length) { makeLights(); } else { return; } }
+    var lamp = Math.max(2, Math.round(block * 0.65));
+    ctx.save();
+    ctx.globalAlpha = fade;
+    nightLights.forEach(function (l) {
+      var dark = darkAt(l.lat, l.lon);
+      if (dark <= 0.2) { return; }
+      var p = project(l.lat, l.lon);
+      if (p.z < 0.08) { return; }
+      var twinkle = still ? 1 : 0.8 + 0.2 * (Math.sin(now / 700 + l.k * 7) > 0.6 ? 1 : 0);
+      var level = l.b * dark * twinkle * (1 - 0.6 * cloudAt(l.lat, l.lon)) * Math.min(1, (p.z - 0.08) * 6);
+      var step = level > 0.9 ? 2 : level > 0.45 ? 1 : level > 0.15 ? 0 : -1;
+      if (step < 0) { return; }
+      var x = Math.floor(p.x / lamp) * lamp, y = Math.floor(p.y / lamp) * lamp;
+      ctx.fillStyle = LAMP[step];
+      ctx.fillRect(x, y, lamp, lamp);
+      if (l.big) {
+        ctx.fillStyle = LAMP[Math.max(0, step - 1)];
+        ctx.fillRect(x - lamp, y, lamp, lamp);
+        ctx.fillRect(x + lamp, y, lamp, lamp);
+        ctx.fillRect(x, y - lamp, lamp, lamp);
+        ctx.fillRect(x, y + lamp, lamp, lamp);
+      }
+    });
+    // Lightning, in the thickest of the cloud: a few blocks lit, off, lit
+    // again, and gone.
+    if (!still && storms.length && Math.random() < 0.025) {
+      var s = Math.floor(Math.random() * storms.length / 2) * 2, cells = [], bx = storms[s], by = storms[s + 1];
+      for (var c = 0; c < 3 + Math.random() * 6; c += 1) {
+        cells.push(bx, by);
+        bx += Math.round(Math.random() * 2 - 1);
+        by += Math.random() < 0.6 ? 1 : 0;
+      }
+      flashes.push({ at: now, cells: cells });
+    }
+    flashes = flashes.filter(function (f) { return now - f.at < 260; });
+    flashes.forEach(function (f) {
+      var t = now - f.at;
+      if ((t > 60 && t < 120) || t > 200) { return; }
+      ctx.fillStyle = t < 60 ? "#f6f2ff" : LILAC;
+      for (var i = 0; i < f.cells.length; i += 2) { ctx.fillRect(f.cells[i] * block, f.cells[i + 1] * block, block, block); }
+    });
+    ctx.restore();
+  }
+
+  /* The herd. One of each gait to start, each on its way from one of the
+     places to another; arriving, it is sometimes born again as a body that
+     has never been seen, and walks on. */
+  function coloursFrom(city) {
+    return dreamColours(((city && city.slug && measured[city.slug]) || []).slice(0, 3));
+  }
+
+  function newBeast(gait, from, along) {
+    var others = cities.filter(function (c) { return c !== from; });
+    var to = others[Math.floor(Math.random() * others.length)];
+    var a = toVec(from.lat, from.lon), b = toVec(to.lat, to.lon);
+    var P = a;
+    if (along) {
+      var k = Math.random() * 0.8;
+      P = norm3([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]);
+    }
+    return {
+      spec: Systems.creature((Math.random() * 1e9) | 0, coloursFrom(from), gait),
+      P: P, T: b, to: to, h: null, phase: Math.random(), flee: 0, facing: 1,
+      born: performance.now(), rest: along ? 0 : 2 + Math.random() * 4, wander: Math.random() * 100
+    };
+  }
+
+  function beastScale(spec) {
+    var want = Math.max(12, Math.min(52, R * 0.075));
+    return Math.max(1, Math.round(want / Math.max(10, spec.fh * 0.8)));
+  }
+
+  function stepHerd(now, dt) {
+    if (!herd.length) {
+      if (cities.length < 2) { return; }
+      Systems.GAITS.forEach(function (g) {
+        herd.push(newBeast(g, cities[Math.floor(Math.random() * cities.length)], true));
+      });
+    }
+    var scared = now - pointerAt.at < 1500;
+    herd.forEach(function (b, n) {
+      var s = beastScale(b.spec);
+      var p = project(latOf(b.P), lonOf(b.P));
+      if (scared && p.z > 0) {
+        var dx = p.x - pointerAt.x, dy = p.y - pointerAt.y;
+        if (dx * dx + dy * dy < Math.pow(90 + 20 * s, 2)) {
+          if (!b.flee) { sparkle(p.x, p.y - b.spec.fh * s * 0.6, [rgbHex(b.spec.colour.map(Math.round))], 5); }
+          b.flee = 1.6;
+          var q = surfaceAt(pointerAt.x, pointerAt.y);
+          var Q = toVec(q.lat, q.lon);
+          var away = toward(b.P, Q);
+          b.away = [-away[0], -away[1], -away[2]];
+        }
+      }
+      b.flee = Math.max(0, b.flee - dt);
+      // Arrived, it stays a while before it sets off again, unless it is
+      // frightened off.
+      if (b.rest > 0 && !b.flee) { b.rest -= dt; return; }
+      b.rest = 0;
+      var want = b.flee > 0 && b.away ? b.away : toward(b.P, b.T);
+      if (!b.flee) {
+        // Not in a straight line: it wanders either side of the way.
+        var th = Math.sin(now / 2900 + b.wander) * 0.7 + Math.sin(now / 1300 + b.wander * 2) * 0.25;
+        var side = [b.P[1] * want[2] - b.P[2] * want[1], b.P[2] * want[0] - b.P[0] * want[2], b.P[0] * want[1] - b.P[1] * want[0]];
+        var ct = Math.cos(th), st = Math.sin(th);
+        want = [want[0] * ct + side[0] * st, want[1] * ct + side[1] * st, want[2] * ct + side[2] * st];
+      }
+      var h = b.h || want, k = b.flee > 0 ? 0.3 : 0.06;
+      h = [h[0] + (want[0] - h[0]) * k, h[1] + (want[1] - h[1]) * k, h[2] + (want[2] - h[2]) * k];
+      var c = dot3(h, b.P);
+      b.h = norm3([h[0] - b.P[0] * c, h[1] - b.P[1] * c, h[2] - b.P[2] * c]);
+      var px = b.spec.speed * s * (b.flee > 0 ? 2.4 : 1) * dt;           // pixels this frame
+      var step = px / Math.max(40, R);
+      b.P = norm3([b.P[0] + b.h[0] * step, b.P[1] + b.h[1] * step, b.P[2] + b.h[2] * step]);
+      b.phase += b.spec.gait === "swoop" ? dt * (b.flee > 0 ? 3.2 : 1.6) : px / (b.spec.stride * s);
+      // Facing the way it is going, as it looks on the screen.
+      var next = norm3([b.P[0] + b.h[0] * 0.01, b.P[1] + b.h[1] * 0.01, b.P[2] + b.h[2] * 0.01]);
+      var from = project(latOf(b.P), lonOf(b.P)), to = project(latOf(next), lonOf(next));
+      if (Math.abs(to.x - from.x) > 0.02) { b.facing = to.x > from.x ? 1 : -1; }
+      if (dot3(b.P, b.T) > Math.cos(1.2 * RAD)) {
+        var at = project(b.to.lat, b.to.lon);
+        if (Math.random() < 0.4) {
+          herd[n] = newBeast(b.spec.gait, b.to, false);
+          if (at.z > 0.1) { pulse(at.x, at.y, [rgbHex(herd[n].spec.colour.map(Math.round)), LIGHT], 0.45, 110); }
+        } else {
+          var others = cities.filter(function (c) { return c !== b.to; });
+          b.to = others[Math.floor(Math.random() * others.length)];
+          b.T = toVec(b.to.lat, b.to.lon);
+          b.rest = 3 + Math.random() * 7;
+        }
+      }
+    });
+  }
+
+  function drawHerd(now, fade) {
+    var seen = [];
+    herd.forEach(function (b) {
+      var lat = latOf(b.P), lon = lonOf(b.P);
+      var p = project(lat, lon);
+      if (p.z < 0.12) { return; }
+      seen.push({ b: b, p: p, lat: lat, lon: lon });
+    });
+    seen.sort(function (a, c) { return a.p.y - c.p.y; });
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    seen.forEach(function (it) {
+      var b = it.b, sp = b.spec, s = beastScale(sp);
+      var edge = Math.min(1, (it.p.z - 0.12) / 0.14), born = Math.min(1, (now - b.born) / 600);
+      var a = Math.round(Math.min(edge, born) * 4) / 4 * fade;
+      if (a <= 0) { return; }
+      // Standing still, it stands on its feet (the first frame) — unless it
+      // flies, and then it hovers.
+      var frame = b.rest > 0 && sp.gait !== "swoop" ? 0 : Math.floor(((b.phase % 1) + 1) % 1 * sp.frames) % sp.frames;
+      if (b.rest > 0 && sp.gait === "swoop") { b.phase += 0.012; }
+      var sheet = darkAt(it.lat, it.lon) > 0.5 ? sp.night : sp.day;
+      var x = Math.round(it.p.x), y = Math.round(it.p.y);
+      ctx.globalAlpha = a * 0.22;
+      ctx.fillStyle = "#1a1430";
+      ctx.fillRect(x - Math.round(sp.fw * s * 0.28), y, Math.round(sp.fw * s * 0.56), s);
+      ctx.globalAlpha = a;
+      ctx.save();
+      ctx.translate(x, y);
+      if (b.facing < 0) { ctx.scale(-1, 1); }
+      ctx.drawImage(sheet, frame * sp.fw, 0, sp.fw, sp.fh,
+                    -Math.round(sp.groundX * s), -Math.round(sp.groundY * s), sp.fw * s, sp.fh * s);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  /* The procession, over the top of the world from one horizon to the
+     other. Positions are kept as angles round the rim, so it keeps its
+     spacing however near or far the world is. */
+  var ARC = 1.25;
+  function walkerScale(spec) {
+    var want = Math.max(16, Math.min(46, R * 0.07));
+    var k = Math.max(1, Math.round(want * dpr / Math.max(20, spec.fh * 0.85)));
+    return k / dpr;
+  }
+  function newWalker(u) {
+    var spec = Systems.person(walkerSeed, dreamColours([]));
+    walkerSeed += 1;
+    return { spec: spec, u: u, phase: Math.random(), gap: 0.4 + Math.random() * 1.3, jump: -1e9 };
+  }
+  function stepProcession(now, dt) {
+    var v = 12;                                           // pixels a second
+    if (!walkers.length) {
+      for (var u = 2 * ARC; u > 0;) {
+        var w = newWalker(u);
+        walkers.unshift(w);
+        u -= (w.spec.fw * walkerScale(w.spec) * (1 + w.gap)) / Math.max(60, R);
+      }
+    }
+    walkers.forEach(function (w) {
+      var s = walkerScale(w.spec);
+      w.u += v * dt / Math.max(60, R);
+      w.phase += v * dt / (w.spec.stride * s);
+    });
+    walkers = walkers.filter(function (w) { return w.u < 2 * ARC; });
+    var last = walkers[0];
+    if (!last || last.u > (last.spec.fw * walkerScale(last.spec) * (1 + last.gap)) / Math.max(60, R)) {
+      walkers.unshift(newWalker(0));
+    }
+    if (now - pointerAt.at < 400) {
+      walkers.forEach(function (w) {
+        var th = -ARC + w.u;
+        var x = cx + R * Math.sin(th), y = cy - R * Math.cos(th);
+        var dx = x - pointerAt.x, dy = y - w.spec.fh * walkerScale(w.spec) * 0.5 - pointerAt.y;
+        if (dx * dx + dy * dy < 900 && now - w.jump > 700) { w.jump = now; }
+      });
+    }
+  }
+
+  function drawProcession(now, fade) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    walkers.forEach(function (w) {
+      var th = -ARC + w.u;
+      var x = cx + R * Math.sin(th), y = cy - R * Math.cos(th);
+      if (x < -60 || x > W + 60 || y < -60 || y > H + 60) { return; }
+      var ends = Math.min(w.u, 2 * ARC - w.u) / 0.22;
+      var a = Math.min(1, Math.round(Math.min(1, ends) * 4) / 4) * fade;
+      if (a <= 0) { return; }
+      var sp = w.spec, s = walkerScale(sp);
+      var frame = Math.floor(((w.phase % 1) + 1) % 1 * sp.frames) % sp.frames;
+      var jt = (now - w.jump) / 420;
+      var up = jt < 1 ? Math.round(Math.sin(Math.PI * jt) * 7) * s : 0;
+      ctx.globalAlpha = a;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(th);
+      ctx.drawImage(sp.day, frame * sp.fw, 0, sp.fw, sp.fh,
+                    -sp.groundX * s, -sp.groundY * s - up, sp.fw * s, sp.fh * s);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  function living(now) {
+    var dt = Math.min(0.1, Math.max(0, (now - livingAt) / 1000));
+    livingAt = now;
+    if (!LIVING || !R) { return; }
+    var fade = 1 - nearness();
+    if (fade <= 0.02) { return; }
+    if (now - sun.at > 20000) {
+      var s = sunNow(Date.now());
+      sun.lat = s.lat; sun.lon = s.lon; sun.at = now;
+    }
+    stepClouds(now);
+    var block = drawWeather(now, fade);
+    drawLights(now, block, fade);
+    if (still || !cities.length) { return; }
+    if (!place && !flying) {
+      stepHerd(now, dt);
+      stepProcession(now, dt);
+    }
+    drawHerd(now, fade);
+    drawProcession(now, fade);
   }
 
   /* ---- how much of the globe is there -------------------------------------
