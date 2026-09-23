@@ -2265,10 +2265,11 @@
      the land there has its lights on. It has weather — cloud carried round
      on the pattern the real winds make, trade winds and westerlies and
      polar easterlies, with storms that flash at night — after Radiohead and
-     Universal Everything's PolyFauna. Animals nobody has seen migrate
-     between the places the collages are in, each moving the way a real
-     animal moves (see Systems.creature), after Universal Everything's
-     Migrations, and shy of the pointer. And a procession walks the rim of
+     Universal Everything's PolyFauna. A company migrates between the places
+     the collages are in, each moving the way a real animal moves, after
+     Universal Everything's Migrations: once bodies nobody had seen
+     (Systems.creature), now figures out of what the artist reads and loves
+     (Systems.figure, COMPANY below). And a procession walks the rim of
      the world that never ends and never repeats, every walker made up as
      it steps over the horizon, after their Infinity.
 
@@ -2555,39 +2556,105 @@
     return dreamColours(((city && city.slug && measured[city.slug]) || []).slice(0, 3));
   }
 
-  function newBeast(gait, from, along) {
+  /* The company (artist's request, 23 Sep 2026: the characters "built more
+     towards me"): in place of bodies nobody has seen, figures out of what he
+     reads and loves — see S.figure in systems.js for who each one is. Only
+     the metamorphosis changes, camel to lion to child and round again; the
+     rest stay themselves. COMPANY = false brings back the invented herd. */
+  var COMPANY = true;
+  var CAST = ["horse", "camel", "eagle", "road", "bat", "bat", "bat"];
+  var BECOMES = { camel: "lion", lion: "child", child: "camel" };
+
+  function darkCities() {
+    return cities.filter(function (c) { return darkAt(c.lat, c.lon) > 0.55; });
+  }
+  // Where a member of the company goes next, from where it is.
+  function nextFor(kind, from) {
     var others = cities.filter(function (c) { return c !== from; });
-    var to = others[Math.floor(Math.random() * others.length)];
+    if (kind === "bat") {
+      // only to where it is night; if nowhere else is, they stay and
+      // circle the place they are
+      var dark = darkCities().filter(function (c) { return c !== from; });
+      if (!dark.length) { return from; }
+      others = dark;
+    } else if (kind === "road") {
+      var south = others.filter(function (c) { return c.lat < from.lat - 1; });   // they keep going south
+      if (south.length) { others = south; }
+    }
+    return others[Math.floor(Math.random() * others.length)];
+  }
+
+  function newMember(kind, from, along) {
+    var b = newBeast(null, from, along, kind);
+    return b;
+  }
+
+  function newBeast(gait, from, along, kind) {
+    var others = cities.filter(function (c) { return c !== from; });
+    var to = kind ? nextFor(kind, from) : others[Math.floor(Math.random() * others.length)];
     var a = toVec(from.lat, from.lon), b = toVec(to.lat, to.lon);
+    if (to === from) {                                       // circling: somewhere just by it
+      b = norm3([b[0] + (Math.random() - 0.5) * 0.06, b[1] + (Math.random() - 0.5) * 0.06, b[2] + (Math.random() - 0.5) * 0.06]);
+    }
     var P = a;
     if (along) {
       var k = Math.random() * 0.8;
       P = norm3([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]);
     }
+    if (kind === "bat") {                                   // a little apart, as bats go
+      P = norm3([P[0] + (Math.random() - 0.5) * 0.04, P[1] + (Math.random() - 0.5) * 0.04, P[2] + (Math.random() - 0.5) * 0.04]);
+    }
     return {
-      spec: Systems.creature((Math.random() * 1e9) | 0, coloursFrom(from), gait),
+      kind: kind || null,
+      spec: kind ? Systems.figure(kind, (Math.random() * 1e9) | 0, coloursFrom(from))
+                 : Systems.creature((Math.random() * 1e9) | 0, coloursFrom(from), gait),
       P: P, T: b, to: to, h: null, phase: Math.random(), flee: 0, facing: 1,
       born: performance.now(), rest: along ? 0 : 2 + Math.random() * 4, wander: Math.random() * 100
     };
   }
 
   function beastScale(spec) {
-    var want = Math.max(12, Math.min(52, R * 0.075));
+    var want = Math.max(12, Math.min(52, R * 0.075)) * (spec.size || 1);
     return Math.max(1, Math.round(want / Math.max(10, spec.fh * 0.8)));
   }
 
   function stepHerd(now, dt) {
     if (!herd.length) {
       if (cities.length < 2) { return; }
-      Systems.GAITS.forEach(function (g) {
-        herd.push(newBeast(g, cities[Math.floor(Math.random() * cities.length)], true));
-      });
+      if (COMPANY && Systems.figure) {
+        CAST.forEach(function (k) {
+          var pool = k === "bat" && darkCities().length ? darkCities() : cities;
+          herd.push(newMember(k, pool[Math.floor(Math.random() * pool.length)], true));
+        });
+      } else {
+        Systems.GAITS.forEach(function (g) {
+          herd.push(newBeast(g, cities[Math.floor(Math.random() * cities.length)], true));
+        });
+      }
     }
     var scared = now - pointerAt.at < 1500;
     herd.forEach(function (b, n) {
       var s = beastScale(b.spec);
+      if (b.kind === "bat") {
+        // Out only in the dark. Where the day has come, they are gone, and
+        // they come out again wherever it is night.
+        var night = darkAt(latOf(b.P), lonOf(b.P)) > 0.5;
+        if (!night && !b.hidden) { b.hidden = true; b.gone = now; }
+        if (b.hidden) {
+          var dark = darkCities();
+          if (!dark.length || now - b.gone < 4000) { return; }
+          herd[n] = newMember("bat", dark[Math.floor(Math.random() * dark.length)], false);
+          herd[n].rest = Math.random() * 2;
+          return;
+        }
+      }
       var p = project(latOf(b.P), lonOf(b.P));
-      if (scared && p.z > 0) {
+      if (scared && p.z > 0 && b.kind === "horse") {
+        // The horse is not frightened off. Touched, it stops, and will not
+        // be made to go on for a while.
+        var hx = p.x - pointerAt.x, hy = p.y - pointerAt.y;
+        if (hx * hx + hy * hy < Math.pow(60 + 20 * s, 2) && !b.rest) { b.rest = 4 + Math.random() * 5; }
+      } else if (scared && p.z > 0) {
         var dx = p.x - pointerAt.x, dy = p.y - pointerAt.y;
         if (dx * dx + dy * dy < Math.pow(90 + 20 * s, 2)) {
           if (!b.flee) { sparkle(p.x, p.y - b.spec.fh * s * 0.6, [rgbHex(b.spec.colour.map(Math.round))], 5); }
@@ -2618,14 +2685,24 @@
       var px = b.spec.speed * s * (b.flee > 0 ? 2.4 : 1) * dt;           // pixels this frame
       var step = px / Math.max(40, R);
       b.P = norm3([b.P[0] + b.h[0] * step, b.P[1] + b.h[1] * step, b.P[2] + b.h[2] * step]);
-      b.phase += b.spec.gait === "swoop" ? dt * (b.flee > 0 ? 3.2 : 1.6) : px / (b.spec.stride * s);
+      b.phase += b.spec.gait === "swoop" ? dt * (b.flee > 0 ? 3.2 : 1.6) * (b.spec.flap || 1) : px / (b.spec.stride * s);
       // Facing the way it is going, as it looks on the screen.
       var next = norm3([b.P[0] + b.h[0] * 0.01, b.P[1] + b.h[1] * 0.01, b.P[2] + b.h[2] * 0.01]);
       var from = project(latOf(b.P), lonOf(b.P)), to = project(latOf(next), lonOf(next));
       if (Math.abs(to.x - from.x) > 0.02) { b.facing = to.x > from.x ? 1 : -1; }
       if (dot3(b.P, b.T) > Math.cos(1.2 * RAD)) {
         var at = project(b.to.lat, b.to.lon);
-        if (Math.random() < 0.4) {
+        if (b.kind && BECOMES[b.kind]) {
+          // Arriving, the spirit changes: camel, lion, child, and again.
+          herd[n] = newMember(BECOMES[b.kind], b.to, false);
+          if (at.z > 0.1) { pulse(at.x, at.y, [rgbHex(herd[n].spec.colour.map(Math.round)), LIGHT], 0.6, 140); }
+        } else if (b.kind) {
+          var was = b.to;
+          b.to = nextFor(b.kind, b.to);
+          b.T = toVec(b.to.lat, b.to.lon);
+          if (b.to === was) { b.T = norm3([b.T[0] + (Math.random() - 0.5) * 0.06, b.T[1] + (Math.random() - 0.5) * 0.06, b.T[2] + (Math.random() - 0.5) * 0.06]); }
+          b.rest = b.kind === "bat" ? Math.random() : b.kind === "road" ? 6 + Math.random() * 8 : 3 + Math.random() * 7;
+        } else if (Math.random() < 0.4) {
           herd[n] = newBeast(b.spec.gait, b.to, false);
           if (at.z > 0.1) { pulse(at.x, at.y, [rgbHex(herd[n].spec.colour.map(Math.round)), LIGHT], 0.45, 110); }
         } else {
@@ -2643,7 +2720,7 @@
     herd.forEach(function (b) {
       var lat = latOf(b.P), lon = lonOf(b.P);
       var p = project(lat, lon);
-      if (p.z < 0.12) { return; }
+      if (p.z < 0.12 || b.hidden) { return; }
       seen.push({ b: b, p: p, lat: lat, lon: lon });
     });
     seen.sort(function (a, c) { return a.p.y - c.p.y; });

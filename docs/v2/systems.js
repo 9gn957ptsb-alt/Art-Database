@@ -1046,6 +1046,291 @@
     return sheet;
   };
 
+  // ---- the company -------------------------------------------------------------------
+
+  /* The herd, made meaningful (artist's request, 23 Sep 2026: the
+     characters should be "built more towards me"). Not bodies nobody has
+     seen any more but a company out of what he reads and loves, each
+     moving the way its animal really moves:
+
+       horse     the sorrel nag of Raskolnikov's dream, the cab-horse Nietzsche
+                 put his arms round in Turin, McCarthy's horses: a trot, the
+                 diagonal pairs together. It will not be hurried off.
+       camel     Zarathustra's first metamorphosis, the spirit that kneels to
+                 be loaded; a pace, both legs on one side together, as camels
+                 really go. Arriving, it becomes the
+       lion      that says "I will", on a walk; and the lion becomes the
+       child     "innocence and forgetting, a new beginning, a game, a wheel
+                 rolling out of itself": a child bowling a hoop. And then the
+                 camel again, which is the eternal return.
+       eagle     Zarathustra's eagle, the serpent coiled round its neck, "not
+                 like prey but like a friend".
+       road      a man and a boy with a cart, walking south; the boy carries
+                 the fire, which is the light in his hand, and it glows at
+                 night.
+       bat       the night's. Bats are out only where it is dark on the real
+                 Earth, at the moment it is looked at.
+
+     Nothing on the page names any of them. Same sheet as S.creature: eight
+     frames facing right, the ground point, speed and stride. */
+  var FIGURES = {
+    horse: [150, 88, 56], camel: [198, 162, 112], lion: [204, 150, 72], child: [226, 196, 170],
+    eagle: [112, 80, 52], road: [104, 102, 108], bat: [54, 44, 66]
+  };
+  S.FIGURES = Object.keys(FIGURES);
+
+  function tri(px, a, b, c, col) {
+    var x0 = Math.floor(Math.min(a[0], b[0], c[0])), x1 = Math.ceil(Math.max(a[0], b[0], c[0]));
+    var y0 = Math.floor(Math.min(a[1], b[1], c[1])), y1 = Math.ceil(Math.max(a[1], b[1], c[1]));
+    function e(p, q, x, y) { return (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]); }
+    for (var y = y0; y <= y1; y += 1) {
+      for (var x = x0; x <= x1; x += 1) {
+        var X = x + 0.5, Y = y + 0.5;
+        var w0 = e(b, c, X, Y), w1 = e(c, a, X, Y), w2 = e(a, b, X, Y);
+        if ((w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0)) { px.set(x, y, col); }
+      }
+    }
+  }
+
+  S.figure = function (kind, seed, colours) {
+    var r = rng(seed);
+    var tint = pickColours(colours, r, 2);
+    var base = FIGURES[kind] || FIGURES.horse;
+    var body = ramp(mix(base, tint[0], 0.14));
+    var far = ramp(mix(body[1], INK, 0.32));
+    var accent = ramp(vivid(tint[1], 1.2));
+    var dark = ramp(mix(base, INK, 0.62));
+    var fw, fh, ground, speed, stride, air = 0, flap = 1, size = 1, draw, gait = "walk";
+
+    if (kind === "horse") {
+      var brx = 8.5, bry = 3.6, l1 = 5, l2 = 5.5, neck = 7;
+      fw = 40; fh = 28; ground = fh - 3; stride = 12; speed = 13;
+      var hoof = ramp(mix(base, INK, 0.75)), mane = ramp(mix(base, INK, 0.5));
+      draw = function (px, phase) {
+        var bob = Math.abs(Math.sin(TAU * phase)) * 0.8;
+        var bx = fw / 2 - 2, by = ground - l1 - l2 - bry * 0.4 - bob;
+        var fore = bx + brx * 0.62, hind = bx - brx * 0.62;
+        // trot: LF with RH, RF with LH. Far pair first.
+        [[fore - 1, 0.5, 1], [hind - 1, 0, -1]].forEach(function (lg) {
+          var f = foot(phase + lg[1], 0.45, stride, 3);
+          var fx = lg[0] + f[0], fy = ground + f[1];
+          var k = knee(lg[0], by + 1, fx, fy, l1, l2, lg[2]);
+          px.limb(lg[0], by + 1, k[0], k[1], 1.8, far);
+          px.limb(k[0], k[1], fx, fy, 1.2, far);
+          px.set(fx, fy, hoof[2]);
+        });
+        var sw = Math.sin(TAU * phase) * 1.2;
+        px.limb(bx - brx + 1, by - 1, bx - brx - 3, by + 2, 2.2, mane);            // the tail
+        px.limb(bx - brx - 3, by + 2, bx - brx - 4 + sw, by + 7, 1.6, mane);
+        px.blob(bx, by, brx, bry, body);
+        [[fore, 0, 1], [hind, 0.5, -1]].forEach(function (lg) {
+          var f = foot(phase + lg[1], 0.45, stride, 3);
+          var fx = lg[0] + f[0], fy = ground + f[1];
+          var k = knee(lg[0], by + 1, fx, fy, l1, l2, lg[2]);
+          px.limb(lg[0], by + 1, k[0], k[1], 2, body);
+          px.limb(k[0], k[1], fx, fy, 1.3, body);
+          px.set(fx, fy, hoof[2]); px.set(fx + 1, fy, hoof[2]);
+        });
+        var nod = Math.sin(TAU * phase * 2) * 0.7;
+        var nx0 = bx + brx - 2, ny0 = by - 1, hx = nx0 + neck * 0.55, hy = ny0 - neck + 1 + nod;
+        px.limb(nx0, ny0, hx, hy, 3.4, body);
+        for (var m = 0; m < 5; m += 1) { px.set(nx0 - 1 + (hx - nx0) * m / 5, ny0 - 2 + (hy - ny0) * m / 5, mane[1]); }
+        px.limb(hx, hy, hx + 5, hy + 3, 2.6, body);                               // the long head
+        px.set(hx - 1, hy - 2, body[2]); px.set(hx, hy - 2, body[1]);               // the ears
+        px.eye(hx + 1, hy, 1);
+        px.set(hx + 5, hy + 3, hoof[2]);
+      };
+    } else if (kind === "camel" || kind === "lion") {
+      var camel = kind === "camel";
+      var crx = camel ? 7.5 : 7, cry = camel ? 3.4 : 3.2, c1 = camel ? 6 : 4, c2 = camel ? 6.5 : 4;
+      fw = 40; fh = camel ? 34 : 24; ground = fh - 3;
+      stride = camel ? 13 : 9; speed = camel ? 8 : 11;
+      var pad = ramp(mix(base, INK, 0.55));
+      var maneR = ramp(mix([122, 70, 40], tint[0], 0.12));
+      // camels pace (a side together); lions walk the lateral sequence
+      var offs = camel ? [0, 0, 0.5, 0.5] : [0, 0.5, 0.25, 0.75];     // LF, RF, LH, RH
+      draw = function (px, phase) {
+        var bob = camel ? Math.sin(TAU * phase * 2) * 0.3 : Math.abs(Math.sin(TAU * phase * 2)) * 0.5;
+        var sway = camel ? Math.sin(TAU * phase) * 0.6 : 0;
+        var bx = fw / 2 - 2, by = ground - c1 - c2 - cry * 0.3 - bob;
+        var fore = bx + crx * 0.6, hind = bx - crx * 0.6;
+        [[fore - 1, offs[1]], [hind - 1, offs[3]]].forEach(function (lg, i) {
+          var f = foot(phase + lg[1], camel ? 0.6 : 0.68, stride, 2.4);
+          var fx = lg[0] + f[0], fy = ground + f[1];
+          var k = knee(lg[0], by + 1, fx, fy, c1, c2, i ? -1 : 1);
+          px.limb(lg[0], by + 1, k[0], k[1], camel ? 1.6 : 2.2, far);
+          px.limb(k[0], k[1], fx, fy, camel ? 1.2 : 1.8, far);
+        });
+        if (!camel) {                                                            // the tail and its tuft
+          px.limb(bx - crx + 1, by - 1, bx - crx - 5, by + 1 + Math.sin(TAU * phase) * 1.5, 1.2, body);
+          px.blob(bx - crx - 5.5, by + 1.5 + Math.sin(TAU * phase) * 1.5, 1.3, 1.3, maneR);
+        } else {
+          px.limb(bx - crx + 1, by - 1, bx - crx - 1, by + 4, 1.2, body);
+        }
+        px.blob(bx + sway * 0.3, by, crx, cry, body);
+        if (camel) {
+          px.blob(bx - 2 + sway * 0.3, by - cry - 1.5, 3.4, 3, body);          // the hump
+          // the load it knelt for
+          px.rect(bx - 6 + sway * 0.3, by - cry - 4, 9, 3, accent[1]);
+          px.rect(bx - 6 + sway * 0.3, by - cry - 4, 9, 1, accent[0]);
+          px.rect(bx - 5 + sway * 0.3, by - cry - 1, 1, 4, accent[2]);
+          px.rect(bx + 1 + sway * 0.3, by - cry - 1, 1, 4, accent[2]);
+        }
+        [[fore, offs[0]], [hind, offs[2]]].forEach(function (lg, i) {
+          var f = foot(phase + lg[1], camel ? 0.6 : 0.68, stride, 2.4);
+          var fx = lg[0] + f[0], fy = ground + f[1];
+          var k = knee(lg[0], by + 1, fx, fy, c1, c2, i ? -1 : 1);
+          px.limb(lg[0], by + 1, k[0], k[1], camel ? 1.8 : 2.4, body);
+          px.limb(k[0], k[1], fx, fy, camel ? 1.3 : 2, body);
+          px.set(fx + 1, fy, pad[2]);
+        });
+        if (camel) {                                                             // the neck, down and up
+          var nx0 = bx + crx - 1, ny0 = by;
+          px.limb(nx0, ny0, nx0 + 4, ny0 + 2, 2.6, body);
+          px.limb(nx0 + 4, ny0 + 2, nx0 + 7, ny0 - 6 + bob, 2.2, body);
+          var hx = nx0 + 8, hy = ny0 - 7 + bob;
+          px.blob(hx, hy, 2.4, 1.6, body);
+          px.eye(hx, hy - 1, 1);
+        } else {
+          var lx = bx + crx + 1, ly = by - 2 + bob * 0.5;
+          px.blob(lx, ly, 4.6, 4.4, maneR);                                      // the mane
+          px.blob(lx + 2, ly + 0.5, 2.6, 2.3, body);
+          px.set(lx + 4.5, ly + 1, pad[2]);
+          px.eye(lx + 2, ly - 0.5, 1);
+        }
+      };
+    } else if (kind === "child") {
+      fw = 30; fh = 24; ground = fh - 3; stride = 7; speed = 10; size = 0.8;
+      var skin = ramp(base), shirt = accent, legs = ramp(mix(tint[1], INK, 0.45)), wood = ramp([168, 116, 64]);
+      draw = function (px, phase) {
+        var b = Math.abs(Math.cos(TAU * phase)) * 1.2;
+        var hipX = 11, hipY = ground - 5 - b;
+        [0.5, 0].forEach(function (off, i) {
+          var f = foot(phase + off, 0.5, stride, 2.4);
+          var k = knee(hipX, hipY, hipX + f[0], ground + f[1], 2.6, 2.8, 1);
+          px.limb(hipX, hipY, k[0], k[1], 1.6, i ? legs : far);
+          px.limb(k[0], k[1], hipX + f[0], ground + f[1], 1.6, i ? legs : far);
+        });
+        px.blob(hipX, hipY - 3, 2.4, 3.2, shirt);
+        px.blob(hipX + 0.5, hipY - 8.5, 3, 3, skin);                              // a big head
+        px.eye(hipX + 2, hipY - 9, 1);
+        px.rect(hipX - 2, hipY - 12, 5, 1, dark[1]);
+        // the hoop, rolling out of itself, and the stick that keeps it going
+        var hx = 22, hy = ground - 5, rr = 5;
+        for (var a = 0; a < 24; a += 1) {
+          var t = a / 24 * TAU;
+          px.set(hx + Math.cos(t) * rr, hy + Math.sin(t) * rr, (a + Math.floor(phase * 24)) % 6 === 0 ? wood[2] : wood[1]);
+        }
+        var sp = -phase * TAU;
+        px.set(hx + Math.cos(sp) * (rr - 1), hy + Math.sin(sp) * (rr - 1), wood[0]);
+        var swing = Math.sin(TAU * phase) * 0.4;
+        px.limb(hipX + 1, hipY - 4, hipX + 4, hipY - 2 + swing, 1.3, skin);
+        px.limb(hipX + 4, hipY - 2 + swing, hx - rr + 1, hy - 1, 1, wood);
+      };
+    } else if (kind === "eagle") {
+      gait = "swoop"; air = 16; fw = 40; fh = 44; ground = fh - 3; stride = 28; speed = 16; flap = 0.7;
+      var head = ramp([236, 226, 206]), beak = ramp([232, 180, 60]), snake = ramp([78, 132, 70]);
+      // seen from in front, like the bats: wings wide and fingered, the
+      // serpent round its neck and hanging down
+      draw = function (px, phase) {
+        var f = Math.sin(TAU * phase);
+        var bx = fw / 2, by = ground - air - 8 + f * 1.2;
+        for (var s = 0; s < 12; s += 1) {
+          var sx = bx + 2 + Math.sin(s * 0.8 + TAU * phase) * 1.5, sy = by + 3 + s;
+          px.set(sx, sy, snake[s % 3 === 0 ? 0 : 1]); px.set(sx + 1, sy, snake[2]);
+        }
+        tri(px, [bx - 2, by + 3], [bx + 2, by + 3], [bx, by + 8], body[2]);           // the tail
+        tri(px, [bx - 3, by + 7], [bx + 3, by + 7], [bx, by + 4], body[2]);
+        [-1, 1].forEach(function (sd) {
+          var P = function (x, y) { return [bx + sd * x, by + y]; };
+          var tip = P(16, -3 - 6 * f), wr = P(8, -3 - 4 * f);
+          tri(px, P(1, -2), wr, P(2, 3), body[1]);
+          tri(px, wr, tip, P(2, 3), body[1]);
+          tri(px, wr, tip, P(6, -1 - 3 * f), body[0]);
+          for (var q = 0; q < 5; q += 1) {                                           // the fingers
+            var fx = 16.5 - q * 1.5, fy = -3 - 6 * f + q * 0.9 + 0.5;
+            px.set(bx + sd * fx, by + fy, body[2]); px.set(bx + sd * fx, by + fy + 1, body[2]);
+          }
+        });
+        px.blob(bx, by, 2.6, 3.4, body);
+        px.blob(bx, by - 4, 2.2, 2, head);
+        px.set(bx - 1.5, by - 2.5, snake[0]); px.set(bx - 0.5, by - 2, snake[1]); px.set(bx + 0.5, by - 2, snake[1]); px.set(bx + 1.5, by - 2.5, snake[2]);
+        px.set(bx, by - 3, beak[1]); px.set(bx, by - 2.6, beak[2]);
+        px.eye(bx - 1, by - 4.5, 1);
+      };
+    } else if (kind === "road") {
+      fw = 46; fh = 30; ground = fh - 3; stride = 6; speed = 5;
+      var coat = ramp(base), boy = ramp(mix(base, tint[0], 0.3)), wire = ramp([176, 176, 184]), face = ramp([214, 190, 170]);
+      function walker(px, x, phase, legL, torso, headR, rp, hood) {
+        var b = Math.abs(Math.cos(TAU * phase)) * 0.6, hipY = ground - legL - b;
+        [0.5, 0].forEach(function (off, i) {
+          var f = foot(phase + off, 0.62, stride * legL / 7, 1.4);
+          var k = knee(x, hipY, x + f[0], ground + f[1], legL * 0.5, legL * 0.52, 1);
+          px.limb(x, hipY, k[0], k[1], 1.6, i ? dark : far);
+          px.limb(k[0], k[1], x + f[0], ground + f[1], 1.6, i ? dark : far);
+        });
+        for (var y = 0; y < torso; y += 1) {
+          for (var xx = -2; xx <= 2; xx += 1) { px.set(x + xx - (y < 2 ? 1 : 0), hipY - torso + y, rp[xx < -1 ? 0 : xx > 1 ? 2 : 1]); }
+        }
+        var hy = hipY - torso - headR + 0.5;
+        px.blob(x + 0.5, hy, headR, headR, hood ? rp : face);
+        if (hood) { px.blob(x + 1.3, hy + 0.3, headR * 0.55, headR * 0.6, face); }
+        return hipY - torso;
+      }
+      draw = function (px, phase) {
+        // the cart, pushed ahead
+        var cx0 = 27, cy0 = ground - 10, rattle = (Math.floor(phase * 8) % 2) * 0.5;
+        for (var i = 0; i <= 12; i += 3) { px.limb(cx0 + i * 0.95, cy0 + rattle, cx0 + 1 + i * 0.8, cy0 + 6, 1, wire); }
+        px.limb(cx0, cy0 + rattle, cx0 + 12, cy0 + rattle, 1, wire);
+        px.limb(cx0 + 1, cy0 + 6, cx0 + 10, cy0 + 6, 1, wire);
+        px.rect(cx0 + 2, cy0 + 1, 8, 3, accent[2]);                                   // what they have
+        px.set(cx0 + 2, ground - 1, INK); px.set(cx0 + 10, ground - 1, INK);
+        px.limb(cx0 + 1, cy0 + 6, cx0 + 2, ground - 2, 1, wire); px.limb(cx0 + 10, cy0 + 6, cx0 + 10, ground - 2, 1, wire);
+        // the boy behind, carrying the fire
+        var bt = walker(px, 7, phase + 0.3, 5, 4, 2, boy, false);
+        var fl = Math.floor(phase * 16) % 3;
+        px.limb(8, bt + 1.5, 10.5, bt + 3, 1.2, boy);
+        px.set(11, bt + 2 - fl * 0.5, EYE); px.set(11, bt + 3, [236, 150, 60]);
+        if (fl) { px.set(11, bt + 1 - fl * 0.5, [250, 206, 110]); }
+        // the man, pushing
+        var mt = walker(px, 20, phase, 8, 7, 2.6, coat, true);
+        px.limb(21, mt + 2, cx0 - 0.5, cy0 + rattle, 1.4, coat);
+      };
+    } else {                                                                      // bat
+      gait = "swoop"; air = 12; fw = 26; fh = 34; ground = fh - 3; stride = 20; speed = 22; flap = 3.4; size = 0.55;
+      // seen from in front, wings spread, the trailing edge scalloped
+      draw = function (px, phase) {
+        var f = Math.sin(TAU * phase);
+        var bx = fw / 2, by = ground - air - 4 + f * 1.4;
+        [-1, 1].forEach(function (sd) {
+          var pts = [[1, -2], [5, -3 - 3 * f], [10, -2 - 5 * f], [8.5, 1.5 - 4 * f], [7, -3 * f],
+                     [5.5, 2.5 - 2.5 * f], [4, 1 - 1.5 * f], [2.5, 3 - 0.5 * f], [1, 1.5]];
+          var P = pts.map(function (q) { return [bx + sd * q[0], by + q[1]]; });
+          var o = [bx + sd * 1.5, by - 0.5];
+          for (var i = 0; i < P.length - 1; i += 1) { tri(px, o, P[i], P[i + 1], body[i < 3 ? 1 : 2]); }
+          px.limb(P[0][0], P[0][1], P[1][0], P[1][1], 1, dark);
+          px.limb(P[1][0], P[1][1], P[2][0], P[2][1], 1, dark);
+        });
+        px.blob(bx, by, 1.8, 2.6, body);
+        px.set(bx - 1, by - 3.5, body[1]); px.set(bx + 1, by - 3.5, body[1]);            // the ears
+        px.set(bx - 1, by - 4.5, body[1]); px.set(bx + 1, by - 4.5, body[1]);
+        px.eye(bx - 1, by - 2, 1);
+      };
+    }
+    var sheet = sheetOf(fw, fh, 8, draw);
+    sheet.kind = kind;
+    sheet.gait = gait;
+    sheet.groundX = fw / 2;
+    sheet.groundY = ground;
+    sheet.stride = stride;
+    sheet.speed = speed;
+    sheet.air = air;
+    sheet.flap = flap;
+    sheet.size = size;
+    sheet.colour = body[1];
+    return sheet;
+  };
+
   function hash2d(x, y, s) {
     var n = (x * 374761393 + y * 668265263 + (s | 0) * 2147483647) | 0;
     n = (n ^ (n >>> 13)) * 1274126177;
