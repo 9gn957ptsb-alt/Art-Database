@@ -591,72 +591,107 @@
   }
 
   function placeCities() {
-    /* Three of his places are in Washington — two collages and the library —
-       and at the size the globe is drawn they are the same three pixels. The
-       coordinates stay true; the marks are pushed apart on the screen until
-       each of them can be pressed, which is a few pixels of lie at a scale
-       where a few pixels is a mile. Names are then given out nearest the
-       middle first, and one that would print across a name already given up
-       is left off until the world moves. */
-    var MARK = 34;                      // how far apart two marks must sit
+    /* Every mark is exactly where its place is: the middle of the dot is
+       the projection of the real latitude and longitude, and nothing pushes
+       it anywhere else. Three of the places are in Washington, a few
+       streets apart, and from orbit they are the same point — so they are
+       the same point: their dots lie on top of each other, and it is their
+       names that make room, stacked one under another beside the one dot.
+       Names are then given out nearest the middle first, and one that would
+       print across a name already given out is left off until the world
+       moves. */
+    var SAME = 14;                      // closer than this is one point
+    var LINE = 16;                      // how far a stacked name steps down
     var out = [];
 
     cities.forEach(function (city, i) {
       var p = project(city.lat, city.lon);
       var el = city.el;
-      if (p.z <= 0.08 || p.x < 8 || p.x > W - 8 || p.y < 8 || p.y > H - 8) {
+      // Not at the very edge of the world, where a name would hang off the
+      // rim into the sky.
+      if (p.z <= 0.18 || p.x < 8 || p.x > W - 8 || p.y < 8 || p.y > H - 8) {
         el.style.visibility = "hidden";
         return;
       }
-      out.push({ city: city, z: p.z, x: p.x, y: p.y, turn: i });
+      if (city.dx === undefined || !city.dx) {
+        var dot = el.firstChild;
+        city.dx = dot.offsetLeft + dot.offsetWidth / 2;
+      }
+      out.push({ city: city, z: p.z, x: p.x, y: p.y, turn: i, step: 0 });
     });
 
-    for (var pass = 0; pass < 5; pass += 1) {
-      for (var a = 0; a < out.length; a += 1) {
-        for (var b = a + 1; b < out.length; b += 1) {
-          var one = out[a], two = out[b];
-          var dx = two.x - one.x, dy = two.y - one.y;
-          var d = Math.sqrt(dx * dx + dy * dy);
-          if (d >= MARK) { continue; }
-          if (d < 0.2) {                 // exactly on top: pick a direction
-            var th = (one.turn * 2.4 + two.turn) % TAU;
-            dx = Math.cos(th); dy = Math.sin(th); d = 1;
-          }
-          var push = (MARK - d) / 2;
-          one.x -= dx / d * push; one.y -= dy / d * push;
-          two.x += dx / d * push; two.y += dy / d * push;
-        }
+    // Which marks are one point, and each one's place in its stack: the
+    // collages first, in the order they were given, then the landmark.
+    out.forEach(function (it, a) {
+      var above = 0;
+      for (var b = 0; b < a; b += 1) {
+        var o = out[b];
+        if (Math.abs(o.x - it.x) < SAME && Math.abs(o.y - it.y) < SAME) { above += 1; }
       }
-    }
+      it.step = above;
+    });
 
     out.forEach(function (it) {
       var el = it.city.el;
       el.style.visibility = "visible";
-      el.style.opacity = (INV2 + INV * Math.min(1, (it.z - 0.08) / 0.3)).toFixed(3);
+      el.style.opacity = (INV2 + INV * Math.min(1, (it.z - 0.18) / 0.3)).toFixed(3);
       el.style.transform =
-        "translate(" + it.x.toFixed(1) + "px," + it.y.toFixed(1) + "px)" +
+        "translate(" + (it.x - it.city.dx).toFixed(1) + "px," + it.y.toFixed(1) + "px)" +
         " translate(0,-50%)";
+      it.city.name.style.transform = it.step ? "translateY(" + (it.step * LINE) + "px)" : "";
+      it.ly = it.y + it.step * LINE;
     });
 
     out.sort(function (m, n) {
-      return (Math.abs(m.x - cx) + Math.abs(m.y - H * 0.5)) -
-             (Math.abs(n.x - cx) + Math.abs(n.y - H * 0.5));
+      return (Math.abs(m.x - cx) + Math.abs(m.ly - H * 0.5)) -
+             (Math.abs(n.x - cx) + Math.abs(n.ly - H * 0.5));
     });
 
+    // Each name goes to the right of its dot if there is room, to the left
+    // if there is not, and is left off only when neither side is clear.
     var taken = [];
-    out.forEach(function (it) {
-      var wide = (it.city.name.offsetWidth || 90) + 18;
-      var clear = true;
+    function free(x0, x1, y) {
       for (var k = 0; k < taken.length; k += 1) {
         var was = taken[k];
-        if (it.x < was.x + was.w && was.x < it.x + wide &&
-            it.y - 17 < was.y + 17 && was.y - 17 < it.y + 17) {
-          clear = false;
-          break;
+        if (x0 < was.x1 && was.x0 < x1 && y - 8 < was.y + 8 && was.y - 8 < y + 8) {
+          return false;
         }
       }
-      if (clear) { taken.push({ x: it.x, y: it.y, w: wide }); }
-      it.city.name.style.visibility = clear ? "visible" : "hidden";
+      return true;
+    }
+    out.forEach(function (it) {
+      var el = it.city.el;
+      var wide = (it.city.name.offsetWidth || 90) + 18;
+      // Right, then left, then a line up or down on either side — the
+      // dot never moves, only where its name is written beside it.
+      var side = null, lift = 0;
+      var tries = [0, -LINE, LINE, -2 * LINE, 2 * LINE];
+      for (var t = 0; t < tries.length && !side; t += 1) {
+        var y = it.ly + tries[t];
+        if (free(it.x, it.x + wide, y)) { side = "right"; lift = tries[t]; }
+        else if (free(it.x - wide, it.x, y)) { side = "left"; lift = tries[t]; }
+      }
+      if (side) {
+        taken.push({ x0: side === "right" ? it.x : it.x - wide,
+                     x1: side === "right" ? it.x + wide : it.x, y: it.ly + lift });
+      }
+      var shift = it.step * LINE + lift;
+      it.city.name.style.transform = shift ? "translateY(" + shift + "px)" : "";
+      var left = side === "left";
+      if ((el.dataset.side === "left") !== left) {
+        if (left) { el.dataset.side = "left"; } else { delete el.dataset.side; }
+      }
+      if (left) {
+        // Mirrored: the dot is now the last thing in the mark, so the mark
+        // is put down with its right-hand dot on the place.
+        el.style.transform =
+          "translate(" + (it.x - el.offsetWidth + it.city.dx).toFixed(1) + "px," +
+          it.y.toFixed(1) + "px) translate(0,-50%)";
+      }
+      // "inherit", never "visible": a child set to visible stays visible
+      // when its city is hidden, which left names hanging in the sky after
+      // the place they belonged to had turned away.
+      it.city.name.style.visibility = side ? "inherit" : "hidden";
     });
   }
 
@@ -1195,7 +1230,11 @@
 
   function onLand(lat, lon) {
     if (!earthBits) { return 0; }
-    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
+    // The mask starts at the date line (180 W), not at Greenwich. Reading
+    // it from Greenwich put every continent half a world away from where it
+    // is — Washington was standing on China — so longitude is taken from
+    // 180 W here, as the mask was written.
+    var x = Math.floor((wrap(lon) + Math.PI) / TAU * earth.w) % earth.w;
     var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
     if (x < 0) { x += earth.w; }
     if (y < 0) { y = 0; }
@@ -1246,7 +1285,7 @@
         var ay = (at / w) | 0;
         var ax = at - ay * w;
         var lat = cellLat[ay];
-        var lon = (ax + 0.5) / w * TAU;
+        var lon = (ax + 0.5) / w * TAU - Math.PI;     // from 180 W
         cells += 1;
         area += cellCos[ay];
         // Summed as points on the sphere, so the wrap takes care of itself.
@@ -1286,7 +1325,11 @@
 
   function ownerAt(lat, lon) {
     if (!earthOwner) { return 0; }
-    var x = Math.floor(wrap(lon) / TAU * earth.w) % earth.w;
+    // The mask starts at the date line (180 W), not at Greenwich. Reading
+    // it from Greenwich put every continent half a world away from where it
+    // is — Washington was standing on China — so longitude is taken from
+    // 180 W here, as the mask was written.
+    var x = Math.floor((wrap(lon) + Math.PI) / TAU * earth.w) % earth.w;
     var y = Math.floor((Math.PI / 2 - lat) / Math.PI * earth.h);
     if (x < 0) { x += earth.w; }
     if (y < 0) { y = 0; }
@@ -1300,7 +1343,7 @@
      which is plenty at this size and costs nothing to write. */
   function inland(lat, lon) {
     if (!onLand(lat, lon)) { return 0; }
-    var step = Math.PI / earth.h;          // one cell of the mask, in radians
+    var step = Math.PI / 256;              // three quarters of a degree, whatever the mask
     var hits = 0;
     var tries = 0;
     for (var ring = 1; ring <= 3; ring += 1) {
@@ -1765,6 +1808,7 @@
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
     placeGloss();
+    placeCoast();
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -2074,6 +2118,88 @@
     g.fillStyle = gritPattern;
     g.fillRect(0, 0, W, H);
     g.restore();
+  }
+
+  /* ---- the coastline ------------------------------------------------------
+
+     The land shapes are the Earth's, exactly: Natural Earth's 50m
+     coastlines, simplified to within about five kilometres, drawn as one
+     fine line of ink over the weave. The weave shows where the land is by
+     how thick it is, and it breathes and fades and hazes; the line does
+     none of that. It is always there and always sharp, so whatever the
+     transparency is doing, the continents are the continents and every
+     city mark is standing on its own coast.
+
+     It has a canvas of its own, drawn again only when the world is turned,
+     rolled, resized or flown through. */
+
+  var coast = document.getElementById("world-coast");
+  var coastCtx = coast.getContext("2d");
+  var coastPts = null;          // sin/cos of lat and lon per point; NaN breaks a line
+  var coastSeen = { spin: null, tilt: 0, cx: 0, cy: 0, r: 0, w: 0, h: 0, dpr: 0 };
+
+  function readCoast(data) {
+    if (!data || !data.points) { return; }
+    var raw = window.atob(data.points);
+    var n = raw.length >> 2;
+    var sLat = new Float32Array(n), cLat = new Float32Array(n);
+    var sLon = new Float32Array(n), cLon = new Float32Array(n);
+    var cut = new Uint8Array(n);
+    for (var i = 0; i < n; i += 1) {
+      var o = i * 4;
+      var lon = (raw.charCodeAt(o) | (raw.charCodeAt(o + 1) << 8)) << 16 >> 16;
+      var lat = (raw.charCodeAt(o + 2) | (raw.charCodeAt(o + 3) << 8)) << 16 >> 16;
+      if (lon === -32768) { cut[i] = 1; continue; }
+      var la = lat / 100 * RAD, lo = lon / 100 * RAD;
+      sLat[i] = Math.sin(la); cLat[i] = Math.cos(la);
+      sLon[i] = Math.sin(lo); cLon[i] = Math.cos(lo);
+    }
+    coastPts = { n: n, sLat: sLat, cLat: cLat, sLon: sLon, cLon: cLon, cut: cut };
+  }
+
+  function drawCoast() {
+    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (coast.width !== pw || coast.height !== ph) { coast.width = pw; coast.height = ph; }
+    var g = coastCtx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    coastSeen.spin = spin; coastSeen.tilt = tilt; coastSeen.cx = cx; coastSeen.cy = cy;
+    coastSeen.r = R; coastSeen.w = W; coastSeen.h = H; coastSeen.dpr = dpr;
+    if (!coastPts) { return; }
+
+    var cosS = Math.cos(spin), sinS = Math.sin(spin);
+    var P = coastPts;
+    g.beginPath();
+    var open = false;
+    for (var i = 0; i < P.n; i += 1) {
+      if (P.cut[i]) { open = false; continue; }
+      var sinA = P.sLon[i] * cosS - P.cLon[i] * sinS;
+      var cosA = P.cLon[i] * cosS + P.sLon[i] * sinS;
+      var y = P.sLat[i];
+      var z = P.cLat[i] * cosA;
+      var z2 = y * SIN_T + z * COS_T;
+      if (z2 <= 0.02) { open = false; continue; }          // round the back
+      var px = cx + P.cLat[i] * sinA * R;
+      var py = cy - (y * COS_T - z * SIN_T) * R;
+      if (open) { g.lineTo(px, py); } else { g.moveTo(px, py); open = true; }
+    }
+    g.lineJoin = "round";
+    g.lineCap = "round";
+    // Finer than a pixel on a sharp screen, a pixel on an ordinary one, and a
+    // touch heavier close to, where the coast is the ground's edge.
+    var near = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+    g.lineWidth = Math.max(1 / dpr, 0.75 + 0.6 * near);
+    g.strokeStyle = "rgba(38, 30, 24, " + (0.46 + 0.14 * near).toFixed(3) + ")";
+    g.stroke();
+  }
+
+  function placeCoast() {
+    if (coastSeen.spin === null || Math.abs(coastSeen.spin - spin) > 0.0004 ||
+        Math.abs(coastSeen.tilt - tilt) > 0.0004 || Math.abs(coastSeen.cx - cx) > 0.3 ||
+        Math.abs(coastSeen.cy - cy) > 0.3 || Math.abs(coastSeen.r - R) > 0.3 ||
+        coastSeen.w !== W || coastSeen.h !== H || coastSeen.dpr !== dpr) {
+      drawCoast();
+    }
   }
 
   /* ---- the clear coat -------------------------------------------------------
@@ -2394,6 +2520,21 @@
       var fade = (INV2 + INV * Math.min(1, (p.z - 0.05) / 0.32)) *
                  (0.45 + 0.55 * p.squash);
       var scale = 0.64 + 0.36 * p.z;
+
+      // A word may lie right up to the rim but not over it into the sky:
+      // it fades as its outline reaches the edge of the world, and is gone
+      // before any of it would hang off.
+      if (ground.pw) {
+        var edge = R - Math.sqrt((p.x - cx) * (p.x - cx) + (p.y - cy) * (p.y - cy));
+        var reach = Math.max(ground.ph * scale / 2,
+          ground.pw * scale * p.squash / 2 * Math.abs(Math.sin(p.lie * RAD))) + 6;
+        fade *= Math.max(0, Math.min(1, (edge - reach) / Math.max(1, reach)));
+        if (fade < 0.02) {
+          ground.box = null;
+          el.style.visibility = "hidden";
+          return;
+        }
+      }
 
       el.style.visibility = "visible";
       delete el.dataset.behind;
@@ -5688,7 +5829,6 @@
   var deckTable = document.getElementById("deck-table");
   var deckClose = document.getElementById("deck-close");
   var hereLayer = document.getElementById("here");
-  var switcher = document.getElementById("switch");
 
   var deckMode = null;         // "all", "word", or null when it is put away
   var deckWord = null;         // the word it was opened on, for "word"
@@ -6154,7 +6294,7 @@
       }, 60, 200));
     }
 
-    // The close control, and the switch in the other corner, are kept clear.
+    // The close control, in the corner, is kept clear.
     var clear = [{ x: width - 64, y: 0, w: 64, h: 64 },
                  { x: width - 180, y: 0, w: 180, h: 60 }];
     var base = Math.min(width * 0.62, height * 0.5);
@@ -6205,8 +6345,6 @@
     // A new table each time it is opened: what was on it is cleared off.
     retire(poolOf(deckTable));
     dealTable();
-    switcher.textContent = mode === "all" ? "The world" : "Collages";
-    switcher.setAttribute("aria-expanded", mode === "all" ? "true" : "false");
     deckClose.focus();
   }
 
@@ -6218,8 +6356,6 @@
     deck.hidden = true;
     delete document.body.dataset.deck;
     retire(poolOf(deckTable));
-    switcher.textContent = "Collages";
-    switcher.setAttribute("aria-expanded", "false");
   }
 
   /* ---- a collage in its own city ---------------------------------------- */
@@ -6231,7 +6367,7 @@
     if (!work || !hereShown) { retire(pool); hereLayer.hidden = true; return; }
     hereLayer.hidden = false;
 
-    // Keep clear of the banner, the switch, and wherever the creature is
+    // Keep clear of the banner, the corner, and wherever the creature is
     // standing, so the collage lands beside what is going on rather than on
     // top of it.
     var clear = [{ x: W - 180, y: 0, w: 180, h: 60 }];
@@ -6336,10 +6472,6 @@
 
   deckClose.addEventListener("click", function () { closeDeck(); });
 
-  switcher.addEventListener("click", function () {
-    if (deckMode === "all") { closeDeck(); } else { closeDeck(); openDeck("all"); }
-  });
-
   bannerCity.addEventListener("click", function () {
     if (!place || !place.work) { return; }
     showHere(true);
@@ -6441,7 +6573,8 @@
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
-               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png")])
+               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png"),
+               read("coast.json").catch(function () { return null; })])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
@@ -6449,6 +6582,7 @@
       readTones(all[3]);
       dirt.land = all[4];
       dirt.sea = all[5];
+      readCoast(all[6]);
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }

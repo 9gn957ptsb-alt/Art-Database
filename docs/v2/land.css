@@ -112,6 +112,8 @@
   image-rendering: auto;
 }
 
+.world-coast { pointer-events: none; }
+
 .world-gloss {
   pointer-events: none;
   transition: opacity var(--beat-3) ease-out;
@@ -242,6 +244,15 @@
 
 .city[data-up="true"] { opacity: 1; }
 
+/* Only the dot and the name take a press, not the box round them. Places
+   that are one point from orbit lie on top of each other with their names
+   stacked, and the box of one would otherwise cover the name of the next. */
+.city { pointer-events: none; }
+.city > * { pointer-events: auto; }
+
+/* A name with no room on the right sits on the left of its dot. */
+.city[data-side="left"] { flex-direction: row-reverse; }
+
 .city-dot {
   width: var(--s-3);
   height: var(--s-3);
@@ -301,6 +312,9 @@
   opacity: 0 !important;
   pointer-events: none;
 }
+
+.land[data-at="city"] .city > *,
+.land[data-at="flying"] .city > * { pointer-events: none; }
 
 .land[data-at="globe"] .creature,
 .land[data-at="flying"] .creature,
@@ -886,27 +900,6 @@
 }
 
 .here > * { pointer-events: auto; }
-
-/* The way across, in the corner the banner does not use. */
-.switch {
-  position: fixed;
-  top: var(--s-5);
-  right: calc(var(--s-6) + var(--s-5));
-  z-index: 110;
-  padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: var(--t-1);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.switch:hover,
-.switch:focus-visible { background: #ffffff; }
 
 .deal-plate,
 .deal-text {
