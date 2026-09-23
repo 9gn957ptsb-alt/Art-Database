@@ -17,7 +17,9 @@ Fibonacci number:
                    hawks that hunt the far ground; over the calm soil they turn back outward
 
 The processes act on the whole field, never on single tiles, so no joins show. Every cell keeps a
-note of where it came from, so pointing anywhere still names the saved painting underneath. The page
+note of where it came from, so pointing anywhere still names the saved painting underneath, and
+clicking or tapping a painting picks it out by darkening everything else. Clicking it again,
+pressing Escape or "Show all" brings the whole field back. The page
 embeds the tile cutouts, so it is written to dirt/private/ and never committed.
 
     python3 dirt/build_soil_viewer.py [--private dirt/private]
@@ -60,13 +62,14 @@ PAGE = r"""<title>DIRT</title>
 
 <div class="bar">
   <button id="shuffle">Shuffle</button>
+  <button id="show-all" hidden>Show all</button>
   <div class="art" aria-live="polite">
     <span class="title" id="c-title"></span>
     <span class="who" id="c-who"></span>
     <span id="c-link"></span>
   </div>
 </div>
-<canvas id="field" aria-label="A field of soil tiles laid out from a point, growing stranger with distance; hover or tap to see which painting is underneath"></canvas>
+<canvas id="field" aria-label="A field of soil tiles laid out from a point, growing stranger with distance; point at it to name the painting underneath; click or tap a painting to pick it out, and again to let it go"></canvas>
 
 <script>
 const TS = __TILES__;
@@ -464,6 +467,9 @@ function frame(now) {
 function lay() {
   cancelAnimationFrame(anim);
   selWork = null;
+  shown = -1;
+  showAll.hidden = true;
+  for (const id of ["c-title", "c-who", "c-link"]) document.getElementById(id).replaceChildren();
   revealed.fill(0);
   deal((Math.random() * 4294967296) >>> 0);
   started = performance.now();
@@ -502,30 +508,63 @@ function makeShade() {
   g.putImageData(im, 0, 0);
 }
 
-let pending = null;
-function pick(ev) {
-  if (!layout.length) return;
+// ---- pointing and picking out ------------------------------------------------------------------
+// Pointing at the field names the painting underneath and darkens nothing. Clicking or tapping a
+// painting picks it out: everything else darkens, and it stays picked out while the pointer goes
+// elsewhere, to the Artsy link say. Clicking it again, pressing Escape or "Show all" lets it go.
+
+const showAll = document.getElementById("show-all");
+let shown = -1, pending = null;
+
+function workUnder(ev) {
+  if (!layout.length) return -1;
   const r = cv.getBoundingClientRect();
   const fx = ((ev.clientX - r.left) / r.width) * W, fy = ((ev.clientY - r.top) / r.height) * H;
   const x = Math.floor(fx), y = Math.floor(fy);
-  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  if (x < 0 || y < 0 || x >= W || y >= H) return -1;
   const pk = particleAt(fx, fy);
-  const wi = pk >= 0 ? P.kin[pk] : workAt(y * W + x);
-  if (wi === selWork || pending !== null) return;
-  pending = requestAnimationFrame(() => {
-    pending = null;
-    selWork = wi;
-    makeShade();
-    const w = TS.works[wi];
-    document.getElementById("c-title").textContent = w.title || "Untitled";
-    document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
-    document.getElementById("c-link").replaceChildren(Object.assign(document.createElement("a"), { href: w.url, target: "_blank", rel: "noopener", textContent: "See it on Artsy" }));
-    if (!anim) frame(Infinity);
-  });
+  return pk >= 0 ? P.kin[pk] : workAt(y * W + x);
 }
-cv.addEventListener("pointermove", pick);
-cv.addEventListener("pointerdown", pick);
-cv.addEventListener("pointerleave", () => { if (selWork !== null) { selWork = null; if (!anim) frame(Infinity); } });
+
+function name(wi) {
+  shown = wi;
+  const w = TS.works[wi];
+  document.getElementById("c-title").textContent = w.title || "Untitled";
+  document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
+  document.getElementById("c-link").replaceChildren(Object.assign(document.createElement("a"), { href: w.url, target: "_blank", rel: "noopener", textContent: "See it on Artsy" }));
+}
+
+const redraw = () => { if (!anim) frame(Infinity); };
+
+function pickOut(wi) {
+  selWork = wi;
+  makeShade();
+  name(wi);
+  showAll.hidden = false;
+  redraw();
+}
+
+function letGo() {
+  if (selWork === null) return;
+  selWork = null;
+  showAll.hidden = true;
+  redraw();
+}
+
+cv.addEventListener("pointermove", (ev) => {
+  // Only a mouse hovers; and a painting that has been picked out holds still until it is let go.
+  if (ev.pointerType !== "mouse" || selWork !== null || pending !== null) return;
+  const wi = workUnder(ev);
+  if (wi < 0 || wi === shown) return;
+  pending = requestAnimationFrame(() => { pending = null; if (selWork === null) name(wi); });
+});
+cv.addEventListener("click", (ev) => {
+  const wi = workUnder(ev);
+  if (wi < 0) return;
+  if (wi === selWork) letGo(); else pickOut(wi);
+});
+showAll.addEventListener("click", letGo);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") letGo(); });
 
 document.getElementById("shuffle").onclick = () => ready.then(lay);
 ready.then(lay);

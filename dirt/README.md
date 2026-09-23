@@ -168,6 +168,10 @@ A similarity map of the paintings (laying clods out by how alike their paintings
 his archives) is the plan for bigger globe terrains, not for DIRT.
 
 The processes run over the whole field, never over single tiles, so no joins show. Every cell remembers which
-painting it came from, so pointing anywhere still names the saved painting underneath. The generator still writes
+painting it came from, so pointing anywhere names the saved painting underneath without darkening anything.
+Clicking or tapping a painting picks it out: everything else darkens, and it stays picked out while the
+pointer goes elsewhere, to the Artsy link for instance. Clicking it again, pressing Escape, or pressing
+**Show all** (which appears only while something is picked out) brings the whole field back without
+shuffling. The generator still writes
 a colour version of each tile, which the viewer does not use.
 All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.
