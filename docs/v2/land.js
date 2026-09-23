@@ -9938,7 +9938,22 @@
 
   var READING = true;                 // false: dealt at random, as before
   var READ_BEAT = 1097;               // --beat-5
-  var WORD_HOLD = 4200;               // how long a word has the room to itself
+  /* The pacing (artist, 23 Sep 2026: "give the viewer a little bit of time,
+     perhaps even 30 seconds to a minute ... before new information is
+     introduced"), set from research on how long people really look at a
+     work — Smith & Smith 2001 (the Met: median 17 s, mean 27 s), Smith,
+     Smith & Tinio 2017 (median 21 s), Carbon 2017 (median 25 s) — and on
+     slow looking (Tishman; Slow Art Day; Sarraf & Chatterjee 2025).
+     Who it is comes in over the first half-minute; the first thing it is
+     made of waits until 30 s, just past where an unguided glance would have
+     moved on, so the looking has turned deliberate; then each word waits
+     longer than the last (22, 30, 40 s), slowing into stillness rather than
+     hurrying. The clock only moves while the viewer is still, so words
+     arrive during looking, not fidgeting; pressing or turning never waits. */
+  var OPEN_AT = [4000, 9000, 16000, 24000];   // title, place, medium and size, price
+  var FIRST_WORD_AT = 30000;
+  var WORD_GAP = 22000, WORD_GAP_GROW = 1.35, WORD_GAP_MAX = 40000;
+  var STILL_MS = 1500;                // still: the pointer has not moved for this long
   var reading = null;                 // what is laid out at this site, and its clock
   var cameBy = null;                  // the word a visit arrived by
 
@@ -9982,6 +9997,24 @@
 
   function reveal(node, ms) {
     later(function () { node.dataset.on = "true"; }, ms);
+  }
+
+  // Like later(), but the clock only moves while the viewer is still: if the
+  // pointer moved within STILL_MS when it comes due, it waits for them to
+  // settle. Under reduced motion nothing waits at all.
+  function afterStill(fn, ms) {
+    var r = reading;
+    if (!r) { return; }
+    function tick() {
+      if (reading !== r) { return; }
+      var moved = performance.now() - pointerAt.at;
+      if (!still && moved < STILL_MS) {
+        r.timers.push(window.setTimeout(tick, STILL_MS - moved + 80));
+        return;
+      }
+      fn();
+    }
+    r.timers.push(window.setTimeout(tick, still ? 0 : ms));
   }
 
   function readHere(work, city) {
@@ -10076,15 +10109,17 @@
     // the clock
     if (!still) { pixelIn(plate, 0); }
     plate.dataset.on = "true";
-    var t = via ? READ_BEAT * 1.4 : READ_BEAT;
-    if (via) { later(function () { say_(via, true); }, 420); }
-    reveal(title, t);
-    reveal(where, t + READ_BEAT * 0.7);
-    reveal(detail, t + READ_BEAT * 1.3);
-    if (work.availability) { reveal(price, t + READ_BEAT * 1.9); }
-    r.start = t + READ_BEAT * 3.2 + (via ? WORD_HOLD : 0);
+    // The photograph first, alone; then who it is, over the first half-minute.
+    reveal(title, OPEN_AT[0]);
+    reveal(where, OPEN_AT[1]);
+    reveal(detail, OPEN_AT[2]);
+    if (work.availability) { reveal(price, OPEN_AT[3]); }
+    // Arrived by a word, that word is the thread you came along: it is said
+    // once the photograph has settled, before anything else it is made of.
+    if (via) { later(function () { say_(via, true); }, 2000); }
     r.n = via ? 1 : 0;
-    later(procession, r.start);
+    r.gap = WORD_GAP;
+    afterStill(procession, FIRST_WORD_AT);
   }
 
   // The words go by one at a time, then settle into their line.
@@ -10099,7 +10134,9 @@
     }
     say_(r.order[r.n], false);
     r.n += 1;
-    later(procession, WORD_HOLD + (r.order.length - r.n < 3 ? 600 : 0));
+    var gap = r.gap;
+    r.gap = Math.min(WORD_GAP_MAX, r.gap * WORD_GAP_GROW);   // each waits longer than the last
+    afterStill(procession, gap);
   }
 
   function quiet() {
@@ -10171,7 +10208,7 @@
     delete r.root.dataset.held;
     Array.prototype.forEach.call(r.line.children, function (b) { b.setAttribute("aria-pressed", "false"); });
     quiet();
-    if (r.n < r.order.length) { later(procession, READ_BEAT); }
+    if (r.n < r.order.length) { afterStill(procession, READ_BEAT); }
   }
 
   /* The composition: the photograph large on one side, the reading beside
