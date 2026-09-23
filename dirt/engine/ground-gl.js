@@ -628,6 +628,116 @@ void digital(int layer, Cell c, int g, out vec3 A, out vec3 B) {
       }
     }
     A = B = min(col, vec3(255.0));
+  } else if (g == 20) {
+    // Picasso: flat planes of synthetic cubism in ochre, black, cream and brown, and, in each 144-cell square, a
+    // head seen from the front and in profile at once, in a bold black line, split cobalt and rose.
+    vec3 PAL[6] = vec3[6](vec3(196.0, 150.0, 70.0), vec3(25.0), vec3(236.0, 224.0, 196.0), vec3(120.0, 80.0, 40.0), vec3(40.0, 90.0, 170.0), vec3(235.0, 180.0, 165.0));
+    vec2 gq = floor(q / 21.0);
+    uint hc = h3(int(gq.x), int(gq.y), hp);
+    vec2 f = fract(q / 21.0);
+    vec3 col = PAL[int(hc % 4u)];
+    if ((hc & 16u) != 0u && f.x + f.y * (unit(mixh(hc)) * 2.0) > 1.0) col = PAL[int(mixh(hc) % 4u)];   // planes split on a slant
+    if (min(f.x, f.y) < 0.05) col = vec3(25.0);
+    vec2 cq = floor(q / 144.0), d = q - (cq + 0.5) * 144.0;
+    uint hf = h3(int(cq.x), int(cq.y), hp + 9u);
+    if (unit(hf) < 0.7) {
+      vec2 e = d / vec2(34.0, 46.0);
+      float head = length(e);
+      if (head < 1.0) col = d.x < 4.0 * sin(d.y * 0.05) ? PAL[4] : PAL[5];   // the face, split
+      if (d.x < -30.0 && head < 1.25 && head > 1.0) col = PAL[4];          // hair
+      float line = abs(head - 1.0) * 34.0;
+      bool ink = line < 1.4;
+      ink = ink || (abs(d.x - 2.0 + d.y * 0.1) < 1.2 && d.y > -18.0 && d.y < 10.0);   // the nose, in profile
+      ink = ink || (abs(d.y - 22.0) < 1.0 && abs(d.x) < 10.0);                          // the mouth
+      for (int n = 0; n < 2; n++) {                                                    // two eyes, both seen from the front
+        vec2 eo = d - vec2(n == 0 ? -14.0 : 12.0, n == 0 ? -12.0 : -8.0);
+        float el = length(eo / vec2(8.0, 4.0));
+        if (abs(el - 1.0) < 0.2) ink = true;
+        if (length(eo) < 2.6) ink = true;
+      }
+      if (ink && head < 1.3) col = vec3(20.0);
+    }
+    A = B = col * (0.94 + 0.08 * vnoise(p, 3.0, hp + 4u));
+  } else if (g == 21) {
+    // de Kooning: broad strokes laid wet into wet, sliding on the diagonal, pink, yellow, cerulean and white, each
+    // streaked by the brush and scraped by the knife, over one another.
+    vec3 PAL[4] = vec3[4](vec3(240.0, 190.0, 170.0), vec3(245.0, 205.0, 60.0), vec3(120.0, 180.0, 210.0), vec3(248.0, 240.0, 225.0));
+    vec3 col = PAL[3];
+    const float G = 21.0;
+    ivec2 sq = ivec2(floor(p / G));
+    float late = -1.0;
+    for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {
+      ivec2 qq = sq + ivec2(i, j);
+      uint h = h3(qq.x, qq.y, hp);
+      float b = unit(mixh(h + 2u));
+      if (b <= late) continue;
+      vec2 o = (vec2(qq) + vec2(unit(h), unit(mixh(h + 1u)))) * G + vec2(8.0 * sin(T * 0.13 + b * 6.0), 0.0);
+      float an = -0.7 + 0.9 * (vnoise(o, 144.0, hp + 3u) - 0.5) + 1.2 * step(0.8, unit(mixh(h + 4u)));
+      vec2 dir = vec2(cos(an), sin(an)), d = p - o;
+      float along = dot(d, dir), across = dot(d, vec2(-dir.y, dir.x)), len = 21.0 + 21.0 * unit(mixh(h + 5u)), w = 5.0 + 5.0 * unit(mixh(h + 6u));
+      if (abs(along) < len && abs(across) < w * (1.0 - 0.3 * abs(along) / len)) {
+        late = b;
+        vec3 c0 = PAL[int(mixh(h + 7u) % 4u)], c1 = PAL[int(mixh(h + 8u) % 4u)];
+        float streak = fract(across * 0.45 + vnoise(vec2(along, across), 6.0, h) * 1.5);   // bristles
+        col = mix(c0, c1, smoothstep(0.3, 0.7, along / len * 0.5 + 0.5)) * (streak < 0.2 ? 0.85 : 1.0);
+        if (abs(across) > w * 0.85) col = mix(col, vec3(255.0), 0.3);                      // the knife's ridge
+      }
+    }
+    A = B = col;
+  } else if (g == 22) {
+    // Cézanne: the land built of small parallel strokes, all leaning one way within each patch, in ochre, viridian,
+    // green and violet-blue, the blue on the heights, the canvas showing between.
+    vec3 canvas = vec3(225.0, 215.0, 185.0), col = canvas;
+    vec2 pq = floor(p / vec2(8.0, 5.0));
+    vec2 f = fract(p / vec2(8.0, 5.0));
+    uint h = h3(int(pq.x), int(pq.y), hp);
+    float land = vnoise(p, 55.0, hp + 1u) + 0.4 * (q.y / 144.0);
+    vec3 c0 = land > 0.9 ? vec3(110.0, 120.0, 170.0) : land > 0.55 ? vec3(205.0, 170.0, 90.0) : land > 0.35 ? vec3(90.0, 150.0, 70.0) : vec3(50.0, 130.0, 90.0);
+    vec3 c1 = mix(c0, vec3(110.0, 120.0, 170.0), 0.35);
+    float slant = f.x - f.y * 0.8;                                    // strokes on the diagonal
+    if (unit(h) < 0.85 && fract(slant * 2.5) < 0.62) col = mix(c0, c1, unit(mixh(h + 1u))) * (0.9 + 0.2 * unit(mixh(h + 2u)));
+    A = B = col;
+  } else if (g == 23) {
+    // Van Gogh: short thick strokes laid along a turbulent flow that swirls round a few glowing orbs, cobalt and
+    // ultramarine against chrome yellow, moving slowly on.
+    vec3 col = vec3(25.0, 50.0, 120.0);
+    vec2 flowv = vec2(0.0);
+    for (int n = 0; n < 3; n++) {
+      uint h = mixh(hp + 800u + uint(n));
+      vec2 o = (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * vec2(233.0, 144.0), d = q - o;
+      float r = length(d) + 1.0;
+      flowv += vec2(-d.y, d.x) / r * exp(-r / 55.0) * 3.0;
+      if (r < 13.0) { col = vec3(245.0, 215.0, 80.0); flowv = vec2(0.0); }
+      else if (r < 21.0 && fract(r / 3.0 - T * 0.3) < 0.6) col = vec3(240.0, 225.0, 140.0);
+    }
+    float an = 6.2832 * vnoise(p, 89.0, hp + 5u) + atan(flowv.y, flowv.x + 1e-3) * min(1.0, length(flowv));
+    vec2 dir = vec2(cos(an), sin(an));
+    float along = dot(p, dir) + T * 3.0, across = dot(p, vec2(-dir.y, dir.x));
+    uint hs = h3(int(floor(along / 6.0)), int(floor(across / 2.0)), hp + 7u);
+    if (length(flowv) > 0.0 || col.b > 100.0) {
+      float k = unit(hs);
+      vec3 sc = k < 0.35 ? vec3(30.0, 70.0, 160.0) : k < 0.6 ? vec3(20.0, 40.0, 120.0) : k < 0.8 ? vec3(90.0, 140.0, 200.0) : k < 0.93 ? vec3(240.0, 210.0, 70.0) : vec3(245.0, 235.0, 170.0);
+      if (col.r < 200.0) col = sc * (fract(across / 2.0) < 0.25 ? 0.75 : 1.0);   // each stroke a ridge
+    }
+    A = B = col;
+  } else if (g == 24) {
+    // Monet: the pond at Giverny from above: lavender and turquoise water broken into soft horizontal dabs, willow
+    // reflections falling in green streaks, lily pads and their pink and white flowers, all shimmering.
+    vec3 col = mix(vec3(140.0, 140.0, 190.0), vec3(100.0, 160.0, 160.0), vnoise(p, 55.0, hp));
+    uint hd = h3(int(floor((p.x + T * 2.0) / 5.0)), int(floor(p.y / 2.0)), hp + 1u);
+    col = mix(col, unit(hd) < 0.5 ? vec3(190.0, 180.0, 220.0) : vec3(90.0, 130.0, 110.0), 0.35 * unit(mixh(hd)));
+    if (vnoise(vec2(p.x, p.y / 8.0), 13.0, hp + 2u) > 0.72) col = mix(col, vec3(70.0, 110.0, 80.0), 0.5);   // reflected willows
+    ivec2 sq = ivec2(floor(p / 34.0));
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+      ivec2 qq = sq + ivec2(i, j);
+      uint h = h3(qq.x, qq.y, hp + 3u);
+      if (unit(h) > 0.55) continue;
+      vec2 o = (vec2(qq) + vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * 34.0, d = p - o;
+      float r = length(d / vec2(1.0, 0.7)), R = 5.0 + 8.0 * unit(mixh(h + 3u)), a = atan(d.y, d.x) - 6.2832 * unit(h);
+      if (r < R && abs(sin(a * 0.5)) > 0.12) col = mix(vec3(80.0, 130.0, 70.0), vec3(120.0, 160.0, 90.0), vnoise(p, 3.0, h));
+      if (unit(mixh(h + 4u)) < 0.5 && length(d - vec2(1.0)) < 2.8) col = unit(mixh(h + 5u)) < 0.6 ? vec3(235.0, 170.0, 185.0) : vec3(245.0, 240.0, 235.0);
+    }
+    A = B = col;
   } else if (g == 19) {
     // test pattern (Ikeda): the whole field in vertical bars of black and white whose widths are a binary code,
     // scrolling fast, now and then thrown into its negative.
@@ -941,12 +1051,12 @@ int changeAt(int kind, ivec2 c, float t0, float tb, vec2 O, uint seed, uint salt
   return broken(progressAt(vec2(c) + 0.5, t0, tb, O, seed, dur, speed), kind, c, salt) ? 3 : 0;
 }
 
-// The worlds, ordered round a wheel so that neighbours on it are far apart: light, writing, data, cubism, life,
+// The worlds (twenty-five), ordered round a wheel so that neighbours on it are far apart: light, writing, data, cubism, life,
 // each followed by its opposite. Passages take their world from their place on a lattice colouring (a step east moves
 // 4 along the wheel, a step south 7), so every edge crosses into a distant world, and each change in time moves a
 // passage 9 further round.
-const int WORLDS[20] = int[20](13, 3, 9, 16, 7, 14, 2, 19, 11, 5, 10, 12, 8, 15, 18, 4, 1, 17, 6, 0);
-int worldOf(int i, int j, int k) { return WORLDS[int(mod(float(i * 4 + j * 7 + (max(k, -1) + 1) * 9), 20.0))]; }
+const int WORLDS[25] = int[25](13, 3, 9, 16, 7, 23, 14, 2, 19, 11, 20, 5, 10, 12, 8, 24, 15, 18, 4, 1, 21, 17, 6, 0, 22);
+int worldOf(int i, int j, int k) { return WORLDS[int(mod(float(i * 4 + j * 7 + (max(k, -1) + 1) * 9), 25.0))]; }
 
 /** A passage's colours at a cell, with its changes: which passage is c.e. */
 void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int kind, out State Sd) {

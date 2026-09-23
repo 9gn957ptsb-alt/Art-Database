@@ -1,5 +1,25 @@
 [
  {
+  "id": "monet",
+  "prompt": "Museum-quality, extremely detailed, sharp, rich texture of the real medium visible at close range. Seen flat and straight on, filling the whole frame edge to edge as a continuous field that could extend beyond the frame, no frame, no wall, no text, no signature. A field in the manner of Claude Monet's late water lilies at Giverny: a surface of water seen from above, lily pads and pink and white blossoms floating, reflections of sky and willows dissolving into broken strokes of lavender, turquoise, rose and green, soft shimmering light, loose feathery brushwork, no horizon."
+ },
+ {
+  "id": "vangogh",
+  "prompt": "Museum-quality, extremely detailed, sharp, rich texture of the real medium visible at close range. Seen flat and straight on, filling the whole frame edge to edge as a continuous field that could extend beyond the frame, no frame, no wall, no text, no signature. A field in the manner of Vincent van Gogh's late paintings: swirling rhythmic impasto brushstrokes like The Starry Night and the wheat fields at once, thick directional dashes of paint following turbulent flows around glowing orbs, cobalt and ultramarine against chrome yellow and emerald, each stroke a separate raised ridge of oil paint."
+ },
+ {
+  "id": "cezanne",
+  "prompt": "Museum-quality, extremely detailed, sharp, rich texture of the real medium visible at close range. Seen flat and straight on, filling the whole frame edge to edge as a continuous field that could extend beyond the frame, no frame, no wall, no text, no signature. A field in the manner of Paul C\u00e9zanne's late landscapes of Mont Sainte-Victoire: the landscape built of small parallel diagonal brushstrokes in blocks of ochre, viridian green and violet-blue, each patch a plane of colour, structure made of colour modulation, patches of bare primed canvas showing between strokes, a solid geometric architecture of trees, rocks and fields."
+ },
+ {
+  "id": "dekooning",
+  "prompt": "Museum-quality, extremely detailed, sharp, rich texture of the real medium visible at close range. Seen flat and straight on, filling the whole frame edge to edge as a continuous field that could extend beyond the frame, no frame, no wall, no text, no signature. A field in the manner of Willem de Kooning's abstract expressionist paintings of the 1950s to 1970s: energetic, sliding, wet-into-wet oil strokes in pale pink, cadmium yellow, cerulean and white, scraped and smeared with a palette knife, shapes dissolving into landscape, sweeping diagonal gestures, thick paint ridges and drips, luminous and bold."
+ },
+ {
+  "id": "picasso",
+  "prompt": "Museum-quality, extremely detailed, sharp, rich texture of the real medium visible at close range. Seen flat and straight on, filling the whole frame edge to edge as a continuous field that could extend beyond the frame, no frame, no wall, no text, no signature. A field in the manner of Pablo Picasso across his periods at once: a synthetic-cubist passage of flat interlocking planes in ochre, black and white with a guitar and a wine bottle reassembled from simultaneous viewpoints, flowing into a bold late-style ink line drawing of a face seen in profile and frontally at once with two eyes on one side, confident black contour lines, patches of cobalt blue and flat rose, the forms broken and remade."
+ },
+ {
   "id": "threads",
   "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A sheet of warm cream paper scattered with small fragments of old paintings like pieces of soil, where one fragment has been touched and glows, and fine hand-drawn graphite and red crayon lines reach out from it to a dozen related fragments across the sheet, the lines looping and wavering like Twombly's pencil, the related fragments faintly lit, the rest of the sheet slightly dimmed. A map of kinship drawn by hand."
  },

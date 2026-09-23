@@ -246,6 +246,17 @@ round. Beside the worlds above, each artist's other work has its own:
 | brushstrokes laid by an algorithm along a flow, each in the colour of the soil under it | Quayola, *Pleasant Places* |
 | test pattern: full-field bars of a binary code, scrolling, now and then negative | Ikeda, *test pattern* |
 
+The wheel also holds the five artists with the most works saved after those already in DIRT, each in their own
+language and colours, guided by high-quality generated studies:
+
+| World | After |
+| --- | --- |
+| flat planes of synthetic cubism, and heads seen from the front and in profile at once, split cobalt and rose, in bold black line | Pablo Picasso (184 works saved) |
+| broad strokes laid wet into wet, sliding on the diagonal, pink, yellow, cerulean and white, streaked and knife-scraped | Willem de Kooning (92) |
+| the land built of small parallel strokes leaning one way, ochre, viridian and violet-blue, blue on the heights, canvas between | Paul Cézanne (75) |
+| thick strokes along a turbulent flow swirling round glowing orbs, cobalt and ultramarine against chrome yellow | Vincent van Gogh (65) |
+| the pond at Giverny from above: lavender and turquoise water in soft dabs, willow reflections, lily pads and flowers | Claude Monet (62) |
+
 **Singularities.** The plane is not an even quilt: one in each 987-cell square (φ⁻¹ of them kept), reaching 233 to
 377 cells, is a singularity, where the image itself collapses and is born again. Across its axis it has two halves.
 On one, whatever world lies there breaks into blocks of 2, 3, 5, 8, 13, 21, 34, 55 and 89 cells, each the colour of its

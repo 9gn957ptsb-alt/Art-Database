@@ -50,15 +50,28 @@ def main():
     todo = [p for p in prompts if p["id"] == args.only] if args.only else [p for p in prompts if p["id"] not in done]
     OUT.mkdir(parents=True, exist_ok=True)
     for p in todo[: args.max]:
-        r = requests.post(API, headers=headers, timeout=300,
-                          json={"model": args.model, "prompt": p["prompt"], "size": args.size, "quality": args.quality, "n": 1})
+        # Streamed, with partial images on the way, so a long high-quality image keeps the connection alive.
+        r = requests.post(API, headers=headers, timeout=600, stream=True,
+                          json={"model": args.model, "prompt": p["prompt"], "size": args.size, "quality": args.quality, "n": 1,
+                                "stream": True, "partial_images": 2})
         if r.status_code != 200:
             print(p["id"], "failed:", r.status_code, r.text[:500])
             if r.status_code in (401, 403, 429):
                 break                                                   # no key, no access, or out of allowance: stop for today
             continue
+        b64 = None
+        for line in r.iter_lines():
+            if line.startswith(b"data: "):
+                ev = json.loads(line[6:])
+                if ev.get("type", "").endswith("completed"):
+                    b64 = ev.get("b64_json")
+                elif "error" in ev:
+                    print(p["id"], "error:", json.dumps(ev["error"])[:300])
+        if not b64:
+            print(p["id"], "failed: the stream ended without an image")
+            continue
         img = OUT / f"{datetime.date.today()}-{p['id']}.png"
-        img.write_bytes(base64.b64decode(r.json()["data"][0]["b64_json"]))
+        img.write_bytes(base64.b64decode(b64))
         with open(OUT / "log.jsonl", "a") as f:
             f.write(json.dumps({"id": p["id"], "file": img.name, "model": args.model, "size": args.size, "quality": args.quality,
                                 "date": str(datetime.date.today()), "prompt": p["prompt"]}) + "\n")
