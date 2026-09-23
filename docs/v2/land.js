@@ -8562,6 +8562,7 @@
   var billPlay = document.getElementById("theatre-play");
   var billTitle = document.getElementById("theatre-title");
   var billWhere = document.getElementById("theatre-where");
+  var billAfter = document.getElementById("theatre-after");
   var billPrev = document.getElementById("theatre-prev");
   var billNext = document.getElementById("theatre-next");
   var stageCtx = stageCanvas ? stageCanvas.getContext("2d") : null;
@@ -8577,6 +8578,8 @@
   var stageBox = { x: 0, y: 0, k: 1 };
 
   var RISE = 1100, STRIKE = 760, PAUSE = 420, HOLD = 1800;
+  var LOOK_MS = 2000;            // how long the Chorus is made of any one thing
+  var CARVE = 1500;              // a scene found in marble takes longer to come up
 
   function readPlaybill(then) {
     if (playbill) { then(); return; }
@@ -8642,11 +8645,14 @@
     var lib = playbill.library;
     var libW = 0;
     if (lib && libraryCanvas.width && W >= 900) {
-      var lk = artScale(lib.w, lib.h, Math.min(W * 0.22, 330), Math.min(H * 0.3, 240));
+      var lk = artScale(lib.w, lib.h, Math.min(W * 0.22, 330), Math.min(H * 0.36, 280));
       libW = lib.w * lk;
       libraryCanvas.style.width = libW.toFixed(2) + "px";
       libraryCanvas.style.height = (lib.h * lk).toFixed(2) + "px";
-      libraryCanvas.style.transform = "translate(" + Math.round(W - libW - 18) + "px," + Math.round(top - 30) + "px)";
+      // Set by where it rests: the room above it is for standing up in.
+      var rest = Math.max(0, (lib.top || 0) - 6) * lk;
+      libraryCanvas.style.transform = "translate(" + Math.round(W - libW - 18 + libraryWalk.dx) + "px," +
+                                      Math.round(top - 6 - rest) + "px)";
       libraryCanvas.hidden = false;
     } else {
       libraryCanvas.hidden = true;
@@ -8667,10 +8673,70 @@
     sheetFor(lib, function (im) {
       libraryCanvas.width = lib.w;
       libraryCanvas.height = lib.h;
-      var g = libraryCanvas.getContext("2d");
-      g.clearRect(0, 0, lib.w, lib.h);
-      g.drawImage(im, 0, 0, lib.w, lib.h, 0, 0, lib.w, lib.h);
+      libraryWalk.im = im;
+      libraryWalk.shown = undefined;
+      showLibrary(null);
+      libraryCanvas.classList.toggle("is-live", !!lib.moves && !still);
       layoutTheatre();
+    });
+  }
+
+  /* After Universal Everything's Walking City (and Archigram's before it):
+     now and then the library stands up on the six legs folded under it and
+     walks a little way, and settles again. Pressing it gets it up. */
+  var libraryWalk = { state: "sit", since: 0, next: 0, dx: 0, im: null, shown: undefined };
+
+  function showLibrary(patch) {
+    var lib = playbill && playbill.library, im = libraryWalk.im;
+    if (!lib || !im || libraryWalk.shown === patch) { return; }
+    libraryWalk.shown = patch;
+    var g = libraryCanvas.getContext("2d");
+    g.clearRect(0, 0, lib.w, lib.h);
+    g.drawImage(im, 0, 0, lib.w, lib.h, 0, 0, lib.w, lib.h);
+    if (patch) {
+      // A patch is the whole of its rectangle: where it is empty, the frame is.
+      g.clearRect(patch[4], patch[5], patch[2], patch[3]);
+      g.drawImage(im, patch[0], patch[1], patch[2], patch[3], patch[4], patch[5], patch[2], patch[3]);
+    }
+  }
+
+  function standLibrary(now) {
+    if (libraryWalk.state !== "sit") { return; }
+    libraryWalk.state = "rise";
+    libraryWalk.since = now;
+    var r = libraryCanvas.getBoundingClientRect();
+    pulse(r.left + r.width / 2, r.top + r.height * 0.6, [LIGHT, GOLD], 0.5, 120);
+  }
+
+  function stepLibrary(now) {
+    var lib = playbill && playbill.library;
+    if (!lib || !lib.moves || still || libraryCanvas.hidden || !libraryWalk.im) { return; }
+    var m = lib.moves, beat = 1000 / 6, w = libraryWalk;
+    if (!w.next) { w.next = now + 9000 + Math.random() * 16000; }
+    if (w.state === "sit" && now > w.next) { standLibrary(now); }
+    var n = Math.floor((now - w.since) / beat);
+    var patch = null;
+    if (w.state === "rise") {
+      if (n < m.stand.length) { patch = m.stand[n]; }
+      else { w.state = "walk"; w.since = now; w.steps = 16 + Math.floor(Math.random() * 16); patch = m.walk[0]; }
+    } else if (w.state === "walk") {
+      patch = m.walk[n % m.walk.length];
+      // A few paces one way and back to where it lives.
+      w.dx = Math.round(-Math.sin(Math.PI * Math.min(1, n / w.steps)) * 36);
+      if (n >= w.steps) { w.state = "sink"; w.since = now; w.dx = 0; }
+      layoutTheatre();
+    } else if (w.state === "sink") {
+      if (n < m.stand.length) { patch = m.stand[m.stand.length - 1 - n]; }
+      else { w.state = "sit"; w.next = now + 25000 + Math.random() * 30000; }
+    }
+    showLibrary(patch);
+  }
+
+  if (libraryCanvas) {
+    libraryCanvas.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    libraryCanvas.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (!still) { standLibrary(performance.now()); }
     });
   }
 
@@ -8681,10 +8747,16 @@
     billPlay.textContent = entry.play;
     billTitle.textContent = entry.title;
     billWhere.textContent = entry.where;
+    billAfter.textContent = entry.after ? "after " + entry.after : "";
+    billAfter.hidden = !entry.after;
     stageCanvas.setAttribute("aria-label", entry.title + ", from " + entry.play + ". " + entry.where +
                              ". Press for the next line.");
     say.hidden = true;
-    staged = { entry: entry, index: index, phase: "wait", line: -1, since: 0, until: 0, speaking: null };
+    staged = { entry: entry, index: index, phase: "wait", line: -1, since: 0, until: 0, speaking: null,
+               look: 0, lookAt: 0,
+               // Up out of the soil a row at a time, or, after Quayola, found in a block of
+               // marble — cut into facets, finer and finer, until it is itself.
+               rise: Math.random() < 0.4 ? "carve" : "rows" };
     sheetFor(entry, function (im) {
       if (!staged || staged.entry !== entry) { return; }
       staged.sheet = im;
@@ -8692,7 +8764,8 @@
       stageCanvas.height = backstage.height = entry.h;
       staged.phase = still ? "play" : "rise";
       staged.since = performance.now();
-      staged.until = staged.since + (still ? 0 : RISE);
+      staged.until = staged.since + (still ? 0 : staged.rise === "carve" ? CARVE : RISE);
+      staged.lookAt = staged.since;
       layoutTheatre();
       scramble(billTitle, "decode", 0, 700);
       if (!still) {
@@ -8737,6 +8810,7 @@
   }
 
   function advance(now) {
+    if (staged && staged.phase === "entracte") { endEntracte(); return; }
     if (!staged || !staged.sheet) { return; }
     if (staged.phase === "rise") { staged.phase = "play"; staged.until = now; return; }
     if (staged.phase === "speak" || staged.phase === "play" || staged.phase === "pause") { staged.until = now; return; }
@@ -8756,11 +8830,19 @@
     var e = staged.entry, im = staged.sheet;
     backCtx.clearRect(0, 0, e.w, e.h);
     backCtx.drawImage(im, 0, 0, e.w, e.h, 0, 0, e.w, e.h);
-    var p = e.idle[t];
-    if (p) { backCtx.drawImage(im, p[0], p[1], p[2], p[3], p[4], p[5], p[2], p[3]); }
+    var p = e.looks ? e.looks[staged.look][t] : e.idle[t];
+    // Each patch is the whole of its rectangle — where it is empty, the frame
+    // is — so the rectangle is cleared before it goes down.
+    if (p) {
+      backCtx.clearRect(p[4], p[5], p[2], p[3]);
+      backCtx.drawImage(im, p[0], p[1], p[2], p[3], p[4], p[5], p[2], p[3]);
+    }
     if (staged.speaking !== null && e.speak[staged.speaking]) {
       var s = e.speak[staged.speaking][t];
-      if (s) { backCtx.drawImage(im, s[0], s[1], s[2], s[3], s[4], s[5], s[2], s[3]); }
+      if (s) {
+        backCtx.clearRect(s[4], s[5], s[2], s[3]);
+        backCtx.drawImage(im, s[0], s[1], s[2], s[3], s[4], s[5], s[2], s[3]);
+      }
     }
   }
 
@@ -8769,6 +8851,11 @@
   function showFrame(now) {
     var e = staged.entry, g = stageCtx;
     g.clearRect(0, 0, e.w, e.h);
+    if (staged.phase === "rise" && staged.rise === "carve") {
+      // A frame's clock can read a moment before the scene was put up.
+      carveFrame(g, e, Math.max(0, Math.min(1, (now - staged.since) / CARVE)));
+      return;
+    }
     if (staged.phase === "rise") {
       var q = Math.min(1, (now - staged.since) / RISE);
       q = Math.floor(q * 18) / 18;
@@ -8808,6 +8895,78 @@
     }
   }
 
+  var LOOK_TONES = ["#ff9a2a", "#3a93ac", "#dcf2ff", "#9c9ca8", "#ee6a8a", "#a06636", "#dcd9e2", "#9c6c3f"];
+
+  /* After Quayola: the scene comes up as if cut out of a block of marble —
+     first the block, then facets, finer every step and taking on the
+     scene's own colours as they go, until the last cut is the picture. */
+  function carveFrame(g, e, q) {
+    if (!staged.carved) {
+      var cols = Math.max(8, Math.round(e.w / 3)), rows = Math.max(8, Math.round(e.h / 3));
+      var small = document.createElement("canvas");
+      small.width = cols;
+      small.height = rows;
+      var sg = small.getContext("2d");
+      sg.imageSmoothingEnabled = false;
+      sg.drawImage(backstage, 0, 0, e.w, e.h, 0, 0, cols, rows);
+      var data = sg.getImageData(0, 0, cols, rows).data;
+      staged.carved = { stages: Systems.strataStages(data, cols, rows, 8, (Math.random() * 1e9) | 0),
+                        kx: e.w / cols, ky: e.h / rows };
+    }
+    var c = staged.carved, n = Math.floor(q * (c.stages.length + 1));
+    if (n >= c.stages.length) { g.drawImage(backstage, 0, 0); return; }
+    var marble = [218, 214, 222], k = 1 - n / (c.stages.length - 1);
+    c.stages[n].forEach(function (t) {
+      var rgba = t[4];
+      if (!rgba || rgba[3] < 128) { return; }
+      var m = k * 0.85, lit = 0.92 + 0.08 * ((t[0][0] + t[1][1]) % 2);
+      g.fillStyle = "rgb(" + Math.round((rgba[0] + (marble[0] - rgba[0]) * m) * lit) + "," +
+                    Math.round((rgba[1] + (marble[1] - rgba[1]) * m) * lit) + "," +
+                    Math.round((rgba[2] + (marble[2] - rgba[2]) * m) * lit) + ")";
+      g.beginPath();
+      g.moveTo(Math.round(t[0][0] * c.kx), Math.round(t[0][1] * c.ky));
+      g.lineTo(Math.round(t[1][0] * c.kx), Math.round(t[1][1] * c.ky));
+      g.lineTo(Math.round(t[2][0] * c.kx), Math.round(t[2][1] * c.ky));
+      g.closePath();
+      g.fill();
+    });
+  }
+
+  /* An entr'acte between two scenes, now and then: after Oskar Fischinger's
+     Motion Painting No. 1, painting given time, on the stage itself. */
+  var painting = null, scenesSince = 0;
+
+  function entracteDue() {
+    scenesSince += 1;
+    if (still || !window.Systems || !Systems.motionPainting || scenesSince < 3) { return false; }
+    return Math.random() < 0.3;
+  }
+
+  function entracte(next) {
+    scenesSince = 0;
+    staged.phase = "entracte";
+    staged.next = next;
+    say.hidden = true;
+    billPlay.textContent = "Entr'acte";
+    billTitle.textContent = "Motion Painting";
+    billWhere.textContent = "painted on glass, a stroke at a time";
+    billAfter.textContent = "after Oskar Fischinger, Motion Painting No. 1";
+    billAfter.hidden = false;
+    scramble(billTitle, "decode", 0, 700);
+    var tones = place ? [cityTone(place)] : [];
+    painting = Systems.motionPainting(stageCanvas, tones, {
+      duration: 8000,
+      onBeat: function (n) { if (window.soundBeat) { window.soundBeat(n); } },
+      onDone: function () { endEntracte(); }
+    });
+  }
+
+  function endEntracte() {
+    if (!staged || staged.phase !== "entracte") { return; }
+    if (painting) { painting.stop(); painting = null; }
+    stageScene(staged.next);
+  }
+
   function theatreFrame(now) {
     if (!theatreOn) { return; }
     requestAnimationFrame(theatreFrame);
@@ -8816,7 +8975,21 @@
     var frames = (playbill && playbill.frames) || 4;
     var t = still ? 0 : Math.floor(now / (1000 / fps)) % frames;
 
+    stepLibrary(now);
+    if (staged.phase === "entracte") { return; }
     if (staged.phase === "rise" && now >= staged.until) { staged.phase = "play"; staged.until = now + 300; }
+    // The Chorus: what it is made of changes every little while, and each
+    // change is answered in pixel light.
+    if (staged.entry.looks && !still && staged.phase !== "rise" && staged.phase !== "strike" &&
+        now - staged.lookAt >= LOOK_MS) {
+      staged.lookAt = now;
+      staged.look = (staged.look + 1) % staged.entry.looks.length;
+      var hd = staged.entry.heads[0];
+      if (hd) {
+        pulse(stageBox.x + hd[0] * stageBox.k, stageBox.y + (hd[1] + 30) * stageBox.k,
+              [LOOK_TONES[staged.look % LOOK_TONES.length], LIGHT], 0.4, 90);
+      }
+    }
     if (staged.phase === "play" && now >= staged.until) { speakLine(now); }
     else if (staged.phase === "speak" && now >= staged.until) {
       staged.phase = "pause";
@@ -8825,10 +8998,13 @@
       staged.until = now + PAUSE;
     } else if (staged.phase === "pause" && now >= staged.until) { speakLine(now); }
     else if (staged.phase === "hold" && now >= staged.until) { strikeFor(dealScene(), now); }
-    else if (staged.phase === "strike" && now - staged.since >= STRIKE) { stageScene(staged.next); return; }
+    else if (staged.phase === "strike" && now - staged.since >= STRIKE) {
+      if (entracteDue()) { entracte(staged.next); } else { stageScene(staged.next); }
+      return;
+    }
 
     // Held frames: nothing is redrawn between them.
-    var key = t + "|" + staged.speaking + "|" + staged.phase + "|" +
+    var key = t + "|" + staged.speaking + "|" + staged.phase + "|" + staged.look + "|" +
               (staged.phase === "rise" || staged.phase === "strike" ? Math.floor(now / 42) : "");
     if (key === staged.drawn) { return; }
     staged.drawn = key;
@@ -8854,7 +9030,11 @@
     theatreOn = false;
     theatreEl.hidden = true;
     say.hidden = true;
+    if (painting) { painting.stop(); painting = null; }
     staged = null;
+    libraryWalk.state = "sit";
+    libraryWalk.dx = 0;
+    libraryWalk.next = 0;
   }
 
   if (stageCanvas) {

@@ -174,6 +174,58 @@ def flicker(seed=17, amt=0.18):
     return tex
 
 
+def bubbles(seed=81, size=2.4):
+    """Soap bubbles: space filled with spheres, each drawn as its dark rim and a glint, and
+    rising a little every frame."""
+    def tex(p, n, frame):
+        q = p / size + np.array([0.0, 0.0, -frame * 0.3])
+        c = np.floor(q)
+        jx = cellhash(c[:, 0], c[:, 1], c[:, 2], seed) - 0.5
+        jy = cellhash(c[:, 0], c[:, 1], c[:, 2], seed + 1) - 0.5
+        f = q - c - 0.5
+        d = np.sqrt((f[:, 0] - jx * 0.3) ** 2 + (f[:, 1] - jy * 0.3) ** 2 + f[:, 2] ** 2)
+        glint = (np.abs(f[:, 0] + 0.18) < 0.1) & (np.abs(f[:, 2] - 0.2) < 0.1)
+        return np.where((d > 0.38) & (d < 0.52), -1.4, np.where(glint, 2.4, 0.15))
+    return tex
+
+
+def blossom(seed=83):
+    """A body in flower: leaves, and in every other cell a bloom — red, white, yellow or
+    lilac — with a gold eye."""
+    leaf = hexes("#10200f", "#1b3419", "#2a4d24", "#3d6a2e", "#5a8a3a", "#86ae4e")
+    blooms = [hexes("#4a0f14", "#8a1c22", "#c8323a", "#ee6a5a", "#ff9a8a", "#ffd0c8"),
+              hexes("#8c8a96", "#c8c6d4", "#f2f0f8", "#ffffff", "#ffffff", "#ffffff"),
+              hexes("#6a4a06", "#a8780e", "#e0b020", "#f8d84a", "#fff08a", "#fffac8"),
+              hexes("#3a2458", "#5e3c8a", "#8a64bc", "#b48ee0", "#d8c0f4", "#f0e6ff")]
+    gold = hexes("#6a4a06", "#a8780e", "#e0b020", "#f8d84a", "#fff08a", "#fffac8")
+
+    def colour(p, n, frame, i, k):
+        q = p / 1.7
+        c = np.floor(q)
+        h = cellhash(c[:, 0], c[:, 1], c[:, 2], seed)
+        kind = np.floor(cellhash(c[:, 0], c[:, 1], c[:, 2], seed + 5) * 4).astype(int)
+        f = q - c - 0.5
+        r = np.sqrt((f ** 2).sum(1))
+        ii = np.clip(i, 0, 5)
+        out = leaf[np.clip(ii, 0, len(leaf) - 1)]
+        for b in range(4):
+            sel = (h > 0.45) & (kind == b) & (r < 0.5)
+            out = np.where(sel[:, None], blooms[b][np.clip(ii + 1, 0, 5)], out)
+        eye = (h > 0.45) & (r < 0.16)
+        return np.where(eye[:, None], gold[np.clip(ii, 0, 5)], out)
+    return colour
+
+
+def grain(seed=85):
+    """Wood seen in the round, its rings running up the body."""
+    def tex(p, n, frame):
+        r = np.sqrt((p[:, 0] - np.round(p[:, 0] / 40) * 40) ** 2 + (p[:, 1] - np.round(p[:, 1] / 40) * 40) ** 2)
+        wob = (fbm(p * np.array([1, 1, 0.2]), 3.0, seed) - 0.5) * 3.0
+        ring = np.sin((r + wob + p[:, 2] * 0.08) * 2.2)
+        return np.where(ring > 0.82, -0.35, ring * 0.08)
+    return tex
+
+
 # ---- the palette ------------------------------------------------------------------------------
 
 def build():
@@ -274,6 +326,17 @@ def build():
     add("banner_blue", Material(["#070b2a", "#101c56", "#1c3290", "#2e4ec0", "#4c74e0"], tex=folds(0.1, 2.0)))
     add("smoke", Material(["#2a3a2a", "#4a6a44", "#7ab060", "#b4e08a", "#e4ffc8"], glow=True, tex=flicker(57, 0.35)))
     add("mist", Material(["#4a5670", "#6e7c9a", "#9aa8c4", "#c6d0e6", "#e8eef8"]))
+
+    # What the Chorus is made of, in turn: after Universal Everything's Transfiguration.
+    add("bubble", Material(["#3a5a7a", "#6a9ac0", "#a4d0ec", "#dcf2ff", "#ffffff"], tex=bubbles(), spec=1.2, rim=0.5))
+    add("smoke_body", Material(["#2e2e38", "#4e4e5a", "#74747f", "#9c9ca8", "#c6c6d0", "#ececf2"],
+                               tex=speckle(0.4, 0.7, 91)))
+    add("blossom", Material(["#10200f", "#1b3419", "#2a4d24", "#3d6a2e", "#5a8a3a", "#86ae4e"], colour=blossom()))
+    add("grain", Material(["#2a160a", "#4a2a14", "#6e4220", "#94602e", "#b8803e", "#d8a25a"], tex=grain()))
+    add("water_body", Material(["#08223a", "#0e3a5e", "#155a84", "#2080a8", "#48acc8", "#9ae0ea"], tex=water(87, 1.6),
+                               spec=1.0, rim=0.35))
+    add("fire_body", Material(["#6a1a04", "#b83a08", "#f06a12", "#ffa228", "#ffd860", "#fff8d0"], glow=True,
+                              tex=flicker(89, 0.5)))
 
     names = list(M.keys())
     index = {k: i for i, k in enumerate(names)}

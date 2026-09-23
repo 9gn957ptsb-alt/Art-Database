@@ -18,7 +18,7 @@ from sets import (v, wall, merlons, rampart, tower, lit_window, arch_cut, rock, 
                   flagpole, gable, hcyl, glow_arch, ivy, bush, cypress, column, cauldron, barrel, headstone,
                   toadstool, log, ship, table, bench, torch)
 from stage import (Scene, clod, clouds, disc, mist, glow, sky, rain, bolt, flash, sparks, ground_z, night, smoke)
-from engine import Union, Cut, Rough, box, cylinder, cone, sphere, ellipsoid, capsule, torus, custom, fbm, _len
+from engine import Union, Cut, Rough, Moved, box, cylinder, cone, sphere, ellipsoid, capsule, torus, custom, fbm, _len
 from palette import MAT
 
 FRAMES = 4
@@ -699,8 +699,124 @@ def line(who, text):
     return [who, text]
 
 
+# ---- Henry V: the Chorus, after Universal Everything's Transfiguration ----------------------------
+
+LOOKS = ["fire_body", "water_body", "bubble", "smoke_body", "blossom", "grain", "marble", "dirt_top"]
+BUBBLE = ["#4a6a8a", "#9cc8e4", "#e2f6ff", "#ffffff"]
+
+
+def chorus(t, speaking, look=0):
+    """The wooden O: the Globe's stage, its tiring house and galleries, on a clod of DIRT. The
+    Chorus walks toward you down the boards and never arrives, and what it is made of keeps
+    changing — fire, water, bubbles, smoke, flowers, wood, marble, the soil itself."""
+    w, d = 104, 92
+    phase = t / FRAMES * TAU
+    mat = LOOKS[look % len(LOOKS)]
+    ground = clod(w, d, depth=22, seed=41, top="path", top_rough=0.8)
+    parts = [ground]
+    # The tiring house along the back: plaster between timbers, two doors, a gallery over them.
+    doors = Union([arch_cut(32, 11, 0, 9, 17, on="y"), arch_cut(74, 11, 0, 9, 17, on="y")])
+    parts.append(Cut(box(v(12, 2, 0), v(w - 4, 11, 46), MAT["plaster"]), doors))
+    for x in (32, 74):
+        parts.append(box(v(x - 4.5, 5.5, 0), v(x + 4.5, 6.5, 17), MAT["wood_dark"]))
+    for x in (12, 22, 42, 53, 64, 84, w - 6):
+        parts.append(box(v(x, 10.6, 0), v(x + 2, 11.6, 46), MAT["wood_dark"]))
+    parts.append(box(v(12, 10.6, 21), v(w - 4, 11.6, 22.6), MAT["wood_dark"]))
+    parts.append(box(v(12, 10.6, 44), v(w - 4, 11.6, 46), MAT["wood_dark"]))
+    parts.append(box(v(12, 11, 24), v(w - 4, 17, 25.4), MAT["wood_dark"]))
+    for x in np.arange(14, w - 5, 4.0):
+        parts.append(box(v(x, 16, 25.4), v(x + 0.9, 17, 30), MAT["wood_dark"]))
+    parts.append(box(v(12, 16, 30), v(w - 4, 17.2, 31.2), MAT["wood_dark"]))
+    parts.append(gable(12, 1, w - 4, 13, 46, 9, "thatch", ridge="x"))
+    # The galleries down the side: the wooden O.
+    parts.append(box(v(2, 11, 0), v(11, d - 10, 40), MAT["plaster"]))
+    for y in np.arange(13, d - 10, 11.0):
+        parts.append(box(v(10.6, y, 0), v(11.6, y + 2, 40), MAT["wood_dark"]))
+    for z in (13.0, 26.0):
+        parts.append(box(v(11, 11, z), v(16, d - 10, z + 1.3), MAT["wood_dark"]))
+        for y in np.arange(12, d - 10, 3.5):
+            parts.append(box(v(15, y, z + 1.3), v(16, y + 0.8, z + 5.2), MAT["wood_dark"]))
+        parts.append(box(v(15, 11, z + 5.2), v(16.2, d - 10, z + 6.3), MAT["wood_dark"]))
+    parts.append(gable(1, 11, 13, d - 10, 40, 8, "thatch", ridge="y"))
+    # The stage: boards thrust out into the yard, and the two pillars that hold up the heavens
+    # over the back of it.
+    parts.append(box(v(22, 11, 0), v(88, 64, 7), MAT["wood"]))
+    parts.append(box(v(22, 11, 38), v(88, 26, 40), MAT["royal"]))
+    for k in range(9):                                     # the heavens, painted with stars
+        parts.append(sphere(v(26 + (k * 37) % 60, 13 + (k * 5) % 12, 40.1), 0.55, MAT["gold"]))
+    parts += column((30, 25, 7), 31, r=1.7, mat="marble")
+    parts += column((80, 25, 7), 31, r=1.7, mat="marble")
+    # The groundlings, in the yard, watching.
+    crowd = []
+    for i, (gx, gy, top_, hair_) in enumerate(((96, 22, "brown", "hair_brown"), (97, 42, "moss_cloth", "hair_black"),
+                                              (34, 80, "teal", "hair_red"), (20, 84, "cream", "hair_blonde"))):
+        gp = at_ground(ground, gx, gy, -0.3)
+        crowd.append(Figure(at=gp, yaw=yaw_to(gp, (55, 38), 0.1), height=0.85, skin="skin", hair=hair_,
+                            top=top_, legs="brown", boots="leather", hat="cap" if i % 2 else None,
+                            arms={"left": {"up": (10, 10), "fore": (30, 6)}, "right": {"up": (10, 10), "fore": (30, 6)}}))
+
+    stride = math.sin(phase) * 26
+    swing = math.sin(phase) * 30
+    step = abs(math.cos(phase)) * 0.7
+    cpos = (60, 50, 7.0 + step)
+    fig = Figure(at=cpos, yaw=math.pi / 4, height=1.3, skin=mat, hair=mat, hair_style="long", top=mat, legs=mat,
+                 boots=mat, cape=mat, cape_len=0.95, cape_flare=1.2 + math.cos(phase) * 0.9, collar=mat,
+                 belt=mat, stride=stride, breathe=step,
+                 arms={"right": {"up": (swing + 10, 12), "fore": (swing + 26, 8)},
+                       "left": {"up": (-swing + 10, 12), "fore": (-swing + 26, 8)}})
+    head = fig.world(fig.head_c + np.array([0, 0, 2.0]))
+    hands = [fig.world(np.array([2.0 + swing * 0.1, side * 7.0, 17.0])) for side in (1, -1)]
+
+    def after(f, t_):
+        if mat == "fire_body":
+            glow(f, [head], (255, 150, 60), radius=30, strength=0.55)
+            sparks(f, [head + np.array([math.sin(k * 2.1 + t_) * 5, math.cos(k * 1.7) * 5, 6 + ((k * 5 + t_ * 3) % 16)])
+                       for k in range(6)], colour=(255, 236, 150), halo=(255, 140, 40))
+        elif mat == "water_body":
+            sparks(f, [hand + np.array([0, 0, -3 - ((k * 4 + t_ * 3) % 12)]) for hand in hands for k in range(2)],
+                   colour=(210, 240, 255), halo=(90, 160, 210))
+        elif mat == "bubble":
+            for k in range(5):
+                rise = ((k * 7 + t_ * 3) % 24)
+                disc(f, head + np.array([math.sin(k * 2.3) * 9, math.cos(k * 1.9) * 9, rise - 4]), 1.6 + (k % 3) * 0.7,
+                     BUBBLE, craters=False)
+        elif mat == "smoke_body":
+            smoke(f, head, t_, colour=(196, 196, 206), rise=34, puffs=5, seed=4, width=9)
+        elif mat == "blossom":
+            sparks(f, [cpos + np.array([math.sin(k * 1.3) * 12, math.cos(k * 2.2) * 12, 30 - ((k * 6 + t_ * 4) % 30)])
+                       for k in range(7)], colour=(255, 214, 226), halo=(230, 120, 160))
+        elif mat == "dirt_top":
+            sparks(f, [hand + np.array([0, 0, -2 - ((k * 5 + t_ * 3) % 14)]) for hand in hands for k in range(2)],
+                   colour=(150, 104, 64), halo=(90, 60, 36))
+
+    figures = {1: fig}
+    for i, g in enumerate(crowd):
+        figures[i + 2] = g
+    return Scene("chorus", parts, figures, ghosts=(1,) if mat == "smoke_body" else (), after=after,
+                 extent=[(60, 50, 80, 10), (20, 92, 0, 6), (110, 20, 0, 6)])
+
+
+CHORUS = {
+    "key": "chorus",
+    "play": "Henry V",
+    "title": "The Chorus",
+    "where": "This wooden O",
+    "build": chorus,
+    "looks": LOOKS,
+    "after": "Universal Everything, Transfiguration",
+    "cast": ["Chorus"],
+    "lines": [
+        [0, "O for a Muse of fire, that would ascend the brightest heaven of invention!"],
+        [0, "A kingdom for a stage, princes to act, and monarchs to behold the swelling scene!"],
+        [0, "Can this cockpit hold the vasty fields of France?"],
+        [0, "Piece out our imperfections with your thoughts."],
+    ],
+}
+
+
 REPERTORY = [
     GHOST,
+    CHORUS,
     {"key": "witches", "play": "Macbeth", "title": "The Witches", "where": "A heath, in thunder",
      "build": witches, "cast": ["First Witch", "Second Witch", "Third Witch"],
      "lines": [line(0, "When shall we three meet again, in thunder, lightning, or in rain?"),
@@ -771,10 +887,14 @@ REPERTORY = [
 
 # ---- the library itself ---------------------------------------------------------------------------
 
-def folger(t, speaking):
+def folger(t, speaking, lift=0.0, gait=None):
     """The Folger Shakespeare Library on East Capitol Street: a long, low block of white marble,
     Paul Cret's, 1932 — nine tall windows behind aluminium grilles between fluted pilasters,
-    nine carved panels under them, and Puck on his plinth at the west end of the lawn."""
+    nine carved panels under them, and Puck on his plinth at the west end of the lawn.
+
+    And under it, folded, six legs: now and then it stands up on them and walks, after
+    Universal Everything's Walking City (and Archigram's before it). `lift` is how far it has
+    stood up; `gait` is where it is in a stride, or None when it is not walking."""
     w, d = 124, 62
     phase = t / FRAMES * TAU
     ground = clod(w, d, depth=20, seed=31, top="grass")
@@ -807,11 +927,61 @@ def folger(t, speaking):
     parts.append(cylinder(v(14, 48, 0.4), 6.0, 2.2, MAT["marble"]))
     parts.append(cylinder(v(14, 48, 2.0), 5.0, 0.5, MAT["water"]))
     parts.append(box(v(12.5, 46.5, 2.0), v(15.5, 49.5, 7.0), MAT["marble"]))
-    puck = Figure(at=(14, 48, 7.0), yaw=0.9, height=0.34, skin="marble", hair="marble", hair_style="curls",
+    bob = 0.0 if gait is None else abs(math.sin(gait * TAU)) * 1.4
+    up = lift + bob
+    puck = Figure(at=(14, 48, 7.0 + up), yaw=0.9, height=0.34, skin="marble", hair="marble", hair_style="curls",
                   top="marble", legs="marble", boots="marble",
                   arms={"left": {"up": (150, 40), "fore": (165, 30)}, "right": {"up": (60, 30), "fore": (90, 20)}})
-    return Scene("folger", parts, {1: puck}, extent=[(0, 70, 10, 4), (130, 0, 30, 4)])
+    body = [Moved(Union(parts), (0, 0, up))] if up else parts
+    body += walking_legs(w, d, up, gait)
+    return Scene("folger", body, {1: puck},
+                 extent=[(0, 70, 10, 4), (130, 0, 30 + LIBRARY_LIFT, 4), (0, 70, -20 - LIBRARY_LEG, 4),
+                         (130, 0, -20 - LIBRARY_LEG, 4)])
+
+
+LIBRARY_LIFT = 26.0          # how far it stands up
+LIBRARY_LEG = 10.0           # how far below the clod its feet are
+
+
+def walking_legs(w, d, up, gait):
+    """Six legs under the clod, three a side, in steel with iron knees. Folded when it sits;
+    walking, they go in the tripod an insect uses — three down, three swinging."""
+    out = []
+    floor = -20.0 - LIBRARY_LEG
+    L1 = L2 = 21.0
+    for i, x in enumerate((24.0, 62.0, 100.0)):
+        for side, y in ((-1, 12.0), (1, d - 12.0)):
+            hip = np.array([x, y, -12.0 + up])
+            group = (i + (side > 0)) % 2
+            fx, lift_ = 0.0, 0.0
+            if gait is not None:
+                ph = (gait + 0.5 * group) % 1.0
+                if ph < 0.5:
+                    fx = 8.0 - 16.0 * (ph / 0.5)
+                else:
+                    s_ = (ph - 0.5) / 0.5
+                    fx = -8.0 + 16.0 * s_
+                    lift_ = math.sin(math.pi * s_) * 7.0
+            foot = np.array([x + fx, y + side * (9.0 + up * 0.25), floor + lift_])
+            # The knee: up and out from the line between hip and foot.
+            dvec = foot - hip
+            dist = min(np.linalg.norm(dvec), L1 + L2 - 0.1)
+            dirn = dvec / max(np.linalg.norm(dvec), 1e-6)
+            out_ = np.array([0.0, side, 0.9])
+            out_ = out_ - dirn * (out_ @ dirn)
+            out_ = out_ / max(np.linalg.norm(out_), 1e-6)
+            a = (L1 * L1 + dist * dist - L2 * L2) / (2 * dist)
+            hgt = math.sqrt(max(0.0, L1 * L1 - a * a))
+            knee = hip + dirn * a + out_ * hgt
+            out.append(capsule(hip, knee, 1.7, MAT["steel"]))
+            out.append(capsule(knee, foot + np.array([0, 0, 1.2]), 1.35, MAT["iron"], r1=1.1))
+            out.append(sphere(knee, 2.1, MAT["iron"]))
+            out.append(cylinder(foot, 2.4, 1.2, MAT["iron"]))
+    return out
 
 
 FOLGER = {"key": "folger", "play": "", "title": "Folger Shakespeare Library", "where": "East Capitol Street",
-          "build": folger, "cast": [], "lines": []}
+          "build": folger, "cast": [], "lines": [],
+          "moves": {"stand": [{"lift": LIBRARY_LIFT * k / 3} for k in (1, 2, 3)],
+                    "walk": [{"lift": LIBRARY_LIFT, "gait": k / 4} for k in range(4)]},
+          "after": "Universal Everything, Walking City"}

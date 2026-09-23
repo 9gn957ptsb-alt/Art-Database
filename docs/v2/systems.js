@@ -546,7 +546,8 @@
         var cx = Math.min(cols - 1, Math.max(0, Math.floor((a[0] + b[0] + c[0]) / 3)));
         var cy = Math.min(rows - 1, Math.max(0, Math.floor((a[1] + b[1] + c[1]) / 3)));
         var i = (cy * cols + cx) * 4;
-        return [a, b, c, "rgb(" + data[i] + "," + data[i + 1] + "," + data[i + 2] + ")"];
+        return [a, b, c, "rgb(" + data[i] + "," + data[i + 1] + "," + data[i + 2] + ")",
+                [data[i], data[i + 1], data[i + 2], data[i + 3]]];
       }));
       count = Math.floor(count * 2.1);
     }
@@ -1191,6 +1192,500 @@
     sheet.walk = walk;
     sheet.build = build;
     return sheet;
+  };
+
+  // ---- motion painting ---------------------------------------------------------------
+
+  /* After Oskar Fischinger, Motion Painting No. 1 (1947): painting given
+     time. He painted on sheets of glass laid one over another and filmed
+     every stroke as it was made, to Bach, so the picture is never finished
+     and never still — each form grows on the beat, and every few bars a
+     fresh sheet goes over what is there and it sinks a little into depth.
+
+     Here the sheets are the stage's own canvas, the forms are drawn a whole
+     pixel at a time, and the beat is 120 to the minute. Each stroke is one
+     of Fischinger's: a spiral unwinding, squares opening out of each other,
+     a band laid across, a run of staccato dots, nested arcs, a zigzag.
+
+     Systems.motionPainting(canvas, colours, { duration, onBeat, onDone })
+       → { stop } */
+  var FISCHINGER = ["#e8c547", "#d2452b", "#3d7fc1", "#f3efe6", "#3f8f5a", "#9d95e6", "#f08a3c"];
+  S.motionPainting = function (canvas, colours, opts) {
+    opts = opts || {};
+    var g = canvas.getContext("2d");
+    var w = canvas.width, h = canvas.height;
+    var r = rng(opts.seed || (Math.random() * 1e9) | 0);
+    var cols = (colours && colours.length ? colours : []).concat(FISCHINGER);
+    var beat = opts.beat || 500, duration = opts.duration || 7000;
+    var ground = opts.ground || "#10131f";
+    var start = performance.now(), done = false, lastBeat = -1;
+    var strokes = [];
+    var cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.46;
+    // The glass it is painted on: a panel with square corners, inset.
+    var px0 = Math.round(w * 0.06), py0 = Math.round(h * 0.1), pw = w - 2 * px0, ph = h - 2 * py0;
+    var sheet = document.createElement("canvas");
+    sheet.width = w; sheet.height = h;
+    var sg = sheet.getContext("2d");
+    sg.fillStyle = ground;
+    sg.fillRect(px0, py0, pw, ph);
+    function dot(x, y, s, c) {
+      x = Math.round(x); y = Math.round(y);
+      if (x < px0 || y < py0 || x >= px0 + pw || y >= py0 + ph) { return; }
+      sg.fillStyle = c;
+      sg.fillRect(x, y, s, s);
+    }
+    function one(list) { return list[Math.floor(r() * list.length)]; }
+    var KINDS = ["spiral", "squares", "band", "staccato", "arcs", "zigzag", "rays"];
+    function newStroke(n) {
+      var k = KINDS[(n * 3 + Math.floor(r() * 3)) % KINDS.length];
+      return {
+        kind: k, c: one(cols), c2: one(cols), at: n,
+        x: cx + (r() - 0.5) * pw * 0.5, y: cy + (r() - 0.5) * ph * 0.5,
+        size: R * (0.35 + r() * 0.55), turn: r() * TAU, dir: r() < 0.5 ? -1 : 1,
+        beats: 1 + Math.floor(r() * 2), drawn: 0
+      };
+    }
+    // Draws the part of a stroke between two points of its growth, 0..1.
+    function paint(s, from, to) {
+      var steps = Math.max(1, Math.ceil((to - from) * 260));
+      for (var i = 0; i <= steps; i += 1) {
+        var q = from + (to - from) * i / steps;
+        var a, rr, x, y;
+        if (s.kind === "spiral") {
+          a = s.turn + s.dir * q * TAU * 3; rr = q * s.size;
+          dot(s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr, 2, s.c);
+        } else if (s.kind === "squares") {
+          var ring = Math.floor(q * 5), side = (ring + 1) * s.size / 5, t = (q * 5) % 1;
+          var per = t * 4, e = Math.floor(per), f = per - e;
+          var hx = side, hy = side;
+          var corners = [[-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy], [-hx, -hy]];
+          x = corners[e][0] + (corners[e + 1][0] - corners[e][0]) * f;
+          y = corners[e][1] + (corners[e + 1][1] - corners[e][1]) * f;
+          dot(s.x + x * 0.6, s.y + y * 0.6, 1, ring % 2 ? s.c2 : s.c);
+        } else if (s.kind === "band") {
+          x = px0 + q * pw;
+          y = s.y + Math.sin(q * TAU * 1.5 + s.turn) * s.size * 0.25;
+          for (var k = -3; k <= 3; k += 1) { dot(x, y + k, 1, Math.abs(k) === 3 ? s.c2 : s.c); }
+        } else if (s.kind === "staccato") {
+          var n = Math.floor(q * 12);
+          if (Math.floor(from * 12) !== n || i === 0) {
+            x = px0 + pw * (0.1 + 0.8 * n / 11);
+            y = s.y + (n % 3 - 1) * s.size * 0.2;
+            for (var dx = -2; dx <= 2; dx += 1) { for (var dy = -2; dy <= 2; dy += 1) { if (dx * dx + dy * dy <= 5) { dot(x + dx, y + dy, 1, s.c); } } }
+          }
+        } else if (s.kind === "arcs") {
+          var m = Math.floor(q * 4), t2 = (q * 4) % 1;
+          a = s.turn + t2 * Math.PI; rr = s.size * (0.35 + m * 0.18);
+          dot(s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr, 2, m % 2 ? s.c2 : s.c);
+        } else if (s.kind === "zigzag") {
+          x = px0 + q * pw;
+          y = s.y + (Math.abs(((q * 10) % 2) - 1) - 0.5) * s.size * 0.6;
+          dot(x, y, 2, s.c);
+        } else {                                          // rays, out from a point
+          var ray = Math.floor(q * 9), t3 = (q * 9) % 1;
+          a = s.turn + ray * TAU / 9;
+          dot(s.x + Math.cos(a) * t3 * s.size, s.y + Math.sin(a) * t3 * s.size, 1, s.c);
+        }
+      }
+    }
+    function frame(now) {
+      if (done) { return; }
+      var t = now - start;
+      if (t >= duration) {
+        done = true;
+        if (opts.onDone) { opts.onDone(); }
+        return;
+      }
+      requestAnimationFrame(frame);
+      var n = Math.floor(t / beat);
+      if (n !== lastBeat) {
+        lastBeat = n;
+        // Every four beats, a new sheet of glass over what is there.
+        if (n && n % 4 === 0) {
+          sg.globalAlpha = 0.34;
+          sg.fillStyle = ground;
+          sg.fillRect(px0, py0, pw, ph);
+          sg.globalAlpha = 1;
+        }
+        strokes.push(newStroke(n));
+        if (opts.onBeat) { opts.onBeat(n, strokes[strokes.length - 1]); }
+      }
+      strokes.forEach(function (s) {
+        var q = Math.min(1, (t - s.at * beat) / (s.beats * beat));
+        if (q > s.drawn) { paint(s, s.drawn, q); s.drawn = q; }
+      });
+      strokes = strokes.filter(function (s) { return s.drawn < 1; });
+      // Held frames, as film is: the sheet is shown twelve times a second.
+      if (Math.floor(t / 83) !== frame.shown) {
+        frame.shown = Math.floor(t / 83);
+        g.clearRect(0, 0, w, h);
+        g.drawImage(sheet, 0, 0);
+      }
+    }
+    requestAnimationFrame(frame);
+    return { stop: function () { done = true; } };
+  };
+
+  // ---- reaction ----------------------------------------------------------------------
+
+  /* After Universal Everything, Primordial: cellular life, generated. Two
+     chemicals, one feeding the other and both spreading, worked out cell by
+     cell (Gray and Scott's model) at the settings where the spots it makes
+     grow, pinch in the middle and divide — mitosis, from nothing but the
+     arithmetic. Seeded from a few specks; it never settles and never
+     repeats.
+
+     new Systems.Reaction(w, h, { seed, feed, kill }) .step(n) .draw(g, colours) */
+  function Reaction(w, h, opts) {
+    opts = opts || {};
+    this.w = w;
+    this.h = h;
+    this.f = opts.feed || 0.0367;
+    this.k = opts.kill || 0.0649;
+    this.a = new Float32Array(w * h).fill(1);
+    this.b = new Float32Array(w * h);
+    this.a2 = new Float32Array(w * h);
+    this.b2 = new Float32Array(w * h);
+    this.img = null;
+    var r = rng(opts.seed || (Math.random() * 1e9) | 0);
+    var specks = opts.specks || Math.max(3, Math.round(w * h / 900));
+    for (var s = 0; s < specks; s += 1) { this.speck(r() * w, r() * h, 2 + r() * 3); }
+  }
+  Reaction.prototype.speck = function (x, y, rad) {
+    for (var j = -rad; j <= rad; j += 1) {
+      for (var i = -rad; i <= rad; i += 1) {
+        var xx = Math.floor(x + i), yy = Math.floor(y + j);
+        if (xx < 0 || yy < 0 || xx >= this.w || yy >= this.h) { continue; }
+        this.b[yy * this.w + xx] = 1;
+        this.a[yy * this.w + xx] = 0.5;
+      }
+    }
+  };
+  Reaction.prototype.step = function (n) {
+    var w = this.w, h = this.h, f = this.f, k = this.k;
+    for (var it = 0; it < (n || 1); it += 1) {
+      var a = this.a, b = this.b, a2 = this.a2, b2 = this.b2;
+      for (var y = 0; y < h; y += 1) {
+        var up = ((y - 1 + h) % h) * w, dn = ((y + 1) % h) * w, row = y * w;
+        for (var x = 0; x < w; x += 1) {
+          var l = (x - 1 + w) % w, rr = (x + 1) % w, i = row + x;
+          var la = a[row + l] * 0.2 + a[row + rr] * 0.2 + a[up + x] * 0.2 + a[dn + x] * 0.2 +
+                   a[up + l] * 0.05 + a[up + rr] * 0.05 + a[dn + l] * 0.05 + a[dn + rr] * 0.05 - a[i];
+          var lb = b[row + l] * 0.2 + b[row + rr] * 0.2 + b[up + x] * 0.2 + b[dn + x] * 0.2 +
+                   b[up + l] * 0.05 + b[up + rr] * 0.05 + b[dn + l] * 0.05 + b[dn + rr] * 0.05 - b[i];
+          var abb = a[i] * b[i] * b[i];
+          a2[i] = a[i] + (la - abb + f * (1 - a[i]));
+          b2[i] = b[i] + (0.5 * lb + abb - (k + f) * b[i]);
+        }
+      }
+      this.a = a2; this.b = b2; this.a2 = a; this.b2 = b;
+    }
+  };
+  // In four steps of a ramp, dithered, like everything else here.
+  Reaction.prototype.draw = function (g, colours, alpha) {
+    var w = this.w, h = this.h;
+    if (!this.img || this.img.width !== w) { this.img = g.createImageData(w, h); }
+    var ramp = (colours && colours.length ? colours : ["#f3f1ee", "#9d95e6", "#5e52c7", "#1c1640"]).map(hexRgb);
+    var d = this.img.data, n = ramp.length - 1, B = this.b;
+    for (var y = 0; y < h; y += 1) {
+      for (var x = 0; x < w; x += 1) {
+        var i = y * w + x;
+        var v = Math.max(0, Math.min(1, B[i] * 2.6)) * n;
+        var dz = BAYER4[(y & 3) * 4 + (x & 3)] / 16;
+        var s = Math.min(n, Math.floor(v + dz));
+        var c = ramp[s], o = i * 4;
+        d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2];
+        d[o + 3] = alpha === undefined ? 255 : (s ? 255 : alpha);
+      }
+    }
+    g.putImageData(this.img, 0, 0);
+  };
+  var BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  S.Reaction = Reaction;
+
+  // ---- the external world --------------------------------------------------------------
+
+  /* After David OReilly, The External World: digital animation not trying
+     to look like anything but itself — crude, funny, surreal. Flat shapes
+     whose corners boil, a palette nobody would choose, and a run of gags
+     that make no sense and are played quite straight. */
+  S.externalWorld = function (canvas, opts) {
+    opts = opts || {};
+    var g = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
+    var r = rng(opts.seed || (Math.random() * 1e9) | 0);
+    var PAL = { bg: "#b8c4c0", floor: "#8a948c", skin: "#f2b8a0", green: "#6ad04a", purple: "#8a4ac8",
+                grey: "#6c6c74", white: "#fbfbf6", black: "#16141a", red: "#e0402a", yellow: "#f4d23a", blue: "#3a6ad0" };
+    var gags = ["head", "stairs", "tv", "teeth", "cube", "door", "piano"];
+    var order = gags.slice().sort(function () { return r() - 0.5; });
+    var start = performance.now();
+    var S_ = Math.min(w, h) / 72;
+    function boil(pts, amt, t) {
+      // Corners that will not keep still: each frame of the animation (held
+      // three times) they are drawn again a little off.
+      var q = Math.floor(t / 125);
+      return pts.map(function (p, i) {
+        return [p[0] + (hash2d(i, q, 7) - 0.5) * amt * S_, p[1] + (hash2d(i, q, 9) - 0.5) * amt * S_];
+      });
+    }
+    function poly(pts, c, t, amt) {
+      pts = boil(pts, amt === undefined ? 1.6 : amt, t);
+      g.fillStyle = c;
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i += 1) { g.lineTo(pts[i][0], pts[i][1]); }
+      g.closePath();
+      g.fill();
+    }
+    function blob(x, y, rx, ry, n, c, t, amt) {
+      var pts = [];
+      for (var i = 0; i < n; i += 1) {
+        var a = i / n * TAU;
+        pts.push([x + Math.cos(a) * rx * (0.85 + 0.3 * hash2d(i, n, 3)), y + Math.sin(a) * ry * (0.85 + 0.3 * hash2d(i, n, 5))]);
+      }
+      poly(pts, c, t, amt);
+    }
+    function eye(x, y, rad, lx, ly, t) {
+      blob(x, y, rad, rad, 7, PAL.white, t, 0.6);
+      g.fillStyle = PAL.black;
+      g.fillRect(Math.round(x + lx * rad * 0.4 - rad * 0.3), Math.round(y + ly * rad * 0.4 - rad * 0.3), Math.max(1, Math.round(rad * 0.6)), Math.max(1, Math.round(rad * 0.6)));
+    }
+    function floor(y) { g.fillStyle = PAL.floor; g.fillRect(0, y, w, h - y); }
+    function draw(now) {
+      var t = now - start, n = Math.floor(t / 3600), gag = order[n % order.length], u = (t % 3600) / 3600;
+      g.fillStyle = PAL.bg;
+      g.fillRect(0, 0, w, h);
+      var cx = w / 2, cy = h / 2;
+      if (gag === "head") {
+        floor(h * 0.8);
+        var bob = Math.sin(t / 300) * 2 * S_;
+        blob(cx, cy + bob, 22 * S_, 25 * S_, 11, PAL.skin, t, 2.2);
+        var lx = Math.sin(t / 700), ly = Math.cos(t / 900);
+        eye(cx - 8 * S_, cy - 5 * S_ + bob, 5 * S_, lx, ly, t);
+        eye(cx + 7 * S_, cy - 6 * S_ + bob, 6 * S_, lx, ly, t);
+        var open = u > 0.5 ? Math.abs(Math.sin(t / 90)) : 0.1;
+        blob(cx, cy + 10 * S_ + bob, 6 * S_, (1 + open * 5) * S_, 8, PAL.black, t, 0.8);
+        if (u > 0.5) { g.fillStyle = PAL.black; g.font = Math.round(8 * S_) + "px monospace"; g.fillText("hello", cx + 18 * S_, cy - 18 * S_); }
+      } else if (gag === "stairs") {
+        var step = 8 * S_, shift = (t / 30) % step;
+        g.fillStyle = PAL.purple;
+        for (var i = -1; i < 12; i += 1) {
+          var sx = i * step - shift, sy = h - (i * step - shift) * 0.7;
+          g.fillRect(sx, sy, step + 1, h);
+        }
+        var fx = cx, fy = h - (fx) * 0.7 - 12 * S_ + Math.abs(Math.sin(t / 150)) * 2 * S_;
+        blob(fx, fy, 3 * S_, 3 * S_, 6, PAL.skin, t, 0.8);
+        poly([[fx - 2 * S_, fy + 3 * S_], [fx + 2 * S_, fy + 3 * S_], [fx + 3 * S_, fy + 11 * S_], [fx - 3 * S_, fy + 11 * S_]], PAL.green, t, 1);
+      } else if (gag === "tv") {
+        var box = [w * 0.9, h * 0.8];
+        for (var k = 0; k < 5; k += 1) {
+          var bw = box[0] * Math.pow(0.62, k), bh = box[1] * Math.pow(0.62, k);
+          poly([[cx - bw / 2, cy - bh / 2], [cx + bw / 2, cy - bh / 2], [cx + bw / 2, cy + bh / 2], [cx - bw / 2, cy + bh / 2]],
+               k % 2 ? PAL.grey : PAL.black, t, 1);
+          if (k === 4) {
+            for (var q = 0; q < 30; q += 1) {
+              g.fillStyle = hash2d(q, Math.floor(t / 80), 1) < 0.5 ? PAL.white : PAL.grey;
+              g.fillRect(cx - bw / 2 + hash2d(q, 3, Math.floor(t / 80)) * bw, cy - bh / 2 + hash2d(q, 5, Math.floor(t / 80)) * bh, 2, 1);
+            }
+          }
+        }
+      } else if (gag === "teeth") {
+        floor(h * 0.78);
+        for (var k2 = 0; k2 < 14; k2 += 1) {
+          var tx = hash2d(k2, 1, 2) * w, fall = ((t / 1000 + hash2d(k2, 2, 2) * 3) % 3) / 3;
+          var ty = Math.min(h * 0.74, fall * h * 1.1 - 10 * S_);
+          poly([[tx - 2 * S_, ty], [tx + 2 * S_, ty], [tx + 2.4 * S_, ty + 3 * S_], [tx + 1 * S_, ty + 5 * S_],
+                [tx, ty + 3.5 * S_], [tx - 1 * S_, ty + 5 * S_], [tx - 2.4 * S_, ty + 3 * S_]], PAL.white, t, 0.5);
+        }
+        blob(cx, h * 0.72, 9 * S_, 6 * S_, 9, PAL.green, t, 1.4);
+        eye(cx - 3 * S_, h * 0.7, 2.5 * S_, Math.sin(t / 200), -1, t);
+        eye(cx + 3 * S_, h * 0.7, 2.5 * S_, Math.sin(t / 200), -1, t);
+      } else if (gag === "cube") {
+        var a = t / 900, glitch = hash2d(Math.floor(t / 400), 1, 4) < 0.2 ? 8 : 0;
+        var faces = [];
+        var V = [];
+        for (var z = 0; z < 8; z += 1) {
+          var px = (z & 1 ? 1 : -1), py = (z & 2 ? 1 : -1), pz = (z & 4 ? 1 : -1);
+          var x1 = px * Math.cos(a) - pz * Math.sin(a), z1 = px * Math.sin(a) + pz * Math.cos(a);
+          var y1 = py * Math.cos(a * 0.7) - z1 * Math.sin(a * 0.7), z2 = py * Math.sin(a * 0.7) + z1 * Math.cos(a * 0.7);
+          V.push([cx + x1 * 16 * S_ + (z === 3 ? glitch * S_ : 0), cy + y1 * 16 * S_, z2]);
+        }
+        [[0, 1, 3, 2, PAL.red], [4, 5, 7, 6, PAL.yellow], [0, 1, 5, 4, PAL.blue], [2, 3, 7, 6, PAL.green],
+         [0, 2, 6, 4, PAL.purple], [1, 3, 7, 5, PAL.skin]].forEach(function (fc) {
+          faces.push({ pts: [V[fc[0]], V[fc[1]], V[fc[3]], V[fc[2]]], c: fc[4], z: (V[fc[0]][2] + V[fc[1]][2] + V[fc[2]][2] + V[fc[3]][2]) / 4 });
+        });
+        faces.sort(function (p, q2) { return p.z - q2.z; });
+        faces.slice(3).forEach(function (fc) { poly(fc.pts.map(function (p) { return [p[0], p[1]]; }), fc.c, t, 0.8); });
+      } else if (gag === "door") {
+        floor(h * 0.85);
+        var depth = Math.floor(u * 4);
+        for (var d = 0; d <= depth; d += 1) {
+          var s = Math.pow(0.7, d), dw = 26 * S_ * s, dh = 44 * S_ * s;
+          var dx = cx - dw / 2, dy = h * 0.85 - dh;
+          poly([[dx, dy], [dx + dw, dy], [dx + dw, dy + dh], [dx, dy + dh]], d % 2 ? PAL.red : PAL.purple, t, 0.6);
+          g.fillStyle = PAL.black;
+          g.fillRect(dx + dw * 0.1, dy + dh * 0.05, dw * 0.8, dh * 0.95);
+        }
+      } else {
+        floor(h * 0.8);
+        var drop = Math.min(1, u * 1.6);
+        var py2 = -20 * S_ + drop * (h * 0.8 - 2 * S_);
+        blob(cx + 14 * S_, h * 0.8 - 8 * S_, 3 * S_, 3 * S_, 6, PAL.skin, t, 0.6);
+        poly([[cx + 12 * S_, h * 0.8 - 5 * S_], [cx + 16 * S_, h * 0.8 - 5 * S_], [cx + 16 * S_, h * 0.8], [cx + 12 * S_, h * 0.8]], PAL.blue, t, 0.6);
+        poly([[cx - 22 * S_, py2 - 12 * S_], [cx + 8 * S_, py2 - 12 * S_], [cx + 8 * S_, py2], [cx - 22 * S_, py2]], PAL.black, t, 1.2);
+        for (var kk = 0; kk < 7; kk += 1) { g.fillStyle = PAL.white; g.fillRect(cx - 21 * S_ + kk * 4 * S_, py2 - 4 * S_, 3 * S_, 3 * S_); }
+      }
+    }
+    return { draw: draw };
+  };
+
+  // ---- a small world ------------------------------------------------------------------
+
+  /* After Radiohead and Universal Everything, PolyFauna: a world of
+     primitive life you move through — organisms, a landscape, weather —
+     that notices you. Here the organisms drift toward the pointer, and a
+     press starts a new one where it lands. */
+  S.polyFauna = function (canvas, opts) {
+    opts = opts || {};
+    var g = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
+    var r = rng(opts.seed || (Math.random() * 1e9) | 0);
+    var horizon = h * 0.42;
+    var life = [];
+    var pointer = null;
+    var cols = (opts.colours && opts.colours.length ? opts.colours : ["#e84a6a", "#f4d23a", "#4ad0c0", "#9d95e6"]);
+    function spawn(x, y) {
+      life.push({ x: x, y: y, vx: 0, vy: 0, arms: 3 + Math.floor(r() * 5), size: 2 + r() * 4,
+                  c: cols[Math.floor(r() * cols.length)], p: r() * TAU, born: performance.now() });
+      if (life.length > 40) { life.shift(); }
+    }
+    for (var i = 0; i < 9; i += 1) { spawn(r() * w, horizon + r() * (h - horizon)); }
+    var trees = [];
+    for (var k = 0; k < 14; k += 1) { trees.push({ x: r(), z: r(), hgt: 0.4 + r() * 0.8 }); }
+    function draw(now) {
+      var t = now / 1000;
+      // The sky, the colour of weather that is coming.
+      var sky = g.createLinearGradient(0, 0, 0, horizon);
+      sky.addColorStop(0, "#1a1030");
+      sky.addColorStop(1, "#6a3a5a");
+      g.fillStyle = sky;
+      g.fillRect(0, 0, w, horizon);
+      g.fillStyle = "#0e0a16";
+      g.fillRect(0, horizon, w, h - horizon);
+      // The ground, going by: lines of a grid rushing toward you.
+      g.strokeStyle = "rgba(157,149,230,0.45)";
+      g.lineWidth = 1;
+      for (var j = 0; j < 12; j += 1) {
+        var z = ((j / 12 + t * 0.12) % 1);
+        var y = horizon + (h - horizon) * z * z;
+        g.beginPath(); g.moveTo(0, Math.round(y) + 0.5); g.lineTo(w, Math.round(y) + 0.5); g.stroke();
+      }
+      for (var c = -6; c <= 6; c += 1) {
+        g.beginPath(); g.moveTo(w / 2 + c * 3, horizon); g.lineTo(w / 2 + c * w * 0.3, h); g.stroke();
+      }
+      // Mountains, and the forest: triangles.
+      g.fillStyle = "#2a1a3a";
+      g.beginPath(); g.moveTo(0, horizon);
+      for (var m = 0; m <= 8; m += 1) { g.lineTo(m / 8 * w, horizon - (0.3 + 0.7 * hash2d(m, 1, 11)) * h * 0.16); }
+      g.lineTo(w, horizon); g.closePath(); g.fill();
+      trees.forEach(function (tr) {
+        var z = (tr.z + t * 0.12) % 1, y = horizon + (h - horizon) * z * z;
+        var x = w / 2 + (tr.x - 0.5) * w * (0.2 + z * 1.6), s = (0.2 + z) * tr.hgt * h * 0.3;
+        g.fillStyle = "#1e3a2a";
+        g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * 0.3, y); g.lineTo(x - s * 0.3, y); g.closePath(); g.fill();
+      });
+      // Weather: rain, slanting.
+      g.fillStyle = "rgba(200,210,255,0.55)";
+      for (var q = 0; q < 40; q += 1) {
+        var rx = (hash2d(q, 1, 21) * w + t * 30) % w, ry = (hash2d(q, 2, 21) * h + t * 90) % h;
+        g.fillRect(Math.round(rx), Math.round(ry), 1, 3);
+      }
+      // The life: drifting, and drawn to whoever is looking.
+      life.forEach(function (o) {
+        var tx = pointer ? pointer.x : w / 2 + Math.sin(t * 0.4 + o.p) * w * 0.3;
+        var ty = pointer ? pointer.y : horizon + (h - horizon) * (0.5 + 0.4 * Math.cos(t * 0.3 + o.p));
+        o.vx += (tx - o.x) * 0.002 + Math.sin(t * 2 + o.p) * 0.05;
+        o.vy += (ty - o.y) * 0.002 + Math.cos(t * 1.7 + o.p) * 0.05;
+        o.vx *= 0.94; o.vy *= 0.94;
+        o.x += o.vx; o.y += o.vy;
+        var grow = Math.min(1, (now - o.born) / 600), sz = o.size * grow;
+        g.fillStyle = o.c;
+        g.strokeStyle = o.c;
+        g.beginPath(); g.arc(o.x, o.y, Math.max(1, sz), 0, TAU); g.fill();
+        for (var a = 0; a < o.arms; a += 1) {
+          var ang = a / o.arms * TAU + t * 1.5 + o.p, len = sz * (1.6 + 0.6 * Math.sin(t * 4 + a));
+          g.beginPath(); g.moveTo(o.x, o.y); g.lineTo(o.x + Math.cos(ang) * len, o.y + Math.sin(ang) * len); g.stroke();
+        }
+      });
+    }
+    return {
+      draw: draw,
+      point: function (x, y) { pointer = x === null ? null : { x: x, y: y }; },
+      press: function (x, y) { spawn(x, y); }
+    };
+  };
+
+  // ---- sound ---------------------------------------------------------------------------
+
+  /* The part of Ikeda and Fischinger that is heard, off until someone asks
+     for it. Ikeda's is sine tones at the top of hearing and clicks, placed
+     on the grid of the picture; Fischinger's is a figure in G, a note to a
+     beat, after the Bach he painted to. */
+  var audio = null, master = null;
+  S.sound = {
+    on: false,
+    start: function () {
+      if (!audio) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { return false; }
+        audio = new AC();
+        master = audio.createGain();
+        master.gain.value = 0.16;
+        master.connect(audio.destination);
+      }
+      if (audio.state === "suspended") { audio.resume(); }
+      this.on = true;
+      return true;
+    },
+    stop: function () { this.on = false; },
+    tone: function (freq, dur, type, level, when) {
+      if (!this.on || !audio) { return; }
+      var t0 = audio.currentTime + (when || 0);
+      var o = audio.createOscillator(), e = audio.createGain();
+      o.type = type || "sine";
+      o.frequency.value = freq;
+      e.gain.setValueAtTime(0, t0);
+      e.gain.linearRampToValueAtTime(level || 0.5, t0 + 0.004);
+      e.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(e); e.connect(master);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    },
+    click: function (level, when) {
+      if (!this.on || !audio) { return; }
+      var t0 = audio.currentTime + (when || 0);
+      var n = Math.floor(audio.sampleRate * 0.004), buf = audio.createBuffer(1, n, audio.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < n; i += 1) { d[i] = (Math.random() * 2 - 1) * (1 - i / n); }
+      var s = audio.createBufferSource(), e = audio.createGain();
+      e.gain.value = level || 0.6;
+      s.buffer = buf; s.connect(e); e.connect(master); s.start(t0);
+    },
+    // A passage of datamatics: clicks on the grid and high sines, for as long as it runs.
+    data: function (ms) {
+      if (!this.on) { return; }
+      var steps = Math.floor(ms / 60);
+      for (var i = 0; i < steps; i += 1) {
+        if (Math.random() < 0.6) { this.click(0.35, i * 0.06); }
+        if (Math.random() < 0.25) { this.tone([8000, 10000, 12000, 6000, 4000][i % 5], 0.05, "sine", 0.12, i * 0.06); }
+      }
+      this.tone(60, ms / 1000, "sine", 0.4);
+    },
+    // A beat of the motion painting: G major, climbing and turning, as a
+    // continuo under whatever is being painted.
+    beat: function (n) {
+      if (!this.on) { return; }
+      var G = [392, 494, 587, 784, 587, 494, 440, 587, 740, 587, 440, 370];
+      var base = [98, 98, 131, 147][Math.floor(n / 4) % 4];
+      for (var i = 0; i < 4; i += 1) { this.tone(G[(n * 4 + i) % G.length], 0.16, "triangle", 0.28, i * 0.125); }
+      this.tone(base, 0.45, "triangle", 0.35);
+    }
   };
 
   window.Systems = S;

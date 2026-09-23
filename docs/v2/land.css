@@ -464,6 +464,17 @@
   color: var(--ink-dim);
 }
 
+/* Whose work a scene or an entr'acte is after, when it is after someone's. */
+.theatre-after {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.theatre-after[hidden] { display: none; }
+
+.theatre-library.is-live { pointer-events: auto; cursor: pointer; }
+
 .theatre-step {
   display: grid;
   place-items: center;
