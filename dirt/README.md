@@ -135,5 +135,20 @@ python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/
 python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
 ```
 
-DIRT shows the cutouts only. The generator still writes a colour version of each tile, which the viewer no longer uses.
+DIRT is now only a field of these tiles and a Shuffle button (`build_soil_viewer.py`). Each Shuffle deals five
+by three tiles, picks a random origin and lays the tiles out from it in a spiral. The farther a place is from the
+origin, the more digital processes take hold of it, each switching on at a golden-ratio distance:
+
+| From | What sets in |
+| --- | --- |
+| the start | more of each object's shards sink at its join, from φ⁻³ up to φ⁻¹ |
+| φ⁻³ | colours turn, by up to the golden angle (137.5°) |
+| φ⁻² | dots fuse into pixel blocks of 2, 3, 5, then 8 cells |
+| φ⁻² + φ⁻⁴ | rows tear sideways, like torn scanlines |
+| φ⁻¹ | columns pixel-sort by lightness into drips up to 21 cells long |
+| φ^-½ | the field folds into a five-fold kaleidoscope about the origin |
+
+The processes run over the whole field, never over single tiles, so no joins show. Every cell remembers which
+painting it came from, so pointing anywhere still names the saved painting underneath. The generator still writes
+a colour version of each tile, which the viewer does not use.
 All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.
