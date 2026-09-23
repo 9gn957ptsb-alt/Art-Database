@@ -147,14 +147,22 @@ origin, the more digital processes take hold of it, each switching on at a golde
 | φ⁻² + φ⁻⁴ | rows tear sideways, like torn scanlines |
 | φ⁻¹ | columns pixel-sort by lightness into drips up to 21 cells long |
 | φ^-½ | the field folds into a five-fold kaleidoscope about the origin |
-| φ⁻² onward | **data pigment**: up to 1/φ of the dots come loose and flow, leaving dark pores behind |
+| φ⁻² onward | **data pigment**: up to 1/φ of the dots come loose and fly as flocks, leaving dark pores behind |
 
-The data pigment follows Refik Anadol's "fluid dreams", but its sources stay traceable. At most 46,368
-particles (a Fibonacci number) ride a slow, divergence-free current made from five travelling waves with
-Fibonacci wavelengths (89 to 610 cells), so they swirl like a liquid rather than scattering. They move faster
-the farther they are from the origin, and slow and settle like silt where they drift back toward the calm
-ground. Each leaves a short trail that fades by φ⁻⁵ a frame. After 377 to 987 frames it returns to its pore
-and starts again. Hovering a particle names its painting. With reduced motion set, nothing comes loose.
+The data pigment takes flight as flocks, like starlings or a school of fish. Each loose dot is a bird (17,711
+at most) following three rules toward the neighbours it can see within 8 cells, heeding at most 13 of them:
+
+- **Alignment:** fly as the others fly.
+- **Cohesion:** drift toward the middle of the flock.
+- **Separation:** keep a wingspan apart.
+
+Birds from the same painting are kin and pull φ times harder, so each painting's pigment tends to fly together.
+Three hawks hunt the far ground. They are never drawn. Each chases a bird of its choosing for a while, then turns
+to another, and any bird within 21 cells bolts away, up to φ times its normal top speed. The flock reads the bolt
+and turns, so the hawks are seen only in the splits, flashes and re-formings they cause. A slow current still runs
+underneath as a thermal to ride. The far ground is the flocks' sky: over the calm soil they turn back outward,
+harder the deeper they stray. Trails fade by φ⁻⁶ a frame. Hovering a bird names its painting. With reduced motion
+set, nothing takes flight.
 
 A similarity map of the paintings (laying clods out by how alike their paintings are, as Anadol does with
 his archives) is the plan for bigger globe terrains, not for DIRT.

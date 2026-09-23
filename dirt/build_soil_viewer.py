@@ -12,9 +12,9 @@ Fibonacci number:
   phi^-2 + phi^-4  rows tear sideways, like torn scanlines
   phi^-1           columns pixel-sort by lightness into drips
   phi^-1/2         the field folds into a five-fold kaleidoscope about the origin
-  phi^-2 onward    data pigment: up to 1/phi of the dots come loose and flow in a slow swirling current,
-                   faster the farther out, leaving short trails and settling like silt where they drift
-                   back toward the calm ground; after a while each returns to its pore and starts again
+  phi^-2 onward    data pigment: up to 1/phi of the dots come loose and take flight as a flock, birds of
+                   one painting flying as kin, riding a slow current and scattering from three unseen
+                   hawks that hunt the far ground; over the calm soil they turn back outward
 
 The processes act on the whole field, never on single tiles, so no joins show. Every cell keeps a
 note of where it came from, so pointing anywhere still names the saved painting underneath. The page
@@ -145,7 +145,13 @@ const ready = Promise.all(TS.tiles.map(async (t, i) => {
 
 let layout = [], outSrc = new Int32Array(W * H), order = [], origin = [0, 0];
 let Dg = null, P = null, waves = [];
-const BUDGET = 46368;                                           // pigment particles at most (Fibonacci)
+const BUDGET = 17711;                                           // birds at most (Fibonacci)
+const HAWKS = 3;                                                // unseen predators (Fibonacci)
+const SEE = 8, NEAR = 3, FEAR = 21, LOOK = 13;                  // cells: sight, personal space, fear; neighbours heeded (Fibonacci)
+const VMAX = 2, VMIN = 1 / PHI, PANIC = VMAX * PHI;             // cells a frame
+const GX = Math.ceil(W / SEE), GY = Math.ceil(H / SEE);
+const head = new Int32Array(GX * GY), next = new Int32Array(BUDGET);
+let hawks = [];
 const trail = document.createElement("canvas");                 // the flowing pigment, one pixel a cell
 trail.width = W; trail.height = H;
 const trailCtx = trail.getContext("2d"), trailImg = trailCtx.createImageData(W, H), trailPx = trailImg.data;
@@ -272,15 +278,16 @@ function deal(seed) {
   const n = picks.length;
   P = { n, x: new Float32Array(n), y: new Float32Array(n), hx: new Float32Array(n), hy: new Float32Array(n),
         rgb: new Uint8Array(n * 3), src: new Int32Array(n), slot: new Uint8Array(n),
-        age: new Uint16Array(n), life: new Uint16Array(n) };
+        vx: new Float32Array(n), vy: new Float32Array(n), kin: new Int32Array(n) };
   picks.forEach((i, k) => {
     const x = i % W, y = (i / W) | 0;
     P.x[k] = P.hx[k] = x + 0.5; P.y[k] = P.hy[k] = y + 0.5;
     P.rgb[k * 3] = oc[i * 3]; P.rgb[k * 3 + 1] = oc[i * 3 + 1]; P.rgb[k * 3 + 2] = oc[i * 3 + 2];
     P.src[k] = outSrc[i];
     P.slot[k] = Math.floor(y / N) * COLS + Math.floor(x / N);
-    P.life[k] = 377 + Math.floor(rand() * 610);                // frames, Fibonacci
-    P.age[k] = Math.floor(rand() * P.life[k]);
+    P.kin[k] = workOf(outSrc[i]);                              // birds of one painting are kin
+    const a = rand() * 2 * Math.PI;
+    P.vx[k] = Math.cos(a) * VMIN; P.vy[k] = Math.sin(a) * VMIN;
     os[i] = 0;
   });
   // The current: a stream function of five travelling waves, Fibonacci wavelengths, so the flow is
@@ -292,6 +299,11 @@ function deal(seed) {
   const norm = waves.reduce((sum, v) => sum + v.amp * Math.hypot(v.kx, v.ky), 0);
   waves.forEach((v) => (v.amp /= norm));
   trailPx.fill(0);
+  // Hawks start somewhere out in the far ground, each after a bird of its own choosing.
+  hawks = Array.from({ length: HAWKS }, () => {
+    const k = Math.floor(rand() * Math.max(1, n));
+    return { x: n ? P.x[k] : W / 2, y: n ? P.y[k] : H / 2, vx: 0, vy: 0, prey: k, until: 0 };
+  });
 
   // F. Paint the ground that stays, two pixels a cell: a full dot fills its cell, the weave's smaller
   //    dots are one pixel with the dark around them.
@@ -318,27 +330,102 @@ function deal(seed) {
 // ---- the pigment in motion --------------------------------------------------------------------
 
 function flow(tick) {
-  const fade = 1 - PHI ** -5;                                      // how long a trail lingers
+  const fade = 1 - PHI ** -6;                                     // long, soft trails
   for (let j = 3; j < trailPx.length; j += 4) if (trailPx[j]) trailPx[j] = trailPx[j] * fade;
-  const vmax = 2;                                                  // cells a frame, at the far edge (Fibonacci)
-  for (let k = 0; k < P.n; k++) {
+  const n = P.n, X = P.x, Y = P.y, VX = P.vx, VY = P.vy;
+
+  // Where everyone is: a bucket grid a sight-length across, rebuilt every frame.
+  head.fill(-1);
+  for (let k = 0; k < n; k++) {
+    const b = Math.min(GY - 1, (Y[k] / SEE) | 0) * GX + Math.min(GX - 1, (X[k] / SEE) | 0);
+    next[k] = head[b]; head[b] = k;
+  }
+
+  // The hawks: each chases its chosen bird for a while, then turns to another. They are never drawn;
+  // they are seen only in what the flocks do.
+  for (const hk of hawks) {
+    if (tick >= hk.until || hk.prey >= n) { hk.prey = Math.floor(Math.random() * n); hk.until = tick + 144 + Math.floor(Math.random() * 233); }
+    const dx = X[hk.prey] - hk.x, dy = Y[hk.prey] - hk.y, d = Math.hypot(dx, dy) || 1;
+    const hs = VMAX * PHI ** 0.5;                                 // quicker than a bird, slower than a panicked one
+    hk.vx += (dx / d * hs - hk.vx) * PHI ** -4; hk.vy += (dy / d * hs - hk.vy) * PHI ** -4;
+    hk.x += hk.vx; hk.y += hk.vy;
+  }
+
+  for (let k = 0; k < n; k++) {
     if (revealed[P.slot[k]] < 1) continue;
-    let x = P.x[k], y = P.y[k];
+    const x = X[k], y = Y[k];
+    let ax = 0, ay = 0, cx0 = 0, cy0 = 0, sx = 0, sy = 0, wsum = 0, seen = 0;
+    const bx = Math.min(GX - 1, (x / SEE) | 0), by = Math.min(GY - 1, (y / SEE) | 0);
+    for (let gy = by - 1; gy <= by + 1 && seen < LOOK; gy++) {
+      if (gy < 0 || gy >= GY) continue;
+      for (let gx = bx - 1; gx <= bx + 1 && seen < LOOK; gx++) {
+        if (gx < 0 || gx >= GX) continue;
+        for (let o = head[gy * GX + gx]; o !== -1 && seen < LOOK; o = next[o]) {
+          if (o === k) continue;
+          const dx = X[o] - x, dy = Y[o] - y, d2 = dx * dx + dy * dy;
+          if (d2 > SEE * SEE) continue;
+          seen++;
+          const w = P.kin[o] === P.kin[k] ? PHI : 1;                // kin pull harder
+          ax += VX[o] * w; ay += VY[o] * w; cx0 += dx * w; cy0 += dy * w; wsum += w;
+          if (d2 < NEAR * NEAR) { const d = Math.sqrt(d2) || 0.1; sx -= dx / d / d; sy -= dy / d / d; }
+        }
+      }
+    }
+    let vx = VX[k], vy = VY[k];
+    if (wsum) {
+      vx += (ax / wsum - vx) * PHI ** -2;                         // alignment: fly as the others fly
+      vy += (ay / wsum - vy) * PHI ** -2;
+      vx += (cx0 / wsum) * PHI ** -5;                             // cohesion: drift toward the middle of the flock
+      vy += (cy0 / wsum) * PHI ** -5;
+    }
+    vx += sx * PHI ** -1; vy += sy * PHI ** -1;                   // separation: keep a wingspan apart
+
+    // The slow current still moves under them, a thermal to ride.
     let u = 0, v = 0;
     for (const w of waves) {
       const c = w.amp * Math.cos(w.kx * x + w.ky * y + w.w * tick + w.ph);
       u += w.ky * c; v -= w.kx * c;
     }
-    // Faster the farther out it is; drifted back toward the calm ground it slows and settles like silt.
-    const s = vmax * smooth(PHI ** -2, 1, Dg[Math.min(H - 1, y | 0) * W + Math.min(W - 1, x | 0)]);
-    x += u * s * 34; y += v * s * 34;
-    if (x < 0) x = -x; if (x >= W) x = 2 * W - x - 1;
-    if (y < 0) y = -y; if (y >= H) y = 2 * H - y - 1;
-    if (++P.age[k] > P.life[k]) { P.age[k] = 0; x = P.hx[k]; y = P.hy[k]; }  // back to its pore, to begin again
-    P.x[k] = x; P.y[k] = y;
-    const j = ((y | 0) * W + (x | 0)) * 4;
-    const f = selWork !== null && workOf(P.src[k]) !== selWork ? PHI ** -2 : 1;
-    trailPx[j] = P.rgb[k * 3] * f; trailPx[j + 1] = P.rgb[k * 3 + 1] * f; trailPx[j + 2] = P.rgb[k * 3 + 2] * f; trailPx[j + 3] = 255;
+    vx += u * PHI ** -3 * 21; vy += v * PHI ** -3 * 21;
+
+    // Fear: a hawk within reach and the bird bolts away from it; the flock reads the bolt and turns.
+    let fled = false;
+    for (const hk of hawks) {
+      const dx = x - hk.x, dy = y - hk.y, d2 = dx * dx + dy * dy;
+      if (d2 < FEAR * FEAR) {
+        const d = Math.sqrt(d2) || 0.1, f = (1 - d / FEAR) * PHI;
+        vx += (dx / d) * f; vy += (dy / d) * f; fled = true;
+      }
+    }
+
+    // Home range: the far ground is their sky. Over the calm soil they turn back outward.
+    const i = Math.min(H - 1, y | 0) * W + Math.min(W - 1, x | 0);
+    if (Dg[i] < PHI ** -2) {
+      const ox = x - origin[0], oy = y - origin[1], d = Math.hypot(ox, oy) || 1;
+      const depth = (PHI ** -2 - Dg[i]) / PHI ** -2;              // the deeper over the soil, the harder the turn
+      vx += (ox / d) * depth * PHI ** -1; vy += (oy / d) * depth * PHI ** -1;
+    }
+    const m = 13;                                                 // and they bank away from the edges
+    if (x < m) vx += PHI ** -4; if (x > W - m) vx -= PHI ** -4;
+    if (y < m) vy += PHI ** -4; if (y > H - m) vy -= PHI ** -4;
+
+    // Speed: never stalling, never past a panicked burst.
+    const sp = Math.hypot(vx, vy) || 1, top = fled ? PANIC : VMAX;
+    if (sp > top) { vx = vx / sp * top; vy = vy / sp * top; }
+    else if (sp < VMIN) { vx = vx / sp * VMIN; vy = vy / sp * VMIN; }
+    VX[k] = vx; VY[k] = vy;
+    X[k] = Math.min(W - 1, Math.max(0, x + vx)); Y[k] = Math.min(H - 1, Math.max(0, y + vy));
+
+    // Each bird is a short stroke along its heading.
+    const f = selWork !== null && P.kin[k] !== selWork ? PHI ** -2 : 1;
+    const r = P.rgb[k * 3] * f, g = P.rgb[k * 3 + 1] * f, b = P.rgb[k * 3 + 2] * f;
+    const s = Math.hypot(vx, vy) || 1;
+    for (let t = 0; t < 2; t++) {
+      const px = (X[k] - (vx / s) * t) | 0, py = (Y[k] - (vy / s) * t) | 0;
+      if (px < 0 || py < 0 || px >= W || py >= H) continue;
+      const j = (py * W + px) * 4;
+      trailPx[j] = r; trailPx[j + 1] = g; trailPx[j + 2] = b; trailPx[j + 3] = 255;
+    }
   }
   trailCtx.putImageData(trailImg, 0, 0);
 }
@@ -423,7 +510,7 @@ function pick(ev) {
   const x = Math.floor(fx), y = Math.floor(fy);
   if (x < 0 || y < 0 || x >= W || y >= H) return;
   const pk = particleAt(fx, fy);
-  const wi = pk >= 0 ? workOf(P.src[pk]) : workAt(y * W + x);
+  const wi = pk >= 0 ? P.kin[pk] : workAt(y * W + x);
   if (wi === selWork || pending !== null) return;
   pending = requestAnimationFrame(() => {
     pending = null;
