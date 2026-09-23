@@ -102,7 +102,7 @@ struct State { int mode, n, w, cand; };
 int gGram = 0;                                                       // the grammar of the passage being painted
 State rawState(uint seed, int k) {
   if (uEarth == 0 && uArtOn == 1) {
-    ivec2 g = uGram[gGram];                                          // one of the works of the passage's grammar
+    ivec2 g = uGram[min(gGram, 3)];                                  // one of the works of the passage's grammar
     uint h = mixh(seed ^ (uint(max(k, -1) + 1) * 0x9e3779b9u));
     return State(0, 0, g.x + int((uHold > 0.5 ? mixh(seed) : h) % uint(max(1, g.y))), 0);
   }
@@ -119,7 +119,7 @@ State rawState(uint seed, int k) {
 State stateOf(uint seed, int k) {
   State s = rawState(seed, k), p = rawState(seed, k - 1);
   if (uEarth == 0 && uArtOn == 1) {
-    ivec2 g = uGram[gGram];
+    ivec2 g = uGram[min(gGram, 3)];
     if (s.w == p.w && g.y > 1) s.w = g.x + (s.w - g.x + 1) % g.y;
     return s;
   }
@@ -337,8 +337,164 @@ float collage(vec2 p, uint salt, float dens, out int ink, out bool photo) {
   return best;
 }
 
+
+// ---- the outskirts: digital territories -------------------------------------------------------------
+// Out from the calm islands, where DIRT's digital processes take hold, some passages leave the paper for the moving
+// image, after the digital animation that turned painting into time and then into data. Nearest the islands:
+// painting in time (Oskar Fischinger's Motion Painting No. 1) and the collection's paintings faceted (Quayola's
+// Iconographies); further out, living tissue (Universal Everything's Primordial) and the soil lifted into relief
+// lines (GMUNK's Synapse Code); farthest, data (Ryoji Ikeda's datamatics). They wear their passage's painting's
+// colours, turned by the golden angle.
+bool soilAt(ivec2 cell, out vec3 soil, out int s) {
+  ivec2 sl = (cell >> 8) - uC0;
+  soil = vec3(0); s = 0;
+  if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) return false;
+  vec4 si = texelFetch(uSlots, sl, 0);
+  if (si.x < 0.5) return false;
+  uint w = texelFetch(uCells, ivec3(cell & 255, int(si.x) - 1), 0).x;
+  soil = vec3(uvec3(w, w >> 8, w >> 16) & 255u); s = int((w >> 24) & 3u);
+  return true;
+}
+uint gSeed = 0u;                                                     // the passage's seed, and its change
+int gK = 0;
+const int DIGITS[10] = int[10](31599, 11415, 29671, 29647, 23497, 31183, 31215, 29257, 31727, 31695);
+/** Is cell (x, y) of a 3 by 5 numeral d lit? */
+bool digit(int d, int x, int y) { return x >= 0 && x < 3 && y >= 0 && y < 5 && ((DIGITS[d] >> (14 - (y * 3 + x))) & 1) == 1; }
+
+void digital(int layer, Cell c, int g, out vec3 A, out vec3 B) {
+  vec3 st[5]; float at[5];
+  uint hp = mixh(gSeed ^ uint(gK + 7) * 0x27d4eb2du);
+  paletteOf(layer, c.e, State(1, 1 + int(hp % 4u), -1, 0), st, at);   // the painting's colours, turned
+  vec2 p = gP, q = p - gMid;
+  float T = uTime;
+  if (g == 5) {
+    // Painting in time: on each beat a shape is painted in, stroke by stroke; they gather for 21 beats; then the
+    // ground is painted over them and it begins again.
+    const float BEAT = 1.618;
+    float cyc = T / (BEAT * 21.0), b = fract(cyc) * 21.0;
+    uint hc = mixh(hp + uint(floor(cyc)));
+    vec3 col = st[1] * 0.38;
+    for (int n = 0; n < 21; n++) {
+      if (float(n) > b) break;
+      uint h = mixh(hc + uint(n) * 977u);
+      float grow = clamp(b - float(n), 0.0, 1.0);
+      vec2 o = (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * 233.0, d = q - o;
+      float r = length(d), a = atan(d.y, d.x) / 6.2832 + 0.5, typ = unit(mixh(h + 2u)), R = 13.0 + 55.0 * unit(mixh(h + 3u));
+      bool on = false;
+      if (typ < 0.3) on = r < R && abs(fract(r / 5.0) - 0.5) < 0.22 && a < grow;                      // rings
+      else if (typ < 0.55) on = r < R * 1.3 && abs(fract(r / 6.0 - a) - 0.5) < 0.2 && r / (R * 1.3) < grow;   // a spiral
+      else if (typ < 0.8) { vec2 e = rot(6.2832 * unit(mixh(h + 4u))) * d; on = abs(e.y) < R * 0.08 + 1.0 && e.x > -R && e.x < -R + 2.0 * R * grow; }   // a bar
+      else on = r < R * 0.3 * grow;                                  // a disc
+      if (on) col = st[2 + int(mixh(h + 5u) % 3u)];
+    }
+    float wipe = smoothstep(20.3, 21.0, b) * step(fract((p.x + p.y) / 89.0), (b - 20.3) / 0.7);
+    col = mix(col, st[1] * 0.38, wipe);
+    A = B = col;
+  } else if (g == 6) {
+    // The collection's paintings faceted: the soil cut into facets, each the colour at its middle, lit as a carved
+    // face is; facets split into smaller ones and join again, each on its own time.
+    float best = 1e9, second = 1e9;
+    ivec2 site = ivec2(0);
+    uint bh = 0u;
+    for (int lv = 0; lv < 2; lv++) {
+      float G = lv == 0 ? 34.0 : 13.0;
+      ivec2 sq = ivec2(floor(p / G));
+      best = 1e9; second = 1e9;
+      for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        ivec2 qq = sq + ivec2(i, j);
+        uint h = h3(qq.x, qq.y, hp + uint(lv));
+        vec2 sp = (vec2(qq) + vec2(unit(h), unit(mixh(h + 1u)))) * G;
+        float d = length(p - sp);
+        if (d < best) { second = best; best = d; site = ivec2(sp); bh = h; } else if (d < second) second = d;
+      }
+      // a big facet splits while the wave of its own time is up
+      if (lv == 0 && sin(T * 0.382 + 6.2832 * unit(mixh(bh + 5u))) < 0.3) break;
+    }
+    vec3 soil; int s;
+    if (!soilAt(site, soil, s)) soil = c.soil;
+    vec3 nrm = normalize(vec3(unit(mixh(bh + 2u)) - 0.5, unit(mixh(bh + 3u)) - 0.5, 1.2));
+    vec3 col = (soil * 1.2 + 24.0) * (0.62 + 0.55 * max(0.0, dot(nrm, normalize(vec3(-0.6, -0.8, 1.0)))));
+    if (second - best < 0.9) col = mix(col, vec3(240.0, 236.0, 226.0), 0.7);   // the cut between faces
+    A = B = min(col, vec3(255.0));
+  } else if (g == 7) {
+    // Living tissue: cells drifting, each with its membrane and nucleus, granules of soil in them, and now and then
+    // one dividing in two.
+    const float G = 21.0;
+    ivec2 sq = ivec2(floor(p / G));
+    float best = 1e9, second = 1e9, split = 0.0;
+    vec2 bs = vec2(0), axis = vec2(1, 0);
+    uint bh = 0u;
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+      ivec2 qq = sq + ivec2(i, j);
+      uint h = h3(qq.x, qq.y, hp);
+      vec2 sp = (vec2(qq) + 0.2 + 0.6 * vec2(unit(h), unit(mixh(h + 1u)))) * G + 3.0 * vec2(sin(T * 0.3 + 6.2832 * unit(mixh(h + 2u))), cos(T * 0.23 + 6.2832 * unit(mixh(h + 3u))));
+      float d = length(p - sp);
+      if (d < best) { second = best; best = d; bs = sp; bh = h; } else if (d < second) second = d;
+    }
+    // a dividing cell: its nucleus draws apart into two
+    float ph = fract(T / 13.0 + unit(mixh(bh + 4u)));
+    if (unit(mixh(bh + 5u)) < 0.382) { split = smoothstep(0.3, 0.9, ph) * 5.0; float an = 6.2832 * unit(mixh(bh + 6u)); axis = vec2(cos(an), sin(an)); }
+    vec2 dn = p - bs;
+    float nuc = min(length(dn - axis * split), length(dn + axis * split));
+    vec3 cyto = mix(st[4], vec3(250.0, 236.0, 242.0), 0.5), mem = st[1] * 0.8, nucleus = mix(st[1], st[2], 0.4);
+    vec3 col = cyto;
+    if (c.s > 0 && unit(h3(int(p.x), int(p.y), bh)) < 0.3) col = mix(cyto, c.soil, 0.55);   // granules
+    if (nuc < 3.5 + 0.6 * sin(T + 6.2832 * unit(bh))) col = nucleus;
+    if (split > 2.5 && abs(dot(dn, axis)) < 0.7) col = mem;            // the furrow
+    if (second - best < 1.4) col = mem;
+    A = B = col;
+  } else if (g == 8) {
+    // The soil lifted into relief: rows of lines, each lifted by the soil's lightness beneath it and rippling, the
+    // nearer rows hiding the ones behind, in light on black.
+    const int GAP = 5;
+    float amp = 34.0 * (0.6 + 0.4 * sin(T * 0.618 + q.x * 0.013));
+    vec3 col = vec3(6.0, 6.0, 8.0);
+    int y = int(floor(p.y)), y0 = (y / GAP + 1) * GAP;
+    for (int n = 0; n < 9; n++) {
+      int yr = y0 + n * GAP;
+      // the soil's lightness along the row, smoothed over 8 cells so each line is a ridge, not a scratch
+      vec3 s0, s1; int s;
+      float fx = p.x / 8.0, u = fract(fx);
+      int x0 = int(floor(fx)) * 8;
+      float l0 = soilAt(ivec2(x0, yr), s0, s) ? lum(s0) : 0.0, l1 = soilAt(ivec2(x0 + 8, yr), s1, s) ? lum(s1) : 0.0;
+      float lift = mix(l0, l1, u * u * (3.0 - 2.0 * u)) / 255.0;
+      float top = float(yr) - amp * lift * (0.5 + 0.5 * sin(float(yr) * 0.05 + T * 1.3));
+      if (top <= p.y + 0.5) {
+        float hue = fract(float(yr) / 144.0 + T * 0.05);
+        vec3 line = mix(st[3], st[4], hue) * 1.2 + vec3(40.0);
+        if (abs(p.y - top) < 0.8) col = min(line, vec3(255.0));
+        break;                                                        // nearer rows hide what is behind
+      }
+    }
+    A = B = col;
+  } else {
+    // Data: black, with barcodes, grids of dots, numerals of the collection's own numbers, a scanline, and now and
+    // then the whole field thrown white.
+    float beat = floor(T * 1.618);
+    int band = int(floor(p.x / 34.0));
+    uint hb = h3(band, int(beat), hp);
+    int mode = int(hb % 4u);
+    bool on = false;
+    int x = int(floor(p.x)), yy = int(floor(p.y));
+    if (mode == 0) on = unit(h3(x, int(beat), hp + 3u)) < 0.25 + 0.5 * lum(c.soil) / 255.0;                      // barcode
+    else if (mode == 1) on = (x % 3 == 0 && yy % 3 == 0 && lum(c.soil) > 60.0 + 120.0 * unit(hb));               // a grid of dots
+    else if (mode == 2) {                                                                                          // numerals
+      int cx = x - band * 34, col = cx / 4, row = (yy - int(floor(p.y / 7.0)) * 7);
+      int v = int(h3(band * 16 + col, int(floor(p.y / 7.0)), uint(beat)) % 10u);
+      on = cx < 32 && digit(v, cx - col * 4, row);
+    }
+    float scan = fract(T * 0.382 + unit(hp));
+    if (abs(fract(p.y / 233.0) - scan) < 0.004) on = !on;                                                        // the scanline
+    if (unit(h3(int(beat), 0, hp + 9u)) < 0.034) on = !on;                                                       // a flash
+    vec3 col = on ? vec3(242.0) : vec3(0.0);
+    if (on && unit(h3(x, yy, hp + uint(beat))) < 0.01) col = st[3];
+    A = B = col;
+  }
+}
+
 /** A sheet's colours at a cell: paper, dirt, and the marks of its grammar. */
 void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
+  if (gGram >= 5) { digital(layer, c, gGram, A, B); return; }
   int w = S.w;
   vec2 p = gP;
   float out_ = smoothUp(P3, 1.0, c.d);                                // how far out: calm ground is nearly clean paper
@@ -580,10 +736,21 @@ void main() {
   int kind = int(m25.z);
   uint seed = h3(int(m26.y), int(m26.z), 777u);
   gP = vec2(cell) + 0.5; gMid = m25.xy;
-  gGram = uForce >= 0 ? uForce : kind == MOSAIC ? 0 : kind == NOCTURNE ? 1 : kind == SPRAY ? 2 : kind == WEAVE ? 3 : 4;
+  gGram = kind == MOSAIC ? 0 : kind == NOCTURNE ? 1 : kind == SPRAY ? 2 : kind == WEAVE ? 3 : 4;
+  // Out in the outskirts, a share of the passages leave the paper for a digital territory: more, the farther out.
+  float dm = entT(layer, c.e, 27).x;
+  if (unit(mixh(seed + 77u)) < smoothUp(P3, 1.0, dm) * P1) {
+    float r = unit(mixh(seed + 78u));
+    gGram = dm < P1 ? (r < 0.5 ? 5 : 6) : dm < 1.0 - P3 ? (r < 0.34 ? 6 : r < 0.67 ? 7 : 8) : (r < 0.25 ? 7 : r < 0.5 ? 8 : 9);
+    // now and then, the archive: a passage that turns through all the territories, one after another
+    if (unit(mixh(seed + 79u)) < P4) gGram = 5 + int(mod(floor((uTime + 21.0 * unit(seed)) / 6.854), 5.0));
+  }
+  if (uForce >= 0) gGram = uForce;
+  gSeed = seed;
   // The passage's changes: this one, when it set out and from where.
   float tau = 55.0 * pow(PHI, unit(mixh(seed + 1u)) - 0.5) * (uEarth == 1 ? PHI : 1.0), first = 3.0 + 21.0 * unit(mixh(seed + 2u));
   int k = uTime < first ? -1 : int(floor((uTime - first) / tau));
+  gK = k;
   float t0 = first + float(k) * tau;
   uint hk = mixh(seed ^ (uint(k) * 0x85ebca6bu));
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
@@ -631,6 +798,12 @@ void main() {
     if (at == 0) { Cell o = cellAt(prev, lc); paint(prev, o, int(entT(prev, o.e, 25).z), Sd, A, B); }
     else if (at != 3) A = B = flatIn(layer, c, kind, Sd, tsel, at == 2);
   }
+  // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
+  if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {
+    float night = smoothstep(0.55, 0.95, 0.5 - 0.5 * cos(6.2832 * uTime / 233.0)) * P2;
+    vec3 tint = mix(vec3(1.0), vec3(0.55, 0.6, 0.8), night);
+    A *= tint; B *= tint;
+  }
   outA = vec4(A / 255.0, 1.0);
   outB = vec4(B / 255.0, 1.0);
 }`;
@@ -658,21 +831,24 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
 
-  function program(fsSrc, names) {
-    const sh = (type, src) => {
-      const s = gl.createShader(type);
-      gl.shaderSource(s, src); gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn("DIRT ground shader:", gl.getShaderInfoLog(s)); return null; }
-      return s;
-    };
-    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc);
-    if (!vs || !fs) return null;
-    const pr = gl.createProgram();
+  // The shaders compile in the background where the browser can (they are long, and a slow driver could stall the
+  // page); the ground is plain paper until they are ready.
+  const parallel = gl.getExtension("KHR_parallel_shader_compile");
+  let pending = null;
+  function program(fsSrc) {
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
     gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
-    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.warn("DIRT ground program:", gl.getProgramInfoLog(pr)); return null; }
+    return { pr, vs, fs };
+  }
+  function finish(p, names) {
+    if (!gl.getProgramParameter(p.pr, gl.LINK_STATUS)) {
+      console.warn("DIRT ground shader:", gl.getShaderInfoLog(p.fs) || gl.getShaderInfoLog(p.vs) || gl.getProgramInfoLog(p.pr));
+      return null;
+    }
     const u = {};
-    for (const n of names) u[n] = gl.getUniformLocation(pr, n);
-    return [pr, u];
+    for (const n of names) u[n] = gl.getUniformLocation(p.pr, n);
+    return [p.pr, u];
   }
   function tex(target) {
     const t = gl.createTexture();
@@ -682,12 +858,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
     return t;
   }
   function setup() {
-    const a = program(GROUND_FS, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce"]);
-    const b = program(GROUND_PX, ["uA", "uB", "uOff", "uCell0", "uH"]);
-    if (!a || !b) return false;
-    [cellProg, U] = a; [pxProg, V] = b;
-    gl.useProgram(cellProg);
-    gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3);
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -696,9 +867,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
     vivid.forEach((cols, w) => cols.slice(0, 3).forEach((c, n) => vd.set([c[0], c[1], c[2], 255], (w * 3 + n) * 4)));
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 3, nv);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 3, nv, gl.RGBA, gl.FLOAT, vd);
-    gl.uniform1i(U.uNV, vivid.length);
-    gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
-    gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
     // The artist's works, grammar by grammar: paper, five inks darkest first, then which are most colourful.
     const ws = art && art.works.length ? art.works.slice().sort((x, y) => x.grammar - y.grammar) : [];
     const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), lumA = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
@@ -722,16 +890,31 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
     gl.activeTexture(gl.TEXTURE6); tex(gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 8, Math.max(1, ws.length));
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 8, Math.max(1, ws.length), gl.RGBA, gl.FLOAT, ad);
-    gl.uniform1i(U.uArt, 6);
-    gl.uniform1i(U.uArtOn, ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0);
-    gl.uniform2iv(U.uGram, gram);
-    const forced = /(?:^|&)g([0-4])(?:&|$)/.exec(location.hash.slice(1));
-    gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
-    gl.useProgram(pxProg);
-    gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
+    pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
     return gl.getError() === gl.NO_ERROR;
+  }
+  /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
+  function link() {
+    if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH"]);
+    if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
+    [cellProg, U] = a; [pxProg, V] = b;
+    gl.useProgram(cellProg);
+    gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6);
+    gl.uniform1i(U.uNV, vivid.length);
+    gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
+    gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
+    gl.uniform1i(U.uArtOn, pending.artOn);
+    gl.uniform2iv(U.uGram, pending.gram);
+    const forced = /(?:^|&)g([0-9])(?:&|$)/.exec(location.hash.slice(1));
+    gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
+    gl.useProgram(pxProg);
+    gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
+    pending = null;
+    return true;
   }
   /** The cells' two colours, a texel a cell, for as many cells as the canvas shows. */
   function cellTargets(w, h) {
@@ -787,6 +970,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art }) {
     if (lost) return;
     const W = cv.width, H = cv.height, t = (now - T0) / 1000;
     if (glcv.width !== W || glcv.height !== H) { glcv.width = W; glcv.height = H; }
+    if (pending && !link()) {
+      const g = art ? [236, 232, 222] : ground;
+      gl.clearColor(g[0] / 255, g[1] / 255, g[2] / 255, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      return;
+    }
     frameNo++;
     const i0 = Math.floor(vx / N), j0 = Math.floor(vy / N), i1 = Math.min(i0 + 15, Math.floor((vx + VW) / N)), j1 = Math.min(j0 + 15, Math.floor((vy + VH) / N));
     const seen = [], need = new Set();

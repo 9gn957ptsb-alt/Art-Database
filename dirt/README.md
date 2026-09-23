@@ -26,6 +26,7 @@ grit, clumps and cracks read as physical matter rather than flat marks.
 - `bake.mjs`: writes PNGs from presets or a JSON config (its flags are listed at the top of the file).
 - `png.mjs`: minimal PNG encoder used by the baker.
 - `build_soil_viewer.py`, `engine/ground-gl.js`: DIRT's page (below), and its ground painted on the GPU.
+- `engine/wanderers.js`: the procession, migrations, walking city and primitives.
 - `artists/`: the artists DIRT is drawn after, measured from their saved works (`measure.py`, `twombly.json`).
 - `playground.html`: the interactive Dirt Lab. Serve the folder (`npx serve dirt`) and open it; opening it as a `file://` URL
   won't work because ES modules need a server.
@@ -192,6 +193,40 @@ A sheet changes as he changed one, about every 55 seconds (times φ^±½): white
 long translucent strokes, then the new marks are drawn in, sweeping across as a hand writes, in the inks of another of
 his works of the same grammar. Add `#noart` to the address for the golden-angle colours below, and `#g0` to `#g4` to
 see one grammar everywhere.
+
+**After the digital animations.** A survey of the most remarkable digital animation (Ikeda, Universal Everything,
+Anadol, GMUNK, Fischinger, OReilly, Radiohead's PolyFauna, Quayola, the Austin Museum of Digital Art's archive) runs
+from painting given time, to images made by systems, to data. DIRT's geography already runs that way, from calm
+paper out to strange outskirts, so the survey lives there. Out from depth φ⁻³, a share of passages (up to φ⁻¹ of them
+at the farthest) leave the paper for a digital territory, drawn on the GPU in their painting's colours turned by the
+golden angle:
+
+| Depth of the passage's middle | Territory | After |
+| --- | --- | --- |
+| to φ⁻¹ | painting in time: on each beat of 1.618 seconds a ring, spiral, bar or disc is painted in stroke by stroke, 21 of them gather, then the ground is painted over them | Oskar Fischinger, *Motion Painting No. 1* |
+| to 1 − φ⁻³ | the collection's paintings faceted: the soil cut into facets 34 cells across, each the colour of the painting at its middle and lit as a carved face; facets split into 13-cell ones and join again, each on its own time | Quayola, *Iconographies* |
+| from φ⁻¹ | living tissue: cells 21 cells apart drifting, each with a membrane, a pulsing nucleus and granules of soil, a φ⁻² share of them dividing | Universal Everything, *Primordial* |
+| from φ⁻¹ | the soil lifted into relief: rows of lines 5 cells apart, each lifted by the soil's lightness (smoothed over 8 cells) and rippling, nearer rows hiding those behind, light on black | GMUNK, *Synapse Code* |
+| from 1 − φ⁻³ | data: black, with barcodes, grids of dots and columns of numerals drawn from the collection's own numbers, changing on beats of 1/φ of a second, a scanline, and now and then the whole field thrown white | Ryoji Ikeda, *datamatics* |
+
+A φ⁻⁴ share of them are **the archive**, after the Austin Museum of Digital Art's collection of hundreds of works:
+a passage that turns through all five territories, one every 6.9 seconds. Over the plane an **artificial day and night**
+turns every 233 seconds, the ground dimming and cooling to φ⁻² at night, after Universal Everything's *Migrations*.
+
+Four kinds of **wanderers** cross the plane over everything, a pixel a cell, in the artist's inks, each naming a
+painting when pointed at ([engine/wanderers.js](engine/wanderers.js)):
+
+| Wanderers | After |
+| --- | --- |
+| the procession: 8 to 21 walkers, one every second or so, each generated anew (height 21 to 34 cells, head, legs, arms, gait, a hat now and then), whose material changes as they walk through bands 144 cells wide: paint, chalk, soil, bubbles that rise, smoke that drifts, flowers that drop petals, flickering data, drips | Universal Everything, *Infinity* and *Transfiguration* |
+| herds of 3 to 8 invented creatures, bodies of 2 to 4 blobs, moving with real animals' gaits: a kangaroo's hop, an elephant's stomp, an ostrich's run with a bobbing neck, a caterpillar's crawl, a bird's swoop | Universal Everything, *Migrations* |
+| the walking city: a tower of 3 to 6 pasted plates with window grids and a red flag, on six stepping legs | Universal Everything, *Walking City* |
+| primitives: up to five crude flat-shaded polyhedral organisms with dot eyes and stick legs, twitching, turning abruptly, a vertex jumping now and then | Radiohead and Universal Everything, *PolyFauna*; David OReilly, *The External World* |
+
+The survey's other points were already DIRT's: a world one moves through (PolyFauna), a system that makes images
+rather than a sequence of them (the survey's closing thought), and Anadol's data pigment (the flocks). Anadol's
+central move, a latent walk that morphs one painting into the next, is left out: DIRT keeps every colour traceable to
+its painting, and the latent walk was ruled out for DIRT. `#g5` to `#g9` show one territory everywhere.
 
 **Colours that change** (with `#noart`). Nearly every saved painting is brown, gold or rust, so a plane that wore their colours only
 as they are would stay chocolate brown. Where the browser has WebGL2, the page paints the ground itself on the GPU

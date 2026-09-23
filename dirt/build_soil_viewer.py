@@ -606,7 +606,10 @@ function entryTable() {
   const buf = new Float32Array(ENT_MAX * ENT_W * 4), byPass = new Map();
   let n = 0;
   const put = (e, t, c, a) => { const o = (e * ENT_W + t) * 4; buf[o] = c[0]; buf[o + 1] = c[1]; buf[o + 2] = c[2]; buf[o + 3] = a; };
-  const head = (e, P, count, chosen) => { put(e, 25, [P.x, P.y, P.kind], count); put(e, 26, [chosen, P.i, P.j], P.turn || 0); };
+  const head = (e, P, count, chosen) => {
+    put(e, 25, [P.x, P.y, P.kind], count); put(e, 26, [chosen, P.i, P.j], P.turn || 0);
+    put(e, 27, [P.dm === undefined ? (P.dm = depth(Math.floor(P.x), Math.floor(P.y))) : P.dm, 0, 0], 0);   // how far out its middle lies
+  };
   return {
     rows: () => buf.slice(0, n * ENT_W * 4),
     /** The plane's entry for passage P: its gradient map. */
@@ -2048,6 +2051,7 @@ document.addEventListener("keydown", (ev) => {
 });
 showAll.addEventListener("click", letGo);
 </script>
+<script id="wanderers">__WANDERERS__</script>
 <script id="earth-main">__EARTH_MAIN__</script>
 """
 
@@ -2087,6 +2091,7 @@ def main():
     gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
+                .replace("__WANDERERS__", (HERE / "engine" / "wanderers.js").read_text().replace("</script", "<\\/script"))
                 .replace("__ART__", (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
