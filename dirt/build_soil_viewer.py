@@ -68,8 +68,7 @@ PAGE = r"""<title>DIRT</title>
   <div class="bench">
     <div class="stage">
       <div class="tabs" role="group" aria-label="Version">
-        <button id="t-colour" aria-pressed="true">Colours</button>
-        <button id="t-cutout" aria-pressed="false">Cutouts</button>
+        <button id="t-cutout" aria-pressed="true">Cutouts</button>
         <button id="t-tile" aria-pressed="false">Lay tiles</button>
         <button id="t-shuffle" hidden>Shuffle</button>
       </div>
@@ -96,17 +95,17 @@ PAGE = r"""<title>DIRT</title>
 
 <script>
 const M = __MANIFEST__;
-const SRC = { colour: "__IMG_A__", cutout: "__IMG_B__" };
+const SRC = { cutout: "__IMG_B__" };
 const TS = __TILES__;
 const N = M.grid, CELL = M.cell;
 const labels = Uint8Array.from(atob(M.labels), (c) => c.charCodeAt(0));
 const imgs = {};
-let mode = "colour", sel = -1, tiled = false;
+const mode = "cutout";
+let sel = -1, tiled = false;
 
 const cv = document.getElementById("soil"), cx = cv.getContext("2d");
 const CAP = {
-  colour: "Colours: each clod wears one of its painting's three dominant colours, in the chocolate range. Pale glints are the same painting's lightest warm colour.",
-  cutout: "Cutouts: the same clods, each a pixelated window into its painting, centred where that painting is most like the colour it gave.",
+  cutout: "Cutouts: each clod is a pixelated window into its painting, centred where that painting is most like the colour it gave.",
 };
 
 function draw() {
@@ -129,7 +128,7 @@ function draw() {
 const gv = document.getElementById("grid"), gx = gv.getContext("2d");
 const ROWS = 3, COLS = 3, TP = TS.tile;
 const byEdges = new Map(TS.tiles.map((t, i) => [t.west * 8 + t.north, i]));
-const tileImgs = { colour: [], cutout: [] }, tileLabels = [];
+const tileImgs = { cutout: [] }, tileLabels = [];
 let layout = [], selWork = null;
 const edgeNames = (list) => list.map((e) => `${e.artist}'s ${e.kind === "face" ? "face" : e.kind}`).join(", ");
 const TILE_CAP = `Tiles: ${TS.tiles.length} different squares, laid so every edge matches. Faces sit across the vertical joins, split down the middle (${edgeNames(TS.edges.vertical)}); the horizontal joins carry ${edgeNames(TS.edges.horizontal)}. Every square has shapes of its own coming up through it, and at each join a different share of the object sinks back into the dirt, so no two meetings are the same.`;
@@ -216,7 +215,7 @@ function loadImage(src) {
   return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; });
 }
 const tilesReady = Promise.all(TS.tiles.map(async (t, i) => {
-  [tileImgs.colour[i], tileImgs.cutout[i]] = await Promise.all([loadImage(t.colour), loadImage(t.cutout)]);
+  tileImgs.cutout[i] = await loadImage(t.cutout);
   const li = await loadImage(t.labels), c = document.createElement("canvas");
   c.width = N; c.height = N;
   const lc = c.getContext("2d");
@@ -263,18 +262,16 @@ M.clods.map((c, i) => i).sort((a, b) => lum(M.clods[a].hex) - lum(M.clods[b].hex
 });
 
 function press(id, on) { document.getElementById(id).setAttribute("aria-pressed", on); }
-function setMode(m) { mode = m; press("t-colour", m === "colour"); press("t-cutout", m === "cutout"); draw(); }
 function setTile(on) {
-  tiled = on; press("t-tile", on);
+  tiled = on; press("t-tile", on); press("t-cutout", !on);
   if (on) tilesReady.then(draw); else { selWork = null; draw(); }
 }
-document.getElementById("t-colour").onclick = () => setMode("colour");
-document.getElementById("t-cutout").onclick = () => setMode("cutout");
+document.getElementById("t-cutout").onclick = () => setTile(false);
 document.getElementById("t-tile").onclick = () => setTile(!tiled);
 document.getElementById("t-shuffle").onclick = () => { deal(); drawGrid(); };
 
-let pending = 2;
-for (const k of ["colour", "cutout"]) {
+let pending = 1;
+for (const k of ["cutout"]) {
   imgs[k] = new Image();
   imgs[k].onload = () => { if (--pending === 0) show(M.clods.reduce((b, c, i) => (c.cells > M.clods[b].cells ? i : b), 0)); };
   imgs[k].src = SRC[k];
@@ -301,8 +298,7 @@ def tile_set(folder):
                 works.append(w)
             rows.append([index[w["id"]], c["hex"], c["glint"], c["kind"], c.get("key")])
         t["clods"] = rows
-        for mode in ("colour", "cutout"):
-            t[mode] = data_uri(folder / f"{t['name']}-{mode}.webp")
+        t["cutout"] = data_uri(folder / f"{t['name']}-cutout.webp")
         t["labels"] = data_uri(folder / f"{t['name']}-labels.png")
     m["works"] = works
     return m
@@ -319,7 +315,6 @@ def main():
         c.pop("crop", None)
     page = (PAGE.replace("__GROUND__", manifest["ground"]["hex"])
                 .replace("__MANIFEST__", json.dumps(manifest, ensure_ascii=False).replace("</", "<\\/"))
-                .replace("__IMG_A__", data_uri(out / "collection-soil.png"))
                 .replace("__IMG_B__", data_uri(priv / "collection-soil-cutouts.png"))
                 .replace("__TILES__", json.dumps(tile_set(priv / "tiles"), ensure_ascii=False).replace("</", "<\\/")))
     target = priv / "collection-soil.html"

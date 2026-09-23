@@ -135,5 +135,5 @@ python3 dirt/soil_tiles.py --db path/to/artworks.db          # → dirt/private/
 python3 dirt/build_soil_viewer.py                            # rebuild DIRT with the tiles in it
 ```
 
-In colour mode each shard of an object is one flat colour from its painting's three, chosen by how light its piece of the picture is.
+DIRT shows the cutouts only. The generator still writes a colour version of each tile, which the viewer no longer uses.
 All tile output is written to `dirt/private/`, because the cutouts reproduce other artists' images.
