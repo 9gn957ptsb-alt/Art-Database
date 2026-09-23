@@ -12,6 +12,9 @@ Fibonacci number:
   phi^-2 + phi^-4  rows tear sideways, like torn scanlines
   phi^-1           columns pixel-sort by lightness into drips
   phi^-1/2         the field folds into a five-fold kaleidoscope about the origin
+  phi^-2 onward    data pigment: up to 1/phi of the dots come loose and flow in a slow swirling current,
+                   faster the farther out, leaving short trails and settling like silt where they drift
+                   back toward the calm ground; after a while each returns to its pore and starts again
 
 The processes act on the whole field, never on single tiles, so no joins show. Every cell keeps a
 note of where it came from, so pointing anywhere still names the saved painting underneath. The page
@@ -141,6 +144,11 @@ const ready = Promise.all(TS.tiles.map(async (t, i) => {
 // ---- a field ----------------------------------------------------------------------------------
 
 let layout = [], outSrc = new Int32Array(W * H), order = [], origin = [0, 0];
+let Dg = null, P = null, waves = [];
+const BUDGET = 46368;                                           // pigment particles at most (Fibonacci)
+const trail = document.createElement("canvas");                 // the flowing pigment, one pixel a cell
+trail.width = W; trail.height = H;
+const trailCtx = trail.getContext("2d"), trailImg = trailCtx.createImageData(W, H), trailPx = trailImg.data;
 
 function deal(seed) {
   const rand = rng(seed);
@@ -250,8 +258,43 @@ function deal(seed) {
     oc[i * 3 + 2] = Math.max(0, Math.min(255, r * (k - q) + g * (k + q) + b * (c + k)));
   }
 
-  // E. Paint the dots, two pixels a cell: a full dot fills its cell, the weave's smaller dots are one
-  //    pixel with the dark around them.
+  // E. Data pigment: past phi^-2 a growing share of the lit cells, up to 1/phi of them, comes loose
+  //    from the ground and flows. Where one leaves, its pore opens to the dark.
+  Dg = D;
+  const picks = [];
+  if (!REDUCED) {
+    for (let i = 0; i < W * H; i++) {
+      if (os[i] && unit(i, seed + 13) < smooth(PHI ** -2, 1, D[i]) / PHI) picks.push(i);
+    }
+    for (let k = picks.length - 1; k > 0; k--) { const j = Math.floor(rand() * (k + 1)); [picks[k], picks[j]] = [picks[j], picks[k]]; }
+    picks.length = Math.min(picks.length, BUDGET);
+  }
+  const n = picks.length;
+  P = { n, x: new Float32Array(n), y: new Float32Array(n), hx: new Float32Array(n), hy: new Float32Array(n),
+        rgb: new Uint8Array(n * 3), src: new Int32Array(n), slot: new Uint8Array(n),
+        age: new Uint16Array(n), life: new Uint16Array(n) };
+  picks.forEach((i, k) => {
+    const x = i % W, y = (i / W) | 0;
+    P.x[k] = P.hx[k] = x + 0.5; P.y[k] = P.hy[k] = y + 0.5;
+    P.rgb[k * 3] = oc[i * 3]; P.rgb[k * 3 + 1] = oc[i * 3 + 1]; P.rgb[k * 3 + 2] = oc[i * 3 + 2];
+    P.src[k] = outSrc[i];
+    P.slot[k] = Math.floor(y / N) * COLS + Math.floor(x / N);
+    P.life[k] = 377 + Math.floor(rand() * 610);                // frames, Fibonacci
+    P.age[k] = Math.floor(rand() * P.life[k]);
+    os[i] = 0;
+  });
+  // The current: a stream function of five travelling waves, Fibonacci wavelengths, so the flow is
+  // divergence-free and swirls like a liquid rather than scattering.
+  waves = [89, 144, 233, 377, 610].map((lambda) => {
+    const a = rand() * 2 * Math.PI, k = (2 * Math.PI) / lambda;
+    return { kx: k * Math.cos(a), ky: k * Math.sin(a), amp: lambda / (2 * Math.PI), w: (rand() - 0.5) * PHI ** -5, ph: rand() * 2 * Math.PI };
+  });
+  const norm = waves.reduce((sum, v) => sum + v.amp * Math.hypot(v.kx, v.ky), 0);
+  waves.forEach((v) => (v.amp /= norm));
+  trailPx.fill(0);
+
+  // F. Paint the ground that stays, two pixels a cell: a full dot fills its cell, the weave's smaller
+  //    dots are one pixel with the dark around them.
   const g = off.getContext("2d"), im = g.createImageData(off.width, off.height), px = im.data, PW = off.width;
   for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -272,10 +315,39 @@ function deal(seed) {
   });
 }
 
+// ---- the pigment in motion --------------------------------------------------------------------
+
+function flow(tick) {
+  const fade = 1 - PHI ** -5;                                      // how long a trail lingers
+  for (let j = 3; j < trailPx.length; j += 4) if (trailPx[j]) trailPx[j] = trailPx[j] * fade;
+  const vmax = 2;                                                  // cells a frame, at the far edge (Fibonacci)
+  for (let k = 0; k < P.n; k++) {
+    if (revealed[P.slot[k]] < 1) continue;
+    let x = P.x[k], y = P.y[k];
+    let u = 0, v = 0;
+    for (const w of waves) {
+      const c = w.amp * Math.cos(w.kx * x + w.ky * y + w.w * tick + w.ph);
+      u += w.ky * c; v -= w.kx * c;
+    }
+    // Faster the farther out it is; drifted back toward the calm ground it slows and settles like silt.
+    const s = vmax * smooth(PHI ** -2, 1, Dg[Math.min(H - 1, y | 0) * W + Math.min(W - 1, x | 0)]);
+    x += u * s * 34; y += v * s * 34;
+    if (x < 0) x = -x; if (x >= W) x = 2 * W - x - 1;
+    if (y < 0) y = -y; if (y >= H) y = 2 * H - y - 1;
+    if (++P.age[k] > P.life[k]) { P.age[k] = 0; x = P.hx[k]; y = P.hy[k]; }  // back to its pore, to begin again
+    P.x[k] = x; P.y[k] = y;
+    const j = ((y | 0) * W + (x | 0)) * 4;
+    const f = selWork !== null && workOf(P.src[k]) !== selWork ? PHI ** -2 : 1;
+    trailPx[j] = P.rgb[k * 3] * f; trailPx[j + 1] = P.rgb[k * 3 + 1] * f; trailPx[j + 2] = P.rgb[k * 3 + 2] * f; trailPx[j + 3] = 255;
+  }
+  trailCtx.putImageData(trailImg, 0, 0);
+}
+
 // ---- laying it out ----------------------------------------------------------------------------
 
-let started = 0, selWork = null, anim = 0;
+let started = 0, selWork = null, anim = 0, tick = 0;
 const STEP = 144, FADE = 377;                                   // milliseconds, Fibonacci
+const revealed = new Float32Array(COLS * ROWS);
 
 function frame(now) {
   const t = REDUCED ? Infinity : now - started;
@@ -283,23 +355,29 @@ function frame(now) {
   cx.fillRect(0, 0, cv.width, cv.height);
   cx.imageSmoothingEnabled = false;
   const T = N * R;
-  let done = true;
   order.forEach((k, n) => {
     const a = Math.min(1, Math.max(0, (t - n * STEP) / FADE));
-    if (a < 1) done = false;
+    revealed[k] = a;
     if (a <= 0) return;
     cx.globalAlpha = a;
     const sx = (k % COLS) * T, sy = Math.floor(k / COLS) * T;
     cx.drawImage(off, sx, sy, T, T, sx, sy, T, T);
   });
   cx.globalAlpha = 1;
-  if (selWork !== null) dim();
-  anim = done ? 0 : requestAnimationFrame(frame);
+  if (selWork !== null) cx.drawImage(shade, 0, 0, cv.width, cv.height);
+  if (P && P.n) {
+    flow(tick++);
+    cx.drawImage(trail, 0, 0, cv.width, cv.height);
+  }
+  const moving = P && P.n && !REDUCED;
+  const done = revealed.every((a) => a >= 1);
+  anim = moving || !done ? requestAnimationFrame(frame) : 0;
 }
 
 function lay() {
   cancelAnimationFrame(anim);
   selWork = null;
+  revealed.fill(0);
   deal((Math.random() * 4294967296) >>> 0);
   started = performance.now();
   anim = requestAnimationFrame(frame);
@@ -307,14 +385,27 @@ function lay() {
 
 // ---- what is underneath -----------------------------------------------------------------------
 
-function workAt(i) {
-  const src = outSrc[i], k = src >> 16, s = src & 65535, t = layout[k];
+function workOf(src) {
+  const k = src >> 16, s = src & 65535, t = layout[k];
   return TS.tiles[t].clods[tiles[t].lab[s]][0];
+}
+const workAt = (i) => workOf(outSrc[i]);
+
+/** The pigment particle nearest (x, y), within a cell and a half, or -1. */
+function particleAt(x, y) {
+  if (!P) return -1;
+  let best = -1, bd = 2.25;
+  for (let k = 0; k < P.n; k++) {
+    if (revealed[P.slot[k]] < 1) continue;
+    const dx = P.x[k] - x, dy = P.y[k] - y, d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; best = k; }
+  }
+  return best;
 }
 
 const shade = document.createElement("canvas");
 shade.width = W; shade.height = H;
-function dim() {
+function makeShade() {
   const g = shade.getContext("2d"), im = g.createImageData(W, H), a = Math.round(255 / PHI);
   for (let i = 0; i < W * H; i++) {
     if (workAt(i) === selWork) continue;
@@ -322,21 +413,22 @@ function dim() {
     im.data[j] = GROUND[0]; im.data[j + 1] = GROUND[1]; im.data[j + 2] = GROUND[2]; im.data[j + 3] = a;
   }
   g.putImageData(im, 0, 0);
-  cx.imageSmoothingEnabled = false;
-  cx.drawImage(shade, 0, 0, cv.width, cv.height);
 }
 
 let pending = null;
 function pick(ev) {
   if (!layout.length) return;
   const r = cv.getBoundingClientRect();
-  const x = Math.floor(((ev.clientX - r.left) / r.width) * W), y = Math.floor(((ev.clientY - r.top) / r.height) * H);
+  const fx = ((ev.clientX - r.left) / r.width) * W, fy = ((ev.clientY - r.top) / r.height) * H;
+  const x = Math.floor(fx), y = Math.floor(fy);
   if (x < 0 || y < 0 || x >= W || y >= H) return;
-  const wi = workAt(y * W + x);
+  const pk = particleAt(fx, fy);
+  const wi = pk >= 0 ? workOf(P.src[pk]) : workAt(y * W + x);
   if (wi === selWork || pending !== null) return;
   pending = requestAnimationFrame(() => {
     pending = null;
     selWork = wi;
+    makeShade();
     const w = TS.works[wi];
     document.getElementById("c-title").textContent = w.title || "Untitled";
     document.getElementById("c-who").textContent = [w.artist, w.date].filter(Boolean).join(", ");
