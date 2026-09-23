@@ -799,10 +799,51 @@ def species_index(g):
     return names
 
 
+def markdown(g):
+    """The grammar as a document to read: the research behind every place DIRT Earth grows."""
+    L = ["# DIRT Earth: the grammar of places", "",
+         "Written by `dirt/earth/grammar.py --markdown`, from the same data DIRT Earth grows its places from. For every biome: the",
+         "strata of its plants and the shape of their crowns from above, its ground, how it turns through the year, the looks it",
+         "wears, and its life by the height it lives at, each kind a behaviour DIRT animates with species realm by realm. Heights",
+         "are shares of the tallest emergent (34 cells); spacing and reach are in DIRT's cells.", ""]
+    L += ["## Crowns seen from above", "", "| shape | what it is |", "|---|---|"] + [f"| {k} | {v} |" for k, v in g["crowns"].items()] + [""]
+    L += ["## Grounds", "", "| ground | what it is |", "|---|---|"] + [f"| {k} | {v} |" for k, v in g["grounds"].items()] + [""]
+    L += ["## The year", "", "| phenology | how it turns | phases |", "|---|---|---|"] + \
+         [f"| {k} | {v} | {g['phase_rules'][k]} |" for k, v in g["phenology"].items()] + [""]
+    L += ["## Clouds by regime", "", "| regime | from above | share of sky |", "|---|---|---|"] + \
+         [f"| {k} | {v['shape']} | {v['cover']} |" for k, v in g["cloud_shapes"].items()] + [""]
+    L += ["## Kinds of life", "", "| kind | behaviour | when |", "|---|---|---|"] + \
+         [f"| {k} | {v} | {', '.join(f'{a} {b}' for a, b in g['when'].get(k, {}).items()) or 'always'} |" for k, v in g["kinds"].items()] + [""]
+    L += ["## Biomes", ""]
+    for bk, b in g["biomes"].items():
+        L += [f"### {b['name']}", "", f"Ground: {b['ground']}. Year: {b['phenology']}. Looks: " +
+              ", ".join(f"{ph} *{lk}*" for ph, lk in b["looks"].items()) + f". Typical canopy {b['typical canopy m']} m.", ""]
+        if b["strata"]:
+            L += ["| stratum | crown | spacing / reach | height | cover | plants |", "|---|---|---|---|---|---|"]
+            for st in b["strata"]:
+                plants = "; ".join(f"{r}: {', '.join(ns)}" for r, ns in st["plants"].items())
+                L.append(f"| {st['name']}{' (turns)' if st.get('turns') else ''} | {st['shape']} | {st['g']} / {st['r']} | {st['height'][0]}-{st['height'][1]} | {st['cover']} | {plants} |")
+            L.append("")
+        L += ["| height | kind | species by realm |", "|---|---|---|"]
+        for level, kinds in b["life"].items():
+            for kind, by in kinds.items():
+                L.append(f"| {level} | {kind} | {'; '.join(f'{r}: {chr(44).join(ns)}' for r, ns in by.items())} |")
+        L.append("")
+    L += ["## The sea", "", "| zone | look | kind | species |", "|---|---|---|---|"]
+    for zk, z in g["marine"].items():
+        for kind, by in z["life"].items():
+            L.append(f"| {zk} | {z['look'] or 'by its warmth'} | {kind} | {'; '.join(f'{h}: {chr(44).join(ns)}' for h, ns in by.items())} |")
+    L += ["", "## Looks", "", "| look | dark | middle | light |", "|---|---|---|---|"] + [f"| {k} | `{v[0]}` | `{v[1]}` | `{v[2]}` |" for k, v in g["looks"].items()]
+    L += ["", "## How the atlas's conditions shape a place", ""] + [f"- **{k}**: {v}" for k, v in g["rules"].items()] + [""]
+    return "\n".join(L).replace(",", ", ").replace(",  ", ", ")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(HERE / "out"))
-    out = Path(ap.parse_args().out)
+    ap.add_argument("--markdown", help="also write the grammar as a document to read, here")
+    a = ap.parse_args()
+    out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     g = {"realms": REALMS, "crowns": CROWNS, "grounds": GROUNDS, "kinds": KINDS, "when": WHEN, "phenology": PHENOLOGY, "phases": PHASES,
          "phase_rules": PHASE_RULES, "cloud_shapes": CLOUD_SHAPES, "looks": LOOKS, "look_rules": LOOK_RULES,
@@ -814,6 +855,9 @@ def main():
     (out / "grammar.json").write_text(json.dumps(g, ensure_ascii=False, indent=1))
     (out / "grammar-engine.json").write_text(json.dumps(eng, ensure_ascii=False, separators=(",", ":")))
     print(out / "grammar.json", out / "grammar-engine.json", len(eng["species"]), "species")
+    if a.markdown:
+        Path(a.markdown).write_text(markdown(g))
+        print(a.markdown)
 
 
 if __name__ == "__main__":

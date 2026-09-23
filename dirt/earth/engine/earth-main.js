@@ -1158,7 +1158,8 @@ function describe(x, y, here) {
   const rainMm = rainOf(E.mP[EM][k2]) * [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][EM], year = E.mP.reduce((s, a, m) => s + rainOf(a[k2]) * [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m], 0);
   const cl = E.mC[EM][k2] / 255, ct = M.cloud_types[E.mK[EM][k2]].name, view = viewOf(E.view[k]), big = E.bigsky[k] / 255, clear = E.clear[k] / 255;
   const month = `${MONTHS[EM]}: ${fmt(tempOf(E.mT[EM][k2]))} °C, the year from ${fmt(lo)} to ${fmt(hi)} °C · ${fmt(rainMm)} mm of rain (${fmt(year)} in the year)`;
-  const sky = `cloud ${fmt(cl * 100)}%, ${ct} · clear days ${fmt(clear * 100)}% · you see ${fmt(view, view < 10 ? 1 : 0)} km${big > PHI ** -1 ? ", a big sky" : ""}`;
+  // "A big sky" where the big-sky index passes 0.4, as over the open, flat, clear-aired upper two fifths of the land.
+  const sky = `cloud ${fmt(cl * 100)}%, ${ct} · clear days ${fmt(clear * 100)}% · you see ${fmt(view, view < 10 ? 1 : 0)} km${big > 0.4 ? " under a big sky" : ""}`;
   let name, lines;
   if (pr.surf === SEA) {
     const sea = E.seaName[k] ? M.seas[E.seaName[k] - 1] : null, zone = M.marine[pr.zone];

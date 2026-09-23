@@ -238,3 +238,23 @@ output is written to `dirt/private/`, because the cutouts reproduce other artist
 
 A similarity map of the paintings (laying clods out by how alike their paintings are, as Refik Anadol does with
 his archives) is the plan for bigger globe terrains, not for DIRT.
+
+## DIRT Earth: the plane becomes the Earth
+
+DIRT's plane can become the Earth, with every place grown from its own shapes as the rainforest is. "Earth" opens
+a globe woven of dots, each place in the saved paintings nearest its own colours for the month. Clicking a place goes
+down into the plane, which is now the Earth there. The place grows the crowns and ground of its biome and the life
+of its realm. It turns through its year. The month's clouds, rain or snow pass over it, and a haze lies as thick as
+its view is short. Pointing tells everything the atlas knows about it, from realm and biome down to the month's rain
+and how far one sees, and names the creature or plant underneath.
+
+[earth/README.md](earth/README.md) has the whole of it: the quarter-degree atlas of the Earth's conditions, the
+grammar of places ([earth/GRAMMAR.md](earth/GRAMMAR.md)), and the month-by-month textures for the Artist Website's
+globe.
+
+```bash
+python3 dirt/build_soil_viewer.py --earth dirt/earth/out     # DIRT with the Earth in it; its files go beside the page
+```
+
+Without `--earth` the page is the plane alone, and with it the plane is unchanged until "Earth" is pressed: its chunks
+hash exactly as before.
