@@ -586,6 +586,14 @@
     lon: -77.0028,
     stage: true,                    // the plays are cast and played here
     piece: "folger"
+  }, {
+    // Where the moving images are, as the library is where the plays are.
+    slug: "archive",
+    title: "The Archive",
+    where: "Austin, Texas",
+    lat: 30.2672,
+    lon: -97.7431,
+    archive: true
   }];
 
   var BUILT = {
@@ -708,7 +716,7 @@
       raiseCity({
         work: null, slug: mark.slug, title: mark.title, where: mark.where,
         lat: mark.lat * RAD, lon: wrap(mark.lon * RAD),
-        stage: mark.stage, piece: mark.piece, real: true,
+        stage: mark.stage, piece: mark.piece, archive: mark.archive, real: true,
         // A library is stone. It takes the hue of whichever collage it is
         // nearest — it stands four streets from two of them — and then
         // almost none of it.
@@ -926,10 +934,12 @@
       window.setTimeout(function () { if (place && !flying) { showHere(true); } }, 90);
     }
     if (place.stage) { startTheatre(); }
+    if (place.archive) { startArchive(); }
   }
 
   function leave() {
     stopTheatre();
+    stopArchive();
     endScene();
     hold();
     // Whatever was standing in that city stays in it. placeSpawns stops
@@ -8457,6 +8467,7 @@
   function dataSweep(y) {
     if (still || !dataCanvas || !window.Systems) { return false; }
     Systems.datamatics(dataCanvas, siteNumbers(), { y: y, duration: 1100 });
+    if (Systems.sound) { Systems.sound.data(1100); }
     return true;
   }
 
@@ -8956,7 +8967,7 @@
     var tones = place ? [cityTone(place)] : [];
     painting = Systems.motionPainting(stageCanvas, tones, {
       duration: 8000,
-      onBeat: function (n) { if (window.soundBeat) { window.soundBeat(n); } },
+      onBeat: function (n) { if (Systems.sound) { Systems.sound.beat(n); } },
       onDone: function () { endEntracte(); }
     });
   }
@@ -9092,6 +9103,520 @@
     dreaming = new Systems.Hallucination(dreamCanvas, dreamColours(first.slice(0, 5)), { cell: 5 });
     dreaming.start();
   }
+
+  /* ---- the Archive ---------------------------------------------------------
+
+     After the Austin Museum of Digital Art, whose archive of moving images
+     the research the artist shared (23 Sep 2026) ends on as a rabbit hole:
+     a place in Austin with a wall of monitors in it, each one playing one
+     of the systems this site is made with, live, and saying whose work it
+     is after. Pressing a monitor brings it up close with a line about it.
+     Every channel is drawn fresh as it plays; none of it is a recording. */
+
+  var archiveEl = document.getElementById("archive");
+  var archiveWall = document.getElementById("archive-wall");
+  var archiveFoot = document.getElementById("archive-foot");
+  var archiveLook = document.getElementById("archive-look");
+  var archiveScreen = document.getElementById("archive-screen");
+  var archiveTitle = document.getElementById("archive-title");
+  var archiveAfter = document.getElementById("archive-after");
+  var archiveNote = document.getElementById("archive-note");
+  var archiveClose = document.getElementById("archive-close");
+  var archiveOn = false;
+  var monitors = [];
+  var looking = null;
+  var MON_W = 128, MON_H = 96;
+
+  function allTones() {
+    var out = [];
+    Object.keys(measured).forEach(function (k) { out = out.concat(measured[k].slice(0, 2)); });
+    return out;
+  }
+
+  // The collages' photographs, read once, for the channels that are made of them.
+  var photos = [];
+  function photo(i) {
+    var works = mine ? mine.works : [];
+    if (!works.length) { return null; }
+    var w = works[((i % works.length) + works.length) % works.length];
+    if (!photos[w.slug]) {
+      var im = new Image();
+      im.src = plateSrc(w);
+      photos[w.slug] = im;
+    }
+    var p = photos[w.slug];
+    return p.complete && p.naturalWidth ? p : null;
+  }
+
+  function sampleOf(img, cols) {
+    var rows = Math.round(cols * 0.75);
+    return { data: Systems.sample(img, cols, rows), cols: cols, rows: rows };
+  }
+
+  var CHANNELS = [
+    { key: "datamatics", title: "datamatics", after: "Ryoji Ikeda, datamatics",
+      note: "This site's own numbers as the picture — its works, its places, its words, the time.",
+      make: function (c) {
+        var g = c.getContext("2d"), bands = [], cut = -1;
+        function deal(now) {
+          var words = siteNumbers(), y = 0;
+          bands = [];
+          while (y < c.height) {
+            var hh = [1, 2, 2, 3, 4, 6, 8, 12][Math.floor(Math.random() * 8)];
+            var h = Systems.hashStr(words[Math.floor(Math.random() * words.length)] || "0");
+            bands.push({ y: y, h: hh, kind: Math.random(), bits: h, speed: (Math.random() - 0.5) * 240,
+                         word: words[Math.floor(Math.random() * words.length)] || "" });
+            y += hh + (Math.random() < 0.3 ? 1 : 0);
+          }
+          cut = now;
+        }
+        return { draw: function (now) {
+          if (cut < 0 || now - cut > 2600) { deal(now); if (looking && looking.channel.key === "datamatics" && Systems.sound.on) { Systems.sound.data(600); } }
+          g.fillStyle = "#000";
+          g.fillRect(0, 0, c.width, c.height);
+          bands.forEach(function (b) {
+            var off = Math.floor(now / 1000 * b.speed);
+            if (b.kind < 0.45) {
+              g.fillStyle = "#fff";
+              for (var x = 0; x < c.width; x += 1) {
+                var i = (x + off) & 31;
+                if ((b.bits >>> i) & 1) { g.fillRect(x, b.y, 1, b.h); }
+              }
+            } else if (b.kind < 0.7 && b.h >= 6) {
+              g.fillStyle = "#fff";
+              g.font = Math.min(b.h, 8) + "px monospace";
+              g.fillText(b.word, -((off % 200) + 200) % 200, b.y + Math.min(b.h, 8) - 1);
+              g.fillText(b.word, 200 - ((off % 200) + 200) % 200, b.y + Math.min(b.h, 8) - 1);
+            } else if (b.kind < 0.85) {
+              g.fillStyle = "#fff";
+              for (var gx = (off & 3); gx < c.width; gx += 4) { g.fillRect(gx, b.y, 1, 1); }
+            }
+          });
+          g.fillStyle = "#fff";
+          g.fillRect(Math.floor((now / 12) % c.width), 0, 1, c.height);
+        } };
+      } },
+    { key: "hallucination", title: "Hallucination", after: "Refik Anadol, Unsupervised",
+      note: "The collages' own colours, carried round in a fluid that never settles.",
+      make: function (c) {
+        var f = new Systems.Hallucination(c, dreamColours(allTones().slice(0, 6)), { cell: 2 });
+        return { draw: function () { f.step(1 / 12); f.draw(); } };
+      } },
+    { key: "synapse", title: "Synapse", after: "GMUNK, Synapse Code",
+      note: "A collage's photograph, turned into geometry.",
+      make: function (c) {
+        var g = c.getContext("2d"), n = Math.floor(Math.random() * 9), s = null, at = 0;
+        return { draw: function (now) {
+          if (!s || now - at > 7000) {
+            var im = photo(n);
+            if (im) { s = sampleOf(im, 22); at = now; n += 1; }
+          }
+          g.fillStyle = "#101018";
+          g.fillRect(0, 0, c.width, c.height);
+          if (!s) { return; }
+          var q = ((now - at) / 7000);
+          Systems.synapse(g, s.data, s.cols, s.rows, c.width, c.height, 0.5 + 0.5 * Math.sin(q * TAU), q * 3);
+        } };
+      } },
+    { key: "strata", title: "Strata", after: "Quayola",
+      note: "A collage found again by triangles, finer and finer, and lost again.",
+      make: function (c) {
+        var g = c.getContext("2d"), n = Math.floor(Math.random() * 9), stages = null, at = 0, s = null;
+        return { draw: function (now) {
+          if (!stages || now - at > 8000) {
+            var im = photo(n);
+            if (im) {
+              s = sampleOf(im, 40);
+              stages = Systems.strataStages(s.data, s.cols, s.rows, 8, (Math.random() * 1e9) | 0);
+              at = now; n += 1;
+            }
+          }
+          g.fillStyle = "#e7e6e2";
+          g.fillRect(0, 0, c.width, c.height);
+          if (!stages) { return; }
+          var q = (now - at) / 8000, k = Math.min(stages.length - 1, Math.floor(Math.sin(Math.PI * q) * stages.length * 1.2));
+          var kx = c.width / s.cols, ky = c.height / s.rows;
+          stages[Math.max(0, k)].forEach(function (t) {
+            g.fillStyle = t[3];
+            g.beginPath();
+            g.moveTo(t[0][0] * kx, t[0][1] * ky);
+            g.lineTo(t[1][0] * kx, t[1][1] * ky);
+            g.lineTo(t[2][0] * kx, t[2][1] * ky);
+            g.closePath();
+            g.fill();
+          });
+        } };
+      } },
+    { key: "primordial", title: "Primordial", after: "Universal Everything, Primordial",
+      note: "Cellular life, from nothing but arithmetic: spots that grow, pinch in the middle and divide.",
+      make: function (c) {
+        var g = c.getContext("2d"), rx = null, born = 0;
+        return { draw: function (now) {
+          if (!rx || now - born > 40000) { rx = new Systems.Reaction(c.width, c.height, {}); born = now; }
+          rx.step(10);
+          rx.draw(g, ["#0c0a18", "#2a1c5a", "#5e52c7", "#9d95e6", "#f3f1ee"]);
+        } };
+      } },
+    { key: "motion", title: "Motion Painting", after: "Oskar Fischinger, Motion Painting No. 1",
+      note: "Painting given time: a stroke at a time, to a beat, on one sheet of glass after another.",
+      make: function (c) {
+        var run = null, stopped = false, big = c === archiveScreen;
+        function go() {
+          if (stopped) { return; }
+          run = Systems.motionPainting(c, [], { duration: 16000, onDone: go,
+            onBeat: function (n) { if (big) { Systems.sound.beat(n); } } });
+        }
+        go();
+        return { draw: function () {}, stop: function () { stopped = true; if (run) { run.stop(); } } };
+      } },
+    { key: "infinity", title: "Infinity", after: "Universal Everything, Infinity",
+      note: "A procession with no loop in it. No one in it has walked by before.",
+      make: function (c) {
+        var g = c.getContext("2d"), folk = [], seed = (Math.random() * 1e9) | 0, last = 0;
+        g.imageSmoothingEnabled = false;
+        return { draw: function (now) {
+          var dt = last ? Math.min(0.2, (now - last) / 1000) : 0;
+          last = now;
+          var ground = Math.round(c.height * 0.84), k = c.width / MON_W;
+          // Already under way when it is switched on: the procession did not
+          // start because someone looked.
+          if (!folk.length) {
+            for (var x0 = c.width; x0 > -30 * k; x0 -= (26 + Math.random() * 26) * k) {
+              folk.unshift({ p: Systems.person(seed += 1, dreamColours([])), x: x0, phase: Math.random(), gap: (26 + Math.random() * 26) * k });
+            }
+            folk.reverse();
+          }
+          if (folk[folk.length - 1].x > folk[folk.length - 1].gap - 30 * k) {
+            folk.push({ p: Systems.person(seed += 1, dreamColours([])), x: -30 * k, phase: Math.random(), gap: (26 + Math.random() * 26) * k });
+          }
+          var sky = g.createLinearGradient(0, 0, 0, ground);
+          sky.addColorStop(0, "#e9eaee");
+          sky.addColorStop(1, "#efe6e4");
+          g.fillStyle = sky;
+          g.fillRect(0, 0, c.width, ground);
+          g.fillStyle = "#c9c2b8";
+          g.fillRect(0, ground, c.width, c.height - ground);
+          folk.forEach(function (f) {
+            f.x += 12 * k * dt;
+            f.phase += 12 * dt / f.p.stride;
+            var fr = Math.floor((f.phase % 1) * 8);
+            g.drawImage(f.p.day, fr * f.p.fw, 0, f.p.fw, f.p.fh, Math.round(f.x - f.p.groundX * k),
+                        Math.round(ground - f.p.groundY * k), f.p.fw * k, f.p.fh * k);
+          });
+          folk = folk.filter(function (f) { return f.x < c.width + 40 * k; });
+        } };
+      } },
+    { key: "migrations", title: "Migrations", after: "Universal Everything, Migrations",
+      note: "Real animals' footfall, lent to bodies nobody has seen, under a sun that goes round in half a minute.",
+      make: function (c) {
+        var g = c.getContext("2d"), beast = null, since = 0, gi = 0, last = 0, walked = 0;
+        var noise = new Systems.Noise((Math.random() * 1e9) | 0);
+        var SKY = [[233, 200, 206], [214, 228, 240], [240, 178, 120], [28, 24, 64]];
+        g.imageSmoothingEnabled = false;
+        return { draw: function (now) {
+          var dt = last ? Math.min(0.2, (now - last) / 1000) : 0;
+          last = now;
+          if (!beast || now - since > 9000) {
+            beast = Systems.creature((Math.random() * 1e9) | 0, dreamColours(allTones().slice(0, 3)), Systems.GAITS[gi % Systems.GAITS.length]);
+            gi += 1; since = now;
+          }
+          var day = (now / 32000) % 1, seg = day * 4, i0 = Math.floor(seg), f = seg - i0;
+          var a = SKY[i0], b = SKY[(i0 + 1) % 4];
+          var sky = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+          g.fillStyle = "rgb(" + sky.map(Math.round).join(",") + ")";
+          g.fillRect(0, 0, c.width, c.height);
+          var dark = i0 === 3 ? 1 - Math.abs(f - 0.5) * 2 : 0;
+          if (dark > 0.3) {
+            g.fillStyle = "#f3f1ee";
+            for (var s = 0; s < 18; s += 1) { g.fillRect(Math.floor(hash2(s, 1) * c.width), Math.floor(hash2(s, 2) * c.height * 0.5), 1, 1); }
+          }
+          var sunA = day * TAU - Math.PI / 2;
+          g.fillStyle = i0 === 3 ? "#e8ecf6" : "#fff1c4";
+          g.fillRect(Math.round(c.width / 2 + Math.cos(sunA) * c.width * 0.4), Math.round(c.height * 0.6 + Math.sin(sunA) * c.height * 0.5), 5, 5);
+          var k = c.width / MON_W, speed = beast.speed * k;
+          walked += speed * dt;
+          [[0.55, 0.35, "#6a6478"], [0.7, 0.7, "#3e3a4a"]].forEach(function (layer) {
+            g.fillStyle = layer[2];
+            for (var x = 0; x < c.width; x += 1) {
+              var hh = noise.fbm((x + walked * layer[1]) / (40 * k), layer[0] * 10, 0, 3) * c.height * 0.5;
+              var top = Math.round(c.height * layer[0] + c.height * 0.2 - hh * 0.6);
+              g.fillRect(x, top, 1, c.height - top);
+            }
+          });
+          var ground = Math.round(c.height * 0.86);
+          g.fillStyle = "#2a2632";
+          g.fillRect(0, ground, c.width, c.height - ground);
+          beast.phase = (beast.phase || 0) + (beast.gait === "swoop" ? dt * 1.6 : speed * dt / (beast.stride * k));
+          var fr = Math.floor((beast.phase % 1) * 8), sh = dark > 0.5 ? beast.night : beast.day;
+          g.drawImage(sh, fr * beast.fw, 0, beast.fw, beast.fh, Math.round(c.width / 2 - beast.groundX * k),
+                      Math.round(ground - beast.groundY * k), beast.fw * k, beast.fh * k);
+        } };
+      } },
+    { key: "transfiguration", title: "Transfiguration", after: "Universal Everything, Transfiguration",
+      note: "The Chorus from Henry V, walking toward you, made of one thing and then another.",
+      make: function (c) {
+        var g = c.getContext("2d"), back = document.createElement("canvas"), bg = back.getContext("2d");
+        var e = null, im = null;
+        readPlaybill(function () {
+          playbill.scenes.forEach(function (s) { if (s.key === "chorus") { e = s; } });
+          if (e) { sheetFor(e, function (loaded) { im = loaded; back.width = e.w; back.height = e.h; }); }
+        });
+        return { draw: function (now) {
+          g.fillStyle = "#e7e6e2";
+          g.fillRect(0, 0, c.width, c.height);
+          if (!e || !im) { return; }
+          var look = Math.floor(now / 1600) % e.looks.length, t = Math.floor(now / 166) % 4;
+          bg.clearRect(0, 0, e.w, e.h);
+          bg.drawImage(im, 0, 0, e.w, e.h, 0, 0, e.w, e.h);
+          var p = e.looks[look][t];
+          if (p) { bg.clearRect(p[4], p[5], p[2], p[3]); bg.drawImage(im, p[0], p[1], p[2], p[3], p[4], p[5], p[2], p[3]); }
+          var hd = e.heads[0] || [e.w / 2, e.h / 3];
+          var cw = c.width * 0.62, ch = c.height * 0.62;
+          g.imageSmoothingEnabled = false;
+          g.drawImage(back, hd[0] - cw / 2, hd[1] - ch * 0.18, cw, ch, 0, 0, c.width, c.height);
+        } };
+      } },
+    { key: "walking", title: "Walking City", after: "Universal Everything, Walking City",
+      note: "The library, standing up on its legs and walking.",
+      make: function (c) {
+        var g = c.getContext("2d"), back = document.createElement("canvas"), bg = back.getContext("2d");
+        var lib = null, im = null;
+        readPlaybill(function () {
+          lib = playbill.library;
+          if (lib) { sheetFor(lib, function (loaded) { im = loaded; back.width = lib.w; back.height = lib.h; }); }
+        });
+        return { draw: function (now) {
+          g.fillStyle = "#e9eaee";
+          g.fillRect(0, 0, c.width, c.height);
+          if (!lib || !im || !lib.moves) { return; }
+          var n = Math.floor(now / 166) % 48, m = lib.moves, p = null;
+          if (n >= 6 && n < 9) { p = m.stand[n - 6]; }
+          else if (n >= 9 && n < 42) { p = m.walk[(n - 9) % 4]; }
+          else if (n >= 42 && n < 45) { p = m.stand[44 - n]; }
+          bg.clearRect(0, 0, lib.w, lib.h);
+          bg.drawImage(im, 0, 0, lib.w, lib.h, 0, 0, lib.w, lib.h);
+          if (p) { bg.clearRect(p[4], p[5], p[2], p[3]); bg.drawImage(im, p[0], p[1], p[2], p[3], p[4], p[5], p[2], p[3]); }
+          var top = Math.max(0, (lib.top || 0) - 40), hh = lib.h - top, k = Math.min(c.width / lib.w, c.height / hh);
+          g.imageSmoothingEnabled = k < 1;
+          g.drawImage(back, 0, top, lib.w, hh, (c.width - lib.w * k) / 2, (c.height - hh * k) / 2, lib.w * k, hh * k);
+        } };
+      } },
+    { key: "external", title: "The External World", after: "David OReilly, The External World",
+      note: "Crude, funny, surreal and deeply digital — not trying to look like anything but itself.",
+      make: function (c) { return Systems.externalWorld(c); } },
+    { key: "polyfauna", title: "PolyFauna", after: "Radiohead and Universal Everything, PolyFauna",
+      note: "A small world of primitive life, a landscape and weather, that notices you. Point at it; press it.",
+      make: function (c) {
+        var world = Systems.polyFauna(c, { colours: dreamColours(allTones().slice(0, 4)) });
+        function at(event) {
+          var r = c.getBoundingClientRect();
+          return [(event.clientX - r.left) / r.width * c.width, (event.clientY - r.top) / r.height * c.height];
+        }
+        var move = function (event) { var p = at(event); world.point(p[0], p[1]); };
+        var out = function () { world.point(null); };
+        var down = function (event) { var p = at(event); world.press(p[0], p[1]); };
+        c.addEventListener("pointermove", move);
+        c.addEventListener("pointerleave", out);
+        c.addEventListener("pointerdown", down);
+        return { draw: world.draw, stop: function () {
+          c.removeEventListener("pointermove", move);
+          c.removeEventListener("pointerleave", out);
+          c.removeEventListener("pointerdown", down);
+        } };
+      } }
+  ];
+
+  function buildWall() {
+    if (monitors.length) { return; }
+    CHANNELS.forEach(function (ch, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "monitor";
+      b.setAttribute("role", "listitem");
+      b.setAttribute("aria-label", ch.title + ", after " + ch.after + ". Press to look closer.");
+      b.innerHTML = '<span class="monitor-case"><canvas></canvas></span>' +
+                    '<span class="monitor-label"><span class="monitor-title"></span><span class="monitor-after"></span></span>';
+      var c = b.querySelector("canvas");
+      c.width = MON_W;
+      c.height = MON_H;
+      b.querySelector(".monitor-title").textContent = ch.title;
+      b.querySelector(".monitor-after").textContent = "after " + ch.after;
+      b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      b.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openLook(i, b);
+      });
+      archiveWall.appendChild(b);
+      monitors.push({ el: b, canvas: c, channel: ch, run: null, at: 0 });
+    });
+  }
+
+  function layoutArchive() {
+    if (!archiveOn) { return; }
+    var top = 64;
+    var br = banner.getBoundingClientRect();
+    if (br.height) { top = Math.max(top, br.bottom + 14); }
+    var cols = W >= 1100 ? 4 : W >= 700 ? 4 : 3;
+    var rows = Math.ceil(CHANNELS.length / cols);
+    var roomW = Math.min(W - 32, 1180), roomH = H - top - 40;
+    var gap = W >= 700 ? 18 : 10;
+    // Each monitor is a case round a 4:3 screen, with two lines under it.
+    var label = W >= 700 ? 40 : 34;
+    var mw = Math.min((roomW - gap * (cols - 1)) / cols, ((roomH - gap * (rows - 1)) / rows - label) / 0.86);
+    mw = Math.max(84, Math.floor(mw));
+    archiveWall.style.gridTemplateColumns = "repeat(" + cols + ", " + mw + "px)";
+    archiveWall.style.gap = gap + "px";
+    archiveWall.style.top = Math.round(top) + "px";
+    var wallH = archiveWall.offsetHeight;
+    archiveFoot.style.top = Math.round(Math.min(H - 26, top + wallH + 10)) + "px";
+    if (looking) {
+      var s = Math.max(1, Math.floor(Math.min((W - 64) / archiveScreen.width, (H - 220) / archiveScreen.height) * 2) / 2);
+      archiveScreen.style.width = Math.round(archiveScreen.width * s) + "px";
+      archiveScreen.style.height = Math.round(archiveScreen.height * s) + "px";
+    }
+  }
+
+  function archiveFrame(now) {
+    if (!archiveOn) { return; }
+    requestAnimationFrame(archiveFrame);
+    // Twelve frames a second, held, as a wall of old monitors would.
+    if (looking) {
+      if (now - looking.at >= 83) {
+        looking.at = now;
+        if (looking.run.draw) { looking.run.draw(now); }
+      }
+      return;
+    }
+    monitors.forEach(function (m) {
+      if (!m.run || now - m.at < 83) { return; }
+      m.at = now;
+      if (m.run.draw) { m.run.draw(now); }
+    });
+  }
+
+  function startArchive() {
+    if (!archiveEl || archiveOn || !window.Systems) { return; }
+    archiveOn = true;
+    buildWall();
+    archiveEl.hidden = false;
+    layoutArchive();
+    // Switched on one after another, down the wall.
+    monitors.forEach(function (m, i) {
+      window.setTimeout(function () {
+        if (!archiveOn) { return; }
+        m.run = m.channel.make(m.canvas);
+        m.el.classList.add("is-on");
+        if (!still) {
+          var r = m.canvas.getBoundingClientRect();
+          pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.3, 60);
+        }
+      }, still ? 0 : 160 + i * 110);
+    });
+    requestAnimationFrame(archiveFrame);
+  }
+
+  function stopArchive() {
+    if (!archiveOn) { return; }
+    archiveOn = false;
+    closeLook();
+    monitors.forEach(function (m) {
+      if (m.run && m.run.stop) { m.run.stop(); }
+      m.run = null;
+      m.el.classList.remove("is-on");
+    });
+    archiveEl.hidden = true;
+  }
+
+  function openLook(i, from) {
+    closeLook();
+    var ch = CHANNELS[i];
+    archiveScreen.width = MON_W * 2;
+    archiveScreen.height = MON_H * 2;
+    looking = { channel: ch, run: ch.make(archiveScreen), at: 0, from: from };
+    archiveTitle.textContent = ch.title;
+    archiveAfter.textContent = "after " + ch.after;
+    archiveNote.textContent = ch.note;
+    archiveLook.hidden = false;
+    archiveWall.style.visibility = "hidden";
+    layoutArchive();
+    scramble(archiveTitle, "decode", 0, 600);
+    var r = from.getBoundingClientRect();
+    pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT, LILAC], 0.6, Math.max(W, H) * INV2);
+    archiveClose.focus({ preventScroll: true });
+  }
+
+  function closeLook() {
+    if (!looking) { return; }
+    if (looking.run && looking.run.stop) { looking.run.stop(); }
+    var from = looking.from;
+    looking = null;
+    archiveLook.hidden = true;
+    archiveWall.style.visibility = "";
+    if (from && archiveOn) { from.focus({ preventScroll: true }); }
+  }
+
+  if (archiveEl) {
+    archiveClose.addEventListener("click", function (event) { event.stopPropagation(); closeLook(); });
+    archiveLook.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    archiveFoot.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    archiveLook.addEventListener("click", function (event) { event.stopPropagation(); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && looking) { closeLook(); }
+    });
+    window.addEventListener("resize", function () { if (archiveOn) { layoutArchive(); } });
+  }
+
+  /* ---- sound ---------------------------------------------------------------
+
+     Off until it is asked for, by the switch that comes with the banner in
+     any place you go down into. */
+  var soundSwitch = document.getElementById("banner-sound");
+  if (soundSwitch) {
+    soundSwitch.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    soundSwitch.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (!window.Systems || !Systems.sound) { return; }
+      if (Systems.sound.on) { Systems.sound.stop(); }
+      else if (Systems.sound.start()) { Systems.sound.tone(880, 0.12, "sine", 0.3); }
+      soundSwitch.setAttribute("aria-pressed", Systems.sound.on ? "true" : "false");
+    });
+  }
+
+  /* ---- Primordial, while the world is read ------------------------------ */
+
+  var primordialCanvas = document.getElementById("primordial");
+  var primordial = null;
+
+  function startPrimordial() {
+    if (!primordialCanvas || still || !window.Systems || !Systems.Reaction) { return; }
+    var k = 5;
+    var w = Math.max(40, Math.round(window.innerWidth / k)), h = Math.max(40, Math.round(window.innerHeight / k));
+    primordialCanvas.width = w;
+    primordialCanvas.height = h;
+    var rx = new Systems.Reaction(w, h, { specks: 1 });
+    rx.speck(w / 2, h * 0.5, 4);
+    rx.speck(w / 2 + 12, h * 0.5 - 6, 3);
+    var g = primordialCanvas.getContext("2d");
+    primordial = { rx: rx, run: true };
+    (function loop() {
+      if (!primordial || !primordial.run) { return; }
+      rx.step(12);
+      rx.draw(g, ["#000000", "#c9c4e8", "#9d95e6", "#5e52c7"], 0);
+      requestAnimationFrame(loop);
+    })();
+  }
+
+  function stopPrimordial() {
+    if (!primordial) { if (primordialCanvas) { primordialCanvas.remove(); } return; }
+    primordialCanvas.classList.add("is-gone");
+    window.setTimeout(function () {
+      if (primordial) { primordial.run = false; }
+      primordial = null;
+      primordialCanvas.remove();
+    }, 700);
+  }
+
+  startPrimordial();
 
   /* ---- the table: every collage, or the ones a word is written on ------- */
 
@@ -9444,6 +9969,7 @@
       survey();
       grow();
       loading.remove();
+      stopPrimordial();
       geometry();
 
       if (document.fonts && document.fonts.ready) {

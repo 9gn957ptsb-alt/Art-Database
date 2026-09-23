@@ -100,6 +100,9 @@
        stay legible, focusable and clickable. land.js projects each one onto
        the sphere every frame. -->
   <div class="land" id="land" aria-label="The words the collages are made of">
+    <!-- While the world is read: cells, growing and dividing, after Universal
+         Everything's Primordial. -->
+    <canvas class="primordial" id="primordial" aria-hidden="true"></canvas>
     <p class="land-loading" id="land-loading">Turning the world&hellip;</p>
 
     <!-- The creature. It walks the surface and grazes on whatever word it
@@ -193,6 +196,25 @@
       </div>
     </div>
 
+    <!-- The Archive, in Austin: a wall of monitors, each playing one of the systems this site
+         is made with and saying whose work it is after. After the Austin Museum of Digital
+         Art's archive. Built by land.js. -->
+    <div class="archive" id="archive" hidden>
+      <div class="archive-wall" id="archive-wall" role="list"></div>
+      <p class="archive-foot" id="archive-foot">
+        after the <a href="https://vimeo.com/channels/amoda" target="_blank" rel="noopener">Austin Museum of Digital Art&rsquo;s archive</a>
+      </p>
+      <div class="archive-look" id="archive-look" role="dialog" aria-modal="false" hidden>
+        <canvas class="archive-screen" id="archive-screen"></canvas>
+        <p class="archive-card">
+          <span class="archive-title" id="archive-title"></span>
+          <span class="archive-after" id="archive-after"></span>
+          <span class="archive-note" id="archive-note"></span>
+        </p>
+        <button class="archive-close" id="archive-close" type="button" aria-label="Back to the wall">&times;</button>
+      </div>
+    </div>
+
     <div class="banner" id="banner" hidden>
       <button class="banner-back" id="banner-back" type="button">
         <span aria-hidden="true">&larr;</span> The world
@@ -202,6 +224,8 @@
                 aria-controls="here"></button>
         <span class="banner-under" id="banner-under"></span>
       </p>
+      <!-- Off until it is asked for: the part of Ikeda and Fischinger that is heard. -->
+      <button class="banner-sound" id="banner-sound" type="button" aria-pressed="false">Sound</button>
     </div>
 
     <!-- The token object: a saved work condensed to its three colours,

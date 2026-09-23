@@ -406,7 +406,6 @@
       g.fillRect(Math.round(head), Math.round((mid - span / 2 * open) * dpr), Math.max(1, dpr), Math.round(span * open * dpr));
     }
     requestAnimationFrame(frame);
-    if (S.sound && S.sound.on) { S.sound.datamatics(dur); }
     return { stop: function () { done = true; g.clearRect(0, 0, canvas.width, canvas.height); } };
   };
 

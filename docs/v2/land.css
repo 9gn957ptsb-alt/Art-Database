@@ -1378,7 +1378,7 @@
   .creature[data-struck="true"] svg,
   .creature .c-eye,
   .hubble .hb-blink { animation: none; }
-  .trail, .sweep, .datamatics, .dream { display: none; }
+  .trail, .sweep, .datamatics, .dream, .primordial { display: none; }
   .deal-text[data-enter], .deal-block, .deal-go[data-pointed] { animation: none; }
   .graze, .token, .deck, .trace { animation: none; }
   .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }
@@ -1389,3 +1389,203 @@
   [data-melting="true"] { transition-duration: 1ms; }
   .graze[data-condensing="true"] .graze-card { transition-duration: 1ms; }
 }
+
+/* ---- the Archive (land.js, "the Archive") ---------------------------------
+
+   A wall of monitors in the dark of a gallery, each a small screen of pixel
+   art in a plastic case, switched on one after another. */
+.archive {
+  position: absolute;
+  inset: 0;
+  z-index: 58;
+  pointer-events: none;
+}
+.archive[hidden] { display: none; }
+
+.archive-wall {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  display: grid;
+  gap: var(--s-3);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.monitor {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+}
+
+.monitor-case {
+  display: block;
+  padding: 7% 7% 11%;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3a3844 0%, #26242e 100%);
+  box-shadow: 0 8px 16px rgba(20, 16, 30, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+/* The power light. */
+.monitor-case::after {
+  content: "";
+  position: absolute;
+  right: 9%;
+  bottom: 4%;
+  width: 4px;
+  height: 4px;
+  background: #3a3a3a;
+}
+.monitor.is-on .monitor-case::after { background: #7cf29a; }
+
+.monitor canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 6px / 8px;
+  background: #07060b;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  /* Switched on: a line of light that opens into the picture, in steps. */
+  clip-path: inset(50% 0 50% 0);
+}
+.monitor.is-on canvas { animation: monitor-on 0.42s steps(6, end) forwards; }
+@keyframes monitor-on {
+  0% { clip-path: inset(50% 50% 50% 50%); filter: brightness(3); }
+  30% { clip-path: inset(49% 0 49% 0); filter: brightness(2.4); }
+  100% { clip-path: inset(0 0 0 0); filter: none; }
+}
+/* Scanlines, over the glass. */
+.monitor-case::before,
+.archive-look::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.monitor-case::before {
+  inset: 7% 7% 11%;
+  border-radius: 6px / 8px;
+  background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  z-index: 1;
+}
+
+.monitor:hover .monitor-case,
+.monitor:focus-visible .monitor-case { background: linear-gradient(180deg, #4a4856 0%, #302e3a 100%); }
+.monitor:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+.monitor-label {
+  display: grid;
+  gap: 1px;
+  padding: 0 2px;
+}
+.monitor-title {
+  font-family: var(--serif);
+  font-size: var(--t-2);
+  line-height: 1.15;
+}
+.monitor-after,
+.archive-after,
+.archive-foot {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+.archive-foot {
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  white-space: nowrap;
+}
+.archive-foot a { color: inherit; }
+
+.archive-look {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #3a3844 0%, #26242e 100%);
+  box-shadow: 0 18px 40px rgba(20, 16, 30, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.archive-look[hidden] { display: none; }
+.archive-screen {
+  display: block;
+  border-radius: 10px / 14px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #07060b;
+}
+.archive-card {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+  max-width: 34rem;
+  text-align: center;
+  color: #f3f1ee;
+}
+.archive-title { font-family: var(--serif); font-size: var(--t-4); line-height: 1.1; }
+.archive-look .archive-after { color: #c9c4e8; }
+.archive-note { font-family: var(--serif); font-style: italic; font-size: var(--t-2); color: #d8d4ea; }
+.archive-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f3f1ee;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.land[data-at="flying"] .archive { display: none; }
+
+/* The sound, off until it is asked for. */
+.banner-sound {
+  pointer-events: auto;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-dim);
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.banner-sound[aria-pressed="true"] { color: var(--ink); background: #ffffff; }
+.banner-sound[aria-pressed="true"]::after { content: " on"; }
+
+/* Primordial, while the world is read: cells dividing behind the words
+   that say so, and gone when it is up. */
+.primordial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0.8;
+  transition: opacity 0.6s steps(5, end);
+}
+.primordial.is-gone { opacity: 0; }
