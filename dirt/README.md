@@ -25,6 +25,7 @@ grit, clumps and cracks read as physical matter rather than flat marks.
 - `dirt.js`: the engine. A plain ES module with no DOM and no dependencies, so it runs in browsers and Node.
 - `bake.mjs`: writes PNGs from presets or a JSON config (its flags are listed at the top of the file).
 - `png.mjs`: minimal PNG encoder used by the baker.
+- `build_soil_viewer.py`, `engine/ground-gl.js`: DIRT's page (below), and its ground painted on the GPU.
 - `playground.html`: the interactive Dirt Lab. Serve the folder (`npx serve dirt`) and open it; opening it as a `file://` URL
   won't work because ES modules need a server.
 - `out/`: sample 512px tiles of every preset, seed 1, transparent background.
@@ -161,6 +162,43 @@ Calm ground takes φ⁻³ of the palette; the outskirts take φ⁻¹ of it. Each
 The passages' edges wander up to 55 cells, smooth over 144. Where two passages meet, each cell belongs to one or
 the other by chance, the likelier the nearer it lies, across a band 55 cells deep: an overspray, as where two
 sprayed colours meet. Clearings are sunlit, up to φ times as brightly at the heart of a calm island.
+
+**Colours that change.** Nearly every saved painting is brown, gold or rust, so a plane that wore their colours only
+as they are would stay chocolate brown. Where the browser has WebGL2, the page paints the ground itself on the GPU
+([engine/ground-gl.js](engine/ground-gl.js)), every frame, from what each cell is made of. The workers send each
+cell's soil colour, dot, passage, crown, depth and light instead of finished pixels, so the colours can change as
+they are watched. About every 55 seconds (times φ^±½), each passage moves on to another way of wearing its painting:
+
+| Share | The passage's colours |
+| --- | --- |
+| φ⁻³ | as grown (never twice running) |
+| the rest: φ⁻¹ of it | the painting's colours turned about the grey axis by the golden angle once, twice, three or four times, toward teal, violet, green, blue or rose, and laid on fully: the soil's lightness chooses where in the palette each dot falls, as on the Earth |
+| the rest: φ⁻³ of it | two of those colours only, darkest to lightest |
+| the rest: φ⁻⁴ of it | lights and darks swapped |
+
+A φ⁻² share of the time the painting is not the passage's own but one of the 85 saved paintings with the most colour
+(a colour of chroma 89 or more), turned the same way. A change always changes something. Left as grown, the GPU
+paints what the workers would have: checked pixel for pixel, 86% match exactly and the rest lie within 2 levels
+of 255.
+
+A change sweeps across its passage from a point near its middle, 34 cells a second, and takes 8 seconds at each
+place. Where it passes, shapes in the new colours build up over the old ground, each shape on its own time, in the
+passage's character:
+
+| Character | Shapes |
+| --- | --- |
+| mosaic | square tiles on a 13-cell grid, each growing out from its middle until it fills its square but a one-cell seam |
+| nocturne | four-pointed stars with round cores, 8 to 21 cells from point to middle, from the palette's lights |
+| spray | round spots 10 to 20 cells across, airbrushed at the edge, each laid over those before it |
+| weave | strips three cells wide along every eighth row and down every eighth column, each 34-cell length growing out from its middle, crossing over and under by turns |
+| drip | runs down one column in three, 34 to 55 cells long |
+
+Shapes are born over the first φ⁻² of the change and are full grown by φ⁻¹ of it. Then they break down: pieces of 8
+cells go first, then of 5, 3 and 2, then single cells (a spray's shapes go straight to dust), and the new ground
+shows through. On the Earth, a place moves only among the five paintings nearest its look, a change about every
+89 seconds, so it stays itself; and when a month turns, the new month sweeps over the ground in the same shapes, out
+from the middle of the view at 233 cells a second. With reduced motion set, the colours stay as grown. Without
+WebGL2, or with `#nogl` in the address, the page paints as before, from the workers' pixels.
 
 **The rainforest.** A forest stands over the ground, seen from above. Its crowns grow at three heights, each on a
 jittered lattice of its own, and each crown swells in five lobes and eight smaller ones:

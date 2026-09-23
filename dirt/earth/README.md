@@ -120,8 +120,12 @@ dithered across 13, so two places meet as two sprayed colours do.
   - the month's temperature against the whole year's range, and its rain against the year's;
   - cloud and its regime, clear days, how far one sees, and whether the sky is big;
   - what is under the pointer: the creature, the plant, or the ground.
-- **The months** turn by hand or by themselves ("Year"). Each chunk of ground grows again in the new month and fades
-  in over the old.
+- **The months** turn by hand or by themselves ("Year"). Each chunk of ground grows again in the new month. Where the
+  ground is painted on the GPU, the new month sweeps over the old from the middle of the view, in shapes of each
+  passage's character that build up and break down; otherwise it fades in over the old.
+- **Colours that change.** Where the ground is painted on the GPU, each place also moves among the five paintings
+  nearest its look, a change about every 89 seconds, in the same shapes (see the DIRT README). It never leaves them,
+  so a place always shows its own conditions.
 
 The default plane is unchanged. With every Earth script loaded in the same workers, its chunks hash as they did
 before (the fingerprint test). Earth chunks are identical whichever worker grows them, in whatever order.

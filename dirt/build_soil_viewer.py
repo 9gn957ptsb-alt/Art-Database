@@ -25,6 +25,11 @@ each of one character: a bright mosaic of fused blocks, a nocturne sunk nearly t
 brightest dots shining out, an airbrushed spray, a fine weave, or pixel-sorted drips. Their edges wander,
 and where two meet, each cell belongs to one or the other by chance: an overspray.
 
+Where the browser has WebGL2 the page paints the ground on the GPU (engine/ground-gl.js) from what each cell is
+made of, and each passage's colours change as they are watched, about every 55 seconds: its painting's colours
+turned by the golden angle and laid on fully, another painting's, two colours, lights and darks swapped, or as
+grown. Each change sweeps across its passage in shapes of its character that build up and break down.
+
 A rainforest stands over the ground. Crowns of three heights (shrubs, the canopy, and emergents above
 it) grow on lattices of their own, the calm islands are clearings, and the forest closes in and rises
 toward the outskirts. It lights the ground from the upper left, with shadows and dark gaps between
@@ -364,7 +369,7 @@ function passage(i, j) {
     while (pal.length < 3) pal.push(pal[pal.length - 1]);
     // The gradient map's stops: its darkest colour sunk, its three colours, its lightest lifted.
     const stops = [pal[0].map((v) => v * PHI ** -2), pal[0], pal[1], pal[2], pal[2].map((v) => v + (255 - v) / PHI)];
-    p = { x, y, kind, pal, stops, at: stops.map((c, n) => (n === 0 ? 0 : n === 4 ? 255 : lumOf(c))), w };
+    p = { x, y, kind, pal, stops, at: stops.map((c, n) => (n === 0 ? 0 : n === 4 ? 255 : lumOf(c))), w, i, j, turn };
     if (passCache.size >= 4181) passCache.clear();
     passCache.set(k, p);
   }
@@ -503,7 +508,8 @@ function forest(x0, y0) {
 function crownTint(c) {
   if (!c.tint) {
     nearestPassages(c.x + wanderX(c.x, c.y), c.y + wanderY(c.x, c.y));
-    c.tint = PA.pal[h3(Math.floor(c.x), Math.floor(c.y), 541) % 3];
+    c.ti = h3(Math.floor(c.x), Math.floor(c.y), 541) % 3; c.tp = PA;     // which colour, of which passage
+    c.tint = PA.pal[c.ti];
   }
   return c.tint;
 }
@@ -585,7 +591,57 @@ function habitats(x0, y0, hl, dd, off, oc, os, ow) {
   return sites;
 }
 
-/** Grow the chunk of ground covering tile (ci, cj): its pixels, painting per cell, depths and birds. */
+// ---- what each cell is made of, for the page's GPU ------------------------------------------------
+// Where the page has WebGL2 it paints the ground itself, every frame, so that its colours can change as they are
+// watched; a chunk then sends what each cell is made of instead of its pixels. Two words a cell:
+//   its soil's colour (turned, before any palette), and its dot's size, stratum, crown colour and flags;
+//   its palette entry, its crown's entry, its depth in 255ths and its light in 127.5ths.
+// An entry is 32 texels: up to five palettes of five stops (the plane's one carries its stops' lightness), then
+// texel 25 its passage's middle, character, and painting or count of palettes, and texel 26 which palette it
+// wears, its passage's lattice square and its turn.
+let GLDATA = false;
+const ENT_W = 32, ENT_MAX = 256;
+function entryTable() {
+  const buf = new Float32Array(ENT_MAX * ENT_W * 4), byPass = new Map();
+  let n = 0;
+  const put = (e, t, c, a) => { const o = (e * ENT_W + t) * 4; buf[o] = c[0]; buf[o + 1] = c[1]; buf[o + 2] = c[2]; buf[o + 3] = a; };
+  const head = (e, P, count, chosen) => { put(e, 25, [P.x, P.y, P.kind], count); put(e, 26, [chosen, P.i, P.j], P.turn || 0); };
+  return {
+    rows: () => buf.slice(0, n * ENT_W * 4),
+    /** The plane's entry for passage P: its gradient map. */
+    plane(P) {
+      let e = byPass.get(P);
+      if (e === undefined) {
+        if (n >= ENT_MAX) return 0;
+        byPass.set(P, (e = n++));
+        P.stops.forEach((c, t) => put(e, t, c, P.at[t]));
+        head(e, P, P.w, 0);
+      }
+      return e;
+    },
+    /** The Earth's entry for passage P wearing look key `key`: the look's palettes, and which of them the passage wears. */
+    earth(P, key) {
+      let m = byPass.get(P);
+      if (!m) byPass.set(P, (m = new Map()));
+      let e = m.get(key);
+      if (e === undefined) {
+        if (n >= ENT_MAX) return 0;
+        m.set(key, (e = n++));
+        const cands = eLookPalettes(key);
+        cands.forEach((q, c) => q.stops.forEach((st, t) => put(e, c * 5 + t, st, q.w)));
+        head(e, P, cands.length, h3(Math.floor(P.x), Math.floor(P.y), key) % cands.length);
+      }
+      return e;
+    },
+  };
+}
+/** A cell's words: its soil's colour and dot flags; its entries, depth and light. */
+const cellWord = (r, g, b, flags) => (Math.round(r) | (Math.round(g) << 8) | (Math.round(b) << 16) | (flags << 24)) >>> 0;
+const cellWord2 = (e, d, light) => (e | (Math.round(d * 255) << 16) | (Math.min(255, Math.round(light * 127.5)) << 24)) >>> 0;
+/** The buffers of a chunk's typed arrays, to hand over to the page. */
+const buffersOf = (o) => Object.values(o).filter((v) => ArrayBuffer.isView(v)).map((v) => v.buffer);
+
+/** Grow the chunk of ground covering tile (ci, cj): its pixels (or cells), painting per cell, depths and birds. */
 function chunk(ci, cj) {
   const x0 = ci * N, y0 = cj * N;
   // Drips are sorted within 21-cell segments fixed on the plane, so rows are grown for whole segments.
@@ -660,8 +716,8 @@ function chunk(ci, cj) {
   // D. The colours turn by up to the golden angle; some dots come loose as birds and leave pores; what
   //    stays is lit by the forest and painted, two pixels a cell. A share of the dots on the canopy
   //    can catch the wind and show pale.
-  const T = N * R, px = new Uint8ClampedArray(T * T * 4);
-  for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
+  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 2) : null, ents = GLDATA ? entryTable() : null;
+  if (px) for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
   const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], glints = [], off = (y0 - s0) * N, rgb = [0, 0, 0], gm = [0, 0, 0];
   for (let yy = 0; yy < N; yy++) {
     const y = y0 + yy;
@@ -670,6 +726,7 @@ function chunk(ci, cj) {
       work[c] = ow[k];
       let [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
       const P = pp[k], st = ps[k];
+      if (cells) { cells[2 * c] = cellWord(r, g, b, 0); cells[2 * c + 1] = cellWord2(ents.plane(P), d, light[c]); }
       {
         // The passage's palette laid over this cell: the colour its lightness maps to, brought back to
         // that lightness, so the palette gives the hue and the ground keeps its lights and darks. Calm
@@ -691,7 +748,13 @@ function chunk(ci, cj) {
       // Lit by the forest, keyed by the passage, and sunlit in a clearing, most at its heart.
       const f = light[c] * KIND_KEY[P.kind] ** st * (1 + PHI ** -1 * (1 - smooth(0, PHI ** -1, d))), w = s === 3 ? R : 1, fk_ = (yy + FM) * FW + xx + FM, L = fl[fk_];
       let pr = r, pg = g, pb = b;
-      if (L) { const tc = crownTint(fcs[fk[fk_]]), q = TINT[L]; pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q; }
+      if (L) { const cr = fcs[fk[fk_]], tc = crownTint(cr), q = TINT[L]; pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q; }
+      if (cells) {
+        const cr = L ? fcs[fk[fk_]] : null;
+        cells[2 * c] |= (s | (L << 2) | ((cr ? cr.ti : 0) << 4)) << 24;
+        if (cr) cells[2 * c + 1] |= ents.plane(cr.tp) << 8;
+        continue;
+      }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
         const j = ((yy * R + dy) * T + xx * R + dx) * 4;
         px[j] = pr * f; px[j + 1] = pg * f; px[j + 2] = pb * f;
@@ -700,7 +763,7 @@ function chunk(ci, cj) {
   }
   for (let by = 0; by < 32; by++) for (let bx = 0; bx < 32; bx++) dgrid[by * 32 + bx] = dd[off + (by * 8 + 4) * N + bx * 8 + 4];
   const sites = habitats(x0, y0, hl, dd, off, oc, os, ow);
-  return { type: "chunk", ci, cj, px, work, dgrid, birds: Float32Array.from(birds), hl, sites, glints: Float32Array.from(glints) };
+  return { type: "chunk", ci, cj, px, cells, ents: ents && ents.rows(), work, dgrid, birds: Float32Array.from(birds), hl, sites, glints: Float32Array.from(glints) };
 }
 
 onmessage = (e) => {
@@ -709,15 +772,16 @@ onmessage = (e) => {
     S = m.sources; CORN = m.corners; VERT = m.vertical; HORZ = m.horizontal; MIDS = m.middles;
     AF = m.a; BF = m.b; CN = m.corner; K = m.colours;
     ({ A: ZA, D: ZD, CZ, CZ_WANDER: CZW } = m.zone);
-    GROUND = m.ground; R = m.R; KAPPA = m.kappa; TOKENS = m.tokens;
+    GROUND = m.ground; R = m.R; KAPPA = m.kappa; TOKENS = m.tokens; GLDATA = !!m.gl;
     postMessage({ type: "ready" });
   } else if (m.type === "chunk") {
     const out = chunk(m.ci, m.cj);
-    postMessage(out, [out.px.buffer, out.work.buffer, out.dgrid.buffer, out.birds.buffer, out.hl.buffer, out.glints.buffer]);
+    postMessage(out, buffersOf(out));
   }
 };
 </script>
 <script id="earth-worker" type="text/plain">__EARTH_WORKER__</script>
+<script id="ground-gl">__GROUND_GL__</script>
 
 <script>
 const PL = __PLANE__;
@@ -731,6 +795,9 @@ const MARGIN = 89, KEEP = 55, ASKING = 2;                       // cells kept li
 
 const stage = document.getElementById("stage"), cv = document.getElementById("field"), cx = cv.getContext("2d");
 const showAll = document.getElementById("show-all");
+// The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
+const GLG = /nogl/.test(location.hash) ? null
+  : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash) });
 
 function hash32(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; }
 function loadImage(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; }); }
@@ -763,13 +830,18 @@ for (const wk of workers) wk.w.onmessage = (e) => {
   const k = ck(m.ci, m.cj);
   asked.delete(k);
   if (!chunkWanted(m)) return;
-  const c = document.createElement("canvas");
-  c.width = c.height = N * R;
-  c.getContext("2d").putImageData(new ImageData(m.px, N * R, N * R), 0, 0);
+  let c = null;
+  if (m.px) {                                                     // pixels grown by the worker; else cells for the GPU
+    c = document.createElement("canvas");
+    c.width = c.height = N * R;
+    c.getContext("2d").putImageData(new ImageData(m.px, N * R, N * R), 0, 0);
+  }
   const old = chunks.get(k);                                      // the same ground in another month: it gives way
   if (old && old.spawned) { despawn(old); despawnLife(old); }
-  chunks.set(k, { i: m.ci, j: m.cj, canvas: c, work: m.work, dgrid: m.dgrid, birds: m.birds, hl: m.hl, sites: m.sites, glints: m.glints,
-                  born: performance.now(), id: nextId++, spawned: false, shade: null, shadeSel: null, prev: old ? old.canvas : null,
+  if (old) old.was = null;
+  chunks.set(k, { i: m.ci, j: m.cj, canvas: c, cells: m.cells, ents: m.ents, was: m.cells ? old || null : undefined,
+                  work: m.work, dgrid: m.dgrid, birds: m.birds, hl: m.hl, sites: m.sites, glints: m.glints,
+                  born: performance.now(), id: nextId++, spawned: false, shade: null, shadeSel: null, prev: old && old.canvas ? old.canvas : null,
                   wet: m.wet, sway: m.sway, crests: m.crests, coast: m.coast, sea: m.sea, leaves: m.leaves, month: m.month });
 };
 
@@ -798,7 +870,7 @@ async function ingredients() {
   for (const f of fields) transfer.push(f.buffer);
   const msg = { type: "init", sources, corners: PL.corners, vertical: PL.vertical, horizontal: PL.horizontal, middles: PL.middles,
                 a: fields.slice(0, K), b: fields.slice(K, 2 * K), corner: fields[2 * K], colours: K, zone: PL.zone,
-                ground: GROUND, R, kappa: REDUCED ? 0 : PHI ** -5, tokens: TOKENS };
+                ground: GROUND, R, kappa: REDUCED ? 0 : PHI ** -5, tokens: TOKENS, gl: !!GLG };
   return { msg, transfer };
 }
 ingredients().then(({ msg, transfer }) => {
@@ -1838,8 +1910,8 @@ function frame(now) {
   const list = wanted();
   tend(list);
   cx.globalAlpha = 1;
-  cx.fillStyle = `rgb(${GROUND})`;
-  cx.fillRect(0, 0, cv.width, cv.height);
+  if (GLG) { GLG.draw(now); cx.clearRect(0, 0, cv.width, cv.height); }   // the ground is painted under this canvas
+  else { cx.fillStyle = `rgb(${GROUND})`; cx.fillRect(0, 0, cv.width, cv.height); }
   cx.imageSmoothingEnabled = false;
   const T = N * R;
   for (const w of list) {
@@ -1847,10 +1919,12 @@ function frame(now) {
     if (!c) continue;
     const px = Math.round((c.i * N - vx) * R), py = Math.round((c.j * N - vy) * R);
     if (px >= cv.width || py >= cv.height || px + T <= 0 || py + T <= 0) continue;
-    const fade = REDUCED ? 1 : Math.min(1, (now - c.born) / FADE);         // new ground comes in
-    if (c.prev) { if (fade < 1) cx.drawImage(c.prev, px, py); else c.prev = null; }   // over the old, when there was one
-    cx.globalAlpha = fade;
-    cx.drawImage(c.canvas, px, py);
+    if (c.canvas) {
+      const fade = REDUCED ? 1 : Math.min(1, (now - c.born) / FADE);       // new ground comes in
+      if (c.prev) { if (fade < 1) cx.drawImage(c.prev, px, py); else c.prev = null; }   // over the old, when there was one
+      cx.globalAlpha = fade;
+      cx.drawImage(c.canvas, px, py);
+    }
     if (selWork !== null) cx.drawImage(shadeOf(c), px, py, T, T);
   }
   cx.globalAlpha = 1;
@@ -2001,7 +2075,9 @@ def main():
     priv = Path(args.private)
     pl = plane(priv / "plane")
     src, files = earth_scripts(Path(args.earth), priv) if args.earth else ({}, [])
+    gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
+                .replace("__GROUND_GL__", gpu)
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))

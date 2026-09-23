@@ -275,7 +275,9 @@ function crownTintE(c) {
     const key = crownKey(c);
     nearestPassages(c.x + wanderX(c.x, c.y), c.y + wanderY(c.x, c.y));
     const pal = passLook(PA, key).pal, h = h3(Math.floor(c.x), Math.floor(c.y), 541);
-    c.tint = c.shape === SHAPES.cone || c.shape === SHAPES.column ? pal[h & 1] : c.turns && c.phase === P_TURNING ? pal[2] : pal[h % 3];
+    c.ti = c.shape === SHAPES.cone || c.shape === SHAPES.column ? h & 1 : c.turns && c.phase === P_TURNING ? 2 : h % 3;
+    c.tp = PA; c.tkey = key;                                       // which colour, of which passage's palette
+    c.tint = pal[c.ti];
   }
   return c.tint;
 }
@@ -451,8 +453,8 @@ function earthChunk(ci, cj) {
 
   t1 = lap("drips", t1);
   // D. Each cell in its place's paintings, lit by the Earth over it, two pixels a cell.
-  const T = N * R, px = new Uint8ClampedArray(T * T * 4);
-  for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
+  const T = N * R, px = GLDATA ? null : new Uint8ClampedArray(T * T * 4), cells = GLDATA ? new Uint32Array(N * N * 2) : null, ents = GLDATA ? entryTable() : null;
+  if (px) for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
   const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), wet = new Uint8Array(N * N), off = (y0 - s0) * N, gm = [0, 0, 0];
   const birds = [], glints = [], sway = [], crests = [], coast = [], sea = [], leaves = [];
   const plant = new Uint16Array(N * N).fill(65535), ground = new Uint8Array(N * N);
@@ -466,12 +468,13 @@ function earthChunk(ci, cj) {
       wet[c] = wt; ground[c] = eSnowy[fk] && crownHere[k] < 0 ? 15 : eG[fk];
       if (crownHere[k] >= 0) plant[c] = ecs[crownHere[k]].plant;
       let r = oc[k * 3], g = oc[k * 3 + 1], b = oc[k * 3 + 2];
-      const P = pp[k], st = ps[k], ent = passLook(P, lk[k]);
+      const P = pp[k], st = ps[k], ent = passLook(P, lk[k]), even = EVEN.has(eG[fk]) || eSnowy[fk];
+      if (cells) { cells[2 * c] = cellWord(r, g, b, even ? 64 : 0); cells[2 * c + 1] = cellWord2(ents.earth(P, lk[k]), d, light[c]); }
       {
         // The place's painting laid over the cell, the soil's lightness choosing where in it the cell falls: nearly all
         // the way on calm ground, all the way out in the outskirts. Nocturnes sink as in chunk().
         let tl = Math.min(1, Math.max(0, (0.3 * r + 0.59 * g + 0.11 * b - E_L0) / (E_L1 - E_L0)));
-        if (EVEN.has(eG[fk]) || eSnowy[fk]) tl = 0.42 + (tl - 0.42) * PHI ** -1;
+        if (even) tl = 0.42 + (tl - 0.42) * PHI ** -1;
         const m = mappedPos(ent, tl, gm), q = q0 + (1 - q0) * st;
         r += (m[0] - r) * q; g += (m[1] - g) * q; b += (m[2] - b) * q;
         if (P.kind === NOCTURNE && st > 0) {
@@ -486,7 +489,7 @@ function earthChunk(ci, cj) {
       if (!s) {
         // A gap in the soil's weave shows the place's own darkest colour, not the bare ground under the plane.
         const dk2 = ent.pal[0], f0 = light[c];
-        for (let dy = 0; dy < R; dy++) for (let dx = 0; dx < R; dx++) {
+        if (px) for (let dy = 0; dy < R; dy++) for (let dx = 0; dx < R; dx++) {
           const j = ((yy * R + dy) * T + xx * R + dx) * 4;
           px[j] = dk2[0] * f0; px[j + 1] = dk2[1] * f0; px[j + 2] = dk2[2] * f0;
         }
@@ -494,12 +497,16 @@ function earthChunk(ci, cj) {
       }
       if (L >= CANOPY && u3(x, y, 401) < PHI ** -5 && glints.length < 6 * 987) glints.push(x + 0.5, y + 0.5, r + (255 - r) / PHI, g + (255 - g) / PHI, b + (255 - b) / PHI, ow[k]);
       const f = light[c] * KIND_KEY[P.kind] ** st * (1 + PHI ** -1 * (1 - smooth(0, PHI ** -1, d))), w = s === 3 ? R : 1;
-      let pr = r, pg = g, pb = b;
+      let pr = r, pg = g, pb = b, te = 0, ti = 0, over = 0;
       if (cn >= 0) {
         const cr = ecs[cn], tc = crownTintE(cr), q = TINT[Math.max(1, L)];
         pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q;
+        if (cells) { te = ents.earth(cr.tp, cr.tkey); ti = cr.ti; }
         // Snow on the sunward side of evergreen crowns.
-        if (eSnowy[fk] || eSn[fk] > PHI ** -2) if (lean[c] > 0 && u3(x, y, 1001) < eSn[fk] * PHI ** -1) { const sp = passLook(P, snowKey).pal[2]; pr = sp[0]; pg = sp[1]; pb = sp[2]; }
+        if (eSnowy[fk] || eSn[fk] > PHI ** -2) if (lean[c] > 0 && u3(x, y, 1001) < eSn[fk] * PHI ** -1) {
+          const sp = passLook(P, snowKey).pal[2]; pr = sp[0]; pg = sp[1]; pb = sp[2];
+          if (cells) { te = ents.earth(P, snowKey); ti = 2; over = 1; }
+        }
         if ((cr.shape === SHAPES.tussock || cr.shape === SHAPES.reed || cr.shape === SHAPES.cushion) && u3(x, y, 1005) < PHI ** -4 && sway.length < 6 * 987)
           sway.push(x + 0.5, y + 0.5, pr + (255 - pr) * PHI ** -2, pg + (255 - pg) * PHI ** -2, pb + (255 - pb) * PHI ** -2, ow[k]);
         if (cr.phase === P_TURNING && L >= 1 && u3(x, y, 1007) < PHI ** -6 && leaves.length < 6 * 377) leaves.push(x + 0.5, y + 0.5, tc[0], tc[1], tc[2], ow[k]);
@@ -512,6 +519,7 @@ function earthChunk(ci, cj) {
         }
       }
       if (eCrest[fk] && u3(x, y, 1013) < PHI ** -3 && crests.length < 5 * 987) crests.push(x + 0.5, y + 0.5, pr + (255 - pr) * PHI ** -2, pg + (255 - pg) * PHI ** -2, pb + (255 - pb) * PHI ** -2);
+      if (cells) { cells[2 * c] |= (s | ((cn >= 0 ? Math.max(1, L) : 0) << 2) | (ti << 4) | (over << 7)) << 24; cells[2 * c + 1] |= te << 8; continue; }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
         const j = ((yy * R + dy) * T + xx * R + dx) * 4;
         px[j] = pr * f; px[j + 1] = pg * f; px[j + 2] = pb * f;
@@ -525,7 +533,7 @@ function earthChunk(ci, cj) {
   const tall = [];
   for (const c of ecs) if (c.L >= 2 && c.x >= x0 && c.y >= y0 && c.x < x0 + N && c.y < y0 + N) tall.push(c.x, c.y, c.r, c.top, c.L, c.shape, c.c5, c.s5, c.c8, c.s8, c.plant);
   const F = (a) => Float32Array.from(a);
-  return { type: "chunk", ci, cj, px, work, dgrid, birds: F(birds), hl, sites, glints: F(glints), wet, sway: F(sway), crests: F(crests), coast: F(coast), sea: F(sea), leaves: F(leaves), plant, ground, tall: F(tall), month: E_M };
+  return { type: "chunk", ci, cj, px, cells, ents: ents && ents.rows(), work, dgrid, birds: F(birds), hl, sites, glints: F(glints), wet, sway: F(sway), crests: F(crests), coast: F(coast), sea: F(sea), leaves: F(leaves), plant, ground, tall: F(tall), month: E_M };
 }
 
 {
@@ -542,8 +550,7 @@ function earthChunk(ci, cj) {
     if (m.type === "month") { earthMonth(m.data); E_M = m.data.m; return; }
     if (m.type === "chunk" && EARTH_ON) {
       const out = earthChunk(m.ci, m.cj);
-      postMessage(out, [out.px.buffer, out.work.buffer, out.dgrid.buffer, out.birds.buffer, out.hl.buffer, out.glints.buffer, out.wet.buffer,
-                        out.sway.buffer, out.crests.buffer, out.coast.buffer, out.sea.buffer, out.leaves.buffer, out.plant.buffer, out.ground.buffer, out.tall.buffer]);
+      postMessage(out, buffersOf(out));
       return;
     }
     plain(e);
