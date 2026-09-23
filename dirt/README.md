@@ -143,6 +143,25 @@ processes take hold of it:
 Everything is a function of position on the plane, so no seams show between tiles or between grown pieces of
 ground.
 
+**Passages.** So that any window onto the plane is a composition, with big shapes of light and dark, a palette,
+and changes of texture, the ground also falls into passages, the way an abstract painting falls into passages.
+They sit on a jittered lattice 233 cells apart. Each passage takes the palette of the painting at its middle: that
+painting's three colours, turned as the ground there is turned and made φ times as saturated. The palette is
+laid over the ground as a gradient map, so it gives the hue while the ground keeps its own lights and darks.
+Calm ground takes φ⁻³ of the palette; the outskirts take φ⁻¹ of it. Each passage also has one character:
+
+| Character | Share | What it does |
+| --- | --- | --- |
+| mosaic | φ⁻² | Dots fuse into blocks as far as their depth allows, whatever stands over them, lit φ^½ as brightly. |
+| nocturne | φ⁻³ | All but the brightest dots sink nearly to black, and those shine out like stars. The canopy here takes flight φ times as readily. |
+| spray | φ⁻⁴ | Each cell takes its soil from a spot up to 8 cells away, in dots of mixed sizes with gaps between: an airbrushed speckle, lit φ^½ as brightly. |
+| weave | φ⁻⁴ | Dots never fuse: a fine textile. |
+| drip | φ⁻⁵ | Columns pixel-sort into drips from depth φ⁻³ out, not φ⁻¹. |
+
+The passages' edges wander up to 55 cells, smooth over 144. Where two passages meet, each cell belongs to one or
+the other by chance, the likelier the nearer it lies, across a band 55 cells deep: an overspray, as where two
+sprayed colours meet. Clearings are sunlit, up to φ times as brightly at the heart of a calm island.
+
 **The rainforest.** A forest stands over the ground, seen from above. Its crowns grow at three heights, each on a
 jittered lattice of its own, and each crown swells in five lobes and eight smaller ones:
 
@@ -177,7 +196,7 @@ back finds the same nests, swarms and flowers.
 | the floor | leaf-cutter ants | Columns run from each nest out to where the plants begin. The ants go out bare and come home each holding up a piece of a painting cut from where the trail ends. |
 | the floor | poison frogs | They sit, hop, and call in rings, each holding its call back when a neighbour is about to call, so they take turns. |
 | the floor | ferns | Fronds coil as spirals that tighten toward the tip and unroll from the base over about 16 seconds, opening leaflets as they go. They stand, wither, and grow again. |
-| far out on the floor | slime mould | 1,597 cells in a gap each follow the scent the others leave (Physarum, after Jeff Jones's model). They gather into glowing veins that join the brightest dots in the gap and keep reshaping. |
+| the floor and shrubs, from depth φ⁻² | slime mould | 987 cells pour out of the brightest dots in a gap, each following the scent the others leave (Physarum, after Jeff Jones's model), in thick, soft, luminous forms that keep joining up and reshaping. They are drawn solid where the scent is strong and as a speckle of overspray where it thins, like sprayed paint. |
 | the floor and shrubs, from depth φ⁻³ | coral snakes | Ringed three of the painting's brightest colour, one pale, three near black, one pale. They wind as they go. |
 | the understory, from depth φ⁻³ | fireflies | 144 to a swarm, each flashing by its own clock. A flash nudges those near it toward their own (pulse-coupled oscillators, after Mirollo and Strogatz), so flashes gather into waves and the swarm falls into flashing as one. |
 | the understory | blue morphos | An erratic, bobbing flight, flashing the painting's bluest colour as the wings open and dark undersides as they close. |
@@ -188,7 +207,7 @@ back finds the same nests, swarms and flowers.
 | above the emergents | macaws | Now and then a pair crosses from one emergent to another, long tails streaming, their shadows racing over the crowns. |
 | above the emergents | a harpy eagle | It circles an emergent near the viewer and is never seen, only its shadow crossing the forest. The flocks scatter from it. |
 
-**The flocks.** Each loose dot is a bird: up to 6,765 of them live around the view at any time, launched from the
+**The flocks.** Each loose dot is a bird: up to 10,946 of them live around the view at any time, launched from the
 canopy as it comes near and grounded again as it falls far behind. Each bird follows three rules toward the
 neighbours it can see within 8 cells, heeding at most 13 of them:
 
@@ -198,7 +217,9 @@ neighbours it can see within 8 cells, heeding at most 13 of them:
 
 Birds from the same painting are kin and pull φ times harder. Three hawks hunt wherever the viewer is. They are
 never drawn: a bird within 21 cells of one bolts at up to φ times its top speed, and the flock turns with it. The
-harpy eagle frightens them from 34 cells. A slow current runs underneath as a thermal. Over calm ground the birds
+harpy eagle frightens them from 34 cells. A slow current runs underneath as a thermal: five travelling waves,
+and an eddy in each 377-cell square, 89 cells across times φ^±½, turning one way or the other as it drifts, so
+the flocks wheel. Over calm ground the birds
 turn back outward, harder the deeper they stray. Trails fade by φ⁻⁶ a frame. With reduced motion set, nothing
 takes flight or moves: only the plants show, full grown and still. New ground appears at once, and swipes do not
 glide.

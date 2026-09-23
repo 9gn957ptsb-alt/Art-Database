@@ -18,6 +18,13 @@ of it. Every threshold and amount is a power of the golden ratio or a Fibonacci 
   phi^-1           columns pixel-sort by lightness into drips
   phi^-1/2         the ground folds into a five-fold kaleidoscope about its island
 
+Out from the islands the ground also falls into passages about 233 cells across, as an abstract painting
+falls into passages, so that any window onto the plane holds a few: big shapes of light and dark, each
+passage in the palette of one painting (its three colours laid over the ground's lights and darks), and
+each of one character: a bright mosaic of fused blocks, a nocturne sunk nearly to black with its
+brightest dots shining out, an airbrushed spray, a fine weave, or pixel-sorted drips. Their edges wander,
+and where two meet, each cell belongs to one or the other by chance: an overspray.
+
 A rainforest stands over the ground. Crowns of three heights (shrubs, the canopy, and emergents above
 it) grow on lattices of their own, the calm islands are clearings, and the forest closes in and rises
 toward the outskirts. It lights the ground from the upper left, with shadows and dark gaps between
@@ -26,13 +33,15 @@ stands tall, so the nearer the eye, the coarser the pixel. Life keeps to its nic
 where nothing taller stands over it:
 
   the floor        leaf-cutter ants carrying painting pieces home, poison frogs, ferns unrolling from
-                   fiddleheads, and far out, slime mould joining the brightest dots in glowing veins
+                   fiddleheads, and far out, slime mould pouring from the brightest dots in soft,
+                   luminous forms, like sprayed paint
   the understory   coral snakes ringed in a painting's colours, fireflies that fall into flashing as
                    one, blue morphos
   the crowns       flowers opening florets by the golden angle, hummingbirds darting between them,
                    monkey troops leaping crown to crown, wind turning the leaves pale in passing bands
-  above            flocks of data pigment, loose dots from the canopy flying as kin, with three unseen
-                   hawks; macaw pairs crossing between emergents; a harpy eagle seen only as its shadow
+  above            flocks of data pigment, loose dots from the canopy flying as kin, wheeling in the
+                   eddies of a slow current, with three unseen hawks; macaw pairs crossing between
+                   emergents; a harpy eagle seen only as its shadow
 
 Every creature wears a painting's colours, turned as the ground where it lives is turned. Everything in
 the ground is a function of position, so no seams show and going back finds the same ground and the
@@ -317,6 +326,76 @@ function sampleAt(qx, qy) {
 const COARSEST = [1, 3, 5, 8];                       // the largest block each stratum fuses into
 const blockOf = (d) => (d < PHI ** -2 ? 1 : d < PHI ** -2 + PHI ** -4 ? 2 : d < PHI ** -2 + 2 * PHI ** -4 ? 3 : d < PHI ** -2 + 3 * PHI ** -4 ? 5 : 8);
 
+// ---- passages -----------------------------------------------------------------------------------
+// Out from the calm islands the ground falls into passages about 233 cells across, as an abstract
+// painting falls into passages. Each has a character of its own and the palette of one painting: the
+// three colours of the painting at its middle, turned as the ground there is turned, laid over the
+// ground's lights and darks as a gradient map. The passages' edges wander, and where two meet, each
+// cell belongs to one or the other by chance, the likelier the nearer: an overspray, as where two
+// sprayed colours meet.
+const PASS = 233, OVERSPRAY = 55, WANDER = 55;
+const MOSAIC = 0, NOCTURNE = 1, SPRAY = 2, WEAVE = 3, DRIP = 4;
+// Their shares: mosaic phi^-2, nocturne phi^-3, spray and weave phi^-4 each, drip phi^-5. They sum to 1.
+const KIND_UPTO = [PHI ** -2, PHI ** -1, PHI ** -1 + PHI ** -4, 1 - PHI ** -5, 1];
+const KIND_CAP = [8, 2, 1, 1, 2];                    // the largest block each character lets dots fuse into
+const KIND_KEY = [PHI ** 0.5, 1, PHI ** 0.5, 1, 1];  // how brightly each character is lit: mosaic and spray are high-keyed
+const KIND_BIRDS = [1, PHI, 0, 0, PHI ** -1];        // how readily each character's canopy takes flight
+const lumOf = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+const passCache = new Map();
+/** The passage of lattice square (i, j): its middle, its character, its painting and palette. */
+function passage(i, j) {
+  const k = key2(i, j);
+  let p = passCache.get(k);
+  if (!p) {
+    const x = (i + u3(i, j, 501)) * PASS, y = (j + u3(i, j, 503)) * PASS, u = u3(i, j, 509);
+    let kind = 0;
+    while (u >= KIND_UPTO[kind]) kind++;
+    const cx = Math.floor(x), cy = Math.floor(y), d = depth(cx, cy);
+    sourceOf(cx, cy, d);
+    const w = sampleAt(QX, QY).work[SI], turn = turnAt(cx, cy, d);
+    // Its palette: the painting's colours, turned, and phi times as saturated.
+    const pal = (TOKENS[w] || TOKENS[0]).map((c) => {
+      const t = turnRGB(c[0], c[1], c[2], turn, [0, 0, 0]), l = lumOf(t);
+      return t.map((v) => Math.max(0, Math.min(255, l + (v - l) * PHI)));
+    }).sort((a, b) => lumOf(a) - lumOf(b));
+    while (pal.length < 3) pal.push(pal[pal.length - 1]);
+    // The gradient map's stops: its darkest colour sunk, its three colours, its lightest lifted.
+    const stops = [pal[0].map((v) => v * PHI ** -2), pal[0], pal[1], pal[2], pal[2].map((v) => v + (255 - v) / PHI)];
+    p = { x, y, kind, pal, stops, at: stops.map((c, n) => (n === 0 ? 0 : n === 4 ? 255 : lumOf(c))), w };
+    if (passCache.size >= 4181) passCache.clear();
+    passCache.set(k, p);
+  }
+  return p;
+}
+/** The colour at lightness l in a passage's gradient map, into out. */
+function mapped(p, l, out) {
+  const at = p.at, st = p.stops;
+  let n = 0;
+  while (n < 3 && l > at[n + 1]) n++;
+  const a = st[n], b = st[n + 1], t = Math.min(1, Math.max(0, (l - at[n]) / Math.max(1, at[n + 1] - at[n])));
+  out[0] = a[0] + (b[0] - a[0]) * t; out[1] = a[1] + (b[1] - a[1]) * t; out[2] = a[2] + (b[2] - a[2]) * t;
+  return out;
+}
+/** How the passages' edges wander: up to 55 cells, smooth over 144. */
+const wanderX = (x, y) => WANDER * (2 * vnoise(x, y, 144, 7) - 1), wanderY = (x, y) => WANDER * (2 * vnoise(x, y, 144, 11) - 1);
+let PA = null, PB = null, PE = 0, pI = NaN, pJ = NaN;
+const pNine = new Array(9);
+/** The two passages nearest the wandered point (wx, wy). PE: how far into the nearer it lies, 1 from 55 cells in. */
+function nearestPassages(wx, wy) {
+  const i0 = Math.floor(wx / PASS), j0 = Math.floor(wy / PASS);
+  if (i0 !== pI || j0 !== pJ) {
+    let n = 0;
+    for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) pNine[n++] = passage(i, j);
+    pI = i0; pJ = j0;
+  }
+  let d1 = Infinity, d2 = Infinity;
+  for (let n = 0; n < 9; n++) {
+    const p = pNine[n], d = (wx - p.x) ** 2 + (wy - p.y) ** 2;
+    if (d < d1) { d2 = d1; PB = PA; d1 = d; PA = p; } else if (d < d2) { d2 = d; PB = p; }
+  }
+  PE = Math.min(1, (Math.sqrt(d2) - Math.sqrt(d1)) / (2 * OVERSPRAY));
+}
+
 /** Torn rows: bands 5 rows tall and 233 cells long, a phi^-2 share of them pulled sideways. */
 function tearAt(x, y) {
   const band = Math.floor(y / 5), span = Math.floor(x / 233);
@@ -414,17 +493,14 @@ function forest(x0, y0) {
 }
 
 /**
- * A crown's own colour: the most colourful of the three colours of the painting at its middle, turned
- * as the ground there is turned. Seen from above, a rainforest's crowns are a mosaic of colours, a few
- * in flower; each crown here leans its dots toward its colour, emergents most.
+ * A crown's own colour: one of the three colours of the passage it stands in. Seen from above, a
+ * rainforest's crowns are a mosaic of colours, a few in flower; each crown here leans its dots toward
+ * its colour, emergents most.
  */
 function crownTint(c) {
   if (!c.tint) {
-    const x = Math.floor(c.x), y = Math.floor(c.y), d = depth(x, y);
-    sourceOf(x, y, d);
-    const t = sampleAt(QX, QY), tok = TOKENS[t.work[SI]] || TOKENS[0];
-    const best = tok.reduce((a, b) => (chroma(b) > chroma(a) ? b : a));
-    c.tint = turnRGB(best[0], best[1], best[2], turnAt(x, y, d));
+    nearestPassages(c.x + wanderX(c.x, c.y), c.y + wanderY(c.x, c.y));
+    c.tint = PA.pal[h3(Math.floor(c.x), Math.floor(c.y), 541) % 3];
   }
   return c.tint;
 }
@@ -437,7 +513,7 @@ const TINT = [0, PHI ** -3, PHI ** -2, PHI ** -1];       // how far each stratum
 const HABITATS = [
   // kind         lattice  salt  odds        strata  from depth
   ["ants",        144,     301,  PHI ** -2,  1,      0],
-  ["mould",       377,     307,  PHI ** -1,  1,      PHI ** -1],
+  ["mould",       233,     307,  PHI ** -1,  3,      PHI ** -2],
   ["frogs",       89,      311,  PHI ** -2,  1,      0],
   ["ferns",       89,      313,  PHI ** -1,  1,      0],
   ["snakes",      233,     317,  PHI ** -1,  3,      PHI ** -3],
@@ -482,12 +558,12 @@ function habitats(x0, y0, hl, dd, off, oc, os, ow) {
         }
         const site = { kind, x: sx + 0.5, y: sy + 0.5, seed: h3(i, j, salt + 3), w, turn: turnAt(sx, sy, d), d, h: (hl[k] & 63) / 63 };
         if (kind === "mould") {
-          // Food: the brightest dots on the floor within 55 cells, which the mould will join up.
+          // Food: the brightest dots under the canopy within 55 cells, which the mould will join up.
           const lum = [];
           for (let y = Math.max(y0, sy - 55); y < Math.min(y0 + N, sy + 56); y++)
             for (let x = Math.max(x0, sx - 55); x < Math.min(x0 + N, sx + 56); x++) {
               const kk = (y - y0) * N + x - x0;
-              if ((hl[kk] >> 6) || !os[off + kk] || Math.hypot(x - sx, y - sy) > 55) continue;
+              if ((hl[kk] >> 6) > SHRUB || !os[off + kk] || Math.hypot(x - sx, y - sy) > 55) continue;
               lum.push([0.3 * oc[(off + kk) * 3] + 0.59 * oc[(off + kk) * 3 + 1] + 0.11 * oc[(off + kk) * 3 + 2], x + 0.5, y + 0.5]);
             }
           lum.sort((a, b) => b[0] - a[0]);
@@ -512,9 +588,16 @@ function chunk(ci, cj) {
   // Drips are sorted within 21-cell segments fixed on the plane, so rows are grown for whole segments.
   const s0 = Math.floor(y0 / SEG) * SEG, s1 = (Math.floor((y0 + N - 1) / SEG) + 1) * SEG, HH = s1 - s0;
   const oc = new Uint8Array(N * HH * 3), os = new Uint8Array(N * HH), ow = new Uint16Array(N * HH), dd = new Float32Array(N * HH);
+  const pp = new Array(N * HH), ps = new Float32Array(N * HH), dk = new Uint8Array(N * HH);   // passage, its strength, drips
 
-  // A. The forest over this ground, and a margin round it.
+  // A. The forest over this ground, and a margin round it; and the passages' wandering edges, sampled
+  //    every 8 cells on the plane's own grid and eased between.
   const { light, hl } = forest(x0, y0);
+  const gx0 = x0 / 8 - 1, gy0 = Math.floor(s0 / 8) - 1, GW = N / 8 + 3, GH = Math.ceil(HH / 8) + 3;
+  const WX = new Float32Array(GW * GH), WY = new Float32Array(GW * GH);
+  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+    WX[gy * GW + gx] = wanderX((gx0 + gx) * 8, (gy0 + gy) * 8); WY[gy * GW + gx] = wanderY((gx0 + gx) * 8, (gy0 + gy) * 8);
+  }
 
   // B. Where each cell takes its soil from: folded, torn and fused, more so the farther out it is. Dots
   //    fuse into blocks only as far as the forest there stands tall: nearer the eye, coarser the pixel,
@@ -524,27 +607,45 @@ function chunk(ci, cj) {
     for (let xx = 0; xx < N; xx++) {
       const x = x0 + xx, k = yy * N + xx, d = depth(x, y);
       dd[k] = d;
-      const b = Math.min(blockOf(d), COARSEST[fl[(y - y0 + FM) * FW + x - x0 + FM]]), bx = x - mod(x, b), by = y - mod(y, b);
-      sourceOf(bx, by, b === 1 ? d : depth(bx, by));
+      // The passage this cell belongs to, and how strongly: not at all on calm ground, fully from phi^-1 out.
+      const fx = x / 8 - gx0, fy = y / 8 - gy0, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy, g = iy * GW + ix;
+      nearestPassages(x + (WX[g] * (1 - tx) + WX[g + 1] * tx) * (1 - ty) + (WX[g + GW] * (1 - tx) + WX[g + GW + 1] * tx) * ty,
+                      y + (WY[g] * (1 - tx) + WY[g + 1] * tx) * (1 - ty) + (WY[g + GW] * (1 - tx) + WY[g + GW + 1] * tx) * ty);
+      const P = u3(x, y, 523) < 0.5 + 0.5 * PE * PE * (3 - 2 * PE) ? PA : PB, st = smooth(PHI ** -3, PHI ** -1, d);
+      pp[k] = P; ps[k] = st;
+      dk[k] = d >= (P.kind === DRIP ? PHI ** -3 : PHI ** -1) ? 1 : 0;
+      // A mosaic passage fuses its dots as far as its depth allows, whatever stands over it; elsewhere the
+      // forest sets how far they fuse.
+      const b = Math.min(blockOf(d), st > 0 && P.kind === MOSAIC ? 8 : COARSEST[fl[(y - y0 + FM) * FW + x - x0 + FM]], st > 0 ? KIND_CAP[P.kind] : 8);
+      const bx = x - mod(x, b), by = y - mod(y, b);
+      // A spray passage takes each cell's soil from a spot up to 8 cells off: an airbrushed speckle.
+      let qx = bx, qy = by;
+      if (P.kind === SPRAY && st > 0) {
+        const a = u3(x, y, 531) * 2 * Math.PI, r = 8 * st * Math.sqrt(u3(x, y, 533));
+        qx += Math.round(Math.cos(a) * r); qy += Math.round(Math.sin(a) * r);
+      }
+      sourceOf(qx, qy, b === 1 ? d : depth(bx, by));
       const t = sampleAt(QX, QY), sz = t.size[SI];
       oc[k * 3] = t.col[SI * 3]; oc[k * 3 + 1] = t.col[SI * 3 + 1]; oc[k * 3 + 2] = t.col[SI * 3 + 2];
       ow[k] = t.work[SI];
       // A fused block is one square dot, with a one-cell gap on its far sides.
       os[k] = b === 1 ? sz : (x - bx === b - 1 || y - by === b - 1 || !sz) ? 0 : 3;
+      if (P.kind === SPRAY && st > 0 && os[k]) os[k] = u3(x, y, 537) < PHI ** -3 * st ? 0 : u3(x, y, 539) < PHI ** -1 ? 1 : 3;
     }
   }
 
-  // C. Drips: past phi^-1, runs of lit cells in a column are sorted by lightness, within their segment.
-  const lum = (r, g, b) => 0.3 * r + 0.59 * g + 0.11 * b, lim = PHI ** -1;
+  // C. Drips: past phi^-1 (past phi^-3 in a drip passage), runs of lit cells in a column are sorted by
+  //    lightness, within their segment.
+  const lum = (r, g, b) => 0.3 * r + 0.59 * g + 0.11 * b;
   for (let xx = 0; xx < N; xx++) {
     const x = x0 + xx, down = u3(x, 0, 29) < 0.5;
     for (let seg = 0; seg < HH; seg += SEG) {
       let yy = seg;
       while (yy < seg + SEG) {
         const k = yy * N + xx;
-        if (!os[k] || dd[k] < lim || vnoise(x, s0 + yy, 55, 2) < PHI ** -2) { yy++; continue; }
+        if (!os[k] || !dk[k] || (pp[k].kind !== DRIP && vnoise(x, s0 + yy, 55, 2) < PHI ** -2)) { yy++; continue; }
         const run = [];
-        while (yy < seg + SEG && os[yy * N + xx] && dd[yy * N + xx] >= lim) { run.push(yy * N + xx); yy++; }
+        while (yy < seg + SEG && os[yy * N + xx] && dk[yy * N + xx]) { run.push(yy * N + xx); yy++; }
         if (run.length < 2) continue;
         const items = run.map((j) => [lum(oc[j * 3], oc[j * 3 + 1], oc[j * 3 + 2]), oc[j * 3], oc[j * 3 + 1], oc[j * 3 + 2], ow[j]]);
         items.sort((a, b) => (down ? a[0] - b[0] : b[0] - a[0]));
@@ -558,20 +659,34 @@ function chunk(ci, cj) {
   //    can catch the wind and show pale.
   const T = N * R, px = new Uint8ClampedArray(T * T * 4);
   for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
-  const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], glints = [], off = (y0 - s0) * N, rgb = [0, 0, 0];
+  const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], glints = [], off = (y0 - s0) * N, rgb = [0, 0, 0], gm = [0, 0, 0];
   for (let yy = 0; yy < N; yy++) {
     const y = y0 + yy;
     for (let xx = 0; xx < N; xx++) {
       const x = x0 + xx, k = off + yy * N + xx, c = yy * N + xx, d = dd[k];
       work[c] = ow[k];
-      const [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
+      let [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
+      const P = pp[k], st = ps[k];
+      {
+        // The passage's palette laid over this cell: the colour its lightness maps to, brought back to
+        // that lightness, so the palette gives the hue and the ground keeps its lights and darks. Calm
+        // ground takes a wash of it, phi^-3 of the way; the outskirts phi^-1 of the way. In a nocturne all
+        // but the brightest sink nearly to black, and those shine out like stars.
+        const l = 0.3 * r + 0.59 * g + 0.11 * b, m = mapped(P, l, gm), f = l / Math.max(1, lumOf(m)), q = PHI ** -1 * (PHI ** -2 + (1 - PHI ** -2) * st);
+        r += (Math.min(255, m[0] * f) - r) * q; g += (Math.min(255, m[1] * f) - g) * q; b += (Math.min(255, m[2] * f) - b) * q;
+        if (P.kind === NOCTURNE && st > 0) {
+          if (0.3 * r + 0.59 * g + 0.11 * b < 144) { const f = 1 - (1 - PHI ** -4) * st; r *= f; g *= f; b *= f; }
+          else { const k2 = PHI ** -2 * st; r += (255 - r) * k2; g += (255 - g) * k2; b += (255 - b) * k2; }
+        }
+      }
       oc[k * 3] = r; oc[k * 3 + 1] = g; oc[k * 3 + 2] = b;
       let s = os[k];
-      if (s && KAPPA && (hl[c] >> 6) >= CANOPY && u3(x, y, 37) < (smooth(PHI ** -2, 1, d) / PHI) * KAPPA) { birds.push(x + 0.5, y + 0.5, r, g, b, ow[k]); s = 0; }
+      if (s && KAPPA && (hl[c] >> 6) >= CANOPY && u3(x, y, 37) < (smooth(PHI ** -2, 1, d) / PHI) * KAPPA * KIND_BIRDS[P.kind]) { birds.push(x + 0.5, y + 0.5, r, g, b, ow[k]); s = 0; }
       if (!s) continue;
       if ((hl[c] >> 6) >= CANOPY && u3(x, y, 401) < PHI ** -5 && glints.length < 6 * 987)
         glints.push(x + 0.5, y + 0.5, r + (255 - r) / PHI, g + (255 - g) / PHI, b + (255 - b) / PHI, ow[k]);
-      const f = light[c], w = s === 3 ? R : 1, fk_ = (yy + FM) * FW + xx + FM, L = fl[fk_];
+      // Lit by the forest, keyed by the passage, and sunlit in a clearing, most at its heart.
+      const f = light[c] * KIND_KEY[P.kind] ** st * (1 + PHI ** -1 * (1 - smooth(0, PHI ** -1, d))), w = s === 3 ? R : 1, fk_ = (yy + FM) * FW + xx + FM, L = fl[fk_];
       let pr = r, pg = g, pb = b;
       if (L) { const tc = crownTint(fcs[fk[fk_]]), q = TINT[L]; pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q; }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
@@ -730,7 +845,7 @@ function tend(list) {
 
 // ---- the birds --------------------------------------------------------------------------------
 
-const CAP = 6765, HAWKS = 3;                                    // birds at most, and unseen hawks (Fibonacci)
+const CAP = 10946, HAWKS = 3;                                   // birds at most, and unseen hawks (Fibonacci)
 const SEE = 8, NEAR = 3, FEAR = 21, LOOK = 13;                  // cells: sight, personal space, fear; neighbours heeded
 const VMAX = 2, VMIN = 1 / PHI, PANIC = VMAX * PHI;             // cells a frame
 const BX = new Float32Array(CAP), BY = new Float32Array(CAP), BVX = new Float32Array(CAP), BVY = new Float32Array(CAP);
@@ -744,6 +859,35 @@ const waves = [89, 144, 233, 377, 610].map((lambda) => {
   return { kx: k * Math.cos(a), ky: k * Math.sin(a), amp: lambda / (2 * Math.PI), w: (Math.random() - 0.5) * PHI ** -5, ph: Math.random() * 2 * Math.PI };
 });
 { const norm = waves.reduce((s, v) => s + v.amp * Math.hypot(v.kx, v.ky), 0); waves.forEach((v) => (v.amp /= norm)); }
+// And eddies: one in each 377-cell square, 89 cells across, turning one way or the other as it drifts,
+// at most phi times as fast as the waves flow, so the flocks wheel. The whole current is worked out on
+// a grid 21 cells apart over the live ground each frame, and eased between.
+const EDDY = 377, EDDY_R = 89, CG = 21, SPIN = PHI * EDDY_R * Math.sqrt(Math.E / 2);   // eddies are 89 cells across times phi^+-1/2
+let curU = new Float32Array(0), curV = new Float32Array(0), cgx0 = 0, cgy0 = 0, CGW = 0;
+function currentField(t, box) {
+  cgx0 = Math.floor(box.x0 / CG); cgy0 = Math.floor(box.y0 / CG);
+  CGW = Math.ceil((box.x1 - box.x0) / CG) + 2;
+  const CGH = Math.ceil((box.y1 - box.y0) / CG) + 2, far = 3 * EDDY_R, eddies = [];
+  if (curU.length < CGW * CGH) { curU = new Float32Array(CGW * CGH); curV = new Float32Array(CGW * CGH); }
+  for (let j = Math.floor((box.y0 - far) / EDDY); j <= Math.floor((box.y1 + far) / EDDY); j++)
+    for (let i = Math.floor((box.x0 - far) / EDDY); i <= Math.floor((box.x1 + far) / EDDY); i++) {
+      const a = u3(i, j, 603) * 2 * Math.PI + t * PHI ** -8, r = EDDY_R * PHI ** (u3(i, j, 605) - 0.5);   // each its own size and strength
+      eddies.push((i + 0.5 + (u3(i, j, 601) - 0.5) / PHI) * EDDY + Math.cos(a) * 55, (j + 0.5 + (u3(i, j, 602) - 0.5) / PHI) * EDDY + Math.sin(a) * 55,
+                  (u3(i, j, 607) < 0.5 ? -1 : 1) * (PHI ** -1 + (1 - PHI ** -1) * u3(i, j, 609)) * SPIN * (r / EDDY_R) * 2 / (r * r), r * r);
+    }
+  for (let gy = 0; gy < CGH; gy++) for (let gx = 0; gx < CGW; gx++) {
+    const x = (cgx0 + gx) * CG, y = (cgy0 + gy) * CG;
+    let u = 0, v = 0;
+    for (const w of waves) { const c = w.amp * Math.cos(w.kx * x + w.ky * y + w.w * t + w.ph); u += w.ky * c; v -= w.kx * c; }
+    for (let e = 0; e < eddies.length; e += 4) {
+      const dx = x - eddies[e], dy = y - eddies[e + 1], r2 = dx * dx + dy * dy;
+      if (r2 > far * far) continue;
+      const q = eddies[e + 2] * Math.exp(-r2 / eddies[e + 3]);
+      u -= dy * q; v += dx * q;
+    }
+    curU[gy * CGW + gx] = u; curV[gy * CGW + gx] = v;
+  }
+}
 
 function spawn(c) {
   const b = c.birds;
@@ -773,9 +917,11 @@ function despawn(c) {
 }
 
 /** How far out a place is, from the grown ground's depth grid (8 cells a sample). */
+let dKey = NaN, dGrid = null;
 function dAt(x, y) {
-  const c = chunks.get(ck(Math.floor(x / N), Math.floor(y / N)));
-  return c ? c.dgrid[Math.floor(mod(y, N) / 8) * 32 + Math.floor(mod(x, N) / 8)] : 1;
+  const k = ck(Math.floor(x / N), Math.floor(y / N));
+  if (k !== dKey || !dGrid) { const c = chunks.get(k); dGrid = c ? c.dgrid : null; dKey = k; }
+  return dGrid ? dGrid[Math.floor(mod(y, N) / 8) * 32 + Math.floor(mod(x, N) / 8)] : 1;
 }
 
 // The trails: one pixel a cell, fixed to the plane, shifted as the view moves.
@@ -806,8 +952,10 @@ function shiftTrail(nx, ny) {
 }
 
 function flow(t, box) {
-  const fade = 1 - PHI ** -6;                                     // long, soft trails
-  for (let j = 3; j < trailPx.length; j += 4) if (trailPx[j]) trailPx[j] = trailPx[j] * fade;
+  // Long, soft trails, fading by phi^-6 a frame: every other row each frame, by the square of that.
+  const fade = (1 - PHI ** -6) ** 2, row = TW * 4;
+  for (let y = t & 1; y < TH; y += 2) for (let j = y * row + 3, e = j + row; j < e; j += 4) if (trailPx[j]) trailPx[j] = trailPx[j] * fade;
+  currentField(t, box);
 
   // Where everyone is: a bucket grid a sight-length across over the live ground, rebuilt each frame.
   const gx0 = Math.floor(box.x0 / SEE), gy0 = Math.floor(box.y0 / SEE);
@@ -859,8 +1007,9 @@ function flow(t, box) {
       vx_ += (cx0 / wsum) * PHI ** -5; vy_ += (cy0 / wsum) * PHI ** -5;              // cohesion
     }
     vx_ += sx * PHI ** -1; vy_ += sy * PHI ** -1;                                      // separation
-    let u = 0, v = 0;                                                                   // the current, a thermal to ride
-    for (const w of waves) { const c = w.amp * Math.cos(w.kx * x + w.ky * y + w.w * t + w.ph); u += w.ky * c; v -= w.kx * c; }
+    const fx = x / CG - cgx0, fy = y / CG - cgy0, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy, gk = iy * CGW + ix;
+    const u = (curU[gk] * (1 - tx) + curU[gk + 1] * tx) * (1 - ty) + (curU[gk + CGW] * (1 - tx) + curU[gk + CGW + 1] * tx) * ty;   // the current,
+    const v = (curV[gk] * (1 - tx) + curV[gk + 1] * tx) * (1 - ty) + (curV[gk + CGW] * (1 - tx) + curV[gk + CGW + 1] * tx) * ty;   // a thermal to ride
     vx_ += u * PHI ** -3 * 21; vy_ += v * PHI ** -3 * 21;
     let fled = false;                                                                   // fear
     for (const hk of hawks) {
@@ -1055,23 +1204,23 @@ LIFE.ants = {
   },
 };
 
-// Slime mould, far out in the gaps of the forest floor: 1,597 cells scattered over a gap, each following
-// the scent the others leave (Physarum, after Jeff Jones's model). They gather into glowing veins that
-// join up the brightest dots in the gap, and the veins keep reshaping.
+// Slime mould, far out on the low ground under the canopy: 987 cells, each following the scent the
+// others leave (Physarum, after Jeff Jones's model). It pours out of the brightest dots in its gap in
+// thick, soft, luminous forms, like paint sprayed from a can, and keeps joining them up and reshaping.
 LIFE.mould = {
   list: [],
   spawn(s) {
     const RP = 55, D = 2 * RP + 1, P = paletteOf(s.w, s.turn);
     return { s, x: s.x, y: s.y, x0: Math.floor(s.x) - RP, y0: Math.floor(s.y) - RP, D, wall: null, glow: lift(P.light, PHI ** -2), w: s.w, live: false };
   },
-  /** Lay the patch out once the ground all round it has grown: its walls are wherever plants stand. */
+  /** Lay the patch out once the ground all round it has grown: walls wherever the canopy stands over it. */
   settle(m) {
     const { D, x0, y0, s } = m, RP = (D - 1) / 2;
     for (const [dx, dy] of [[0, 0], [D, 0], [0, D], [D, D]]) if (!chunks.has(ck(Math.floor((x0 + dx) / N), Math.floor((y0 + dy) / N)))) return false;
     const wall = new Uint8Array(D * D);
     for (let j = 0; j < D; j++) for (let i = 0; i < D; i++) {
       const edge = RP * (1 - PHI ** -2 * vnoise(x0 + i, y0 + j, 13, 5));
-      wall[j * D + i] = Math.hypot(i - RP, j - RP) >= edge || forestAt(x0 + i, y0 + j) >> 6 !== FLOOR ? 1 : 0;
+      wall[j * D + i] = Math.hypot(i - RP, j - RP) >= edge || forestAt(x0 + i, y0 + j) >> 6 >= CANOPY ? 1 : 0;
     }
     const food = [];
     for (let f = 0; f < s.food.length; f += 2) {
@@ -1079,23 +1228,21 @@ LIFE.mould = {
       if (i >= 0 && j >= 0 && i < D && j < D && !wall[j * D + i]) food.push(j * D + i);
     }
     if (!food.length && !wall[RP * D + RP]) food.push(RP * D + RP);
-    const open = [];
-    for (let k = 0; k < D * D; k++) if (!wall[k]) open.push(k);
-    const A = open.length ? 1597 : 0, ax = new Float32Array(A), ay = new Float32Array(A), ah = new Float32Array(A);
-    for (let a = 0; a < A; a++) { const k = open[Math.floor(rnd() * open.length)]; ax[a] = (k % D) + rnd(); ay[a] = Math.floor(k / D) + rnd(); ah[a] = rnd() * TAU; }
+    const A = food.length ? 987 : 0, ax = new Float32Array(A), ay = new Float32Array(A), ah = new Float32Array(A);
+    for (let a = 0; a < A; a++) { const f = food[a % food.length]; ax[a] = (f % D) + rnd(); ay[a] = Math.floor(f / D) + rnd(); ah[a] = rnd() * TAU; }
     Object.assign(m, { wall, food, A, ax, ay, ah, trail: new Float32Array(D * D), tmp: new Float32Array(D * D) });
     return true;
   },
   step() {
-    // Only the patches nearest the middle of the view grow, three at most.
+    // Only the patches nearest the middle of the view grow, five at most.
     const mx = vx + VW / 2, my = vy + VH / 2, near = this.list
       .filter((m) => m.x > vx - 55 && m.x < vx + VW + 55 && m.y > vy - 55 && m.y < vy + VH + 55)
-      .sort((a, b) => Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my)).slice(0, 3);
+      .sort((a, b) => Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my)).slice(0, 5);
     for (const m of this.list) m.live = near.includes(m) && (m.wall !== null || this.settle(m));
     for (const m of near) if (m.live) this.grow(m);
   },
   grow(m) {
-    const { D, wall, trail, tmp, ax, ay, ah } = m, SO = 5, SA = GOLDEN_ANGLE / 4, RA = GOLDEN_ANGLE / 4;
+    const { D, wall, trail, tmp, ax, ay, ah } = m, SO = 8, SA = GOLDEN_ANGLE / 3, RA = GOLDEN_ANGLE / 5, SS = PHI ** -1;
     const sense = (x, y) => { const i = Math.floor(x), j = Math.floor(y); return i < 0 || j < 0 || i >= D || j >= D || wall[j * D + i] ? -1 : trail[j * D + i]; };
     for (let a = 0; a < m.A; a++) {
       const x = ax[a], y = ay[a];
@@ -1103,25 +1250,30 @@ LIFE.mould = {
       const F = sense(x + Math.cos(h) * SO, y + Math.sin(h) * SO);
       const L = sense(x + Math.cos(h - SA) * SO, y + Math.sin(h - SA) * SO), Rt = sense(x + Math.cos(h + SA) * SO, y + Math.sin(h + SA) * SO);
       if (F < L || F < Rt) h += F < L && F < Rt ? (rnd() < 0.5 ? -RA : RA) : L > Rt ? -RA : RA;
-      const nx = x + Math.cos(h), ny = y + Math.sin(h), i = Math.floor(nx), j = Math.floor(ny);
+      const nx = x + Math.cos(h) * SS, ny = y + Math.sin(h) * SS, i = Math.floor(nx), j = Math.floor(ny);
       if (i < 0 || j < 0 || i >= D || j >= D || wall[j * D + i]) { ah[a] = rnd() * TAU; continue; }
       ax[a] = nx; ay[a] = ny; ah[a] = h; trail[j * D + i] += 1;
     }
-    for (const f of m.food) trail[f] += PHI ** 2;
-    // The scent spreads a little into the eight cells round each, and fades.
+    for (const f of m.food) trail[f] += PHI ** 3;
+    // The scent spreads to the eight cells round each and fades.
+    const keep = (1 - PHI ** -5) / 9;
     for (let j = 1; j < D - 1; j++) for (let i = 1; i < D - 1; i++) {
-      const k = j * D + i, t = trail[k];
-      tmp[k] = wall[k] ? 0 : (t + ((trail[k - D - 1] + trail[k - D] + trail[k - D + 1] + trail[k - 1] + t + trail[k + 1] + trail[k + D - 1] + trail[k + D] + trail[k + D + 1]) / 9 - t) * PHI ** -3) * (1 - PHI ** -2);
+      const k = j * D + i;
+      tmp[k] = wall[k] ? 0 : (trail[k - D - 1] + trail[k - D] + trail[k - D + 1] + trail[k - 1] + trail[k] + trail[k + 1] + trail[k + D - 1] + trail[k + D] + trail[k + D + 1]) * keep;
     }
     m.trail = tmp; m.tmp = trail;
   },
   draw() {
+    // Solid where the scent is strong, and a speckle of overspray where it thins: spray paint.
     for (const m of this.list) {
       if (!m.live) continue;
       const { D, trail } = m;
       for (let j = 0; j < D; j++) for (let i = 0; i < D; i++) {
         const v = trail[j * D + i];
-        if (v > PHI ** -1) put(m.x0 + i, m.y0 + j, m.glow, (1 - PHI ** -3) * Math.min(1, (v - PHI ** -1) / (PHI ** 2 - PHI ** -1)) ** PHI ** -1, m.w);
+        if (v < PHI ** -2) continue;
+        const a = Math.min(1, v / PHI ** 4) ** PHI ** -1, x = m.x0 + i, y = m.y0 + j;
+        if (a >= PHI ** -1) put(x, y, m.glow, a, m.w);
+        else if (u3(x, y, 547) < a * PHI) put(x, y, m.glow, PHI ** -1, m.w);
       }
     }
   },
