@@ -1,0 +1,86 @@
+[
+ {
+  "id": "writing",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide sheet of warm off-white paper scumbled with translucent white gesso in long horizontal brush strokes. Across it, rows of fast cursive handwriting that is not letters: continuous looping lines leaning hard to the right, loops tall and narrow and pointed at the turns, overlapping the rows above and below, in two inks, a deep blue-black wax crayon and a lighter cerulean crayon, the line pressing harder and softer, lifting between phrases. The crayon catches on the paper's tooth so the edges of every line are broken and granular. About a quarter of the sheet is marked."
+ },
+ {
+  "id": "blooms",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide sheet of off-white paper with a row of four large flower-like explosions of thick oil paint, each a knotted head of heavy dabs of crimson, rose and cadmium yellow over a dark umber heart, with a few thick stems flung outward, long drips of red running straight down from each head, and splatter around them. Brush-hair streaks visible in every dab. Lots of bare paper between them."
+ },
+ {
+  "id": "wash",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide sheet washed in pale watery sky blue that runs down in many thin vertical streaks and drips, with bushes of yellow, ochre, violet and red paint along the lower half that also drip downward, and a few thin dark vertical lines like stalks. Loose, wet, luminous."
+ },
+ {
+  "id": "blackboard",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide dark slate-grey painted board covered in dense fast chalk scribble: rows of looping cursive lines in white and pale grey chalk, overlapping, leaning right, some rubbed half away into chalk dust, the grey paint brushed unevenly underneath."
+ },
+ {
+  "id": "collage",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A wide sheet of off-white paper arranged like a naturalist's notebook: pale sepia photographic plates of earth and fungi pasted on as rectangles, thin hand-drawn red rectangles beside some, graphite pencil hatching and scrawled notes and numbers around them, a smudge of coloured crayon, much bare paper."
+ },
+ {
+  "id": "grain",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. Extreme close-up of a single wax crayon stroke on rough paper at 1:1, the pigment catching only on the raised tooth of the paper so the stroke is made of thousands of tiny separate specks, dense in its heart and scattered at its edges, beside a graphite line and a line of chalk on grey."
+ },
+ {
+  "id": "pixel-writing",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. Pixel art at a large scale, every pixel a visible square: a sheet of off-white paper with rows of looping cursive crayon lines leaning right in deep blue and cerulean, each line a chain of single pixels broken where the paper's grain skips, soft dithered gesso strokes in the paper. Sixteen-bit era restraint, crisp squares, no anti-aliasing."
+ },
+ {
+  "id": "erase",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. Three panels side by side showing one sheet changing: first, looping blue crayon writing on off-white paper; second, the same sheet being painted over with long translucent strokes of white gesso that half hide the writing; third, new marks in red and umber being drawn in over the whitened sheet from the left, still unfinished on the right."
+ },
+ {
+  "id": "rings",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. An abstract painting in time caught at one moment: on a deep ultramarine ground, concentric rings, an Archimedean spiral, bold diagonal bars and a few discs in pale turquoise, warm white and coral, some shapes only half painted as if still being drawn stroke by stroke, the paint flat and graphic, 1940s visual music."
+ },
+ {
+  "id": "facets",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A fragment of an old master oil painting of a face and drapery reinterpreted as a carved relief of flat polygonal facets, each facet one colour taken from the painting and lit from the upper left like chiselled stone, thin pale cuts between facets, some areas broken into much smaller facets than others, halfway between sculpture, painting and data."
+ },
+ {
+  "id": "tissue",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A microscope view of living tissue stained pink and violet: cells packed like cobbles, each with a thin dark membrane, a round violet nucleus and fine granules, one cell mid-division with two nuclei pulling apart and a furrow forming, soft translucent colour, crisp and scientific but beautiful."
+ },
+ {
+  "id": "relief",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. On pure black, dozens of thin horizontal lines of light, each lifted into ridges and peaks by an invisible landscape beneath it, nearer lines hiding those behind, lines glowing in a gradient from pale cyan to coral to white, a precise, hypnotic, generative relief of data."
+ },
+ {
+  "id": "data",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A black field of raw data made visible in pure white: dense vertical barcode stripes of varied widths, a grid of tiny dots of varied sizes, columns of small numerals, one bright horizontal scanline crossing everything, and one region inverted to white; minimal, precise, high contrast, a single thin red accent."
+ },
+ {
+  "id": "procession",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A side view of a procession of small human figures walking in a line across a sheet of off-white paper, each figure a different build and gait, and each made of a different material that changes along the line: thick paint, chalk, earth, soap bubbles that float away, smoke drifting off, flowers dropping petals, flickering black and white pixels, dripping paint. Charming, strange, simple silhouettes."
+ },
+ {
+  "id": "migration",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A side view of a herd of invented creatures crossing an off-white sheet, each body an impossible blob of two or three soft shapes in crimson, ochre and blue, moving with real animals' gaits: one hopping like a kangaroo, one stomping heavily on four pillar legs, one running on two long legs with a bobbing neck, one crawling like a caterpillar, one swooping. Playful, drawn with crayon."
+ },
+ {
+  "id": "walking-city",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A tall tower of stacked paper rectangles with small grids of windows, outlined in graphite pencil, walking on six long thin jointed legs across an off-white sheet, a small red triangular flag on a mast at the top. Drawn and collaged, whimsical and architectural."
+ },
+ {
+  "id": "primitives",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. A few crude low-polygon creatures made of flat-shaded grey and pale pink triangles, with two dot eyes and stick legs, wandering on an off-white ground, one glitching with a vertex pulled out of place. Deliberately awkward, funny, early-computer-graphics."
+ },
+ {
+  "id": "edge",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. Seen from above, a large off-white paper surface with looping crayon writing and dripping red blooms that, toward the right, dissolves into a field of glowing digital pattern: first a faceted polygonal mosaic, then living cells, then black with white barcodes and data. The transition is gradual and beautiful, the paper tearing into pixels at the seam."
+ },
+ {
+  "id": "plane",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. An aerial view of an endless abstract landscape made of tiny square dots of colour on off-white paper, like soil made of painting fragments: a calm open clearing in the middle, and toward the edges passages of different character, a region of cursive writing, a region of dripping blooms, a grey chalk-scribbled region, a faint wash, small figures and creatures crossing. Rich, balanced composition."
+ },
+ {
+  "id": "night",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. The same kind of sheet of crayon writing, blooms and drips on paper, but at night: the paper dimmed and cooled to blue-grey, the colours glowing softly, small white creatures crossing, as if a gallery with the lights down."
+ },
+ {
+  "id": "earth-rainforest",
+  "prompt": "Seen flat from directly above, as a sheet on a table, no perspective, no frame, no text or signature. An aerial view of a rainforest canopy rendered entirely as tiny square dots of colour, like a pointillist mosaic, crowns of different heights in many greens with a few trees in flower, dark gaps between crowns, a river glinting through, painterly and semi-pixel."
+ }
+]
