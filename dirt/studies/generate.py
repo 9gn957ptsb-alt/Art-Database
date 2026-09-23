@@ -9,7 +9,11 @@ Prompts live in prompts.json beside this file, in order of what DIRT needs most.
 made, up to --max, and writes each image and a line in log.jsonl (its prompt, model, size, date) to the study folder,
 which is private (dirt/private/studies/) and never committed.
 
-    python3 dirt/studies/generate.py [--max 5] [--model gpt-image-1] [--quality medium]
+    python3 dirt/studies/generate.py [--max 5] [--model gpt-image-1] [--quality medium] [--briefs]
+
+With --briefs the prompts come from briefs.json (made by brief.py): one study per artist, asking for what all their
+saved works share rather than any one picture, in the order that serves the most artists (each study also serves
+its artist's kin) with the fewest images.
 
 The OpenAI key is never in the session: it is stored as the environment's API credential for api.openai.com, and
 the environment's proxy adds it to each request on the way out. (Where the key is in OPENAI_API_KEY instead, as
@@ -42,10 +46,15 @@ def main():
     ap.add_argument("--quality", default="medium", help="low, medium or high (high costs most)")
     ap.add_argument("--size", default="1536x1024")
     ap.add_argument("--only", help="make this prompt id, even if made before")
+    ap.add_argument("--briefs", action="store_true", help="take the prompts from briefs.json (brief.py), in its order")
     args = ap.parse_args()
     key = os.environ.get("OPENAI_API_KEY")
     headers = {"Authorization": f"Bearer {key}"} if key else {}          # else the environment's proxy adds it
-    prompts = json.loads((HERE / "prompts.json").read_text())
+    if args.briefs:
+        b = json.loads((HERE / "briefs.json").read_text())
+        prompts = [{"id": "brief-" + "".join(c for c in n.lower() if c.isalnum()), "prompt": b["artists"][n]["prompt"]} for n in b["order"]]
+    else:
+        prompts = json.loads((HERE / "prompts.json").read_text())
     done = made()
     todo = [p for p in prompts if p["id"] == args.only] if args.only else [p for p in prompts if p["id"] not in done]
     OUT.mkdir(parents=True, exist_ok=True)
