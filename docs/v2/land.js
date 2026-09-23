@@ -858,6 +858,7 @@
     land.dataset.at = "flying";
     hideGraze();
     closeDeck();
+    sweepCells(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9);
   }
 
   function comeUp() {
@@ -876,6 +877,7 @@
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
+    sweepCells(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], FLY * 0.9);
   }
 
   function arrive() {
@@ -883,8 +885,11 @@
     pulse(W / 2, H * 0.62, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV);
     banner.hidden = false;
     bannerCity.textContent = place.title;
+    bannerCity.setAttribute("aria-label", place.title);   // its name, while the letters settle
     bannerUnder.textContent = place.where || "";
     bannerCity.disabled = !place.work;
+    scramble(bannerCity, "decode", 120, 760);
+    scramble(bannerUnder, "type", 380, 640);
     creature.hidden = false;
 
     beast.lat = goal.lat = place.lat;
@@ -1410,7 +1415,7 @@
     if (tilesCanvas.width !== pw || tilesCanvas.height !== ph) {
       tilesCanvas.width = pw; tilesCanvas.height = ph; tilesDirty = true;
     }
-    if (!waves.length && !notes.length && !tilesDirty) { return; }
+    if (!waves.length && !notes.length && !trail.length && !tilesDirty) { return; }
     var g = tilesCtx;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
@@ -1486,6 +1491,8 @@
         }
       }
     }
+
+    drawTrail(g, t);
 
     // The notes, in held frames, on a two-pixel grid.
     for (var q = notes.length - 1; q >= 0; q -= 1) {
@@ -3403,6 +3410,7 @@
       // off with it, rather than crossing a continent to reach a word.
       bannerUnder.textContent = (place.where ? place.where + " · " : "") +
                                 "standing on " + ground.word;
+      scramble(bannerUnder, "type", 0, 560);
       goal.lat = place.lat + (Math.random() - 0.5) * near(0.38);
       goal.lon = wrap(place.lon + (Math.random() - 0.5) * near(0.56));
       return;
@@ -6495,6 +6503,10 @@
   });
 
   stage.addEventListener("pointermove", function (event) {
+    if (!deckMode) {
+      tread(event.clientX, event.clientY);
+      dropHubble(event.clientX, event.clientY);
+    }
     if (fingers[event.pointerId]) {
       fingers[event.pointerId].x = event.clientX;
       fingers[event.pointerId].y = event.clientY;
@@ -6717,6 +6729,9 @@
     voices = voices || VOICES;
     el.dataset.voice = voices[Math.floor(Math.random() * voices.length)];
     el.style.maxWidth = Math.round(between(narrow, wide)) + "px";
+    // Never narrower than its longest word: one that cannot break would hang
+    // out of its box, over whatever is dealt beside it, and out of its clip.
+    if (el.scrollWidth > el.offsetWidth + 1) { el.style.maxWidth = Math.ceil(el.scrollWidth) + "px"; }
     el.style.textAlign = ["left", "left", "right", "center"][Math.floor(Math.random() * 4)];
   }
 
@@ -6831,6 +6846,7 @@
         }
       });
       go.appendChild(img);
+      go.addEventListener("pointerenter", function (event) { pointAt(box, go, event); });
       box.appendChild(go);
 
       var turn = document.createElement("button");
@@ -6978,7 +6994,7 @@
           // rather than sliding in from the corner all at once.
           el.getBoundingClientRect();
           var wait = still ? 0 : Math.round(n * 70 + m * 40 + Math.random() * 90);
-          if (el.classList.contains("deal-plate")) { pixelIn(el, wait); }
+          if (el.classList.contains("deal-plate")) { bringIn(el, wait); } else { enterText(el, wait); }
           requestAnimationFrame(function () {
             // Only the fade (and a caption's wipe) waits; a move never does,
             // or pressing again soon after would leave some of it standing.
@@ -7045,6 +7061,732 @@
     }
     requestAnimationFrame(step);
   }
+
+  /* ---- the repertoire ------------------------------------------------------
+
+     Nothing on this page is shown the same way twice, so nothing arrives the
+     same way twice either. Each thing that happens is answered by one of
+     several animations, dealt at random every time, the way the collages
+     themselves are dealt. Most are after demos Codrops publishes with their
+     source (github.com/codrops, named below), redrawn in this page's own
+     pixel hand: held frames, a grid, the lavender light.
+
+       a photograph arriving    tiles, mosaic (ImagePixelLoading), cells
+                                (PixelTransition), bands (PixelTransition,
+                                its fifth), blocks (BlockRevealers), glitch
+                                (CSSGlitchEffect), dither, interlace, lift
+                                (SegmentEffect)
+       a photograph pointed at  glitch, tilt (GlitchPerspective), echo (the
+                                repetition hover in codrops-sketches), mosaic
+       a line of text arriving  wipe, decode, type (LineTextHoverAnimations),
+                                block (BlockRevealers), blur
+                                (ScrollBlurTypography), rise
+       a word pointed at        decode or type
+       the pointer going by     a trail of lit tiles (GooeyCursor), and out in
+                                space a trail of the telescope's photographs
+                                (ImageTrailEffects)
+       going down, coming up,   a curtain of cells across the whole window
+       opening, closing         (PixelTransition's staggers)
+       a button near the        leans toward it (Magnetic Buttons)
+       pointer                                                                */
+
+  function oneOf(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  var COVER = "#f3f1ee";       // the table a photograph is laid on
+  var MOUNT = "#e7e6e2";       // and the card behind it
+  var LILAC = "#9d95e6";
+  var GOLD = "#d6b05c";
+
+  /* A canvas laid over a photograph's box, covered or clear. */
+  function veilOver(box, covered) {
+    var w = box.offsetWidth, h = box.offsetHeight;
+    if (!w || !h) { return null; }
+    var c = document.createElement("canvas");
+    c.className = "deal-veil";
+    c.setAttribute("aria-hidden", "true");
+    var k = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
+    box.appendChild(c);
+    var g = c.getContext("2d");
+    g.setTransform(k, 0, 0, k, 0, 0);
+    if (covered) { g.fillStyle = COVER; g.fillRect(0, 0, w, h); }
+    return { c: c, g: g, w: w, h: h };
+  }
+
+  /* The photograph as it hangs in its box, the same size and the same
+     quarter turn, for drawing on a canvas. Nothing until it has loaded. */
+  function artOf(box) {
+    var img = box.querySelector(".deal-go img");
+    if (!img || !img.complete || !img.naturalWidth) { return null; }
+    return {
+      img: img,
+      w: parseFloat(img.style.width) || box.offsetWidth,
+      h: parseFloat(img.style.height) || box.offsetHeight,
+      turn: ((parseInt(box.dataset.orientation, 10) || 1) - 1) * Math.PI / 2
+    };
+  }
+
+  function drawArt(g, art, w, h, s) {
+    s = s || 1;
+    g.fillStyle = MOUNT;
+    g.fillRect(0, 0, w * s, h * s);
+    g.save();
+    g.translate(w * s / 2, h * s / 2);
+    g.rotate(art.turn);
+    g.drawImage(art.img, -art.w * s / 2, -art.h * s / 2, art.w * s, art.h * s);
+    g.restore();
+  }
+
+  /* Plays one over a photograph: draw(veil, q, art, ms), q going from 0 to
+     1 in `frames` held steps over `dur` ms, starting after `wait`. One that
+     needs the picture starts once the picture is there, and gives up — the
+     photograph simply shows — if it never comes. */
+  function runVeil(box, wait, dur, frames, draw, opts) {
+    opts = opts || {};
+    var v = veilOver(box, opts.covered !== false);
+    if (!v) { return null; }
+    var start = performance.now() + wait, art = null, gaveUp = start + 1600, last = -1;
+    function step(now) {
+      if (!v.c.parentNode) { return; }
+      if (opts.art && !art) {
+        art = artOf(box);
+        if (!art) {
+          if (now > gaveUp) { v.c.parentNode.removeChild(v.c); return; }
+          requestAnimationFrame(step);
+          return;
+        }
+        start = Math.max(start, now);
+      }
+      var ms = now - start;
+      if (ms >= dur) { v.c.parentNode.removeChild(v.c); return; }
+      if (ms >= 0) {
+        var q = Math.floor(ms / dur * frames) / frames;
+        if (q !== last || opts.everyFrame) {
+          last = q;
+          v.g.clearRect(0, 0, v.w, v.h);
+          draw(v, q, art, ms);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    return v;
+  }
+
+  function clamp01(x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
+
+  /* The picture, drawn small and blown back up without smoothing. */
+  function mosaicFrame(v, art, across, small) {
+    var sw = Math.max(1, across), sh = Math.max(1, Math.round(across * v.h / v.w));
+    small.width = sw;
+    small.height = sh;
+    var sg = small.getContext("2d");
+    sg.imageSmoothingEnabled = true;
+    drawArt(sg, art, v.w, v.h, sw / v.w);
+    v.g.imageSmoothingEnabled = false;
+    v.g.drawImage(small, 0, 0, sw, sh, 0, 0, v.w, v.h);
+    v.g.imageSmoothingEnabled = true;
+  }
+
+  /* CSSGlitchEffect: slices of it knocked sideways, a flash of colour
+     across it, thin lines of light, settling as q goes to 1. The same frame
+     is drawn for the same step, so a held frame holds. */
+  function glitchFrame(arriving) {
+    var seed = Math.random() * 97;
+    return function (v, q, art) {
+      var g = v.g, w = v.w, h = v.h, f = Math.round(q * 40);
+      var r = function (n) { return hash2(f * 13 + n, Math.floor(seed) + n * 7); };
+      if (q >= 0.8) { drawArt(g, art, w, h); return; }
+      if (arriving && q < 0.3) { g.fillStyle = COVER; g.fillRect(0, 0, w, h); }
+      else { drawArt(g, art, w, h); }
+      var n = 3 + Math.floor(r(1) * 4);
+      for (var s = 0; s < n; s += 1) {
+        var y = r(10 + s) * h, hh = (0.05 + r(20 + s) * 0.2) * h;
+        var dx = (r(30 + s) - 0.5) * w * 0.28 * (1 - q);
+        g.save();
+        g.beginPath();
+        g.rect(0, y, w, hh);
+        g.clip();
+        g.translate(dx, 0);
+        drawArt(g, art, w, h);
+        g.restore();
+        if (r(40 + s) < 0.4) {
+          g.globalAlpha = 0.3;
+          g.fillStyle = r(50 + s) < 0.5 ? LIGHT : "#ff4f7a";
+          g.fillRect(0, y, w, hh);
+          g.globalAlpha = 1;
+        }
+      }
+      for (var l = 0; l < 2; l += 1) {
+        g.fillStyle = r(60 + l) < 0.5 ? LIGHT : "#ffffff";
+        g.fillRect(r(70 + l) * w * 0.3, r(80 + l) * h, w * (0.3 + r(90 + l) * 0.7),
+                   1 + Math.round(r(95 + l) * 2));
+      }
+      if (f % 9 === 4) {
+        g.globalAlpha = 0.28;
+        g.fillStyle = LIGHT;
+        g.fillRect(0, 0, w, h);
+        g.globalAlpha = 1;
+      }
+    };
+  }
+
+  var BAYER = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
+               12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
+               3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25,
+               15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21];
+
+  /* How a photograph comes onto the table. */
+  var ARRIVALS = {
+    tiles: function (box, wait) { pixelIn(box, wait); },
+
+    // ImagePixelLoading: a few blocks across, then twice as many, and twice
+    // again, then the photograph — the first held longest.
+    mosaic: function (box, wait) {
+      var small = document.createElement("canvas");
+      var across = [5, 10, 20, 45];
+      runVeil(box, wait, 300 + 80 * across.length, 15, function (v, q, art, ms) {
+        var n = ms < 300 ? 0 : Math.min(across.length - 1, 1 + Math.floor((ms - 300) / 80));
+        mosaicFrame(v, art, across[n], small);
+      }, { art: true });
+    },
+
+    // PixelTransition: a grid of coloured cells over it that shrink away,
+    // staggered from the middle, from the edges, from a corner or row by row.
+    cells: function (box, wait) {
+      var w = box.offsetWidth, h = box.offsetHeight;
+      var size = Math.max(14, Math.min(w, h) / 6);
+      var cols = Math.ceil(w / size), rows = Math.ceil(h / size);
+      var from = oneOf(["center", "edges", "corner", "rows"]);
+      var ci = Math.random() < 0.5 ? 0 : cols - 1, cj = Math.random() < 0.5 ? 0 : rows - 1;
+      var anchor = oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]);
+      var half = Math.max(1, (Math.min(cols, rows) - 1) / 2);
+      var tones = [LIGHT, LIGHT, LILAC, GOLD];
+      var cells = [];
+      for (var j = 0; j < rows; j += 1) {
+        for (var i = 0; i < cols; i += 1) {
+          var o;
+          if (from === "center") {
+            o = Math.sqrt(Math.pow((i - (cols - 1) / 2) / cols, 2) +
+                          Math.pow((j - (rows - 1) / 2) / rows, 2)) * 1.4;
+          } else if (from === "edges") {
+            o = 1 - Math.min(i, cols - 1 - i, j, rows - 1 - j) / half;
+          } else if (from === "corner") {
+            o = Math.sqrt((i - ci) * (i - ci) + (j - cj) * (j - cj)) / Math.sqrt(cols * cols + rows * rows);
+          } else {
+            o = (j + hash2(i, j) * 5) / (rows + 5);
+          }
+          cells.push({ x: i * size, y: j * size, o: clamp01(o),
+                       tone: tones[Math.floor(hash2(i + 3, j + 5) * tones.length)] });
+        }
+      }
+      runVeil(box, wait, 760, 18, function (v, q) {
+        cells.forEach(function (c) {
+          var s = 1 - clamp01((q - c.o * 0.55) / 0.45);
+          if (s <= 0) { return; }
+          var side = size * s;
+          v.g.fillStyle = c.tone;
+          v.g.fillRect(c.x + (size - side) * anchor[0], c.y + (size - side) * anchor[1],
+                       side + 0.5, side + 0.5);
+        });
+      });
+    },
+
+    // PixelTransition's fifth: bands that flare white as they open.
+    bands: function (box, wait) {
+      var rows = 14, down = Math.random() < 0.5;
+      runVeil(box, wait, 620, 16, function (v, q) {
+        var bh = v.h / rows;
+        for (var j = 0; j < rows; j += 1) {
+          var o = (down ? j : rows - 1 - j) / rows;
+          var p = (q - o * 0.6) / 0.4;
+          if (p >= 1) { continue; }
+          if (p <= 0) {
+            v.g.fillStyle = COVER;
+            v.g.fillRect(0, j * bh, v.w, bh + 0.5);
+            continue;
+          }
+          v.g.globalAlpha = 1 - p;
+          v.g.fillStyle = "#ffffff";
+          v.g.fillRect(0, j * bh, v.w, bh + 0.5);
+          v.g.globalAlpha = (1 - p) * 0.5;
+          v.g.fillStyle = LIGHT;
+          v.g.fillRect(0, j * bh, v.w, bh + 0.5);
+          v.g.globalAlpha = 1;
+        }
+      });
+    },
+
+    // BlockRevealers: a block of light runs over it and off again, a gold
+    // one close behind, and the photograph is there once they have passed.
+    blocks: function (box, wait) {
+      var side = oneOf(["left", "right", "top", "bottom"]);
+      var LAG = 0.12;
+      function block(v, tone, t) {
+        if (t <= 0 || t >= 1) { return; }
+        var a = t < 0.5 ? 0 : (t - 0.5) / 0.5, b = t < 0.5 ? t / 0.5 : 1;
+        var across = side === "left" || side === "right";
+        var len = across ? v.w : v.h;
+        var s0 = a * len, s1 = b * len;
+        if (side === "right" || side === "bottom") { var k = s0; s0 = len - s1; s1 = len - k; }
+        v.g.fillStyle = tone;
+        if (across) { v.g.fillRect(s0, 0, s1 - s0, v.h); }
+        else { v.g.fillRect(0, s0, v.w, s1 - s0); }
+      }
+      runVeil(box, wait, 820, 20, function (v, q) {
+        if (q < 0.5 * (1 - LAG)) { v.g.fillStyle = COVER; v.g.fillRect(0, 0, v.w, v.h); }
+        block(v, GOLD, (q - LAG) / (1 - LAG));
+        block(v, LIGHT, q / (1 - LAG));
+      });
+    },
+
+    glitch: function (box, wait) {
+      runVeil(box, wait, 560, 12, glitchFrame(true), { art: true });
+    },
+
+    // An ordered dither: the covering comes away a pixel at a time in the
+    // order a Bayer matrix gives, the pixels just going catching the light.
+    dither: function (box, wait) {
+      var px = 3;
+      var small = document.createElement("canvas");
+      var sg = null, data = null, cols = 0, rows = 0, order = null;
+      runVeil(box, wait, 700, 18, function (v, q) {
+        if (!data) {
+          cols = Math.ceil(v.w / px);
+          rows = Math.ceil(v.h / px);
+          small.width = cols;
+          small.height = rows;
+          sg = small.getContext("2d");
+          data = sg.createImageData(cols, rows);
+          order = new Float32Array(cols * rows);
+          for (var j = 0; j < rows; j += 1) {
+            for (var i = 0; i < cols; i += 1) {
+              order[j * cols + i] = (BAYER[(j % 8) * 8 + (i % 8)] / 64) * 0.86 +
+                                    hash2(i >> 3, j >> 3) * 0.14;
+            }
+          }
+        }
+        var d = data.data, at = q * 1.1;
+        for (var n = 0; n < order.length; n += 1) {
+          var th = order[n], o = n * 4;
+          if (th <= at - 0.1) { d[o + 3] = 0; continue; }
+          if (th <= at) { d[o] = 94; d[o + 1] = 82; d[o + 2] = 199; d[o + 3] = 210; continue; }
+          d[o] = 243; d[o + 1] = 241; d[o + 2] = 238; d[o + 3] = 255;
+        }
+        sg.putImageData(data, 0, 0);
+        v.g.imageSmoothingEnabled = false;
+        v.g.drawImage(small, 0, 0, cols, rows, 0, 0, cols * px, rows * px);
+        v.g.imageSmoothingEnabled = true;
+      });
+    },
+
+    // The way a picture used to come down a slow line: every eighth row
+    // first, stretched to fill, then every fourth, every second, all of them.
+    interlace: function (box, wait) {
+      var full = document.createElement("canvas");
+      var row = 3;
+      runVeil(box, wait, 560, 4, function (v, q, art) {
+        if (!full.width || full.width !== Math.round(v.w)) {
+          full.width = Math.round(v.w);
+          full.height = Math.round(v.h);
+          drawArt(full.getContext("2d"), art, v.w, v.h);
+        }
+        var pass = Math.min(3, Math.floor(q * 4));
+        var step = [8, 4, 2, 1][pass] * row;
+        v.g.imageSmoothingEnabled = false;
+        for (var y = 0; y < v.h; y += step) {
+          v.g.drawImage(full, 0, y, full.width, Math.min(row, full.height - y), 0, y, v.w, step);
+        }
+        v.g.imageSmoothingEnabled = true;
+        v.g.fillStyle = LIGHT;
+        v.g.globalAlpha = 0.7;
+        v.g.fillRect(0, Math.floor(hash2(pass, 3) * v.h / step) * step, v.w, 1);
+        v.g.globalAlpha = 1;
+      }, { art: true });
+    },
+
+    // SegmentEffect: pieces of it lift off it on their shadows and settle.
+    lift: function (box, wait) {
+      var segs = [];
+      var n = 3 + Math.floor(Math.random() * 3);
+      for (var s = 0; s < n; s += 1) {
+        var sw = between(0.24, 0.52), sh = between(0.18, 0.42);
+        segs.push({ x: between(0, 1 - sw), y: between(0, 1 - sh), w: sw, h: sh });
+      }
+      runVeil(box, wait, 1000, 24, function (v, q, art) {
+        var g = v.g;
+        drawArt(g, art, v.w, v.h);
+        g.fillStyle = "rgba(20, 22, 30, " + (0.18 * Math.sin(Math.PI * q)).toFixed(3) + ")";
+        g.fillRect(0, 0, v.w, v.h);
+        segs.forEach(function (seg, i) {
+          var up = Math.sin(Math.PI * clamp01((q - i * 0.07) / 0.72));
+          if (up <= 0.01) { return; }
+          var x = seg.x * v.w, y = seg.y * v.h, w = seg.w * v.w, h = seg.h * v.h;
+          var mx = x + w / 2, my = y + h / 2, k = 1 + 0.05 * up;
+          g.save();
+          g.translate(mx, my - 4 * up);
+          g.scale(k, k);
+          g.translate(-mx, -my);
+          g.shadowColor = "rgba(20, 22, 30, 0.35)";
+          g.shadowBlur = 14 * up;
+          g.shadowOffsetY = 6 * up;
+          g.fillStyle = MOUNT;
+          g.fillRect(x, y, w, h);
+          g.shadowColor = "transparent";
+          g.beginPath();
+          g.rect(x, y, w, h);
+          g.clip();
+          drawArt(g, art, v.w, v.h);
+          g.restore();
+        });
+      }, { art: true });
+    }
+  };
+
+  function bringIn(box, wait) {
+    if (still) { return; }
+    ARRIVALS[oneOf(Object.keys(ARRIVALS))](box, wait);
+  }
+
+  /* Pointing at a photograph. */
+  var POINTED = {
+    glitch: function (box) { runVeil(box, 0, 420, 10, glitchFrame(false), { art: true, covered: false }); },
+
+    // GlitchPerspective: it tips back into the table and up again, its
+    // colours splitting as it goes (land.css).
+    tilt: function (box, go) {
+      go.dataset.pointed = "tilt";
+      window.setTimeout(function () { delete go.dataset.pointed; }, 700);
+    },
+
+    // The repetition hover in codrops-sketches: the photograph inside itself,
+    // four times over, drawing in and out again.
+    echo: function (box) {
+      runVeil(box, 0, 700, 14, function (v, q, art) {
+        var g = v.g, up = Math.sin(Math.PI * q);
+        drawArt(g, art, v.w, v.h);
+        for (var n = 1; n <= 4; n += 1) {
+          var s = 1 - (1 - Math.pow(0.8, n)) * up;
+          if (s >= 0.995) { continue; }
+          g.save();
+          g.translate(v.w / 2, v.h / 2);
+          g.scale(s, s);
+          g.translate(-v.w / 2, -v.h / 2);
+          g.shadowColor = "rgba(20, 22, 30, 0.3)";
+          g.shadowBlur = 10;
+          g.fillStyle = MOUNT;
+          g.fillRect(0, 0, v.w, v.h);
+          g.shadowColor = "transparent";
+          drawArt(g, art, v.w, v.h);
+          g.strokeStyle = LIGHT;
+          g.globalAlpha = 0.8;
+          g.lineWidth = 2 / s;
+          g.strokeRect(0, 0, v.w, v.h);
+          g.globalAlpha = 1;
+          g.restore();
+        }
+      }, { art: true, covered: false });
+    },
+
+    mosaic: function (box) {
+      var small = document.createElement("canvas");
+      var across = [45, 18, 8, 18, 45];
+      runVeil(box, 0, 84 * across.length, across.length, function (v, q, art) {
+        mosaicFrame(v, art, across[Math.min(across.length - 1, Math.round(q * across.length))], small);
+      }, { art: true, covered: false });
+    }
+  };
+
+  function pointAt(box, go, event) {
+    if (still || event.pointerType !== "mouse") { return; }
+    if (box.querySelector(".deal-veil") || go.dataset.pointed) { return; }
+    var now = performance.now();
+    if (box.pointedAt && now - box.pointedAt < 900) { return; }
+    box.pointedAt = now;
+    POINTED[oneOf(Object.keys(POINTED))](box, go);
+  }
+
+  /* ---- words ------------------------------------------------------------ */
+
+  var NOISE = "!<>-_\\/[]{}=+*^?#%&@$~:;░▒▓▚▞";
+
+  function textNodesOf(el) {
+    var out = [], walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    while (walk.nextNode()) { out.push(walk.currentNode); }
+    return out;
+  }
+
+  /* A line of text, scrambled and put right. "decode": every letter is
+     noise, and each settles into itself, more or less left to right.
+     "type": written on behind a block cursor, the few letters ahead of it
+     flickering, as LineTextHoverAnimations does it. The letters change
+     twenty-four times a second; the text is put back exactly at the end. */
+  function scramble(el, how, wait, dur) {
+    if (still || !el) { return; }
+    if (el.scrambling) { el.scrambling.stop(); }
+    var nodes = textNodesOf(el);
+    var texts = nodes.map(function (n) { return n.nodeValue; });
+    var total = 0;
+    texts.forEach(function (t) { total += t.length; });
+    if (!total) { return; }
+    dur = dur || Math.min(1100, 360 + total * 16);
+    var start = performance.now() + (wait || 0);
+    var seed = Math.floor(Math.random() * 1000);
+    var raf = 0, last = -1;
+    function put(t, tick) {
+      var at = 0;
+      nodes.forEach(function (node, n) {
+        var src = texts[n], out = "";
+        for (var i = 0; i < src.length; i += 1, at += 1) {
+          var ch = src.charAt(i);
+          if (ch === " " || ch === "\n" || ch === " ") { out += ch; continue; }
+          var x = at / total;
+          var noise = NOISE.charAt(Math.floor(hash2(at + tick * 3, seed) * NOISE.length));
+          if (how === "type") {
+            var head = t * (1 + 4 / total);
+            if (x < head - 1 / total) { out += ch; }
+            else if (x < head) { out += "█"; }
+            else if (x < head + 3 / total) { out += noise; }
+            else { out += " "; }
+          } else {
+            out += t >= 0.72 * x + 0.28 * hash2(at, seed + 7) ? ch : noise;
+          }
+        }
+        if (node.nodeValue !== out) { node.nodeValue = out; }
+      });
+    }
+    var job = {
+      stop: function () {
+        cancelAnimationFrame(raf);
+        nodes.forEach(function (node, n) { node.nodeValue = texts[n]; });
+        if (el.scrambling === job) { el.scrambling = null; }
+      }
+    };
+    el.scrambling = job;
+    function step(now) {
+      var t = (now - start) / dur;
+      if (t >= 1) { job.stop(); return; }
+      var tick = Math.floor(now / 42);
+      if (tick !== last) { last = tick; put(Math.max(0, t), tick); }
+      raf = requestAnimationFrame(step);
+    }
+    put(0, Math.floor(performance.now() / 42));
+    raf = requestAnimationFrame(step);
+  }
+
+  /* How a piece of text comes onto the table. "wipe" is the stepped wipe in
+     land.css; the rest take it over. */
+  var ENTRANCES = ["wipe", "decode", "type", "block", "blur", "rise"];
+  var OPEN = "inset(-48px -100% -48px -48px)";
+
+  function enterText(el, wait) {
+    if (still || el.tagName === "BUTTON") { return; }
+    var how = oneOf(ENTRANCES);
+    if (how === "wipe") { return; }
+    // Open it now, while it is still fresh and nothing is transitioning, so
+    // that the wipe does not also run.
+    el.style.clipPath = OPEN;
+    void el.offsetWidth;
+    if (how === "decode" || how === "type") {
+      scramble(el, how, wait);
+      return;
+    }
+    el.style.setProperty("--wait", wait + "ms");
+    el.dataset.enter = how;
+    if (how === "block") {
+      var bar = document.createElement("span");
+      bar.className = "deal-block";
+      bar.setAttribute("aria-hidden", "true");
+      bar.style.background = oneOf([LIGHT, LIGHT, GOLD]);
+      el.appendChild(bar);
+    }
+    window.setTimeout(function () {
+      delete el.dataset.enter;
+      var b = el.querySelector(".deal-block");
+      if (b) { b.parentNode.removeChild(b); }
+    }, wait + 1300);
+  }
+
+  /* ---- the pointer ------------------------------------------------------ */
+
+  // GooeyCursor, in tiles: the tile under the pointer lights, a neighbour
+  // or two with it, and they go out in held steps behind it.
+  var trail = [];
+
+  function tread(x, y) {
+    if (still) { return; }
+    var i = Math.floor(x / CELL_PX), j = Math.floor(y / CELL_PX);
+    var last = trail[trail.length - 1];
+    if (last && last.i === i && last.j === j) { return; }
+    var now = performance.now();
+    trail.push({ i: i, j: j, at: now, tone: LIGHT, lvl: 4 });
+    if (Math.random() < 0.6) {
+      trail.push({ i: i + oneOf([-1, 0, 1]), j: j + oneOf([-1, 1]), at: now + 42, tone: LILAC, lvl: 3 });
+    }
+    if (trail.length > 90) { trail.splice(0, trail.length - 90); }
+  }
+
+  function drawTrail(g, t) {
+    for (var m = trail.length - 1; m >= 0; m -= 1) {
+      var c = trail[m], a = t - c.at;
+      if (a < 0) { continue; }
+      if (a > 560) { trail.splice(m, 1); continue; }
+      var lv = Math.ceil(c.lvl * (1 - a / 560));
+      if (lv < 1) { continue; }
+      g.fillStyle = c.tone;
+      g.globalAlpha = LEVELS[lv];
+      g.fillRect(c.i * CELL_PX + 1, c.j * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+    }
+    g.globalAlpha = 1;
+  }
+
+  // ImageTrailEffects, out in space: while the world is small enough for
+  // the telescope to be out, the pointer crossing the sky leaves the
+  // telescope's photographs behind it.
+  var trailLayer = document.getElementById("trail");
+  var lastShot = null, shots = 0;
+
+  function dropHubble(x, y) {
+    if (still || !trailLayer || !scopeShown || place || flying || !hubble.tokens.length) { return; }
+    var dx = x - cx, dy = y - cy;
+    if (dx * dx + dy * dy < R * R * 1.15) { return; }        // not over the world
+    if (lastShot && Math.abs(x - lastShot.x) + Math.abs(y - lastShot.y) < 110) { return; }
+    if (shots >= 7) { return; }
+    lastShot = { x: x, y: y };
+    var tok = oneOf(hubble.tokens);
+    var im = document.createElement("img");
+    im.className = "trail-shot";
+    im.alt = "";
+    im.decoding = "async";
+    im.draggable = false;
+    im.src = tok.u;
+    im.style.width = Math.round(between(72, 128)) + "px";
+    im.style.left = x.toFixed(0) + "px";
+    im.style.top = y.toFixed(0) + "px";
+    shots += 1;
+    var gone = function () {
+      if (im.parentNode) { im.parentNode.removeChild(im); shots -= 1; }
+    };
+    im.addEventListener("animationend", gone);
+    im.addEventListener("error", gone);
+    window.setTimeout(gone, 2400);
+    trailLayer.appendChild(im);
+  }
+
+  /* ---- the sweep --------------------------------------------------------- */
+
+  // PixelTransition across the whole window: a wave of squares that grow
+  // and shrink as it passes, from the edges in, from the middle out, from a
+  // corner or row by row, over the world and under whatever is dealt.
+  var sweepCanvas = document.getElementById("sweep");
+  var sweepCtx = sweepCanvas ? sweepCanvas.getContext("2d") : null;
+  var sweepNow = null;
+
+  function sweepCells(from, tones, dur) {
+    if (still || !sweepCtx) { return; }
+    var size = Math.max(48, Math.round(Math.max(W, H) / 14));
+    var cols = Math.ceil(W / size), rows = Math.ceil(H / size);
+    var ci = Math.random() < 0.5 ? 0 : cols - 1, cj = Math.random() < 0.5 ? 0 : rows - 1;
+    var half = Math.max(1, (Math.min(cols, rows) - 1) / 2);
+    var up = Math.random() < 0.5;
+    var cells = [];
+    for (var j = 0; j < rows; j += 1) {
+      for (var i = 0; i < cols; i += 1) {
+        var e = Math.min(i, cols - 1 - i, j, rows - 1 - j) / half;   // 0 at the edge
+        var o, most = 1;
+        if (from === "edges") { o = e; most = clamp01(1 - e * 1.5); }
+        else if (from === "center") { o = 1 - e; }
+        else if (from === "corner") {
+          o = Math.sqrt((i - ci) * (i - ci) + (j - cj) * (j - cj)) / Math.sqrt(cols * cols + rows * rows);
+        } else {
+          o = (j + hash2(i, j) * 5) / (rows + 5);
+          if (up) { o = 1 - o; }
+        }
+        if (most <= 0) { continue; }
+        cells.push({ x: i * size, y: j * size, o: clamp01(o), most: most,
+                     tone: tones[Math.floor(hash2(i + 9, j + 4) * tones.length)] });
+      }
+    }
+    var first = !sweepNow;
+    sweepNow = { cells: cells, size: size, at: performance.now(), dur: dur || 820,
+                   anchor: oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) };
+    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (sweepCanvas.width !== pw || sweepCanvas.height !== ph) {
+      sweepCanvas.width = pw;
+      sweepCanvas.height = ph;
+    }
+    if (first) { requestAnimationFrame(drawSweep); }
+  }
+
+  function drawSweep(now) {
+    var cu = sweepNow, g = sweepCtx;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    if (!cu) { return; }
+    var q = (Math.floor(now / 42) * 42 - cu.at) / cu.dur;
+    if (q >= 1) { sweepNow = null; return; }
+    g.globalAlpha = 0.88;
+    cu.cells.forEach(function (c) {
+      var u = (q - c.o * 0.55) / 0.45;
+      if (u <= 0 || u >= 1) { return; }
+      var s = Math.round(Math.sin(Math.PI * u) * c.most * 4) / 4;
+      if (s <= 0) { return; }
+      var side = cu.size * s;
+      g.fillStyle = c.tone;
+      g.fillRect(c.x + (cu.size - side) * cu.anchor[0], c.y + (cu.size - side) * cu.anchor[1], side, side);
+    });
+    g.globalAlpha = 1;
+    requestAnimationFrame(drawSweep);
+  }
+
+  /* ---- Magnetic Buttons ------------------------------------------------- */
+
+  // The few round buttons lean toward a pointer that comes near them.
+  var MAGNETS = "#deck-close, #banner-back, #banner-city, .deal-turn, #hubble";
+  var aim = null, magnetsMoving = false;
+
+  function magnetStep() {
+    var busy = false;
+    Array.prototype.forEach.call(document.querySelectorAll(MAGNETS), function (el) {
+      var m = el.pull || (el.pull = { x: 0, y: 0 });
+      var tx = 0, ty = 0;
+      var r = el.getBoundingClientRect();
+      if (aim && r.width) {
+        var dx = aim.x - (r.left + r.width / 2 - m.x), dy = aim.y - (r.top + r.height / 2 - m.y);
+        var reach = Math.max(r.width, r.height) / 2 + 70;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < reach) {
+          var k = (1 - d / reach) * 0.35;
+          tx = dx * k;
+          ty = dy * k;
+        }
+      }
+      m.x += (tx - m.x) * 0.22;
+      m.y += (ty - m.y) * 0.22;
+      if (Math.abs(tx - m.x) > 0.15 || Math.abs(ty - m.y) > 0.15) { busy = true; }
+      else { m.x = tx; m.y = ty; }
+      var v = (m.x || m.y) ? m.x.toFixed(1) + "px " + m.y.toFixed(1) + "px" : "";
+      if (el.style.translate !== v) { el.style.translate = v; }
+    });
+    magnetsMoving = busy;
+    if (busy) { requestAnimationFrame(magnetStep); }
+  }
+
+  if (!still) {
+    document.addEventListener("pointermove", function (event) {
+      if (event.pointerType !== "mouse") { return; }
+      aim = { x: event.clientX, y: event.clientY };
+      if (!magnetsMoving) { magnetsMoving = true; requestAnimationFrame(magnetStep); }
+    }, { passive: true });
+    document.addEventListener("mouseout", function (event) {
+      if (event.relatedTarget) { return; }        // still in the window
+      aim = null;
+      if (!magnetsMoving) { magnetsMoving = true; requestAnimationFrame(magnetStep); }
+    });
+  }
+
+  scramble(loading, "decode", 0, 900);
 
   /* Whatever was on the table and has not been dealt this time goes. */
   function retire(pool) {
@@ -7173,6 +7915,7 @@
     retire(poolOf(deckTable));
     dealTable();
     deckClose.focus();
+    sweepCells(oneOf(["rows", "corner", "center"]), [LIGHT, LILAC, GOLD]);
   }
 
   function closeDeck() {
@@ -7183,6 +7926,7 @@
     deck.hidden = true;
     delete document.body.dataset.deck;
     retire(poolOf(deckTable));
+    if (!flying) { sweepCells(oneOf(["rows", "corner"]), [LIGHT, LILAC]); }
   }
 
   /* ---- a collage in its own city ---------------------------------------- */
@@ -7373,6 +8117,10 @@
       el.addEventListener("click", function () { openSeam(index); });
       el.addEventListener("pointerdown", function (event) {
         event.stopPropagation();      // clicking a word is not a turn
+      });
+      // Pointed at, it scrambles and settles (its name is its aria-label).
+      el.addEventListener("pointerenter", function (event) {
+        if (event.pointerType === "mouse") { scramble(el, oneOf(["decode", "type"]), 0, 420); }
       });
       // Tabbing to a word turns the world until it is facing you.
       el.addEventListener("focus", function () {

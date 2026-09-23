@@ -29,6 +29,8 @@
   <canvas class="world world-gloss" id="world-gloss" aria-hidden="true"></canvas>
   <!-- Pixel light: the grid of tiles that lights up in waves. -->
   <canvas class="world world-tiles" id="tiles" aria-hidden="true"></canvas>
+  <!-- Out in space, the telescope's photographs left behind the pointer. -->
+  <div class="trail" id="trail" aria-hidden="true"></div>
 
   <!-- The Hubble Space Telescope, in orbit round a world seen from far off.
        Pressing it opens one of its own photographs. -->
@@ -355,6 +357,9 @@
 
 <!-- The air going past when a small world is fired at you. -->
 <canvas class="burst" id="burst" aria-hidden="true"></canvas>
+<!-- A sweep of cells across the whole window, going down, coming up,
+     opening and closing. -->
+<canvas class="sweep" id="sweep" aria-hidden="true"></canvas>
 
 <script src="land.js"></script>
 </body>

@@ -144,6 +144,43 @@
 
 .world-tiles { pointer-events: none; }
 
+/* The sweep: cells across the whole window, over the world and the
+   creature, under the banner and whatever is dealt. Drawn by land.js. */
+.sweep {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 65;
+  pointer-events: none;
+}
+
+/* Out in space, the telescope's photographs dropped behind the pointer
+   (after Codrops' ImageTrailEffects), each coming up and going in held
+   frames. */
+.trail {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.trail-shot {
+  position: absolute;
+  display: block;
+  height: auto;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 6px 18px rgba(20, 22, 30, 0.28);
+  animation: shot var(--beat-5) steps(9, end) forwards;
+}
+
+@keyframes shot {
+  0%   { opacity: 0; scale: 0.6; }
+  14%  { opacity: 1; scale: 1; }
+  70%  { opacity: 1; scale: 1; translate: 0 0; }
+  100% { opacity: 0; scale: 0.84; translate: 0 18px; }
+}
+
 .world-gloss {
   pointer-events: none;
   transition: opacity var(--beat-3) ease-out;
@@ -992,6 +1029,65 @@
   overflow: visible;
 }
 
+/* How a line of text comes in, when it is not the wipe — dealt by land.js
+   (enterText), each starting after the piece's own wait. */
+.deal-text[data-enter="blur"] {
+  animation: ink-blur var(--beat-4) steps(6, end) var(--wait, 0ms) both;
+}
+
+@keyframes ink-blur {
+  0%   { filter: blur(12px); }
+  100% { filter: blur(0); }
+}
+
+.deal-text[data-enter="rise"] {
+  animation: ink-rise var(--beat-3) steps(4, end) var(--wait, 0ms) both;
+}
+
+@keyframes ink-rise {
+  0%   { translate: 0 0.8em; }
+  100% { translate: 0 0; }
+}
+
+/* BlockRevealers: a bar runs over the words and off again, and they are
+   there once it has covered them. */
+.deal-text[data-enter="block"] {
+  animation: ink-late var(--beat-4) steps(1, end) var(--wait, 0ms) both;
+}
+
+@keyframes ink-late {
+  0%   { -webkit-text-fill-color: transparent; }
+  50%  { -webkit-text-fill-color: currentcolor; }
+  100% { -webkit-text-fill-color: currentcolor; }
+}
+
+.deal-block {
+  position: absolute;
+  inset: -2px -4px;
+  pointer-events: none;
+  animation: block-run var(--beat-4) steps(8, end) var(--wait, 0ms) both;
+}
+
+@keyframes block-run {
+  0%   { clip-path: inset(0 100% 0 0); }
+  50%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 0 0 100%); }
+}
+
+/* GlitchPerspective: pointed at, a photograph tips back into the table and
+   up again, in held frames. */
+.deal-go[data-pointed="tilt"] {
+  animation: pointed-tilt 640ms steps(8, end);
+}
+
+@keyframes pointed-tilt {
+  0%   { transform: none; filter: none; }
+  25%  { filter: drop-shadow(6px 0 0 rgba(255, 79, 122, 0.7)) drop-shadow(-6px 0 0 rgba(94, 82, 199, 0.7)); }
+  45%  { transform: perspective(700px) rotateX(36deg) scale(0.92); filter: hue-rotate(40deg) saturate(1.8); }
+  70%  { filter: drop-shadow(-4px 0 0 rgba(255, 79, 122, 0.7)) drop-shadow(4px 0 0 rgba(94, 82, 199, 0.7)); }
+  100% { transform: none; filter: none; }
+}
+
 .deal-go {
   position: absolute;
   inset: 0;
@@ -1156,6 +1252,8 @@
   .creature[data-struck="true"] svg,
   .creature .c-eye,
   .hubble .hb-blink { animation: none; }
+  .trail, .sweep { display: none; }
+  .deal-text[data-enter], .deal-block, .deal-go[data-pointed] { animation: none; }
   .graze, .token, .deck, .trace { animation: none; }
   .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }
   .part[data-fresh="true"] { animation: none; }
