@@ -1028,6 +1028,86 @@ float kinship(int a, int b, out vec3 shared, out float sharedD) {
   return max(r, 0.8 * clamp(1.0 - sharedD / 89.0, 0.0, 1.0));
 }
 
+
+// ---- singularities: where the image collapses to one pixel, and something new is born of it --------------
+// One in each 987-cell square, kept at phi^-1 of them, each reaching 233 to 377 cells. Across its axis it has two
+// halves. On one, the plane collapses: whatever world is there breaks into blocks of 2, 3, 5, 8 ... 89 cells, every
+// block the colour of its middle, the blocks converging on the core, until at the core there is a single pixel: one
+// colour, pulsing, with a corona and two turning beams, like a neutron star. On the other half a world found nowhere
+// else builds up out of that pixel, coarse at the core and finer outward, in colours born of the core's own colour
+// turned by the golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing, rings
+// interfering, or a prismatic crystal.
+const int FIBS[11] = int[11](1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144);
+struct Sing { bool on; vec2 C, axis; float R; uint h; };
+Sing singAt(vec2 p) {
+  const float G = 987.0;
+  ivec2 sq = ivec2(floor(p / G));
+  Sing best = Sing(false, vec2(0), vec2(1, 0), 0.0, 0u);
+  float bd = 1e9;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 q = sq + ivec2(i, j);
+    uint h = h3(q.x, q.y, 1597u);
+    if (unit(h) > P1) continue;
+    vec2 C = (vec2(q) + 0.25 + 0.5 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * G;
+    float R = 233.0 + 144.0 * unit(mixh(h + 3u)), d = length(p - C);
+    if (d < R && d < bd) { bd = d; float a = 6.2832 * unit(mixh(h + 4u)); best = Sing(true, C, vec2(cos(a), sin(a)), R, h); }
+  }
+  return best;
+}
+/** How coarse the image is at distance r from a core: one cell out at the rim, the whole core at the centre. */
+float blockAt(float r, float R) { float t = clamp(1.0 - (r - 21.0) / (R - 21.0), 0.0, 1.0); return float(FIBS[min(10, int(pow(t, 1.3) * 10.99))]); }
+/** The world born of a core of colour cc, at p (relative to the core). */
+vec3 newborn(vec2 d, vec3 cc, uint h, float T) {
+  int kind = int(mixh(h + 9u) % 4u);
+  // the core's colour, made pure: its hue kept (or, if it has none, one of its own), its chroma and light raised
+  float l = lum(cc);
+  vec3 hue = chroma(cc) > 12.0 ? (cc - l) / chroma(cc) : turnRGB(vec3(1.0, -0.5, -0.5), turnOf(6.2832 * unit(h)));
+  vec3 base = clamp(vec3(150.0) + hue * 150.0, 0.0, 255.0);
+  #define PAL(k) min(satur(turnRGB(base, turnOf(float(k) * GA))) * 1.1 + 20.0, vec3(255.0))
+  float r = length(d);
+  if (kind == 0) {
+    // a galaxy: seeds set by the golden angle, as a sunflower's are, turning slowly
+    float n0 = (r / 3.0) * (r / 3.0);
+    vec3 col = PAL(0) * 0.12;
+    for (int k = -8; k <= 8; k++) {
+      float n = floor(n0) + float(k);
+      if (n < 1.0) continue;
+      float a = n * GA + T * 0.05, rn = 3.0 * sqrt(n);
+      if (length(d - rn * vec2(cos(a), sin(a))) < 1.2 + 0.004 * rn) col = PAL(int(mod(n, 5.0)));
+    }
+    return col;
+  } else if (kind == 1) {
+    // stained glass: a square subdividing, deeper the farther out, each piece its colour, lead between them
+    vec2 q = d + 400.0, o = vec2(0), sz = vec2(800.0);
+    uint hh = h;
+    int depth = 2 + int(r / 55.0);
+    for (int i = 0; i < 9; i++) {
+      if (i >= depth) break;
+      hh = mixh(hh + 7u);
+      bool vert = (hh & 1u) == 1u;
+      float cut = 0.3 + 0.4 * unit(hh);
+      if (vert) { float cx = o.x + sz.x * cut; if (q.x < cx) { sz.x = cx - o.x; hh += 11u; } else { sz.x = o.x + sz.x - cx; o.x = cx; hh += 13u; } }
+      else { float cy = o.y + sz.y * cut; if (q.y < cy) { sz.y = cy - o.y; hh += 17u; } else { sz.y = o.y + sz.y - cy; o.y = cy; hh += 19u; } }
+    }
+    vec2 e = min(q - o, o + sz - q);
+    if (min(e.x, e.y) < 1.0) return vec3(20.0);
+    return PAL(int(hh % 5u)) * (0.85 + 0.25 * sin(T * 0.7 + unit(hh) * 6.28));
+  } else if (kind == 2) {
+    // rings interfering: two sources, their waves crossing
+    vec2 s = 21.0 * vec2(cos(T * 0.2), sin(T * 0.2));
+    float w = sin(length(d - s) * 0.55 - T * 2.0) + sin(length(d + s) * 0.55 - T * 2.0);
+    return mix(PAL(1), PAL(3), 0.5 + 0.25 * w) * (0.7 + 0.3 * step(0.0, w));
+  }
+  // a crystal: hexagons, each face lit by its angle to a light that turns
+  vec2 hx = vec2(d.x / 11.0, (d.y + d.x * 0.577) / 12.7);
+  vec2 cellc = floor(hx), f = fract(hx);
+  float an = atan(f.y - 0.5, f.x - 0.5) + T * 0.3;
+  vec3 col = mix(PAL(int(mod(cellc.x + cellc.y * 3.0, 5.0))), vec3(255.0), 0.25 + 0.25 * sin(an * 3.0));
+  if (min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)) < 0.06) col = vec3(250.0);
+  return col;
+  #undef PAL
+}
+
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 void main() {
@@ -1039,16 +1119,40 @@ void main() {
   int layer = int(si.x) - 1;
   Cell c = cellAt(layer, lc);
   bool art = uEarth == 0 && uArtOn == 1;
+  // A singularity: on its collapsing half the cell takes the colour of its block's middle (the plane gathering to the
+  // core); on the other, a new world is born.
+  Sing sg = Sing(false, vec2(0), vec2(1, 0), 0.0, 0u);
+  bool emerge = false;
+  float sr = 0.0, sside = 0.0;
+  vec2 cellP = vec2(cell) + 0.5;
+  if (art && uHold < 0.5) {
+    sg = singAt(cellP);
+    if (sg.on) {
+      vec2 d = cellP - sg.C;
+      sr = length(d);
+      sside = dot(d, sg.axis) + 21.0 * (vnoise(cellP, 34.0, sg.h) - 0.5);
+      float b = blockAt(sr, sg.R);
+      if (sside > 0.0 && (sr < sg.R - 13.0 || unit(h3(cell.x, cell.y, sg.h)) < (sg.R - sr) / 13.0)) emerge = true;
+      else if (b > 1.0 || sr < 21.0) {
+        ivec2 bc = sr < 21.0 ? ivec2(sg.C) : ivec2(sg.C + (floor(d / b) + 0.5) * b);
+        ivec2 sl2 = (bc >> 8) - uC0;
+        if (all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
+          vec4 si2 = texelFetch(uSlots, sl2, 0);
+          if (si2.x > 0.5) { cell = bc; layer = int(si2.x) - 1; lc = bc & 255; c = cellAt(layer, lc); }
+        }
+      }
+    }
+  }
   if (art) c.e = c.en;
   // The cell's passage, and where it lies near an edge, the passage beyond: one evaluation in a loop of one or two, so
   // the shader holds a single copy of it.
-  bool seam = art && c.eb != c.e && c.pe < 0.62;
-  vec3 A, B, Ab = vec3(0), Bb = vec3(0), mk0 = vec3(0), mk1 = vec3(0);
+  bool seam = art && !emerge && c.eb != c.e && c.pe < 0.62;
+  vec3 A = vec3(0), B = vec3(0), Ab = vec3(0), Bb = vec3(0), mk0 = vec3(0), mk1 = vec3(0);
   int kind, kb, g0 = 0, g1 = 0;
   float cov0 = 0.0, cov1 = 0.0;
   uint s0 = 0u, s1 = 0u;
   State Sd, Sb;
-  int sides = seam ? 2 : 1;
+  int sides = emerge ? 0 : seam ? 2 : 1;
   for (int side = 0; side < sides; side++) {
     Cell cc = c;
     if (side == 1) cc.e = c.eb;
@@ -1112,6 +1216,30 @@ void main() {
     // a colour the two share, stitched along the seam
     if (sharedD < 21.0 && chroma(sharedC) > 34.0 && abs(x) < 0.9 && fract((gP.x - gP.y) / 8.0) < 0.38) { PA = sharedC * 0.85; PB2 = sharedC * 0.85; }
     A = PA; B = PB2;
+  }
+  if (sg.on) {
+    vec2 d = cellP - sg.C;
+    vec3 soil; int s_;
+    vec3 cc = soilAt(ivec2(sg.C), soil, s_) ? soil : vec3(180.0, 120.0, 90.0);
+    if (emerge) {
+      // the new world, coarse at the core and finer outward, each block the colour at its middle
+      float b = blockAt(sr, sg.R);
+      vec2 bd = sr < 21.0 ? vec2(0) : (floor(d / b) + 0.5) * b;
+      A = B = newborn(bd, cc, sg.h, uTime);
+    }
+    if (sr < 21.0) {
+      // the core: one pixel, pulsing
+      vec3 core = sside > 0.0 ? A : A;
+      A = B = min(core * (1.1 + 0.3 * sin(uTime * 8.0)) + 30.0, vec3(255.0));
+    }
+    if (abs(sr - 21.0) < 1.2) A = B = vec3(255.0, 252.0, 240.0);   // the corona
+    // two beams turning, as a pulsar's do
+    float ang = uTime * 0.8 + 6.2832 * unit(sg.h);
+    vec2 bdir = vec2(cos(ang), sin(ang));
+    if (sr > 21.0 && abs(dot(d, vec2(-bdir.y, bdir.x))) < 1.5) {
+      float f = 0.7 * (1.0 - sr / sg.R);
+      A = mix(A, vec3(255.0), f); B = mix(B, vec3(255.0), f);
+    }
   }
   // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
   if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {

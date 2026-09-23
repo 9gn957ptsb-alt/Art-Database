@@ -246,6 +246,15 @@ round. Beside the worlds above, each artist's other work has its own:
 | brushstrokes laid by an algorithm along a flow, each in the colour of the soil under it | Quayola, *Pleasant Places* |
 | test pattern: full-field bars of a binary code, scrolling, now and then negative | Ikeda, *test pattern* |
 
+**Singularities.** The plane is not an even quilt: one in each 987-cell square (φ⁻¹ of them kept), reaching 233 to
+377 cells, is a singularity, where the image itself collapses and is born again. Across its axis it has two halves.
+On one, whatever world lies there breaks into blocks of 2, 3, 5, 8, 13, 21, 34, 55 and 89 cells, each the colour of its
+middle, converging on the core, until at the core there is a single pixel: one colour, pulsing, with a corona and two
+turning beams, like a neutron star. On the other half a world found nowhere else on the plane builds up out of that
+pixel, coarse at the core and finer outward, in colours born of the core's own colour made pure and turned by the
+golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
+rings interfering, or a crystal of hexagons whose faces turn with the light.
+
 **The gesture.** Across the plane run long lines, one in every 610-cell band, that belong to no passage: each is one
 unbroken gesture taking the form of whatever world it passes through. It is crayon on paper, chalk on slate, a painted
 stem hung with drips among the blooms, and in the territories a string of rings, a cut, a chain of cells, a glowing
