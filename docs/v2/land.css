@@ -1641,7 +1641,14 @@
   flex-direction: column;
   padding-bottom: var(--s-6);
   pointer-events: none;
+  /* On a turn the whole column eases across to its new side, in step with the
+     photograph, so turning re-organizes the composition rather than snapping. */
+  transition:
+    left var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1),
+    top var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1),
+    width var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1);
 }
+@media (prefers-reduced-motion: reduce) { .read-col { transition: none; } }
 
 /* Everything that is brought up is brought up the same way: from soft to
    sharp, a little below where it settles. */

@@ -10178,51 +10178,69 @@
      it; on a narrow screen, one above the other. Which side is the
      collage's own (it is always the same for the same collage), and the
      photograph is as big as the room allows. */
+  /* An arrangement is dealt from the work and its quarter-turn, so it is steady
+     while you read but re-dealt on every turn: a different side, a different
+     size, standing somewhere new. Turning back returns to the one before. It
+     reuses the seeded RNG the world is woven with (seedFrom, defined above). */
   function layoutReading() {
     var r = reading;
     if (!r) { return; }
-    var top = 84, pad = W < 640 ? 21 : 55;
+    var pad = W < 640 ? 21 : 55;
     var a = aspectOf[r.work.slug] || 0.75;
-    var turned = turnsFor(r.work.slug) % 2 === 1;
+    var turns = turnsFor(r.work.slug);
+    var turned = turns % 2 === 1;
     var shown = turned ? 1 / a : a;                   // width over height, as hung
     var wide = W >= 760 && W > H * 0.9;
-    // A phone scrolls it, so it starts below the banner and never runs
-    // over it.
+    // A phone scrolls it, so it starts below the banner and never runs over it.
     r.root.style.top = wide ? "0px" : "68px";
-    if (!wide) { top = 13; }
-    var colW = wide ? Math.min(380, Math.max(260, W * 0.3)) : W - 2 * pad;
+    var top = wide ? 84 : 13;
+
+    var rnd = seedFrom(r.work.slug, turns + 1);
+    var side = rnd() < 0.5;                            // which side the photograph takes
+    var sizeK = 0.80 + rnd() * 0.20;                   // not always at full size
+    var slackX = rnd(), slackY = rnd();
+
+    var colW = wide
+      ? Math.round(Math.min(400, Math.max(250, W * (0.26 + rnd() * 0.08))))
+      : W - 2 * pad;
     var bw, bh;
     if (wide) {
-      bh = Math.min(H - top - 55, (W - 3 * pad - colW) / shown);
+      bh = Math.min(H - top - 55, (W - 3 * pad - colW) / shown) * sizeK;
       bw = bh * shown;
     } else {
-      bw = Math.min(W - 2 * pad, (H * 0.44) * shown);
+      bw = Math.min(W - 2 * pad, (H * 0.44) * shown) * (0.90 + sizeK * 0.10);
       bh = bw / shown;
     }
-    var long = Math.max(bw, bh);
-    // platePiece sizes the box from its long side as the photograph is,
-    // before it is turned
+    // platePiece sizes the box from its long side as the photograph is, before turning.
     var longUnturned = turned ? (a <= 1 ? bw : bh) : (a <= 1 ? bh : bw);
-    platePiece(r.root, { els: pool_(r), used: {} }, r.work, r.city, longUnturned || long, function () {
+    platePiece(r.root, { els: pool_(r), used: {} }, r.work, r.city, longUnturned, function () {
       if (r.held) { release(); }
     });
-    var side = hash2(r.work.slug.length, r.work.slug.charCodeAt(0)) < 0.5;
+
     var px, py, cx0, cy0;
     if (wide) {
       var total = bw + pad + colW;
-      var left = Math.max(pad, (W - total) / 2);
-      py = top + Math.max(0, (H - top - 34 - bh) / 2);
+      var freeX = Math.max(0, W - total - 2 * pad);
+      var left = pad + freeX * slackX;
+      var freeY = Math.max(0, H - top - 34 - bh);
+      var driftY = Math.min(90, freeY * (0.12 + 0.4 * slackY));
+      py = top + driftY;
       if (side) { px = left; cx0 = left + bw + pad; } else { cx0 = left; px = left + colW + pad; }
-      cy0 = py;
+      cy0 = top + Math.min(driftY, freeY * 0.5);
     } else {
-      px = (W - bw) / 2; py = top; cx0 = pad; cy0 = py + bh + 21;
+      var freeXt = Math.max(0, W - 2 * pad - bw);
+      px = pad + freeXt * slackX; py = top; cx0 = pad; cy0 = py + bh + 21;
     }
+    // The first time it is laid out it does not slide in; a turn after that
+    // eases everything across to its new place.
+    if (!r.laidOut) { r.col.style.transition = "none"; }
     r.plate.style.transform = "translate(" + px.toFixed(1) + "px," + py.toFixed(1) + "px)";
     r.col.style.left = cx0.toFixed(1) + "px";
     r.col.style.top = cy0.toFixed(1) + "px";
     r.col.style.width = colW.toFixed(1) + "px";
     r.root.dataset.shape = wide ? "wide" : "tall";
     r.root.dataset.side = side ? "right" : "left";
+    if (!r.laidOut) { r.col.getBoundingClientRect(); r.col.style.transition = ""; r.laidOut = true; }
   }
 
   function pool_(r) {
