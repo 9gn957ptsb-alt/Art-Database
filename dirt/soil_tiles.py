@@ -235,7 +235,7 @@ def export(out, kinds, sources, fields, blacks, ground, spec, by_id):
     def ref(w):
         if w["id"] not in windex:
             windex[w["id"]] = len(works)
-            works.append({k: w[k] for k in ("id", "title", "artist", "date", "url")})
+            works.append({k: w[k] for k in ("id", "title", "artist", "date", "url", "colors")})
         return windex[w["id"]]
 
     entries = []

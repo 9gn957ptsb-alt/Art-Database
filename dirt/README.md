@@ -108,7 +108,8 @@ place finds the same ground. Every number chosen for it comes from the golden ra
 power of φ.
 
 **How the plane is built.** `soil_tiles.py` makes the plane's ingredients, and the page assembles tiles from
-them wherever the viewer goes, in a background worker so moving stays smooth.
+them wherever the viewer goes, in background workers (two, where the device has the cores) so moving stays
+smooth.
 
 - **Joins decided by position.** Every vertical join on the plane takes one of five colours, and so does every
   horizontal join. The colour comes from the join's own position, so the two tiles that share a join always
@@ -133,17 +134,62 @@ processes take hold of it:
 | --- | --- |
 | the start | more of each object's shards sink at its join, from φ⁻³ up to φ⁻¹ |
 | φ⁻³ | colours turn, by up to the golden angle (137.5°) |
-| φ⁻² | dots fuse into pixel blocks of 2, 3, 5, then 8 cells |
+| φ⁻² | dots fuse into pixel blocks of 2, 3, 5, then 8 cells, as far as the forest over them allows (below) |
 | φ⁻² + φ⁻⁴ | rows tear sideways in bands 5 rows tall and 233 cells long |
 | φ⁻¹ | columns pixel-sort by lightness into drips, within 21-cell segments fixed on the plane |
 | φ^-½ | the ground folds into a five-fold kaleidoscope about its island |
-| φ⁻² onward | **data pigment**: some of the dots come loose and fly as flocks, leaving dark pores behind |
+| φ⁻² onward | **data pigment**: some of the dots on the canopy come loose and fly as flocks, leaving dark pores behind |
 
 Everything is a function of position on the plane, so no seams show between tiles or between grown pieces of
 ground.
 
-**The flocks.** Each loose dot is a bird: up to 17,711 of them live around the view at any time, launched from the
-ground as it comes near and grounded again as it falls far behind. Each bird follows three rules toward the
+**The rainforest.** A forest stands over the ground, seen from above. Its crowns grow at three heights, each on a
+jittered lattice of its own, and each crown swells in five lobes and eight smaller ones:
+
+| Stratum | Lattice | Crown reach | Height (0 floor, 1 tallest) | Where it grows |
+| --- | --- | --- | --- | --- |
+| shrubs and understory trees | 21 cells | about 13 | φ⁻³ to φ⁻² | everywhere but the heart of a calm island |
+| the canopy | 55 cells | about 34 | φ⁻¹ ± φ⁻⁴ | thickening from depth φ⁻³ out |
+| emergents, standing above it | 233 cells | about 55 | 1 − φ⁻⁴ to 1 | from depth φ⁻² out |
+
+So the calm islands are clearings, and the forest closes over and rises toward the outskirts. The forest shapes the
+ground in four ways:
+
+- **Light.** Sunlight comes from the upper left, high enough that a crown's shadow is 1/φ of its height long.
+  Crowns are lit on their upper left and shaded on their lower right. Taller crowns cast shadows. A place lower
+  than the forest within 13 cells of it sees less sky and lies darker. The rim of each crown, where it stands over
+  lower ground, is drawn dark, like the gaps between crowns.
+- **Colour.** Each crown leans its dots toward a colour of its own: the most colourful of the three colours of the
+  painting at its middle. Shrubs lean by φ⁻³, the canopy by φ⁻², and emergents by φ⁻¹, like the few trees in
+  flower that stand out in a canopy seen from the air.
+- **Pixel size.** Nearer the eye, coarser the pixel. Dots fuse into blocks only as far as the forest there stands
+  tall: the floor keeps its fine dots, shrubs fuse into blocks of 3 cells at most, the canopy 5, emergents 8.
+- **Niches.** Each kind of life settles in the strata it lives in, and a creature is seen only where nothing
+  taller stands over it, so ants go under a shrub and come out the other side.
+
+Every creature wears the colours of a painting from the ground where it lives, found within 34 cells, the most
+colourful one there. Its colours are all three of that painting's colours, turned as the ground there is turned,
+made φ² times as saturated so they stand out from the soil. The homes of life are decided by position too, so going
+back finds the same nests, swarms and flowers.
+
+| Niche | Life | What it does |
+| --- | --- | --- |
+| the floor | leaf-cutter ants | Columns run from each nest out to where the plants begin. The ants go out bare and come home each holding up a piece of a painting cut from where the trail ends. |
+| the floor | poison frogs | They sit, hop, and call in rings, each holding its call back when a neighbour is about to call, so they take turns. |
+| the floor | ferns | Fronds coil as spirals that tighten toward the tip and unroll from the base over about 16 seconds, opening leaflets as they go. They stand, wither, and grow again. |
+| far out on the floor | slime mould | 1,597 cells in a gap each follow the scent the others leave (Physarum, after Jeff Jones's model). They gather into glowing veins that join the brightest dots in the gap and keep reshaping. |
+| the floor and shrubs, from depth φ⁻³ | coral snakes | Ringed three of the painting's brightest colour, one pale, three near black, one pale. They wind as they go. |
+| the understory, from depth φ⁻³ | fireflies | 144 to a swarm, each flashing by its own clock. A flash nudges those near it toward their own (pulse-coupled oscillators, after Mirollo and Strogatz), so flashes gather into waves and the swarm falls into flashing as one. |
+| the understory | blue morphos | An erratic, bobbing flight, flashing the painting's bluest colour as the wings open and dark undersides as they close. |
+| on crowns | flowers | Florets set by the golden angle, as a sunflower's are, in the painting's three colours from a dark heart to a bright rim. They open, stand, drop their florets from the rim in, rest, and open again. |
+| on crowns | hummingbirds | They hover at open flowers in a small figure of eight and dart between them. |
+| the canopy, from depth φ⁻³ | monkeys | Troops of 5, 8 or 13 follow a leader across the crowns, feeding on each, then leaping the gaps one after another, each seen apart from its shadow for the leap. |
+| the canopy | wind | Gusts cross the treetops in bands 233 cells apart, turning leaves up pale where they pass, the way Cecropia leaves flash silver. |
+| above the emergents | macaws | Now and then a pair crosses from one emergent to another, long tails streaming, their shadows racing over the crowns. |
+| above the emergents | a harpy eagle | It circles an emergent near the viewer and is never seen, only its shadow crossing the forest. The flocks scatter from it. |
+
+**The flocks.** Each loose dot is a bird: up to 6,765 of them live around the view at any time, launched from the
+canopy as it comes near and grounded again as it falls far behind. Each bird follows three rules toward the
 neighbours it can see within 8 cells, heeding at most 13 of them:
 
 - **Alignment:** fly as the others fly.
@@ -151,13 +197,14 @@ neighbours it can see within 8 cells, heeding at most 13 of them:
 - **Separation:** keep a wingspan apart.
 
 Birds from the same painting are kin and pull φ times harder. Three hawks hunt wherever the viewer is. They are
-never drawn: a bird within 21 cells of one bolts at up to φ times its top speed, and the flock turns with it. A
-slow current runs underneath as a thermal. Over calm ground the birds turn back outward, harder the deeper they
-stray. Trails fade by φ⁻⁶ a frame. With reduced motion set, nothing takes flight, new ground appears at once, and
-swipes do not glide.
+never drawn: a bird within 21 cells of one bolts at up to φ times its top speed, and the flock turns with it. The
+harpy eagle frightens them from 34 cells. A slow current runs underneath as a thermal. Over calm ground the birds
+turn back outward, harder the deeper they stray. Trails fade by φ⁻⁶ a frame. With reduced motion set, nothing
+takes flight or moves: only the plants show, full grown and still. New ground appears at once, and swipes do not
+glide.
 
 **Naming and picking out.** Every cell remembers which painting it came from, however it was moved, so pointing
-anywhere names the saved painting underneath. A click or tap that does not move picks a painting out, darkening
+anywhere names the saved painting underneath, or the painting a creature there wears. A click or tap that does not move picks a painting out, darkening
 everything else. Clicking it again, pressing Escape, or pressing **Show all** brings the whole plane back.
 
 ```bash

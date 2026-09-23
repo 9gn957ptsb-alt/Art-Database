@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build DIRT: an infinite plane of collection soil to swipe through.
+"""Build DIRT: an infinite plane of collection soil to swipe through, under a rainforest.
 
 soil_tiles.py writes the plane's ingredients: corner, join and middle soils made from the saved
-paintings, and the fields that shape each tile's zones. This page carries them, and a worker thread
-assembles tiles from them wherever the viewer goes. Every join on the plane takes its colour from its
+paintings, and the fields that shape each tile's zones. This page carries them, and worker threads
+assemble tiles from them wherever the viewer goes. Every join on the plane takes its colour from its
 own position, so any tile can be built anywhere and its edges always meet its neighbours'. The plane
 has no edge and no start.
 
@@ -17,15 +17,29 @@ of it. Every threshold and amount is a power of the golden ratio or a Fibonacci 
   phi^-2 + phi^-4  rows tear sideways, like torn scanlines
   phi^-1           columns pixel-sort by lightness into drips
   phi^-1/2         the ground folds into a five-fold kaleidoscope about its island
-  phi^-2 onward    data pigment: some of the dots come loose and take flight as flocks, birds of one
-                   painting flying as kin, riding a slow current and scattering from three unseen
-                   hawks that hunt wherever the viewer is; over calm ground they turn back outward
 
-Everything is a function of position, so no seams show and going back finds the same ground. Swiping,
-a trackpad or the arrow keys move through it, and a swipe glides on after the hand lets go. Pointing
-names the saved painting underneath; clicking or tapping picks it out by darkening everything else,
-and clicking it again, Escape or "Show all" brings the whole plane back. The page embeds the cutouts,
-so it is written to dirt/private/ and never committed.
+A rainforest stands over the ground. Crowns of three heights (shrubs, the canopy, and emergents above
+it) grow on lattices of their own, the calm islands are clearings, and the forest closes in and rises
+toward the outskirts. It lights the ground from the upper left, with shadows and dark gaps between
+crowns; each crown leans toward a colour of its own; and dots fuse into blocks only as far as the forest
+stands tall, so the nearer the eye, the coarser the pixel. Life keeps to its niche and is seen only
+where nothing taller stands over it:
+
+  the floor        leaf-cutter ants carrying painting pieces home, poison frogs, ferns unrolling from
+                   fiddleheads, and far out, slime mould joining the brightest dots in glowing veins
+  the understory   coral snakes ringed in a painting's colours, fireflies that fall into flashing as
+                   one, blue morphos
+  the crowns       flowers opening florets by the golden angle, hummingbirds darting between them,
+                   monkey troops leaping crown to crown, wind turning the leaves pale in passing bands
+  above            flocks of data pigment, loose dots from the canopy flying as kin, with three unseen
+                   hawks; macaw pairs crossing between emergents; a harpy eagle seen only as its shadow
+
+Every creature wears a painting's colours, turned as the ground where it lives is turned. Everything in
+the ground is a function of position, so no seams show and going back finds the same ground and the
+same homes. Swiping, a trackpad or the arrow keys move through it, and a swipe glides on after the hand
+lets go. Pointing names the saved painting underneath, or the one a creature wears; clicking or tapping
+picks it out by darkening everything else, and clicking it again, Escape or "Show all" brings the whole
+plane back. The page embeds the cutouts, so it is written to dirt/private/ and never committed.
 
     python3 dirt/build_soil_viewer.py [--private dirt/private]
 """
@@ -147,12 +161,92 @@ function depth(x, y) {
   nearIsle(x, y);
   return Math.min(1, Math.max(0, NEAR_D + (vnoise(x, y, 34, 1) - 0.5) * 2 * PHI ** -3));
 }
+
+/** How far the colours turn at (x, y), at depth d: by up to the golden angle, either way. */
+const turnAt = (x, y, d) => smooth(PHI ** -3, 1, d) * (vnoise(x, y, 21, 3) * 2 - 1) * GOLDEN_ANGLE;
+/** A colour turned about the grey axis by t radians. */
+function turnRGB(r, g, b, t, out = [0, 0, 0]) {
+  if (Math.abs(t) < 0.01) { out[0] = r; out[1] = g; out[2] = b; return out; }
+  const c = Math.cos(t), s = Math.sin(t), k = (1 - c) / 3, q = Math.sqrt(1 / 3) * s, cl = (v) => Math.max(0, Math.min(255, v));
+  out[0] = cl(r * (c + k) + g * (k - q) + b * (k + q)); out[1] = cl(r * (k + q) + g * (c + k) + b * (k - q)); out[2] = cl(r * (k - q) + g * (k + q) + b * (c + k));
+  return out;
+}
+
+// ---- the forest ---------------------------------------------------------------------------------
+// Crowns of three heights stand over the plane: shrubs and understory trees, the canopy, and the
+// emergents standing clear above it. Heights run from 0, the forest floor, to 1, the top of the
+// tallest emergent. Each stratum is a jittered lattice of round crowns; a crown grows or not by its
+// square's hash and the depth at its middle, so the calm islands are clearings, and the forest closes
+// over and rises toward the outskirts.
+const FLOOR = 0, SHRUB = 1, CANOPY = 2, EMERGENT = 3, TALL = 34;    // strata; cells tall at height 1
+const STRATA = [
+  { g: 21, r: 13, lo: PHI ** -3, hi: PHI ** -2, salt: 200, odds: (d) => PHI ** -1 * smooth(0, PHI ** -2, d) },
+  { g: 55, r: 34, lo: PHI ** -1 - PHI ** -4, hi: PHI ** -1 + PHI ** -4, salt: 210, odds: (d) => (1 - PHI ** -3) * smooth(PHI ** -3, 1, d) },
+  { g: 233, r: 55, lo: 1 - PHI ** -4, hi: 1, salt: 220, odds: (d) => PHI ** -1 * smooth(PHI ** -2, 1, d) },
+];
+const crownCache = STRATA.map(() => new Map());
+/** The crown of stratum L (0 shrubs, 1 canopy, 2 emergents) in lattice square (i, j), or null. */
+function crownOf(L, i, j) {
+  const m = crownCache[L], k = (i + 32768) * 65536 + (j + 32768);
+  let c = m.get(k);
+  if (c === undefined) {
+    const S = STRATA[L], x = (i + u3(i, j, S.salt)) * S.g, y = (j + u3(i, j, S.salt + 1)) * S.g;
+    c = u3(i, j, S.salt + 2) < S.odds(depth(x, y))
+      ? { x, y, r: S.r * PHI ** (u3(i, j, S.salt + 3) - 0.5), top: S.lo + (S.hi - S.lo) * u3(i, j, S.salt + 4), L: L + 1,
+          c5: Math.cos(u3(i, j, S.salt + 5) * 2 * Math.PI), s5: Math.sin(u3(i, j, S.salt + 5) * 2 * Math.PI),
+          c8: Math.cos(u3(i, j, S.salt + 6) * 2 * Math.PI), s8: Math.sin(u3(i, j, S.salt + 6) * 2 * Math.PI) }
+      : null;
+    if (m.size >= 28657) m.clear();
+    m.set(k, c);
+  }
+  return c;
+}
+/**
+ * A crown's height at (x, y): a low dome whose rim stands at 1/phi of its top, 0 off the crown. Its
+ * outline swells in five lobes and eight smaller ones, as a crown of leaves seen from above does.
+ */
+function crownHeight(c, x, y) {
+  const dx = x - c.x, dy = y - c.y, d2 = dx * dx + dy * dy;
+  if (d2 >= c.r * c.r * (1 + PHI ** -3) ** 2) return 0;
+  // sin(5a + p) and sin(8a + q) for the direction a, from powers of the unit vector (cos a, sin a).
+  const d = Math.sqrt(d2) || 1, ca = dx / d, sa = dy / d;
+  const r2 = ca * ca - sa * sa, i2 = 2 * ca * sa, r4 = r2 * r2 - i2 * i2, i4 = 2 * r2 * i2;
+  const r5 = r4 * ca - i4 * sa, i5 = r4 * sa + i4 * ca, r8 = r4 * r4 - i4 * i4, i8 = 2 * r4 * i4;
+  const r = c.r * (1 + PHI ** -4 * (i5 * c.c5 + r5 * c.s5) + PHI ** -5 * (i8 * c.c8 + r8 * c.s8)), t = d2 / (r * r);
+  return t < 1 ? c.top * (1 - PHI ** -2 * t) : 0;
+}
+let CANOPY_L = FLOOR;
+/** How high the forest stands at (x, y). Sets CANOPY_L to the stratum on top there. */
+function canopyAt(x, y) {
+  let h = 0;
+  CANOPY_L = FLOOR;
+  for (let L = 0; L < STRATA.length; L++) {
+    const g = STRATA[L].g, i0 = Math.floor(x / g), j0 = Math.floor(y / g);
+    for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
+      const c = crownOf(L, i, j);
+      if (!c) continue;
+      const v = crownHeight(c, x, y);
+      if (v > h) { h = v; CANOPY_L = c.L; }
+    }
+  }
+  return h;
+}
+/** The crowns of stratum L whose middles lie within rad of (x, y). */
+function crownsNear(L, x, y, rad) {
+  const g = STRATA[L].g, out = [];
+  for (let j = Math.floor((y - rad) / g); j <= Math.floor((y + rad) / g); j++)
+    for (let i = Math.floor((x - rad) / g); i <= Math.floor((x + rad) / g); i++) {
+      const c = crownOf(L, i, j);
+      if (c && Math.hypot(c.x - x, c.y - y) <= rad) out.push(c);
+    }
+  return out;
+}
 </script>
 
 <script id="worker-src" type="text/plain">
 // ---- the worker: assembles tiles and grows processed ground, a tile-sized chunk at a time -------
 
-let S = [], CORN = [], VERT = [], HORZ = [], MIDS = [], AF = [], BF = [], CN = null;
+let S = [], CORN = [], VERT = [], HORZ = [], MIDS = [], AF = [], BF = [], CN = null, TOKENS = [];
 let K = 5, ZA = 13, ZD = 8, CZ = 21, CZW = 5, GROUND = [0, 0, 0], R = 2, KAPPA = 0;
 const tileCache = new Map(), TILE_CAP = 55;
 const key2 = (i, j) => (i + 32768) * 65536 + (j + 32768);
@@ -220,6 +314,7 @@ function sampleAt(qx, qy) {
   return lastTile;
 }
 
+const COARSEST = [1, 3, 5, 8];                       // the largest block each stratum fuses into
 const blockOf = (d) => (d < PHI ** -2 ? 1 : d < PHI ** -2 + PHI ** -4 ? 2 : d < PHI ** -2 + 2 * PHI ** -4 ? 3 : d < PHI ** -2 + 3 * PHI ** -4 ? 5 : 8);
 
 /** Torn rows: bands 5 rows tall and 233 cells long, a phi^-2 share of them pulled sideways. */
@@ -243,6 +338,174 @@ function sourceOf(x, y, d) {
   QY = qy;
 }
 
+// ---- the forest over the ground: its heights, and the light and shade they make -----------------
+
+const FM = 34, FW = N + 2 * FM;                      // a margin for the shadows cast in from outside
+const fh = new Float32Array(FW * FW), fl = new Uint8Array(FW * FW), fz = new Float32Array(FW * FW), fk = new Int32Array(FW * FW);
+const fcs = [];                                      // the crowns over the chunk being grown; fk indexes them
+const fa = new Float32Array(FW * FW), fb = new Float32Array(FW * FW);
+
+/** A box blur of `src` into `dst`, `rad` cells each way, through `tmp`. */
+function boxBlur(src, dst, tmp, rad) {
+  const n = 2 * rad + 1;
+  for (let y = 0; y < FW; y++) {
+    let s = 0;
+    for (let x = -rad; x <= rad; x++) s += src[y * FW + Math.min(FW - 1, Math.max(0, x))];
+    for (let x = 0; x < FW; x++) {
+      tmp[y * FW + x] = s / n;
+      s += src[y * FW + Math.min(FW - 1, x + rad + 1)] - src[y * FW + Math.max(0, x - rad)];
+    }
+  }
+  for (let x = 0; x < FW; x++) {
+    let s = 0;
+    for (let y = -rad; y <= rad; y++) s += tmp[Math.min(FW - 1, Math.max(0, y)) * FW + x];
+    for (let y = 0; y < FW; y++) {
+      dst[y * FW + x] = s / n;
+      s += tmp[Math.min(FW - 1, y + rad + 1) * FW + x] - tmp[Math.max(0, y - rad) * FW + x];
+    }
+  }
+}
+
+/**
+ * The forest over the chunk at (x0, y0): how much light each cell gets, and per cell its stratum and
+ * height packed in a byte (stratum << 6 | height in 63rds). Sunlight comes from the upper left, high
+ * enough that a crown's shadow is 1/phi of its height long. A cell is lit or shaded by its slope,
+ * darkened in the shadow of taller crowns, and darkened more the lower it lies than the forest round it.
+ */
+function forest(x0, y0) {
+  const X0 = x0 - FM, Y0 = y0 - FM;
+  fh.fill(0); fl.fill(0); fcs.length = 0;
+  for (let L = 0; L < STRATA.length; L++) {
+    const St = STRATA[L], reach = St.r * PHI ** 0.5 * (1 + PHI ** -3);
+    for (let j = Math.floor((Y0 - reach) / St.g); j <= Math.floor((Y0 + FW + reach) / St.g); j++)
+      for (let i = Math.floor((X0 - reach) / St.g); i <= Math.floor((X0 + FW + reach) / St.g); i++) {
+        const c = crownOf(L, i, j);
+        if (!c) continue;
+        const n = fcs.push(c) - 1, cr = c.r * (1 + PHI ** -3);   // the lobes reach out this far
+        const ya = Math.max(0, Math.floor(c.y - cr) - Y0), yb = Math.min(FW - 1, Math.ceil(c.y + cr) - Y0);
+        const xa = Math.max(0, Math.floor(c.x - cr) - X0), xb = Math.min(FW - 1, Math.ceil(c.x + cr) - X0);
+        for (let yy = ya; yy <= yb; yy++) for (let xx = xa; xx <= xb; xx++) {
+          const v = crownHeight(c, X0 + xx + 0.5, Y0 + yy + 0.5), k = yy * FW + xx;
+          if (v > fh[k]) { fh[k] = v; fl[k] = c.L; fk[k] = n; }
+        }
+      }
+  }
+  // Shadows: a running horizon down each diagonal from the upper left, falling phi*sqrt(2) cells a step.
+  const fall = PHI * Math.SQRT2;
+  for (let yy = 0; yy < FW; yy++) for (let xx = 0; xx < FW; xx++) {
+    const k = yy * FW + xx;
+    fz[k] = yy && xx ? Math.max(fz[k - FW - 1] - fall, fh[k - FW - 1] * TALL) : 0;
+  }
+  // The sky a place sees: how much lower it lies than the forest within 13 cells of it.
+  boxBlur(fh, fa, fb, 13);
+  const light = new Float32Array(N * N), hl = new Uint8Array(N * N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const k = (y + FM) * FW + x + FM, h = fh[k];
+    const slope = ((fh[k + 1] - fh[k - 1]) + (fh[k + FW] - fh[k - FW])) * TALL / 2;
+    const lean = Math.max(-1, Math.min(1, slope * PHI));
+    const shade = Math.min(1, Math.max(0, (fz[k] - h * TALL) / PHI));
+    const sky = Math.max(0, fa[k] - h);
+    // A crown's rim, where it stands over lower ground, is drawn dark: the gaps between crowns.
+    const rim = fl[k] && Math.min(fh[k - 1], fh[k + 1], fh[k - FW], fh[k + FW]) < h - PHI ** -4 ? PHI ** -2 : 1;
+    light[y * N + x] = rim * (1 + PHI ** -2 * lean) * (1 - (1 - PHI ** -2) * shade) * (1 - (1 - PHI ** -3) * Math.min(1, sky * PHI * PHI));
+    hl[y * N + x] = (fl[k] << 6) | Math.round(h * 63);
+  }
+  return { light, hl };
+}
+
+/**
+ * A crown's own colour: the most colourful of the three colours of the painting at its middle, turned
+ * as the ground there is turned. Seen from above, a rainforest's crowns are a mosaic of colours, a few
+ * in flower; each crown here leans its dots toward its colour, emergents most.
+ */
+function crownTint(c) {
+  if (!c.tint) {
+    const x = Math.floor(c.x), y = Math.floor(c.y), d = depth(x, y);
+    sourceOf(x, y, d);
+    const t = sampleAt(QX, QY), tok = TOKENS[t.work[SI]] || TOKENS[0];
+    const best = tok.reduce((a, b) => (chroma(b) > chroma(a) ? b : a));
+    c.tint = turnRGB(best[0], best[1], best[2], turnAt(x, y, d));
+  }
+  return c.tint;
+}
+const TINT = [0, PHI ** -3, PHI ** -2, PHI ** -1];       // how far each stratum's dots lean to their crown's colour
+
+// ---- where life settles -------------------------------------------------------------------------
+// Each kind keeps a lattice of its own with one candidate site a square. A site is kept when the
+// square's hash allows it and it lies deep enough out, and it moves to the nearest cell of its kind's
+// strata within 21 cells, or is dropped. Strata are bits: 1 floor, 2 shrubs, 4 canopy, 8 emergents.
+const HABITATS = [
+  // kind         lattice  salt  odds        strata  from depth
+  ["ants",        144,     301,  PHI ** -2,  1,      0],
+  ["mould",       377,     307,  PHI ** -1,  1,      PHI ** -1],
+  ["frogs",       89,      311,  PHI ** -2,  1,      0],
+  ["ferns",       89,      313,  PHI ** -1,  1,      0],
+  ["snakes",      233,     317,  PHI ** -1,  3,      PHI ** -3],
+  ["fireflies",   233,     331,  PHI ** -1,  2,      PHI ** -3],
+  ["morphos",     144,     337,  PHI ** -1,  3,      0],
+  ["blooms",      89,      347,  PHI ** -1,  6,      0],
+  ["hummers",     377,     349,  PHI ** -1,  6,      0],
+  ["troops",      377,     353,  PHI ** -1,  12,     PHI ** -3],
+];
+/** n points in a sunflower spiral out to rad cells, nearest first. */
+const spiral = (n, rad) => Array.from({ length: n }, (_, k) => [Math.round(Math.sqrt(k / (n - 1)) * rad * Math.cos(k * GOLDEN_ANGLE)),
+                                                              Math.round(Math.sqrt(k / (n - 1)) * rad * Math.sin(k * GOLDEN_ANGLE))]);
+const SEEK = spiral(89, 21), LOOK = spiral(89, 34);
+const chroma = (c) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
+
+/** Life's sites in the chunk at (x0, y0), from its cells' strata, depths, colours and paintings. */
+function habitats(x0, y0, hl, dd, off, oc, os, ow) {
+  const sites = [];
+  const inChunk = (x, y) => x >= x0 && y >= y0 && x < x0 + N && y < y0 + N;
+  for (const [kind, g, salt, odds, strata, dmin] of HABITATS) {
+    for (let j = Math.floor(y0 / g); j <= Math.floor((y0 + N - 1) / g); j++)
+      for (let i = Math.floor(x0 / g); i <= Math.floor((x0 + N - 1) / g); i++) {
+        let sx = Math.floor((i + u3(i, j, salt)) * g), sy = Math.floor((j + u3(i, j, salt + 1)) * g);
+        if (!inChunk(sx, sy) || u3(i, j, salt + 2) >= odds) continue;
+        let found = false;
+        for (const [dx, dy] of SEEK) {
+          const x = sx + dx, y = sy + dy;
+          if (!inChunk(x, y) || !((strata >> (hl[(y - y0) * N + x - x0] >> 6)) & 1)) continue;
+          sx = x; sy = y; found = true; break;
+        }
+        const k = (sy - y0) * N + sx - x0, d = dd[off + k];
+        if (!found || d < dmin) continue;
+        // The painting it wears: the most colourful among the dots within 34 cells.
+        let w = ow[off + k], best = -1;
+        for (const [dx, dy] of LOOK) {
+          const x = sx + dx, y = sy + dy;
+          if (!inChunk(x, y)) continue;
+          const kk = off + (y - y0) * N + x - x0;
+          if (!os[kk] || !TOKENS[ow[kk]]) continue;
+          const c = Math.max(...TOKENS[ow[kk]].map(chroma));
+          if (c > best) { best = c; w = ow[kk]; }
+        }
+        const site = { kind, x: sx + 0.5, y: sy + 0.5, seed: h3(i, j, salt + 3), w, turn: turnAt(sx, sy, d), d, h: (hl[k] & 63) / 63 };
+        if (kind === "mould") {
+          // Food: the brightest dots on the floor within 55 cells, which the mould will join up.
+          const lum = [];
+          for (let y = Math.max(y0, sy - 55); y < Math.min(y0 + N, sy + 56); y++)
+            for (let x = Math.max(x0, sx - 55); x < Math.min(x0 + N, sx + 56); x++) {
+              const kk = (y - y0) * N + x - x0;
+              if ((hl[kk] >> 6) || !os[off + kk] || Math.hypot(x - sx, y - sy) > 55) continue;
+              lum.push([0.3 * oc[(off + kk) * 3] + 0.59 * oc[(off + kk) * 3 + 1] + 0.11 * oc[(off + kk) * 3 + 2], x + 0.5, y + 0.5]);
+            }
+          lum.sort((a, b) => b[0] - a[0]);
+          const food = [];
+          for (const [, x, y] of lum) {
+            if (food.length >= 2 * 8) break;
+            let near = false;
+            for (let f = 0; f < food.length; f += 2) if (Math.hypot(food[f] - x, food[f + 1] - y) < 13) near = true;
+            if (!near) food.push(x, y);
+          }
+          site.food = food;
+        }
+        sites.push(site);
+      }
+  }
+  return sites;
+}
+
 /** Grow the chunk of ground covering tile (ci, cj): its pixels, painting per cell, depths and birds. */
 function chunk(ci, cj) {
   const x0 = ci * N, y0 = cj * N;
@@ -250,13 +513,18 @@ function chunk(ci, cj) {
   const s0 = Math.floor(y0 / SEG) * SEG, s1 = (Math.floor((y0 + N - 1) / SEG) + 1) * SEG, HH = s1 - s0;
   const oc = new Uint8Array(N * HH * 3), os = new Uint8Array(N * HH), ow = new Uint16Array(N * HH), dd = new Float32Array(N * HH);
 
-  // B. Where each cell takes its soil from: folded, torn and fused, more so the farther out it is.
+  // A. The forest over this ground, and a margin round it.
+  const { light, hl } = forest(x0, y0);
+
+  // B. Where each cell takes its soil from: folded, torn and fused, more so the farther out it is. Dots
+  //    fuse into blocks only as far as the forest there stands tall: nearer the eye, coarser the pixel,
+  //    so the floor keeps its fine dots, shrubs fuse to 3 cells at most, the canopy to 5, emergents to 8.
   for (let yy = 0; yy < HH; yy++) {
     const y = s0 + yy;
     for (let xx = 0; xx < N; xx++) {
       const x = x0 + xx, k = yy * N + xx, d = depth(x, y);
       dd[k] = d;
-      const b = blockOf(d), bx = x - mod(x, b), by = y - mod(y, b);
+      const b = Math.min(blockOf(d), COARSEST[fl[(y - y0 + FM) * FW + x - x0 + FM]]), bx = x - mod(x, b), by = y - mod(y, b);
       sourceOf(bx, by, b === 1 ? d : depth(bx, by));
       const t = sampleAt(QX, QY), sz = t.size[SI];
       oc[k * 3] = t.col[SI * 3]; oc[k * 3 + 1] = t.col[SI * 3 + 1]; oc[k * 3 + 2] = t.col[SI * 3 + 2];
@@ -285,35 +553,36 @@ function chunk(ci, cj) {
     }
   }
 
-  // D, E. The colours turn by up to the golden angle; some dots come loose as birds and leave pores;
-  //       what stays is painted, two pixels a cell.
+  // D. The colours turn by up to the golden angle; some dots come loose as birds and leave pores; what
+  //    stays is lit by the forest and painted, two pixels a cell. A share of the dots on the canopy
+  //    can catch the wind and show pale.
   const T = N * R, px = new Uint8ClampedArray(T * T * 4);
   for (let j = 0; j < px.length; j += 4) { px[j] = GROUND[0]; px[j + 1] = GROUND[1]; px[j + 2] = GROUND[2]; px[j + 3] = 255; }
-  const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], off = (y0 - s0) * N;
+  const work = new Uint16Array(N * N), dgrid = new Float32Array(32 * 32), birds = [], glints = [], off = (y0 - s0) * N, rgb = [0, 0, 0];
   for (let yy = 0; yy < N; yy++) {
     const y = y0 + yy;
     for (let xx = 0; xx < N; xx++) {
-      const x = x0 + xx, k = off + yy * N + xx, d = dd[k];
-      work[yy * N + xx] = ow[k];
-      let r = oc[k * 3], g = oc[k * 3 + 1], b = oc[k * 3 + 2];
-      const t = smooth(PHI ** -3, 1, d) * (vnoise(x, y, 21, 3) * 2 - 1) * GOLDEN_ANGLE;
-      if (Math.abs(t) >= 0.01) {
-        const c = Math.cos(t), s = Math.sin(t), kk = (1 - c) / 3, q = Math.sqrt(1 / 3) * s;
-        const r2 = r * (c + kk) + g * (kk - q) + b * (kk + q), g2 = r * (kk + q) + g * (c + kk) + b * (kk - q), b2 = r * (kk - q) + g * (kk + q) + b * (c + kk);
-        r = Math.max(0, Math.min(255, r2)); g = Math.max(0, Math.min(255, g2)); b = Math.max(0, Math.min(255, b2));
-      }
+      const x = x0 + xx, k = off + yy * N + xx, c = yy * N + xx, d = dd[k];
+      work[c] = ow[k];
+      const [r, g, b] = turnRGB(oc[k * 3], oc[k * 3 + 1], oc[k * 3 + 2], turnAt(x, y, d), rgb);
+      oc[k * 3] = r; oc[k * 3 + 1] = g; oc[k * 3 + 2] = b;
       let s = os[k];
-      if (s && KAPPA && u3(x, y, 37) < (smooth(PHI ** -2, 1, d) / PHI) * KAPPA) { birds.push(x + 0.5, y + 0.5, r, g, b, ow[k]); s = 0; }
+      if (s && KAPPA && (hl[c] >> 6) >= CANOPY && u3(x, y, 37) < (smooth(PHI ** -2, 1, d) / PHI) * KAPPA) { birds.push(x + 0.5, y + 0.5, r, g, b, ow[k]); s = 0; }
       if (!s) continue;
-      const w = s === 3 ? R : 1;
+      if ((hl[c] >> 6) >= CANOPY && u3(x, y, 401) < PHI ** -5 && glints.length < 6 * 987)
+        glints.push(x + 0.5, y + 0.5, r + (255 - r) / PHI, g + (255 - g) / PHI, b + (255 - b) / PHI, ow[k]);
+      const f = light[c], w = s === 3 ? R : 1, fk_ = (yy + FM) * FW + xx + FM, L = fl[fk_];
+      let pr = r, pg = g, pb = b;
+      if (L) { const tc = crownTint(fcs[fk[fk_]]), q = TINT[L]; pr += (tc[0] - r) * q; pg += (tc[1] - g) * q; pb += (tc[2] - b) * q; }
       for (let dy = 0; dy < w; dy++) for (let dx = 0; dx < w; dx++) {
         const j = ((yy * R + dy) * T + xx * R + dx) * 4;
-        px[j] = r; px[j + 1] = g; px[j + 2] = b;
+        px[j] = pr * f; px[j + 1] = pg * f; px[j + 2] = pb * f;
       }
     }
   }
   for (let by = 0; by < 32; by++) for (let bx = 0; bx < 32; bx++) dgrid[by * 32 + bx] = dd[off + (by * 8 + 4) * N + bx * 8 + 4];
-  return { type: "chunk", ci, cj, px, work, dgrid, birds: Float32Array.from(birds) };
+  const sites = habitats(x0, y0, hl, dd, off, oc, os, ow);
+  return { type: "chunk", ci, cj, px, work, dgrid, birds: Float32Array.from(birds), hl, sites, glints: Float32Array.from(glints) };
 }
 
 onmessage = (e) => {
@@ -322,23 +591,24 @@ onmessage = (e) => {
     S = m.sources; CORN = m.corners; VERT = m.vertical; HORZ = m.horizontal; MIDS = m.middles;
     AF = m.a; BF = m.b; CN = m.corner; K = m.colours;
     ({ A: ZA, D: ZD, CZ, CZ_WANDER: CZW } = m.zone);
-    GROUND = m.ground; R = m.R; KAPPA = m.kappa;
+    GROUND = m.ground; R = m.R; KAPPA = m.kappa; TOKENS = m.tokens;
     postMessage({ type: "ready" });
   } else if (m.type === "chunk") {
     const out = chunk(m.ci, m.cj);
-    postMessage(out, [out.px.buffer, out.work.buffer, out.dgrid.buffer, out.birds.buffer]);
+    postMessage(out, [out.px.buffer, out.work.buffer, out.dgrid.buffer, out.birds.buffer, out.hl.buffer, out.glints.buffer]);
   }
 };
 </script>
 
 <script>
 const PL = __PLANE__;
+const TOKENS = PL.works.map((w) => w.colors.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))));   // each painting's colours
 const R = 2;                                                    // canvas pixels a cell
 const GROUND = [1, 3, 5].map((i) => parseInt(PL.ground.hex.slice(i, i + 2), 16));
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FADE = 377;                                               // ms for new ground to come in (Fibonacci)
 const GLIDE = 1 - PHI ** -6;                                    // how long a swipe glides on
-const MARGIN = 89, KEEP = 55, ASKING = 2;                       // cells kept live round the view; chunks kept; asks in flight
+const MARGIN = 89, KEEP = 55, ASKING = 2;                       // cells kept live round the view; chunks kept; asks in flight a worker
 
 const stage = document.getElementById("stage"), cv = document.getElementById("field"), cx = cv.getContext("2d");
 const showAll = document.getElementById("show-all");
@@ -353,23 +623,26 @@ function pixels(img, w, h) {
 
 // ---- the worker that grows the ground ---------------------------------------------------------
 
-const worker = new Worker(URL.createObjectURL(new Blob(
+// Two workers where the device has the cores for them, each growing a chunk at a time.
+const workerUrl = URL.createObjectURL(new Blob(
   [document.getElementById("common").textContent, "\n", document.getElementById("worker-src").textContent],
-  { type: "text/javascript" })));
+  { type: "text/javascript" }));
+const workers = Array.from({ length: (navigator.hardwareConcurrency || 1) > 2 ? 2 : 1 }, () => ({ w: new Worker(workerUrl), ready: false, busy: 0 }));
 const chunks = new Map(), asked = new Set();
 const ck = (i, j) => (i + 32768) * 65536 + (j + 32768);
-let ready = false, nextId = 1;
+let nextId = 1;
 
-worker.onmessage = (e) => {
+for (const wk of workers) wk.w.onmessage = (e) => {
   const m = e.data;
-  if (m.type === "ready") { ready = true; return; }
+  if (m.type === "ready") { wk.ready = true; return; }
   if (m.type !== "chunk") return;
+  wk.busy--;
   const k = ck(m.ci, m.cj);
   asked.delete(k);
   const c = document.createElement("canvas");
   c.width = c.height = N * R;
   c.getContext("2d").putImageData(new ImageData(m.px, N * R, N * R), 0, 0);
-  chunks.set(k, { i: m.ci, j: m.cj, canvas: c, work: m.work, dgrid: m.dgrid, birds: m.birds,
+  chunks.set(k, { i: m.ci, j: m.cj, canvas: c, work: m.work, dgrid: m.dgrid, birds: m.birds, hl: m.hl, sites: m.sites, glints: m.glints,
                   born: performance.now(), id: nextId++, spawned: false, shade: null, shadeSel: null });
 };
 
@@ -398,10 +671,13 @@ async function ingredients() {
   for (const f of fields) transfer.push(f.buffer);
   const msg = { type: "init", sources, corners: PL.corners, vertical: PL.vertical, horizontal: PL.horizontal, middles: PL.middles,
                 a: fields.slice(0, K), b: fields.slice(K, 2 * K), corner: fields[2 * K], colours: K, zone: PL.zone,
-                ground: GROUND, R, kappa: REDUCED ? 0 : PHI ** -5 };
+                ground: GROUND, R, kappa: REDUCED ? 0 : PHI ** -5, tokens: TOKENS };
   return { msg, transfer };
 }
-ingredients().then(({ msg, transfer }) => worker.postMessage(msg, transfer));
+ingredients().then(({ msg, transfer }) => {
+  for (let n = workers.length - 1; n > 0; n--) workers[n].w.postMessage(msg);     // copies for all but the first,
+  workers[0].w.postMessage(msg, transfer);                                        // which takes the originals
+});
 
 // ---- the view ---------------------------------------------------------------------------------
 
@@ -433,14 +709,16 @@ function wanted() {
 /** Ask for missing ground, launch and ground the birds, and forget ground far behind. */
 function tend(list) {
   const want = new Set(list.map((w) => w.k));
-  if (ready) for (const w of list) {
-    if (asked.size >= ASKING) break;
-    if (!chunks.has(w.k) && !asked.has(w.k)) { asked.add(w.k); worker.postMessage({ type: "chunk", ci: w.i, cj: w.j }); }
+  for (const w of list) {
+    if (chunks.has(w.k) || asked.has(w.k)) continue;
+    const wk = workers.filter((o) => o.ready && o.busy < ASKING).sort((a, b) => a.busy - b.busy)[0];
+    if (!wk) break;
+    asked.add(w.k); wk.busy++; wk.w.postMessage({ type: "chunk", ci: w.i, cj: w.j });
   }
   for (const [k, c] of chunks) {
     const on = want.has(k);
-    if (on && !c.spawned) spawn(c);
-    else if (!on && c.spawned) despawn(c);
+    if (on && !c.spawned) { spawn(c); spawnLife(c); }
+    else if (!on && c.spawned) { despawn(c); despawnLife(c); }
   }
   if (chunks.size > KEEP) {
     const mx = vx + VW / 2, my = vy + VH / 2;
@@ -452,7 +730,7 @@ function tend(list) {
 
 // ---- the birds --------------------------------------------------------------------------------
 
-const CAP = 17711, HAWKS = 3;                                   // birds at most, and unseen hawks (Fibonacci)
+const CAP = 6765, HAWKS = 3;                                    // birds at most, and unseen hawks (Fibonacci)
 const SEE = 8, NEAR = 3, FEAR = 21, LOOK = 13;                  // cells: sight, personal space, fear; neighbours heeded
 const VMAX = 2, VMIN = 1 / PHI, PANIC = VMAX * PHI;             // cells a frame
 const BX = new Float32Array(CAP), BY = new Float32Array(CAP), BVX = new Float32Array(CAP), BVY = new Float32Array(CAP);
@@ -508,6 +786,7 @@ function sizeTrail() {
   trailCv.width = TW; trailCv.height = TH;
   trailImg = trailCtx.createImageData(TW, TH); trailPx = trailImg.data; trailTmp = new Uint8ClampedArray(trailPx.length);
   tox = Math.floor(vx); toy = Math.floor(vy);
+  sizeLife();
 }
 function shiftTrail(nx, ny) {
   const dx = nx - tox, dy = ny - toy;
@@ -588,6 +867,10 @@ function flow(t, box) {
       const dx = x - hk.x, dy = y - hk.y, d2 = dx * dx + dy * dy;
       if (d2 < FEAR * FEAR) { const d = Math.sqrt(d2) || 0.1, f = (1 - d / FEAR) * PHI; vx_ += (dx / d) * f; vy_ += (dy / d) * f; fled = true; }
     }
+    for (const e of LIFE.eagles.list) {                                                 // and the eagle, farther off
+      const dx = x - e.x, dy = y - e.y, d2 = dx * dx + dy * dy, far = FEAR * PHI;
+      if (d2 < far * far) { const d = Math.sqrt(d2) || 0.1, f = (1 - d / far) * PHI; vx_ += (dx / d) * f; vy_ += (dy / d) * f; fled = true; }
+    }
     const d = dAt(x, y);                                                                // calm ground is land: turn back outward
     if (d < PHI ** -2) {
       const c = nearIsle(x, y), ox = x - c.x, oy = y - c.y, dist = Math.hypot(ox, oy) || 1, depthIn = (PHI ** -2 - d) / PHI ** -2;
@@ -607,6 +890,756 @@ function flow(t, box) {
       const j = (py * TW + px) * 4;
       trailPx[j] = r; trailPx[j + 1] = g; trailPx[j + 2] = b; trailPx[j + 3] = 255;
     }
+  }
+}
+
+// ---- the forest's life ------------------------------------------------------------------------
+// Life keeps to its niche. Each kind settles in the strata it lives in, and a creature is seen only
+// where nothing taller stands over it: ants go under a shrub and come out the other side, and a
+// butterfly passes beneath a canopy crown. Every creature wears the colours of a painting from the
+// ground where it lives, all three of them, turned as the ground there is turned, and pointing at
+// one names its painting.
+
+const TAU = 2 * Math.PI, rnd = Math.random;
+const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+const chroma = (c) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
+const lift = (c, k) => c.map((v) => v + (255 - v) * k);
+const mixRGB = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+const turnTo = (from, to) => Math.atan2(Math.sin(to - from), Math.cos(to - from));
+const dim = (c, k) => c.map((v) => v * k);
+/** A colour made to stand out from the soil, as the forest's creatures do: phi^2 times as saturated, and lit. */
+function pop(c) {
+  const g = lum(c), s = c.map((v) => Math.max(0, Math.min(255, g + (v - g) * PHI * PHI)));
+  const l = lum(s);
+  return l >= 144 ? s : lift(s, (144 - l) / (255 - l));
+}
+
+/** A painting's colours as a creature wears them, turned as the ground where it lives is turned. */
+function paletteOf(w, turn) {
+  const cols = (TOKENS[w] || TOKENS[0]).map((c) => turnRGB(c[0], c[1], c[2], turn));
+  const byL = [...cols].sort((a, b) => lum(a) - lum(b));
+  return { w, cols, byL, dark: byL[0], mid: byL[byL.length >> 1], light: byL[byL.length - 1],
+           vivid: [...cols].sort((a, b) => chroma(b) - chroma(a))[0],
+           blue: [...cols].sort((a, b) => b[2] - b[0] - (a[2] - a[0]))[0] };
+}
+
+// The life layer: one pixel a cell over the ground, drawn afresh each frame. Each pixel remembers
+// the painting its creature wears, for naming.
+const lifeCv = document.createElement("canvas"), lifeCtx = lifeCv.getContext("2d");
+let lifeImg = null, lifePx = null, lifeW = null, lifeDirty = null, nDirty = 0;
+function sizeLife() {
+  lifeCv.width = TW; lifeCv.height = TH;
+  lifeImg = lifeCtx.createImageData(TW, TH); lifePx = lifeImg.data;
+  lifeW = new Int32Array(TW * TH).fill(-1); lifeDirty = new Int32Array(TW * TH); nDirty = 0;
+}
+function clearLife() {
+  for (let d = 0; d < nDirty; d++) { const i = lifeDirty[d]; lifePx[i * 4 + 3] = 0; lifeW[i] = -1; }
+  nDirty = 0;
+}
+/** Lay a pixel of life at (x, y) with opacity a, over whatever life is there already. */
+function put(x, y, rgb, a, w) {
+  if (a * 255 < 1) return;
+  const px = Math.floor(x) - tox, py = Math.floor(y) - toy;
+  if (!(px >= 0 && py >= 0 && px < TW && py < TH)) return;
+  const i = py * TW + px, j = i * 4, f = selWork !== null && w !== selWork ? PHI ** -2 : 1, da = lifePx[j + 3] / 255;
+  if (a > 1) a = 1;
+  if (!da) {
+    lifeDirty[nDirty++] = i;
+    lifePx[j] = rgb[0] * f; lifePx[j + 1] = rgb[1] * f; lifePx[j + 2] = rgb[2] * f; lifePx[j + 3] = a * 255;
+  } else {
+    const oa = a + da * (1 - a), k = a / oa;
+    lifePx[j] += (rgb[0] * f - lifePx[j]) * k; lifePx[j + 1] += (rgb[1] * f - lifePx[j + 1]) * k; lifePx[j + 2] += (rgb[2] * f - lifePx[j + 2]) * k;
+    lifePx[j + 3] = oa * 255;
+  }
+  if (a >= PHI ** -1 && w >= 0) lifeW[i] = w;
+}
+/** A shadow at (x, y) with depth a: it darkens the life drawn there, or else the ground. */
+function shadowAt(x, y, a) {
+  const px = Math.floor(x) - tox, py = Math.floor(y) - toy;
+  if (!(px >= 0 && py >= 0 && px < TW && py < TH)) return;
+  const i = py * TW + px, j = i * 4, da = lifePx[j + 3] / 255;
+  if (!da) { lifeDirty[nDirty++] = i; lifePx[j] = lifePx[j + 1] = lifePx[j + 2] = 0; lifePx[j + 3] = a * 255; }
+  else { lifePx[j] *= 1 - a; lifePx[j + 1] *= 1 - a; lifePx[j + 2] *= 1 - a; lifePx[j + 3] = (a + da * (1 - a)) * 255; }
+}
+
+let hlKey = NaN, hlArr = null;
+/** The forest over a cell of grown ground: stratum << 6 | height in 63rds; 255 where none is grown. */
+function forestAt(x, y) {
+  const k = ck(Math.floor(x / N), Math.floor(y / N));
+  if (k !== hlKey || !hlArr) { const c = chunks.get(k); hlArr = c ? c.hl : null; hlKey = k; }
+  return hlArr ? hlArr[mod(Math.floor(y), N) * N + mod(Math.floor(x), N)] : 255;
+}
+const heightAt = (x, y) => (forestAt(x, y) & 63) / 63;
+/** Is something at height z seen at (x, y)? Only where nothing stands taller over it. */
+const seen = (x, y, z) => heightAt(x, y) <= z;
+/** Is anything within r cells of (x, y) in view? */
+const inView = (x, y, r) => x > vx - r && x < vx + VW + r && y > vy - r && y < vy + VH + r;
+/** The painting under (x, y), where the ground is grown; otherwise -1. */
+function workAt(x, y) {
+  const c = chunks.get(ck(Math.floor(x / N), Math.floor(y / N)));
+  return c ? c.work[mod(Math.floor(y), N) * N + mod(Math.floor(x), N)] : -1;
+}
+/** The canopy or emergent crown standing highest over (x, y), if any. */
+function crownUnder(x, y) {
+  let best = null, bh = 0;
+  for (const L of [1, 2]) for (const c of crownsNear(L, x, y, STRATA[L].r * PHI)) {
+    const h = crownHeight(c, x, y);
+    if (h > bh) { bh = h; best = c; }
+  }
+  return best;
+}
+
+// Heights creatures live at: on the floor, just above it, in the understory, above the canopy.
+const ON_FLOOR = PHI ** -5, LOW = PHI ** -4, UNDER = PHI ** -2, HIGH = PHI ** -1 + PHI ** -4;
+const LIFE = {};
+
+// Leaf-cutter ants, on the forest floor. Trails run out from each nest to where the plants begin; the
+// ants go out bare and come home each holding up a piece of a painting cut from where the trail ends.
+LIFE.ants = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), trails = [], a0 = unitOf(s.seed) * TAU, n = s.seed & 1 ? 5 : 3;
+    for (let t = 0; t < n; t++) {
+      const a = a0 + t * GOLDEN_ANGLE, ca = Math.cos(a), sa = Math.sin(a);
+      let reach = 0;
+      for (let r = 13; r <= 144; r += 2) if (canopyAt(s.x + ca * r, s.y + sa * r) > 0) { reach = r + 3; break; }
+      if (!reach) continue;
+      // A meandering way, pinned at both ends.
+      const p1 = rnd() * TAU, p2 = rnd() * TAU, amp = reach * PHI ** -3, pts = new Float32Array((reach + 1) * 2);
+      for (let q = 0; q <= reach; q++) {
+        const u = q / reach, bend = amp * Math.sin(Math.PI * u) * (Math.sin(TAU * u + p1) + PHI ** -1 * Math.sin(3 * Math.PI * u + p2));
+        pts[q * 2] = s.x + ca * q - sa * bend; pts[q * 2 + 1] = s.y + sa * q + ca * bend;
+      }
+      const tx = pts[reach * 2], ty = pts[reach * 2 + 1], leaves = [];
+      for (let q = 0; q < 5; q++) {
+        const x = tx + (rnd() - 0.5) * 8, y = ty + (rnd() - 0.5) * 8, w = workAt(x, y);
+        if (w < 0) continue;
+        const L = paletteOf(w, turnAt(x, y, depth(x, y)));
+        leaves.push({ c: pop(L.vivid), w }, { c: pop(L.light), w });
+      }
+      if (!leaves.length) leaves.push({ c: pop(P.vivid), w: P.w });
+      const ants = [], many = Math.round(reach / PHI);        // a column: an ant every 1.6 cells or so
+      for (let k = 0; k < many; k++) {
+        const back = k & 1;
+        ants.push({ s: ((k + rnd() * PHI ** -1) / many) * reach, dir: back ? -1 : 1, wait: 0, load: back ? leaves[k % leaves.length] : null });
+      }
+      trails.push({ pts, len: reach, ants, leaves });
+    }
+    return trails.length ? { x: s.x, y: s.y, P, body: dim(pop(P.dark), PHI ** -1), trails } : null;
+  },
+  step() {
+    for (const n of this.list) for (const tr of n.trails) for (const a of tr.ants) {
+      if (a.wait > 0) { a.wait--; continue; }
+      a.s += a.dir * (a.load ? PHI ** -3 : PHI ** -2);
+      if (a.s >= tr.len) { a.s = tr.len; a.dir = -1; a.load = tr.leaves[Math.floor(rnd() * tr.leaves.length)]; a.wait = 21 + rnd() * 34; }
+      else if (a.s <= 0) { a.s = 0; a.dir = 1; a.load = null; a.wait = rnd() * 13; }
+    }
+  },
+  draw() {
+    for (const n of this.list) {
+      if (!inView(n.x, n.y, 144)) continue;
+      for (let k = 1; k < 13; k++) {                     // the nest: soil brought up from below
+        const a = k * GOLDEN_ANGLE, r = PHI + Math.sqrt(k) * PHI;
+        put(n.x + Math.cos(a) * r, n.y + Math.sin(a) * r, n.P.light, PHI ** -1, n.P.w);
+      }
+      for (const tr of n.trails) for (const a of tr.ants) {
+        const q = Math.min(tr.len - 1, Math.floor(a.s)), f = a.s - q, p = tr.pts;
+        const x = p[q * 2] + (p[q * 2 + 2] - p[q * 2]) * f, y = p[q * 2 + 1] + (p[q * 2 + 3] - p[q * 2 + 1]) * f;
+        if (!seen(x, y, ON_FLOOR)) continue;
+        if (a.load) {
+          const c = a.load.c, w = a.load.w;
+          put(x, y, c, 1, w); put(x + 1, y, c, 1, w); put(x, y - 1, c, 1, w); put(x + 1, y - 1, c, 1, w);
+        } else put(x, y, n.body, 1, n.P.w);
+      }
+    }
+  },
+};
+
+// Slime mould, far out in the gaps of the forest floor: 1,597 cells scattered over a gap, each following
+// the scent the others leave (Physarum, after Jeff Jones's model). They gather into glowing veins that
+// join up the brightest dots in the gap, and the veins keep reshaping.
+LIFE.mould = {
+  list: [],
+  spawn(s) {
+    const RP = 55, D = 2 * RP + 1, P = paletteOf(s.w, s.turn);
+    return { s, x: s.x, y: s.y, x0: Math.floor(s.x) - RP, y0: Math.floor(s.y) - RP, D, wall: null, glow: lift(P.light, PHI ** -2), w: s.w, live: false };
+  },
+  /** Lay the patch out once the ground all round it has grown: its walls are wherever plants stand. */
+  settle(m) {
+    const { D, x0, y0, s } = m, RP = (D - 1) / 2;
+    for (const [dx, dy] of [[0, 0], [D, 0], [0, D], [D, D]]) if (!chunks.has(ck(Math.floor((x0 + dx) / N), Math.floor((y0 + dy) / N)))) return false;
+    const wall = new Uint8Array(D * D);
+    for (let j = 0; j < D; j++) for (let i = 0; i < D; i++) {
+      const edge = RP * (1 - PHI ** -2 * vnoise(x0 + i, y0 + j, 13, 5));
+      wall[j * D + i] = Math.hypot(i - RP, j - RP) >= edge || forestAt(x0 + i, y0 + j) >> 6 !== FLOOR ? 1 : 0;
+    }
+    const food = [];
+    for (let f = 0; f < s.food.length; f += 2) {
+      const i = Math.floor(s.food[f]) - x0, j = Math.floor(s.food[f + 1]) - y0;
+      if (i >= 0 && j >= 0 && i < D && j < D && !wall[j * D + i]) food.push(j * D + i);
+    }
+    if (!food.length && !wall[RP * D + RP]) food.push(RP * D + RP);
+    const open = [];
+    for (let k = 0; k < D * D; k++) if (!wall[k]) open.push(k);
+    const A = open.length ? 1597 : 0, ax = new Float32Array(A), ay = new Float32Array(A), ah = new Float32Array(A);
+    for (let a = 0; a < A; a++) { const k = open[Math.floor(rnd() * open.length)]; ax[a] = (k % D) + rnd(); ay[a] = Math.floor(k / D) + rnd(); ah[a] = rnd() * TAU; }
+    Object.assign(m, { wall, food, A, ax, ay, ah, trail: new Float32Array(D * D), tmp: new Float32Array(D * D) });
+    return true;
+  },
+  step() {
+    // Only the patches nearest the middle of the view grow, three at most.
+    const mx = vx + VW / 2, my = vy + VH / 2, near = this.list
+      .filter((m) => m.x > vx - 55 && m.x < vx + VW + 55 && m.y > vy - 55 && m.y < vy + VH + 55)
+      .sort((a, b) => Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my)).slice(0, 3);
+    for (const m of this.list) m.live = near.includes(m) && (m.wall !== null || this.settle(m));
+    for (const m of near) if (m.live) this.grow(m);
+  },
+  grow(m) {
+    const { D, wall, trail, tmp, ax, ay, ah } = m, SO = 5, SA = GOLDEN_ANGLE / 4, RA = GOLDEN_ANGLE / 4;
+    const sense = (x, y) => { const i = Math.floor(x), j = Math.floor(y); return i < 0 || j < 0 || i >= D || j >= D || wall[j * D + i] ? -1 : trail[j * D + i]; };
+    for (let a = 0; a < m.A; a++) {
+      const x = ax[a], y = ay[a];
+      let h = ah[a];
+      const F = sense(x + Math.cos(h) * SO, y + Math.sin(h) * SO);
+      const L = sense(x + Math.cos(h - SA) * SO, y + Math.sin(h - SA) * SO), Rt = sense(x + Math.cos(h + SA) * SO, y + Math.sin(h + SA) * SO);
+      if (F < L || F < Rt) h += F < L && F < Rt ? (rnd() < 0.5 ? -RA : RA) : L > Rt ? -RA : RA;
+      const nx = x + Math.cos(h), ny = y + Math.sin(h), i = Math.floor(nx), j = Math.floor(ny);
+      if (i < 0 || j < 0 || i >= D || j >= D || wall[j * D + i]) { ah[a] = rnd() * TAU; continue; }
+      ax[a] = nx; ay[a] = ny; ah[a] = h; trail[j * D + i] += 1;
+    }
+    for (const f of m.food) trail[f] += PHI ** 2;
+    // The scent spreads a little into the eight cells round each, and fades.
+    for (let j = 1; j < D - 1; j++) for (let i = 1; i < D - 1; i++) {
+      const k = j * D + i, t = trail[k];
+      tmp[k] = wall[k] ? 0 : (t + ((trail[k - D - 1] + trail[k - D] + trail[k - D + 1] + trail[k - 1] + t + trail[k + 1] + trail[k + D - 1] + trail[k + D] + trail[k + D + 1]) / 9 - t) * PHI ** -3) * (1 - PHI ** -2);
+    }
+    m.trail = tmp; m.tmp = trail;
+  },
+  draw() {
+    for (const m of this.list) {
+      if (!m.live) continue;
+      const { D, trail } = m;
+      for (let j = 0; j < D; j++) for (let i = 0; i < D; i++) {
+        const v = trail[j * D + i];
+        if (v > PHI ** -1) put(m.x0 + i, m.y0 + j, m.glow, (1 - PHI ** -3) * Math.min(1, (v - PHI ** -1) / (PHI ** 2 - PHI ** -1)) ** PHI ** -1, m.w);
+      }
+    }
+  },
+};
+
+// Poison frogs on the floor. They sit, hop, and call, each frog holding its call back a little when
+// a neighbour is about to call, so that they take turns.
+LIFE.frogs = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), n = s.seed & 1 ? 5 : 3, frogs = [];
+    for (let k = 0; k < n; k++) {
+      const a = unitOf(s.seed + k) * TAU, r = PHI + k * PHI;
+      frogs.push({ x: s.x + Math.cos(a) * r, y: s.y + Math.sin(a) * r, fx: 0, fy: 0, tx: 0, ty: 0, hop: 0, wait: rnd() * 233, call: rnd(), voice: 0 });
+    }
+    return { x: s.x, y: s.y, P, frogs, skin: pop(P.vivid) };
+  },
+  step() {
+    for (const g of this.list) for (const f of g.frogs) {
+      if (f.hop) {
+        f.hop += 1 / 8;
+        if (f.hop >= 1) { f.hop = 0; f.x = f.tx; f.y = f.ty; f.wait = 34 + rnd() * 377; }
+        else { f.x = f.fx + (f.tx - f.fx) * f.hop; f.y = f.fy + (f.ty - f.fy) * f.hop; }
+      } else if (--f.wait <= 0) {
+        f.wait = 21;
+        for (let q = 0; q < 5; q++) {
+          const a = rnd() * TAU, r = 5 + rnd() * 8, tx = f.x + Math.cos(a) * r, ty = f.y + Math.sin(a) * r;
+          if (Math.hypot(tx - g.x, ty - g.y) > 21 || heightAt(tx, ty) > 0) continue;
+          f.fx = f.x; f.fy = f.y; f.tx = tx; f.ty = ty; f.hop = PHI ** -8;
+          break;
+        }
+      }
+      f.call += 1 / 89;
+      if (f.call >= 1) {
+        f.call -= 1; f.voice = 1;
+        for (const o of g.frogs) if (o !== f && o.call > 1 - PHI ** -3) o.call -= PHI ** -3;
+      }
+      f.voice = Math.max(0, f.voice - 1 / 21);
+    }
+  },
+  draw() {
+    for (const g of this.list) for (const f of g.frogs) {
+      if (!inView(f.x, f.y, 8) || !seen(f.x, f.y, ON_FLOOR)) continue;
+      const up = f.hop ? Math.sin(Math.PI * f.hop) : 0, w = g.P.w;
+      if (up > PHI ** -2) {                                  // in the air: its shadow falls below and right
+        const o = up * 3;
+        shadowAt(f.x + o, f.y + o, PHI ** -2);
+        put(f.x, f.y, g.skin, 1, w); put(f.x + 1, f.y, g.skin, 1, w); put(f.x, f.y + 1, g.skin, 1, w); put(f.x + 1, f.y + 1, g.P.dark, 1, w);
+      } else {                                               // sitting: a body two cells square, legs tucked at its corners
+        put(f.x, f.y, g.skin, 1, w); put(f.x + 1, f.y, g.skin, 1, w); put(f.x, f.y + 1, g.skin, 1, w); put(f.x + 1, f.y + 1, g.skin, 1, w);
+        for (const [a, b] of [[-1, -1], [2, -1], [-1, 2], [2, 2]]) put(f.x + a, f.y + b, g.skin, PHI ** -1, w);
+      }
+      if (f.voice > 0) {                                     // the call carries out in a ring
+        const r = (1 - f.voice) * 8;
+        for (let k = 0; k < 13; k++) put(f.x + Math.cos((k * TAU) / 13) * r, f.y + Math.sin((k * TAU) / 13) * r, g.P.light, f.voice * PHI ** -2, w);
+      }
+    }
+  },
+};
+
+// Ferns on the floor, their fronds unrolling from fiddleheads. A frond coils in a spiral that tightens
+// toward its tip and unrolls from the base out, opening its leaflets as it goes; it stands a while,
+// withers, and in time a new one comes.
+const UNROLL = 987, STAND = 1597, WITHER = 144;
+LIFE.ferns = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), n = s.seed & 1 ? 5 : 3, a0 = unitOf(s.seed) * TAU, fronds = [];
+    for (let k = 0; k < n; k++)
+      fronds.push({ a: a0 + k * GOLDEN_ANGLE, len: (s.seed >> (k + 1)) & 1 ? 21 : 13, side: (s.seed >> (k + 8)) & 1 ? 1 : -1,
+                    age: REDUCED ? UNROLL : Math.floor(rnd() * (610 + UNROLL + STAND)) - 610 });   // anywhere in its life
+    return { x: s.x, y: s.y, w: s.w, fronds, stem: pop(P.light), leaf: pop(P.vivid) };
+  },
+  step() { for (const g of this.list) for (const f of g.fronds) if (++f.age > UNROLL + STAND + WITHER) f.age = -Math.floor(rnd() * 987); },
+  draw() {
+    for (const g of this.list) for (const f of g.fronds) {
+      if (f.age < 0 || !inView(g.x, g.y, 34)) continue;
+      const u = Math.min(1, f.age / UNROLL), m = u * f.len, fade = f.age > UNROLL + STAND ? 1 - (f.age - UNROLL - STAND) / WITHER : 1;
+      let x = g.x, y = g.y, th = f.a;
+      for (let i = 0; i < f.len; i++) {
+        th += f.side * (i < m ? PHI ** -5 : Math.min(GOLDEN_ANGLE / 4, PHI ** -5 * PHI ** ((i - m) / PHI)));
+        x += Math.cos(th); y += Math.sin(th);
+        if (!seen(x, y, LOW)) continue;
+        put(x, y, g.stem, fade, g.w);
+        if (i > 1 && i < m - 1 && i % 2 === 0) {           // leaflets open along what has unrolled
+          const l = Math.max(1, Math.round((1 - i / f.len) * 3 * u)), nx = -Math.sin(th), ny = Math.cos(th);
+          for (let q = 1; q <= l; q++) {
+            put(x + nx * q, y + ny * q, g.leaf, fade * PHI ** -0.5, g.w);
+            put(x - nx * q, y - ny * q, g.leaf, fade * PHI ** -0.5, g.w);
+          }
+        }
+      }
+    }
+  },
+};
+
+// Coral snakes below the canopy, ringed in their painting's three colours, winding as they go.
+LIFE.snakes = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), a = unitOf(s.seed) * TAU, black = dim(P.dark, PHI ** -2), bright = pop(P.vivid), pale = pop(P.light);
+    // Coral rings: three of the painting's brightest colour, one pale, three near black, one pale.
+    const rings = [bright, bright, bright, pale, black, black, black, pale];
+    const path = [];
+    for (let k = 0; k < 2 * 34; k++) path.push(s.x - (Math.cos(a) * k) / 2, s.y - (Math.sin(a) * k) / 2);
+    return { hx: s.x, hy: s.y, x: s.x, y: s.y, base: a, th: a, wave: rnd() * TAU, path, moved: 0, rings, head: dim(P.dark, PHI ** -1), tongue: 0, tip: pop(P.vivid), w: s.w };
+  },
+  step() {
+    for (const k of this.list) {
+      k.wave += TAU / 55;
+      k.base += (rnd() - 0.5) * PHI ** -4;
+      const dx = k.hx - k.x, dy = k.hy - k.y;
+      if (dx * dx + dy * dy > 55 * 55) k.base += turnTo(k.base, Math.atan2(dy, dx)) * PHI ** -5;
+      k.th = k.base + Math.sin(k.wave) * PHI ** -1;
+      const v = PHI ** -3;
+      k.x += Math.cos(k.th) * v; k.y += Math.sin(k.th) * v; k.moved += v;
+      if (k.moved >= 0.5) { k.moved -= 0.5; k.path.unshift(k.x, k.y); k.path.length = 2 * 2 * 34; }
+      if (k.tongue > 0) k.tongue--;
+      else if (rnd() < PHI ** -8) k.tongue = 8;
+    }
+  },
+  draw() {
+    for (const k of this.list) {
+      if (!inView(k.x, k.y, 34)) continue;
+      for (let s = 33; s >= 0; s--) {                        // tail to head, two cells thick, tapering at the tail
+        const x = k.path[s * 4], y = k.path[s * 4 + 1], c = s ? k.rings[s % k.rings.length] : k.head;
+        if (!seen(x, y, UNDER)) continue;
+        const nx = k.path[s * 4 + 1] - k.path[s * 4 + 5], ny = k.path[s * 4 + 4] - k.path[s * 4], l = Math.hypot(nx, ny) || 1;
+        put(x, y, c, 1, k.w);
+        if (s < 29) put(x + nx / l, y + ny / l, c, 1, k.w);
+      }
+      if (k.tongue > 4) for (let q = 1; q <= 2; q++) {
+        const x = k.x + Math.cos(k.th) * q, y = k.y + Math.sin(k.th) * q;
+        if (seen(x, y, UNDER)) put(x, y, k.tip, PHI ** -1, k.w);
+      }
+    }
+  },
+};
+
+// Fireflies among the shrubs, far enough out. Each flashes by its own clock; a flash nudges the
+// fireflies near it on toward their own, so flashes gather into waves that sweep the swarm, and at
+// times much of it flashes as one (pulse-coupled oscillators, after Mirollo and Strogatz).
+LIFE.fireflies = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), fl = [];
+    for (let k = 0; k < 144; k++) {
+      const r = 34 * Math.sqrt(rnd()), a = rnd() * TAU, x = s.x + Math.cos(a) * r, y = s.y + Math.sin(a) * r;
+      fl.push({ x, y, hx: x, hy: y, vx: 0, vy: 0, p: rnd(), T: 55 * PHI ** ((rnd() - 0.5) * PHI ** -3), glow: 0 });
+    }
+    return { x: s.x, y: s.y, fl, glow: lift(pop(P.vivid), PHI ** -1), w: s.w };
+  },
+  step() {
+    for (const sw of this.list) {
+      const fl = sw.fl, lit = [];
+      for (const f of fl) {
+        f.p += 1 / f.T;
+        if (f.p >= 1) { f.p = 0; f.glow = 1; lit.push(f); }
+        else f.glow *= 1 - PHI ** -4;
+        if (rnd() < PHI ** -13) f.p = rnd();                  // now and then one loses the beat
+        f.vx = f.vx * (1 - PHI ** -3) + (rnd() - 0.5) * PHI ** -5 + (f.hx - f.x) * PHI ** -10;
+        f.vy = f.vy * (1 - PHI ** -3) + (rnd() - 0.5) * PHI ** -5 + (f.hy - f.y) * PHI ** -10;
+        f.x += f.vx; f.y += f.vy;
+      }
+      while (lit.length) {
+        const f = lit.pop();
+        for (const o of fl) {
+          if (o.p < PHI ** -2) continue;                      // too soon after its own flash to be moved
+          const dx = o.x - f.x, dy = o.y - f.y;
+          if (dx * dx + dy * dy > 13 * 13) continue;
+          o.p += PHI ** -5;
+          if (o.p >= 1) { o.p = 0; o.glow = 1; lit.push(o); }
+        }
+      }
+    }
+  },
+  draw() {
+    for (const sw of this.list) {
+      if (!inView(sw.x, sw.y, 55)) continue;
+      for (const f of sw.fl) {
+      if (f.glow < PHI ** -5 || !seen(f.x, f.y, UNDER)) continue;
+      const h = f.glow * PHI ** -1, e = f.glow * PHI ** -3;
+      put(f.x, f.y, sw.glow, f.glow, sw.w);
+      put(f.x + 1, f.y, sw.glow, h, sw.w); put(f.x - 1, f.y, sw.glow, h, sw.w); put(f.x, f.y + 1, sw.glow, h, sw.w); put(f.x, f.y - 1, sw.glow, h, sw.w);
+      put(f.x + 1, f.y + 1, sw.glow, e, sw.w); put(f.x - 1, f.y - 1, sw.glow, e, sw.w); put(f.x - 1, f.y + 1, sw.glow, e, sw.w); put(f.x + 1, f.y - 1, sw.glow, e, sw.w);
+      put(f.x + 2, f.y, sw.glow, e, sw.w); put(f.x - 2, f.y, sw.glow, e, sw.w); put(f.x, f.y + 2, sw.glow, e, sw.w); put(f.x, f.y - 2, sw.glow, e, sw.w);
+      }
+    }
+  },
+};
+
+// Morpho butterflies in the understory: an erratic, bobbing flight, flashing the painting's bluest
+// colour each time the wings open and showing only their dark undersides as they close.
+LIFE.morphos = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), bs = [];
+    for (let k = 0; k <= s.seed % 3; k++) bs.push({ x: s.x + (rnd() - 0.5) * 13, y: s.y + (rnd() - 0.5) * 13, th: rnd() * TAU, om: 0, flap: rnd() * TAU });
+    return { x: s.x, y: s.y, bs, open: pop(P.blue), shut: dim(P.dark, PHI ** -1), under: P.mid, w: s.w };
+  },
+  step() {
+    for (const g of this.list) for (const b of g.bs) {
+      b.om = b.om * (1 - PHI ** -3) + (rnd() - 0.5) * PHI ** -3;
+      const dx = g.x - b.x, dy = g.y - b.y;
+      if (dx * dx + dy * dy > 89 * 89) b.om += turnTo(b.th, Math.atan2(dy, dx)) * PHI ** -5;
+      b.th += b.om; b.flap += TAU / 8;
+      const v = PHI ** -1 * (1 + PHI ** -1 * Math.sin(b.flap));
+      b.x += Math.cos(b.th) * v; b.y += Math.sin(b.th) * v;
+    }
+  },
+  draw() {
+    for (const g of this.list) for (const b of g.bs) {
+      if (!inView(b.x, b.y, 5) || !seen(b.x, b.y, UNDER)) continue;
+      const open = Math.sin(b.flap), fx = Math.cos(b.th), fy = Math.sin(b.th), nx = -fy, ny = fx;
+      for (let q = -1; q <= 1; q++) put(b.x + fx * q, b.y + fy * q, g.shut, 1, g.w);       // the body
+      if (open > 0) {
+        const a = PHI ** -1 + (1 - PHI ** -1) * open;
+        for (const side of [-1, 1]) for (let q = 1; q <= 4; q++) {
+          put(b.x + nx * q * side + fx * PHI ** -1, b.y + ny * q * side + fy * PHI ** -1, g.open, a, g.w);          // forewings
+          put(b.x + nx * q * side + fx * PHI ** -1 * 2.5, b.y + ny * q * side + fy * PHI ** -1 * 2.5, g.open, q < 4 ? a : 0, g.w);
+          if (q < 4) put(b.x + nx * q * side - fx, b.y + ny * q * side - fy, g.open, a * PHI ** -0.5, g.w);         // hindwings
+        }
+      } else for (const side of [-1, 1]) for (let q = 1; q <= 2; q++) put(b.x + nx * q * side, b.y + ny * q * side, g.under, PHI ** -1, g.w);
+    }
+  },
+};
+
+// Wind over the canopy: gusts cross the treetops in bands, and where one passes, the leaves turn up
+// their pale undersides, as Cecropia leaves flash silver.
+LIFE.wind = {
+  list: [],
+  draw(t) {
+    const a = PHI + PHI ** -2 * Math.sin((t * TAU) / 1597), ca = Math.cos(a), sa = Math.sin(a), v = PHI, lam = 233, col = [0, 0, 0];
+    for (const c of chunks.values()) {
+      if (!c.glints.length || (c.i + 1) * N < vx || c.i * N > vx + VW || (c.j + 1) * N < vy || c.j * N > vy + VH) continue;
+      const g = c.glints;
+      for (let o = 0; o < g.length; o += 6) {
+        const x = g[o], y = g[o + 1], along = (x * ca + y * sa - t * v) / lam, ph = along - Math.floor(along);
+        if (ph > PHI ** -3) continue;
+        const f = Math.sin((Math.PI * ph) / PHI ** -3) * smooth(PHI ** -2, 1, vnoise(x - t * v * ca, y - t * v * sa, 89, 5));
+        if (f < PHI ** -4) continue;
+        col[0] = g[o + 2]; col[1] = g[o + 3]; col[2] = g[o + 4];
+        put(x, y, col, f, g[o + 5]);
+      }
+    }
+  },
+};
+
+// Flowers opening on the crowns of shrubs and trees, their florets set by the golden angle as a
+// sunflower's are, in the painting's three colours from a dark heart to a bright rim. They open,
+// stand, drop their florets from the rim in, rest, and open again.
+const OPEN = 233, BLOOM = 1597, DROP = 144;
+LIFE.blooms = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn), n = [55, 89, 144][s.seed % 3], th = unitOf(s.seed) * TAU;
+    const heart = P.byL[0], mid = pop(P.byL[P.byL.length >> 1]), rim = pop(P.byL[P.byL.length - 1]);
+    const at = new Float32Array(n * 2), col = [];
+    for (let k = 0; k < n; k++) {
+      const u = k / n, r = PHI * Math.sqrt(k), a = k * GOLDEN_ANGLE + th;
+      at[k * 2] = s.x + Math.cos(a) * r; at[k * 2 + 1] = s.y + Math.sin(a) * r;
+      col.push(u < 0.5 ? mixRGB(heart, mid, u * 2) : mixRGB(mid, rim, u * 2 - 1));
+    }
+    return { x: s.x, y: s.y, z: s.h + PHI ** -5, n, at, col, w: s.w, age: REDUCED ? OPEN : Math.floor(rnd() * (987 + OPEN + BLOOM)) - 987 };
+  },
+  step() { for (const b of this.list) if (++b.age > OPEN + BLOOM + DROP) b.age = -Math.floor(610 + rnd() * 987); },
+  isOpen: (b) => b.age > OPEN / PHI && b.age < OPEN + BLOOM,
+  draw() {
+    for (const b of this.list) {
+      if (b.age <= 0 || !inView(b.x, b.y, 21)) continue;
+      const shown = b.n * Math.min(1, b.age / OPEN), kept = b.age > OPEN + BLOOM ? b.n * (1 - (b.age - OPEN - BLOOM) / DROP) : b.n;
+      for (let k = 0; k < Math.min(shown, kept); k++) {
+        const x = b.at[k * 2], y = b.at[k * 2 + 1];
+        if (seen(x, y, b.z)) put(x, y, b.col[k], Math.min(1, shown - k), b.w);
+      }
+    }
+  },
+};
+
+// Hummingbirds, which hover at the open flowers in a small figure of eight and dart between them.
+LIFE.hummers = {
+  list: [],
+  spawn(s) {
+    const P = paletteOf(s.w, s.turn);
+    return { x: s.x, y: s.y, hx: s.x, hy: s.y, ax: s.x, ay: s.y, bx: s.x, by: s.y, th: rnd() * TAU, dart: 0, len: 1, wait: 34, at: null,
+             body: pop(P.vivid), beak: dim(P.dark, PHI ** -1), w: s.w };
+  },
+  step(t) {
+    const open = LIFE.blooms.list.filter(LIFE.blooms.isOpen);
+    for (const h of this.list) {
+      if (h.dart) {
+        h.dart = Math.min(1, h.dart + PHI ** 2 / h.len);
+        const u = h.dart, e = u * u * (3 - 2 * u), bend = Math.sin(Math.PI * u) * h.len * PHI ** -4, dx = (h.bx - h.ax) / h.len, dy = (h.by - h.ay) / h.len;
+        h.x = h.ax + (h.bx - h.ax) * e - dy * bend; h.y = h.ay + (h.by - h.ay) * e + dx * bend;
+        if (u >= 1) { h.dart = 0; h.wait = 34 + rnd() * 89; if (h.at) h.th = Math.atan2(h.at.y - h.by, h.at.x - h.bx); }
+        continue;
+      }
+      h.x = h.bx + Math.sin(t * PHI ** -1) * PHI ** -1; h.y = h.by + Math.sin(t * PHI ** -1 * 2) * PHI ** -2;
+      if (--h.wait > 0) continue;
+      const near = open.filter((b) => b !== h.at && Math.hypot(b.x - h.x, b.y - h.y) < 233);
+      let tx, ty;
+      h.at = near.length ? near[Math.floor(rnd() * near.length)] : null;
+      if (h.at) { const a = rnd() * TAU, r = PHI * Math.sqrt(h.at.n) + 2; tx = h.at.x + Math.cos(a) * r; ty = h.at.y + Math.sin(a) * r; }
+      else { const a = rnd() * TAU; tx = h.hx + Math.cos(a) * 21; ty = h.hy + Math.sin(a) * 21; }
+      h.ax = h.x; h.ay = h.y; h.bx = tx; h.by = ty; h.len = Math.max(1, Math.hypot(tx - h.x, ty - h.y));
+      h.th = Math.atan2(ty - h.y, tx - h.x); h.dart = PHI ** -8;
+    }
+  },
+  draw(t) {
+    for (const h of this.list) {
+      if (!seen(h.x, h.y, HIGH)) continue;
+      const c = Math.cos(h.th), s = Math.sin(h.th);
+      if (h.dart) for (let q = 1; q <= 5; q++) put(h.x - c * q * PHI, h.y - s * q * PHI, h.body, PHI ** -q, h.w);
+      put(h.x, h.y, h.body, 1, h.w); put(h.x + c, h.y + s, h.beak, 1, h.w); put(h.x + 2 * c, h.y + 2 * s, h.beak, PHI ** -1, h.w);
+      if (t & 1) { put(h.x - s, h.y + c, h.body, PHI ** -1, h.w); put(h.x + s, h.y - c, h.body, PHI ** -1, h.w); }
+    }
+  },
+};
+
+// Monkeys in the canopy, bright as golden tamarins. A troop follows its leader across the crowns: it
+// feeds a while on each crown, spread about it, then crosses to the next, leaping the gap one after
+// another, each seen apart from its shadow for the length of the leap.
+const LAG = 8;
+LIFE.troops = {
+  list: [],
+  spawn(s) {
+    const crown = crownUnder(s.x, s.y);
+    if (!crown) return null;
+    const P = paletteOf(s.w, s.turn), n = [5, 8, 13][s.seed % 3];
+    return { n, crown, x: s.x, y: s.y, up: 0, hx: s.x, hy: s.y, state: "feed", timer: 55, gx: s.x, gy: s.y, next: null,
+             lx: 0, ly: 0, ltx: 0, lty: 0, u: 0, dur: 1, rise: 0, been: [crown], way: [], fur: pop(P.vivid), face: dim(P.dark, PHI ** -1), w: s.w };
+  },
+  step() {
+    for (const tr of this.list) {
+      const c = tr.crown;
+      if (tr.state === "feed") {
+        if (Math.hypot(tr.gx - tr.x, tr.gy - tr.y) < 1) {
+          const a = rnd() * TAU, r = c.r * PHI ** -1 * Math.sqrt(rnd());
+          tr.gx = c.x + Math.cos(a) * r; tr.gy = c.y + Math.sin(a) * r;
+        }
+        this.walk(tr, tr.gx, tr.gy, PHI ** -3);
+        if (--tr.timer <= 0) {
+          const far = Math.hypot(tr.x - tr.hx, tr.y - tr.hy) > 377;
+          let opts = [];
+          for (const L of [1, 2]) for (const o of crownsNear(L, c.x, c.y, c.r + 89)) {
+            const d = Math.hypot(o.x - c.x, o.y - c.y);
+            if (o !== c && d - o.r - c.r <= 13 && !tr.been.includes(o)) opts.push(o);
+          }
+          if (far && opts.length) opts = [opts.reduce((a, b) => (Math.hypot(a.x - tr.hx, a.y - tr.hy) < Math.hypot(b.x - tr.hx, b.y - tr.hy) ? a : b))];
+          if (!opts.length) { tr.timer = 89; tr.been = [c]; continue; }
+          const o = opts[Math.floor(rnd() * opts.length)], d = Math.hypot(o.x - c.x, o.y - c.y), ux = (o.x - c.x) / d, uy = (o.y - c.y) / d;
+          tr.next = o; tr.state = "walk";
+          tr.gx = c.x + ux * (c.r - 2); tr.gy = c.y + uy * (c.r - 2);
+          tr.ltx = o.x - ux * (o.r - 2); tr.lty = o.y - uy * (o.r - 2);
+        }
+      } else if (tr.state === "walk") {
+        if (this.walk(tr, tr.gx, tr.gy, PHI ** -2)) {
+          tr.state = "leap"; tr.lx = tr.x; tr.ly = tr.y; tr.u = 0;
+          const gap = Math.hypot(tr.ltx - tr.x, tr.lty - tr.y);
+          tr.dur = Math.max(8, gap * PHI ** -1); tr.rise = gap * PHI ** -2 + 2;
+        }
+      } else {
+        tr.u = Math.min(1, tr.u + 1 / tr.dur);
+        tr.x = tr.lx + (tr.ltx - tr.lx) * tr.u; tr.y = tr.ly + (tr.lty - tr.ly) * tr.u; tr.up = Math.sin(Math.PI * tr.u) * tr.rise;
+        if (tr.u >= 1) {
+          tr.up = 0; tr.crown = tr.next; tr.state = "feed"; tr.timer = 89 + rnd() * 377; tr.gx = tr.x; tr.gy = tr.y;
+          tr.been.push(tr.next); if (tr.been.length > 5) tr.been.shift();
+        }
+      }
+      tr.way.push(tr.x, tr.y, tr.up);
+      if (tr.way.length > 3 * (tr.n * LAG + 1)) tr.way.splice(0, 3);
+    }
+  },
+  walk(tr, gx, gy, v) {
+    const dx = gx - tr.x, dy = gy - tr.y, d = Math.hypot(dx, dy);
+    if (d <= v) { tr.x = gx; tr.y = gy; return true; }
+    tr.x += (dx / d) * v; tr.y += (dy / d) * v;
+    return false;
+  },
+  draw(t) {
+    for (const tr of this.list) {
+      const z = tr.crown.top + PHI ** -5, W = tr.way;
+      for (let k = 0; k < tr.n; k++) {
+        const o = W.length - 3 * (1 + k * LAG);
+        if (o < 0) break;
+        let x = W[o], y = W[o + 1];
+        const up = W[o + 2];
+        if (k && !up) { const a = k * GOLDEN_ANGLE, r = PHI * Math.sqrt(k); x += Math.cos(a) * r; y += Math.sin(a) * r; }  // spread about
+        if (!seen(x, y, z + up / TALL)) continue;
+        if (up > 1) {
+          shadowAt(x + up / PHI, y + up / PHI, PHI ** -2); shadowAt(x + 1 + up / PHI, y + up / PHI, PHI ** -2);
+          put(x - 1, y, tr.fur, 1, tr.w); put(x + 1, y, tr.fur, 1, tr.w); put(x, y - 1, tr.fur, 1, tr.w);   // limbs flung wide
+        }
+        put(x, y, tr.fur, 1, tr.w); put(x + 1, y, tr.fur, 1, tr.w); put(x, y + 1, tr.fur, 1, tr.w); put(x + 1, y + 1, tr.fur, 1, tr.w);
+        put(x + 2, y, tr.face, 1, tr.w);
+        const curl = Math.sin(t / 13 + k);                    // the tail
+        put(x - 1, y + 1 + curl, tr.fur, PHI ** -1, tr.w); put(x - 2, y + 2 + curl, tr.fur, PHI ** -2, tr.w);
+      }
+    }
+  },
+};
+
+// Macaws above the emergents: now and then a pair crosses from one emergent to another, side by side
+// with long tails streaming, their shadows racing over the crowns below.
+LIFE.macaws = {
+  list: [],
+  wait: 377,
+  step() {
+    if (--this.wait <= 0) {
+      this.wait = 89;                                         // try again soon unless a pair sets off
+      const em = crownsNear(2, vx + VW / 2, vy + VH / 2, Math.max(VW, VH)).filter((c) => workAt(c.x, c.y) >= 0);
+      if (em.length > 1) {
+        const a = em[Math.floor(rnd() * em.length)];
+        let b = null, bd = 0;
+        for (const c of em) { const d = Math.hypot(c.x - a.x, c.y - a.y); if (d > bd) { bd = d; b = c; } }
+        const w = workAt(a.x, a.y);
+        if (bd > 233 && w >= 0) {
+          this.wait = 610 + rnd() * 1597;
+          const P = paletteOf(w, turnAt(a.x, a.y, depth(a.x, a.y))), byC = [...P.cols].sort((p, q) => chroma(q) - chroma(p));
+          this.list.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, len: bd, u: 0, flap: rnd() * TAU,
+                           body: pop(byC[0]), tail: pop(byC[1] || byC[0]), w });
+        }
+      }
+    }
+    for (const m of this.list) { m.u += PHI ** 2 / m.len; m.flap += TAU / 13; }
+    this.list = this.list.filter((m) => m.u < 1);
+  },
+  draw() {
+    for (const m of this.list) {
+      const dx = (m.bx - m.ax) / m.len, dy = (m.by - m.ay) / m.len, weave = Math.sin((m.u * m.len) / 34) * 3;
+      for (const side of [-1, 1]) {
+        const x = m.ax + (m.bx - m.ax) * m.u - dy * (side * 5 + weave), y = m.ay + (m.by - m.ay) * m.u + dx * (side * 5 + weave);
+        for (let q = 0; q < 5; q++) shadowAt(x + 13 - dx * q, y + 13 - dy * q, PHI ** -2);
+        for (let q = 0; q < 3; q++) put(x - dx * q, y - dy * q, m.body, 1, m.w);
+        for (let q = 3; q < 8; q++) put(x - dx * q, y - dy * q, m.tail, 1 - (q - 3) * PHI ** -3, m.w);   // the long tail
+        const wing = Math.sin(m.flap + side);
+        if (wing > 0) for (let q = 1; q <= 3; q++) {
+          put(x - dx - dy * q, y - dy + dx * q, m.body, wing, m.w); put(x - dx + dy * q, y - dy - dx * q, m.body, wing, m.w);
+        }
+      }
+    }
+  },
+};
+
+// A harpy eagle circling high over the emergents. It is never seen, only its shadow crossing the
+// forest, and the flocks scatter from it.
+function eagleShape(u, v) {
+  const av = Math.abs(v);
+  if (av <= 1 && u >= -5 && u <= 3) return true;                                   // body and head
+  if (u < -5 && u >= -8 && av <= 1 + (-5 - u) * PHI ** -1) return true;            // the tail, fanned
+  if (av > 21 / 2) return false;
+  const lead = PHI - av * PHI ** -3, chord = 3 * (1 - (av / 21) * PHI ** -1 * 2); // wings swept a little back
+  return u <= lead && u >= lead - chord;
+}
+LIFE.eagles = {
+  list: [],
+  wait: 144,
+  step() {
+    // It keeps near the viewer: when its tree falls out of the view, it glides to an emergent in view.
+    const mx = vx + VW / 2, my = vy + VH / 2, reach = Math.max(VW, VH) / 2;
+    this.list = this.list.filter((e) => Math.hypot(e.x - mx, e.y - my) < 1597);
+    if (!this.list.length && --this.wait <= 0) {
+      this.wait = 89;
+      const em = crownsNear(2, mx, my, reach);
+      if (em.length) {
+        const c = em[Math.floor(rnd() * em.length)], a = rnd() * TAU;
+        this.list.push({ c, x: c.x + Math.cos(a) * 610, y: c.y + Math.sin(a) * 610, th: a + Math.PI, ang: 0, rad: 55 + rnd() * 34, glide: true, timer: 987 + rnd() * 1597 });
+      }
+    }
+    for (const e of this.list) {
+      if (!e.glide && Math.hypot(e.c.x - mx, e.c.y - my) > reach) {
+        const em = crownsNear(2, mx, my, reach);
+        if (em.length) { e.c = em[Math.floor(rnd() * em.length)]; e.glide = true; }
+      }
+      if (e.glide) {
+        e.th += turnTo(e.th, Math.atan2(e.c.y - e.y, e.c.x - e.x)) * PHI ** -4;
+        if (Math.hypot(e.c.x - e.x, e.c.y - e.y) < e.rad) { e.glide = false; e.ang = Math.atan2(e.y - e.c.y, e.x - e.c.x); }
+      } else {
+        e.ang += PHI / e.rad;
+        e.th += turnTo(e.th, Math.atan2(e.c.y + Math.sin(e.ang) * e.rad - e.y, e.c.x + Math.cos(e.ang) * e.rad - e.x)) * PHI ** -3;
+        if (--e.timer <= 0) {
+          const em = crownsNear(2, mx, my, 610).filter((c) => c !== e.c);
+          if (em.length) { e.c = em[Math.floor(rnd() * em.length)]; e.glide = true; }
+          e.timer = 987 + rnd() * 1597;
+        }
+      }
+      e.x += Math.cos(e.th) * PHI; e.y += Math.sin(e.th) * PHI;
+    }
+  },
+  draw() {
+    for (const e of this.list) {
+      const sx = e.x + 34, sy = e.y + 34, c = Math.cos(e.th), s = Math.sin(e.th);   // the shadow falls to the lower right
+      for (let y = -21; y <= 21; y++) for (let x = -21; x <= 21; x++)                 // its wings span 34 cells
+        if (eagleShape((x * c + y * s) / PHI, (-x * s + y * c) / PHI)) shadowAt(sx + x, sy + y, 1 - PHI ** -3);
+    }
+  },
+};
+
+const LIFE_ORDER = ["mould", "ants", "frogs", "ferns", "snakes", "fireflies", "morphos", "wind", "blooms", "troops", "hummers", "macaws", "eagles"];
+const STILL = new Set(["blooms", "ferns"]);                     // with reduced motion: only plants, full grown
+function spawnLife(c) {
+  for (const s of c.sites) {
+    const g = LIFE[s.kind];
+    if (!g || (REDUCED && !STILL.has(s.kind))) continue;
+    const o = g.spawn(s);
+    if (o) { o.home = c.id; g.list.push(o); }
+  }
+}
+function despawnLife(c) {
+  for (const k of LIFE_ORDER) { const g = LIFE[k]; if (g.list.length && g.spawn) g.list = g.list.filter((o) => o.home !== c.id); }
+}
+/** Move the forest's life on a frame and draw it into the life layer. */
+function live(t) {
+  clearLife();
+  for (const k of LIFE_ORDER) {
+    const g = LIFE[k];
+    if (!REDUCED && g.step) g.step(t);
+    if (!REDUCED || STILL.has(k)) g.draw(t);
   }
 }
 
@@ -653,12 +1686,18 @@ function frame(now) {
     if (selWork !== null) cx.drawImage(shadeOf(c), px, py, T, T);
   }
   cx.globalAlpha = 1;
+  shiftTrail(Math.floor(vx), Math.floor(vy));
+  live(tick);
+  if (nDirty) {
+    lifeCtx.putImageData(lifeImg, 0, 0);
+    cx.drawImage(lifeCv, Math.round((tox - vx) * R), Math.round((toy - vy) * R), TW * R, TH * R);
+  }
   if (nb) {
-    shiftTrail(Math.floor(vx), Math.floor(vy));
-    flow(tick++, list.box);
+    flow(tick, list.box);
     trailCtx.putImageData(trailImg, 0, 0);
     cx.drawImage(trailCv, Math.round((tox - vx) * R), Math.round((toy - vy) * R), TW * R, TH * R);
   }
+  tick++;
 }
 requestAnimationFrame(frame);
 
@@ -680,6 +1719,10 @@ function birdAt(x, y) {
 function workUnder(clientX, clientY) {
   const [x, y] = worldAt(clientX, clientY), b = birdAt(x, y);
   if (b >= 0) return BKIN[b];
+  for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {        // a creature within a cell
+    const lx = Math.floor(x) + dx - tox, ly = Math.floor(y) + dy - toy;
+    if (lifeW && lx >= 0 && ly >= 0 && lx < TW && ly < TH && lifeW[ly * TW + lx] >= 0) return lifeW[ly * TW + lx];
+  }
   const c = chunks.get(ck(Math.floor(x / N), Math.floor(y / N)));
   return c ? c.work[mod(Math.floor(y), N) * N + mod(Math.floor(x), N)] : -1;
 }
