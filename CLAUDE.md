@@ -64,8 +64,13 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
 
 ## Working preferences
 
-- Don't paste the artifact or site link on every update — say it's done. Keep
-  publishing the updated artifact each time, just without the link.
+- **Whenever the words "Artist Website" appear in a reply, write them as a
+  link to the site: [Artist Website](https://9gn957ptsb-alt.github.io/Art-Database/v2/).**
+  Every time, the way the DIRT session always links the word DIRT to its
+  artifact (artist's request, 23 Sep 2026). That link is the one link to
+  everything — never a deep link into the page.
+- Don't paste a bare URL on every update — say it's done; the linked words
+  carry the link. Keep publishing the updated artifact each time.
 - The work photographs are placeholders until shot properly. Don't crop or
   retouch them. They are wanted on the live site as they are — but images cannot
   be uploaded to Wix from a session (see `WIX.md`), so the artist uploads them by
