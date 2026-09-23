@@ -393,6 +393,97 @@
   pointer-events: none;
 }
 
+/* The theatre at the library (land.js, "the theatre"): pixel art at whole
+   device pixels, so nothing in it is ever smoothed. */
+.theatre {
+  position: absolute;
+  inset: 0;
+  z-index: 58;
+  pointer-events: none;
+}
+
+.theatre[hidden],
+.theatre canvas[hidden] { display: none; }
+
+.theatre canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.theatre-stage {
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 10px 14px rgba(24, 20, 16, 0.22));
+}
+
+.theatre-stage:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+.theatre-bill {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  pointer-events: auto;
+}
+
+.theatre-card {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  background: rgba(252, 251, 249, 0.88);
+  text-align: center;
+  min-width: 14rem;
+}
+
+.theatre-play {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.theatre-title {
+  font-family: var(--serif);
+  font-size: var(--t-4);
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.theatre-where {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: var(--t-2);
+  color: var(--ink-dim);
+}
+
+.theatre-step {
+  display: grid;
+  place-items: center;
+  width: var(--s-6);
+  height: var(--s-6);
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.theatre-step:hover,
+.theatre-step:focus-visible { background: #ffffff; }
+
+.land[data-at="flying"] .theatre { display: none; }
+
 /* Where you are, and the way back up. */
 .banner {
   position: absolute;

@@ -572,6 +572,12 @@
     return at + 1;
   }
 
+  /* The creature is out of the cities for now: the artist took it out on
+     23 Sep 2026 and has not decided where it goes next. Everything it does
+     is still here, and turning this back on puts it back down in every
+     city, grazing, turning things up and throwing them. */
+  var CREATURE = false;
+
   var LANDMARKS = [{
     slug: "folger",
     title: "Folger Shakespeare Library",
@@ -863,6 +869,7 @@
 
   function comeUp() {
     if (flying || !place) { return; }
+    stopTheatre();
     hold();                         // the walk stops where it is
     hideGraze();
     hereShown = false;
@@ -890,7 +897,7 @@
     bannerCity.disabled = !place.work;
     scramble(bannerCity, "decode", 120, 760);
     scramble(bannerUnder, "type", 380, 640);
-    creature.hidden = false;
+    creature.hidden = !CREATURE;
 
     beast.lat = goal.lat = place.lat;
     beast.lon = goal.lon = place.lon;
@@ -900,25 +907,29 @@
     weave({ lat: place.lat, lon: place.lon });
 
     // Whatever is built here is built once and stays built.
-    if (place.piece && !spawns.some(function (born) {
+    if (place.piece && !place.stage && !spawns.some(function (born) {
       return born.kind === "house" && born.home === place.slug;
     })) {
       houseFor(place);
     }
 
     place.terms = termsOf(place);
-    if (place.terms.length) { standOn(place.terms[0]); }
-    creature.dataset.grazing = "true";
-    resume();
+    if (CREATURE) {
+      if (place.terms.length) { standOn(place.terms[0]); }
+      creature.dataset.grazing = "true";
+      resume();
+    }
 
     // And the collage this place is, laid out beside whatever is going on,
     // once the creature has been put down and it is known where that is.
     if (place.work) {
       window.setTimeout(function () { if (place && !flying) { showHere(true); } }, 90);
     }
+    if (place.stage) { startTheatre(); }
   }
 
   function leave() {
+    stopTheatre();
     endScene();
     hold();
     // Whatever was standing in that city stays in it. placeSpawns stops
@@ -7743,7 +7754,7 @@
   /* ---- Magnetic Buttons ------------------------------------------------- */
 
   // The few round buttons lean toward a pointer that comes near them.
-  var MAGNETS = "#deck-close, #banner-back, #banner-city, .deal-turn, #hubble";
+  var MAGNETS = "#deck-close, #banner-back, #banner-city, .deal-turn, #hubble, .theatre-step";
   var aim = null, magnetsMoving = false;
 
   function magnetStep() {
@@ -7816,6 +7827,346 @@
     setText(el, narrow, wide, voices);
     var m = measure(el);
     return { parts: [{ x: 0, y: 0, w: m.w, h: m.h, el: el }], w: m.w, h: m.h };
+  }
+
+  /* ---- the theatre ---------------------------------------------------------
+
+     The library is where the plays are. Going down into it, one of
+     Shakespeare's scenes is put on the ground in front of you, drawn as
+     pixel art on a clod of DIRT — scripts/build_theatre.py draws them, and
+     docs/v2/theatre/ is what it wrote. The scene comes up out of the soil
+     a row at a time, its people say their lines, and it goes back into the
+     ground for the next. Which comes next is dealt, the way everything here
+     is. Pressing the scene takes the next line; the bill under it goes back
+     or on. The library itself stands behind, in the same hand. */
+
+  var theatreEl = document.getElementById("theatre");
+  var libraryCanvas = document.getElementById("theatre-library");
+  var stageCanvas = document.getElementById("theatre-stage");
+  var bill = document.getElementById("theatre-bill");
+  var billPlay = document.getElementById("theatre-play");
+  var billTitle = document.getElementById("theatre-title");
+  var billWhere = document.getElementById("theatre-where");
+  var billPrev = document.getElementById("theatre-prev");
+  var billNext = document.getElementById("theatre-next");
+  var stageCtx = stageCanvas ? stageCanvas.getContext("2d") : null;
+  var backstage = document.createElement("canvas");       // the frame, before it is shown
+  var backCtx = backstage.getContext("2d");
+
+  var playbill = null;           // theatre.json, once read
+  var sheets = {};               // the pictures, by scene
+  var staged = null;               // the scene that is on
+  var theatreOn = false;
+  var dealtScenes = [];          // what is still to come this visit, in the order dealt
+  var lastScene = -1;
+  var stageBox = { x: 0, y: 0, k: 1 };
+
+  var RISE = 1100, STRIKE = 760, PAUSE = 420, HOLD = 1800;
+
+  function readPlaybill(then) {
+    if (playbill) { then(); return; }
+    if (!window.fetch) { return; }
+    fetch("theatre/theatre.json")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d && d.scenes && d.scenes.length) { playbill = d; then(); } })
+      .catch(function () {});
+  }
+
+  function sheetFor(entry, then) {
+    var im = sheets[entry.key];
+    if (!im) {
+      im = new Image();
+      im.decoding = "async";
+      im.src = "theatre/" + entry.sheet;
+      sheets[entry.key] = im;
+    }
+    if (!then) { return; }
+    if (im.complete && im.naturalWidth) { then(im); return; }
+    im.addEventListener("load", function () { then(im); }, { once: true });
+  }
+
+  /* The next scene: dealt from the whole repertory, each once, before any
+     comes round again — and never the one that has just been played. */
+  function dealScene() {
+    if (!dealtScenes.length) {
+      dealtScenes = playbill.scenes.map(function (s, i) { return i; });
+      for (var i = dealtScenes.length - 1; i > 0; i -= 1) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var k = dealtScenes[i]; dealtScenes[i] = dealtScenes[j]; dealtScenes[j] = k;
+      }
+      if (dealtScenes[0] === lastScene && dealtScenes.length > 1) {
+        dealtScenes.push(dealtScenes.shift());
+      }
+    }
+    return dealtScenes.shift();
+  }
+
+  /* As many whole device pixels to each of the picture's as will fit. On a
+     screen of one device pixel to the pixel, where the choice is between
+     one and two, a half step is allowed: a little unevenness is better than
+     a scene the size of a stamp. */
+  function artScale(w, h, maxW, maxH) {
+    var dpr = window.devicePixelRatio || 1;
+    var fit = Math.min(maxW * dpr / w, maxH * dpr / h);
+    var k = Math.floor(fit);
+    if (dpr < 1.5 && k < 2 && fit >= 1.5) { return 1.5; }
+    return Math.max(1, k) / dpr;
+  }
+
+  function layoutTheatre() {
+    if (!staged || !playbill) { return; }
+    var entry = staged.entry;
+    var top = 64;
+    var br = banner.getBoundingClientRect();
+    if (br.height) { top = Math.max(top, br.bottom + 10); }
+    var billH = bill.offsetHeight || 64;
+    var roomH = H - top - billH - 22;
+
+    // The library, as a landmark in the far corner, where a screen is wide
+    // enough to have one; the stage has the rest.
+    var lib = playbill.library;
+    var libW = 0;
+    if (lib && libraryCanvas.width && W >= 900) {
+      var lk = artScale(lib.w, lib.h, Math.min(W * 0.22, 330), Math.min(H * 0.3, 240));
+      libW = lib.w * lk;
+      libraryCanvas.style.width = libW.toFixed(2) + "px";
+      libraryCanvas.style.height = (lib.h * lk).toFixed(2) + "px";
+      libraryCanvas.style.transform = "translate(" + Math.round(W - libW - 18) + "px," + Math.round(top - 30) + "px)";
+      libraryCanvas.hidden = false;
+    } else {
+      libraryCanvas.hidden = true;
+    }
+    var k = artScale(entry.w, entry.h, Math.min(W * 0.92, W - 2 * libW), roomH);
+    var sw = entry.w * k, sh = entry.h * k;
+    var sy = top + Math.max(0, (roomH - sh) * 0.5);
+    stageBox = { x: Math.round(W / 2 - sw / 2), y: Math.round(sy), k: k, w: sw, h: sh };
+    stageCanvas.style.width = sw.toFixed(2) + "px";
+    stageCanvas.style.height = sh.toFixed(2) + "px";
+    stageCanvas.style.transform = "translate(" + stageBox.x + "px," + stageBox.y + "px)";
+    bill.style.transform = "translate(-50%," + Math.round(Math.min(H - billH - 12, stageBox.y + sh + 8)) + "px)";
+  }
+
+  function drawLibrary() {
+    var lib = playbill && playbill.library;
+    if (!lib) { return; }
+    sheetFor(lib, function (im) {
+      libraryCanvas.width = lib.w;
+      libraryCanvas.height = lib.h;
+      var g = libraryCanvas.getContext("2d");
+      g.clearRect(0, 0, lib.w, lib.h);
+      g.drawImage(im, 0, 0, lib.w, lib.h, 0, 0, lib.w, lib.h);
+      layoutTheatre();
+    });
+  }
+
+  function stageScene(index) {
+    if (!playbill) { return; }
+    var entry = playbill.scenes[index];
+    lastScene = index;
+    billPlay.textContent = entry.play;
+    billTitle.textContent = entry.title;
+    billWhere.textContent = entry.where;
+    stageCanvas.setAttribute("aria-label", entry.title + ", from " + entry.play + ". " + entry.where +
+                             ". Press for the next line.");
+    say.hidden = true;
+    staged = { entry: entry, index: index, phase: "wait", line: -1, since: 0, until: 0, speaking: null };
+    sheetFor(entry, function (im) {
+      if (!staged || staged.entry !== entry) { return; }
+      staged.sheet = im;
+      stageCanvas.width = backstage.width = entry.w;
+      stageCanvas.height = backstage.height = entry.h;
+      staged.phase = still ? "play" : "rise";
+      staged.since = performance.now();
+      staged.until = staged.since + (still ? 0 : RISE);
+      layoutTheatre();
+      scramble(billTitle, "decode", 0, 700);
+      if (!still) {
+        pulse(stageBox.x + stageBox.w / 2, stageBox.y + stageBox.h * 0.72,
+              [LIGHT, place ? cityTone(place) : LILAC], 0.85, Math.max(W, H) * INV);
+      }
+      // The next one is fetched while this one plays.
+      if (dealtScenes.length) { sheetFor(playbill.scenes[dealtScenes[0]]); }
+    });
+  }
+
+  function speakLine(now) {
+    var lines = staged.entry.lines;
+    staged.line += 1;
+    if (staged.line >= lines.length) {
+      staged.phase = "hold";
+      staged.speaking = null;
+      staged.until = now + HOLD;
+      say.hidden = true;
+      return;
+    }
+    var line = lines[staged.line];
+    staged.speaking = line[0];
+    sayWho.textContent = staged.entry.cast[line[0]] || "";
+    sayLine.textContent = line[1];
+    say.hidden = false;
+    staged.phase = "speak";
+    staged.until = now + dwell(line[1]);
+    placeTheatreSay();
+  }
+
+  function placeTheatreSay() {
+    if (!staged || staged.speaking === null || say.hidden) { return; }
+    var head = staged.entry.heads[staged.speaking] || [staged.entry.w / 2, staged.entry.h * 0.3];
+    var hx = stageBox.x + head[0] * stageBox.k;
+    var hy = stageBox.y + head[1] * stageBox.k;
+    var w = say.offsetWidth || 200;
+    var h = say.offsetHeight || 48;
+    var x = Math.max(8, Math.min(hx - w / 2, W - w - 8));
+    var y = Math.max(8, hy - h - 8);
+    say.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+
+  function advance(now) {
+    if (!staged || !staged.sheet) { return; }
+    if (staged.phase === "rise") { staged.phase = "play"; staged.until = now; return; }
+    if (staged.phase === "speak" || staged.phase === "play" || staged.phase === "pause") { staged.until = now; return; }
+    if (staged.phase === "hold") { strikeFor(dealScene(), now); }
+  }
+
+  function strikeFor(next, now) {
+    if (!staged || still) { say.hidden = true; stageScene(next); return; }
+    staged.phase = "strike";
+    staged.since = now;
+    staged.next = next;
+    staged.speaking = null;
+    say.hidden = true;
+  }
+
+  function composeFrame(t) {
+    var e = staged.entry, im = staged.sheet;
+    backCtx.clearRect(0, 0, e.w, e.h);
+    backCtx.drawImage(im, 0, 0, e.w, e.h, 0, 0, e.w, e.h);
+    var p = e.idle[t];
+    if (p) { backCtx.drawImage(im, p[0], p[1], p[2], p[3], p[4], p[5], p[2], p[3]); }
+    if (staged.speaking !== null && e.speak[staged.speaking]) {
+      var s = e.speak[staged.speaking][t];
+      if (s) { backCtx.drawImage(im, s[0], s[1], s[2], s[3], s[4], s[5], s[2], s[3]); }
+    }
+  }
+
+  /* Coming up out of the ground a row at a time, the row just arriving lit;
+     going back down into it as held squares of nothing. */
+  function showFrame(now) {
+    var e = staged.entry, g = stageCtx;
+    g.clearRect(0, 0, e.w, e.h);
+    if (staged.phase === "rise") {
+      var q = Math.min(1, (now - staged.since) / RISE);
+      q = Math.floor(q * 18) / 18;
+      var cut = Math.round(e.h * (1 - q));
+      if (cut < e.h) { g.drawImage(backstage, 0, cut, e.w, e.h - cut, 0, cut, e.w, e.h - cut); }
+      g.save();
+      g.globalCompositeOperation = "source-atop";
+      g.fillStyle = LIGHT;
+      g.globalAlpha = 0.7;
+      g.fillRect(0, cut, e.w, 3);
+      g.restore();
+      return;
+    }
+    g.drawImage(backstage, 0, 0);
+    if (staged.phase === "strike") {
+      var s = Math.min(1, (now - staged.since) / STRIKE);
+      s = Math.floor(s * 14) / 14;
+      var cell = 6;
+      g.save();
+      for (var y = 0; y < e.h; y += cell) {
+        for (var x = 0; x < e.w; x += cell) {
+          // Top first, and ragged: the scene settles back into the soil.
+          var o = 0.62 * (y / e.h) + 0.38 * hash2(x / cell, y / cell);
+          var gone = 1 - o;
+          if (gone < s) { g.clearRect(x, y, cell, cell); }
+          else if (gone < s + 0.06) {
+            g.globalCompositeOperation = "source-atop";
+            g.fillStyle = LIGHT;
+            g.globalAlpha = 0.6;
+            g.fillRect(x, y, cell, cell);
+            g.globalCompositeOperation = "source-over";
+            g.globalAlpha = 1;
+          }
+        }
+      }
+      g.restore();
+    }
+  }
+
+  function theatreFrame(now) {
+    if (!theatreOn) { return; }
+    requestAnimationFrame(theatreFrame);
+    if (!staged || !staged.sheet) { return; }
+    var fps = (playbill && playbill.fps) || 6;
+    var frames = (playbill && playbill.frames) || 4;
+    var t = still ? 0 : Math.floor(now / (1000 / fps)) % frames;
+
+    if (staged.phase === "rise" && now >= staged.until) { staged.phase = "play"; staged.until = now + 300; }
+    if (staged.phase === "play" && now >= staged.until) { speakLine(now); }
+    else if (staged.phase === "speak" && now >= staged.until) {
+      staged.phase = "pause";
+      staged.speaking = null;
+      say.hidden = true;
+      staged.until = now + PAUSE;
+    } else if (staged.phase === "pause" && now >= staged.until) { speakLine(now); }
+    else if (staged.phase === "hold" && now >= staged.until) { strikeFor(dealScene(), now); }
+    else if (staged.phase === "strike" && now - staged.since >= STRIKE) { stageScene(staged.next); return; }
+
+    // Held frames: nothing is redrawn between them.
+    var key = t + "|" + staged.speaking + "|" + staged.phase + "|" +
+              (staged.phase === "rise" || staged.phase === "strike" ? Math.floor(now / 42) : "");
+    if (key === staged.drawn) { return; }
+    staged.drawn = key;
+    composeFrame(t);
+    showFrame(now);
+    placeTheatreSay();
+  }
+
+  function startTheatre() {
+    if (!theatreEl || theatreOn) { return; }
+    theatreOn = true;
+    readPlaybill(function () {
+      if (!theatreOn) { return; }
+      theatreEl.hidden = false;
+      drawLibrary();
+      stageScene(dealScene());
+      requestAnimationFrame(theatreFrame);
+    });
+  }
+
+  function stopTheatre() {
+    if (!theatreOn) { return; }
+    theatreOn = false;
+    theatreEl.hidden = true;
+    say.hidden = true;
+    staged = null;
+  }
+
+  if (stageCanvas) {
+    stageCanvas.addEventListener("click", function (event) {
+      event.stopPropagation();
+      advance(performance.now());
+    });
+    stageCanvas.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " ") { return; }
+      event.preventDefault();
+      advance(performance.now());
+    });
+    stageCanvas.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    bill.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    billNext.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (!playbill || !staged) { return; }
+      dealtScenes = dealtScenes.filter(function (i) { return i !== (staged.index + 1) % playbill.scenes.length; });
+      strikeFor((staged.index + 1) % playbill.scenes.length, performance.now());
+    });
+    billPrev.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (!playbill || !staged) { return; }
+      var n = playbill.scenes.length;
+      strikeFor((staged.index - 1 + n) % n, performance.now());
+    });
+    window.addEventListener("resize", function () { if (theatreOn) { layoutTheatre(); placeTheatreSay(); } });
   }
 
   /* ---- the table: every collage, or the ones a word is written on ------- */
@@ -8065,7 +8416,7 @@
     // Opening a word used to send the creature to stand on it as well. The
     // creature is not up here any more, so on the globe a word is a word: it
     // opens what it is written on, and nothing walks anywhere.
-    if (place) {
+    if (place && CREATURE) {
       hold();
       standOn(index);
       walkTimer = window.setTimeout(function () {

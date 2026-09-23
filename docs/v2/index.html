@@ -176,6 +176,22 @@
 
     <!-- Where you are, once you have gone down into a city, and the way
          back up to the world. Nothing on the globe itself. -->
+    <!-- The theatre at the library: a scene from Shakespeare on a clod of DIRT, the library
+         behind it, and the bill under it. Drawn by scripts/build_theatre.py. -->
+    <div class="theatre" id="theatre" hidden>
+      <canvas class="theatre-library" id="theatre-library" aria-hidden="true" hidden></canvas>
+      <canvas class="theatre-stage" id="theatre-stage" role="button" tabindex="0"></canvas>
+      <div class="theatre-bill" id="theatre-bill">
+        <button class="theatre-step" id="theatre-prev" type="button" aria-label="The scene before">&lsaquo;</button>
+        <p class="theatre-card">
+          <span class="theatre-play" id="theatre-play"></span>
+          <span class="theatre-title" id="theatre-title"></span>
+          <span class="theatre-where" id="theatre-where"></span>
+        </p>
+        <button class="theatre-step" id="theatre-next" type="button" aria-label="The next scene">&rsaquo;</button>
+      </div>
+    </div>
+
     <div class="banner" id="banner" hidden>
       <button class="banner-back" id="banner-back" type="button">
         <span aria-hidden="true">&larr;</span> The world
