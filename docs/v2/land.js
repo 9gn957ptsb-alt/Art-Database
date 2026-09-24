@@ -720,6 +720,9 @@
         work: null, slug: mark.slug, title: mark.title, where: mark.where,
         lat: mark.lat * RAD, lon: wrap(mark.lon * RAD),
         stage: mark.stage, piece: mark.piece, archive: mark.archive, real: true,
+        // The Folger is a museum and library, and is shown with the museums
+        // (artist, 24 Sep 2026); the Archive stays on every view.
+        layer: mark.stage ? "museums" : undefined,
         // A library is stone. It takes the hue of whichever collage it is
         // nearest — it stands four streets from two of them — and then
         // almost none of it.
