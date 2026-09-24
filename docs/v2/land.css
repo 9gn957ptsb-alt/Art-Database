@@ -1924,3 +1924,33 @@
   color: var(--ink-dim);
 }
 .land[data-at="flying"] .building { display: none; }
+
+/* Going down: the city's ground is DIRT Earth, and below it the streets. */
+.banner-down {
+  pointer-events: auto;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.banner-down:hover,
+.banner-down:focus-visible { background: #ffffff; }
+.ground-dirt {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: #0f0a07;
+  opacity: 0;
+  transform: scale(0.382);
+  transition: opacity 0.61s ease, transform 0.61s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ground-dirt.on { opacity: 1; transform: none; }
+.ground-dirt[hidden] { display: none; }
+.ground-dirt iframe { width: 100%; height: 100%; border: 0; display: block; }
+@media (prefers-reduced-motion: reduce) { .ground-dirt { transition: none; transform: none; } }

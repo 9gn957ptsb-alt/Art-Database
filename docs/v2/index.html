@@ -236,6 +236,8 @@
       </p>
       <!-- Off until it is asked for: the part of Ikeda and Fischinger that is heard. -->
       <button class="banner-sound" id="banner-sound" type="button" aria-pressed="false">Sound</button>
+      <!-- Further down: DIRT Earth, the ground of this place, and on down to its streets. -->
+      <button class="banner-down" id="banner-down" type="button">Closer <span aria-hidden="true">&darr;</span></button>
     </div>
 
     <!-- The token object: a saved work condensed to its three colours,
@@ -318,11 +320,20 @@
     further off; drag on the empty sky to carry it across; tap the sky to
     bounce the view somewhere new. The world is never left stranded — there
     is always ground in front of you or within reach. The world is woven in
-    threads of dots. Where a thread
-    crosses land it shows DIRT, a soil in which every clod is one saved
-    painting in one of its own colours; where it crosses the sea it shows
-    the same soil made of the paintings' blues, lighter and sparser, so the
-    coastlines are where the one gives way to the other. The soil is only
+    threads of dots, and it is DIRT Earth's globe: every dot wears what
+    DIRT Earth dresses that place in this month, the saved paintings
+    nearest the place's own colours (its biome, its soil, its season, its
+    snow and sea ice), land and sea alike, and close to, in a city, each
+    finer dot is dressed in its place's palette the same way. Down in a
+    city, Closer (or scrolling or pinching further in) goes on down into
+    DIRT Earth itself at that place: the ground with everything that grows
+    and lives on it, its weather and its light; and further in again, the
+    streets, from OpenStreetMap, every building standing at its own height
+    in the place's colours, lit by a light that turns and casting its
+    shadow, the places people go to see named, and every edge a grey
+    gradient rather than a line. Going back out past the ground, or its
+    Globe button, comes back up here. No painting is in it but as its
+    three colours: its soil is these same dots. The soil is only
     ever seen through the threads. The whole globe is always partly
     see-through, and how much is never still: the body of it and each of
     the two directions of thread fade between 0.382 and 0.618 — the golden
@@ -417,6 +428,11 @@
      (after Refik Anadol). -->
 <canvas class="dream" id="dream" aria-hidden="true" hidden></canvas>
 
+<!-- DIRT Earth: the same Earth as the globe, close to. Loaded the first time
+     it is gone down into. -->
+<div class="ground-dirt" id="ground-dirt" hidden>
+  <iframe id="ground-dirt-frame" title="DIRT Earth: the ground of this place, and its streets"></iframe>
+</div>
 <script src="systems.js"></script>
 <script src="models.js"></script>
 <script src="land.js"></script>
