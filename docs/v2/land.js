@@ -890,6 +890,7 @@
 
   function comeUp() {
     if (flying || !place) { return; }
+    comeUpFromGround();
     stopTheatre();
     stopBuilding();
     hold();                         // the walk stops where it is
@@ -1806,7 +1807,16 @@
      the threads: the silk is the transparency, and DIRT is what shows
      through it. */
 
-  var dirt = { land: null, sea: null };
+  /* The globe is DIRT Earth's globe. Every dot of it wears what DIRT Earth
+     dresses that place in this month: the paintings nearest the place's own
+     colours (its biome, its soil, its season, snow and sea ice), from
+     earth-dirt/earth-dirt-MM.png, half a degree a cell, colour and dot size.
+     Close to, in a city, the dots are the fine tile's and each is dressed in
+     its place's palette as DIRT Earth dresses its ground
+     (earth-palette-MM.png: the dark, middle and light colour of every place,
+     one band each). Going down further is DIRT Earth itself (dirt/). */
+  var dirt = { land: null, sea: null, earth: null, pal: null };
+  var MONTH = ("0" + (new Date().getMonth() + 1)).slice(-2);
   var DIRT_ROUND = 2;          // the tile goes round the world twice…
   var DIRT_DOWN = 1;           // …and once from pole to pole
 
@@ -1819,7 +1829,7 @@
         c.height = img.naturalHeight;
         var x = c.getContext("2d", { willReadFrequently: true });
         x.drawImage(img, 0, 0);
-        done({ n: c.width, px: x.getImageData(0, 0, c.width, c.height).data });
+        done({ n: c.width, h: c.height, px: x.getImageData(0, 0, c.width, c.height).data });
       };
       // Without it the world is still woven, in the colours it had before.
       img.onerror = function () { done(null); };
@@ -1960,14 +1970,29 @@
       wTone[k] = deep ? ownerAt(lat[k], lon[k]) : 0;
 
       var tile = deep ? dirt.land : dirt.sea;
-      if (tile) {
+      if (dirt.earth && !at) {
+        // DIRT Earth's own dot for this place and month.
+        var E = dirt.earth;
+        var eu = cellOf(E.n, (lon[k] / TAU + 0.5) * E.n);
+        var ev = Math.min(E.h - 1, Math.max(0, Math.floor((0.5 - lat[k] / Math.PI) * E.h)));
+        var eo = (ev * E.n + eu) * 4;
+        var esize = Math.round(E.px[eo + 3] / 85);
+        wSize[k] = esize;
+        if (esize) {
+          var ergb = E.px[eo] + "," + E.px[eo + 1] + "," + E.px[eo + 2];
+          if (inkAt[ergb] === undefined) { inkAt[ergb] = wInks.length; wInks.push(ergb); }
+          wInk[k] = inkAt[ergb];
+        }
+      } else if (tile) {
         var u = cellOf(tile.n, (lon[k] / TAU + 0.5) * DIRT_ROUND * tile.n * near_);
         var v = cellOf(tile.n, (lat[k] / Math.PI + 0.5) * DIRT_DOWN * tile.n * near_);
         var o = (v * tile.n + u) * 4;
         var size = Math.round(tile.px[o + 3] / 85);
         wSize[k] = size;
         if (size) {
-          var rgb = tile.px[o] + "," + tile.px[o + 1] + "," + tile.px[o + 2];
+          var rgb = dirt.pal
+            ? dressed(tile.px[o], tile.px[o + 1], tile.px[o + 2], lat[k], lon[k], !deep)
+            : tile.px[o] + "," + tile.px[o + 1] + "," + tile.px[o + 2];
           if (inkAt[rgb] === undefined) { inkAt[rgb] = wInks.length; wInks.push(rgb); }
           wInk[k] = inkAt[rgb];
         }
@@ -1977,6 +2002,26 @@
     }
 
     woven.spin = null;      // it will have to be drawn again
+  }
+
+  /* A fine dot dressed in its place's palette, as DIRT Earth dresses its
+     ground: where its lightness falls between the place's darkest and
+     lightest colours (on even ground, the sea, closer to the middle). */
+  var STOP_AT = [0, Math.pow(PHI, -4), 0.42, 1 - Math.pow(PHI, -4), 1];
+  function dressed(r, g, b, la, lo, even) {
+    var P = dirt.pal, w = P.n, h = P.h / 3;
+    var u = cellOf(w, (lo / TAU + 0.5) * w);
+    var v = Math.min(h - 1, Math.max(0, Math.floor((0.5 - la / Math.PI) * h)));
+    var col = function (band) { var o = ((band * h + v) * w + u) * 4; return [P.px[o], P.px[o + 1], P.px[o + 2]]; };
+    var dark = col(0), mid = col(1), light = col(2);
+    var st = [dark.map(function (c) { return c / (PHI * PHI); }), dark, mid, light,
+              light.map(function (c) { return c + (255 - c) / PHI; })];
+    var t = Math.max(0, Math.min(1, (0.3 * r + 0.59 * g + 0.11 * b - 34) / 144));
+    if (even) { t = 0.42 + (t - 0.42) / PHI; }
+    var n = 0;
+    while (n < 3 && t > STOP_AT[n + 1]) { n += 1; }
+    var f = Math.max(0, Math.min(1, (t - STOP_AT[n]) / (STOP_AT[n + 1] - STOP_AT[n])));
+    return [0, 1, 2].map(function (i) { return Math.round(st[n][i] + (st[n + 1][i] - st[n][i]) * f); }).join(",");
   }
 
   function clothStale() {
@@ -8610,7 +8655,7 @@
   /* ---- Magnetic Buttons ------------------------------------------------- */
 
   // The few round buttons lean toward a pointer that comes near them.
-  var MAGNETS = "#deck-close, #banner-back, #banner-city, .deal-turn, #hubble, .theatre-step";
+  var MAGNETS = "#deck-close, #banner-back, #banner-city, #banner-down, .deal-turn, #hubble, .theatre-step";
   var aim = null, magnetsMoving = false;
 
   function magnetStep() {
@@ -10653,6 +10698,90 @@
   }
 
   bannerBack.addEventListener("click", function () { comeUp(); });
+
+  /* ---- down: DIRT Earth ------------------------------------------------
+
+     The globe is DIRT Earth's globe, so going down into a place does not
+     stop at the city: Closer (or scrolling or pinching further in) goes on
+     into DIRT Earth itself at that place, this month, with everything that
+     lives and grows there, and further in again to its streets, every
+     building standing at its height. DIRT's own Globe button, or going back
+     out past its ground, comes back up here. The page is dirt/index.html,
+     the site's edition of DIRT: its soil is this globe's own dots, and no
+     painting is in it but as its three colours. */
+  var groundDirt = document.getElementById("ground-dirt");
+  var groundFrame = document.getElementById("ground-dirt-frame");
+  var bannerDown = document.getElementById("banner-down");
+  var groundOn = false;
+  var downPush = 0;
+
+  function goDeeper(streets) {
+    if (!place || flying || groundOn) { return; }
+    var lat = place.lat * 180 / Math.PI, lon = place.lon * 180 / Math.PI;
+    var month = new Date().getMonth();
+    if (!groundFrame.src) {
+      groundFrame.src = "dirt/index.html#earth=" + lat.toFixed(4) + "," + lon.toFixed(4) + "," + (month + 1);
+    } else {
+      groundFrame.contentWindow.postMessage({ dirt: "goto", lat: lat, lon: lon, month: month, streets: !!streets }, "*");
+    }
+    groundDirt.hidden = false;
+    groundOn = true;
+    window.requestAnimationFrame(function () { groundDirt.classList.add("on"); groundFrame.focus(); });
+  }
+  function comeUpFromGround() {
+    if (!groundOn) { return; }
+    groundOn = false;
+    downPush = 0;
+    groundDirt.classList.remove("on");
+    window.setTimeout(function () { if (!groundOn) { groundDirt.hidden = true; } }, 640);
+    bannerDown.focus();
+  }
+  bannerDown.addEventListener("click", function () { goDeeper(false); });
+  // The reading lies over the banner (it is another layer, above the
+  // stage): a press on its empty band at the top goes to whichever of the
+  // banner's buttons is under it, so the way back and the way down both
+  // work while a collage is being read.
+  document.addEventListener("click", function (event) {
+    if (!event.target.classList || !event.target.classList.contains("read")) { return; }
+    var hit = ["banner-back", "banner-city", "banner-sound", "banner-down"].map(function (id) {
+      return document.getElementById(id);
+    }).filter(function (b) {
+      var r = b && !b.disabled ? b.getBoundingClientRect() : null;
+      return r && r.width && event.clientX >= r.left && event.clientX <= r.right &&
+             event.clientY >= r.top && event.clientY <= r.bottom;
+    })[0];
+    if (hit) { event.preventDefault(); event.stopPropagation(); hit.click(); }
+  }, true);
+  window.addEventListener("message", function (event) {
+    if (event.source !== groundFrame.contentWindow || !event.data) { return; }
+    if (event.data.dirt === "up") { comeUpFromGround(); }
+  });
+  // Scrolling in on a city, or spreading two fingers on it, goes on down.
+  stage.addEventListener("wheel", function (event) {
+    if (!place || flying || groundOn || event.deltaY >= 0) { return; }
+    downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
+    if (downPush > 233) { downPush = 0; goDeeper(false); }
+  }, { passive: true });
+  var downFingers = {}, downFrom = 0;
+  function downSpread() {
+    var ids = Object.keys(downFingers);
+    if (ids.length < 2) { return 0; }
+    var a = downFingers[ids[0]], b = downFingers[ids[1]];
+    return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+  }
+  stage.addEventListener("pointerdown", function (event) {
+    downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    downFrom = downSpread();
+  }, true);
+  stage.addEventListener("pointermove", function (event) {
+    if (!downFingers[event.pointerId]) { return; }
+    downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    var d = downSpread();
+    if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) { downFrom = 0; goDeeper(false); }
+  }, true);
+  ["pointerup", "pointercancel"].forEach(function (name) {
+    stage.addEventListener(name, function (event) { delete downFingers[event.pointerId]; downFrom = downSpread(); }, true);
+  });
   banner.addEventListener("pointerdown", function (event) {
     event.stopPropagation();      // the stage would take the pointer otherwise
   });
@@ -10723,7 +10852,8 @@
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
                read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png"),
-               read("architecture.json").catch(function () { return { buildings: [] }; })])
+               read("architecture.json").catch(function () { return { buildings: [] }; }),
+               readTile("earth-dirt/earth-dirt-" + MONTH + ".png"), readTile("earth-dirt/earth-palette-" + MONTH + ".png")])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
@@ -10732,6 +10862,8 @@
       dirt.land = all[4];
       dirt.sea = all[5];
       architecture = all[6];
+      dirt.earth = all[7];
+      dirt.pal = all[8];
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }
