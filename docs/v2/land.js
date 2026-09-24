@@ -781,7 +781,7 @@
     });
     if (!filterEl) { return; }
     Array.prototype.forEach.call(filterEl.children, function (b) {
-      b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn));
+      if (b.dataset.layer) { b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn)); }
     });
   }
 
@@ -799,11 +799,22 @@
         try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
         filterGlobe();
         placeCities();
+        groundPlaces();
         var r = b.getBoundingClientRect();
         pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
       });
       filterEl.appendChild(b);
     });
+    // And down onto the ground from wherever the globe is facing, to fly over
+    // it and find the places from the air.
+    var fly = document.createElement("button");
+    fly.type = "button";
+    fly.className = "filter-layer filter-fly";
+    fly.textContent = "Fly";
+    fly.title = "Down onto the ground from here, to fly over it and find the places from the air";
+    fly.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    fly.addEventListener("click", function () { flyOver(); });
+    filterEl.appendChild(fly);
   }
 
   /* Which collage a landmark is standing nearest, by the places they are in. */
@@ -955,6 +966,34 @@
     hideGraze();
     closeDeck();
     passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9, from.y);
+  }
+
+  /* From one place to another without going back up: the world turns under
+     you from the one to the other at the height of a city, and you arrive. */
+  function hopTo(city) {
+    if (flying) { return; }
+    if (!place) { goDown(city); return; }
+    stopTheatre();
+    stopArchive();
+    stopBuilding();
+    endScene();
+    hold();
+    hideGraze();
+    showHere(false);
+    spawns.forEach(function (born) { born.el.style.visibility = "hidden"; });
+    banner.hidden = true;
+    place = city;
+    focus.lat = city.lat;
+    focus.lon = city.lon;
+    wanted = city.lon;
+    leanFrom = tilt;
+    leanTo = city.lat;
+    flyFrom = zoom;
+    flyTo = CITY_ZOOM;
+    flyAt = performance.now();
+    flying = true;
+    land.dataset.at = "flying";
+    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9, H / 2);
   }
 
   function comeUp() {
@@ -9575,6 +9614,7 @@
     if (city.museum) { showHeld(city.museum); } else { delete buildingEl.dataset.museum; }
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
+    groundBehindAt(city);
 
     Promise.all([readModel(b.slug), readGround(b.slug)]).then(function (both) {
       if (buildingOn !== visit) { return; }
@@ -9768,6 +9808,7 @@
     }
     if (buildingEl) { buildingEl.hidden = true; }
     if (buildingWorks) { buildingWorks.textContent = ""; }
+    if (typeof groundBehindOff === "function" && groundBehind) { groundBehindOff(); }
   }
 
   if (buildingEl) {
@@ -10984,29 +11025,112 @@
   var groundDirt = document.getElementById("ground-dirt");
   var groundFrame = document.getElementById("ground-dirt-frame");
   var bannerDown = document.getElementById("banner-down");
-  var groundOn = false;
+  var groundOn = false;             // DIRT Earth up front, to fly over by hand
+  var groundBehind = false;         // DIRT Earth laid behind a building, still
+  var groundLoaded = false;
+  var groundAtWas = "";
   var downPush = 0;
 
-  function goDeeper(streets) {
-    if (!place || flying || groundOn) { return; }
-    var lat = place.lat * 180 / Math.PI, lon = place.lon * 180 / Math.PI;
+  /* The ground at a place: loaded the first time, told where to go after. */
+  function groundAt(lat, lon, streets) {
     var month = new Date().getMonth();
+    var key = lat.toFixed(4) + "," + lon.toFixed(4);
     if (!groundFrame.src) {
-      groundFrame.src = "dirt/index.html#earth=" + lat.toFixed(4) + "," + lon.toFixed(4) + "," + (month + 1);
-    } else {
+      groundFrame.src = "dirt/index.html#earth=" + key + "," + (month + 1);
+    } else if (key !== groundAtWas || streets) {
       groundFrame.contentWindow.postMessage({ dirt: "goto", lat: lat, lon: lon, month: month, streets: !!streets }, "*");
     }
+    groundAtWas = key;
+  }
+  function groundSay(message) {
+    if (groundLoaded) { groundFrame.contentWindow.postMessage(message, "*"); }
+  }
+  /* Every place the globe is showing, for the ground to carry as marks: the
+     collages always, and whichever layer the filter has on. */
+  function groundPlaces() {
+    groundSay({ dirt: "places", list: cities.filter(function (c) { return !c.off; }).map(function (c) {
+      return { id: c.slug, lat: c.lat * 180 / Math.PI, lon: wrap(c.lon) * 180 / Math.PI,
+               name: c.title, kind: c.el ? c.el.dataset.kind : "work" };
+    }) });
+  }
+  groundFrame.addEventListener("load", function () {
+    groundLoaded = true;
+    groundPlaces();
+    groundSay({ dirt: "chrome", on: groundOn });
+  });
+
+  /* Behind a building: the ground of its place in DIRT Earth, the landscape
+     it stands in seen from the air, still, with what the atlas says of it;
+     the building rises over it. (Artist, 24 Sep 2026: "I want that to be what
+     shows up around the buildings.") */
+  function groundBehindAt(city) {
+    groundAt(city.lat * 180 / Math.PI, wrap(city.lon) * 180 / Math.PI, false);
+    groundBehind = true;
+    groundSay({ dirt: "chrome", on: false });
     groundDirt.hidden = false;
+    groundDirt.classList.add("behind");
+    document.body.classList.add("aground");
+    window.requestAnimationFrame(function () { groundDirt.classList.add("on"); });
+  }
+  function groundBehindOff() {
+    groundBehind = false;
+    document.body.classList.remove("aground");
+    if (groundOn) { return; }
+    groundDirt.classList.remove("on", "behind");
+    window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
+  }
+
+  /* Up front: DIRT Earth to fly over — swipe to cross the ground, the site's
+     places on it as marks and the nearest off the screen pointed to from its
+     edges; pressing one opens it. From a place, at the place; from the globe
+     (Fly), wherever the globe is facing. */
+  function groundUp(lat, lon, streets) {
+    groundAt(lat, lon, streets);
+    groundDirt.hidden = false;
+    groundDirt.classList.remove("behind");
     groundOn = true;
+    groundSay({ dirt: "chrome", on: true });
+    groundPlaces();
     window.requestAnimationFrame(function () { groundDirt.classList.add("on"); groundFrame.focus(); });
+  }
+  function goDeeper(streets) {
+    if (!place || flying || groundOn) { return; }
+    groundUp(place.lat * 180 / Math.PI, wrap(place.lon) * 180 / Math.PI, streets);
+  }
+  function flyOver() {
+    if (flying || place || groundOn) { return; }
+    var at = unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
+    groundUp(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
   }
   function comeUpFromGround() {
     if (!groundOn) { return; }
     groundOn = false;
     downPush = 0;
-    groundDirt.classList.remove("on");
-    window.setTimeout(function () { if (!groundOn) { groundDirt.hidden = true; } }, 640);
-    bannerDown.focus();
+    if (groundBehind) {
+      // Back behind the building it was opened from.
+      groundDirt.classList.add("behind");
+      groundSay({ dirt: "chrome", on: false });
+      if (place) { groundAt(place.lat * 180 / Math.PI, wrap(place.lon) * 180 / Math.PI, false); }
+    } else {
+      groundDirt.classList.remove("on");
+      window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
+    }
+    if (place) { bannerDown.focus(); }
+  }
+
+  /* A mark pressed on the ground: that place, reached by flying over the
+     globe to it — the ground put away first, and laid again behind it if it
+     is a building. */
+  function openFromGround(id) {
+    var city = null;
+    cities.forEach(function (c) { if (c.slug === id) { city = c; } });
+    if (!city || flying) { return; }
+    groundOn = false;
+    groundBehindOff();
+    groundDirt.classList.remove("on", "behind");
+    window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
+    if (place === city) { if (city.building) { groundBehindAt(city); } return; }
+    hopTo(city);
   }
   bannerDown.addEventListener("click", function () { goDeeper(false); });
   // The reading lies over the banner (it is another layer, above the
@@ -11027,10 +11151,12 @@
   window.addEventListener("message", function (event) {
     if (event.source !== groundFrame.contentWindow || !event.data) { return; }
     if (event.data.dirt === "up") { comeUpFromGround(); }
+    if (event.data.dirt === "open") { openFromGround(event.data.id); }
   });
   // Scrolling in on a city, or spreading two fingers on it, goes on down.
   stage.addEventListener("wheel", function (event) {
     if (!place || flying || groundOn || event.deltaY >= 0) { return; }
+    if (groundBehind && event.target.closest && event.target.closest(".building-works")) { return; }
     downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
     if (downPush > 233) { downPush = 0; goDeeper(false); }
   }, { passive: true });

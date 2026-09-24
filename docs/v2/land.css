@@ -2162,3 +2162,29 @@
 .dirt-look .collection-from { color: #a8927a; }
 .dirt-look .collection-field { color: #eadfcd; }
 .dirt-look .collection-field::placeholder { color: #a8927a; }
+
+/* ---- DIRT Earth behind a building, and Fly ------------------------------ */
+/* Behind: the ground laid under the stage, which goes clear over it; the
+   building, its banner and its works stand on top as they always do. */
+.ground-dirt.behind { z-index: -1; pointer-events: none; transform: none; }
+.dirt-look .aground .stage { background: transparent; }
+.aground #world,
+.aground #world-soft,
+.aground #world-gloss { visibility: hidden; }
+.dirt-look .aground .building {
+  background: radial-gradient(ellipse 55% 50% at 50% 52%, rgba(15, 10, 7, 0.42), rgba(15, 10, 7, 0.12) 70%, rgba(15, 10, 7, 0) 100%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.dirt-look .aground .building[data-museum] {
+  background: radial-gradient(ellipse 40% 50% at 32% 52%, rgba(15, 10, 7, 0.42), rgba(15, 10, 7, 0.12) 70%, rgba(15, 10, 7, 0) 100%);
+}
+.aground .building-works { background: rgba(15, 10, 7, 0.82); padding-top: var(--s-3); }
+.aground .banner-where { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
+@media (max-width: 720px) {
+  .dirt-look .aground .building[data-museum] {
+    background: radial-gradient(ellipse 60% 40% at 50% 30%, rgba(15, 10, 7, 0.42), rgba(15, 10, 7, 0) 100%);
+  }
+}
+.filter-fly { margin-left: 6px; box-shadow: inset 1px 0 0 rgba(168, 146, 122, 0.4); border-radius: 0 999px 999px 0; }
+@media (max-width: 720px) { .aground .building-works { background: rgba(15, 10, 7, 0.95); } }

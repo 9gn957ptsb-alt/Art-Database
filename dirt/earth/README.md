@@ -203,6 +203,8 @@ and on to its streets. The website carries its own edition of the page, built wi
 
 ```sh
 python3 dirt/build_soil_viewer.py --earth dirt/earth/out --site <website>/docs/v2/dirt --dots <website>/docs/v2/dirt-land.png
+# or, for a change to the engine alone (no private plane needed):
+python3 scripts/splice_dirt_engine.py
 cp dirt/earth/site/earth-dirt-*.png dirt/earth/site/earth-palette-*.png <website>/docs/v2/earth-dirt/
 ```
 
@@ -241,3 +243,11 @@ They must be published with it: served from the same place, not from `file://`.
   distance is a model built from haze and clear days. Canopy height comes from MERRA-2's displacement height, which
   is coarse and near nought over grassland; that is why trees outside forest biomes thin with aridity instead.
 - **The species** are what characterises each place, not everything that lives there.
+
+### The website's places on the ground
+
+The site's edition carries the Artist Website's own places. The site sends `{dirt: "places", list: [{id, lat,
+lon, name, kind}]}` (its collages and the layer its globe's filter shows); DIRT Earth draws each as a mark at its
+spot, and points to the nearest ones off the screen from the top of the view, with their distances; pressing one
+glides (or, far off, flies) there, and pressing a mark posts `{dirt: "open", id}` back. `{dirt: "chrome", on:
+false}` hides the bar and the marks, for when the site lays the ground behind one of its buildings.

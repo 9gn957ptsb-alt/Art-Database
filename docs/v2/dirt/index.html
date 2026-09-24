@@ -6801,10 +6801,143 @@ globeCv.addEventListener("pointerup", (ev) => {
   const plainFrame = frame;
   frame = function (now) {
     if (MODE === "globe") { requestAnimationFrame(frame); drawGlobe(now); return; }
-    if (MODE === "city") { requestAnimationFrame(frame); cityFrame(now); return; }
+    if (MODE === "city") { requestAnimationFrame(frame); cityFrame(now); siteMarks(now); return; }
     plainFrame(now);
     if (earthOn()) { earthOverlay(now); readCentre(); }
+    siteMarks(now);
   };
+}
+
+// ---- the website's places, on the ground ---------------------------------------------------------------------
+// On the Artist Website the ground carries the site's own places: its collages, and whichever layer of buildings
+// its globe is showing (museums, architecture), each a mark at its real spot that opens it on the site. The
+// places off the screen are pointed to from its edges, nearest first, with how far they are; pressing one glides
+// there, or, when it is far, flies. {dirt: "places", list: [{id, lat, lon, name, kind}]} gives them;
+// {dirt: "chrome", on} shows or hides the page's own bar and the marks, for when the site lays the ground behind
+// one of its buildings. A press posts {dirt: "open", id} to the site.
+const MARKS = { list: [], layer: null, edge: null, chips: [], shown: true, glide: null, t: 0 };
+{
+  const css = document.createElement("style");
+  css.textContent = `
+    .site-marks { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+    .site-mark { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; pointer-events: auto;
+                 background: none; border: 0; padding: 4px; margin: 0; cursor: pointer; color: #f3ecdf; text-transform: none;
+                 letter-spacing: 0; font: italic 400 13px/1.2 var(--serif); text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.8);
+                 white-space: nowrap; will-change: transform; }
+    .site-mark i { display: block; width: 9px; height: 9px; flex: none; background: #f3ecdf; border: 1.5px solid #0f0a07;
+                   box-shadow: 0 0 0 2px rgba(243,236,223,0.35); }
+    .site-mark[data-kind="work"] i { border-radius: 50%; width: 11px; height: 11px; }
+    .site-mark[data-kind="landmark"] i { border-radius: 50%; background: transparent; border: 2px solid #f3ecdf; }
+    .site-mark[data-kind="museum"] i { transform: rotate(45deg); }
+    .site-mark:hover span, .site-mark:focus-visible span { text-decoration: underline; }
+    .site-edge { position: absolute; left: 0; top: 0; pointer-events: auto; display: flex; align-items: center; gap: 5px;
+                 padding: 5px 10px; border: 1px solid rgba(243,236,223,0.45); border-radius: 999px; background: rgba(15,10,7,0.72);
+                 color: #f3ecdf; font: 10px/1.2 var(--mono); letter-spacing: 0.04em; text-transform: none; white-space: nowrap;
+                 cursor: pointer; will-change: transform; }
+    .site-edge b { display: inline-block; font-weight: 400; }
+    .site-edge span { max-width: min(46ch, 62vw); overflow: hidden; text-overflow: ellipsis; }
+    .site-mark.nameless span { visibility: hidden; }
+    .site-edge:hover, .site-edge:focus-visible { background: #f3ecdf; color: #0f0a07; }
+    body.backdrop .bar, body.backdrop .site-marks { display: none; }
+  `;
+  document.head.appendChild(css);
+  MARKS.layer = document.createElement("div");
+  MARKS.layer.className = "site-marks";
+  stage.appendChild(MARKS.layer);
+}
+const kmBetween = (la1, lo1, la2, lo2) => {
+  const r = Math.PI / 180, a = Math.sin(((la2 - la1) * r) / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin(((lo2 - lo1) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.min(1, Math.sqrt(a)));
+};
+function setMarks(list) {
+  MARKS.layer.textContent = "";
+  MARKS.chips = [];
+  MARKS.list = (list || []).map((p) => {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "site-mark";
+    el.dataset.kind = p.kind || "building";
+    el.innerHTML = "<i></i><span></span>";
+    el.lastChild.textContent = p.name;
+    el.setAttribute("aria-label", "Open " + p.name);
+    el.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    el.addEventListener("click", () => window.parent.postMessage({ dirt: "open", id: p.id }, "*"));
+    el.style.visibility = "hidden";
+    MARKS.layer.appendChild(el);
+    return { p, el, x: xOfLon(p.lon), y: yOfLat(p.lat) };
+  });
+  for (let k = 0; k < 4; k++) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "site-edge";
+    b.style.visibility = "hidden";
+    b.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    b.addEventListener("click", () => { const m = b._m; if (m) glideTo(m.p.lat, m.p.lon); });
+    MARKS.layer.appendChild(b);
+    MARKS.chips.push(b);
+  }
+}
+/** Over there: a glide across the ground when it is near, a flight (the ground laid again there) when it is far. */
+function glideTo(lat, lon) {
+  if (MODE === "city") upFromCity();
+  const tx = xOfLon(lon) - VW / 2, ty = yOfLat(lat) - VH / 2;
+  let dx = mod(tx - vx + E_W / 2, E_W) - E_W / 2;
+  const dy = ty - vy;
+  if (Math.hypot(dx, dy) > 34 * Math.max(VW, VH)) { toEarth(lat, lon); return; }
+  MARKS.glide = { x0: vx, y0: vy, dx, dy, t0: performance.now(), dur: 1000 * PHI * (1 + Math.min(1, Math.hypot(dx, dy) / (13 * Math.max(VW, VH)))) };
+}
+function siteMarks(now) {
+  if (!MARKS.list.length) return;
+  const g = MARKS.glide;
+  if (g) {
+    const q = Math.min(1, (now - g.t0) / g.dur), e = q < 0.5 ? 4 * q * q * q : 1 - (-2 * q + 2) ** 3 / 2;
+    vx = g.x0 + g.dx * e; vy = g.y0 + g.dy * e; velX = velY = 0;
+    if (q >= 1) MARKS.glide = null;
+  }
+  const on = MODE === "earth" && !document.body.classList.contains("backdrop");
+  if (!on) { if (MARKS.shown) { for (const m of MARKS.list) m.el.style.visibility = "hidden"; for (const c of MARKS.chips) c.style.visibility = "hidden"; MARKS.shown = false; } return; }
+  MARKS.shown = true;
+  const r = cv.getBoundingClientRect(), s = r.width / Math.max(1, VW), W = r.width, H = r.height;
+  const cLat = latOfY(vy + VH / 2), cLon = lonOfX(vx + VW / 2), off = [], named = [];
+  for (const m of MARKS.list) {
+    const px = (mod(m.x - vx + E_W / 2, E_W) - E_W / 2) * s, py = (m.y - vy) * s;
+    if (px > -8 && px < W + 8 && py > -8 && py < H + 8) {
+      m.el.style.visibility = "visible";
+      m.el.style.transform = `translate(${(px - 8).toFixed(1)}px, ${(py - 11).toFixed(1)}px)`;
+      // A name that would print over one already given out keeps its mark and loses its words.
+      const w = m.w || (m.w = m.el.offsetWidth || 120), clash = named.some((o) => px < o.x + o.w && o.x < px + w && Math.abs(py - o.y) < 17);
+      m.el.classList.toggle("nameless", clash);
+      if (!clash) named.push({ x: px, y: py, w });
+    } else {
+      m.el.style.visibility = "hidden";
+      off.push(m);
+    }
+  }
+  // The edges: the nearest places off the screen, each on the edge toward it. Worked out every few frames.
+  if (++MARKS.t % 8) return;
+  for (const m of off) m.km = kmBetween(cLat, cLon, m.p.lat, m.p.lon);
+  off.sort((a, b) => a.km - b.km);
+  const fmtKm = (km) => (km < 10 ? km.toFixed(1) : Math.round(km).toLocaleString("en")) + " km";
+  const taken = [];
+  MARKS.chips.forEach((c, k) => {
+    const m = off[k];
+    c._m = m || null;
+    if (!m) { c.style.visibility = "hidden"; return; }
+    // The way to it on the ground: east-west the short way round, north-south as it is.
+    const dx = mod(m.x - (vx + VW / 2) + E_W / 2, E_W) - E_W / 2, dy = m.y - (vy + VH / 2), a = Math.atan2(dy, dx);
+    const arrow = "→↘↓↙←↖↑↗"[Math.round(((a + 2 * Math.PI) % (2 * Math.PI)) / (Math.PI / 4)) % 8];
+    c.innerHTML = `<b>${arrow}</b><span></span>`;
+    c.lastChild.textContent = `${m.p.name} · ${fmtKm(m.km)}`;
+    c.setAttribute("aria-label", `Go to ${m.p.name}, ${fmtKm(m.km)} away`);
+    const cw = c.offsetWidth || 120, ch = c.offsetHeight || 22, pad = 13;
+    // Stacked along the top, clear of the middle where the marks are: those to the east on the right, those to
+    // the west on the left, each under the last on its side; the arrow says the rest.
+    const east = Math.cos(a) >= 0, row = taken.filter((o) => o.east === east).length;
+    const x = east ? W - pad - cw : pad, y = pad + row * (ch + 6);
+    taken.push({ east });
+    c.style.visibility = "visible";
+    c.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+  });
 }
 // A link can open the Earth: #earth=lat,lon[,month] goes down into a place, #globe opens the globe.
 function followHash() {
@@ -6819,7 +6952,10 @@ function followHash() {
 // The website drives its DIRT from outside: {dirt: "goto", lat, lon, month (0-11), streets (go straight down to them)}.
 window.addEventListener("message", (ev) => {
   const m = ev.data;
-  if (!m || m.dirt !== "goto" || ev.source !== window.parent) return;
+  if (!m || ev.source !== window.parent) return;
+  if (m.dirt === "places") { setMarks(m.list); return; }
+  if (m.dirt === "chrome") { document.body.classList.toggle("backdrop", !m.on); return; }
+  if (m.dirt !== "goto") return;
   const go = () => {
     if (!placed) return setTimeout(go, 55);
     if (MODE === "city") upFromCity();
