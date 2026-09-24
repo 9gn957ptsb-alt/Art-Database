@@ -2197,3 +2197,7 @@
 }
 /* The building link sits where the timeline would; while the timeline shows, it steps up. */
 .building:has(.building-time:not([hidden])) .building-link { bottom: calc(var(--s-5) + 64px); }
+/* A saved work whose picture could not be had: its caption alone, a quiet frame where the picture was. */
+.held-nopic img { visibility: hidden; }
+.held-nopic { grid-template-columns: 89px 1fr; }
+.held-nopic::before { content: ""; grid-area: 1 / 1; width: 89px; height: 89px; box-shadow: inset 0 0 0 1px rgba(168, 146, 122, 0.35); }

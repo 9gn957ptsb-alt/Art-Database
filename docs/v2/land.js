@@ -9694,7 +9694,7 @@
      (collections.js) and shown the same way, marked as the collection's.
      Pressing a work brings it up large; pressing it again puts it back.
      Nothing leads off the site. */
-  function heldFigure(w, src, i, found) {
+  function heldFigure(w, src, i, found, alts) {
     var fig = document.createElement("figure");
     fig.className = found ? "held held-found" : "held";
     fig.tabIndex = 0;
@@ -9702,10 +9702,21 @@
     fig.setAttribute("aria-expanded", "false");
     var img = document.createElement("img");
     img.alt = w.t + (w.a ? ", " + w.a : "");
-    img.loading = "lazy";
+    // A saved work is never lost for want of its picture: another size of
+    // it is tried, and failing all, it stays as its caption. (Dropping it had
+    // emptied a museum's saved works on a phone where the pictures failed.)
+    // Found works without a picture are simply left out.
+    img.loading = found ? "lazy" : "eager";
     img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    var tries = (alts || []).slice();
+    img.addEventListener("error", function () {
+      if (tries.length) { img.src = tries.shift(); return; }
+      if (found) { fig.remove(); return; }
+      fig.classList.add("held-nopic");
+      img.removeAttribute("src");
+    });
     img.src = src;
-    img.addEventListener("error", function () { fig.remove(); });
     var cap = document.createElement("figcaption");
     var t = document.createElement("i");
     t.textContent = w.t || "Untitled";
@@ -9744,7 +9755,10 @@
     head.textContent = "Saved \u00b7 " + (m.held === 1 ? "one work" : m.held + " works");
     buildingWorks.appendChild(head);
     (m.works || []).forEach(function (w, i) {
-      buildingWorks.appendChild(heldFigure(w, (museums.cdn || "") + w.i + ".jpg", i, false));
+      var cdn = museums.cdn || "", key = w.i.split("/")[0];
+      var alts = ["medium", "square", "small"].map(function (v) { return cdn + key + "/" + v + ".jpg"; })
+        .filter(function (u) { return u !== cdn + w.i + ".jpg"; });
+      buildingWorks.appendChild(heldFigure(w, cdn + w.i + ".jpg", i, false, alts));
     });
     if (window.Collections) { buildingWorks.appendChild(searchFor(m)); }
     buildingWorks.scrollTop = 0;
