@@ -2168,3 +2168,32 @@
    between the globe, a place, the ground and its streets. The button stays in
    the page for the code that proxies presses to it, out of sight. */
 .banner-down { display: none; }
+
+/* ---- the timeline under a town's ground ---------------------------------- */
+.building-time {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--s-5) + 8px);
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.78);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.06em;
+  z-index: 2;
+}
+.building-time[hidden] { display: none; }
+.building-time-year { min-width: 4ch; font-variant-numeric: tabular-nums; }
+.building-time-range { flex: 1; accent-color: #eadfcd; touch-action: pan-x; }
+.building[data-museum] .building-time { left: calc((100% - min(40vw, 440px)) / 2); }
+@media (max-width: 720px) {
+  .building[data-museum] .building-time { left: 50%; bottom: calc(38vh + 8px); }
+}
+/* The building link sits where the timeline would; while the timeline shows, it steps up. */
+.building:has(.building-time:not([hidden])) .building-link { bottom: calc(var(--s-5) + 64px); }

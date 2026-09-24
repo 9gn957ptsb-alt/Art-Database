@@ -9488,10 +9488,22 @@
     var lift = Math.min(4, (n / 6) * cell / Math.max(relief, 1)) / cell;
     var dots = { x: [], y: [], z: [], size: [], ink: [], reveal: [] };
     var highest = 0;
+    // When each building was put up, where it is known (g.built: a year for
+    // each building cell, row by row, 0 where not known): the clod is then a
+    // time as well as a place, and its reveal is the year, not the row — the
+    // ground is there from the start and the town rises on it year by year,
+    // storey by storey (the timeline, below).
+    var years = null, bi = 0;
+    if (g.built && g.built.length) {
+      var y0 = Infinity, y1 = new Date().getFullYear();
+      g.built.forEach(function (yr) { if (yr > 0 && yr < y0) { y0 = yr; } });
+      if (y0 < y1) { years = { y0: y0 - 1, y1: y1 }; }
+    }
+    function yearAt(yr) { return (yr - years.y0) / (years.y1 - years.y0); }
 
     function put(x, y, z, size, ink, row) {
       dots.x.push(x); dots.y.push(y); dots.z.push(z);
-      dots.size.push(size); dots.ink.push(ink); dots.reveal.push(row / n);
+      dots.size.push(size); dots.ink.push(ink); dots.reveal.push(years ? 0 : row / n);
       if (z > highest) { highest = z; }
     }
     function zAt(i, j) {
@@ -9519,9 +9531,13 @@
           // tower is kept to about a fifth of the clod.
           var up_ = Math.min(n / 5, Math.max(1, storeys * 3.2 / cell * 1.2));   // in cells
           var layers = Math.max(1, Math.round(up_ * 2));
+          var built = years ? g.built[bi] || 0 : 0;
+          bi += 1;
           for (var l = 1; l <= layers; l += 1) {
             var top = l === layers;
             put(x, y, z + l * 0.5, 2, inkOf(mixTo(soil, PALE, 0.72), top ? 1.06 : 0.84 + 0.1 * l / layers), i);
+            // Its storeys go up one after another within its year.
+            if (built) { dots.reveal[dots.reveal.length - 1] = yearAt(built - 1) + (l / layers) * 0.97 / (years.y1 - years.y0); }
           }
         } else if (size) {
           put(x, y, z, size, inkOf(soil, what === "~" ? 1 : light), i);
@@ -9539,6 +9555,7 @@
     dots.count = dots.x.length;
     dots.span = n;
     dots.lift = Math.min(highest, n / 4);
+    dots.years = years;
     return dots;
   }
 
@@ -9555,8 +9572,10 @@
     sizeClod();
     // It rises out of the ground over a second and a half: the town row by
     // row from the north, the building a storey at a time.
+    var dots = clod.views[clod.view];
     var shown = still ? 1 : (now - clod.at) / CLOD_RISE;
-    window.Models.draw(clod.canvas, clod.views[clod.view], clod.heading, shown, 0.92);
+    if (dots.years) { shown = clod.when; }
+    window.Models.draw(clod.canvas, dots, clod.heading, shown, 0.92);
   }
 
   /* Isometric: the building rests on one of its four 45° diagonals, where
@@ -9566,6 +9585,7 @@
   var CLOD_REST = Math.pow(PHI, 6) * 1000;    // ≈ 17.9 s at rest on a diagonal
   var CLOD_SWING = PHI * PHI * 1000;          // ≈ 2.6 s to swing to the next
   var CLOD_RISE = PHI * 1000;                 // ≈ 1.6 s to rise out of the ground
+  var CLOD_GROW = Math.pow(PHI, 5) * 1000;    // ≈ 11 s for the whole of a town's years to go by
   function isoNearest(h) { return Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8; }
 
   function clodFrame(now) {
@@ -9584,6 +9604,22 @@
         clod.dirty = true;
         if (q >= 1) { clod.heading = clod.to; clod.swingAt = null; }
       }
+    }
+    // The timeline eases toward where it has been set, so what went up
+    // between rises storey by storey as the slider passes.
+    var dotsNow = clod.views[clod.view];
+    if (dotsNow && dotsNow.years && clod.when !== clod.whenTo) {
+      var dt = now - (clod.last || now);
+      if (clod.byHand) {
+        // Following the slider: close behind it, so what is passed still rises.
+        clod.when += (clod.whenTo - clod.when) * Math.min(1, dt / 377);
+        if (Math.abs(clod.whenTo - clod.when) < 0.0005) { clod.when = clod.whenTo; }
+      } else {
+        // The first time: the town's years go by at an even pace.
+        clod.when = Math.min(clod.whenTo, clod.when + dt / CLOD_GROW);
+      }
+      clod.dirty = true;
+      showYear();
     }
     clod.last = now;
     // Drawn only while something is happening — rising, swinging, being
@@ -9641,10 +9677,13 @@
         canvas: canvas, views: views, view: first,
         heading: TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4,
         at: performance.now(), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
-        swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST
+        swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST,
+        when: 1, whenTo: 1, byHand: false
       };
       buildingEl.dataset.air = "up";
       buildingEl.dataset.view = first;
+      startTime(views[first]);
+      showYear();
       clod.raf = requestAnimationFrame(clodFrame);
     });
   }
@@ -9789,6 +9828,47 @@
     return box;
   }
 
+  /* The timeline: when the ground knows when its buildings went up, a
+     slider of years lies under it. The town first grows from its earliest
+     year to this one; moving the slider back and forth takes it down and
+     puts it up again, each year's buildings rising storey by storey as they
+     are passed (artist, 24 Sep 2026: "watching the urban development of an
+     area rise over time"). */
+  var timeline = document.getElementById("building-time");
+  var timeRange = document.getElementById("building-time-range");
+  var timeYear = document.getElementById("building-time-year");
+  function yearOf(when, years) { return Math.round(years.y0 + when * (years.y1 - years.y0)); }
+  function showYear() {
+    if (!clod || !timeline) { return; }
+    var d = clod.views[clod.view];
+    var on = !!(d && d.years);
+    timeline.hidden = !on;
+    if (!on) { return; }
+    var yr = Math.max(d.years.y0 + 1, yearOf(clod.when, d.years));
+    timeYear.textContent = String(yr);
+    if (document.activeElement !== timeRange) { timeRange.value = String(Math.round(clod.when * 1000)); }
+    timeRange.setAttribute("aria-valuetext", String(yr));
+  }
+  function startTime(d) {
+    if (!d || !d.years) { return; }
+    timeRange.min = "0";
+    timeRange.max = "1000";
+    clod.when = still ? 1 : 0;
+    clod.whenTo = 1;
+    clod.byHand = false;
+    showYear();
+  }
+  if (timeline) {
+    timeRange.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    timeRange.addEventListener("input", function () {
+      if (!clod) { return; }
+      clod.whenTo = Number(timeRange.value) / 1000;
+      clod.byHand = true;
+      var d = clod.views[clod.view];
+      if (d && d.years) { timeYear.textContent = String(Math.max(d.years.y0 + 1, yearOf(clod.whenTo, d.years))); }
+    });
+  }
+
   /* A tap swaps the building for the ground it stands in, and back; each
      rises again as it comes. */
   function turnView() {
@@ -9799,6 +9879,8 @@
     clod.at = performance.now();
     clod.dirty = true;
     buildingEl.dataset.view = other;
+    startTime(clod.views[other]);
+    showYear();
     var r = buildingMap.getBoundingClientRect();
     pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(r.width, r.height) * INV2);
   }
@@ -9812,6 +9894,7 @@
     }
     if (buildingEl) { buildingEl.hidden = true; }
     if (buildingWorks) { buildingWorks.textContent = ""; }
+    if (timeline) { timeline.hidden = true; }
   }
 
   if (buildingEl) {
@@ -9820,6 +9903,7 @@
     buildingEl.addEventListener("pointerdown", function (event) {
       event.stopPropagation();
       if (!clod || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
+      if (timeline && timeline.contains(event.target)) { return; }
       if (buildingWorks && buildingWorks.contains(event.target)) { return; }
       clodDrag = { x: event.clientX, y: event.clientY, heading: clod.heading, moved: 0 };
       clod.held = true;

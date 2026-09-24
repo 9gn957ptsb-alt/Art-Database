@@ -224,6 +224,12 @@
       </a>
       <!-- Ground from Overture Maps & (c) OpenStreetMap contributors (ODbL); heights from open
            terrain tiles. The credit line was taken off the view at the artist's request (24 Sep 2026). -->
+      <!-- The timeline: the town's years, when its ground knows when its buildings went up. -->
+      <div class="building-time" id="building-time" hidden>
+        <span class="building-time-year" id="building-time-year" aria-hidden="true"></span>
+        <input class="building-time-range" id="building-time-range" type="range" min="0" max="1000" step="1" value="1000"
+               aria-label="The year: slide back to take the town down, forward to put it up again">
+      </div>
       <!-- A museum: the works it holds that the artist saved, from museums.json. -->
       <div class="building-works" id="building-works" aria-label="The works here"></div>
     </div>
