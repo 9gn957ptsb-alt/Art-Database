@@ -313,7 +313,8 @@
     var tall = (dots.lift || 0) * ct;
     var scale = Math.min(w * (fit || 0.9) / (dots.span * 1.42),
                          h * 0.86 / (dots.span * 1.42 * st + tall));
-    var cx0 = w / 2, cy0 = h * 0.5 + tall * scale * 0.42;
+    // Its ground sits a golden section down, lifted by what stands on it.
+    var cx0 = w / 2, cy0 = h * 0.5 + tall * scale * 0.382;
     var cover = Math.max(0.5, scale * 0.56);
     if (!sorter.order || sorter.order.length < dots.count) {
       sorter.order = new Uint32Array(dots.count);

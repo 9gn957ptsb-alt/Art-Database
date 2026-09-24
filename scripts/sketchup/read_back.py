@@ -13,7 +13,7 @@ for g in model.get_entities().get_groups():
         rec = out.setdefault(name, {"keys": {}, "v": [], "f": []})
         idx = []
         for p in pts:
-            k = (round(p.x * IN, 2), round(-p.y * IN, 2), round(p.z * IN, 2))
+            k = (round(p.x * IN, 1), round(-p.y * IN, 1), round(p.z * IN, 1))
             if k not in rec["keys"]:
                 rec["keys"][k] = len(rec["v"]) // 3
                 rec["v"] += [k[0], k[1], k[2]]

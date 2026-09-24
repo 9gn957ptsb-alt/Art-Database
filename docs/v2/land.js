@@ -9419,7 +9419,7 @@
     sizeClod();
     // It rises out of the ground over a second and a half: the town row by
     // row from the north, the building a storey at a time.
-    var shown = still ? 1 : (now - clod.at) / 1500;
+    var shown = still ? 1 : (now - clod.at) / CLOD_RISE;
     window.Models.draw(clod.canvas, clod.views[clod.view], clod.heading, shown, 0.92);
   }
 
@@ -9427,8 +9427,9 @@
      every measurement along its walls reads true, and every CLOD_REST it
      swings a quarter turn to the next, easing in and out. A drag turns it
      freely; let go, it settles on the nearest diagonal. */
-  var CLOD_REST = 22500;
-  var CLOD_SWING = 2600;
+  var CLOD_REST = Math.pow(PHI, 6) * 1000;    // ≈ 17.9 s at rest on a diagonal
+  var CLOD_SWING = PHI * PHI * 1000;          // ≈ 2.6 s to swing to the next
+  var CLOD_RISE = PHI * 1000;                 // ≈ 1.6 s to rise out of the ground
   function isoNearest(h) { return Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8; }
 
   function clodFrame(now) {
@@ -9449,9 +9450,15 @@
       }
     }
     clod.last = now;
-    if (now - clod.drawn >= 1000 / CLOD_FPS || clod.dirty) {
+    // Drawn only while something is happening — rising, swinging, being
+    // turned, or the window changing size. At rest it costs nothing.
+    var rising = !still && now - clod.at < CLOD_RISE + 100;
+    var sized = buildingMap.clientWidth !== clod.cw || buildingMap.clientHeight !== clod.ch;
+    if ((rising || clod.dirty || sized) && now - clod.drawn >= 1000 / CLOD_FPS) {
       clod.drawn = now;
       clod.dirty = false;
+      clod.cw = buildingMap.clientWidth;
+      clod.ch = buildingMap.clientHeight;
       drawClod(now);
     }
     clod.raf = requestAnimationFrame(clodFrame);
