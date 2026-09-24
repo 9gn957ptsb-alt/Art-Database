@@ -1860,26 +1860,37 @@
 }
 
 
-/* ---- the buildings: seen from the air ---------------------------------- */
+/* ---- the buildings: a clod of their ground, in DIRT ------------------- */
 .building {
   position: absolute;
   inset: 0;
   z-index: 57;
+  /* The city behind is washed, as it is while a collage is read. */
+  background: linear-gradient(180deg,
+    rgba(233, 234, 238, 0.86) 0%, rgba(242, 236, 231, 0.9) 50%, rgba(230, 229, 236, 0.92) 100%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 .building[hidden] { display: none; }
-.building-map,
-.building-map gmp-map-3d {
+.building-map {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.building-map:active { cursor: grabbing; }
+.building-clod {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
-.building[data-air="up"] .building-map { animation: air-in var(--beat-5, 0.8s) ease-out both; }
-@keyframes air-in { from { opacity: 0; } to { opacity: 1; } }
 .building-link {
   position: absolute;
   left: 50%;
-  bottom: var(--s-5);
+  bottom: calc(var(--s-5) + 22px);
   transform: translateX(-50%);
   max-width: calc(100% - 32px);
   padding: 8px 14px;
@@ -1893,17 +1904,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
-/* Over Google's view, the link sits clear of its logo and credits along the
-   bottom edge, which have to stay visible. */
-.building[data-air="up"] .building-link { bottom: calc(var(--s-5) + 40px); }
 .building-link:hover,
 .building-link:focus-visible { background: rgba(94, 82, 199, 0.9); }
 .building[data-air="none"] .building-link,
 .building[data-air="waiting"] .building-link { bottom: 50%; transform: translate(-50%, 50%); }
-.land[data-at="flying"] .building { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .building[data-air="up"] .building-map { animation: none; }
+.building-credit {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: var(--s-4);
+  margin: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
 }
+.land[data-at="flying"] .building { display: none; }

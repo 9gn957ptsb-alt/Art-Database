@@ -9236,45 +9236,187 @@
 
   /* ---- the buildings ------------------------------------------------------
 
-     Going down to a building ends in the air above it, the way Google Earth
-     shows a place: Google's photorealistic 3D, the camera coming down out of
-     the sky and then circling slowly. A public building is circled close; a
-     private home is never pinned, so its view is its town from higher up.
-     The key is Google's (maps-key.js, written at deploy from the repository
-     secret GOOGLE_MAPS_KEY); without one the view is just the link to the
-     article, which is always there. */
+     Going down to a building ends at a clod of its ground, in DIRT, turning
+     slowly the way the camera used to circle it — after Google Earth's view
+     from the air, drawn in the site's own soil instead of fetched from a paid
+     map. The ground is read once at build time from free data
+     (scripts/build_grounds.py: Overture Maps and OpenStreetMap for the
+     buildings, roads and water, the open terrain tiles for the hills) and
+     comes as grounds/<slug>.json: a grid, each cell land, water, road or
+     building, with the height of the ground and of what stands on it.
+
+     Every cell is one dot of the soil, the way the globe is woven: land
+     wears DIRT from the very spot on the globe the place is at, water the
+     sea's DIRT, roads the soil gone to dust, and a building stands up out of
+     it in stone-pale dots, a storey at a time. The edges go down into the
+     soil, so it is a clod lifted out of the Earth. It rises out of the
+     ground a row at a time, turns once every minute and a half, and a drag
+     turns it by hand. A public building is its own grounds; a private home
+     is never pinned, so its clod is its town. */
 
   var buildingEl = document.getElementById("building");
   var buildingMap = document.getElementById("building-map");
   var buildingLink = document.getElementById("building-link");
   var buildingOn = null;             // the visit the view belongs to
-  var buildingView = null;           // the gmp-map-3d element, while it is up
-  var mapsReady = null;
+  var grounds = {};                  // slug -> the ground, once read
+  var clod = null;                   // what is being drawn, while it is up
 
-  // How close the camera circles, by how exactly the point is known.
-  var AIR = {
-    exact:    { range: 420,   tilt: 64 },
-    street:   { range: 650,   tilt: 62 },
-    district: { range: 5200,  tilt: 56 },
-    town:     { range: 3400,  tilt: 58 },
-    region:   { range: 26000, tilt: 50 }
-  };
+  var CLOD_PIX = 2;                  // screen pixels to one of the clod's
+  var CLOD_TURN = 90000;             // ms to go once round
+  var CLOD_FPS = 12;                 // held frames, like the rest of the pixel light
+  var CLOD_TILT = 0.66;              // how far above the horizon it is seen from
+  var CLOD_DEEP = 7;                 // layers of soil under the edge
+  var DUST = [232, 220, 203];        // what a road is, the soil gone pale
+  var PALE = [239, 233, 226];        // what a building is, the soil gone to stone
 
-  function loadMaps() {
-    var key = window.MAPS_KEY;
-    if (!key) { return Promise.reject(new Error("no Google Maps key")); }
-    if (!mapsReady) {
-      mapsReady = new Promise(function (resolve, reject) {
-        window.__mapsUp = resolve;
-        var tag = document.createElement("script");
-        tag.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key) +
-                  "&v=beta&libraries=maps3d&loading=async&callback=__mapsUp";
-        tag.async = true;
-        tag.onerror = function () { mapsReady = null; reject(new Error("Google Maps did not load")); };
-        document.head.appendChild(tag);
-      }).then(function () { return window.google.maps.importLibrary("maps3d"); });
+  function readGround(slug) {
+    if (!grounds[slug]) {
+      grounds[slug] = read("grounds/" + slug + ".json").catch(function () { return null; });
     }
-    return mapsReady;
+    return grounds[slug];
+  }
+
+  /* The soil at a cell: the DIRT that lies on the globe where the place is,
+     and on out from there, so every place stands on its own patch of it. */
+  function soilCell(tile, b, i, j) {
+    if (!tile) { return null; }
+    var u0 = Math.floor((b.lon / 360 + 0.5) * DIRT_ROUND * tile.n);
+    var v0 = Math.floor((0.5 - b.lat / 180) * DIRT_DOWN * tile.n);
+    var o = (cellOf(tile.n, v0 + i) * tile.n + cellOf(tile.n, u0 + j)) * 4;
+    return [tile.px[o], tile.px[o + 1], tile.px[o + 2], Math.round(tile.px[o + 3] / 85)];
+  }
+
+  function mixTo(c, to, k) {
+    return [c[0] + (to[0] - c[0]) * k, c[1] + (to[1] - c[1]) * k, c[2] + (to[2] - c[2]) * k];
+  }
+
+  function inkOf(c, light) {
+    return "rgb(" + Math.round(Math.min(255, c[0] * light)) + "," +
+           Math.round(Math.min(255, c[1] * light)) + "," +
+           Math.round(Math.min(255, c[2] * light)) + ")";
+  }
+
+  /* The ground, as dots: where each is, how big, what colour, which row. */
+  function shapeClod(b, g) {
+    var n = g.n, cell = g.side / n;
+    var land = [], hi = 0, k;
+    for (k = 0; k < n * n; k += 1) {
+      if (g.kind[k] !== "~") { hi = Math.max(hi, g.ground[k]); }
+    }
+    // Hills are raised until the highest is about a sixth of the clod across,
+    // and never more than four times their real height.
+    var relief = hi / 2;
+    var lift = Math.min(4, (n / 6) * cell / Math.max(relief, 1)) / cell;
+    var dots = { x: [], y: [], z: [], size: [], ink: [], row: [] };
+
+    function put(x, y, z, size, ink, row) {
+      dots.x.push(x); dots.y.push(y); dots.z.push(z);
+      dots.size.push(size); dots.ink.push(ink); dots.row.push(row);
+    }
+    function zAt(i, j) {
+      var q = i * n + j;
+      return g.kind[q] === "~" ? 0 : g.ground[q] / 2 * lift;
+    }
+
+    for (var i = 0; i < n; i += 1) {
+      for (var j = 0; j < n; j += 1) {
+        var q = i * n + j, what = g.kind[q];
+        var x = j - n / 2 + 0.5, y = i - n / 2 + 0.5, z = zAt(i, j);
+        var soil = soilCell(what === "~" ? dirt.sea : dirt.land, b, i, j) ||
+                   (what === "~" ? [96, 118, 150, 2] : [138, 118, 96, 2]);
+        // Lit from the upper left: a cell higher than the one up and to its
+        // left catches the light, lower is in shade, in four steps.
+        var up = i && j ? zAt(i - 1, j - 1) : z;
+        var light = 0.82 + 0.12 * Math.max(-1, Math.min(2, Math.round((z - up) * 3)));
+        var size = soil[3];
+        if (what === "=") {
+          put(x, y, z, 1, inkOf(mixTo(soil, DUST, 0.6), 1), i);
+        } else if (what === "b") {
+          put(x, y, z, Math.max(1, size), inkOf(soil, light * 0.8), i);
+          var storeys = g.tall.charCodeAt(q) - 48;
+          // Raised a little, so a house still stands up out of a town; a
+          // tower is kept to about a fifth of the clod.
+          var up_ = Math.min(n / 5, Math.max(1, storeys * 3.2 / cell * 1.2));   // in cells
+          var layers = Math.max(1, Math.round(up_ * 2));
+          for (var l = 1; l <= layers; l += 1) {
+            var top = l === layers;
+            put(x, y, z + l * 0.5, 2, inkOf(mixTo(soil, PALE, 0.72), top ? 1.06 : 0.84 + 0.1 * l / layers), i);
+          }
+        } else if (size) {
+          put(x, y, z, size, inkOf(soil, what === "~" ? 1 : light), i);
+        }
+        // The edges go down into the earth: a clod, cut out and lifted.
+        if (i === 0 || j === 0 || i === n - 1 || j === n - 1) {
+          var under = soilCell(dirt.land, b, i + n, j) || [120, 100, 80, 2];
+          for (var d = 1; d <= CLOD_DEEP; d += 1) {
+            put(x, y, Math.min(z, 0) - d * 0.5, Math.max(1, under[3]),
+                inkOf(under, 0.78 - d * 0.035), i);
+          }
+        }
+      }
+    }
+    dots.count = dots.x.length;
+    dots.n = n;
+    return dots;
+  }
+
+  function sizeClod() {
+    var w = Math.max(1, Math.ceil(buildingMap.clientWidth / CLOD_PIX));
+    var h = Math.max(1, Math.ceil(buildingMap.clientHeight / CLOD_PIX));
+    if (clod.canvas.width !== w || clod.canvas.height !== h) {
+      clod.canvas.width = w;
+      clod.canvas.height = h;
+    }
+  }
+
+  function drawClod(now) {
+    var c = clod, d = c.dots, ctx = c.ctx;
+    sizeClod();
+    var w = c.canvas.width, h = c.canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    var cos = Math.cos(c.heading), sin = Math.sin(c.heading);
+    var st = Math.sin(CLOD_TILT), ct = Math.cos(CLOD_TILT);
+    var scale = Math.min(w * 0.92, h * 1.15) / (d.n * 1.42);
+    var cx0 = w / 2, cy0 = h * 0.54;
+    var grain = Math.max(0.5, scale * 0.42);
+    // Row by row out of the ground, north first, over a second and a half.
+    var shown = still ? d.n : Math.floor((now - c.at) / 1500 * d.n);
+    var order = c.order, key = c.key, m = 0, k;
+    for (k = 0; k < d.count; k += 1) {
+      if (d.row[k] > shown) { continue; }
+      var yr = d.x[k] * sin + d.y[k] * cos;
+      key[k] = yr * ct + d.z[k] * st;
+      order[m] = k; m += 1;
+    }
+    var live = order.subarray(0, m);
+    live.sort(function (a, b) { return key[a] - key[b]; });
+    var was = null;
+    for (var t = 0; t < m; t += 1) {
+      k = live[t];
+      var xr = d.x[k] * cos - d.y[k] * sin;
+      var yr2 = d.x[k] * sin + d.y[k] * cos;
+      var sx = cx0 + xr * scale;
+      var sy = cy0 + (yr2 * st - d.z[k] * ct) * scale;
+      // A dot is as big as the soil says, in the clod's own cells: the
+      // weave is as close on a big screen as on a phone.
+      var r = Math.max(1, Math.round(d.size[k] * grain));
+      if (d.ink[k] !== was) { ctx.fillStyle = was = d.ink[k]; }
+      ctx.fillRect(Math.round(sx - r / 2), Math.round(sy - r / 2), r, r);
+    }
+  }
+
+  function clodFrame(now) {
+    if (!clod) { return; }
+    if (!still && !clod.held) {
+      clod.heading += (now - (clod.last || now)) * TAU / CLOD_TURN;
+    }
+    clod.last = now;
+    if (now - clod.drawn >= 1000 / CLOD_FPS || clod.dirty) {
+      clod.drawn = now;
+      clod.dirty = false;
+      drawClod(now);
+    }
+    clod.raf = requestAnimationFrame(clodFrame);
   }
 
   function startBuilding(city) {
@@ -9286,53 +9428,55 @@
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
 
-    loadMaps().then(function (lib) {
+    readGround(b.slug).then(function (g) {
       if (buildingOn !== visit) { return; }
-      var air = AIR[b.precision] || AIR.town;
-      var camera = {
-        center: { lat: b.lat, lng: b.lon, altitude: 0 },
-        range: air.range, tilt: air.tilt, heading: Math.random() * 360
+      if (!g || !g.n) { buildingEl.dataset.air = "none"; return; }
+      var canvas = document.createElement("canvas");
+      canvas.className = "building-clod";
+      buildingMap.appendChild(canvas);
+      var dots = shapeClod(b, g);
+      clod = {
+        canvas: canvas, ctx: canvas.getContext("2d"), dots: dots,
+        order: new Uint32Array(dots.count), key: new Float32Array(dots.count),
+        heading: Math.random() * TAU, at: performance.now(), drawn: 0,
+        last: 0, held: false, dirty: true, raf: 0
       };
-      // Seen from straight overhead and far up first, then brought down.
-      var view = new lib.Map3DElement({
-        center: camera.center, range: still ? air.range : air.range * 9,
-        tilt: still ? air.tilt : 0, heading: camera.heading,
-        mode: lib.MapMode ? lib.MapMode.SATELLITE : "SATELLITE",   // no labels: no words
-        defaultUIHidden: true
-      });
-      buildingView = view;
-      buildingMap.appendChild(view);
       buildingEl.dataset.air = "up";
-      if (still || !view.flyCameraTo) { return; }
-
-      var touched = false;
-      view.addEventListener("pointerdown", function () {
-        touched = true;
-        if (view.stopCameraAnimation) { view.stopCameraAnimation(); }
-      });
-      function circle() {
-        if (buildingOn !== visit || touched || !view.flyCameraAround) { return; }
-        view.flyCameraAround({ camera: camera, durationMillis: 90000, rounds: 1, repeatCount: 1 });
-      }
-      view.addEventListener("gmp-animationend", circle);
-      view.flyCameraTo({ endCamera: camera, durationMillis: 4200 });
-    }).catch(function (error) {
-      if (buildingOn !== visit) { return; }
-      buildingEl.dataset.air = "none";
-      if (window.MAPS_KEY) { window.console.warn("the 3D view did not come up:", error); }
+      clod.raf = requestAnimationFrame(clodFrame);
     });
   }
 
   function stopBuilding() {
     buildingOn = null;
-    if (buildingView && buildingView.parentNode) { buildingView.parentNode.removeChild(buildingView); }
-    buildingView = null;
+    if (clod) {
+      cancelAnimationFrame(clod.raf);
+      if (clod.canvas.parentNode) { clod.canvas.parentNode.removeChild(clod.canvas); }
+      clod = null;
+    }
     if (buildingEl) { buildingEl.hidden = true; }
   }
 
   if (buildingEl) {
-    // The stage turns the world with the pointer; in here it turns the view.
-    buildingEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    // The stage turns the world with the pointer; in here it turns the clod.
+    var clodDrag = null;
+    buildingEl.addEventListener("pointerdown", function (event) {
+      event.stopPropagation();
+      if (!clod || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
+      clodDrag = { x: event.clientX, heading: clod.heading };
+      clod.held = true;
+      try { buildingMap.setPointerCapture(event.pointerId); } catch (e) {}
+    });
+    buildingMap.addEventListener("pointermove", function (event) {
+      if (!clodDrag || !clod) { return; }
+      clod.heading = clodDrag.heading + (event.clientX - clodDrag.x) * 0.012;
+      clod.dirty = true;
+    });
+    var letGo = function () {
+      clodDrag = null;
+      if (clod) { clod.held = false; clod.last = performance.now(); }
+    };
+    buildingMap.addEventListener("pointerup", letGo);
+    buildingMap.addEventListener("pointercancel", letGo);
   }
 
   /* ---- the Archive ---------------------------------------------------------
