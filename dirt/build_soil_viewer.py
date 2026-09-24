@@ -792,6 +792,7 @@ onmessage = (e) => {
 <script>
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
+const QUILTS = __QUILTS__;                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
 // The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
 const SITE = __SITE__;
@@ -808,7 +809,7 @@ const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
   : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
-                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER });
+                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER, quilts: QUILTS });
 // Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
 // the rest into the paper rather than into the dark.
 const ON_PAPER = !!GLG && !/noart/.test(location.hash);
@@ -2051,17 +2052,28 @@ function complexityJS(x, y) {
   if (v) b *= smooth(v.R, v.R + 377, v.d);
   return b;
 }
+// The hangs (the formal pass, in ground-gl.js): how much of a hang's wall is at x, y, once the quilts are in. Life
+// keeps off the walls, as it does off the minimal rungs: a gallery wall is quiet.
+const FORMAL = /(?:^|&)formal(?:&|$)/.test(location.hash.slice(1));
+function wallJS(x, y) {
+  const G = 987, sx = Math.floor(x / G + 0.5), sy = Math.floor(y / G + 0.5), h = h3(sx, sy, 2584), u = (v) => (v >>> 8) / 16777216;
+  const Cx = (sx + 0.2 * (u(mix(h + 1)) - 0.5)) * G, Cy = (sy + 0.2 * (u(mix(h + 2)) - 0.5)) * G, S = 55 + 34 * u(mix(h + 3));
+  if (u(h) >= smooth(0.5, 0.8, FORMAL ? 1 : vnoise(Cx, Cy, 1597, 6765))) return 0;
+  const dx = Math.max(0, Math.abs(x - Cx) - S * 1.9), dy = Math.max(0, Math.abs(y - Cy) - S * 1.6);
+  return 1 - smooth(0, 34, Math.hypot(dx, dy));
+}
 const QG = 8, quietCv = document.createElement("canvas"), quietCtx = quietCv.getContext("2d");
 let quietAt = "";
 function quieten() {
-  const gx = Math.floor(vx / QG) - 1, gy = Math.floor(vy / QG) - 1, w = Math.ceil(VW / QG) + 3, h = Math.ceil(VH / QG) + 3, key = `${gx},${gy},${w},${h}`;
+  const gx = Math.floor(vx / QG) - 1, gy = Math.floor(vy / QG) - 1, w = Math.ceil(VW / QG) + 3, h = Math.ceil(VH / QG) + 3, walls = GLG && GLG.quilts && GLG.quilts() > 0, key = `${gx},${gy},${w},${h},${walls}`;
   if (key !== quietAt) {
     quietAt = key;
     quietCv.width = w; quietCv.height = h;
     const img = quietCtx.createImageData(w, h);
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-      const c = complexityJS((gx + i + 0.5) * QG, (gy + j + 0.5) * QG);
-      img.data[(j * w + i) * 4 + 3] = Math.round(255 * (1 - smooth(0.4, 0.62, c)));   // none on the minimal rungs, all once the worlds are full
+      const x = (gx + i + 0.5) * QG, y = (gy + j + 0.5) * QG, c = complexityJS(x, y);
+      const wall = walls ? wallJS(x, y) * smooth(0.7, 0.8, c) : 0;
+      img.data[(j * w + i) * 4 + 3] = Math.round(255 * Math.max(1 - smooth(0.4, 0.62, c), wall));   // none on the minimal rungs, all once the worlds are full
     }
     quietCtx.putImageData(img, 0, 0);
   }
@@ -2252,6 +2264,7 @@ def main():
                 .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__SITE__", "true" if site else "false")
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
+                .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))

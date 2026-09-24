@@ -27,7 +27,8 @@ grit, clumps and cracks read as physical matter rather than flat marks.
 - `png.mjs`: minimal PNG encoder used by the baker.
 - `build_soil_viewer.py`, `engine/ground-gl.js`: DIRT's page (below), and its ground painted on the GPU.
 - `engine/wanderers.js`: the procession, migrations, walking city and primitives.
-- `artists/`: the artists DIRT is drawn after, measured from their saved works (`measure.py`, `twombly.json`).
+- `artists/`: the artists DIRT is drawn after, measured from their saved works (`measure.py`, `twombly.json`), the roster
+  (`roster.py`), and the quilts of their works (`quilt.py`).
 - `playground.html`: the interactive Dirt Lab. Serve the folder (`npx serve dirt`) and open it; opening it as a `file://` URL
   won't work because ES modules need a server.
 - `out/`: sample 512px tiles of every preset, seed 1, transparent background.
@@ -332,6 +333,34 @@ dark, and the flip: it comes nearer until it is all there is, and the object is 
 
 `#anomaly=N` starts kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet) five seconds in. The life over the
 ground goes with the light while one lasts.
+
+**Formality: the paintings themselves.** The plane can show what it is made of at every degree of formality, as the
+ladder shows every degree of complexity. At the free end is the soil: the saved paintings' colours and marks in the
+artists' grammars. Past it, the paintings themselves, quilted (`artists/quilt.py`, after Efros and Freeman's image
+quilting, 2001). A quilt is one artist's saved works laid together patch by patch, each patch taken from another
+painting than its neighbours because the strip where they overlap agrees best, and joined along the path through
+that strip where they differ least; so a quilt shows no patchwork, only the places where a sky in one painting goes on
+as a sky in another, a contour in one as a contour in another. Every quilt is a torus (its right edge carries on into
+its left, its bottom into its top), so it repeats with no seam and no mirror. A kin quilt does the same across two
+artists, one painter becoming the other and back. They come in three degrees:
+
+| degree | what it is |
+|---|---|
+| the join | a passage filled with its artist's quilt (or its kin quilt), at 1.6 or 2.6 texels a cell; where two quilts meet they run into each other over 21 cells, and where a quilt meets the soil its edge is torn |
+| the kin flow | the same with a two-artist quilt |
+| the hang | the most formal: a gallery wall (its edge torn into the plane), lit from above, and on it a quilt in a frame 110 to 178 cells wide whose moulding runs dark to light as every edge here does, casting its shadow; life keeps off the wall |
+
+Where each lies is a field over the plane, 1597 cells across, so formal country and wild country each run for a
+while; a hang is one in each 987-cell square where the field is high, and all of them only where the plane is full
+(the lower rungs, the voids and the singularities keep their own). The pixel pass lays no grey gradient over a
+painting shown as itself. It is drawn by a third, small shader over the first pass's cells, blending, so the first
+need not grow, from quilts published beside the page (`quilts/`, 37 of them, 440 pixels square, 2.3 MB); until they
+arrive, and on devices at the lowest tier, the plane is as it was. The quilts are made from the private image cache
+and are never committed:
+
+    python3 dirt/artists/quilt.py --db artworks.db --cache dirt/private/briefs --out dirt/private/quilts
+
+`#formal` puts the formal end everywhere, for looking at it.
 
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's

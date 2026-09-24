@@ -40,8 +40,8 @@ void main() {
   X.y = uH - 1 - X.y;
   ivec2 G = X + uOff, t = (G >> 1) - uCell0;
   vec4 own = (G & 1) == ivec2(0) ? texelFetch(uA, t, 0) : texelFetch(uB, t, 0);
-  outColour = own;
-  if (uEdge == 0) return;
+  outColour = vec4(own.rgb, 1.0);
+  if (uEdge == 0 || texelFetch(uB, t, 0).a < 0.75) return;
   ivec2 sz = textureSize(uB, 0) - 1;
   vec2 P = vec2(G) + 0.5;
   float lo = 1.0, hi = 0.0, sw = 0.0, sl = 0.0;
@@ -2137,12 +2137,145 @@ void main() {
   outB = vec4(B / 255.0, 1.0);
 }`;
 
+// The third pass, over the cells the first has drawn: the plane at its formal end. The plane can show what it is made
+// of at every degree of formality. At the free end, the soil: the paintings' colours and marks in the artists'
+// grammars (the first pass). Then the join: a passage filled with a quilt (dirt/artists/quilt.py), an artist's works
+// laid together patch by patch where their regions carry on into one another, so a sky in one painting goes on as a
+// sky in another; where two quilts meet they run into each other, and where a quilt meets the soil its edge is torn.
+// Then the kin flow: a quilt across two artists, one painter becoming the other. And at the formal end, the hang: a
+// wall, and on it a quilt in a frame, lit from above, the plane's chaos all round the wall's edge. Where each lies is
+// a field over the plane, 1597 cells across, so formal country and wild country each run for a while, and only where
+// the plane is full (the ladder's lower rungs, the voids and the singularities keep their own).
+// A program of its own, small, drawn over the first with blending, so that the first, long already, need not grow;
+// it shares the first's helpers, taken from its source.
+const GROUND_FORMAL = (() => {
+  const part = (from, to) => {
+    const i = GROUND_FS.indexOf(from), j = GROUND_FS.indexOf(to, i + from.length);
+    if (i < 0 || j < 0) throw new Error("DIRT formal pass: no " + from);
+    return GROUND_FS.slice(i, j) + "\n";
+  };
+  return `#version 300 es
+precision highp float;
+precision highp int;
+precision highp usampler2DArray;
+precision highp sampler2DArray;
+precision highp sampler2D;
+uniform usampler2DArray uCells;
+uniform sampler2DArray uEnts;
+uniform sampler2D uSlots;
+uniform sampler2D uWorks;           // per painting: its artist, year, and its artist's quilts (layer + 1: its own, its kin)
+uniform sampler2DArray uQuilt;      // the quilts (dirt/artists/quilt.py)
+uniform ivec2 uCell0, uC0;
+uniform int uQN, uFormal, uDay;     // how many quilts; #formal: the formal end everywhere; whether the day turns
+uniform float uQS;                  // a quilt's side, in texels
+uniform float uTime;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "float chroma(")}${part("float smoothUp(", "int fdiv(")}${part("struct Cell {", "\n// A passage's colours")}${part("float vnoise(", "vec3 artPaper(")}${part("struct Void {", "float segD(")}${part("float feather(", "vec3 rostered(")}${part("struct Sing {", "/** How coarse")}${part("float sdBox(", "\n")}
+float formalityAt(vec2 p) { return uFormal == 1 ? 1.0 : vnoise(p, 1597.0, 6765u); }
+vec3 quiltAt(int q, vec2 uv) { return texture(uQuilt, vec3(uv, float(q))).rgb * 255.0; }
+int quiltOf(int work, bool kin, uint h) {
+  vec4 m = texelFetch(uWorks, ivec2(0, work), 0);
+  int solo = int(m.z) - 1, k = int(m.w) - 1;
+  if (kin && k >= 0) return k;
+  if (solo >= 0) return solo;
+  return int(h % uint(max(uQN, 1)));                                // an artist with none: another's, lent
+}
+/** The join: whether passage e is a quilt; if so its two colours at p. */
+bool joinOf(int layer, int e, vec2 p, out vec3 A, out vec3 B) {
+  A = B = vec3(0);
+  vec4 m25 = entT(layer, e, 25);
+  uint h = h3(int(m25.x), int(m25.y), 4181u);
+  if (unit(h) > smoothUp(0.34, 0.72, formalityAt(m25.xy)) * P1) return false;
+  int q = quiltOf(int(m25.w), unit(mixh(h + 1u)) < P2, mixh(h + 2u));
+  float sc = unit(mixh(h + 3u)) < P1 ? PHI : PHI * PHI;             // texels a cell: a painting's passage at its own size
+  vec2 o = vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u)));
+  A = quiltAt(q, (p - 0.25) * sc / uQS + o);
+  B = quiltAt(q, (p + 0.25) * sc / uQS + o);
+  return true;
+}
+/** The hang: one in each 987-cell square where the plane is formal, a frame 110 to 178 cells wide. */
+struct Hang { bool on; vec2 C; float S; uint h; };
+Hang hangAt(vec2 p) {
+  const float G = 987.0;
+  ivec2 sq = ivec2(floor(p / G + 0.5));
+  uint h = h3(sq.x, sq.y, 2584u);
+  vec2 C = (vec2(sq) + 0.2 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G;
+  return Hang(unit(h) < smoothUp(0.5, 0.8, formalityAt(C)), C, 55.0 + 34.0 * unit(mixh(h + 3u)), h);
+}
+/** The hang at p: its two colours, and how much of its wall is here (0 outside it). */
+float hang(Hang hg, vec2 p, out vec3 A, out vec3 B) {
+  vec2 d = p - hg.C;
+  float dw = sdBox(d, hg.S * vec2(1.9, 1.6)) - 21.0 * (vnoise(p, 34.0, hg.h) - 0.5);
+  float w = feather(max(dw, 0.0), 34.0);
+  A = B = vec3(0);
+  if (w <= 0.0) return 0.0;
+  // the wall: a warm white, lit from above by the lamp over the painting, the painting's shadow below and right
+  vec2 l = d - vec2(0.0, -hg.S * 1.2);
+  float lamp = exp(-dot(l, l) / (hg.S * hg.S * 3.0));
+  vec3 wall = vec3(226.0, 222.0, 214.0) * (0.86 + 0.14 * lamp) + 6.0 * (vnoise(p, 3.0, hg.h + 7u) - 0.5);
+  wall *= 1.0 - 0.34 * feather(max(sdBox(d - vec2(5.0, 8.0), vec2(hg.S + 5.0)), 0.0), 13.0);
+  A = B = wall;
+  float fd = sdBox(d, vec2(hg.S));                                   // < 0 in the painting
+  if (fd < 0.0) {
+    int q = int(mixh(hg.h + 4u) % uint(max(uQN, 1)));
+    vec2 uv = d / (2.0 * hg.S) + 0.5, e = vec2(0.25 / (2.0 * hg.S));
+    A = quiltAt(q, uv - e) * (0.92 + 0.08 * lamp); B = quiltAt(q, uv + e) * (0.92 + 0.08 * lamp);
+  } else if (fd < 5.0) {
+    // the frame: a moulding whose light runs dark to light across it, the grey gradient every edge here has
+    float g = fd / 5.0, lit = 0.5 + 0.5 * dot(normalize(d), vec2(-0.6, -0.8));
+    A = B = vec3(255.0 * (0.04 + 0.92 * mix(g, lit, 0.4))) * vec3(1.0, 0.994, 0.985);
+  }
+  return w;
+}
+void main() {
+  ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
+  if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) discard;
+  vec4 si = texelFetch(uSlots, sl, 0);
+  if (si.x < 0.5) discard;
+  int layer = int(si.x) - 1;
+  Cell c = cellAt(layer, lc);
+  vec2 p = vec2(cell) + 0.5;
+  float cx = smoothUp(0.7, 0.8, complexityAt(p));
+  if (cx <= 0.0) discard;
+  Sing sg = singAt(p);
+  if (sg.on && length(p - sg.C) < sg.R + 13.0) discard;
+  // the join, and at a seam, what lies beyond it
+  vec3 J = vec3(0), Jb = vec3(0), K = vec3(0), Kb = vec3(0);
+  float w = 0.0;
+  if (joinOf(layer, c.en, p, J, Jb)) {
+    w = 1.0;
+    if (c.eb != c.en && c.pe < 0.62) {
+      float x = c.pe * 55.0 + 13.0 * (vnoise(p, 8.0, 131u) - 0.5) + 5.0 * (vnoise(p, 2.0, 137u) - 0.5);   // to the seam, torn
+      if (joinOf(layer, c.eb, p, K, Kb)) { float k = 0.5 + 0.5 * smoothstep(0.0, 21.0, x); J = mix(K, J, k); Jb = mix(Kb, Jb, k); }
+      else w = smoothstep(-2.0, 8.0, x);
+    }
+  }
+  // the hang, over it
+  vec3 H = vec3(0), Hb = vec3(0);
+  Hang hg = hangAt(p);
+  float hw = hg.on ? hang(hg, p, H, Hb) : 0.0;
+  float a = 1.0 - (1.0 - w) * (1.0 - hw);
+  if (a <= 0.0) discard;
+  vec3 A = (J * w * (1.0 - hw) + H * hw) / a, B = (Jb * w * (1.0 - hw) + Hb * hw) / a;
+  if (uDay == 1) {                                                   // the plane's day and night, as the first pass has it
+    float night = smoothstep(0.55, 0.95, 0.5 - 0.5 * cos(6.2832 * uTime / 233.0)) * P2;
+    vec3 tint = mix(vec3(1.0), vec3(0.55, 0.6, 0.8), night);
+    A *= tint; B *= tint;
+  }
+  // blended over the first pass's colours by a; and its alpha, 1 - a, tells the pixel pass to lay no grey gradient
+  // over a painting shown as itself
+  outA = vec4(A / 255.0, a * cx);
+  outB = vec4(B / 255.0, a * cx);
+}`;
+})();
+
 /**
  * The ground painted on the GPU under the page's canvas, or null where there is no WebGL2 or only a software renderer
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
  */
-function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster }) {
+function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster, quilts }) {
   const glcv = document.createElement("canvas");
   glcv.setAttribute("aria-hidden", "true");
   glcv.style.pointerEvents = "none";
@@ -2156,9 +2289,35 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, U = {}, V = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, U = {}, V = {}, F = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
+  let tQuilt = null, qn = 0, qs = 1, quiltImgs = null;
+  /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
+  function fillQuilts(imgs) {
+    const Q = imgs[0].naturalWidth, c2 = document.createElement("canvas");
+    c2.width = c2.height = Q;
+    const x = c2.getContext("2d", { willReadFrequently: true });
+    gl.activeTexture(gl.TEXTURE9);
+    gl.deleteTexture(tQuilt);
+    tQuilt = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, tQuilt);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1 + Math.floor(Math.log2(Q)), gl.RGBA8, Q, Q, imgs.length);
+    imgs.forEach((im, i) => {
+      x.drawImage(im, 0, 0, Q, Q);
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, Q, Q, 1, gl.RGBA, gl.UNSIGNED_BYTE, x.getImageData(0, 0, Q, Q));
+    });
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, q, gl.REPEAT);   // each quilt a torus
+    qn = gl.getError() === gl.NO_ERROR ? imgs.length : 0;
+    qs = Q;
+  }
+  if (quilts && quilts.length) {
+    Promise.all(quilts.map((q) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = "quilts/" + q.file; })))
+      .then((imgs) => { if (imgs.every(Boolean)) { quiltImgs = imgs; if (!lost) fillQuilts(imgs); } });
+  }
 
   // The shaders compile in the background where the browser can (they are long, and a slow driver could stall the
   // page); the ground is plain paper until they are ready.
@@ -2187,7 +2346,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -2224,7 +2383,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     tokens.forEach((cols, i) => {
       const wk = (works || [])[i] || {}, who = wk.artist || "", yr = /\d{4}/.exec(wk.date || "");
       if (!artists.has(who)) artists.set(who, who ? artists.size : -1 - i);
-      wd.set([artists.get(who), yr ? +yr[0] : 0, 0, 0], i * 16);
+      // and the artist's quilts, if it has any: its own, and the one where it becomes its nearest kin (layer + 1)
+      const solo = (quilts || []).findIndex((q) => q.artists.length === 1 && q.artists[0] === who);
+      const kin = (quilts || []).findIndex((q) => q.artists.length === 2 && q.artists.includes(who));
+      wd.set([artists.get(who), yr ? +yr[0] : 0, solo + 1, kin + 1], i * 16);
       for (let n = 0; n < 3; n++) { const c = cols[Math.min(n, cols.length - 1)]; wd.set([c[0], c[1], c[2], 1], i * 16 + 4 + n * 4); }
     });
     gl.activeTexture(gl.TEXTURE7); tex(gl.TEXTURE_2D);
@@ -2241,6 +2403,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 6, Math.max(1, ro.length));
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 6, Math.max(1, ro.length), gl.RGBA, gl.FLOAT, rd);
     pending.rAt = [0, 1, 2, 3, 4].map((r) => ro.filter((x) => x.rung < r).length);
+    // The quilts: a layer each, filled once their images arrive (published beside the page, in quilts/).
+    gl.activeTexture(gl.TEXTURE9); tQuilt = tex(gl.TEXTURE_2D_ARRAY);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, 1, 1, 1);
+    qn = 0;
+    if (quiltImgs) fillQuilts(quiltImgs);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -2248,14 +2415,23 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
+    // the formal pass is an addition: without it, the plane is as it was
+    const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
+    if (c) {
+      [formalProg, F] = c;
+      gl.useProgram(formalProg);
+      gl.uniform1i(F.uCells, 0); gl.uniform1i(F.uEnts, 1); gl.uniform1i(F.uSlots, 2); gl.uniform1i(F.uWorks, 7); gl.uniform1i(F.uQuilt, 9);
+      gl.uniform1i(F.uFormal, /(?:^|&)formal(?:&|$)/.test(location.hash.slice(1)) ? 1 : 0);
+      gl.uniform1i(F.uDay, hold || reduced ? 0 : 1);
+    }
     gl.useProgram(cellProg);
     gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6); gl.uniform1i(U.uWorks, 7);
-    gl.uniform1i(U.uRoster, 8); gl.uniform1iv(U.uRAt, pending.rAt);
+    gl.uniform1i(U.uRoster, 8); gl.uniform1iv(U.uRAt, pending.rAt); 
     gl.uniform1i(U.uNV, vivid.length);
     gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
     gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
@@ -2373,6 +2549,19 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform1i(U.uTier, tier);
     gl.uniform2f(U.uHalf, cw / 2, ch / 2);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // then the formal end over it, once the quilts are here, on the plane after the artists, and not in an anomaly
+    if (formalProg && qn && !earth && edgeOn && tier >= 1 && !(anom[2] > 0)) {
+      gl.useProgram(formalProg);
+      gl.uniform2i(F.uCell0, cx0, cy0);
+      gl.uniform2i(F.uC0, i0, j0);
+      gl.uniform1i(F.uQN, qn);
+      gl.uniform1f(F.uQS, qs);
+      gl.uniform1f(F.uTime, t);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.useProgram(pxProg);
@@ -2388,5 +2577,5 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }
