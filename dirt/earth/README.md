@@ -162,6 +162,50 @@ Only colours are in these files: no titles, no artists, and nothing of which pai
 site's own tiles keep to. `site/preview-year.png` shows the twelve months. For naming places on the globe,
 `out/place.png` with `out/atlas.json` gives the ecoregion, biome and realm of any cell (see `where.py`).
 
+## Closer: the streets
+
+Below DIRT Earth's ground (a cell is about 120 metres) the Earth goes on down to its streets (`engine/earth-city.js`).
+Closer, a pinch, ctrl and scroll, or `+` goes down at the middle of the view; scrolling, pinching or `+` and `-`
+go nearer or further, dragging moves, and going further out than the ground's own scale (or Up, or Escape) comes
+back up to the ground, wherever the streets were left.
+
+The streets are OpenStreetMap, as vector tiles from OpenFreeMap (no key; the page fetches the tiles it needs,
+at most z14, magnified beyond that), drawn in DIRT's own language rather than as a map:
+
+| from the tiles | drawn as |
+|---|---|
+| the ground | the place's own palette this month (DIRT Earth's), laid as dots |
+| parks, woods, grass, sand, ice | the palette's body or its light, over the dots |
+| water, rivers | the lake palette, each edge a grey gradient |
+| roads, paths, rail | the paper's light (rail in the dark), edged in the gradient; paths dashed |
+| buildings | raised by `render_height` (a metre up is half a metre on the screen), each in one artist's shade from dark to light, its faces lit by the light that turns once in 377 seconds, casting its shadow, every edge a grey gradient |
+| attractions, monuments, memorials, museums | named in italic, when near enough |
+
+So in Washington the Monument stands 169 metres, the Capitol's dome over it, the Lincoln and Jefferson Memorials
+and the White House each at their height, all named. Near the ground's own scale the ground of DIRT Earth shows
+through, magnified to the streets' scale and to true proportions, and the streets' own ground comes up over it as
+they come nearer. The credit (© OpenFreeMap © OpenMapTiles © OpenStreetMap contributors) is always shown.
+
+A page that may not fetch from elsewhere (a claude.ai artifact) says the streets could not be reached. Set
+`window.DIRT_CITY_TILES` to a template (`…/{z}/{x}/{y}.pbf`) to take them from somewhere else.
+
+## The Artist Website's edition
+
+The website's globe is DIRT Earth's globe (see above), and going down into a city goes on into DIRT Earth there
+and on to its streets. The website carries its own edition of the page, built with `--site`:
+
+- its one soil is the site's own dot tile (`docs/v2/dirt-land.png`, which the globe is woven of), not the cutouts,
+  so no painting is in it but as its three colours (`works` keeps only `colors`; titles, artists, links and the
+  joins' sources are left out, and nothing is named on pointing);
+- it opens at `#earth=lat,lon,month`, hides the plane, and its Globe button goes back up to the website
+  (`postMessage({dirt: "up"})`), as does going further out than the ground;
+- the website moves it with `postMessage({dirt: "goto", lat, lon, month, streets})`.
+
+```sh
+python3 dirt/build_soil_viewer.py --earth dirt/earth/out --site <website>/docs/v2/dirt --dots <website>/docs/v2/dirt-land.png
+cp dirt/earth/site/earth-dirt-*.png dirt/earth/site/earth-palette-*.png <website>/docs/v2/earth-dirt/
+```
+
 ## Building
 
 ```sh

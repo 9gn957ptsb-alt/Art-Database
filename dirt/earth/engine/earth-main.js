@@ -1236,6 +1236,7 @@ style.textContent = `
   .place .pl-line { color: var(--muted); }
   .place .pl-here { color: var(--ink); margin-top: 3px; }
   canvas.globe { cursor: grab; z-index: 1; }
+  .stage { overflow: hidden; }                                       /* the ground, magnified under the streets, stays in its frame */
   @media (max-width: 640px) { .place { font-size: 10px; } .place .pl-name { font-size: 15px; } .bar { flex-wrap: wrap; row-gap: 8px; } }
 `;
 document.head.appendChild(style);
@@ -1244,24 +1245,31 @@ ui.className = "earth-ui";
 ui.innerHTML = `<button id="e-earth" title="The Earth, woven: every place in the paintings nearest its colours">Earth</button>
   <span id="e-months" hidden><button id="e-prev" aria-label="The month before">‹</button><span class="month" id="e-month"></span><button id="e-next" aria-label="The month after">›</button>
   <button id="e-year" title="Let the months turn by themselves">Year</button></span>
-  <button id="e-globe" hidden>Globe</button><button id="e-plane" hidden>Plane</button>`;
+  <button id="e-globe" hidden>Globe</button><button id="e-closer" hidden title="Down to the streets: every building at its height (or pinch, or ctrl and scroll)">Closer</button>
+  <button id="e-up" hidden title="Back up to the ground">Up</button><button id="e-plane" hidden>Plane</button>`;
 document.querySelector(".bar").appendChild(ui);
 const $ = (id) => document.getElementById(id);
 let yearTimer = null;
 function showMode() {
-  $("e-earth").hidden = MODE !== "plane";
+  if (SITE) { $("e-earth").hidden = $("e-plane").hidden = true; $("e-globe").hidden = MODE === "globe"; }
+  else $("e-globe").hidden = MODE !== "earth";
+  $("e-earth").hidden = SITE || MODE !== "plane";
   $("e-months").hidden = MODE === "plane";
-  $("e-globe").hidden = MODE !== "earth";
-  $("e-plane").hidden = MODE === "plane";
+  $("e-plane").hidden = SITE || MODE === "plane";
   $("e-month").textContent = MONTHS[EM];
   $("e-year").classList.toggle("on", !!yearTimer);
+  $("e-closer").hidden = MODE !== "earth";
+  $("e-up").hidden = MODE !== "city";
   globeCv.style.display = MODE === "globe" ? "block" : "none";
-  cv.style.visibility = MODE === "globe" ? "hidden" : "visible";
+  cityCv.style.display = MODE === "city" ? "block" : "none";
+  if (MODE !== "city") cv.style.visibility = MODE === "globe" ? "hidden" : "visible";
   if (MODE === "plane") placeEl.hidden = true;
   else if (MODE === "globe") placeText(`<span class=pl-name>The Earth in ${MONTHS[EM]}</span><div class=pl-line>every place in the paintings nearest its own colours · point to name a place, and click to go down into it</div>`);
 }
 $("e-earth").addEventListener("click", () => toGlobe());
-$("e-globe").addEventListener("click", () => toGlobe());
+// On the website the globe is the site's own: Globe goes back up to it.
+const upToSite = () => window.parent.postMessage({ dirt: "up", lat: MODE === "city" ? CITY.lat : latOfY(vy + VH / 2), lon: MODE === "city" ? CITY.lon : lonOfX(vx + VW / 2) }, "*");
+$("e-globe").addEventListener("click", () => (SITE && window.parent !== window ? upToSite() : toGlobe()));
 $("e-plane").addEventListener("click", () => { if (yearTimer) { clearInterval(yearTimer); yearTimer = null; } toPlane(); });
 $("e-prev").addEventListener("click", () => setMonth(EM - 1));
 $("e-next").addEventListener("click", () => setMonth(EM + 1));
@@ -1281,6 +1289,12 @@ globeCv.className = "globe";
 globeCv.setAttribute("aria-label", "The Earth, woven of dots in the paintings nearest each place's colours: drag to turn it, point to name a place, click to go down into it");
 globeCv.style.display = "none";
 stage.appendChild(globeCv);
+// The streets' own canvas (see the end of this file, and earth-city.js).
+const cityCv = document.createElement("canvas");
+cityCv.className = "globe";
+cityCv.setAttribute("aria-label", "The streets, every building at its height, in the place's own colours: drag to move, scroll or pinch to go nearer or further");
+cityCv.style.display = "none";
+stage.appendChild(cityCv);
 const GLOBE = { lat0: 0.3, lon0: -1.2, dots: null, cols: null, n: 0, drag: null, spin: 1 };
 function globeDots() {
   const lat = [], lon = [], fam = [];
@@ -1407,6 +1421,7 @@ globeCv.addEventListener("pointerup", (ev) => {
   const plainFrame = frame;
   frame = function (now) {
     if (MODE === "globe") { requestAnimationFrame(frame); drawGlobe(now); return; }
+    if (MODE === "city") { requestAnimationFrame(frame); cityFrame(now); return; }
     plainFrame(now);
     if (earthOn()) { earthOverlay(now); readCentre(); }
   };
@@ -1414,12 +1429,140 @@ globeCv.addEventListener("pointerup", (ev) => {
 // A link can open the Earth: #earth=lat,lon[,month] goes down into a place, #globe opens the globe.
 function followHash() {
   const h = decodeURIComponent(location.hash.slice(1));
-  const m = h.match(/^earth=(-?[\d.]+),(-?[\d.]+)(?:,(\d+))?/);
+  const m = h.match(/(?:^|&)earth=(-?[\d.]+),(-?[\d.]+)(?:,(\d+))?/);
   if (m) {
     const go = () => (placed ? toEarth(+m[1], +m[2], m[3] !== undefined ? (+m[3] - 1 + 12) % 12 : undefined) : setTimeout(go, 55));
     go();
-  } else if (h === "globe") toGlobe();
+  } else if (/(?:^|&)globe(?:&|$)/.test(h)) toGlobe();
+  else if (SITE) { const go = () => (placed ? toEarth(38.8895, -77.0353) : setTimeout(go, 55)); go(); }
 }
+// The website drives its DIRT from outside: {dirt: "goto", lat, lon, month (0-11), streets (go straight down to them)}.
+window.addEventListener("message", (ev) => {
+  const m = ev.data;
+  if (!m || m.dirt !== "goto" || ev.source !== window.parent) return;
+  const go = () => {
+    if (!placed) return setTimeout(go, 55);
+    if (MODE === "city") upFromCity();
+    toEarth(+m.lat, +m.lon, m.month).then(() => { if (m.streets) toCity(+m.lat, +m.lon); });
+  };
+  go();
+});
 followHash();
 window.addEventListener("hashchange", followHash);
 showMode();
+
+// ---- closer: the streets (earth-city.js) --------------------------------------------------------------------
+// From the ground of DIRT Earth, nearer: pinch, ctrl and scroll, "+" or Closer goes down to the streets of the
+// place in the middle of the view, at the ground's own scale, and on in; going further out than the ground's own
+// scale comes back up to it, at wherever the streets were left.
+const cityG = cityCv.getContext("2d");
+const planeMpp = () => 111320 / E_DEG / R;                             // metres a device pixel on the ground (north to south)
+let cityShown = "";
+function toCity(lat, lon) {
+  if (MODE !== "earth") return;
+  MODE = "city";
+  CITY.fromMpp = planeMpp();
+  cityGo(lat, lon, CITY.fromMpp / PHI);
+  showMode();
+  cityShown = "";
+}
+/** The ground's canvases (the GPU's and the page's), magnified under the streets, or as they were. */
+function groundTransform(t, hide) {
+  for (const c of stage.querySelectorAll("canvas")) {
+    if (c === cityCv || c === globeCv) continue;
+    c.style.transformOrigin = "50% 50%";
+    c.style.transform = t;
+    c.style.visibility = hide ? "hidden" : "visible";
+  }
+}
+function upFromCity() {
+  groundTransform("", false);
+  MODE = "earth";
+  const x = xOfLon(CITY.lon), y = yOfLat(CITY.lat);
+  if (Math.abs(x - (vx + VW / 2)) > 3 || Math.abs(y - (vy + VH / 2)) > 3) { vx = x - VW / 2; vy = y - VH / 2; }
+  velX = velY = 0;
+  showMode();
+  if (window.parent !== window) window.parent.postMessage({ dirt: "ground", lat: CITY.lat, lon: CITY.lon }, "*");
+}
+const centreLat = () => latOfY(vy + VH / 2), centreLon = () => lonOfX(vx + VW / 2);
+function cityFrame(now) {
+  const r = stage.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, w = Math.max(2, Math.round(r.width * dpr)), h = Math.max(2, Math.round(r.height * dpr));
+  if (cityCv.width !== w || cityCv.height !== h) { cityCv.width = w; cityCv.height = h; CITY.dirty = true; }
+  drawStreets(cityG, w, h, now);
+  // The ground of DIRT Earth under the streets, magnified to their scale and to true proportions (the ground is
+  // drawn a degree of longitude as wide as a degree of latitude), centred where the streets are.
+  const s0 = CITY.fromMpp / CITY.mpp, cl = Math.cos((CITY.lat * Math.PI) / 180);
+  const dx = ((xOfLon(CITY.lon) - (vx + VW / 2)) * R) / dpr, dy = ((yOfLat(CITY.lat) - (vy + VH / 2)) * R) / dpr;
+  groundTransform(CITY.veil >= 1 ? "" : `scale(${s0 * cl}, ${s0}) translate(${-dx}px, ${-dy}px)`, CITY.veil >= 1);
+  const said = CITY.err ? "err" : CITY.missing ? "coming" : "here";
+  if (said !== cityShown) {
+    cityShown = said;
+    placeText(CITY.err
+      ? `<span class=pl-name>The streets could not be reached</span><div class=pl-line>${CITY.err} · they come from OpenFreeMap, which this page may not be allowed to fetch; Up goes back to the ground</div>`
+      : `<span class=pl-name>The streets, ${Math.abs(CITY.lat).toFixed(3)}° ${CITY.lat >= 0 ? "N" : "S"}, ${Math.abs(CITY.lon).toFixed(3)}° ${CITY.lon >= 0 ? "E" : "W"}</span><div class=pl-line>every building at its height, in the place's own colours this month · drag to move, scroll or pinch to go nearer; further out goes back up to the ground${CITY.missing ? " · the streets are coming" : ""}</div>`);
+  }
+}
+function cityWheel(ev, dpr) {
+  const f = Math.exp(-ev.deltaY * (ev.ctrlKey ? 0.012 : 0.0016) * (ev.deltaMode === 1 ? 16 : 1)), r = cityCv.getBoundingClientRect();
+  cityZoom(f, (ev.clientX - r.left) * dpr, (ev.clientY - r.top) * dpr, cityCv.width, cityCv.height);
+  if (CITY.mpp > CITY.fromMpp * PHI) upFromCity();
+}
+$("e-closer").addEventListener("click", () => toCity(centreLat(), centreLon()));
+$("e-up").addEventListener("click", upFromCity);
+let groundPinch = 0;
+stage.addEventListener("wheel", (ev) => {
+  if (MODE === "earth" && ev.ctrlKey) {
+    ev.preventDefault(); ev.stopPropagation();
+    groundPinch -= ev.deltaY;
+    if (groundPinch > 55) { groundPinch = 0; toCity(centreLat(), centreLon()); }
+    else if (groundPinch < -89) { groundPinch = 0; if (SITE && window.parent !== window) upToSite(); }
+  } else if (MODE === "city") { ev.preventDefault(); ev.stopPropagation(); cityWheel(ev, window.devicePixelRatio || 1); }
+}, { capture: true, passive: false });
+// by hand: one finger drags the streets, two pinch them; two fingers spreading on the ground go down to them
+const fingers = new Map();
+let pinchFrom = 0;
+const spread = () => { const [a, b] = [...fingers.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+stage.addEventListener("pointerdown", (ev) => {
+  if (MODE !== "earth" && MODE !== "city") return;
+  fingers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (fingers.size === 2) pinchFrom = spread();
+  if (MODE === "city") cityCv.setPointerCapture(ev.pointerId);
+}, true);
+stage.addEventListener("pointermove", (ev) => {
+  const f = fingers.get(ev.pointerId);
+  if (!f) return;
+  const dpr = window.devicePixelRatio || 1, dx = ev.clientX - f.x, dy = ev.clientY - f.y;
+  if (fingers.size === 2 && pinchFrom > 0) {
+    f.x = ev.clientX; f.y = ev.clientY;
+    const d = spread(), [a, b] = [...fingers.values()], r = stage.getBoundingClientRect();
+    if (MODE === "earth" && d / pinchFrom > 1.3) { pinchFrom = 0; ev.stopPropagation(); toCity(centreLat(), centreLon()); return; }
+    if (MODE === "earth" && d / pinchFrom < 0.62 && SITE && window.parent !== window) { pinchFrom = 0; ev.stopPropagation(); upToSite(); return; }
+    if (MODE === "city") {
+      cityZoom(d / pinchFrom, ((a.x + b.x) / 2 - r.left) * dpr, ((a.y + b.y) / 2 - r.top) * dpr, cityCv.width, cityCv.height);
+      pinchFrom = d;
+      if (CITY.mpp > CITY.fromMpp * PHI) upFromCity();
+    }
+    ev.stopPropagation();
+    return;
+  }
+  f.x = ev.clientX; f.y = ev.clientY;
+  if (MODE === "city" && fingers.size === 1) { cityPan(dx * dpr, dy * dpr); ev.stopPropagation(); }
+}, true);
+const letFinger = (ev) => { fingers.delete(ev.pointerId); if (fingers.size < 2) pinchFrom = 0; };
+stage.addEventListener("pointerup", letFinger, true);
+stage.addEventListener("pointercancel", letFinger, true);
+document.addEventListener("keydown", (ev) => {
+  if (MODE === "earth" && (ev.key === "+" || ev.key === "=")) { toCity(centreLat(), centreLon()); return; }
+  if (MODE === "earth" && (ev.key === "-" || ev.key === "_") && SITE && window.parent !== window) { upToSite(); return; }
+  if (MODE !== "city") return;
+  const dpr = window.devicePixelRatio || 1, W = cityCv.width, H = cityCv.height;
+  if (ev.key === "+" || ev.key === "=") cityZoom(PHI, W / 2, H / 2, W, H);
+  else if (ev.key === "-" || ev.key === "_") { cityZoom(1 / PHI, W / 2, H / 2, W, H); if (CITY.mpp > CITY.fromMpp * PHI) upFromCity(); }
+  else if (ev.key === "Escape") upFromCity();
+  else {
+    const step = { ArrowLeft: [89, 0], ArrowRight: [-89, 0], ArrowUp: [0, 89], ArrowDown: [0, -89] }[ev.key];
+    if (!step) return;
+    cityPan(step[0] * dpr, step[1] * dpr);
+  }
+  ev.preventDefault(); ev.stopImmediatePropagation();
+}, true);

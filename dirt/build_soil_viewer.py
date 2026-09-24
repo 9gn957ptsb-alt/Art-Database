@@ -792,6 +792,8 @@ onmessage = (e) => {
 <script>
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
+// The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
+const SITE = __SITE__;
 const TOKENS = PL.works.map((w) => w.colors.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))));   // each painting's colours
 const R = 2;                                                    // canvas pixels a cell
 const GROUND = [1, 3, 5].map((i) => parseInt(PL.ground.hex.slice(i, i + 2), 16));
@@ -1972,6 +1974,7 @@ function birdAt(x, y) {
   return best;
 }
 function workUnder(clientX, clientY) {
+  if (SITE) return -1;                                          // on the website nothing is named but places
   const [x, y] = worldAt(clientX, clientY), b = birdAt(x, y);
   if (b >= 0) return BKIN[b];
   for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {        // a creature within a cell
@@ -2053,6 +2056,7 @@ document.addEventListener("keydown", (ev) => {
 showAll.addEventListener("click", letGo);
 </script>
 <script id="wanderers">__WANDERERS__</script>
+<script id="earth-city">__EARTH_CITY__</script>
 <script id="earth-main">__EARTH_MAIN__</script>
 """
 
@@ -2072,12 +2076,41 @@ def plane(folder):
     return m
 
 
+def site_plane(folder, dots):
+    """The plane for the Artist Website: no cutouts. Its one source is the site's own dot tile (the soil its globe is
+    woven of, already published there), and of each painting only its three colours, which the Earth's palettes are
+    ranked from. Nothing else of any painting goes into the page."""
+    from io import BytesIO
+    from PIL import Image
+    m = json.loads((folder / "plane.json").read_text())
+    im = Image.open(dots).convert("RGBA")
+    assert im.size == (m["grid"], m["grid"]), "the dot tile must be a whole tile"
+    a = im.load()
+    colour, meta = Image.new("RGB", im.size), Image.new("RGBA", im.size)
+    for y in range(im.size[1]):
+        for x in range(im.size[0]):
+            r, g, b, al = a[x, y]
+            colour.putpixel((x, y), (r, g, b))
+            meta.putpixel((x, y), (0, 0, round(al / 85) & 3, 255))       # label 0, the dot's size, never a seam zone
+    def uri(img):
+        buf = BytesIO(); img.save(buf, "PNG")
+        return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    m["sources"] = [{"kind": "dots", "clods": [[0, None, None]], "colour": uri(colour), "meta": uri(meta)}]
+    for k in ("corners", "vertical", "horizontal", "middles"):
+        m[k] = [0] * len(m[k])
+    m["works"] = [{"colors": w["colors"]} for w in m["works"]]
+    m["ground"] = {"hex": m["ground"]["hex"]}
+    m.pop("edges", None)                                                # which paintings the joins came from: not needed
+    m["fields"] = [data_uri(folder / f) for f in m["fields"]]
+    return m
+
+
 def earth_scripts(atlas, priv):
     """DIRT Earth's scripts, and its files beside the page (see dirt/earth/page_files.py)."""
     sys.path.insert(0, str(HERE / "earth"))
     import page_files
     files = page_files.write(atlas, priv / "earth")
-    src = {n: (HERE / "earth" / "engine" / f"{n}.js").read_text().replace("</script", "<\\/script") for n in ("earth-common", "earth-worker", "earth-main")}
+    src = {n: (HERE / "earth" / "engine" / f"{n}.js").read_text().replace("</script", "<\\/script") for n in ("earth-common", "earth-worker", "earth-city", "earth-main")}
     return src, files
 
 
@@ -2085,22 +2118,30 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--private", default=str(HERE / "private"))
     ap.add_argument("--earth", help="the Earth atlas's folder (dirt/earth/build_atlas.py --out), to build DIRT Earth into the page")
+    ap.add_argument("--site", help="write the Artist Website's edition into this folder instead (index.html and earth/): the "
+                    "Earth alone, with no cutouts in it; needs --earth and --dots")
+    ap.add_argument("--dots", help="the site's own dot tile (docs/v2/dirt-land.png on the website), for --site")
     args = ap.parse_args()
     priv = Path(args.private)
-    pl = plane(priv / "plane")
-    src, files = earth_scripts(Path(args.earth), priv) if args.earth else ({}, [])
+    site = Path(args.site) if args.site else None
+    if site and not (args.earth and args.dots):
+        ap.error("--site needs --earth and --dots")
+    pl = site_plane(priv / "plane", args.dots) if site else plane(priv / "plane")
+    src, files = earth_scripts(Path(args.earth), site or priv) if args.earth else ({}, [])
     gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
                 .replace("__WANDERERS__", (HERE / "engine" / "wanderers.js").read_text().replace("</script", "<\\/script"))
-                .replace("__ART__", (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
+                .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
+                .replace("__SITE__", "true" if site else "false")
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
+                .replace("__EARTH_CITY__", src.get("earth-city", ""))
                 .replace("__EARTH_MAIN__", src.get("earth-main", "")))
-    target = priv / "collection-soil.html"
+    target = site / "index.html" if site else priv / "collection-soil.html"
     target.write_text(page)
-    print(target, f"{len(page) / 1e6:.1f} MB", f"and {len(files)} Earth files in {priv / 'earth'}" if files else "")
+    print(target, f"{len(page) / 1e6:.1f} MB", f"and {len(files)} Earth files in {(site or priv) / 'earth'}" if files else "")
 
 
 if __name__ == "__main__":
