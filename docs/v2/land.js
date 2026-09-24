@@ -805,16 +805,6 @@
       });
       filterEl.appendChild(b);
     });
-    // And down onto the ground from wherever the globe is facing, to fly over
-    // it and find the places from the air.
-    var fly = document.createElement("button");
-    fly.type = "button";
-    fly.className = "filter-layer filter-fly";
-    fly.textContent = "Fly";
-    fly.title = "Down onto the ground from here, to fly over it and find the places from the air";
-    fly.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
-    fly.addEventListener("click", function () { flyOver(); });
-    filterEl.appendChild(fly);
   }
 
   /* Which collage a landmark is standing nearest, by the places they are in. */
@@ -3634,9 +3624,17 @@
   }
 
   stage.addEventListener("wheel", function (event) {
-    if (place || flying || swing || deckMode) { return; }
+    if (place || flying || swing || deckMode || groundOn) { return; }
     event.preventDefault();
     var step = event.ctrlKey ? 0.012 : 0.0016;         // a trackpad pinch comes as ctrl+wheel
+    if (dive.on || (seat.size >= SIZE_MOST - 1e-6 && event.deltaY < 0)) {
+      // Past the globe's nearest: scrolling on is the dive; it settles when the scrolling stops.
+      diveTo(dive.log - event.deltaY * step * (event.deltaMode === 1 ? 16 : 1), event.clientX, event.clientY);
+      window.clearTimeout(dive.timer);
+      if (dive.p >= 1 || dive.log <= 0) { diveEnd(); }
+      else { dive.timer = window.setTimeout(diveEnd, 380); }
+      return;
+    }
     var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST,
       seat.size * Math.exp(-event.deltaY * step)));
     handle(seatAbout(event.clientX, event.clientY, size));
@@ -7347,6 +7345,13 @@
     }
     if (pinch) {
       var now2 = pinchState();
+      if (now2 && !place && (dive.on || (seat.size >= SIZE_MOST - 1e-6 && now2.d > pinch.d))) {
+        // Past the globe's nearest: the dive, as far as the fingers go.
+        diveTo(dive.log + Math.log(now2.d / pinch.d), now2.x, now2.y);
+        pinch.d = now2.d; pinch.x = now2.x; pinch.y = now2.y;
+        if (dive.log <= 0) { diveEnd(); }
+        return;
+      }
       if (now2) {
         var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST, pinch.size * now2.d / pinch.d));
         var t = seatAbout(now2.x, now2.y, size);
@@ -7389,7 +7394,7 @@
     stage.addEventListener(name, function (event) {
       delete fingers[event.pointerId];
       if (pinch) {
-        if (Object.keys(fingers).length < 2) { pinch = null; delete stage.dataset.turning; }
+        if (Object.keys(fingers).length < 2) { pinch = null; delete stage.dataset.turning; diveEnd(); }
         return;
       }
       if (panning && event.pointerId === panning.id) {
@@ -9614,7 +9619,6 @@
     if (city.museum) { showHeld(city.museum); } else { delete buildingEl.dataset.museum; }
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
-    groundBehindAt(city);
 
     Promise.all([readModel(b.slug), readGround(b.slug)]).then(function (both) {
       if (buildingOn !== visit) { return; }
@@ -9808,7 +9812,6 @@
     }
     if (buildingEl) { buildingEl.hidden = true; }
     if (buildingWorks) { buildingWorks.textContent = ""; }
-    if (typeof groundBehindOff === "function" && groundBehind) { groundBehindOff(); }
   }
 
   if (buildingEl) {
@@ -11025,8 +11028,7 @@
   var groundDirt = document.getElementById("ground-dirt");
   var groundFrame = document.getElementById("ground-dirt-frame");
   var bannerDown = document.getElementById("banner-down");
-  var groundOn = false;             // DIRT Earth up front, to fly over by hand
-  var groundBehind = false;         // DIRT Earth laid behind a building, still
+  var groundOn = false;             // DIRT Earth up, to fly over by hand
   var groundLoaded = false;
   var groundAtWas = "";
   var downPush = 0;
@@ -11059,35 +11061,15 @@
     groundSay({ dirt: "chrome", on: groundOn });
   });
 
-  /* Behind a building: the ground of its place in DIRT Earth, the landscape
-     it stands in seen from the air, still, with what the atlas says of it;
-     the building rises over it. (Artist, 24 Sep 2026: "I want that to be what
-     shows up around the buildings.") */
-  function groundBehindAt(city) {
-    groundAt(city.lat * 180 / Math.PI, wrap(city.lon) * 180 / Math.PI, false);
-    groundBehind = true;
-    groundSay({ dirt: "chrome", on: false });
-    groundDirt.hidden = false;
-    groundDirt.classList.add("behind");
-    document.body.classList.add("aground");
-    window.requestAnimationFrame(function () { groundDirt.classList.add("on"); });
-  }
-  function groundBehindOff() {
-    groundBehind = false;
-    document.body.classList.remove("aground");
-    if (groundOn) { return; }
-    groundDirt.classList.remove("on", "behind");
-    window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
-  }
-
-  /* Up front: DIRT Earth to fly over — swipe to cross the ground, the site's
-     places on it as marks and the nearest off the screen pointed to from its
-     edges; pressing one opens it. From a place, at the place; from the globe
-     (Fly), wherever the globe is facing. */
+  /* DIRT Earth to fly over — swipe to cross the ground, the site's places on
+     it as marks and the nearest off the screen pointed to from its top;
+     pressing one opens it. Reached by gesture, never by a button (artist, 24
+     Sep 2026: "I want to be able to gesture different touches on my device to
+     move between those levels of perspective"): pinching on past the globe's
+     nearest, or on in a place; pinching in comes back up. */
   function groundUp(lat, lon, streets) {
     groundAt(lat, lon, streets);
     groundDirt.hidden = false;
-    groundDirt.classList.remove("behind");
     groundOn = true;
     groundSay({ dirt: "chrome", on: true });
     groundPlaces();
@@ -11097,25 +11079,78 @@
     if (!place || flying || groundOn) { return; }
     groundUp(place.lat * 180 / Math.PI, wrap(place.lon) * 180 / Math.PI, streets);
   }
-  function flyOver() {
+  function flyOver(x, y) {
     if (flying || place || groundOn) { return; }
-    var at = unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
+    var at = unproject(x === undefined ? W / 2 : x, y === undefined ? H / 2 : y) || unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
     groundUp(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
+  }
+
+  /* The dive: from the globe's nearest, pinching (or scrolling) on in carries
+     you down into the ground under your fingers, the globe swelling and
+     thinning away as the ground comes up, as far as your fingers have gone;
+     let go past half way and you are down, short of it and the globe comes
+     back. What you learn is in how you got there. */
+  var dive = { log: 0, p: 0, on: false, x: 0, y: 0, timer: 0 };
+  var DIVE_SPAN = Math.log(PHI * PHI);          // a further phi-squared of pinch
+  function diveTo(logAmount, x, y) {
+    dive.log = Math.max(0, logAmount);
+    dive.p = Math.min(1, dive.log / DIVE_SPAN);
+    if (dive.p > 0 && !dive.on) {
+      var at = unproject(x, y) || unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
+      groundAt(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
+      groundDirt.hidden = false;
+      // Not to be touched until it is reached: the fingers are still on the globe.
+      groundDirt.style.pointerEvents = "none";
+      groundDirt.style.transition = "none";
+      stage.style.transition = "none";
+      dive.on = true;
+      dive.x = x; dive.y = y;
+    }
+    if (!dive.on) { return; }
+    var e = dive.p;
+    stage.style.transformOrigin = dive.x.toFixed(0) + "px " + dive.y.toFixed(0) + "px";
+    stage.style.transform = "scale(" + (1 + e * PHI * PHI * PHI).toFixed(3) + ")";
+    stage.style.opacity = (1 - e).toFixed(3);
+    groundDirt.style.opacity = e.toFixed(3);
+    groundDirt.style.transform = "scale(" + (INV2 + (1 - INV2) * e).toFixed(3) + ")";
+  }
+  function diveEnd() {
+    window.clearTimeout(dive.timer);
+    if (!dive.on) { return; }
+    var down = dive.p >= 0.5;
+    dive.on = false;
+    dive.log = dive.p = 0;
+    stage.style.transition = "transform 0.61s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.61s ease";
+    groundDirt.style.transition = "opacity 0.61s ease, transform 0.61s cubic-bezier(0.2, 0.7, 0.2, 1)";
+    if (down) {
+      groundDirt.style.pointerEvents = "";
+      groundOn = true;
+      groundSay({ dirt: "chrome", on: true });
+      groundPlaces();
+      groundDirt.classList.add("on");
+      groundDirt.style.opacity = "";
+      groundDirt.style.transform = "";
+      stage.style.opacity = "0";
+      groundFrame.focus();
+    } else {
+      groundDirt.style.opacity = "0";
+      groundDirt.style.transform = "scale(" + INV2 + ")";
+      stage.style.transform = "";
+      stage.style.opacity = "";
+    }
+    window.setTimeout(function () {
+      // Tidy: the stage is itself again beneath, the ground hidden if not down.
+      stage.style.transition = stage.style.transform = stage.style.opacity = stage.style.transformOrigin = "";
+      groundDirt.style.transition = groundDirt.style.opacity = groundDirt.style.transform = groundDirt.style.pointerEvents = "";
+      if (!groundOn) { groundDirt.hidden = true; }
+    }, 700);
   }
   function comeUpFromGround() {
     if (!groundOn) { return; }
     groundOn = false;
     downPush = 0;
-    if (groundBehind) {
-      // Back behind the building it was opened from.
-      groundDirt.classList.add("behind");
-      groundSay({ dirt: "chrome", on: false });
-      if (place) { groundAt(place.lat * 180 / Math.PI, wrap(place.lon) * 180 / Math.PI, false); }
-    } else {
-      groundDirt.classList.remove("on");
-      window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
-    }
-    if (place) { bannerDown.focus(); }
+    groundDirt.classList.remove("on");
+    window.setTimeout(function () { if (!groundOn) { groundDirt.hidden = true; } }, 640);
   }
 
   /* A mark pressed on the ground: that place, reached by flying over the
@@ -11125,14 +11160,19 @@
     var city = null;
     cities.forEach(function (c) { if (c.slug === id) { city = c; } });
     if (!city || flying) { return; }
-    groundOn = false;
-    groundBehindOff();
-    groundDirt.classList.remove("on", "behind");
-    window.setTimeout(function () { if (!groundOn && !groundBehind) { groundDirt.hidden = true; } }, 640);
-    if (place === city) { if (city.building) { groundBehindAt(city); } return; }
+    comeUpFromGround();
+    if (place === city) { return; }
     hopTo(city);
   }
   bannerDown.addEventListener("click", function () { goDeeper(false); });
+  // Without fingers: "+" goes down a level (into the ground, from the globe or
+  // a place), "-" comes back up a level.
+  document.addEventListener("keydown", function (event) {
+    if (event.target && /INPUT|TEXTAREA/.test(event.target.tagName)) { return; }
+    if (groundOn || flying || deckMode) { return; }
+    if (event.key === "+" || event.key === "=") { if (place) { goDeeper(false); } else { flyOver(); } }
+    else if ((event.key === "-" || event.key === "_") && place) { comeUp(); }
+  });
   // The reading lies over the banner (it is another layer, above the
   // stage): a press on its empty band at the top goes to whichever of the
   // banner's buttons is under it, so the way back and the way down both
@@ -11154,9 +11194,18 @@
     if (event.data.dirt === "open") { openFromGround(event.data.id); }
   });
   // Scrolling in on a city, or spreading two fingers on it, goes on down.
+  var upPush = 0;
   stage.addEventListener("wheel", function (event) {
-    if (!place || flying || groundOn || event.deltaY >= 0) { return; }
-    if (groundBehind && event.target.closest && event.target.closest(".building-works")) { return; }
+    if (!place || flying || groundOn) { return; }
+    // Scrolling out of a place goes back up to the world — but not while
+    // scrolling a column of works or a reading, which scroll themselves.
+    if (event.deltaY > 0) {
+      if (event.target.closest && event.target.closest(".building-works, .here, .deck, .theatre, .archive")) { return; }
+      upPush += event.deltaY * (event.ctrlKey ? 8 : 1);
+      if (upPush > 377) { upPush = 0; comeUp(); }
+      return;
+    }
+    upPush = 0;
     downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
     if (downPush > 233) { downPush = 0; goDeeper(false); }
   }, { passive: true });
@@ -11176,6 +11225,7 @@
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
     if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) { downFrom = 0; goDeeper(false); }
+    else if (place && !flying && !groundOn && downFrom > 0 && d / downFrom < INV) { downFrom = 0; comeUp(); }
   }, true);
   ["pointerup", "pointercancel"].forEach(function (name) {
     stage.addEventListener(name, function (event) { delete downFingers[event.pointerId]; downFrom = downSpread(); }, true);

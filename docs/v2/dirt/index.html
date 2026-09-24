@@ -6643,6 +6643,9 @@ function showMode() {
   globeCv.style.display = MODE === "globe" ? "block" : "none";
   cityCv.style.display = MODE === "city" ? "block" : "none";
   if (MODE !== "city") cv.style.visibility = MODE === "globe" ? "hidden" : "visible";
+  // On the website the levels are moved between by gesture, not buttons: pinching out goes down to the streets,
+  // pinching in comes back up (to the ground, and from it to the site's globe); only the months stay.
+  if (SITE) $("e-globe").hidden = $("e-closer").hidden = $("e-up").hidden = true;
   if (MODE === "plane") placeEl.hidden = true;
   else if (MODE === "globe") placeText(`<span class=pl-name>The Earth in ${MONTHS[EM]}</span><div class=pl-line>every place in the paintings nearest its own colours · point to name a place, and click to go down into it</div>`);
 }
@@ -7014,7 +7017,7 @@ function cityFrame(now) {
   if (said !== cityShown) {
     cityShown = said;
     placeText(CITY.err
-      ? `<span class=pl-name>The streets could not be reached</span><div class=pl-line>${CITY.err} · they come from OpenFreeMap, which this page may not be allowed to fetch; Up goes back to the ground</div>`
+      ? `<span class=pl-name>The streets could not be reached</span><div class=pl-line>${CITY.err} · they come from OpenFreeMap, which this page may not be allowed to fetch; ${SITE ? "pinching in" : "Up"} goes back to the ground</div>`
       : `<span class=pl-name>The streets, ${Math.abs(CITY.lat).toFixed(3)}° ${CITY.lat >= 0 ? "N" : "S"}, ${Math.abs(CITY.lon).toFixed(3)}° ${CITY.lon >= 0 ? "E" : "W"}</span><div class=pl-line>every building at its height, in the place's own colours this month · drag to move, scroll or pinch to go nearer; further out goes back up to the ground${CITY.missing ? " · the streets are coming" : ""}</div>`);
   }
 }
@@ -7069,7 +7072,7 @@ stage.addEventListener("pointerup", letFinger, true);
 stage.addEventListener("pointercancel", letFinger, true);
 document.addEventListener("keydown", (ev) => {
   if (MODE === "earth" && (ev.key === "+" || ev.key === "=")) { toCity(centreLat(), centreLon()); return; }
-  if (MODE === "earth" && (ev.key === "-" || ev.key === "_") && SITE && window.parent !== window) { upToSite(); return; }
+  if (MODE === "earth" && (ev.key === "-" || ev.key === "_" || ev.key === "Escape") && SITE && window.parent !== window) { upToSite(); return; }
   if (MODE !== "city") return;
   const dpr = window.devicePixelRatio || 1, W = cityCv.width, H = cityCv.height;
   if (ev.key === "+" || ev.key === "=") cityZoom(PHI, W / 2, H / 2, W, H);
