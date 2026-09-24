@@ -283,10 +283,19 @@ larger than any area, one to each 610-cell square and overlapping into their nei
 Each area takes the artist whose shade the forms have where it lies, so the forms are drawn in artists as a
 painting is drawn in values: an orb's lit side is Twombly and de Kooning, its turning edge Cézanne and Braque, its
 shadow Turrell and Ikeda. Inside every area its colours are set to its artist's shade with the form's light
-running on through them, across the seams, so one light falls across many worlds; and each form's edge is drawn as
-one line through every world it crosses, dark over light and light over dark. The light goes round once in 377
+running on through them, across the seams, so one light falls across many worlds. Nothing steps: each form gives way
+to the ground and to the forms under it over 21 cells, a head's planes turn into each other over 26, and across a
+seam the two artists' shades blend, meeting halfway at the seam itself. The light goes round once in 377
 seconds; as it turns, the shading slides across the areas, and at each change an area passes to the artist whose
 shade now falls there. `#g99` shows the meta forms alone, each area in its shade.
+
+**Every edge a grey gradient.** No edge is a hard line. Across every edge of every shape, in every world, lies a grey
+gradient running the whole scale from dark to light: the same scale the artists make over the whole plane, held in
+a few pixels. The very small and the very large are one law here, where physics still has two. The last pass finds
+it from the cells around each pixel (five by five, weighted by nearness to the pixel, so the gradient runs smoothly at
+the pixel's own size): where they span a wide range of light, the pixel takes the grey of where it stands between
+their darkest and lightest, strongest halfway across the edge and fading into the colours on either side. The meta
+forms' own edges are the same gradient, 13 cells wide, and a head's planes 8.
 
 **The gesture.** Across the plane run long lines, one in every 610-cell band, that belong to no passage: each is one
 unbroken gesture taking the form of whatever world it passes through. It is crayon on paper, chalk on slate, a painted

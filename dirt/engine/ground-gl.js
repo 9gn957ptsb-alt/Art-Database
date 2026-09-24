@@ -27,13 +27,37 @@ precision highp int;
 precision highp sampler2D;
 uniform sampler2D uA, uB;
 uniform ivec2 uOff, uCell0;
-uniform int uH;
+uniform int uH, uEdge;
 out vec4 outColour;
+// Drawn after the artists, no edge is a hard line. Across every edge of every shape, in every world, lies a grey
+// gradient running the whole scale from dark to light, the same scale the artists make over the whole plane: the
+// smallest thing on the plane holds what the largest does. The gradient is found from the cells around the pixel
+// (five by five, weighted by nearness to the pixel itself, so it runs smoothly at the pixel's own size): where they
+// span a wide range of light, the pixel takes the grey of where it stands between their darkest and lightest,
+// strongest halfway across the edge and fading into the colours on either side.
 void main() {
   ivec2 X = ivec2(gl_FragCoord.xy);
   X.y = uH - 1 - X.y;
   ivec2 G = X + uOff, t = (G >> 1) - uCell0;
-  outColour = (G & 1) == ivec2(0) ? texelFetch(uA, t, 0) : texelFetch(uB, t, 0);
+  vec4 own = (G & 1) == ivec2(0) ? texelFetch(uA, t, 0) : texelFetch(uB, t, 0);
+  outColour = own;
+  if (uEdge == 0) return;
+  ivec2 sz = textureSize(uB, 0) - 1;
+  vec2 P = vec2(G) + 0.5;
+  float lo = 1.0, hi = 0.0, sw = 0.0, sl = 0.0;
+  for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) {
+    ivec2 c = t + ivec2(dx, dy);
+    float l = dot(texelFetch(uB, clamp(c, ivec2(0), sz), 0).rgb, vec3(0.3, 0.59, 0.11));
+    vec2 d = (vec2(c + uCell0) * 2.0 + 1.0 - P) / 3.0;               // in 3-pixel steps
+    float w = exp(-dot(d, d));
+    lo = min(lo, l); hi = max(hi, l); sw += w; sl += w * l;
+  }
+  float e = hi - lo;
+  if (e < 0.08) return;
+  float g = clamp((sl / sw - lo) / e, 0.0, 1.0);
+  float a = smoothstep(0.08, 0.38, e) * 4.0 * g * (1.0 - g) * 0.618;
+  float v = 0.04 + 0.92 * g;
+  outColour = vec4(mix(own.rgb, vec3(v, v * 0.994, v * 0.985), a), 1.0);
 }`;
 
 // The first pass, a fragment a cell: its two colours.
@@ -1074,15 +1098,19 @@ const float NATL[25] = float[25](0.8, 0.2, 0.75, 0.88, 0.8, 0.12, 0.5, 0.3, 0.4,
 const float MB = 610.0;                                              // a meta form to a square this wide, overlapping its neighbours
 float shadeOf(int g) { return (float(RANK_OF[g]) + 0.5) / 13.0; }
 float metaLightAngle(float t) { return t * 6.2832 / 377.0; }         // the light goes round once in 377 seconds
-/** One meta form, of block b, at p: its value v there, its signed distance sd (outline where 0), how high it lies. */
-void metaForm(ivec2 b, vec2 p, float t, out float v, out float sd, out float prio, out float edge) {
+/**
+ * One meta form, of block b, at p: its value v there, its signed distance sd (its edge where 0), how softly it
+ * gives way to what lies round it (soft, cells; a form with a contour has soft under 34), how high it lies, and
+ * inside a head of planes the signed distance to its nearest plane's edge.
+ */
+void metaForm(ivec2 b, vec2 p, float t, out float v, out float sd, out float soft, out float prio, out float edge) {
   uint h = h3(b.x, b.y, 4181u);
   vec2 C = (vec2(b) + 0.5 + (vec2(unit(h), unit(mixh(h + 1u))) - 0.5) * P1) * MB;
   float R = 144.0 + 233.0 * unit(mixh(h + 2u)), th = 6.2832 * unit(mixh(h + 3u)), la = metaLightAngle(t) + th;
   vec2 q = p - C, L = vec2(cos(la), sin(la));
   prio = unit(mixh(h + 4u));
   int k = int(mixh(h + 5u) % 5u);
-  edge = 1e9;
+  edge = 1e9; soft = 21.0;
   float r = length(q);
   if (k == 0) {                                                      // an orb, lit from the turning light
     sd = r - R;
@@ -1095,68 +1123,76 @@ void metaForm(ivec2 b, vec2 p, float t, out float v, out float sd, out float pri
     sd = (f - 1.0) * 0.5 * R;
     float nx = clamp(u.x, -1.0, 1.0);
     v = clamp(0.5 + 0.46 * (nx * L.x + sqrt(1.0 - nx * nx) * 0.6), 0.02, 0.98);
-  } else if (k == 2) {                                               // a vortex, as Turner's: no edge, a swept spiral
-    sd = r < R ? -1e9 : 1e9;
+  } else if (k == 2) {                                               // a vortex, as Turner's: a swept spiral, no edge at all
+    sd = r - R; soft = R * P2;
     float a = atan(q.y, q.x);
-    v = 0.5 + 0.44 * sin(a + log(max(r, 1.0)) * 2.6 - t * 0.21 + th) * (1.0 - smoothstep(R * 0.6, R, r));
+    v = 0.5 + 0.44 * sin(a + log(max(r, 1.0)) * 2.6 - t * 0.21 + th) * (1.0 - smoothstep(R * 0.4, R, r));
     prio *= 0.5;                                                     // lies under the forms with edges
-  } else if (k == 3) {                                               // a head of planes, as Picasso's: lines through off-centre points
+  } else if (k == 3) {                                               // a head of planes, as Picasso's: each plane shaded, turning at its edges
     sd = r - R;
-    uint id = 0u;
+    float s = 0.0, en = 1e9;
     for (int n = 0; n < 5; n++) {
       uint hn = mixh(h + 10u + uint(n));
       float an = 6.2832 * unit(hn);
       vec2 o = (vec2(unit(mixh(hn + 1u)), unit(mixh(hn + 2u))) - 0.5) * R;
       float dl = dot(q - o, vec2(-sin(an), cos(an)));
-      edge = min(edge, abs(dl));
-      if (dl > 0.0) id |= 1u << n;
+      if (abs(dl) < abs(en)) en = dl;
+      s += (unit(mixh(hn + 3u)) * 2.0 - 1.0) * (smoothstep(-13.0, 13.0, dl) * 2.0 - 1.0);
     }
-    v = clamp(0.5 + 0.45 * (unit(mixh(h ^ (id * 0x9e3779b9u))) * 2.0 - 1.0) + 0.1 * dot(q / R, L), 0.02, 0.98);
+    edge = en;
+    v = clamp(0.5 + 0.2 * s + 0.1 * dot(q / R, L), 0.02, 0.98);
   } else {                                                           // a lit field, as Turrell's: glowing toward its rim
     vec2 e = abs(q) - vec2(R, R * P1);
     sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0);
     v = 0.14 + 0.8 * smoothstep(-R * P2, 0.0, sd) * (0.6 + 0.4 * (0.5 + 0.5 * dot(normalize(q + 1e-3), L)));
   }
-  if (sd > 0.0) prio = -1.0;
 }
-/** The meta forms' value at p at time t (0 dark, 1 light), and how near an outline is (cells; big when none). */
-float metaAt(vec2 p, float t, out float line) {
+/**
+ * The meta forms' value at p at time t (0 dark, 1 light), with no step anywhere: each form gives way to the
+ * ground and to the forms under it over its soft width, the higher over the lower. And where a form has an edge,
+ * a grey gradient across it (cg, how strongly ca): the whole scale from dark to light in 13 cells, the edge of a
+ * form as the plane's whole range of artists in little.
+ */
+float metaAt(vec2 p, float t, out float cg, out float ca) {
   ivec2 b0 = ivec2(floor(p / MB));
-  float best = -1.0, M = 0.5 + 0.34 * (vnoise(p, 610.0, 4187u) * 2.0 - 1.0), topSd = 1e9, topEdge = 1e9;
+  float M = 0.5 + 0.34 * (vnoise(p, 610.0, 4187u) * 2.0 - 1.0), sw = 1.0, sm = M, top = 0.0, topSd = 1e9, topEdge = 1e9, topSoft = 99.0;
   float shade = 1.0;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    float v, sd, pr, ed;
-    metaForm(b0 + ivec2(i, j), p, t, v, sd, pr, ed);
-    if (pr > best) { best = pr; M = v; topSd = sd; topEdge = ed; }
-  }
-  // outlines: the top form's, and any form's edge not under a higher one; and the shadows the solid forms cast
-  line = min(abs(topSd), topEdge);
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    float v, sd, pr, ed;
-    metaForm(b0 + ivec2(i, j), p, t, v, sd, pr, ed);
+    float v, sd, so, pr, ed;
+    metaForm(b0 + ivec2(i, j), p, t, v, sd, so, pr, ed);
+    float w = (1.0 - smoothstep(-so, so, sd)) * 21.0 * exp(8.0 * pr);
+    sw += w; sm += w * v;
+    if (w > top) { top = w; topSd = sd; topEdge = ed; topSoft = so; }
     uint h = h3(b0.x + i, b0.y + j, 4181u);
-    float prAll = unit(mixh(h + 4u));
-    if (sd > 0.0 && sd < 1e8 && prAll > best) line = min(line, sd);
     int k = int(mixh(h + 5u) % 5u);
-    if (sd > 0.0 && (k == 0 || k == 1) && best < prAll) {
+    if ((k == 0 || k == 1) && sd > 0.0 && sd < 144.0) {             // the shadow a solid form casts, soft-edged
       float la = metaLightAngle(t) + 6.2832 * unit(mixh(h + 3u)), R = 144.0 + 233.0 * unit(mixh(h + 2u));
-      float v2, sd2, pr2, ed2;
-      metaForm(b0 + ivec2(i, j), p + vec2(cos(la), sin(la)) * R * P3, t, v2, sd2, pr2, ed2);
-      if (sd2 < 0.0) shade = min(shade, P1 + P2 * smoothstep(-R * P3, 0.0, sd2));
+      float v2, sd2, so2, pr2, ed2;
+      metaForm(b0 + ivec2(i, j), p + vec2(cos(la), sin(la)) * R * P3, t, v2, sd2, so2, pr2, ed2);
+      shade = min(shade, 1.0 - P2 * (1.0 - smoothstep(-R * P3, 13.0, sd2)));
     }
   }
-  return M * shade;
+  M = sm / sw * shade;
+  // the gradients: across the top form's edge, and across the edges of a head's planes
+  cg = 0.5; ca = 0.0;
+  if (topSoft < 34.0) {
+    float x = topSd / 13.0;
+    if (abs(x) < 1.0) { cg = 0.5 - 0.5 * x; ca = (1.0 - x * x) * P1; }
+    float y = topEdge / 8.0;
+    if (topSd < 0.0 && abs(y) < 1.0 && (1.0 - y * y) * P2 > ca) { cg = 0.5 + 0.5 * y; ca = (1.0 - y * y) * P2; }
+  }
+  return M;
 }
 /** The world a passage takes at its change k: an artist whose shade is near the meta forms' value at its middle. */
 int shadedWorld(vec2 mid, int i, int j, int k, float tk) {
-  float line, M = metaAt(mid, tk, line);
+  float cg, ca, M = metaAt(mid, tk, cg, ca);
   uint h = h3(i, j, uint(max(k, -1) + 7));
   int r = clamp(int(floor((M + (unit(h) - 0.5) * P2 / 1.3) * 13.0)), 0, 12);
   return BY_RANK[RSTART[r] + int(mixh(h + 1u) % uint(RSTART[r + 1] - RSTART[r]))];
 }
-/** A colour set to its world's artist's shade, the meta forms' light running on through it. */
-vec3 toShade(vec3 col, int g, float M) {
-  float l = lum(col), T = 255.0 * (0.05 + 0.9 * mix(shadeOf(g), M, P1));
+/** A colour of world g set to the shade sh (an artist's, or two artists' blended across a seam), the meta forms' light M running on through it. */
+vec3 toShade(vec3 col, int g, float sh, float M) {
+  float l = lum(col), T = 255.0 * (0.05 + 0.9 * mix(sh, M, P1));
   float nl = clamp(T + (l - 255.0 * NATL[g]) * P1, 0.0, 255.0);
   return clamp(mix(col * (nl / max(l, 1.0)), col + (nl - l), 0.5), 0.0, 255.0);
 }
@@ -1361,10 +1397,10 @@ void main() {
   }
   if (art) c.e = c.en;
   if (art && uForce == 99) {                                         // #g99: the meta forms alone, and each passage's shade
-    float ln, M = metaAt(cellP, uTime, ln);
+    float cg, ca, M = metaAt(cellP, uTime, cg, ca);
     vec4 m26 = entT(layer, c.e, 26);
     float v = mix(shadeOf(shadedWorld(entT(layer, c.e, 25).xy, int(m26.y), int(m26.z), 0, uTime)), M, P1);
-    vec3 g = ln < 0.9 ? vec3(220.0, 60.0, 40.0) : vec3(255.0 * (0.05 + 0.9 * v));
+    vec3 g = vec3(255.0 * mix(0.05 + 0.9 * v, 0.04 + 0.92 * cg, ca));
     outA = outB = vec4(g / 255.0, 1.0);
     return;
   }
@@ -1379,7 +1415,7 @@ void main() {
   int sides = emerge ? 0 : seam ? 2 : 1;
   // the meta forms' value here, and how near their outline
   bool shaded = art && uForce < 0 && !emerge;
-  float metaLine = 1e9, metaM = shaded ? metaAt(vec2(cell) + 0.5, uTime, metaLine) : 0.5;
+  float metaG = 0.5, metaA = 0.0, metaM = shaded ? metaAt(vec2(cell) + 0.5, uTime, metaG, metaA) : 0.5;
   for (int side = 0; side < sides; side++) {
     Cell cc = c;
     if (side == 1) cc.e = c.eb;
@@ -1387,9 +1423,15 @@ void main() {
     int kk;
     State ss;
     passageAt(layer, cc, cell, a, b, kk, ss);
-    if (shaded) { a = toShade(a, gGram, metaM); b = toShade(b, gGram, metaM); }
     if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
     else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
+  }
+  if (shaded) {
+    // Each side in its artist's shade, and across a seam the two shades blend, halfway at the seam itself, so the
+    // plane's light has no step in it anywhere.
+    float w0 = seam ? 0.5 + 0.5 * smoothstep(0.0, 0.62, c.pe) : 1.0, sh = seam ? mix(shadeOf(g1), shadeOf(g0), w0) : shadeOf(g0);
+    A = toShade(A, g0, sh, metaM); B = toShade(B, g0, sh, metaM);
+    if (seam) { Ab = toShade(Ab, g1, sh, metaM); Bb = toShade(Bb, g1, sh, metaM); }
   }
   if (seam) { gGram = g0; gSeed = s0; gCov = cov0; gMark = mk0; gP = vec2(cell) + 0.5; gMid = entT(layer, c.e, 25).xy; }
   // Ground just grown comes in dot by dot; ground grown again for a new month, as the month sweeps over it.
@@ -1445,10 +1487,10 @@ void main() {
     if (sharedD < 21.0 && chroma(sharedC) > 34.0 && abs(x) < 0.9 && fract((gP.x - gP.y) / 8.0) < 0.38) { PA = sharedC * 0.85; PB2 = sharedC * 0.85; }
     A = PA; B = PB2;
   }
-  // the meta forms' outlines, one line through every world they cross: dark over light, light over dark
-  if (shaded && metaLine < 0.9) {
-    vec3 ink = lum(A) > 110.0 ? vec3(26.0, 24.0, 22.0) : vec3(242.0, 238.0, 226.0);
-    A = ink; B = mix(B, ink, P1);
+  // the meta forms' edges: one grey gradient, dark to light, through every world they cross
+  if (shaded && metaA > 0.0) {
+    vec3 grey = vec3(255.0 * (0.04 + 0.92 * metaG)) * vec3(1.0, 0.994, 0.985);
+    A = mix(A, grey, metaA); B = mix(B, grey, metaA);
   }
   if (sg.on) {
     vec2 d = cellP - sg.C;
@@ -1503,7 +1545,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, U = {}, V = {}, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, U = {}, V = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
 
@@ -1586,7 +1628,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
   function link() {
     if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     gl.useProgram(cellProg);
@@ -1598,6 +1640,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.uniform2iv(U.uGram, pending.gram);
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
+    edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
     pending = null;
@@ -1710,6 +1753,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.uniform2i(V.uOff, ox, oy);
     gl.uniform2i(V.uCell0, cx0, cy0);
     gl.uniform1i(V.uH, H);
+    gl.uniform1i(V.uEdge, edgeOn && !earth ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   return { draw, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
