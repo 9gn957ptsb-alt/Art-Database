@@ -1816,6 +1816,13 @@
      (earth-palette-MM.png: the dark, middle and light colour of every place,
      one band each). Going down further is DIRT Earth itself (dirt/). */
   var dirt = { land: null, sea: null, earth: null, pal: null };
+  /* And it looks as DIRT Earth's globe does: an opaque globe of woven dots
+     in each place's colours, lit from one side, on DIRT's near-black ground,
+     with no glass over it. Everything that stands on it (the words, the
+     places the collages are in, the buildings, the telescope, the weather)
+     is as it was. DIRT_LOOK off is the pale glass globe of before. */
+  var DIRT_LOOK = true;
+  if (DIRT_LOOK) { document.documentElement.classList.add("dirt-look"); }
   var MONTH = ("0" + (new Date().getMonth() + 1)).slice(-2);
   var DIRT_ROUND = 2;          // the tile goes round the world twice…
   var DIRT_DOWN = 1;           // …and once from pole to pole
@@ -2098,7 +2105,8 @@
           // whole device pixels, so on a sharp screen a small clod is a
           // single hair of a pixel rather than a crumb.
           dot = Math.max(1, Math.round((grain + size - 1) * Math.sqrt(INV) * dpr)) / dpr;
-          a = gain ? (0.74 + 0.26 * lit) * (0.82 + 0.18 * gain)
+          a = DIRT_LOOK ? (gain ? 0.3 + 0.7 * lit : 0.08 + 0.26 * lit)
+            : gain ? (0.74 + 0.26 * lit) * (0.82 + 0.18 * gain)
                    : (0.1 + 0.2 * lit);
         } else if (gain) {
           a = (0.22 + 0.42 * lit) * (0.5 + 1.0 * gain);
@@ -2214,12 +2222,12 @@
 
     // The globe, and each family of its threads, each seen through by an
     // amount of its own that never settles — see flux().
-    var body = flux(now, FLUX_BODY, 0);
+    var body = DIRT_LOOK ? 1 : flux(now, FLUX_BODY, 0);
     // The threads, which carry the land, breathe higher up the scale than
     // the body does — between 1/phi and all the way there — so the land
     // has presence while the sphere under it stays glass.
-    var down = flux(now, FLUX_DOWN, GOLDEN, INV, 1);
-    var round = flux(now, FLUX_ROUND, 2 * GOLDEN, INV, 1);
+    var down = DIRT_LOOK ? 1 : flux(now, FLUX_DOWN, GOLDEN, INV, 1);
+    var round = DIRT_LOOK ? 1 : flux(now, FLUX_ROUND, 2 * GOLDEN, INV, 1);
 
     // Everything that is the globe goes onto a layer of its own first, so
     // the patches and the pulse can be taken out of all of it at once.
@@ -2255,11 +2263,13 @@
 
     // The patches and the pulse, as a mask: kept where it is opaque, faded
     // where it is not.
-    veil(now);
+    if (!DIRT_LOOK) { veil(now); }
     gctx.globalAlpha = 1;
-    gctx.globalCompositeOperation = "destination-in";
+    gctx.globalCompositeOperation = DIRT_LOOK ? "source-over" : "destination-in";
     gctx.imageSmoothingEnabled = true;
-    if (moving() && veilSeen.r) {
+    if (DIRT_LOOK) {
+      // no patches: DIRT's globe is whole
+    } else if (moving() && veilSeen.r) {
       // The mask is magnified with everything else while the world swings.
       gctx.save();
       gctx.translate(cx, cy);
@@ -2275,7 +2285,7 @@
     // Grit into it, then part of it laid down soft — both more the further
     // down you are. See gritAndBlur.
     var near = nearness();
-    var mist = INV3 + (INV - INV3) * near;          // how much of it is blurred
+    var mist = DIRT_LOOK ? 0 : INV3 + (INV - INV3) * near;   // how much of it is blurred (none, in DIRT's look)
     var shrink = Math.pow(INV, 2 + 2 * near);       // and how far
     var sw = Math.max(1, Math.round(layer.width * shrink));
     var sh = Math.max(1, Math.round(layer.height * shrink));
@@ -3715,6 +3725,18 @@
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, TAU);
     ctx.clip();
+    if (DIRT_LOOK) {
+      // DIRT's globe: a dark body, lit from where the light is, its edge
+      // turning away into the ground it hangs in.
+      var body = ctx.createRadialGradient(lit.x, lit.y, R * 0.04, cx, cy, R * 1.05);
+      body.addColorStop(0, "#2a1f16");
+      body.addColorStop(0.5, "#1a130d");
+      body.addColorStop(1, "#0b0806");
+      ctx.fillStyle = body;
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+      ctx.restore();
+      return;
+    }
     ctx.globalAlpha = GLOBE_ALPHA;
 
     var base = ctx.createRadialGradient(
