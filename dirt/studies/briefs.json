@@ -1,0 +1,1095 @@
+{
+ "order": [
+  "Pablo Picasso",
+  "Cy Twombly",
+  "Vincent van Gogh",
+  "Henri Cartier-Bresson",
+  "J. M. W. Turner",
+  "Salvador Dalí",
+  "Elaine de Kooning",
+  "Alberto Giacometti",
+  "Henri Matisse",
+  "James Turrell",
+  "Jackson Pollock",
+  "Peter Doig"
+ ],
+ "artists": {
+  "Pablo Picasso": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.14685388513513514,
+   "coherence": 0.10040390841418452,
+   "angle": 97.24091825964665,
+   "bare": 0.39321157094594594,
+   "light": [
+    78.33,
+    233.59
+   ],
+   "sat": 22.0,
+   "palette": [
+    "#eceae3 (29%)",
+    "#dad4c5 (19%)",
+    "#beb5a3 (17%)",
+    "#463e35 (16%)",
+    "#8f7e61 (10%)",
+    "#86a9b9 (9%)"
+   ],
+   "range": [
+    "pablo-picasso-femme-au-chapeau-et-au-missel-1",
+    "pablo-picasso-portrait-de-femme-a-la-fraise-et-au-chapeau-b-1145-ba-1323"
+   ],
+   "kin": [
+    "Robert Rauschenberg",
+    "Andy Warhol",
+    "Willem de Kooning"
+   ],
+   "prompt": "A study of the visual language shared across Pablo Picasso's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #eceae3 (29%), #dad4c5 (19%), #beb5a3 (17%), #463e35 (16%), #8f7e61 (10%), #86a9b9 (9%). The surface is moderately marked; its marks run in many directions; some bare ground left showing; a wide range from deep darks to bright lights; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Robert Rauschenberg, Andy Warhol, Willem de Kooning, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Willem de Kooning",
+    "Giorgio Morandi",
+    "Salvador Dalí",
+    "Henri Matisse",
+    "Andy Warhol",
+    "Georges Braque",
+    "Robert Rauschenberg"
+   ]
+  },
+  "Cy Twombly": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.0728302001953125,
+   "coherence": 0.3024456431973128,
+   "angle": 115.98118510289899,
+   "bare": 0.53497314453125,
+   "light": [
+    132.19,
+    224.83999999999997
+   ],
+   "sat": 11.0,
+   "palette": [
+    "#e7e1d3 (39%)",
+    "#cec9c4 (16%)",
+    "#f8f7f6 (13%)",
+    "#afa275 (12%)",
+    "#915a4b (10%)",
+    "#392823 (9%)"
+   ],
+   "range": [
+    "cy-twombly-cy-twombly-untitled-from-the-new-york-collection-for-stockholm-8",
+    "cy-twombly-drei-ansichten-des-hofgartens"
+   ],
+   "kin": [
+    "Richard Diebenkorn",
+    "Paul Cézanne",
+    "Helen Frankenthaler"
+   ],
+   "prompt": "A study of the visual language shared across Cy Twombly's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e7e1d3 (39%), #cec9c4 (16%), #f8f7f6 (13%), #afa275 (12%), #915a4b (10%), #392823 (9%). The surface is sparse, calm, much of it open; its strokes strongly share one direction, about 115 degrees from horizontal; a lot of bare ground left showing; a narrow, even range of light; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Richard Diebenkorn, Paul Cézanne, Helen Frankenthaler, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Alberto Giacometti",
+    "Richard Diebenkorn"
+   ]
+  },
+  "Willem de Kooning": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.18439226519337015,
+   "coherence": 0.1222566380815628,
+   "angle": 111.53164744099685,
+   "bare": 0.4763427734375,
+   "light": [
+    88.55,
+    235.0
+   ],
+   "sat": 16.0,
+   "palette": [
+    "#e9e2d8 (33%)",
+    "#f3f2f1 (25%)",
+    "#d6cab9 (13%)",
+    "#50463e (11%)",
+    "#c4ab88 (9%)",
+    "#897d6e (8%)"
+   ],
+   "range": [
+    "willem-de-kooning-clam-digger-from-portfolio-9-13",
+    "willem-de-kooning-the-preacher-g-27-1"
+   ],
+   "kin": [
+    "Brice Marden",
+    "Pablo Picasso",
+    "Robert Rauschenberg"
+   ],
+   "prompt": "A study of the visual language shared across Willem de Kooning's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e9e2d8 (33%), #f3f2f1 (25%), #d6cab9 (13%), #50463e (11%), #c4ab88 (9%), #897d6e (8%). The surface is dense, busy with marks; its marks run in many directions; a lot of bare ground left showing; a moderate range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Brice Marden, Pablo Picasso, Robert Rauschenberg, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Pablo Picasso",
+    "Brice Marden"
+   ]
+  },
+  "Paul Cézanne": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.1633029513888889,
+   "coherence": 0.19348341260126956,
+   "angle": 122.48874645339137,
+   "bare": 0.5009584780092593,
+   "light": [
+    127.26499999999999,
+    224.93999999999997
+   ],
+   "sat": 43.0,
+   "palette": [
+    "#e9d9bf (37%)",
+    "#c9ba9b (17%)",
+    "#9f9373 (15%)",
+    "#676b4a (13%)",
+    "#313625 (12%)",
+    "#f1f1ee (5%)"
+   ],
+   "range": [
+    "paul-cezanne-house-surrounded-by-vegetation",
+    "paul-cezanne-les-baigneurs-petite-planche-1"
+   ],
+   "kin": [
+    "Georges Braque",
+    "Childe Hassam",
+    "Helen Frankenthaler"
+   ],
+   "prompt": "A study of the visual language shared across Paul Cézanne's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e9d9bf (37%), #c9ba9b (17%), #9f9373 (15%), #676b4a (13%), #313625 (12%), #f1f1ee (5%). The surface is moderately marked; its strokes strongly share one direction, about 122 degrees from horizontal; a lot of bare ground left showing; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Georges Braque, Childe Hassam, Helen Frankenthaler, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Cy Twombly",
+    "Helen Frankenthaler",
+    "Richard Diebenkorn"
+   ]
+  },
+  "Vincent van Gogh": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.1470371462264151,
+   "coherence": 0.09474862222114447,
+   "angle": 37.95326618956624,
+   "bare": 0.15835492227979275,
+   "light": [
+    73.133,
+    153.56
+   ],
+   "sat": 40.0,
+   "palette": [
+    "#869f8f (23%)",
+    "#222e20 (18%)",
+    "#515336 (16%)",
+    "#57736f (15%)",
+    "#948141 (15%)",
+    "#bbc8aa (14%)"
+   ],
+   "range": [
+    "vincent-van-gogh-roulins-baby",
+    "vincent-van-gogh-le-berceuse-portrait-of-madame-roulin"
+   ],
+   "kin": [
+    "Edgar Degas",
+    "Graham Sutherland",
+    "Elaine de Kooning"
+   ],
+   "prompt": "A study of the visual language shared across Vincent van Gogh's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #869f8f (23%), #222e20 (18%), #515336 (16%), #57736f (15%), #948141 (15%), #bbc8aa (14%). The surface is moderately marked; its marks run in many directions; the surface mostly covered; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Edgar Degas, Graham Sutherland, Elaine de Kooning, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Edgar Degas"
+   ]
+  },
+  "Claude Monet": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.07549019607843137,
+   "coherence": 0.22248346939810593,
+   "angle": 116.55713056987537,
+   "bare": 0.40870098039215685,
+   "light": [
+    79.17999999999999,
+    180.20999999999998
+   ],
+   "sat": 25.0,
+   "palette": [
+    "#586155 (23%)",
+    "#a3a9a1 (20%)",
+    "#687c8f (19%)",
+    "#cfcfba (13%)",
+    "#888969 (13%)",
+    "#363c2e (11%)"
+   ],
+   "range": [
+    "claude-monet-cliffs-at-pourville",
+    "claude-monet-water-lilies-and-japanese-bridge"
+   ],
+   "kin": [
+    "Childe Hassam",
+    "Edgar Degas",
+    "Helen Frankenthaler"
+   ],
+   "prompt": "A study of the visual language shared across Claude Monet's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #586155 (23%), #a3a9a1 (20%), #687c8f (19%), #cfcfba (13%), #888969 (13%), #363c2e (11%). The surface is sparse, calm, much of it open; its strokes strongly share one direction, about 116 degrees from horizontal; some bare ground left showing; a narrow, even range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Childe Hassam, Edgar Degas, Helen Frankenthaler, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "James Turrell",
+    "J. M. W. Turner",
+    "Anish Kapoor",
+    "Edgar Degas"
+   ]
+  },
+  "Giorgio Morandi": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.08041944781553398,
+   "coherence": 0.09877321499264022,
+   "angle": 80.42551982697174,
+   "bare": 0.3059419461382114,
+   "light": [
+    136.07999999999998,
+    242.46
+   ],
+   "sat": 21.0,
+   "palette": [
+    "#fdfdf9 (24%)",
+    "#e7e1cf (18%)",
+    "#aca28e (17%)",
+    "#827865 (17%)",
+    "#5b4e3d (12%)",
+    "#cdc4b1 (12%)"
+   ],
+   "range": [
+    "giorgio-morandi-still-life-62",
+    "giorgio-morandi-still-life-with-bold-lines-natura-morta-a-grandi-segni"
+   ],
+   "kin": [
+    "J. M. W. Turner",
+    "Salvador Dalí",
+    "Pablo Picasso"
+   ],
+   "prompt": "A study of the visual language shared across Giorgio Morandi's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #fdfdf9 (24%), #e7e1cf (18%), #aca28e (17%), #827865 (17%), #5b4e3d (12%), #cdc4b1 (12%). The surface is sparse, calm, much of it open; its marks run in many directions; the surface mostly covered; a moderate range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside J. M. W. Turner, Salvador Dalí, Pablo Picasso, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "J. M. W. Turner"
+   ]
+  },
+  "Salvador Dalí": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.11512419871794871,
+   "coherence": 0.15811937401680387,
+   "angle": 45.96246860100455,
+   "bare": 0.6198933919270834,
+   "light": [
+    67.557,
+    239.41
+   ],
+   "sat": 15.0,
+   "palette": [
+    "#f0f2f4 (27%)",
+    "#ece5db (22%)",
+    "#c7c4be (17%)",
+    "#423329 (12%)",
+    "#916a3b (12%)",
+    "#ad9e89 (9%)"
+   ],
+   "range": [
+    "salvador-dali-st-jacques-de-compostela-santiago-of-compostela-dot",
+    "salvador-dali-the-road-to-perdition-train-station"
+   ],
+   "kin": [
+    "Georges Braque",
+    "Pablo Picasso",
+    "Brice Marden"
+   ],
+   "prompt": "A study of the visual language shared across Salvador Dalí's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #f0f2f4 (27%), #ece5db (22%), #c7c4be (17%), #423329 (12%), #916a3b (12%), #ad9e89 (9%). The surface is sparse, calm, much of it open; its marks lean loosely one way; a lot of bare ground left showing; a wide range from deep darks to bright lights; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Georges Braque, Pablo Picasso, Brice Marden, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Giorgio Morandi",
+    "Alberto Giacometti",
+    "Henri Matisse",
+    "Georges Braque",
+    "Richard Diebenkorn",
+    "Brice Marden"
+   ]
+  },
+  "Alberto Giacometti": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.025151466836734693,
+   "coherence": 0.23504459378292725,
+   "angle": 85.3893836408905,
+   "bare": 0.8086136798469388,
+   "light": [
+    193.2,
+    220.93999999999997
+   ],
+   "sat": 25.0,
+   "palette": [
+    "#ede6d6 (25%)",
+    "#e5d7bf (24%)",
+    "#d6c8b0 (20%)",
+    "#8e7a5b (13%)",
+    "#b1ab9e (11%)",
+    "#fefefe (8%)"
+   ],
+   "range": [
+    "alberto-giacometti-homme-assis-et-personnage",
+    "alberto-giacometti-dans-latelier-lust-187-1"
+   ],
+   "kin": [
+    "Cy Twombly",
+    "Salvador Dalí",
+    "Richard Diebenkorn"
+   ],
+   "prompt": "A study of the visual language shared across Alberto Giacometti's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #ede6d6 (25%), #e5d7bf (24%), #d6c8b0 (20%), #8e7a5b (13%), #b1ab9e (11%), #fefefe (8%). The surface is sparse, calm, much of it open; its strokes strongly share one direction, about 85 degrees from horizontal; a lot of bare ground left showing; a narrow, even range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Cy Twombly, Salvador Dalí, Richard Diebenkorn, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": []
+  },
+  "Henri Matisse": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.13327702702702704,
+   "coherence": 0.09953433586765735,
+   "angle": 95.3322301874433,
+   "bare": 0.6524522569444444,
+   "light": [
+    100.245,
+    228.06
+   ],
+   "sat": 27.0,
+   "palette": [
+    "#f0eade (48%)",
+    "#bcb8ae (18%)",
+    "#af9663 (13%)",
+    "#4b3f35 (10%)",
+    "#0d699e (6%)",
+    "#e1812c (5%)"
+   ],
+   "range": [
+    "henri-matisse-nu-pour-cleveland-22",
+    "henri-matisse-madame-de-pompadour-5"
+   ],
+   "kin": [
+    "Pablo Picasso",
+    "Brice Marden",
+    "Salvador Dalí"
+   ],
+   "prompt": "A study of the visual language shared across Henri Matisse's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #f0eade (48%), #bcb8ae (18%), #af9663 (13%), #4b3f35 (10%), #0d699e (6%), #e1812c (5%). The surface is moderately marked; its marks run in many directions; a lot of bare ground left showing; a moderate range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Pablo Picasso, Brice Marden, Salvador Dalí, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Brice Marden"
+   ]
+  },
+  "Helen Frankenthaler": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.09355198732718895,
+   "coherence": 0.27118274625853744,
+   "angle": 87.28456076010015,
+   "bare": 0.3815347546728972,
+   "light": [
+    116.92,
+    217.12
+   ],
+   "sat": 38.0,
+   "palette": [
+    "#a89c90 (26%)",
+    "#e1dfdf (25%)",
+    "#e1cb94 (18%)",
+    "#877c61 (17%)",
+    "#4a3e3f (7%)",
+    "#4096bd (6%)"
+   ],
+   "range": [
+    "helen-frankenthaler-skywriting-14",
+    "helen-frankenthaler-east-and-beyond-1"
+   ],
+   "kin": [
+    "Childe Hassam",
+    "Anish Kapoor",
+    "Paul Cézanne"
+   ],
+   "prompt": "A study of the visual language shared across Helen Frankenthaler's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #a89c90 (26%), #e1dfdf (25%), #e1cb94 (18%), #877c61 (17%), #4a3e3f (7%), #4096bd (6%). The surface is sparse, calm, much of it open; its strokes strongly share one direction, about 87 degrees from horizontal; some bare ground left showing; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Childe Hassam, Anish Kapoor, Paul Cézanne, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Cy Twombly",
+    "Paul Cézanne",
+    "Claude Monet",
+    "James Turrell",
+    "Anish Kapoor",
+    "Childe Hassam"
+   ]
+  },
+  "James Turrell": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.04441636029411765,
+   "coherence": 0.40872927687848737,
+   "angle": 89.73134262118693,
+   "bare": 0.5450827205882353,
+   "light": [
+    35.29,
+    106.60900000000001
+   ],
+   "sat": 36.0,
+   "palette": [
+    "#292128 (33%)",
+    "#133a7a (17%)",
+    "#6f23bf (16%)",
+    "#ebe9e7 (16%)",
+    "#978c88 (10%)",
+    "#e49703 (7%)"
+   ],
+   "range": [
+    "james-turrell-untitled-24",
+    "james-turrell-perfectly-clear-ganzfeld"
+   ],
+   "kin": [
+    "Claude Monet",
+    "Helen Frankenthaler",
+    "Edgar Degas"
+   ],
+   "prompt": "A study of the visual language shared across James Turrell's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #292128 (33%), #133a7a (17%), #6f23bf (16%), #ebe9e7 (16%), #978c88 (10%), #e49703 (7%). The surface is sparse, calm, much of it open; its strokes strongly share one direction, about 89 degrees from horizontal; a lot of bare ground left showing; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Claude Monet, Helen Frankenthaler, Edgar Degas, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": []
+  },
+  "Henri Cartier-Bresson": {
+   "works": 13,
+   "kind": "photographs",
+   "edges": 0.24339148116438356,
+   "coherence": 0.15967791146576313,
+   "angle": 83.40426934542084,
+   "bare": 0.24535845588235294,
+   "light": [
+    39.99999999999999,
+    220.21999999999997
+   ],
+   "sat": 2.0,
+   "palette": [
+    "#dedddb (21%)",
+    "#1d1d1e (19%)",
+    "#3d3b3b (16%)",
+    "#b9b7b6 (16%)",
+    "#666564 (15%)",
+    "#908f8e (13%)"
+   ],
+   "range": [
+    "henri-cartier-bresson-boston-commons-1",
+    "henri-cartier-bresson-gardens-of-the-palais-royal-paris-5"
+   ],
+   "kin": [
+    "Paul Caponigro",
+    "Peter Doig",
+    "Julian Schnabel"
+   ],
+   "prompt": "A study of the visual language shared across Henri Cartier-Bresson's saved photographs, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their photographs. Palette, in these proportions: #dedddb (21%), #1d1d1e (19%), #3d3b3b (16%), #b9b7b6 (16%), #666564 (15%), #908f8e (13%). The surface is dense, busy with marks; its marks lean loosely one way; the surface mostly covered; a wide range from deep darks to bright lights; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Paul Caponigro, Peter Doig, Julian Schnabel, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Jackson Pollock",
+    "Paul Caponigro",
+    "Peter Doig"
+   ]
+  },
+  "Jackson Pollock": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.4743430397727273,
+   "coherence": 0.07407866840092771,
+   "angle": 91.02160081723343,
+   "bare": 0.6159855769230769,
+   "light": [
+    33.98,
+    242.03
+   ],
+   "sat": 11.0,
+   "palette": [
+    "#f7f6f4 (30%)",
+    "#e8e1d0 (22%)",
+    "#cdbfb2 (14%)",
+    "#1c1b1c (14%)",
+    "#504d47 (10%)",
+    "#8e8a7e (10%)"
+   ],
+   "range": [
+    "jackson-pollock-untitled-1963",
+    "jackson-pollock-untitled-64"
+   ],
+   "kin": [
+    "Peter Doig",
+    "Julian Schnabel",
+    "Henri Cartier-Bresson"
+   ],
+   "prompt": "A study of the visual language shared across Jackson Pollock's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #f7f6f4 (30%), #e8e1d0 (22%), #cdbfb2 (14%), #1c1b1c (14%), #504d47 (10%), #8e8a7e (10%). The surface is dense, busy with marks; its marks run in many directions; a lot of bare ground left showing; a wide range from deep darks to bright lights; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Peter Doig, Julian Schnabel, Henri Cartier-Bresson, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": []
+  },
+  "Elaine de Kooning": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.17666266025641025,
+   "coherence": 0.19630018802936788,
+   "angle": 96.33930242197124,
+   "bare": 0.23729987684729065,
+   "light": [
+    79.343,
+    193.78
+   ],
+   "sat": 31.0,
+   "palette": [
+    "#a4a29f (21%)",
+    "#ded7cb (20%)",
+    "#717574 (19%)",
+    "#43423e (15%)",
+    "#c7a87e (14%)",
+    "#a17144 (12%)"
+   ],
+   "range": [
+    "elaine-de-kooning-veronica-3",
+    "elaine-de-kooning-barnett-newman-and-willem-de-kooning"
+   ],
+   "kin": [
+    "Childe Hassam",
+    "David Hockney",
+    "Graham Sutherland"
+   ],
+   "prompt": "A study of the visual language shared across Elaine de Kooning's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #a4a29f (21%), #ded7cb (20%), #717574 (19%), #43423e (15%), #c7a87e (14%), #a17144 (12%). The surface is moderately marked; its strokes strongly share one direction, about 96 degrees from horizontal; the surface mostly covered; a moderate range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Childe Hassam, David Hockney, Graham Sutherland, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Vincent van Gogh",
+    "David Hockney",
+    "Graham Sutherland",
+    "Edgar Degas",
+    "Stanley William Hayter",
+    "Childe Hassam"
+   ]
+  },
+  "Paul Caponigro": {
+   "works": 13,
+   "kind": "photographs",
+   "edges": 0.12534877232142858,
+   "coherence": 0.1577703945735579,
+   "angle": 95.76399432996202,
+   "bare": 0.3163170662100457,
+   "light": [
+    37.13999999999999,
+    197.74999999999997
+   ],
+   "sat": 5.0,
+   "palette": [
+    "#19191a (27%)",
+    "#d0ceca (20%)",
+    "#413f3f (20%)",
+    "#f0efed (13%)",
+    "#a5a4a0 (11%)",
+    "#706d6b (10%)"
+   ],
+   "range": [
+    "paul-caponigro-shoreline-montauk-point-long-island-ny",
+    "paul-caponigro-seaweed-and-sand-lynn-beach-ma"
+   ],
+   "kin": [
+    "Henri Cartier-Bresson",
+    "Andy Warhol",
+    "Georges Braque"
+   ],
+   "prompt": "A study of the visual language shared across Paul Caponigro's saved photographs, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their photographs. Palette, in these proportions: #19191a (27%), #d0ceca (20%), #413f3f (20%), #f0efed (13%), #a5a4a0 (11%), #706d6b (10%). The surface is moderately marked; its marks lean loosely one way; the surface mostly covered; a wide range from deep darks to bright lights; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Henri Cartier-Bresson, Andy Warhol, Georges Braque, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Henri Cartier-Bresson"
+   ]
+  },
+  "Andy Warhol": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.2003936767578125,
+   "coherence": 0.11290018631066216,
+   "angle": 92.82571692389675,
+   "bare": 0.41151315789473686,
+   "light": [
+    52.169000000000004,
+    228.99999999999997
+   ],
+   "sat": 14.0,
+   "palette": [
+    "#f0eee9 (28%)",
+    "#cdc9bd (24%)",
+    "#2a2320 (22%)",
+    "#ca7645 (11%)",
+    "#887d79 (8%)",
+    "#316386 (7%)"
+   ],
+   "range": [
+    "andy-warhol-sunset-see-f-and-s-85-88-1",
+    "andy-warhol-siberian-tiger-from-endangered-species-29"
+   ],
+   "kin": [
+    "Robert Rauschenberg",
+    "Pablo Picasso",
+    "Georges Braque"
+   ],
+   "prompt": "A study of the visual language shared across Andy Warhol's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #f0eee9 (28%), #cdc9bd (24%), #2a2320 (22%), #ca7645 (11%), #887d79 (8%), #316386 (7%). The surface is dense, busy with marks; its marks run in many directions; some bare ground left showing; a wide range from deep darks to bright lights; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Robert Rauschenberg, Pablo Picasso, Georges Braque, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Pablo Picasso",
+    "Paul Caponigro",
+    "Georges Braque",
+    "Robert Rauschenberg",
+    "Graham Sutherland",
+    "Julian Schnabel"
+   ]
+  },
+  "David Hockney": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.21286088197969544,
+   "coherence": 0.15650222461298424,
+   "angle": 91.32149297967744,
+   "bare": 0.3296518083756345,
+   "light": [
+    95.441,
+    229.92999999999998
+   ],
+   "sat": 50.0,
+   "palette": [
+    "#eae6dc (35%)",
+    "#44562e (17%)",
+    "#b2c3bf (16%)",
+    "#6a8a6e (13%)",
+    "#c2a359 (10%)",
+    "#d03931 (9%)"
+   ],
+   "range": [
+    "david-hockney-spilt-ink-with-tests-35",
+    "david-hockney-red-celia"
+   ],
+   "kin": [
+    "Elaine de Kooning",
+    "Robert Rauschenberg",
+    "Childe Hassam"
+   ],
+   "prompt": "A study of the visual language shared across David Hockney's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #eae6dc (35%), #44562e (17%), #b2c3bf (16%), #6a8a6e (13%), #c2a359 (10%), #d03931 (9%). The surface is dense, busy with marks; its marks lean loosely one way; the surface mostly covered; a moderate range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Elaine de Kooning, Robert Rauschenberg, Childe Hassam, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Elaine de Kooning",
+    "Stanley William Hayter"
+   ]
+  },
+  "Georges Braque": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.13958938953488373,
+   "coherence": 0.19024033983092453,
+   "angle": 94.64165471035736,
+   "bare": 0.44599817154255317,
+   "light": [
+    54.992000000000004,
+    229.36999999999998
+   ],
+   "sat": 15.0,
+   "palette": [
+    "#dad6cb (34%)",
+    "#b6b2a4 (22%)",
+    "#26221c (16%)",
+    "#625e56 (12%)",
+    "#f6f5ef (11%)",
+    "#cda50b (6%)"
+   ],
+   "range": [
+    "georges-braque-boreade-3",
+    "georges-braque-giroflee-bleue-lettera-amorosa"
+   ],
+   "kin": [
+    "Andy Warhol",
+    "Salvador Dalí",
+    "Pablo Picasso"
+   ],
+   "prompt": "A study of the visual language shared across Georges Braque's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #dad6cb (34%), #b6b2a4 (22%), #26221c (16%), #625e56 (12%), #f6f5ef (11%), #cda50b (6%). The surface is moderately marked; its strokes strongly share one direction, about 94 degrees from horizontal; some bare ground left showing; a wide range from deep darks to bright lights; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Andy Warhol, Salvador Dalí, Pablo Picasso, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Paul Cézanne",
+    "Salvador Dalí",
+    "Paul Caponigro",
+    "Andy Warhol"
+   ]
+  },
+  "J. M. W. Turner": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.05738146551724138,
+   "coherence": 0.12808247245839785,
+   "angle": 44.67025732145228,
+   "bare": 0.3376806115591398,
+   "light": [
+    84.494,
+    210.64
+   ],
+   "sat": 29.0,
+   "palette": [
+    "#dfd9ca (24%)",
+    "#9d9883 (19%)",
+    "#827055 (16%)",
+    "#bbbcac (15%)",
+    "#ccb386 (13%)",
+    "#4f3e2d (13%)"
+   ],
+   "range": [
+    "jmw-turner-ancient-rome-agrippina-landing-with-the-ashes-of-germanicus-1",
+    "jmw-turner-a-packet-boat-off-dover"
+   ],
+   "kin": [
+    "Anish Kapoor",
+    "Giorgio Morandi",
+    "Claude Monet"
+   ],
+   "prompt": "A study of the visual language shared across J. M. W. Turner's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #dfd9ca (24%), #9d9883 (19%), #827055 (16%), #bbbcac (15%), #ccb386 (13%), #4f3e2d (13%). The surface is sparse, calm, much of it open; its marks lean loosely one way; some bare ground left showing; a moderate range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Anish Kapoor, Giorgio Morandi, Claude Monet, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Giorgio Morandi",
+    "Anish Kapoor"
+   ]
+  },
+  "Anish Kapoor": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.05684763824884793,
+   "coherence": 0.156390096576783,
+   "angle": 78.68425062961909,
+   "bare": 0.4127029718137255,
+   "light": [
+    54.959999999999994,
+    237.98999999999998
+   ],
+   "sat": 10.0,
+   "palette": [
+    "#ebebea (45%)",
+    "#4b2525 (23%)",
+    "#bbb3b0 (14%)",
+    "#f1ab19 (8%)",
+    "#2e396a (7%)",
+    "#2894cc (3%)"
+   ],
+   "range": [
+    "anish-kapoor-yellow-rising-1",
+    "anish-kapoor-untitled-2525"
+   ],
+   "kin": [
+    "J. M. W. Turner",
+    "Helen Frankenthaler",
+    "Claude Monet"
+   ],
+   "prompt": "A study of the visual language shared across Anish Kapoor's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #ebebea (45%), #4b2525 (23%), #bbb3b0 (14%), #f1ab19 (8%), #2e396a (7%), #2894cc (3%). The surface is sparse, calm, much of it open; its marks lean loosely one way; some bare ground left showing; a wide range from deep darks to bright lights; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside J. M. W. Turner, Helen Frankenthaler, Claude Monet, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Helen Frankenthaler",
+    "J. M. W. Turner"
+   ]
+  },
+  "Richard Diebenkorn": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.14153922872340424,
+   "coherence": 0.2603839811413167,
+   "angle": 89.28802017122366,
+   "bare": 0.5817372311827957,
+   "light": [
+    161.71,
+    239.04999999999998
+   ],
+   "sat": 12.0,
+   "palette": [
+    "#f0eee6 (47%)",
+    "#ded7c9 (20%)",
+    "#b2ada4 (13%)",
+    "#343331 (9%)",
+    "#a87164 (8%)",
+    "#fefefe (3%)"
+   ],
+   "range": [
+    "richard-diebenkorn-scrabbling-5",
+    "richard-diebenkorn-small-thin-4"
+   ],
+   "kin": [
+    "Cy Twombly",
+    "Salvador Dalí",
+    "Paul Cézanne"
+   ],
+   "prompt": "A study of the visual language shared across Richard Diebenkorn's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #f0eee6 (47%), #ded7c9 (20%), #b2ada4 (13%), #343331 (9%), #a87164 (8%), #fefefe (3%). The surface is moderately marked; its strokes strongly share one direction, about 89 degrees from horizontal; a lot of bare ground left showing; a narrow, even range of light; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Cy Twombly, Salvador Dalí, Paul Cézanne, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Cy Twombly",
+    "Alberto Giacometti"
+   ]
+  },
+  "Robert Rauschenberg": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.20958144430051814,
+   "coherence": 0.15670457726501272,
+   "angle": 85.61832922750364,
+   "bare": 0.3491131756756757,
+   "light": [
+    94.73700000000001,
+    242.59
+   ],
+   "sat": 13.0,
+   "palette": [
+    "#e5decf (31%)",
+    "#f7f7f7 (19%)",
+    "#c2b29b (18%)",
+    "#3e3a39 (13%)",
+    "#857b71 (13%)",
+    "#a53a33 (6%)"
+   ],
+   "range": [
+    "robert-rauschenberg-octave",
+    "robert-rauschenberg-10000-and-rising-from-la-flakes-1"
+   ],
+   "kin": [
+    "Pablo Picasso",
+    "Andy Warhol",
+    "Julian Schnabel"
+   ],
+   "prompt": "A study of the visual language shared across Robert Rauschenberg's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e5decf (31%), #f7f7f7 (19%), #c2b29b (18%), #3e3a39 (13%), #857b71 (13%), #a53a33 (6%). The surface is dense, busy with marks; its marks lean loosely one way; some bare ground left showing; a moderate range of light; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Pablo Picasso, Andy Warhol, Julian Schnabel, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Pablo Picasso",
+    "Willem de Kooning",
+    "Andy Warhol",
+    "David Hockney",
+    "Julian Schnabel",
+    "Childe Hassam"
+   ]
+  },
+  "Peter Doig": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.27022660340314136,
+   "coherence": 0.15230467714491083,
+   "angle": 71.9957303102541,
+   "bare": 0.31604497832369943,
+   "light": [
+    80.08900000000001,
+    225.95999999999998
+   ],
+   "sat": 9.0,
+   "palette": [
+    "#383835 (18%)",
+    "#ddd7d0 (18%)",
+    "#f4f3f1 (18%)",
+    "#998a82 (16%)",
+    "#6c6359 (15%)",
+    "#b9afa8 (15%)"
+   ],
+   "range": [
+    "peter-doig-muldenberg-11",
+    "peter-doig-adk-hammock"
+   ],
+   "kin": [
+    "Julian Schnabel",
+    "Henri Cartier-Bresson",
+    "Stanley William Hayter"
+   ],
+   "prompt": "A study of the visual language shared across Peter Doig's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #383835 (18%), #ddd7d0 (18%), #f4f3f1 (18%), #998a82 (16%), #6c6359 (15%), #b9afa8 (15%). The surface is dense, busy with marks; its marks lean loosely one way; the surface mostly covered; a moderate range of light; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Julian Schnabel, Henri Cartier-Bresson, Stanley William Hayter, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Henri Cartier-Bresson",
+    "Jackson Pollock",
+    "Julian Schnabel",
+    "Stanley William Hayter"
+   ]
+  },
+  "Graham Sutherland": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.18951822916666666,
+   "coherence": 0.0995517585902202,
+   "angle": 32.07015841423386,
+   "bare": 0.35666787790697674,
+   "light": [
+    49.730000000000004,
+    213.32000000000002
+   ],
+   "sat": 21.0,
+   "palette": [
+    "#2f2d27 (32%)",
+    "#e5ddcc (24%)",
+    "#aea68c (18%)",
+    "#6a6754 (14%)",
+    "#c6993c (9%)",
+    "#df2107 (2%)"
+   ],
+   "range": [
+    "graham-sutherland-flames-in-a-rock-form-ii",
+    "graham-sutherland-thorn-cross-tassi-66"
+   ],
+   "kin": [
+    "Elaine de Kooning",
+    "Julian Schnabel",
+    "Andy Warhol"
+   ],
+   "prompt": "A study of the visual language shared across Graham Sutherland's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #2f2d27 (32%), #e5ddcc (24%), #aea68c (18%), #6a6754 (14%), #c6993c (9%), #df2107 (2%). The surface is dense, busy with marks; its marks run in many directions; some bare ground left showing; a wide range from deep darks to bright lights; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Elaine de Kooning, Julian Schnabel, Andy Warhol, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Vincent van Gogh",
+    "Elaine de Kooning"
+   ]
+  },
+  "Brice Marden": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.12763444767441862,
+   "coherence": 0.09344195649180946,
+   "angle": 85.70609399296963,
+   "bare": 0.6511688232421875,
+   "light": [
+    115.86,
+    232.16
+   ],
+   "sat": 11.0,
+   "palette": [
+    "#e2e0da (33%)",
+    "#f3f2ef (23%)",
+    "#beb19a (15%)",
+    "#dad1be (12%)",
+    "#6e6b60 (10%)",
+    "#272521 (7%)"
+   ],
+   "range": [
+    "brice-marden-etching-for-rexroth-14",
+    "brice-marden-green-study"
+   ],
+   "kin": [
+    "Willem de Kooning",
+    "Salvador Dalí",
+    "Henri Matisse"
+   ],
+   "prompt": "A study of the visual language shared across Brice Marden's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e2e0da (33%), #f3f2ef (23%), #beb19a (15%), #dad1be (12%), #6e6b60 (10%), #272521 (7%). The surface is moderately marked; its marks run in many directions; a lot of bare ground left showing; a moderate range of light; muted colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Willem de Kooning, Salvador Dalí, Henri Matisse, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Willem de Kooning",
+    "Salvador Dalí",
+    "Henri Matisse"
+   ]
+  },
+  "Edgar Degas": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.11983746859296482,
+   "coherence": 0.18279144761693514,
+   "angle": 88.78742434021468,
+   "bare": 0.25028019514767935,
+   "light": [
+    50.88999999999999,
+    155.51
+   ],
+   "sat": 40.0,
+   "palette": [
+    "#564a36 (22%)",
+    "#8f7042 (19%)",
+    "#a19778 (17%)",
+    "#33281d (16%)",
+    "#6c6f5d (14%)",
+    "#d8c9af (13%)"
+   ],
+   "range": [
+    "edgar-degas-dancers",
+    "edgar-degas-nude-woman-standing-drying-herself-femme-nue-debout-a-sa-toilette"
+   ],
+   "kin": [
+    "Vincent van Gogh",
+    "Claude Monet",
+    "Elaine de Kooning"
+   ],
+   "prompt": "A study of the visual language shared across Edgar Degas's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #564a36 (22%), #8f7042 (19%), #a19778 (17%), #33281d (16%), #6c6f5d (14%), #d8c9af (13%). The surface is moderately marked; its marks lean loosely one way; the surface mostly covered; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Vincent van Gogh, Claude Monet, Elaine de Kooning, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Vincent van Gogh",
+    "Claude Monet",
+    "James Turrell"
+   ]
+  },
+  "Julian Schnabel": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.2401027036516854,
+   "coherence": 0.11686193505828686,
+   "angle": 113.52213557293743,
+   "bare": 0.38732192095588236,
+   "light": [
+    61.209,
+    227.0
+   ],
+   "sat": 26.0,
+   "palette": [
+    "#ece6de (34%)",
+    "#c8bdb0 (22%)",
+    "#39332f (13%)",
+    "#80715b (12%)",
+    "#bf9978 (12%)",
+    "#7c3625 (7%)"
+   ],
+   "range": [
+    "julian-schnabel-untitled-richard-cooper",
+    "julian-schnabel-untitled-2088"
+   ],
+   "kin": [
+    "Robert Rauschenberg",
+    "Andy Warhol",
+    "Peter Doig"
+   ],
+   "prompt": "A study of the visual language shared across Julian Schnabel's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #ece6de (34%), #c8bdb0 (22%), #39332f (13%), #80715b (12%), #bf9978 (12%), #7c3625 (7%). The surface is dense, busy with marks; its marks run in many directions; some bare ground left showing; a wide range from deep darks to bright lights; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Robert Rauschenberg, Andy Warhol, Peter Doig, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Henri Cartier-Bresson",
+    "Jackson Pollock",
+    "Robert Rauschenberg",
+    "Peter Doig",
+    "Graham Sutherland"
+   ]
+  },
+  "Stanley William Hayter": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.25907076322115385,
+   "coherence": 0.2739978950613868,
+   "angle": 90.70126563854855,
+   "bare": 0.26803828534031415,
+   "light": [
+    87.35,
+    220.48
+   ],
+   "sat": 27.0,
+   "palette": [
+    "#e2dacd (30%)",
+    "#72635c (26%)",
+    "#332f2c (15%)",
+    "#5d9590 (12%)",
+    "#b79993 (12%)",
+    "#d8bb55 (5%)"
+   ],
+   "range": [
+    "stanley-william-hayter-allegro-from-the-peace-portfolio",
+    "stanley-william-hayter-before-the-curtain-for-emma-agee-ling"
+   ],
+   "kin": [
+    "Peter Doig",
+    "Elaine de Kooning",
+    "David Hockney"
+   ],
+   "prompt": "A study of the visual language shared across Stanley William Hayter's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #e2dacd (30%), #72635c (26%), #332f2c (15%), #5d9590 (12%), #b79993 (12%), #d8bb55 (5%). The surface is dense, busy with marks; its strokes strongly share one direction, about 90 degrees from horizontal; the surface mostly covered; a moderate range of light; moderately saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Peter Doig, Elaine de Kooning, David Hockney, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Peter Doig"
+   ]
+  },
+  "Childe Hassam": {
+   "works": 13,
+   "kind": "works",
+   "edges": 0.11837026892430279,
+   "coherence": 0.18161508915112068,
+   "angle": 104.2861520044826,
+   "bare": 0.274417953187251,
+   "light": [
+    108.09,
+    206.85999999999999
+   ],
+   "sat": 29.0,
+   "palette": [
+    "#cfc0a7 (23%)",
+    "#a5a696 (22%)",
+    "#727b6f (18%)",
+    "#a18b6d (17%)",
+    "#e8e0ca (10%)",
+    "#534f40 (9%)"
+   ],
+   "range": [
+    "childe-hassam-washingtons-home-mt-vernon",
+    "childe-hassam-washingtons-birthday-fifth-avenue-and-23rd-street-cortissoz-slash-clayton-210"
+   ],
+   "kin": [
+    "Elaine de Kooning",
+    "Helen Frankenthaler",
+    "Robert Rauschenberg"
+   ],
+   "prompt": "A study of the visual language shared across Childe Hassam's saved works, not a copy of any one of them and not their most famous image: a continuous field, filling the frame, that could be any part of any of their works. Palette, in these proportions: #cfc0a7 (23%), #a5a696 (22%), #727b6f (18%), #a18b6d (17%), #e8e0ca (10%), #534f40 (9%). The surface is sparse, calm, much of it open; its marks lean loosely one way; the surface mostly covered; a narrow, even range of light; saturated colour. Show the characteristic mark itself (the stroke, line, edge or plane) sharply, at a scale where its texture reads, and the way marks meet and overlap. It should also sit well beside Elaine de Kooning, Helen Frankenthaler, Robert Rauschenberg, whose works share much of this grammar. Seen flat and straight on, no frame, no text, no signature.",
+   "reach": [
+    "Paul Cézanne",
+    "Claude Monet",
+    "Helen Frankenthaler",
+    "Elaine de Kooning",
+    "David Hockney"
+   ]
+  }
+ }
+}

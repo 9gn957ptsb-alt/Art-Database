@@ -3,6 +3,8 @@ __pycache__/
 .DS_Store
 build/
 data/
+dirt/private/
+dirt/earth/cache/
 
 # Screenshots from browser checks. They are written next to whatever the
 # test was run from; they are never part of the site.
