@@ -1896,6 +1896,9 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
+/* Over Google's view, the link sits clear of its logo and credits along the
+   bottom edge, which have to stay visible. */
+.building[data-air="up"] .building-link { bottom: calc(var(--s-5) + 40px); }
 .building-link:hover,
 .building-link:focus-visible { background: rgba(94, 82, 199, 0.9); }
 .building[data-air="none"] .building-link,
