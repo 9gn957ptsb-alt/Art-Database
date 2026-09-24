@@ -123,21 +123,23 @@
  "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura": {
   "name": "Escala Humana Wines Winery",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: removed the unphotographed basin (vines in its place), vine stems lowered to their photographed height"
   ]
  },
  "the-da-vinci-of-architecture-frank-gehry-19292025": {
   "name": "Frank Gehry 1929–2025",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": true,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 built in SketchUp: steel petals as curved sheets"
+   "2026-09-24 built in SketchUp: steel petals as curved sheets",
+   "2026-09-24 refined: garden trees lifted onto a planted podium garden with the Rose for Lilly fountain, streets round the podium, street trees clear of the entrance corner (meshes untouched)"
   ]
  },
  "music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera": {
@@ -898,6 +900,116 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside."
+  ]
+ },
+ "museum-museo-nacional-del-prado": {
+  "name": "Museo del Prado",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Villanueva's 190 m brick-and-stone range with the Velázquez portico, Goya loggia and Murillo portico, the central gallery skylight, the rotunda; Moneo's brick cube and box-garden roof; San Jerónimo el Real; the Paseo's trees and the Botanical Garden"
+  ]
+ },
+ "museum-jean-paul-najar-foundation": {
+  "name": "Jean-Paul Najar Foundation",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: a plain white two-level box with recessed entrance, window bands and roof light among Alserkal Avenue's low warehouse sheds (guessed; no footprint in the ground)"
+  ]
+ },
+ "museum-saint-louis-art-museum": {
+  "name": "Saint Louis Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Gilbert's limestone Palace of Fine Arts at its true angle on Art Hill, skylit wings, the vaulted Sculpture Hall, the arched and columned front with the St. Louis statue, and Chipperfield's dark coffered East Building"
+  ]
+ },
+ "museum-m-woods": {
+  "name": "M WOODS",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: grey-brick former munitions factory with steel windows and roof lantern, Vector Architects steel-mesh veil over the forecourt, a 798 sawtooth hall across the lane"
+  ]
+ },
+ "museum-dia-art-foundation": {
+  "name": "Dia Chelsea",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: three brick industrial buildings on West 22nd Street with skylit galleries and steel windows, Beuys 7000 Oaks trees and basalt columns on the sidewalk, turned to the Manhattan grid"
+  ]
+ },
+ "museum-the-studio-museum-in-harlem": {
+  "name": "Studio Museum in Harlem",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Adjaye's stacked dark precast volumes shifting over West 125th Street, the double-height street window, varied windows, roof terrace with the black pyramid, between walk-ups"
+  ]
+ },
+ "museum-victoria-and-albert-museum-v-and-a": {
+  "name": "V&A",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model (coarse, whole complex): Webb's brick-and-stone Cromwell Road front with the crowned tower, brick ranges round glass-roofed courts, the Madejski Garden pool, the Exhibition Road screen"
+  ]
+ },
+ "museum-musee-du-petit-palais": {
+  "name": "Petit Palais (Avignon)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Palais des Archevêques — limestone ranges round a courtyard under terracotta roofs, crenellated south front on the Place du Palais with cross windows, corner tower"
+  ]
+ },
+ "museum-museum-folkwang": {
+  "name": "Museum Folkwang",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Chipperfield's milky-glass cubes round courts with the steps from Bismarckstraße, the low 1960 building to the south, one stone plinth"
+  ]
+ },
+ "museum-frye-art-museum": {
+  "name": "Frye Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: low pale galleries with skylight monitors on Seattle's turned grid, the rotunda lobby, reflecting pool and column arcade on Terry Ave, the courtyard café."
+  ]
+ },
+ "museum-albright-knox-art-gallery": {
+  "name": "Albright-Knox (Buffalo AKG)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner."
   ]
  }
 }

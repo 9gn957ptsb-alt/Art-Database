@@ -6,6 +6,18 @@
   "ground": "paving",
   "sketchup": "scripts/sketchup/walt_disney_concert_hall.py",
   "parts": [
+    {"box": [-56, 44, 0, 112, 6, 0.2], "m": "dark"},
+    {"box": [-56, -50, 0, 112, 6, 0.2], "m": "dark"},
+    {"box": [-56, -50, 0, 4, 100, 0.2], "m": "dark"},
+    {"box": [-56, 46.8, 0.2, 112, 0.4, 0.05], "m": "white"},
+    {"box": [-56, -47.2, 0.2, 112, 0.4, 0.05], "m": "white"},
+    {"tree": [-46, 42, 9, 2.4]},
+    {"tree": [-34, 42, 9, 2.4]},
+    {"tree": [-22, 42, 9, 2.4]},
+    {"tree": [-10, 42, 9, 2.4]},
+    {"tree": [2, 42, 9, 2.4]},
+    {"tree": [14, 42, 9, 2.4]},
+    {"tree": [26, 42, 9, 2.4]},
     {"box": [30, -40, 6, 20, 48, 0.9], "m": "soil"},
     {"box": [30, -40, 6.9, 20, 48, 0.1], "m": "grass"},
     {"box": [30.5, -39.5, 6, 19, 0.6, 1.5], "m": "stone"},
@@ -27,5 +39,5 @@
     {"blob": [48, -30, 7.4, 1.6, 1.3, 0.9], "m": "plant"},
     {"blob": [44, 5, 7.4, 1.6, 1.3, 0.9], "m": "plant"}
   ],
-  "notes": "Modelled in SketchUp (24 Sep 2026) and read back as meshes: the stainless-steel sails as closed curved sheets, each an arc in plan rising and curling outward at the top (cubic flare), their top edges tilting and bowing; ten petals round a low steel roof over the hall, the lower three curling out over the glass lobby at the entrance corner, and the drum as a petal curled into a ring. On a limestone podium with the stair on its east side. From the article's one exterior (the entrance corner at dusk) and general knowledge of the building; the plan, the backs of the sails and all heights (tallest ~46 m) are estimates, and the entrance corner is faced south-east rather than to the real street grid. Garden trees kept from the first version."
+  "notes": "Modelled in SketchUp (24 Sep 2026) and read back as meshes: the stainless-steel sails as closed curved sheets, each an arc in plan rising and curling outward at the top (cubic flare), their top edges tilting and bowing; ten petals round a low steel roof over the hall, the lower three curling out over the glass lobby at the entrance corner, and the drum as a petal curled into a ring. On a limestone podium with the stair on its east side. From the article's one exterior (the entrance corner at dusk) and general knowledge of the building; the plan, the backs of the sails and all heights (tallest ~46 m) are estimates, and the entrance corner is faced south-east rather than to the real street grid. Garden trees kept from the first version. Refined 24 Sep 2026 (three rounds; the SketchUp meshes untouched, only what is round them): the garden trees had stood at street level inside the 6 m podium, so only their crowns showed through the stone; they now stand in a planted garden on the podium top (the real hall's garden is up on its podium) - a soil bed with lawn, a low stone parapet, shrubs and a white blob for the tiled 'Rose for Lilly' fountain - drawn before the meshes so the sails always win; streets round the podium (asphalt with a white lane line) on the front, back and side, with a row of street trees along the front that stops short of the entrance corner, which photo 01 shows open. The garden's position follows the model's rotated plan, not the real one (on the real site it lies to the south-west)."
 }
