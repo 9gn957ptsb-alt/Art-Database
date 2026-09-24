@@ -30,3 +30,11 @@ redirects to Trimble's S3 bucket; fetch it with redirects followed:
     curl -sSL -o sketchup/<name>.skp '<download_url>'
 
 (`api.sketchup.com` is allowed under the environment's Network access.)
+
+**Storage.** Git keeps every version of a binary for good, so a `.skp` is
+re-committed only when a building's form really changes — not on every small
+refinement. The build script is the source of truth and regenerates the
+file exactly. (The artist decided, 24 Sep 2026, not to copy `.skp` files into
+his Obsidian vault: uploading through the Drive connector costs too much
+usage per file.)
+
