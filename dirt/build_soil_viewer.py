@@ -1927,6 +1927,7 @@ function frame(now) {
   tend(list);
   cx.globalAlpha = 1;
   const anomOn = anomalyNow(now);
+  govern(now);
   if (GLG) { GLG.draw(now); cx.clearRect(0, 0, cv.width, cv.height); }   // the ground is painted under this canvas
   else { cx.fillStyle = `rgb(${GROUND})`; cx.fillRect(0, 0, cv.width, cv.height); }
   cx.imageSmoothingEnabled = false;
@@ -1961,6 +1962,40 @@ function frame(now) {
     cx.save(); cx.globalCompositeOperation = "destination-out"; cx.fillStyle = `rgba(0,0,0,${anomOn})`; cx.fillRect(0, 0, cv.width, cv.height); cx.restore();
   }
   tick++;
+}
+
+// ---- how much this device can draw ------------------------------------------------------------------------------
+// The plane shows as much as the device it runs on can draw smoothly. Four levels:
+//   3  everything: the meta forms' light, the singularities, the seams, and every edge as a grey gradient
+//   2  all but the grey-gradient edges (the costliest single pass)
+//   1  all but the meta forms' light too
+//   0  the worlds, the ladder of complexity, the life and the weather: no seams between worlds, no singularities
+// It begins from a guess (the device's cores and memory, and whether it is a phone), then watches the frames: slower
+// than about 42 a second for a second and a half, it draws less; faster than 75 for eight seconds, it tries more,
+// and after a step down it does not try that level again for a minute, so it never flickers between two. #tier0 to
+// #tier3 holds a level.
+const TIER = (() => {
+  const m = /(?:^|&)tier([0-3])(?:&|$)/.exec(location.hash.slice(1));
+  const phone = /iPhone|iPad|Android|Mobile/.test(navigator.userAgent);
+  const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 8;
+  const guess = phone ? 2 : cores >= 8 && mem >= 8 ? 3 : cores >= 4 ? 2 : 1;
+  return { n: m ? +m[1] : guess, held: !!m, last: 0, dts: [], at: 0, noUp: {} };
+})();
+function govern(now) {
+  if (!GLG || !GLG.setTier) return;
+  GLG.setTier(TIER.n);
+  const dt = now - (TIER.last || now);
+  TIER.last = now;
+  if (TIER.held || dt <= 0 || dt > 1500 || document.hidden) return;      // a tab away is not slowness
+  TIER.dts.push(dt);
+  if (TIER.dts.length < 45 || now - TIER.at < 1500) return;
+  const sorted = TIER.dts.slice().sort((a, b) => a - b), med = sorted[sorted.length >> 1];
+  if (med > 24 && TIER.n > 0) {
+    TIER.noUp[TIER.n] = now + 60000;                                     // this level was too much: not again for a minute
+    TIER.n--; TIER.at = now; TIER.dts = [];
+  } else if (med < 13.3 && TIER.n < 3 && TIER.dts.length >= 480 && !(TIER.noUp[TIER.n + 1] > now)) {
+    TIER.n++; TIER.at = now; TIER.dts = [];
+  } else if (TIER.dts.length > 600) TIER.dts.splice(0, 120);
 }
 
 // ---- anomalies (ground-gl.js draws them) -------------------------------------------------------------------------

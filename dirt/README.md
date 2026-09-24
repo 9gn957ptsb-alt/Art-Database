@@ -266,6 +266,13 @@ pixel, coarse at the core and finer outward, in colours born of the core's own c
 golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
 rings interfering, or a crystal of hexagons whose faces turn with the light.
 
+**As much as the device can draw.** DRIFT shows as much as the device it runs on can draw smoothly, at four levels:
+3, everything (the meta forms' light, the singularities, the seams between worlds, every edge a grey gradient); 2, all
+but the grey-gradient edges; 1, all but the meta forms' light too; 0, the worlds, the ladder of complexity, the life
+and the weather. It starts from a guess (cores, memory, phone or not), then watches the frame rate: slower than about 42
+frames a second it draws less, comfortably faster than 75 for eight seconds it tries more, and it does not retry a level
+it had to leave for a minute, so it never flickers between two. `#tier0` to `#tier3` holds a level.
+
 **The drift.** Put a thing into the plane: name it in the bar, or give it a photo (picked, pasted, or dropped on the
 plane). Claude reads it for its qualities (colour, surface, shape, motion, sound, scale, material, place, time, use,
 meaning) and finds seven real, specific things, each joined to the one before by one quality they share, never of the

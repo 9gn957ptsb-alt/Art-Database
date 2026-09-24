@@ -82,6 +82,7 @@ uniform int uArtOn, uForce;
 uniform sampler2D uWorks;           // the collection: per painting its artist and year, then its three colours
 uniform vec4 uAnom;                 // an anomaly: the view's middle (cells), how far it has come (0: none), which
 uniform vec2 uHalf;                 // half the view, in cells
+uniform int uTier;                  // how much this device can draw smoothly: 3 everything, 0 the least (see the page)
 uniform sampler2D uRoster;          // the roster (dirt/artists/roster.json): 6 texels an artist, sorted by rung
 uniform int uRAt[5];                // where each rung's artists begin on it
 float gCov = 0.0;                   // the marks the last sheet painted here, and in what colour
@@ -1967,7 +1968,7 @@ void main() {
       }
     }
   }
-  if (art && uHold < 0.5 && cx > 0.6) {
+  if (art && uHold < 0.5 && cx > 0.6 && uTier >= 1) {
     sg = singAt(cellP);
     if (sg.on && complexityAt(sg.C) < 0.6) sg.on = false;
     if (sg.on) {
@@ -2007,7 +2008,7 @@ void main() {
   }
   // The cell's passage, and where it lies near an edge, the passage beyond: one evaluation in a loop of one or two, so
   // the shader holds a single copy of it.
-  bool seam = art && !emerge && c.eb != c.e && c.pe < 0.62;
+  bool seam = art && !emerge && c.eb != c.e && c.pe < 0.62 && uTier >= 1;
   vec3 A = vec3(0), B = vec3(0), Ab = vec3(0), Bb = vec3(0), mk0 = vec3(0), mk1 = vec3(0);
   int kind, kb, g0 = 0, g1 = 0;
   float cov0 = 0.0, cov1 = 0.0;
@@ -2015,7 +2016,7 @@ void main() {
   State Sd, Sb;
   int sides = emerge ? 0 : seam ? 2 : 1;
   // the meta forms' value here, and how near their outline
-  bool shaded = art && uForce < 0 && !emerge;
+  bool shaded = art && uForce < 0 && !emerge && uTier >= 2;
   float metaG = 0.5, metaA = 0.0, metaM = shaded ? metaAt(vec2(cell) + 0.5, uTime, metaG, metaA) : 0.5;
   for (int side = 0; side < sides; side++) {
     Cell cc = c;
@@ -2248,7 +2249,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
@@ -2369,6 +2370,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform1f(U.uTurnAt, turnAt);
     gl.uniform2f(U.uTurnO, turnO[0], turnO[1]);
     gl.uniform4fv(U.uAnom, anom);
+    gl.uniform1i(U.uTier, tier);
     gl.uniform2f(U.uHalf, cw / 2, ch / 2);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2377,11 +2379,14 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform2i(V.uOff, ox, oy);
     gl.uniform2i(V.uCell0, cx0, cy0);
     gl.uniform1i(V.uH, H);
-    gl.uniform1i(V.uEdge, edgeOn && !earth ? 1 : 0);
+    gl.uniform1i(V.uEdge, edgeOn && !earth && tier >= 3 ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   /** An anomaly (see the shader): [the view's middle x, y in cells, how far it has come 0 to 1 (0: none), which]. */
   const anom = new Float32Array(4);
   const anomaly = (v) => anom.set(v);
-  return { draw, anomaly, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
+  let tier = 3;
+  const setTier = (n) => { tier = n; };
+  return { draw, anomaly, setTier, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }
