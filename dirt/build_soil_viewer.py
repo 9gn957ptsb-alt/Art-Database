@@ -1954,7 +1954,53 @@ function frame(now) {
     trailCtx.putImageData(trailImg, 0, 0);
     cx.drawImage(trailCv, Math.round((tox - vx) * R), Math.round((toy - vy) * R), TW * R, TH * R);
   }
+  if (LADDER && (typeof MODE === "undefined" || MODE === "plane")) quieten();
   tick++;
+}
+
+// ---- the ladder of complexity, for the life over the ground ----------------------------------------------------
+// The ground's complexity (ground-gl.js) worked out here the same way, so that where the plane is simple its life
+// is too: fewer creatures and flocks the lower it is, and in a void's heart none at all, only the one pixel.
+const LADDER = !!GLG && !!ART && !/(?:^|&)g[0-9]+(?:&|$)/.test(location.hash.slice(1));
+const unitH = (h) => (h >>> 8) / 16777216;
+function voidNear(x, y) {
+  const G = 1597, i0 = Math.floor(x / G), j0 = Math.floor(y / G);
+  let best = null, bd = Infinity;
+  for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
+    const h = h3(i, j, 2584);
+    if (unitH(h) > 1 / PHI) continue;
+    const cx0 = (i + 0.5 + (unitH(mix((h + 1) >>> 0)) - 0.5) * PHI ** -2) * G, cy0 = (j + 0.5 + (unitH(mix((h + 2) >>> 0)) - 0.5) * PHI ** -2) * G;
+    const d = Math.hypot(x - cx0, y - cy0);
+    if (d < bd) { bd = d; best = { x: cx0, y: cy0, d, R: 233 + 377 * unitH(mix((h + 3) >>> 0)) }; }
+  }
+  return best;
+}
+function complexityJS(x, y) {
+  const n = 0.62 * vnoise(x, y, 987, 3001) + 0.38 * vnoise(x, y, 377, 3002);
+  let b = smooth(0.2, 0.8, n);
+  const v = voidNear(x, y);
+  if (v) b *= smooth(v.R, v.R + 377, v.d);
+  return b;
+}
+const QG = 8, quietCv = document.createElement("canvas"), quietCtx = quietCv.getContext("2d");
+let quietAt = "";
+function quieten() {
+  const gx = Math.floor(vx / QG) - 1, gy = Math.floor(vy / QG) - 1, w = Math.ceil(VW / QG) + 3, h = Math.ceil(VH / QG) + 3, key = `${gx},${gy},${w},${h}`;
+  if (key !== quietAt) {
+    quietAt = key;
+    quietCv.width = w; quietCv.height = h;
+    const img = quietCtx.createImageData(w, h);
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const c = complexityJS((gx + i + 0.5) * QG, (gy + j + 0.5) * QG);
+      img.data[(j * w + i) * 4 + 3] = Math.round(255 * (1 - smooth(0.4, 0.62, c)));   // none on the minimal rungs, all once the worlds are full
+    }
+    quietCtx.putImageData(img, 0, 0);
+  }
+  cx.save();
+  cx.globalCompositeOperation = "destination-out";
+  cx.imageSmoothingEnabled = true;
+  cx.drawImage(quietCv, (gx * QG - vx) * R, (gy * QG - vy) * R, w * QG * R, h * QG * R);
+  cx.restore();
 }
 requestAnimationFrame(frame);
 

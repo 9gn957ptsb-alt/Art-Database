@@ -266,6 +266,32 @@ pixel, coarse at the core and finer outward, in colours born of the core's own c
 golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
 rings interfering, or a crystal of hexagons whose faces turn with the light.
 
+**The ladder of complexity.** The plane is DIRT at the full reach of its language, and that reach runs from nothing to
+everything. Over the plane lies a field of complexity, 0 to 1, rising and falling across two or three screens, so a few
+swipes cross the whole ladder:
+
+| rung | complexity | what is there |
+|---|---|---|
+| void | 0 | a field of Reinhardt's black or Ryman's white, bigger than a screen (233 to 610 cells across its heart, one in each 1,597-cell square, φ⁻¹ of them kept), no life at all, and at its middle one pixel |
+| point and line | to 0.16 | Reinhardt's cross of blacks, Ryman's white on white, Sugimoto's horizon, McCall's line of light drawing a circle, Giacometti's one figure, Newman's zip |
+| plane | to 0.28 | Rothko's stacked fields, Kelly's one shape, Irwin's disc, Larry Bell's cube, Kline's strokes, Kandinsky's point, line and triangle |
+| structure | to 0.40 | Albers's squares, Agnes Martin's grid, LeWitt's four directions, Mondrian, Miró's constellation, Morandi's bottles |
+| repetition | to 0.50 | Gerstner's rings, Riley's waves, Kusama's dots, Judd's stack |
+| simplified | to 0.75 | the worlds, drawn from the middles of blocks (13 cells down to 2) and in few tones (2 up to 16) |
+| full | 1 | the worlds as they were, with the meta forms' light, the singularities and all their life |
+
+Each minimal area is one painting after one of the saved artists, in the colours of that artist's own saved works
+(the dark, middle and light thirds of their works' colours, and the most vivid, measured from the collection), and at
+each change it becomes another of the same rung, wiped across. Life over the ground thins with the ladder: none on the
+minimal rungs, all once the worlds are full.
+
+The one pixel is one device pixel. Most of the time it only breathes, its colour turning through the artists'. Every
+89 seconds or so it does something astronomical, each void in its own order: a line of light draws a circle out of it,
+as McCall's; planets go round it on Kepler's orbits, the far ones slower; a supernova throws out a shell and its
+debris and leaves a nebula; a constellation appears star by star, joined, as Miró's; a pulsar's two beams turn; an
+accretion ring turns round a black point with light bent round it; or a big bang: the whole plane at its most complex
+opens out of the pixel across the void, and closes back into it.
+
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
 black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque, Cézanne,

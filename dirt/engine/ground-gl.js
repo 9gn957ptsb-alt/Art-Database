@@ -84,6 +84,7 @@ float gCov = 0.0;                   // the marks the last sheet painted here, an
 vec3 gMark = vec3(0);         // uForce: one grammar everywhere, for looking at it (#g0 to #g4)
 uniform ivec2 uGram[5];             // each grammar's works: first row, count
 vec2 gP;                            // the cell being painted, on the plane
+vec2 gTrue;                         // where the cell really is (a simplified area samples others)
 vec2 gMid;                          // the middle of its passage
 float gGate = 1.0;                  // how much of a sheet's marks are drawn yet (while it is being drawn)
 
@@ -1096,7 +1097,7 @@ const int RSTART[14] = int[14](0, 2, 4, 5, 8, 9, 10, 11, 13, 16, 17, 18, 19, 25)
 // how light each world is as it draws itself, before it is set to its artist's shade
 const float NATL[25] = float[25](0.8, 0.2, 0.75, 0.88, 0.8, 0.12, 0.5, 0.3, 0.4, 0.08, 0.3, 0.55, 0.6, 0.65, 0.35, 0.72, 0.45, 0.6, 0.5, 0.9, 0.65, 0.72, 0.68, 0.42, 0.45);
 const float MB = 610.0;                                              // a meta form to a square this wide, overlapping its neighbours
-float shadeOf(int g) { return (float(RANK_OF[g]) + 0.5) / 13.0; }
+float shadeOf(int g) { return g < 25 ? (float(RANK_OF[g]) + 0.5) / 13.0 : 0.5; }
 float metaLightAngle(float t) { return t * 6.2832 / 377.0; }         // the light goes round once in 377 seconds
 /**
  * One meta form, of block b, at p: its value v there, its signed distance sd (its edge where 0), how softly it
@@ -1192,9 +1193,288 @@ int shadedWorld(vec2 mid, int i, int j, int k, float tk) {
 }
 /** A colour of world g set to the shade sh (an artist's, or two artists' blended across a seam), the meta forms' light M running on through it. */
 vec3 toShade(vec3 col, int g, float sh, float M) {
+  if (g >= 25) return col;                                           // a minimal area keeps its own colours
   float l = lum(col), T = 255.0 * (0.05 + 0.9 * mix(sh, M, P1));
   float nl = clamp(T + (l - 255.0 * NATL[g]) * P1, 0.0, 255.0);
   return clamp(mix(col * (nl / max(l, 1.0)), col + (nl - l), 0.5), 0.0, 255.0);
+}
+
+// ---- the ladder of complexity ------------------------------------------------------------------------------
+// The plane is not equally busy everywhere. Over it lies a field of complexity, from 0 (nothing at all) to 1
+// (everything DIRT can do), which rises and falls across two or three screens: swiping crosses the whole ladder.
+//   void          nothing: a field of Reinhardt's near-black or Ryman's white, bigger than a screen, and at its middle
+//                 one pixel, which in its time does astronomical things (below)
+//   point, line   Sugimoto's horizon, Newman's zip, McCall's line of light, Giacometti's one figure, Reinhardt, Ryman
+//   plane         Rothko's stacked fields, Kelly's one shape, Irwin's disc, Larry Bell's cube, Kline, Kandinsky
+//   structure     Albers's squares, Agnes Martin's grid, LeWitt's lines, Mondrian, Miro's constellations, Morandi
+//   repetition    Gerstner's rings, Riley's waves, Kusama's dots, Judd's stacks
+//   simplified    the worlds, in blocks and few tones, fewer the lower
+//   full          the worlds as they are, with the meta forms' light and the singularities
+// Each minimal area is drawn in the colours of that artist's own saved works (dark, middle, light, and their most
+// vivid), measured from the collection.
+const vec3 MINI[88] = vec3[88](
+  vec3(32, 41, 57), vec3(128, 115, 111), vec3(222, 220, 214), vec3(2, 95, 169),        //  0 Ad Reinhardt
+  vec3(193, 170, 138), vec3(223, 214, 198), vec3(238, 235, 228), vec3(237, 205, 152), //  1 Robert Ryman
+  vec3(34, 34, 35), vec3(108, 108, 106), vec3(196, 196, 194), vec3(226, 219, 208),    //  2 Hiroshi Sugimoto
+  vec3(58, 63, 63), vec3(156, 158, 157), vec3(221, 223, 223), vec3(95, 157, 192),     //  3 Anthony McCall
+  vec3(77, 47, 38), vec3(179, 133, 96), vec3(222, 211, 177), vec3(237, 146, 59),      //  4 Joan Miro
+  vec3(79, 67, 63), vec3(151, 128, 115), vec3(216, 199, 172), vec3(219, 163, 66),     //  5 Wassily Kandinsky
+  vec3(47, 47, 41), vec3(132, 119, 103), vec3(220, 212, 199), vec3(155, 89, 42),      //  6 Franz Kline
+  vec3(111, 104, 94), vec3(177, 167, 147), vec3(220, 212, 196), vec3(250, 217, 164),  //  7 Alberto Giacometti
+  vec3(63, 84, 60), vec3(141, 167, 132), vec3(160, 171, 186), vec3(141, 167, 132),    //  8 Barnett Newman
+  vec3(84, 53, 52), vec3(175, 121, 107), vec3(227, 208, 195), vec3(231, 151, 35),     //  9 Mark Rothko
+  vec3(106, 98, 125), vec3(169, 143, 133), vec3(221, 219, 205), vec3(198, 76, 151),   // 10 Ellsworth Kelly
+  vec3(76, 82, 72), vec3(167, 170, 162), vec3(216, 217, 215), vec3(190, 163, 128),    // 11 Robert Irwin
+  vec3(48, 45, 45), vec3(136, 133, 126), vec3(221, 214, 207), vec3(19, 136, 83),      // 12 Larry Bell
+  vec3(122, 59, 86), vec3(201, 174, 137), vec3(236, 231, 217), vec3(244, 34, 4),      // 13 Josef Albers
+  vec3(86, 88, 89), vec3(239, 236, 229), vec3(241, 241, 241), vec3(238, 235, 223),    // 14 Agnes Martin
+  vec3(41, 44, 43), vec3(93, 119, 113), vec3(194, 188, 174), vec3(34, 127, 129),      // 15 Sol LeWitt
+  vec3(91, 76, 72), vec3(161, 140, 129), vec3(220, 212, 203), vec3(24, 79, 151),      // 16 Piet Mondrian
+  vec3(60, 30, 44), vec3(146, 94, 112), vec3(210, 193, 191), vec3(253, 53, 2),        // 17 Karl Gerstner
+  vec3(73, 59, 56), vec3(130, 137, 140), vec3(224, 220, 215), vec3(142, 34, 56),      // 18 Bridget Riley
+  vec3(45, 12, 9), vec3(118, 77, 41), vec3(223, 211, 212), vec3(173, 84, 47),         // 19 Yayoi Kusama
+  vec3(138, 117, 114), vec3(199, 194, 188), vec3(242, 240, 237), vec3(237, 134, 126), // 20 Donald Judd
+  vec3(106, 96, 85), vec3(179, 167, 148), vec3(232, 226, 212), vec3(228, 201, 104));  // 21 Giorgio Morandi
+// the rungs, and the artists on each
+const int RUNG[22] = int[22](0, 1, 2, 3, 7, 8,  9, 10, 11, 12, 6, 5,  13, 14, 15, 16, 4, 21,  17, 18, 19, 20);
+const int RUNG_AT[5] = int[5](0, 6, 12, 18, 22);
+const float RUNG_C[4] = float[4](0.16, 0.28, 0.40, 0.50);             // the complexity each rung reaches up to
+
+struct Void { bool on; vec2 C; float R; uint h; };
+/** The void nearest p: one in each 1597-cell square, phi^-1 of them kept, 233 to 610 cells across its heart. */
+Void voidAt(vec2 p) {
+  const float G = 1597.0;
+  ivec2 sq = ivec2(floor(p / G));
+  Void best = Void(false, vec2(0), 0.0, 0u);
+  float bd = 1e9;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 q = sq + ivec2(i, j);
+    uint h = h3(q.x, q.y, 2584u);
+    if (unit(h) > P1) continue;
+    vec2 C = (vec2(q) + 0.5 + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * P2) * G;
+    float d = length(p - C);
+    if (d < bd) { bd = d; best = Void(true, C, 233.0 + 377.0 * unit(mixh(h + 3u)), h); }
+  }
+  return best;
+}
+/** How complex the plane is at p: 0 in a void's heart, 1 where everything is. */
+float complexityAt(vec2 p) {
+  float b = smoothstep(0.2, 0.8, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u));
+  Void v = voidAt(p);
+  if (v.on) b *= smoothstep(v.R, v.R + 377.0, length(p - v.C));
+  return b;
+}
+float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
+float feather(float d, float w) { return 1.0 - smoothstep(0.0, w, d); }   // 1 on a mark, falling to 0 over w cells: no hard edges
+/** A minimal area: artist a's composition at q (cells from the area's middle), its choices by h, at time t. */
+vec3 minimal(int a, vec2 q, uint h, float t) {
+  vec3 D = MINI[a * 4], M = MINI[a * 4 + 1], L = MINI[a * 4 + 2], V = MINI[a * 4 + 3];
+  float u1 = unit(mixh(h + 11u)), u2 = unit(mixh(h + 12u)), u3 = unit(mixh(h + 13u));
+  vec2 aq = abs(q);
+  if (a == 0) {                                                      // Reinhardt: black, and a cross of blacks in it
+    vec2 g = floor((q + 89.0) / 59.0);
+    bool cross = (g.x == 1.0 || g.y == 1.0) && max(aq.x, aq.y) < 89.0;
+    return D * (0.36 + (cross ? 0.05 : 0.0) + 0.012 * (vnoise(q, 5.0, h) - 0.5));
+  }
+  if (a == 1) {                                                      // Ryman: white on white, brushed
+    float sq = feather(max(aq.x, aq.y) - 72.0, 3.0);
+    return mix(L, mix(L, M, 0.25), sq * (0.35 + 0.25 * vnoise(vec2(q.x / 13.0, q.y), 1.0, h)));
+  }
+  if (a == 2) {                                                      // Sugimoto: sea and sky, and the horizon
+    float y = q.y - (u1 - 0.5) * 34.0;
+    return y < 0.0 ? mix(L, M, smoothstep(-144.0, 0.0, y) * 0.5) : mix(M * 0.62, D, smoothstep(0.0, 144.0, y));
+  }
+  if (a == 3) {                                                      // McCall: a line of light drawing a circle in the dark
+    float r = length(q), ang = mod(atan(q.y, q.x) + 3.1416, 6.2832), grow = fract(t / 34.0 + u1) * 6.2832;
+    float ring = feather(abs(r - 72.0), 1.4) * (ang < grow ? 1.0 : 0.0);
+    vec2 tip = 72.0 * vec2(cos(grow - 3.1416), sin(grow - 3.1416)), src = vec2(-150.0, -150.0 + 300.0 * u2);
+    float beam = feather(segD(q, src, tip), 1.0) * 0.25;
+    return mix(D * 0.3, L, max(ring, beam) + 0.04 * (ang < grow && r < 72.0 ? 1.0 : 0.0));
+  }
+  if (a == 4) {                                                      // Miro: a constellation, joined
+    vec3 c = L;
+    vec2 prev = vec2(0);
+    for (int i = 0; i < 7; i++) {
+      uint hi = mixh(h + 20u + uint(i));
+      vec2 s = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 170.0;
+      if (i > 0) c = mix(c, D * 0.4, feather(segD(q, prev, s), 0.9));
+      float rr = 2.0 + 3.0 * unit(mixh(hi + 2u));
+      c = mix(c, i % 3 == 0 ? V : D * 0.4, feather(length(q - s) - rr, 1.0));
+      prev = s;
+    }
+    return c;
+  }
+  if (a == 5) {                                                      // Kandinsky: a point, lines, a plane
+    vec3 c = L;
+    vec2 tA = vec2(-60.0, 50.0), tB = vec2(20.0 + 40.0 * u1, -60.0), tC = vec2(70.0, 60.0);
+    vec2 e0 = tB - tA, e1 = tC - tB, e2 = tA - tC;
+    bool inT = (e0.x * (q.y - tA.y) - e0.y * (q.x - tA.x)) * (e1.x * (q.y - tB.y) - e1.y * (q.x - tB.x)) > 0.0 && (e1.x * (q.y - tB.y) - e1.y * (q.x - tB.x)) * (e2.x * (q.y - tC.y) - e2.y * (q.x - tC.x)) > 0.0;
+    if (inT) c = mix(c, M, 0.7);
+    for (int i = 0; i < 3; i++) { uint hi = mixh(h + 30u + uint(i)); vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 200.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 200.0; c = mix(c, D * 0.5, feather(segD(q, a0, a1), 0.8)); }
+    return mix(c, V, feather(length(q - vec2(-30.0 + 60.0 * u2, -20.0)) - 21.0, 1.5));
+  }
+  if (a == 6) {                                                      // Kline: a few broad black strokes
+    vec3 c = L;
+    for (int i = 0; i < 3; i++) { uint hi = mixh(h + 40u + uint(i)); vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 220.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 220.0;
+      float w = 6.0 + 8.0 * unit(mixh(hi + 4u)) + 3.0 * (vnoise(q, 4.0, hi) - 0.5); c = mix(c, D * 0.45, feather(segD(q, a0, a1) - w, 1.5)); }
+    return c;
+  }
+  if (a == 7) {                                                      // Giacometti: one thin figure in all that space
+    vec2 f = q - vec2((u1 - 0.5) * 60.0, 0.0);
+    float body = abs(f.x + 1.5 * (vnoise(vec2(0.0, f.y), 6.0, h) - 0.5)) - (f.y < -52.0 ? 3.0 : 1.2);
+    float on = (f.y > -58.0 && f.y < 58.0) ? feather(body, 0.9) : 0.0;
+    return mix(mix(M, L, 0.6), D * 0.7, on);
+  }
+  if (a == 8) {                                                      // Newman: a field, and one zip through it
+    return mix(M, L, feather(abs(q.x - (u1 - 0.5) * 90.0) - 1.5, 1.0));
+  }
+  if (a == 9) {                                                      // Rothko: fields stacked, their edges breathing
+    float e1 = max(abs(q.x) - 76.0, abs(q.y + 34.0) - 28.0) + 4.0 * (vnoise(q, 9.0, h) - 0.5);
+    float e2 = max(abs(q.x) - 76.0, abs(q.y - 30.0) - 26.0) + 4.0 * (vnoise(q, 9.0, h + 1u) - 0.5);
+    return mix(mix(D, V * 0.9, feather(e1, 8.0)), M, feather(e2, 8.0));
+  }
+  if (a == 10) {                                                     // Kelly: one shape, one colour
+    float d = max(length(q - vec2(0.0, 40.0)) - 90.0, q.y - 20.0 - 30.0 * u1);
+    return mix(L, V, feather(d, 1.2));
+  }
+  if (a == 11) {                                                     // Irwin: a disc barely there, and its shadow's cross
+    float r = length(q), disc = feather(r - 64.0, 14.0);
+    float cross = feather(min(aq.x, aq.y), 1.0) * feather(r - 110.0, 10.0) * 0.4;
+    return mix(L, mix(L, M, 0.2), max(disc * 0.8, cross));
+  }
+  if (a == 12) {                                                     // Larry Bell: a glass cube, its edges iridescent
+    float e = max(aq.x, aq.y) - 55.0, band = feather(abs(e), 6.0);
+    vec3 glass = mix(D, M, 0.5 + 0.5 * q.y / 55.0);
+    vec3 iri = mix(V, L, 0.5 + 0.5 * sin(atan(q.y, q.x) * 3.0 + t * 0.2));
+    return e < 0.0 ? mix(glass, iri, band) : mix(L, iri, band * 0.5);
+  }
+  if (a == 13) {                                                     // Albers: squares within squares, sunk toward the bottom
+    vec3 c = V;
+    float s = 90.0;
+    vec3 cs[4] = vec3[4](V, M, D * 1.3, L);
+    for (int i = 0; i < 4; i++) { float off = float(i) * 9.0; if (max(abs(q.x), abs(q.y - off)) < s) c = cs[i]; s -= 22.0; }
+    return c;
+  }
+  if (a == 14) {                                                     // Agnes Martin: pale bands, and a pencil grid
+    float band = mod(floor(q.y / 21.0), 2.0);
+    vec3 c = mix(L, mix(M, V, 0.5), band * 0.5);
+    float g = max(feather(abs(mod(q.x, 8.0) - 4.0) - 3.5, 0.5), feather(abs(mod(q.y, 8.0) - 4.0) - 3.5, 0.5));
+    return mix(c, D * 1.6, g * 0.18);
+  }
+  if (a == 15) {                                                     // LeWitt: lines in four directions, a quarter each
+    int qd = (q.x > 0.0 ? 1 : 0) + (q.y > 0.0 ? 2 : 0);
+    float v = qd == 0 ? q.x : qd == 1 ? q.y : qd == 2 ? (q.x + q.y) * 0.7071 : (q.x - q.y) * 0.7071;
+    return mix(L, D, feather(abs(mod(v, 4.0) - 2.0) - 1.4, 0.5) * 0.8);
+  }
+  if (a == 16) {                                                     // Mondrian: black lines, white, and three colours
+    vec3 c = L;
+    float xs[3] = float[3](-55.0 + 20.0 * u1, 20.0 + 30.0 * u2, 80.0), ys[3] = float[3](-70.0, -10.0 + 30.0 * u3, 60.0);
+    int ix = q.x < xs[0] ? 0 : q.x < xs[1] ? 1 : q.x < xs[2] ? 2 : 3, iy = q.y < ys[0] ? 0 : q.y < ys[1] ? 1 : q.y < ys[2] ? 2 : 3;
+    uint hc = h3(ix, iy, h);
+    if (hc % 7u == 0u) c = V; else if (hc % 7u == 1u) c = vec3(214, 40, 30); else if (hc % 7u == 2u) c = vec3(240, 200, 40);
+    float line = 1e9;
+    for (int i = 0; i < 3; i++) line = min(line, min(abs(q.x - xs[i]), abs(q.y - ys[i])));
+    return mix(c, vec3(20), feather(line - 2.0, 0.8));
+  }
+  if (a == 17) {                                                     // Gerstner: rings of colour turning through each other
+    float r = length(q), k = fract(r / 55.0 - t * 0.02);
+    return k < 0.33 ? mix(D, V, k / 0.33) : k < 0.66 ? mix(V, L, (k - 0.33) / 0.33) : mix(L, D, (k - 0.66) / 0.34);
+  }
+  if (a == 18) {                                                     // Riley: black and white, waving
+    float x = q.x + 6.0 * sin(q.y / 13.0 + t * 0.3 + q.x / 55.0);
+    return mix(L, D * 0.3, smoothstep(0.35, 0.65, abs(fract(x / 8.0) * 2.0 - 1.0)));
+  }
+  if (a == 19) {                                                     // Kusama: dots, infinitely
+    vec2 g = q / 10.0; g.x += mod(floor(g.y), 2.0) * 0.5;
+    return mix(L, vec3(200, 30, 30), feather(length(fract(g) - 0.5) * 10.0 - 3.0, 0.9));
+  }
+  if (a == 20) {                                                     // Judd: the same box, stacked, the same space between
+    float y = mod(q.y + 11.0, 22.0), onBox = (aq.x < 60.0 && y < 10.0 && abs(q.y) < 88.0) ? 1.0 : 0.0;
+    return mix(L, mix(V, V * 0.7, y / 10.0), onBox);
+  }
+  // Morandi: a few bottles and boxes, close together, on a table
+  vec3 c = q.y > 30.0 ? M : L;
+  for (int i = 0; i < 4; i++) {
+    uint hi = mixh(h + 50u + uint(i));
+    float x0 = (float(i) - 1.5) * 30.0 + 10.0 * (unit(hi) - 0.5), w = 9.0 + 7.0 * unit(mixh(hi + 1u)), ht = 30.0 + 40.0 * unit(mixh(hi + 2u));
+    bool bottle = (hi & 1u) == 0u;
+    float d = max(abs(q.x - x0) - (bottle && q.y < 30.0 - ht * 0.6 ? w * 0.35 : w), max(q.y - 30.0, 30.0 - ht - q.y));
+    c = mix(c, mix(D, M, 0.3 + 0.5 * unit(mixh(hi + 3u))), feather(d, 1.2));
+  }
+  return c;
+}
+/** The artist a minimal area of complexity cx takes, by its rung, and h. */
+int minimalOf(float cx, uint h) {
+  int r = cx < RUNG_C[0] ? 0 : cx < RUNG_C[1] ? 1 : cx < RUNG_C[2] ? 2 : 3;
+  return RUNG[RUNG_AT[r] + int(h % uint(RUNG_AT[r + 1] - RUNG_AT[r]))];
+}
+
+// ---- the one pixel ----------------------------------------------------------------------------------------------
+// In a void's heart there is one pixel. Most of the time it only breathes, its colour turning through the artists'.
+// But every 89 seconds or so it does something astronomical, each void in its own order:
+//   0 a line of light drawing a circle out of it, as McCall's;   1 planets, on orbits as Kepler's (the far slower);
+//   2 a supernova: a shell thrown out, its debris, then a nebula; 3 a constellation, star by star, joined, as Miro's;
+//   4 a pulsar: two beams turning;   5 an event horizon: an accretion ring round a black point, and light bent round it;
+//   6 a big bang: everything, the whole plane at its most complex, opening out of the pixel and closing back into it.
+float gBang = 0.0;                                                   // how far a big bang has opened here (cells), for main
+vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
+  vec2 d = p - v.C;
+  float r = length(d), period = 89.0, T = t + 55.0 * unit(mixh(v.h + 7u));
+  float cyc = floor(T / period), ph = fract(T / period);
+  uint hc = mixh(v.h ^ uint(cyc) * 0x9e3779b9u);
+  int ev = int(hc % 7u);
+  float on = smoothstep(0.2, 0.3, ph) * (1.0 - smoothstep(0.85, 0.95, ph)), q = clamp((ph - 0.2) / 0.75, 0.0, 1.0);
+  bool dark = lum(field) < 128.0;
+  vec3 light = dark ? vec3(250, 246, 236) : vec3(12, 12, 16);
+  int a = int(mixh(v.h + uint(floor(T / 8.0))) % 22u);
+  vec3 pix = mix(MINI[a * 4 + 3], light, 0.3 + 0.2 * sin(T * 2.0));
+  one = all(equal(ivec2(floor(p)), ivec2(floor(v.C))));
+  vec3 c = field;
+  gBang = 0.0;
+  if (on <= 0.0) return one ? pix : c;
+  if (ev == 0) {
+    float R = 55.0 + 89.0 * unit(hc), ang = mod(atan(d.y, d.x) + 6.2832, 6.2832), grow = q * 6.2832 * 1.2;
+    c = mix(c, light, on * feather(abs(r - R), 1.2) * (ang < grow ? 1.0 : 0.0));
+    vec2 tip = R * vec2(cos(grow), sin(grow));
+    c = mix(c, light, on * 0.35 * feather(segD(d, vec2(0), tip), 0.8));
+  } else if (ev == 1) {
+    for (int i = 1; i <= 6; i++) {
+      float R = 8.0 * pow(PHI, float(i)), w = 0.9 / pow(R / 8.0, 1.5), an = w * T + 6.2832 * unit(mixh(hc + uint(i)));
+      vec2 b = R * vec2(cos(an), sin(an) * 0.62);
+      c = mix(c, light, on * 0.07 * feather(abs(length(d / vec2(1.0, 0.62)) - R), 0.6));
+      c = mix(c, MINI[int(mixh(hc + uint(i) * 7u) % 22u) * 4 + 3], on * feather(length(d - b) - 0.8, 0.7));
+    }
+  } else if (ev == 2) {
+    float R = 233.0 * (1.0 - pow(1.0 - q, 3.0));
+    c = mix(c, light, on * (1.0 - q) * feather(abs(r - R), 2.0 + 6.0 * q));
+    uint hd = h3(int(floor(atan(d.y, d.x) * 34.0)), 0, hc);
+    float dr = R * (0.55 + 0.4 * unit(hd));
+    c = mix(c, MINI[int(hd % 22u) * 4 + 3], on * (1.0 - q) * feather(abs(r - dr), 1.0) * step(0.7, unit(mixh(hd + 1u))));
+    c = mix(c, MINI[int(hc % 22u) * 4 + 3], on * q * 0.25 * feather(r - R * 0.7, R * 0.3) * vnoise(d, 21.0, hc));
+  } else if (ev == 3) {
+    vec2 prev = vec2(0);
+    int n = int(q * 9.0);
+    for (int i = 0; i < 9; i++) {
+      if (i > n) break;
+      uint hi = mixh(hc + 90u + uint(i));
+      vec2 s = prev + (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 89.0;
+      c = mix(c, light, on * 0.6 * feather(segD(d, prev, s), 0.6));
+      c = mix(c, MINI[4 * 4 + 3], on * feather(length(d - s) - 1.5, 0.8));
+      prev = s;
+    }
+  } else if (ev == 4) {
+    float an = T * 3.0, cross = abs(dot(d, vec2(-sin(an), cos(an))));
+    c = mix(c, light, on * feather(cross, 1.0) * feather(r - 377.0, 144.0) * 0.8);
+  } else if (ev == 5) {
+    vec2 e = d / vec2(1.0, 0.34);
+    float ring = feather(abs(length(e) - 34.0), 3.0), lens = feather(abs(r - 21.0), 1.5);
+    c = mix(c, mix(MINI[17 * 4 + 3], light, 0.5 + 0.5 * sin(atan(e.y, e.x) * 2.0 - T * 2.0)), on * ring);
+    c = mix(c, light, on * lens * 0.8);
+    if (r < 13.0) c = mix(c, vec3(0), on);
+  } else {
+    gBang = on * (v.R * 0.9) * sin(3.1416 * q);
+  }
+  return one ? pix : c;
 }
 
 /** A passage's colours at a cell, with its changes: which passage is c.e. */
@@ -1224,6 +1504,21 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   float t0 = first + float(k) * tau;
   uint hk = mixh(seed ^ (uint(k) * 0x85ebca6bu));
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
+  // Low on the ladder, the area is one minimal painting, after one of the saved artists, and at each change another
+  // of the same rung, wiped across as the old one goes.
+  if (worlds) {
+    float cxm = complexityAt(m25.xy);
+    if (cxm < RUNG_C[3]) {
+      int a1 = minimalOf(cxm, h3(int(m26.y), int(m26.z), uint(max(k, -1) + 3))), a0 = minimalOf(cxm, h3(int(m26.y), int(m26.z), uint(max(k - 1, -1) + 3)));
+      vec2 q = gTrue - m25.xy;
+      float pcm = k < 0 || uHold > 0.5 ? 2.0 : progressAt(cp, t0, -1e9, O, seed, DUR, SPEED);
+      float wipe = smoothstep(-0.05, 0.05, pcm - 0.5 - 0.3 * (vnoise(gTrue, 21.0, hk) - 0.5));
+      A = B = mix(minimal(a0, q, h3(int(m26.y), int(m26.z), uint(k + 99)), uTime), minimal(a1, q, h3(int(m26.y), int(m26.z), uint(k + 100)), uTime), wipe);
+      gGram = 40 + (wipe > 0.5 ? a1 : a0);
+      Sd = State(0, 0, 0, 0);
+      return;
+    }
+  }
   int gW0 = gGram, gW1 = gGram;
   if (worlds) {
     gW0 = shadedWorld(m25.xy, int(m26.y), int(m26.z), k - 1, first + float(k - 1) * tau);
@@ -1377,8 +1672,31 @@ void main() {
   bool emerge = false;
   float sr = 0.0, sside = 0.0;
   vec2 cellP = vec2(cell) + 0.5;
-  if (art && uHold < 0.5) {
+  gTrue = cellP;
+  // Where on the ladder of complexity the cell is; and in a void's heart, nothing but the field and the one pixel.
+  bool ladder = art && uForce < 0;
+  float cx = ladder ? complexityAt(cellP) : 1.0;
+  float voidEdge = 0.0;
+  vec3 voidField = vec3(0), voidCol = vec3(0);
+  bool voidOne = false;
+  if (ladder) {
+    Void vd = voidAt(cellP);
+    float vr = vd.on ? length(cellP - vd.C) : 1e9;
+    if (vr < vd.R) {
+      voidField = unit(mixh(vd.h + 5u)) < 0.5 ? MINI[0] * 0.36 : MINI[6];   // Reinhardt's black, or Ryman's white
+      voidCol = astronomy(vd, cellP, uTime, voidField, voidOne);
+      voidEdge = feather(vd.R - vr, 21.0) < 1.0 ? 1.0 - feather(vd.R - vr, 21.0) : 0.0;
+      if (vr < gBang) { cx = 1.0; voidEdge = 0.0; }                 // inside a big bang: everything, out of one pixel
+      else if (voidEdge >= 1.0) {
+        outA = vec4((voidOne ? voidCol : voidCol) / 255.0, 1.0);
+        outB = vec4((voidOne ? voidField : voidCol) / 255.0, 1.0);   // the pixel is one pixel: its cell's other three are the field
+        return;
+      }
+    }
+  }
+  if (art && uHold < 0.5 && cx > 0.6) {
     sg = singAt(cellP);
+    if (sg.on && complexityAt(sg.C) < 0.6) sg.on = false;
     if (sg.on) {
       vec2 d = cellP - sg.C;
       sr = length(d);
@@ -1393,6 +1711,16 @@ void main() {
           if (si2.x > 0.5) { cell = bc; layer = int(si2.x) - 1; lc = bc & 255; c = cellAt(layer, lc); }
         }
       }
+    }
+  }
+  // Between the minimal and the full, the worlds simplified: drawn from the middles of blocks, coarser the lower.
+  if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3]) {
+    int bs = cx < 0.56 ? 13 : cx < 0.62 ? 8 : cx < 0.68 ? 5 : cx < 0.72 ? 3 : 2;
+    ivec2 bc = ivec2(floor(vec2(cell) / float(bs)) * float(bs)) + bs / 2;
+    ivec2 sl2 = (bc >> 8) - uC0;
+    if (all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
+      vec4 si2 = texelFetch(uSlots, sl2, 0);
+      if (si2.x > 0.5) { cell = bc; layer = int(si2.x) - 1; lc = bc & 255; c = cellAt(layer, lc); }
     }
   }
   if (art) c.e = c.en;
@@ -1430,8 +1758,15 @@ void main() {
     // Each side in its artist's shade, and across a seam the two shades blend, halfway at the seam itself, so the
     // plane's light has no step in it anywhere.
     float w0 = seam ? 0.5 + 0.5 * smoothstep(0.0, 0.62, c.pe) : 1.0, sh = seam ? mix(shadeOf(g1), shadeOf(g0), w0) : shadeOf(g0);
-    A = toShade(A, g0, sh, metaM); B = toShade(B, g0, sh, metaM);
-    if (seam) { Ab = toShade(Ab, g1, sh, metaM); Bb = toShade(Bb, g1, sh, metaM); }
+    float ms = smoothstep(RUNG_C[3], 0.85, cx);                     // the forms' light only where the plane is full
+    A = mix(A, toShade(A, g0, sh, metaM), ms); B = mix(B, toShade(B, g0, sh, metaM), ms);
+    if (seam) { Ab = mix(Ab, toShade(Ab, g1, sh, metaM), ms); Bb = mix(Bb, toShade(Bb, g1, sh, metaM), ms); }
+    metaA *= ms;
+    if (cx < 0.75) {
+      // and in few tones: the lower, the fewer
+      float n = 2.0 + 14.0 * clamp((cx - RUNG_C[3]) / (0.75 - RUNG_C[3]), 0.0, 1.0);
+      if (g0 < 25) { float l = max(lum(A), 1.0); A *= (floor(l / 255.0 * n + 0.5) / n * 255.0 + 8.0) / (l + 8.0); l = max(lum(B), 1.0); B *= (floor(l / 255.0 * n + 0.5) / n * 255.0 + 8.0) / (l + 8.0); }
+    }
   }
   if (seam) { gGram = g0; gSeed = s0; gCov = cov0; gMark = mk0; gP = vec2(cell) + 0.5; gMid = entT(layer, c.e, 25).xy; }
   // Ground just grown comes in dot by dot; ground grown again for a new month, as the month sweeps over it.
@@ -1467,7 +1802,7 @@ void main() {
     vec3 markThere = ownSide ? mk1 : mk0;
     // strangers: the upper sheet (the one on the positive side) shadows the lower
     if (xt < 0.0 && xt > -1.6 && r < 0.5) { PA *= mix(0.72, 1.0, r * 2.0); PB2 *= mix(0.72, 1.0, r * 2.0); }
-    bool dig0 = gHere >= 5, dig1 = gThere >= 5;
+    bool dig0 = gHere >= 5 && gHere < 25, dig1 = gThere >= 5 && gThere < 25;
     float ax = abs(xt), wc = mix(5.0, 34.0, r);
     if (!dig0 && !dig1) {
       // kin: the other sheet's marks carry on across, in this sheet's hand
@@ -1516,6 +1851,7 @@ void main() {
       A = mix(A, vec3(255.0), f); B = mix(B, vec3(255.0), f);
     }
   }
+  if (voidEdge > 0.0) { A = mix(A, voidCol, voidEdge); B = mix(B, voidCol, voidEdge); }
   // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
   if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {
     float night = smoothstep(0.55, 0.95, 0.5 - 0.5 * cos(6.2832 * uTime / 233.0)) * P2;
