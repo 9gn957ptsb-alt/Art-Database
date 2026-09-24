@@ -818,5 +818,15 @@
   "log": [
    "2026-09-24 first model: Moneo's closed red-brick box with a precast band, the plaza window and entrance slot, four metal lanterns in a pinwheel on the roof; bridge to Jewett, Collins Cinema across the plaza."
   ]
+ },
+ "museum-centre-for-fine-arts-bozar": {
+  "name": "Bozar (Palais des Beaux-Arts)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Horta's low trapezoidal block of pale stone stepping back in bands, the glazed Rue Ravenstein arcade and corner entrance, the oval Henry Le Boeuf hall roof rising in the middle"
+  ]
  }
 }
