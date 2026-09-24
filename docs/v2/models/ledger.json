@@ -462,5 +462,35 @@
   "log": [
    "2026-09-24 first model: ten-storey corner block of stacked concrete trays, bays jutting by turns with brown slatted shutters or black railings, long balconies on the short face, set-back houses on top, V columns under the prow, rear pool patio"
   ]
+ },
+ "museum-musee-picasso-paris": {
+  "name": "Musée Picasso (Hôtel Salé)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Hôtel Salé — portal on rue de Thorigny, the oval court with its low balustraded wings, the corps de logis under its slate roof and great semicircular pediment, the garden front with its pavilions and the garden"
+  ]
+ },
+ "museum-montclair-art-museum": {
+  "name": "Montclair Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1914 Greek Revival block with its Ionic portico to Bloomfield Avenue on its real bearing, later galleries behind"
+  ]
+ },
+ "museum-ordrupgaard": {
+  "name": "Ordrupgaard",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Snøhetta's skylights in the lawn"
+  ]
  }
 }
