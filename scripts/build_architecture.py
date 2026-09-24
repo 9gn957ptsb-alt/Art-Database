@@ -174,6 +174,10 @@ SPOTS = {
     # district is on the map.
     "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura":
         {"lat": -33.3853, "lon": -69.2771, "precision": "district"},
+    # The clinic's own site and Guía del Dentista: C. de la Alcaparra 35, 47008
+    # Valladolid; OpenStreetMap has the house number (24 Sep 2026).
+    "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura":
+        {"lat": 41.6135, "lon": -4.7603, "precision": "exact"},
 }
 
 

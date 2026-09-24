@@ -1,6 +1,18 @@
 {
   "buildings": [
     {
+      "title": "The Precision of the Subtle – Clinica Dental Apolonia by JGA Arquitectura",
+      "name": "Clinica Dental Apolonia",
+      "slug": "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura",
+      "url": "https://www.thearchitecturalauthority.com/article/the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura",
+      "city": "Valladolid",
+      "country": "Spain",
+      "where": "Valladolid, Spain",
+      "lat": 41.6135,
+      "lon": -4.7603,
+      "precision": "exact"
+    },
+    {
       "title": "Roots of the Mountain – Casa LL by RA! Arquitectura",
       "name": "Casa LL",
       "slug": "roots-of-the-mountain-casa-ll-by-ra-arquitectura",

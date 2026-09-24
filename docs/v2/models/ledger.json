@@ -178,5 +178,14 @@
    "2026-09-24 first model from the article's photographs",
    "2026-09-24 second pass: the five biggest mismatches with the photographs"
   ]
+ },
+ "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura": {
+  "name": "Clinica Dental Apolonia",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "log": [
+   "2026-09-24 first model from the article's photographs: a cutaway at the clinic's ceiling, its street front and its curved interior"
+  ]
  }
 }
