@@ -112,11 +112,12 @@
  "tree-as-origin-residence-204-by-estudio-bearzotti": {
   "name": "Residence 204",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: bedroom-wing glass band brought forward under a shorter eave so it reads, tree moved out of the pool, carport tree growing through its roof"
   ]
  },
  "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura": {
@@ -827,6 +828,76 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model: Horta's low trapezoidal block of pale stone stepping back in bands, the glazed Rue Ravenstein arcade and corner entrance, the oval Henry Le Boeuf hall roof rising in the middle"
+  ]
+ },
+ "museum-los-angeles-county-museum-of-art": {
+  "name": "LACMA",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Zumthor's David Geffen Galleries as one long glass-wrapped level under a concrete roof on seven pavilions crossing Wilshire, Piano's BCAM and Resnick with their sawtooth roofs, Urban Light, Hancock Park and the Lake Pit"
+  ]
+ },
+ "museum-british-museum": {
+  "name": "British Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Smirke's Portland-stone quadrangle on Bloomsbury's grid, the Great Court's glass roof round the Reading Room drum and dome, the Ionic colonnade, portico and pediment on Great Russell Street, the forecourt, the northern galleries"
+  ]
+ },
+ "museum-parrish-art-museum": {
+  "name": "Parrish Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Herzog and de Meuron long white-concrete building under twin corrugated-metal barn roofs with porches and north skylights, turned to its axis in the meadow"
+  ]
+ },
+ "museum-art-gallery-of-ontario": {
+  "name": "Art Gallery of Ontario",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Gehry Galleria Italia bulging glass-and-fir facade on Dundas, the older wings and skylights, the blue titanium tower with its glass stair, the Grange in the park; turned to the street grid"
+  ]
+ },
+ "museum-museum-of-fine-arts-boston": {
+  "name": "Museum of Fine Arts, Boston",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Lowell's granite Huntington Avenue front with portico and Rotunda dome, the Evans Wing colonnade on the Fenway, courts, Pei's West Wing galleria, Foster's Americas Wing and glass courtyard"
+  ]
+ },
+ "museum-langen-foundation": {
+  "name": "Langen Foundation",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Ando's 76 m concrete core in its glass envelope, the pond, and the two sunken concrete wings at 45 degrees in their grass banks"
+  ]
+ },
+ "museum-padiglione-darte-contemporanea-pac": {
+  "name": "PAC Milan",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside."
   ]
  }
 }
