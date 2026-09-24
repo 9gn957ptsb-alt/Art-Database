@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
-"""Bring in new Architectural Authority bookmarks, end to end.
+"""Bring in every kind of building on the globe, end to end.
 
-The same as the Artsy saves: bookmark a building on the site and it arrives
-here with nothing to copy. Each step is a script already in this folder; this
-runs them in order and says what is left for a person (or a scheduled
-session) to do — model the new buildings from their photographs.
+Each kind is a source of places the artist keeps, and each has its own
+intake; this runs them all, cuts the ground under anything new, and says what
+is left for a person (or a scheduled session) to do — model the buildings
+that have no model yet. A new kind of building is one more entry in KINDS.
 
-  1. fetch_architecture_saves.py   the bookmarks (signs itself in with
-                                    AA_REFRESH_TOKEN; see that script)
-  2. build_architecture.py          place each on the globe (docs/v2/architecture.json)
-  3. build_grounds.py               the ground under each new one, in DIRT
-  4. fetch_reference_photos.py      the new ones' photographs, into data/ (private)
+  architecture   the Architectural Authority bookmarks
+                 (fetch_architecture_saves.py signs itself in with
+                 AA_REFRESH_TOKEN; build_architecture.py places them)
+  museums        the museums that hold the works saved on Artsy
+                 (fetch_artsy_saves.py — the proxy adds Artsy's token;
+                 build_museums.py places them)
+
+then build_grounds.py for the ground under every new place, and
+fetch_reference_photos.py for the new Architectural Authority buildings'
+photographs, into data/ (private).
 
     python3 scripts/update_buildings.py
 
-Prints the buildings that have no model yet (docs/v2/models/<slug>.json).
+A kind whose source fails (a refused token) is reported and the rest carry on.
+Prints the buildings that have no model yet (docs/v2/models/<slug>.json),
+kind by kind, most important first.
 """
 
 import json
@@ -25,34 +32,49 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 MODELS = ROOT / "docs" / "v2" / "models"
-BUILDINGS = ROOT / "docs" / "v2" / "architecture.json"
+
+KINDS = [
+    {"kind": "architecture", "file": "architecture.json", "key": "buildings",
+     "steps": ["fetch_architecture_saves.py", "build_architecture.py"]},
+    {"kind": "museums", "file": "museums.json", "key": "museums",
+     "steps": ["fetch_artsy_saves.py", "build_museums.py"]},
+]
 
 
 def run(*args):
     print("\n$", " ".join(args), flush=True)
-    done = subprocess.run([sys.executable, *args], cwd=ROOT)
-    if done.returncode:
-        sys.exit(f"stopped: {args[0]} failed")
+    return subprocess.run([sys.executable, *args], cwd=ROOT).returncode == 0
+
+
+def places(k):
+    path = ROOT / "docs" / "v2" / k["file"]
+    return json.loads(path.read_text(encoding="utf-8"))[k["key"]] if path.exists() else []
 
 
 def main():
-    before = {b["slug"] for b in json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]}
-    run(str(SCRIPTS / "fetch_architecture_saves.py"))
-    run(str(SCRIPTS / "build_architecture.py"))
-    after = json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]
-    new = [b for b in after if b["slug"] not in before]
+    failed, new = [], {}
+    for k in KINDS:
+        before = {p["slug"] for p in places(k)}
+        if all(run(str(SCRIPTS / step)) for step in k["steps"]):
+            new[k["kind"]] = [p for p in places(k) if p["slug"] not in before]
+        else:
+            failed.append(k["kind"])
     run(str(SCRIPTS / "build_grounds.py"))                 # skips grounds already cut
-    for b in [b for b in after if not (MODELS / (b["slug"] + ".json")).exists()]:
-        run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
+    for b in places(KINDS[0]):
+        if not (MODELS / (b["slug"] + ".json")).exists():
+            run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
 
-    unmodelled = [b for b in after if not (MODELS / (b["slug"] + ".json")).exists()]
-    print(f"\n{len(after)} buildings; {len(new)} new this run.")
-    if unmodelled:
-        print("To model (docs/v2/models/MODELS.md, photographs in data/photos/<slug>/):")
-        for b in unmodelled:
+    for k in KINDS:
+        every = places(k)
+        todo = [b for b in every if not (MODELS / (b["slug"] + ".json")).exists()]
+        print(f"\n{k['kind']}: {len(every)}; {len(new.get(k['kind'], []))} new this run; "
+              f"{len(todo)} without a model.")
+        for b in todo[:12]:
             print(f"  {b['slug']}  —  {b.get('name')}, {b.get('where')} ({b.get('precision')})")
-    else:
-        print("Every building has a model.")
+        if len(todo) > 12:
+            print(f"  … and {len(todo) - 12} more")
+    if failed:
+        print("\nFailed to bring in:", ", ".join(failed))
 
 
 if __name__ == "__main__":
