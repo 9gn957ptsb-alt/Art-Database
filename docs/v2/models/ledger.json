@@ -594,5 +594,15 @@
   "log": [
    "2026-09-24 first model: College Hill terraced between North Main and Benefit Streets, Moneo's brick-and-glass Chace Center, the Radeke Building with its Benefit Street frontispiece, Pendleton House"
   ]
+ },
+ "museum-colby-college-museum-of-art": {
+  "name": "Colby College Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Bixler brick building with slate roof and cupola, the clerestory-lit brick gallery wings, Fisher fritted-glass Alfond-Lunder Pavilion with its cantilevered top floor"
+  ]
  }
 }
