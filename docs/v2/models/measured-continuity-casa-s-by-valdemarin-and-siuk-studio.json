@@ -6,13 +6,15 @@
   "ground": "grass",
   "parts": [
     {"box": [-10, -17, 0, 20, 14, 4.6], "m": "paintbrick"},
-    {"cut": [-9.3, -6.6, 0.2, 17.3, 3.6, 3.0]},
-    {"box": [2.0, -6.6, 0.2, 0.7, 3.6, 3.0], "m": "paintbrick"},
-    {"box": [-9.3, -6.6, 0, 17.3, 3.6, 0.2], "m": "paving"},
-    {"box": [-9.3, -6.8, 0.2, 11.3, 0.2, 2.6], "m": "glass"},
-    {"box": [2.7, -6.8, 0.2, 4.7, 0.2, 3.0], "m": "paintbrick"},
-    {"box": [4.2, -6.9, 0.6, 1.8, 0.3, 1.2], "m": "dark"},
-    {"box": [-9.3, -6.6, 3.0, 17.3, 3.6, 0.2], "m": "timber"},
+    {"cut": [-9.3, -4.3, 0.2, 17.3, 1.3, 3.0]},
+    {"box": [2.0, -4.3, 0.2, 0.7, 1.3, 3.0], "m": "paintbrick"},
+    {"box": [-9.3, -4.3, 0, 17.3, 1.3, 0.2], "m": "paving"},
+    {"box": [-9.3, -4.5, 0.2, 11.3, 0.2, 2.8], "m": "glass"},
+    {"cut": [-9.3, -5.3, 0.2, 11.3, 0.8, 2.8]},
+    {"box": [-9.3, -5.7, 0.2, 11.3, 0.4, 2.8], "m": "dark"},
+    {"box": [2.7, -4.5, 0.2, 4.7, 0.2, 3.0], "m": "paintbrick"},
+    {"box": [4.2, -4.6, 0.6, 1.8, 0.3, 1.2], "m": "dark"},
+    {"box": [-9.3, -4.3, 3.0, 17.3, 1.3, 0.2], "m": "timber"},
     {"box": [-10, -17, 4.6, 17.6, 11.2, 3.0], "m": "paintbrick"},
     {"cut": [-9.4, -5.8, 5.0, 3.6, 0.4, 2.3]},
     {"box": [-9.4, -6.0, 5.0, 3.6, 0.2, 2.3], "m": "glass"},
@@ -50,7 +52,7 @@
     {"box": [-17.5, 5.9, 0, 6.4, 3.4, 0.2], "m": "rubble"},
     {"box": [-16.6, 6.7, 0.2, 0.8, 2.0, 0.4], "m": "dark"},
     {"box": [-14.8, 6.7, 0.2, 0.8, 2.0, 0.4], "m": "dark"},
-    {"tree": [15.5, -1.5, 13, 5.2]},
+    {"tree": [15.2, 3.0, 13, 4.8]},
     {"tree": [14, -12, 5, 2.4]},
     {"tree": [8, -19.0, 10, 3.5]},
     {"box": [-10, -3.2, 6.0, 20, 0.1, 0.1], "m": "metal"},
@@ -62,5 +64,5 @@
     {"tree": [-15.5, -4.5, 5.5, 2.2]},
     {"box": [-9.6, -16.6, 8.6, 16.8, 10.4, 0.2], "m": "concrete"}
   ],
-  "notes": "From the garden views (00-02, 16): a two-storey house of pale painted brick facing a long lawn and, across it, a pool with a pale stone coping and a cobbled corner for loungers. The ground floor is a deep gallery under a tall brick parapet band, glazed at the back, with a corner pier, one middle pier and a barbecue bay with a grill in its back wall, dark timber soffit; above, a planted terrace (dark planters of feather grass along the edge behind a thin steel rail) in front of the set-back upper storey with its thin concrete eave and a tall brick band on top; two black flues at the terrace's east end on gravel; a brick chimney fin on the west end. The side entrance (louvred aluminium canopy, concrete canopy over stepped brick volumes) is placed on the east end. This pass: the painted brick drawn as palebrick (was render, too white), the grasses as drygrass (was thatch), the railing added, the roof drawn as a concrete deck inside the brick band, the faked poplar replaced by two real poplars to the north-west, and the row of small trees on the west replaced by the tall hedge the garden views show. The street side, the plan depth and window positions on the north and ends are guessed. The painted brick in the photographs is a cooler, paler grey-green than palebrick."
+  "notes": "From the garden views (00-02, 16): a two-storey house of pale painted brick facing a long lawn and, across it, a pool with a pale stone coping and a cobbled corner for loungers. The ground floor is a deep gallery under a tall brick parapet band, glazed at the back, with a corner pier, one middle pier and a barbecue bay with a grill in its back wall, dark timber soffit; above, a planted terrace (dark planters of feather grass along the edge behind a thin steel rail) in front of the set-back upper storey with its thin concrete eave and a tall brick band on top; two black flues at the terrace's east end on gravel; a brick chimney fin on the west end. The side entrance (louvred aluminium canopy, concrete canopy over stepped brick volumes) is placed on the east end. This pass: the painted brick drawn as palebrick (was render, too white), the grasses as drygrass (was thatch), the railing added, the roof drawn as a concrete deck inside the brick band, the faked poplar replaced by two real poplars to the north-west, and the row of small trees on the west replaced by the tall hedge the garden views show. The street side, the plan depth and window positions on the north and ends are guessed. The painted brick in the photographs is a cooler, paler grey-green than palebrick. Refined 24 Sep 2026 (three rounds, photos 00-02 and 16): the ground-floor gallery's glass never showed - from the renderer's height a 2.6-3.6 m deep gallery shows only its floor - so the gallery is now drawn 1.3 m deep (shallower than the real one, as MODELS.md advises for recesses meant to be seen), with a dark room behind the glass so it reads as glazing; the middle pier, the barbecue wall and grill moved forward with it; the big tree east of the house moved south-east and slightly smaller so it no longer hides the barbecue bay (photo 00 shows it standing clear of the facade)."
 }

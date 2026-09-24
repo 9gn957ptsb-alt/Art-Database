@@ -2,31 +2,34 @@
  "roots-of-the-mountain-casa-ll-by-ra-arquitectura": {
   "name": "Casa LL",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: living-room glass wall taller under a shallower overhang so it reads, wider bedroom glass doors, bigger junction tree, more planting, dark gabion"
   ]
  },
  "a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos": {
   "name": "Casa Kakmo",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: smaller rear trees so the roof lounge reads, pool entry steps, stair railing, pale main-house walls, guessed yellow street front"
   ]
  },
  "measured-continuity-casa-s-by-valdemarin-and-siuk-studio": {
   "name": "Casa S",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: ground-floor gallery glass now reads (gallery drawn shallower, dark room behind the glass), big east tree moved clear of the facade"
   ]
  },
  "language-of-light-residence-oliva-by-estudio-bearzotti": {
@@ -42,11 +45,12 @@
  "roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos": {
   "name": "Miami Residence",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: flatter wing hips (2.0 m) and centre block lowered to 6.6 m so the two wing roofs read apart, walls white, planting beds along the front"
   ]
  },
  "the-diaphanous-cave-casa-cosmo-by-cristian-nanzer": {
@@ -182,10 +186,11 @@
  "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura": {
   "name": "Clinica Dental Apolonia",
   "refined": "2026-09-24",
-  "passes": 1,
+  "passes": 2,
   "sketchup": false,
   "log": [
-   "2026-09-24 first model from the article's photographs: a cutaway at the clinic's ceiling, its street front and its curved interior"
+   "2026-09-24 first model from the article's photographs: a cutaway at the clinic's ceiling, its street front and its curved interior",
+   "2026-09-24 refined: shopfront frosted windows in dark frames and grey granite surround, pale floor, rear treatment-room windows, disc pendants"
   ]
  },
  "museum-national-gallery-of-art-washington-dc": {
@@ -216,6 +221,246 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+  ]
+ },
+ "museum-the-metropolitan-museum-of-art": {
+  "name": "The Met Fifth Avenue",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the four-block limestone front set to Fifth Avenue's 29-degree grid, Hunt's pavilion and stair, the skylit core, Roche-Dinkeloo's glass wings (Dendur slope, American Wing court, Lehman pyramid), Cleopatra's Needle, Central Park behind"
+  ]
+ },
+ "museum-seattle-art-museum": {
+  "name": "Seattle Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Venturi Scott Brown's fluted limestone block with its arched coloured base and the Hammering Man, the 2007 expansion and the Russell Investments Center tower, set to downtown's grid"
+  ]
+ },
+ "museum-indianapolis-museum-of-art": {
+  "name": "Indianapolis Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the four-storey pale stone block from the ground file, the skylit Great Hall, the 2005 east wing, the half-cylinder glass entrance with its five steel rings, lawns and trees of Newfields"
+  ]
+ },
+ "museum-phillips-collection": {
+  "name": "The Phillips Collection",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1897 brick-and-brownstone Phillips house at 21st and Q with its slate roof, 1923 skylit studio and gallery wing, the pale-stone Sant Building north, courtyard and rowhouses across 21st St"
+  ]
+ },
+ "museum-kroller-muller-museum": {
+  "name": "Kröller-Müller Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: van de Velde's long low buff-brick building with its clerestory lanterns and taller central block, Quist's 1977 glass corridors and plain rooms toward the sculpture garden, in the Veluwe woods"
+  ]
+ },
+ "museum-musee-dorsay": {
+  "name": "Musée d'Orsay",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Laloux's limestone station set at the true angle of the quai, the iron-and-glass barrel vault, the arcade and attic on the Seine, end lunettes, clock pavilions, the hotel's slate mansard on rue de Lille"
+  ]
+ },
+ "museum-musee-du-louvre": {
+  "name": "Musée du Louvre",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the whole palace, coarse, on the historic axis: Cour Carrée with Perrault's colonnade and the Pavillon de l'Horloge, Richelieu and Denon wings under slate with their pavilions, Pei's pyramid and pools, the Carrousel arch, the Grande Galerie on the Seine"
+  ]
+ },
+ "museum-the-national-gallery-london": {
+  "name": "National Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Wilkins front with octastyle portico on its podium, dome and pepperpots, lead roofs with glazed lanterns, Barry domes, and the Sainsbury Wing to the west"
+  ]
+ },
+ "museum-centre-pompidou": {
+  "name": "Centre Pompidou",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the white exoskeleton and glass body, escalator tube on the piazza front, colour-coded ducts on rue du Renard"
+  ]
+ },
+ "museum-hammer-museum": {
+  "name": "Hammer Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Barnes grey-and-white banded marble block round its courtyard with Maltzan bridge and opened Wilshire corner, the Occidental tower beside it"
+  ]
+ },
+ "museum-art-institute-of-chicago": {
+  "name": "Art Institute of Chicago",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway"
+  ]
+ },
+ "museum-national-gallery-of-victoria": {
+  "name": "NGV International",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Grounds bluestone block in its moat, entrance arch with the Water Wall, three courtyards, Great Hall roof, St Kilda Road and the garden"
+  ]
+ },
+ "museum-de-young-museum": {
+  "name": "de Young Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: three splayed copper bars turned 43° off north with glazed courts, the entrance canopy, and the Hamon Tower twisting to the city grid (rotated volumes as prism meshes)"
+  ]
+ },
+ "museum-van-gogh-museum": {
+  "name": "Van Gogh Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Rietveld's pale block with glazed ground floor and lantern, the 2015 glass entrance hall, Kurokawa's stone crescent round its sunken oval pool under a tilted titanium roof"
+  ]
+ },
+ "museum-philadelphia-museum-of-art": {
+  "name": "Philadelphia Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the golden Kasota-stone U on its podium facing the Parkway, central temple with portico and terracotta pediment, pedimented wing ends, blue tile roofs, the great stair and fountain"
+  ]
+ },
+ "museum-turner-contemporary": {
+  "name": "Turner Contemporary",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around"
+  ]
+ },
+ "museum-guggenheim-museum-bilbao": {
+  "name": "Guggenheim Bilbao",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: titanium flower atrium and petals as overlapping ellipsoids, the long fish gallery under La Salve bridge to the tower, limestone blocks on the city side, pool, river, Puppy; curves approximated — a SketchUp mesh would do them better"
+  ]
+ },
+ "museum-clark-art-institute": {
+  "name": "Clark Art Institute",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1955 white marble temple with its portico, Belluschi red-granite Manton Center, Ando Clark Center and the three-tier reflecting pool; layout guessed (no OSM buildings)"
+  ]
+ },
+ "museum-legion-of-honor": {
+  "name": "Legion of Honor",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: three-quarter Hôtel de Salm on its real bearing (rasterised rows) — arch, Ionic colonnades round the Court of Honour, Corinthian portico, rotunda dome, glass pyramid, the Thinker"
+  ]
+ },
+ "museum-j-paul-getty-museum": {
+  "name": "Getty Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Meier's pavilions round the cypress courtyard and long fountain, the glazed rotunda of the Entrance Hall, travertine below and white panels above, skylight lanterns, the Central Garden's stream to the west."
+  ]
+ },
+ "museum-the-museum-of-modern-art": {
+  "name": "MoMA",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the block between 53rd and 54th turned to Manhattan's grid: Goodwin-Stone 1939 front, Johnson's east wing, Taniguchi's granite-and-glass galleries and the Sculpture Garden, the Geffen Wing, with Museum Tower and 53W53 cut at 72 m."
+  ]
+ },
+ "museum-yale-university-art-gallery": {
+  "name": "Yale University Art Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Kahn's brick-and-stone-course wall and glass to York St, Swartwout's stone gallery with its arcade, the bridge over High St and Street Hall, turned with New Haven's grid."
+  ]
+ },
+ "museum-anderson-collection-at-stanford-university": {
+  "name": "Anderson Collection",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Ennead's three bars: glass ground floor under a cantilevered tan gallery box, bow-tie in plan, zinc-framed window bands, clerestory bar under a zinc cap, campus oaks."
+  ]
+ },
+ "parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno": {
+  "name": "Depart Colegiales",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "architecture",
+  "log": [
+   "2026-09-24 first model: ten-storey corner block of stacked concrete trays, bays jutting by turns with brown slatted shutters or black railings, long balconies on the short face, set-back houses on top, V columns under the prow, rear pool patio"
   ]
  }
 }
