@@ -52,7 +52,7 @@ looks from.
 | `box` | `[x, y, z, w, d, h]` | a block; x, y, z is its north-west bottom corner |
 | `cut` | `[x, y, z, w, d, h]` | takes out a block: courtyards, openings, a void under an overhang, a recessed glass band (cut, then box the glass back in further in) |
 | `gable` | `[x, y, z, w, d, h]` + `"axis": "x"\|"y"` | a pitched roof in that box, its ridge along the axis, eaves at z |
-| `shed` | `[x, y, z, w, d, h]` + `"rise": "+x"\|"-x"\|"+y"\|"-y"` | a mono-pitch, full height on the side it rises toward |
+| `shed` | `[x, y, z, w, d, h]` + `"rise": "+x"\|"-x"\|"+y"\|"-y"` (+ optional `"thick"`) | a mono-pitch, full height on the side it rises toward; with `thick` (metres) only a tilted slab of that thickness, not a wedge |
 | `cyl` | `[cx, cy, z, r, h]` | an upright cylinder |
 | `dome` | `[cx, cy, z, r]` | a half sphere standing on z |
 | `blob` | `[cx, cy, cz, rx, ry, rz]` | an ellipsoid, for anything that swells or curves |
@@ -61,11 +61,14 @@ looks from.
 | `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
-`brick`, `tile` (terracotta roof), `earth` (rammed earth, adobe), `ochre`
+`rubble` (grey-brown field stone), `brick`, `tile` (terracotta roof), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `thatch`, `glass` (drawn open, every other dot),
 `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `sand`,
 `gravel`, `paving`, `soil` (the place's own DIRT).
+
+The renderer casts shadow from a sun up to the north-west, so overhangs,
+courtyards and the ground east of walls fall into shade by themselves.
 
 ## Getting it right
 

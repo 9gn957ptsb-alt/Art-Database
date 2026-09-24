@@ -24,6 +24,7 @@
     render:   { c: [236, 231, 222], soil: 0.10 },
     white:    { c: [246, 243, 236], soil: 0.06 },
     stone:    { c: [178, 164, 142], soil: 0.22 },
+    rubble:   { c: [132, 120, 104], soil: 0.30 },     // grey-brown field stone, dry-stone walls
     marble:   { c: [232, 228, 220], soil: 0.06 },
     brick:    { c: [158, 84, 58], soil: 0.14 },
     tile:     { c: [170, 88, 56], soil: 0.10 },
@@ -169,10 +170,14 @@
         });
       } else if ((a = p.shed)) {
         // A mono-pitch: full height on the side it rises to, nothing on the other.
-        var rise = p.rise || "+x";
-        each(a[0], a[1], a[2], a[0] + a[3], a[1] + a[4], a[2] + a[5], function (x, y, z) {
+        // With "thick", only a slab of that thickness under the slope: a
+        // tilted roof plate rather than a wedge.
+        var rise = p.rise || "+x", thick = p.thick || 0;
+        each(a[0], a[1], a[2], a[0] + a[3], a[1] + a[4], a[2] + a[5] + thick, function (x, y, z) {
           var t = rise[1] === "x" ? (x - a[0]) / a[3] : (y - a[1]) / a[4];
           if (rise[0] === "-") { t = 1 - t; }
+          var under = a[2] + a[5] * t;
+          if (thick) { return z <= under + thick && z >= under ? m : undefined; }
           return z - a[2] <= a[5] * t ? m : undefined;
         });
       } else if ((a = p.cyl)) {
@@ -229,6 +234,18 @@
     }
     var ox = nx / 2, oy = ny / 2;
 
+    /* Shade: the sun is up and to the north-west, as the light on the globe
+       is. A dot with anything between it and the sun — under an overhang, in
+       a courtyard, on the ground east of a wall — is in shadow. */
+    function shaded(i, j, k) {
+      for (var s = 1; s < nz * 1.2; s += 1) {
+        var a = i - s, b = j - s, c = k + Math.round(s * 1.1);
+        if (c >= nz || a < 0 || b < 0) { return false; }
+        if (g[(c * ny + b) * nx + a]) { return true; }
+      }
+      return false;
+    }
+
     // The plate: the ground of the site, the place's DIRT, a layer thick,
     // with its edges going down into the earth.
     for (var j = 0; j < ny; j += 1) {
@@ -237,7 +254,8 @@
         var c = ground.c ? mix(ground.c, s, ground.soil) : s;
         if (!at(i, j, 0)) {
           var size = ground.c ? 2 : s[3];
-          if (size) { put(i - ox, j - oy, 0, size, ink(c, 0.92 + ((i + j) % 3) * 0.04), 0); }
+          var sun = shaded(i, j, 0) ? 0.62 : 1;
+          if (size) { put(i - ox, j - oy, 0, size, ink(c, sun * (0.92 + ((i + j) % 3) * 0.04)), 0); }
         }
         if (i === 0 || j === 0 || i === nx - 1 || j === ny - 1) {
           var under = soilAt(i + nx, j);
@@ -265,6 +283,7 @@
           // And the grain of it: no two dots of a wall quite the same, the
           // way no two clods of the soil are.
           light *= 0.93 + 0.14 * grainAt(i, j, k);
+          if (shaded(i, j, k + 1)) { light *= 0.66; }
           put(i - ox, j - oy, k + 1, mat.size || 2, ink(base, light), (k + 1) / nz);
         }
       }
