@@ -2321,6 +2321,65 @@ void main() {
   outA = outB = vec4(col, a);
 }`;
 
+// The fifth pass: light and space, after James Turrell (the Ganzfelds, the Skyspaces, Aten Reign at the Guggenheim,
+// 2013): most of the plane is given over to coloured light with no edge and no object, the saved paintings seen through
+// it, blurred as through a haze, and here and there clear, where the light opens like an aperture. The light comes in
+// pairs of colour, as Turrell's rooms do: a warm field, a pale band where it turns, a dark core, and the warm field
+// again, the bands curving slowly and breathing, the pairs changing over the plane without a boundary. The blur is
+// the last frame at a coarse level of its detail, so the light also carries a memory of what was there.
+const GROUND_LIGHT = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+uniform sampler2D uPrev;            // the last frame's cells, mipmapped (alpha under 0.75: a painting shown as itself)
+uniform vec2 uPrevSize, uPrevTex;
+uniform ivec2 uCell0, uPrev0;       // this frame's first cell, and the last's
+uniform float uTime, uHaze;         // uHaze: whether the last frame is here to blur (0 or 1)
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}
+// the pairs: a field and the colour it turns toward
+const vec3 PAIR[12] = vec3[12](
+  vec3(198, 58, 34), vec3(160, 120, 196),                          // vermilion and lilac
+  vec3(214, 42, 118), vec3(58, 72, 206),                           // magenta and blue
+  vec3(232, 138, 44), vec3(214, 112, 156),                         // amber and rose
+  vec3(222, 44, 40), vec3(44, 62, 210),                            // red and blue (Breathing Light)
+  vec3(40, 164, 200), vec3(118, 58, 188),                          // cyan and violet
+  vec3(236, 96, 60), vec3(96, 40, 120));                           // coral and plum
+void main() {
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy;
+  // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
+  float w = smoothUp(0.26, 0.5, vnoise(p + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(p, 233.0, 28658u) * 0.38);
+  // the edge of an aperture dithered, as light breaking up on a screen
+  w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
+  vec2 lp = vec2(gl_FragCoord.xy) + vec2(uCell0 - uPrev0);          // where this cell was in the last frame
+  vec4 was = texelFetch(uPrev, ivec2(lp), 0);
+  bool inPrev = uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize));
+  if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
+  if (w <= 0.0) discard;
+  // which pair, changing over the plane with no boundary
+  float k = vnoise(p, 1597.0, 28661u) * 5.999;
+  int i = int(k);
+  float f = smoothstep(0.3, 0.7, fract(k));
+  vec3 c1 = mix(PAIR[2 * i], PAIR[2 * min(i + 1, 5)], f), c2 = mix(PAIR[2 * i + 1], PAIR[2 * min(i + 1, 5) + 1], f);
+  vec3 pale = mix(c2, vec3(236, 230, 240), 0.35), dark = c2 * 0.16 + vec3(8, 4, 10);
+  // the bands: across a slowly turning direction, curving, breathing
+  float an = 6.2832 * vnoise(p, 2584.0, 28663u) + uTime / 233.0;
+  vec2 dir = vec2(cos(an), sin(an));
+  float sAt = dot(p, dir) + 89.0 * sin(dot(p, vec2(-dir.y, dir.x)) / 610.0 + uTime / 89.0);
+  float x = fract(sAt / 987.0 + 0.05 * sin(uTime / 34.0));   // one band to a view, as one horizon to a room
+  vec3 L = x < 0.42 ? mix(c1, pale, pow(smoothstep(0.0, 0.42, x), 3.0))
+         : x < 0.55 ? mix(pale, dark, smoothstep(0.42, 0.55, x))
+         : mix(dark, c1, smoothstep(0.55, 1.0, x));
+  // and through it, the plane as it was, blurred
+  if (inPrev) {
+    vec3 haze = textureLod(uPrev, (lp + 0.5) / uPrevTex, 4.0).rgb * 255.0;
+    L = mix(L, L * (0.55 + 0.9 * lum(haze) / 255.0), 0.5);
+    L = mix(L, haze, 0.18);
+  }
+  outA = outB = vec4(min(L, vec3(255.0)) / 255.0, w * 0.92);
+}`;
+
 /**
  * The ground painted on the GPU under the page's canvas, or null where there is no WebGL2 or only a software renderer
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
@@ -2340,10 +2399,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, U = {}, V = {}, F = {}, D = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
-  let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0];
+  let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
     const Q = imgs[0].naturalWidth, c2 = document.createElement("canvas");
@@ -2397,7 +2456,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -2466,7 +2525,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -2475,6 +2534,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     // and so is the depth pass
     const dd = finish(pending.d, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uTime", "uDeep"]);
     if (dd) { [depthProg, D] = dd; gl.useProgram(depthProg); gl.uniform1i(D.uPrev, 10); }
+    // and the light
+    const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze"]);
+    if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -2641,7 +2703,23 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
-    if (depthProg && deep) {
+    // then the light over it all
+    const lit = lightProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0);
+    if (lit) {
+      gl.useProgram(lightProg);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2f(Lu.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(Lu.uPrevTex, FW, FH);
+      gl.uniform2i(Lu.uCell0, cx0, cy0);
+      gl.uniform2i(Lu.uPrev0, prev0[0], prev0[1]);
+      gl.uniform1f(Lu.uTime, t);
+      gl.uniform1f(Lu.uHaze, prevN[0] ? 1 : 0);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
+    if ((depthProg && deep) || lit) {
       // this frame, kept for the next
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
       gl.readBuffer(gl.COLOR_ATTACHMENT1);
@@ -2650,7 +2728,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
       gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
       gl.generateMipmap(gl.TEXTURE_2D);
-      prevN = [cw, ch];
+      prevN = [cw, ch]; prev0 = [cx0, cy0];
     } else prevN = [0, 0];
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);

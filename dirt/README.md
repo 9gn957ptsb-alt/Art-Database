@@ -373,6 +373,15 @@ and no scale comes first. How deep the plane goes is a field 987 cells across dr
 from flat to as deep as the device draws (full at tier 3, φ⁻¹ at tier 2, none below); anomalies and the Earth keep out
 of it. It is a fourth small shader, fed the last frame's cells, mipmapped.
 
+**Light and space.** After James Turrell (the Ganzfelds, the Skyspaces, *Aten Reign* at the Guggenheim, 2013), most
+of the plane is given over to coloured light with no edge and no object. The light comes in pairs of colour, as his
+rooms do: vermilion and lilac, magenta and blue, amber and rose, red and blue (*Breathing Light*, LACMA, 2013), cyan
+and violet, coral and plum. Across each view runs one horizon, 987 cells to a band: a warm field, a pale band where it
+turns, a dark core, and the warm field again, curving slowly and breathing, the pairs changing over the plane with no
+boundary. Through the light the paintings are seen blurred, as through a haze (the last frame at a coarse level of its
+detail), and here and there it opens in soft apertures, their edges dithered, where they show clear; a painting shown
+as itself (the quilts, the hangs) has the light stand back from it. A fifth small shader, at every tier from 1 up.
+
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
 black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque, Cézanne,
