@@ -1266,7 +1266,30 @@ function showMode() {
   if (MODE === "plane") placeEl.hidden = true;
   else if (MODE === "globe") placeText(`<span class=pl-name>The Earth in ${MONTHS[EM]}</span><div class=pl-line>every place in the paintings nearest its own colours · point to name a place, and click to go down into it</div>`);
 }
-$("e-earth").addEventListener("click", () => toGlobe());
+// ---- the Earth is the Artist Website's globe ------------------------------------------------------------------
+// One Earth, two ways in: DIRT's Earth button opens exactly what the website shows (its globe, its places, and
+// going down into DIRT Earth and its streets), published beside this page under world/ (dirt/world_files.py).
+// Plane comes back to the plane, where it was left. (On the website's own edition, SITE, it is the website itself.)
+let worldEl = null;
+function openWorld() {
+  if (!worldEl) {
+    const st = document.createElement("style");
+    st.textContent = `.world-view { position: fixed; inset: 0; z-index: 60; background: #eeeef1; }
+      .world-view iframe { width: 100%; height: 100%; border: 0; display: block; }
+      .world-view button { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 1;
+        background: rgba(255, 255, 255, 0.78); color: #1b1d24; border: 1px solid rgba(27, 29, 36, 0.25); border-radius: 999px; }`;
+    document.head.appendChild(st);
+    worldEl = document.createElement("div");
+    worldEl.className = "world-view";
+    worldEl.innerHTML = `<iframe src="world/v2/index.html" title="The Earth: the Artist Website's globe"></iframe><button type="button">Plane</button>`;
+    worldEl.querySelector("button").addEventListener("click", closeWorld);
+    document.body.appendChild(worldEl);
+  }
+  worldEl.hidden = false;
+  worldEl.querySelector("iframe").focus();
+}
+function closeWorld() { if (worldEl) worldEl.hidden = true; }
+$("e-earth").addEventListener("click", () => (SITE ? toGlobe() : openWorld()));
 // On the website the globe is the site's own: Globe goes back up to it.
 const upToSite = () => window.parent.postMessage({ dirt: "up", lat: MODE === "city" ? CITY.lat : latOfY(vy + VH / 2), lon: MODE === "city" ? CITY.lon : lonOfX(vx + VW / 2) }, "*");
 $("e-globe").addEventListener("click", () => (SITE && window.parent !== window ? upToSite() : toGlobe()));
@@ -1430,7 +1453,8 @@ globeCv.addEventListener("pointerup", (ev) => {
 function followHash() {
   const h = decodeURIComponent(location.hash.slice(1));
   const m = h.match(/(?:^|&)earth=(-?[\d.]+),(-?[\d.]+)(?:,(\d+))?/);
-  if (m) {
+  if (!SITE && (m || /(?:^|&)(globe|world)(?:&|$)/.test(h))) openWorld();       // the Earth is the website's
+  else if (m) {
     const go = () => (placed ? toEarth(+m[1], +m[2], m[3] !== undefined ? (+m[3] - 1 + 12) % 12 : undefined) : setTimeout(go, 55));
     go();
   } else if (/(?:^|&)globe(?:&|$)/.test(h)) toGlobe();
