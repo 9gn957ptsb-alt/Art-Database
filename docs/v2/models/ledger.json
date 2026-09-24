@@ -403,11 +403,12 @@
  "museum-guggenheim-museum-bilbao": {
   "name": "Guggenheim Bilbao",
   "refined": "2026-09-24",
-  "passes": 1,
-  "sketchup": false,
+  "passes": 2,
+  "sketchup": true,
   "kind": "museum",
   "log": [
-   "2026-09-24 first model: titanium flower atrium and petals as overlapping ellipsoids, the long fish gallery under La Salve bridge to the tower, limestone blocks on the city side, pool, river, Puppy; curves approximated — a SketchUp mesh would do them better"
+   "2026-09-24 first model: titanium flower atrium and petals as overlapping ellipsoids, the long fish gallery under La Salve bridge to the tower, limestone blocks on the city side, pool, river, Puppy; curves approximated — a SketchUp mesh would do them better",
+   "2026-09-24 SketchUp: the titanium rebuilt as 17 lofted and curling solids (atrium bundle and crown, seven sails, four galleries, the fish gallery and tail, the tower cap), replacing 40 overlapping blobs"
   ]
  },
  "museum-clark-art-institute": {

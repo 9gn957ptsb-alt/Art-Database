@@ -31,6 +31,10 @@ redirects to Trimble's S3 bucket; fetch it with redirects followed:
 
 (`api.sketchup.com` is allowed under the environment's Network access.)
 
+Built so far: Walt Disney Concert Hall (the whole building) and Guggenheim
+Bilbao (the titanium only — `to_model.py … --keep-except blob` keeps the
+model's straight parts and replaces its blobs with the meshes).
+
 **Storage.** Git keeps every version of a binary for good, so a `.skp` is
 re-committed only when a building's form really changes — not on every small
 refinement. The build script is the source of truth and regenerates the
