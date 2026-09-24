@@ -1,0 +1,778 @@
+{
+ "slug": "tree-as-origin-residence-204-by-estudio-bearzotti",
+ "name": "Residence 204",
+ "voxel": 0.5,
+ "site": [
+  60,
+  48
+ ],
+ "ground": "grass",
+ "parts": [
+  {
+   "box": [
+    -2.5,
+    -24,
+    0,
+    4,
+    16,
+    0.2
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -28,
+    -6,
+    0,
+    23,
+    9,
+    3.4
+   ],
+   "m": "concrete"
+  },
+  {
+   "cut": [
+    -27,
+    2,
+    0.2,
+    21,
+    1.2,
+    2.3
+   ]
+  },
+  {
+   "box": [
+    -27,
+    2.4,
+    0.2,
+    21,
+    0.3,
+    2.3
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -28,
+    3,
+    0,
+    23,
+    2,
+    0.2
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    -29.5,
+    -7,
+    3.4,
+    25,
+    12,
+    0.2
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -29.5,
+    -7,
+    3.6,
+    25,
+    12,
+    0.3
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -20,
+    -4.5,
+    3.9,
+    2.6,
+    2.6,
+    2.2
+   ],
+   "m": "concrete"
+  },
+  {
+   "cut": [
+    -26,
+    -6.2,
+    1.3,
+    9,
+    0.6,
+    0.7
+   ]
+  },
+  {
+   "box": [
+    -26,
+    -6,
+    1.3,
+    9,
+    0.3,
+    0.7
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -16,
+    -6.2,
+    0,
+    11,
+    0.8,
+    3.4
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -5,
+    -7,
+    0,
+    1.2,
+    9,
+    3.3
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    2.2,
+    -7,
+    0,
+    1.2,
+    9,
+    3.3
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -3.8,
+    -6,
+    0.2,
+    6,
+    0.3,
+    2.9
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -3.8,
+    1.2,
+    0.2,
+    6,
+    0.3,
+    2.9
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -5.5,
+    -7.5,
+    3.3,
+    9.5,
+    9.5,
+    0.5
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    -4.5,
+    2,
+    0,
+    7.5,
+    7,
+    0.2
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -0.8,
+    5.2,
+    0,
+    0.6,
+    0.6,
+    8.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -0.5,
+    5.5,
+    8.8,
+    6.8999999999999995,
+    6.300000000000001,
+    2.52
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    3.4,
+    -7,
+    0,
+    22,
+    17,
+    1.2
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    3.4,
+    -7,
+    1.2,
+    16,
+    10,
+    3.4
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    3.4,
+    -7.6,
+    0,
+    12,
+    0.8,
+    4.6
+   ],
+   "m": "stone"
+  },
+  {
+   "cut": [
+    8,
+    -7.8,
+    2.2,
+    5,
+    1.2,
+    1
+   ]
+  },
+  {
+   "box": [
+    8,
+    -7.2,
+    2.2,
+    5,
+    0.3,
+    1
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    4.5,
+    2.4,
+    1.3,
+    15,
+    1,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    4.5,
+    2.6,
+    1.3,
+    15,
+    0.3,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    18.8,
+    -5.5,
+    1.3,
+    1,
+    8,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    19,
+    -5.5,
+    1.3,
+    0.3,
+    8,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    3.4,
+    3,
+    1.2,
+    22,
+    7,
+    0.1
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    19.4,
+    -7,
+    1.2,
+    6,
+    10,
+    0.1
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    3,
+    -8,
+    4.6,
+    23,
+    18.5,
+    0.2
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    3,
+    -8,
+    4.8,
+    23,
+    18.5,
+    0.35
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    25.2,
+    9.7,
+    1.2,
+    0.3,
+    0.3,
+    3.4
+   ],
+   "m": "steel"
+  },
+  {
+   "box": [
+    14,
+    9.7,
+    1.2,
+    0.3,
+    0.3,
+    3.4
+   ],
+   "m": "steel"
+  },
+  {
+   "box": [
+    25.2,
+    -0.5,
+    1.2,
+    0.3,
+    0.3,
+    3.4
+   ],
+   "m": "steel"
+  },
+  {
+   "box": [
+    5,
+    10,
+    0,
+    20,
+    1,
+    0.8
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    5,
+    11,
+    0,
+    20,
+    1,
+    0.4
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -20,
+    -18,
+    0,
+    1,
+    8,
+    2.6
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -21,
+    -18,
+    2.6,
+    11,
+    8,
+    0.2
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -21,
+    -18,
+    2.8,
+    11,
+    8,
+    0.3
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -19,
+    -18,
+    0,
+    9,
+    8,
+    0.2
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -11,
+    -17,
+    0,
+    1,
+    6,
+    2.6
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    8,
+    14,
+    0,
+    16,
+    6,
+    0.9
+   ],
+   "m": "corten"
+  },
+  {
+   "cut": [
+    8.5,
+    14.5,
+    0.2,
+    15,
+    5,
+    0.8
+   ]
+  },
+  {
+   "box": [
+    8.5,
+    14.5,
+    0,
+    15,
+    5,
+    0.75
+   ],
+   "m": "water"
+  },
+  {
+   "box": [
+    5,
+    20,
+    0,
+    20,
+    3,
+    0.2
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    5,
+    14,
+    0,
+    3,
+    6,
+    0.2
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    21,
+    4,
+    1.3,
+    0.6,
+    0.4,
+    3.2
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    15.7,
+    20.7,
+    0,
+    0.6,
+    0.6,
+    4.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    16,
+    21,
+    4.8,
+    2.9899999999999998,
+    2.7300000000000004,
+    1.092
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -15.3,
+    11.7,
+    0,
+    0.6,
+    0.6,
+    6.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -15,
+    12,
+    6.8,
+    4.369999999999999,
+    3.9899999999999998,
+    1.5959999999999999
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    27.7,
+    5.7,
+    0,
+    0.6,
+    0.6,
+    5.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    28,
+    6,
+    5.8,
+    3.6799999999999997,
+    3.3600000000000003,
+    1.344
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    27.7,
+    -8.3,
+    0,
+    0.6,
+    0.6,
+    4.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    28,
+    -8,
+    4.8,
+    3.4499999999999997,
+    3.1500000000000004,
+    1.26
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -8.3,
+    -14.3,
+    0,
+    0.6,
+    0.6,
+    5.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -8,
+    -14,
+    5.8,
+    3.9099999999999997,
+    3.57,
+    1.428
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    4.7,
+    -15.3,
+    0,
+    0.6,
+    0.6,
+    5.0
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    5,
+    -15,
+    5.3,
+    3.6799999999999997,
+    3.3600000000000003,
+    1.344
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -27.3,
+    13.7,
+    0,
+    0.6,
+    0.6,
+    4.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -27,
+    14,
+    4.8,
+    3.4499999999999997,
+    3.1500000000000004,
+    1.26
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -26.3,
+    -15.3,
+    0,
+    0.6,
+    0.6,
+    4.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -26,
+    -15,
+    4.8,
+    3.2199999999999998,
+    2.94,
+    1.176
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    0.7,
+    -20.3,
+    0,
+    0.6,
+    0.6,
+    3.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    1,
+    -20,
+    3.8,
+    2.76,
+    2.52,
+    1.008
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -8,
+    8,
+    1.2,
+    1.2
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -20,
+    8,
+    1.2,
+    1.2
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -24,
+    -12,
+    1,
+    1
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -6,
+    -10,
+    1,
+    1
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    2,
+    -11,
+    1,
+    1
+   ],
+   "m": "plant"
+  }
+ ],
+ "notes": "From the garden views (a long, low single-storey house under thin flat dark roofs with warm wood soffits; the social wing raised on a stone plinth with a five-metre gallery wrapping its south and east sides on W310 steel, glass walls under a concrete band; the lower bedroom wing with a concrete chimney box, set partly into the slope), the approach views (stone-clad north walls either side of a glass entrance hall under a concrete lintel, steps down from the road, a horizontal window in the stone), the carob tree preserved in a stone-paved patio just off the hall, the raised pool with a corten rim and travertine deck, grass terraces with concrete edges, and a carport under the same roof type. Orientation guessed: road to the north, garden and golf course to the south; social wing placed east (left of the hall on entering, per the article). Plan dimensions, the carport's position and the pool's exact place were estimated from the photos; the site slope is flattened except for the social wing's plinth. The carob and the other native trees are drawn as flat umbrella crowns (a blob on a trunk), the way they grow there."
+}

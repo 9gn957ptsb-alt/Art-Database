@@ -311,7 +311,7 @@
     var scale = Math.min(w * (fit || 0.9) / (dots.span * 1.42),
                          h * 0.86 / (dots.span * 1.42 * st + tall));
     var cx0 = w / 2, cy0 = h * 0.5 + tall * scale * 0.42;
-    var grain = Math.max(0.5, scale * 0.42);
+    var cover = Math.max(0.5, scale * 0.56);
     if (!sorter.order || sorter.order.length < dots.count) {
       sorter.order = new Uint32Array(dots.count);
       sorter.key = new Float32Array(dots.count);
@@ -332,7 +332,10 @@
       var yr2 = dots.x[k] * sin + dots.y[k] * cos;
       var sx = cx0 + xr * scale;
       var sy = cy0 + (yr2 * st - dots.z[k] * ct) * scale;
-      var r = Math.max(1, Math.round(dots.size[k] * grain));
+      // A dot of size 2 covers its whole cell at any scale — rounded up,
+      // never down, so a wall is never see-through on a small screen. Size
+      // 1 is half a cell: the soil's own gaps and speckle.
+      var r = Math.max(1, Math.ceil(dots.size[k] * cover));
       if (dots.ink[k] !== was) { ctx.fillStyle = was = dots.ink[k]; }
       ctx.fillRect(Math.round(sx - r / 2), Math.round(sy - r / 2), r, r);
     }
