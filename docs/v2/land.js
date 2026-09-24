@@ -710,7 +710,7 @@
       raiseCity({
         work: work, slug: work.slug, title: work.title, where: spot.where,
         lat: spot.lat * RAD, lon: wrap(spot.lon * RAD),
-        hue: hues[work.slug]
+        layer: "collages", hue: hues[work.slug]
       }, false);
     });
 
@@ -747,7 +747,7 @@
       raiseCity({
         work: null, slug: m.slug, title: m.name, where: m.where,
         lat: m.lat * RAD, lon: wrap(m.lon * RAD), building: m, museum: m, real: true,
-        layer: "artworks", hue: hues[nearWork(m)] || 0.09
+        layer: "museums", hue: hues[nearWork(m)] || 0.09
       }, true);
     });
     filterGlobe();
@@ -755,17 +755,18 @@
 
   /* ---- the filter -----------------------------------------------------------
 
-     The globe carries the collages and the landmarks always, and one layer
-     of everything else at a time, so it is never crowded: the museums that
-     hold the saved works, or the architecture. A new kind of place is one
-     more entry here and a `layer` on its marks. The choice is kept per
-     viewer. */
+     The globe carries the landmarks always, and one layer of everything
+     else at a time, so it is never crowded and each kind reads as itself:
+     the artist's own collages, the museums that hold the works he saved,
+     or the architecture. A new kind of place is one more entry here and a
+     `layer` on its marks. The choice is kept per viewer. */
   var LAYERS = [
-    { key: "artworks", label: "Artworks" },
+    { key: "collages", label: "Collages" },
+    { key: "museums", label: "Museums" },
     { key: "architecture", label: "Architecture" }
   ];
   var LAYER_KEY = "globe-layer";
-  var layerOn = "architecture";
+  var layerOn = "collages";
   try { layerOn = localStorage.getItem(LAYER_KEY) || layerOn; } catch (e) {}
   if (!LAYERS.some(function (l) { return l.key === layerOn; })) { layerOn = LAYERS[0].key; }
   var filterEl = document.getElementById("filter");
@@ -886,14 +887,6 @@
     }
     out.forEach(function (it) {
       var el = it.city.el;
-      // A layer's marks (the museums, the buildings) are dots: there are a
-      // hundred of them, and their names would bury the collages'. The name
-      // comes on a hover or a focus, and in the banner on the way down.
-      if (it.city.layer) {
-        it.city.name.style.visibility = "";
-        it.city.name.style.transform = "";
-        return;
-      }
       var wide = (it.city.name.offsetWidth || 90) + 18;
       // Right, then left, then a line up or down on either side — the
       // dot never moves, only where its name is written beside it.

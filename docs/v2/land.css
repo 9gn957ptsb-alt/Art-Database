@@ -2108,9 +2108,5 @@
 .dirt-look .held img { background: rgba(234, 223, 205, 0.06); }
 .held img { color: transparent; overflow: hidden; }
 
-/* A layer's marks carry their names only when pointed at. */
-.city[data-layer] .city-name { visibility: hidden; }
-.city[data-layer]:hover .city-name,
-.city[data-layer]:focus-visible .city-name { visibility: inherit; }
-.city[data-layer]:hover,
-.city[data-layer]:focus-visible { z-index: 60; }
+.city:hover,
+.city:focus-visible { z-index: 60; }
