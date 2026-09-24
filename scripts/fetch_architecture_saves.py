@@ -9,7 +9,14 @@ environment and sends it itself, exactly as the app's own front end does:
     GET /api/account-data/Social/me/bookmarks
     Authorization: Bearer <token>
 
-The token is read from the environment variable AA_TOKEN. It is set in the cloud
+Best: the refresh token, in the environment variable AA_REFRESH_TOKEN. The
+site signs in with AWS Cognito, and its refresh token lasts weeks; this script
+trades it for fresh tokens on every run, so new bookmarks arrive with nothing
+to copy. To find it: signed in at thearchitecturalauthority.com in Chrome,
+open DevTools (View > Developer > Developer Tools) > Application > Local
+Storage (or Cookies) > the site, and copy the value whose key ends in
+".refreshToken" (it begins "eyJ"). Otherwise the short-lived token is read
+from AA_TOKEN, as before. It is set in the cloud
 environment's settings (the environment menu in the session title bar, then Edit),
 never pasted into a chat and never written to the repo. A session started after it
 is set picks it up. The token is the artist's own session token for his own saved
@@ -40,6 +47,7 @@ BASE = os.environ.get(
     "AA_BASE", "https://www.thearchitecturalauthority.com/api/account-data"
 )
 PATH = "Social/me/bookmarks"
+REFRESH_VAR = "AA_REFRESH_TOKEN"   # long-lived: the script signs itself in with it
 TOKEN_VAR = "AA_TOKEN"          # the access token (or the one the Network tab shows)
 ID_TOKEN_VAR = "AA_ID_TOKEN"    # optional: the id token, tried if the first is refused
 OUT = Path(__file__).resolve().parent.parent / "data" / "architecture_saves_raw.json"
@@ -56,10 +64,46 @@ def clean(value):
     return value[len("Bearer "):].strip() if value.lower().startswith("bearer ") else value
 
 
+# The site signs in through AWS Cognito (a public app client, no secret). Its
+# refresh token lasts weeks, not an hour, and trades for fresh tokens on
+# every run — so new bookmarks come in without anyone copying tokens again,
+# the way the Artsy saves do.
+COGNITO = "https://cognito-idp.us-east-2.amazonaws.com/"
+CLIENT_ID = "casbqtnci5i6n48fj89k70tup"
+
+
+def refreshed():
+    """Fresh [(name, token)] from the refresh token, or [] if there is none."""
+    refresh = clean(os.environ.get(REFRESH_VAR))
+    if not refresh:
+        return []
+    try:
+        r = requests.post(COGNITO, timeout=60, headers={
+            "Content-Type": "application/x-amz-json-1.1",
+            "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
+        }, json={"AuthFlow": "REFRESH_TOKEN_AUTH", "ClientId": CLIENT_ID,
+                 "AuthParameters": {"REFRESH_TOKEN": refresh}})
+    except requests.RequestException as exc:
+        sys.exit(f"Could not reach the sign-in service ({COGNITO}): {exc}")
+    if r.status_code != 200:
+        kind = (r.json() if r.headers.get("content-type", "").startswith("application/") else {}).get("__type", "")
+        sys.exit(
+            f"The refresh token in {REFRESH_VAR} was refused ({r.status_code} {kind}). It has\n"
+            "expired or was signed out. Copy a fresh one from the site into the environment's\n"
+            f"settings as {REFRESH_VAR} (see the top of this script), then start a new session."
+        )
+    got = r.json().get("AuthenticationResult", {})
+    return [(name, got[key]) for name, key in (("refreshed access token", "AccessToken"),
+                                               ("refreshed id token", "IdToken")) if got.get(key)]
+
+
 def tokens():
     """The tokens to try, in order. The site keeps two (an access token and an
     id token); which one its API wants is not worth a round trip to find out,
     since each change to the environment needs a new session."""
+    fresh = refreshed()
+    if fresh:
+        return fresh
     found = [(name, clean(os.environ.get(name))) for name in (TOKEN_VAR, ID_TOKEN_VAR)]
     found = [(name, value) for name, value in found if value]
     if not found:
