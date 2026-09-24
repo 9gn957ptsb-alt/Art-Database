@@ -35,11 +35,12 @@
  "language-of-light-residence-oliva-by-estudio-bearzotti": {
   "name": "Residence Oliva",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: garden glazing mullions, gravel roofs within dark/concrete rims, terrace sofas and pool loungers"
   ]
  },
  "roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos": {
@@ -66,11 +67,12 @@
  "embracing-nature-naman-pure-spa-by-mia-design-studio": {
   "name": "Naman Pure Spa",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: fin screens filled in so the pool and east faces read solid white, jagged bars above the roof on the pool side, screens on the bare north faces, planting along the roof edge"
   ]
  },
  "balance-and-permanence-unpuente-by-paolini-arquitectos": {
@@ -491,6 +493,96 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Snøhetta's skylights in the lawn"
+  ]
+ },
+ "museum-cleveland-museum-of-art": {
+  "name": "Cleveland Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1916 marble temple with its Ionic portico and stair to the Fine Arts Garden, Breuer's banded granite wing, Viñoly's glass-roofed atrium and east and west wings, Wade Lagoon"
+  ]
+ },
+ "museum-dallas-museum-of-art": {
+  "name": "Dallas Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Barnes's low limestone composition on the diagonal downtown grid, the barrel vault closing Flora Street, the skylit Concourse spine, open courts, the stepped Reves/Hamon wings and the walled sculpture garden"
+  ]
+ },
+ "museum-isabella-stewart-gardner-museum": {
+  "name": "Isabella Stewart Gardner Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Fenway Court, four plain stucco storeys round the glass-roofed garden court with its few Venetian windows, and Piano's 2012 wing: copper-clad cube and gallery over a glass ground storey, greenhouses and the glass link"
+  ]
+ },
+ "museum-alte-nationalgalerie": {
+  "name": "Alte Nationalgalerie",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: sandstone temple on its podium turned to the real axis, apse, portico and pediment over the double stair and equestrian statue, colonnade garden, the Spree"
+  ]
+ },
+ "museum-museum-brandhorst": {
+  "name": "Museum Brandhorst",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the long gallery wing and taller head, its skin of coloured ceramic rods as vertical stripes, north-light sheds on the roof, between Türkenstraße and the Kunstareal lawn"
+  ]
+ },
+ "museum-museo-thyssen-bornemisza": {
+  "name": "Museo Thyssen-Bornemisza",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Palacio de Villahermosa in rose render on a granite base with stone trim, slate roof and Moneo skylight, the 2004 extension to the west, the railed garden, the Paseo del Prado"
+  ]
+ },
+ "museum-triennale-design-museum": {
+  "name": "Triennale (Palazzo dell'Arte)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Muzio's long red-brick Palazzo dell'Arte on its real bearing — raised entrance block with three arched portals on Viale Alemagna, the curved exedra to Parco Sempione, skylit roofs"
+  ]
+ },
+ "museum-mca-chicago": {
+  "name": "MCA Chicago",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Kleihues's aluminium-grid block on a limestone podium, the broad west stair, glazed atrium in the front, barrel-vaulted roof galleries, garden terraces east; museums.json coordinates are off (Near West Side)."
+  ]
+ },
+ "museum-stedelijk-museum-amsterdam": {
+  "name": "Stedelijk Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Weissman's 1895 red-brick building with stone bands, slate roofs and central tower on Paulus Potterstraat; Benthem Crouwel's white bathtub over a glass ground floor with its canopy over the Museumplein."
   ]
  }
 }
