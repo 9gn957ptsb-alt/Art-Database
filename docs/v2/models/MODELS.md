@@ -34,7 +34,7 @@ looks from.
 }
 ```
 
-- `voxel`: metres to one voxel. Fine enough for the building's smallest
+- `voxel`: metres to one voxel. Keep `max(site) / voxel` at about 100. Fine enough for the building's smallest
   telling feature (a mullion rhythm, a stair, a parapet). Keep
   `max(site) / voxel` at 120 or under, and the whole model under ~60,000 dots
   (the preview prints the count). 0.25 for a small pavilion, 0.5 for a house,
@@ -56,15 +56,16 @@ looks from.
 | `cyl` | `[cx, cy, z, r, h]` | an upright cylinder |
 | `dome` | `[cx, cy, z, r]` | a half sphere standing on z |
 | `blob` | `[cx, cy, cz, rx, ry, rz]` | an ellipsoid, for anything that swells or curves |
-| `pool` | `[x, y, w, d]` | water at ground level |
-| `tree` | `[cx, cy, h, r]` | a trunk and a round crown, h tall, crown radius r |
+| `hip` | `[x, y, z, w, d, h]` | a hipped roof, rising from all four eaves at z to a ridge h above |
+| `pool` | `[x, y, w, d]` (+ `z`) | water at ground level, or at z for a raised pool |
+| `tree` | `[cx, cy, h, r]` + optional `"shape"` | a trunk and a crown, h tall, crown radius r; `shape`: `round` (default), `poplar`, `umbrella` (flat, wide), `palm` (bare trunk, frond crown) |
 | `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
-`rubble` (grey-brown field stone), `brick`, `tile` (terracotta roof), `earth` (rammed earth, adobe), `ochre`
+`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `sandstone` (red, rusticated), `tile` (terracotta roof), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `thatch`, `glass` (drawn open, every other dot),
-`metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `sand`,
+`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `drygrass`, `sand`,
 `gravel`, `paving`, `soil` (the place's own DIRT).
 
 The renderer casts shadow from a sun up to the north-west, so overhangs,

@@ -3,7 +3,9 @@
    draws it, from four sides, into one PNG — to check it against the
    photographs it was made from.
 
-     node scripts/preview_model.js docs/v2/models/<slug>.json out.png
+     node scripts/preview_model.js docs/v2/models/<slug>.json out.png [--big]
+
+   --big draws each view at twice the resolution, to judge detail.
 
    Uses the site's own docs/v2/models.js and the DIRT at the building's place
    (docs/v2/dirt-land.png, located from docs/v2/architecture.json). Needs
@@ -21,7 +23,9 @@ function playwright() {
 }
 
 (async () => {
-  const [specPath, out] = process.argv.slice(2);
+  const args = process.argv.slice(2).filter(a => a !== "--big");
+  const zoom = process.argv.includes("--big") ? 2 : 1;
+  const [specPath, out] = args;
   if (!specPath || !out) {
     console.error("usage: node scripts/preview_model.js <model.json> <out.png>");
     process.exit(2);
@@ -35,12 +39,12 @@ function playwright() {
     fs.readFileSync(path.join(root, "docs/v2/dirt-land.png")).toString("base64");
 
   const browser = await playwright().chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1200 * zoom, height: 900 * zoom } });
   page.on("pageerror", e => { console.error("page error:", e.message); });
   await page.setContent(`<!doctype html><body style="margin:0;background:#eeecec">
-    <canvas id="c" width="1200" height="900" style="image-rendering:pixelated"></canvas>
+    <canvas id="c" width="${1200 * zoom}" height="${900 * zoom}" style="image-rendering:pixelated"></canvas>
     <script>${models}</script></body>`);
-  const info = await page.evaluate(async ({ spec, dirt, where }) => {
+  const info = await page.evaluate(async ({ spec, dirt, where, zoom }) => {
     const img = new Image();
     await new Promise(r => { img.onload = r; img.src = dirt; });
     const t = document.createElement("canvas");
@@ -60,13 +64,13 @@ function playwright() {
     const big = document.getElementById("c"), bx = big.getContext("2d");
     bx.imageSmoothingEnabled = false;
     const small = document.createElement("canvas");
-    small.width = 300; small.height = 225;
+    small.width = 300 * zoom; small.height = 225 * zoom;
     [0, 1, 2, 3].forEach((q, i) => {
       Models.draw(small, dots, Math.PI / 4 + q * Math.PI / 2, 1, 0.9);   // the four isometric views
-      bx.drawImage(small, (i % 2) * 600, Math.floor(i / 2) * 450, 600, 450);
+      bx.drawImage(small, (i % 2) * 600 * zoom, Math.floor(i / 2) * 450 * zoom, 600 * zoom, 450 * zoom);
     });
     return { dots: dots.count, ms: Math.round(built) };
-  }, { spec, dirt, where });
+  }, { spec, dirt, where, zoom });
   await page.locator("#c").screenshot({ path: out });
   console.log(`${spec.slug}: ${info.dots} dots, built in ${info.ms} ms -> ${out}`);
   await browser.close();

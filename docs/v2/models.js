@@ -30,6 +30,12 @@
     tile:     { c: [170, 88, 56], soil: 0.10 },
     earth:    { c: [178, 126, 82], soil: 0.35 },      // rammed earth, adobe
     ochre:    { c: [208, 172, 130], soil: 0.24 },     // concrete or plaster tinted to the ground
+    yellow:   { c: [226, 178, 64], soil: 0.12 },      // Izamal's yellow lime paint
+    rose:     { c: [196, 132, 120], soil: 0.16 },     // dusty-rose pigmented render
+    palebrick:{ c: [196, 180, 156], soil: 0.16 },     // grey-beige brick
+    sandstone:{ c: [158, 88, 70], soil: 0.18 },       // red sandstone, rusticated
+    drygrass: { c: [206, 190, 140], soil: 0.28, size: 2 },   // feather grass, dry meadow
+    mesh:     { c: [60, 58, 58], soil: 0.04, open: 0.5 },    // expanded metal, perforated screens
     wood:     { c: [178, 128, 82], soil: 0.10 },
     timber:   { c: [104, 72, 46], soil: 0.10 },
     thatch:   { c: [170, 142, 88], soil: 0.20 },
@@ -77,13 +83,14 @@
         for (var q = 2; q < p.mesh.v.length; q += 3) { top = Math.max(top, p.mesh.v[q]); }
         return;
       }
-      var a = p.box || p.gable || p.shed || p.cut || p.blob || p.cyl || p.dome || p.tree;
+      var a = p.box || p.gable || p.shed || p.hip || p.cut || p.blob || p.cyl || p.dome || p.tree;
       if (!a) { return; }
-      if (p.box || p.gable || p.shed) { top = Math.max(top, a[2] + a[5]); }
+      if (p.box || p.gable || p.shed || p.hip) { top = Math.max(top, a[2] + a[5] + (p.thick || 0)); }
       if (p.cyl) { top = Math.max(top, a[2] + a[4]); }
       if (p.dome) { top = Math.max(top, a[2] + a[3]); }
       if (p.blob) { top = Math.max(top, a[2] + a[5]); }
       if (p.tree) { top = Math.max(top, a[2]); }
+      if (p.pool) { top = Math.max(top, (p.pool[4] || 0) + 1); }
     });
     var nz = Math.min(400, Math.ceil(top / v) + 2);
     var grid = new Uint8Array(nx * ny * nz);          // 0 empty, else material index + 1
@@ -196,19 +203,42 @@
           var dx = (x - a[0]) / a[3], dy = (y - a[1]) / a[4], dz = (z - a[2]) / a[5];
           return dx * dx + dy * dy + dz * dz <= 1 ? m : undefined;
         });
+      } else if ((a = p.hip)) {
+        // A hipped roof: rising from all four eaves at z to a ridge (or a
+        // point, on a square plan) h above.
+        var hx = a[0] + a[3] / 2, hy = a[1] + a[4] / 2, half = Math.min(a[3], a[4]) / 2;
+        each(a[0], a[1], a[2], a[0] + a[3], a[1] + a[4], a[2] + a[5], function (x, y, z) {
+          var inX = (a[3] / 2 - Math.abs(x - hx)) / half, inY = (a[4] / 2 - Math.abs(y - hy)) / half;
+          return z - a[2] <= a[5] * Math.min(1, inX, inY) ? m : undefined;
+        });
       } else if ((a = p.tree)) {
-        // cx, cy, height, crown radius: a trunk and a round crown.
-        var trunk = mi("timber"), crown = mi(p.m || "plant");
-        each(a[0] - v, a[1] - v, 0, a[0] + v, a[1] + v, a[2] - a[3], function () { return trunk; });
-        each(a[0] - a[3], a[1] - a[3], a[2] - 2 * a[3], a[0] + a[3], a[1] + a[3], a[2], function (x, y, z) {
-          var dx = x - a[0], dy = y - a[1], dz = (z - (a[2] - a[3])) * 1.15;
-          return dx * dx + dy * dy + dz * dz <= a[3] * a[3] ? crown : undefined;
+        // cx, cy, height, crown radius, and a "shape": round (the default),
+        // poplar (a tall narrow flame), umbrella (a flat wide crown, the
+        // native trees of the Americas' dry hills), palm (a bare trunk to
+        // a small crown of fronds).
+        var trunk = mi("timber"), crown = mi(p.m || "plant"), shape = p.shape || "round";
+        var r = a[3], hh = a[2], tw = v * 0.5;
+        var rz = shape === "poplar" ? hh * 0.42 : shape === "umbrella" ? r * 0.38 :
+                 shape === "palm" ? r * 0.3 : r / 1.15;
+        var cz = hh - rz;
+        each(a[0] - tw, a[1] - tw, 0, a[0] + tw, a[1] + tw, shape === "palm" ? hh : cz, function () { return trunk; });
+        each(a[0] - r, a[1] - r, cz - rz, a[0] + r, a[1] + r, hh, function (x, y, z) {
+          var dx = (x - a[0]) / r, dy = (y - a[1]) / r, dz = (z - cz) / rz;
+          var d2 = dx * dx + dy * dy + dz * dz;
+          // Fronds: the palm's crown is a star, not a ball.
+          if (shape === "palm" && d2 <= 1) {
+            var ang = Math.atan2(dy, dx), arm = Math.abs(Math.cos(ang * 3.5));
+            return Math.sqrt(dx * dx + dy * dy) <= 0.35 + 0.65 * arm ? crown : undefined;
+          }
+          return d2 <= 1 ? crown : undefined;
         });
       } else if (p.mesh) {
         fillMesh(p.mesh, m);
       } else if ((a = p.pool)) {
-        // x, y, w, d: water let into the ground, its surface at ground level.
-        each(a[0], a[1], 0, a[0] + a[2], a[1] + a[3], v, function () { return mi("water"); });
+        // x, y, w, d (and z): water let into the ground, its surface at
+        // ground level — or at z, for a pool raised on a terrace.
+        var pz = a[4] || 0;
+        each(a[0], a[1], pz, a[0] + a[2], a[1] + a[3], pz + v, function () { return mi("water"); });
       }
     });
     return { grid: grid, nx: nx, ny: ny, nz: nz, v: v, names: names, site: site };
