@@ -37,19 +37,11 @@ git push -u origin claude/digital-dirt-layers-paiial
 # 4. rebuild DIRT and republish it (the plane is built from the saves; its files stay in dirt/private/)
 pip install "opencv-python-headless<4.13" scipy
 python3 dirt/soil_tiles.py --db data/artworks.db
-python3 dirt/build_soil_viewer.py --earth dirt/earth/out
-```
-
-DIRT's Earth is the Artist Website's globe, published beside the page under `world/`, taken fresh from the website's
-branch every time:
-
-```sh
-python3 dirt/world_files.py --out dirt/private/world --list > /tmp/world-files.json   # the paths to publish
+python3 dirt/build_soil_viewer.py                 # the plane alone: the Earth is the website's globe
 ```
 
 Then publish `dirt/private/collection-soil.html` to the existing DIRT artifact,
-https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`), with `root` set to
-`dirt/private` and `files` the list of `world/...` paths from `/tmp/world-files.json`. If the rebuild or the
+https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`). If the rebuild or the
 publish cannot be done in that session, the roster is still committed and the next rebuild picks it up.
 
 Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), and whether

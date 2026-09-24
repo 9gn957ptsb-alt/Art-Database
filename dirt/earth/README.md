@@ -162,14 +162,11 @@ Only colours are in these files: no titles, no artists, and nothing of which pai
 site's own tiles keep to. `site/preview-year.png` shows the twelve months. For naming places on the globe,
 `out/place.png` with `out/atlas.json` gives the ecoregion, biome and realm of any cell (see `where.py`).
 
-## One Earth, two ways in
+## The Earth lives on the Artist Website
 
-DIRT's Earth and the Artist Website's globe are one and the same. On the website the globe is the way in; in DIRT, the
-Earth button (or `#globe`, `#world`, `#earth=…`) opens the website's globe itself, published beside DIRT's page under
-`world/` by `dirt/world_files.py`, which copies it from the website's branch as it stands at every publish; Plane comes
-back. From the globe, going down into a place goes into DIRT Earth (the website's edition, below) and on to its
-streets, the same both ways. Inside claude.ai, what the website fetches from elsewhere (Artsy's thumbnails, NASA's
-photographs, OpenStreetMap's streets) cannot load; on the website it all does.
+DIRT's Earth is the Artist Website's globe, in DIRT's look (`DIRT_LOOK` in the website's `land.js`), with every collage
+in its place; going down into a place there goes into DIRT Earth (the website's edition, below) and on to its streets.
+The DIRT page on claude.ai is the plane alone, built without `--earth`. This engine is kept for the website's edition.
 
 ## Closer: the streets
 
