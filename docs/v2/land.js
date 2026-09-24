@@ -149,6 +149,7 @@
 
   var supply = null;    // land.json — the tokens
   var architecture = null;   // architecture.json — the buildings (scripts/build_architecture.py)
+  var museums = null;        // museums.json — the museums that hold the saved works (scripts/build_museums.py)
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
@@ -665,7 +666,8 @@
       var el = document.createElement("button");
       el.className = "city";
       el.type = "button";
-      el.dataset.kind = city.building ? "building" : real ? "landmark" : "work";
+      el.dataset.kind = city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
+      if (city.layer) { el.dataset.layer = city.layer; }
       el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
                      '<span class="city-name"></span>';
       el.lastChild.textContent = city.title;
@@ -733,8 +735,70 @@
       raiseCity({
         work: null, slug: "building-" + b.slug, title: b.name || b.title, where: b.where,
         lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true,
-        hue: hues[nearWork(b)] || 0.09
+        layer: "architecture", hue: hues[nearWork(b)] || 0.09
       }, true);
+    });
+
+    // And the museums that hold the works the artist has saved on Artsy,
+    // each at its own door. Going down to one is the same as to a building —
+    // the museum in DIRT — with the works it holds beside it.
+    ((museums && museums.museums) || []).forEach(function (m) {
+      if (typeof m.lat !== "number" || typeof m.lon !== "number") { return; }
+      raiseCity({
+        work: null, slug: m.slug, title: m.name, where: m.where,
+        lat: m.lat * RAD, lon: wrap(m.lon * RAD), building: m, museum: m, real: true,
+        layer: "artworks", hue: hues[nearWork(m)] || 0.09
+      }, true);
+    });
+    filterGlobe();
+  }
+
+  /* ---- the filter -----------------------------------------------------------
+
+     The globe carries the collages and the landmarks always, and one layer
+     of everything else at a time, so it is never crowded: the museums that
+     hold the saved works, or the architecture. A new kind of place is one
+     more entry here and a `layer` on its marks. The choice is kept per
+     viewer. */
+  var LAYERS = [
+    { key: "artworks", label: "Artworks" },
+    { key: "architecture", label: "Architecture" }
+  ];
+  var LAYER_KEY = "globe-layer";
+  var layerOn = "architecture";
+  try { layerOn = localStorage.getItem(LAYER_KEY) || layerOn; } catch (e) {}
+  if (!LAYERS.some(function (l) { return l.key === layerOn; })) { layerOn = LAYERS[0].key; }
+  var filterEl = document.getElementById("filter");
+
+  function filterGlobe() {
+    cities.forEach(function (city) {
+      city.off = !!city.layer && city.layer !== layerOn;
+      if (city.off) { city.el.style.visibility = "hidden"; }
+    });
+    if (!filterEl) { return; }
+    Array.prototype.forEach.call(filterEl.children, function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn));
+    });
+  }
+
+  if (filterEl) {
+    LAYERS.forEach(function (l) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "filter-layer";
+      b.dataset.layer = l.key;
+      b.textContent = l.label;
+      b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      b.addEventListener("click", function () {
+        if (layerOn === l.key) { return; }
+        layerOn = l.key;
+        try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
+        filterGlobe();
+        placeCities();
+        var r = b.getBoundingClientRect();
+        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
+      });
+      filterEl.appendChild(b);
     });
   }
 
@@ -765,6 +829,7 @@
     var out = [];
 
     cities.forEach(function (city, i) {
+      if (city.off) { return; }
       var p = project(city.lat, city.lon);
       var el = city.el;
       // Not at the very edge of the world, where a name would hang off the
@@ -821,6 +886,14 @@
     }
     out.forEach(function (it) {
       var el = it.city.el;
+      // A layer's marks (the museums, the buildings) are dots: there are a
+      // hundred of them, and their names would bury the collages'. The name
+      // comes on a hover or a focus, and in the banner on the way down.
+      if (it.city.layer) {
+        it.city.name.style.visibility = "";
+        it.city.name.style.transform = "";
+        return;
+      }
       var wide = (it.city.name.offsetWidth || 90) + 18;
       // Right, then left, then a line up or down on either side — the
       // dot never moves, only where its name is written beside it.
@@ -9324,6 +9397,7 @@
   var buildingEl = document.getElementById("building");
   var buildingMap = document.getElementById("building-map");
   var buildingLink = document.getElementById("building-link");
+  var buildingWorks = document.getElementById("building-works");
   var buildingOn = null;             // the visit the view belongs to
   var grounds = {};                  // slug -> the ground, once read
   var clod = null;                   // what is being drawn, while it is up
@@ -9499,7 +9573,10 @@
     var b = city.building;
     var visit = {};
     buildingOn = visit;
-    buildingLink.href = b.url;
+    // A building links to its article; a museum has its works instead.
+    buildingLink.hidden = !b.url;
+    if (b.url) { buildingLink.href = b.url; }
+    if (city.museum) { showHeld(city.museum); } else { delete buildingEl.dataset.museum; }
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
 
@@ -9532,6 +9609,61 @@
     });
   }
 
+  /* A museum's works: the ones the artist saved that it holds, most
+     recently saved first, each a picture off Artsy's image store and its
+     caption. Pressing one brings it up large; pressing it again puts it
+     back. They come in one after another, the way the marks rise. */
+  function showHeld(m) {
+    buildingEl.dataset.museum = "true";
+    if (!buildingWorks) { return; }
+    buildingWorks.textContent = "";
+    var head = document.createElement("p");
+    head.className = "held-count";
+    head.textContent = m.held === 1 ? "One work here" : m.held + " works here";
+    buildingWorks.appendChild(head);
+    (m.works || []).forEach(function (w, i) {
+      var fig = document.createElement("figure");
+      fig.className = "held";
+      fig.tabIndex = 0;
+      fig.setAttribute("role", "button");
+      fig.setAttribute("aria-expanded", "false");
+      var img = document.createElement("img");
+      img.alt = w.t + (w.a ? ", " + w.a : "");
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = (museums.cdn || "") + w.i + ".jpg";
+      var cap = document.createElement("figcaption");
+      var t = document.createElement("i");
+      t.textContent = w.t;
+      cap.appendChild(t);
+      cap.appendChild(document.createTextNode([w.a, w.y].filter(Boolean).length ?
+        " — " + [w.a, w.y].filter(Boolean).join(", ") : ""));
+      var med = document.createElement("span");
+      med.className = "held-medium";
+      med.textContent = w.m || "";
+      cap.appendChild(med);
+      fig.appendChild(img);
+      fig.appendChild(cap);
+      function open() {
+        var was = fig.getAttribute("aria-expanded") === "true";
+        Array.prototype.forEach.call(buildingWorks.querySelectorAll(".held"), function (f) {
+          f.setAttribute("aria-expanded", "false");
+        });
+        fig.setAttribute("aria-expanded", String(!was));
+        var r = fig.getBoundingClientRect();
+        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.4, Math.max(r.width, r.height));
+      }
+      fig.addEventListener("click", open);
+      fig.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+      });
+      fig.style.animationDelay = (still ? 0 : 0.38 + i * 0.09).toFixed(2) + "s";
+      buildingWorks.appendChild(fig);
+    });
+    buildingWorks.scrollTop = 0;
+    buildingWorks.scrollLeft = 0;
+  }
+
   /* A tap swaps the building for the ground it stands in, and back; each
      rises again as it comes. */
   function turnView() {
@@ -9554,6 +9686,7 @@
       clod = null;
     }
     if (buildingEl) { buildingEl.hidden = true; }
+    if (buildingWorks) { buildingWorks.textContent = ""; }
   }
 
   if (buildingEl) {
@@ -9562,6 +9695,7 @@
     buildingEl.addEventListener("pointerdown", function (event) {
       event.stopPropagation();
       if (!clod || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
+      if (buildingWorks && buildingWorks.contains(event.target)) { return; }
       clodDrag = { x: event.clientX, y: event.clientY, heading: clod.heading, moved: 0 };
       clod.held = true;
       try { buildingMap.setPointerCapture(event.pointerId); } catch (e) {}
@@ -10910,6 +11044,7 @@
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
                read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png"),
                read("architecture.json").catch(function () { return { buildings: [] }; }),
+               read("museums.json").catch(function () { return { museums: [] }; }),
                readTile("earth-dirt/earth-dirt-" + MONTH + ".png"), readTile("earth-dirt/earth-palette-" + MONTH + ".png")])
     .then(function (all) {
       mine = all[0];
@@ -10919,8 +11054,9 @@
       dirt.land = all[4];
       dirt.sea = all[5];
       architecture = all[6];
-      dirt.earth = all[7];
-      dirt.pal = all[8];
+      museums = all[7];
+      dirt.earth = all[8];
+      dirt.pal = all[9];
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }

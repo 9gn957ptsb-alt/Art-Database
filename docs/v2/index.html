@@ -215,15 +215,20 @@
       </div>
     </div>
 
-    <!-- A building from the Architectural Authority: a clod of its ground in DIRT, turning,
-         and the way to its article. Built by land.js from grounds/<slug>.json. -->
+    <!-- A building from the Architectural Authority, or a museum that holds saved works: the
+         building in DIRT on a clod of its ground, turning, and the way to its article or its works. Built by land.js from grounds/<slug>.json. -->
     <div class="building" id="building" hidden>
       <div class="building-map" id="building-map"></div>
       <a class="building-link" id="building-link" target="_blank" rel="noopener">
         Read it at The Architectural Authority <span aria-hidden="true">&nearr;</span>
       </a>
       <p class="building-credit">ground from Overture Maps &amp; &copy; OpenStreetMap contributors &middot; heights from open terrain tiles</p>
+      <!-- A museum: the works it holds that the artist saved, from museums.json. -->
+      <div class="building-works" id="building-works" aria-label="The works here"></div>
     </div>
+
+    <!-- What the globe carries besides the collages: one layer at a time. Built by land.js (LAYERS). -->
+    <div class="filter" id="filter" role="group" aria-label="Show on the globe"></div>
 
     <div class="banner" id="banner" hidden>
       <button class="banner-back" id="banner-back" type="button">

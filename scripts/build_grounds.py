@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The ground under each building, for the DIRT view — free data, read once.
 
-For every building in docs/v2/architecture.json this writes
+For every building in docs/v2/architecture.json, and every museum in
+docs/v2/museums.json (scripts/build_museums.py), this writes
 docs/v2/grounds/<slug>.json: a square of the Earth round its point, cut into
 a grid, each cell saying what it is (land, water, road or building), how high
 the ground is there and how tall anything standing on it is. land.js draws it
@@ -39,6 +40,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILDINGS = ROOT / "docs" / "v2" / "architecture.json"
+MUSEUMS = ROOT / "docs" / "v2" / "museums.json"
 OUT = ROOT / "docs" / "v2" / "grounds"
 
 RELEASE = "2026-09-23.0"
@@ -67,8 +69,39 @@ def local(lat, lon):
             lambda e, n: (lon + e / (k * c), lat + n / k))
 
 
+COLUMNS = {("base", "water"): ["subtype", "class"],
+           ("transportation", "segment"): ["subtype", "class"],
+           ("buildings", "building"): ["height", "num_floors"]}
+FETCHED = {}                  # (theme, kind) -> rows, read once for many places
+
+
+def prefetch(boxes):
+    """Read each theme once for every square at the same time. Overture's
+    files are sorted by place, so one pass over the planet's index serves a
+    batch of places nearly as cheaply as one; each place then takes its own
+    rows."""
+    f = None
+    for west, south, east, north in boxes:
+        one = ((ds.field("bbox", "xmax") > west) & (ds.field("bbox", "xmin") < east) &
+               (ds.field("bbox", "ymax") > south) & (ds.field("bbox", "ymin") < north))
+        f = one if f is None else f | one
+    for (theme, kind), columns in COLUMNS.items():
+        d = ds.dataset(f"{BUCKET}/theme={theme}/type={kind}/", filesystem=S3, format="parquet")
+        scan = d.scanner(columns=columns + ["geometry", "bbox"], filter=f,
+                         batch_readahead=2, fragment_readahead=2)
+        rows = []
+        for batch in scan.to_batches():
+            rows.extend(batch.to_pylist())
+        FETCHED[(theme, kind)] = rows
+        print(f"  read {theme}/{kind}: {len(rows)} for {len(boxes)} places", flush=True)
+
+
 def overture(theme, kind, columns, box):
     west, south, east, north = box
+    if (theme, kind) in FETCHED:
+        return [r for r in FETCHED[(theme, kind)]
+                if r["bbox"]["xmax"] > west and r["bbox"]["xmin"] < east
+                and r["bbox"]["ymax"] > south and r["bbox"]["ymin"] < north]
     d = ds.dataset(f"{BUCKET}/theme={theme}/type={kind}/", filesystem=S3, format="parquet")
     f = ((ds.field("bbox", "xmax") > west) & (ds.field("bbox", "xmin") < east) &
          (ds.field("bbox", "ymax") > south) & (ds.field("bbox", "ymin") < north))
@@ -112,15 +145,22 @@ def terrain(box, cell, lat):
     return at
 
 
+def square(b):
+    """The square round a place, in degrees: west, south, east, north."""
+    side = SIDE.get(b.get("precision"), SIDE["town"])
+    to_m, to_deg = local(b["lat"], b["lon"])
+    w, s = to_deg(-side / 2, -side / 2)
+    e, n = to_deg(side / 2, side / 2)
+    return (w, s, e, n)
+
+
 def build(b):
     lat, lon = b["lat"], b["lon"]
     side = SIDE.get(b.get("precision"), SIDE["town"])
     cell = side / N
     to_m, to_deg = local(lat, lon)
     half = side / 2
-    w, s = to_deg(-half, -half)
-    e, n = to_deg(half, half)
-    box = (w, s, e, n)
+    box = square(b)
 
     # Cell centres, row 0 at the north.
     xs = (np.arange(N) + 0.5) * cell - half
@@ -201,12 +241,19 @@ def main():
     parser.add_argument("--only")
     args = parser.parse_args()
 
-    buildings = [b for b in json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]
-                 if isinstance(b.get("lat"), (int, float))]
+    places = json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]
+    if MUSEUMS.exists():
+        places += json.loads(MUSEUMS.read_text(encoding="utf-8"))["museums"]
+    buildings = [b for b in places if isinstance(b.get("lat"), (int, float))]
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]
     OUT.mkdir(parents=True, exist_ok=True)
     todo = [b for b in buildings if args.force or not (OUT / (b["slug"] + ".json")).exists()]
+
+    # Many at once (the museums, first time round): read the planet once for
+    # a batch of them, a batch at a time so memory stays small.
+    BATCH = 24
+    batches = [todo[k:k + BATCH] for k in range(0, len(todo), BATCH)] if len(todo) > 3 else [todo]
 
     def one(b):
         try:
@@ -218,9 +265,13 @@ def main():
         kinds = {k: g["kind"].count(k) for k in ".~=b"}
         return f"  + {b['name']}: {g['buildings']} buildings, {kinds}"
 
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        for line in pool.map(one, todo):
-            print(line, flush=True)
+    for batch in batches:
+        FETCHED.clear()
+        if len(batch) > 3:
+            prefetch([square(b) for b in batch])
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            for line in pool.map(one, batch):
+                print(line, flush=True)
     print(f"{len(todo)} written, {len(buildings) - len(todo)} already there")
     sys.exit(0)
 

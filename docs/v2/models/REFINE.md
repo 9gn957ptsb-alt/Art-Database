@@ -23,11 +23,26 @@ Artist Website.
      `scripts/build_architecture.py` with its source, then rerun that script
      and `build_grounds.py --force --only <slug>`. **A private home never
      does** — it stays at its town.
+2b. **The museums.** The globe also carries every museum that holds a work
+   the artist saved on Artsy (the "Artworks" layer). `python3
+   scripts/fetch_artsy_saves.py && python3 scripts/build_museums.py && python3
+   scripts/build_grounds.py` — refetches the saves (Artsy's token is added by
+   the proxy), rewrites `docs/v2/museums.json` (each museum at its door, with
+   the works it holds) and cuts the ground of any new museum. Then **model
+   the three museums without a model that hold the most works** (the order of
+   `museums.json`), one first model each, the building the saved works are in
+   (for a museum of several buildings, the one that holds them — the National
+   Gallery's West Building). Add each to `ledger.json` with `passes: 1` and
+   `"kind": "museum"`. Museums are public buildings: model them exactly.
+   Their photographs come from Wikimedia Commons once
+   `commons.wikimedia.org` and `upload.wikimedia.org` are allowed; until
+   then, work from published plans and dimensions and say so in `notes`.
 3. **Photographs** for the buildings to refine: `python3
    scripts/fetch_reference_photos.py` — into `data/photos/<slug>/`
    (gitignored; reference only, never committed).
 4. **Choose.** Read `ledger.json` beside this page and take the **three**
-   buildings refined longest ago (never refined first). A building whose
+   buildings refined longest ago (never refined first). Museums are in the
+   ledger too and take their turn with the rest. A building whose
    `sketchup` flag is set is refined in SketchUp (step 6); at most one of those
    per run.
 5. **Refine each** (`MODELS.md` has the format):

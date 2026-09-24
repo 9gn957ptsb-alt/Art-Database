@@ -187,5 +187,35 @@
   "log": [
    "2026-09-24 first model from the article's photographs: a cutaway at the clinic's ceiling, its street front and its curved interior"
   ]
+ },
+ "museum-national-gallery-of-art-washington-dc": {
+  "name": "National Gallery of Art, West Building",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+  ]
+ },
+ "museum-guggenheim-museum": {
+  "name": "Solomon R. Guggenheim Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+  ]
+ },
+ "museum-san-francisco-museum-of-modern-art-sfmoma": {
+  "name": "San Francisco Museum of Modern Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+  ]
  }
 }
