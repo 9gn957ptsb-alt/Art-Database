@@ -9264,7 +9264,6 @@
   var CLOD_PIX = 2;                  // screen pixels to one of the clod's
   var CLOD_TURN = 90000;             // ms to go once round
   var CLOD_FPS = 12;                 // held frames, like the rest of the pixel light
-  var CLOD_TILT = 0.66;              // how far above the horizon it is seen from
   var CLOD_DEEP = 7;                 // layers of soil under the edge
   var DUST = [232, 220, 203];        // what a road is, the soil gone pale
   var PALE = [239, 233, 226];        // what a building is, the soil gone to stone
@@ -9307,11 +9306,13 @@
     // and never more than four times their real height.
     var relief = hi / 2;
     var lift = Math.min(4, (n / 6) * cell / Math.max(relief, 1)) / cell;
-    var dots = { x: [], y: [], z: [], size: [], ink: [], row: [] };
+    var dots = { x: [], y: [], z: [], size: [], ink: [], reveal: [] };
+    var highest = 0;
 
     function put(x, y, z, size, ink, row) {
       dots.x.push(x); dots.y.push(y); dots.z.push(z);
-      dots.size.push(size); dots.ink.push(ink); dots.row.push(row);
+      dots.size.push(size); dots.ink.push(ink); dots.reveal.push(row / n);
+      if (z > highest) { highest = z; }
     }
     function zAt(i, j) {
       var q = i * n + j;
@@ -9356,7 +9357,8 @@
       }
     }
     dots.count = dots.x.length;
-    dots.n = n;
+    dots.span = n;
+    dots.lift = Math.min(highest, n / 4);
     return dots;
   }
 
@@ -9370,39 +9372,11 @@
   }
 
   function drawClod(now) {
-    var c = clod, d = c.dots, ctx = c.ctx;
     sizeClod();
-    var w = c.canvas.width, h = c.canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    var cos = Math.cos(c.heading), sin = Math.sin(c.heading);
-    var st = Math.sin(CLOD_TILT), ct = Math.cos(CLOD_TILT);
-    var scale = Math.min(w * 0.92, h * 1.15) / (d.n * 1.42);
-    var cx0 = w / 2, cy0 = h * 0.54;
-    var grain = Math.max(0.5, scale * 0.42);
-    // Row by row out of the ground, north first, over a second and a half.
-    var shown = still ? d.n : Math.floor((now - c.at) / 1500 * d.n);
-    var order = c.order, key = c.key, m = 0, k;
-    for (k = 0; k < d.count; k += 1) {
-      if (d.row[k] > shown) { continue; }
-      var yr = d.x[k] * sin + d.y[k] * cos;
-      key[k] = yr * ct + d.z[k] * st;
-      order[m] = k; m += 1;
-    }
-    var live = order.subarray(0, m);
-    live.sort(function (a, b) { return key[a] - key[b]; });
-    var was = null;
-    for (var t = 0; t < m; t += 1) {
-      k = live[t];
-      var xr = d.x[k] * cos - d.y[k] * sin;
-      var yr2 = d.x[k] * sin + d.y[k] * cos;
-      var sx = cx0 + xr * scale;
-      var sy = cy0 + (yr2 * st - d.z[k] * ct) * scale;
-      // A dot is as big as the soil says, in the clod's own cells: the
-      // weave is as close on a big screen as on a phone.
-      var r = Math.max(1, Math.round(d.size[k] * grain));
-      if (d.ink[k] !== was) { ctx.fillStyle = was = d.ink[k]; }
-      ctx.fillRect(Math.round(sx - r / 2), Math.round(sy - r / 2), r, r);
-    }
+    // It rises out of the ground over a second and a half: the town row by
+    // row from the north, the building a storey at a time.
+    var shown = still ? 1 : (now - clod.at) / 1500;
+    window.Models.draw(clod.canvas, clod.views[clod.view], clod.heading, shown, 0.92);
   }
 
   function clodFrame(now) {
@@ -9419,6 +9393,14 @@
     clod.raf = requestAnimationFrame(clodFrame);
   }
 
+  function readModel(slug) {
+    var key = "model:" + slug;
+    if (!grounds[key]) {
+      grounds[key] = read("models/" + slug + ".json").catch(function () { return null; });
+    }
+    return grounds[key];
+  }
+
   function startBuilding(city) {
     if (!buildingEl) { return; }
     var b = city.building;
@@ -9428,22 +9410,46 @@
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
 
-    readGround(b.slug).then(function (g) {
+    Promise.all([readModel(b.slug), readGround(b.slug)]).then(function (both) {
       if (buildingOn !== visit) { return; }
-      if (!g || !g.n) { buildingEl.dataset.air = "none"; return; }
+      var model = both[0], g = both[1];
+      var views = {};
+      // The building itself, made from its photographs, on a plate of its
+      // own ground; and the ground it stands in — its grounds, or its town.
+      if (model && model.parts && window.Models) {
+        views.building = window.Models.build(model, function (i, j) {
+          return soilCell(dirt.land, b, j, i);
+        });
+      }
+      if (g && g.n) { views.ground = shapeClod(b, g); }
+      var first = views.building ? "building" : views.ground ? "ground" : null;
+      if (!first) { buildingEl.dataset.air = "none"; return; }
       var canvas = document.createElement("canvas");
       canvas.className = "building-clod";
       buildingMap.appendChild(canvas);
-      var dots = shapeClod(b, g);
       clod = {
-        canvas: canvas, ctx: canvas.getContext("2d"), dots: dots,
-        order: new Uint32Array(dots.count), key: new Float32Array(dots.count),
+        canvas: canvas, views: views, view: first,
         heading: Math.random() * TAU, at: performance.now(), drawn: 0,
         last: 0, held: false, dirty: true, raf: 0
       };
       buildingEl.dataset.air = "up";
+      buildingEl.dataset.view = first;
       clod.raf = requestAnimationFrame(clodFrame);
     });
+  }
+
+  /* A tap swaps the building for the ground it stands in, and back; each
+     rises again as it comes. */
+  function turnView() {
+    if (!clod) { return; }
+    var other = clod.view === "building" ? "ground" : "building";
+    if (!clod.views[other]) { return; }
+    clod.view = other;
+    clod.at = performance.now();
+    clod.dirty = true;
+    buildingEl.dataset.view = other;
+    var r = buildingMap.getBoundingClientRect();
+    pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(r.width, r.height) * INV2);
   }
 
   function stopBuilding() {
@@ -9462,16 +9468,19 @@
     buildingEl.addEventListener("pointerdown", function (event) {
       event.stopPropagation();
       if (!clod || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
-      clodDrag = { x: event.clientX, heading: clod.heading };
+      clodDrag = { x: event.clientX, y: event.clientY, heading: clod.heading, moved: 0 };
       clod.held = true;
       try { buildingMap.setPointerCapture(event.pointerId); } catch (e) {}
     });
     buildingMap.addEventListener("pointermove", function (event) {
       if (!clodDrag || !clod) { return; }
+      clodDrag.moved = Math.max(clodDrag.moved, Math.abs(event.clientX - clodDrag.x) +
+                                Math.abs(event.clientY - clodDrag.y));
       clod.heading = clodDrag.heading + (event.clientX - clodDrag.x) * 0.012;
       clod.dirty = true;
     });
-    var letGo = function () {
+    var letGo = function (event) {
+      if (clodDrag && clodDrag.moved < 6 && event && event.type === "pointerup") { turnView(); }
       clodDrag = null;
       if (clod) { clod.held = false; clod.last = performance.now(); }
     };

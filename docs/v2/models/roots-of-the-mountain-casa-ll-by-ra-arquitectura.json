@@ -1,0 +1,50 @@
+{
+  "slug": "roots-of-the-mountain-casa-ll-by-ra-arquitectura",
+  "name": "Casa LL",
+  "voxel": 0.5,
+  "site": [46, 42],
+  "ground": "gravel",
+  "parts": [
+    {"box": [-19, -2, 0, 36, 20, 0.5], "m": "grass"},
+
+    {"box": [-21, -19, 0, 10, 9, 5.5], "m": "ochre"},
+    {"box": [-9.5, -19, 0, 8, 8, 4.5], "m": "ochre"},
+    {"box": [0.5, -19, 0, 9, 9, 6.2], "m": "ochre"},
+    {"box": [11, -18, 0, 9, 8, 4.8], "m": "ochre"},
+    {"box": [-1.4, -19, 3.4, 1.9, 1, 0.3], "m": "dark"},
+    {"box": [-1.5, -17, 0, 2, 10, 0.25], "m": "stone"},
+
+    {"box": [-21, -10, 0, 9, 22, 4.2], "m": "ochre"},
+    {"box": [-21, 3, 0, 8, 7, 4.8], "m": "ochre"},
+    {"cut": [-12.6, -7, 0.3, 0.6, 4, 2.6]},
+    {"box": [-12.6, -7, 0.3, 0.3, 4, 2.6], "m": "glass"},
+    {"cut": [-12.6, -1, 0.3, 0.6, 3.2, 2.6]},
+    {"box": [-12.6, -1, 0.3, 0.3, 3.2, 2.6], "m": "glass"},
+    {"cut": [-13.6, 5, 0.3, 0.6, 3.5, 2.8]},
+    {"box": [-13.6, 5, 0.3, 0.3, 3.5, 2.8], "m": "glass"},
+
+    {"box": [-12, -10, 0, 22, 7, 4.4], "m": "ochre"},
+    {"cut": [-6, -4, 0, 12, 1.6, 3.4]},
+    {"box": [-6, -5, 0.3, 12, 0.3, 3], "m": "glass"},
+    {"box": [-6, -4, 0, 12, 1.6, 0.3], "m": "stone"},
+    {"box": [-4.6, -3.2, 0.3, 2.4, 0.9, 0.8], "m": "ochre"},
+
+    {"box": [10, -10, 0, 10, 20, 5], "m": "ochre"},
+    {"cut": [9.6, -6, 0.3, 1.4, 12, 3.4]},
+    {"box": [10.6, -6, 0.3, 0.3, 12, 3], "m": "glass"},
+    {"box": [9.6, -6, 0, 1.4, 12, 0.3], "m": "stone"},
+    {"box": [16, 10, 0, 5, 6, 3.6], "m": "ochre"},
+
+    {"tree": [1, 3, 11, 4.6]},
+    {"tree": [-15, 14, 9, 3.2]},
+    {"tree": [14, 15, 5, 1.6], "m": "plant"},
+    {"tree": [-8, 13, 2, 1.1]},
+    {"tree": [6, 12, 1.8, 1.0]},
+    {"tree": [-10, -12, 1.4, 0.9]},
+    {"tree": [-3, -13, 1.3, 0.8]},
+    {"tree": [5, -11, 1.5, 1.0]},
+    {"tree": [-11, 9, 1.2, 0.9]},
+    {"tree": [17.5, -6, 1.4, 0.9]}
+  ],
+  "notes": "From the article's garden views (U of prisms round a lawn, living room glazed to the garden under a deep lintel, bedrooms each with a glass opening), the street views (closed tinted-concrete blocks of differing height, gravel, a narrow access alley with a dark steel frame) and the patio views. Orientation guessed: street to the north, the garden open to the south toward the Tepozteco. Block sizes estimated from door and storey heights; exact plan not shown."
+}

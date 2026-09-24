@@ -1865,6 +1865,8 @@
   position: absolute;
   inset: 0;
   z-index: 57;
+  /* .land takes no presses; this does — the tap, the drag and the link. */
+  pointer-events: auto;
   /* The city behind is washed, as it is while a collage is read. */
   background: linear-gradient(180deg,
     rgba(233, 234, 238, 0.86) 0%, rgba(242, 236, 231, 0.9) 50%, rgba(230, 229, 236, 0.92) 100%);
