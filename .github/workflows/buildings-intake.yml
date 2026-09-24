@@ -60,9 +60,10 @@ jobs:
       - name: Place them and cut their ground
         if: steps.fetch.outputs.changed == 'yes'
         run: |
-          pip install -q pillow numpy shapely pyarrow
+          pip install -q pillow numpy shapely pyarrow tifffile imagecodecs
           python3 scripts/build_architecture.py
           python3 scripts/build_grounds.py
+          python3 scripts/build_built_years.py
 
       - name: Publish
         if: steps.fetch.outputs.changed == 'yes'
