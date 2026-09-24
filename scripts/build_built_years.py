@@ -23,7 +23,7 @@ What neither knows stays 0: the town shows it from the start.
 
 Tiles and answers are cached in data/ (not committed).
 
-    python3 scripts/build_built_years.py [--only slug] [--force]
+    python3 scripts/build_built_years.py [--only slug] [--force] [--cities]
 """
 
 import argparse
@@ -183,12 +183,332 @@ def bag_polygons(box):
         start += 1000
 
 
-def in_ring(x, y, ring):
-    hit = False
-    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
-        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
-            hit = not hit
-    return hit
+# ---- more cities: each a coverage box and a fetcher ----------------------------------------------
+# A fetcher takes (south, west, north, east) and gives ("points", [(lat, lon, year)]) — each to the
+# nearest building cell within a cell or 25 m — or ("polys", [(year, [(lon, lat), ...])]) — each to
+# the cells whose middles it holds.
+
+THIS_YEAR = time.localtime().tm_year
+
+
+def year_of(v):
+    try:
+        y = int(float(str(v).strip()[:4]))
+    except (TypeError, ValueError):
+        return 0
+    return y if 1200 <= y <= THIS_YEAR else 0
+
+
+def arcgis(url, box, field):
+    """Polygons with their attributes from an ArcGIS REST layer, paged: [(attributes, ring)]."""
+    s, w, n, e = box
+    out, offset = [], 0
+    while True:
+        q = {"where": "1=1", "geometry": f"{w},{s},{e},{n}", "geometryType": "esriGeometryEnvelope",
+             "inSR": 4326, "outSR": 4326, "spatialRel": "esriSpatialRelIntersects", "outFields": field,
+             "returnGeometry": "true", "f": "json", "resultOffset": offset, "resultRecordCount": 1000}
+        d = json.loads(fetch(url + "/query?" + urllib.parse.urlencode(q)))
+        feats = d.get("features") or []
+        for f in feats:
+            rings = (f.get("geometry") or {}).get("rings") or []
+            if rings:
+                out.append((f.get("attributes") or {}, rings[0]))
+        if not d.get("exceededTransferLimit") or not feats:
+            return out
+        offset += len(feats)
+
+
+def philadelphia(box):
+    s, w, n, e = box
+    q = ("SELECT year_built, ST_Y(the_geom) AS lat, ST_X(the_geom) AS lon FROM opa_properties_public "
+         f"WHERE the_geom && ST_MakeEnvelope({w},{s},{e},{n},4326)")
+    rows = json.loads(fetch("https://phl.carto.com/api/v2/sql?" + urllib.parse.urlencode({"q": q}))).get("rows", [])
+    return "points", [(r["lat"], r["lon"], year_of(r["year_built"])) for r in rows
+                      if r.get("lat") and year_of(r.get("year_built"))]
+
+
+def los_angeles(box):
+    url = "https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0"
+    return "polys", [(year_of(a.get("YearBuilt1")), ring) for a, ring in arcgis(url, box, "YearBuilt1")
+                     if year_of(a.get("YearBuilt1"))]
+
+
+def boston(box):
+    url = "https://gisportal.boston.gov/arcgis/rest/services/Assessing/Property_Assessment_FY25/FeatureServer/0"
+    return "polys", [(year_of(a.get("YR_BUILT")), ring) for a, ring in arcgis(url, box, "YR_BUILT")
+                     if year_of(a.get("YR_BUILT"))]
+
+
+def washington(box):
+    """Lots by place (their SSL), then each lot's year from the assessor's tables (AYB, actual year built)."""
+    base = "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land_WebMercator"
+    lots = arcgis(base + "/MapServer/39", box, "SSL")
+    ssl = sorted({a["SSL"] for a, _ in lots if a.get("SSL")})
+    year = {}
+    for layer in (25, 23, 24):                    # residential, commercial, condominium
+        for k in range(0, len(ssl), 80):
+            where = "SSL IN (" + ",".join("'" + x.replace("'", "''") + "'" for x in ssl[k:k + 80]) + ")"
+            q = {"where": where, "outFields": "SSL,AYB", "returnGeometry": "false", "f": "json"}
+            d = json.loads(fetch(f"{base}/FeatureServer/{layer}/query?" + urllib.parse.urlencode(q)))
+            for f in d.get("features") or []:
+                at = f.get("attributes") or {}
+                y = year_of(at.get("AYB"))
+                if y and (at["SSL"] not in year or y < year[at["SSL"]]):
+                    year[at["SSL"]] = y
+    return "polys", [(year[a["SSL"]], ring) for a, ring in lots if a.get("SSL") in year]
+
+
+def chicago(box):
+    s, w, n, e = box
+    q = {"$select": "year_built,the_geom", "$where": f"within_box(the_geom,{n},{w},{s},{e})", "$limit": 50000}
+    d = json.loads(fetch("https://data.cityofchicago.org/resource/syp8-uezg.geojson?" + urllib.parse.urlencode(q)))
+    out = []
+    for f in d.get("features") or []:
+        y = year_of((f.get("properties") or {}).get("year_built"))
+        g = f.get("geometry") or {}
+        if y and g.get("type") in ("Polygon", "MultiPolygon"):
+            for poly in (g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]):
+                out.append((y, poly[0]))
+    return "polys", out
+
+
+def vienna(box):
+    s, w, n, e = box
+    q = {"service": "WFS", "request": "GetFeature", "version": "1.1.0", "typeName": "ogdwien:GEBAEUDEINFOOGD",
+         "srsName": "EPSG:4326", "outputFormat": "json", "bbox": f"{w},{s},{e},{n},EPSG:4326"}
+    d = json.loads(fetch("https://data.wien.gv.at/daten/geo?" + urllib.parse.urlencode(q)))
+    pts, polys = [], []
+    for f in d.get("features") or []:
+        y = year_of((f.get("properties") or {}).get("BAUJAHR"))
+        g = f.get("geometry") or {}
+        if not y or not g:
+            continue
+        if g["type"] == "Point":
+            pts.append((g["coordinates"][1], g["coordinates"][0], y))
+        elif g["type"] in ("Polygon", "MultiPolygon"):
+            for poly in (g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]):
+                polys.append((y, poly[0]))
+    return ("polys", polys) if polys else ("points", pts)
+
+
+# The Swiss register's period codes (gbaup), where a building has no year: the middle of each period.
+GWR_PERIOD = {8011: 1900, 8012: 1932, 8013: 1953, 8014: 1966, 8015: 1976, 8016: 1983, 8017: 1988,
+              8018: 1993, 8019: 1998, 8020: 2003, 8021: 2008, 8022: 2013, 8023: 2018}
+
+
+def switzerland(box):
+    s, w, n, e = box
+    out, offset = [], 0
+    while True:
+        q = {"geometryType": "esriGeometryEnvelope", "geometry": f"{w},{s},{e},{n}", "sr": 4326, "tolerance": 0,
+             "layers": "all:ch.bfs.gebaeude_wohnungs_register", "returnGeometry": "true",
+             "geometryFormat": "geojson", "limit": 200, "offset": offset}
+        d = json.loads(fetch("https://api3.geo.admin.ch/rest/services/api/MapServer/identify?"
+                             + urllib.parse.urlencode(q)))
+        res = d.get("results") or []
+        for r in res:
+            at, g = r.get("attributes") or r.get("properties") or {}, r.get("geometry") or {}
+            y = year_of(at.get("gbauj")) or GWR_PERIOD.get(at.get("gbaup") or 0, 0)
+            if y and g.get("type") == "Point":
+                out.append((g["coordinates"][1], g["coordinates"][0], y))
+        if len(res) < 200:
+            return "points", out
+        offset += 200
+
+
+def melbourne(box):
+    s, w, n, e = box
+    base = ("https://data.melbourne.vic.gov.au/api/explore/v2.1/catalog/datasets/"
+            "buildings-with-name-age-size-accessibility-and-bicycle-facilities/records?")
+    latest, offset = {}, 0
+    while offset < 9900:
+        q = {"select": "property_id,construction_year,latitude,longitude,census_year",
+             "where": f"latitude>{s} and latitude<{n} and longitude>{w} and longitude<{e}",
+             "order_by": "census_year desc", "limit": 100, "offset": offset}
+        rows = json.loads(fetch(base + urllib.parse.urlencode(q))).get("results") or []
+        for r in rows:
+            latest.setdefault(r.get("property_id"), r)       # the latest census first
+        if len(rows) < 100:
+            break
+        offset += 100
+    return "points", [(r["latitude"], r["longitude"], year_of(r.get("construction_year")))
+                      for r in latest.values() if r.get("latitude") and year_of(r.get("construction_year"))]
+
+
+def spain(box):
+    """The Catastro's INSPIRE buildings (not the Basque Country or Navarre), in pieces under its 4 km² cap."""
+    import re
+    s, w, n, e = box
+    out, step = [], 0.012
+    y0 = s
+    while y0 < n:
+        x0 = w
+        while x0 < e:
+            q = {"service": "wfs", "version": "2.0.0", "request": "getfeature", "typenames": "BU.BUILDING",
+                 "bbox": f"{y0},{x0},{min(n, y0 + step)},{min(e, x0 + step)}", "SRSNAME": "EPSG:4326"}
+            gml = (fetch("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q))
+                   or b"").decode("latin-1")
+            for part in gml.split("<gml:featureMember")[1:]:     # one bu-ext2d:Building each
+                m = re.search(r"<bu-core2d:beginning>(\d{4})", part)
+                pl = re.search(r"<gml:posList[^>]*>([^<]+)", part)
+                if not m or not pl or not year_of(m.group(1)):
+                    continue
+                v = [float(t) for t in pl.group(1).split()]
+                out.append((year_of(m.group(1)), [(v[k + 1], v[k]) for k in range(0, len(v) - 1, 2)]))
+            x0 += step
+        y0 += step
+    return "polys", out
+
+
+def france(box):
+    """The BDNB's building groups, commune by commune (Paris by arrondissement), kept where they meet the box."""
+    from pyproj import Transformer
+    s, w, n, e = box
+    communes = set()
+    q = urllib.parse.urlencode({"lat": (s + n) / 2, "lon": (w + e) / 2, "format": "jsonv2", "zoom": 3, "addressdetails": 1})
+    if (json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}").get("address") or {}).get("country_code") != "fr":
+        return "polys", []
+    time.sleep(1.1)
+    for la, lo in ((s, w), (s, e), (n, w), (n, e), ((s + n) / 2, (w + e) / 2)):
+        q = urllib.parse.urlencode({"lat": la, "lon": lo, "format": "jsonv2", "zoom": 14, "addressdetails": 1})
+        a = json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}").get("address") or {}
+        pc = a.get("postcode", "")
+        if pc.startswith("750") and len(pc) == 5:
+            communes.add("751" + pc[3:])                 # Paris: postcode 750NN is arrondissement 751NN
+        time.sleep(1.1)
+    to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
+    out = []
+    for code in sorted(communes):
+        offset, total = 0, None
+        while total is None or offset < total:
+            # It answers pages shorter than asked when the outlines are heavy, so the true total (from
+            # Content-Range, with Prefer: count=exact) says when to stop, not a short page.
+            q = {"code_commune_insee": f"eq.{code}", "select": "annee_construction,geom_groupe",
+                 "annee_construction": "not.is.null", "limit": 1000, "offset": offset}
+            req = urllib.request.Request("https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_complet?"
+                                         + urllib.parse.urlencode(q), headers={**AGENT, "Prefer": "count=exact"})
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                rng = resp.headers.get("Content-Range") or ""
+                rows = json.loads(resp.read() or b"[]")
+            if total is None:
+                total = int(rng.split("/")[-1]) if "/" in rng and rng.split("/")[-1].isdigit() else 0
+            for r in rows:
+                y, g = year_of(r.get("annee_construction")), r.get("geom_groupe") or {}
+                if not y or g.get("type") not in ("Polygon", "MultiPolygon"):
+                    continue
+                for poly in (g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]):
+                    xs, ys = zip(*[c[:2] for c in poly[0]])
+                    lons, lats = to_ll.transform(xs, ys)
+                    if max(lats) < s or min(lats) > n or max(lons) < w or min(lons) > e:
+                        continue
+                    out.append((y, list(zip(lons, lats))))
+            if not rows:
+                break
+            offset += len(rows)
+    return "polys", out
+
+
+# London: the GLA's building stock model, borough by borough (the boroughs round our places), each age
+# band standing for its middle year.
+LBSM = "https://data.london.gov.uk/download/2k55d/"
+LBSM_BOROUGHS = {
+    "Westminster": "b871c181-1be1-4e43-b10b-154dea109555/LBSMv2_Westminster.csv",
+    "Camden": "3d4072e0-2731-4617-a166-6a0e18067b6f/LBSMv2_Camden.csv",
+    "Kensington and Chelsea": "d9453dfa-7c4e-4330-b4ce-035bc2b29b0a/"
+                              "London%20Building%20Stock%20Model%202%20-%20Kensington%20and%20Chelsea.csv",
+    "City of London": "f1eecee2-7f7d-41b1-a574-02edc383d13a/LBSMv2_City_of_London.csv",
+    "Lambeth": "c7845e78-00fc-4f93-b70c-c5d245713110/LBSMv2_Lambeth.csv",
+    "Southwark": "76f9f478-7636-45be-adaf-19903354ec73/LBSMv2_Southwark.csv",
+}
+LBSM_BAND = {"pre-1900": 1880, "1900-1929": 1915, "1930-1949": 1940, "1950-1966": 1958, "1967-1982": 1975,
+             "1983-1995": 1989, "1996-2011": 2004, "2012-onwards": 2016}
+_lbsm = None
+
+
+def london(box):
+    global _lbsm
+    if _lbsm is None:
+        import csv
+        from pyproj import Transformer
+        to_ll = Transformer.from_crs(27700, 4326, always_xy=True)
+        pts = []
+        for name, path in LBSM_BOROUGHS.items():
+            local_csv = CACHE / "lbsm" / (name.replace(" ", "_") + ".csv")
+            if not local_csv.exists():
+                local_csv.parent.mkdir(parents=True, exist_ok=True)
+                local_csv.write_bytes(fetch(LBSM + path, timeout=900) or b"")
+            with open(local_csv, encoding="utf-8", errors="ignore") as f:
+                for r in csv.DictReader(f):
+                    y = LBSM_BAND.get(r.get("construction_age_band", ""))
+                    if y and r.get("easting"):
+                        pts.append((float(r["easting"]), float(r["northing"]), y))
+        _lbsm = []
+        if pts:
+            E, N, Y = zip(*pts)
+            lons, lats = to_ll.transform(E, N)
+            _lbsm = list(zip(lats, lons, Y))
+    s, w, n, e = box
+    return "points", [p for p in _lbsm if s <= p[0] <= n and w <= p[1] <= e]
+
+
+def new_york(box):
+    return "points", pluto_years(box)
+
+
+def netherlands(box):
+    return "polys", bag_polygons(box)
+
+
+CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
+    ("New York City PLUTO", *NYC, new_york),
+    ("BAG (Kadaster)", *NL, netherlands),
+    ("London Building Stock Model 2 (GLA)", 51.28, -0.51, 51.70, 0.34, london),
+    ("BDNB (CSTB)", 41.3, -5.2, 51.1, 9.6, france),
+    ("DC assessor (CAMA)", 38.79, -77.12, 39.0, -76.90, washington),
+    ("LA County Assessor", 33.70, -118.95, 34.85, -117.65, los_angeles),
+    ("Chicago building footprints", 41.64, -87.94, 42.03, -87.52, chicago),
+    ("Boston assessing", 42.22, -71.20, 42.40, -70.98, boston),
+    ("Philadelphia OPA", 39.86, -75.29, 40.14, -74.95, philadelphia),
+    ("Vienna building information (Stadt Wien)", 48.11, 16.18, 48.33, 16.58, vienna),
+    ("Swiss building register (GWR)", 45.8, 5.9, 47.9, 10.5, switzerland),
+    ("City of Melbourne CLUE", -37.86, 144.89, -37.77, 145.0, melbourne),
+    ("Catastro (Spain)", 35.9, -9.4, 43.8, 4.4, spain),
+]
+
+
+def city_years(place, box, lat, lon, cell):
+    """Years for the cells from whichever city covers the place: (years, name), or (None, None)."""
+    import shapely
+    for name, s, w, n, e, fetcher in CITIES:
+        if not (s <= place["lat"] <= n and w <= place["lon"] <= e):
+            continue
+        kind, rows = fetcher(box)
+        years = np.zeros(len(lat), dtype=np.int64)
+        if not rows:
+            continue            # a box that also takes in a neighbour (France's takes in Bern): try the next
+        if kind == "points":
+            P = np.array(rows, dtype=float)
+            reach = max(cell, 25.0)
+            for k in range(len(lat)):
+                dy = (P[:, 0] - lat[k]) * 111320
+                dx = (P[:, 1] - lon[k]) * 111320 * math.cos(math.radians(lat[k]))
+                d2 = dx * dx + dy * dy
+                m = int(np.argmin(d2))
+                if d2[m] <= reach * reach:
+                    years[k] = int(P[m, 2])
+        else:
+            polys, ys = [], []
+            for y, ring in rows:
+                if len(ring) >= 3:
+                    polys.append(shapely.Polygon(ring))
+                    ys.append(y)
+            tree = shapely.STRtree(polys)
+            hit_pt, hit_poly = tree.query(shapely.points(lon, lat), predicate="within")
+            for kp, kq in zip(hit_pt, hit_poly):
+                if not years[kp]:
+                    years[kp] = ys[kq]
+        return years, name
+    return None, None
 
 
 def years_for(place, g):
@@ -207,29 +527,11 @@ def years_for(place, g):
     # The building's own year, where the city says.
     w, s = to_deg(-half, -half)
     e, nn = to_deg(half, half)
-    box = (s, w, nn, e)
-    if inside(NYC, place["lat"], place["lon"]):
-        pts = pluto_years(box)
-        if pts:
-            P = np.array(pts, dtype=float)
-            reach = max(cell, 25.0)
-            for k in range(len(cells)):
-                dy = (P[:, 0] - lat[k]) * 111320
-                dx = (P[:, 1] - lon[k]) * 111320 * math.cos(math.radians(lat[k]))
-                d2 = dx * dx + dy * dy
-                m = int(np.argmin(d2))
-                if d2[m] <= reach * reach:
-                    years[k] = int(P[m, 2])
-            said.append("New York City PLUTO")
-    elif inside(NL, place["lat"], place["lon"]):
-        polys = bag_polygons(box)
-        if polys:
-            for k in range(len(cells)):
-                for yr, ring in polys:
-                    if in_ring(lon[k], lat[k], ring):
-                        years[k] = yr
-                        break
-            said.append("BAG (Kadaster)")
+    got, name = city_years(place, (s, w, nn, e), lat, lon, cell)
+    if got is not None:
+        years = got
+        if (got > 0).any():
+            said.append(name)
 
     # The year its ground was first built on, for what the city did not say.
     rest = years == 0
@@ -255,6 +557,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--cities", action="store_true", help="only the places a city source covers (with --force: re-date them)")
     args = ap.parse_args()
     places = []
     for f in PLACES:
@@ -264,6 +567,8 @@ def main():
     places = [p for p in places if isinstance(p.get("lat"), (int, float))]
     if args.only:
         places = [p for p in places if p["slug"] == args.only]
+    if args.cities:
+        places = [p for p in places if any(c[1] <= p["lat"] <= c[3] and c[2] <= p["lon"] <= c[4] for c in CITIES)]
     # Neighbours share tiles: go through them west to east, north to south.
     places.sort(key=lambda p: (math.floor(p["lon"] / 10), -math.floor(p["lat"] / 10), p["lon"]))
     for p in places:
