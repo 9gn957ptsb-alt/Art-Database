@@ -1,6 +1,18 @@
 {
   "buildings": [
     {
+      "title": "Parkside Urban Living – Depart Colegiales by Grupo Uno en Uno",
+      "name": "Depart Colegiales",
+      "slug": "parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno",
+      "url": "https://www.thearchitecturalauthority.com/article/parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno",
+      "city": "",
+      "country": "Argentina",
+      "where": "Buenos Aires, Argentina",
+      "lat": -36.379,
+      "lon": -60.3856,
+      "precision": "region"
+    },
+    {
       "title": "The Precision of the Subtle – Clinica Dental Apolonia by JGA Arquitectura",
       "name": "Clinica Dental Apolonia",
       "slug": "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura",
