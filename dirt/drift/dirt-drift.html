@@ -1,0 +1,344 @@
+<title>DIRT Drift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,300;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #0f0a07;
+    --ground-2: #17110c;
+    --line: #3a2a1d;
+    --ink: #eadfcd;
+    --muted: #a8927a;
+    --faint: #6f5d4b;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); }
+  body { margin: 0; font: 13px/1.55 var(--mono); padding-inline: 16px; padding-block: 21px 34px; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .top { max-width: 1100px; margin: 0 auto; display: grid; gap: 13px; }
+  .name { display: flex; align-items: baseline; gap: 13px; flex-wrap: wrap; }
+  .name h1 { margin: 0; font: italic 300 34px/1 var(--serif); letter-spacing: -0.01em; }
+  .name p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .well { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; }
+  .drop { position: relative; border: 1px dashed var(--line); background: var(--ground-2); min-height: 55px; display: flex; align-items: center; gap: 13px; padding: 8px 13px; }
+  .drop.over { border-color: var(--ink); }
+  .drop img { height: 44px; width: 44px; object-fit: cover; flex: none; }
+  .drop input[type=text] { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; font: italic 400 19px/1.2 var(--serif); padding: 4px 0; }
+  .drop input[type=text]::placeholder { color: var(--faint); }
+  .drop .pick { flex: none; border: 1px solid var(--line); background: transparent; padding: 5px 10px; cursor: pointer; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+  .drop .pick:hover { color: var(--ink); border-color: var(--muted); }
+  .go { border: 1px solid var(--ink); background: var(--ink); color: var(--ground); padding: 0 21px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 500; }
+  .go:disabled { opacity: 0.45; cursor: default; }
+  .status { color: var(--muted); min-height: 1.55em; }
+  .status b { color: var(--ink); font-weight: 500; }
+
+  .drift { margin-top: 21px; }
+  .drift-head { max-width: 1100px; margin: 0 auto 8px; display: flex; gap: 13px; align-items: baseline; flex-wrap: wrap; color: var(--muted); }
+  .drift-head .tag { border: 1px solid var(--line); padding: 1px 8px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+  .band { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; margin-inline: -16px; padding-inline: 16px; scrollbar-color: var(--line) transparent; }
+  .station { position: relative; flex: none; width: min(88vw, 620px); height: min(72vh, 560px); min-height: 420px; scroll-snap-align: start; overflow: hidden; }
+  .station canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .seam { position: absolute; left: 0; top: 13px; z-index: 2; max-width: 70%; font-size: 11px; letter-spacing: 0.02em; background: rgba(15, 10, 7, 0.82); padding: 4px 8px; color: var(--muted); }
+  .seam b { color: var(--ink); font-weight: 500; }
+  .card { position: absolute; left: 13px; right: 13px; bottom: 13px; z-index: 2; background: rgba(15, 10, 7, 0.86); padding: 13px 16px; display: grid; gap: 6px; }
+  .card .no { color: var(--faint); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .card h2 { margin: 0; font: italic 400 28px/1.1 var(--serif); text-wrap: balance; }
+  .card .scene { margin: 0; font: 400 16px/1.4 var(--serif); color: var(--ink); }
+  .card .why { margin: 0; color: var(--muted); }
+  .card .links { display: flex; gap: 13px; flex-wrap: wrap; align-items: baseline; margin-top: 2px; }
+  .card .links a { font-size: 12px; }
+  .card .links .visit { color: var(--ink); font-weight: 500; }
+  .card .links a:not(.visit) { color: var(--muted); }
+  .card .from { justify-self: start; margin-top: 4px; border: 1px solid var(--muted); background: transparent; padding: 4px 10px; cursor: pointer; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .card .from:hover { border-color: var(--ink); }
+  .station.thing .card h2 { font-size: 34px; }
+  .station.pending .card { opacity: 0.6; }
+  .note { max-width: 1100px; margin: 13px auto 0; color: var(--faint); font-size: 11px; }
+  @media (max-width: 520px) {
+    .name h1 { font-size: 28px; }
+    .well { grid-template-columns: 1fr; }
+    .go { padding: 10px; }
+    .card h2 { font-size: 24px; }
+    .station { height: 78vh; }
+  }
+  @media (prefers-reduced-motion: reduce) { .band { scroll-behavior: auto; } }
+</style>
+
+<div class="top">
+  <div class="name">
+    <h1>DIRT Drift</h1>
+    <p>Put a thing in: a photo of an object, or its name. It drifts outward through things that share one quality at a time, never the same kind of thing, farther with every step. Each station leads somewhere to explore.</p>
+  </div>
+  <form class="well" id="well">
+    <label class="drop" id="drop">
+      <img id="thumb" alt="" hidden>
+      <input type="text" id="q" placeholder="a basketball, a moth, the smell of tar…" autocomplete="off" aria-label="Name a thing, or drop a photo of one">
+      <button type="button" class="pick" id="pick">Photo</button>
+      <input type="file" id="file" accept="image/*" hidden>
+    </label>
+    <button class="go" id="go" type="submit">Drift</button>
+  </form>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+</div>
+
+<section class="drift" aria-label="The drift">
+  <div class="drift-head" id="head"></div>
+  <div class="band" id="band"></div>
+  <p class="note">Stations and websites are found by Claude on your own Claude account, each time you drift. A site it names may occasionally be wrong; the search links beside it always work.</p>
+</section>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const band = $("band"), head = $("head"), status = $("status");
+  const TAU = Math.PI * 2;
+
+  // ---- the example drift, shown before anything is put in --------------------------------------------------------
+  const EXAMPLE = {
+    thing: { name: "A basketball", sees: "An orange sphere pebbled all over, black seams dividing it into eight curved panels; it lives in the air as much as on the floor.", palette: ["#c8621e", "#2a1a12", "#e39a5a"] },
+    stations: [
+      { name: "A clementine, half peeled", by: "a pebbled orange skin", kind: "texture", scene: "On a kitchen windowsill, a clementine with its rind lifted away, every pore of the peel standing up like a ball's grip.", why: "The same dimpled surface, softened: the grip becomes a scent.", go: { name: "Wikipedia: Mandarin orange", url: "https://en.wikipedia.org/wiki/Mandarin_orange" }, search: "clementine peel macro photograph", palette: ["#f08a24", "#fbd08a", "#6b8f3a"] },
+      { name: "The Montreal Biosphère", by: "a sphere divided into segments", kind: "shape", scene: "Buckminster Fuller's geodesic dome on an island in the St. Lawrence, its acrylic skin long burned away, only the lattice left against the sky.", why: "The fruit's segments, at the scale of a building you can walk inside.", go: { name: "Wikipedia: Montreal Biosphère", url: "https://en.wikipedia.org/wiki/Montreal_Biosph%C3%A8re" }, search: "Montreal Biosphere Buckminster Fuller dome", palette: ["#9aa7b0", "#3d4a52", "#e7ecef"] },
+      { name: "A murmuration of starlings over Rome", by: "a mesh that is also a crowd", kind: "motion", scene: "At dusk over the Tiber, a hundred thousand starlings fold into one shape and pour through it, the dome's lattice turned alive.", why: "Structure made of bodies, holding together without a frame.", go: null, search: "starling murmuration Rome dusk", palette: ["#1d1a22", "#6b6a86", "#d9b48a"] },
+      { name: "Yves Klein, Leap into the Void", by: "a body held in the air", kind: "motion", scene: "1960, a Paris suburb: Klein launching himself from a wall, arms out, caught at the top of the jump that a rebound or a dunk also lives in.", why: "The flight of the flock, taken by one person, as art.", go: { name: "Wikipedia: Leap into the Void", url: "https://en.wikipedia.org/wiki/Leap_into_the_Void" }, search: "Yves Klein Leap into the Void photograph", palette: ["#2a2a2a", "#8c8c86", "#e9e6de"] },
+      { name: "The cliff divers of La Quebrada", by: "a fall timed to the swell", kind: "time", scene: "In Acapulco, a diver waits on the rock for the wave to fill the gorge, then drops thirty-five metres into it.", why: "The leap again, but now it has to meet the sea on time.", go: null, search: "La Quebrada cliff divers Acapulco", palette: ["#0e3b52", "#c7a57a", "#f2f0e8"] },
+      { name: "A pelican sitting on a rock out at sea", by: "folding the body before the plunge", kind: "place", scene: "A brown pelican on a wave-washed rock, head drawn back into its shoulders, the same shape it makes when it folds and drops into the water.", why: "The diver's craft, done for a living, at rest between dives.", go: { name: "All About Birds: Brown Pelican", url: "https://www.allaboutbirds.org/guide/Brown_Pelican/" }, search: "brown pelican on rock at sea", palette: ["#5b4a3a", "#9fb3b8", "#e8e2d6"] },
+      { name: "The guano islands of Chincha", by: "a rock whitened by the birds", kind: "place", scene: "Off Peru, islands so thick with what seabirds leave that nations went to war over them in the 1860s; the white is the wealth.", why: "The pelican's rock, turned into history, trade and fertilizer.", go: { name: "Wikipedia: Chincha Islands", url: "https://en.wikipedia.org/wiki/Chincha_Islands" }, search: "Chincha Islands guano history", palette: ["#e9e4d8", "#7c6a58", "#2f4f5f"] },
+    ],
+  };
+
+  // ---- the soil: each station a region of DIRT, drawn by the quality that carried the drift there --------------
+  const hex = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "").trim()); const n = m ? parseInt(m[1], 16) : 0x806040; return [n >> 16, (n >> 8) & 255, n & 255]; };
+  const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  function hash(x, y, s) { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  function vnoise(x, y, g, s) {
+    const fx = x / g, fy = y / g, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+    const a = hash(x0, y0, s), b = hash(x0 + 1, y0, s), c = hash(x0, y0 + 1, s), d = hash(x0 + 1, y0 + 1, s);
+    return (a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy;
+  }
+  /** A value 0..1 at cell (x, y) of a W by H region, in the grammar of a kind of quality. */
+  function grammar(kind, x, y, W, H, s) {
+    const u = x / W, v = y / H, n = vnoise(x, y, 21, s);
+    switch (kind) {
+      case "colour": case "color": return v < 0.36 ? 0.15 + 0.2 * n : v < 0.7 ? 0.5 + 0.2 * n : 0.85 + 0.1 * n;               // stacked fields
+      case "texture": return hash(x, y, s) * 0.7 + 0.3 * n;                                                                      // grain
+      case "shape": { const d = Math.hypot(u - 0.55, (v - 0.42) * H / W); return Math.abs(d - 0.28) < 0.012 ? 1 : d < 0.28 ? 0.75 + 0.2 * n : 0.2 + 0.2 * n; }
+      case "motion": return 0.5 + 0.5 * Math.sin(y / 5 + 3 * Math.sin(x / 34 + s) + n * 3);                                    // flow
+      case "sound": { const d = Math.hypot(u - 0.3, (v - 0.35) * H / W); return 0.5 + 0.5 * Math.sin(d * 90 - n * 2); }        // rings
+      case "scale": return hash(Math.floor(x / (1 + 6 * u)), Math.floor(y / (1 + 6 * u)), s);                                  // growing grain
+      case "place": return v < 0.48 + 0.04 * Math.sin(u * 6 + s) ? 0.8 + 0.15 * n : 0.25 + 0.25 * n;                           // horizon
+      case "time": return (Math.floor(v * 9 + n * 1.5) % 3) / 2;                                                                 // strata
+      default: return n < 0.45 ? 0.2 : hash(x, y, s) < 0.12 ? 1 : 0.6;                                                         // scattered marks
+    }
+  }
+  function mapped(pal, t) {
+    const p = pal.map(hex).sort((a, b) => lum(a) - lum(b)), f = Math.max(0, Math.min(1, t)) * (p.length - 1), i = Math.min(p.length - 2, Math.floor(f)), k = f - i;
+    return [0, 1, 2].map((j) => p[i][j] + (p[i + 1][j] - p[i][j]) * k);
+  }
+  /** Draw a station's soil into its canvas; prev: the station before (for the seam), img: the thing's own picture. */
+  function soil(cv, st, prev, seed, img) {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const Wp = Math.max(2, Math.round(r.width * dpr)), Hp = Math.max(2, Math.round(r.height * dpr));
+    cv.width = Wp; cv.height = Hp;
+    const g = cv.getContext("2d"), C = Math.max(2, Math.round(3 * dpr)), W = Math.ceil(Wp / C), H = Math.ceil(Hp / C);
+    g.fillStyle = "#0f0a07"; g.fillRect(0, 0, Wp, Hp);
+    let pix = null;
+    if (img) {
+      const t = document.createElement("canvas"); t.width = W; t.height = H;
+      const tg = t.getContext("2d"), s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      tg.drawImage(img, (W - img.naturalWidth * s) / 2, (H - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+      pix = tg.getImageData(0, 0, W, H).data;
+    }
+    const pal = st.palette && st.palette.length ? st.palette : ["#3a2a1d", "#a8927a", "#eadfcd"];
+    const ppal = prev && prev.palette && prev.palette.length ? prev.palette : null;
+    // the shared colour: this station's colour nearest the one before's, stitched along the seam
+    let shared = null;
+    if (ppal) { let bd = 1e9; for (const a of pal.map(hex)) for (const b of ppal.map(hex)) { const d = dist(a, b); if (d < bd) { bd = d; shared = a.map((v, i) => (v + b[i]) / 2); } } }
+    const seamW = Math.round(W * 0.16);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let col;
+      if (pix) { const o = (y * W + x) * 4; col = [pix[o], pix[o + 1], pix[o + 2]]; }
+      else col = mapped(pal, grammar(st.kind, x, y, W, H, seed));
+      if (ppal && x < seamW) {                                          // the overspray: the station before, giving way
+        const k = x / seamW + (hash(x, y, seed + 7) - 0.5) * 0.5;
+        if (k < 0.5) col = mapped(ppal, grammar(prev.kind, x + W, y, W, H, seed - 1));
+        if (shared && Math.abs(x - seamW * 0.5) < 1.5 && (y % 4) < 2) col = shared;
+      }
+      const h = hash(x, y, seed + 3), l = lum(col) / 255;
+      if (h < 0.1) continue;                                            // a gap in the soil
+      const size = pix ? (l > 0.66 ? C : l > 0.33 ? C - 1 : Math.max(1, C - 2)) : (h > 0.8 ? C : h > 0.35 ? C - 1 : Math.max(1, C - 2));
+      g.fillStyle = `rgb(${col[0] | 0},${col[1] | 0},${col[2] | 0})`;
+      g.fillRect(x * C, y * C, size, size);
+    }
+  }
+
+  // ---- the band of stations ----------------------------------------------------------------------------------
+  let drift = null;                                                     // { thing, stations: [] }
+  let thingImg = null;                                                  // the picture put in (an Image), if any
+  const search = (q) => "https://www.google.com/search?q=" + encodeURIComponent(q);
+  const wiki = (q) => "https://en.wikipedia.org/w/index.php?search=" + encodeURIComponent(q);
+  const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; } };
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function stationEl(st, i, prev) {
+    const s = el("article", "station" + (i < 0 ? " thing" : ""));
+    s.setAttribute("aria-label", i < 0 ? "The thing" : `Station ${i + 1}: ${st.name}`);
+    const cv = el("canvas"); cv.setAttribute("aria-hidden", "true"); s.append(cv);
+    if (i >= 0 && st.by) { const seam = el("div", "seam"); seam.append("carried by ", el("b", "", st.by)); s.append(seam); }
+    const card = el("div", "card");
+    card.append(el("div", "no", i < 0 ? "the thing" : `station ${i + 1} · ${st.kind || "quality"}`), el("h2", "", st.name));
+    if (st.scene || st.sees) card.append(el("p", "scene", st.scene || st.sees));
+    if (st.why) card.append(el("p", "why", st.why));
+    if (i >= 0) {
+      const links = el("div", "links");
+      const u = st.go && safeUrl(st.go.url);
+      if (u) { const a = el("a", "visit", (st.go.name || "Visit") + " ↗"); a.href = u; a.target = "_blank"; a.rel = "noopener"; links.append(a); }
+      const q = st.search || st.name;
+      const a1 = el("a", "", "search ↗"); a1.href = search(q); a1.target = "_blank"; a1.rel = "noopener";
+      const a2 = el("a", "", "wikipedia ↗"); a2.href = wiki(st.name); a2.target = "_blank"; a2.rel = "noopener";
+      links.append(a1, a2);
+      card.append(links);
+      const b = el("button", "from", "Drift from here"); b.type = "button";
+      b.addEventListener("click", () => driftFrom(st));
+      card.append(b);
+    }
+    s.append(card);
+    requestAnimationFrame(() => soil(cv, st, prev, (i + 2) * 131 + ((drift && drift.salt) || 0), i < 0 ? thingImg : null));
+    return s;
+  }
+  function render(d, isExample) {
+    drift = d;
+    band.replaceChildren();
+    head.replaceChildren();
+    if (isExample) head.append(el("span", "tag", "example"), el("span", "", "A drift from a basketball. Put something of your own in above."));
+    else head.append(el("span", "", `From ${d.thing.name.replace(/^./, (c) => c.toLowerCase())}, ${d.stations.length} stations out.`));
+    band.append(stationEl(d.thing, -1, null));
+    d.stations.forEach((st, i) => band.append(stationEl(st, i, i ? d.stations[i - 1] : d.thing)));
+  }
+  let resizeT = 0;
+  window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => drift && render(drift, drift === EXAMPLE), 233); });
+
+  // ---- asking Claude ------------------------------------------------------------------------------------------
+  const WORLD = "The person drifting is a collage artist. Artists they have saved include Cy Twombly, Pablo Picasso, Willem de Kooning, Paul Cezanne, Vincent van Gogh, Claude Monet, Giorgio Morandi, Salvador Dali, Alberto Giacometti, Henri Matisse, Helen Frankenthaler, James Turrell, Mark Rothko, Josef Albers and Hiroshi Sugimoto; they care about aesthetics, materials, light and unexpected connections.";
+  function prompt(thingText, visited) {
+    return `You are DIRT Drift, a search engine for lateral association. The input is a THING (${thingText ? "named below" : "shown in the attached image"}). Do not return similar things or the same category: a basketball leading to a soccer ball is a failure; a basketball leading, step by step, to a pelican sitting on a rock out at sea is the spirit.
+
+First read the thing for its qualities across the senses and ideas: colour, surface and texture, shape and silhouette, motion and gesture, sound, scale and weight, material, where it lives, rhythm and time, what people do with it, what it means.
+
+Then drift: 7 stations. Each station is a concrete, specific, real thing or scene someone could look up and see: a creature, a place, a person at work, a named artwork, an instrument, a weather, a craft, a building, a phenomenon, a community, a tool. Each is joined to the station before it (station 1 to the thing itself) by exactly ONE quality they share, stated precisely and sensorially in a few words. Every station jumps to a different domain from all earlier ones; the distance grows, station 1 already surprising, station 7 far away but still justified by the chain. Favour what is beautiful, strange, specific and real, and what leads somewhere: people, places, makers, collections, communities with a real presence online. ${WORLD}
+${visited.length ? "Already visited (do not repeat): " + visited.join("; ") + "." : ""}
+${thingText ? "THE THING: " + thingText : ""}
+
+Reply with JSON Lines only, one object per line, no other text, no code fences:
+line 1: {"t":"thing","name":"what it is, a few words","sees":"one sentence of what you notice","palette":["#rrggbb","#rrggbb","#rrggbb"]}
+then 7 lines: {"t":"station","name":"short title","by":"the one quality carried across, max 8 words","kind":"colour|texture|shape|motion|sound|scale|place|time|use|meaning","scene":"one vivid sentence","why":"one sentence on why it is worth following","go":{"name":"site name","url":"https://..."},"search":"a precise web search phrase","palette":["#rrggbb","#rrggbb","#rrggbb"]}
+For "go", give a real website you are certain exists (a museum or collection page, an organization, a well-known article, a maker's own site); if not certain, give null. Palettes are the thing's own colours, dark to light.`;
+  }
+  let sample = null, ctl = null, busy = false;
+  const limitsP = (async () => {
+    const p = window.claude && window.claude.use ? window.claude.use("sample") : null;
+    sample = p ? await p.catch(() => null) : null;
+    if (!sample) { status.textContent = "Drifting needs Claude, which this view cannot reach. The example below shows what it does."; $("go").disabled = true; return null; }
+    const lim = await sample.limits().catch(() => null);
+    if (!lim || !lim.images) { $("pick").hidden = true; $("q").placeholder = "a basketball, a moth, the smell of tar…"; }
+    else $("file").accept = lim.images.mediaTypes.join(",");
+    return lim;
+  })();
+  const COPY = {
+    not_granted: "Claude wasn't allowed for this page, so drifting is off. The example stays.",
+    sampling_disabled: "Claude isn't available on this account.",
+    rate_limited: "Too many drifts at once. Wait a little, then drift again.",
+    session_expired: "Sign in to Claude again, then drift.",
+    image_rejected: "That picture couldn't be read. Try a JPEG or PNG.",
+    refused: "Claude declined this one. Try another thing.",
+    images_unavailable: "Pictures can't be sent from this view; name the thing instead.",
+  };
+  function parseLines(text) {
+    const out = [];
+    for (const line of text.split("\n")) { const s = line.trim(); if (!s.startsWith("{")) continue; try { out.push(JSON.parse(s)); } catch (e) { /* an unfinished line */ } }
+    return out;
+  }
+  async function run(thingText, file, visited, carry) {
+    if (busy) { ctl && ctl.abort(); return; }
+    await limitsP;
+    if (!sample) return;
+    busy = true; $("go").textContent = "Stop";
+    ctl = new AbortController();
+    status.replaceChildren(el("b", "", "Reading the thing…"), " the first station takes a little while.");
+    const d = { thing: carry || { name: thingText || "Your thing", sees: "", palette: ["#3a2a1d", "#a8927a", "#eadfcd"] }, stations: [], salt: Math.floor(Math.random() * 9999) };
+    let shown = 0;
+    try {
+      const { text } = await sample(prompt(thingText, visited), {
+        signal: ctl.signal, cache: false, images: file || undefined,
+        onText: ({ text }) => {
+          const objs = parseLines(text);
+          const th = objs.find((o) => o.t === "thing");
+          if (th && !carry) d.thing = { name: th.name, sees: th.sees, palette: th.palette };
+          d.stations = objs.filter((o) => o.t === "station" && o.name);
+          if (d.stations.length !== shown || (th && shown === 0)) {
+            shown = d.stations.length;
+            render(d, false);
+            status.replaceChildren(el("b", "", `${shown} of 7 stations`), shown < 7 ? " — more are coming." : "");
+          }
+        },
+      });
+      d.stations = parseLines(text).filter((o) => o.t === "station" && o.name);
+      render(d, false);
+      status.textContent = d.stations.length ? "Swipe along the band. Drift from any station to keep going." : "Nothing came back that could be drawn. Try again.";
+      try { localStorage.setItem("dirt-drift-last", JSON.stringify({ thing: d.thing, stations: d.stations, salt: d.salt })); } catch (e) {}
+    } catch (e) {
+      if (e && e.code === "cancelled") status.textContent = "Stopped.";
+      else status.textContent = COPY[e && e.code] || "The drift was interrupted. Try again.";
+      if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) $("go").disabled = true;
+    } finally {
+      busy = false; $("go").textContent = "Drift";
+    }
+  }
+  function driftFrom(st) {
+    const visited = [drift.thing.name, ...drift.stations.map((s) => s.name)];
+    $("q").value = st.name; thingImg = null; picked = null; $("thumb").hidden = true;
+    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    run(`${st.name}: ${st.scene || ""}`, null, visited, { name: st.name, sees: st.scene, palette: st.palette, kind: st.kind });
+  }
+
+  // ---- putting something in -----------------------------------------------------------------------------------
+  let picked = null;
+  function take(file) {
+    if (!file || !/^image\//.test(file.type)) return;
+    picked = file;
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { thingImg = img; };
+    img.src = url;
+    $("thumb").src = url; $("thumb").hidden = false; $("thumb").alt = "The picture put in";
+    if (!$("q").value) $("q").placeholder = "(the picture) — add words if you like";
+  }
+  $("pick").addEventListener("click", (e) => { e.preventDefault(); $("file").click(); });
+  $("file").addEventListener("change", () => take($("file").files[0]));
+  const drop = $("drop");
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); take(e.dataTransfer.files[0]); });
+  document.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find((x) => /^image\//.test(x.type)); if (f) take(f); });
+  $("well").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (busy) { ctl && ctl.abort(); return; }
+    const t = $("q").value.trim();
+    if (!t && !picked) { status.textContent = "Name a thing, or give it a photo."; $("q").focus(); return; }
+    if (!picked) thingImg = null;
+    run(t ? (picked ? "the thing in the photo — " + t : t) : "", picked, [], null);
+  });
+
+  // ---- at rest: the last drift you made, or the example --------------------------------------------------------
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem("dirt-drift-last") || "null"); } catch (e) {}
+  if (last && last.stations && last.stations.length) { render(last, false); status.textContent = "Your last drift. Put something new in above, or drift on from any station."; }
+  else render(EXAMPLE, true);
+})();
+</script>
