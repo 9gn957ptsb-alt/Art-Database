@@ -2136,6 +2136,7 @@ document.addEventListener("keydown", (ev) => {
 showAll.addEventListener("click", letGo);
 </script>
 <script id="wanderers">__WANDERERS__</script>
+<script id="drift">__DRIFT__</script>
 <script id="earth-city">__EARTH_CITY__</script>
 <script id="earth-main">__EARTH_MAIN__</script>
 """
@@ -2212,6 +2213,7 @@ def main():
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
                 .replace("__WANDERERS__", (HERE / "engine" / "wanderers.js").read_text().replace("</script", "<\\/script"))
+                .replace("__DRIFT__", "" if site else (HERE / "engine" / "drift.js").read_text().replace("</script", "<\\/script"))
                 .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__SITE__", "true" if site else "false")
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))

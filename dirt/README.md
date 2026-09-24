@@ -266,6 +266,14 @@ pixel, coarse at the core and finer outward, in colours born of the core's own c
 golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
 rings interfering, or a crystal of hexagons whose faces turn with the light.
 
+**The drift.** Put a thing into the plane: name it in the bar, or give it a photo (picked, pasted, or dropped on the
+plane). Claude reads it for its qualities (colour, surface, shape, motion, sound, scale, material, place, time, use,
+meaning) and finds seven real, specific things, each joined to the one before by one quality they share, never of the
+same kind, farther out with every step. The plane carries you to each in a long glide (987 to 1,597 cells on, turning
+a little each time, so each station lands somewhere new on the ladder), names where you have come to and what carried
+you there, and gives a site to visit and search links; ‹ › (or [ ]) move between stations and Drift from here goes on.
+It asks Claude through the page's `sample` capability, on the viewer's own Claude account (`engine/drift.js`).
+
 **The ladder of complexity.** The plane is DIRT at the full reach of its language, and that reach runs from nothing to
 everything. Over the plane lies a field of complexity, 0 to 1, rising and falling across two or three screens, so a few
 swipes cross the whole ladder:
