@@ -1,0 +1,160 @@
+{
+  "buildings": [
+    {
+      "title": "Roots of the Mountain – Casa LL by RA! Arquitectura",
+      "slug": "roots-of-the-mountain-casa-ll-by-ra-arquitectura",
+      "url": "https://www.thearchitecturalauthority.com/article/roots-of-the-mountain-casa-ll-by-ra-arquitectura",
+      "city": "Tepoztlán",
+      "country": "Mexico",
+      "lat": 18.9861,
+      "lon": -99.0998
+    },
+    {
+      "title": "A Firelit Harmony – Casa Kakmo in Izamal Magical Town by Garrido Lizarraga Arquitectos",
+      "slug": "a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos",
+      "city": "Izamal",
+      "country": "Mexico",
+      "lat": 20.9334,
+      "lon": -89.0183
+    },
+    {
+      "title": "Measured Continuity – Casa S by Valdemarin and Siuk Studio",
+      "slug": "measured-continuity-casa-s-by-valdemarin-and-siuk-studio",
+      "url": "https://www.thearchitecturalauthority.com/article/measured-continuity-casa-s-by-valdemarin-and-siuk-studio",
+      "city": "Buenos Aires",
+      "country": "Argentina",
+      "lat": -34.6096,
+      "lon": -58.3888
+    },
+    {
+      "title": "Language of Light – Residence Oliva  by Estudio Bearzotti",
+      "slug": "language-of-light-residence-oliva-by-estudio-bearzotti",
+      "url": "https://www.thearchitecturalauthority.com/article/language-of-light-residence-oliva-by-estudio-bearzotti",
+      "city": "Mendiolaza",
+      "country": "Argentina",
+      "lat": -31.2655,
+      "lon": -64.3033
+    },
+    {
+      "title": "Roots in Motion – Miami Residence by Caroline Andrusko Arquitetos",
+      "slug": "roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos",
+      "url": "https://www.thearchitecturalauthority.com/article/roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos",
+      "city": "Miami",
+      "country": "United States",
+      "lat": 25.7742,
+      "lon": -80.1936
+    },
+    {
+      "title": "The Diaphanous Cave – Casa Cosmo by Cristian Nanzer",
+      "slug": "the-diaphanous-cave-casa-cosmo-by-cristian-nanzer",
+      "url": "https://www.thearchitecturalauthority.com/article/the-diaphanous-cave-casa-cosmo-by-cristian-nanzer",
+      "city": "Capilla del Monte",
+      "country": "Argentina",
+      "lat": -30.8572,
+      "lon": -64.5263
+    },
+    {
+      "title": "Embracing Nature – Naman Pure Spa by MIA Design Studio",
+      "slug": "embracing-nature-naman-pure-spa-by-mia-design-studio",
+      "url": "https://www.thearchitecturalauthority.com/article/embracing-nature-naman-pure-spa-by-mia-design-studio",
+      "city": "Da Nang",
+      "country": "Vietnam",
+      "lat": 16.0681,
+      "lon": 108.0842
+    },
+    {
+      "title": "Balance and Permanence – UNPUENTE by Paolini Arquitectos",
+      "slug": "balance-and-permanence-unpuente-by-paolini-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/balance-and-permanence-unpuente-by-paolini-arquitectos",
+      "city": "Departamento de Calamuchita",
+      "country": "Argentina"
+    },
+    {
+      "title": "Honouring Memory – Centro Cultural Los Lavaderos by Modulo Arquitectos and AMD Arquitectos",
+      "slug": "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
+      "city": "Zaratán",
+      "country": "Spain",
+      "lat": 41.6541,
+      "lon": -4.7958
+    },
+    {
+      "title": "A Dialogue of Textures – Simon Hamui Space by Simon Hamui Studio",
+      "slug": "a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio",
+      "url": "https://www.thearchitecturalauthority.com/article/a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio",
+      "city": "Aspen",
+      "country": "United States",
+      "lat": 39.1911,
+      "lon": -106.8236
+    },
+    {
+      "title": "Tree as Origin – Residence 204 by Estudio Bearzotti",
+      "slug": "tree-as-origin-residence-204-by-estudio-bearzotti",
+      "url": "https://www.thearchitecturalauthority.com/article/tree-as-origin-residence-204-by-estudio-bearzotti",
+      "city": "Córdoba",
+      "country": "Argentina",
+      "lat": -31.4167,
+      "lon": -64.1834
+    },
+    {
+      "title": "Escala Humana Wines Winery by Estudio Monte Arquitectura, Estudio RARE and Unamuno Arquitectura",
+      "slug": "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura",
+      "url": "https://www.thearchitecturalauthority.com/article/escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura",
+      "city": "Departamento de Tupungato",
+      "country": "Argentina"
+    },
+    {
+      "title": "The Da Vinci of Architecture — Frank Gehry 1929–2025",
+      "slug": "the-da-vinci-of-architecture-frank-gehry-19292025",
+      "url": "https://www.thearchitecturalauthority.com/article/the-da-vinci-of-architecture-frank-gehry-19292025",
+      "city": "Los Angeles",
+      "country": "United States",
+      "lat": 34.0537,
+      "lon": -118.2428
+    },
+    {
+      "title": "Music Room – Casa La Flecha by Gonzalez Olsina & Vega Arquitectos and Eduardo Vera",
+      "slug": "music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera",
+      "url": "https://www.thearchitecturalauthority.com/article/music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera",
+      "city": "",
+      "country": "Uruguay"
+    },
+    {
+      "title": "Between Edges – Casa en el Dragon by Cristian Nanzer",
+      "slug": "between-edges-casa-en-el-dragon-by-cristian-nanzer",
+      "url": "https://www.thearchitecturalauthority.com/article/between-edges-casa-en-el-dragon-by-cristian-nanzer",
+      "city": "Córdoba",
+      "country": "Argentina",
+      "lat": -31.4167,
+      "lon": -64.1834
+    },
+    {
+      "title": "A Territorial Presence – Casa BP by Santiago Bertotti",
+      "slug": "a-territorial-presence-casa-bp-by-santiago-bertotti",
+      "url": "https://www.thearchitecturalauthority.com/article/a-territorial-presence-casa-bp-by-santiago-bertotti",
+      "city": "Mendiolaza",
+      "country": "Argentina",
+      "lat": -31.2655,
+      "lon": -64.3033
+    },
+    {
+      "title": "A Pause in the Scenery – Strazik House by Gonzalez Olsina & Vega Arquitectos",
+      "slug": "a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos",
+      "city": "Mendoza",
+      "country": "Argentina",
+      "lat": -32.8894,
+      "lon": -68.8446
+    },
+    {
+      "title": "Gravity Held in Stone – Suspended Stone Houses by Paul Dragicevic",
+      "slug": "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
+      "url": "https://www.thearchitecturalauthority.com/article/gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
+      "city": "",
+      "country": "Argentina",
+      "lat": -32.0222,
+      "lon": -63.9699
+    }
+  ]
+}
