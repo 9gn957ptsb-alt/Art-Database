@@ -362,6 +362,17 @@ and are never committed:
 
 `#formal` puts the formal end everywhere, for looking at it.
 
+**Depth without distance.** DRIFT has no zoom and wants none: nothing on it is understood by coming nearer or going
+farther (the Artist Website's globe is where distance means something). So every scale is on the screen at once.
+Here and there a window opens, one in each 233-cell square where the plane is deep enough, 34 to 144 cells across,
+torn at its edge and turned by a multiple of the golden angle. It holds the whole view as it was a frame ago, shrunk,
+and that view held its own windows, holding the view before, so after a few frames each window holds the plane at
+every scale down to a pixel. Several windows of different sizes, each holding all of them, are an iterated function
+system (Hutchinson 1981; Barnsley, *Fractals Everywhere*, 1988): what they converge on has structure at every scale,
+and no scale comes first. How deep the plane goes is a field 987 cells across drifting through it at 8 cells a second,
+from flat to as deep as the device draws (full at tier 3, φ⁻¹ at tier 2, none below); anomalies and the Earth keep out
+of it. It is a fourth small shader, fed the last frame's cells, mipmapped.
+
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
 black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque, Cézanne,

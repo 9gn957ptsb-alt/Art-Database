@@ -2148,12 +2148,14 @@ void main() {
 // the plane is full (the ladder's lower rungs, the voids and the singularities keep their own).
 // A program of its own, small, drawn over the first with blending, so that the first, long already, need not grow;
 // it shares the first's helpers, taken from its source.
+/** A piece of the first pass's source, from `from` up to `to`: its helpers, shared by the passes after it. */
+function fsPart(from, to) {
+  const i = GROUND_FS.indexOf(from), j = GROUND_FS.indexOf(to, i + from.length);
+  if (i < 0 || j < 0) throw new Error("DIRT ground shader: no " + from);
+  return GROUND_FS.slice(i, j) + "\n";
+}
 const GROUND_FORMAL = (() => {
-  const part = (from, to) => {
-    const i = GROUND_FS.indexOf(from), j = GROUND_FS.indexOf(to, i + from.length);
-    if (i < 0 || j < 0) throw new Error("DIRT formal pass: no " + from);
-    return GROUND_FS.slice(i, j) + "\n";
-  };
+  const part = fsPart;
   return `#version 300 es
 precision highp float;
 precision highp int;
@@ -2270,6 +2272,55 @@ void main() {
 }`;
 })();
 
+// The fourth pass: depth without distance. DRIFT has no zoom, and wants none: nothing here is understood by coming
+// nearer or going farther, so instead every scale is on the screen at once. Here and there over the plane a window
+// opens (torn at its edge, turned by a multiple of the golden angle), and in it is the whole view as it was a frame
+// ago, shrunk; that view had its windows, holding the view before, shrunk again, and so on down, so after a few
+// frames each window holds the plane at every scale to the size of a pixel. Several windows of different sizes,
+// each holding all of them, are an iterated function system (Hutchinson 1981; Barnsley, Fractals Everywhere, 1988):
+// what they converge on has structure at every scale and no scale first. How deep the plane goes is a field that
+// drifts over it and through time, from flat to as deep as the device can draw, so no depth is the right one.
+const GROUND_DEPTH = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+uniform sampler2D uPrev;            // the last frame's cells, mipmapped
+uniform vec2 uPrevSize, uPrevTex;   // how many cells across it held, and its texture's size
+uniform ivec2 uCell0;
+uniform float uTime, uDeep;         // uDeep: the deepest this device draws (0 to 1)
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}
+/** How deep the plane goes at p now: a field 987 cells across, drifting 8 cells a second. */
+float depthAt(vec2 p) { return uDeep * smoothUp(0.3, 0.8, vnoise(p + uTime * vec2(5.0, 3.0), 987.0, 10946u)); }
+void main() {
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy;
+  // the windows: one in each 233-cell square where the plane is deep enough, 34 to 144 cells across its heart,
+  // opening as the depth there rises past its own threshold; the smallest in front
+  const float G = 233.0;
+  ivec2 sq = ivec2(floor(p / G));
+  float best = 1e9, r = 2.0;
+  vec2 q = vec2(0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = sq + ivec2(i, j);
+    uint h = h3(c.x, c.y, 17711u);
+    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G;
+    float th = unit(h), R = 34.0 * pow(PHI, floor(unit(mixh(h + 3u)) * 3.99)) * smoothUp(th, th + P3, depthAt(C));
+    if (R < 2.0 || R >= best) continue;
+    float an = GA * float(int(mixh(h + 4u) % 5u) - 2), co = cos(an), si = sin(an);
+    vec2 d = mat2(co, si, -si, co) * (p - C) / R;
+    float rr = length(d) + 0.13 * (vnoise(p, 13.0, h) - 0.5) + 0.05 * (vnoise(p, 3.0, h + 1u) - 0.5);
+    if (rr < 1.0) { best = R; r = rr; q = d; }
+  }
+  if (r >= 1.0) discard;
+  // the whole view (its middle square) shrunk into the window, at the detail its size can hold
+  float m = min(uPrevSize.x, uPrevSize.y);
+  vec2 uv = 0.5 + 0.5 * q * m / uPrevSize;
+  vec3 col = textureLod(uPrev, uv * uPrevSize / uPrevTex, log2(m / (2.0 * best))).rgb;
+  float a = 1.0 - smoothstep(0.86, 1.0, r);
+  outA = outB = vec4(col, a);
+}`;
+
 /**
  * The ground painted on the GPU under the page's canvas, or null where there is no WebGL2 or only a software renderer
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
@@ -2289,10 +2340,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, U = {}, V = {}, F = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, U = {}, V = {}, F = {}, D = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
-  let tQuilt = null, qn = 0, qs = 1, quiltImgs = null;
+  let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
     const Q = imgs[0].naturalWidth, c2 = document.createElement("canvas");
@@ -2346,7 +2397,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -2415,12 +2466,15 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
+    // and so is the depth pass
+    const dd = finish(pending.d, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uTime", "uDeep"]);
+    if (dd) { [depthProg, D] = dd; gl.useProgram(depthProg); gl.uniform1i(D.uPrev, 10); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -2456,11 +2510,21 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tA, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, tB, 0);
     gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+    // the last frame's cells, for the depth pass, with every level of detail
+    if (tP) gl.deleteTexture(tP);
+    gl.activeTexture(gl.TEXTURE10); tP = tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1 + Math.floor(Math.log2(Math.max(FW, FH))), gl.RGBA8, FW, FH);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    if (!fboP) fboP = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fboP);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tP, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    prevN = [0, 0];
   }
   if (!setup()) return null;
   glcv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; });
-  glcv.addEventListener("webglcontextrestored", () => { tA = tB = null; lost = !setup(); });
+  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; lost = !setup(); });
   stage.insertBefore(glcv, cv);
   // Seen whenever the page's canvas is (the globe hides it).
   new MutationObserver(() => { glcv.style.visibility = cv.style.visibility; }).observe(cv, { attributes: true, attributeFilter: ["style"] });
@@ -2562,6 +2626,32 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
+    // then the depth: windows holding the last frame, which held the one before
+    const deep = tier >= 3 ? 1 : tier === 2 ? 1 / PHI : 0;
+    if (depthProg && deep && !earth && edgeOn && !(anom[2] > 0) && prevN[0]) {
+      gl.useProgram(depthProg);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2f(D.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(D.uPrevTex, FW, FH);
+      gl.uniform2i(D.uCell0, cx0, cy0);
+      gl.uniform1f(D.uTime, t);
+      gl.uniform1f(D.uDeep, deep);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
+    if (depthProg && deep) {
+      // this frame, kept for the next
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
+      gl.readBuffer(gl.COLOR_ATTACHMENT1);
+      gl.blitFramebuffer(0, 0, cw, ch, 0, 0, cw, ch, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.readBuffer(gl.COLOR_ATTACHMENT0);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      prevN = [cw, ch];
+    } else prevN = [0, 0];
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.useProgram(pxProg);
