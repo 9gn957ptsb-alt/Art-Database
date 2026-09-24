@@ -1965,7 +1965,7 @@ function frame(now) {
 
 // ---- anomalies (ground-gl.js draws them) -------------------------------------------------------------------------
 // Unannounced: the first 55 to 144 seconds in, then one every 144 to 377 seconds, of any kind. #anomaly=N starts
-// kind N five seconds in (0 the eye, 1 the figure, 2 the painting, 3 the planet).
+// kind N five seconds in (0 the eye, 1 the toys, 2 the painting, 3 the planet).
 const ANOM = { at: 0, kind: 0, next: 0, dur: 34000 };
 {
   const m = /(?:^|&)anomaly=(\d)/.exec(location.hash.slice(1));
@@ -1977,11 +1977,11 @@ function anomalyNow(now) {
   if (!GLG || !GLG.anomaly || REDUCED || (typeof MODE !== "undefined" && MODE !== "plane")) { if (GLG && GLG.anomaly) GLG.anomaly([0, 0, 0, 0]); return 0; }
   if (!ANOM.at && now >= ANOM.next) {
     ANOM.at = now;
-    ANOM.kind = ANOM.forced >= 0 ? ANOM.forced : Math.floor(Math.random() * 4);
-    ANOM.dur = ANOM.kind === 2 ? 21000 : 34000;
+    ANOM.kind = ANOM.forced >= 0 ? ANOM.forced : Math.random() < 0.5 ? 1 : [0, 2, 3][Math.floor(Math.random() * 3)];   // the toys, half the time
+    ANOM.dur = ANOM.kind === 2 ? 21000 : ANOM.kind === 1 ? 55000 : 34000;
   }
   if (!ANOM.at) { GLG.anomaly([0, 0, 0, 0]); return 0; }
-  const ph = (now - ANOM.at) / ANOM.dur;
+  const ph = ANOM.hold != null ? ANOM.hold : (now - ANOM.at) / ANOM.dur;   // hold: a phase held still, for looking at one
   if (ph >= 1) {
     ANOM.at = 0;
     ANOM.next = now + (144 + 233 * Math.random()) * 1000;

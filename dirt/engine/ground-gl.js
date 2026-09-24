@@ -1754,9 +1754,104 @@ layout(location = 1) out vec4 outB;
 // as one thing: an eye whose iris is the plane, a figure made of it, or a planet wrapped in it, seen whole, hanging in
 // the dark; and then the flip: it comes nearer and nearer until it is all there is, and the object is the world again.
 // Or, the gentlest of them, the plane shrinks to a painting hung on a wall, and is gone back into.
-// uAnom.w: 0 the eye, 1 the figure, 2 the painting, 3 the planet.
+// uAnom.w: 0 the eye, 1 the toys, 2 the painting, 3 the planet.
 mat2 rot2(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
 float capsule(vec2 p, vec2 a, vec2 b, float r) { return segD(p, a, b) - r; }
+float sdBox(vec2 q, vec2 b) { vec2 d = abs(q) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+/**
+ * The toys. Out of the dark a lamp comes on over floorboards, and toys come to life while nobody is looking: a
+ * spinning top wobbles in, a wind-up robot walks across with its key turning, blocks drop and stack, a ball rolls in.
+ * The lamp flickers (someone is coming) and everything freezes where it stands; the top topples. Then the ball rolls
+ * to the middle and grows until it is all there is, and it is the plane again. Every toy is made of the plane: where a
+ * toy is, the plane shows through, lit by the lamp. e runs 0 to 1 over the scene (26 seconds).
+ */
+void toyScene(vec2 p, vec2 C, float e, inout vec2 src, inout vec3 tint, inout vec4 over) {
+  float S = uHalf.y, s = e * 26.0, mt = min(s, 16.0);
+  vec2 u = (p - C) / S / 1.7;                                         // near: the toys fill the view
+  const float FY = 0.4;                                               // the floor line the toys stand on
+  float flick = s > 16.0 && s < 18.6 ? step(0.45, fract(sin(floor(s * 9.0) * 43.1) * 917.3)) : 1.0;
+  float lamp = smoothstep(0.3, 1.2, s) * mix(0.22, 1.0, flick);
+  vec2 lp = (u - vec2(0.0, 0.3)) * vec2(0.62, 1.3);
+  float light = lamp * (0.3 + 1.1 * exp(-dot(lp, lp) * 1.2));
+  float sd = 1e9;                                                     // the nearest toy's edge (screen units)
+  bool body = false;
+  vec3 paint = vec3(0);
+  float paintA = 0.0;
+  // the ball: rolls in, waits, then rolls to the middle and grows until it is the whole view
+  float g = smoothstep(21.0, 26.0, s);
+  vec2 bc = vec2(mix(-2.1, -0.38, smoothstep(12.0, 15.0, mt)), FY - 0.09);
+  bc = mix(bc, vec2(0.0, FY - 0.09), smoothstep(19.0, 21.0, s));
+  float br = 0.09 * exp(log(30.0) * g * g);
+  bc = mix(bc, vec2(0.0), g);
+  float dball = length(u - bc) - br;
+  if (dball < 0.0) {
+    src = p;
+    tint *= mix(0.35 + 0.95 * light, 1.0, g);
+    float x = -dball * S * 1.7 / 5.0;
+    if (x < 1.0) over = vec4(vec3(30.0 + 210.0 * x), 0.7 * (1.0 - x) * (1.0 - g));
+    return;
+  }
+  // the top: spins in from the left, precessing; when the lamp flickers it topples over
+  {
+    float tilt = 0.14 * sin(mt * 3.1);
+    tilt = mix(tilt, 1.4, smoothstep(16.3, 17.1, s));
+    vec2 tip = vec2(mix(-2.0, -0.78, smoothstep(1.0, 4.0, mt)) + 0.04 * sin(mt * 2.0), FY);
+    vec2 q = rot2(tilt) * (u - tip);
+    float cone = max(abs(q.x) + q.y * 0.93, max(q.y, -0.14 - q.y));
+    float dome = max(length(q - vec2(0.0, -0.14)) - 0.13, q.y + 0.14);
+    float stem = capsule(q, vec2(0.0, -0.26), vec2(0.0, -0.33), 0.016);
+    float d = min(min(cone, dome), stem);
+    if (d < sd) { sd = d; body = sin(q.x * 42.0 + mt * 26.0) > 0.0; paint = vec3(196, 64, 44); }
+  }
+  // the robot: walks in from the right, its legs stepping and its key turning; its eyes light with the lamp
+  {
+    float walk = smoothstep(3.0, 11.0, mt), stepping = walk > 0.0 && walk < 1.0 ? 1.0 : 0.0;
+    float bob = 0.012 * abs(sin(mt * 6.0)) * stepping, la = 0.035 * sin(mt * 6.0) * stepping;
+    vec2 r = u - vec2(mix(1.95, 0.74, walk), FY);
+    float legs = min(capsule(r, vec2(-0.05, -0.1 - bob), vec2(-0.05 + la, 0.0), 0.022), capsule(r, vec2(0.05, -0.1 - bob), vec2(0.05 - la, 0.0), 0.022));
+    float torso = sdBox(r - vec2(0.0, -0.2 - bob), vec2(0.09, 0.1)), head = sdBox(r - vec2(0.0, -0.365 - bob), vec2(0.066, 0.056));
+    float ant = min(capsule(r, vec2(0.0, -0.42 - bob), vec2(0.0, -0.475 - bob), 0.006), length(r - vec2(0.0, -0.485 - bob)) - 0.016);
+    float ka = mt * 4.0;
+    float key = capsule(r, vec2(0.1, -0.2 - bob), vec2(0.1 + 0.05 * cos(ka), -0.2 - bob + 0.02 * sin(ka)), 0.012);
+    float d = min(min(min(legs, torso), min(head, ant)), key);
+    if (d < sd) {
+      sd = d; body = torso < 0.0 || head < 0.0; paint = vec3(168, 174, 186);
+      float eye = min(length(r - vec2(-0.026, -0.372 - bob)), length(r - vec2(0.026, -0.372 - bob))) - 0.013;
+      if (eye < 0.0) { body = false; paint = mix(vec3(60), vec3(255, 214, 90), lamp); }
+    }
+  }
+  // the blocks: one after another they drop and bounce, stacking
+  for (int i = 0; i < 3; i++) {
+    float t0 = 5.0 + 2.0 * float(i), k = mt - t0;
+    if (k < 0.0) continue;
+    float yt = FY - 0.058 - float(i) * 0.114, y0 = -1.3;
+    float y = k < 0.55 ? mix(y0, yt, (k / 0.55) * (k / 0.55)) : yt - 0.03 * abs(sin((k - 0.55) * 9.0)) * exp(-(k - 0.55) * 5.0);
+    vec2 q = rot2(0.06 * float(i - 1)) * (u - vec2(0.14 + 0.012 * float(i), y));
+    float d = sdBox(q, vec2(0.057));
+    if (d < sd) { sd = d; body = sdBox(q, vec2(0.042)) < 0.0; paint = i == 0 ? vec3(60, 110, 170) : i == 1 ? vec3(230, 190, 60) : vec3(190, 70, 60); }
+  }
+  if (sd < 0.0) {
+    if (body) { src = p; tint *= 0.45 + 1.0 * light; }
+    else over = vec4(min(paint * (0.3 + 0.95 * light), vec3(255.0)), 1.0);
+    float x = -sd * S * 1.7 / 4.0;                                    // every edge a grey gradient
+    if (x < 1.0) over = vec4(mix(vec3(25.0 + 210.0 * x) * (0.4 + 0.6 * lamp), over.rgb, over.a * x), max(over.a, 0.75 * (1.0 - x)));
+    return;
+  }
+  // the room: floorboards under the lamp, the wall behind, a skirting line between
+  vec3 col;
+  if (u.y > 0.17) {
+    float w = 0.16 * (0.45 + (u.y - 0.17) * 1.4), bk = floor(u.x / w);
+    float hb = unit(h3(int(bk), 3, 51u));
+    col = mix(vec3(64, 42, 26), vec3(116, 78, 44), hb) * (0.9 + 0.2 * vnoise(vec2(u.x * 900.0, u.y * 60.0), 9.0, uint(bk) + 7u));
+    col *= 1.0 - 0.5 * feather(abs(fract(u.x / w) - 0.5) * 2.0 - 0.96, 0.04);
+  } else col = vec3(34, 27, 22) * (0.8 + 0.2 * vnoise(u * 400.0, 21.0, 9u));
+  col *= light;
+  float sk = abs(u.y - 0.17) * S * 1.7 / 4.0;
+  if (sk < 1.0) col = mix(col, vec3(25.0 + 180.0 * sk) * light, (1.0 - sk) * 0.8);
+  // the toys' shadows on the floor, soft, away from the lamp
+  over = vec4(col, 1.0);
+}
+
 /** Where the cell at p takes its colour from in an anomaly (src), a tint over it, and what covers it (over.a 1: only that). */
 void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
   vec2 C = uAnom.xy, d = p - C;
@@ -1794,6 +1889,7 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
     return;
   }
   float e = (ph - 0.52) / 0.48, grow = smoothstep(0.0, 0.4, e), flip = smoothstep(0.5, 1.0, e);
+  if (kind == 1) { toyScene(p, C, e, src, tint, over); return; }       // the toys (the figure of before, retired)
   float a = max(1.0, 144.0 * grow * mix(1.0, 55.0, flip * flip * flip));
   vec2 u = d / a;
   float sd, inside = 0.0;                                            // sd in units of a; inside: 1 where the plane shows as itself

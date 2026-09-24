@@ -319,11 +319,11 @@ dark, and the flip: it comes nearer until it is all there is, and the object is 
 | | the plane becomes | and is fallen back into through |
 |---|---|---|
 | the eye | an eye whose iris is the plane (its white, the plane farther off and paled; its pupil, what is left of the horizon) | the iris |
-| the figure | a thin standing figure, as Giacometti's, made of the plane | its body |
+| the toys | (half the time; 55 seconds) a lamp comes on over floorboards and toys come to life while nobody is looking: a spinning top wobbles in, a wind-up robot walks across with its key turning and its eyes lit, blocks drop and stack, a ball rolls in; the lamp flickers, someone is coming, and everything freezes where it stands, the top toppling. Every toy is made of the plane, showing through it, lit by the lamp | the ball, which rolls to the middle and grows until it is all there is |
 | the planet | a planet wrapped in the plane, turning, lit from one side | its surface, flattening into the plane |
 | the painting | (no collapse) the plane shrinks to a painting in a frame on a gallery wall, casting its shadow | the painting |
 
-`#anomaly=N` starts kind N (0 the eye, 1 the figure, 2 the painting, 3 the planet) five seconds in. The life over the
+`#anomaly=N` starts kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet) five seconds in. The life over the
 ground goes with the light while one lasts.
 
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
