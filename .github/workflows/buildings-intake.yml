@@ -1,0 +1,79 @@
+name: Buildings intake (every 15 minutes)
+
+# Brings the artist's new Architectural Authority bookmarks onto the Artist
+# Website's globe within minutes, with no Claude usage: fetch the bookmarks
+# (signing in with the AA_REFRESH_TOKEN repository secret), place new
+# buildings, cut their ground, publish. Their models are made by the daily
+# Claude run (docs/v2/models/REFINE.md); until then a building opens on its
+# ground. Scheduled jobs only run from the default branch, so this file lives
+# there; it works on the site's branch.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: buildings-intake
+  cancel-in-progress: false
+
+env:
+  SITE_BRANCH: claude/artist-website-dev-s92irf
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SITE_BRANCH }}
+
+      # data/ is private and never committed; keep it between runs so each
+      # check is cheap (the article index and geocodes are only looked up once).
+      - uses: actions/cache@v4
+        with:
+          path: data
+          key: buildings-data-${{ github.run_id }}
+          restore-keys: buildings-data-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch the bookmarks
+        id: fetch
+        env:
+          AA_REFRESH_TOKEN: ${{ secrets.AA_REFRESH_TOKEN }}
+        run: |
+          pip install -q requests
+          mkdir -p data
+          old=$(python3 -c "import json;print(sorted(r['article_id'] for r in json.load(open('data/architecture_saves_raw.json'))))" 2>/dev/null || echo none)
+          python3 scripts/fetch_architecture_saves.py
+          new=$(python3 -c "import json;print(sorted(r['article_id'] for r in json.load(open('data/architecture_saves_raw.json'))))")
+          if [ "$old" = "$new" ]; then echo "changed=no" >> "$GITHUB_OUTPUT"; echo "No new bookmarks."; else echo "changed=yes" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Place them and cut their ground
+        if: steps.fetch.outputs.changed == 'yes'
+        run: |
+          pip install -q pillow numpy shapely pyarrow
+          python3 scripts/build_architecture.py
+          python3 scripts/build_grounds.py
+
+      - name: Publish
+        if: steps.fetch.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add docs/v2/architecture.json docs/v2/grounds
+          if git diff --cached --quiet; then echo "Nothing to publish."; exit 0; fi
+          git config user.name "buildings-intake"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Bring in new Architectural Authority bookmarks"
+          for i in 1 2 3; do git pull --no-rebase --no-edit origin "$SITE_BRANCH" && git push origin "HEAD:$SITE_BRANCH" && break; sleep 5; done
+          # A push made by this job does not start the site's deploy by itself.
+          gh workflow run pages.yml --ref "$SITE_BRANCH"
