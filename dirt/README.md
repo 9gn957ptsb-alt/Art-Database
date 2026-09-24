@@ -318,20 +318,29 @@ next three most-saved artists every week and republishes DIRT. The first eight: 
 Frankenthaler (stacked fields), Cartier-Bresson and Warhol (grids), Pollock (scattered marks), Elaine de Kooning
 (strokes), Caponigro (dots).
 
-**Anomalies.** Now and then, unannounced (the first a minute or two in, then every two and a half to six minutes),
+**Anomalies.** Now and then, unannounced (the first a minute or two in, then one to two and a half minutes after the last ends),
 the whole plane in view collapses to its middle as a star does: it spirals in, reddens and dims as its light is
 stretched, and an event horizon opens from the middle, ringed by a grey gradient, and swallows everything until not even
-light gets out. In the dark a pixel or two flickers. Then the infinite plane comes back as one thing, seen whole in the
+light gets out. In the dark is deep space: stars at three depths drifting past, the nearer faster, and faint
+nebulae in a colour pair. Then the infinite plane comes back as one thing, seen whole in the
 dark, and the flip: it comes nearer until it is all there is, and the object is the world again:
 
 | | the plane becomes | and is fallen back into through |
 |---|---|---|
 | the eye | an eye whose iris is the plane (its white, the plane farther off and paled; its pupil, what is left of the horizon) | the iris |
-| the toys | (half the time; 55 seconds) a lamp comes on over floorboards and toys come to life while nobody is looking: a spinning top wobbles in, a wind-up robot walks across with its key turning and its eyes lit, blocks drop and stack, a ball rolls in; the lamp flickers, someone is coming, and everything freezes where it stands, the top toppling. Every toy is made of the plane, showing through it, lit by the lamp | the ball, which rolls to the middle and grows until it is all there is |
+| the toys | (a third of the time; 55 seconds) a lamp comes on over floorboards and toys come to life while nobody is looking: a spinning top wobbles in, a wind-up robot walks across with its key turning and its eyes lit, blocks drop and stack, a ball rolls in; the lamp flickers, someone is coming, and everything freezes where it stands, the top toppling. Every toy is made of the plane, showing through it, lit by the lamp | the ball, which rolls to the middle and grows until it is all there is |
 | the planet | a planet wrapped in the plane, turning, lit from one side | its surface, flattening into the plane |
 | the painting | (no collapse) the plane shrinks to a painting in a frame on a gallery wall, casting its shadow | the painting |
+| the voyage | (a third of the time; 89 seconds) a quick collapse, then a long night in deep space: a wind-up tin rocket (red nose, red fins, brass porthole, its key on its back) passes far off, left to right, trailing sparks, and later near and large, right to left; through its porthole, the plane | one star, out of which the plane opens again, ringed by a grey gradient |
 
-`#anomaly=N` starts kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet) five seconds in. The life over the
+`#anomaly=N` starts kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet, 4 the voyage) five seconds in. The
+**Elsewhere** button (or the E key) starts the next one at once, the toys and the voyage in turn, now and then another.
+Deep space and the voyage are drawn by a sixth small shader over the rest.
+
+**Keeping what is seen.** **Still** keeps the view as it is (a PNG); **Record** keeps it moving (a video, MP4 or
+WebM as the browser can, up to 89 seconds, until Stop). Both are the ground and the life drawn together at up to 1920
+pixels across, named for where on the plane they were made, and offered through the viewer's own save prompt (the
+artifact's `downloads` capability), so the buttons show only where saving can be done. The life over the
 ground goes with the light while one lasts.
 
 **Formality: the paintings themselves.** The plane can show what it is made of at every degree of formality, as the

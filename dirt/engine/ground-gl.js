@@ -1859,6 +1859,10 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
   float r = length(d), ph = uAnom.z, big = length(uHalf) * 1.15;
   int kind = int(uAnom.w);
   src = p;
+  if (kind == 4) {                                                   // the voyage: a quick collapse, then a long dark
+    if (ph >= 0.2) return;                                           // (drawn by the space pass, over the plane)
+    ph = ph / 0.2 * 0.52;
+  }
   if (kind == 2) {
     float s = 1.0 + 1.6 * smoothstep(0.0, 0.3, ph) * (1.0 - smoothstep(0.7, 1.0, ph));
     vec2 hf = uHalf / s * 0.86, e = abs(d) - hf;
@@ -1885,8 +1889,7 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
     return;
   }
   if (ph < 0.52) {
-    over = vec4(0, 0, 0, 1);
-    if (unit(h3(int(p.x), int(p.y), uint(uTime * 6.0))) < 0.0003) over.rgb = vec3(160.0 + 90.0 * unit(h3(int(p.y), int(p.x), 7u)));
+    over = vec4(0, 0, 0, 1);                                         // (the space pass draws the dark's stars)
     return;
   }
   float e = (ph - 0.52) / 0.48, grow = smoothstep(0.0, 0.4, e), flip = smoothstep(0.5, 1.0, e);
@@ -2380,6 +2383,122 @@ void main() {
   outA = outB = vec4(min(L, vec3(255.0)) / 255.0, w * 0.92);
 }`;
 
+// The sixth pass: deep space. Every collapse passes through the dark, and the voyage stays there: a quick collapse,
+// then a long night of stars at three depths and faint nebulae, a wind-up tin rocket passing far off and then near
+// (through its porthole, the plane), and at the end the plane opening back out of one star. Its own small program,
+// drawn over the rest, so the first need not grow.
+const GROUND_SPACE = `#version 300 es
+precision highp float;
+precision highp int;
+uniform ivec2 uCell0;
+uniform vec4 uAnom;                 // as the first pass has it: the view's middle, how far (0 to 1), which
+uniform vec2 uHalf;
+uniform float uTime;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float vnoise(", "vec3 artPaper(")}
+mat2 rot2(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
+
+// ---- deep space: the dark every collapse passes through, and the voyage ---------------------------------------
+/** The dark after a collapse: faint nebulae in a colour pair, and stars at three depths, the nearer drifting faster
+ * past, twinkling. */
+vec3 deepSpace(vec2 p, float T) {
+  vec3 col = vec3(2.0, 2.0, 6.0);
+  float n = 0.6 * vnoise(p, 233.0, 51u) + 0.4 * vnoise(p, 89.0, 52u);
+  col += mix(vec3(34.0, 6.0, 28.0), vec3(8.0, 16.0, 42.0), vnoise(p, 610.0, 53u)) * smoothstep(0.5, 0.9, n);
+  for (int k = 0; k < 3; k++) {
+    float g = k == 0 ? 13.0 : k == 1 ? 21.0 : 34.0, sp = k == 0 ? 0.8 : k == 1 ? 2.1 : 5.5;
+    vec2 q = p + vec2(T * sp, 0.0);
+    ivec2 c = ivec2(floor(q / g));
+    uint h = h3(c.x, c.y, 60u + uint(k));
+    if (unit(h) > 0.5) continue;
+    vec2 at = (vec2(c) + vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * g;
+    float d = length(q - at), rad = 0.5 + 0.4 * float(k);
+    float b = (0.3 + 0.7 * unit(mixh(h + 3u))) * (0.7 + 0.3 * sin(T * (1.0 + 3.0 * unit(mixh(h + 4u))) + 6.2832 * unit(h)));
+    vec3 hue = unit(mixh(h + 5u)) < 0.13 ? vec3(255.0, 190.0, 150.0) : unit(mixh(h + 5u)) > 0.9 ? vec3(170.0, 200.0, 255.0) : vec3(235.0, 236.0, 255.0);
+    col += hue * b * exp(-d * d / (rad * rad)) * (0.55 + 0.25 * float(k));
+  }
+  return min(col, vec3(255.0));
+}
+/** A wind-up tin rocket, the toy: at "at", tilted "ang", "s" cells from tail to nose. Returns how much of it covers
+ * p (0 none), its colour, and whether p is in its porthole (through which the plane shows). */
+float tinRocket(vec2 p, vec2 at, float ang, float s, float face, float T, out vec3 col, out bool port) {
+  vec2 u = rot2(-ang) * (p - at) / s;
+  u.x *= face;                                                        // facing right (1) or left (-1), key up
+  col = vec3(0); port = false;
+  // the flame, flickering, behind
+  float fl = 0.55 + 0.15 * sin(T * 31.0) + 0.1 * sin(T * 53.0);
+  float fd = length(vec2((u.x + 0.86) / fl, u.y / 0.16));
+  float a = 0.0;
+  if (u.x < -0.8 && fd < 1.0) { col = mix(vec3(255.0, 240.0, 170.0), vec3(230.0, 70.0, 20.0), fd); a = 1.0 - fd * fd; }
+  // the body: a tin spindle, silver, shaded from above, with a red band and a red nose
+  float bd = length(vec2(u.x / 0.9, u.y / 0.3));
+  if (bd < 1.0 && u.x > -0.86) {
+    vec3 tin = mix(vec3(236.0, 238.0, 242.0), vec3(96.0, 100.0, 112.0), clamp(0.5 + 1.6 * u.y, 0.0, 1.0));
+    if (u.x > 0.52 || abs(u.x + 0.12) < 0.07) tin = mix(vec3(236.0, 60.0, 46.0), vec3(120.0, 18.0, 16.0), clamp(0.5 + 1.6 * u.y, 0.0, 1.0));
+    col = tin; a = 1.0;
+    float pd = length(u - vec2(0.24, -0.02));
+    if (pd < 0.15) port = true;
+    else if (pd < 0.2) col = vec3(214.0, 170.0, 70.0) * (0.8 + 0.4 * (0.5 - u.y));   // its brass rim
+    if (abs(bd - 0.97) < 0.03) col *= 0.6;                          // the seam of the tin
+  }
+  // three fins, red
+  float fx = -0.5 - u.x;
+  if (fx > 0.0 && u.x > -1.02 && abs(u.y) > 0.18 && abs(u.y) < 0.2 + fx * 1.3) { col = vec3(206.0, 44.0, 36.0) * (u.y < 0.0 ? 1.1 : 0.75); a = 1.0; }
+  // the wind-up key, on its back
+  vec2 kq = u - vec2(-0.3, -0.36);
+  if (abs(kq.x) < 0.03 && kq.y > -0.08 && kq.y < 0.0 || abs(length(vec2(kq.x * 0.6, kq.y + 0.14)) - 0.08) < 0.025) { col = vec3(190.0, 170.0, 110.0); a = 1.0; }
+  return a;
+}
+/** The voyage (e, 0 to 1): deep space, the rocket passing far off and then near, and at the end the plane coming
+ * back out of one star, as it went in. */
+void voyage(vec2 p, vec2 C, float e, inout vec2 src, inout vec4 over) {
+  vec2 d = p - C;
+  float big = length(uHalf) * 1.15;
+  vec3 col = deepSpace(p, uTime);
+  // coming home: the plane opens out of the middle, a grey gradient round its rim
+  float home = smoothstep(0.86, 1.0, e), Rh = big * home * home;
+  float r = length(d);
+  if (r < Rh) { src = p; return; }
+  if (Rh > 0.0 && r < Rh + 8.0) col = mix(vec3(255.0), col, (r - Rh) / 8.0);
+  // the rocket: far and small first, left to right; then near and large, right to left
+  for (int n = 0; n < 2; n++) {
+    float t0 = n == 0 ? 0.1 : 0.5, t1 = n == 0 ? 0.45 : 0.82, t = (e - t0) / (t1 - t0);
+    if (t < 0.0 || t > 1.0) continue;
+    float dirx = n == 0 ? 1.0 : -1.0, s = n == 0 ? 21.0 : 55.0, span = uHalf.x + 2.0 * s;
+    vec2 at = C + vec2(dirx * mix(-span, span, t), (n == 0 ? -0.35 : 0.25) * uHalf.y + 13.0 * sin(t * 9.0));
+    float ang = 0.12 * sin(t * 9.0 + 1.0);
+    // its trail of sparks, fading behind it
+    for (int k = 1; k < 8; k++) {
+      float tk = t - float(k) * 0.012;
+      vec2 ak = C + vec2(dirx * mix(-span, span, tk), (n == 0 ? -0.35 : 0.25) * uHalf.y + 13.0 * sin(tk * 9.0)) - vec2(dirx, 0.0) * s;
+      float dk = length(p - ak - vec2(0.0, 3.0 * sin(float(k) * 2.3 + uTime * 4.0)));
+      col += vec3(255.0, 180.0, 90.0) * exp(-dk * dk / (1.0 + 0.3 * float(k))) * (1.0 - float(k) / 8.0);
+    }
+    vec3 rc; bool port;
+    float a = tinRocket(p, at, ang, s, dirx, uTime, rc, port);
+    if (port) { src = p; over = vec4(0); return; }                 // through the porthole, the plane
+    col = mix(col, rc, a);
+  }
+  over = vec4(min(col, vec3(255.0)), 1.0);
+}
+
+void main() {
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy, C = uAnom.xy;
+  float ph = uAnom.z;
+  int kind = int(uAnom.w);
+  vec4 over = vec4(0);
+  vec2 src = p;
+  if (kind == 4 && ph >= 0.2) voyage(p, C, (ph - 0.2) / 0.8, src, over);
+  else {
+    float q = kind == 4 ? ph / 0.2 * 0.52 : ph;                      // the dark between collapse and emergence
+    if (kind == 2 || q < 0.42 || q >= 0.52) discard;
+    over = vec4(deepSpace(p, uTime), 1.0);
+  }
+  if (over.a <= 0.0) discard;
+  outA = outB = vec4(over.rgb / 255.0, over.a);
+}`;
+
 /**
  * The ground painted on the GPU under the page's canvas, or null where there is no WebGL2 or only a software renderer
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
@@ -2399,7 +2518,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
@@ -2456,7 +2575,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -2525,7 +2644,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -2537,6 +2656,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     // and the light
     const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze"]);
     if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); }
+    const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
+    if (ff) [spaceProg, Sp] = ff;
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -2718,6 +2839,15 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
+    }
+    // and in an anomaly's dark, space
+    if (spaceProg && anom[2] > 0 && !earth) {
+      gl.useProgram(spaceProg);
+      gl.uniform2i(Sp.uCell0, cx0, cy0);
+      gl.uniform4fv(Sp.uAnom, anom);
+      gl.uniform2f(Sp.uHalf, cw / 2, ch / 2);
+      gl.uniform1f(Sp.uTime, t);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
     if ((depthProg && deep) || lit) {
       // this frame, kept for the next

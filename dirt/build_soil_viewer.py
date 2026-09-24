@@ -1962,6 +1962,7 @@ function frame(now) {
   if (anomOn > 0) {                                                // in an anomaly the life goes with the light
     cx.save(); cx.globalCompositeOperation = "destination-out"; cx.fillStyle = `rgba(0,0,0,${anomOn})`; cx.fillRect(0, 0, cv.width, cv.height); cx.restore();
   }
+  if (typeof SNAP !== "undefined") captured();
   tick++;
 }
 
@@ -2000,27 +2001,37 @@ function govern(now) {
 }
 
 // ---- anomalies (ground-gl.js draws them) -------------------------------------------------------------------------
-// Unannounced: the first 55 to 144 seconds in, then one every 144 to 377 seconds, of any kind. #anomaly=N starts
-// kind N five seconds in (0 the eye, 1 the toys, 2 the painting, 3 the planet).
+// Unannounced: the first 55 to 144 seconds in, then one every 55 to 144 seconds after the last, of any kind; or at
+// once, with the Elsewhere button (or the E key), which goes to the toys and the voyage in turn, then the others.
+// #anomaly=N starts kind N five seconds in (0 the eye, 1 the toys, 2 the painting, 3 the planet, 4 the voyage).
 const ANOM = { at: 0, kind: 0, next: 0, dur: 34000 };
 {
   const m = /(?:^|&)anomaly=(\d)/.exec(location.hash.slice(1));
   ANOM.next = performance.now() + (m ? 5000 : (55 + 89 * Math.random()) * 1000);
   ANOM.forced = m ? +m[1] : -1;
 }
+ANOM.asked = -1; ANOM.round = 0;
+/** Elsewhere, now: the next anomaly at once (the toys, the voyage, then the eye, the painting, the planet, in turn). */
+function elsewhere() {
+  if (ANOM.at || !GLG || !GLG.anomaly || REDUCED) return;
+  ANOM.asked = [1, 4, 0, 1, 4, 2, 1, 4, 3][ANOM.round++ % 9];
+  ANOM.next = performance.now();
+}
 /** How far the anomaly has come now (0 to 1, 0 when there is none), told to the ground; and how much the life is hidden. */
 function anomalyNow(now) {
   if (!GLG || !GLG.anomaly || REDUCED || (typeof MODE !== "undefined" && MODE !== "plane")) { if (GLG && GLG.anomaly) GLG.anomaly([0, 0, 0, 0]); return 0; }
   if (!ANOM.at && now >= ANOM.next) {
     ANOM.at = now;
-    ANOM.kind = ANOM.forced >= 0 ? ANOM.forced : Math.random() < 0.5 ? 1 : [0, 2, 3][Math.floor(Math.random() * 3)];   // the toys, half the time
-    ANOM.dur = ANOM.kind === 2 ? 21000 : ANOM.kind === 1 ? 55000 : 34000;
+    const r = Math.random();                                         // the toys and the voyage, a third of the time each
+    ANOM.kind = ANOM.forced >= 0 ? ANOM.forced : ANOM.asked >= 0 ? ANOM.asked : r < 1 / 3 ? 1 : r < 2 / 3 ? 4 : [0, 2, 3][Math.floor(Math.random() * 3)];
+    ANOM.asked = -1;
+    ANOM.dur = ANOM.kind === 2 ? 21000 : ANOM.kind === 1 ? 55000 : ANOM.kind === 4 ? 89000 : 34000;
   }
   if (!ANOM.at) { GLG.anomaly([0, 0, 0, 0]); return 0; }
   const ph = ANOM.hold != null ? ANOM.hold : (now - ANOM.at) / ANOM.dur;   // hold: a phase held still, for looking at one
   if (ph >= 1) {
     ANOM.at = 0;
-    ANOM.next = now + (144 + 233 * Math.random()) * 1000;
+    ANOM.next = now + (55 + 89 * Math.random()) * 1000;
     GLG.anomaly([0, 0, 0, 0]);
     return 0;
   }
@@ -2172,8 +2183,86 @@ cv.addEventListener("wheel", (ev) => {
   vx += ev.deltaX * unit * s; vy += ev.deltaY * unit * s;
   velX = velY = 0;
 }, { passive: false });
+// ---- Elsewhere, and keeping what is seen ---------------------------------------------------------------------------
+// Elsewhere: the next anomaly now. Still: the view as it is, a PNG. Record: the view as it moves, a video, until
+// stopped (or 89 seconds). The page's two layers (the ground on the GPU, the life over it) are drawn together into one
+// canvas just after each frame is drawn; the file is offered through the viewer's own save prompt, so the buttons
+// show only where that can be done.
+const SNAP = { cv: document.createElement("canvas"), still: null, rec: null, chunks: [], at: 0 };
+function composite() {
+  const c = SNAP.cv, k = Math.min(1, 1920 / Math.max(cv.width, cv.height));
+  const w = Math.round(cv.width * k), h = Math.round(cv.height * k);
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = c.getContext("2d");
+  if (GLG) x.drawImage(GLG.canvas, 0, 0, w, h);
+  x.drawImage(cv, 0, 0, w, h);
+}
+function captured() {                                              // called at the end of every frame
+  if (!SNAP.still && !SNAP.rec) return;
+  composite();
+  if (SNAP.still) { const done = SNAP.still; SNAP.still = null; SNAP.cv.toBlob(done, "image/png"); }
+  if (SNAP.rec && performance.now() - SNAP.at > 89000) stopRecording();
+}
+let saver = null;
+const place = () => `drift ${Math.round(vx + VW / 2)} ${Math.round(vy + VH / 2)}`;
+async function offer(filename, data) {
+  try { await saver.save({ filename, data }); } catch (e) { /* declined, or not here: nothing to do */ }
+}
+function stopRecording() {
+  if (!SNAP.rec) return;
+  SNAP.rec.stop();
+}
+if (!SITE) {
+  const box = document.createElement("div");
+  box.className = "cap";
+  box.innerHTML = `<button type="button" id="cap-else" title="Somewhere else, now (E)">Elsewhere</button>
+    <button type="button" id="cap-still" title="Keep this view as a picture" hidden>Still</button>
+    <button type="button" id="cap-rec" title="Keep this view moving, as a video" hidden>Record</button>`;
+  document.querySelector(".bar").appendChild(box);
+  const stEl = document.createElement("style");
+  stEl.textContent = `.bar { flex-wrap: wrap; row-gap: 8px; }
+    .cap { display: flex; gap: 8px; align-items: center; flex: none; margin-left: auto; }
+    .cap button.on { border-color: var(--ink); color: var(--ink); }
+    .cap button.on::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d8402e; margin-right: 6px; vertical-align: 1px; }`;
+  document.head.appendChild(stEl);
+  const bElse = document.getElementById("cap-else"), bStill = document.getElementById("cap-still"), bRec = document.getElementById("cap-rec");
+  bElse.hidden = !GLG || REDUCED;
+  bElse.addEventListener("click", elsewhere);
+  (async () => {
+    const p = window.claude && window.claude.use ? window.claude.use("downloads") : null;
+    saver = p ? await p.catch(() => null) : null;
+    if (!saver) return;
+    bStill.hidden = false;
+    bRec.hidden = !(SNAP.cv.captureStream && window.MediaRecorder);
+  })();
+  bStill.addEventListener("click", () => {
+    const name = place();
+    SNAP.still = (blob) => { if (blob) offer(name + ".png", blob); };
+  });
+  bRec.addEventListener("click", () => {
+    if (SNAP.rec) { stopRecording(); return; }
+    composite();
+    const type = ["video/mp4;codecs=avc1", "video/webm;codecs=vp9", "video/webm"].find((t) => MediaRecorder.isTypeSupported(t));
+    let rec;
+    try { rec = new MediaRecorder(SNAP.cv.captureStream(30), type ? { mimeType: type, videoBitsPerSecond: 8e6 } : undefined); }
+    catch (e) { return; }
+    const name = place();
+    SNAP.chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) SNAP.chunks.push(e.data); };
+    rec.onstop = () => {
+      SNAP.rec = null;
+      bRec.classList.remove("on"); bRec.textContent = "Record";
+      const mime = rec.mimeType || type || "video/webm";
+      if (SNAP.chunks.length) offer(name + (/mp4/.test(mime) ? ".mp4" : ".webm"), new Blob(SNAP.chunks, { type: mime }));
+    };
+    SNAP.rec = rec; SNAP.at = performance.now();
+    rec.start(1000);
+    bRec.classList.add("on"); bRec.textContent = "Stop";
+  });
+}
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") { letGo(); return; }
+  if ((ev.key === "e" || ev.key === "E") && !(ev.target && /INPUT|TEXTAREA/.test(ev.target.tagName))) { elsewhere(); return; }
   const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
   if (!step) return;
   ev.preventDefault();
