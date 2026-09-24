@@ -41,8 +41,8 @@ looks from.
   1–2 for a big building.
 - `site`: [east-west, north-south] metres of ground shown round the building:
   the building plus its immediate setting (terrace, pool, garden, a few trees).
-- `ground`: what the plate is: `soil` (the place's DIRT), `grass`, `sand`,
-  `gravel` or `paving`.
+- `ground`: what the plate is — any material; usually `soil` (the place's
+  DIRT), `grass`, `drygrass`, `sand`, `gravel` or `paving`.
 - `parts`: applied **in order**; a `cut` removes whatever earlier parts put
   there. Every part has an `"m"` material except `cut`, `pool` and `tree`
   (a tree's `m` is its crown, default `plant`).
@@ -58,11 +58,11 @@ looks from.
 | `blob` | `[cx, cy, cz, rx, ry, rz]` | an ellipsoid, for anything that swells or curves |
 | `hip` | `[x, y, z, w, d, h]` | a hipped roof, rising from all four eaves at z to a ridge h above |
 | `pool` | `[x, y, w, d]` (+ `z`) | water at ground level, or at z for a raised pool |
-| `tree` | `[cx, cy, h, r]` + optional `"shape"` | a trunk and a crown, h tall, crown radius r; `shape`: `round` (default), `poplar`, `umbrella` (flat, wide), `palm` (bare trunk, frond crown) |
+| `tree` | `[cx, cy, h, r]` (+ base `z`) + optional `"shape"` | a trunk and a crown, h tall, crown radius r; `shape`: `round` (default), `poplar`, `umbrella` (flat, wide), `palm` (bare trunk, frond crown), `bare` (winter: limbs and an open crown of twigs) |
 | `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
-`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `sandstone` (red, rusticated), `tile` (terracotta roof), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
+`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `thatch`, `glass` (drawn open, every other dot),
 `mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `drygrass`, `sand`,
@@ -70,6 +70,13 @@ Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
 
 The renderer casts shadow from a sun up to the north-west, so overhangs,
 courtyards and the ground east of walls fall into shade by themselves.
+
+Anything thinner than one voxel does not show: a gravel roof or a lawn is at
+least one voxel thick.
+
+Glass or shade set back under an overhang reads about √2 times deeper in the
+diagonal views, so a recess meant to be seen is modelled shallower than the
+real one.
 
 ## Getting it right
 

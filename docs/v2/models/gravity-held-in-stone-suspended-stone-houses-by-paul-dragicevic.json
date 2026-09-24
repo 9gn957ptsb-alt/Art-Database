@@ -1,950 +1,116 @@
 {
- "slug": "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
- "name": "Suspended Stone Houses",
- "voxel": 0.5,
- "site": [
-  56,
-  60
- ],
- "ground": "soil",
- "parts": [
-  {
-   "shed": [
-    -12,
-    -30,
-    0,
-    14,
-    60,
-    1.0
-   ],
-   "m": "soil",
-   "rise": "+x"
-  },
-  {
-   "box": [
-    2,
-    -30,
-    0,
-    26,
-    60,
-    1.0
-   ],
-   "m": "soil"
-  },
-  {
-   "blob": [
-    12,
-    -14,
-    1.72,
-    1.44,
-    1.2,
-    0.96
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    18,
-    -26,
-    1.6,
-    1.2,
-    1.0,
-    0.8
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    11,
-    10,
-    1.66,
-    1.32,
-    1.1,
-    0.88
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    22,
-    14,
-    1.54,
-    1.08,
-    0.9,
-    0.72
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    -10,
-    -14,
-    0.6,
-    1.2,
-    1.0,
-    0.8
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    -14,
-    -2,
-    0.48,
-    0.96,
-    0.8,
-    0.64
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    -6,
-    26,
-    0.66,
-    1.32,
-    1.1,
-    0.88
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    9,
-    -2,
-    1.48,
-    0.96,
-    0.8,
-    0.64
-   ],
-   "m": "plant"
-  },
-  {
-   "blob": [
-    25,
-    26,
-    1.72,
-    1.44,
-    1.2,
-    0.96
-   ],
-   "m": "plant"
-  },
-  {
-   "box": [
-    -1.5,
-    -25,
-    0,
-    5.5,
-    22,
-    1.2
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -5,
-    -30,
-    0.85,
-    9.5,
-    28,
-    0.35
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -4,
-    -26,
-    1.2,
-    8,
-    24,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -4.6,
-    -30.5,
-    4.5,
-    12.6,
-    14.5,
-    0.5
-   ],
-   "m": "concrete"
-  },
-  {
-   "shed": [
-    -4.6,
-    -30.5,
-    5.0,
-    12.6,
-    14.5,
-    0.7
-   ],
-   "m": "concrete",
-   "rise": "+x"
-  },
-  {
-   "box": [
-    -4.6,
-    -16,
-    4.5,
-    12.6,
-    14.5,
-    0.5
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -4.3,
-    -15.7,
-    5.0,
-    11.9,
-    13.9,
-    0.3
-   ],
-   "m": "concrete"
-  },
-  {
-   "cut": [
-    -3.9,
-    -15.3,
-    5.0,
-    11.1,
-    13.1,
-    0.3
-   ]
-  },
-  {
-   "box": [
-    -3.9,
-    -15.3,
-    4.95,
-    11.1,
-    13.1,
-    0.1
-   ],
-   "m": "gravel"
-  },
-  {
-   "cut": [
-    -4,
-    -26,
-    1.2,
-    8,
-    8,
-    3.3
-   ]
-  },
-  {
-   "box": [
-    -4,
-    -18.5,
-    1.2,
-    0.6,
-    0.5,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -1.5,
-    -26,
-    1.2,
-    5.5,
-    8,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "cut": [
-    -1.5,
-    -26,
-    1.2,
-    4.2,
-    8,
-    3.3
-   ]
-  },
-  {
-   "box": [
-    -1.5,
-    -26,
-    1.25,
-    5.5,
-    0.3,
-    3.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -1.5,
-    -26,
-    1.25,
-    0.3,
-    8,
-    3.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    3.7,
-    -26,
-    1.2,
-    0.3,
-    8,
-    3.3
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -5,
-    -30,
-    1.2,
-    0.7,
-    12,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -5,
-    -30,
-    1.2,
-    6,
-    0.7,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    4,
-    -30,
-    1.0,
-    3.5,
-    28,
-    0.25
-   ],
-   "m": "wood"
-  },
-  {
-   "cut": [
-    3.6,
-    -17,
-    1.3,
-    0.6,
-    4,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    3.7,
-    -17,
-    1.3,
-    0.3,
-    4,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -4.2,
-    -17,
-    2.6,
-    0.6,
-    3.2,
-    0.9
-   ]
-  },
-  {
-   "box": [
-    -4,
-    -17,
-    2.6,
-    0.3,
-    3.2,
-    0.9
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -4.2,
-    -12.5,
-    2.6,
-    0.6,
-    3.2,
-    0.9
-   ]
-  },
-  {
-   "box": [
-    -4,
-    -12.5,
-    2.6,
-    0.3,
-    3.2,
-    0.9
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -4.2,
-    -8.0,
-    2.6,
-    0.6,
-    3.2,
-    0.9
-   ]
-  },
-  {
-   "box": [
-    -4,
-    -8.0,
-    2.6,
-    0.3,
-    3.2,
-    0.9
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -1,
-    -2.4,
-    2.1,
-    2,
-    0.6,
-    1.6
-   ]
-  },
-  {
-   "box": [
-    -1,
-    -2.3,
-    2.1,
-    2,
-    0.3,
-    1.6
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    3.6,
-    -11.5,
-    1.7,
-    0.6,
-    1.4,
-    2.1
-   ]
-  },
-  {
-   "box": [
-    3.7,
-    -11.5,
-    1.7,
-    0.3,
-    1.4,
-    2.1
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    3.6,
-    -7.5,
-    1.7,
-    0.6,
-    1.4,
-    2.1
-   ]
-  },
-  {
-   "box": [
-    3.7,
-    -7.5,
-    1.7,
-    0.3,
-    1.4,
-    2.1
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    4,
-    -10,
-    4.2,
-    7,
-    0.6,
-    0.75
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    4,
-    -6,
-    4.2,
-    7,
-    0.6,
-    0.75
-   ],
-   "m": "concrete"
-  },
-  {
-   "cyl": [
-    0,
-    -16,
-    4.95,
-    0.25,
-    0.9
-   ],
-   "m": "metal"
-  },
-  {
-   "cyl": [
-    0,
-    -6,
-    4.95,
-    0.25,
-    0.9
-   ],
-   "m": "metal"
-  },
-  {
-   "box": [
-    -1.5,
-    16,
-    0,
-    5.5,
-    12,
-    1.2
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -5,
-    11,
-    0.85,
-    9.5,
-    18,
-    0.35
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -4,
-    15,
-    1.2,
-    8,
-    14,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -4.6,
-    10.5,
-    4.5,
-    12.6,
-    12.5,
-    0.5
-   ],
-   "m": "concrete"
-  },
-  {
-   "shed": [
-    -4.6,
-    10.5,
-    5.0,
-    12.6,
-    12.5,
-    0.7
-   ],
-   "m": "concrete",
-   "rise": "+x"
-  },
-  {
-   "box": [
-    -4.6,
-    23,
-    4.5,
-    12.6,
-    6.5,
-    0.5
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -4.3,
-    23.3,
-    5.0,
-    11.9,
-    5.9,
-    0.3
-   ],
-   "m": "concrete"
-  },
-  {
-   "cut": [
-    -3.9,
-    23.7,
-    5.0,
-    11.1,
-    5.1,
-    0.3
-   ]
-  },
-  {
-   "box": [
-    -3.9,
-    23.7,
-    4.95,
-    11.1,
-    5.1,
-    0.1
-   ],
-   "m": "gravel"
-  },
-  {
-   "cut": [
-    -4,
-    15,
-    1.2,
-    8,
-    6,
-    3.3
-   ]
-  },
-  {
-   "box": [
-    -4,
-    20.5,
-    1.2,
-    0.6,
-    0.5,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -1.5,
-    15,
-    1.2,
-    5.5,
-    6,
-    3.3
-   ],
-   "m": "rubble"
-  },
-  {
-   "cut": [
-    -1.5,
-    15,
-    1.2,
-    4.2,
-    6,
-    3.3
-   ]
-  },
-  {
-   "box": [
-    -1.5,
-    15,
-    1.25,
-    5.5,
-    0.3,
-    3.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -1.5,
-    15,
-    1.25,
-    0.3,
-    6,
-    3.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    3.7,
-    15,
-    1.2,
-    0.3,
-    6,
-    3.3
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -5,
-    11,
-    1.2,
-    0.7,
-    10,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    -5,
-    11,
-    1.2,
-    6,
-    0.7,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "box": [
-    4,
-    11,
-    1.0,
-    3.5,
-    18,
-    0.25
-   ],
-   "m": "wood"
-  },
-  {
-   "cut": [
-    3.6,
-    22,
-    1.3,
-    0.6,
-    4,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    3.7,
-    22,
-    1.3,
-    0.3,
-    4,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -4.2,
-    22,
-    2.6,
-    0.6,
-    3.2,
-    0.9
-   ]
-  },
-  {
-   "box": [
-    -4,
-    22,
-    2.6,
-    0.3,
-    3.2,
-    0.9
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -1,
-    28.6,
-    2.1,
-    2,
-    0.6,
-    1.6
-   ]
-  },
-  {
-   "box": [
-    -1,
-    28.7,
-    2.1,
-    2,
-    0.3,
-    1.6
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    4,
-    25,
-    4.2,
-    7,
-    0.6,
-    0.75
-   ],
-   "m": "concrete"
-  },
-  {
-   "cyl": [
-    0,
-    23,
-    4.95,
-    0.25,
-    0.9
-   ],
-   "m": "metal"
-  },
-  {
-   "cyl": [
-    0,
-    25,
-    4.95,
-    0.25,
-    0.9
-   ],
-   "m": "metal"
-  },
-  {
-   "box": [
-    1.5,
-    1,
-    1.0,
-    5,
-    11,
-    0.4
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    1.8,
-    1.2,
-    1.4,
-    4.4,
-    10.6,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "cut": [
-    2.2,
-    1.6,
-    2.0,
-    3.6,
-    9.8,
-    0.4
-   ]
-  },
-  {
-   "box": [
-    2.2,
-    1.6,
-    1.9,
-    3.6,
-    9.8,
-    0.3
-   ],
-   "m": "water"
-  },
-  {
-   "box": [
-    -24,
-    -18,
-    0,
-    1.2,
-    30,
-    1.0
-   ],
-   "m": "rubble"
-  },
-  {
-   "tree": [
-    -18,
-    -26,
-    4,
-    2.2
-   ]
-  },
-  {
-   "tree": [
-    -15,
-    6,
-    3.5,
-    1.8
-   ]
-  },
-  {
-   "tree": [
-    -20,
-    20,
-    4.5,
-    2.4
-   ]
-  },
-  {
-   "tree": [
-    14,
-    -22,
-    6.0,
-    2.4
-   ]
-  },
-  {
-   "tree": [
-    20,
-    4,
-    5.0,
-    2
-   ]
-  },
-  {
-   "tree": [
-    16,
-    22,
-    5.5,
-    2.2
-   ]
-  },
-  {
-   "tree": [
-    -9,
-    12,
-    3,
-    1.5
-   ]
-  },
-  {
-   "tree": [
-    24,
-    -8,
-    4.5,
-    1.8
-   ]
-  }
- ],
- "notes": "Two houses and a shared pool along the edge of a slope falling to the west. From the west views (long bars of dark site stone, flush concrete roof, horizontal strip and square windows, the whole volume standing on a concrete floor slab that runs out past the stone with the supports recessed into shadow over the hillside), the corner and dusk views (a big roof slab thrown out over a glazed living room at the end of each house, a stone-parapet balcony cantilevered on the downhill corner, steps down to the ground), the gallery views (roof overhanging the east side over a timber deck, deep concrete beams running out east over the bedroom patios, carrying wires for climbers), the roof view (gravel roof inside a concrete upstand, U-shaped planter beams) and the pool view (the pool raised, stone-clad on a concrete base). The slope is drawn as a bank of the place's soil rising east to a level terrace; the living slab rises toward the east as the article describes (drawn as a wedge, since a thin tilted slab cannot be drawn). Which end is the living room, the second house's length (~14 m against ~24 m) and the pool sitting on the east terrace between them are read from the distant views and guessed; plans were not shown. The stone is the renderer's stone, lighter and warmer than the real grey-brown rubble. Scrub is shown as a few low trees and bushes; the pirca (dry-stone wall) below the houses is a straight run."
+  "slug": "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
+  "name": "Suspended Stone Houses",
+  "voxel": 0.5,
+  "site": [56, 60],
+  "ground": "grass",
+  "parts": [
+    {"shed": [-13, -30, 0, 17, 60, 3.0], "m": "drygrass", "rise": "+x"},
+    {"box": [4, -30, 0, 24, 60, 3.0], "m": "grass"},
+    {"box": [-1.5, -25, 0, 5.5, 22, 3.2], "m": "concrete"},
+    {"box": [-5, -30, 2.85, 9.5, 28, 0.35], "m": "concrete"},
+    {"box": [-4, -26, 3.2, 8, 24, 3.3], "m": "rubble"},
+    {"shed": [-4.6, -30.5, 6.5, 12.6, 14.5, 0.5], "m": "concrete", "rise": "+x", "thick": 0.45},
+    {"shed": [-4, -30.0, 6.5, 8, 14.0, 0.32], "m": "concrete", "rise": "+x"},
+    {"box": [-4.6, -16, 6.5, 12.6, 14.5, 0.5], "m": "concrete"},
+    {"box": [-4.3, -15.7, 7.0, 11.9, 13.9, 0.3], "m": "concrete"},
+    {"cut": [-3.9, -15.3, 7.0, 11.1, 13.1, 0.3]},
+    {"box": [-3.9, -15.3, 6.95, 11.1, 13.1, 0.1], "m": "gravel"},
+    {"cut": [-4, -26, 3.2, 8, 8, 3.3]},
+    {"box": [-4, -18.5, 3.2, 0.6, 0.5, 3.3], "m": "rubble"},
+    {"box": [-1.5, -26, 3.2, 5.5, 8, 3.3], "m": "rubble"},
+    {"cut": [-1.5, -26, 3.2, 4.2, 8, 3.3]},
+    {"box": [-1.5, -26, 3.25, 5.5, 0.3, 3.2], "m": "glass"},
+    {"box": [-1.5, -26, 3.25, 0.3, 8, 3.2], "m": "glass"},
+    {"box": [3.7, -26, 3.2, 0.3, 8, 3.3], "m": "glass"},
+    {"box": [-5, -30, 3.2, 0.7, 12, 1.0], "m": "rubble"},
+    {"box": [-5, -30, 3.2, 6, 0.7, 1.0], "m": "rubble"},
+    {"box": [4, -30, 3.0, 3.5, 28, 0.25], "m": "wood"},
+    {"cut": [3.6, -17, 3.3, 0.6, 4, 2.2]},
+    {"box": [3.7, -17, 3.3, 0.3, 4, 2.2], "m": "glass"},
+    {"cut": [-4.2, -17, 4.6, 0.6, 3.2, 0.9]},
+    {"box": [-4, -17, 4.6, 0.3, 3.2, 0.9], "m": "glass"},
+    {"cut": [-4.2, -12.5, 4.6, 0.6, 3.2, 0.9]},
+    {"box": [-4, -12.5, 4.6, 0.3, 3.2, 0.9], "m": "glass"},
+    {"cut": [-4.2, -8.0, 4.6, 0.6, 3.2, 0.9]},
+    {"box": [-4, -8.0, 4.6, 0.3, 3.2, 0.9], "m": "glass"},
+    {"cut": [-1, -2.4, 4.1, 2, 0.6, 1.6]},
+    {"box": [-1, -2.3, 4.1, 2, 0.3, 1.6], "m": "glass"},
+    {"cut": [3.6, -11.5, 3.7, 0.6, 1.4, 2.1]},
+    {"box": [3.7, -11.5, 3.7, 0.3, 1.4, 2.1], "m": "glass"},
+    {"cut": [3.6, -7.5, 3.7, 0.6, 1.4, 2.1]},
+    {"box": [3.7, -7.5, 3.7, 0.3, 1.4, 2.1], "m": "glass"},
+    {"box": [4, -10, 6.2, 7, 0.6, 0.75], "m": "concrete"},
+    {"box": [4, -6, 6.2, 7, 0.6, 0.75], "m": "concrete"},
+    {"cyl": [0, -16, 6.95, 0.25, 0.9], "m": "metal"},
+    {"cyl": [0, -6, 6.95, 0.25, 0.9], "m": "metal"},
+    {"box": [-1.5, 16, 0, 5.5, 12, 3.2], "m": "concrete"},
+    {"box": [-5, 11, 2.85, 9.5, 18, 0.35], "m": "concrete"},
+    {"box": [-4, 15, 3.2, 8, 14, 3.3], "m": "rubble"},
+    {"shed": [-4.6, 10.5, 6.5, 12.6, 12.5, 0.5], "m": "concrete", "rise": "+x", "thick": 0.45},
+    {"shed": [-4, 11.0, 6.5, 8, 12.0, 0.32], "m": "concrete", "rise": "+x"},
+    {"box": [-4.6, 23, 6.5, 12.6, 6.5, 0.5], "m": "concrete"},
+    {"box": [-4.3, 23.3, 7.0, 11.9, 5.9, 0.3], "m": "concrete"},
+    {"cut": [-3.9, 23.7, 7.0, 11.1, 5.1, 0.3]},
+    {"box": [-3.9, 23.7, 6.95, 11.1, 5.1, 0.1], "m": "gravel"},
+    {"cut": [-4, 15, 3.2, 8, 6, 3.3]},
+    {"box": [-4, 20.5, 3.2, 0.6, 0.5, 3.3], "m": "rubble"},
+    {"box": [-1.5, 15, 3.2, 5.5, 6, 3.3], "m": "rubble"},
+    {"cut": [-1.5, 15, 3.2, 4.2, 6, 3.3]},
+    {"box": [-1.5, 15, 3.25, 5.5, 0.3, 3.2], "m": "glass"},
+    {"box": [-1.5, 15, 3.25, 0.3, 6, 3.2], "m": "glass"},
+    {"box": [3.7, 15, 3.2, 0.3, 6, 3.3], "m": "glass"},
+    {"box": [-5, 11, 3.2, 0.7, 10, 1.0], "m": "rubble"},
+    {"box": [-5, 11, 3.2, 6, 0.7, 1.0], "m": "rubble"},
+    {"box": [4, 11, 3.0, 3.5, 18, 0.25], "m": "wood"},
+    {"cut": [3.6, 22, 3.3, 0.6, 4, 2.2]},
+    {"box": [3.7, 22, 3.3, 0.3, 4, 2.2], "m": "glass"},
+    {"cut": [-4.2, 22, 4.6, 0.6, 3.2, 0.9]},
+    {"box": [-4, 22, 4.6, 0.3, 3.2, 0.9], "m": "glass"},
+    {"cut": [-1, 28.6, 4.1, 2, 0.6, 1.6]},
+    {"box": [-1, 28.7, 4.1, 2, 0.3, 1.6], "m": "glass"},
+    {"box": [4, 25, 6.2, 7, 0.6, 0.75], "m": "concrete"},
+    {"cyl": [0, 23, 6.95, 0.25, 0.9], "m": "metal"},
+    {"cyl": [0, 25, 6.95, 0.25, 0.9], "m": "metal"},
+    {"box": [1.5, 1, 3.0, 5, 11, 0.4], "m": "concrete"},
+    {"box": [1.8, 1.2, 3.4, 4.4, 10.6, 1.0], "m": "rubble"},
+    {"cut": [2.2, 1.6, 4.0, 3.6, 9.8, 0.4]},
+    {"box": [2.2, 1.6, 3.9, 3.6, 9.8, 0.3], "m": "water"},
+    {"box": [-24, -18, 0, 1.2, 30, 1.0], "m": "rubble"},
+    {"blob": [12, -14, 3.58, 1.44, 1.2, 0.96], "m": "plant"},
+    {"blob": [18, -26, 3.48, 1.2, 1.0, 0.8], "m": "plant"},
+    {"blob": [11, 10, 3.53, 1.32, 1.1, 0.88], "m": "plant"},
+    {"blob": [22, 14, 3.43, 1.08, 0.9, 0.72], "m": "plant"},
+    {"blob": [-10, -14, 1.01, 1.2, 1.0, 0.8], "m": "plant"},
+    {"blob": [-14, -2, 0.38, 0.96, 0.8, 0.64], "m": "plant"},
+    {"blob": [-6, 26, 1.76, 1.32, 1.1, 0.88], "m": "plant"},
+    {"blob": [9, -2, 3.38, 0.96, 0.8, 0.64], "m": "plant"},
+    {"blob": [25, 26, 3.58, 1.44, 1.2, 0.96], "m": "plant"},
+    {"tree": [-18, -26, 4, 2.97], "shape": "umbrella"},
+    {"tree": [-15, 6, 3.5, 2.43], "shape": "umbrella"},
+    {"tree": [-20, 20, 4.5, 3.24], "shape": "umbrella"},
+    {"tree": [14, -22, 9.0, 3.24], "shape": "umbrella"},
+    {"tree": [20, 4, 8.0, 2.7], "shape": "umbrella"},
+    {"tree": [16, 22, 8.5, 2.97], "shape": "umbrella"},
+    {"tree": [-9, 12, 3.71, 2.03], "shape": "umbrella"},
+    {"tree": [24, -8, 7.5, 2.43], "shape": "umbrella"},
+    {"blob": [-8, -22, 0.88, 1.35, 1.08, 0.81], "m": "concrete"},
+    {"blob": [-11, -8, 0.35, 1.65, 1.32, 0.99], "m": "concrete"},
+    {"blob": [-6, 4, 1.24, 1.2, 0.96, 0.72], "m": "concrete"},
+    {"blob": [-9, 14, 0.71, 1.5, 1.2, 0.9], "m": "concrete"},
+    {"blob": [-4, -28, 1.59, 1.05, 0.84, 0.63], "m": "concrete"},
+    {"blob": [-12, 24, 0.18, 1.35, 1.08, 0.81], "m": "concrete"},
+    {"blob": [-7, -12, 1.06, 0.9, 0.72, 0.54], "m": "concrete"},
+    {"blob": [-2, 8, 1.94, 1.05, 0.84, 0.63], "m": "concrete"},
+    {"blob": [-10, -18, 1.13, 1.2, 1.08, 0.84], "m": "plant"},
+    {"blob": [-7, -4, 1.56, 1.0, 0.9, 0.7], "m": "plant"},
+    {"blob": [-12, 10, 0.83, 1.3, 1.1700000000000002, 0.9099999999999999], "m": "plant"},
+    {"blob": [-5, 20, 1.86, 0.9, 0.81, 0.63], "m": "plant"},
+    {"blob": [-9, 28, 1.26, 1.1, 0.9900000000000001, 0.77], "m": "plant"},
+    {"blob": [-3, -10, 2.16, 0.8, 0.7200000000000001, 0.5599999999999999], "m": "plant"},
+    {"tree": [-17, -12, 4.5, 2.6], "shape": "umbrella"},
+    {"tree": [-19, 8, 4, 2.4], "shape": "umbrella"},
+    {"tree": [-21, 26, 4.5, 2.6], "shape": "umbrella"}
+  ],
+  "notes": "Two houses and a shared pool along the edge of a slope falling to the west. From the west views (long bars of dark site stone, flush concrete roof, horizontal strip and square windows, the whole volume standing on a concrete floor slab that runs out past the stone with the supports recessed into shadow over the hillside), the corner and dusk views (a big roof slab thrown out over a glazed living room at the end of each house, a stone-parapet balcony cantilevered on the downhill corner, steps down to the ground), the gallery views (roof overhanging the east side over a timber deck, deep concrete beams running out east over the bedroom patios, carrying wires for climbers), the roof view (gravel roof inside a concrete upstand, U-shaped planter beams) and the pool view (the pool raised, stone-clad on a concrete base). The slope is a bank rising east to a level terrace; the living slab rises toward the east as the article describes. Which end is the living room, the second house's length (~14 m against ~24 m) and the pool sitting on the east terrace between them are read from the distant views and guessed; plans were not shown. Scrub is shown as trees and bushes; the pirca (dry-stone wall) below the houses is a straight run. Refinement pass (24 Sep 2026): the living roofs are now thin tilted slabs (shed with thick, 0.45 m, rising 0.5 m to the east) instead of solid wedges, with the gap over the stone walls closed by a concrete fillet. The hillside was too gentle to show the suspension: the east terrace is now 3 m up, the bank falls 3 m to the west over 17 m, and the houses (floor slab, stone, roofs, pool) were raised with it, so the concrete floor slab hovers about 1.5 m over the falling ground at the west edge with its supports set back in shadow. The ground is grass (the photos show a green meadow, not bare earth) with the bank in dry grass and pale granite boulders as in the corner view; the scrub trees are umbrella-crowned (espinillo, chañar), with three more on the lower ground and bushes on the bank. The stone is rubble (grey-brown field stone) and reads darker than the concrete slabs. Still guessed: the real fall of the ground (drawn as one even bank), the boulders' and trees' positions, the timber-slat soffit of the gallery (not drawn; it cannot be seen from above), and the steps down from the living-room corner."
 }

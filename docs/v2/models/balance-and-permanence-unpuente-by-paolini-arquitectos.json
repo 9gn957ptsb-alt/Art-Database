@@ -11,6 +11,39 @@
   {
    "box": [
     -23,
+    -23,
+    0,
+    46,
+    53,
+    0.5
+   ],
+   "m": "drygrass"
+  },
+  {
+   "box": [
+    -15,
+    21,
+    0,
+    14,
+    9,
+    0.5
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    12,
+    -2,
+    0,
+    11,
+    14,
+    0.5
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -23,
     -30,
     0,
     46,
@@ -28,7 +61,7 @@
     7,
     0.2
    ],
-   "m": "grass"
+   "m": "drygrass"
   },
   {
    "box": [
@@ -61,7 +94,7 @@
     19.5,
     6.4
    ],
-   "m": "stone"
+   "m": "rubble"
   },
   {
    "gable": [
@@ -116,7 +149,7 @@
     14.5,
     6.4
    ],
-   "m": "stone"
+   "m": "rubble"
   },
   {
    "gable": [
@@ -237,204 +270,6 @@
   },
   {
    "box": [
-    -1.2,
-    -28,
-    3.0,
-    2.2,
-    4,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    -0.4,
-    -24,
-    3.0,
-    2.2,
-    4,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    0.6,
-    -20,
-    3.0,
-    2.2,
-    5,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    0.4,
-    -15,
-    3.0,
-    2.2,
-    4,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    -0.3,
-    -11,
-    3.0,
-    2.2,
-    4,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    -0.6,
-    -7,
-    3.0,
-    2.2,
-    4,
-    0.2
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    -1.4,
-    -28,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    1.0,
-    -28,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    -0.6,
-    -24,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    1.8,
-    -24,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    0.4,
-    -20,
-    3.2,
-    0.25,
-    5,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    2.8,
-    -20,
-    3.2,
-    0.25,
-    5,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    0.2,
-    -15,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    2.6,
-    -15,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    -0.5,
-    -11,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    1.9,
-    -11,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    -0.8,
-    -7,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
-    1.6,
-    -7,
-    3.2,
-    0.25,
-    4,
-    1.1
-   ],
-   "m": "timber"
-  },
-  {
-   "box": [
     -12,
     2,
     0,
@@ -442,7 +277,7 @@
     12,
     3.2
    ],
-   "m": "stone"
+   "m": "rubble"
   },
   {
    "box": [
@@ -453,7 +288,7 @@
     4.5,
     3.2
    ],
-   "m": "stone"
+   "m": "rubble"
   },
   {
    "cut": [
@@ -679,18 +514,7 @@
     5,
     3.2
    ],
-   "m": "stone"
-  },
-  {
-   "box": [
-    1,
-    15,
-    2.9,
-    10.5,
-    3.2,
-    0.3
-   ],
-   "m": "water"
+   "m": "rubble"
   },
   {
    "box": [
@@ -712,7 +536,7 @@
     5,
     1.0
    ],
-   "m": "stone"
+   "m": "rubble"
   },
   {
    "cut": [
@@ -934,31 +758,1420 @@
    "m": "paving"
   },
   {
-   "tree": [
-    -6.5,
-    22.5,
-    9,
-    2.6
+   "box": [
+    0.5,
+    -19.5,
+    0,
+    0.4,
+    0.4,
+    3.0
    ],
-   "m": "timber"
+   "m": "steel"
   },
   {
-   "tree": [
+   "cut": [
+    1,
     15,
-    26,
+    2.7,
+    10.5,
+    3.2,
+    0.5
+   ]
+  },
+  {
+   "pool": [
+    1,
+    15,
+    10.5,
+    3.2,
+    2.7
+   ]
+  },
+  {
+   "box": [
+    0,
+    14,
+    3.2,
+    12.5,
+    0.5,
+    0.2
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    0,
+    18.2,
+    3.2,
+    12.5,
+    0.8,
+    0.2
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    11.5,
+    14,
+    3.2,
+    1,
+    5,
+    0.2
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    3,
+    -22.5,
+    0,
+    9,
+    6,
+    0.5
+   ],
+   "m": "drygrass"
+  },
+  {
+   "box": [
+    -10,
+    -23,
+    0,
     8,
-    2.4
+    1.2,
+    0.5
+   ],
+   "m": "drygrass"
+  },
+  {
+   "box": [
+    -0.65,
+    -28.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.75,
+    -28.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
    ],
    "m": "timber"
   },
   {
-   "tree": [
-    -19,
-    8,
-    11,
-    3.2
+   "box": [
+    1.4,
+    -28.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
    ],
    "m": "timber"
+  },
+  {
+   "box": [
+    -1.45,
+    -27.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -1.55,
+    -27.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0.6,
+    -27.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -2.0,
+    -26.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -2.1,
+    -26.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0.05,
+    -26.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -2.2,
+    -25.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -2.3,
+    -25.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.15,
+    -25.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -2.0,
+    -24.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -2.1,
+    -24.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0.05,
+    -24.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -1.45,
+    -23.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -1.55,
+    -23.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0.6,
+    -23.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.65,
+    -22.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.75,
+    -22.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.4,
+    -22.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.21,
+    -21.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.31,
+    -21.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.84,
+    -21.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.24,
+    -20.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.34,
+    -20.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.81,
+    -20.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.27,
+    -19.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.37,
+    -19.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.78,
+    -19.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.3,
+    -18.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.4,
+    -18.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.75,
+    -18.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.33,
+    -17.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.43,
+    -17.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.72,
+    -17.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.36,
+    -16.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.46,
+    -16.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.69,
+    -16.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.39,
+    -15.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.49,
+    -15.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.66,
+    -15.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.42,
+    -14.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.52,
+    -14.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.63,
+    -14.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.45,
+    -13.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.55,
+    -13.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.6,
+    -13.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.48,
+    -12.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.58,
+    -12.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.57,
+    -12.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.51,
+    -11.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.61,
+    -11.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.54,
+    -11.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.54,
+    -10.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.64,
+    -10.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.51,
+    -10.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.57,
+    -9.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.67,
+    -9.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.48,
+    -9.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.6,
+    -8.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.7,
+    -8.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.45,
+    -8.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.63,
+    -7.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.73,
+    -7.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.42,
+    -7.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.66,
+    -6.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.76,
+    -6.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.39,
+    -6.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -0.69,
+    -5.0,
+    3.0,
+    2.2,
+    1.0,
+    0.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -0.79,
+    -5.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    1.36,
+    -5.0,
+    3.2,
+    0.25,
+    1.0,
+    1.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -19.25,
+    7.75,
+    0,
+    0.5,
+    0.5,
+    6.6
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -20.8,
+    7.8,
+    4.95,
+    0.4,
+    0.4,
+    2.75
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -17.599999999999998,
+    8.600000000000001,
+    5.5,
+    0.4,
+    0.4,
+    2.75
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -20.8,
+    8,
+    8.14,
+    2.4,
+    2.4,
+    1.92
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -17.2,
+    9.0,
+    8.8,
+    2.4,
+    2.4,
+    1.92
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -19,
+    6.2,
+    9.46,
+    2.2,
+    2.2,
+    1.76
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -18.8,
+    9.4,
+    9.9,
+    2.0,
+    2.0,
+    1.6
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -6.75,
+    23.25,
+    0,
+    0.5,
+    0.5,
+    6.0
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -8.14,
+    23.3,
+    4.5,
+    0.4,
+    0.4,
+    2.5
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -5.26,
+    24.02,
+    5.0,
+    0.4,
+    0.4,
+    2.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -8.12,
+    23.5,
+    7.4,
+    2.16,
+    2.16,
+    1.73
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -4.88,
+    24.4,
+    8.0,
+    2.16,
+    2.16,
+    1.73
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -6.5,
+    21.88,
+    8.6,
+    1.98,
+    1.98,
+    1.58
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -6.32,
+    24.76,
+    9.0,
+    1.8,
+    1.8,
+    1.44
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    14.75,
+    25.75,
+    0,
+    0.5,
+    0.5,
+    5.7
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    13.440000000000001,
+    25.8,
+    4.275,
+    0.4,
+    0.4,
+    2.375
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    16.16,
+    26.48,
+    4.75,
+    0.4,
+    0.4,
+    2.375
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    13.47,
+    26.0,
+    7.03,
+    2.04,
+    2.04,
+    1.63
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    16.53,
+    26.85,
+    7.6,
+    2.04,
+    2.04,
+    1.63
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    15.0,
+    24.47,
+    8.17,
+    1.87,
+    1.87,
+    1.5
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    15.17,
+    27.19,
+    8.55,
+    1.7,
+    1.7,
+    1.36
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -19.25,
+    -13.25,
+    0,
+    0.5,
+    0.5,
+    6.0
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -20.56,
+    -13.2,
+    4.5,
+    0.4,
+    0.4,
+    2.5
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -17.84,
+    -12.52,
+    5.0,
+    0.4,
+    0.4,
+    2.5
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -20.53,
+    -13.0,
+    7.4,
+    2.04,
+    2.04,
+    1.63
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -17.47,
+    -12.15,
+    8.0,
+    2.04,
+    2.04,
+    1.63
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -19.0,
+    -14.53,
+    8.6,
+    1.87,
+    1.87,
+    1.5
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -18.83,
+    -11.81,
+    9.0,
+    1.7,
+    1.7,
+    1.36
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    17.75,
+    -24.25,
+    0,
+    0.5,
+    0.5,
+    5.3999999999999995
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    16.6,
+    -24.2,
+    4.05,
+    0.4,
+    0.4,
+    2.25
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    19.0,
+    -23.599999999999998,
+    4.5,
+    0.4,
+    0.4,
+    2.25
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    16.65,
+    -24,
+    6.66,
+    1.8,
+    1.8,
+    1.44
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    19.35,
+    -23.25,
+    7.2,
+    1.8,
+    1.8,
+    1.44
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    18,
+    -25.35,
+    7.74,
+    1.65,
+    1.65,
+    1.32
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    18.15,
+    -22.95,
+    8.1,
+    1.5,
+    1.5,
+    1.2
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -19.25,
+    23.75,
+    0,
+    0.5,
+    0.5,
+    6.3
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -20.64,
+    23.8,
+    4.7250000000000005,
+    0.4,
+    0.4,
+    2.625
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -17.759999999999998,
+    24.52,
+    5.25,
+    0.4,
+    0.4,
+    2.625
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -20.62,
+    24.0,
+    7.77,
+    2.16,
+    2.16,
+    1.73
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -17.38,
+    24.9,
+    8.4,
+    2.16,
+    2.16,
+    1.73
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -19.0,
+    22.38,
+    9.03,
+    1.98,
+    1.98,
+    1.58
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -18.82,
+    25.26,
+    9.45,
+    1.8,
+    1.8,
+    1.44
+   ],
+   "m": "mesh"
+  },
+  {
+   "box": [
+    -17.25,
+    -26.25,
+    0,
+    0.5,
+    0.5,
+    4.8
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -18.32,
+    -26.2,
+    3.6,
+    0.4,
+    0.4,
+    2.0
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -16.080000000000002,
+    -25.64,
+    4.0,
+    0.4,
+    0.4,
+    2.0
+   ],
+   "m": "timber"
+  },
+  {
+   "blob": [
+    -18.26,
+    -26.0,
+    5.92,
+    1.68,
+    1.68,
+    1.34
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -15.74,
+    -25.3,
+    6.4,
+    1.68,
+    1.68,
+    1.34
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -17.0,
+    -27.26,
+    6.88,
+    1.54,
+    1.54,
+    1.23
+   ],
+   "m": "mesh"
+  },
+  {
+   "blob": [
+    -16.86,
+    -25.02,
+    7.2,
+    1.4,
+    1.4,
+    1.12
+   ],
+   "m": "mesh"
   },
   {
    "tree": [
@@ -970,33 +2183,7 @@
   },
   {
    "tree": [
-    -19,
-    -13,
-    9,
-    2.6
-   ],
-   "m": "timber"
-  },
-  {
-   "tree": [
-    18,
-    -24,
-    7,
-    2.2
-   ],
-   "m": "timber"
-  },
-  {
-   "tree": [
-    0.5,
-    -9,
-    2.4,
-    1.0
-   ]
-  },
-  {
-   "tree": [
-    -17,
+    -18,
     -4,
     1.2,
     0.8
@@ -1009,7 +2196,15 @@
     1.2,
     0.8
    ]
+  },
+  {
+   "tree": [
+    0.5,
+    -9,
+    2.4,
+    1.0
+   ]
   }
  ],
- "notes": "Street to the north, lake (Embalse Los Molinos) to the south. From the overhead drone view (two stone bedroom wings under shallow dark metal gables either side of a sunken courtyard, a central flat roof with the round skylight over the helical stair, the long living wing under the big dark gable, the pool beside it and the pale flat roof over the gallery), the oblique drone view, the lakeside elevations (glazed living floor with board-formed concrete ends over a stone lower floor with its own glass wall, raised pool on a stone plinth, steps down to a sunken lounge) and the entrance views (a curving steel-grating bridge with timber slat parapets crossing from street level to the door). The living wing is in fact turned a few degrees off the others; boxes can't rotate, so it is squared up. The bridge's curve is stepped. Slope simplified to a raised street strip; lower floors of the wings are shown full height. Dark-grey standing-seam roofs drawn as dark; pale gallery roof as metal."
+ "notes": "Street to the north, lake (Embalse Los Molinos) to the south. From the overhead drone view (two stone bedroom wings under shallow dark metal gables either side of a sunken courtyard, a central flat roof with the round skylight over the helical stair, the long living wing under the big dark gable, the pool beside it and the pale flat roof over the gallery), the oblique drone view, the lakeside elevations (glazed living floor with board-formed concrete ends over a stone lower floor with its own glass wall, raised pool on a stone plinth, steps down to a sunken lounge) and the entrance views (a curving steel-grating bridge with timber slat parapets crossing from street level to the door). The living wing is in fact turned a few degrees off the others; boxes can't rotate, so it is squared up. The bridge's curve is stepped. Slope simplified to a raised street strip; lower floors of the wings are shown full height. Dark-grey standing-seam roofs drawn as dark; pale gallery roof as metal. Pass of 24 Sep 2026: the walls are the dark grey-brown field stone of the photographs, now rubble (was the paler stone); the bare winter trees (the drone views, the lakeside elevations) are trunks with two limbs and open crowns of mesh blobs instead of solid timber balls, one evergreen and the small shrubs kept; the ground is the dry winter grass of every exterior view (drygrass over the plate), with green lawn only where the lakeside photos show it (below the sunken lounge, and east of the living wing); feather-grass beds along the entry path; the pool is a raised pool let into the stone plinth at the upper floor with a white concrete rim; the bridge is a steel-grating deck (mesh) with timber slat parapets laid in 1 m steps along an S \u2014 swinging west past the street end and easing back between the wings, as in the overhead view. Still stepped at 0.5 m voxels; a true curved ribbon would need a SketchUp mesh. Still guessed: the slope (a raised street strip), the living wing's few-degree turn (squared up), the lower floors' full extent."
 }

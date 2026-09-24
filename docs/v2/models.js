@@ -33,9 +33,10 @@
     yellow:   { c: [226, 178, 64], soil: 0.12 },      // Izamal's yellow lime paint
     rose:     { c: [196, 132, 120], soil: 0.16 },     // dusty-rose pigmented render
     palebrick:{ c: [196, 180, 156], soil: 0.16 },     // grey-beige brick
+    paintbrick:{ c: [206, 209, 197], soil: 0.08 },    // brick painted a cool pale grey-green
     sandstone:{ c: [158, 88, 70], soil: 0.18 },       // red sandstone, rusticated
     drygrass: { c: [206, 190, 140], soil: 0.28, size: 2 },   // feather grass, dry meadow
-    mesh:     { c: [60, 58, 58], soil: 0.04, open: 0.5 },    // expanded metal, perforated screens
+    mesh:     { c: [118, 116, 112], soil: 0.04, open: 0.5 },  // expanded metal, perforated screens
     wood:     { c: [178, 128, 82], soil: 0.10 },
     timber:   { c: [104, 72, 46], soil: 0.10 },
     thatch:   { c: [170, 142, 88], soil: 0.20 },
@@ -56,8 +57,10 @@
   var DEEP = 6;          // layers of soil under the plate's edge
 
   function grainAt(i, j, k) {
-    var h = (i * 374761393 + j * 668265263 + k * 2147483647) | 0;
-    h = (h ^ (h >>> 13)) * 1274126177 | 0;
+    // Integer hashing in 32 bits (Math.imul), so neighbouring cells get
+    // unrelated values — plain multiplication loses the low bits.
+    var h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1274126177);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
@@ -89,7 +92,7 @@
       if (p.cyl) { top = Math.max(top, a[2] + a[4]); }
       if (p.dome) { top = Math.max(top, a[2] + a[3]); }
       if (p.blob) { top = Math.max(top, a[2] + a[5]); }
-      if (p.tree) { top = Math.max(top, a[2]); }
+      if (p.tree) { top = Math.max(top, a[2] + (a[4] || 0)); }
       if (p.pool) { top = Math.max(top, (p.pool[4] || 0) + 1); }
     });
     var nz = Math.min(400, Math.ceil(top / v) + 2);
@@ -217,11 +220,14 @@
         // native trees of the Americas' dry hills), palm (a bare trunk to
         // a small crown of fronds).
         var trunk = mi("timber"), crown = mi(p.m || "plant"), shape = p.shape || "round";
-        var r = a[3], hh = a[2], tw = v * 0.5;
+        // A fifth value stands it on a terrace: its foot is that high.
+        var base = a[4] || 0;
+        var r = a[3], hh = a[2] + base, tw = v * 0.05;   // a trunk one voxel wide
+        if (shape === "bare") { crown = trunk; }         // winter: twigs, no leaves
         var rz = shape === "poplar" ? hh * 0.42 : shape === "umbrella" ? r * 0.38 :
                  shape === "palm" ? r * 0.3 : r / 1.15;
         var cz = hh - rz;
-        each(a[0] - tw, a[1] - tw, 0, a[0] + tw, a[1] + tw, shape === "palm" ? hh : cz, function () { return trunk; });
+        each(a[0] - tw, a[1] - tw, base, a[0] + tw, a[1] + tw, shape === "palm" ? hh : cz, function () { return trunk; });
         each(a[0] - r, a[1] - r, cz - rz, a[0] + r, a[1] + r, hh, function (x, y, z) {
           var dx = (x - a[0]) / r, dy = (y - a[1]) / r, dz = (z - cz) / rz;
           var d2 = dx * dx + dy * dy + dz * dz;
@@ -229,6 +235,15 @@
           if (shape === "palm" && d2 <= 1) {
             var ang = Math.atan2(dy, dx), arm = Math.abs(Math.cos(ang * 3.5));
             return Math.sqrt(dx * dx + dy * dy) <= 0.35 + 0.65 * arm ? crown : undefined;
+          }
+          // Bare: an open crown of twigs — a scatter through the crown, and
+          // its limbs, the lines from the trunk's head out to the edge.
+          if (shape === "bare" && d2 <= 1) {
+            var lx = x - a[0], ly = y - a[1];
+            var limb = Math.abs(Math.sin(Math.atan2(ly, lx) * 2.5)) < 0.12 &&
+                       Math.abs((z - cz) / rz + 0.2 - Math.sqrt(d2)) < 0.25;
+            var twig = d2 > 0.6 && grainAt(Math.round(x / v), Math.round(y / v), Math.round(z / v)) < 0.07;
+            return limb || twig ? crown : undefined;
           }
           return d2 <= 1 ? crown : undefined;
         });
@@ -296,6 +311,14 @@
       }
     }
 
+    // How high the building stands in each column, so a sloping roof can
+    // be lit by which way it faces.
+    var topK = new Int16Array(nx * ny).fill(-1);
+    for (var kk = 0; kk < nz; kk += 1) {
+      for (var q = 0; q < nx * ny; q += 1) { if (g[kk * nx * ny + q]) { topK[q] = kk; } }
+    }
+    function topAt(i, j) { return i < 0 || j < 0 || i >= nx || j >= ny ? -1 : topK[j * nx + i]; }
+
     // The building: each outside voxel, lit by which of its faces is open.
     for (var k = 0; k < nz; k += 1) {
       for (j = 0; j < ny; j += 1) {
@@ -310,6 +333,17 @@
           if (mat.open && ((i + j + k) % 2)) { continue; }
           var base = mat.c ? mix(mat.c, soilAt(i, j), mat.soil) : soilAt(i, j);
           var light = up ? 1.08 : (west || north) ? 0.94 : 0.74;
+          // A roof that rises away from the sun (to the south-east) faces
+          // it and is brighter; one that falls away is darker.
+          if (up && topAt(i, j) === k) {
+            // Measured over three cells each way, so a gentle roof reads as
+            // a plane in light, not as steps.
+            var bw = topAt(i - 3, j), bn = topAt(i, j - 3), fe = topAt(i + 3, j), fs = topAt(i, j + 3);
+            if (bw >= 0 && bn >= 0 && fe >= 0 && fs >= 0) {
+              var rise = ((fe - bw) + (fs - bn)) / 12;    // voxels up per voxel, toward the south-east
+              light += 0.5 * Math.max(-1, Math.min(1, rise));
+            }
+          }
           // And the grain of it: no two dots of a wall quite the same, the
           // way no two clods of the soil are.
           light *= 0.93 + 0.14 * grainAt(i, j, k);
