@@ -13,7 +13,8 @@ that have no model yet. A new kind of building is one more entry in KINDS.
                  (fetch_artsy_saves.py — the proxy adds Artsy's token;
                  build_museums.py places them)
 
-then build_grounds.py for the ground under every new place, and
+then build_grounds.py for the ground under every new place, build_built_years.py
+for when its buildings went up (the timeline), and
 fetch_reference_photos.py for the new Architectural Authority buildings'
 photographs, into data/ (private).
 
@@ -60,6 +61,7 @@ def main():
         else:
             failed.append(k["kind"])
     run(str(SCRIPTS / "build_grounds.py"))                 # skips grounds already cut
+    run(str(SCRIPTS / "build_built_years.py"))             # and dates their buildings, for the timeline
     for b in places(KINDS[0]):
         if not (MODELS / (b["slug"] + ".json")).exists():
             run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
