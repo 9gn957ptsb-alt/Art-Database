@@ -31,6 +31,8 @@
     {"box": [47, 16, 19, 11, 9, 1.2], "m": "glass"},
     {"box": [80, -26, 19, 32, 9, 1.2], "m": "glass"},
     {"box": [80, 16, 19, 32, 9, 1.2], "m": "glass"},
+    {"box": [-46, -5, 21, 26, 10, 1.5], "m": "glass"},
+    {"box": [20, -5, 21, 26, 10, 1.5], "m": "glass"},
     {"cyl": [0, 0, 22, 19, 5], "m": "marble"},
     {"blob": [0, 0, 27, 19, 19, 11], "m": "metal"},
     {"cyl": [0, 0, 27, 19.2, 1.5], "m": "marble"},
@@ -90,5 +92,5 @@
     {"tree": [91, -55, 11, 4.5]},
     {"tree": [117, -55, 11, 4.5]}
   ],
-  "notes": "John Russell Pope's West Building (1941), from its published plan and dimensions (about 239 m long): two long windowless wings of pink Tennessee marble either side of a taller central block under the rotunda's low dome and oculus; four skylit garden courts; the galleries' skylight strips down the roofs; the Ionic portico and steps on the Mall (south), the smaller porch on Constitution Avenue (north); end and mid-wing pavilions. Guessed: the exact pavilion widths, the court sizes, the column count on the north porch. No photographs were available in the session (Wikimedia blocked); refine from photographs. Refined 24 Sep 2026 without photographs, from the published descriptions (SAH Archipedia, NGA campus page, Docomomo): the Mall portico has twelve Ionic columns in two rows, the inner ones framing three doors - the inner row of four is added and the portico's back wall is now marble with three dark doorways between them (it was one black band); length 782 ft (238 m) confirms the plan; rose-white Tennessee marble is drawn as marble. The low dome over the rotunda (modelled on the Pantheon) now has two stepped marble rings at its foot. No photographs were available."
+  "notes": "John Russell Pope's West Building (1941), from its published plan and dimensions (about 239 m long): two long windowless wings of pink Tennessee marble either side of a taller central block under the rotunda's low dome and oculus; four skylit garden courts; the galleries' skylight strips down the roofs; the Ionic portico and steps on the Mall (south), the smaller porch on Constitution Avenue (north); end and mid-wing pavilions. Guessed: the exact pavilion widths, the court sizes, the column count on the north porch. No photographs were available in the session (Wikimedia blocked); refine from photographs. Refined 24 Sep 2026 without photographs, from the published descriptions (SAH Archipedia, NGA campus page, Docomomo): the Mall portico has twelve Ionic columns in two rows, the inner ones framing three doors - the inner row of four is added and the portico's back wall is now marble with three dark doorways between them (it was one black band); length 782 ft (238 m) confirms the plan; rose-white Tennessee marble is drawn as marble. The low dome over the rotunda (modelled on the Pantheon) now has two stepped marble rings at its foot. The skylit sculpture halls running east and west from the rotunda along the spine are drawn as glass strips down the centre block. No photographs were available."
 }

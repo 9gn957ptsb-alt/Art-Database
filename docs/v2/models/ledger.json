@@ -210,31 +210,34 @@
  "museum-national-gallery-of-art-washington-dc": {
   "name": "National Gallery of Art, West Building",
   "refined": "2026-09-24",
-  "passes": 1,
+  "passes": 2,
   "sketchup": false,
   "kind": "museum",
   "log": [
-   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
+   "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine"
   ]
  },
  "museum-guggenheim-museum": {
   "name": "Solomon R. Guggenheim Museum",
   "refined": "2026-09-24",
-  "passes": 1,
+  "passes": 2,
   "sketchup": false,
   "kind": "museum",
   "log": [
-   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
+   "2026-09-24 refined: turned onto Manhattan grid (29 deg) and placed on its lot between 88th and 89th from the ground file, smaller Monitor and skylight, 88th/89th Streets, park thickened, rotunda clear of street trees"
   ]
  },
  "museum-san-francisco-museum-of-modern-art-sfmoma": {
   "name": "San Francisco Museum of Modern Art",
   "refined": "2026-09-24",
-  "passes": 1,
+  "passes": 2,
   "sketchup": false,
   "kind": "museum",
   "log": [
-   "2026-09-24 first model from published plans and dimensions (no photographs reachable)"
+   "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
+   "2026-09-24 refined: turned onto the SoMa grid (45 deg) with Third Street where the ground has it, cylinder slice cut along the rotated slope, Howard Street entrance and street, gallery skylights, height 62 m confirmed"
   ]
  },
  "museum-the-metropolitan-museum-of-art": {
@@ -977,16 +980,6 @@
    "2026-09-24 first model (coarse, whole complex): Webb's brick-and-stone Cromwell Road front with the crowned tower, brick ranges round glass-roofed courts, the Madejski Garden pool, the Exhibition Road screen"
   ]
  },
- "museum-musee-du-petit-palais": {
-  "name": "Petit Palais (Avignon)",
-  "refined": "2026-09-24",
-  "passes": 1,
-  "sketchup": false,
-  "kind": "museum",
-  "log": [
-   "2026-09-24 first model: the Palais des Archevêques — limestone ranges round a courtyard under terracotta roofs, crenellated south front on the Place du Palais with cross windows, corner tower"
-  ]
- },
  "museum-museum-folkwang": {
   "name": "Museum Folkwang",
   "refined": "2026-09-24",
@@ -1235,6 +1228,206 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries."
+  ]
+ },
+ "museum-faurschou-foundation": {
+  "name": "Faurschou Foundation Copenhagen",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: a four-storey yellow-brick harbour warehouse on the quay at Nordhavn (footprint from the ground file), glazed loading doors, the galleries opened up white at the east end, the harbour basin"
+  ]
+ },
+ "museum-whitney-museum-of-american-art-1": {
+  "name": "Whitney Museum of American Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Piano's steel-clad body tall to the Hudson with its north-light roof, the east half lifted over the largo and stepping down in timber terraces to the High Line, Hudson River Park and the Meatpacking District"
+  ]
+ },
+ "museum-museum-ludwig": {
+  "name": "Museum Ludwig",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Busmann + Haberer's dark red brick block under two ranks of curved zinc north-light sheds, stair towers, the glass porch, Heinrich-Böll-Platz, the railway viaduct and the Rhine garden"
+  ]
+ },
+ "museum-musee-rodin": {
+  "name": "Musée Rodin (Hôtel Biron)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Hôtel Biron with its court of honour, pedimented court front and rounded garden pavilion under slate, the chapel pavilion, The Thinker, the long garden of lawn, lime alleys and bosquets to the round basin"
+  ]
+ },
+ "museum-el-museo-del-barrio": {
+  "name": "El Museo del Barrio",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Heckscher Building on Manhattan's grid, red brick over a rusticated limestone base with quoins and cornice, the glass entrance on Fifth, the theatre block, the Conservatory Garden across the avenue"
+  ]
+ },
+ "museum-national-museum-of-women-in-the-arts": {
+  "name": "National Museum of Women in the Arts",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the former Masonic Temple on its wedge between New York Avenue, H and 13th Streets — limestone, arched base, giant pilasters and tall windows, heavy cornice, corner entrance, the Great Hall skylight"
+  ]
+ },
+ "museum-the-state-hermitage-museum": {
+  "name": "The State Hermitage Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the whole ensemble coarse, set to the Palace Embankment — the Winter Palace's four green-and-white ranges round the Great Courtyard with columns, statues and the square's gate, the Small Hermitage and hanging garden, the Old and New Hermitage with the Atlantes, the Winter Canal and Theatre, the Neva, the Alexander Column"
+  ]
+ },
+ "museum-pera-museum": {
+  "name": "Pera Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the former Bristol Hotel's six-storey neoclassical front on Meşrutiyet Caddesi — stone ground floor, windows between pilasters, balconies, cornice and attic — the modern back, low Beyoğlu blocks round it"
+  ]
+ },
+ "museum-amon-carter-museum-of-american-art": {
+  "name": "Amon Carter Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind"
+  ]
+ },
+ "museum-the-courtauld-gallery": {
+  "name": "The Courtauld Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Somerset House at the Strand's angle, Portland-stone ranges round the great court and its fountains, the Strand block with its arched vestibule, porticoes and the south dome, the river terrace with watergate arches"
+  ]
+ },
+ "museum-royal-collection-trust": {
+  "name": "The King's Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Simpson's top-lit stone gallery with its Doric portico and pediment on Buckingham Gate, the palace's Portland-stone south wing and quadrangle behind, the Royal Mews and its clock-tower gate"
+  ]
+ },
+ "museum-musei-vaticani": {
+  "name": "Vatican Museums",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: whole complex coarse: Bramante corridors under tile roofs, Cortile della Pigna with the Nicchione and pine cone, Braccio Nuovo and Library crossings, Belvedere court, Pinacoteca, entrance dome, walls and gardens"
+  ]
+ },
+ "museum-smithsonian-freer-and-sackler-galleries": {
+  "name": "Freer Gallery of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Platt's granite palazzo round its open court and fountain, the three-arched Mall entrance, balustraded cornice and roof lights, and the Sackler's pyramid-roofed pavilion in the Haupt Garden"
+  ]
+ },
+ "museum-columbus-museum-of-art": {
+  "name": "Columbus Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1931 Renaissance Revival front on East Broad Street with its three arched portals, the glass-roofed Derby Court, and the copper-clad Walter Wing to the east"
+  ]
+ },
+ "museum-m-hka-museum-of-modern-art-antwerp": {
+  "name": "M HKA",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1926 grain silo's tall Art Deco volume and staircase tower, flanked by Grandsard's white-walled galleries with roof lights, on Leuvenstraat facing the Waalse Kaai"
+  ]
+ },
+ "museum-princeton-university-art-museum": {
+  "name": "Princeton University Art Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Adjaye's nine cantilevered pavilions in banded aggregate concrete with glass-and-bronze lenses between them"
+  ]
+ },
+ "museum-galleria-d-arte-moderna-di-bologna": {
+  "name": "MAMbo (GAM Bologna)",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the former Forno del Pane on Via Don Minzoni: long rendered front with taller centre under tile roofs, three brick bakery halls behind with ridge lights, the Cavaticcio park and canal."
+  ]
+ },
+ "museum-national-museum-of-western-art": {
+  "name": "National Museum of Western Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Le Corbusier's pebble-panel box on pilotis over a glazed lobby, the roof's ring of lighting galleries round the hall's lantern, the Rodins in the forecourt, Maekawa's tiled wing."
+  ]
+ },
+ "museum-vancouver-art-gallery": {
+  "name": "Vancouver Art Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Rattenbury's neoclassical courthouse on downtown's 45-degree grid: granite base, marble walls, end pavilions, Ionic portico and lions to Georgia St, drum and low copper dome, the lawn and fountain."
+  ]
+ },
+ "museum-new-museum-1": {
+  "name": "New Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: SANAA's seven shifted aluminium-clad boxes over a glass ground floor on the Bowery, skylights at the setbacks; OMA's 2025 stepped glass-and-mesh expansion to the north (form guessed)."
   ]
  }
 }
