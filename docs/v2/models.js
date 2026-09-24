@@ -72,6 +72,10 @@
     var nx = Math.ceil(site[0] / v), ny = Math.ceil(site[1] / v);
     var top = 0;
     (spec.parts || []).forEach(function (p) {
+      if (p.mesh) {
+        for (var q = 2; q < p.mesh.v.length; q += 3) { top = Math.max(top, p.mesh.v[q]); }
+        return;
+      }
       var a = p.box || p.gable || p.shed || p.cut || p.blob || p.cyl || p.dome || p.tree;
       if (!a) { return; }
       if (p.box || p.gable || p.shed) { top = Math.max(top, a[2] + a[5]); }
@@ -102,6 +106,51 @@
           }
         }
       }
+    }
+
+    /* A closed mesh — modelled in SketchUp and read back as triangles, for
+       what the other parts can't shape (a curving sail, a carved cave). Each
+       column of voxels is filled wherever a vertical line through its centre
+       is inside the surface: between the first crossing and the second, the
+       third and the fourth, and so on. */
+    function fillMesh(mesh, m) {
+      var V = mesh.v, F = mesh.f;
+      var cols = {};
+      for (var t = 0; t < F.length; t += 3) {
+        var a0 = F[t] * 3, b0 = F[t + 1] * 3, c0 = F[t + 2] * 3;
+        var ax = V[a0], ay = V[a0 + 1], az = V[a0 + 2];
+        var bx = V[b0], by = V[b0 + 1], bz = V[b0 + 2];
+        var cx = V[c0], cy = V[c0 + 1], cz = V[c0 + 2];
+        var den = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+        if (Math.abs(den) < 1e-12) { continue; }          // edge-on from above
+        var i0 = Math.max(0, I(Math.min(ax, bx, cx))), i1 = Math.min(nx - 1, I(Math.max(ax, bx, cx)));
+        var j0 = Math.max(0, J(Math.min(ay, by, cy))), j1 = Math.min(ny - 1, J(Math.max(ay, by, cy)));
+        for (var j = j0; j <= j1; j += 1) {
+          for (var i = i0; i <= i1; i += 1) {
+            var px = (i + 0.5) * v - site[0] / 2, py = (j + 0.5) * v - site[1] / 2;
+            var l1 = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / den;
+            var l2 = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / den;
+            var l3 = 1 - l1 - l2;
+            if (l1 < 0 || l2 < 0 || l3 < 0) { continue; }
+            var key = j * nx + i;
+            (cols[key] || (cols[key] = [])).push(l1 * az + l2 * bz + l3 * cz);
+          }
+        }
+      }
+      Object.keys(cols).forEach(function (key) {
+        // A line through a shared edge crosses both its triangles at once:
+        // that is one crossing, not two.
+        var zs = [];
+        cols[key].sort(function (p1, p2) { return p1 - p2; }).forEach(function (z) {
+          if (!zs.length || z - zs[zs.length - 1] > 1e-6) { zs.push(z); }
+        });
+        var i = key % nx, j = Math.floor(key / nx);
+        for (var n = 0; n + 1 < zs.length; n += 2) {
+          for (var k = Math.max(0, K(zs[n])); k <= Math.min(nz - 1, K(zs[n + 1])); k += 1) {
+            grid[(k * ny + j) * nx + i] = m;
+          }
+        }
+      });
     }
 
     (spec.parts || []).forEach(function (p) {
@@ -150,6 +199,8 @@
           var dx = x - a[0], dy = y - a[1], dz = (z - (a[2] - a[3])) * 1.15;
           return dx * dx + dy * dy + dz * dz <= a[3] * a[3] ? crown : undefined;
         });
+      } else if (p.mesh) {
+        fillMesh(p.mesh, m);
       } else if ((a = p.pool)) {
         // x, y, w, d: water let into the ground, its surface at ground level.
         each(a[0], a[1], 0, a[0] + a[2], a[1] + a[3], v, function () { return mi("water"); });

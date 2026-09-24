@@ -58,6 +58,7 @@ looks from.
 | `blob` | `[cx, cy, cz, rx, ry, rz]` | an ellipsoid, for anything that swells or curves |
 | `pool` | `[x, y, w, d]` | water at ground level |
 | `tree` | `[cx, cy, h, r]` | a trunk and a round crown, h tall, crown radius r |
+| `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
 `brick`, `tile` (terracotta roof), `earth` (rammed earth, adobe), `ochre`
@@ -80,3 +81,13 @@ Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
   wider landscape — the town view carries that.
 - `notes`: say which views informed what, and what could not be seen and was
   guessed.
+
+## Curved and sculpted buildings: SketchUp
+
+When a building's form can't be made from the parts above (sails, shells,
+carved or twisted volumes), it is modelled in SketchUp through the Trimble
+SketchUp connector, and its geometry read back as triangles into a `mesh`
+part (one per material). Convert SketchUp's inches and axes on the way out:
+metres = inches × 0.0254, x = SketchUp X, **y = −SketchUp Y** (SketchUp's Y
+runs north), z = SketchUp Z. The mesh must be closed (watertight) to fill
+properly. The `.skp` file is kept for the artist.
