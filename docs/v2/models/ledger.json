@@ -492,15 +492,5 @@
   "log": [
    "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Snøhetta's skylights in the lawn"
   ]
- },
- "museum-indianapolis-museum-of-art-at-newfields": {
-  "name": "Indianapolis Museum of Art",
-  "refined": "2026-09-24",
-  "passes": 1,
-  "sketchup": false,
-  "kind": "museum",
-  "log": [
-   "2026-09-24 first model: the pale stone acropolis of the 1970 Krannert and sister pavilions on a common base, the Hulman Pavilion to the east, a curved glass entrance on the forecourt, pool and garden trees"
-  ]
  }
 }

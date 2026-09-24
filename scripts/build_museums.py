@@ -182,6 +182,13 @@ def checked(spot, name, cache):
     return (osm[0], osm[1], spot[2]) if 150 < far < 30000 else spot
 
 
+def same_name(a, b):
+    """One museum under two spellings: "Indianapolis Museum of Art" and
+    "Indianapolis Museum of Art at Newfields"."""
+    a, b = flat(a.split(",")[0]), flat(b.split(",")[0])
+    return bool(a and b) and (a in b or b in a)
+
+
 def slugify(text):
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
     return "-".join(re.findall(r"[a-z0-9]+", text))[:60]
@@ -255,7 +262,9 @@ def main():
         slug = "museum-" + (key[1] if key[0] == "artsy" else slugify(name.split(",")[0]))
         m = museums.get(slug) or next(
             (m for m in museums.values()
-             if abs(m["lat"] - lat) < 0.0003 and abs(m["lon"] - lon) < 0.0003), None)
+             if (abs(m["lat"] - lat) < 0.0003 and abs(m["lon"] - lon) < 0.0003)
+             or (abs(m["lat"] - lat) < 0.02 and abs(m["lon"] - lon) < 0.02
+                 and same_name(m["name"], name))), None)
         if not m:
             m = museums[slug] = {"slug": slug, "name": name.split(",")[0].strip()
                                  if key[0] == "named" else name,
