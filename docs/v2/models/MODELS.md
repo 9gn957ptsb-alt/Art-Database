@@ -64,8 +64,8 @@ looks from.
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
 `rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
-(light), `timber` (dark), `thatch`, `glass` (drawn open, every other dot),
-`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `drygrass`, `sand`,
+(light), `timber` (dark), `thatch`, `glass` (dark interior and pale sky, dot by dot — reads as glass on its own),
+`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
 `gravel`, `paving`, `soil` (the place's own DIRT).
 
 The renderer casts shadow from a sun up to the north-west, so overhangs,

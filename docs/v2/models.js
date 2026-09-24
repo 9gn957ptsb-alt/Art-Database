@@ -40,7 +40,7 @@
     wood:     { c: [178, 128, 82], soil: 0.10 },
     timber:   { c: [104, 72, 46], soil: 0.10 },
     thatch:   { c: [170, 142, 88], soil: 0.20 },
-    glass:    { c: [88, 110, 128], soil: 0.04, open: 0.5 },
+    glass:    { c: [88, 110, 128], soil: 0.04, glass: true },
     metal:    { c: [150, 154, 160], soil: 0.04 },
     steel:    { c: [150, 154, 160], soil: 0.04 },
     dark:     { c: [52, 50, 50], soil: 0.06 },
@@ -48,6 +48,8 @@
     water:    { c: [70, 132, 168], soil: 0.08 },
     plant:    { c: [84, 112, 64], soil: 0.18, size: 2 },
     grass:    { c: [118, 140, 82], soil: 0.30 },
+    lavender: { c: [146, 132, 176], soil: 0.20, size: 2 },   // lavender in flower
+    sage:     { c: [138, 150, 122], soil: 0.24, size: 2 },   // grey-green shrubs, olive, salvia
     sand:     { c: [222, 204, 170], soil: 0.25 },
     gravel:   { c: [186, 180, 168], soil: 0.30 },
     paving:   { c: [206, 198, 186], soil: 0.20 },
@@ -329,8 +331,15 @@
           var east = !at(i + 1, j, k), south = !at(i, j + 1, k);
           if (!(up || west || north || east || south)) { continue; }
           var mat = MATERIALS[vx.names[m - 1]];
-          // Glass is left open: every other dot, so what is behind shows.
+          // Glass: dark where you see into it, pale where it holds the sky,
+          // dot by dot — so it reads as glass whatever stands behind it.
           if (mat.open && ((i + j + k) % 2)) { continue; }
+          if (mat.glass) {
+            var sky = (i + j + k) % 2 === 0;
+            put(i - ox, j - oy, k + 1, 2, ink(sky ? [150, 172, 190] : [46, 58, 72],
+                (up ? 1.08 : (west || north) ? 0.96 : 0.8) * (shaded(i, j, k + 1) ? 0.7 : 1)), (k + 1) / nz);
+            continue;
+          }
           var base = mat.c ? mix(mat.c, soilAt(i, j), mat.soil) : soilAt(i, j);
           var light = up ? 1.08 : (west || north) ? 0.94 : 0.74;
           // A roof that rises away from the sun (to the south-east) faces
