@@ -80,6 +80,10 @@ uniform vec3 uGround;
 uniform sampler2D uArt;             // the artist's works as measured: paper, five inks darkest first, then roles
 uniform int uArtOn, uForce;
 uniform sampler2D uWorks;           // the collection: per painting its artist and year, then its three colours
+uniform vec4 uAnom;                 // an anomaly: the view's middle (cells), how far it has come (0: none), which
+uniform vec2 uHalf;                 // half the view, in cells
+uniform sampler2D uRoster;          // the roster (dirt/artists/roster.json): 6 texels an artist, sorted by rung
+uniform int uRAt[5];                // where each rung's artists begin on it
 float gCov = 0.0;                   // the marks the last sheet painted here, and in what colour
 vec3 gMark = vec3(0);         // uForce: one grammar everywhere, for looking at it (#g0 to #g4)
 uniform ivec2 uGram[5];             // each grammar's works: first row, count
@@ -1266,8 +1270,10 @@ float complexityAt(vec2 p) {
 }
 float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
 float feather(float d, float w) { return 1.0 - smoothstep(0.0, w, d); }   // 1 on a mark, falling to 0 over w cells: no hard edges
+vec3 rostered(int j, vec2 q, uint h, float t);                      // (below)
 /** A minimal area: artist a's composition at q (cells from the area's middle), its choices by h, at time t. */
 vec3 minimal(int a, vec2 q, uint h, float t) {
+  if (a >= 100) return rostered(a - 100, q, h, t);
   vec3 D = MINI[a * 4], M = MINI[a * 4 + 1], L = MINI[a * 4 + 2], V = MINI[a * 4 + 3];
   float u1 = unit(mixh(h + 11u)), u2 = unit(mixh(h + 12u)), u3 = unit(mixh(h + 13u));
   vec2 aq = abs(q);
@@ -1403,10 +1409,94 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
   }
   return c;
 }
-/** The artist a minimal area of complexity cx takes, by its rung, and h. */
+/**
+ * A roster artist's area (dirt/artists/roster.py): one of ten compositions, its parameters measured from their works,
+ * in their works' colours. j is their row on the roster.
+ */
+vec3 rostered(int j, vec2 q, uint h, float t) {
+  vec3 D = texelFetch(uRoster, ivec2(0, j), 0).rgb, M = texelFetch(uRoster, ivec2(1, j), 0).rgb;
+  vec3 L = texelFetch(uRoster, ivec2(2, j), 0).rgb, V = texelFetch(uRoster, ivec2(3, j), 0).rgb;
+  vec4 g = texelFetch(uRoster, ivec2(4, j), 0), pp = texelFetch(uRoster, ivec2(5, j), 0);
+  int gm = int(g.x);
+  float p1 = g.z, p2 = g.w, p3 = pp.x, p4 = pp.y, u1 = unit(mixh(h + 61u)), u2 = unit(mixh(h + 62u));
+  if (gm == 0) {                                                     // a field and one band
+    vec2 dir = vec2(cos(p1), sin(p1));
+    float x = dot(q, vec2(-dir.y, dir.x)) - (u1 - 0.5) * 60.0;
+    return mix(L, mix(M, V, u2), feather(abs(x) - p2 * 0.5, 3.0));
+  }
+  if (gm == 1) {                                                     // stripes, along the direction the marks share
+    vec2 dir = vec2(cos(p1), sin(p1));
+    float x = dot(q, vec2(-dir.y, dir.x)) + p3 * sin(dot(q, dir) / 13.0 + t * 0.2);
+    float k = fract(x / max(3.0, p2));
+    return k < 0.5 ? mix(L, D, feather(abs(k - 0.25) * p2 - p2 * 0.2, 1.0)) : mix(M, V, 0.3);
+  }
+  if (gm == 2) {                                                     // dots
+    vec2 gg = q / max(4.0, p2); gg.x += mod(floor(gg.y), 2.0) * 0.5;
+    return mix(L, (h3(int(floor(gg.x)), int(floor(gg.y)), h) & 3u) == 0u ? V : D, feather(length(fract(gg) - 0.5) * p2 - p3, 1.0));
+  }
+  if (gm == 3) {                                                     // a grid, a few of its cells filled
+    vec2 c = floor(q / max(4.0, p2)), f = abs(fract(q / max(4.0, p2)) - 0.5) * p2;
+    uint hc = h3(int(c.x), int(c.y), h);
+    vec3 fill = (hc % 5u) == 0u ? V : (hc % 5u) == 1u ? M : L;
+    return mix(fill, D, feather(p2 * 0.5 - max(f.x, f.y) - p3 * 0.5, 0.8));
+  }
+  if (gm == 4) {                                                     // a few broad strokes, leaning together
+    vec3 c = L;
+    for (int i = 0; i < 6; i++) {
+      if (float(i) >= p2) break;
+      uint hi = mixh(h + 70u + uint(i));
+      float an = p1 + (unit(hi) - 0.5) * 0.6, len = 60.0 + 60.0 * unit(mixh(hi + 1u));
+      vec2 m = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 140.0, dv = vec2(cos(an), sin(an)) * len * 0.5;
+      c = mix(c, (hi & 1u) == 0u ? D : V, feather(segD(q, m - dv, m + dv) - p3 + 2.0 * (vnoise(q, 4.0, hi) - 0.5), 1.5));
+    }
+    return c;
+  }
+  if (gm == 5) {                                                     // rings
+    float k = fract(length(q) / max(6.0, p2) - t * 0.02);
+    return k < 0.33 ? mix(D, V, k / 0.33) : k < 0.66 ? mix(V, L, (k - 0.33) / 0.33) : mix(L, M, (k - 0.66) / 0.34);
+  }
+  if (gm == 6) {                                                     // stacked fields, their edges breathing
+    float n = max(2.0, p1), hgt = 150.0 / n, y = q.y + 75.0, k = floor(y / hgt);
+    if (abs(q.x) > 76.0 || y < 0.0 || y > 150.0) return D;
+    float edge = min(fract(y / hgt), 1.0 - fract(y / hgt)) * hgt + 3.0 * (vnoise(q, 9.0, h) - 0.5);
+    vec3 fc = mod(k, 3.0) == 0.0 ? V : mod(k, 3.0) == 1.0 ? M : L;
+    return mix(D, fc, smoothstep(0.0, p2, edge) * smoothstep(0.0, p2, 76.0 - abs(q.x)));
+  }
+  if (gm == 7) {                                                     // marks scattered every way (the more, the denser)
+    vec3 c = L;
+    for (int j2 = -1; j2 <= 1; j2++) for (int i2 = -1; i2 <= 1; i2++) {
+      vec2 cc = floor(q / 13.0) + vec2(i2, j2);
+      uint hi = h3(int(cc.x), int(cc.y), h);
+      if (unit(hi) > p2) continue;
+      float an = mix(6.2832 * unit(mixh(hi + 1u)), p1, p4), len = p3 * (1.0 + unit(mixh(hi + 2u)));
+      vec2 m = (cc + 0.5) * 13.0, dv = vec2(cos(an), sin(an)) * len;
+      c = mix(c, (hi & 3u) == 0u ? V : (hi & 3u) == 1u ? M : D, feather(segD(q, m - dv, m + dv) - 0.6, 0.8));
+    }
+    return c;
+  }
+  if (gm == 8) {                                                     // poured stains, soaked into the ground
+    vec2 w = q + 21.0 * vec2(vnoise(q, 55.0, h), vnoise(q, 55.0, h + 1u));
+    float n = vnoise(w, p2, h + 2u), n2 = vnoise(w, p2 * 0.6, h + 3u);
+    vec3 c = mix(L, V, smoothstep(0.5, 0.56, n) * (0.6 + 0.4 * p3));
+    return mix(c, M, smoothstep(0.6, 0.66, n2) * 0.7);
+  }
+  // 9: cut shapes, flat, on open ground
+  vec3 c = L;
+  for (int i = 0; i < 6; i++) {
+    if (float(i) >= p2) break;
+    uint hi = mixh(h + 80u + uint(i));
+    vec2 m = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 150.0;
+    float r = 18.0 + 22.0 * unit(mixh(hi + 2u)), a = atan(q.y - m.y, q.x - m.x);
+    float d = length(q - m) - r * (1.0 + 0.3 * sin(a * float(3 + int(hi % 4u)) + 6.2832 * unit(mixh(hi + 3u))));
+    c = mix(c, (hi & 1u) == 0u ? V : D, feather(d, 1.0));
+  }
+  return c;
+}
+/** The artist a minimal area of complexity cx takes, by its rung, and h: one of the 22, or from the roster (100 on). */
 int minimalOf(float cx, uint h) {
   int r = cx < RUNG_C[0] ? 0 : cx < RUNG_C[1] ? 1 : cx < RUNG_C[2] ? 2 : 3;
-  return RUNG[RUNG_AT[r] + int(h % uint(RUNG_AT[r + 1] - RUNG_AT[r]))];
+  int nb = RUNG_AT[r + 1] - RUNG_AT[r], nr = uRAt[r + 1] - uRAt[r], i = int(h % uint(nb + nr));
+  return i < nb ? RUNG[RUNG_AT[r] + i] : 100 + uRAt[r] + i - nb;
 }
 
 // ---- the one pixel ----------------------------------------------------------------------------------------------
@@ -1657,8 +1747,95 @@ vec3 newborn(vec2 d, vec3 cc, uint h, float T) {
 
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
+// ---- anomalies -------------------------------------------------------------------------------------------------
+// Now and then, without warning, the whole plane in view collapses to its middle, as a star does: it spirals in,
+// reddens and dims as its light is stretched, and an event horizon opens from the middle and swallows it, until not
+// even light gets out. In the dark a pixel or two flickers (Hawking's radiation). Then the infinite plane comes back
+// as one thing: an eye whose iris is the plane, a figure made of it, or a planet wrapped in it, seen whole, hanging in
+// the dark; and then the flip: it comes nearer and nearer until it is all there is, and the object is the world again.
+// Or, the gentlest of them, the plane shrinks to a painting hung on a wall, and is gone back into.
+// uAnom.w: 0 the eye, 1 the figure, 2 the painting, 3 the planet.
+mat2 rot2(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
+float capsule(vec2 p, vec2 a, vec2 b, float r) { return segD(p, a, b) - r; }
+/** Where the cell at p takes its colour from in an anomaly (src), a tint over it, and what covers it (over.a 1: only that). */
+void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
+  vec2 C = uAnom.xy, d = p - C;
+  float r = length(d), ph = uAnom.z, big = length(uHalf) * 1.15;
+  int kind = int(uAnom.w);
+  src = p;
+  if (kind == 2) {
+    float s = 1.0 + 1.6 * smoothstep(0.0, 0.3, ph) * (1.0 - smoothstep(0.7, 1.0, ph));
+    vec2 hf = uHalf / s * 0.86, e = abs(d) - hf;
+    float sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0);
+    if (sd < 0.0) { src = C + d * s; return; }
+    float fr = 8.0 / s + 2.0;
+    if (sd < fr) { float g = sd / fr; over = vec4(mix(vec3(58, 44, 32), vec3(24, 18, 14), g) * (0.8 + 0.4 * feather(abs(sd - fr * 0.5), fr * 0.5)), 1.0); return; }
+    vec2 e2 = abs(d - vec2(0.0, 10.0)) - hf;
+    float sh = length(max(e2, 0.0)) + min(max(e2.x, e2.y), 0.0);
+    vec3 wall = vec3(232, 228, 220) * (0.9 + 0.1 * (1.0 - clamp(abs(d.y) / big, 0.0, 1.0))) * (1.0 - 0.3 * feather(sh, 34.0));
+    over = vec4(wall, 1.0);
+    return;
+  }
+  if (ph < 0.42) {
+    float q = ph / 0.42, s = 1.0 + 3.0 * q * q, th = 6.0 * q * q / (1.0 + r / 144.0);
+    src = C + rot2(th) * d * s;
+    tint = mix(vec3(1), vec3(0.95, 0.38, 0.22), q) * (1.0 - 0.8 * q * q);
+    float Rh = big * smoothstep(0.5, 1.0, q);
+    if (Rh > 0.0) {
+      if (r < Rh) { over = vec4(0, 0, 0, 1); return; }
+      float x = (r - Rh) / 8.0;                                     // the photon ring: a grey gradient round the horizon
+      if (x < 1.0) over = vec4(vec3(255.0 * (1.0 - x)), 0.9 * (1.0 - x));
+    }
+    return;
+  }
+  if (ph < 0.52) {
+    over = vec4(0, 0, 0, 1);
+    if (unit(h3(int(p.x), int(p.y), uint(uTime * 6.0))) < 0.0003) over.rgb = vec3(160.0 + 90.0 * unit(h3(int(p.y), int(p.x), 7u)));
+    return;
+  }
+  float e = (ph - 0.52) / 0.48, grow = smoothstep(0.0, 0.4, e), flip = smoothstep(0.5, 1.0, e);
+  float a = max(1.0, 144.0 * grow * mix(1.0, 55.0, flip * flip * flip));
+  vec2 u = d / a;
+  float sd, inside = 0.0;                                            // sd in units of a; inside: 1 where the plane shows as itself
+  vec3 stars = unit(h3(int(p.x), int(p.y), 11u)) < 0.0006 * (1.0 - flip) ? vec3(200) : vec3(0);
+  if (kind == 0) {
+    vec2 look = 0.08 * vec2(sin(uTime * 0.7), 0.4 * cos(uTime * 0.5)) * (1.0 - flip);
+    sd = max(length(u - vec2(0.0, 0.62)), length(u + vec2(0.0, 0.62))) - 1.0;
+    float ri = length(u - look) - 0.3, rp = length(u - look) - 0.12 * (1.0 - flip);
+    if (sd < 0.0) {
+      if (rp < 0.0) { over = vec4(0, 0, 0, 1); return; }             // the pupil: what is left of the horizon
+      if (ri < 0.0) { src = p; float x = -ri * a / 6.0; if (x < 1.0) over = vec4(vec3(40.0 + 200.0 * x), 0.7 * (1.0 - x)); return; }
+      src = C + d * 1.6; over = vec4(250, 246, 238, 0.62); return;   // the white of the eye: the plane, farther off, paled
+    }
+  } else if (kind == 1) {
+    sd = min(min(length(u - vec2(0.0, -1.05)) - 0.2, capsule(u, vec2(0.0, -0.8), vec2(0.0, 0.35), 0.15)),
+             min(min(capsule(u, vec2(0.0, 0.35), vec2(-0.16, 1.6), 0.06), capsule(u, vec2(0.0, 0.35), vec2(0.16, 1.6), 0.06)),
+                 min(capsule(u, vec2(0.0, -0.62), vec2(-0.3, 0.25), 0.045), capsule(u, vec2(0.0, -0.62), vec2(0.3, 0.25), 0.045))));
+    if (sd < 0.0) { src = p; float x = -sd * a / 6.0; if (x < 1.0) over = vec4(vec3(255.0 * x), 0.6 * (1.0 - x)); return; }
+  } else {
+    sd = length(u) - 1.0;
+    if (sd < 0.0) {
+      vec2 n = u; float z = sqrt(max(0.0, 1.0 - dot(n, n)));
+      src = C + a * vec2(asin(clamp(n.x, -1.0, 1.0)), asin(clamp(n.y, -1.0, 1.0))) + vec2(uTime * 13.0, 0.0) * (1.0 - flip);
+      tint *= mix(0.25 + 0.75 * max(0.0, dot(vec3(n, z), normalize(vec3(-0.5, -0.4, 0.75)))), 1.0, flip);
+      return;
+    }
+  }
+  // outside the object: the dark, a gradient at its edge, and a few stars
+  float x = sd * a / 13.0;
+  over = vec4(x < 1.0 ? vec3(255.0 * (1.0 - x) * (kind == 3 ? 0.7 : 0.5)) * (kind == 3 ? vec3(0.7, 0.85, 1.0) : vec3(1)) + stars : stars, 1.0);
+}
+
 void main() {
   ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
+  vec3 anTint = vec3(1);
+  vec4 anOver = vec4(0);
+  if (uAnom.z > 0.0 && uEarth == 0) {
+    vec2 src;
+    anomaly(vec2(cell) + 0.5, src, anTint, anOver);
+    if (anOver.a >= 1.0) { outA = outB = vec4(anOver.rgb / 255.0, 1.0); return; }
+    cell = ivec2(floor(src)); sl = (cell >> 8) - uC0; lc = cell & 255;
+  }
   outA = outB = vec4(uGround / 255.0, 1.0);
   if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) return;
   vec4 si = texelFetch(uSlots, sl, 0);
@@ -1858,6 +2035,7 @@ void main() {
     vec3 tint = mix(vec3(1.0), vec3(0.55, 0.6, 0.8), night);
     A *= tint; B *= tint;
   }
+  if (anOver.a > 0.0 || anTint != vec3(1)) { A = mix(A * anTint, anOver.rgb, anOver.a); B = mix(B * anTint, anOver.rgb, anOver.a); }
   outA = vec4(A / 255.0, 1.0);
   outB = vec4(B / 255.0, 1.0);
 }`;
@@ -1867,7 +2045,7 @@ void main() {
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
  */
-function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works }) {
+function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster }) {
   const glcv = document.createElement("canvas");
   glcv.setAttribute("aria-hidden", "true");
   glcv.style.pointerEvents = "none";
@@ -1955,6 +2133,17 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.activeTexture(gl.TEXTURE7); tex(gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 4, nw);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4, nw, gl.RGBA, gl.FLOAT, wd);
+    // The roster: six texels an artist (dark, middle, light, vivid; grammar, rung, p1, p2; p3, p4), sorted by rung.
+    const ro = ((roster && roster.artists) || []).slice().sort((a, b) => a.rung - b.rung), rd = new Float32Array(6 * 4 * Math.max(1, ro.length));
+    ro.forEach((r, i) => {
+      r.palette.forEach((c, k) => rd.set([c[0], c[1], c[2], 1], (i * 6 + k) * 4));
+      const p = r.params.concat([0, 0, 0, 0]);
+      rd.set([r.grammar, r.rung, p[0], p[1]], (i * 6 + 4) * 4); rd.set([p[2], p[3], 0, 0], (i * 6 + 5) * 4);
+    });
+    gl.activeTexture(gl.TEXTURE8); tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 6, Math.max(1, ro.length));
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 6, Math.max(1, ro.length), gl.RGBA, gl.FLOAT, rd);
+    pending.rAt = [0, 1, 2, 3, 4].map((r) => ro.filter((x) => x.rung < r).length);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -1963,12 +2152,13 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && !(gl.getProgramParameter(pending.a.pr, parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(pending.b.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     gl.useProgram(cellProg);
     gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6); gl.uniform1i(U.uWorks, 7);
+    gl.uniform1i(U.uRoster, 8); gl.uniform1iv(U.uRAt, pending.rAt);
     gl.uniform1i(U.uNV, vivid.length);
     gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
     gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
@@ -2082,6 +2272,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.uniform1f(U.uTime, t);
     gl.uniform1f(U.uTurnAt, turnAt);
     gl.uniform2f(U.uTurnO, turnO[0], turnO[1]);
+    gl.uniform4fv(U.uAnom, anom);
+    gl.uniform2f(U.uHalf, cw / 2, ch / 2);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
@@ -2092,5 +2284,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works 
     gl.uniform1i(V.uEdge, edgeOn && !earth ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  return { draw, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  /** An anomaly (see the shader): [the view's middle x, y in cells, how far it has come 0 to 1 (0: none), which]. */
+  const anom = new Float32Array(4);
+  const anomaly = (v) => anom.set(v);
+  return { draw, anomaly, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }

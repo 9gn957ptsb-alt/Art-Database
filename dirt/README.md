@@ -292,6 +292,32 @@ debris and leaves a nebula; a constellation appears star by star, joined, as Mir
 accretion ring turns round a black point with light bent round it; or a big bang: the whole plane at its most complex
 opens out of the pixel across the void, and closes back into it.
 
+**New artists, every week.** Beyond the 22 drawn by hand, artists join the ladder from the roster
+(`dirt/artists/roster.json`), with no new code: `dirt/artists/roster.py` reads an artist's saved works, measures what
+they share (how densely they mark, whether their marks share a direction, how much ground they leave bare, how
+saturated they are), and gives them one of ten compositions (a field and a band, stripes, dots, a grid, strokes, rings,
+stacked fields, scattered marks, poured stains, cut shapes) with its parameters, the rung their marks earn, and the
+colours of their own saved works. A coworker (a scheduled Claude session, `dirt/artists/COWORKER.md`) brings in the
+next three most-saved artists every week and republishes DIRT. The first eight: Dalí (a horizon), Matisse (cut shapes),
+Frankenthaler (stacked fields), Cartier-Bresson and Warhol (grids), Pollock (scattered marks), Elaine de Kooning
+(strokes), Caponigro (dots).
+
+**Anomalies.** Now and then, unannounced (the first a minute or two in, then every two and a half to six minutes),
+the whole plane in view collapses to its middle as a star does: it spirals in, reddens and dims as its light is
+stretched, and an event horizon opens from the middle, ringed by a grey gradient, and swallows everything until not even
+light gets out. In the dark a pixel or two flickers. Then the infinite plane comes back as one thing, seen whole in the
+dark, and the flip: it comes nearer until it is all there is, and the object is the world again:
+
+| | the plane becomes | and is fallen back into through |
+|---|---|---|
+| the eye | an eye whose iris is the plane (its white, the plane farther off and paled; its pupil, what is left of the horizon) | the iris |
+| the figure | a thin standing figure, as Giacometti's, made of the plane | its body |
+| the planet | a planet wrapped in the plane, turning, lit from one side | its surface, flattening into the plane |
+| the painting | (no collapse) the plane shrinks to a painting in a frame on a gallery wall, casting its shadow | the painting |
+
+`#anomaly=N` starts kind N (0 the eye, 1 the figure, 2 the painting, 3 the planet) five seconds in. The life over the
+ground goes with the light while one lasts.
+
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
 black, Fischinger's night, the Primordial, Turrell's dark rooms, Van Gogh, Monet, GMUNK, Quayola, Braque, Cézanne,

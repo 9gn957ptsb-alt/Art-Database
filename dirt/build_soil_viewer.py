@@ -792,6 +792,7 @@ onmessage = (e) => {
 <script>
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
+const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
 // The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
 const SITE = __SITE__;
 const TOKENS = PL.works.map((w) => w.colors.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))));   // each painting's colours
@@ -807,7 +808,7 @@ const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
   : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
-                           art: /noart/.test(location.hash) ? null : ART, works: PL.works });
+                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER });
 // Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
 // the rest into the paper rather than into the dark.
 const ON_PAPER = !!GLG && !/noart/.test(location.hash);
@@ -1925,6 +1926,7 @@ function frame(now) {
   const list = wanted();
   tend(list);
   cx.globalAlpha = 1;
+  const anomOn = anomalyNow(now);
   if (GLG) { GLG.draw(now); cx.clearRect(0, 0, cv.width, cv.height); }   // the ground is painted under this canvas
   else { cx.fillStyle = `rgb(${GROUND})`; cx.fillRect(0, 0, cv.width, cv.height); }
   cx.imageSmoothingEnabled = false;
@@ -1955,7 +1957,39 @@ function frame(now) {
     cx.drawImage(trailCv, Math.round((tox - vx) * R), Math.round((toy - vy) * R), TW * R, TH * R);
   }
   if (LADDER && (typeof MODE === "undefined" || MODE === "plane")) quieten();
+  if (anomOn > 0) {                                                // in an anomaly the life goes with the light
+    cx.save(); cx.globalCompositeOperation = "destination-out"; cx.fillStyle = `rgba(0,0,0,${anomOn})`; cx.fillRect(0, 0, cv.width, cv.height); cx.restore();
+  }
   tick++;
+}
+
+// ---- anomalies (ground-gl.js draws them) -------------------------------------------------------------------------
+// Unannounced: the first 55 to 144 seconds in, then one every 144 to 377 seconds, of any kind. #anomaly=N starts
+// kind N five seconds in (0 the eye, 1 the figure, 2 the painting, 3 the planet).
+const ANOM = { at: 0, kind: 0, next: 0, dur: 34000 };
+{
+  const m = /(?:^|&)anomaly=(\d)/.exec(location.hash.slice(1));
+  ANOM.next = performance.now() + (m ? 5000 : (55 + 89 * Math.random()) * 1000);
+  ANOM.forced = m ? +m[1] : -1;
+}
+/** How far the anomaly has come now (0 to 1, 0 when there is none), told to the ground; and how much the life is hidden. */
+function anomalyNow(now) {
+  if (!GLG || !GLG.anomaly || REDUCED || (typeof MODE !== "undefined" && MODE !== "plane")) { if (GLG && GLG.anomaly) GLG.anomaly([0, 0, 0, 0]); return 0; }
+  if (!ANOM.at && now >= ANOM.next) {
+    ANOM.at = now;
+    ANOM.kind = ANOM.forced >= 0 ? ANOM.forced : Math.floor(Math.random() * 4);
+    ANOM.dur = ANOM.kind === 2 ? 21000 : 34000;
+  }
+  if (!ANOM.at) { GLG.anomaly([0, 0, 0, 0]); return 0; }
+  const ph = (now - ANOM.at) / ANOM.dur;
+  if (ph >= 1) {
+    ANOM.at = 0;
+    ANOM.next = now + (144 + 233 * Math.random()) * 1000;
+    GLG.anomaly([0, 0, 0, 0]);
+    return 0;
+  }
+  GLG.anomaly([vx + VW / 2, vy + VH / 2, Math.max(1e-4, ph), ANOM.kind]);
+  return Math.min(1, ph * 13, (1 - ph) * 13);
 }
 
 // ---- the ladder of complexity, for the life over the ground ----------------------------------------------------
@@ -2180,6 +2214,7 @@ def main():
                 .replace("__WANDERERS__", (HERE / "engine" / "wanderers.js").read_text().replace("</script", "<\\/script"))
                 .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__SITE__", "true" if site else "false")
+                .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
