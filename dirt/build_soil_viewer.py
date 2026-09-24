@@ -67,7 +67,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 PAGE = r"""<meta charset="utf-8">
-<title>DIRT</title>
+<title>DRIFT</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
 <style>
   :root {
