@@ -584,5 +584,15 @@
   "log": [
    "2026-09-24 first model: Weissman's 1895 red-brick building with stone bands, slate roofs and central tower on Paulus Potterstraat; Benthem Crouwel's white bathtub over a glass ground floor with its canopy over the Museumplein."
   ]
+ },
+ "museum-risd-museum": {
+  "name": "RISD Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: College Hill terraced between North Main and Benefit Streets, Moneo's brick-and-glass Chace Center, the Radeke Building with its Benefit Street frontispiece, Pendleton House"
+  ]
  }
 }

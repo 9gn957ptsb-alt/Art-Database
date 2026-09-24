@@ -1,765 +1,212 @@
 {
- "slug": "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
- "name": "Centro Cultural Los Lavaderos",
- "voxel": 0.5,
- "site": [
-  44,
-  36
- ],
- "ground": "paving",
- "parts": [
-  {
-   "box": [
-    -22,
-    11.8,
-    0,
-    44,
-    2.6,
-    0.15
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -22,
-    -17.6,
-    0,
-    44,
-    4.2,
-    0.15
-   ],
-   "m": "concrete"
-  },
-  {
-   "box": [
-    -22,
-    11,
-    0,
-    44,
-    7,
-    0.15
-   ],
-   "m": "paving"
-  },
-  {
-   "box": [
-    -22,
-    -18,
-    0,
-    44,
-    7,
-    0.15
-   ],
-   "m": "paving"
-  },
-  {
-   "box": [
-    -6,
-    14.5,
-    0,
-    28,
-    3.5,
-    0.6
-   ],
-   "m": "plant"
-  },
-  {
-   "box": [
-    -6,
-    14.4,
-    0.6,
-    28,
-    0.1,
-    0.9
-   ],
-   "m": "steel"
-  },
-  {
-   "box": [
-    -22,
-    -11,
-    0,
-    4,
-    22,
-    6.4
-   ],
-   "m": "brick"
-  },
-  {
-   "box": [
-    -22,
-    -11,
-    0,
-    4,
-    22,
-    2.8
-   ],
-   "m": "ochre"
-  },
-  {
-   "gable": [
-    -22.4,
-    -11,
-    6.4,
-    4.8,
-    22,
-    1.6
-   ],
-   "axis": "y",
-   "m": "tile"
-  },
-  {
-   "box": [
-    -22,
-    4,
-    0,
-    4,
-    7,
-    2.8
-   ],
-   "m": "ochre"
-  },
-  {
-   "box": [
-    18,
-    -11,
-    0,
-    4,
-    22,
-    7.0
-   ],
-   "m": "brick"
-  },
-  {
-   "gable": [
-    17.6,
-    -11,
-    7.0,
-    4.8,
-    22,
-    1.5
-   ],
-   "axis": "y",
-   "m": "tile"
-  },
-  {
-   "box": [
-    -18,
-    -11,
-    0,
-    36,
-    22,
-    3.8
-   ],
-   "m": "palebrick"
-  },
-  {
-   "box": [
-    -18,
-    -11,
-    3.8,
-    22,
-    22,
-    8.7
-   ],
-   "m": "palebrick"
-  },
-  {
-   "box": [
-    4,
-    -11,
-    3.8,
-    14,
-    22,
-    7.7
-   ],
-   "m": "palebrick"
-  },
-  {
-   "box": [
-    -16,
-    11,
-    3.6,
-    20,
-    0.6,
-    8.9
-   ],
-   "m": "palebrick"
-  },
-  {
-   "cut": [
-    -18,
-    9.5,
-    0.3,
-    1.6,
-    2.2,
-    12.2
-   ]
-  },
-  {
-   "box": [
-    -18,
-    9.8,
-    0.3,
-    1.6,
-    0.3,
-    12.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -18,
-    9.8,
-    3.5,
-    1.6,
-    0.4,
-    0.5
-   ],
-   "m": "white"
-  },
-  {
-   "box": [
-    -18,
-    9.8,
-    7.2,
-    1.6,
-    0.4,
-    0.5
-   ],
-   "m": "white"
-  },
-  {
-   "cut": [
-    -12,
-    10.4,
-    3.6,
-    9.2,
-    1.2,
-    2.7
-   ]
-  },
-  {
-   "box": [
-    -12,
-    10.5,
-    3.6,
-    9.2,
-    0.3,
-    2.7
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -12,
-    10.4,
-    7.9,
-    9.2,
-    1.2,
-    2.8
-   ]
-  },
-  {
-   "box": [
-    -12,
-    10.5,
-    7.9,
-    9.2,
-    0.3,
-    2.8
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -12,
-    10.4,
-    6.3,
-    9.2,
-    1.2,
-    1.6
-   ],
-   "m": "metal"
-  },
-  {
-   "cut": [
-    -11,
-    10.4,
-    0.3,
-    5,
-    0.8,
-    2.7
-   ]
-  },
-  {
-   "box": [
-    -11,
-    10.6,
-    0.3,
-    5,
-    0.3,
-    2.7
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    6,
-    10.4,
-    0.3,
-    1.6,
-    0.8,
-    2.4
-   ]
-  },
-  {
-   "box": [
-    6,
-    10.6,
-    0.3,
-    1.6,
-    0.3,
-    2.4
-   ],
-   "m": "dark"
-  },
-  {
-   "box": [
-    0.5,
-    -11,
-    12,
-    3.5,
-    5.5,
-    3.0
-   ],
-   "m": "palebrick"
-  },
-  {
-   "box": [
-    0.5,
-    -11,
-    15,
-    3.5,
-    5.5,
-    0.12
-   ],
-   "m": "palebrick"
-  },
-  {
-   "box": [
-    -18,
-    -11.6,
-    3.6,
-    18.5,
-    0.6,
-    8.9
-   ],
-   "m": "palebrick"
-  },
-  {
-   "cut": [
-    -11,
-    -11.6,
-    4.5,
-    11.3,
-    1.2,
-    2.6
-   ]
-  },
-  {
-   "box": [
-    -11,
-    -11.4,
-    4.5,
-    11.3,
-    0.3,
-    2.6
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    -11,
-    -11.6,
-    8.3,
-    11.3,
-    1.2,
-    2.6
-   ]
-  },
-  {
-   "box": [
-    -11,
-    -11.4,
-    8.3,
-    11.3,
-    0.3,
-    2.6
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -11,
-    -11.6,
-    7.1,
-    11.3,
-    1.0,
-    1.2
-   ],
-   "m": "metal"
-  },
-  {
-   "cut": [
-    0.5,
-    -11,
-    0,
-    5.5,
-    1.2,
-    3.0
-   ]
-  },
-  {
-   "box": [
-    0.5,
-    -10,
-    0,
-    5.5,
-    0.3,
-    3.0
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    0.5,
-    -11,
-    0,
-    5.5,
-    1.0,
-    0.3
-   ],
-   "m": "paving"
-  },
-  {
-   "cut": [
-    -17.8,
-    -11,
-    0.3,
-    1.2,
-    0.6,
-    2.8
-   ]
-  },
-  {
-   "box": [
-    -17.8,
-    -10.8,
-    0.3,
-    1.2,
-    0.3,
-    2.8
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    6,
-    -11,
-    5,
-    1.8,
-    0.6,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    6,
-    -10.8,
-    5,
-    1.8,
-    0.3,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    9.5,
-    -11,
-    5,
-    1.8,
-    0.6,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    9.5,
-    -10.8,
-    5,
-    1.8,
-    0.3,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    13,
-    -11,
-    5,
-    1.8,
-    0.6,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    13,
-    -10.8,
-    5,
-    1.8,
-    0.3,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "cut": [
-    9.5,
-    -11,
-    8.3,
-    1.8,
-    0.6,
-    2.2
-   ]
-  },
-  {
-   "box": [
-    9.5,
-    -10.8,
-    8.3,
-    1.8,
-    0.3,
-    2.2
-   ],
-   "m": "glass"
-  },
-  {
-   "box": [
-    -18,
-    -11.6,
-    12.5,
-    22,
-    23.2,
-    0.2
-   ],
-   "m": "metal"
-  },
-  {
-   "cut": [
-    -17.7,
-    -11.3,
-    12.5,
-    21.4,
-    22.6,
-    0.2
-   ]
-  },
-  {
-   "box": [
-    4,
-    -11,
-    11.5,
-    14,
-    22,
-    0.2
-   ],
-   "m": "metal"
-  },
-  {
-   "cut": [
-    4.3,
-    -10.7,
-    11.5,
-    13.4,
-    21.4,
-    0.2
-   ]
-  },
-  {
-   "box": [
-    -6,
-    -2,
-    12.5,
-    4,
-    3,
-    1.2
-   ],
-   "m": "metal"
-  },
-  {
-   "box": [
-    -1.2,
-    11.1,
-    3.9,
-    4.0,
-    0.5,
-    2.2
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    -1.2,
-    11.1,
-    8.1,
-    4.0,
-    0.5,
-    2.5
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    6,
-    10.5,
-    1.5,
-    11.5,
-    0.5,
-    1.0
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    6,
-    10.5,
-    6.0,
-    11.5,
-    0.5,
-    1.0
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    6,
-    10.5,
-    9.0,
-    11.5,
-    0.5,
-    1.0
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    7,
-    -11,
-    0.8,
-    2.2,
-    0.5,
-    2.0
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    10.5,
-    -11,
-    0.8,
-    2.2,
-    0.5,
-    2.0
-   ],
-   "m": "mesh"
-  },
-  {
-   "box": [
-    -17.7,
-    -11.3,
-    12.0,
-    21.4,
-    22.6,
-    0.5
-   ],
-   "m": "gravel"
-  },
-  {
-   "box": [
-    4.3,
-    -10.7,
-    11.0,
-    13.4,
-    21.4,
-    0.5
-   ],
-   "m": "gravel"
-  },
-  {
-   "tree": [
-    10,
-    -15.5,
-    6.5,
-    2.6
-   ],
-   "m": "timber"
-  },
-  {
-   "tree": [
-    -2,
-    16,
-    3.5,
-    1.4
-   ]
-  },
-  {
-   "tree": [
-    3,
-    16.5,
-    5.5,
-    1.8
-   ]
-  },
-  {
-   "tree": [
-    10,
-    16,
-    5,
-    2.0
-   ]
-  },
-  {
-   "tree": [
-    16,
-    15.5,
-    4,
-    1.6
-   ]
-  },
-  {
-   "tree": [
-    20,
-    16.8,
-    6.5,
-    1.0
-   ],
-   "shape": "poplar"
-  },
-  {
-   "box": [
-    3.8,
-    -11,
-    0.3,
-    2.2,
-    0.4,
-    2.7
-   ],
-   "m": "mesh"
-  }
- ],
- "notes": "Garden street (south) facade from the view across the railed garden and the street corner view: a long pale brick front, its western two thirds cantilevered a little over the ground floor, a two-storey ribbon of glass with a pale metal spandrel, patches and bands of open-bond perforated brick, a recessed glass slot at the west party wall. North facade from the dusk view: a brick stair tower standing clear of the roof, a lower eastern part with punched windows and brick lattices at ground level, and a second cantilevered volume with two ribbon windows to the west, the entrance under the tower. Plot size estimated from storey and door heights (~36 x 22 m); depth, roof and the side streets were not photographed and are guessed; the preserved washhouse under its glass floor is inside and not shown. The brick is a pale grey-beige, not red; the red brick material is kept for the neighbouring houses against the party walls. Pass of 24 Sep 2026: the grey-beige brick is now palebrick (it was stone); the open-bond perforated brick is drawn as mesh panels over the brick one layer in \u2014 two patches on the south cantilever beside the glass ribbon (at the two window bands, as in the street-corner view), three bands on the eastern part, two lattices beside the north entrance, and the slatted screen at the entrance itself (dusk view); the roofs are gravel inside the metal coping; the copper-leaved tree moved to the east end of the north front, where the dusk view has it; more shrubs and a poplar in the railed garden across the street; the two streets drawn as concrete strips. Still guessed: plot depth, roof, the side elevations, the neighbours' real extents."
+  "slug": "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
+  "name": "Centro Cultural Los Lavaderos",
+  "voxel": 0.5,
+  "site": [44, 36],
+  "ground": "paving",
+  "parts": [
+    {"box": [-22, 11.8, 0, 44, 2.6, 0.15], "m": "concrete"},
+    {"box": [-22, -17.6, 0, 44, 4.2, 0.15], "m": "concrete"},
+    {"box": [-22, 11, 0, 44, 7, 0.15], "m": "paving"},
+    {"box": [-22, -18, 0, 44, 7, 0.15], "m": "paving"},
+    {"box": [-6, 14.5, 0, 28, 3.5, 0.6], "m": "plant"},
+    {"box": [-6, 14.4, 0.6, 28, 0.1, 0.9], "m": "steel"},
+    {"box": [-22, -11, 0, 4, 22, 6.4], "m": "brick"},
+    {"box": [-22, -11, 0, 4, 22, 2.8], "m": "ochre"},
+    {"gable": [-22.4, -11, 6.4, 4.8, 22, 1.6], "axis": "y", "m": "tile"},
+    {"box": [-22, 4, 0, 4, 7, 2.8], "m": "ochre"},
+    {"box": [18, -11, 0, 4, 22, 7.0], "m": "brick"},
+    {"gable": [17.6, -11, 7.0, 4.8, 22, 1.5], "axis": "y", "m": "tile"},
+    {"box": [-18, -11, 0, 36, 22, 3.8], "m": "palebrick"},
+    {"box": [-18, -11, 3.8, 22, 22, 8.7], "m": "palebrick"},
+    {"box": [4, -11, 3.8, 14, 22, 7.7], "m": "palebrick"},
+    {"box": [-16, 11, 3.6, 20, 0.6, 8.9], "m": "palebrick"},
+    {"cut": [-18, 9.5, 0.3, 1.6, 2.2, 12.2]},
+    {"box": [-18, 9.8, 0.3, 1.6, 0.3, 12.2], "m": "glass"},
+    {"box": [-18, 9.8, 3.5, 1.6, 0.4, 0.5], "m": "white"},
+    {"box": [-18, 9.8, 7.2, 1.6, 0.4, 0.5], "m": "white"},
+    {"cut": [-12, 10.4, 3.6, 9.2, 1.2, 2.7]},
+    {"box": [-12, 10.5, 3.6, 9.2, 0.3, 2.7], "m": "glass"},
+    {"cut": [-12, 10.4, 7.9, 9.2, 1.2, 2.8]},
+    {"box": [-12, 10.5, 7.9, 9.2, 0.3, 2.8], "m": "glass"},
+    {"box": [-12, 10.4, 6.3, 9.2, 1.2, 1.6], "m": "metal"},
+    {"cut": [-11, 10.4, 0.3, 5, 0.8, 2.7]},
+    {"box": [-11, 10.6, 0.3, 5, 0.3, 2.7], "m": "glass"},
+    {"cut": [6, 10.4, 0.3, 1.6, 0.8, 2.4]},
+    {"box": [6, 10.6, 0.3, 1.6, 0.3, 2.4], "m": "dark"},
+    {"box": [0.5, -11, 12, 3.5, 5.5, 3.0], "m": "palebrick"},
+    {"box": [0.5, -11, 15, 3.5, 5.5, 0.12], "m": "palebrick"},
+    {"box": [-18, -11.6, 3.6, 18.5, 0.6, 8.9], "m": "palebrick"},
+    {"cut": [-11, -11.6, 4.5, 11.3, 1.2, 2.6]},
+    {"box": [-11, -11.4, 4.5, 11.3, 0.3, 2.6], "m": "glass"},
+    {"cut": [-11, -11.6, 8.3, 11.3, 1.2, 2.6]},
+    {"box": [-11, -11.4, 8.3, 11.3, 0.3, 2.6], "m": "glass"},
+    {"box": [-11, -11.6, 7.1, 11.3, 1.0, 1.2], "m": "metal"},
+    {"cut": [0.5, -11, 0, 5.5, 1.2, 3.0]},
+    {"box": [0.5, -10, 0, 5.5, 0.3, 3.0], "m": "glass"},
+    {"box": [0.5, -11, 0, 5.5, 1.0, 0.3], "m": "paving"},
+    {"cut": [-17.8, -11, 0.3, 1.2, 0.6, 2.8]},
+    {"box": [-17.8, -10.8, 0.3, 1.2, 0.3, 2.8], "m": "glass"},
+    {"cut": [6, -11, 5, 1.8, 0.6, 2.2]},
+    {"box": [6, -10.8, 5, 1.8, 0.3, 2.2], "m": "glass"},
+    {"cut": [9.5, -11, 5, 1.8, 0.6, 2.2]},
+    {"box": [9.5, -10.8, 5, 1.8, 0.3, 2.2], "m": "glass"},
+    {"cut": [13, -11, 5, 1.8, 0.6, 2.2]},
+    {"box": [13, -10.8, 5, 1.8, 0.3, 2.2], "m": "glass"},
+    {"cut": [9.5, -11, 8.3, 1.8, 0.6, 2.2]},
+    {"box": [9.5, -10.8, 8.3, 1.8, 0.3, 2.2], "m": "glass"},
+    {"box": [-18, -11.6, 12.5, 22, 23.2, 0.2], "m": "metal"},
+    {"cut": [-17.7, -11.3, 12.5, 21.4, 22.6, 0.2]},
+    {"box": [4, -11, 11.5, 14, 22, 0.2], "m": "metal"},
+    {"cut": [4.3, -10.7, 11.5, 13.4, 21.4, 0.2]},
+    {"box": [-6, -2, 12.5, 4, 3, 1.2], "m": "metal"},
+    {"box": [-1.2, 11.1, 3.9, 4.0, 0.5, 2.2], "m": "palebrick"},
+    {"box": [-1.2, 11.1, 3.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-1.2, 11.1, 4.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.7, 11.1, 4.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.7, 11.1, 5.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.2, 11.1, 3.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.2, 11.1, 4.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.3, 11.1, 4.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.3, 11.1, 5.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.8, 11.1, 3.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.8, 11.1, 4.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.3, 11.1, 4.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.3, 11.1, 5.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.8, 11.1, 3.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.8, 11.1, 4.9, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [2.3, 11.1, 4.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [2.3, 11.1, 5.4, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-1.2, 11.1, 8.1, 4.0, 0.5, 2.5], "m": "palebrick"},
+    {"box": [-1.2, 11.1, 8.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-1.2, 11.1, 9.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-1.2, 11.1, 10.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.7, 11.1, 8.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.7, 11.1, 9.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.2, 11.1, 8.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.2, 11.1, 9.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-0.2, 11.1, 10.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.3, 11.1, 8.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.3, 11.1, 9.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.8, 11.1, 8.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.8, 11.1, 9.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [0.8, 11.1, 10.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.3, 11.1, 8.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.3, 11.1, 9.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.8, 11.1, 8.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.8, 11.1, 9.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [1.8, 11.1, 10.1, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [2.3, 11.1, 8.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [2.3, 11.1, 9.6, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6, 10.5, 1.5, 11.5, 0.5, 1.0], "m": "palebrick"},
+    {"box": [6.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.5, 10.5, 2.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [17.0, 10.5, 1.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6, 10.5, 6.0, 11.5, 0.5, 1.0], "m": "palebrick"},
+    {"box": [6.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.5, 10.5, 6.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [17.0, 10.5, 6.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6, 10.5, 9.0, 11.5, 0.5, 1.0], "m": "palebrick"},
+    {"box": [6.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [6.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [9.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [13.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [14.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [15.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [16.5, 10.5, 9.5, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [17.0, 10.5, 9.0, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7, -11, 0.8, 2.2, 0.5, 2.0], "m": "palebrick"},
+    {"box": [7.0, -11, 0.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.0, -11, 1.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.5, -11, 1.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [7.5, -11, 2.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.0, -11, 0.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.0, -11, 1.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.5, -11, 1.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [8.5, -11, 2.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.5, -11, 0.8, 2.2, 0.5, 2.0], "m": "palebrick"},
+    {"box": [10.5, -11, 0.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [10.5, -11, 1.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.0, -11, 1.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.0, -11, 2.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.5, -11, 0.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [11.5, -11, 1.8, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.0, -11, 1.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [12.0, -11, 2.3, 0.5, 0.5, 0.5], "m": "dark"},
+    {"box": [-17.7, -11.3, 12.0, 21.4, 22.6, 0.5], "m": "gravel"},
+    {"box": [4.3, -10.7, 11.0, 13.4, 21.4, 0.5], "m": "gravel"},
+    {"tree": [10, -15.5, 6.5, 2.6], "m": "timber"},
+    {"tree": [-2, 16, 3.5, 1.4]},
+    {"tree": [3, 16.5, 5.5, 1.8]},
+    {"tree": [10, 16, 5, 2.0]},
+    {"tree": [16, 15.5, 4, 1.6]},
+    {"tree": [20, 16.8, 6.5, 1.0], "shape": "poplar"},
+    {"box": [3.8, -11, 0.3, 2.2, 0.4, 2.7], "m": "palebrick"},
+    {"box": [3.8, -11, 0.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [3.8, -11, 1.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [3.8, -11, 2.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [4.3, -11, 0.8, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [4.3, -11, 1.8, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [4.8, -11, 0.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [4.8, -11, 1.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [4.8, -11, 2.3, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [5.3, -11, 0.8, 0.5, 0.4, 0.5], "m": "dark"},
+    {"box": [5.3, -11, 1.8, 0.5, 0.4, 0.5], "m": "dark"}
+  ],
+  "notes": "Garden street (south) facade from the view across the railed garden and the street corner view: a long pale brick front, its western two thirds cantilevered a little over the ground floor, a two-storey ribbon of glass with a pale metal spandrel, patches and bands of open-bond perforated brick, a recessed glass slot at the west party wall. North facade from the dusk view: a brick stair tower standing clear of the roof, a lower eastern part with punched windows and brick lattices at ground level, and a second cantilevered volume with two ribbon windows to the west, the entrance under the tower. Plot size estimated from storey and door heights (~36 x 22 m); depth, roof and the side streets were not photographed and are guessed; the preserved washhouse under its glass floor is inside and not shown. The brick is a pale grey-beige, not red; the red brick material is kept for the neighbouring houses against the party walls. Pass of 24 Sep 2026: the grey-beige brick is now palebrick (it was stone); the open-bond perforated brick is drawn as mesh panels over the brick one layer in \u2014 two patches on the south cantilever beside the glass ribbon (at the two window bands, as in the street-corner view), three bands on the eastern part, two lattices beside the north entrance, and the slatted screen at the entrance itself (dusk view); the roofs are gravel inside the metal coping; the copper-leaved tree moved to the east end of the north front, where the dusk view has it; more shrubs and a poplar in the railed garden across the street; the two streets drawn as concrete strips. Still guessed: plot depth, roof, the side elevations, the neighbours' real extents."
 }
