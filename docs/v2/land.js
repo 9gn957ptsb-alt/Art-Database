@@ -9605,59 +9605,144 @@
     });
   }
 
-  /* A museum's works: the ones the artist saved that it holds, most
+  /* A museum's works: first the ones the artist saved that it holds, most
      recently saved first, each a picture off Artsy's image store and its
-     caption. Pressing one brings it up large; pressing it again puts it
-     back. They come in one after another, the way the marks rise. */
+     caption; then, on asking, the rest of its collection, searched from here
+     (collections.js) and shown the same way, marked as the collection's.
+     Pressing a work brings it up large; pressing it again puts it back.
+     Nothing leads off the site. */
+  function heldFigure(w, src, i, found) {
+    var fig = document.createElement("figure");
+    fig.className = found ? "held held-found" : "held";
+    fig.tabIndex = 0;
+    fig.setAttribute("role", "button");
+    fig.setAttribute("aria-expanded", "false");
+    var img = document.createElement("img");
+    img.alt = w.t + (w.a ? ", " + w.a : "");
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.src = src;
+    img.addEventListener("error", function () { fig.remove(); });
+    var cap = document.createElement("figcaption");
+    var t = document.createElement("i");
+    t.textContent = w.t || "Untitled";
+    cap.appendChild(t);
+    var by = [w.a, w.y].filter(Boolean).join(", ");
+    cap.appendChild(document.createTextNode(by ? " — " + by : ""));
+    var med = document.createElement("span");
+    med.className = "held-medium";
+    med.textContent = w.m || "";
+    cap.appendChild(med);
+    fig.appendChild(img);
+    fig.appendChild(cap);
+    function open() {
+      var was = fig.getAttribute("aria-expanded") === "true";
+      Array.prototype.forEach.call(buildingWorks.querySelectorAll(".held"), function (f) {
+        f.setAttribute("aria-expanded", "false");
+      });
+      fig.setAttribute("aria-expanded", String(!was));
+      var r = fig.getBoundingClientRect();
+      pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.4, Math.max(r.width, r.height));
+    }
+    fig.addEventListener("click", open);
+    fig.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+    });
+    fig.style.animationDelay = (still ? 0 : 0.38 + Math.min(i, 13) * 0.09).toFixed(2) + "s";
+    return fig;
+  }
+
   function showHeld(m) {
     buildingEl.dataset.museum = "true";
     if (!buildingWorks) { return; }
     buildingWorks.textContent = "";
     var head = document.createElement("p");
     head.className = "held-count";
-    head.textContent = m.held === 1 ? "One work here" : m.held + " works here";
+    head.textContent = "Saved \u00b7 " + (m.held === 1 ? "one work" : m.held + " works");
     buildingWorks.appendChild(head);
     (m.works || []).forEach(function (w, i) {
-      var fig = document.createElement("figure");
-      fig.className = "held";
-      fig.tabIndex = 0;
-      fig.setAttribute("role", "button");
-      fig.setAttribute("aria-expanded", "false");
-      var img = document.createElement("img");
-      img.alt = w.t + (w.a ? ", " + w.a : "");
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.src = (museums.cdn || "") + w.i + ".jpg";
-      var cap = document.createElement("figcaption");
-      var t = document.createElement("i");
-      t.textContent = w.t;
-      cap.appendChild(t);
-      cap.appendChild(document.createTextNode([w.a, w.y].filter(Boolean).length ?
-        " — " + [w.a, w.y].filter(Boolean).join(", ") : ""));
-      var med = document.createElement("span");
-      med.className = "held-medium";
-      med.textContent = w.m || "";
-      cap.appendChild(med);
-      fig.appendChild(img);
-      fig.appendChild(cap);
-      function open() {
-        var was = fig.getAttribute("aria-expanded") === "true";
-        Array.prototype.forEach.call(buildingWorks.querySelectorAll(".held"), function (f) {
-          f.setAttribute("aria-expanded", "false");
-        });
-        fig.setAttribute("aria-expanded", String(!was));
-        var r = fig.getBoundingClientRect();
-        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.4, Math.max(r.width, r.height));
-      }
-      fig.addEventListener("click", open);
-      fig.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
-      });
-      fig.style.animationDelay = (still ? 0 : 0.38 + i * 0.09).toFixed(2) + "s";
-      buildingWorks.appendChild(fig);
+      buildingWorks.appendChild(heldFigure(w, (museums.cdn || "") + w.i + ".jpg", i, false));
     });
+    if (window.Collections) { buildingWorks.appendChild(searchFor(m)); }
     buildingWorks.scrollTop = 0;
     buildingWorks.scrollLeft = 0;
+  }
+
+  /* The rest of the collection: a button, then a search field and what it
+     finds. It opens on a first page of the collection, and each search
+     replaces it; an answer that comes back after a newer search is dropped. */
+  function searchFor(m) {
+    var box = document.createElement("section");
+    box.className = "collection";
+    var ask = document.createElement("button");
+    ask.type = "button";
+    ask.className = "collection-open";
+    ask.textContent = "Search the rest of the collection";
+    box.appendChild(ask);
+
+    ask.addEventListener("click", function () {
+      ask.remove();
+      var head = document.createElement("p");
+      head.className = "held-count";
+      head.textContent = "In the collection";
+      var form = document.createElement("form");
+      form.className = "collection-form";
+      form.setAttribute("role", "search");
+      var field = document.createElement("input");
+      field.type = "search";
+      field.className = "collection-field";
+      field.placeholder = "Artist, title, subject\u2026";
+      field.setAttribute("aria-label", "Search the collection of " + m.name);
+      field.autocomplete = "off";
+      form.appendChild(field);
+      var said = document.createElement("p");
+      said.className = "collection-said";
+      said.setAttribute("aria-live", "polite");
+      var found = document.createElement("div");
+      found.className = "collection-found";
+      var from = document.createElement("p");
+      from.className = "collection-from";
+      from.textContent = "from " + window.Collections.source(m);
+      box.appendChild(head);
+      box.appendChild(form);
+      box.appendChild(said);
+      box.appendChild(found);
+      box.appendChild(from);
+
+      var asked = 0, wait = 0;
+      function look(text) {
+        var mine_ = ++asked;
+        said.textContent = "Looking\u2026";
+        box.dataset.busy = "true";
+        window.Collections.search(m, text).then(function (works) {
+          if (mine_ !== asked) { return; }
+          found.textContent = "";
+          works.forEach(function (w, i) { found.appendChild(heldFigure(w, w.src, i, true)); });
+          said.textContent = works.length ? "" :
+            (text ? "Nothing with a picture for \u201c" + text + "\u201d." : "Nothing with a picture found.");
+        }).catch(function () {
+          if (mine_ !== asked) { return; }
+          said.textContent = "The collection could not be reached just now.";
+        }).then(function () {
+          if (mine_ === asked) { delete box.dataset.busy; }
+        });
+      }
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        window.clearTimeout(wait);
+        look(field.value);
+        field.blur();
+      });
+      field.addEventListener("input", function () {
+        window.clearTimeout(wait);
+        wait = window.setTimeout(function () { look(field.value); }, 610);
+      });
+      look("");
+      field.focus({ preventScroll: true });
+      var r = box.getBoundingClientRect();
+      pulse(r.left + r.width / 2, r.top + 20, [LIGHT], 0.4, r.width);
+    });
+    return box;
   }
 
   /* A tap swaps the building for the ground it stands in, and back; each

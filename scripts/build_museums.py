@@ -78,11 +78,19 @@ QUERIES = {
     "Musei Vaticani, Pinacoteca, Rome": "Pinacoteca Vaticana",
     "Galleria dell'Accademia, Venice": "Gallerie dell'Accademia Venezia",
 }
+# Partner museums whose Artsy address is simply somewhere else: placed by
+# hand at the door (MCA Chicago was on the Near West Side; it is at 220 East
+# Chicago Avenue).
+PARTNER_SPOTS = {"mca-chicago": (41.8972, -87.6212)}
 # Where OpenStreetMap's first answer is the museum's other house (Belvedere 21).
 ARTSY_RIGHT = {"Belvedere Museum"}
 # And those it does not know at all, placed by hand at their doors.
 SPOTS = {
     "Pushkin Museum of Fine Arts, Moscow": (55.7473, 37.6050, "Moscow, RU"),  # Volkhonka 12
+    # Apsley House, Hyde Park Corner; not Wellington, South Africa.
+    "The Wellington Museum, London": (51.5034, -0.1518, "London, GB"),
+    # The Petit Palais on the Champs-Élysées; not the one in Avignon.
+    "Musée du Petit Palais, Paris": (48.8661, 2.3145, "Paris, FR"),
 }
 # How many of a museum's works the page carries, most recently saved first.
 WORKS_EACH = 34
@@ -250,6 +258,8 @@ def main():
         spot = partner_location(key[1], locations, session) if key[0] == "artsy" else None
         if spot:
             spot = checked(spot, name, geocoded)
+        if spot and key[1] in PARTNER_SPOTS:
+            spot = PARTNER_SPOTS[key[1]] + (spot[2],)
         if not spot:
             spot = geocode(name, geocoded)
         if not spot:
