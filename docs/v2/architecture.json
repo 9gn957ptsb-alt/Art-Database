@@ -1,6 +1,18 @@
 {
   "buildings": [
     {
+      "title": "A Luxury Oasis – Casa Sisal by Reyes Rios + Larrain",
+      "name": "Casa Sisal",
+      "slug": "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
+      "url": "https://www.thearchitecturalauthority.com/article/a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
+      "city": "Acanceh",
+      "country": "Mexico",
+      "where": "Acanceh, Mexico",
+      "lat": 20.8132,
+      "lon": -89.4529,
+      "precision": "town"
+    },
+    {
       "title": "A Sanctuary of Relaxation – Living N5 on the CASA FOA Platform by Giunta Muebles",
       "name": "Living N5 on the CASA FOA Platform",
       "slug": "a-sanctuary-of-relaxation-living-n5-on-the-casa-foa-platform-by-giunta-muebles",
