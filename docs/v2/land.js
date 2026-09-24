@@ -148,6 +148,7 @@
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var supply = null;    // land.json — the tokens
+  var architecture = null;   // architecture.json — the buildings (scripts/build_architecture.py)
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
@@ -664,7 +665,7 @@
       var el = document.createElement("button");
       el.className = "city";
       el.type = "button";
-      el.dataset.kind = real ? "landmark" : "work";
+      el.dataset.kind = city.building ? "building" : real ? "landmark" : "work";
       el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
                      '<span class="city-name"></span>';
       el.lastChild.textContent = city.title;
@@ -721,6 +722,18 @@
         // nearest — it stands four streets from two of them — and then
         // almost none of it.
         hue: hues[nearWork(mark)] || 0.09
+      }, true);
+    });
+
+    // And the buildings the artist keeps an eye on, from the Architectural
+    // Authority: each where it stands, or — a private home — in its town.
+    // Pressing one goes down to it and it is seen from the air, in 3D.
+    ((architecture && architecture.buildings) || []).forEach(function (b) {
+      if (typeof b.lat !== "number" || typeof b.lon !== "number") { return; }
+      raiseCity({
+        work: null, slug: "building-" + b.slug, title: b.name || b.title, where: b.where,
+        lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true,
+        hue: hues[nearWork(b)] || 0.09
       }, true);
     });
   }
@@ -878,6 +891,7 @@
   function comeUp() {
     if (flying || !place) { return; }
     stopTheatre();
+    stopBuilding();
     hold();                         // the walk stops where it is
     hideGraze();
     hereShown = false;
@@ -935,11 +949,13 @@
     }
     if (place.stage) { startTheatre(); }
     if (place.archive) { startArchive(); }
+    if (place.building) { startBuilding(place); }
   }
 
   function leave() {
     stopTheatre();
     stopArchive();
+    stopBuilding();
     endScene();
     hold();
     // Whatever was standing in that city stays in it. placeSpawns stops
@@ -9218,6 +9234,107 @@
     dreaming.start();
   }
 
+  /* ---- the buildings ------------------------------------------------------
+
+     Going down to a building ends in the air above it, the way Google Earth
+     shows a place: Google's photorealistic 3D, the camera coming down out of
+     the sky and then circling slowly. A public building is circled close; a
+     private home is never pinned, so its view is its town from higher up.
+     The key is Google's (maps-key.js, written at deploy from the repository
+     secret GOOGLE_MAPS_KEY); without one the view is just the link to the
+     article, which is always there. */
+
+  var buildingEl = document.getElementById("building");
+  var buildingMap = document.getElementById("building-map");
+  var buildingLink = document.getElementById("building-link");
+  var buildingOn = null;             // the visit the view belongs to
+  var buildingView = null;           // the gmp-map-3d element, while it is up
+  var mapsReady = null;
+
+  // How close the camera circles, by how exactly the point is known.
+  var AIR = {
+    exact:    { range: 420,   tilt: 64 },
+    street:   { range: 650,   tilt: 62 },
+    district: { range: 5200,  tilt: 56 },
+    town:     { range: 3400,  tilt: 58 },
+    region:   { range: 26000, tilt: 50 }
+  };
+
+  function loadMaps() {
+    var key = window.MAPS_KEY;
+    if (!key) { return Promise.reject(new Error("no Google Maps key")); }
+    if (!mapsReady) {
+      mapsReady = new Promise(function (resolve, reject) {
+        window.__mapsUp = resolve;
+        var tag = document.createElement("script");
+        tag.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key) +
+                  "&v=beta&libraries=maps3d&loading=async&callback=__mapsUp";
+        tag.async = true;
+        tag.onerror = function () { mapsReady = null; reject(new Error("Google Maps did not load")); };
+        document.head.appendChild(tag);
+      }).then(function () { return window.google.maps.importLibrary("maps3d"); });
+    }
+    return mapsReady;
+  }
+
+  function startBuilding(city) {
+    if (!buildingEl) { return; }
+    var b = city.building;
+    var visit = {};
+    buildingOn = visit;
+    buildingLink.href = b.url;
+    buildingEl.hidden = false;
+    buildingEl.dataset.air = "waiting";
+
+    loadMaps().then(function (lib) {
+      if (buildingOn !== visit) { return; }
+      var air = AIR[b.precision] || AIR.town;
+      var camera = {
+        center: { lat: b.lat, lng: b.lon, altitude: 0 },
+        range: air.range, tilt: air.tilt, heading: Math.random() * 360
+      };
+      // Seen from straight overhead and far up first, then brought down.
+      var view = new lib.Map3DElement({
+        center: camera.center, range: still ? air.range : air.range * 9,
+        tilt: still ? air.tilt : 0, heading: camera.heading,
+        mode: lib.MapMode ? lib.MapMode.SATELLITE : "SATELLITE",   // no labels: no words
+        defaultUIHidden: true
+      });
+      buildingView = view;
+      buildingMap.appendChild(view);
+      buildingEl.dataset.air = "up";
+      if (still || !view.flyCameraTo) { return; }
+
+      var touched = false;
+      view.addEventListener("pointerdown", function () {
+        touched = true;
+        if (view.stopCameraAnimation) { view.stopCameraAnimation(); }
+      });
+      function circle() {
+        if (buildingOn !== visit || touched || !view.flyCameraAround) { return; }
+        view.flyCameraAround({ camera: camera, durationMillis: 90000, rounds: 1, repeatCount: 1 });
+      }
+      view.addEventListener("gmp-animationend", circle);
+      view.flyCameraTo({ endCamera: camera, durationMillis: 4200 });
+    }).catch(function (error) {
+      if (buildingOn !== visit) { return; }
+      buildingEl.dataset.air = "none";
+      if (window.MAPS_KEY) { window.console.warn("the 3D view did not come up:", error); }
+    });
+  }
+
+  function stopBuilding() {
+    buildingOn = null;
+    if (buildingView && buildingView.parentNode) { buildingView.parentNode.removeChild(buildingView); }
+    buildingView = null;
+    if (buildingEl) { buildingEl.hidden = true; }
+  }
+
+  if (buildingEl) {
+    // The stage turns the world with the pointer; in here it turns the view.
+    buildingEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+  }
+
   /* ---- the Archive ---------------------------------------------------------
 
      After the Austin Museum of Digital Art, whose archive of moving images
@@ -10452,7 +10569,8 @@
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),
-               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png")])
+               read("tones.json"), readTile("dirt-land.png"), readTile("dirt-sea.png"),
+               read("architecture.json").catch(function () { return { buildings: [] }; })])
     .then(function (all) {
       mine = all[0];
       supply = all[1];
@@ -10460,6 +10578,7 @@
       readTones(all[3]);
       dirt.land = all[4];
       dirt.sea = all[5];
+      architecture = all[6];
 
       vocabulary = readVocabulary();
       if (!vocabulary.length) { throw new Error("the works carry no terms"); }

@@ -345,6 +345,18 @@
 
 .city[data-kind="landmark"] .city-name { font-weight: 600; }
 
+/* A building the artist keeps an eye on: a small square, the shape of a
+   plan, so it reads as neither a collage nor the library. */
+.city[data-kind="building"] .city-dot {
+  width: var(--s-3);
+  height: var(--s-3);
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid var(--ink);
+  box-sizing: border-box;
+}
+.city[data-kind="building"] .city-name { font-style: italic; }
+
 .city-name {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
@@ -1845,4 +1857,50 @@
 
 @media (prefers-reduced-motion: reduce) {
   .read-wash, .read .read-plate, .read-cap > *, .read-words, .read-foot, .read-said, .read-word, .read-door { transition: none; }
+}
+
+
+/* ---- the buildings: seen from the air ---------------------------------- */
+.building {
+  position: absolute;
+  inset: 0;
+  z-index: 57;
+}
+.building[hidden] { display: none; }
+.building-map,
+.building-map gmp-map-3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.building[data-air="up"] .building-map { animation: air-in var(--beat-5, 0.8s) ease-out both; }
+@keyframes air-in { from { opacity: 0; } to { opacity: 1; } }
+.building-link {
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-5);
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 18, 28, 0.72);
+  color: #f3f1ee;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.building-link:hover,
+.building-link:focus-visible { background: rgba(94, 82, 199, 0.9); }
+.building[data-air="none"] .building-link,
+.building[data-air="waiting"] .building-link { bottom: 50%; transform: translate(-50%, 50%); }
+.land[data-at="flying"] .building { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .building[data-air="up"] .building-map { animation: none; }
 }

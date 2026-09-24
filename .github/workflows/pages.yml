@@ -29,6 +29,16 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # The buildings' 3D view needs a Google Maps browser key. It lives in the
+      # repository secret GOOGLE_MAPS_KEY and is written into the published
+      # page only; the repository copy of maps-key.js stays empty.
+      - name: Write the Google Maps key
+        env:
+          MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+        run: |
+          if [ -n "$MAPS_KEY" ]; then
+            printf 'window.MAPS_KEY = "%s";\n' "$MAPS_KEY" > docs/v2/maps-key.js
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs

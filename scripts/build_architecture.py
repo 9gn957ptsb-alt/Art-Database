@@ -32,10 +32,12 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "architecture_saves_raw.json"
 CACHE = ROOT / "data" / "geocode_cache.json"
+INDEX = ROOT / "data" / "article_index.json"
 OUT = ROOT / "docs" / "v2" / "architecture.json"
 
 SITE = "https://www.thearchitecturalauthority.com"
 ARTICLE = SITE + "/article/{slug}"
+SITEMAP = SITE + "/sitemap.xml"
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 
 # Field-name variants, the way the app's own reader tolerates camel / snake / Pascal.
@@ -92,6 +94,46 @@ def find_string(text, key):
     return m.group(1).replace('\\u0026', '&').strip() if m else ""
 
 
+def page_id(text):
+    m = re.search(r'\\?"articleId\\?"\s*:\s*(\d+)', text)
+    return int(m.group(1)) if m else None
+
+
+def article_index(session, wanted):
+    """The bookmarks name articles only by number. Each public article page says
+    its own number (articleId), so walk the sitemap's article pages once and
+    keep number -> slug, cached in data/article_index.json."""
+    try:
+        index = {int(k): v for k, v in json.loads(INDEX.read_text(encoding="utf-8")).items()}
+    except (FileNotFoundError, ValueError):
+        index = {}
+    if wanted <= set(index):
+        return index
+    try:
+        r = session.get(SITEMAP, timeout=45)
+        slugs = re.findall(r"<loc>%s/article/([^<]+)</loc>" % re.escape(SITE), r.text)
+    except requests.RequestException as exc:
+        print(f"  ! could not read the sitemap ({exc})")
+        slugs = []
+    known = set(index.values())
+    for slug in slugs:
+        if wanted <= set(index):
+            break
+        if slug in known:
+            continue
+        try:
+            page = session.get(ARTICLE.format(slug=slug), timeout=45)
+        except requests.RequestException:
+            continue
+        number = page_id(page.text) if page.status_code == 200 else None
+        if number is not None:
+            index[number] = slug
+        time.sleep(0.2)
+    INDEX.parent.mkdir(parents=True, exist_ok=True)
+    INDEX.write_text(json.dumps(index, indent=2), encoding="utf-8")
+    return index
+
+
 def article_place(session, slug):
     """Fetch a public article page and read where its building is."""
     try:
@@ -105,6 +147,7 @@ def article_place(session, slug):
     loc = find_object(r.text, "articleLocation") or {}
     year = find_string(r.text, "yearCompleted") or find_string(r.text, "year")
     return {
+        "title": find_string(r.text, "title"),
         "city": pick(loc, ["city", "cityName", "City"]),
         "state": pick(loc, ["state", "stateName", "State"]),
         "country": pick(loc, ["country", "countryName", "Country"]),
@@ -112,25 +155,75 @@ def article_place(session, slug):
     }
 
 
-def geocode(session, cache, city, state, country):
-    key = ", ".join([p for p in (city, state, country) if p]).lower()
-    if not key:
-        return None
-    if key in cache:
-        return cache[key]
-    params = {"format": "json", "limit": 1, "city": city, "country": country}
-    if state:
-        params["state"] = state
+# The articles give a town at best. Where a building is a public place, its
+# own spot was looked up by hand (23-24 Sep 2026) and is kept here, with where
+# it came from; its point is then the building rather than the town. Private
+# homes are never pinned closer than their town (the artist's choice, 24 Sep
+# 2026): the site and this repository are public.
+#   precision: "exact" (the building), "street" (its block), "district",
+#   "town", "region" (department or province, when no town is given).
+SPOTS = {
+    # OpenStreetMap: Naman Retreat, Đường Trường Sa; the spa is in its grounds.
+    "embracing-nature-naman-pure-spa-by-mia-design-studio":
+        {"lat": 15.9697, "lon": 108.2854, "precision": "exact"},
+    # Zaratán town hall: c/ Trasiglesia 9, behind San Pedro Apóstol. The street
+    # is not in OpenStreetMap, so the point is the church beside it.
+    "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos":
+        {"lat": 41.6615, "lon": -4.7827, "precision": "street"},
+    # The winery's listing: La Masía, Villa Agrícola, Gualtallary. Only the
+    # district is on the map.
+    "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura":
+        {"lat": -33.3853, "lon": -69.2771, "precision": "district"},
+}
+
+
+def short_name(title):
+    """"Roots of the Mountain – Casa LL by RA! Arquitectura" -> "Casa LL"."""
+    name = re.split(r"\s[–—]\s", title, maxsplit=1)[-1]
+    name = re.split(r"\sby\s", name, maxsplit=1)[0]
+    return re.split(r"\sin\s", name, maxsplit=1)[0].strip() or title
+
+
+def nominatim(session, params):
     try:
-        r = session.get(NOMINATIM, params=params,
+        r = session.get(NOMINATIM, params={"format": "json", "limit": 1, **params},
                         headers={"User-Agent": "art-database-build/1.0 (matthew livingston site)"},
                         timeout=45)
         hit = r.json()[0] if r.status_code == 200 and r.json() else None
     except (requests.RequestException, ValueError, IndexError):
-        hit = None
-    cache[key] = ({"lat": round(float(hit["lat"]), 4), "lon": round(float(hit["lon"]), 4)}
-                  if hit else None)
+        # Not cached: a refused or failed request is not an answer.
+        raise LookupError("geocoder unreachable")
     time.sleep(1.0)  # Nominatim asks for no more than one request a second
+    return {"lat": round(float(hit["lat"]), 4), "lon": round(float(hit["lon"]), 4)} if hit else None
+
+
+def geocode(session, cache, city, state, country):
+    """The town if there is one; otherwise the department or province. Never
+    the country alone — the middle of a country is nowhere in particular."""
+    key = ", ".join([p for p in (city, state, country) if p]).lower()
+    if not key or not (city or state):
+        return None
+    if cache.get(key) and "precision" in cache[key] and cache[key].get("v") == 2:
+        return cache[key]
+    try:
+        point = None
+        if city:
+            params = {"city": city, "country": country}
+            if state:
+                params["state"] = state
+            point = nominatim(session, params)
+            precision = "town"
+            if not point:                      # "Departamento de X" is not a city
+                point = nominatim(session, {"q": ", ".join(p for p in (city, state, country) if p)})
+                precision = "region"
+        if not point and state:
+            point = (nominatim(session, {"state": state, "country": country}) or
+                     nominatim(session, {"state": re.sub(r"(?i)\s*department\b|\bdepartamento de\s*", "", state).strip(),
+                                         "country": country}))
+            precision = "region"
+    except LookupError:
+        return None
+    cache[key] = dict(point, precision=precision, v=2) if point else None
     return cache[key]
 
 
@@ -138,30 +231,45 @@ def main():
     saves = load_raw()
     cache = load_cache()
     session = requests.Session()
+    wanted = {int(row["article_id"]) for row in saves
+              if isinstance(row, dict) and not pick(row, ["slug", "Slug"])
+              and str(row.get("article_id", "")).isdigit()}
+    index = article_index(session, wanted) if wanted else {}
+    missing = sorted(wanted - set(index))
+    if missing:
+        print(f"  · no public article page found for id(s) {missing}")
     buildings = []
     for row in saves:
         if not isinstance(row, dict):
             continue
         slug = str(pick(row, ["slug", "Slug"]))
+        if not slug and str(row.get("article_id", "")).isdigit():
+            slug = index.get(int(row["article_id"]), "")
         title = str(pick(row, ["title", "Title", "headline", "Headline"]))
         if not slug:
             continue
         place = article_place(session, slug)
         if not place:
             continue
-        point = geocode(session, cache, place["city"], place["state"], place["country"])
+        title = title or place["title"]
+        point = SPOTS.get(slug) or geocode(session, cache, place["city"], place["state"],
+                                           place["country"])
+        where = ", ".join(p for p in (place["city"] or place["state"], place["country"]) if p)
         entry = {
             "title": title,
+            "name": short_name(title),
             "slug": slug,
             "url": ARTICLE.format(slug=slug),
             "city": place["city"],
             "country": place["country"],
+            "where": where,
         }
         if place["year"]:
             entry["year"] = place["year"]
         if point:
             entry["lat"] = point["lat"]
             entry["lon"] = point["lon"]
+            entry["precision"] = point["precision"]
         else:
             print(f"  · {slug}: no point for {place['city']!r}, {place['country']!r} "
                   "(kept without one; allow nominatim.openstreetmap.org to place it)")
