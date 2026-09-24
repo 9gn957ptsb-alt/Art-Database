@@ -9307,7 +9307,6 @@
   var clod = null;                   // what is being drawn, while it is up
 
   var CLOD_PIX = 2;                  // screen pixels to one of the clod's
-  var CLOD_TURN = 90000;             // ms to go once round
   var CLOD_FPS = 12;                 // held frames, like the rest of the pixel light
   var CLOD_DEEP = 7;                 // layers of soil under the edge
   var DUST = [232, 220, 203];        // what a road is, the soil gone pale
@@ -9424,10 +9423,30 @@
     window.Models.draw(clod.canvas, clod.views[clod.view], clod.heading, shown, 0.92);
   }
 
+  /* Isometric: the building rests on one of its four 45° diagonals, where
+     every measurement along its walls reads true, and every CLOD_REST it
+     swings a quarter turn to the next, easing in and out. A drag turns it
+     freely; let go, it settles on the nearest diagonal. */
+  var CLOD_REST = 22500;
+  var CLOD_SWING = 2600;
+  function isoNearest(h) { return Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8; }
+
   function clodFrame(now) {
     if (!clod) { return; }
-    if (!still && !clod.held) {
-      clod.heading += (now - (clod.last || now)) * TAU / CLOD_TURN;
+    if (!clod.held) {
+      if (!still && now >= clod.nextTurn) {
+        clod.from = clod.heading;
+        clod.to = isoNearest(clod.heading) + TAU / 4;
+        clod.swingAt = now;
+        clod.nextTurn = now + CLOD_REST;
+      }
+      if (clod.swingAt !== null) {
+        var q = Math.min(1, (now - clod.swingAt) / (still ? 1 : CLOD_SWING));
+        var e = q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2;
+        clod.heading = clod.from + (clod.to - clod.from) * e;
+        clod.dirty = true;
+        if (q >= 1) { clod.heading = clod.to; clod.swingAt = null; }
+      }
     }
     clod.last = now;
     if (now - clod.drawn >= 1000 / CLOD_FPS || clod.dirty) {
@@ -9474,8 +9493,9 @@
       buildingMap.appendChild(canvas);
       clod = {
         canvas: canvas, views: views, view: first,
-        heading: Math.random() * TAU, at: performance.now(), drawn: 0,
-        last: 0, held: false, dirty: true, raf: 0
+        heading: TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4,
+        at: performance.now(), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
+        swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST
       };
       buildingEl.dataset.air = "up";
       buildingEl.dataset.view = first;
@@ -9527,7 +9547,15 @@
     var letGo = function (event) {
       if (clodDrag && clodDrag.moved < 6 && event && event.type === "pointerup") { turnView(); }
       clodDrag = null;
-      if (clod) { clod.held = false; clod.last = performance.now(); }
+      if (clod) {
+        // Settle on the nearest isometric diagonal.
+        var now = performance.now();
+        clod.held = false;
+        clod.from = clod.heading;
+        clod.to = isoNearest(clod.heading);
+        clod.swingAt = now;
+        clod.nextTurn = now + CLOD_REST;
+      }
     };
     buildingMap.addEventListener("pointerup", letGo);
     buildingMap.addEventListener("pointercancel", letGo);

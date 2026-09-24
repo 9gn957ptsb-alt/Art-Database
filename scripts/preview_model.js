@@ -62,7 +62,7 @@ function playwright() {
     const small = document.createElement("canvas");
     small.width = 300; small.height = 225;
     [0, 1, 2, 3].forEach((q, i) => {
-      Models.draw(small, dots, 0.6 + q * Math.PI / 2, 1, 0.9);
+      Models.draw(small, dots, Math.PI / 4 + q * Math.PI / 2, 1, 0.9);   // the four isometric views
       bx.drawImage(small, (i % 2) * 600, Math.floor(i / 2) * 450, 600, 450);
     });
     return { dots: dots.count, ms: Math.round(built) };

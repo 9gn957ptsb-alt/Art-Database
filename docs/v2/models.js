@@ -297,7 +297,10 @@
   /* Draw the dots, turned to a heading, seen from a little above, on a
      canvas one pixel of which is a few of the screen's. shown (0–1) is how
      far it has risen. */
-  var TILT = 0.62;
+  // True isometric: seen from arctan(1/√2) above the horizon, in parallel
+  // projection, so a metre is the same length wherever it is in the view.
+  // (land.js rests the heading on the four 45° diagonals.)
+  var TILT = Math.atan(1 / Math.SQRT2);
   var sorter = { order: null, key: null };
 
   function draw(canvas, dots, heading, shown, fit) {
