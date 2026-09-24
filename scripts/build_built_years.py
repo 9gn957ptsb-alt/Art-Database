@@ -102,6 +102,11 @@ def wsf_tile(lat, lon):
     x, y = int(math.floor(lon / 2) * 2), int(math.floor(lat / 2) * 2)
     key = ("wsf", x, y)
     if key not in _tiles:
+        # Each is 225 MB unpacked: hold the last two only (places are gone
+        # through tile by tile), or a whole run fills the memory.
+        held = [k for k in _tiles if k[0] == "wsf"]
+        for k in held[:-1]:
+            del _tiles[k]
         path = CACHE / "wsf" / f"WSFevolution_v1_{x}_{y}.tif"
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
