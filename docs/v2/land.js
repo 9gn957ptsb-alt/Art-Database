@@ -9708,7 +9708,7 @@
     // Found works without a picture are simply left out.
     img.loading = found ? "lazy" : "eager";
     img.decoding = "async";
-    img.referrerPolicy = "no-referrer";
+    if (!found) { img.referrerPolicy = "no-referrer"; }   // Artsy's store; the museums' own are asked as before
     var tries = (alts || []).slice();
     img.addEventListener("error", function () {
       if (tries.length) { img.src = tries.shift(); return; }
@@ -9834,8 +9834,10 @@
         window.clearTimeout(wait);
         wait = window.setTimeout(function () { look(field.value); }, 610);
       });
+      // It opens on works from the collection, not on a keyboard: the
+      // search bar waits above them until it is tapped (artist, 24 Sep 2026).
       look("");
-      field.focus({ preventScroll: true });
+      try { box.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" }); } catch (e) {}
       var r = box.getBoundingClientRect();
       pulse(r.left + r.width / 2, r.top + 20, [LIGHT], 0.4, r.width);
     });
