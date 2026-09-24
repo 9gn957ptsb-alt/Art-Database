@@ -23,6 +23,10 @@ them in as DIRT voxels like any other part.
    SketchUp material names to the site's (`MATERIALS` in the script).
 5. **Check.** `node scripts/preview_model.js <model.json> out.png`.
 
-The session sandbox can't reach `api.sketchup.com`, so `.skp` files can't be
-fetched into the repository from a session; the artist downloads them from
-the link `save_model` gives.
+The `.skp` files are kept in `sketchup/` at the top of the repository (outside
+`docs/`, so they are not published with the site). `save_model`'s link
+redirects to Trimble's S3 bucket; fetch it with redirects followed:
+
+    curl -sSL -o sketchup/<name>.skp '<download_url>'
+
+(`api.sketchup.com` is allowed under the environment's Network access.)
