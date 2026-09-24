@@ -145,51 +145,56 @@
  "music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera": {
   "name": "Casa La Flecha",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: lavender and sage drifts round the forecourt, bright shrubs by the entrance, black glazing frames"
   ]
  },
  "between-edges-casa-en-el-dragon-by-cristian-nanzer": {
   "name": "Casa en el Dragon",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: taller chimney and west blade clear of the roof, roof edge pulled back so the upper glazing reads, red succulents on the bank"
   ]
  },
  "a-territorial-presence-casa-bp-by-santiago-bertotti": {
   "name": "Casa BP",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: flat grey-topped gallery roof, pool deck and loungers, bench, street-wall lamp boxes, bigger west tree, soil bed"
   ]
  },
  "a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos": {
   "name": "Strazik House",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: vines redrawn as dense 0.9 m canopies every 2.5 m, living-gallery glass wraps the north end under the slab"
   ]
  },
  "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic": {
   "name": "Suspended Stone Houses",
   "refined": "2026-09-24",
-  "passes": 2,
+  "passes": 3,
   "sketchup": false,
   "log": [
    "2026-09-24 first model from the article's photographs",
-   "2026-09-24 second pass: the five biggest mismatches with the photographs"
+   "2026-09-24 second pass: the five biggest mismatches with the photographs",
+   "2026-09-24 refined: pirca as pale rounded stones, gravel bedroom patios with planted strips under the beams, living-room steps"
   ]
  },
  "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura": {
@@ -1010,6 +1015,226 @@
   "kind": "museum",
   "log": [
    "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner."
+  ]
+ },
+ "museum-louisiana-museum-of-modern-art": {
+  "name": "Louisiana Museum of Modern Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the white villa by the road and Bo and Wohlert's low white pavilions and glass corridors running north to the lake wing and south to the half-sunk south wing and café, in the park of old beeches sloping to the Øresund"
+  ]
+ },
+ "museum-fondation-louis-vuitton": {
+  "name": "Fondation Louis Vuitton",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne"
+  ]
+ },
+ "museum-tate-britain": {
+  "name": "Tate Britain",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Smith's Portland stone gallery squared to Millbank, the Corinthian portico and steps, end pavilions, the rotunda dome, the skylit roofs and the Duveen galleries, Stirling's Clore Gallery and pond, the planes and the Thames"
+  ]
+ },
+ "museum-frans-halsmuseum": {
+  "name": "Frans Hals Museum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1608 Oudemannenhuis, two brick storeys under dark pitched roofs round the courtyard garden, stepped gables and the gate on Groot Heiligland, lower galleries behind"
+  ]
+ },
+ "museum-kunstmuseum-basel": {
+  "name": "Kunstmuseum Basel",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 1936 limestone Hauptbau round its arcaded court with skylit top galleries and street arcade, and the 2016 grey-brick Neubau monolith with its frieze across Dufourstrasse"
+  ]
+ },
+ "museum-blanton-museum-of-art": {
+  "name": "Blanton Museum of Art",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the two 2006 limestone buildings with roof monitors and glazed atria across the plaza, petal canopies and oaks, and Ellsworth Kelly's white vaulted cross, Austin"
+  ]
+ },
+ "museum-pinacoteca-di-brera": {
+  "name": "Pinacoteca di Brera",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Palazzo Brera, four rendered storeys under terracotta hips, the portal on via Brera, the arcaded cortile d'onore with Canova's Napoleon, the observatory domes and the Orto Botanico"
+  ]
+ },
+ "museum-grey-art-gallery": {
+  "name": "Grey Art Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: NYU Silver Center on Washington Square East, stone base and brick-and-limestone shaft with arched top storeys, the gallery windows facing the park; turned to the Manhattan grid"
+  ]
+ },
+ "museum-galleria-nazionale-d-arte-moderna-rome": {
+  "name": "Galleria Nazionale d Arte Moderna",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Bazzani palace on Viale delle Belle Arti turned to the avenue, colossal columned entrance with attic and steps, top-lit wings, end pavilions, Villa Borghese pines behind"
+  ]
+ },
+ "museum-the-wellington-museum": {
+  "name": "Apsley House",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Apsley House (the geocode wrongly points to Wellington, South Africa): Bath-stone house with Wyatt Corinthian portico and pediment on the east, sash windows, balustrade, Waterloo Gallery wing and lantern"
+  ]
+ },
+ "museum-asia-society-hong-kong": {
+  "name": "Asia Society Hong Kong",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Tod Williams Billie Tsien stone pavilion with roof garden and pool, the zig-zag roofed bridge over the ravine, the restored magazine buildings with tiled roofs on the wooded hillside"
+  ]
+ },
+ "museum-moderna-museet": {
+  "name": "Moderna Museet",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Moneo's low red-ochre building down Skeppsholmen's spine, galleries bundled in fragments under pyramidal zinc roofs with rectangular lanterns, the top-lit entrance street, the old armoury"
+  ]
+ },
+ "museum-musee-dixelles": {
+  "name": "Musée d'Ixelles",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the former slaughterhouse's brick street front with stone gate pavilion, skylit galleries round a court and a rear extension, among Brussels row houses (largely guessed)"
+  ]
+ },
+ "museum-lentos-museum-of-modern-art-linz": {
+  "name": "Lentos Kunstmuseum",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river"
+  ]
+ },
+ "museum-virginia-museum-of-contemporary-art": {
+  "name": "Virginia MOCA",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the closed gallery core, the glazed lobby behind its perforated zinc veil on Parks Avenue, skylit corridor, studios and auditorium (massing largely guessed)"
+  ]
+ },
+ "museum-the-broad": {
+  "name": "The Broad",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the white lattice veil over glass with skylit lattice roof, the corners lifted over the lobby on Grand Avenue, the oculus, the olive plaza, on the downtown grid bearing"
+  ]
+ },
+ "museum-galleria-dell-accademia": {
+  "name": "Gallerie dell'Accademia",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the Carità church's Gothic brick front and the Scuola's Istrian-stone front on the campo, rendered ranges round two courts under tile roofs, the Grand Canal and the wooden Accademia bridge, on the canal bearing"
+  ]
+ },
+ "museum-ben-uri-gallery-and-museum": {
+  "name": "Ben Uri",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model (largely guessed): a modest two-storey stock-brick gallery with a glazed street front and roof skylight on Boundary Road between taller houses"
+  ]
+ },
+ "museum-g2-kunsthalle": {
+  "name": "G2 Kunsthalle",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: the six-storey late-GDR data centre on Dittrichring with window rows between piers, floor bands, set-back top floor and glass lounge, the Pleißemühlgraben and ring road, on the real bearing"
+  ]
+ },
+ "museum-the-menil-collection": {
+  "name": "The Menil Collection",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Piano's long low grey-sided house in a white steel frame under rows of white leaves over glass, the porch all round, gardens let in, the Treasure House above; live oaks."
+  ]
+ },
+ "museum-national-portrait-gallery": {
+  "name": "National Portrait Gallery",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Ewan Christian's Portland-stone palazzo: rusticated base, arched piano nobile windows, cornice and balustrade, projecting entrance on St Martin's Place, lanterns and the Ondaatje rooftop restaurant; the NG's back to the south."
+  ]
+ },
+ "museum-museum-kunstpalast": {
+  "name": "Museum Kunstpalast",
+  "refined": "2026-09-24",
+  "passes": 1,
+  "sketchup": false,
+  "kind": "museum",
+  "log": [
+   "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries."
   ]
  }
 }
