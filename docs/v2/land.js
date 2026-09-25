@@ -588,15 +588,13 @@
     lon: -77.0028,
     stage: true,                    // the plays are cast and played here
     piece: "folger"
-  }, {
-    // Where the moving images are, as the library is where the plays are.
-    slug: "archive",
-    title: "The Archive",
-    where: "Austin, Texas",
-    lat: 30.2672,
-    lon: -97.7431,
-    archive: true
   }];
+  /* The Archive (the wall of monitors in Austin, where the moving images
+     were) was taken off the globe at the artist's request, 25 Sep 2026:
+     "it's irrelevant now". Its code stays (startArchive, CHANNELS); putting
+     this back in LANDMARKS brings it back.
+     { slug: "archive", title: "The Archive", where: "Austin, Texas",
+       lat: 30.2672, lon: -97.7431, archive: true } */
 
   var BUILT = {
     "folger": function (o) {
@@ -721,7 +719,7 @@
         lat: mark.lat * RAD, lon: wrap(mark.lon * RAD),
         stage: mark.stage, piece: mark.piece, archive: mark.archive, real: true,
         // The Folger is a museum and library, and is shown with the museums
-        // (artist, 24 Sep 2026); the Archive stays on every view.
+        // (artist, 24 Sep 2026).
         layer: mark.stage ? "museums" : undefined,
         // A library is stone. It takes the hue of whichever collage it is
         // nearest — it stands four streets from two of them — and then
