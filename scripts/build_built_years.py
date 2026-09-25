@@ -160,14 +160,22 @@ def pluto_years(box):
 def bag_polygons(box):
     """Buildings with their year, in (south, west, north, east): [(year, [ring (lon, lat)...])]."""
     s, w, n, e = box
-    out, start = [], 0
+    out, start, seen = [], 0, set()
     while True:
+        # PDOK reads a page of 1000 from the box's envelope in its own projection and then drops what
+        # falls outside the box, so a page short of 1000 is not the last: read on until one is empty.
         q = {"service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": "bag:pand",
              "outputFormat": "application/json", "srsName": "EPSG:4326", "count": 1000,
-             "startIndex": start, "bbox": f"{s},{w},{n},{e},EPSG:4326"}
+             "startIndex": start, "sortBy": "identificatie", "bbox": f"{s},{w},{n},{e},EPSG:4326"}
         d = json.loads(fetch(BAG + "?" + urllib.parse.urlencode(q)))
         feats = d.get("features") or []
+        if not feats:
+            return out
         for f in feats:
+            key = (f.get("properties") or {}).get("identificatie")
+            if key in seen:
+                continue
+            seen.add(key)
             yr = (f.get("properties") or {}).get("bouwjaar")
             g = f.get("geometry") or {}
             # The BAG writes 1005 for "not known", and 9999 for "not yet built".
@@ -178,8 +186,6 @@ def bag_polygons(box):
             polys = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
             for poly in polys:
                 out.append((int(yr), poly[0]))
-        if len(feats) < 1000:
-            return out
         start += 1000
 
 
@@ -370,10 +376,16 @@ def france(box):
         return "polys", []
     time.sleep(1.1)
     for la, lo in ((s, w), (s, e), (n, w), (n, e), ((s + n) / 2, (w + e) / 2)):
-        q = urllib.parse.urlencode({"lat": la, "lon": lo, "format": "jsonv2", "zoom": 14, "addressdetails": 1})
-        a = json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}").get("address") or {}
-        pc = a.get("postcode", "")
-        if pc.startswith("750") and len(pc) == 5:
+        # At zoom 12 the answer is the commune, or the arrondissement in Paris, Lyon and Marseille,
+        # as the BDNB counts them, and OpenStreetMap carries its INSEE code.
+        q = urllib.parse.urlencode({"lat": la, "lon": lo, "format": "jsonv2", "zoom": 12,
+                                    "addressdetails": 1, "extratags": 1})
+        d = json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}")
+        code = (d.get("extratags") or {}).get("ref:INSEE", "")
+        pc = (d.get("address") or {}).get("postcode", "")
+        if len(code) == 5 and code != "75056":
+            communes.add(code)
+        elif pc.startswith("750") and len(pc) == 5:
             communes.add("751" + pc[3:])                 # Paris: postcode 750NN is arrondissement 751NN
         time.sleep(1.1)
     to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
@@ -507,6 +519,13 @@ def city_years(place, box, lat, lon, cell):
             for kp, kq in zip(hit_pt, hit_poly):
                 if not years[kp]:
                     years[kp] = ys[kq]
+            # The ground's footprints (Overture's) and the city's differ by a metre or two, so a cell
+            # at a building's edge takes the year of the city's building within a cell of it.
+            miss = np.flatnonzero(years == 0)
+            if miss.size and polys:
+                ip, iq = tree.query_nearest(shapely.points(lon[miss], lat[miss]),
+                                            max_distance=cell / 111320, all_matches=False)
+                years[miss[ip]] = np.asarray(ys)[iq]
         return years, name
     return None, None
 
