@@ -195,8 +195,10 @@ def build(b):
     for row in overture("buildings", "building", ["height", "num_floors"], box):
         g = to_local(shapely.from_wkb(row["geometry"]))
         # Some maps draw a whole resort or campus as one "building" round the
-        # real ones; nothing that big is one roof.
-        if g.area > BIGGEST:
+        # real ones; nothing that big is one roof — except the place's own
+        # building, where the point is exact (the Met is 45,000 m²).
+        if g.area > BIGGEST and not (b.get("precision") in ("exact", "street")
+                                     and shapely.contains_xy(g, 0.0, 0.0)):
             continue
         inside = shapely.contains_xy(g, gx, gy)
         if not inside.any():

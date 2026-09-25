@@ -81,7 +81,11 @@ QUERIES = {
 # Partner museums whose Artsy address is simply somewhere else: placed by
 # hand at the door (MCA Chicago was on the Near West Side; it is at 220 East
 # Chicago Avenue).
-PARTNER_SPOTS = {"mca-chicago": (41.8972, -87.6212)}
+PARTNER_SPOTS = {
+    "mca-chicago": (41.8972, -87.6212),
+    "harn-museum-of-art": (29.6369, -82.3701),          # Artsy's "Gainsville" put it in Jacksonville (OSM r11797936)
+    "museo-nacional-del-prado": (40.4138, -3.6920),     # Artsy's is the office address, 140 m east (OSM)
+}
 # Where OpenStreetMap's first answer is the museum's other house (Belvedere 21).
 ARTSY_RIGHT = {"Belvedere Museum"}
 # And those it does not know at all, placed by hand at their doors.
