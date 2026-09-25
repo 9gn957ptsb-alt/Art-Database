@@ -6,7 +6,7 @@ is not a connector, so there is no proxy-injected credential the way there is fo
 Artsy. Instead this script reads a bearer token the artist stores in the
 environment and sends it itself, exactly as the app's own front end does:
 
-    GET /api/account-data/Social/me/bookmarks
+    GET https://api.thearchitecturalauthority.com/api/Social/me/bookmarks
     Authorization: Bearer <token>
 
 Best: the refresh token, in the environment variable AA_REFRESH_TOKEN. The
@@ -40,11 +40,10 @@ from pathlib import Path
 
 import requests
 
-# The app calls the API through its own origin (Next.js rewrites /api/... to the
-# api. host); either works through the proxy, and the site origin is the one the
-# browser actually uses, so a token minted there is certain to be accepted.
+# The app's front end calls the API host directly. (Until 25 Sep 2026 it went
+# through its own origin, /api/account-data/..., which now answers 404.)
 BASE = os.environ.get(
-    "AA_BASE", "https://www.thearchitecturalauthority.com/api/account-data"
+    "AA_BASE", "https://api.thearchitecturalauthority.com/api"
 )
 PATH = "Social/me/bookmarks"
 REFRESH_VAR = "AA_REFRESH_TOKEN"   # long-lived: the script signs itself in with it
