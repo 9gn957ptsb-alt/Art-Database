@@ -2450,7 +2450,56 @@ float tinRocket(vec2 p, vec2 at, float ang, float s, float face, float T, out ve
   if (abs(kq.x) < 0.03 && kq.y > -0.08 && kq.y < 0.0 || abs(length(vec2(kq.x * 0.6, kq.y + 0.14)) - 0.08) < 0.025) { col = vec3(190.0, 170.0, 110.0); a = 1.0; }
   return a;
 }
-/** The voyage (e, 0 to 1): deep space, the rocket passing far off and then near, and at the end the plane coming
+/** A space ranger, the toy: flying flat out, one arm reaching ahead, a jetpack on his back with two swept fins and a
+ * flame, a bubble helmet (through its glass, the plane, as if reflected in it). His own colours: an orange suit, a
+ * cream chest plate with a teal emblem, teal boots and gloves. At "at", "s" cells from boot to glove, facing right (1)
+ * or left (-1). Returns how much of him covers p; glass is set where p is behind the helmet's glass. */
+float capsuleD(vec2 p, vec2 a, vec2 b, float r) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)) - r; }
+float spaceRanger(vec2 p, vec2 at, float s, float face, float T, out vec3 col, out bool glass) {
+  vec2 u = (p - at) / s;
+  u.x *= face;
+  u.y -= 0.03 * sin(T * 2.0);                                        // bobbing as he flies
+  col = vec3(0); glass = false;
+  float a = 0.0;
+  vec3 suit = vec3(232.0, 118.0, 40.0), cream = vec3(238.0, 228.0, 206.0), teal = vec3(28.0, 150.0, 150.0);
+  float shade = clamp(0.5 + 2.0 * u.y, 0.0, 1.0);                    // lit from above
+  // the jetpack's flame, flickering, out behind
+  float fl = 0.3 + 0.08 * sin(T * 29.0) + 0.05 * sin(T * 47.0);
+  float fd = length(vec2((u.x + 0.28) / fl, (u.y + 0.2) / 0.06));
+  if (u.x < -0.2 && fd < 1.0) { col = mix(vec3(255.0, 244.0, 190.0), vec3(240.0, 90.0, 30.0), fd); a = 1.0 - fd * fd; }
+  // legs, trailing, and teal boots
+  for (int k = 0; k < 2; k++) {
+    float sy = k == 0 ? -0.05 : 0.07;
+    float d = capsuleD(u, vec2(-0.12, sy), vec2(-0.72, sy * 1.4 + 0.02), 0.075);
+    if (d < 0.0) { col = (u.x < -0.58 ? teal : suit) * mix(1.05, 0.7, shade); a = 1.0; }
+  }
+  // the torso, and its cream chest plate with a teal emblem
+  if (capsuleD(u, vec2(-0.12, 0.0), vec2(0.34, 0.0), 0.16) < 0.0) {
+    col = suit * mix(1.05, 0.7, shade); a = 1.0;
+    if (u.x > 0.02 && u.x < 0.3 && u.y > -0.02 && u.y < 0.13) {
+      col = cream * mix(1.0, 0.8, shade);
+      if (length(u - vec2(0.16, 0.06)) < 0.045) col = teal;
+    }
+  }
+  // the jetpack on his back, and its two swept fins
+  vec2 jq = u - vec2(0.02, -0.19);
+  if (abs(jq.x) < 0.2 && abs(jq.y) < 0.07) { col = teal * (0.85 + 0.3 * (0.07 - jq.y) / 0.14); a = 1.0; }
+  for (int k = 0; k < 2; k++) {
+    float x0 = k == 0 ? 0.12 : -0.08, w = (x0 + 0.1) - u.x, h = -0.24 - u.y;
+    if (w > 0.0 && w < 0.34 && h > 0.0 && h < w * 0.7 && h < 0.2) { col = mix(cream, teal, smoothstep(0.1, 0.18, h)) * 0.95; a = 1.0; }
+  }
+  // the arm, reaching ahead, and its teal glove
+  if (capsuleD(u, vec2(0.3, -0.06), vec2(0.8, -0.16), 0.055) < 0.0) { col = (u.x > 0.7 ? teal : suit) * mix(1.05, 0.75, shade); a = 1.0; }
+  // the helmet: a bubble of glass round his head
+  float hd = length(u - vec2(0.52, -0.03));
+  if (hd < 0.21) {
+    if (length(u - vec2(0.54, -0.02)) < 0.1) { col = vec3(236.0, 196.0, 164.0) * mix(1.05, 0.8, shade); a = 1.0; }   // his head
+    else if (hd > 0.19 || (hd > 0.13 && hd < 0.16 && u.x > 0.52 && u.y < -0.06)) { col = vec3(245.0, 250.0, 255.0); a = 1.0; }   // rim, and a gleam
+    else { glass = true; a = 0.0; }
+  }
+  return a;
+}
+/** The voyage (e, 0 to 1): deep space, the tin rocket passing far off, then the space ranger flying by near, and at the end the plane coming
  * back out of one star, as it went in. */
 void voyage(vec2 p, vec2 C, float e, inout vec2 src, inout vec4 over) {
   vec2 d = p - C;
@@ -2465,7 +2514,7 @@ void voyage(vec2 p, vec2 C, float e, inout vec2 src, inout vec4 over) {
   for (int n = 0; n < 2; n++) {
     float t0 = n == 0 ? 0.1 : 0.5, t1 = n == 0 ? 0.45 : 0.82, t = (e - t0) / (t1 - t0);
     if (t < 0.0 || t > 1.0) continue;
-    float dirx = n == 0 ? 1.0 : -1.0, s = n == 0 ? 21.0 : 55.0, span = uHalf.x + 2.0 * s;
+    float dirx = n == 0 ? 1.0 : -1.0, s = n == 0 ? 21.0 : 89.0, span = uHalf.x + 2.0 * s;
     vec2 at = C + vec2(dirx * mix(-span, span, t), (n == 0 ? -0.35 : 0.25) * uHalf.y + 13.0 * sin(t * 9.0));
     float ang = 0.12 * sin(t * 9.0 + 1.0);
     // its trail of sparks, fading behind it
@@ -2476,8 +2525,9 @@ void voyage(vec2 p, vec2 C, float e, inout vec2 src, inout vec4 over) {
       col += vec3(255.0, 180.0, 90.0) * exp(-dk * dk / (1.0 + 0.3 * float(k))) * (1.0 - float(k) / 8.0);
     }
     vec3 rc; bool port;
-    float a = tinRocket(p, at, ang, s, dirx, uTime, rc, port);
-    if (port) { src = p; over = vec4(0); return; }                 // through the porthole, the plane
+    float a = n == 0 ? tinRocket(p, at, ang, s, dirx, uTime, rc, port) : spaceRanger(p, at, s, dirx, uTime, rc, port);
+    if (port && n == 0) { src = p; over = vec4(0); return; }       // through the porthole, the plane
+    if (port) { over = vec4(mix(col, vec3(150.0, 205.0, 235.0), 0.5), 0.55); return; }   // through his helmet's glass, the plane
     col = mix(col, rc, a);
   }
   over = vec4(min(col, vec3(255.0)), 1.0);
@@ -2847,7 +2897,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform4fv(Sp.uAnom, anom);
       gl.uniform2f(Sp.uHalf, cw / 2, ch / 2);
       gl.uniform1f(Sp.uTime, t);
+      gl.enable(gl.BLEND);                                             // (his helmet's glass lets the plane through)
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
     }
     if ((depthProg && deep) || lit) {
       // this frame, kept for the next
