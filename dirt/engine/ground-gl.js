@@ -2383,6 +2383,158 @@ void main() {
   outA = outB = vec4(min(L, vec3(255.0)) / 255.0, w * 0.92);
 }`;
 
+// The seventh pass: the seams as tree lines. Where two regions meet, the edge is a canopy against the sky, as a
+// wood's top is from below: the darker painting is the canopy, the lighter the sky, and the line between them breaks
+// into crowns, then clumps, then single leaves or needles, the sky showing through gaps inside the canopy's edge and
+// the outermost leaves lit from behind. The trees change along every seam, a stretch of each: white pine (tufts of
+// needles), broadleaf (poplar, maple), magnolia (large leaves), oak (lobed), spruce (spires), willow (hanging
+// strands), palm (fronds), aspen and birch (small leaves, quivering), cypress (flames), and a tree in winter (bare
+// twigs); all sway a little in the wind. Colours come from the last frame, taken from well inside each region, so
+// each region keeps its own texture in the leaves and the holes. Its own small program, drawn over the rest.
+const GROUND_CANOPY = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp usampler2DArray;
+precision highp sampler2DArray;
+precision highp sampler2D;
+uniform usampler2DArray uCells;
+uniform sampler2DArray uEnts;
+uniform sampler2D uSlots;
+uniform sampler2D uWorks;
+uniform sampler2D uPrev;
+uniform ivec2 uCell0, uC0, uPrev0;
+uniform vec2 uPrevSize, uPrevTex;
+uniform float uTime, uHaze;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("struct Cell {", "\n// A passage's colours")}${fsPart("float vnoise(", "vec3 artPaper(")}${fsPart("struct Void {", "float segD(")}
+const int PINE = 0, BROADLEAF = 1, MAGNOLIA = 2, OAK = 3, SPRUCE = 4, WILLOW = 5, PALM = 6, ASPEN = 7, CYPRESS = 8, BARE = 9;
+bool cellOf(ivec2 cell, out Cell c, out int layer) {
+  ivec2 sl = (cell >> 8) - uC0;
+  layer = 0;
+  if (any(lessThan(sl, ivec2(0))) || any(greaterThanEqual(sl, ivec2(16)))) return false;
+  vec4 si = texelFetch(uSlots, sl, 0);
+  if (si.x < 0.5) return false;
+  layer = int(si.x) - 1;
+  c = cellAt(layer, cell & 255);
+  return true;
+}
+/** Cells from q to the seam, positive on the side whose passage has its middle at a, negative on b's side. */
+float signedTo(ivec2 q, vec2 a, vec2 b, float fallback) {
+  Cell k; int L;
+  if (!cellOf(q, k, L)) return fallback;
+  vec2 m = entT(L, k.en, 25).xy;
+  if (distance(m, a) < 0.5) return k.pe * 55.0;
+  if (distance(m, b) < 0.5) return -k.pe * 55.0;
+  return fallback;
+}
+/** A needle star: rays from C, K of them, R long, as thin as a cell; its leafiness at w (0 to 1). */
+float tuft(vec2 w, vec2 C, float K, float R, float ph, float thick) {
+  vec2 d = w - C;
+  float r = length(d);
+  if (r > R) return 0.0;
+  if (r < 1.2) return 1.0;
+  float f = fract(atan(d.y, d.x) * K / 6.2832 + ph), off = min(f, 1.0 - f) * 6.2832 * r / K;   // cells from the nearest ray
+  return off < thick ? 1.0 - 0.4 * r / R : 0.0;
+}
+/** How much leaf there is at w, for a tree of this kind (0 none, 1 the heart of a leaf). */
+float leafAt(vec2 w, int kind, vec2 n, vec2 t) {
+  float g = kind == PINE ? 8.0 : kind == PALM ? 21.0 : kind == MAGNOLIA ? 7.0 : kind == OAK ? 5.0 : kind == ASPEN ? 3.0 : 4.0;
+  if (kind == SPRUCE) { float u = dot(w, t); return 0.35 + 0.65 * (1.0 - 2.0 * abs(fract(u / 3.0) - 0.5)); }
+  if (kind == WILLOW) { int ci = int(floor(w.x / 2.0)); return unit(h3(ci, 7, 211u)) < 0.62 ? 0.9 : 0.1; }
+  if (kind == CYPRESS) return vnoise(vec2(dot(w, t), dot(w, n) * 0.3), 3.0, 212u);
+  if (kind == BARE) {
+    float r1 = abs(vnoise(w, 21.0, 213u) - 0.5), r2 = abs(vnoise(w, 8.0, 214u) - 0.5);
+    return max(1.0 - smoothstep(0.012, 0.03, r1), 0.8 * (1.0 - smoothstep(0.015, 0.035, r2)));
+  }
+  ivec2 c0 = ivec2(floor(w / g));
+  float m = 0.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 215u + uint(kind));
+    if (unit(h) < (kind == ASPEN ? 0.4 : 0.12)) continue;          // not every place has its leaf
+    vec2 C = (vec2(c) + 0.15 + 0.7 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * g;
+    float ph = unit(mixh(h + 3u)), an = 6.2832 * ph;
+    if (kind == ASPEN) C += 0.4 * vec2(sin(uTime * 7.0 + 6.2832 * ph), cos(uTime * 5.0 + 9.0 * ph));   // quivering
+    if (kind == PINE) { m = max(m, tuft(w, C, 11.0, 5.5, ph, 0.55)); continue; }
+    if (kind == PALM) {
+      float f = tuft(w, C, 7.0, 11.0, ph, 0.6 + 1.4 * (0.5 + 0.5 * sin(length(w - C) * 3.0)));   // fronds, with leaflets
+      m = max(m, f); continue;
+    }
+    vec2 d = mat2(cos(an), sin(an), -sin(an), cos(an)) * (w - C);
+    vec2 ax = kind == MAGNOLIA ? vec2(3.4, 1.5) : kind == OAK ? vec2(2.5, 1.7) : kind == ASPEN ? vec2(1.0, 0.9) : vec2(1.9, 1.2);
+    float e = length(d / ax);
+    if (kind == OAK) e *= 1.0 + 0.2 * sin(atan(d.y, d.x) * 7.0);  // lobes
+    if (kind == MAGNOLIA) e = pow(abs(d.x) / ax.x, 1.4) + pow(abs(d.y) / ax.y, 2.0);   // pointed ends
+    if (e < 1.0) m = max(m, 1.0 - 0.5 * e);
+  }
+  return m;
+}
+/** Whether p is canopy: sc cells into the canopy from the seam, n toward the seam, t along it. glint: how lit from
+ * behind a leaf at the canopy's very edge is. */
+bool canopyAt(vec2 p, float sc, vec2 n, vec2 t, int kind, out float glint, out float leafM) {
+  glint = 0.0; leafM = 1.0;
+  vec2 w = p + vec2(sin(uTime * 0.9 + p.y * 0.07), cos(uTime * 0.7 + p.x * 0.05)) * 0.7;   // the wind
+  float u = dot(p, t);
+  float crown = 21.0 * (vnoise(p, 55.0, 201u) - 0.5) + 8.0 * (vnoise(p, 13.0, 202u) - 0.5);
+  if (kind == SPRUCE) crown += 21.0 * (1.0 - 2.0 * abs(fract(u / 17.0) - 0.5)) - 9.0;   // spires
+  if (kind == CYPRESS) crown += 17.0 * (vnoise(vec2(u, 0.0), 8.0, 203u) - 0.5);          // flames
+  if (kind == WILLOW) { int ci = int(floor(w.x / 2.0)); crown += 17.0 * unit(h3(ci, 3, 204u)) * step(unit(h3(ci, 7, 211u)), 0.62); }
+  float b = sc + crown;
+  if (b < -13.0) return false;
+  if (b > 21.0) return true;
+  float m = leafAt(w, kind, n, t);
+  leafM = m;
+  float th = clamp(0.5 - b / 26.0, 0.04, 0.97);
+  bool leaf = m > th;
+  if (b > 0.0 && kind != BARE) {                                    // inside the edge: gaps where the sky shows through
+    bool hole = vnoise(p, 6.0, 205u) > 0.68 + b * 0.012 && m < 0.35;
+    return !hole;
+  }
+  if (leaf) glint = 0.7 * clamp(-b / 13.0, 0.0, 1.0) * step(0.45, unit(h3(int(w.x / 3.0), int(w.y / 3.0), 206u)));
+  return leaf;
+}
+/** The colour well inside the region beyond: the last frame at q, or, without it, the painting's own colour. */
+vec3 across(vec2 q, int work) {
+  vec2 lp = q - vec2(uPrev0);
+  if (uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize))) return texelFetch(uPrev, ivec2(lp), 0).rgb;
+  return texelFetch(uWorks, ivec2(1, work), 0).rgb / 255.0;
+}
+void main() {
+  ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy);
+  Cell c; int layer;
+  if (!cellOf(cell, c, layer)) discard;
+  if (c.eb == c.en || c.pe > 0.72) discard;
+  vec2 p = vec2(cell) + 0.5;
+  if (complexityAt(p) < 0.3) discard;
+  vec4 mo = entT(layer, c.en, 25), mt = entT(layer, c.eb, 25);
+  float d = c.pe * 55.0;
+  vec2 g = vec2(signedTo(cell + ivec2(3, 0), mo.xy, mt.xy, d) - signedTo(cell - ivec2(3, 0), mo.xy, mt.xy, d),
+                signedTo(cell + ivec2(0, 3), mo.xy, mt.xy, d) - signedTo(cell - ivec2(0, 3), mo.xy, mt.xy, d));
+  if (dot(g, g) < 1e-4) discard;
+  vec2 n = -normalize(g), t = vec2(-n.y, n.x);                      // toward the seam, and along it
+  // the canopy is the darker painting, the sky the lighter (the same answer from either side)
+  float lo = lum(texelFetch(uWorks, ivec2(1, int(mo.w)), 0).rgb), lt = lum(texelFetch(uWorks, ivec2(1, int(mt.w)), 0).rgb);
+  bool ownCanopy = lo < lt || (lo == lt && (mo.x < mt.x || (mo.x == mt.x && mo.y < mt.y)));
+  float sc = ownCanopy ? d : -d;
+  int kind = int(vnoise(p, 144.0, 7919u) * 9.999);                  // a stretch of each kind of tree
+  float glint, m;
+  bool canopy = canopyAt(p, sc, n, t, kind, glint, m);
+  // the canopy seen against the light: dark toward its edge, each leaf a little different
+  float dark = (0.3 + 0.28 * (1.0 - clamp(m, 0.0, 1.0))) * (1.0 - smoothstep(0.0, 34.0, max(sc, 0.0)));
+  vec3 warm = vec3(0.86, 0.8, 0.36);
+  if (canopy == ownCanopy) {
+    if (!canopy) discard;                                            // the sky, as it is
+    vec4 o = glint > 0.0 ? vec4(warm, glint * 0.45) : vec4(0.0, 0.0, 0.0, dark);
+    outA = outB = o;
+    return;
+  }
+  // the other region reaches over: its leaves into this sky, or its sky through this canopy's gaps
+  vec3 col = across(p + n * (d + 46.0), int(mt.w));
+  if (canopy) { col *= 1.0 - dark; col = mix(col, warm, glint * 0.45); }
+  outA = outB = vec4(col, 1.0);
+}`;
+
 // The sixth pass: deep space. Every collapse passes through the dark, and the voyage stays there: a quick collapse,
 // then a long night of stars at three depths and faint nebulae, a wind-up tin rocket passing far off and then near
 // (through its porthole, the plane), and at the end the plane opening back out of one star. Its own small program,
@@ -2568,9 +2720,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
+  const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -2625,7 +2778,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -2694,7 +2847,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -2708,6 +2861,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); }
     const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
     if (ff) [spaceProg, Sp] = ff;
+    const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze"]);
+    if (gg) {
+      [canopyProg, Cn] = gg;
+      gl.useProgram(canopyProg);
+      gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10);
+    }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -2875,7 +3034,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.disable(gl.BLEND);
     }
     // then the light over it all
-    const lit = lightProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0);
+    const lit = lightProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0) && !noLight;
     if (lit) {
       gl.useProgram(lightProg);
       gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
@@ -2885,6 +3044,23 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform2i(Lu.uPrev0, prev0[0], prev0[1]);
       gl.uniform1f(Lu.uTime, t);
       gl.uniform1f(Lu.uHaze, prevN[0] ? 1 : 0);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
+    // then the seams as tree lines
+    const trees = canopyProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0);
+    if (trees) {
+      gl.useProgram(canopyProg);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2i(Cn.uCell0, cx0, cy0);
+      gl.uniform2i(Cn.uC0, i0, j0);
+      gl.uniform2i(Cn.uPrev0, prev0[0], prev0[1]);
+      gl.uniform2f(Cn.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(Cn.uPrevTex, FW, FH);
+      gl.uniform1f(Cn.uTime, t);
+      gl.uniform1f(Cn.uHaze, prevN[0] ? 1 : 0);
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -2902,7 +3078,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
-    if ((depthProg && deep) || lit) {
+    if ((depthProg && deep) || lit || trees) {
       // this frame, kept for the next
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
       gl.readBuffer(gl.COLOR_ATTACHMENT1);

@@ -390,6 +390,18 @@ turns, a dark core, and the warm field again, curving slowly and breathing, the 
 boundary. Through the light the paintings are seen blurred, as through a haze (the last frame at a coarse level of its
 detail), and here and there it opens in soft apertures, their edges dithered, where they show clear; a painting shown
 as itself (the quilts, the hangs) has the light stand back from it. A fifth small shader, at every tier from 1 up.
+`#nolight` leaves the light off, for looking at what is under it.
+
+**The seams as tree lines.** Where two regions meet, the edge is a wood's top against the sky, seen from below: the
+darker painting is the canopy and the lighter the sky, and the line between them breaks into crowns (lobes 55 and 13
+cells across), then clumps, then single leaves or needles, the sky showing through gaps just inside the canopy's edge,
+the canopy darkening toward its edge as a canopy does against the light, and the outermost leaves lit yellow from
+behind. The trees change along every seam, a stretch of each (a field 144 cells across): white pine (tufts of eleven
+needles), broadleaf (poplar, maple), magnolia (large pointed leaves), oak (lobed), spruce (spires, finely serrated),
+willow (hanging strands), palm (fronds with leaflets), aspen and birch (small leaves that quiver), cypress (flames),
+and a tree in winter (bare twigs). All of them sway a little in the wind. The leaves carry the canopy's own texture and
+the gaps the sky's, taken from the last frame well inside each region. A seventh small shader, over the rest; not on
+the lowest rungs or in the voids.
 
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
