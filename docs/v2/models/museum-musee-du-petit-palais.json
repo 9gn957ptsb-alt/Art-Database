@@ -1,0 +1,635 @@
+{
+  "slug": "museum-musee-du-petit-palais",
+  "name": "Musée du Petit Palais",
+  "voxel": 1.5,
+  "site": [
+    148,
+    108
+  ],
+  "ground": "paving",
+  "parts": [
+    {
+      "box": [
+        -74,
+        -54,
+        0,
+        148,
+        108,
+        0.4
+      ],
+      "m": "gravel"
+    },
+    {
+      "box": [
+        -62,
+        -40,
+        0,
+        124,
+        16,
+        17
+      ],
+      "m": "stone"
+    },
+    {
+      "cut": [
+        -58,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        -58,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        -50,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        -50,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        -42,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        -42,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        -34,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        -34,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        -26,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        -26,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        26,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        26,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        34,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        34,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        42,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        42,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        50,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        50,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        58,
+        -40.2,
+        4,
+        4,
+        0.3,
+        8
+      ]
+    },
+    {
+      "box": [
+        58,
+        -40.5,
+        4,
+        4,
+        0.3,
+        8
+      ],
+      "m": "glass"
+    },
+    {
+      "hip": [
+        -63,
+        -41,
+        17,
+        126,
+        18,
+        3.6
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        -62,
+        24,
+        0,
+        124,
+        16,
+        15
+      ],
+      "m": "stone"
+    },
+    {
+      "hip": [
+        -63,
+        23,
+        15,
+        126,
+        18,
+        3.4
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        -62,
+        -40,
+        0,
+        16,
+        64,
+        16
+      ],
+      "m": "stone"
+    },
+    {
+      "hip": [
+        -63,
+        -41,
+        16,
+        18,
+        66,
+        3.4
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        46,
+        -40,
+        0,
+        16,
+        64,
+        16
+      ],
+      "m": "stone"
+    },
+    {
+      "hip": [
+        45,
+        -41,
+        16,
+        18,
+        66,
+        3.4
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        -16,
+        -48,
+        0,
+        32,
+        9,
+        20
+      ],
+      "m": "stone"
+    },
+    {
+      "cyl": [
+        -11,
+        -48.5,
+        0,
+        1.3,
+        17
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -6,
+        -48.5,
+        0,
+        1.3,
+        17
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        6,
+        -48.5,
+        0,
+        1.3,
+        17
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        11,
+        -48.5,
+        0,
+        1.3,
+        17
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -15,
+        -49,
+        17,
+        30,
+        10,
+        1.4
+      ],
+      "m": "stone"
+    },
+    {
+      "cut": [
+        -9,
+        -40,
+        3,
+        18,
+        8.2,
+        10
+      ]
+    },
+    {
+      "box": [
+        -9,
+        -39.4,
+        3,
+        18,
+        0.6,
+        10
+      ],
+      "m": "yellow"
+    },
+    {
+      "cyl": [
+        0,
+        -43.5,
+        18.4,
+        10.5,
+        2.2
+      ],
+      "m": "stone"
+    },
+    {
+      "dome": [
+        0,
+        -43.5,
+        20.6,
+        10
+      ],
+      "m": "stone"
+    },
+    {
+      "cut": [
+        -4.5,
+        -43.5,
+        22,
+        9,
+        9,
+        6
+      ]
+    },
+    {
+      "box": [
+        -4.5,
+        -44,
+        22,
+        9,
+        0.6,
+        6
+      ],
+      "m": "glass"
+    },
+    {
+      "cyl": [
+        -40,
+        -22.5,
+        0,
+        0.8,
+        13.5
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -24,
+        -22.5,
+        0,
+        0.8,
+        13.5
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        24,
+        -22.5,
+        0,
+        0.8,
+        13.5
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        40,
+        -22.5,
+        0,
+        0.8,
+        13.5
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -40,
+        22,
+        0,
+        0.8,
+        12
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -13,
+        22,
+        0,
+        0.8,
+        12
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        13,
+        22,
+        0,
+        0.8,
+        12
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        40,
+        22,
+        0,
+        0.8,
+        12
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -40.5,
+        -10,
+        0,
+        0.8,
+        13
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        -40.5,
+        8,
+        0,
+        0.8,
+        13
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        40.5,
+        -10,
+        0,
+        0.8,
+        13
+      ],
+      "m": "white"
+    },
+    {
+      "cyl": [
+        40.5,
+        8,
+        0,
+        0.8,
+        13
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -42,
+        -22,
+        0,
+        84,
+        44,
+        0.15
+      ],
+      "m": "grass"
+    },
+    {
+      "pool": [
+        -30,
+        -8,
+        14,
+        16
+      ]
+    },
+    {
+      "pool": [
+        16,
+        -8,
+        14,
+        16
+      ]
+    },
+    {
+      "box": [
+        -2,
+        -20,
+        0.1,
+        4,
+        40,
+        0.1
+      ],
+      "m": "paving"
+    },
+    {
+      "tree": [
+        -33,
+        14,
+        8,
+        3
+      ]
+    },
+    {
+      "tree": [
+        33,
+        14,
+        8,
+        3
+      ]
+    },
+    {
+      "tree": [
+        -33,
+        -16,
+        7,
+        2.6
+      ]
+    },
+    {
+      "tree": [
+        33,
+        -16,
+        7,
+        2.6
+      ]
+    }
+  ],
+  "notes": "Charles Girault's Petit Palais (1900): a ring of four stone wings — the 125 m colonnaded avenue facade, the two returning side wings and a plainer rear wing — round the semicircular garden court (drawn here as a rectangle: the parts here can't curve a wall, the biggest simplification in the model). Shallow slate-and-copper mansard roofs (drawn dark) cap each wing. The avenue front's domed central porch: four free-standing pink-granite columns (drawn as plain white stone — the pink is guessed away) under a shallow pediment, a tall arched opening for the gilded grille (drawn as a flat gold band, not its ironwork), and the glassless cupola with its own ring of small windows. Inside, the peristyle's colonnade is suggested with widely spaced single columns rather than Girault's coupled pairs, round a lawn, two mosaic pools (blue-and-gold, drawn as plain water) either side of the garden's cross-axis, and four trees. Scaled from the published 125 m facade figure and the two-storey-plus-attic photographs; every depth, the courtyard's true curve, and the roof pitch are guessed. No photographs were available in this session (Wikimedia Commons blocked); from published descriptions and dimensions only. A rhythm of tall window bays was added along the avenue facade either side of the portico, since a blank stone wall there read wrong against every Beaux-Arts facade of the period."
+}

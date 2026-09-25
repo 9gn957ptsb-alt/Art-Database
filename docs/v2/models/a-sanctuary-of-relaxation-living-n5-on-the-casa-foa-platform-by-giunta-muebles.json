@@ -1,0 +1,42 @@
+{
+  "slug": "a-sanctuary-of-relaxation-living-n5-on-the-casa-foa-platform-by-giunta-muebles",
+  "name": "Living N5",
+  "voxel": 0.25,
+  "site": [26, 20],
+  "ground": "paving",
+  "parts": [
+    {"box": [-13, -10, 0, 26, 20, 0.15], "m": "paving"},
+
+    {"box": [-6.2, -2.6, 0, 12.4, 5.2, 2.6], "m": "timber"},
+    {"cut": [-6, -2.4, 0, 12, 5, 2.6]},
+    {"box": [-6, -2.4, 0, 12, 5, 0.08], "m": "wood"},
+    {"shed": [-6.3, -2.6, 2.6, 12.6, 5.2, 1.0], "rise": "+y", "m": "dark"},
+
+    {"cut": [-5.7, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [-5.7, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+    {"cut": [-4.3, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [-4.3, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+    {"cut": [-1, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [-1, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+    {"cut": [0.4, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [0.4, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+    {"cut": [2.9, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [2.9, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+    {"cut": [4.3, -2.5, 0.1, 0.9, 0.35, 2.1]},
+    {"box": [4.3, -2.55, 0.1, 0.9, 0.05, 2.1], "m": "mesh"},
+
+    {"tree": [-5.2, -2.9, 2.0, 0.7]},
+    {"tree": [-0.5, -2.9, 2.3, 0.75]},
+    {"tree": [3.2, -2.9, 1.9, 0.65]},
+    {"tree": [5.3, -2.9, 2.2, 0.7]},
+
+    {"box": [-6.3, -2.7, 0, 0.3, 5.4, 2.65], "m": "wood"},
+    {"box": [6, -2.7, 0, 0.3, 5.4, 2.65], "m": "wood"},
+
+    {"box": [-9, -6, 0, 1.4, 1.4, 0.1], "m": "wood"},
+    {"box": [7.6, -6, 0, 1.4, 1.4, 0.1], "m": "wood"},
+    {"tree": [-8.3, -5.3, 3, 1.1]},
+    {"tree": [8.3, -5.3, 3.2, 1.2]}
+  ],
+  "notes": "Giunta Muebles' Living N5, a single show room on the CASA FOA exhibition platform in Córdoba (the article's interior photographs only — no exterior of the pavilion itself exists to check against, since a show-house room has none; this stands for the room as built). A dark timber-clad box under a single-slope wood-lined roof rising toward the back, as the photographed ceiling does; slatted timber screens down the long front with the indoor garden (the article's planted 'living wall') glimpsed through, its green drapes read as the mesh's darker gaps. Solid timber-lined back and ends, on the exhibition hall's paved floor with two potted trees flanking the entry. Guessed entirely: there being no true exterior, the wall thickness, the screen spacing and the room's real plan proportions, taken from the panoramic interior shots' apparent length against the sofa (about 4 m). Refined: the roof is now a true single-pitch shed rather than a flat lid, and the interior shelf band that was poking through the roofline as stripes is removed."
+}

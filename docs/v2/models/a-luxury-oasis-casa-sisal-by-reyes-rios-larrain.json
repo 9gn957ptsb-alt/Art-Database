@@ -1,0 +1,407 @@
+{
+  "slug": "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
+  "name": "Casa Sisal",
+  "voxel": 0.8,
+  "site": [
+    64,
+    84
+  ],
+  "ground": "grass",
+  "parts": [
+    {
+      "box": [
+        -32,
+        -42,
+        0,
+        64,
+        84,
+        0.3
+      ],
+      "m": "grass"
+    },
+    {
+      "box": [
+        -19,
+        -22,
+        0,
+        38,
+        9,
+        3.4
+      ],
+      "m": "render"
+    },
+    {
+      "cut": [
+        -17,
+        -22,
+        0.9,
+        8,
+        0.8,
+        1.9
+      ]
+    },
+    {
+      "box": [
+        -17,
+        -22.4,
+        0.9,
+        8,
+        0.8,
+        0.1
+      ],
+      "m": "glass"
+    },
+    {
+      "cut": [
+        -6,
+        -22,
+        0.9,
+        9,
+        0.8,
+        1.9
+      ]
+    },
+    {
+      "box": [
+        -6,
+        -22.4,
+        0.9,
+        9,
+        0.8,
+        0.1
+      ],
+      "m": "glass"
+    },
+    {
+      "box": [
+        -20,
+        -23,
+        3.4,
+        40,
+        11,
+        0.4
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -15,
+        -12.2,
+        0,
+        6,
+        6,
+        1.4
+      ],
+      "m": "water"
+    },
+    {
+      "box": [
+        -33,
+        -10,
+        0,
+        16,
+        15,
+        3.4
+      ],
+      "m": "render"
+    },
+    {
+      "cut": [
+        -20,
+        -9.3,
+        0.7,
+        3,
+        13,
+        2.1
+      ]
+    },
+    {
+      "box": [
+        -20,
+        -10.1,
+        0.7,
+        3,
+        0.8,
+        2.1
+      ],
+      "m": "glass"
+    },
+    {
+      "box": [
+        -34,
+        -11,
+        3.4,
+        18,
+        17,
+        0.4
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -18.5,
+        4.4,
+        0.5,
+        2,
+        2.2,
+        2.1
+      ],
+      "m": "timber"
+    },
+    {
+      "box": [
+        -18.7,
+        4.4,
+        2.5,
+        2.4,
+        2.2,
+        0.15
+      ],
+      "m": "timber"
+    },
+    {
+      "box": [
+        -31,
+        3,
+        0.3,
+        7,
+        4,
+        1.1
+      ],
+      "m": "water"
+    },
+    {
+      "box": [
+        -31,
+        7.5,
+        0.3,
+        7,
+        3,
+        0.7
+      ],
+      "m": "water"
+    },
+    {
+      "box": [
+        -24.5,
+        3,
+        0.9,
+        0.8,
+        8,
+        1.2
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        -19.6,
+        -21.7,
+        0,
+        0.8,
+        3.8,
+        0.9
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -19.6,
+        -18.1,
+        0.75,
+        0.8,
+        3.8,
+        0.9
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -19.6,
+        -14.5,
+        1.5,
+        0.8,
+        3.8,
+        0.9
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -19.6,
+        -10.9,
+        2.25,
+        0.8,
+        4,
+        1.15
+      ],
+      "m": "render"
+    },
+    {
+      "tree": [
+        -19,
+        -37,
+        9,
+        3
+      ],
+      "shape": "bare"
+    },
+    {
+      "tree": [
+        10,
+        -40,
+        8,
+        2.6
+      ]
+    },
+    {
+      "tree": [
+        -13,
+        -2,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        -13,
+        8,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        -13,
+        18,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        -13,
+        28,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        -13,
+        -2,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        -13,
+        8,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        18,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        28,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        -2,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        8,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        18,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "tree": [
+        13,
+        28,
+        13,
+        3.6
+      ],
+      "shape": "palm"
+    },
+    {
+      "pool": [
+        -1.7,
+        32,
+        3.4,
+        8
+      ]
+    },
+    {
+      "box": [
+        -20,
+        -12.6,
+        3.8,
+        40,
+        0.6,
+        0.35
+      ],
+      "m": "dark"
+    },
+    {
+      "box": [
+        -31,
+        -41,
+        0,
+        1,
+        82,
+        3.3
+      ],
+      "m": "render"
+    },
+    {
+      "box": [
+        30,
+        -41,
+        0,
+        1,
+        82,
+        3.3
+      ],
+      "m": "render"
+    }
+  ],
+  "notes": "Reyes Rios + Larrain's Casa Sisal, a single-storey house within the historic Hacienda Sac Chich near Acanceh (the article's photographs, no plan): flat concrete roofs on deep overhangs over cream chukum-plastered walls, floor-to-ceiling sliding glass that disappears into the structure. The formal front: a lily pond with steps down, glimpsed through wide-open glass into a lit room at night. West of it, a lower wing holds the sunken living room and kitchen, opening onto its own terrace with a small stepped water feature and a freestanding outdoor shower/pergola post (guessed from the pergola patio described but not fully shown). A long lawn, given the two-acre former henequen field, runs south between two rows of Royal Palms (the night photograph's all\u00e9e) to a linear pool at the far end (the pool most clearly photographed; the described three-sided infinity pool on the opposite side is guessed and not separately modelled). The hacienda's 11-foot perimeter walls are suggested at east and west only, to keep the lawn open in the view. Guessed throughout: the exact plan, the roof step for the cantilevered exterior stair (simplified to three landings), the second pool's shape. No dimensions were published; scaled from the photographs against door heights (~2.1 m)."
+}
