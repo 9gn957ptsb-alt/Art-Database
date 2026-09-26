@@ -270,9 +270,11 @@ rings interfering, or a crystal of hexagons whose faces turn with the light.
 **As much as the device can draw.** DRIFT shows as much as the device it runs on can draw smoothly, at four levels:
 3, everything (the meta forms' light, the singularities, the seams between worlds, every edge a grey gradient); 2, all
 but the grey-gradient edges; 1, all but the meta forms' light too; 0, the worlds, the ladder of complexity, the life
-and the weather. It starts from a guess (cores, memory, phone or not), then watches the frame rate: slower than about 42
-frames a second it draws less, comfortably faster than 75 for eight seconds it tries more, and it does not retry a level
-it had to leave for a minute, so it never flickers between two. `#tier0` to `#tier3` holds a level.
+and the weather. The coloured light and the collage stay at every level: they are the look. It starts from a guess
+(cores, memory, phone or not), then watches the frame rate: slower than about 29 frames a second it draws less, at a
+screen's full 60 for eight seconds it tries more, and it does not retry a level it had to leave for a minute, so it
+never flickers between two. The canvas is drawn at no more than twice the page's pixels, since past that the eye
+gains little and a phone pays in frames. `#tier0` to `#tier3` holds a level.
 
 **The drift.** Put a thing into the plane: name it in the bar, or give it a photo (picked, pasted, or dropped on the
 plane). Claude reads it for its qualities (colour, surface, shape, motion, sound, scale, material, place, time, use,
@@ -458,7 +460,8 @@ Kurt Schwitters); **clouds**, white cumulus lit from above and grey-blue beneath
 **slivers** of spectrum, broken along their length; and in patches the colour reduced to five levels and dithered, as an image saved too small.
 Its country covers most of the plane at some strength (a field 1597 cells across, drifting), and it opens onto the
 plane as speckle, never along a line; where it covers, the grey-gradient edge pass stands aside so its cuts stay cuts.
-Its own program, drawn after the tree lines, at tier 1 and up; `#nocollage` leaves it out, for looking.
+Its own program, drawn after the tree lines at every tier (at tier 0 without the smaller pieces and the slivers), since
+it is the look and must not go when a phone slows while swiping; `#nocollage` leaves it out, for looking.
 
 **The seams as tree lines.** Where two regions meet, the edge is a wood's top against the sky, seen from below: the
 darker painting is the canopy and the lighter the sky, and the line between them breaks into crowns (lobes 55 and 13

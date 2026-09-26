@@ -2636,6 +2636,7 @@ uniform float uTime;
 uniform sampler2DArray uQuilt;
 uniform int uQN;
 uniform float uQS;
+uniform int uLite;                  // 1 on a device at its lowest level: the smaller pieces and the slivers left out
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
@@ -2771,7 +2772,7 @@ void main() {
   uint bh = 0u;
   vec2 bC = vec2(0.0);
   pieces(p, T, 377.0, 55.0, 233.0, 0.7, 40141u, bestZ, bh, bC, bR, bTorn);
-  pieces(p, T, 144.0, 13.0, 89.0, 0.55, 40142u, bestZ, bh, bC, bR, bTorn);
+  if (uLite == 0) pieces(p, T, 144.0, 13.0, 89.0, 0.55, 40142u, bestZ, bh, bC, bR, bTorn);
   if (bestZ >= 0.0) {
     uint h = bh;
     float kind = unit(mixh(h + 20u));
@@ -2803,7 +2804,7 @@ void main() {
     over(col, a, c, 1.0);
   }
   // slivers of spectrum, here and there: a few bands in a stretch, each its own width
-  float sl = smoothstep(0.66, 0.8, vnoise(pa + T * vec2(0.6, -1.1), 610.0, 40151u));
+  float sl = uLite == 1 ? 0.0 : smoothstep(0.66, 0.8, vnoise(pa + T * vec2(0.6, -1.1), 610.0, 40151u));
   if (sl > 0.0) {
     float an = 0.35 + 2.4 * vnoise(p, 2584.0, 40152u);
     vec2 n = vec2(-sin(an), cos(an));
@@ -3353,7 +3354,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN"]);
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite"]);
     if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -3560,7 +3561,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.disable(gl.BLEND);
     }
     // then the collage, cut from all of it
-    const glued = collageProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0) && !noCollage;
+    const glued = collageProg && !earth && edgeOn && !(anom[2] > 0) && !noCollage;
     if (glued && prevN[0]) {
       gl.useProgram(collageProg);
       gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
@@ -3572,6 +3573,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Co.uQN, qn);
       gl.uniform1f(Co.uQS, qs);
       gl.uniform1i(Co.uAN, an);
+      gl.uniform1i(Co.uLite, tier === 0 ? 1 : 0);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

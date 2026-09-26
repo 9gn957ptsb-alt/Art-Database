@@ -901,7 +901,7 @@ ingredients().then(({ msg, transfer }) => {
 let VW = 0, VH = 0, vx = 0, vy = 0, velX = 0, velY = 0, placed = false, tick = 0;
 
 function fit() {
-  const r = stage.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);   // past 2 the eye gains little and the phone pays in frames
   const w = Math.max(2, Math.round(r.width * dpr)), h = Math.max(2, Math.round(r.height * dpr));
   if (placed && w === cv.width && h === cv.height) return;
   const midX = vx + VW / 2, midY = vy + VH / 2;
@@ -1973,9 +1973,10 @@ function frame(now) {
 //   2  all but the grey-gradient edges (the costliest single pass); the depth at phi^-1
 //   1  all but the meta forms' light, the depth and the tree lines too
 //   0  the worlds, the ladder of complexity, the life and the weather: no seams between worlds, no singularities.
-//      The coloured light stays at every level: it is the last thing to go.
+//      The coloured light and the collage stay at every level (the collage lighter at 0): they are the look, and the
+//      last things to go.
 // It begins from a guess (the device's cores and memory, and whether it is a phone), then watches the frames: slower
-// than about 42 a second for a second and a half, it draws less; faster than 75 for eight seconds, it tries more,
+// than about 29 a second for a second and a half, it draws less; at a screen's full 60 for eight seconds, it tries more,
 // and after a step down it does not try that level again for a minute, so it never flickers between two. #tier0 to
 // #tier3 holds a level.
 const TIER = (() => {
@@ -1994,10 +1995,10 @@ function govern(now) {
   TIER.dts.push(dt);
   if (TIER.dts.length < 45 || now - TIER.at < 1500) return;
   const sorted = TIER.dts.slice().sort((a, b) => a - b), med = sorted[sorted.length >> 1];
-  if (med > 24 && TIER.n > 0) {
+  if (med > 34 && TIER.n > 0) {
     TIER.noUp[TIER.n] = now + 60000;                                     // this level was too much: not again for a minute
     TIER.n--; TIER.at = now; TIER.dts = [];
-  } else if (med < 13.3 && TIER.n < 3 && TIER.dts.length >= 480 && !(TIER.noUp[TIER.n + 1] > now)) {
+  } else if (med < 18 && TIER.n < 3 && TIER.dts.length >= 480 && !(TIER.noUp[TIER.n + 1] > now)) {
     TIER.n++; TIER.at = now; TIER.dts = [];
   } else if (TIER.dts.length > 600) TIER.dts.splice(0, 120);
 }
