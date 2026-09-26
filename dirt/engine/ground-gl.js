@@ -2430,6 +2430,14 @@ const vec3 PHONE[12] = vec3[12](
   vec3(64, 196, 146), vec3(22, 94, 116),                           // green, teal
   vec3(250, 202, 92), vec3(112, 62, 174),                          // gold, deep purple
   vec3(196, 58, 22), vec3(110, 160, 235));                         // ember, sky
+/** Which country p is in, now: a field 2584 cells across drifting over the plane at a few cells a second. Low, the plane
+ * as it is, without the light (its soil, paintings, quilts, hangs, ladder and tree lines); then Turrell's light and
+ * its orbs; then the silk and glass; each handing over to the next across a soft border, so everything DRIFT has
+ * made is somewhere on it, and whatever is in view becomes, in time, the next. */
+float regime(vec2 p, float T) {
+  vec2 q = mat2(0.8, 0.6, -0.6, 0.8) * p + T * vec2(3.0, 1.7);
+  return vnoise(q + 233.0 * (vec2(vnoise(q, 610.0, 30203u), vnoise(q, 610.0, 30204u)) - 0.5), 2584.0, 30201u);
+}
 float fbm2(vec2 q, uint s) { return 0.62 * vnoise(q * 89.0, 89.0, s) + 0.38 * vnoise(q * 89.0, 34.0, s + 1u); }
 /** The light at p at time T; off: how its glass bends what is behind it (cells); sheen: the light along its crests. */
 vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
@@ -2448,10 +2456,24 @@ vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
   vec3 iri = 0.5 + 0.5 * cos(6.2832 * (2.0 * v + 0.6 * w1.x + vec3(0.0, 0.33, 0.67)));   // a thin film's colours
   sheen = crest * crest * mix(vec3(255.0), iri * 255.0, 0.55);
   off = (w2 - 0.5) * 55.0;
-  // Turrell's light comes and goes over it
+  // Turrell's light, with its orbs, has its own country, and hands over to the silk across a soft border
   vec3 A = bands(p, T, 28661u, 987.0, 987.0), B = bands(p + vec2(377.0, -233.0), T * 1.3, 28671u, 610.0, 610.0);
   vec3 turrell = mix(A, B, 0.72 * smoothstep(0.3, 0.7, vnoise(p + T * vec2(-1.5, 2.0), 377.0, 28675u)));
-  return mix(col, turrell, 0.4 * smoothstep(0.4, 0.8, vnoise(p + T * vec2(1.1, 0.7), 1597.0, 30013u)));
+  const float G = 144.0;
+  ivec2 c0 = ivec2(floor(p / G));
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 28677u);
+    if (unit(h) > 0.45) continue;
+    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G
+           + 21.0 * vec2(sin(T / 21.0 + 6.2832 * unit(h)), cos(T / 34.0 + 6.2832 * unit(mixh(h + 3u))));
+    float r = 21.0 + 34.0 * unit(mixh(h + 4u)), d2 = dot(p - C, p - C) / (r * r);
+    turrell = mix(turrell, PAIR[int(mixh(h + 5u) % 12u)] * 1.08, 0.5 * exp(-d2 * 1.6));
+  }
+  float silk = smoothstep(0.5, 0.6, regime(p, T));
+  sheen *= silk;
+  off *= silk;
+  return mix(turrell, col, silk);
 }
 vec3 lightAt(vec2 p, float T) { vec2 o; vec3 s; return lightAt(p, T, o, s) + s * 0.3; }
 /** A filmic curve (Narkowicz's fit to ACES, 2015): highlights roll off instead of clipping, so the light has depth. */
@@ -2472,7 +2494,7 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
 vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
 int weil(vec2 p, float T, out vec3 col, out float a) {
   col = vec3(0); a = 0.0;
-  if (vnoise(askew(p), 1597.0, 28681u) < 0.58) return 0;
+  if (vnoise(askew(p), 1597.0, 28681u) < 0.58 || regime(p, T) < 0.4) return 0;   // not in the plane's own country
   // the shards: the nearest of seeds scattered 89 cells apart, the plane warped a little first so no edge is straight
   const float S = 144.0;
   vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
@@ -2557,6 +2579,7 @@ void main() {
   w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
   vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
   if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
+  w *= smoothstep(0.32, 0.44, regime(p, uTime));                      // and in the plane's own country, no light at all
   if (w <= 0.0) discard;
   vec2 off; vec3 sheen;
   vec3 L = lightAt(p, uTime, off, sheen);

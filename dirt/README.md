@@ -394,6 +394,13 @@ another pair at another angle (610 cells to a band), and soft orbs of colour, 21
 both, so several pairs are in view at once, even on a phone's narrow screen. A fifth small shader, drawn at every
 tier: when a device can draw little, everything else goes first and the light stays.
 
+**Countries, not replacements.** Everything DRIFT has made stays in it; what comes later is added, not swapped in. A
+field 2584 cells across, warped off the lattice, drifts over the plane at a few cells a second and sorts it into
+countries, each handing over to the next across a soft border, so whatever is in view becomes, in time, the next: where
+the field is low, the plane as it is, with no light over it (its soil and grammars, the ladder and its voids, the
+paintings quilted and hung, the tree lines); then Turrell's light and its drifting orbs; then the silk and glass. Weil's
+shards keep to the light's countries; the raindrops, the depth windows, the tree lines and the anomalies go everywhere.
+
 **The phones' backgrounds: silk and glass.** Behind the light lies what Apple's standard iPhone backgrounds are made
 of, not their shapes: from the colour-in-water images of the iPhone X years to the Liquid Glass of the iPhone 17 Pro,
 what they share is material and optics, folds of colour with no edge, depth, a sheen along a crest, glass that bends
