@@ -2370,116 +2370,47 @@ vec3 bands(vec2 p, float T, uint seed, float scale, float period) {
        : x < 0.55 ? mix(pale, dark, smoothstep(0.42, 0.55, x))
        : mix(dark, c1, smoothstep(0.55, 1.0, x));
 }
-// The phones' wallpapers, as motifs of the light (original drawings in the manner of the standard backgrounds Apple
-// issues with each iPhone and shows on its screen, not copies of them): each is large, soft, lit from within, and
-// moves slowly, as the phones' dynamic wallpapers do. Their colours are phone colours: cosmic orange, deep blue,
-// silver and lilac, pink and ultramarine, green and teal, deep purple and gold.
-const vec3 WALL[18] = vec3[18](
-  vec3(255, 122, 40), vec3(196, 58, 22), vec3(34, 16, 22),        // cosmic orange
-  vec3(40, 70, 170), vec3(110, 160, 235), vec3(8, 12, 36),         // deep blue
-  vec3(226, 226, 238), vec3(162, 150, 206), vec3(52, 52, 72),      // silver and lilac
-  vec3(242, 92, 162), vec3(72, 82, 232), vec3(252, 192, 122),      // pink and ultramarine
-  vec3(64, 196, 146), vec3(22, 94, 116), vec3(222, 242, 164),      // green and teal
-  vec3(112, 62, 174), vec3(250, 202, 92), vec3(28, 18, 48));       // deep purple and gold
-float vn(vec2 q, uint s) { return vnoise(q * 55.0, 55.0, s); }   // noise at the motif's own scale (1 = its radius)
-mat2 turn(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
-/** One wallpaper at q (1 = its radius), time T, in palette a (lit), b (its pair), c (its ground); kind 0 to 5. */
-vec3 wallpaper(vec2 q, float T, int kind, vec3 a, vec3 b, vec3 c, uint h) {
-  float r = length(q), an = atan(q.y, q.x);
-  vec3 col = c;
-  if (kind == 0) {
-    // liquid: inks folding into one another, as colour dropped in water (the iPhone X years)
-    vec2 w = q * 0.7 + 0.7 * (vec2(vn(q * 0.8 + T * 0.02, h), vn(q * 0.8 + 7.0 - T * 0.015, h + 1u)) - 0.5);
-    float v = vn(w * 1.1 + 3.0, h + 2u);
-    col = mix(mix(c, b, smoothstep(0.2, 0.55, v)), a, smoothstep(0.5, 0.85, v));
-    col += vec3(255, 250, 244) * 0.3 * smoothstep(0.6, 0.66, v) * (1.0 - smoothstep(0.66, 0.78, v));   // a silken light along the fold
-  } else if (kind == 1) {
-    // a bloom: seven petals of coloured glass overlapping, turning slowly (the iPhone 13 years)
-    for (int k = 0; k < 7; k++) {
-      float th = float(k) * 0.8976 + T * 0.02;
-      vec2 d = turn(-th) * q - vec2(0.42, 0.0);
-      float e = length(d / vec2(0.5, 0.2));
-      vec3 pc = k % 2 == 0 ? a : b;
-      col += pc * 0.58 * (1.0 - smoothstep(0.55, 1.05, e));         // gels: where petals overlap, their light adds
-    }
-    col += a * 0.45 * exp(-r * r * 5.0);
-  } else if (kind == 2) {
-    // a swirl of three colours round a centre (the iPhone 14)
-    float tw = an + 2.6 * r - T * 0.06, x = fract(tw * 3.0 / 6.2832);
-    vec3 m3 = c * 2.4 + 20.0;
-    vec3 s3 = x < 0.333 ? mix(a, b, smoothstep(0.05, 0.333, x)) : x < 0.667 ? mix(b, m3, smoothstep(0.38, 0.667, x)) : mix(m3, a, smoothstep(0.72, 1.0, x));
-    s3 *= 0.55 + 0.5 * smoothstep(0.0, 0.8, r);                      // deeper toward the eye of it
-    s3 += vec3(255) * 0.12 * exp(-pow(fract(x * 3.0) - 0.5, 2.0) * 60.0);   // each arm's crest catching the light
-    col = mix(c, s3, 1.0 - smoothstep(0.85, 1.3, r));
-  } else if (kind == 3) {
-    // two half-discs meeting at the middle, breathing apart and together (the iPhone 14 Pro)
-    float g = 0.5 + 0.035 * sin(T / 5.0);
-    float dl = length(q - vec2(-g, 0.0)) - 0.5, dr = length(q - vec2(g, 0.0)) - 0.5;
-    float lit = exp(-dot(q, q) * 3.0);                               // each lit from where they touch
-    col = mix(col * 0.55, col, smoothstep(0.0, 0.5, min(dl, dr)));    // their glow on the ground round them
-    col = mix(col, a * (0.62 + 0.55 * lit), 1.0 - smoothstep(-0.02, 0.1, dl));
-    col = mix(col, b * (0.62 + 0.55 * lit), 1.0 - smoothstep(-0.02, 0.1, dr));
-    col += vec3(255, 240, 220) * 0.5 * exp(-dot(q, q) * 60.0);    // where they touch, a glint
-  } else if (kind == 4) {
-    // a star, soft, many-pointed, its light spreading (the iPhone 17)
-    float rr = r * (1.0 + 0.32 * cos(5.0 * an + T * 0.05)) * (1.0 + 0.12 * cos(13.0 * an - T * 0.08));
-    col = mix(c, b, exp(-rr * rr * 3.0));
-    col = mix(col, a, exp(-rr * rr * 14.0));
-    col += vec3(255) * 0.6 * exp(-r * r * 90.0);
-  } else {
-    // liquid glass: a slab of glass hovering over a field of colour, bending what is behind it, a rim of light at its
-    // edges (the iPhone 17 Pro and Air)
-    vec2 o = vec2(0.08 * sin(T / 7.0), 0.06 * cos(T / 9.0));
-    vec2 e = abs(q - o) - vec2(0.55, 0.28);
-    float sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - 0.22;   // a rounded slab
-    vec2 back = q;
-    if (sd < 0.0) back = q * 0.82 + normalize(q - o + 1e-4) * 0.1 * (1.0 + sd * 3.0);   // bent, as through a lens
-    float v = vn(back * 0.6 + T * 0.01, h + 5u), v2 = vn(back * 0.45 + 3.0, h + 6u);
-    col = mix(mix(c, a, smoothstep(0.25, 0.75, v)), b, 0.8 * smoothstep(0.45, 0.8, v2));
-    if (sd < 0.0) col = mix(col, vec3(255), 0.1 + 0.12 * smoothstep(-0.2, 0.0, sd));
-    col += vec3(255) * 0.55 * exp(-sd * sd * 900.0);              // the rim
-  }
-  return col;
-}
-/** The light at p at time T. Behind everything, the wallpapers: one to each 987-cell square of the plane, each its own
- * motif, palette, size (377 to 521 cells to its radius) and turn, blending into its neighbours where they meet; they
- * lie deeper than the plane, so as the plane is dragged they move less (by 0.18 of it). Over them, the Turrell light
- * (two fields of paired colour crossing) comes and goes, and soft orbs of colour drift through all of it. */
-vec3 lightAt(vec2 p, float T) {
-  vec2 pp = mix(p, uView, 0.18);
-  const float Z = 987.0;
-  vec2 g = pp / Z - 0.5, i0 = floor(g), f = g - i0;
-  f = f * f * (3.0 - 2.0 * f);
-  vec3 W = vec3(0);
-  for (int k = 0; k < 4; k++) {
-    vec2 zc = i0 + vec2(k & 1, k >> 1);
-    uint h = h3(int(zc.x), int(zc.y), 30011u);
-    vec2 C = (zc + 0.5 + 0.2 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * Z;
-    float R = 377.0 + 144.0 * unit(mixh(h + 3u));
-    vec2 q = turn(6.2832 * unit(mixh(h + 4u))) * (pp - C) / R;
-    int pal = int(mixh(h + 5u) % 6u), kind = int(mixh(h + 6u) % 6u);
-    vec3 wc = wallpaper(q, T + 89.0 * unit(h), kind, WALL[pal * 3], WALL[pal * 3 + 1], WALL[pal * 3 + 2], h);
-    float wt = (k & 1) == 1 ? f.x : 1.0 - f.x;
-    wt *= (k >> 1) == 1 ? f.y : 1.0 - f.y;
-    W += wc * wt;
-  }
+// The phones' backgrounds, not as their shapes but as what makes them: light through liquid and glass. What Apple's
+// standard backgrounds share, from the colour-in-water images of the iPhone X years to the Liquid Glass of the iPhone
+// 17 Pro, is material and optics, not motif: folds of colour with no edge, depth, a sheen along a crest, glass that
+// bends what is behind it. So the light is silk: a field of colour warped by a field warped by another (domain
+// warping, after Inigo Quilez), in phone colours (cosmic orange and deep blue, silver and lilac, pink and
+// ultramarine, green and teal, deep purple and gold), its folds in shadow and their crests catching an iridescent
+// sheen, as a film of oil does; and it is glass: the paintings under it are seen through it, bent by its folds, the
+// red, green and blue each bent a little differently, as a prism parts them.
+const vec3 PHONE[12] = vec3[12](
+  vec3(255, 122, 40), vec3(40, 70, 170),                           // cosmic orange, deep blue
+  vec3(226, 226, 238), vec3(162, 150, 206),                        // silver, lilac
+  vec3(242, 92, 162), vec3(72, 82, 232),                           // pink, ultramarine
+  vec3(64, 196, 146), vec3(22, 94, 116),                           // green, teal
+  vec3(250, 202, 92), vec3(112, 62, 174),                          // gold, deep purple
+  vec3(196, 58, 22), vec3(110, 160, 235));                         // ember, sky
+float fbm2(vec2 q, uint s) { return 0.62 * vnoise(q * 89.0, 89.0, s) + 0.38 * vnoise(q * 89.0, 34.0, s + 1u); }
+/** The light at p at time T; off: how its glass bends what is behind it (cells); sheen: the light along its crests. */
+vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
+  vec2 q = mix(p, uView, 0.18) / 610.0;                              // deeper than the plane: it moves less
+  vec2 w1 = vec2(fbm2(q + vec2(0.0, T * 0.004), 301u), fbm2(q + vec2(5.2, 1.3) - T * 0.003, 303u));
+  vec2 w2 = vec2(fbm2(q + 3.0 * w1 + vec2(1.7, 9.2), 305u), fbm2(q + 3.0 * w1 + vec2(8.3, 2.8) + T * 0.002, 307u));
+  float v = fbm2(q + 3.0 * w2, 309u);
+  float k = vnoise(p, 2584.0, 311u) * 5.999;
+  int i = int(k);
+  float f = smoothstep(0.3, 0.7, fract(k));
+  vec3 a = mix(PHONE[2 * i], PHONE[2 * min(i + 1, 5)], f), b = mix(PHONE[2 * i + 1], PHONE[2 * min(i + 1, 5) + 1], f);
+  vec3 col = mix(b * 0.1, b, smoothstep(0.18, 0.62, v));             // from the deep up to the pair's cool
+  col = mix(col, a, smoothstep(0.42, 0.82, 1.6 * length(w1 - 0.5) + 0.45 * v));   // its warm drawn through in veins
+  col *= 0.55 + 0.7 * w2.y;                                          // the folds in shadow
+  float crest = smoothstep(0.56, 0.68, v) * (1.0 - smoothstep(0.68, 0.84, v));
+  vec3 iri = 0.5 + 0.5 * cos(6.2832 * (2.0 * v + 0.6 * w1.x + vec3(0.0, 0.33, 0.67)));   // a thin film's colours
+  sheen = crest * crest * mix(vec3(255.0), iri * 255.0, 0.55);
+  off = (w2 - 0.5) * 55.0;
+  // Turrell's light comes and goes over it
   vec3 A = bands(p, T, 28661u, 987.0, 987.0), B = bands(p + vec2(377.0, -233.0), T * 1.3, 28671u, 610.0, 610.0);
   vec3 turrell = mix(A, B, 0.72 * smoothstep(0.3, 0.7, vnoise(p + T * vec2(-1.5, 2.0), 377.0, 28675u)));
-  vec3 L = mix(W, turrell, 0.45 * smoothstep(0.35, 0.75, vnoise(p + T * vec2(1.1, 0.7), 1597.0, 30013u)));
-  const float G = 144.0;
-  ivec2 c0 = ivec2(floor(p / G));
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    ivec2 c = c0 + ivec2(i, j);
-    uint h = h3(c.x, c.y, 28677u);
-    if (unit(h) > 0.45) continue;
-    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G
-           + 21.0 * vec2(sin(T / 21.0 + 6.2832 * unit(h)), cos(T / 34.0 + 6.2832 * unit(mixh(h + 3u))));
-    float r = 21.0 + 34.0 * unit(mixh(h + 4u)), d2 = dot(p - C, p - C) / (r * r);
-    vec3 oc = PAIR[int(mixh(h + 5u) % 12u)] * 1.08;
-    L = mix(L, oc, 0.5 * exp(-d2 * 1.6));
-  }
-  return min(L, vec3(255.0));
+  return mix(col, turrell, 0.4 * smoothstep(0.4, 0.8, vnoise(p + T * vec2(1.1, 0.7), 1597.0, 30013u)));
 }
+vec3 lightAt(vec2 p, float T) { vec2 o; vec3 s; return lightAt(p, T, o, s) + s * 0.3; }
+/** A filmic curve (Narkowicz's fit to ACES, 2015): highlights roll off instead of clipping, so the light has depth. */
+vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0) * 255.0; }
 /** Weil's fragments (after Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
  * hangs them apart, a little out of step, so the whole appears between them, e.g. Bicircle, 2007). In stretches of
  * the plane (a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases:
@@ -2500,7 +2431,6 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   uint ht = h;
   vec2 fc = lo + G * (0.5 + 0.3 * (vec2(unit(mixh(ht + 21u)), unit(mixh(ht + 22u))) - 0.5));
   float fr = 144.0 + 110.0 * unit(mixh(ht + 23u));
-  vec3 fcol = PAIR[int(mixh(ht + 24u) % 12u)], fedge = PAIR[int(mixh(ht + 25u) % 12u)];
   for (int k = 0; k < 5; k++) {                                      // golden sections, the longer side first
     vec2 sz = hi - lo;
     if (k >= 2 && unit(mixh(h + 7u)) < 0.3) break;                   // some canvases stay large
@@ -2520,9 +2450,12 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   if (u < P4) return 3;                                              // clear: the plane itself
   vec2 off = (vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u))) - 0.5) * 34.0;   // a little out of step with its neighbours
   float dt = (unit(mixh(h + 6u)) - 0.5) * 8.0;                       // and a moment ahead or behind
-  col = lightAt(p + off, T + dt);
   float fd = length(p + off - fc) - fr - 8.0 * sin(T / 13.0 + unit(ht) * 6.2832);
-  col = mix(col, mix(fcol, fedge, smoothstep(-55.0, 0.0, fd)), 0.85 * (1.0 - smoothstep(-6.0, 6.0, fd)));
+  // inside the great circle the light is seen through a lens, magnified; round it, a thin ring of light parted into
+  // its colours
+  vec2 pl = fd < 0.0 ? fc + (p + off - fc) * (0.62 + 0.2 * (1.0 + fd / fr)) : p + off;
+  col = lightAt(pl, T + dt);
+  col += vec3(255.0, 200.0, 170.0) * 0.4 * exp(-fd * fd / 9.0) + vec3(150.0, 190.0, 255.0) * 0.3 * exp(-(fd - 3.0) * (fd - 3.0) / 9.0);
   if (u < P4 + P3 && uQN > 0) {                                      // a painting, in the light it replaces
     vec3 q = texture(uQuilt, vec3((p + off) / (uQS * 1.2), float(mixh(h + 8u) % uint(max(uQN, 1))))).rgb * 255.0;
     col = mix(q, col * (0.35 + 0.9 * lum(q) / 255.0), 0.5);
@@ -2538,7 +2471,7 @@ void main() {
   int wk = weil(p, uTime, wc, wa);
   if (wk == 3) discard;
   if (wk == 2) { outA = outB = vec4(0.03, 0.02, 0.03, wa); return; }
-  if (wk == 1) { outA = outB = vec4(min(wc, vec3(255.0)) / 255.0, wa); return; }
+  if (wk == 1) { outA = outB = vec4(filmic(wc) / 255.0, wa); return; }
   // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
   float w = smoothUp(0.22, 0.46, vnoise(p + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(p, 233.0, 28658u) * 0.38);
   // the edge of an aperture dithered, as light breaking up on a screen
@@ -2546,14 +2479,19 @@ void main() {
   vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
   if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
   if (w <= 0.0) discard;
-  vec3 L = lightAt(p, uTime);
-  // and through it, the plane as it was, blurred
+  vec2 off; vec3 sheen;
+  vec3 L = lightAt(p, uTime, off, sheen);
+  // and through it, as through glass, the plane as it was: bent by the folds, its red, green and blue bent a little
+  // differently, softened where the glass is thick
   if (inPrev) {
-    vec3 haze = textureLod(uPrev, (lp + 0.5) / uPrevTex, 4.0).rgb * 255.0;
-    L = mix(L, L * (0.55 + 0.9 * lum(haze) / 255.0), 0.5);
-    L = mix(L, haze, 0.18);
+    float lod = 1.0 + 1.5 * clamp(length(off) / 34.0, 0.0, 1.0);
+    vec3 seen = vec3(textureLod(uPrev, (lp + off + 0.5) / uPrevTex, lod).r, textureLod(uPrev, (lp + off * 1.08 + 0.5) / uPrevTex, lod).g,
+                     textureLod(uPrev, (lp + off * 1.16 + 0.5) / uPrevTex, lod).b) * 255.0;
+    L = mix(L, seen * (0.45 + 0.75 * L / 255.0), 0.34);
   }
-  outA = outB = vec4(min(L, vec3(255.0)) / 255.0, w * 0.92);
+  L += sheen * 0.42;
+  L += (unit(h3(int(p.x), int(p.y), uint(uTime * 24.0))) - 0.5) * 7.0;   // grain, as in a photograph
+  outA = outB = vec4(filmic(max(L, vec3(0.0))) / 255.0, w * 0.92);
 }`;
 
 // The seventh pass: the seams as tree lines. Where two regions meet, the edge is a canopy against the sky, as a

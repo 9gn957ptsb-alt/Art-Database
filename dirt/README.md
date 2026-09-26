@@ -394,23 +394,17 @@ another pair at another angle (610 cells to a band), and soft orbs of colour, 21
 both, so several pairs are in view at once, even on a phone's narrow screen. A fifth small shader, drawn at every
 tier: when a device can draw little, everything else goes first and the light stays.
 
-**The phones' wallpapers.** Behind the light lie wallpapers: original motifs in the manner of the standard backgrounds
-Apple issues with each iPhone and shows on its screen (not copies of them), each large, soft, lit from within and
-slowly moving, as the phones' dynamic wallpapers are. One to each 987-cell square, blending into its neighbours where
-they meet, each with its own motif, palette, size and turn:
-
-| motif | in the manner of |
-|---|---|
-| liquid: inks folding into one another, with a thin light between them | the colour-in-water backgrounds of the iPhone X years |
-| a bloom: seven petals of coloured glass overlapping, turning | the iPhone 13's |
-| a swirl of three colours round a centre | the iPhone 14's tricolour swirl |
-| two half-discs meeting at the middle, breathing apart and together, a glint where they touch | the iPhone 14 Pro's |
-| a soft many-pointed star, its light spreading | the iPhone 17's star designs |
-| liquid glass: a rounded slab of glass over a field of colour, bending what is behind it, its rim lit | the iPhone 17 Pro and Air's Liquid Glass |
-
-Their palettes are phone colours: cosmic orange, deep blue, silver and lilac, pink and ultramarine, green and teal, deep
-purple and gold. They lie deeper than the plane: dragged, they move 0.18 less than it, as a phone's wallpaper moves
-behind its icons. The Turrell light comes and goes over them (a field 1597 cells across), and the orbs drift through.
+**The phones' backgrounds: silk and glass.** Behind the light lies what Apple's standard iPhone backgrounds are made
+of, not their shapes: from the colour-in-water images of the iPhone X years to the Liquid Glass of the iPhone 17 Pro,
+what they share is material and optics, folds of colour with no edge, depth, a sheen along a crest, glass that bends
+what is behind it. So the light is silk: a field of colour warped by a field warped by another (domain warping, after
+Inigo Quilez), 610 cells to a fold, in phone colours (cosmic orange and deep blue, silver and lilac, pink and
+ultramarine, green and teal, gold and deep purple, ember and sky, changing over 2584 cells), its folds in shadow and
+their crests catching an iridescent sheen, as a film of oil does. And it is glass: the paintings under it are seen
+through it, bent by its folds up to 27 cells, their red, green and blue each bent a little differently, as a prism
+parts them, softer where the glass is thick. It lies deeper than the plane, moving 0.18 less when dragged, and is
+finished as a photograph is: a filmic curve (Narkowicz's fit to ACES, 2015) so its highlights roll off instead of
+clipping, and a fine grain. Turrell's bands come and go over it.
 
 **Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
 hangs them apart and a little out of step, so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in
@@ -418,8 +412,9 @@ hangs them apart and a little out of step, so the whole appears between them (a 
 (a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases: the square is
 split again and again at golden sections, each canvas hangs a little off its place (gutters of 3 to 13 cells, a shadow
 below and to the right), and every canvas shows the same large composition (the light, and one great circle, 144 to
-254 cells across, in another colour pair) out of step by up to 17 cells and a few seconds, so the circle breaks across
-them and is still one circle. A few canvases are paintings instead (a quilt, tinted by the light it stands in for,
+254 cells across, through which the light is seen magnified, as through a lens, a thin ring of light parted into its
+colours at its rim) out of step by up to 17 cells and a few seconds, so the circle breaks across them and is still one
+circle. A few canvases are paintings instead (a quilt, tinted by the light it stands in for,
 so the composition carries on through it), and a few are clear: the plane itself.
 `#nolight` leaves the light off, for looking at what is under it.
 
