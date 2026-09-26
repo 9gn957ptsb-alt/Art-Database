@@ -732,6 +732,160 @@ def miami_dade(box):
     return "polys", [(year_of(a.get("YEAR_BUILT")), ring)
                      for a, ring in arcgis(MIAMI, box, "YEAR_BUILT", where="YEAR_BUILT>0 AND YEAR_BUILT<9999")]
 
+def earliest(a, b):
+    """Two claims on one parcel: the earlier real year, else "old", else nothing."""
+    if a > 0 and b > 0:
+        return min(a, b)
+    return a if a > 0 else b if b > 0 else (OLD if OLD in (a, b) else 0)
+
+
+# San Francisco: the Assessor's latest closed roll (one point a parcel, condominium units stacked on
+# their lot), on the city's building footprints joined by lot (mblr = "SF" + lot). 1900 is the roll's
+# floor for old, civic and institutional lots: "1900 or earlier".
+SF = "https://data.sf.gov/resource/"
+
+
+def san_francisco(box):
+    s, w, n, e = box
+    latest = json.loads(fetch(SF + "wv5m-vpq2.json?" + urllib.parse.urlencode(
+        {"$select": "max(closed_roll_year) as y"})))[0]["y"]
+    ps, pw, pn, pe = padded(box, 60)
+    rows = json.loads(fetch(SF + "wv5m-vpq2.json?" + urllib.parse.urlencode({
+        "$select": "parcel_number,year_property_built,the_geom",
+        "$where": f"within_box(the_geom,{pn},{pw},{ps},{pe}) AND closed_roll_year='{latest}'", "$limit": 50000})))
+    lot, pts = {}, []
+    for r in rows:
+        y = year_of(r.get("year_property_built"))
+        y = OLD if y == 1900 else y
+        key = str(r.get("parcel_number") or "")
+        lot[key] = earliest(lot.get(key, 0), y)
+        g = r.get("the_geom") or {}
+        if y and g.get("type") == "Point":
+            pts.append((g["coordinates"][1], g["coordinates"][0], y))
+    wkt = f"POLYGON(({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))"
+    feats = json.loads(fetch(SF + "ynuv-fyni.json?" + urllib.parse.urlencode(
+        {"$select": "mblr,shape", "$where": f"intersects(shape,'{wkt}')", "$limit": 50000})))
+    polys = []
+    for f in feats:
+        m = str(f.get("mblr") or "")
+        if not m.startswith("SF") or m[2:] not in lot:
+            continue                     # a condominium's base lot: its units' points date it
+        for ring in outer_rings(f.get("shape")):
+            polys.append((lot[m[2:]], ring))
+    return "polys", polys, pts
+
+
+# Vancouver: BC Assessment's years in the City's property tax report (one row a folio, a strata
+# building's folios sharing its land coordinate: the earliest), on the City's parcels.
+VAN = "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets/"
+
+
+def vancouver(box):
+    ps, pw, pn, pe = padded(box, 60)
+    parcels, offset = [], 0
+    while offset < 9900:
+        q = {"select": "tax_coord,geom", "where": f"in_bbox(geo_point_2d,{ps},{pw},{pn},{pe})",
+             "limit": 100, "offset": offset}
+        rows = json.loads(fetch(VAN + "property-parcel-polygons/records?" + urllib.parse.urlencode(q))).get("results") or []
+        parcels += rows
+        if len(rows) < 100:
+            break
+        offset += 100
+    norm = lambda c: str(int(c)) if str(c or "").strip().isdigit() else ""
+    coords = sorted({norm(r.get("tax_coord")) for r in parcels} - {""})
+    latest = json.loads(fetch(VAN + "property-tax-report/records?" + urllib.parse.urlencode(
+        {"select": "tax_assessment_year", "order_by": "tax_assessment_year desc", "limit": 1})))["results"][0]["tax_assessment_year"]
+    year = {}
+    for k in range(0, len(coords), 30):
+        # The two files write a coordinate with and without a leading zero: ask for both.
+        ors = " or ".join(f"land_coordinate='{c}' or land_coordinate='0{c}'" for c in coords[k:k + 30])
+        offset = 0
+        while offset < 9900:
+            q = {"select": "land_coordinate,year_built", "where": f"tax_assessment_year='{latest}' and ({ors})",
+                 "limit": 100, "offset": offset}
+            rows = json.loads(fetch(VAN + "property-tax-report/records?" + urllib.parse.urlencode(q))).get("results") or []
+            for r in rows:
+                c = norm(r.get("land_coordinate"))
+                year[c] = earliest(year.get(c, 0), year_of(r.get("year_built")))
+            if len(rows) < 100:
+                break
+            offset += 100
+    polys = []
+    for r in parcels:
+        g = r.get("geom") or {}
+        for ring in outer_rings(g.get("geometry", g)):
+            polys.append((year.get(norm(r.get("tax_coord")), 0), ring))
+    return "polys", polys
+
+
+# New Jersey: the state's parcels with MOD-IV's year constructed (NJ Office of GIS; MOD-IV from the
+# Division of Taxation). Exempt lots (the museums', the universities') are mostly blank.
+NJ = "https://services2.arcgis.com/XVOqAjTOJ5P6ngMu/arcgis/rest/services/Parcels_Composite_NJ_WM/FeatureServer/0"
+
+
+def new_jersey(box):
+    return "polys", [(year_of(a.get("YR_CONSTR")), ring) for a, ring in arcgis(NJ, box, "YR_CONSTR")]
+
+
+# Texas: TxGIO's StratMap land parcels (2025), the appraisal districts' year for each parcel's main
+# improvement, county by county from the bulk files (read once into data/stratmap/). No owner or
+# address is ever read out of them.
+STRATMAP = ("https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/"
+            "items/shp/stratmap-2025-land-parcels-{}_shp.zip")
+TEXAS = [  # (county file, south, west, north, east)
+    ("harris_48201", 29.49, -95.97, 30.17, -94.90), ("tarrant_48439", 32.54, -97.56, 33.00, -97.03),
+    ("travis_48453", 30.02, -98.18, 30.63, -97.36), ("dallas_48113", 32.54, -97.04, 33.03, -96.51),
+]
+
+
+def texas(box):
+    import shapefile
+    import shapely
+    s, w, n, e = box
+    la, lo = (s + n) / 2, (w + e) / 2
+    county = next((c for c, cs, cw, cn, ce in TEXAS if cs <= la <= cn and cw <= lo <= ce), None)
+    if not county:
+        return "polys", []
+    folder = CACHE / "stratmap" / county
+    if not folder.exists():
+        data = fetch(STRATMAP.format(county), timeout=1800)
+        folder.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            for name in z.namelist():
+                if name.lower().endswith((".shp", ".shx", ".dbf", ".prj")):
+                    (folder / Path(name).name).write_bytes(z.read(name))
+    out = []
+    for shp in sorted(folder.glob("*.shp")):
+        prj = shp.with_suffix(".prj")
+        mercator = prj.exists() and "mercator" in prj.read_text(errors="ignore").lower()
+        if mercator:
+            from pyproj import Transformer
+            to_m = Transformer.from_crs(4326, 3857, always_xy=True)
+            to_ll = Transformer.from_crs(3857, 4326, always_xy=True)
+            (x0, x1), (y0, y1) = to_m.transform([w, e], [s, n])
+            bbox = (x0, y0, x1, y1)
+        else:
+            bbox = (w, s, e, n)
+        with shapefile.Reader(str(shp)) as r:
+            names = [f[0] for f in r.fields[1:]]
+            iy = names.index("YEAR_BUILT")
+            ist = names.index("STAT_LAND_") if "STAT_LAND_" in names else None
+            for sr in r.iterShapeRecords(bbox=bbox):
+                rec = sr.record
+                if ist is not None and str(rec[ist]).strip() == "L1":
+                    continue            # a business's personal property, repeating a real parcel
+                y = year_of(str(rec[iy]).strip())
+                pts, parts = sr.shape.points, list(sr.shape.parts) + [len(sr.shape.points)]
+                for a, b in zip(parts, parts[1:]):
+                    ring = pts[a:b]
+                    if len(ring) < 4 or shapely.LinearRing(ring).is_ccw:
+                        continue        # a hole
+                    if mercator:
+                        xs, ys = zip(*ring)
+                        ring = list(zip(*to_ll.transform(xs, ys)))
+                    out.append((y, ring))
+    return "polys", out
+
 
 CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
     ("New York City building footprints and PLUTO", *NYC, new_york),
@@ -749,6 +903,10 @@ CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
     ("Catastro (Spain)", 35.9, -9.4, 43.8, 4.4, spain),
     ("King County Assessor", 47.08, -122.54, 47.78, -121.06, king_county),
     ("Miami-Dade County Property Appraiser", 25.13, -80.87, 25.98, -80.11, miami_dade),
+    ("San Francisco Assessor-Recorder", 37.70, -122.52, 37.84, -122.35, san_francisco),
+    ("Vancouver property tax report (BC Assessment)", 49.19, -123.23, 49.32, -123.02, vancouver),
+    ("NJ parcels and MOD-IV (NJOGIS)", 38.92, -75.57, 41.36, -73.88, new_jersey),
+    ("TxGIO StratMap land parcels 2025", 29.49, -98.18, 33.03, -94.90, texas),
 ]
 
 
