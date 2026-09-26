@@ -394,6 +394,24 @@ another pair at another angle (610 cells to a band), and soft orbs of colour, 21
 both, so several pairs are in view at once, even on a phone's narrow screen. A fifth small shader, drawn at every
 tier: when a device can draw little, everything else goes first and the light stays.
 
+**The phones' wallpapers.** Behind the light lie wallpapers: original motifs in the manner of the standard backgrounds
+Apple issues with each iPhone and shows on its screen (not copies of them), each large, soft, lit from within and
+slowly moving, as the phones' dynamic wallpapers are. One to each 987-cell square, blending into its neighbours where
+they meet, each with its own motif, palette, size and turn:
+
+| motif | in the manner of |
+|---|---|
+| liquid: inks folding into one another, with a thin light between them | the colour-in-water backgrounds of the iPhone X years |
+| a bloom: seven petals of coloured glass overlapping, turning | the iPhone 13's |
+| a swirl of three colours round a centre | the iPhone 14's tricolour swirl |
+| two half-discs meeting at the middle, breathing apart and together, a glint where they touch | the iPhone 14 Pro's |
+| a soft many-pointed star, its light spreading | the iPhone 17's star designs |
+| liquid glass: a rounded slab of glass over a field of colour, bending what is behind it, its rim lit | the iPhone 17 Pro and Air's Liquid Glass |
+
+Their palettes are phone colours: cosmic orange, deep blue, silver and lilac, pink and ultramarine, green and teal, deep
+purple and gold. They lie deeper than the plane: dragged, they move 0.18 less than it, as a phone's wallpaper moves
+behind its icons. The Turrell light comes and goes over them (a field 1597 cells across), and the orbs drift through.
+
 **Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
 hangs them apart and a little out of step, so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in
 *Baroque Tree*, 2006; a circle of cracks across four panes of glass in *Quarter Past Four*). In stretches of the plane
