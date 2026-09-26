@@ -2327,7 +2327,8 @@ void main() {
 // The history of Greece and Rome (dirt/artists/antiquity.py): sixteen saved works in the order of the time they show,
 // from a Cypriot jar of 1200-800 BCE through Troy, Ulysses, the Minotaur, Attic and Apulian vases, Bacchus, Baia,
 // Agrippina landing at Brindisi, Commodus, the arch of Septimius Severus, the amphitheatre and the ruins, to Twombly's
-// Rome. It is kept small: in a raindrop, and behind the leaves. Shared by the passes that show it.
+// Rome. It is never shown as pictures: it is the light in the dapples under unseen leaves, the colour in the caustics,
+// and the colour through the leaves' gaps. Shared by the passes that show it.
 const ANTIQUITY_GLSL = `
 uniform highp sampler2DArray uAnt;
 uniform int uAN;
@@ -2340,33 +2341,13 @@ vec3 history(float e, vec2 uv) {
   vec3 a = texture(uAnt, vec3(uv, float(i))).rgb, b = texture(uAnt, vec3(uv, float((i + 1) % n))).rgb;
   return mix(a, b, smoothstep(0.75, 1.0, fract(k))) * 255.0;
 }
-/** A raindrop at C, R cells across its middle, over col: in it the history, upside down and drawn in to its edge as a
- * drop draws in the world behind it; darker toward its rim, where the rim runs a grey gradient from its shadowed side
- * to its lit side (no line round it); a highlight on its crown that glimmers; a soft shadow beside it. Returns how much
- * of p it covers. */
-float raindrop(vec2 p, vec2 C, float R, float e, float T, uint h, inout vec3 col) {
-  vec2 d = (p - C) / R;
-  d.x *= 1.0 - 0.14 * d.y;                                           // heavier below, as water on glass is
-  float r = length(d) * (1.0 + 0.06 * (vnoise(p, max(R * 0.6, 2.0), h) - 0.5));   // and never quite round
-  if (r > 1.45) return 0.0;
-  if (r >= 1.0) {                                                    // its shadow, below and to the right
-    float s = length((p - C - vec2(0.18, 0.28) * R) / R);
-    col *= 1.0 - 0.22 * (1.0 - smoothstep(0.85, 1.25, s));
-    return 0.0;
-  }
-  float z = sqrt(1.0 - r * r);
-  vec2 uv = 0.5 - d * 0.5 * (0.5 + 0.5 * z);                         // upside down, and gathered in toward the rim
-  vec3 img = history(e, clamp(uv, 0.0, 1.0)) * (0.55 + 0.55 * z);
-  img = mix(img, col * 1.12, 0.3 + 0.2 * z);                         // clear: what is behind it shows through too
-  float lit = 0.5 + 0.5 * dot(d / max(r, 1e-3), vec2(-0.7, -0.7));  // its lit side, up and to the left
-  vec3 grey = vec3(255.0 * (0.04 + 0.92 * lit));
-  img = mix(img, grey, 0.75 * smoothstep(0.72, 1.0, r));            // the rim: a grey gradient, dark to light
-  float gl = 0.75 + 0.25 * sin(T * 2.3 + 6.2832 * unit(h));          // it glimmers
-  img += vec3(255.0) * gl * exp(-dot(d - vec2(-0.34, -0.4), d - vec2(-0.34, -0.4)) * 55.0);
-  img += vec3(255.0) * 0.3 * exp(-dot(d - vec2(0.42, 0.46), d - vec2(0.42, 0.46)) * 120.0);
-  float a = 1.0 - smoothstep(0.93, 1.0, r);
-  col = mix(col, min(img, vec3(255.0)), a);
-  return a;
+/** The history as colour and light only: the picture at a coarse level of its detail (lod 0 sharp, 7 its mean). */
+vec3 historyBlur(float e, vec2 uv, float lod) {
+  int n = max(uAN, 1);
+  float k = mod(e, float(n));
+  int i = int(k);
+  vec3 a = textureLod(uAnt, vec3(uv, float(i)), lod).rgb, b = textureLod(uAnt, vec3(uv, float((i + 1) % n)), lod).rgb;
+  return mix(a, b, smoothstep(0.75, 1.0, fract(k))) * 255.0;
 }`;
 
 // The fifth pass: light and space, after James Turrell (the Ganzfelds, the Skyspaces, Aten Reign at the Guggenheim,
@@ -2538,35 +2519,54 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   a = 0.96;
   return 1;
 }
-/** The raindrops on the glass: one in some of the 89-cell squares round p, 5 to 34 cells across, a few sliding down;
- * each holds the history at its own place in it, and moves on through it. col: over what; returns how much. */
-float drops(vec2 p, float T, inout vec3 col) {
-  if (uAN == 0) return 0.0;
-  const float G = 89.0;
+/** Komorebi: light through leaves. Every gap between leaves is a pinhole and throws an image of what lies beyond it (in
+ * an eclipse the ground under a tree fills with crescent suns); so the dapples here are soft, overlapping pinhole
+ * images of the history, upside down and out of focus, warm with sun, swaying and flickering as unseen leaves move in
+ * a wind. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
+vec4 dapples(vec2 p, float T) {
+  if (uAN == 0) return vec4(0.0);
+  float dens = smoothstep(0.42, 0.72, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));
+  if (dens <= 0.0) return vec4(0.0);
+  vec2 wind = vec2(sin(T * 0.7) + 0.4 * sin(T * 1.9 + 1.3), 0.6 * cos(T * 0.5) + 0.3 * sin(T * 2.3)) * 4.0;
+  const float G = 34.0;
   ivec2 c0 = ivec2(floor(p / G));
-  float cover = 0.0;
+  vec3 acc = vec3(0.0);
+  float sum = 0.0;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 c = c0 + ivec2(i, j);
-    uint h = h3(c.x, c.y, 30101u);
-    if (unit(h) > 0.34) continue;
-    float R = unit(mixh(h + 3u)) < P1 ? 5.0 + 8.0 * unit(mixh(h + 4u)) : 13.0 + 21.0 * unit(mixh(h + 4u));
-    vec2 C = (vec2(c) + 0.25 + 0.5 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * G;
-    if (unit(mixh(h + 5u)) < P3) C.y += mod(T * (3.0 + 5.0 * unit(mixh(h + 6u))) + 89.0 * unit(h), 89.0) - 44.0;   // sliding
-    cover = max(cover, raindrop(p, C, R, 16.0 * unit(mixh(h + 7u)) + T / 13.0, T, h, col));
+    uint h = h3(c.x, c.y, 30303u);
+    if (unit(h) > 0.62) continue;
+    vec2 C = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G + wind * (0.5 + unit(mixh(h + 3u)));
+    float R = 8.0 + 18.0 * unit(mixh(h + 4u));
+    vec2 d = mat2(0.88, 0.47, -0.47, 0.88) * (p - C);
+    d.x /= 1.35;                                                     // the sun low: each image drawn out along its light
+    float r = length(d) / R;
+    float m = exp(-r * r * r * r * 2.2);                              // a disc with no edge, only a falling-off
+    if (m < 0.01) continue;
+    float flick = smoothstep(0.25, 0.75, vnoise(C + T * vec2(13.0, -8.0), 8.0, h));   // leaves passing over the gap
+    vec3 img = historyBlur(16.0 * unit(mixh(h + 5u)) + T / 21.0, clamp(0.5 - d / (2.2 * R), 0.0, 1.0), 2.5);
+    vec3 lightc = mix(vec3(255.0, 238.0, 206.0), img * 1.25, 0.55);
+    acc += lightc * m * flick;
+    sum += m * flick;
   }
-  return cover;
+  if (sum < 0.01) return vec4(0.0);
+  return vec4(acc / sum, min(sum, 1.0) * dens * 0.42);
+}
+/** Caustics: the threads of light that water throws, glimmering, in the history's colours; strongest where the silk is. */
+vec3 caustics(vec2 p, float T, float amount) {
+  if (amount <= 0.0 || uAN == 0) return vec3(0.0);
+  vec2 q = askew(p);
+  float a = 1.0 - abs(2.0 * vnoise(q + T * vec2(4.0, 2.5), 55.0, 30311u) - 1.0);
+  float b = 1.0 - abs(2.0 * vnoise(q * 1.3 - T * vec2(3.0, -2.0), 34.0, 30313u) - 1.0);
+  float c = pow(a * b, 7.0);
+  vec3 tint = historyBlur(16.0 * vnoise(p, 2584.0, 30315u) + T / 34.0, fract(p / 987.0), 4.0);
+  return mix(vec3(255.0, 250.0, 240.0), tint * 1.3, 0.5) * c * amount * 0.6;
 }
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy;
   vec2 lp = vec2(gl_FragCoord.xy) + vec2(uCell0 - uPrev0);          // where this cell was in the last frame
   bool inPrev = uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize));
-  // the raindrops first: they sit on the glass over everything, the apertures too
-  {
-    vec3 under = inPrev ? texelFetch(uPrev, ivec2(lp), 0).rgb * 255.0 : vec3(128.0);
-    vec3 dc = under;
-    float dcov = drops(p, uTime, dc);
-    if (dcov > 0.02 || dc != under) { outA = outB = vec4(dc / 255.0, 1.0); return; }
-  }
+  vec4 dap = dapples(p, uTime);
   vec3 wc; float wa;
   int wk = weil(p, uTime, wc, wa);
   if (wk == 3) discard;
@@ -2580,7 +2580,11 @@ void main() {
   vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
   if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
   w *= smoothstep(0.32, 0.44, regime(p, uTime));                      // and in the plane's own country, no light at all
-  if (w <= 0.0) discard;
+  if (w <= 0.0) {                                                    // no light here: only the dapples, if any
+    if (dap.a <= 0.0) discard;
+    outA = outB = vec4(filmic(dap.rgb) / 255.0, dap.a);
+    return;
+  }
   vec2 off; vec3 sheen;
   vec3 L = lightAt(p, uTime, off, sheen);
   // and through it, as through glass, the plane as it was: bent by the folds, its red, green and blue bent a little
@@ -2592,6 +2596,8 @@ void main() {
     L = mix(L, seen * (0.45 + 0.75 * L / 255.0), 0.34);
   }
   L += sheen * 0.42;
+  L += caustics(p, uTime, smoothstep(0.5, 0.6, regime(p, uTime)));
+  L = mix(L, dap.rgb, dap.a);
   L += (unit(h3(int(p.x), int(p.y), uint(uTime * 24.0))) - 0.5) * 7.0;   // grain, as in a photograph
   outA = outB = vec4(filmic(max(L, vec3(0.0))) / 255.0, w * 0.92);
 }`;
@@ -2736,26 +2742,14 @@ void main() {
   // the canopy seen against the light: dark toward its edge, each leaf a little different
   float dark = (0.3 + 0.28 * (1.0 - clamp(m, 0.0, 1.0))) * (1.0 - smoothstep(0.0, 34.0, max(sc, 0.0)));
   vec3 warm = vec3(0.86, 0.8, 0.36);
-  // raindrops on the tips of the outermost leaves, glimmering, each with the history in it
-  if (canopy && sc > -14.0 && sc < 4.0 && uAN > 0) {
-    ivec2 dc = ivec2(floor(p / 13.0));
-    uint dh = h3(dc.x, dc.y, 30121u);
-    if (unit(dh) < 0.22) {
-      vec2 C = (vec2(dc) + 0.3 + 0.4 * vec2(unit(mixh(dh + 1u)), unit(mixh(dh + 2u)))) * 13.0;
-      vec3 under = canopy == ownCanopy ? vec3(60.0) : across(p + n * (d + 46.0), int(mt.w)) * 255.0;
-      vec3 dcol = under;
-      float cov = raindrop(p, C, 2.5 + 3.0 * unit(mixh(dh + 3u)), 16.0 * unit(dh) + uTime / 13.0, uTime, dh, dcol);
-      if (cov > 0.05) { outA = outB = vec4(dcol / 255.0, cov); return; }
-    }
-  }
   // through the gaps in the leaves, the history, large and far off behind them, drifting as in a wind
   bool gap = !canopy && ownCanopy && sc > 0.0;
   if (gap && uAN > 0) {
     vec2 uv = (p - mo.xy) / 377.0 + 0.5 + vec2(uTime * 0.004 + 0.02 * sin(uTime * 0.6), 0.015 * sin(uTime * 0.9 + p.x * 0.01));
     float e = 16.0 * unit(h3(int(mo.x), int(mo.y), 30123u)) + uTime / 21.0;
-    vec3 hist = history(e, fract(uv));
+    vec3 hist = historyBlur(e, fract(uv), 3.5);                     // its colour and light, not its picture
     vec3 sky = across(p + n * (d + 46.0), int(mt.w)) * 255.0;
-    outA = outB = vec4(mix(sky, hist, 0.82) / 255.0, 1.0);
+    outA = outB = vec4(mix(sky, hist, 0.6) / 255.0, 1.0);
     return;
   }
   if (canopy == ownCanopy) {
