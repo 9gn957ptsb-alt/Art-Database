@@ -1969,9 +1969,10 @@ function frame(now) {
 // ---- how much this device can draw ------------------------------------------------------------------------------
 // The plane shows as much as the device it runs on can draw smoothly. Four levels:
 //   3  everything: the meta forms' light, the singularities, the seams, and every edge as a grey gradient
-//   2  all but the grey-gradient edges (the costliest single pass)
-//   1  all but the meta forms' light too
-//   0  the worlds, the ladder of complexity, the life and the weather: no seams between worlds, no singularities
+//   2  all but the grey-gradient edges (the costliest single pass); the depth at phi^-1
+//   1  all but the meta forms' light, the depth and the tree lines too
+//   0  the worlds, the ladder of complexity, the life and the weather: no seams between worlds, no singularities.
+//      The coloured light stays at every level: it is the last thing to go.
 // It begins from a guess (the device's cores and memory, and whether it is a phone), then watches the frames: slower
 // than about 42 a second for a second and a half, it draws less; faster than 75 for eight seconds, it tries more,
 // and after a step down it does not try that level again for a minute, so it never flickers between two. #tier0 to

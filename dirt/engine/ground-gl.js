@@ -2334,10 +2334,14 @@ const GROUND_LIGHT = `#version 300 es
 precision highp float;
 precision highp int;
 precision highp sampler2D;
+precision highp sampler2DArray;
 uniform sampler2D uPrev;            // the last frame's cells, mipmapped (alpha under 0.75: a painting shown as itself)
 uniform vec2 uPrevSize, uPrevTex;
 uniform ivec2 uCell0, uPrev0;       // this frame's first cell, and the last's
 uniform float uTime, uHaze;         // uHaze: whether the last frame is here to blur (0 or 1)
+uniform sampler2DArray uQuilt;      // the quilts, for the canvases that are paintings
+uniform int uQN;
+uniform float uQS;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}
@@ -2349,31 +2353,108 @@ const vec3 PAIR[12] = vec3[12](
   vec3(222, 44, 40), vec3(44, 62, 210),                            // red and blue (Breathing Light)
   vec3(40, 164, 200), vec3(118, 58, 188),                          // cyan and violet
   vec3(236, 96, 60), vec3(96, 40, 120));                           // coral and plum
-void main() {
-  vec2 p = vec2(uCell0) + gl_FragCoord.xy;
-  // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
-  float w = smoothUp(0.26, 0.5, vnoise(p + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(p, 233.0, 28658u) * 0.38);
-  // the edge of an aperture dithered, as light breaking up on a screen
-  w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
-  vec2 lp = vec2(gl_FragCoord.xy) + vec2(uCell0 - uPrev0);          // where this cell was in the last frame
-  vec4 was = texelFetch(uPrev, ivec2(lp), 0);
-  bool inPrev = uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize));
-  if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
-  if (w <= 0.0) discard;
-  // which pair, changing over the plane with no boundary
-  float k = vnoise(p, 1597.0, 28661u) * 5.999;
+/** One field of light: a pair of colours (chosen by a field "scale" cells across) in bands "period" cells apart, a
+ * warm field, a pale band where it turns, a dark core, and the warm field again, curving slowly and breathing. */
+vec3 bands(vec2 p, float T, uint seed, float scale, float period) {
+  float k = vnoise(p, scale, seed) * 5.999;
   int i = int(k);
   float f = smoothstep(0.3, 0.7, fract(k));
   vec3 c1 = mix(PAIR[2 * i], PAIR[2 * min(i + 1, 5)], f), c2 = mix(PAIR[2 * i + 1], PAIR[2 * min(i + 1, 5) + 1], f);
   vec3 pale = mix(c2, vec3(236, 230, 240), 0.35), dark = c2 * 0.16 + vec3(8, 4, 10);
-  // the bands: across a slowly turning direction, curving, breathing
-  float an = 6.2832 * vnoise(p, 2584.0, 28663u) + uTime / 233.0;
+  float an = 6.2832 * vnoise(p, 2584.0, seed + 2u) + T / 233.0;
   vec2 dir = vec2(cos(an), sin(an));
-  float sAt = dot(p, dir) + 89.0 * sin(dot(p, vec2(-dir.y, dir.x)) / 610.0 + uTime / 89.0);
-  float x = fract(sAt / 987.0 + 0.05 * sin(uTime / 34.0));   // one band to a view, as one horizon to a room
-  vec3 L = x < 0.42 ? mix(c1, pale, pow(smoothstep(0.0, 0.42, x), 3.0))
-         : x < 0.55 ? mix(pale, dark, smoothstep(0.42, 0.55, x))
-         : mix(dark, c1, smoothstep(0.55, 1.0, x));
+  float sAt = dot(p, dir) + 89.0 * sin(dot(p, vec2(-dir.y, dir.x)) / 610.0 + T / 89.0);
+  float x = fract(sAt / period + 0.05 * sin(T / 34.0));
+  return x < 0.42 ? mix(c1, pale, pow(smoothstep(0.0, 0.42, x), 3.0))
+       : x < 0.55 ? mix(pale, dark, smoothstep(0.42, 0.55, x))
+       : mix(dark, c1, smoothstep(0.55, 1.0, x));
+}
+/** The light at p at time T: two fields of paired colour crossing, one broad (one horizon to a view), one finer at
+ * another angle, and soft orbs of colour drifting through them, so several pairs are in view at once. */
+vec3 lightAt(vec2 p, float T) {
+  vec3 A = bands(p, T, 28661u, 987.0, 987.0), B = bands(p + vec2(377.0, -233.0), T * 1.3, 28671u, 610.0, 610.0);
+  vec3 L = mix(A, B, 0.72 * smoothstep(0.3, 0.7, vnoise(p + T * vec2(-1.5, 2.0), 377.0, 28675u)));
+  const float G = 144.0;
+  ivec2 c0 = ivec2(floor(p / G));
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 28677u);
+    if (unit(h) > 0.45) continue;
+    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G
+           + 21.0 * vec2(sin(T / 21.0 + 6.2832 * unit(h)), cos(T / 34.0 + 6.2832 * unit(mixh(h + 3u))));
+    float r = 21.0 + 34.0 * unit(mixh(h + 4u)), d2 = dot(p - C, p - C) / (r * r);
+    vec3 oc = PAIR[int(mixh(h + 5u) % 12u)] * 1.08;
+    L = mix(L, oc, 0.62 * exp(-d2 * 1.6));
+  }
+  return min(L, vec3(255.0));
+}
+/** Weil's fragments (after Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
+ * hangs them apart, a little out of step, so the whole appears between them, e.g. Bicircle, 2007). In stretches of
+ * the plane (a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases:
+ * the square split again and again at golden sections, each canvas hung a little off its place (gutters 3 to 13
+ * cells), showing the same large composition (the light, and one great circle of another colour pair, which breaks
+ * across the canvases as the circle of cracks does in her Quarter Past Four) out of step by up to 17 cells and a
+ * few seconds; a few are a painting instead (a quilt,
+ * tinted by the light it stands in for, so the composition carries on through it), and a few are clear, the plane
+ * itself. Returns 0 outside them; 1 on a canvas (colour in col, alpha in a); 2 in a gutter (a shadow in a). */
+int weil(vec2 p, float T, out vec3 col, out float a) {
+  col = vec3(0); a = 0.0;
+  const float G = 610.0;
+  vec2 tile = floor(p / G);
+  vec2 lo = tile * G, hi = lo + G;
+  if (vnoise(lo + G * 0.5, 1597.0, 28681u) < 0.56) return 0;
+  uint h = h3(int(tile.x), int(tile.y), 28683u);
+  // the large form the canvases share: a circle of light in another pair, which breaks across them
+  uint ht = h;
+  vec2 fc = lo + G * (0.5 + 0.3 * (vec2(unit(mixh(ht + 21u)), unit(mixh(ht + 22u))) - 0.5));
+  float fr = 144.0 + 110.0 * unit(mixh(ht + 23u));
+  vec3 fcol = PAIR[int(mixh(ht + 24u) % 12u)], fedge = PAIR[int(mixh(ht + 25u) % 12u)];
+  for (int k = 0; k < 5; k++) {                                      // golden sections, the longer side first
+    vec2 sz = hi - lo;
+    if (k >= 2 && unit(mixh(h + 7u)) < 0.3) break;                   // some canvases stay large
+    float cut = unit(mixh(h + 1u)) < 0.5 ? P1 : P2;
+    if (sz.x >= sz.y) { float m = lo.x + sz.x * cut; if (p.x < m) hi.x = m; else lo.x = m; h = mixh(h + (p.x < m ? 11u : 13u)); }
+    else { float m = lo.y + sz.y * cut; if (p.y < m) hi.y = m; else lo.y = m; h = mixh(h + (p.y < m ? 17u : 19u)); }
+  }
+  // each canvas hung a little off its place: gutters of uneven width, 3 to 13 cells a side
+  vec4 gut = 3.0 + 10.0 * vec4(unit(mixh(h + 31u)), unit(mixh(h + 32u)), unit(mixh(h + 33u)), unit(mixh(h + 34u)));
+  vec2 dlo = p - lo - gut.xy, dhi = hi - gut.zw - p;
+  if (min(min(dlo.x, dlo.y), min(dhi.x, dhi.y)) < 0.0) {            // the wall between canvases, and each one's shadow
+    bool shade = (dhi.x < 0.0 && dhi.x > -3.0 && dhi.y > -3.0 && dlo.y > 2.0) || (dhi.y < 0.0 && dhi.y > -3.0 && dhi.x > -3.0 && dlo.x > 2.0);
+    a = shade ? 0.42 : 0.16;
+    return 2;
+  }
+  float u = unit(mixh(h + 3u));
+  if (u < P4) return 3;                                              // clear: the plane itself
+  vec2 off = (vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u))) - 0.5) * 34.0;   // a little out of step with its neighbours
+  float dt = (unit(mixh(h + 6u)) - 0.5) * 8.0;                       // and a moment ahead or behind
+  col = lightAt(p + off, T + dt);
+  float fd = length(p + off - fc) - fr - 8.0 * sin(T / 13.0 + unit(ht) * 6.2832);
+  col = mix(col, mix(fcol, fedge, smoothstep(-55.0, 0.0, fd)), 0.85 * (1.0 - smoothstep(-6.0, 6.0, fd)));
+  if (u < P4 + P3 && uQN > 0) {                                      // a painting, in the light it replaces
+    vec3 q = texture(uQuilt, vec3((p + off) / (uQS * 1.2), float(mixh(h + 8u) % uint(max(uQN, 1))))).rgb * 255.0;
+    col = mix(q, col * (0.35 + 0.9 * lum(q) / 255.0), 0.5);
+  }
+  a = 0.96;
+  return 1;
+}
+void main() {
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy;
+  vec2 lp = vec2(gl_FragCoord.xy) + vec2(uCell0 - uPrev0);          // where this cell was in the last frame
+  bool inPrev = uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize));
+  vec3 wc; float wa;
+  int wk = weil(p, uTime, wc, wa);
+  if (wk == 3) discard;
+  if (wk == 2) { outA = outB = vec4(0.03, 0.02, 0.03, wa); return; }
+  if (wk == 1) { outA = outB = vec4(min(wc, vec3(255.0)) / 255.0, wa); return; }
+  // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
+  float w = smoothUp(0.22, 0.46, vnoise(p + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(p, 233.0, 28658u) * 0.38);
+  // the edge of an aperture dithered, as light breaking up on a screen
+  w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
+  vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
+  if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
+  if (w <= 0.0) discard;
+  vec3 L = lightAt(p, uTime);
   // and through it, the plane as it was, blurred
   if (inPrev) {
     vec3 haze = textureLod(uPrev, (lp + 0.5) / uPrevTex, 4.0).rgb * 255.0;
@@ -2857,8 +2938,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const dd = finish(pending.d, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uTime", "uDeep"]);
     if (dd) { [depthProg, D] = dd; gl.useProgram(depthProg); gl.uniform1i(D.uPrev, 10); }
     // and the light
-    const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze"]);
-    if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); }
+    const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze", "uQuilt", "uQN", "uQS"]);
+    if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); gl.uniform1i(Lu.uQuilt, 9); }
     const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
     if (ff) [spaceProg, Sp] = ff;
     const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze"]);
@@ -3034,7 +3115,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.disable(gl.BLEND);
     }
     // then the light over it all
-    const lit = lightProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0) && !noLight;
+    const lit = lightProg && !earth && edgeOn && !(anom[2] > 0) && !noLight;   // at every tier: the light is the last to go
     if (lit) {
       gl.useProgram(lightProg);
       gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
@@ -3044,13 +3125,15 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform2i(Lu.uPrev0, prev0[0], prev0[1]);
       gl.uniform1f(Lu.uTime, t);
       gl.uniform1f(Lu.uHaze, prevN[0] ? 1 : 0);
+      gl.uniform1i(Lu.uQN, qn);
+      gl.uniform1f(Lu.uQS, qs);
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
     // then the seams as tree lines
-    const trees = canopyProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0);
+    const trees = canopyProg && tier >= 2 && !earth && edgeOn && !(anom[2] > 0);
     if (trees) {
       gl.useProgram(canopyProg);
       gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);

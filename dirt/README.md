@@ -389,7 +389,20 @@ and violet, coral and plum. Across each view runs one horizon, 987 cells to a ba
 turns, a dark core, and the warm field again, curving slowly and breathing, the pairs changing over the plane with no
 boundary. Through the light the paintings are seen blurred, as through a haze (the last frame at a coarse level of its
 detail), and here and there it opens in soft apertures, their edges dithered, where they show clear; a painting shown
-as itself (the quilts, the hangs) has the light stand back from it. A fifth small shader, at every tier from 1 up.
+as itself (the quilts, the hangs) has the light stand back from it. Over the first field lies a second, finer one in
+another pair at another angle (610 cells to a band), and soft orbs of colour, 21 to 55 cells across, drift through
+both, so several pairs are in view at once, even on a phone's narrow screen. A fifth small shader, drawn at every
+tier: when a device can draw little, everything else goes first and the light stays.
+
+**Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
+hangs them apart and a little out of step, so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in
+*Baroque Tree*, 2006; a circle of cracks across four panes of glass in *Quarter Past Four*). In stretches of the plane
+(a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases: the square is
+split again and again at golden sections, each canvas hangs a little off its place (gutters of 3 to 13 cells, a shadow
+below and to the right), and every canvas shows the same large composition (the light, and one great circle, 144 to
+254 cells across, in another colour pair) out of step by up to 17 cells and a few seconds, so the circle breaks across
+them and is still one circle. A few canvases are paintings instead (a quilt, tinted by the light it stands in for,
+so the composition carries on through it), and a few are clear: the plane itself.
 `#nolight` leaves the light off, for looking at what is under it.
 
 **The seams as tree lines.** Where two regions meet, the edge is a wood's top against the sky, seen from below: the
@@ -401,7 +414,7 @@ needles), broadleaf (poplar, maple), magnolia (large pointed leaves), oak (lobed
 willow (hanging strands), palm (fronds with leaflets), aspen and birch (small leaves that quiver), cypress (flames),
 and a tree in winter (bare twigs). All of them sway a little in the wind. The leaves carry the canopy's own texture and
 the gaps the sky's, taken from the last frame well inside each region. A seventh small shader, over the rest; not on
-the lowest rungs or in the voids.
+the lowest rungs or in the voids, and only from tier 2.
 
 **Meta forms: the artists as shades.** The areas are not portraits of their artists. Each artist is one value,
 a shade on a scale from dark to light, as a painter's palette runs from its darkest colour to its lightest: Ikeda's
