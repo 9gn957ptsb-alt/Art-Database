@@ -963,6 +963,87 @@ def city_years(place, box, lat, lon, cell):
     return None, None
 
 
+# OpenStreetMap: the construction dates its contributors have written on the buildings round each
+# place, read by scripts/fetch_osm_dates.py (on GitHub's runners) into osm/dates/<slug>.json. They
+# date what the city leaves undated, before the satellites: a landmark nearly always has one.
+OSM_DATES = ROOT / "osm" / "dates"
+ROMAN = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100}
+
+
+def roman(t):
+    n = 0
+    for a, b in zip(t, t[1:] + " "):
+        v = ROMAN[a]
+        n += -v if ROMAN.get(b, 0) > v else v
+    return n
+
+
+def osm_year(value):
+    """A year out of a date as OpenStreetMap's contributors write it — "1890", "1890-05-01", "~1890",
+    "1890s", "1885..1890", "C19", "mid C19", "late 19th century", "19. Jh.", "sec. XIX", "before
+    1900". A decade is its middle; a century its middle, or its early, middle or late part; "before"
+    a year, or anything before 1000 (the Pantheon's 126), is old, year not known."""
+    import re
+    t = str(value or "").strip().lower()
+    if not t or t.startswith("-"):
+        return OLD if t.startswith("-") else 0
+    part = 20 if re.search(r"\b(early|first half|1st half|anfang|inizio)\b", t) else \
+        80 if re.search(r"\b(late|second half|2nd half|ende|fine)\b", t) else 50
+    m = re.search(r"(?<!\d)(\d{4})(?!\d)", t)
+    if m:
+        y = int(m.group(1))
+        if re.search(r"\b(before|pre|until|bis|prima|ante|avant|vor)\b|<", t[:m.start()]):
+            return OLD
+        if t[m.end():m.end() + 1] == "s" and y % 10 == 0:
+            y += 5                       # a decade: its middle
+        return OLD if y < 1000 else y if y <= THIS_YEAR else 0
+    c = (re.search(r"\bc\s*(\d{1,2})\b", t) or re.search(r"\b(\d{1,2})\s*(?:st|nd|rd|th|\.)?\s*(?:century|cent|c\b|jh|jahrhundert|siecle|siècle|secolo)", t))
+    if c:
+        n = int(c.group(1))
+    else:
+        r = re.search(r"\b(?:sec\.?|secolo|siècle|siecle|century|s\.)\s*([ivxlc]+)\b|\b([ivxlc]+)\s*(?:sec|secolo|siècle|siecle|century|jh)", t)
+        n = roman(r.group(1) or r.group(2)) if r else 0
+    if 1 <= n <= 21:
+        y = (n - 1) * 100 + part
+        return OLD if y < 1000 else y if y <= THIS_YEAR else 0
+    m = re.search(r"(?<!\d)(\d{1,3})(?!\d)", t)
+    return OLD if m and re.fullmatch(r"[~c.\s]*\d{1,3}(-\d\d){0,2}", t) else 0
+
+
+def osm_years(place, lat, lon, cell):
+    """Each cell's year from the dated OpenStreetMap outline it stands in (the earliest, where they
+    overlap), or the nearest within a few metres; None where nothing has been read for the place."""
+    import shapely
+    path = OSM_DATES / (place["slug"] + ".json")
+    if not path.exists():
+        return None
+    polys, ys = [], []
+    for value, ring in json.loads(path.read_text()).get("buildings") or []:
+        y = osm_year(value)
+        if y and len(ring) >= 4:
+            polys.append(shapely.Polygon(ring))
+            ys.append(y)
+    years = np.zeros(len(lat), dtype=np.int64)
+    if not polys:
+        return years
+    ys = np.asarray(ys, dtype=np.int64)
+    here = shapely.points(lon, lat)
+    tree = shapely.STRtree(polys)
+    covered = np.zeros(len(lat), dtype=bool)
+    for kp, kq in zip(*tree.query(here, predicate="within")):
+        covered[kp] = True
+        y = ys[kq]
+        if y > 0 and (years[kp] <= 0 or y < years[kp]):
+            years[kp] = y
+        elif y < 0 and years[kp] == 0:
+            years[kp] = y
+    miss = np.flatnonzero(~covered)
+    if miss.size:
+        ip, iq = tree.query_nearest(here[miss], max_distance=3 / 111320, all_matches=False)
+        years[miss[ip]] = ys[iq]
+    return years
+
+
 def years_for(place, g):
     n, side = g["n"], g["side"]
     cell = side / n
@@ -985,6 +1066,15 @@ def years_for(place, g):
         if (got != 0).any():
             said.append(name)
 
+    # What the city leaves, from the dates OpenStreetMap's contributors have written on the buildings.
+    osm = osm_years(place, lat, lon, cell)
+    if osm is not None:
+        take = (years == 0) & (osm != 0)
+        if take.any():
+            years[take] = osm[take]
+            said.append("OpenStreetMap contributors")
+    known = years.copy()
+
     # The year its ground was first built on, for what the city did not say.
     rest = years == 0
     if rest.any():
@@ -1004,7 +1094,7 @@ def years_for(place, g):
                 said.append("GHSL built-up surface 1975–1980 (JRC)")
         # "By 1975" is the satellites' floor. Where the city's own years go back before it, such a
         # building is as likely old as not: it stands from the start rather than rising in 1975.
-        if got is not None and ((got > 0) & (got < 1975)).any():
+        if ((known > 0) & (known < 1975)).any():
             years[rest & (years == 1975)] = 0
     years[years < 0] = 0          # old, year not known: there from the start
     return years.tolist(), said

@@ -1,0 +1,60 @@
+name: OpenStreetMap building dates
+
+# Reads OpenStreetMap's construction dates for the buildings round every place
+# on the Artist Website's globe (scripts/fetch_osm_dates.py) into osm/dates/,
+# which build_built_years.py uses for the timeline. It runs here because
+# Geofabrik's and Overpass's servers do not answer the Claude sessions'
+# network. A push to the site's branch that touches the script, this file or
+# osm/REQUEST (write the date in it to ask for a fresh read) runs it; the
+# workflow on a pushed branch is the one that runs, so it needs no copy on
+# the default branch.
+
+on:
+  push:
+    branches: [claude/artist-website-dev-s92irf]
+    paths:
+      - scripts/fetch_osm_dates.py
+      - .github/workflows/osm-dates.yml
+      - osm/REQUEST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: osm-dates
+  cancel-in-progress: true
+
+env:
+  SITE_BRANCH: claude/artist-website-dev-s92irf
+
+jobs:
+  dates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SITE_BRANCH }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read the dates
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+          pip install -q shapely
+          python3 scripts/fetch_osm_dates.py
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add osm/dates
+          if git diff --cached --quiet; then echo "Nothing new."; exit 0; fi
+          git config user.name "osm-dates"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "OpenStreetMap building dates round every place"
+          for i in 1 2 3; do git pull --no-rebase --no-edit origin "$SITE_BRANCH" && git push origin "HEAD:$SITE_BRANCH" && break; sleep 5; done
