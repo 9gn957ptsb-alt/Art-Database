@@ -406,17 +406,17 @@ parts them, softer where the glass is thick. It lies deeper than the plane, movi
 finished as a photograph is: a filmic curve (Narkowicz's fit to ACES, 2015) so its highlights roll off instead of
 clipping, and a fine grain. Turrell's bands come and go over it.
 
-**Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
-hangs them apart and a little out of step, so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in
-*Baroque Tree*, 2006; a circle of cracks across four panes of glass in *Quarter Past Four*). In stretches of the plane
-(a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases: the square is
-split again and again at golden sections, each canvas hangs a little off its place (gutters of 3 to 13 cells, a shadow
-below and to the right), and every canvas shows the same large composition (the light, and one great circle, 144 to
-254 cells across, through which the light is seen magnified, as through a lens, a thin ring of light parted into its
-colours at its rim) out of step by up to 17 cells and a few seconds, so the circle breaks across them and is still one
-circle. A few canvases are paintings instead (a quilt, tinted by the light it stands in for,
-so the composition carries on through it), and a few are clear: the plane itself.
-`#nolight` leaves the light off, for looking at what is under it.
+**Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces and sets them a little out of step,
+so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in *Baroque Tree*, 2006), and who cracks
+glass and mirror on purpose and fills the cracks with white grout (*Quarter Past Four*). In stretches of the plane
+(where a field 1597 cells across, turned off the lattice and warped, is high, so their edges wander) the light is broken
+into shards about 144 cells across: cells round scattered seeds, their edges warped, with fissures between them that
+wander in course and width, filled with pale grout and shadowed on one side. Every shard shows the same large
+composition out of step by up to 17 cells and a few seconds, and across them lies one great circle, 144 to 254 cells
+across, through which the light is seen magnified, as through a lens, a thin ring of light parted into its colours at
+its rim, so the circle breaks at every crack and is still one circle. A few shards are paintings instead (a quilt,
+tinted by the light it stands in for), and a few are clear: the plane itself. There is no grid: straight lines and
+right angles are kept for when the plane turns to architecture.
 
 **The seams as tree lines.** Where two regions meet, the edge is a wood's top against the sky, seen from below: the
 darker painting is the canopy and the lighter the sky, and the line between them breaks into crowns (lobes 55 and 13

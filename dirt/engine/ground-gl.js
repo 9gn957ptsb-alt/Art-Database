@@ -2411,48 +2411,50 @@ vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
 vec3 lightAt(vec2 p, float T) { vec2 o; vec3 s; return lightAt(p, T, o, s) + s * 0.3; }
 /** A filmic curve (Narkowicz's fit to ACES, 2015): highlights roll off instead of clipping, so the light has depth. */
 vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0) * 255.0; }
-/** Weil's fragments (after Susan Weil, who breaks a figure or a tree into pieces on canvases of different sizes and
- * hangs them apart, a little out of step, so the whole appears between them, e.g. Bicircle, 2007). In stretches of
- * the plane (a 610-cell square at a time, where a field 1597 cells across is high) the light is cut into canvases:
- * the square split again and again at golden sections, each canvas hung a little off its place (gutters 3 to 13
- * cells), showing the same large composition (the light, and one great circle of another colour pair, which breaks
- * across the canvases as the circle of cracks does in her Quarter Past Four) out of step by up to 17 cells and a
- * few seconds; a few are a painting instead (a quilt,
- * tinted by the light it stands in for, so the composition carries on through it), and a few are clear, the plane
- * itself. Returns 0 outside them; 1 on a canvas (colour in col, alpha in a); 2 in a gutter (a shadow in a). */
+/** Weil's fragments (after Susan Weil, who breaks a figure or a tree into pieces and sets them a little out of step,
+ * so the whole appears between them, e.g. Bicircle, 2007; and who cracks glass and mirror on purpose and fills the
+ * cracks with white grout, e.g. Quarter Past Four). In stretches of the plane (where a field 1597 cells across, turned
+ * off the lattice and warped, is high: their edges wander, never straight) the light is broken into shards, about
+ * 144 cells across, with
+ * fissures between them that wander (the shards are cells round scattered seeds, their edges warped), each fissure
+ * filled with pale grout and shadowed on one side. Every shard shows the same large composition out of step by up
+ * to 17 cells and a few seconds; across them lies one great circle through which the light is seen magnified, as
+ * through a lens, a thin ring of light parted into its colours at its rim, so the circle breaks at every crack and is
+ * still one circle. A few shards are a painting instead (a quilt, tinted by the light it stands in for), and a few
+ * are clear: the plane itself. No grid: straight lines and right angles are kept for when the plane turns to
+ * architecture. Returns 0 outside them; 1 on a shard (colour in col, alpha in a); 2 in a fissure; 3 clear. */
+/** p turned off the lattice and warped, so fields made of it have no straight contours. */
+vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
 int weil(vec2 p, float T, out vec3 col, out float a) {
   col = vec3(0); a = 0.0;
-  const float G = 610.0;
-  vec2 tile = floor(p / G);
-  vec2 lo = tile * G, hi = lo + G;
-  if (vnoise(lo + G * 0.5, 1597.0, 28681u) < 0.56) return 0;
-  uint h = h3(int(tile.x), int(tile.y), 28683u);
-  // the large form the canvases share: a circle of light in another pair, which breaks across them
-  uint ht = h;
-  vec2 fc = lo + G * (0.5 + 0.3 * (vec2(unit(mixh(ht + 21u)), unit(mixh(ht + 22u))) - 0.5));
-  float fr = 144.0 + 110.0 * unit(mixh(ht + 23u));
-  for (int k = 0; k < 5; k++) {                                      // golden sections, the longer side first
-    vec2 sz = hi - lo;
-    if (k >= 2 && unit(mixh(h + 7u)) < 0.3) break;                   // some canvases stay large
-    float cut = unit(mixh(h + 1u)) < 0.5 ? P1 : P2;
-    if (sz.x >= sz.y) { float m = lo.x + sz.x * cut; if (p.x < m) hi.x = m; else lo.x = m; h = mixh(h + (p.x < m ? 11u : 13u)); }
-    else { float m = lo.y + sz.y * cut; if (p.y < m) hi.y = m; else lo.y = m; h = mixh(h + (p.y < m ? 17u : 19u)); }
+  if (vnoise(askew(p), 1597.0, 28681u) < 0.58) return 0;
+  // the shards: the nearest of seeds scattered 89 cells apart, the plane warped a little first so no edge is straight
+  const float S = 144.0;
+  vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
+  ivec2 c0 = ivec2(floor(pw / S));
+  float d1 = 1e9, d2 = 1e9;
+  uint h = 0u;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint hc = h3(c.x, c.y, 28695u);
+    vec2 sd = (vec2(c) + 0.1 + 0.8 * vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u)))) * S;
+    float d = length(pw - sd);
+    if (d < d1) { d2 = d1; d1 = d; h = hc; } else if (d < d2) d2 = d;
   }
-  // each canvas hung a little off its place: gutters of uneven width, 3 to 13 cells a side
-  vec4 gut = 3.0 + 10.0 * vec4(unit(mixh(h + 31u)), unit(mixh(h + 32u)), unit(mixh(h + 33u)), unit(mixh(h + 34u)));
-  vec2 dlo = p - lo - gut.xy, dhi = hi - gut.zw - p;
-  if (min(min(dlo.x, dlo.y), min(dhi.x, dhi.y)) < 0.0) {            // the wall between canvases, and each one's shadow
-    bool shade = (dhi.x < 0.0 && dhi.x > -3.0 && dhi.y > -3.0 && dlo.y > 2.0) || (dhi.y < 0.0 && dhi.y > -3.0 && dhi.x > -3.0 && dlo.x > 2.0);
-    a = shade ? 0.42 : 0.16;
-    return 2;
-  }
+  float edge = (d2 - d1) * 0.5;                                      // cells to the fissure
+  float wide = 0.8 + 1.4 * vnoise(p, 21.0, 28697u);                  // the crack wanders in width too
+  if (edge < wide) { a = 0.72; col = vec3(236.0, 232.0, 224.0); return 2; }   // grout
+  if (edge < wide + 2.0) { a = 0.3 * (1.0 - (edge - wide) / 2.0); col = vec3(0.0); return 2; }   // its shadow
   float u = unit(mixh(h + 3u));
   if (u < P4) return 3;                                              // clear: the plane itself
   vec2 off = (vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u))) - 0.5) * 34.0;   // a little out of step with its neighbours
   float dt = (unit(mixh(h + 6u)) - 0.5) * 8.0;                       // and a moment ahead or behind
+  // the great circle, round the nearest of points 987 cells apart
+  vec2 zc = floor(p / 987.0 + 0.5);
+  uint ht = h3(int(zc.x), int(zc.y), 28683u);
+  vec2 fc = (zc + 0.15 * (vec2(unit(mixh(ht + 21u)), unit(mixh(ht + 22u))) - 0.5)) * 987.0;
+  float fr = 144.0 + 110.0 * unit(mixh(ht + 23u));
   float fd = length(p + off - fc) - fr - 8.0 * sin(T / 13.0 + unit(ht) * 6.2832);
-  // inside the great circle the light is seen through a lens, magnified; round it, a thin ring of light parted into
-  // its colours
   vec2 pl = fd < 0.0 ? fc + (p + off - fc) * (0.62 + 0.2 * (1.0 + fd / fr)) : p + off;
   col = lightAt(pl, T + dt);
   col += vec3(255.0, 200.0, 170.0) * 0.4 * exp(-fd * fd / 9.0) + vec3(150.0, 190.0, 255.0) * 0.3 * exp(-(fd - 3.0) * (fd - 3.0) / 9.0);
@@ -2470,10 +2472,11 @@ void main() {
   vec3 wc; float wa;
   int wk = weil(p, uTime, wc, wa);
   if (wk == 3) discard;
-  if (wk == 2) { outA = outB = vec4(0.03, 0.02, 0.03, wa); return; }
+  if (wk == 2) { outA = outB = vec4(wc / 255.0, wa); return; }
   if (wk == 1) { outA = outB = vec4(filmic(wc) / 255.0, wa); return; }
   // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
-  float w = smoothUp(0.22, 0.46, vnoise(p + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(p, 233.0, 28658u) * 0.38);
+  vec2 pa = askew(p);
+  float w = smoothUp(0.22, 0.46, vnoise(pa + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(pa, 233.0, 28658u) * 0.38);
   // the edge of an aperture dithered, as light breaking up on a screen
   w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
   vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
