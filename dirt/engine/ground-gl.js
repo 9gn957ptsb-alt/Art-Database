@@ -2324,6 +2324,51 @@ void main() {
   outA = outB = vec4(col, a);
 }`;
 
+// The history of Greece and Rome (dirt/artists/antiquity.py): sixteen saved works in the order of the time they show,
+// from a Cypriot jar of 1200-800 BCE through Troy, Ulysses, the Minotaur, Attic and Apulian vases, Bacchus, Baia,
+// Agrippina landing at Brindisi, Commodus, the arch of Septimius Severus, the amphitheatre and the ruins, to Twombly's
+// Rome. It is kept small: in a raindrop, and behind the leaves. Shared by the passes that show it.
+const ANTIQUITY_GLSL = `
+uniform highp sampler2DArray uAnt;
+uniform int uAN;
+/** The history at a place e along it (0 to its length, and round again), uv in the picture: one age dissolving into
+ * the next over the last quarter of each. */
+vec3 history(float e, vec2 uv) {
+  int n = max(uAN, 1);
+  float k = mod(e, float(n));
+  int i = int(k);
+  vec3 a = texture(uAnt, vec3(uv, float(i))).rgb, b = texture(uAnt, vec3(uv, float((i + 1) % n))).rgb;
+  return mix(a, b, smoothstep(0.75, 1.0, fract(k))) * 255.0;
+}
+/** A raindrop at C, R cells across its middle, over col: in it the history, upside down and drawn in to its edge as a
+ * drop draws in the world behind it; darker toward its rim, where the rim runs a grey gradient from its shadowed side
+ * to its lit side (no line round it); a highlight on its crown that glimmers; a soft shadow beside it. Returns how much
+ * of p it covers. */
+float raindrop(vec2 p, vec2 C, float R, float e, float T, uint h, inout vec3 col) {
+  vec2 d = (p - C) / R;
+  d.x *= 1.0 - 0.14 * d.y;                                           // heavier below, as water on glass is
+  float r = length(d) * (1.0 + 0.06 * (vnoise(p, max(R * 0.6, 2.0), h) - 0.5));   // and never quite round
+  if (r > 1.45) return 0.0;
+  if (r >= 1.0) {                                                    // its shadow, below and to the right
+    float s = length((p - C - vec2(0.18, 0.28) * R) / R);
+    col *= 1.0 - 0.22 * (1.0 - smoothstep(0.85, 1.25, s));
+    return 0.0;
+  }
+  float z = sqrt(1.0 - r * r);
+  vec2 uv = 0.5 - d * 0.5 * (0.5 + 0.5 * z);                         // upside down, and gathered in toward the rim
+  vec3 img = history(e, clamp(uv, 0.0, 1.0)) * (0.55 + 0.55 * z);
+  img = mix(img, col * 1.12, 0.3 + 0.2 * z);                         // clear: what is behind it shows through too
+  float lit = 0.5 + 0.5 * dot(d / max(r, 1e-3), vec2(-0.7, -0.7));  // its lit side, up and to the left
+  vec3 grey = vec3(255.0 * (0.04 + 0.92 * lit));
+  img = mix(img, grey, 0.75 * smoothstep(0.72, 1.0, r));            // the rim: a grey gradient, dark to light
+  float gl = 0.75 + 0.25 * sin(T * 2.3 + 6.2832 * unit(h));          // it glimmers
+  img += vec3(255.0) * gl * exp(-dot(d - vec2(-0.34, -0.4), d - vec2(-0.34, -0.4)) * 55.0);
+  img += vec3(255.0) * 0.3 * exp(-dot(d - vec2(0.42, 0.46), d - vec2(0.42, 0.46)) * 120.0);
+  float a = 1.0 - smoothstep(0.93, 1.0, r);
+  col = mix(col, min(img, vec3(255.0)), a);
+  return a;
+}`;
+
 // The fifth pass: light and space, after James Turrell (the Ganzfelds, the Skyspaces, Aten Reign at the Guggenheim,
 // 2013): most of the plane is given over to coloured light with no edge and no object, the saved paintings seen through
 // it, blurred as through a haze, and here and there clear, where the light opens like an aperture. The light comes in
@@ -2345,7 +2390,7 @@ uniform float uQS;
 uniform vec2 uView;                 // the middle of the view, in cells (the wallpapers lie deeper, and move less)
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
-${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
 // the pairs: a field and the colour it turns toward
 const vec3 PAIR[12] = vec3[12](
   vec3(198, 58, 34), vec3(160, 120, 196),                          // vermilion and lilac
@@ -2417,9 +2462,9 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
  * off the lattice and warped, is high: their edges wander, never straight) the light is broken into shards, about
  * 144 cells across, with
  * fissures between them that wander (the shards are cells round scattered seeds, their edges warped), each fissure
- * filled with pale grout and shadowed on one side. Every shard shows the same large composition out of step by up
+ * a grey gradient, dark on one side to light on the other, never a line. Every shard shows the same large composition out of step by up
  * to 17 cells and a few seconds; across them lies one great circle through which the light is seen magnified, as
- * through a lens, a thin ring of light parted into its colours at its rim, so the circle breaks at every crack and is
+ * through a lens, its rim a grey gradient from dark outside to light within, so the circle breaks at every crack and is
  * still one circle. A few shards are a painting instead (a quilt, tinted by the light it stands in for), and a few
  * are clear: the plane itself. No grid: straight lines and right angles are kept for when the plane turns to
  * architecture. Returns 0 outside them; 1 on a shard (colour in col, alpha in a); 2 in a fissure; 3 clear. */
@@ -2433,18 +2478,23 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
   ivec2 c0 = ivec2(floor(pw / S));
   float d1 = 1e9, d2 = 1e9;
-  uint h = 0u;
+  uint h = 0u, h2 = 0u;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 c = c0 + ivec2(i, j);
     uint hc = h3(c.x, c.y, 28695u);
     vec2 sd = (vec2(c) + 0.1 + 0.8 * vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u)))) * S;
     float d = length(pw - sd);
-    if (d < d1) { d2 = d1; d1 = d; h = hc; } else if (d < d2) d2 = d;
+    if (d < d1) { d2 = d1; h2 = h; d1 = d; h = hc; } else if (d < d2) { d2 = d; h2 = hc; }
   }
   float edge = (d2 - d1) * 0.5;                                      // cells to the fissure
   float wide = 0.8 + 1.4 * vnoise(p, 21.0, 28697u);                  // the crack wanders in width too
-  if (edge < wide) { a = 0.72; col = vec3(236.0, 232.0, 224.0); return 2; }   // grout
-  if (edge < wide + 2.0) { a = 0.3 * (1.0 - (edge - wide) / 2.0); col = vec3(0.0); return 2; }   // its shadow
+  if (edge < wide + 2.0) {
+    // the fissure: no line, a grey gradient across it, dark on one shard's side to light on the other's
+    float x = (h < h2 ? 1.0 : -1.0) * edge / (wide + 2.0);
+    col = vec3(255.0 * (0.04 + 0.92 * (0.5 + 0.5 * x)));
+    a = 0.85 * (1.0 - x * x);
+    return 2;
+  }
   float u = unit(mixh(h + 3u));
   if (u < P4) return 3;                                              // clear: the plane itself
   vec2 off = (vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u))) - 0.5) * 34.0;   // a little out of step with its neighbours
@@ -2457,7 +2507,8 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   float fd = length(p + off - fc) - fr - 8.0 * sin(T / 13.0 + unit(ht) * 6.2832);
   vec2 pl = fd < 0.0 ? fc + (p + off - fc) * (0.62 + 0.2 * (1.0 + fd / fr)) : p + off;
   col = lightAt(pl, T + dt);
-  col += vec3(255.0, 200.0, 170.0) * 0.4 * exp(-fd * fd / 9.0) + vec3(150.0, 190.0, 255.0) * 0.3 * exp(-(fd - 3.0) * (fd - 3.0) / 9.0);
+  // the lens's rim: a grey gradient across it, dark outside to light within
+  col = mix(col, vec3(255.0 * (0.04 + 0.92 * clamp(0.5 - fd / 10.0, 0.0, 1.0))), 0.6 * (1.0 - smoothstep(3.0, 6.0, abs(fd))));
   if (u < P4 + P3 && uQN > 0) {                                      // a painting, in the light it replaces
     vec3 q = texture(uQuilt, vec3((p + off) / (uQS * 1.2), float(mixh(h + 8u) % uint(max(uQN, 1))))).rgb * 255.0;
     col = mix(q, col * (0.35 + 0.9 * lum(q) / 255.0), 0.5);
@@ -2465,10 +2516,35 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   a = 0.96;
   return 1;
 }
+/** The raindrops on the glass: one in some of the 89-cell squares round p, 5 to 34 cells across, a few sliding down;
+ * each holds the history at its own place in it, and moves on through it. col: over what; returns how much. */
+float drops(vec2 p, float T, inout vec3 col) {
+  if (uAN == 0) return 0.0;
+  const float G = 89.0;
+  ivec2 c0 = ivec2(floor(p / G));
+  float cover = 0.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 30101u);
+    if (unit(h) > 0.34) continue;
+    float R = unit(mixh(h + 3u)) < P1 ? 5.0 + 8.0 * unit(mixh(h + 4u)) : 13.0 + 21.0 * unit(mixh(h + 4u));
+    vec2 C = (vec2(c) + 0.25 + 0.5 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * G;
+    if (unit(mixh(h + 5u)) < P3) C.y += mod(T * (3.0 + 5.0 * unit(mixh(h + 6u))) + 89.0 * unit(h), 89.0) - 44.0;   // sliding
+    cover = max(cover, raindrop(p, C, R, 16.0 * unit(mixh(h + 7u)) + T / 13.0, T, h, col));
+  }
+  return cover;
+}
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy;
   vec2 lp = vec2(gl_FragCoord.xy) + vec2(uCell0 - uPrev0);          // where this cell was in the last frame
   bool inPrev = uHaze > 0.5 && all(greaterThanEqual(lp, vec2(0))) && all(lessThan(lp, uPrevSize));
+  // the raindrops first: they sit on the glass over everything, the apertures too
+  {
+    vec3 under = inPrev ? texelFetch(uPrev, ivec2(lp), 0).rgb * 255.0 : vec3(128.0);
+    vec3 dc = under;
+    float dcov = drops(p, uTime, dc);
+    if (dcov > 0.02 || dc != under) { outA = outB = vec4(dc / 255.0, 1.0); return; }
+  }
   vec3 wc; float wa;
   int wk = weil(p, uTime, wc, wa);
   if (wk == 3) discard;
@@ -2521,7 +2597,7 @@ uniform vec2 uPrevSize, uPrevTex;
 uniform float uTime, uHaze;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
-${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("struct Cell {", "\n// A passage's colours")}${fsPart("float vnoise(", "vec3 artPaper(")}${fsPart("struct Void {", "float segD(")}
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("struct Cell {", "\n// A passage's colours")}${fsPart("float vnoise(", "vec3 artPaper(")}${fsPart("struct Void {", "float segD(")}${ANTIQUITY_GLSL}
 const int PINE = 0, BROADLEAF = 1, MAGNOLIA = 2, OAK = 3, SPRUCE = 4, WILLOW = 5, PALM = 6, ASPEN = 7, CYPRESS = 8, BARE = 9;
 bool cellOf(ivec2 cell, out Cell c, out int layer) {
   ivec2 sl = (cell >> 8) - uC0;
@@ -2637,6 +2713,28 @@ void main() {
   // the canopy seen against the light: dark toward its edge, each leaf a little different
   float dark = (0.3 + 0.28 * (1.0 - clamp(m, 0.0, 1.0))) * (1.0 - smoothstep(0.0, 34.0, max(sc, 0.0)));
   vec3 warm = vec3(0.86, 0.8, 0.36);
+  // raindrops on the tips of the outermost leaves, glimmering, each with the history in it
+  if (canopy && sc > -14.0 && sc < 4.0 && uAN > 0) {
+    ivec2 dc = ivec2(floor(p / 13.0));
+    uint dh = h3(dc.x, dc.y, 30121u);
+    if (unit(dh) < 0.22) {
+      vec2 C = (vec2(dc) + 0.3 + 0.4 * vec2(unit(mixh(dh + 1u)), unit(mixh(dh + 2u)))) * 13.0;
+      vec3 under = canopy == ownCanopy ? vec3(60.0) : across(p + n * (d + 46.0), int(mt.w)) * 255.0;
+      vec3 dcol = under;
+      float cov = raindrop(p, C, 2.5 + 3.0 * unit(mixh(dh + 3u)), 16.0 * unit(dh) + uTime / 13.0, uTime, dh, dcol);
+      if (cov > 0.05) { outA = outB = vec4(dcol / 255.0, cov); return; }
+    }
+  }
+  // through the gaps in the leaves, the history, large and far off behind them, drifting as in a wind
+  bool gap = !canopy && ownCanopy && sc > 0.0;
+  if (gap && uAN > 0) {
+    vec2 uv = (p - mo.xy) / 377.0 + 0.5 + vec2(uTime * 0.004 + 0.02 * sin(uTime * 0.6), 0.015 * sin(uTime * 0.9 + p.x * 0.01));
+    float e = 16.0 * unit(h3(int(mo.x), int(mo.y), 30123u)) + uTime / 21.0;
+    vec3 hist = history(e, fract(uv));
+    vec3 sky = across(p + n * (d + 46.0), int(mt.w)) * 255.0;
+    outA = outB = vec4(mix(sky, hist, 0.82) / 255.0, 1.0);
+    return;
+  }
   if (canopy == ownCanopy) {
     if (!canopy) discard;                                            // the sky, as it is
     vec4 o = glint > 0.0 ? vec4(warm, glint * 0.45) : vec4(0.0, 0.0, 0.0, dark);
@@ -2820,7 +2918,7 @@ void main() {
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
  */
-function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster, quilts }) {
+function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster, quilts, antiquity }) {
   const glcv = document.createElement("canvas");
   glcv.setAttribute("aria-hidden", "true");
   glcv.style.pointerEvents = "none";
@@ -2859,6 +2957,31 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, q, gl.REPEAT);   // each quilt a torus
     qn = gl.getError() === gl.NO_ERROR ? imgs.length : 0;
     qs = Q;
+  }
+  // the history of Greece and Rome, the same way, on unit 11
+  let tAnt = null, an = 0, antImgs = null;
+  function fillAntiquity(imgs) {
+    const Q = imgs[0].naturalWidth, c2 = document.createElement("canvas");
+    c2.width = c2.height = Q;
+    const x = c2.getContext("2d", { willReadFrequently: true });
+    gl.activeTexture(gl.TEXTURE11);
+    gl.deleteTexture(tAnt);
+    tAnt = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, tAnt);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1 + Math.floor(Math.log2(Q)), gl.RGBA8, Q, Q, imgs.length);
+    imgs.forEach((im, i) => {
+      x.drawImage(im, 0, 0, Q, Q);
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, Q, Q, 1, gl.RGBA, gl.UNSIGNED_BYTE, x.getImageData(0, 0, Q, Q));
+    });
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, q, gl.CLAMP_TO_EDGE);
+    an = gl.getError() === gl.NO_ERROR ? imgs.length : 0;
+  }
+  if (antiquity && antiquity.length) {
+    Promise.all(antiquity.map((q) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = "antiquity/" + q.file; })))
+      .then((imgs) => { if (imgs.every(Boolean)) { antImgs = imgs; if (!lost) fillAntiquity(imgs); } });
   }
   if (quilts && quilts.length) {
     Promise.all(quilts.map((q) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = "quilts/" + q.file; })))
@@ -2954,6 +3077,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, 1, 1, 1);
     qn = 0;
     if (quiltImgs) fillQuilts(quiltImgs);
+    gl.activeTexture(gl.TEXTURE11); tAnt = tex(gl.TEXTURE_2D_ARRAY);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, 1, 1, 1);
+    an = 0;
+    if (antImgs) fillAntiquity(antImgs);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -2971,15 +3098,15 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const dd = finish(pending.d, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uTime", "uDeep"]);
     if (dd) { [depthProg, D] = dd; gl.useProgram(depthProg); gl.uniform1i(D.uPrev, 10); }
     // and the light
-    const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze", "uQuilt", "uQN", "uQS", "uView"]);
-    if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); gl.uniform1i(Lu.uQuilt, 9); }
+    const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze", "uQuilt", "uQN", "uQS", "uView", "uAnt", "uAN"]);
+    if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); gl.uniform1i(Lu.uQuilt, 9); gl.uniform1i(Lu.uAnt, 11); }
     const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
     if (ff) [spaceProg, Sp] = ff;
-    const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze"]);
+    const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze", "uAnt", "uAN"]);
     if (gg) {
       [canopyProg, Cn] = gg;
       gl.useProgram(canopyProg);
-      gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10);
+      gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -3161,6 +3288,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Lu.uQN, qn);
       gl.uniform1f(Lu.uQS, qs);
       gl.uniform2f(Lu.uView, cx0 + cw / 2, cy0 + ch / 2);
+      gl.uniform1i(Lu.uAN, an);
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -3178,6 +3306,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform2f(Cn.uPrevTex, FW, FH);
       gl.uniform1f(Cn.uTime, t);
       gl.uniform1f(Cn.uHaze, prevN[0] ? 1 : 0);
+      gl.uniform1i(Cn.uAN, an);
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

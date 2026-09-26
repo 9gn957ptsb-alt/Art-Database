@@ -406,15 +406,33 @@ parts them, softer where the glass is thick. It lies deeper than the plane, movi
 finished as a photograph is: a filmic curve (Narkowicz's fit to ACES, 2015) so its highlights roll off instead of
 clipping, and a fine grain. Turrell's bands come and go over it.
 
+**The history of Greece and Rome, in a raindrop and behind the leaves.** Sixteen saved works, in the order of the
+time they show rather than when they were made (`artists/antiquity.py`): a Cypriot Bichrome jar (1200 to 800 BCE);
+Troy (Hayter's *Head of Zeus*, from *The Death of Hektor*); Ingres's *Ulysses*; the Minotaur (Picasso, *La Suite
+Vollard*); an Attic red-figured column krater attributed to the Boreas Painter (460 to 430 BCE); an Apulian amphora
+(400 to 300 BCE); Poussin's *Votary of Bacchus*; Abbott's *Roman Temple at Baia*; Turner's *Ancient Rome; Agrippina
+Landing with the Ashes of Germanicus*; Twombly's *Nine Discourses on Commodus*; Poelenburgh's *Arch of Septimius
+Severus*; Cartier-Bresson's *Roman Amphitheater*; Guardi's and Sonntag's ruins; and Twombly's *Roman Notes I* and
+*Interior (Rome)*. They are kept small. On the light's glass lie raindrops, 5 to 34 cells across, a few sliding down,
+each never quite round and heavier below; in each is the history, upside down and drawn in to its edge as a drop holds
+the world behind it, what is behind the drop showing through too, its rim a grey gradient from its shadowed side to
+its lit side, a highlight on its crown that glimmers; each drop is at its own place in the history and moves on through
+it, one age dissolving into the next every 13 seconds. On the tips of the tree lines' outermost leaves hang smaller
+drops, 2.5 to 5.5 cells, with the same history in them. And through the gaps in the leaves, far off behind them, the
+history is seen large (377 cells to a picture), drifting as in a wind, each tree line with its own age, moving on
+every 21 seconds. The images come from the collection's own links into `dirt/private/antiquity/` (never committed)
+and are published beside the page in `antiquity/`.
+
 **Weil's fragments.** After Susan Weil, who breaks a figure or a tree into pieces and sets them a little out of step,
 so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in *Baroque Tree*, 2006), and who cracks
 glass and mirror on purpose and fills the cracks with white grout (*Quarter Past Four*). In stretches of the plane
 (where a field 1597 cells across, turned off the lattice and warped, is high, so their edges wander) the light is broken
 into shards about 144 cells across: cells round scattered seeds, their edges warped, with fissures between them that
-wander in course and width, filled with pale grout and shadowed on one side. Every shard shows the same large
+wander in course and width, each a grey gradient across it, dark on one shard's side to light on the other's, never
+a line. Every shard shows the same large
 composition out of step by up to 17 cells and a few seconds, and across them lies one great circle, 144 to 254 cells
-across, through which the light is seen magnified, as through a lens, a thin ring of light parted into its colours at
-its rim, so the circle breaks at every crack and is still one circle. A few shards are paintings instead (a quilt,
+across, through which the light is seen magnified, as through a lens, its rim a grey gradient from dark outside to
+light within, so the circle breaks at every crack and is still one circle. A few shards are paintings instead (a quilt,
 tinted by the light it stands in for), and a few are clear: the plane itself. There is no grid: straight lines and
 right angles are kept for when the plane turns to architecture.
 

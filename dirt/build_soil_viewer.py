@@ -792,7 +792,8 @@ onmessage = (e) => {
 <script>
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
-const QUILTS = __QUILTS__;                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
+const QUILTS = __QUILTS__;
+const ANTIQUITY = __ANTIQUITY__;                                // the history of Greece and Rome (dirt/artists/antiquity.py), in antiquity/                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
 // The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
 const SITE = __SITE__;
@@ -809,7 +810,7 @@ const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
   : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
-                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER, quilts: QUILTS });
+                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER, quilts: QUILTS, antiquity: ANTIQUITY });
 // Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
 // the rest into the paper rather than into the dark.
 const ON_PAPER = !!GLG && !/noart/.test(location.hash);
@@ -2355,6 +2356,7 @@ def main():
                 .replace("__SITE__", "true" if site else "false")
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
+                .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
