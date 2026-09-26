@@ -51,8 +51,8 @@ then covers it without change.
    `commons.wikimedia.org` and `upload.wikimedia.org` are allowed under
    Network access. Where there are none, work from published plans,
    sections and dimensions, and say so in `notes`.
-4. **Choose.** Read `ledger.json` beside this page and take the **three**
-   buildings refined longest ago (never refined first), whatever their kind
+4. **Choose.** Read `ledger.json` beside this page and take the **ten**
+   buildings refined longest ago (artist, 26 Sep 2026: raised from three) (never refined first), whatever their kind
    — every building of every kind takes its turn. A building whose
    `sketchup` flag is set is refined in SketchUp (step 6); at most one of those
    per run.
