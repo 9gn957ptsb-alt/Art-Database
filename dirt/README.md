@@ -442,6 +442,24 @@ light within, so the circle breaks at every crack and is still one circle. A few
 tinted by the light it stands in for), and a few are clear: the plane itself. There is no grid: straight lines and
 right angles are kept for when the plane turns to architecture.
 
+**The collage.** What DRIFT is ultimately to feel like: a torn, high-key collage in which everything the plane has
+made is cut up and glued into everything else, smeared as a damaged video smears, and dissolved into speckle, so no
+country ends at a border and nothing stays one thing. (*Collage* is French *coller*, "to glue," from *colle*, "glue,"
+Greek *kolla*: here the pieces are always of what is already on the plane.) Its material is the last frame, so it takes
+in soil, paintings, quilts, Turrell's light, silk and glass, Weil's shards, tree lines, dapples and itself, and gives
+them back as: a **datamosh**, the last frame carried on cell by cell along a slow current, melting, until a keyframe gives
+the plane back (each stretch on its own clock, every 21 seconds) and it melts again (after Takeshi Murata's *Monster Movie*, 2005, and Rosa Menkman's *The Glitch Moment(um)*, 2011);
+**streaks**, a colour dragged down a column from where the streak starts, 5 to 150 cells long, mostly falling, some
+aslant (pixel sorting, after Kim Asendorf, 2010; Richter's squeegee); **pieces**, triangles and four-sided scraps, some
+edges cut and some torn to a white fibrous margin, glued in no order, each a piece of elsewhere in the view (larger or
+smaller by powers of φ, sharp or out of focus, its colours parted), a saved painting, a fragment of the history of
+Greece and Rome, or flat coloured paper, living 13 to 55 seconds and dissolving in and out as speckle (Hannah Höch,
+Kurt Schwitters); **clouds**, white cumulus lit from above and grey-blue beneath, their edges breaking into spray; thin
+**slivers** of spectrum, broken along their length; and in patches the colour reduced to five levels and dithered, as an image saved too small.
+Its country covers most of the plane at some strength (a field 1597 cells across, drifting), and it opens onto the
+plane as speckle, never along a line; where it covers, the grey-gradient edge pass stands aside so its cuts stay cuts.
+Its own program, drawn after the tree lines, at tier 1 and up; `#nocollage` leaves it out, for looking.
+
 **The seams as tree lines.** Where two regions meet, the edge is a wood's top against the sky, seen from below: the
 darker painting is the canopy and the lighter the sky, and the line between them breaks into crowns (lobes 55 and 13
 cells across), then clumps, then single leaves or needles, the sky showing through gaps just inside the canopy's edge,

@@ -2602,6 +2602,233 @@ void main() {
   outA = outB = vec4(filmic(max(L, vec3(0.0))) / 255.0, w * 0.92);
 }`;
 
+// The eighth pass: the collage. What DRIFT is ultimately to feel like (the user's reference, 26 Sep 2026): a torn,
+// high-key collage in which everything the plane has made is cut up and pasted into everything else, smeared as a
+// damaged video smears, and dissolved into speckle, so that no country ends at a border and nothing stays one thing.
+// Collage is from French coller, "to glue" (colle, "glue", from Greek kolla): pieces are glued in, here always of what
+// is already on the plane. Its material is the last frame, so it takes in whatever DRIFT drew (soil, paintings,
+// quilts, Turrell's light, silk and glass, Weil's shards, tree lines, dapples, and itself) and gives it back:
+//  - datamosh: where a video loses its keyframes, the colours of the last frame are carried on by the motion of the
+//    next (Takeshi Murata, Monster Movie, 2005; Rosa Menkman, The Glitch Moment(um), 2011); here the last frame
+//    slides cell by cell along a slow current and melts, until a keyframe gives the plane back, and melts again;
+//  - streaks: a colour dragged along a column, as when pixels are sorted (Kim Asendorf, ASDFPixelSort, 2010), in
+//    lengths from a few cells to a few hundred, mostly falling, some aslant, like paint scraped down a sheet
+//    (Gerhard Richter's squeegee paintings);
+//  - pieces: triangles and four-sided scraps, some edges cut and some torn, glued over it all in no order: a piece
+//    of elsewhere in the view (larger, smaller, sharp or out of focus, its red, green and blue parted), a saved
+//    painting, a fragment of the history of Greece and Rome, or flat coloured paper, each living a few tens of
+//    seconds and dissolving in and out as speckle (Hannah Hoch's photomontages; Kurt Schwitters' Merz collages);
+//  - clouds: white cumulus masses, lit from above and grey-blue beneath, the high key the whole is set in;
+//  - slivers: thin bands of spectrum where the light has been split, the colours of the frame parted within them;
+//  - and in patches, the colour reduced to a few levels and dithered, as an image saved too small.
+// Its country covers most of the plane at some strength, strongest where a slow field is high, and it opens onto
+// the plane as speckle, not along a line. Its own small program, drawn over the rest; where it covers, the grey
+// gradient edge pass stands aside, so the cuts stay cuts.
+const GROUND_COLLAGE = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+uniform sampler2D uPrev;            // the last frame, mipmapped
+uniform vec2 uPrevSize, uPrevTex;
+uniform ivec2 uCell0, uPrev0;
+uniform float uTime;
+uniform sampler2DArray uQuilt;
+uniform int uQN;
+uniform float uQS;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
+// coloured paper, from the reference: vermilion, salmon, cyan, sky, ochre, umber, magenta, yellow, ultramarine
+const vec3 PAPER[9] = vec3[9](vec3(240, 60, 44), vec3(238, 128, 104), vec3(96, 200, 214), vec3(136, 198, 238),
+  vec3(226, 146, 70), vec3(170, 104, 62), vec3(232, 70, 156), vec3(248, 216, 92), vec3(64, 84, 214));
+vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
+float cellHash(vec2 p, uint s) { return unit(h3(int(floor(p.x)), int(floor(p.y)), s)); }
+/** The last frame at lp (cells in it), at a level of detail (0 sharp). */
+vec3 was(vec2 lp, float lod) { return textureLod(uPrev, clamp(lp, vec2(0.5), uPrevSize - 0.5) / uPrevTex, lod).rgb * 255.0; }
+/** The last frame's cell at lp, exactly: what is carried on from frame to frame must not blur, or it all goes grey. */
+vec3 cellWas(vec2 lp) { return texelFetch(uPrev, ivec2(clamp(floor(lp), vec2(0.0), uPrevSize - 1.0)), 0).rgb * 255.0; }
+/** A painting brought up into the collage's key: lighter, and its colour pushed. */
+vec3 keyed(vec3 c) {
+  float l = lum(c);
+  c = mix(vec3(l), c, 1.5);
+  return clamp(255.0 - (255.0 - c) * 0.8, 0.0, 255.0);
+}
+/** Paint c over (col, a) with coverage m. */
+void over(inout vec3 col, inout float a, vec3 c, float m) {
+  float na = a + m * (1.0 - a);
+  if (na > 0.0) col = (col * a * (1.0 - m) + c * m) / na;
+  a = na;
+}
+/** How strongly the collage is here: most of the plane at some strength, drifting. */
+float torn(vec2 p, float T) {
+  vec2 q = askew(p * 0.8) + T * vec2(-2.1, 1.3);
+  return smoothstep(0.26, 0.56, 0.7 * vnoise(q, 1597.0, 40101u) + 0.3 * vnoise(q, 377.0, 40102u));
+}
+/** The cumulus: density, warped so it billows. */
+float cloudD(vec2 p, float T) {
+  vec2 q = p + T * vec2(4.0, 0.8);
+  q += 55.0 * (vec2(vnoise(q, 144.0, 40131u), vnoise(q, 144.0, 40132u)) - 0.5);
+  return 0.5 * vnoise(q, 233.0, 40133u) + 0.27 * vnoise(q, 89.0, 40134u) + 0.15 * vnoise(q, 34.0, 40135u) + 0.08 * vnoise(q, 13.0, 40136u);
+}
+/** One scale of pieces (seeds S cells apart on a lattice turned off the plane's, each a triangle or four-sided scrap
+ * R0 to R0 + R1 across, living 13 to 55 seconds): the topmost covering p, if its z is above bestZ. */
+void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
+            inout float bestZ, inout uint bh, inout vec2 bC, inout float bR, inout float bTorn) {
+  vec2 q = mat2(0.94, 0.34, -0.34, 0.94) * p;
+  ivec2 c0 = ivec2(floor(q / S));
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = c0 + ivec2(i, j);
+    uint h0 = h3(c.x, c.y, seed);
+    float P = 13.0 + 42.0 * unit(mixh(h0 + 1u)), e = T / P + unit(mixh(h0 + 2u)), age = fract(e);
+    if (age > 0.8) continue;                                         // between lives
+    uint h = mixh(h0 ^ uint(floor(e)) * 0x9E3779B9u);                 // each life a new piece
+    if (unit(h) > dens) continue;
+    float z = unit(mixh(h + 9u));
+    if (z <= bestZ) continue;
+    vec2 Cq = (vec2(c) + 0.5 + 0.5 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * S;
+    vec2 C = mat2(0.94, -0.34, 0.34, 0.94) * Cq;                      // back to the plane
+    float an0 = 6.2832 * unit(mixh(h + 3u));
+    C += 21.0 * age * vec2(cos(an0 * 1.7), sin(an0 * 1.7));          // drifting while it lives
+    float R = R0 + R1 * pow(unit(mixh(h + 4u)), 1.4);
+    vec2 d = p - C;
+    if (dot(d, d) > R * R) continue;
+    int nv = unit(mixh(h + 5u)) < 0.55 ? 3 : 4;
+    // inside: on the inner side of every edge (a convex polygon with its corners jittered)
+    bool inside = true;
+    float tornE = 0.0, s = 6.2832 / float(nv);
+    for (int k = 0; k < 4; k++) {
+      if (k >= nv) break;
+      float a0 = an0 + s * float(k) + 0.6 * s * (unit(mixh(h + 6u + uint(k))) - 0.5);
+      float a1 = an0 + s * float((k + 1) % nv) + 0.6 * s * (unit(mixh(h + 6u + uint((k + 1) % nv))) - 0.5);
+      vec2 v0 = R * vec2(cos(a0), sin(a0)), v1 = R * vec2(cos(a1), sin(a1)), ed = normalize(v1 - v0);
+      float side = ed.x * (d.y - v0.y) - ed.y * (d.x - v0.x);
+      // some edges torn: the paper's fibres, a ragged margin a few cells deep
+      if (unit(mixh(h + 11u + uint(k))) < 0.4) {
+        side += 5.0 * (vnoise(p, 3.0, h + 17u) - 0.5) + 10.0 * (vnoise(p, 13.0, h + 18u) - 0.5);
+        tornE = max(tornE, 1.0 - clamp(abs(side) / 3.0, 0.0, 1.0));
+      }
+      if (side < 0.0) { inside = false; break; }
+    }
+    if (!inside) continue;
+    // dissolving in and out as speckle
+    float vis = min(age / 0.05, (0.8 - age) / 0.05);
+    if (vis < 1.0 && vis < cellHash(p, h + 19u)) continue;
+    bestZ = z; bh = h; bC = C; bR = R; bTorn = tornE;
+  }
+}
+void main() {
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
+  float T = uTime, t = torn(p, T);
+  if (t <= 0.0) discard;
+  vec2 pa = askew(p);
+  float fr = floor(T * 30.0);
+  vec3 col = vec3(0.0);
+  float a = 0.0;
+  // the datamosh: the last frame carried on along a slow current, so it melts, until a keyframe gives the plane back
+  // (each stretch on its own clock), and it melts again
+  float mo = smoothstep(0.3, 0.55, vnoise(pa + T * vec2(1.3, 2.2), 610.0, 40111u));
+  float cyc = fract(T / 21.0 + 3.0 * vnoise(pa, 987.0, 40114u));
+  mo *= smoothstep(0.03, 0.1, cyc);
+  if (mo > 0.0) {
+    float an = 6.2832 * vnoise(pa - T * vec2(3.0, 2.0), 233.0, 40112u), sp = 0.3 + 1.6 * vnoise(pa, 377.0, 40113u);
+    vec2 v = floor(vec2(cos(an), sin(an)) * sp + vec2(unit(h3(int(fr), 1, 40115u)), unit(h3(int(fr), 2, 40115u))));
+    over(col, a, cellWas(lp - v), mo * 0.97);
+  }
+  // streaks: a colour dragged down a column, from where the streak starts
+  float sz = smoothstep(0.52, 0.72, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));
+  if (sz > 0.0) {
+    float an = 1.5708 + 1.3 * (vnoise(pa, 987.0, 40122u) - 0.5);
+    vec2 d = vec2(cos(an), sin(an)), n = vec2(-d.y, d.x);
+    float u = dot(p, d), col1 = floor(dot(p, n));
+    uint hc = h3(int(col1), 7, 40123u);
+    float L = 5.0 + 144.0 * pow(unit(hc), 2.5), ph = unit(mixh(hc + 1u)) * L + T * (5.0 + 21.0 * unit(mixh(hc + 2u)));
+    float k = floor((u + ph) / L), f = (u + ph) / L - k;
+    if (unit(h3(int(col1), int(k), 40125u)) < 0.6) {
+      vec3 c = cellWas(lp - d * f * L);
+      float m = sz * (1.0 - f * f) * (cellHash(p, 40126u) < sz * 1.4 ? 1.0 : 0.0);
+      over(col, a, c, m);
+    }
+  }
+  // clouds, the high key
+  float ca = smoothstep(0.35, 0.7, vnoise(pa - T * vec2(1.0, 0.5), 987.0, 40137u));
+  if (ca > 0.0) {
+    float d = cloudD(p, T), th = 0.66 - 0.12 * ca;
+    float m = smoothstep(th, th + 0.04, d);
+    if (m > 0.0) {
+      float lit = clamp(0.5 + (d - cloudD(p + vec2(-8.0, -13.0), T)) * 7.0, 0.0, 1.0);
+      vec3 c = mix(vec3(140, 152, 178), vec3(253, 252, 250), 0.2 + 0.8 * smoothstep(0.15, 0.85, lit));
+      c = mix(c, vec3(255), smoothstep(th + 0.04, th + 0.18, d) * 0.5);
+      c += (cellHash(p, 40140u) - 0.5) * 10.0;
+      // their edges break into spray
+      float spray = smoothstep(0.5, 0.7, vnoise(p, 55.0, 40138u));
+      m = mix(m, m > cellHash(p, 40139u) ? 1.0 : 0.0, spray);
+      over(col, a, c, m);
+    }
+  }
+  // the pieces glued over it all, in no order, at two scales
+  float bestZ = -1.0, bR = 0.0, bTorn = 0.0;
+  uint bh = 0u;
+  vec2 bC = vec2(0.0);
+  pieces(p, T, 377.0, 55.0, 233.0, 0.7, 40141u, bestZ, bh, bC, bR, bTorn);
+  pieces(p, T, 144.0, 13.0, 89.0, 0.55, 40142u, bestZ, bh, bC, bR, bTorn);
+  if (bestZ >= 0.0) {
+    uint h = bh;
+    float kind = unit(mixh(h + 20u));
+    vec3 c;
+    if (kind < 0.36) {
+      // a piece of elsewhere in the view: moved, larger or smaller, sharp or out of focus, its colours parted
+      vec2 sh = (vec2(unit(mixh(h + 21u)), unit(mixh(h + 22u))) - 0.5) * uPrevSize * 0.7;
+      float zm = pow(PHI, 2.0 * unit(mixh(h + 23u)) - 1.0) * (unit(mixh(h + 24u)) < 0.2 ? PHI * PHI : 1.0);
+      vec2 src = bC - vec2(uPrev0) + sh + (p - bC) / zm;
+      float lod = unit(mixh(h + 25u)) < 0.35 ? 2.5 : 0.0, ab = floor(1.0 + 4.0 * unit(mixh(h + 26u)));
+      c = vec3(was(src + vec2(ab, 0.0), lod).r, was(src, lod).g, was(src - vec2(ab, 0.0), lod).b);
+    } else if (kind < 0.66 && uQN > 0) {
+      // a saved painting
+      int ql = int(mixh(h + 27u) % uint(max(uQN, 1)));
+      float sc = pow(PHI, 3.0 * unit(mixh(h + 28u)) - 1.5);
+      c = keyed(texture(uQuilt, vec3((p - bC) / (uQS * sc) + unit(mixh(h + 29u)), float(ql))).rgb * 255.0);
+    } else if (kind < 0.8 && uAN > 0) {
+      // a fragment of the history, torn from somewhere in the picture
+      float sc = 1.0 + 2.0 * unit(mixh(h + 30u));
+      vec2 uv = clamp(0.5 + (p - bC) / (bR * 2.0 * sc) + 0.3 * (vec2(unit(mixh(h + 31u)), unit(mixh(h + 32u))) - 0.5), 0.0, 1.0);
+      c = keyed(history(16.0 * unit(mixh(h + 33u)), uv));
+    } else {
+      // coloured paper: flat, the colour its own or taken from the plane where it lies, pushed
+      c = unit(mixh(h + 34u)) < 0.7 ? PAPER[int(mixh(h + 35u) % 9u)] : keyed(was(bC - vec2(uPrev0), 4.0));
+      c *= 0.94 + 0.12 * vnoise(p, 8.0, h + 36u);                     // the paper's grain
+    }
+    // a torn edge shows the paper's white core
+    c = mix(c, vec3(246, 244, 238), bTorn * 0.8);
+    over(col, a, c, 1.0);
+  }
+  // slivers of spectrum, here and there: a few bands in a stretch, each its own width
+  float sl = smoothstep(0.66, 0.8, vnoise(pa + T * vec2(0.6, -1.1), 610.0, 40151u));
+  if (sl > 0.0) {
+    float an = 0.35 + 2.4 * vnoise(p, 2584.0, 40152u);
+    vec2 n = vec2(-sin(an), cos(an));
+    float along = dot(p, vec2(cos(an), sin(an))), sg = floor(along / 55.0 + vnoise(p, 34.0, 40154u));
+    // broken along their length: runs of a few tens of cells, each set a little aside, some missing
+    float v = dot(p, n) + 13.0 * (unit(h3(int(sg), 5, 40155u)) - 0.5);
+    float bi = floor(v / 55.0);
+    uint hb = h3(int(bi), 3, 40153u);
+    if (unit(h3(int(sg), int(bi), 40156u)) < 0.45) hb = 0xFFFFFFFFu;
+    float w = 2.0 + 21.0 * pow(unit(hb), 2.0), g = (v - bi * 55.0 - 55.0 * unit(mixh(hb + 1u)) * 0.5) / w;
+    if (unit(mixh(hb + 2u)) < 0.3 && g > 0.0 && g < 1.0) {
+      vec3 spec = 0.5 + 0.5 * cos(6.2832 * (g * 1.3 + unit(mixh(hb + 3u)) + vec3(0.0, 0.33, 0.67)));
+      vec3 c = vec3(cellWas(lp + n * 5.0).r, cellWas(lp).g, cellWas(lp - n * 5.0).b);
+      over(col, a, mix(c, spec * 255.0, 0.55), sl);
+    }
+  }
+  if (a <= 0.0) discard;
+  // in patches, the colour reduced to five levels and dithered (the dither fixed to the plane, so it does not seethe)
+  float po = smoothstep(0.6, 0.7, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));
+  if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + cellHash(p, 40162u)) / 4.0 * 255.0, po);
+  // it opens onto the plane as speckle, at the edge of its country only
+  float m = a * (t > cellHash(p, 40164u) * 0.8 + 0.1 ? 1.0 : 0.0);
+  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, m);
+}`;
+
 // The seventh pass: the seams as tree lines. Where two regions meet, the edge is a canopy against the sky, as a
 // wood's top is from below: the darker painting is the canopy, the lighter the sky, and the line between them breaks
 // into crowns, then clumps, then single leaves or needles, the sky showing through gaps inside the canopy's edge and
@@ -2949,10 +3176,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
+  const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -3032,7 +3260,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -3105,7 +3333,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -3125,6 +3353,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN"]);
+    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -3329,6 +3559,24 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
+    // then the collage, cut from all of it
+    const glued = collageProg && tier >= 1 && !earth && edgeOn && !(anom[2] > 0) && !noCollage;
+    if (glued && prevN[0]) {
+      gl.useProgram(collageProg);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2i(Co.uCell0, cx0, cy0);
+      gl.uniform2i(Co.uPrev0, prev0[0], prev0[1]);
+      gl.uniform2f(Co.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(Co.uPrevTex, FW, FH);
+      gl.uniform1f(Co.uTime, t);
+      gl.uniform1i(Co.uQN, qn);
+      gl.uniform1f(Co.uQS, qs);
+      gl.uniform1i(Co.uAN, an);
+      gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
     // and in an anomaly's dark, space
     if (spaceProg && anom[2] > 0 && !earth) {
       gl.useProgram(spaceProg);
@@ -3341,7 +3589,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
-    if ((depthProg && deep) || lit || trees) {
+    if ((depthProg && deep) || lit || trees || glued) {
       // this frame, kept for the next
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
       gl.readBuffer(gl.COLOR_ATTACHMENT1);
