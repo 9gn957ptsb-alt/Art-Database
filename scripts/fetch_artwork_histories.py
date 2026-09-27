@@ -55,8 +55,8 @@ def get(path):
     for attempt in range(6):
         try:
             r = session().get(API + path, timeout=60)
-            if r.status_code == 404:
-                return None
+            if r.status_code in (401, 403, 404):
+                return None             # gone, or private (a closed or invitation-only sale)
             if r.status_code == 429 or r.status_code >= 500:
                 time.sleep(5 * 2 ** attempt)
                 continue
@@ -64,7 +64,8 @@ def get(path):
             return r.json()
         except requests.RequestException:
             time.sleep(5 * 2 ** attempt)
-    raise RuntimeError(f"Artsy would not answer {path}")
+    print(f"  ! Artsy would not answer {path}", flush=True)
+    return None
 
 
 def slim_partner(p):
@@ -159,6 +160,11 @@ def places(refresh):
 
     for d in ("fairs", "partners"):
         (OUT / d).mkdir(parents=True, exist_ok=True)
+    # The partner that listed each work: where the work was when it was offered (or is held).
+    for path in sorted((OUT / "works").glob("*.json")):
+        pid = (json.loads(path.read_text()).get("partner") or {}).get("id")
+        if pid:
+            partner(pid)
     for kind in ("shows", "sales"):
         for path in sorted((OUT / kind).glob("*.json")):
             rec = json.loads(path.read_text())
