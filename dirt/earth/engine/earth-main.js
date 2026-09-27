@@ -25,7 +25,7 @@ async function earthLoad() {
   const meta = await (await fetch(E_URL + "meta.json")).json();
   const stat = ["place", "class", "ground", "water", "sky", "names", "view", "relief", "wind"];
   const monthly = ["temp", "rain", "cloud", "cloudtype", "snow"];
-  const imgs = await Promise.all([...stat.map((n) => earthImage(n + ".png")), ...monthly.flatMap((n) => [0, 1, 2, 3].map((q) => earthImage(`${n}-${q}.png`)))]);
+  const imgs = await Promise.all([...stat.map((n) => earthImage(n + ".webp")), ...monthly.flatMap((n) => [0, 1, 2, 3].map((q) => earthImage(`${n}-${q}.webp`)))]);
   const px = imgs.map(rgbaOf), [place, cls, ground, water, sky, names, view, relief, wind] = px, n = AW * AH, n2 = MW * MH;
   const U8 = () => new Uint8Array(n);
   const D = { meta, eco: new Uint16Array(n), surf: U8(), koppen: U8(), hold: U8(), realm: U8(), soil: U8(), canopy: U8(), arid: U8(), wbits: U8(), marine: U8(),

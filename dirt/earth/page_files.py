@@ -10,7 +10,6 @@ the square root of its height, for shading hills; the sea's depth is already in 
 """
 
 import json
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -32,14 +31,19 @@ def half(a, pick=False):
 
 
 def save(a, path):
-    Image.fromarray(a).save(path, optimize=True)
+    """Lossless WebP: the same bytes a PNG would hold, a quarter smaller. Every layer here is data, not a
+    picture - the page reads each channel back as a number - so nothing may be rounded."""
+    path = Path(path).with_suffix(".webp")
+    Image.fromarray(a).save(path, "WEBP", lossless=True, quality=100, method=6, exact=True)
+    if not np.array_equal(np.asarray(Image.open(path).convert("RGB")), a):
+        raise ValueError(f"{path.name} did not come back byte for byte")
 
 
 def write(atlas, out):
     atlas, out = Path(atlas), Path(out)
     out.mkdir(parents=True, exist_ok=True)
     for n in STATIC:
-        shutil.copy(atlas / n, out / n)
+        save(rgb(atlas / n), out / n)
     t = rgb(atlas / "terrain.png").astype(np.int32)
     elev = t[..., 0] + 256 * t[..., 1] - 11000
     sea = rgb(atlas / "place.png")[..., 2] == 255
@@ -52,7 +56,7 @@ def write(atlas, out):
         save(half(rgb(atlas / f"cloudtype-{q}.png"), pick=True), out / f"cloudtype-{q}.png")
     meta = json.loads((atlas / "atlas.json").read_text())
     meta["grammar"] = json.loads((atlas / "grammar-engine.json").read_text())
-    meta["page"] = {"relief.png": {"r,g": "land elevation in metres + 11000, little-endian 16 bit (0 m at sea); under the Greenland and Antarctic ice sheets the rock's, not the ice's",
+    meta["page"] = {"format": "each layer below is written as lossless WebP (same name, .webp): the same bytes as the PNG", "relief.png": {"r,g": "land elevation in metres + 11000, little-endian 16 bit (0 m at sea); under the Greenland and Antarctic ice sheets the rock's, not the ice's",
                                    "b": "relief code, as terrain.png b"},
                     "half degree": ["wind.png", "temp-*.png", "rain-*.png", "cloud-*.png", "cloudtype-*.png", "snow-*.png"]}
     (out / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")))
