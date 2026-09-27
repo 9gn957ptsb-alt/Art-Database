@@ -2637,6 +2637,9 @@ uniform sampler2DArray uQuilt;
 uniform int uQN;
 uniform float uQS;
 uniform int uLite;                  // 1 on a device at its lowest level: the smaller pieces and the slivers left out
+uniform sampler2D uThing;           // the thing put in: a photo the viewer gave the plane (see drift.js)
+uniform float uThingOn;             // 1 once there is one
+uniform vec4 uThingP;               // where it was put in (cells), when (seconds), and its width over its height
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
@@ -2672,6 +2675,28 @@ float cloudD(vec2 p, float T) {
   q += 55.0 * (vec2(vnoise(q, 144.0, 40131u), vnoise(q, 144.0, 40132u)) - 0.5);
   return 0.5 * vnoise(q, 233.0, 40133u) + 0.27 * vnoise(q, 89.0, 40134u) + 0.15 * vnoise(q, 34.0, 40135u) + 0.08 * vnoise(q, 13.0, 40136u);
 }
+/** Whether p (d from the middle) is inside a convex scrap of nv corners about R across, turned an0, its corners
+ * jittered by jit of their spacing; each edge torn (the paper's fibres, a ragged margin a few cells deep) with the
+ * chance torn, tornE how near p is to a torn edge. */
+bool shard(vec2 p, vec2 d, float R, float an0, int nv, uint h, float jit, float torn, out float tornE) {
+  tornE = 0.0;
+  float s = 6.2832 / float(nv);
+  for (int k = 0; k < 4; k++) {
+    if (k >= nv) break;
+    float a0 = an0 + s * float(k) + jit * s * (unit(mixh(h + 6u + uint(k))) - 0.5);
+    float a1 = an0 + s * float((k + 1) % nv) + jit * s * (unit(mixh(h + 6u + uint((k + 1) % nv))) - 0.5);
+    vec2 v0 = R * vec2(cos(a0), sin(a0)), v1 = R * vec2(cos(a1), sin(a1)), ed = normalize(v1 - v0);
+    float side = ed.x * (d.y - v0.y) - ed.y * (d.x - v0.x);
+    if (unit(mixh(h + 11u + uint(k))) < torn) {
+      side += 5.0 * (vnoise(p, 3.0, h + 17u) - 0.5) + 10.0 * (vnoise(p, 13.0, h + 18u) - 0.5);
+      tornE = max(tornE, 1.0 - clamp(abs(side) / 3.0, 0.0, 1.0));
+    }
+    if (side < 0.0) return false;
+  }
+  return true;
+}
+/** The photo put in at uv (0 to 1 across it), a little brought into the collage's key. */
+vec3 thingAt(vec2 uv, float lod) { vec3 c = textureLod(uThing, clamp(uv, 0.0, 1.0), lod).rgb * 255.0; return mix(c, keyed(c), 0.3); }
 /** One scale of pieces (seeds S cells apart on a lattice turned off the plane's, each a triangle or four-sided scrap
  * R0 to R0 + R1 across, living 13 to 55 seconds): the topmost covering p, if its z is above bestZ. */
 void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
@@ -2695,23 +2720,8 @@ void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
     vec2 d = p - C;
     if (dot(d, d) > R * R) continue;
     int nv = unit(mixh(h + 5u)) < 0.55 ? 3 : 4;
-    // inside: on the inner side of every edge (a convex polygon with its corners jittered)
-    bool inside = true;
-    float tornE = 0.0, s = 6.2832 / float(nv);
-    for (int k = 0; k < 4; k++) {
-      if (k >= nv) break;
-      float a0 = an0 + s * float(k) + 0.6 * s * (unit(mixh(h + 6u + uint(k))) - 0.5);
-      float a1 = an0 + s * float((k + 1) % nv) + 0.6 * s * (unit(mixh(h + 6u + uint((k + 1) % nv))) - 0.5);
-      vec2 v0 = R * vec2(cos(a0), sin(a0)), v1 = R * vec2(cos(a1), sin(a1)), ed = normalize(v1 - v0);
-      float side = ed.x * (d.y - v0.y) - ed.y * (d.x - v0.x);
-      // some edges torn: the paper's fibres, a ragged margin a few cells deep
-      if (unit(mixh(h + 11u + uint(k))) < 0.4) {
-        side += 5.0 * (vnoise(p, 3.0, h + 17u) - 0.5) + 10.0 * (vnoise(p, 13.0, h + 18u) - 0.5);
-        tornE = max(tornE, 1.0 - clamp(abs(side) / 3.0, 0.0, 1.0));
-      }
-      if (side < 0.0) { inside = false; break; }
-    }
-    if (!inside) continue;
+    float tornE;
+    if (!shard(p, d, R, an0, nv, h, 0.6, 0.4, tornE)) continue;
     // dissolving in and out as speckle
     float vis = min(age / 0.05, (0.8 - age) / 0.05);
     if (vis < 1.0 && vis < cellHash(p, h + 19u)) continue;
@@ -2721,7 +2731,25 @@ void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
-  if (t <= 0.0) discard;
+  // the thing put in arrives where it was put in: the whole photo, torn out, for a few seconds, and the collage takes
+  // it from there (the datamosh melts it, the pieces carry it off across the plane)
+  float thAge = T - uThingP.z, am = 0.0, amT = 0.0;
+  vec3 ac = vec3(0.0);
+  if (uThingOn > 0.5 && thAge >= 0.0 && thAge < 21.0) {
+    vec2 d = p - uThingP.xy;
+    float ar = uThingP.w, hh = 144.0 * min(1.0, 1.2 / sqrt(ar)), R = hh * sqrt(1.0 + ar * ar) * 0.72;
+    float tilt = 0.12 * sin(uThingP.z * 7.0);
+    mat2 rot = mat2(cos(tilt), sin(tilt), -sin(tilt), cos(tilt));
+    vec2 e = rot * d / vec2(ar, 1.0);                                  // the photo's own frame, squared up
+    if (dot(e, e) < hh * hh * 2.0 && shard(p, e, hh * 1.1, 0.785, 4, 40171u, 0.18, 0.75, amT)) {
+      float vis = min(thAge / 0.6, (21.0 - thAge) / 8.0);
+      if (vis >= 1.0 || vis > cellHash(p, 40172u)) {
+        ac = mix(thingAt(0.5 + e / (hh * 1.5), 0.0), vec3(246, 244, 238), amT * 0.8);
+        am = 1.0;
+      }
+    }
+  }
+  if (t <= 0.0 && am <= 0.0) discard;
   vec2 pa = askew(p);
   float fr = floor(T * 30.0);
   vec3 col = vec3(0.0);
@@ -2777,7 +2805,14 @@ void main() {
     uint h = bh;
     float kind = unit(mixh(h + 20u));
     vec3 c;
-    if (kind < 0.36) {
+    // once there is a photo put in, many of the pieces are of it: most at first, a third after a few minutes
+    float thingShare = uThingOn * (0.3 + 0.4 * exp(-max(thAge, 0.0) / 144.0));
+    if (unit(mixh(h + 40u)) < thingShare) {
+      float sc = 0.6 + 1.8 * unit(mixh(h + 41u));
+      vec2 uv = 0.5 + (p - bC) / (bR * 2.0 * sc) / vec2(uThingP.w, 1.0) + 0.4 * (vec2(unit(mixh(h + 42u)), unit(mixh(h + 43u))) - 0.5);
+      float lod = unit(mixh(h + 44u)) < 0.25 ? 2.5 : 0.0;
+      c = thingAt(uv, lod);
+    } else if (kind < 0.36) {
       // a piece of elsewhere in the view: moved, larger or smaller, sharp or out of focus, its colours parted
       vec2 sh = (vec2(unit(mixh(h + 21u)), unit(mixh(h + 22u))) - 0.5) * uPrevSize * 0.7;
       float zm = pow(PHI, 2.0 * unit(mixh(h + 23u)) - 1.0) * (unit(mixh(h + 24u)) < 0.2 ? PHI * PHI : 1.0);
@@ -2821,12 +2856,13 @@ void main() {
       over(col, a, mix(c, spec * 255.0, 0.55), sl);
     }
   }
-  if (a <= 0.0) discard;
+  if (a <= 0.0 && am <= 0.0) discard;
   // in patches, the colour reduced to five levels and dithered (the dither fixed to the plane, so it does not seethe)
   float po = smoothstep(0.6, 0.7, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));
   if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + cellHash(p, 40162u)) / 4.0 * 255.0, po);
   // it opens onto the plane as speckle, at the edge of its country only
   float m = a * (t > cellHash(p, 40164u) * 0.8 + 0.1 ? 1.0 : 0.0);
+  if (am > 0.0) { col = mix(col, ac, am); m = max(m, am); }            // the photo arriving, over all of it
   outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, m);
 }`;
 
@@ -3225,6 +3261,27 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, q, gl.CLAMP_TO_EDGE);
     an = gl.getError() === gl.NO_ERROR ? imgs.length : 0;
   }
+  // the thing put in: a photo the viewer gave the plane (drift.js), on unit 12, for the collage to glue in
+  let tThing = null, thingSrc = null, thingOn = 0;
+  const thingP = [0, 0, -1e9, 1];
+  function fillThing(src) {
+    gl.activeTexture(gl.TEXTURE12);
+    gl.deleteTexture(tThing);
+    tThing = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tThing);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+    thingOn = gl.getError() === gl.NO_ERROR ? 1 : 0;
+  }
+  /** Put a photo into the plane (a canvas or image), at x, y in cells: it arrives there, then the collage carries it. */
+  function putIn(src, x, y) {
+    thingSrc = src;
+    thingP[0] = x; thingP[1] = y; thingP[2] = (performance.now() - T0) / 1000; thingP[3] = (src.width || 1) / (src.height || 1);
+    if (!lost) fillThing(src);
+  }
   if (antiquity && antiquity.length) {
     Promise.all(antiquity.map((q) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = "antiquity/" + q.file; })))
       .then((imgs) => { if (imgs.every(Boolean)) { antImgs = imgs; if (!lost) fillAntiquity(imgs); } });
@@ -3327,6 +3384,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, 1, 1, 1);
     an = 0;
     if (antImgs) fillAntiquity(antImgs);
+    gl.activeTexture(gl.TEXTURE12); tThing = tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 1, 1);
+    thingOn = 0;
+    if (thingSrc) fillThing(thingSrc);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -3354,8 +3415,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite"]);
-    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); }
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP"]);
+    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -3574,6 +3635,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1f(Co.uQS, qs);
       gl.uniform1i(Co.uAN, an);
       gl.uniform1i(Co.uLite, tier === 0 ? 1 : 0);
+      gl.uniform1f(Co.uThingOn, thingOn);
+      gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -3617,5 +3680,5 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, putIn, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }

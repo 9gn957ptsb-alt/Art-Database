@@ -5,6 +5,10 @@
 // of the same kind, farther out with every step. The plane carries you to each in turn, a long glide across it, and
 // names where you have come to, what carried you there, and where to go to see more; Drift from here goes on from
 // any of them. It asks Claude through the page's `sample` capability, on the viewer's own Claude account.
+// A photo also goes into the plane itself, the moment it is given: it arrives where you are, torn out whole, and the
+// collage (ground-gl.js) melts it and carries pieces of it across the plane from then on. Where Claude cannot be sent
+// pictures in this view, the drift still follows the photo: the page measures it (its colours, light, contrast and
+// grain) and gives Claude that instead, with any name you add.
 
 (() => {
   if (typeof SITE !== "undefined" && SITE) return;
@@ -36,7 +40,7 @@
   const form = document.createElement("form");
   form.className = "drift-in";
   form.innerHTML = `<img id="d-thumb" alt="" hidden><input type="text" id="d-q" autocomplete="off" placeholder="put a thing in" aria-label="Put a thing in: name it, or give a photo">
-    <button type="button" id="d-pick" title="A photo of the thing">Photo</button><input type="file" id="d-file" accept="image/*" hidden>
+    <button type="button" id="d-pick" title="Put a photo in: it goes into the plane, and the drift starts from it">Photo</button><input type="file" id="d-file" accept="image/*" hidden>
     <button type="submit" id="d-go">Drift</button>`;
   bar.appendChild(form);
   const at = document.createElement("div"); at.className = "drift-at"; at.hidden = true; at.setAttribute("aria-live", "polite");
@@ -48,14 +52,18 @@
   const link = (text, href, cls) => { const a = el("a", cls || "", text); a.href = href; a.target = "_blank"; a.rel = "noopener"; return a; };
 
   // ---- Claude --------------------------------------------------------------------------------------------------
-  let sample = null;
+  let sample = null, imagesOk = false, sendAs = null;
+  const plane = () => typeof GLG !== "undefined" && GLG && GLG.putIn;
   const ready = (async () => {
     const p = window.claude && window.claude.use ? window.claude.use("sample") : null;
     sample = p ? await p.catch(() => null) : null;
-    if (!sample) { form.hidden = true; return; }
+    if (!sample) {                                                   // no Claude here: a photo can still go into the plane
+      if (plane()) { $("d-q").hidden = $("d-go").hidden = true; } else form.hidden = true;
+      return;
+    }
     const lim = await sample.limits().catch(() => null);
-    if (!lim || !lim.images) $("d-pick").hidden = true;
-    else $("d-file").accept = lim.images.mediaTypes.join(",");
+    imagesOk = !!(lim && lim.images);
+    if (imagesOk) sendAs = ["image/jpeg", "image/png", "image/webp"].find((m) => lim.images.mediaTypes.includes(m)) || null;
   })();
   const ARTISTS = (typeof PL !== "undefined" && PL.works ? [...new Set(PL.works.map((w) => w.artist).filter(Boolean))].slice(0, 24) : []).join(", ");
   function prompt(thing, visited) {
@@ -133,35 +141,101 @@ For "go", give a real website you are certain exists (a museum or collection pag
   function say(text) { at.replaceChildren(el("div", "dn", "the drift"), el("p", "ds", text)); at.hidden = false; by.hidden = true; }
 
   // ---- putting a thing in ----------------------------------------------------------------------------------------
-  let picked = null, ctl = null, busy = false;
-  function take(file) {
-    if (!file || !/^image\//.test(file.type)) return;
-    picked = file;
-    $("d-thumb").src = URL.createObjectURL(file); $("d-thumb").hidden = false; $("d-thumb").alt = "The photo put in";
+  // ---- a photo -------------------------------------------------------------------------------------------------
+  const isImage = (f) => f && (/^image\//.test(f.type) || /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(f.name || ""));
+  const open = (file) => new Promise((ok, no) => {
+    const im = new Image(), u = URL.createObjectURL(file);
+    im.onload = () => ok(im); im.onerror = () => { URL.revokeObjectURL(u); no(new Error("undecodable")); };
+    im.src = u;
+  });
+  /** The photo drawn at most `side` pixels on its longer side (browsers turn it upright as they draw it). */
+  function fitted(im, side) {
+    const w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, side / Math.max(w, h)), c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    return c;
   }
+  const hex = (c) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+  /** What the page can tell of a photo without seeing it as Claude would: its colours, most to least, its light, its
+   * contrast, its grain, and its shape. */
+  function measure(c) {
+    const S = 34, s = document.createElement("canvas"); s.width = s.height = S;
+    const x = s.getContext("2d", { willReadFrequently: true }); x.drawImage(c, 0, 0, S, S);
+    const d = x.getImageData(0, 0, S, S).data, bins = new Map();
+    let L = 0, L2 = 0, sat = 0, warm = 0, edge = 0;
+    const lum = (i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2], l = lum(i), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      L += l; L2 += l * l; sat += mx ? (mx - mn) / mx : 0; warm += r - b;
+      if ((i / 4) % S) edge += Math.abs(l - lum(i - 4));
+      const k = (r >> 5) * 64 + (g >> 5) * 8 + (b >> 5), e = bins.get(k) || [0, 0, 0, 0];
+      e[0] += r; e[1] += g; e[2] += b; e[3]++; bins.set(k, e);
+    }
+    const n = S * S; L /= n; const sd = Math.sqrt(Math.max(0, L2 / n - L * L)); sat /= n; warm /= n; edge /= S * (S - 1);
+    const cols = [];
+    for (const e of [...bins.values()].sort((a, b) => b[3] - a[3])) {
+      const col = [e[0] / e[3], e[1] / e[3], e[2] / e[3]];
+      if (cols.every((q) => Math.hypot(q[0] - col[0], q[1] - col[1], q[2] - col[2]) > 55)) cols.push(col);
+      if (cols.length === 6) break;
+    }
+    const ar = c.width / c.height;
+    return [ar > 1.15 ? "wider than tall" : ar < 0.87 ? "taller than wide" : "about square",
+      L > 170 ? "light and high-key" : L < 85 ? "dark and low-key" : "mid-toned",
+      sd > 64 ? "strong contrast" : sd < 32 ? "soft, low contrast" : "moderate contrast",
+      sat > 0.45 ? "saturated colour" : sat < 0.18 ? "nearly colourless" : "some colour",
+      warm > 18 ? "warm" : warm < -18 ? "cool" : "neither warm nor cool",
+      edge > 18 ? "busy with detail and texture" : edge < 7 ? "smooth, few edges" : "some detail",
+    ].join(", ") + "; its colours, most to least: " + cols.map(hex).join(", ");
+  }
+  let picked = null, ctl = null, busy = false;
+  /** Take a photo: into the plane at once, and ready for the drift. */
+  async function take(file) {
+    if (!isImage(file)) return null;
+    let im;
+    try { im = await open(file); } catch (e) { say("That photo couldn't be opened here. Try a JPEG or PNG."); return null; }
+    const canvas = fitted(im, 1024);
+    picked = { file, canvas, measured: measure(canvas) };
+    $("d-thumb").src = im.src; $("d-thumb").hidden = false; $("d-thumb").alt = "The photo put in";
+    if (plane()) GLG.putIn(canvas, vx + VW / 2, vy + VH / 2);
+    await ready;
+    if (!sample) say("The photo is in the plane.");
+    else if (!imagesOk) say("The photo is in the plane. Claude can't be sent pictures in this view, so the drift will follow its colours and light; add a name for more, then Drift.");
+    else say("The photo is in the plane. Add a name if you like, then Drift.");
+    return picked;
+  }
+  const blobOf = (canvas) => new Promise((ok) => sendAs ? canvas.toBlob(ok, sendAs, 0.88) : ok(null));
   $("d-pick").addEventListener("click", () => $("d-file").click());
   $("d-file").addEventListener("change", () => take($("d-file").files[0]));
   stageEl.addEventListener("dragover", (e) => { if ([...(e.dataTransfer.items || [])].some((i) => i.kind === "file")) e.preventDefault(); });
-  stageEl.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f && /^image\//.test(f.type)) { e.preventDefault(); take(f); go(null, f, []); } });
-  document.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find((x) => /^image\//.test(x.type)); if (f) take(f); });
+  stageEl.addEventListener("drop", async (e) => { const f = e.dataTransfer.files[0]; if (isImage(f)) { e.preventDefault(); const ph = await take(f); if (ph) go(null, ph, []); } });
+  document.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find(isImage); if (f) take(f); });
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (busy) { ctl && ctl.abort(); return; }
     const t = $("d-q").value.trim();
     if (!t && !picked) { $("d-q").focus(); return; }
-    go(t ? (picked ? "the thing in the photo: " + t : t) : null, picked, []);
+    go(t || null, picked, []);
   });
-  async function go(thing, file, visited) {
+  /** Drift from a thing: a name, a photo (with or without a name), or a station to go on from. */
+  async function go(name, photo, visited) {
     await ready;
     if (!sample || busy) return;
+    let thing = name, images, retry = false;
+    if (photo && imagesOk) {
+      images = (await blobOf(photo.canvas)) || photo.file;
+      thing = name ? "the thing in the photo: " + name : null;
+    } else if (photo) {
+      thing = name ? `the thing in the photo: ${name} (you cannot see the photo here; the page measured it: ${photo.measured})`
+        : `a photograph the person put in, which you cannot see here; the page measured it: ${photo.measured}. Drift from what such a picture holds`;
+    }
     busy = true; $("d-go").textContent = "Stop";
     ctl = new AbortController();
     const start = [vx + VW / 2, vy + VH / 2];
-    trip = { thing: thing ? thing.split(":")[0].replace(/^the thing in the photo: /, "") : "the photo", stations: [], at: -1, path: [start], dir: Math.random() * Math.PI * 2, done: false };
+    trip = { thing: name ? name.split(":")[0] : photo ? "the photo" : "the thing", stations: [], at: -1, path: [start], dir: Math.random() * Math.PI * 2, done: false };
     say("Reading the thing. The first station takes a little while.");
     try {
       const { text } = await sample(prompt(thing, visited), {
-        signal: ctl.signal, cache: false, images: file || undefined,
+        signal: ctl.signal, cache: false, images,
         onText: ({ text }) => {
           const objs = lines(text), th = objs.find((o) => o.t === "thing");
           if (th && th.name) trip.thing = th.name;
@@ -174,13 +248,15 @@ For "go", give a real website you are certain exists (a museum or collection pag
       trip.done = true;
       if (trip.stations.length) show(Math.max(0, trip.at)); else say("Nothing came back to follow. Try another thing.");
     } catch (e) {
-      if (e && e.code === "cancelled") say("Stopped.");
+      if (e && e.code === "images_unavailable" && images) retry = true;   // then from what the page measured of it
+      else if (e && e.code === "cancelled") say("Stopped.");
       else say(COPY[e && e.code] || "The drift was interrupted. Try again.");
       if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) form.hidden = true;
     } finally {
       busy = false; $("d-go").textContent = "Drift";
       picked = null; $("d-thumb").hidden = true; $("d-file").value = "";
     }
+    if (retry) { imagesOk = false; go(name, photo, visited); }
   }
   document.addEventListener("keydown", (e) => {
     if (!trip || at.hidden || /^(input|textarea)$/i.test(document.activeElement && document.activeElement.tagName)) return;

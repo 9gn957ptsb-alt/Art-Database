@@ -283,6 +283,12 @@ same kind, farther out with every step. The plane carries you to each in a long 
 a little each time, so each station lands somewhere new on the ladder), names where you have come to and what carried
 you there, and gives a site to visit and search links; ‹ › (or [ ]) move between stations and Drift from here goes on.
 It asks Claude through the page's `sample` capability, on the viewer's own Claude account (`engine/drift.js`).
+A photo also goes into the plane itself the moment it is given (Photo is always there, even where Claude is not): it
+arrives where you are, torn out whole, for a few seconds while the datamosh melts it, and from then on it is one of the
+collage's materials, most of its pieces at first and a third of them after a few minutes, carried across the plane
+until another photo takes its place. Where the view cannot send Claude pictures, the page measures the photo (its
+colours most to least, its light, contrast, saturation, warmth and grain, and its shape) and the drift follows that,
+with any name you add. The photo stays in the viewer's browser, and goes to Claude only when the view can send it.
 
 **The ladder of complexity.** The plane is DIRT at the full reach of its language, and that reach runs from nothing to
 everything. Over the plane lies a field of complexity, 0 to 1, rising and falling across two or three screens, so a few
