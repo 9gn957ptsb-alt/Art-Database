@@ -260,11 +260,14 @@ language and colours, guided by high-quality generated studies:
 
 **Singularities.** The plane is not an even quilt: one in each 987-cell square (φ⁻¹ of them kept), reaching 233 to
 377 cells, is a singularity, where the image itself collapses and is born again. Across its axis it has two halves.
-On one, whatever world lies there breaks into blocks of 2, 3, 5, 8, 13, 21, 34, 55 and 89 cells, each the colour of its
-middle, converging on the core, until at the core there is a single pixel: one colour, pulsing, with a corona and two
-turning beams, like a neutron star. On the other half a world found nowhere else on the plane builds up out of that
-pixel, coarse at the core and finer outward, in colours born of the core's own colour made pure and turned by the
-golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
+On one, whatever world lies there is drawn into a kaleidoscope's tube: 3 mirrors at the rim, then 5, 8, 13 and 21
+nearer the core, and down the tube every ring φ times nearer holds the ring outside it again, drawing slowly inward,
+so the flat plane is seen to go down and down, a depth that is not there. Each image is as much dimmer and greener as
+the mirrors it has come through (silvered glass takes a little light at each reflection and leans green), and where
+the mirrors meet, a glint fades off the glass, a gradient, never a line. At the core there is a single pixel: one
+colour, pulsing, with a corona and two turning beams, like a neutron star. On the other half a world found nowhere
+else on the plane builds up out of that pixel, seen in a kaleidoscope of 8 mirrors at the core, 5, then 3 at the rim,
+turning slowly against the tube, in colours born of the core's own colour made pure and turned by the golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing deeper outward, two sources of
 rings interfering, or a crystal of hexagons whose faces turn with the light.
 
 **As much as the device can draw.** DRIFT shows as much as the device it runs on can draw smoothly, at four levels:
@@ -301,7 +304,7 @@ swipes cross the whole ladder:
 | plane | to 0.28 | Rothko's stacked fields, Kelly's one shape, Irwin's disc, Larry Bell's cube, Kline's strokes, Kandinsky's point, line and triangle |
 | structure | to 0.40 | Albers's squares, Agnes Martin's grid, LeWitt's four directions, Mondrian, Miró's constellation, Morandi's bottles |
 | repetition | to 0.50 | Gerstner's rings, Riley's waves, Kusama's dots, Judd's stack |
-| simplified | to 0.75 | the worlds, drawn from the middles of blocks (13 cells down to 2) and in few tones (2 up to 16) |
+| simplified | to 0.75 | the worlds in few tones (2 up to 16), with mirrors standing in them: strips of silvered glass (8 to 55 cells deep, more the lower) where one side of a winding line shows the other reflected, and lower down a second mirror reflecting the first |
 | full | 1 | the worlds as they were, with the meta forms' light, the singularities and all their life |
 
 Each minimal area is one painting after one of the saved artists, in the colours of that artist's own saved works

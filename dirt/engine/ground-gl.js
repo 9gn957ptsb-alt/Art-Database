@@ -90,6 +90,7 @@ vec3 gMark = vec3(0);         // uForce: one grammar everywhere, for looking at 
 uniform ivec2 uGram[5];             // each grammar's works: first row, count
 vec2 gP;                            // the cell being painted, on the plane
 vec2 gTrue;                         // where the cell really is (a simplified area samples others)
+float gMirK = 0.0, gMirE = 1e9;     // the mirrors: how many reflections the cell is seen through, how near their glass
 vec2 gMid;                          // the middle of its passage
 float gGate = 1.0;                  // how much of a sheet's marks are drawn yet (while it is being drawn)
 
@@ -1213,7 +1214,7 @@ vec3 toShade(vec3 col, int g, float sh, float M) {
 //   plane         Rothko's stacked fields, Kelly's one shape, Irwin's disc, Larry Bell's cube, Kline, Kandinsky
 //   structure     Albers's squares, Agnes Martin's grid, LeWitt's lines, Mondrian, Miro's constellations, Morandi
 //   repetition    Gerstner's rings, Riley's waves, Kusama's dots, Judd's stacks
-//   simplified    the worlds, in blocks and few tones, fewer the lower
+//   simplified    the worlds in few tones, fewer the lower, with mirrors standing in them
 //   full          the worlds as they are, with the meta forms' light and the singularities
 // Each minimal area is drawn in the colours of that artist's own saved works (dark, middle, light, and their most
 // vivid), measured from the collection.
@@ -1669,10 +1670,11 @@ float kinship(int a, int b, out vec3 shared, out float sharedD) {
 
 // ---- singularities: where the image collapses to one pixel, and something new is born of it --------------
 // One in each 987-cell square, kept at phi^-1 of them, each reaching 233 to 377 cells. Across its axis it has two
-// halves. On one, the plane collapses: whatever world is there breaks into blocks of 2, 3, 5, 8 ... 89 cells, every
-// block the colour of its middle, the blocks converging on the core, until at the core there is a single pixel: one
-// colour, pulsing, with a corona and two turning beams, like a neutron star. On the other half a world found nowhere
-// else builds up out of that pixel, coarse at the core and finer outward, in colours born of the core's own colour
+// halves. On one, the plane collapses into a kaleidoscope's tube: 3 mirrors at the rim, 5, 8, 13, 21 nearer the core,
+// and every ring phi times nearer holding the ring outside it again, drawing inward, so the flat plane is seen going
+// down and down (each image dimmer and greener for the mirrors it came through), until at the core there is a single
+// pixel: one colour, pulsing, with a corona and two turning beams, like a neutron star. On the other half a world
+// found nowhere else builds up out of that pixel, seen in a kaleidoscope of 8 mirrors, then 5, then 3, in colours born of the core's own colour
 // turned by the golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing, rings
 // interfering, or a prismatic crystal.
 const int FIBS[11] = int[11](1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144);
@@ -1693,7 +1695,33 @@ Sing singAt(vec2 p) {
   return best;
 }
 /** How coarse the image is at distance r from a core: one cell out at the rim, the whole core at the centre. */
-float blockAt(float r, float R) { float t = clamp(1.0 - (r - 21.0) / (R - 21.0), 0.0, 1.0); return float(FIBS[min(10, int(pow(t, 1.3) * 10.99))]); }
+/** A kaleidoscope's fold: d turned into the wedge between two of n mirrors (2n images round the turn), rot the tube's
+ * turn; k how many reflections the image has come through (those farther round, more), ea how near a mirror (radians). */
+vec2 kaleido(vec2 d, float n, float rot, out float k, out float ea) {
+  float r = length(d), w = 3.14159265 / n, a = atan(d.y, d.x) + rot;
+  float i = floor(a / w), f = a - i * w;
+  if (mod(i, 2.0) > 0.5) f = w - f;                                   // every other image the mirror image
+  float ii = mod(i, 2.0 * n);
+  k = min(ii, 2.0 * n - ii);
+  ea = min(f, w - f);
+  return r * vec2(cos(f - rot), sin(f - rot));
+}
+/** A mirror standing in the plane, as a strip of silvered glass: where a field S cells across (turned off the lattice)
+ * crosses its middle, the side above shows the side below reflected, out to W cells from the glass. p itself where
+ * there is none; k counts the reflection, e keeps how near the glass (or the strip's far edge) the cell is. */
+vec2 mirrorAt(vec2 p, float S, float W, uint s, inout float k, inout float e) {
+  mat2 R = mat2(0.8, 0.6, -0.6, 0.8);
+  vec2 q = R * p;
+  float m = vnoise(q, S, s) - 0.5;
+  if (m <= 0.0) return p;
+  vec2 g = vec2(vnoise(q + vec2(2.0, 0.0), S, s) - 0.5 - m, vnoise(q + vec2(0.0, 2.0), S, s) - 0.5 - m) * 0.5;
+  float gl = length(g);
+  if (gl < 1e-6) return p;
+  float dist = m / gl;
+  if (dist > W) return p;
+  k += 1.0; e = min(e, min(dist, W - dist));
+  return transpose(R) * (q - 2.0 * dist * g / gl);
+}
 /** The world born of a core of colour cc, at p (relative to the core). */
 vec3 newborn(vec2 d, vec3 cc, uint h, float T) {
   int kind = int(mixh(h + 9u) % 4u);
@@ -1978,10 +2006,21 @@ void main() {
       vec2 d = cellP - sg.C;
       sr = length(d);
       sside = dot(d, sg.axis) + 21.0 * (vnoise(cellP, 34.0, sg.h) - 0.5);
-      float b = blockAt(sr, sg.R);
+      float t = clamp(1.0 - (sr - 21.0) / (sg.R - 21.0), 0.0, 1.0);
       if (sside > 0.0 && (sr < sg.R - 13.0 || unit(h3(cell.x, cell.y, sg.h)) < (sg.R - sr) / 13.0)) emerge = true;
-      else if (b > 1.0 || sr < 21.0) {
-        ivec2 bc = sr < 21.0 ? ivec2(sg.C) : ivec2(sg.C + (floor(d / b) + 0.5) * b);
+      else if (sr < 21.0 || t > 0.2 || unit(h3(cell.x, cell.y, sg.h + 1u)) < t / 0.2) {   // (its rim a speckle, not a line)
+        // The plane gathering to the core, seen in a kaleidoscope's tube: 3 mirrors at the rim, then 5, 8, 13 and 21
+        // nearer the core, and down the tube every ring phi times nearer holds the ring outside it again, drawing
+        // slowly inward, so a flat plane is seen to go down and down; each image as dim and green as the mirrors
+        // it has come through.
+        float n = float(FIBS[2 + min(4, int(pow(t, 1.3) * 4.99))]);
+        float rho = log(max(sr, 21.0) / 21.0) / log(PHI) + uTime * 0.08, ring = floor(rho);
+        float rS = sg.R / (PHI * PHI) * pow(PHI, fract(rho));
+        float k, ea;
+        vec2 kd = kaleido(d / max(sr, 1.0) * rS, n, uTime * 0.04 * (mod(ring, 2.0) > 0.5 ? 1.0 : -1.0) + 6.2832 * unit(sg.h), k, ea);
+        gMirK = min(k, 5.0) + max(0.0, log(sg.R / max(sr, 21.0)) / log(PHI) - 1.0);
+        gMirE = ea * sr;
+        ivec2 bc = sr < 21.0 ? ivec2(sg.C) : ivec2(sg.C + kd);
         ivec2 sl2 = (bc >> 8) - uC0;
         if (all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
           vec4 si2 = texelFetch(uSlots, sl2, 0);
@@ -1990,12 +2029,16 @@ void main() {
       }
     }
   }
-  // Between the minimal and the full, the worlds simplified: drawn from the middles of blocks, coarser the lower.
+  // Between the minimal and the full, the worlds simplified.
   if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3]) {
-    int bs = cx < 0.56 ? 13 : cx < 0.62 ? 8 : cx < 0.68 ? 5 : cx < 0.72 ? 3 : 2;
-    ivec2 bc = ivec2(floor(vec2(cell) / float(bs)) * float(bs)) + bs / 2;
+    // (once drawn in blocks: now mirrors, strips of silvered glass standing in the plane, more and deeper the lower,
+    // and lower still, a second mirror reflecting the first)
+    float f = clamp((0.75 - cx) / (0.75 - RUNG_C[3]), 0.0, 1.0);
+    vec2 q = mirrorAt(cellP, 233.0, 8.0 + 47.0 * f, 5101u, gMirK, gMirE);
+    if (f > 0.4) q = mirrorAt(q, 144.0, 5.0 + 29.0 * f, 5103u, gMirK, gMirE);
+    ivec2 bc = ivec2(floor(q));
     ivec2 sl2 = (bc >> 8) - uC0;
-    if (all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
+    if (bc != cell && all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
       vec4 si2 = texelFetch(uSlots, sl2, 0);
       if (si2.x > 0.5) { cell = bc; layer = int(si2.x) - 1; lc = bc & 255; c = cellAt(layer, lc); }
     }
@@ -2109,10 +2152,11 @@ void main() {
     vec3 soil; int s_;
     vec3 cc = soilAt(ivec2(sg.C), soil, s_) ? soil : vec3(180.0, 120.0, 90.0);
     if (emerge) {
-      // the new world, coarse at the core and finer outward, each block the colour at its middle
-      float b = blockAt(sr, sg.R);
-      vec2 bd = sr < 21.0 ? vec2(0) : (floor(d / b) + 0.5) * b;
-      A = B = newborn(bd, cc, sg.h, uTime);
+      // the new world, seen in a kaleidoscope of 8 mirrors at the core, 5, then 3 at the rim, turning slowly the other way
+      float t = clamp(1.0 - (sr - 21.0) / (sg.R - 21.0), 0.0, 1.0), k, ea;
+      vec2 kd = kaleido(d, float(FIBS[2 + min(2, int(t * 2.99))]), -uTime * 0.03 + 6.2832 * unit(mixh(sg.h + 7u)), k, ea);
+      A = B = newborn(kd, cc, sg.h, uTime);
+      gMirK = min(k, 5.0); gMirE = ea * sr;
     }
     if (sr < 21.0) {
       // the core: one pixel, pulsing
@@ -2128,6 +2172,10 @@ void main() {
       A = mix(A, vec3(255.0), f); B = mix(B, vec3(255.0), f);
     }
   }
+  // what is seen in the mirrors: each reflection takes a little of the light, and silvered glass leans green; and
+  // where a mirror's glass is, a glint that fades off it (a gradient, never a line)
+  if (gMirK > 0.0) { vec3 m = pow(vec3(0.93, 0.965, 0.955), vec3(gMirK)); A *= m; B *= m; }
+  if (gMirE < 2.5) { float s = 1.0 - gMirE / 2.5; s *= s * 0.42; A = mix(A, vec3(246.0, 251.0, 249.0), s); B = mix(B, vec3(246.0, 251.0, 249.0), s * 0.6); }
   if (voidEdge > 0.0) { A = mix(A, voidCol, voidEdge); B = mix(B, voidCol, voidEdge); }
   // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
   if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {
