@@ -11,7 +11,7 @@ date what the city sources leave undated, before the satellites.
 It downloads, for each place, the smallest of Geofabrik's regional extracts that holds it (one
 download serves every place in the region), and cuts it with osmium-tool:
 
-    osmium extract (the squares) -> osmium tags-filter (the date keys) -> osmium export (outlines)
+    osmium tags-filter (the date keys) -> osmium export (outlines) -> each to the squares it meets
 
 Geofabrik's and Overpass's servers do not answer the Claude sessions' network, so this runs on
 GitHub's (.github/workflows/osm-dates.yml); anywhere with osmium-tool and a route to
@@ -111,36 +111,42 @@ def date_of(tags):
 
 
 def cut_region(src, group, fid, stamp, work):
-    """Every place's square out of one region's extract, and its dated buildings into osm/dates/."""
-    cut = work / "cut"
-    shutil.rmtree(cut, ignore_errors=True)
-    cut.mkdir()
-    config = {"directory": str(cut), "extracts": [
-        {"output": p["slug"] + ".osm.pbf", "bbox": square(p)} for p in group]}
-    (work / "extracts.json").write_text(json.dumps(config))
-    run("osmium", "extract", "-s", "smart", "-c", str(work / "extracts.json"), "--overwrite", str(src))
-    for p in group:
-        part = cut / (p["slug"] + ".osm.pbf")
-        dated = work / "dated.osm.pbf"
-        run("osmium", "tags-filter", str(part), *[f"wr/{k}" for k in DATE_KEYS], "-o", str(dated), "--overwrite")
-        lines = subprocess.run(["osmium", "export", str(dated), "-f", "geojsonseq", "--geometry-types=polygon",
-                                "-x", "print_record_separator=false"],
-                               check=True, capture_output=True, text=True).stdout.splitlines()
-        found = []
+    """Every place's dated buildings out of one region's extract, into osm/dates/.
+
+    One pass keeps only what carries a date key (and the nodes and ways it is drawn with), which
+    leaves a small file; that is exported once and each outline goes to every square it meets. (Cutting
+    the squares out of the whole region with osmium extract held an ID table a square and ran the
+    runner out of memory.)"""
+    dated = work / "dated.osm.pbf"
+    run("osmium", "tags-filter", "--no-progress", str(src), *[f"wr/{k}" for k in DATE_KEYS],
+        "-o", str(dated), "--overwrite")
+    seq = work / "dated.geojsonseq"
+    run("osmium", "export", "--no-progress", str(dated), "-f", "geojsonseq", "--geometry-types=polygon",
+        "-x", "print_record_separator=false", "-o", str(seq), "--overwrite")
+    boxes = {p["slug"]: square(p) for p in group}
+    found = {slug: [] for slug in boxes}
+    with open(seq, encoding="utf-8") as lines:
         for line in lines:
             f = json.loads(line)
             tags = f.get("properties") or {}
             if tags.get("building", "no") == "no" and not tags.get("building:part"):
                 continue
             key, value = date_of(tags)
-            if value:
-                for r in rings(f["geometry"]):
-                    found.append([value, r])
-        (OUT / (p["slug"] + ".json")).write_text(json.dumps({
+            if not value:
+                continue
+            for r in rings(f["geometry"]):
+                xs, ys = [c[0] for c in r], [c[1] for c in r]
+                for slug, (w, s, e, n) in boxes.items():
+                    if max(xs) >= w and min(xs) <= e and max(ys) >= s and min(ys) <= n:
+                        found[slug].append([value, r])
+    for slug, got in found.items():
+        (OUT / (slug + ".json")).write_text(json.dumps({
             "source": "© OpenStreetMap contributors, ODbL 1.0 (openstreetmap.org/copyright); via Geofabrik",
-            "extract": fid, "read": stamp, "keys": DATE_KEYS, "buildings": found,
+            "extract": fid, "read": stamp, "keys": DATE_KEYS, "buildings": got,
         }, separators=(",", ":")))
-        print(f"  + {p['slug']}: {len(found)} dated outlines", flush=True)
+        print(f"  + {slug}: {len(got)} dated outlines", flush=True)
+    dated.unlink()
+    seq.unlink()
 
 
 def run(*args):
@@ -162,16 +168,22 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="osm-"))
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    failed = []
     for fid, (pbf, group) in sorted(regions(places).items()):
         print(f"\n{fid}: {len(group)} place(s) — {pbf}", flush=True)
         src = work / "region.osm.pbf"
-        t = time.time()
-        fetch(pbf, src, timeout=3600)
-        print(f"  downloaded {src.stat().st_size / 1e6:.0f} MB in {time.time() - t:.0f} s", flush=True)
-        cut_region(src, group, fid, stamp, work)
-        if not args.keep:
+        try:
+            t = time.time()
+            fetch(pbf, src, timeout=3600)
+            print(f"  downloaded {src.stat().st_size / 1e6:.0f} MB in {time.time() - t:.0f} s", flush=True)
+            cut_region(src, group, fid, stamp, work)
+        except Exception as exc:           # one region failing keeps none of the others back
+            print(f"  ! {fid}: {type(exc).__name__}: {exc}", flush=True)
+            failed.append(fid)
+        if src.exists() and not args.keep:
             src.unlink()
     shutil.rmtree(work, ignore_errors=True)
+    print(f"\nRead {len(list(OUT.glob('*.json')))} place(s); failed regions: {', '.join(failed) or 'none'}")
 
 
 if __name__ == "__main__":
