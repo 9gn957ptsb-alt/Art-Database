@@ -32,9 +32,13 @@ be strong:
     (not one as common as "Untitled" or "Landscape", and not one the museum has more than one work of
     by the artist), the date within a year, the dimensions within 0.8 cm or 1%; the work must not be
     a print, photograph, poster, cast or other multiple (an impression in another collection is not
-    this object), and it must not be one a gallery or auction house had for sale (a museum's object
-    is not on the market) unless the museum says it deaccessioned it. Everything else is rejected, and
-    the doubtful ones are listed in data/museum_apis_cache/report.json with why.
+    this object), it must not be one a gallery or auction house had for sale (a museum's object
+    is not on the market) unless the museum says it deaccessioned it, and if another museum,
+    foundation or collection listed it outside a show, Artsy's record must name this museum (in its
+    provenance, picture credit or the museum's own credit line) — else it is that lister's own (Van
+    Gogh's upright Irises of 1890 at the Van Gogh Museum is not the Met's wide Irises of 1890, nor
+    the Saint Louis panel of Monet's Agapanthus triptych the Cleveland one). Everything else is
+    rejected, and the doubtful ones are listed in data/museum_apis_cache/report.json with why.
   * a work Artsy says is held by some other collection, or shown as a loan from one, is not looked
     for at all. Two candidates that fit equally well are no match.
 
@@ -280,6 +284,11 @@ def fetch(api, url, params=None, body=None, refresh=False, tries=7):
 
 # ---------------------------------------------------------------- words, names, dates and sizes
 
+def squash(s):
+    """Letters and digits only: 'H. O. Havemeyer' and 'H.O. Havemeyer' are one credit."""
+    return re.sub(r"[^a-z0-9]", "", fold(s))
+
+
 def fold(s):
     s = unicodedata.normalize("NFKD", str(s or ""))
     s = "".join(c for c in s if not unicodedata.combining(c)).lower()
@@ -308,6 +317,10 @@ def title_variants(*titles):
         pieces |= set(re.findall(r"[\(\[]([^\)\]]+)[\)\]]", t))
         for p in list(pieces):
             pieces |= set(re.split(r"\s+/\s+|\s+=\s+", p))
+        for p in list(pieces):          # 'Number 7, 1952' is Pollock's 'Number 7'
+            m = re.fullmatch(r"(.*\S)[,\s]+(?:1[0-9]{3}|20[0-9]{2})\s*", p)
+            if m and re.search(r"[^\W\d_]", m.group(1)):
+                pieces.add(m.group(1))
         for p in pieces:
             n = normtitle(p)
             if n and re.search(r"[a-z]", n):
@@ -434,8 +447,8 @@ def sizes_in(text):
 
 
 def sizes_agree(a, b, tight=False):
-    """Do two lists of (h, w) share a size? Within 1.5 cm or 3% (tight: 0.8 cm or 1%, for a work
-    Artsy does not say the museum holds)."""
+    """Do two lists of (h, w) share a size? Within 1.5 cm or 3%, either way up (tight: 0.8 cm or 1%,
+    the same way up, for a work Artsy does not say the museum holds)."""
     if not a or not b:
         return None
 
@@ -443,8 +456,8 @@ def sizes_agree(a, b, tight=False):
         return abs(x - y) <= (max(0.8, 0.01 * max(x, y)) if tight else max(1.5, 0.03 * max(x, y)))
     for h, w in a:
         for H, W in b:
-            if (near(h, H) and near(w, W)) or (near(h, W) and near(w, H)):
-                return True
+            if (near(h, H) and near(w, W)) or (not tight and near(h, W) and near(w, H)):
+                return True     # (tight: the same way up, too — an upright and a wide canvas are two)
     return False
 
 
@@ -483,8 +496,12 @@ def load_works(only=None):
             "date": r.get("date") or s.get("date") or "", "artists": artists,
             "category": category, "medium": medium, "sizes": sizes,
             "partner": partner.get("name") or "", "partner_type": partner.get("type") or "",
-            "ci": ci, "info": info,
-            "text": " ".join([ci, info, r.get("blurb") or "", r.get("provenance") or ""]),
+            "ci": ci, "info": info, "shows": len(r.get("show_ids") or s.get("show_ids") or []),
+            "text": " ".join([ci, info, r.get("blurb") or "", r.get("provenance") or "", r.get("image_rights") or ""]),
+            # the museums Artsy's provenance or picture credit names ('The Metropolitan Museum of Art,
+            # New York. H.O. Havemeyer Collection …'; '© bpk, The Metropolitan Museum of Art'): not
+            # enough to say it holds the work (it lends pictures of loans too), enough to look there
+            "named": set(which((r.get("provenance") or "") + "\n" + (r.get("image_rights") or ""))),
             "multiple": category in MULTIPLE_CATEGORIES or bool(MULTIPLE_MEDIUM.search(medium))
                         or bool(s.get("edition_sets_count")),
             "for_sale": partner.get("type") in ("Gallery", "Auction") or bool(s.get("sale_ids"))
@@ -618,6 +635,12 @@ def aic_candidate(d):
 
 def aic_candidates(w, refresh):
     out = {}
+    if w["holder"] == "aic" or "aic" in w["named"]:
+        for acc in set(re.findall(r"\b(\d{4}\.\d+(?:\.\d+)?)\b", w["text"])):
+            j = fetch("aic", AIC + "artworks/search", {"query[term][main_reference_number]": acc,
+                                                         "fields": ",".join(AIC_LIST), "limit": 5}, refresh=refresh)
+            for d in (j or {}).get("data") or []:
+                out[str(d["id"])] = aic_candidate(d)
     for q in aic_queries(w):
         k = json.dumps(q, sort_keys=True)
         p = cache_path("aic", AIC + "search#" + k)
@@ -671,7 +694,7 @@ def cma_candidates(w, refresh):
                 skip += 100
             if found:
                 break
-    if w["holder"] == "cma":
+    if w["holder"] == "cma" or "cma" in w["named"]:
         for acc in set(re.findall(r"\b(\d{4}\.\d+(?:\.\d+)?)\b", w["text"])):
             d = (fetch("cma", CMA + acc, refresh=refresh) or {}).get("data")
             if d:
@@ -851,7 +874,7 @@ def judge(w, c):
     acc = c["accession"] and len(c["accession"]) >= 5 and re.search(
         r"(?<![\w.])" + re.escape(c["accession"]) + r"(?![\w]|\.\d)", w["text"])
     linked_id = c["museum"] == "met" and c["record"] in w["met_ids"]
-    credit = len(c.get("credit") or "") >= 15 and fold(c["credit"]).strip(" .") in fold(w["text"])
+    credit = len(squash(c.get("credit"))) >= 12 and squash(c["credit"]) in squash(w["text"])
     if not t and not acc and not linked_id:
         return None
     d = dates_agree(w["years"], c["years"])
@@ -859,8 +882,10 @@ def judge(w, c):
     linked = w["holder"] == c["museum"]
     clash = bool(w["kind"] and c.get("kind") and frozenset((w["kind"], c["kind"])) in CLASH)
     facts = []
-    if linked:
+    if linked or w["held_how"]:
         facts.append(w["held_how"])
+    if not linked and c["museum"] in w["named"]:
+        facts.append("Artsy's provenance or picture credit names the museum")
     facts.append({"exact": "same title", "fuzzy": "title words shared", None: "title differs"}[t])
     facts.append("same artist")
     facts.append({True: "date agrees", False: "date differs", None: "date not given on both"}[d])
@@ -898,8 +923,18 @@ def judge(w, c):
         return "reject", "a print, photograph, cast or other multiple, and Artsy does not name this museum's impression; " + how
     if w["for_sale"] and not c.get("deaccessioned"):
         return "reject", f"offered by {w['partner'] or 'a dealer'} ({w['partner_type']}), so not a museum's object; " + how
-    # Artsy does not name the museum: everything must agree, closely, and the title must be one only
-    # this object has there.
+    if w["partner"] and not which(w["partner"]) and not w["ci"] and not w["shows"] \
+            and c["museum"] not in w["named"] and not credit:
+        # a museum, foundation or collection listing a work of its own, not a loan to a show: Van Gogh's
+        # Irises of 1890 at the Van Gogh Museum is not the Met's Irises of 1890, the same size on its side
+        return "reject", (f"listed by {w['partner']} as its own (not in a show), and Artsy's record does not "
+                          f"name {NAMES.get(c['museum'], c['museum'])}; " + how)
+    # Artsy does not name the museum as the holder: everything must agree, closely, and the title
+    # must be one only this object has there — or Artsy's record must carry the museum's own credit
+    # line ('Purchase, Emilio Azcarraga Gift, in honor of William S. Lieberman, 1987').
+    if credit and t == "exact" and dates_agree(w["years"], c["years"], slack=1) \
+            and sizes_agree(w["sizes"], c["sizes"], tight=True) is not False:
+        return "strong", how
     if t != "exact":
         return "reject", "Artsy does not name this museum and the titles are not the same; " + how
     if generic(min(w["titles"] & c["titles"], key=len)):
@@ -1054,7 +1089,10 @@ def dates(text, prefer_months=True):
     start = iso(*ms[0])
     end = iso(*ms[-1]) if len(ms) > 1 and ms[-1] != ms[0] else ""
     if end and start[:4] == end[:4] and start > end[:len(start)]:
-        start = f"{int(start[:4]) - 1:04d}" + start[4:]      # "Oct. 13–Jan. 14, 2024" runs over a new year
+        if len(start) >= 7 and len(end) >= 7 and int(start[5:7]) >= 8 and int(end[5:7]) <= 5:
+            start = f"{int(start[:4]) - 1:04d}" + start[4:]      # "Oct. 13–Jan. 14, 2024" runs over a new year
+        else:
+            end = ""            # "April 9-March 17, 1931": the source's slip; its first date stands
     if len(ms) == 1 and re.search(r"\b(until|till|to|through)\s+(" + MONTH + r"\.?\s*\d{0,2},?\s*)?\d{4}", t, re.I):
         return "", start, circa
     return start, end, circa
@@ -1463,7 +1501,8 @@ def smk_events(c, refresh):
                       title=x.get("exhibition") or "", venue=x.get("venue") or ""))
     for i, x in enumerate(d.get("documentation") or [], 1):
         text = ", ".join(v for v in (x.get("author"), x.get("title"), x.get("year_of_publication"), x.get("notes")) if v)
-        out.append(ev("written", text, "documentation", i, start=(x.get("year_of_publication") or "")[:4],
+        out.append(ev("written", text, "documentation", i,
+                      start=(re.findall(r"\b\d{4}\b", str(x.get("year_of_publication") or "")) or [""])[0],
                       who=x.get("author") or "", title=x.get("title") or "", pages=x.get("notes") or "",
                       note=("shelfmark " + x["shelfmark"]) if x.get("shelfmark") else ""))
     if d.get("acquisition_date"):
