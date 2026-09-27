@@ -28,9 +28,11 @@ be strong:
     institution, or its own record's link or accession number — that is enough, with the museum's
     record found by the link or number ("exact"), by title ("strong"), or, when the titles only share
     their words, by a single candidate whose date agrees ("probable");
-  * where Artsy does not name the museum, everything must agree closely ("strong"): the very title
-    (not one as common as "Untitled" or "Landscape", and not one the museum has more than one work of
-    by the artist), the date within a year, the dimensions within 0.8 cm or 1%; the work must not be
+  * where Artsy does not say the museum holds it, everything must agree closely ("strong"): the very
+    title (a year after it counts as part of it: Pollock's "Number 7, 1952"), not one as common as
+    "Untitled" or "Landscape" nor one the museum has more than one work of by the artist — unless
+    Artsy's record carries the museum's own credit line — the date within a year, the dimensions
+    within 0.8 cm or 1% and the same way up; the work must not be
     a print, photograph, poster, cast or other multiple (an impression in another collection is not
     this object), it must not be one a gallery or auction house had for sale (a museum's object
     is not on the market) unless the museum says it deaccessioned it, and if another museum,
@@ -42,15 +44,25 @@ be strong:
   * a work Artsy says is held by some other collection, or shown as a loan from one, is not looked
     for at all. Two candidates that fit equally well are no match.
 
-How it searches: the Art Institute by title words and artist (msearch, 25 queries a request — its
-limit is 60 requests a minute); Cleveland by artist; SMK by artist surname; LUX by title and artist;
-the Met by title intersected with artist (and directly by the object number Artsy links to).
+How it searches: the Art Institute by title words and artist (msearch, up to 25 queries and 7 KB a
+request — its firewall refuses a body over 8 KB, and it allows 60 requests a minute); Cleveland by
+the artist's name, else the surname; SMK by artist surname; LUX by title and artist; the Met by
+title intersected with artist. Where Artsy's record gives the museum's accession number or object
+link, that record is read directly too.
+
+Exhibition venues and cities are read off the source's own words: Cleveland, SMK and Yale give
+them in fixed places; the Art Institute writes free text ('Paris, Durand-Ruel, …'), so a part of
+it is taken for a city only if the repository's own place data (Artsy's partner, show and fair
+locations, the museums on the globe, the histories' geocoder) knows that city.
 
 Writes one file per matched work, private like the saves (data/ is never committed):
 data/histories/museums/<file>.json (the same file name as data/histories/artsy/works/), with the
 source credited, how it matched, and every event in the museum's own words (text verbatim; dates,
 places and names only as the source gives them). The HTTP answers are cached under
-data/museum_apis_cache/, so a second run reads nothing again (--refresh does).
+data/museum_apis_cache/, so a second run reads nothing again (--refresh does); a full first run
+takes about half an hour, a run from the cache about a minute. The report of what matched, what
+was rejected as doubtful and why, and which works Artsy says these museums hold that were not
+found is data/museum_apis_cache/report.json.
 
     python3 scripts/fetch_history_museum_apis.py [--only artsy-id ...] [--museums aic,cma,smk,lux,met]
                                                  [--threads 8] [--refresh]
@@ -1119,13 +1131,13 @@ def place_after(parts):
     """City and country from the parts of a text after a name ('…, Pittsburgh, Pennsylvania, United
     States'): the part before a country (before its state, in the United States), else the first part
     when it reads like a place."""
-    parts = [re.sub(r"\s*\(.*", "", p).strip() for p in parts]
+    parts = [x for x in (re.sub(r"\s*\(.*", "", p).strip() for p in parts) if x]
     for i, p in enumerate(parts):
         c = country_of(p)
         if c:
             j = i - 1
-            if c == "US" and j > 0 and fold(parts[j]).strip(" .") in US_STATES:
-                j -= 1
+            if j > 0 and (fold(parts[j]).strip(" .") in US_STATES or STATEISH.fullmatch(parts[j])):
+                j -= 1          # 'Pittsburgh, Pennsylvania, United States'; 'Ottawa, Ont., Canada'
             city = parts[j] if j >= 0 else ""
             if re.search(r"\d", city) or ORGISH.search(city) or len(city.split()) > 4 or not city[:1].isupper():
                 city = ""
@@ -1296,6 +1308,44 @@ def made_event(text, field, years, who, place=""):
     return [ev("made", text, field, 1, start=s, end=e, circa=circa, who=who, city="", note=place)]
 
 
+_cities = None
+
+
+def known_cities():
+    """Every city named in the repository's own place data: Artsy's partner and show locations, the
+    museums on the globe, the histories' geocoder. The Art Institute's exhibition lines are free
+    text, and a part of one is taken for a city only if it is one of these."""
+    global _cities
+    if _cities is None:
+        names = set()
+        art = ROOT / "data" / "histories" / "artsy"
+        for f in list((art / "partners").glob("*.json")) + list((art / "shows").glob("*.json")) + \
+                list((art / "fairs").glob("*.json")):
+            try:
+                d = json.loads(f.read_text())
+            except (OSError, ValueError):
+                continue
+            locs = d.get("locations") or [d.get("location") or {}]
+            names |= {x.get("city") for x in locs if isinstance(x, dict) and x.get("city")}
+        try:
+            for locs in json.loads((ROOT / "data" / "artsy_partner_locations.json").read_text()).values():
+                names |= {x.get("city") for x in locs or [] if x.get("city")}
+        except (OSError, ValueError):
+            pass
+        try:
+            names |= {m["where"].rsplit(", ", 1)[0] for m in json.loads(
+                (ROOT / "docs" / "v2" / "museums.json").read_text())["museums"] if m.get("where")}
+        except (OSError, ValueError, KeyError):
+            pass
+        try:
+            names |= {k.split("|")[0] for k, v in json.loads(
+                (ROOT / "data" / "histories" / "geocode.json").read_text()).items() if v}
+        except (OSError, ValueError):
+            pass
+        _cities = {normtitle(n) for n in names if n and not re.search(r"\d", n)}
+    return _cities
+
+
 VENUEISH = re.compile(r"\b(museum|musee|musée|museo|museu|gallery|galleries|galerie|galleria|institute|institut|"
                       r"institution|palace|palais|palazzo|kunsthalle|kunsthaus|academy|académie|hall|centre|center|"
                       r"salon|society|club|foundation|fondation|fundación|library|collection|biennale|"
@@ -1319,7 +1369,8 @@ def lead_place(parts):
         return city, country, venue
 
     def place(p):
-        return bool(PLACEISH.fullmatch(p)) and not VENUEISH.search(p) and not re.search(r"\d", p)
+        return bool(PLACEISH.fullmatch(p)) and not VENUEISH.search(p) and not re.search(r"\d", p) \
+            and fold(re.sub(r"\s*\(.*?\)", "", p)).strip() in known_cities()
     if VENUEISH.search(parts[0]) and not re.search(r"\d", parts[0]):
         venue = parts[0]
         # a place after the venue is its city only where nothing else can follow: the dates, 'as …',
@@ -1388,7 +1439,7 @@ def aic_events(c, refresh):
                     head, title = pre.split(", as ", 1)
                     if not venue and "," not in head:
                         venue = head
-                elif j > 0 and pre and date_mentions(text) and "," not in pre:
+                elif j > 0 and pre and date_mentions(text) and "," not in pre and VENUEISH.search(pre):
                     venue = venue or pre      # 'Seattle Art Museum, Apr. 27–May 27, 1956': the show goes on
                     title = head_title
                 elif j > 0 and venue and pre.count(",") <= 1 and (not city or pre.startswith(city) or pre.endswith(city)):

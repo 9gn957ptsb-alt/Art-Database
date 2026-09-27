@@ -132,7 +132,10 @@ KIND_ROOTS = {"Q3305213": "painting", "Q11060274": "print", "Q125191": "photogra
 PLACES = {"Q6256", "Q3624078", "Q515", "Q5119", "Q1549591", "Q1637706", "Q486972", "Q484170", "Q747074", "Q262166",
           "Q2039348", "Q1093829", "Q200250", "Q7275", "Q35657", "Q107390", "Q10864048", "Q15284", "Q3957",
           "Q532", "Q6465", "Q36784", "Q1221156"}  # countries, states, cities, towns, regions: not holders
-SETTLEMENT, NOT_TOWN = "Q486972", ["Q123705", "Q2983893", "Q149621", "Q1907114"]  # neighbourhood, quarter ...
+TOWN_ROOTS = ["Q486972", "Q15284", "Q515"]  # human settlement, municipality, city
+# A place that is one of these is part of a town, not the town: neighbourhood, quarter, district,
+# metropolitan area, borough of New York City, London borough, municipal arrondissement, special ward.
+NOT_TOWN = {"Q123705", "Q2983893", "Q149621", "Q1907114", "Q408804", "Q211690", "Q702842", "Q5327704"}
 PRIVATE_COLLECTION = "Q768717"
 UNITS = {"Q174728": 1.0, "Q174789": 0.1, "Q11573": 100.0, "Q218593": 2.54, "Q3710": 30.48, "Q200323": 10.0}
 CIRCA = "Q5727902"
@@ -606,7 +609,7 @@ def artsy_dims(saved, rec):
 def is_credit(ci):
     """An exhibition credit ('"Show" at Museum', a show with its dates), not a holder."""
     ci = (ci or "").strip()
-    return bool(ci[:1] in "\"“”'‘" or re.search(r"[\"”]\s+at\s", ci) or re.search(r"(?<!\d)(1[89]|20)\d\d(?!\d)", ci)
+    return bool(ci) and bool(ci[:1] in "\"“”'‘" or re.search(r"[\"”]\s+at\s", ci) or re.search(r"(?<!\d)(1[89]|20)\d\d(?!\d)", ci)
                 or re.search(r"\b(january|february|march|april|may|june|july|august|september|october|november|"
                              r"december)\b", ci, re.I))
 
@@ -666,8 +669,12 @@ def resolve_artists(arts, threads):
     found = defaultdict(dict)
     by_name = defaultdict(list)
     for s in rest:
+        if NOT_ARTIST.search(arts[s]["name"]):
+            out[s] = {"qid": None, "why": "not the artist's own hand ('after', 'circle of' ...)"}
+            continue
         by_name[arts[s]["name"]].append(s)
-    for batch in chunks([n for n in by_name if n], 20):
+    variants = {n: name_variants(n) for n in by_name}
+    for batch in chunks(sorted({v for vs in variants.values() for v in vs}), 20):
         vals = " ".join(f"{lit(n)}@{lg}" for n in batch for lg in NAME_LANGS)
         for r in sparql(f"SELECT ?name ?item ?t ?b ?d ?o (EXISTS {{ ?w wdt:P170 ?item }} AS ?creates) WHERE {{ "
                         f"VALUES ?name {{ {vals} }} {{ ?item rdfs:label ?name }} UNION {{ ?item skos:altLabel ?name }} "
@@ -687,19 +694,27 @@ def resolve_artists(arts, threads):
         art_occ |= {r["o"] for r in sparql(f"SELECT DISTINCT ?o WHERE {{ VALUES ?o {{ {items(batch)} }} "
                                            f"VALUES ?root {{ {items(ART_ROOTS)} }} ?o wdt:P279* ?root . }}")}
     for name, slugs_ in by_name.items():
-        cands = found.get(name, {})
+        cands = {}
+        for v in variants[name]:
+            cands.update(found.get(v, {}))
         artists = {q: c for q, c in cands.items()
                    if (c["t"] & PEOPLE or c["creates"]) and (c["o"] & art_occ or c["creates"])}
         for s in slugs_:
             a = arts[s]
             if a["birth"]:
+                # born the same year: the same person, even if a death year disagrees; a year apart,
+                # only when the death years agree
                 fit = [q for q, c in artists.items()
-                       if (a["birth"] in c["b"] or (any(abs(a["birth"] - b) <= 1 for b in c["b"])
-                                                    and a["death"] and a["death"] in c["d"]))
-                       and not (a["death"] and c["d"] and all(abs(a["death"] - d) > 1 for d in c["d"]))]
+                       if a["birth"] in c["b"] or (any(abs(a["birth"] - b) <= 1 for b in c["b"])
+                                                   and a["death"] and a["death"] in c["d"])]
                 if len(fit) == 1:
-                    out[s] = {"qid": fit[0], "how": f"name, an artist, born {a['birth']}" +
-                              (f", died {a['death']}" if a["death"] and a["death"] in artists[fit[0]]["d"] else ""),
+                    c = artists[fit[0]]
+                    died = ""
+                    if a["death"] and a["death"] in c["d"]:
+                        died = f", died {a['death']}"
+                    elif a["death"] and c["d"]:
+                        died = f" (the death years differ: Artsy {a['death']}, Wikidata {min(c['d'])})"
+                    out[s] = {"qid": fit[0], "how": f"name, an artist, born {a['birth']}{died}",
                               "confidence": "strong"}
                 elif len(fit) > 1:
                     out[s] = {"qid": None, "why": f"several artists named so, born {a['birth']}: {', '.join(fit)}"}
@@ -715,6 +730,26 @@ def resolve_artists(arts, threads):
                 else:
                     out[s] = {"qid": None, "why": ("no birth year on Artsy, and several artists so named: " +
                                                    ", ".join(fit)) if fit else "no artist of that name"}
+    return out
+
+
+NOT_ARTIST = re.compile(r"\((after|attributed|circle|school|workshop|follower|studio|manner|copy)\b|"
+                        r"^(after|attributed to|circle of|school of|workshop of|follower of|studio of|manner of)\s",
+                        re.I)
+
+
+def name_variants(name):
+    """An Artsy artist's name as Wikidata may label it: without life dates in brackets, without the
+    name in another script after it, with 'and' for '&', a surname in capitals written as a name."""
+    out = [name]
+    n = re.sub(r"\s*\((?:b\.?\s*|born\s*)?\d{4}(?:\s*[-–]\s*\d{4})?\)\s*$", "", name).strip()
+    n = re.sub(r"\s*\([^)]*\)\s*$", "", n).strip() or n
+    latin = re.sub(r"[\u2E80-\u9FFF\uAC00-\uD7AF\u3040-\u30FF]+", " ", n)
+    latin = re.sub(r"\s+", " ", latin).strip()
+    for v in (n, latin, latin.replace("&", "and"), " ".join(w.capitalize() if w.isupper() and len(w) > 1 else w
+                                                           for w in latin.split())):
+        if v and v not in out:
+            out.append(v)
     return out
 
 
@@ -1191,12 +1226,12 @@ def gather_places(qs):
                 nxt |= set(fact(q, p)[:3])
         frontier = nxt
     facts(sorted({c for q in seen for c in fact(q, "P17")}))
-    towns, not_towns = set(), set()
+    towns = set()
     for batch in chunks(sorted(seen), 100):
-        for r in sparql(f"SELECT ?x ?root WHERE {{ VALUES ?x {{ {items(batch)} }} "
-                        f"VALUES ?root {{ {items([SETTLEMENT] + NOT_TOWN)} }} ?x wdt:P31/wdt:P279* ?root . }}"):
-            (towns if r["root"] == SETTLEMENT else not_towns).add(r["x"])
-    TOWNS.update(towns - not_towns)
+        for r in sparql(f"SELECT DISTINCT ?x WHERE {{ VALUES ?x {{ {items(batch)} }} "
+                        f"VALUES ?root {{ {items(TOWN_ROOTS)} }} ?x wdt:P31/wdt:P279* ?root . }}"):
+            towns.add(r["x"])
+    TOWNS.update(q for q in towns if not set(fact(q, "P31")) & NOT_TOWN)
 
 
 def event(kind, text, field, order, **kw):
