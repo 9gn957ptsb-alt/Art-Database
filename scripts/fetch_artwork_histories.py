@@ -128,6 +128,52 @@ def sale(sid, refresh):
     path.write_text(json.dumps(rec, ensure_ascii=False))
 
 
+def places(refresh):
+    """Where each show and sale took place: its own location, else its fair's, else its partner's
+    (every location a partner lists, the first one first). Written into the show and sale files as
+    "place" (city, country, coordinates, and what it came from)."""
+    fairs, partners = {}, {}
+
+    def fair(fid):
+        if fid not in fairs:
+            path = OUT / "fairs" / filename(fid)
+            if path.exists() and not refresh:
+                fairs[fid] = json.loads(path.read_text())
+            else:
+                j = get("fair/" + fid) or {}
+                fairs[fid] = {"id": fid, "name": j.get("name"), "location": slim_location(j.get("location")),
+                              "start_at": j.get("start_at"), "end_at": j.get("end_at")}
+                path.write_text(json.dumps(fairs[fid], ensure_ascii=False))
+        return fairs[fid]
+
+    def partner(pid):
+        if pid not in partners:
+            path = OUT / "partners" / filename(pid)
+            if path.exists() and not refresh:
+                partners[pid] = json.loads(path.read_text())
+            else:
+                locs = get(f"partner/{pid}/locations?size=20") or []
+                partners[pid] = {"id": pid, "locations": [slim_location(l) for l in locs if isinstance(l, dict)]}
+                path.write_text(json.dumps(partners[pid], ensure_ascii=False))
+        return partners[pid]
+
+    for d in ("fairs", "partners"):
+        (OUT / d).mkdir(parents=True, exist_ok=True)
+    for kind in ("shows", "sales"):
+        for path in sorted((OUT / kind).glob("*.json")):
+            rec = json.loads(path.read_text())
+            if rec.get("place") and not refresh:
+                continue
+            place, came = rec.get("location"), "own"
+            if not (place and (place.get("coordinates") or place.get("city"))) and rec.get("fair"):
+                place, came = fair(rec["fair"]["id"]).get("location"), "fair"
+            if not (place and (place.get("coordinates") or place.get("city"))) and (rec.get("partner") or {}).get("id"):
+                locs = [l for l in partner(rec["partner"]["id"])["locations"] if l]
+                place, came = (locs[0] if locs else None), "partner"
+            rec["place"] = dict(place, source=came) if place else None
+            path.write_text(json.dumps(rec, ensure_ascii=False))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only")
@@ -149,6 +195,8 @@ def main():
         sales = sorted({i for w in works for i in (w.get("sale_ids") or [])})
         list(pool.map(lambda i: sale(i, args.refresh), sales))
         print(f"{len(sales)} sales read in {time.time() - t:.0f} s", flush=True)
+        places(args.refresh)
+        print(f"places found in {time.time() - t:.0f} s", flush=True)
     filled = {k: sum(1 for w in works if (w.get(k) or "").strip()) for k in
               ("provenance", "exhibition_history", "literature", "collecting_institution")}
     print("filled:", filled)
