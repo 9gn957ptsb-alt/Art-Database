@@ -96,14 +96,19 @@ NOT_MAKER = {"printer", "publisher", "author", "editor", "translator", "edition 
 # An attribution to someone near the artist, not the artist.
 NOT_HAND = re.compile(r"^(follower|imitator|style|circle|workshop|studio|school|manner|copy|after|assistant|"
                       r"formerly|and studio|and workshop)\b", re.I)
-MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
-                                      "september", "october", "november", "december"], 1)}
-MONTH = r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+MONTH3 = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov",
+                                      "dec"], 1)}
+MONTH = (r"(?:Jan(?:uary|\.)?|Feb(?:ruary|\.)?|Mar(?:ch|\.)?|Apr(?:il|\.)?|May|June?|July?|Aug(?:ust|\.)?|"
+         r"Sep(?:tember|t\.|\.)?|Oct(?:ober|\.)?|Nov(?:ember|\.)?|Dec(?:ember|\.)?)(?![A-Za-z])")
 ABBR = {"mrs", "mme", "mlle", "inc", "ltd", "bros", "nos", "ste", "cie", "rev", "esq", "hon", "gal", "ave", "vol",
         "vols", "fig", "figs", "sgt", "capt", "prof", "messrs", "dept", "repro", "cat", "nr", "jan", "feb", "mar",
         "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec", "etc", "univ", "dott", "sig", "sra", "sta",
         "mons", "fils", "succ", "comm", "gen", "col", "lieut", "ibid", "approx", "illus", "pls", "est", "wm",
-        "chas", "thos", "geo", "jas", "jno", "robt", "saml", "benj", "edw", "hy", "mass", "penn", "conn", "calif"}
+        "chas", "thos", "geo", "jas", "jno", "robt", "saml", "benj", "edw", "hy", "mass", "penn", "conn", "calif",
+        "inv", "eds", "repr", "esp", "viz", "cit", "exh", "coll", "mss", "fol", "fols", "bart", "knt", "sen", "jun",
+        "blvd", "gov", "pres", "adm", "maj", "brig", "cdr", "cmdr", "ven", "assoc", "corp", "mfg", "dist", "twp",
+        "marq", "vte", "cte", "mgr", "msgr", "card", "abb", "dott", "avv", "ing", "arch", "sac", "rag", "cav",
+        "comm", "dep", "suppl", "ser", "trans", "ult", "illus", "pag", "fasc", "ann"}
 CORP = {"inc", "inc.", "ltd", "ltd.", "co", "co.", "llc", "gmbh", "ag", "s.a.", "sa", "jr", "jr.", "sr", "sr.",
         "esq.", "esq", "s.a.r.l.", "b.v.", "n.v.", "plc", "ii", "iii", "iv"}
 PARTICLES = {"de", "du", "des", "la", "le", "les", "sur", "en", "am", "an", "der", "di", "del", "della", "upon", "on",
@@ -113,7 +118,10 @@ INSTITUTION = re.compile(r"\b(museum|musee|musée|museo|muzeum|gallery|galleries
                          r"center|centre|foundation|fondation|hall|university|college|league|association|exposition|"
                          r"salon|rooms|pinacoteca|collection|nga|school|studio|biennale|biennial|exhibition|fair|"
                          r"corcoran|smithsonian|hirshhorn|guggenheim|whitney|metropolitan|louvre|tate|rijksmuseum|"
-                         r"hermitage|orangerie|grand palais|petit palais|arts|art)\b", re.I)
+                         r"hermitage|orangerie|grand palais|petit palais|arts|art|kunstmuseum|staatsgalerie|museu|pinakothek|"
+                         r"kunstverein|glyptothek|sammlung|stiftung|ateneum|atheneum|athenaeum|kunstsammlung|istituto|"
+                         r"fondazione|castello|landesmuseum|nationalmuseum|nationalgalerie|national|kunsthistorisches|"
+                         r"museet|museum|galleria|palace|trust|church|chiesa|abbey|cathedral|convent)\b", re.I)
 COUNTRIES = {
     "france": "FR", "england": "GB", "scotland": "GB", "wales": "GB", "united kingdom": "GB", "great britain": "GB",
     "ireland": "IE", "germany": "DE", "italy": "IT", "spain": "ES", "portugal": "PT", "netherlands": "NL",
@@ -270,23 +278,30 @@ def year_of(v):
     return int(m.group(1)) if m else None
 
 
+_NAMES = {}
+
+
+def maker_names(cid, nga):
+    """Every form of an NGA constituent's name, normalised (cached)."""
+    if cid not in _NAMES:
+        person = nga["people"].get(cid) or {}
+        names = {person_name(person.get("forwarddisplayname")), person_name(person.get("preferreddisplayname"))}
+        for n in [person.get("preferreddisplayname") or ""] + list(nga["alt"].get(cid, ())):
+            names.add(person_name(n))
+            if "," in n:  # "Monet, Claude" -> "claude monet"
+                last, first = n.split(",", 1)
+                names.add(person_name(f"{first} {last}"))
+        _NAMES[cid] = ({n for n in names if n}, year_of(person.get("beginyear")), year_of(person.get("endyear")))
+    return _NAMES[cid]
+
+
 def artist_agrees(a, maker, nga):
     """An Artsy artist and one of the NGA's makers of an object: same name, same life dates."""
-    person = nga["people"].get(maker["constituentid"]) or {}
-    names = {person_name(person.get("forwarddisplayname")), person_name(person.get("preferreddisplayname"))}
-    pref = person.get("preferreddisplayname") or ""
-    if "," in pref:  # "Monet, Claude" -> "claude monet"
-        last, first = pref.split(",", 1)
-        names.add(person_name(f"{first} {last}"))
-    names |= {person_name(n) for n in nga["alt"].get(maker["constituentid"], ())}
-    names |= {person_name(" ".join(reversed(n.split(",", 1)))) for n in nga["alt"].get(maker["constituentid"], ())
-              if "," in n}
+    names, born, died = maker_names(maker["constituentid"], nga)
     mine = person_name(a.get("name"))
-    if not any(names_agree(mine, n) for n in names if n):
+    if not any(names_agree(mine, n) for n in names):
         return False
-    for mine_y, theirs in ((year_of(a.get("birthday")), person.get("beginyear")),
-                           (year_of(a.get("deathday")), person.get("endyear"))):
-        theirs = year_of(theirs)
+    for mine_y, theirs in ((year_of(a.get("birthday")), born), (year_of(a.get("deathday")), died)):
         if mine_y and theirs and abs(mine_y - theirs) > 2:
             return False
     return True
@@ -328,18 +343,23 @@ def close(a, b):
     return abs(a - b) <= max(0.6, 0.02 * max(a, b))
 
 
+def same_measure(p, q):
+    if len(p) == 1 or len(q) == 1:
+        return len(p) == len(q) == 1 and close(p[0], q[0])
+    return (close(p[0], q[0]) and close(p[1], q[1])) or (close(p[0], q[1]) and close(p[1], q[0]))
+
+
 def dims_agree(mine, theirs):
+    """"agree" (and how many of Artsy's measurements the NGA's share), "half" (one side of a sheet
+    agrees, the other not), "conflict", or "none" when one of them gives no measurements."""
     if not mine or not theirs:
-        return "none"
-    for p in mine:
-        for q in theirs:
-            if len(p) == 1 or len(q) == 1:
-                if len(p) == len(q) == 1 and close(p[0], q[0]):
-                    return "agree"
-                continue
-            if (close(p[0], q[0]) and close(p[1], q[1])) or (close(p[0], q[1]) and close(p[1], q[0])):
-                return "agree"
-    return "conflict"
+        return "none", 0
+    score = sum(1 for p in set(mine) if any(same_measure(p, q) for q in theirs))
+    if score:
+        return "agree", score
+    half = any(len(p) > 1 and len(q) > 1 and any(close(a, b) for a in p[:2] for b in q[:2])
+               for p in mine for q in theirs)
+    return ("half" if half else "conflict"), 0
 
 
 ACCESSION = re.compile(r"(?<![\d.])((?:1[89]|20)\d\d\.\d+\.\d+(?:\.[a-z0-9]+)*)(?![\d])", re.I)
@@ -363,7 +383,7 @@ def nga_named(saved, rec):
     ai = (rec.get("additional_information") or "").strip()
     if re.search(r"National Gallery of Art,?\s*Washington", ci) and '" at ' not in ci:
         return "collecting institution: " + ci, None
-    if re.match(r"\W*(?:Collection(?: of)?:?\s*)?(?:[^.\n]{0,90}?,\s*)?National Gallery of Art,?\s*Washington",
+    if re.match(r"\W*(?:Collection(?: of)?:?\s*)?(?:[^\n]{0,90}?,\s*)?National Gallery of Art,?\s*Washington",
                 ai, re.I):
         return "credited on Artsy: " + ai[:120].replace("\n", " "), None
     if re.search(r"from (the )?National Gallery of Art", ci, re.I):
@@ -404,11 +424,10 @@ def candidates(saved, rec, nga, index):
     out = []
     for oid in ids:
         o = nga["objects"][oid]
-        o_full, o_parts = title_keys(o["title"])
-        prev = [title_keys(p) for p in nga["previous"].get(oid, [])]
-        if full == o_full or any(full == p[0] for p in prev):
+        fulls, o_parts = nga["tkeys"][oid]
+        if full in fulls:
             level = "title"
-        elif parts & (o_parts | {k for p in prev for k in p[1]}):
+        elif parts & o_parts:
             level = "part of the title"
         else:
             continue
@@ -421,8 +440,12 @@ def candidates(saved, rec, nga, index):
             continue
         acc = accession_agrees(found_acc, o["accessionnum"])
         credit = bool(o["creditline"]) and len(norm(o["creditline"])) >= 12 and norm(o["creditline"]) in norm(art_text)
-        dims = dims_agree(my_dims, measures(o["dimensions"]))
+        dims, dim_score = dims_agree(my_dims, measures(o["dimensions"]))
+        first_line = re.sub(r"\s+", " ", (o["dimensions"] or "").split("\n")[0]).strip().lower().replace("×", "x")
+        dim_text = len(first_line) > 8 and first_line in re.sub(r"\s+", " ", art_text).lower().replace("×", "x")
+        same_date = bool(norm(o["displaydate"])) and norm(o["displaydate"]) == norm(saved.get("date") or rec.get("date"))
         out.append({"oid": oid, "level": level, "date": date, "acc": acc, "credit": credit, "dims": dims,
+                    "dim_score": dim_score + (2 if dim_text else 0), "same_date": same_date,
                     "qualified": qualified, "attribution": o["attribution"], "accession": o["accessionnum"],
                     "title": o["title"], "displaydate": o["displaydate"]})
     return out
@@ -439,7 +462,13 @@ def decide(saved, rec, cands):
         return c, "exact", f"accession number {c['accession']} in Artsy's record; artist and {c['level']} agree"
     if len(exact) > 1:
         return None, "the accession number fits several NGA objects: " + ", ".join(c["accession"] for c in exact)
-    fits = [c for c in cands if c["dims"] != "conflict"]
+    fits = [c for c in cands if c["dims"] not in ("conflict", "half")]
+    halves = [c for c in cands if c["dims"] == "half"]
+    if not fits and len(halves) == 1 and len(cands) == 1 and named and halves[0]["level"] == "title" \
+            and halves[0]["date"] == "agree" and not halves[0]["qualified"]:
+        c = halves[0]
+        return c, "probable", (f"artist, title and date agree, and it is the NGA's only such object; {named}; "
+                               f"one side of the sheet measures the same, the other not (NGA: {c['accession']})")
     if not fits:
         c = cands[0]
         return None, (f"artist, {c['level']} and date agree with NGA {c['accession']} ({c['title']}), "
@@ -447,8 +476,10 @@ def decide(saved, rec, cands):
     whole = [c for c in fits if c["level"] == "title"] or fits
     if len(whole) > 1:
         best = [c for c in whole if c["dims"] == "agree"] or whole
-        if len(best) > 1:
-            best = [c for c in best if c["credit"]] or best
+        for better in (lambda c: c["dim_score"], lambda c: c["same_date"], lambda c: c["credit"]):
+            if len(best) > 1:
+                top = max(better(c) for c in best)
+                best = [c for c in best if better(c) == top]
         if len(best) > 1:
             return None, ("several NGA objects fit equally well: " +
                           "; ".join(f"{c['accession']} {c['title']} ({c['displaydate']})" for c in best[:6]))
@@ -528,7 +559,7 @@ def depth_map(text):
 def sentence_breaks(text, a, b, depth):
     """Positions in text[a:b] after which a new sentence starts (a full stop that is not an abbreviation)."""
     out = []
-    for m in re.finditer(r"\.(?=\s+[\"“(A-Za-z])", text[a:b]):
+    for m in re.finditer(r"\.((?:\[\d{1,2}\])*)(?=\s+[\"“(A-Za-z])", text[a:b]):
         i = a + m.start()
         if depth[i]:
             continue
@@ -536,31 +567,46 @@ def sentence_breaks(text, a, b, depth):
         tok = before.group(1) if before else ""
         word = re.sub(r"^[\[(\"“']+", "", tok)
         if re.fullmatch(r"\d{4}", word) or tok.endswith((")", "]", '"', "”")):
-            out.append(i + 1)
+            out.append(a + m.end())
         elif re.fullmatch(r"[A-Za-zÀ-ÿ'’]+", word) and len(word) >= 3 and word.lower() not in ABBR \
                 and not word.isupper():
-            out.append(i + 1)
+            out.append(a + m.end())
     return out
 
 
 FOOTMARK = re.compile(r"\[(\d{1,2})\]")
+KIN = (r"(?:wife|husband|widow|widower|sons?|daughters?|nephew|niece|brother|sister|father|mother|cousin|heirs?|"
+       r"grandson|granddaughter|grandnephew|grandniece|children|child|stepson|stepdaughter|son-in-law|"
+       r"daughter-in-law|executors?|executrix|legatee|trustees?|descendants?|partner|friend)")
+AUCTION = re.compile(r"(drouot|christie|sotheby|parke|bernet|american art|georges petit|galliera|charpentier|lepke|"
+                     r"helbing|cassirer|dorotheum|kornfeld|bonhams|phillips|m[uü]ller|lempertz|weinm[uü]ller|hampel|"
+                     r"koller|tajan|artcurial|swann|doyle|freeman|bukowski|mak van waay|puttick|anderson|h[oô]tel|"
+                     r"salle|rooms|galerie|galleries|gallery|atelier|auction|kunst|&|manson|association|ltd|inc)", re.I)
 
 
 def provenance_pieces(text):
-    """The provenance's owners, as (start, end) spans of the text, and its footnotes by number."""
-    notes = {}
-    m = re.search(r"\n\s*\[1\]\s", text)
+    """The provenance's owners, as (start, end, footnote marks) spans of the text; its numbered footnotes;
+    and its other notes (whatever follows the first blank line)."""
+    notes, loose = {}, []
+    m = re.search(r"\n[ \t]*\n\s*\S", text)
     main_end = m.start() if m else len(text)
     if m:
-        for n in re.finditer(r"\[(\d{1,2})\]\s*(.*?)(?=\n\s*\[\d{1,2}\]\s|\Z)", text[m.start():], re.S):
-            notes[n.group(1)] = re.sub(r"\s+", " ", n.group(2)).strip()
+        block = text[main_end:]
+        starts = [n.start() for n in re.finditer(r"(?:(?<=\s)|^)\[\d{1,2}\]", block)]
+        if not starts or block[:starts[0]].strip():
+            head = block[:starts[0]] if starts else block
+            loose += [q.strip() for q in re.split(r"\n[ \t]*\n", head) if q.strip()]
+        for x, y in zip(starts, starts[1:] + [len(block)]):
+            n = re.match(r"\[(\d{1,2})\]\s*(.*)", block[x:y], re.S)
+            notes.setdefault(n.group(1), re.sub(r"\s+", " ", n.group(2)).strip())
     depth = depth_map(text)
     pieces = []
     for a, b in top_split(text, ";", 0, main_end):
         cuts = [a] + sentence_breaks(text, a, b, depth)
-        # "(Dealer, City), by whom sold 1952 to X" is two owners.
-        for w in re.finditer(r",\s+(?=(?:by|from|to|through) whom\b|who (?:sold|gave|bequeathed|lent|exchanged)\b)",
-                             text[a:b]):
+        # "(Dealer, City), by whom sold 1952 to X" and "(sale, ...), bought by X" are two owners.
+        for w in re.finditer(r",\s+(?=(?:by|from|to|through) whom\b|who (?:sold|gave|bequeathed|lent|exchanged|left)\b"
+                             r"|whose\b)|(?<=\)),\s+(?=(?:bought|purchased|acquired|sold|given|bequeathed|inherited|"
+                             r"returned|transferred|exchanged)\b)", text[a:b]):
             if not depth[a + w.start()]:
                 cuts.append(a + w.start() + 1)
         cuts = sorted(set(cuts)) + [b]
@@ -571,7 +617,6 @@ def provenance_pieces(text):
     # A footnote mark that follows the semicolon belongs to the owner before it.
     out = []
     for s, e in pieces:
-        marks = []
         while True:
             lead = FOOTMARK.match(text, s)
             if not lead:
@@ -582,26 +627,30 @@ def provenance_pieces(text):
         if s >= e:
             continue
         seg = text[s:e]
-        marks += FOOTMARK.findall(seg)
+        marks = FOOTMARK.findall(seg)
         tail = re.search(r"(?:\s*\[\d{1,2}\])+\s*[.;,]?\s*$", seg)
         if tail and tail.start() > 0:
-            e = s + tail.start()
-            s, e = strip_span(text, s, e, " \t\r\n;,")
+            s, e = strip_span(text, s, s + tail.start())
         out.append([s, e, marks])
-    return [(s, e, marks) for s, e, marks in out if re.search(r"[A-Za-z]", text[s:e])], notes
+    return [(s, e, marks) for s, e, marks in out if re.search(r"[A-Za-z]", text[s:e])], notes, loose
 
 
 def outside_brackets(seg):
     return re.sub(r"\[[^\]]*\]", lambda m: " " * len(m.group(0)), seg)
 
 
+def month_of(name):
+    return MONTH3[name[:3].lower()]
+
+
 def dates_in(seg):
     """Dates written in a piece of text, in order, as YYYY, YYYY-MM or YYYY-MM-DD, with a range's end."""
     found = []
     pats = [
+        (rf"\b({MONTH})\s*[-–/]\s*({MONTH})\s+(\d{{4}})(?![\d.])", "mmy"),
         (rf"(?<![\d.])(\d{{1,2}})(?:\s*[-–]\s*(\d{{1,2}}))?\s+({MONTH})\s+(\d{{4}})(?![\d.])", "dmy"),
-        (rf"({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}})(?![\d.])", "mdy"),
-        (rf"({MONTH})\s+(\d{{4}})(?![\d.])", "my"),
+        (rf"\b({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}})(?![\d.])", "mdy"),
+        (rf"\b({MONTH})\s+(\d{{4}})(?![\d.])", "my"),
         (r"(?<![\d.])(\d{4})(?:\s*[-–/]\s*(\d{4}|\d{2}))?(?![\d.])", "y"),
     ]
     taken = [False] * len(seg)
@@ -609,18 +658,20 @@ def dates_in(seg):
         for m in re.finditer(pat, seg):
             if any(taken[m.start():m.end()]):
                 continue
-            before = seg[max(0, m.start() - 6):m.start()].lower()
-            if kind == "y" and re.search(r"(no|nos|lot|inv|pp|p)\.\s*$|#\s*$", before):
+            before = seg[max(0, m.start() - 12):m.start()].lower()
+            if kind == "y" and re.search(r"\b(no|nos|lot|inv|pp|p|l|nr|cat)\.?\s*$|#\s*$|lugt\s*(supp\.?\s*)?$", before):
                 continue
             g = m.groups()
-            if kind == "dmy":
-                y, mo = int(g[3]), MONTHS[g[2].lower()]
+            if kind == "mmy":
+                y = int(g[2])
+                vals = [f"{y:04d}-{month_of(g[0]):02d}", f"{y:04d}-{month_of(g[1]):02d}"]
+            elif kind == "dmy":
+                y, mo = int(g[3]), month_of(g[2])
                 vals = [f"{y:04d}-{mo:02d}-{int(g[0]):02d}"] + ([f"{y:04d}-{mo:02d}-{int(g[1]):02d}"] if g[1] else [])
             elif kind == "mdy":
-                y, mo = int(g[2]), MONTHS[g[0].lower()]
-                vals = [f"{y:04d}-{mo:02d}-{int(g[1]):02d}"]
+                vals = [f"{int(g[2]):04d}-{month_of(g[0]):02d}-{int(g[1]):02d}"]
             elif kind == "my":
-                vals = [f"{int(g[1]):04d}-{MONTHS[g[0].lower()]:02d}"]
+                vals = [f"{int(g[1]):04d}-{month_of(g[0]):02d}"]
             else:
                 y = int(g[0])
                 vals = [f"{y:04d}"]
@@ -628,7 +679,7 @@ def dates_in(seg):
                     y2 = int(g[1]) if len(g[1]) == 4 else int(g[0][:2] + g[1])
                     if y2 > y:
                         vals.append(f"{y2:04d}")
-            if not all(1000 <= int(v[:4]) <= 2030 for v in vals):
+            if not all(1000 <= int(v[:4]) <= 2030 and int(v[8:10] or 1) <= 31 for v in vals):
                 continue
             for i in range(m.start(), m.end()):
                 taken[i] = True
@@ -637,13 +688,15 @@ def dates_in(seg):
     return [v for _, vals in found for v in vals]
 
 
+CIRCA = re.compile(rf"\b(by|c\.|ca\.|circa|about|around|before|after|probably|possibly|perhaps|reportedly|until|"
+                   rf"not later than)\s+(?:the\s+)?(?:\d|{MONTH})", re.I)
+
+
 def start_end(seg):
     ds = dates_in(seg)
     if not ds:
         return "", "", False
-    circa = bool(re.search(rf"\b(by|c\.|ca\.|circa|about|around|before|after|probably|possibly|perhaps|"
-                           rf"reportedly|until|not later than)\s+(?:the\s+)?(?:\d|{MONTH})", seg, re.I))
-    return ds[0], (ds[-1] if len(ds) > 1 and ds[-1] != ds[0] else ""), circa
+    return ds[0], (ds[-1] if len(ds) > 1 and ds[-1] != ds[0] else ""), bool(CIRCA.search(seg))
 
 
 def components(seg):
@@ -651,8 +704,10 @@ def components(seg):
 
 
 def placeish(c):
-    c = c.strip().rstrip(".")
-    if not c or re.search(r"\d", c) or INSTITUTION.search(c) or c.lower() in CORP:
+    c = re.sub(r"\s+", " ", c).strip().rstrip(".")
+    if not c or re.search(r"[\d?()\[\]]|\.\s", c) or INSTITUTION.search(c) or c.lower() in CORP:
+        return False
+    if re.fullmatch(MONTH, c) or re.match(r"(?:The|A|An)\s", c):
         return False
     words = c.replace("-", " ").split()
     if len(words) > 4 or not words[0][:1].isupper() or c.isupper() and len(c) <= 4 and c.lower() not in COUNTRIES:
@@ -662,142 +717,223 @@ def placeish(c):
 
 
 def country_of(c):
-    c = (c or "").strip().rstrip(".").lower()
-    if c in COUNTRIES:
-        return COUNTRIES[c]
-    if c in US_STATES or c + "." in US_STATES:
-        return "US"
+    c = re.sub(r"\s+", " ", (c or "").strip().lower())
+    for k in (c, c.rstrip("."), c.rstrip(".") + "."):
+        if k in COUNTRIES:
+            return COUNTRIES[k]
+        if k in US_STATES:
+            return "US"
     return None
 
 
 def place_after(comps):
     """City and country from the components that follow a name: "New York", "Upperville, Virginia"."""
-    comps = [c for c in comps if c.lower().rstrip(".") not in CORP and c.lower() not in CORP]
+    comps = [re.sub(r"\s+", " ", c).strip() for c in comps]
+    comps = [c for c in comps if c and c.lower().rstrip(".") not in CORP and c.lower() not in CORP]
     places = []
     for c in comps:
         if placeish(c) or country_of(c) is not None:
             places.append(c)
+        elif c[:1].isupper() or re.search(r"[\[(\d]", c[:1]):
+            return "", ""  # a title or another name follows: which part is the place is not clear
         else:
-            break
+            break  # "and later ...", "by 1920"
     if not places:
         return "", ""
-    city, country = "", ""
     first = places[0].rstrip(".")
     if country_of(first) is not None and not (len(places) > 1 and country_of(places[1]) is not None):
         return "", country_of(first) or ""
-    city = first
+    country = ""
     if len(places) > 1:
         nxt = country_of(places[1])
-        if nxt is not None:
-            country = nxt
-        else:
+        if nxt is None:
             return "", ""  # several places: which one is not said
-    if city.lower().startswith("and "):
+        country = nxt
+    if first.lower().startswith("and "):
         return "", ""
-    return city, country
+    return first, country
+
+
+OWNER_STOP = {"mr", "mrs", "and", "the", "of", "de", "del", "della", "van", "von", "der", "la", "le", "du", "y", "sir",
+              "lady", "lord", "dr", "miss", "madame", "monsieur", "mme", "don", "dona", "baron", "baroness", "count",
+              "countess", "comte", "comtesse", "duke", "duchess", "prince", "princess", "marquis", "earl", "czar",
+              "tsar", "king", "queen", "emperor", "empress", "pope", "cardinal", "bishop", "rev", "reverend", "jr",
+              "sr", "und", "zu", "graf", "grafin", "furst", "herzog", "conte", "contessa", "marchese", "duca"}
+FIRM_SUFFIX = {"co", "company", "inc", "ltd", "limited", "and", "llc", "gmbh", "sa", "ag", "cie", "et"}
 
 
 def owner_names(rec, nga):
+    """An NGA owner record, ready to be looked for in the text."""
     person = nga["people"].get(rec["constituentid"]) or {}
-    name = person.get("forwarddisplayname") or ""
-    if not name or re.match(r"(unknown|anonymous|private collection)", name, re.I):
+    name = (person.get("forwarddisplayname") or "").strip()
+    if not name or re.match(r"(unknown|anonymous|private collection)", name, re.I) or rec.get("role") == "current owner":
         return None
-    last = norm(person.get("lastname") or name.split()[-1])
-    stop = {"mr", "mrs", "and", "the", "of", "de", "van", "von", "der", "la", "le", "du", "co", "inc", "ltd", "sir",
-            "lady", "lord", "dr", "family", "estate", "collection", "gallery", "galleries", "galerie", "company",
-            "brothers", "bros", "art", "arts", "museum", "trust", "foundation", "sons", "son", "fils", "et", "cie",
-            "jr", "sr", "fine", "ii", "iii", "baron", "baroness", "count", "countess", "comte", "comtesse", "duke",
-            "duchess", "prince", "princess", "marquis", "earl", "miss", "madame", "monsieur"}
-    toks = [t for t in norm(name).split() if t not in stop and len(t) >= 3 and t not in last.split()]
-    return {"name": name, "last": last, "others": toks,
-            "corporate": person.get("constituenttype") in ("corporate", "purchase_fund")}
+    if person.get("constituenttype") in ("corporate", "purchase_fund") or not person.get("lastname"):
+        toks = norm(name).split()
+        while toks and toks[0] == "the":
+            toks = toks[1:]
+        while toks and toks[-1] in FIRM_SUFFIX:
+            toks = toks[:-1]
+        return {"name": name, "firm": toks} if len(" ".join(toks)) >= 4 else None
+    last = norm(person["lastname"]).split()
+    head = norm(name.split(",")[0]).split()
+    given = [t for t in head if t not in OWNER_STOP and t not in last]
+    return {"name": name, "last": last, "given": given, "window": max(6, len(head) + 2)}
+
+
+def find_all(toks, seq):
+    n = len(seq)
+    return [i for i in range(len(toks) - n + 1) if seq and toks[i:i + n] == seq]
 
 
 def align_owners(pieces, text, owners, nga):
-    """The NGA's owner records, in their order, laid against the pieces of the provenance text."""
+    """The NGA's owner records laid against the pieces of the provenance text: a piece gets every owner
+    it spells out — a firm's whole name; a person's surname with every given name (or its initial) just
+    before it — in the order the text names them."""
     names = [n for n in (owner_names(r, nga) for r in owners) if n]
-    normed = [" " + norm(text[s:e]) + " " for s, e, _ in pieces]
     got = defaultdict(list)
-    p = 0
-    for n in names:
-        if not n["last"] or len(n["last"]) < 3:
-            continue
-        for j in range(p, len(pieces)):
-            seg = normed[j]
-            if f" {n['last']} " not in seg:
+    for j, (s, e, _) in enumerate(pieces):
+        toks = norm(outside_brackets(text[s:e]) + " " + " ".join(re.findall(r"\[([^\]]*)\]", text[s:e]))).split()
+        found, firm_spans = [], []
+        for n in names:
+            if "firm" in n:
+                at = find_all(toks, n["firm"])
+                if at:
+                    found.append((at[0], n["name"]))
+                    firm_spans += [(i, i + len(n["firm"])) for i in at]
+        for n in names:
+            if "last" not in n:
                 continue
-            if not n["corporate"] and n["others"] and not any(f" {t} " in seg for t in n["others"]):
-                continue
-            got[j].append(n["name"])
-            p = j
-            break
+            for i in find_all(toks, n["last"]):
+                if any(a <= i < b for a, b in firm_spans):
+                    continue  # "The A.W. Mellon ... Trust" is not Andrew W. Mellon
+                window = toks[max(0, i - n["window"]):i]
+                if all(t in window or t[0] in window for t in n["given"]):
+                    found.append((i, n["name"]))
+                    break
+        for _, name in sorted(found):
+            if name not in got[j]:
+                got[j].append(name)
     return got
 
 
+LEAD = re.compile(r"^\s*(?:[A-Za-z][^()]*?\b(?:by|to|from|with|for|through)\s+)?\(([^()]*)\)")
+
+
+def squash(t):
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def trim(who):
+    """A name without the sentence's full stop (but "Jr.", "Inc.", "W." keep theirs)."""
+    who = who.strip()
+    last = re.search(r"(\S+)\.$", who)
+    if last and last.group(1).lower() not in ("jr", "sr", "co", "inc", "ltd", "bros", "cie", "esq", "st") \
+            and len(last.group(1)) > 1:
+        who = who[:-1]
+    return who
+
+
 def name_in_text(seg):
-    """The owner as the text names them, when the NGA's records don't say."""
+    """The owner as the text names them (and what follows the name), when the NGA's records don't say."""
     flat = outside_brackets(seg)
-    lead = re.match(r"^\s*(?:[a-z][^()]*?\b(?:by|to|from|with|for)\s+)?\(([^()]*)\)", flat)
+    lead = LEAD.match(flat)
     if lead:  # "(Duveen Brothers, Inc., Paris)" or "purchased 1919 by (Duveen Brothers, Inc.)"
-        comps = components(seg[lead.start(1):lead.end(1)])
-        if comps:
-            who = comps[0]
-            if len(comps) > 1 and comps[1].lower() in CORP:
-                who += ", " + comps[1]
-            return who, comps[1:]
+        inner = seg[lead.start(1):lead.end(1)]
+        firms = []
+        for a, b in top_split(inner, ";"):
+            comps = components(outside_brackets(inner[a:b]))
+            if comps:
+                first = re.split(r"\b(?:by|to|from|for|with|and)\s+(?=[A-Z])", comps[0])[-1]
+                first = trim(squash(first) + (", " + comps[1] if len(comps) > 1 and comps[1].lower() in CORP else ""))
+                if first[:1].isupper() and not re.search(r"\d", first):
+                    firms.append(first)
+        if firms:
+            comps = components(outside_brackets(inner))
+            return "; ".join(firms), (comps[1:] if len(firms) == 1 else [])
     head_end = len(flat)
-    for ch in ("[", ","):
-        i = flat.find(ch)
+    for i in (seg.find("["), flat.find(",")):
         if i > 0:
             head_end = min(head_end, i)
-    head = seg[:head_end]
-    parts = re.split(r"\b(?:by|to|from|for|From|By|To)\s+(?=[A-Z(\"“])", head)
-    who = parts[-1].strip().strip('"“”').strip()
-    who = re.sub(r"^(?:his|her|their|the)\s+(?=[A-Z])", "", who)
-    rest = components(flat[head_end:].replace("  ", " "))
-    rest = [r for r in rest if not re.search(r"\[|\]", r)]
-    if not who or not who[:1].isupper() or re.match(r"(?:The artist|The sitter|NGA)\b", who):
-        return "", rest
-    if re.search(r"\d", who) or len(who.split()) > 9:
+    head = squash(flat[:head_end])
+    rest = [r for r in components(flat[head_end:]) if r]
+    if re.search(rf"\b{KIN}\s*$", head.strip(), re.I) and rest:  # "by inheritance to his wife, Emma S. Bellows"
+        who, rest = squash(rest[0]), rest[1:]
+    else:
+        parts = re.split(r"\b(?:by|to|from|for|From|By|To)\s+(?=[A-Z(\"“])", head)
+        who = parts[-1].strip().strip('"“”').strip()
+        who = re.sub(r"^(?:his|her|their|the)\s+(?=[A-Z])", "", who)
+    who = re.sub(r"^(?:Possibly|Probably|Presumably|Perhaps|Reportedly|Supposedly)\s+", "", who)
+    who = trim(who)
+    if re.search(r"[()]", who) or not who or not who[:1].isupper() or re.match(r"(?:The artist|The sitter|NGA)\b", who) \
+            or re.search(r"\d", who) or len(who.split()) > 9:
         return "", rest
     return who, rest
+
+
+def sale_house(comps):
+    """Auction house and city from the components after "sale": "Christie, Manson & Woods, London", or
+    "Paris, Hôtel Drouot"."""
+    after = [squash(c) for c in comps if not re.match(r"(no|nos|lot|lots)\b", c, re.I)]
+    who, city, i = "", "", 0
+    if after and not dates_in(after[0]):
+        a0, a1 = after[0], (after[1] if len(after) > 1 and not dates_in(after[1]) else "")
+        if AUCTION.search(a0) or INSTITUTION.search(a0) or not placeish(a0):
+            who, i = a0, 1
+        elif a1 and (AUCTION.search(a1) or INSTITUTION.search(a1)):
+            city, who, i = a0, a1, 2
+        elif a1 and (placeish(a1) or country_of(a1) is not None):
+            who, i = a0, 1
+        else:
+            city, i = a0, 1
+        while who and i < len(after) and not dates_in(after[i]) and not placeish(after[i]) \
+                and country_of(after[i]) is None:
+            who, i = who + ", " + after[i], i + 1  # "Christie, Manson & Woods"
+        if not city and i < len(after) and not dates_in(after[i]):
+            city = after[i] if placeish(after[i]) or country_of(after[i]) is not None else ""
+    country = ""
+    if city and country_of(city) is not None:
+        city, country = "", country_of(city) or ""
+    return who, city, country
 
 
 def provenance_events(o, nga):
     text = (o["provenancetext"] or "").replace("\r\n", "\n")
     if not text.strip():
         return []
-    pieces, notes = provenance_pieces(text)
+    pieces, notes, loose = provenance_pieces(text)
     aligned = align_owners(pieces, text, nga["owners"].get(o["objectid"], []), nga)
     events = []
     for i, (s, e, marks) in enumerate(pieces):
         seg = text[s:e]
         flat = outside_brackets(seg)
         start, end, circa = start_end(flat)
-        group = re.search(r"\(([^()]*\b(?:sale|auction|vente)\b[^()]*)\)", flat, re.I)
+        group = re.search(r"\(([^()]*\b(?:sale|auction|vente|lots?\s+\d+)\b[^()]*)\)", flat, re.I)
         to_nga = re.search(r"\b(NGA|National Gallery of Art)\b", seg) and not re.search(r"\b(lent|loan|deposit)",
                                                                                         seg, re.I)
+        after_nga = events and events[-1]["kind"] == "held" and re.match(
+            r"(?:partial |fractional )?(?:gift|life interest|bequest|remainder|transfer)", seg, re.I)
         who, city, country, venue = "", "", "", ""
-        if to_nga:
+        if to_nga or after_nga:
             kind, who, venue, city, country = "held", "National Gallery of Art", "National Gallery of Art", \
                 "Washington", "US"
         elif group:
             kind = "sold"
             comps = components(seg[group.start(1):group.end(1)])
-            k = next((j for j, c in enumerate(comps) if re.search(r"\b(sale|auction|vente)\b", c, re.I)), 0)
-            after = comps[k + 1:]
-            if aligned.get(i):
+            k = next((j for j, c in enumerate(comps) if re.search(r"\b(sale|auction|vente)\b", c, re.I)), -1)
+            who, city, country = sale_house(comps[k + 1:])
+            if not who and aligned.get(i):
                 who = "; ".join(aligned[i])
-                if after and norm(after[0]) and norm(after[0]).split()[-1:] == norm(who).split()[-1:]:
-                    after = after[1:]
-            elif after and not placeish(after[0]) and not dates_in(after[0]):
-                who, after = after[0], after[1:]
-            after = [c for c in after if not dates_in(c) and not re.match(r"(no|nos|lot)\b", c, re.I)]
-            city, country = place_after(after)
         else:
             kind = "owned"
             text_who, rest = name_in_text(seg)
-            who = "; ".join(aligned[i]) if aligned.get(i) else text_who
+            if LEAD.match(flat) and text_who:  # dealers as the text names them, then anyone else it names
+                have = set(norm(text_who).split())
+                more = [n for n in aligned.get(i, []) if not set(norm(n).split()) - OWNER_STOP - FIRM_SUFFIX <= have
+                        and not (set(norm(n).split()) & have - OWNER_STOP - FIRM_SUFFIX - {"gallery", "galleries"})]
+                who = "; ".join([text_who] + more)
+            else:
+                who = "; ".join(aligned[i]) if aligned.get(i) else text_who
             if re.match(r"\s*(?:From\s+)?the artist\b", seg, re.I) and not who:
                 who = o["attribution"]
             city, country = place_after([r for r in rest if not dates_in(r)])
@@ -805,25 +941,29 @@ def provenance_events(o, nga):
         events.append({"kind": kind, "text": seg, "field": "provenance", "start": start, "end": end,
                        "circa": circa, "who": who, "title": "", "venue": venue, "city": city, "country": country,
                        "publication": "", "pages": "", "note": note, "url": "", "order": i + 1})
+    for q in loose:  # a note to the provenance as a whole
+        events.append({"kind": "other", "text": q, "field": "provenance", "start": "", "end": "", "circa": False,
+                       "who": "", "title": "", "venue": "", "city": "", "country": "", "publication": "",
+                       "pages": "", "note": "a note to the provenance", "url": "", "order": len(events) + 1})
     return events
 
 
 def exhibition_event(r, order, field, footnotes):
     text = r["text"].strip()
-    comps_spans = [(a, b) for a, b in top_split(text, ",")]
     first_venue_end = top_split(text, ";")[0][1]
-    comps = [(a, b, text[a:b].strip()) for a, b in comps_spans if text[a:b].strip()]
+    comps = [(a, b, text[a:b].strip()) for a, b in top_split(text, ",") if text[a:b].strip()]
     single = first_venue_end == len(text)
     # Where the dates begin (single venue), or where the first venue ends (several).
     d = len(comps)
     for j, (a, b, c) in enumerate(comps):
-        if single and (dates_in(c) or re.match(r"(no|nos|cat|unnumbered)\b", c, re.I)) and j > 0:
+        if single and j > 0 and (dates_in(c) or re.fullmatch(MONTH, c.strip(" .")) or
+                                 re.match(r"(no|nos|cat|unnumbered|possibly)\b", c, re.I)):
             d = j
             break
         if not single and b >= first_venue_end:
             d = j + 1 if a < first_venue_end else j
             break
-    head = [c for c in comps[:d]]
+    head = list(comps[:d])
     if head and not single:
         a, b, c = head[-1]
         head[-1] = (a, first_venue_end, text[a:first_venue_end].strip())
@@ -833,7 +973,7 @@ def exhibition_event(r, order, field, footnotes):
         country = country_of(head[k - 1][2]) or ""
         k -= 1
     if k >= 2 and placeish(head[k - 1][2]):
-        city = head[k - 1][2].rstrip(".")
+        city = squash(head[k - 1][2]).rstrip(".")
         k -= 1
     if k >= 2:
         j = k - 1
@@ -842,7 +982,10 @@ def exhibition_event(r, order, field, footnotes):
         venue = text[head[j][0]:head[k - 1][1]].strip()
         title = text[head[0][0]:head[j - 1][1]].strip()
     elif k == 1:
-        title = head[0][2]
+        if INSTITUTION.search(head[0][2]) and not re.search(r"\b(exhibition|exposition|salon|fair)\b", head[0][2], re.I):
+            venue = head[0][2]
+        else:
+            title = head[0][2]
     if venue.upper() == "NGA":
         venue = "National Gallery of Art"
         if not city:
@@ -851,8 +994,12 @@ def exhibition_event(r, order, field, footnotes):
         country, city = country_of(city) or country, ""
     if city.lower() == "washington" and not country and re.search(r"Washington,?\s*D\.?\s*C\.?", text):
         country = "US"
-    tail = text[comps[d][0]:] if d < len(comps) else ""
-    start, end, circa = start_end(tail if single else text[first_venue_end:])
+    # The dates: everything after the title, less titles in italics and remarks in parentheses.
+    rest = text[head[0][1]:] if head and title else text
+    rest = re.sub(r"_[^_]*_|\([^()]*\)|\bas\s+[\"“][^\"”]*[\"”]", " ", rest)
+    ds = sorted(dates_in(rest))
+    start, end = (ds[0], ds[-1] if ds[-1] != ds[0] else "") if ds else ("", "")
+    circa = bool(ds) and bool(CIRCA.search(rest))
     if not start and r.get("year"):
         start = r["year"]
     note = " ".join(f"[{n}] {footnotes[n]}" for n in FOOTMARK.findall(text) if n in footnotes)
@@ -875,10 +1022,11 @@ def written_event(r, order):
         publication = next((b for b in books if text.find("_" + b + "_") > q.end()), "")
     elif books:
         title = books[0].strip()
-    pages = ""
-    p = re.search(r"(?:1[5-9]\d\d|20\d\d)\)?[^:]{0,12}:\s*([^:]+?)\s*$", text)
+    pages, printed = "", ""
+    p = re.search(r"((?:1[5-9]\d\d|20\d\d))\)?[^:]{0,12}:\s*(.+?)\s*$", text)
     if p:
-        pages = re.sub(r"[,.]?\s*(?:(?:color|colour|black and white)\s+)?(?:repro|illus|fig)\b.*$", "", p.group(1))
+        printed = p.group(1)
+        pages = re.sub(r"[,.]?\s*(?:(?:color|colour|black and white)\s+)?(?:repro|illus|fig)\b.*$", "", p.group(2))
         pages = pages.strip(" .,")
     city, country = "", ""
     if books and not q:
@@ -889,7 +1037,10 @@ def written_event(r, order):
             country = country_of(city) or ""
             if country:
                 city = ""
+    # The NGA's own year for the entry; where the text prints another year before the pages, that one.
     start = r.get("year") or ""
+    if printed and start not in text:
+        start = printed
     if not start:
         ds = dates_in(text)
         start = ds[0][:4] if ds else ""
@@ -959,11 +1110,16 @@ def events_for(o, nga):
 # ---------------------------------------------------------------- main
 
 def title_index(nga):
-    index = defaultdict(set)
+    """Title key -> NGA objects; and each object's whole titles (current and previous) and title parts."""
+    index, nga["tkeys"] = defaultdict(set), {}
     for oid, o in nga["objects"].items():
-        keys = set(title_keys(o["title"])[1])
+        full, keys = title_keys(o["title"])
+        fulls = {full}
         for p in nga["previous"].get(oid, []):
-            keys |= title_keys(p)[1]
+            f, k = title_keys(p)
+            fulls.add(f)
+            keys |= k
+        nga["tkeys"][oid] = (fulls, keys)
         for k in keys:
             index[k].add(oid)
     return index
@@ -973,7 +1129,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true", help="download the NGA's CSVs again")
     ap.add_argument("--only", help="one saved work (Artsy id)")
-    ap.add_argument("--dry-run", action="store_true", help="match and report, write nothing")
+    ap.add_argument("--dry-run", action="store_true", help="match and report (data/nga/matches.json), write no histories")
     args = ap.parse_args()
     download(args.refresh)
     nga = load()
@@ -1020,6 +1176,7 @@ def main():
         for stale in OUT.glob("*.json"):
             if stale.name not in keep:
                 stale.unlink()
+    if not args.only:
         (CACHE / "matches.json").write_text(json.dumps({"matched": matched, "rejected": rejected},
                                                         ensure_ascii=False, indent=1))
     by_conf = defaultdict(int)

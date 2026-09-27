@@ -97,14 +97,14 @@ CMA_LIST = ["id", "accession_number", "title", "creation_date", "creation_date_e
             "creation_date_latest", "technique", "type", "measurements", "dimensions", "url", "creditline",
             "creators", "legal_status", "alternate_titles"]
 SMK_LIST = ["object_number", "titles", "production", "production_date", "dimensions", "object_names",
-            "techniques", "frontend_url"]
+            "techniques"]
 
 # Who holds what, as Artsy's partner names and credits spell them.
 MUSEUMS = {
     "aic": re.compile(r"(?<!school of the )art institute of chicago", re.I),
     "cma": re.compile(r"cleveland museum of art", re.I),
     "met": re.compile(r"metropolitan museum of art", re.I),
-    "smk": re.compile(r"statens museum for kunst|national gallery of denmark|\bSMK\b"),
+    "smk": re.compile(r"(?i:statens museum for kunst|national gallery of denmark)|\bSMK\b"),
     "yuag": re.compile(r"yale university art gallery", re.I),
     "ycba": re.compile(r"yale center for british art", re.I),
 }
@@ -207,7 +207,7 @@ def fetch(api, url, params=None, body=None, refresh=False):
             j = json.loads(path.read_text())
             return j.get("answer")
         gate = host_gate(urllib.parse.urlparse(url).hostname)
-        answer, last = None, None
+        answer, last, broken = None, None, 0
         for attempt in range(7):
             with gate["sem"]:
                 with gate["lock"]:
@@ -231,9 +231,9 @@ def fetch(api, url, params=None, body=None, refresh=False):
                 # The Met's firewall answers 403 with a page of HTML when it wants a pause.
                 if r.status_code in (403, 429) or r.status_code >= 500 or "json" not in ctype:
                     last = f"{r.status_code} {ctype}"
-                    if r.status_code == 400:
-                        answer = None
-                        break
+                    broken += r.status_code >= 500
+                    if broken >= 3:          # a server error that repeats is not a pause
+                        raise RuntimeError(f"no answer from {url} ({last})")
                 else:
                     try:
                         answer = r.json()
@@ -307,6 +307,8 @@ def title_match(a, b):
             small, big = (sx, sy) if len(sx) <= len(sy) else (sy, sx)
             if len(small) >= 2 and small <= big and not generic(" ".join(small)):
                 best = "fuzzy"
+            elif len(sx & sy) >= 3 and len(sx & sy) >= 0.5 * len(sx | sy):
+                best = "fuzzy"          # "Avery Coonley Playhouse: Triptych Window" / "Triptych Window from the Coonley Playhouse …"
     return best
 
 
@@ -321,6 +323,12 @@ def name_words(n):
 def surname(n):
     w = [x for x in name_words(n) if x not in PARTICLES]
     return w[-1] if w else ""
+
+
+def raw_surname(n):
+    """The surname as the name spells it, accents and all (some search engines do not fold them)."""
+    sn = surname(n)
+    return next((x for x in re.findall(r"[^\W\d_]+", str(n or "")) if fold(x) == sn), sn)
 
 
 def birth_year(s):
@@ -487,17 +495,16 @@ def holder(w):
 # Each candidate: {museum, record, url, titles, names, births, qualified, years, sizes, accession, raw}
 
 def aic_query(title, name, loose=False):
-    q = {"bool": {"must": [
-        {"match": {"title": {"query": title, "operator": "or", "minimum_should_match": "60%"}}
-         if loose else {"match": {"title": {"query": title, "operator": "and"}}},
-        {"match": {"artist_display": {"query": name}}}]}}
+    words_rule = {"query": title, "operator": "or", "minimum_should_match": "60%"} if loose else \
+        {"query": title, "operator": "and"}
+    q = {"bool": {"must": [{"match": {"title": words_rule}}, {"match": {"artist_display": {"query": name}}}]}}
     return {"resources": "artworks", "query": q, "limit": 20, "fields": AIC_LIST}
 
 
 def aic_queries(w):
     qs = []
     for a in w["artists"][:2]:
-        sn = surname(a["name"])
+        sn = raw_surname(a["name"])
         if not sn:
             continue
         for t in sorted(w["titles"], key=len, reverse=True)[:3]:
@@ -521,7 +528,11 @@ def aic_prefetch(works, refresh):
     print(f"  aic: {len(todo)} searches to make", flush=True)
     for i in range(0, len(todo), 25):
         chunk = todo[i:i + 25]
-        answer = fetch("aic-msearch", AIC + "msearch", body=chunk, refresh=True)
+        try:
+            answer = fetch("aic-msearch", AIC + "msearch", body=chunk, refresh=True)
+        except RuntimeError as e:
+            print(f"  aic: a batch went unanswered ({e})", flush=True)
+            continue
         if not isinstance(answer, list) or len(answer) != len(chunk):
             continue
         for q, a in zip(chunk, answer):
@@ -544,6 +555,7 @@ def aic_candidate(d):
             "years": (d.get("date_start"), d.get("date_end") or d.get("date_start")) if d.get("date_start") else
                      year_range(d.get("date_display")),
             "sizes": sizes_in(d.get("dimensions")), "accession": d.get("main_reference_number") or "",
+            "credit": d.get("credit_line") or "",
             "deaccessioned": bool(d.get("fiscal_year_deaccession")), "raw": d}
 
 
@@ -575,7 +587,7 @@ def cma_candidate(d):
                              for c in creators[:1]),
             "years": (d.get("creation_date_earliest"), d.get("creation_date_latest"))
                      if d.get("creation_date_earliest") else year_range(d.get("creation_date")),
-            "sizes": dims, "accession": d.get("accession_number") or "",
+            "sizes": dims, "accession": d.get("accession_number") or "", "credit": d.get("creditline") or "",
             "deaccessioned": (d.get("legal_status") or "") == "deaccessioned", "raw": d}
 
 
@@ -631,7 +643,7 @@ def smk_candidates(w, refresh):
             continue
         offset = 0
         while offset < 1000:
-            j = fetch("smk", SMK + "art/search/", {"keys": sn, "offset": offset, "rows": 100, "lang": "en",
+            j = fetch("smk", SMK + "art/search/", {"keys": raw_surname(a["name"]), "offset": offset, "rows": 100, "lang": "en",
                                                    "fields": SMK_LIST}, refresh=refresh) or {}
             items = j.get("items") or []
             for d in items:
@@ -666,7 +678,8 @@ def met_candidate(d):
             "qualified": bool(QUALIFIED.search((d.get("artistPrefix") or "") + " " + (d.get("artistRole") or ""))),
             "years": (d.get("objectBeginDate"), d.get("objectEndDate")) if d.get("objectBeginDate") is not None
                      and d.get("objectEndDate") else year_range(d.get("objectDate")),
-            "sizes": sizes, "accession": d.get("accessionNumber") or "", "raw": d}
+            "sizes": sizes, "accession": d.get("accessionNumber") or "", "credit": d.get("creditLine") or "",
+            "raw": d}
 
 
 def met_candidates(w, refresh):
@@ -676,8 +689,7 @@ def met_candidates(w, refresh):
         sn = surname(a["name"])
         if not sn:
             continue
-        raw = [x for x in re.findall(r"[^\W\d_]+", a["name"]) if fold(x) == sn]
-        for key in {sn} | set(raw):
+        for key in {sn, raw_surname(a["name"])}:
             by_artist |= met_ids({"artistOrCulture": "true", "q": key}, refresh)
     if by_artist:
         for t in sorted(w["titles"], key=len, reverse=True)[:3]:
@@ -734,7 +746,8 @@ def lux_candidate(d):
             "qualified": any(QUALIFIED.search(r) for r in roles) or any(QUALIFIED.search(n[:30]) for n in
                                                                         [c.get("_label") or "" for p in (prod.get("part") or [])
                                                                          for c in p.get("carried_out_by") or []][:1]),
-            "years": years, "sizes": sizes, "accession": acc, "raw": d}
+            "years": years, "sizes": sizes, "accession": acc,
+            "credit": next(iter(lux_statements(d, "Credit Line")), ""), "raw": d}
 
 
 def lux_candidates(w, refresh):
@@ -744,7 +757,7 @@ def lux_candidates(w, refresh):
         if not sn:
             continue
         for t in sorted(w["titles"], key=len, reverse=True)[:2]:
-            q = json.dumps({"AND": [{"name": t}, {"producedBy": {"name": sn}}]})
+            q = json.dumps({"AND": [{"name": t}, {"producedBy": {"name": raw_surname(a["name"])}}]})
             j = fetch("lux", LUX + "api/search/item", {"q": q}, refresh=refresh) or {}
             ids += [x["id"] for x in j.get("orderedItems") or []]
     out = []
@@ -770,6 +783,7 @@ def judge(w, c):
     acc = c["accession"] and len(c["accession"]) >= 5 and re.search(
         r"(?<![\w.])" + re.escape(c["accession"]) + r"(?![\w]|\.\d)", w["text"])
     linked_id = c["museum"] == "met" and c["record"] in w["met_ids"]
+    credit = len(c.get("credit") or "") >= 15 and fold(c["credit"]).strip(" .") in fold(w["text"])
     if not t and not acc and not linked_id:
         return None
     d = dates_agree(w["years"], c["years"])
@@ -782,6 +796,8 @@ def judge(w, c):
     facts.append("same artist")
     facts.append({True: "date agrees", False: "date differs", None: "date not given on both"}[d])
     facts.append({True: "dimensions agree", False: "dimensions differ", None: "dimensions not on both"}[s])
+    if credit:
+        facts.append("the museum's credit line in Artsy's record")
     how = ", ".join(facts)
     if c["qualified"]:
         return "reject", "the museum gives it to the artist's circle, school or a copy: " + how
@@ -789,11 +805,15 @@ def judge(w, c):
         return "exact", "Artsy's record links to this Met object; " + how
     if acc and d is not False:
         return "exact", f"accession number {c['accession']} in Artsy's record; " + how
+    if linked and t == "exact" and s and d is False:
+        return "probable", how          # the museum's, the same title and size; one of the two dates is off
     if d is False:
         return "reject", how
+    if linked and credit and t:
+        return "strong", how
     if linked:
         if t == "exact" and d and s is not False:
-            return ("strong" if s or not generic(min(w["titles"], key=len)) else "probable"), how
+            return ("strong" if s or not generic(min(w["titles"], key=len, default="")) else "probable"), how
         if t == "exact" and s is not False:
             return "probable", how
         if t and d:
@@ -824,7 +844,7 @@ def match_work(w, museums, refresh):
     for api in apis:
         try:
             cands = FINDERS[api](w, refresh)
-        except RuntimeError as e:
+        except Exception as e:  # noqa: BLE001 — one museum failing must not stop the rest
             doubtful.append({"museum": api, "record": "", "why": "could not search: " + str(e)})
             continue
         for c in cands:
@@ -877,6 +897,13 @@ def split_top(text, sep=";"):
     return [x.strip() for x in out if x.strip(" .;\n")]
 
 
+def unbracket(text, repl=" "):
+    """The text without its square-bracketed asides, nested ones too ('[… 2942.50 [guilders] …]')."""
+    while re.search(r"\[[^\[\]]*\]", text):
+        text = re.sub(r"\[[^\[\]]*\]", repl, text)
+    return text
+
+
 def iso(y, m=None, d=None):
     return f"{y:04d}" + (f"-{m:02d}" if m else "") + (f"-{d:02d}" if m and d else "")
 
@@ -891,10 +918,10 @@ def date_mentions(text):
     found = []
     pat = re.compile(
         r"(?P<iso>(?P<iy>\d{4})-(?P<im>\d{2})-(?P<id>\d{2}))"
-        r"|(?P<dmy>(?P<dd>\d{1,2})\s+(?P<dm>" + MONTH + r")\.?,?\s+(?P<dy>\d{4}))"
-        r"|(?P<md>(?P<m>" + MONTH + r")\.?(?:\s+(?P<d>\d{1,2})(?:st|nd|rd|th)?(?!\d))?"
+        r"|(?P<dmy>(?P<dd>\d{1,2})\s+(?P<dm>" + MONTH + r")\b\.?,?\s+(?P<dy>\d{4}))"
+        r"|(?P<md>\b(?P<m>" + MONTH + r")\b\.?(?:\s+(?P<d>\d{1,2})(?:st|nd|rd|th)?(?!\d))?"
         r"(?:\s*[-–]\s*(?P<d2>\d{1,2})(?!\d)(?!\s*[-–]))?(?:,?\s+(?P<y>\d{4}))?)"
-        r"|(?P<year>(?<![\d/])\d{4}(?![\d]))", re.I)
+        r"|(?P<year>(?<![A-Za-z0-9./])\d{4}(?![A-Za-z0-9]))", re.I)
     for m in pat.finditer(t):
         if m.group("iso"):
             found.append([int(m.group("iy")), int(m.group("im")), int(m.group("id"))])
@@ -904,8 +931,8 @@ def date_mentions(text):
         elif m.group("md"):
             name = m.group("m").lower()
             mo = MONTHS.get(name) or MONTHS.get(name[:4]) or MONTHS.get(name[:3])
-            if not (m.group("d") or m.group("y")) and name in ("may", "march"):
-                continue          # a word, not a month
+            if not (m.group("d") or m.group("y")) and not re.match(r"\s*[-–]\s*" + MONTH + r"\b", t[m.end():]):
+                continue          # a word ("May", "Jan", "March"), not a date; "May–June 1914" is one
             y = int(m.group("y")) if m.group("y") else None
             day = int(m.group("d")) if m.group("d") and 1 <= int(m.group("d")) <= 31 else None
             found.append([y, mo, day])
@@ -937,6 +964,8 @@ def dates(text, prefer_months=True):
     circa = bool(re.search(r"\b(c\.|ca\.|circa|about|around|by)\s*(" + MONTH + r"\.?\s*)?\d", t, re.I))
     start = iso(*ms[0])
     end = iso(*ms[-1]) if len(ms) > 1 and ms[-1] != ms[0] else ""
+    if end and start[:4] == end[:4] and start > end[:len(start)]:
+        start = f"{int(start[:4]) - 1:04d}" + start[4:]      # "Oct. 13–Jan. 14, 2024" runs over a new year
     if len(ms) == 1 and re.search(r"\b(until|till|to|through)\s+(" + MONTH + r"\.?\s*\d{0,2},?\s*)?\d{4}", t, re.I):
         return "", start, circa
     return start, end, circa
@@ -950,51 +979,76 @@ ORGISH = re.compile(r"\b(gallery|galleries|galerie|museum|company|co\.|inc|ltd|c
                     r"society|school|sons|club|trust|bank|associates|& |and|university|library)\b", re.I)
 
 
+US_STATES = {"alabama", "alaska", "arizona", "arkansas", "california", "colorado", "connecticut", "delaware",
+             "florida", "georgia", "hawaii", "idaho", "illinois", "indiana", "iowa", "kansas", "kentucky",
+             "louisiana", "maine", "maryland", "massachusetts", "michigan", "minnesota", "mississippi",
+             "missouri", "montana", "nebraska", "nevada", "new hampshire", "new jersey", "new mexico",
+             "new york", "north carolina", "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania",
+             "rhode island", "south carolina", "south dakota", "tennessee", "texas", "utah", "vermont",
+             "virginia", "washington", "west virginia", "wisconsin", "wyoming", "district of columbia"}
+
+
 def place_after(parts):
-    """City and country from the parts of a text after a name: the part before a country, else the
-    first part when it reads like a place."""
+    """City and country from the parts of a text after a name ('…, Pittsburgh, Pennsylvania, United
+    States'): the part before a country (before its state, in the United States), else the first part
+    when it reads like a place."""
+    parts = [re.sub(r"\s*\(.*", "", p).strip() for p in parts]
     for i, p in enumerate(parts):
         c = country_of(p)
         if c:
-            city = parts[i - 1].strip() if i > 0 else ""
-            if re.search(r"\d", city) or ORGISH.search(city) or len(city.split()) > 4:
+            j = i - 1
+            if c == "US" and j > 0 and fold(parts[j]).strip(" .") in US_STATES:
+                j -= 1
+            city = parts[j] if j >= 0 else ""
+            if re.search(r"\d", city) or ORGISH.search(city) or len(city.split()) > 4 or not city[:1].isupper():
                 city = ""
             return city, c
     if parts:
-        p = parts[0].strip()
+        p = parts[0]
         if re.fullmatch(r"[A-Z][\w'’.-]+(?: [A-Z][\w'’.-]+){0,2}", p) and not ORGISH.search(p) \
                 and not re.search(r"\d", p):
             return p, ""
     return "", ""
 
 
-PROTECT = [(r",\s*(Jr|Sr|Inc|Ltd|Esq|S\.A|Co)\b\.?", r" \1."), ]
+PROTECT = re.compile(r",(\s*(?:Jr|Sr|Inc|Ltd|Esq|S\.A|Co)\b\.?)")
+LEAD = re.compile(r"^(?:and\s+|then\s+|later\s+|subsequently\s+)?(?:(?:probably|possibly|presumably|perhaps|"
+                  r"privately|jointly|reportedly|apparently)\s+)?(.*)$", re.I)
+VERBISH = re.compile(r"^(?:by|sold|purchased|bought|given|gift|bequeathed|consigned|placed|returned|acquired|"
+                     r"transferred|exchanged|with|created|inherited|lent|deposited|confiscated|seized|"
+                     r"restituted|possibly|probably|to|on|commissioned|delivered|offered|shared)\b", re.I)
+
+
+KIN = re.compile(r"^(?:the\s+)?(?:artist|painter|sculptor|sitter|collector|owner)[’']s\s+[\w-]+(?:\s+[\w-]+)?$", re.I)
+
+
+def namey(s):
+    """Does a text start the way a name does: a capital, a quote, or 'the', 'his', 'her', 'their'?"""
+    s = s.lstrip()
+    return bool(s) and (s[0].isupper() or s[0] in "\"“'‘" or bool(re.match(r"(?:the|his|her|their)\b", s)))
 
 
 def who_and_place(seg):
-    s = re.sub(r"\[[^\]]*\]", " ", seg)
-    s = s.strip().strip("()").strip()
-    for a, b in PROTECT:
-        s = re.sub(a, b, s)
+    """The owner, dealer or institution a provenance step names, and the place given after it."""
+    s = unbracket(seg).strip()
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1]          # Cleveland puts a dealer in brackets
+    s = PROTECT.sub(lambda m: "\x00" + m.group(1), s)      # "Walter P. Chrysler, Jr." is one name
     s = re.sub(r"\s*\((?:\d{4}|b\.|born|died|d\.)[^)]*\)", "", s)
-    parts = [p.strip() for p in s.split(",")]
-    first = parts[0]
-    lead = re.match(r"^(?:and\s+)?(?:(?:probably|possibly|presumably|perhaps)\s+)?(.*)$", first, re.I).group(1)
-    m = list(re.finditer(r"\b(?:to|by|with|from)\s+(?=[A-Z\"“'‘]|the\b|his\b|her\b|their\b)", lead))
-    verbish = re.match(r"^(?:by|sold|purchased|bought|given|gift|bequeathed|consigned|placed|returned|acquired|"
-                       r"transferred|exchanged|with|created|inherited|lent|deposited|confiscated|seized|"
-                       r"restituted|possibly|probably|to)\b", lead, re.I)
-    if verbish and m:
-        who = lead[m[-1].end():]
-    elif verbish:
-        who = ""
+    parts = [p.strip().replace("\x00", ",") for p in s.split(",")]
+    lead = LEAD.match(parts[0]).group(1)
+    rest = parts[1:]
+    m = [x for x in re.finditer(r"\b(?:to|by|with|from)\s+", lead) if namey(lead[x.end():])]
+    if VERBISH.match(lead):
+        who = lead[m[-1].end():] if m else ""
     else:
         who = lead
     who = re.sub(r"\s*\([^)]*\)", "", who).strip(" .;:")
-    who = re.sub(r"^(?:his|her|their)\s+\w+,?\s+", "", who)
-    if who and not re.match(r"[A-Z\"“'‘]|the\b", who):
+    if (re.fullmatch(r"(?:his|her|their|its)\s+[\w-]+(?:\s+[\w-]+)?", who) or KIN.search(who)) and rest:
+        who, rest = re.sub(r"\s*\([^)]*\)", "", rest[0]).strip(" .;:"), rest[1:]     # "to his wife, Martha …"
+    if who and not namey(who):
         who = ""
-    city, country = place_after(parts[1:])
+    city, country = place_after(rest)
     return who, city, country
 
 
@@ -1020,7 +1074,7 @@ def provenance_events(segments, field, notes=None):
     out = []
     for i, seg in enumerate(segments, 1):
         text = plain(seg)
-        start, end, circa = dates(re.sub(r"\[[^\]]*\]", " ", text), prefer_months=False)
+        start, end, circa = dates(unbracket(text), prefer_months=False)
         who, city, country = who_and_place(text)
         note = ""
         if notes:
@@ -1033,12 +1087,24 @@ def provenance_events(segments, field, notes=None):
 
 def split_notes(text):
     """A provenance with its notes after it ('… Notes: [1] …'): the chain, and the notes by mark."""
-    body, _, tail = re.split(r"\s+(Notes?:)\s+", text, maxsplit=1) + ["", ""] if re.search(r"\s+Notes?:\s+", text) \
-        else [text, "", ""]
+    parts = re.split(r"\s+Notes?:\s+", text, maxsplit=1)
+    body, tail = parts[0], (parts[1] if len(parts) > 1 else "")
     notes = {}
     for m in re.finditer(r"\[(\w{1,3})\]\s*(.*?)(?=\s*\[\w{1,3}\]\s|$)", tail, re.S):
         notes[m.group(1)] = plain(m.group(2))
     return body, notes
+
+
+NOT_A_NAME = re.compile(r"\b(catalogue|catalog|exhibition|exposition|salon|annual|collection|museum|gallery|"
+                        r"galerie|society|institute|journal|magazine|review|bulletin|press|library|report|"
+                        r"acquisitions|anonymous)\b", re.I)
+
+
+def looks_like_name(s):
+    s = s.strip()
+    return bool(s) and len(s) < 90 and not re.search(r"\d|:", s) and not NOT_A_NAME.search(s) and bool(
+        re.fullmatch(r"(?:(?:[A-Z][\w'’.-]*|[a-z]{1,3})\.?\s*){2,6}(?:(?:and|&|with)\s+(?:(?:[A-Z][\w'’.-]*|[a-z]{1,3})"
+                     r"\.?\s*){1,6})?(?:,?\s*(?:et al\.|eds?\.))?", s))
 
 
 def publication_parts(text):
@@ -1056,17 +1122,20 @@ def publication_parts(text):
         if em_after:
             publication = plain(em_after[0]).strip(" ,.")
         else:
-            publication = plain(re.split(r"[,(]", plain(after).lstrip(" ,.in"), 1)[0]).strip(" ,.")
+            lead = re.sub(r"^[\s,.]*(?:in\s+)?", "", plain(after))
+            publication = re.split(r"[,(]", lead, 1)[0].strip(" ,.\"“”")
     elif em:
         title = plain(em[0]).strip(" ,.")
         who = plain(t[:t.find("<")]).strip(" ,.:")
     else:
-        parts = re.split(r",\s{2,}|,\s+(?=\()| \(", flat, 1)
-        head = parts[0]
-        if ", " in head:
-            who, title = head.split(", ", 1)
+        head = re.split(r",\s{2,}|\s\(", t.strip(), 1)[0]          # "Author, Title,  Publisher …" / "… (Place: …"
+        head = plain(head)
+        first, _, second = head.partition(", ")
+        if second and looks_like_name(re.sub(r"\[[^\]]*\]", "", first)):
+            who, title = first, second
         else:
             title = head
+        title = title.strip(" ,.")
     if len(who) > 120 or re.search(r"\d{4}", who):
         who = ""
     pages = ", ".join(re.findall(r"\bpp?\.\s*[\dixvlc]+(?:\s*[-–]\s*\d+)?(?:,\s*\d+(?:\s*[-–]\s*\d+)?)*", flat))
@@ -1110,7 +1179,14 @@ def aic_events(c, refresh):
     for para in re.split(r"\n\s*\n", d.get("exhibition_history") or ""):
         if not para.strip():
             continue
-        segs = split_top(para)
+        segs = []
+        for seg in split_top(para):
+            # a venue that follows on has its own dates; a ";" inside a title ("Rue de Paris; Temps de
+            # pluie") does not start one
+            if segs and not date_mentions(plain(seg)):
+                segs[-1] += "; " + seg
+            else:
+                segs.append(seg)
         head_title = ""
         for j, seg in enumerate(segs):
             order += 1
@@ -1132,9 +1208,9 @@ def aic_events(c, refresh):
                 first = date_mentions(text)
                 m = re.search(r",\s*(?:opened\s+|closed\s+)?" + MONTH + r"\.?\s|,\s*\d{4}", text)
                 pre = text[:m.start()] if m else ""
-                if ", as " in pre:
+                if ", as " in pre and "," not in pre.split(", as ", 1)[0]:
                     venue, title = pre.split(", as ", 1)
-                elif pre and first:
+                elif pre and first and "," not in pre:
                     venue = pre
                     title = head_title
             if j == 0:
@@ -1173,20 +1249,27 @@ def cma_events(c, refresh):
         e["note"] = " ".join(notes + cites)
         out.append(e)
     ex = d.get("exhibitions") or {}
-    for i, x in enumerate(ex.get("current") or [], 1):
+    order = 0
+    for x in ex.get("current") or []:
         desc = x.get("description") or ""
-        text = plain(desc)
         m = re.search(r"</i>\.?\s*(.*)$", desc, re.S)
-        rest = plain(m.group(1)) if m else text
-        rest_venue = re.sub(r"\s*\((?:organizer|organiser)\)", "", re.sub(r"\s*\([^()]*\d{4}[^()]*\)\.?\s*$", "", rest))
-        bits = [b.strip() for b in rest_venue.split(",") if b.strip()]
-        venue = bits[0] if bits else ""
-        city, country = place_after(bits[1:]) if len(bits) > 1 else ("", "")
-        start, end, circa = dates(rest)
-        if x.get("opening_date"):
-            start = x["opening_date"][:10]
-        out.append(ev("exhibited", text, "exhibitions.current", i, start=start, end=end if end != start else "",
-                      circa=circa, title=plain(x.get("title")), venue=venue, city=city, country=country))
+        head = desc[:m.start(1)] if m else ""
+        # "<i>Title</i>. Venue, City, Country (organizer) (dates); Venue, City (dates)." — a venue each
+        for j, seg in enumerate(split_top(m.group(1) if m else desc)):
+            order += 1
+            text = plain((head if j == 0 else "") + seg)
+            rest = plain(seg)
+            rest_venue = re.sub(r"\s*\((?:co-)?(?:organizer|organiser)\)", "",
+                                re.sub(r"\s*\([^()]*\d{4}[^()]*\)\.?\s*$", "", rest))
+            bits = [b.strip() for b in rest_venue.split(",") if b.strip()]
+            venue = bits[0] if bits and m else ""
+            city, country = place_after(bits[1:]) if len(bits) > 1 and m else ("", "")
+            start, end, circa = dates(rest)
+            if j == 0 and x.get("opening_date"):
+                start = x["opening_date"][:10]
+            out.append(ev("exhibited", text, "exhibitions.current", order, start=start,
+                          end=end if end != start else "", circa=circa, title=plain(x.get("title")),
+                          venue=venue, city=city, country=country))
     for i, x in enumerate(ex.get("legacy") or [], 1):
         text = plain(x.get("description") if isinstance(x, dict) else x)
         if not text:
@@ -1362,7 +1445,7 @@ def main():
         conf, how, c = top
         try:
             source, events = EVENTS[c["museum"]](c, args.refresh)
-        except RuntimeError as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  could not read {c['url']}: {e}", flush=True)
             continue
         rec = {"id": w["id"], "source": source,
