@@ -22,16 +22,19 @@ be strong:
   * the same artist (surname, and the other names or initials, or the same birth year; a museum's
     "after", "copy", "follower", "circle", "school", "workshop", "studio", "manner" or "style" is not
     the artist) AND the same title (normalised: case, accents, punctuation, a leading article; a
-    bracketed alternative counts as a title) AND a compatible date (within two years);
+    bracketed alternative counts as a title) AND a compatible date (within two years) AND the same
+    sort of object (a painting is never the museum's print or photograph, nor a sculpture either);
   * where Artsy names the museum — as the partner that listed the work, or its collecting
     institution, or its own record's link or accession number — that is enough, with the museum's
     record found by the link or number ("exact"), by title ("strong"), or, when the titles only share
     their words, by a single candidate whose date agrees ("probable");
-  * where Artsy does not name the museum, the dimensions must agree as well ("strong"), the work must
-    not be a print, photograph, poster, cast or other multiple (an impression in another collection is
-    not this object), and it must not be one a gallery or auction house had for sale (a museum's
-    object is not on the market). Everything else is rejected, and the doubtful ones are listed in
-    data/museum_apis_cache/report.json with why.
+  * where Artsy does not name the museum, everything must agree closely ("strong"): the very title
+    (not one as common as "Untitled" or "Landscape", and not one the museum has more than one work of
+    by the artist), the date within a year, the dimensions within 1 cm or 1.5%; the work must not be
+    a print, photograph, poster, cast or other multiple (an impression in another collection is not
+    this object), and it must not be one a gallery or auction house had for sale (a museum's object
+    is not on the market) unless the museum says it deaccessioned it. Everything else is rejected, and
+    the doubtful ones are listed in data/museum_apis_cache/report.json with why.
   * a work Artsy says is held by some other collection, or shown as a loan from one, is not looked
     for at all. Two candidates that fit equally well are no match.
 
@@ -123,6 +126,27 @@ MULTIPLE_MEDIUM = re.compile(r"\b(bronze|cast|edition|lithograph|etching|engravi
                              r"screenprint|silkscreen|serigraph|aquatint|drypoint|mezzotint|intaglio|"
                              r"photograph|gelatin|albumen|platinum print|chromogenic|pigment print|"
                              r"inkjet|giclee|giclée|c-print|offset|poster|multiple|impression)\b", re.I)
+# What sort of object a record is, from Artsy's category or the museum's classification. A painting
+# is never a print or a photograph, nor a sculpture any of them; a drawing may be called a print (a
+# monotype) or a painting (a gouache), so those are let be.
+KIND_WORDS = [("photograph", r"photograph|daguerreotype|gelatin silver|albumen|photogravure"),
+              ("print", r"\bprints?\b|etching|engraving|lithograph|woodcut|linocut|screenprint|aquatint|"
+                        r"drypoint|mezzotint|intaglio"),
+              ("sculpture", r"sculpture|statuette|\bbronze\b"),
+              ("painting", r"painting"),
+              ("drawing", r"drawing|watercolou?r|pastel")]
+ARTSY_KINDS = {"Painting": "painting", "Print": "print", "Photography": "photograph",
+               "Drawing, Collage or other Work on Paper": "drawing", "Sculpture": "sculpture"}
+CLASH = {frozenset(p) for p in [("painting", "print"), ("painting", "photograph"), ("print", "photograph"),
+                                ("sculpture", "painting"), ("sculpture", "print"), ("sculpture", "photograph"),
+                                ("drawing", "photograph"), ("drawing", "sculpture")]}
+
+
+def kind_of(*labels):
+    t = " ".join(str(x or "") for x in labels).lower()
+    return next((k for k, rx in KIND_WORDS if re.search(rx, t)), None)
+
+
 QUALIFIED = re.compile(r"\b(after|copy|copied|follower|followers|circle|school|workshop|studio|manner|"
                        r"style|imitator|pupil|efter|reproduction)\b", re.I)
 
@@ -194,7 +218,7 @@ def cache_path(api, key):
     return CACHE / api / (hashlib.sha1(key.encode()).hexdigest() + ".json")
 
 
-def fetch(api, url, params=None, body=None, refresh=False):
+def fetch(api, url, params=None, body=None, refresh=False, tries=7):
     """GET (or POST a JSON body) and return the parsed answer, None when the thing is not there.
     Every answer is kept in data/museum_apis_cache/<api>/ and read from there next time."""
     key = url + "?" + urllib.parse.urlencode(params or {}, doseq=True) + ("#" + json.dumps(body, sort_keys=True)
@@ -208,7 +232,7 @@ def fetch(api, url, params=None, body=None, refresh=False):
             return j.get("answer")
         gate = host_gate(urllib.parse.urlparse(url).hostname)
         answer, last, broken = None, None, 0
-        for attempt in range(7):
+        for attempt in range(tries):
             with gate["sem"]:
                 with gate["lock"]:
                     wait = gate["next"] - time.time()
@@ -403,12 +427,14 @@ def sizes_in(text):
     return out
 
 
-def sizes_agree(a, b):
+def sizes_agree(a, b, tight=False):
+    """Do two lists of (h, w) share a size? Within 1.5 cm or 3% (tight: 1 cm or 1.5%, for a work
+    Artsy does not say the museum holds)."""
     if not a or not b:
         return None
 
     def near(x, y):
-        return abs(x - y) <= max(1.5, 0.03 * max(x, y))
+        return abs(x - y) <= (max(1.0, 0.015 * max(x, y)) if tight else max(1.5, 0.03 * max(x, y)))
     for h, w in a:
         for H, W in b:
             if (near(h, H) and near(w, W)) or (near(h, W) and near(w, H)):
@@ -458,6 +484,7 @@ def load_works(only=None):
             "for_sale": partner.get("type") in ("Gallery", "Auction") or bool(s.get("sale_ids"))
                         or bool(s.get("forsale")) or bool(s.get("sold")),
         }
+        w["kind"] = ARTSY_KINDS.get(category)
         w["titles"] = title_variants(w["title"])
         w["years"] = year_range(w["date"])
         w["holder"], w["held_how"] = holder(w)
@@ -514,8 +541,23 @@ def aic_queries(w):
     return qs
 
 
+def aic_batches(todo, most=25, room=7000):
+    """The queries in batches of at most 25 and 7,000 bytes: the Art Institute's firewall refuses a
+    body much over 8 KB (403) and its msearch takes 25 queries at a time."""
+    batch, size = [], 2
+    for q in todo:
+        n = len(json.dumps(q)) + 2
+        if batch and (len(batch) >= most or size + n > room):
+            yield batch
+            batch, size = [], 2
+        batch.append(q)
+        size += n
+    if batch:
+        yield batch
+
+
 def aic_prefetch(works, refresh):
-    """Fill the cache for every Art Institute query, 25 to a request (it allows 60 requests a minute)."""
+    """Fill the cache for every Art Institute query, many to a request (it allows 60 requests a minute)."""
     todo, seen = [], set()
     for w in works:
         for q in aic_queries(w):
@@ -526,24 +568,33 @@ def aic_prefetch(works, refresh):
             if refresh or not cache_path("aic", AIC + "search#" + k).exists():
                 todo.append(q)
     print(f"  aic: {len(todo)} searches to make", flush=True)
-    for i in range(0, len(todo), 25):
-        chunk = todo[i:i + 25]
+    i = 0
+    for n, chunk in enumerate(aic_batches(todo)):
         try:
-            answer = fetch("aic-msearch", AIC + "msearch", body=chunk, refresh=True)
+            answer = fetch("aic-msearch", AIC + "msearch", body=chunk, refresh=True, tries=4)
         except RuntimeError as e:
-            print(f"  aic: a batch went unanswered ({e})", flush=True)
-            continue
+            print(f"  aic: a batch went unanswered ({e}); asking one by one", flush=True)
+            answer = []
+            for q in chunk:
+                try:
+                    answer += fetch("aic-msearch", AIC + "msearch", body=[q], refresh=True, tries=3) or [None]
+                except RuntimeError:
+                    answer.append(None)
+                cache_path("aic-msearch", AIC + "msearch?#" + json.dumps([q], sort_keys=True)).unlink(missing_ok=True)
         if not isinstance(answer, list) or len(answer) != len(chunk):
             continue
         for q, a in zip(chunk, answer):
+            if a is None:
+                continue          # unanswered: asked again next run
             k = json.dumps(q, sort_keys=True)
             p = cache_path("aic", AIC + "search#" + k)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(json.dumps({"key": k, "answer": a}, ensure_ascii=False))
         # the msearch answers are kept one by one; the batch itself need not be
         cache_path("aic-msearch", AIC + "msearch?#" + json.dumps(chunk, sort_keys=True)).unlink(missing_ok=True)
-        if i // 25 % 20 == 0:
-            print(f"  aic: {i + len(chunk)} of {len(todo)}", flush=True)
+        i += len(chunk)
+        if n % 25 == 0:
+            print(f"  aic: {i} of {len(todo)}", flush=True)
 
 
 def aic_candidate(d):
@@ -555,7 +606,7 @@ def aic_candidate(d):
             "years": (d.get("date_start"), d.get("date_end") or d.get("date_start")) if d.get("date_start") else
                      year_range(d.get("date_display")),
             "sizes": sizes_in(d.get("dimensions")), "accession": d.get("main_reference_number") or "",
-            "credit": d.get("credit_line") or "",
+            "credit": d.get("credit_line") or "", "kind": kind_of(d.get("artwork_type_title")),
             "deaccessioned": bool(d.get("fiscal_year_deaccession")), "raw": d}
 
 
@@ -588,7 +639,7 @@ def cma_candidate(d):
             "years": (d.get("creation_date_earliest"), d.get("creation_date_latest"))
                      if d.get("creation_date_earliest") else year_range(d.get("creation_date")),
             "sizes": dims, "accession": d.get("accession_number") or "", "credit": d.get("creditline") or "",
-            "deaccessioned": (d.get("legal_status") or "") == "deaccessioned", "raw": d}
+            "kind": kind_of(d.get("type")), "deaccessioned": (d.get("legal_status") or "") == "deaccessioned", "raw": d}
 
 
 def cma_candidates(w, refresh):
@@ -632,7 +683,8 @@ def smk_candidate(d):
             "names": [p.get("creator") for p in prod[:1]],
             "births": [birth_year(p.get("creator_date_of_birth")) for p in prod[:1]],
             "qualified": any(QUALIFIED.search(p.get("creator_role") or "") for p in prod[:1]),
-            "years": years, "sizes": sizes, "accession": d.get("object_number") or "", "raw": d}
+            "years": years, "sizes": sizes, "accession": d.get("object_number") or "",
+            "kind": kind_of(*[o.get("name") for o in d.get("object_names") or []]), "raw": d}
 
 
 def smk_candidates(w, refresh):
@@ -656,10 +708,11 @@ def smk_candidates(w, refresh):
 
 
 def met_ids(params, refresh):
+    """The object ids a Met search gives, in its order."""
     q = params.pop("q")
     params["q"] = q            # the Met reads q only when it comes last
     j = fetch("met", MET + "search", params, refresh=refresh) or {}
-    return set(j.get("objectIDs") or [])
+    return list(j.get("objectIDs") or [])
 
 
 def met_candidate(d):
@@ -679,23 +732,25 @@ def met_candidate(d):
             "years": (d.get("objectBeginDate"), d.get("objectEndDate")) if d.get("objectBeginDate") is not None
                      and d.get("objectEndDate") else year_range(d.get("objectDate")),
             "sizes": sizes, "accession": d.get("accessionNumber") or "", "credit": d.get("creditLine") or "",
-            "raw": d}
+            "kind": kind_of(d.get("classification") or d.get("objectName")), "raw": d}
 
 
 def met_candidates(w, refresh):
-    ids = set(int(i) for i in w["met_ids"])
+    """The objects Artsy links to, then those whose title search and artist search meet (up to 60,
+    in the Met's own order)."""
+    ids = [int(i) for i in w["met_ids"]]
     by_artist = set()
     for a in w["artists"][:2]:
         sn = surname(a["name"])
         if not sn:
             continue
         for key in {sn, raw_surname(a["name"])}:
-            by_artist |= met_ids({"artistOrCulture": "true", "q": key}, refresh)
+            by_artist |= set(met_ids({"artistOrCulture": "true", "q": key}, refresh))
     if by_artist:
         for t in sorted(w["titles"], key=len, reverse=True)[:3]:
-            ids |= met_ids({"title": "true", "q": t}, refresh) & by_artist
+            ids += [i for i in met_ids({"title": "true", "q": t}, refresh) if i in by_artist]
     out = []
-    for i in sorted(ids)[:60]:
+    for i in list(dict.fromkeys(ids))[:60]:
         d = fetch("met", MET + f"objects/{i}", refresh=refresh)
         if d and d.get("objectID"):
             out.append(met_candidate(d))
@@ -747,6 +802,7 @@ def lux_candidate(d):
                                                                         [c.get("_label") or "" for p in (prod.get("part") or [])
                                                                          for c in p.get("carried_out_by") or []][:1]),
             "years": years, "sizes": sizes, "accession": acc,
+            "kind": kind_of(*[c.get("_label") for c in d.get("classified_as") or []]),
             "credit": next(iter(lux_statements(d, "Credit Line")), ""), "raw": d}
 
 
@@ -789,6 +845,7 @@ def judge(w, c):
     d = dates_agree(w["years"], c["years"])
     s = sizes_agree(w["sizes"], c["sizes"])
     linked = w["holder"] == c["museum"]
+    clash = bool(w["kind"] and c.get("kind") and frozenset((w["kind"], c["kind"])) in CLASH)
     facts = []
     if linked:
         facts.append(w["held_how"])
@@ -801,6 +858,8 @@ def judge(w, c):
     how = ", ".join(facts)
     if c["qualified"]:
         return "reject", "the museum gives it to the artist's circle, school or a copy: " + how
+    if clash:
+        return "reject", f"Artsy's is a {w['kind']}, the museum's a {c['kind']}: " + how
     if linked_id:
         return "exact", "Artsy's record links to this Met object; " + how
     if acc and d is not False:
@@ -825,9 +884,22 @@ def judge(w, c):
         return "reject", "a print, photograph, cast or other multiple, and Artsy does not name this museum's impression; " + how
     if w["for_sale"] and not c.get("deaccessioned"):
         return "reject", f"offered by {w['partner'] or 'a dealer'} ({w['partner_type']}), so not a museum's object; " + how
-    if t == "exact" and d and s:
-        return "strong", how
-    return "reject", how
+    # Artsy does not name the museum: everything must agree, closely, and the title must be one only
+    # this object has there.
+    if t != "exact":
+        return "reject", "Artsy does not name this museum and the titles are not the same; " + how
+    if generic(min(w["titles"] & c["titles"], key=len)):
+        return "reject", "Artsy does not name this museum and the title is too common to go on; " + how
+    if c.get("series", 1) > 1:
+        return "reject", (f"Artsy does not name this museum, which has {c['series']} works of this title by the "
+                          "artist; " + how)
+    if not dates_agree(w["years"], c["years"], slack=1):
+        return "reject", "Artsy does not name this museum and the dates are not close enough; " + how
+    if not sizes_agree(w["sizes"], c["sizes"], tight=True):
+        return "reject", "Artsy does not name this museum and the dimensions are not the same; " + how
+    if c.get("deaccessioned"):
+        return "strong", "deaccessioned by the museum, " + how
+    return "strong", how
 
 
 RANK = {"exact": 3, "strong": 2, "probable": 1}
@@ -847,9 +919,11 @@ def match_work(w, museums, refresh):
         except Exception as e:  # noqa: BLE001 — one museum failing must not stop the rest
             doubtful.append({"museum": api, "record": "", "why": "could not search: " + str(e)})
             continue
+        mine = [c for c in cands if artist_match(w["artists"], c["names"], c["births"])]
         for c in cands:
             if c["museum"] not in museums:
                 continue
+            c["series"] = sum(1 for o in mine if o["museum"] == c["museum"] and o["titles"] & c["titles"])
             v = judge(w, c)
             if not v:
                 continue
@@ -954,7 +1028,8 @@ def date_mentions(text):
 
 def dates(text, prefer_months=True):
     """start, end and circa for an event's text."""
-    t = re.sub(r"[\(\[]\s*(?:b\.|born|d\.|died|active|fl\.)?\s*\d{4}\s*[-–]\s*(?:\d{4})?\s*[\)\]]", " ", text)
+    t = re.sub(r"[\(\[]\s*(?:b\.|born|d\.|died|active|fl\.)?\s*(?:ca?\.|circa|about)?\s*\d{4}\??\s*[-–]\s*"
+               r"(?:(?:ca?\.|circa|about|after|before)\s*)?(?:\d{4})?\??\s*[\)\]]", " ", text)
     t = re.sub(r"\((?:born|died|b\.|d\.)\s*\d{4}\)", " ", t)
     ms = date_mentions(t)
     if not ms:
@@ -1072,6 +1147,7 @@ def ev(kind, text, field, order, **kw):
 
 def provenance_events(segments, field, notes=None):
     out = []
+    segments = [x for x in segments if re.search(r"[^\W\d_]", unbracket(plain(x)))]   # not a bare "…"
     for i, seg in enumerate(segments, 1):
         text = plain(seg)
         start, end, circa = dates(unbracket(text), prefer_months=False)
@@ -1167,6 +1243,55 @@ def made_event(text, field, years, who, place=""):
     return [ev("made", text, field, 1, start=s, end=e, circa=circa, who=who, city="", note=place)]
 
 
+VENUEISH = re.compile(r"\b(museum|musee|musée|museo|museu|gallery|galleries|galerie|galleria|institute|institut|"
+                      r"institution|palace|palais|palazzo|kunsthalle|kunsthaus|academy|académie|hall|centre|center|"
+                      r"salon|society|club|foundation|fondation|fundación|library|collection|biennale|"
+                      r"kunstverein|nationalgalerie|pinakothek|& co|and co|inc|ltd|sons|brothers)\b", re.I)
+PLACEISH = re.compile(r"[A-Z][\w'’.-]*(?:\s+(?:[A-Z][\w'’.-]*|\([A-Z][\w. ]*\)|de|la|le|am|upon|on|sur))"
+                      r"{0,3}")
+TITLEISH = re.compile(r"\b(paint|drawing|print|master|art|arts|exhibit|works|selections|highlights|portrait|"
+                      r"landscape|modern|french|american|british|european|impression|retrospective|annual|"
+                      r"collection|century|school|masterpiece|show)", re.I)
+STATEISH = re.compile(r"(?:[A-Z][a-z]{1,5}\.|[A-Z]\.\s?[A-Z]\.|[A-Z]{2})")
+
+
+def lead_place(parts):
+    """The city, country and venue at the head of an Art Institute exhibition entry, which it writes
+    'City, Venue, Title, dates' ('Washington, D.C., National Gallery of Art, …', 'Essen, Germany,
+    Museum Folkwang, …') or 'Venue, City, …' ('Museum of Fine Arts, Houston, …'). Nothing is
+    guessed: a part is a venue only if it reads like one, a city only if it reads like a place."""
+    parts = [p.strip() for p in parts if p.strip()]
+    city = country = venue = ""
+    if not parts:
+        return city, country, venue
+
+    def place(p):
+        return bool(PLACEISH.fullmatch(p)) and not VENUEISH.search(p) and not re.search(r"\d", p)
+    if VENUEISH.search(parts[0]) and not re.search(r"\d", parts[0]):
+        venue = parts[0]
+        # a place after the venue is its city only where nothing else can follow: the dates, 'as …',
+        # a state or a country ('Art Institute of Chicago, Theodore Robinson, 1852–1896' is a show)
+        nxt = parts[2] if len(parts) > 2 else ""
+        if len(parts) > 1 and place(parts[1]) and not STATEISH.fullmatch(parts[1]) and not TITLEISH.search(parts[1]) \
+                and (not nxt or nxt.startswith("as ") or country_of(nxt) or STATEISH.fullmatch(nxt)
+                     or fold(nxt).strip(" .") in US_STATES):
+            city = parts[1]
+            if len(parts) > 2 and country_of(parts[2]):
+                country = country_of(parts[2])
+        return city, country, venue
+    if place(parts[0]) and not country_of(parts[0]):
+        city = parts[0]
+        rest = parts[1:]
+        if rest and country_of(rest[0]):
+            country, rest = country_of(rest[0]), rest[1:]
+        elif rest and (STATEISH.fullmatch(rest[0]) or fold(rest[0]).strip(" .") in US_STATES):
+            rest = rest[1:]
+        if rest and not re.search(r"\d", rest[0]) and (VENUEISH.search(rest[0]) or len(rest) > 1) \
+                and rest[0][:1].isupper() and len(rest[0]) < 90:
+            venue = rest[0]
+    return city, country, venue
+
+
 def aic_events(c, refresh):
     d = (fetch("aic", AIC + f"artworks/{c['raw']['id']}", {"fields": ",".join(AIC_FULL)}, refresh=refresh)
          or {}).get("data") or c["raw"]
@@ -1193,31 +1318,39 @@ def aic_events(c, refresh):
             text = plain(seg)
             url = (re.search(r'href="([^"]+)"', seg) or [None, ""])[1]
             em = re.search(r"<em>(.*?)</em>", seg)
-            title = venue = city = ""
+            title = venue = city = country = ""
             after = text
             if em:
                 title = plain(em.group(1))
                 pre = plain(seg[:em.start()]).strip(" ,")
                 after = plain(seg[em.end():])
-                bits = [b.strip() for b in pre.split(",") if b.strip()]
-                if len(bits) >= 2:
-                    city, venue = bits[0], ", ".join(bits[1:])
-                elif bits:
-                    venue = bits[0]
-            elif j > 0:
-                first = date_mentions(text)
-                m = re.search(r",\s*(?:opened\s+|closed\s+)?" + MONTH + r"\.?\s|,\s*\d{4}", text)
+                city, country, venue = lead_place(pre.split(",") + ["…"])
+            else:
+                # the parts before the dates: 'Paris, Durand-Ruel, Exposition …, June 4–16, 1894'
+                m = re.search(r",\s*(?:opened\s+|closed\s+)?(?:" + MONTH + r")\.?\s|,\s*\d{4}", text)
+                city, country, venue = lead_place((text[:m.start()] if m else "").split(","))
+            if not em:
                 pre = text[:m.start()] if m else ""
-                if ", as " in pre and "," not in pre.split(", as ", 1)[0]:
-                    venue, title = pre.split(", as ", 1)
-                elif pre and first and "," not in pre:
-                    venue = pre
+                if ", as " in pre:          # 'Art Institute of Chicago, as Gustave Caillebotte: Urban Impressionist'
+                    head, title = pre.split(", as ", 1)
+                    if not venue and "," not in head:
+                        venue = head
+                elif j > 0 and pre and date_mentions(text) and "," not in pre:
+                    venue = venue or pre      # 'Seattle Art Museum, Apr. 27–May 27, 1956': the show goes on
                     title = head_title
+                elif j > 0 and venue and pre.count(",") <= 1 and (not city or pre.startswith(city) or pre.endswith(city)):
+                    title = head_title        # 'Museum of Fine Arts, Boston, Mar. 8–Apr. 7, 1957.'
+                if not title and venue and venue in pre:
+                    rest = pre[pre.index(venue) + len(venue):].strip(" ,")
+                    if city and rest.startswith(city):
+                        rest = rest[len(city):].strip(" ,")
+                    if rest and not re.match(r"(?:cat|no|as)\b", rest):
+                        title = rest          # 'Paris, Galerie Beaux-Arts, Rétrospective Gustave Caillebotte, May …'
             if j == 0:
                 head_title = title
             start, end, circa = dates(after)
             out.append(ev("exhibited", text, "exhibition_history", order, start=start, end=end, circa=circa,
-                          title=title, venue=venue.strip(), city=city, url=url))
+                          title=title, venue=venue.strip(), city=city, country=country, url=url))
     pubs = [(p, {}) for p in re.split(r"\n\s*\n", d.get("publication_history") or "") if p.strip()]
     out += written_events(pubs, "publication_history")
     if d.get("credit_line"):
@@ -1265,8 +1398,8 @@ def cma_events(c, refresh):
             venue = bits[0] if bits and m else ""
             city, country = place_after(bits[1:]) if len(bits) > 1 and m else ("", "")
             start, end, circa = dates(rest)
-            if j == 0 and x.get("opening_date"):
-                start = x["opening_date"][:10]
+            if j == 0 and x.get("opening_date") and not start:
+                start = x["opening_date"][:10]      # the show's first opening, when this venue gives no dates
             out.append(ev("exhibited", text, "exhibitions.current", order, start=start,
                           end=end if end != start else "", circa=circa, title=plain(x.get("title")),
                           venue=venue, city=city, country=country))
@@ -1319,7 +1452,7 @@ def smk_events(c, refresh):
                       who=x.get("author") or "", title=x.get("title") or "", pages=x.get("notes") or "",
                       note=("shelfmark " + x["shelfmark"]) if x.get("shelfmark") else ""))
     if d.get("acquisition_date"):
-        out.append(ev("held", f"{num}; acquisition_date {smk_date(d['acquisition_date'], d.get('acquisition_date_precision'))}",
+        out.append(ev("held", "acquisition_date: " + smk_date(d["acquisition_date"], d.get("acquisition_date_precision")),
                       "acquisition_date", 1, start=smk_date(d["acquisition_date"], d.get("acquisition_date_precision")),
                       venue="Statens Museum for Kunst", note="object number " + num +
                       ("; " + d["responsible_department"] if d.get("responsible_department") else "")))
@@ -1335,7 +1468,8 @@ def lux_events(c, refresh):
     prod = d.get("produced_by") or {}
     ts = prod.get("timespan") or {}
     dt = next((n.get("content") for n in ts.get("identified_by") or [] if n.get("content")), "")
-    who = "; ".join(c2.get("_label") or "" for p in [prod] + (prod.get("part") or []) for c2 in p.get("carried_out_by") or [])
+    who = "; ".join(re.sub(r"^[A-Za-z ]+:\s*", "", c2.get("_label") or "")
+                    for p in [prod] + (prod.get("part") or []) for c2 in p.get("carried_out_by") or [])
     out = made_event(dt, "produced_by", c["years"], who)
     for stmt in lux_statements(d, "Provenance Statement", "Provenance"):
         body, notes = split_notes(stmt)

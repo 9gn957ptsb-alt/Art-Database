@@ -195,16 +195,19 @@ def load():
         for k in ("forwarddisplayname", "displayname"):
             if r[k]:
                 alt[r["constituentid"]].add(r[k])
-    makers, owners = defaultdict(list), defaultdict(list)
+    makers, after, owners = defaultdict(list), defaultdict(list), defaultdict(list)
     for r in rows("objects_constituents"):
         if r["roletype"] == "artist" and r["role"] not in NOT_MAKER:
             makers[r["objectid"]].append(r)
+        elif r["roletype"] == "artist" and r["role"] == "artist after":
+            after[r["objectid"]].append(r)
         elif r["roletype"] == "owner":
             owners[r["objectid"]].append(r)
     for v in owners.values():
         v.sort(key=lambda r: int(r["displayorder"] or 0))
     texts = defaultdict(list)
     for r in rows("objects_text_entries"):
+        r["text"] = r["text"].replace("\r\n", "\n")
         texts[r["objectid"]].append(r)
     previous = defaultdict(list)
     for r in rows("objects_historical_data"):
@@ -219,7 +222,7 @@ def load():
         if r["relationship"] == "inseparable":
             parent[r["childobjectid"]] = r["parentobjectid"]
     print(f"NGA data: {len(objects)} objects, {len(people)} people, read in {time.time() - t:.0f} s", flush=True)
-    return {"objects": objects, "people": people, "alt": alt, "makers": makers, "owners": owners,
+    return {"objects": objects, "people": people, "alt": alt, "makers": makers, "after": after, "owners": owners,
             "texts": texts, "previous": previous, "made_at": made_at, "parent": parent}
 
 
@@ -301,10 +304,11 @@ def artist_agrees(a, maker, nga):
     mine = person_name(a.get("name"))
     if not any(names_agree(mine, n) for n in names):
         return False
-    for mine_y, theirs in ((year_of(a.get("birthday")), born), (year_of(a.get("deathday")), died)):
-        if mine_y and theirs and abs(mine_y - theirs) > 2:
-            return False
-    return True
+    b = year_of(a.get("birthday"))
+    if b and born:
+        return abs(b - born) <= 2  # born the same year: the same person, even if a death year disagrees
+    d = year_of(a.get("deathday"))
+    return not (d and died and abs(d - died) > 2)
 
 
 def span(s):
@@ -408,6 +412,15 @@ def other_holder(saved, rec):
     return None
 
 
+def flat_dims(t):
+    return re.sub(r"\s+", " ", (t or "").replace("×", "x")).strip().lower()
+
+
+def date_words(t):
+    """A date as written, with "c.", "ca." and "circa" alike."""
+    return re.sub(r"\b(?:circa|ca|c)\b", "c", norm(t))
+
+
 def candidates(saved, rec, nga, index):
     """The NGA objects that agree with a saved work on title, artist and date, each with its evidence."""
     full, parts = title_keys(saved.get("title"))
@@ -432,6 +445,9 @@ def candidates(saved, rec, nga, index):
         else:
             continue
         hands = [m for m in nga["makers"].get(oid, []) if any(artist_agrees(a, m, nga) for a in artists)]
+        after = not hands  # Artsy's artist is the one the NGA says the work is after (a print after a design)
+        if after:
+            hands = [m for m in nga["after"].get(oid, []) if any(artist_agrees(a, m, nga) for a in artists)]
         if not hands:
             continue
         qualified = all(NOT_HAND.match((m.get("prefix") or "").strip()) for m in hands)
@@ -441,11 +457,16 @@ def candidates(saved, rec, nga, index):
         acc = accession_agrees(found_acc, o["accessionnum"])
         credit = bool(o["creditline"]) and len(norm(o["creditline"])) >= 12 and norm(o["creditline"]) in norm(art_text)
         dims, dim_score = dims_agree(my_dims, measures(o["dimensions"]))
-        first_line = re.sub(r"\s+", " ", (o["dimensions"] or "").split("\n")[0]).strip().lower().replace("×", "x")
-        dim_text = len(first_line) > 8 and first_line in re.sub(r"\s+", " ", art_text).lower().replace("×", "x")
-        same_date = bool(norm(o["displaydate"])) and norm(o["displaydate"]) == norm(saved.get("date") or rec.get("date"))
+        first_line = flat_dims(o["dimensions"].split("\n")[0])
+        dim_text = len(first_line) > 8 and first_line in flat_dims(art_text)
+        # Artsy's listing repeats the NGA's whole statement of size, every line of it, where it has one.
+        dim_whole = len(first_line) > 8 and flat_dims(o["dimensions"]) == flat_dims(rec.get("additional_information"))
+        same_date = bool(date_words(o["displaydate"])) and \
+            date_words(o["displaydate"]) == date_words(saved.get("date") or rec.get("date"))
+        same_medium = bool(norm(o["medium"])) and norm(o["medium"]) == norm(rec.get("medium") or saved.get("medium"))
         out.append({"oid": oid, "level": level, "date": date, "acc": acc, "credit": credit, "dims": dims,
-                    "dim_score": dim_score + (2 if dim_text else 0), "same_date": same_date,
+                    "dim_score": dim_score + (2 if dim_text else 0), "dim_whole": dim_whole,
+                    "same_date": same_date, "same_medium": same_medium, "after": after,
                     "qualified": qualified, "attribution": o["attribution"], "accession": o["accessionnum"],
                     "title": o["title"], "displaydate": o["displaydate"]})
     return out
@@ -462,6 +483,16 @@ def decide(saved, rec, cands):
         return c, "exact", f"accession number {c['accession']} in Artsy's record; artist and {c['level']} agree"
     if len(exact) > 1:
         return None, "the accession number fits several NGA objects: " + ", ".join(c["accession"] for c in exact)
+    if all(c["after"] for c in cands):
+        # Artsy names the artist the NGA's print is after, not its maker: only the NGA's own listing, with
+        # the whole title and the same measurements, makes it this object.
+        c = cands[0]
+        ident = f"NGA {c['accession']} ({c['title']}, {c['displaydate'] or 'no date'}, {c['attribution']})"
+        if len(cands) == 1 and named and c["level"] == "title" and c["dims"] == "agree":
+            return c, "probable", (f"title and dimensions agree, and it is the NGA's only such object; {named}; "
+                                   f"Artsy's artist is the one the NGA says it is after ({c['attribution']})")
+        return None, f"Artsy's artist is only the one the NGA says {ident} is after, and nothing else confirms it"
+    cands = [c for c in cands if not c["after"]]
     fits = [c for c in cands if c["dims"] not in ("conflict", "half")]
     halves = [c for c in cands if c["dims"] == "half"]
     if not fits and len(halves) == 1 and len(cands) == 1 and named and halves[0]["level"] == "title" \
@@ -474,12 +505,19 @@ def decide(saved, rec, cands):
         return None, (f"artist, {c['level']} and date agree with NGA {c['accession']} ({c['title']}), "
                       f"but the dimensions do not")
     whole = [c for c in fits if c["level"] == "title"] or fits
+    told = ""  # what told one of several NGA objects (impressions, versions) from the others
     if len(whole) > 1:
         best = [c for c in whole if c["dims"] == "agree"] or whole
-        for better in (lambda c: c["dim_score"], lambda c: c["same_date"], lambda c: c["credit"]):
+        if len(best) < len(whole):
+            told = "measurements"
+        for why, better in (("measurements", lambda c: (c["dim_whole"], c["dim_score"])),
+                            ("date as written", lambda c: c["same_date"]),
+                            ("credit line", lambda c: c["credit"])):
             if len(best) > 1:
                 top = max(better(c) for c in best)
                 best = [c for c in best if better(c) == top]
+                if len(best) == 1:
+                    told = why
         if len(best) > 1:
             return None, ("several NGA objects fit equally well: " +
                           "; ".join(f"{c['accession']} {c['title']} ({c['displaydate']})" for c in best[:6]))
@@ -496,26 +534,66 @@ def decide(saved, rec, cands):
         return None, f"Artsy names another holder ({held}) for a work like {ident}"
     what = f"artist, {c['level']} and date ({c['date']})"
     extra = [w for w, ok in (("dimensions", measured), ("NGA credit line", c["credit"])) if ok]
+    others = f"; of {len(cands)} NGA objects under this title, the {told} tell this one" if told else ""
     if named:
         if extra:
-            return c, "strong", f"{what}, {' and '.join(extra)} agree; {named}"
+            return c, "strong", f"{what}, {' and '.join(extra)} agree; {named}{others}"
         if len(cands) == 1 and c["level"] == "title":
             return c, "probable", f"{what} agree, and it is the NGA's only such object; {named}; nothing to measure"
+        if told == "date as written" and c["same_medium"] and c["level"] == "title":
+            return c, "probable", (f"{what} agree; {named}; nothing to measure, but of {len(cands)} NGA objects "
+                                   f"under this title only this one has Artsy's date and medium as written "
+                                   f"({c['displaydate']}; {c['accession']})")
         return None, f"{named}, but nothing tells {ident} from the NGA's other candidates"
     if hint:
         if extra and c["level"] == "title":
-            return c, "strong", f"{what}, {' and '.join(extra)} agree; {hint}"
+            return c, "strong", f"{what}, {' and '.join(extra)} agree; {hint}{others}"
         return None, f"{hint}, but neither dimensions nor credit line confirm {ident}"
     category = saved.get("category") or rec.get("category") or ""
     if category not in UNIQUE:
         return None, f"{category or 'an uncategorised work'} not placed at the NGA on Artsy, like {ident}: " \
                      f"another impression or copy"
     if c["credit"] and measured and c["level"] == "title" and c["date"] == "agree":
-        return c, "strong", f"{what}, dimensions and NGA credit line agree (Artsy does not name the holder)"
+        return c, "strong", f"{what}, dimensions and NGA credit line agree (Artsy does not name the holder){others}"
     if measured and c["level"] == "title" and c["date"] == "agree":
         return None, (f"artist, title, date and dimensions agree with {ident}, but Artsy does not place the work "
                       f"at the NGA ({(saved.get('partner') or {}).get('name')})")
     return None, f"artist and {c['level']} agree with {ident}, but nothing else confirms it"
+
+
+def elsewhere(saved, rec, nga):
+    """For a work Artsy places at the NGA that matched nothing: the NGA's objects by the same artist whose
+    statement of size is word for word Artsy's (a work the NGA has retitled, perhaps), and those that
+    merely measure the same (canvases come in standard sizes). Reported, never matched."""
+    artists = saved.get("artists") or rec.get("artists") or []
+    art_text = " \n ".join(str(rec.get(k) or "") for k in ("additional_information", "collecting_institution"))
+    mine = measures(((saved.get("dimensions") or {}).get("cm") or "")) + measures(art_text)
+    if not mine or not artists:
+        return [], []
+    if "objects_of" not in nga:
+        objects_of, by_last = defaultdict(set), defaultdict(set)
+        for oid, ms in nga["makers"].items():
+            for m in ms:
+                objects_of[m["constituentid"]].add(oid)
+        for cid in objects_of:
+            for n in maker_names(cid, nga)[0]:
+                by_last[n.split()[-1]].add(cid)
+        nga["objects_of"], nga["by_last"] = objects_of, by_last
+    oids = set()
+    for a in artists:
+        last = (person_name(a.get("name")).split() or [""])[-1]
+        for cid in nga["by_last"].get(last, ()):
+            if artist_agrees(a, {"constituentid": cid}, nga):
+                oids |= nga["objects_of"][cid]
+    word_for_word, same_size = [], []
+    for oid in sorted(oids, key=int):
+        o = nga["objects"][oid]
+        ident = f"NGA {o['accessionnum']} ({o['title']}, {o['displaydate'] or 'no date'}, {o['attribution']})"
+        if len(flat_dims(o["dimensions"])) > 8 and flat_dims(o["dimensions"]) == flat_dims(rec.get("additional_information")):
+            word_for_word.append(ident)
+        elif dims_agree(mine, measures(o["dimensions"]))[0] == "agree":
+            same_size.append(ident)
+    return word_for_word, same_size
 
 
 # ---------------------------------------------------------------- the events
@@ -584,6 +662,34 @@ AUCTION = re.compile(r"(drouot|christie|sotheby|parke|bernet|american art|george
                      r"salle|rooms|galerie|galleries|gallery|atelier|auction|kunst|&|manson|association|ltd|inc)", re.I)
 
 
+SALE = re.compile(r"\b(?:sale|auction|vente)\b", re.I)
+LINK = {"by", "to", "at", "in", "from", "through", "via", "with", "for", "and", "of", "the", "his", "her", "their",
+        "its", "sold", "bought", "purchased", "acquired", "consigned", "offered", "lent"}
+
+
+def sale_cuts(text, a, b, depth):
+    """An owner's own sale is its own event: "Jerome Stonborough (sale, Parke-Bernet ...)" is cut before
+    the parenthesis, and "(sale, 1989), Mr. and Mrs. Paul Mellon" after it."""
+    cuts, i = [], a
+    while i < b:
+        if text[i] == "(" and depth[i] == 1 and (i == 0 or depth[i - 1] == 0):
+            j = i
+            while j < b and not (text[j] == ")" and depth[j] == 1):
+                j += 1
+            if j < b and SALE.search(text[i:j]):
+                before = re.sub(r"[\s,;]+$", "", text[a:i])
+                last = (re.findall(r"[^\s]+$", before) or [""])[0]
+                if re.search(r"[A-Za-z]", before) and last.lower().strip(".,") not in LINK:
+                    cuts.append(i)
+                after = re.match(r",\s+(?=[A-Z])", text[j + 1:b])
+                if after:
+                    cuts.append(j + 1 + after.end())
+            i = j + 1
+        else:
+            i += 1
+    return cuts
+
+
 def provenance_pieces(text):
     """The provenance's owners, as (start, end, footnote marks) spans of the text; its numbered footnotes;
     and its other notes (whatever follows the first blank line)."""
@@ -592,12 +698,12 @@ def provenance_pieces(text):
     main_end = m.start() if m else len(text)
     if m:
         block = text[main_end:]
-        starts = [n.start() for n in re.finditer(r"(?:(?<=\s)|^)\[\d{1,2}\]", block)]
+        starts = [n.start() for n in re.finditer(r"(?:(?<=\s)|^)\[\d{1,2}\.?\]", block)]
         if not starts or block[:starts[0]].strip():
             head = block[:starts[0]] if starts else block
             loose += [q.strip() for q in re.split(r"\n[ \t]*\n", head) if q.strip()]
         for x, y in zip(starts, starts[1:] + [len(block)]):
-            n = re.match(r"\[(\d{1,2})\]\s*(.*)", block[x:y], re.S)
+            n = re.match(r"\[(\d{1,2})\.?\]\s*(.*)", block[x:y], re.S)
             notes.setdefault(n.group(1), re.sub(r"\s+", " ", n.group(2)).strip())
     depth = depth_map(text)
     pieces = []
@@ -609,6 +715,7 @@ def provenance_pieces(text):
                              r"returned|transferred|exchanged)\b)", text[a:b]):
             if not depth[a + w.start()]:
                 cuts.append(a + w.start() + 1)
+        cuts += sale_cuts(text, a, b, depth)
         cuts = sorted(set(cuts)) + [b]
         for s, e in zip(cuts, cuts[1:]):
             s, e = strip_span(text, s, e)
@@ -643,15 +750,18 @@ def month_of(name):
     return MONTH3[name[:3].lower()]
 
 
+NOT_NUM = r"(?!\d|\.\d)"  # a year ends a number: "gift to NGA, 2009." has one, "1943.3.9129" does not
+
+
 def dates_in(seg):
     """Dates written in a piece of text, in order, as YYYY, YYYY-MM or YYYY-MM-DD, with a range's end."""
     found = []
     pats = [
-        (rf"\b({MONTH})\s*[-–/]\s*({MONTH})\s+(\d{{4}})(?![\d.])", "mmy"),
-        (rf"(?<![\d.])(\d{{1,2}})(?:\s*[-–]\s*(\d{{1,2}}))?\s+({MONTH})\s+(\d{{4}})(?![\d.])", "dmy"),
-        (rf"\b({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}})(?![\d.])", "mdy"),
-        (rf"\b({MONTH})\s+(\d{{4}})(?![\d.])", "my"),
-        (r"(?<![\d.])(\d{4})(?:\s*[-–/]\s*(\d{4}|\d{2}))?(?![\d.])", "y"),
+        (rf"\b({MONTH})\s*[-–/]\s*({MONTH})\s+(\d{{4}}){NOT_NUM}", "mmy"),
+        (rf"(?<![\d.])(\d{{1,2}})(?:\s*[-–]\s*(\d{{1,2}}))?\s+({MONTH})\s+(\d{{4}}){NOT_NUM}", "dmy"),
+        (rf"\b({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}}){NOT_NUM}", "mdy"),
+        (rf"\b({MONTH})\s+(\d{{4}}){NOT_NUM}", "my"),
+        (rf"(?<!\d)(?<!\d\.)(\d{{4}})(?:\s*[-–/]\s*(\d{{4}}|\d{{2}}))?{NOT_NUM}", "y"),
     ]
     taken = [False] * len(seg)
     for pat, kind in pats:
@@ -707,7 +817,7 @@ def placeish(c):
     c = re.sub(r"\s+", " ", c).strip().rstrip(".")
     if not c or re.search(r"[\d?()\[\]]|\.\s", c) or INSTITUTION.search(c) or c.lower() in CORP:
         return False
-    if re.fullmatch(MONTH, c) or re.match(r"(?:The|A|An)\s", c):
+    if re.fullmatch(MONTH, c) or re.match(r"(?:The|A|An)\s", c) and c not in ("The Hague", "The Bronx"):
         return False
     words = c.replace("-", " ").split()
     if len(words) > 4 or not words[0][:1].isupper() or c.isupper() and len(c) <= 4 and c.lower() not in COUNTRIES:
@@ -765,7 +875,7 @@ FIRM_SUFFIX = {"co", "company", "inc", "ltd", "limited", "and", "llc", "gmbh", "
 def owner_names(rec, nga):
     """An NGA owner record, ready to be looked for in the text."""
     person = nga["people"].get(rec["constituentid"]) or {}
-    name = (person.get("forwarddisplayname") or "").strip()
+    name = squash(person.get("forwarddisplayname") or "")
     if not name or re.match(r"(unknown|anonymous|private collection)", name, re.I) or rec.get("role") == "current owner":
         return None
     if person.get("constituenttype") in ("corporate", "purchase_fund") or not person.get("lastname"):
@@ -811,13 +921,16 @@ def align_owners(pieces, text, owners, nga):
                 if all(t in window or t[0] in window for t in n["given"]):
                     found.append((i, n["name"]))
                     break
-        for _, name in sorted(found):
-            if name not in got[j]:
-                got[j].append(name)
+        names_here = [name for _, name in sorted(found)]
+        for name in names_here:
+            mine = set(norm(name).split()) - OWNER_STOP
+            if name not in got[j] and not any(other != name and mine < set(norm(other).split()) - OWNER_STOP
+                                              for other in names_here):
+                got[j].append(name)  # "Agnes Ernst Meyer" is in "Eugene and Agnes Ernst Meyer"
     return got
 
 
-LEAD = re.compile(r"^\s*(?:[A-Za-z][^()]*?\b(?:by|to|from|with|for|through)\s+)?\(([^()]*)\)")
+LEAD = re.compile(r"^\s*(?:[A-Za-z0-9][^()]*?\b(?:by|to|from|with|for|through)\s+)?\(([^()]*)\)")
 
 
 def squash(t):
@@ -844,7 +957,7 @@ def name_in_text(seg):
         for a, b in top_split(inner, ";"):
             comps = components(outside_brackets(inner[a:b]))
             if comps:
-                first = re.split(r"\b(?:by|to|from|for|with|and)\s+(?=[A-Z])", comps[0])[-1]
+                first = re.split(r"\b(?:by|to|from|for|with)\s+(?=[A-Z])", comps[0])[-1]
                 first = trim(squash(first) + (", " + comps[1] if len(comps) > 1 and comps[1].lower() in CORP else ""))
                 if first[:1].isupper() and not re.search(r"\d", first):
                     firms.append(first)
@@ -921,7 +1034,13 @@ def provenance_events(o, nga):
             kind = "sold"
             comps = components(seg[group.start(1):group.end(1)])
             k = next((j for j, c in enumerate(comps) if re.search(r"\b(sale|auction|vente)\b", c, re.I)), -1)
-            who, city, country = sale_house(comps[k + 1:])
+            head = SALE.split(comps[k], 1)[1].strip(" ,.") if k >= 0 else ""
+            if head and not dates_in(head) and not re.match(r"(no|nos|lot|lots|number)\b", head, re.I):
+                who, city, country = sale_house([head] + comps[k + 1:])  # "sale Christie, Manson & Woods"
+            else:
+                who, city, country = sale_house(comps[k + 1:])
+            if not who and k > 0:
+                who = next((squash(c) for c in comps[:k] if AUCTION.search(c) and not dates_in(c)), "")
             if not who and aligned.get(i):
                 who = "; ".join(aligned[i])
         else:
@@ -934,6 +1053,10 @@ def provenance_events(o, nga):
                 who = "; ".join([text_who] + more)
             else:
                 who = "; ".join(aligned[i]) if aligned.get(i) else text_who
+                if text_who and len(aligned.get(i, [])) == 1 and re.search(
+                        r"\b(Foundation|Trust|Collection|Gallery|Galleries|Company|Museum|Institute)\b", text_who) \
+                        and set(norm(who).split()) - OWNER_STOP <= set(norm(text_who).split()):
+                    who = text_who  # a body named after the owner the NGA records, as the text names it
             if re.match(r"\s*(?:From\s+)?the artist\b", seg, re.I) and not who:
                 who = o["attribution"]
             city, country = place_after([r for r in rest if not dates_in(r)])
@@ -1014,6 +1137,8 @@ def written_event(r, order):
     m = re.match(r"^(?P<who>[^_\"“]+?)\.\s+(?=[_\"“])", text)
     if m:
         who = m.group("who").strip()
+        if re.search(r"(?:^|[\s.])[A-Z]$", who):
+            who += "."  # "Coman, Florence E."
     title, publication = "", ""
     q = re.search(r"[\"“]([^\"”]+?)[,.]?[\"”]", text)
     books = re.findall(r"_([^_]+)_", text)
@@ -1069,13 +1194,17 @@ def events_for(o, nga):
     prov = provenance_events(o, nga)
     events += prov
     if o["creditline"] and not any(e["kind"] == "held" for e in prov):
-        y = re.match(r"((?:1[89]|20)\d\d)\.", o["accessionnum"] or "")
+        # The year is the NGA's own, from its record of itself as the owner ("current owner", "1971 -").
+        now = [r for r in nga["owners"].get(o["objectid"], []) if r["role"] == "current owner"]
+        year = now[0]["beginyear"] if len(now) == 1 and re.fullmatch(r"\d{4}", now[0]["beginyear"] or "") else ""
+        note = [f"accession number {o['accessionnum']}"] if o["accessionnum"] else []
+        if year:
+            note.append(f"year from the NGA's record of itself as owner ({squash(now[0]['displaydate'])})")
         events.append({"kind": "held", "text": o["creditline"].strip(), "field": "creditline",
-                       "start": y.group(1) if y else "", "end": "", "circa": False,
+                       "start": year, "end": "", "circa": False,
                        "who": "National Gallery of Art", "title": "", "venue": "National Gallery of Art",
                        "city": "Washington", "country": "US", "publication": "", "pages": "",
-                       "note": f"accession number {o['accessionnum']}" if o["accessionnum"] else "", "url": "",
-                       "order": 1})
+                       "note": "; ".join(note), "url": "", "order": 1})
     entries = nga["texts"].get(o["objectid"], [])
     footnotes = {}
     for r in entries:
@@ -1138,17 +1267,27 @@ def main():
     if args.only:
         saves = [s for s in saves if s["id"] == args.only]
     OUT.mkdir(parents=True, exist_ok=True)
-    matched, rejected, events_n, kinds = [], [], 0, defaultdict(int)
+    matched, rejected, unfound, events_n, kinds = [], [], [], 0, defaultdict(int)
     for saved in saves:
         path = ARTSY / filename(saved["id"])
         rec = json.loads(path.read_text()) if path.exists() else {}
         verdict = decide(saved, rec, candidates(saved, rec, nga, index))
-        if verdict is None:
-            continue
         who = {"id": saved["id"], "title": saved.get("title"), "date": saved.get("date"),
                "artists": [a.get("name") for a in saved.get("artists") or []],
                "partner": (saved.get("partner") or {}).get("name"),
                "collecting_institution": saved.get("collecting_institution")}
+        if verdict is None:
+            named = nga_named(saved, rec)[0]
+            if named:  # Artsy places it at the NGA, but no NGA object has its artist and title
+                word_for_word, same_size = elsewhere(saved, rec, nga)
+                why = f"{named}, but no NGA object by the artist has its title"
+                if word_for_word:
+                    rejected.append(dict(who, reason=f"{why}; under another title, with Artsy's statement of size "
+                                                     f"word for word (retitled?): " + "; ".join(word_for_word)))
+                else:
+                    unfound.append(dict(who, reason=why + (f" (by the artist and of the same size, under other "
+                                                           f"titles: {'; '.join(same_size[:4])})" if same_size else "")))
+            continue
         if verdict[0] is None:
             rejected.append(dict(who, reason=verdict[1]))
             continue
@@ -1177,12 +1316,13 @@ def main():
             if stale.name not in keep:
                 stale.unlink()
     if not args.only:
-        (CACHE / "matches.json").write_text(json.dumps({"matched": matched, "rejected": rejected},
-                                                        ensure_ascii=False, indent=1))
+        (CACHE / "matches.json").write_text(json.dumps({"matched": matched, "rejected": rejected,
+                                                         "not_found": unfound}, ensure_ascii=False, indent=1))
     by_conf = defaultdict(int)
     for m in matched:
         by_conf[m["confidence"]] += 1
-    print(f"{len(matched)} works matched ({dict(by_conf)}), {len(rejected)} doubtful matches rejected; "
+    print(f"{len(matched)} works matched ({dict(by_conf)}), {len(rejected)} doubtful matches rejected, "
+          f"{len(unfound)} placed at the NGA by Artsy but not in its open data; "
           f"{events_n} events: {dict(sorted(kinds.items(), key=lambda kv: -kv[1]))}")
 
 
