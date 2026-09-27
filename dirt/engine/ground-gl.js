@@ -1789,7 +1789,9 @@ float capsule(vec2 p, vec2 a, vec2 b, float r) { return segD(p, a, b) - r; }
 float sdBox(vec2 q, vec2 b) { vec2 d = abs(q) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
 /**
  * The toys. Out of the dark a lamp comes on over floorboards, and toys come to life while nobody is looking: a
- * spinning top wobbles in, a wind-up robot walks across with its key turning, blocks drop and stack, a ball rolls in.
+ * spinning top wobbles in, a wind-up robot walks across with its key turning, three glass blocks tumble down and stack
+ * (each an infinity mirror: a box of mirrors round the plane, holding it smaller and smaller, deeper and deeper, as
+ * Yayoi Kusama's Infinity Mirror Rooms and Josiah McElheny's mirror boxes do), a ball rolls in.
  * The lamp flickers (someone is coming) and everything freezes where it stands; the top topples. Then the ball rolls
  * to the middle and grows until it is all there is, and it is the plane again. Every toy is made of the plane: where a
  * toy is, the plane shows through, lit by the lamp. e runs 0 to 1 over the scene (26 seconds).
@@ -1849,16 +1851,7 @@ void toyScene(vec2 p, vec2 C, float e, inout vec2 src, inout vec3 tint, inout ve
       if (eye < 0.0) { body = false; paint = mix(vec3(60), vec3(255, 214, 90), lamp); }
     }
   }
-  // the blocks: one after another they drop and bounce, stacking
-  for (int i = 0; i < 3; i++) {
-    float t0 = 5.0 + 2.0 * float(i), k = mt - t0;
-    if (k < 0.0) continue;
-    float yt = FY - 0.058 - float(i) * 0.114, y0 = -1.3;
-    float y = k < 0.55 ? mix(y0, yt, (k / 0.55) * (k / 0.55)) : yt - 0.03 * abs(sin((k - 0.55) * 9.0)) * exp(-(k - 0.55) * 5.0);
-    vec2 q = rot2(0.06 * float(i - 1)) * (u - vec2(0.14 + 0.012 * float(i), y));
-    float d = sdBox(q, vec2(0.057));
-    if (d < sd) { sd = d; body = sdBox(q, vec2(0.042)) < 0.0; paint = i == 0 ? vec3(60, 110, 170) : i == 1 ? vec3(230, 190, 60) : vec3(190, 70, 60); }
-  }
+  // (the glass blocks are their own small pass: GROUND_TOYS)
   if (sd < 0.0) {
     if (body) { src = p; tint *= 0.45 + 1.0 * light; }
     else over = vec4(min(paint * (0.3 + 0.95 * light), vec3(255.0)), 1.0);
@@ -2914,6 +2907,68 @@ void main() {
   outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, m);
 }`;
 
+// The toys' glass blocks, their own small pass over the toy scene (the anomaly of the toys, in the cell pass): three
+// blocks of glass, one after another, turning as they fall, landing on a corner and toppling flat onto the one below.
+// Each is an infinity mirror, a box of mirrors round the plane (after Yayoi Kusama's Infinity Mirror Rooms, 1965 on,
+// and Josiah McElheny's mirror boxes): its walls reflect one another, so it holds what is behind it again and again,
+// each time phi smaller and deeper in, each image dimmer and greener for the mirrors it has come through, to a dark far
+// end, a glint fading off each mirror's edge. What it holds is the last frame, blocks and all, so the mirrors hold
+// their own reflections too.
+const GROUND_TOYS = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+uniform sampler2D uPrev;
+uniform vec2 uPrevSize, uPrevTex, uHalf;
+uniform ivec2 uCell0, uPrev0;
+uniform vec4 uAnom;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+const float PHI = 1.618033988749895;
+mat2 rot2(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
+float sdBox(vec2 q, vec2 b) { vec2 d = abs(q) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+void main() {
+  if (int(uAnom.w) != 1 || uAnom.z < 0.52) discard;
+  vec2 p = vec2(uCell0) + gl_FragCoord.xy, C = uAnom.xy;
+  float S = uHalf.y, s = (uAnom.z - 0.52) / 0.48 * 26.0, mt = min(s, 16.0);
+  vec2 u = (p - C) / S / 1.7;
+  const float FY = 0.4, H = 0.057;
+  // the ball covers them when it comes to the middle and grows
+  float g = smoothstep(21.0, 26.0, s);
+  vec2 bc = mix(mix(vec2(mix(-2.1, -0.38, smoothstep(12.0, 15.0, mt)), FY - 0.09), vec2(0.0, FY - 0.09), smoothstep(19.0, 21.0, s)), vec2(0.0), g);
+  if (length(u - bc) < 0.09 * exp(log(30.0) * g * g)) discard;
+  float flick = s > 16.0 && s < 18.6 ? step(0.45, fract(sin(floor(s * 9.0) * 43.1) * 917.3)) : 1.0;
+  float lamp = smoothstep(0.3, 1.2, s) * mix(0.22, 1.0, flick);
+  vec2 lpos = (u - vec2(0.0, 0.3)) * vec2(0.62, 1.3);
+  float light = lamp * (0.3 + 1.1 * exp(-dot(lpos, lpos) * 1.2));
+  float sd = 1e9, ba = 0.0;
+  vec2 bq = vec2(0), bpos = vec2(0);
+  vec3 tintC = vec3(0);
+  for (int i = 0; i < 3; i++) {
+    float k = mt - 5.0 - 2.0 * float(i);
+    if (k < 0.0) continue;
+    float fall = clamp(k / 0.55, 0.0, 1.0), af = 0.06 * float(i - 1), dir = float(i % 2) * 2.0 - 1.0;
+    float a = k < 0.55 ? af + dir * (0.5 + (1.6 + 0.8 * float(i)) * (1.0 - fall) * (1.0 - fall))   // turning as it falls
+                       : af + 0.5 * dir * exp(-(k - 0.55) * 7.0) * cos((k - 0.55) * 11.0);       // on a corner, then down flat
+    float lift = H * (abs(cos(a - af)) + abs(sin(a - af)) - 1.0);    // a tilted block stands on its corner
+    vec2 pos = vec2(0.14 + 0.012 * float(i) + 0.06 * dir * (1.0 - fall), mix(-1.3, FY - H - float(i) * 0.114, fall * fall) - lift);
+    vec2 q = rot2(a) * (u - pos);
+    float d = sdBox(q, vec2(H));
+    if (d < sd) { sd = d; bq = q; bpos = pos; ba = a; tintC = i == 0 ? vec3(0.47, 0.67, 0.9) : i == 1 ? vec3(0.94, 0.81, 0.47) : vec3(0.91, 0.5, 0.46); }
+  }
+  if (sd >= 0.0) discard;
+  float m = max(abs(bq.x), abs(bq.y)) / H, lv = -log(max(m, 1e-3)) / log(PHI), l = min(floor(lv), 7.0);
+  vec2 qf = abs(bq) * pow(PHI, l) * 1.3;                             // the walls as mirrors: folded, and taken back up to size
+  vec2 lp = C + (bpos + rot2(-ba) * qf) * S * 1.7 - vec2(uPrev0);
+  vec3 c = textureLod(uPrev, clamp(lp, vec2(0.5), uPrevSize - 0.5) / uPrevTex, 0.0).rgb * 255.0;
+  c *= (0.4 + 1.05 * light) * pow(vec3(0.84, 0.9, 0.88), vec3(l)) * mix(vec3(1.0), tintC, 0.35);
+  float fr = fract(lv), gl = l < 7.0 ? max(0.0, 1.0 - fr / 0.1) : 0.0;
+  c = mix(c, vec3(235.0, 245.0, 242.0) * (0.45 + 0.6 * light), 0.5 * gl * gl);   // a glint off each mirror's edge
+  float x = -sd * S * 1.7 / 4.0;                                      // the glass's own edge, a gradient, lit by the lamp
+  if (x < 1.0) c = mix(c, mix(tintC * 255.0, vec3(250.0), 0.5) * (0.35 + 0.75 * lamp), 0.8 * (1.0 - x));
+  outA = outB = vec4(clamp(c, 0.0, 255.0) / 255.0, 1.0);
+}`;
+
 // The seventh pass: the seams as tree lines. Where two regions meet, the edge is a canopy against the sky, as a
 // wood's top is from below: the darker painting is the canopy, the lighter the sky, and the line between them breaks
 // into crowns, then clumps, then single leaves or needles, the sky showing through gaps inside the canopy's edge and
@@ -3261,7 +3316,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
+  let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, toysProg = null, Ty = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
@@ -3366,7 +3421,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -3443,7 +3498,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -3455,6 +3510,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     // and the light
     const ee = finish(pending.e, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uHaze", "uQuilt", "uQN", "uQS", "uView", "uAnt", "uAN"]);
     if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); gl.uniform1i(Lu.uQuilt, 9); gl.uniform1i(Lu.uAnt, 11); }
+    const ii = finish(pending.i, ["uPrev", "uPrevSize", "uPrevTex", "uHalf", "uCell0", "uPrev0", "uAnom"]);
+    if (ii) { [toysProg, Ty] = ii; gl.useProgram(toysProg); gl.uniform1i(Ty.uPrev, 10); }
     const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
     if (ff) [spaceProg, Sp] = ff;
     const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze", "uAnt", "uAN"]);
@@ -3690,6 +3747,22 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
+    // the toys' glass blocks, holding the last frame in their mirrors
+    const glass = toysProg && anom[3] === 1 && anom[2] > 0.52 && !earth;
+    if (glass && prevN[0]) {
+      gl.useProgram(toysProg);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2i(Ty.uCell0, cx0, cy0);
+      gl.uniform2i(Ty.uPrev0, prev0[0], prev0[1]);
+      gl.uniform2f(Ty.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(Ty.uPrevTex, FW, FH);
+      gl.uniform2f(Ty.uHalf, cw / 2, ch / 2);
+      gl.uniform4fv(Ty.uAnom, anom);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
+    }
     // and in an anomaly's dark, space
     if (spaceProg && anom[2] > 0 && !earth) {
       gl.useProgram(spaceProg);
@@ -3702,7 +3775,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
-    if ((depthProg && deep) || lit || trees || glued) {
+    if ((depthProg && deep) || lit || trees || glued || glass) {
       // this frame, kept for the next
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
       gl.readBuffer(gl.COLOR_ATTACHMENT1);
