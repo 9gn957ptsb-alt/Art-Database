@@ -20,39 +20,49 @@ data/nga/ (private; --refresh downloads it again):
 Matching. Every saved work (data/artsy_saves_raw.json, with Artsy's fuller record from
 data/histories/artsy/works/) is looked up among the NGA's objects by title (normalised: case,
 accents, punctuation; the NGA's previous titles count). A candidate must have the same artist
-(name, and life dates where both give them) and a compatible date, and must not measure
-differently. Then:
+(name, and life dates where both give them: the birth year where both have one, else the death
+year) and a compatible date, and must not measure differently. Then:
 
   exact     the NGA's accession number is in Artsy's record;
   strong    Artsy names the NGA as the holder (it listed the work, or its collecting institution or
             credit line says so) or credits it in an NGA exhibition, and the dimensions or the NGA's
             credit line agree too;
   probable  Artsy names the NGA as the holder, and the NGA has just one object by that artist
-            under that title, but there is nothing to measure it against.
+            under that title, but there is nothing to measure it against; or it has several (a
+            print's impressions) and only one carries Artsy's date and medium word for word; or
+            Artsy's artist is the one the NGA says the print is after, and the size is the same.
 
-A work Artsy does not place at the NGA is matched only if it is one of a kind (a painting, drawing
-or sculpture), carries the NGA's own title, date and dimensions, and names no other holder. Prints
-and photographs exist in many impressions, and one is matched only when Artsy says it is the NGA's
+Where the NGA holds several impressions under one title, Artsy's listing tells one from the others
+only by its measurements (the NGA's whole statement of size, word for word, before any single
+measurement) or by the date as written; otherwise the work is not matched. A work Artsy does not
+place at the NGA is matched only if it is one of a kind (a painting, drawing or sculpture), carries
+the NGA's own title, date, dimensions and credit line, and names no other holder. Prints and
+photographs exist in many impressions, and one is matched only when Artsy says it is the NGA's
 impression. Several NGA objects fitting equally well, a title matching only in part, or another
 holder named, and the work is not matched; every such doubt is written to data/nga/matches.json
-with the reason.
+with the reason. So are the works Artsy places at the NGA that no NGA object under their title
+fits: where an object by the same artist has Artsy's statement of size word for word under another
+title (retitled, perhaps), it is named among the doubts; the rest are listed as not found.
 
 Events, all in the NGA's own words ("text" is always verbatim):
-  provenance      split into one event per owner (semicolons, sentences, and "by whom sold ... to"
-                  clauses), in order: "owned", "sold" for a sale (a parenthesised auction), "held"
-                  for the gift, bequest or purchase to the NGA. Footnotes go in "note". Dates only
+  provenance      split into one event per owner (semicolons, sentences, "by whom sold ... to"
+                  clauses, and an owner's own sale in parentheses after the name), in order:
+                  "owned", "sold" for a sale (a parenthesised auction), "held" for the gift,
+                  bequest or purchase to the NGA. Footnotes go in "note". Dates only
                   as the text gives them; "who" is the NGA's own name for the owner when its owner
                   records (objects_constituents) line up with the text, else the name as written.
   exhibitions     one "exhibited" event per entry: title, venue and city as the entry lays them
-                  out, dates from the entry (else its year).
+                  out, dates from the entry where they reach the NGA's own year for it (a range in a
+                  show's title is not its date), else that year.
   bibliography    one "written" event per entry: author, title, publication, pages, year.
   also            "made" (the date as displayed, where it was made), "held" from the credit line
-                  when the provenance does not say how the NGA acquired it, and the labels on the
-                  back ("other").
+                  when the provenance does not say how the NGA acquired it (its year from the NGA's
+                  record of itself as owner), and the labels on the back ("other").
 
 Output (private — data/ is never committed): data/histories/nga/<file>.json, one per matched work,
-<file> as filename() in fetch_artwork_histories.py; and data/nga/matches.json, the matches and the
-rejected doubts. Re-running rebuilds both from the cached CSVs (the matching is all local).
+<file> as filename() in fetch_artwork_histories.py; and data/nga/matches.json, the matches, the
+rejected doubts and the works not found. Re-running rebuilds both from the cached CSVs (the
+matching is all local; a history no longer matched is removed).
 
     python3 scripts/fetch_history_nga.py [--refresh] [--only artwork-id] [--dry-run]
 """
@@ -589,7 +599,8 @@ def elsewhere(saved, rec, nga):
     for oid in sorted(oids, key=int):
         o = nga["objects"][oid]
         ident = f"NGA {o['accessionnum']} ({o['title']}, {o['displaydate'] or 'no date'}, {o['attribution']})"
-        if len(flat_dims(o["dimensions"])) > 8 and flat_dims(o["dimensions"]) == flat_dims(rec.get("additional_information")):
+        theirs = flat_dims(o["dimensions"])
+        if len(theirs) > 8 and theirs == flat_dims(rec.get("additional_information")):
             word_for_word.append(ident)
         elif dims_agree(mine, measures(o["dimensions"]))[0] == "agree":
             same_size.append(ident)
@@ -757,6 +768,9 @@ def dates_in(seg):
     """Dates written in a piece of text, in order, as YYYY, YYYY-MM or YYYY-MM-DD, with a range's end."""
     found = []
     pats = [
+        (rf"(?<![\d.])(\d{{1,2}})\s+({MONTH})\s*[-–]\s*(\d{{1,2}})\s+({MONTH})\s+(\d{{4}}){NOT_NUM}", "dmdmy"),
+        (rf"\b({MONTH})\s+(\d{{1,2}})\s*[-–]\s*({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}}){NOT_NUM}", "mdmdy"),
+        (rf"\b({MONTH})\s+(\d{{1,2}})\s*[-–]\s*(\d{{1,2}}),?\s+(\d{{4}}){NOT_NUM}", "mddy"),
         (rf"\b({MONTH})\s*[-–/]\s*({MONTH})\s+(\d{{4}}){NOT_NUM}", "mmy"),
         (rf"(?<![\d.])(\d{{1,2}})(?:\s*[-–]\s*(\d{{1,2}}))?\s+({MONTH})\s+(\d{{4}}){NOT_NUM}", "dmy"),
         (rf"\b({MONTH})\s+(\d{{1,2}}),?\s+(\d{{4}}){NOT_NUM}", "mdy"),
@@ -772,7 +786,16 @@ def dates_in(seg):
             if kind == "y" and re.search(r"\b(no|nos|lot|inv|pp|p|l|nr|cat)\.?\s*$|#\s*$|lugt\s*(supp\.?\s*)?$", before):
                 continue
             g = m.groups()
-            if kind == "mmy":
+            if kind == "dmdmy":  # 7 July-28 Aug. 1966
+                y = int(g[4])
+                vals = [f"{y:04d}-{month_of(g[1]):02d}-{int(g[0]):02d}", f"{y:04d}-{month_of(g[3]):02d}-{int(g[2]):02d}"]
+            elif kind == "mdmdy":  # March 26-April 30, 1982
+                y = int(g[4])
+                vals = [f"{y:04d}-{month_of(g[0]):02d}-{int(g[1]):02d}", f"{y:04d}-{month_of(g[2]):02d}-{int(g[3]):02d}"]
+            elif kind == "mddy":  # March 3-15, 1990
+                y, mo = int(g[3]), month_of(g[0])
+                vals = [f"{y:04d}-{mo:02d}-{int(g[1]):02d}", f"{y:04d}-{mo:02d}-{int(g[2]):02d}"]
+            elif kind == "mmy":
                 y = int(g[2])
                 vals = [f"{y:04d}-{month_of(g[0]):02d}", f"{y:04d}-{month_of(g[1]):02d}"]
             elif kind == "dmy":
@@ -1073,13 +1096,21 @@ def provenance_events(o, nga):
 
 def exhibition_event(r, order, field, footnotes):
     text = r["text"].strip()
+    year = int(r["year"]) if re.fullmatch(r"\d{4}", r.get("year") or "") else None
+
+    def when(ds):
+        """Dates that can be the show's: they reach the NGA's own year for the entry, where it gives one
+        ("Impression: Painting Quickly in France, 1860-1890" is a title, the show was in 2000)."""
+        ys = [int(x[:4]) for x in ds]
+        return bool(ys) and (year is None or min(ys) - 1 <= year <= max(ys) + 1)
+
     first_venue_end = top_split(text, ";")[0][1]
     comps = [(a, b, text[a:b].strip()) for a, b in top_split(text, ",") if text[a:b].strip()]
     single = first_venue_end == len(text)
     # Where the dates begin (single venue), or where the first venue ends (several).
     d = len(comps)
     for j, (a, b, c) in enumerate(comps):
-        if single and j > 0 and (dates_in(c) or re.fullmatch(MONTH, c.strip(" .")) or
+        if single and j > 0 and (when(dates_in(c)) or re.fullmatch(MONTH, c.strip(" .")) or
                                  re.match(r"(no|nos|cat|unnumbered|possibly)\b", c, re.I)):
             d = j
             break
@@ -1090,7 +1121,7 @@ def exhibition_event(r, order, field, footnotes):
     if head and not single:
         a, b, c = head[-1]
         head[-1] = (a, first_venue_end, text[a:first_venue_end].strip())
-    title, venue, city, country = "", "", "", ""
+    title, venue, city, country, title_end = "", "", "", "", 0
     k = len(head)
     if k and country_of(head[k - 1][2]) is not None:
         country = country_of(head[k - 1][2]) or ""
@@ -1103,12 +1134,13 @@ def exhibition_event(r, order, field, footnotes):
         while j > 1 and head[j][2].lower() in CORP:
             j -= 1
         venue = text[head[j][0]:head[k - 1][1]].strip()
-        title = text[head[0][0]:head[j - 1][1]].strip()
+        title, title_end = text[head[0][0]:head[j - 1][1]].strip(), head[j - 1][1]
     elif k == 1:
         if INSTITUTION.search(head[0][2]) and not re.search(r"\b(exhibition|exposition|salon|fair)\b", head[0][2], re.I):
             venue = head[0][2]
         else:
-            title = head[0][2]
+            title, title_end = head[0][2], head[0][1]
+    venue = re.sub(r"^(?:starting with|beginning (?:with|at))\s+", "", venue)
     if venue.upper() == "NGA":
         venue = "National Gallery of Art"
         if not city:
@@ -1118,13 +1150,13 @@ def exhibition_event(r, order, field, footnotes):
     if city.lower() == "washington" and not country and re.search(r"Washington,?\s*D\.?\s*C\.?", text):
         country = "US"
     # The dates: everything after the title, less titles in italics and remarks in parentheses.
-    rest = text[head[0][1]:] if head and title else text
+    rest = text[title_end:]
     rest = re.sub(r"_[^_]*_|\([^()]*\)|\bas\s+[\"“][^\"”]*[\"”]", " ", rest)
     ds = sorted(dates_in(rest))
     start, end = (ds[0], ds[-1] if ds[-1] != ds[0] else "") if ds else ("", "")
     circa = bool(ds) and bool(CIRCA.search(rest))
-    if not start and r.get("year"):
-        start = r["year"]
+    if year and not when(ds):  # none of the dates written is the show's: the NGA's year for the entry
+        start, end, circa = str(year), "", False
     note = " ".join(f"[{n}] {footnotes[n]}" for n in FOOTMARK.findall(text) if n in footnotes)
     return {"kind": "exhibited", "text": text, "field": field, "start": start, "end": end, "circa": circa,
             "who": "", "title": title.strip('" '), "venue": venue, "city": city, "country": country,

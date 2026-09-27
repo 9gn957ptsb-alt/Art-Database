@@ -30,7 +30,7 @@ be strong:
     their words, by a single candidate whose date agrees ("probable");
   * where Artsy does not name the museum, everything must agree closely ("strong"): the very title
     (not one as common as "Untitled" or "Landscape", and not one the museum has more than one work of
-    by the artist), the date within a year, the dimensions within 1 cm or 1.5%; the work must not be
+    by the artist), the date within a year, the dimensions within 0.8 cm or 1%; the work must not be
     a print, photograph, poster, cast or other multiple (an impression in another collection is not
     this object), and it must not be one a gallery or auction house had for sale (a museum's object
     is not on the market) unless the museum says it deaccessioned it. Everything else is rejected, and
@@ -182,7 +182,13 @@ COUNTRIES = {"france": "FR", "spain": "ES", "germany": "DE", "italy": "IT", "eng
              "united states of america": "US", "australia": "AU", "ireland": "IE", "portugal": "PT",
              "greece": "GR", "czech republic": "CZ", "poland": "PL", "hungary": "HU", "brazil": "BR",
              "argentina": "AR", "israel": "IL", "south korea": "KR", "korea": "KR", "india": "IN",
-             "iceland": "IS", "luxembourg": "LU", "monaco": "MC"}
+             "iceland": "IS", "luxembourg": "LU", "monaco": "MC",
+             "united kingdom of great britain and northern ireland": "GB", "russian federation": "RU",
+             "republic of korea": "KR", "czechia": "CZ", "turkey": "TR", "turkiye": "TR", "new zealand": "NZ",
+             "south africa": "ZA", "singapore": "SG", "taiwan": "TW", "hong kong": "HK", "qatar": "QA",
+             "united arab emirates": "AE", "chile": "CL", "colombia": "CO", "peru": "PE", "venezuela": "VE",
+             "cuba": "CU", "egypt": "EG", "lebanon": "LB", "romania": "RO", "croatia": "HR", "slovenia": "SI",
+             "slovakia": "SK", "estonia": "EE", "latvia": "LV", "lithuania": "LT", "ukraine": "UA"}
 
 MONTHS = {"jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3, "apr": 4, "april": 4,
           "may": 5, "jun": 6, "june": 6, "jul": 7, "july": 7, "aug": 8, "august": 8, "sep": 9,
@@ -428,13 +434,13 @@ def sizes_in(text):
 
 
 def sizes_agree(a, b, tight=False):
-    """Do two lists of (h, w) share a size? Within 1.5 cm or 3% (tight: 1 cm or 1.5%, for a work
+    """Do two lists of (h, w) share a size? Within 1.5 cm or 3% (tight: 0.8 cm or 1%, for a work
     Artsy does not say the museum holds)."""
     if not a or not b:
         return None
 
     def near(x, y):
-        return abs(x - y) <= (max(1.0, 0.015 * max(x, y)) if tight else max(1.5, 0.03 * max(x, y)))
+        return abs(x - y) <= (max(0.8, 0.01 * max(x, y)) if tight else max(1.5, 0.03 * max(x, y)))
     for h, w in a:
         for H, W in b:
             if (near(h, H) and near(w, W)) or (near(h, W) and near(w, H)):
@@ -643,22 +649,28 @@ def cma_candidate(d):
 
 
 def cma_candidates(w, refresh):
+    """Cleveland by the artist's name as Artsy gives it, or, when that finds nothing ('J. M. W.
+    Turner' is 'Joseph Mallord William Turner' there), by the surname."""
     out = {}
     for a in w["artists"][:2]:
         sn = surname(a["name"])
         if not sn:
             continue
-        skip = 0
-        while skip < 1000:
-            j = fetch("cma", CMA, {"artists": a["name"], "limit": 100, "skip": skip,
-                                   "fields": ",".join(CMA_LIST)}, refresh=refresh) or {}
-            data = j.get("data") or []
-            mine = [d for d in data if any(sn in words(c.get("description")) for c in d.get("creators") or [])]
-            for d in mine:
-                out[d.get("accession_number") or str(d.get("id"))] = cma_candidate(d)
-            if len(data) < 100 or not mine:
+        for key in (a["name"], raw_surname(a["name"])):
+            skip, found = 0, 0
+            while skip < 1000:
+                j = fetch("cma", CMA, {"artists": key, "limit": 100, "skip": skip,
+                                       "fields": ",".join(CMA_LIST)}, refresh=refresh) or {}
+                data = j.get("data") or []
+                found += len(data)
+                mine = [d for d in data if any(sn in words(c.get("description")) for c in d.get("creators") or [])]
+                for d in mine:
+                    out[d.get("accession_number") or str(d.get("id"))] = cma_candidate(d)
+                if len(data) < 100 or not mine:
+                    break
+                skip += 100
+            if found:
                 break
-            skip += 100
     if w["holder"] == "cma":
         for acc in set(re.findall(r"\b(\d{4}\.\d+(?:\.\d+)?)\b", w["text"])):
             d = (fetch("cma", CMA + acc, refresh=refresh) or {}).get("data")
@@ -856,18 +868,20 @@ def judge(w, c):
     if credit:
         facts.append("the museum's credit line in Artsy's record")
     how = ", ".join(facts)
+    if not (linked or linked_id or acc or (t == "exact" and d and s is not False) or (d and s)):
+        return None             # Artsy does not name the museum, and not enough agrees to be in doubt
     if c["qualified"]:
         return "reject", "the museum gives it to the artist's circle, school or a copy: " + how
     if clash:
         return "reject", f"Artsy's is a {w['kind']}, the museum's a {c['kind']}: " + how
     if linked_id:
         return "exact", "Artsy's record links to this Met object; " + how
-    if acc and d is not False:
+    if acc and d is not False and (t or linked):
         return "exact", f"accession number {c['accession']} in Artsy's record; " + how
     if linked and t == "exact" and s and d is False:
         return "probable", how          # the museum's, the same title and size; one of the two dates is off
-    if d is False:
-        return "reject", how
+    if d is False:          # another object, unless the museum or the size says it may be this one
+        return ("reject", how) if linked or s else None
     if linked and credit and t:
         return "strong", how
     if linked:
@@ -1212,6 +1226,7 @@ def publication_parts(text):
         else:
             title = head
         title = title.strip(" ,.")
+    title = re.sub(r"^(?:eds?\.|et al\.),\s*", "", title)       # 'Gloria Groom, ed., L’impressionnisme …'
     if len(who) > 120 or re.search(r"\d{4}", who):
         who = ""
     pages = ", ".join(re.findall(r"\bpp?\.\s*[\dixvlc]+(?:\s*[-–]\s*\d+)?(?:,\s*\d+(?:\s*[-–]\s*\d+)?)*", flat))
