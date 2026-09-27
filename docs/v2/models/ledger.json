@@ -253,12 +253,13 @@
   },
   "museum-seattle-art-museum": {
     "name": "Seattle Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Venturi Scott Brown's fluted limestone block with its arched coloured base and the Hammering Man, the 2007 expansion and the Russell Investments Center tower, set to downtown's grid"
+      "2026-09-24 first model: Venturi Scott Brown's fluted limestone block with its arched coloured base and the Hammering Man, the 2007 expansion and the Russell Investments Center tower, set to downtown's grid",
+      "2026-09-27 refined: voxel 1.6 to 1.8 m so the tower keeps it under 25,000 dots and 100 voxels across; street trees along University Street (no photographs)"
     ]
   },
   "museum-indianapolis-museum-of-art": {
@@ -285,32 +286,35 @@
   },
   "museum-kroller-muller-museum": {
     "name": "Kr\u00f6ller-M\u00fcller Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: van de Velde's long low buff-brick building with its clerestory lanterns and taller central block, Quist's 1977 glass corridors and plain rooms toward the sculpture garden, in the Veluwe woods"
+      "2026-09-24 first model: van de Velde's long low buff-brick building with its clerestory lanterns and taller central block, Quist's 1977 glass corridors and plain rooms toward the sculpture garden, in the Veluwe woods",
+      "2026-09-27 refined: Dubuffet's Jardin d'\u00e9mail in the sculpture garden, white with its black lines flush, and Rietveld's pavilion beside it; gravel walks out to them (no photographs)"
     ]
   },
   "museum-musee-dorsay": {
     "name": "Mus\u00e9e d'Orsay",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Laloux's limestone station set at the true angle of the quai, the iron-and-glass barrel vault, the arcade and attic on the Seine, end lunettes, clock pavilions, the hotel's slate mansard on rue de Lille"
+      "2026-09-24 first model: Laloux's limestone station set at the true angle of the quai, the iron-and-glass barrel vault, the arcade and attic on the Seine, end lunettes, clock pavilions, the hotel's slate mansard on rue de Lille",
+      "2026-09-27 refined: walls in the new pale 'limestone', mansards and pavilion roofs in the new blue-grey 'slate' (no photographs)"
     ]
   },
   "museum-musee-du-louvre": {
     "name": "Mus\u00e9e du Louvre",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the whole palace, coarse, on the historic axis: Cour Carr\u00e9e with Perrault's colonnade and the Pavillon de l'Horloge, Richelieu and Denon wings under slate with their pavilions, Pei's pyramid and pools, the Carrousel arch, the Grande Galerie on the Seine"
+      "2026-09-24 first model: the whole palace, coarse, on the historic axis: Cour Carr\u00e9e with Perrault's colonnade and the Pavillon de l'Horloge, Richelieu and Denon wings under slate with their pavilions, Pei's pyramid and pools, the Carrousel arch, the Grande Galerie on the Seine",
+      "2026-09-27 refined: walls in 'limestone', every roof in 'slate'; the rue de Rivoli blocks given a zinc mansard along their street front only (no photographs)"
     ]
   },
   "museum-the-national-gallery-london": {
@@ -326,42 +330,46 @@
   },
   "museum-centre-pompidou": {
     "name": "Centre Pompidou",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the white exoskeleton and glass body, escalator tube on the piazza front, colour-coded ducts on rue du Renard"
+      "2026-09-24 first model: the white exoskeleton and glass body, escalator tube on the piazza front, colour-coded ducts on rue du Renard",
+      "2026-09-27 refined: the piazza falls toward the building; rue du Renard and rue Rambuteau drawn; two white air-intake funnels on the piazza (no photographs)"
     ]
   },
   "museum-hammer-museum": {
     "name": "Hammer Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Barnes grey-and-white banded marble block round its courtyard with Maltzan bridge and opened Wilshire corner, the Occidental tower beside it"
+      "2026-09-24 first model: Barnes grey-and-white banded marble block round its courtyard with Maltzan bridge and opened Wilshire corner, the Occidental tower beside it",
+      "2026-09-27 refined: the Occidental tower redrawn as white marble piers every other voxel with dark glass between, a crown and plant room; warmer grey bands; trees on Westwood (no photographs)"
     ]
   },
   "museum-art-institute-of-chicago": {
     "name": "Art Institute of Chicago",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway"
+      "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway",
+      "2026-09-27 refined: the Allerton and east wings in buff limestone; the Allerton's Michigan Avenue front given its two rows of windows at an even rhythm and a darker frieze (no photographs)"
     ]
   },
   "museum-national-gallery-of-victoria": {
     "name": "NGV International",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Grounds bluestone block in its moat, entrance arch with the Water Wall, three courtyards, Great Hall roof, St Kilda Road and the garden"
+      "2026-09-24 first model: Grounds bluestone block in its moat, entrance arch with the Water Wall, three courtyards, Great Hall roof, St Kilda Road and the garden",
+      "2026-09-27 refined: gravel roof inside a stone parapet; St Kilda Road's elms one fuller row with the axis to the arch kept clear; the garden courts glazed at ground level (no photographs)"
     ]
   },
   "museum-de-young-museum": {
@@ -377,22 +385,24 @@
   },
   "museum-van-gogh-museum": {
     "name": "Van Gogh Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Rietveld's pale block with glazed ground floor and lantern, the 2015 glass entrance hall, Kurokawa's stone crescent round its sunken oval pool under a tilted titanium roof"
+      "2026-09-24 first model: Rietveld's pale block with glazed ground floor and lantern, the 2015 glass entrance hall, Kurokawa's stone crescent round its sunken oval pool under a tilted titanium roof",
+      "2026-09-27 refined: gravel roofs inside white parapets on the Rietveld block and east wing; Van Heeswijk's entrance hall raised to about 8 m; a paved forecourt on the Museumplein side (no photographs)"
     ]
   },
   "museum-philadelphia-museum-of-art": {
     "name": "Philadelphia Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-27",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the golden Kasota-stone U on its podium facing the Parkway, central temple with portico and terracotta pediment, pedimented wing ends, blue tile roofs, the great stair and fountain"
+      "2026-09-24 first model: the golden Kasota-stone U on its podium facing the Parkway, central temple with portico and terracotta pediment, pedimented wing ends, blue tile roofs, the great stair and fountain",
+      "2026-09-27 refined: roofs in the new cobalt 'bluetile' instead of the water's blue; the polychrome terracotta moved to the north wing's pediment, the only one completed (no photographs)"
     ]
   },
   "museum-turner-contemporary": {
