@@ -695,6 +695,19 @@ AUCTION = re.compile(r"(drouot|christie|sotheby|parke|bernet|american art|george
 
 
 SALE = re.compile(r"\b(?:sale|auction|vente)\b", re.I)
+SOLD = re.compile(r"\b(?:sale|auction|vente|sold)\b", re.I)
+# Houses that only auction (Georges Petit, Charpentier and the like were dealers too).
+AUCTIONEER = re.compile(r"christie|sotheby|drouot|parke[- ]bernet|american art association|galliera|lepke|dorotheum|"
+                        r"lempertz|weinm[uü]ller|bonhams|bukowski", re.I)
+
+
+def auction(inner):
+    """Is a parenthesis an auction? "(his sale, ...)", or an auctioneer with a day and a lot:
+    "(Christie, Manson & Woods, London, 21 June 1912, no. 140)", "(sold Geneva, Christie's, Nov 6, 1969, no. 154)"."""
+    if re.search(r"\b(?:sale|auction|vente|lots?\s+\d+)\b", inner, re.I):
+        return True
+    return bool(AUCTIONEER.search(inner) and re.search(r"\b(?:no|nos|lot|lots)\.?\s*\d|\bbought in\b", inner, re.I)
+                and any(len(d) == 10 for d in dates_in(inner)))
 LINK = {"by", "to", "at", "in", "from", "through", "via", "with", "for", "and", "of", "the", "his", "her", "their",
         "its", "sold", "bought", "purchased", "acquired", "consigned", "offered", "lent"}
 
@@ -708,7 +721,7 @@ def sale_cuts(text, a, b, depth):
             j = i
             while j < b and not (text[j] == ")" and depth[j] == 1):
                 j += 1
-            if j < b and SALE.search(text[i:j]):
+            if j < b and auction(text[i + 1:j]):
                 before = re.sub(r"[\s,;]+$", "", text[a:i])
                 last = (re.findall(r"[^\s]+$", before) or [""])[0]
                 if re.search(r"[A-Za-z]", before) and last.lower().strip(".,") not in LINK:
@@ -916,6 +929,21 @@ OWNER_STOP = {"mr", "mrs", "and", "the", "of", "de", "del", "della", "van", "von
 FIRM_SUFFIX = {"co", "company", "inc", "ltd", "limited", "and", "llc", "gmbh", "sa", "ag", "cie", "et"}
 
 
+TITLES = {"mr", "mrs", "ms", "miss", "mme", "mlle", "madame", "monsieur", "dr", "sir", "lady", "lord", "rev",
+          "reverend", "prof", "professor", "capt", "captain", "major", "admiral", "general", "col", "colonel", "lieut",
+          "senator", "judge", "hon", "count", "countess", "comte", "comtesse", "baron", "baroness", "duke", "duchess",
+          "prince", "princess", "marquis", "marquise", "marquess", "earl", "don", "dona", "herr", "frau", "graf",
+          "grafin", "furst", "furstin", "herzog", "conte", "contessa", "marchese", "marchesa", "duca", "duchessa",
+          "king", "queen", "emperor", "empress", "czar", "tsar", "pope", "cardinal", "bishop"}
+FEMALE = {"mrs", "ms", "miss", "mme", "mlle", "madame", "lady", "countess", "comtesse", "baroness", "duchess",
+          "princess", "marquise", "dona", "frau", "grafin", "furstin", "contessa", "marchesa", "duchessa", "queen",
+          "empress"}
+MALE = {"mr", "monsieur", "sir", "lord", "count", "comte", "baron", "duke", "prince", "marquis", "marquess", "earl",
+        "don", "herr", "graf", "furst", "herzog", "conte", "marchese", "duca", "king", "emperor", "czar", "tsar"}
+# What tells two people of one name apart: "Jr.", "Sr.", "2nd marquess", "Johann II".
+MARK = re.compile(r"(?:\d+(?:st|nd|rd|th)|jr|sr|ii|iii|iv|vi|vii|viii|ix|xi|xii|xiii|xiv|xv)")
+
+
 def owner_names(rec, nga):
     """An NGA owner record, ready to be looked for in the text."""
     person = nga["people"].get(rec["constituentid"]) or {}
@@ -929,10 +957,16 @@ def owner_names(rec, nga):
         while toks and toks[-1] in FIRM_SUFFIX:
             toks = toks[:-1]
         return {"name": name, "firm": toks} if len(" ".join(toks)) >= 4 else None
-    last = norm(person["lastname"]).split()
+    toks = norm(name).split()
     head = norm(name.split(",")[0]).split()
-    given = [t for t in head if t not in OWNER_STOP and t not in last]
-    return {"name": name, "last": last, "given": given, "window": max(6, len(head) + 2)}
+    last = norm(person["lastname"]).split()
+    if not find_all(head, last) and head:
+        last = head[-1:]  # a peer, "Brownlow Cecil, 2nd marquess of Exeter", filed under the title
+    titles = {t for t in head if t in TITLES}
+    couple = person.get("constituenttype") == "couple" or "and" in head
+    sex = "couple" if couple else "f" if titles & FEMALE else "m" if titles & MALE else ""
+    given = [t for t in head if t not in OWNER_STOP and t not in TITLES and t not in last and not MARK.fullmatch(t)]
+    return {"name": name, "last": last, "given": given, "marks": [t for t in toks if MARK.fullmatch(t)], "sex": sex}
 
 
 def find_all(toks, seq):
@@ -940,14 +974,107 @@ def find_all(toks, seq):
     return [i for i in range(len(toks) - n + 1) if seq and toks[i:i + n] == seq]
 
 
+# Capitalised at the head of a sentence, but not part of a name.
+NOT_NAME = {"possibly", "probably", "presumably", "perhaps", "reportedly", "supposedly", "apparently", "purchased",
+            "sold", "acquired", "gift", "given", "from", "by", "to", "bequest", "bequeathed", "inherited",
+            "inheritance", "commissioned", "consigned", "deeded", "transferred", "exchanged", "the", "his", "her",
+            "their", "its", "with", "for", "through", "in", "at", "on", "or", "estate", "heirs", "sale", "lent",
+            "returned", "bought", "owned", "according", "see", "purchase", "confiscated", "restituted", "seized",
+            "recovered", "collection", "private", "artist", "sitter", "after", "before", "until", "since", "then",
+            "later", "also", "which", "who", "whose", "when", "where", "this", "that", "one", "all", "mother",
+            "father", "son", "daughter", "wife", "husband", "widow", "brother", "sister", "nephew", "niece", "family"}
+
+
+def words_of(seg):
+    """The words of a piece of provenance, each as (token, the word as written, start, end, where): the words
+    outside brackets first (where 0), then those in each bracket (1, 2 ...), as the NGA puts other names
+    ("[Mrs. Rudolf J. Heinemann]") and life dates there. A word of several tokens gives each of them."""
+    out = []
+    parts = [(outside_brackets(seg), 0, 0)] + [(m.group(1), m.start(1), n + 1)
+                                                for n, m in enumerate(re.finditer(r"\[([^\]]*)\]", seg))]
+    for part, offset, where in parts:
+        for m in re.finditer(r"&|[^\W_]+(?:['’][^\W_]+)*\.?", part):
+            for t in norm(m.group(0)).split():
+                out.append((t, m.group(0), offset + m.start(), offset + m.end(), where))
+    return out
+
+
+def name_before(words, i, apart):
+    """The name written just before the token at i (a surname), as groups split at "and", each (its titles, its
+    given names): capitalised words and initials, back to a lower-case word or a comma, parenthesis or bracket;
+    "von", "de la" next to the surname skipped. In "Mr. and Mrs. Paul Mellon", Mr. is Paul Mellon too."""
+    k = i - 1
+    while k >= 0 and not apart(k) and words[k][0] in PARTICLES and not words[k][1][:1].isupper():
+        k -= 1
+    run = []
+    while k >= 0 and not apart(k):
+        t, w = words[k][0], words[k][1]
+        if t in ("and", "et"):
+            if not (k > 0 and not apart(k - 1) and words[k - 1][1][:1].isupper() and words[k - 1][0] not in NOT_NAME):
+                break
+        elif not w[:1].isupper() or t in NOT_NAME:
+            break
+        run.insert(0, t)
+        k -= 1
+    groups, cur = [], (set(), [])
+    for t in run:
+        if t in ("and", "et"):
+            groups.append(cur)
+            cur = (set(), [])
+        elif t in TITLES:
+            cur[0].add(t)
+        else:
+            cur[1].append(t)
+    groups.append(cur)
+    for n in range(len(groups) - 2, -1, -1):
+        if not groups[n][1]:
+            groups[n][1].extend(groups[n + 1][1])
+    return groups, k + 1
+
+
+def same_name(a, b):
+    return a == b or (len(a) == 1 and b[:1] == a) or (len(b) == 1 and a[:1] == b)
+
+
+def person_here(n, words, i, apart):
+    """Is the NGA's owner record n the person whose surname is at token i? The given names written before it
+    are the record's (or their initials), no more and no fewer; a "Mrs." or "Mme" on one side is on the other
+    (Mrs. Charles R. Henschel is not Charles R. Henschel); a "Jr.", "2nd" or "II" in the record is in the text."""
+    groups, start = name_before(words, i, apart)
+
+    def mine(t):
+        return any(same_name(t, g) for g in n["given"]) or t in n["last"] or t in n["marks"]
+
+    def sex_ok(titles):
+        sex = "f" if titles & FEMALE and not titles & MALE else "m" if titles & MALE else ""
+        return not ("f" in (sex, n["sex"]) and sex != n["sex"])
+
+    if n["sex"] == "couple":  # "Mr. and Mrs. Julian Ganz" in "Jo Ann and Julian Ganz"
+        every = [t for _, names in groups for t in names]
+        ok = all(any(same_name(t, g) for t in every) for g in n["given"]) and all(mine(t) for t in groups[-1][1])
+    else:
+        ok = any(sex_ok(titles) and all(mine(t) for t in names) and
+                 all(any(same_name(t, g) for t in names) for g in n["given"]) for titles, names in groups)
+    around = {w[0] for w in words[start:i + len(n["last"]) + 6]}
+    return ok and all(m in around for m in n["marks"])
+
+
 def align_owners(pieces, text, owners, nga):
     """The NGA's owner records laid against the pieces of the provenance text: a piece gets every owner
-    it spells out — a firm's whole name; a person's surname with every given name (or its initial) just
-    before it — in the order the text names them."""
+    it spells out — a firm's whole name; a person's surname with the given names written just before it
+    (or their initials) — in the order the text names them."""
     names = [n for n in (owner_names(r, nga) for r in owners) if n]
     got = defaultdict(list)
     for j, (s, e, _) in enumerate(pieces):
-        toks = norm(outside_brackets(text[s:e]) + " " + " ".join(re.findall(r"\[([^\]]*)\]", text[s:e]))).split()
+        seg = text[s:e]
+        flat = outside_brackets(seg)
+        words = words_of(seg)
+        toks = [w[0] for w in words]
+
+        def apart(k, words=words, seg=seg, flat=flat):  # a comma, bracket or the like between word k and the next
+            a, b = words[k], words[k + 1]
+            return a[4] != b[4] or bool(re.search(r"[,;:()\[\]]", (flat if a[4] == 0 else seg)[a[3]:b[2]]))
+
         found, firm_spans = [], []
         for n in names:
             if "firm" in n:
@@ -961,8 +1088,7 @@ def align_owners(pieces, text, owners, nga):
             for i in find_all(toks, n["last"]):
                 if any(a <= i < b for a, b in firm_spans):
                     continue  # "The A.W. Mellon ... Trust" is not Andrew W. Mellon
-                window = toks[max(0, i - n["window"]):i]
-                if all(t in window or t[0] in window for t in n["given"]):
+                if person_here(n, words, i, apart):
                     found.append((i, n["name"]))
                     break
         names_here = [name for _, name in sorted(found)]
@@ -1043,7 +1169,7 @@ def sale_house(comps):
             who, i = a0, 1
         else:
             city, i = a0, 1
-        while who and i < len(after) and not dates_in(after[i]) and not placeish(after[i]) \
+        while who and i < len(after) and not re.search(r"\d", after[i]) and not placeish(after[i]) \
                 and country_of(after[i]) is None:
             who, i = who + ", " + after[i], i + 1  # "Christie, Manson & Woods"
         if not city and i < len(after) and not dates_in(after[i]):
@@ -1065,7 +1191,7 @@ def provenance_events(o, nga):
         seg = text[s:e]
         flat = outside_brackets(seg)
         start, end, circa = start_end(flat)
-        group = re.search(r"\(([^()]*\b(?:sale|auction|vente|lots?\s+\d+)\b[^()]*)\)", flat, re.I)
+        group = next((m for m in re.finditer(r"\(([^()]*)\)", flat) if auction(m.group(1))), None)
         to_nga = re.search(r"\b(NGA|National Gallery of Art)\b", seg) and not re.search(r"\b(lent|loan|deposit)",
                                                                                         seg, re.I)
         after_nga = events and events[-1]["kind"] == "held" and re.match(
@@ -1077,8 +1203,8 @@ def provenance_events(o, nga):
         elif group:
             kind = "sold"
             comps = components(seg[group.start(1):group.end(1)])
-            k = next((j for j, c in enumerate(comps) if re.search(r"\b(sale|auction|vente)\b", c, re.I)), -1)
-            head = SALE.split(comps[k], 1)[1].strip(" ,.") if k >= 0 else ""
+            k = next((j for j, c in enumerate(comps) if SOLD.search(c)), -1)
+            head = SOLD.split(comps[k], 1)[1].strip(" ,.") if k >= 0 else ""
             if head and not dates_in(head) and not re.match(r"(no|nos|lot|lots|number)\b", head, re.I):
                 who, city, country = sale_house([head] + comps[k + 1:])  # "sale Christie, Manson & Woods"
             else:

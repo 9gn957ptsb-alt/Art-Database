@@ -147,10 +147,6 @@ KIND_ROOTS = {"Q3305213": "painting", "Q11060274": "print", "Q125191": "photogra
 PLACES = {"Q6256", "Q3624078", "Q515", "Q5119", "Q1549591", "Q1637706", "Q486972", "Q484170", "Q747074", "Q262166",
           "Q2039348", "Q1093829", "Q200250", "Q7275", "Q35657", "Q107390", "Q10864048", "Q15284", "Q3957",
           "Q532", "Q6465", "Q36784", "Q1221156"}  # countries, states, cities, towns, regions: not holders
-TOWN_ROOTS = ["Q486972", "Q15284", "Q515"]  # human settlement, municipality, city
-# A place that is one of these is part of a town, not the town: neighbourhood, quarter, district,
-# metropolitan area, borough of New York City, London borough, municipal arrondissement, special ward.
-NOT_TOWN = {"Q123705", "Q2983893", "Q149621", "Q1907114", "Q408804", "Q211690", "Q702842", "Q5327704"}
 PRIVATE_COLLECTION = "Q768717"
 UNITS = {"Q174728": 1.0, "Q174789": 0.1, "Q11573": 100.0, "Q218593": 2.54, "Q3710": 30.48, "Q200323": 10.0}
 CIRCA = "Q5727902"
@@ -653,7 +649,9 @@ def is_market(saved):
 def own_sentences(text):
     """A text without its sentences about other objects ('four other prints of this image are at …',
     'another version is in …', 'compare …')."""
-    keep = [x for x in re.split(r"(?<=[.!?])\s+|\n+", text or "") if x.strip() and not ELSEWHERE.search(x)]
+    keep = [x.strip() for x in re.split(r"(?<=[A-Za-z]{3}[.!?])\s+(?=[A-Z\"“(])|(?<=\d[.!?])\s+(?=[A-Z])|[\r\n]+",
+                                        text or "")
+            if x.strip() and not ELSEWHERE.search(x)]
     return "\n".join(keep)
 
 
@@ -689,10 +687,10 @@ def id_texts(saved, rec):
 
 def category(saved):
     """Artsy's category, unless its medium plainly says it is a painting ('Oil on canvas' filed under
-    Print or Sculpture)."""
+    Print). Not a sculpture: a painted one is 'Acrylic on wood'."""
     c = saved.get("category") or ""
     m = saved.get("medium") or ""
-    if c in ("Print", "Sculpture", "Photography", "Posters", "") and PAINT_MEDIUM.search(m) and not REPRODUCED.search(m):
+    if c in ("Print", "Photography", "Posters", "") and PAINT_MEDIUM.search(m) and not REPRODUCED.search(m):
         return "Painting"
     return c
 
@@ -1352,23 +1350,24 @@ def refs(s):
     return "; ".join(dict.fromkeys(notes)), url
 
 
-def place(q, depth=0):
-    """(city, country) from Wikidata's own data about a place, museum or venue: the first settlement
-    up its 'located in' chain (not a quarter or neighbourhood), and its country's ISO code."""
-    if not q or depth > 5:
+def place(q):
+    """(city, country) from Wikidata's own data about a place, museum or venue, up its 'located in'
+    chain: the highest city in it (Paris, not the Quartier Saint-Merri; Tokyo, not Roppongi), else the
+    highest municipality (Saint-Rémy-de-Provence, Ede), else the first settlement; and the country's
+    ISO code."""
+    if not q:
         return "", ""
-    city = ""
     chain, x = [], q
-    for _ in range(6):
+    for _ in range(8):
         if not x or x in chain:
             break
         chain.append(x)
-        nxt = (fact(x, "P131") or fact(x, "P159") or fact(x, "P276") or [None])[0]
-        x = nxt
-    for x in chain:
-        if x in TOWNS:
-            city = label(x)
-            break
+        x = (fact(x, "P131") or fact(x, "P159") or fact(x, "P276") or [None])[0]
+    cities = [x for x in chain if x in CITIES]
+    munis = [x for x in chain if x in MUNIS]
+    settled = [x for x in chain if x in TOWNS]
+    top = cities[-1] if cities else munis[-1] if munis else settled[0] if settled else None
+    city = label(top) if top else ""
     country = ""
     for x in chain:
         for c in fact(x, "P17"):
@@ -1381,14 +1380,18 @@ def place(q, depth=0):
     return city, country
 
 
-TOWNS = set()
+# Places by kind: a city, a municipality, or any settlement (these include the other two). Wikidata's
+# class tree, climbed without end, makes a monastery a city; it is climbed three steps at most.
+CITIES, MUNIS, TOWNS = set(), set(), set()
+PLACE_ROOTS = {"Q515": CITIES, "Q15284": MUNIS, "Q486972": TOWNS}
 
 
 def gather_places(qs):
-    """Read what places need: their chain up 'located in', their countries, which are towns."""
+    """Read what places need: their chain up 'located in', their countries, which are cities,
+    municipalities and settlements."""
     frontier = set(qs)
     seen = set()
-    for _ in range(6):
+    for _ in range(8):
         frontier = {q for q in frontier if q and q not in seen}
         if not frontier:
             break
@@ -1400,12 +1403,12 @@ def gather_places(qs):
                 nxt |= set(fact(q, p)[:3])
         frontier = nxt
     facts(sorted({c for q in seen for c in fact(q, "P17")}))
-    towns = set()
-    for batch in chunks(sorted(seen), 100):
-        for r in sparql(f"SELECT DISTINCT ?x WHERE {{ VALUES ?x {{ {items(batch)} }} "
-                        f"VALUES ?root {{ {items(TOWN_ROOTS)} }} ?x wdt:P31/wdt:P279* ?root . }}"):
-            towns.add(r["x"])
-    TOWNS.update(q for q in towns if not set(fact(q, "P31")) & NOT_TOWN)
+    for root, found in PLACE_ROOTS.items():
+        for batch in chunks(sorted(seen), 100):
+            for r in sparql(f"SELECT DISTINCT ?x WHERE {{ VALUES ?x {{ {items(batch)} }} ?x wdt:P31 ?c . "
+                            f"?c wdt:P279? ?c1 . ?c1 wdt:P279? ?c2 . ?c2 wdt:P279? wd:{root} . }}"):
+                found.add(r["x"])
+    TOWNS.update(CITIES | MUNIS)
 
 
 def event(kind, text, field, order, **kw):
