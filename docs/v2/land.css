@@ -2415,6 +2415,7 @@
 .art-came { margin: 0 0 var(--s-3); font-size: var(--t-1); color: #a8927a; }
 .art-came i, .art-back i { text-transform: none; letter-spacing: 0; font-family: var(--serif); font-size: var(--t-2); color: #eadfcd; }
 .art-back {
+  position: relative;
   padding: 0;
   border: 0;
   background: none;
@@ -2536,6 +2537,10 @@ button.art-stop-head:focus-visible { text-decoration: underline; }
 }
 .art-go:hover,
 .art-go:focus-visible { background: rgba(94, 82, 199, 0.9); }
+/* Both sit in running text; the finger's reach is wider than the words. */
+.art-go { position: relative; }
+.art-back::after,
+.art-go::after { content: ""; position: absolute; inset: -8px -4px; }
 
 .art-words { margin-top: var(--s-4); }
 .art .read-w { min-height: 32px; color: #a8927a; }

@@ -11512,7 +11512,8 @@
     if (!graze.hidden || carrying) { dismiss(); return; }
     if (playing) { curtain = performance.now(); endScene(); strike(); return; }
     if (hereShown && place && place.work) { showHere(false); return; }
-    if (finderEl && !finderEl.hidden) { closeFinder(); return; }
+    // The search field would clear itself on Escape; Find keeps its words.
+    if (finderEl && !finderEl.hidden) { event.preventDefault(); closeFinder(); return; }
     if (art && art.held) { releaseThread(); return; }
     // Nothing else to put down: Escape is the way back up to the world.
     comeUp();
@@ -12946,7 +12947,11 @@
       hopTo(m);
       return;
     }
-    openArt({ place: g.p }, { work: h.id, from: { id: h.id, title: h.title } });
+    // The place opens at the year the work arrived there (its first dated
+    // event there), not at now.
+    var yr = null;
+    g.events.some(function (n) { yr = yearNum((h.events[n] || {}).y); return yr !== null; });
+    openArt({ place: g.p }, { work: h.id, from: { id: h.id, title: h.title }, year: yr === null ? 0 : Math.floor(yr) });
   }
 
   /* ---- threads and doors ---------------------------------------------------
@@ -13342,6 +13347,12 @@
     a.ticks.sort(function (m, n) { return m - n; });
     a.when = a.whenTo = 1;
     a.yearNow = hi;
+    // Come from a stop: the slider slides back to the year the work was here.
+    var at = a.via && a.via.year;
+    if (at && at >= lo && at <= hi) {
+      a.whenTo = (at - lo) / (a.y1 - lo);
+      a.byHand = true;
+    }
     artTime.hidden = false;
     showArtYear();
   }
