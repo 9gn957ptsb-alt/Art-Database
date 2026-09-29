@@ -47,6 +47,7 @@
     steel:    { c: [150, 154, 160], soil: 0.04 },
     dark:     { c: [52, 50, 50], soil: 0.06 },
     slate:    { c: [84, 90, 100], soil: 0.06 },      // slate and zinc roofs, blue-grey
+    copper:   { c: [124, 148, 136], soil: 0.08 },    // copper gone green, or pre-patinated: roofs and cladding
     corten:   { c: [150, 76, 40], soil: 0.10 },
     water:    { c: [70, 132, 168], soil: 0.08 },
     plant:    { c: [84, 112, 64], soil: 0.18, size: 2 },
