@@ -1039,7 +1039,7 @@ def cat_agree(rec, e, artist):
     """The item's catalogue numbers (P528, a catalogue raisonné's or an exhibition catalogue's) that
     Artsy's literature, exhibition history or notes give for it: the code as Wikidata writes it
     ('F146', 'JH 551'), or its number ('no. 146') on a line naming the catalogue's author or title."""
-    lines = [x for f in ("literature", "exhibition_history") for x in re.split(r"\n+", rec.get(f) or "")]
+    lines = [x for f in ("literature", "exhibition_history") for x in re.split(r"[\r\n|]+", rec.get(f) or "")]
     lines += own_sentences(rec.get("additional_information")).split("\n")
     lines = [x for x in lines if x.strip() and not ELSEWHERE.search(x)]
     if not lines:

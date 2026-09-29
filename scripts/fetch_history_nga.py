@@ -738,7 +738,7 @@ def sale_cuts(text, a, b, depth):
 def provenance_pieces(text):
     """The provenance's owners, as (start, end, footnote marks) spans of the text; its numbered footnotes;
     and its other notes (whatever follows the first blank line)."""
-    notes, loose = {}, []
+    notes, loose, raw = {}, [], {}
     m = re.search(r"\n[ \t]*\n\s*\S", text)
     main_end = m.start() if m else len(text)
     if m:
@@ -750,6 +750,7 @@ def provenance_pieces(text):
         for x, y in zip(starts, starts[1:] + [len(block)]):
             n = re.match(r"\[(\d{1,2})\.?\]\s*(.*)", block[x:y], re.S)
             notes.setdefault(n.group(1), re.sub(r"\s+", " ", n.group(2)).strip())
+            raw.setdefault(n.group(1), block[x:y].strip())
     depth = depth_map(text)
     pieces = []
     for a, b in top_split(text, ";", 0, main_end):
@@ -784,7 +785,11 @@ def provenance_pieces(text):
         if tail and tail.start() > 0:
             s, e = strip_span(text, s, s + tail.start())
         out.append([s, e, marks])
-    return [(s, e, marks) for s, e, marks in out if re.search(r"[A-Za-z]", text[s:e])], notes, loose
+    out = [(s, e, marks) for s, e, marks in out if re.search(r"[A-Za-z]", text[s:e])]
+    # A footnote the text never points to (a mark misnumbered, or none) is kept as a note to the whole.
+    pointed = {n for _, _, marks in out for n in marks}
+    loose += [raw[n] for n in sorted(raw, key=int) if n not in pointed]
+    return out, notes, loose
 
 
 def outside_brackets(seg):
@@ -793,6 +798,17 @@ def outside_brackets(seg):
 
 def month_of(name):
     return MONTH3[name[:3].lower()]
+
+
+LIFE = re.compile(r"\(\s*(?:(?:b|d|born|died)\.?\s*)?(?:c\.\s*)?(\d{4})\s*(?:[-–]\s*(\d{4}))?\s*\)")
+
+
+def without_life_dates(seg):
+    """ "Bernhard Funck (1895-1993), Munich", "Sir Gilbert Lewis (d. 1883)": life dates, not the owner's."""
+    def blank(m):
+        life = re.match(r"\(\s*(?:b|d|born|died)\b", m.group(0)) or (m.group(2) and int(m.group(2)) - int(m.group(1)) >= 30)
+        return " " * len(m.group(0)) if life else m.group(0)
+    return LIFE.sub(blank, seg)
 
 
 NOT_NUM = r"(?!\d|\.\d)"  # a year ends a number: "gift to NGA, 2009." has one, "1943.3.9129" does not
@@ -883,7 +899,14 @@ def placeish(c):
                for w in words)
 
 
+POSTAL = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY",
+          "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH",
+          "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"}
+
+
 def country_of(c):
+    if re.sub(r"\s+", "", (c or "").strip().rstrip(".")) in POSTAL and (c or "").strip().rstrip(".").isupper():
+        return "US"
     c = re.sub(r"\s+", " ", (c or "").strip().lower())
     for k in (c, c.rstrip("."), c.rstrip(".") + "."):
         if k in COUNTRIES:
@@ -907,7 +930,7 @@ def place_after(comps):
             break  # "and later ...", "by 1920"
     if not places:
         return "", ""
-    first = places[0].rstrip(".")
+    first = places[0].rstrip(".").strip()
     if country_of(first) is not None and not (len(places) > 1 and country_of(places[1]) is not None):
         return "", country_of(first) or ""
     country = ""
@@ -1143,7 +1166,7 @@ def name_in_text(seg):
     if re.search(rf"\b{KIN}\s*$", head.strip(), re.I) and rest:  # "by inheritance to his wife, Emma S. Bellows"
         who, rest = squash(rest[0]), rest[1:]
     else:
-        parts = re.split(r"\b(?:by|to|from|for|From|By|To)\s+(?=[A-Z(\"“])", head)
+        parts = re.split(r"\b(?:by|to|from|for|From|By|To)\s+(?=(?:the\s+)?[A-Z(\"“])", head)
         who = parts[-1].strip().strip('"“”').strip()
         who = re.sub(r"^(?:his|her|their|the)\s+(?=[A-Z])", "", who)
     who = re.sub(r"^(?:Possibly|Probably|Presumably|Perhaps|Reportedly|Supposedly)\s+", "", who)
@@ -1190,7 +1213,7 @@ def provenance_events(o, nga):
     for i, (s, e, marks) in enumerate(pieces):
         seg = text[s:e]
         flat = outside_brackets(seg)
-        start, end, circa = start_end(flat)
+        start, end, circa = start_end(without_life_dates(flat))
         group = next((m for m in re.finditer(r"\(([^()]*)\)", flat) if auction(m.group(1))), None)
         to_nga = re.search(r"\b(NGA|National Gallery of Art)\b", seg) and not re.search(r"\b(lent|loan|deposit)",
                                                                                         seg, re.I)
@@ -1227,6 +1250,8 @@ def provenance_events(o, nga):
                         r"\b(Foundation|Trust|Collection|Gallery|Galleries|Company|Museum|Institute)\b", text_who) \
                         and set(norm(who).split()) - OWNER_STOP <= set(norm(text_who).split()):
                     who = text_who  # a body named after the owner the NGA records, as the text names it
+                if who and ";" not in who and "," in who and who in flat:
+                    rest = components(flat[flat.find(who) + len(who):])
             if re.match(r"\s*(?:From\s+)?the artist\b", seg, re.I) and not who:
                 who = o["attribution"]
             city, country = place_after([r for r in rest if not dates_in(r)])
