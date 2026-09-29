@@ -19,7 +19,8 @@ credit is looked up once on nominatim.openstreetmap.org. Both are cached in
 data/, which is never committed.
 
 Writes docs/v2/museums.json — the museums and, under each, the saved works it
-holds: title, artist, date, medium and a picture off Artsy's image CDN. The
+holds: its Artsy id (the key to its history, in docs/v2/histories/), title,
+artist, date, medium and a picture off Artsy's image CDN. The
 artist asked for each museum to be referenced with the works he saved there
 (24 Sep 2026). Nothing says it is a saved list.
 
@@ -296,7 +297,8 @@ def main():
             key = picture(r)
             if not key:
                 continue
-            works.append({"t": r.get("title") or "Untitled",
+            works.append({"id": r.get("_id") or "",
+                          "t": r.get("title") or "Untitled",
                           "a": (r.get("artist") or {}).get("name") or "",
                           "y": r.get("date") or "", "m": r.get("medium") or "",
                           "i": key})

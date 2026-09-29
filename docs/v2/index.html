@@ -237,6 +237,18 @@
     <!-- What the globe carries besides the collages: one layer at a time. Built by land.js (LAYERS). -->
     <div class="filter" id="filter" role="group" aria-label="Show on the globe"></div>
 
+    <!-- The Artworks layer: one quiet line above the pill, and the sheet it opens. land.js
+         writes the count from places.json. -->
+    <button class="art-find" id="art-find" type="button" hidden aria-controls="finder" aria-expanded="false"></button>
+    <section class="finder" id="finder" role="search" hidden aria-label="Find a work">
+      <form class="finder-form" id="finder-form">
+        <input class="collection-field" id="finder-field" type="search" autocomplete="off"
+               placeholder="Title, artist, place, show&hellip;" aria-label="Find a work among the saved works">
+      </form>
+      <p class="collection-said" id="finder-said" aria-live="polite"></p>
+      <div class="finder-found" id="finder-found"></div>
+    </section>
+
     <div class="banner" id="banner" hidden>
       <button class="banner-back" id="banner-back" type="button">
         <span aria-hidden="true">&larr;</span> The world
@@ -414,6 +426,30 @@
     letting go squashes everything inside it — the pixels burst, and two or
     more of them come back down as a single egg. A press that moves is a turn
     of the world instead, so nothing is lost by trying.
+
+    The Artworks layer, the third on the filter, lights every place the
+    artist's saved works have been, a tile of light each, brighter where more
+    have been; the fifty-five most visited are named. Press a name or a lit
+    tile for that place: the galleries, museums, fairs and salerooms the
+    works passed through there, in the order they came, each with its works,
+    and a slider of its years. Above the filter, Find reaches any of the
+    works by title, artist, date or any place it has been, and the globe
+    lights the places of what it finds. A work opens on its photograph alone;
+    then the world is framed on where it has been, its journey drawn in the
+    same light, a stop at a time, on a slider of its own years, and beside it
+    the history, a dated line an event, grouped by where it stayed, the
+    source's own words a press away on each line and every writing a
+    citation, linked to its original where there is one. Slowly, one at a
+    time, the column says what the work shares with other saved works — a
+    show, a sale, an owner, a museum, a book, and last its artist — each with
+    the works that share it as small doors. Press a thread to hold it and
+    see where each of its works came from and went; press a door to go to
+    that work, where the thread you came by is said first. In a museum, a
+    saved work brought up large has Where it has been, which opens its
+    history; a stop at one of the site's museums opens the museum, its town
+    as it stood that year. Pinch out to go
+    down to the ground at the stop the slider is at; pinch in, the back
+    button or Escape to come back up, where the way you walked is drawn once.
   </p>
 
 </div>
@@ -421,6 +457,20 @@
 <!-- The collage a city is, laid out in that city. Its pieces are dealt to
      new places every time anything is pressed. -->
 <div class="here" id="here" hidden aria-label="The collage here"></div>
+
+<!-- A saved work's history (or a place's, or a thread's): the photograph first, then a column
+     telling it briefly, and a slider of its own years under the globe. Built by land.js. -->
+<div class="art" id="art" hidden aria-label="Where this work has been">
+  <div class="art-wash"></div>
+  <div class="art-plate" id="art-plate" hidden></div>
+  <div class="art-col" id="art-col"></div>
+  <div class="building-time art-time" id="art-time" hidden>
+    <span class="building-time-year" id="art-time-year" aria-hidden="true"></span>
+    <div class="art-ticks" id="art-ticks" aria-hidden="true"></div>
+    <input class="building-time-range" id="art-time-range" type="range" min="0" max="1000" step="1" value="0"
+           aria-label="The year: slide back through where it has been">
+  </div>
+</div>
 
 <!-- The collages, all of them or the ones a word is written on, laid out
      over the world. Not another page: the same one, from another side. -->

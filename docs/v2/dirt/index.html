@@ -6832,6 +6832,8 @@ const MARKS = { list: [], layer: null, edge: null, chips: [], shown: true, glide
     .site-mark[data-kind="work"] i { border-radius: 50%; width: 11px; height: 11px; }
     .site-mark[data-kind="landmark"] i { border-radius: 50%; background: transparent; border: 2px solid #f3ecdf; }
     .site-mark[data-kind="museum"] i { transform: rotate(45deg); }
+    .site-mark[data-kind="place"] i { width: 7px; height: 7px; background: #5e52c7; border: 0; box-shadow: 0 0 0 2px rgba(15,10,7,0.6); }
+    .site-mark[data-kind="place"] span { font: 10px/1.2 var(--mono); font-style: normal; letter-spacing: 0.08em; text-transform: uppercase; }
     .site-mark:hover span, .site-mark:focus-visible span { text-decoration: underline; }
     .site-edge { position: absolute; left: 0; top: 0; pointer-events: auto; display: flex; align-items: center; gap: 5px;
                  padding: 5px 10px; border: 1px solid rgba(243,236,223,0.45); border-radius: 999px; background: rgba(15,10,7,0.72);

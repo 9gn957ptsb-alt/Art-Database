@@ -2201,3 +2201,569 @@
 .held-nopic img { visibility: hidden; }
 .held-nopic { grid-template-columns: 89px 1fr; }
 .held-nopic::before { content: ""; grid-area: 1 / 1; width: 89px; height: 89px; box-shadow: inset 0 0 0 1px rgba(168, 146, 122, 0.35); }
+
+/* ---- the Artworks layer ---------------------------------------------------
+   Every place the saved works have been, lit as tiles by land.js; the most
+   travelled-to named, each a small square of the light. Four pills measure
+   the whole of a phone's width between its gutters, so on a narrow one they
+   are drawn a little closer. */
+@media (max-width: 400px) {
+  .filter-layer { padding: 6px 10px; letter-spacing: 0.06em; }
+}
+.city[data-kind="place"] .city-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  background: #5e52c7;
+  box-shadow: none;
+}
+.city[data-kind="place"] .city-name { font-family: var(--mono); font-style: normal; }
+.dirt-look .city[data-kind="place"] .city-dot { background: #5e52c7; border: 0; box-shadow: 0 0 0 2px rgba(15, 10, 7, 0.6); }
+
+/* Find: one quiet line just above the pill, only up at the globe and only
+   while the Artworks layer is on. */
+.art-find {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--s-5) + 40px);
+  transform: translateX(-50%);
+  z-index: 86;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.55);
+  color: #a8927a;
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.26s steps(3), color 0.26s steps(3);
+}
+.art-find:hover,
+.art-find:focus-visible,
+.art-find[aria-expanded="true"] { background: #eadfcd; color: #0f0a07; }
+.art-find[hidden],
+.land:not([data-at="globe"]) .art-find,
+.land:not([data-layer-on="artworks"]) .art-find { display: none; }
+
+.finder {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--s-5) + 84px);
+  z-index: 87;
+  box-sizing: border-box;
+  padding: var(--s-4);
+  border-radius: 13px;
+  background: rgba(15, 10, 7, 0.92);
+  color: #eadfcd;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  pointer-events: auto;
+  animation: finder-up 0.42s steps(4) both;
+}
+@media (min-width: 721px) {
+  .finder {
+    top: auto;
+    left: 50%;
+    right: auto;
+    width: 440px;
+    max-height: 61vh;
+    transform: translateX(-50%);
+  }
+}
+@keyframes finder-up { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+.finder[hidden],
+.land:not([data-at="globe"]) .finder { display: none; }
+.finder-form { margin: 0 0 var(--s-3); }
+.finder-group {
+  margin: var(--s-4) 0 var(--s-3);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.finder-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: var(--s-3);
+  align-items: start;
+  width: 100%;
+  margin: 0 0 var(--s-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: held-in 0.61s steps(5) both;
+}
+.finder-row img { width: 44px; height: 44px; object-fit: contain; background: rgba(234, 223, 205, 0.06); }
+
+/* ---- an art view: a work's history, a place's, a thread's -----------------
+   Over the world, which stays where it is framed; only what is in it takes
+   a press. The wash is the reading's, on DIRT's ground, lifted after the
+   look. */
+.art {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  color: #eadfcd;
+}
+.art[hidden] { display: none; }
+.art > * { pointer-events: auto; }
+.art-wash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(15, 10, 7, 0);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 68px, #000 104px);
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 68px, #000 104px);
+  transition: background var(--beat-6) ease, backdrop-filter var(--beat-6) ease;
+}
+.art[data-on="true"][data-look="plate"] .art-wash {
+  background: rgba(15, 10, 7, 0.72);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.art > .art-wash { pointer-events: none; }
+
+/* The photograph, alone first; then into the column head, FLIPped. */
+.art-plate {
+  position: absolute;
+  box-shadow: 0 21px 55px -21px rgba(0, 0, 0, 0.6);
+  transform-origin: 0 0;
+  transition: transform var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1), opacity var(--beat-5) ease;
+}
+.art-plate[hidden] { display: none; }
+.art-plate .deal-go { background: #0f0a07; cursor: default; }
+.art-plate .deal-go img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  object-fit: contain;
+}
+
+/* The column: right of the globe on a desktop, as the museum's is; the
+   lower half on a phone, scrolling on its own. */
+.art-col {
+  position: absolute;
+  top: calc(var(--s-5) + 52px);
+  right: 0;
+  bottom: 0;
+  width: min(40vw, 440px);
+  box-sizing: border-box;
+  padding: var(--s-3) var(--s-5) var(--s-6) var(--s-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  background: linear-gradient(to right, rgba(15, 10, 7, 0), rgba(15, 10, 7, 0.86) 21px);
+}
+.art-col:empty { display: none; }
+@media (max-width: 720px) {
+  .art-col {
+    top: 50vh;
+    left: 0;
+    width: auto;
+    padding: 13px 16px var(--s-6);
+    background: linear-gradient(to bottom, rgba(15, 10, 7, 0), rgba(15, 10, 7, 0.92) 21px);
+  }
+}
+.art-col .held figcaption,
+.art-head-text { position: relative; color: #eadfcd; }
+.art-head { cursor: zoom-in; animation: none; opacity: 1; }
+.art-head img { visibility: hidden; }
+.art-head[data-on="true"] img { visibility: visible; }
+.art-head .held-medium { display: block; color: #a8927a; margin-top: var(--s-1); }
+.art-head figcaption,
+.art-head-text { opacity: 0; filter: blur(6px); transition: opacity var(--beat-5) ease, filter var(--beat-5) ease; }
+.art-head figcaption[data-on="true"],
+.art-head-text[data-on="true"] { opacity: 1; filter: none; }
+.art-head-text { margin: 0 0 var(--s-3); font-size: var(--t-2); }
+
+/* The body of the column comes in with the journey, after the look. */
+.art-body { transition: opacity var(--beat-5) ease; }
+.art[data-look="plate"] .art-body { opacity: 0; visibility: hidden; }
+
+.art-count,
+.art-came,
+.art-cites-head,
+.art-stop-head,
+.art-sources {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.art-count {
+  position: relative;
+  margin: var(--s-3) 0 var(--s-3);
+  font-size: var(--t-1);
+  line-height: 1.5;
+  color: #a8927a;
+}
+.art-came { margin: 0 0 var(--s-3); font-size: var(--t-1); color: #a8927a; }
+.art-came i, .art-back i { text-transform: none; letter-spacing: 0; font-family: var(--serif); font-size: var(--t-2); color: #eadfcd; }
+.art-back {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.art-stage { min-height: 0; margin-top: var(--s-3); }
+.art-stage:empty { display: none; }
+.art-col [data-enter="blur"] { animation: ink-blur var(--beat-4) steps(6, end) var(--wait, 0ms) both; }
+.art-col [data-enter="rise"] { animation: ink-rise var(--beat-3) steps(4, end) var(--wait, 0ms) both; }
+.art-col [data-enter="block"] { position: relative; animation: ink-late var(--beat-4) steps(1, end) var(--wait, 0ms) both; }
+
+.art-stops { margin: var(--s-4) 0 0; padding: 0; list-style: none; }
+.art-stop { margin: 0 0 var(--s-4); }
+.art-stop-head {
+  display: block;
+  margin: 0 0 var(--s-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-size: var(--t-1);
+  text-align: left;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+button.art-stop-head:hover,
+button.art-stop-head:focus-visible { text-decoration: underline; }
+.art-stop-head[data-unplaced] { color: #a8927a; opacity: 0.7; cursor: default; pointer-events: none; }
+
+/* A line an event: its year, and what happened. Dim until the slider has
+   passed it. */
+.art-line {
+  display: grid;
+  grid-template-columns: 4.5ch 1fr;
+  gap: 0 var(--s-3);
+  padding: 2px 0;
+  font-size: var(--t-2);
+  line-height: 1.38;
+  color: #a8927a;
+  cursor: pointer;
+  transition: color 0.26s steps(3);
+}
+.art-line[data-on] { color: #eadfcd; }
+.art-line[data-kind="listed"],
+.art-line[data-kind="listed"][data-on] { color: #a8927a; }
+.art-line:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 2px; }
+.art-when { font-family: var(--mono); font-size: var(--t-1); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.art-line .art-shared {
+  margin-left: 0.4em;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  color: #9d95e6;
+}
+.art-more { display: none; grid-column: 2; margin: var(--s-2) 0 var(--s-3); }
+.art-line[aria-expanded="true"] .art-more { display: block; }
+.art-q {
+  margin: 0 0 var(--s-2);
+  font-family: "Newsreader", var(--serif), serif;
+  font-style: italic;
+  color: #eadfcd;
+}
+.art-q i { font-style: normal; }
+.art-src,
+.art-how {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+.art-thread {
+  display: block;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.art-thread:hover,
+.art-thread:focus-visible { text-decoration: underline; }
+
+/* The writings, as citations. */
+.art-cites { margin: var(--s-5) 0 0; }
+.art-cites-head { margin: 0 0 var(--s-3); font-size: var(--t-1); color: #a8927a; }
+.art-cites .art-cite {
+  margin: 0 0 var(--s-3);
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+  font-size: var(--t-2);
+  line-height: 1.38;
+  color: #a8927a;
+  transition: color 0.26s steps(3);
+}
+.art-cites .art-cite[data-on] { color: #eadfcd; }
+.art-go {
+  display: inline-block;
+  text-indent: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(20, 18, 28, 0.72);
+  color: #f3f1ee;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+.art-go:hover,
+.art-go:focus-visible { background: rgba(94, 82, 199, 0.9); }
+
+.art-words { margin-top: var(--s-4); }
+.art .read-w { color: #a8927a; }
+.art .read-w:hover,
+.art .read-w:focus-visible,
+.art .read-w[aria-pressed="true"] { color: #eadfcd; }
+.art-sources { margin: var(--s-5) 0 var(--s-3); font-size: 10px; letter-spacing: 0.04em; color: #a8927a; }
+.art .read-quiet { color: #a8927a; border-color: rgba(168, 146, 122, 0.5); }
+.art .read-quiet:hover,
+.art .read-quiet:focus-visible { color: #eadfcd; border-color: #eadfcd; }
+
+/* A place view's institutions (the next pass fills them). */
+.art-venue {
+  display: block;
+  margin: var(--s-4) 0 var(--s-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+button.art-venue { cursor: pointer; }
+button.art-venue:hover,
+button.art-venue:focus-visible { text-decoration: underline; }
+
+/* The one writing the globe carries in an art view: a stop's place. */
+.art-stop-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #eadfcd;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+.art > .art-stop-name { pointer-events: none; }
+
+/* A saved work in a museum's column: the way to where it has been. */
+.held-history { display: none; margin-top: var(--s-3); }
+.held[aria-expanded="true"] .held-history { display: inline-block; }
+.held-history {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(168, 146, 122, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a8927a;
+  cursor: pointer;
+}
+.held-history:hover,
+.held-history:focus-visible { color: #eadfcd; border-color: #eadfcd; }
+
+/* The slider of the work's own years: the town timeline's pill, under the
+   globe, with a tick for every event above its track. */
+.art-time {
+  position: absolute;
+  left: calc((100% - min(40vw, 440px)) / 2);
+  bottom: calc(var(--s-5) + 8px);
+  width: min(560px, 55vw);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 7px auto;
+  column-gap: var(--s-3);
+  padding: 4px 14px 6px;
+  z-index: 3;
+}
+.art-time .building-time-year { grid-row: 1 / 3; align-self: center; }
+.art-time .building-time-range { grid-column: 2; grid-row: 2; width: 100%; margin: 0; }
+.art-ticks { position: relative; grid-column: 2; grid-row: 1; margin: 0 8px; }
+.art-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 4px;
+  background: #a8927a;
+}
+.art-tick[data-kind="written"] { height: 7px; background: #eadfcd; }
+.art-tick[data-circa] { width: 3px; margin-left: -1px; background: none; box-shadow: inset 0 0 0 1px #a8927a; }
+@media (max-width: 720px) {
+  .art-time { left: 50%; bottom: calc(50vh + 8px); width: calc(100% - 32px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-wash, .art-plate, .art-body, .art-line, .art-cite, .art-head figcaption, .art-head-text,
+  .finder, .finder-row, .art-find { transition: none; animation: none; }
+}
+/* The photograph is alone at first: the slider comes with the journey. */
+.art[data-look="plate"] .art-time { visibility: hidden; }
+/* A work's title can be long: the way back keeps to one line beside it. */
+.land[data-art] .banner-back { white-space: nowrap; }
+
+/* The threads, said in the column: the sentence, and its doors. */
+.art-stage .read-said { position: relative; }
+.art-stage .read-said[data-on="false"] { position: absolute; left: 0; right: 0; top: 0; }
+.art-sentence {
+  margin: 0;
+  font-family: "Instrument Serif", var(--serif), serif;
+  font-size: var(--t-5);
+  line-height: 1.12;
+  letter-spacing: 0.08em;
+  color: #eadfcd;
+  transition: letter-spacing 2400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.read-said[data-on="true"] .art-sentence { letter-spacing: -0.005em; }
+.art-sentence i { font-style: italic; }
+.art .read-only { color: #a8927a; }
+.art-doors { gap: var(--s-3); align-items: flex-start; }
+.art-door { max-width: 89px; text-align: left; }
+.art-door-pic {
+  position: relative;
+  display: block;
+  width: 55px;
+  height: 55px;
+  overflow: hidden;
+  background: rgba(234, 223, 205, 0.06);
+  transition: width var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1), height var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.art-door-pic .deal-go { background: transparent; cursor: pointer; }
+.art-door-pic .deal-go img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  object-fit: cover;
+}
+.art-door .read-door-t {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-1);
+  line-height: 1.25;
+  color: #a8927a;
+}
+.art-door:hover .read-door-t,
+.art-door:focus-visible .read-door-t { color: #eadfcd; }
+.art-door:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); }
+.art-door-came {
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9d95e6;
+}
+/* A museum's own door: the Museums layer's diamond. */
+.art-door-museum .art-door-pic { background: none; }
+.art-door-museum .art-door-pic::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 21px;
+  height: 21px;
+  margin: -10.5px 0 0 -10.5px;
+  background: #eadfcd;
+  transform: rotate(45deg);
+}
+.art-and-more {
+  align-self: center;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(168, 146, 122, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a8927a;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--beat-5) ease;
+}
+.read-said[data-on="true"] .art-and-more { opacity: 1; }
+.art-and-more:hover,
+.art-and-more:focus-visible { color: #eadfcd; border-color: #eadfcd; }
+/* A thread held: the work steps back, the doors come forward with their names. */
+.art-head { transition: opacity var(--beat-5) ease; }
+.art[data-held] .art-head { opacity: 0.382; }
+.art[data-held] .art-door { max-width: 144px; }
+.art[data-held] .art-door-pic { width: 89px; height: 89px; }
+.art[data-held] .art-door .read-door-t { font-size: var(--t-2); color: #eadfcd; -webkit-line-clamp: 3; }
+
+/* A place's and a thread's rows. */
+.art-rows .held { grid-template-columns: 55px 1fr; }
+.art-rows .held img { width: 55px; height: 55px; }
+.art-rows .held[aria-expanded="true"] { grid-template-columns: 1fr; }
+.art-row-what {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+/* Not yet there, at the slider's year. */
+.art-rows .held[data-later] { animation: none; opacity: 0.34; }
+.art-venue[data-unnamed] { color: #a8927a; }
+.art-more-rows { height: 1px; }
+.art .art-came { margin-top: var(--s-2); }
+
+/* Find's rows. */
+.finder-text { display: block; font-size: var(--t-2); line-height: 1.38; }
+.finder-text i { font-style: italic; }
+.finder-how {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.finder-line { display: block; font-size: var(--t-2); line-height: 1.38; }
+.finder-line i { font-style: italic; }
+.finder-row:hover .finder-text,
+.finder-row:focus-visible,
+.finder-line:hover { color: #fff; }
+.finder-row:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 2px; }
+.finder-foot { margin-top: var(--s-4); }
+.finder .collection-said { color: #a8927a; font-family: var(--mono); font-size: var(--t-1); letter-spacing: 0.08em; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .art-sentence, .art-door-pic, .art-and-more, .art-head { transition: none; }
+}
+.finder .collection-field::placeholder { color: #a8927a; }
