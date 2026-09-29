@@ -52,7 +52,8 @@ then read whole (wbgetentities) and judged:
 
 Sizes are compared in centimetres, within 3% (or a centimetre). Where Wikidata's numbers are Artsy's
 size in another unit than the one it names (the Phillips Collection's items give inches under
-millimetres), the sizes are taken as neither agreeing nor differing, and the match says so. Artsy's
+millimetres; some of Artsy's sizes are centimetres taken for inches), the sizes are taken as neither
+agreeing nor differing, and the match says so. Artsy's
 category gives way to its medium where the two disagree plainly ("Oil on canvas" filed under Print).
 
 Never matched: the dates or sizes disagreeing; a different kind of object (a painting is not a print,
@@ -150,8 +151,13 @@ PLACES = {"Q6256", "Q3624078", "Q515", "Q5119", "Q1549591", "Q1637706", "Q486972
 PRIVATE_COLLECTION = "Q768717"
 UNITS = {"Q174728": 1.0, "Q174789": 0.1, "Q11573": 100.0, "Q218593": 2.54, "Q3710": 30.48, "Q200323": 10.0}
 CIRCA = "Q5727902"
-SALE = {"Q194189", "Q177923", "Q1371819", "Q17013749", "Q2295092", "Q3303096"}  # sale, auction ...
+SALE = {"Q194189", "Q177923", "Q1371819", "Q17013749", "Q2295092", "Q3303096", "Q1369832", "Q74570489",
+        "Q2143504"}  # sale, auction, purchasing, art auction, estate sale ...
 EXHIBITION = {"Q464980", "Q667276", "Q29023906"}
+# What an exhibition-history (P608) value is: an exhibition (temporary, art, online, a world's fair), or
+# — as Wikidata sometimes has it — the museum, gallery or archive where the work was shown.
+EXHIBITION_CLASSES = {"Q464980", "Q667276", "Q59861107", "Q29023906", "Q172754", "Q3062261", "Q170584"}
+VENUE_CLASSES = {"Q33506", "Q207694", "Q1007870", "Q3844310", "Q17431399", "Q166118", "Q2668072", "Q1030034"}
 FACT_PROPS = ["P31", "P17", "P131", "P159", "P276", "P297", "P361", "P749", "P527", "P355", "P50", "P2093",
               "P1433", "P577", "P1476", "P356", "P953", "P123", "P580", "P582", "P585", "P571"]
 MULTIPLE_CATEGORIES = {"Print", "Photography", "Posters", "Books and Portfolios", "Reproduction",
@@ -919,8 +925,9 @@ def wd_raw_dims(e):
 
 
 def unit_slip(saved, rec, e):
-    """Wikidata's numbers are Artsy's size in another unit than the one Wikidata names — the size
-    entered in inches under millimetres, say. Returns the words for it, or ''."""
+    """Wikidata's numbers are Artsy's size in another unit than the one Wikidata names — inches entered
+    under millimetres on Wikidata, or centimetres taken for inches on Artsy. Returns the words for it,
+    or ''."""
     mine = artsy_dims(saved, rec)
     for h, hu, w, wu in wd_raw_dims(e):
         if hu != wu:
@@ -930,8 +937,8 @@ def unit_slip(saved, rec, e):
                 continue
             for h1, w1 in mine:
                 if w1 and ((close(h1, h * f) and close(w1, w * f)) or (close(h1, w * f) and close(w1, h * f))):
-                    return (f"Wikidata's {h:g} x {w:g} {UNIT_NAMES.get(hu, hu)} are Artsy's size read as "
-                            f"{UNIT_NAMES.get(u, u)} (a unit slip on Wikidata)")
+                    return (f"Wikidata's {h:g} x {w:g} {UNIT_NAMES.get(hu, hu)} are Artsy's {h1:g} x {w1:g} cm "
+                            f"only if read as {UNIT_NAMES.get(u, u)} (a unit slip on one side)")
     return ""
 
 
@@ -1352,9 +1359,10 @@ def refs(s):
 
 def place(q):
     """(city, country) from Wikidata's own data about a place, museum or venue, up its 'located in'
-    chain: the highest city in it (Paris, not the Quartier Saint-Merri; Tokyo, not Roppongi), else the
-    highest municipality (Saint-Rémy-de-Provence, Ede), else the first settlement; and the country's
-    ISO code."""
+    chain: the highest city in it (Paris, not the Quartier Saint-Merri; Tokyo, not Roppongi; never a
+    borough, an arrondissement or a ward), else the first municipality (Saint-Rémy-de-Provence, not the
+    monastery in it; Princeton, not Mercer County), else the first settlement; and the country's ISO
+    code."""
     if not q:
         return "", ""
     chain, x = [], q
@@ -1363,10 +1371,12 @@ def place(q):
             break
         chain.append(x)
         x = (fact(x, "P131") or fact(x, "P159") or fact(x, "P276") or [None])[0]
+    chain = [x for x in chain if not set(fact(x, "P31")) & PART_OF_TOWN]
     cities = [x for x in chain if x in CITIES]
+    cities = [x for x in cities if not set(fact(x, "P31")) & REGIONS] or cities  # Basel, not its canton
     munis = [x for x in chain if x in MUNIS]
     settled = [x for x in chain if x in TOWNS]
-    top = cities[-1] if cities else munis[-1] if munis else settled[0] if settled else None
+    top = cities[-1] if cities else munis[0] if munis else settled[0] if settled else None
     city = label(top) if top else ""
     country = ""
     for x in chain:
@@ -1383,6 +1393,13 @@ def place(q):
 # Places by kind: a city, a municipality, or any settlement (these include the other two). Wikidata's
 # class tree, climbed without end, makes a monastery a city; it is climbed three steps at most.
 CITIES, MUNIS, TOWNS = set(), set(), set()
+# Parts of a town, whatever else they are: neighbourhood, quarter, district, metropolitan area, borough of
+# New York City, London borough, municipal arrondissement, special ward of Tokyo.
+PART_OF_TOWN = {"Q123705", "Q2983893", "Q149621", "Q1907114", "Q408804", "Q211690", "Q702842", "Q5327704"}
+# Countries, states, cantons, prefectures, regions, departments: a city-state is one, and a city only if
+# nothing below it is.
+REGIONS = {"Q6256", "Q3624078", "Q7275", "Q35657", "Q107390", "Q10864048", "Q1221156", "Q6465", "Q36784",
+           "Q23058", "Q50337"}
 PLACE_ROOTS = {"Q515": CITIES, "Q15284": MUNIS, "Q486972": TOWNS}
 
 
@@ -1584,7 +1601,8 @@ def events_for(e):
         where = (qual_items(s, "P276") or [None])[0]
         city, country = place(where) if where else ("", "")
         who = ", ".join(label(x) for x in qual_items(s, "P710"))
-        kind = "sold" if q in SALE else "exhibited" if q in EXHIBITION else "other"
+        kinds_ = {q} | set(fact(q, "P31")) if q else set()  # a named sale ('Degas Collection Sale I') is an auction
+        kind = "sold" if kinds_ & SALE else "exhibited" if kinds_ & EXHIBITION else "other"
         note, url = refs(s)
         n += 1
         ev.append(event(kind, text, "P793", n, who=who, venue=label(where) if where and where not in TOWNS else "",
@@ -1599,7 +1617,15 @@ def events_for(e):
         venues = []
         estart = eend = ""
         country = ""
-        if x and not x.get("missing"):
+        classes = {v for t, v in (snak(st["mainsnak"]) for st in statements(x, "P31"))} if x and not x.get("missing") \
+            else set()
+        if x and not classes & EXHIBITION_CLASSES and (classes & VENUE_CLASSES or statements(x, "P131")
+                                                       or statements(x, "P159")):
+            # Wikidata gives the museum or gallery itself as the exhibition: it is the venue, and its
+            # own dates (its founding) are not the show's
+            title = ""
+            venues = [(q, "", "")]
+        elif x and not x.get("missing"):
             titles = [v[0] for t, v in (snak(st["mainsnak"]) for st in statements(x, "P1476")) if t == "mono"]
             title = titles[0] if titles else label(q)
             for t, v in (snak(st["mainsnak"]) for st in statements(x, "P580")):
@@ -1678,10 +1704,12 @@ def events_for(e):
         ev.append(event("written", text, "P1343", n, who=who, title=title, publication=publication, start=start,
                         pages=", ".join(qual_strings(s, "P304")), note="; ".join(y for y in extra + [note] if y),
                         url=(qurl[0] if qurl else link or rurl)))
-    for i, s in enumerate(statements(e, "P528"), 1):
+    i = 0
+    for s in statements(e, "P528"):
         t, v = snak(s["mainsnak"])
         if t != "string":
             continue
+        i += 1
         cats = qual_items(s, "P972")
         c = cats[0] if cats else None
         start = ""
@@ -1698,10 +1726,12 @@ def events_for(e):
         note, url = refs(s)
         ev.append(event("written", v, "P528", i, title=label(c) if c else "", who="; ".join(a for a in authors if a),
                         start=start, note="; ".join(y for y in ("catalogue number", note) if y), url=url))
-    for i, s in enumerate(statements(e, "P973"), 1):
+    i = 0
+    for s in statements(e, "P973"):
         t, v = snak(s["mainsnak"])
         if t != "string":
             continue
+        i += 1
         extra = []
         if qual_items(s, "P407"):
             extra.append("language " + ", ".join(label(x) for x in qual_items(s, "P407")))

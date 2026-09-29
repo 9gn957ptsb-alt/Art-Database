@@ -132,7 +132,7 @@ INSTITUTION = re.compile(r"\b(museum|musee|musée|museo|muzeum|gallery|galleries
                          r"hermitage|orangerie|grand palais|petit palais|arts|art|kunstmuseum|staatsgalerie|museu|pinakothek|"
                          r"kunstverein|glyptothek|sammlung|stiftung|ateneum|atheneum|athenaeum|kunstsammlung|istituto|"
                          r"fondazione|castello|landesmuseum|nationalmuseum|nationalgalerie|national|kunsthistorisches|"
-                         r"museet|museum|galleria|palace|trust|church|chiesa|abbey|cathedral|convent)\b", re.I)
+                         r"museet|museum|galleria|palace|trust|church|chiesa|abbey|cathedral|convent|house)\b", re.I)
 COUNTRIES = {
     "france": "FR", "england": "GB", "scotland": "GB", "wales": "GB", "united kingdom": "GB", "great britain": "GB",
     "ireland": "IE", "germany": "DE", "italy": "IT", "spain": "ES", "portugal": "PT", "netherlands": "NL",
@@ -678,7 +678,7 @@ def sentence_breaks(text, a, b, depth):
         word = re.sub(r"^[\[(\"“']+", "", tok)
         if re.fullmatch(r"\d{4}", word) or tok.endswith((")", "]", '"', "”")):
             out.append(a + m.end())
-        elif re.fullmatch(r"[A-Za-zÀ-ÿ'’]+", word) and len(word) >= 3 and word.lower() not in ABBR \
+        elif re.fullmatch(r"[A-Za-zÀ-ÿ'’]+(?:-[A-Za-zÀ-ÿ'’]+)*", word) and len(word) >= 3 and word.lower() not in ABBR \
                 and not word.isupper():
             out.append(a + m.end())
     return out
@@ -724,7 +724,9 @@ def sale_cuts(text, a, b, depth):
             if j < b and auction(text[i + 1:j]):
                 before = re.sub(r"[\s,;]+$", "", text[a:i])
                 last = (re.findall(r"[^\s]+$", before) or [""])[0]
-                if re.search(r"[A-Za-z]", before) and last.lower().strip(".,") not in LINK:
+                if re.search(r"[A-Za-z]", before) and last.lower().strip(".,") not in LINK and not re.fullmatch(
+                        r"\W*(?:possibly|probably|presumably|perhaps|reportedly|apparently|said to have been)\W*",
+                        before, re.I):
                     cuts.append(i)
                 after = re.match(r",\s+(?=[A-Z])", text[j + 1:b])
                 if after:
@@ -988,7 +990,8 @@ def owner_names(rec, nga):
     titles = {t for t in head if t in TITLES}
     couple = person.get("constituenttype") == "couple" or "and" in head
     sex = "couple" if couple else "f" if titles & FEMALE else "m" if titles & MALE else ""
-    given = [t for t in head if t not in OWNER_STOP and t not in TITLES and t not in last and not MARK.fullmatch(t)]
+    given = [t for t in head if t not in OWNER_STOP and t not in TITLES and t not in PARTICLES and t not in last
+             and not MARK.fullmatch(t)]
     return {"name": name, "last": last, "given": given, "marks": [t for t in toks if MARK.fullmatch(t)], "sex": sex}
 
 
@@ -1026,18 +1029,26 @@ def name_before(words, i, apart):
     """The name written just before the token at i (a surname), as groups split at "and", each (its titles, its
     given names): capitalised words and initials, back to a lower-case word or a comma, parenthesis or bracket;
     "von", "de la" next to the surname skipped. In "Mr. and Mrs. Paul Mellon", Mr. is Paul Mellon too."""
+    def named(k):  # a capitalised word that can be part of a name
+        return words[k][1][:1].isupper() and words[k][0] not in NOT_NAME and not ends(k)
+
+    def ends(k):  # "Saint Germain-en-Laye. Auguste Pellerin": a sentence ends at word k
+        t, w = words[k][0], words[k][1]
+        return w.endswith(".") and len(t) > 1 and t not in TITLES and t not in ABBR and not MARK.fullmatch(t)
+
     k = i - 1
     while k >= 0 and not apart(k) and words[k][0] in PARTICLES and not words[k][1][:1].isupper():
         k -= 1
     run = []
     while k >= 0 and not apart(k):
         t, w = words[k][0], words[k][1]
-        if t in ("and", "et"):
-            if not (k > 0 and not apart(k - 1) and words[k - 1][1][:1].isupper() and words[k - 1][0] not in NOT_NAME):
+        if t in ("and", "et") or (t in PARTICLES and not w[:1].isupper()):  # "Silva y Alvarez de Toledo"
+            if not (k > 0 and not apart(k - 1) and named(k - 1)):
                 break
-        elif not w[:1].isupper() or t in NOT_NAME:
+        elif not named(k):
             break
-        run.insert(0, t)
+        if t not in PARTICLES or t in ("and", "et"):
+            run.insert(0, t)
         k -= 1
     groups, cur = [], (set(), [])
     for t in run:
@@ -1064,22 +1075,31 @@ def person_here(n, words, i, apart):
     are the record's (or their initials), no more and no fewer; a "Mrs." or "Mme" on one side is on the other
     (Mrs. Charles R. Henschel is not Charles R. Henschel); a "Jr.", "2nd" or "II" in the record is in the text."""
     groups, start = name_before(words, i, apart)
+    around = {w[0] for w in words[start:i + len(n["last"]) + 6]}
+    if not all(m in around for m in n["marks"]):
+        return 0
 
-    def mine(t):
-        return any(same_name(t, g) for g in n["given"]) or t in n["last"] or t in n["marks"]
+    def mine(t):  # a name the record has, or a middle initial it leaves out ("Fritz A. Molle")
+        return any(same_name(t, g) for g in n["given"]) or t in n["last"] or t in n["marks"] or len(t) == 1
 
-    def sex_ok(titles):
+    def fits(names):
+        return all(mine(t) for t in names) and all(any(same_name(t, g) for t in names) for g in n["given"])
+
+    def score(titles):
+        """2: the same (a "Mrs." on both sides, or none); 1: "Mrs." in the text, a record without a title
+        (Empress Catherine II); 0: not the same person (Mrs. Charles R. Henschel is not Charles R. Henschel)."""
         sex = "f" if titles & FEMALE and not titles & MALE else "m" if titles & MALE else ""
-        return not ("f" in (sex, n["sex"]) and sex != n["sex"])
+        if sex == n["sex"] or n["sex"] == "couple" or (sex, n["sex"]) in (("m", ""), ("", "m")):
+            return 2
+        return 1 if (sex, n["sex"]) == ("f", "") else 0
 
     if n["sex"] == "couple":  # "Mr. and Mrs. Julian Ganz" in "Jo Ann and Julian Ganz"
         every = [t for _, names in groups for t in names]
-        ok = all(any(same_name(t, g) for t in every) for g in n["given"]) and all(mine(t) for t in groups[-1][1])
-    else:
-        ok = any(sex_ok(titles) and all(mine(t) for t in names) and
-                 all(any(same_name(t, g) for t in names) for g in n["given"]) for titles, names in groups)
-    around = {w[0] for w in words[start:i + len(n["last"]) + 6]}
-    return ok and all(m in around for m in n["marks"])
+        ok = all(any(same_name(t, g) for t in every) for g in n["given"]) and any(fits(nm) for _, nm in groups)
+        return 2 if ok else 0
+    if len(groups) > 1:  # a couple in the text: "Mr. and Mrs. Paul Mellon" is both
+        return max((score(titles) for titles, names in groups if fits(names)), default=0)
+    return score(groups[0][0]) if fits(groups[0][1]) else 0
 
 
 def align_owners(pieces, text, owners, nga):
@@ -1103,7 +1123,7 @@ def align_owners(pieces, text, owners, nga):
             if "firm" in n:
                 at = find_all(toks, n["firm"])
                 if at:
-                    found.append((at[0], n["name"]))
+                    found.append((at[0], n["name"], 2))
                     firm_spans += [(i, i + len(n["firm"])) for i in at]
         for n in names:
             if "last" not in n:
@@ -1111,10 +1131,15 @@ def align_owners(pieces, text, owners, nga):
             for i in find_all(toks, n["last"]):
                 if any(a <= i < b for a, b in firm_spans):
                     continue  # "The A.W. Mellon ... Trust" is not Andrew W. Mellon
-                if person_here(n, words, i, apart):
-                    found.append((i, n["name"]))
+                score = person_here(n, words, i, apart)
+                if score:
+                    found.append((i, n["name"], score))
                     break
-        names_here = [name for _, name in sorted(found)]
+        # Where two records fit one name, the one whose "Mrs." or "Mme" agrees with the text's.
+        best = defaultdict(int)
+        for i, _, score in found:
+            best[i] = max(best[i], score)
+        names_here = [name for i, name, score in sorted(found) if score == best[i]]
         for name in names_here:
             mine = set(norm(name).split()) - OWNER_STOP
             if name not in got[j] and not any(other != name and mine < set(norm(other).split()) - OWNER_STOP
@@ -1266,6 +1291,32 @@ def provenance_events(o, nga):
     return events
 
 
+def bare(c):
+    """A component without its remarks in parentheses: "Rome (exhibition title in this venue: ...)" is Rome."""
+    return re.sub(r"\s*\([^()]*\)", "", c).strip()
+
+
+def date_only(c):
+    """ "16 Oct.-7 Nov. 1915", "1980-1981": a date and nothing else."""
+    return bool(re.search(r"\d", c)) and not re.search(r"[A-Za-z]{2,}", re.sub(MONTH, " ", re.sub(r"\bc\.", " ", c)))
+
+
+def later_venue(seg):
+    """Venue, city and country of one of a show's later venues ("National Gallery, London, 2015-2016, no. 20")."""
+    comps = components(seg)
+    cut = next((j for j, c in enumerate(comps) if dates_in(bare(c)) or date_only(c) or
+                re.match(r"(no|nos|cat|unnumbered|repro|possibly|not in)\b", c, re.I)), len(comps))
+    comps = [bare(c) for c in comps[:cut] if bare(c)]
+    country, city = "", ""
+    if comps and country_of(comps[-1]) is not None:
+        country = country_of(comps.pop()) or ""
+    if len(comps) >= 2 and placeish(comps[-1]):
+        city = squash(comps.pop()).rstrip(".")
+    if city and country_of(city) is not None:
+        country, city = country_of(city) or country, ""
+    return ", ".join(comps), city, country
+
+
 def exhibition_event(r, order, field, footnotes):
     text = r["text"].strip()
     year = int(r["year"]) if re.fullmatch(r"\d{4}", r.get("year") or "") else None
@@ -1293,13 +1344,15 @@ def exhibition_event(r, order, field, footnotes):
     if head and not single:
         a, b, c = head[-1]
         head[-1] = (a, first_venue_end, text[a:first_venue_end].strip())
+        while len(head) > 1 and date_only(head[-1][2]):  # "..., The Museum of the Brooklyn Institute, 16 Oct.-7 Nov. 1915;"
+            head.pop()
     title, venue, city, country, title_end = "", "", "", "", 0
     k = len(head)
-    if k and country_of(head[k - 1][2]) is not None:
-        country = country_of(head[k - 1][2]) or ""
+    if k and country_of(bare(head[k - 1][2])) is not None:
+        country = country_of(bare(head[k - 1][2])) or ""
         k -= 1
-    if k >= 2 and placeish(head[k - 1][2]):
-        city = squash(head[k - 1][2]).rstrip(".")
+    if k >= 2 and placeish(bare(head[k - 1][2])):
+        city = squash(bare(head[k - 1][2])).rstrip(".")
         k -= 1
     if k >= 2:
         j = k - 1
@@ -1321,6 +1374,15 @@ def exhibition_event(r, order, field, footnotes):
         country, city = country_of(city) or country, ""
     if city.lower() == "washington" and not country and re.search(r"Washington,?\s*D\.?\s*C\.?", text):
         country = "US"
+    # "(shown only in London)": the venue is the one in London, not the first.
+    only = re.search(r"\((?:shown|exhibited) only (?:in|at) ([^()]+?)\)", text)
+    if only and not single:
+        segs = [text[a:b] for a, b in top_split(text, ";")]
+        at = [n for n, sg in enumerate(segs) if only.group(1).strip().lower() in re.sub(r"\([^()]*\)", "", sg).lower()]
+        if not at:
+            venue, city, country = "", "", ""
+        elif at[0] > 0:
+            venue, city, country = later_venue(segs[at[0]])
     # The dates: everything after the title, less titles in italics and remarks in parentheses.
     rest = text[title_end:]
     rest = re.sub(r"_[^_]*_|\([^()]*\)|\bas\s+[\"“][^\"”]*[\"”]", " ", rest)
