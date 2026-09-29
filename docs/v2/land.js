@@ -200,6 +200,9 @@
   var place = null;              // the city we are down in, or null
   var flying = false;
   var flyFrom = 1, flyTo = 1, flyAt = 0;
+  var goingUp = false;           // the flight under way is back up to the world
+  var flyK = 0;                  // how far down the flight is, 0 up to 1 at a place
+  var hopFrom = null;            // where the world was held when a hop began
   var leanFrom = TILT, leanTo = TILT, leanWas = TILT;
   var spinWas = 0;
   var focus = { lat: 0, lon: 0 };
@@ -664,16 +667,18 @@
       var el = document.createElement("button");
       el.className = "city";
       el.type = "button";
-      el.dataset.kind = city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
+      el.dataset.kind = city.spot !== undefined ? "place" : city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
       if (city.layer) { el.dataset.layer = city.layer; }
       el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
                      '<span class="city-name"></span>';
       el.lastChild.textContent = city.title;
-      el.setAttribute("aria-label", "Go down to " + city.title + ", " + city.where);
+      el.setAttribute("aria-label", city.spot !== undefined ? "The works that have been in " + city.where
+                                                         : "Go down to " + city.title + ", " + city.where);
 
       city.el = el;
       city.name = el.lastChild;
-      el.addEventListener("click", function () { goDown(city); });
+      // A place of the Artworks layer opens its own view, not a city.
+      el.addEventListener("click", function () { if (city.open) { city.open(); } else { goDown(city); } });
       el.addEventListener("pointerdown", function (event) {
         // The stage takes the pointer on its way down, to turn the world
         // with; a press that lands on a city is not a turn, and if the
@@ -696,7 +701,8 @@
 
       // They come up one after another rather than all at once.
       order += 1;
-      var mine_ = order;
+      // An Artworks place comes up in its own run, the largest first.
+      var mine_ = city.spot !== undefined ? city.spot : order;
       window.setTimeout(function () { el.dataset.up = "true"; }, 300 + mine_ * 150);
     }
 
@@ -751,6 +757,18 @@
         layer: "museums", hue: hues[nearWork(m)] || 0.09
       }, true);
     });
+
+    // And the places the saved works have been, the most travelled-to named:
+    // the rest are lit tiles on the world (drawArtPlaces), pressed as tiles.
+    if (ARTWORKS && artPlaces) {
+      artPlaces.slice(0, ART_NAMED).forEach(function (pl) {
+        raiseCity({
+          work: null, slug: "place-" + pl.p, title: pl.name, where: pl.name + ", " + pl.cc,
+          lat: pl.lat, lon: pl.lon, spot: pl.i, real: true, layer: "artworks",
+          open: function () { openArt({ place: pl.p }); }
+        }, true);
+      });
+    }
     filterGlobe();
   }
 
@@ -761,11 +779,14 @@
      the artist's own collages, the museums that hold the works he saved,
      or the architecture. A new kind of place is one more entry here and a
      `layer` on its marks. The choice is kept per viewer. */
+  var ARTWORKS = true;                 // false: no Artworks layer, and nothing of it is added
   var LAYERS = [
     { key: "collages", label: "Collages" },
     { key: "museums", label: "Museums" },
     { key: "architecture", label: "Architecture" }
   ];
+  // The saved works' places sit beside the museums that hold them.
+  if (ARTWORKS) { LAYERS.splice(2, 0, { key: "artworks", label: "Artworks" }); }
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
   try { layerOn = localStorage.getItem(LAYER_KEY) || layerOn; } catch (e) {}
@@ -798,6 +819,7 @@
         filterGlobe();
         placeCities();
         groundPlaces();
+        artLayer();
         var r = b.getBoundingClientRect();
         pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
       });
@@ -947,7 +969,10 @@
     leanFrom = tilt;
     leanTo = city.lat;
     flyFrom = zoom;
-    flyTo = CITY_ZOOM;
+    // An art view is framed at the height its history needs (see frameOf).
+    flyTo = city.zoomTo || CITY_ZOOM;
+    goingUp = false;
+    hopFrom = null;
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
@@ -964,12 +989,16 @@
     stopTheatre();
     stopArchive();
     stopBuilding();
+    stopArt();
     endScene();
     hold();
     hideGraze();
     showHere(false);
     spawns.forEach(function (born) { born.el.style.visibility = "hidden"; });
     banner.hidden = true;
+    delete land.dataset.art;
+    // The framing eases from wherever the last place held the world.
+    hopFrom = { x: cx, y: cy };
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;
@@ -977,7 +1006,8 @@
     leanFrom = tilt;
     leanTo = city.lat;
     flyFrom = zoom;
-    flyTo = CITY_ZOOM;
+    flyTo = city.zoomTo || CITY_ZOOM;
+    goingUp = false;
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
@@ -986,9 +1016,13 @@
 
   function comeUp() {
     if (flying || !place) { return; }
+    artAsked = null;                // a view still being read is not flown to after you have left
     comeUpFromGround();
     stopTheatre();
     stopBuilding();
+    stopArt();
+    goingUp = true;
+    hopFrom = null;
     hold();                         // the walk stops where it is
     hideGraze();
     hereShown = false;
@@ -1008,7 +1042,8 @@
 
   function arrive() {
     land.dataset.at = "city";
-    pulse(W / 2, H * 0.62, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV);
+    var seatX = place.seatAt ? place.seatAt.x * W : W / 2, seatY = place.seatAt ? place.seatAt.y * H : H * 0.62;
+    pulse(seatX, seatY, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV);
     banner.hidden = false;
     bannerCity.textContent = place.title;
     bannerCity.setAttribute("aria-label", place.title);   // its name, while the letters settle
@@ -1022,8 +1057,9 @@
     beast.lon = goal.lon = place.lon;
 
     // The creature keeps to this work's own things: what it finds underfoot
-    // here are the objects that collage is made of, and nothing else.
-    weave({ lat: place.lat, lon: place.lon });
+    // here are the objects that collage is made of, and nothing else. An art
+    // view is not a city: the whole world stays woven.
+    weave(place && !place.art ? { lat: place.lat, lon: place.lon } : null);
 
     // Whatever is built here is built once and stays built.
     if (place.piece && !place.stage && !spawns.some(function (born) {
@@ -1047,12 +1083,18 @@
     if (place.stage) { startTheatre(); }
     if (place.archive) { startArchive(); }
     if (place.building) { startBuilding(place); }
+    if (place.art) {
+      land.dataset.art = place.art.kind;
+      startArt(place);
+    }
   }
 
   function leave() {
     stopTheatre();
     stopArchive();
     stopBuilding();
+    stopArt();
+    delete land.dataset.art;
     endScene();
     hold();
     // Whatever was standing in that city stays in it. placeSpawns stops
@@ -1065,6 +1107,8 @@
     banner.hidden = true;
     land.dataset.at = "globe";
     showHere(false);
+    // How you got here, drawn once on the way out (the walk).
+    if (artWalk.length > 1) { drawWalkOnce(); }
   }
 
   /* Which of the words on the globe are things this collage is made of. A
@@ -1241,11 +1285,30 @@
     R = baseR * zoom;
     var down = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
     var half = W / 2;
+    // Where the place is held on the screen: a city a little below the
+    // middle; an art view in the band beside its column (seatAt), at a
+    // height that may be above or below the globe's own, so the way there is
+    // measured by the flight (flyK), not by the zoom.
+    var gx = half, gy = H * 0.62;
+    if (place && place.seatAt) {
+      down = flyK;
+      gx = place.seatAt.x * W;
+      gy = place.seatAt.y * H;
+    } else if (hopFrom) {
+      down = flyK;
+    }
     cx = half + seat.dx * W * (1 - down);
     var orbit = orbitFor(R) + seat.dy * H;
     // Where the city is, at the lean we have now: dead centre once the lean
     // has arrived at its latitude, and travelling there smoothly before.
-    var ground = H * 0.62 + Math.sin(focus.lat - tilt) * R;
+    var ground = gy + Math.sin(focus.lat - tilt) * R;
+    if (hopFrom) {
+      // From one place to the next: from where the last one was held.
+      cx = hopFrom.x + (gx - hopFrom.x) * down;
+      cy = hopFrom.y + (ground - hopFrom.y) * down;
+      return;
+    }
+    cx += (gx - half) * down;
     cy = orbit + (ground - orbit) * down;
   }
 
@@ -1306,7 +1369,7 @@
     relax();
     found();
     remass();
-    weave(place ? { lat: place.lat, lon: place.lon } : null);
+    weave(place && !place.art ? { lat: place.lat, lon: place.lon } : null);
   }
 
   /* ---- how a word is dressed --------------------------------------------- */
@@ -1549,7 +1612,8 @@
     if (tilesCanvas.width !== pw || tilesCanvas.height !== ph) {
       tilesCanvas.width = pw; tilesCanvas.height = ph; tilesDirty = true;
     }
-    if (!waves.length && !notes.length && !trail.length && !tilesDirty) { return; }
+    if (!waves.length && !notes.length && !trail.length && !tilesDirty &&
+        !(art && art.dirty) && !(passing && passing.legs) && !walkShown) { return; }
     var g = tilesCtx;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
@@ -1596,6 +1660,9 @@
       }
     }
 
+    // A history's journey, in the same light (the journey, below).
+    if (art || passing || walkShown) { drawJourney(runs, t); }
+
     Object.keys(runs).forEach(function (key) {
       var cut = key.lastIndexOf("|");
       g.fillStyle = key.slice(0, cut);
@@ -1626,6 +1693,7 @@
       }
     }
 
+    if (art) { drawStops(g, t); }
     drawTrail(g, t);
 
     // The notes, in held frames, on a two-pixel grid.
@@ -1646,7 +1714,9 @@
       });
     }
     g.globalAlpha = 1;
-    tilesDirty = waves.length > 0 || notes.length > 0 || !!ringNow;
+    tilesDirty = waves.length > 0 || notes.length > 0 || !!ringNow ||
+                 !!(art && (art.playing || art.moving || art.anim)) ||
+                 !!walkShown || !!(passing && passing.legs);
   }
 
   /* The creature's own beat, while it grazes: every phi-squared seconds a
@@ -1670,6 +1740,7 @@
   }
 
   function cityTone(city) {
+    if (city && city.tone) { return city.tone; }      // an art view: the work's own colour
     return rgbHex(fromHsl(city && city.hue !== undefined ? city.hue : 0.7, 0.55, 0.42));
   }
 
@@ -2409,6 +2480,7 @@
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
     living(now);
+    if (layerOn === "artworks" && !place && artPlaces) { drawArtPlaces(now); }
     placeGloss();
     placeHubble(now);
 
@@ -2666,7 +2738,10 @@
       }
     }
     vocabulary.forEach(function (g) { nightLights.push({ lat: g.lat, lon: g.lon, b: 1, k: Math.random() * TAU }); });
-    cities.forEach(function (c) { nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true }); });
+    cities.forEach(function (c) {
+      if (c.spot !== undefined) { return; }        // an Artworks place is lit as its own tile
+      nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true });
+    });
   }
 
   var LAMP = ["#7b5a2c", "#d9a64e", "#fff1c4"];
@@ -3026,7 +3101,10 @@
     drawLights(now, block, fade);
     if (still || !cities.length) { return; }
     if (!place && !flying) {
-      stepHerd(now, dt);
+      // On the Artworks layer the company rests, and in its slot one
+      // travelled work draws its journey (once whoever is out has gone).
+      if (PASSING && ARTWORKS && layerOn === "artworks" && artPlaces && !herd.length) { stepPassing(now); }
+      else { stepHerd(now, dt); }
       if (PROCESSION) { stepProcession(now, dt); }
     }
     drawHerd(now, fade);
@@ -3287,7 +3365,9 @@
   var softTick = 0;
 
   function nearness() {
-    return Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+    var n = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
+    // An art view is framed above the cities: the living world stays mostly alive.
+    return place && place.art ? Math.min(n, INV3) : n;
   }
 
   var soft = document.getElementById("world-soft");
@@ -3587,6 +3667,8 @@
   /* A tap on the empty sky bounces the view somewhere new — near or far —
      which is also the way out of any view that has stopped being useful. */
   function pressSky(x, y) {
+    // A tap on the sky puts Find away first.
+    if (finder.open) { closeFinder(); return true; }
     if (place || flying || swing || deckMode) { return false; }
     if (unproject(x, y)) { return false; }
     pulse(x, y, [LIGHT], 0.8);
@@ -4164,13 +4246,19 @@
       var went = Math.max(0, Math.min(1, (now - flyAt) / FLY));
       var easing = 1 - Math.pow(1 - went, 3);
       zoom = flyFrom + (flyTo - flyFrom) * easing;
+      flyK = goingUp ? 1 - easing : easing;
       lean(leanFrom + (leanTo - leanFrom) * easing);
       reframe();
       if (went >= 1) {
         flying = false;
-        if (flyTo > 1) { arrive(); } else { leave(); }
+        hopFrom = null;
+        // Up or down is which way it was going, not the zoom: an art view's
+        // height may be under the globe's own.
+        if (goingUp) { goingUp = false; leave(); } else { flyK = 1; arrive(); }
         onward();
       }
+    } else if (place) {
+      flyK = 1;
     }
 
     // The world only turns when it is turned: by a drag, or by tabbing to a
@@ -4199,6 +4287,7 @@
     if (!place) { placeWords(); }
     if (!place || flying) { placeCities(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
+    if (art) { stepArt(now); placeStops(); }
 
     stepCompany(now);
     placeSpawns();
@@ -7399,13 +7488,32 @@
         var tap = panning.moved < 6 && performance.now() - panning.at < 450;
         panning = null;
         delete stage.dataset.turning;
-        if (tap && name === "pointerup") { pressSky(event.clientX, event.clientY); }
+        // The passing journey's head can arch out over the sky.
+        if (tap && name === "pointerup" && !pressPassing(event.clientX, event.clientY)) { pressSky(event.clientX, event.clientY); }
         return;
       }
       if (!turning || event.pointerId !== turning.id) { return; }
       var was = turning;
       turning = null;
       delete stage.dataset.turning;
+
+      // On the Artworks layer a press on a lit tile opens that place; in an
+      // art view, a press on a stop goes to it.
+      var k = -1;
+      if (name === "pointerup" && was.moved < 6 && ARTWORKS) {
+        if (pressPassing(event.clientX, event.clientY)) { squashing = null; return; }
+        if (layerOn === "artworks" && !place && !flying &&
+            (k = hitArtPlace(event.clientX, event.clientY)) >= 0) {
+          squashing = null;
+          openArt({ place: artPlaces[k].p });
+          return;
+        }
+        if (art && !flying && (k = hitStop(event.clientX, event.clientY)) >= 0) {
+          squashing = null;
+          chooseStop(k);
+          return;
+        }
+      }
 
       // A quick press that did not move, on a world small enough to be seen
       // whole, brings it in.
@@ -8788,7 +8896,7 @@
   /* ---- Magnetic Buttons ------------------------------------------------- */
 
   // The few round buttons lean toward a pointer that comes near them.
-  var MAGNETS = "#deck-close, #banner-back, #banner-city, #banner-down, .deal-turn, #hubble, .theatre-step";
+  var MAGNETS = "#deck-close, #banner-back, #banner-city, #banner-down, .deal-turn, #hubble, .theatre-step, .art-find";
   var aim = null, magnetsMoving = false;
 
   function magnetStep() {
@@ -9650,7 +9758,11 @@
     // A building links to its article; a museum has its works instead.
     buildingLink.hidden = !b.url;
     if (b.url) { buildingLink.href = b.url; }
-    if (city.museum) { showHeld(city.museum); } else { delete buildingEl.dataset.museum; }
+    if (city.museum) { showHeld(city.museum, city.via); } else { delete buildingEl.dataset.museum; }
+    delete city.via;
+    // Come from a work's stop at this museum: its town opens at that year.
+    var atYear = city.atYear;
+    delete city.atYear;
     buildingEl.hidden = false;
     buildingEl.dataset.air = "waiting";
 
@@ -9667,6 +9779,7 @@
       }
       if (g && g.n) { views.ground = shapeClod(b, g); }
       var first = views.building ? "building" : views.ground ? "ground" : null;
+      if (atYear && views.ground && views.ground.years) { first = "ground"; } else { atYear = 0; }
       if (!first) { buildingEl.dataset.air = "none"; return; }
       var canvas = document.createElement("canvas");
       canvas.className = "building-clod";
@@ -9680,7 +9793,7 @@
       };
       buildingEl.dataset.air = "up";
       buildingEl.dataset.view = first;
-      startTime(views[first]);
+      startTime(views[first], atYear);
       showYear();
       clod.raf = requestAnimationFrame(clodFrame);
     });
@@ -9692,7 +9805,8 @@
      (collections.js) and shown the same way, marked as the collection's.
      Pressing a work brings it up large; pressing it again puts it back.
      Nothing leads off the site. */
-  function heldFigure(w, src, i, found, alts) {
+  function heldFigure(w, src, i, found, alts, opts) {
+    opts = opts || {};
     var fig = document.createElement("figure");
     fig.className = found ? "held held-found" : "held";
     fig.tabIndex = 0;
@@ -9725,11 +9839,28 @@
     med.className = "held-medium";
     med.textContent = w.m || "";
     cap.appendChild(med);
+    // A saved work in a museum's column: where it has been, on the Artworks side.
+    if (opts.history) {
+      var hist = document.createElement("button");
+      hist.type = "button";
+      hist.className = "held-history";
+      hist.textContent = "Where it has been";
+      hist.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openArt({ work: w.id }, { museum: { name: opts.history.name, slug: opts.history.slug } });
+      });
+      // Enter on it is its own, not the figure's.
+      hist.addEventListener("keydown", function (event) { event.stopPropagation(); });
+      cap.appendChild(hist);
+    }
     fig.appendChild(img);
     fig.appendChild(cap);
     function open() {
+      // Something else to do when pressed: open its history, say (opts.onOpen).
+      if (opts.onOpen) { opts.onOpen(fig); return; }
       var was = fig.getAttribute("aria-expanded") === "true";
-      Array.prototype.forEach.call(buildingWorks.querySelectorAll(".held"), function (f) {
+      var host = fig.closest(".art-col") || buildingWorks;
+      Array.prototype.forEach.call(host.querySelectorAll(".held"), function (f) {
         f.setAttribute("aria-expanded", "false");
       });
       fig.setAttribute("aria-expanded", String(!was));
@@ -9744,7 +9875,7 @@
     return fig;
   }
 
-  function showHeld(m) {
+  function showHeld(m, via) {
     buildingEl.dataset.museum = "true";
     if (!buildingWorks) { return; }
     buildingWorks.textContent = "";
@@ -9752,11 +9883,20 @@
     head.className = "held-count";
     head.textContent = "Saved \u00b7 " + (m.held === 1 ? "one work" : m.held + " works");
     buildingWorks.appendChild(head);
-    (m.works || []).forEach(function (w, i) {
+    // Come from a work's history, that work is first, and brought up large.
+    var first = via && via.work;
+    var works = (m.works || []).slice();
+    if (first) {
+      works = works.filter(function (w) { return w.id === first; })
+        .concat(works.filter(function (w) { return w.id !== first; }));
+    }
+    works.forEach(function (w, i) {
       var cdn = museums.cdn || "", key = w.i.split("/")[0];
       var alts = ["medium", "square", "small"].map(function (v) { return cdn + key + "/" + v + ".jpg"; })
         .filter(function (u) { return u !== cdn + w.i + ".jpg"; });
-      buildingWorks.appendChild(heldFigure(w, cdn + w.i + ".jpg", i, false, alts));
+      var fig = heldFigure(w, cdn + w.i + ".jpg", i, false, alts, ARTWORKS && w.id ? { history: m } : null);
+      if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); }
+      buildingWorks.appendChild(fig);
     });
     if (window.Collections) { buildingWorks.appendChild(searchFor(m)); }
     buildingWorks.scrollTop = 0;
@@ -9863,13 +10003,28 @@
     if (document.activeElement !== timeRange) { timeRange.value = String(Math.round(clod.when * 1000)); }
     timeRange.setAttribute("aria-valuetext", String(yr));
   }
-  function startTime(d) {
+  /* Given a year (a work was here then), the town opens as it stood that
+     year, holds a moment, and rises on to now — unless the slider is
+     taken first. */
+  function startTime(d, atYear) {
     if (!d || !d.years) { return; }
     timeRange.min = "0";
     timeRange.max = "1000";
     clod.when = still ? 1 : 0;
     clod.whenTo = 1;
     clod.byHand = false;
+    clod.touched = false;
+    if (atYear && !still) {
+      var span = Math.max(1, d.years.y1 - d.years.y0);
+      clod.when = clod.whenTo = Math.max(0, Math.min(1, (atYear - d.years.y0) / span));
+      clod.byHand = true;
+      var mine_ = clod;
+      window.setTimeout(function () {
+        if (clod !== mine_ || mine_.touched) { return; }
+        mine_.whenTo = 1;
+        mine_.byHand = false;
+      }, Math.pow(PHI, 3) * 1000);
+    }
     showYear();
   }
   if (timeline) {
@@ -9878,6 +10033,7 @@
       if (!clod) { return; }
       clod.whenTo = Number(timeRange.value) / 1000;
       clod.byHand = true;
+      clod.touched = true;
       var d = clod.views[clod.view];
       if (d && d.years) { timeYear.textContent = String(Math.max(d.years.y0 + 1, yearOf(clod.whenTo, d.years))); }
     });
@@ -10713,29 +10869,33 @@
 
   function clearReading() {
     if (!reading) { return; }
+    reading.live = false;
     reading.timers.forEach(function (t) { window.clearTimeout(t); });
     if (reading.root.parentNode) { reading.root.parentNode.removeChild(reading.root); }
     reading = null;
   }
 
-  function later(fn, ms) {
-    var r = reading;
-    var t = window.setTimeout(function () { if (reading === r) { fn(); } }, still ? 0 : ms);
+  // One clock for the reading and the art view: each belongs to an owner
+  // (the reading, unless another is given) and stops when it is put away.
+  function later(fn, ms, r) {
+    r = r || reading;
+    if (!r) { return; }
+    var t = window.setTimeout(function () { if (r.live) { fn(); } }, still ? 0 : ms);
     r.timers.push(t);
   }
 
-  function reveal(node, ms) {
-    later(function () { node.dataset.on = "true"; }, ms);
+  function reveal(node, ms, r) {
+    later(function () { node.dataset.on = "true"; }, ms, r);
   }
 
   // Like later(), but the clock only moves while the viewer is still: if the
   // pointer moved within STILL_MS when it comes due, it waits for them to
   // settle. Under reduced motion nothing waits at all.
-  function afterStill(fn, ms) {
-    var r = reading;
+  function afterStill(fn, ms, r) {
+    r = r || reading;
     if (!r) { return; }
     function tick() {
-      if (reading !== r) { return; }
+      if (!r.live) { return; }
       var moved = performance.now() - pointerAt.at;
       if (!still && moved < STILL_MS) {
         r.timers.push(window.setTimeout(tick, STILL_MS - moved + 80));
@@ -10752,7 +10912,7 @@
     cameBy = null;
     var root = el("div", "read");
     root.appendChild(el("div", "read-wash"));
-    var r = reading = { root: root, work: work, city: city, timers: [], held: null, n: 0 };
+    var r = reading = { root: root, work: work, city: city, timers: [], held: null, n: 0, live: true };
     r.order = wordOrder(work, via);
 
     // the photograph
@@ -10868,11 +11028,16 @@
     afterStill(procession, gap);
   }
 
-  function quiet() {
-    var old = reading && reading.stage.firstChild;
-    if (!old) { return; }
-    old.dataset.on = "false";
-    window.setTimeout(function () { if (old.parentNode) { old.parentNode.removeChild(old); } }, 700);
+  // Everything said is put down, not only the last: under reduced motion the
+  // words used to pile up, each said before the one before had gone.
+  function quiet(r) {
+    r = r || reading;
+    if (!r || !r.stage) { return; }
+    Array.prototype.forEach.call(r.stage.children, function (old) {
+      if (old.dataset.on === "false") { return; }
+      old.dataset.on = "false";
+      window.setTimeout(function () { if (old.parentNode) { old.parentNode.removeChild(old); } }, still ? 0 : 700);
+    });
   }
 
   // A word takes the room: the word, and under it whatever else it is in.
@@ -11175,7 +11340,9 @@
   }
   function goDeeper(streets) {
     if (!place || flying || groundOn) { return; }
-    groundUp(place.lat * 180 / Math.PI, wrap(place.lon) * 180 / Math.PI, streets);
+    // In an art view, down is at the stop the slider is at.
+    var at = place.art && art ? art.stopNow() : place;
+    groundUp(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, streets);
   }
   function flyOver(x, y) {
     if (flying || place || groundOn) { return; }
@@ -11259,6 +11426,7 @@
     cities.forEach(function (c) { if (c.slug === id) { city = c; } });
     if (!city || flying) { return; }
     comeUpFromGround();
+    if (city.open) { city.open(); return; }
     if (place === city) { return; }
     hopTo(city);
   }
@@ -11295,6 +11463,8 @@
   var upPush = 0;
   stage.addEventListener("wheel", function (event) {
     if (!place || flying || groundOn) { return; }
+    // An art view's column scrolls itself, both ways (and moves its time).
+    if (event.target.closest && event.target.closest(".art-col")) { return; }
     // Scrolling out of a place goes back up to the world — but not while
     // scrolling a column of works or a reading, which scroll themselves.
     if (event.deltaY > 0) {
@@ -11340,9 +11510,2214 @@
     if (!graze.hidden || carrying) { dismiss(); return; }
     if (playing) { curtain = performance.now(); endScene(); strike(); return; }
     if (hereShown && place && place.work) { showHere(false); return; }
+    if (finderEl && !finderEl.hidden) { closeFinder(); return; }
+    if (art && art.held) { releaseThread(); return; }
     // Nothing else to put down: Escape is the way back up to the world.
     comeUp();
   });
+
+  /* ---- the Artworks layer --------------------------------------------------
+
+     The artist, 27 Sep 2026: "timelines of artworks … all the different
+     places these artworks have ever gone, every show they have ever been in
+     and everything that has ever been written about them". The globe's
+     fourth layer lights every place the saved works have been, one tile of
+     pixel light each (places.json, from scripts/build_artwork_histories.py);
+     the most travelled-to are named, the rest are tiles to press. Pressing
+     one — or a work — flies down into an art view: the globe framed on the
+     history, its journey lit on a slider of the work's own years, and a
+     column beside it that tells it briefly, one dated line an event, the
+     source's own words a press away. Then, on the reading's slow clock,
+     what it shares with other works, each with its doors; a door turns the
+     world to the next work. A place and a thread have views of their own,
+     and Find reaches any of the works. Nothing changes the address. */
+
+  var PASSING = true;                   // false: the company keeps its slot on this layer too
+  var ART_NAMED = 55;                   // places named on the globe; the rest are tiles
+  var ART_LINGER = INV * 1000;          // 618 ms on each event, and at most that across a gap
+  var LEG_MS = 610;                     // a leg lights end to end in this long
+  var artPlaces = null;                 // places.json's places, read when the layer is chosen
+  var artPlaceBy = {};                  // place key -> its place
+  var artInfo = null;                   // places.json itself: works, j
+  var artLitAt = 0;                     // when the layer's tiles were last lit
+  var artAsked = null;                  // the last view asked for; a later press wins
+  var art = null;                       // the art view that is open, and its clock
+  var artWalk = [];                     // the walk, work to work, this visit
+  var walkShown = null;                 // the walk, drawn once on the way up
+  var passing = null;                   // the passing journey, when one is out
+  var finder = { open: false, found: null };
+  var artKept = [];                     // the histories and threads read, oldest first
+  var artEl = document.getElementById("art");
+  var artPlate = document.getElementById("art-plate");
+  var artCol = document.getElementById("art-col");
+  var artTime = document.getElementById("art-time");
+  var artYear = document.getElementById("art-time-year");
+  var artTicks = document.getElementById("art-ticks");
+  var artRange = document.getElementById("art-time-range");
+  var artFind = document.getElementById("art-find");
+  var finderEl = document.getElementById("finder");
+  var ART_CDN = "https://d32dm0rphc51dk.cloudfront.net/";
+
+  /* Everything the layer reads is kept in the same cache as the grounds,
+     the last 89 histories and threads of it. */
+  function readArt(path) {
+    var key = "art:" + path;
+    if (!grounds[key]) {
+      grounds[key] = read(path).catch(function () {
+        // Not kept: the next press reads it again.
+        delete grounds[key];
+        var at = artKept.indexOf(key);
+        if (at >= 0) { artKept.splice(at, 1); }
+        return null;
+      });
+      if (/^(histories|threads)\//.test(path)) {
+        artKept.push(key);
+        if (artKept.length > 89) { delete grounds[artKept.shift()]; }
+      }
+    }
+    return grounds[key];
+  }
+
+  function readPlaces() {
+    return readArt("places.json").then(function (d) {
+      if (!d || artPlaces) { return artPlaces; }
+      artInfo = d;
+      artPlaces = d.places.map(function (row, i) {
+        var pl = { i: i, p: row[0], name: row[1], cc: row[2],
+                   lat: row[3] * RAD, lon: wrap(row[4] * RAD), n: row[5] };
+        pl.v = toVec(pl.lat, pl.lon);
+        // How bright its tile is, by how many works have been there, in
+        // Fibonacci bins: one, up to eight, up to fifty-five, more.
+        pl.level = pl.n > 55 ? 4 : pl.n > 8 ? 3 : pl.n > 1 ? 2 : 1;
+        artPlaceBy[pl.p] = pl;
+        return pl;
+      });
+      return artPlaces;
+    });
+  }
+
+  function readThread(tid) { return readArt("threads/" + tid + ".json"); }
+
+  /* The layer chosen (or left chosen from the last visit): its places are
+     read, marked and lit, and Find waits at the pill. */
+  function artLayer() {
+    if (!ARTWORKS) { return; }
+    land.dataset.layerOn = layerOn;
+    if (layerOn !== "artworks") {
+      artAsked = null;              // nor after you have chosen another layer
+      if (artFind) { artFind.hidden = true; }
+      closeFinder();
+      if (passing) { endPassing(performance.now()); }
+      return;
+    }
+    readPlaces().then(function () {
+      if (!artPlaces || layerOn !== "artworks") { return; }
+      artLitAt = performance.now();
+      if (!cities.some(function (c) { return c.spot !== undefined; })) { found(); groundPlaces(); }
+      if (artFind && artInfo) {
+        artFind.textContent = "Find among " + artInfo.works.toLocaleString("en") + " works";
+        artFind.hidden = false;
+        scramble(artFind, oneOf(["decode", "type"]), 0, 640);
+      }
+    });
+  }
+
+  /* The places, at rest: one tile each, snapped to the grid the rest of the
+     pixel light is on, fading toward the limb as the night lights do. Where
+     two share a tile the brighter wins. While Find has found something, its
+     places are at the top and the rest at the bottom. */
+  function drawArtPlaces(now) {
+    var up = still ? 1 : Math.min(1, Math.floor((now - artLitAt) / 140 + 1) / 3);   // steps(3)
+    var hits = finder.found;
+    var best = {};
+    for (var n = 0; n < artPlaces.length; n += 1) {
+      var pl = artPlaces[n];
+      var p = project(pl.lat, pl.lon);
+      if (p.z < 0.08 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { continue; }
+      var level = hits ? (hits[pl.i] ? 4 : 1) : pl.level;
+      var a = LEVELS[level] * Math.min(1, (p.z - 0.08) * 6) * up;
+      var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
+      var key = i * 4096 + j;
+      if (!best[key] || best[key].a < a) { best[key] = { i: i, j: j, a: a }; }
+    }
+    ctx.fillStyle = LIGHT;
+    Object.keys(best).forEach(function (key) {
+      var b = best[key];
+      ctx.globalAlpha = b.a;
+      ctx.fillRect(b.i * CELL_PX + 1, b.j * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  /* The place a press landed on: the nearest within one tile. */
+  function hitArtPlace(x, y) {
+    if (!artPlaces) { return -1; }
+    var best = -1, near = CELL_PX;
+    artPlaces.forEach(function (pl, k) {
+      var p = project(pl.lat, pl.lon);
+      if (p.z < 0.08) { return; }
+      // From the middle of the tile it is lit in, not the point itself.
+      var tx = (Math.floor(p.x / CELL_PX) + 0.5) * CELL_PX, ty = (Math.floor(p.y / CELL_PX) + 0.5) * CELL_PX;
+      var d = Math.max(Math.abs(tx - x), Math.abs(ty - y));
+      if (d <= near) { near = d; best = k; }
+    });
+    return best;
+  }
+
+  /* ---- opening a view ------------------------------------------------------
+
+     A work, a place or a thread is a place like a city — {art, lat, lon,
+     zoomTo, seatAt} — flown down to by goDown, or hopped to by hopTo, so the
+     banner, the way back, pinching in and out and Escape are all a city's.
+     It is flown only as far as its history needs. */
+
+  function openArt(spec, via) {
+    if (!ARTWORKS || flying) { return; }
+    via = via || {};
+    var fromFind = finder.open;
+    closeFinder();
+    var path = spec.work ? "histories/" + spec.work + ".json"
+      : spec.place ? "places/" + spec.place + ".json"
+      : "threads/" + spec.thread + ".json";
+    var asked = artAsked = {};
+    Promise.all([readPlaces(), readArt(path)]).then(function (both) {
+      var d = both[1];
+      if (asked !== artAsked || flying) { return; }
+      if (!d || !both[0]) { unread(fromFind); return; }
+      var c = spec.work ? workCity(d) : spec.place ? placeCity(d) : threadCity(d);
+      c.art.via = via;
+      if (place) { hopTo(c); } else { goDown(c); }
+    });
+  }
+
+  /* What was pressed could not be read (the network, most likely): said
+     where it was pressed — in Find, or on the thread being said — and left
+     to be pressed again. */
+  function unread(fromFind) {
+    var words = "That could not be read just now.";
+    if (fromFind && !place) {
+      openFinder();
+      if (finderSaid) { finderSaid.textContent = words; }
+    } else if (art && art.stage) {
+      quiet(art);
+      var box = el("div", "read-said art-said");
+      box.appendChild(el("p", "read-only", words));
+      art.stage.appendChild(box);
+      requestAnimationFrame(function () { box.dataset.on = "true"; });
+    }
+  }
+
+  /* Where the globe is framed beside the column: on a phone the band above
+     the column; on a desktop, left of it. */
+  function artBand() {
+    if (W <= 720) { return { x: 0, y: 68, w: W, h: H * 0.5 - 120 }; }
+    return { x: 0, y: 68, w: W - Math.min(0.4 * W, 440), h: H - 148 };
+  }
+
+  /* The framing for a set of points: centred on their mean (or the centre
+     given), near enough that the furthest (or the angle given) fits the
+     band — never nearer than a hand can bring the globe, so its weave holds,
+     and a work with one place sits at that nearest. */
+  function frameOf(vecs, centre, theta) {
+    var c = centre;
+    if (!c) {
+      var sum = [0, 0, 0];
+      vecs.forEach(function (v) { sum[0] += v[0]; sum[1] += v[1]; sum[2] += v[2]; });
+      c = norm3(sum);
+    }
+    if (theta === undefined) {
+      theta = 0;
+      vecs.forEach(function (v) { theta = Math.max(theta, Math.acos(Math.max(-1, Math.min(1, dot3(c, v))))); });
+    }
+    theta = Math.max(theta, 3 * RAD);
+    var b = artBand(), m = Math.min(b.w, b.h);
+    var r = 0.4 * m / Math.sin(Math.min(theta, 80 * RAD));
+    r = Math.max(0.42 * m, Math.min(base0 * SIZE_MOST, r));
+    return { lat: latOf(c), lon: lonOf(c), zoomTo: r / Math.max(1, baseR),
+             seatAt: { x: (b.x + b.w / 2) / W, y: (b.y + b.h / 2) / H } };
+  }
+
+  /* No place to go to: the world is washed where it already is. */
+  function frameHere() {
+    var at = unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
+    var b = artBand();
+    return { lat: at.lat, lon: at.lon, zoomTo: zoom,
+             seatAt: { x: (b.x + b.w / 2) / W, y: (b.y + b.h / 2) / H } };
+  }
+
+  /* The median of the angles from a centre to the places given by key. */
+  function medianAngle(c, keys) {
+    var angles = [];
+    keys.forEach(function (k) {
+      var pl = k && artPlaceBy[k];
+      if (pl) { angles.push(Math.acos(Math.max(-1, Math.min(1, dot3(c, pl.v))))); }
+    });
+    if (!angles.length) { return 3 * RAD; }
+    angles.sort(function (a, b) { return a - b; });
+    return angles[Math.floor(angles.length / 2)];
+  }
+
+  function workCity(h) {
+    var stops = stopsOf(h).stops;
+    var f = stops.length ? frameOf(stops.map(function (s) { return s.v; })) : frameHere();
+    return {
+      slug: "art-" + h.id, title: h.title || "Untitled",
+      where: [(h.artists || []).join(", "), h.date].filter(Boolean).join(" · "),
+      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt,
+      tone: stopTone((h.c && h.c[0]) || LIGHT),
+      art: { kind: "work", data: h, via: null }
+    };
+  }
+
+  function placeCity(pf) {
+    var pl = artPlaceBy[pf.p];
+    var c = toVec(pf.ll[0] * RAD, pf.ll[1] * RAD);
+    var ends = [];
+    pf.works.forEach(function (row) { ends.push(row[9], row[10]); });
+    var f = frameOf([], c, medianAngle(c, ends));
+    var n = pl ? pl.n : pf.works.length;
+    return {
+      slug: "art-place-" + pf.p, title: pl ? pl.name : pf.w.split(",")[0],
+      where: n.toLocaleString("en") + (n === 1 ? " work has" : " works have") + " been here",
+      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
+      art: { kind: "place", data: pf, via: null }
+    };
+  }
+
+  var THREAD_WORD = { show: "Shown", sale: "Offered", owner: "Owned", museum: "Held",
+                      writing: "Written", artist: "By" };
+
+  function threadCity(tf) {
+    var ends = [];
+    tf.works.forEach(function (row) { ends.push(row[5], row[6]); });
+    var c = null;
+    if (tf.ll) { c = toVec(tf.ll[0] * RAD, tf.ll[1] * RAD); }
+    var vecs = ends.filter(function (k) { return k && artPlaceBy[k]; }).map(function (k) { return artPlaceBy[k].v; });
+    var f = c ? frameOf([], c, medianAngle(c, ends)) : vecs.length ? frameOf(vecs) : frameHere();
+    var n = tf.works.length;
+    return {
+      slug: "art-thread-" + tf.id, title: tf.name,
+      where: [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
+              [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "),
+      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
+      art: { kind: "thread", data: tf, via: null }
+    };
+  }
+
+  /* A work's own colour, held light enough to be seen on the globe's dark
+     ground: Artsy's dominant colours are mostly mid-tones and darker. */
+  function stopTone(hex) {
+    var c = toHsl(hex);
+    return rgbHex(fromHsl(c.h, Math.min(0.72, c.s), Math.max(0.58, c.l)));
+  }
+
+  /* Down at the view: its column filled, its slider built, its clock begun.
+     Put away when you leave it (stopArt). */
+  function startArt(city) {
+    stopArt();
+    var a = city.art;
+    art = {
+      live: true, kind: a.kind, data: a.data, via: a.via || {}, city: city, tone: city.tone || LIGHT,
+      stops: [], groups: [], legs: [], evs: [], ticks: [], y0: 0, y1: 0,
+      when: -1, whenTo: -1, playing: false, byHand: false, seg: null, holdUntil: 0,
+      held: null, timers: [], order: [], n: 0, gap: WORD_GAP, dirty: true, ring: -1,
+      flipped: false, names: {}, lines: [], heads: [], last: 0, stage: null,
+      at: performance.now(), cons: null, rows: [], yearNow: 0, begun: false
+    };
+    art.stopNow = function () {
+      var s = art && art.stops[Math.max(0, art.ring)];
+      return s ? { lat: s.lat, lon: s.lon } : { lat: place.lat, lon: place.lon };
+    };
+    artEl.hidden = false;
+    artCol.textContent = "";
+    artCol.scrollTop = 0;
+    artPlate.textContent = "";
+    artPlate.hidden = true;
+    artTime.hidden = true;
+    artEl.dataset.kind = a.kind;
+    if (a.kind === "work") {
+      buildJourney(art);
+      artColumn(art.data, art.via);
+      buildTicks(art);
+      lookAt(art);
+      watchStops(art);
+      threadProcession();
+      // Through a door: the stop the two works share answers in both their colours.
+      var sh = art.via.thread && art.via.thread.ll;
+      if (sh && !still) {
+        var sp = project(sh[0] * RAD, wrap(sh[1] * RAD));
+        if (sp.z > 0) { pulse(sp.x, sp.y, [art.tone, (art.via.from && art.via.from.tone) || LIGHT], 0.6, 144); }
+      }
+    } else if (a.kind === "place") {
+      artEl.dataset.look = "done";
+      placeColumn(art.data, art.via);
+    } else {
+      artEl.dataset.look = "done";
+      threadColumn(art.data, art.via);
+    }
+    // Only now: an empty column is not drawn, and keeps the last one's scroll.
+    artCol.scrollTop = 0;
+    var mine_ = art;
+    requestAnimationFrame(function () { if (art === mine_) { artEl.dataset.on = "true"; } });
+  }
+
+  function stopArt() {
+    if (!art) { return; }
+    var a = art;
+    a.live = false;
+    a.playing = false;
+    a.timers.forEach(function (t) { window.clearTimeout(t); });
+    if (a.watch) { a.watch.disconnect(); }
+    if (a.pager) { a.pager.disconnect(); }
+    a.cons = null;
+    Object.keys(a.names).forEach(function (p) {
+      var n = a.names[p];
+      if (n.parentNode) { n.parentNode.removeChild(n); }
+    });
+    art = null;
+    artEl.hidden = true;
+    delete artEl.dataset.on;
+    delete artEl.dataset.look;
+    delete artEl.dataset.kind;
+    delete artEl.dataset.held;
+    artCol.textContent = "";
+    artPlate.textContent = "";
+    artPlate.hidden = true;
+    artPlate.style.transform = "";
+    artTime.hidden = true;
+    tilesDirty = true;
+  }
+
+  /* ---- the journey ---------------------------------------------------------
+
+     Consecutive events at one place are a stop; a leg is the great circle
+     from one stop to the next, lifted a little over its middle so a hop
+     across town hugs the ground and an ocean crossing arches. Both are
+     drawn in the page's pixel light, on the 13 px grid, as the slider
+     passes each arrival. Writings are never stops — a writing is not travel —
+     and nor is a place known only as a country. */
+
+  // "1968-11-30" as a year with its fraction; null when there is none.
+  function yearNum(y) {
+    var m = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/.exec(y || "");
+    if (!m) { return null; }
+    return Number(m[1]) + (m[2] ? (Number(m[2]) - 1) / 12 : 0) + (m[3] ? (Number(m[3]) - 1) / 365 : 0);
+  }
+
+  /* The column's groups (a run of events at one place, or where no place is
+     recorded) and the globe's stops (runs of placed events, which a run of
+     unrecorded ones between two at the same place does not break). */
+  function stopsOf(h) {
+    var groups = [], stops = [], cur = null, stop = null, gap = false;
+    h.events.forEach(function (ev, n) {
+      if (ev.k === "written") { return; }
+      var placed = !!(ev.ll && ev.p);
+      var key = placed ? ev.p : "";
+      if (!cur || cur.key !== key) {
+        cur = { key: key, p: ev.p, name: ev.w, unplaced: !placed, events: [], stop: -1 };
+        groups.push(cur);
+      }
+      cur.events.push(n);
+      if (!placed) { if (stop) { gap = true; } return; }
+      if (!stop || stop.p !== ev.p) {
+        var lat = ev.ll[0] * RAD, lon = wrap(ev.ll[1] * RAD);
+        stop = { p: ev.p, name: ev.w, lat: lat, lon: lon, v: toVec(lat, lon), pr: ev.pr,
+                 m: null, first: n, last: n, events: [], broken: gap, visit: 0 };
+        stops.forEach(function (s) { if (s.p === stop.p) { stop.visit += 1; } });
+        stops.push(stop);
+      }
+      gap = false;
+      stop.events.push(n);
+      stop.last = n;
+      // A stop is at a museum only when all of it is: one show at the
+      // Guggenheim does not make New York the Guggenheim.
+      stop.m = stop.events.length === 1 ? ev.m || null : stop.m === ev.m ? stop.m : null;
+      // The most exact placing it has: a venue, else the city, else only
+      // where the gallery that listed it is.
+      if (ev.pr === "venue" || (ev.pr === "city" && stop.pr === "office")) { stop.pr = ev.pr; }
+      cur.stop = stops.length - 1;
+    });
+    return { groups: groups, stops: stops };
+  }
+
+  /* A great circle from one point to another, every two degrees, lifted
+     over its middle; nothing when they are the same place. */
+  function arcOf(av, bv) {
+    var om = Math.acos(Math.max(-1, Math.min(1, dot3(av, bv))));
+    if (om < 1e-5) { return null; }
+    var count = Math.max(2, Math.ceil(om / (2 * RAD)) + 1);
+    var s = new Float32Array(count * 4);
+    var high = 0.12 * Math.min(1, om / (90 * RAD));
+    for (var k = 0; k < count; k += 1) {
+      var t = k / (count - 1);
+      var fa = Math.sin((1 - t) * om) / Math.sin(om), fb = Math.sin(t * om) / Math.sin(om);
+      s[k * 4] = av[0] * fa + bv[0] * fb;
+      s[k * 4 + 1] = av[1] * fa + bv[1] * fb;
+      s[k * 4 + 2] = av[2] * fa + bv[2] * fb;
+      s[k * 4 + 3] = 1 + high * Math.sin(Math.PI * t);
+    }
+    return s;
+  }
+
+  /* The legs between the stops. */
+  function legsOf(stops) {
+    var legs = [];
+    for (var n = 1; n < stops.length; n += 1) {
+      var a = stops[n - 1], b = stops[n];
+      var s = arcOf(a.v, b.v);
+      if (!s) { continue; }
+      legs.push({ a: n - 1, b: n, at: b.first, broken: b.broken, samples: s, litAt: null });
+    }
+    return legs;
+  }
+
+  /* Where on the slider each event is: linear in years, from the first dated
+     event to now, so every history runs to today. An undated event takes the
+     place of the one before it. */
+  function buildJourney(a) {
+    var h = a.data;
+    var sg = stopsOf(h);
+    a.groups = sg.groups;
+    a.stops = sg.stops;
+    a.legs = legsOf(a.stops);
+    var d = new Date();
+    var nowY = d.getFullYear() + (d.getMonth() + (d.getDate() - 1) / 31) / 12;
+    var y0 = Infinity;
+    h.events.forEach(function (ev) { var y = yearNum(ev.y); if (y !== null && y < y0) { y0 = y; } });
+    a.dated = y0 !== Infinity;
+    if (!a.dated) { y0 = nowY - 1; }
+    y0 = Math.floor(y0);
+    if (nowY - y0 < 1) { y0 = nowY - 1; }
+    a.y0 = y0;
+    a.y1 = nowY;
+    var prev = 0;
+    a.evs = h.events.map(function (ev) {
+      var y = yearNum(ev.y);
+      var pos = y === null ? prev : Math.max(0, Math.min(1, (y - y0) / (nowY - y0)));
+      prev = pos;
+      return { pos: pos, lit: false };
+    });
+    var seen = {};
+    a.ticks = [];
+    a.evs.forEach(function (e) {
+      var k = e.pos.toFixed(5);
+      if (!seen[k]) { seen[k] = true; a.ticks.push(e.pos); }
+    });
+    a.ticks.sort(function (m, n) { return m - n; });
+  }
+
+  // A point of the unit sphere, lifted, on the screen.
+  function liftedAt(x, y, z, lift) {
+    var p = project(latOf([x, y, z]), lonOf([x, y, z]));
+    var sx = cx + (p.x - cx) * lift, sy = cy + (p.y - cy) * lift;
+    var dx = sx - cx, dy = sy - cy;
+    return { x: sx, y: sy, front: p.z >= 0 || dx * dx + dy * dy > R * R };
+  }
+
+  /* A leg walked through the grid: the tiles it passes, in order. */
+  function legCells(leg) {
+    var s = leg.samples, out = [], li = null, lj = null, lx = 0, ly = 0;
+    function add(x, y, front) {
+      var i = Math.floor(x / CELL_PX), j = Math.floor(y / CELL_PX);
+      if (i === li && j === lj) { return; }
+      li = i; lj = j;
+      out.push(i, j, front ? 1 : 0);
+    }
+    for (var k = 0; k < s.length; k += 4) {
+      var p = liftedAt(s[k], s[k + 1], s[k + 2], s[k + 3]);
+      if (k === 0) { add(p.x, p.y, p.front); }
+      else {
+        var steps = Math.max(1, Math.ceil(Math.max(Math.abs(p.x - lx), Math.abs(p.y - ly)) / (CELL_PX * 0.5)));
+        for (var st = 1; st <= steps; st += 1) {
+          add(lx + (p.x - lx) * st / steps, ly + (p.y - ly) * st / steps, p.front);
+        }
+      }
+      lx = p.x; ly = p.y;
+    }
+    return out;
+  }
+
+  /* The legs, into drawTiles' runs: a leg being reached runs out from its
+     stop with its head at the top level and a tail stepping down; the last
+     leg rests a level up from the older ones. The unrecorded between two
+     stops is every other tile, and so is the far side of the world. */
+  function drawJourney(runs, t) {
+    var a = art;
+    if (a) {
+      a.dirty = false;
+      a.anim = false;
+      var lastLit = -1;
+      a.legs.forEach(function (leg, n) { if (leg.litAt !== null) { lastLit = n; } });
+      a.legs.forEach(function (leg, n) {
+        if (leg.litAt === null) { return; }
+        var q = still ? 1 : Math.max(0, Math.min(1, (t - leg.litAt) / LEG_MS));
+        if (q < 1) { a.anim = true; }
+        legRuns(runs, leg, LIGHT, n === lastLit ? 2 : 1, q, leg.broken, 0);
+      });
+      if (a.cons) { consRuns(a, runs, t); }
+    }
+    // Up at the world: the walk, going out, and the passing journey.
+    if (walkShown) { walkRuns(runs, t); }
+    if (passing && passing.legs) {
+      if (place || flying) { endPassing(t); } else { passingRuns(runs, t); }
+    }
+  }
+
+  /* One leg into the runs: lit from its start as far as q, the head bright
+     and a tail stepping down to its resting level while it runs; the part
+     already gone out (a fraction of it) left dark. Returns the head. */
+  function legRuns(runs, leg, tone, rest, q, broken, gone) {
+    var cols = Math.ceil(W / CELL_PX), rows = Math.ceil(H / CELL_PX);
+    var cells = legCells(leg);
+    var count = cells.length / 3;
+    var head = Math.floor(q * (count - 1)), from = Math.floor((gone || 0) * count);
+    var at = null;
+    for (var c = from; c <= head; c += 1) {
+      var i = cells[c * 3], j = cells[c * 3 + 1], front = cells[c * 3 + 2];
+      if (c === head) { at = { x: (i + 0.5) * CELL_PX, y: (j + 0.5) * CELL_PX }; }
+      if (i < 0 || j < 0 || i >= cols || j >= rows) { continue; }
+      var lvl = rest;
+      if (q < 1) {
+        var back = head - c;
+        if (back < 4) { lvl = Math.max(rest, 4 - back); }
+      }
+      if (!front) {
+        if (c % 2) { continue; }
+        lvl = 1;
+      } else if (broken && c % 2) {
+        continue;
+      }
+      var key = tone + "|" + lvl;
+      (runs[key] || (runs[key] = [])).push(i, j);
+    }
+    return at;
+  }
+
+  /* The stops, over the legs, in the work's own colour: filled where a
+     source puts the work there, outlined where only the listing gallery's
+     address is known, and five tiles in a diamond at one of the site's
+     museums. A return brightens it; the stop the slider is at is ringed. */
+  function drawStops(g, t) {
+    var a = art;
+    if (!a || !a.stops.length) { return; }
+    var seen = {};
+    a.stops.forEach(function (s, k) {
+      if (a.evs[s.first].pos > a.when + 1e-9) { return; }
+      seen[s.p] = (seen[s.p] || 0) + 1;
+    });
+    var drawn = {};
+    a.stops.forEach(function (s, k) {
+      if (a.evs[s.first].pos > a.when + 1e-9 || drawn[s.p]) { return; }
+      drawn[s.p] = true;
+      var p = project(s.lat, s.lon);
+      if (p.z < 0) { return; }
+      var x = Math.floor(p.x / CELL_PX) * CELL_PX, y = Math.floor(p.y / CELL_PX) * CELL_PX;
+      g.globalAlpha = Math.min(1, 0.7 + 0.15 * (seen[s.p] - 1));
+      g.fillStyle = a.tone;
+      g.strokeStyle = a.tone;
+      if (s.m) {
+        [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
+          g.fillRect(x + d[0] * CELL_PX + 1, y + d[1] * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+        });
+      } else if (s.pr === "office") {
+        g.lineWidth = 2;
+        g.strokeRect(x + 3, y + 3, CELL_PX - 6, CELL_PX - 6);
+      } else {
+        g.fillRect(x + 1, y + 1, CELL_PX - 2, CELL_PX - 2);
+      }
+    });
+    var r = a.stops[a.ring];
+    if (r && a.evs[r.first].pos <= a.when + 1e-9) {
+      var rp = project(r.lat, r.lon);
+      if (rp.z >= 0) {
+        var rx = Math.floor(rp.x / CELL_PX) * CELL_PX, ry = Math.floor(rp.y / CELL_PX) * CELL_PX;
+        var o = r.m ? CELL_PX : 0;          // round the diamond, or the tile
+        g.globalAlpha = LEVELS[4];
+        g.strokeStyle = LIGHT;
+        g.lineWidth = 2;
+        g.strokeRect(rx - o - 3, ry - o - 3, CELL_PX + 2 * o + 6, CELL_PX + 2 * o + 6);
+      }
+    }
+    g.globalAlpha = 1;
+    g.lineWidth = 1;
+  }
+
+  /* The clock of the journey. Playing, it lingers on each event and crosses
+     any empty stretch in at most 618 ms, at the town timeline's pace
+     otherwise; by hand it follows the slider 377 ms behind. Every event it
+     passes lights its line; an arrival pulses and names its stop. */
+  function stepArt(now) {
+    var a = art;
+    if (!a) { return; }
+    var dt = Math.min(100, now - (a.last || now));
+    a.last = now;
+    var was = a.when;
+    if (a.kind !== "work") {
+      // A place's or a thread's years: by hand only. Works not yet there
+      // step back, and the constellation keeps to those that had arrived.
+      if (a.byHand && a.when !== a.whenTo) {
+        a.when += (a.whenTo - a.when) * Math.min(1, dt / 377);
+        if (Math.abs(a.whenTo - a.when) < 0.0005) { a.when = a.whenTo; }
+      }
+      a.moving = a.when !== was;
+      if (a.moving) {
+        var yr = yearAt(a, a.when);
+        if (yr !== a.yearNow) { a.yearNow = yr; laterRows(a); a.dirty = true; }
+        showArtYear();
+      }
+      if (Math.abs(shortest(spin, wanted)) > 1e-5) { a.dirty = true; }
+      return;
+    }
+    if (a.playing) {
+      if (now >= a.holdUntil) {
+        if (!a.seg) {
+          var next = 1;
+          for (var k = 0; k < a.ticks.length; k += 1) {
+            if (a.ticks[k] > a.when + 1e-9) { next = a.ticks[k]; break; }
+          }
+          a.seg = { from: a.when, to: next, at: now,
+                    dur: Math.min((next - a.when) * CLOD_GROW, ART_LINGER) };
+        }
+        var q = a.seg.dur > 0 ? Math.min(1, (now - a.seg.at) / a.seg.dur) : 1;
+        a.when = a.seg.from + (a.seg.to - a.seg.from) * q;
+        if (q >= 1) {
+          a.when = a.seg.to;
+          a.seg = null;
+          if (a.when >= 1) { a.playing = false; }
+          else { a.holdUntil = now + ART_LINGER; }
+        }
+      }
+      a.whenTo = a.when;
+    } else if (a.byHand && a.when !== a.whenTo) {
+      a.when += (a.whenTo - a.when) * Math.min(1, dt / 377);
+      if (Math.abs(a.whenTo - a.when) < 0.0005) { a.when = a.whenTo; }
+    }
+    a.moving = a.when !== was;
+    if (a.moving) {
+      passEvents(a, now, a.when > was);
+      showArtYear();
+      a.dirty = true;
+    }
+    // The world may still be settling from the flight.
+    if (Math.abs(shortest(spin, wanted)) > 1e-5) { a.dirty = true; }
+  }
+
+  function passEvents(a, now, forward) {
+    var arrived = [], passed = 0;
+    a.evs.forEach(function (e, n) {
+      var on = e.pos <= a.when + 1e-9;
+      if (on === e.lit) { return; }
+      e.lit = on;
+      var line = a.lines[n];
+      if (line) { if (on) { line.dataset.on = "true"; } else { delete line.dataset.on; } }
+      if (on) { passed += 1; }
+    });
+    var ring = -1;
+    a.stops.forEach(function (s, k) {
+      var on = a.evs[s.first].pos <= a.when + 1e-9;
+      if (on) { ring = k; }
+      if (on && !s.reached) { s.reached = true; arrived.push(k); }
+      if (!on) { s.reached = false; }
+    });
+    // The legs: the newest one reached runs out from its stop; any passed
+    // over at once (by hand, or all of them under reduced motion) are whole.
+    var fresh = [];
+    a.legs.forEach(function (leg) {
+      var on = a.evs[leg.at].pos <= a.when + 1e-9;
+      if (!on) { leg.litAt = null; return; }
+      if (leg.litAt === null) { fresh.push(leg); }
+    });
+    fresh.forEach(function (leg, n) { leg.litAt = n === fresh.length - 1 && forward ? now : now - LEG_MS; });
+    if (ring !== a.ring) { a.ring = ring; }
+    if (forward && !still) {
+      arrived.forEach(function (k) {
+        var s = a.stops[k];
+        var p = project(s.lat, s.lon);
+        if (p.z > 0) {
+          pulse(p.x, p.y, [a.tone, LIGHT], 0.5, 89);
+          if (s.m) { sparkle(p.x, p.y, [GOLD], 8); }
+        }
+        if (window.Systems && Systems.sound && Systems.sound.on) { Systems.sound.tone(2637, 0.03, "square", 0.08); }
+      });
+      if (passed) { scramble(artYear, "decode", 0, 160); }
+    }
+    arrived.forEach(function (k) { nameStop(a, a.stops[k]); });
+  }
+
+  /* A stop's name: the one writing the globe carries in an art view. It is
+     typed in beside the stop the first time the stop is reached. */
+  function nameStop(a, s) {
+    if (a.names[s.p]) { return; }
+    var n = el("span", "art-stop-name", (s.name || "").split(",")[0]);
+    n.setAttribute("aria-hidden", "true");
+    artEl.appendChild(n);
+    a.names[s.p] = n;
+    scramble(n, "type", 0, 520);
+  }
+
+  function placeStops() {
+    var a = art;
+    if (!a) { return; }
+    var taken = [];
+    a.stops.forEach(function (s) {
+      var n = a.names[s.p];
+      if (!n || n.placed === a.frame) { return; }
+      n.placed = a.frame;
+      var p = project(s.lat, s.lon);
+      var x = Math.floor(p.x / CELL_PX) * CELL_PX + CELL_PX + 5, y = Math.floor(p.y / CELL_PX) * CELL_PX;
+      var w = n.offsetWidth || 60;
+      var clear = p.z > 0.18 && !taken.some(function (b) {
+        return x < b.x + b.w && b.x < x + w && Math.abs(b.y - y) < 12;
+      });
+      if (clear) { taken.push({ x: x, y: y, w: w }); }
+      n.style.visibility = clear ? "visible" : "hidden";
+      n.style.transform = "translate(" + x.toFixed(0) + "px," + y.toFixed(0) + "px)";
+    });
+    a.frame = (a.frame || 0) + 1;
+  }
+
+  /* The stop a press on the globe landed on. */
+  function hitStop(x, y) {
+    var a = art;
+    if (!a || !a.stops.length) { return -1; }
+    var best = -1, near = CELL_PX * (1 + INV);
+    a.stops.forEach(function (s, k) {
+      if (a.evs[s.first].pos > a.when + 1e-9) { return; }
+      var p = project(s.lat, s.lon);
+      if (p.z < 0) { return; }
+      var d = Math.max(Math.abs(p.x - x), Math.abs(p.y - y));
+      if (d < near) { near = d; best = k; }
+    });
+    return best;
+  }
+
+  /* A stop chosen on the globe: the slider to its first event, the column
+     to its place. */
+  function chooseStop(k) {
+    var a = art;
+    var s = a && a.stops[k];
+    if (!s) { return; }
+    setWhen(a, a.evs[s.first].pos);
+    a.ring = k;
+    a.dirty = true;
+    var head = null;
+    a.heads.forEach(function (hd) { if (!head && Number(hd.dataset.stop) === k) { head = hd; } });
+    if (head) { artCol.scrollTo({ top: Math.max(0, head.offsetTop - 8), behavior: still ? "auto" : "smooth" }); }
+    var p = project(s.lat, s.lon);
+    pulse(p.x, p.y, [a.tone, LIGHT], 0.6, 144);
+  }
+
+  /* ---- the slider ----------------------------------------------------------
+
+     The town timeline's own instrument (.building-time), linear in the
+     work's years, from its first dated event to now. A tick for each event,
+     raised for a writing, hollow for a date given as "c.". */
+
+  function setWhen(a, pos) {
+    flipToHead();
+    a.playing = false;
+    a.seg = null;
+    a.byHand = true;
+    a.whenTo = Math.max(0, Math.min(1, pos));
+  }
+
+  function yearAt(a, when) {
+    return Math.floor(a.y0 + Math.max(0, when) * (a.y1 - a.y0));
+  }
+
+  function showArtYear() {
+    var a = art;
+    if (!a || !artYear) { return; }
+    var yr = String(yearAt(a, a.when < 0 ? 0 : a.when));
+    if (!artYear.scrambling) { artYear.textContent = yr; }
+    if (document.activeElement !== artRange) { artRange.value = String(Math.round(Math.max(0, a.when) * 1000)); }
+    artRange.setAttribute("aria-valuetext", yr);
+  }
+
+  function buildTicks(a) {
+    artTicks.textContent = "";
+    if (!a.dated) { artTime.hidden = true; return; }
+    a.data.events.forEach(function (ev, n) {
+      var t = el("span", "art-tick");
+      t.style.left = (a.evs[n].pos * 100).toFixed(2) + "%";
+      if (ev.k === "written") { t.dataset.kind = "written"; }
+      if (ev.c) { t.dataset.circa = "true"; }
+      artTicks.appendChild(t);
+    });
+    artTime.hidden = false;
+    showArtYear();
+  }
+
+  if (artRange) {
+    artRange.addEventListener("pointerdown", function (event) { event.stopPropagation(); flipToHead(); });
+    artRange.addEventListener("input", function () {
+      var a = art;
+      if (!a || !a.ticks.length) { return; }
+      var raw = Number(artRange.value) / 1000, v = raw;
+      // It snaps to an event within one and a half per cent of the span.
+      var near = 0.015;
+      a.ticks.forEach(function (t) { if (Math.abs(t - raw) < near) { near = Math.abs(t - raw); v = t; } });
+      setWhen(a, v);
+      artYear.textContent = String(yearAt(a, v));
+    });
+  }
+
+  /* On a phone, after the play, scrolling the column moves time too: the
+     stop nearest the column's top sets the slider and is ringed. */
+  function watchStops(a) {
+    if (W > 720 || !window.IntersectionObserver) { return; }
+    var touched = 0;
+    ["touchmove", "wheel"].forEach(function (name) {
+      artCol.addEventListener(name, function () { if (art === a) { touched = performance.now(); } }, { passive: true });
+    });
+    a.watch = new IntersectionObserver(function (entries) {
+      if (art !== a || a.playing || !a.flipped || performance.now() - touched > 1200) { return; }
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) { return; }
+        var k = Number(e.target.dataset.stop);
+        var s = a.stops[k];
+        if (!s) { return; }
+        a.byHand = true;
+        a.whenTo = a.evs[s.first].pos;
+        a.ring = k;
+        a.dirty = true;
+      });
+    }, { root: artCol, rootMargin: "0px 0px -80% 0px" });
+    a.heads.forEach(function (h) { if (h.dataset.stop !== undefined) { a.watch.observe(h); } });
+  }
+
+  /* ---- the look ------------------------------------------------------------
+
+     First the photograph alone, large, in the band, the world washed behind
+     it; the caption at 4 s; at 9 s — or at once, on any press, scroll or
+     slide: pressing never waits — it goes into the column head, the wash
+     lifts and the journey plays. */
+
+  function lookAt(a) {
+    var h = a.data;
+    artEl.dataset.look = still ? "done" : "plate";
+    if (still || !h.image) {
+      a.flipped = true;
+      if (a.headFig) { a.headFig.dataset.on = "true"; }
+      reveal(a.headCap, 0, a);
+      playArt();
+      return;
+    }
+    var go = el("span", "deal-go");
+    var img = el("img");
+    img.alt = "";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    var tries = ["medium", "square"].map(function (v) { return ART_CDN + h.image + "/" + v + ".jpg"; });
+    img.addEventListener("error", function () {
+      if (tries.length) { img.src = tries.shift(); return; }
+      artPlate.hidden = true;
+    });
+    img.addEventListener("load", function () {
+      if (art !== a || a.flipped) { return; }
+      layoutPlate(img.naturalWidth / Math.max(1, img.naturalHeight));
+      artPlate.hidden = false;
+      bringIn(artPlate, 0);
+    });
+    img.src = ART_CDN + h.image + "/large.jpg";
+    go.appendChild(img);
+    artPlate.appendChild(go);
+    artPlate.dataset.aspect = "1";
+    reveal(a.headCap, OPEN_AT[0], a);
+    later(function () { enterText(a.headCap, 0); }, OPEN_AT[0], a);
+    later(flipToHead, OPEN_AT[1], a);
+  }
+
+  /* The photograph as large as the band allows, never cropped. */
+  function layoutPlate(aspect) {
+    if (aspect) { artPlate.dataset.aspect = String(aspect); }
+    aspect = Number(artPlate.dataset.aspect) || 1;
+    var b = artBand(), pad = 21;
+    var mw = Math.max(40, b.w - 2 * pad), mh = Math.max(40, b.h - pad);
+    var w = Math.min(mw, mh * aspect), hh = w / aspect;
+    artPlate.style.width = w.toFixed(1) + "px";
+    artPlate.style.height = hh.toFixed(1) + "px";
+    artPlate.style.left = (b.x + (b.w - w) / 2).toFixed(1) + "px";
+    artPlate.style.top = (b.y + (b.h - hh) / 2).toFixed(1) + "px";
+  }
+
+  /* The photograph into the column head (a FLIP at beat-6), and the play. */
+  function flipToHead() {
+    var a = art;
+    if (!a || a.flipped || a.kind !== "work") { return; }
+    a.flipped = true;
+    reveal(a.headCap, 0, a);
+    var img = a.headFig && a.headFig.querySelector("img");
+    var from = artPlate.getBoundingClientRect();
+    function done() {
+      if (art !== a) { return; }
+      if (a.headFig) { a.headFig.dataset.on = "true"; }
+      delete artPlate.dataset.flip;
+      artPlate.hidden = true;
+      artPlate.style.transform = "";
+      artEl.dataset.look = "done";
+    }
+    // The wash lifts and the column's body comes in as the journey starts.
+    artEl.dataset.look = "flip";
+    if (a.count && !still) { enterText(a.count, 0); }
+    playArt();
+    var to = img ? img.getBoundingClientRect() : null;
+    if (still || artPlate.hidden || !to || !to.width || !from.width) { done(); return; }
+    // Contained in the head's square, as the head shows it: top, centred.
+    var ar = from.width / from.height, tw, th, tx, ty;
+    if (ar >= 1) { tw = to.width; th = tw / ar; tx = to.left; ty = to.top; }
+    else { th = to.height; tw = th * ar; tx = to.left + (to.width - tw) / 2; ty = to.top; }
+    a.headFig.dataset.on = "waiting";
+    artPlate.dataset.flip = "true";
+    artPlate.style.transform = "translate(" + (tx - from.left).toFixed(1) + "px," + (ty - from.top).toFixed(1) +
+      "px) scale(" + (tw / from.width).toFixed(4) + ")";
+    later(done, 1775, a);
+  }
+
+  function playArt() {
+    var a = art;
+    if (!a || a.kind !== "work" || !a.live) { return; }
+    if (still) {
+      a.when = a.whenTo = 1;
+      passEvents(a, performance.now(), false);
+      showArtYear();
+      a.dirty = true;
+      return;
+    }
+    a.when = a.whenTo = 0;
+    a.evs.forEach(function (e) { e.lit = false; });
+    a.playing = true;
+    a.seg = null;
+    a.holdUntil = performance.now() + 240;
+    passEvents(a, performance.now(), true);
+    showArtYear();
+    a.dirty = true;
+    // The threads, on the reading's slow clock (the next pass).
+    threadProcession();
+  }
+
+  if (artEl) {
+    // Pressing, scrolling or sliding never waits for the look.
+    artEl.addEventListener("pointerdown", function () { flipToHead(); }, true);
+    artCol.addEventListener("wheel", function () { flipToHead(); }, { passive: true });
+    artCol.addEventListener("touchmove", function () { flipToHead(); }, { passive: true });
+    window.addEventListener("resize", function () { if (art && !art.flipped) { layoutPlate(); } });
+  }
+
+  /* ---- the column ----------------------------------------------------------
+
+     A work's history, briefly: the work; a count line; how you came; the
+     thread being said; the stops, each a head (a door to its place) and a
+     dated line an event with a fixed verb and the record's own words; the
+     writings, as citations; all its threads; where it is all from. Every
+     line is on the page from the start, dim, and steps to ink as the slider
+     passes its year. Text is set as text, never as markup from the data. */
+
+  // "_Alberto Giacometti_" as italics, the rest as it stands.
+  function italics(text, into) {
+    into = into || document.createDocumentFragment();
+    String(text || "").split(/_([^_]+)_/).forEach(function (part, i) {
+      if (!part) { return; }
+      if (i % 2) { into.appendChild(el("i", "", part)); }
+      else { into.appendChild(document.createTextNode(part)); }
+    });
+    return into;
+  }
+
+  function yearsOf(evs, h) {
+    var lo = Infinity, hi = -Infinity;
+    evs.forEach(function (n) {
+      var y = yearNum(h.events[n].y);
+      if (y !== null) { lo = Math.min(lo, Math.floor(y)); hi = Math.max(hi, Math.floor(y)); }
+    });
+    if (lo === Infinity) { return ""; }
+    return lo === hi ? String(lo) : lo + "–" + hi;
+  }
+
+  function whenOf(ev) {
+    var y = /^\d{4}/.exec(ev.y || "");
+    if (!y) { return "·"; }
+    return (ev.c ? "c. " : "") + y[0];
+  }
+
+  function countLine(h, stops) {
+    var all = h.events.map(function (e, n) { return n; });
+    var owners = {};
+    var k = { exhibited: 0, sale: 0, written: 0 };
+    h.events.forEach(function (ev) {
+      if (ev.k === "exhibited") { k.exhibited += 1; }
+      if (ev.k === "sold" || ev.k === "offered") { k.sale += 1; }
+      if (ev.k === "written") { k.written += 1; }
+      if (ev.k === "owned" && ev.who) { owners[ev.who] = true; }
+    });
+    var places = {};
+    stops.forEach(function (s) { places[s.p] = true; });
+    function n(c, one, many) { return c ? c + " " + (c === 1 ? one : many) : ""; }
+    var parts = [yearsOf(all, h), n(Object.keys(places).length, "place", "places"),
+                 n(k.exhibited, "show", "shows"), n(k.sale, "sale", "sales"),
+                 n(Object.keys(owners).length, "owner", "owners"),
+                 n(k.written, "writing", "writings")];
+    if (!stops.length) { parts.push("not yet placed on the Earth"); }
+    return parts.filter(Boolean).join(" · ");
+  }
+
+  var FAIR = /\b(fair|frieze|art basel|armory show|fiac|expo chicago|tefaf|arco|masterpiece)\b/i;
+
+  // An owner as the record names them; one only relative to the record
+  // ("the present owner") stays in its quotation marks.
+  function ownerName(who) {
+    return /^(the|a|an|his|her|their|by)\s/.test(who || "") ? "“" + who + "”" : who;
+  }
+
+  /* One event as a line: its year, and a fixed verb with the record's own
+     fields. Nothing about price, ever. */
+  function lineOf(ev) {
+    var out = document.createDocumentFragment();
+    function t(s) { out.appendChild(document.createTextNode(s)); }
+    function i(s) { out.appendChild(el("i", "", s)); }
+    var note = ev.n ? " (" + ev.n + ")" : "";
+    switch (ev.k) {
+      case "made":
+        t("Made" + (ev.w ? " in " + ev.w : ""));
+        break;
+      case "owned":
+        t("Owned by " + ownerName(ev.who || "someone not named") + note);
+        break;
+      case "held":
+        t("In the collection of " + String(ev.who || ev.v || "").replace(/^collection\s+/i, ""));
+        break;
+      case "listed":
+        t("Listed on Artsy by " + (ev.who || "a gallery"));
+        break;
+      case "exhibited":
+        if (ev.t && !FAIR.test(ev.v || "")) {
+          t("Shown in "); i(ev.t);
+          if (ev.v) { t(", " + ev.v); }
+          if (ev.pg) { t(", " + ev.pg); }
+        } else {
+          t("Shown at " + (ev.v || ev.t || ev.w || "a place not named"));
+        }
+        break;
+      case "offered":
+        if (ev.t) { t("Offered in "); i(ev.t); }
+        else { t("Offered by " + (ev.who || ev.v || "a house not named")); }
+        break;
+      case "sold":
+        t(ev.v ? "Sold at " + ev.v : ev.who ? "Sold to " + ev.who : "Sold");
+        if (ev.n) { t(", " + ev.n); }
+        break;
+      default:
+        t(ev.n || ev.q || "");
+    }
+    return out;
+  }
+
+  var HOW = { venue: "placed at the venue", city: "at the city", office: "where the gallery is" };
+
+  /* A writing as a citation: the source's own string when it gives one,
+     else put together from its parts, the note never dropped. */
+  function citeOf(ev) {
+    var box = el("p", "art-cite");
+    if (ev.q && ev.q !== ev.y) {
+      italics(ev.q, box);
+    } else {
+      var bits = [];
+      if (ev.who) { bits.push(document.createTextNode(ev.who)); }
+      if (ev.t && ev.pub && ev.pub !== ev.t) {
+        bits.push(document.createTextNode("“" + ev.t + "”"));
+        bits.push(el("i", "", ev.pub));
+      } else if (ev.t || ev.pub) {
+        bits.push(el("i", "", ev.t || ev.pub));
+      }
+      if (ev.w) { bits.push(document.createTextNode(ev.w.split(",")[0])); }
+      if (ev.y) { bits.push(document.createTextNode(String(ev.y).slice(0, 4))); }
+      if (ev.pg) { bits.push(document.createTextNode(ev.pg)); }
+      bits.forEach(function (b, n) {
+        if (n) { box.appendChild(document.createTextNode(", ")); }
+        box.appendChild(b);
+      });
+      box.appendChild(document.createTextNode((ev.n ? " (" + ev.n + ")" : "") + "."));
+    }
+    if (ev.u && /^https?:\/\//.test(ev.u)) {
+      var host = ev.u;
+      try { host = new URL(ev.u).hostname.replace(/^www\./, ""); } catch (e) {}
+      var go = el("a", "art-go", "Read it at " + host + " ↗");
+      go.href = ev.u;
+      go.target = "_blank";
+      go.rel = "noopener";
+      box.appendChild(document.createTextNode(" "));
+      box.appendChild(go);
+    }
+    return box;
+  }
+
+  /* What a thread is, as a sentence, its name in italics. */
+  function threadSentence(t) {
+    var f = document.createDocumentFragment();
+    function s(x) { f.appendChild(document.createTextNode(x)); }
+    function i(x) { f.appendChild(el("i", "", x)); }
+    var n = t.n || 0, others = n === 1 ? "1 other" : n + " others";
+    var town = String(t.at || "").split(", ").pop();
+    switch (t.k) {
+      case "show": s("Shown with " + others + " in "); i(t.name); s([town, t.y].filter(Boolean).length ? ", " + [town, t.y].filter(Boolean).join(", ") : ""); break;
+      case "sale": s("Offered with " + others + " in "); i(t.name); s(t.y ? ", " + t.y : ""); break;
+      case "owner": s("Owned by "); i(t.name); s(", as " + others + (n === 1 ? " was" : " were")); break;
+      case "museum": s("Held by " + (/^the\s/i.test(t.name) ? "" : "the ")); i(t.name); s(", with " + others); break;
+      case "writing": s("In "); i(t.name); s(" (" + [String(t.at || "").split(" ").pop(), t.y].filter(Boolean).join(", ") + "), with " + others); break;
+      case "artist": s("By "); i(t.name); s(", like " + others); break;
+      default: i(t.name);
+    }
+    return f;
+  }
+
+  function artColumn(h, via) {
+    var a = art;
+    var cdn = ART_CDN;
+    var col = artCol;
+
+    // The work: its photograph goes here at the end of the look.
+    var head = h.image
+      ? heldFigure({ t: h.title, a: (h.artists || []).join(", "), y: h.date,
+                     m: [h.medium, h.dimensions].filter(Boolean).join(" · ") },
+                   cdn + h.image + "/large.jpg", 0, false,
+                   ["medium", "square"].map(function (v) { return cdn + h.image + "/" + v + ".jpg"; }))
+      : null;
+    if (head) {
+      head.classList.add("art-head");
+      col.appendChild(head);
+      a.headFig = head;
+      a.headCap = head.querySelector("figcaption");
+    } else {
+      var cap = el("p", "art-head-text");
+      cap.appendChild(el("i", "", h.title || "Untitled"));
+      cap.appendChild(document.createTextNode([" — " + (h.artists || []).join(", "), h.date].filter(Boolean).join(", ")));
+      col.appendChild(cap);
+      a.headCap = cap;
+    }
+
+    var body = el("div", "art-body");
+    col.appendChild(body);
+    a.body = body;
+
+    var count = el("p", "art-count", countLine(h, a.stops));
+    body.appendChild(count);
+
+    // How you came: by a thread, from a work (FROM hops back).
+    var came = cameLine(via);
+    if (came) { body.appendChild(came); }
+
+    // The thread being said (the next pass says them).
+    var stageW = el("div", "read-stage art-stage");
+    stageW.setAttribute("aria-live", "polite");
+    body.appendChild(stageW);
+    a.stage = stageW;
+
+    // The stops, a group at a time, a line an event.
+    var ol = el("ol", "art-stops");
+    a.groups.forEach(function (g) {
+      var li = el("li", "art-stop");
+      var years = yearsOf(g.events, h);
+      var office = !g.unplaced && g.events.every(function (n) { return h.events[n].pr === "office"; });
+      var headText = g.unplaced ? "Place not recorded" + (years ? " · " + years : "")
+        : office ? (g.name || g.p) + " · where the gallery is"
+        : [g.name || g.p, years].filter(Boolean).join(" · ");
+      var hd;
+      if (g.unplaced) {
+        hd = el("p", "art-stop-head", headText);
+        hd.dataset.unplaced = "true";
+      } else {
+        hd = el("button", "art-stop-head", headText);
+        hd.type = "button";
+        hd.dataset.stop = String(g.stop);
+        hd.addEventListener("click", function (event) { event.stopPropagation(); stopDoor(g, h); });
+        hd.addEventListener("pointerenter", function (event) {
+          if (event.pointerType === "mouse") { pulseStop(g.stop, 0.3); }
+        });
+      }
+      a.heads.push(hd);
+      li.appendChild(hd);
+      g.events.forEach(function (n) {
+        li.appendChild(artLine(h, n));
+      });
+      ol.appendChild(li);
+    });
+    body.appendChild(ol);
+
+    // The writings: citations, linked to their originals where there is one.
+    var written = [];
+    h.events.forEach(function (ev, n) { if (ev.k === "written") { written.push(n); } });
+    if (written.length) {
+      var cites = el("section", "art-cites");
+      cites.appendChild(el("p", "art-cites-head", "Written · " + written.length));
+      written.forEach(function (n) {
+        var c = citeOf(h.events[n]);
+        a.lines[n] = c;
+        cites.appendChild(c);
+      });
+      body.appendChild(cites);
+    }
+
+    // All the threads, once each has been said (the next pass shows them).
+    var line = el("div", "read-words art-words");
+    line.setAttribute("aria-label", "What " + (h.title || "this work") + " shares");
+    (h.threads || []).forEach(function (t) {
+      var b = el("button", "read-w", t.name);
+      b.type = "button";
+      b.dataset.thread = t.id;
+      b.addEventListener("click", function (event) { event.stopPropagation(); holdThread(t); });
+      line.appendChild(b);
+    });
+    body.appendChild(line);
+    a.line = line;
+    a.order = (h.threads || []).slice();
+
+    // Where it is all from, in plain words; and putting it away.
+    var names = [];
+    (h.sources || []).forEach(function (s) { if (s.name && names.indexOf(s.name) < 0) { names.push(s.name); } });
+    var from = el("p", "art-sources",
+      (names.length ? "From " + names.join("; ") + ". " : "") + (h.asof ? "Known to " + dayOf(h.asof) + "." : ""));
+    body.appendChild(from);
+    var away = el("button", "read-quiet", "Put it away");
+    away.type = "button";
+    away.addEventListener("click", function (event) { event.stopPropagation(); comeUp(); });
+    body.appendChild(away);
+
+    a.count = count;
+  }
+
+  function dayOf(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    if (!m) { return iso; }
+    var mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(m[2]) - 1];
+    return Number(m[3]) + " " + mon + " " + m[1];
+  }
+
+  /* "BY Giacometti & Dubuffet ← FROM Chaise et guéridon": how a door
+     brought you, and the way back. */
+  function cameLine(via) {
+    if (!via || !(via.thread || via.from || via.museum || via.place)) { return null; }
+    var p = el("p", "art-came");
+    var by = via.thread ? via.thread.name : via.museum ? via.museum.name
+      : via.place && artPlaceBy[via.place] ? artPlaceBy[via.place].name : "";
+    if (by) {
+      p.appendChild(document.createTextNode("By "));
+      p.appendChild(el("i", "", by));
+    }
+    if (via.from) {
+      p.appendChild(document.createTextNode((by ? " ← " : "") + "From "));
+      var back = el("button", "art-back");
+      back.type = "button";
+      back.appendChild(el("i", "", via.from.title || "the work before"));
+      back.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openArt({ work: via.from.id }, { thread: via.thread });
+      });
+      p.appendChild(back);
+    }
+    return p;
+  }
+
+  /* One event's line, and what a press opens under it. */
+  function artLine(h, n) {
+    var a = art;
+    var ev = h.events[n];
+    var line = el("div", "art-line");
+    line.tabIndex = 0;
+    line.setAttribute("role", "button");
+    line.setAttribute("aria-expanded", "false");
+    if (ev.k === "listed") { line.dataset.kind = "listed"; }
+    line.appendChild(el("span", "art-when", whenOf(ev)));
+    var what = el("span", "art-what");
+    what.appendChild(lineOf(ev));
+    if (ev.x && ev.x.length && h.threads) {
+      var most = 0;
+      ev.x.forEach(function (x) { var t = h.threads[x]; if (t && t.n > most) { most = t.n; } });
+      if (most) { what.appendChild(el("span", "art-shared", "·" + most)); }
+    }
+    line.appendChild(what);
+    function toggle(event) {
+      if (event.target.closest && event.target.closest(".art-more button, .art-more a")) { return; }
+      expandLine(line, ev, n);
+    }
+    line.addEventListener("click", toggle);
+    // Pointed at with a mouse, its stop answers on the globe.
+    line.addEventListener("pointerenter", function (event) {
+      if (event.pointerType !== "mouse" || !art) { return; }
+      art.stops.forEach(function (st, k) { if (st.events.indexOf(n) >= 0) { pulseStop(k, 0.3); } });
+    });
+    line.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); }
+    });
+    a.lines[n] = line;
+    return line;
+  }
+
+  /* A line opened: the source's own words, whose they are, how it is
+     placed, and its threads as sentences; the slider goes to it and its
+     stop answers on the globe. */
+  function expandLine(line, ev, n) {
+    var a = art;
+    if (!a) { return; }
+    var open = line.getAttribute("aria-expanded") === "true";
+    line.setAttribute("aria-expanded", String(!open));
+    if (open) { return; }
+    if (!line.more) {
+      var h = a.data;
+      var more = el("div", "art-more");
+      if (ev.q && ev.q !== ev.y) {
+        var q = el("p", "art-q");
+        q.appendChild(document.createTextNode("“"));
+        italics(ev.q, q);
+        q.appendChild(document.createTextNode("”"));
+        more.appendChild(q);
+      }
+      var srcs = [];
+      (ev.s || []).forEach(function (k) {
+        var s = h.sources && h.sources[k];
+        if (s && s.name && srcs.indexOf(s.name) < 0) { srcs.push(s.name); }
+      });
+      if (srcs.length) { more.appendChild(el("p", "art-src", "— " + srcs.join("; "))); }
+      more.appendChild(el("p", "art-how", ev.k === "written" ? "a writing, not a place" :
+        (ev.ll && HOW[ev.pr]) || "no place given"));
+      (ev.x || []).forEach(function (x) {
+        var t = h.threads && h.threads[x];
+        if (!t) { return; }
+        var b = el("button", "art-thread");
+        b.type = "button";
+        b.appendChild(threadSentence(t));
+        b.addEventListener("click", function (event) { event.stopPropagation(); holdThread(t); });
+        more.appendChild(b);
+      });
+      line.appendChild(more);
+      line.more = more;
+      if (!still) { enterText(more.firstChild, 0); }
+    }
+    setWhen(a, a.evs[n].pos);
+    var k = -1;
+    a.stops.forEach(function (s, i) { if (s.events.indexOf(n) >= 0) { k = i; } });
+    if (k >= 0) { a.ring = k; pulseStop(k, 0.5); }
+  }
+
+  function pulseStop(k, strength) {
+    var a = art;
+    var s = a && a.stops[k];
+    if (!s) { return; }
+    var p = project(s.lat, s.lon);
+    if (p.z > 0) { pulse(p.x, p.y, [a.tone, LIGHT], strength, 89); }
+  }
+
+  /* A stop's head: a door to its place's view — or, at one of the site's
+     museums, to the museum, its town at that year (startBuilding reads
+     atYear) and this work first among its saved works. */
+  function stopDoor(g, h) {
+    var at = h.events[g.events[0]].m;
+    var m = at && g.events.every(function (n) { return h.events[n].m === at; }) ? cityOf(at) : null;
+    if (m) {
+      var y = yearNum((h.events[g.events[0]] || {}).y);
+      if (y !== null) { m.atYear = Math.floor(y); }
+      m.via = { work: h.id };
+      hopTo(m);
+      return;
+    }
+    openArt({ place: g.p }, { work: h.id, from: { id: h.id, title: h.title } });
+  }
+
+  /* ---- threads and doors ---------------------------------------------------
+
+     What a history shares with other saved works — a show, a sale, an
+     owner, a museum, a book, and the artist last — said one at a time on
+     the reading's slow clock, rarest first, each with its doors: the works
+     that share it. Pressing a door turns the world to that work, and the
+     thread you came by is the first thing said there, so a visit is a walk
+     from work to work by where they have been together. Pressing a thread
+     holds it: the work steps back, the doors come forward with their names,
+     and the globe draws every member's way into the shared place and on
+     from it (the constellation). A listing is not a thread: a gallery's
+     catalogue is reached through the place view's institutions instead. */
+
+  // The thread a visit arrived by: a door's, or the museum's when it came
+  // from that museum's column.
+  function cameThread(h, via) {
+    if (!via) { return null; }
+    var found = null;
+    (h.threads || []).forEach(function (t) {
+      if (found) { return; }
+      if (via.thread ? t.id === via.thread.id
+                     : via.museum && t.k === "museum" && t.name === via.museum.name) { found = t; }
+    });
+    return found;
+  }
+
+  function museumNamed(name) {
+    for (var i = 0; i < cities.length; i += 1) {
+      if (cities[i].museum && cities[i].museum.name === name) { return cities[i]; }
+    }
+    return null;
+  }
+
+  /* The threads, on the reading's clock from arrival: the one you came by at
+     2 s, then the first at FIRST_WORD_AT and each after it waiting longer,
+     only while the pointer is still; then all of them, small, in a line. */
+  function threadProcession() {
+    var a = art;
+    if (!a || a.kind !== "work" || a.begun) { return; }
+    a.begun = true;
+    var by = cameThread(a.data, a.via);
+    a.order = (a.data.threads || []).slice();
+    if (by) { a.order = [by].concat(a.order.filter(function (t) { return t !== by; })); }
+    a.n = 0;
+    a.gap = WORD_GAP;
+    if (by) {
+      a.n = 1;
+      later(function () { flipToHead(); sayThread(by, true); }, 2000, a);
+    }
+    sayNext(a, Math.max(0, FIRST_WORD_AT - (performance.now() - a.at)));
+  }
+
+  // One chain of the clock at a time: holding and letting go start it again.
+  function sayNext(a, ms) {
+    var me = a.chain = (a.chain || 0) + 1;
+    afterStill(function () { if (a.chain === me) { nextThread(); } }, ms, a);
+  }
+
+  function nextThread() {
+    var a = art;
+    if (!a || !a.live || a.held) { return; }
+    if (!a.order.length) {
+      // Nothing it shares with another saved work: said once, and kept.
+      var box = el("div", "read-said art-said");
+      box.appendChild(el("p", "read-only", "only here"));
+      a.stage.appendChild(box);
+      requestAnimationFrame(function () { box.dataset.on = "true"; });
+      return;
+    }
+    if (a.n >= a.order.length) {
+      quiet(a);
+      a.line.dataset.on = "true";
+      return;
+    }
+    sayThread(a.order[a.n], false);
+    a.n += 1;
+    var gap = a.gap;
+    a.gap = Math.min(WORD_GAP_MAX, a.gap * WORD_GAP_GROW);
+    sayNext(a, gap);
+  }
+
+  /* A thread takes the room: its sentence, and under it its doors, read
+     just before it is said, the next one read ahead. */
+  function sayThread(t, keep) {
+    var a = art;
+    if (!a || !a.stage || !t) { return; }
+    quiet(a);
+    var box = el("div", "read-said art-said");
+    var said = el("p", "art-sentence");
+    said.appendChild(threadSentence(t));
+    box.appendChild(said);
+    a.stage.appendChild(box);
+    box.getBoundingClientRect();
+    requestAnimationFrame(function () { if (box.dataset.on !== "false") { box.dataset.on = "true"; } });
+    if (a.line) {
+      Array.prototype.forEach.call(a.line.children, function (b) {
+        b.setAttribute("aria-pressed", String(!!keep && b.dataset.thread === t.id));
+      });
+    }
+    readThread(t.id).then(function (tf) {
+      if (art !== a || box.dataset.on === "false" || !box.parentNode) { return; }
+      box.appendChild(doorsOf(tf, t, a));
+    });
+    var k = a.order.indexOf(t);
+    var ahead = a.order[k >= 0 ? k + 1 : a.n];
+    if (ahead) { readThread(ahead.id); }
+    var at = a.stage.getBoundingClientRect();
+    if (at.width && !still) { pulse(at.left + 30, at.top + 24, [a.tone, LIGHT], 0.35, 90); }
+  }
+
+  /* Eight of the works that share it, the one you came from first and
+     marked; a museum's thread has the museum itself as its first door; and
+     the rest are in the thread's own view. */
+  function doorsOf(tf, t, a) {
+    var box = el("div", "read-doors art-doors");
+    var me = a.data.id, from = a.via.from && a.via.from.id;
+    var rows = tf ? tf.works.filter(function (w) { return w[0] !== me; }) : [];
+    rows = rows.filter(function (w) { return w[0] === from; })
+      .concat(rows.filter(function (w) { return w[0] !== from; }));
+    var n = 0;
+    var mc = t.k === "museum" ? museumNamed(t.name) : null;
+    if (mc) { box.appendChild(museumDoor(mc, a, n)); n += 1; }
+    rows.slice(0, 8).forEach(function (w) { box.appendChild(workDoor(w, t, tf, a, n)); n += 1; });
+    if (rows.length > 8) {
+      var more = el("button", "art-and-more", "and " + (rows.length - 8) + " more");
+      more.type = "button";
+      more.style.transitionDelay = (still ? 0 : 520 + n * 140) + "ms";
+      more.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openArt({ thread: t.id }, { work: me, from: { id: me, title: a.data.title, tone: a.tone } });
+      });
+      box.appendChild(more);
+    }
+    if (!n) { box.appendChild(el("p", "read-only", "only here")); }
+    return box;
+  }
+
+  function workDoor(w, t, tf, a, n) {
+    var d = el("button", "read-door art-door");
+    d.type = "button";
+    d.setAttribute("aria-label", (w[1] || "Untitled") + (w[2] ? ", " + w[2] : "") + " — also " + t.name);
+    var pic = el("span", "art-door-pic");
+    var go = el("span", "deal-go");
+    var img = el("img");
+    img.alt = "";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    if (w[3]) { img.src = ART_CDN + w[3] + "/square.jpg"; }
+    go.appendChild(img);
+    pic.appendChild(go);
+    d.appendChild(pic);
+    d.appendChild(el("span", "read-door-t", w[1] || "Untitled"));
+    if (a.via.from && a.via.from.id === w[0]) { d.appendChild(el("span", "art-door-came", "you came from here")); }
+    var wait = still ? 0 : 520 + n * 140;
+    d.style.transitionDelay = wait + "ms";
+    later(function () { pixelIn(pic, 0); }, wait, a);
+    d.addEventListener("click", function (event) {
+      event.stopPropagation();
+      throughDoor(w, t, tf, pic, go);
+    });
+    return d;
+  }
+
+  function museumDoor(mc, a, n) {
+    var d = el("button", "read-door art-door art-door-museum");
+    d.type = "button";
+    d.setAttribute("aria-label", "Go down to " + mc.title);
+    d.appendChild(el("span", "art-door-pic"));
+    d.appendChild(el("span", "read-door-t", mc.title));
+    d.style.transitionDelay = (still ? 0 : 520 + n * 140) + "ms";
+    d.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (flying) { return; }
+      mc.via = { work: a.data.id };
+      hopTo(mc);
+    });
+    return d;
+  }
+
+  /* Pressed, a thread stays: the work steps back, the doors grow and show
+     their names, and the constellation is drawn. Pressed again, let go. */
+  function holdThread(t) {
+    var a = art;
+    if (!a || a.kind !== "work" || !t) { return; }
+    if (a.held === t.id) { releaseThread(); return; }
+    flipToHead();
+    a.held = t.id;
+    artEl.dataset.held = "true";
+    sayThread(t, true);
+    readThread(t.id).then(function (tf) {
+      if (art !== a || a.held !== t.id || !tf) { return; }
+      var members = tf.works.filter(function (w) { return w[0] !== a.data.id; }).map(function (w) {
+        return { y: w[4], prev: w[5], next: w[6] };
+      });
+      constellation(members, tf.ll, a);
+    });
+  }
+
+  function releaseThread() {
+    var a = art;
+    if (!a) { return; }
+    a.held = null;
+    delete artEl.dataset.held;
+    a.cons = null;
+    a.dirty = true;
+    tilesDirty = true;
+    if (a.line) {
+      Array.prototype.forEach.call(a.line.children, function (b) { b.setAttribute("aria-pressed", "false"); });
+    }
+    quiet(a);
+    if (a.kind === "work" && a.n < a.order.length) { sayNext(a, READ_BEAT); }
+  }
+
+  /* Each member's way into the shared place from where it was before, and
+     on to where it went after, for at most 34 of them, in lilac, one every
+     89 ms, converging; then the place sparkles once. Members carry their
+     year, so a place's or a thread's slider keeps to those already there. */
+  function constellation(members, ll, a) {
+    a = a || art;
+    if (!a || !ll) { return; }
+    var c = toVec(ll[0] * RAD, wrap(ll[1] * RAD));
+    var now = performance.now(), legs = [], n = 0;
+    members.forEach(function (m) {
+      if (n >= 34) { return; }
+      var prev = m.prev && artPlaceBy[m.prev], next = m.next && artPlaceBy[m.next];
+      var into = prev ? arcOf(prev.v, c) : null, on = next ? arcOf(c, next.v) : null;
+      if (!into && !on) { return; }
+      var at = now + n * 89;
+      if (into) { legs.push({ samples: into, litAt: at, y: m.y || 0 }); }
+      if (on) { legs.push({ samples: on, litAt: at + (into ? LEG_MS : 0), y: m.y || 0 }); }
+      n += 1;
+    });
+    a.cons = { legs: legs, ll: ll };
+    a.dirty = true;
+    tilesDirty = true;
+    if (!legs.length) { return; }
+    later(function () {
+      var p = project(ll[0] * RAD, wrap(ll[1] * RAD));
+      if (p.z > 0) { sparkle(p.x, p.y, [GOLD], 13); }
+    }, (n - 1) * 89 + LEG_MS, a);
+  }
+
+  function consRuns(a, runs, t) {
+    a.cons.legs.forEach(function (leg) {
+      if (a.kind !== "work" && a.yearNow && leg.y > a.yearNow) { return; }
+      if (!still && t < leg.litAt) { a.anim = true; return; }
+      var q = still ? 1 : Math.min(1, (t - leg.litAt) / LEG_MS);
+      if (q < 1) { a.anim = true; }
+      legRuns(runs, leg, LILAC, 2, q, false, 0);
+    });
+  }
+
+  /* A door pressed: the thumbnail answers (a dealt pointed effect), the
+     step is kept for the walk, and the world turns to the next work. */
+  function throughDoor(w, t, tf, pic, go) {
+    var a = art;
+    if (!a || flying) { return; }
+    if (!still && pic) { POINTED[oneOf(Object.keys(POINTED))](pic, go); }
+    if (!artWalk.length) {
+      var here = a.stopNow();
+      artWalk.push({ lat: here.lat, lon: here.lon });
+    }
+    if (tf && tf.ll) { artWalk.push({ lat: tf.ll[0] * RAD, lon: wrap(tf.ll[1] * RAD) }); }
+    if (artWalk.length > 34) { artWalk.splice(0, artWalk.length - 34); }
+    var from = { id: a.data.id, title: a.data.title, tone: a.tone };
+    var by = { id: t.id, k: t.k, name: t.name, ll: tf && tf.ll };
+    window.setTimeout(function () {
+      if (art === a) { openArt({ work: w[0] }, { thread: by, from: from }); }
+    }, still ? 0 : 377);
+  }
+
+  /* Come up to the world, how you got there is drawn once: each shared
+     stop joined to the next in lilac, going out in steps over φ³ s. */
+  function drawWalkOnce() {
+    var pts = artWalk.map(function (p) { return { v: toVec(p.lat, p.lon), first: 0, broken: false }; });
+    artWalk = [];
+    var legs = legsOf(pts);
+    if (!legs.length || still) { return; }
+    walkShown = { legs: legs, at: performance.now() };
+    tilesDirty = true;
+  }
+
+  function walkRuns(runs, t) {
+    var age = t - walkShown.at, dur = Math.pow(PHI, 3) * 1000;
+    if (age >= dur) { walkShown = null; return; }
+    var lvl = Math.max(1, Math.ceil(3 * (1 - age / dur)));
+    walkShown.legs.forEach(function (leg) { legRuns(runs, leg, LILAC, lvl, 1, false, 0); });
+  }
+
+  /* ---- the place and thread views ------------------------------------------
+
+     A place: every gallery, museum, fair and saleroom a saved work passed
+     through there, in the order they came into the story, each with its
+     works; a site museum's is a door down to it. A thread: its works in the
+     order they arrived, each with where it came from and went. Any row
+     opens its history, arriving by the place or the thread. Long columns
+     come 34 rows at a time. */
+
+  var KIND_WORD = { made: "Made", owned: "Owned", held: "Held", listed: "Listed", exhibited: "Shown",
+                    offered: "Offered", sold: "Sold", written: "Written", other: "Here" };
+
+  // "1968–73", "1968–2003", "1968", or nothing.
+  function yearsText(y0, y1) {
+    if (!y0) { return y1 ? String(y1) : ""; }
+    if (!y1 || y1 === y0) { return String(y0); }
+    var a = String(y0), b = String(y1);
+    return a.slice(0, 2) === b.slice(0, 2) ? a + "–" + b.slice(2) : a + "–" + b;
+  }
+
+  /* The rows, 34 at a time: more come as the last nears the column's foot. */
+  function pageRows(host, items, make) {
+    var a = art, at = 0;
+    var mark = el("div", "art-more-rows");
+    mark.setAttribute("aria-hidden", "true");
+    host.appendChild(mark);
+    function near() {
+      var r = mark.getBoundingClientRect(), c = artCol.getBoundingClientRect();
+      return r.top < c.bottom + 377;
+    }
+    function more() {
+      if (art !== a || !mark.parentNode) { return; }
+      var stop = Math.min(items.length, at + 34);
+      var frag = document.createDocumentFragment();
+      for (var k = at; k < stop; k += 1) {
+        var e = make(items[k], k - at);
+        if (e) { frag.appendChild(e); }
+      }
+      at = stop;
+      host.insertBefore(frag, mark);
+      if (at >= items.length) {
+        if (a.pager) { a.pager.disconnect(); }
+        mark.parentNode.removeChild(mark);
+        return;
+      }
+      // Still near the foot after a short page: another.
+      requestAnimationFrame(function () { if (near()) { more(); } });
+    }
+    more();
+    if (at < items.length && window.IntersectionObserver) {
+      a.pager = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) { more(); }
+      }, { root: artCol, rootMargin: "0px 0px 377px 0px" });
+      a.pager.observe(mark);
+    } else {
+      while (at < items.length) { more(); }
+    }
+  }
+
+  // A row: a saved work, what happened there in mono, and its history a press away.
+  function artRow(id, t, who, img, what, y, via, k) {
+    var a = art;
+    var fig = heldFigure({ t: t, a: who, y: "" }, ART_CDN + img + "/square.jpg", k, false,
+                         [ART_CDN + img + "/medium.jpg"],
+                         { onOpen: function () { openArt({ work: id }, via); } });
+    fig.classList.add("art-row");
+    fig.querySelector("img").loading = "lazy";
+    if (what) { fig.querySelector("figcaption").appendChild(el("span", "art-row-what", what)); }
+    a.rows.push({ el: fig, y: y || 0 });
+    if (a.yearNow && y && y > a.yearNow) { fig.dataset.later = "true"; }
+    return fig;
+  }
+
+  function laterRows(a) {
+    a.rows.forEach(function (r) {
+      if (r.y && r.y > a.yearNow) { r.el.dataset.later = "true"; } else { delete r.el.dataset.later; }
+    });
+  }
+
+  /* The slider over a place's or a thread's members: from the first year
+     one of them was there to the last. It starts at the last, all shown. */
+  function memberYears(a, ys) {
+    var lo = Infinity, hi = -Infinity, seen = {};
+    ys.forEach(function (y) { if (y) { lo = Math.min(lo, y); hi = Math.max(hi, y); } });
+    artTicks.textContent = "";
+    if (lo === Infinity || hi <= lo) { artTime.hidden = true; return; }
+    a.y0 = lo;
+    a.y1 = hi + 0.999;
+    a.dated = true;
+    a.ticks = [];
+    ys.forEach(function (y) {
+      if (!y || seen[y]) { return; }
+      seen[y] = true;
+      var pos = (y - lo) / (a.y1 - lo);
+      a.ticks.push(pos);
+      var tk = el("span", "art-tick");
+      tk.style.left = (pos * 100).toFixed(2) + "%";
+      artTicks.appendChild(tk);
+    });
+    a.ticks.sort(function (m, n) { return m - n; });
+    a.when = a.whenTo = 1;
+    a.yearNow = hi;
+    artTime.hidden = false;
+    showArtYear();
+  }
+
+  function placeColumn(pf, via) {
+    var a = art;
+    var pl = artPlaceBy[pf.p];
+    var y0 = Infinity, y1 = -Infinity;
+    (pf.venues || []).forEach(function (v) {
+      if (v[2]) { y0 = Math.min(y0, v[2]); }
+      if (v[3]) { y1 = Math.max(y1, v[3]); }
+    });
+    var n = pl ? pl.n : pf.works.length;
+    var head = el("p", "art-count", ["Here", n.toLocaleString("en") + (n === 1 ? " work" : " works"),
+      y0 !== Infinity ? (y0 === y1 ? String(y0) : y0 + "–" + y1) : ""].filter(Boolean).join(" · "));
+    artCol.appendChild(head);
+    enterText(head, 0);
+    var came = cameLine(via);
+    if (came) { artCol.appendChild(came); }
+
+    // The institutions in the order they came into the story; the work you
+    // came by first, with its own.
+    var by = pf.venues.map(function () { return []; });
+    pf.works.forEach(function (row) { if (by[row[5]]) { by[row[5]].push(row); } });
+    var order = pf.venues.map(function (v, i) { return i; });
+    if (via && via.work) {
+      var mineAt = order.filter(function (i) { return by[i].some(function (r) { return r[0] === via.work; }); });
+      order = mineAt.concat(order.filter(function (i) { return mineAt.indexOf(i) < 0; }));
+      mineAt.forEach(function (i) {
+        by[i] = by[i].filter(function (r) { return r[0] === via.work; })
+          .concat(by[i].filter(function (r) { return r[0] !== via.work; }));
+      });
+    }
+    var items = [];
+    order.forEach(function (i) {
+      if (!by[i].length) { return; }
+      items.push({ venue: i });
+      by[i].forEach(function (r) { items.push({ row: r }); });
+    });
+    var host = el("div", "art-rows");
+    artCol.appendChild(host);
+    pageRows(host, items, function (it, k) {
+      if (it.venue !== undefined) { return venueHead(pf, it.venue, by[it.venue]); }
+      var r = it.row;
+      var what = r[8].map(function (kd) { return KIND_WORD[kd] || kd; })
+        .filter(function (w, i, all) { return all.indexOf(w) === i; }).join(" · ");
+      return artRow(r[0], r[1], r[2], r[3], [what, yearsText(r[6], r[7])].filter(Boolean).join(" "),
+                    r[6], { place: pf.p }, k);
+    });
+    artFoot();
+
+    // Its years, and every member's way in and out.
+    var first = {};
+    pf.works.forEach(function (r) {
+      var f = first[r[0]];
+      if (!f) { first[r[0]] = { y: r[6], prev: r[9], next: r[10] }; }
+      else if (r[6] && (!f.y || r[6] < f.y)) { f.y = r[6]; }
+    });
+    var members = Object.keys(first).map(function (id) { return first[id]; });
+    memberYears(a, members.map(function (m) { return m.y; }));
+    constellation(members.filter(function (m) { return m.prev || m.next; }), pf.ll, a);
+  }
+
+  // "Sidney Janis Gallery · 1968–1973 · 3 works"; a site museum's is a door down to it.
+  function venueHead(pf, i, rows) {
+    var v = pf.venues[i];
+    var ids = {};
+    rows.forEach(function (r) { ids[r[0]] = true; });
+    var count = Object.keys(ids).length;
+    var text = [v[0] || "Venue not recorded", v[2] ? (v[2] === v[3] ? String(v[2]) : v[2] + "–" + v[3]) : "",
+                count + (count === 1 ? " work" : " works")].filter(Boolean).join(" · ");
+    var mc = v[1] ? cityOf(v[1]) : null;
+    if (!mc) {
+      var p = el("p", "art-venue", text);
+      if (!v[0]) { p.dataset.unnamed = "true"; }
+      return p;
+    }
+    var b = el("button", "art-venue", text);
+    b.type = "button";
+    b.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (flying) { return; }
+      if (v[2]) { mc.atYear = v[2]; }
+      mc.via = {};
+      hopTo(mc);
+    });
+    return b;
+  }
+
+  function threadColumn(tf, via) {
+    var a = art;
+    var n = tf.works.length;
+    var head = el("p", "art-count", [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
+      [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "));
+    artCol.appendChild(head);
+    enterText(head, 0);
+    var came = cameLine(via);
+    if (came) { artCol.appendChild(came); }
+    var rows = tf.works.slice();
+    if (via && via.work) {
+      rows = rows.filter(function (w) { return w[0] === via.work; })
+        .concat(rows.filter(function (w) { return w[0] !== via.work; }));
+    }
+    var by = { id: tf.id, k: tf.k, name: tf.name, ll: tf.ll };
+    var host = el("div", "art-rows");
+    artCol.appendChild(host);
+    pageRows(host, rows, function (w, k) {
+      var prev = w[5] && artPlaceBy[w[5]], next = w[6] && artPlaceBy[w[6]];
+      var what = [prev ? "From " + prev.name : "", next ? "To " + next.name : ""].filter(Boolean).join(" · ");
+      return artRow(w[0], w[1], w[2], w[3], what, w[4], { thread: by }, k);
+    });
+    artFoot();
+    var members = tf.works.map(function (w) { return { y: w[4], prev: w[5], next: w[6] }; });
+    memberYears(a, members.map(function (m) { return m.y; }));
+    constellation(members, tf.ll, a);
+  }
+
+  function artFoot() {
+    var away = el("button", "read-quiet", "Put it away");
+    away.type = "button";
+    away.addEventListener("click", function (event) { event.stopPropagation(); comeUp(); });
+    artCol.appendChild(away);
+  }
+
+  /* ---- Find ------------------------------------------------------------------
+
+     5,112 works cannot be found by turning a globe, and with one link and
+     no deep links the page is its own finder. It opens on works, not on a
+     keyboard: eight dealt from the longest journeys, the field waiting
+     above them. Typing matches the starts of words, whatever the accents
+     and case, in the titles, artists, dates, categories and the names of
+     every place a work has been; the globe answers, the places of what is
+     found lit and the rest let down. Closed, it keeps its words and where
+     it was scrolled to. Nothing is submitted; the address never changes. */
+
+  var finding = null;                   // finding.json, folded for searching
+  var finderField = document.getElementById("finder-field");
+  var finderSaid = document.getElementById("finder-said");
+  var finderFound = document.getElementById("finder-found");
+
+  // As the build's norm(): no accents, lower case, letters and digits.
+  function fold(s) {
+    return " " + String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() + " ";
+  }
+
+  function readFinding() {
+    return Promise.all([readPlaces(), readArt("finding.json")]).then(function (both) {
+      var d = both[1];
+      if (finding || !d || !artPlaces) { return finding; }
+      artPlaces.forEach(function (pl) { pl.hay = fold(pl.name + " " + pl.cc); });
+      var works = d.w.map(function (w) {
+        var names = (w[5] || []).map(function (i) { return artPlaces[i] ? artPlaces[i].name : ""; }).join(" ");
+        return { id: w[0], t: w[1], a: w[2], y: w[3], i: w[4], pl: w[5] || [], n: w[6],
+                 hay: fold([w[1], w[2], w[3], (d.k || [])[w[7]] || "", names].join(" ")) };
+      });
+      var byId = {};
+      works.forEach(function (w) { byId[w.id] = w; });
+      finding = {
+        cdn: d.cdn || ART_CDN, works: works, byId: byId,
+        threads: d.t.map(function (t) {
+          return { id: t[0], k: t[1], name: t[2], at: t[3], y: t[4], n: t[5],
+                   hay: fold([t[2], t[3], t[4] || ""].join(" ")) };
+        })
+      };
+      return finding;
+    });
+  }
+
+  function findIn(text) {
+    var toks = fold(text).split(" ").filter(Boolean);
+    function hit(hay) {
+      for (var k = 0; k < toks.length; k += 1) { if (hay.indexOf(" " + toks[k]) < 0) { return false; } }
+      return true;
+    }
+    var works = finding.works.filter(function (w) { return hit(w.hay); });
+    works.sort(function (a, b) { return b.n - a.n; });
+    var out = { works: works, places: [], shows: [], owners: [], writings: [], artists: [] };
+    artPlaces.forEach(function (pl) { if (out.places.length < 3 && hit(pl.hay)) { out.places.push(pl); } });
+    finding.threads.forEach(function (t) {
+      var g = t.k === "show" || t.k === "sale" ? "shows" : t.k === "owner" || t.k === "museum" ? "owners"
+        : t.k === "writing" ? "writings" : "artists";
+      if (out[g].length < 3 && hit(t.hay)) { out[g].push(t); }
+    });
+    return out;
+  }
+
+  function finderHead(text) { finderFound.appendChild(el("p", "finder-group", text)); }
+
+  // A work: its square, its title and artist, and how far it has been.
+  function foundWork(w, k) {
+    var b = el("button", "finder-row");
+    b.type = "button";
+    var img = el("img");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    if (w.i) { img.src = finding.cdn + w.i + "/square.jpg"; }
+    b.appendChild(img);
+    var txt = el("span", "finder-text");
+    txt.appendChild(el("i", "", w.t || "Untitled"));
+    txt.appendChild(document.createTextNode([" — " + (w.a || ""), w.y].filter(Boolean).join(", ")));
+    var places = w.pl.length;
+    txt.appendChild(el("span", "finder-how", [places ? places + (places === 1 ? " place" : " places") : "",
+      w.n + (w.n === 1 ? " event" : " events")].filter(Boolean).join(" · ")));
+    b.appendChild(txt);
+    b.style.animationDelay = (still ? 0 : k * 90) + "ms";
+    b.addEventListener("click", function () { openArt({ work: w.id }); });
+    return b;
+  }
+
+  function foundLine(k, make) {
+    var b = el("button", "finder-row finder-line");
+    b.type = "button";
+    make(b);
+    b.style.animationDelay = (still ? 0 : k * 90) + "ms";
+    return b;
+  }
+
+  function showFound(g) {
+    finderFound.textContent = "";
+    var works = artInfo ? artInfo.works.toLocaleString("en") : "saved works";
+    var total = g.works.length;
+    var others = g.places.length + g.shows.length + g.owners.length + g.writings.length + g.artists.length;
+    var lit = {};
+    g.works.forEach(function (w) { w.pl.forEach(function (i) { lit[i] = true; }); });
+    g.places.forEach(function (pl) { lit[pl.i] = true; });
+    finder.found = lit;
+    if (!total && !others) {
+      finderSaid.textContent = "Nothing by that name among the " + works + ".";
+      return;
+    }
+    finderSaid.textContent = "Found · " + total.toLocaleString("en");
+    var k = 0;
+    if (total) {
+      finderHead("Works");
+      g.works.slice(0, 13).forEach(function (w) { finderFound.appendChild(foundWork(w, k)); k += 1; });
+    }
+    if (g.places.length) {
+      finderHead("Places");
+      g.places.forEach(function (pl) {
+        finderFound.appendChild(foundLine(k, function (b) {
+          b.textContent = pl.name + ", " + pl.cc + " · " + pl.n.toLocaleString("en") + (pl.n === 1 ? " work" : " works");
+          b.addEventListener("click", function () { openArt({ place: pl.p }); });
+        }));
+        k += 1;
+      });
+    }
+    [["shows", "Shows and sales"], ["owners", "Owners and museums"], ["writings", "Writings"], ["artists", "Artists"]]
+      .forEach(function (grp) {
+        if (!g[grp[0]].length) { return; }
+        finderHead(grp[1]);
+        g[grp[0]].forEach(function (t) {
+          finderFound.appendChild(foundLine(k, function (b) {
+            b.appendChild(el("i", "", t.name));
+            b.appendChild(document.createTextNode([t.k === "artist" ? "" : t.at, t.y || ""].filter(Boolean)
+              .map(function (s) { return ", " + s; }).join("") + " · " + t.n + " works"));
+            b.addEventListener("click", function () {
+              // A museum on the Museums layer opens as the museum.
+              var mc = t.k === "museum" ? museumNamed(t.name) : null;
+              if (mc) { closeFinder(); if (!place && !flying) { goDown(mc); } return; }
+              openArt({ thread: t.id });
+            });
+          }));
+          k += 1;
+        });
+      });
+    if (total > 13) { finderFound.appendChild(el("p", "finder-group finder-foot", "13 of " + total.toLocaleString("en") + " — add a word")); }
+  }
+
+  // Before a word is typed: eight works dealt from the longest journeys.
+  function dealFound() {
+    finderFound.textContent = "";
+    finder.found = null;
+    finderSaid.textContent = "";
+    var j = (artInfo && artInfo.j) || [];
+    var pool = j.slice(0, 144), dealt = [];
+    while (pool.length && dealt.length < 8) {
+      var w = finding.byId[pool.splice(Math.floor(Math.random() * pool.length), 1)[0]];
+      if (w) { dealt.push(w); }
+    }
+    finderHead("Dealt from the longest journeys");
+    dealt.forEach(function (w, k) { finderFound.appendChild(foundWork(w, k)); });
+  }
+
+  function openFinder() {
+    if (!finderEl || layerOn !== "artworks" || place || flying) { return; }
+    finderEl.hidden = false;
+    finder.open = true;
+    if (artFind) { artFind.setAttribute("aria-expanded", "true"); }
+    // As it was left: the same words, the same place in the list.
+    finder.found = finder.kept || null;
+    if (finder.scroll) { finderEl.scrollTop = finder.scroll; }
+    if (!finding) { finderSaid.textContent = "Reading the works…"; }
+    readFinding().then(function () {
+      if (!finder.open) { return; }
+      if (!finding) { finderSaid.textContent = "The works could not be read just now."; return; }
+      if (!finder.dealt) { finder.dealt = true; dealFound(); }
+    });
+  }
+
+  function closeFinder() {
+    if (!finderEl || finderEl.hidden) { return; }
+    finder.scroll = finderEl.scrollTop;
+    finder.kept = finder.found;
+    finderEl.hidden = true;
+    finder.open = false;
+    finder.found = null;
+    if (artFind) { artFind.setAttribute("aria-expanded", "false"); }
+  }
+
+  if (artFind) {
+    artFind.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    artFind.addEventListener("click", function () { if (finder.open) { closeFinder(); } else { openFinder(); } });
+  }
+  if (finderEl) {
+    finderEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    finderEl.addEventListener("wheel", function (event) { event.stopPropagation(); }, { passive: true });
+    // A search is a state of the page: never a submitted form, which would
+    // change the address.
+    finderEl.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (finderField) { finderField.blur(); }
+    });
+    var findWait = 0;
+    if (finderField) {
+      finderField.addEventListener("input", function () {
+        window.clearTimeout(findWait);
+        findWait = window.setTimeout(function () {
+          if (!finding) { return; }
+          var text = finderField.value;
+          if (!fold(text).trim()) { dealFound(); return; }
+          showFound(findIn(text));
+          finderEl.scrollTop = 0;
+        }, 233);
+      });
+    }
+    // On a desktop, typing a letter while it is open goes into the field.
+    document.addEventListener("keydown", function (event) {
+      if (!finder.open || !finderField || event.ctrlKey || event.metaKey || event.altKey) { return; }
+      if (event.key.length !== 1 || document.activeElement === finderField) { return; }
+      var tag = document.activeElement && document.activeElement.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") { return; }
+      finderField.focus();
+    });
+  }
+
+  /* ---- the passing journey -------------------------------------------------
+
+     By chance: on the Artworks layer the company rests, and in its slot —
+     after its 34 to 89 s of empty world, and only when nobody has touched
+     anything for a while — one travelled work draws its journey in tiles,
+     holds, and goes out tile by tile. No words. Pressing its lit head opens
+     it. */
+
+  var PASS_LIT = Math.pow(PHI, 4) * 1000, PASS_HOLD = Math.pow(PHI, 3) * 1000, PASS_OUT = Math.pow(PHI, 3) * 1000;
+
+  function stepPassing(now) {
+    if (passing) {
+      if (passing.at && now - passing.at > PASS_LIT + PASS_HOLD + PASS_OUT) { endPassing(now); }
+      return;
+    }
+    if (!castNext) { castNext = now + 8000 + Math.random() * 13000; }
+    if (now < castNext || now - lastTouch < SWING_IDLE || !artInfo || !artInfo.j || !artInfo.j.length) { return; }
+    var id = artInfo.j[Math.floor(Math.random() * artInfo.j.length)];
+    var mine_ = passing = { id: id, at: 0, legs: null, head: null };
+    readArt("histories/" + id + ".json").then(function (h) {
+      if (passing !== mine_) { return; }
+      var legs = h ? legsOf(stopsOf(h).stops) : [];
+      if (!legs.length) { passing = null; castNext = performance.now() + 5000; return; }
+      mine_.tone = stopTone((h.c && h.c[0]) || LIGHT);
+      mine_.legs = legs;
+      mine_.at = performance.now();
+    });
+  }
+
+  function endPassing(now) {
+    passing = null;
+    castNext = now + (CAST_GAP[0] + Math.random() * (CAST_GAP[1] - CAST_GAP[0])) * 1000;
+    tilesDirty = true;
+  }
+
+  function passingRuns(runs, t) {
+    var p = passing, count = p.legs.length, age = t - p.at;
+    var lit = Math.min(1, age / PASS_LIT) * count;
+    var gone = Math.max(0, (age - PASS_LIT - PASS_HOLD) / PASS_OUT) * count;
+    p.head = null;
+    p.legs.forEach(function (leg, k) {
+      var q = Math.max(0, Math.min(1, lit - k)), g = Math.max(0, Math.min(1, gone - k));
+      if (q <= 0 || g >= 1) { return; }
+      var head = legRuns(runs, leg, p.tone, 2, q, leg.broken, g);
+      if (head) { p.head = head; }
+    });
+  }
+
+  // Its lit head pressed: that work's history.
+  function pressPassing(x, y) {
+    var h = passing && passing.head;
+    if (!ARTWORKS || place || flying || !h || Math.abs(h.x - x) > CELL_PX * 1.5 || Math.abs(h.y - y) > CELL_PX * 1.5) { return false; }
+    var id = passing.id;
+    endPassing(performance.now());
+    openArt({ work: id });
+    return true;
+  }
 
   /* ---- growing it -------------------------------------------------------- */
 
@@ -11454,6 +13829,15 @@
       }
 
       requestAnimationFrame(frame);
+
+      // The Artworks layer, when it was this viewer's last: read once the
+      // world is up, so the first paint waits on none of it.
+      if (ARTWORKS) {
+        land.dataset.layerOn = layerOn;
+        if (layerOn === "artworks") {
+          (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(artLayer);
+        }
+      }
 
       // An old link to the works page, forwarded here.
       followHash();
