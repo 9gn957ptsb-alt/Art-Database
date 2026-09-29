@@ -2228,6 +2228,7 @@
   bottom: calc(var(--s-5) + 40px);
   transform: translateX(-50%);
   z-index: 86;
+  min-height: 32px;
   padding: 6px 13px;
   border: 0;
   border-radius: 999px;
@@ -2431,8 +2432,10 @@
 .art-stops { margin: var(--s-4) 0 0; padding: 0; list-style: none; }
 .art-stop { margin: 0 0 var(--s-4); }
 .art-stop-head {
-  display: block;
-  margin: 0 0 var(--s-2);
+  display: flex;                 /* a door: a finger's height, however small its words */
+  align-items: center;
+  min-height: 32px;
+  margin: 0;
   padding: 0;
   border: 0;
   background: none;
@@ -2451,8 +2454,11 @@ button.art-stop-head:focus-visible { text-decoration: underline; }
 .art-line {
   display: grid;
   grid-template-columns: 4.5ch 1fr;
+  align-content: center;
   gap: 0 var(--s-3);
-  padding: 2px 0;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 5px 0;
   font-size: var(--t-2);
   line-height: 1.38;
   color: #a8927a;
@@ -2489,7 +2495,8 @@ button.art-stop-head:focus-visible { text-decoration: underline; }
 }
 .art-thread {
   display: block;
-  margin: var(--s-2) 0 0;
+  min-height: 32px;
+  margin: var(--s-1) 0 0;
   padding: 0;
   border: 0;
   background: none;
@@ -2531,19 +2538,21 @@ button.art-stop-head:focus-visible { text-decoration: underline; }
 .art-go:focus-visible { background: rgba(94, 82, 199, 0.9); }
 
 .art-words { margin-top: var(--s-4); }
-.art .read-w { color: #a8927a; }
+.art .read-w { min-height: 32px; color: #a8927a; }
 .art .read-w:hover,
 .art .read-w:focus-visible,
 .art .read-w[aria-pressed="true"] { color: #eadfcd; }
 .art-sources { margin: var(--s-5) 0 var(--s-3); font-size: 10px; letter-spacing: 0.04em; color: #a8927a; }
-.art .read-quiet { color: #a8927a; border-color: rgba(168, 146, 122, 0.5); }
+.art .read-quiet { min-height: 32px; color: #a8927a; border-color: rgba(168, 146, 122, 0.5); }
 .art .read-quiet:hover,
 .art .read-quiet:focus-visible { color: #eadfcd; border-color: #eadfcd; }
 
 /* A place view's institutions (the next pass fills them). */
 .art-venue {
-  display: block;
-  margin: var(--s-4) 0 var(--s-2);
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: var(--s-3) 0 0;
   padding: 0;
   border: 0;
   background: none;
@@ -2578,6 +2587,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .held-history { display: none; margin-top: var(--s-3); }
 .held[aria-expanded="true"] .held-history { display: inline-block; }
 .held-history {
+  min-height: 32px;
   padding: var(--s-2) var(--s-3);
   border: 1px solid rgba(168, 146, 122, 0.5);
   border-radius: 999px;
@@ -2628,8 +2638,28 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 /* The photograph is alone at first: the slider comes with the journey. */
 .art[data-look="plate"] .art-time { visibility: hidden; }
-/* A work's title can be long: the way back keeps to one line beside it. */
+/* A work's title can be long: the way back keeps to one line beside it,
+   the banner keeps its gutter on the right (the Sound switch inside it),
+   and the title keeps to two lines so it never lies over the globe. */
 .land[data-art] .banner-back { white-space: nowrap; }
+.land[data-art] .banner { right: var(--s-5); }
+.land[data-art] .banner-where { min-width: 0; }
+.land[data-art] .banner-city {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-height: 2.2em;
+  overflow: hidden;
+}
+@media (max-width: 720px) {
+  .land[data-art] .banner-city { font-size: var(--t-3); }
+}
+
+/* Through a door, the thread you came by is said at 2 s while the
+   photograph is still looked at: how you came and the thread come into the
+   column alone, the rest of it with the journey. */
+.art[data-look="plate"][data-came] .art-body { opacity: 1; visibility: visible; }
+.art[data-look="plate"][data-came] .art-body > :not(.art-came):not(.art-stage) { visibility: hidden; }
 
 /* The threads, said in the column: the sentence, and its doors. */
 .art-stage .read-said { position: relative; }
@@ -2700,6 +2730,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .art-and-more {
   align-self: center;
+  min-height: 32px;
   padding: var(--s-2) var(--s-3);
   border: 1px solid rgba(168, 146, 122, 0.5);
   border-radius: 999px;
@@ -2754,7 +2785,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
   text-transform: uppercase;
   color: #a8927a;
 }
-.finder-line { display: block; font-size: var(--t-2); line-height: 1.38; }
+.finder-line { display: block; margin: 0; padding: 7px 0; font-size: var(--t-2); line-height: 1.38; }
 .finder-line i { font-style: italic; }
 .finder-row:hover .finder-text,
 .finder-row:focus-visible,

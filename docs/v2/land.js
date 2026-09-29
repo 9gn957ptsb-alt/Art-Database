@@ -954,6 +954,7 @@
 
   function goDown(city) {
     if (flying || place) { return; }
+    if (!city.art) { artAsked = null; }   // pressed elsewhere: a view still being read is not flown to
     var from = project(city.lat, city.lon);
     pulse(from.x, from.y, [cityTone(city), LIGHT], 1, Math.max(W, H) * INV);
     place = city;
@@ -986,6 +987,7 @@
   function hopTo(city) {
     if (flying) { return; }
     if (!place) { goDown(city); return; }
+    if (!city.art) { artAsked = null; }
     stopTheatre();
     stopArchive();
     stopBuilding();
@@ -11880,6 +11882,7 @@
     delete artEl.dataset.look;
     delete artEl.dataset.kind;
     delete artEl.dataset.held;
+    delete artEl.dataset.came;
     artCol.textContent = "";
     artPlate.textContent = "";
     artPlate.hidden = true;
@@ -12363,27 +12366,25 @@
   }
 
   /* On a phone, after the play, scrolling the column moves time too: the
-     stop nearest the column's top sets the slider and is ringed. */
+     group nearest the column's top sets the slider, and its stop is ringed. */
+  var artTouched = 0;                   // when the column was last moved by hand
   function watchStops(a) {
     if (W > 720 || !window.IntersectionObserver) { return; }
-    var touched = 0;
-    ["touchmove", "wheel"].forEach(function (name) {
-      artCol.addEventListener(name, function () { if (art === a) { touched = performance.now(); } }, { passive: true });
-    });
     a.watch = new IntersectionObserver(function (entries) {
-      if (art !== a || a.playing || !a.flipped || performance.now() - touched > 1200) { return; }
+      if (art !== a || a.playing || !a.flipped || performance.now() - artTouched > 1200) { return; }
       entries.forEach(function (e) {
         if (!e.isIntersecting) { return; }
-        var k = Number(e.target.dataset.stop);
-        var s = a.stops[k];
-        if (!s) { return; }
+        var ev = a.evs[Number(e.target.dataset.at)];
+        if (!ev) { return; }
         a.byHand = true;
-        a.whenTo = a.evs[s.first].pos;
-        a.ring = k;
+        a.whenTo = ev.pos;
+        // A place not recorded rings no stop of its own: the slider rings
+        // the last one reached.
+        if (e.target.dataset.stop !== undefined) { a.ring = Number(e.target.dataset.stop); }
         a.dirty = true;
       });
     }, { root: artCol, rootMargin: "0px 0px -80% 0px" });
-    a.heads.forEach(function (h) { if (h.dataset.stop !== undefined) { a.watch.observe(h); } });
+    a.heads.forEach(function (h) { a.watch.observe(h); });
   }
 
   /* ---- the look ------------------------------------------------------------
@@ -12499,8 +12500,8 @@
   if (artEl) {
     // Pressing, scrolling or sliding never waits for the look.
     artEl.addEventListener("pointerdown", function () { flipToHead(); }, true);
-    artCol.addEventListener("wheel", function () { flipToHead(); }, { passive: true });
-    artCol.addEventListener("touchmove", function () { flipToHead(); }, { passive: true });
+    artCol.addEventListener("wheel", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
+    artCol.addEventListener("touchmove", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
     window.addEventListener("resize", function () { if (art && !art.flipped) { layoutPlate(); } });
   }
 
@@ -12569,41 +12570,63 @@
     return /^(the|a|an|his|her|their|by)\s/.test(who || "") ? "“" + who + "”" : who;
   }
 
+  // A place as a line can say it: a town as it stands ("Paris, FR"), a
+  // country by its name rather than its code; "" when neither.
+  var regionNames = null;
+  function placeWords(w) {
+    if (!w || w.indexOf(",") >= 0) { return w || ""; }
+    if (!/^[A-Z]{2}$/.test(w)) { return w; }
+    try {
+      regionNames = regionNames || new Intl.DisplayNames(["en"], { type: "region" });
+      var name = regionNames.of(w);
+      return name && name !== w ? name : "";
+    } catch (e) { return ""; }
+  }
+
   /* One event as a line: its year, and a fixed verb with the record's own
-     fields. Nothing about price, ever. */
+     fields — where a field is missing, the record's own words after the
+     verb, never a phrase made up to stand in for it. Nothing about price,
+     ever. */
   function lineOf(ev) {
     var out = document.createDocumentFragment();
     function t(s) { out.appendChild(document.createTextNode(s)); }
     function i(s) { out.appendChild(el("i", "", s)); }
     var note = ev.n ? " (" + ev.n + ")" : "";
+    var own = ev.n || ev.q ? " — " + (ev.n || ev.q) : "";
     switch (ev.k) {
       case "made":
-        t("Made" + (ev.w ? " in " + ev.w : ""));
+        var at = placeWords(ev.w);
+        t("Made" + (at ? " in " + at : ""));
         break;
       case "owned":
-        t("Owned by " + ownerName(ev.who || "someone not named") + note);
+        t(ev.who ? "Owned by " + ownerName(ev.who) + note : "Owned" + own);
         break;
       case "held":
-        t("In the collection of " + String(ev.who || ev.v || "").replace(/^collection\s+/i, ""));
+        var holder = String(ev.who || ev.v || "").replace(/^collection\s+/i, "");
+        t(holder ? "In the collection of " + holder : "In the collection" + own);
         break;
       case "listed":
-        t("Listed on Artsy by " + (ev.who || "a gallery"));
+        t("Listed on Artsy" + (ev.who ? " by " + ev.who : ""));
         break;
       case "exhibited":
         if (ev.t && !FAIR.test(ev.v || "")) {
           t("Shown in "); i(ev.t);
           if (ev.v) { t(", " + ev.v); }
           if (ev.pg) { t(", " + ev.pg); }
+        } else if (ev.v || ev.t) {
+          t("Shown at " + (ev.v || ev.t));
         } else {
-          t("Shown at " + (ev.v || ev.t || ev.w || "a place not named"));
+          t("Shown" + (own || (placeWords(ev.w) ? " in " + placeWords(ev.w) : "")));
         }
         break;
       case "offered":
         if (ev.t) { t("Offered in "); i(ev.t); }
-        else { t("Offered by " + (ev.who || ev.v || "a house not named")); }
+        else { t("Offered" + (ev.who || ev.v ? " by " + (ev.who || ev.v) : own)); }
         break;
       case "sold":
-        t(ev.v ? "Sold at " + ev.v : ev.who ? "Sold to " + ev.who : "Sold");
+        // Who a sale was to, the record does not say apart from where it
+        // was: the name is given as it stands, the direction not guessed.
+        t(ev.v ? "Sold at " + ev.v : "Sold" + (ev.who ? " — " + ev.who : ""));
         if (ev.n) { t(", " + ev.n); }
         break;
       default:
@@ -12734,6 +12757,10 @@
           if (event.pointerType === "mouse") { pulseStop(g.stop, 0.3); }
         });
       }
+      // The time this group is at, for scrolling: its first dated line (a
+      // return to a place is its own group, with its own years).
+      var dated = g.events.filter(function (n) { return yearNum(h.events[n].y) !== null; })[0];
+      hd.dataset.at = String(dated === undefined ? g.events[0] : dated);
       a.heads.push(hd);
       li.appendChild(hd);
       g.events.forEach(function (n) {
@@ -12969,7 +12996,9 @@
     a.gap = WORD_GAP;
     if (by) {
       a.n = 1;
-      later(function () { flipToHead(); sayThread(by, true); }, 2000, a);
+      // Said while the photograph is still looked at: how you came and the
+      // thread come into the column alone, and the look keeps its 9 s.
+      later(function () { artEl.dataset.came = "true"; sayThread(by, true); }, 2000, a);
     }
     sayNext(a, Math.max(0, FIRST_WORD_AT - (performance.now() - a.at)));
   }
@@ -13611,7 +13640,11 @@
     readFinding().then(function () {
       if (!finder.open) { return; }
       if (!finding) { finderSaid.textContent = "The works could not be read just now."; return; }
-      if (!finder.dealt) { finder.dealt = true; dealFound(); }
+      if (finder.dealt) { return; }
+      finder.dealt = true;
+      // Words typed while the works were still being read are the search.
+      if (finderField && fold(finderField.value).trim()) { showFound(findIn(finderField.value)); }
+      else { dealFound(); }
     });
   }
 
@@ -13654,7 +13687,8 @@
     // On a desktop, typing a letter while it is open goes into the field.
     document.addEventListener("keydown", function (event) {
       if (!finder.open || !finderField || event.ctrlKey || event.metaKey || event.altKey) { return; }
-      if (event.key.length !== 1 || document.activeElement === finderField) { return; }
+      // Space presses the row or line that has the focus; it is not a word.
+      if (event.key.length !== 1 || event.key === " " || document.activeElement === finderField) { return; }
       var tag = document.activeElement && document.activeElement.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") { return; }
       finderField.focus();
