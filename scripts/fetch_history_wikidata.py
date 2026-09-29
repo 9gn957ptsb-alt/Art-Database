@@ -138,8 +138,8 @@ LANGS = ["en", "mul", "en-gb", "en-us", "en-ca", "fr", "de", "es", "it", "nl", "
          "fi", "pl", "cs", "hu", "ro", "la", "de-ch", "de-at", "gl", "eu", "sl", "hr", "sk", "et", "lv", "lt",
          "ga", "cy", "is", "tr", "id", "vi", "af", "sq", "eo", "oc", "br", "lb", "fy", "sco", "ast", "no"]
 NAME_LANGS = ["en", "mul", "fr", "de", "es", "it", "nl", "pt"]
-PEOPLE = {"Q5", "Q16334295", "Q10648343", "Q281643", "Q4677483", "Q1141470", "Q14514600", "Q2088357",
-          "Q16979650", "Q219160", "Q2093025"}  # human, group of humans, duo, artist duo, art group ...
+PEOPLE = {"Q5", "Q16334295", "Q10648343", "Q1141470", "Q16979650", "Q219160", "Q1400264",
+          "Q4502119"}  # human, group of humans, duo, double act, siblings, couple, artist collective, art group
 ART_ROOTS = ["Q483501", "Q3391743", "Q1028181", "Q33231", "Q5322166", "Q42973", "Q1281618", "Q11569986",
              "Q644687"]  # artist, visual artist, painter, photographer, designer, architect, sculptor ...
 KIND_ROOTS = {"Q3305213": "painting", "Q11060274": "print", "Q125191": "photograph", "Q860861": "sculpture",
@@ -151,8 +151,7 @@ PLACES = {"Q6256", "Q3624078", "Q515", "Q5119", "Q1549591", "Q1637706", "Q486972
 PRIVATE_COLLECTION = "Q768717"
 UNITS = {"Q174728": 1.0, "Q174789": 0.1, "Q11573": 100.0, "Q218593": 2.54, "Q3710": 30.48, "Q200323": 10.0}
 CIRCA = "Q5727902"
-SALE = {"Q194189", "Q177923", "Q1371819", "Q17013749", "Q2295092", "Q3303096", "Q1369832", "Q74570489",
-        "Q2143504"}  # sale, auction, purchasing, art auction, estate sale ...
+SALE = {"Q194189", "Q177923", "Q1369832", "Q74570489"}  # sale, auction, purchasing, art auction
 EXHIBITION = {"Q464980", "Q667276", "Q29023906"}
 # What an exhibition-history (P608) value is: an exhibition (temporary, art, online, a world's fair), or
 # — as Wikidata sometimes has it — the museum, gallery or archive where the work was shown.
