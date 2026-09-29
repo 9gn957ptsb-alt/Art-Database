@@ -81,13 +81,15 @@ places and names only from Wikidata's own data:
              given; P1642 acquisition transaction and P1534 end cause in the note), P1028 donated by;
   exhibited  P608 exhibition history — the exhibition item's own title, dates (P580/P582, or the
              statement's own P580/P582/P585), location (P276: one event a venue, with that venue's
-             dates where the exhibition gives them), and country (P17);
+             dates where the exhibition gives them), and country (P17); where Wikidata gives a
+             museum or gallery itself as the exhibition, it is the venue, with no title and none of
+             its own dates (they are its founding, not the show's);
   written    P1343 described by source (the source's title, authors P50/P2093, journal P1433,
              publication date P577, DOI P356 or full-text link P953; page P304, chapter P792 and
              section P958 from the statement), P528 catalogue code (in the P972 catalogue), and
              P973 described at URL;
-  sold/other P793 significant event (a sale or an auction is "sold"), P88 commissioned by, and
-             P6216 copyright status ("other").
+  sold/other P793 significant event (a sale, an auction or a purchase, or a named sale that is one,
+             is "sold"), P88 commissioned by, and P6216 copyright status ("other").
 A statement's reference URL (P854) and "stated in" (P248) go in the event's note, the URL in "url"
 when the event has none of its own.
 

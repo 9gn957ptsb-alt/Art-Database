@@ -1150,7 +1150,8 @@ def align_owners(pieces, text, owners, nga):
     return got
 
 
-LEAD = re.compile(r"^\s*(?:[A-Za-z0-9][^()]*?\b(?:by|to|from|with|for|through)\s+)?\(([^()]*)\)")
+LEAD = re.compile(r"^\s*(?:(?:Possibly|Probably|Presumably|Perhaps)\s+)?"
+                  r"(?:[A-Za-z0-9][^()]*?\b(?:by|to|from|with|for|through)\s+)?\(([^()]*)\)")
 
 
 def squash(t):
@@ -1185,7 +1186,9 @@ def name_in_text(seg):
             comps = components(outside_brackets(inner))
             return "; ".join(firms), (comps[1:] if len(firms) == 1 else [])
     head_end = len(flat)
-    for i in (seg.find("["), flat.find(",")):
+    # "Sir Gilbert Lewis (d. 1883)", "Susan Nichols Pulsifer (Mrs. Harold Trowbridge Pulsifer)": the name ends there
+    alias = re.search(r"\s\((?=\s*(?:Mrs\.?|Mme\.?|Mr\.?|née|born|b\.|d\.|died|\d))", flat)
+    for i in (seg.find("["), flat.find(","), alias.start() if alias else -1):
         if i > 0:
             head_end = min(head_end, i)
     head = squash(flat[:head_end])
@@ -1343,11 +1346,13 @@ def exhibition_event(r, order, field, footnotes):
             d = j + 1 if a < first_venue_end else j
             break
     head = list(comps[:d])
+    dated = False  # the first venue's own dates stood at its end
     if head and not single:
         a, b, c = head[-1]
         head[-1] = (a, first_venue_end, text[a:first_venue_end].strip())
         while len(head) > 1 and date_only(head[-1][2]):  # "..., The Museum of the Brooklyn Institute, 16 Oct.-7 Nov. 1915;"
             head.pop()
+            dated = True
     title, venue, city, country, title_end = "", "", "", "", 0
     k = len(head)
     if k and country_of(bare(head[k - 1][2])) is not None:
@@ -1363,7 +1368,8 @@ def exhibition_event(r, order, field, footnotes):
         venue = text[head[j][0]:head[k - 1][1]].strip()
         title, title_end = text[head[0][0]:head[j - 1][1]].strip(), head[j - 1][1]
     elif k == 1:
-        if INSTITUTION.search(head[0][2]) and not re.search(r"\b(exhibition|exposition|salon|fair)\b", head[0][2], re.I):
+        if INSTITUTION.search(head[0][2]) and not re.search(r"\b(exhibition|exposition|salon|fair)\b", head[0][2], re.I) \
+                and not (dated and len(head) == 1):  # "Winslow Homer in the 1870s: ... Collection, 10 Feb.-11 March 1990;"
             venue = head[0][2]
         else:
             title, title_end = head[0][2], head[0][1]
