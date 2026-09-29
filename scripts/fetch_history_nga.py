@@ -1086,16 +1086,18 @@ def person_here(n, words, i, apart):
         return all(mine(t) for t in names) and all(any(same_name(t, g) for t in names) for g in n["given"])
 
     def score(titles):
-        """2: the same (a "Mrs." on both sides, or none); 1: "Mrs." in the text, a record without a title
-        (Empress Catherine II); 0: not the same person (Mrs. Charles R. Henschel is not Charles R. Henschel)."""
+        """2: the same (a "Mrs." on both sides, or none); 1: a woman's title in the text and a record without one
+        (Empress Catherine II); 0: not the same person. "Mrs." and "Mme" go with a husband's names, so they never
+        fit a record without them: Mrs. Charles R. Henschel is not Charles R. Henschel."""
         sex = "f" if titles & FEMALE and not titles & MALE else "m" if titles & MALE else ""
         if sex == n["sex"] or n["sex"] == "couple" or (sex, n["sex"]) in (("m", ""), ("", "m")):
             return 2
-        return 1 if (sex, n["sex"]) == ("f", "") else 0
+        return 1 if (sex, n["sex"]) == ("f", "") and not titles & {"mrs", "mme", "madame"} else 0
 
     if n["sex"] == "couple":  # "Mr. and Mrs. Julian Ganz" in "Jo Ann and Julian Ganz"
         every = [t for _, names in groups for t in names]
-        ok = all(any(same_name(t, g) for t in every) for g in n["given"]) and any(fits(nm) for _, nm in groups)
+        ok = all(any(same_name(t, g) for t in every) for g in n["given"]) and \
+            any(nm and all(mine(t) for t in nm) for _, nm in groups)
         return 2 if ok else 0
     if len(groups) > 1:  # a couple in the text: "Mr. and Mrs. Paul Mellon" is both
         return max((score(titles) for titles, names in groups if fits(names)), default=0)
