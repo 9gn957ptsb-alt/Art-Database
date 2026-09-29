@@ -11,7 +11,7 @@ colours of their own saved works. roster.json holds only numbers, colours and na
               0 a field and one band       few marks, much open ground
               1 stripes (angle, period)     marks that share one direction
               2 dots (spacing, size)        small marks on bare ground
-              3 a grid (period, weight)     moderate, even structure
+              3 a net (period, weight)      moderate, even structure (cells bent, never a grid)
               4 strokes (count, width)      a few broad marks
               5 rings (period)              saturated, moderately marked
               6 stacked fields (count)      few marks, little open ground

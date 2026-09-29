@@ -1436,8 +1436,10 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     vec2 gg = q / max(4.0, p2); gg.x += mod(floor(gg.y), 2.0) * 0.5;
     return mix(L, (h3(int(floor(gg.x)), int(floor(gg.y)), h) & 3u) == 0u ? V : D, feather(length(fract(gg) - 0.5) * p2 - p3, 1.0));
   }
-  if (gm == 3) {                                                     // a grid, a few of its cells filled
-    vec2 c = floor(q / max(4.0, p2)), f = abs(fract(q / max(4.0, p2)) - 0.5) * p2;
+  if (gm == 3) {                                                     // a net, a few of its cells filled (no grid: the
+    float s = max(4.0, p2);                                          // space bent first, so every cell is its own shape)
+    vec2 w = mat2(0.8, 0.6, -0.6, 0.8) * q + s * 0.7 * (vec2(vnoise(q, s * 2.6, h + 5u), vnoise(q, s * 2.6, h + 6u)) - 0.5);
+    vec2 c = floor(w / s), f = abs(fract(w / s) - 0.5) * p2;
     uint hc = h3(int(c.x), int(c.y), h);
     vec3 fill = (hc % 5u) == 0u ? V : (hc % 5u) == 1u ? M : L;
     return mix(fill, D, feather(p2 * 0.5 - max(f.x, f.y) - p3 * 0.5, 0.8));

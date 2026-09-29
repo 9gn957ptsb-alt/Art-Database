@@ -322,7 +322,7 @@ opens out of the pixel across the void, and closes back into it.
 **New artists, every week.** Beyond the 22 drawn by hand, artists join the ladder from the roster
 (`dirt/artists/roster.json`), with no new code: `dirt/artists/roster.py` reads an artist's saved works, measures what
 they share (how densely they mark, whether their marks share a direction, how much ground they leave bare, how
-saturated they are), and gives them one of ten compositions (a field and a band, stripes, dots, a grid, strokes, rings,
+saturated they are), and gives them one of ten compositions (a field and a band, stripes, dots, a net (cells bent, never a grid), strokes, rings,
 stacked fields, scattered marks, poured stains, cut shapes) with its parameters, the rung their marks earn, and the
 colours of their own saved works. A coworker (a scheduled Claude session, `dirt/artists/COWORKER.md`) brings in the
 next three most-saved artists every week and republishes DIRT. The first eight: Dalí (a horizon), Matisse (cut shapes),
