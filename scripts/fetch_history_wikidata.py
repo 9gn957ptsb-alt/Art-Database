@@ -30,25 +30,40 @@ then read whole (wbgetentities) and judged:
             Artsy's record (its collecting institution, provenance, notes or a link to the
             museum's page) and a collection it gives is named there too;
   strong    Artsy names the holder (the museum that listed it on Artsy, its collecting
-            institution, its provenance, notes or image credit) and the item's collection (P195),
-            location (P276) or owner (P127) is that holder — or part of it, or what it is part of —
-            and the whole title matches, the dates agree (within a year, or two for "circa"), and
-            the sizes do not differ; and no other item by the artist in that holder has the title
-            unless the sizes tell them apart;
+            institution, its provenance, notes or image credit — but of a dealer's or an auction
+            house's listing only the provenance and collecting institution, as their essays name
+            museums for comparison; and never a sentence about other objects: "four other prints of
+            this image are at …", "another version …") and the item's collection (P195), location
+            (P276) or owner (P127) is that holder — or part of it, or what it is part of — and the
+            whole title matches, the dates agree (within a year, or two for "circa"), and the sizes
+            do not differ; and no other item by the artist in that holder has the title unless the
+            sizes or a catalogue number tell them apart; or, for a one-of-a-kind work, the item's
+            catalogue number (P528: "F146", "JH551", or its number on a line naming the catalogue's
+            author or title) is in Artsy's literature, exhibition history or notes, with the whole
+            title and the dates agreeing (not when the work is for sale and Wikidata has it in a
+            museum);
   probable  the holder named and agreeing, with the whole title but no date on one side, or with
-            only part of the title (not a common one) and the dates agreeing; or — for a
+            only part of the title (not a common one, unless a catalogue number agrees) and the
+            dates agreeing; or part of the title with a catalogue number and the dates; or — for a
             one-of-a-kind work (painting, drawing, sculpture not in an edition) where Artsy names no
             holder — the whole title, not a common one and the artist's only item under it, the
             dates agreeing, the sizes agreeing (both must give them), and no public collection
             holding it on Wikidata that Artsy does not name.
 
+Sizes are compared in centimetres, within 3% (or a centimetre). Where Wikidata's numbers are Artsy's
+size in another unit than the one it names (the Phillips Collection's items give inches under
+millimetres), the sizes are taken as neither agreeing nor differing, and the match says so. Artsy's
+category gives way to its medium where the two disagree plainly ("Oil on canvas" filed under Print).
+
 Never matched: the dates or sizes disagreeing; a different kind of object (a painting is not a print,
 a photograph or a sculpture); an attribution ("attributed to", "workshop of", "circle of" …) on the
 creator statement; a print, photograph, poster, cast or other edition (on either side) whose holder
-Artsy does not name — an impression in another collection is another object; a one-of-a-kind work
-Wikidata places in a public collection Artsy does not name (a museum's work is not on the market); a
-common title ("Untitled", "Still Life", "Head of a Woman") without a holder or number to go by; and
-two items fitting equally well. Every such doubt is listed in data/wikidata/matches.json with the
+Artsy does not name — an impression in another collection is another object — or which is for sale
+(a museum named in its provenance still has its own impression, which is Wikidata's); a
+one-of-a-kind work Wikidata places in a public collection Artsy does not name (a museum's work is not
+on the market), unless its catalogue number agrees and it is not for sale; a common title
+("Untitled", "Still Life", "Head of a Woman") without a holder or number to go by; and two items
+fitting equally well. Every such doubt is listed in data/wikidata/matches.json with the
 reason, next to the matches and the artists found and not found. "Exhibition credit" collecting
 institutions ('"Show" at Museum') and the museum that listed a work from one are a venue, not a
 holder, and are not taken as naming it.
@@ -150,6 +165,20 @@ MULTIPLE_MEDIUM = re.compile(r"\b(lithograph|etching|engraving|screen ?print|sil
                              r"chromogenic|c-print|pigment print|inkjet|archival pigment|offset|albumen|"
                              r"platinum print|palladium print|photogravure|dye transfer|giclee|giclée|"
                              r"bronze|cast)\b", re.I)
+# A painting's medium: 'Oil on canvas', 'Tempera on panel', 'Acrylic on linen' (one medium, on a support).
+PAINT_MEDIUM = re.compile(r"^\s*(oil|oils|oil paint|tempera|egg tempera|acrylic|encaustic|distemper)\b[^,;]{0,30}?"
+                          r"\bon\s+(canvas|panel|wood|oak|poplar|board|linen|copper|fabric|cardboard|paper|"
+                          r"paperboard|masonite|hardboard|plywood)", re.I)
+# Paint first, on a canvas or a panel, whatever else is in it: one of a kind, not an impression.
+PAINTED = re.compile(r"^\s*(oil|oils|oil paint|tempera|egg tempera|acrylic|encaustic|distemper)\b[^;]{0,80}?"
+                     r"\bon\s+(canvas|panel|wood|oak|poplar|board|linen|copper)", re.I)
+REPRODUCED = re.compile(r"gicl[eé]e|edition|reproduc|print|lithograph|serigraph|facsimile|poster|multiple", re.I)
+# Dealers, auction houses and fairs that Artsy files as institutions.
+MARKET_NAME = re.compile(r"christie|sotheby|bonhams|\bphillips\b(?! collection)|auction|photofairs|art fair", re.I)
+# A sentence about other objects than the one listed.
+ELSEWHERE = re.compile(r"\b(other|others|another|similar|comparable|compare|cf|related|version|versions|replica|"
+                       r"replicas|variant|variants|pendant|companion|impressions|examples|counterpart|"
+                       r"also in|likewise)\b", re.I)
 NOT_HAND = re.compile(r"attribut|possib|probabl|presum|workshop|atelier|circle|follower|school|manner|after|"
                       r"copy|studio|disputed|uncertain|imitat|style of|formerly|workshop|assistant|doubt", re.I)
 GENERIC = set("""
@@ -614,26 +643,67 @@ def is_credit(ci):
                              r"december)\b", ci, re.I))
 
 
+def is_market(saved):
+    """Listed by a dealer, an auction house or a fair: the work is for sale, and what the listing's
+    essay says about museums is about other works."""
+    p = saved.get("partner") or {}
+    return p.get("type") in ("Gallery", "Auction") or bool(MARKET_NAME.search(p.get("name") or ""))
+
+
+def own_sentences(text):
+    """A text without its sentences about other objects ('four other prints of this image are at …',
+    'another version is in …', 'compare …')."""
+    keep = [x for x in re.split(r"(?<=[.!?])\s+|\n+", text or "") if x.strip() and not ELSEWHERE.search(x)]
+    return "\n".join(keep)
+
+
 def holder_texts(saved, rec):
     """What on Artsy can name the work's holder: the museum that listed it (unless it listed it from
-    an exhibition), its collecting institution (unless that is an exhibition credit), its notes,
-    provenance and image credit."""
+    an exhibition), its collecting institution (unless that is an exhibition credit), its provenance,
+    and — when a museum or an archive listed it — its notes (not their sentences about other objects)
+    and image credit. A dealer's or an auction house's essay names museums for comparison; only its
+    provenance and collecting institution are taken."""
     p = saved.get("partner") or {}
     ci = rec.get("collecting_institution") or saved.get("collecting_institution") or ""
+    market = is_market(saved)
     out = []
-    if p.get("type") in ("Institution", "Institutional Seller") and not is_credit(ci):
+    if p.get("type") in ("Institution", "Institutional Seller") and not is_credit(ci) and not market:
         out.append(p.get("name") or "")
     if ci and not is_credit(ci):
         out.append(ci)
-    out += [rec.get("additional_information") or "", rec.get("provenance") or "", rec.get("image_rights") or ""]
+    out.append(rec.get("provenance") or "")
+    if not market:
+        out += [own_sentences(rec.get("additional_information")), rec.get("image_rights") or ""]
     return [t for t in out if t]
+
+
+def id_texts(saved, rec):
+    """Where an inventory number or a museum's id for the work can be: the holder texts, and the notes
+    and image credit of any listing (not their sentences about other objects)."""
+    out = holder_texts(saved, rec)
+    for t in (own_sentences(rec.get("additional_information")), rec.get("image_rights") or ""):
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
+def category(saved):
+    """Artsy's category, unless its medium plainly says it is a painting ('Oil on canvas' filed under
+    Print or Sculpture)."""
+    c = saved.get("category") or ""
+    m = saved.get("medium") or ""
+    if c in ("Print", "Sculpture", "Photography", "Posters", "") and PAINT_MEDIUM.search(m) and not REPRODUCED.search(m):
+        return "Painting"
+    return c
 
 
 def is_multiple(saved, rec):
     if saved.get("attribution_class") in ("limited edition", "unknown edition", "open edition"):
         return True
-    if saved.get("category") in MULTIPLE_CATEGORIES or saved.get("edition_sets"):
+    if category(saved) in MULTIPLE_CATEGORIES or saved.get("edition_sets"):
         return True
+    if PAINTED.search(saved.get("medium") or "") and not REPRODUCED.search(saved.get("medium") or ""):
+        return False  # 'Oil, emulsion, woodcut, and straw on canvas' is a painting, not an impression
     return bool(MULTIPLE_MEDIUM.search(saved.get("medium") or "")) and saved.get("attribution_class") != "unique"
 
 
@@ -832,7 +902,44 @@ def close(a, b):
     return abs(a - b) <= max(1.0, 0.03 * max(a, b))
 
 
+UNIT_NAMES = {"Q174728": "centimetres", "Q174789": "millimetres", "Q11573": "metres", "Q218593": "inches",
+              "Q3710": "feet", "Q200323": "decimetres"}
+
+
+def wd_raw_dims(e):
+    """Height and width as Wikidata states them: (height, its unit, width, its unit)."""
+    def amounts(p):
+        out = []
+        for s in statements(e, p):
+            t, v = snak(s["mainsnak"])
+            if t == "quantity" and v[1] in UNITS:
+                if any("frame" in label(q).lower() for q in qual_items(s, "P518")):
+                    continue
+                out.append(v)
+        return out
+    return [(h, hu, w, wu) for h, hu in amounts("P2048") for w, wu in amounts("P2049")]
+
+
+def unit_slip(saved, rec, e):
+    """Wikidata's numbers are Artsy's size in another unit than the one Wikidata names — the size
+    entered in inches under millimetres, say. Returns the words for it, or ''."""
+    mine = artsy_dims(saved, rec)
+    for h, hu, w, wu in wd_raw_dims(e):
+        if hu != wu:
+            continue
+        for u, f in UNITS.items():
+            if u == hu:
+                continue
+            for h1, w1 in mine:
+                if w1 and ((close(h1, h * f) and close(w1, w * f)) or (close(h1, w * f) and close(w1, h * f))):
+                    return (f"Wikidata's {h:g} x {w:g} {UNIT_NAMES.get(hu, hu)} are Artsy's size read as "
+                            f"{UNIT_NAMES.get(u, u)} (a unit slip on Wikidata)")
+    return ""
+
+
 def dims_agree(saved, rec, e):
+    """'agree', 'differ', 'unknown' (a side gives none), or 'slip' (Wikidata's numbers are Artsy's
+    size in another unit than it names: no size to go by, but none against)."""
     mine, theirs = artsy_dims(saved, rec), wd_dims(e)
     if not mine or not theirs:
         return "unknown"
@@ -843,7 +950,7 @@ def dims_agree(saved, rec, e):
                     return "agree"
             elif close(h1, h2):
                 return "agree"
-    return "differ"
+    return "slip" if unit_slip(saved, rec, e) else "differ"
 
 
 def holders(e, artist=None):
@@ -930,6 +1037,47 @@ def ids_in(e, texts):
     return hits
 
 
+def cat_agree(rec, e, artist):
+    """The item's catalogue numbers (P528, a catalogue raisonné's or an exhibition catalogue's) that
+    Artsy's literature, exhibition history or notes give for it: the code as Wikidata writes it
+    ('F146', 'JH 551'), or its number ('no. 146') on a line naming the catalogue's author or title."""
+    lines = [x for f in ("literature", "exhibition_history") for x in re.split(r"\n+", rec.get(f) or "")]
+    lines += own_sentences(rec.get("additional_information")).split("\n")
+    lines = [x for x in lines if x.strip() and not ELSEWHERE.search(x)]
+    if not lines:
+        return []
+    mine = {w for n in names(artist) for w in re.findall(r"[a-z]{4,}", fold(n))} if artist else set()
+    found = []
+    for s in statements(e, "P528"):
+        t, v = snak(s["mainsnak"])
+        if t != "string" or not re.search(r"\d", v):
+            continue
+        num = re.findall(r"\d+", v)[-1]
+        words = set()
+        for c in qual_items(s, "P972"):
+            for a in fact(c, "P50"):
+                words |= {w for n in names(a) for w in re.findall(r"[a-z]{4,}", fold(n))}
+            words |= {w for n in names(c) for w in re.findall(r"[a-z]{5,}", fold(n))}
+        words -= mine | CAT_COMMON
+        code = None
+        m = re.fullmatch(r"([A-Za-z]{1,4})[\s.]*(\d+)", v.strip())
+        if m and m.group(1).lower() not in NOT_CODES:
+            code = re.compile(rf"(?<![A-Za-z0-9]){re.escape(m.group(1))}[\s.]{{0,2}}{m.group(2)}(?![\d.])")
+        numbered = re.compile(rf"\b(?:no|nos|nr|n°|cat|number|num)\.?\s*(?:\d+[a-z]?\s*,\s*)*{num}(?![\d.])", re.I)
+        for x in lines:
+            if (code and code.search(x)) or (words and numbered.search(x) and set(re.findall(r"[a-z]{4,}", fold(x))) & words):
+                found.append(v)
+                break
+    return found
+
+
+# Letters before a number that are words, not a catalogue's siglum ('No. 5' is in titles).
+NOT_CODES = {"no", "nr", "nos", "op", "cat", "p", "pp", "pl", "fig", "vol", "n", "s", "ca", "c", "nb", "num", "inv"}
+CAT_COMMON = set("""catalogue catalog raisonne raisonnee oeuvre complete works paintings painting drawings prints
+werkverzeichnis catalogo ragionato generale general volume edition revised enlarged fully illustrated collection
+museum gallery exhibition works with from their life among""".split())
+
+
 def attribution(e, artist):
     """Words on the creator statement saying it is not simply the artist's hand."""
     for s in statements(e, "P170"):
@@ -951,14 +1099,14 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     kinds = item_kinds(e, ctx["kind_of"])
     if "series" in kinds:
         return None, "a series of works on Wikidata, not one work"
-    why_kind = kind_conflict(saved.get("category"), kinds)
+    why_kind = kind_conflict(category(saved), kinds)
     if why_kind:
         return None, f"a different kind of object: {why_kind}"
     hand = attribution(e, artist_q)
     if hand:
         return None, f"Wikidata's creator statement says '{hand}'"
     texts = holder_texts(saved, rec)
-    ids = ids_in(e, texts)
+    ids = ids_in(e, id_texts(saved, rec))
     dates, dnote = dates_agree(saved, e)
     dims = dims_agree(saved, rec, e)
     hs = holders(e, artist_q)
@@ -970,8 +1118,14 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     agree = sorted({related[r][1] for r in named if r in related})
     agree_names = "; ".join(f"{label(h)} ({h})" for h in agree)
     multiple = is_multiple(saved, rec) or bool(kinds & {"print", "photograph"})
+    market = is_market(saved)
+    # a catalogue number identifies a one-of-a-kind work; a print's or a cast's names the edition
+    cats = [] if multiple else cat_agree(rec, e, artist_q)
+    cat_how = f"the catalogue number ({', '.join(cats)}) in Artsy's record" if cats else ""
     title_how = ("the whole title" if level == "full" else f"part of the title ('{key}')")
     cap = (lambda c: "probable" if artist_conf == "probable" and c in ("exact", "strong") else c)
+    size_how = ("; the sizes agree" if dims == "agree" else
+                f"; {unit_slip(saved, rec, e)}" if dims == "slip" else "")
     if dates == "differ" and not ids:
         return None, f"the dates differ ({dnote})"
     if dims == "differ" and not ids:
@@ -981,24 +1135,26 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
         return cap("exact"), (f"{', '.join(f'{p} {v}' for p, v, _ in ids)} in Artsy's record; {title_how}" +
                               (f"; held by {agree_names}, which Artsy names" if agree else ""))
     if agree:
-        if (generic(key) or multiple) and dims != "agree":
+        if multiple and market:
+            return None, (f"held by {agree_names}, which the provenance names, but an edition or impression on the "
+                          f"market: Wikidata's is the holder's own, not the one for sale")
+        if (generic(key) or multiple) and dims != "agree" and not cats:
             return None, (f"held by {agree_names}, which Artsy names, but " +
                           ("an edition or impression" if multiple else f"a common title ('{key}')") +
-                          (" with no size to compare" if dims == "unknown" else "") +
+                          (" with no size to compare" if dims in ("unknown", "slip") else "") +
                           " — nothing to tell it from the holder's others")
         if multiple and level == "full" and dates == "agree":
             return "probable", (f"{title_how}, the date, the size and the holder ({agree_names}, which Artsy "
                                 f"names): the same institution's impression")
+        extra = (f"; {cat_how}" if cats else "") + size_how
         if level == "full" and dates == "agree":
-            return cap("strong"), (f"{title_how}, the date, and the holder: {agree_names}, which Artsy names" +
-                                   ("; the sizes agree" if dims == "agree" else ""))
-        if level == "full" and dates == "unknown" and not generic(key):
+            return cap("strong"), f"{title_how}, the date, and the holder: {agree_names}, which Artsy names{extra}"
+        if level == "full" and dates == "unknown" and (not generic(key) or cats):
             return "probable", (f"{title_how} and the holder ({agree_names}, which Artsy names); "
                                 f"no date on {'Artsy' if not artsy_span(saved.get('date')) else 'Wikidata'} to compare"
-                                + ("; the sizes agree" if dims == "agree" else ""))
-        if level == "part" and dates == "agree" and not generic(key):
-            return "probable", (f"{title_how}, the date and the holder ({agree_names}, which Artsy names)" +
-                                ("; the sizes agree" if dims == "agree" else ""))
+                                + extra)
+        if level == "part" and dates == "agree" and (not generic(key) or cats):
+            return "probable", f"{title_how}, the date and the holder ({agree_names}, which Artsy names){extra}"
         return None, (f"held by {agree_names}, which Artsy names, but only {title_how}" if level == "part" else
                       f"held by {agree_names}, which Artsy names, but the title is a common one and there is no date")
     held = [label(h) or h for h in current_public(e)]
@@ -1006,6 +1162,13 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
         return None, ("an edition or impression (a print, photograph, cast …): " +
                       (f"Wikidata's is held by {', '.join(held)}, which Artsy does not name" if held else
                        "Artsy does not say it is the same institution's impression"))
+    if cats and dates == "agree" and not (held and market):
+        # the same catalogue raisonné number, title and date: the same work, wherever Wikidata puts it
+        # (a museum's loan to another's exhibition names neither) — unless it is for sale and Wikidata
+        # has it in a museum
+        if level == "full":
+            return cap("strong"), f"{title_how}, the date and {cat_how}" + size_how
+        return "probable", f"{title_how}, the date and {cat_how}" + size_how
     if held:
         return None, f"Wikidata places it in {', '.join(held)}, which Artsy does not name"
     if level != "full":
@@ -1017,7 +1180,8 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     if dates != "agree":
         return None, "no date on one side to compare, and no holder named on both sides"
     if dims != "agree":
-        return None, "no sizes on one side to compare, and no holder named on both sides"
+        return None, ("no sizes on one side to compare, and no holder named on both sides" if dims != "slip" else
+                      "the sizes agree only in another unit than Wikidata names, and no holder named on both sides")
     return "probable", "the whole title (the artist's only item under it), the date and the size agree; no holder named"
 
 
@@ -1110,6 +1274,11 @@ def match_all(saves, recs, artists, threads):
         partner_items |= {r["item"] for r in sparql(f"SELECT DISTINCT ?item WHERE {{ VALUES ?n {{ {vals} }} "
                                                     f"{{ ?item rdfs:label ?n }} UNION {{ ?item skos:altLabel ?n }} }}")}
     facts(sorted(partner_items))
+    # the catalogues the candidates' catalogue numbers are in, and their authors
+    catalogues = sorted({c for w in everything if not ENT[w].get("missing") for s in statements(ENT[w], "P528")
+                         for c in qual_items(s, "P972")})
+    facts(catalogues)
+    facts(sorted({a for c in catalogues for a in fact(c, "P50")}))
     save_facts()
     namer = Namer()
     for q in set(hold) | set(relatives) | partner_items:
@@ -1148,7 +1317,12 @@ def match_all(saves, recs, artists, threads):
         top = [v for v in ok if RANK[v[1]] == best]
         if len(top) > 1:
             sized = [v for v in top if dims_agree(s, rec, ENT[v[0]]) == "agree"]
-            if len(sized) == 1:
+            numbered = [v for v in top if "the catalogue number (" in v[2]]
+            if len(numbered) == 1:
+                top = [(numbered[0][0], numbered[0][1], numbered[0][2] + "; of the items under this title, the only "
+                                                                         "one whose catalogue number agrees",
+                        numbered[0][3])]
+            elif len(sized) == 1:
                 top = [(sized[0][0], sized[0][1], sized[0][2] + "; of the items under this title, the only one "
                                                                   "whose size agrees", sized[0][3])]
             else:
