@@ -37,12 +37,24 @@ git push -u origin claude/digital-dirt-layers-paiial
 # 4. rebuild DIRT and republish it (the plane is built from the saves; its files stay in dirt/private/)
 pip install "opencv-python-headless<4.13" scipy
 python3 dirt/soil_tiles.py --db data/artworks.db
+# (4a, below: the quilts and the history into dirt/private/ first)
 python3 dirt/build_soil_viewer.py                 # the plane alone: the Earth is the website's globe
 ```
 
+**4a. The private images come from the artifact, never from nowhere.** The page is built with the quilts
+(`dirt/private/quilts/`) and the history of Greece and Rome (`dirt/private/antiquity/`); they are never committed, and
+a fresh session does not have them. Built without them, the page loses the quilts, the history's light and the
+collage's painting pieces, so it must not be published that way. They live beside the page in the DIRT artifact
+itself. Before `build_soil_viewer.py`, read them back with the Artifact tool (`action: "read"` with the artifact's
+`url` and `paths`): first `quilts/quilts.json` and `antiquity/antiquity.json`, then every file those two list
+(`quilts/qNN.jpg`, `antiquity/aNN.jpg`), and copy them, with the two JSON files, into `dirt/private/quilts/` and
+`dirt/private/antiquity/`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
+the roster is committed, and the next session that has the files picks it up; say so in the final line.
+
 Then publish `dirt/private/collection-soil.html` to the existing DIRT artifact,
-https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`). If the rebuild or the
-publish cannot be done in that session, the roster is still committed and the next rebuild picks it up.
+https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`, passing no `files`:
+the images and their JSON already there are kept). If the rebuild or the publish cannot be done in that session, the
+roster is still committed and the next rebuild picks it up.
 
 Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), and whether
 DIRT was republished.
