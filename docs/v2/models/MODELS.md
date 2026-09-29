@@ -61,11 +61,11 @@ looks from.
 | `tree` | `[cx, cy, h, r]` (+ base `z`) + optional `"shape"` | a trunk and a crown, h tall, crown radius r; `shape`: `round` (default), `poplar`, `umbrella` (flat, wide), `palm` (bare trunk, frond crown), `bare` (winter: limbs and an open crown of twigs) |
 | `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
-Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `marble`,
-`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
+Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `limestone` (pale dressed ashlar), `marble`,
+`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `bluetile` (glazed cobalt roof tile), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `thatch`, `glass` (dark interior and pale sky, dot by dot — reads as glass on its own),
-`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
+`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `slate` (slate or zinc roof, blue-grey), `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
 `gravel`, `paving`, `soil` (the place's own DIRT).
 
 The renderer casts shadow from a sun up to the north-west, so overhangs,

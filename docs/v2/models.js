@@ -24,10 +24,12 @@
     render:   { c: [236, 231, 222], soil: 0.10 },
     white:    { c: [246, 243, 236], soil: 0.06 },
     stone:    { c: [178, 164, 142], soil: 0.22 },
+    limestone:{ c: [214, 202, 176], soil: 0.12 },     // pale dressed limestone, Paris and Bath
     rubble:   { c: [132, 120, 104], soil: 0.30 },     // grey-brown field stone, dry-stone walls
     marble:   { c: [232, 228, 220], soil: 0.06 },
     brick:    { c: [158, 84, 58], soil: 0.14 },
     tile:     { c: [170, 88, 56], soil: 0.10 },
+    bluetile: { c: [52, 84, 138], soil: 0.10 },      // glazed cobalt roof tile
     earth:    { c: [178, 126, 82], soil: 0.35 },      // rammed earth, adobe
     ochre:    { c: [208, 172, 130], soil: 0.24 },     // concrete or plaster tinted to the ground
     yellow:   { c: [226, 178, 64], soil: 0.12 },      // Izamal's yellow lime paint
@@ -44,6 +46,7 @@
     metal:    { c: [150, 154, 160], soil: 0.04 },
     steel:    { c: [150, 154, 160], soil: 0.04 },
     dark:     { c: [52, 50, 50], soil: 0.06 },
+    slate:    { c: [84, 90, 100], soil: 0.06 },      // slate and zinc roofs, blue-grey
     corten:   { c: [150, 76, 40], soil: 0.10 },
     water:    { c: [70, 132, 168], soil: 0.08 },
     plant:    { c: [84, 112, 64], soil: 0.18, size: 2 },
