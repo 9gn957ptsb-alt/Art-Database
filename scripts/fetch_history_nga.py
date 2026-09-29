@@ -33,8 +33,9 @@ year) and a compatible date, and must not measure differently. Then:
             Artsy's artist is the one the NGA says the print is after, and the size is the same.
 
 Where the NGA holds several impressions under one title, Artsy's listing tells one from the others
-only by its measurements (the NGA's whole statement of size, word for word, before any single
-measurement) or by the date as written; otherwise the work is not matched. A work Artsy does not
+only by its measurements (the NGA's statement of size word for word on every part both state -
+image, sheet, mount - before any single measurement; a part the NGA has added since, like a sheet
+size, tells nothing) or by the date as written; otherwise the work is not matched. A work Artsy does not
 place at the NGA is matched only if it is one of a kind (a painting, drawing or sculpture), carries
 the NGA's own title, date, dimensions and credit line, and names no other holder. Prints and
 photographs exist in many impressions, and one is matched only when Artsy says it is the NGA's
@@ -426,6 +427,24 @@ def flat_dims(t):
     return re.sub(r"\s+", " ", (t or "").replace("×", "x")).strip().lower()
 
 
+def dim_parts(t):
+    """A statement of size by its parts: {"image": "32.8 x 24.6 cm (12 15/16 x 9 11/16 in.)", "sheet": ...}."""
+    t = flat_dims(t)
+    marks = list(re.finditer(r"(?:^|(?<=\s))([a-z][a-z ]*?(?:\s*\([^)]*\))?):\s", t))
+    parts = {}
+    for m, n in zip(marks, marks[1:] + [None]):
+        parts.setdefault(m.group(1).strip(), t[m.end():n.start() if n else len(t)].strip())
+    return parts
+
+
+def dim_lines(mine, theirs):
+    """Artsy's statement of size and the NGA's agree part by part, word for word, on every part both state.
+    A part only one of them states (a sheet size the NGA has added since Artsy copied its record) tells
+    nothing either way."""
+    shared = set(mine) & set(theirs)
+    return bool(shared) and all(mine[k] == theirs[k] for k in shared)
+
+
 def date_words(t):
     """A date as written, with "c.", "ca." and "circa" alike."""
     return re.sub(r"\b(?:circa|ca|c)\b", "c", norm(t))
@@ -469,8 +488,10 @@ def candidates(saved, rec, nga, index):
         dims, dim_score = dims_agree(my_dims, measures(o["dimensions"]))
         first_line = flat_dims(o["dimensions"].split("\n")[0])
         dim_text = len(first_line) > 8 and first_line in flat_dims(art_text)
-        # Artsy's listing repeats the NGA's whole statement of size, every line of it, where it has one.
-        dim_whole = len(first_line) > 8 and flat_dims(o["dimensions"]) == flat_dims(rec.get("additional_information"))
+        # Artsy's listing repeats the NGA's statement of size, part by part (image, sheet, mount ...), where it has
+        # one. Not the whole statement: the NGA adds parts to its records (a sheet size measured since), so an
+        # impression whose record has grown since Artsy copied its sister's is not told apart by that.
+        dim_whole = dim_lines(dim_parts(rec.get("additional_information")), dim_parts(o["dimensions"]))
         same_date = bool(date_words(o["displaydate"])) and \
             date_words(o["displaydate"]) == date_words(saved.get("date") or rec.get("date"))
         same_medium = bool(norm(o["medium"])) and norm(o["medium"]) == norm(rec.get("medium") or saved.get("medium"))
