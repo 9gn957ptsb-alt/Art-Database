@@ -22,13 +22,17 @@ Then the works. For each artist found, every item whose creator (P170) is that a
 its labels, aliases and titles (P1476), and the saved work's title (normalised: case, accents,
 punctuation, a leading article, "No."/"Number"/"#") is looked for among them: the whole title, or
 every part of a two-language title ("Tete de femme (Head of a Woman)"), is a "full" match; a part
-only (before a bracket, inside one, either side of a slash) is a "part" match. The candidates are
-then read whole (wbgetentities) and judged:
+only (before a bracket, inside one, either side of a slash) is a "part" match. Where Artsy's record
+links to the museum's page for the work (the Met's object ID, P3634; SFMOMA's accession number, P217),
+the item with that id is a candidate too, whatever its title, if its creator is the saved work's
+artist and its title is the saved one in the same words or fewer ("Mt. Katahdin (Maine), Autumn #2"
+and "Mt. Katahdin, Maine, No. 2"). The candidates are then read whole (wbgetentities) and judged:
 
   exact     Artsy's own artwork id is on the item (P11005, "Artsy artwork ID"); or the item's
             inventory number (P217), or a museum's id for it (an external identifier), is in
-            Artsy's record (its collecting institution, provenance, notes or a link to the
-            museum's page) and a collection it gives is named there too;
+            Artsy's record (its collecting institution, provenance, notes, or a link to the
+            museum's page anywhere in it; a number that is a size, '51.7 x 36 cm', is not one) and
+            a collection it gives is named there too;
   strong    Artsy names the holder (the museum that listed it on Artsy, its collecting
             institution, its provenance, notes or image credit — but of a dealer's or an auction
             house's listing only the provenance and collecting institution, as their essays name
@@ -63,9 +67,11 @@ Artsy does not name — an impression in another collection is another object �
 (a museum named in its provenance still has its own impression, which is Wikidata's); a
 one-of-a-kind work Wikidata places in a public collection Artsy does not name (a museum's work is not
 on the market), unless its catalogue number agrees and it is not for sale; a common title
-("Untitled", "Still Life", "Head of a Woman") without a holder or number to go by; and two items
-fitting equally well. Every such doubt is listed in data/wikidata/matches.json with the
-reason, next to the matches and the artists found and not found. "Exhibition credit" collecting
+("Untitled", "Still Life", "Head of a Woman") without a holder or number to go by; an impression or
+a common title told from the holder's others by its size alone, when another of the holder's items
+under the title has no size on Wikidata (it may be the one); a series of works (but a diptych or a
+triptych that Wikidata also calls a painting is one work); and two items fitting equally well. Every
+such doubt is listed in data/wikidata/matches.json with the reason, next to the matches and the artists found and not found. "Exhibition credit" collecting
 institutions ('"Show" at Museum') and the museum that listed a work from one are a venue, not a
 holder, and are not taken as naming it.
 
@@ -73,23 +79,31 @@ Events, from the matched item (deprecated statements left out), each in Wikidata
 is the label of the statement's value (or its "stated as", P1932), or the value itself; dates,
 places and names only from Wikidata's own data:
   made       P1071 location of creation (city and country from the place's own P131/P17), dated by
-             P571 inception (with P1319/P1326 earliest/latest, "circa" from P1480); or P571 alone;
-  held       P195 collection (start P580, end P582; inventory number P217 in the note; city and
-             country from the collection's own location) and P276 location (not repeated when it is
-             one of the collections and says no more);
+             P571 inception (with P1319/P1326 earliest/latest or P580/P582 start/end, "circa" from
+             P1480); or P571 alone; every other P571 Wikidata gives is a "made" event of its own;
+  held       P195 collection (start P580, end P582, or P585; inventory number P217, a role P3831
+             ("private collection"), an owner P127, a cause P828 in the note; city and country from
+             the collection's own location) and P276 location (not repeated when it is one of the
+             collections and says no more);
   owned      P127 owned by (P580/P582/P585; P1932 stated as; order by P1545 series ordinal where
-             given; P1642 acquisition transaction and P1534 end cause in the note), P1028 donated by;
+             given; P1642 acquisition transaction, P1534 end cause, P1480 "possibly", P1319/P8555
+             date bounds and P1810 named as in the note), P1028 donated by;
   exhibited  P608 exhibition history — the exhibition item's own title, dates (P580/P582, or the
              statement's own P580/P582/P585), location (P276: one event a venue, with that venue's
-             dates where the exhibition gives them), and country (P17); where Wikidata gives a
+             dates where the exhibition gives them), and country (P17, the statement's own first;
+             its number P1545 and any "possibly" in the note; a date before the work was made, a
+             slip such as '0021' for 2021, goes to the note instead); where Wikidata gives a
              museum or gallery itself as the exhibition, it is the venue, with no title and none of
              its own dates (they are its founding, not the show's);
   written    P1343 described by source (the source's title, authors P50/P2093, journal P1433,
              publication date P577, DOI P356 or full-text link P953; page P304, chapter P792 and
-             section P958 from the statement), P528 catalogue code (in the P972 catalogue), and
+             section P958, plate P12275 and — where the source has none — a date P577/P585 from the
+             statement), P528 catalogue code (in the P972 catalogue), and
              P973 described at URL;
   sold/other P793 significant event (a sale, an auction or a purchase, or a named sale that is one,
-             is "sold"), P88 commissioned by, and P6216 copyright status ("other").
+             is "sold"; the auction house P12995 or participants P710 as "who"; beforehand and
+             afterward owned by P11811/P11812, lot number P4775, issue P433 in the note), P88
+             commissioned by, and P6216 copyright status ("other").
 A statement's reference URL (P854) and "stated in" (P248) go in the event's note, the URL in "url"
 when the event has none of its own.
 
@@ -593,8 +607,22 @@ def ntok(t):
 
 
 def segments(text):
+    """A text's clauses, each as tokens, with no clause starts inside (a comma ends a clause); then the
+    same text split everywhere but at commas, each with the tokens that begin a comma's clause, so
+    that a name written across a comma ('Museum of Fine Arts, Boston') is found too."""
     parts = re.split(r"[,;:()\[\]\"“”/|\n•©]+|(?<=[A-Za-z]{3})\.\s+", text or "")
-    return [ntok(p) for p in parts if p.strip()]
+    out = [(ntok(p), None) for p in parts if p.strip()]
+    for p in re.split(r"[;:()\[\]\"“”/|\n•©]+|(?<=[A-Za-z]{3})\.\s+", text or ""):
+        if "," not in p:
+            continue
+        toks, starts = [], set()
+        for k, clause in enumerate(p.split(",")):
+            if k and toks:
+                starts.add(len(toks))
+            toks += ntok(clause)
+        if starts:
+            out.append((toks, starts))
+    return out
 
 
 # ---------------------------------------------------------------- the saves
@@ -690,6 +718,12 @@ def id_texts(saved, rec):
         if t and t not in out:
             out.append(t)
     return out
+
+
+def link_texts(rec):
+    """Other parts of Artsy's record where a link to the museum's page for the work can be (SFMOMA
+    lists it under literature): read for links only, and not a line about other objects."""
+    return [own_sentences(rec.get(f)) for f in ("literature", "exhibition_history")]
 
 
 def category(saved):
@@ -864,10 +898,10 @@ def wd_dates(e):
         if not w:
             continue
         lo, hi = w[3], w[4]
-        for p, f in (("P1319", min), ("P1326", max)):
+        for p, f in (("P1319", min), ("P580", min), ("P1326", max), ("P582", max)):
             q = wd_time(qual_time(s, p))
             if q:
-                lo, hi = (f(lo, q[3]), hi) if p == "P1319" else (lo, f(hi, q[4]))
+                lo, hi = (f(lo, q[3]), hi) if p in ("P1319", "P580") else (lo, f(hi, q[4]))
         out.append((lo, hi, CIRCA in qual_items(s, "P1480")))
     return out
 
@@ -1003,18 +1037,21 @@ class Namer:
     def named(self, texts):
         found = set()
         for text in texts:
-            for seg in segments(text):
+            for seg, starts in segments(text):
                 spans = []
                 for i, (orig, n) in enumerate(seg):
                     for q, toks in self.first.get(n, ()):
                         j = i + len(toks)
                         if j > len(seg) or any(seg[i + k][1] != toks[k][1] for k in range(len(toks))):
                             continue
+                        if starts is not None and not any(i < x < j for x in starts):
+                            continue  # across commas, only the names written across one
                         if len(toks) == 1 and seg[i][0] != toks[0][0]:
                             continue  # one word, as written: 'Tate', 'MoMA'
-                        if i > 0 and seg[i - 1][0][:1].isupper() and seg[i - 1][1] not in OK_BEFORE:
+                        if i > 0 and (starts is None or i not in starts) and seg[i - 1][0][:1].isupper() \
+                                and seg[i - 1][1] not in OK_BEFORE:
                             continue
-                        if j < len(seg) and seg[j][1] in CONTINUE:
+                        if j < len(seg) and (starts is None or j not in starts) and seg[j][1] in CONTINUE:
                             continue
                         spans.append((i, j, q))
                 for i, j, q in spans:
@@ -1023,16 +1060,48 @@ class Namer:
         return found
 
 
-def ids_in(e, texts):
-    """The item's inventory numbers and external identifiers that Artsy's record gives."""
+# Links to a museum's page for a work, and where Wikidata keeps the id in them: a property, or an
+# inventory number (P217) in the museum's collection.
+MUSEUM_LINKS = [(r"metmuseum\.org/art/collection/search/(\d+)", "P3634", None),         # the Met's object ID
+                (r"sfmoma\.org/artwork/([0-9][\w.\-]*?)/?(?=[\s\"'<>)\]]|$)", "P217", "Q913672")]  # SFMOMA
+
+
+def same_words(title, item_names):
+    """The title of an item found by a museum's id, if it is the saved work's title: the same once
+    normalised, or the same words but for some more on one side ('Mt. Katahdin (Maine), Autumn #2' and
+    'Mt. Katahdin, Maine, No. 2'), at least two of them and not only common ones. '' if none is."""
+    f, segs, parts = title_forms(title)
+    mine = [x for x in [f] + segs if x]
+    for n in item_names:
+        g, gsegs, gparts = title_forms(n)
+        if f and (f == g or f in gsegs or f in gparts):
+            return f
+    for n in item_names:
+        g = title_forms(n)[0]
+        b = set(g.split()) - ARTICLES
+        for x in mine:
+            a = set(x.split()) - ARTICLES
+            small = a if len(a) <= len(b) else b
+            if len(small) >= 2 and (a <= b or b <= a) and not generic(" ".join(sorted(small))):
+                return g
+    return ""
+
+
+def ids_in(e, texts, links=()):
+    """The item's inventory numbers and external identifiers that Artsy's record gives: an inventory
+    number written in the holder texts (not a size: '51.7 x 36 cm'), or either one as part of a link
+    to the museum's page for the work, wherever in the record the link is (links too)."""
     blob = "\n".join(texts)
-    urls = re.findall(r"https?://[^\s\"'<>]+", blob)
+    urls = re.findall(r"https?://[^\s\"'<>]+", "\n".join(list(texts) + [t for t in links if t]))
     segs = {s for u in urls for s in re.split(r"[/?=&#]+", u) if s}
     hits = []
     for s in statements(e, "P217"):
         t, v = snak(s["mainsnak"])
         if t == "string" and re.search(r"\d", v) and len(v) >= 3 and not re.fullmatch(r"\d{1,3}", v):
-            if re.search(rf"(?<![\w.]){re.escape(v)}(?![\w]|\.\d)", blob) or v in segs:
+            written = any(not re.match(r"\s*(?:[x×](?![A-Za-z])|cm\b|mm\b|in(?:\.|ches\b|\s*[)\]]))", blob[m.end():], re.I)
+                          and not re.search(r"(?<![A-Za-z])[x×]\s*$", blob[:m.start()], re.I)
+                          for m in re.finditer(rf"(?<![\w.]){re.escape(v)}(?![\w]|\.\d)", blob))
+            if written or v in segs:
                 hits.append(("P217", v, qual_items(s, "P195")))
     for p, sts in (e.get("claims") or {}).items():
         for s in sts:
@@ -1103,7 +1172,8 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     """(confidence or None, how or why) for one saved work and one item."""
     q = e["id"]
     kinds = item_kinds(e, ctx["kind_of"])
-    if "series" in kinds:
+    if "series" in kinds and not kinds - {"series"}:
+        # a series; but a diptych or a triptych that is also a painting is one work in parts
         return None, "a series of works on Wikidata, not one work"
     why_kind = kind_conflict(category(saved), kinds)
     if why_kind:
@@ -1112,7 +1182,7 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     if hand:
         return None, f"Wikidata's creator statement says '{hand}'"
     texts = holder_texts(saved, rec)
-    ids = ids_in(e, id_texts(saved, rec))
+    ids = ids_in(e, id_texts(saved, rec), link_texts(rec))
     dates, dnote = dates_agree(saved, e)
     dims = dims_agree(saved, rec, e)
     hs = holders(e, artist_q)
@@ -1128,7 +1198,11 @@ def judge(saved, rec, e, level, key, artist_q, artist_conf, ctx):
     # a catalogue number identifies a one-of-a-kind work; a print's or a cast's names the edition
     cats = [] if multiple else cat_agree(rec, e, artist_q)
     cat_how = f"the catalogue number ({', '.join(cats)}) in Artsy's record" if cats else ""
-    title_how = ("the whole title" if level == "full" else f"part of the title ('{key}')")
+    title_how = ("the whole title" if level == "full" else
+                 f"the title, in fewer words on one side ('{key}')" if level == "idtitle" else
+                 f"part of the title ('{key}')")
+    if level == "idtitle" and not ids:
+        return None, f"found by the museum's id, but the id is not in Artsy's record where it can be read, and only {title_how}"
     cap = (lambda c: "probable" if artist_conf == "probable" and c in ("exact", "strong") else c)
     size_how = ("; the sizes agree" if dims == "agree" else
                 f"; {unit_slip(saved, rec, e)}" if dims == "slip" else "")
@@ -1202,6 +1276,25 @@ def match_all(saves, recs, artists, threads):
         for r in sparql(f"SELECT ?v ?item WHERE {{ VALUES ?v {{ {' '.join(lit(x) for x in batch)} }} "
                         f"?item wdt:P11005 ?v . }}"):
             by_artsy.setdefault(r["v"], []).append(r["item"])
+    # the museum's own id for the work, where Artsy's record links to the museum's page for it: the
+    # item is a candidate whatever its title, and is judged like the others (the title must still
+    # be the same, in the same or fewer words)
+    by_link = defaultdict(set)
+    wanted = defaultdict(set)  # (property, collection) -> ids
+    for s in saves:
+        blob = "\n".join(str(v) for v in (recs.get(s["id"]) or {}).values() if isinstance(v, str))
+        for pat, prop, coll in MUSEUM_LINKS:
+            for v in re.findall(pat, blob):
+                wanted[(prop, coll)].add(v)
+                by_link[(prop, coll, v)].add(s["id"])
+    by_id = defaultdict(set)  # saved id -> items
+    for (prop, coll), vs in wanted.items():
+        for batch in chunks(sorted(vs), 200):
+            where = (f"?item wdt:{prop} ?v ." if not coll else
+                     f"?item p:{prop} ?st . ?st ps:{prop} ?v . ?item wdt:P195 wd:{coll} .")
+            for r in sparql(f"SELECT ?v ?item WHERE {{ VALUES ?v {{ {' '.join(lit(x) for x in batch)} }} {where} }}"):
+                for sid in by_link[(prop, coll, r["v"])]:
+                    by_id[sid].add(r["item"])
     # the artists' works
     qids = sorted({a["qid"] for a in artists.values() if a.get("qid")})
     print(f"reading the works of {len(qids)} artists", flush=True)
@@ -1255,9 +1348,31 @@ def match_all(saves, recs, artists, threads):
                 cands[s["id"]].setdefault(w, (lv, key, aq))
         for w in by_artsy.get(s["id"], ()):
             cands[s["id"]][w] = ("artsy", s["id"], None)
-    everything = sorted({w for c in cands.values() for w in c})
+    everything = sorted({w for c in cands.values() for w in c} | {w for ws in by_id.values() for w in ws})
     print(f"{len(everything)} candidate items for {len(cands)} saved works", flush=True)
     entities(everything, threads)
+    # the items found by a museum's id alone: by the saved work's artist, and under the same title
+    linked_out = []
+    for s in saves:
+        for w in sorted(by_id.get(s["id"], ())):
+            if w in cands[s["id"]] or not ENT.get(w) or ENT[w].get("missing"):
+                continue
+            mine = [q for q in ((artists.get(a.get("id")) or {}).get("qid") for a in s.get("artists") or []) if q]
+            aq = next((q for q in mine if q in fact(w, "P170")), None)
+            who = {"id": s["id"], "title": s.get("title"), "date": s.get("date"),
+                   "artists": [a.get("name") for a in s.get("artists") or []],
+                   "partner": (s.get("partner") or {}).get("name"), "category": s.get("category"),
+                   "item": w, "item_label": label(w)}
+            if not aq:
+                linked_out.append(dict(who, reason="the museum's id for it is on the item, but its creator is not "
+                                                   "the saved work's artist on Wikidata"))
+                continue
+            key = same_words(s.get("title"), names(w))
+            if not key:
+                linked_out.append(dict(who, reason="the museum's id for it is on the item, but the titles differ"))
+                continue
+            f = title_forms(s.get("title"))[0]
+            cands[s["id"]][w] = ("full", f, aq) if key == f else ("idtitle", key, aq)
     # what the candidates are, and who holds them
     classes = sorted({c for w in everything for c in fact(w, "P31")})
     kind_of = {}
@@ -1306,8 +1421,8 @@ def match_all(saves, recs, artists, threads):
                 continue
             aconf = (artists.get(next((a["id"] for a in s.get("artists") or []
                                        if (artists.get(a["id"]) or {}).get("qid") == aq), ""), {}) or {}).get("confidence")
-            full = index[aq][0]
-            same = len(full.get(key, ())) if lv == "full" else len(set(index[aq][1].get(key, ())) | set(full.get(key, ())))
+            full, part = index.get(aq, ({}, {}))
+            same = len(full.get(key, ())) if lv == "full" else len(set(part.get(key, ())) | set(full.get(key, ())))
             conf, how = judge(s, rec, e, lv, key, aq, aconf, {"kind_of": kind_of, "namer": namer, "same_title": same})
             verdicts.append((w, conf, how, lv))
         ok = [v for v in verdicts if v[1]]
@@ -1315,7 +1430,7 @@ def match_all(saves, recs, artists, threads):
                "artists": [a.get("name") for a in s.get("artists") or []],
                "partner": (s.get("partner") or {}).get("name"), "category": s.get("category")}
         for w, conf, how, lv in verdicts:
-            if not conf and lv in ("full", "part"):
+            if not conf and lv in ("full", "part", "idtitle"):
                 rejected.append(dict(who, item=w, item_label=label(w), reason=how))
         if not ok:
             continue
@@ -1337,7 +1452,20 @@ def match_all(saves, recs, artists, threads):
                                      reason="several items fit equally well: " + " | ".join(v[2] for v in top)))
                 continue
         w, conf, how, _ = top[0]
+        # an impression or a common title told from the holder's others by its size: not when another
+        # of the holder's items under the title has no size to tell it by (it may be this one)
+        held_by = set(re.findall(r"\((Q\d+)\)", how))
+        unsized = [v for v in verdicts if not v[1] and v[0] != w and "no size to compare" in v[2]
+                   and "nothing to tell it from the holder's others" in v[2]
+                   and held_by & set(re.findall(r"\((Q\d+)\)", v[2]))]
+        if unsized and conf != "exact":
+            rejected.append(dict(who, item=w, item_label=label(w),
+                                 reason=f"{how}; but the holder has {len(unsized)} other item(s) under this title "
+                                        f"with no size on Wikidata ({', '.join(v[0] for v in unsized)}), which could "
+                                        f"be this one"))
+            continue
         matched[s["id"]] = (w, conf, how)
+    rejected += linked_out
     return matched, rejected
 
 
@@ -1477,13 +1605,14 @@ def item_text(s):
 def related_ids(e):
     """Items the events will need to name or place."""
     main, qual = set(), set()
-    for p in ("P1071", "P195", "P276", "P127", "P1028", "P88", "P793", "P608", "P1343", "P6216", "P528"):
+    for p in ("P1071", "P195", "P276", "P127", "P1028", "P88", "P793", "P608", "P1343", "P6216", "P528", "P571",
+              "P973"):
         for s in statements(e, p):
             t, v = snak(s["mainsnak"])
             if t == "item":
                 main.add(v)
             for qp in ("P972", "P1642", "P1534", "P1001", "P459", "P276", "P710", "P407", "P123", "P518", "P1480",
-                       "P17"):
+                       "P17", "P11811", "P11812", "P12995", "P3831", "P127", "P828", "P5102", "P4241"):
                 qual |= set(qual_items(s, qp))
             for r in s.get("references") or []:
                 qual |= {v2 for t2, v2 in (snak(x) for x in (r.get("snaks") or {}).get("P248", [])) if t2 == "item"}
@@ -1492,26 +1621,64 @@ def related_ids(e):
     return main, qual
 
 
+def inception_of(s):
+    """A P571 statement as {text, start, end, circa, note, refs}: its date to the precision given,
+    narrowed by the earliest and latest dates (P1319, P1326) or the start and end of the making
+    (P580, P582) where Wikidata gives them."""
+    t, v = snak(s["mainsnak"])
+    w = wd_time(v) if t == "time" else None
+    if not w:
+        return None
+    start, end, notes = w[1], w[2], [w[5]]
+    for p, key in (("P1319", "earliest date"), ("P580", "start time"), ("P1326", "latest date"), ("P582", "end time")):
+        q = wd_time(qual_time(s, p))
+        if q:
+            notes.append(f"{key} {q[0]} ({p})")
+            if p in ("P1319", "P580"):
+                start = q[1]
+            else:
+                end = q[2] or q[1]
+    for p, what in (("P4241", "refine date"), ("P1480", "sourcing circumstances"), ("P5102", "nature of statement")):
+        vs = [label(x) for x in qual_items(s, p) if x != CIRCA]
+        if vs:
+            notes.append(f"{what}: {', '.join(vs)}")
+    return {"text": w[0], "start": start, "end": end, "circa": CIRCA in qual_items(s, "P1480"),
+            "note": "; ".join(x for x in notes if x), "refs": refs(s)}
+
+
+def qual_notes(s, spec):
+    """Words for a statement's qualifiers: spec is [(property, what)], items by their labels, strings
+    and dates as written."""
+    out = []
+    for p, what in spec:
+        vs = []
+        for t, v in quals(s, p):
+            if t == "item":
+                vs.append(label(v) or v)
+            elif t in ("string",):
+                vs.append(v)
+            elif t == "mono":
+                vs.append(v[0])
+            elif t == "time" and wd_time(v):
+                vs.append(wd_time(v)[0])
+            elif t == "quantity":
+                vs.append(f"{v[0]:g}")
+        if vs:
+            out.append(f"{what} {', '.join(vs)}")
+    return out
+
+
+def believable(d, made_from):
+    """A date for something that happened to the work: not before it was made (nor before 1000)."""
+    y = int(d[:4]) if d and d[:4].isdigit() else None
+    return y is None or (y >= 1000 and (made_from is None or y >= made_from - 1))
+
+
 def events_for(e):
     ev = []
-    made = [s for s in statements(e, "P571")]
-    inception = None
-    if made:
-        s = made[0]
-        t, v = snak(s["mainsnak"])
-        w = wd_time(v) if t == "time" else None
-        if w:
-            start, end, lo_note = w[1], w[2], [w[5]]
-            for p, key in (("P1319", "earliest"), ("P1326", "latest")):
-                q = wd_time(qual_time(s, p))
-                if q:
-                    lo_note.append(f"{key} date {q[0]} ({p})")
-                    if p == "P1319":
-                        start = q[1]
-                    else:
-                        end = q[2] or q[1]
-            inception = {"text": w[0], "start": start, "end": end, "circa": CIRCA in qual_items(s, "P1480"),
-                         "note": "; ".join(x for x in lo_note if x), "refs": refs(s)}
+    inceptions = [x for x in (inception_of(s) for s in statements(e, "P571")) if x]
+    inception = inceptions[0] if inceptions else None
+    made_from = min((int(x["start"][:4]) for x in inceptions if x["start"][:4].isdigit()), default=None)
     n = 0
     for s in statements(e, "P1071"):
         text, q = item_text(s)
@@ -1525,10 +1692,12 @@ def events_for(e):
         ev.append(event("made", text, "P1071", n, city=city or (label(q) if q in TOWNS else ""), country=country,
                         venue="" if q in TOWNS or city == label(q) else label(q) if city else "", note=note,
                         url=url, **kw))
-    if not n and inception:
-        note, url = inception["refs"]
-        ev.append(event("made", inception["text"], "P571", 1, start=inception["start"], end=inception["end"],
-                        circa=inception["circa"], note="; ".join(x for x in (inception["note"], note) if x), url=url))
+    # the inception itself, unless it went with the place above; and every other date Wikidata gives
+    for i, inc in enumerate(inceptions[1:] if n else inceptions, 1):
+        note, url = inc["refs"]
+        other = "another date Wikidata gives for its making" if (n or i > 1) else ""
+        ev.append(event("made", inc["text"], "P571", i, start=inc["start"], end=inc["end"], circa=inc["circa"],
+                        note="; ".join(x for x in (other, inc["note"], note) if x), url=url))
     inventory = defaultdict(list)
     for s in statements(e, "P217"):
         t, v = snak(s["mainsnak"])
@@ -1538,7 +1707,7 @@ def events_for(e):
     collections = []
     for i, s in enumerate(statements(e, "P195"), 1):
         text, q = item_text(s)
-        start, end, dnote = dated(s, "P580", "P582")
+        start, end, dnote = dated(s, "P580", "P582", "P585")
         city, country = place(q)
         note, url = refs(s)
         extra = []
@@ -1547,6 +1716,8 @@ def events_for(e):
         for qp, what in (("P1642", "acquisition"), ("P1534", "end cause")):
             if qual_items(s, qp):
                 extra.append(f"{what}: " + ", ".join(label(x) for x in qual_items(s, qp)))
+        extra += qual_notes(s, [("P3831", "object has role:"), ("P127", "owned by"), ("P828", "has cause:"),
+                                ("P1480", "sourcing circumstances:"), ("P5102", "nature of statement:")])
         collections.append((q, bool(start or end)))
         ev.append(event("held", text, "P195", i, who=label(q) if q else "", venue=label(q) if q else "", city=city,
                         country=country, start=start, end=end, note="; ".join(x for x in extra + [dnote, note] if x),
@@ -1577,6 +1748,9 @@ def events_for(e):
         stated = qual_strings(s, "P1932")
         if stated and q:
             extra.append(f"Wikidata's item for the owner: {label(q)} ({q})")
+        extra += qual_notes(s, [("P1480", "sourcing circumstances:"), ("P5102", "nature of statement:"),
+                                ("P1319", "earliest date"), ("P8555", "latest start date"), ("P1326", "latest date"),
+                                ("P828", "has cause:"), ("P1810", "named as:")])
         note, url = refs(s)
         key = (int(serial[0]) if serial and serial[0].isdigit() else 10 ** 6, i)
         owners.append((key, dict(text=text, who=label(q) if q else "", start=start, end=end,
@@ -1601,14 +1775,18 @@ def events_for(e):
         start, end, dnote = dated(s, "P580", "P582", "P585")
         where = (qual_items(s, "P276") or [None])[0]
         city, country = place(where) if where else ("", "")
-        who = ", ".join(label(x) for x in qual_items(s, "P710"))
+        who = ", ".join(label(x) or x for x in qual_items(s, "P12995") + qual_items(s, "P710"))
         kinds_ = {q} | set(fact(q, "P31")) if q else set()  # a named sale ('Degas Collection Sale I') is an auction
         kind = "sold" if kinds_ & SALE else "exhibited" if kinds_ & EXHIBITION else "other"
+        extra = qual_notes(s, [("P11811", "beforehand owned by"), ("P11812", "afterward owned by"),
+                               ("P12995", "agent of action:"), ("P710", "participant:"), ("P4775", "lot number"),
+                               ("P433", "issue"), ("P528", "catalogue number"), ("P1480", "sourcing circumstances:"),
+                               ("P5102", "nature of statement:")])
         note, url = refs(s)
         n += 1
         ev.append(event(kind, text, "P793", n, who=who, venue=label(where) if where and where not in TOWNS else "",
                         city=city or (label(where) if where in TOWNS else ""), country=country, start=start, end=end,
-                        note="; ".join(x for x in ("significant event", dnote, note) if x), url=url))
+                        note="; ".join(x for x in ["significant event"] + extra + [dnote, note] if x), url=url))
     n = 0
     for s in statements(e, "P608"):
         text, q = item_text(s)
@@ -1656,21 +1834,35 @@ def events_for(e):
         where = qual_items(s, "P276")
         if where:
             venues = [(v, "", "") for v in where]
+        own_country = [fact(c, "P297")[0] for c in qual_items(s, "P17") if fact(c, "P297")]
+        if own_country:
+            country = own_country[0]
         note, url = refs(s)
         extra = []
         cat = qual_strings(s, "P528")
         if cat:
             extra.append(f"catalogue number {cat[0]}")
+        extra += qual_notes(s, [("P1545", "number"), ("P1480", "sourcing circumstances:"),
+                                ("P5102", "nature of statement:")])
+        if len(own_country) < len(qual_items(s, "P17")) or len(own_country) > 1:
+            extra += qual_notes(s, [("P17", "country:")])
         pages = ", ".join(qual_strings(s, "P304"))
         for k, (v, vs, ve) in enumerate(venues or [(None, "", "")], 1):
             city, vcountry = place(v) if v else ("", "")
             vnote = f"venue {k} of {len(venues)}" if len(venues) > 1 else ""
+            # a date before the work was made is a slip on Wikidata ('0021' for 2021): it is left in the
+            # note, and the exhibition's own dates stand in only where there is one venue
+            slips = [x for x in (qstart, qend, vs, ve) if x and not believable(x, made_from)]
+            q0, q1 = (x if believable(x, made_from) else "" for x in (qstart, qend))
+            v0, v1 = (x if believable(x, made_from) else "" for x in (vs, ve))
+            e0, e1 = (x if believable(x, made_from) and not (slips and len(venues) > 1) else "" for x in (estart, eend))
+            snote = (f"Wikidata gives {' to '.join(slips)} here, before the work was made" if slips else "")
             n += 1
             ev.append(event("exhibited", text, "P608", n, title=title,
                             venue=label(v) if v and v not in TOWNS else "",
                             city=city or (label(v) if v in TOWNS else ""), country=vcountry or country,
-                            start=qstart or vs or estart, end=qend or ve or eend, pages=pages,
-                            note="; ".join(y for y in [vnote] + extra + [dnote, note] if y), url=url))
+                            start=q0 or v0 or e0, end=q1 or v1 or e1, pages=pages,
+                            note="; ".join(y for y in [vnote] + extra + [snote, dnote, note] if y), url=url))
     n = 0
     for s in statements(e, "P1343"):
         text, q = item_text(s)
@@ -1695,9 +1887,15 @@ def events_for(e):
             link = f"https://doi.org/{doi[0]}" if doi else (fact(q, "P953") or [""])[0]
         extra = []
         for qp, what in (("P792", "chapter"), ("P958", "section"), ("P1545", "number"), ("P1810", "named as"),
-                         ("P528", "catalogue number")):
+                         ("P528", "catalogue number"), ("P12275", "plate")):
             if qual_strings(s, qp):
                 extra.append(f"{what} {', '.join(qual_strings(s, qp))}")
+        if not start:  # the statement's own date for the source, where the source has none
+            for qp in ("P577", "P585"):
+                w = wd_time(qual_time(s, qp))
+                if w:
+                    start = w[1]
+                    break
         qurl = (qual_strings(s, "P2699") + qual_strings(s, "P854") + qual_strings(s, "P973") +
                 qual_strings(s, "P953"))
         note, rurl = refs(s)
@@ -1735,11 +1933,13 @@ def events_for(e):
         i += 1
         extra = []
         if qual_items(s, "P407"):
-            extra.append("language " + ", ".join(label(x) for x in qual_items(s, "P407")))
+            extra.append("language " + ", ".join(label(x) or x for x in qual_items(s, "P407")))
         if qual_items(s, "P123"):
-            extra.append("publisher " + ", ".join(label(x) for x in qual_items(s, "P123")))
+            extra.append("publisher " + ", ".join(label(x) or x for x in qual_items(s, "P123")))
+        extra += qual_notes(s, [("P1476", "title"), ("P1810", "named as"), ("P1545", "number"),
+                                ("P577", "publication date"), ("P50", "author"), ("P2093", "author")])
         note, _ = refs(s)
-        ev.append(event("written", v, "P973", i, who=", ".join(label(x) for x in qual_items(s, "P123")),
+        ev.append(event("written", v, "P973", i, who=", ".join(label(x) or x for x in qual_items(s, "P123")),
                         note="; ".join(y for y in ["described at URL"] + extra + [note] if y), url=v))
     for i, s in enumerate(statements(e, "P6216"), 1):
         text, q = item_text(s)

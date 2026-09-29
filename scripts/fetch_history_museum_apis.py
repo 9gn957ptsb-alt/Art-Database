@@ -53,7 +53,17 @@ link, that record is read directly too.
 Exhibition venues and cities are read off the source's own words: Cleveland, SMK and Yale give
 them in fixed places; the Art Institute writes free text ('Paris, Durand-Ruel, …'), so a part of
 it is taken for a city only if the repository's own place data (Artsy's partner, show and fair
-locations, the museums on the globe, the histories' geocoder) knows that city.
+locations, the museums on the globe, and those of the histories' geocoder that a source placed in
+a state or country) knows that city. A provenance city is the part before a country or a state, or
+one of those known cities; never an initialism ('A.R.A.') or a firm ('Christie’s').
+
+One event a step, a show, a venue and a citation: the Art Institute's provenance is cut at its
+semicolons and at the full stops that end its sentences, its exhibitions and publications a line
+each (a ';' inside a show's title does not part it, and the 'as …' after a show's dates, which gives
+the work's title and date there, does not date the show); an older Cleveland entry that packs the
+whole chain is cut at its semicolons; a Yale exhibition statement is cut into its venues. A work's
+making is dated by its own words ('ca. 1635–36'), the museum's computed span only when the words
+give no year (the Met dates Poussin's Bacchanal drawing 1594–1665, his life).
 
 Writes one file per matched work, private like the saves (data/ is never committed):
 data/histories/museums/<file>.json (the same file name as data/histories/artsy/works/), with the
@@ -1032,11 +1042,60 @@ def split_top(text, sep=";"):
     return [x.strip() for x in out if x.strip(" .;\n")]
 
 
+def split_top_spans(text, sep=";"):
+    """Like split_top, but the (start, end) of each piece in the text, so that pieces joined again
+    are the source's own characters ('Pablo Picasso; A Retrospective', '… as c. 1895;Art Institute')."""
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(text + sep):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+        if ch == sep and (depth == 0 or i == len(text)):
+            piece = text[start:i]
+            lead = len(piece) - len(piece.lstrip())
+            if piece.strip(" .;\n"):
+                out.append((start + lead, start + len(piece.rstrip())))
+            start = i + 1
+    return out
+
+
+ABBREV = {"mrs", "messrs", "mme", "mlle", "esq", "bros", "ltd", "inc", "rev", "hon", "col", "gen", "capt",
+          "prof", "ste", "sgt", "nos", "figs", "vols", "eds", "cat", "fig", "vol", "ill", "cf", "viz", "no",
+          "nr", "pp", "ca", "fl", "bt", "jr", "sr", "dr", "mr", "st", "co", "cie", "comp", "coll", "repr",
+          "approx", "ed", "trans", "mt", "ft", "ave", "av", "dept", "univ", "inv", "illus", "pl", "pls",
+          "ms", "mss", "fol", "fols", "cit", "op", "ibid", "abb", "sig", "anon"}
+
+
+def sentences(text):
+    """A provenance step written as several sentences — the Art Institute writes '… 40 écus [….].
+    Probably in a French collection by 1680 [….].  François-Antoine Robit, Paris, …' — cut where a
+    full stop outside brackets ends a word that is not an initial or an abbreviation and a capital
+    follows. Each piece is the source's own characters."""
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+        elif ch == "." and depth == 0 and re.match(r"\s+[\"“‘']?[A-ZÀ-ÖØ-Þ]", text[i + 1:]):
+            token = (re.search(r"(\S+)$", text[start:i]) or [None, ""])[1]
+            letters = re.sub(r"[^\w]", "", token)
+            if token.endswith((")", "]")) or (letters and letters[-1].isdigit()) or (
+                    len(letters) > 1 and "." not in token and letters.lower() not in ABBREV):
+                out.append(text[start:i + 1].strip())
+                start = i + 1
+    out.append(text[start:].strip())
+    return [x for x in out if x.strip(" .;")]
+
+
 def unbracket(text, repl=" "):
     """The text without its square-bracketed asides, nested ones too ('[… 2942.50 [guilders] …]')."""
     while re.search(r"\[[^\[\]]*\]", text):
         text = re.sub(r"\[[^\[\]]*\]", repl, text)
-    return text
+    # an aside the source opened with '[' and closed with ')' ('[documents published by Barroero 1979
+    # and Corradini 1979)')
+    return re.sub(r"\[[^\[\]()]*\)", repl, text)
 
 
 def iso(y, m=None, d=None):
@@ -1051,10 +1110,11 @@ def date_mentions(text):
     year of the next date that has one ('Oct. 29–Dec. 10, 1942')."""
     t = text
     found = []
+    # a month may run into its day ('June1–Nov. 1, 1933', 'Jan.26, 2009'), as the Art Institute types it
     pat = re.compile(
         r"(?P<iso>(?P<iy>\d{4})-(?P<im>\d{2})-(?P<id>\d{2}))"
-        r"|(?P<dmy>(?P<dd>\d{1,2})\s+(?P<dm>" + MONTH + r")\b\.?,?\s+(?P<dy>\d{4}))"
-        r"|(?P<md>\b(?P<m>" + MONTH + r")\b\.?(?:\s+(?P<d>\d{1,2})(?:st|nd|rd|th)?(?!\d))?"
+        r"|(?P<dmy>(?P<dd>\d{1,2})\s+(?P<dm>" + MONTH + r")(?![a-z])\.?,?\s+(?P<dy>\d{4}))"
+        r"|(?P<md>\b(?P<m>" + MONTH + r")(?![a-z])\.?(?:\s*(?P<d>\d{1,2})(?:st|nd|rd|th)?(?!\d))?"
         r"(?:\s*[-–]\s*(?P<d2>\d{1,2})(?!\d)(?!\s*[-–]))?(?:,?\s+(?P<y>\d{4}))?)"
         r"|(?P<year>(?<![A-Za-z0-9./])\d{4}(?![A-Za-z0-9]))", re.I)
     for m in pat.finditer(t):
@@ -1127,10 +1187,19 @@ US_STATES = {"alabama", "alaska", "arizona", "arkansas", "california", "colorado
              "virginia", "washington", "west virginia", "wisconsin", "wyoming", "district of columbia"}
 
 
+def cityish(p):
+    """Can a part of a text be a city's name? Not a number, a firm, an initialism ('A.R.A.'), a
+    possessive ('Christie’s'), a state's abbreviation or more than four words."""
+    return bool(p) and p[:1].isupper() and bool(re.search(r"[a-zà-ÿ]", p)) and not re.search(r"\d", p) \
+        and not ORGISH.search(p) and len(p.split()) <= 4 and not re.search(r"[’']s$", p) \
+        and not STATEISH.fullmatch(p) and not re.search(r"[A-Z]\.[A-Z]", p)
+
+
 def place_after(parts):
     """City and country from the parts of a text after a name ('…, Pittsburgh, Pennsylvania, United
-    States'): the part before a country (before its state, in the United States), else the first part
-    when it reads like a place."""
+    States'): the part before a country (before its state, in the United States), or before a state
+    ('Upperville, Virginia'; 'Boston, MA'); else, among the first two parts, one the repository's own
+    place data knows for a city ('offered for sale, Christie’s, London, …' is in London)."""
     parts = [x for x in (re.sub(r"\s*\(.*", "", p).strip() for p in parts) if x]
     for i, p in enumerate(parts):
         c = country_of(p)
@@ -1139,13 +1208,12 @@ def place_after(parts):
             if j > 0 and (fold(parts[j]).strip(" .") in US_STATES or STATEISH.fullmatch(parts[j])):
                 j -= 1          # 'Pittsburgh, Pennsylvania, United States'; 'Ottawa, Ont., Canada'
             city = parts[j] if j >= 0 else ""
-            if re.search(r"\d", city) or ORGISH.search(city) or len(city.split()) > 4 or not city[:1].isupper():
-                city = ""
-            return city, c
-    if parts:
-        p = parts[0]
-        if re.fullmatch(r"[A-Z][\w'’.-]+(?: [A-Z][\w'’.-]+){0,2}", p) and not ORGISH.search(p) \
-                and not re.search(r"\d", p):
+            return (city if cityish(city) else ""), c
+    if len(parts) > 1 and (fold(parts[1]).strip(" .") in US_STATES or STATEISH.fullmatch(parts[1])) \
+            and cityish(parts[0]):
+        return parts[0], ""
+    for p in parts[:2]:
+        if cityish(p) and normtitle(p) in known_cities():
             return p, ""
     return "", ""
 
@@ -1153,7 +1221,7 @@ def place_after(parts):
 PROTECT = re.compile(r",(\s*(?:Jr|Sr|Inc|Ltd|Esq|S\.A|Co)\b\.?)")
 LEAD = re.compile(r"^(?:and\s+|then\s+|later\s+|subsequently\s+)?(?:(?:probably|possibly|presumably|perhaps|"
                   r"privately|jointly|reportedly|apparently)\s+)?(.*)$", re.I)
-VERBISH = re.compile(r"^(?:by|sold|purchased|bought|given|gift|bequeathed|consigned|placed|returned|acquired|"
+VERBISH = re.compile(r"^(?:by|sold|purchased|bought|given|gift|bequeathed|consigned|placed|returned|acquired|painted|"
                      r"transferred|exchanged|with|created|inherited|lent|deposited|confiscated|seized|"
                      r"restituted|possibly|probably|to|on|commissioned|delivered|offered|shared)\b", re.I)
 
@@ -1169,7 +1237,13 @@ def namey(s):
 
 def who_and_place(seg):
     """The owner, dealer or institution a provenance step names, and the place given after it."""
-    s = unbracket(seg).strip()
+    s = seg.strip()
+    if s.startswith("[") and s.endswith("]") and not unbracket(s).strip():
+        s = s[1:-1]          # a step the source gives only as a supposition: '[perhaps Reynière coll., …]'
+    # an aside before a capital parts a name from its place ('Julien Leclercq [1865-1901] Paris, France')
+    s = re.sub(r"\s*\[[^\[\]]*\]\s*(?=[A-Z])", ", ", s)
+    s = re.sub(r"\s+([.,;:])", r"\1", re.sub(r"\s+", " ", unbracket(s))).strip()
+    s = re.sub(r"(?<=[a-zà-ÿ\])0-9]{2})\.$", "", s)     # the step's full stop ('…, Paris.'), not 'Jr.' or 'D.C.'
     if s.startswith("(") and s.endswith(")"):
         s = s[1:-1]          # Cleveland puts a dealer in brackets
     s = PROTECT.sub(lambda m: "\x00" + m.group(1), s)      # "Walter P. Chrysler, Jr." is one name
@@ -1177,12 +1251,14 @@ def who_and_place(seg):
     parts = [p.strip().replace("\x00", ",") for p in s.split(",")]
     lead = LEAD.match(parts[0]).group(1)
     rest = parts[1:]
-    m = [x for x in re.finditer(r"\b(?:to|by|with|from)\s+", lead) if namey(lead[x.end():])]
+    m = [x for x in re.finditer(r"\b(?:to|by|with|from)\s+", lead) if namey(lead[x.end():])] or \
+        [x for x in re.finditer(r"^(?:painted|made|executed|commissioned)\s+for\s+", lead, re.I)
+         if namey(lead[x.end():])]         # 'Painted for Pierre Hennequin de Fresne'; not '… Center for British Art'
     if VERBISH.match(lead):
         who = lead[m[-1].end():] if m else ""
     else:
         who = lead
-    who = re.sub(r"\s*\([^)]*\)", "", who).strip(" .;:")
+    who = re.sub(r"\s*\([^)]*(?:\)|$)", "", who).strip(" .;:")      # 'Henri Lerolle (Paris sale 1944, …)'
     if (re.fullmatch(r"(?:his|her|their|its)\s+[\w-]+(?:\s+[\w-]+)?", who) or KIN.search(who)) and rest:
         who, rest = re.sub(r"\s*\([^)]*\)", "", rest[0]).strip(" .;:"), rest[1:]     # "to his wife, Martha …"
     if who and not namey(who):
@@ -1211,10 +1287,12 @@ def ev(kind, text, field, order, **kw):
 
 def provenance_events(segments, field, notes=None):
     out = []
-    segments = [x for x in segments if re.search(r"[^\W\d_]", unbracket(plain(x)))]   # not a bare "…"
+    segments = [x for x in segments if re.search(r"[^\W\d_]", plain(x))]   # not a bare "…"
     for i, seg in enumerate(segments, 1):
         text = plain(seg)
-        start, end, circa = dates(unbracket(text), prefer_months=False)
+        inner = text[1:-1] if text.startswith("[") and text.endswith("]") and not unbracket(text).strip() \
+            else text        # a whole step in brackets, a supposition: its dates are its own
+        start, end, circa = dates(unbracket(inner), prefer_months=False)
         who, city, country = who_and_place(text)
         note = ""
         if notes:
@@ -1240,6 +1318,16 @@ NOT_A_NAME = re.compile(r"\b(catalogue|catalog|exhibition|exposition|salon|annua
                         r"acquisitions|anonymous)\b", re.I)
 
 
+def personish(s):
+    """A person's name and nothing else: two to five words, each capitalised, an initial or a particle
+    ('Paul Hayes Tucker', 'Natalie H. Lee'); not a title ('the Gare Saint-Lazare', 'Manet')."""
+    toks = s.split()
+    return 2 <= len(toks) <= 5 and toks[0][:1].isupper() and toks[-1][:1].isupper() and not re.search(r"\d", s) \
+        and all(re.fullmatch(r"[A-Z]\.(?:-?[A-Z]\.)*", t) or t in PARTICLES or (
+            t[:1].isupper() and re.fullmatch(r"[^\W\d_][^\W\d_'’-]*(?:['’-][^\W\d_]+)*", t)
+            and fold(t) not in STOP | ARTICLES) for t in toks)
+
+
 def looks_like_name(s):
     s = s.strip()
     return bool(s) and len(s) < 90 and not re.search(r"\d|:", s) and not NOT_A_NAME.search(s) and bool(
@@ -1254,6 +1342,20 @@ def publication_parts(text):
     q = re.search(r"[“\"]([^”\"]+?)[,.]?[”\"]", t)
     em = re.findall(r"<(?:em|i)>(.*?)</(?:em|i)>", t)
     flat = plain(t)
+    pages_rx = r"\bpp?\.\s*[\dixvlc]+(?:\s*[-–]\s*\d+)?(?:(?:,|,?\s+and)\s*\d+(?:\s*[-–]\s*\d+)?)*"
+    # author-date: 'Zukowsky, John, ed. 1987. Chicago Architecture and Design, 1872-1922: … Exh. cat. …';
+    # 'Wilson, Richard Guy. 1995. "Prairie School Works …" Museum Studies 21(2): 93-111.'
+    ad = re.match(r"\s*(?P<who>[^.“\"<\d]{3,120}?)\.\s+(?P<y>1[5-9]\d\d|20[0-3]\d)[a-z]?\.\s+(?P<rest>.+)$", flat, re.S)
+    if ad and "," in ad.group("who"):
+        who = re.sub(r",\s*eds?$", "", ad.group("who").strip())
+        rest = ad.group("rest")
+        q2 = re.match(r"[“\"]([^”\"]+?)[,.]?[”\"]\s*(.*)$", rest, re.S)
+        if q2:
+            title = q2.group(1).strip(" ,.")
+            publication = re.split(r"[,(:]|\s\d", q2.group(2), 1)[0].strip(" ,.")
+        else:
+            title = re.split(r"\.\s", rest, 1)[0].strip(" ,.")
+        return who, title, publication, ", ".join(re.findall(pages_rx, flat)), ad.group("y")
     if q:
         title = plain(q.group(1)).strip(" ,.")
         who = plain(t[:q.start()]).strip(" ,.:")
@@ -1273,13 +1375,19 @@ def publication_parts(text):
         first, _, second = head.partition(", ")
         if second and looks_like_name(re.sub(r"\[[^\]]*\]", "", first)):
             who, title = first, second
+            ps = head.split(", ")       # 'Richard R. Brettell, Paul Hayes Tucker, and Natalie H. Lee, The …'
+            for k in range(2, min(len(ps), 7)):
+                names = [re.sub(r"^(?:and|&)\s+", "", x) for x in ps[1:k]]
+                if re.match(r"(?:and|&)\s+", ps[k - 1]) and all(personish(x) for x in names):
+                    who, title = ", ".join(ps[:k]), ", ".join(ps[k:])
+                    break
         else:
             title = head
         title = title.strip(" ,.")
     title = re.sub(r"^(?:eds?\.|et al\.),\s*", "", title)       # 'Gloria Groom, ed., L’impressionnisme …'
     if len(who) > 120 or re.search(r"\d{4}", who):
         who = ""
-    pages = ", ".join(re.findall(r"\bpp?\.\s*[\dixvlc]+(?:\s*[-–]\s*\d+)?(?:,\s*\d+(?:\s*[-–]\s*\d+)?)*", flat))
+    pages = ", ".join(re.findall(pages_rx, flat))
     paren = re.findall(r"\(([^()]*\b\d{4}\b[^()]*)\)", flat)
     src = paren[-1] if paren else (flat[flat.find(title) + len(title):] if title and title in flat else flat)
     ms = date_mentions(src)
@@ -1300,8 +1408,12 @@ def written_events(entries, field):
 
 
 def made_event(text, field, years, who, place=""):
+    """The work's making, dated as its own words date it ('ca. 1635–36'); the museum's computed span
+    (the Met gives Poussin's drawing 1594–1665, his life; 'c. 1893' is 1887–1900 at the Art Institute)
+    only when the words give no year."""
     if not text:
         return []
+    years = year_range(re.sub(r"\([^)]*\)", " ", text)) or years      # not '1912 (removed 1967)'
     circa = bool(re.search(r"\b(c\.|ca\.|circa|about)", text, re.I))
     s = str(years[0]) if years and years[0] else ""
     e = str(years[1]) if years and years[1] and years[1] != years[0] else ""
@@ -1338,8 +1450,12 @@ def known_cities():
         except (OSError, ValueError, KeyError):
             pass
         try:
+            # The geocoder's cache is filled from the readers' own outputs, so a name a reader once
+            # took wrongly for a city ('Christie’s', 'A.R.A.', 'Inc.') is in it too. Only the names
+            # a source placed in a state or country ('toulouse||fr', 'dayton|ohio|us') count.
             names |= {k.split("|")[0] for k, v in json.loads(
-                (ROOT / "data" / "histories" / "geocode.json").read_text()).items() if v}
+                (ROOT / "data" / "histories" / "geocode.json").read_text()).items()
+                if v and any(k.split("|")[1:])}
         except (OSError, ValueError):
             pass
         _cities = {normtitle(n) for n in names if n and not re.search(r"\d", n)}
@@ -1356,6 +1472,10 @@ TITLEISH = re.compile(r"\b(paint|drawing|print|master|art|arts|exhibit|works|sel
                       r"landscape|modern|french|american|british|european|impression|retrospective|annual|"
                       r"collection|century|school|masterpiece|show)", re.I)
 STATEISH = re.compile(r"(?:[A-Z][a-z]{1,5}\.|[A-Z]\.\s?[A-Z]\.|[A-Z]{2})")
+
+
+FIRM_TAIL = re.compile(r"[A-Z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*)*\s*(?:&|and)\s*(?:Cie|Co|Company|Sons|Fils|Frères)\.?"
+                       r"|(?:Inc|Ltd|S\.A|Cie)\.?", re.I)
 
 
 def lead_place(parts):
@@ -1393,7 +1513,19 @@ def lead_place(parts):
         if rest and not re.search(r"\d", rest[0]) and (VENUEISH.search(rest[0]) or len(rest) > 1) \
                 and rest[0][:1].isupper() and len(rest[0]) < 90:
             venue = rest[0]
+            if len(rest) > 1 and FIRM_TAIL.fullmatch(rest[1]):
+                venue += ", " + rest[1]          # 'Paris, Manzi, Joyant & Cie, Exposition d’art moderne'
+
     return city, country, venue
+
+
+def show_dates(text):
+    """The part of an exhibition entry that dates the show: not the 'as …' after its dates, which gives
+    the title and date the work was shown under ('…, Feb. 27–Mar. 28, 1971, cat. 25 (ill.), as c. 1895')."""
+    for m in re.finditer(r",\s+as\s+", text):
+        if date_mentions(text[:m.start()]):
+            return text[:m.start()]
+    return text
 
 
 def aic_events(c, refresh):
@@ -1403,19 +1535,24 @@ def aic_events(c, refresh):
                      d.get("artist_title") or "", "place_of_origin: " + d["place_of_origin"] if d.get("place_of_origin") else "")
     if d.get("provenance_text"):
         body, notes = split_notes(d["provenance_text"])
-        out += provenance_events(split_top(body.replace("\n", " ")), "provenance_text", notes)
+        out += provenance_events([x for seg in split_top(body.replace("\n", " ")) for x in sentences(seg)],
+                                 "provenance_text", notes)
     order = 0
-    for para in re.split(r"\n\s*\n", d.get("exhibition_history") or ""):
+    for para in (d.get("exhibition_history") or "").split("\n"):      # a show a line
         if not para.strip():
             continue
-        segs = []
-        for seg in split_top(para):
-            # a venue that follows on has its own dates; a ";" inside a title ("Rue de Paris; Temps de
-            # pluie") does not start one
-            if segs and not date_mentions(plain(seg)):
-                segs[-1] += "; " + seg
+        spans = []
+        for a, b in split_top_spans(para):
+            # a venue that follows on has its own dates; a ";" inside a title does not start one,
+            # whether after the dates ('… as Rue de Paris; Temps de pluie') or before them ('Pablo
+            # Picasso; A Retrospective, May 22–Sept. 16, 1980')
+            seg, prev = para[a:b], (para[spans[-1][0]:spans[-1][1]] if spans else "")
+            if spans and (not date_mentions(plain(seg)) or (
+                    not date_mentions(plain(prev)) and not any(lead_place(plain(seg).split(","))))):
+                spans[-1] = (spans[-1][0], b)
             else:
-                segs.append(seg)
+                spans.append((a, b))
+        segs = [para[a:b] for a, b in spans]
         head_title = ""
         for j, seg in enumerate(segs):
             order += 1
@@ -1432,9 +1569,9 @@ def aic_events(c, refresh):
             else:
                 # the parts before the dates: 'Paris, Durand-Ruel, Exposition …, June 4–16, 1894'
                 m = re.search(r",\s*(?:opened\s+|closed\s+)?(?:" + MONTH + r")\.?\s|,\s*\d{4}", text)
-                city, country, venue = lead_place((text[:m.start()] if m else "").split(","))
+                pre = re.sub(r"^(?:and|then|also|traveled to|travelled to)\s+", "", text[:m.start()] if m else "")
+                city, country, venue = lead_place(pre.split(","))
             if not em:
-                pre = text[:m.start()] if m else ""
                 if ", as " in pre:          # 'Art Institute of Chicago, as Gustave Caillebotte: Urban Impressionist'
                     head, title = pre.split(", as ", 1)
                     if not venue and "," not in head:
@@ -1452,10 +1589,11 @@ def aic_events(c, refresh):
                         title = rest          # 'Paris, Galerie Beaux-Arts, Rétrospective Gustave Caillebotte, May …'
             if j == 0:
                 head_title = title
-            start, end, circa = dates(after)
+            start, end, circa = dates(show_dates(after))
             out.append(ev("exhibited", text, "exhibition_history", order, start=start, end=end, circa=circa,
                           title=title, venue=venue.strip(), city=city, country=country, url=url))
-    pubs = [(p, {}) for p in re.split(r"\n\s*\n", d.get("publication_history") or "") if p.strip()]
+    # an entry a line: most are parted by an empty line, some only by a line break
+    pubs = [(p, {}) for p in (d.get("publication_history") or "").split("\n") if p.strip()]
     out += written_events(pubs, "publication_history")
     if d.get("credit_line"):
         out.append(ev("held", plain(d["credit_line"]), "credit_line", 1, venue="Art Institute of Chicago",
@@ -1476,15 +1614,18 @@ def cma_events(c, refresh):
         text = plain(p.get("description"))
         if not text:
             continue
-        i = len([e for e in out if e["field"] == "provenance"]) + 1
-        e = provenance_events([text], "provenance")[0]
-        e["order"] = i
-        if p.get("date") and re.fullmatch(r"\d{4}(-\d{2}(-\d{2})?)?", str(p["date"]).strip()):
-            e["start"] = str(p["date"]).strip()
-        notes = [plain(f) for f in (p.get("footnotes") or []) if plain(f)]
-        cites = [plain(x) for x in (p.get("citations") or []) if plain(x)]
-        e["note"] = " ".join(notes + cites)
-        out.append(e)
+        # one step an entry; an older record packs the whole chain into one ('Painted for Pierre
+        # Hennequin de Fresne (…); [perhaps Reynière coll., …]; Lord Ashburton; …'): a step each
+        steps = split_top(text)
+        for k, e in enumerate(provenance_events(steps, "provenance")):
+            e["order"] = len([x for x in out if x["field"] == "provenance"]) + 1
+            if len(steps) == 1 and p.get("date") and re.fullmatch(r"\d{4}(-\d{2}(-\d{2})?)?", str(p["date"]).strip()):
+                e["start"] = str(p["date"]).strip()
+            if k == 0:
+                notes = [plain(f) for f in (p.get("footnotes") or []) if plain(f)]
+                cites = [plain(x) for x in (p.get("citations") or []) if plain(x)]
+                e["note"] = " ".join(notes + cites)
+            out.append(e)
     ex = d.get("exhibitions") or {}
     order = 0
     for x in ex.get("current") or []:
@@ -1578,22 +1719,37 @@ def lux_events(c, refresh):
     out = made_event(dt, "produced_by", c["years"], who)
     for stmt in lux_statements(d, "Provenance Statement", "Provenance"):
         body, notes = split_notes(stmt)
-        out += provenance_events(split_top(body), "Provenance", notes)
+        out += provenance_events([x for seg in split_top(body) for x in sentences(seg)], "Provenance", notes)
     order = 0
     for x in lux_statements(d, "Exhibitions (events)", "Exhibition History", "Exhibitions"):
-        order += 1
-        text = plain(x)
-        m = re.search(r",?\s*(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})\s*$", text)
-        start, end = (m.group(1), m.group(2)) if m else ("", "")
-        if not m:
-            start, end, _ = dates(text)
-        rest = text[:m.start()] if m else text
-        parts = [p.strip() for p in rest.split(", ")]
-        title = venue = city = ""
-        if len(parts) >= 4 and re.search(r"\.$|^[A-Z]{2,3}$", parts[-1]) or (len(parts) >= 4 and country_of(parts[-1])):
-            title, venue, city = ", ".join(parts[:-3]), parts[-3], parts[-2]
-        out.append(ev("exhibited", text, "Exhibitions (events)", order, start=start, end=end, title=title,
-                      venue=venue, city=city, country=country_of(parts[-1]) if parts else ""))
+        whole = plain(x)
+        # 'Title, Venue, City, State, 2009-01-27 to 2009-05-24; Venue, City, State, 2009-08-20 to …':
+        # a venue each, the show's title carried on; a ';' before any dates is inside the title
+        spans = []
+        for a, b in split_top_spans(whole):
+            if spans and not date_mentions(whole[spans[-1][0]:spans[-1][1]]):
+                spans[-1] = (spans[-1][0], b)
+            else:
+                spans.append((a, b))
+        head_title = ""
+        for j, (a, b) in enumerate(spans):
+            order += 1
+            text = whole[a:b]
+            m = re.search(r",?\s*(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})\s*$", text)
+            start, end, circa = (m.group(1), m.group(2), False) if m else dates(text)
+            rest = text[:m.start()] if m else text
+            parts = [p.strip() for p in rest.split(", ")]
+            title = venue = city = ""
+            if parts and (re.search(r"\.$|^[A-Z]{2,3}$", parts[-1]) or country_of(parts[-1])) \
+                    and len(parts) >= (4 if j == 0 else 3):
+                title, venue, city = ", ".join(parts[:-3]), parts[-3], parts[-2]
+            if j == 0:
+                head_title = title
+            elif not title and venue:
+                title = head_title
+            out.append(ev("exhibited", text, "Exhibitions (events)", order, start=start, end=end, circa=circa,
+                          title=title, venue=venue, city=city if cityish(city) else "",
+                          country=country_of(parts[-1]) if parts else ""))
     for mem in d.get("member_of") or []:
         lab = mem.get("_label") or ""
         m = re.match(r'YCBA Exhibit set for "(.*) \((.*), (\d{4}-\d{2}-\d{2}) - (\d{4}-\d{2}-\d{2})\)"$', lab)

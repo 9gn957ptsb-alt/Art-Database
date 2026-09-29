@@ -48,13 +48,18 @@ title (retitled, perhaps), it is named among the doubts; the rest are listed as 
 Events, all in the NGA's own words ("text" is always verbatim):
   provenance      split into one event per owner (semicolons, sentences, "by whom sold ... to"
                   clauses, and an owner's own sale in parentheses after the name), in order:
-                  "owned", "sold" for a sale (a parenthesised auction), "held" for the gift,
-                  bequest or purchase to the NGA. Footnotes go in "note". Dates only
-                  as the text gives them; "who" is the NGA's own name for the owner when its owner
-                  records (objects_constituents) line up with the text, else the name as written.
+                  "owned", "sold" for a sale (a parenthesised auction: "sale", or an auctioneer with
+                  a day and a lot), "held" for the gift, bequest or purchase to the NGA. Footnotes go
+                  in "note"; one the text never points to is kept as a note to the whole ("other").
+                  Dates only as the text gives them, less life dates ("(1895-1993)", "(d. 1883)");
+                  a lone "until at least 1949" is the end. "who" is the NGA's own name for the owner
+                  when one of its owner records (objects_constituents) is the name written: the same
+                  surname, the same given names or their initials and no others, a "Mrs." or "Mme"
+                  on both sides or neither, the same "Jr." or "2nd marquess"; else the name as written.
   exhibitions     one "exhibited" event per entry: title, venue and city as the entry lays them
-                  out, dates from the entry where they reach the NGA's own year for it (a range in a
-                  show's title is not its date), else that year.
+                  out (the venue it was "shown only in", where the entry says so), dates from the
+                  entry where they reach the NGA's own year for it (a range in a show's title is
+                  not its date), else that year.
   bibliography    one "written" event per entry: author, title, publication, pages, year.
   also            "made" (the date as displayed, where it was made), "held" from the credit line
                   when the provenance does not say how the NGA acquired it (its year from the NGA's
@@ -694,7 +699,6 @@ AUCTION = re.compile(r"(drouot|christie|sotheby|parke|bernet|american art|george
                      r"salle|rooms|galerie|galleries|gallery|atelier|auction|kunst|&|manson|association|ltd|inc)", re.I)
 
 
-SALE = re.compile(r"\b(?:sale|auction|vente)\b", re.I)
 SOLD = re.compile(r"\b(?:sale|auction|vente|sold)\b", re.I)
 # Houses that only auction (Georges Petit, Charpentier and the like were dealers too).
 AUCTIONEER = re.compile(r"christie|sotheby|drouot|parke[- ]bernet|american art association|galliera|lepke|dorotheum|"
@@ -881,7 +885,10 @@ def start_end(seg):
     ds = dates_in(seg)
     if not ds:
         return "", "", False
-    return ds[0], (ds[-1] if len(ds) > 1 and ds[-1] != ds[0] else ""), bool(CIRCA.search(seg))
+    circa = bool(CIRCA.search(seg) or re.search(r"\d{3}0s\b", seg))  # "early 1930s"
+    if len(set(ds)) == 1 and re.search(r"\buntil(?:\s+at\s+least)?\s+(?:c\.\s*)?[^\d]{0,12}" + ds[0][:4], seg):
+        return "", ds[0], circa  # "..., until at least 1949": when it was still theirs, not when it came
+    return ds[0], (ds[-1] if len(ds) > 1 and ds[-1] != ds[0] else ""), circa
 
 
 def components(seg):
