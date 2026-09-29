@@ -3144,10 +3144,23 @@ uniform ivec2 uCell0;
 uniform vec4 uAnom;                 // as the first pass has it: the view's middle, how far (0 to 1), which
 uniform vec2 uHalf;
 uniform float uTime;
+uniform sampler2D uPrev;            // the plane as it was the moment before the dark (held while the voyage lasts)
+uniform vec2 uPrevSize, uPrevTex;
+uniform ivec2 uPrev0;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float vnoise(", "vec3 artPaper(")}
 mat2 rot2(float a) { return mat2(cos(a), sin(a), -sin(a), cos(a)); }
+/** The plane as it was before the dark, at p (cells), at a level of detail. The toys of the voyage are made of it. */
+vec3 planeAt(vec2 p, float lod) {
+  if (uPrevSize.x < 1.0) return vec3(150.0, 140.0, 130.0);
+  return textureLod(uPrev, clamp(p - vec2(uPrev0), vec2(0.5), uPrevSize - 0.5) / uPrevTex, lod).rgb * 255.0;
+}
+/** The plane in one colour's range: its lights and darks kept, its hue the toy's (a duotone), a little of its own left. */
+vec3 duo(vec3 c, vec3 hue) {
+  float l = dot(c, vec3(0.3, 0.59, 0.11)) / 255.0;
+  return mix(mix(hue * 0.28, min(hue * 1.3 + 30.0, vec3(255.0)), smoothstep(0.04, 0.96, l)), c, 0.2);
+}
 
 // ---- deep space: the dark every collapse passes through, and the voyage ---------------------------------------
 /** The dark after a collapse: faint nebulae in a colour pair, and stars at three depths, the nearer drifting faster
@@ -3180,24 +3193,37 @@ float tinRocket(vec2 p, vec2 at, float ang, float s, float face, float T, out ve
   float fl = 0.55 + 0.15 * sin(T * 31.0) + 0.1 * sin(T * 53.0);
   float fd = length(vec2((u.x + 0.86) / fl, u.y / 0.16));
   float a = 0.0;
-  if (u.x < -0.8 && fd < 1.0) { col = mix(vec3(255.0, 240.0, 170.0), vec3(230.0, 70.0, 20.0), fd); a = 1.0 - fd * fd; }
-  // the body: a tin spindle, silver, shaded from above, with a red band and a red nose
+  vec2 C = uAnom.xy;
+  // the flame: the plane itself, burnt bright and warm
+  if (u.x < -0.8 && fd < 1.0) {
+    vec3 pl = planeAt(p + vec2(-face * s * 0.4, 5.0 * sin(T * 13.0)), 2.0);
+    col = mix(min(pl * 1.5 + vec3(110.0, 70.0, 10.0), vec3(255.0)), vec3(230.0, 70.0, 20.0), fd * fd); a = 1.0 - fd * fd;
+  }
+  // the body: tin as a mirror, the plane (as it was before the dark) bent round the spindle as a bright toy bends a
+  // room; red enamel over the mirror at the nose and the band; lit from above
   float bd = length(vec2(u.x / 0.9, u.y / 0.3));
   if (bd < 1.0 && u.x > -0.86) {
-    vec3 tin = mix(vec3(236.0, 238.0, 242.0), vec3(96.0, 100.0, 112.0), clamp(0.5 + 1.6 * u.y, 0.0, 1.0));
-    if (u.x > 0.52 || abs(u.x + 0.12) < 0.07) tin = mix(vec3(236.0, 60.0, 46.0), vec3(120.0, 18.0, 16.0), clamp(0.5 + 1.6 * u.y, 0.0, 1.0));
-    col = tin; a = 1.0;
+    vec2 m = vec2(u.x / 0.9, u.y / 0.3);
+    vec3 env = planeAt(C + rot2(ang) * vec2(m.x * face, m.y) * (1.0 + 0.7 * dot(m, m)) * uHalf * 0.85, 1.0);
+    float sh = clamp(0.5 + 1.6 * u.y, 0.0, 1.0);
+    vec3 tin = mix(env * 1.05 + 28.0, env * 0.42, sh);
+    bool red = u.x > 0.52 || abs(u.x + 0.12) < 0.07;
+    if (red) tin *= vec3(1.18, 0.42, 0.36);
+    tin = mix(tin, vec3(255.0), smoothstep(0.12, 0.0, abs(u.y + 0.15)) * (red ? 0.25 : 0.45));   // the light along its top
+    col = min(tin, vec3(255.0)); a = 1.0;
     float pd = length(u - vec2(0.24, -0.02));
     if (pd < 0.15) port = true;
-    else if (pd < 0.2) col = vec3(214.0, 170.0, 70.0) * (0.8 + 0.4 * (0.5 - u.y));   // its brass rim
-    if (abs(bd - 0.97) < 0.03) col *= 0.6;                          // the seam of the tin
+    else if (pd < 0.2) col = min(env * vec3(1.2, 0.95, 0.5) + 30.0, vec3(255.0)) * (0.8 + 0.4 * (0.5 - u.y));   // its brass rim, a mirror too
+    col = mix(col, col * 0.55, smoothstep(0.92, 1.0, bd));          // its edge turning away, a gradient
   }
-  // three fins, red
+  // three fins, of red glass: the plane seen through them
   float fx = -0.5 - u.x;
-  if (fx > 0.0 && u.x > -1.02 && abs(u.y) > 0.18 && abs(u.y) < 0.2 + fx * 1.3) { col = vec3(206.0, 44.0, 36.0) * (u.y < 0.0 ? 1.1 : 0.75); a = 1.0; }
-  // the wind-up key, on its back
+  if (fx > 0.0 && u.x > -1.02 && abs(u.y) > 0.18 && abs(u.y) < 0.2 + fx * 1.3) {
+    col = min(planeAt(p + vec2(0.0, 7.0), 1.5) * vec3(1.1, 0.34, 0.3) + vec3(40.0, 6.0, 4.0), vec3(255.0)) * (u.y < 0.0 ? 1.1 : 0.8); a = 1.0;
+  }
+  // the wind-up key, on its back, brass
   vec2 kq = u - vec2(-0.3, -0.36);
-  if (abs(kq.x) < 0.03 && kq.y > -0.08 && kq.y < 0.0 || abs(length(vec2(kq.x * 0.6, kq.y + 0.14)) - 0.08) < 0.025) { col = vec3(190.0, 170.0, 110.0); a = 1.0; }
+  if (abs(kq.x) < 0.03 && kq.y > -0.08 && kq.y < 0.0 || abs(length(vec2(kq.x * 0.6, kq.y + 0.14)) - 0.08) < 0.025) { col = min(planeAt(C + (p - at) * 3.0, 1.0) * vec3(1.1, 0.9, 0.55) + 40.0, vec3(255.0)); a = 1.0; }
   return a;
 }
 /** A space ranger, the toy: flying flat out, one arm reaching ahead, a jetpack on his back with two swept fins and a
@@ -3211,12 +3237,14 @@ float spaceRanger(vec2 p, vec2 at, float s, float face, float T, out vec3 col, o
   u.y -= 0.03 * sin(T * 2.0);                                        // bobbing as he flies
   col = vec3(0); glass = false;
   float a = 0.0;
-  vec3 suit = vec3(232.0, 118.0, 40.0), cream = vec3(238.0, 228.0, 206.0), teal = vec3(28.0, 150.0, 150.0);
+  // his colours, but made of the plane: each part the plane under it, folded, in that part's colour's range
+  vec3 pl = planeAt(p + 9.0 * (vec2(vnoise(p, 13.0, 71u), vnoise(p, 13.0, 72u)) - 0.5), 0.5);
+  vec3 suit = duo(pl, vec3(232.0, 118.0, 40.0)), cream = duo(pl, vec3(238.0, 228.0, 206.0)), teal = duo(pl, vec3(28.0, 150.0, 150.0));
   float shade = clamp(0.5 + 2.0 * u.y, 0.0, 1.0);                    // lit from above
   // the jetpack's flame, flickering, out behind
   float fl = 0.3 + 0.08 * sin(T * 29.0) + 0.05 * sin(T * 47.0);
   float fd = length(vec2((u.x + 0.28) / fl, (u.y + 0.2) / 0.06));
-  if (u.x < -0.2 && fd < 1.0) { col = mix(vec3(255.0, 244.0, 190.0), vec3(240.0, 90.0, 30.0), fd); a = 1.0 - fd * fd; }
+  if (u.x < -0.2 && fd < 1.0) { col = mix(min(planeAt(p - vec2(face * s * 0.2, 0.0), 2.0) * 1.5 + vec3(110.0, 80.0, 20.0), vec3(255.0)), vec3(240.0, 90.0, 30.0), fd * fd); a = 1.0 - fd * fd; }
   // legs, trailing, and teal boots
   for (int k = 0; k < 2; k++) {
     float sy = k == 0 ? -0.05 : 0.07;
@@ -3243,7 +3271,7 @@ float spaceRanger(vec2 p, vec2 at, float s, float face, float T, out vec3 col, o
   // the helmet: a bubble of glass round his head
   float hd = length(u - vec2(0.52, -0.03));
   if (hd < 0.21) {
-    if (length(u - vec2(0.54, -0.02)) < 0.1) { col = vec3(236.0, 196.0, 164.0) * mix(1.05, 0.8, shade); a = 1.0; }   // his head
+    if (length(u - vec2(0.54, -0.02)) < 0.1) { col = duo(pl, vec3(236.0, 196.0, 164.0)) * mix(1.05, 0.8, shade); a = 1.0; }   // his head
     else if (hd > 0.19 || (hd > 0.13 && hd < 0.16 && u.x > 0.52 && u.y < -0.06)) { col = vec3(245.0, 250.0, 255.0); a = 1.0; }   // rim, and a gleam
     else { glass = true; a = 0.0; }
   }
@@ -3277,7 +3305,23 @@ void voyage(vec2 p, vec2 C, float e, inout vec2 src, inout vec4 over) {
     vec3 rc; bool port;
     float a = n == 0 ? tinRocket(p, at, ang, s, dirx, uTime, rc, port) : spaceRanger(p, at, s, dirx, uTime, rc, port);
     if (port && n == 0) { src = p; over = vec4(0); return; }       // through the porthole, the plane
-    if (port) { over = vec4(mix(col, vec3(150.0, 205.0, 235.0), 0.5), 0.55); return; }   // through his helmet's glass, the plane
+    if (port) {
+      // his helmet's glass: the plane in it as in a small kaleidoscope, six mirrors turning slowly, the glass faintly blue
+      vec2 hc = at + vec2(0.52 * s * dirx, -0.03 * s), dq = p - hc;
+      float w = 3.14159265 / 6.0, an = atan(dq.y, dq.x) + uTime * 0.2, f = mod(an, 2.0 * w);
+      f = f > w ? 2.0 * w - f : f;
+      vec3 k = planeAt(uAnom.xy + (21.0 + length(dq) * 13.0) * vec2(cos(f), sin(f)), 0.5);
+      over = vec4(min(mix(k * 1.25 + 20.0, vec3(170.0, 215.0, 240.0), 0.18), vec3(255.0)), 1.0);
+      return;
+    }
+    // near, he leaves after-images, as the collage's melt does: three of him, fading behind
+    if (n == 1 && a <= 0.0) for (int g = 1; g <= 3; g++) {
+      float tg = t - float(g) * 0.018;
+      vec2 ag = C + vec2(dirx * mix(-span, span, tg), 0.25 * uHalf.y + 13.0 * sin(tg * 9.0));
+      vec3 gc; bool gp;
+      float ga = spaceRanger(p, ag, s, dirx, uTime - float(g) * 0.1, gc, gp);
+      if (ga > 0.0 || gp) { col = mix(col, gp ? planeAt(p, 1.0) : gc, 0.42 / float(g)); break; }
+    }
     col = mix(col, rc, a);
   }
   over = vec4(min(col, vec3(255.0)), 1.0);
@@ -3514,8 +3558,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (ee) { [lightProg, Lu] = ee; gl.useProgram(lightProg); gl.uniform1i(Lu.uPrev, 10); gl.uniform1i(Lu.uQuilt, 9); gl.uniform1i(Lu.uAnt, 11); }
     const ii = finish(pending.i, ["uPrev", "uPrevSize", "uPrevTex", "uHalf", "uCell0", "uPrev0", "uAnom"]);
     if (ii) { [toysProg, Ty] = ii; gl.useProgram(toysProg); gl.uniform1i(Ty.uPrev, 10); }
-    const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime"]);
-    if (ff) [spaceProg, Sp] = ff;
+    const ff = finish(pending.f, ["uCell0", "uAnom", "uHalf", "uTime", "uPrev", "uPrevSize", "uPrevTex", "uPrev0"]);
+    if (ff) { [spaceProg, Sp] = ff; gl.useProgram(spaceProg); gl.uniform1i(Sp.uPrev, 10); }
     const gg = finish(pending.g, ["uCells", "uEnts", "uSlots", "uWorks", "uPrev", "uCell0", "uC0", "uPrev0", "uPrevSize", "uPrevTex", "uTime", "uHaze", "uAnt", "uAN"]);
     if (gg) {
       [canopyProg, Cn] = gg;
@@ -3772,12 +3816,19 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform4fv(Sp.uAnom, anom);
       gl.uniform2f(Sp.uHalf, cw / 2, ch / 2);
       gl.uniform1f(Sp.uTime, t);
+      gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tP);
+      gl.uniform2f(Sp.uPrevSize, prevN[0], prevN[1]);
+      gl.uniform2f(Sp.uPrevTex, FW, FH);
+      gl.uniform2i(Sp.uPrev0, prev0[0], prev0[1]);
       gl.enable(gl.BLEND);                                             // (his helmet's glass lets the plane through)
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
-    if ((depthProg && deep) || lit || trees || glued || glass) {
+    // (in an anomaly other than the toys, the last frame before it is held: the voyage's toys are made of it)
+    const holdPrev = anom[2] > 0 && !glass;
+    if (holdPrev) { /* keep tP, prevN and prev0 as they were */ }
+    else if ((depthProg && deep) || lit || trees || glued || glass) {
       // this frame, kept for the next
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboP);
       gl.readBuffer(gl.COLOR_ATTACHMENT1);
