@@ -12574,7 +12574,7 @@
   // A place as a line can say it: a town as it stands ("Paris, FR"), a
   // country by its name rather than its code; "" when neither.
   var regionNames = null;
-  function placeWords(w) {
+  function placeSaid(w) {
     if (!w || w.indexOf(",") >= 0) { return w || ""; }
     if (!/^[A-Z]{2}$/.test(w)) { return w; }
     try {
@@ -12596,7 +12596,7 @@
     var own = ev.n || ev.q ? " — " + (ev.n || ev.q) : "";
     switch (ev.k) {
       case "made":
-        var at = placeWords(ev.w);
+        var at = placeSaid(ev.w);
         t("Made" + (at ? " in " + at : ""));
         break;
       case "owned":
@@ -12617,7 +12617,7 @@
         } else if (ev.v || ev.t) {
           t("Shown at " + (ev.v || ev.t));
         } else {
-          t("Shown" + (own || (placeWords(ev.w) ? " in " + placeWords(ev.w) : "")));
+          t("Shown" + (own || (placeSaid(ev.w) ? " in " + placeSaid(ev.w) : "")));
         }
         break;
       case "offered":
