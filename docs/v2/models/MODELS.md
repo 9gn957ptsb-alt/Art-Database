@@ -65,7 +65,7 @@ Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `limestone`
 `rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `bluetile` (glazed cobalt roof tile), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `thatch`, `glass` (dark interior and pale sky, dot by dot — reads as glass on its own),
-`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `slate` (slate or zinc roof, blue-grey), `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
+`mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `slate` (slate or zinc roof, blue-grey), `copper` (copper gone green, or pre-patinated: roofs and cladding), `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
 `gravel`, `paving`, `soil` (the place's own DIRT).
 
 The renderer casts shadow from a sun up to the north-west, so overhangs,

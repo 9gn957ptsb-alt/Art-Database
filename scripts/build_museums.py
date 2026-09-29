@@ -85,6 +85,7 @@ PARTNER_SPOTS = {
     "mca-chicago": (41.8972, -87.6212),
     "harn-museum-of-art": (29.6369, -82.3701),          # Artsy's "Gainsville" put it in Jacksonville (OSM r11797936)
     "museo-nacional-del-prado": (40.4138, -3.6920),     # Artsy's is the office address, 140 m east (OSM)
+    "clark-art-institute": (42.7076, -73.2137),         # OSM's first answer is the campus's middle, 380 m south-west in the woods; the Museum Building, 225 South Street (OSM)
 }
 # Where OpenStreetMap's first answer is the museum's other house (Belvedere 21).
 ARTSY_RIGHT = {"Belvedere Museum"}

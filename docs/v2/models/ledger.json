@@ -407,12 +407,13 @@
   },
   "museum-turner-contemporary": {
     "name": "Turner Contemporary",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around"
+      "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): joints between the six volumes widened and glazed so they read as six, north lights on the back row, steps to the sands, and the harbour, Harbour Arm and Droit House to the north-east"
     ]
   },
   "museum-guggenheim-museum-bilbao": {
@@ -428,22 +429,24 @@
   },
   "museum-clark-art-institute": {
     "name": "Clark Art Institute",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1955 white marble temple with its portico, Belluschi red-granite Manton Center, Ando Clark Center and the three-tier reflecting pool; layout guessed (no OSM buildings)"
+      "2026-09-24 first model: the 1955 white marble temple with its portico, Belluschi red-granite Manton Center, Ando Clark Center and the three-tier reflecting pool; layout guessed (no OSM buildings)",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): placed on the Museum Building at 225 South Street (it stood 380 m off in the woods) and its ground cut again; flat roof with a glazed monitor on the 1955 building, the Clark Center in red granite, Ando's wall along the pool, trees in clusters"
     ]
   },
   "museum-legion-of-honor": {
     "name": "Legion of Honor",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: three-quarter H\u00f4tel de Salm on its real bearing (rasterised rows) \u2014 arch, Ionic colonnades round the Court of Honour, Corinthian portico, rotunda dome, glass pyramid, the Thinker"
+      "2026-09-24 first model: three-quarter H\u00f4tel de Salm on its real bearing (rasterised rows) \u2014 arch, Ionic colonnades round the Court of Honour, Corinthian portico, rotunda dome, glass pyramid, the Thinker",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): rotunda brought down to the cornice with an attic, engaged columns and a saucer dome; balustrade round the main block; glazed skylight lanterns; El Cid in the forecourt; broad Monterey cypresses"
     ]
   },
   "museum-j-paul-getty-museum": {
@@ -459,172 +462,189 @@
   },
   "museum-the-museum-of-modern-art": {
     "name": "MoMA",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the block between 53rd and 54th turned to Manhattan's grid: Goodwin-Stone 1939 front, Johnson's east wing, Taniguchi's granite-and-glass galleries and the Sculpture Garden, the Geffen Wing, with Museum Tower and 53W53 cut at 72 m."
+      "2026-09-24 first model: the block between 53rd and 54th turned to Manhattan's grid: Goodwin-Stone 1939 front, Johnson's east wing, Taniguchi's granite-and-glass galleries and the Sculpture Garden, the Geffen Wing, with Museum Tower and 53W53 cut at 72 m.",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): 53W53's concrete diagrid on all four faces in place of horizontal ribs; the 1939 Thermolux band made translucent white; the Sculpture Garden's grove thickened"
     ]
   },
   "museum-yale-university-art-gallery": {
     "name": "Yale University Art Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Kahn's brick-and-stone-course wall and glass to York St, Swartwout's stone gallery with its arcade, the bridge over High St and Street Hall, turned with New Haven's grid."
+      "2026-09-24 first model: Kahn's brick-and-stone-course wall and glass to York St, Swartwout's stone gallery with its arcade, the bridge over High St and Street Hall, turned with New Haven's grid.",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Street Hall given a steep slate roof, pale stone bands and a cross-gable; the Kahn building's and Old Art Gallery's flat roofs made grey"
     ]
   },
   "museum-anderson-collection-at-stanford-university": {
     "name": "Anderson Collection",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Ennead's three bars: glass ground floor under a cantilevered tan gallery box, bow-tie in plan, zinc-framed window bands, clerestory bar under a zinc cap, campus oaks."
+      "2026-09-24 first model: Ennead's three bars: glass ground floor under a cantilevered tan gallery box, bow-tie in plan, zinc-framed window bands, clerestory bar under a zinc cap, campus oaks.",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): gallery box in pale tan stone; a thin zinc lid over a taller clerestory; campus trees as broad low coast live oaks"
     ]
   },
   "parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno": {
     "name": "Depart Colegiales",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-09-24 first model: ten-storey corner block of stacked concrete trays, bays jutting by turns with brown slatted shutters or black railings, long balconies on the short face, set-back houses on top, V columns under the prow, rear pool patio"
+      "2026-09-24 first model: ten-storey corner block of stacked concrete trays, bays jutting by turns with brown slatted shutters or black railings, long balconies on the short face, set-back houses on top, V columns under the prow, rear pool patio",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): rear face over the patio made glass between slab edges with black-railed balconies; louvre band the length of the top floor; big tipas on the street; re-cut to a 0.6 m voxel on a 48 m plate (39,000 dots to 26,000)"
     ]
   },
   "museum-musee-picasso-paris": {
     "name": "Mus\u00e9e Picasso (H\u00f4tel Sal\u00e9)",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the H\u00f4tel Sal\u00e9 \u2014 portal on rue de Thorigny, the oval court with its low balustraded wings, the corps de logis under its slate roof and great semicircular pediment, the garden front with its pavilions and the garden"
+      "2026-09-24 first model: the H\u00f4tel Sal\u00e9 \u2014 portal on rue de Thorigny, the oval court with its low balustraded wings, the corps de logis under its slate roof and great semicircular pediment, the garden front with its pavilions and the garden",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): h\u00f4tel in pale limestone under blue-grey slate; the two blank neighbouring slabs broken into ten Marais houses of different widths and heights, lower than the cornice, with tall windows"
     ]
   },
   "museum-montclair-art-museum": {
     "name": "Montclair Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1914 Greek Revival block with its Ionic portico to Bloomfield Avenue on its real bearing, later galleries behind"
+      "2026-09-24 first model: the 1914 Greek Revival block with its Ionic portico to Bloomfield Avenue on its real bearing, later galleries behind",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): flat roofs made grey with a coping on the later galleries; a skylight down the main block's roof; voxel 0.6 to 0.75 m (29,000 dots to 18,000)"
     ]
   },
   "museum-ordrupgaard": {
     "name": "Ordrupgaard",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Sn\u00f8hetta's skylights in the lawn"
+      "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Sn\u00f8hetta's skylights in the lawn",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Hadid's wing rebuilt as one continuous shell of black lava concrete, its roof sloping down into the outer wall, glass the length of its inner side; beeches of different sizes; voxel 0.8 to 0.9 m, boxes snapped to the grid"
     ]
   },
   "museum-cleveland-museum-of-art": {
     "name": "Cleveland Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1916 marble temple with its Ionic portico and stair to the Fine Arts Garden, Breuer's banded granite wing, Vi\u00f1oly's glass-roofed atrium and east and west wings, Wade Lagoon"
+      "2026-09-24 first model: the 1916 marble temple with its Ionic portico and stair to the Fine Arts Garden, Breuer's banded granite wing, Vi\u00f1oly's glass-roofed atrium and east and west wings, Wade Lagoon",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Breuer wing's roof made grey; the Fine Arts Garden's all\u00e9es, cross walk and axial path toward Wade Lagoon; old trees round the lagoon"
     ]
   },
   "museum-dallas-museum-of-art": {
     "name": "Dallas Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Barnes's low limestone composition on the diagonal downtown grid, the barrel vault closing Flora Street, the skylit Concourse spine, open courts, the stepped Reves/Hamon wings and the walled sculpture garden"
+      "2026-09-24 first model: Barnes's low limestone composition on the diagonal downtown grid, the barrel vault closing Flora Street, the skylit Concourse spine, open courts, the stepped Reves/Hamon wings and the walled sculpture garden",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): limestone made pale buff; grey roofs on the wings; the barrel vault raised to crown at about 17 m over the galleries"
     ]
   },
   "museum-isabella-stewart-gardner-museum": {
     "name": "Isabella Stewart Gardner Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Fenway Court, four plain stucco storeys round the glass-roofed garden court with its few Venetian windows, and Piano's 2012 wing: copper-clad cube and gallery over a glass ground storey, greenhouses and the glass link"
+      "2026-09-24 first model: Fenway Court, four plain stucco storeys round the glass-roofed garden court with its few Venetian windows, and Piano's 2012 wing: copper-clad cube and gallery over a glass ground storey, greenhouses and the glass link",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): palazzo in warm buff stucco with grey roofs and more of its irregular windows; the court's glass roof pitched; the Piano wing in the new copper material"
     ]
   },
   "museum-alte-nationalgalerie": {
     "name": "Alte Nationalgalerie",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: sandstone temple on its podium turned to the real axis, apse, portico and pediment over the double stair and equestrian statue, colonnade garden, the Spree"
+      "2026-09-24 first model: sandstone temple on its podium turned to the real axis, apse, portico and pediment over the double stair and equestrian statue, colonnade garden, the Spree",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): sandstone made pale warm buff; the colonnade's columns thickened so they stand as columns; a glazed lantern along the ridge"
     ]
   },
   "museum-museum-brandhorst": {
     "name": "Museum Brandhorst",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the long gallery wing and taller head, its skin of coloured ceramic rods as vertical stripes, north-light sheds on the roof, between T\u00fcrkenstra\u00dfe and the Kunstareal lawn"
+      "2026-09-24 first model: the long gallery wing and taller head, its skin of coloured ceramic rods as vertical stripes, north-light sheds on the roof, between T\u00fcrkenstra\u00dfe and the Kunstareal lawn",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the head block given its coloured rods on all four faces and over the gallery wing's roof; street and Kunstareal trees grown"
     ]
   },
   "museum-museo-thyssen-bornemisza": {
     "name": "Museo Thyssen-Bornemisza",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Palacio de Villahermosa in rose render on a granite base with stone trim, slate roof and Moneo skylight, the 2004 extension to the west, the railed garden, the Paseo del Prado"
+      "2026-09-24 first model: the Palacio de Villahermosa in rose render on a granite base with stone trim, slate roof and Moneo skylight, the 2004 extension to the west, the railed garden, the Paseo del Prado",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): palace roof made slate; the extension's glass roof made a grey roof with four skylight strips; the Paseo del Prado's second row of trees"
     ]
   },
   "museum-triennale-design-museum": {
     "name": "Triennale (Palazzo dell'Arte)",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Muzio's long red-brick Palazzo dell'Arte on its real bearing \u2014 raised entrance block with three arched portals on Viale Alemagna, the curved exedra to Parco Sempione, skylit roofs"
+      "2026-09-24 first model: Muzio's long red-brick Palazzo dell'Arte on its real bearing \u2014 raised entrance block with three arched portals on Viale Alemagna, the curved exedra to Parco Sempione, skylit roofs",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): roofs made grey inside a stone coping, the exedra's too; Viale Alemagna's plane trees along the front"
     ]
   },
   "museum-mca-chicago": {
     "name": "MCA Chicago",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Kleihues's aluminium-grid block on a limestone podium, the broad west stair, glazed atrium in the front, barrel-vaulted roof galleries, garden terraces east; museums.json coordinates are off (Near West Side)."
+      "2026-09-24 first model: Kleihues's aluminium-grid block on a limestone podium, the broad west stair, glazed atrium in the front, barrel-vaulted roof galleries, garden terraces east; museums.json coordinates are off (Near West Side).",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the aluminium skin's panel grid laid exactly on the voxels so it shows on all four faces; limestone podium and stair made pale; the streets north and south with trees"
     ]
   },
   "museum-stedelijk-museum-amsterdam": {
     "name": "Stedelijk Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Weissman's 1895 red-brick building with stone bands, slate roofs and central tower on Paulus Potterstraat; Benthem Crouwel's white bathtub over a glass ground floor with its canopy over the Museumplein."
+      "2026-09-24 first model: Weissman's 1895 red-brick building with stone bands, slate roofs and central tower on Paulus Potterstraat; Benthem Crouwel's white bathtub over a glass ground floor with its canopy over the Museumplein.",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Weissman's roofs made blue-grey slate; the tower's lantern and spire; the Museumplein's trees grown"
     ]
   },
   "museum-risd-museum": {
     "name": "RISD Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-09-29",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: College Hill terraced between North Main and Benefit Streets, Moneo's brick-and-glass Chace Center, the Radeke Building with its Benefit Street frontispiece, Pendleton House"
+      "2026-09-24 first model: College Hill terraced between North Main and Benefit Streets, Moneo's brick-and-glass Chace Center, the Radeke Building with its Benefit Street frontispiece, Pendleton House",
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the Chace Center's flat roofs made grey; Pendleton House's and the College Building's roofs made slate; the hillside trees grown"
     ]
   },
   "museum-colby-college-museum-of-art": {
