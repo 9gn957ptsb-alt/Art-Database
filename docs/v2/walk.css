@@ -90,12 +90,16 @@
   hyphens: none;
   overflow-wrap: normal;
   word-break: keep-all;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 6px rgba(15, 10, 7, 0.6);
+  /* Over the dots of a plan or a wall they must still read: a close dark
+     halo, and a wider one. */
+  text-shadow: 0 0 2px #0f0a07, 0 0 2px #0f0a07, 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(15, 10, 7, 0.9);
   cursor: pointer;
   pointer-events: auto;
   transition: opacity 0.26s steps(3);
 }
 .walk-name[hidden] { display: none; }
+/* Said, not pressed: the room you are in, on the plan. */
+.walk-name[data-passive] { pointer-events: none; cursor: default; }
 .walk-name[data-kind="work"] {
   font-family: "Instrument Serif", var(--serif), serif;
   font-style: italic;
@@ -103,7 +107,8 @@
   letter-spacing: 0;
   text-transform: none;
 }
-.walk-name[data-kind="edge"] { color: #a8927a; }
+.walk-name[data-kind="edge"],
+.walk-edge { color: #a8927a; }
 .walk-name:hover,
 .walk-name:focus-visible { color: #ffffff; }
 .walk-name:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: -8px; }
@@ -121,9 +126,11 @@
   min-width: min-content;
   max-width: 16em;
   padding: var(--s-3) var(--s-4);
-  background: rgba(15, 10, 7, 0.78);
+  background: transparent;
   color: #eadfcd;
+  transition: background-color var(--beat-5) steps(3);
 }
+.walk-label[data-lit] { background: rgba(15, 10, 7, 0.78); }
 .walk-label[hidden] { display: none; }
 .walk-l {
   margin: 0;
@@ -193,6 +200,12 @@
 .walk-history:hover,
 .walk-history:focus-visible { color: #eadfcd; border-color: #eadfcd; }
 .walk-only { color: #a8927a; }
+/* All its threads, once each has had its turn: small, in a line. */
+.walk-words { margin-top: var(--s-3); gap: 0 var(--s-3); }
+.walk-words .read-w { min-height: 32px; font-size: var(--t-2); color: #a8927a; }
+.walk-words .read-w:hover,
+.walk-words .read-w:focus-visible,
+.walk-words .read-w[aria-pressed="true"] { color: #eadfcd; }
 @media (max-width: 720px) {
   .walk-label { max-width: calc(100% - 16px); padding: var(--s-2) var(--s-3); }
   .walk-label .walk-l-t { font-size: var(--t-2); }
@@ -267,6 +280,6 @@
 .building[data-inside] .building-time { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .walk-name, .walk-l, .walk-look-plate { transition: none; }
+  .walk-name, .walk-l, .walk-label, .walk-look-plate { transition: none; }
   .walk-l { filter: none; transform: none; }
 }

@@ -240,7 +240,6 @@
     var cx = cam.x, cy = cam.y, dx = Math.cos(cam.a), dy = Math.sin(cam.a);
     var zE = cam.z + EYE;
     var si = this.si;
-    var paneInk = packRgb(world.sky ? world.sky.pane : [206, 220, 232]);
     var glassA = packRgb(GLASS_SKY), glassB = packRgb(GLASS_DARK);
 
     // The sky, a gradient from its tone overhead to its pane at the horizon,
@@ -254,7 +253,6 @@
         this.skyRow[sy * 4 + ss] = pack(Math.round(rr * kk), Math.round(gg * kk), Math.round(bb * kk));
       }
     }
-    var skyRow = this.skyRow;
 
     // The works that may be seen from here: their segments, relative to the eye.
     var cand = [];
@@ -270,7 +268,7 @@
     var gx = (cx - x0) / cell, gy = (cy - y0) / cell;
     var ix0 = Math.floor(gx), iy0 = Math.floor(gy);
     var inside0 = ix0 >= 0 && iy0 >= 0 && ix0 < gw && iy0 < gh;
-    var i, y, o, q, nq, d0, d1, top, bot, lt, li, s, thr, xm, dist, yA, yB, k;
+    var y, o, q, nq, d0, d1, top, bot, lt, li, s, thr, xm, dist, yA, yB, k;
 
     // A vertical face at distance d1 from zLo to zHi, rows clipped to the
     // window: rows [a, b] (inclusive).
@@ -413,20 +411,22 @@
               buf[o] = ((x + y) & 1) ? glassA : glassB;
             }
           } else {
-            this.steps(ink);
-            var ib = grW[nq] * fl_;
+            // A gap in the soil of a wall nobody knows the make of: dark
+            // clods half a metre high, not a stripe from floor to ceiling;
+            // the rest of it the soil of the wall beside it.
+            var clod = ink === DARK ? this.beside(nq, side, gw, kind, inkW) : 0;
+            if (clod) { this.steps(clod); } else { this.steps(ink); }
+            var ib = grW[nq] * fl_, dz = d1 / focal;
+            li = ((ib - 0.4) * 256) | 0;
+            if (li < 0) { li = 0; } else if (li > 255) { li = 255; }
             for (y = from; y <= bot; y += 1) {
               o = y * W + x;
               thr = THR[((y & 7) << 3) | xm];
               pick[o] = pkw;
               if (thr < fogw) { buf[o] = DARK; continue; }
+              if (clod && hash(nq, Math.floor((zE - (y + 0.5 - hz) * dz) * 2)) < 0.42) { buf[o] = DARK; continue; }
               // A dot's darker skirting at the foot of every wall.
-              if (y === yFoot) { s = 0; }
-              else {
-                li = ((ib - 0.4) * 256) | 0;
-                if (li < 0) { li = 0; } else if (li > 255) { li = 255; }
-                s = LS[li] + (thr < LF[li] ? 1 : 0) - night;
-              }
+              s = y === yFoot ? 0 : LS[li] + (thr < LF[li] ? 1 : 0) - night;
               buf[o] = si[s < 0 ? 0 : s];
             }
           }
@@ -531,6 +531,18 @@
         if ((pick[o] >>> 24) === PICK_WORK && (pick[o] & 0xffffff) === h) { buf[o] = DARK; }
       }
     }
+  };
+
+  // The soil of the wall beside a cell, along its face: the first of its
+  // neighbours that is wall and not a gap; or 0.
+  Caster.prototype.beside = function (q, side, gw, kind, inkW) {
+    var step = side === 0 ? gw : 1, DARK = this.DARK;
+    for (var k = 1; k <= 2; k += 1) {
+      var a = q - step * k, b = q + step * k;
+      if (a >= 0 && (kind[a] === 0) && inkW[a] !== DARK) { return inkW[a]; }
+      if (b < kind.length && (kind[b] === 0) && inkW[b] !== DARK) { return inkW[b]; }
+    }
+    return 0;
   };
 
   // What is left of a column where the ray goes out of what is known: the
@@ -639,7 +651,7 @@
      clipped to what is in front of it, fitted inside its real size where
      the photograph's proportions are not the work's, and fading past 13 m.
      A picture seen for the first time is uncovered over about 0.6 s. */
-  function blitWorks(g, cs, cam, hung, pics, now, dot) {
+  function blitWorks(g, cs, cam, hung, pics, now, dot, still) {
     var W = cs.W, hz = cs.hz, focal = cs.focal, zE = cam.z + EYE, busy = false;
     var dark = cssOf(cs.darkRgb);
     g.imageSmoothingEnabled = false;
@@ -655,7 +667,7 @@
       var p = key && near && n >= 4 ? pics.get(key) : null;
       if (p) {
         if (!p.at) { p.at = now; }
-        var up = clamp((Math.floor((now - p.at) / (1000 / FPS)) * (1000 / FPS)) / 600, 0, 1);
+        var up = still ? 1 : clamp((Math.floor((now - p.at) / (1000 / FPS)) * (1000 / FPS)) / 600, 0, 1);
         if (up < 1) { busy = true; }
         // The photograph fitted inside the work's real size, never stretched.
         var arW = h.w / Math.max(0.01, h.h), fu0 = 0, fu1 = 1, fv0 = 0, fv1 = 1;
@@ -825,7 +837,8 @@
       heading: ctx.heading === undefined ? TAU / 8 : ctx.heading, headAnim: null, frame: null,
       dot: window.innerWidth <= 720 ? 3 : 4, times: [], slow: 0, standing: null, reading: null,
       stillSince: 0, walked: 0, pics: new Pictures(host.cdn), live: true, listeners: [], nameEls: {},
-      stats: { frames: 0, total: 0, max: 0, list: [] }, cameFor: {}, lastRoom: null, lastWhere: 0,
+      stats: { frames: 0, total: 0, max: 0, list: [], parts: [0, 0, 0, 0] }, planStats: { frames: 0, total: 0, max: 0 },
+      cameFor: {}, lastRoom: null, lastWhere: 0,
       toClose: [], rechecked: false
     };
     s.pics.onready = function (p) {
@@ -924,6 +937,7 @@
     if (s.host.lightInto) { s.host.lightInto(null); }
     if (s.level !== null && s.ctx.onLevel) { s.ctx.onLevel(null); }
     s.world = null; s.caster = null; s.hung = [];
+    paint.dots = null; paint.order = null; paint.img = null; paint.inks = {};
   }
 
   function listen(s) {
@@ -935,14 +949,28 @@
       on(c, "pointercancel", pointerUp);
       on(c, "lostpointercapture", pointerUp);
     });
-    // The names, the label and the look take their own presses; the stage
-    // behind must not take them for a turn of the building.
-    [s.names, s.label, s.look].forEach(function (c) {
-      on(c, "pointerdown", function (event) { event.stopPropagation(); });
+    // The names, the label and the look take their own presses; nothing
+    // pressed in here may reach the building behind, which would take it
+    // for a turn or a tap that swaps it for its ground. (The stage's own
+    // listeners for two fingers listen on the way down, and still hear.)
+    on(s.root, "pointerdown", function (event) { event.stopPropagation(); });
+    on(s.names, "pointerdown", function (event) {
+      var b = event.target && event.target.closest ? event.target.closest(".walk-name") : null;
+      if (b) { pointerDown(event, s.level === "plan" ? s.plan : s.view, b); }
     });
+    // A press that began in the look: on a phone, the tap that opened it
+    // is followed by a click on whatever is now under the finger, which must
+    // neither put it away nor zoom it.
+    on(s.look, "pointerdown", function () { s.lookDown = performance.now(); });
     on(s.look, "click", function (event) {
+      if (!pressedInLook()) { return; }
       if (event.target === s.look || event.target.classList.contains("walk-look-in")) { unlook(); }
     });
+    // A finger let go anywhere is let go: a second finger's release can land
+    // on a name that came up under it, which has no handler of its own.
+    function letGo(event) { if (S) { delete S.pointers[event.pointerId]; } }
+    on(window, "pointerup", letGo, true);
+    on(window, "pointercancel", letGo, true);
     on(document, "keydown", keyDown);
     on(document, "keyup", keyUp);
     on(window, "blur", function () { if (S) { S.keys = {}; } });
@@ -968,6 +996,7 @@
     var drop = 0;
     if (bn) { var bb = bn.getBoundingClientRect(); if (bb.height && bb.bottom + 4 > r.top) { drop = Math.min(r.height * 0.3, Math.ceil(bb.bottom + 4 - r.top)); } }
     s.box.style.top = drop ? drop + "px" : "";
+    s.look.style.top = drop ? drop + "px" : "";
     var bh = r.height - drop;
     var W = Math.max(8, Math.ceil(r.width / s.dot)), H = Math.max(8, Math.ceil(bh / s.dot));
     s.view.width = W; s.view.height = H;
@@ -1014,10 +1043,24 @@
     var dt = Math.min(0.1, Math.max(0, (now - s.last) / 1000));
     s.last = now;
     if (!s.sized) { size(); }
+    // A picture being uncovered is drawn on, frame by held frame.
+    if (s.picBusy) { s.dirty = true; }
     if (s.level === "walk" || s.level === "look") { step(dt, now); }
     planStep(now);
-    if (s.level === "plan" && s.planDirty && now - s.planDrawn >= 1000 / PLAN_FPS - 1) { planDraw(now); }
-    if ((s.level === "walk" || s.level === "look") && s.dirty && now - s.drawn >= 1000 / FPS - 2) { draw(now); }
+    // The roof settled back, or the door walked out of: the walk is closed.
+    if (S !== s) { return; }
+    // Held frames on a fixed clock of 24 a second (the plan 12), as the pixel
+    // light's are: a frame when the clock's slot changes, so a 60 Hz screen
+    // draws two ticks, then three, and keeps the rate (a minimum gap between
+    // frames would round it down to 20).
+    if (s.level === "plan" && s.planDirty && Math.floor(now * PLAN_FPS / 1000) !== s.planSlot) {
+      s.planSlot = Math.floor(now * PLAN_FPS / 1000);
+      planDraw(now);
+    }
+    if ((s.level === "walk" || s.level === "look") && s.dirty && Math.floor(now * FPS / 1000) !== s.slot) {
+      s.slot = Math.floor(now * FPS / 1000);
+      draw(now);
+    }
     // Still long enough: are you before a work? (No frame is drawn for it.)
     if (s.level === "walk" && !s.dirty && s.stillSince && !s.standChecked && now - s.stillSince >= STILL_WAIT) {
       s.standChecked = true;
@@ -1036,18 +1079,21 @@
     var cam = { fl: fl, x: s.me.x, y: s.me.y, a: s.me.a, z: s.me.z };
     var works = s.hung.filter(function (h) { return h.floor === s.me.floor; });
     s.caster.render(cam, works);
+    var t1 = performance.now();
     s.g.putImageData(s.caster.img, 0, 0);
+    var t2 = performance.now();
     var saveData = navigator.connection && navigator.connection.saveData;
     var pics = saveData ? standingOnly(s) : s.pics;
-    s.picBusy = blitWorks(s.g, s.caster, cam, s.hung, pics, now, s.dot);
-    var ms = performance.now() - t0;
+    s.picBusy = blitWorks(s.g, s.caster, cam, s.hung, pics, now, s.dot, s.host.still);
+    var t3 = performance.now();
     s.drawn = now;
     s.dirty = false;
     s.cam = cam;
-    pace(ms, now);
     seen(s);
     names(now);
     standCheck(now);
+    // The whole frame, names and all, is what the dot grows by.
+    pace(performance.now() - t0, now, [t1 - t0, t2 - t1, t3 - t2, performance.now() - t3]);
   }
 
   // With saveData, a work stays its three colours until you stand before it.
@@ -1059,14 +1105,16 @@
 
   // Frame times: if they average over 30 ms for two seconds, the dot grows
   // (3, 4, 5, 6) and does not shrink back.
-  function pace(ms, now) {
+  function pace(ms, now, parts) {
     var s = S, st = s.stats;
     st.frames += 1; st.total += ms; st.max = Math.max(st.max, ms);
     st.list.push(ms);
     if (st.list.length > 600) { st.list.shift(); }
+    if (parts) { for (var k = 0; k < 4; k += 1) { st.parts[k] += parts[k]; } }
     s.times.push({ at: now, ms: ms });
     while (s.times.length && now - s.times[0].at > 2000) { s.times.shift(); }
-    if (s.times.length >= 24 && now - s.times[0].at > 1800) {
+    // Two seconds of frames (slow ones are few: a handful is enough to say so).
+    if (s.times.length >= 6 && now - s.times[0].at > 1800) {
       var sum = 0;
       s.times.forEach(function (t) { sum += t.ms; });
       if (sum / s.times.length > 30 && s.dot < DOT_MAX) {
@@ -1174,11 +1222,63 @@
     var s = S;
     if (!s.planDots) { return; }
     var t0 = performance.now();
-    s.frame = M().draw(s.plan, s.planDots, s.heading, s.shown === undefined ? s.planDots.cut : s.shown, PLAN_FIT);
+    s.frame = planPaint(s.plan, s.planDots, s.heading, s.shown === undefined ? s.planDots.cut : s.shown, PLAN_FIT);
     s.planMs = performance.now() - t0;
+    var ps = s.planStats;
+    ps.frames += 1; ps.total += s.planMs; ps.max = Math.max(ps.max, s.planMs);
     s.planDrawn = now;
     s.planDirty = false;
     planNames();
+  }
+
+  /* The plan level, painted exactly as Models.draw paints it — the same
+     frame, the same squares, the same order back to front — but straight
+     into the canvas's pixels, and with the order kept while the heading
+     holds: the roof coming off is some 40,000 dots twelve times a second,
+     and a phone was drawing it at four. Returns the frame, as draw does. */
+  var paint = { dots: null, heading: null, order: null, img: null, inks: {} };
+  function planPaint(canvas, dots, heading, shown, fit) {
+    var f = M().frame(canvas, dots, heading, fit);
+    var w = canvas.width, h = canvas.height, g = canvas.getContext("2d");
+    var n = dots.count, k;
+    if (paint.dots !== dots || paint.heading !== heading || !paint.order) {
+      // Back to front at this heading, ties in the dots' own order (a stable
+      // sort, as draw's is), so any set of them keeps draw's order.
+      var key = new Float32Array(n), order = new Uint32Array(n);
+      for (k = 0; k < n; k += 1) {
+        key[k] = (dots.x[k] * f.sin + dots.y[k] * f.cos) * f.ct + dots.z[k] * f.st;
+        order[k] = k;
+      }
+      order.sort(function (a, b) { return key[a] - key[b]; });
+      paint.dots = dots; paint.heading = heading; paint.order = order;
+    }
+    if (!paint.img || paint.img.width !== w || paint.img.height !== h) {
+      paint.img = g.createImageData(w, h);
+      paint.buf = new Uint32Array(paint.img.data.buffer);
+    }
+    var buf = paint.buf, inks = paint.inks, ord = paint.order;
+    buf.fill(0);
+    var cos = f.cos, sin = f.sin, st = f.st, ct = f.ct, scale = f.scale, cx0 = f.cx0, cy0 = f.cy0;
+    var cover = Math.max(0.5, scale * 0.56);
+    for (var t = 0; t < n; t += 1) {
+      k = ord[t];
+      if (dots.reveal[k] > shown) { continue; }
+      var sx = cx0 + (dots.x[k] * cos - dots.y[k] * sin) * scale;
+      var sy = cy0 + ((dots.x[k] * sin + dots.y[k] * cos) * st - dots.z[k] * ct) * scale;
+      var r = Math.max(1, Math.ceil(dots.size[k] * cover));
+      var x0 = Math.round(sx - r / 2), y0 = Math.round(sy - r / 2);
+      var x1 = Math.min(w, x0 + r), y1 = Math.min(h, y0 + r);
+      if (x0 < 0) { x0 = 0; }
+      if (y0 < 0) { y0 = 0; }
+      if (x0 >= x1 || y0 >= y1) { continue; }
+      var c = dots.ink[k], u = inks[c];
+      if (u === undefined) { var m = rgbOf(c, [0, 0, 0]); u = inks[c] = pack(m[0], m[1], m[2]); }
+      for (var y = y0; y < y1; y += 1) {
+        for (var o = y * w + x0, e = y * w + x1; o < e; o += 1) { buf[o] = u; }
+      }
+    }
+    g.putImageData(paint.img, 0, 0);
+    return f;
   }
 
   // A point of the grid on the plan's canvas, in the page's own pixels.
@@ -1206,7 +1306,12 @@
     var e = s.world.enter;
     if (e && e.floor === s.planFloor) {
       var pd = planPoint(e.door[0], e.door[1], fl.z + CUT);
-      if (pd) { out.push({ key: "p:door", text: "The door", x: pd.x, y: pd.y, rank: 1, kind: "room", go: function () { descend(); } }); }
+      // Pressed: down where you stand, and back to the door, facing in.
+      if (pd) {
+        out.push({ key: "p:door", text: "The door", x: pd.x, y: pd.y, rank: 1, kind: "room", go: function () {
+          descend(function () { glideTo({ x: e.x, y: e.y, floor: e.floor, face: e.a, key: "door" }); });
+        } });
+      }
     }
     var counts = {};
     s.hung.forEach(function (h) {
@@ -1221,8 +1326,10 @@
       var p = planPoint(r.cx, r.cy, fl.z + r.fz + CUT);
       if (!p) { return; }
       var text = roomWords(r) + (n ? " · " + n : "");
+      // The room you are in is only said: it would lie over the rooms round
+      // you, which are the ones a press would want.
       out.push({ key: "p:" + r.id, text: text, x: p.x, y: p.y, rank: r === mine ? 0 : 2 + 1 / (n + 1), kind: "room",
-                 go: function () { planRoom(r); } });
+                 passive: r === mine, go: function () { planRoom(r); } });
     });
     placeNames(out, "plan", s.planRect.left - s.rootRect.left, s.planRect.top - s.rootRect.top);
   }
@@ -1233,8 +1340,13 @@
   function planTap(cx, cy) {
     var s = S, fl = s.world.floors[s.planFloor];
     var you = s.me.floor === s.planFloor ? youOnPlan() : null;
-    if (you && Math.hypot(cx - you.cx, cy - you.cy) <= 22) { descend(); return; }
-    var best = null, bd = 22;
+    var dYou = you ? Math.hypot(cx - you.cx, cy - you.cy) : Infinity;
+    // On a phone a room is a few pixels (the National Gallery is a pixel a
+    // metre), so what is right under the press comes first: your own tile,
+    // a work's tile, the room under it; then what is near: you, a work, the
+    // nearest room.
+    if (dYou <= 6) { descend(); return; }
+    var best = null, bd = 16;
     s.hung.forEach(function (h) {
       if (h.floor !== s.planFloor) { return; }
       var p = planPoint(h.cx, h.cy, Math.min(fl.z + CUT, (h.z0 + h.z1) / 2));
@@ -1242,15 +1354,22 @@
       var d = Math.hypot(cx - p.cx, cy - p.cy);
       if (d < bd) { bd = d; best = h; }
     });
-    if (best) { goTo(best.id); return; }
-    // The room under the press: each room's outline at its floor, projected.
-    var hit = null;
+    if (best && bd <= 8) { goTo(best.id); return; }
+    var mine = you ? roomAt(s.world, s.me.floor, s.me.x, s.me.y) : null;
+    var hit = null, near = null, nd = 16;
     fl.rooms.forEach(function (r) {
       if (r.pseudo || !r.poly || hit) { return; }
       var poly = r.poly.map(function (p) { var q = planPoint(p[0], p[1], fl.z + r.fz); return q ? [q.cx, q.cy] : [NaN, NaN]; });
-      if (inPoly(poly, cx, cy)) { hit = r; }
+      if (inPoly(poly, cx, cy)) { hit = r; return; }
+      for (var i = 0, j = poly.length - 1; i < poly.length; j = i, i += 1) {
+        var d = segDist(cx, cy, poly[j][0], poly[j][1], poly[i][0], poly[i][1]);
+        if (d < nd) { nd = d; near = r; }
+      }
     });
-    if (hit) { planRoom(hit); return; }
+    if (hit && hit !== mine) { planRoom(hit); return; }
+    if (dYou <= 22 || (hit && hit === mine)) { descend(); return; }
+    if (best) { goTo(best.id); return; }
+    if (near && near !== mine) { planRoom(near); }
   }
 
   function inPoly(p, x, y) {
@@ -1263,7 +1382,6 @@
   }
 
   function planRoom(r) {
-    var s = S;
     if (!r.reach) { noWayIn(r); return; }
     var target = roomTarget(r);
     if (!target) { noWayIn(r); return; }
@@ -1584,11 +1702,16 @@
 
   function move(dx, dy) {
     var s = S, me = s.me, fl = s.world.floors[me.floor], z = floorZ(me.floor, me.x, me.y);
-    var nx = me.x + dx, ny = me.y + dy, went = false;
-    if (free(fl, nx, me.y, z)) { me.x = nx; went = true; }
-    if (free(fl, me.x, ny, floorZ(me.floor, me.x, me.y))) { me.y = ny; went = true; }
-    if (!went) { outward(dx, dy); return; }
-    stride(Math.hypot(dx, dy));
+    var went = 0, blocked = false;
+    if (Math.abs(dx) > 1e-9) {
+      if (free(fl, me.x + dx, me.y, z)) { me.x += dx; went += Math.abs(dx); } else { blocked = true; }
+    }
+    if (Math.abs(dy) > 1e-9) {
+      if (free(fl, me.x, me.y + dy, floorZ(me.floor, me.x, me.y))) { me.y += dy; went += Math.abs(dy); } else { blocked = true; }
+    }
+    // Stopped at the edge of the ground before the door, going away from it: out.
+    if (blocked) { outward(dx, dy); }
+    if (went) { stride(went); }
   }
 
   // Walking back out through the door: out beyond the ground before it,
@@ -1651,7 +1774,8 @@
     var li = q >= 0 ? fl.lift[q] : -1;
     if (li < 0) { return; }
     var lf = s.world.lifts[li], to = s.world.floors[fi];
-    var r = roomAt(s.world, me.floor, me.x, me.y);
+    // In the tones of the room the lift stands in (the lift itself is only its cells).
+    var r = s.realRoom;
     s.host.sweepCells(s.host.oneOf(["edges", "center", "corner", "rows"]), [cssOf((r && r.tone) || [180, 170, 150]), s.host.LIGHT, s.host.LILAC], 820);
     me.floor = fi;
     me.x = (lf.rect[0] + lf.rect[2]) / 2; me.y = (lf.rect[1] + lf.rect[3]) / 2;
@@ -1672,6 +1796,7 @@
     if (key === s.lastRoom) { return; }
     var first = s.lastRoom === null;
     s.lastRoom = key;
+    if (r && !r.pseudo) { s.realRoom = r; }
     underline("walk");
     s.view.setAttribute("aria-label", "Inside " + ((s.ctx.museum && s.ctx.museum.name) || "the museum") + ", " + roomWords(r));
     if (!first && r && !r.pseudo && !s.host.still) {
@@ -1849,17 +1974,24 @@
 
   /* ---------------------------------------------------------------- pointers and keys */
 
-  function pointerDown(event) {
+  // canvas and name: given when the press is on a name, which is the
+  // walk's too — dragged, it turns and walks (or turns the plan), and only
+  // a press that stays put is the name's.
+  function pointerDown(event, canvas, name) {
     var s = S;
     if (!s) { return; }
     // Two fingers change level (land.js's own handlers see them first);
     // the building behind must not take this for a turn.
     event.stopPropagation();
+    // A primary pointer is the first of a gesture: none other is down.
+    if (event.isPrimary) { s.pointers = {}; }
     s.pointers[event.pointerId] = true;
     if (Object.keys(s.pointers).length >= 2) { s.drag = null; return; }
-    try { event.currentTarget.setPointerCapture(event.pointerId); } catch (e) {}
+    var c = canvas || event.currentTarget;
+    try { c.setPointerCapture(event.pointerId); } catch (e) {}
     s.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, lx: event.clientX, t: performance.now(),
-               moved: 0, walking: false, speed: 0, plan: event.currentTarget === s.plan, heading: s.heading, floorDone: false };
+               moved: 0, walking: false, speed: 0, plan: c === s.plan, heading: s.heading, floorDone: false,
+               name: name || null };
     if (s.level === "walk" && !s.drag.plan) { stopGlide(); s.turnTo = null; }
   }
 
@@ -1914,6 +2046,11 @@
     if (!d || d.id !== event.pointerId) { return; }
     s.drag = null;
     var tap = event.type === "pointerup" && d.moved < TAP_PX && performance.now() - d.t < TAP_MS;
+    // A name pressed and let go where it was pressed: however long it was held.
+    if (d.name && event.type === "pointerup" && d.moved < TAP_PX) {
+      if (d.name.go && !d.name.hidden) { d.name.go(); }
+      return;
+    }
     if (d.plan && s.level === "plan") {
       if (tap) { planTap(event.clientX, event.clientY); return; }
       if (!d.floorDone && d.moved >= TAP_PX) {
@@ -1951,8 +2088,13 @@
     if (hit.kind === PICK_FLOOR) {
       var fl = s.world.floors[s.me.floor], W = P();
       var cs = s.caster, rx = cs.colRx[hit.x], ry = cs.colRy[hit.x];
-      var q = hit.i, fz = fl.fh[q] / 100, d = (s.me.z + EYE - fz) * cs.rowK[hit.y];
-      var px = s.me.x + rx * d, py = s.me.y + ry * d;
+      var q = hit.i, fz = fl.fh[q] / 100, c = W.centreOf(fl, q), px = c[0], py = c[1];
+      // The point under the finger on the floor; on a riser (a step's face,
+      // which may stand above the eye), the step itself.
+      if (s.me.z + EYE > fz + 0.01) {
+        var d = (s.me.z + EYE - fz) * cs.rowK[hit.y], fx = s.me.x + rx * d, fy = s.me.y + ry * d;
+        if (Math.hypot(fx - c[0], fy - c[1]) <= fl.cell * 1.5) { px = fx; py = fy; }
+      }
       var goal = W.walkable(fl, W.cellAt(fl, px, py)) ? [px, py] : nearestFree(fl, px, py);
       if (!goal) { return; }
       var t = { x: goal[0], y: goal[1], floor: s.me.floor, key: "f:" + Math.round(goal[0] * 2) + "," + Math.round(goal[1] * 2) };
@@ -2108,11 +2250,15 @@
         e = s.nameEls[it.key] = el("button", "walk-name");
         e.type = "button";
         e.dataset.group = group;
-        e.addEventListener("click", function (event) { event.stopPropagation(); if (e.go) { e.go(); } });
+        // A pointer's press is taken on its way up (pointerUp); a click
+        // with no pointer behind it is the keyboard's, or a reader's.
+        e.addEventListener("click", function (event) { event.stopPropagation(); if (!event.detail && e.go) { e.go(); } });
         s.names.appendChild(e);
       }
       e.go = it.go;
       e.dataset.kind = it.kind;
+      e.classList.toggle("walk-edge", it.kind === "edge");
+      if (it.passive) { e.dataset.passive = "true"; e.tabIndex = -1; } else if (e.dataset.passive) { delete e.dataset.passive; e.tabIndex = 0; }
       if (e.textContent !== it.text) { e.textContent = it.text; }
       e.setAttribute("aria-label", it.kind === "work" ? "Walk to " + it.text : it.kind === "edge" ? "Through to " + it.text.replace(/[←→]/g, "").trim() : it.text);
       e.style.left = Math.round(left) + "px";
@@ -2182,6 +2328,9 @@
     }
     startReading(h);
     if (s.cam && s.level === "walk") { names(performance.now()); }
+    // One more frame: with saveData, its picture is asked for only now.
+    s.dirty = true;
+    wake();
   }
 
   /* ---------------------------------------------------------------- the reading */
@@ -2289,23 +2438,34 @@
     return null;
   }
 
+  // One thread at a time, each waiting longer than the last; once each has
+  // had its turn, all of them in a line, as the reading at a collage ends.
+  // Under reduced motion it is all there at once: the first said, the line.
   function procession(R) {
     var s = S;
     if (!s || s.reading !== R || !R.live) { return; }
     var host = s.host;
     if (!R.order) {
-      // The history has not come yet: a moment more.
-      host.later(function () { procession(R); }, 610, R);
+      // The history has not come yet: a moment more (it may never come).
+      if ((R.waited = (R.waited || 0) + 1) <= 13) { host.later(function () { procession(R); }, 610, R); }
       return;
     }
     if (!R.order.length && !R.thread) {
-      if (!R.was.onlyHere) { R.was.onlyHere = true; }
+      R.was.onlyHere = true;
       R.views.forEach(function (v) { onlyHere(v); });
       return;
     }
-    if (R.was.n >= R.order.length) { R.was.n = 0; }
+    if (host.still) {
+      if (!R.thread && R.order[0]) { sayThread(R, R.order[0]); }
+      R.was.n = R.order.length;
+    }
+    if (R.was.n >= R.order.length) {
+      R.was.done = true;
+      R.views.forEach(function (v) { lineInto(v, R); });
+      placeLabel();
+      return;
+    }
     var t = R.order[R.was.n];
-    if (!t) { return; }
     R.was.n += 1;
     sayThread(R, t);
     var gap = R.gap;
@@ -2313,10 +2473,33 @@
     host.afterStill(function () { procession(R); }, gap, R);
   }
 
+  // All its threads, small, in a line: each said again when pressed.
+  function lineInto(v, R) {
+    if (!v.said || v.line) { return; }
+    var list = R.came ? [findThread(R, R.came)].filter(Boolean).concat(R.order || []) : (R.order || []);
+    if (!list.length) { return; }
+    var line = el("div", "read-words walk-words");
+    line.setAttribute("aria-label", "What " + (R.lines.t || "this work") + " shares");
+    list.forEach(function (t) {
+      var b = el("button", "read-w", t.name);
+      b.type = "button";
+      b.dataset.thread = t.id;
+      b.setAttribute("aria-pressed", String(!!R.thread && R.thread.id === t.id));
+      b.addEventListener("click", function (event) { event.stopPropagation(); sayThread(R, t); });
+      line.appendChild(b);
+    });
+    v.said.parentNode.insertBefore(line, v.said.nextSibling);
+    v.line = line;
+    requestAnimationFrame(function () { line.dataset.on = "true"; });
+  }
+
   function reveal(R, k) {
     if (!R.live) { return; }
     R.was.on[k] = true;
-    R.views.forEach(function (v) { var e = v.lines[k]; if (e) { e.dataset.on = "true"; } });
+    R.views.forEach(function (v) {
+      var e = v.lines[k];
+      if (e) { e.dataset.on = "true"; v.host.dataset.lit = "true"; }
+    });
     placeLabel();
   }
   function refreshLine(R, k) {
@@ -2324,10 +2507,14 @@
   }
 
   // A view of the reading: the label beside the work, the strip's card on a
-  // phone, or the look's lines.
-  function buildView(host, R, full, isLabel) {
+  // phone, or the look's lines. The look's has 'Where it has been' at once:
+  // a press never waits on the clock.
+  function buildView(host, R, full, isLabel, inLook) {
     host.textContent = "";
-    var v = { host: host, lines: {}, full: full, said: null };
+    // Its ground comes up with its first line, not before: the label is
+    // nothing until the clock says something.
+    if (Object.keys(R.was.on).length) { host.dataset.lit = "true"; } else { delete host.dataset.lit; }
+    var v = { host: host, lines: {}, full: full, said: null, line: null, look: !!inLook };
     var t = el("p", "walk-l walk-l-t");
     t.appendChild(el("i", "", R.lines.t));
     v.lines.t = t;
@@ -2341,13 +2528,26 @@
       v.said = el("div", "walk-said");
       v.said.setAttribute("aria-live", "polite");
       host.appendChild(v.said);
+      if (inLook) { host.appendChild(historyButton(R)); }
     }
     Object.keys(v.lines).forEach(function (k) { if (R.was.on[k]) { v.lines[k].dataset.on = "true"; } });
     if (isLabel && !full) { v.lines.t.dataset.on = R.was.on.t ? "true" : "false"; }
     R.views.push(v);
     if (R.thread && v.said) { sayInto(v, R, R.thread); }
     if (R.was.onlyHere && !R.thread && v.said) { onlyHere(v); }
+    if (R.was.done && v.said) { lineInto(v, R); }
     return v;
+  }
+
+  function historyButton(R) {
+    var s = S, b = el("button", "walk-history", "Where it has been");
+    b.type = "button";
+    b.addEventListener("click", function (event) {
+      event.stopPropagation();
+      var m = s.ctx.museum || {};
+      s.host.openArt({ work: R.h.id }, { museum: { name: m.name, slug: m.slug } });
+    });
+    return b;
   }
 
   function onlyHere(v) {
@@ -2359,7 +2559,12 @@
     if (!R.live) { return; }
     R.thread = t;
     if (R.was.said.indexOf(t.id) < 0) { R.was.said.push(t.id); }
-    R.views.forEach(function (v) { if (v.said) { sayInto(v, R, t); } });
+    R.views.forEach(function (v) {
+      if (v.said) { sayInto(v, R, t); }
+      if (v.line) {
+        Array.prototype.forEach.call(v.line.children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.thread === t.id)); });
+      }
+    });
     var s = S;
     if (!s.host.still && R.views[0]) {
       var b = R.views[0].host.getBoundingClientRect();
@@ -2380,15 +2585,8 @@
     box.appendChild(p);
     var doors = el("div", "read-doors walk-doors");
     box.appendChild(doors);
-    // 'Where it has been' comes with the first thread.
-    var hist = el("button", "walk-history", "Where it has been");
-    hist.type = "button";
-    hist.addEventListener("click", function (event) {
-      event.stopPropagation();
-      var m = s.ctx.museum || {};
-      s.host.openArt({ work: R.h.id }, { museum: { name: m.name, slug: m.slug } });
-    });
-    box.appendChild(hist);
+    // 'Where it has been' comes with the first thread (the look has its own).
+    if (!v.look) { box.appendChild(historyButton(R)); }
     v.said.appendChild(box);
     box.getBoundingClientRect();
     requestAnimationFrame(function () { if (box.dataset.on !== "false") { box.dataset.on = "true"; } });
@@ -2595,13 +2793,19 @@
     });
     if (w.i) { img.src = host.cdn + w.i + "/large.jpg"; } else { img.dispatchEvent(new Event("error")); }
     fit(h.w / Math.max(0.01, h.h));
-    plate.addEventListener("click", function (event) { event.stopPropagation(); zoom(); });
-    if (s.reading && s.reading.h === h) { buildView(lines, s.reading, true, false); }
+    plate.addEventListener("click", function (event) { event.stopPropagation(); if (pressedInLook()) { zoom(); } });
+    if (s.reading && s.reading.h === h) { buildView(lines, s.reading, true, false, true); }
     setLevel("look");
     s.label.hidden = true;
     clearNames("walk");
     s.dirty = true;
     wake();
+  }
+
+  function pressedInLook() {
+    var s = S, ok_ = !!(s && s.lookDown && performance.now() - s.lookDown < 1500);
+    if (s) { s.lookDown = 0; }
+    return ok_;
   }
 
   function unlook(quiet) {
@@ -2725,7 +2929,10 @@
     var W = P(), world = s.world;
     var offs = [], total = 0;
     world.floors.forEach(function (fl) { offs.push(total); total += fl.n; W.clearance(fl); });
-    var dist = new Float32Array(total).fill(Infinity);
+    // Float64, and each cell settled once: the stairs join the floors at no
+    // cost, and a float32 distance rounded up would pass a cell back and
+    // forth across them for ever.
+    var dist = new Float64Array(total).fill(Infinity), done = new Uint8Array(total);
     var fl0 = world.floors[s.me.floor], q0 = W.cellAt(fl0, s.me.x, s.me.y);
     var heap = [[0, offs[s.me.floor] + q0]];
     if (q0 >= 0) { dist[offs[s.me.floor] + q0] = 0; }
@@ -2753,7 +2960,8 @@
     var N8 = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
     while (q0 >= 0 && heap.length) {
       var it = pop(), d = it[0], node = it[1];
-      if (d > dist[node]) { continue; }
+      if (done[node] || d > dist[node]) { continue; }
+      done[node] = 1;
       var fi = floorAt(node), fl = world.floors[fi], q = node - offs[fi];
       var i = q % fl.gw, j = (q - i) / fl.gw;
       for (var k = 0; k < 8; k += 1) {
@@ -2761,6 +2969,8 @@
         if (a < 0 || b < 0 || a >= fl.gw || b >= fl.gh) { continue; }
         var p = b * fl.gw + a;
         if (!W.walkable(fl, p) || fl.clear[p] < 0.25 || Math.abs(fl.fh[p] - fl.fh[q]) > STEP * 100) { continue; }
+        // No cutting a corner: a wall one cell thick meets another only at a corner.
+        if (N8[k][0] && N8[k][1] && (!W.walkable(fl, j * fl.gw + a) || !W.walkable(fl, b * fl.gw + i))) { continue; }
         var nd = d + N8[k][2] * fl.cell;
         if (nd < dist[offs[fi] + p]) { dist[offs[fi] + p] = nd; push(nd, offs[fi] + p); }
       }
@@ -2801,7 +3011,11 @@
     return { frames: st.frames, mean: st.frames ? st.total / st.frames : 0, max: st.max,
              median: list.length ? list[Math.floor(list.length / 2)] : 0,
              p95: list.length ? list[Math.floor(list.length * 0.95)] : 0,
+             // The mean of each part: the cast, putting it, the pictures, the names.
+             parts: st.parts.map(function (v) { return st.frames ? v / st.frames : 0; }),
              w: s.caster ? s.caster.W : 0, h: s.caster ? s.caster.H : 0, dot: s.dot, planMs: s.planMs || 0,
+             plan: { frames: s.planStats.frames, mean: s.planStats.frames ? s.planStats.total / s.planStats.frames : 0, max: s.planStats.max,
+                     dots: s.planDots ? s.planDots.count : 0, shown: s.planDots && s.planDots.plan ? s.planDots.plan.shown : 0 },
              arrival: s.lookArrival || null };
   }
 
@@ -2858,10 +3072,17 @@
     });
   }
 
+  // Leaving the museum's building: what was compiled for it is let go.
+  function forget() { if (!S) { cache = {}; } }
+
+  // The 'Here' card on a phone, for land.js to keep first when it regroups
+  // the strip; null while you stand before nothing.
+  function here() { return S && S.standing && S.here && S.here.firstChild ? S.here : null; }
+
   var api = {
     open: open, up: up, down: down, goTo: function (id, came) { return goTo(id, came); },
     level: function () { return S ? S.level : null; },
-    state: state, close: close, prepare: prepare, doorShows: doorShows, order: order,
+    state: state, close: close, prepare: prepare, doorShows: doorShows, order: order, forget: forget, here: here,
     world: function () { return S ? S.world : null; },
     hung: function () { return S ? S.hung : []; },
     works: function () { return S ? S.works : []; },
@@ -2873,9 +3094,27 @@
       var r = P().roomById(S.world, id);
       if (!r) { return null; }
       var fl = S.world.floors[r.floor], p = planPoint(r.cx, r.cy, fl.z + r.fz);
-      return p ? { x: p.cx, y: p.cy, floor: r.floor } : null;
+      var poly = (r.poly || []).map(function (v) { var q = planPoint(v[0], v[1], fl.z + r.fz); return q ? [q.cx, q.cy] : null; });
+      return p ? { x: p.cx, y: p.cy, floor: r.floor, poly: poly } : null;
     },
-    _look: function () { if (S && S.standing) { look(S.standing); } }
+    _look: function () { if (S && S.standing) { look(S.standing); } },
+    _youOnPlan: function () { var p = S && S.level === "plan" && S.me.floor === S.planFloor ? youOnPlan() : null; return p ? { x: p.cx, y: p.cy } : null; },
+    _workOnPlan: function (id) {
+      var h = null;
+      if (S) { S.hung.forEach(function (x) { if (x.id === id) { h = x; } }); }
+      if (!h || S.level !== "plan" || h.floor !== S.planFloor) { return null; }
+      var fl = S.world.floors[h.floor], p = planPoint(h.cx, h.cy, Math.min(fl.z + CUT, (h.z0 + h.z1) / 2));
+      return p ? { x: p.cx, y: p.cy } : null;
+    },
+    _pointers: function () { return S ? Object.keys(S.pointers) : null; },
+    _planPaint: function (c, d, h, sh, fit) { return planPaint(c, d, h, sh, fit); },
+    _planDots: function () { return S ? S.planDots : null; },
+    _screenOf: function (x, y, z) {
+      if (!S || !S.cam || S.level !== "walk") { return null; }
+      var p = S.caster.project(S.cam, x, y, z), r = S.view.getBoundingClientRect();
+      return p ? { x: r.left + p.x * S.dot, y: r.top + p.y * S.dot, t: p.t } : null;
+    },
+    _resetStats: function () { if (S) { S.stats = { frames: 0, total: 0, max: 0, list: [], parts: [0, 0, 0, 0] }; S.planStats = { frames: 0, total: 0, max: 0 }; } }
   };
   window.Walk = api;
 }());

@@ -886,7 +886,8 @@
      29 Sep 2026: the museums' names were "way too cluttered"): a name is
      written right of its dot, else left of it, and nowhere else; wholly on
      the Earth and wholly on the screen, clear of the pills at the foot; never
-     over another name, nor over the dot of a place that matters more; and
+     over another name, nor over the dot of a place that matters more, nor
+     ever over a city with museums, whose diamond is the way to them; and
      no more of them at once than the window has room for — seven on a
      phone. The rest keep their dots, and are named as the world turns or
      comes nearer. The collages are seven: each is named whenever it has
@@ -1100,15 +1101,28 @@
     groups.sort(function (a, b) { return b.pri - a.pri; });
 
     var given = [], dots = [], count = 0;
+    function dotOf(m) { return { x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead, town: m.city.town }; }
     // Dots that are never let go are never written over, whatever their rank.
-    if (rules.keepDots) {
-      items.forEach(function (m) { dots.push({ x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead }); });
-    }
+    if (rules.keepDots) { items.forEach(function (m) { dots.push(dotOf(m)); }); }
+    // The diamond of a city with museums is how its museums are reached, so a
+    // name keeps off every one it can, whatever its rank (30 Sep 2026:
+    // AMSTERDAM had hidden Otterlo). Where neither side is clear of them it
+    // may cover a smaller city its own Near here lists, so what it hides is a
+    // press away from where it leads; and only where that fails too, any
+    // smaller city, let go for that pass (a city that matters more is never
+    // left unnamed for one that matters less). `keep`: 2, off every diamond;
+    // 1, off all but the near and smaller; 0, off the larger.
+    var diamonds = rules.keepDots ? [] : items.filter(function (m) {
+      return m.city.town && m.city.town.museums.length;
+    }).map(dotOf);
     function onEarth(x, y) {
       var dx = x - cx, dy = y - cy;
       return dx * dx + dy * dy <= 0.96 * 0.96 * R * R;
     }
-    function fits(b, lead) {
+    function spare(t, o, keep) {
+      return keep === 1 ? nearBy(t, o) : keep === 0 ? !!(t && o && o.rank < t.rank) : false;
+    }
+    function fits(b, lead, keep) {
       if (b.x0 < S.x0 || b.x1 > S.x1 || b.y0 < S.y0 || b.y1 > S.y1) { return false; }
       if (!onEarth(b.x0, b.y0) || !onEarth(b.x1, b.y0) || !onEarth(b.x0, b.y1) || !onEarth(b.x1, b.y1)) { return false; }
       for (var k = 0; k < given.length; k += 1) {
@@ -1120,6 +1134,12 @@
         if (p.lead && p.lead === lead) { continue; }        // its own stack
         if (b.x0 < p.x + p.r && p.x - p.r < b.x1 && b.y0 < p.y + p.r && p.y - p.r < b.y1) { return false; }
       }
+      for (var q = 0; q < diamonds.length; q += 1) {
+        var m = diamonds[q];
+        if (m.lead === lead) { continue; }
+        if (b.x0 < m.x + m.r && m.x - m.r < b.x1 && b.y0 < m.y + m.r && m.y - m.r < b.y1 &&
+            !spare(lead.city.town, m.town, keep)) { return false; }
+      }
       return true;
     }
     function under(it) {
@@ -1128,6 +1148,17 @@
         if (it.x > o.x0 && it.x < o.x1 && it.y > o.y0 && it.y < o.y1) { return true; }
       }
       return false;
+    }
+    // How much of what is still to be named a name there would hide: the
+    // places under it, each as much as it matters.
+    function hides(b, lead) {
+      var n = 0;
+      items.forEach(function (m) {
+        if (m.lead === lead || m.hidden) { return; }
+        var r = (m.city.dh || 4) + 3;
+        if (b.x0 < m.x + r && m.x - r < b.x1 && b.y0 < m.y + r && m.y - r < b.y1) { n += m.city.rank || 1; }
+      });
+      return n;
     }
     groups.forEach(function (g) {
       var L = g.lead;
@@ -1145,7 +1176,22 @@
           var y0 = L.y + lifts[k] - Math.max(LINE, L.city.nh || 0) / 2;
           var right = { x0: L.x + gap, x1: L.x + gap + g.w, y0: y0, y1: y0 + g.h };
           var left = { x0: L.x - gap - g.w, x1: L.x - gap, y0: y0, y1: y0 + g.h };
-          var side = fits(right, L) ? "right" : fits(left, L) ? "left" : null;
+          var okR = false, okL = false;
+          for (var keep = 2; keep >= 0 && !okR && !okL; keep -= 1) {
+            okR = fits(right, L, keep);
+            okL = fits(left, L, keep);
+            if (!diamonds.length) { break; }
+          }
+          var side = okR ? "right" : okL ? "left" : null;
+          // Room on both sides: the side that hides less of the smaller
+          // places, so a city's name is not written over a town of galleries
+          // it could have left alone; on a tie, the side it had, so names do
+          // not swap sides as the world turns.
+          if (okR && okL && !rules.keepDots) {
+            var hideR = hides(right, L), hideL = hides(left, L);
+            var had = L.city.wasNamed && L.city.el.dataset.side === "left" ? "left" : "right";
+            side = hideL < hideR ? "left" : hideR < hideL ? "right" : had;
+          }
           if (side) {
             given.push(side === "right" ? right : left);
             count += 1;
@@ -1154,12 +1200,32 @@
           }
         }
       }
-      if (!rules.keepDots) {
-        g.members.forEach(function (m) { dots.push({ x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead }); });
-      }
+      if (!rules.keepDots) { g.members.forEach(function (m) { dots.push(dotOf(m)); }); }
     });
     return given;
   }
+
+  /* The smaller cities with museums near one with museums: listed in its
+     Near here, and the only diamonds its name may ever cover. As far as a
+     diamond can be tied into it on this window while the world carries names
+     (13 px at its smallest with names), and never less than 100 km: Princeton
+     and New Haven from New York, Otterlo from Amsterdam. */
+  function nearMuseums(t) {
+    var km = Math.round(Math.max(100, Math.min(400, KNOT / (INV2 * Math.max(1, base0)) * 6371)));
+    if (t.nearMus && t.nearMusKm === km) { return t.nearMus; }
+    var out = {};
+    if (t.museums.length) {
+      towns.forEach(function (o) {
+        if (o === t || !o.museums.length || o.rank >= t.rank) { return; }
+        var d = Math.acos(Math.max(-1, Math.min(1, dot3(t.v, o.v)))) * 6371;
+        if (d <= km) { out[o.key] = Math.max(1, Math.round(d)); }
+      });
+    }
+    t.nearMus = out;
+    t.nearMusKm = km;
+    return out;
+  }
+  function nearBy(t, o) { return !!(t && o && t !== o && nearMuseums(t)[o.key]); }
 
   /* The flight. Nothing is torn down and nothing is built: the sphere grows
      under you until the city you pressed is the ground you are standing on,
@@ -12583,27 +12649,40 @@
     return false;
   }
 
-  /* The city a press on the globe landed on, named or not: the one that
-     matters most within 16 px, else the nearest within a finger's reach. A
-     tile is measured from the middle of the cell it is lit in. */
+  /* The city a press on the globe landed on, named or not: first the one
+     whose own tile the press is in (a city of galleries, or a diamond tied
+     into a larger one), or the square its diamond stands in, so a city tied
+     into a neighbour is still pressed on its own tile; then, on a world near
+     enough, the one that matters most within 16 px, else the nearest within
+     a finger's reach. A small world, one a press fires in (pressGlobe), is
+     not reached across: a press between its tiles is the world's. A tile is
+     measured from the middle of the cell it is lit in. */
   function hitTown(x, y) {
     if (!towns) { return null; }
     var S = safeBox();
+    var small = R <= Math.min(W, H) * 0.5;
     var reach = W <= 720 ? 26 : 18;
-    var best = null, near = null, nearD = Infinity;
+    var half = CELL_PX / 2;
+    var tile = null, square = null, best = null, near = null, nearD = Infinity;
     towns.forEach(function (t) {
       var p = project(t.lat, t.lon);
       if (p.z <= 0.08 || p.x < S.x0 || p.x > S.x1 || p.y < S.y0 || p.y > S.y1) { return; }
       var px = p.x, py = p.y;
-      if (!t.museums.length || (t.mark && t.mark.knot)) {
+      var lit = !t.museums.length || (t.mark && t.mark.knot);
+      if (lit) {
         px = (Math.floor(px / CELL_PX) + 0.5) * CELL_PX;
         py = (Math.floor(py / CELL_PX) + 0.5) * CELL_PX;
       }
+      if (Math.abs(px - x) <= half && Math.abs(py - y) <= half) {
+        if (lit && (!tile || t.rank > tile.rank)) { tile = t; }
+        if (!lit && t.mark && t.mark.shown && (!square || t.rank > square.rank)) { square = t; }
+      }
+      if (small) { return; }
       var d = Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
       if (d <= 16 && (!best || t.rank > best.rank)) { best = t; }
       if (d <= reach && d < nearD) { nearD = d; near = t; }
     });
-    return best || near;
+    return tile || square || best || near;
   }
 
   /* The galleries, fairs and sale rooms of a city whose address is known:
@@ -12943,13 +13022,23 @@
   }
 
   /* The cities nearest this one, within 500 km: a diamond where a city has
-     museums. Each is flown to from here. */
+     museums. Each is flown to from here. A city with museums also lists
+     every smaller city with museums its diamond can be tied into, or its
+     name written over, on the globe (nearMuseums): from here is where they
+     are found. */
   function nearRow(t) {
-    if (!t.near.length) { return null; }
+    var list = t.near.slice();
+    var mus = nearMuseums(t);
+    Object.keys(mus).forEach(function (key) {
+      var o = townBy[key];
+      if (o && !list.some(function (pair) { return pair[0] === o.i; })) { list.push([o.i, mus[key]]); }
+    });
+    list.sort(function (a, b) { return a[1] - b[1]; });
+    if (!list.length) { return null; }
     var box = el("section", "town-near-box");
     box.appendChild(el("p", "town-section", "Near here"));
     var row = el("div", "town-near-row");
-    t.near.forEach(function (pair) {
+    list.forEach(function (pair) {
       var o = towns[pair[0]];
       if (!o) { return; }
       var b = el("button", "town-near");

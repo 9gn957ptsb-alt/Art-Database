@@ -3145,6 +3145,10 @@ button.art-venue:focus-visible { text-decoration: underline; }
   pointer-events: none;
 }
 .building-time.dial:focus-within { box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.5), 0 8px 34px rgba(0, 0, 0, 0.45); }
+/* The dial sets `display`, which outbids .building-time[hidden] (the same
+   weight, earlier in the file): without this a hidden dial still showed as
+   an empty ring, in every museum whose building was up. */
+.building-time.dial[hidden] { display: none; }
 /* Where it stands: under the ground in a museum, under the city's band
    beside the column, at the right on a phone, over the edge of what is below. */
 .art-time.dial { width: var(--dial); height: var(--dial); padding: 0; }
