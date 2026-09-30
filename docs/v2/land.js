@@ -1189,6 +1189,7 @@
 
   function goDown(city) {
     if (flying || place) { return; }
+    if (route) { endRoute(); }
     if (!city.art) { artAsked = null; }   // pressed elsewhere: a view still being read is not flown to
     var from = project(city.lat, city.lon);
     pulse(from.x, from.y, [cityTone(city), LIGHT], 1, Math.max(W, H) * INV);
@@ -1242,6 +1243,9 @@
     var apart = Math.acos(Math.max(-1, Math.min(1, dot3(toVec(focus.lat, focus.lon), toVec(city.lat, city.lon)))));
     var band = artBand();
     var zFit = apart > 1e-9 ? 0.4 * Math.min(band.w, band.h) / apart / Math.max(1, baseR) : Infinity;
+    // A work's history is framed on no one place: a way from it starts unnamed.
+    var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug,
+                name: place.art && place.art.kind !== "town" ? "" : place.title };
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;
@@ -1251,15 +1255,256 @@
     flyFrom = zoom;
     flyTo = city.zoomTo || CITY_ZOOM;
     goingUp = false;
-    planFlight("hop", zFit);
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2);
+    if (still) {
+      planFlight("hop", zFit);
+      passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2);
+    } else {
+      setOut(was, city, apart, zFit);
+    }
+  }
+
+  /* ---- the journey ---------------------------------------------------------
+
+     From one place to another is a journey, not a cut: the world is not
+     hidden and nothing is swept over it. You rise off the place you are
+     leaving until both it and the next are in view, travel the great circle
+     between them over the land itself, and come down onto the next. The
+     land is woven again under you as you go, each piece fading into the
+     last, so there is never an edge of it or a hole in it; the way is drawn
+     in the light as it is travelled, ahead of you faint and behind you
+     lit, and the towns it passes over are named as you pass them. It takes
+     as long as the way is long, and the way stays lit a while after. */
+  var journey = null;
+  var route = null;
+  var landFade = { old: null, at: 0 };
+  var LAND_FADE = 360;
+  var ROUTE_STEP = 900;                 // after arriving, the way steps down a level this often
+  var JOURNEY_WORLD = 2.2;              // above this height the land is the world's own weave
+  var clothOld = document.createElement("canvas"), cloth2Old = document.createElement("canvas");
+  var oldCtxs = [clothOld.getContext("2d"), cloth2Old.getContext("2d")];
+  var routeNames = el("div", "route-names");
+  routeNames.setAttribute("aria-hidden", "true");
+  stage.appendChild(routeNames);
+
+  function setOut(was, city, apart, zFit) {
+    var a = Math.log(Math.max(1e-6, flyFrom)), b = Math.log(Math.max(1e-6, flyTo));
+    // High enough to see both ends at once, and always at least a little up:
+    // the place you are leaving is seen from above before it is left.
+    var top = Math.max(0.9, Math.min(zFit, Math.min(flyFrom, flyTo) / (PHI * PHI)));
+    var km = apart * 6371;
+    fly.kind = "journey";
+    fly.deep = true;
+    fly.a = a;
+    fly.b = b;
+    fly.m = Math.log(top);
+    fly.dur = Math.max(4800, Math.min(11000, 4200 + 1800 * Math.log(1 + km / 20) / Math.LN10));
+    fly.spin0 = spin;
+    fly.dSpin = shortest(spin, wanted);
+    var av = toVec(was.lat, was.lon), bv = toVec(city.lat, city.lon);
+    journey = { av: av, bv: bv, om: apart, lift: Math.max(0, (a + b) / 2 - fly.m),
+                wk: "", wc: null, wz: 0, wspan: 0, wAt: 0, pickAt: 0, fromKey: was.key,
+                toKey: city.townKey || city.slug };
+    clearRouteNames();
+    route = { samples: routeArc(av, bv, apart), u: 0, doneAt: null, towns: [],
+              names: [routeName(city.title, city.lat, city.lon, "to")] };
+    if (was.name) { route.names.push(routeName(was.name, was.lat, was.lon, "from")); }
+    tilesDirty = true;
+  }
+
+  function journeyZoom(went) {
+    var s = went * went * (3 - 2 * went);
+    return Math.exp(fly.a + (fly.b - fly.a) * s - journey.lift * 4 * s * (1 - s));
+  }
+
+  // Where along the way, and how high, at a moment of the flight.
+  function stepJourney(went) {
+    var J = journey;
+    J.went = went;
+    var s = went * went * (3 - 2 * went);
+    zoom = journeyZoom(went);
+    // The going starts once you are up and is done before you are down.
+    var q = Math.max(0, Math.min(1, (went - 0.08) / 0.84));
+    var u = q * q * q * (q * (q * 6 - 15) + 10);
+    var v = slerp3(J.av, J.bv, J.om, u);
+    focus.lat = latOf(v);
+    focus.lon = lonOf(v);
+    spin = focus.lon;
+    lean(focus.lat);
+    flyK = s;
+    route.u = u;
+  }
+
+  function slerp3(a, b, om, u) {
+    if (om < 1e-9) { return a; }
+    var fa = Math.sin((1 - u) * om) / Math.sin(om), fb = Math.sin(u * om) / Math.sin(om);
+    return norm3([a[0] * fa + b[0] * fb, a[1] * fa + b[1] * fb, a[2] * fa + b[2] * fb]);
+  }
+
+  // The way on the ground, close enough together to draw it at any height.
+  function routeArc(av, bv, om) {
+    var count = Math.max(24, Math.min(480, Math.ceil(om / (0.02 * RAD)) + 1));
+    var s = new Float32Array(count * 4);
+    for (var k = 0; k < count; k += 1) {
+      var v = slerp3(av, bv, om, k / (count - 1));
+      s[k * 4] = v[0]; s[k * 4 + 1] = v[1]; s[k * 4 + 2] = v[2]; s[k * 4 + 3] = 1;
+    }
+    return s;
+  }
+
+  /* The land under a journey: woven again wherever you have got to before
+     any edge of it could come into view — wide enough for the height you
+     will have climbed to in the next half second — and again, closer, once
+     you have come down a third of a height into it; the one before fades. */
+  function journeyLand(now) {
+    var J = journey;
+    if (zoom < JOURNEY_WORLD) {
+      if (J.wk !== "world") {
+        keepLand(now);
+        if (worldWeave) { putWeave(worldWeave); } else { weave(); }
+        J.wk = "world";
+      }
+      return;
+    }
+    var c = { lat: focus.lat, lon: focus.lon };
+    var ahead = zoom;
+    for (var k = 1; k <= 4; k += 1) {
+      ahead = Math.min(ahead, journeyZoom(Math.min(1, J.went + k * 130 / fly.dur)));
+    }
+    if (J.wk === "patch") {
+      var gone = Math.acos(Math.max(-1, Math.min(1, dot3(toVec(c.lat, c.lon), toVec(J.wc.lat, J.wc.lon)))));
+      var here = project(c.lat, c.lon), reach = 0;
+      [[0, 0], [W, 0], [0, H], [W, H]].forEach(function (p) {
+        reach = Math.max(reach, Math.sqrt((p[0] - here.x) * (p[0] - here.x) + (p[1] - here.y) * (p[1] - here.y)));
+      });
+      var covered = (J.wspan - gone) * R >= 1.04 * reach * (zoom / Math.max(1e-6, ahead));
+      var coarse = zoom / J.wz > 1.35;
+      if (covered && !(coarse && now - J.wAt > 240)) { return; }
+    }
+    keepLand(now);
+    weave(c, { loose: true, margin: 1.2 * Math.max(1, zoom / ahead) });
+    J.wk = "patch";
+    J.wc = c;
+    J.wz = zoom;
+    J.wspan = woven.span;
+    J.wAt = now;
+  }
+
+  // The land as it is now, kept to fade out under what comes next.
+  function keepLand(now) {
+    if (!wCount) { return; }
+    landFade.old = takeWeave();
+    landFade.at = now;
+  }
+
+  function routeName(text, lat, lon, kind) {
+    var n = el("span", "route-name", text);
+    n.dataset.kind = kind;
+    routeNames.appendChild(n);
+    return { el: n, lat: lat, lon: lon, kind: kind, until: Infinity, shown: false };
+  }
+
+  function clearRouteNames() {
+    routeNames.textContent = "";
+  }
+
+  /* The towns the way passes over: the one that matters most near where you
+     are is named a while, two at most at once, each once. */
+  function passTowns(now) {
+    if (!towns || now - journey.pickAt < 260) { return; }
+    journey.pickAt = now;
+    var live = route.names.filter(function (n) { return n.kind === "past" && n.until > now; });
+    if (live.length >= 2) { return; }
+    var here = project(focus.lat, focus.lon);
+    var reach = 0.34 * Math.min(W, H);
+    var best = null;
+    towns.forEach(function (t) {
+      if (t.key === journey.fromKey || t.key === journey.toKey || route.towns.indexOf(t) >= 0) { return; }
+      var p = project(t.lat, t.lon);
+      if (p.z < 0.08 || p.x < 16 || p.x > W - 140 || p.y < 90 || p.y > H - 40) { return; }
+      var d = Math.sqrt((p.x - here.x) * (p.x - here.x) + (p.y - here.y) * (p.y - here.y));
+      if (d > reach) { return; }
+      if (!best || t.rank > best.rank) { best = t; }
+    });
+    if (!best) { return; }
+    route.towns.push(best);
+    var n = routeName(best.name, best.lat, best.lon, "past");
+    n.el.appendChild(el("span", "route-name-n", " · " + best.n.toLocaleString("en") + (best.n === 1 ? " work" : " works")));
+    n.until = now + 2600;
+    route.names.push(n);
+  }
+
+  // The names beside their places, each frame; a name is let go in steps.
+  function placeRouteNames(now) {
+    route.names.forEach(function (n) {
+      var p = project(n.lat, n.lon);
+      var gone = n.until <= now || (n.kind === "to" && route.doneAt !== null) ||
+                 (route.doneAt !== null && now - route.doneAt > 3 * ROUTE_STEP);
+      var on = !gone && p.z >= 0.08 && p.x > -40 && p.x < W + 40 && p.y > 60 && p.y < H;
+      if (on) { n.el.style.transform = "translate(" + Math.round(p.x + 11) + "px," + Math.round(p.y) + "px) translateY(-50%)"; }
+      if (on !== n.shown) { n.shown = on; n.el.dataset.on = on ? "true" : "false"; }
+    });
+  }
+
+  /* The way, into drawTiles' runs: behind you lit, with a head stepping
+     down to it; ahead of you every other tile, faint; each end five tiles
+     in a diamond; the towns it passes, a tile each. After arriving it steps
+     down a level at a time and is gone. */
+  function routeRuns(runs, t) {
+    var cells = legCells(route);
+    var count = cells.length / 3;
+    var dim = 0;
+    if (route.doneAt !== null) {
+      dim = Math.floor((t - route.doneAt) / ROUTE_STEP);
+      if (dim >= 4) { endRoute(); return; }
+    }
+    var cols = Math.ceil(W / CELL_PX), rows = Math.ceil(H / CELL_PX);
+    function put(i, j, lvl) {
+      lvl -= dim;
+      if (lvl < 1 || i < 0 || j < 0 || i >= cols || j >= rows) { return; }
+      var key = LIGHT + "|" + Math.min(4, lvl);
+      (runs[key] || (runs[key] = [])).push(i, j);
+    }
+    var head = Math.round(route.u * (count - 1));
+    for (var c = 0; c < count; c += 1) {
+      if (!cells[c * 3 + 2]) { continue; }
+      var i = cells[c * 3], j = cells[c * 3 + 1];
+      if (c <= head) {
+        var back = head - c;
+        put(i, j, route.doneAt === null && back < 3 ? 4 - back : 2);
+      } else if (!(c % 2)) {
+        put(i, j, 1);
+      }
+    }
+    [0, count - 1].forEach(function (c, e) {
+      if (c < 0 || !cells[c * 3 + 2]) { return; }
+      var i = cells[c * 3], j = cells[c * 3 + 1], lvl = e ? 4 : 3;
+      put(i, j, lvl); put(i - 1, j, lvl - 1); put(i + 1, j, lvl - 1); put(i, j - 1, lvl - 1); put(i, j + 1, lvl - 1);
+    });
+    route.towns.forEach(function (tw) {
+      var p = project(tw.lat, tw.lon);
+      if (p.z >= 0.08) { put(Math.floor(p.x / CELL_PX), Math.floor(p.y / CELL_PX), 3); }
+    });
+  }
+
+  function endRoute() {
+    route = null;
+    clearRouteNames();
+    tilesDirty = true;
+  }
+
+  // Arrived: the way stays lit a while, and the last of the land fades.
+  function endJourney(now) {
+    keepLand(now);
+    journey = null;
+    if (route) { route.doneAt = now; route.u = 1; }
   }
 
   function comeUp() {
     if (flying || !place) { return; }
+    if (route) { endRoute(); }
     artAsked = null;                // a view still being read is not flown to after you have left
     // One level at a time: up from a museum (or the theatre) is its city,
     // and up from a city is the world. A city that is only its museum is
@@ -1888,7 +2133,7 @@
       tilesCanvas.width = pw; tilesCanvas.height = ph; tilesDirty = true;
     }
     if (!waves.length && !notes.length && !trail.length && !tilesDirty &&
-        !(art && art.dirty) && !(passing && passing.legs) && !walkShown) { return; }
+        !(art && art.dirty) && !(passing && passing.legs) && !walkShown && !route) { return; }
     var g = tilesCtx;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
@@ -1937,6 +2182,7 @@
 
     // A history's journey, in the same light (the journey, below).
     if (art || passing || walkShown) { drawJourney(runs, t); }
+    if (route) { routeRuns(runs, t); }
 
     Object.keys(runs).forEach(function (key) {
       var cut = key.lastIndexOf("|");
@@ -2310,7 +2556,7 @@
      meanders the same distance and lies the same distance from its
      neighbour as it does up on the globe. It is not a different surface; it
      is the same surface, close to. */
-  function weave(at) {
+  function weave(at, opts) {
     var lat = [];
     var lon = [];
     var salt = [];
@@ -2319,17 +2565,31 @@
 
     var k = at ? 1 / zoom : 1;                 // every angle, at this height
     // The patch is what can be seen: a city of museums is framed far closer
-    // than a collage's city, and its patch is as much smaller.
-    var spanLat = at ? 0.115 * CITY_ZOOM / Math.max(CITY_ZOOM, zoom) : 0;
-    var spanLon = at ? spanLat / Math.max(0.2, Math.cos(at.lat)) : 0;
+    // than a collage's city, and its patch is as much smaller. It reaches
+    // every corner of the window from where the place is held, so no edge of
+    // it is ever in view; a wider patch is given more threads, up to half
+    // again, so it keeps most of its closeness.
+    var spanLat = 0, dense = 1;
+    if (at) {
+      var held = project(at.lat, at.lon);
+      var reach = 0;
+      [[0, 0], [W, 0], [0, H], [W, H]].forEach(function (c) {
+        reach = Math.max(reach, Math.sqrt((c[0] - held.x) * (c[0] - held.x) + (c[1] - held.y) * (c[1] - held.y)));
+      });
+      var close = 0.115 * CITY_ZOOM / Math.max(CITY_ZOOM, zoom);
+      spanLat = Math.min(1.3, Math.max(close, (opts && opts.margin || 1.12) * reach / Math.max(1, R)));
+      dense = Math.min(1.45, spanLat / close) * (opts && opts.loose ? 0.72 : 1);
+      woven.span = spanLat;
+    }
+    var spanLon = at ? Math.min(Math.PI, spanLat / Math.max(0.2, Math.cos(at.lat))) : 0;
 
     // Strands running down the world. Even steps in latitude are even steps
     // along the surface, so these keep their spacing wherever they fall.
     // Half again and more: phi times the threads of before, because the
     // globe is phi times more see-through than it was (see the patches), so
     // there is as much more of the land and sea as there is less of each dot.
-    var strands = Math.round((at ? 150 : 420) * PHI);
-    var down = at ? 150 : 320;
+    var strands = Math.round((at ? 150 * dense : 420) * PHI);
+    var down = at ? Math.round(150 * dense) : 320;
     for (var i = 0; i < strands; i += 1) {
       var base = at
         ? at.lon - spanLon + (i / strands) * 2 * spanLon
@@ -2357,8 +2617,8 @@
     // nearer the pole, so these gather into a ridge toward the top of the
     // world by themselves — which is the part of her surfaces that does the
     // most work, and here it falls out of the geometry for nothing.
-    var rings = Math.round((at ? 110 : 240) * PHI);
-    var round = at ? 180 : 520;
+    var rings = Math.round((at ? 110 * dense : 240) * PHI);
+    var round = at ? Math.round(180 * dense) : 520;
     for (var j = 0; j < rings; j += 1) {
       var lat0 = at
         ? at.lat - spanLat + ((j + 0.5) / rings) * 2 * spanLat
@@ -2410,7 +2670,7 @@
       // Where it falls on the Earth, and how far into it. A dot at sea is
       // bare ink; a dot on land wears the colour of whichever of the works
       // lies nearest and sits heavier the further inland it is.
-      var deep = inland(lat[k], lon[k]);
+      var deep = at ? inlandNear(lat[k], lon[k]) : inland(lat[k], lon[k]);
       wGain[k] = deep ? 0.25 + 0.75 * deep : 0;
 
       // Which land it is standing on, straight off the map. What colour that
@@ -2453,16 +2713,57 @@
     }
 
     woven.spin = null;      // it will have to be drawn again
+    if (!at) { worldWeave = takeWeave(); }
+  }
+
+  /* A weave kept whole, to be laid down again or faded out: the world's own
+     (kept whenever it is woven), and the one a journey is leaving behind. */
+  var worldWeave = null;
+  function takeWeave() {
+    return { n: wCount, sl: wSinLat, cl: wCosLat, so: wSinLon, co: wCosLon, salt: wSalt, tone: wTone,
+             gain: wGain, ink: wInk, size: wSize, split: wSplit, inks: wInks, tones: wTones };
+  }
+  function putWeave(o) {
+    wCount = o.n; wSinLat = o.sl; wCosLat = o.cl; wSinLon = o.so; wCosLon = o.co; wSalt = o.salt;
+    wTone = o.tone; wGain = o.gain; wInk = o.ink; wSize = o.size; wSplit = o.split; wInks = o.inks;
+    wTones = o.tones;
+    woven.spin = null;
+  }
+
+  /* Close to, the land map is far coarser than the patch: how far inland a
+     point is, read once for each 1/64 of a degree and kept. */
+  var inlandSeen = new Map();
+  function inlandNear(la, lo) {
+    var key = Math.round(la * 3667) * 40000 + Math.round(wrap(lo) * 3667);
+    var v = inlandSeen.get(key);
+    if (v === undefined) {
+      if (inlandSeen.size > 200000) { inlandSeen.clear(); }
+      v = inland(la, lo);
+      inlandSeen.set(key, v);
+    }
+    return v;
   }
 
   /* A fine dot dressed in its place's palette, as DIRT Earth dresses its
      ground: where its lightness falls between the place's darkest and
      lightest colours (on even ground, the sea, closer to the middle). */
   var STOP_AT = [0, Math.pow(PHI, -4), 0.42, 1 - Math.pow(PHI, -4), 1];
+  var dressSeen = new Map();
   function dressed(r, g, b, la, lo, even) {
     var P = dirt.pal, w = P.n, h = P.h / 3;
     var u = cellOf(w, (lo / TAU + 0.5) * w);
     var v = Math.min(h - 1, Math.max(0, Math.floor((0.5 - la / Math.PI) * h)));
+    // The same soil colour in the same cell of the palette is dressed the
+    // same way: worked out once.
+    var key = ((((v * w + u) * 2 + (even ? 1 : 0)) * 256 + r) * 256 + g) * 256 + b;
+    var got = dressSeen.get(key);
+    if (got !== undefined) { return got; }
+    if (dressSeen.size > 200000) { dressSeen.clear(); }
+    got = dressedOnce(P, w, h, u, v, r, g, b, even);
+    dressSeen.set(key, got);
+    return got;
+  }
+  function dressedOnce(P, w, h, u, v, r, g, b, even) {
     var col = function (band) { var o = ((band * h + v) * w + u) * 4; return [P.px[o], P.px[o + 1], P.px[o + 2]]; };
     var dark = col(0), mid = col(1), light = col(2);
     var st = [dark.map(function (c) { return c / (PHI * PHI); }), dark, mid, light,
@@ -2488,8 +2789,8 @@
   /* The whole field, onto its own surface, in runs of one colour: a hundred
      thousand dots is nothing, a hundred thousand changes of fillStyle is the
      whole cost of having a surface at all. */
-  function drawCloth() {
-    [cloth, cloth2].forEach(function (c) {
+  function drawCloth(into) {
+    [into ? into[0].canvas : cloth, into ? into[1].canvas : cloth2].forEach(function (c) {
       if (c.width !== canvas.width || c.height !== canvas.height) {
         c.width = canvas.width;
         c.height = canvas.height;
@@ -2504,10 +2805,10 @@
     // And it grows with the world: a near world is woven in bigger dots, so
     // the land keeps its presence however close it comes.
     var grain = Math.max(1, baseR / 440);
-    var loose = turning ? 2 : 1;
+    var loose = turning || (journey && journey.wk === "world") ? 2 : 1;
 
     // The strands down onto one surface, the strands round onto the other.
-    [[wctx, 0, wSplit], [wctx2, wSplit, wCount]].forEach(function (family) {
+    [[into ? into[0] : wctx, 0, wSplit], [into ? into[1] : wctx2, wSplit, wCount]].forEach(function (family) {
       var c = family[0];
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
       c.clearRect(0, 0, W, H);
@@ -2582,6 +2883,7 @@
       c.globalAlpha = 1;
     });
 
+    if (into) { return; }
     woven.spin = spin;
     woven.loose = loose > 1;
     woven.w = W;
@@ -2650,10 +2952,14 @@
     // What the creature stands on is the brightest part of the sphere.
     var lit = project(beast.lat, beast.lon);
     if (!flying && !moving() && sphereStale(lit)) { drawSphere(lit); }
+    // On a journey the body is painted where it is: slid or grown from where
+    // it was, its edge would open onto the room behind it.
+    if (journey && drawn.r && (Math.abs(cx - drawn.cx) > 1 || Math.abs(cy - drawn.cy) > 1 ||
+        R < drawn.r * 0.998 || R > drawn.r * 1.06)) { drawSphere(lit); }
     // A swing magnifies what is drawn, and a world coming in from far off
     // grows six times over: past phi times, it is woven again at the size
     // it has got to, a few times on the way in, so it never goes to blocks.
-    if (moving() && drawn.r && (R / drawn.r > PHI || R / drawn.r < INV || !covered()) &&
+    if ((moving() || journey) && drawn.r && (R / drawn.r > PHI || R / drawn.r < INV || !covered()) &&
         now - swungAt > 60) {
       swungAt = now;
       drawSphere(lit);
@@ -2699,11 +3005,38 @@
     }
     gctx.globalAlpha = body;
     gctx.drawImage(sphere, 0, 0, W, H);
-    gctx.globalAlpha = down;
-    gctx.drawImage(cloth, 0, 0, W, H);
-    gctx.globalAlpha = round;
-    gctx.drawImage(cloth2, 0, 0, W, H);
+    // On a journey the land is drawn where the world is now, every frame,
+    // not magnified from where it was: it is what you are travelling over.
+    var live = !!journey || !!landFade.old;
+    if (!live) {
+      gctx.globalAlpha = down;
+      gctx.drawImage(cloth, 0, 0, W, H);
+      gctx.globalAlpha = round;
+      gctx.drawImage(cloth2, 0, 0, W, H);
+    }
     gctx.restore();
+    if (live) {
+      var f = landFade.old ? Math.min(1, (now - landFade.at) / LAND_FADE) : 1;
+      if (landFade.old && f < 1) {
+        var cur = takeWeave();
+        putWeave(landFade.old);
+        drawCloth(oldCtxs);
+        putWeave(cur);
+        // The piece left behind fades out over the new one, which is laid
+        // down whole at once: a new piece is always the wider, so no edge of
+        // the old one is ever seen against nothing.
+        gctx.globalAlpha = down * (1 - f);
+        gctx.drawImage(clothOld, 0, 0, W, H);
+        gctx.globalAlpha = round * (1 - f);
+        gctx.drawImage(cloth2Old, 0, 0, W, H);
+      }
+      if (clothStale()) { drawCloth(); }
+      gctx.globalAlpha = down;
+      gctx.drawImage(cloth, 0, 0, W, H);
+      gctx.globalAlpha = round;
+      gctx.drawImage(cloth2, 0, 0, W, H);
+      if (f >= 1 && !journey) { landFade.old = null; drawn.r = 0; }
+    }
 
     // The patches and the pulse, as a mask: kept where it is opaque, faded
     // where it is not.
@@ -3369,6 +3702,9 @@
     livingAt = now;
     if (!LIVING || !R) { return; }
     var fade = 1 - nearness();
+    // On a journey the weather is only there while the world is seen whole:
+    // enlarged, it is no longer weather but blocks.
+    if (journey) { fade = Math.min(fade, Math.max(0, (PHI - zoom) / (PHI - 1))); }
     if (fade <= 0.02) { return; }
     if (now - sun.at > 20000) {
       var s = sunNow(Date.now());
@@ -4523,7 +4859,9 @@
       // A frame's clock can read a few milliseconds before the press that
       // started the flight; before its start the flight is at its start.
       var went = Math.max(0, Math.min(1, (now - flyAt) / fly.dur));
-      if (fly.deep) {
+      if (journey) {
+        stepJourney(went);
+      } else if (fly.deep) {
         // In log space, the world turned as the height allows (see fly).
         var s = went * went * (3 - 2 * went);
         var lz = (1 - s) * (1 - s) * fly.a + 2 * s * (1 - s) * fly.m + s * s * fly.b;
@@ -4541,7 +4879,9 @@
         lean(leanFrom + (leanTo - leanFrom) * easing);
       }
       reframe();
+      if (journey) { journeyLand(now); passTowns(now); }
       if (went >= 1) {
+        if (journey) { endJourney(now); }
         flying = false;
         hopFrom = null;
         if (fly.deep) { spin = wanted; fly.deep = false; }
@@ -4571,6 +4911,7 @@
     }
 
     paint(now);
+    if (route) { placeRouteNames(now); }
 
     // Up on the globe: the world, its words and its cities, and none of the
     // rest of it — not hidden but not running, which is most of what this
