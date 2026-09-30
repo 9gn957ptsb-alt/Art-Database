@@ -116,6 +116,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
   function show(n) {
     if (!trip || !trip.stations[n]) return;
     trip.at = n;
+    UC.shownAt = performance.now();                                   // (the ultracode lets a station be read before moving on)
     const st = trip.stations[n];
     while (trip.path.length < n + 2) place(trip.path.length - 1);
     glideTo(trip.path[n + 1][0], trip.path[n + 1][1]);
@@ -205,6 +206,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
     }
     const canvas = fitted(im, 1024);
     picked = { file, canvas, measured: measure(canvas) };
+    UC.given = true;
     $("d-thumb").src = canvas.toDataURL("image/jpeg", 0.6); $("d-thumb").hidden = false; $("d-thumb").alt = "The photo put in";
     if (plane()) GLG.putIn(canvas, vx + VW / 2, vy + VH / 2);
     label();
@@ -229,6 +231,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
   /** Into the plane, at once: the photo if there is one (already in), else the word as type. */
   function putIn(name, photo) {
     if (photo || !name || !plane()) return;
+    UC.given = true;
     GLG.putIn(wordSheet(name), vx + VW / 2, vy + VH / 2);
   }
   let queued = null, claudeOff = "";
@@ -311,6 +314,80 @@ For "go", give a real website you are certain exists (a museum or collection pag
     if (retry) { imagesOk = false; go(name, photo, visited); }
     else if (queued) { const q = queued; queued = null; go(...q); }
   }
+
+  // ---- ultracode: a self-reflective propulsion ----------------------------------------------------------------
+  // Ultracode: code (Latin cōdex, earlier caudex, a tree's trunk, then the tablets split from it and bound, then a
+  // book of laws, then a cipher) that goes beyond itself (ultra-, "on the far side of") by reading itself. Here it
+  // is a propulsion that is a reflection. To reflect is to bend back (re- + flectere) and to propel is to drive
+  // forward (prō- + pellere); a rocket goes forward only by throwing something back, and DRIFT goes forward only by
+  // looking back at what it has just made. Three parts, each feeding the next:
+  //   reflection   about three times a second DRIFT reads back a tiny copy of its own last frame (ground-gl.js,
+  //                reflect(): a mipmap level ~34 texels across, read without stalling the GPU) and measures it: its
+  //                life (how much it changes across itself) and its novelty (how much it has changed since it last
+  //                looked, the view's own motion taken out), and where in the view each is strongest;
+  //   propulsion   left alone for five seconds, that measure becomes thrust: the view is driven toward where it is
+  //                most alive and most new, harder the more it is (at most 21 cells a second), with phi seconds of
+  //                inertia, coasting when calm. Moving changes what it sees, which changes the thrust, so it steers
+  //                itself, and what it has already seen stops pulling (it is no longer new). A touch, a drift's glide,
+  //                an anomaly or a preference for reduced motion stops it at once;
+  //   code as matter  until a thing is put in, the collage glues in sheets of DRIFT's own code, these very functions,
+  //                headed by their live readings, a new stretch of them every 34 seconds: the codex read as texture,
+  //                taken back to the trunk it was split from.
+  const UC = { prev: null, px: 0, py: 0, dir: [0, 0], life: 0, novelty: 0, vx: 0, vy: 0, idleAt: performance.now(), last: 0, seen: null, given: false, sheetAt: -1e9, line: 0 };
+  for (const ev of ["pointerdown", "wheel", "keydown", "touchstart"]) addEventListener(ev, () => { UC.idleAt = performance.now(); }, { passive: true, capture: true });
+  /** Reflection: the measure of a reading of the last frame (w by h texels, uw by uh of them the view). */
+  function reflectOn(r) {
+    const { w, uw, uh, data, cells } = r, n = uw * uh, L = new Float32Array(n);
+    for (let y = 0; y < uh; y++) for (let x = 0; x < uw; x++) { const i = (y * w + x) * 4; L[y * uw + x] = 0.3 * data[i] + 0.59 * data[i + 1] + 0.11 * data[i + 2]; }
+    // the last reading, moved by as far as the view moved since, so what changed is the image and not the looking
+    const sx = Math.round((r.x0 - UC.px) / cells), sy = Math.round((r.y0 - UC.py) / cells), P = UC.prev && UC.prev.uw === uw && UC.prev.uh === uh ? UC.prev.L : null;
+    let life = 0, nov = 0, cx = 0, cy = 0, sum = 0, m = 0;
+    for (let y = 0; y < uh; y++) for (let x = 0; x < uw; x++) {
+      const k = y * uw + x, g = (x + 1 < uw ? Math.abs(L[k + 1] - L[k]) : 0) + (y + 1 < uh ? Math.abs(L[k + uw] - L[k]) : 0);
+      const ox = x + sx, oy = y + sy, dn = P && ox >= 0 && oy >= 0 && ox < uw && oy < uh ? Math.abs(L[k] - P[oy * uw + ox]) : 0;
+      if (P && dn) m++;
+      life += g; nov += dn;
+      const wgt = 0.382 * g + dn;                                   // where it is most alive, and most of all where it is new
+      cx += wgt * ((x + 0.5) / uw - 0.5); cy += wgt * ((y + 0.5) / uh - 0.5); sum += wgt;
+    }
+    UC.prev = { L, uw, uh }; UC.px = r.x0; UC.py = r.y0;
+    UC.life = life / n / 255; UC.novelty = nov / Math.max(1, n) / 255;
+    if (sum > 0) UC.dir = [cx / sum, cy / sum];
+  }
+  /** Propulsion, every frame: the reflection become thrust while DRIFT is left alone. */
+  function propel(now) {
+    requestAnimationFrame(propel);
+    const dt = Math.min(0.1, (now - (UC.last || now)) / 1000);
+    UC.last = now;
+    const r = plane() && GLG.reflection ? GLG.reflection() : null;
+    if (r && r !== UC.seen) { UC.seen = r; reflectOn(r); }
+    const alone = now - UC.idleAt > 5000 && !flight && !(typeof ANOM !== "undefined" && ANOM.at) && !REDUCED
+      && !(typeof down !== "undefined" && down) && !document.hidden && !(!at.hidden && now - (UC.shownAt || -1e9) < 34000);
+    const m = Math.hypot(UC.dir[0], UC.dir[1]);
+    const want = alone && m > 0.004 ? 21 * Math.min(1, UC.life * 2.6 + UC.novelty * 8) * Math.min(1, m * 8) : 0;
+    const k = 1 - Math.exp(-dt / PHI);                               // phi seconds of inertia
+    UC.vx += ((m ? UC.dir[0] / m : 0) * want - UC.vx) * k;
+    UC.vy += ((m ? UC.dir[1] / m : 0) * want - UC.vy) * k;
+    if (alone) { vx += UC.vx * dt; vy += UC.vy * dt; } else { UC.vx *= 0.8; UC.vy *= 0.8; }
+    if (!UC.given && plane() && now - UC.sheetAt > 34000) { UC.sheetAt = now; GLG.putIn(codeSheet(), vx + VW / 2, vy + VH / 2, { quiet: true, share: 0.618 }); }
+  }
+  /** Code as matter: a sheet of DRIFT's own code (these functions), a new stretch each time, headed by its readings. */
+  function codeSheet() {
+    const lines = [reflectOn, propel, codeSheet].map((f) => f.toString()).join("\n\n").split("\n");
+    const c = document.createElement("canvas"); c.width = 1024; c.height = 640;
+    const x = c.getContext("2d");
+    x.fillStyle = "#eee7d8"; x.fillRect(0, 0, c.width, c.height);
+    x.font = "500 17px 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace";
+    x.fillStyle = "#d23c28";
+    const sp = Math.hypot(UC.vx, UC.vy);
+    x.fillText(`ultracode · life ${UC.life.toFixed(3)} · new ${UC.novelty.toFixed(3)} · thrust (${UC.dir[0].toFixed(2)}, ${UC.dir[1].toFixed(2)}) · ${sp.toFixed(1)} cells a second`, 21, 34);
+    x.fillStyle = "#17120e";
+    for (let i = 0; i < 27; i++) x.fillText(lines[(UC.line + i) % lines.length].replace(/\t/g, "  "), 21, 68 + i * 21.5);
+    UC.line = (UC.line + 27) % lines.length;
+    return c;
+  }
+  requestAnimationFrame(propel);
+  window.ULTRACODE = UC;                                              // its state, to look at
   document.addEventListener("keydown", (e) => {
     if (!trip || at.hidden || /^(input|textarea)$/i.test(document.activeElement && document.activeElement.tagName)) return;
     if (e.key === "]" && trip.at < trip.stations.length - 1) show(trip.at + 1);

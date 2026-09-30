@@ -298,6 +298,27 @@ until another photo takes its place. Where the view cannot send Claude pictures,
 colours most to least, its light, contrast, saturation, warmth and grain, and its shape) and the drift follows that,
 with any name you add. The photo stays in the viewer's browser, and goes to Claude only when the view can send it.
 
+**Ultracode: a self-reflective propulsion.** *Code* is Latin *cōdex*, earlier *caudex*, a tree's trunk, then the
+wooden tablets split from it and bound into a book, then a book of laws, then a cipher; *ultra-* is "beyond, on the
+far side of." Ultracode is code that goes beyond itself by reading itself. To reflect is to bend back (*re-* +
+*flectere*) and to propel is to drive forward (*prō-* + *pellere*): a rocket goes forward only by throwing something
+back, and DRIFT goes forward only by looking back at what it has just made. Three parts, each feeding the next
+(`engine/drift.js`, with the reading in `engine/ground-gl.js`):
+
+- **Reflection.** About three times a second DRIFT reads back a tiny copy of its own last frame (a mipmap level about
+  34 texels across, read into a buffer behind a fence and collected on a later frame, so the GPU never waits) and
+  measures it: its *life*, how much it changes across itself, and its *novelty*, how much it has changed since it last
+  looked (the view's own motion taken out), and where in the view each is strongest.
+- **Propulsion.** Left alone for five seconds, that measure becomes thrust: the view is driven toward where the image
+  is most alive and most new, harder the more it is (at most 21 cells a second), with φ seconds of inertia, coasting
+  when calm. Moving changes what it sees, which changes the thrust, so it steers itself, and what it has already seen
+  stops pulling, since it is no longer new. A touch, a drift's glide, a station being read (34 seconds), an anomaly, a
+  hidden tab or a preference for reduced motion stops it at once.
+- **Code as matter.** Until a thing is put in, the collage glues in sheets of DRIFT's own code (the functions that do
+  the reflecting and the propelling, read from themselves), headed in vermilion by their live readings (life, novelty,
+  thrust, speed), a new stretch of the code every 34 seconds, as about a fifth of the collage's pieces: the
+  codex read as texture, taken back to the trunk it was split from.
+
 **The ladder of complexity.** The plane is DIRT at the full reach of its language, and that reach runs from nothing to
 everything. Over the plane lies a field of complexity, 0 to 1, rising and falling across two or three screens, so a few
 swipes cross the whole ladder:

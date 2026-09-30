@@ -3425,10 +3425,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
     thingOn = gl.getError() === gl.NO_ERROR ? 1 : 0;
   }
-  /** Put a photo into the plane (a canvas or image), at x, y in cells: it arrives there, then the collage carries it. */
-  function putIn(src, x, y) {
-    thingSrc = src;
-    thingP[0] = x; thingP[1] = y; thingP[2] = (performance.now() - T0) / 1000; thingP[3] = (src.width || 1) / (src.height || 1);
+  /** Put a photo into the plane (a canvas or image), at x, y in cells: it arrives there, then the collage carries it.
+   * quiet: no arrival, and only `share` of the usual pieces (the ultracode's sheets of DRIFT's own code, drift.js). */
+  let thingShare = 1;
+  function putIn(src, x, y, { quiet = false, share = 1 } = {}) {
+    thingSrc = src; thingShare = share;
+    thingP[0] = x; thingP[1] = y; thingP[2] = quiet ? -1e6 : (performance.now() - T0) / 1000; thingP[3] = (src.width || 1) / (src.height || 1);
     if (!lost) fillThing(src);
   }
   if (antiquity && antiquity.length) {
@@ -3617,7 +3619,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   if (!setup()) return null;
   glcv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; });
-  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; lost = !setup(); });
+  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; reflFbo = reflPbo = reflSync = null; lost = !setup(); });
   stage.insertBefore(glcv, cv);
   // Seen whenever the page's canvas is (the globe hides it).
   new MutationObserver(() => { glcv.style.visibility = cv.style.visibility; }).observe(cv, { attributes: true, attributeFilter: ["style"] });
@@ -3786,7 +3788,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1f(Co.uQS, qs);
       gl.uniform1i(Co.uAN, an);
       gl.uniform1i(Co.uLite, tier === 0 ? 1 : 0);
-      gl.uniform1f(Co.uThingOn, thingOn);
+      gl.uniform1f(Co.uThingOn, thingOn * thingShare);
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
@@ -3847,6 +3849,41 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform1i(V.uH, H);
     gl.uniform1i(V.uEdge, edgeOn && !earth && tier >= 3 ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (!earth) reflect(now);
+  }
+  // ---- the ultracode's reflection (drift.js): DRIFT reads back a small copy of what it has just drawn, the level of
+  // the last frame's mipmap about 34 texels across, every 377 ms, without waiting for it: the read goes into a buffer
+  // with a fence, and is collected on a later frame once the GPU has finished, so it never stalls a frame.
+  let refl = null, reflAt = 0, reflPbo = null, reflSync = null, reflFbo = null, reflDims = null;
+  function reflect(now) {
+    if (reflSync) {
+      const st = gl.clientWaitSync(reflSync, 0, 0);
+      if (st === gl.TIMEOUT_EXPIRED) return;
+      gl.deleteSync(reflSync); reflSync = null;
+      if (st !== gl.WAIT_FAILED) {
+        const d = new Uint8Array(reflDims.w * reflDims.h * 4);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, reflPbo);
+        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, d);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        refl = { ...reflDims, data: d, at: now };
+      }
+    }
+    if (now - reflAt < 377 || !prevN[0] || !tP || !FW) return;
+    reflAt = now;
+    const L = Math.max(0, Math.floor(Math.log2(FW / 34))), w = Math.max(1, FW >> L), h = Math.max(1, FH >> L);
+    if (!reflFbo) reflFbo = gl.createFramebuffer();
+    if (!reflPbo) reflPbo = gl.createBuffer();
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, reflFbo);
+    gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tP, L);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, reflPbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, w * h * 4, gl.STREAM_READ);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    reflSync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    // (w by h texels, the first row the top of the view; uw by uh of them are the view; cells a texel; where it began)
+    reflDims = { w, h, uw: Math.max(1, Math.min(w, Math.round(prevN[0] / (1 << L)))), uh: Math.max(1, Math.min(h, Math.round(prevN[1] / (1 << L)))), cells: 1 << L, x0: prev0[0], y0: prev0[1] };
   }
   /** An anomaly (see the shader): [the view's middle x, y in cells, how far it has come 0 to 1 (0: none), which]. */
   const anom = new Float32Array(4);
@@ -3854,5 +3891,5 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, putIn, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, putIn, reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }
