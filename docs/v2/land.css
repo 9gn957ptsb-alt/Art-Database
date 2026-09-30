@@ -2180,18 +2180,57 @@
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: 8px 14px;
+  padding: 6px 16px;
+  border: 1px solid rgba(234, 223, 205, 0.1);
   border-radius: 999px;
-  background: rgba(15, 10, 7, 0.78);
+  background: rgba(15, 10, 7, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: #eadfcd;
   font-family: var(--mono);
-  font-size: var(--t-1);
-  letter-spacing: 0.06em;
+  font-size: var(--t-0);
+  letter-spacing: 0.12em;
   z-index: 2;
 }
 .building-time[hidden] { display: none; }
-.building-time-year { min-width: 4ch; font-variant-numeric: tabular-nums; }
-.building-time-range { flex: 1; accent-color: #eadfcd; touch-action: pan-x; }
+.building-time-year { min-width: 4ch; font-variant-numeric: tabular-nums; color: #a8927a; }
+/* A hairline track and a small diamond, the museums' own mark, for the year. */
+.building-time-range {
+  flex: 1;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: pan-x;
+  cursor: pointer;
+}
+.building-time-range::-webkit-slider-runnable-track { height: 1px; background: rgba(168, 146, 122, 0.55); }
+.building-time-range::-moz-range-track { height: 1px; background: rgba(168, 146, 122, 0.55); }
+.building-time-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 0;
+  background: #eadfcd;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 3px rgba(15, 10, 7, 0.6);
+}
+.building-time-range::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 0;
+  background: #eadfcd;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 3px rgba(15, 10, 7, 0.6);
+}
+.building-time-range:focus-visible { outline: none; }
+.building-time-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(15, 10, 7, 0.6), 0 0 0 4px #eadfcd; }
+.building-time-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(15, 10, 7, 0.6), 0 0 0 4px #eadfcd; }
+.building-time:has(.building-time-range:active) .building-time-year { color: #eadfcd; }
 .building[data-museum] .building-time { left: calc((100% - min(40vw, 440px)) / 2); }
 @media (max-width: 720px) {
   .building[data-museum] .building-time { left: 50%; bottom: calc(38vh + 8px); }
@@ -2834,12 +2873,12 @@ button.art-venue:focus-visible { text-decoration: underline; }
   grid-template-columns: auto 1fr;
   grid-template-rows: 7px auto;
   column-gap: var(--s-3);
-  padding: 4px 14px 6px;
+  padding: 5px 16px 3px;
   z-index: 3;
 }
-.art-time .building-time-year { grid-row: 1 / 3; align-self: center; }
-.art-time .building-time-range { grid-column: 2; grid-row: 2; width: 100%; margin: 0; }
-.art-ticks { position: relative; grid-column: 2; grid-row: 1; margin: 0 8px; }
+.art-time .building-time-year { grid-row: 2; align-self: center; }
+.art-time .building-time-range { grid-column: 2; grid-row: 2; width: 100%; margin: -5px 0 0; }
+.art-ticks { position: relative; grid-column: 2; grid-row: 1; margin: 0 4.5px; }
 .art-tick {
   position: absolute;
   bottom: 0;
@@ -2850,7 +2889,15 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .art-tick[data-kind="written"] { height: 7px; background: #eadfcd; }
 .art-tick[data-circa] { width: 3px; margin-left: -1px; background: none; box-shadow: inset 0 0 0 1px #a8927a; }
 @media (max-width: 720px) {
-  .art-time { left: 50%; bottom: calc(50vh + 8px); width: calc(100% - 32px); }
+  /* Measured from the top, as the column is: 100vh is not the visible height
+     in a phone's browser, so "50vh from the bottom" floats well above it. */
+  .art-time {
+    left: 50%;
+    top: calc(50vh - 2px);
+    bottom: auto;
+    transform: translate(-50%, -100%);
+    width: calc(100% - 32px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
