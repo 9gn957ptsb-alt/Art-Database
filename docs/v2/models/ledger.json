@@ -216,14 +216,14 @@
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
       "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine",
-      "2026-09-30 interior finding: 17 documented rooms on the main floor lie outside the model (M-015, M-016, M-017, M-018, M-019, M-035, M-035-A, M-040, M-041, M-041-A, M-060-B, M-062, \u2026), between x -98.8 and 99.3, y -45.8 and 45.8 m",
-      "2026-09-30 interior finding: 5 documented rooms on the ground floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014), between x -98.3 and -55.8, y -45.3 and -35.3 m",
-      "2026-09-30 interior finding: only 77% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 77% of the model's footprint stands on the ground's buildings",
+      "2026-09-30 interior finding: 17 documented rooms of the Main Floor lie outside the model (M-015, M-016, M-017, M-018, M-019, M-035, M-035-A, M-040, M-041, M-041-A, M-060-B, M-062, \u2026): its rooms reach y -46.2 to 46.2 m (92.3 m) where the model reaches y -32.5 to 35.0 m (67.5 m), in x -98.8 to -56.3 and 56.8 to 99.3 m",
+      "2026-09-30 interior finding: 5 documented rooms of the Ground Floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014): its rooms reach y -45.7 to 34.6 m (80.3 m) where the model reaches y -32.5 to 32.5 m (65.0 m), in x -98.3 to -55.8 m"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "documented",
+      "refined": "2026-09-30",
+      "passes": 1,
       "rooms": {
         "documented": 181,
         "reconstructed": 0
@@ -234,7 +234,9 @@
         "off": 0,
         "none": 138
       },
-      "log": []
+      "log": [
+        "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)"
+      ]
     }
   },
   "museum-guggenheim-museum": {
@@ -246,7 +248,6 @@
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
       "2026-09-24 refined: turned onto Manhattan grid (29 deg) and placed on its lot between 88th and 89th from the ground file, smaller Monitor and skylight, 88th/89th Streets, park thickened, rotunda clear of street trees",
-      "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -357,8 +358,7 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the four-storey pale stone block from the ground file, the skylit Great Hall, the 2005 east wing, the half-cylinder glass entrance with its five steel rings, lawns and trees of Newfields",
-      "2026-09-26 refined: a garden terrace with steps and planting along the north front, a steel eave/canopy ring round the entrance rotunda, forecourt planters, trees and bollard lights, a bigger LOVE sculpture",
-      "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings"
+      "2026-09-26 refined: a garden terrace with steps and planting along the north front, a steel eave/canopy ring round the entrance rotunda, forecourt planters, trees and bollard lights, a bigger LOVE sculpture"
     ],
     "interior": {
       "tier": "shell",
@@ -638,7 +638,6 @@
     "log": [
       "2026-09-24 first model: three splayed copper bars turned 43\u00b0 off north with glazed courts, the entrance canopy, and the Hamon Tower twisting to the city grid (rotated volumes as prism meshes)",
       "2026-09-26 refined: added the cantilevered entrance canopy at the west corner, two wall segments changed to perforated-screen material, more courtyard planting",
-      "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -667,7 +666,6 @@
     "log": [
       "2026-09-24 first model: Rietveld's pale block with glazed ground floor and lantern, the 2015 glass entrance hall, Kurokawa's stone crescent round its sunken oval pool under a tilted titanium roof",
       "2026-09-27 refined: gravel roofs inside white parapets on the Rietveld block and east wing; Van Heeswijk's entrance hall raised to about 8 m; a paved forecourt on the Museumplein side (no photographs)",
-      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -1127,7 +1125,6 @@
     "log": [
       "2026-09-24 first model: sandstone temple on its podium turned to the real axis, apse, portico and pediment over the double stair and equestrian statue, colonnade garden, the Spree",
       "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): sandstone made pale warm buff; the colonnade's columns thickened so they stand as columns; a glazed lantern along the ridge",
-      "2026-09-30 interior finding: only 76% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -1321,9 +1318,7 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Bixler brick building with slate roof and cupola, the clerestory-lit brick gallery wings, Fisher fritted-glass Alfond-Lunder Pavilion with its cantilevered top floor",
-      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings",
-      "2026-09-30 refined (no photographs reachable; against the ground file's outlines): Alfond-Lunder Pavilion moved ~16 m west onto its outline and made smaller with its cantilevered top floor, a glass link to the wings, Bixler deepened north, the gallery wing shortened, corner posts and a recessed entrance beside the LeWitt wall; footprint on the ground's buildings 62% -> 81%",
-      "2026-09-30 interior finding: only 63% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 refined (no photographs reachable; against the ground file's outlines): Alfond-Lunder Pavilion moved ~16 m west onto its outline and made smaller with its cantilevered top floor, a glass link to the wings, Bixler deepened north, the gallery wing shortened, corner posts and a recessed entrance beside the LeWitt wall; footprint on the ground's buildings 62% -> 81%"
     ],
     "interior": {
       "tier": "shell",
@@ -1350,9 +1345,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Carnegie Mansion on Manhattan's grid \u2014 red brick on a sandstone base, cornice and balustrade, slate roof and chimneys, the 91st Street canopy, the Arthur Ross garden, the Miller house, Central Park across Fifth",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
       "2026-09-30 refined (no photographs reachable; published descriptions): Central Park across Fifth Avenue as lawn and canopy behind its limestone wall, the mansion's stone trim made pale limestone, Otto Kahn's limestone palazzo across 91st Street; voxel 1.2 -> 1.25 to stay under 25,000 dots; the ground file lacks the mansion's outline, so placement unchanged",
-      "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 53% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1379,8 +1373,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gill's white stucco house and the Venturi additions with the street arcade, Selldorf's travertine and concrete galleries with sun screens and sea terraces, lawn and palms to the Pacific, the village across Prospect Street",
-      "2026-09-30 interior finding: only 29% of the model's footprint stands on the ground's buildings",
-      "2026-09-30 refined (no photographs reachable; ground outlines): whole place moved 26 m east onto the museum's outline, the Selldorf galleries 10 m narrower on the sea side with their windows and terrace, travertine cladding"
+      "2026-09-30 refined (no photographs reachable; ground outlines): whole place moved 26 m east onto the museum's outline, the Selldorf galleries 10 m narrower on the sea side with their windows and terrace, travertine cladding",
+      "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1407,9 +1401,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Cuypers's red-brick palace at its true angle on the Singelgracht, two glass-roofed atria, the passage through the middle, steep slate roofs and lantern, twin entrance towers, the Museumplein and pool",
-      "2026-09-30 interior finding: only 34% of the model's footprint stands on the ground's buildings",
       "2026-09-30 refined (no photographs reachable; ground outlines): moved 12 m west and 12 m south onto the outline, the Philips Wing added at the south-west corner, the roofs blue-grey slate",
-      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1436,8 +1429,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Sabatini hospital at its true angle, four storeys round the garden court, Ritchie's two glass lift towers, and Nouvel's three buildings under the great red-edged cantilevered roof",
-      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings",
-      "2026-09-30 refined (no photographs reachable; ground outlines): Sabatini building moved onto its outline, the Nouvel extension moved 24 m west and 20 m north onto its two blocks, limestone cornices and slate roofs on the old building"
+      "2026-09-30 refined (no photographs reachable; ground outlines): Sabatini building moved onto its outline, the Nouvel extension moved 24 m west and 20 m north onto its two blocks, limestone cornices and slate roofs on the old building",
+      "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1492,8 +1485,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the north wing, spine and south wing in grey concrete round the sculpture garden, top-lit galleries and the tall hall, the glazed Great Hall on Central Avenue with its palms",
-      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings",
-      "2026-09-30 refined (no photographs reachable; ground outlines): model mirrored so Central Avenue runs on the west, the museum's point moved 76 m west to the complex's middle (PARTNER_SPOTS; ground re-cut), an east gallery range closing the ring round the sculpture garden; footprint 51% -> 77%"
+      "2026-09-30 refined (no photographs reachable; ground outlines): model mirrored so Central Avenue runs on the west, the museum's point moved 76 m west to the complex's middle (PARTNER_SPOTS; ground re-cut), an east gallery range closing the ring round the sculpture garden; footprint 51% -> 77%",
+      "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1520,7 +1513,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Johnson granite box on its recessed glass base with the bronze piers and crossing roof beams, turned 45 degrees to Genesee Street, Fountain Elms beside it",
-      "2026-09-30 refined (no photographs reachable; published descriptions): the dry moat round the glazed ground floor, its curb, and the entrance bridge"
+      "2026-09-30 refined (no photographs reachable; published descriptions): the dry moat round the glazed ground floor, its curb, and the entrance bridge",
+      "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1547,7 +1541,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Hartley five-storey brick warehouse ranges of the Albert Dock over their red cast-iron colonnade, the dock basin and Canning Dock, Stirling colour panels at the entrance",
-      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings",
       "2026-09-30 refined (no photographs reachable; ground outlines and water): ranges rebuilt to the outlines -- the Tate's range shortened to the water passage, the second range moved to its east end along the basin, the passage and basin placed, the warehouse block across the passage added; footprint 50% -> 81%"
     ],
     "interior": {
@@ -1575,9 +1568,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: white marble temple on its podium turned to face Volkhonka, twelve-column Ionic portico under a pediment, frieze band, Shukhov glass roofs, front garden and railing",
-      "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings",
       "2026-09-30 refined (no photographs reachable; ground outlines): moved 20 m east and 12 m south onto the outline, whose courtyard holes match the skylit Greek and Italian courtyards",
-      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 73% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -1631,7 +1623,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: white rotunda under its tetrahedral skylight, low gallery wings, the entrance gateway, Cofrin Pavilion and the Asian Art Wing's water garden (ground file empty: orientation guessed)",
-      "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -1686,7 +1677,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Stettler's 1879 sandstone front on Hodlerstrasse with its taller central pavilion, arched entrance and end pavilions, and the Atelier 5 concrete extension stepping toward the Aare",
-      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 42% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -1780,9 +1770,9 @@
       },
       "works": {
         "hung": 0,
-        "elsewhere": 0,
+        "elsewhere": 1,
         "off": 0,
-        "none": 2
+        "none": 1
       },
       "log": []
     }
@@ -1957,7 +1947,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Zumthor's David Geffen Galleries as one long glass-wrapped level under a concrete roof on seven pavilions crossing Wilshire, Piano's BCAM and Resnick with their sawtooth roofs, Urban Light, Hancock Park and the Lake Pit",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 40% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -2415,7 +2404,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white villa by the road and Bo and Wohlert's low white pavilions and glass corridors running north to the lake wing and south to the half-sunk south wing and caf\u00e9, in the park of old beeches sloping to the \u00d8resund",
-      "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -2443,7 +2431,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne",
-      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 70% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -2768,7 +2755,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river",
-      "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
@@ -3307,7 +3293,6 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: whole complex coarse: Bramante corridors under tile roofs, Cortile della Pigna with the Nicchione and pine cone, Braccio Nuovo and Library crossings, Belvedere court, Pinacoteca, entrance dome, walls and gardens",
-      "2026-09-30 interior finding: only 36% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {

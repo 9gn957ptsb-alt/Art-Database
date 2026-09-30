@@ -244,12 +244,13 @@
 
   // The model's voxels, with each column's highest built voxel and whether
   // that one is glass.
-  function modelOf(spec) {
+  function modelOf(spec, mats) {
     if (!spec || !spec.parts) { return null; }
     var M = Models(), vx = M.voxelize(spec);
+    mats = mats || M.MATERIALS;
     var n = vx.nx * vx.ny, top = new Int16Array(n).fill(-1), glassTop = new Uint8Array(n);
     var built = vx.names.map(function (name) { return !GROWN[name]; });
-    var glass = vx.names.map(function (name) { return !!(M.MATERIALS[name] && M.MATERIALS[name].glass); });
+    var glass = vx.names.map(function (name) { return !!(mats[name] && mats[name].glass); });
     for (var k = 0; k < vx.nz; k += 1) {
       for (var q = 0; q < n; q += 1) {
         var m = vx.grid[k * n + q];
@@ -549,9 +550,12 @@
   /* ---------------------------------------------------------------- stairs and lifts */
 
   // A stair, in both its floors' grids: treads of equal risers up to 0.2 m,
-  // rising the way it says, its top flush with the upper floor. Returns
-  // {ok, why}.
+  // rising the way it says, its top flush with the upper floor. Takes
+  // (world, stair) or (stair, world or its floors); the stair's rect is in
+  // the grid and from and to are floor indices. Returns {ok, why}.
   function ramp(world, st) {
+    if (world && world.rect && st) { var sw = world; world = st; st = sw; }
+    if (Array.isArray(world)) { world = { floors: world, cell: world[0] ? world[0].cell : 0.5 }; }
     var fa = world.floors[st.from], fb = world.floors[st.to];
     if (!fa || !fb) { return { ok: false, why: "it joins a floor that is not in the file" }; }
     var lo = min(fa.z, fb.z), hi = max(fa.z, fb.z), dz = hi - lo;
@@ -941,6 +945,22 @@
     return { w: UNSIZED * ar, h: UNSIZED, d: null, known: false };
   }
 
+  // Two works by the museum's own record numbers (an NGA object id, a Met
+  // object, an accession number), numbers as numbers; 0 where either has none.
+  function byRecord(a, b) {
+    var ra = a.ref && a.ref.object != null ? String(a.ref.object) : null;
+    var rb = b.ref && b.ref.object != null ? String(b.ref.object) : null;
+    if (ra === null || rb === null || ra === rb) { return 0; }
+    var pa = ra.split(/(\d+)/), pb = rb.split(/(\d+)/);
+    for (var i = 0; i < min(pa.length, pb.length); i += 1) {
+      if (pa[i] === pb[i]) { continue; }
+      var na = i % 2 ? parseInt(pa[i], 10) : NaN, nb = i % 2 ? parseInt(pb[i], 10) : NaN;
+      if (!isNaN(na) && !isNaN(nb) && na !== nb) { return na - nb; }
+      return pa[i] < pb[i] ? -1 : 1;
+    }
+    return pa.length - pb.length;
+  }
+
   function roomById(world, id) {
     for (var f = 0; f < world.floors.length; f += 1) {
       var rooms = world.floors[f].rooms;
@@ -972,27 +992,30 @@
     });
     order.forEach(function (key) {
       var g = groups[key], room = g.room, fl = world.floors[room.floor], base = fl.z + room.fz;
-      // The museum's order, then by date.
+      // The museum's order — its own record numbers — then by date; the
+      // order the file lists them in last, so it is always the same.
       g.list.sort(function (a, b) {
-        return a.n - b.n || String(a.w.y || "").localeCompare(String(b.w.y || ""));
+        return byRecord(a.w, b.w) || String(a.w.y || "").localeCompare(String(b.w.y || "")) || a.n - b.n;
       });
       if (g.dir === "centre") { centre(g.list, room, fl, base); return; }
       var walls = g.dir ? compass(room, g.dir, world) : room.walls.slice();
+      // What they hang along: each straight wall, or a round room's arc as one.
+      var carriers = room.circle && g.dir ? arcs(room, walls) : walls.map(straight);
       var avail = [];
-      walls.forEach(function (wl) {
-        wl.runs.forEach(function (u) { avail.push({ wall: wl, t0: u[0], t1: u[1] }); });
+      carriers.forEach(function (cr) {
+        cr.runs.forEach(function (u) { avail.push({ wall: cr, t0: u[0], t1: u[1] }); });
       });
       // Pinned works first, where their record puts them.
       var rest = [];
       g.list.forEach(function (it) {
-        if (it.pin && typeof it.pin.at === "number" && walls.length) {
-          var wl = walls[0], t = it.pin.at * wl.len;
-          put(it, wl, t, base + (typeof it.pin.z === "number" ? it.pin.z : HANG), 1, false, true);
-          avail = cutAvail(avail, wl, t - it.size.w / 2 - APART, t + it.size.w / 2 + APART);
+        if (it.pin && typeof it.pin.at === "number" && carriers.length) {
+          var cr = carriers[0], t = it.pin.at * cr.len;
+          put(it, cr, t, base + (typeof it.pin.z === "number" ? it.pin.z : HANG), 1, false, true);
+          avail = cutAvail(avail, cr, t - it.size.w / 2 - APART, t + it.size.w / 2 + APART);
         } else { rest.push(it); }
       });
       avail.sort(function (a, b) { return (b.t1 - b.t0) - (a.t1 - a.t0); });
-      var queue = rest, firstTier = [];
+      var queue = rest;
       avail.forEach(function (run) {
         if (!queue.length) { return; }
         var take = [];
@@ -1001,7 +1024,6 @@
         }
         queue = queue.slice(take.length);
         lay(take, run, 1, null);
-        firstTier.push({ run: run, list: take });
       });
       // A second tier over the longest run, for what is left.
       if (queue.length && avail.length) {
@@ -1033,38 +1055,91 @@
     });
     return { hung: hung, spill: spill };
 
+    // A straight wall to hang along: t metres from its left end as you face it.
+    function straight(wl) {
+      return { walls: [wl], len: wl.len, runs: wl.runs,
+               at: function (t) { return [wl.x0 + wl.ux * t, wl.y0 + wl.uy * t]; } };
+    }
+    // A round room's arc facing the way the record says: its facets in turn,
+    // one run from end to end, kept clear of its openings and of its two ends
+    // (a facet's own corners are not corners). Where an opening takes a whole
+    // facet out, the arc is two.
+    function arcs(rm, ws) {
+      var n = rm.poly.length, byEdge = {};
+      ws.forEach(function (w) { byEdge[w.edge] = w; });
+      var idx = ws.map(function (w) { return w.edge; }).sort(function (a, b) { return a - b; });
+      if (!idx.length) { return []; }
+      // Start after the widest step round the ring, so an arc over edge 0 stays whole.
+      var start = 0, widest = -1;
+      idx.forEach(function (e, k) {
+        var step = (idx[(k + 1) % idx.length] - e + n) % n || n;
+        if (step > widest) { widest = step; start = (k + 1) % idx.length; }
+      });
+      var ordered = idx.slice(start).concat(idx.slice(0, start)), pieces = [[]];
+      ordered.forEach(function (e, k) {
+        if (k && (e - ordered[k - 1] + n) % n !== 1) { pieces.push([]); }
+        pieces[pieces.length - 1].push(byEdge[e]);
+      });
+      return pieces.map(function (list) {
+        var cum = [0];
+        list.forEach(function (w) { cum.push(cum[cum.length - 1] + w.len); });
+        var L = cum[cum.length - 1], rs = [[OFF_CORNER, L - OFF_CORNER]];
+        list.forEach(function (w, k) {
+          w.gaps.forEach(function (gp) { rs = cutRuns(rs, cum[k] + gp[0] - OFF_OPEN, cum[k] + gp[1] + OFF_OPEN); });
+        });
+        return {
+          walls: list, len: L, runs: rs.filter(function (u) { return u[1] - u[0] >= 0.3; }),
+          at: function (t) {
+            t = max(0, min(L, t));
+            for (var k = 0; k < list.length; k += 1) {
+              if (t <= cum[k + 1] + 1e-9 || k === list.length - 1) {
+                var w = list[k], tl = t - cum[k];
+                return [w.x0 + w.ux * tl, w.y0 + w.uy * tl];
+              }
+            }
+            return null;
+          }
+        };
+      });
+    }
     function fits(list, L) {
       var sum = 0;
       list.forEach(function (it) { sum += it.size.w; });
       if (sum > L + 1e-9) { return false; }
       return list.length < 2 || (L - sum) / (list.length - 1) >= APART - 1e-9;
     }
-    function cutAvail(avail, wl, a, b) {
+    function cutAvail(avail, cr, a, b) {
       var out = [];
       avail.forEach(function (u) {
-        if (u.wall !== wl) { out.push(u); return; }
-        cutRuns([[u.t0, u.t1]], a, b).forEach(function (p) { out.push({ wall: wl, t0: p[0], t1: p[1] }); });
+        if (u.wall !== cr) { out.push(u); return; }
+        cutRuns([[u.t0, u.t1]], a, b).forEach(function (p) { out.push({ wall: cr, t0: p[0], t1: p[1] }); });
       });
       return out.filter(function (u) { return u.t1 - u.t0 >= 0.3; });
     }
-    function put(it, wl, t, zc, tier, wallOurs, pinned) {
+    // A work at t along what it hangs on: flat, at its real size — on an arc,
+    // the chord between its two edges — 2 cm into the room, or 1 m out if it
+    // stands free.
+    function put(it, cr, t, zc, tier, wallOurs, pinned) {
       var w = it.w, sz = it.size, free = standsFree(w, sz);
       var room = roomById(world, w.room), fl = world.floors[room.floor];
       var base = fl.z + room.fz;
-      // Into the room: works face the way the wall's normal does not.
-      var nx = -wl.nx, ny = -wl.ny, out = INTO + (free ? FREE_OUT : 0);
-      var cx = wl.x0 + wl.ux * t + nx * out, cy = wl.y0 + wl.uy * t + ny * out;
+      var p0 = cr.at(t - sz.w / 2), p1 = cr.at(t + sz.w / 2);
+      var ux = p1[0] - p0[0], uy = p1[1] - p0[1], ul = hypot(ux, uy) || 1;
+      ux /= ul; uy /= ul;
+      // Into the room: the other way from the wall's outward normal.
+      var nx = -uy, ny = ux, out = INTO + (free ? FREE_OUT : 0);
+      var cx = (p0[0] + p1[0]) / 2 + nx * out, cy = (p0[1] + p1[1]) / 2 + ny * out;
       var z0, z1;
       if (free) { z0 = base; z1 = base + sz.h; }
       else if (sz.h > TALL && tier === 1) { z0 = base + LIFTED; z1 = z0 + sz.h; }
       else { z0 = zc - sz.h / 2; z1 = zc + sz.h / 2; }
       // Left to right as you face the wall.
-      var hx = wl.ux * sz.w / 2, hy = wl.uy * sz.w / 2;
+      var hx = ux * sz.w / 2, hy = uy * sz.w / 2;
       var h = {
         id: w.id, work: w, floor: fl.index, room: room.index, wall: it.pin && it.pin.wall || w.wall || null,
         x0: cx - hx, y0: cy - hy, x1: cx + hx, y1: cy + hy, z0: z0, z1: z1, nx: nx, ny: ny,
         w: sz.w, h: sz.h, d: sz.d, sized: sz.known, free: free, standing: free || (sz.h > TALL && tier === 1),
-        tier: tier, ours: !pinned, wallOurs: !!wallOurs, t: t / wl.len, cx: cx, cy: cy
+        tier: tier, ours: !pinned, wallOurs: !!wallOurs, t: t / cr.len, cx: cx, cy: cy
       };
       h.spot = stand(h, world);
       hung.push(h);
@@ -1320,48 +1395,142 @@
 
   /* ---------------------------------------------------------------- the entrance */
 
-  // A shell's door: the middle of the longest run of the model's outer wall
-  // facing south with the inside behind it — east, west or north where no
-  // wall facing south has — at the floor's height. Returns {x, y, dx, dy}:
-  // the middle of the wall's outer face, and the way out.
+  // A shell's door, from the model alone: on the outer wall of the museum
+  // itself — of the parts of the footprint that hold together, the one
+  // nearest the model's middle, which is the museum's own point, so a
+  // neighbour or a kiosk the model also holds is never taken for it — the
+  // middle of the longest straight stretch of wall facing south (within 60°
+  // of it, at whatever angle the building stands), with open ground before
+  // it for the few metres a visitor stands in; east, west or north where
+  // no wall facing south has that. Returns {x, y, dx, dy, run}: the middle
+  // of the wall's outer face, the way out as a unit vector, and the length
+  // of the stretch; or null.
   function shellDoor(world, fl) {
-    var cell = fl.cell, deep = ceil(world.vox.v * 2 / cell) + 1;
-    var ways = [[0, 1], [1, 0], [-1, 0], [0, -1]];
-    for (var w = 0; w < ways.length; w += 1) {
-      var di = ways[w][0], dj = ways[w][1], best = null;
-      var face = function (i, j) {
-        if (i < 0 || j < 0 || i >= fl.gw || j >= fl.gh) { return false; }
-        var q = j * fl.gw + i, oi = i + di, oj = j + dj;
-        if (fl.foot[q] !== 2 || fl.kind[q] === FLOOR) { return false; }
-        if (oi < 0 || oj < 0 || oi >= fl.gw || oj >= fl.gh) { return false; }
-        var o = oj * fl.gw + oi;
-        if (fl.foot[o] !== 0 || fl.kind[o] !== CLOSED) { return false; }
-        for (var s = 1; s <= deep; s += 1) {
-          var ii = i - di * s, jj = j - dj * s;
-          if (ii < 0 || jj < 0 || ii >= fl.gw || jj >= fl.gh) { return false; }
-          if (fl.foot[jj * fl.gw + ii] === 1) { return true; }
+    var gw = fl.gw, gh = fl.gh, n = fl.n, cell = fl.cell, q, k;
+    var N4 = [-1, 1, -gw, gw];
+    function inGrid(p, o, i) { return p >= 0 && p < n && !(o === -1 && i === 0) && !(o === 1 && i === gw - 1); }
+    // The inside's parts, four-connected.
+    var part = new Int32Array(n).fill(-1), sizes = [], stack = [];
+    for (q = 0; q < n; q += 1) {
+      if (fl.foot[q] !== 1 || part[q] >= 0) { continue; }
+      var id = sizes.length, count = 0;
+      part[q] = id; stack.push(q);
+      while (stack.length) {
+        var c = stack.pop(), ci = c % gw;
+        count += 1;
+        for (k = 0; k < 4; k += 1) {
+          var p = c + N4[k];
+          if (inGrid(p, N4[k], ci) && fl.foot[p] === 1 && part[p] < 0) { part[p] = id; stack.push(p); }
         }
-        return false;
-      };
-      // Runs along the wall: along x for a wall facing south or north, along y else.
-      var lines = dj ? fl.gh : fl.gw, len = dj ? fl.gw : fl.gh;
-      for (var a = 0; a < lines; a += 1) {
-        var run = null;
-        for (var b = 0; b <= len; b += 1) {
-          var ok = b < len && (dj ? face(b, a) : face(a, b));
-          if (ok && !run) { run = { a: a, b0: b }; }
-          if (!ok && run) {
-            run.b1 = b - 1;
-            if (!best || run.b1 - run.b0 > best.b1 - best.b0) { best = run; }
-            run = null;
+      }
+      sizes.push(count);
+    }
+    if (!sizes.length) { return null; }
+    // The museum: of the parts of any size (a tenth of the largest, and
+    // 100 m²), the one nearest the model's middle, which is the museum's
+    // own point — a model often holds its neighbours too.
+    var largest = max.apply(null, sizes), near0 = sizes.map(function () { return Infinity; });
+    var o = toGrid(world, 0, 0);
+    for (q = 0; q < n; q += 1) {
+      if (part[q] < 0) { continue; }
+      var oc = centreOf(fl, q), od = (oc[0] - o[0]) * (oc[0] - o[0]) + (oc[1] - o[1]) * (oc[1] - o[1]);
+      if (od < near0[part[q]]) { near0[part[q]] = od; }
+    }
+    var main = -1;
+    sizes.forEach(function (s, m) {
+      if (s < 0.1 * largest || s * cell * cell < 100) { return; }
+      if (main < 0 || near0[m] < near0[main]) { main = m; }
+    });
+    if (main < 0) { main = sizes.indexOf(largest); }
+    // Its wall: the ring within two voxels of it.
+    var deep = ceil(world.vox.v * 2 / cell) + 1, dist = new Int16Array(n).fill(-1), queue = [];
+    for (q = 0; q < n; q += 1) { if (part[q] === main) { dist[q] = 0; queue.push(q); } }
+    for (var h = 0; h < queue.length; h += 1) {
+      var c2 = queue[h], i2 = c2 % gw;
+      if (dist[c2] >= deep) { continue; }
+      for (k = 0; k < 4; k += 1) {
+        var p2 = c2 + N4[k];
+        if (inGrid(p2, N4[k], i2) && fl.foot[p2] === 2 && dist[p2] < 0) { dist[p2] = dist[c2] + 1; queue.push(p2); }
+      }
+    }
+    function ground(p) { return p >= 0 && fl.foot[p] === 0 && fl.kind[p] === CLOSED; }
+    // The outer face: the wall's cells with open ground beside them, each
+    // with its way out — toward the ground round it, away from the inside,
+    // over a metre and a half, so a stepped slanting wall reads as straight.
+    var R = max(2, round(1.5 / cell)), edge = [], at = new Int32Array(n).fill(-1);
+    for (q = 0; q < n; q += 1) {
+      if (dist[q] <= 0 || fl.foot[q] !== 2) { continue; }
+      var i = q % gw, j = (q - i) / gw, open = false;
+      for (k = 0; k < 4; k += 1) { if (inGrid(q + N4[k], N4[k], i) && ground(q + N4[k])) { open = true; } }
+      if (!open) { continue; }
+      var sx = 0, sy = 0;
+      for (var dj = -R; dj <= R; dj += 1) {
+        for (var di = -R; di <= R; di += 1) {
+          var a = i + di, b = j + dj;
+          if (a < 0 || b < 0 || a >= gw || b >= gh || di * di + dj * dj > R * R) { continue; }
+          var f = fl.foot[b * gw + a], wgt = f === 0 ? 1 : part[b * gw + a] === main ? -1 : 0;
+          sx += wgt * di; sy += wgt * dj;
+        }
+      }
+      var L = hypot(sx, sy);
+      if (L < 1e-9) { continue; }
+      at[q] = edge.length;
+      edge.push({ q: q, i: i, j: j, nx: sx / L, ny: sy / L });
+    }
+    // Stretches: cells of the face that touch and agree in their way out
+    // within 20°.
+    var group = new Int32Array(edge.length).fill(-1), stretches = [], COS = cos(20 * PI / 180);
+    for (k = 0; k < edge.length; k += 1) {
+      if (group[k] >= 0) { continue; }
+      var g = stretches.length, list = [k], mx = edge[k].nx, my = edge[k].ny;
+      group[k] = g;
+      for (var t = 0; t < list.length; t += 1) {
+        var e0 = edge[list[t]];
+        for (var dj2 = -1; dj2 <= 1; dj2 += 1) {
+          for (var di2 = -1; di2 <= 1; di2 += 1) {
+            var a2 = e0.i + di2, b2 = e0.j + dj2;
+            if (a2 < 0 || b2 < 0 || a2 >= gw || b2 >= gh) { continue; }
+            var k2 = at[b2 * gw + a2];
+            if (k2 < 0 || group[k2] >= 0) { continue; }
+            if ((edge[k2].nx * mx + edge[k2].ny * my) / hypot(mx, my) < COS) { continue; }
+            group[k2] = g; list.push(k2); mx += edge[k2].nx; my += edge[k2].ny;
           }
         }
       }
+      var ml = hypot(mx, my);
+      mx /= ml; my /= ml;
+      var lo = Infinity, hi = -Infinity;
+      list.forEach(function (kk) { var s = -edge[kk].i * my + edge[kk].j * mx; lo = min(lo, s); hi = max(hi, s); });
+      stretches.push({ list: list, nx: mx, ny: my, len: (hi - lo + 1) * cell, mid: (lo + hi) / 2 });
+    }
+    // Open ground before a cell of the face, out along the way out for the
+    // depth a visitor stands in, across a doorway's width.
+    function clear(e, nx, ny) {
+      var c = centreOf(fl, e.q);
+      for (var s = cell; s <= 2.5 + 1e-9; s += cell / 2) {
+        var half = s < 1 ? 0 : DOOR_W / 2;
+        for (var w = -half; w <= half + 1e-9; w += cell / 2) {
+          if (!ground(cellAt(fl, c[0] + nx * s - ny * w, c[1] + ny * s + nx * w))) { return false; }
+        }
+      }
+      return true;
+    }
+    var ways = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+    for (var wv = 0; wv < ways.length; wv += 1) {
+      var best = null;
+      stretches.forEach(function (st) {
+        if (st.nx * ways[wv][0] + st.ny * ways[wv][1] < 0.5 || (best && st.len <= best.st.len)) { return; }
+        // The cell of it nearest its middle with open ground before it.
+        var pick = null, pd = Infinity;
+        st.list.forEach(function (kk) {
+          var e = edge[kk], d = abs(-e.i * st.ny + e.j * st.nx - st.mid);
+          if (d < pd && clear(e, st.nx, st.ny)) { pick = e; pd = d; }
+        });
+        if (pick) { best = { st: st, e: pick }; }
+      });
       if (!best) { continue; }
-      var mid = floor((best.b0 + best.b1) / 2);
-      var i0 = dj ? mid : best.a, j0 = dj ? best.a : mid;
-      var c = centreOf(fl, j0 * fl.gw + i0);
-      return { x: c[0] + di * cell / 2, y: c[1] + dj * cell / 2, dx: di, dy: dj, run: (best.b1 - best.b0 + 1) * cell };
+      var cc = centreOf(fl, best.e.q), nx0 = best.st.nx, ny0 = best.st.ny;
+      return { x: cc[0] + nx0 * cell / 2, y: cc[1] + ny0 * cell / 2, dx: nx0, dy: ny0, run: best.st.len };
     }
     return null;
   }
@@ -1605,9 +1774,12 @@
         door = [sd.x - sd.dx * fl.cell, sd.y - sd.dy * fl.cell];
         at = [sd.x + sd.dx * 2, sd.y + sd.dy * 2];
         face = atan2(-sd.dy, -sd.dx);
-        var ox = sd.dx ? [sd.x, sd.x + sd.dx * OUT_D] : [sd.x - OUT_W / 2, sd.x + OUT_W / 2];
-        var oy = sd.dy ? [sd.y, sd.y + sd.dy * OUT_D] : [sd.y - OUT_W / 2, sd.y + OUT_W / 2];
-        out = [[min(ox[0], ox[1]), min(oy[0], oy[1]), max(ox[0], ox[1]), max(oy[0], oy[1])]];
+        // The ground before it, 6 m across and 4 m out, as the box round it
+        // in the grid; only open ground in it is walked.
+        var ends = [[-OUT_W / 2, 0], [OUT_W / 2, 0], [-OUT_W / 2, OUT_D], [OUT_W / 2, OUT_D]].map(function (u) {
+          return [sd.x - sd.dy * u[0] + sd.dx * u[1], sd.y + sd.dx * u[0] + sd.dy * u[1]];
+        });
+        out = [bboxOf(ends)];
       }
     }
     out.forEach(function (g) {
@@ -1672,19 +1844,25 @@
 
   // Compile an interior file against its building's model. opts: {soil(i,
   // j) → [r, g, b, size] | null, the DIRT at the cell i east and j south of
-  // the grid's origin; sky: {alt, dark} or a function giving it; dark:
-  // [r, g, b], the frame's own dark}. Returns the world (see the notes in
-  // INTERIORS.md and the head of this file).
+  // the grid's origin, one cell to a pixel of the soil — the way round
+  // Models.build asks for it, so land.js passes (i, j) => soilCell(dirt.land,
+  // b, j, i) to both; materials: Models.MATERIALS unless given; sky: {alt,
+  // dark} or a function giving it; dark: [r, g, b], the frame's own dark}.
+  // Returns the world: {cell, turn, floors, stairs, lifts, enter, tier,
+  // shell, ...}; each floor its typed arrays in the grid ({kind, room, fh,
+  // ch, ck, inkF, inkW, inkT}, gw by gh cells from x0, y0), its rooms, the
+  // stairs and lifts that reach it, and its things; enter {floor, x, y,
+  // face, door, out} in the grid, face in radians (INTERIORS.md says more).
   function compile(interior, modelSpec, opts) {
     opts = opts || {};
     interior = interior || {};
-    MATS = Models().MATERIALS;
+    MATS = opts.materials || Models().MATERIALS;
     var grid = interior.grid || {}, f = frameOf(grid.turn || 0);
     var world = {
       slug: interior.slug || (modelSpec && modelSpec.slug) || null, building: interior.building || null,
       cell: grid.cell || 0.5, turn: f.turn, cos: f.cos, sin: f.sin,
       floors: [], stairs: [], lifts: [], enter: null, tier: "shell", shell: false,
-      vox: modelOf(modelSpec), sky: skyOf(opts.sky), dark: opts.dark || DARK_INK,
+      vox: modelOf(modelSpec, MATS), sky: skyOf(opts.sky), dark: opts.dark || DARK_INK,
       groundMaterial: modelSpec && modelSpec.ground || null,
       sources: {}, works: interior.works || [], pins: interior.pins || {},
       problems: [], overlaps: [], stairSpecs: [], liftSpecs: []
@@ -1769,7 +1947,13 @@
     reachAll(world);
     world.floors.forEach(function (fl) {
       fl.rooms.forEach(function (r) { r.walls = r.pseudo === "outside" ? [] : wallsOf(fl, r); });
+      // The stairs and lifts that reach this floor.
+      fl.stairs = world.stairs.filter(function (st) { return st.from === fl.index || st.to === fl.index; });
+      fl.lifts = world.lifts.filter(function (lf) { return lf.floors.indexOf(fl.index) >= 0; });
+      // Only compiling needs each cell's voxel column: a phone keeps the rest.
+      delete fl.col;
     });
+    if (world.enter) { world.enter.face = world.enter.a; }
     world.tier = tierOf(world);
     delete world.stairSpecs;
     delete world.liftSpecs;
@@ -1808,8 +1992,10 @@
   // known, each hung work a few dots of its first colour, and you in the
   // pixel light. The model's dots are all kept — the roof comes off by
   // drawing it with `shown` easing from 1 down to dots.cut. pitch (metres)
-  // is chosen to keep the whole under 40,000 dots where it is not given.
-  // you: {x, y, a} in the grid, or null.
+  // is chosen, where it is not given, to keep what is drawn once the roof
+  // is off — the model below the cut and the plan — under 40,000 dots: the
+  // plan holds still to be read and turned, and the lift itself lasts a
+  // moment. you: {x, y, a} in the grid, or null.
   function planDots(world, floorId, extDots, voxel, cutZ, pitch, you, hung) {
     var M = Models(), fl = floorOf(world, floorId);
     if (!fl) { return extDots; }
@@ -1820,7 +2006,9 @@
     var ext = extDots || { x: [], y: [], z: [], size: [], ink: [], reveal: [], count: 0,
                            span: max(fl.gw, fl.gh) * fl.cell / v, lift: 1 };
     function X(gx, gy) { var m = toWorld(world, gx, gy); return [(m[0] + sx / 2) / v - nx / 2 - 0.5, (m[1] + sy / 2) / v - ny / 2 - 0.5]; }
-    var budget = PLAN_DOTS - (ext.count || 0);
+    var cutR = (cut / v) / (ext.lift || 1), under = 0;
+    for (var e = 0; e < (ext.count || 0); e += 1) { if (ext.reveal[e] <= cutR) { under += 1; } }
+    var budget = PLAN_DOTS - under;
     var pitches = typeof pitch === "number" ? [pitch] : [0.5, 1, 2, 4];
     var dots = null;
     for (var pi = 0; pi < pitches.length; pi += 1) {
@@ -1828,8 +2016,8 @@
       if (dots.count <= budget || pi === pitches.length - 1) { break; }
     }
     var joined = M.join(ext, dots);
-    joined.cut = (cut / v) / (ext.lift || 1);
-    joined.plan = { start: ext.count || 0, count: dots.count, pitch: dots.pitch, you: dots.you };
+    joined.cut = cutR;
+    joined.plan = { start: ext.count || 0, count: dots.count, pitch: dots.pitch, you: dots.you, shown: under + dots.count };
     return joined;
 
     function build(p) {

@@ -80,9 +80,62 @@ then covers it without change.
    refined building: it rises, turns and swaps to its ground without errors. Commit ("Refine <names>")
    and push. If the push is refused, fetch, merge and push again.
 
+## Interiors
+
+The artist asked (27 Sep 2026) to walk the building, with every museum on
+the site. Each museum has an interior file, `docs/v2/interiors/<slug>.json`
+(the format, the certainty policy and the sources are in `INTERIORS.md`
+there): its rooms as far as they are known, and where its saved works hang,
+as the museum's own records put them. Every museum can be walked from the
+first day, as its model's shell; the pass raises them a tier at a time.
+After the buildings, each run:
+
+1. **Where the works hang today.** `update_buildings.py` has already run
+   `python3 scripts/build_interiors.py --stubs --refresh` (a shell for each
+   new museum; the NGA's open data and the Met's, the Art Institute's,
+   Cleveland's and SMK's records read again). Placements move as museums
+   rehang: works moved, put up or taken down are written into the museum's
+   interior log in `ledger.json`, and `update_buildings.py` lists the saved
+   works placed in rooms not drawn yet.
+2. **Raise two museums a tier.** First any museum whose records place saved
+   works in rooms not drawn (most such works first); then shells, most saved
+   works held first. For each: research its public entrance (which façade,
+   which door, its floor's level) and what its own pages say of where the
+   saved works hang (`HANGS` in `build_interiors.py`, with each page's
+   address and the day read); draw at least the entrance, the way in from it
+   and every room where a saved work hangs, each with its source; leave the
+   rest as not known. Plans go only into `data/plans/<slug>/` (never
+   committed); nothing is traced — only facts are redrawn, in metres.
+3. **Refine the three interiors refined longest ago.** List the five biggest
+   mismatches against the sources — the outline, the doorways, the heights,
+   the finishes, the entrance — fix them and check again; at least two
+   rounds. A doorway needs a source saying the two rooms connect; a room
+   name, a material, a height or a size needs its source; what no source
+   gives stays earth.
+4. **Check.** `node scripts/check_interior.js --all` until it is clean, then
+   `node scripts/check_interior.js docs/v2/interiors/<slug>.json --png
+   /tmp/<slug>` for each museum touched, and look at the plans and frames;
+   then `node scripts/smoke_walk.js`. Independent verifiers check every
+   `said` against its source where it can be reached, and every
+   reconstructed room against what it cites.
+5. **Record.** Each museum's entry in `ledger.json` has
+   `interior: {tier, refined, passes, rooms: {documented, reconstructed},
+   works: {hung, elsewhere, off, none}, log}`; the checker writes the tier,
+   rooms and works. Set `refined` to today, add one to `passes`, and add a
+   line to its `log`. A finding against the model (a documented room outside
+   it, a footprint off its ground's buildings) goes into the model's own
+   `log`, written by the checker, for its next refinement; when a model is
+   refined, check its interior again, since the shell must still hold the
+   rooms.
+6. **Publish.** Commit ("Interiors: <names>") with the buildings' work and
+   push to `claude/artist-website-dev-s92irf`.
+
+Interiors are for museums only: a new kind of building never gets them by
+default, and a private home never does.
+
 ## Keep
 
-- Photographs never enter the repository or the site.
+- Photographs and plans never enter the repository or the site.
 - Private homes stay unlocated (their clod is their town); nothing in a
   model's notes places a home more exactly than its town.
 - Timings and proportions follow the site's golden ratio; the view is true

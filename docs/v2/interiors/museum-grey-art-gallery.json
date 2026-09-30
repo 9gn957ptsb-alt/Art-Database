@@ -1,13 +1,13 @@
 {"slug": "museum-grey-art-gallery",
  "v": 1,
- "grid": {"cell": 0.5, "turn": 0},
+ "grid": {"cell":0.5,"turn":0},
  "sources": [
-  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-grey-art-gallery.json", "read": "2026-09-30"}],
+  {"id":"model","t":"this museum's exterior model","u":"models/museum-grey-art-gallery.json","read":"2026-09-30"}],
  "enter": null,
  "floors": null,
  "pins": {},
  "notes": "Nothing published about its rooms has been read yet.",
  "works": [
-  {"id": "5d126cbee5280a0012d04fa8", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+  {"id":"5d126cbee5280a0012d04fa8","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"}],
  "asof": "2026-09-30",
  "tier": "shell"}

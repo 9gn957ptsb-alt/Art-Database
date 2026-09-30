@@ -3,6 +3,10 @@ __pycache__/
 .DS_Store
 build/
 data/
+# Named as well, so they are never let back in: reference photographs and the
+# museums' published plans, read for the models and the walk, never copied.
+data/photos/
+data/plans/
 dirt/private/
 dirt/earth/cache/
 

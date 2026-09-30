@@ -2409,12 +2409,15 @@
 .town-venue-works { margin: var(--s-2) 0 var(--s-3); }
 .art-rows .held[data-came] { box-shadow: -4px 0 0 #9d95e6; }
 .town-unread { margin-top: var(--s-4); }
-/* A gallery's tile pressed: what it is, beside it. */
+/* A gallery's tile pressed: what it is, beside it — its name, and under it
+   when and how much, narrow enough to find room among the museums' names. */
 .venue-label {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 58;
+  box-sizing: border-box;
+  max-width: min(240px, calc(100vw - 32px));
   margin: 0;
   padding: 3px 8px;
   border-radius: 3px;
@@ -2422,10 +2425,13 @@
   color: #eadfcd;
   font-family: var(--mono);
   font-size: 10px;
+  line-height: 1.4;
   letter-spacing: 0.04em;
-  white-space: nowrap;
   pointer-events: none;
 }
+.venue-label-name,
+.venue-label-meta { display: block; }
+.venue-label-meta { color: #a8927a; }
 .venue-label[hidden],
 .land:not([data-at="city"]) .venue-label { display: none; }
 /* A museum's works that have been there without being held by it. */

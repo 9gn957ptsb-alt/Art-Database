@@ -10063,6 +10063,9 @@
     var atYear = city.atYear;
     delete city.atYear;
     buildingEl.hidden = false;
+    // Its works from the top: a scroll set while the building was hidden
+    // does not hold, and the last museum's would come back with it.
+    if (city.museum && buildingWorks) { buildingWorks.scrollTop = 0; buildingWorks.scrollLeft = 0; }
     buildingEl.dataset.air = "waiting";
 
     Promise.all([readModel(b.slug), readGround(b.slug)]).then(function (both) {
@@ -12773,6 +12776,8 @@
       if (c.shift) { c.shift = ""; c.name.style.transform = ""; }
       nameShown(c, !!side);
     });
+    // What a gallery's label is to keep clear of: the names, and the museums' diamonds.
+    a.nameBoxes = given.concat(dots.map(function (p) { return { x0: p.x - p.r, y0: p.y - p.r, x1: p.x + p.r, y1: p.y + p.r }; }));
   }
 
   /* A mark out of the city view: back to what the globe makes of it. */
@@ -12864,15 +12869,34 @@
       venueLabel.setAttribute("aria-live", "polite");
       land.appendChild(venueLabel);
     }
-    venueLabel.textContent = [v[0], yearsText(v[2], v[3]), n + (n === 1 ? " work" : " works")].filter(Boolean).join(" · ") +
-      (others ? " · and " + others + " more here" : "");
+    // Its name, and under it when it was here and how much.
+    venueLabel.textContent = "";
+    venueLabel.appendChild(el("span", "venue-label-name", v[0]));
+    venueLabel.appendChild(el("span", "venue-label-meta", [yearsText(v[2], v[3]), n + (n === 1 ? " work" : " works")]
+      .filter(Boolean).join(" · ") + (others ? " · and " + others + " more here" : "")));
     venueLabel.hidden = false;
     var w = venueLabel.offsetWidth, h = venueLabel.offsetHeight;
     var band = artBand();
-    var x = hit.x + CELL_PX;
-    if (x + w > band.x + band.w - 8) { x = Math.max(band.x + 8, hit.x - CELL_PX - w); }
-    var y = Math.max(band.y + 8, Math.min(band.y + band.h - 8 - h, hit.y - h / 2));
-    venueLabel.style.transform = "translate(" + x.toFixed(0) + "px," + y.toFixed(0) + "px)";
+    // Beside its tile, inside the band, over no museum's name or diamond:
+    // right, left, above, below, the first that is clear; where none is,
+    // whichever covers least.
+    var half = CELL_PX / 2;
+    var avoid = (a.nameBoxes || []).concat([{ x0: hit.x - half, y0: hit.y - half, x1: hit.x + half, y1: hit.y + half }]);
+    var lo = { x: band.x + 8, y: band.y + 8 }, hi = { x: band.x + band.w - 8 - w, y: band.y + band.h - 8 - h };
+    var best = null;
+    [[hit.x + half + 4, hit.y - h / 2], [hit.x - half - 4 - w, hit.y - h / 2],
+     [hit.x - w / 2, hit.y - half - 4 - h], [hit.x - w / 2, hit.y + half + 4],
+     [hit.x - half, hit.y - half - 4 - h], [hit.x + half - w, hit.y - half - 4 - h],
+     [hit.x - half, hit.y + half + 4], [hit.x + half - w, hit.y + half + 4]].forEach(function (xy) {
+      var x = Math.max(lo.x, Math.min(hi.x, xy[0])), y = Math.max(lo.y, Math.min(hi.y, xy[1]));
+      var cover = 0;
+      avoid.forEach(function (o) {
+        var ox = Math.min(x + w, o.x1 + 4) - Math.max(x, o.x0 - 4), oy = Math.min(y + h, o.y1 + 4) - Math.max(y, o.y0 - 4);
+        if (ox > 0 && oy > 0) { cover += ox * oy; }
+      });
+      if (!best || cover < best.cover) { best = { x: x, y: y, cover: cover }; }
+    });
+    venueLabel.style.transform = "translate(" + best.x.toFixed(0) + "px," + best.y.toFixed(0) + "px)";
     // Its row: paged on until it is there, opened, and brought into view.
     var box = null;
     var at = a.venueOrder ? a.venueOrder.indexOf(hit.g.vi) : -1;
@@ -12880,7 +12904,8 @@
     a.venueBoxes.forEach(function (o) { if (o.vis.indexOf(hit.g.vi) >= 0) { box = o; } });
     if (box) {
       if (box.button.getAttribute("aria-expanded") !== "true") { openVenue(a, box, false); }
-      try { box.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" }); } catch (e) {}
+      // At the top of the column, so its works are there under it to see.
+      try { box.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" }); } catch (e) {}
     }
   }
 
