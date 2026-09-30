@@ -11,8 +11,9 @@
    reads as glass. It stands on a clod of its own ground and rises out of it
    a storey at a time.
 
-   Shared by land.js (the building view) and the preview used to check a
-   model against its photographs. */
+   Shared by land.js (the building view), the preview used to check a
+   model against its photographs, and the walk inside a museum
+   (walk-plan.js), whose plan is drawn in the same frame as its building. */
 
 (function () {
   "use strict";
@@ -380,10 +381,11 @@
   var TILT = Math.atan(1 / Math.SQRT2);
   var sorter = { order: null, key: null };
 
-  function draw(canvas, dots, heading, shown, fit) {
-    var ctx = canvas.getContext("2d");
+  /* Where the dots go on a canvas at a heading: the projection draw() uses,
+     kept so what is drawn can be pointed at afterwards — the door of a
+     building, a room of its plan. */
+  function frame(canvas, dots, heading, fit) {
     var w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
     var cos = Math.cos(heading), sin = Math.sin(heading);
     var st = Math.sin(TILT), ct = Math.cos(TILT);
     // Fit the plate turned any way, with room above for what stands on it.
@@ -392,6 +394,32 @@
                          h * 0.86 / (dots.span * 1.42 * st + tall));
     // Its ground sits a golden section down, lifted by what stands on it.
     var cx0 = w / 2, cy0 = h * 0.5 + tall * scale * 0.382;
+    return { scale: scale, cx0: cx0, cy0: cy0, cos: cos, sin: sin, st: st, ct: ct };
+  }
+
+  // A point in the dots' own units (a voxel each way, z up) to the canvas.
+  function project(f, x, y, z) {
+    return { x: f.cx0 + (x * f.cos - y * f.sin) * f.scale,
+             y: f.cy0 + ((x * f.sin + y * f.cos) * f.st - z * f.ct) * f.scale };
+  }
+
+  // Two sets of dots as one — a building's and its plan's — drawn and
+  // sorted together, in the first one's frame.
+  function join(a, b) {
+    return {
+      x: a.x.concat(b.x), y: a.y.concat(b.y), z: a.z.concat(b.z),
+      size: a.size.concat(b.size), ink: a.ink.concat(b.ink), reveal: a.reveal.concat(b.reveal),
+      count: a.count + b.count, span: a.span, lift: a.lift
+    };
+  }
+
+  function draw(canvas, dots, heading, shown, fit) {
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    var f = frame(canvas, dots, heading, fit);
+    var cos = f.cos, sin = f.sin, st = f.st, ct = f.ct;
+    var scale = f.scale, cx0 = f.cx0, cy0 = f.cy0;
     var cover = Math.max(0.5, scale * 0.56);
     if (!sorter.order || sorter.order.length < dots.count) {
       sorter.order = new Uint32Array(dots.count);
@@ -420,7 +448,9 @@
       if (dots.ink[k] !== was) { ctx.fillStyle = was = dots.ink[k]; }
       ctx.fillRect(Math.round(sx - r / 2), Math.round(sy - r / 2), r, r);
     }
+    return f;
   }
 
-  window.Models = { MATERIALS: MATERIALS, voxelize: voxelize, build: build, draw: draw };
+  window.Models = { MATERIALS: MATERIALS, voxelize: voxelize, build: build, draw: draw,
+                    frame: frame, project: project, join: join, grain: grainAt };
 })();

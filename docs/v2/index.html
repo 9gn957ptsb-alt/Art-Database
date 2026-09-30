@@ -237,8 +237,8 @@
     <!-- What the globe carries besides the collages: one layer at a time. Built by land.js (LAYERS). -->
     <div class="filter" id="filter" role="group" aria-label="Show on the globe"></div>
 
-    <!-- The Artworks layer: one quiet line above the pill, and the sheet it opens. land.js
-         writes the count from places.json. -->
+    <!-- Find, on the Museums layer: one quiet line above the pill, and the sheet it opens.
+         land.js writes the count from places.json. -->
     <button class="art-find" id="art-find" type="button" hidden aria-controls="finder" aria-expanded="false"></button>
     <section class="finder" id="finder" role="search" hidden aria-label="Find a work">
       <form class="finder-form" id="finder-form">
@@ -251,7 +251,7 @@
 
     <div class="banner" id="banner" hidden>
       <button class="banner-back" id="banner-back" type="button">
-        <span aria-hidden="true">&larr;</span> The world
+        <span aria-hidden="true">&larr;</span> <span id="banner-back-to">The world</span>
       </button>
       <p class="banner-where">
         <button class="banner-city" id="banner-city" type="button"
@@ -427,14 +427,21 @@
     more of them come back down as a single egg. A press that moves is a turn
     of the world instead, so nothing is lost by trying.
 
-    The Artworks layer, the third on the filter, lights every place the
-    artist's saved works have been, a tile of light each, brighter where more
-    have been; the fifty-five most visited are named. Press a name or a lit
-    tile for that place: the galleries, museums, fairs and salerooms the
-    works passed through there, in the order they came, each with its works,
-    and a slider of its years. Above the filter, Find reaches any of the
-    works by title, artist, date or any place it has been, and the globe
-    lights the places of what it finds. A work opens on its photograph alone;
+    The Museums layer, the second on the filter, carries the cities: every
+    city that holds a museum with one of the artist's saved works is a
+    diamond, named with the city's name, and every other place the saved
+    works have been is a tile of light. A few names are written at a time,
+    each beside its dot, and more come as the world turns or comes nearer;
+    every city can be pressed, named or not. Pressing one flies down into
+    it: its museums stand at their own doors, the galleries whose address is
+    known are faint tiles, and beside it the city's directory lists its
+    museums, each a way into the museum, the cities near it, and then the
+    galleries, fairs and sale rooms where saved works have been, each opening
+    to its works, with a slider of the city's years. Up from a museum is its
+    city, and up from a city is the world. Above the filter, Find reaches any
+    of the works by title, artist, date or any place it has been, and any
+    city or museum by name, and the globe lights the cities of what it
+    finds. A work opens on its photograph alone;
     then the world is framed on where it has been, its journey drawn in the
     same light, a stop at a time, on a slider of its own years, and beside it
     the history, a dated line an event, grouped by where it stayed, the
@@ -447,7 +454,8 @@
     that work, where the thread you came by is said first. In a museum, a
     saved work brought up large has Where it has been, which opens its
     history; a stop at one of the site's museums opens the museum, its town
-    as it stood that year. Pinch out to go
+    as it stood that year, and any other stop opens its city at that year,
+    the work first among its gallery's. Pinch out to go
     down to the ground at the stop the slider is at; pinch in, the back
     button or Escape to come back up, where the way you walked is drawn once.
   </p>
@@ -458,9 +466,10 @@
      new places every time anything is pressed. -->
 <div class="here" id="here" hidden aria-label="The collage here"></div>
 
-<!-- A saved work's history (or a place's, or a thread's): the photograph first, then a column
-     telling it briefly, and a slider of its own years under the globe. Built by land.js. -->
-<div class="art" id="art" hidden aria-label="Where this work has been">
+<!-- A saved work's history (or a city's museums and galleries, or a thread's): the photograph
+     first, then a column telling it briefly, and a slider of its own years under the globe.
+     Built by land.js. -->
+<div class="art" id="art" hidden aria-label="A city, a work or a thread">
   <div class="art-wash"></div>
   <div class="art-plate" id="art-plate" hidden></div>
   <div class="art-col" id="art-col"></div>

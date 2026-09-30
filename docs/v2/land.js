@@ -44,6 +44,7 @@
   var bannerBack = document.getElementById("banner-back");
   var bannerCity = document.getElementById("banner-city");
   var bannerUnder = document.getElementById("banner-under");
+  var bannerBackTo = document.getElementById("banner-back-to");
 
   // The sky is pale, not black: a cool white overhead easing to the faintest
   // warmth near the horizon, with the sphere set into it rather than against
@@ -507,8 +508,10 @@
      Five of the seven are within a few hundred miles of each other on the
      east coast of America, so at the size the globe is drawn their marks
      sit close together and their names would print on top of one another.
-     placeCities below gives the names out nearest-first and drops the ones
-     that would collide; the mark itself is always there to press. */
+     placeMarks below names every one of them it can, flipping a name to the
+     left of its dot before it would run off the screen or the world, and
+     stacks the two in Washington under one dot; the mark itself is always
+     there to press. */
 
   var WHERE = [
     { slug: "amadeus",                where: "Sydney",        lat: -33.8688, lon: 151.2093 },
@@ -590,7 +593,8 @@
     lat: 38.8890,
     lon: -77.0028,
     stage: true,                    // the plays are cast and played here
-    piece: "folger"
+    piece: "folger",
+    town: "washington-us"           // it stands in Washington, among its museums (cities.json)
   }];
   /* The Archive (the wall of monitors in Austin, where the moving images
      were) was taken off the globe at the artist's request, 25 Sep 2026:
@@ -653,6 +657,72 @@
             rgbHex(fromHsl(hue, 0.20, 0.33))];
   }
 
+  /* A mark on the globe: a dot and its name, as a button. Made again for
+     every mark whenever found() runs (the window changing size, the fonts
+     arriving). */
+  var raiseOrder = 0;
+  function raiseCity(city, real) {
+    var el = document.createElement("button");
+    el.className = "city";
+    el.type = "button";
+    el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
+    if (city.layer) { el.dataset.layer = city.layer; }
+    if (city.inTown) { el.dataset.intown = "true"; }     // named in its city, in the serif (land.css)
+    if (city.town) {
+      // A city's diamond is as big as its museums are many; a city of
+      // galleries only is its tile of light, and the mark is its name.
+      var many = city.town.museums.length;
+      el.dataset.size = many >= 4 ? "3" : many >= 2 ? "2" : "1";
+      if (city.tile) { el.dataset.tile = "true"; }
+    }
+    el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
+                   '<span class="city-name"></span>';
+    // A museum is named short in its city (SFMOMA, National Gallery of
+    // Art); its full name is what is read out and what the banner says.
+    el.lastChild.textContent = city.label || city.title;
+    el.setAttribute("aria-label", city.aria || "Go down to " + city.title + ", " + city.where);
+
+    city.el = el;
+    city.name = el.lastChild;
+    city.nw = 0;                     // its name's width, measured in one pass (measureNames)
+    // A city of the Museums layer, and a museum, open their own way.
+    el.addEventListener("click", function () { if (city.open) { city.open(); } else { goDown(city); } });
+    el.addEventListener("pointerdown", function (event) {
+      // The stage takes the pointer on its way down, to turn the world
+      // with; a press that lands on a city is not a turn, and if the
+      // stage captures it the click never reaches the button at all.
+      event.stopPropagation();
+    });
+    el.addEventListener("focus", function () {
+      // Tabbed to: bring it round and roll to it, without going down into
+      // it. Not when it was pressed — a press focuses it too, a moment
+      // before the click, and turning the world then would lose the view
+      // that coming back up is meant to return to. Never in a place: a
+      // museum or a neighbour tabbed to in its city is already in view.
+      if (place) { return; }
+      var keyed = true;
+      try { keyed = el.matches(":focus-visible"); } catch (e) {}
+      if (!keyed) { return; }
+      wanted = city.lon;
+      lean(city.lat - LOOK);
+    });
+    if (city.museum || city.stage) {
+      // In its city, a museum's mark and its row in the column answer each other.
+      el.addEventListener("pointerenter", function () { lightMuseum(city.slug, true); });
+      el.addEventListener("pointerleave", function () { lightMuseum(city.slug, false); });
+      el.addEventListener("focus", function () { lightMuseum(city.slug, true); });
+      el.addEventListener("blur", function () { lightMuseum(city.slug, false); });
+    }
+    cities.push(city);
+    land.appendChild(el);
+
+    // They come up one after another rather than all at once; a city in
+    // its own run (city.rise), the one with the most museums first.
+    raiseOrder += 1;
+    var wait = city.rise !== undefined ? city.rise : 300 + raiseOrder * 150;
+    window.setTimeout(function () { el.dataset.up = "true"; }, still ? 0 : wait);
+  }
+
   function found() {
     cities.forEach(function (city) {
       if (city.el && city.el.parentNode) { city.el.parentNode.removeChild(city.el); }
@@ -661,50 +731,7 @@
     if (!mine) { return; }
 
     var hues = workHues();
-    var order = 0;
-
-    function raiseCity(city, real) {
-      var el = document.createElement("button");
-      el.className = "city";
-      el.type = "button";
-      el.dataset.kind = city.spot !== undefined ? "place" : city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
-      if (city.layer) { el.dataset.layer = city.layer; }
-      el.innerHTML = '<span class="city-dot" aria-hidden="true"></span>' +
-                     '<span class="city-name"></span>';
-      el.lastChild.textContent = city.title;
-      el.setAttribute("aria-label", city.spot !== undefined ? "The works that have been in " + city.where
-                                                         : "Go down to " + city.title + ", " + city.where);
-
-      city.el = el;
-      city.name = el.lastChild;
-      // A place of the Artworks layer opens its own view, not a city.
-      el.addEventListener("click", function () { if (city.open) { city.open(); } else { goDown(city); } });
-      el.addEventListener("pointerdown", function (event) {
-        // The stage takes the pointer on its way down, to turn the world
-        // with; a press that lands on a city is not a turn, and if the
-        // stage captures it the click never reaches the button at all.
-        event.stopPropagation();
-      });
-      el.addEventListener("focus", function () {
-        // Tabbed to: bring it round and roll to it, without going down into
-        // it. Not when it was pressed — a press focuses it too, a moment
-        // before the click, and turning the world then would lose the view
-        // that coming back up is meant to return to.
-        var keyed = true;
-        try { keyed = el.matches(":focus-visible"); } catch (e) {}
-        if (!keyed) { return; }
-        wanted = city.lon;
-        lean(city.lat - LOOK);
-      });
-      cities.push(city);
-      land.appendChild(el);
-
-      // They come up one after another rather than all at once.
-      order += 1;
-      // An Artworks place comes up in its own run, the largest first.
-      var mine_ = city.spot !== undefined ? city.spot : order;
-      window.setTimeout(function () { el.dataset.up = "true"; }, 300 + mine_ * 150);
-    }
+    raiseOrder = 0;
 
     // The collages, each in the place the artist put it.
     WHERE.forEach(function (spot) {
@@ -725,8 +752,9 @@
         lat: mark.lat * RAD, lon: wrap(mark.lon * RAD),
         stage: mark.stage, piece: mark.piece, archive: mark.archive, real: true,
         // The Folger is a museum and library, and is shown with the museums
-        // (artist, 24 Sep 2026).
+        // (artist, 24 Sep 2026): in Washington, among them, not on the globe.
         layer: mark.stage ? "museums" : undefined,
+        townKey: mark.town, inTown: !!mark.town,
         // A library is stone. It takes the hue of whichever collage it is
         // nearest — it stands four streets from two of them — and then
         // almost none of it.
@@ -748,28 +776,23 @@
 
     // And the museums that hold the works the artist has saved on Artsy,
     // each at its own door. Going down to one is the same as to a building —
-    // the museum in DIRT — with the works it holds beside it.
+    // the museum in DIRT — with the works it holds beside it. They stand in
+    // their cities, not on the globe: the globe carries the cities.
     ((museums && museums.museums) || []).forEach(function (m) {
       if (typeof m.lat !== "number" || typeof m.lon !== "number") { return; }
       raiseCity({
-        work: null, slug: m.slug, title: m.name, where: m.where,
+        work: null, slug: m.slug, title: m.name, label: shortName(m), where: m.where,
         lat: m.lat * RAD, lon: wrap(m.lon * RAD), building: m, museum: m, real: true,
-        layer: "museums", hue: hues[nearWork(m)] || 0.09
+        layer: "museums", hue: hues[nearWork(m)] || 0.09,
+        inTown: true, townKey: townOfSlug[m.slug], rise: 0,
+        open: function () { downToMuseum(m.slug, {}); }
       }, true);
     });
 
-    // And the places the saved works have been, the most travelled-to named:
-    // the rest are lit tiles on the world (drawArtPlaces), pressed as tiles.
-    if (ARTWORKS && artPlaces) {
-      artPlaces.slice(0, ART_NAMED).forEach(function (pl) {
-        raiseCity({
-          work: null, slug: "place-" + pl.p, title: pl.name, where: pl.name + ", " + pl.cc,
-          lat: pl.lat, lon: pl.lon, spot: pl.i, real: true, layer: "artworks",
-          open: function () { openArt({ place: pl.p }); }
-        }, true);
-      });
-    }
+    // And the cities, once cities.json has been read (the Museums layer).
+    if (towns) { raiseTowns(); }
     filterGlobe();
+    measureNames();
   }
 
   /* ---- the filter -----------------------------------------------------------
@@ -778,26 +801,38 @@
      else at a time, so it is never crowded and each kind reads as itself:
      the artist's own collages, the museums that hold the works he saved,
      or the architecture. A new kind of place is one more entry here and a
-     `layer` on its marks. The choice is kept per viewer. */
-  var ARTWORKS = true;                 // false: no Artworks layer, and nothing of it is added
+     `layer` on its marks. The choice is kept per viewer.
+
+     The Museums layer is the cities now (artist, 29 Sep 2026: the artworks
+     are "supposed to be within the museums section … have the cities
+     displayed on the globe and then when you click on the city that is
+     when it shows you the museums in that city"): see "the cities". */
+  var ARTWORKS = true;                 // false: no histories, threads, Find or doors
+  var ART_LAYER = false;               // true: the Artworks pill of 27 Sep again, beside Museums
   var LAYERS = [
     { key: "collages", label: "Collages" },
     { key: "museums", label: "Museums" },
     { key: "architecture", label: "Architecture" }
   ];
-  // The saved works' places sit beside the museums that hold them.
-  if (ARTWORKS) { LAYERS.splice(2, 0, { key: "artworks", label: "Artworks" }); }
+  if (ARTWORKS && ART_LAYER) { LAYERS.splice(2, 0, { key: "artworks", label: "Artworks" }); }
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
   try { layerOn = localStorage.getItem(LAYER_KEY) || layerOn; } catch (e) {}
+  // Whoever last looked at the Artworks layer lands on the one that holds it now.
+  if (layerOn === "artworks" && !ART_LAYER) {
+    layerOn = "museums";
+    try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
+  }
   if (!LAYERS.some(function (l) { return l.key === layerOn; })) { layerOn = LAYERS[0].key; }
   var filterEl = document.getElementById("filter");
 
   function filterGlobe() {
     cities.forEach(function (city) {
-      city.off = !!city.layer && city.layer !== layerOn;
-      if (city.off) { city.el.style.visibility = "hidden"; }
+      // A museum (and the Folger) stands in its city, not on the globe.
+      city.off = (!!city.layer && city.layer !== layerOn) || !!city.inTown;
+      if (city.off) { city.el.style.visibility = "hidden"; city.shown = false; }
     });
+    marksDirty = true;
     if (!filterEl) { return; }
     Array.prototype.forEach.call(filterEl.children, function (b) {
       if (b.dataset.layer) { b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn)); }
@@ -817,9 +852,9 @@
         layerOn = l.key;
         try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
         filterGlobe();
-        placeCities();
+        placeMarks();
         groundPlaces();
-        artLayer();
+        museumsLayer();
         var r = b.getBoundingClientRect();
         pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
       });
@@ -839,118 +874,316 @@
     return best;
   }
 
-  function placeCities() {
-    /* Every mark is exactly where its place is: the middle of the dot is
-       the projection of the real latitude and longitude, and nothing pushes
-       it anywhere else. Three of the places are in Washington, a few
-       streets apart, and from orbit they are the same point — so they are
-       the same point: their dots lie on top of each other, and it is their
-       names that make room, stacked one under another beside the one dot.
-       Names are then given out nearest the middle first, and one that would
-       print across a name already given out is left off until the world
-       moves. */
-    var SAME = 14;                      // closer than this is one point
-    var LINE = 16;                      // how far a stacked name steps down
-    var out = [];
+  /* ---- the names -------------------------------------------------------------
 
+     Every mark is exactly where its place is: the middle of the dot is the
+     projection of the real latitude and longitude, and nothing pushes it
+     anywhere else. What makes room is the names, and they are few (artist,
+     29 Sep 2026: the museums' names were "way too cluttered"): a name is
+     written right of its dot, else left of it, and nowhere else; wholly on
+     the Earth and wholly on the screen, clear of the pills at the foot; never
+     over another name, nor over the dot of a place that matters more; and
+     no more of them at once than the window has room for — seven on a
+     phone. The rest keep their dots, and are named as the world turns or
+     comes nearer. The collages are few and are always named.
+
+     Nothing here reads the page's layout: every mark's size is measured
+     once (measureNames), and a frame only works out where things go and
+     writes what has moved. When the world is not moving it does nothing. */
+  var SAME = 14;                        // closer than this is one point: the names stack
+  var LINE = 16;                        // a name's line, and how far a stacked one steps down
+  var KNOT = 13;                        // a city's diamond this near a kept one is tied into it:
+                                        // 12 px, and the 0.3 px a mark may lag its point by
+  var marksDirty = true;
+  var marksAt = {};
+  var safeFoot = 60;                    // the pills at the foot, from the bottom of the window
+  var nameBoxes = [];                   // where the names are written, for the tiles to keep clear of
+
+  /* The safe box's foot: the top of the filter pill, or of Find while it
+     shows, less 8 px. Measured when they can be seen. */
+  function measureSafe() {
+    var foot = 0;
+    [filterEl, artFind].forEach(function (b) {
+      if (!b || b.hidden) { return; }
+      var r = b.getBoundingClientRect();
+      if (r.height) { foot = Math.max(foot, H - r.top + 8); }
+    });
+    if (foot) { safeFoot = foot; }
+    marksDirty = true;
+  }
+
+  function safeBox() { return { x0: 16, y0: 16, x1: W - 16, y1: H - safeFoot }; }
+
+  /* Every mark's measurements, in one pass: its width, its name's width and
+     height, where its dot's middle is and how far the name starts from it. */
+  function measureNames() {
+    cities.forEach(function (c) {
+      if (!c.el) { return; }
+      var dot = c.el.firstChild, name = c.el.lastChild;
+      c.w = c.el.offsetWidth;
+      c.dx = dot.offsetLeft + dot.offsetWidth / 2;
+      c.dh = dot.offsetWidth / 2;
+      c.nw = name.offsetWidth;
+      c.nh = name.offsetHeight;
+      c.gap = name.offsetLeft - c.dx;
+    });
+    marksDirty = true;
+    townDirty = true;
+  }
+
+  function hideMark(city) {
+    if (city.shown === false) { return; }
+    city.shown = false;
+    city.el.style.visibility = "hidden";
+  }
+
+  /* A mark put down: its dot on (x, y), its name on the side given. */
+  function putMark(city, x, y, side, opacity) {
+    var el = city.el;
+    var left = side === "left";
+    if ((el.dataset.side === "left") !== left) {
+      if (left) { el.dataset.side = "left"; } else { delete el.dataset.side; }
+      city.px = null;
+    }
+    // Mirrored, the dot is the last thing in the mark, and the mark is put
+    // down with its right-hand dot on the place.
+    var at = left ? x - (city.w - city.dx) : x - city.dx;
+    if (city.px === null || city.px === undefined || Math.abs(at - city.px) >= 0.3 || Math.abs(y - city.py) >= 0.3) {
+      city.px = at;
+      city.py = y;
+      el.style.transform = "translate(" + at.toFixed(1) + "px," + y.toFixed(1) + "px) translate(0,-50%)";
+    }
+    var o = opacity.toFixed(2);
+    if (city.op !== o) { city.op = o; el.style.opacity = o; }
+    if (city.shown !== true) { city.shown = true; el.style.visibility = "visible"; }
+  }
+
+  function nameShown(city, on) {
+    var v = on ? "true" : "false";
+    if (city.el.dataset.named !== v) { city.el.dataset.named = v; }
+    city.wasNamed = on;
+  }
+
+  // How many names the window has room for: seven on a phone, 21 at most.
+  function nameBudget() { return Math.max(5, Math.min(21, Math.round(W * H / 46000))); }
+
+  function placeMarks() {
+    if (!marksDirty && marksAt.spin === spin && marksAt.tilt === tilt && marksAt.R === R &&
+        marksAt.cx === cx && marksAt.cy === cy && marksAt.W === W && marksAt.H === H) { return; }
+    marksDirty = false;
+    marksAt = { spin: spin, tilt: tilt, R: R, cx: cx, cy: cy, W: W, H: H };
+    var S = safeBox();
+    var items = [];
+    var finding = !!(finder && finder.found);
     cities.forEach(function (city, i) {
-      if (city.off) { return; }
+      if (city.off || !city.el) { return; }
       var p = project(city.lat, city.lon);
-      var el = city.el;
-      // Not at the very edge of the world, where a name would hang off the
-      // rim into the sky.
-      if (p.z <= 0.18 || p.x < 8 || p.x > W - 8 || p.y < 8 || p.y > H - 8) {
-        el.style.visibility = "hidden";
+      var x = p.x, y = p.y;
+      // A city of galleries is its tile: its name sits beside the lit cell.
+      if (city.tile) { x = (Math.floor(x / CELL_PX) + 0.5) * CELL_PX; y = (Math.floor(y / CELL_PX) + 0.5) * CELL_PX; }
+      if (p.z <= 0.12 || x < S.x0 || x > S.x1 || y < S.y0 || y > S.y1) {
+        if (city.knot) { city.knot = false; delete city.el.dataset.knot; }
+        hideMark(city);
         return;
       }
-      if (city.dx === undefined || !city.dx) {
-        var dot = el.firstChild;
-        city.dx = dot.offsetLeft + dot.offsetWidth / 2;
-      }
-      out.push({ city: city, z: p.z, x: p.x, y: p.y, turn: i, step: 0 });
+      items.push({ city: city, x: x, y: y, z: p.z, turn: i });
     });
 
-    // Which marks are one point, and each one's place in its stack: the
-    // collages first, in the order they were given, then the landmark.
-    out.forEach(function (it, a) {
-      var above = 0;
-      for (var b = 0; b < a; b += 1) {
-        var o = out[b];
-        if (Math.abs(o.x - it.x) < SAME && Math.abs(o.y - it.y) < SAME) { above += 1; }
-      }
-      it.step = above;
-    });
+    // Knots: one diamond in any 12 px, the city that matters most kept;
+    // the others are its tile until the world comes nearer.
+    if (layerOn === "museums") {
+      var kept = [];
+      items.filter(function (it) { return it.city.town && !it.city.tile; })
+        .sort(function (a, b) { return a.city.town.i - b.city.town.i; })
+        .forEach(function (it) {
+          var tied = kept.some(function (k) {
+            var dx = k.x - it.x, dy = k.y - it.y;
+            return dx * dx + dy * dy < KNOT * KNOT;
+          });
+          if (tied !== !!it.city.knot) {
+            it.city.knot = tied;
+            if (tied) { it.city.el.dataset.knot = "true"; } else { delete it.city.el.dataset.knot; }
+          }
+          if (tied) { it.knot = true; } else { kept.push(it); }
+        });
+      items = items.filter(function (it) {
+        if (it.knot) { hideMark(it.city); return false; }
+        return true;
+      });
+    }
 
-    out.forEach(function (it) {
-      var el = it.city.el;
-      el.style.visibility = "visible";
-      el.style.opacity = (INV2 + INV * Math.min(1, (it.z - 0.18) / 0.3)).toFixed(3);
-      el.style.transform =
-        "translate(" + (it.x - it.city.dx).toFixed(1) + "px," + it.y.toFixed(1) + "px)" +
-        " translate(0,-50%)";
-      it.city.name.style.transform = it.step ? "translateY(" + (it.step * LINE) + "px)" : "";
-      it.ly = it.y + it.step * LINE;
-    });
+    // The collages are seven: each is named whenever it has room, and its
+    // dot is never let go. The rest are named as many at a time as the
+    // window has room for.
+    var rules = layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
+      : layerOn === "architecture" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
+    rules.box = S;
+    nameBoxes = nameMarks(items, rules);
 
-    out.sort(function (m, n) {
-      return (Math.abs(m.x - cx) + Math.abs(m.ly - H * 0.5)) -
-             (Math.abs(n.x - cx) + Math.abs(n.ly - H * 0.5));
+    items.forEach(function (it) {
+      var c = it.city;
+      if (it.hidden) { hideMark(c); nameShown(c, false); return; }
+      var dim = finding && c.town && !finder.found[c.town.key] ? 0.3 : 1;
+      putMark(c, it.x, it.y, it.side || (c.el.dataset.side === "left" ? "left" : "right"),
+              (INV2 + INV * Math.min(1, (it.z - 0.12) / 0.3)) * dim);
+      nameShown(c, !!it.side);
+      // A stacked name sits under the first, beside the first's dot; a
+      // lifted one carries a hairline back to its dot.
+      var dx = it.lead ? it.lead.x - it.x : 0, dy = it.lead ? it.lead.y - it.y + it.step * LINE + it.lift : 0;
+      var shift = Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05 ? "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px)" : "";
+      if (c.shift !== shift) { c.shift = shift; c.name.style.transform = shift; }
+      leadTo(c, it.side, it.side && it.lead === it ? it.lift : 0);
     });
+  }
 
-    // Each name goes to the right of its dot if there is room, to the left
-    // if there is not, and is left off only when neither side is clear.
-    var taken = [];
-    function free(x0, x1, y) {
-      for (var k = 0; k < taken.length; k += 1) {
-        var was = taken[k];
-        if (x0 < was.x1 && was.x0 < x1 && y - 8 < was.y + 8 && was.y - 8 < y + 8) {
-          return false;
+  /* A name lifted or dropped from its dot carries a hairline back to it,
+     from the near edge of the name to the edge of the dot. */
+  function leadTo(c, side, lift) {
+    var mode = lift ? (lift < 0 ? "up" : "down") : "";
+    if ((c.el.dataset.lift || "") !== mode) {
+      if (mode) { c.el.dataset.lift = mode; } else { delete c.el.dataset.lift; }
+    }
+    if (!mode) { return; }
+    var gap = c.gap || 10;
+    var len = Math.max(0, Math.sqrt(gap * gap + lift * lift) - (c.dh || 4) - 2);
+    var rot = Math.atan2(Math.abs(lift), gap) / RAD * ((lift < 0) === (side === "right") ? -1 : 1);
+    var key = len.toFixed(1) + "|" + rot.toFixed(1);
+    if (c.leadKey !== key) {
+      c.leadKey = key;
+      c.el.style.setProperty("--lead", len.toFixed(1) + "px");
+      c.el.style.setProperty("--lead-rot", rot.toFixed(1) + "deg");
+    }
+  }
+
+  /* The names, given out by priority: how much the place matters, how near
+     the middle of the world it is, and a little more for a name already
+     showing, so names hold steady while the world turns. rules.stack puts
+     marks within 14 px under one dot with their names stacked, as one box;
+     rules.keepDots never lets a dot go under a name (the collages). */
+  function nameMarks(items, rules) {
+    var S = rules.box;
+    var far = R < base0 * INV2;
+    var groups = [];
+    items.forEach(function (it) {
+      it.side = null;
+      it.hidden = false;
+      it.step = 0;
+      it.lift = 0;
+      it.lead = null;
+      if (rules.stack) {
+        for (var g = 0; g < groups.length; g += 1) {
+          var L = groups[g].lead;
+          if (Math.abs(L.x - it.x) < SAME && Math.abs(L.y - it.y) < SAME) {
+            it.step = groups[g].members.length;
+            it.lead = L;
+            groups[g].members.push(it);
+            return;
+          }
         }
+      }
+      it.lead = it;
+      groups.push({ lead: it, members: [it] });
+    });
+    groups.forEach(function (g) {
+      var c = g.lead.city;
+      g.pri = (c.rank || 1) * (0.3 + 0.7 * g.lead.z) * (c.wasNamed ? 1.25 : 1);
+      g.w = 0;
+      g.members.forEach(function (m) { g.w = Math.max(g.w, m.city.nw || 0); });
+      g.h = Math.max(LINE, c.nh || 0) + (g.members.length - 1) * LINE;
+    });
+    groups.sort(function (a, b) { return b.pri - a.pri; });
+
+    var given = [], dots = [], count = 0;
+    // Dots that are never let go are never written over, whatever their rank.
+    if (rules.keepDots) {
+      items.forEach(function (m) { dots.push({ x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead }); });
+    }
+    function onEarth(x, y) {
+      var dx = x - cx, dy = y - cy;
+      return dx * dx + dy * dy <= 0.96 * 0.96 * R * R;
+    }
+    function fits(b, lead) {
+      if (b.x0 < S.x0 || b.x1 > S.x1 || b.y0 < S.y0 || b.y1 > S.y1) { return false; }
+      if (!onEarth(b.x0, b.y0) || !onEarth(b.x1, b.y0) || !onEarth(b.x0, b.y1) || !onEarth(b.x1, b.y1)) { return false; }
+      for (var k = 0; k < given.length; k += 1) {
+        var o = given[k];
+        if (b.x0 < o.x1 + 8 && o.x0 < b.x1 + 8 && b.y0 < o.y1 + 6 && o.y0 < b.y1 + 6) { return false; }
+      }
+      for (var d = 0; d < dots.length; d += 1) {
+        var p = dots[d];
+        if (p.lead && p.lead === lead) { continue; }        // its own stack
+        if (b.x0 < p.x + p.r && p.x - p.r < b.x1 && b.y0 < p.y + p.r && p.y - p.r < b.y1) { return false; }
       }
       return true;
     }
-    out.forEach(function (it) {
-      var el = it.city.el;
-      var wide = (it.city.name.offsetWidth || 90) + 18;
-      // Right, then left, then a line up or down on either side — the
-      // dot never moves, only where its name is written beside it.
-      var side = null, lift = 0;
-      var tries = [0, -LINE, LINE, -2 * LINE, 2 * LINE];
-      for (var t = 0; t < tries.length && !side; t += 1) {
-        var y = it.ly + tries[t];
-        if (free(it.x, it.x + wide, y)) { side = "right"; lift = tries[t]; }
-        else if (free(it.x - wide, it.x, y)) { side = "left"; lift = tries[t]; }
+    function under(it) {
+      for (var k = 0; k < given.length; k += 1) {
+        var o = given[k];
+        if (it.x > o.x0 && it.x < o.x1 && it.y > o.y0 && it.y < o.y1) { return true; }
       }
-      if (side) {
-        taken.push({ x0: side === "right" ? it.x : it.x - wide,
-                     x1: side === "right" ? it.x + wide : it.x, y: it.ly + lift });
+      return false;
+    }
+    groups.forEach(function (g) {
+      var L = g.lead;
+      // A dot that falls under a name already given out is let go for now.
+      if (!rules.keepDots && under(L)) {
+        g.members.forEach(function (m) { m.hidden = true; });
+        return;
       }
-      var shift = it.step * LINE + lift;
-      it.city.name.style.transform = shift ? "translateY(" + shift + "px)" : "";
-      var left = side === "left";
-      if ((el.dataset.side === "left") !== left) {
-        if (left) { el.dataset.side = "left"; } else { delete el.dataset.side; }
+      if (!far && L.z >= 0.3 && count < rules.budget && g.w) {
+        var gap = L.city.gap || 10;
+        // Beside the dot, right or left; a collage may be lifted or dropped
+        // a line or two, with a hairline back to its dot (rules.lifts).
+        var lifts = [0].concat(rules.lifts || []);
+        for (var k = 0; k < lifts.length && !L.side; k += 1) {
+          var y0 = L.y + lifts[k] - Math.max(LINE, L.city.nh || 0) / 2;
+          var right = { x0: L.x + gap, x1: L.x + gap + g.w, y0: y0, y1: y0 + g.h };
+          var left = { x0: L.x - gap - g.w, x1: L.x - gap, y0: y0, y1: y0 + g.h };
+          var side = fits(right, L) ? "right" : fits(left, L) ? "left" : null;
+          if (side) {
+            given.push(side === "right" ? right : left);
+            count += 1;
+            var lift = lifts[k];
+            g.members.forEach(function (m) { m.side = side; m.lift = lift; });
+          }
+        }
       }
-      if (left) {
-        // Mirrored: the dot is now the last thing in the mark, so the mark
-        // is put down with its right-hand dot on the place.
-        el.style.transform =
-          "translate(" + (it.x - el.offsetWidth + it.city.dx).toFixed(1) + "px," +
-          it.y.toFixed(1) + "px) translate(0,-50%)";
+      if (!rules.keepDots) {
+        g.members.forEach(function (m) { dots.push({ x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead }); });
       }
-      // "inherit", never "visible": a child set to visible stays visible
-      // when its city is hidden, which left names hanging in the sky after
-      // the place they belonged to had turned away.
-      // A world far off carries its dots and not its names; they come back
-      // as it comes in.
-      if (R < base0 * INV2) { side = null; }
-      it.city.name.style.visibility = side ? "inherit" : "hidden";
     });
+    return given;
   }
 
   /* The flight. Nothing is torn down and nothing is built: the sphere grows
      under you until the city you pressed is the ground you are standing on,
      and shrinks back the same way. */
+
+  /* A deep flight: down to a city of museums, framed far below a collage's
+     city, and back up. The zoom is eased on a logarithmic scale, so every
+     doubling of it takes as long as the last, and the world turns with it:
+     going down, what you are flying to slides steadily to its seat as the
+     ground swells, and never runs off the screen; going up, it pulls out
+     first and turns back after; between two places too far apart to be seen
+     together from the lower height, it rises until both fit and comes down
+     again (a dip). Every other flight is as it always was. */
+  var fly = { deep: false, kind: "", a: 0, m: 0, b: 0, dur: FLY, spin0: 0, dSpin: 0 };
+
+  function planFlight(kind, zFit) {
+    var a = Math.log(Math.max(1e-6, flyFrom)), b = Math.log(Math.max(1e-6, flyTo));
+    var dip = kind === "hop" && zFit !== undefined && zFit < 0.8 * Math.min(flyFrom, flyTo);
+    var ratio = Math.max(flyTo / flyFrom, flyFrom / flyTo);
+    fly.deep = dip || ratio > CITY_ZOOM + 0.01;
+    fly.kind = dip ? "dip" : kind === "hop" ? (flyTo > flyFrom ? "down" : "up") : kind;
+    fly.a = a;
+    fly.b = b;
+    // The middle of the curve: halfway, or out to where both places fit.
+    fly.m = dip ? 2 * Math.log(zFit) - (a + b) / 2 : (a + b) / 2;
+    var travel = dip ? Math.exp(Math.abs(a - Math.log(zFit)) + Math.abs(b - Math.log(zFit))) : ratio;
+    fly.dur = fly.deep ? FLY * Math.max(1, Math.min(1.6, 1 + 0.2 * Math.log(travel / 7) / Math.LN10)) : FLY;
+    fly.spin0 = spin;
+    fly.dSpin = shortest(spin, wanted);
+  }
 
   function goDown(city) {
     if (flying || place) { return; }
@@ -970,16 +1203,18 @@
     leanFrom = tilt;
     leanTo = city.lat;
     flyFrom = zoom;
-    // An art view is framed at the height its history needs (see frameOf).
+    // An art view is framed at the height its history needs (see frameOf),
+    // and a city at the height its museums need (townFrame).
     flyTo = city.zoomTo || CITY_ZOOM;
     goingUp = false;
     hopFrom = null;
+    planFlight("down");
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
     hideGraze();
     closeDeck();
-    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9, from.y);
+    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, from.y);
   }
 
   /* From one place to another without going back up: the world turns under
@@ -1001,6 +1236,10 @@
     delete land.dataset.art;
     // The framing eases from wherever the last place held the world.
     hopFrom = { x: cx, y: cy };
+    // How near the world must be to see both places at once, for a dip.
+    var apart = Math.acos(Math.max(-1, Math.min(1, dot3(toVec(focus.lat, focus.lon), toVec(city.lat, city.lon)))));
+    var band = artBand();
+    var zFit = apart > 1e-9 ? 0.4 * Math.min(band.w, band.h) / apart / Math.max(1, baseR) : Infinity;
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;
@@ -1010,15 +1249,24 @@
     flyFrom = zoom;
     flyTo = city.zoomTo || CITY_ZOOM;
     goingUp = false;
+    planFlight("hop", zFit);
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], FLY * 0.9, H / 2);
+    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2);
   }
 
   function comeUp() {
     if (flying || !place) { return; }
     artAsked = null;                // a view still being read is not flown to after you have left
+    // One level at a time: up from a museum (or the theatre) is its city,
+    // and up from a city is the world. A city that is only its museum is
+    // passed through both ways.
+    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
+    if (home && !home.pass && !groundOn) {
+      openTown(home.key, { museum: place.slug });
+      return;
+    }
     comeUpFromGround();
     stopTheatre();
     stopBuilding();
@@ -1036,10 +1284,11 @@
     wanted = spinWas;
     flyFrom = zoom;
     flyTo = 1;
+    planFlight("up");
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    passage(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], FLY * 0.9);
+    passage(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], fly.dur * 0.9);
   }
 
   function arrive() {
@@ -1051,6 +1300,10 @@
     bannerCity.setAttribute("aria-label", place.title);   // its name, while the letters settle
     bannerUnder.textContent = place.where || "";
     bannerCity.disabled = !place.work;
+    // The way back is one level up: a museum's city, unless the city is
+    // only that museum; everywhere else, the world.
+    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
+    if (bannerBackTo) { bannerBackTo.textContent = home && !home.pass ? home.name : "The world"; }
     scramble(bannerCity, "decode", 120, 760);
     scramble(bannerUnder, "type", 380, 640);
     creature.hidden = !CREATURE;
@@ -1060,8 +1313,8 @@
 
     // The creature keeps to this work's own things: what it finds underfoot
     // here are the objects that collage is made of, and nothing else. An art
-    // view is not a city: the whole world stays woven.
-    weave(place && !place.art ? { lat: place.lat, lon: place.lon } : null);
+    // view is not a city: the whole world stays woven. A city of museums is.
+    weave(groundHere());
 
     // Whatever is built here is built once and stays built.
     if (place.piece && !place.stage && !spawns.some(function (born) {
@@ -1109,6 +1362,7 @@
     banner.hidden = true;
     land.dataset.at = "globe";
     showHere(false);
+    measureSafe();                  // the pills are there to be measured again
     // How you got here, drawn once on the way out (the walk).
     if (artWalk.length > 1) { drawWalkOnce(); }
   }
@@ -1371,7 +1625,21 @@
     relax();
     found();
     remass();
-    weave(place && !place.art ? { lat: place.lat, lon: place.lon } : null);
+    // Down in a city of museums, it is framed again for the new window.
+    if (place && place.art && place.art.kind === "town" && !flying) {
+      var f = townFrame(place.art.town);
+      zoom = f.zoomTo;
+      place.seatAt = f.seatAt;
+      reframe();
+    }
+    weave(groundHere());
+    measureSafe();
+  }
+
+  /* The ground under a place, woven close: a city, a building, a museum or
+     a city of museums; an art view is the whole world. */
+  function groundHere() {
+    return place && (!place.art || place.art.kind === "town") ? { lat: place.lat, lon: place.lon } : null;
   }
 
   /* ---- how a word is dressed --------------------------------------------- */
@@ -2045,8 +2313,10 @@
     var rnd = seedFrom("mina mina", 3);
 
     var k = at ? 1 / zoom : 1;                 // every angle, at this height
-    var spanLat = at ? 0.115 : 0;
-    var spanLon = at ? 0.115 / Math.max(0.2, Math.cos(at.lat)) : 0;
+    // The patch is what can be seen: a city of museums is framed far closer
+    // than a collage's city, and its patch is as much smaller.
+    var spanLat = at ? 0.115 * CITY_ZOOM / Math.max(CITY_ZOOM, zoom) : 0;
+    var spanLon = at ? spanLat / Math.max(0.2, Math.cos(at.lat)) : 0;
 
     // Strands running down the world. Even steps in latitude are even steps
     // along the surface, so these keep their spacing wherever they fall.
@@ -2482,7 +2752,8 @@
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
     living(now);
-    if (layerOn === "artworks" && !place && artPlaces) { drawArtPlaces(now); }
+    if (layerOn === "museums" && !place && towns) { drawTowns(now); }
+    if (place && !flying && art && art.kind === "town") { drawVenues(); }
     placeGloss();
     placeHubble(now);
 
@@ -2741,7 +3012,7 @@
     }
     vocabulary.forEach(function (g) { nightLights.push({ lat: g.lat, lon: g.lon, b: 1, k: Math.random() * TAU }); });
     cities.forEach(function (c) {
-      if (c.spot !== undefined) { return; }        // an Artworks place is lit as its own tile
+      if (c.town) { return; }                      // a city of the Museums layer is its own mark
       nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true });
     });
   }
@@ -3103,9 +3374,9 @@
     drawLights(now, block, fade);
     if (still || !cities.length) { return; }
     if (!place && !flying) {
-      // On the Artworks layer the company rests, and in its slot one
-      // travelled work draws its journey (once whoever is out has gone).
-      if (PASSING && ARTWORKS && layerOn === "artworks" && artPlaces && !herd.length) { stepPassing(now); }
+      // With PASSING on, on the Museums layer the company rests, and in its
+      // slot one travelled work draws its journey (once whoever is out has gone).
+      if (PASSING && ARTWORKS && layerOn === "museums" && artPlaces && !herd.length) { stepPassing(now); }
       else { stepHerd(now, dt); }
       if (PROCESSION) { stepProcession(now, dt); }
     }
@@ -3368,8 +3639,9 @@
 
   function nearness() {
     var n = Math.max(0, Math.min(1, (zoom - 1) / Math.max(0.001, CITY_ZOOM - 1)));
-    // An art view is framed above the cities: the living world stays mostly alive.
-    return place && place.art ? Math.min(n, INV3) : n;
+    // An art view is framed above the cities: the living world stays mostly
+    // alive. A city of museums is the ground.
+    return place && place.art && place.art.kind !== "town" ? Math.min(n, INV3) : n;
   }
 
   var soft = document.getElementById("world-soft");
@@ -4245,15 +4517,29 @@
     if (flying) {
       // A frame's clock can read a few milliseconds before the press that
       // started the flight; before its start the flight is at its start.
-      var went = Math.max(0, Math.min(1, (now - flyAt) / FLY));
-      var easing = 1 - Math.pow(1 - went, 3);
-      zoom = flyFrom + (flyTo - flyFrom) * easing;
-      flyK = goingUp ? 1 - easing : easing;
-      lean(leanFrom + (leanTo - leanFrom) * easing);
+      var went = Math.max(0, Math.min(1, (now - flyAt) / fly.dur));
+      if (fly.deep) {
+        // In log space, the world turned as the height allows (see fly).
+        var s = went * went * (3 - 2 * went);
+        var lz = (1 - s) * (1 - s) * fly.a + 2 * s * (1 - s) * fly.m + s * s * fly.b;
+        zoom = Math.exp(lz);
+        var u = fly.kind === "down" ? 1 - (1 - s) * Math.exp(fly.a - lz)
+              : fly.kind === "up" ? s * Math.exp(fly.b - lz) : s;
+        u = Math.max(0, Math.min(1, u));
+        spin = fly.spin0 + fly.dSpin * u;
+        flyK = goingUp ? 1 - u : u;
+        lean(leanFrom + (leanTo - leanFrom) * u);
+      } else {
+        var easing = 1 - Math.pow(1 - went, 3);
+        zoom = flyFrom + (flyTo - flyFrom) * easing;
+        flyK = goingUp ? 1 - easing : easing;
+        lean(leanFrom + (leanTo - leanFrom) * easing);
+      }
       reframe();
       if (went >= 1) {
         flying = false;
         hopFrom = null;
+        if (fly.deep) { spin = wanted; fly.deep = false; }
         // Up or down is which way it was going, not the zoom: an art view's
         // height may be under the globe's own.
         if (goingUp) { goingUp = false; leave(); } else { flyK = 1; arrive(); }
@@ -4266,7 +4552,7 @@
     // The world only turns when it is turned: by a drag, or by tabbing to a
     // word. It used to swing round to follow the creature, which meant every
     // word on it was always drifting.
-    spin += shortest(spin, wanted) * (still ? 1 : (flying ? 0.16 : INV5));
+    if (!flying || !fly.deep) { spin += shortest(spin, wanted) * (still ? 1 : (flying ? 0.16 : INV5)); }
 
     // The creature crosses the surface toward the word it is heading for.
     var ease = still ? 1 : INV5;
@@ -4287,9 +4573,9 @@
     // replanting them at seven times the size would churn the whole
     // vocabulary every frame for something nobody can see.
     if (!place) { placeWords(); }
-    if (!place || flying) { placeCities(); }
+    if (!place || flying) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
-    if (art) { stepArt(now); placeStops(); }
+    if (art) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
 
     stepCompany(now);
     placeSpawns();
@@ -7499,18 +7785,24 @@
       turning = null;
       delete stage.dataset.turning;
 
-      // On the Artworks layer a press on a lit tile opens that place; in an
+      // On the Museums layer a press on a city, named or not, goes down to
+      // it; in a city, a press on a gallery's tile says what it is; in an
       // art view, a press on a stop goes to it.
-      var k = -1;
-      if (name === "pointerup" && was.moved < 6 && ARTWORKS) {
-        if (pressPassing(event.clientX, event.clientY)) { squashing = null; return; }
-        if (layerOn === "artworks" && !place && !flying &&
-            (k = hitArtPlace(event.clientX, event.clientY)) >= 0) {
+      var k = -1, hit = null;
+      if (name === "pointerup" && was.moved < 6) {
+        if (venueLabel && !venueLabel.hidden) { venueLabel.hidden = true; }
+        if (ARTWORKS && pressPassing(event.clientX, event.clientY)) { squashing = null; return; }
+        if (place && !flying && art && art.kind === "town" && (hit = hitVenue(event.clientX, event.clientY))) {
           squashing = null;
-          openArt({ place: artPlaces[k].p });
+          showVenue(hit);
           return;
         }
-        if (art && !flying && (k = hitStop(event.clientX, event.clientY)) >= 0) {
+        if (layerOn === "museums" && !place && !flying && (hit = hitTown(event.clientX, event.clientY))) {
+          squashing = null;
+          openTown(hit.key);
+          return;
+        }
+        if (ARTWORKS && art && !flying && (k = hitStop(event.clientX, event.clientY)) >= 0) {
           squashing = null;
           chooseStop(k);
           return;
@@ -9760,7 +10052,7 @@
     // A building links to its article; a museum has its works instead.
     buildingLink.hidden = !b.url;
     if (b.url) { buildingLink.href = b.url; }
-    if (city.museum) { showHeld(city.museum, city.via); } else { delete buildingEl.dataset.museum; }
+    if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
     delete city.via;
     // Come from a work's stop at this museum: its town opens at that year.
     var atYear = city.atYear;
@@ -9877,7 +10169,11 @@
     return fig;
   }
 
-  function showHeld(m, via) {
+  /* Every saved work it holds, 34 at a time (the National Gallery holds
+     177); then the works that have been here without being saved as held —
+     shown, lent, listed — each a door to its history; then the search. */
+  var buildingPagers = [];
+  function showHeld(m, via, visit, townKey) {
     buildingEl.dataset.museum = "true";
     if (!buildingWorks) { return; }
     buildingWorks.textContent = "";
@@ -9892,17 +10188,61 @@
       works = works.filter(function (w) { return w.id === first; })
         .concat(works.filter(function (w) { return w.id !== first; }));
     }
-    works.forEach(function (w, i) {
+    var alive = function () { return buildingOn === visit; };
+    var paging = { root: buildingWorks, alive: alive, pagers: buildingPagers };
+    var saved = document.createElement("div");
+    saved.className = "held-rows";
+    buildingWorks.appendChild(saved);
+    pageRows(saved, works, function (w, i) {
       var cdn = museums.cdn || "", key = w.i.split("/")[0];
       var alts = ["medium", "square", "small"].map(function (v) { return cdn + key + "/" + v + ".jpg"; })
         .filter(function (u) { return u !== cdn + w.i + ".jpg"; });
       var fig = heldFigure(w, cdn + w.i + ".jpg", i, false, alts, ARTWORKS && w.id ? { history: m } : null);
       if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); }
-      buildingWorks.appendChild(fig);
-    });
+      return fig;
+    }, paging);
+    // Also here: from its city's file (usually read already, on the way in).
+    var also = document.createElement("section");
+    also.className = "held-also";
+    buildingWorks.appendChild(also);
+    var t = ARTWORKS && townKey && towns ? townBy[townKey] : null;
+    if (t && t.file) {
+      readArt("places/" + t.key + ".json").then(function (pf) {
+        if (!alive() || !pf) { return; }
+        var held = {}, rows = [], seen = {};
+        (m.works || []).forEach(function (w) { held[w.id] = true; });
+        pf.works.forEach(function (r) {
+          var v = pf.venues[r[5]];
+          if (!v || v[1] !== m.slug || held[r[0]] || seen[r[0]]) { return; }
+          seen[r[0]] = true;
+          rows.push(r);
+        });
+        if (!rows.length) { return; }
+        var h = document.createElement("p");
+        h.className = "held-count";
+        h.textContent = "Also here \u00b7 " + rows.length;
+        also.appendChild(h);
+        pageRows(also, rows, function (r, i) { return alsoRow(r, m, i); }, paging);
+      });
+    }
     if (window.Collections) { buildingWorks.appendChild(searchFor(m)); }
     buildingWorks.scrollTop = 0;
     buildingWorks.scrollLeft = 0;
+  }
+
+  /* A work that has been here without being held: as a saved one is shown,
+     with what happened here and when; pressed, its history, the museum's
+     thread said first. */
+  function alsoRow(r, m, i) {
+    var what = (r[8] || []).map(function (kd) { return KIND_WORD[kd] || kd; })
+      .filter(function (w, k, all) { return all.indexOf(w) === k; }).join(" · ");
+    var fig = heldFigure({ t: r[1], a: r[2], y: "" }, ART_CDN + r[3] + "/square.jpg", i, false,
+                         [ART_CDN + r[3] + "/medium.jpg"],
+                         { onOpen: function () { openArt({ work: r[0] }, { museum: { name: m.name, slug: m.slug } }); } });
+    fig.classList.add("held-also-row");
+    fig.querySelector("img").loading = "lazy";
+    fig.querySelector("figcaption").appendChild(el("span", "art-row-what", [what, yearsText(r[6], r[7])].filter(Boolean).join(" ")));
+    return fig;
   }
 
   /* The rest of the collection: a button, then a search field and what it
@@ -10059,6 +10399,8 @@
 
   function stopBuilding() {
     buildingOn = null;
+    buildingPagers.forEach(function (p) { p.disconnect(); });
+    buildingPagers = [];
     if (clod) {
       cancelAnimationFrame(clod.raf);
       if (clod.canvas.parentNode) { clod.canvas.parentNode.removeChild(clod.canvas); }
@@ -11312,12 +11654,17 @@
   function groundSay(message) {
     if (groundLoaded) { groundFrame.contentWindow.postMessage(message, "*"); }
   }
-  /* Every place the globe is showing, for the ground to carry as marks: the
-     collages always, and whichever layer the filter has on. */
+  /* Every place the globe is showing, for the ground to carry as marks:
+     whichever layer the filter has on. On Museums, the ground is near
+     enough for the museums themselves (and the Folger) to stand for their
+     cities; a busy city of galleries is its own mark. */
   function groundPlaces() {
-    groundSay({ dirt: "places", list: cities.filter(function (c) { return !c.off; }).map(function (c) {
+    groundSay({ dirt: "places", list: cities.filter(function (c) {
+      if (layerOn === "museums" && c.layer === "museums") { return !!(c.museum || c.stage || (c.town && c.tile)); }
+      return !c.off;
+    }).map(function (c) {
       return { id: c.slug, lat: c.lat * 180 / Math.PI, lon: wrap(c.lon) * 180 / Math.PI,
-               name: c.title, kind: c.el ? c.el.dataset.kind : "work" };
+               name: c.title, kind: c.town ? "place" : c.el ? c.el.dataset.kind : "work" };
     }) });
   }
   groundFrame.addEventListener("load", function () {
@@ -11519,30 +11866,31 @@
     comeUp();
   });
 
-  /* ---- the Artworks layer --------------------------------------------------
+  /* ---- the histories --------------------------------------------------------
 
      The artist, 27 Sep 2026: "timelines of artworks … all the different
      places these artworks have ever gone, every show they have ever been in
-     and everything that has ever been written about them". The globe's
-     fourth layer lights every place the saved works have been, one tile of
-     pixel light each (places.json, from scripts/build_artwork_histories.py);
-     the most travelled-to are named, the rest are tiles to press. Pressing
-     one — or a work — flies down into an art view: the globe framed on the
-     history, its journey lit on a slider of the work's own years, and a
-     column beside it that tells it briefly, one dated line an event, the
-     source's own words a press away. Then, on the reading's slow clock,
-     what it shares with other works, each with its doors; a door turns the
-     world to the next work. A place and a thread have views of their own,
-     and Find reaches any of the works. Nothing changes the address. */
+     and everything that has ever been written about them". Every place the
+     saved works have been is a city of the Museums layer now (29 Sep 2026:
+     "that artwork is supposed to be within the museums section"; see "the
+     cities"), and a work — pressed in a museum, a city's gallery, or Find —
+     flies down into an art view: the globe framed on the history, its
+     journey lit on a slider of the work's own years, and a column beside it
+     that tells it briefly, one dated line an event, the source's own words a
+     press away. Then, on the reading's slow clock, what it shares with other
+     works, each with its doors; a door turns the world to the next work. A
+     thread has a view of its own, and Find reaches any of the works. Nothing
+     changes the address. */
 
-  var PASSING = true;                   // false: the company keeps its slot on this layer too
-  var ART_NAMED = 55;                   // places named on the globe; the rest are tiles
+  /* Off (29 Sep 2026): the Museums globe was "way too cluttered", and a
+     work's journey is shown in its own history. true: now and then, in the
+     company's slot, one travelled work draws its journey over the globe. */
+  var PASSING = false;
   var ART_LINGER = INV * 1000;          // 618 ms on each event, and at most that across a gap
   var LEG_MS = 610;                     // a leg lights end to end in this long
   var artPlaces = null;                 // places.json's places, read when the layer is chosen
   var artPlaceBy = {};                  // place key -> its place
   var artInfo = null;                   // places.json itself: works, j
-  var artLitAt = 0;                     // when the layer's tiles were last lit
   var artAsked = null;                  // the last view asked for; a later press wins
   var art = null;                       // the art view that is open, and its clock
   var artWalk = [];                     // the walk, work to work, this visit
@@ -11601,43 +11949,166 @@
 
   function readThread(tid) { return readArt("threads/" + tid + ".json"); }
 
-  /* The layer chosen (or left chosen from the last visit): its places are
-     read, marked and lit, and Find waits at the pill. */
-  function artLayer() {
-    if (!ARTWORKS) { return; }
+  /* ---- the cities ----------------------------------------------------------
+
+     The Museums layer is cities (artist, 29 Sep 2026: "have the cities
+     displayed on the globe and then when you click on the city that is when
+     it shows you the museums in that city"). Every place a saved work has
+     been is a city of cities.json (scripts/build_cities.py): the ones that
+     hold his museums are cream diamonds, the museums' own shape, named with
+     the city's name; the rest, where saved works have only passed through
+     galleries, fairs and sale rooms, are tiles of pixel light, a step
+     quieter, and the busiest of them are named too. A diamond tied into a
+     nearer, larger one (a knot) is its tile until the world comes nearer.
+
+     Pressing one flies down into the same globe, far closer than a collage's
+     city, until the city fills the band beside the column: its museums stand
+     at their own doors, every one named that can be, the galleries whose
+     address is known are faint tiles at theirs, and the column is the
+     city's directory — its museums, each a door into the museum; the cities
+     near it; then, quieter, every gallery, fair and sale room a saved work
+     has been in, each opening to its works. The slider takes the city's art
+     world back to any year. Up from a museum is its city, and up from a city
+     is the world; a city that is only its museum is passed straight
+     through. */
+
+  var TOWN_MIN_KM = 2, TOWN_MAX_KM = 34;   // how much of a city the band is framed on
+  var TOWN_R_MAX = 300000;              // as near as a city is flown: the depth its ground was tested at
+  var TOWN_NAMED_N = 8;                 // a city of galleries this busy is named on the globe
+  var TOWN_LIFT = 18;                   // a museum's name lifted or dropped a line to find room
+  var TOWN_SAME = 8;                    // museums this close are one diamond, their names stacked
+                                        // (Yale's two, across the street; not the Met and the Guggenheim)
+  var towns = null;                     // cities.json's rows, in the order they are named
+  var townBy = {};                      // key -> its city
+  var townOfSlug = {};                  // a museum's slug -> its city's key
+  var townCities = {};                  // key -> the place flown down to, made on the first press
+  var museumBy = null;                  // slug -> its row of museums.json
+  var townsLitAt = 0;                   // when the layer's tiles were lit
+  var townDirty = true;                 // the city view is to be placed again
+  var townAt = {};
+  var venueLabel = null;                // the one label a pressed gallery's tile shows
+
+  function readTowns() {
+    return Promise.all([readPlaces(), readArt("cities.json")]).then(function (both) {
+      var d = both[1];
+      if (towns || !d || !d.towns) { return towns; }
+      towns = d.towns.map(function (row, i) {
+        var t = { i: i, key: row[0], name: row[1], cc: row[2], lat: row[3] * RAD, lon: wrap(row[4] * RAD),
+                  n: row[5], museums: row[6] || [], others: row[7], pass: !!row[8], file: !!row[9],
+                  near: row[10] || [], venues: (d.venues && d.venues[row[0]]) || [] };
+        t.v = toVec(t.lat, t.lon);
+        var lg = Math.log(1 + t.n) / Math.LN10;
+        t.rank = t.museums.length ? 1 + 0.5 * t.museums.length + 0.5 * lg : 0.5 * lg;
+        townBy[t.key] = t;
+        t.museums.forEach(function (slug) { townOfSlug[slug] = t.key; });
+        return t;
+      });
+      cities.forEach(function (c) { if (c.museum && townOfSlug[c.slug]) { c.townKey = townOfSlug[c.slug]; } });
+      return towns;
+    });
+  }
+
+  function museumOf(slug) {
+    if (!museumBy) {
+      museumBy = {};
+      ((museums && museums.museums) || []).forEach(function (m) { museumBy[m.slug] = m; });
+    }
+    return museumBy[slug] || null;
+  }
+
+  /* A museum's name in its city, short, and only by rule: its own acronym
+     where the name ends in one (SFMOMA, V&A), else the name without its
+     town on the end ("National Gallery of Art", "The National Gallery"),
+     else the name. Never a short name written by hand. */
+  function shortName(m) {
+    var name = String(m.name || "");
+    var acronym = /\(([^()]+)\)\s*$/.exec(name);
+    if (acronym) { return acronym[1]; }
+    var where = String(m.where || "");
+    var town = where.lastIndexOf(",") > 0 ? where.slice(0, where.lastIndexOf(",")).trim() : where.trim();
+    if (town) {
+      var at = name.toLowerCase().indexOf(", " + town.toLowerCase());
+      if (at > 0) { return name.slice(0, at); }
+    }
+    return name;
+  }
+
+  function worksHere(n) {
+    return n.toLocaleString("en") + (n === 1 ? " work has" : " works have") + " been here";
+  }
+
+  /* The globe's marks for the cities: a diamond for every city with
+     museums, a name for every busy city of galleries (its tile is its dot).
+     Once, after cities.json is read; found() makes them again after that. */
+  function raiseTowns() {
+    if (!towns || cities.some(function (c) { return c.town; })) { return; }
+    towns.forEach(function (t) {
+      var tile = !t.museums.length;
+      if (tile && t.n < TOWN_NAMED_N) { return; }
+      var only = t.pass ? museumOf(t.museums[0]) : null;
+      var mark = {
+        work: null, slug: "town-" + t.key, title: t.name, where: t.name + ", " + t.cc,
+        lat: t.lat, lon: t.lon, layer: "museums", town: t, tile: tile, real: true,
+        rank: t.rank, tone: LIGHT, rise: 300 + Math.min(t.i, 34) * 55,
+        aria: only ? "Go down to " + only.name + ", " + t.name
+          : tile ? "Go down to " + t.name + " — " + worksHere(t.n)
+          : "Go down to " + t.name + " — " + t.museums.length + (t.museums.length === 1 ? " museum" : " museums"),
+        open: function () { openTown(t.key); }
+      };
+      raiseCity(mark, true);
+      t.mark = mark;
+    });
+  }
+
+  /* The Museums layer chosen (or left chosen from the last visit): its
+     cities are read, marked and lit, and Find waits over the pill. */
+  function museumsLayer() {
     land.dataset.layerOn = layerOn;
-    if (layerOn !== "artworks") {
+    if (layerOn !== "museums") {
       artAsked = null;              // nor after you have chosen another layer
       if (artFind) { artFind.hidden = true; }
       closeFinder();
       if (passing) { endPassing(performance.now()); }
+      measureSafe();
       return;
     }
-    readPlaces().then(function () {
-      if (!artPlaces || layerOn !== "artworks") { return; }
-      artLitAt = performance.now();
-      if (!cities.some(function (c) { return c.spot !== undefined; })) { found(); groundPlaces(); }
-      if (artFind && artInfo) {
+    readTowns().then(function () {
+      if (!towns || layerOn !== "museums") { return; }
+      townsLitAt = performance.now();
+      if (!cities.some(function (c) { return c.town; })) {
+        raiseTowns();
+        filterGlobe();
+        measureNames();
+        groundPlaces();
+      }
+      if (ARTWORKS && artFind && artInfo) {
         artFind.textContent = "Find among " + artInfo.works.toLocaleString("en") + " works";
         artFind.hidden = false;
         scramble(artFind, oneOf(["decode", "type"]), 0, 640);
       }
+      measureSafe();
     });
   }
 
-  /* The places, at rest: one tile each, snapped to the grid the rest of the
-     pixel light is on, fading toward the limb as the night lights do. Where
-     two share a tile the brighter wins. While Find has found something, its
-     places are at the top and the rest at the bottom. */
-  function drawArtPlaces(now) {
-    var up = still ? 1 : Math.min(1, Math.floor((now - artLitAt) / 140 + 1) / 3);   // steps(3)
+  /* The cities of galleries, at rest: one tile each, snapped to the grid
+     the rest of the pixel light is on, fading toward the limb as the night
+     lights do, never as bright as a diamond; a knot's diamond is a brighter
+     tile. Where two share a tile the brighter wins. While Find has found
+     something, its cities are at the top and the rest at the bottom. */
+  function drawTowns(now) {
+    var up = still ? 1 : Math.min(1, Math.floor((now - townsLitAt) / 140 + 1) / 3);   // steps(3)
     var hits = finder.found;
+    var S = safeBox();
     var best = {};
-    for (var n = 0; n < artPlaces.length; n += 1) {
-      var pl = artPlaces[n];
-      var p = project(pl.lat, pl.lon);
-      if (p.z < 0.08 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { continue; }
-      var level = hits ? (hits[pl.i] ? 4 : 1) : pl.level;
+    for (var n = 0; n < towns.length; n += 1) {
+      var t = towns[n];
+      var knot = !!(t.mark && t.mark.knot);
+      if (t.museums.length && !knot) { continue; }          // a diamond is its own mark
+      var p = project(t.lat, t.lon);
+      if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1) { continue; }
+      // A tile under a name is let go while the name is there, as a dot is.
+      if (!(t.mark && t.mark.wasNamed) && underName(p.x, p.y)) { continue; }
+      var level = hits ? (hits[t.key] ? 4 : 1) : knot ? 3 : t.n >= TOWN_NAMED_N ? 2 : 1;
       var a = LEVELS[level] * Math.min(1, (p.z - 0.08) * 6) * up;
       var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
       var key = i * 4096 + j;
@@ -11652,19 +12123,759 @@
     ctx.globalAlpha = 1;
   }
 
-  /* The place a press landed on: the nearest within one tile. */
-  function hitArtPlace(x, y) {
-    if (!artPlaces) { return -1; }
-    var best = -1, near = CELL_PX;
-    artPlaces.forEach(function (pl, k) {
-      var p = project(pl.lat, pl.lon);
-      if (p.z < 0.08) { return; }
-      // From the middle of the tile it is lit in, not the point itself.
+  function underName(x, y) {
+    for (var k = 0; k < nameBoxes.length; k += 1) {
+      var b = nameBoxes[k];
+      if (x > b.x0 - 3 && x < b.x1 + 3 && y > b.y0 - 3 && y < b.y1 + 3) { return true; }
+    }
+    return false;
+  }
+
+  /* The city a press on the globe landed on, named or not: the one that
+     matters most within 16 px, else the nearest within a finger's reach. A
+     tile is measured from the middle of the cell it is lit in. */
+  function hitTown(x, y) {
+    if (!towns) { return null; }
+    var S = safeBox();
+    var reach = W <= 720 ? 26 : 18;
+    var best = null, near = null, nearD = Infinity;
+    towns.forEach(function (t) {
+      var p = project(t.lat, t.lon);
+      if (p.z <= 0.08 || p.x < S.x0 || p.x > S.x1 || p.y < S.y0 || p.y > S.y1) { return; }
+      var px = p.x, py = p.y;
+      if (!t.museums.length || (t.mark && t.mark.knot)) {
+        px = (Math.floor(px / CELL_PX) + 0.5) * CELL_PX;
+        py = (Math.floor(py / CELL_PX) + 0.5) * CELL_PX;
+      }
+      var d = Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
+      if (d <= 16 && (!best || t.rank > best.rank)) { best = t; }
+      if (d <= reach && d < nearD) { nearD = d; near = t; }
+    });
+    return best || near;
+  }
+
+  /* The galleries, fairs and sale rooms of a city whose address is known:
+     cities.json's points, less its museums' own (known exactly once the
+     city's file is read, and by their museum's point before). */
+  function galleryPoints(t, pf) {
+    if (t.galleries && (t.galleriesExact || !pf)) { return t.galleries; }
+    var mus = t.museums.map(museumOf).filter(Boolean);
+    t.galleries = t.venues.filter(function (v) {
+      if (pf) { var row = pf.venues[v[0]]; return !!row && !row[1]; }
+      return !mus.some(function (m) { return Math.abs(m.lat - v[1]) < 6e-5 && Math.abs(m.lon - v[2]) < 6e-5; });
+    }).map(function (v) {
+      var lat = v[1] * RAD, lon = wrap(v[2] * RAD);
+      return { vi: v[0], lat: lat, lon: lon, v: toVec(lat, lon) };
+    });
+    t.galleriesExact = !!pf;
+    return t.galleries;
+  }
+
+  /* How a city is framed: centred on its museums (or, without any, on the
+     middle of its galleries), near enough that its museums and most of its
+     galleries fill the band beside the column, and never nearer than the
+     ground was tested at. Worked out at every open: the window and the
+     globe's own size can change. */
+  function townFrame(t) {
+    var mus = [];
+    t.museums.forEach(function (slug) {
+      var m = museumOf(slug);
+      if (m) { mus.push(toVec(m.lat * RAD, m.lon * RAD)); }
+    });
+    var gal = galleryPoints(t);
+    var c;
+    if (mus.length) {
+      var sum = [0, 0, 0];
+      mus.forEach(function (v) { sum[0] += v[0]; sum[1] += v[1]; sum[2] += v[2]; });
+      c = norm3(sum);
+    } else if (gal.length) {
+      var las = gal.map(function (g) { return g.lat; }).sort(function (a, b) { return a - b; });
+      var los = gal.map(function (g) { return g.lon; }).sort(function (a, b) { return a - b; });
+      c = toVec(las[Math.floor(las.length / 2)], los[Math.floor(los.length / 2)]);
+    } else {
+      c = t.v;
+    }
+    function km(v) { return Math.acos(Math.max(-1, Math.min(1, dot3(c, v)))) * 6371; }
+    var ds = gal.map(function (g) { return km(g.v); }).sort(function (a, b) { return a - b; });
+    var theta = 3;
+    if (mus.length) {
+      theta = 0;
+      mus.forEach(function (v) { theta = Math.max(theta, km(v)); });
+      if (ds.length) { theta = Math.max(theta, ds[Math.floor(0.75 * (ds.length - 1))]); }
+    } else if (ds.length) {
+      theta = PHI * ds[Math.floor(ds.length / 2)];
+    }
+    theta = Math.max(TOWN_MIN_KM, Math.min(TOWN_MAX_KM, theta));
+    var b = artBand();
+    var r = Math.min(0.4 * Math.min(b.w, b.h) / (theta / 6371), TOWN_R_MAX);
+    return { lat: latOf(c), lon: lonOf(c), zoomTo: r / Math.max(1, baseR),
+             seatAt: { x: (b.x + b.w / 2) / W, y: (b.y + b.h / 2) / H } };
+  }
+
+  function townWhere(t) {
+    var m = t.museums.length;
+    return (m ? m + (m === 1 ? " museum · " : " museums · ") : "") + worksHere(t.n);
+  }
+
+  function townCity(t) {
+    return {
+      slug: "town-" + t.key, title: t.name, where: townWhere(t),
+      lat: t.lat, lon: t.lon, zoomTo: 1, seatAt: null, townKey: t.key, tone: LIGHT,
+      art: { kind: "town", data: null, town: t, via: {} }
+    };
+  }
+
+  /* A city pressed — on the globe, in Near here, in Find, at a stop of a
+     history: flown to at once, since its framing needs nothing that is not
+     already read; its galleries fill the column when its file lands. A city
+     that is only its museum goes straight into the museum. */
+  function openTown(key, via) {
+    if (flying) { return; }
+    if (!towns) {
+      readTowns().then(function () { if (towns && townBy[key]) { openTown(key, via); } });
+      return;
+    }
+    var t = townBy[key];
+    if (!t) { return; }
+    closeFinder();
+    artAsked = null;                // a view still being read is not flown to after this
+    if (t.pass) { openMuseum(t.museums[0], via); return; }
+    var c = townCities[key] || (townCities[key] = townCity(t));
+    var f = townFrame(t);
+    c.lat = f.lat;
+    c.lon = wrap(f.lon);
+    c.zoomTo = f.zoomTo;
+    c.seatAt = f.seatAt;
+    c.art.via = via || {};
+    if (place) { hopTo(c); } else { goDown(c); }
+  }
+
+  /* A museum, at its city's height, so going between the two is a short
+     slide rather than a flight; the Folger keeps the height its theatre
+     was built for. */
+  function openMuseum(slug, via) {
+    if (flying) { return; }
+    var mc = cityOf(slug);
+    if (!mc) { return; }
+    closeFinder();
+    artAsked = null;
+    var t = towns && townBy[mc.townKey];
+    if (mc.stage) { mc.zoomTo = CITY_ZOOM; }
+    else if (t) { mc.zoomTo = townFrame(t).zoomTo; }
+    mc.via = via || {};
+    if (place === mc) { return; }
+    if (place) { hopTo(mc); } else { goDown(mc); }
+  }
+
+  /* Down from a city into one of its museums: its ground opens at the
+     city's year when the slider was moved there by hand. */
+  function downToMuseum(slug, via) {
+    var mc = cityOf(slug);
+    if (!mc || flying) { return; }
+    var a = art;
+    if (a && a.kind === "town" && a.byHand && a.y0) { mc.atYear = yearAt(a, a.whenTo); }
+    openMuseum(slug, via);
+  }
+
+  /* A museum's mark and its row in the column answer each other. */
+  function lightMuseum(slug, on) {
+    var a = art;
+    if (!a || a.kind !== "town" || !a.museumRows) { return; }
+    var row = a.museumRows[slug];
+    var mark = cityOf(slug);
+    [row && row.row, mark && mark.el].forEach(function (e) {
+      if (!e) { return; }
+      if (on) { e.dataset.lit = "true"; } else { delete e.dataset.lit; }
+    });
+    townDirty = true;
+  }
+
+  /* Down in a city: the column, and its file read for the galleries. */
+  function startTown(a) {
+    var t = a.town;
+    a.museumRows = {};
+    a.venueBoxes = [];
+    a.venueWorks = null;
+    townDirty = true;
+    townAt = {};
+    townColumn(a, t, a.via);
+    if (!t.file) { return; }
+    readArt("places/" + t.key + ".json").then(function (pf) {
+      if (art !== a) { return; }
+      if (!pf) {
+        var said = el("p", "read-only town-unread", "The galleries here could not be read just now.");
+        artCol.insertBefore(said, a.foot);
+        return;
+      }
+      a.pf = pf;
+      galleryPoints(t, pf);
+      townFile(a, pf);
+    });
+  }
+
+  /* The city's file landed: its years, the museums' "more have been here",
+     the galleries, fairs and sale rooms, and the slider. */
+  function townFile(a, pf) {
+    var t = a.town;
+    var ids = pf.venues.map(function () { return {}; });
+    pf.works.forEach(function (r) { if (ids[r[5]]) { ids[r[5]][r[0]] = true; } });
+    a.venueWorks = ids.map(function (o) { return Object.keys(o).length; });
+    var y0 = Infinity, y1 = -Infinity;
+    pf.venues.forEach(function (v) {
+      if (v[2]) { y0 = Math.min(y0, v[2]); }
+      if (v[3]) { y1 = Math.max(y1, v[3]); }
+    });
+    if (a.head) {
+      a.head.textContent = ["Here", t.n.toLocaleString("en") + (t.n === 1 ? " work" : " works"),
+        y0 !== Infinity ? yearsText(y0, y1) : ""].filter(Boolean).join(" · ");
+    }
+    // Each museum: its first year here, and the works that have been at it
+    // that are not among those it holds.
+    Object.keys(a.museumRows).forEach(function (slug) {
+      var r = a.museumRows[slug];
+      var held = {}, more = {};
+      (r.m.works || []).forEach(function (w) { held[w.id] = true; });
+      pf.venues.forEach(function (v, i) {
+        if (v[1] !== slug) { return; }
+        if (v[2] && (!r.y0 || v[2] < r.y0)) { r.y0 = v[2]; }
+        Object.keys(ids[i]).forEach(function (id) { if (!held[id]) { more[id] = true; } });
+      });
+      var n = Object.keys(more).length;
+      if (n) { r.meta.textContent = r.m.held + " saved · " + n + (n === 1 ? " more has" : " more have") + " been here"; }
+    });
+    venueSection(a, pf);
+    memberYears(a, pf.venues.map(function (v) { return v[2]; }));
+    laterRows(a);
+    a.dirty = true;
+    townDirty = true;
+    // Come from a history: its venue, open, is brought into view.
+    var open_ = a.via && a.via.work && artCol.querySelector('.town-venue[aria-expanded="true"]');
+    if (open_) {
+      requestAnimationFrame(function () {
+        if (art !== a) { return; }
+        try { open_.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" }); } catch (e) {}
+      });
+    }
+    // Come from a history: its gallery's tile answers.
+    var came = a.via && a.via.work;
+    if (came && !still) {
+      galleryPoints(t, pf).forEach(function (g) {
+        if (!pf.works.some(function (r) { return r[0] === came && r[5] === g.vi; })) { return; }
+        var p = project(g.lat, g.lon);
+        if (p.z > 0) { pulse(p.x, p.y, [LIGHT, LILAC], 0.6, 144); }
+      });
+    }
+  }
+
+  /* The column: a city's directory. How you came; the count; its museums,
+     each a door, most saved works first; the cities near it; then (when the
+     file lands) its galleries, fairs and sale rooms; and the way out. */
+  function townColumn(a, t, via) {
+    var col = artCol;
+    if (via && via.from) {
+      var came = cameLine({ from: via.from });
+      if (came) { col.appendChild(came); }
+    }
+    a.head = el("p", "art-count", "Here · " + t.n.toLocaleString("en") + (t.n === 1 ? " work" : " works"));
+    col.appendChild(a.head);
+    enterText(a.head, 0);
+    var folger = LANDMARKS.filter(function (m) { return m.town === t.key; });
+    if (t.museums.length || folger.length) {
+      col.appendChild(el("p", "town-section", "Museums · " + t.museums.length));
+      t.museums.forEach(function (slug) {
+        var row = museumRow(a, slug);
+        if (row) { col.appendChild(row); }
+      });
+      folger.forEach(function (mark) { col.appendChild(stageRow(a, mark)); });
+    }
+    var near = nearRow(t);
+    if (near) { col.appendChild(near); }
+    a.foot = artFoot();
+    // Up from one of its museums: that museum's row, lit, and its mark answers.
+    var from = via && typeof via.museum === "string" ? via.museum : null;
+    if (from && a.museumRows[from]) {
+      var r = a.museumRows[from];
+      lightMuseum(from, true);
+      requestAnimationFrame(function () {
+        if (art !== a) { return; }
+        try { r.row.scrollIntoView({ block: "nearest" }); } catch (e) {}
+      });
+      later(function () {
+        lightMuseum(from, false);
+        var mc = cityOf(from);
+        if (mc && !still) {
+          var p = project(mc.lat, mc.lon);
+          if (p.z > 0) { pulse(p.x, p.y, [LIGHT, GOLD], 0.6, 144); }
+        }
+      }, 1600, a);
+    }
+  }
+
+  /* A museum's row: its diamond, its name and the way in; how many saved
+     works it holds; and four of them, each a door into the museum with that
+     work first and large. */
+  function museumRow(a, slug) {
+    var m = museumOf(slug);
+    if (!m || !cityOf(slug)) { return null; }
+    var row = el("div", "town-museum-row");
+    var door = el("button", "town-museum");
+    door.type = "button";
+    door.setAttribute("aria-label", "Go into " + m.name + " — " + m.held + " saved");
+    var dia = el("span", "town-dia");
+    dia.setAttribute("aria-hidden", "true");
+    door.appendChild(dia);
+    door.appendChild(el("span", "town-museum-name", m.name));
+    var go = el("span", "town-go", "›");
+    go.setAttribute("aria-hidden", "true");
+    door.appendChild(go);
+    row.appendChild(door);
+    var meta = el("p", "town-museum-meta", m.held + " saved");
+    row.appendChild(meta);
+    var thumbs = el("div", "town-thumbs");
+    var cdn = (museums && museums.cdn) || ART_CDN;
+    (m.works || []).slice(0, 4).forEach(function (w) {
+      var b = el("button", "town-thumb");
+      b.type = "button";
+      b.setAttribute("aria-label", (w.t || "Untitled") + (w.a ? ", " + w.a : "") + " — in " + m.name);
+      var img = el("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      var key = String(w.i || "").split("/")[0];
+      var tries = [cdn + key + "/medium.jpg"];
+      img.addEventListener("error", function () {
+        if (tries.length) { img.src = tries.shift(); return; }
+        b.classList.add("town-thumb-none");
+      });
+      img.src = cdn + key + "/square.jpg";
+      b.appendChild(img);
+      b.addEventListener("click", function (event) {
+        event.stopPropagation();
+        downToMuseum(slug, { work: w.id });
+      });
+      thumbs.appendChild(b);
+    });
+    if (thumbs.children.length) { row.appendChild(thumbs); }
+    door.addEventListener("click", function (event) { event.stopPropagation(); downToMuseum(slug, {}); });
+    row.addEventListener("click", function () { downToMuseum(slug, {}); });
+    row.addEventListener("pointerenter", function () { lightMuseum(slug, true); });
+    row.addEventListener("pointerleave", function () { lightMuseum(slug, false); });
+    row.addEventListener("focusin", function () { lightMuseum(slug, true); });
+    row.addEventListener("focusout", function () { lightMuseum(slug, false); });
+    a.museumRows[slug] = { row: row, meta: meta, m: m, y0: 0 };
+    return row;
+  }
+
+  /* Washington's theatre: the Folger, where the plays are. */
+  function stageRow(a, mark) {
+    var row = el("div", "town-museum-row town-stage");
+    var door = el("button", "town-museum");
+    door.type = "button";
+    door.setAttribute("aria-label", "Go into the " + mark.title + " — the plays");
+    var dia = el("span", "town-dia town-ring");
+    dia.setAttribute("aria-hidden", "true");
+    door.appendChild(dia);
+    door.appendChild(el("span", "town-museum-name", mark.title + " · the plays"));
+    var go = el("span", "town-go", "›");
+    go.setAttribute("aria-hidden", "true");
+    door.appendChild(go);
+    row.appendChild(door);
+    function enter(event) { if (event) { event.stopPropagation(); } openMuseum(mark.slug, {}); }
+    door.addEventListener("click", enter);
+    row.addEventListener("click", enter);
+    row.addEventListener("pointerenter", function () { lightMuseum(mark.slug, true); });
+    row.addEventListener("pointerleave", function () { lightMuseum(mark.slug, false); });
+    a.museumRows[mark.slug] = { row: row, meta: null, m: { works: [], held: 0, name: mark.title }, y0: 0, stage: true };
+    return row;
+  }
+
+  /* The cities nearest this one, within 500 km: a diamond where a city has
+     museums. Each is flown to from here. */
+  function nearRow(t) {
+    if (!t.near.length) { return null; }
+    var box = el("section", "town-near-box");
+    box.appendChild(el("p", "town-section", "Near here"));
+    var row = el("div", "town-near-row");
+    t.near.forEach(function (pair) {
+      var o = towns[pair[0]];
+      if (!o) { return; }
+      var b = el("button", "town-near");
+      b.type = "button";
+      if (o.museums.length) {
+        var d = el("span", "town-near-dia", "◆ ");
+        d.setAttribute("aria-hidden", "true");
+        b.appendChild(d);
+      }
+      b.appendChild(document.createTextNode(o.name + " · " + pair[1] + " km"));
+      b.addEventListener("click", function (event) { event.stopPropagation(); openTown(o.key); });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+    return box;
+  }
+
+  /* Every gallery, fair and sale room a saved work has been in here, the
+     busiest first, a step quieter than the museums; and last, the works
+     whose venue the records do not give. */
+  function venueSection(a, pf) {
+    var rowsOf = pf.venues.map(function () { return []; });
+    var seen = pf.venues.map(function () { return {}; });
+    pf.works.forEach(function (r) {
+      var i = r[5];
+      if (!rowsOf[i] || seen[i][r[0]]) { return; }
+      seen[i][r[0]] = true;
+      rowsOf[i].push(r);
+    });
+    var named = [], unnamed = [];
+    pf.venues.forEach(function (v, i) {
+      if (v[1] || !rowsOf[i].length) { return; }         // a museum's is its row above
+      (v[0] ? named : unnamed).push(i);
+    });
+    named.sort(function (x, y) {
+      return rowsOf[y].length - rowsOf[x].length || (pf.venues[x][2] || 9999) - (pf.venues[y][2] || 9999) ||
+             String(pf.venues[x][0]).localeCompare(String(pf.venues[y][0]));
+    });
+    // Come from a history: the venues that hold that work first, open, the
+    // work first in them.
+    var came = a.via && a.via.work;
+    var holding = function (i) { return rowsOf[i].some(function (r) { return r[0] === came; }); };
+    if (came) {
+      named = named.filter(holding).concat(named.filter(function (i) { return !holding(i); }));
+      named.concat(unnamed).forEach(function (i) {
+        if (!holding(i)) { return; }
+        rowsOf[i] = rowsOf[i].filter(function (r) { return r[0] === came; })
+          .concat(rowsOf[i].filter(function (r) { return r[0] !== came; }));
+      });
+      Object.keys(a.museumRows).forEach(function (slug) {
+        var at = pf.venues.some(function (v, i) { return v[1] === slug && rowsOf[i].some(function (r) { return r[0] === came; }); })
+          || pf.works.some(function (r) { return r[0] === came && pf.venues[r[5]] && pf.venues[r[5]][1] === slug; });
+        if (at) { a.museumRows[slug].row.dataset.came = "true"; }
+      });
+    }
+    var host = el("section", "town-venues");
+    if (named.length) {
+      host.appendChild(el("p", "town-section town-quiet", "Galleries, fairs and sale rooms · " + named.length));
+      var list = el("div", "town-venue-list");
+      host.appendChild(list);
+      a.venueOrder = named;
+      a.venuePager = pageRows(list, named, function (i) {
+        var box = venueRow(a, pf, [i], rowsOf[i], pf.venues[i][0]);
+        if (came && holding(i)) { openVenue(a, box, true); }
+        return box;
+      });
+    }
+    if (unnamed.length) {
+      var rows = [], have = {};
+      unnamed.forEach(function (i) {
+        rowsOf[i].forEach(function (r) { if (!have[r[0]]) { have[r[0]] = true; rows.push(r); } });
+      });
+      var box = venueRow(a, pf, unnamed, rows, "Venue not recorded · " + rows.length.toLocaleString("en"));
+      box.classList.add("town-venue-unnamed");
+      host.appendChild(box);
+      if (came && have[came] && !named.some(holding)) { openVenue(a, box, true); }
+    }
+    if (host.children.length) { artCol.insertBefore(host, a.foot); }
+  }
+
+  /* A venue: its name, what happened there and when, how many works; open,
+     its works, 34 at a time, each a door to its history. */
+  function venueRow(a, pf, vis, rows, label) {
+    var box = el("div", "town-venue-box");
+    var b = el("button", "town-venue");
+    b.type = "button";
+    b.setAttribute("aria-expanded", "false");
+    b.appendChild(el("span", "town-venue-name", label));
+    var kinds = [], y0 = 0, y1 = 0;
+    rows.forEach(function (r) {
+      (r[8] || []).forEach(function (kd) {
+        var w = KIND_WORD[kd] || kd;
+        if (kinds.indexOf(w) < 0) { kinds.push(w); }
+      });
+    });
+    vis.forEach(function (i) {
+      var v = pf.venues[i];
+      if (v[2] && (!y0 || v[2] < y0)) { y0 = v[2]; }
+      if (v[3] && v[3] > y1) { y1 = v[3]; }
+    });
+    b.appendChild(el("span", "town-venue-meta", kinds.concat([yearsText(y0, y1),
+      rows.length + (rows.length === 1 ? " work" : " works")]).filter(Boolean).join(" · ")));
+    box.appendChild(b);
+    box.rows = rows;
+    box.vis = vis;
+    box.y0 = y0;
+    box.button = b;
+    if (a.yearNow && y0 && y0 > a.yearNow) { box.dataset.later = "true"; }
+    b.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (b.getAttribute("aria-expanded") === "true") { closeVenue(a, box); } else { openVenue(a, box, false); }
+    });
+    a.venueBoxes.push(box);
+    return box;
+  }
+
+  function openVenue(a, box, keepOthers) {
+    if (!keepOthers) {
+      a.venueBoxes.forEach(function (o) { if (o !== box && o.button.getAttribute("aria-expanded") === "true") { closeVenue(a, o); } });
+    }
+    box.button.setAttribute("aria-expanded", "true");
+    var works = el("div", "art-rows town-venue-works");
+    box.appendChild(works);
+    box.works = works;
+    var came = a.via && a.via.work;
+    box.pager = pageRows(works, box.rows, function (r, k) {
+      var what = (r[8] || []).map(function (kd) { return KIND_WORD[kd] || kd; })
+        .filter(function (w, i, all) { return all.indexOf(w) === i; }).join(" · ");
+      var fig = artRow(r[0], r[1], r[2], r[3], [what, yearsText(r[6], r[7])].filter(Boolean).join(" "),
+                       r[6], { place: a.town.key }, k);
+      if (came && r[0] === came) { fig.dataset.came = "true"; }
+      return fig;
+    });
+  }
+
+  function closeVenue(a, box) {
+    box.button.setAttribute("aria-expanded", "false");
+    if (box.pager) { box.pager.stop(); box.pager = null; }
+    if (box.works && box.works.parentNode) { box.works.parentNode.removeChild(box.works); }
+    box.works = null;
+    a.rows = a.rows.filter(function (r) { return r.el.isConnected; });
+  }
+
+  /* The city's marks, placed while you are in it — only when the view or
+     what is lit has changed. Its museums (and, in Washington, the Folger)
+     at their own doors inside the band, rising one after another the first
+     time; each named if it can be: right of its diamond, left, or lifted or
+     dropped a line with a hairline back to it, never over another name,
+     another museum's diamond, the banner or the column. A name with no room
+     comes up while its row or its mark is pointed at. The cities around it
+     that are in the band keep their marks, two named at most. */
+  function placeTown() {
+    var a = art;
+    if (!a || a.kind !== "town") { return; }
+    if (!townDirty && townAt.spin === spin && townAt.tilt === tilt && townAt.R === R &&
+        townAt.cx === cx && townAt.cy === cy && townAt.W === W && townAt.H === H) { return; }
+    townDirty = false;
+    townAt = { spin: spin, tilt: tilt, R: R, cx: cx, cy: cy, W: W, H: H };
+    var t = a.town;
+    var b = artBand();
+    var box = { x0: b.x + 8, y0: b.y + 8, x1: b.x + b.w - 8, y1: b.y + b.h - 8 };
+    var now = performance.now();
+    a.risen = a.risen || {};
+
+    // The museums, and the Folger in Washington.
+    var list = [];
+    t.museums.forEach(function (slug) { var c = cityOf(slug); if (c) { list.push(c); } });
+    LANDMARKS.forEach(function (m) { if (m.town === t.key) { var c = cityOf(m.slug); if (c) { list.push(c); } } });
+    var items = [], seen = 0;
+    list.forEach(function (c) {
+      var p = project(c.lat, c.lon);
+      if (p.z <= 0 || p.x < box.x0 || p.x > box.x1 || p.y < box.y0 || p.y > box.y1) { townOut(c); return; }
+      // The first time, one after another.
+      if (!a.risen[c.slug]) { a.risen[c.slug] = now + (still ? 0 : seen * 150); }
+      seen += 1;
+      if (now < a.risen[c.slug]) { townDirty = true; townOut(c); return; }
+      items.push({ city: c, x: p.x, y: p.y });
+    });
+    var dots = items.map(function (it) { return { x: it.x, y: it.y, r: (it.city.dh || 5) + 3, it: it }; });
+
+    // Museums on top of each other share their dot, their names stacked under it.
+    var groups = [];
+    items.forEach(function (it) {
+      for (var g = 0; g < groups.length; g += 1) {
+        var L = groups[g][0];
+        if (Math.abs(L.x - it.x) < TOWN_SAME && Math.abs(L.y - it.y) < TOWN_SAME) { groups[g].push(it); return; }
+      }
+      groups.push([it]);
+    });
+    var given = [];
+    function clear(r, own) {
+      if (r.x0 < box.x0 || r.x1 > box.x1 || r.y0 < box.y0 || r.y1 > box.y1) { return false; }
+      for (var k = 0; k < given.length; k += 1) {
+        var o = given[k];
+        if (r.x0 < o.x1 + 6 && o.x0 < r.x1 + 6 && r.y0 < o.y1 + 4 && o.y0 < r.y1 + 4) { return false; }
+      }
+      for (var d = 0; d < dots.length; d += 1) {
+        var p = dots[d];
+        if (own.indexOf(p.it) >= 0) { continue; }
+        if (r.x0 < p.x + p.r && p.x - p.r < r.x1 && r.y0 < p.y + p.r && p.y - p.r < r.y1) { return false; }
+      }
+      return true;
+    }
+    groups.forEach(function (g) {
+      var L = g[0], c0 = L.city;
+      var w = 0, h = 0;
+      g.forEach(function (it) { w = Math.max(w, it.city.nw || 0); h += Math.max(LINE, it.city.nh || 0); });
+      var gap = c0.gap || 10;
+      var lit = g.some(function (it) { return !!it.city.el.dataset.lit; });
+      var tries = [["right", 0], ["left", 0], ["right", -TOWN_LIFT], ["left", -TOWN_LIFT], ["right", TOWN_LIFT], ["left", TOWN_LIFT]];
+      var chosen = null;
+      for (var k = 0; k < tries.length && !chosen; k += 1) {
+        var side = tries[k][0], lift = tries[k][1];
+        var y0 = L.y + lift - Math.max(LINE, c0.nh || 0) / 2;
+        var r = side === "right" ? { x0: L.x + gap, x1: L.x + gap + w, y0: y0, y1: y0 + h }
+                                 : { x0: L.x - gap - w, x1: L.x - gap, y0: y0, y1: y0 + h };
+        if (clear(r, g)) { chosen = { side: side, lift: lift, r: r }; }
+      }
+      if (!chosen && lit) {
+        // Pointed at: named whatever it lies over, on whichever side is inside.
+        var side2 = L.x + gap + w <= box.x1 ? "right" : "left";
+        chosen = { side: side2, lift: 0, r: null };
+      }
+      if (chosen && chosen.r) { given.push(chosen.r); }
+      var down = 0;
+      g.forEach(function (it) {
+        var c = it.city;
+        var lift = chosen ? chosen.lift : 0;
+        putMark(c, it.x, it.y, chosen ? chosen.side : "right", 1);
+        if (c.el.dataset.in !== "town") { c.el.dataset.in = "town"; }
+        var shift = "";
+        var dx = L.x - it.x, dy = L.y - it.y + lift + down;
+        if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) { shift = "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px)"; }
+        if (c.shift !== shift) { c.shift = shift; c.name.style.transform = shift; }
+        down += Math.max(LINE, c.nh || 0);
+        leadTo(c, chosen ? chosen.side : "right", chosen && it === L ? lift : 0);
+        nameShown(c, !!chosen);
+        if (a.museumRows && a.museumRows[c.slug]) {
+          var later_ = a.yearNow && a.museumRows[c.slug].y0 && a.museumRows[c.slug].y0 > a.yearNow;
+          if (!!c.el.dataset.later !== !!later_) {
+            if (later_) { c.el.dataset.later = "true"; } else { delete c.el.dataset.later; }
+          }
+        }
+      });
+    });
+
+    // The cities around it that are in the band: their marks, two named.
+    var named = 0;
+    (towns || []).forEach(function (o) {
+      var c = o.mark;
+      if (!c || !c.el) { return; }
+      var p = project(o.lat, o.lon);
+      var x = p.x, y = p.y;
+      if (c.tile) { x = (Math.floor(x / CELL_PX) + 0.5) * CELL_PX; y = (Math.floor(y / CELL_PX) + 0.5) * CELL_PX; }
+      if (o === t || p.z <= 0 || x < box.x0 || x > box.x1 || y < box.y0 || y > box.y1) {
+        if (c.el.dataset.in === "near") { townOut(c); }
+        return;
+      }
+      if (c.el.dataset.in !== "near") { c.el.dataset.in = "near"; }
+      var gap = c.gap || 10, w = c.nw || 0;
+      var y0 = y - LINE / 2;
+      var right = { x0: x + gap, x1: x + gap + w, y0: y0, y1: y0 + LINE };
+      var left = { x0: x - gap - w, x1: x - gap, y0: y0, y1: y0 + LINE };
+      var side = named < 2 && w ? (clear(right, []) ? "right" : clear(left, []) ? "left" : null) : null;
+      if (side) { given.push(side === "right" ? right : left); named += 1; }
+      putMark(c, x, y, side || "right", 1);
+      if (c.shift) { c.shift = ""; c.name.style.transform = ""; }
+      nameShown(c, !!side);
+    });
+  }
+
+  /* A mark out of the city view: back to what the globe makes of it. */
+  function townOut(c) {
+    if (!c || !c.el) { return; }
+    var e = c.el;
+    if (e.dataset.in) { delete e.dataset.in; }
+    if (e.dataset.lift) { delete e.dataset.lift; }
+    if (e.dataset.later) { delete e.dataset.later; }
+    if (c.shift) { c.shift = ""; c.name.style.transform = ""; }
+    hideMark(c);
+  }
+
+  /* Leaving the city: every mark it used goes back to the globe's keeping. */
+  function stopTown() {
+    cities.forEach(function (c) {
+      if (!c.el || !(c.el.dataset.in || c.el.dataset.lit)) { return; }
+      delete c.el.dataset.lit;
+      townOut(c);
+      c.px = null;
+    });
+    if (venueLabel) { venueLabel.hidden = true; }
+    marksDirty = true;
+    townDirty = true;
+  }
+
+  /* The galleries whose address is known, as tiles of light inside the band:
+     brighter the more works have been there, let down where the slider is
+     earlier than their first year. */
+  function drawVenues() {
+    var a = art, t = a.town;
+    var b = artBand();
+    var pf = a.pf;
+    var best = {};
+    galleryPoints(t, pf).forEach(function (g) {
+      var p = project(g.lat, g.lon);
+      if (p.z <= 0 || p.x < b.x || p.x > b.x + b.w || p.y < b.y || p.y > b.y + b.h) { return; }
+      var n = a.venueWorks ? a.venueWorks[g.vi] || 1 : 1;
+      var level = !pf ? 1 : n > 8 ? 3 : n > 1 ? 2 : 1;
+      var alpha = LEVELS[level];
+      var v = pf && pf.venues[g.vi];
+      if (v && a.yearNow && v[2] && v[2] > a.yearNow) { alpha *= 0.34; }
+      var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
+      var key = i * 4096 + j;
+      if (!best[key] || best[key].a < alpha) { best[key] = { i: i, j: j, a: alpha }; }
+    });
+    ctx.fillStyle = LIGHT;
+    Object.keys(best).forEach(function (key) {
+      var c = best[key];
+      ctx.globalAlpha = c.a;
+      ctx.fillRect(c.i * CELL_PX + 1, c.j * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  /* The gallery tile a press landed on, within one tile. */
+  function hitVenue(x, y) {
+    var a = art;
+    if (!a || !a.town) { return null; }
+    var b = artBand();
+    var best = null, near = CELL_PX;
+    galleryPoints(a.town, a.pf).forEach(function (g) {
+      var p = project(g.lat, g.lon);
+      if (p.z <= 0 || p.x < b.x || p.x > b.x + b.w || p.y < b.y || p.y > b.y + b.h) { return; }
       var tx = (Math.floor(p.x / CELL_PX) + 0.5) * CELL_PX, ty = (Math.floor(p.y / CELL_PX) + 0.5) * CELL_PX;
       var d = Math.max(Math.abs(tx - x), Math.abs(ty - y));
-      if (d <= near) { near = d; best = k; }
+      if (d <= near) { near = d; best = { g: g, x: tx, y: ty, i: Math.floor(p.x / CELL_PX), j: Math.floor(p.y / CELL_PX) }; }
     });
     return best;
+  }
+
+  /* A gallery's tile pressed: it answers, says what it is beside itself,
+     and its row in the column opens. */
+  function showVenue(hit) {
+    var a = art, pf = a && a.pf;
+    pulse(hit.x, hit.y, [LIGHT, LILAC], 0.5, 89);
+    if (!pf) { return; }
+    var v = pf.venues[hit.g.vi];
+    if (!v) { return; }
+    var n = a.venueWorks ? a.venueWorks[hit.g.vi] : 0;
+    var others = 0;
+    galleryPoints(a.town, pf).forEach(function (g) {
+      if (g === hit.g) { return; }
+      var p = project(g.lat, g.lon);
+      if (Math.floor(p.x / CELL_PX) === hit.i && Math.floor(p.y / CELL_PX) === hit.j) { others += 1; }
+    });
+    if (!venueLabel) {
+      venueLabel = el("p", "venue-label");
+      venueLabel.setAttribute("aria-live", "polite");
+      land.appendChild(venueLabel);
+    }
+    venueLabel.textContent = [v[0], yearsText(v[2], v[3]), n + (n === 1 ? " work" : " works")].filter(Boolean).join(" · ") +
+      (others ? " · and " + others + " more here" : "");
+    venueLabel.hidden = false;
+    var w = venueLabel.offsetWidth, h = venueLabel.offsetHeight;
+    var band = artBand();
+    var x = hit.x + CELL_PX;
+    if (x + w > band.x + band.w - 8) { x = Math.max(band.x + 8, hit.x - CELL_PX - w); }
+    var y = Math.max(band.y + 8, Math.min(band.y + band.h - 8 - h, hit.y - h / 2));
+    venueLabel.style.transform = "translate(" + x.toFixed(0) + "px," + y.toFixed(0) + "px)";
+    // Its row: paged on until it is there, opened, and brought into view.
+    var box = null;
+    var at = a.venueOrder ? a.venueOrder.indexOf(hit.g.vi) : -1;
+    if (at >= 0 && a.venuePager) { a.venuePager.until(at); }
+    a.venueBoxes.forEach(function (o) { if (o.vis.indexOf(hit.g.vi) >= 0) { box = o; } });
+    if (box) {
+      if (box.button.getAttribute("aria-expanded") !== "true") { openVenue(a, box, false); }
+      try { box.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" }); } catch (e) {}
+    }
   }
 
   /* ---- opening a view ------------------------------------------------------
@@ -11676,18 +12887,18 @@
 
   function openArt(spec, via) {
     if (!ARTWORKS || flying) { return; }
+    // A place is its city now, on the Museums layer.
+    if (spec.place) { openTown(spec.place, via); return; }
     via = via || {};
     var fromFind = finder.open;
     closeFinder();
-    var path = spec.work ? "histories/" + spec.work + ".json"
-      : spec.place ? "places/" + spec.place + ".json"
-      : "threads/" + spec.thread + ".json";
+    var path = spec.work ? "histories/" + spec.work + ".json" : "threads/" + spec.thread + ".json";
     var asked = artAsked = {};
     Promise.all([readPlaces(), readArt(path)]).then(function (both) {
       var d = both[1];
       if (asked !== artAsked || flying) { return; }
       if (!d || !both[0]) { unread(fromFind); return; }
-      var c = spec.work ? workCity(d) : spec.place ? placeCity(d) : threadCity(d);
+      var c = spec.work ? workCity(d) : threadCity(d);
       c.art.via = via;
       if (place) { hopTo(c); } else { goDown(c); }
     });
@@ -11772,21 +12983,6 @@
     };
   }
 
-  function placeCity(pf) {
-    var pl = artPlaceBy[pf.p];
-    var c = toVec(pf.ll[0] * RAD, pf.ll[1] * RAD);
-    var ends = [];
-    pf.works.forEach(function (row) { ends.push(row[9], row[10]); });
-    var f = frameOf([], c, medianAngle(c, ends));
-    var n = pl ? pl.n : pf.works.length;
-    return {
-      slug: "art-place-" + pf.p, title: pl ? pl.name : pf.w.split(",")[0],
-      where: n.toLocaleString("en") + (n === 1 ? " work has" : " works have") + " been here",
-      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
-      art: { kind: "place", data: pf, via: null }
-    };
-  }
-
   var THREAD_WORD = { show: "Shown", sale: "Offered", owner: "Owned", museum: "Held",
                       writing: "Written", artist: "By" };
 
@@ -11825,7 +13021,8 @@
       when: -1, whenTo: -1, playing: false, byHand: false, seg: null, holdUntil: 0,
       held: null, timers: [], order: [], n: 0, gap: WORD_GAP, dirty: true, ring: -1,
       flipped: false, names: {}, lines: [], heads: [], last: 0, stage: null,
-      at: performance.now(), cons: null, rows: [], yearNow: 0, begun: false
+      at: performance.now(), cons: null, rows: [], yearNow: 0, begun: false,
+      town: a.town || null, pagers: []
     };
     art.stopNow = function () {
       var s = art && art.stops[Math.max(0, art.ring)];
@@ -11851,9 +13048,9 @@
         var sp = project(sh[0] * RAD, wrap(sh[1] * RAD));
         if (sp.z > 0) { pulse(sp.x, sp.y, [art.tone, (art.via.from && art.via.from.tone) || LIGHT], 0.6, 144); }
       }
-    } else if (a.kind === "place") {
+    } else if (a.kind === "town") {
       artEl.dataset.look = "done";
-      placeColumn(art.data, art.via);
+      startTown(art);
     } else {
       artEl.dataset.look = "done";
       threadColumn(art.data, art.via);
@@ -11871,7 +13068,8 @@
     a.playing = false;
     a.timers.forEach(function (t) { window.clearTimeout(t); });
     if (a.watch) { a.watch.disconnect(); }
-    if (a.pager) { a.pager.disconnect(); }
+    a.pagers.forEach(function (p) { p.disconnect(); });
+    if (a.kind === "town") { stopTown(); }
     a.cons = null;
     Object.keys(a.names).forEach(function (p) {
       var n = a.names[p];
@@ -12934,24 +14132,23 @@
     if (p.z > 0) { pulse(p.x, p.y, [a.tone, LIGHT], strength, 89); }
   }
 
-  /* A stop's head: a door to its place's view — or, at one of the site's
-     museums, to the museum, its town at that year (startBuilding reads
-     atYear) and this work first among its saved works. */
+  /* A stop's head: a door to its city — or, at one of the site's museums,
+     to the museum, its town at that year (startBuilding reads atYear) and
+     this work first among its saved works. */
   function stopDoor(g, h) {
     var at = h.events[g.events[0]].m;
     var m = at && g.events.every(function (n) { return h.events[n].m === at; }) ? cityOf(at) : null;
     if (m) {
       var y = yearNum((h.events[g.events[0]] || {}).y);
       if (y !== null) { m.atYear = Math.floor(y); }
-      m.via = { work: h.id };
-      hopTo(m);
+      openMuseum(m.slug, { work: h.id });
       return;
     }
-    // The place opens at the year the work arrived there (its first dated
-    // event there), not at now.
+    // The city opens at the year the work arrived there (its first dated
+    // event there), not at now, with the work's venue first and open.
     var yr = null;
     g.events.some(function (n) { yr = yearNum((h.events[n] || {}).y); return yr !== null; });
-    openArt({ place: g.p }, { work: h.id, from: { id: h.id, title: h.title }, year: yr === null ? 0 : Math.floor(yr) });
+    openTown(g.p, { work: h.id, from: { id: h.id, title: h.title }, year: yr === null ? 0 : Math.floor(yr) });
   }
 
   /* ---- threads and doors ---------------------------------------------------
@@ -13128,9 +14325,7 @@
     d.style.transitionDelay = (still ? 0 : 520 + n * 140) + "ms";
     d.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (flying) { return; }
-      mc.via = { work: a.data.id };
-      hopTo(mc);
+      openMuseum(mc.slug, { work: a.data.id });
     });
     return d;
   }
@@ -13265,18 +14460,26 @@
     return a.slice(0, 2) === b.slice(0, 2) ? a + "–" + b.slice(2) : a + "–" + b;
   }
 
-  /* The rows, 34 at a time: more come as the last nears the column's foot. */
-  function pageRows(host, items, make) {
-    var a = art, at = 0;
+  /* The rows, 34 at a time: more come as the last nears the foot of what
+     scrolls them (the column, unless opts.root; a museum's works may be a
+     strip, so either way). opts.alive says whether they are still wanted,
+     and every watcher is kept to be let go (opts.pagers). until(k) pages on
+     until row k is there. */
+  function pageRows(host, items, make, opts) {
+    opts = opts || {};
+    var a = art, at = 0, watch = null;
+    var root = opts.root || artCol;
+    var alive = opts.alive || function () { return art === a; };
+    var pagers = opts.pagers || (a ? a.pagers : []);
     var mark = el("div", "art-more-rows");
     mark.setAttribute("aria-hidden", "true");
     host.appendChild(mark);
     function near() {
-      var r = mark.getBoundingClientRect(), c = artCol.getBoundingClientRect();
-      return r.top < c.bottom + 377;
+      var r = mark.getBoundingClientRect(), c = root.getBoundingClientRect();
+      return r.top < c.bottom + 377 && r.left < c.right + 377;
     }
     function more() {
-      if (art !== a || !mark.parentNode) { return; }
+      if (!alive() || !mark.parentNode) { return; }
       var stop = Math.min(items.length, at + 34);
       var frag = document.createDocumentFragment();
       for (var k = at; k < stop; k += 1) {
@@ -13286,22 +14489,31 @@
       at = stop;
       host.insertBefore(frag, mark);
       if (at >= items.length) {
-        if (a.pager) { a.pager.disconnect(); }
+        if (watch) { watch.disconnect(); }
         mark.parentNode.removeChild(mark);
         return;
       }
       // Still near the foot after a short page: another.
       requestAnimationFrame(function () { if (near()) { more(); } });
     }
+    // Scrolled past the foot at a fling, the rows still come.
+    function flung() { if (near()) { more(); } }
     more();
     if (at < items.length && window.IntersectionObserver) {
-      a.pager = new IntersectionObserver(function (entries) {
+      var seen = new IntersectionObserver(function (entries) {
         if (entries.some(function (e) { return e.isIntersecting; })) { more(); }
-      }, { root: artCol, rootMargin: "0px 0px 377px 0px" });
-      a.pager.observe(mark);
+      }, { root: root, rootMargin: "377px" });
+      seen.observe(mark);
+      root.addEventListener("scroll", flung, { passive: true });
+      watch = { disconnect: function () { seen.disconnect(); root.removeEventListener("scroll", flung); } };
+      pagers.push(watch);
     } else {
-      while (at < items.length) { more(); }
+      while (at < items.length && alive() && mark.parentNode) { more(); }
     }
+    return {
+      until: function (k) { while (at <= k && at < items.length && alive() && mark.parentNode) { more(); } },
+      stop: function () { if (watch) { watch.disconnect(); } }
+    };
   }
 
   // A row: a saved work, what happened there in mono, and its history a press away.
@@ -13322,6 +14534,17 @@
     a.rows.forEach(function (r) {
       if (r.y && r.y > a.yearNow) { r.el.dataset.later = "true"; } else { delete r.el.dataset.later; }
     });
+    if (a.kind !== "town") { return; }
+    // A city: its museums' rows and its galleries' by their first year here;
+    // the marks and the tiles follow (placeTown, drawVenues).
+    Object.keys(a.museumRows || {}).forEach(function (slug) {
+      var r = a.museumRows[slug];
+      if (r.y0 && r.y0 > a.yearNow) { r.row.dataset.later = "true"; } else { delete r.row.dataset.later; }
+    });
+    (a.venueBoxes || []).forEach(function (box) {
+      if (box.y0 && box.y0 > a.yearNow) { box.dataset.later = "true"; } else { delete box.dataset.later; }
+    });
+    townDirty = true;
   }
 
   /* The slider over a place's or a thread's members: from the first year
@@ -13357,91 +14580,6 @@
     showArtYear();
   }
 
-  function placeColumn(pf, via) {
-    var a = art;
-    var pl = artPlaceBy[pf.p];
-    var y0 = Infinity, y1 = -Infinity;
-    (pf.venues || []).forEach(function (v) {
-      if (v[2]) { y0 = Math.min(y0, v[2]); }
-      if (v[3]) { y1 = Math.max(y1, v[3]); }
-    });
-    var n = pl ? pl.n : pf.works.length;
-    var head = el("p", "art-count", ["Here", n.toLocaleString("en") + (n === 1 ? " work" : " works"),
-      y0 !== Infinity ? (y0 === y1 ? String(y0) : y0 + "–" + y1) : ""].filter(Boolean).join(" · "));
-    artCol.appendChild(head);
-    enterText(head, 0);
-    var came = cameLine(via);
-    if (came) { artCol.appendChild(came); }
-
-    // The institutions in the order they came into the story; the work you
-    // came by first, with its own.
-    var by = pf.venues.map(function () { return []; });
-    pf.works.forEach(function (row) { if (by[row[5]]) { by[row[5]].push(row); } });
-    var order = pf.venues.map(function (v, i) { return i; });
-    if (via && via.work) {
-      var mineAt = order.filter(function (i) { return by[i].some(function (r) { return r[0] === via.work; }); });
-      order = mineAt.concat(order.filter(function (i) { return mineAt.indexOf(i) < 0; }));
-      mineAt.forEach(function (i) {
-        by[i] = by[i].filter(function (r) { return r[0] === via.work; })
-          .concat(by[i].filter(function (r) { return r[0] !== via.work; }));
-      });
-    }
-    var items = [];
-    order.forEach(function (i) {
-      if (!by[i].length) { return; }
-      items.push({ venue: i });
-      by[i].forEach(function (r) { items.push({ row: r }); });
-    });
-    var host = el("div", "art-rows");
-    artCol.appendChild(host);
-    pageRows(host, items, function (it, k) {
-      if (it.venue !== undefined) { return venueHead(pf, it.venue, by[it.venue]); }
-      var r = it.row;
-      var what = r[8].map(function (kd) { return KIND_WORD[kd] || kd; })
-        .filter(function (w, i, all) { return all.indexOf(w) === i; }).join(" · ");
-      return artRow(r[0], r[1], r[2], r[3], [what, yearsText(r[6], r[7])].filter(Boolean).join(" "),
-                    r[6], { place: pf.p }, k);
-    });
-    artFoot();
-
-    // Its years, and every member's way in and out.
-    var first = {};
-    pf.works.forEach(function (r) {
-      var f = first[r[0]];
-      if (!f) { first[r[0]] = { y: r[6], prev: r[9], next: r[10] }; }
-      else if (r[6] && (!f.y || r[6] < f.y)) { f.y = r[6]; }
-    });
-    var members = Object.keys(first).map(function (id) { return first[id]; });
-    memberYears(a, members.map(function (m) { return m.y; }));
-    constellation(members.filter(function (m) { return m.prev || m.next; }), pf.ll, a);
-  }
-
-  // "Sidney Janis Gallery · 1968–1973 · 3 works"; a site museum's is a door down to it.
-  function venueHead(pf, i, rows) {
-    var v = pf.venues[i];
-    var ids = {};
-    rows.forEach(function (r) { ids[r[0]] = true; });
-    var count = Object.keys(ids).length;
-    var text = [v[0] || "Venue not recorded", v[2] ? (v[2] === v[3] ? String(v[2]) : v[2] + "–" + v[3]) : "",
-                count + (count === 1 ? " work" : " works")].filter(Boolean).join(" · ");
-    var mc = v[1] ? cityOf(v[1]) : null;
-    if (!mc) {
-      var p = el("p", "art-venue", text);
-      if (!v[0]) { p.dataset.unnamed = "true"; }
-      return p;
-    }
-    var b = el("button", "art-venue", text);
-    b.type = "button";
-    b.addEventListener("click", function (event) {
-      event.stopPropagation();
-      if (flying) { return; }
-      if (v[2]) { mc.atYear = v[2]; }
-      mc.via = {};
-      hopTo(mc);
-    });
-    return b;
-  }
-
   function threadColumn(tf, via) {
     var a = art;
     var n = tf.works.length;
@@ -13475,6 +14613,7 @@
     away.type = "button";
     away.addEventListener("click", function (event) { event.stopPropagation(); comeUp(); });
     artCol.appendChild(away);
+    return away;
   }
 
   /* ---- Find ------------------------------------------------------------------
@@ -13522,6 +14661,24 @@
     });
   }
 
+  /* The museums as Find knows them: museums.json's, and the Folger. */
+  var findMuseums = null;
+  function museumsToFind() {
+    if (findMuseums) { return findMuseums; }
+    findMuseums = ((museums && museums.museums) || []).map(function (m) {
+      var t = townBy[townOfSlug[m.slug]];
+      return { slug: m.slug, name: m.name, town: t ? t.name : String(m.where || "").split(",")[0],
+               held: m.held, hay: fold([m.name, shortName(m), t ? t.name : m.where].join(" ")) };
+    });
+    LANDMARKS.forEach(function (mark) {
+      if (!mark.town) { return; }
+      var t = townBy[mark.town];
+      findMuseums.push({ slug: mark.slug, name: mark.title, town: t ? t.name : "", stage: true,
+                         hay: fold(mark.title + " " + (t ? t.name : "")) });
+    });
+    return findMuseums;
+  }
+
   function findIn(text) {
     var toks = fold(text).split(" ").filter(Boolean);
     function hit(hay) {
@@ -13530,11 +14687,20 @@
     }
     var works = finding.works.filter(function (w) { return hit(w.hay); });
     works.sort(function (a, b) { return b.n - a.n; });
-    var out = { works: works, places: [], shows: [], owners: [], writings: [], artists: [] };
-    artPlaces.forEach(function (pl) { if (out.places.length < 3 && hit(pl.hay)) { out.places.push(pl); } });
+    var out = { works: works, cities: [], museums: [], shows: [], owners: [], writings: [], artists: [] };
+    (towns || []).forEach(function (t) {
+      if (out.cities.length >= 5) { return; }
+      if (!t.hay) { t.hay = fold(t.name + " " + t.cc); }
+      if (hit(t.hay)) { out.cities.push(t); }
+    });
+    if (towns) {
+      museumsToFind().forEach(function (m) { if (out.museums.length < 3 && hit(m.hay)) { out.museums.push(m); } });
+    }
     finding.threads.forEach(function (t) {
       var g = t.k === "show" || t.k === "sale" ? "shows" : t.k === "owner" || t.k === "museum" ? "owners"
         : t.k === "writing" ? "writings" : "artists";
+      // A museum found as a museum is not found again as its thread.
+      if (t.k === "museum" && out.museums.some(function (m) { return m.name === t.name; })) { return; }
       if (out[g].length < 3 && hit(t.hay)) { out[g].push(t); }
     });
     return out;
@@ -13577,11 +14743,13 @@
     finderFound.textContent = "";
     var works = artInfo ? artInfo.works.toLocaleString("en") : "saved works";
     var total = g.works.length;
-    var others = g.places.length + g.shows.length + g.owners.length + g.writings.length + g.artists.length;
+    var others = g.cities.length + g.museums.length + g.shows.length + g.owners.length + g.writings.length + g.artists.length;
+    // What is found is lit on the globe by its cities.
     var lit = {};
-    g.works.forEach(function (w) { w.pl.forEach(function (i) { lit[i] = true; }); });
-    g.places.forEach(function (pl) { lit[pl.i] = true; });
-    finder.found = lit;
+    g.works.forEach(function (w) { w.pl.forEach(function (i) { if (artPlaces[i]) { lit[artPlaces[i].p] = true; } }); });
+    g.cities.forEach(function (t) { lit[t.key] = true; });
+    g.museums.forEach(function (m) { var key = townOfSlug[m.slug] || (m.stage && "washington-us"); if (key) { lit[key] = true; } });
+    showFinding(lit);
     if (!total && !others) {
       finderSaid.textContent = "Nothing by that name among the " + works + ".";
       return;
@@ -13592,12 +14760,24 @@
       finderHead("Works");
       g.works.slice(0, 13).forEach(function (w) { finderFound.appendChild(foundWork(w, k)); k += 1; });
     }
-    if (g.places.length) {
-      finderHead("Places");
-      g.places.forEach(function (pl) {
+    if (g.cities.length) {
+      finderHead("Cities");
+      g.cities.forEach(function (t) {
         finderFound.appendChild(foundLine(k, function (b) {
-          b.textContent = pl.name + ", " + pl.cc + " · " + pl.n.toLocaleString("en") + (pl.n === 1 ? " work" : " works");
-          b.addEventListener("click", function () { openArt({ place: pl.p }); });
+          var m = t.museums.length;
+          b.textContent = t.name + ", " + t.cc + " · " + (m ? m + (m === 1 ? " museum · " : " museums · ") : "") +
+            t.n.toLocaleString("en") + (t.n === 1 ? " work" : " works");
+          b.addEventListener("click", function () { openTown(t.key); });
+        }));
+        k += 1;
+      });
+    }
+    if (g.museums.length) {
+      finderHead("Museums");
+      g.museums.forEach(function (m) {
+        finderFound.appendChild(foundLine(k, function (b) {
+          b.textContent = [m.name, m.town, m.stage ? "the plays" : m.held + " saved"].filter(Boolean).join(" · ");
+          b.addEventListener("click", function () { openMuseum(m.slug, {}); });
         }));
         k += 1;
       });
@@ -13614,7 +14794,7 @@
             b.addEventListener("click", function () {
               // A museum on the Museums layer opens as the museum.
               var mc = t.k === "museum" ? museumNamed(t.name) : null;
-              if (mc) { closeFinder(); if (!place && !flying) { goDown(mc); } return; }
+              if (mc) { openMuseum(mc.slug, {}); return; }
               openArt({ thread: t.id });
             });
           }));
@@ -13627,7 +14807,7 @@
   // Before a word is typed: eight works dealt from the longest journeys.
   function dealFound() {
     finderFound.textContent = "";
-    finder.found = null;
+    showFinding(null);
     finderSaid.textContent = "";
     var j = (artInfo && artInfo.j) || [];
     var pool = j.slice(0, 144), dealt = [];
@@ -13640,15 +14820,15 @@
   }
 
   function openFinder() {
-    if (!finderEl || layerOn !== "artworks" || place || flying) { return; }
+    if (!ARTWORKS || !finderEl || layerOn !== "museums" || place || flying) { return; }
     finderEl.hidden = false;
     finder.open = true;
     if (artFind) { artFind.setAttribute("aria-expanded", "true"); }
     // As it was left: the same words, the same place in the list.
-    finder.found = finder.kept || null;
+    showFinding(finder.kept || null);
     if (finder.scroll) { finderEl.scrollTop = finder.scroll; }
     if (!finding) { finderSaid.textContent = "Reading the works…"; }
-    readFinding().then(function () {
+    Promise.all([readFinding(), readTowns()]).then(function () {
       if (!finder.open) { return; }
       if (!finding) { finderSaid.textContent = "The works could not be read just now."; return; }
       if (finder.dealt) { return; }
@@ -13665,8 +14845,23 @@
     finder.kept = finder.found;
     finderEl.hidden = true;
     finder.open = false;
-    finder.found = null;
+    showFinding(null);
     if (artFind) { artFind.setAttribute("aria-expanded", "false"); }
+  }
+
+  /* What Find has found, lit on the globe: its cities' tiles at the top and
+     their diamonds ringed, the rest let down. */
+  function showFinding(lit) {
+    finder.found = lit;
+    if (lit) { land.dataset.finding = "true"; } else { delete land.dataset.finding; }
+    cities.forEach(function (c) {
+      if (!c.town) { return; }
+      var on = !!(lit && lit[c.town.key]);
+      if (on !== !!c.el.dataset.found) {
+        if (on) { c.el.dataset.found = "true"; } else { delete c.el.dataset.found; }
+      }
+    });
+    marksDirty = true;
   }
 
   if (artFind) {
@@ -13875,13 +15070,12 @@
 
       requestAnimationFrame(frame);
 
-      // The Artworks layer, when it was this viewer's last: read once the
-      // world is up, so the first paint waits on none of it.
-      if (ARTWORKS) {
-        land.dataset.layerOn = layerOn;
-        if (layerOn === "artworks") {
-          (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(artLayer);
-        }
+      // The Museums layer's cities, when it was this viewer's last: read once
+      // the world is up, so the first paint waits on none of it.
+      land.dataset.layerOn = layerOn;
+      measureSafe();
+      if (layerOn === "museums") {
+        (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(museumsLayer);
       }
 
       // An old link to the works page, forwarded here.

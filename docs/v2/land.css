@@ -536,6 +536,7 @@
   font-size: var(--t-1);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;           /* "← New York" on one line beside a museum's name */
   cursor: pointer;
 }
 
@@ -2202,26 +2203,241 @@
 .held-nopic { grid-template-columns: 89px 1fr; }
 .held-nopic::before { content: ""; grid-area: 1 / 1; width: 89px; height: 89px; box-shadow: inset 0 0 0 1px rgba(168, 146, 122, 0.35); }
 
-/* ---- the Artworks layer ---------------------------------------------------
-   Every place the saved works have been, lit as tiles by land.js; the most
-   travelled-to named, each a small square of the light. Four pills measure
-   the whole of a phone's width between its gutters, so on a narrow one they
-   are drawn a little closer. */
+/* ---- the Museums layer's cities (land.js, "the cities") ---------------------
+   A city with museums is a cream diamond, the museums' own shape, as big as
+   its museums are many; a city of galleries only is a tile of the light,
+   drawn by land.js, and the busiest of them are named beside it. On a
+   narrow phone the pills are drawn a little closer. */
 @media (max-width: 400px) {
   .filter-layer { padding: 6px 10px; letter-spacing: 0.06em; }
 }
-.city[data-kind="place"] .city-dot {
+.city[data-kind="town"] .city-dot,
+.dirt-look .city[data-kind="town"] .city-dot {
+  box-sizing: border-box;
   width: 7px;
   height: 7px;
-  border-radius: 0;
-  background: #5e52c7;
+  margin: 0 2px;
+  border-radius: 1px;
+  background: #eadfcd;
+  border: 1.5px solid rgba(15, 10, 7, 0.85);
   box-shadow: none;
+  transform: rotate(45deg) scale(0.2);
 }
-.city[data-kind="place"] .city-name { font-family: var(--mono); font-style: normal; }
-.dirt-look .city[data-kind="place"] .city-dot { background: #5e52c7; border: 0; box-shadow: 0 0 0 2px rgba(15, 10, 7, 0.6); }
+.city[data-kind="town"][data-size="2"] .city-dot { width: 9px; height: 9px; }
+.city[data-kind="town"][data-size="3"] .city-dot { width: 11px; height: 11px; }
+.city[data-kind="town"][data-up="true"] .city-dot { transform: rotate(45deg); }
+.city[data-kind="town"]:hover .city-dot,
+.city[data-kind="town"]:focus-visible .city-dot { transform: rotate(45deg) scale(1.5); }
+/* A city of galleries: the lit tile is its dot, and its name sits beside it. */
+.city[data-tile] .city-dot,
+.dirt-look .city[data-tile] .city-dot { visibility: hidden; width: 11px; height: 11px; }
+.city[data-knot] { visibility: hidden; }
+/* While Find has found something: its cities ringed in the light. */
+.city[data-kind="town"][data-found] .city-dot { box-shadow: 0 0 0 3px #5e52c7; }
+
+/* Names come and go in three steps, and a name not shown takes no press. */
+.city-name { transition: opacity 0.26s steps(3); }
+.city[data-named="false"] .city-name { opacity: 0; pointer-events: none; }
+
+/* In a city: its museums (and the Folger in Washington) at their own doors,
+   and the cities around it, take the light and the press there. */
+.land[data-at="city"][data-art="town"] .city[data-in] {
+  opacity: 1 !important;
+  transition: opacity 0.42s steps(4), color var(--beat-3) ease;
+}
+.land[data-at="city"][data-art="town"] .city[data-in] > * { pointer-events: auto; }
+.land[data-at="city"][data-art="town"] .city[data-in][data-named="false"] .city-name { pointer-events: none; }
+/* Not yet there, at the slider's year. */
+.land[data-at="city"][data-art="town"] .city[data-in][data-later] { opacity: 0.34 !important; }
+/* A museum's name in its city, in the serif, short (land.js shortName). */
+.city[data-intown] .city-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 44vw;
+  font-family: var(--serif, serif);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+@media (min-width: 721px) {
+  .city[data-intown] .city-name { max-width: none; white-space: nowrap; }
+}
+/* Lifted or dropped a line to find room: a hairline back to its dot. */
+.city[data-lift] .city-name { position: relative; overflow: visible; }
+.city[data-lift] .city-name::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: var(--lead, 0px);
+  height: 1px;
+  margin-top: -0.5px;
+  background: currentColor;
+  opacity: 0.4;
+  transform-origin: 100% 50%;
+  transform: rotate(var(--lead-rot, 0deg));
+  pointer-events: none;
+}
+.city[data-side="left"][data-lift] .city-name::before { right: auto; left: 100%; transform-origin: 0 50%; }
+/* Pointed at, here or in the column: bigger, named whatever it lies over. */
+.city[data-lit] { z-index: 61; }
+.city[data-kind="museum"][data-lit] .city-dot { transform: rotate(45deg) scale(1.5); }
+.city[data-kind="landmark"][data-lit] .city-dot { transform: scale(1.5); }
+
+/* The city's column: a directory. */
+.town-section {
+  margin: var(--s-5) 0 var(--s-3);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.art-count + .town-section { margin-top: var(--s-4); }
+.town-museum-row { margin: 0 0 var(--s-4); cursor: pointer; }
+.town-museum {
+  display: grid;
+  grid-template-columns: 13px 1fr 12px;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 16px;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.26s steps(3);
+}
+.town-dia {
+  width: 9px;
+  height: 9px;
+  margin: 0 2px;
+  background: #eadfcd;
+  transform: rotate(45deg);
+  transition: transform 0.26s steps(3);
+}
+.town-ring { box-sizing: border-box; width: 11px; height: 11px; margin: 0 1px; border: 2px solid #eadfcd; border-radius: 50%; background: transparent; transform: none; }
+.town-go { color: #a8927a; font-size: 18px; line-height: 1; text-align: right; }
+.town-museum:hover,
+.town-museum:focus-visible,
+.town-museum-row[data-lit] .town-museum { color: #ffffff; }
+.town-museum-row[data-lit] .town-dia { transform: rotate(45deg) scale(1.5); }
+.town-museum-row[data-lit] .town-ring { transform: scale(1.5); }
+.town-museum:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 2px; }
+.town-museum-meta {
+  margin: 1px 0 0 calc(13px + var(--s-3));
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+.town-thumbs { display: flex; gap: 6px; margin: var(--s-2) 0 0 calc(13px + var(--s-3)); }
+.town-thumb {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: rgba(234, 223, 205, 0.06);
+  cursor: pointer;
+}
+.town-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; color: transparent; }
+.town-thumb-none img { visibility: hidden; }
+.town-thumb:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 2px; }
+@media (min-width: 721px) {
+  .town-thumb { width: 40px; height: 40px; }
+}
+/* Where the work you came by was held here. */
+.town-museum-row[data-came] .town-museum-name { text-decoration: underline; text-decoration-color: #9d95e6; text-underline-offset: 4px; }
+.town-museum-row[data-later],
+.town-venue-box[data-later] { opacity: 0.34; }
+.town-near-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.town-near {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(168, 146, 122, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: #cbbba6;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.town-near:hover,
+.town-near:focus-visible { color: #eadfcd; border-color: #eadfcd; }
+/* The galleries, fairs and sale rooms: a step quieter than the museums. */
+.town-venues { margin-top: var(--s-5); }
+.town-venue {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.town-venue-name { display: block; font-family: var(--sans); font-size: 15px; line-height: 1.3; color: #cbbba6; }
+.town-venue-meta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8d7a66;
+}
+.town-venue:hover .town-venue-name,
+.town-venue:focus-visible .town-venue-name,
+.town-venue[aria-expanded="true"] .town-venue-name { color: #eadfcd; }
+.town-venue:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 2px; }
+.town-venue-unnamed .town-venue-name { color: #a8927a; }
+.town-venue-works { margin: var(--s-2) 0 var(--s-3); }
+.art-rows .held[data-came] { box-shadow: -4px 0 0 #9d95e6; }
+.town-unread { margin-top: var(--s-4); }
+/* A gallery's tile pressed: what it is, beside it. */
+.venue-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 58;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.8);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.venue-label[hidden],
+.land:not([data-at="city"]) .venue-label { display: none; }
+/* A museum's works that have been there without being held by it. */
+.held-also .held-count { margin-top: var(--s-5); }
+.held-also-row .art-row-what { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .city-name, .town-museum, .town-dia,
+  .land[data-at="city"][data-art="town"] .city[data-in] { transition: none; }
+}
 
 /* Find: one quiet line just above the pill, only up at the globe and only
-   while the Artworks layer is on. */
+   while the Museums layer is on. */
 .art-find {
   position: absolute;
   left: 50%;
@@ -2248,7 +2464,7 @@
 .art-find[aria-expanded="true"] { background: #eadfcd; color: #0f0a07; }
 .art-find[hidden],
 .land:not([data-at="globe"]) .art-find,
-.land:not([data-layer-on="artworks"]) .art-find { display: none; }
+.land:not([data-layer-on="museums"]) .art-find { display: none; }
 
 .finder {
   position: fixed;
