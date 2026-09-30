@@ -199,7 +199,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
     if (!im) {
       // this browser cannot draw it; Claude may still read it
       picked = { file, canvas: null, measured: "" };
-      if (imagesOk) say("This browser can't show that photo's format, so it can't go into the plane, but Claude can still read it. Drift when ready.");
+      if (imagesOk) say("This browser can't show that photo's format, so it can't go into the plane, but Claude is reading it.");
       else { picked = null; say("This browser can't open that photo's format (it may be HEIC). A screenshot of it, or a JPEG or PNG, will go in."); }
       return picked;
     }
@@ -208,9 +208,6 @@ For "go", give a real website you are certain exists (a museum or collection pag
     $("d-thumb").src = canvas.toDataURL("image/jpeg", 0.6); $("d-thumb").hidden = false; $("d-thumb").alt = "The photo put in";
     if (plane()) GLG.putIn(canvas, vx + VW / 2, vy + VH / 2);
     label();
-    if (!sample) say("The photo is in the plane.");
-    else if (!imagesOk) say("The photo is in the plane. Claude can't be sent pictures in this view, so the drift will follow its colours and light; add a name for more, then Drift.");
-    else say("The photo is in the plane. Add a name if you like, then Drift.");
     return picked;
   }
   /** A word as a sheet of type for the plane: warm paper, lines of the word at Fibonacci sizes, roman and italic, one
@@ -240,15 +237,23 @@ For "go", give a real website you are certain exists (a museum or collection pag
   $("d-q").addEventListener("input", label);
   const blobOf = (canvas) => new Promise((ok) => sendAs ? canvas.toBlob(ok, sendAs, 0.88) : ok(null));
   $("d-pick").addEventListener("click", () => $("d-file").click());
-  $("d-file").addEventListener("change", () => take($("d-file").files[0]));
+  /** A photo given is taken in at once: into the plane, and the drift starts from it (with any name already typed). */
+  async function takeAndGo(f) {
+    const ph = await take(f);
+    if (!ph) return;
+    const t = $("d-q").value.trim();
+    $("d-q").value = "";
+    go(t || null, ph, []);
+  }
+  $("d-file").addEventListener("change", () => takeAndGo($("d-file").files[0]));
   stageEl.addEventListener("dragover", (e) => { if ([...(e.dataTransfer.items || [])].some((i) => i.kind === "file")) e.preventDefault(); });
   stageEl.addEventListener("dragover", (e) => { if ([...(e.dataTransfer.types || [])].includes("text/plain")) e.preventDefault(); });
   stageEl.addEventListener("drop", async (e) => {
     const f = e.dataTransfer.files[0], text = (e.dataTransfer.getData("text/plain") || "").trim();
-    if (isImage(f)) { e.preventDefault(); const ph = await take(f); if (ph) go(null, ph, []); }
+    if (isImage(f)) { e.preventDefault(); takeAndGo(f); }
     else if (text) { e.preventDefault(); putIn(text.slice(0, 233), null); go(text.slice(0, 233), null, []); }
   });
-  document.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find(isImage); if (f) take(f); });
+  document.addEventListener("paste", (e) => { const f = [...(e.clipboardData?.files || [])].find(isImage); if (f) takeAndGo(f); });
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const t = $("d-q").value.trim();

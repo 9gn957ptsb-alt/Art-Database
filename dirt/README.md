@@ -291,7 +291,7 @@ sizes, roman and italic, one line vermilion) that the collage tears up and carri
 a new thing given mid-drift replaces that drift; and where Claude cannot answer, the thing is in the plane all the same
 and the page says why there is no drift. A photo that the browser cannot open is tried with a second decoder, and if
 that fails too, goes to Claude alone where Claude can take pictures.
-A photo also goes into the plane itself the moment it is given (Photo is always there, even where Claude is not): it
+A photo also starts the drift the moment it is given (with any name already typed; no need to press Drift), and goes into the plane itself at once (Photo is always there, even where Claude is not): it
 arrives where you are, torn out whole, for a few seconds while the datamosh melts it, and from then on it is one of the
 collage's materials, most of its pieces at first and a third of them after a few minutes, carried across the plane
 until another photo takes its place. Where the view cannot send Claude pictures, the page measures the photo (its
