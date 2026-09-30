@@ -74,8 +74,18 @@ takes about half an hour, a run from the cache about a minute. The report of wha
 was rejected as doubtful and why, and which works Artsy says these museums hold that were not
 found is data/museum_apis_cache/report.json.
 
+Where each matched work is now (--where): for the works report.json matched at the Art Institute,
+the Met, Cleveland and SMK, the museum's own record of where it is — the Art Institute's is_on_view,
+gallery_id and gallery_title (asked for all of them in one request), the Met's GalleryNumber,
+Cleveland's current_location, SMK's on_display and current_location_name — with each record's
+statement of size and kind, into data/museum_apis_cache/where.json, and the Art Institute's
+galleries (number, title, floor, a point) into data/museum_apis_cache/aic-galleries.json. Read from
+the cache unless --refresh asks again, as the daily run does, so a work rehung is seen. The walk
+inside the museums hangs the saved works from these (scripts/build_interiors.py).
+
     python3 scripts/fetch_history_museum_apis.py [--only artsy-id ...] [--museums aic,cma,smk,lux,met]
                                                  [--threads 8] [--refresh]
+    python3 scripts/fetch_history_museum_apis.py --where [--refresh]
 """
 
 import argparse
@@ -102,6 +112,8 @@ WORKS = ROOT / "data" / "histories" / "artsy" / "works"
 OUT = ROOT / "data" / "histories" / "museums"
 CACHE = ROOT / "data" / "museum_apis_cache"
 REPORT = CACHE / "report.json"
+WHERE = CACHE / "where.json"
+GALLERIES = CACHE / "aic-galleries.json"
 
 AGENT = ("Art-Database artwork-history reader (+https://github.com/9gn957ptsb-alt/Art-Database; "
          "art-database@users.noreply.github.com)")
@@ -121,7 +133,9 @@ AIC_LIST = ["id", "title", "alt_titles", "artist_title", "artist_display", "arti
             "date_end", "date_display", "main_reference_number", "dimensions", "medium_display",
             "credit_line", "artwork_type_title", "fiscal_year_deaccession", "edition"]
 AIC_FULL = AIC_LIST + ["provenance_text", "exhibition_history", "publication_history", "place_of_origin",
-                       "catalogue_display"]
+                       "catalogue_display", "is_on_view", "gallery_id", "gallery_title"]
+# Where a work is now, and what the walk needs to hang it.
+AIC_WHERE = ["id", "title", "is_on_view", "gallery_id", "gallery_title", "dimensions", "artwork_type_title"]
 CMA_LIST = ["id", "accession_number", "title", "creation_date", "creation_date_earliest",
             "creation_date_latest", "technique", "type", "measurements", "dimensions", "url", "creditline",
             "creators", "legal_status", "alternate_titles"]
@@ -250,11 +264,21 @@ def cache_path(api, key):
     return CACHE / api / (hashlib.sha1(key.encode()).hexdigest() + ".json")
 
 
+def cache_key(url, params=None, body=None):
+    return url + "?" + urllib.parse.urlencode(params or {}, doseq=True) + ("#" + json.dumps(body, sort_keys=True)
+                                                                           if body is not None else "")
+
+
+def read_on(api, url, params=None, body=None):
+    """The day an answer was read: when its cache file was written."""
+    path = cache_path(api, cache_key(url, params, body))
+    return time.strftime("%Y-%m-%d", time.gmtime(path.stat().st_mtime)) if path.exists() else None
+
+
 def fetch(api, url, params=None, body=None, refresh=False, tries=7):
     """GET (or POST a JSON body) and return the parsed answer, None when the thing is not there.
     Every answer is kept in data/museum_apis_cache/<api>/ and read from there next time."""
-    key = url + "?" + urllib.parse.urlencode(params or {}, doseq=True) + ("#" + json.dumps(body, sort_keys=True)
-                                                                          if body is not None else "")
+    key = cache_key(url, params, body)
     path = cache_path(api, key)
     with _lock:
         klock = _key_locks.setdefault(str(path), threading.Lock())
@@ -1788,6 +1812,78 @@ EVENTS = {"aic": aic_events, "cma": cma_events, "smk": smk_events, "met": met_ev
           "yuag": lux_events, "ycba": lux_events}
 
 
+# ---------------------------------------------------------------- where each work is now
+
+def where_now(refresh):
+    """Each matched work's place in its museum today, from the museum's own record."""
+    matched = json.loads(REPORT.read_text())["matched"] if REPORT.exists() else []
+    out = {}
+    aic = [m for m in matched if m["museum"] == "aic"]
+    for k in range(0, len(aic), 100):
+        batch = aic[k:k + 100]
+        params = {"ids": ",".join(m["record"] for m in batch), "fields": ",".join(AIC_WHERE), "limit": 100}
+        data = {str(d["id"]): d for d in (fetch("aic", AIC + "artworks", params, refresh=refresh) or {}).get("data") or []}
+        on = read_on("aic", AIC + "artworks", params)
+        for m in batch:
+            d = data.get(str(m["record"]))
+            if d:
+                out[m["id"]] = {"museum": "aic", "record": m["record"], "url": m["url"], "read": on,
+                                "where": {f: d.get(f) for f in ("is_on_view", "gallery_id", "gallery_title")},
+                                "dims": d.get("dimensions") or "", "kind": d.get("artwork_type_title") or ""}
+    for m in matched:
+        mus, rec = m["museum"], m["record"]
+        if mus == "met":
+            url = MET + f"objects/{rec}"
+            d = fetch("met", url, refresh=refresh) or {}
+            out[m["id"]] = {"museum": "met", "record": rec, "url": m["url"], "read": read_on("met", url),
+                            "where": {"GalleryNumber": d.get("GalleryNumber") or ""},
+                            "dims": d.get("dimensions") or "", "kind": d.get("classification") or ""}
+        elif mus == "cma":
+            url = CMA + urllib.parse.quote(rec)
+            d = (fetch("cma", url, refresh=refresh) or {}).get("data") or {}
+            dims = d.get("dimensions") or {}
+            part = next((dims[p] for p in ("unframed", "overall", "image", "sheet", "object") if dims.get(p)), None)
+            out[m["id"]] = {"museum": "cma", "record": rec, "url": m["url"], "read": read_on("cma", url),
+                            "where": {"current_location": d.get("current_location")},
+                            "dims": d.get("measurements") or "", "kind": d.get("type") or "",
+                            "cm": [round(part["width"] * 100, 1), round(part["height"] * 100, 1)]
+                            + ([round(part["depth"] * 100, 1)] if part.get("depth") else [])
+                            if part and part.get("width") and part.get("height") else None}
+        elif mus == "smk":
+            url, params = SMK + "art/", {"object_number": rec, "lang": "en"}
+            j = fetch("smk", url, params, refresh=refresh) or {}
+            d = (j.get("items") or [{}])[0]
+            net = {x.get("type"): x.get("value") for x in d.get("dimensions") or [] if x.get("part") == "Netto"}
+            cm = None
+            try:
+                if net.get("width") and net.get("height"):
+                    cm = [float(net["width"]), float(net["height"])] + ([float(net["depth"])] if net.get("depth") else [])
+            except ValueError:
+                cm = None
+            out[m["id"]] = {"museum": "smk", "record": rec, "url": m["url"], "read": read_on("smk", url, params),
+                            "where": {f: d.get(f) for f in ("on_display", "current_location_name",
+                                                            "current_location_date")},
+                            "dims": "", "kind": ", ".join(d.get("object_names") and
+                                                         [o.get("name", "") for o in d["object_names"]] or []),
+                            "cm": cm}
+    WHERE.write_text(json.dumps({"read": time.strftime("%Y-%m-%d"), "works": out}, ensure_ascii=False, indent=1))
+    # The Art Institute's galleries: where each is, and on which floor.
+    galleries, page = [], 1
+    while True:
+        params = {"page": page, "limit": 100, "fields": "id,title,number,floor,latitude,longitude,is_closed"}
+        j = fetch("aic", AIC + "galleries", params, refresh=refresh) or {}
+        galleries += j.get("data") or []
+        if page >= (j.get("pagination") or {}).get("total_pages", 0):
+            break
+        page += 1
+    GALLERIES.write_text(json.dumps({"read": time.strftime("%Y-%m-%d"), "galleries": galleries},
+                                    ensure_ascii=False, indent=1))
+    by = {}
+    for v in out.values():
+        by[v["museum"]] = by.get(v["museum"], 0) + 1
+    print(f"where each matched work is now: {by}; {len(galleries)} Art Institute galleries", flush=True)
+
+
 # ---------------------------------------------------------------- the run
 
 def main():
@@ -1796,7 +1892,13 @@ def main():
     ap.add_argument("--museums", default="aic,cma,smk,lux,met")
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--refresh", action="store_true", help="ask the museums again, not the cache")
+    ap.add_argument("--where", action="store_true",
+                    help="only read where each matched work is now, into where.json (and the AIC's galleries)")
     args = ap.parse_args()
+    if args.where:
+        CACHE.mkdir(parents=True, exist_ok=True)
+        where_now(args.refresh)
+        return
     wanted = set()
     for m in args.museums.split(","):
         wanted |= {"yuag", "ycba"} if m == "lux" else {m}
