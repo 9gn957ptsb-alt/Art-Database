@@ -668,6 +668,10 @@
     el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
     if (city.layer) { el.dataset.layer = city.layer; }
     if (city.inTown) { el.dataset.intown = "true"; }     // named in its city, in the serif (land.css)
+    // Unnamed until a naming pass gives it its name: made again (the window
+    // changing size, the fonts arriving), every mark's name would otherwise
+    // show for a moment before it was taken away.
+    el.dataset.named = "false";
     if (city.town) {
       // A city's diamond is as big as its museums are many; a city of
       // galleries only is its tile of light, and the mark is its name.

@@ -815,7 +815,7 @@
     [box, plan, light, names, label, look].forEach(function (e) { root.appendChild(e); });
     root.style.visibility = "hidden";
     (ctx.host || document.body).appendChild(root);
-    styleOnce();
+    var styled_ = styleOnce();
 
     var s = S = {
       ctx: ctx, host: host, root: root, box: box, view: view, plan: plan, light: light, names: names,
@@ -832,8 +832,9 @@
     if (ctx.came && ctx.at && ctx.at.work) { s.cameFor[ctx.at.work] = ctx.came; }
 
     return new Promise(function (done, fail) {
-      // Compiled after the page has had a moment to show the press.
-      window.setTimeout(function () {
+      // Compiled after the page has had a moment to show the press, and
+      // sized once walk.css has come.
+      Promise.all([styled_, new Promise(function (r) { window.setTimeout(r, 30); })]).then(function () {
         if (S !== s) { done(null); return; }
         try {
           s.world = compileFor(ctx);
@@ -846,6 +847,7 @@
         }
         if (!s.world.floors.length || !s.world.enter) { close(); fail(new Error("nothing to walk")); return; }
         s.caster = new Caster(s.world, rgbOf(ctx.frameInk, [15, 12, 10]));
+        s.world.floors.forEach(function (f) { prepFloor(s.world, f); });
         var e = s.world.enter, was = ctx.at && ctx.at.resume;
         s.me = was && s.world.floors[was.floor] ? { floor: was.floor, x: was.x, y: was.y, a: was.a, z: 0 }
                                                 : { floor: e.floor, x: e.x, y: e.y, a: e.a, z: 0 };
@@ -863,18 +865,29 @@
           window.setTimeout(function () { if (S === s && s.level === "plan") { goTo(wid, ctx.came); } }, host.still ? 0 : host.CLOD_RISE + 200);
         }
         done(api);
-      }, 30);
+      });
     });
   }
 
-  var styled = false;
+  // walk.css, appended once; resolved when it has come (or failed: the walk
+  // still works, only plainer).
+  var styled = null;
   function styleOnce() {
-    if (styled || document.querySelector("link[href$='walk.css']")) { styled = true; return; }
-    styled = true;
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "walk.css";
-    document.head.appendChild(link);
+    if (styled) { return styled; }
+    var had = document.querySelector("link[href$='walk.css']");
+    if (had && had.sheet) { styled = Promise.resolve(); return styled; }
+    styled = new Promise(function (done) {
+      var link = had || document.createElement("link");
+      link.addEventListener("load", function () { done(); });
+      link.addEventListener("error", function () { done(); });
+      if (!had) {
+        link.rel = "stylesheet";
+        link.href = "walk.css";
+        document.head.appendChild(link);
+      }
+      window.setTimeout(done, 4000);
+    });
+    return styled;
   }
 
   function floorZ(fi, x, y) {
@@ -919,6 +932,12 @@
     on(document, "keyup", keyUp);
     on(window, "blur", function () { if (S) { S.keys = {}; } });
     on(window, "resize", function () { if (S) { S.sized = false; S.dirty = S.planDirty = true; wake(); } });
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(function () { if (S === s) { s.sized = false; s.dirty = s.planDirty = true; wake(); } });
+      ro.observe(s.root);
+      if (s.ctx.band) { ro.observe(s.ctx.band); }
+      s.listeners.push([{ removeEventListener: function () { ro.disconnect(); } }, "", null, null]);
+    }
     on(document, "visibilitychange", function () { if (S && !document.hidden) { S.last = performance.now(); S.dirty = S.planDirty = true; wake(); } });
   }
 
@@ -2140,6 +2159,7 @@
       s.host.pulse(br.left + mid, br.top + br.height * 0.45, (h.tones || []).concat([s.host.LIGHT]), 0.8);
     }
     startReading(h);
+    if (s.cam && s.level === "walk") { names(performance.now()); }
   }
 
   /* ---------------------------------------------------------------- the reading */
@@ -2659,7 +2679,17 @@
     var fl = world.floors[e.floor], vx = world.model;
     var z = fl ? fl.z : 0;
     var dots = vx ? [(m[0] + vx.site[0] / 2) / vx.v - vx.nx / 2 - 0.5, (m[1] + vx.site[1] / 2) / vx.v - vx.ny / 2 - 0.5, z / vx.v] : null;
-    return { door: { x: m[0], y: m[1], z: z }, dots: dots, shell: world.shell, tier: world.tier };
+    // The way out of the door, in the model's frame: the tile is shown only
+    // while the door faces the one looking (Walk.doorShows).
+    var ox = Math.cos(e.a + Math.PI), oy = Math.sin(e.a + Math.PI), o = P().toWorld(world, ox, oy);
+    return { door: { x: m[0], y: m[1], z: z }, dots: dots, out: o, shell: world.shell, tier: world.tier };
+  }
+
+  // Whether a door's front can be seen at a heading of the building view
+  // (Models.draw's): its way out turned toward the one looking.
+  function doorShows(prep, heading) {
+    if (!prep || !prep.out) { return false; }
+    return prep.out[0] * Math.sin(heading) + prep.out[1] * Math.cos(heading) > -0.05;
   }
 
   // The hung works in walking order from where you are: one flood over the
@@ -2736,7 +2766,7 @@
     var fl = s.world && s.world.floors[s.me.floor];
     return { level: s.level, floor: s.me.floor, floorId: fl ? fl.id : null, x: s.me.x, y: s.me.y, a: s.me.a,
              room: r && !r.pseudo ? r.id : null, standing: s.standing ? s.standing.id : null,
-             gliding: !!s.glide, planFloor: s.planFloor, dot: s.dot };
+             gliding: !!s.glide, planFloor: s.planFloor, dot: s.dot, raf: !!s.raf };
   }
 
   function stats() {
@@ -2806,7 +2836,7 @@
   var api = {
     open: open, up: up, down: down, goTo: function (id, came) { return goTo(id, came); },
     level: function () { return S ? S.level : null; },
-    state: state, close: close, prepare: prepare, order: order,
+    state: state, close: close, prepare: prepare, doorShows: doorShows, order: order,
     world: function () { return S ? S.world : null; },
     hung: function () { return S ? S.hung : []; },
     works: function () { return S ? S.works : []; },
