@@ -1,0 +1,13 @@
+{"slug": "museum-whitney-museum-of-american-art-1",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-whitney-museum-of-american-art-1.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "5c10127b01c98c002c38fd7f", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

@@ -1,0 +1,21 @@
+{"slug": "museum-princeton-university-art-museum",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-princeton-university-art-museum.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "53076028275b24a8030000d2", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "566057a45b2fba6408000033", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "56608806864d827a28000006", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "566057b3cb4c27640f000091", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5660621d9acc8a6404000092", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "566057b0c9dc24430b0000ee", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "54ef878a7261691659e70300", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5307707db202a38f6a000003", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "56608837cd530e10bb00000e", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

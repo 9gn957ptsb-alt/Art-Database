@@ -120,9 +120,11 @@
   // the grid — as [x0, y0, x1, y1] in the grid.
   function rectOf(f, a) {
     var g = toGrid(f, a[0], a[1]);
-    return [min(g[0], g[0] + a[2]), min(g[1], g[1] + a[3]),
-            max(g[0], g[0] + a[2]), max(g[1], g[1] + a[3])];
+    return [um(min(g[0], g[0] + a[2])), um(min(g[1], g[1] + a[3])),
+            um(max(g[0], g[0] + a[2])), um(max(g[1], g[1] + a[3]))];
   }
+  // To the micrometre: -73.24 + 11.99 is -61.25, as the room beside it says.
+  function um(v) { return round(v * 1e6) / 1e6; }
 
   /* ---------------------------------------------------------------- shapes */
 
@@ -166,6 +168,7 @@
     return ins;
   }
   function inRoom(r, x, y) {
+    if (r.box) { return x >= r.box[0] && x < r.box[2] && y >= r.box[1] && y < r.box[3]; }
     if (r.circle) {
       var dx = x - r.circle[0], dy = y - r.circle[1];
       return dx * dx + dy * dy < r.circle[2] * r.circle[2];
@@ -344,6 +347,9 @@
       var c = toGrid(f, spec.circle[0], spec.circle[1]);
       r.circle = [c[0], c[1], spec.circle[2]];
     }
+    // A rect holds the cells whose centres are on its first sides, not on its
+    // last, so two rooms that share a side never both hold a cell on it.
+    if (spec.rect) { r.box = rectOf(f, spec.rect); }
     if (!poly) {
       // A stair, a lift or the ground outside: its outline comes after.
       r.bbox = [0, 0, 0, 0]; r.area = 0; r.cx = 0; r.cy = 0; r.pattern = "grain";
@@ -703,7 +709,9 @@
         if (col >= 0) {
           for (var k = floor((fl.z + EYE) / vx.v) + 1; k < vx.nz; k += 1) {
             var mm = vx.grid[k * vx.nx * vx.ny + col];
-            if (mm && vx.built[mm - 1]) { fl.ch[qq] = cm(k * vx.v); fl.ck[qq] = FLAT; return; }
+            // Never lower than a walker needs: a model's voxels are too coarse to say
+            // a porch is lower than that.
+            if (mm && vx.built[mm - 1]) { fl.ch[qq] = cm(max(k * vx.v, fl.fh[qq] / 100 + HEAD + 0.1)); fl.ck[qq] = FLAT; return; }
           }
         }
       }
@@ -929,7 +937,8 @@
     pins = pins || {};
     var groups = {}, order = [], hung = [], spill = [];
     (works || []).forEach(function (w, n) {
-      if (w.how !== "museum" || !w.room) { return; }
+      // A work that is another saved work's very object hangs once, as that one.
+      if (w.how !== "museum" || !w.room || w.same) { return; }
       var room = roomById(world, w.room);
       if (!room) { spill.push(w.id); return; }
       var pin = pins[w.id] || null;
@@ -1289,27 +1298,49 @@
   /* ---------------------------------------------------------------- the entrance */
 
   // A shell's door: the middle of the longest run of the model's outer wall
-  // facing south, at the floor's height.
+  // facing south with the inside behind it — east, west or north where no
+  // wall facing south has — at the floor's height. Returns {x, y, dx, dy}:
+  // the middle of the wall's outer face, and the way out.
   function shellDoor(world, fl) {
-    var best = null, cell = fl.cell;
-    for (var j = 1; j < fl.gh - 1; j += 1) {
-      var run = null;
-      for (var i = 0; i <= fl.gw; i += 1) {
-        var q = j * fl.gw + i;
-        var face = i < fl.gw && fl.foot[q] === 2 && fl.kind[q] !== FLOOR &&
-                   fl.foot[q + fl.gw] === 0 && fl.kind[q + fl.gw] === CLOSED;
-        if (face && !run) { run = { j: j, i0: i }; }
-        if (!face && run) {
-          run.i1 = i - 1;
-          if (!best || run.i1 - run.i0 > best.i1 - best.i0) { best = run; }
-          run = null;
+    var cell = fl.cell, deep = ceil(world.vox.v * 2 / cell) + 1;
+    var ways = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+    for (var w = 0; w < ways.length; w += 1) {
+      var di = ways[w][0], dj = ways[w][1], best = null;
+      var face = function (i, j) {
+        if (i < 0 || j < 0 || i >= fl.gw || j >= fl.gh) { return false; }
+        var q = j * fl.gw + i, oi = i + di, oj = j + dj;
+        if (fl.foot[q] !== 2 || fl.kind[q] === FLOOR) { return false; }
+        if (oi < 0 || oj < 0 || oi >= fl.gw || oj >= fl.gh) { return false; }
+        var o = oj * fl.gw + oi;
+        if (fl.foot[o] !== 0 || fl.kind[o] !== CLOSED) { return false; }
+        for (var s = 1; s <= deep; s += 1) {
+          var ii = i - di * s, jj = j - dj * s;
+          if (ii < 0 || jj < 0 || ii >= fl.gw || jj >= fl.gh) { return false; }
+          if (fl.foot[jj * fl.gw + ii] === 1) { return true; }
+        }
+        return false;
+      };
+      // Runs along the wall: along x for a wall facing south or north, along y else.
+      var lines = dj ? fl.gh : fl.gw, len = dj ? fl.gw : fl.gh;
+      for (var a = 0; a < lines; a += 1) {
+        var run = null;
+        for (var b = 0; b <= len; b += 1) {
+          var ok = b < len && (dj ? face(b, a) : face(a, b));
+          if (ok && !run) { run = { a: a, b0: b }; }
+          if (!ok && run) {
+            run.b1 = b - 1;
+            if (!best || run.b1 - run.b0 > best.b1 - best.b0) { best = run; }
+            run = null;
+          }
         }
       }
+      if (!best) { continue; }
+      var mid = floor((best.b0 + best.b1) / 2);
+      var i0 = dj ? mid : best.a, j0 = dj ? best.a : mid;
+      var c = centreOf(fl, j0 * fl.gw + i0);
+      return { x: c[0] + di * cell / 2, y: c[1] + dj * cell / 2, dx: di, dy: dj, run: (best.b1 - best.b0 + 1) * cell };
     }
-    if (!best) { return null; }
-    var mid = floor((best.i0 + best.i1) / 2);
-    var x = fl.x0 + (mid + 0.5) * cell, yFace = fl.y0 + (best.j + 1) * cell;
-    return { x: x, y: yFace, run: (best.i1 - best.i0 + 1) * cell };
+    return null;
   }
 
   /* ---------------------------------------------------------------- building a floor */
@@ -1548,13 +1579,16 @@
     } else {
       var sd = shellDoor(world, fl);
       if (!sd) {
-        world.problems.push({ rule: "shell", text: "the model has no wall facing south to enter by" });
+        world.problems.push({ rule: "shell", text: "the model has no outer wall with an inside behind it to enter by" });
         door = [shellRoom.cx, shellRoom.cy]; at = door.slice(); face = -PI / 2; out = [];
       } else {
-        door = [sd.x, sd.y - world.vox.v / 2];
-        at = [sd.x, sd.y + 2];
-        face = headingOf(world, 0);
-        out = [[sd.x - OUT_W / 2, sd.y, sd.x + OUT_W / 2, sd.y + OUT_D]];
+        // In the middle of the wall, standing 2 m out, facing in.
+        door = [sd.x - sd.dx * fl.cell, sd.y - sd.dy * fl.cell];
+        at = [sd.x + sd.dx * 2, sd.y + sd.dy * 2];
+        face = atan2(-sd.dy, -sd.dx);
+        var ox = sd.dx ? [sd.x, sd.x + sd.dx * OUT_D] : [sd.x - OUT_W / 2, sd.x + OUT_W / 2];
+        var oy = sd.dy ? [sd.y, sd.y + sd.dy * OUT_D] : [sd.y - OUT_W / 2, sd.y + OUT_W / 2];
+        out = [[min(ox[0], ox[1]), min(oy[0], oy[1]), max(ox[0], ox[1]), max(oy[0], oy[1])]];
       }
     }
     out.forEach(function (g) {

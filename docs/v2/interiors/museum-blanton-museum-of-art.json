@@ -1,0 +1,13 @@
+{"slug": "museum-blanton-museum-of-art",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-blanton-museum-of-art.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "550732c47261697b2f6a0100", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

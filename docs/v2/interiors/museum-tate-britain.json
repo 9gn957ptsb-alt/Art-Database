@@ -1,0 +1,21 @@
+{"slug": "museum-tate-britain",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-tate-britain.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "5613e316726169643b000033", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "521d1d80a09a67a3c80001b6", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c1262672616908ad000132", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c126217261697df80000bc", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c126297261697df80000cc", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c1262172616977ca000136", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c126237261697e03000157", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c1262672616931ee0000fa", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "55c1262772616905700000e5", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

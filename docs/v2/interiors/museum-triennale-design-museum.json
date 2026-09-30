@@ -1,0 +1,15 @@
+{"slug": "museum-triennale-design-museum",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-triennale-design-museum.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "5528ef697261696b92b05000", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5528f0487261697111175200", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5528f0e07261693873145200", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

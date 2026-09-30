@@ -1,0 +1,17 @@
+{"slug": "museum-ordrupgaard",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-ordrupgaard.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "57e885669c18db2d60001cd6", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "580e04688b0c146579000e19", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "57e8858b9c18db2d60001ce4", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "57e885a3275b243fbe001675", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "57fe23f5cd530e66f800003a", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

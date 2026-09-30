@@ -1,0 +1,14 @@
+{"slug": "museum-victoria-and-albert-museum-v-and-a",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-victoria-and-albert-museum-v-and-a.json", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "557f15d472616937eb00012f", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5081754ec883d20002000dc7", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

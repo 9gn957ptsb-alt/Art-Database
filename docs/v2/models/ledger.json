@@ -215,8 +215,26 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
-      "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine"
-    ]
+      "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine",
+      "2026-09-30 interior finding: 17 documented rooms on the main floor lie outside the model (M-015, M-016, M-017, M-018, M-019, M-035, M-035-A, M-040, M-041, M-041-A, M-060-B, M-062, \u2026), between x -98.8 and 99.3, y -45.8 and 45.8 m",
+      "2026-09-30 interior finding: 5 documented rooms on the ground floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014), between x -98.3 and -55.8, y -45.3 and -35.3 m"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 181,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 45,
+        "elsewhere": 4,
+        "off": 0,
+        "none": 138
+      },
+      "log": []
+    }
   },
   "museum-guggenheim-museum": {
     "name": "Solomon R. Guggenheim Museum",
@@ -226,8 +244,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
-      "2026-09-24 refined: turned onto Manhattan grid (29 deg) and placed on its lot between 88th and 89th from the ground file, smaller Monitor and skylight, 88th/89th Streets, park thickened, rotunda clear of street trees"
-    ]
+      "2026-09-24 refined: turned onto Manhattan grid (29 deg) and placed on its lot between 88th and 89th from the ground file, smaller Monitor and skylight, 88th/89th Streets, park thickened, rotunda clear of street trees",
+      "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 15
+      },
+      "log": []
+    }
   },
   "museum-san-francisco-museum-of-modern-art-sfmoma": {
     "name": "San Francisco Museum of Modern Art",
@@ -238,7 +273,23 @@
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
       "2026-09-24 refined: turned onto the SoMa grid (45 deg) with Third Street where the ground has it, cylinder slice cut along the rotated slope, Howard Street entrance and street, gallery skylights, height 62 m confirmed"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 36
+      },
+      "log": []
+    }
   },
   "museum-the-metropolitan-museum-of-art": {
     "name": "The Met Fifth Avenue",
@@ -248,8 +299,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the four-block limestone front set to Fifth Avenue's 29-degree grid, Hunt's pavilion and stair, the skylit core, Roche-Dinkeloo's glass wings (Dendur slope, American Wing court, Lehman pyramid), Cleopatra's Needle, Central Park behind",
-      "2026-09-25 refined: removed 201 background trees burying the building; fattened the colonnade's columns to read at the 4 m voxel"
-    ]
+      "2026-09-25 refined: removed 201 background trees burying the building; fattened the colonnade's columns to read at the 4 m voxel",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 21,
+        "off": 0,
+        "none": 18
+      },
+      "log": []
+    }
   },
   "museum-seattle-art-museum": {
     "name": "Seattle Art Museum",
@@ -259,8 +327,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Venturi Scott Brown's fluted limestone block with its arched coloured base and the Hammering Man, the 2007 expansion and the Russell Investments Center tower, set to downtown's grid",
-      "2026-09-27 refined: voxel 1.6 to 1.8 m so the tower keeps it under 25,000 dots and 100 voxels across; street trees along University Street (no photographs)"
-    ]
+      "2026-09-27 refined: voxel 1.6 to 1.8 m so the tower keeps it under 25,000 dots and 100 voxels across; street trees along University Street (no photographs)",
+      "2026-09-30 interior finding: only 46% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 17
+      },
+      "log": []
+    }
   },
   "museum-indianapolis-museum-of-art": {
     "name": "Indianapolis Museum of Art",
@@ -270,8 +355,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the four-storey pale stone block from the ground file, the skylit Great Hall, the 2005 east wing, the half-cylinder glass entrance with its five steel rings, lawns and trees of Newfields",
-      "2026-09-26 refined: a garden terrace with steps and planting along the north front, a steel eave/canopy ring round the entrance rotunda, forecourt planters, trees and bollard lights, a bigger LOVE sculpture"
-    ]
+      "2026-09-26 refined: a garden terrace with steps and planting along the north front, a steel eave/canopy ring round the entrance rotunda, forecourt planters, trees and bollard lights, a bigger LOVE sculpture",
+      "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 18
+      },
+      "log": []
+    }
   },
   "museum-phillips-collection": {
     "name": "The Phillips Collection",
@@ -281,8 +383,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1897 brick-and-brownstone Phillips house at 21st and Q with its slate roof, 1923 skylit studio and gallery wing, the pale-stone Sant Building north, courtyard and rowhouses across 21st St",
-      "2026-09-25 refined: added a window rhythm to the main house's blank faces, the curved 21st Street entrance stair and portico, and windows to the Sant Building and Main Gallery wing"
-    ]
+      "2026-09-25 refined: added a window rhythm to the main house's blank faces, the curved 21st Street entrance stair and portico, and windows to the Sant Building and Main Gallery wing",
+      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 31
+      },
+      "log": []
+    }
   },
   "museum-kroller-muller-museum": {
     "name": "Kr\u00f6ller-M\u00fcller Museum",
@@ -292,8 +411,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: van de Velde's long low buff-brick building with its clerestory lanterns and taller central block, Quist's 1977 glass corridors and plain rooms toward the sculpture garden, in the Veluwe woods",
-      "2026-09-27 refined: Dubuffet's Jardin d'\u00e9mail in the sculpture garden, white with its black lines flush, and Rietveld's pavilion beside it; gravel walks out to them (no photographs)"
-    ]
+      "2026-09-27 refined: Dubuffet's Jardin d'\u00e9mail in the sculpture garden, white with its black lines flush, and Rietveld's pavilion beside it; gravel walks out to them (no photographs)",
+      "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 21
+      },
+      "log": []
+    }
   },
   "museum-musee-dorsay": {
     "name": "Mus\u00e9e d'Orsay",
@@ -303,8 +439,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Laloux's limestone station set at the true angle of the quai, the iron-and-glass barrel vault, the arcade and attic on the Seine, end lunettes, clock pavilions, the hotel's slate mansard on rue de Lille",
-      "2026-09-27 refined: walls in the new pale 'limestone', mansards and pavilion roofs in the new blue-grey 'slate' (no photographs)"
-    ]
+      "2026-09-27 refined: walls in the new pale 'limestone', mansards and pavilion roofs in the new blue-grey 'slate' (no photographs)",
+      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 16
+      },
+      "log": []
+    }
   },
   "museum-musee-du-louvre": {
     "name": "Mus\u00e9e du Louvre",
@@ -314,8 +467,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the whole palace, coarse, on the historic axis: Cour Carr\u00e9e with Perrault's colonnade and the Pavillon de l'Horloge, Richelieu and Denon wings under slate with their pavilions, Pei's pyramid and pools, the Carrousel arch, the Grande Galerie on the Seine",
-      "2026-09-27 refined: walls in 'limestone', every roof in 'slate'; the rue de Rivoli blocks given a zinc mansard along their street front only (no photographs)"
-    ]
+      "2026-09-27 refined: walls in 'limestone', every roof in 'slate'; the rue de Rivoli blocks given a zinc mansard along their street front only (no photographs)",
+      "2026-09-30 interior finding: only 15% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 2,
+        "off": 0,
+        "none": 7
+      },
+      "log": []
+    }
   },
   "museum-the-national-gallery-london": {
     "name": "National Gallery",
@@ -325,8 +495,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Wilkins front with octastyle portico on its podium, dome and pepperpots, lead roofs with glazed lanterns, Barry domes, and the Sainsbury Wing to the west",
-      "2026-09-25 refined: fattened the portico and porch columns to read at the 2 m voxel, added cupola finials and a proper flight of entrance steps"
-    ]
+      "2026-09-25 refined: fattened the portico and porch columns to read at the 2 m voxel, added cupola finials and a proper flight of entrance steps",
+      "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 1,
+        "off": 0,
+        "none": 31
+      },
+      "log": []
+    }
   },
   "museum-centre-pompidou": {
     "name": "Centre Pompidou",
@@ -336,8 +523,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white exoskeleton and glass body, escalator tube on the piazza front, colour-coded ducts on rue du Renard",
-      "2026-09-27 refined: the piazza falls toward the building; rue du Renard and rue Rambuteau drawn; two white air-intake funnels on the piazza (no photographs)"
-    ]
+      "2026-09-27 refined: the piazza falls toward the building; rue du Renard and rue Rambuteau drawn; two white air-intake funnels on the piazza (no photographs)",
+      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 16
+      },
+      "log": []
+    }
   },
   "museum-hammer-museum": {
     "name": "Hammer Museum",
@@ -347,8 +551,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Barnes grey-and-white banded marble block round its courtyard with Maltzan bridge and opened Wilshire corner, the Occidental tower beside it",
-      "2026-09-27 refined: the Occidental tower redrawn as white marble piers every other voxel with dark glass between, a crown and plant room; warmer grey bands; trees on Westwood (no photographs)"
-    ]
+      "2026-09-27 refined: the Occidental tower redrawn as white marble piers every other voxel with dark glass between, a crown and plant room; warmer grey bands; trees on Westwood (no photographs)",
+      "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 11
+      },
+      "log": []
+    }
   },
   "museum-art-institute-of-chicago": {
     "name": "Art Institute of Chicago",
@@ -358,8 +579,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway",
-      "2026-09-27 refined: the Allerton and east wings in buff limestone; the Allerton's Michigan Avenue front given its two rows of windows at an even rhythm and a darker frieze (no photographs)"
-    ]
+      "2026-09-27 refined: the Allerton and east wings in buff limestone; the Allerton's Michigan Avenue front given its two rows of windows at an even rhythm and a darker frieze (no photographs)",
+      "2026-09-30 interior finding: only 23% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 8,
+        "off": 0,
+        "none": 0
+      },
+      "log": []
+    }
   },
   "museum-national-gallery-of-victoria": {
     "name": "NGV International",
@@ -369,8 +607,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Grounds bluestone block in its moat, entrance arch with the Water Wall, three courtyards, Great Hall roof, St Kilda Road and the garden",
-      "2026-09-27 refined: gravel roof inside a stone parapet; St Kilda Road's elms one fuller row with the axis to the arch kept clear; the garden courts glazed at ground level (no photographs)"
-    ]
+      "2026-09-27 refined: gravel roof inside a stone parapet; St Kilda Road's elms one fuller row with the axis to the arch kept clear; the garden courts glazed at ground level (no photographs)",
+      "2026-09-30 interior finding: only 53% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 6
+      },
+      "log": []
+    }
   },
   "museum-de-young-museum": {
     "name": "de Young Museum",
@@ -380,8 +635,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: three splayed copper bars turned 43\u00b0 off north with glazed courts, the entrance canopy, and the Hamon Tower twisting to the city grid (rotated volumes as prism meshes)",
-      "2026-09-26 refined: added the cantilevered entrance canopy at the west corner, two wall segments changed to perforated-screen material, more courtyard planting"
-    ]
+      "2026-09-26 refined: added the cantilevered entrance canopy at the west corner, two wall segments changed to perforated-screen material, more courtyard planting",
+      "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 20
+      },
+      "log": []
+    }
   },
   "museum-van-gogh-museum": {
     "name": "Van Gogh Museum",
@@ -391,8 +663,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Rietveld's pale block with glazed ground floor and lantern, the 2015 glass entrance hall, Kurokawa's stone crescent round its sunken oval pool under a tilted titanium roof",
-      "2026-09-27 refined: gravel roofs inside white parapets on the Rietveld block and east wing; Van Heeswijk's entrance hall raised to about 8 m; a paved forecourt on the Museumplein side (no photographs)"
-    ]
+      "2026-09-27 refined: gravel roofs inside white parapets on the Rietveld block and east wing; Van Heeswijk's entrance hall raised to about 8 m; a paved forecourt on the Museumplein side (no photographs)",
+      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 15
+      },
+      "log": []
+    }
   },
   "museum-philadelphia-museum-of-art": {
     "name": "Philadelphia Museum of Art",
@@ -402,8 +691,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the golden Kasota-stone U on its podium facing the Parkway, central temple with portico and terracotta pediment, pedimented wing ends, blue tile roofs, the great stair and fountain",
-      "2026-09-27 refined: roofs in the new cobalt 'bluetile' instead of the water's blue; the polychrome terracotta moved to the north wing's pediment, the only one completed (no photographs)"
-    ]
+      "2026-09-27 refined: roofs in the new cobalt 'bluetile' instead of the water's blue; the polychrome terracotta moved to the north wing's pediment, the only one completed (no photographs)",
+      "2026-09-30 interior finding: only 31% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 11
+      },
+      "log": []
+    }
   },
   "museum-turner-contemporary": {
     "name": "Turner Contemporary",
@@ -413,8 +719,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): joints between the six volumes widened and glazed so they read as six, north lights on the back row, steps to the sands, and the harbour, Harbour Arm and Droit House to the north-east"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): joints between the six volumes widened and glazed so they read as six, north lights on the back row, steps to the sands, and the harbour, Harbour Arm and Droit House to the north-east",
+      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 7
+      },
+      "log": []
+    }
   },
   "museum-guggenheim-museum-bilbao": {
     "name": "Guggenheim Bilbao",
@@ -424,8 +747,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: titanium flower atrium and petals as overlapping ellipsoids, the long fish gallery under La Salve bridge to the tower, limestone blocks on the city side, pool, river, Puppy; curves approximated \u2014 a SketchUp mesh would do them better",
-      "2026-09-24 SketchUp: the titanium rebuilt as 17 lofted and curling solids (atrium bundle and crown, seven sails, four galleries, the fish gallery and tail, the tower cap), replacing 40 overlapping blobs"
-    ]
+      "2026-09-24 SketchUp: the titanium rebuilt as 17 lofted and curling solids (atrium bundle and crown, seven sails, four galleries, the fish gallery and tail, the tower cap), replacing 40 overlapping blobs",
+      "2026-09-30 interior finding: only 21% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 18
+      },
+      "log": []
+    }
   },
   "museum-clark-art-institute": {
     "name": "Clark Art Institute",
@@ -435,8 +775,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1955 white marble temple with its portico, Belluschi red-granite Manton Center, Ando Clark Center and the three-tier reflecting pool; layout guessed (no OSM buildings)",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): placed on the Museum Building at 225 South Street (it stood 380 m off in the woods) and its ground cut again; flat roof with a glazed monitor on the 1955 building, the Clark Center in red granite, Ando's wall along the pool, trees in clusters"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): placed on the Museum Building at 225 South Street (it stood 380 m off in the woods) and its ground cut again; flat roof with a glazed monitor on the 1955 building, the Clark Center in red granite, Ando's wall along the pool, trees in clusters",
+      "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 14
+      },
+      "log": []
+    }
   },
   "museum-legion-of-honor": {
     "name": "Legion of Honor",
@@ -446,8 +803,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: three-quarter H\u00f4tel de Salm on its real bearing (rasterised rows) \u2014 arch, Ionic colonnades round the Court of Honour, Corinthian portico, rotunda dome, glass pyramid, the Thinker",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): rotunda brought down to the cornice with an attic, engaged columns and a saucer dome; balustrade round the main block; glazed skylight lanterns; El Cid in the forecourt; broad Monterey cypresses"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): rotunda brought down to the cornice with an attic, engaged columns and a saucer dome; balustrade round the main block; glazed skylight lanterns; El Cid in the forecourt; broad Monterey cypresses",
+      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 7
+      },
+      "log": []
+    }
   },
   "museum-j-paul-getty-museum": {
     "name": "Getty Museum",
@@ -457,8 +831,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Meier's pavilions round the cypress courtyard and long fountain, the glazed rotunda of the Entrance Hall, travertine below and white panels above, skylight lanterns, the Central Garden's stream to the west.",
-      "2026-09-26 refined: fixed the arrival-plaza canopy (was too thin to show), added roof-lantern skylights to three pavilions, desert-shaped promontory shrubs, a courtyard fountain jet and framing cypress"
-    ]
+      "2026-09-26 refined: fixed the arrival-plaza canopy (was too thin to show), added roof-lantern skylights to three pavilions, desert-shaped promontory shrubs, a courtyard fountain jet and framing cypress",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 17
+      },
+      "log": []
+    }
   },
   "museum-the-museum-of-modern-art": {
     "name": "MoMA",
@@ -468,8 +859,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the block between 53rd and 54th turned to Manhattan's grid: Goodwin-Stone 1939 front, Johnson's east wing, Taniguchi's granite-and-glass galleries and the Sculpture Garden, the Geffen Wing, with Museum Tower and 53W53 cut at 72 m.",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): 53W53's concrete diagrid on all four faces in place of horizontal ribs; the 1939 Thermolux band made translucent white; the Sculpture Garden's grove thickened"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): 53W53's concrete diagrid on all four faces in place of horizontal ribs; the 1939 Thermolux band made translucent white; the Sculpture Garden's grove thickened",
+      "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 18
+      },
+      "log": []
+    }
   },
   "museum-yale-university-art-gallery": {
     "name": "Yale University Art Gallery",
@@ -479,8 +887,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Kahn's brick-and-stone-course wall and glass to York St, Swartwout's stone gallery with its arcade, the bridge over High St and Street Hall, turned with New Haven's grid.",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Street Hall given a steep slate roof, pale stone bands and a cross-gable; the Kahn building's and Old Art Gallery's flat roofs made grey"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Street Hall given a steep slate roof, pale stone bands and a cross-gable; the Kahn building's and Old Art Gallery's flat roofs made grey",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 8
+      },
+      "log": []
+    }
   },
   "museum-anderson-collection-at-stanford-university": {
     "name": "Anderson Collection",
@@ -491,7 +916,23 @@
     "log": [
       "2026-09-24 first model: Ennead's three bars: glass ground floor under a cantilevered tan gallery box, bow-tie in plan, zinc-framed window bands, clerestory bar under a zinc cap, campus oaks.",
       "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): gallery box in pale tan stone; a thin zinc lid over a taller clerestory; campus trees as broad low coast live oaks"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 6
+      },
+      "log": []
+    }
   },
   "parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno": {
     "name": "Depart Colegiales",
@@ -512,8 +953,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the H\u00f4tel Sal\u00e9 \u2014 portal on rue de Thorigny, the oval court with its low balustraded wings, the corps de logis under its slate roof and great semicircular pediment, the garden front with its pavilions and the garden",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): h\u00f4tel in pale limestone under blue-grey slate; the two blank neighbouring slabs broken into ten Marais houses of different widths and heights, lower than the cornice, with tall windows"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): h\u00f4tel in pale limestone under blue-grey slate; the two blank neighbouring slabs broken into ten Marais houses of different widths and heights, lower than the cornice, with tall windows",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 10
+      },
+      "log": []
+    }
   },
   "museum-montclair-art-museum": {
     "name": "Montclair Art Museum",
@@ -523,8 +981,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1914 Greek Revival block with its Ionic portico to Bloomfield Avenue on its real bearing, later galleries behind",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): flat roofs made grey with a coping on the later galleries; a skylight down the main block's roof; voxel 0.6 to 0.75 m (29,000 dots to 18,000)"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): flat roofs made grey with a coping on the later galleries; a skylight down the main block's roof; voxel 0.6 to 0.75 m (29,000 dots to 18,000)",
+      "2026-09-30 interior finding: only 1% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 6
+      },
+      "log": []
+    }
   },
   "museum-ordrupgaard": {
     "name": "Ordrupgaard",
@@ -534,8 +1009,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Tvede's 1918 mansion and gallery wing, Hadid's black lava-concrete ribbon bending northwest (boxes along a curve), Sn\u00f8hetta's skylights in the lawn",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Hadid's wing rebuilt as one continuous shell of black lava concrete, its roof sloping down into the outer wall, glass the length of its inner side; beeches of different sizes; voxel 0.8 to 0.9 m, boxes snapped to the grid"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Hadid's wing rebuilt as one continuous shell of black lava concrete, its roof sloping down into the outer wall, glass the length of its inner side; beeches of different sizes; voxel 0.8 to 0.9 m, boxes snapped to the grid",
+      "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-cleveland-museum-of-art": {
     "name": "Cleveland Museum of Art",
@@ -545,8 +1037,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1916 marble temple with its Ionic portico and stair to the Fine Arts Garden, Breuer's banded granite wing, Vi\u00f1oly's glass-roofed atrium and east and west wings, Wade Lagoon",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Breuer wing's roof made grey; the Fine Arts Garden's all\u00e9es, cross walk and axial path toward Wade Lagoon; old trees round the lagoon"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Breuer wing's roof made grey; the Fine Arts Garden's all\u00e9es, cross walk and axial path toward Wade Lagoon; old trees round the lagoon",
+      "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 3,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-dallas-museum-of-art": {
     "name": "Dallas Museum of Art",
@@ -556,8 +1065,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Barnes's low limestone composition on the diagonal downtown grid, the barrel vault closing Flora Street, the skylit Concourse spine, open courts, the stepped Reves/Hamon wings and the walled sculpture garden",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): limestone made pale buff; grey roofs on the wings; the barrel vault raised to crown at about 17 m over the galleries"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): limestone made pale buff; grey roofs on the wings; the barrel vault raised to crown at about 17 m over the galleries",
+      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 6
+      },
+      "log": []
+    }
   },
   "museum-isabella-stewart-gardner-museum": {
     "name": "Isabella Stewart Gardner Museum",
@@ -567,8 +1093,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Fenway Court, four plain stucco storeys round the glass-roofed garden court with its few Venetian windows, and Piano's 2012 wing: copper-clad cube and gallery over a glass ground storey, greenhouses and the glass link",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): palazzo in warm buff stucco with grey roofs and more of its irregular windows; the court's glass roof pitched; the Piano wing in the new copper material"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): palazzo in warm buff stucco with grey roofs and more of its irregular windows; the court's glass roof pitched; the Piano wing in the new copper material",
+      "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-alte-nationalgalerie": {
     "name": "Alte Nationalgalerie",
@@ -578,8 +1121,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: sandstone temple on its podium turned to the real axis, apse, portico and pediment over the double stair and equestrian statue, colonnade garden, the Spree",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): sandstone made pale warm buff; the colonnade's columns thickened so they stand as columns; a glazed lantern along the ridge"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): sandstone made pale warm buff; the colonnade's columns thickened so they stand as columns; a glazed lantern along the ridge",
+      "2026-09-30 interior finding: only 76% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-museum-brandhorst": {
     "name": "Museum Brandhorst",
@@ -589,8 +1149,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the long gallery wing and taller head, its skin of coloured ceramic rods as vertical stripes, north-light sheds on the roof, between T\u00fcrkenstra\u00dfe and the Kunstareal lawn",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the head block given its coloured rods on all four faces and over the gallery wing's roof; street and Kunstareal trees grown"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the head block given its coloured rods on all four faces and over the gallery wing's roof; street and Kunstareal trees grown",
+      "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-museo-thyssen-bornemisza": {
     "name": "Museo Thyssen-Bornemisza",
@@ -601,7 +1178,23 @@
     "log": [
       "2026-09-24 first model: the Palacio de Villahermosa in rose render on a granite base with stone trim, slate roof and Moneo skylight, the 2004 extension to the west, the railed garden, the Paseo del Prado",
       "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): palace roof made slate; the extension's glass roof made a grey roof with four skylight strips; the Paseo del Prado's second row of trees"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-triennale-design-museum": {
     "name": "Triennale (Palazzo dell'Arte)",
@@ -612,7 +1205,23 @@
     "log": [
       "2026-09-24 first model: Muzio's long red-brick Palazzo dell'Arte on its real bearing \u2014 raised entrance block with three arched portals on Viale Alemagna, the curved exedra to Parco Sempione, skylit roofs",
       "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): roofs made grey inside a stone coping, the exedra's too; Viale Alemagna's plane trees along the front"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-mca-chicago": {
     "name": "MCA Chicago",
@@ -622,8 +1231,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Kleihues's aluminium-grid block on a limestone podium, the broad west stair, glazed atrium in the front, barrel-vaulted roof galleries, garden terraces east; museums.json coordinates are off (Near West Side).",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the aluminium skin's panel grid laid exactly on the voxels so it shows on all four faces; limestone podium and stair made pale; the streets north and south with trees"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the aluminium skin's panel grid laid exactly on the voxels so it shows on all four faces; limestone podium and stair made pale; the streets north and south with trees",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-stedelijk-museum-amsterdam": {
     "name": "Stedelijk Museum",
@@ -633,8 +1259,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Weissman's 1895 red-brick building with stone bands, slate roofs and central tower on Paulus Potterstraat; Benthem Crouwel's white bathtub over a glass ground floor with its canopy over the Museumplein.",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Weissman's roofs made blue-grey slate; the tower's lantern and spire; the Museumplein's trees grown"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): Weissman's roofs made blue-grey slate; the tower's lantern and spire; the Museumplein's trees grown",
+      "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 6
+      },
+      "log": []
+    }
   },
   "museum-risd-museum": {
     "name": "RISD Museum",
@@ -644,8 +1287,25 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: College Hill terraced between North Main and Benefit Streets, Moneo's brick-and-glass Chace Center, the Radeke Building with its Benefit Street frontispiece, Pendleton House",
-      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the Chace Center's flat roofs made grey; Pendleton House's and the College Building's roofs made slate; the hillside trees grown"
-    ]
+      "2026-09-29 refined (catch-up pass for 28\u201329 Sep; no photographs reachable): the Chace Center's flat roofs made grey; Pendleton House's and the College Building's roofs made slate; the hillside trees grown",
+      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-colby-college-museum-of-art": {
     "name": "Colby College Museum of Art",
@@ -654,8 +1314,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Bixler brick building with slate roof and cupola, the clerestory-lit brick gallery wings, Fisher fritted-glass Alfond-Lunder Pavilion with its cantilevered top floor"
-    ]
+      "2026-09-24 first model: Bixler brick building with slate roof and cupola, the clerestory-lit brick gallery wings, Fisher fritted-glass Alfond-Lunder Pavilion with its cantilevered top floor",
+      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-cooper-hewitt-smithsonian-design-museum": {
     "name": "Cooper Hewitt (Carnegie Mansion)",
@@ -664,8 +1341,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Carnegie Mansion on Manhattan's grid \u2014 red brick on a sandstone base, cornice and balustrade, slate roof and chimneys, the 91st Street canopy, the Arthur Ross garden, the Miller house, Central Park across Fifth"
-    ]
+      "2026-09-24 first model: the Carnegie Mansion on Manhattan's grid \u2014 red brick on a sandstone base, cornice and balustrade, slate roof and chimneys, the 91st Street canopy, the Arthur Ross garden, the Miller house, Central Park across Fifth",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-museum-of-contemporary-art-san-diego": {
     "name": "MCASD La Jolla",
@@ -674,8 +1368,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Gill's white stucco house and the Venturi additions with the street arcade, Selldorf's travertine and concrete galleries with sun screens and sea terraces, lawn and palms to the Pacific, the village across Prospect Street"
-    ]
+      "2026-09-24 first model: Gill's white stucco house and the Venturi additions with the street arcade, Selldorf's travertine and concrete galleries with sun screens and sea terraces, lawn and palms to the Pacific, the village across Prospect Street",
+      "2026-09-30 interior finding: only 29% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-rijksmuseum": {
     "name": "Rijksmuseum",
@@ -684,8 +1395,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Cuypers's red-brick palace at its true angle on the Singelgracht, two glass-roofed atria, the passage through the middle, steep slate roofs and lantern, twin entrance towers, the Museumplein and pool"
-    ]
+      "2026-09-24 first model: Cuypers's red-brick palace at its true angle on the Singelgracht, two glass-roofed atria, the passage through the middle, steep slate roofs and lantern, twin entrance towers, the Museumplein and pool",
+      "2026-09-30 interior finding: only 34% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 1,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-museo-reina-sofia": {
     "name": "Museo Reina Sof\u00eda",
@@ -694,8 +1422,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Sabatini hospital at its true angle, four storeys round the garden court, Ritchie's two glass lift towers, and Nouvel's three buildings under the great red-edged cantilevered roof"
-    ]
+      "2026-09-24 first model: the Sabatini hospital at its true angle, four storeys round the garden court, Ritchie's two glass lift towers, and Nouvel's three buildings under the great red-edged cantilevered roof",
+      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-leeum-samsung-museum-of-art": {
     "name": "Leeum",
@@ -704,8 +1449,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Botta's terracotta block and inverted-cone rotunda, Nouvel's rusted-steel and black-glass boxes stepping down the slope, OMA's lifted black box, Kapoor's mirror spheres in the garden"
-    ]
+      "2026-09-24 first model: Botta's terracotta block and inverted-cone rotunda, Nouvel's rusted-steel and black-glass boxes stepping down the slope, OMA's lifted black box, Kapoor's mirror spheres in the garden",
+      "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-phoenix-art-museum": {
     "name": "Phoenix Art Museum",
@@ -714,8 +1476,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the north wing, spine and south wing in grey concrete round the sculpture garden, top-lit galleries and the tall hall, the glazed Great Hall on Central Avenue with its palms"
-    ]
+      "2026-09-24 first model: the north wing, spine and south wing in grey concrete round the sculpture garden, top-lit galleries and the tall hall, the glazed Great Hall on Central Avenue with its palms",
+      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-munson-williams-proctor-arts-institute": {
     "name": "Munson-Williams-Proctor Museum of Art",
@@ -725,7 +1504,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Johnson granite box on its recessed glass base with the bronze piers and crossing roof beams, turned 45 degrees to Genesee Street, Fountain Elms beside it"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-tate-liverpool": {
     "name": "Tate Liverpool",
@@ -734,8 +1529,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Hartley five-storey brick warehouse ranges of the Albert Dock over their red cast-iron colonnade, the dock basin and Canning Dock, Stirling colour panels at the entrance"
-    ]
+      "2026-09-24 first model: Hartley five-storey brick warehouse ranges of the Albert Dock over their red cast-iron colonnade, the dock basin and Canning Dock, Stirling colour panels at the entrance",
+      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-pushkin-museum-of-fine-arts": {
     "name": "Pushkin Museum",
@@ -744,8 +1556,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: white marble temple on its podium turned to face Volkhonka, twelve-column Ionic portico under a pediment, frieze band, Shukhov glass roofs, front garden and railing"
-    ]
+      "2026-09-24 first model: white marble temple on its podium turned to face Volkhonka, twelve-column Ionic portico under a pediment, frieze band, Shukhov glass roofs, front garden and railing",
+      "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-newark-museum": {
     "name": "Newark Museum of Art",
@@ -754,8 +1583,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: 1926 limestone palazzo on Washington Street with arched entrance and cornice, atrium and rear wing, the Ballantine House beside it, Washington Park"
-    ]
+      "2026-09-24 first model: 1926 limestone palazzo on Washington Street with arched entrance and cornice, atrium and rear wing, the Ballantine House beside it, Washington Park",
+      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-harn-museum-of-art": {
     "name": "Harn Museum of Art",
@@ -764,8 +1610,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: white rotunda under its tetrahedral skylight, low gallery wings, the entrance gateway, Cofrin Pavilion and the Asian Art Wing's water garden (ground file empty: orientation guessed)"
-    ]
+      "2026-09-24 first model: white rotunda under its tetrahedral skylight, low gallery wings, the entrance gateway, Cofrin Pavilion and the Asian Art Wing's water garden (ground file empty: orientation guessed)",
+      "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-belvedere-museum": {
     "name": "Upper Belvedere",
@@ -774,8 +1637,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Hildebrandt's white palace of stepped pavilions under green copper roofs, domed octagonal corner towers, three-arched south porch, the great pool and the northern parterres"
-    ]
+      "2026-09-24 first model: Hildebrandt's white palace of stepped pavilions under green copper roofs, domed octagonal corner towers, three-arched south porch, the great pool and the northern parterres",
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-kunstmuseum-bern": {
     "name": "Kunstmuseum Bern",
@@ -784,8 +1664,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Stettler's 1879 sandstone front on Hodlerstrasse with its taller central pavilion, arched entrance and end pavilions, and the Atelier 5 concrete extension stepping toward the Aare"
-    ]
+      "2026-09-24 first model: Stettler's 1879 sandstone front on Hodlerstrasse with its taller central pavilion, arched entrance and end pavilions, and the Atelier 5 concrete extension stepping toward the Aare",
+      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-contemporary-arts-museum-houston": {
     "name": "CAMH",
@@ -794,8 +1691,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Birkerts' ribbed stainless-steel parallelogram, acute corner with the entrance notch at Montrose and Bissonnet"
-    ]
+      "2026-09-24 first model: Birkerts' ribbed stainless-steel parallelogram, acute corner with the entrance notch at Montrose and Bissonnet",
+      "2026-09-30 interior finding: only 10% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-yuz-museum": {
     "name": "Yuz Museum",
@@ -804,8 +1718,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Longhua hangar with its shallow vault and clerestory, Fujimoto's L-shaped glass hall under a thin white roof, the olive tree"
-    ]
+      "2026-09-24 first model: the Longhua hangar with its shallow vault and clerestory, Fujimoto's L-shaped glass hall under a thin white roof, the olive tree",
+      "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-statens-museum-for-kunst": {
     "name": "SMK",
@@ -814,8 +1745,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1896 red-brick Neo-Renaissance front on S\u00f8lvgade with central and end pavilions and slate roofs, the glass Sculpture Street and Indrio's white wing toward \u00d8stre Anl\u00e6g, on the real bearing"
-    ]
+      "2026-09-24 first model: the 1896 red-brick Neo-Renaissance front on S\u00f8lvgade with central and end pavilions and slate roofs, the glass Sculpture Street and Indrio's white wing toward \u00d8stre Anl\u00e6g, on the real bearing",
+      "2026-09-30 interior finding: only 67% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-yale-center-for-british-art": {
     "name": "Yale Center for British Art",
@@ -824,8 +1772,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Kahn's 10x6-bay concrete frame with pewter steel and glass infill, shop fronts on Chapel Street, the open corner entrance, rows of roof skylights, on the street grid's bearing"
-    ]
+      "2026-09-24 first model: Kahn's 10x6-bay concrete frame with pewter steel and glass infill, shop fronts on Chapel Street, the open corner entrance, rows of roof skylights, on the street grid's bearing",
+      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-middelheim-museum": {
     "name": "Middelheim Museum",
@@ -834,8 +1799,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Renaat Braem's 1971 pavilion: white rounded rooms round patios, bird-wing rooflights, curved entrance wall, in the sculpture park's lawns and trees."
-    ]
+      "2026-09-24 first model: Renaat Braem's 1971 pavilion: white rounded rooms round patios, bird-wing rooflights, curved entrance wall, in the sculpture park's lawns and trees.",
+      "2026-09-30 interior finding: only 31% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-museo-de-arte-contemporaneo-de-buenos-aires": {
     "name": "MACBA",
@@ -844,8 +1826,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: a 15 m concrete front between party walls on Av. San Juan, its great 15 x 12 m glass plane in a concrete frame over a set-back entrance; MAMBA's brick warehouse next door."
-    ]
+      "2026-09-24 first model: a 15 m concrete front between party walls on Av. San Juan, its great 15 x 12 m glass plane in a concrete frame over a set-back entrance; MAMBA's brick warehouse next door.",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-gemaldegalerie-alte-meister": {
     "name": "Gem\u00e4ldegalerie",
@@ -854,8 +1853,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Hilmer and Sattler's low block: terracotta plates over a rusticated base, rows of gallery lanterns either side of the raised Wandelhalle with its 32 round skylights."
-    ]
+      "2026-09-24 first model: Hilmer and Sattler's low block: terracotta plates over a rusticated base, rows of gallery lanterns either side of the raised Wandelhalle with its 32 round skylights.",
+      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-davis-museum": {
     "name": "Davis Museum",
@@ -864,8 +1880,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Moneo's closed red-brick box with a precast band, the plaza window and entrance slot, four metal lanterns in a pinwheel on the roof; bridge to Jewett, Collins Cinema across the plaza."
-    ]
+      "2026-09-24 first model: Moneo's closed red-brick box with a precast band, the plaza window and entrance slot, four metal lanterns in a pinwheel on the roof; bridge to Jewett, Collins Cinema across the plaza.",
+      "2026-09-30 interior finding: only 43% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-centre-for-fine-arts-bozar": {
     "name": "Bozar (Palais des Beaux-Arts)",
@@ -874,8 +1907,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Horta's low trapezoidal block of pale stone stepping back in bands, the glazed Rue Ravenstein arcade and corner entrance, the oval Henry Le Boeuf hall roof rising in the middle"
-    ]
+      "2026-09-24 first model: Horta's low trapezoidal block of pale stone stepping back in bands, the glazed Rue Ravenstein arcade and corner entrance, the oval Henry Le Boeuf hall roof rising in the middle",
+      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-los-angeles-county-museum-of-art": {
     "name": "LACMA",
@@ -884,8 +1934,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Zumthor's David Geffen Galleries as one long glass-wrapped level under a concrete roof on seven pavilions crossing Wilshire, Piano's BCAM and Resnick with their sawtooth roofs, Urban Light, Hancock Park and the Lake Pit"
-    ]
+      "2026-09-24 first model: Zumthor's David Geffen Galleries as one long glass-wrapped level under a concrete roof on seven pavilions crossing Wilshire, Piano's BCAM and Resnick with their sawtooth roofs, Urban Light, Hancock Park and the Lake Pit",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-british-museum": {
     "name": "British Museum",
@@ -894,8 +1961,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Smirke's Portland-stone quadrangle on Bloomsbury's grid, the Great Court's glass roof round the Reading Room drum and dome, the Ionic colonnade, portico and pediment on Great Russell Street, the forecourt, the northern galleries"
-    ]
+      "2026-09-24 first model: Smirke's Portland-stone quadrangle on Bloomsbury's grid, the Great Court's glass roof round the Reading Room drum and dome, the Ionic colonnade, portico and pediment on Great Russell Street, the forecourt, the northern galleries",
+      "2026-09-30 interior finding: only 27% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-parrish-art-museum": {
     "name": "Parrish Art Museum",
@@ -905,7 +1989,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Herzog and de Meuron long white-concrete building under twin corrugated-metal barn roofs with porches and north skylights, turned to its axis in the meadow"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-art-gallery-of-ontario": {
     "name": "Art Gallery of Ontario",
@@ -914,8 +2014,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Gehry Galleria Italia bulging glass-and-fir facade on Dundas, the older wings and skylights, the blue titanium tower with its glass stair, the Grange in the park; turned to the street grid"
-    ]
+      "2026-09-24 first model: Gehry Galleria Italia bulging glass-and-fir facade on Dundas, the older wings and skylights, the blue titanium tower with its glass stair, the Grange in the park; turned to the street grid",
+      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 5
+      },
+      "log": []
+    }
   },
   "museum-museum-of-fine-arts-boston": {
     "name": "Museum of Fine Arts, Boston",
@@ -924,8 +2041,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Lowell's granite Huntington Avenue front with portico and Rotunda dome, the Evans Wing colonnade on the Fenway, courts, Pei's West Wing galleria, Foster's Americas Wing and glass courtyard"
-    ]
+      "2026-09-24 first model: Lowell's granite Huntington Avenue front with portico and Rotunda dome, the Evans Wing colonnade on the Fenway, courts, Pei's West Wing galleria, Foster's Americas Wing and glass courtyard",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-langen-foundation": {
     "name": "Langen Foundation",
@@ -934,8 +2068,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Ando's 76 m concrete core in its glass envelope, the pond, and the two sunken concrete wings at 45 degrees in their grass banks"
-    ]
+      "2026-09-24 first model: Ando's 76 m concrete core in its glass envelope, the pond, and the two sunken concrete wings at 45 degrees in their grass banks",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-padiglione-darte-contemporanea-pac": {
     "name": "PAC Milan",
@@ -944,8 +2095,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside."
-    ]
+      "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside.",
+      "2026-09-30 interior finding: only 5% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-museo-nacional-del-prado": {
     "name": "Museo del Prado",
@@ -954,8 +2122,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Villanueva's 190 m brick-and-stone range with the Vel\u00e1zquez portico, Goya loggia and Murillo portico, the central gallery skylight, the rotunda; Moneo's brick cube and box-garden roof; San Jer\u00f3nimo el Real; the Paseo's trees and the Botanical Garden"
-    ]
+      "2026-09-24 first model: Villanueva's 190 m brick-and-stone range with the Vel\u00e1zquez portico, Goya loggia and Murillo portico, the central gallery skylight, the rotunda; Moneo's brick cube and box-garden roof; San Jer\u00f3nimo el Real; the Paseo's trees and the Botanical Garden",
+      "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 4
+      },
+      "log": []
+    }
   },
   "museum-jean-paul-najar-foundation": {
     "name": "Jean-Paul Najar Foundation",
@@ -964,8 +2149,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: a plain white two-level box with recessed entrance, window bands and roof light among Alserkal Avenue's low warehouse sheds (guessed; no footprint in the ground)"
-    ]
+      "2026-09-24 first model: a plain white two-level box with recessed entrance, window bands and roof light among Alserkal Avenue's low warehouse sheds (guessed; no footprint in the ground)",
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-saint-louis-art-museum": {
     "name": "Saint Louis Art Museum",
@@ -974,8 +2176,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Gilbert's limestone Palace of Fine Arts at its true angle on Art Hill, skylit wings, the vaulted Sculpture Hall, the arched and columned front with the St. Louis statue, and Chipperfield's dark coffered East Building"
-    ]
+      "2026-09-24 first model: Gilbert's limestone Palace of Fine Arts at its true angle on Art Hill, skylit wings, the vaulted Sculpture Hall, the arched and columned front with the St. Louis statue, and Chipperfield's dark coffered East Building",
+      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-m-woods": {
     "name": "M WOODS",
@@ -984,8 +2203,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: grey-brick former munitions factory with steel windows and roof lantern, Vector Architects steel-mesh veil over the forecourt, a 798 sawtooth hall across the lane"
-    ]
+      "2026-09-24 first model: grey-brick former munitions factory with steel windows and roof lantern, Vector Architects steel-mesh veil over the forecourt, a 798 sawtooth hall across the lane",
+      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-dia-art-foundation": {
     "name": "Dia Chelsea",
@@ -995,7 +2231,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: three brick industrial buildings on West 22nd Street with skylit galleries and steel windows, Beuys 7000 Oaks trees and basalt columns on the sidewalk, turned to the Manhattan grid"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-studio-museum-in-harlem": {
     "name": "Studio Museum in Harlem",
@@ -1004,8 +2256,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Adjaye's stacked dark precast volumes shifting over West 125th Street, the double-height street window, varied windows, roof terrace with the black pyramid, between walk-ups"
-    ]
+      "2026-09-24 first model: Adjaye's stacked dark precast volumes shifting over West 125th Street, the double-height street window, varied windows, roof terrace with the black pyramid, between walk-ups",
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-victoria-and-albert-museum-v-and-a": {
     "name": "V&A",
@@ -1014,8 +2283,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model (coarse, whole complex): Webb's brick-and-stone Cromwell Road front with the crowned tower, brick ranges round glass-roofed courts, the Madejski Garden pool, the Exhibition Road screen"
-    ]
+      "2026-09-24 first model (coarse, whole complex): Webb's brick-and-stone Cromwell Road front with the crowned tower, brick ranges round glass-roofed courts, the Madejski Garden pool, the Exhibition Road screen",
+      "2026-09-30 interior finding: only 6% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-museum-folkwang": {
     "name": "Museum Folkwang",
@@ -1024,8 +2310,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Chipperfield's milky-glass cubes round courts with the steps from Bismarckstra\u00dfe, the low 1960 building to the south, one stone plinth"
-    ]
+      "2026-09-24 first model: Chipperfield's milky-glass cubes round courts with the steps from Bismarckstra\u00dfe, the low 1960 building to the south, one stone plinth",
+      "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-frye-art-museum": {
     "name": "Frye Art Museum",
@@ -1034,8 +2337,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: low pale galleries with skylight monitors on Seattle's turned grid, the rotunda lobby, reflecting pool and column arcade on Terry Ave, the courtyard caf\u00e9."
-    ]
+      "2026-09-24 first model: low pale galleries with skylight monitors on Seattle's turned grid, the rotunda lobby, reflecting pool and column arcade on Terry Ave, the courtyard caf\u00e9.",
+      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-albright-knox-art-gallery": {
     "name": "Albright-Knox (Buffalo AKG)",
@@ -1044,8 +2364,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner."
-    ]
+      "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner.",
+      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-louisiana-museum-of-modern-art": {
     "name": "Louisiana Museum of Modern Art",
@@ -1054,8 +2391,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the white villa by the road and Bo and Wohlert's low white pavilions and glass corridors running north to the lake wing and south to the half-sunk south wing and caf\u00e9, in the park of old beeches sloping to the \u00d8resund"
-    ]
+      "2026-09-24 first model: the white villa by the road and Bo and Wohlert's low white pavilions and glass corridors running north to the lake wing and south to the half-sunk south wing and caf\u00e9, in the park of old beeches sloping to the \u00d8resund",
+      "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 3
+      },
+      "log": []
+    }
   },
   "museum-fondation-louis-vuitton": {
     "name": "Fondation Louis Vuitton",
@@ -1064,8 +2418,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne"
-    ]
+      "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne",
+      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-tate-britain": {
     "name": "Tate Britain",
@@ -1074,8 +2445,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Smith's Portland stone gallery squared to Millbank, the Corinthian portico and steps, end pavilions, the rotunda dome, the skylit roofs and the Duveen galleries, Stirling's Clore Gallery and pond, the planes and the Thames"
-    ]
+      "2026-09-24 first model: Smith's Portland stone gallery squared to Millbank, the Corinthian portico and steps, end pavilions, the rotunda dome, the skylit roofs and the Duveen galleries, Stirling's Clore Gallery and pond, the planes and the Thames",
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 9
+      },
+      "log": []
+    }
   },
   "museum-frans-halsmuseum": {
     "name": "Frans Hals Museum",
@@ -1084,8 +2472,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1608 Oudemannenhuis, two brick storeys under dark pitched roofs round the courtyard garden, stepped gables and the gate on Groot Heiligland, lower galleries behind"
-    ]
+      "2026-09-24 first model: the 1608 Oudemannenhuis, two brick storeys under dark pitched roofs round the courtyard garden, stepped gables and the gate on Groot Heiligland, lower galleries behind",
+      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-kunstmuseum-basel": {
     "name": "Kunstmuseum Basel",
@@ -1094,8 +2499,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1936 limestone Hauptbau round its arcaded court with skylit top galleries and street arcade, and the 2016 grey-brick Neubau monolith with its frieze across Dufourstrasse"
-    ]
+      "2026-09-24 first model: the 1936 limestone Hauptbau round its arcaded court with skylit top galleries and street arcade, and the 2016 grey-brick Neubau monolith with its frieze across Dufourstrasse",
+      "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-blanton-museum-of-art": {
     "name": "Blanton Museum of Art",
@@ -1104,8 +2526,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the two 2006 limestone buildings with roof monitors and glazed atria across the plaza, petal canopies and oaks, and Ellsworth Kelly's white vaulted cross, Austin"
-    ]
+      "2026-09-24 first model: the two 2006 limestone buildings with roof monitors and glazed atria across the plaza, petal canopies and oaks, and Ellsworth Kelly's white vaulted cross, Austin",
+      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-pinacoteca-di-brera": {
     "name": "Pinacoteca di Brera",
@@ -1114,8 +2553,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Palazzo Brera, four rendered storeys under terracotta hips, the portal on via Brera, the arcaded cortile d'onore with Canova's Napoleon, the observatory domes and the Orto Botanico"
-    ]
+      "2026-09-24 first model: Palazzo Brera, four rendered storeys under terracotta hips, the portal on via Brera, the arcaded cortile d'onore with Canova's Napoleon, the observatory domes and the Orto Botanico",
+      "2026-09-30 interior finding: only 49% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-grey-art-gallery": {
     "name": "Grey Art Gallery",
@@ -1124,8 +2580,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: NYU Silver Center on Washington Square East, stone base and brick-and-limestone shaft with arched top storeys, the gallery windows facing the park; turned to the Manhattan grid"
-    ]
+      "2026-09-24 first model: NYU Silver Center on Washington Square East, stone base and brick-and-limestone shaft with arched top storeys, the gallery windows facing the park; turned to the Manhattan grid",
+      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-galleria-nazionale-d-arte-moderna-rome": {
     "name": "Galleria Nazionale d Arte Moderna",
@@ -1134,8 +2607,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Bazzani palace on Viale delle Belle Arti turned to the avenue, colossal columned entrance with attic and steps, top-lit wings, end pavilions, Villa Borghese pines behind"
-    ]
+      "2026-09-24 first model: Bazzani palace on Viale delle Belle Arti turned to the avenue, colossal columned entrance with attic and steps, top-lit wings, end pavilions, Villa Borghese pines behind",
+      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-wellington-museum": {
     "name": "Apsley House",
@@ -1144,8 +2634,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Apsley House (the geocode wrongly points to Wellington, South Africa): Bath-stone house with Wyatt Corinthian portico and pediment on the east, sash windows, balustrade, Waterloo Gallery wing and lantern"
-    ]
+      "2026-09-24 first model: Apsley House (the geocode wrongly points to Wellington, South Africa): Bath-stone house with Wyatt Corinthian portico and pediment on the east, sash windows, balustrade, Waterloo Gallery wing and lantern",
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-asia-society-hong-kong": {
     "name": "Asia Society Hong Kong",
@@ -1154,8 +2661,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Tod Williams Billie Tsien stone pavilion with roof garden and pool, the zig-zag roofed bridge over the ravine, the restored magazine buildings with tiled roofs on the wooded hillside"
-    ]
+      "2026-09-24 first model: Tod Williams Billie Tsien stone pavilion with roof garden and pool, the zig-zag roofed bridge over the ravine, the restored magazine buildings with tiled roofs on the wooded hillside",
+      "2026-09-30 interior finding: only 13% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-moderna-museet": {
     "name": "Moderna Museet",
@@ -1164,8 +2688,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Moneo's low red-ochre building down Skeppsholmen's spine, galleries bundled in fragments under pyramidal zinc roofs with rectangular lanterns, the top-lit entrance street, the old armoury"
-    ]
+      "2026-09-24 first model: Moneo's low red-ochre building down Skeppsholmen's spine, galleries bundled in fragments under pyramidal zinc roofs with rectangular lanterns, the top-lit entrance street, the old armoury",
+      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-musee-dixelles": {
     "name": "Mus\u00e9e d'Ixelles",
@@ -1174,8 +2715,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the former slaughterhouse's brick street front with stone gate pavilion, skylit galleries round a court and a rear extension, among Brussels row houses (largely guessed)"
-    ]
+      "2026-09-24 first model: the former slaughterhouse's brick street front with stone gate pavilion, skylit galleries round a court and a rear extension, among Brussels row houses (largely guessed)",
+      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-lentos-museum-of-modern-art-linz": {
     "name": "Lentos Kunstmuseum",
@@ -1184,8 +2742,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river"
-    ]
+      "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river",
+      "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-virginia-museum-of-contemporary-art": {
     "name": "Virginia MOCA",
@@ -1194,8 +2769,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the closed gallery core, the glazed lobby behind its perforated zinc veil on Parks Avenue, skylit corridor, studios and auditorium (massing largely guessed)"
-    ]
+      "2026-09-24 first model: the closed gallery core, the glazed lobby behind its perforated zinc veil on Parks Avenue, skylit corridor, studios and auditorium (massing largely guessed)",
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-broad": {
     "name": "The Broad",
@@ -1205,7 +2797,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white lattice veil over glass with skylit lattice roof, the corners lifted over the lobby on Grand Avenue, the oculus, the olive plaza, on the downtown grid bearing"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-galleria-dell-accademia": {
     "name": "Gallerie dell'Accademia",
@@ -1214,8 +2822,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Carit\u00e0 church's Gothic brick front and the Scuola's Istrian-stone front on the campo, rendered ranges round two courts under tile roofs, the Grand Canal and the wooden Accademia bridge, on the canal bearing"
-    ]
+      "2026-09-24 first model: the Carit\u00e0 church's Gothic brick front and the Scuola's Istrian-stone front on the campo, rendered ranges round two courts under tile roofs, the Grand Canal and the wooden Accademia bridge, on the canal bearing",
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-ben-uri-gallery-and-museum": {
     "name": "Ben Uri",
@@ -1224,8 +2849,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model (largely guessed): a modest two-storey stock-brick gallery with a glazed street front and roof skylight on Boundary Road between taller houses"
-    ]
+      "2026-09-24 first model (largely guessed): a modest two-storey stock-brick gallery with a glazed street front and roof skylight on Boundary Road between taller houses",
+      "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-g2-kunsthalle": {
     "name": "G2 Kunsthalle",
@@ -1234,8 +2876,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the six-storey late-GDR data centre on Dittrichring with window rows between piers, floor bands, set-back top floor and glass lounge, the Plei\u00dfem\u00fchlgraben and ring road, on the real bearing"
-    ]
+      "2026-09-24 first model: the six-storey late-GDR data centre on Dittrichring with window rows between piers, floor bands, set-back top floor and glass lounge, the Plei\u00dfem\u00fchlgraben and ring road, on the real bearing",
+      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-menil-collection": {
     "name": "The Menil Collection",
@@ -1245,7 +2904,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Piano's long low grey-sided house in a white steel frame under rows of white leaves over glass, the porch all round, gardens let in, the Treasure House above; live oaks."
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-national-portrait-gallery": {
     "name": "National Portrait Gallery",
@@ -1254,8 +2929,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Ewan Christian's Portland-stone palazzo: rusticated base, arched piano nobile windows, cornice and balustrade, projecting entrance on St Martin's Place, lanterns and the Ondaatje rooftop restaurant; the NG's back to the south."
-    ]
+      "2026-09-24 first model: Ewan Christian's Portland-stone palazzo: rusticated base, arched piano nobile windows, cornice and balustrade, projecting entrance on St Martin's Place, lanterns and the Ondaatje rooftop restaurant; the NG's back to the south.",
+      "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-museum-kunstpalast": {
     "name": "Museum Kunstpalast",
@@ -1264,8 +2956,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries."
-    ]
+      "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries.",
+      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-faurschou-foundation": {
     "name": "Faurschou Foundation Copenhagen",
@@ -1274,8 +2983,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: a four-storey yellow-brick harbour warehouse on the quay at Nordhavn (footprint from the ground file), glazed loading doors, the galleries opened up white at the east end, the harbour basin"
-    ]
+      "2026-09-24 first model: a four-storey yellow-brick harbour warehouse on the quay at Nordhavn (footprint from the ground file), glazed loading doors, the galleries opened up white at the east end, the harbour basin",
+      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-whitney-museum-of-american-art-1": {
     "name": "Whitney Museum of American Art",
@@ -1284,8 +3010,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Piano's steel-clad body tall to the Hudson with its north-light roof, the east half lifted over the largo and stepping down in timber terraces to the High Line, Hudson River Park and the Meatpacking District"
-    ]
+      "2026-09-24 first model: Piano's steel-clad body tall to the Hudson with its north-light roof, the east half lifted over the largo and stepping down in timber terraces to the High Line, Hudson River Park and the Meatpacking District",
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-museum-ludwig": {
     "name": "Museum Ludwig",
@@ -1294,8 +3037,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Busmann + Haberer's dark red brick block under two ranks of curved zinc north-light sheds, stair towers, the glass porch, Heinrich-B\u00f6ll-Platz, the railway viaduct and the Rhine garden"
-    ]
+      "2026-09-24 first model: Busmann + Haberer's dark red brick block under two ranks of curved zinc north-light sheds, stair towers, the glass porch, Heinrich-B\u00f6ll-Platz, the railway viaduct and the Rhine garden",
+      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-musee-rodin": {
     "name": "Mus\u00e9e Rodin (H\u00f4tel Biron)",
@@ -1304,8 +3064,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the H\u00f4tel Biron with its court of honour, pedimented court front and rounded garden pavilion under slate, the chapel pavilion, The Thinker, the long garden of lawn, lime alleys and bosquets to the round basin"
-    ]
+      "2026-09-24 first model: the H\u00f4tel Biron with its court of honour, pedimented court front and rounded garden pavilion under slate, the chapel pavilion, The Thinker, the long garden of lawn, lime alleys and bosquets to the round basin",
+      "2026-09-30 interior finding: only 25% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-el-museo-del-barrio": {
     "name": "El Museo del Barrio",
@@ -1314,8 +3091,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the Heckscher Building on Manhattan's grid, red brick over a rusticated limestone base with quoins and cornice, the glass entrance on Fifth, the theatre block, the Conservatory Garden across the avenue"
-    ]
+      "2026-09-24 first model: the Heckscher Building on Manhattan's grid, red brick over a rusticated limestone base with quoins and cornice, the glass entrance on Fifth, the theatre block, the Conservatory Garden across the avenue",
+      "2026-09-30 interior finding: only 54% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-national-museum-of-women-in-the-arts": {
     "name": "National Museum of Women in the Arts",
@@ -1324,8 +3118,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the former Masonic Temple on its wedge between New York Avenue, H and 13th Streets \u2014 limestone, arched base, giant pilasters and tall windows, heavy cornice, corner entrance, the Great Hall skylight"
-    ]
+      "2026-09-24 first model: the former Masonic Temple on its wedge between New York Avenue, H and 13th Streets \u2014 limestone, arched base, giant pilasters and tall windows, heavy cornice, corner entrance, the Great Hall skylight",
+      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-state-hermitage-museum": {
     "name": "The State Hermitage Museum",
@@ -1334,8 +3145,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the whole ensemble coarse, set to the Palace Embankment \u2014 the Winter Palace's four green-and-white ranges round the Great Courtyard with columns, statues and the square's gate, the Small Hermitage and hanging garden, the Old and New Hermitage with the Atlantes, the Winter Canal and Theatre, the Neva, the Alexander Column"
-    ]
+      "2026-09-24 first model: the whole ensemble coarse, set to the Palace Embankment \u2014 the Winter Palace's four green-and-white ranges round the Great Courtyard with columns, statues and the square's gate, the Small Hermitage and hanging garden, the Old and New Hermitage with the Atlantes, the Winter Canal and Theatre, the Neva, the Alexander Column",
+      "2026-09-30 interior finding: only 30% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-pera-museum": {
     "name": "Pera Museum",
@@ -1344,8 +3172,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the former Bristol Hotel's six-storey neoclassical front on Me\u015frutiyet Caddesi \u2014 stone ground floor, windows between pilasters, balconies, cornice and attic \u2014 the modern back, low Beyo\u011flu blocks round it"
-    ]
+      "2026-09-24 first model: the former Bristol Hotel's six-storey neoclassical front on Me\u015frutiyet Caddesi \u2014 stone ground floor, windows between pilasters, balconies, cornice and attic \u2014 the modern back, low Beyo\u011flu blocks round it",
+      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-amon-carter-museum-of-american-art": {
     "name": "Amon Carter Museum",
@@ -1354,8 +3199,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind"
-    ]
+      "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind",
+      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-the-courtauld-gallery": {
     "name": "The Courtauld Gallery",
@@ -1364,8 +3226,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Somerset House at the Strand's angle, Portland-stone ranges round the great court and its fountains, the Strand block with its arched vestibule, porticoes and the south dome, the river terrace with watergate arches"
-    ]
+      "2026-09-24 first model: Somerset House at the Strand's angle, Portland-stone ranges round the great court and its fountains, the Strand block with its arched vestibule, porticoes and the south dome, the river terrace with watergate arches",
+      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-royal-collection-trust": {
     "name": "The King's Gallery",
@@ -1374,8 +3253,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Simpson's top-lit stone gallery with its Doric portico and pediment on Buckingham Gate, the palace's Portland-stone south wing and quadrangle behind, the Royal Mews and its clock-tower gate"
-    ]
+      "2026-09-24 first model: Simpson's top-lit stone gallery with its Doric portico and pediment on Buckingham Gate, the palace's Portland-stone south wing and quadrangle behind, the Royal Mews and its clock-tower gate",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-musei-vaticani": {
     "name": "Vatican Museums",
@@ -1384,8 +3280,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: whole complex coarse: Bramante corridors under tile roofs, Cortile della Pigna with the Nicchione and pine cone, Braccio Nuovo and Library crossings, Belvedere court, Pinacoteca, entrance dome, walls and gardens"
-    ]
+      "2026-09-24 first model: whole complex coarse: Bramante corridors under tile roofs, Cortile della Pigna with the Nicchione and pine cone, Braccio Nuovo and Library crossings, Belvedere court, Pinacoteca, entrance dome, walls and gardens",
+      "2026-09-30 interior finding: only 36% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-smithsonian-freer-and-sackler-galleries": {
     "name": "Freer Gallery of Art",
@@ -1395,7 +3308,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Platt's granite palazzo round its open court and fountain, the three-arched Mall entrance, balustraded cornice and roof lights, and the Sackler's pyramid-roofed pavilion in the Haupt Garden"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-columbus-museum-of-art": {
     "name": "Columbus Museum of Art",
@@ -1405,7 +3334,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1931 Renaissance Revival front on East Broad Street with its three arched portals, the glass-roofed Derby Court, and the copper-clad Walter Wing to the east"
-    ]
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-m-hka-museum-of-modern-art-antwerp": {
     "name": "M HKA",
@@ -1414,8 +3359,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1926 grain silo's tall Art Deco volume and staircase tower, flanked by Grandsard's white-walled galleries with roof lights, on Leuvenstraat facing the Waalse Kaai"
-    ]
+      "2026-09-24 first model: the 1926 grain silo's tall Art Deco volume and staircase tower, flanked by Grandsard's white-walled galleries with roof lights, on Leuvenstraat facing the Waalse Kaai",
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-princeton-university-art-museum": {
     "name": "Princeton University Art Museum",
@@ -1424,8 +3386,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Adjaye's nine cantilevered pavilions in banded aggregate concrete with glass-and-bronze lenses between them"
-    ]
+      "2026-09-24 first model: Adjaye's nine cantilevered pavilions in banded aggregate concrete with glass-and-bronze lenses between them",
+      "2026-09-30 interior finding: only 64% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 9
+      },
+      "log": []
+    }
   },
   "museum-galleria-d-arte-moderna-di-bologna": {
     "name": "MAMbo (GAM Bologna)",
@@ -1434,8 +3413,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the former Forno del Pane on Via Don Minzoni: long rendered front with taller centre under tile roofs, three brick bakery halls behind with ridge lights, the Cavaticcio park and canal."
-    ]
+      "2026-09-24 first model: the former Forno del Pane on Via Don Minzoni: long rendered front with taller centre under tile roofs, three brick bakery halls behind with ridge lights, the Cavaticcio park and canal.",
+      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-national-museum-of-western-art": {
     "name": "National Museum of Western Art",
@@ -1444,8 +3440,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Le Corbusier's pebble-panel box on pilotis over a glazed lobby, the roof's ring of lighting galleries round the hall's lantern, the Rodins in the forecourt, Maekawa's tiled wing."
-    ]
+      "2026-09-24 first model: Le Corbusier's pebble-panel box on pilotis over a glazed lobby, the roof's ring of lighting galleries round the hall's lantern, the Rodins in the forecourt, Maekawa's tiled wing.",
+      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 2
+      },
+      "log": []
+    }
   },
   "museum-vancouver-art-gallery": {
     "name": "Vancouver Art Gallery",
@@ -1454,8 +3467,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Rattenbury's neoclassical courthouse on downtown's 45-degree grid: granite base, marble walls, end pavilions, Ionic portico and lions to Georgia St, drum and low copper dome, the lawn and fountain."
-    ]
+      "2026-09-24 first model: Rattenbury's neoclassical courthouse on downtown's 45-degree grid: granite base, marble walls, end pavilions, Ionic portico and lions to Georgia St, drum and low copper dome, the lawn and fountain.",
+      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-new-museum-1": {
     "name": "New Museum",
@@ -1464,8 +3494,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: SANAA's seven shifted aluminium-clad boxes over a glass ground floor on the Bowery, skylights at the setbacks; OMA's 2025 stepped glass-and-mesh expansion to the north (form guessed)."
-    ]
+      "2026-09-24 first model: SANAA's seven shifted aluminium-clad boxes over a glass ground floor on the Bowery, skylights at the setbacks; OMA's 2025 stepped glass-and-mesh expansion to the north (form guessed).",
+      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain": {
     "name": "Casa Sisal",
@@ -1494,8 +3541,25 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-25 first model from published descriptions and dimensions (no photographs available this session)"
-    ]
+      "2026-09-25 first model from published descriptions and dimensions (no photographs available this session)",
+      "2026-09-30 interior finding: only 46% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   },
   "museum-black-mountain-college-museum-and-arts-center": {
     "name": "Black Mountain College Museum and Arts Center",
@@ -1504,7 +3568,24 @@
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-26 first model: a generic downtown-Asheville brick storefront block (no photographs reachable, no purpose-built museum building of its own; the institution occupies a storefront on College Street)"
-    ]
+      "2026-09-26 first model: a generic downtown-Asheville brick storefront block (no photographs reachable, no purpose-built museum building of its own; the institution occupies a storefront on College Street)",
+      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+    ],
+    "interior": {
+      "tier": "shell",
+      "refined": null,
+      "passes": 0,
+      "rooms": {
+        "documented": 0,
+        "reconstructed": 0
+      },
+      "works": {
+        "hung": 0,
+        "elsewhere": 0,
+        "off": 0,
+        "none": 1
+      },
+      "log": []
+    }
   }
 }

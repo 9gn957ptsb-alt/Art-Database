@@ -1,0 +1,22 @@
+{"slug": "museum-musee-du-louvre",
+ "v": 1,
+ "grid": {"cell": 1.0, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-musee-du-louvre.json", "read": "2026-09-30"},
+  {"id": "wikidata-where", "t": "Wikidata: the room each work is located in (P276)", "u": "https://www.wikidata.org/", "licence": "CC0-1.0", "read": "2026-09-27"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "5487224a726169208b7c0400", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "4eaefdd86899c800010081e1", "how": "elsewhere", "said": "Room 710", "src": "wikidata-where", "asof": "2026-09-27", "ref": {"museum": "wikidata", "object": "Q11935346", "room": "Q12269950"}, "t": "Virgin of the Rocks", "a": "Leonardo da Vinci", "y": "ca. 1483-1486", "m": "Wood, transferred to canvas in 1806 by Hacquin", "i": "Jv-e1fhDjg61OYhhsMoiQg", "c": ["#524c34", "#483518", "#cc9146"], "cm": [121.9, 198.9], "cmsrc": "artsy"},
+  {"id": "5081754c2145ad0002000d8e", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "50809f8b4039bf0002000030", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "547df8a472616977d5da1800", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5084459bac67ce0002000141", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "547dfaad7261697904021900", "how": "elsewhere", "said": "Room 837", "src": "wikidata-where", "asof": "2026-09-27", "ref": {"museum": "wikidata", "object": "Q1216387", "room": "Q19018819"}, "t": "Le Dentellière (The Lacemaker)", "a": "Johannes Vermeer", "y": "1669/1670", "m": "", "i": "kODQKA2x28auUU5vVx1P0g", "c": ["#735332", "#636465", "#b19063"], "cm": [21.1, 23.9], "cmsrc": "artsy"},
+  {"id": "52164e47275b2488dc0002de", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5730e39a275b243b54002e21", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

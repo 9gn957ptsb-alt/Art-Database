@@ -1,0 +1,17 @@
+{"slug": "museum-rijksmuseum",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-rijksmuseum.json", "read": "2026-09-30"},
+  {"id": "wikidata-where", "t": "Wikidata: the room each work is located in (P276)", "u": "https://www.wikidata.org/", "licence": "CC0-1.0", "read": "2026-09-27"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "506ca46ae408ea0002001487", "how": "elsewhere", "said": "Gallery of Honour", "src": "wikidata-where", "asof": "2026-09-27", "ref": {"museum": "wikidata", "object": "Q167605", "room": "Q25858124"}, "t": "The Milkmaid", "a": "Johannes Vermeer", "y": "1658-1660", "m": "Oil on canvas", "i": "eEIEjwnsdk7y_qLhWbWIUg", "c": ["#736955", "#1f2636", "#c1bdac"], "cm": [40.9, 45.5], "cmsrc": "artsy"},
+  {"id": "506c95ade408ea000200136e", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "5357da03cb4c2786a3000020", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"},
+  {"id": "534ea0d9b202a31c61000030", "how": "none", "said": "where it hangs is not published", "src": null, "asof": "2026-09-30"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}

@@ -1,0 +1,21 @@
+{"slug": "museum-art-institute-of-chicago",
+ "v": 1,
+ "grid": {"cell": 0.5, "turn": 0},
+ "sources": [
+  {"id": "model", "t": "this museum's exterior model", "u": "models/museum-art-institute-of-chicago.json", "read": "2026-09-30"},
+  {"id": "aic-where", "t": "the Art Institute of Chicago's API: whether each work is on view, and in which gallery", "u": "https://api.artic.edu/api/v1/", "licence": "CC0-1.0", "read": "2026-09-30"}],
+ "enter": null,
+ "floors": null,
+ "pins": {},
+ "notes": "Nothing published about its rooms has been read yet.",
+ "works": [
+  {"id": "537e6af24b848084ca000067", "how": "elsewhere", "said": "Gallery 241", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "80607"}, "t": "Self-Portrait", "a": "Vincent van Gogh", "y": "1887", "m": "Oil on artist's board, mounted on cradled panel", "i": "AWZqm_m_888YpjzTdjlvRQ", "c": ["#545751", "#705a40", "#3b483a"], "cm": [32.5, 41.0], "cmsrc": "aic"},
+  {"id": "521e687c139b213452000762", "how": "elsewhere", "said": "Gallery 248", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "111436"}, "t": "Still life with basket of apples", "a": "Paul Cézanne", "y": "1890-1894", "m": "Oil on canvas", "i": "EUYQKFz5enUYat956_Wj-A", "c": ["#b9bdad", "#85927f", "#9e8e56"], "cm": [80.0, 65.0], "cmsrc": "aic"},
+  {"id": "4eaeef8976e78f0001007a94", "how": "elsewhere", "said": "Gallery 201", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "20684"}, "t": "Paris Street; Rainy Day", "a": "Gustave Caillebotte", "y": "1876-1877", "m": "Oil on canvas", "i": "UayNTgTSPJeNL5lGJDQWdw", "c": ["#bbb3a4", "#666f77", "#a0968b"], "cm": [276.2, 212.2], "cmsrc": "aic"},
+  {"id": "537e69741a1e86510c000037", "how": "elsewhere", "said": "Gallery 391", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "111060"}, "t": "Daniel-Henry Kahnweiler", "a": "Pablo Picasso", "y": "1910", "m": "Oil on canvas", "i": "rC3xdKws0h2ZlR_fmAK-dQ", "c": ["#63604d", "#45453d", "#a29e88"], "cm": [72.4, 100.4], "cmsrc": "aic"},
+  {"id": "537e4780cd530ea10300009b", "how": "elsewhere", "said": "Gallery 200", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "105203"}, "t": "Avery Coonley Playhouse: Triptych Window", "a": "Frank Lloyd Wright", "y": "1912", "m": "Clear and colored lead glass in oak frames", "i": "4IVdpNWni1lkxbG8g0R6LQ", "c": ["#e0e1e0", "#2c231d", "#a4a39c"], "cm": [109.2, 89.5], "cmsrc": "aic"},
+  {"id": "537e5c394b848058fa000200", "how": "elsewhere", "said": "Gallery 291", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "83642"}, "t": "Greyed Rainbow", "a": "Jackson Pollock", "y": "1953", "m": "Oil on linen", "i": "xRzSuzEe7FkBCiG7dUXEXQ", "c": ["#868078", "#777877", "#d2cfc5"], "cm": [244.2, 182.9], "cmsrc": "aic"},
+  {"id": "521665c29c18db1dcb0002e2", "how": "elsewhere", "said": "Gallery 209", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "5848"}, "t": "Landscape with Saint John on Patmos", "a": "Nicolas Poussin", "y": "1650", "m": "Oil on canvas", "i": "lRe4BiataD2NM3Yso-iUPA", "c": ["#514132", "#5d6e7d", "#a09989"], "cm": [136.4, 100.3], "cmsrc": "aic"},
+  {"id": "57e885669c18db2d60001cd6", "how": "elsewhere", "said": "Gallery 243", "src": "aic-where", "asof": "2026-09-30", "ref": {"museum": "aic", "object": "16568"}, "t": "Water Lilies", "a": "Claude Monet", "y": "1906", "m": "", "i": "ZL62-KtvJBig3hMeMO7DMw", "c": ["#5b7386", "#7890a5", "#7a8f7d"], "cm": [94.1, 89.9], "cmsrc": "aic"}],
+ "asof": "2026-09-30",
+ "tier": "shell"}
