@@ -1244,8 +1244,11 @@
     var band = artBand();
     var zFit = apart > 1e-9 ? 0.4 * Math.min(band.w, band.h) / apart / Math.max(1, baseR) : Infinity;
     // A work's history is framed on no one place: a way from it starts unnamed.
+    // Nor is a museum named again on the way up to its own city, where its
+    // mark stands named already.
+    var home = city.art && city.art.kind === "town" && (place.museum || place.stage) && place.townKey === city.townKey;
     var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug,
-                name: place.art && place.art.kind !== "town" ? "" : place.title };
+                name: (place.art && place.art.kind !== "town") || home ? "" : place.title };
     place = city;
     focus.lat = city.lat;
     focus.lon = city.lon;

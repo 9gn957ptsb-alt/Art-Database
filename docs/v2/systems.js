@@ -1961,6 +1961,16 @@
       }
       this.tone(60, ms / 1000, "sine", 0.4);
     },
+    // A step inside a museum (walk.js): a soft tick, brighter on stone,
+    // lower on wood, a dull tap where what the floor is made of is not known.
+    step: function (material) {
+      if (!this.on) { return; }
+      var hard = { marble: 1, stone: 1, limestone: 1, paving: 1, concrete: 1, tile: 1, rubble: 1 };
+      var soft = { wood: 1, timber: 1 };
+      var f = hard[material] ? 2400 : soft[material] ? 520 : 900;
+      this.click(hard[material] ? 0.22 : 0.14);
+      this.tone(f * (0.96 + Math.random() * 0.08), 0.045, "triangle", hard[material] ? 0.12 : 0.08);
+    },
     // A beat of the motion painting: G major, climbing and turning, as a
     // continuo under whatever is being painted.
     beat: function (n) {

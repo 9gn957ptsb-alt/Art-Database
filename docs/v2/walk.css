@@ -1,0 +1,272 @@
+/* The walk inside a museum (walk.js, appended by it the first time a
+   museum is gone into): the plan, the walk, the look. It fills the band the
+   building stood in — above the strip of works on a phone, left of the
+   column on a desktop — under the banner, which stays. */
+
+.walk {
+  position: absolute;
+  top: calc(var(--s-5) + 52px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.building[data-museum] .walk { right: min(40vw, 440px); }
+@media (max-width: 720px) {
+  .building[data-museum] .walk { right: 0; bottom: 38vh; }
+}
+.walk > * { pointer-events: auto; }
+
+/* The walk itself: a dot is three or four screen pixels, kept square. */
+.walk-box {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.walk-box[hidden] { display: none; }
+.walk-plan,
+.walk-view {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.walk-plan:active,
+.walk-view:active { cursor: grabbing; }
+.walk-view:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: -2px; }
+/* The plan lies over the building's own box, so its roof comes off in place. */
+.walk-plan { z-index: 2; }
+.walk-plan[hidden] { display: none; }
+.walk-box .deal-veil { z-index: 1; }
+
+/* The pixel light, drawn here by land.js while you are inside. */
+.walk-light {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+.walk > .walk-light { pointer-events: none; }
+
+/* Names over the picture: works' titles in the italic serif, rooms in the
+   marks' mono. Only a few, near ones, never over each other. */
+.walk-names {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.walk > .walk-names { pointer-events: none; }
+.walk-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 12em;
+  min-height: 44px;
+  margin: 0;
+  padding: 12px 6px;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  -webkit-hyphens: none;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 6px rgba(15, 10, 7, 0.6);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: opacity 0.26s steps(3);
+}
+.walk-name[hidden] { display: none; }
+.walk-name[data-kind="work"] {
+  font-family: "Instrument Serif", var(--serif), serif;
+  font-style: italic;
+  font-size: var(--t-2);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.walk-name[data-kind="edge"] { color: #a8927a; }
+.walk-name:hover,
+.walk-name:focus-visible { color: #ffffff; }
+.walk-name:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: -8px; }
+
+/* The wall label of the work you stand before: beside it at 1.4 m on a
+   desktop, never narrower than its longest word; the title only on a phone,
+   the rest coming into the strip. Each line comes up on the reading's clock. */
+.walk-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min-content;
+  max-width: 16em;
+  padding: var(--s-3) var(--s-4);
+  background: rgba(15, 10, 7, 0.78);
+  color: #eadfcd;
+}
+.walk-label[hidden] { display: none; }
+.walk-l {
+  margin: 0;
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(6px);
+  transition: opacity var(--beat-5) steps(5), filter var(--beat-5) steps(5), transform var(--beat-5) steps(5);
+}
+.walk-l[data-on="true"] { opacity: 1; filter: none; transform: none; }
+.walk-l-t {
+  font-family: "Instrument Serif", var(--serif), serif;
+  font-size: var(--t-3);
+  line-height: 1.1;
+}
+.walk-l-t i { font-style: italic; }
+.walk-l-by {
+  margin-top: var(--s-2);
+  font-family: var(--serif);
+  font-size: var(--t-2);
+  line-height: 1.3;
+}
+.walk-l-made,
+.walk-l-where {
+  margin-top: var(--s-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+.walk-said { position: relative; margin-top: var(--s-3); }
+.walk-said:empty { display: none; }
+.walk-said .read-said { position: relative; }
+.walk-said .read-said[data-on="false"] { position: absolute; left: 0; right: 0; top: 0; }
+.walk-sentence { font-size: var(--t-3); }
+.walk-doors { gap: var(--s-3); align-items: flex-start; margin-top: var(--s-3); }
+.walk-doors .art-door-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  box-shadow: none;
+}
+.walk-door-here {
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9d95e6;
+}
+.walk-history {
+  display: inline-block;
+  margin-top: var(--s-3);
+  min-height: 32px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(168, 146, 122, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a8927a;
+  cursor: pointer;
+}
+.walk-history:hover,
+.walk-history:focus-visible { color: #eadfcd; border-color: #eadfcd; }
+.walk-only { color: #a8927a; }
+@media (max-width: 720px) {
+  .walk-label { max-width: calc(100% - 16px); padding: var(--s-2) var(--s-3); }
+  .walk-label .walk-l-t { font-size: var(--t-2); }
+}
+
+/* On a phone the reading's lines come into the strip's first card. */
+.walk-here {
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) 0 var(--s-4);
+  border-bottom: 1px solid rgba(168, 146, 122, 0.3);
+  color: #eadfcd;
+}
+.walk-here .walk-l-t { font-size: var(--t-3); }
+
+/* The look: the work large over the walk, which is washed behind it. */
+.walk[data-level="look"] .walk-view { filter: brightness(0.5) blur(2px); }
+.walk-look {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.walk-look[hidden] { display: none; }
+.walk-look-in {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-5);
+}
+.walk-look-plate {
+  position: relative;
+  flex: none;
+  box-shadow: 0 21px 55px -21px rgba(0, 0, 0, 0.7);
+  transform-origin: 50% 50%;
+  transition: transform var(--beat-5) cubic-bezier(0.2, 0.7, 0.2, 1);
+  cursor: zoom-in;
+}
+.walk-look-plate[data-zoom="3"] { cursor: zoom-out; }
+.walk-look-plate .deal-go { background: #0f0a07; cursor: inherit; }
+.walk-look-plate .deal-go img {
+  position: static;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  object-fit: contain;
+}
+.walk-look-bands { display: flex; flex-direction: column; }
+.walk-look-band { display: block; }
+.walk-look-lines {
+  flex: 1;
+  min-width: 12em;
+  max-width: 24em;
+  color: #eadfcd;
+}
+.walk-look-lines .walk-l-t { font-size: var(--t-5); }
+@media (max-width: 720px) {
+  .walk-look-in {
+    flex-direction: column;
+    align-items: center;
+    padding: var(--s-4) 16px var(--s-6);
+  }
+  .walk-look-lines { max-width: none; width: 100%; }
+}
+
+/* While inside, the building's own drawing, its years and its blur go. */
+.building[data-inside] { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.building[data-inside] .building-clod,
+.building[data-inside] .building-time { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .walk-name, .walk-l, .walk-look-plate { transition: none; }
+  .walk-l { filter: none; transform: none; }
+}
