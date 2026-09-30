@@ -1,6 +1,66 @@
 {
   "buildings": [
     {
+      "title": "Seamless Horizons – Balboa by RIVA Spain",
+      "name": "Balboa",
+      "slug": "seamless-horizons-balboa-by-riva-spain",
+      "url": "https://www.thearchitecturalauthority.com/article/seamless-horizons-balboa-by-riva-spain",
+      "city": "Del Mar",
+      "country": "United States",
+      "where": "Del Mar, United States",
+      "lat": 32.9595,
+      "lon": -117.2653,
+      "precision": "town"
+    },
+    {
+      "title": "Beyond the Interior – Las Casuarinas by Carla Canepa Design Studio",
+      "name": "Las Casuarinas",
+      "slug": "beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio",
+      "url": "https://www.thearchitecturalauthority.com/article/beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio",
+      "city": "Lima",
+      "country": "Peru",
+      "where": "Lima, Peru",
+      "lat": -12.046,
+      "lon": -77.0306,
+      "precision": "town"
+    },
+    {
+      "title": "Light, Matter and Garden – Casa Galera by Karlen + Clemente",
+      "name": "Casa Galera",
+      "slug": "light-matter-and-garden-casa-galera-by-karlen-clemente",
+      "url": "https://www.thearchitecturalauthority.com/article/light-matter-and-garden-casa-galera-by-karlen-clemente",
+      "city": "Río Tercero",
+      "country": "Argentina",
+      "where": "Río Tercero, Argentina",
+      "lat": -32.1768,
+      "lon": -64.113,
+      "precision": "town"
+    },
+    {
+      "title": "Ode to the Environment – Casa R&C by Cristián Nanzer",
+      "name": "Casa R&C",
+      "slug": "ode-to-the-environment-casa-rc-by-cristin-nanzer",
+      "url": "https://www.thearchitecturalauthority.com/article/ode-to-the-environment-casa-rc-by-cristin-nanzer",
+      "city": "Córdoba",
+      "country": "Argentina",
+      "where": "Córdoba, Argentina",
+      "lat": -31.4167,
+      "lon": -64.1834,
+      "precision": "town"
+    },
+    {
+      "title": "Elegance and Functionality – Clínica Dental Vega by Murillo y Hernández Arquitectura",
+      "name": "Clínica Dental Vega",
+      "slug": "elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura",
+      "url": "https://www.thearchitecturalauthority.com/article/elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura",
+      "city": "Salamanca",
+      "country": "Spain",
+      "where": "Salamanca, Spain",
+      "lat": 40.9652,
+      "lon": -5.664,
+      "precision": "town"
+    },
+    {
       "title": "A Luxury Oasis – Casa Sisal by Reyes Rios + Larrain",
       "name": "Casa Sisal",
       "slug": "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
