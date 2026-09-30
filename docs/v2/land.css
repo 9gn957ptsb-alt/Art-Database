@@ -3066,3 +3066,33 @@ button.art-venue:focus-visible { text-decoration: underline; }
   .art-sentence, .art-door-pic, .art-and-more, .art-head { transition: none; }
 }
 .finder .collection-field::placeholder { color: #a8927a; }
+
+/* ---- the journey (land.js, "the journey") ----------------------------------
+   The names along the way between two places: where you left, where you are
+   going, and the towns passed over, beside their places in the land's own
+   mono caps. They come and go in three steps, as the globe's names do. */
+.route-names { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.route-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #eadfcd;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(15, 10, 7, 0.8);
+  opacity: 0;
+  transition: opacity 0.42s steps(3);
+  will-change: transform;
+}
+.route-name[data-on="true"] { opacity: 1; }
+.route-name[data-kind="from"] { color: #a8927a; }
+.route-name[data-kind="to"] { font-size: 11px; }
+.route-name[data-kind="past"] { opacity: 0; }
+.route-name[data-kind="past"][data-on="true"] { opacity: 0.82; }
+.route-name-n { color: #a8927a; }
+@media (prefers-reduced-motion: reduce) {
+  .route-name { transition: none; }
+}
