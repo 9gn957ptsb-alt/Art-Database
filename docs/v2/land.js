@@ -1247,7 +1247,7 @@
     // Nor is a museum named again on the way up to its own city, where its
     // mark stands named already.
     var home = city.art && city.art.kind === "town" && (place.museum || place.stage) && place.townKey === city.townKey;
-    var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug,
+    var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug, town: place.townKey || null,
                 name: (place.art && place.art.kind !== "town") || home ? "" : place.title };
     place = city;
     focus.lat = city.lat;
@@ -1311,9 +1311,11 @@
                 wk: "", wc: null, wz: 0, wspan: 0, wAt: 0, pickAt: 0, fromKey: was.key,
                 toKey: city.townKey || city.slug };
     clearRouteNames();
-    route = { samples: routeArc(av, bv, apart), u: 0, doneAt: null, towns: [],
+    route = { samples: routeArc(av, bv, apart), u: 0, doneAt: null, towns: [], av: av, bv: bv, om: apart,
               names: [routeName(city.title, city.lat, city.lon, "to")] };
     if (was.name) { route.names.push(routeName(was.name, was.lat, was.lon, "from")); }
+    route.riders = [];
+    boardRiders(route, was, city);
     tilesDirty = true;
   }
 
@@ -1489,6 +1491,98 @@
     route.towns.forEach(function (tw) {
       var p = project(tw.lat, tw.lon);
       if (p.z >= 0.08) { put(Math.floor(p.x / CELL_PX), Math.floor(p.y / CELL_PX), 3); }
+    });
+  }
+
+  /* The company a journey keeps: the works that made this same journey.
+     Each place's file gives, for every work there, the place it came from
+     and the place it went on to; a work that left the one for the other
+     rides beside you the whole way, and a work that has been in both,
+     whenever, keeps it when none made the trip. Five at most. They lift off
+     the place you leave, follow you a little behind, fanned either side of
+     the way, and gather at the place you come to; the one leading is named,
+     and each takes the lead in turn. */
+  function boardRiders(r, was, city) {
+    var fromKey = was.town, toKey = city.townKey;
+    if (!fromKey || !toKey || fromKey === toKey) { return; }
+    Promise.all([readArt("places/" + fromKey + ".json"), readArt("places/" + toKey + ".json")]).then(function (both) {
+      var A = both[0], B = both[1];
+      if (route !== r || !A || !B) { return; }
+      var picked = [], seen = {};
+      var nameA = A.w ? A.w.split(",")[0] : was.name, nameB = B.w ? B.w.split(",")[0] : city.title;
+      function add(row, line) {
+        if (picked.length >= 5 || seen[row[0]] || !row[3]) { return; }
+        seen[row[0]] = true;
+        picked.push({ id: row[0], t: row[1], a: row[2], img: row[3], line: line });
+      }
+      A.works.forEach(function (row) {
+        if (row[10] === toKey) { add(row, "left " + nameA + " for " + nameB + (row[7] ? ", " + row[7] : "")); }
+      });
+      B.works.forEach(function (row) {
+        if (row[9] === fromKey) { add(row, "came to " + nameB + " from " + nameA + (row[6] ? ", " + row[6] : "")); }
+      });
+      var inB = {};
+      B.works.forEach(function (row) { if (!inB[row[0]]) { inB[row[0]] = row; } });
+      A.works.forEach(function (row) {
+        var other = inB[row[0]];
+        if (other) { add(row, nameA + (row[6] ? " " + row[6] : "") + " \u00b7 " + nameB + (other[6] ? " " + other[6] : "")); }
+      });
+      picked.forEach(function (w, i) {
+        var fig = el("figure", "route-work");
+        var img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        img.src = ART_CDN + w.img + "/square.jpg";
+        img.addEventListener("error", function () { fig.dataset.nopic = "true"; });
+        fig.appendChild(img);
+        fig.style.setProperty("--tone", "#eadfcd");
+        routeNames.appendChild(fig);
+        var cap = el("span", "route-work-cap");
+        cap.appendChild(el("span", "route-work-title", w.t));
+        cap.appendChild(el("span", "route-work-by", " \u2014 " + w.a));
+        cap.appendChild(el("span", "route-work-line", w.line));
+        routeNames.appendChild(cap);
+        r.riders.push({ w: w, el: fig, cap: cap, i: i, shown: false, capShown: false });
+      });
+      r.boardedAt = performance.now();
+    });
+  }
+
+  function placeRiders(now) {
+    var r = route;
+    if (!r.riders || !r.riders.length) { return; }
+    var J = journey;
+    var n = r.riders.length;
+    // Each takes the lead for a while, in turn.
+    var lead = Math.floor((now - (r.boardedAt || now)) / 2200) % n;
+    var gone = r.doneAt !== null && now - r.doneAt > 2600;
+    r.riders.forEach(function (rd) {
+      var lag = 0.045 * (rd.i + 1);
+      var u = r.doneAt === null ? Math.max(0, r.u - lag) : Math.min(1, 1 - lag + (now - r.doneAt) / 700);
+      var av = r.av, bv = r.bv;
+      var v = slerp3(av, bv, r.om, u), v2 = slerp3(av, bv, r.om, Math.min(1, u + 0.01));
+      var p = project(latOf(v), lonOf(v)), q = project(latOf(v2), lonOf(v2));
+      var dx = q.x - p.x, dy = q.y - p.y, len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var side = rd.i % 2 ? 1 : -1, far = 44 + 26 * Math.floor(rd.i / 2);
+      // Gathered at the end: a small arc round the place arrived at.
+      if (r.doneAt !== null) { far *= Math.max(0.55, 1 - (now - r.doneAt) / 1400); }
+      var x = p.x - dy / len * far * side, y = p.y + dx / len * far * side;
+      var on = !gone && p.z >= 0.08 && x > -30 && x < W + 30 && y > 70 && y < H + 30 && (r.u > 0.01 || r.doneAt !== null);
+      if (on) { rd.el.style.transform = "translate(" + Math.round(x - 19) + "px," + Math.round(y - 19) + "px)"; }
+      if (on !== rd.shown) { rd.shown = on; rd.el.dataset.on = on ? "true" : "false"; }
+      var capOn = on && rd.i === lead && r.doneAt === null;
+      if (capOn) {
+        // On the rider's own side of the way, away from the line and its names.
+        var out = -dy / len * side;
+        var right = Math.abs(out) > 0.3 ? out > 0 : x < W * 0.55;
+        var cw = rd.cw || (rd.cw = rd.cap.offsetWidth || 200);
+        if (right && x + 26 + cw > W - 8) { right = false; }
+        if (!right && x - 26 - cw < 8) { right = true; }
+        rd.cap.dataset.side = right ? "right" : "left";
+        rd.cap.style.transform = right ? "translate(" + Math.round(x + 26) + "px," + Math.round(y - 17) + "px)"
+                                       : "translate(" + Math.round(x - 26) + "px," + Math.round(y - 17) + "px) translateX(-100%)";
+      }
+      if (capOn !== rd.capShown) { rd.capShown = capOn; rd.cap.dataset.on = capOn ? "true" : "false"; }
     });
   }
 
@@ -4914,7 +5008,8 @@
     }
 
     paint(now);
-    if (route) { placeRouteNames(now); }
+    if (route) { placeRouteNames(now); placeRiders(now); }
+    drawDials();
 
     // Up on the globe: the world, its words and its cities, and none of the
     // rest of it — not hidden but not running, which is most of what this
@@ -13942,6 +14037,231 @@
       artYear.textContent = String(yearAt(a, v));
     });
   }
+
+  /* ---- the dial ------------------------------------------------------------
+
+     Time is a circle, not a line (artist, 30 Sep 2026: "the slide bar for
+     the timelapse should be circle based and futuristic … the most powerful
+     device in the history of the world"). Each timeline is a dial. The years
+     run clockwise from the top round to the top again, where now meets the
+     beginning across a small gap; the year stands in the middle over its
+     span; every event is a mark inside the ring, lit once it is passed; the
+     way already come is a line of light with a comet's tail behind the
+     handle, the museums' diamond. Two rings inside it are geared to time and
+     turn as it turns, one against the other at phi, so turning the years is
+     felt as a mechanism; the chronograph's scale outside stays still. It is
+     turned by dragging round it, by a wheel or a trackpad over it, or by the
+     keyboard on the range underneath, which stays for everything that sets
+     it: the dial only reads it and, when turned, writes it. It draws only
+     when something on it has changed. */
+  var DIAL_GAP = 18 * RAD;
+  var DIAL_START = -Math.PI / 2 + DIAL_GAP / 2;
+  var DIAL_SWEEP = TAU - DIAL_GAP;
+  var dials = [];
+  var dialFont = (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace").trim();
+
+  function makeDial(box, range, span, ticksOf) {
+    if (!box || !range) { return; }
+    box.classList.add("dial");
+    var face = document.createElement("canvas");
+    face.className = "dial-face";
+    face.setAttribute("aria-hidden", "true");
+    box.appendChild(face);
+    var d = { box: box, range: range, face: face, g: face.getContext("2d"), span: span, ticksOf: ticksOf,
+              drawn: "", grab: null, last: null };
+    function tAt(event) {
+      var r = face.getBoundingClientRect();
+      var a = Math.atan2(event.clientY - r.top - r.height / 2, event.clientX - r.left - r.width / 2);
+      var rel = ((a - DIAL_START) % TAU + TAU) % TAU;
+      var t = rel <= DIAL_SWEEP ? rel / DIAL_SWEEP : (rel - DIAL_SWEEP < DIAL_GAP / 2 ? 1 : 0);
+      // Never across the gap in one move: time is turned round, not jumped.
+      if (d.last !== null && Math.abs(t - d.last) > 0.5) { t = d.last > 0.5 ? 1 : 0; }
+      d.last = t;
+      return t;
+    }
+    function turnTo(t) {
+      d.grab = t;
+      range.value = String(Math.round(Math.max(0, Math.min(1, t)) * 1000));
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    face.addEventListener("pointerdown", function (event) {
+      event.stopPropagation();
+      event.preventDefault();
+      range.dispatchEvent(new Event("pointerdown"));
+      d.last = null;
+      face.setPointerCapture(event.pointerId);
+      box.dataset.turning = "true";
+      turnTo(tAt(event));
+    });
+    face.addEventListener("pointermove", function (event) {
+      if (d.grab === null) { return; }
+      event.stopPropagation();
+      turnTo(tAt(event));
+    });
+    function let_(event) {
+      if (d.grab === null) { return; }
+      event.stopPropagation();
+      d.grab = null;
+      d.last = null;
+      delete box.dataset.turning;
+      range.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    face.addEventListener("pointerup", let_);
+    face.addEventListener("pointercancel", let_);
+    // A wheel or two fingers on a trackpad over it turn it, like a crown.
+    face.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      range.dispatchEvent(new Event("pointerdown"));
+      var t = Number(range.value) / 1000 + (event.deltaY + event.deltaX) * 0.0007;
+      turnTo(t);
+      d.grab = null;
+    }, { passive: false });
+    dials.push(d);
+  }
+
+  function drawDials() {
+    for (var n = 0; n < dials.length; n += 1) { drawDial(dials[n]); }
+  }
+
+  function drawDial(d) {
+    if (d.box.hidden || !d.box.offsetWidth) { return; }
+    var S = d.box.offsetWidth;
+    var t = d.grab !== null ? d.grab : Number(d.range.value) / 1000;
+    var span = d.span() || [0, 0];
+    var ticks = d.ticksOf ? d.ticksOf() : [];
+    var year = d.box.querySelector(".building-time-year").textContent;
+    var focused = document.activeElement === d.range;
+    var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning].join("|");
+    if (key === d.drawn) { return; }
+    d.drawn = key;
+    var px = Math.round(S * dpr);
+    if (d.face.width !== px) { d.face.width = px; d.face.height = px; }
+    var g = d.g;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, S, S);
+    var c = S / 2, R1 = S / 2 - 13;
+    var at = DIAL_START + t * DIAL_SWEEP;
+    g.lineCap = "butt";
+
+    // The chronograph's scale, outside the ring, still.
+    for (var k = 0; k < 120; k += 1) {
+      var ak = -Math.PI / 2 + k / 120 * TAU;
+      var long = k % 10 === 0;
+      g.strokeStyle = "rgba(168, 146, 122, " + (long ? 0.55 : 0.22) + ")";
+      g.lineWidth = long ? 1 : 0.75;
+      g.beginPath();
+      g.moveTo(c + Math.cos(ak) * (R1 + 5), c + Math.sin(ak) * (R1 + 5));
+      g.lineTo(c + Math.cos(ak) * (R1 + (long ? 11 : 8)), c + Math.sin(ak) * (R1 + (long ? 11 : 8)));
+      g.stroke();
+    }
+
+    // Two rings geared to time, turning against each other at phi.
+    g.setLineDash([2, 5]);
+    g.strokeStyle = "rgba(234, 223, 205, 0.22)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.arc(c, c, R1 - 15, t * TAU * PHI, t * TAU * PHI + TAU);
+    g.stroke();
+    g.setLineDash([1, 9]);
+    g.strokeStyle = "rgba(157, 149, 230, 0.35)";
+    g.beginPath();
+    g.arc(c, c, R1 - 21, -t * TAU, -t * TAU + TAU);
+    g.stroke();
+    g.setLineDash([]);
+
+    // The whole of the time, and where now meets the beginning.
+    g.strokeStyle = "rgba(168, 146, 122, 0.4)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.arc(c, c, R1, DIAL_START, DIAL_START + DIAL_SWEEP);
+    g.stroke();
+    g.fillStyle = LILAC;
+    g.fillRect(c - 1.5, c - R1 - 1.5, 3, 3);
+
+    // Every event, inside the ring: lit once it has been passed.
+    ticks.forEach(function (tk) {
+      var a = DIAL_START + tk.pos * DIAL_SWEEP;
+      var lit = tk.pos <= t + 1e-6;
+      var len = tk.written ? 9 : 6;
+      g.strokeStyle = lit ? (tk.written ? "#ffffff" : "rgba(234, 223, 205, 0.9)") : "rgba(168, 146, 122, 0.45)";
+      g.lineWidth = tk.written ? 1.25 : 1;
+      g.beginPath();
+      g.moveTo(c + Math.cos(a) * (R1 - 3), c + Math.sin(a) * (R1 - 3));
+      g.lineTo(c + Math.cos(a) * (R1 - 3 - len), c + Math.sin(a) * (R1 - 3 - len));
+      g.stroke();
+    });
+
+    // The way come, a line of light, and a comet's tail behind the handle.
+    if (t > 0) {
+      g.save();
+      g.shadowColor = LIGHT;
+      g.shadowBlur = 8;
+      g.strokeStyle = "#eadfcd";
+      g.lineWidth = 1.75;
+      g.beginPath();
+      g.arc(c, c, R1, DIAL_START, at);
+      g.stroke();
+      g.restore();
+      var tail = Math.min(at - DIAL_START, 0.9);
+      for (var q = 0; q < 12; q += 1) {
+        var a0 = at - tail * (q + 1) / 12, a1 = at - tail * q / 12;
+        g.strokeStyle = "rgba(157, 149, 230, " + (0.55 * (1 - q / 12)).toFixed(3) + ")";
+        g.lineWidth = 4;
+        g.beginPath();
+        g.arc(c, c, R1, a0, a1);
+        g.stroke();
+      }
+    }
+
+    // The handle: the museums' diamond, and pixel light round it while turned.
+    var hx = c + Math.cos(at) * R1, hy = c + Math.sin(at) * R1;
+    if (d.box.dataset.turning || focused) {
+      g.fillStyle = LIGHT;
+      [[0, -8], [8, 0], [0, 8], [-8, 0]].forEach(function (o) { g.fillRect(hx + o[0] - 1.5, hy + o[1] - 1.5, 3, 3); });
+    }
+    g.save();
+    g.translate(hx, hy);
+    g.rotate(Math.PI / 4);
+    g.fillStyle = "#0f0a07";
+    g.fillRect(-6, -6, 12, 12);
+    g.fillStyle = "#eadfcd";
+    g.fillRect(-4.5, -4.5, 9, 9);
+    g.restore();
+
+    // The year in the middle, over its span.
+    g.textAlign = "center";
+    g.textBaseline = "alphabetic";
+    g.fillStyle = "#eadfcd";
+    g.font = "600 " + Math.round(S * 0.17) + "px " + dialFont;
+    g.fillText(year, c, c + S * 0.05);
+    if (span[1] > span[0]) {
+      g.fillStyle = "#a8927a";
+      g.font = Math.max(8, Math.round(S * 0.058)) + "px " + dialFont;
+      g.fillText(Math.floor(span[0]) + " — " + Math.floor(span[1]), c, c + S * 0.05 + S * 0.12);
+    }
+  }
+
+  var tickCache = { n: -1, list: [] };
+  function artTickList() {
+    if (!artTicks) { return []; }
+    var kids = artTicks.children;
+    if (kids.length !== tickCache.n || (kids[0] && kids[0] !== tickCache.first)) {
+      tickCache.n = kids.length;
+      tickCache.first = kids[0];
+      tickCache.list = Array.prototype.map.call(kids, function (e) {
+        return { pos: parseFloat(e.style.left) / 100, written: e.dataset.kind === "written" };
+      });
+    }
+    return tickCache.list;
+  }
+  makeDial(timeline, timeRange, function () {
+    var v = clod && clod.views[clod.view];
+    return v && v.years ? [v.years.y0, v.years.y1] : null;
+  }, null);
+  makeDial(artTime, artRange, function () {
+    return art && art.dated ? [art.y0, art.y1] : null;
+  }, artTickList);
 
   /* On a phone, after the play, scrolling the column moves time too: the
      group nearest the column's top sets the slider, and its stop is ringed. */

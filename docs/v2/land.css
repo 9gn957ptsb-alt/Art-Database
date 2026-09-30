@@ -3102,3 +3102,107 @@ button.art-venue:focus-visible { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   .route-name { transition: none; }
 }
+
+/* ---- the dial (land.js, "the dial") ----------------------------------------
+   Every timeline is a circle: the pill it was is now a round instrument, set
+   where it was set, at the side of the view rather than across it. The range
+   underneath is kept for the keyboard and hidden from sight; the year text and
+   the ticks are drawn by the dial and kept for those who read the page. */
+.building-time.dial {
+  --dial: 168px;
+  width: var(--dial);
+  height: var(--dial);
+  padding: 0;
+  display: block;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(15, 10, 7, 0.78) 0, rgba(15, 10, 7, 0.66) 62%,
+              rgba(15, 10, 7, 0.4) 72%, rgba(15, 10, 7, 0) 74%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.06), 0 8px 34px rgba(0, 0, 0, 0.45);
+}
+.building-time.dial .dial-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.building-time.dial[data-turning] .dial-face { cursor: grabbing; }
+.building-time.dial .building-time-year,
+.building-time.dial .art-ticks,
+.building-time.dial .building-time-range {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.building-time.dial:focus-within { box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.5), 0 8px 34px rgba(0, 0, 0, 0.45); }
+/* Where it stands: under the ground in a museum, under the city's band
+   beside the column, at the right on a phone, over the edge of what is below. */
+.art-time.dial { width: var(--dial); height: var(--dial); padding: 0; }
+.building:has(.building-time.dial:not([hidden])) .building-link { bottom: calc(var(--s-5) + 184px); }
+@media (max-width: 720px) {
+  .building-time.dial { --dial: 136px; }
+  .building[data-museum] .building-time.dial { left: auto; right: 12px; transform: none; bottom: calc(38vh + 8px); }
+  .art-time.dial { left: auto; right: 12px; width: var(--dial); transform: translateY(-72%); top: calc(50vh - 2px); }
+  .building:has(.building-time.dial:not([hidden])) .building-link { bottom: calc(var(--s-5) + 150px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .building-time.dial { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* The works that ride along a journey: small framed squares either side of
+   the way, stepping in and out; the one leading carries its caption. */
+.route-work {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  padding: 2px;
+  box-sizing: border-box;
+  background: #0f0a07;
+  box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.55), 0 6px 18px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.42s steps(3);
+  will-change: transform;
+}
+.route-work[data-on="true"] { opacity: 1; }
+.route-work img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.route-work[data-nopic] img { visibility: hidden; }
+.route-work[data-nopic] { background: linear-gradient(135deg, rgba(94, 82, 199, 0.35), rgba(15, 10, 7, 0.9)); }
+.route-work-cap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(58vw, 260px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  color: #eadfcd;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(15, 10, 7, 0.9);
+  opacity: 0;
+  transition: opacity 0.42s steps(3);
+  will-change: transform;
+}
+.route-work-cap[data-side="left"] { text-align: right; align-items: flex-end; }
+.route-work-cap[data-on="true"] { opacity: 1; }
+.route-work-title { font-family: var(--serif, Georgia, serif); font-style: italic; font-size: 13px; letter-spacing: 0; }
+.route-work-by { color: #a8927a; }
+.route-work-line { color: #9d95e6; text-transform: uppercase; font-size: 9px; letter-spacing: 0.1em; }
+@media (prefers-reduced-motion: reduce) {
+  .route-work, .route-work-cap { transition: none; }
+}
