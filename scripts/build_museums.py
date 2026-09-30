@@ -18,11 +18,13 @@ proxy adds — this script sends none); a museum that is only named in a
 credit is looked up once on nominatim.openstreetmap.org. Both are cached in
 data/, which is never committed.
 
-Writes docs/v2/museums.json — the museums and, under each, the saved works it
-holds: its Artsy id (the key to its history, in docs/v2/histories/), title,
-artist, date, medium and a picture off Artsy's image CDN. The
-artist asked for each museum to be referenced with the works he saved there
-(24 Sep 2026). Nothing says it is a saved list.
+Writes docs/v2/museums.json — the museums and, under each, every saved work it
+holds, most recently saved first: its Artsy id (the key to its history, in
+docs/v2/histories/), title, artist, date, medium and a picture off Artsy's
+image CDN. The artist asked for each museum to be referenced with the works he
+saved there (24 Sep 2026). Nothing says it is a saved list. Then it writes
+docs/v2/cities.json (build_cities.py), the towns the Museums layer shows, each
+with the museums in it.
 
     python3 scripts/build_museums.py
 """
@@ -98,8 +100,13 @@ SPOTS = {
     # The Petit Palais on the Champs-Élysées; not the one in Avignon.
     "Musée du Petit Palais, Paris": (48.8661, 2.3145, "Paris, FR"),
 }
-# How many of a museum's works the page carries, most recently saved first.
-WORKS_EACH = 34
+# Where the town a museum was placed in is not its town, as its own name says: the
+# Anderson Collection at Stanford University was geocoded to "California", and the
+# Vatican's museums answered with no town at all.
+WHERE_RIGHT = {
+    "museum-anderson-collection-at-stanford-university": "Stanford, US",
+    "museum-musei-vaticani": "Vatican City, VA",
+}
 
 VERSIONS = ["large", "medium", "larger", "normalized", "square", "small", "main"]
 
@@ -201,6 +208,18 @@ def same_name(a, b):
     "Indianapolis Museum of Art at Newfields"."""
     a, b = flat(a.split(",")[0]), flat(b.split(",")[0])
     return bool(a and b) and (a in b or b in a)
+
+
+def tidy_where(slug, where):
+    """A museum's town and country as "Paris, FR", not "Paris , FR"; the town under the one name
+    the histories give it ("City of Utica" is Utica, Artsy's "Gainsville" Gainesville); then the
+    fixes by hand."""
+    from build_artwork_histories import city_name   # here: that script imports this one
+    where = re.sub(r"\s+,", ",", " ".join((where or "").split()))
+    town, _, cc = where.rpartition(", ")
+    if town:
+        where = city_name(town) + ", " + cc
+    return WHERE_RIGHT.get(slug, where)
 
 
 def slugify(text):
@@ -305,7 +324,8 @@ def main():
         if not works:
             continue
         m["held"] = len(recs)
-        m["works"] = works[:WORKS_EACH]
+        m["works"] = works
+        m["where"] = tidy_where(m["slug"], m["where"])
         out.append(m)
     out.sort(key=lambda m: -m["held"])
 
@@ -319,6 +339,8 @@ def main():
         print(f"  {m['held']:4d}  {m['name']}  —  {m['where']}")
     if missed:
         print("Not found:", "; ".join(missed))
+    import build_cities                                 # the towns the museums stand in
+    build_cities.main()
 
 
 if __name__ == "__main__":

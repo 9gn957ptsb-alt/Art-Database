@@ -21,6 +21,8 @@ and writes, public:
   docs/v2/places/<p>.json          one place: its institutions, and the works that passed through them
   docs/v2/finding.json             what Find searches: every work and every thread, in brief
 
+and, after a full build, docs/v2/cities.json (build_cities.py): the towns of the Museums layer.
+
 Places are Artsy's own coordinates where it has them (shows, fairs, partners), else the museum's
 point from museums.json, else the named city geocoded once on Nominatim (cached in
 data/histories/geocode.json). Nothing is placed more exactly than its source says, a writing is
@@ -1118,6 +1120,8 @@ def main():
     write_threads(threads, by_id)
     listing = write_places(records)
     write_finding(records, threads, listing)
+    import build_cities                                 # the Museums layer's towns come from these places
+    build_cities.main()
     stale = SITE / "artworks.json"                      # superseded by places.json and finding.json
     if stale.exists():
         stale.unlink()
