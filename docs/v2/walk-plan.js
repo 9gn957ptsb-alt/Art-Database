@@ -452,6 +452,31 @@
   // their sides. Returns {ok, why, thick, cells}.
   function carve(fl, d, limit) {
     var cell = fl.cell, carved = [];
+    // Two parts of one space the source names as one (its North Lobby, by
+    // the stairs and by the door): no wall between them at all.
+    if (d.kind === "part") {
+      var gw = fl.gw, px = 0, py = 0;
+      for (var qp = 0; qp < fl.n; qp += 1) {
+        if (fl.kind[qp] !== WALL || fl.room[qp] >= 0) { continue; }
+        var ip = qp % gw, pair = null;
+        if (ip > 0 && ip < gw - 1) { pair = [fl.room[qp - 1], fl.room[qp + 1]]; }
+        var vert = qp >= gw && qp < fl.n - gw ? [fl.room[qp - gw], fl.room[qp + gw]] : null;
+        [pair, vert].forEach(function (pr) {
+          if (!pr || fl.kind[qp] !== WALL) { return; }
+          if ((pr[0] === d.a && pr[1] === d.b) || (pr[0] === d.b && pr[1] === d.a)) {
+            carved.push(qp);
+            var c0 = centreOf(fl, qp);
+            px += c0[0]; py += c0[1];
+            open(qp, pr[0]);
+          }
+        });
+      }
+      if (!carved.length) { return { ok: false, why: "no wall between its rooms" }; }
+      d.x = px / carved.length; d.y = py / carved.length;
+      var pa = fl.rooms[d.a], pb = fl.rooms[d.b], pl = hypot(pb.cx - pa.cx, pb.cy - pa.cy) || 1;
+      d.ax = (pb.cx - pa.cx) / pl; d.ay = (pb.cy - pa.cy) / pl;
+      return { ok: true, thick: cell, cells: carved.length };
+    }
     function side(q) {
       if (q < 0) { return "x"; }
       var r = fl.room[q];
@@ -519,23 +544,39 @@
     }
     // The cells within half its width of the line through `at`, between the rooms.
     var ux = best.u[0], uy = best.u[1], half = (d.w || DOOR_W) / 2, mid = (best.s0 + best.s1) / 2;
-    var span = max(half, best.s1 - best.s0) + cell;
+    var span = max(half, best.s1 - best.s0) + cell * 1.5;
     var gi0 = floor((d.x - span - fl.x0) / cell), gi1 = ceil((d.x + span - fl.x0) / cell);
     var gj0 = floor((d.y - span - fl.y0) / cell), gj1 = ceil((d.y + span - fl.y0) / cell);
+    var cand = [];
     for (var gj = max(0, gj0); gj <= min(fl.gh - 1, gj1); gj += 1) {
       for (var gi = max(0, gi0); gi <= min(fl.gw - 1, gi1); gi += 1) {
         var qq = gj * fl.gw + gi;
         if (fl.kind[qq] !== WALL && fl.kind[qq] !== GLASS) { continue; }
         var px = fl.x0 + (gi + 0.5) * cell - d.x, py = fl.y0 + (gj + 0.5) * cell - d.y;
         var along = px * ux + py * uy, across = -px * uy + py * ux;
-        if (along <= best.s0 || along >= best.s1 || abs(across) > half + 1e-9) { continue; }
-        carved.push(qq);
-        open(qq, along < mid ? d.a : d.b);
+        if (along <= best.s0 || along >= best.s1) { continue; }
+        cand.push([qq, along, across]);
       }
     }
+    // A doorway a walker can pass: at least as many cells across as a
+    // walker's width needs (a 0.9 m door whose middle falls on a cell's
+    // centre would be one cell of 0.5 m); where it would be fewer, the
+    // cells are taken half a cell to one side, never more of them.
+    var need = floor(2 * CLEAR / cell + 1e-9) + 1, shift = 0;
+    function across_(sh) {
+      var seen = {};
+      cand.forEach(function (c) { if (abs(c[2] - sh) <= half + 1e-9) { seen[round(c[2] / cell * 2)] = 1; } });
+      return Object.keys(seen).length;
+    }
+    if (across_(0) < need && across_(cell / 2) > across_(0)) { shift = cell / 2; }
+    cand.forEach(function (c) {
+      if (abs(c[2] - shift) > half + 1e-9) { return; }
+      carved.push(c[0]);
+      open(c[0], c[1] < mid ? d.a : d.b);
+    });
     if (!carved.length) { return { ok: false, why: "nothing to carve" }; }
     d.ax = ux; d.ay = uy;
-    d.x += ux * mid; d.y += uy * mid;
+    d.x += ux * mid - uy * shift; d.y += uy * mid + ux * shift;
     return { ok: true, thick: best.thick, cells: carved.length };
 
     function open(q, r) {
@@ -579,6 +620,7 @@
       st.rooms = st.rooms || {};
       st.rooms[fl.index] = ri;
       forRect(fl, r, function (q, x, y) {
+        over(st, fl, q);
         var t = (axis === "x" ? x - r[0] : y - r[1]) / run;
         if (up < 0) { t = 1 - t; }
         var k = min(n - 1, max(0, floor(t * n)));
@@ -602,8 +644,32 @@
       room.area = (r[2] - r[0]) * (r[3] - r[1]);
       room.lift = lf.index;
       forRect(fl, r, function (q) {
+        over(lf, fl, q);
         fl.kind[q] = FLOOR; fl.room[q] = ri; fl.fh[q] = cm(fl.z); fl.lift[q] = lf.index;
       });
+    });
+  }
+
+  // What a stair or a lift is laid over, before it is: a stair across a
+  // wall, or reaching into two rooms, would join rooms no source connects.
+  function over(t, fl, q) {
+    var o = t.over = t.over || { wall: 0, rooms: {} };
+    var k = fl.kind[q], r = fl.room[q];
+    if (k === WALL || k === GLASS || (k === CLOSED && (r < 0 || !fl.rooms[r].pseudo))) { o.wall += 1; }
+    if (r >= 0 && !fl.rooms[r].pseudo) { (o.rooms[fl.index] = o.rooms[fl.index] || {})[fl.rooms[r].id] = 1; }
+  }
+  function overProblems(world, t, what) {
+    var o = t.over;
+    if (!o) { return; }
+    if (o.wall) {
+      world.problems.push({ rule: what, text: what + " " + t.id + " is laid over " + o.wall + " cells of wall, earth or a closed room" });
+    }
+    Object.keys(o.rooms).forEach(function (fi) {
+      var ids = Object.keys(o.rooms[fi]);
+      if (ids.length > 1) {
+        world.problems.push({ rule: what, text: what + " " + t.id + " reaches into " + ids.join(" and ") + " on " +
+                              world.floors[fi].id + ": it would join rooms no source connects" });
+      }
     });
   }
 
@@ -731,14 +797,16 @@
 
   // A surface's ink, packed, straight from its material and the soil:
   // the material worn over the soil (a little more soil where it is
-  // reconstructed), or where nothing is known the soil, its gaps the dark
-  // and its speckle a darker dot. m: a Models.MATERIALS entry or null.
+  // reconstructed), or where nothing is known the soil itself. DIRT's gaps
+  // and speckle are not the ink: a soil pixel is half a metre here, and a
+  // gap as big as that reads as a doorway or a pit; they are marked in
+  // fl.grit and the walk darkens dots within the cell for them, at the
+  // scale the model's own dots have them. m: a Models.MATERIALS entry or null.
   function inkOf(m, lift, s, dark) {
     var r, g, b;
-    if (!m || !m.c) {
-      if (s[3] === 0) { r = dark[0]; g = dark[1]; b = dark[2]; }
-      else { var k = s[3] === 1 ? 0.72 : 1; r = s[0] * k; g = s[1] * k; b = s[2] * k; }
-    } else if (m.glass) { r = 150; g = 172; b = 190; }
+    void dark;
+    if (!m || !m.c) { r = s[0]; g = s[1]; b = s[2]; }
+    else if (m.glass) { r = 150; g = 172; b = 190; }
     else {
       var t = min(1, m.soil + lift);
       r = m.c[0] + (s[0] - m.c[0]) * t; g = m.c[1] + (s[1] - m.c[1]) * t; b = m.c[2] + (s[2] - m.c[2]) * t;
@@ -757,27 +825,60 @@
       return { floor: mats[r.mats.floor] || null, walls: mats[r.mats.walls] || null, top: mats[r.mats.top] || null,
                lift: lift, pseudo: r.pseudo, void: r.kind === "void" };
     });
+    var grit = fl.grit = new Uint8Array(fl.n);
+    // The soil under the grid and three cells round it, read once.
+    var M3 = 3, sw = fl.gw + 2 * M3, sh = fl.gh + 2 * M3, sc = soil ? new Uint8Array(sw * sh * 4) : null;
+    if (sc) {
+      for (var sj = 0; sj < sh; sj += 1) {
+        for (var si = 0; si < sw; si += 1) {
+          var got = soil(fl.i0 + si - M3, fl.j0 + sj - M3) || SOIL, so = (sj * sw + si) * 4;
+          sc[so] = got[0]; sc[so + 1] = got[1]; sc[so + 2] = got[2]; sc[so + 3] = got[3];
+        }
+      }
+    }
+    function soilAt(o) { return [sc[o], sc[o + 1], sc[o + 2], sc[o + 3]]; }
+    function solid(i, j, s) {
+      // A gap's own colour is none: the soil's nearest grain round it.
+      for (var r = 1; r <= M3; r += 1) {
+        for (var dj = -r; dj <= r; dj += 1) {
+          for (var di = -r; di <= r; di += 1) {
+            if (max(abs(di), abs(dj)) !== r) { continue; }
+            var o = ((j + dj + M3) * sw + i + di + M3) * 4;
+            if (sc[o + 3] > 0) { return soilAt(o); }
+          }
+        }
+      }
+      return [SOIL[0], SOIL[1], SOIL[2], s[3]];
+    }
     for (var q = 0; q < fl.n; q += 1) {
       var i = q % fl.gw, j = (q - i) / fl.gw;
-      var s = (soil && soil(fl.i0 + i, fl.j0 + j)) || SOIL;
-      var ri = fl.room[q], k = fl.kind[q], F, Wl, T;
+      var s = sc ? soilAt(((j + M3) * sw + i + M3) * 4) : SOIL;
+      // 1: a gap, 2: speckle, on the floor (bits 0-1), the walls (2-3), the top (4-5), where the soil shows.
+      var g0 = s[3] === 0 ? 1 : s[3] === 1 ? 2 : 0;
+      if (s[3] === 0) { s = solid(i, j, s); }
+      var ri = fl.room[q], k = fl.kind[q], F, Wl, T, gr = 0;
       if (k === WALL || k === GLASS) {
         // Earth where nothing is known; the model's own wall on its edge.
         var mm = fl.foot[q] === 2 && fl.footM[q] ? byName[fl.footM[q] - 1] : null;
         F = Wl = T = inkOf(mm, UNSURE, s, dark);
-        if (k === GLASS) { Wl = glass; }
+        if (k === GLASS) { Wl = glass; } else if (!mm) { gr = g0 * 21; }
       } else if (ri >= 0 && !rm[ri].pseudo) {
         var m = rm[ri];
         F = m.void ? void_ : inkOf(m.floor, m.lift, s, dark);
         Wl = inkOf(m.walls, m.lift, s, dark);
         T = inkOf(m.top, m.lift, s, dark);
+        gr = (m.floor || m.void ? 0 : g0) | (m.walls ? 0 : g0 << 2) | (m.top ? 0 : g0 << 4);
       } else if (ri >= 0 && rm[ri].pseudo !== "outside") {
         // The shell, a stair, a lift: as far as they are known, the soil.
         F = Wl = T = inkOf(null, 0, s, dark);
+        gr = g0 * 21;
       } else {
         // Outside: the ground under it in the model, else the soil.
-        F = Wl = T = inkOf(fl.footM[q] ? byName[fl.footM[q] - 1] : ground, UNSURE, s, dark);
+        var om = fl.footM[q] ? byName[fl.footM[q] - 1] : ground;
+        F = Wl = T = inkOf(om, UNSURE, s, dark);
+        if (!om) { gr = g0 * 21; }
       }
+      grit[q] = gr;
       if (fl.ck[q] === SKYLIGHT) { T = pane; } else if (fl.ck[q] === SKY) { T = tone; }
       fl.inkF[q] = F; fl.inkW[q] = Wl; fl.inkT[q] = T;
     }
@@ -897,6 +998,8 @@
   var BY = "\\s*(?:x|×|by)\\s*";
   var MEASURE = new RegExp(NUM + "\\s*" + UNIT + BY + NUM + "\\s*" + UNIT + "(?:" + BY + NUM + "\\s*" + UNIT + ")?", "i");
   var LONE_UNIT = /(?:^|[\s\d.])(cm|mm|in|inches)\b/i;
+  // One measure alone: a tondo's diameter, a small bronze's greatest extension, a height.
+  var SINGLE = new RegExp("\\b(diameter|diam\\.|greatest extension|height)\\)?\\s*:?\\s*" + NUM + "\\s*(cm|mm|in|inches)\\b", "i");
   function number(s) {
     s = s.replace(",", ".").trim();
     var m = /^(\d+(?:\.\d+)?)?[\s-]*(?:(\d+)\/(\d+))?$/.exec(s);
@@ -912,7 +1015,16 @@
     for (var i = 0; i < parts.length; i += 1) {
       var part = parts[i];
       var m = MEASURE.exec(part);
-      if (!m) { continue; }
+      if (!m) {
+        // 'overall (diameter): 94.5 cm' is as wide as it is high; a greatest
+        // extension or a height alone is its height, its width the picture's.
+        var one = SINGLE.exec(part);
+        if (!one || /\b(framed|frame|mount|mounted|mat)\b/i.test(part.slice(0, one.index))) { continue; }
+        var v = number(one[2]) * (one[3].toLowerCase() === "cm" ? 1 : one[3].toLowerCase() === "mm" ? 0.1 : 2.54);
+        if (!(v > 0)) { continue; }
+        v = round(v * 10) / 10;
+        return /^diam/i.test(one[1]) ? { w: v, h: v, d: null } : { w: null, h: v, d: null };
+      }
       if (/\b(framed|frame|mount|mounted|mat)\b/i.test(part.slice(0, m.index))) { continue; }
       var unit = (m[6] || m[4] || m[2] || "").toLowerCase();
       if (!unit) { var lone = LONE_UNIT.exec(part.slice(m.index)); unit = lone ? lone[1].toLowerCase() : ""; }
@@ -942,6 +1054,8 @@
     var c = w.cm;
     if (c && c[0] > 0 && c[1] > 0) { return { w: c[0] / 100, h: c[1] / 100, d: c[2] ? c[2] / 100 : null, known: true }; }
     var ar = w.ar > 0 ? w.ar : 1;
+    // Its height alone known: as wide as its picture makes it.
+    if (c && !(c[0] > 0) && c[1] > 0) { return { w: c[1] / 100 * ar, h: c[1] / 100, d: null, known: true }; }
     return { w: UNSIZED * ar, h: UNSIZED, d: null, known: false };
   }
 
@@ -1261,15 +1375,36 @@
   function passable(fl, q, clear) { return walkable(fl, q) && clear[q] >= CLEAR - 1e-6; }
   function stepOK(fl, a, b) { return abs(fl.fh[a] - fl.fh[b]) <= STEP * 100 && fl.ch[b] - fl.fh[a] >= HEAD * 100; }
 
-  // Whether a straight line on one floor can be walked.
+  // Whether a straight line on one floor can be walked: every point of it
+  // a walker's half-width clear of every cell that cannot be walked (a
+  // cell's centre being clear is not enough: a line can clip a jamb's
+  // corner between two centres).
   function sightline(fl, clear, x0, y0, x1, y1) {
-    var len = hypot(x1 - x0, y1 - y0), n = max(1, ceil(len / (fl.cell / 2)));
+    var len = hypot(x1 - x0, y1 - y0), n = max(1, ceil(len / (fl.cell / 4)));
     var prev = cellAt(fl, x0, y0);
     for (var s = 1; s <= n; s += 1) {
-      var q = cellAt(fl, x0 + (x1 - x0) * s / n, y0 + (y1 - y0) * s / n);
+      var x = x0 + (x1 - x0) * s / n, y = y0 + (y1 - y0) * s / n, q = cellAt(fl, x, y);
       if (q !== prev) {
         if (!passable(fl, q, clear) || (prev >= 0 && !stepOK(fl, prev, q))) { return false; }
         prev = q;
+      }
+      if (!roomFor(fl, x, y, CLEAR)) { return false; }
+    }
+    return true;
+  }
+
+  // Whether a disc of radius r at a point touches no cell that cannot be walked.
+  function roomFor(fl, x, y, r) {
+    var c = fl.cell;
+    var i0 = floor((x - r - fl.x0) / c), i1 = floor((x + r - fl.x0) / c);
+    var j0 = floor((y - r - fl.y0) / c), j1 = floor((y + r - fl.y0) / c);
+    for (var j = j0; j <= j1; j += 1) {
+      for (var i = i0; i <= i1; i += 1) {
+        var q = i < 0 || j < 0 || i >= fl.gw || j >= fl.gh ? -1 : j * fl.gw + i;
+        if (q >= 0 && walkable(fl, q)) { continue; }
+        var cx = fl.x0 + i * c, cy = fl.y0 + j * c;
+        var dx = x < cx ? cx - x : x > cx + c ? x - cx - c : 0, dy = y < cy ? cy - y : y > cy + c ? y - cy - c : 0;
+        if (dx * dx + dy * dy < (r - 1e-6) * (r - 1e-6)) { return false; }
       }
     }
     return true;
@@ -1373,8 +1508,12 @@
       if (n === start) { break; }
     }
     cells.reverse();
+    var goalAt = cells[cells.length - 1];
     cells[0] = [A.x, A.y, A.fl.index];
-    if (cells.length > 1) { cells[cells.length - 1] = [B.x, B.y, B.fl.index]; } else { cells.push([B.x, B.y, B.fl.index]); }
+    // It ends on the very point asked for where a walker stands clear there;
+    // else on the middle of its cell, clear of the wall it is against.
+    var endB = roomFor(B.fl, B.x, B.y, CLEAR) ? [B.x, B.y, B.fl.index] : goalAt;
+    if (cells.length > 1) { cells[cells.length - 1] = endB; } else { cells.push(endB); }
     // Straightened: skip ahead to the farthest point in plain sight on the same floor.
     var out = [cells[0]], at = 0;
     while (at < cells.length - 1) {
@@ -1668,6 +1807,16 @@
       d.cells = res.ok ? res.cells : 0;
       d.thick = res.thick;
       if (!res.ok) { world.problems.push({ rule: "open", text: "opening " + o.a + " — " + o.b + " on " + fs.id + ": " + res.why }); }
+      // A passage cut through more than a wall's thickness goes through what
+      // no source shows: its note must say why, and its length is reported.
+      if (res.ok && d.cut && res.thick > THICK + 1e-9) {
+        var ow = "opening " + o.a + " — " + o.b + " on " + fs.id + ": a passage cut " + res.thick.toFixed(1) + " m long";
+        if (!o.note) { world.problems.push({ rule: "open", text: ow + ", with no note saying why" }); }
+        else { world.notices.push(ow); }
+      }
+      if (res.ok && d.kind !== "part" && typeof o.w === "number" && o.w < 2 * CLEAR) {
+        world.notices.push("opening " + o.a + " — " + o.b + " on " + fs.id + " is " + o.w + " m wide, narrower than a walker (" + 2 * CLEAR + " m)");
+      }
     });
     // Things a source names: a fountain stands up out of the floor, and
     // what is solid is walked round.
@@ -1865,7 +2014,7 @@
       vox: modelOf(modelSpec, MATS), sky: skyOf(opts.sky), dark: opts.dark || DARK_INK,
       groundMaterial: modelSpec && modelSpec.ground || null,
       sources: {}, works: interior.works || [], pins: interior.pins || {},
-      problems: [], overlaps: [], stairSpecs: [], liftSpecs: []
+      problems: [], notices: [], overlaps: [], stairSpecs: [], liftSpecs: []
     };
     (interior.sources || []).forEach(function (s) { if (s && s.id) { world.sources[s.id] = s; } });
     var vx = world.vox;
@@ -1913,6 +2062,7 @@
         });
         var res = ramp(world, c);
         if (!res.ok) { world.problems.push({ rule: "stair", text: "stair " + st.id + ": " + res.why }); }
+        overProblems(world, c, "stair");
         // Over a stair, the higher of what was over it on either floor: the stairwell.
         [fa, fb].forEach(function (fl) {
           var other = fl === fa ? fb : fa;
@@ -1932,6 +2082,7 @@
                   sure: lf.sure || null, src: lf.src || [] };
         world.lifts.push(c);
         lift(world, c);
+        overProblems(world, c, "lift");
         c.floors.forEach(function (fi) {
           var fl = world.floors[fi];
           forRect(fl, c.rect, function (q) {
@@ -2010,15 +2161,44 @@
     for (var e = 0; e < (ext.count || 0); e += 1) { if (ext.reveal[e] <= cutR) { under += 1; } }
     var budget = PLAN_DOTS - under;
     var pitches = typeof pitch === "number" ? [pitch] : [0.5, 1, 2, 4];
-    var dots = null;
+    // The pitch from a count of what each would make, then one build: a
+    // build at half a metre first, to be thrown away, took four times as long.
+    var pick = pitches[pitches.length - 1];
     for (var pi = 0; pi < pitches.length; pi += 1) {
-      dots = build(pitches[pi]);
-      if (dots.count <= budget || pi === pitches.length - 1) { break; }
+      if (pitches.length === 1 || count(pitches[pi]) <= budget) { pick = pitches[pi]; break; }
     }
+    var dots = build(pick);
     var joined = M.join(ext, dots);
     joined.cut = cutR;
     joined.plan = { start: ext.count || 0, count: dots.count, pitch: dots.pitch, you: dots.you, shown: under + dots.count };
     return joined;
+
+    // As build() below, only counting.
+    function count(p) {
+      var k = max(1, round(p / fl.cell)), n = 0, layers = 1;
+      for (var z0 = fl.z + p; z0 < cut - 1e-6; z0 += p) { layers += 1; }
+      for (var bj = 0; bj < fl.gh; bj += k) {
+        for (var bi = 0; bi < fl.gw; bi += k) {
+          var fq = -1, wq = -1, eq = -1, rq = -1;
+          for (var j = bj; j < min(fl.gh, bj + k); j += 1) {
+            for (var i = bi; i < min(fl.gw, bi + k); i += 1) {
+              var q = j * fl.gw + i, kd = fl.kind[q];
+              if (kd === FLOOR || (kd === CLOSED && fl.room[q] >= 0)) { if (fq < 0) { fq = q; } }
+              else if (kd === WALL || kd === GLASS) {
+                if (besideRoom(fl, q)) { if (wq < 0) { wq = q; } }
+                else if (fl.foot[q] === 1 || fl.foot[q] === 0) { if (eq < 0) { eq = q; } }
+                else if (rq < 0) { rq = q; }
+              }
+            }
+          }
+          var w = wq >= 0 ? wq : fq < 0 && rq >= 0 ? rq : -1;
+          if (fq >= 0 && fl.room[fq] >= 0 && fl.rooms[fl.room[fq]].pseudo !== "outside") { n += 1; }
+          if (w >= 0) { n += layers; } else if (eq >= 0 && fq < 0) { n += 1; }
+        }
+      }
+      (hung || []).forEach(function (h) { if (h.floor === fl.index) { n += max(1, round(h.w / (p / 2))) + 1; } });
+      return n + (you ? 2 : 0);
+    }
 
     function build(p) {
       var k = max(1, round(p / fl.cell)), size = 2 * (k * fl.cell) / v;
@@ -2229,7 +2409,7 @@
         if (o.at && !pair(o.at)) { err(ow + ": at must be [x, y]"); }
         if (o.cut) { rect(o.cut, ow + " cut"); }
         if (o.w !== undefined && o.w !== null && !(o.w > 0)) { err(ow + ": w must be metres"); }
-        if (o.kind && o.kind !== "door" && o.kind !== "arch") { err(ow + ": kind must be door or arch"); }
+        if (o.kind && o.kind !== "door" && o.kind !== "arch" && o.kind !== "part") { err(ow + ": kind must be door, arch or part"); }
         sure(o.sure, ow);
         cites(o.src, ow, true);
       });
@@ -2324,6 +2504,7 @@
     if (!world) { return { errors: E, warnings: Wn, stats: stats, tier: "shell", findings: findings, world: null, hung: hung }; }
     if (!world.vox) { err("its model has no parts"); }
     world.problems.forEach(function (p) { err(p.text); });
+    (world.notices || []).forEach(function (t) { warn(t); });
     world.floors.forEach(function (fl) {
       if (fl.n > 400000) { err("floor " + fl.id + " is " + fl.n + " cells (at most 400,000): use a coarser grid"); }
     });

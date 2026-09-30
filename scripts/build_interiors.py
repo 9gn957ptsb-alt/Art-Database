@@ -37,8 +37,10 @@ the public files, and where one carries none, from the private Artsy records in 
   --nga      the National Gallery of Art's West Building, both public floors: each public room's
              outline from the NGA's open data (preferred_locations.csv, CC0), put into metres in
              the model's frame (0.44385 m a map pixel, the Rotunda's centre on the model's dome,
-             north up), merged by id — the outline, name, keys and the NGA's words for it are
-             rewritten, anything written by hand on a room is kept.
+             north up), merged by id. It owns each room's outline, id, ref, said, sure and tol, and
+             rewrites them; its name, kind and src too, except that a room a hand has closed (or
+             made a void) stays so, a name a hand has set to null stays null, and sources a hand
+             has added to src are kept after the NGA's. Every other key on a room is the hand's.
   --refresh  read the NGA's open data again (when the copy is more than a day old), and where the
              other museums say each work is now (fetch_history_museum_apis.py --where --refresh),
              before placing the works: the daily run (scripts/update_buildings.py) does.
@@ -136,12 +138,20 @@ def download(name, refresh=False):
         return path
     NGA.mkdir(parents=True, exist_ok=True)
     print(f"  reading {NGA_BASE + name}", flush=True)
-    r = requests.get(NGA_BASE + name, headers={"User-Agent": AGENT}, timeout=600, stream=True)
-    r.raise_for_status()
     tmp = path.with_suffix(".part")
-    with tmp.open("wb") as f:
-        for chunk in r.iter_content(1 << 20):
-            f.write(chunk)
+    try:
+        r = requests.get(NGA_BASE + name, headers={"User-Agent": AGENT}, timeout=600, stream=True)
+        r.raise_for_status()
+        with tmp.open("wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+    except requests.RequestException as e:
+        # Cut off or refused: the copy already here stands (the .part never replaces it half-read).
+        tmp.unlink(missing_ok=True)
+        if path.exists():
+            print(f"  could not read it again ({e}); the copy of {day_of(path)} stands", flush=True)
+            return path
+        raise
     tmp.replace(path)
     return path
 
@@ -177,6 +187,8 @@ BY = r"\s*(?:x|×|by)\s*"
 MEASURE = re.compile(NUM + r"\s*" + UNIT + BY + NUM + r"\s*" + UNIT + "(?:" + BY + NUM + r"\s*" + UNIT + ")?", re.I)
 LONE_UNIT = re.compile(r"(?:^|[\s\d.])(cm|mm|in|inches)\b", re.I)
 LABELLED = re.compile(r"\b(H|W|D)\.?\s*" + NUM + r"\s*(cm|mm|in|inches)\b", re.I)
+# One measure alone: a tondo's diameter, a small bronze's greatest extension, a height.
+SINGLE = re.compile(r"\b(diameter|diam\.|greatest extension|height)\)?\s*:?\s*" + NUM + r"\s*(cm|mm|in|inches)\b", re.I)
 
 
 def number(s):
@@ -190,11 +202,18 @@ def number(s):
 def parse_dims(text):
     """A work's size in cm as [w, h] or [w, h, d], from a statement of it: the first part not labelled
     framed or its mount; inches with their fractions, or cm; height first. The same rule as
-    WalkPlan.dims() in the page: '23 5/8 × 31 3/8 in' -> [79.7, 60.0]."""
+    WalkPlan.dims() in the page: '23 5/8 × 31 3/8 in' -> [79.7, 60.0]. One measure alone is read too:
+    'overall (diameter): 94.5 cm' -> [94.5, 94.5]; a greatest extension or a height -> [None, h]."""
     if not text:
         return None
     for part in re.split(r"[;\n\r|]+", str(text)):
         m = MEASURE.search(part)
+        one = SINGLE.search(part) if not m else None
+        if one and not re.search(r"\b(framed|frame|mount|mounted|mat)\b", part[:one.start()], re.I):
+            v = number(one.group(2))
+            if v:
+                v = round(v * {"cm": 1, "mm": 0.1}.get(one.group(3).lower(), 2.54), 1)
+                return [v, v] if one.group(1).lower().startswith("diam") else [None, v]
         if m and not re.search(r"\b(framed|frame|mount|mounted|mat)\b", part[:m.start()], re.I):
             unit = (m.group(6) or m.group(4) or m.group(2) or "").lower()
             if not unit:
@@ -373,6 +392,10 @@ class NGAData:
     def extra(o):
         cm = parse_dims((o.get("dimensions") or "").split("\n")[0]) or parse_dims(o.get("dimensions"))
         out = {"cm": cm, "cmsrc": "nga" if cm else None}
+        one = SINGLE.search(o.get("dimensions") or "")
+        if cm and one and (cm[0] is None or cm[0] == cm[1]):
+            k = one.group(1).lower()
+            out["cmk"] = "diameter" if k.startswith("diam") else k
         if o.get("classification") == "Sculpture":
             out["free"] = True
         return out
@@ -391,10 +414,14 @@ def api_place(v):
         g = str(wh.get("GalleryNumber") or "").strip()
         if not g:
             return {"how": "none", "said": "no gallery in the Met's record", **base}
-        return {"how": "room", "keys": [g, "Gallery " + g], "wall": None, "said": "GalleryNumber: " + g, **base}
+        # The Met's field is a bare number: said in plain words, the field as it came kept in ref.
+        base["ref"] = dict(ref, field="GalleryNumber: " + g)
+        return {"how": "room", "keys": [g, "Gallery " + g], "wall": None, "said": "Gallery " + g + ", in the Met's record",
+                **base}
     if mus == "aic":
         if wh.get("is_on_view") is False:
-            return {"how": "off", "said": "is_on_view: false", **base}
+            base["ref"] = dict(ref, field="is_on_view: false")
+            return {"how": "off", "said": "not on view, in the Art Institute's record", **base}
         t = (wh.get("gallery_title") or "").strip()
         if not t:
             return {"how": "none", "said": "no gallery in the Art Institute's record", **base}
@@ -407,7 +434,8 @@ def api_place(v):
         return {"how": "room", "keys": [loc, loc.split(" ")[0]], "wall": None, "said": loc, **base}
     if mus == "smk":
         if wh.get("on_display") is False:
-            return {"how": "off", "said": "on_display: false", **base}
+            base["ref"] = dict(ref, field="on_display: false")
+            return {"how": "off", "said": "not on display, in SMK's record", **base}
         loc = (wh.get("current_location_name") or "").strip()
         if not loc:
             return {"how": "none", "said": "no location in SMK's record", **base}
@@ -463,10 +491,28 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
     rooms = room_index(doc)
     building = doc.get("building")
     out, cited, objects = [], {}, {}
+    # A record that could not be read today: the placements it gave at the last run stand.
+    was = {w["id"]: w for w in doc.get("works") or []}
+    unread = {"nga-where"} if m["slug"] == NGA_SLUG and not (nga and nga.ok) else set()
     for hid in ids:
         h = hist.get(hid) or {}
         s = h.get("slug")
         p = None
+        old = was.get(hid)
+        if old and old.get("src") in unread:
+            w = dict(old)
+            prev = next((x for x in doc.get("sources") or [] if x.get("id") == old["src"]), None)
+            if prev:
+                cited[old["src"]] = prev
+            key = ((w.get("ref") or {}).get("museum"), (w.get("ref") or {}).get("object"))
+            w.pop("same", None)
+            if w.get("ref"):
+                if key in objects:
+                    w["same"] = objects[key]
+                else:
+                    objects[key] = hid
+            out.append(w)
+            continue
         if m["slug"] == NGA_SLUG and nga and nga.ok and s:
             p = nga.place(s)
         if not p and s in where and API_MUSEUM.get(where[s]["museum"]) == m["slug"]:
@@ -481,7 +527,7 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
             p = {"how": "room", "keys": [hand["room"]], "wall": hand.get("wall"), "said": hand["said"],
                  "src": sid, "asof": hand["read"]}
         if not p:
-            p = {"how": "none", "said": "where it hangs is not published", "src": None, "asof": TODAY}
+            p = {"how": "none", "said": "where it hangs has not been read yet", "src": None, "asof": TODAY}
         w = {"id": hid}
         if p["how"] == "room":
             rid = None
@@ -498,9 +544,10 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
         else:
             w["how"] = p["how"]
         w.update({"said": p["said"], "src": p["src"], "asof": p["asof"]})
-        if p.get("ref") and w["how"] != "none":
+        if p.get("ref"):
             w["ref"] = p["ref"]
-            # Two saved works that are one object of the museum's hang once, as the first.
+            # Two saved works that are one object of the museum's hang once, and are listed once, as the
+            # first, whatever their record says of it.
             key = (p["ref"].get("museum"), p["ref"].get("object"))
             if key in objects:
                 w["same"] = objects[key]
@@ -517,6 +564,8 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
                       "cm": cm, "cmsrc": cmsrc})
             if p.get("free"):
                 w["free"] = True
+            if p.get("cmk") and cmsrc == p.get("cmsrc"):
+                w["cmk"] = p["cmk"]
         if w.get("src") and w["src"] in WHERE_SOURCES:
             read = cited.get(w["src"], {}).get("read")
             cited[w["src"]] = dict({"id": w["src"]}, **WHERE_SOURCES[w["src"]],
@@ -699,7 +748,15 @@ def merge_nga(doc, model):
                                                                "circle", "sure", "src", "tol", "px")}
             if "nga-rooms" not in (was.get("src") or ["nga-rooms"]):
                 continue                    # a room of that id written by hand: it stands
-            new.append(dict(r, **hand))
+            room = dict(r, **hand)
+            # What a hand may say over the NGA's own words: a room closed to visitors (or a void) is
+            # never opened again; a source added to its src stays; a name taken back to null stays.
+            if was.get("kind") in ("closed", "void"):
+                room["kind"] = was["kind"]
+            room["src"] = r["src"] + [x for x in was.get("src") or [] if x not in r["src"]]
+            if "name" in was and was["name"] is None:
+                room["name"] = None
+            new.append(room)
         f["rooms"] = kept + new
     doc["floors"] = [floors[k] for k in ("main", "ground")] + [f for k, f in floors.items() if k not in ("main", "ground")]
     print(f"  NGA: {len(rooms['main'])} rooms on the Main Floor, {len(rooms['ground'])} on the Ground Floor", flush=True)
@@ -778,7 +835,7 @@ def main():
     nga = None
     wd = Wikidata()
     totals = {"museum": 0, "elsewhere": 0, "off": 0, "none": 0}
-    made, moved = 0, {}
+    made, moved, done = 0, {}, []
     for m in museums:
         path = OUT / f"{m['slug']}.json"
         model = read_json(MODELS / f"{m['slug']}.json")
@@ -794,10 +851,40 @@ def main():
             nga = NGAData(args.refresh)
         works, sources = place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api_matches)
         lines = moves(doc.get("works"), works)
+        if m["slug"] == NGA_SLUG and not nga.ok:
+            lines.append("the NGA's open data could not be read; the placements read before stand")
         if lines:
             moved[m["slug"]] = lines
             for line in lines:
                 print(f"    {line}", flush=True)
+        done.append((m, path, doc, works, sources))
+    # A work one museum's own record places, listed at another museum (the one that listed it on Artsy):
+    # said there where it hangs, never left as 'not read'. From this run, else from the files as they are.
+    placed = {}
+    names = {m["slug"]: m["name"] for m in (read_json(DOCS / "museums.json", {}) or {}).get("museums") or []}
+    ran = {m["slug"] for m, *_ in done}
+    for f in sorted(OUT.glob("*.json")):
+        d = read_json(f) or {}
+        if d.get("slug") in ran:
+            continue
+        srcs = {x.get("id"): x for x in d.get("sources") or []}
+        for w in d.get("works") or []:
+            if w.get("how") in PLACED and w.get("src") in srcs:
+                placed.setdefault(w["id"], (d["slug"], w["said"], srcs[w["src"]], w.get("asof")))
+    for m, path, doc, works, sources in done:
+        srcs = {x.get("id"): x for x in sources}
+        for w in works:
+            if w["how"] in PLACED and w.get("src") in srcs:
+                placed.setdefault(w["id"], (m["slug"], w["said"], srcs[w["src"]], w.get("asof")))
+    for m, path, doc, works, sources in done:
+        for w in works:
+            got = placed.get(w["id"])
+            if w["how"] != "none" or w.get("src") or not got or got[0] == m["slug"]:
+                continue
+            slug, said, src, asof = got
+            w.update({"said": f"at {names.get(slug, slug)}: {said}", "src": src["id"], "asof": asof, "at": slug})
+            if not any(x.get("id") == src["id"] for x in sources):
+                sources.append(dict(src))
         doc["works"] = works
         doc["sources"] = sources
         doc["asof"] = TODAY

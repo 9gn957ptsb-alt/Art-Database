@@ -527,6 +527,7 @@
 .banner[hidden] { display: none; }
 
 .banner-back {
+  min-height: 32px;              /* a finger's size, as every other control here */
   padding: var(--s-2) var(--s-3);
   border: 1px solid var(--edge);
   border-radius: 999px;
@@ -1574,6 +1575,7 @@
 /* The sound, off until it is asked for. */
 .banner-sound {
   pointer-events: auto;
+  min-height: 32px;
   padding: var(--s-2) var(--s-3);
   border: 1px solid var(--edge);
   border-radius: 999px;
@@ -1991,6 +1993,7 @@
 }
 .land:not([data-at="globe"]) .filter { display: none; }
 .filter-layer {
+  min-height: 32px;
   padding: 6px 13px;
   border: 0;
   border-radius: 999px;
@@ -2271,6 +2274,15 @@
 .city[data-tile] .city-dot,
 .dirt-look .city[data-tile] .city-dot { visibility: hidden; width: 11px; height: 11px; }
 .city[data-knot] { visibility: hidden; }
+/* In a city the world's tiles are not drawn: a neighbouring city of
+   galleries shown there brings its own tile of the light as its dot. */
+.land[data-art="town"] .city[data-in="near"][data-tile] .city-dot {
+  visibility: visible;
+  border: 0;
+  border-radius: 0;
+  background: rgba(94, 82, 199, 0.6);
+  transform: none;
+}
 /* While Find has found something: its cities ringed in the light. */
 .city[data-kind="town"][data-found] .city-dot { box-shadow: 0 0 0 3px #5e52c7; }
 
@@ -2469,8 +2481,6 @@
   pointer-events: none;
 }
 .venue-label-name,
-.venue-label-meta { display: block; }
-.venue-label-meta { color: #a8927a; }
 .venue-label[hidden],
 .land:not([data-at="city"]) .venue-label { display: none; }
 /* A museum's works that have been there without being held by it. */
@@ -3152,6 +3162,16 @@ button.art-venue:focus-visible { text-decoration: underline; }
 /* Where it stands: under the ground in a museum, under the city's band
    beside the column, at the right on a phone, over the edge of what is below. */
 .art-time.dial { width: var(--dial); height: var(--dial); padding: 0; }
+/* On a phone the dial reaches 36 px into the top of the column: what the
+   column starts with is written round it, not under it. */
+@media (max-width: 720px) {
+  .art:has(> .art-time.dial:not([hidden])) .art-col::before {
+    content: "";
+    float: right;
+    width: 144px;
+    height: 30px;
+  }
+}
 .building:has(.building-time.dial:not([hidden])) .building-link { bottom: calc(var(--s-5) + 184px); }
 @media (max-width: 720px) {
   .building-time.dial { --dial: 136px; }

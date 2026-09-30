@@ -55,7 +55,7 @@
   var LOOK_NEAR = 4, FACE = 20 * Math.PI / 180; // before a work: within 4 m, facing it within 20°
   var CUT = 3.0;                                // m over the floor: where the roof comes off
   var PLAN_DOTS = 40000, PLAN_PIX = 2, PLAN_FPS = 12, PLAN_FIT = 0.92;
-  var GLIDE_MIN = 1.4, GLIDE_MAX = 12, GLIDE_SPAN = Math.pow(PHI, 4);   // m/s, m/s, s
+  var GLIDE_MIN = 1.4, GLIDE_SPAN = Math.pow(PHI, 4);   // m/s; s, the longest a glide takes
   var STRIDE = 0.7;                             // m: a tick of the step's sound
   var TAP_MS = 250, TAP_PX = 6;
   var WEDGE = 0.012;                            // rad a pixel, turning the plan
@@ -129,6 +129,7 @@
   var FOG_K = 1 / (FOG_FAR - FOG_NEAR);
 
   // What each dot of the frame is, for a tap: kind << 24 | index.
+  var GRIT = 40;                                // DIRT's gaps and speckle drawn 2.5 cm each: a dot or so near by
   var PICK_FLOOR = 1, PICK_WALL = 2, PICK_CEIL = 3, PICK_SKY = 4, PICK_WORK = 5;
   var PAT = { grain: 0, flags: 1, "boards-x": 2, "boards-y": 3 };
   var GLASS_SKY = [150, 172, 190], GLASS_DARK = [46, 58, 72];
@@ -175,8 +176,12 @@
       var m = W.toWorld(world, nx, ny);
       return (-m[0] - m[1]) >= 0 ? 0.94 : 0.74;
     }
+    // A room's walls of a known make wear it, seen from the room; of no
+    // known make, a wall is its own cell's soil, not the floor's before it.
+    var known = new Uint8Array(fl.rooms.length);
+    fl.rooms.forEach(function (rm, k) { known[k] = rm.pseudo || !rm.mats || !rm.mats.walls ? 0 : 1; });
     fl.walk = {
-      pat: pat, litF: litF, roof: roof, grW: grW,
+      pat: pat, litF: litF, roof: roof, grW: grW, known: known, grit: fl.grit || new Uint8Array(n),
       // the face met going +x is a wall's west face, and so on
       face: [faceLight(-1, 0), faceLight(1, 0), faceLight(0, -1), faceLight(0, 1)]
     };
@@ -231,11 +236,11 @@
     var W = this.W, H = this.H, focal = this.focal, hz = this.hz;
     var buf = this.buf, pick = this.pick, rowK = this.rowK, DARK = this.DARK;
     var kind = fl.kind, fh = fl.fh, ch = fl.ch, ck = fl.ck, inkF = fl.inkF, inkW = fl.inkW, inkT = fl.inkT;
-    var pat = ex.pat, litF = ex.litF, roof = ex.roof, grW = ex.grW, face = ex.face;
+    var pat = ex.pat, litF = ex.litF, roof = ex.roof, grW = ex.grW, face = ex.face, known = ex.known, grit = ex.grit;
     var rooms = fl.rooms, room = fl.room;
     var gw = fl.gw, gh = fl.gh, cell = fl.cell, x0 = fl.x0, y0 = fl.y0;
     var WALL = Wp.WALL, GLASS = Wp.GLASS, OPEN = Wp.OPEN;
-    var SKY = Wp.SKY, SKYLIGHT = Wp.SKYLIGHT, DARKC = Wp.DARK, DOME = Wp.DOME, VAULT = Wp.VAULT;
+    var SKY = Wp.SKY, SKYLIGHT = Wp.SKYLIGHT, DARKC = Wp.DARK, DOME = Wp.DOME, VAULT = Wp.VAULT, FLATC = Wp.FLAT;
     var night = world.sky && world.sky.night ? 1 : 0;
     var cx = cam.x, cy = cam.y, dx = Math.cos(cam.a), dy = Math.sin(cam.a);
     var zE = cam.z + EYE;
@@ -322,7 +327,7 @@
           if (yB > bot) { yB = bot; }
           if (yA <= yB) {
             this.steps(inkF[q]);
-            var lt0 = litF[q], pt = pat[q], zd = zE - fz, pk = (PICK_FLOOR << 24) | q;
+            var lt0 = litF[q], pt = pat[q], zd = zE - fz, pk = (PICK_FLOOR << 24) | q, gF = grit[q] & 3;
             for (y = yA; y <= yB; y += 1) {
               o = y * W + x;
               var d = zd * rowK[y];
@@ -331,6 +336,13 @@
               pick[o] = pk;
               if (dist > FOG_NEAR && thr < (dist - FOG_NEAR) * FOG_K) { buf[o] = DARK; continue; }
               lt = lt0;
+              if (gF) {
+                // DIRT's gaps and speckle, 2.5 cm each (a dot or so near by,
+                // fine grit far off), where the soil shows.
+                var gh_ = hash(Math.floor((cx + rx * d) * GRIT), Math.floor((cy + ry * d) * GRIT));
+                if (gF === 1 && gh_ < 0.25) { buf[o] = DARK; continue; }
+                if (gF === 2 && gh_ < 0.3) { lt *= 0.72; }
+              }
               if (pt) {
                 var wx = cx + rx * d, wy = cy + ry * d;
                 if (pt === 1) { lt *= ((Math.floor(wx) + Math.floor(wy)) & 1) ? 1.03 : 0.95; }
@@ -357,6 +369,7 @@
             var zu = cz - zE, pkc = (PICK_CEIL << 24) | q;
             var lc = kc === SKYLIGHT ? 1.0 : kc === DOME || kc === VAULT ? (((czc / 50) | 0) & 1 ? 0.8 : 0.88) : 0.84;
             this.steps(kc === DARKC ? DARK : inkT[q]);
+            var gT = kc === FLATC ? (grit[q] >> 4) & 3 : 0;
             for (y = yA; y <= yB; y += 1) {
               o = y * W + x;
               var dc = -zu * rowK[y];
@@ -365,6 +378,11 @@
               pick[o] = pkc;
               if (kc === DARKC || (dist > FOG_NEAR && thr < (dist - FOG_NEAR) * FOG_K)) { buf[o] = DARK; continue; }
               lt = lc;
+              if (gT) {
+                var gc_ = hash(Math.floor((cx + rx * dc) * GRIT), Math.floor((cy + ry * dc) * GRIT));
+                if (gT === 1 && gc_ < 0.2) { buf[o] = DARK; continue; }
+                if (gT === 2 && gc_ < 0.3) { lt *= 0.72; }
+              }
               if (kc === SKYLIGHT) {
                 // Panes a metre square, their bars in the room's own top.
                 var px_ = cx + rx * dc, py_ = cy + ry * dc;
@@ -390,7 +408,8 @@
         if (k === WALL || k === GLASS) {
           // The wall it ends at: from the floor to the ceiling, or under an
           // open sky to the model's roof over it, the sky or the dark above.
-          var ink = room[q] >= 0 && !rooms[room[q]].pseudo ? inkW[q] : inkW[nq];
+          var mine = room[q] >= 0 && known[room[q]];
+          var ink = mine ? inkW[q] : inkW[nq], gW = mine ? 0 : (grit[nq] >> 2) & 3;
           var from = top;
           if (czc >= OPEN) {
             var rz = roof[nq] / 100;
@@ -411,22 +430,27 @@
               buf[o] = ((x + y) & 1) ? glassA : glassB;
             }
           } else {
-            // A gap in the soil of a wall nobody knows the make of: dark
-            // clods half a metre high, not a stripe from floor to ceiling;
-            // the rest of it the soil of the wall beside it.
-            var clod = ink === DARK ? this.beside(nq, side, gw, kind, inkW) : 0;
-            if (clod) { this.steps(clod); } else { this.steps(ink); }
+            // A wall nobody knows the make of is its soil, and where the soil
+            // has a gap or speckle, dots of it 2.5 cm each, far fewer than on a
+            // floor (the model's walls show none): never a stripe from floor
+            // to ceiling.
+            this.steps(ink);
             var ib = grW[nq] * fl_, dz = d1 / focal;
             li = ((ib - 0.4) * 256) | 0;
             if (li < 0) { li = 0; } else if (li > 255) { li = 255; }
+            var along = gW ? Math.floor((side === 0 ? cy + ry * d1 : cx + rx * d1) * GRIT) : 0;
             for (y = from; y <= bot; y += 1) {
               o = y * W + x;
               thr = THR[((y & 7) << 3) | xm];
               pick[o] = pkw;
               if (thr < fogw) { buf[o] = DARK; continue; }
-              if (clod && hash(nq, Math.floor((zE - (y + 0.5 - hz) * dz) * 2)) < 0.42) { buf[o] = DARK; continue; }
               // A dot's darker skirting at the foot of every wall.
               s = y === yFoot ? 0 : LS[li] + (thr < LF[li] ? 1 : 0) - night;
+              if (gW) {
+                var gw_ = hash(along, Math.floor((zE - (y + 0.5 - hz) * dz) * GRIT));
+                if (gW === 1 && gw_ < 0.12) { buf[o] = DARK; continue; }
+                if (gW === 2 && gw_ < 0.2) { s -= 1; }
+              }
               buf[o] = si[s < 0 ? 0 : s];
             }
           }
@@ -531,18 +555,6 @@
         if ((pick[o] >>> 24) === PICK_WORK && (pick[o] & 0xffffff) === h) { buf[o] = DARK; }
       }
     }
-  };
-
-  // The soil of the wall beside a cell, along its face: the first of its
-  // neighbours that is wall and not a gap; or 0.
-  Caster.prototype.beside = function (q, side, gw, kind, inkW) {
-    var step = side === 0 ? gw : 1, DARK = this.DARK;
-    for (var k = 1; k <= 2; k += 1) {
-      var a = q - step * k, b = q + step * k;
-      if (a >= 0 && (kind[a] === 0) && inkW[a] !== DARK) { return inkW[a]; }
-      if (b < kind.length && (kind[b] === 0) && inkW[b] !== DARK) { return inkW[b]; }
-    }
-    return 0;
   };
 
   // What is left of a column where the ray goes out of what is known: the
@@ -791,7 +803,7 @@
     if (room.name) { return room.name; }
     if (room.pseudo === "stair") { return "the stairs"; }
     if (room.pseudo === "lift") { return "the lift"; }
-    if (room.pseudo === "outside") { return "outside, at the door"; }
+    if (room.pseudo === "outside") { return S && S.world && S.world.shell ? "outside, at a way in (ours)" : "outside, at the door"; }
     if (room.pseudo === "shell") { return "inside"; }
     return "a " + (room.kind || "room") + " not named in the sources";
   }
@@ -852,6 +864,8 @@
         var res = hangAll(s.world, s.works, s.ctx.interior && s.ctx.interior.pins);
         var was = s.standing && s.standing.id;
         s.hung = res.hung; s.spill = res.spill;
+        s.planCache = {};
+        s.orderWas = null;
         if (was) { s.hung.forEach(function (h) { if (h.id === was) { s.standing = h; if (s.reading) { s.reading.h = h; } } }); }
       }
       s.dirty = true;
@@ -875,7 +889,6 @@
         }
         if (!s.world.floors.length || !s.world.enter) { close(); fail(new Error("nothing to walk")); return; }
         s.caster = new Caster(s.world, rgbOf(ctx.frameInk, [15, 12, 10]));
-        s.world.floors.forEach(function (f) { prepFloor(s.world, f); });
         var e = s.world.enter, was = ctx.at && ctx.at.resume;
         s.me = was && s.world.floors[was.floor] ? { floor: was.floor, x: was.x, y: was.y, a: was.a, z: 0 }
                                                 : { floor: e.floor, x: e.x, y: e.y, a: e.a, z: 0 };
@@ -890,7 +903,12 @@
         recheck();
         if (ctx.at && ctx.at.work) {
           var wid = ctx.at.work;
-          window.setTimeout(function () { if (S === s && s.level === "plan") { goTo(wid, ctx.came); } }, host.still ? 0 : host.CLOD_RISE + 200);
+          // Come for a work: while the roof comes off, its room is named first and lit.
+          s.hung.forEach(function (h) {
+            var w = (s.works || []).filter(function (x) { return x.id === wid; })[0];
+            if (h.id === wid || (w && w.same === h.id)) { s.focusRoom = { floor: h.floor, index: h.room }; }
+          });
+          window.setTimeout(function () { if (S === s && s.level === "plan" && !s.leaving) { goTo(wid, ctx.came); } }, host.still ? 0 : host.CLOD_RISE + 200);
         }
         done(api);
       });
@@ -937,7 +955,7 @@
     if (s.host.lightInto) { s.host.lightInto(null); }
     if (s.level !== null && s.ctx.onLevel) { s.ctx.onLevel(null); }
     s.world = null; s.caster = null; s.hung = [];
-    paint.dots = null; paint.order = null; paint.img = null; paint.inks = {};
+    paint.dots = null; paint.orders = []; paint.order = null; paint.img = null; paint.inks = {};
   }
 
   function listen(s) {
@@ -1026,8 +1044,13 @@
     s.raf = requestAnimationFrame(tick);
   }
 
+  // What keeps the frames coming: on the plan only its own lift and turn;
+  // in the walk, moving, turning, a picture being uncovered, the eye
+  // settling on a stair, and the moment before you count as standing.
   function busy(s, now) {
-    return !!(s.glide || s.turnTo || s.drag && s.drag.walking || anyKey(s) || s.planAnim || s.headAnim ||
+    if (s.planAnim || s.headAnim) { return true; }
+    if (s.level !== "walk" && s.level !== "look") { return false; }
+    return !!(s.glide || (s.turnTo !== null && s.turnTo !== undefined) || s.drag && s.drag.walking || anyKey(s) ||
               s.picBusy || (s.me && Math.abs(s.me.zTo - s.me.z) > 0.002) || (s.stillSince && now - s.stillSince < STILL_WAIT + 60));
   }
   function anyKey(s) {
@@ -1143,11 +1166,14 @@
 
   /* ---------------------------------------------------------------- the plan */
 
+  // Each floor's dots made once while the walk is open (the works hung on
+  // it change them; you do not: your tile is laid over them as they are drawn).
   function planDotsFor(fi) {
     var s = S, fl = s.world.floors[fi];
-    var you = s.me && s.me.floor === fi ? { x: s.me.x, y: s.me.y, a: s.me.a } : null;
+    s.planCache = s.planCache || {};
+    if (s.planCache[fi]) { return s.planCache[fi]; }
     var ext = s.ctx.extDots || null;
-    var d = P().planDots(s.world, fi, ext, null, fl.z + CUT, undefined, you, s.hung);
+    var d = s.planCache[fi] = P().planDots(s.world, fi, ext, null, fl.z + CUT, undefined, null, s.hung);
     return d;
   }
 
@@ -1192,6 +1218,7 @@
     }
     s.label.hidden = true;
     clearNames("walk");
+    clearNames("choose");
     s.planDirty = true;
     planDraw(now);
     underline("plan");
@@ -1223,6 +1250,7 @@
     if (!s.planDots) { return; }
     var t0 = performance.now();
     s.frame = planPaint(s.plan, s.planDots, s.heading, s.shown === undefined ? s.planDots.cut : s.shown, PLAN_FIT);
+    planOver();
     s.planMs = performance.now() - t0;
     var ps = s.planStats;
     ps.frames += 1; ps.total += s.planMs; ps.max = Math.max(ps.max, s.planMs);
@@ -1236,21 +1264,26 @@
      into the canvas's pixels, and with the order kept while the heading
      holds: the roof coming off is some 40,000 dots twelve times a second,
      and a phone was drawing it at four. Returns the frame, as draw does. */
-  var paint = { dots: null, heading: null, order: null, img: null, inks: {} };
+  var paint = { dots: null, orders: [], order: null, img: null, inks: {} };
   function planPaint(canvas, dots, heading, shown, fit) {
     var f = M().frame(canvas, dots, heading, fit);
     var w = canvas.width, h = canvas.height, g = canvas.getContext("2d");
     var n = dots.count, k;
-    if (paint.dots !== dots || paint.heading !== heading || !paint.order) {
-      // Back to front at this heading, ties in the dots' own order (a stable
-      // sort, as draw's is), so any set of them keeps draw's order.
-      var key = new Float32Array(n), order = new Uint32Array(n);
+    // Back to front, sorted once for each of the four diagonals and kept:
+    // while a drag turns it between them, the nearest diagonal's order
+    // stands (a few dots out of order for a moment, not 40,000 sorted a frame).
+    var diag = isoNearest(heading), dk = Math.round((diag - TAU / 8) / (TAU / 4)) & 3;
+    if (paint.dots !== dots) { paint.dots = dots; paint.orders = []; }
+    paint.order = paint.orders[dk];
+    if (!paint.order) {
+      // Ties in the dots' own order (a stable sort, as draw's is), so any set of them keeps draw's order.
+      var key = new Float32Array(n), order = new Uint32Array(n), dc = Math.cos(diag), ds = Math.sin(diag);
       for (k = 0; k < n; k += 1) {
-        key[k] = (dots.x[k] * f.sin + dots.y[k] * f.cos) * f.ct + dots.z[k] * f.st;
+        key[k] = (dots.x[k] * ds + dots.y[k] * dc) * f.ct + dots.z[k] * f.st;
         order[k] = k;
       }
       order.sort(function (a, b) { return key[a] - key[b]; });
-      paint.dots = dots; paint.heading = heading; paint.order = order;
+      paint.order = paint.orders[dk] = order;
     }
     if (!paint.img || paint.img.width !== w || paint.img.height !== h) {
       paint.img = g.createImageData(w, h);
@@ -1281,6 +1314,29 @@
     return f;
   }
 
+  // Over the plan's dots: you, a lavender tile with a wedge the way you
+  // face; and the room asked for, lit, until the next press.
+  function planOver() {
+    var s = S, g = s.plan.getContext("2d"), k = s.plan.width / (s.planRect.width || s.plan.width);
+    var fl = s.world.floors[s.planFloor];
+    function tile(x, y, z, size, ink) {
+      var p = planPoint(x, y, z);
+      if (!p) { return; }
+      var n = Math.max(2, Math.round(size * k));
+      g.fillStyle = ink;
+      g.fillRect(Math.round(p.x * k - n / 2), Math.round(p.y * k - n / 2), n, n);
+    }
+    if (s.focusRoom && s.focusRoom.floor === s.planFloor) {
+      var r = fl.rooms[s.focusRoom.index];
+      if (r) { tile(r.cx, r.cy, fl.z + r.fz + 0.2, 13, s.host.LIGHT); }
+    }
+    if (s.me && s.me.floor === s.planFloor && s.planDots && s.planDots.plan) {
+      var pitch = s.planDots.plan.pitch || 1, sz = Math.max(6, (s.frame ? s.frame.scale : 1) * pitch / (s.world.model ? s.world.model.v : 1) * 1.8 / k);
+      tile(s.me.x, s.me.y, fl.z + 0.2, sz, s.host.LIGHT);
+      tile(s.me.x + Math.cos(s.me.a) * pitch, s.me.y + Math.sin(s.me.a) * pitch, fl.z + 0.2, sz * 0.62, s.host.LILAC);
+    }
+  }
+
   // A point of the grid on the plan's canvas, in the page's own pixels.
   function planPoint(x, y, z) {
     var s = S, w = s.world, vx = w.model;
@@ -1303,12 +1359,13 @@
   // placed saved works, with their count; waiting rather than overprinting.
   function planNames() {
     var s = S, fl = s.world.floors[s.planFloor], out = [];
+    if (s.leaving || s.choosing) { clearNames("plan"); return; }
     var e = s.world.enter;
     if (e && e.floor === s.planFloor) {
       var pd = planPoint(e.door[0], e.door[1], fl.z + CUT);
       // Pressed: down where you stand, and back to the door, facing in.
       if (pd) {
-        out.push({ key: "p:door", text: "The door", x: pd.x, y: pd.y, rank: 1, kind: "room", go: function () {
+        out.push({ key: "p:door", text: s.world.shell ? "A way in (ours)" : "The door", x: pd.x, y: pd.y, rank: 1, kind: "room", go: function () {
           descend(function () { glideTo({ x: e.x, y: e.y, floor: e.floor, face: e.a, key: "door" }); });
         } });
       }
@@ -1319,17 +1376,27 @@
       counts[h.room] = (counts[h.room] || 0) + 1;
     });
     var mine = s.me && s.me.floor === s.planFloor ? roomAt(s.world, s.me.floor, s.me.x, s.me.y) : null;
+    var focus = s.focusRoom && s.focusRoom.floor === s.planFloor ? fl.rooms[s.focusRoom.index] : null;
     fl.rooms.forEach(function (r) {
       if (r.pseudo || !r.poly) { return; }
       var n = counts[r.index] || 0;
-      if (!n && r !== mine) { return; }
+      if (!n && r !== mine && r !== focus) { return; }
+      if (r === focus && r !== mine) {
+        // The room asked for is named before any other.
+        var pf = planPoint(r.cx, r.cy, fl.z + r.fz + CUT);
+        if (pf) {
+          out.push({ key: "p:" + r.id, text: roomWords(r) + (n ? " · " + n : ""), x: pf.x, y: pf.y, rank: -1, kind: "room",
+                     room: r, go: function () { planRoom(r); } });
+        }
+        return;
+      }
       var p = planPoint(r.cx, r.cy, fl.z + r.fz + CUT);
       if (!p) { return; }
       var text = roomWords(r) + (n ? " · " + n : "");
       // The room you are in is only said: it would lie over the rooms round
       // you, which are the ones a press would want.
       out.push({ key: "p:" + r.id, text: text, x: p.x, y: p.y, rank: r === mine ? 0 : 2 + 1 / (n + 1), kind: "room",
-                 passive: r === mine, go: function () { planRoom(r); } });
+                 passive: r === mine, room: r === mine ? null : r, go: function () { planRoom(r); } });
     });
     placeNames(out, "plan", s.planRect.left - s.rootRect.left, s.planRect.top - s.rootRect.top);
   }
@@ -1339,8 +1406,14 @@
      door, facing along it; a room nobody has found a way into says so. */
   function planTap(cx, cy) {
     var s = S, fl = s.world.floors[s.planFloor];
+    if (s.leaving) { return; }
+    clearNames("choose");
+    if (s.focusRoom) { s.focusRoom = null; s.planDirty = true; wake(); }
     var you = s.me.floor === s.planFloor ? youOnPlan() : null;
     var dYou = you ? Math.hypot(cx - you.cx, cy - you.cy) : Infinity;
+    // Under a finger the rooms are a few pixels each: where a press could
+    // mean more than one, they are offered as names to choose from.
+    if (coarse() && choose(cx, cy, you, dYou)) { return; }
     // On a phone a room is a few pixels (the National Gallery is a pixel a
     // metre), so what is right under the press comes first: your own tile,
     // a work's tile, the room under it; then what is near: you, a work, the
@@ -1372,6 +1445,51 @@
     if (near && near !== mine) { planRoom(near); }
   }
 
+  function coarse() {
+    return window.innerWidth <= 720 || !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  }
+
+  // The rooms within a finger's reach of a press (and you, if you are),
+  // nearest first; offered as a stack of names, 44 px each, when there is
+  // more than one. Returns whether it offered them.
+  function choose(cx, cy, you, dYou, first) {
+    var s = S, fl = s.world.floors[s.planFloor], REACH = 22, list = [];
+    var counts = {};
+    s.hung.forEach(function (h) { if (h.floor === s.planFloor) { counts[h.room] = (counts[h.room] || 0) + 1; } });
+    var mine = you ? roomAt(s.world, s.me.floor, s.me.x, s.me.y) : null;
+    fl.rooms.forEach(function (r) {
+      if (r.pseudo || !r.poly || r === mine) { return; }
+      var poly = r.poly.map(function (pt) { var q = planPoint(pt[0], pt[1], fl.z + r.fz); return q ? [q.cx, q.cy] : [NaN, NaN]; });
+      var d = inPoly(poly, cx, cy) ? 0 : Infinity;
+      for (var i = 0, j = poly.length - 1; i < poly.length && d > 0; j = i, i += 1) {
+        d = Math.min(d, segDist(cx, cy, poly[j][0], poly[j][1], poly[i][0], poly[i][1]));
+      }
+      if (d <= REACH && (r.name || counts[r.index])) { list.push({ r: r, d: d - (counts[r.index] ? 4 : 0) }); }
+    });
+    if (dYou <= REACH) { list.push({ you: true, d: dYou }); }
+    if (first) {
+      list = list.filter(function (c) { return c.r !== first; });
+      list.unshift({ r: first, d: -Infinity });
+    }
+    if (list.length < 2) { return false; }
+    list.sort(function (a, b) { return a.d - b.d; });
+    list = list.slice(0, 5);
+    // Stacked round the press, kept within the walk's own band (never over the strip).
+    var rr = s.rootRect || s.root.getBoundingClientRect(), STEP_Y = 46, tall = list.length * STEP_Y;
+    var x = cx - rr.left, top = clamp(cy - rr.top - tall / 2, 8, Math.max(8, rr.height - tall - 8));
+    var out = list.map(function (c, k) {
+      var y = top + 22 + k * STEP_Y;
+      if (c.you) { return { key: "c:you", text: "Where you are", x: x, y: y, rank: k, kind: "room", go: function () { clearNames("choose"); descend(); } }; }
+      var n = counts[c.r.index] || 0;
+      return { key: "c:" + c.r.id, text: roomWords(c.r) + (n ? " · " + n : ""), x: x, y: y, rank: k, kind: "room",
+               go: function () { clearNames("choose"); planRoom(c.r); } };
+    });
+    placeNames(out, "choose", 0, 0);
+    clearNames("plan");
+    s.choosing = true;
+    return true;
+  }
+
   function inPoly(p, x, y) {
     var ins = false;
     for (var i = 0, j = p.length - 1; i < p.length; j = i, i += 1) {
@@ -1381,11 +1499,13 @@
     return ins;
   }
 
+  // A room pressed on the plan: walked to where a way is known from where
+  // you are; else, if it holds saved works, put into; else said so.
   function planRoom(r) {
-    if (!r.reach) { noWayIn(r); return; }
     var target = roomTarget(r);
-    if (!target) { noWayIn(r); return; }
-    descend(function () { glideTo(target); });
+    if (target) { descend(function () { glideTo(target); }); return; }
+    if (holdsWorks(r)) { placeIn(r); return; }
+    noWayIn(r);
   }
 
   // Just inside a room's door, facing along it: the way there cut where it
@@ -1442,16 +1562,71 @@
     return best;
   }
 
-  // "No way into Gallery 85 is known yet": said on the plan, the room pulsing.
+  // "No way into Gallery 85 is known yet": said on the plan, the room
+  // named before any other and lit until the next press, a pulse over it
+  // as big as it is on the screen.
   function noWayIn(r) {
     var s = S;
     if (s.level !== "plan") { toPlan(); }
     if (s.planFloor !== r.floor) { floorTo(r.floor); }
-    var fl = s.world.floors[r.floor];
-    var p = planPoint(r.cx, r.cy, fl.z + r.fz + CUT);
-    if (p) { s.host.pulse(p.cx, p.cy, [s.host.LIGHT, s.host.LILAC], 0.8, 120); }
+    s.focusRoom = { floor: r.floor, index: r.index };
+    s.planDirty = true;
+    planDraw(performance.now());
+    var p = planPoint(r.cx, r.cy, s.world.floors[r.floor].z + r.fz + CUT);
+    if (p) { s.host.pulse(p.cx, p.cy, [s.host.LIGHT, s.host.LILAC], 0.8, reachOf(r)); }
     var words = "No way into " + (r.name || "this room") + " is known yet";
     say(words);
+  }
+
+  // A room's size on the plan, for a pulse over it: its outline's diagonal.
+  function reachOf(r) {
+    var fl = S.world.floors[r.floor], x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    (r.poly || []).forEach(function (pt) {
+      var q = planPoint(pt[0], pt[1], fl.z + r.fz);
+      if (q) { x0 = Math.min(x0, q.cx); y0 = Math.min(y0, q.cy); x1 = Math.max(x1, q.cx); y1 = Math.max(y1, q.cy); }
+    });
+    return isFinite(x0) ? clamp(Math.hypot(x1 - x0, y1 - y0), 20, 120) : 60;
+  }
+
+  /* Into a room nobody has found the way into yet, that holds saved works:
+     a cut, as the lift is, with no doorway drawn — you are put there, and
+     the banner says so ('no way in is known yet · placed here'). From
+     there you walk the room, and whatever joins it. */
+  function placeIn(r, t) {
+    var s = S, fl = s.world.floors[r.floor];
+    var spot = t ? [t.x, t.y] : nearestFree(fl, r.cx, r.cy, r.index);
+    if (!spot) { noWayIn(r); return false; }
+    if (s.level === "look") { unlook(true); }
+    stopGlide();
+    stand(null);
+    s.turnTo = null;
+    s.focusRoom = null;
+    clearNames("choose");
+    var me = s.me;
+    me.floor = r.floor; me.x = spot[0]; me.y = spot[1]; me.z = me.zTo = floorZ(r.floor, me.x, me.y);
+    if (t && t.face !== undefined) { me.a = t.face; }
+    else {
+      var long = (r.bbox[2] - r.bbox[0]) >= (r.bbox[3] - r.bbox[1]) ? [1, 0] : [0, 1];
+      me.a = Math.atan2(long[1], long[0]);
+    }
+    s.planFloor = r.floor;
+    s.lastRoom = null;
+    s.dirty = true;
+    if (s.level === "plan") {
+      s.planDirty = true;
+      descend();
+    } else {
+      if (!s.host.still) {
+        s.host.sweepCells(s.host.oneOf(["edges", "center", "corner", "rows"]), [cssOf(r.tone || [180, 170, 150]), s.host.LIGHT, s.host.LILAC], 820);
+      }
+      onRoom(performance.now());
+      wake();
+    }
+    if (t) { arrived(t); } else { settleOut(); where(); }
+    return true;
+  }
+  function holdsWorks(r) {
+    return S.hung.some(function (h) { return h.floor === r.floor && h.room === r.index; });
   }
 
   // A line under the banner's, for a moment: what could not be done.
@@ -1468,6 +1643,7 @@
 
   function floorTo(fi) {
     var s = S;
+    if (s.leaving) { return; }
     if (fi < 0 || fi >= s.world.floors.length || fi === s.planFloor) { return; }
     var was = s.planDots ? s.planDots.cut : 1;
     s.planFloor = fi;
@@ -1494,12 +1670,15 @@
   // that need no picture, and a pulse goes out from where you stand.
   function descend(then) {
     var s = S;
-    if (!s || s.level === "walk" || s.level === "look") { if (then) { then(); } return; }
+    if (!s || s.leaving) { return; }
+    if (s.level === "walk" || s.level === "look") { if (then) { then(); } return; }
     var still = s.host.still;
     if (s.planFloor !== s.me.floor) { s.planFloor = s.me.floor; }
     var o = youOnPlan();
     s.box.hidden = false;
     s.dirty = true;
+    s.focusRoom = null;
+    clearNames("choose");
     setLevel("walk");
     draw(performance.now());
     clearNames("plan");
@@ -1532,6 +1711,10 @@
     stopGlide();
     s.keys = {};
     s.drag = null;
+    // Nothing of the walk's may keep the frames coming on the plan.
+    s.turnTo = null;
+    s.picBusy = false;
+    if (s.me && s.me.zTo !== undefined) { s.me.z = s.me.zTo; }
     stand(null);
     s.planFloor = s.me.floor;
     showPlan("walk");
@@ -1542,7 +1725,11 @@
   // land.js's again.
   function toBuilding() {
     var s = S;
+    // Leaving: while the roof settles back, nothing on the plan answers a
+    // press, and its names do not come back.
+    s.leaving = true;
     clearNames("plan");
+    clearNames("choose");
     if (s.host.still) { finish(); return; }
     s.planAnim = { from: s.shown, to: 1, t0: performance.now(), dur: PHI * 1000, then: finish };
     s.planDirty = true;
@@ -1565,7 +1752,7 @@
 
   function down(x, y) {
     var s = S;
-    if (!s || !s.world) { return; }
+    if (!s || !s.world || s.leaving) { return; }
     if (s.level === "plan") { if (!s.planAnim || s.planAnim.to !== 1) { descend(); } return; }
     if (s.level === "walk") {
       var h = s.standing || facing(x, y);
@@ -1597,7 +1784,8 @@
     if (!u) { return; }
     var text;
     if (s.world.shell) {
-      text = "Inside · nothing is known yet · the walls are the model's";
+      // A shell's way in is ours (the rule's, on the model), not the museum's door.
+      text = "Inside · nothing is known yet · the walls are the model's, the way in ours";
     } else if (level === "plan") {
       var fl = s.world.floors[s.planFloor];
       var src = (fl.src || []).filter(function (id) { return id !== "model"; })[0];
@@ -1614,13 +1802,24 @@
         text = floorName(f2) + " · outside, at the door · " + (s.world.enter.sure || "reconstructed");
       } else {
         text = floorName(f2) + " · " + roomWords(r) + " · " + ((r && r.sure) || "not known");
-        if (r && r.ceil === "auto" && !r.pseudo) { text += ", its height the model's"; }
+        text += heightWords(r);
+        // Put in a room nobody has found the way into yet: said, every time.
+        if (r && !r.pseudo && !r.reach) { text += " · no way in is known yet · placed here"; }
       }
     }
     u.setAttribute("aria-live", "polite");
     if (u.textContent === text) { return; }
     u.textContent = text;
     if (!quiet) { s.host.scramble(u, "decode"); }
+  }
+
+  // How a room's height is known, where its file gives none: the model's
+  // roof over it (the auto ceiling, a dome, a skylight, a vault), or, where
+  // the model has nothing over it, not known at all.
+  function heightWords(r) {
+    if (!r || r.pseudo || r.h !== null || r.ceil === "sky") { return ""; }
+    if (r.ceil === "dark" || r.autoH === null || r.autoH === undefined) { return ", its height not known"; }
+    return ", its height the model's";
   }
 
   /* ---------------------------------------------------------------- moving */
@@ -1679,10 +1878,15 @@
   // Walls, glass, voids, what is closed and what a source puts on the floor
   // stop you; a step of more than 0.35 m stops you; a freestanding work keeps
   // you 0.4 m off. Four points round you, sliding along a wall a way at a time.
+  // The points tested: four at the corners (a hair inside, so a walker
+  // flush with a wall is not in it); and where the grid's cell is smaller
+  // than the walker, the middles of its sides too, so a wall one cell thick
+  // cannot be straddled.
+  var AT4 = [[-1, -1], [1, -1], [-1, 1], [1, 1]], AT8 = AT4.concat([[0, -1], [0, 1], [-1, 0], [1, 0]]);
   function free(fl, x, y, z) {
-    var W = P(), r = RADIUS;
-    for (var k = 0; k < 4; k += 1) {
-      var q = W.cellAt(fl, x + (k & 1 ? r : -r), y + (k & 2 ? r : -r));
+    var W = P(), r = RADIUS - 0.002, at = fl.cell < 2 * RADIUS ? AT8 : AT4;
+    for (var k = 0; k < at.length; k += 1) {
+      var q = W.cellAt(fl, x + at[k][0] * r, y + at[k][1] * r);
       if (q < 0 || fl.kind[q] !== W.FLOOR) { return false; }
       if (Math.abs(fl.fh[q] / 100 - z) > STEP) { return false; }
       if (fl.ch[q] - fl.fh[q] < HEAD * 100) { return false; }
@@ -1694,6 +1898,36 @@
     }
     return true;
   }
+  // How far a point is from the nearest cell that cannot be walked, up to a metre.
+  function gap(fl, x, y) {
+    var W = P(), c = fl.cell, best = 1;
+    var i0 = Math.floor((x - 1 - fl.x0) / c), i1 = Math.floor((x + 1 - fl.x0) / c);
+    var j0 = Math.floor((y - 1 - fl.y0) / c), j1 = Math.floor((y + 1 - fl.y0) / c);
+    for (var j = j0; j <= j1; j += 1) {
+      for (var i = i0; i <= i1; i += 1) {
+        var q = i < 0 || j < 0 || i >= fl.gw || j >= fl.gh ? -1 : j * fl.gw + i;
+        if (q >= 0 && W.walkable(fl, q)) { continue; }
+        var ax = fl.x0 + i * c, ay = fl.y0 + j * c;
+        var ddx = x < ax ? ax - x : x > ax + c ? x - ax - c : 0, ddy = y < ay ? ay - y : y > ay + c ? y - ay - c : 0;
+        best = Math.min(best, Math.hypot(ddx, ddy));
+      }
+    }
+    return best;
+  }
+
+  // Out of any wall you have come to rest a hair into: the nearest place
+  // within 0.4 m where you stand free.
+  function settleOut() {
+    var s = S, me = s.me, fl = s.world.floors[me.floor], z = floorZ(me.floor, me.x, me.y);
+    if (free(fl, me.x, me.y, z)) { return; }
+    for (var r = 0.05; r <= 0.4 + 1e-9; r += 0.05) {
+      for (var k = 0; k < 16; k += 1) {
+        var a = k * TAU / 16, x = me.x + Math.cos(a) * r, y = me.y + Math.sin(a) * r;
+        if (free(fl, x, y, floorZ(me.floor, x, y))) { me.x = x; me.y = y; s.dirty = true; return; }
+      }
+    }
+  }
+
   function segDist(px, py, ax, ay, bx, by) {
     var vx = bx - ax, vy = by - ay, L = vx * vx + vy * vy;
     var t = L ? clamp(((px - ax) * vx + (py - ay) * vy) / L, 0, 1) : 0;
@@ -1703,11 +1937,15 @@
   function move(dx, dy) {
     var s = S, me = s.me, fl = s.world.floors[me.floor], z = floorZ(me.floor, me.x, me.y);
     var went = 0, blocked = false;
+    // Already against a wall (a glide may end a hair into one): any step
+    // that takes you further from it is let through, so you are never stuck.
+    var stuck = !free(fl, me.x, me.y, z), was = stuck ? gap(fl, me.x, me.y) : 0;
+    function ok(x, y, zz) { return free(fl, x, y, zz) || (stuck && gap(fl, x, y) > was + 1e-6); }
     if (Math.abs(dx) > 1e-9) {
-      if (free(fl, me.x + dx, me.y, z)) { me.x += dx; went += Math.abs(dx); } else { blocked = true; }
+      if (ok(me.x + dx, me.y, z)) { me.x += dx; went += Math.abs(dx); } else { blocked = true; }
     }
     if (Math.abs(dy) > 1e-9) {
-      if (free(fl, me.x, me.y + dy, floorZ(me.floor, me.x, me.y))) { me.y += dy; went += Math.abs(dy); } else { blocked = true; }
+      if (ok(me.x, me.y + dy, floorZ(me.floor, me.x, me.y))) { me.y += dy; went += Math.abs(dy); } else { blocked = true; }
     }
     // Stopped at the edge of the ground before the door, going away from it: out.
     if (blocked) { outward(dx, dy); }
@@ -1741,10 +1979,13 @@
 
   // A tick at each stride when the sound is on, brighter on stone, lower on wood.
   function stride(d) {
-    var s = S;
+    var s = S, now = performance.now();
     s.walked += d;
     if (s.walked < STRIDE) { return; }
     s.walked = 0;
+    // A glide may go at many strides a second: its steps are heard at most two a second.
+    if (s.glide && now - (s.tickAt || 0) < 500) { return; }
+    s.tickAt = now;
     var snd = window.Systems && window.Systems.sound;
     if (!snd || !snd.on || !snd.step) { return; }
     var r = roomAt(s.world, s.me.floor, s.me.x, s.me.y);
@@ -1818,7 +2059,7 @@
   /* ---------------------------------------------------------------- glides */
 
   // Walk there: the way over the floors' grids, eased in and out at
-  // clamp(length / φ⁴ s, 1.4, 12) m/s, turning ahead, and stopping to face
+  // max(length / φ⁴ s, 1.4) m/s, so never longer than φ⁴ s, turning ahead, and stopping to face
   // the target. Every room passed is named in the banner as it is entered.
   function glideTo(t) {
     var s = S, W = P(), me = s.me;
@@ -1846,7 +2087,9 @@
       wake();
       return true;
     }
-    var speed = clamp(L / GLIDE_SPAN, GLIDE_MIN, GLIDE_MAX);
+    // Never longer than φ⁴ s, whatever the distance (timing over a literal
+    // pace): at least a walk's pace, faster the further it is.
+    var speed = Math.max(L / GLIDE_SPAN, GLIDE_MIN);
     s.glide = { t: t, key: t.key || null, segs: segs, L: L, T: L / speed * 1000, t0: performance.now(), done: false };
     wake();
     return true;
@@ -1936,6 +2179,7 @@
 
   function arrived(t) {
     var s = S;
+    settleOut();
     s.dirty = true;
     if (t.work) {
       s.standing = null;
@@ -1950,7 +2194,7 @@
   /* Go to a hung work: from the plan, down first; from the look, back to
      the walk; then walk to its viewing spot, turn to it, and read it — the
      thread it was come by first. A work in a room no way into is known yet
-     is said so on the plan. */
+     is come to by a cut, and the banner says so (placeIn). */
   function goTo(id, came, opts) {
     var s = S;
     if (!s || !s.world) { return false; }
@@ -1967,7 +2211,8 @@
     if (s.level === "look") { unlook(true); }
     var W = P();
     var path = W.path(s.world, { x: s.me.x, y: s.me.y, floor: s.me.floor }, { x: target.x, y: target.y, floor: target.floor });
-    if (!path) { noWayIn(room); return false; }
+    // No way there known: put before it, the banner saying so.
+    if (!path) { return placeIn(room, target); }
     if (s.level === "plan") { descend(function () { glideTo(target); }); } else { glideTo(target); }
     return true;
   }
@@ -2002,7 +2247,7 @@
     var d = s.drag;
     d.moved = Math.max(d.moved, Math.abs(event.clientX - d.x) + Math.abs(event.clientY - d.y));
     if (d.plan) {
-      if (s.level !== "plan") { return; }
+      if (s.level !== "plan" || s.leaving) { return; }
       var ddx = event.clientX - d.x, ddy = event.clientY - d.y;
       if (!d.floorDone && Math.abs(ddy) >= FLOOR_DRAG && Math.abs(ddy) > Math.abs(ddx) * 1.5) {
         d.floorDone = true;
@@ -2048,9 +2293,17 @@
     var tap = event.type === "pointerup" && d.moved < TAP_PX && performance.now() - d.t < TAP_MS;
     // A name pressed and let go where it was pressed: however long it was held.
     if (d.name && event.type === "pointerup" && d.moved < TAP_PX) {
-      if (d.name.go && !d.name.hidden) { d.name.go(); }
+      if (s.leaving || !d.name.go || d.name.hidden) { return; }
+      // On a phone a room's name covers the rooms round it: pressed where
+      // other rooms are within a finger's reach, they are offered with it, it first.
+      if (s.level === "plan" && d.name.dataset.group === "plan" && d.name.room && coarse()) {
+        var you0 = s.me.floor === s.planFloor ? youOnPlan() : null;
+        if (choose(event.clientX, event.clientY, you0, you0 ? Math.hypot(event.clientX - you0.cx, event.clientY - you0.cy) : Infinity, d.name.room)) { return; }
+      }
+      d.name.go();
       return;
     }
+    if (s.leaving) { return; }
     if (d.plan && s.level === "plan") {
       if (tap) { planTap(event.clientX, event.clientY); return; }
       if (!d.floorDone && d.moved >= TAP_PX) {
@@ -2095,7 +2348,9 @@
         var d = (s.me.z + EYE - fz) * cs.rowK[hit.y], fx = s.me.x + rx * d, fy = s.me.y + ry * d;
         if (Math.hypot(fx - c[0], fy - c[1]) <= fl.cell * 1.5) { px = fx; py = fy; }
       }
-      var goal = W.walkable(fl, W.cellAt(fl, px, py)) ? [px, py] : nearestFree(fl, px, py);
+      // Where a walker stands free: the point itself, else the nearest cell
+      // clear of the walls (a tap at a wall's foot would end with you in it).
+      var goal = free(fl, px, py, fz) ? [px, py] : nearestFree(fl, px, py);
       if (!goal) { return; }
       var t = { x: goal[0], y: goal[1], floor: s.me.floor, key: "f:" + Math.round(goal[0] * 2) + "," + Math.round(goal[1] * 2) };
       if (!glideTo(t)) { s.host.pulse(clientX, clientY, [s.host.LILAC], 0.35, 60); }
@@ -2252,10 +2507,11 @@
         e.dataset.group = group;
         // A pointer's press is taken on its way up (pointerUp); a click
         // with no pointer behind it is the keyboard's, or a reader's.
-        e.addEventListener("click", function (event) { event.stopPropagation(); if (!event.detail && e.go) { e.go(); } });
+        e.addEventListener("click", function (event) { event.stopPropagation(); if (!event.detail && e.go && S && !S.leaving) { e.go(); } });
         s.names.appendChild(e);
       }
       e.go = it.go;
+      e.room = it.room || null;
       e.dataset.kind = it.kind;
       e.classList.toggle("walk-edge", it.kind === "edge");
       if (it.passive) { e.dataset.passive = "true"; e.tabIndex = -1; } else if (e.dataset.passive) { delete e.dataset.passive; e.tabIndex = 0; }
@@ -2280,6 +2536,7 @@
       if (!group || e.dataset.group === group) { e.hidden = true; }
     });
     if (group === "walk") { s.label.hidden = true; }
+    if (!group || group === "choose") { s.choosing = false; }
   }
 
   /* ---------------------------------------------------------------- standing before a work */
@@ -2402,7 +2659,10 @@
     if (medium) { parts.push(medium); }
     if (h.sized && w.cm) {
       var c = w.cm;
-      parts.push(num(c[1]) + " × " + num(c[0]) + (c[2] ? " × " + num(c[2]) : "") + " cm");
+      // One measure alone, said as the record says it: a tondo's diameter, a bronze's greatest extension.
+      if (!(c[0] > 0)) { parts.push(num(c[1]) + " cm, its " + (w.cmk || "height")); }
+      else if (w.cmk === "diameter") { parts.push(num(c[0]) + " cm across, its diameter"); }
+      else { parts.push(num(c[1]) + " × " + num(c[0]) + (c[2] ? " × " + num(c[2]) : "") + " cm"); }
     } else { parts.push("size not known"); }
     if (h.free) { parts.push("a photograph of it"); }
     return parts.join(" · ");
@@ -2877,6 +3137,8 @@
       var res = hangAll(s.world, next, s.ctx.interior && s.ctx.interior.pins);
       stand(null);
       s.hung = res.hung; s.spill = res.spill;
+      s.planCache = {};
+      s.orderWas = null;
       if (s.level === "plan") { s.planDots = planDotsFor(s.planFloor); s.planDirty = true; }
       s.dirty = true;
       if (s.ctx.onWorks) { s.ctx.onWorks(next); }
@@ -2915,20 +3177,33 @@
   }
 
   // Whether a door's front can be seen at a heading of the building view
-  // (Models.draw's): its way out turned toward the one looking.
+  // (Models.draw's): its way out turned toward the one looking. A shell's
+  // way in is the rule's, not the museum's door, so it is never lit as if
+  // it were: the tile marks only an entrance a source gives (the gesture
+  // still goes in, by that way of ours, and the walk says so).
   function doorShows(prep, heading) {
-    if (!prep || !prep.out) { return false; }
+    if (!prep || !prep.out || prep.shell) { return false; }
     return prep.out[0] * Math.sin(heading) + prep.out[1] * Math.cos(heading) > -0.05;
   }
 
   // The hung works in walking order from where you are: one flood over the
-  // floors' grids, each work at the length of the way to its viewing spot.
+  // floors' grids, each work at the length of the way to its viewing spot,
+  // stopping once every work's spot is reached; kept while you stay in the
+  // same room (land.js asks on every room you enter).
   function order() {
     var s = S;
-    if (!s || !s.world) { return []; }
+    if (!s || !s.world || !s.hung.length) { return []; }
     var W = P(), world = s.world;
+    var here = roomAt(world, s.me.floor, s.me.x, s.me.y);
+    var okey = s.me.floor + ":" + (here && !here.pseudo ? "r" + here.index : "q" + W.cellAt(world.floors[s.me.floor], s.me.x, s.me.y));
+    if (s.orderWas && s.orderWas.key === okey) { return s.orderWas.list.slice(); }
     var offs = [], total = 0;
     world.floors.forEach(function (fl) { offs.push(total); total += fl.n; W.clearance(fl); });
+    var want = {}, left = 0;
+    s.hung.forEach(function (h) {
+      var q = W.cellAt(world.floors[h.floor], h.spot.x, h.spot.y);
+      if (q >= 0 && !want[offs[h.floor] + q]) { want[offs[h.floor] + q] = 1; left += 1; }
+    });
     // Float64, and each cell settled once: the stairs join the floors at no
     // cost, and a float32 distance rounded up would pass a cell back and
     // forth across them for ever.
@@ -2962,6 +3237,7 @@
       var it = pop(), d = it[0], node = it[1];
       if (done[node] || d > dist[node]) { continue; }
       done[node] = 1;
+      if (want[node]) { left -= 1; if (!left) { break; } }
       var fi = floorAt(node), fl = world.floors[fi], q = node - offs[fi];
       var i = q % fl.gw, j = (q - i) / fl.gw;
       for (var k = 0; k < 8; k += 1) {
@@ -2987,11 +3263,13 @@
         });
       }
     }
-    return s.hung.map(function (h) {
+    var list = s.hung.map(function (h) {
       var fl = world.floors[h.floor], q = W.cellAt(fl, h.spot.x, h.spot.y);
       var r = fl.rooms[h.room];
       return { id: h.id, room: r.id, name: r.name, floor: fl.id, d: q >= 0 ? dist[offs[h.floor] + q] : Infinity, reach: !!r.reach };
     }).sort(function (a, b) { return a.d - b.d; });
+    s.orderWas = { key: okey, list: list };
+    return list.slice();
   }
 
   function state() {
@@ -3098,6 +3376,7 @@
       return p ? { x: p.cx, y: p.cy, floor: r.floor, poly: poly } : null;
     },
     _look: function () { if (S && S.standing) { look(S.standing); } },
+    _noWayIn: function (id) { var r = S && S.world ? P().roomById(S.world, id) : null; if (r) { noWayIn(r); } },
     _youOnPlan: function () { var p = S && S.level === "plan" && S.me.floor === S.planFloor ? youOnPlan() : null; return p ? { x: p.cx, y: p.cy } : null; },
     _workOnPlan: function (id) {
       var h = null;

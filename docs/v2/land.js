@@ -690,8 +690,23 @@
     city.name = el.lastChild;
     city.nw = 0;                     // its name's width, measured in one pass (measureNames)
     // A city of the Museums layer, and a museum, open their own way.
-    el.addEventListener("click", function () { if (city.open) { city.open(); } else { goDown(city); } });
+    el.addEventListener("click", function () {
+      // In its city, a museum whose name found no room is named by a first
+      // tap, which also lights its row; a second goes in. A phone has no
+      // pointing at, and a museum is not gone into without knowing which.
+      if (place && city.inTown && city.touched && art && art.kind === "town" &&
+          art.tapped !== city.slug && city.el.dataset.named !== "true") {
+        if (art.tapped) { lightMuseum(art.tapped, false); }
+        art.tapped = city.slug;
+        lightMuseum(city.slug, true);
+        var r = el.firstChild.getBoundingClientRect();
+        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT, LILAC], 0.5, 89);
+        return;
+      }
+      if (city.open) { city.open(); } else { goDown(city); }
+    });
     el.addEventListener("pointerdown", function (event) {
+      city.touched = event.pointerType === "touch";
       // The stage takes the pointer on its way down, to turn the world
       // with; a press that lands on a city is not a turn, and if the
       // stage captures it the click never reaches the button at all.
@@ -713,7 +728,7 @@
     if (city.museum || city.stage) {
       // In its city, a museum's mark and its row in the column answer each other.
       el.addEventListener("pointerenter", function () { lightMuseum(city.slug, true); });
-      el.addEventListener("pointerleave", function () { lightMuseum(city.slug, false); });
+      el.addEventListener("pointerleave", function () { if (!(art && art.tapped === city.slug)) { lightMuseum(city.slug, false); } });
       el.addEventListener("focus", function () { lightMuseum(city.slug, true); });
       el.addEventListener("blur", function () { lightMuseum(city.slug, false); });
     }
@@ -759,6 +774,8 @@
         // (artist, 24 Sep 2026): in Washington, among them, not on the globe.
         layer: mark.stage ? "museums" : undefined,
         townKey: mark.town, inTown: !!mark.town,
+        // Pressed where it stands in its city, it opens as a museum does.
+        open: mark.town ? function () { downToMuseum(mark.slug, {}); } : undefined,
         // A library is stone. It takes the hue of whichever collage it is
         // nearest — it stands four streets from two of them — and then
         // almost none of it.
@@ -812,18 +829,17 @@
      displayed on the globe and then when you click on the city that is
      when it shows you the museums in that city"): see "the cities". */
   var ARTWORKS = true;                 // false: no histories, threads, Find or doors
-  var ART_LAYER = false;               // true: the Artworks pill of 27 Sep again, beside Museums
   var LAYERS = [
     { key: "collages", label: "Collages" },
     { key: "museums", label: "Museums" },
     { key: "architecture", label: "Architecture" }
   ];
-  if (ARTWORKS && ART_LAYER) { LAYERS.splice(2, 0, { key: "artworks", label: "Artworks" }); }
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
   try { layerOn = localStorage.getItem(LAYER_KEY) || layerOn; } catch (e) {}
-  // Whoever last looked at the Artworks layer lands on the one that holds it now.
-  if (layerOn === "artworks" && !ART_LAYER) {
+  // Whoever last looked at the Artworks layer (27–29 Sep 2026; its pill and
+  // its drawing are gone) lands on the one that holds it now.
+  if (layerOn === "artworks") {
     layerOn = "museums";
     try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
   }
@@ -852,7 +868,8 @@
       b.textContent = l.label;
       b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
       b.addEventListener("click", function () {
-        if (layerOn === l.key) { return; }
+        // Pressed again while its cities could not be read: read them again.
+        if (layerOn === l.key && !(l.key === "museums" && !towns)) { return; }
         layerOn = l.key;
         try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
         filterGlobe();
@@ -1259,6 +1276,7 @@
 
   function goDown(city) {
     if (flying || place) { return; }
+    settleSwing();
     if (route) { endRoute(); }
     if (!city.art) { artAsked = null; }   // pressed elsewhere: a view still being read is not flown to
     var from = project(city.lat, city.lon);
@@ -1331,7 +1349,10 @@
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    if (still) {
+    // Between a city and its own museums (or two museums in one city) there
+    // is no journey to make: the view only slides to its new seat.
+    var inside = !!(was.town && was.town === city.townKey);
+    if (still || inside) {
       planFlight("hop", zFit);
       passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2);
     } else {
@@ -1669,6 +1690,27 @@
     if (route) { route.doneAt = now; route.u = 1; }
   }
 
+  /* One level up from where you are: from a museum (or the theatre), its
+     city, unless the city is only that museum; from a work's history opened
+     in a museum or a city, that museum or city; else nothing, the world. */
+  function levelUp() {
+    if (!place) { return null; }
+    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
+    if (home) {
+      return home.pass ? null : { name: home.name, go: function () { openTown(home.key, { museum: place.slug }); } };
+    }
+    var via = place.art && place.art.kind === "work" && place.art.via;
+    var mc = via && via.museum && via.museum.slug && cityOf(via.museum.slug);
+    if (mc && mc.museum) {
+      return { name: shortName(mc.museum), go: function () { openMuseum(mc.slug, {}); } };
+    }
+    var t = via && via.place && towns && townBy[via.place];
+    if (t) {
+      return { name: t.name, go: t.pass ? function () { openMuseum(t.museums[0], {}); } : function () { openTown(t.key, {}); } };
+    }
+    return null;
+  }
+
   function comeUp() {
     if (flying || !place) { return; }
     if (route) { endRoute(); }
@@ -1676,11 +1718,8 @@
     // One level at a time: up from a museum (or the theatre) is its city,
     // and up from a city is the world. A city that is only its museum is
     // passed through both ways.
-    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
-    if (home && !home.pass && !groundOn) {
-      openTown(home.key, { museum: place.slug });
-      return;
-    }
+    var up = !groundOn && levelUp();
+    if (up) { up.go(); return; }
     comeUpFromGround();
     stopTheatre();
     stopBuilding();
@@ -1719,8 +1758,8 @@
     bannerCity.disabled = !place.work;
     // The way back is one level up: a museum's city, unless the city is
     // only that museum; everywhere else, the world.
-    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
-    if (bannerBackTo) { bannerBackTo.textContent = home && !home.pass ? home.name : "The world"; }
+    var up = levelUp();
+    if (bannerBackTo) { bannerBackTo.textContent = up ? up.name : "The world"; }
     scramble(bannerCity, "decode", 120, 760);
     scramble(bannerUnder, "type", 380, 640);
     creature.hidden = !CREATURE;
@@ -4371,6 +4410,19 @@
       burstCtx.clearRect(0, 0, burst.width, burst.height);
       nextSwing = now + swingWait();
     }
+  }
+
+  /* A place pressed while the world is still swinging: the swing stops
+     where it is, so the place is framed at the size the world really has
+     when it is flown to, not one it is about to leave. */
+  function settleSwing() {
+    if (!swing) { return; }
+    swing = null;
+    stage.style.transform = "";
+    stage.style.filter = "";
+    stage.style.transition = "";
+    burstCtx.clearRect(0, 0, burst.width, burst.height);
+    nextSwing = performance.now() + swingWait();
   }
 
   /* The air going past: rays out of the middle of the window, a flash as
@@ -10694,6 +10746,11 @@
     buildingEl.dataset.museum = "true";
     if (!buildingWorks) { return; }
     buildingWorks.textContent = "";
+    // A museum that holds more than a page of saved works has the search of
+    // its collection first, not at the foot of a list that grows as it is
+    // scrolled toward (the National Gallery of Art holds 177).
+    var searchFirst = !!window.Collections && (m.works || []).length > 34;
+    if (searchFirst) { buildingWorks.appendChild(searchFor(m)); }
     var head = document.createElement("p");
     head.className = "held-count";
     head.textContent = "Saved \u00b7 " + (m.held === 1 ? "one work" : m.held + " works");
@@ -10742,7 +10799,7 @@
         pageRows(also, rows, function (r, i) { return alsoRow(r, m, i); }, paging);
       });
     }
-    if (window.Collections) { buildingWorks.appendChild(searchFor(m)); }
+    if (window.Collections && !searchFirst) { buildingWorks.appendChild(searchFor(m)); }
     buildingWorks.scrollTop = 0;
     buildingWorks.scrollLeft = 0;
   }
@@ -12580,6 +12637,7 @@
 
   /* The Museums layer chosen (or left chosen from the last visit): its
      cities are read, marked and lit, and Find waits over the pill. */
+  var townsRetry = 0;
   function museumsLayer() {
     land.dataset.layerOn = layerOn;
     if (layerOn !== "museums") {
@@ -12591,7 +12649,21 @@
       return;
     }
     readTowns().then(function () {
-      if (!towns || layerOn !== "museums") { return; }
+      if (layerOn !== "museums") { return; }
+      if (!towns) {
+        // Not read (the network, most likely): said quietly where Find
+        // would be, and tried again in a while, or when Museums is pressed.
+        if (artFind) {
+          artFind.textContent = "The cities could not be read just now";
+          artFind.disabled = true;
+          artFind.hidden = false;
+        }
+        measureSafe();
+        window.clearTimeout(townsRetry);
+        townsRetry = window.setTimeout(function () { if (layerOn === "museums" && !towns) { museumsLayer(); } }, 8000);
+        return;
+      }
+      if (artFind) { artFind.disabled = false; artFind.hidden = true; }
       townsLitAt = performance.now();
       if (!cities.some(function (c) { return c.town; })) {
         raiseTowns();
@@ -12682,7 +12754,8 @@
       if (d <= 16 && (!best || t.rank > best.rank)) { best = t; }
       if (d <= reach && d < nearD) { nearD = d; near = t; }
     });
-    return tile || square || best || near;
+    // A diamond drawn is over any tile lit in its square, and takes the press.
+    return square || tile || best || near;
   }
 
   /* The galleries, fairs and sale rooms of a city whose address is known:
@@ -12769,6 +12842,8 @@
     var t = townBy[key];
     if (!t) { return; }
     closeFinder();
+    if (place && place === townCities[key]) { return; }   // already here
+    settleSwing();
     artAsked = null;                // a view still being read is not flown to after this
     if (t.pass) { openMuseum(t.museums[0], via); return; }
     var c = townCities[key] || (townCities[key] = townCity(t));
@@ -12789,6 +12864,7 @@
     var mc = cityOf(slug);
     if (!mc) { return; }
     closeFinder();
+    settleSwing();
     artAsked = null;
     var t = towns && townBy[mc.townKey];
     if (mc.stage) { mc.zoomTo = CITY_ZOOM; }
@@ -12875,7 +12951,10 @@
       if (n) { r.meta.textContent = r.m.held + " saved · " + n + (n === 1 ? " more has" : " more have") + " been here"; }
     });
     venueSection(a, pf);
-    memberYears(a, pf.venues.map(function (v) { return v[2]; }));
+    // Its marks are its venues' first years; it runs on to the last year
+    // any of them had a work, so at rest it stands at the present.
+    memberYears(a, pf.venues.map(function (v) { return v[2]; }),
+                Math.max.apply(null, pf.venues.map(function (v) { return v[3] || v[2] || 0; })));
     laterRows(a);
     a.dirty = true;
     townDirty = true;
@@ -13228,6 +13307,12 @@
       }
       groups.push([it]);
     });
+    // What is pointed at (or tapped) is named first, so the rest keep off it.
+    groups.sort(function (g1, g2) {
+      var l1 = g1.some(function (it) { return !!it.city.el.dataset.lit; });
+      var l2 = g2.some(function (it) { return !!it.city.el.dataset.lit; });
+      return (l2 ? 1 : 0) - (l1 ? 1 : 0);
+    });
     var given = [];
     function clear(r, own) {
       if (r.x0 < box.x0 || r.x1 > box.x1 || r.y0 < box.y0 || r.y1 > box.y1) { return false; }
@@ -13248,7 +13333,8 @@
       g.forEach(function (it) { w = Math.max(w, it.city.nw || 0); h += Math.max(LINE, it.city.nh || 0); });
       var gap = c0.gap || 10;
       var lit = g.some(function (it) { return !!it.city.el.dataset.lit; });
-      var tries = [["right", 0], ["left", 0], ["right", -TOWN_LIFT], ["left", -TOWN_LIFT], ["right", TOWN_LIFT], ["left", TOWN_LIFT]];
+      var tries = [["right", 0], ["left", 0], ["right", -TOWN_LIFT], ["left", -TOWN_LIFT], ["right", TOWN_LIFT], ["left", TOWN_LIFT],
+                   ["right", -2 * TOWN_LIFT], ["left", -2 * TOWN_LIFT], ["right", 2 * TOWN_LIFT], ["left", 2 * TOWN_LIFT]];
       var chosen = null;
       for (var k = 0; k < tries.length && !chosen; k += 1) {
         var side = tries[k][0], lift = tries[k][1];
@@ -13260,7 +13346,9 @@
       if (!chosen && lit) {
         // Pointed at: named whatever it lies over, on whichever side is inside.
         var side2 = L.x + gap + w <= box.x1 ? "right" : "left";
-        chosen = { side: side2, lift: 0, r: null };
+        var y2 = L.y - Math.max(LINE, c0.nh || 0) / 2;
+        chosen = { side: side2, lift: 0, r: side2 === "right" ? { x0: L.x + gap, x1: L.x + gap + w, y0: y2, y1: y2 + h }
+                                                               : { x0: L.x - gap - w, x1: L.x - gap, y0: y2, y1: y2 + h } };
       }
       if (chosen && chosen.r) { given.push(chosen.r); }
       var down = 0;
@@ -13270,7 +13358,9 @@
         putMark(c, it.x, it.y, chosen ? chosen.side : "right", 1);
         if (c.el.dataset.in !== "town") { c.el.dataset.in = "town"; }
         var shift = "";
-        var dx = L.x - it.x, dy = L.y - it.y + lift + down;
+        // Each name centred in its own slot of the stack, however many lines it takes.
+        var dy = L.y - it.y + lift + down - Math.max(LINE, c0.nh || 0) / 2 + Math.max(LINE, c.nh || 0) / 2;
+        var dx = L.x - it.x;
         if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) { shift = "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px)"; }
         if (c.shift !== shift) { c.shift = shift; c.name.style.transform = shift; }
         down += Math.max(LINE, c.nh || 0);
@@ -13353,6 +13443,7 @@
       var v = pf && pf.venues[g.vi];
       if (v && a.yearNow && v[2] && v[2] > a.yearNow) { alpha *= 0.34; }
       var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
+      if (underTownName(a, i, j)) { return; }
       var key = i * 4096 + j;
       if (!best[key] || best[key].a < alpha) { best[key] = { i: i, j: j, a: alpha }; }
     });
@@ -13365,6 +13456,18 @@
     ctx.globalAlpha = 1;
   }
 
+  /* A tile a museum's name or diamond lies over is not lit, nor pressed:
+     a press there is the museum's. Its gallery is in the column. */
+  function underTownName(a, i, j) {
+    var boxes = a.nameBoxes || [];
+    var x0 = i * CELL_PX, y0 = j * CELL_PX, x1 = x0 + CELL_PX, y1 = y0 + CELL_PX;
+    for (var k = 0; k < boxes.length; k += 1) {
+      var o = boxes[k];
+      if (x0 < o.x1 && o.x0 < x1 && y0 < o.y1 && o.y0 < y1) { return true; }
+    }
+    return false;
+  }
+
   /* The gallery tile a press landed on, within one tile. */
   function hitVenue(x, y) {
     var a = art;
@@ -13374,6 +13477,7 @@
     galleryPoints(a.town, a.pf).forEach(function (g) {
       var p = project(g.lat, g.lon);
       if (p.z <= 0 || p.x < b.x || p.x > b.x + b.w || p.y < b.y || p.y > b.y + b.h) { return; }
+      if (underTownName(a, Math.floor(p.x / CELL_PX), Math.floor(p.y / CELL_PX))) { return; }
       var tx = (Math.floor(p.x / CELL_PX) + 0.5) * CELL_PX, ty = (Math.floor(p.y / CELL_PX) + 0.5) * CELL_PX;
       var d = Math.max(Math.abs(tx - x), Math.abs(ty - y));
       if (d <= near) { near = d; best = { g: g, x: tx, y: ty, i: Math.floor(p.x / CELL_PX), j: Math.floor(p.y / CELL_PX) }; }
@@ -13389,23 +13493,15 @@
     if (!pf) { return; }
     var v = pf.venues[hit.g.vi];
     if (!v) { return; }
-    var n = a.venueWorks ? a.venueWorks[hit.g.vi] : 0;
-    var others = 0;
-    galleryPoints(a.town, pf).forEach(function (g) {
-      if (g === hit.g) { return; }
-      var p = project(g.lat, g.lon);
-      if (Math.floor(p.x / CELL_PX) === hit.i && Math.floor(p.y / CELL_PX) === hit.j) { others += 1; }
-    });
     if (!venueLabel) {
       venueLabel = el("p", "venue-label");
       venueLabel.setAttribute("aria-live", "polite");
       land.appendChild(venueLabel);
     }
-    // Its name, and under it when it was here and how much.
+    // Only its name: on the ground only places are named; when it was
+    // here and how much are in its row, which the press opens.
     venueLabel.textContent = "";
     venueLabel.appendChild(el("span", "venue-label-name", v[0]));
-    venueLabel.appendChild(el("span", "venue-label-meta", [yearsText(v[2], v[3]), n + (n === 1 ? " work" : " works")]
-      .filter(Boolean).join(" · ") + (others ? " · and " + others + " more here" : "")));
     venueLabel.hidden = false;
     var w = venueLabel.offsetWidth, h = venueLabel.offsetHeight;
     var band = artBand();
@@ -13455,6 +13551,7 @@
     via = via || {};
     var fromFind = finder.open;
     closeFinder();
+    settleSwing();
     var path = spec.work ? "histories/" + spec.work + ".json" : "threads/" + spec.thread + ".json";
     var asked = artAsked = {};
     Promise.all([readPlaces(), readArt(path)]).then(function (both) {
@@ -15341,9 +15438,10 @@
 
   /* The slider over a place's or a thread's members: from the first year
      one of them was there to the last. It starts at the last, all shown. */
-  function memberYears(a, ys) {
+  function memberYears(a, ys, end) {
     var lo = Infinity, hi = -Infinity, seen = {};
     ys.forEach(function (y) { if (y) { lo = Math.min(lo, y); hi = Math.max(hi, y); } });
+    if (end && end > hi && lo !== Infinity) { hi = end; }
     artTicks.textContent = "";
     if (lo === Infinity || hi <= lo) { artTime.hidden = true; return; }
     a.y0 = lo;
@@ -15546,7 +15644,8 @@
       finderSaid.textContent = "Nothing by that name among the " + works + ".";
       return;
     }
-    finderSaid.textContent = "Found · " + total.toLocaleString("en");
+    // Everything found counts: a museum or a city found is found too.
+    finderSaid.textContent = "Found · " + (total + others).toLocaleString("en");
     var k = 0;
     if (total) {
       finderHead("Works");

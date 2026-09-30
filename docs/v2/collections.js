@@ -236,7 +236,7 @@
         return json("https://collectionapi.metmuseum.org/public/collection/v1/objects/" + encodeURIComponent(w.ref.object))
           .then(function (o) {
             var g = String(o.GalleryNumber || "").trim();
-            return g ? room("GalleryNumber: " + g, [g, "Gallery " + g]) : none("no gallery in the Met's record");
+            return g ? room("Gallery " + g + ", in the Met's record", [g, "Gallery " + g]) : none("no gallery in the Met's record");
           });
       });
     },
@@ -251,7 +251,7 @@
           works.forEach(function (w) {
             var a = by[String(w.ref.object)];
             if (!a) { return; }
-            if (a.is_on_view === false) { out[w.id] = off("is_on_view: false"); return; }
+            if (a.is_on_view === false) { out[w.id] = off("not on view, in the Art Institute's record"); return; }
             var t = String(a.gallery_title || "").trim();
             out[w.id] = t ? room(t, [t, num(t), String(a.gallery_id || "")].filter(Boolean))
                           : none("no gallery in the Art Institute's record");
@@ -274,7 +274,7 @@
           .then(function (d) {
             var a = (d.items || [])[0];
             if (!a) { return null; }
-            if (a.on_display === false) { return off("on_display: false"); }
+            if (a.on_display === false) { return off("not on display, in SMK's record"); }
             var loc = String(a.current_location_name || "").trim();
             return loc ? room(loc, [loc]) : none("no location in SMK's record");
           });

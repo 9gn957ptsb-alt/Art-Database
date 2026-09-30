@@ -134,11 +134,20 @@ Rooms may not overlap by more than 5% of the smaller.
 - `a`, `b`: the rooms it joins; `b` may be `"outside"`.
 - `at`: a point in the wall between them. The wall found is the nearest
   within 1.5 m of it, looking along the grid's axes and diagonals, and at
-  most 2.5 m thick; the doorway is cut through it `w` wide (default 2.4 m).
+  most 2.5 m thick; the doorway is cut through it `w` wide (default 2.4 m),
+  and never fewer cells across than a walker needs (two at 0.5 m, three at
+  0.25 m: a 0.9 m door whose middle falls on a cell's centre is taken half
+  a cell to one side, not made wider). A door narrower than a walker (0.5 m)
+  is warned of.
 - For a passage through a thicker gap, `cut` `[x, y, w, d]` in place of
-  `at`: carved as given, and it must reach both rooms.
+  `at`: carved as given, and it must reach both rooms. A cut longer than a
+  wall's 2.5 m goes through what no source shows: it needs a `note` saying
+  why, and the checker reports its length.
 - `h`: its head in metres over room a's floor, or null: the lower of the
-  two rooms' ceilings. `kind`: `door` or `arch`.
+  two rooms' ceilings. `kind`: `door`, `arch` or `part`.
+- `part`: the two are parts of one space a source names as one (the NGA's
+  three "North Lobby" outlines): no wall is drawn between them at all, and no
+  doorway is made up. `at` still names a point on the seam.
 - `src`: **a source that says the two rooms connect** — a plan, a visitor
   map read for its layout, a description, a photograph through the doorway,
   OpenStreetMap's indoor mapping. The place and size may be reconstructed by
@@ -156,13 +165,20 @@ Rooms may not overlap by more than 5% of the smaller.
   to, sure, src}`, listed once, on either of its floors. It is laid into both
   floors' grids as treads of equal risers of at most 0.2 m, rising the way
   `rise` says, its top flush with the upper floor; each tread must be at
-  least a grid cell deep. The walker changes floor at its middle.
-- A lift: `{id, name, rect, floors: [ids], sure, src}`.
+  least a grid cell deep. The walker changes floor at its middle. It must lie
+  inside one room on each floor, over no wall, earth or closed room: laid
+  across a wall it would join rooms no source connects, and the checker
+  refuses it.
+- A lift: `{id, name, rect, floors: [ids], sure, src}`, held to the same.
 
 ## Generated
 
 `scripts/build_interiors.py` owns only these, and (with `--nga`) the
-National Gallery's room outlines:
+National Gallery's rooms: of each, the outline, `id`, `ref`, `said`, `sure`
+and `tol`, rewritten; and its `name`, `kind` and `src`, except that a room a
+hand has closed (or made a void) stays so, a name a hand has set to null
+stays null, and sources a hand has added to `src` are kept after the NGA's.
+Every other key on a room is the hand's:
 
 - `works`: every saved work the museum holds — museums.json's, those its
   history says it held or listed, and those its own records match — each
@@ -172,15 +188,25 @@ National Gallery's room outlines:
     drawn yet — listed, never hung), `off` (the record says in so many words
     that it is not on view) or `none` (nothing says; the empty field is
     reported as what it is, never read as "in storage").
-  - `said`: the record's own words; `src` its source; `asof` the day read;
-    `ref` `{museum, object}`, the museum's record.
+  - `said`: the record's own words (a bare field in plain words: the Met's
+    `GalleryNumber` 625 is "Gallery 625, in the Met's record", the field as
+    it came kept in `ref.field`); `src` its source; `asof` the day read;
+    `ref` `{museum, object}`, the museum's record. Where nothing has been
+    read, `said` is "where it hangs has not been read yet" and `src` null.
+  - `at`: a work another museum's own record places (the NGA, the Met …),
+    listed here because this museum listed it on Artsy: `how` stays `none`,
+    `said` says where it is ("at National Gallery of Art, Washington, D.C.:
+    West Main Floor Gallery 91 · S") and `src` is that museum's record.
   - `wall`: `n`, `e`, `s`, `w`, `centre` or null.
   - for `museum` and `elsewhere`, also `t`, `a`, `y`, `m` (title, artist,
     date, medium), `i` (the picture's key on Artsy's image store), `c` (its
     three colours), `cm` `[w, h, d?]` or null and `cmsrc` (the museum's own
-    measure where it has one, never the framed one, else Artsy's); `free`
-    for a sculpture; `same`, a work that is another saved work's very
-    object, which hangs once, as that one.
+    measure where it has one, never the framed one, else Artsy's; one measure
+    alone is read too: a diameter as `[d, d]`, a greatest extension or a
+    height as `[null, h]`, the width then the picture's, with `cmk` saying
+    which); `free` for a sculpture; `same`, a work that is another saved
+    work's very object, whatever its record says of it, which hangs once and
+    is counted once, as that one.
 - `asof`: the day the works were placed.
 - `tier`, written by the checker: `documented` (at least 80% of the
   walkable floor in documented rooms), `reconstructed` (any rooms drawn) or
@@ -228,8 +254,11 @@ holds its neighbours too), the middle of the longest straight stretch of
 wall facing south (within 60° of it, at whatever angle the building stands),
 with open ground before it for the few metres a visitor stands in; east,
 west or north where no wall facing south has that. You stand 2 m out, facing
-in. The banner says nothing is known yet; no work hangs; the column lists
-the works and why each is not hung.
+in. That way in is ours, not the museum's door, and is said so: the plan
+names it "A way in (ours)", the banner reads "Inside · nothing is known yet ·
+the walls are the model's, the way in ours", and no lit tile marks it on the
+building (the tile marks only an entrance a source gives; the gesture still
+goes in). No work hangs; the column lists the works and why each is not hung.
 
 ## The certainty policy
 
@@ -296,15 +325,19 @@ points or more not crossing itself, a circle's r over 0); a `src`, `hsrc`
 or `msrc` not in `sources`, or citing one not yet read; a `sure` other than
 documented or reconstructed; a material not in `models.js`, or one without
 `msrc`; an opening missing a room, finding no wall between its rooms within
-1.5 m of `at` and 2.5 m thick, or without a source; a stair whose ends do not
-meet its floors or whose treads are shorter than a cell; an entrance not on
+1.5 m of `at` and 2.5 m thick, or without a source; a cut longer than 2.5 m
+with no note; a stair whose ends do not meet its floors or whose treads are
+shorter than a cell; a stair or lift laid over a wall, earth or a closed
+room, or reaching into two rooms on a floor; an entrance not on
 a floor, or no room reached from it; rooms overlapping by more than 5% of
 the smaller; a reconstructed room more than 10% outside the model at its
 floor's eye height (a voxel's slack); a placed work whose room or wall does
 not resolve; a file over 96 KB, a floor over 400,000 cells or 400 rooms.
 
 It warns of a documented room outside the model, rooms with no way in known
-yet, a ceiling above the model's roof, works overflowing into a second tier,
+yet (in the walk, a room of those that holds saved works is come into by a
+cut, no doorway drawn, and the banner says "no way in is known yet · placed
+here"), a cut's length, a door narrower than a walker, a ceiling above the model's roof, works overflowing into a second tier,
 works placed in rooms not drawn, a model whose footprint stands less than
 80% on its ground's buildings, a source read more than 180 days ago and
 works placed more than 30 days ago. Findings against the model go into its

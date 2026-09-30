@@ -9,7 +9,7 @@
  "pins": {},
  "notes": "Nothing published about its rooms has been read yet.",
  "works": [
-  {"id":"5af174b0b202a313a3900aff","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
+  {"id":"5af174b0b202a313a3900aff","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
   {"id":"53fb8e987261692d78d90000","how":"elsewhere","said":"SMK Thy","src":"smk-where","asof":"2026-09-27","ref":{"museum":"smk","object":"KMS3413"},"t":"A Mountain Climber","a":"J.F. Willumsen","y":"1912","m":"Oil on canvas","i":"mjlPe1KUrdfTSZN1HMhqfg","c":["#b3a27a","#796b53","#938d7e"],"cm":[170.5,210.0],"cmsrc":"smk"}],
  "asof": "2026-09-30",
  "tier": "shell"}

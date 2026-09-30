@@ -115,7 +115,9 @@ After the buildings, each run:
 4. **Check.** `node scripts/check_interior.js --all` until it is clean, then
    `node scripts/check_interior.js docs/v2/interiors/<slug>.json --png
    /tmp/<slug>` for each museum touched, and look at the plans and frames;
-   then `node scripts/smoke_walk.js`. Independent verifiers check every
+   then `node scripts/smoke_walk.js` — once it exists: it comes with the
+   walk's hooks in `land.js`, and until then this step is skipped, not
+   failed. Independent verifiers check every
    `said` against its source where it can be reached, and every
    reconstructed room against what it cites.
 5. **Record.** Each museum's entry in `ledger.json` has

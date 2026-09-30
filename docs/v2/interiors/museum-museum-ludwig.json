@@ -8,7 +8,7 @@
  "pins": {},
  "notes": "Nothing published about its rooms has been read yet.",
  "works": [
-  {"id":"570e7b7d139b216f35000dbd","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"54120a6b72616974f7f50100","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"}],
+  {"id":"570e7b7d139b216f35000dbd","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"54120a6b72616974f7f50100","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"}],
  "asof": "2026-09-30",
  "tier": "shell"}

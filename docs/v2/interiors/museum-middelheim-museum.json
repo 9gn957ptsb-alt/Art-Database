@@ -8,9 +8,9 @@
  "pins": {},
  "notes": "Nothing published about its rooms has been read yet.",
  "works": [
-  {"id":"545337ef72616935fd980500","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"577be57c8b3b810c87003377","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"577be57f275b2443b0002fc9","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"577be58ab202a365df00054d","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"}],
+  {"id":"545337ef72616935fd980500","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"577be57c8b3b810c87003377","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"577be57f275b2443b0002fc9","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"577be58ab202a365df00054d","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"}],
  "asof": "2026-09-30",
  "tier": "shell"}

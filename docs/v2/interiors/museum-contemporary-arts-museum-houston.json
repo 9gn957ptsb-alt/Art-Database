@@ -8,8 +8,8 @@
  "pins": {},
  "notes": "Nothing published about its rooms has been read yet.",
  "works": [
-  {"id":"57f2afa8139b21624e00003b","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"583c85bfc9dc242ddb0028e2","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"},
-  {"id":"57f2ade68b3b817e1000002b","how":"none","said":"where it hangs is not published","src":null,"asof":"2026-09-30"}],
+  {"id":"57f2afa8139b21624e00003b","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"583c85bfc9dc242ddb0028e2","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"},
+  {"id":"57f2ade68b3b817e1000002b","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"}],
  "asof": "2026-09-30",
  "tier": "shell"}
