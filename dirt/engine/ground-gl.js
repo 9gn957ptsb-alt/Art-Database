@@ -2683,6 +2683,7 @@ uniform int uLite;                  // 1 on a device at its lowest level: the sm
 uniform sampler2D uThing;           // the thing put in: a photo the viewer gave the plane (see drift.js)
 uniform float uThingOn;             // 1 once there is one
 uniform vec4 uThingP;               // where it was put in (cells), when (seconds), and its width over its height
+uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells a second (105 at most): its wake runs the other way
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
@@ -2797,6 +2798,10 @@ void main() {
   float fr = floor(T * 30.0);
   vec3 col = vec3(0.0);
   float a = 0.0;
+  // the ultracode's wake (drift.js): while DRIFT drives itself, what it leaves behind is thrown back, the melt and the
+  // streaks running out behind it as a rocket's exhaust does, the more the faster it goes
+  float thr = length(uThrust), ew = clamp(thr / 105.0, 0.0, 1.0);
+  vec2 back = thr > 0.01 ? -uThrust / thr : vec2(0.0);
   // the datamosh: the last frame carried on along a slow current, so it melts, until a keyframe gives the plane back
   // (each stretch on its own clock), and it melts again
   float mo = smoothstep(0.3, 0.55, vnoise(pa + T * vec2(1.3, 2.2), 610.0, 40111u));
@@ -2804,14 +2809,18 @@ void main() {
   mo *= smoothstep(0.03, 0.1, cyc);
   if (mo > 0.0) {
     float an = 6.2832 * vnoise(pa - T * vec2(3.0, 2.0), 233.0, 40112u), sp = 0.3 + 1.6 * vnoise(pa, 377.0, 40113u);
-    vec2 v = floor(vec2(cos(an), sin(an)) * sp + vec2(unit(h3(int(fr), 1, 40115u)), unit(h3(int(fr), 2, 40115u))));
+    vec2 flow = mix(vec2(cos(an), sin(an)) * sp, back * (0.6 + 1.8 * ew), 0.618 * ew);
+    vec2 v = floor(flow + vec2(unit(h3(int(fr), 1, 40115u)), unit(h3(int(fr), 2, 40115u))));
     over(col, a, cellWas(lp - v), mo * 0.97);
   }
   // streaks: a colour dragged down a column, from where the streak starts
-  float sz = smoothstep(0.52, 0.72, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));
+  float sz = smoothstep(0.52 - 0.2 * ew, 0.72 - 0.2 * ew, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));
   if (sz > 0.0) {
     float an = 1.5708 + 1.3 * (vnoise(pa, 987.0, 40122u) - 0.5);
-    vec2 d = vec2(cos(an), sin(an)), n = vec2(-d.y, d.x);
+    vec2 d = vec2(cos(an), sin(an));
+    vec2 dm = mix(d, back, 0.7 * ew);                                // (in the wake, dragged out behind)
+    d = dot(dm, dm) > 1e-4 ? normalize(dm) : d;
+    vec2 n = vec2(-d.y, d.x);
     float u = dot(p, d), col1 = floor(dot(p, n));
     uint hc = h3(int(col1), 7, 40123u);
     float L = 5.0 + 144.0 * pow(unit(hc), 2.5), ph = unit(mixh(hc + 1u)) * L + T * (5.0 + 21.0 * unit(mixh(hc + 2u)));
@@ -3428,6 +3437,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Put a photo into the plane (a canvas or image), at x, y in cells: it arrives there, then the collage carries it.
    * quiet: no arrival, and only `share` of the usual pieces (the ultracode's sheets of DRIFT's own code, drift.js). */
   let thingShare = 1;
+  /** The ultracode's thrust (drift.js), cells a second, for the collage's wake. */
+  const thrust = [0, 0];
+  const setThrust = (x, y) => { thrust[0] = x; thrust[1] = y; };
   function putIn(src, x, y, { quiet = false, share = 1 } = {}) {
     thingSrc = src; thingShare = share;
     thingP[0] = x; thingP[1] = y; thingP[2] = quiet ? -1e6 : (performance.now() - T0) / 1000; thingP[3] = (src.width || 1) / (src.height || 1);
@@ -3568,7 +3580,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP"]);
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust"]);
     if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -3619,7 +3631,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   if (!setup()) return null;
   glcv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; });
-  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; reflFbo = reflPbo = reflSync = null; lost = !setup(); });
+  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; reflFbo = reflPbo = reflSync = null; reflBytes = 0; lost = !setup(); });
   stage.insertBefore(glcv, cv);
   // Seen whenever the page's canvas is (the globe hides it).
   new MutationObserver(() => { glcv.style.visibility = cv.style.visibility; }).observe(cv, { attributes: true, attributeFilter: ["style"] });
@@ -3790,6 +3802,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Co.uLite, tier === 0 ? 1 : 0);
       gl.uniform1f(Co.uThingOn, thingOn * thingShare);
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
+      gl.uniform2f(Co.uThrust, thrust[0], thrust[1]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -3852,9 +3865,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (!earth) reflect(now);
   }
   // ---- the ultracode's reflection (drift.js): DRIFT reads back a small copy of what it has just drawn, the level of
-  // the last frame's mipmap about 34 texels across, every 377 ms, without waiting for it: the read goes into a buffer
+  // the last frame's mipmap about 34 texels across, every 75 ms, without waiting for it: the read goes into a buffer
   // with a fence, and is collected on a later frame once the GPU has finished, so it never stalls a frame.
-  let refl = null, reflAt = 0, reflPbo = null, reflSync = null, reflFbo = null, reflDims = null;
+  let refl = null, reflAt = 0, reflPbo = null, reflBytes = 0, reflSync = null, reflFbo = null, reflDims = null;
   function reflect(now) {
     if (reflSync) {
       const st = gl.clientWaitSync(reflSync, 0, 0);
@@ -3865,25 +3878,26 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, reflPbo);
         gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, d);
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-        refl = { ...reflDims, data: d, at: now };
+        refl = { ...reflDims, data: d };
       }
     }
-    if (now - reflAt < 377 || !prevN[0] || !tP || !FW) return;
+    if (now - reflAt < 75 || !prevN[0] || !tP || !FW) return;
     reflAt = now;
     const L = Math.max(0, Math.floor(Math.log2(FW / 34))), w = Math.max(1, FW >> L), h = Math.max(1, FH >> L);
     if (!reflFbo) reflFbo = gl.createFramebuffer();
-    if (!reflPbo) reflPbo = gl.createBuffer();
+    if (!reflPbo) { reflPbo = gl.createBuffer(); reflBytes = 0; }
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, reflFbo);
     gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tP, L);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, reflPbo);
-    gl.bufferData(gl.PIXEL_PACK_BUFFER, w * h * 4, gl.STREAM_READ);
+    if (reflBytes !== w * h * 4) { reflBytes = w * h * 4; gl.bufferData(gl.PIXEL_PACK_BUFFER, reflBytes, gl.STREAM_READ); }   // (once a size)
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, 0);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     reflSync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
-    // (w by h texels, the first row the top of the view; uw by uh of them are the view; cells a texel; where it began)
-    reflDims = { w, h, uw: Math.max(1, Math.min(w, Math.round(prevN[0] / (1 << L)))), uh: Math.max(1, Math.min(h, Math.round(prevN[1] / (1 << L)))), cells: 1 << L, x0: prev0[0], y0: prev0[1] };
+    // (w by h texels, the first row the top of the view; uw by uh of them are the view; cells a texel; where it began;
+    //  when it was read, not when it was collected)
+    reflDims = { w, h, uw: Math.max(1, Math.min(w, Math.round(prevN[0] / (1 << L)))), uh: Math.max(1, Math.min(h, Math.round(prevN[1] / (1 << L)))), cells: 1 << L, x0: prev0[0], y0: prev0[1], at: now };
   }
   /** An anomaly (see the shader): [the view's middle x, y in cells, how far it has come 0 to 1 (0: none), which]. */
   const anom = new Float32Array(4);
@@ -3891,5 +3905,5 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, putIn, reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, putIn, setThrust, reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }

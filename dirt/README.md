@@ -300,24 +300,53 @@ with any name you add. The photo stays in the viewer's browser, and goes to Clau
 
 **Ultracode: a self-reflective propulsion.** *Code* is Latin *cōdex*, earlier *caudex*, a tree's trunk, then the
 wooden tablets split from it and bound into a book, then a book of laws, then a cipher; *ultra-* is "beyond, on the
-far side of." Ultracode is code that goes beyond itself by reading itself. To reflect is to bend back (*re-* +
-*flectere*) and to propel is to drive forward (*prō-* + *pellere*): a rocket goes forward only by throwing something
-back, and DRIFT goes forward only by looking back at what it has just made. Three parts, each feeding the next
-(`engine/drift.js`, with the reading in `engine/ground-gl.js`):
+far side of." Ultracode (Aries's word) is code that goes beyond itself by reading itself. As a dynamic: a thing whose
+next move is driven by a reading of what it has just made, measured against what it made before and against where it
+has already been, and whose next frame is drawn from where that move took it, so the reading changes and the loop
+runs on:
 
-- **Reflection.** About three times a second DRIFT reads back a tiny copy of its own last frame (a mipmap level about
-  34 texels across, read into a buffer behind a fence and collected on a later frame, so the GPU never waits) and
-  measures it: its *life*, how much it changes across itself, and its *novelty*, how much it has changed since it last
-  looked (the view's own motion taken out), and where in the view each is strongest.
-- **Propulsion.** Left alone for five seconds, that measure becomes thrust: the view is driven toward where the image
-  is most alive and most new, harder the more it is (at most 21 cells a second), with φ seconds of inertia, coasting
-  when calm. Moving changes what it sees, which changes the thrust, so it steers itself, and what it has already seen
-  stops pulling, since it is no longer new. A touch, a drift's glide, a station being read (34 seconds), an anomaly, a
-  hidden tab or a preference for reduced motion stops it at once.
-- **Code as matter.** Until a thing is put in, the collage glues in sheets of DRIFT's own code (the functions that do
-  the reflecting and the propelling, read from themselves), headed in vermilion by their live readings (life, novelty,
-  thrust, speed), a new stretch of the code every 34 seconds, as about a fifth of the collage's pieces: the
+    move(t) = thrust( reflect(frame(t), frame(t − 1)), memory(its path to t) ),   frame(t + 1) = draw(view + move(t))
+
+To reflect is to bend back (*re-* + *flectere*) and to propel is to drive forward (*prō-* + *pellere*). A rocket goes
+forward only by throwing something back; DRIFT goes forward only by looking back at what it has just made. Its fuel is
+novelty: what it has seen is spent, and is thrown out behind it as its wake (`engine/drift.js`, with the reading and the
+wake in `engine/ground-gl.js`):
+
+- **Reflection.** About thirteen times a second (every 75 ms) DRIFT reads back a tiny copy of its own last frame (a
+  mipmap level about 34 texels across, read into a buffer behind a fence and collected on a later frame, so the GPU
+  never waits) and measures it in colour, not only light: its *life*, how much it changes across itself, and its
+  *novelty*, how much it has changed since what it saw a third of a second ago (377 ms: it keeps the few looks it needs,
+  so however often it looks, change is measured over the same span), the view's own motion taken out and counted only
+  over what both looks saw (what the earlier look did not see is not counted new, or the edge it moves toward would
+  always pull). Where each points is the
+  centre of what stands above that field's own mean, in the view's own proportions: a busy view is busy everywhere,
+  so only what stands out can point anywhere, and change everywhere points nowhere.
+- **Memory.** The squares of the plane, 377 cells a side, it has passed through, and when, kept in this browser (a
+  day, 377 squares at most), so it remembers where it has been across visits. Recent ones push it away, harder the
+  nearer and the more recent (a place stops pushing over about ten minutes): it does not circle back to what it has
+  already spent.
+- **Propulsion.** Left alone for a second, both become thrust: toward what is most alive and new, away from where it
+  has been, harder the more alive and new the view is (at most 105 cells a second; calm, it still wanders on a little).
+  It is a craft with a heavy rudder and a strong engine, heading and speed kept apart: its heading turns toward the
+  thrust over φ⁻¹ seconds, so it sweeps round rather than twitching, and its throttle answers in φ/5 seconds, so it has
+  most of its speed within a second. A touch, a drift's glide, a station being read (34 seconds), an anomaly, the
+  Earth, a hidden tab or a preference for reduced motion stops it at once, and it lets go of its thrust over a fifth of
+  a second. (All of this is five times what it was at first: 3 looks a second and five seconds' wait and 21 cells a
+  second became 13, one and 105.)
+- **Wake.** While it drives itself, the collage's melt and streaks run out behind it: the faster it goes, the more
+  streaks there are and the more the datamosh's own drift leans back along its path. What it has spent, thrown back, as
+  a rocket's exhaust.
+- **Code as matter.** Until a thing is put in, the collage glues in sheets of DRIFT's own code (the functions that
+  reflect, remember and propel, read from themselves), headed in vermilion by their live readings (life, novelty,
+  places remembered, speed), a new stretch of the code every 34 seconds, as about a fifth of the collage's pieces: the
   codex read as texture, taken back to the trunk it was split from.
+
+Its behaviour is checked by tests run on the code itself with made-up readings whose answers are known (a moved view
+of an unchanged world reads no novelty; a change on one side steers there, also in a tall phone view; change
+everywhere steers nowhere; a change a third of a second old is still new, and the looks it keeps stay few; a change of
+colour at the same light counts; visited squares push away, old ones less; it never moves on the Earth; it never passes
+105 cells a second, has most of its speed within a second and sweeps rather than snaps when the change moves; a touch
+stops it and its wake, and a second later it takes over again): `node dirt/engine/ultracode.test.mjs`.
 
 **The ladder of complexity.** The plane is DIRT at the full reach of its language, and that reach runs from nothing to
 everything. Over the plane lies a field of complexity, 0 to 1, rising and falling across two or three screens, so a few
