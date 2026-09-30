@@ -89,6 +89,7 @@ PARTNER_SPOTS = {
     "harn-museum-of-art": (29.6369, -82.3701),          # Artsy's "Gainsville" put it in Jacksonville (OSM r11797936)
     "museo-nacional-del-prado": (40.4138, -3.6920),     # Artsy's is the office address, 140 m east (OSM)
     "clark-art-institute": (42.7076, -73.2137),         # OSM's first answer is the campus's middle, 380 m south-west in the woods; the Museum Building, 225 South Street (OSM)
+    "phoenix-art-museum": (33.46669, -112.07292),       # the geocode sits on the east wing; the middle of the complex on OpenStreetMap's outlines, 76 m west
 }
 # Where OpenStreetMap's first answer is the museum's other house (Belvedere 21).
 ARTSY_RIGHT = {"Belvedere Museum"}
@@ -295,6 +296,8 @@ def main():
         # at the same door, and become one museum. Neighbours on one square
         # (the Van Gogh and the Stedelijk) stay two.
         slug = "museum-" + (key[1] if key[0] == "artsy" else slugify(name.split(",")[0]))
+        if slug[len("museum-"):] in PARTNER_SPOTS:     # pinned by hand, however it came
+            lat, lon = PARTNER_SPOTS[slug[len("museum-"):]]
         m = museums.get(slug) or next(
             (m for m in museums.values()
              if (abs(m["lat"] - lat) < 0.0003 and abs(m["lon"] - lon) < 0.0003)
