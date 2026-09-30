@@ -16,8 +16,17 @@
 
    Collections.search(museum, text) resolves to a list of works in the same
    shape as the saved ones — { t: title, a: artist, y: date, m: medium,
-   src: picture } — or rejects if the source cannot be reached.
-   Collections.source(museum) names where the results come from. */
+   src: picture } — or rejects if the source cannot be reached. The Met's and
+   the Art Institute's also say where each work hangs today (gallery), as a
+   line under it; a work found here is never hung in the walk.
+   Collections.source(museum) names where the results come from.
+
+   Collections.whereNow(museum, works) asks the same four services, from the
+   visitor's browser, where each saved work placed in the museum's interior
+   file (docs/v2/interiors/, its ref.object the museum's own record) is
+   today, in the record's own words, as scripts/build_interiors.py reads
+   them: {<id>: {on, how: room | off | none, room, keys, said, asof}}. It
+   rejects when none of them answers; the walk then keeps the file's own. */
 (function () {
   "use strict";
 
@@ -57,7 +66,7 @@
         }).then(function (objs) {
           return objs.filter(function (o) { return o && o.primaryImageSmall; }).map(function (o) {
             return { t: o.title, a: o.artistDisplayName, y: o.objectDate, m: o.medium,
-                     src: o.primaryImageSmall };
+                     src: o.primaryImageSmall, gallery: o.GalleryNumber ? "Gallery " + o.GalleryNumber : "" };
           });
         });
       }
@@ -66,7 +75,7 @@
     "museum-art-institute-of-chicago": {
       name: "the Art Institute's open collection",
       search: function (text) {
-        var fields = "id,title,artist_title,artist_display,date_display,medium_display,image_id";
+        var fields = "id,title,artist_title,artist_display,date_display,medium_display,image_id,is_on_view,gallery_title";
         var url = text
           ? "https://api.artic.edu/api/v1/artworks/search?" + q({ q: text, limit: PAGE, fields: fields })
           : "https://api.artic.edu/api/v1/artworks?" + q({ limit: PAGE, fields: fields });
@@ -75,7 +84,8 @@
           return (d.data || []).filter(function (w) { return w.image_id; }).map(function (w) {
             return { t: w.title, a: w.artist_title || (w.artist_display || "").split("\n")[0],
                      y: w.date_display, m: w.medium_display,
-                     src: iiif + "/" + w.image_id + "/full/600,/0/default.jpg" };
+                     src: iiif + "/" + w.image_id + "/full/600,/0/default.jpg",
+                     gallery: w.is_on_view && w.gallery_title ? w.gallery_title : "" };
           });
         });
       }
@@ -198,7 +208,92 @@
     });
   }
 
+  /* ---- where a placed work is today ---------------------------------- */
+
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function num(g) { return String(g).replace(/^Gallery\s+/i, ""); }
+  // The same words scripts/build_interiors.py writes for each answer.
+  function room(said, keys) {
+    return { on: true, how: "room", room: keys[0], keys: keys, said: said, asof: today() };
+  }
+  function none(said) { return { on: null, how: "none", room: null, keys: [], said: said, asof: today() }; }
+  function off(said) { return { on: false, how: "off", room: null, keys: [], said: said, asof: today() }; }
+
+  // Each object on its own, then all of them; if not one answered, a refusal.
+  function each(works, ask) {
+    var out = {}, answered = 0;
+    return Promise.all(works.map(function (w) {
+      return ask(w).then(function (v) { if (v) { out[w.id] = v; answered += 1; } }).catch(function () {});
+    })).then(function () {
+      if (works.length && !answered) { throw new Error("no answer"); }
+      return out;
+    });
+  }
+
+  var WHERE = {
+    "museum-the-metropolitan-museum-of-art": function (works) {
+      return each(works, function (w) {
+        return json("https://collectionapi.metmuseum.org/public/collection/v1/objects/" + encodeURIComponent(w.ref.object))
+          .then(function (o) {
+            var g = String(o.GalleryNumber || "").trim();
+            return g ? room("GalleryNumber: " + g, [g, "Gallery " + g]) : none("no gallery in the Met's record");
+          });
+      });
+    },
+    "museum-art-institute-of-chicago": function (works) {
+      var ids = works.map(function (w) { return String(w.ref.object); });
+      if (!ids.length) { return Promise.resolve({}); }
+      return json("https://api.artic.edu/api/v1/artworks?" + q({ ids: ids.join(","), limit: 100,
+                                                                 fields: "id,is_on_view,gallery_id,gallery_title" }))
+        .then(function (d) {
+          var by = {}, out = {};
+          (d.data || []).forEach(function (a) { by[String(a.id)] = a; });
+          works.forEach(function (w) {
+            var a = by[String(w.ref.object)];
+            if (!a) { return; }
+            if (a.is_on_view === false) { out[w.id] = off("is_on_view: false"); return; }
+            var t = String(a.gallery_title || "").trim();
+            out[w.id] = t ? room(t, [t, num(t), String(a.gallery_id || "")].filter(Boolean))
+                          : none("no gallery in the Art Institute's record");
+          });
+          return out;
+        });
+    },
+    "museum-cleveland-museum-of-art": function (works) {
+      return each(works, function (w) {
+        return json("https://openaccess-api.clevelandart.org/api/artworks/" + encodeURIComponent(w.ref.object))
+          .then(function (d) {
+            var loc = String((d.data && d.data.current_location) || "").trim();
+            return loc ? room(loc, [loc, loc.split(" ")[0]]) : none("no current location in Cleveland's record");
+          });
+      });
+    },
+    "museum-statens-museum-for-kunst": function (works) {
+      return each(works, function (w) {
+        return json("https://api.smk.dk/api/v1/art/?" + q({ object_number: w.ref.object, lang: "en" }))
+          .then(function (d) {
+            var a = (d.items || [])[0];
+            if (!a) { return null; }
+            if (a.on_display === false) { return off("on_display: false"); }
+            var loc = String(a.current_location_name || "").trim();
+            return loc ? room(loc, [loc]) : none("no location in SMK's record");
+          });
+      });
+    }
+  };
+
   window.Collections = {
+    whereNow: function (m, works) {
+      var ask = m && WHERE[m.slug];
+      if (!ask) { return Promise.reject(new Error("no live record for " + (m && m.slug))); }
+      var mine = { "museum-the-metropolitan-museum-of-art": "met", "museum-art-institute-of-chicago": "aic",
+                   "museum-cleveland-museum-of-art": "cma", "museum-statens-museum-for-kunst": "smk" }[m.slug];
+      var list = (works || []).filter(function (w) {
+        return w && w.ref && w.ref.object !== undefined && w.ref.object !== null && w.ref.museum === mine;
+      });
+      if (!list.length) { return Promise.resolve({}); }
+      return ask(list);
+    },
     search: function (m, text) {
       text = (text || "").trim();
       var own = NATIVE[m.slug];
