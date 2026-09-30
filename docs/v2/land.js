@@ -885,7 +885,9 @@
      over another name, nor over the dot of a place that matters more; and
      no more of them at once than the window has room for — seven on a
      phone. The rest keep their dots, and are named as the world turns or
-     comes nearer. The collages are few and are always named.
+     comes nearer. The collages are seven: each is named whenever it has
+     room, lifted a line with a hairline back to its dot if it must be, and
+     its dot is never let go.
 
      Nothing here reads the page's layout: every mark's size is measured
      once (measureNames), and a frame only works out where things go and
@@ -1293,6 +1295,9 @@
 
   function arrive() {
     land.dataset.at = "city";
+    // The globe's marks are not shown in a place: hidden, so none is tabbed
+    // to unseen. A city of museums places its own (placeTown).
+    cities.forEach(function (c) { if (c.el && !c.el.dataset.in) { hideMark(c); } });
     var seatX = place.seatAt ? place.seatAt.x * W : W / 2, seatY = place.seatAt ? place.seatAt.y * H : H * 0.62;
     pulse(seatX, seatY, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV);
     banner.hidden = false;
@@ -12057,6 +12062,7 @@
       };
       raiseCity(mark, true);
       t.mark = mark;
+      if (finder.found && finder.found[t.key]) { mark.el.dataset.found = "true"; }
     });
   }
 
@@ -12918,6 +12924,10 @@
       box.appendChild(el("p", "read-only", words));
       art.stage.appendChild(box);
       requestAnimationFrame(function () { box.dataset.on = "true"; });
+    } else if (buildingOn && buildingWorks) {
+      // In a museum: said on the work's own way to its history.
+      var go = buildingWorks.querySelector('.held[aria-expanded="true"] .held-history');
+      if (go) { go.textContent = words; }
     }
   }
 

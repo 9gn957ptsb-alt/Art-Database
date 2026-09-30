@@ -82,6 +82,7 @@
   var SOIL = [138, 118, 96, 2];  // DIRT, where none is given
   var DARK_INK = [15, 12, 10];   // the dark of the frame, where none is given
   var LIGHT = [94, 82, 199];     // the pixel light's lavender (land.js's LIGHT)
+  var PALE = [239, 233, 226];    // the soil gone to stone (land.js's PALE)
   var SKY_DAY = [206, 220, 232], SKY_DUSK = [226, 170, 112], SKY_NIGHT = [30, 38, 78];
   var DIRS = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
   // What grows or lies on the ground makes no wall of a building.
@@ -208,7 +209,7 @@
     return false;
   }
 
-  /* ---------------------------------------------------------------- inks */
+  /* ---------------------------------------------------------------- colours */
 
   function clamp8(v) { return v < 0 ? 0 : v > 255 ? 255 : round(v); }
   // Packed for a Uint32 view of ImageData: r | g << 8 | b << 16 | a << 24.
@@ -224,20 +225,7 @@
     return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
   }
 
-  // The soil itself: its gaps are the dark, its speckle a darker dot.
-  function soilInk(s, dark) {
-    if (s[3] === 0) { return dark; }
-    return s[3] === 1 ? [s[0] * 0.72, s[1] * 0.72, s[2] * 0.72] : [s[0], s[1], s[2]];
-  }
-  // A surface: its material worn over the soil — a little more of the soil
-  // where the material is reconstructed — or, not known, the soil.
   var MATS = null;               // Models.MATERIALS, kept while compiling
-  function surface(name, sure, s, dark) {
-    var m = name && (MATS || Models().MATERIALS)[name];
-    if (!m || !m.c) { return soilInk(s, dark); }
-    if (m.glass) { return [150, 172, 190]; }
-    return mix(m.c, s, min(1, m.soil + (sure === "documented" ? 0 : UNSURE)));
-  }
 
   // The sky over the museum now: pale by day, amber within 6° of the
   // horizon, deep blue at night. sky: {alt (radians), dark (0-1)} or a
@@ -289,13 +277,10 @@
   // Whether the voxel at a column is built on all four sides at that
   // height: inside the footprint, not on its edge.
   function deepAt(vx, col, z) {
-    var i = col % vx.nx, j = floor(col / vx.nx), k = floor(z / vx.v);
-    function b(ii, jj) {
-      if (ii < 0 || jj < 0 || ii >= vx.nx || jj >= vx.ny) { return false; }
-      var m = vx.grid[k * vx.nx * vx.ny + jj * vx.nx + ii];
-      return !!(m && vx.built[m - 1]);
-    }
-    return b(i - 1, j) && b(i + 1, j) && b(i, j - 1) && b(i, j + 1);
+    var i = col % vx.nx, j = (col - i) / vx.nx, base = floor(z / vx.v) * vx.nx * vx.ny, g = vx.grid, m;
+    if (i < 1 || j < 1 || i >= vx.nx - 1 || j >= vx.ny - 1) { return false; }
+    return !!((m = g[base + col - 1]) && vx.built[m - 1]) && !!((m = g[base + col + 1]) && vx.built[m - 1]) &&
+           !!((m = g[base + col - vx.nx]) && vx.built[m - 1]) && !!((m = g[base + col + vx.nx]) && vx.built[m - 1]);
   }
 
   /* ---------------------------------------------------------------- grids */
@@ -322,6 +307,39 @@
     return [fl.x0 + (q % fl.gw + 0.5) * fl.cell, fl.y0 + (floor(q / fl.gw) + 0.5) * fl.cell];
   }
   function cm(z) { return max(-32767, min(OPEN - 1, round(z * 100))); }
+  // The cells whose centres are in a rect of the grid ([x0, y0, x1, y1],
+  // first sides in, last sides out), each given to fn(q, x, y).
+  function forRect(fl, r, fn) {
+    var i0 = max(0, floor((r[0] - fl.x0) / fl.cell) - 1), i1 = min(fl.gw - 1, ceil((r[2] - fl.x0) / fl.cell));
+    var j0 = max(0, floor((r[1] - fl.y0) / fl.cell) - 1), j1 = min(fl.gh - 1, ceil((r[3] - fl.y0) / fl.cell));
+    for (var j = j0; j <= j1; j += 1) {
+      var y = fl.y0 + (j + 0.5) * fl.cell;
+      if (y < r[1] || y >= r[3]) { continue; }
+      for (var i = i0; i <= i1; i += 1) {
+        var x = fl.x0 + (i + 0.5) * fl.cell;
+        if (x < r[0] || x >= r[2]) { continue; }
+        fn(j * fl.gw + i, x, y);
+      }
+    }
+  }
+  // The model's voxel column under each cell, worked out once a floor.
+  function columnsOf(world, fl) {
+    if (fl.col) { return fl.col; }
+    var vx = world.vox, col = new Int32Array(fl.n).fill(-1);
+    if (vx) {
+      var c = world.cos, s = world.sin, hx = vx.site[0] / 2, hy = vx.site[1] / 2, v = vx.v;
+      for (var j = 0; j < fl.gh; j += 1) {
+        var gy = fl.y0 + (j + 0.5) * fl.cell;
+        for (var i = 0; i < fl.gw; i += 1) {
+          var gx = fl.x0 + (i + 0.5) * fl.cell;
+          var vi = floor((gx * c - gy * s + hx) / v), vj = floor((gx * s + gy * c + hy) / v);
+          col[j * fl.gw + i] = vi < 0 || vj < 0 || vi >= vx.nx || vj >= vx.ny ? -1 : vj * vx.nx + vi;
+        }
+      }
+    }
+    fl.col = col;
+    return col;
+  }
   function walkable(fl, q) { return q >= 0 && fl.kind[q] === FLOOR && fl.ch[q] - fl.fh[q] >= HEAD * 100; }
   function floorOf(world, id) {
     if (typeof id === "number") { return world.floors[id] || null; }
@@ -443,16 +461,9 @@
     }
     if (d.cut) {
       var c = d.cut, near = { a: 0, b: 0 };
-      for (var j = 0; j < fl.gh; j += 1) {
-        var y = fl.y0 + (j + 0.5) * cell;
-        if (y < c[1] || y >= c[3]) { continue; }
-        for (var i = 0; i < fl.gw; i += 1) {
-          var x = fl.x0 + (i + 0.5) * cell;
-          if (x < c[0] || x >= c[2]) { continue; }
-          var q = j * fl.gw + i;
-          if (fl.kind[q] === WALL || fl.kind[q] === GLASS) { carved.push(q); }
-        }
-      }
+      forRect(fl, c, function (q) {
+        if (fl.kind[q] === WALL || fl.kind[q] === GLASS) { carved.push(q); }
+      });
       // It must reach both rooms.
       carved.forEach(function (q) {
         [1, -1, fl.gw, -fl.gw].forEach(function (o) {
@@ -563,17 +574,15 @@
       room.stair = st.index;
       st.rooms = st.rooms || {};
       st.rooms[fl.index] = ri;
-      for (var q = 0; q < fl.n; q += 1) {
-        var c = centreOf(fl, q);
-        if (c[0] < r[0] || c[0] >= r[2] || c[1] < r[1] || c[1] >= r[3]) { continue; }
-        var t = (axis === "x" ? c[0] - r[0] : c[1] - r[1]) / run;
+      forRect(fl, r, function (q, x, y) {
+        var t = (axis === "x" ? x - r[0] : y - r[1]) / run;
         if (up < 0) { t = 1 - t; }
         var k = min(n - 1, max(0, floor(t * n)));
         fl.kind[q] = FLOOR;
         fl.room[q] = ri;
         fl.fh[q] = cm(lo + (k + 1) * dz / n);
         fl.stair[q] = st.index;
-      }
+      });
     });
     return why ? { ok: false, why: why } : { ok: true };
   }
@@ -588,28 +597,13 @@
       room.bbox = r.slice(); room.cx = (r[0] + r[2]) / 2; room.cy = (r[1] + r[3]) / 2;
       room.area = (r[2] - r[0]) * (r[3] - r[1]);
       room.lift = lf.index;
-      for (var q = 0; q < fl.n; q += 1) {
-        var c = centreOf(fl, q);
-        if (c[0] < r[0] || c[0] >= r[2] || c[1] < r[1] || c[1] >= r[3]) { continue; }
+      forRect(fl, r, function (q) {
         fl.kind[q] = FLOOR; fl.room[q] = ri; fl.fh[q] = cm(fl.z); fl.lift[q] = lf.index;
-      }
+      });
     });
   }
 
   /* ---------------------------------------------------------------- ceilings */
-
-  // The model's roof over a point, less one voxel, never above the floor
-  // over this one: {z, glass} in metres, or null where the model has no roof.
-  function autoAt(world, fl, gx, gy, zFloor, capZ) {
-    var vx = world.vox;
-    if (!vx) { return null; }
-    var m = toWorld(world, gx, gy), col = columnAt(vx, m[0], m[1]);
-    if (col < 0 || vx.top[col] < 0) { return null; }
-    var z = vx.top[col] * vx.v;
-    if (z <= zFloor + HEAD) { return null; }
-    if (z > capZ) { return { z: capZ, glass: false, capped: true }; }
-    return { z: z, glass: !!vx.glassTop[col], capped: false };
-  }
 
   function median(a) {
     if (!a.length) { return null; }
@@ -620,27 +614,39 @@
   function ceilings(world, fl) {
     var above = null;
     world.floors.forEach(function (o) { if (o.z > fl.z + 0.5 && (!above || o.z < above.z)) { above = o; } });
-    var capZ = above ? above.z : Infinity, q, r;
-    // Each room's height where it gives one, else the model's (the middle
-    // of its cells' heights), for the ceilings that are one height.
-    fl.rooms.forEach(function (room) {
-      var zs = [];
-      for (var i = 0; i < fl.n; i += 7) {
-        if (fl.room[i] !== room.index) { continue; }
-        var c = centreOf(fl, i), a = autoAt(world, fl, c[0], c[1], fl.z + room.fz, capZ);
-        if (a) { zs.push(a.z - (fl.z + room.fz)); }
+    var capZ = above ? above.z : Infinity, n = fl.n, q, r, vx = world.vox, col = columnsOf(world, fl);
+    // The model's roof over each cell, less a voxel, never above the floor
+    // over this one; and whether it is glass on top.
+    var roof = new Float32Array(n).fill(-1), glassy = new Uint8Array(n);
+    if (vx) {
+      for (q = 0; q < n; q += 1) {
+        var c0 = col[q];
+        if (c0 < 0 || vx.top[c0] < 0) { continue; }
+        var z0 = vx.top[c0] * vx.v;
+        if (z0 > capZ) { roof[q] = capZ; } else { roof[q] = z0; glassy[q] = vx.glassTop[c0]; }
       }
-      room.autoH = median(zs);
+    }
+    // Each room's height where it gives one, else the middle of the model's
+    // over it, for the ceilings that are one height.
+    var samples = fl.rooms.map(function () { return []; });
+    for (q = 0; q < n; q += 3) {
+      var ri = fl.room[q];
+      if (ri < 0 || fl.door[q] >= 0) { continue; }
+      var zb = fl.z + fl.rooms[ri].fz;
+      if (roof[q] > zb + HEAD) { samples[ri].push(roof[q] - zb); }
+    }
+    fl.rooms.forEach(function (room, k) {
+      room.autoH = median(samples[k]);
       room.clearH = room.h !== null ? room.h : room.autoH;
     });
-    for (q = 0; q < fl.n; q += 1) {
+    for (q = 0; q < n; q += 1) {
       var kind = fl.kind[q];
       if (kind === WALL || kind === GLASS) { fl.ch[q] = OPEN; fl.ck[q] = DARK; continue; }
       if (fl.door[q] >= 0) { continue; }
       r = fl.room[q] >= 0 ? fl.rooms[fl.room[q]] : null;
-      var c = centreOf(fl, q);
-      if (!r || r.pseudo === "outside") { outside(q, c); continue; }
-      var base = fl.z + r.fz, H = r.clearH;
+      if (!r || r.pseudo === "outside") { outside(q); continue; }
+      var base = fl.z + r.fz, H = r.clearH, a = roof[q] > base + HEAD ? roof[q] : -1;
+      var cx = fl.x0 + (q % fl.gw + 0.5) * fl.cell, cy = fl.y0 + (floor(q / fl.gw) + 0.5) * fl.cell;
       switch (r.pseudo ? "auto" : r.ceil) {
         case "flat": case "skylight":
           if (H === null) { fl.ch[q] = OPEN; fl.ck[q] = DARK; }
@@ -653,66 +659,64 @@
           fl.ch[q] = OPEN; fl.ck[q] = DARK;
           break;
         case "dome": {
-          // Rising toward its middle in rings a cell wide, from its spring.
           var R = r.circle ? r.circle[2] : min(r.bbox[2] - r.bbox[0], r.bbox[3] - r.bbox[1]) / 2;
-          var d = round(hypot(c[0] - r.cx, c[1] - r.cy) / fl.cell) * fl.cell;
+          var d = round(hypot(cx - r.cx, cy - r.cy) / fl.cell) * fl.cell;
           if (r.oculus && d < r.oculus) { fl.ch[q] = OPEN; fl.ck[q] = SKY; break; }
-          var spring = H === null ? 0 : H;
-          fl.ch[q] = cm(base + spring + sqrt(max(0, R * R - d * d)));
+          if (r.h === null) {
+            // Its height not published: the model's own dome over it, less a
+            // voxel, and where the model has glass on top, its oculus.
+            if (a < 0) { fl.ch[q] = OPEN; fl.ck[q] = DARK; }
+            else { fl.ch[q] = cm(a); fl.ck[q] = glassy[q] ? SKYLIGHT : DOME; }
+            break;
+          }
+          // Rising toward its middle in rings a cell wide, from its spring.
+          fl.ch[q] = cm(base + r.h + sqrt(max(0, R * R - d * d)));
           fl.ck[q] = DOME;
           break;
         }
         case "vault": {
           // Round over its long axis, from the height of its walls.
           var wide = r.bbox[2] - r.bbox[0], deep = r.bbox[3] - r.bbox[1], half = min(wide, deep) / 2;
-          var off = wide >= deep ? abs(c[1] - r.cy) : abs(c[0] - r.cx);
+          var off = wide >= deep ? abs(cy - r.cy) : abs(cx - r.cx);
           off = round(off / fl.cell) * fl.cell;
           fl.ch[q] = cm(base + (H === null ? 0 : H) + sqrt(max(0, half * half - off * off)));
           fl.ck[q] = VAULT;
           break;
         }
-        default: {
+        default:
           // auto: the model's roof over the cell, less a voxel; a skylight
           // where the model has glass on top, else a ceiling nobody knows.
-          var a = autoAt(world, fl, c[0], c[1], base, capZ);
-          if (!a) { fl.ch[q] = OPEN; fl.ck[q] = DARK; }
-          else { fl.ch[q] = cm(a.z); fl.ck[q] = a.glass ? SKYLIGHT : DARK; }
-        }
+          if (a < 0) { fl.ch[q] = OPEN; fl.ck[q] = DARK; }
+          else { fl.ch[q] = cm(a); fl.ck[q] = glassy[q] ? SKYLIGHT : DARK; }
       }
     }
     // A doorway's head: as it says, else the lower of its two rooms' ceilings.
-    fl.doors.forEach(function (d) {
-      if (!d.cells) { return; }
-      var head = null;
-      if (typeof d.h === "number") { head = cm(fl.z + (d.a >= 0 ? fl.rooms[d.a].fz : 0) + d.h); }
-      else {
-        var heads = [d.a, d.b].map(function (ri) {
-          if (ri < 0) { return OPEN; }
-          var zs = [];
-          for (var i = 0; i < fl.n; i += 3) { if (fl.room[i] === ri && fl.door[i] < 0) { zs.push(fl.ch[i]); } }
-          return median(zs) || OPEN;
-        });
-        head = min(heads[0], heads[1]);
-      }
-      for (var i = 0; i < fl.n; i += 1) {
-        if (fl.door[i] !== d.index) { continue; }
-        fl.ch[i] = head;
-        fl.ck[i] = head >= OPEN ? SKY : FLAT;
-      }
+    var tops = fl.rooms.map(function () { return []; });
+    for (q = 0; q < n; q += 3) {
+      if (fl.room[q] >= 0 && fl.door[q] < 0 && fl.kind[q] !== WALL) { tops[fl.room[q]].push(fl.ch[q]); }
+    }
+    var heads = fl.doors.map(function (d) {
+      if (!d.cells) { return null; }
+      if (typeof d.h === "number") { return cm(fl.z + (d.a >= 0 ? fl.rooms[d.a].fz : 0) + d.h); }
+      var ha = d.a >= 0 ? median(tops[d.a]) || OPEN : OPEN, hb = d.b >= 0 ? median(tops[d.b]) || OPEN : OPEN;
+      return min(ha, hb);
     });
+    for (q = 0; q < n; q += 1) {
+      var di = fl.door[q];
+      if (di < 0 || heads[di] === null) { continue; }
+      fl.ch[q] = heads[di];
+      fl.ck[q] = heads[di] >= OPEN ? SKY : FLAT;
+    }
 
-    function outside(qq, cc) {
-      // Under whatever the model has overhead — a porch roof — else the sky.
-      var vx = world.vox;
-      if (vx) {
-        var m = toWorld(world, cc[0], cc[1]), col = columnAt(vx, m[0], m[1]);
-        if (col >= 0) {
-          for (var k = floor((fl.z + EYE) / vx.v) + 1; k < vx.nz; k += 1) {
-            var mm = vx.grid[k * vx.nx * vx.ny + col];
-            // Never lower than a walker needs: a model's voxels are too coarse to say
-            // a porch is lower than that.
-            if (mm && vx.built[mm - 1]) { fl.ch[qq] = cm(max(k * vx.v, fl.fh[qq] / 100 + HEAD + 0.1)); fl.ck[qq] = FLAT; return; }
-          }
+    function outside(qq) {
+      // Under whatever the model has overhead — a porch roof — else the sky;
+      // never lower than a walker needs, a model's voxels being too coarse
+      // to say a porch is lower than that.
+      var c1 = col[qq];
+      if (vx && c1 >= 0) {
+        for (var k = floor((fl.z + EYE) / vx.v) + 1; k < vx.nz; k += 1) {
+          var mm = vx.grid[k * vx.nx * vx.ny + c1];
+          if (mm && vx.built[mm - 1]) { fl.ch[qq] = cm(max(k * vx.v, fl.fh[qq] / 100 + HEAD + 0.1)); fl.ck[qq] = FLAT; return; }
         }
       }
       fl.ch[qq] = OPEN; fl.ck[qq] = SKY;
@@ -721,38 +725,57 @@
 
   /* ---------------------------------------------------------------- inks */
 
+  // A surface's ink, packed, straight from its material and the soil:
+  // the material worn over the soil (a little more soil where it is
+  // reconstructed), or where nothing is known the soil, its gaps the dark
+  // and its speckle a darker dot. m: a Models.MATERIALS entry or null.
+  function inkOf(m, lift, s, dark) {
+    var r, g, b;
+    if (!m || !m.c) {
+      if (s[3] === 0) { r = dark[0]; g = dark[1]; b = dark[2]; }
+      else { var k = s[3] === 1 ? 0.72 : 1; r = s[0] * k; g = s[1] * k; b = s[2] * k; }
+    } else if (m.glass) { r = 150; g = 172; b = 190; }
+    else {
+      var t = min(1, m.soil + lift);
+      r = m.c[0] + (s[0] - m.c[0]) * t; g = m.c[1] + (s[1] - m.c[1]) * t; b = m.c[2] + (s[2] - m.c[2]) * t;
+    }
+    return ((255 << 24) | (clamp8(b) << 16) | (clamp8(g) << 8) | clamp8(r)) >>> 0;
+  }
+
   function inks(world, fl, soil) {
-    var M = Models(), names = world.vox ? world.vox.names : Object.keys(M.MATERIALS);
-    var dark = world.dark, sky = world.sky;
-    var ground = world.groundMaterial;
+    var mats = MATS || Models().MATERIALS, names = world.vox ? world.vox.names : Object.keys(mats);
+    var dark = world.dark, sky = world.sky, ground = mats[world.groundMaterial] || null;
+    var pane = pack(sky.pane), tone = pack(sky.tone), glass = pack([150, 172, 190]), void_ = pack(dark);
+    var byName = names.map(function (n) { return mats[n] || null; });
+    // Each room's materials, looked up once.
+    var rm = fl.rooms.map(function (r) {
+      var lift = r.mats.sure === "documented" ? 0 : UNSURE;
+      return { floor: mats[r.mats.floor] || null, walls: mats[r.mats.walls] || null, top: mats[r.mats.top] || null,
+               lift: lift, pseudo: r.pseudo, void: r.kind === "void" };
+    });
     for (var q = 0; q < fl.n; q += 1) {
-      var i = q % fl.gw, j = floor(q / fl.gw);
+      var i = q % fl.gw, j = (q - i) / fl.gw;
       var s = (soil && soil(fl.i0 + i, fl.j0 + j)) || SOIL;
-      var r = fl.room[q] >= 0 ? fl.rooms[fl.room[q]] : null, k = fl.kind[q];
-      var F, Wl, T;
+      var ri = fl.room[q], k = fl.kind[q], F, Wl, T;
       if (k === WALL || k === GLASS) {
         // Earth where nothing is known; the model's own wall on its edge.
-        var mat = fl.footM[q] ? names[fl.footM[q] - 1] : null;
-        F = Wl = T = fl.foot[q] === 2 && mat ? surface(mat, "reconstructed", s, dark) : soilInk(s, dark);
-        if (k === GLASS) { Wl = [150, 172, 190]; }
-      } else if (r && !r.pseudo) {
-        F = r.kind === "void" ? dark : surface(r.mats.floor, r.mats.sure, s, dark);
-        Wl = surface(r.mats.walls, r.mats.sure, s, dark);
-        T = surface(r.mats.top, r.mats.sure, s, dark);
-      } else if (r && r.pseudo === "shell") {
-        F = Wl = T = soilInk(s, dark);
-      } else if (r && (r.pseudo === "stair" || r.pseudo === "lift")) {
-        // A stair of the rooms it joins, as far as they are known: the soil.
-        F = Wl = T = soilInk(s, dark);
+        var mm = fl.foot[q] === 2 && fl.footM[q] ? byName[fl.footM[q] - 1] : null;
+        F = Wl = T = inkOf(mm, UNSURE, s, dark);
+        if (k === GLASS) { Wl = glass; }
+      } else if (ri >= 0 && !rm[ri].pseudo) {
+        var m = rm[ri];
+        F = m.void ? void_ : inkOf(m.floor, m.lift, s, dark);
+        Wl = inkOf(m.walls, m.lift, s, dark);
+        T = inkOf(m.top, m.lift, s, dark);
+      } else if (ri >= 0 && rm[ri].pseudo !== "outside") {
+        // The shell, a stair, a lift: as far as they are known, the soil.
+        F = Wl = T = inkOf(null, 0, s, dark);
       } else {
         // Outside: the ground under it in the model, else the soil.
-        var gm = fl.footM[q] ? names[fl.footM[q] - 1] : ground;
-        F = surface(gm, "reconstructed", s, dark);
-        Wl = T = F;
+        F = Wl = T = inkOf(fl.footM[q] ? byName[fl.footM[q] - 1] : ground, UNSURE, s, dark);
       }
-      if (fl.ck[q] === SKYLIGHT) { T = sky.pane; }
-      else if (fl.ck[q] === SKY) { T = sky.tone; }
-      fl.inkF[q] = pack(F); fl.inkW[q] = pack(Wl); fl.inkT[q] = pack(T);
+      if (fl.ck[q] === SKYLIGHT) { T = pane; } else if (fl.ck[q] === SKY) { T = tone; }
+      fl.inkF[q] = F; fl.inkW[q] = Wl; fl.inkT[q] = T;
     }
     fl.rooms.forEach(function (room) {
       var q0 = cellAt(fl, room.cx, room.cy);
@@ -1348,21 +1371,20 @@
   function footprint(world, fl) {
     var vx = world.vox;
     if (!vx) { return; }
-    var zc = fl.z + EYE;
+    var zc = fl.z + EYE, col = columnsOf(world, fl), top = min(vx.nz - 1, floor((fl.z + STEP) / vx.v));
     for (var q = 0; q < fl.n; q += 1) {
-      var c = centreOf(fl, q), m = toWorld(world, c[0], c[1]), col = columnAt(vx, m[0], m[1]);
-      var b = builtAt(vx, col, zc);
+      var c = col[q], b = builtAt(vx, c, zc);
       if (!b) {
         // What the ground outside is, underfoot: the model's top below the floor.
-        if (col >= 0) {
-          for (var k = min(vx.nz - 1, floor((fl.z + STEP) / vx.v)); k >= 0; k -= 1) {
-            var mm = vx.grid[k * vx.nx * vx.ny + col];
+        if (c >= 0) {
+          for (var k = top; k >= 0; k -= 1) {
+            var mm = vx.grid[k * vx.nx * vx.ny + c];
             if (mm) { fl.footM[q] = mm; break; }
           }
         }
         continue;
       }
-      fl.foot[q] = deepAt(vx, col, zc) ? 1 : 2;
+      fl.foot[q] = deepAt(vx, c, zc) ? 1 : 2;
       fl.footM[q] = b;
     }
   }
@@ -1450,13 +1472,10 @@
     outRoom.poly = null; outRoom.bbox = [0, 0, 0, 0];
     if (e && e.floor === fs.id) {
       (e.out || []).forEach(function (r) {
-        var g = rectOf(f, r);
-        for (var qq = 0; qq < fl.n; qq += 1) {
-          var c = centreOf(fl, qq);
-          if (c[0] < g[0] || c[0] >= g[2] || c[1] < g[1] || c[1] >= g[3]) { continue; }
-          if (fl.room[qq] >= 0 || fl.kind[qq] !== CLOSED) { continue; }
+        forRect(fl, rectOf(f, r), function (qq) {
+          if (fl.room[qq] >= 0 || fl.kind[qq] !== CLOSED) { return; }
           fl.kind[qq] = FLOOR; fl.room[qq] = fl.outside; fl.fh[qq] = cm(fl.z);
-        }
+        });
       });
     }
     // The openings.
@@ -1489,16 +1508,14 @@
       var thing = { index: n, rect: g, h: hgt, m: t.m || null, solid: t.solid !== false, sure: t.sure || null,
                     src: t.src || [], note: t.note || null };
       fl.things.push(thing);
-      for (var qq = 0; qq < fl.n; qq += 1) {
-        var c = centreOf(fl, qq);
-        if (c[0] < g[0] || c[0] >= g[2] || c[1] < g[1] || c[1] >= g[3]) { continue; }
-        if (fl.kind[qq] === WALL || fl.kind[qq] === GLASS) { continue; }
+      fl.thing = fl.thing || new Int16Array(fl.n).fill(-1);
+      forRect(fl, g, function (qq) {
+        if (fl.kind[qq] === WALL || fl.kind[qq] === GLASS) { return; }
         var host = fl.room[qq] >= 0 ? fl.rooms[fl.room[qq]] : null;
         fl.fh[qq] = cm(fl.z + (host ? host.fz : 0) + hgt);
         if (thing.solid) { fl.kind[qq] = CLOSED; }
-        fl.thing = fl.thing || new Int16Array(fl.n).fill(-1);
         fl.thing[qq] = n;
-      }
+      });
     });
     return fl;
   }
@@ -1508,15 +1525,17 @@
     return -1;
   }
 
-  // The ground under a cell outside: the model's top, below the floor.
+  // The ground under a cell outside: the top of what the model has built
+  // there, below the floor — a lawn or a pavement is the ground itself, and
+  // a voxel that spans the floor's own level is taken to meet it.
   function groundUnder(world, fl, q) {
     var vx = world.vox;
     if (!vx) { return fl.z; }
-    var c = centreOf(fl, q), m = toWorld(world, c[0], c[1]), col = columnAt(vx, m[0], m[1]);
+    var col = columnsOf(world, fl)[q];
     if (col < 0) { return 0; }
     for (var k = min(vx.nz - 1, floor((fl.z + STEP) / vx.v)); k >= 0; k -= 1) {
       var mm = vx.grid[k * vx.nx * vx.ny + col];
-      if (mm) { return (k + 1) * vx.v; }
+      if (mm && vx.built[mm - 1]) { return max(k * vx.v, min((k + 1) * vx.v, fl.z)); }
     }
     return 0;
   }
@@ -1592,12 +1611,10 @@
       }
     }
     out.forEach(function (g) {
-      for (var qq = 0; qq < fl.n; qq += 1) {
-        var c2 = centreOf(fl, qq);
-        if (c2[0] < g[0] || c2[0] >= g[2] || c2[1] < g[1] || c2[1] >= g[3]) { continue; }
-        if (fl.kind[qq] !== CLOSED) { continue; }
+      forRect(fl, g, function (qq) {
+        if (fl.kind[qq] !== CLOSED) { return; }
         fl.kind[qq] = FLOOR; fl.room[qq] = 1; fl.fh[qq] = cm(z0);
-      }
+      });
     });
     var d = { index: 0, a: 0, b: -1, aId: "shell", bId: "outside", x: door[0], y: door[1], w: DOOR_W, h: null,
               kind: "door", sure: "reconstructed", src: ["model"], note: "the model's longest south wall, by the rule",
@@ -1702,6 +1719,7 @@
       }
       // Ceilings first, so a stair can take the higher of the two over it.
       world.floors.forEach(function (fl) { ceilings(world, fl); });
+      var before = {};
       world.stairSpecs.forEach(function (st, n) {
         var c = { index: n, id: st.id, name: st.name == null ? null : st.name, rect: rectOf(f, st.rect || [0, 0, 0, 0]),
                   rise: /^[+-][xy]$/.test(st.rise || "") ? st.rise : "+x", from: idx[st.from], to: idx[st.to],
@@ -1711,23 +1729,23 @@
           world.problems.push({ rule: "stair", text: "stair " + st.id + " joins a floor that is not in the file" });
           return;
         }
-        var fa = world.floors[c.from], fb = world.floors[c.to], before = {};
+        var fa = world.floors[c.from], fb = world.floors[c.to];
         [fa, fb].forEach(function (fl) {
-          before[fl.index] = { ch: fl.ch.slice(), ck: fl.ck.slice() };
+          if (!before[fl.index]) { before[fl.index] = { ch: fl.ch.slice(), ck: fl.ck.slice() }; }
         });
         var res = ramp(world, c);
         if (!res.ok) { world.problems.push({ rule: "stair", text: "stair " + st.id + ": " + res.why }); }
         // Over a stair, the higher of what was over it on either floor: the stairwell.
         [fa, fb].forEach(function (fl) {
           var other = fl === fa ? fb : fa;
-          for (var q = 0; q < fl.n; q += 1) {
-            if (fl.stair[q] !== c.index) { continue; }
-            var p = centreOf(fl, q), oq = cellAt(other, p[0], p[1]);
+          forRect(fl, c.rect, function (q, x, y) {
+            if (fl.stair[q] !== c.index) { return; }
+            var oq = cellAt(other, x, y);
             var mine = before[fl.index].ch[q], theirs = oq >= 0 ? before[other.index].ch[oq] : OPEN;
             var hi = max(mine, theirs);
             fl.ch[q] = max(hi, fl.fh[q] + HEAD * 100 + 20);
             fl.ck[q] = hi === mine ? before[fl.index].ck[q] : before[other.index].ck[oq];
-          }
+          });
         });
       });
       world.liftSpecs.forEach(function (lf, n) {
@@ -1738,9 +1756,9 @@
         lift(world, c);
         c.floors.forEach(function (fi) {
           var fl = world.floors[fi];
-          for (var q = 0; q < fl.n; q += 1) {
+          forRect(fl, c.rect, function (q) {
             if (fl.lift[q] === c.index) { fl.ch[q] = cm(fl.z + 2.4); fl.ck[q] = DARK; }
-          }
+          });
         });
       });
     }
@@ -1826,6 +1844,12 @@
         var key = u + ":" + light;
         return inkCache[key] || (inkCache[key] = css(unpack(u), light));
       }
+      // A wall's cap: its own ink gone toward pale stone, the way the
+      // town's buildings are drawn, so the rooms read from above.
+      function cap(u) {
+        var key = u + ":cap";
+        return inkCache[key] || (inkCache[key] = css(mix(unpack(u), PALE, 0.45), 1.04));
+      }
       for (var bj = 0; bj < fl.gh; bj += k) {
         for (var bi = 0; bi < fl.gw; bi += k) {
           // The block's cells: a floor, a wall beside a room, or earth.
@@ -1841,19 +1865,21 @@
               }
             }
           }
-          var cq = floorQ >= 0 ? floorQ : wallQ >= 0 ? wallQ : earthQ;
+          // Walls: those beside a room, and the model's own outer wall.
+          var wq = wallQ >= 0 ? wallQ : floorQ < 0 && ringQ >= 0 ? ringQ : -1;
+          var cq = floorQ >= 0 ? floorQ : wq >= 0 ? wq : earthQ;
           if (cq < 0) { continue; }
           var c = centreOf(fl, cq);
           var gx = fl.x0 + (bi + k / 2) * fl.cell, gy = fl.y0 + (bj + k / 2) * fl.cell;
           if (floorQ >= 0 && fl.room[floorQ] >= 0 && fl.rooms[fl.room[floorQ]].pseudo !== "outside") {
-            put(gx, gy, fl.fh[floorQ] / 100, size, ink(fl.inkF[floorQ], 0.9));
+            put(gx, gy, fl.fh[floorQ] / 100, size, ink(fl.inkF[floorQ], 1));
           }
-          if (wallQ >= 0) {
-            var z0 = fl.z;
-            for (var z = z0 + p; z < cut - 1e-6; z += p) { put(c[0], c[1], z, size, ink(fl.inkW[wallQ], 0.84)); }
-            put(c[0], c[1], cut, size, ink(fl.inkW[wallQ], 1.12));
+          if (wq >= 0) {
+            for (var z = fl.z + p; z < cut - 1e-6; z += p) { put(c[0], c[1], z, size, ink(fl.inkW[wq], 0.84)); }
+            put(c[0], c[1], cut, size, cap(fl.inkW[wq]));
           } else if (earthQ >= 0 && floorQ < 0) {
-            put(gx, gy, cut, size, ink(fl.inkF[earthQ], 0.7));
+            // What is inside and not known: earth, up to the cut.
+            put(gx, gy, cut, size, ink(fl.inkF[earthQ], 0.55));
           }
         }
       }
@@ -2189,7 +2215,10 @@
         var sh = world.floors[0].rooms[0];
         if (!sh.reach) { err("the shell cannot be entered from its door"); }
       }
-      if (unreached.length) { warn(unreached.length + " rooms have no way in known yet: " + unreached.join(", ")); }
+      if (unreached.length) {
+        warn(unreached.length + " rooms have no way in known yet: " + unreached.slice(0, 24).join(", ") +
+             (unreached.length > 24 ? " and " + (unreached.length - 24) + " more" : ""));
+      }
     }
     // The works.
     try {
@@ -2224,6 +2253,9 @@
           for (var i = 0; i < vx.nx; i += 1) {
             var mm = vx.grid[k * vx.nx * vx.ny + j * vx.nx + i];
             if (!mm || !vx.built[mm - 1]) { continue; }
+            // A voxel standing alone is a trunk or a post, not the building.
+            if (!builtAt(vx, j * vx.nx + i - 1, z) && !builtAt(vx, j * vx.nx + i + 1, z) &&
+                !builtAt(vx, (j - 1) * vx.nx + i, z) && !builtAt(vx, (j + 1) * vx.nx + i, z)) { continue; }
             var x = (i + 0.5) * vx.v - vx.site[0] / 2, y = (j + 0.5) * vx.v - vx.site[1] / 2;
             var gi = floor((y + half) / gc), gj = floor((x + half) / gc);
             tot += 1;
