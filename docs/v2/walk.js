@@ -828,7 +828,22 @@
       stats: { frames: 0, total: 0, max: 0, list: [] }, cameFor: {}, lastRoom: null, lastWhere: 0,
       toClose: [], rechecked: false
     };
-    s.pics.onready = function () { if (S === s) { s.dirty = true; wake(); } };
+    s.pics.onready = function (p) {
+      if (S !== s) { return; }
+      // A work of no known size is 60 cm tall at its picture's proportions.
+      var again = false;
+      s.works.forEach(function (w) {
+        if (w.i === p.key && !(w.cm && w.cm[0] > 0 && w.cm[1] > 0) && Math.abs((w.ar || 1) - p.ar) > 0.02) { w.ar = p.ar; again = true; }
+      });
+      if (again && s.world) {
+        var res = hangAll(s.world, s.works, s.ctx.interior && s.ctx.interior.pins);
+        var was = s.standing && s.standing.id;
+        s.hung = res.hung; s.spill = res.spill;
+        if (was) { s.hung.forEach(function (h) { if (h.id === was) { s.standing = h; if (s.reading) { s.reading.h = h; } } }); }
+      }
+      s.dirty = true;
+      wake();
+    };
     if (ctx.came && ctx.at && ctx.at.work) { s.cameFor[ctx.at.work] = ctx.came; }
 
     return new Promise(function (done, fail) {
@@ -947,7 +962,14 @@
   function size() {
     var s = S;
     var r = s.root.getBoundingClientRect();
-    var W = Math.max(8, Math.ceil(r.width / s.dot)), H = Math.max(8, Math.ceil(r.height / s.dot));
+    // Where the banner has wrapped (a long name on a phone) the walk starts
+    // under it, so what it says stays readable over the picture.
+    var under = s.host.banner.under, bn = under && under.closest ? under.closest(".banner") : null;
+    var drop = 0;
+    if (bn) { var bb = bn.getBoundingClientRect(); if (bb.height && bb.bottom + 4 > r.top) { drop = Math.min(r.height * 0.3, Math.ceil(bb.bottom + 4 - r.top)); } }
+    s.box.style.top = drop ? drop + "px" : "";
+    var bh = r.height - drop;
+    var W = Math.max(8, Math.ceil(r.width / s.dot)), H = Math.max(8, Math.ceil(bh / s.dot));
     s.view.width = W; s.view.height = H;
     s.view.style.width = W * s.dot + "px";
     s.view.style.height = H * s.dot + "px";
@@ -1467,7 +1489,7 @@
       var r = roomAt(s.world, s.me.floor, s.me.x, s.me.y), f2 = s.world.floors[s.me.floor];
       if (r && r.pseudo === "stair") {
         var st = s.world.stairs[r.stair], other = st ? s.world.floors[st.from === s.me.floor ? st.to : st.from] : null;
-        text = (r.name || "Stairs") + " · to the " + floorName(other) + " · " + (st && st.sure || "reconstructed");
+        text = floorName(f2) + " · " + (r.name || "Stairs to the " + floorName(other)) + " · " + (st && st.sure || "reconstructed");
       } else if (r && r.pseudo === "lift") {
         text = floorName(f2) + " · by the lift";
       } else if (r && r.pseudo === "outside") {
@@ -1700,7 +1722,7 @@
       return true;
     }
     var speed = clamp(L / GLIDE_SPAN, GLIDE_MIN, GLIDE_MAX);
-    s.glide = { t: t, key: t.key || null, segs: segs, L: L, T: L / speed * 1000 * 1.35, t0: performance.now(), done: false };
+    s.glide = { t: t, key: t.key || null, segs: segs, L: L, T: L / speed * 1000, t0: performance.now(), done: false };
     wake();
     return true;
   }
@@ -2485,14 +2507,17 @@
       x = ox + mid - lw / 2;
       y = oy + (pb ? pb.y * dot + 8 : br.height - lh - 8);
     } else {
-      var ux = (h.x1 - h.x0) / Math.max(0.01, h.w), uy = (h.y1 - h.y0) / Math.max(0.01, h.w);
-      var pr = cs.project(s.cam, h.x1 + ux * 0.3, h.y1 + uy * 0.3, base + 1.4);
-      if (pr && pr.x * dot + lw + 8 < br.width) { x = ox + pr.x * dot + 8; y = oy + pr.y * dot - lh / 2; }
-      else {
-        var pl = cs.project(s.cam, h.x0 - ux * 0.3, h.y0 - uy * 0.3, base + 1.4);
-        x = pl ? ox + pl.x * dot - lw - 8 : ox + 12;
-        y = pl ? oy + pl.y * dot - lh / 2 : oy + 12;
-      }
+      // Beside the work, on whichever side has the more room, narrowed to
+      // it (never narrower than its longest word, which the sheet keeps).
+      var lo = s.seenLo && s.seenLo[h.i] >= 0 ? s.seenLo[h.i] * dot : br.width / 2;
+      var hi = s.seenHi && s.seenHi[h.i] >= 0 ? (s.seenHi[h.i] + 1) * dot : br.width / 2;
+      var pz = cs.project(s.cam, h.cx, h.cy, base + 1.4);
+      var right = br.width - hi - 16, left = lo - 16;
+      lab.style.maxWidth = Math.round(clamp(Math.max(right, left), 150, 256)) + "px";
+      lw = lab.offsetWidth || lw;
+      lh = lab.offsetHeight || lh;
+      x = right >= left ? ox + hi + 12 : ox + lo - lw - 12;
+      y = pz ? oy + pz.y * dot - lh / 2 : oy + 12;
     }
     x = clamp(x, ox + 8, ox + br.width - lw - 8);
     y = clamp(y, oy + 8, oy + br.height - lh - 8);
@@ -2843,6 +2868,13 @@
     stats: stats, snapshot: snapshot, LOOK_ARRIVALS: LOOK_ARRIVALS,
     // Only for the tests: glide and look by hand.
     _pickAt: function (x, y) { return S ? pickAt(x, y) : null; },
+    _roomOnPlan: function (id) {
+      if (!S || !S.world) { return null; }
+      var r = P().roomById(S.world, id);
+      if (!r) { return null; }
+      var fl = S.world.floors[r.floor], p = planPoint(r.cx, r.cy, fl.z + r.fz);
+      return p ? { x: p.cx, y: p.cy, floor: r.floor } : null;
+    },
     _look: function () { if (S && S.standing) { look(S.standing); } }
   };
   window.Walk = api;
