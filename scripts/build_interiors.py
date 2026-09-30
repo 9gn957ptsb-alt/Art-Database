@@ -28,15 +28,20 @@ script writes only what the museums' own data gives, in place, and keeps everyth
   asof     the day it ran.
   sources  the placement sources it cites (their ids end in -where), with the day each was read.
 
+A work whose record now says another place than at the last run — moved, taken down, put up — goes
+into that museum's interior log in docs/v2/models/ledger.json. The histories' Artsy slugs come from
+the public files, and where one carries none, from the private Artsy records in data/.
+
   --stubs    every museum in museums.json without a file gets one: its model's shell, entered by
              the rule, no rooms, its works listed with why none hangs.
   --nga      the National Gallery of Art's West Building, both public floors: each public room's
              outline from the NGA's open data (preferred_locations.csv, CC0), put into metres in
              the model's frame (0.44385 m a map pixel, the Rotunda's centre on the model's dome,
-             north up), merged by id — the outline, names and keys are rewritten, anything written
-             by hand on a room is kept.
-  --refresh  read the NGA's open data again, and where the other museums say each work is now
-             (fetch_history_museum_apis.py --where --refresh), before placing the works.
+             north up), merged by id — the outline, name, keys and the NGA's words for it are
+             rewritten, anything written by hand on a room is kept.
+  --refresh  read the NGA's open data again (when the copy is more than a day old), and where the
+             other museums say each work is now (fetch_history_museum_apis.py --where --refresh),
+             before placing the works: the daily run (scripts/update_buildings.py) does.
   --only     one museum.
 
 Downloads go to data/ (private, never committed). It prints each museum's works by how.
@@ -61,6 +66,7 @@ DOCS = ROOT / "docs" / "v2"
 OUT = DOCS / "interiors"
 MODELS = DOCS / "models"
 HISTORIES = DOCS / "histories"
+ARTSY_WORKS = ROOT / "data" / "histories" / "artsy" / "works"
 NGA = ROOT / "data" / "nga"
 APIS = ROOT / "data" / "museum_apis_cache"
 WIKIDATA = ROOT / "data" / "wikidata"
@@ -123,9 +129,10 @@ def day_of(path):
 
 
 def download(name, refresh=False):
-    """One of the NGA's open data files, into data/nga/ (once, or again with --refresh)."""
+    """One of the NGA's open data files, into data/nga/ (once, or again with --refresh when the copy is
+    more than a day old: the NGA publishes about once a day, and objects.csv is 80 MB)."""
     path = NGA / name
-    if path.exists() and not refresh:
+    if path.exists() and (not refresh or time.time() - path.stat().st_mtime < 20 * 3600):
         return path
     NGA.mkdir(parents=True, exist_ok=True)
     print(f"  reading {NGA_BASE + name}", flush=True)
@@ -140,7 +147,9 @@ def download(name, refresh=False):
 
 
 def histories():
-    """Every saved work's public history, by its Artsy id; and the ids by Artsy slug."""
+    """Every saved work's public history, by its Artsy id; and the ids by Artsy slug. The museums'
+    matches are keyed by slug, and some public histories carry none (179 on 30 Sep 2026), so the
+    private Artsy records (data/histories/artsy/works/<slug>.json, each with its _id) fill them in."""
     by_id, by_slug = {}, {}
     for p in HISTORIES.glob("*.json"):
         h = read_json(p)
@@ -149,6 +158,14 @@ def histories():
         by_id[h["id"]] = h
         if h.get("slug"):
             by_slug[h["slug"]] = h["id"]
+    for p in ARTSY_WORKS.glob("*.json"):
+        if p.stem in by_slug:
+            continue
+        w = read_json(p) or {}
+        if w.get("_id") in by_id and w.get("id") and w["id"] != w["_id"]:
+            by_slug[w["id"]] = w["_id"]
+            if not by_id[w["_id"]].get("slug"):
+                by_id[w["_id"]]["slug"] = w["id"]         # in memory only; the public file is not touched
     return by_id, by_slug
 
 
@@ -214,7 +231,8 @@ FLOOR_ORDER = ["id", "name", "z", "sure", "src", "note", "rooms", "open", "thing
 
 
 def dumps(x):
-    return json.dumps(x, ensure_ascii=False, separators=(", ", ": "))
+    # Tight within a line: a museum of 181 rooms and 189 works has to stay under 96 KB.
+    return json.dumps(x, ensure_ascii=False, separators=(",", ":"))
 
 
 def write(path, doc):
@@ -641,7 +659,7 @@ def nga_rooms():
                 refs.append(k)
                 refs += locs.get(k, [])
             refs = list(dict.fromkeys(refs))
-            room = {"id": key, "ref": refs, "name": nga_name(r["descs"][0]),
+            room = {"id": key, "ref": refs, "name": nga_name(r["descs"][0]), "said": r["descs"][0],
                     "kind": nga_kind(r["descs"][0]), **r["shape"], "sure": "documented",
                     "src": ["nga-rooms", "length"], "tol": 1.0}
             made.append(room)
@@ -690,6 +708,50 @@ def merge_nga(doc, model):
     return doc
 
 
+# ---------------------------------------------------------------- what moved
+
+PLACED = ("museum", "elsewhere")
+
+
+def moves(old, new):
+    """The works a museum has rehung since the last run, as lines for its interior log in the ledger:
+    a work whose record now says another place, one taken down, one put up. A room newly drawn is not a
+    move: the record's words are the same."""
+    was = {w["id"]: w for w in old or []}
+    out = []
+    for w in new:
+        o = was.get(w["id"])
+        if not o or o.get("src") != w.get("src"):
+            continue
+        name = w.get("t") or o.get("t") or w["id"]
+        if o["how"] in PLACED and w["how"] in PLACED and o.get("said") != w.get("said"):
+            out.append(f"moved: {name}, from {o.get('said')} to {w.get('said')}")
+        elif o["how"] in PLACED and w["how"] not in PLACED:
+            out.append(f"taken down: {name}, was {o.get('said')}; now {w.get('said')}")
+        elif o["how"] not in PLACED and w["how"] in PLACED:
+            out.append(f"put up: {name}, {w.get('said')}")
+    return out
+
+
+def log_moves(found):
+    """Each museum's moves into its interior's log in docs/v2/models/ledger.json, read just before it is
+    written (the daily routine and the checker write there too), in the layout the other scripts use."""
+    if not found:
+        return
+    path = MODELS / "ledger.json"
+    ledger = read_json(path)
+    if not ledger:
+        return
+    for slug, lines in found.items():
+        entry = ledger.get(slug)
+        if not entry:
+            continue
+        inside = entry.setdefault("interior", {"tier": "shell", "refined": None, "passes": 0, "rooms": {},
+                                               "works": {}, "log": []})
+        inside.setdefault("log", []).extend(f"{TODAY} {line}" for line in lines)
+    path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+
+
 # ---------------------------------------------------------------- the run
 
 def main():
@@ -716,7 +778,7 @@ def main():
     nga = None
     wd = Wikidata()
     totals = {"museum": 0, "elsewhere": 0, "off": 0, "none": 0}
-    made = 0
+    made, moved = 0, {}
     for m in museums:
         path = OUT / f"{m['slug']}.json"
         model = read_json(MODELS / f"{m['slug']}.json")
@@ -731,6 +793,11 @@ def main():
         if m["slug"] == NGA_SLUG and nga is None:
             nga = NGAData(args.refresh)
         works, sources = place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api_matches)
+        lines = moves(doc.get("works"), works)
+        if lines:
+            moved[m["slug"]] = lines
+            for line in lines:
+                print(f"    {line}", flush=True)
         doc["works"] = works
         doc["sources"] = sources
         doc["asof"] = TODAY
@@ -741,7 +808,9 @@ def main():
             totals[w["how"]] += 1
         line = ", ".join(f"{k} {v}" for k, v in by.items() if v)
         print(f"  {m['slug']}: {len(works)} works ({line}); {size // 1024} KB", flush=True)
-    print(f"{made} new files; works: " + ", ".join(f"{k} {v}" for k, v in totals.items()), flush=True)
+    log_moves(moved)
+    print(f"{made} new files; works: " + ", ".join(f"{k} {v}" for k, v in totals.items()) +
+          (f"; {sum(len(v) for v in moved.values())} moved, put up or taken down" if moved else ""), flush=True)
 
 
 if __name__ == "__main__":

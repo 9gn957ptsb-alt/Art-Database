@@ -14,15 +14,20 @@ that have no model yet. A new kind of building is one more entry in KINDS.
                  build_museums.py places them)
 
 then build_grounds.py for the ground under every new place, build_built_years.py
-for when its buildings went up (the timeline), and
-fetch_reference_photos.py for the new Architectural Authority buildings'
-photographs, into data/ (private).
+for when its buildings went up (the timeline), fetch_reference_photos.py for
+the new Architectural Authority buildings' photographs, into data/ (private),
+and build_interiors.py for the museums' insides: a shell for every new museum,
+and where each museum's own records say its saved works hang today, read
+again (the walk; docs/v2/interiors/INTERIORS.md). Interiors are for museums
+only: a new kind of building never gets them by default, and a private home
+never does.
 
     python3 scripts/update_buildings.py
 
 A kind whose source fails (a refused token) is reported and the rest carry on.
 Prints the buildings that have no model yet (docs/v2/models/<slug>.json),
-kind by kind, most important first.
+kind by kind, most important first; then each museum's interior tier and the
+saved works its records place in rooms not drawn yet.
 """
 
 import json
@@ -33,6 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 MODELS = ROOT / "docs" / "v2" / "models"
+INTERIORS = ROOT / "docs" / "v2" / "interiors"
 
 KINDS = [
     {"kind": "architecture", "file": "architecture.json", "key": "buildings",
@@ -65,6 +71,8 @@ def main():
     for b in places(KINDS[0]):
         if not (MODELS / (b["slug"] + ".json")).exists():
             run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
+    # The museums' insides: a shell for each new one, and where the works hang today.
+    run(str(SCRIPTS / "build_interiors.py"), "--stubs", "--refresh")
 
     for k in KINDS:
         every = places(k)
@@ -75,8 +83,29 @@ def main():
             print(f"  {b['slug']}  —  {b.get('name')}, {b.get('where')} ({b.get('precision')})")
         if len(todo) > 12:
             print(f"  … and {len(todo) - 12} more")
+    interiors()
     if failed:
         print("\nFailed to bring in:", ", ".join(failed))
+
+
+def interiors():
+    """Each museum's interior tier, and the saved works its records place in rooms not drawn yet
+    (most first): the first to raise a tier (models/REFINE.md, Interiors)."""
+    tiers, waiting = {}, []
+    for m in places(KINDS[1]):
+        path = INTERIORS / (m["slug"] + ".json")
+        doc = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        tier = doc.get("tier", "none")
+        tiers[tier] = tiers.get(tier, 0) + 1
+        away = [w for w in doc.get("works") or [] if w.get("how") == "elsewhere"]
+        if away:
+            waiting.append((len(away), m["slug"], tier, away))
+    print("\ninteriors: " + ", ".join(f"{v} {k}" for k, v in sorted(tiers.items())))
+    waiting.sort(key=lambda x: (-x[0], x[1]))
+    for n, slug, tier, away in waiting:
+        rooms = sorted({w.get("said") or "" for w in away})
+        print(f"  {slug} ({tier}): {n} placed in rooms not drawn — " + "; ".join(rooms[:6]) +
+              (f"; … and {len(rooms) - 6} more rooms" if len(rooms) > 6 else ""))
 
 
 if __name__ == "__main__":

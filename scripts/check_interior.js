@@ -1,31 +1,34 @@
 #!/usr/bin/env node
 /* Check a museum's interior (docs/v2/interiors/<slug>.json) the way the walk
    will have it: the page's own docs/v2/models.js and docs/v2/walk-plan.js,
-   run here in a vm, compile it against the museum's model and apply every
-   rule of INTERIORS.md (WalkPlan.check).
+   run here in a vm, compile it against the museum's model and ground and
+   apply every rule of INTERIORS.md (WalkPlan.check).
 
      node scripts/check_interior.js docs/v2/interiors/<slug>.json [--png dir]
      node scripts/check_interior.js --all [--png dir]
 
    It prints the tier, the square metres of documented and reconstructed
    rooms on each floor, what can be reached from the door, the works by how
-   the museum's records place them, and every error and warning. Errors set
-   the exit code. It writes the tier back into the file, and into the
-   museum's entry in docs/v2/models/ledger.json its interior's tier, rooms
-   and works; a finding against the model (a documented room outside it, a
-   footprint that does not stand on the ground's buildings) goes into the
-   model's own log there, for its next refinement.
+   the museum's records place them, and every error and warning; --all a
+   line a museum. Errors set the exit code. It writes the tier back into the
+   file, and into the museum's entry in docs/v2/models/ledger.json its
+   interior's tier, rooms and works; the findings against the model (a
+   documented room outside it, a footprint that does not stand on the
+   ground's buildings) go into the model's own log there, for its next
+   refinement, one line a kind, rewritten as they change. The ledger is
+   written as the Python scripts write it.
 
    --png renders through Playwright (installed globally in a session), into
    the directory given: a plan of every floor seen from above (rooms tinted
    by how they are known, their ids, the openings, the stairs as arrows, the
    hung works as ticks of their colours on their walls, the model's
-   footprint outlined and any room outside it in red), the cut-away plan
-   level from two diagonals as the page draws it, and — once docs/v2/walk.js
-   offers Walk.snapshot — first-person frames from the door and before up to
-   six hung works, each work a stand-in picture of its three colours
-   (Artsy's image store is not reachable from a session). It prints the
-   frame times. */
+   footprint and any room outside it in red), the cut-away plan level from
+   two diagonals as the page draws it, and — once docs/v2/walk.js offers
+   Walk.snapshot(world, hung, {x, y, a, floor, w, h, dot}), resolving to a
+   canvas of one frame — first-person frames from the door and before up to
+   six hung works. Artsy's pictures are stood in for by each work's three
+   colours (its image store is not reachable from a session); nothing else
+   leaves the page. It prints the frame times. */
 
 const fs = require("fs");
 const path = require("path");
@@ -72,7 +75,7 @@ function checkOne(file, W, museums, opts) {
   res.ground = ground;
   // The tier, written back where it stands, without reflowing the file.
   if (!res.errors.length && interior.tier !== res.tier) {
-    const next = text.replace(/"tier": "(documented|reconstructed|shell)"/, `"tier": "${res.tier}"`);
+    const next = text.replace(/"tier":(\s*)"(documented|reconstructed|shell)"/, (m, sp) => `"tier":${sp}"${res.tier}"`);
     if (next !== text) { fs.writeFileSync(file, next); }
   }
   return res;
@@ -103,6 +106,7 @@ function report(r, brief) {
 
 // The museum's entry in the ledger: its interior, and the findings against its model.
 function record(results) {
+  // Read just before writing: the daily routine and other runs write here too.
   const ledger = readJSON(LEDGER, null);
   if (!ledger) { return; }
   let changed = false;
@@ -125,42 +129,135 @@ function record(results) {
     inside.works = works;
     if (JSON.stringify([inside.tier, inside.rooms, inside.works]) !== was || !entry.interior) { changed = true; }
     entry.interior = inside;
-    // Findings for the model's next refinement, each once.
+    // The findings against the model, for its next refinement: the checker's
+    // current ones, a line each, rewritten as they change — a line that
+    // still holds stays where it is, one that no longer does is taken out
+    // (the refinement's own line says what changed), a new one goes last.
     entry.log = entry.log || [];
-    for (const f of r.findings || []) {
-      let line;
-      if (f.room) {
-        line = `interior finding: documented room ${f.room} (${f.floor}) lies ${Math.round(f.out * 100)}% outside the model, ` +
-               `x ${f.x0.toFixed(1)} to ${f.x1.toFixed(1)}, y ${f.y0.toFixed(1)} to ${f.y1.toFixed(1)} m`;
-      } else if (f.ground !== undefined) {
-        line = `interior finding: only ${Math.round(f.ground * 100)}% of the model's footprint stands on the ground's buildings`;
-      } else if (f.text) {
-        line = "interior finding: " + f.text;
-      }
-      if (line && !entry.log.some(l => l.indexOf(line) >= 0)) {
-        entry.log.push(`${today()} ${line}`);
-        changed = true;
-      }
+    const now = (r.findings || []).map(findingLine).filter(Boolean);
+    const mine = /^\d{4}-\d{2}-\d{2} interior finding: /;
+    const kept = [], had = new Set();
+    for (const line of entry.log) {
+      if (!mine.test(line)) { kept.push(line); continue; }
+      const text = line.slice(11);
+      if (now.includes(text) && !had.has(text)) { kept.push(line); had.add(text); } else { changed = true; }
     }
+    for (const text of now) {
+      if (!had.has(text)) { kept.push(`${today()} ${text}`); had.add(text); changed = true; }
+    }
+    entry.log = kept;
   }
-  if (changed) { fs.writeFileSync(LEDGER, JSON.stringify(ledger, null, 1) + "\n"); }
+  if (changed) { fs.writeFileSync(LEDGER, pythonJSON(ledger) + "\n"); }
 }
 
-// Several documented rooms outside the model are one finding: the model's
-// extent against theirs, as the next refinement needs it.
+// The ledger as the Python scripts write it (json.dumps, indent 2, ASCII),
+// so a run of the checker changes only the lines it means to.
+function pythonJSON(x) {
+  return JSON.stringify(x, null, 2).replace(/[\u0080-\uffff]/g, ch => "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"));
+}
+
+function findingLine(f) {
+  if (f.text) { return "interior finding: " + f.text; }
+  if (f.room) {
+    return `interior finding: documented room ${f.room} (${f.floor}) lies ${Math.round(f.out * 100)}% outside the model, ` +
+           `x ${f.x0.toFixed(1)} to ${f.x1.toFixed(1)}, y ${f.y0.toFixed(1)} to ${f.y1.toFixed(1)} m`;
+  }
+  if (f.ground !== undefined) {
+    return `interior finding: only ${Math.round(f.ground * 100)}% of the model's footprint stands on the ground's buildings`;
+  }
+  return null;
+}
+
+// How far the model's footprint reaches across a band of it, at a floor's
+// eye height: along y for a band of x (axis "x"), or along x for a band of
+// y — the voxels built there and over them, a wall rather than a step or a
+// kerb, and not a post standing alone. [lo, hi] or null.
+function modelReach(world, z, axis, lo, hi) {
+  const vx = world && world.vox;
+  if (!vx) { return null; }
+  const k = Math.floor((z + 1.6) / vx.v);
+  if (k < 0 || k >= vx.nz) { return null; }
+  const plane = vx.nx * vx.ny;
+  const at = (i, j, kk) => {
+    if (kk >= vx.nz) { return true; }
+    const m = vx.grid[kk * plane + j * vx.nx + i];
+    return !!(m && vx.built[m - 1]);
+  };
+  const built = (i, j) => i >= 0 && j >= 0 && i < vx.nx && j < vx.ny && at(i, j, k) && at(i, j, k + 1);
+  let a = Infinity, b = -Infinity;
+  for (let j = 0; j < vx.ny; j += 1) {
+    for (let i = 0; i < vx.nx; i += 1) {
+      if (!built(i, j) || !(built(i - 1, j) || built(i + 1, j) || built(i, j - 1) || built(i, j + 1))) { continue; }
+      const x = (i + 0.5) * vx.v - vx.site[0] / 2, y = (j + 0.5) * vx.v - vx.site[1] / 2;
+      const on = axis === "x" ? x : y, across = axis === "x" ? y : x;
+      if (on < lo || on > hi) { continue; }
+      a = Math.min(a, across - vx.v / 2); b = Math.max(b, across + vx.v / 2);
+    }
+  }
+  return isFinite(a) ? [a, b] : null;
+}
+
+// Several documented rooms outside the model are one finding a floor, said
+// the way the next refinement needs it: which way the rooms overreach the
+// model (for each room, the way it would take the smaller change to the
+// model to take it in), and across the bands they stand in, how far the
+// rooms reach that way and how far the model does — the National Gallery's
+// wings, 92 m deep in its own outlines and 62 m in its model.
 function gather(r) {
   const rooms = (r.findings || []).filter(f => f.room);
-  if (rooms.length < 4) { return; }
+  if (rooms.length < 4 || !r.world) { return; }
   const by = {};
   rooms.forEach(f => { (by[f.floor] = by[f.floor] || []).push(f); });
   const out = (r.findings || []).filter(f => !f.room);
+  const c = r.world.cos, s = r.world.sin;
+  // A room's extent in the model's frame.
+  const extent = room => {
+    const pts = room.poly.map(p => [p[0] * c - p[1] * s, p[0] * s + p[1] * c]);
+    return [Math.min(...pts.map(p => p[0])), Math.min(...pts.map(p => p[1])),
+            Math.max(...pts.map(p => p[0])), Math.max(...pts.map(p => p[1]))];
+  };
+  const median = a => { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
   Object.keys(by).forEach(fid => {
-    const list = by[fid];
-    const y0 = Math.min(...list.map(f => f.y0)), y1 = Math.max(...list.map(f => f.y1));
-    const x0 = Math.min(...list.map(f => f.x0)), x1 = Math.max(...list.map(f => f.x1));
-    out.push({ text: `${list.length} documented rooms on the ${fid} floor lie outside the model ` +
-                     `(${list.map(f => f.room).slice(0, 12).join(", ")}${list.length > 12 ? ", …" : ""}), ` +
-                     `between x ${x0.toFixed(1)} and ${x1.toFixed(1)}, y ${y0.toFixed(1)} and ${y1.toFixed(1)} m` });
+    const list = by[fid], fl = r.world.floors.find(f => f.id === fid);
+    if (!fl) { return; }
+    const documented = fl.rooms.filter(room => !room.pseudo && room.sure === "documented" && room.poly).map(extent);
+    // Each room: the model's reach across its band either way, and which way it overshoots least.
+    const each = list.map(f => {
+      const my = modelReach(r.world, fl.z, "x", f.x0, f.x1), mx = modelReach(r.world, fl.z, "y", f.y0, f.y1);
+      const oy = my ? Math.max(0, my[0] - f.y0, f.y1 - my[1]) : Infinity;
+      const ox = mx ? Math.max(0, mx[0] - f.x0, f.x1 - mx[1]) : Infinity;
+      const axis = oy > 0 && (oy <= ox || !(ox > 0)) ? "y" : "x";
+      return { f, axis, m: axis === "y" ? my : mx };
+    }).filter(e => e.m);
+    const ids = list.map(f => f.room);
+    let text = `${list.length} documented rooms of the ${fl.name || fid} lie outside the model (` +
+               `${ids.slice(0, 12).join(", ")}${ids.length > 12 ? ", …" : ""})`;
+    const ys = each.filter(e => e.axis === "y"), xs = each.filter(e => e.axis === "x");
+    const way = ys.length >= xs.length ? ys : xs;
+    if (way.length) {
+      const axis = way[0].axis, along = axis === "y" ? "x" : "y";
+      // The bands the rooms stand in, joined where they touch.
+      const bands = way.map(e => axis === "y" ? [e.f.x0, e.f.x1] : [e.f.y0, e.f.y1]).sort((a, b) => a[0] - b[0]);
+      const joined = [];
+      bands.forEach(b => {
+        const last = joined[joined.length - 1];
+        if (last && b[0] <= last[1] + 2) { last[1] = Math.max(last[1], b[1]); } else { joined.push(b.slice()); }
+      });
+      // How far the documented rooms in those bands reach, and the model.
+      let a = Infinity, b = -Infinity;
+      documented.forEach(e => {
+        const on = axis === "y" ? [e[0], e[2]] : [e[1], e[3]];
+        if (!joined.some(j => on[1] >= j[0] && on[0] <= j[1])) { return; }
+        a = Math.min(a, axis === "y" ? e[1] : e[0]); b = Math.max(b, axis === "y" ? e[3] : e[2]);
+      });
+      const m0 = median(way.map(e => e.m[0])), m1 = median(way.map(e => e.m[1]));
+      if (isFinite(a)) {
+        text += `: its rooms reach ${axis} ${a.toFixed(1)} to ${b.toFixed(1)} m (${(b - a).toFixed(1)} m) where the model reaches ` +
+                `${axis} ${m0.toFixed(1)} to ${m1.toFixed(1)} m (${(m1 - m0).toFixed(1)} m), in ${along} ` +
+                joined.map(j => `${j[0].toFixed(1)} to ${j[1].toFixed(1)}`).join(" and ") + " m";
+      }
+    }
+    out.push({ text });
   });
   r.findings = out;
 }
@@ -170,6 +267,30 @@ function playwright() {
     const root = execSync("npm root -g").toString().trim();
     return require(path.join(root, "playwright"));
   }
+}
+
+// A stand-in for a work's picture: its three measured colours as bands,
+// 5:3:2 from the top, the way the walk shows a saved work before its picture
+// comes (Artsy's image store is not reachable from a session). A small BMP,
+// which needs no library to write.
+function standIn(colours, w = 60, h = 40) {
+  const rgb = (colours || []).map(c => {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c || "");
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [128, 128, 128];
+  });
+  while (rgb.length < 3) { rgb.push(rgb[rgb.length - 1] || [128, 128, 128]); }
+  const row = Math.ceil(w * 3 / 4) * 4, size = 54 + row * h, b = Buffer.alloc(size);
+  b.write("BM", 0); b.writeUInt32LE(size, 2); b.writeUInt32LE(54, 10);
+  b.writeUInt32LE(40, 14); b.writeInt32LE(w, 18); b.writeInt32LE(-h, 22);   // rows top down
+  b.writeUInt16LE(1, 26); b.writeUInt16LE(24, 28); b.writeUInt32LE(row * h, 34);
+  for (let y = 0; y < h; y += 1) {
+    const c = y < h * 0.5 ? rgb[0] : y < h * 0.8 ? rgb[1] : rgb[2];
+    for (let x = 0; x < w; x += 1) {
+      const o = 54 + y * row + x * 3;
+      b[o] = c[2]; b[o + 1] = c[1]; b[o + 2] = c[0];
+    }
+  }
+  return b;
 }
 
 async function pictures(results, dir) {
@@ -184,6 +305,14 @@ async function pictures(results, dir) {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
     const errors = [];
     page.on("pageerror", e => errors.push(e.message));
+    // Artsy's pictures, stood in for by each work's three colours; nothing else leaves the page.
+    const byKey = {};
+    (r.interior.works || []).forEach(w => { if (w.i) { byKey[w.i] = w.c; } });
+    await page.route(/^https?:\/\//, route => {
+      const m = /d32dm0rphc51dk\.cloudfront\.net\/([^/]+)\//.exec(route.request().url());
+      if (m) { return route.fulfill({ status: 200, contentType: "image/bmp", body: standIn(byKey[m[1]]) }); }
+      return route.abort();
+    });
     await page.setContent(`<!doctype html><body style="margin:0;background:#0f0c0a">
       <canvas id="c"></canvas>${code.map(c => `<script>${c}</script>`).join("")}</body>`);
     const out = await page.evaluate(async ({ interior, model, museum, dirt }) => {
@@ -196,9 +325,11 @@ async function pictures(results, dir) {
       const cellOf = (m, a) => ((Math.floor(a) % m) + m) % m;
       const lat = museum ? museum.lat : 0, lon = museum ? museum.lon : 0;
       const u0 = Math.floor((lon / 360 + 0.5) * 2 * n), v0 = Math.floor((0.5 - lat / 180) * n);
-      // The soil as land.js reads it: soilCell(dirt.land, b, i, j).
+      // The soil as the page gives it to the model and the plan: i east, j
+      // south of the museum's point, a pixel of dirt-land.png a cell
+      // (land.js: (i, j) => soilCell(dirt.land, b, j, i)).
       const soil = (i, j) => {
-        const o = (cellOf(n, v0 + i) * n + cellOf(n, u0 + j)) * 4;
+        const o = (cellOf(n, v0 + j) * n + cellOf(n, u0 + i)) * 4;
         return [px[o], px[o + 1], px[o + 2], Math.round(px[o + 3] / 85)];
       };
       const shots = {};
@@ -277,7 +408,7 @@ async function pictures(results, dir) {
         shots["plan-" + fl.id] = c.toDataURL("image/png");
       });
       // The cut-away plan level, from two diagonals.
-      const dotsOf = Models.build(model, (i, j) => soil(j, i));
+      const dotsOf = Models.build(model, soil);
       const times = [];
       [Math.PI / 4, Math.PI * 5 / 4].forEach((h, k) => {
         const fl = world.floors[world.enter ? world.enter.floor : 0];
