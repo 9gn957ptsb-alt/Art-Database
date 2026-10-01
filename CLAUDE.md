@@ -82,6 +82,11 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   Every time, the way the DIRT session always links the word DIRT to its
   artifact (artist's request, 23 Sep 2026). That link is the one link to
   everything — never a deep link into the page.
+- **Replies are a game of associations** (artist, 1 Oct 2026: "I read everything you respond to me with, so be
+  more creative in your responses so that I can be more creative as well … give me constructive feedback while
+  refining your responses to be shorter and more to the point so that we can really benefit and map out all the
+  novel connections to be made in what we build"). Short. Lead with the idea, not the process; offer a connection
+  or two he hasn't made, and say plainly where an idea is weak.
 - Don't paste a bare URL on every update — say it's done; the linked words
   carry the link. Keep publishing the updated artifact each time.
 - The work photographs are placeholders until shot properly. Don't crop or
