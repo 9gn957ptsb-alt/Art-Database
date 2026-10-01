@@ -2826,11 +2826,19 @@ float frieze(vec2 p, float T, out vec3 col) {
     float l = lum(c);
     c = mix(c, mix(vec3(22, 58, 66), vec3(238, 196, 146), smoothstep(30.0, 220.0, l)), 0.42);   // teal shadow, amber light
     c += (cellHash(p + floor(T * 8.0), 52008u) - 0.5) * 34.0 * (1.0 - smoothstep(40.0, 140.0, l));   // grain in the dark
-    band = mix(faceAt(f0, vec2(0.5), 6.0), vec3(238, 196, 146), 0.3);
+    // its field: one colour along the whole row (never a block a face), turning slowly from one face's mean to another's
+    int fa = int(mixh(hr + 12u) % uint(uFN)), fb = int(mixh(hr + 13u) % uint(uFN));
+    band = mix(mix(faceAt(fa, vec2(0.5), 7.0), faceAt(fb, vec2(0.5), 7.0), vnoise(vec2(x, row * 89.0), 233.0, 52012u)), vec3(238, 196, 146), 0.3);
   } else if (y < FR2) {
-    float yy = (y - FR1) / (FR2 - FR1), v = (x + blur * (cellHash(p, 52010u) - 0.5)) / 5.0 + abs(yy - 0.5) * (FR2 - FR1) * FZH / 2.5;
-    int b = int(mod(floor(v), 3.0));
-    c = b == 0 ? vec3(178, 66, 50) : b == 1 ? vec3(54, 74, 170) : vec3(228, 220, 202);
+    // chevrons as a hand draws them: the stroke wavers, and the pan drags it along the row
+    float yy = (y - FR1) / (FR2 - FR1) + 0.12 * (vnoise(vec2(x, row), 21.0, 52011u) - 0.5);
+    c = vec3(0.0);
+    for (int q = 0; q < 3; q++) {
+      float v = (x + (float(q) - 1.0) * blur * 0.6) / (5.0 + 1.5 * vnoise(vec2(x, row), 55.0, 52013u)) + abs(yy - 0.5) * (FR2 - FR1) * FZH / 2.5;
+      int b = int(mod(floor(v), 3.0));
+      c += b == 0 ? vec3(178, 66, 50) : b == 1 ? vec3(54, 74, 170) : vec3(228, 220, 202);
+    }
+    c /= 3.0;
     band = vec3(150, 112, 132);
   } else {
     float yy = (y - FR2) / (1.0 - FR2);

@@ -2401,7 +2401,7 @@ function stopRecording() {
 if (!SITE) {
   const box = document.createElement("div");
   box.className = "cap";
-  box.innerHTML = `<button type="button" id="cap-else" title="Somewhere else, now (E)" hidden>Elsewhere</button>
+  box.innerHTML = `<button type="button" id="cap-else" title="Somewhere else, now (E)" style="display:none">Elsewhere</button>
     <button type="button" id="cap-still" title="Keep this view as a picture" hidden>Still</button>
     <button type="button" id="cap-rec" title="Keep this view moving, as a video" hidden>Record</button>`;
   document.querySelector(".bar").appendChild(box);
