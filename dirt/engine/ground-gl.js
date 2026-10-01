@@ -2799,7 +2799,7 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
   float z = vnoise(p + 34.0 * (vec2(vnoise(p, 89.0, 52003u), vnoise(p, 89.0, 52004u)) - 0.5), 987.0, 52001u);
-  float m = smoothstep(0.66, 0.7, z);
+  float m = smoothstep(0.74, 0.78, z);                               // (rarer: a crowd now and then, not the rule)
   if (m <= 0.0) return 0.0;
   float d = smoothstep(0.3, 0.8, vnoise(p, 610.0, 52002u));        // how far dissolved toward the fields
   float row = floor(p.y / FZH), y = p.y / FZH - row;                 // 0 at a frieze's top, 1 at its foot
@@ -2876,8 +2876,11 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
     uint hq = h3(q.x, q.y, 53001u);
     if (unit(hq) > 0.236) continue;                                 // phi^-3 of the squares have one
     vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
-    float r = 89.0 + 55.0 * unit(mixh(hq + 3u)), d = length(p - c) / r;
-    if (d < bd) { bd = d; C = c; R = r; h = hq; }
+    // a portrait, as tall as a face crop is (5 to 4), torn out like a photograph: its edge wanders by a few cells
+    float r = 89.0 + 55.0 * unit(mixh(hq + 3u));
+    vec2 e = abs(p - c) / vec2(r * 0.8, r);
+    float dd = max(e.x, e.y) + 0.04 * (vnoise(p, 5.0, 53010u) - 0.5) + 0.03 * (vnoise(p, 21.0, 53011u) - 0.5);
+    if (dd < bd) { bd = dd; C = c; R = r; h = hq; }
   }
   if (bd >= 1.0) return 0.0;
   vec2 d = p - C;
@@ -2895,18 +2898,68 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
     float e = length(p - q);
     if (e < d1) { d2 = d1; d1 = e; tc = q; } else if (e < d2) d2 = e;
   }
-  bool self = unit(mixh(h + 6u)) < 0.5;                               // the plane itself, or one face
-  int ft = int(mixh(h + 7u) % uint(uFN));
-  vec3 tgt = self ? was(lp + (tc - p), 2.0) : faceAt(ft, vec2(0.5 + (tc - C).x / (2.0 * R * 0.8), 0.5 + (tc - C).y / (2.0 * R)), 1.0);
+  int ft = int(mixh(h + 7u) % uint(uFN));                            // the face the whole is, made of all the others
+  vec3 tgt = faceAt(ft, vec2(0.5 + (tc - C).x / (2.0 * R * 0.8), 0.5 + (tc - C).y / (2.0 * R)), 1.0);
   int f = faceFor(tgt);
   vec3 tile = faceAt(f, 0.5 + (p - tc) / (2.2 * sp) * vec2(1.0, 0.8), 0.0);
   col = mix(tile, tgt, 0.3 + 0.2 * sin(T * 0.21 + 6.2832 * unit(mixh(h + 8u))));   // the large picture, showing through
   col *= mix(0.6, 1.0, smoothstep(0.3, 1.3, d2 - d1));                // the seams between the tiles
-  return smoothstep(1.0, 1.0 - 13.0 / R, bd);
+  col = mix(col, vec3(238, 232, 218), smoothstep(1.0 - 3.0 / R, 1.0, bd));   // the white border of a print, torn
+  return 1.0;
+}
+// ---- the exquisite corpse ---------------------------------------------------------------------------------------
+// The Surrealists' game (Paris, from 1925; named for the first sentence it made, "Le cadavre exquis boira le vin
+// nouveau"): a sheet folded in sections, each player drawing one without seeing the others, only a few lines crossing
+// each fold. Here and there DRIFT unfolds one: a sheet 55 cells wide and 144 tall in Fibonacci sections, a head of 34
+// made of two faces (the top of one and the bottom of another, meeting at the nose, as two players' halves meet), a
+// torso of 55 cut from one painting and legs of 55 cut from another, each section set a little aside from the one
+// above as a different hand would set it, outlined in ink, with creases at the folds and torn paper round it.
+float corpse(vec2 p, float T, out vec3 col) {
+  col = vec3(0.0);
+  if (uFN <= 0) return 0.0;
+  const float G = 610.0 * ${FKS}, W = 55.0, H = 144.0;
+  ivec2 sq = ivec2(floor(p / G));
+  uint h = h3(sq.x, sq.y, 54001u);
+  if (unit(h) > 0.236) return 0.0;                                   // in phi^-3 of the squares
+  vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - 160.0, 0.0);
+  float a = (unit(mixh(h + 3u)) - 0.5) * 0.3;
+  vec2 q = mat2(cos(a), -sin(a), sin(a), cos(a)) * (p - o);
+  float e = max(abs(q.x) - W * 0.5, abs(q.y) - H * 0.5) + 2.5 * (vnoise(p, 3.0, 54002u) - 0.5);
+  if (e > 0.0) return 0.0;
+  float y = q.y + H * 0.5;                                           // 0 at the top of the sheet
+  int sec = y < 17.0 ? 0 : y < 34.0 ? 1 : y < 89.0 ? 2 : 3;
+  float x = q.x / W + 0.5 + 0.08 * (unit(mixh(h + 10u + uint(sec))) - 0.5);   // each hand sets its part a little aside
+  vec3 paper = vec3(236, 228, 210) + 10.0 * (cellHash(p, 54003u) - 0.5), c = paper;
+  float m = 0.0, ink = 1e9;
+  if (sec <= 1) {                                                    // the head: the top of one face, the bottom of another
+    int f = int(mixh(h + 4u + uint(sec)) % uint(uFN));
+    float hy = y / 34.0, ex = (x - 0.5) / 0.44, ey = (hy - 0.52) / 0.5, r = length(vec2(ex, ey));
+    m = 1.0 - smoothstep(0.96, 1.0, r); ink = abs(r - 1.0) * 17.0;
+    c = faceAt(f, vec2(x, hy), 0.0);
+  } else if (sec == 2) {                                             // the torso: shoulders narrowing to the waist
+    float ty = (y - 34.0) / 55.0, hw = mix(0.47, 0.3, ty) + 0.05 * sin(ty * 3.1416);
+    float dx = abs(x - 0.5) - hw;
+    m = 1.0 - smoothstep(-0.02, 0.0, dx); ink = abs(dx) * W;
+    float ql = float(mixh(h + 6u) % uint(max(uQN, 1)));
+    c = texture(uQuilt, vec3(vec2(x, ty) * 0.35 + vec2(unit(mixh(h + 7u)), unit(mixh(h + 8u))), ql)).rgb * 255.0;
+  } else {                                                           // the legs: two, tapering to the feet
+    float ly = (y - 89.0) / 55.0, cx = abs(x - 0.5), hw = mix(0.11, 0.06, ly), lx = abs(cx - 0.15) - hw;
+    if (ly > 0.9) lx = min(lx, abs(cx - 0.18) - 0.12);              // the feet, turned out
+    m = 1.0 - smoothstep(-0.02, 0.0, lx); ink = abs(lx) * W;
+    float ql = float(mixh(h + 9u) % uint(max(uQN, 1)));
+    c = texture(uQuilt, vec3(vec2(x, ly) * 0.35 + vec2(unit(mixh(h + 11u)), unit(mixh(h + 12u))), ql)).rgb * 255.0;
+  }
+  col = mix(paper, c, m);
+  col = mix(col, vec3(34, 28, 26), (1.0 - smoothstep(0.4, 1.2, ink)) * 0.85);   // the drawn outline
+  float fold = min(min(abs(y - 17.0), abs(y - 34.0)), abs(y - 89.0));
+  col *= 0.86 + 0.14 * smoothstep(0.0, 1.5, fold);                   // the creases where it was folded
+  col *= 0.9 + 0.1 * smoothstep(-3.0, 0.0, -abs(e));                 // its torn edge, a shade darker
+  return 1.0;
 }
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
+  { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
   { vec3 mz; float mm = mosaic(p, lp, T, mz);                         // a photomosaic, where there is one
     if (mm > cellHash(p, 53009u)) { outA = outB = vec4(clamp(mz, 0.0, 255.0) / 255.0, 1.0); return; } }
   { vec3 fz; float fm = frieze(p, T, fz);                             // a frieze, where there is one, over everything here

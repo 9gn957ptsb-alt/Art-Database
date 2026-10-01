@@ -304,7 +304,7 @@ the calm islands, the passages and their oversprays, the collage's and the world
 the gardens all change in 377 to 987 cells where they took 987 to 2584, so a swipe of a phone's width or two is
 already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1.
 
-**Friezes, after Rothko.** In places, about one part in seven, the collage gives way to friezes (`ground-gl.js`,
+**Friezes, after Rothko.** Now and then (rarer since the exquisite corpses came), the collage gives way to friezes (`ground-gl.js`,
 `frieze()`): rows 89 cells high in three registers in golden proportion, as Rothko stacked heads over torsos over feet
 in his mythic paintings of 1938 to 1942 (*Antigone*, 1939–40). On top (φ⁻¹ of the row), faces from the saved paintings
 (68 of them, found by `artists/faces.py` and kept in `private/faces/`, published beside the page) line up and overlap,
@@ -314,6 +314,14 @@ row only, with a ghost a third of a face behind, teal in the shadows and amber i
 after a photograph of Aries's. Across a few hundred cells the friezes dissolve into bands of colour, each register its
 own field with feathered edges: Rothko's later fields are those friezes with the figures gone, and DRIFT walks from one
 to the other in space, so the plane now runs from its densest collage to near-empty bands within a swipe.
+
+**The exquisite corpse.** Where faces and bodies merge, they merge as in the Surrealists' game (Paris, from 1925; named
+for the first sentence it made, *Le cadavre exquis boira le vin nouveau*): a sheet folded in sections, each player
+drawing one without seeing the others. In φ⁻³ of the 233-cell squares a sheet 55 cells wide and 144 tall unfolds in
+Fibonacci sections: a head of 34 made of two faces, the top of one and the bottom of another meeting at the nose; a
+torso of 55 cut from one painting, shoulders narrowing to the waist; legs of 55 cut from another, tapering to turned-out
+feet. Each section is set a little aside from the one above, as another hand would set it, outlined in ink, creased at
+the folds, the paper torn round it. One or two faces at a time, against the crowds of the friezes, which are now rarer.
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
@@ -328,10 +336,9 @@ it lingers where Aries would have kept the frame. Every still kept joins the tas
 
 **Photomosaics, after Robert Silvers.** Silvers made pictures out of many small pictures (the Photomosaic, from his
 years at the MIT Media Lab in the 1990s), each tile chosen because its colour matches that spot of the large picture.
-Here and there (in φ⁻³ of the 377-cell squares) a disc 89 to 144 cells across is made of the faces from the saved
-paintings: either one face made of all the others, as his portraits are, or the plane itself, its own last frame
-recomposed out of faces, which up close are faces and from afar the place (as Dalí's *Gala Contemplating the
-Mediterranean Sea*, 1976, becomes Lincoln from twenty metres). Never a grid: the tiles lie on a sunflower, each a
+Here and there (in φ⁻³ of the 377-cell squares) a portrait 143 to 230 cells tall, torn out like a photograph with its
+white border, is one face made of all the other faces from the saved paintings: the whole is itself a picture, as his
+portraits are, never a shape for its own sake. Never a grid: the tiles lie on a sunflower, each a
 golden angle round from the last, each cell the part of the disc nearest its tile's middle, found among the tiles at
 about the same distance from the middle whose turn (k × φ⁻² of a full turn) is near the point's. Which face best matches a colour is worked out once, on loading, into
 a table of 8 × 8 × 8 colours, so a tile costs one look-up. The large picture shows through its tiles more and less
