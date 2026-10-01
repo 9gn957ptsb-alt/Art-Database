@@ -1456,6 +1456,7 @@
      you have come down a third of a height into it; the one before fades. */
   function journeyLand(now) {
     var J = journey;
+    if (bodyOn()) { return; }          // the body is the land, drawn where the world is, every frame
     if (zoom < JOURNEY_WORLD) {
       if (J.wk !== "world") {
         keepLand(now);
@@ -2771,6 +2772,10 @@
      neighbour as it does up on the globe. It is not a different surface; it
      is the same surface, close to. */
   function weave(at, opts) {
+    // Over the body of works (earth-body.js) every cell is already one
+    // painting's clod, and a door: the dots woven over it said nothing more,
+    // so there are none, and nothing to weave.
+    if (bodyOn()) { woven.spin = null; return; }
     var lat = [];
     var lon = [];
     var salt = [];
@@ -2873,9 +2878,6 @@
     // the ink was a correction for colours that were pale by accident, and
     // the colours are chosen now rather than inherited.
     wTones = masses.map(function (mass) { return mass.ink; });
-    // With the body of works, every dot wears the work of the cell it lies on
-    // (at the level the body draws at this height).
-    var bodyK = bodyOn() ? EarthBody.levelOf(R) : -1;
 
     for (var k = 0; k < wCount; k += 1) {
       wSinLat[k] = Math.sin(lat[k]);
@@ -2907,9 +2909,7 @@
         var esize = Math.round(E.px[eo + 3] / 85);
         wSize[k] = esize;
         if (esize) {
-          // With the body of works, a dot wears the work of the cell it lies on.
-          var ergb = bodyK >= 0 ? EarthBody.rgbOf(EarthBody.entryIndexAt(lat[k], lon[k], bodyK))
-            : E.px[eo] + "," + E.px[eo + 1] + "," + E.px[eo + 2];
+          var ergb = E.px[eo] + "," + E.px[eo + 1] + "," + E.px[eo + 2];
           if (inkAt[ergb] === undefined) { inkAt[ergb] = wInks.length; wInks.push(ergb); }
           wInk[k] = inkAt[ergb];
         }
@@ -2920,8 +2920,8 @@
         var size = Math.round(tile.px[o + 3] / 85);
         wSize[k] = size;
         if (size) {
-          var rgb = bodyK >= 0 ? EarthBody.rgbOf(EarthBody.entryIndexAt(lat[k], lon[k], bodyK))
-            : dirt.pal ? dressed(tile.px[o], tile.px[o + 1], tile.px[o + 2], lat[k], lon[k], !deep)
+          var rgb = dirt.pal
+            ? dressed(tile.px[o], tile.px[o + 1], tile.px[o + 2], lat[k], lon[k], !deep)
             : tile.px[o] + "," + tile.px[o + 1] + "," + tile.px[o + 2];
           if (inkAt[rgb] === undefined) { inkAt[rgb] = wInks.length; wInks.push(rgb); }
           wInk[k] = inkAt[rgb];
@@ -3015,6 +3015,14 @@
         c.height = canvas.height;
       }
     });
+    if (bodyOn()) {
+      [into ? into[0] : wctx, into ? into[1] : wctx2].forEach(function (c) {
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+      });
+      if (!into) { woven.spin = spin; woven.loose = false; woven.w = W; woven.h = H; woven.r = R; woven.cx = cx; woven.cy = cy; }
+      return;
+    }
 
     var cosS = Math.cos(spin);
     var sinS = Math.sin(spin);
@@ -3180,7 +3188,8 @@
      are headed and soft round the edges, the month's cloud on a layer above
      the ground that swells past you as you come down, the land sharpening as
      you descend, the air thick at the limb, and stars far behind when high. */
-  function bodyOn() { return DIRT_LOOK && !!window.EarthBody && EarthBody.ready(); }
+  var bodyScale = 1, bodyGone = false;
+  function bodyOn() { return DIRT_LOOK && !bodyGone && !!window.EarthBody && EarthBody.ready(); }
 
   // How high a journey is, 0 on the ground of a city to 1 with the world whole.
   function journeyHigh() { return Math.max(0, Math.min(1, 1 - Math.log(Math.max(1, zoom)) / Math.log(600))); }
@@ -3192,8 +3201,10 @@
     var v = slerp3(journey.av, journey.bv, journey.om, Math.min(1, route.u + 0.1));
     var p = project(latOf(v), lonOf(v));
     var amt = Math.min(1, went / 0.14) * (1 - Math.max(0, Math.min(1, (went - 0.78) / 0.2)));
+    // Softer at the edges the higher you are; as you come down the land sharpens.
+    var up = smooth01((journeyHigh() - 0.15) / 0.5);
     return { x: Math.max(0.2 * W, Math.min(0.8 * W, p.x)), y: Math.max(0.2 * H, Math.min(0.8 * H, p.y)),
-             amt: 0.85 * amt * amt * (3 - 2 * amt), r: 0.5 * Math.sqrt(W * W + H * H) };
+             amt: 0.8 * up * amt * amt * (3 - 2 * amt), r: 0.5 * Math.sqrt(W * W + H * H) };
   }
 
   function drawBody(now) {
@@ -3207,17 +3218,27 @@
     // The cloud layer: as you come down it lies nearer you than the ground,
     // so it swells and slides past faster, and is gone before you land.
     var kc = Math.min(0.62, zoom / 260);
-    var cloud = on * Math.max(0, Math.min(1, (zoom - 1.1) / 1.3)) * (1 - smooth01((kc - 0.32) / 0.3)) *
+    var cloud = on * Math.max(0, Math.min(1, (zoom - 1.1) / 1.3)) * (1 - smooth01((kc - 0.18) / 0.22)) *
                 (1 - smooth01((went - 0.8) / 0.17)) * 0.8;
     var stars = on * smooth01((high - 0.35) / 0.45) * (1 - smooth01((went - 0.85) / 0.15)) * 0.9;
     var sv = toVec(sun.lat, sun.lon);
+    // How much the ground is a city's ground (lit evenly, seated dark under
+    // the names): at each end of a journey what it is there; between, by
+    // how high you are, so the sun comes back as you rise.
+    var near = nearness();
+    if (on) {
+      var ends = Math.abs(went - 0.5) * 2;
+      near += (1 - smooth01((high - 0.12) / 0.4) - near) * (1 - ends * ends * ends * ends);
+    }
     if (flying && doorShown) { hideDoor(); }
     // Once the body has come, the world's dots are woven again in its colours.
     if (!bodyWoven && !place && !flying && !journey) { bodyWoven = true; weave(); }
     stepFeel(now, cloud, kc);
     return EarthBody.draw({
-      W: W, H: H, dpr: Math.min(dpr, 2), cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
-      sun: sv, near: nearness(), high: high, journey: on, time: still ? 0 : now / 1000,
+      // At the page's own density, so each cell's edge falls on a device
+      // pixel (sharpen() steps it down on a machine that cannot keep up).
+      W: W, H: H, dpr: dpr * bodyScale, cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
+      sun: sv, near: near, high: high, journey: on, time: still ? 0 : now / 1000,
       focus: journeyFocus(), cloud: cloud, shell: 1 / (1 - kc), stars: stars,
       starX: ((spin * 140) % 4000 + 4000) % 4000, starY: tilt * 140, light: 1,
       feel: [feel.glass, feel.grain, feel.damp, feel.dense], crisp: feel.crisp
@@ -3246,7 +3267,7 @@
       var f = kind ? (kind.snow ? { crisp: 1 } : FEELS[kind.kind] || {}) : {};
       Object.keys(f).forEach(function (n) { want[n] = f[n]; });
       // Passing through the cloud layer: damp.
-      want.damp = Math.max(want.damp, cloud * smooth01((kc - 0.12) / 0.25));
+      want.damp = Math.max(want.damp, cloud * smooth01((kc - 0.08) / 0.2));
     }
     var k = 1 - Math.exp(-dt / 0.9);
     ["glass", "grain", "damp", "dense", "crisp"].forEach(function (n) { feel[n] += (want[n] - feel[n]) * k; });
@@ -3623,12 +3644,15 @@
           var lit = nx * sv[0] + ny * sv[1] + nz * sv[2];
           var dither = BAYER[(j & 7) * 8 + (i & 7)] / 64;
           var night = Math.max(0, Math.min(1, (0.03 - lit) / 0.15));
-          var nq = Math.min(3, Math.floor(night * 3 + dither)) / 3;
+          // Continuous over the body of works (cloud is vapour, not pixels);
+          // in three dithered steps over the old body.
+          var nq = bodyOn() ? night : Math.min(3, Math.floor(night * 3 + dither)) / 3;
           var dusk = Math.max(0, 1 - Math.abs(lit + 0.02) / 0.07);
           var cloud = cloudAt(lat, lon);
-          var cq = Math.min(3, Math.floor(cloud * 3 + dither * 0.999)) / 3;
+          var cq = bodyOn() ? smooth01((cloud - 0.12) / 0.8) : Math.min(3, Math.floor(cloud * 3 + dither * 0.999)) / 3;
           if (cloud > 0.9 && storms.length < 96) { storms.push(i, j); }
-          var an = Math.max(0.3 * nq, 0.16 * (dusk > 0.5 ? 1 : dusk > 0.2 ? 0.5 : 0));
+          // The body of works is lit by the sun itself: over it the night is a breath.
+          var an = bodyOn() ? 0.1 * nq : Math.max(0.3 * nq, 0.16 * (dusk > 0.5 ? 1 : dusk > 0.2 ? 0.5 : 0));
           var cn0 = nq > 0 ? NIGHT : DUSK;
           var ac = cq * (0.58 - 0.3 * nq);
           if (an <= 0 && ac <= 0) { continue; }
@@ -3648,8 +3672,9 @@
     block = weatherSeen.block;
     ctx.save();
     ctx.globalAlpha = fade;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = bodyOn();
     ctx.drawImage(weatherCanvas, 0, 0, weatherCanvas.width * block, weatherCanvas.height * block);
+    ctx.imageSmoothingEnabled = true;
     ctx.restore();
     return block;
   }
@@ -4648,6 +4673,7 @@
     if (!doorLabel) {
       doorLabel = el("p", "door-label");
       doorLabel.setAttribute("aria-live", "polite");
+      doorLabel.hidden = true;
       land.appendChild(doorLabel);
     }
     doorShown = { d: d, x: x, y: y, at: performance.now() };
@@ -4660,11 +4686,26 @@
       doorLabel.appendChild(el("span", "door-title", w ? w.t : "A saved work"));
       if (w && w.a) { doorLabel.appendChild(el("span", "door-by", w.a)); }
       doorLabel.hidden = false;
-      // Beside the cell, on whichever side has room, inside the window.
+      // Beside the cell — right, left, above, below, the first clear of the
+      // dial — inside the band the globe is shown in (clear of the column).
       var bw = doorLabel.offsetWidth, bh = doorLabel.offsetHeight, gap = 12;
-      var lx = x + gap + bw <= W - 8 ? x + gap : x - gap - bw;
-      var ly = Math.max(8, Math.min(H - bh - 8, y - bh / 2));
-      doorLabel.style.transform = "translate(" + Math.round(Math.max(8, lx)) + "px," + Math.round(ly) + "px)";
+      var band = place && art ? artBand() : { x: 0, y: 68, w: W, h: H - 136 };
+      var avoid = [].slice.call(document.querySelectorAll(".dial")).map(function (e) { return e.getBoundingClientRect(); })
+        .filter(function (r) { return r.width > 0; });
+      var best = null;
+      [[x + gap, y - bh / 2], [x - gap - bw, y - bh / 2], [x - bw / 2, y - gap - bh], [x - bw / 2, y + gap]].forEach(function (xy) {
+        var lx = Math.max(band.x + 8, Math.min(band.x + band.w - bw - 8, xy[0]));
+        var ly = Math.max(band.y + 8, Math.min(band.y + band.h - bh - 8, xy[1]));
+        var cover = 0;
+        avoid.forEach(function (r) {
+          var ox = Math.min(lx + bw, r.right + 6) - Math.max(lx, r.left - 6), oy = Math.min(ly + bh, r.bottom + 6) - Math.max(ly, r.top - 6);
+          if (ox > 0 && oy > 0) { cover += ox * oy; }
+        });
+        // never over the cell itself
+        if (x > lx - 4 && x < lx + bw + 4 && y > ly - 4 && y < ly + bh + 4) { cover += bw * bh; }
+        if (!best || cover < best.cover) { best = { x: lx, y: ly, cover: cover }; }
+      });
+      doorLabel.style.transform = "translate(" + Math.round(best.x) + "px," + Math.round(best.y) + "px)";
       doorLabel.dataset.on = "true";
     });
   }
@@ -4700,6 +4741,8 @@
     clearTimeout(doorRest);
     if (doorShown && Math.abs(x - doorShown.x) + Math.abs(y - doorShown.y) > 6) { hideDoor(); }
     if (!doorable()) { return; }
+    // The works' names are read the first time the pointer is on the world.
+    if (!finding && !pointDoor.asked && unproject(x, y)) { pointDoor.asked = true; readFinding(); }
     doorRest = setTimeout(function () {
       if (!doorable() || turning || panning || pinch) { return; }
       var d = doorAtPoint(x, y);
@@ -5268,6 +5311,11 @@
     if (fps < 45 && have > 1) {
       dprCap = Math.max(1, have - 0.5);
       geometry();
+    } else if (fps < 24 && bodyOn()) {
+      // A machine that cannot draw the body of works even at one to one
+      // draws it at half density, and failing that has the globe of before.
+      if (bodyScale > 0.5) { bodyScale = 0.5; }
+      else { bodyGone = true; hideDoor(); EarthBody.canvas().style.display = "none"; drawn.w = 0; weave(place ? { lat: focus.lat, lon: focus.lon } : null); }
     }
   }
 

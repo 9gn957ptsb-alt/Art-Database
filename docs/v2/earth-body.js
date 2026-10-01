@@ -26,9 +26,10 @@
    earth-props.webp, and DIRT Earth's cloud for the season.
 
    EarthBody.start(month) loads it; EarthBody.draw(o) renders a frame and
-   hands back its canvas (null until ready, or without WebGL 2, when the
-   globe is as it was); EarthBody.doorAt(lat, lon, R) names the work under a
-   point at a radius; EarthBody.kindAt(lat, lon) says what the place is. */
+   hands back its canvas, laid under the page's own (null until ready, or
+   without WebGL 2, when the globe is as it was); EarthBody.doorAt(lat, lon,
+   R) names the work under a point at a radius; EarthBody.light(door, amt)
+   lights its cell; EarthBody.kindAt(lat, lon) says what the place is. */
 (function () {
   "use strict";
 
@@ -94,14 +95,26 @@
     "  int nx = GWI << k, ny = GHI << k;",
     "  s.x = ((s.x % nx) + nx) % nx; s.y = clamp(s.y, 0, ny - 1);",
     "  ivec2 b = s >> k;",
+    "  if (k > 0) {",
+    // dithered between this cell and its neighbours, by where in it the small cell lies
+    "    uint h = pcg(uvec3(uint(s.x), uint(s.y), uint(k)));",
+    "    int sc = 1 << k, q = 32768 >> k;",
+    "    int tx = (2 * (s.x & (sc - 1)) + 1 - sc) * q, ty = (2 * (s.y & (sc - 1)) + 1 - sc) * q;",
+    "    int r1 = int(h & 65535u), r2 = int(h >> 16);",
+    "    b.x += tx >= 0 ? (r1 < tx ? 1 : 0) : (r1 < -tx ? -1 : 0);",
+    "    b.y += ty >= 0 ? (r2 < ty ? 1 : 0) : (r2 < -ty ? -1 : 0);",
+    "    b.x = ((b.x % GWI) + GWI) % GWI; b.y = clamp(b.y, 0, GHI - 1);",
+    "  }",
     "  uvec4 d = texelFetch(uDoors, b, 0);",
     "  uvec4 se = texelFetch(uSeason, b, 0);",
     "  uint months = se.r | ((se.g & 15u) << 8);",
     "  int e = ((months >> uint(uMonth)) & 1u) == 1u ? int((d.g >> 4) | (d.b << 4)) : int(d.r | ((d.g & 15u) << 8));",
     "  if (k > 0) {",
-    "    uint h = pcg(uvec3(uint(s.x), uint(s.y), uint(k)));",
-    "    if ((h & 7u) >= 3u) {",
-    "      int j = e * 8 + int((h >> 3) & 7u);",
+    // one of the eight works nearest it in colour; water mostly keeps its own, and stays calm
+    "    uint h2 = pcg(uvec3(uint(s.x), uint(s.y), uint(k + 16)));",
+    "    uint keep = (se.g >> 4) <= 2u ? 7u : 3u;",
+    "    if ((h2 & 7u) >= keep) {",
+    "      int j = e * 8 + int((h2 >> 3) & 7u);",
     "      uvec4 sb = texelFetch(uSib, ivec2(j & 511, j >> 9), 0);",
     "      e = int(sb.r | (sb.g << 8));",
     "    }",
@@ -146,7 +159,7 @@
     "  float d2 = dot(q, q);",
     "  float journey = uK.z, high = uK.y, near = uK.x;",
     "  float blur = uDof.z * smoothstep(0.35, 1.25, length(p - uDof.xy) / max(1.0, uDof.w));",
-    "  blur = clamp(blur + uFeel.z * 0.35 * journey - uCrisp * 0.3 * journey, 0.0, 1.0);",
+    "  blur = clamp(blur + uFeel.z * 0.2 * journey - uCrisp * 0.3 * journey, 0.0, 1.0);",
     "  if (d2 >= 1.0) {",
     // the rim of the air, and the stars far behind
     "    float r = sqrt(d2);",
@@ -172,7 +185,7 @@
     "  fwBase.x = min(fwBase.x, max(fwBase.y, 1e-4) * 8.0);",
     // smooth (averaged) where cells are under two pixels, or out of focus
     "  float cellPx = 1.0 / max(max(fwBase.x, fwBase.y), 1e-6);",
-    "  float smoothK = clamp(max(1.0 - smoothstep(1.6, 3.0, cellPx), blur * 1.4) + uFeel.x * 0.35 * journey, 0.0, 1.0);",
+    "  float smoothK = clamp(max(1.0 - smoothstep(1.6, 3.0, cellPx), smoothstep(0.15, 0.7, blur)) + uFeel.x * 0.3 * journey, 0.0, 1.0);",
     "  vec3 col; float lit = 0.0;",
     "  if (smoothK < 0.999) {",
     "    int k = int(uLevel.x);",
@@ -181,7 +194,7 @@
     "    col = a.rgb; lit = a.a;",
     "  }",
     "  if (smoothK > 0.001) {",
-    "    float lod = log2(max(max(fwBase.x, fwBase.y), 1e-6)) + blur * 3.5;",
+    "    float lod = log2(max(max(fwBase.x, fwBase.y), 1e-6)) + blur * 1.6;",
     "    vec3 sm = textureLod(uCol, uv, max(lod, 0.0)).rgb;",
     "    col = smoothK >= 0.999 ? sm : mix(col, sm, smoothK);",
     "  }",
@@ -214,8 +227,8 @@
     "  float day = smoothstep(-0.14, 0.32, day0);",
     "  float lam = max(dot(nw, uSun), 0.0);",
     "  float relief = clamp(dot(nw, uSun) - day0, -0.6, 0.6);",
-    "  float shade = mix(0.38, 0.74 + 0.36 * lam, day) + relief * (0.9 - 0.5 * wet);",
-    "  shade = mix(shade, 0.97 + relief * 1.5, near);",
+    "  float shade = mix(0.44, 0.74 + 0.36 * lam, day) + relief * (0.9 - 0.5 * wet);",
+    "  shade = mix(shade, 0.66 + relief * 1.5, near);",
     "  shade = mix(1.0, shade, uSky.w);",
     "  shade *= 1.0 + 0.06 * uCrisp * journey;",
     "  col *= shade;",
@@ -230,7 +243,7 @@
     "  col += GLINT * spec * (0.45 + 0.25 * glassy) * (1.0 - 0.8 * uFeel.y * journey);",
     // the air: thicker toward the limb; when high, over everything; damp and a little cooler in cloud and mountains
     "  float limb = pow(1.0 - nz, 2.2);",
-    "  float air = limb * (0.6 - 0.4 * near) + journey * high * 0.14 + journey * uFeel.z * 0.1;",
+    "  float air = limb * (0.6 - 0.4 * near) + journey * high * 0.08 + journey * uFeel.z * 0.08;",
     "  vec3 hz = mix(HAZE_DEEP, HAZE, 0.35 + 0.45 * day);",
     "  col = mix(col, hz * mix(0.55, 1.0, day), clamp(air, 0.0, 0.85));",
     // the month's cloud on a layer above the ground, swelling past you as you come down
@@ -242,9 +255,9 @@
     "      vec3 ws = toWorld(vec3(qs, sqrt(1.0 - ds)));",
     "      float amt = dot(texture(uCloud, uvOf(ws)).rgb, uCloudCh);",
     "      float f = grain(ws + vec3(t * 0.0004, 0.0, 0.0), Rs, 70.0) * 0.7 + grain(ws * 2.3, Rs, 24.0) * 0.3;",
-    "      float cov = smoothstep(1.02 - amt * 0.85, 1.22 - amt * 0.85, f + 0.25);",
-    "      vec3 cc = mix(CLOUD_SHADE, CLOUD, smoothstep(0.35, 0.8, f)) * mix(0.55, 1.0, day);",
-    "      col = mix(col, cc, cov * uSky.x * (1.0 - 0.6 * blur));",
+    "      float cov = smoothstep(1.02 - amt * 0.5, 1.26 - amt * 0.5, f + 0.2);",
+    "      vec3 cc = mix(CLOUD_SHADE, CLOUD, 0.55 + 0.45 * smoothstep(0.45, 0.85, f)) * mix(0.6, 1.0, day);",
+    "      col = mix(col, cc, cov * uSky.x * 0.62 * (1.0 - 0.5 * blur));",
     "    }",
     "  }",
     // the cell pointed at, lit
@@ -366,11 +379,21 @@
     var nx = GW << k, ny = GH << k;
     si = ((si % nx) + nx) % nx;
     sj = Math.max(0, Math.min(ny - 1, sj));
-    var b = (sj >> k) * GW + (si >> k), o = b * 4;
+    var bi = si >> k, bj = sj >> k;
+    if (k > 0) {
+      var h = pcg(si, sj, k), sc = 1 << k, q = 32768 >> k;
+      var tx = (2 * (si & (sc - 1)) + 1 - sc) * q, ty = (2 * (sj & (sc - 1)) + 1 - sc) * q;
+      var r1 = h & 65535, r2 = h >>> 16;
+      bi += tx >= 0 ? (r1 < tx ? 1 : 0) : (r1 < -tx ? -1 : 0);
+      bj += ty >= 0 ? (r2 < ty ? 1 : 0) : (r2 < -ty ? -1 : 0);
+      bi = ((bi % GW) + GW) % GW;
+      bj = Math.max(0, Math.min(GH - 1, bj));
+    }
+    var b = bj * GW + bi, o = b * 4;
     var e = snowy(b) ? (D.doors[o + 1] >> 4) | (D.doors[o + 2] << 4) : D.doors[o] | ((D.doors[o + 1] & 15) << 8);
     if (k > 0) {
-      var h = pcg(si, sj, k);
-      if ((h & 7) >= 3) { e = D.sib[e * 8 + ((h >>> 3) & 7)]; }
+      var h2 = pcg(si, sj, k + 16), keep = (D.season[o + 1] >> 4) <= 2 ? 7 : 3;
+      if ((h2 & 7) >= keep) { e = D.sib[e * 8 + ((h2 >>> 3) & 7)]; }
     }
     return e;
   }
@@ -405,24 +428,6 @@
     return { kind: CLASSES[D.season[b * 4 + 1] >> 4] || "grass", snow: !!snowy(b) };
   }
 
-  // The colour of the cell under a point at radius R, as "r,g,b": for DIRT's dots woven over it.
-  function colourAt(lat, lon, R) {
-    var d = doorAt(lat, lon, R);
-    return d ? D.rgb[d.e] : null;
-  }
-
-  // The same, lean, for a hundred thousand dots: the entry under a point at level k, and its colour.
-  var TAU_ = 2 * Math.PI;
-  function entryIndexAt(lat, lon, k) {
-    var u = lon / TAU_ + 0.5;
-    u -= Math.floor(u);
-    var v = 0.5 - lat / Math.PI;
-    v = v < 0 ? 0 : v > 0.99999 ? 0.99999 : v;
-    return entryAt(Math.floor(u * (GW << k)), Math.floor(v * (GH << k)), k);
-  }
-  function rgbOf(e) { return D.rgb[e]; }
-  function levelOf(R) { var L = levelFor(R); return L.blend > 0.5 ? L.k + 1 : L.k; }
-
   function start(m) {
     month = m - 1;
     if (failed || ready) { return Promise.resolve(ready); }
@@ -434,12 +439,11 @@
       .then(function (got) {
         var t = got[4], n = t.e.length;
         D = { doors: pixels(got[0]), season: pixels(got[1]), works: t.w, ew: t.e, sib: t.s,
-              hex: [], rgb: [], col: new Uint8Array(n * 3) };
+              hex: [], col: new Uint8Array(n * 3) };
         for (var e = 0; e < n; e += 1) {
           var h = t.c.substr(e * 6, 6);
           D.hex.push("#" + h);
           var r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
-          D.rgb.push(r + "," + g + "," + b);
           D.col[e * 3] = r; D.col[e * 3 + 1] = g; D.col[e * 3 + 2] = b;
         }
         // The entries' colours and siblings, and the doors, as integer textures.
@@ -513,8 +517,7 @@
     sel.i = door.i; sel.j = door.j; sel.k = door.k; sel.amt = amt;
   }
 
-  window.EarthBody = { start: start, draw: draw, doorAt: doorAt, kindAt: kindAt, colourAt: colourAt,
-                       entryIndexAt: entryIndexAt, rgbOf: rgbOf, levelOf: levelOf,
+  window.EarthBody = { start: start, draw: draw, doorAt: doorAt, kindAt: kindAt,
                        light: light, levelFor: levelFor, ready: function () { return ready; },
                        canvas: function () { return canvas; } };
 })();
