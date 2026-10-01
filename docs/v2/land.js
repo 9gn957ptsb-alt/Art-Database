@@ -4627,7 +4627,8 @@
      Land.frame): the world turned so the route's middle faces you, rolled
      so it stands a little above the window's middle, and drawn back, once,
      until every point of it is on the screen with room round it. The world
-     holds still while it is framed (no drift) for `hold` ms. */
+     holds still while it is framed (no drift) for `hold` ms. It is never
+     brought nearer than the whole world in the window. */
   var framing = null;
 
   function frameRoute(pts, hold) {
@@ -4666,6 +4667,8 @@
       var k = 1;
       if (behind) { k = 0.62; }
       else if (x1 > x0 || y1 > y0) { k = Math.min(1.25, (W * 0.72) / Math.max(1, x1 - x0), (H * 0.5) / Math.max(1, y1 - y0)); }
+      // Never nearer than the whole world in the window: a short route is framed on the globe, not in a city.
+      k = Math.min(k, Math.min(W, H) * 0.46 / Math.max(R, 1));
       if (Math.abs(k - 1) > 0.06) {
         var size = Math.max(SIZE_FAR, Math.min(SIZE_NEAR, seat.size * k));
         swingTo({ size: size, dx: 0, dy: 0 }, FLY * PHI, "drift");
