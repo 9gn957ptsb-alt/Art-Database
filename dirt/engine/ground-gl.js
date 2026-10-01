@@ -2690,6 +2690,7 @@ uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells 
 uniform sampler2D uFace;            // the faces in the saved paintings (dirt/artists/faces.py), an atlas uFG cells across, down
 uniform int uFN;
 uniform vec2 uFG;
+uniform sampler2D uFaceLut;         // which face's mean is nearest a colour: 8 levels a channel, 64 by 8 (r + 8 g, b)
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
@@ -2855,9 +2856,57 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = mix(canvas, c, smoothstep(0.6, 1.6 + 6.0 * d, seam));
   return m;
 }
+// ---- photomosaics, after Robert Silvers ------------------------------------------------------------------------
+// Silvers made a picture out of many small pictures (the Photomosaic, from his years at the MIT Media Lab in the 1990s),
+// each chosen because its colour matches that spot of the large one. In DRIFT, in a disc here and there, the faces from
+// the saved paintings make another picture: one face out of all the others (his portraits), or the plane itself, its
+// own last frame recomposed out of faces, which up close are faces and from afar the place (as Dali's Lincoln, 1976,
+// is a woman at the window near and Lincoln far). Never a grid: the tiles lie on a sunflower, each a golden angle round
+// from the last, each cell the part of the disc nearest its tile's middle, and a tile's neighbours are found among the
+// tiles a Fibonacci number away in the spiral. The large picture shows through its tiles more and less over time.
+int faceFor(vec3 c) { ivec3 q = ivec3(clamp(floor(c / 32.0), 0.0, 7.0)); return int(texelFetch(uFaceLut, ivec2(q.r + 8 * q.g, q.b), 0).r * 255.0 + 0.5) % max(uFN, 1); }
+const int FIB_N = 21;
+const float FIB[21] = float[21](0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 5.0, -5.0, 8.0, -8.0, 13.0, -13.0, 21.0, -21.0, 34.0, -34.0, 55.0, -55.0, 89.0, -89.0);
+float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
+  col = vec3(0.0);
+  if (uFN <= 0) return 0.0;
+  const float G = 987.0 * ${FKS};
+  ivec2 sq = ivec2(floor(p / G));
+  vec2 C = vec2(0.0); float R = 0.0, bd = 1e9; uint h = 0u;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 q = sq + ivec2(i, j);
+    uint hq = h3(q.x, q.y, 53001u);
+    if (unit(hq) > 0.236) continue;                                 // phi^-3 of the squares have one
+    vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
+    float r = 89.0 + 55.0 * unit(mixh(hq + 3u)), d = length(p - c) / r;
+    if (d < bd) { bd = d; C = c; R = r; h = hq; }
+  }
+  if (bd >= 1.0) return 0.0;
+  vec2 d = p - C;
+  float sp = 6.5 + 2.0 * unit(mixh(h + 4u)), th = 6.2832 * unit(mixh(h + 5u)), rr = length(d) / sp, k0 = floor(rr * rr);
+  float d1 = 1e9, d2 = 1e9; vec2 tc = C;
+  for (int n = 0; n < FIB_N; n++) {
+    float k = k0 + FIB[n];
+    if (k < 0.0) continue;
+    float a = k * 2.399963229728653 + th;
+    vec2 q = C + sp * sqrt(k + 0.5) * vec2(cos(a), sin(a));
+    float e = length(p - q);
+    if (e < d1) { d2 = d1; d1 = e; tc = q; } else if (e < d2) d2 = e;
+  }
+  bool self = unit(mixh(h + 6u)) < 0.5;                               // the plane itself, or one face
+  int ft = int(mixh(h + 7u) % uint(uFN));
+  vec3 tgt = self ? was(lp + (tc - p), 2.0) : faceAt(ft, vec2(0.5 + (tc - C).x / (2.0 * R * 0.8), 0.5 + (tc - C).y / (2.0 * R)), 1.0);
+  int f = faceFor(tgt);
+  vec3 tile = faceAt(f, 0.5 + (p - tc) / (2.2 * sp) * vec2(1.0, 0.8), 0.0);
+  col = mix(tile, tgt, 0.3 + 0.2 * sin(T * 0.21 + 6.2832 * unit(mixh(h + 8u))));   // the large picture, showing through
+  col *= mix(0.6, 1.0, smoothstep(0.3, 1.3, d2 - d1));                // the seams between the tiles
+  return smoothstep(1.0, 1.0 - 13.0 / R, bd);
+}
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
+  { vec3 mz; float mm = mosaic(p, lp, T, mz);                         // a photomosaic, where there is one
+    if (mm > cellHash(p, 53009u)) { outA = outB = vec4(clamp(mz, 0.0, 255.0) / 255.0, 1.0); return; } }
   { vec3 fz; float fm = frieze(p, T, fz);                             // a frieze, where there is one, over everything here
     if (fm > cellHash(p, 52009u)) { outA = outB = vec4(clamp(fz, 0.0, 255.0) / 255.0, 1.0); return; } }
   // the thing put in arrives where it was put in: the whole photo, torn out, for a few seconds, and the collage takes
@@ -3517,9 +3566,42 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+    if (faceLut) {
+      gl.activeTexture(gl.TEXTURE14);
+      gl.deleteTexture(tLut);
+      tLut = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tLut);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 64, 8, 0, gl.RED, gl.UNSIGNED_BYTE, faceLut);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.NEAREST);
+    }
     faceOn = gl.getError() === gl.NO_ERROR ? 1 : 0;
   }
-  if (faces && faces.n) { const im = new Image(); im.onload = () => { faceImg = im; if (!lost) fillFaces(im); }; im.src = "faces/" + faces.file; }
+  if (faces && faces.n) { const im = new Image(); im.onload = () => { faceImg = im; faceLut = lutOf(im); if (!lost) fillFaces(im); }; im.src = "faces/" + faces.file; }
+  /** For the photomosaics: which face's mean colour is nearest each of 8 x 8 x 8 colours, worked out once. */
+  let faceLut = null, tLut = null;
+  function lutOf(im) {
+    const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+    const x = c.getContext("2d"); x.drawImage(im, 0, 0);
+    const d = x.getImageData(0, 0, im.width, im.height).data, cw = im.width / faces.cols, ch = im.height / faces.rows, means = [];
+    for (let f = 0; f < faces.n; f++) {
+      const x0 = (f % faces.cols) * cw, y0 = Math.floor(f / faces.cols) * ch, m = [0, 0, 0];
+      let n = 0;
+      for (let y = y0 + ch * 0.2; y < y0 + ch * 0.8; y += 3) for (let xx = x0 + cw * 0.2; xx < x0 + cw * 0.8; xx += 3) {
+        const i = (Math.floor(y) * im.width + Math.floor(xx)) * 4; m[0] += d[i]; m[1] += d[i + 1]; m[2] += d[i + 2]; n++;
+      }
+      means.push(m.map((v) => v / n));
+    }
+    const lut = new Uint8Array(64 * 8);
+    for (let b = 0; b < 8; b++) for (let g = 0; g < 8; g++) for (let r = 0; r < 8; r++) {
+      const q = [r * 32 + 16, g * 32 + 16, b * 32 + 16];
+      let best = 0, bd = Infinity;
+      means.forEach((m, f) => { const e = (m[0] - q[0]) ** 2 + (m[1] - q[1]) ** 2 + (m[2] - q[2]) ** 2; if (e < bd) { bd = e; best = f; } });
+      lut[b * 64 + g * 8 + r] = best;
+    }
+    return lut;
+  }
   let tThing = null, thingSrc = null, thingOn = 0;
   const thingP = [0, 0, -1e9, 1];
   function fillThing(src) {
@@ -3653,6 +3735,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (thingSrc) fillThing(thingSrc);
     gl.activeTexture(gl.TEXTURE13); tFace = tex(gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 1, 1);
+    gl.activeTexture(gl.TEXTURE14); tLut = tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R8, 1, 1);
     faceOn = 0;
     if (faceImg) fillFaces(faceImg);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
@@ -3684,8 +3768,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG"]);
-    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); }
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut"]);
+    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); gl.uniform1i(Co.uFaceLut, 14); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
