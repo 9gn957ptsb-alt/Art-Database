@@ -2873,6 +2873,9 @@
     // the ink was a correction for colours that were pale by accident, and
     // the colours are chosen now rather than inherited.
     wTones = masses.map(function (mass) { return mass.ink; });
+    // With the body of works, every dot wears the work of the cell it lies on
+    // (at the level the body draws at this height).
+    var bodyK = bodyOn() ? EarthBody.levelOf(R) : -1;
 
     for (var k = 0; k < wCount; k += 1) {
       wSinLat[k] = Math.sin(lat[k]);
@@ -2904,7 +2907,9 @@
         var esize = Math.round(E.px[eo + 3] / 85);
         wSize[k] = esize;
         if (esize) {
-          var ergb = E.px[eo] + "," + E.px[eo + 1] + "," + E.px[eo + 2];
+          // With the body of works, a dot wears the work of the cell it lies on.
+          var ergb = bodyK >= 0 ? EarthBody.rgbOf(EarthBody.entryIndexAt(lat[k], lon[k], bodyK))
+            : E.px[eo] + "," + E.px[eo + 1] + "," + E.px[eo + 2];
           if (inkAt[ergb] === undefined) { inkAt[ergb] = wInks.length; wInks.push(ergb); }
           wInk[k] = inkAt[ergb];
         }
@@ -2915,8 +2920,8 @@
         var size = Math.round(tile.px[o + 3] / 85);
         wSize[k] = size;
         if (size) {
-          var rgb = dirt.pal
-            ? dressed(tile.px[o], tile.px[o + 1], tile.px[o + 2], lat[k], lon[k], !deep)
+          var rgb = bodyK >= 0 ? EarthBody.rgbOf(EarthBody.entryIndexAt(lat[k], lon[k], bodyK))
+            : dirt.pal ? dressed(tile.px[o], tile.px[o + 1], tile.px[o + 2], lat[k], lon[k], !deep)
             : tile.px[o] + "," + tile.px[o + 1] + "," + tile.px[o + 2];
           if (inkAt[rgb] === undefined) { inkAt[rgb] = wInks.length; wInks.push(rgb); }
           wInk[k] = inkAt[rgb];
@@ -3206,12 +3211,45 @@
                 (1 - smooth01((went - 0.8) / 0.17)) * 0.8;
     var stars = on * smooth01((high - 0.35) / 0.45) * (1 - smooth01((went - 0.85) / 0.15)) * 0.9;
     var sv = toVec(sun.lat, sun.lon);
+    if (flying && doorShown) { hideDoor(); }
+    // Once the body has come, the world's dots are woven again in its colours.
+    if (!bodyWoven && !place && !flying && !journey) { bodyWoven = true; weave(); }
+    stepFeel(now, cloud, kc);
     return EarthBody.draw({
       W: W, H: H, dpr: Math.min(dpr, 2), cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
       sun: sv, near: nearness(), high: high, journey: on, time: still ? 0 : now / 1000,
       focus: journeyFocus(), cloud: cloud, shell: 1 / (1 - kc), stars: stars,
-      starX: ((spin * 140) % 4000 + 4000) % 4000, starY: tilt * 140, light: 1
+      starX: ((spin * 140) % 4000 + 4000) % 4000, starY: tilt * 140, light: 1,
+      feel: [feel.glass, feel.grain, feel.damp, feel.dense], crisp: feel.crisp
     });
+  }
+  var bodyWoven = false;
+
+  /* What a journey feels like, by what it is crossing (the artist's idea,
+     1 Oct 2026): over the sea quiet and glassy, a slow shimmer; over desert
+     a fine dry grain, matte; through cloud or high mountains damp and
+     diffuse, a little cooler; over forest textured and dense; over ice
+     bright and crisp. Read from what is under you as you go, and eased
+     from one to the next over a second or so. */
+  var feel = { glass: 0, grain: 0, damp: 0, dense: 0, crisp: 0, at: 0 };
+  var FEELS = {
+    "sea": { glass: 1 }, "shallow sea": { glass: 0.85 }, "lake": { glass: 0.7 },
+    "desert": { grain: 1 }, "rock": { damp: 0.75, grain: 0.2 }, "forest": { dense: 1 }, "wetland": { dense: 0.6, glass: 0.3 },
+    "grass": { grain: 0.25, dense: 0.25 }, "ice": { crisp: 1 }, "city": {}
+  };
+  function stepFeel(now, cloud, kc) {
+    var dt = Math.min(0.1, Math.max(0, (now - (feel.at || now)) / 1000));
+    feel.at = now;
+    var want = { glass: 0, grain: 0, damp: 0, dense: 0, crisp: 0 };
+    if (journey && !still) {
+      var kind = EarthBody.kindAt(focus.lat, focus.lon);
+      var f = kind ? (kind.snow ? { crisp: 1 } : FEELS[kind.kind] || {}) : {};
+      Object.keys(f).forEach(function (n) { want[n] = f[n]; });
+      // Passing through the cloud layer: damp.
+      want.damp = Math.max(want.damp, cloud * smooth01((kc - 0.12) / 0.25));
+    }
+    var k = 1 - Math.exp(-dt / 0.9);
+    ["glass", "grain", "damp", "dense", "crisp"].forEach(function (n) { feel[n] += (want[n] - feel[n]) * k; });
   }
   function smooth01(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
 
@@ -3259,9 +3297,9 @@
     gctx.globalCompositeOperation = "source-over";
     gctx.globalAlpha = 1;
     gctx.clearRect(0, 0, W, H);
-    // The body, by what each place is made of, where the world is now.
-    var bodyCanvas = bodyOn() ? drawBody(now) : null;
-    if (bodyCanvas) { gctx.drawImage(bodyCanvas, 0, 0, W, H); }
+    // The body, by what each place is made of, where the world is now: on
+    // its own canvas under this one, so it is never copied (earth-body.js).
+    if (bodyOn()) { drawBody(now); }
 
     gctx.save();
     if ((flying || moving()) && drawn.r) {
@@ -3361,6 +3399,18 @@
     ctx.globalAlpha = 1 - mist;
     ctx.drawImage(layer, 0, 0, W, H);
     ctx.globalAlpha = 1;
+    // On a journey the dots are sharp where you are headed and let go of
+    // toward the edges, as the body under them is.
+    var dof = bodyOn() ? journeyFocus() : null;
+    if (dof && dof.amt > 0.01) {
+      var fade = ctx.createRadialGradient(dof.x, dof.y, dof.r * 0.3, dof.x, dof.y, dof.r * 1.15);
+      fade.addColorStop(0, "rgba(0,0,0,0)");
+      fade.addColorStop(1, "rgba(0,0,0," + (0.8 * dof.amt).toFixed(3) + ")");
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "source-over";
+    }
     living(now);
     if (layerOn === "museums" && !place && towns) { drawTowns(now); }
     if (place && !flying && art && art.kind === "town") { drawVenues(); }
@@ -4563,6 +4613,98 @@
       dy: (c1y - orbitFor(r1)) / H
     }, FLY * PHI, "rocket");
     return true;
+  }
+
+  /* ---- the doors ------------------------------------------------------------
+
+     The artist, 1 Oct 2026: "I still want you to be able to select an artwork
+     from any pixel." Every cell of the globe wears one saved work's colour
+     (earth-body.js), and is a door to it. Everything else that can be
+     pressed is pressed first — a city, a gallery, a stop, the world brought
+     in, the wave held and let go; only a plain quick tap on bare land or sea
+     is the door's. Pointing at a cell (with a mouse, once it rests) or a
+     first tap (on a touch screen) lights the cell and names its work small
+     beside it; a second tap on the same cell, or a click, opens the work's
+     history, flown to as anything else is. */
+  var doorLabel = null;
+  var doorShown = null;                 // { d: the door, x, y, at }
+  var doorRest = 0;
+  var HOVER = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  function doorable() {
+    if (!bodyOn() || flying || swing || deckMode || dive.on || finder.open) { return false; }
+    if (!place) { return true; }
+    // In a city of museums or a work's history the ground is the globe's; not
+    // in a collage's city (where a collage is read), a museum or a building.
+    return !!(place.art && !buildingOn && !place.museum && !place.stage);
+  }
+
+  function doorAtPoint(x, y) {
+    var at = unproject(x, y);
+    return at ? EarthBody.doorAt(at.lat, at.lon, R) : null;
+  }
+
+  function showDoor(d, x, y) {
+    if (!doorLabel) {
+      doorLabel = el("p", "door-label");
+      doorLabel.setAttribute("aria-live", "polite");
+      land.appendChild(doorLabel);
+    }
+    doorShown = { d: d, x: x, y: y, at: performance.now() };
+    EarthBody.light(d, 1);
+    var shown = doorShown;
+    readFinding().then(function (f) {
+      if (doorShown !== shown) { return; }
+      var w = f && f.byId[d.id];
+      doorLabel.textContent = "";
+      doorLabel.appendChild(el("span", "door-title", w ? w.t : "A saved work"));
+      if (w && w.a) { doorLabel.appendChild(el("span", "door-by", w.a)); }
+      doorLabel.hidden = false;
+      // Beside the cell, on whichever side has room, inside the window.
+      var bw = doorLabel.offsetWidth, bh = doorLabel.offsetHeight, gap = 12;
+      var lx = x + gap + bw <= W - 8 ? x + gap : x - gap - bw;
+      var ly = Math.max(8, Math.min(H - bh - 8, y - bh / 2));
+      doorLabel.style.transform = "translate(" + Math.round(Math.max(8, lx)) + "px," + Math.round(ly) + "px)";
+      doorLabel.dataset.on = "true";
+    });
+  }
+
+  function hideDoor() {
+    if (!doorShown) { return; }
+    doorShown = null;
+    if (bodyOn()) { EarthBody.light(null); }
+    if (doorLabel) { delete doorLabel.dataset.on; doorLabel.hidden = true; }
+  }
+
+  function sameDoor(a, b) { return a && b && a.i === b.i && a.j === b.j && a.k === b.k; }
+
+  // A quick tap on bare land or sea. True if the door took it.
+  function pressDoor(x, y) {
+    if (!doorable()) { return false; }
+    var d = doorAtPoint(x, y);
+    if (!d) { return false; }
+    if (HOVER || (doorShown && sameDoor(doorShown.d, d))) {
+      hideDoor();
+      pulse(x, y, [LIGHT, LILAC], 0.5, 89);
+      openArt({ work: d.id }, {});
+      return true;
+    }
+    pulse(x, y, [LIGHT], 0.35, 55);
+    showDoor(d, x, y);
+    return true;
+  }
+
+  // With a mouse: the cell under the pointer is named once the pointer rests.
+  function pointDoor(x, y) {
+    if (!HOVER) { return; }
+    clearTimeout(doorRest);
+    if (doorShown && Math.abs(x - doorShown.x) + Math.abs(y - doorShown.y) > 6) { hideDoor(); }
+    if (!doorable()) { return; }
+    doorRest = setTimeout(function () {
+      if (!doorable() || turning || panning || pinch) { return; }
+      var d = doorAtPoint(x, y);
+      if (d) { showDoor(d, x, y); } else { hideDoor(); }
+    }, 320);
   }
 
   /* A tap on the empty sky bounces the view somewhere new — near or far —
@@ -8355,6 +8497,7 @@
       tread(event.clientX, event.clientY);
       dropHubble(event.clientX, event.clientY);
     }
+    if (event.pointerType === "mouse") { pointDoor(event.clientX, event.clientY); }
     if (fingers[event.pointerId]) {
       fingers[event.pointerId].x = event.clientX;
       fingers[event.pointerId].y = event.clientY;
@@ -8463,8 +8606,13 @@
         var reach = squashRing(performance.now());
         var where = squashing;
         squashing = null;
-        if (reach) { squash(where.x, where.y, reach); }
+        if (reach) { squash(where.x, where.y, reach); return; }
       }
+
+      // A plain quick tap on bare land or sea: the work in that cell.
+      if (name === "pointerup" && was.moved < 6 && performance.now() - was.at < 450 &&
+          pressDoor(event.clientX, event.clientY)) { return; }
+      hideDoor();
     });
   });
 
@@ -16204,7 +16352,14 @@
   // The body of the globe, by what each place is made of (earth-body.js);
   // until it has come, or where it cannot, the dark body of before.
   if (DIRT_LOOK && window.EarthBody) {
-    EarthBody.start(Number(MONTH)).then(function (ok) { if (ok) { drawn.w = 0; } });
+    EarthBody.start(Number(MONTH)).then(function (ok) {
+      if (!ok) { return; }
+      var body = EarthBody.canvas();
+      body.className = "world world-body";
+      body.setAttribute("aria-hidden", "true");
+      canvas.parentNode.insertBefore(body, canvas);
+      drawn.w = 0;
+    });
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),

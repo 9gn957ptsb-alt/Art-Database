@@ -3311,3 +3311,29 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .follow-route .town-near[data-here] { color: #eadfcd; border-color: #9d95e6; }
 .follow-away { margin-top: var(--s-4); }
 .town-museum-row[data-followed] .town-museum-name { text-decoration: underline; text-decoration-color: #9d95e6; text-underline-offset: 4px; }
+
+/* A cell of the globe pointed at or tapped once: its work, small, beside it
+   (earth-body.js; land.js, "the doors"). The gallery label's hand. */
+.door-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 58;
+  box-sizing: border-box;
+  max-width: min(240px, calc(100vw - 32px));
+  margin: 0;
+  padding: 4px 8px 5px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.8);
+  color: #eadfcd;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.door-label[data-on="true"] { opacity: 1; }
+.door-label[hidden] { display: none; }
+.door-title { display: block; font-family: var(--serif, Georgia, serif); font-style: italic; font-size: 13px; line-height: 1.3; }
+.door-by { display: block; font-family: var(--mono); font-size: 10px; line-height: 1.4; letter-spacing: 0.04em; color: #a8927a; }
+@media (prefers-reduced-motion: reduce) { .door-label { transition: none; } }
+
+.world-body { pointer-events: none; }
