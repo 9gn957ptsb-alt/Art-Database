@@ -741,8 +741,12 @@ def build(saved, parsed, places):
         if not p.exists():
             continue
         rec = json.loads(p.read_text())
+        evs = rec.get("events") or []
+        kept = [ev for ev in evs if not (ev.get("note") or "").lower().startswith("copyright status")]
+        if evs and not kept:                            # Wikidata's copyright status (P6216) is no history
+            continue
         s = add_source(sources, rec["source"]["name"], rec["source"].get("url", ""), rec["source"].get("licence", ""))
-        for ev in rec.get("events") or []:
+        for ev in kept:
             ev = dict(ev, src=[s])
             if ev.get("kind") == "held" and any(h.lower() in (ev.get("who") or "").lower() for h in NOT_HOLDERS):
                 ev["kind"] = "other"

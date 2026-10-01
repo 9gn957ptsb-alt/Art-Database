@@ -1941,17 +1941,8 @@ def events_for(e):
         note, _ = refs(s)
         ev.append(event("written", v, "P973", i, who=", ".join(label(x) or x for x in qual_items(s, "P123")),
                         note="; ".join(y for y in ["described at URL"] + extra + [note] if y), url=v))
-    for i, s in enumerate(statements(e, "P6216"), 1):
-        text, q = item_text(s)
-        start, end, dnote = dated(s, "P580", "P582")
-        extra = []
-        if qual_items(s, "P1001"):
-            extra.append("applies to " + ", ".join(label(x) for x in qual_items(s, "P1001")))
-        if qual_items(s, "P459"):
-            extra.append("determined by " + ", ".join(label(x) for x in qual_items(s, "P459")))
-        note, url = refs(s)
-        ev.append(event("other", text, "P6216", i, start=start, end=end,
-                        note="; ".join(y for y in ["copyright status"] + extra + [dnote, note] if y), url=url))
+    # P6216, copyright status, is not part of a work's history: never emitted (build_artwork_histories.py
+    # drops any such event still in the cache).
     return ev
 
 
