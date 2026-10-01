@@ -42,6 +42,7 @@ by the museum or gallery that holds the work.
 | `homes.json` | where each artist (cast and backlog) was born, worked and lived, from Wikidata (CC0), with the source; written by `python3 scripts/fetch_artist_homes.py` (network; the artist's item is the one `fetch_history_wikidata.py` matched, in `data/wikidata/matches.json`) |
 | `artists.json` | each artist's map — works, cities in route order, the museums holding the works, where the animal waits, and home with its plants — written by `build_characters.py` from public files |
 | `docs/v2/characters.js` | the page: when one comes, how it moves, how it is drawn |
+| `walks.json` | the walks published for everyone, two per character from its artist's map (`python3 scripts/build_walks.py`) and any the artist publishes; played by `docs/v2/walks.js` |
 | `scripts/preview_character.js` | draws a character large, every pose, on the soil of six cities with their plants |
 
 ## Each run
@@ -116,6 +117,33 @@ by the museum or gallery that holds the work.
    line names the nearest city of the artist and which way. No page errors.
    Then commit ("Characters: <new>; refine <names>") and push; if refused,
    fetch, merge and push again.
+
+## The walks
+
+The artist, 1 Oct 2026, on "a trail you follow is an essay without words.
+Save a following as a route someone else can walk: 'Twombly by fox, 32
+cities'": "fantastic, really great stuff, implement that". `docs/v2/walks.js`
+plays them; `walks.json` here holds the ones published for everyone.
+
+- **A new character gets its published walks the same day.** After its
+  artist's map is in `artists.json`, run `python3 scripts/build_walks.py`: it
+  writes, for every character of the cast, its artist's route
+  (nearest-first from home, "Twombly by fox") and the same cities as the
+  work travelled (by the year the artist's works first came there),
+  three works a stop at most, earliest first. Check one in the page: a walk
+  played from the animal's column flies to its first city, the animal
+  waits by the work, and the work comes up with its first lines said.
+- **A walk code the artist sends** (as `fox·8GD2-0MSN-J9CT`: the animal, then
+  the walk) **becomes a published walk**: open the page, and in the console
+  `Walks.decode("<code>").then(w => console.log(JSON.stringify(w)))`; if it
+  says `stale: true` the map has changed since it was kept — ask him to walk
+  it again. Otherwise add it to `walks` in `walks.json` as `{id, title, artist,
+  animal, by, stops}` with **his** title (ask if he gave none), `by` as he
+  wants it named (never "the route", which the build rewrites), and the
+  stops as decoded (`key`, `works`, `s`). `build_walks.py` keeps it on every
+  run. Never put a code or a walk in a URL: the site has one link.
+- The walks follow the reading's clock and never hurry: change the timings
+  only in `walks.js` and say why.
 
 ## How the cast comes onto the page
 

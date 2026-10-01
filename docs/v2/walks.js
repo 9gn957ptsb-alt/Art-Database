@@ -38,7 +38,9 @@
    work as an index into the artist's works, each look in eight steps, and
    a check that says when the map has changed under it. Four cities with a
    work each is 18 characters. Pasted into Find, it is offered first:
-   "Walk: Twombly by fox · 4 cities". */
+   "Walk: Twombly by fox · 4 cities". Find also offers the published walks
+   to "walks" or a cast artist's name ("Twombly") — the way in under
+   reduced motion, where no animal comes out of the wave. */
 (function () {
   "use strict";
 
@@ -499,7 +501,8 @@
     var name = wait && (wait[0] === "m" ? data.museums[wait[1]] : wait[1]);
     var animal = castBy(walk.w.animal).name.split(" ").pop().toLowerCase();
     var n = st.works.length;
-    return (name ? "The " + animal + " waits by " + name + " · " : "") +
+    // Under reduced motion no animal is drawn: the place is only named.
+    return (name ? (still ? "At " : "The " + animal + " waits by ") + name + " · " : "") +
       (n ? n + (n === 1 ? " work" : " works") + " here" : "nothing opened here: a city passed through");
   }
 
@@ -667,18 +670,54 @@
   var found = document.getElementById("finder-found");
   var said = document.getElementById("finder-said");
 
+  /* What Find is asked that a walk answers: a code (that walk, first); or
+     "walk", "walks", or the start of a cast artist's name (the published
+     walks, which is also how a walk is reached under reduced motion, where
+     no animal comes out of the wave to be followed). */
+  function asked(text) {
+    var t = String(text || "").toLowerCase().trim();
+    if (parse(t)) { return "code"; }
+    if (/^walks?$/.test(t)) { return "walks"; }
+    if (t.length >= 4 && data && data.cast.some(function (c) { return surname(c.artist).toLowerCase().indexOf(t) === 0; })) { return "walks"; }
+    return null;
+  }
+
+  function foundRow(w) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "finder-row finder-line";
+    b.textContent = "Walk: " + (/\bcit(y|ies)\b/.test(w.title) ? w.title : w.title + " · " + cities(w.stops.length));
+    b.addEventListener("click", function () { play(w); });
+    return b;
+  }
+
   function offerInFind() {
     if (!field || !found || found.querySelector(".walk-found")) { return; }
-    if (!parse(field.value)) { return; }
+    var text = field.value;
+    if (!parse(text) && !data) { load().then(function () { if (data && asked(text)) { offerInFind(); } }); return; }
+    var kind = asked(text);
+    if (!kind) { return; }
     load().then(function () {
-      var w = decode(field.value);
-      if (!w || found.querySelector(".walk-found")) { return; }
+      if (field.value !== text || found.querySelector(".walk-found")) { return; }
       var box = document.createElement("div");
       box.className = "walk-found";
       var head = document.createElement("p");
       head.className = "finder-group";
-      head.textContent = "A walk";
       box.appendChild(head);
+      if (kind === "walks") {
+        var t = text.toLowerCase().trim();
+        var list = data.published.filter(function (w) {
+          return /^walks?$/.test(t) || surname(w.artist).toLowerCase().indexOf(t) === 0;
+        });
+        if (!list.length) { return; }
+        head.textContent = "Walks";
+        list.forEach(function (w) { box.appendChild(foundRow(w)); });
+        found.insertBefore(box, found.firstChild);
+        return;
+      }
+      var w = decode(text);
+      if (!w) { return; }
+      head.textContent = "A walk";
       // A code whose check fails was kept against an earlier map (or mistyped): said, not walked.
       if (w.stale) {
         var p = document.createElement("p");
@@ -686,12 +725,7 @@
         p.textContent = "A walk code, but not one this map knows: kept against an earlier map, or a letter out";
         box.appendChild(p);
       } else {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "finder-row finder-line";
-        b.textContent = "Walk: " + w.title;
-        b.addEventListener("click", function () { play(w); });
-        box.appendChild(b);
+        box.appendChild(foundRow(w));
       }
       found.insertBefore(box, found.firstChild);
       if (said && !w.stale) { said.textContent = "Found · a walk of " + cities(w.stops.length); }
@@ -725,7 +759,7 @@
   }
   if (field) { field.addEventListener("input", function () { window.setTimeout(offerInFind, 300); }); }
   if (found && window.MutationObserver) {
-    new MutationObserver(function () { if (field && parse(field.value)) { offerInFind(); } })
+    new MutationObserver(function () { if (field && asked(field.value)) { offerInFind(); } })
       .observe(found, { childList: true });
   }
 
