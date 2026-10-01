@@ -1818,6 +1818,8 @@
   // the model has nothing over it, not known at all.
   function heightWords(r) {
     if (!r || r.pseudo || r.h !== null || r.ceil === "sky") { return ""; }
+    // On a phone the line is kept to what matters most; the height waits for a wider screen.
+    if (window.innerWidth <= 720) { return ""; }
     if (r.ceil === "dark" || r.autoH === null || r.autoH === undefined) { return ", its height not known"; }
     return ", its height the model's";
   }

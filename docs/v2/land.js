@@ -1718,7 +1718,8 @@
     return null;
   }
 
-  function comeUp() {
+  function comeUp(all) {
+    if (walkOn) { if (all === true) { walkClose("all"); } else { window.Walk.up(); } return; }
     if (flying || !place) { return; }
     if (route) { endRoute(); }
     artAsked = null;                // a view still being read is not flown to after you have left
@@ -2284,6 +2285,7 @@
 
   var tilesCanvas = document.getElementById("tiles");
   var tilesCtx = tilesCanvas.getContext("2d");
+  var tilesHome = tilesCanvas;          // the light's own canvas; the walk lends another (lightInto)
   var CELL_PX = 13;                     // not TILE: that is the creature's iso unit
   var LIGHT = "#5e52c7";                // the default light: Ultracode's lavender
   var LEVELS = [0, 0.16, 0.3, 0.46, 0.64];
@@ -2343,15 +2345,18 @@
   }
 
   function drawTiles(now) {
-    var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    // On the walk's canvas (lightInto) the grid is still the screen's.
+    var box = tilesCanvas === tilesHome ? null : tilesCanvas.getBoundingClientRect();
+    var pw = Math.round((box ? box.width : W) * dpr), ph = Math.round((box ? box.height : H) * dpr);
     if (tilesCanvas.width !== pw || tilesCanvas.height !== ph) {
       tilesCanvas.width = pw; tilesCanvas.height = ph; tilesDirty = true;
     }
     if (!waves.length && !notes.length && !trail.length && !tilesDirty &&
         !(art && art.dirty) && !(passing && passing.legs) && !walkShown && !route) { return; }
     var g = tilesCtx;
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, W, H);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, pw, ph);
+    g.setTransform(dpr, 0, 0, dpr, box ? -box.left * dpr : 0, box ? -box.top * dpr : 0);
     tilesDirty = false;
 
     // Held frames: the light moves twenty-four times a second, not sixty.
@@ -5327,6 +5332,8 @@
     // them, out of focus, and every frame spent on it is a frame the blur
     // has to be worked out again for nothing.
     if (deckMode && !flying) { requestAnimationFrame(frame); return; }
+    // Inside a museum the world behind rests; only the pixel light goes on.
+    if (walkOn && !flying) { drawTiles(now); requestAnimationFrame(frame); return; }
 
     // Going down into a city, or coming back up out of one. The sphere grows
     // or shrinks and its framing travels with it; everything else on here is
@@ -10812,7 +10819,8 @@
     var dots = clod.views[clod.view];
     var shown = still ? 1 : (now - clod.at) / CLOD_RISE;
     if (dots.years) { shown = clod.when; }
-    window.Models.draw(clod.canvas, dots, clod.heading, shown, 0.92);
+    clod.frame = window.Models.draw(clod.canvas, dots, clod.heading, shown, 0.92);
+    if (clod.interior) { placeDoor(); }
   }
 
   /* Isometric: the building rests on one of its four 45° diagonals, where
@@ -10890,6 +10898,7 @@
     buildingLink.hidden = !b.url;
     if (b.url) { buildingLink.href = b.url; }
     if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
+    var walkVia = city.via;
     delete city.via;
     // Come from a work's stop at this museum: its town opens at that year.
     var atYear = city.atYear;
@@ -10923,8 +10932,10 @@
         heading: TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4,
         at: performance.now(), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
         swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST,
-        when: 1, whenTo: 1, byHand: false
+        when: 1, whenTo: 1, byHand: false,
+        b: b, m: city.museum || null, model: model
       };
+      if (city.museum && views.building) { walkLoad(visit, b, city.museum, walkVia); }
       buildingEl.dataset.air = "up";
       buildingEl.dataset.view = first;
       startTime(views[first], atYear);
@@ -11044,6 +11055,7 @@
         .filter(function (u) { return u !== cdn + w.i + ".jpg"; });
       var fig = heldFigure(w, cdn + w.i + ".jpg", i, false, alts, ARTWORKS && w.id ? { history: m } : null);
       if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); }
+      if (w.id) { fig.dataset.work = w.id; walkWhere(fig, w); }
       return fig;
     }, paging);
     // Also here: from its city's file (usually read already, on the way in).
@@ -11243,6 +11255,7 @@
   }
 
   function stopBuilding() {
+    walkStop();
     buildingOn = null;
     buildingPagers.forEach(function (p) { p.disconnect(); });
     buildingPagers = [];
@@ -11261,7 +11274,7 @@
     var clodDrag = null;
     buildingEl.addEventListener("pointerdown", function (event) {
       event.stopPropagation();
-      if (!clod || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
+      if (!clod || walkOn || event.target === buildingLink || buildingLink.contains(event.target)) { return; }
       if (timeline && timeline.contains(event.target)) { return; }
       if (buildingWorks && buildingWorks.contains(event.target)) { return; }
       clodDrag = { x: event.clientX, y: event.clientY, heading: clod.heading, moved: 0 };
@@ -11290,6 +11303,324 @@
     };
     buildingMap.addEventListener("pointerup", letGo);
     buildingMap.addEventListener("pointercancel", letGo);
+  }
+
+  /* ---- walk the building ----------------------------------------------------
+
+     The artist, 27 Sep 2026: "…click 'walk the building' and walk around the
+     given space. I want to be able to do that with every museum on the
+     website"; and 1 Oct 2026: "did you figure out the museum walk throughs
+     using that website I sent you?" — and, the same day, "regardless of where
+     you are … you should always be free to move".
+
+     Every museum's building has a way in: "Walk the building" at its foot (and,
+     where a source gives the door, one lit tile on it); spreading two fingers,
+     scrolling in or "+" on the building go in too. Inside is walk.js (the plan,
+     the walk, the look) over interiors/<slug>.json, compiled by walk-plan.js;
+     both are read only when a museum is opened, on idle. Pinching in, "−",
+     scrolling out or Escape climb one level (look → walk → plan → building);
+     the banner's way back, which reads the museum's name while inside, leaves
+     the walk in one press. Where you stood is kept for the visit only. */
+
+  var WALK = true;                   // false: the museum view exactly as before
+  var walkOn = false;
+  var insideWas = {};                // slug -> where you stood, this visit only
+  var walkGoEl = null, walkDoorEl = null, walkDoorPulses = 0;
+  var needs = {};
+
+  // A script, once; a failure is forgotten, so it can be asked for again.
+  function need(src) {
+    if (!needs[src]) {
+      needs[src] = new Promise(function (done, fail) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.onload = function () { done(); };
+        s.onerror = function () { delete needs[src]; fail(new Error(src)); };
+        document.head.appendChild(s);
+      });
+    }
+    return needs[src];
+  }
+
+  function readInterior(slug) {
+    var key = "interior:" + slug;
+    if (!grounds[key]) {
+      grounds[key] = read("interiors/" + slug + ".json").catch(function () { delete grounds[key]; return null; });
+    }
+    return grounds[key];
+  }
+
+  // After the building has risen, on idle: the walk's code and the interior.
+  function walkLoad(visit, b, m, via) {
+    if (!WALK || !window.Models) { return; }
+    var go = function () {
+      if (buildingOn !== visit) { return; }
+      Promise.all([need("walk-plan.js"), need("walk.js"), readInterior(b.slug)]).then(function (all) {
+        if (buildingOn !== visit || !clod || !all[2] || !window.Walk) { return; }
+        var interior = all[2];
+        clod.interior = interior;
+        clod.where = {};
+        (interior.works || []).forEach(function (w) { clod.where[w.id] = w; });
+        clod.roomName = {};
+        (interior.floors || []).forEach(function (f) {
+          (f.rooms || []).forEach(function (r) { clod.roomName[r.id] = r.name || r.id; });
+        });
+        try { clod.door = window.Walk.prepare(walkCtx({})); } catch (e) { clod.door = null; }
+        Array.prototype.forEach.call(buildingWorks.querySelectorAll(".held[data-work]"), function (fig) {
+          walkWhere(fig, { id: fig.dataset.work });
+        });
+        placeDoor();
+        if (via && via.walk) {
+          window.setTimeout(function () {
+            if (buildingOn === visit) { enterWalk({ to: via.work, came: via.came }); }
+          }, still ? 0 : CLOD_RISE + PHI * 1000);
+        }
+      }).catch(function () {});
+    };
+    if (window.requestIdleCallback) { window.requestIdleCallback(go, { timeout: 2600 }); }
+    else { window.setTimeout(go, CLOD_RISE); }
+  }
+
+  // The sun at the museum now, for its skylights and courts.
+  function skyAt(b) {
+    return function () {
+      var s = sunNow(Date.now()), lat = b.lat * RAD, lon = b.lon * RAD;
+      var dot = Math.sin(lat) * Math.sin(s.lat) + Math.cos(lat) * Math.cos(s.lat) * Math.cos(lon - s.lon);
+      return { alt: Math.asin(Math.max(-1, Math.min(1, dot))), dark: Math.max(0, Math.min(1, (0.03 - dot) / 0.15)) };
+    };
+  }
+
+  // The pixel light on another canvas (the walk's, which lies over the
+  // building), or back on #tiles.
+  function lightInto(canvas) {
+    var old = tilesCanvas;
+    tilesCanvas = canvas || tilesHome;
+    tilesCtx = tilesCanvas.getContext("2d");
+    if (old !== tilesCanvas) {
+      var og = old.getContext("2d");
+      og.setTransform(1, 0, 0, 1, 0, 0);
+      og.clearRect(0, 0, old.width, old.height);
+    }
+    tilesDirty = true;
+  }
+
+  // What land.js lends the walk.
+  function walkHost() {
+    return {
+      pulse: pulse, sweepCells: sweepCells, passage: passage, scramble: scramble, ARRIVALS: ARRIVALS,
+      oneOf: oneOf, later: later, afterStill: afterStill, pointerAt: pointerAt, still: still,
+      LIGHT: LIGHT, LILAC: LILAC, PHI: PHI, INV: INV, INV2: INV2,
+      OPEN_AT: OPEN_AT, FIRST_WORD_AT: FIRST_WORD_AT, WORD_GAP: WORD_GAP, WORD_GAP_GROW: WORD_GAP_GROW,
+      WORD_GAP_MAX: WORD_GAP_MAX, CLOD_RISE: CLOD_RISE,
+      readArt: readArt, openArt: openArt, cdn: (museums && museums.cdn) || ART_CDN,
+      banner: { city: bannerCity, under: bannerUnder }, lightInto: lightInto,
+      // A thread's door to a work held at another of the site's museums:
+      // there, and in by itself once its building has risen.
+      goMuseum: function (slug, workId, came) { openMuseum(slug, { work: workId, walk: true, came: came }); }
+    };
+  }
+
+  function walkCtx(opts) {
+    var b = clod.b, m = clod.m, was = insideWas[m.slug];
+    return {
+      museum: m, interior: clod.interior, modelSpec: clod.model, extDots: clod.views.building,
+      heading: clod.heading, host: buildingEl, band: buildingMap, strip: buildingWorks,
+      soil: function (i, j) { return soilCell(dirt.land, b, j, i); },
+      frameInk: getComputedStyle(buildingEl).backgroundColor, sky: skyAt(b),
+      at: opts.to ? { work: opts.to } : was ? { resume: was } : null, came: opts.came || null,
+      land: walkHost(),
+      onLevel: function (lv) {
+        if (lv) { buildingEl.dataset.inside = lv; } else { delete buildingEl.dataset.inside; }
+        // Inside, the way back is out of the building, in one press: "← Outside".
+        if (bannerBackTo) { bannerBackTo.textContent = lv ? "Outside" : backName(levelUp()); }
+        placeDoor();
+      },
+      onWhere: function (p) {
+        var had = insideWas[m.slug];
+        insideWas[m.slug] = p;
+        if (!had || had.room !== p.room) { walkHere(p.room); }
+      },
+      onOut: leaveWalk
+    };
+  }
+
+  function enterWalk(opts) {
+    if (!WALK || walkOn || !clod || !clod.interior || !clod.m || !window.Walk || flying || groundOn) { return false; }
+    if (clod.view !== "building" && clod.views.building) {
+      clod.view = "building";
+      buildingEl.dataset.view = "building";
+    }
+    walkOn = true;
+    cancelAnimationFrame(clod.raf);
+    clod.raf = 0;
+    if (timeline) { timeline.hidden = true; }
+    placeDoor();
+    window.Walk.open(walkCtx(opts || {})).catch(function () {
+      // Nothing that can be walked: the building, as it was.
+      if (walkOn) { leaveWalk("error"); }
+    });
+    return true;
+  }
+
+  function leaveWalk(how) {
+    if (!walkOn) { return; }
+    walkOn = false;
+    delete buildingEl.dataset.inside;
+    lightInto(null);
+    if (bannerBackTo) { bannerBackTo.textContent = backName(levelUp()); }
+    walkHere(null);
+    if (!clod) { return; }
+    var now = performance.now();
+    clod.dirty = true;
+    // Back up from the plan the roof has settled already; out of the door it rises.
+    clod.at = how === "up" ? now - CLOD_RISE - 200 : now;
+    clod.heading = isoNearest(clod.heading);
+    clod.swingAt = null;
+    clod.nextTurn = now + CLOD_REST;
+    if (!clod.raf) { clod.raf = requestAnimationFrame(clodFrame); }
+    showYear();
+    placeDoor();
+  }
+
+  // Out of the walk at once (the banner's way back, or leaving the museum).
+  function walkClose(how) {
+    if (!walkOn) { return false; }
+    if (window.Walk) { window.Walk.close(); }
+    leaveWalk(how || "all");
+    return true;
+  }
+
+  // The way in at the building's foot, and the lit tile at its door where
+  // a source gives one. Neither shows on the ground or while inside.
+  function placeDoor() {
+    if (!clod || !clod.interior || !clod.m) {
+      if (walkGoEl) { walkGoEl.hidden = true; }
+      if (walkDoorEl) { walkDoorEl.hidden = true; }
+      return;
+    }
+    if (!walkGoEl) {
+      walkGoEl = document.createElement("button");
+      walkGoEl.type = "button";
+      walkGoEl.className = "walk-go";
+      walkGoEl.textContent = "Walk the building";
+      walkGoEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      walkGoEl.addEventListener("click", function () {
+        var r = walkGoEl.getBoundingClientRect();
+        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT, LILAC], 0.6, 120);
+        enterWalk({});
+      });
+      buildingEl.appendChild(walkGoEl);
+    }
+    var outside = !walkOn && clod.view === "building" && !!clod.views.building;
+    walkGoEl.hidden = !outside;
+    if (outside) {
+      walkGoEl.setAttribute("aria-label", "Walk " + clod.m.name +
+        (clod.door && clod.door.shell ? " (its rooms are not known yet)" : ""));
+    }
+    if (!walkDoorEl) {
+      walkDoorEl = document.createElement("button");
+      walkDoorEl.type = "button";
+      walkDoorEl.className = "walk-door";
+      walkDoorEl.appendChild(document.createElement("span"));
+      walkDoorEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      walkDoorEl.addEventListener("click", function () { enterWalk({}); });
+      buildingMap.appendChild(walkDoorEl);
+    }
+    var d = clod.door, shows = outside && d && d.dots && clod.frame && window.Walk.doorShows(d, clod.heading) &&
+      (still || performance.now() - clod.at > CLOD_RISE);
+    walkDoorEl.hidden = !shows;
+    if (!shows) { return; }
+    walkDoorEl.setAttribute("aria-label", "Go into " + clod.m.name);
+    var p = window.Models.project(clod.frame, d.dots[0], d.dots[1], d.dots[2]);
+    var k = buildingMap.clientWidth / clod.canvas.width;
+    walkDoorEl.style.left = Math.round(p.x * k - 22) + "px";
+    walkDoorEl.style.top = Math.round(p.y * k - 22) + "px";
+    // It pulses when the building has risen, and once more after φ⁶ s
+    // untouched; never again that visit.
+    if (!walkDoorPulses && !still) {
+      walkDoorPulses = 1;
+      pulseDoor();
+      var mine_ = clod;
+      window.setTimeout(function () {
+        if (clod === mine_ && walkDoorPulses === 1 && !walkOn && !walkDoorEl.hidden &&
+            performance.now() - pointerAt.at > Math.pow(PHI, 6) * 1000) {
+          walkDoorPulses = 2;
+          pulseDoor();
+        }
+      }, Math.pow(PHI, 6) * 1000);
+    }
+  }
+  function pulseDoor() {
+    var r = walkDoorEl.getBoundingClientRect();
+    pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.6, 90);
+  }
+
+  // A saved work in the column: where it hangs (a door into the walk,
+  // before it), or why it does not hang, in the record's own words.
+  function walkWhere(fig, w) {
+    if (!clod || !clod.where || !w || !w.id) { return; }
+    var cap = fig.querySelector("figcaption");
+    if (!cap || cap.querySelector(".held-where, .held-where-said")) { return; }
+    var iw = clod.where[w.id];
+    if (iw && iw.same && clod.where[iw.same]) { iw = clod.where[iw.same]; }
+    if (!iw) { return; }
+    if (iw.how === "museum" && iw.room && clod.roomName[iw.room] !== undefined) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "held-where";
+      b.textContent = "Where it hangs · " + clod.roomName[iw.room];
+      b.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (walkOn) { window.Walk.goTo(iw.id); } else { enterWalk({ to: iw.id }); }
+      });
+      b.addEventListener("keydown", function (event) { event.stopPropagation(); });
+      cap.appendChild(b);
+    } else if (iw.said) {
+      var said = String(iw.said);
+      if (iw.how === "elsewhere") { said = "Elsewhere in the museum · " + said; }
+      cap.appendChild(el("span", "held-where-said", said.charAt(0).toUpperCase() + said.slice(1)));
+    }
+  }
+
+  // While inside: the works that hang in the room you are in, first.
+  function walkHere(roomId) {
+    var was = buildingWorks && buildingWorks.querySelector(".walk-here-group");
+    if (was) { was.parentNode.removeChild(was); }
+    if (!walkOn || !roomId || !clod || !clod.where || !clod.m) { return; }
+    var byId = {};
+    (clod.m.works || []).forEach(function (w) { byId[w.id] = w; });
+    var here = (clod.interior.works || []).filter(function (w) {
+      return w.how === "museum" && w.room === roomId && !w.same;
+    });
+    if (!here.length) { return; }
+    var box = el("section", "walk-here-group");
+    box.appendChild(el("p", "held-count held-group", "Here · " + (clod.roomName[roomId] || roomId) + " · " + here.length));
+    var cdn = (museums && museums.cdn) || ART_CDN;
+    here.forEach(function (iw, i) {
+      var w = byId[iw.id] || iw;
+      if (!w.i) { return; }
+      var key = String(w.i).split("/")[0];
+      var fig = heldFigure(w, cdn + key + "/square.jpg", i, false, [cdn + key + "/medium.jpg"],
+                           ARTWORKS && w.id ? { history: clod.m } : null);
+      fig.dataset.work = w.id;
+      walkWhere(fig, w);
+      box.appendChild(fig);
+    });
+    // The reading's card, if walk.js has put one there, stays first.
+    var card = window.Walk && window.Walk.here && window.Walk.here();
+    buildingWorks.insertBefore(box, card && card.parentNode === buildingWorks ? card.nextSibling : buildingWorks.firstChild);
+  }
+
+  // Leaving the museum: out of the walk, and its door let go.
+  function walkStop() {
+    if (walkOn && window.Walk) { window.Walk.close(); }
+    walkOn = false;
+    if (buildingEl) { delete buildingEl.dataset.inside; }
+    if (tilesCanvas !== tilesHome) { lightInto(null); }
+    if (walkGoEl) { walkGoEl.hidden = true; }
+    if (walkDoorEl) { walkDoorEl.hidden = true; }
+    walkDoorPulses = 0;
+    if (window.Walk && window.Walk.forget) { window.Walk.forget(); }
   }
 
   /* ---- the Archive ---------------------------------------------------------
@@ -12465,7 +12796,7 @@
     openDeck("word", index);
   }
 
-  bannerBack.addEventListener("click", function () { comeUp(); });
+  bannerBack.addEventListener("click", function () { comeUp(true); });
 
   /* ---- down: DIRT Earth ------------------------------------------------
 
@@ -12532,7 +12863,12 @@
     groundPlaces();
     window.requestAnimationFrame(function () { groundDirt.classList.add("on"); groundFrame.focus(); });
   }
-  function goDeeper(streets) {
+  function goDeeper(streets, x, y) {
+    if (walkOn) { window.Walk.down(x, y); return; }
+    if (WALK && place && place.museum && clod && clod.view === "building" && clod.interior && !flying && !groundOn) {
+      enterWalk({});
+      return;
+    }
     if (!place || flying || groundOn) { return; }
     // In an art view, down is at the stop the slider is at.
     var at = place.art && art ? art.stopNow() : place;
@@ -12658,7 +12994,7 @@
   stage.addEventListener("wheel", function (event) {
     if (!place || flying || groundOn) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
-    if (event.target.closest && event.target.closest(".art-col")) { return; }
+    if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
     // Scrolling out of a place goes back up to the world — but not while
     // scrolling a column of works or a reading, which scroll themselves.
     if (event.deltaY > 0) {
@@ -12669,7 +13005,7 @@
     }
     upPush = 0;
     downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
-    if (downPush > 233) { downPush = 0; goDeeper(false); }
+    if (downPush > 233) { downPush = 0; goDeeper(false, event.clientX, event.clientY); }
   }, { passive: true });
   var downFingers = {}, downFrom = 0;
   function downSpread() {
@@ -12686,7 +13022,11 @@
     if (!downFingers[event.pointerId]) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
-    if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) { downFrom = 0; goDeeper(false); }
+    if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) {
+      var fi = Object.keys(downFingers), fa = downFingers[fi[0]], fb = downFingers[fi[1]];
+      downFrom = 0;
+      goDeeper(false, (fa.x + fb.x) / 2, (fa.y + fb.y) / 2);
+    }
     else if (place && !flying && !groundOn && downFrom > 0 && d / downFrom < INV) { downFrom = 0; comeUp(); }
   }, true);
   ["pointerup", "pointercancel"].forEach(function (name) {
@@ -13449,7 +13789,10 @@
     },
     go: function (key) { followGo([key]); },
     work: function (id, key) { openArt({ work: id }, key ? { place: key } : {}); },
-    up: function () { comeUp(); }
+    up: function () { comeUp(); },
+    // Walk the building: a museum by its slug, and where you are inside it.
+    museum: function (slug, via) { openMuseum(slug, via || {}); },
+    inside: function () { return walkOn && window.Walk ? window.Walk.state() : null; }
   };
 
   function backName(up) {

@@ -2889,6 +2889,82 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .held-history:hover,
 .held-history:focus-visible { color: #eadfcd; border-color: #eadfcd; }
 
+/* ---- walk the building (land.js, "walk the building"; walk.js, walk.css) ---
+   The way in, quiet at the building's foot; the lit tile at a door a source
+   gives; and in the column, where each saved work hangs. */
+.walk-go {
+  position: absolute;
+  left: 16px;
+  bottom: calc(var(--s-5) + 22px);
+  z-index: 2;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(168, 146, 122, 0.55);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.55);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.26s steps(3), color 0.26s steps(3), border-color 0.26s steps(3);
+}
+.walk-go:hover,
+.walk-go:focus-visible { background: rgba(94, 82, 199, 0.9); border-color: rgba(94, 82, 199, 0.9); color: #f3f1ee; }
+.walk-go[hidden],
+.building[data-inside] .walk-go,
+.building:not([data-view="building"]) .walk-go { display: none; }
+@media (max-width: 720px) {
+  .walk-go { bottom: calc(38vh + 12px); }
+}
+.walk-door {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+.walk-door > span {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  width: 13px;
+  height: 13px;
+  background: #5e52c7;
+  box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.5);
+}
+.walk-door:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: -6px; }
+.walk-door[hidden],
+.building[data-inside] .walk-door,
+.building:not([data-view="building"]) .walk-door { display: none; }
+.held-where {
+  display: table;
+  margin-top: var(--s-2);
+  min-height: 32px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid rgba(157, 149, 230, 0.6);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9d95e6;
+  cursor: pointer;
+}
+.held-where:hover,
+.held-where:focus-visible { color: #f3f1ee; border-color: #9d95e6; background: rgba(94, 82, 199, 0.5); }
+.held[aria-expanded="true"] .held-where { margin-right: var(--s-2); }
+.held-where-said { display: none; color: var(--ink-dim); font-size: var(--t-0); }
+.dirt-look .held-where-said { color: #a8927a; }
+.held[aria-expanded="true"] .held-where-said { display: block; margin-top: var(--s-2); }
+.walk-here-group { margin: 0 0 var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid rgba(157, 149, 230, 0.35); }
+.held-group { color: #9d95e6; }
+
 /* The slider of the work's own years: the town timeline's pill, under the
    globe, with a tick for every event above its track. */
 .art-time {
