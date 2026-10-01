@@ -571,8 +571,11 @@
 
   function told(said) { show(progress(), said, acts()); }
 
-  function play(w) {
+  /* opts (explorations.js, the relay): from, the stop to join it at; onEnd,
+     told when it ends ("done", "up", "away", "ended") with the walk. */
+  function play(w, opts) {
     if (!w || !w.stops || !w.stops.length) { return; }
+    opts = opts || {};
     load().then(function () {
       var c = castBy(w.animal);
       if (!c || !window.Land || !Land.where) { return; }
@@ -584,11 +587,13 @@
       return Characters.lead(c.id).then(function (f) {
         if (!f) { return; }
         fromWalk = true;
-        walk = { w: w, i: 0, j: -1, map: f.map, timers: [], paused: false, down: false, said: [], upto: 0, closed: 0 };
+        var from = Math.max(0, Math.min(w.stops.length - 1, opts.from || 0));
+        walk = { w: w, i: from, j: -1, map: f.map, timers: [], paused: false, down: false, said: [], upto: from, closed: from,
+                 onEnd: opts.onEnd || null };
         setLines([]);
-        told(w.title + (w.by ? " · by " + w.by : ""));
-        var first = w.stops[0].key;
-        if (Land.following()) { goStop(0, -1); }
+        told(w.title + (w.by ? " · by " + w.by : "") + (from ? " · joined at stop " + (from + 1) + " of " + w.stops.length : ""));
+        var first = w.stops[from].key;
+        if (Land.following()) { goStop(from, -1); }
         else { f.to = first; Land.follow(f); waitArrive(-1); }
       });
     });
@@ -708,12 +713,17 @@
   }
 
   function done() {
-    var w = walk.w;
+    var w = walk.w, onEnd = walk.onEnd;
     clearTimers();
     walk = null;
+    // In a relay (explorations.js) the next leg goes on from here.
+    if (onEnd && onEnd("done", w)) { hide(); return; }
     var rh = rhymeButton(w);
+    // The relay: the explorations that begin (or pass) where this one ended.
+    var on = window.Explorations && Explorations.handoffs ? Explorations.handoffs({ walk: w }) : null;
     show("Walked · " + w.title, "The animal is still yours to follow.",
-         [button("Walk it again", "", function () { play(w); })].concat(rh ? [rh] : []).concat([button("×", "walk-x", hide)]), KEEP_FOR);
+         [button("Walk it again", "", function () { play(w); })].concat(rh ? [rh] : []).concat(on ? [on] : [])
+           .concat([button("×", "walk-x", hide)]), KEEP_FOR);
     setLines(sentence(w), false, true);
   }
 
@@ -743,9 +753,10 @@
 
   function end(why) {
     if (!walk) { return; }
-    var w = walk.w, i = walk.i;
+    var w = walk.w, i = walk.i, onEnd = walk.onEnd;
     clearTimers();
     walk = null;
+    if (onEnd) { onEnd(why, w); }
     show("The walk ends · " + (i + 1) + " of " + w.stops.length,
          why === "up" ? "Up to the world." : why === "away" ? "The animal was let go." : "", [], 6000);
   }
@@ -914,6 +925,7 @@
   window.Walks = {
     play: play,
     kept: kept,
+    walking: function () { return !!walk; },
     encode: function (w) { return load().then(function () { return encode(w); }); },
     decode: function (code) { return load().then(function () { return decode(code); }); },
     // A walk's sentence, as text ("Rome, New York — London. / Munich, Munich."), and its rhyme.

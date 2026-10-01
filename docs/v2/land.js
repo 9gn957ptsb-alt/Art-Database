@@ -13831,8 +13831,8 @@
       var a = art, o = { flying: flying, key: place.townKey || null, at: "place" };
       if (a && a.kind === "town" && a.town) { o.at = "town"; o.key = a.town.key; o.name = a.town.name; }
       else if (a && a.kind === "work" && a.data) { o.at = "work"; o.work = a.data.id; o.key = a.via && a.via.place || null; }
-      else if (place.museum) { o.at = "museum"; }
-      else if (a) { o.at = a.kind; }
+      else if (place.museum) { o.at = "museum"; o.museum = place.museum.slug || null; }
+      else if (a) { o.at = a.kind; if (a.data && a.data.id) { o.id = a.data.id; } }
       return o;
     },
     go: function (key) { followGo([key]); },
