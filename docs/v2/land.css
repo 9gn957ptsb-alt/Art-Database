@@ -1628,6 +1628,9 @@
   overflow-y: auto;              /* a phone reads down past the fold */
   overscroll-behavior: contain;
 }
+/* Two fingers on a reading or a work's photograph are the page's (up a
+   level), not the browser's zoom; one finger still scrolls. */
+.read, .art-plate { touch-action: pan-y; }
 /* The wash is its own layer, and stops short of the banner (which lives in
    another layer, under this one), so where you are and the way back stay
    sharp. */

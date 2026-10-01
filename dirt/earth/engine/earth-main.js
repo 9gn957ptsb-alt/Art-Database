@@ -1652,9 +1652,11 @@ $("e-closer").addEventListener("click", () => toCity(centreLat(), centreLon()));
 $("e-up").addEventListener("click", upFromCity);
 let groundPinch = 0;
 stage.addEventListener("wheel", (ev) => {
-  if (MODE === "earth" && ev.ctrlKey) {
+  // A trackpad pinch (ctrl+wheel) or a mouse's wheel: the same levels, so a
+  // mouse is never kept down here (a notch of a wheel is a quarter of its deltaY).
+  if (MODE === "earth") {
     ev.preventDefault(); ev.stopPropagation();
-    groundPinch -= ev.deltaY;
+    groundPinch -= ev.deltaY * (ev.ctrlKey ? 1 : 0.25) * (ev.deltaMode === 1 ? 16 : 1);
     if (groundPinch > 55) { groundPinch = 0; toCity(centreLat(), centreLon()); }
     else if (groundPinch < -89) { groundPinch = 0; if (SITE && window.parent !== window) upToSite(); }
   } else if (MODE === "city") { ev.preventDefault(); ev.stopPropagation(); cityWheel(ev, window.devicePixelRatio || 1); }

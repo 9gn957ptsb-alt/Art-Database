@@ -13018,14 +13018,30 @@
   });
   // Scrolling in on a city, or spreading two fingers on it, goes on down.
   var upPush = 0;
-  stage.addEventListener("wheel", function (event) {
+  // The reading (#here) and the art view (#art) lie over the stage, outside
+  // it: the same gestures are heard on them too, so no view holds you
+  // (artist, 1 Oct 2026: "regardless of where you are … you should always
+  // be free to move around the globe").
+  var overStage = ["here", "art"].map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+  // Something under the pointer that scrolls itself (a column of works, a
+  // reading on a phone): the wheel is its own, not the way up.
+  function scrollsItself(e) {
+    for (; e && e.nodeType === 1 && e !== stage && e !== document.body; e = e.parentElement) {
+      var oy = getComputedStyle(e).overflowY;
+      if ((oy === "auto" || oy === "scroll") && e.scrollHeight > e.clientHeight + 2) { return true; }
+    }
+    return false;
+  }
+  function placeWheel(event) {
     if (!place || flying || groundOn) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
     // Scrolling out of a place goes back up to the world — but not while
     // scrolling a column of works or a reading, which scroll themselves.
     if (event.deltaY > 0) {
-      if (event.target.closest && event.target.closest(".building-works, .here, .deck, .theatre, .archive")) { return; }
+      if (event.target.closest && event.target.closest(".deck, .archive")) { return; }
+      if (scrollsItself(event.target)) { return; }
       upPush += event.deltaY * (event.ctrlKey ? 8 : 1);
       if (upPush > 377) { upPush = 0; comeUp(); }
       return;
@@ -13033,7 +13049,9 @@
     upPush = 0;
     downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
     if (downPush > 233) { downPush = 0; goDeeper(false, event.clientX, event.clientY); }
-  }, { passive: true });
+  }
+  stage.addEventListener("wheel", placeWheel, { passive: true });
+  overStage.forEach(function (o) { o.addEventListener("wheel", placeWheel, { passive: true }); });
   var downFingers = {}, downFrom = 0;
   function downSpread() {
     var ids = Object.keys(downFingers);
@@ -13041,11 +13059,17 @@
     var a = downFingers[ids[0]], b = downFingers[ids[1]];
     return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
   }
-  stage.addEventListener("pointerdown", function (event) {
+  [stage].concat(overStage).forEach(function (o) {
+    o.addEventListener("pointerdown", fingerDown, true);
+    o.addEventListener("pointermove", fingerMove, true);
+    ["pointerup", "pointercancel"].forEach(function (name) { o.addEventListener(name, fingerUp, true); });
+  });
+  function fingerUp(event) { delete downFingers[event.pointerId]; downFrom = downSpread(); }
+  function fingerDown(event) {
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
-  }, true);
-  stage.addEventListener("pointermove", function (event) {
+  }
+  function fingerMove(event) {
     if (!downFingers[event.pointerId]) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
@@ -13055,10 +13079,7 @@
       goDeeper(false, (fa.x + fb.x) / 2, (fa.y + fb.y) / 2);
     }
     else if (place && !flying && !groundOn && downFrom > 0 && d / downFrom < INV) { downFrom = 0; comeUp(); }
-  }, true);
-  ["pointerup", "pointercancel"].forEach(function (name) {
-    stage.addEventListener(name, function (event) { delete downFingers[event.pointerId]; downFrom = downSpread(); }, true);
-  });
+  }
   banner.addEventListener("pointerdown", function (event) {
     event.stopPropagation();      // the stage would take the pointer otherwise
   });
