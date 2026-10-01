@@ -2687,6 +2687,9 @@ uniform sampler2D uThing;           // the thing put in: a photo the viewer gave
 uniform float uThingOn;             // 1 once there is one
 uniform vec4 uThingP;               // where it was put in (cells), when (seconds), and its width over its height
 uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells a second (105 at most): its wake runs the other way
+uniform sampler2D uFace;            // the faces in the saved paintings (dirt/artists/faces.py), an atlas uFG cells across, down
+uniform int uFN;
+uniform vec2 uFG;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
@@ -2775,9 +2778,80 @@ void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
     bestZ = z; bh = h; bC = C; bR = R; bTorn = tornE;
   }
 }
+// ---- friezes, after Rothko's paintings of 1938 to 1942 ---------------------------------------------------------
+// In places (about one part in seven) the collage gives way to friezes: rows 89 cells high, each in three registers in
+// golden proportion, as Rothko stacked heads over torsos over feet in his mythic paintings (Antigone, 1939-40): a
+// register of heads (to phi^-1 of the height), the faces from the saved paintings lined up and overlapping so that
+// neighbours share an eye or a mouth; a band of chevrons, his hatching, in red, blue and chalk (to 1 - phi^-3); and
+// the torsos, a painting smeared in his reds. Each row slides slowly sideways and is blurred as a panned camera blurs
+// it, along the row only, with a ghost a third of a face behind, teal in the shadows and amber in the light, grain in
+// the dark (after a photograph of Aries's). And the friezes dissolve, across a few hundred cells, into bands of colour,
+// each register its own colour with feathered edges: Rothko's later fields are those friezes with the figures gone, and
+// DRIFT goes from one to the other in space. Raw canvas between.
+vec3 faceAt(int f, vec2 uv, float lod) {
+  int cols = int(uFG.x);
+  vec2 cell = vec2(float(f % cols), float(f / cols));
+  return textureLod(uFace, (cell + clamp(uv, vec2(0.03), vec2(0.97))) / uFG, lod).rgb * 255.0;
+}
+const float FZH = 89.0, FR1 = 0.618033989, FR2 = 0.763932023;
+float frieze(vec2 p, float T, out vec3 col) {
+  col = vec3(0.0);
+  if (uFN <= 0) return 0.0;
+  float z = vnoise(p + 34.0 * (vec2(vnoise(p, 89.0, 52003u), vnoise(p, 89.0, 52004u)) - 0.5), 987.0, 52001u);
+  float m = smoothstep(0.66, 0.7, z);
+  if (m <= 0.0) return 0.0;
+  float d = smoothstep(0.3, 0.8, vnoise(p, 610.0, 52002u));        // how far dissolved toward the fields
+  float row = floor(p.y / FZH), y = p.y / FZH - row;                 // 0 at a frieze's top, 1 at its foot
+  uint hr = h3(int(row), 7, 52005u);
+  float x = p.x + T * (2.0 + 5.0 * unit(hr)) * (unit(mixh(hr + 1u)) < 0.5 ? -1.0 : 1.0);   // each row pans slowly
+  vec3 canvas = vec3(224, 214, 192) + 12.0 * (cellHash(p, 52006u) - 0.5), c, band;
+  float blur = mix(2.0, 21.0, d);                                    // the pan's half-width, in cells
+  if (y < FR1) {
+    float hh = FR1 * FZH, fw = hh * 0.8, stp = fw * FR1, k0 = floor(x / stp);
+    vec3 acc = vec3(0.0); float ws = 0.0;
+    int taps = uLite == 1 ? 3 : 7, f0 = 0;
+    for (int j = 0; j < 2; j++) {
+      float k = k0 - float(j), u = (x - k * stp) / fw;
+      if (u < 0.0 || u > 1.0) continue;
+      int f = int(mixh(h3(int(k), int(row), 52007u)) % uint(uFN));
+      if (j == 0) f0 = f;
+      vec2 uv = vec2(u, y / FR1);
+      vec3 sm = vec3(0.0);
+      for (int q = 0; q < 7; q++) { if (q >= taps) break; sm += faceAt(f, uv + vec2((float(q) / float(taps - 1) - 0.5) * 2.0 * blur / fw, 0.0), 1.0 + 2.0 * d); }
+      sm = mix(sm / float(taps), faceAt(f, uv + vec2(0.38, 0.0), 2.0 + 2.0 * d), 0.38);   // and its ghost
+      float wg = sin(3.14159 * u) + 0.05;                            // where one face fades, the next has come in
+      acc += sm * wg; ws += wg;
+    }
+    c = ws > 0.0 ? acc / ws : canvas;
+    float l = lum(c);
+    c = mix(c, mix(vec3(22, 58, 66), vec3(238, 196, 146), smoothstep(30.0, 220.0, l)), 0.42);   // teal shadow, amber light
+    c += (cellHash(p + floor(T * 8.0), 52008u) - 0.5) * 34.0 * (1.0 - smoothstep(40.0, 140.0, l));   // grain in the dark
+    band = mix(faceAt(f0, vec2(0.5), 6.0), vec3(238, 196, 146), 0.3);
+  } else if (y < FR2) {
+    float yy = (y - FR1) / (FR2 - FR1), v = (x + blur * (cellHash(p, 52010u) - 0.5)) / 5.0 + abs(yy - 0.5) * (FR2 - FR1) * FZH / 2.5;
+    int b = int(mod(floor(v), 3.0));
+    c = b == 0 ? vec3(178, 66, 50) : b == 1 ? vec3(54, 74, 170) : vec3(228, 220, 202);
+    band = vec3(150, 112, 132);
+  } else {
+    float yy = (y - FR2) / (1.0 - FR2);
+    float ql = float(mixh(hr + 9u) % uint(max(uQN, 1)));
+    vec2 o = vec2(unit(mixh(hr + 10u)), unit(mixh(hr + 11u)));
+    vec3 sm = vec3(0.0);
+    for (int q = 0; q < 5; q++) sm += texture(uQuilt, vec3(vec2(x + (float(q) - 2.0) * blur * 0.5, yy * 21.0) / (uQS * 0.8) + o, ql)).rgb * 255.0;
+    c = mix(sm / 5.0, vec3(206, 118, 104), 0.35);                   // torsos, in his reds
+    band = mix(textureLod(uQuilt, vec3(o, ql), 6.0).rgb * 255.0, vec3(196, 72, 58), 0.5);
+  }
+  // dissolved, each register becomes its own field of colour, its edges feathered wider the further it has gone
+  c = mix(c, band, smoothstep(0.5, 1.0, d));
+  float seam = min(min(abs(y - FR1), abs(y - FR2)), min(y, 1.0 - y)) * FZH;
+  col = mix(canvas, c, smoothstep(0.6, 1.6 + 6.0 * d, seam));
+  return m;
+}
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
+  { vec3 fz; float fm = frieze(p, T, fz);                             // a frieze, where there is one, over everything here
+    if (fm > cellHash(p, 52009u)) { outA = outB = vec4(clamp(fz, 0.0, 255.0) / 255.0, 1.0); return; } }
   // the thing put in arrives where it was put in: the whole photo, torn out, for a few seconds, and the collage takes
   // it from there (the datamosh melts it, the pieces carry it off across the plane)
   float thAge = T - uThingP.z, am = 0.0, amT = 0.0;
@@ -3360,7 +3434,7 @@ void main() {
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
  */
-function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster, quilts, antiquity }) {
+function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works, roster, quilts, antiquity, faces }) {
   const glcv = document.createElement("canvas");
   glcv.setAttribute("aria-hidden", "true");
   glcv.style.pointerEvents = "none";
@@ -3423,6 +3497,21 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     an = gl.getError() === gl.NO_ERROR ? imgs.length : 0;
   }
   // the thing put in: a photo the viewer gave the plane (drift.js), on unit 12, for the collage to glue in
+  // The faces' atlas (dirt/artists/faces.py), for the friezes: on unit 13.
+  let tFace = null, faceImg = null, faceOn = 0;
+  function fillFaces(im) {
+    gl.activeTexture(gl.TEXTURE13);
+    gl.deleteTexture(tFace);
+    tFace = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tFace);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+    faceOn = gl.getError() === gl.NO_ERROR ? 1 : 0;
+  }
+  if (faces && faces.n) { const im = new Image(); im.onload = () => { faceImg = im; if (!lost) fillFaces(im); }; im.src = "faces/" + faces.file; }
   let tThing = null, thingSrc = null, thingOn = 0;
   const thingP = [0, 0, -1e9, 1];
   function fillThing(src) {
@@ -3554,6 +3643,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 1, 1);
     thingOn = 0;
     if (thingSrc) fillThing(thingSrc);
+    gl.activeTexture(gl.TEXTURE13); tFace = tex(gl.TEXTURE_2D);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, 1, 1);
+    faceOn = 0;
+    if (faceImg) fillFaces(faceImg);
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -3583,8 +3676,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust"]);
-    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); }
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG"]);
+    if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
       [formalProg, F] = c;
@@ -3804,6 +3897,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Co.uAN, an);
       gl.uniform1i(Co.uLite, tier === 0 ? 1 : 0);
       gl.uniform1f(Co.uThingOn, thingOn * thingShare);
+      gl.uniform1i(Co.uFN, faceOn && faces ? faces.n : 0);
+      if (faces) gl.uniform2f(Co.uFG, faces.cols, faces.rows);
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
       gl.uniform2f(Co.uThrust, thrust[0], thrust[1]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside

@@ -61,9 +61,9 @@ that best shows the scene (petals, cut, flash, fling, rain, glow, void, wind, ri
 a fresh session does not have them. Built without them, the page loses the quilts, the history's light and the
 collage's painting pieces, so it must not be published that way. They live beside the page in the DIRT artifact
 itself. Before `build_soil_viewer.py`, read them back with the Artifact tool (`action: "read"` with the artifact's
-`url` and `paths`): first `quilts/quilts.json` and `antiquity/antiquity.json`, then every file those two list
-(`quilts/qNN.jpg`, `antiquity/aNN.jpg`), and copy them, with the two JSON files, into `dirt/private/quilts/` and
-`dirt/private/antiquity/`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
+`url` and `paths`): first `quilts/quilts.json`, `antiquity/antiquity.json` and `faces/faces.json`, then every file
+those list (`quilts/qNN.jpg`, `antiquity/aNN.jpg`, `faces/faces.jpg`), and copy them, with the JSON files, into
+`dirt/private/quilts/`, `dirt/private/antiquity/` and `dirt/private/faces/`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
 the roster is committed, and the next session that has the files picks it up; say so in the final line.
 
 Then publish `dirt/private/collection-soil.html` to the existing DIRT artifact,

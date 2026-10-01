@@ -304,7 +304,18 @@ the calm islands, the passages and their oversprays, the collage's and the world
 the gardens all change in 377 to 987 cells where they took 987 to 2584, so a swipe of a phone's width or two is
 already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1.
 
-**The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
+**Friezes, after Rothko.** In places, about one part in seven, the collage gives way to friezes (`ground-gl.js`,
+`frieze()`): rows 89 cells high in three registers in golden proportion, as Rothko stacked heads over torsos over feet
+in his mythic paintings of 1938 to 1942 (*Antigone*, 1939–40). On top (φ⁻¹ of the row), faces from the saved paintings
+(68 of them, found by `artists/faces.py` and kept in `private/faces/`, published beside the page) line up and overlap,
+so that neighbours share an eye or a mouth; then a band of his chevrons in red, blue and chalk (to 1 − φ⁻³); then the
+torsos, a painting smeared in his reds. Each row pans slowly sideways and is blurred as a panned camera blurs, along the
+row only, with a ghost a third of a face behind, teal in the shadows and amber in the light and grain in the dark,
+after a photograph of Aries's. Across a few hundred cells the friezes dissolve into bands of colour, each register its
+own field with feathered edges: Rothko's later fields are those friezes with the figures gone, and DRIFT walks from one
+to the other in space, so the plane now runs from its densest collage to near-empty bands within a swipe.
+
+**The artists' garden.****The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
 (`artists/plants.json`; the coworker chooses it, `artists/COWORKER.md` step 3a). Each artist keeps a garden, a square of
 the plane 610 cells a side, where their plant grows on the floor and among the shrubs: a rosette of five to seven
 coleus leaves (*Plectranthus scutellarioides*, whose leaves run the widest spectrum of any foliage) in the artist's

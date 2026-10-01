@@ -798,6 +798,7 @@ onmessage = (e) => {
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
 const QUILTS = __QUILTS__;
+const FACES = __FACES__;                                        // the faces in the saved paintings, for the friezes (dirt/artists/faces.py), in faces/
 const ANTIQUITY = __ANTIQUITY__;                                // the history of Greece and Rome (dirt/artists/antiquity.py), in antiquity/                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
 const CAST = __CAST__;                                          // the garden as a film, Falling Like Leaves (dirt/artists/cast.json)
@@ -817,7 +818,7 @@ const showAll = document.getElementById("show-all");
 // The ground painted on the GPU, where there is WebGL2, so its colours can change (see ground-gl.js); else by the canvas.
 const GLG = /nogl/.test(location.hash) ? null
   : groundGL(stage, cv, { tokens: TOKENS, ground: GROUND, reduced: REDUCED, hold: /hold/.test(location.hash), force: /forcegl/.test(location.hash),
-                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER, quilts: QUILTS, antiquity: ANTIQUITY });
+                           art: /noart/.test(location.hash) ? null : ART, works: PL.works, roster: ROSTER, quilts: QUILTS, antiquity: ANTIQUITY, faces: FACES });
 // Drawn after the artist, the plane is paper: the page round it is a graphite wall, and picking a painting out fades
 // the rest into the paper rather than into the dark.
 const ON_PAPER = !!GLG && !/noart/.test(location.hash);
@@ -2542,6 +2543,7 @@ def main():
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
                 .replace("__CAST__", "null" if site or not (HERE / "artists" / "cast.json").exists() else (HERE / "artists" / "cast.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANTS__", "null" if site or not (HERE / "artists" / "plants.json").exists() else (HERE / "artists" / "plants.json").read_text().replace("</", "<\\/"))
+                .replace("__FACES__", "null" if site or not (priv / "faces" / "faces.json").exists() else (priv / "faces" / "faces.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
                 .replace("__FIELD_K__", "1" if site else "0.381966011250105")
