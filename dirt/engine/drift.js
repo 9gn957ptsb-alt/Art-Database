@@ -462,7 +462,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
     UC.vx = UC.hx * UC.speed; UC.vy = UC.hy * UC.speed;
     if (alone) { vx += UC.vx * dt; vy += UC.vy * dt; }
     if (plane() && GLG.setThrust) GLG.setThrust(UC.vx, UC.vy);       // its wake, in the collage
-    if (!UC.given && plane() && onPlane() && now - UC.sheetAt > 34000) {                // code, and every other time a character's card
+    if (!UC.given && plane() && onPlane() && now - UC.sheetAt > 89000) {              // (every 89 s since 2 Oct 2026, not 34)                // code, and every other time a character's card
       UC.sheetAt = now; UC.sheets = (UC.sheets || 0) + 1;
       GLG.putIn((UC.sheets % 2 === 0 && castCard()) || codeSheet(), vx + VW / 2, vy + VH / 2, { quiet: true, share: 0.618 });
     }

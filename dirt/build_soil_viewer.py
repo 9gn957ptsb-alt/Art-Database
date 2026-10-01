@@ -2060,10 +2060,15 @@ LIFE.eagles = {
 
 const LIFE_ORDER = ["mould", "ants", "frogs", "ferns", "snakes", "fireflies", "morphos", "wind", "garden", "blooms", "troops", "hummers", "macaws", "eagles"];
 const STILL = new Set(["blooms", "ferns", "garden"]);                     // with reduced motion: only plants, full grown
+// Simplified by half (2 October 2026: "too much going on ... I want to be able to see intentionality in every detail"):
+// of the life over the plane, only what carries an idea of its own is kept: the artists' garden and its cast, the
+// blooms and ferns, and the morpho butterflies. The rest (ants, mould, frogs, snakes, fireflies, wind, troops,
+// hummingbirds, macaws, eagles, and the wanderers) stay in the code, off.
+const KEPT_LIFE = new Set(["ferns", "morphos", "garden", "blooms", "cast"]);
 function spawnLife(c) {
   for (const s of c.sites) {
     const g = LIFE[s.kind];
-    if (!g || (REDUCED && !STILL.has(s.kind))) continue;
+    if (!g || !KEPT_LIFE.has(s.kind) || (REDUCED && !STILL.has(s.kind))) continue;
     const o = g.spawn(s);
     if (o) { o.home = c.id; g.list.push(o); }
   }
@@ -2075,6 +2080,7 @@ function despawnLife(c) {
 function live(t) {
   clearLife();
   for (const k of LIFE_ORDER) {
+    if (!KEPT_LIFE.has(k)) continue;
     const g = LIFE[k];
     if (!REDUCED && g.step) g.step(t);
     if (!REDUCED || STILL.has(k)) g.draw(t);

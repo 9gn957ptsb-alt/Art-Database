@@ -323,6 +323,15 @@ torso of 55 cut from one painting, shoulders narrowing to the waist; legs of 55 
 feet. Each section is set a little aside from the one above, as another hand would set it, outlined in ink, creased at
 the folds, the paper torn round it. One or two faces at a time, against the crowds of the friezes, which are now rarer.
 
+**Simplified by half** (2 October 2026: "too much going on ... I want to be able to see intentionality in every
+detail"). What stays carries an idea of its own: the artists' garden and its cast, the blooms and ferns and the morpho
+butterflies; the datamosh, the clouds (the large calm masses the kept still is made of) and the large torn pieces; and,
+as occasional events, the exquisite corpses, the Silvers portraits (each now in φ⁻⁴ of their squares) and the friezes.
+Off, though kept in the code: ten of the forest's creatures (ants, mould, frogs, snakes, fireflies, wind, troops,
+hummingbirds, macaws, eagles) and the wanderers, the collage's slivers of spectrum and its smaller pieces. Halved: the
+streaks, the posterized patches and the dapples of light; Weil's shards are rarer, and the sheets of code and title
+cards come every 89 seconds, not 34.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later

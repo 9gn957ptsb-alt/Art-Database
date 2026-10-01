@@ -2518,7 +2518,7 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
 vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
 int weil(vec2 p, float T, out vec3 col, out float a) {
   col = vec3(0); a = 0.0;
-  if (vnoise(askew(p), 1597.0, 28681u) < 0.58 || regime(p, T) < 0.4) return 0;   // not in the plane's own country
+  if (vnoise(askew(p), 1597.0, 28681u) < 0.7 || regime(p, T) < 0.4) return 0;   // (rarer since 2 Oct 2026)   // not in the plane's own country
   // the shards: the nearest of seeds scattered 89 cells apart, the plane warped a little first so no edge is straight
   const float S = 144.0;
   vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
@@ -2559,7 +2559,7 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
  * a wind. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
 vec4 dapples(vec2 p, float T) {
   if (uAN == 0) return vec4(0.0);
-  float dens = smoothstep(0.42, 0.72, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));
+  float dens = smoothstep(0.58, 0.8, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));   // (halved, 2 Oct 2026)
   if (dens <= 0.0) return vec4(0.0);
   vec2 wind = vec2(sin(T * 0.7) + 0.4 * sin(T * 1.9 + 1.3), 0.6 * cos(T * 0.5) + 0.3 * sin(T * 2.3)) * 4.0;
   const float G = 34.0;
@@ -2862,7 +2862,7 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 q = sq + ivec2(i, j);
     uint hq = h3(q.x, q.y, 53001u);
-    if (unit(hq) > 0.236) continue;                                 // phi^-3 of the squares have one
+    if (unit(hq) > 0.146) continue;                                 // phi^-4 of the squares have one
     vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
     // a portrait, as tall as a face crop is (5 to 4), torn out like a photograph: its edge wanders by a few cells
     float r = 89.0 + 55.0 * unit(mixh(hq + 3u));
@@ -2908,7 +2908,7 @@ float corpse(vec2 p, float T, out vec3 col) {
   const float G = 610.0 * ${FKS}, W = 55.0, H = 144.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 54001u);
-  if (unit(h) > 0.236) return 0.0;                                   // in phi^-3 of the squares
+  if (unit(h) > 0.146) return 0.0;                                   // in phi^-4 of the squares
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - 160.0, 0.0);
   float a = (unit(mixh(h + 3u)) - 0.5) * 0.3;
   vec2 q = mat2(cos(a), -sin(a), sin(a), cos(a)) * (p - o);
@@ -2991,7 +2991,7 @@ void main() {
     over(col, a, cellWas(lp - v), mo * 0.97);
   }
   // streaks: a colour dragged down a column, from where the streak starts
-  float sz = smoothstep(0.52 - 0.2 * ew, 0.72 - 0.2 * ew, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));
+  float sz = smoothstep(0.64 - 0.2 * ew, 0.8 - 0.2 * ew, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));   // (halved, 2 Oct 2026)
   if (sz > 0.0) {
     float an = 1.5708 + 1.3 * (vnoise(pa, 987.0, 40122u) - 0.5);
     vec2 d = vec2(cos(an), sin(an));
@@ -3029,7 +3029,7 @@ void main() {
   uint bh = 0u;
   vec2 bC = vec2(0.0);
   pieces(p, T, 377.0, 55.0, 233.0, 0.7, 40141u, bestZ, bh, bC, bR, bTorn);
-  if (uLite == 0) pieces(p, T, 144.0, 13.0, 89.0, 0.55, 40142u, bestZ, bh, bC, bR, bTorn);
+  // (the smaller pieces: off since 2 Oct 2026; only the large ones are glued in, so each can be seen as chosen)
   if (bestZ >= 0.0) {
     uint h = bh;
     float kind = unit(mixh(h + 20u));
@@ -3068,7 +3068,7 @@ void main() {
     over(col, a, c, 1.0);
   }
   // slivers of spectrum, here and there: a few bands in a stretch, each its own width
-  float sl = uLite == 1 ? 0.0 : smoothstep(0.66, 0.8, vnoise(pa + T * vec2(0.6, -1.1), 610.0, 40151u));
+  float sl = 0.0;                                                     // (the slivers of spectrum: off since 2 Oct 2026, noise without an idea)
   if (sl > 0.0) {
     float an = 0.35 + 2.4 * vnoise(p, 2584.0, 40152u);
     vec2 n = vec2(-sin(an), cos(an));
@@ -3087,7 +3087,7 @@ void main() {
   }
   if (a <= 0.0 && am <= 0.0) discard;
   // in patches, the colour reduced to five levels and dithered (the dither fixed to the plane, so it does not seethe)
-  float po = smoothstep(0.6, 0.7, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));
+  float po = smoothstep(0.72, 0.8, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));   // (halved, 2 Oct 2026)
   if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + cellHash(p, 40162u)) / 4.0 * 255.0, po);
   // it opens onto the plane as speckle, at the edge of its country only
   float m = a * (t > cellHash(p, 40164u) * 0.8 + 0.1 ? 1.0 : 0.0);
