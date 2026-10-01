@@ -331,6 +331,11 @@ Off, though kept in the code: ten of the forest's creatures (ants, mould, frogs,
 hummingbirds, macaws, eagles) and the wanderers, the collage's slivers of spectrum and its smaller pieces. Halved: the
 streaks, the posterized patches and the dapples of light; Weil's shards are rarer, and the sheets of code and title
 cards come every 89 seconds, not 34.
+Then the collage's country itself halved: it covered nearly all the plane (its mean strength 0.69) and now covers
+about half (0.36), so the rest is one passage at a time. Its edges, the friezes' and portraits' edges, the streaks and
+the clouds are feathered, no longer broken into speckle, and the posterized patches are flat, not dithered; the large
+pieces are φ⁻¹ as many. Measured at six places against the kept still (34 texels across): calm 0.365 → 0.615 (the
+still: 0.614), life 0.113 → 0.077 (0.091), busy 0.282 → 0.203 (0.195).
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was

@@ -2654,8 +2654,8 @@ void main() {
 //    seconds and dissolving in and out as speckle (Hannah Hoch's photomontages; Kurt Schwitters' Merz collages);
 //  - clouds: white cumulus masses, lit from above and grey-blue beneath, the high key the whole is set in;
 //  - slivers: thin bands of spectrum where the light has been split, the colours of the frame parted within them;
-//  - and in patches, the colour reduced to a few levels and dithered, as an image saved too small.
-// Its country covers most of the plane at some strength, strongest where a slow field is high, and it opens onto
+//  - and in patches, the colour reduced to a few flat levels, as a poster is.
+// Its country covers about half the plane, strongest where a slow field is high, and it opens onto
 // the plane as speckle, not along a line. Its own small program, drawn over the rest; where it covers, the grey
 // gradient edge pass stands aside, so the cuts stay cuts.
 const GROUND_COLLAGE = `#version 300 es
@@ -2706,7 +2706,9 @@ void over(inout vec3 col, inout float a, vec3 c, float m) {
 /** How strongly the collage is here: most of the plane at some strength, drifting. */
 float torn(vec2 p, float T) {
   vec2 q = askew(p * 0.8) + T * vec2(-2.1, 1.3);
-  return smoothstep(0.26, 0.56, 0.7 * vnoise(q, 1597.0, 40101u) + 0.3 * vnoise(q, 377.0, 40102u));
+  // (from 2 Oct 2026 over half the plane, not nearly all of it: its strength there halved, 0.69 to 0.36, so the rest is
+  // one passage at a time)
+  return smoothstep(0.5, 0.62, 0.7 * vnoise(q, 1597.0, 40101u) + 0.3 * vnoise(q, 377.0, 40102u));
 }
 /** The cumulus: density, warped so it billows. */
 float cloudD(vec2 p, float T) {
@@ -2949,9 +2951,9 @@ void main() {
   float T = uTime, t = torn(p, T);
   { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
   { vec3 mz; float mm = mosaic(p, lp, T, mz);                         // a photomosaic, where there is one
-    if (mm > cellHash(p, 53009u)) { outA = outB = vec4(clamp(mz, 0.0, 255.0) / 255.0, 1.0); return; } }
+    if (mm > 0.0) { outA = outB = vec4(clamp(mz, 0.0, 255.0) / 255.0, mm); return; } }   // (feathered, not speckled)
   { vec3 fz; float fm = frieze(p, T, fz);                             // a frieze, where there is one, over everything here
-    if (fm > cellHash(p, 52009u)) { outA = outB = vec4(clamp(fz, 0.0, 255.0) / 255.0, 1.0); return; } }
+    if (fm > 0.0) { outA = outB = vec4(clamp(fz, 0.0, 255.0) / 255.0, fm); return; } }
   // the thing put in arrives where it was put in: the whole photo, torn out, for a few seconds, and the collage takes
   // it from there (the datamosh melts it, the pieces carry it off across the plane)
   float thAge = T - uThingP.z, am = 0.0, amT = 0.0;
@@ -3004,7 +3006,7 @@ void main() {
     float k = floor((u + ph) / L), f = (u + ph) / L - k;
     if (unit(h3(int(col1), int(k), 40125u)) < 0.6) {
       vec3 c = cellWas(lp - d * f * L);
-      float m = sz * (1.0 - f * f) * (cellHash(p, 40126u) < sz * 1.4 ? 1.0 : 0.0);
+      float m = sz * (1.0 - f * f);                                   // (whole, not speckled: 2 Oct 2026)
       over(col, a, c, m);
     }
   }
@@ -3018,17 +3020,15 @@ void main() {
       vec3 c = mix(vec3(140, 152, 178), vec3(253, 252, 250), 0.2 + 0.8 * smoothstep(0.15, 0.85, lit));
       c = mix(c, vec3(255), smoothstep(th + 0.04, th + 0.18, d) * 0.5);
       c += (cellHash(p, 40140u) - 0.5) * 10.0;
-      // their edges break into spray
-      float spray = smoothstep(0.5, 0.7, vnoise(p, 55.0, 40138u));
-      m = mix(m, m > cellHash(p, 40139u) ? 1.0 : 0.0, spray);
-      over(col, a, c, m);
+      // (their edges no longer break into spray: 2 Oct 2026)
+            over(col, a, c, m);
     }
   }
   // the pieces glued over it all, in no order, at two scales
   float bestZ = -1.0, bR = 0.0, bTorn = 0.0;
   uint bh = 0u;
   vec2 bC = vec2(0.0);
-  pieces(p, T, 377.0, 55.0, 233.0, 0.7, 40141u, bestZ, bh, bC, bR, bTorn);
+  pieces(p, T, 377.0, 55.0, 233.0, 0.7 / PHI, 40141u, bestZ, bh, bC, bR, bTorn);
   // (the smaller pieces: off since 2 Oct 2026; only the large ones are glued in, so each can be seen as chosen)
   if (bestZ >= 0.0) {
     uint h = bh;
@@ -3086,11 +3086,11 @@ void main() {
     }
   }
   if (a <= 0.0 && am <= 0.0) discard;
-  // in patches, the colour reduced to five levels and dithered (the dither fixed to the plane, so it does not seethe)
+  // in patches, the colour reduced to five flat levels (no dither since 2 Oct 2026: a poster, not noise)
   float po = smoothstep(0.72, 0.8, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));   // (halved, 2 Oct 2026)
-  if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + cellHash(p, 40162u)) / 4.0 * 255.0, po);
-  // it opens onto the plane as speckle, at the edge of its country only
-  float m = a * (t > cellHash(p, 40164u) * 0.8 + 0.1 ? 1.0 : 0.0);
+  if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + 0.5) / 4.0 * 255.0, po);   // (flat, not dithered)
+  // it opens onto the plane feathered, at the edge of its country only (once speckle; the speckle was noise)
+  float m = a * smoothstep(0.1, 0.9, t);                             // (feathered, not speckled: 2 Oct 2026)
   if (am > 0.0) { col = mix(col, ac, am); m = max(m, am); }            // the photo arriving, over all of it
   outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, m);
 }`;
