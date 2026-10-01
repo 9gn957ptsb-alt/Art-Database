@@ -206,6 +206,11 @@ def main():
     drow = []
     for ch in chunks(items, 25):
         drow += sparql(DETAILS.format(vals=vals(ch)))
+    # And the items of the hand table (scripts/studios_hand.json), read on their own.
+    hand = os.path.join(ROOT, 'scripts', 'studios_hand.json')
+    extra = sorted({h['q'] for h in json.load(open(hand)).get('studios', []) if h.get('q')} - set(items)) if os.path.exists(hand) else []
+    if extra:
+        drow += sparql(DETAILS.format(vals=vals(extra)))
     json.dump(drow, open(os.path.join(OUT, 'details.json'), 'w'))
     artist_text()
     wiki_text()

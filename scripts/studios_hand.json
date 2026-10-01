@@ -1,0 +1,74 @@
+{
+  "note": "The studios' hand table (scripts/build_studios.py): what Wikidata does not link, each entry with its sources and, where a sentence is quoted, the sentence exactly as its source gives it. 'drop' removes a statement of Wikidata's that is plainly a mis-linked item, with the reason. Coordinates of a street address are OpenStreetMap's (Nominatim), geocoded from the address the source gives.",
+  "studios": [
+    {
+      "artist": "Paul Cézanne", "q": "Q754053", "kind": "studio", "y0": 1902, "y1": 1906, "place": "Aix-en-Provence",
+      "src": [{"name": "Wikipedia, Cézanne's studio", "url": "https://en.wikipedia.org/wiki/C%C3%A9zanne%27s_studio"},
+              {"name": "Wikidata Q754053", "url": "https://www.wikidata.org/wiki/Q754053"}],
+      "said": [{"q": "Cézanne's studio is a biographical museum about the painter Paul Cézanne, in Aix-en-Provence in Southern France. It was his studio from 1902 until his death in 1906.", "by": "Wikipedia", "in": "Cézanne's studio", "url": "https://en.wikipedia.org/wiki/C%C3%A9zanne%27s_studio"}]
+    },
+    {
+      "artist": "Andy Warhol", "kind": "studio", "name": "The Factory, 231 East 47th Street", "place": "New York", "pr": "exact",
+      "ll": [40.75354, -73.97095], "y0": 1964, "y1": 1968, "why": "a historic studio: the building is gone",
+      "src": [{"name": "Wikipedia, The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"},
+              {"name": "OpenStreetMap (Nominatim), the address geocoded", "url": "https://nominatim.openstreetmap.org/"}],
+      "said": [{"q": "In November 1963, Warhol found another loft on the fifth floor at 231 East 47th Street in Midtown Manhattan, which would become the first Factory.", "by": "Wikipedia", "in": "The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"},
+               {"q": "The location where 231 East 47th Street once was is now the entrance to the parking garage of One Dag.", "by": "Wikipedia", "in": "The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"}]
+    },
+    {
+      "artist": "Andy Warhol", "kind": "studio", "name": "The Factory, Decker Building, 33 Union Square West", "place": "New York", "pr": "exact",
+      "ll": [40.73685, -73.99094], "y0": 1968, "y1": 1974, "why": "a historic studio: the artist died in 1987",
+      "src": [{"name": "Wikipedia, The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"},
+              {"name": "OpenStreetMap (Nominatim), the Decker Building", "url": "https://nominatim.openstreetmap.org/"}],
+      "said": [{"q": "In February 1968, Warhol relocated the Factory to the Decker Building at 33 Union Square West.", "by": "Wikipedia", "in": "The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"}]
+    },
+    {
+      "artist": "Andy Warhol", "kind": "studio", "name": "The Factory, 860 Broadway", "place": "New York", "pr": "exact",
+      "ll": [40.73723, -73.99019], "y0": 1974, "y1": 1984, "why": "a historic studio: the artist died in 1987",
+      "src": [{"name": "Wikipedia, The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"},
+              {"name": "OpenStreetMap (Nominatim), the address geocoded", "url": "https://nominatim.openstreetmap.org/"}],
+      "said": [{"q": "In August 1974, Warhol relocated the Factory to 860 Broadway, a former 19th-century warehouse overlooking Union Square Park at East 17th Street and Broadway in Manhattan.", "by": "Wikipedia", "in": "The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"}]
+    },
+    {
+      "artist": "Andy Warhol", "kind": "studio", "name": "The Factory, 158 Madison Avenue", "place": "New York", "pr": "exact",
+      "ll": [40.74679, -73.98379], "y0": 1984, "y1": 1987, "why": "a historic studio: the artist died in 1987",
+      "src": [{"name": "Wikipedia, The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"},
+              {"name": "OpenStreetMap (Nominatim), the address geocoded", "url": "https://nominatim.openstreetmap.org/"}],
+      "said": [{"q": "After renovations, Warhol relocated his studio there at the end of 1984.", "by": "Wikipedia", "in": "The Factory", "url": "https://en.wikipedia.org/wiki/The_Factory"}]
+    },
+    {
+      "artist": "Cy Twombly", "kind": "worked", "name": "New York", "place": "New York", "pr": "town",
+      "ll": [40.71278, -74.00611], "y0": 1955, "y1": 1959, "why": "the record names the town only",
+      "src": [{"name": "Wikipedia, Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}],
+      "said": [{"q": "From 1955 to 1959, he worked in New York, where he became a prominent figure among a group of artists including Robert Rauschenberg, with whom he was sharing a studio, and Jasper Johns.", "by": "Wikipedia", "in": "Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}]
+    },
+    {
+      "artist": "Cy Twombly", "kind": "lived and worked", "name": "Rome", "place": "Rome", "pr": "town",
+      "ll": [41.89306, 12.48278], "y0": 1957, "why": "a home: its address is private",
+      "src": [{"name": "Wikipedia, Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}],
+      "said": [{"q": "In 1957, Twombly moved to Rome and made it his primary city, where he met the Italian artist Tatiana Franchetti – sister of his patron Baron Giorgio Franchetti.", "by": "Wikipedia", "in": "Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}]
+    },
+    {
+      "artist": "Cy Twombly", "kind": "studio", "name": "Gaeta", "place": "Gaeta", "pr": "town",
+      "ll": [41.21389, 13.57111], "y0": 1990, "yt": "from the early 1990s", "why": "the studio’s address is private",
+      "src": [{"name": "Wikipedia, Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}],
+      "said": [{"q": "Twombly bought a house and rented a studio in Gaeta in the early 1990s.", "by": "Wikipedia", "in": "Cy Twombly", "url": "https://en.wikipedia.org/wiki/Cy_Twombly"}]
+    },
+    {
+      "artist": "Willem de Kooning", "kind": "studio", "name": "East Hampton", "place": "East Hampton", "pr": "town",
+      "ll": [40.96343, -72.18481], "y0": 1963, "y1": 1997, "yt": "1963 until his death in 1997", "why": "the studio’s address is private",
+      "src": [{"name": "Wikipedia, Willem de Kooning", "url": "https://en.wikipedia.org/wiki/Willem_de_Kooning"}],
+      "said": [{"q": "He built a studio nearby and lived in the house for the remainder of his life.", "by": "Wikipedia", "in": "Willem de Kooning", "url": "https://en.wikipedia.org/wiki/Willem_de_Kooning"}]
+    },
+    {
+      "artist": "Willem de Kooning", "kind": "studio", "name": "New York", "place": "New York", "pr": "town",
+      "ll": [40.71278, -74.00611], "y0": 1927, "yt": "from 1927", "why": "only the town is given: the address is private",
+      "src": [{"name": "Wikipedia, Willem de Kooning", "url": "https://en.wikipedia.org/wiki/Willem_de_Kooning"}],
+      "said": [{"q": "In 1927, he moved to Manhattan, New York City, where he had a studio on West Forty-fourth Street.", "by": "Wikipedia", "in": "Willem de Kooning", "url": "https://en.wikipedia.org/wiki/Willem_de_Kooning"}]
+    }
+  ],
+  "drop": [
+    {"artist": "Q159566", "place": "Q929667", "why": "Lexington, Massachusetts: every account of Cy Twombly is of Lexington, Virginia (Wikipedia: born there, and studied at Washington and Lee University there) — a mis-linked item"},
+    {"artist": "Q35548", "place": "Q2387781", "why": "Diller, a village in Nebraska: no account of Cézanne has him in America — a mis-linked item"}
+  ]
+}
