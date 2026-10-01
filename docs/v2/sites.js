@@ -113,7 +113,7 @@
     if (ph.of) { bits.push(ph.of); }
     if (ph.d) { bits.push(ph.d + " m from the point"); }
     if (ph.when === "then") { bits.push("then"); }
-    bits.push("photo " + (ph.by || "Wikimedia Commons") + (ph.lic ? ", " + ph.lic : ""));
+    bits.push((ph.when === "then" ? "picture " : "photo ") + (ph.by || "Wikimedia Commons") + (ph.lic ? ", " + ph.lic : ""));
     return bits.join(" · ");
   }
 

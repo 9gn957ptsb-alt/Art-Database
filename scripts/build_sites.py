@@ -56,8 +56,8 @@ NOTE = ("Painted here (docs/v2/sites.js; scripts/build_sites.py). sites: one row
         "of, by, lic, d metres from the point, when then|now}], said [{q quotation, by, in, url}], src [{name, url}]. "
         "explorations: [{id, title, artist, place, stops [[ll, key, [site row indexes]]]}].")
 
-SAY = re.compile(r"\b(painted (?:it )?(?:at|in|from|on|near|while)|paint(?:ed|ing) (?:the )?(?:view|scene)|view (?:of|from)|"
-                 r"vantage|viewpoint|point of view|location|located|site|spot|identified|"
+SAY = re.compile(r"\b(painted (?:it )?(?:at|in|from|on|near|while)|paint(?:ed|ing) (?:the )?(?:view|scene)|view from|"
+                 r"vantage|viewpoint|point of view|location|located|site|spot|identified|looking (?:toward|towards|down|up|across)|"
                  r"depicts?|shows? (?:the|a)|stood|en plein air|plein air|motif|from (?:his|her) (?:window|room|studio|hotel))\b", re.I)
 
 
@@ -182,6 +182,15 @@ def main():
         if r.get('article') and r.get('lang'):
             w['arts'].setdefault(r['lang'], r['article'])
 
+    work_files = {w['img'] for w in works.values() if w['img']}
+    painters = {a.split(' ')[-1].lower() for a in raw['artists'].values() if a}
+    painters |= {(w['a'] or '').split(' ')[-1].lower() for w in works.values() if w['a']}
+    painters.discard('')
+
+    def painted_by_artist(meta):
+        by = clean_html((meta or {}).get('artist') or '').lower()
+        return any(re.search(r'\b' + re.escape(n) + r'\b', by) for n in painters if len(n) > 3) if by else False
+
     # Each work's candidate sites.
     cand = collections.defaultdict(list)
     for r in raw['rows']:
@@ -283,6 +292,9 @@ def main():
                 photos.append({'f': f, 'of': n.get('label') or '', 'd': int(round(float(n.get('d', 0)) * 1000))})
                 if len(photos) >= 2:
                     break
+        # Never a painting standing in for the site: a file that is any work's own picture, or one whose
+        # author is a painter on this list (a place's picture on Wikidata is sometimes the painting).
+        photos = [ph for ph in photos if ph['f'] not in work_files and not painted_by_artist(files.get(ph['f']))]
         for ph in photos:
             want_files.add(ph['f'])
             meta = licence(files.get(ph['f']))
@@ -299,7 +311,7 @@ def main():
             want_wiki.add(art)
             a = wiki.get(art)
             if a and not said:
-                words = [what, place, row['t']] + ((p and [p['label']]) or [])
+                words = [what] + ((p and [p['label']]) or []) + ([place] if pr == 'view' else [])
                 for s in quotes_from(a, [x for x in words if x]):
                     said.append({'q': s, 'by': 'Wikipedia', 'in': '“' + a.get('title', '') + '”, English Wikipedia (CC BY-SA)', 'url': art})
         if said:

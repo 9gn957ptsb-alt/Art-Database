@@ -79,6 +79,188 @@
      "url": "https://www.wikidata.org/wiki/Q4819026"
     }
    ]
+  },
+  {
+   "q": "Q19829089",
+   "t": "Houses at Auvers",
+   "a": "Vincent van Gogh",
+   "pr": "site",
+   "ll": [
+    49.071117,
+    2.146928
+   ],
+   "what": "5 rue de Gré, Chaponval",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auvers-sur-Oise (95), le Castel Val, 4 rue des Meulières (6).jpg",
+     "of": "the Castel Val, Chaponval (Wikidata Q2941361)",
+     "d": 102
+    }
+   ],
+   "said": [
+    {
+     "by": "Wikipedia",
+     "in": "“Houses at Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers",
+     "q": "The central house was a townhouse in the hamlet of Chaponval, about a mile west of the Auberge Ravoux. It was situated at 5 Rue de Gré (49°4′16.02″N 2°8′48.94″E) and still exists, although renovated."
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Houses at Auvers” (its coordinates, after de la Faille)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers"
+    }
+   ]
+  },
+  {
+   "q": "Q26221232",
+   "t": "The House of Père Pilon",
+   "a": "Vincent van Gogh",
+   "pr": "site",
+   "ll": [
+    49.070283,
+    2.144478
+   ],
+   "what": "18 rue François Villon",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auvers-sur-Oise - Gare de Chaponval 05.jpg",
+     "of": "the Chaponval station (Wikidata Q2761375)",
+     "d": 222
+    }
+   ],
+   "said": [
+    {
+     "by": "Wikipedia",
+     "in": "“Houses at Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers",
+     "q": "De La Faille gives the location of F791 The House of Père Pilon as 18 rue Francois Villon (49°4′13.02″N 2°8′40.12″E), midway between the Auberge Ravoux and 5 Rue de Gré."
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Houses at Auvers” (its coordinates, after de la Faille)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers"
+    }
+   ]
+  },
+  {
+   "q": "Q28146907",
+   "t": "Houses in Auvers",
+   "a": "Vincent van Gogh",
+   "pr": "street",
+   "ll": [
+    49.071169,
+    2.149719
+   ],
+   "what": "the rue Marceau",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auvers-sur-Oise (95), le Castel Val, 4 rue des Meulières (6).jpg",
+     "of": "the Castel Val, Chaponval (Wikidata Q2941361)",
+     "d": 151
+    }
+   ],
+   "said": [
+    {
+     "by": "Wikipedia",
+     "in": "“Houses at Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers",
+     "q": "De La Faille gives the location of F805 Houses at Auvers as 2 Rue Marceau (49°4′16.21″N 2°8′58.99″E), about 200 yards east of 5 Rue de Gré. However, the correct address is 4 Rue Marceau."
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Houses at Auvers” (its coordinates, after de la Faille)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers"
+    },
+    {
+     "name": "the point is de la Faille's no. 2; the house is no. 4"
+    }
+   ]
+  },
+  {
+   "q": "Q26221234",
+   "t": "Stairway at Auvers",
+   "a": "Vincent van Gogh",
+   "pr": "street",
+   "ll": [
+    49.07069,
+    2.17151
+   ],
+   "what": "the rue de la Sansonne, opposite the Auberge Ravoux",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auberge ravoux.jpg",
+     "of": "the Auberge Ravoux, across the street",
+     "d": 0
+    }
+   ],
+   "said": [
+    {
+     "by": "Wikipedia",
+     "in": "“Houses at Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers",
+     "q": "The location of F795 Village street and stairs in Auvers with figures is the Rue de la Sansonne directly opposite the Auberge Ravoux, though the stairs connecting the two streets are no longer there."
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Houses at Auvers” (its coordinates, after de la Faille)",
+     "url": "https://en.wikipedia.org/wiki/Houses_at_Auvers"
+    },
+    {
+     "name": "the point: the Auberge Ravoux, Wikidata Q4819026",
+     "url": "https://www.wikidata.org/wiki/Q4819026"
+    }
+   ]
+  },
+  {
+   "q": "Q5287337",
+   "t": "Doctor Gachet's Garden in Auvers",
+   "a": "Vincent van Gogh",
+   "pr": "site",
+   "ll": [
+    49.07184,
+    2.15611
+   ],
+   "what": "the Maison du docteur Gachet",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auvers-sur-Oise (95), maison du Docteur Gachet, rue Gachet.jpg",
+     "of": "the Maison du docteur Gachet (Wikidata Q22998303)",
+     "d": 0
+    }
+   ],
+   "said": [
+    {
+     "q": "Gachet's Garden in Auvers and Marguerite Gachet in the Garden were both painted in 1890 by Vincent van Gogh in the gardens of his homeopathic physician, Dr. Paul Gachet.",
+     "by": "Wikipedia",
+     "in": "“Doctor Gachet's Garden in Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Doctor_Gachet%27s_Garden_in_Auvers"
+    },
+    {
+     "q": "Dr. Gachet's house was set in the hillside above the main street [of the village], with a terraced garden full of flowers and looking down into the valley of the Oise.",
+     "by": "Wikipedia",
+     "in": "“Doctor Gachet's Garden in Auvers”, English Wikipedia (CC BY-SA), quoting its source",
+     "url": "https://en.wikipedia.org/wiki/Doctor_Gachet%27s_Garden_in_Auvers"
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Doctor Gachet's Garden in Auvers”",
+     "url": "https://en.wikipedia.org/wiki/Doctor_Gachet%27s_Garden_in_Auvers"
+    },
+    {
+     "name": "the point: Wikidata Q22998303, Maison du docteur Gachet",
+     "url": "https://www.wikidata.org/wiki/Q22998303"
+    }
+   ]
   }
  ]
 }

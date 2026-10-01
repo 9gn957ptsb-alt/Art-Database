@@ -50,7 +50,7 @@ SITE_CLASSES = {   # each checked against its English label on Wikidata
     'Q4989906': 'monument', 'Q39715': 'lighthouse', 'Q23413': 'castle', 'Q54050': 'hill',
     'Q185113': 'cape', 'Q207326': 'summit', 'Q8072': 'volcano', 'Q39816': 'valley',
     'Q133056': 'mountain pass', 'Q35666': 'glacier', 'Q190429': 'depression', 'Q188040': 'quarry',
-    'Q38720': 'windmill', 'Q46831': 'mountain range', 'Q35509': 'cave',
+    'Q38720': 'windmill', 'Q35509': 'cave',
 }
 
 
