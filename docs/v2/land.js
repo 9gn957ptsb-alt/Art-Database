@@ -12735,7 +12735,7 @@
     var small = R <= Math.min(W, H) * 0.5;
     var reach = W <= 720 ? 26 : 18;
     var half = CELL_PX / 2;
-    var tile = null, square = null, best = null, near = null, nearD = Infinity;
+    var own = null, ownD = Infinity, best = null, near = null, nearD = Infinity;
     towns.forEach(function (t) {
       var p = project(t.lat, t.lon);
       if (p.z <= 0.08 || p.x < S.x0 || p.x > S.x1 || p.y < S.y0 || p.y > S.y1) { return; }
@@ -12745,17 +12745,19 @@
         px = (Math.floor(px / CELL_PX) + 0.5) * CELL_PX;
         py = (Math.floor(py / CELL_PX) + 0.5) * CELL_PX;
       }
-      if (Math.abs(px - x) <= half && Math.abs(py - y) <= half) {
-        if (lit && (!tile || t.rank > tile.rank)) { tile = t; }
-        if (!lit && t.mark && t.mark.shown && (!square || t.rank > square.rank)) { square = t; }
+      // Of the diamonds and tiles whose own square the press is in, the
+      // one whose middle it is nearest (a knot's tile can share a square
+      // with the diamond it is tied into); on a tie, the one that matters more.
+      if (Math.abs(px - x) <= half && Math.abs(py - y) <= half && (lit || (t.mark && t.mark.shown))) {
+        var dOwn = Math.max(Math.abs(px - x), Math.abs(py - y));
+        if (dOwn < ownD - 0.5 || (dOwn < ownD + 0.5 && own && t.rank > own.rank)) { own = t; ownD = Math.min(ownD, dOwn); }
       }
       if (small) { return; }
       var d = Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
       if (d <= 16 && (!best || t.rank > best.rank)) { best = t; }
       if (d <= reach && d < nearD) { nearD = d; near = t; }
     });
-    // A diamond drawn is over any tile lit in its square, and takes the press.
-    return square || tile || best || near;
+    return own || best || near;
   }
 
   /* The galleries, fairs and sale rooms of a city whose address is known:

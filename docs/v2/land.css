@@ -2480,7 +2480,7 @@
   letter-spacing: 0.04em;
   pointer-events: none;
 }
-.venue-label-name,
+.venue-label-name { display: block; }
 .venue-label[hidden],
 .land:not([data-at="city"]) .venue-label { display: none; }
 /* A museum's works that have been there without being held by it. */
