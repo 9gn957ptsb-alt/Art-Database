@@ -3272,6 +3272,22 @@ button.art-venue:focus-visible { text-decoration: underline; }
   .art-time.dial { left: auto; right: 12px; width: var(--dial); transform: translateY(-72%); top: calc(50vh - 2px); }
   .building:has(.building-time.dial:not([hidden])) .building-link { bottom: calc(var(--s-5) + 150px); }
 }
+/* Carried (land.js, "where the dial stands"): wherever the viewer put it,
+   above what it stands over and pressable there; lifted while carried;
+   eased into place on release. */
+.building-time.dial[data-moved] { z-index: 12; }
+.building-time.dial .dial-face { -webkit-tap-highlight-color: transparent; }
+.building-time.dial[data-lifted] {
+  scale: 1.04;
+  box-shadow: 0 0 0 1px rgba(234, 223, 205, 0.18), 0 18px 48px rgba(0, 0, 0, 0.6);
+  transition: scale 160ms ease, box-shadow 160ms ease;
+}
+.building-time.dial[data-lifted] .dial-face,
+.building-time.dial .dial-face[data-over="face"] { cursor: move; }
+.building-time.dial[data-settling] {
+  transition: left 320ms cubic-bezier(0.2, 0.7, 0.2, 1), top 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+              scale 160ms ease, box-shadow 160ms ease;
+}
 @media (prefers-reduced-motion: reduce) {
   .building-time.dial { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }

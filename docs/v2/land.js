@@ -11294,6 +11294,11 @@
     clod.whenTo = 1;
     clod.byHand = false;
     clod.touched = false;
+    clod.firstPlay = false;
+    // It grows by itself the first time this viewer comes to it, else stands at now.
+    if (!atYear && !still) {
+      if (dialDriven() || !firstSeen("m:" + clod.b.slug)) { clod.when = 1; } else { clod.firstPlay = true; }
+    }
     if (atYear && !still) {
       var span = Math.max(1, d.years.y1 - d.years.y0);
       clod.when = clod.whenTo = Math.max(0, Math.min(1, (atYear - d.years.y0) / span));
@@ -13671,6 +13676,7 @@
     memberYears(a, pf.venues.map(function (v) { return v[2]; }),
                 Math.max.apply(null, pf.venues.map(function (v) { return v[3] || v[2] || 0; })));
     laterRows(a);
+    autoTown(a);
     a.dirty = true;
     townDirty = true;
     // Come from a history: its venue, open, is brought into view.
@@ -14643,7 +14649,7 @@
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
       var gy = top + ph + 6;
       return { plate: { x: 16, y: top, w: W - 32, h: ph }, look: { x: 16, y: top, w: W - 32, h: colTop - top - 14 },
-               globe: { x: 0, y: gy, w: W - 148, h: Math.max(96, colTop - gy) }, colTop: colTop };
+               globe: { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) }, colTop: colTop };
     }
     var pw = Math.round(Math.min(0.34 * W, 560));
     var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 };
@@ -15103,7 +15109,12 @@
     if (a.kind !== "work") {
       // A place's or a thread's years: by hand only. Works not yet there
       // step back, and the constellation keeps to those that had arrived.
-      if (a.byHand && a.when !== a.whenTo) {
+      // The first time, a city's years play by themselves (autoTown).
+      if (a.auto) {
+        var qa = Math.max(0, (now - a.auto.at) / a.auto.dur);
+        a.when = a.whenTo = qa >= 1 ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * qa);
+        if (qa >= 1) { a.auto = null; }
+      } else if (a.byHand && a.when !== a.whenTo) {
         a.when += (a.whenTo - a.when) * Math.min(1, dt / 377);
         if (Math.abs(a.whenTo - a.when) < 0.0005) { a.when = a.whenTo; }
       }
@@ -15319,6 +15330,8 @@
 
   function setWhen(a, pos) {
     flipToHead();
+    a.auto = null;
+    a.firstPlay = false;
     a.playing = false;
     a.seg = null;
     a.byHand = true;
@@ -15388,6 +15401,142 @@
   var dials = [];
   var dialFont = (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace").trim();
 
+  /* Where the dial stands (artist, 1 Oct 2026: "Have me be able to move the
+     circle timeline anywhere on the screen when I want to"). Dragging from
+     its face — the year in the middle — carries it; on a touch screen so
+     does holding a finger anywhere on it for a moment (it lifts). It follows
+     1:1, stays wholly on the screen and clear of the banner, and eases into
+     place, drawn to an edge within 24 px. Its place is this viewer's, kept
+     as a fraction of the window, one for a phone-sized window and one for a
+     larger, and every dial on the site stands there. A double tap on its
+     face sends it home; Shift and the arrows nudge it. */
+  var DIAL_MARGIN = 12, DIAL_MAGNET = 24, DIAL_HOLD = 350;
+  var dialPlaceVer = 0;
+  function dialPlaceKey() { return "dial.place." + (window.innerWidth <= 720 ? "phone" : "desk"); }
+  function dialPlace() {
+    try {
+      var p = JSON.parse(localStorage.getItem(dialPlaceKey()) || "null");
+      return p && isFinite(p.x) && isFinite(p.y) ? p : null;
+    } catch (e) { return null; }
+  }
+  function dialMoved() { return !!dialPlace(); }
+  function keepDialPlace(p) {
+    try {
+      if (p) { localStorage.setItem(dialPlaceKey(), JSON.stringify({ x: +p.x.toFixed(4), y: +p.y.toFixed(4) })); }
+      else { localStorage.removeItem(dialPlaceKey()); }
+    } catch (e) {}
+    dialPlaceVer += 1;
+  }
+  function dialSize(d) { return d.box.offsetWidth || (window.innerWidth <= 720 ? 136 : 168); }
+  /* The centre clamped onto the screen, under the banner. */
+  function dialClamp(d, x, y) {
+    var S = dialSize(d), w = window.innerWidth, h = window.innerHeight;
+    var top = DIAL_MARGIN;
+    if (banner && !banner.hidden) {
+      var br = banner.getBoundingClientRect();
+      if (br.height) { top = Math.max(top, br.bottom + DIAL_MARGIN); }
+    }
+    return { x: Math.max(DIAL_MARGIN + S / 2, Math.min(w - DIAL_MARGIN - S / 2, x)),
+             y: Math.max(top + S / 2, Math.min(h - DIAL_MARGIN - S / 2, y)) };
+  }
+  function dialPut(d, x, y) {
+    var c = dialClamp(d, x, y), S = dialSize(d);
+    var host = d.box.offsetParent || d.box.parentElement;
+    var pr = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+    var st = d.box.style;
+    st.setProperty("left", Math.round(c.x - S / 2 - pr.left) + "px", "important");
+    st.setProperty("top", Math.round(c.y - S / 2 - pr.top) + "px", "important");
+    st.setProperty("right", "auto", "important");
+    st.setProperty("bottom", "auto", "important");
+    st.setProperty("transform", "none", "important");
+    d.box.dataset.moved = "true";
+    return c;
+  }
+  function dialHome(d) {
+    ["left", "top", "right", "bottom", "transform"].forEach(function (k) { d.box.style.removeProperty(k); });
+    delete d.box.dataset.moved;
+  }
+  /* Each dial to the viewer's place (or home), whenever the window or the
+     place has changed since it was last put. */
+  function placeDial(d) {
+    var key = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
+    if (d.placed === key || d.move) { return; }
+    d.placed = key;
+    var p = dialPlace();
+    if (p) { dialPut(d, p.x * window.innerWidth, p.y * window.innerHeight); } else { dialHome(d); }
+  }
+  function dialSettle(d) {
+    d.box.dataset.settling = "true";
+    window.clearTimeout(d.settleT);
+    d.settleT = window.setTimeout(function () { delete d.box.dataset.settling; }, 340);
+  }
+  function dialSendHome(d) {
+    var r0 = d.box.getBoundingClientRect();
+    keepDialPlace(null);
+    dialHome(d);
+    var home = d.box.getBoundingClientRect();
+    if (still) { d.placed = ""; return; }
+    // Eased home from where it stood, then given back to its stylesheet.
+    dialPut(d, r0.left + r0.width / 2, r0.top + r0.height / 2);
+    void d.box.offsetWidth;
+    dialSettle(d);
+    dialPut(d, home.left + home.width / 2, home.top + home.height / 2);
+    window.setTimeout(function () { if (!dialPlace()) { dialHome(d); d.placed = ""; } }, 340);
+  }
+
+  /* The first time (artist, 1 Oct 2026: "It also should play automatically
+     the first time someone comes to see it on a new part of the globe"): a
+     city's years, a work's history and a museum's ground each play from the
+     beginning to now the first time this viewer comes to them, and rest at
+     now after. Any touch, drag, wheel or key hands it over at once. Not
+     under reduced motion, nor while a walk, an exploration or a corpse is
+     driving the dial itself. */
+  var DIAL_SEEN = "dial.seen", DIAL_SEEN_MOST = 800;
+  function firstSeen(key) {
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem(DIAL_SEEN) || "[]"); } catch (e) { list = []; }
+    if (!Array.isArray(list)) { list = []; }
+    if (list.indexOf(key) >= 0) { return false; }
+    list.push(key);
+    try { localStorage.setItem(DIAL_SEEN, JSON.stringify(list.slice(-DIAL_SEEN_MOST))); } catch (e) {}
+    return true;
+  }
+  function dialDriven() {
+    try {
+      if (window.Walks && Walks.walking && Walks.walking()) { return true; }
+      var x = window.Explorations && Explorations._state && Explorations._state();
+      if (x && x.playing) { return true; }
+      var c = window.Corpse && Corpse._state && Corpse._state();
+      if (c && (c.leg || c.stage || c.ritual)) { return true; }
+    } catch (e) {}
+    return false;
+  }
+  function stopFirstPlay() {
+    var a = art;
+    if (a && a.auto) { a.auto = null; a.whenTo = a.when; a.byHand = true; }
+    if (a && a.firstPlay && a.playing) {
+      a.playing = false; a.seg = null; a.whenTo = a.when; a.byHand = true; a.firstPlay = false;
+    }
+    if (clod && clod.firstPlay && !clod.byHand && clod.when < clod.whenTo) {
+      clod.whenTo = clod.when; clod.byHand = true; clod.touched = true; clod.firstPlay = false;
+    }
+  }
+  ["pointerdown", "wheel", "keydown", "touchstart"].forEach(function (type) {
+    window.addEventListener(type, function (event) {
+      if (event.isTrusted) { stopFirstPlay(); }
+    }, { capture: true, passive: true });
+  });
+  /* A city's years from its first to now, calmly: 8 to 12 s by its span. */
+  function autoTown(a) {
+    if (still || a.byHand || !a.dated || !a.town || dialDriven() || !firstSeen("t:" + a.town.key)) { return; }
+    a.when = a.whenTo = 0;
+    a.yearNow = Math.floor(a.y0);
+    laterRows(a);
+    a.auto = { at: performance.now() + 600, dur: Math.max(8000, Math.min(12000, 8000 + (a.y1 - a.y0) * 40)) };
+    showArtYear();
+    a.dirty = true;
+  }
+
   function makeDial(box, range, span, ticksOf) {
     if (!box || !range) { return; }
     box.classList.add("dial");
@@ -15396,7 +15545,7 @@
     face.setAttribute("aria-hidden", "true");
     box.appendChild(face);
     var d = { box: box, range: range, face: face, g: face.getContext("2d"), span: span, ticksOf: ticksOf,
-              drawn: "", grab: null, last: null };
+              drawn: "", grab: null, last: null, down: null, move: null, hold: 0, lastTap: 0, placed: "" };
     function tAt(event) {
       var r = face.getBoundingClientRect();
       var a = Math.atan2(event.clientY - r.top - r.height / 2, event.clientX - r.left - r.width / 2);
@@ -15412,21 +15561,91 @@
       range.value = String(Math.round(Math.max(0, Math.min(1, t)) * 1000));
       range.dispatchEvent(new Event("input", { bubbles: true }));
     }
+    function lift(event) {
+      var r = box.getBoundingClientRect();
+      d.move = { sx: event.clientX, sy: event.clientY, cx: r.left + r.width / 2, cy: r.top + r.height / 2, moved: false };
+      box.dataset.lifted = "true";
+      delete box.dataset.turning;
+      d.grab = null;
+      d.drawn = "";
+    }
     face.addEventListener("pointerdown", function (event) {
       event.stopPropagation();
       event.preventDefault();
+      var r = face.getBoundingClientRect();
+      var inner = Math.hypot(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2) < r.width * 0.3;
+      face.setPointerCapture(event.pointerId);
+      d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: inner, far: false };
+      // The face carries the dial; the ring turns time, as it always has.
+      if (inner) { lift(event); return; }
       range.dispatchEvent(new Event("pointerdown"));
       d.last = null;
-      face.setPointerCapture(event.pointerId);
       box.dataset.turning = "true";
       turnTo(tAt(event));
+      if (event.pointerType !== "mouse") {
+        // Held still, a finger lifts it from anywhere on it.
+        window.clearTimeout(d.hold);
+        d.hold = window.setTimeout(function () {
+          if (!d.down || d.down.far || d.grab === null) { return; }
+          turnTo(Number(d.down.was) / 1000);
+          d.last = null;
+          lift({ clientX: d.down.x, clientY: d.down.y });
+          range.dispatchEvent(new Event("change", { bubbles: true }));
+        }, DIAL_HOLD);
+      }
     });
     face.addEventListener("pointermove", function (event) {
+      if (!d.down && event.pointerType === "mouse") {
+        var fr = face.getBoundingClientRect();
+        var over = Math.hypot(event.clientX - fr.left - fr.width / 2, event.clientY - fr.top - fr.height / 2) < fr.width * 0.3;
+        if (over) { face.dataset.over = "face"; } else { delete face.dataset.over; }
+      }
+      if (d.down && Math.hypot(event.clientX - d.down.x, event.clientY - d.down.y) > 6) {
+        d.down.far = true;
+        window.clearTimeout(d.hold);
+      }
+      if (d.move) {
+        event.stopPropagation();
+        if (!d.down || !d.down.far) { return; }
+        d.move.moved = true;
+        d.move.at = dialPut(d, d.move.cx + event.clientX - d.move.sx, d.move.cy + event.clientY - d.move.sy);
+        return;
+      }
       if (d.grab === null) { return; }
       event.stopPropagation();
       turnTo(tAt(event));
     });
     function let_(event) {
+      window.clearTimeout(d.hold);
+      var down = d.down;
+      d.down = null;
+      if (d.move) {
+        event.stopPropagation();
+        var m = d.move;
+        d.move = null;
+        delete box.dataset.lifted;
+        d.drawn = "";
+        if (m.moved && m.at) {
+          // Eased into place; an edge within 24 px draws it the rest of the way.
+          var lo = dialClamp(d, -1e5, -1e5), hi = dialClamp(d, 1e5, 1e5);
+          var x = m.at.x, y = m.at.y;
+          if (x - lo.x < DIAL_MAGNET) { x = lo.x; } else if (hi.x - x < DIAL_MAGNET) { x = hi.x; }
+          if (y - lo.y < DIAL_MAGNET) { y = lo.y; } else if (hi.y - y < DIAL_MAGNET) { y = hi.y; }
+          if (!still) { dialSettle(d); }
+          dialPut(d, x, y);
+          keepDialPlace({ x: x / window.innerWidth, y: y / window.innerHeight });
+          d.placed = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
+          dials.forEach(function (o) { if (o !== d) { o.placed = ""; } });
+          // The work's globe no longer keeps room for it where it was.
+          if (art && art.kind === "work") { layoutWork(); }
+        } else if (down && down.inner && event.type === "pointerup") {
+          // Two taps on its face send it home.
+          var now = performance.now();
+          if (now - d.lastTap < 320) { d.lastTap = 0; dialSendHome(d); dials.forEach(function (o) { if (o !== d) { o.placed = ""; } }); }
+          else { d.lastTap = now; }
+        }
+        return;
+      }
       if (d.grab === null) { return; }
       event.stopPropagation();
       d.grab = null;
@@ -15445,7 +15664,20 @@
       turnTo(t);
       d.grab = null;
     }, { passive: false });
+    // Shift and the arrows nudge it; the arrows alone still turn time.
+    range.addEventListener("keydown", function (event) {
+      var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+      if (!event.shiftKey || !dir) { return; }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      var r = box.getBoundingClientRect();
+      var c = dialPut(d, r.left + r.width / 2 + dir[0] * DIAL_MARGIN, r.top + r.height / 2 + dir[1] * DIAL_MARGIN);
+      keepDialPlace({ x: c.x / window.innerWidth, y: c.y / window.innerHeight });
+      d.placed = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
+      dials.forEach(function (o) { if (o !== d) { o.placed = ""; } });
+    }, true);
     dials.push(d);
+    placeDial(d);
   }
 
   function drawDials() {
@@ -15454,13 +15686,15 @@
 
   function drawDial(d) {
     if (d.box.hidden || !d.box.offsetWidth) { return; }
+    placeDial(d);
     var S = d.box.offsetWidth;
     var t = d.grab !== null ? d.grab : Number(d.range.value) / 1000;
     var span = d.span() || [0, 0];
     var ticks = d.ticksOf ? d.ticksOf() : [];
     var year = d.box.querySelector(".building-time-year").textContent;
     var focused = document.activeElement === d.range;
-    var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning].join("|");
+    var lifted = !!d.box.dataset.lifted;
+    var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
     var px = Math.round(S * dpr);
@@ -15556,6 +15790,14 @@
     g.fillStyle = "#eadfcd";
     g.fillRect(-4.5, -4.5, 9, 9);
     g.restore();
+
+    // Lifted to be carried: four tiles of pixel light round it.
+    if (lifted) {
+      g.fillStyle = LIGHT;
+      [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(function (o) {
+        g.fillRect(c + o[0] * (R1 + 9) - 2, c + o[1] * (R1 + 9) - 2, 4, 4);
+      });
+    }
 
     // The year in the middle, over its span.
     g.textAlign = "center";
@@ -15755,13 +15997,17 @@
   function playArt() {
     var a = art;
     if (!a || a.kind !== "work" || !a.live) { return; }
-    if (still) {
+    // Played the first time this viewer comes to it; at rest at now after.
+    var first = !still && !dialDriven() && firstSeen("w:" + (a.data && a.data.id));
+    if (!first) {
       a.when = a.whenTo = 1;
       passEvents(a, performance.now(), false);
       showArtYear();
       a.dirty = true;
+      if (!still) { threadProcession(); }
       return;
     }
+    a.firstPlay = true;
     a.when = a.whenTo = 0;
     a.evs.forEach(function (e) { e.lit = false; });
     a.playing = true;
