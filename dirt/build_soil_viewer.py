@@ -529,6 +529,7 @@ const HABITATS = [
   ["fireflies",   233,     331,  PHI ** -1,  2,      PHI ** -3],
   ["morphos",     144,     337,  PHI ** -1,  3,      0],
   ["blooms",      89,      347,  PHI ** -1,  6,      0],
+  ["garden",      89,      359,  PHI ** -1,  3,      0],
   ["hummers",     377,     349,  PHI ** -1,  6,      0],
   ["troops",      377,     353,  PHI ** -1,  12,     PHI ** -3],
 ];
@@ -795,6 +796,7 @@ const ART = __ART__;                                            // the artist DI
 const QUILTS = __QUILTS__;
 const ANTIQUITY = __ANTIQUITY__;                                // the history of Greece and Rome (dirt/artists/antiquity.py), in antiquity/                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
+const PLANTS = __PLANTS__;                                      // each artist's plant, in DRIFT's garden (dirt/artists/plants.json)
 // The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
 const SITE = __SITE__;
 const TOKENS = PL.works.map((w) => w.colors.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))));   // each painting's colours
@@ -1657,6 +1659,165 @@ LIFE.blooms = {
   },
 };
 
+// The artists' garden (dirt/artists/plants.json). Each artist keeps a garden, a square of the plane 610 cells a side,
+// and in it grows their plant: a rosette of coleus leaves in their colours (coleus runs the widest spectrum of any
+// leaf), and the flower tied to them. The leaves follow the colour study (dirt/studies/colour-and-space.md): the half
+// turned from the light keeps its chroma and goes cool, as a shadow does in Cézanne, Van Gogh and Monet, and colour
+// gathers at the margin, where the leaf turns away. Where two gardens meet, the plants cross: within 89 cells of the
+// border a plant may be a hybrid, its leaves the one artist's edged in the other's, its flower the other's form in the
+// first one's colours. Every artist on the roster has a plant: one not yet in plants.json grows a flower of its own
+// colours until the coworker gives it one (COWORKER.md).
+const GARDEN = 610, CROSS = 89, GROW = 610, FLOWER = 2584, F_OPEN = 233, F_FALL = 144;
+const PLANT = (() => {
+  const by = new Map(((PLANTS && PLANTS.plants) || []).map((p) => [p.artist, p])), out = [];
+  for (const a of (ROSTER && ROSTER.artists) || []) {
+    const P = a.palette, p = by.get(a.artist) || { artist: a.artist, form: "radial", petals: 5, size: 3, flower: [P[2], P[3], P[1]] };
+    out.push({ ...p, leaf: p.leaf || [pop(P[3]), P[0], P[1], pop(mixRGB(P[2], [150, 196, 64], 0.5))] });
+  }
+  for (const p of by.values()) if (p.leaf && !out.some((q) => q.artist === p.artist)) out.push(p);   // the painters drawn in by hand
+  return out;
+})();
+/** The same colour in shadow: cooler, as light as phi^-0.5 of it, and as saturated. */
+function coolOf(c) {
+  const t = [c[0] * 0.72, c[1] * 0.9, Math.min(255, c[2] * 1.15 + 24)], f = PHI ** -0.5 * lum(c) / Math.max(1, lum(t));
+  return t.map((v) => Math.min(255, v * f));
+}
+const LIGHT = [-Math.SQRT1_2, -Math.SQRT1_2];                    // the light comes from the upper left
+/** A colour turned by a radians round the hue wheel, its lightness kept. */
+function hueTurn(c, a) {
+  const k = Math.cos(a), q = Math.sin(a) / Math.sqrt(3), w = (1 - k) / 3, m = (v) => Math.max(0, Math.min(255, v));
+  return [m(c[0] * (k + w) + c[1] * (w - q) + c[2] * (w + q)), m(c[0] * (w + q) + c[1] * (k + w) + c[2] * (w - q)), m(c[0] * (w - q) + c[1] * (w + q) + c[2] * (k + w))];
+}
+LIFE.garden = {
+  list: [],
+  spawn(s) {
+    if (!PLANT.length) return null;
+    const own = (i, j) => PLANT[(h3(i, j, 359) >>> 0) % PLANT.length];
+    const gi = Math.floor(s.x / GARDEN), gj = Math.floor(s.y / GARDEN), fx = s.x - gi * GARDEN, fy = s.y - gj * GARDEN;
+    const A = own(gi, gj), [d, di, dj] = [[fx, -1, 0], [GARDEN - fx, 1, 0], [fy, 0, -1], [GARDEN - fy, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+    let B = null;
+    if (d < CROSS && unitOf(s.seed + 7) > d / CROSS) { const o = own(gi + di, gj + dj); if (o !== A) B = o; }
+    const F = B || A, form = F.form, size = F.size;
+    let fl = B ? [A.flower[0], A.flower[1], B.flower[2]] : F.flower;
+    if (F.alt) { const P = paletteOf(s.w, s.turn); if (P.mid[0] > P.mid[2]) fl = B ? [A.flower[0], A.flower[1], F.alt[2]] : F.alt; }   // the soil decides
+    const leaf = A.leaf.map((c) => [c, coolOf(c)]), edge = (B || A).leaf.map((c) => [c, coolOf(c)]);
+    const deep = mixRGB(A.leaf[1], [36, 56, 128], 0.45), deepC = coolOf(deep);
+    const L = [], Fl = [], z = s.h + PHI ** -5, a0 = unitOf(s.seed) * TAU, len = 11 + (s.seed >>> 3) % 7;
+    // Leaves: a rosette of five to seven, each a golden angle round from the last, the outer (older, larger) first.
+    const nl = 5 + (s.seed >>> 7) % 3;
+    for (let k = 0; k < nl; k++) {
+      const a = a0 + k * GOLDEN_ANGLE + 0.2 * (unitOf(s.seed + k) - 0.5), ll = len * (1 - 0.3 * k / nl), dx = Math.cos(a), dy = Math.sin(a);
+      const hue = (k - nl / 2) * 0.24, tl = (z) => z.map((pr) => pr.map((c) => hueTurn(c, hue)));     // each leaf a little round the wheel from the last
+      const lk = tl(leaf), ek = tl(edge);
+      const r = Math.ceil(ll + 1);
+      for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+        const u = (x * dx + y * dy - 1) / ll, v = -x * dy + y * dx;
+        if (u <= 0 || u >= 1) continue;
+        // an ovate leaf, broadest a third of the way out, its margin scalloped (a coleus's crenate edge)
+        const hw = 0.5 * ll * Math.sin(Math.PI * u ** 0.62) ** 0.8 * (1 - 0.13 * Math.abs(Math.sin(u * Math.PI * 7))), t = Math.abs(v) / Math.max(hw, 1e-3);
+        if (t > 1) continue;
+        const nx = -dy * Math.sign(v || 1), ny = dx * Math.sign(v || 1), shade = nx * LIGHT[0] + ny * LIGHT[1] < 0 ? 1 : 0;
+        const zone = Math.abs(v) < 0.5 && u < 0.85 ? lk[0] : t < 0.4 ? lk[0] : t < 0.68 ? lk[1] : t < 0.86 ? ek[2] : t < 0.93 ? ek[3] : [deep, deepC];
+        L.push(s.x + x, s.y + y, (k + u) * 3 / nl, zone[shade]);
+      }
+    }
+    // The flower, by its form; each cell keeps its zone (0 heart, 1 petal, 2 edge) so its colours can change.
+    const fa = a0 + Math.PI / 4, fdx = Math.cos(fa), fdy = Math.sin(fa);
+    const cell = (x, y, zn, r) => Fl.push(Math.round(x), Math.round(y), zn, r);
+    const radial = (cx, cy, n, P, th) => {
+      const w = n >= 13 ? 0.13 : n === 4 ? 0.62 : 0.48, R = Math.ceil(P * 1.25), m = n >= 13 ? 0.22 : 0.35;
+      for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
+        const r = Math.hypot(x, y), ang = Math.atan2(y, x) - th, k = Math.round(ang / (TAU / n)), da = ang - k * TAU / n;
+        const pl = F.falls ? (((k % 2) + 2) % 2 ? 0.75 : 1.2) * P : P, pr = r / pl;
+        if (r < 0.8) { cell(cx + x, cy + y, 0, 0); continue; }
+        if (pr > 1 || Math.abs(da) * r > w * pl * Math.sin(Math.PI * Math.min(1, pr) ** 0.8) + m) continue;
+        if (F.notch && pr > 0.82 && Math.abs(da) * r < 0.3 * w * pl) continue;
+        cell(cx + x, cy + y, pr < 0.3 || (F.falls && pr < 0.55 && Math.abs(da) * r < 0.5 && !(((k % 2) + 2) % 2)) ? 0 : pr < 0.8 ? 1 : 2, r);
+      }
+    };
+    const fc = [s.x + fdx * 2, s.y + fdy * 2];
+    if (form === "radial") {
+      const m = F.clusters || 1;
+      for (let q = 0; q < m; q++) {
+        const qa = fa + q * GOLDEN_ANGLE, qr = m > 1 ? size * 1.3 : 0;
+        radial(fc[0] + Math.cos(qa) * qr, fc[1] + Math.sin(qa) * qr, F.petals, size, a0 + q);
+      }
+    } else if (form === "rose") {
+      for (let y = -size; y <= size; y++) for (let x = -size; x <= size; x++) {
+        const r = Math.hypot(x, y); if (r > size + 0.3) continue;
+        const crease = ((Math.atan2(y, x) + r * 1.4) / (TAU / 5) % 1 + 1) % 1 < 0.2;
+        cell(fc[0] + x, fc[1] + y, r < 1 || crease ? 0 : r < size * 0.7 ? 1 : 2, r);
+      }
+    } else if (form === "cluster") {
+      const n = F.florets || 13;
+      for (let k = 0; k < n; k++) {
+        let x, y;
+        if (!F.petals) { const t = k / n, al = t * size * 1.7, ac = (unitOf(s.seed + k) - 0.5) * size * 1.3 * (1 - t);   // a bunch, hanging
+          x = fc[0] + fdx * al - fdy * ac; y = fc[1] + fdy * al + fdx * ac;
+          cell(x, y, k % 3 === 0 ? 0 : 1, al); cell(x + 1, y, k % 3 === 0 ? 1 : 2, al); continue; }
+        const r = 1.5 * Math.sqrt(k), a = k * GOLDEN_ANGLE + a0;              // packed, as a flower head is
+        x = fc[0] + Math.cos(a) * r; y = fc[1] + Math.sin(a) * r;
+        cell(x, y, 0, r);
+        for (let p = 0; p < F.petals; p++) { const pa = a + p * TAU / F.petals; cell(x + Math.round(Math.cos(pa)), y + Math.round(Math.sin(pa)), p ? 1 : 2, r + 1); }
+      }
+    } else if (form === "spike") {
+      for (let k = 0; k < size * 2; k++) {
+        const x = fc[0] + fdx * k * 1.3, y = fc[1] + fdy * k * 1.3, sd = k % 2 ? 1 : -1;
+        cell(x, y, 0, k);
+        cell(x - fdy * sd, y + fdx * sd, 1, k); cell(x - fdy * sd * 2 + fdx, y + fdx * sd * 2 + fdy, 2, k);
+      }
+    } else if (form === "pitcher") {
+      const pc = [s.x + fdx * size * 1.3, s.y + fdy * size * 1.3], aa = size * 0.8, bb = size * 0.55;
+      for (let k = 1; k < size; k++) Fl.push(Math.round(s.x + fdx * k), Math.round(s.y + fdy * k), 3, k);   // its tendril
+      for (let y = -size; y <= size; y++) for (let x = -size; x <= size; x++) {
+        const u = (x * fdx + y * fdy) / aa, v = (-x * fdy + y * fdx) / bb, e = Math.hypot(u, v);
+        if (e <= 1) cell(pc[0] + x, pc[1] + y, e < 0.62 ? 0 : e < 0.85 ? 1 : 2, e * size);
+      }
+    } else if (form === "pad") {
+      const pc = [s.x + fdx * size, s.y + fdy * size], R = size * 1.4;
+      for (let y = -Math.ceil(R); y <= R; y++) for (let x = -Math.ceil(R); x <= R; x++) {
+        const r = Math.hypot(x, y), an = Math.atan2(y, x) - fa;
+        if (r > R || Math.abs(Math.atan2(Math.sin(an), Math.cos(an))) < 0.3) continue;    // the pad, with its notch
+        L.push(Math.round(pc[0] + x), Math.round(pc[1] + y), 3, (r > R - 1 ? [deep, deepC] : Math.round(an * 3) % 2 ? leaf[1] : leaf[2])[x + y > 0 ? 1 : 0]);
+      }
+      radial(pc[0], pc[1], F.petals, size, a0);
+    }
+    const n = L.length / 4, lx = new Float32Array(n), ly = new Float32Array(n), lo = new Float32Array(n), lc = [];
+    for (let k = 0; k < n; k++) { lx[k] = L[k * 4]; ly[k] = L[k * 4 + 1]; lo[k] = L[k * 4 + 2]; lc.push(L[k * 4 + 3]); }
+    const stem = coolOf(A.leaf[1]);
+    return { x: s.x, y: s.y, z, w: s.w, n, lx, ly, lo, lc, fl: Fl, pal: [...fl, stem], swap: F.swap, brief: F.brief, fling: F.fling,
+             seeds: F.fling ? Array.from({ length: 13 }, (_, k) => [k * GOLDEN_ANGLE + a0, 8 + 13 * unitOf(s.seed + 31 * k), A.leaf[k % 4]]) : null,
+             t: REDUCED ? GROW + F_OPEN : -Math.floor(rnd() * 233), ph: Math.floor(rnd() * FLOWER) };
+  },
+  step() { for (const g of this.list) { g.t++; g.ph = (g.ph + 1) % (FLOWER * 8); } },
+  draw() {
+    for (const g of this.list) {
+      if (g.t <= 0 || !inView(g.x, g.y, 34)) continue;
+      // What the canopy hides of it is found once (a plant does not move), not every frame.
+      if (!g.vis) { g.vis = new Uint8Array(g.n); for (let k = 0; k < g.n; k++) g.vis[k] = seen(g.lx[k], g.ly[k], g.z) ? 1 : 0;
+                    g.fvis = new Uint8Array(g.fl.length >> 2); for (let k = 0; k < g.fl.length; k += 4) g.fvis[k >> 2] = seen(g.fl[k], g.fl[k + 1], g.z + PHI ** -4) ? 1 : 0; }
+      const grown = Math.min(1, g.t / GROW) * 3;                       // the leaves, outer to inner, base to tip
+      for (let k = 0; k < g.n; k++) if (g.vis[k] && g.lo[k] <= grown) put(g.lx[k], g.ly[k], g.lc[k], 1, g.w);
+      if (g.t < GROW) continue;
+      // The flower: it opens, stands, falls and comes again; a brief one (the cereus) stands for a moment only.
+      const c = g.ph % FLOWER, stand = g.brief ? 89 : 1597, cyc = Math.floor(g.ph / FLOWER);
+      const open = REDUCED ? 1 : c < F_OPEN ? c / F_OPEN : c < F_OPEN + stand ? 1 : c < F_OPEN + stand + F_FALL ? 1 - (c - F_OPEN - stand) / F_FALL : 0;
+      const pal = g.swap ? [g.pal[0], g.swap[cyc % g.swap.length], g.swap[(cyc + 2) % g.swap.length], g.pal[3]] : g.pal;   // Warhol's, in every colour
+      const reach = open * 34, z = g.z + PHI ** -4, F = g.fl;
+      for (let k = 0; k < F.length; k += 4) {
+        if (F[k + 2] !== 3 && F[k + 3] > reach && open < 1) continue;
+        const a = F[k + 2] === 3 ? 1 : open > 0 ? Math.min(1, open * PHI) : F[k + 3] < 1 ? 1 : 0;   // closed: a bud at the heart
+        if (a > 0 && g.fvis[k >> 2]) put(F[k], F[k + 1], pal[F[k + 2]], a, g.w);
+      }
+      if (g.seeds && c >= F_OPEN + stand && c < F_OPEN + stand + F_FALL * 3) {       // Pollock's: the seeds flung out
+        const q = (c - F_OPEN - stand) / (F_FALL * 3);
+        for (const [a, r, col] of g.seeds) { const x = g.x + Math.cos(a) * r * Math.sqrt(q), y = g.y + Math.sin(a) * r * Math.sqrt(q);
+          if (seen(x, y, z)) put(x, y, col, 1 - q * q, g.w); }
+      }
+    }
+  },
+};
+
 // Hummingbirds, which hover at the open flowers in a small figure of eight and dart between them.
 LIFE.hummers = {
   list: [],
@@ -1876,8 +2037,8 @@ LIFE.eagles = {
   },
 };
 
-const LIFE_ORDER = ["mould", "ants", "frogs", "ferns", "snakes", "fireflies", "morphos", "wind", "blooms", "troops", "hummers", "macaws", "eagles"];
-const STILL = new Set(["blooms", "ferns"]);                     // with reduced motion: only plants, full grown
+const LIFE_ORDER = ["mould", "ants", "frogs", "ferns", "snakes", "fireflies", "morphos", "wind", "garden", "blooms", "troops", "hummers", "macaws", "eagles"];
+const STILL = new Set(["blooms", "ferns", "garden"]);                     // with reduced motion: only plants, full grown
 function spawnLife(c) {
   for (const s of c.sites) {
     const g = LIFE[s.kind];
@@ -2356,6 +2517,7 @@ def main():
                 .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__SITE__", "true" if site else "false")
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
+                .replace("__PLANTS__", "null" if site or not (HERE / "artists" / "plants.json").exists() else (HERE / "artists" / "plants.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))

@@ -298,6 +298,24 @@ until another photo takes its place. Where the view cannot send Claude pictures,
 colours most to least, its light, contrast, saturation, warmth and grain, and its shape) and the drift follows that,
 with any name you add. The photo stays in the viewer's browser, and goes to Claude only when the view can send it.
 
+**The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
+(`artists/plants.json`; the coworker chooses it, `artists/COWORKER.md` step 3a). Each artist keeps a garden, a square of
+the plane 610 cells a side, where their plant grows on the floor and among the shrubs: a rosette of five to seven
+coleus leaves (*Plectranthus scutellarioides*, whose leaves run the widest spectrum of any foliage) in the artist's
+colours, each leaf turned a little round the colour wheel from the last, and the flower tied to them by a work, a
+process, a form or an hour: Dalí's rose (*Meditative Rose*, 1958), Matisse's acanthus (*Acanthes*, 1953),
+Frankenthaler's hydrangea (blue or pink by the soil under it, as her paint soaked into the canvas), Cartier-Bresson's
+night-blooming cereus (open for a moment only), Pollock's impatiens (its seeds flung out in his colours when it falls),
+Elaine de Kooning's grapevine (*Bacchus*), Caponigro's apple blossom (*Galaxy Apple*, 1964), Warhol's hibiscus
+(*Flowers*, 1964, in a new colour each time it opens), Hockney's hawthorn (Woldgate, 2011), Turner's evening primrose
+(it opens at dusk), Kapoor's pitcher plant (a hollow with no floor), Cézanne's primrose (*Still Life with Apples and a
+Pot of Primroses*), Van Gogh's iris (*Irises*, 1889) and Monet's water lily. The leaves follow the colour study
+(`studies/colour-and-space.md`): the half turned from the light keeps its chroma and cools, and colour gathers in a
+blue contour at the margin, where the leaf turns away. Where two gardens meet the plants cross: within 89 cells of
+the border a plant may be a hybrid, its leaves the one artist's edged in the other's, its flower the other's form in
+the first one's colours. The flowers open, stand about half a minute, fall and come again; the leaves stay. Where a
+plant lies under the canopy is found once, not every frame, so the garden costs well under a millisecond a frame.
+
 **Ultracode: a self-reflective propulsion.** *Code* is Latin *cōdex*, earlier *caudex*, a tree's trunk, then the
 wooden tablets split from it and bound into a book, then a book of laws, then a cipher; *ultra-* is "beyond, on the
 far side of." Ultracode (Aries's word) is code that goes beyond itself by reading itself. As a dynamic: a thing whose

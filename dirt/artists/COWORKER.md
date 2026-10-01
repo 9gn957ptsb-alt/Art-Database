@@ -29,8 +29,8 @@ rm scripts/normalize_artsy_saves.py
 pip install numpy pillow requests
 python3 dirt/artists/roster.py --db data/artworks.db --cache dirt/private/briefs --add 3
 
-# 3. commit the roster
-git add dirt/artists/roster.json
+# 3. a plant for each new artist (below), then commit the roster and the plants
+git add dirt/artists/roster.json dirt/artists/plants.json
 git commit -m "DIRT roster: <the artists added>"
 git push -u origin claude/digital-dirt-layers-paiial
 
@@ -40,6 +40,16 @@ python3 dirt/soil_tiles.py --db data/artworks.db
 # (4a, below: the quilts and the history into dirt/private/ first)
 python3 dirt/build_soil_viewer.py                 # the plane alone: the Earth is the website's globe
 ```
+
+**3a. Every new artist gets a plant.** DRIFT's garden (`build_soil_viewer.py`, `LIFE.garden`) grows a plant for every
+artist: coleus leaves in their colours and a flower tied to them. For each artist just added, find a plant with a real
+tie and add it to `dirt/artists/plants.json`: a flower or plant they painted, photographed or made a work of (best,
+`"tie": "work"`; check Aries's saved works in `data/artworks.db` first), one that does what their work does
+(`"process"`), has its shape (`"form"`), or lives in their light (`"hour"`). Give `why` one sentence naming the work and
+its year; never invent a work, and prefer a plant not already in the garden. Choose the `form` (radial, rose, cluster,
+spike, pitcher, pad) and the flower's real colours `[heart, petal, edge]`; the leaves come from their palette. An
+artist without an entry still grows a flower in their own colours, so the garden never waits, but the entry is the
+point: the plants are how the artists relate to each other where their gardens meet and cross.
 
 **4a. The private images come from the artifact, never from nowhere.** The page is built with the quilts
 (`dirt/private/quilts/`) and the history of Greece and Rome (`dirt/private/antiquity/`); they are never committed, and
@@ -56,5 +66,5 @@ https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish w
 the images and their JSON already there are kept). If the rebuild or the publish cannot be done in that session, the
 roster is still committed and the next rebuild picks it up.
 
-Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), and whether
+Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants, and whether
 DIRT was republished.
