@@ -1,0 +1,249 @@
+/* ---- the exquisite corpse (corpse.js) ---------------------------------------
+   A folded sheet: the panel shows only the edge of what came before (below
+   a crease), the animal carrying this leg and its instinct in one line, the
+   leg so far and where it can go. The unfolding: the chimera large, its
+   parts lit in turn, the sentence said in the serif. The walks' lilac and
+   hand; nothing louder. */
+.corpse-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 74px;
+  z-index: 87;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 10px 10px;
+  border-left: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 0 3px 3px 0;
+  background: rgba(15, 10, 7, 0.88);
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+.corpse-panel[hidden], .corpse-stage[hidden], .corpse-ritual[hidden], .corpse-toast[hidden] { display: none; }
+@media (max-width: 720px) {
+  .corpse-panel { left: 0; right: 0; bottom: 0; width: 100%; max-height: 48vh; background: rgba(15, 10, 7, 0.97); z-index: 90; border-left: 0; border-top: 1px solid rgba(157, 149, 230, 0.7); border-radius: 3px 3px 0 0; padding: 8px 16px 14px; }
+  .corpse-panel[data-collapsed="true"] { padding-bottom: 8px; }
+}
+.corpse-head {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9d95e6;
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+.corpse-head-static { cursor: default; }
+.corpse-said { margin: 3px 0 0; color: #cbbba6; }
+.corpse-rule {
+  margin: 6px 0 2px;
+  font-family: var(--serif, serif);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: #eadfcd;
+}
+
+/* The fold: what came before is under the crease; only the edge shows. */
+.corpse-fold { margin: 8px 0 4px; }
+.corpse-crease {
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(157, 149, 230, 0.55);
+  color: rgba(234, 223, 205, 0.45);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.corpse-edge { display: flex; gap: 8px; align-items: center; }
+.corpse-edge-title { margin: 0; font-family: var(--serif, serif); font-size: 13px; letter-spacing: 0; }
+.corpse-square {
+  flex: none;
+  display: block;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  background: rgba(234, 223, 205, 0.1);
+}
+.corpse-square img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.corpse-veiled { background: repeating-linear-gradient(135deg, rgba(234, 223, 205, 0.16) 0 3px, transparent 3px 6px); }
+
+.corpse-animals { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; }
+.corpse-animal {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(234, 223, 205, 0.25);
+  border-radius: 999px;
+  background: none;
+  color: #cbbba6;
+  font: inherit;
+  cursor: pointer;
+}
+.corpse-animal[data-met="true"] { border-color: rgba(157, 149, 230, 0.7); }
+.corpse-animal[aria-pressed="true"] { background: #9d95e6; border-color: #9d95e6; color: #0f0a07; }
+.corpse-deer { display: block; width: 80px; height: 52px; margin: 2px 0 0; image-rendering: pixelated; }
+
+.corpse-stops { display: flex; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; flex-wrap: wrap; }
+.corpse-stop { display: flex; flex-direction: column; gap: 2px; width: 72px; }
+.corpse-stop .corpse-square { width: 30px; height: 30px; }
+.corpse-stop-text { color: #cbbba6; font-size: 9px; }
+
+.corpse-offers { display: flex; flex-direction: column; gap: 2px; margin: 8px 0 0; }
+.corpse-offer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 149, 230, 0.22);
+  background: none;
+  color: #eadfcd;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.corpse-offer:hover, .corpse-offer:focus-visible { background: rgba(157, 149, 230, 0.12); outline: none; }
+.corpse-offer-text { display: flex; flex-direction: column; min-width: 0; }
+.corpse-offer-title { font-family: var(--serif, serif); font-size: 13px; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.corpse-offer-where { color: #cbbba6; }
+.corpse-offer-why { color: #9d95e6; }
+.corpse-offer[data-how="cache"] .corpse-offer-why { color: #d9a55b; }
+.corpse-choice {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 149, 230, 0.22);
+  background: none;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.corpse-choice:hover, .corpse-choice:focus-visible { background: rgba(157, 149, 230, 0.12); outline: none; }
+.corpse-acts { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 10px 0 0; }
+.corpse-code {
+  margin: 8px 0 0;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #eadfcd;
+  word-break: break-all;
+  user-select: all;
+}
+
+/* The unfolding. */
+.corpse-chimera { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; image-rendering: pixelated; z-index: 86; }
+.corpse-chimera[hidden] { display: none; }
+.corpse-stage {
+  position: fixed;
+  left: 50%;
+  bottom: 118px;
+  z-index: 87;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 32px));
+  text-align: center;
+  color: #eadfcd;
+  pointer-events: none;
+}
+.corpse-stage > * { position: relative; z-index: 1; }
+.corpse-stage .corpse-acts, .corpse-stage .corpse-code { pointer-events: auto; justify-content: center; }
+.corpse-stage .corpse-acts:empty, .corpse-part:empty { display: none; }
+.corpse-part {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 8px;
+  background: rgba(15, 10, 7, 0.72);
+  border-radius: 3px;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9d95e6;
+}
+.corpse-sentence {
+  min-height: 1.3em;
+  margin: 6px 0 0;
+  font-family: var(--serif, serif);
+  font-size: clamp(22px, 4.4vw, 34px);
+  line-height: 1.2;
+  text-shadow: 0 0 14px rgba(15, 10, 7, 0.95), 0 1px 3px rgba(15, 10, 7, 0.9);
+}
+.corpse-word { animation: corpse-in 1.4s steps(7) both; }
+@keyframes corpse-in { from { opacity: 0; } to { opacity: 1; } }
+.corpse-stage .corpse-acts { padding: 4px 10px; background: rgba(15, 10, 7, 0.72); border-radius: 3px; display: inline-flex; font-family: var(--mono, monospace); font-size: 10px; }
+
+/* Two that meet. */
+.corpse-ritual {
+  position: fixed;
+  left: 50%;
+  top: 64px;
+  z-index: 87;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(380px, calc(100vw - 32px));
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  text-align: center;
+  pointer-events: none;
+}
+.corpse-ritual-text {
+  padding: 6px 10px 10px;
+  border-top: 1px solid rgba(157, 149, 230, 0.7);
+  background: rgba(15, 10, 7, 0.86);
+  pointer-events: auto;
+}
+.corpse-ritual-cv { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto; image-rendering: pixelated; }
+.corpse-ritual-pair { margin: 4px 0 0; font-family: var(--serif, serif); font-size: 12px; letter-spacing: 0; color: #cbbba6; }
+.corpse-door {
+  display: block;
+  margin: 6px auto 0;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 149, 230, 0.7);
+  background: none;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 13px;
+  cursor: pointer;
+}
+.corpse-door:hover, .corpse-door:focus-visible { color: #ffffff; outline: none; }
+.corpse-rite:empty { display: none; }
+.corpse-ritual .read-quiet { margin: 6px 6px 0; }
+
+.corpse-toast {
+  position: fixed;
+  left: 50%;
+  top: 72px;
+  z-index: 88;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 10px;
+  background: rgba(15, 10, 7, 0.82);
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-style: italic;
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) { .corpse-word { animation: none; } }
