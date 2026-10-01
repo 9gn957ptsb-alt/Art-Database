@@ -443,7 +443,10 @@ For "go", give a real website you are certain exists (a museum or collection pag
     UC.vx = UC.hx * UC.speed; UC.vy = UC.hy * UC.speed;
     if (alone) { vx += UC.vx * dt; vy += UC.vy * dt; }
     if (plane() && GLG.setThrust) GLG.setThrust(UC.vx, UC.vy);       // its wake, in the collage
-    if (!UC.given && plane() && onPlane() && now - UC.sheetAt > 34000) { UC.sheetAt = now; GLG.putIn(codeSheet(), vx + VW / 2, vy + VH / 2, { quiet: true, share: 0.618 }); }
+    if (!UC.given && plane() && onPlane() && now - UC.sheetAt > 34000) {                // code, and every other time a character's card
+      UC.sheetAt = now; UC.sheets = (UC.sheets || 0) + 1;
+      GLG.putIn((UC.sheets % 2 === 0 && castCard()) || codeSheet(), vx + VW / 2, vy + VH / 2, { quiet: true, share: 0.618 });
+    }
   }
   /** Code as matter: a sheet of DRIFT's own code (these functions), a new stretch each time, headed by its readings. */
   function codeSheet() {
@@ -459,8 +462,46 @@ For "go", give a real website you are certain exists (a museum or collection pag
     UC.line = (UC.line + 27) % lines.length;
     return c;
   }
+  /** A title card for Falling Like Leaves (cast.js): the character nearest the middle of the view, else any, in the
+   * colours of its plant, with the place on Earth where its plant thrives. */
+  function castCard() {
+    if (typeof STAR === "undefined" || typeof CASTED === "undefined" || !CASTED.size) return null;
+    const mx = vx + VW / 2, my = vy + VH / 2;
+    const near = STAR.list.slice().sort((p, q) => Math.hypot(p.x - mx, p.y - my) - Math.hypot(q.x - mx, q.y - my))[0];
+    const all = [...CASTED.values()], c = near ? near.c : all[Math.floor(Math.random() * all.length)];
+    const pl = (typeof PLANT !== "undefined" && PLANT.find((p) => p.plant === c.plant)) || null;
+    const leaf = near ? near.cols : pl ? pl.leaf : [[170, 60, 140], [60, 30, 70], [90, 140, 70], [200, 220, 110]];
+    const fl = near ? near.flower : pl ? pl.flower : [[250, 240, 120], [170, 60, 140], [90, 30, 90]];
+    const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 640;
+    const x = cv.getContext("2d"), rgb = (q) => `rgb(${q.map(Math.round).join(",")})`;
+    const css = getComputedStyle(document.documentElement), serif = css.getPropertyValue("--serif").trim() || "Georgia, serif",
+      mono = css.getPropertyValue("--mono").trim() || "ui-monospace, Menlo, monospace";
+    const dark = leaf.slice().sort((p, q) => lum(p) - lum(q))[0];
+    x.fillStyle = rgb(dark.map((v) => v * 0.35)); x.fillRect(0, 0, 1024, 640);
+    // the flower, large, on the left: petals round a heart
+    const n = c.action === "void" ? 0 : 7, R = 190;
+    for (let k = 0; k < n; k++) { x.save(); x.translate(250, 320); x.rotate(k * Math.PI * 2 / n); x.fillStyle = rgb(fl[1]);
+      x.beginPath(); x.ellipse(R * 0.5, 0, R * 0.5, R * 0.2, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = rgb(fl[2]);
+      x.beginPath(); x.ellipse(R * 0.82, 0, R * 0.16, R * 0.11, 0, 0, Math.PI * 2); x.fill(); x.restore(); }
+    x.fillStyle = rgb(fl[0]); x.beginPath(); x.arc(250, 320, n ? 34 : 120, 0, Math.PI * 2); x.fill();
+    // the leaves' spectrum, a band along the foot
+    leaf.forEach((q, k) => { x.fillStyle = rgb(q); x.fillRect(k * 256, 604, 256, 36); });
+    const lat = `${Math.abs(c.lat).toFixed(2)}° ${c.lat < 0 ? "S" : "N"}  ${Math.abs(c.lon).toFixed(2)}° ${c.lon < 0 ? "W" : "E"}`;
+    x.fillStyle = "#efe8d8"; x.font = `500 15px ${mono}`;
+    x.fillText("FALLING LIKE LEAVES", 500, 96);
+    x.font = `italic 400 76px ${serif}`; x.fillText(c.name, 500, 196);
+    x.font = `italic 400 25px ${serif}`;
+    const wrap = (txt, y0, max, lh) => { let line = "", y = y0; for (const wd of txt.split(" ")) { if (x.measureText(line + wd).width > max) { x.fillText(line, 500, y); line = ""; y += lh; } line += wd + " "; } x.fillText(line, 500, y); return y + lh; };
+    let y = wrap(c.role, 238, 480, 31);
+    x.font = `500 15px ${mono}`; x.fillStyle = rgb(fl[1].map((v) => Math.min(255, v + 40)));
+    x.fillText(`${c.plant.toUpperCase()}${c.artist ? "  ·  " + c.artist.toUpperCase() : ""}`, 500, y + 14);
+    x.fillStyle = "#efe8d8"; x.fillText(c.place, 500, y + 44); x.fillText(lat, 500, y + 66);
+    x.font = `400 14px ${mono}`; x.fillText(c.climate, 500, y + 88);
+    x.font = `italic 400 21px ${serif}`; y = wrap(`after ${c.after}, ${c.performance} (${c.year})`, y + 136, 480, 27);
+    return cv;
+  }
   requestAnimationFrame(propel);
-  UC.places = () => memory.size;
+  UC.places = () => memory.size; UC.castCard = castCard;
   window.ULTRACODE = UC;                                              // its state, to look at
   document.addEventListener("keydown", (e) => {
     if (!trip || at.hidden || /^(input|textarea)$/i.test(document.activeElement && document.activeElement.tagName)) return;

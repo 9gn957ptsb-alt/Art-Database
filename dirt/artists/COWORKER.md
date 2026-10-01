@@ -30,7 +30,7 @@ pip install numpy pillow requests
 python3 dirt/artists/roster.py --db data/artworks.db --cache dirt/private/briefs --add 3
 
 # 3. a plant for each new artist (below), then commit the roster and the plants
-git add dirt/artists/roster.json dirt/artists/plants.json
+git add dirt/artists/roster.json dirt/artists/plants.json dirt/artists/cast.json
 git commit -m "DIRT roster: <the artists added>"
 git push -u origin claude/digital-dirt-layers-paiial
 
@@ -50,6 +50,11 @@ its year; never invent a work, and prefer a plant not already in the garden. Cho
 spike, pitcher, pad) and the flower's real colours `[heart, petal, edge]`; the leaves come from their palette. An
 artist without an entry still grows a flower in their own colours, so the garden never waits, but the entry is the
 point: the plants are how the artists relate to each other where their gardens meet and cross.
+Then give the plant a character in `dirt/artists/cast.json` (the garden as a film, *Falling Like Leaves*): a name and
+role drawn from the artist and the plant, the place on Earth where the plant thrives (with its latitude, longitude and
+climate) as the setting, the scene they act out there, and the performance from the history of cinema the part is
+written after (a real actor, film and year, and in `why` the performance and its honours, checked). Pick the `action`
+that best shows the scene (petals, cut, flash, fling, rain, glow, void, wind, ripple, swap).
 
 **4a. The private images come from the artifact, never from nowhere.** The page is built with the quilts
 (`dirt/private/quilts/`) and the history of Greece and Rome (`dirt/private/antiquity/`); they are never committed, and
@@ -66,5 +71,5 @@ https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish w
 the images and their JSON already there are kept). If the rebuild or the publish cannot be done in that session, the
 roster is still committed and the next rebuild picks it up.
 
-Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants, and whether
+Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants and characters, and whether
 DIRT was republished.

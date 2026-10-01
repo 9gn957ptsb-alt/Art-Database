@@ -316,6 +316,27 @@ the border a plant may be a hybrid, its leaves the one artist's edged in the oth
 the first one's colours. The flowers open, stand about half a minute, fall and come again; the leaves stay. Where a
 plant lies under the canopy is found once, not every frame, so the garden costs well under a millisecond a frame.
 
+**Falling Like Leaves: the garden as a film.** The coleus loves heat and keeps to the shade, and its colour is
+brightest there: a character before it is a plant. Every plant in the garden is one (`artists/cast.json`), set where
+that plant thrives on Earth and written after a performance from the history of cinema. Plectra, the coleus, is the
+protagonist (Kebun Raya Bogor, Java; after Tony Leung in *In the Mood for Love*); she crosses the gardens and takes
+each one's colours, slowing in the shade and hurrying across the open. Around her: Rosa Damascena in Bulgaria's Rose
+Valley (after Daniel Day-Lewis, *Phantom Thread*), Acantha among the ruins of Corinth (Emmanuelle Riva, *Amour*),
+Ajisai in the June rains at Kamakura (Setsuko Hara, *Tokyo Story*), Selene waiting all night in Havana (James Stewart,
+*Rear Window*), Wallera in the Usambara cloud forest (Marlon Brando, *A Streetcar Named Desire*), Rtveli at the
+Georgian vintage (Anna Magnani, *Rome, Open City*), Sievers in the wild apple forests of the Tian Shan (Bruno Ganz,
+*Wings of Desire*), Bunga Raya in Kuala Lumpur (Buster Keaton, *The General*), May in the Yorkshire Wolds (Peter
+O'Toole, *Lawrence of Arabia*), Drummond on the dunes of Padre Island at dusk (Toshiro Mifune, *Red Beard*), Rajah on
+Mount Kinabalu (Maria Falconetti, *The Passion of Joan of Arc*), Primula in the pines of Château Noir (Max von Sydow,
+*The Seventh Seal*), Iris Mistral at Saint-Rémy (Giulietta Masina, *Nights of Cabiria*) and Nymphe at Giverny
+(Katharine Hepburn, *On Golden Pond*). In DRIFT (`engine/cast.js`) each character walks round its plant in its garden,
+a figure dithered in its coleus colours with its flower for a head, acting out its scene: petals fall, a camera
+flashes, seeds and paint are flung, rain falls, paper leaves are cut, a halo glows at dusk, a void opens at the feet,
+the mistral blows, ripples spread. Each appears once at a time, in the first of its gardens in view. Every other time
+the collage glues in a sheet, it is a character's title card (`engine/drift.js`, `castCard`): its name and part, its
+plant and artist, its place on Earth with latitude and longitude, its climate, and the performance it is written
+after, over its flower and its leaves' spectrum, to be melted and torn into the plane with everything else.
+
 **Ultracode: a self-reflective propulsion.** *Code* is Latin *cōdex*, earlier *caudex*, a tree's trunk, then the
 wooden tablets split from it and bound into a book, then a book of laws, then a cipher; *ultra-* is "beyond, on the
 far side of." Ultracode (Aries's word) is code that goes beyond itself by reading itself. As a dynamic: a thing whose

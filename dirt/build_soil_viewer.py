@@ -796,6 +796,7 @@ const ART = __ART__;                                            // the artist DI
 const QUILTS = __QUILTS__;
 const ANTIQUITY = __ANTIQUITY__;                                // the history of Greece and Rome (dirt/artists/antiquity.py), in antiquity/                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
+const CAST = __CAST__;                                          // the garden as a film, Falling Like Leaves (dirt/artists/cast.json)
 const PLANTS = __PLANTS__;                                      // each artist's plant, in DRIFT's garden (dirt/artists/plants.json)
 // The Artist Website's edition (--site): the Earth alone, its soil the site's own dots, no painting named or shown.
 const SITE = __SITE__;
@@ -1785,7 +1786,7 @@ LIFE.garden = {
     const n = L.length / 4, lx = new Float32Array(n), ly = new Float32Array(n), lo = new Float32Array(n), lc = [];
     for (let k = 0; k < n; k++) { lx[k] = L[k * 4]; ly[k] = L[k * 4 + 1]; lo[k] = L[k * 4 + 2]; lc.push(L[k * 4 + 3]); }
     const stem = coolOf(A.leaf[1]);
-    return { x: s.x, y: s.y, z, w: s.w, n, lx, ly, lo, lc, fl: Fl, pal: [...fl, stem], swap: F.swap, brief: F.brief, fling: F.fling,
+    return { x: s.x, y: s.y, z, w: s.w, n, lx, ly, lo, lc, fl: Fl, pal: [...fl, stem], plant: F.plant, hybrid: !!B, leaf: A.leaf, gi, gj, swap: F.swap, brief: F.brief, fling: F.fling,
              seeds: F.fling ? Array.from({ length: 13 }, (_, k) => [k * GOLDEN_ANGLE + a0, 8 + 13 * unitOf(s.seed + 31 * k), A.leaf[k % 4]]) : null,
              t: REDUCED ? GROW + F_OPEN : -Math.floor(rnd() * 233), ph: Math.floor(rnd() * FLOWER) };
   },
@@ -2436,6 +2437,7 @@ document.addEventListener("keydown", (ev) => {
 showAll.addEventListener("click", letGo);
 </script>
 <script id="wanderers">__WANDERERS__</script>
+<script id="cast">__CAST_JS__</script>
 <script id="drift">__DRIFT__</script>
 <script id="earth-city">__EARTH_CITY__</script>
 <script id="earth-main">__EARTH_MAIN__</script>
@@ -2512,11 +2514,13 @@ def main():
     gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
+                .replace("__CAST_JS__", "" if site else (HERE / "engine" / "cast.js").read_text().replace("</script", "<\\/script"))
                 .replace("__WANDERERS__", (HERE / "engine" / "wanderers.js").read_text().replace("</script", "<\\/script"))
                 .replace("__DRIFT__", "" if site else (HERE / "engine" / "drift.js").read_text().replace("</script", "<\\/script"))
                 .replace("__ART__", "null" if site else (HERE / "artists" / "twombly.json").read_text().replace("</", "<\\/"))
                 .replace("__SITE__", "true" if site else "false")
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
+                .replace("__CAST__", "null" if site or not (HERE / "artists" / "cast.json").exists() else (HERE / "artists" / "cast.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANTS__", "null" if site or not (HERE / "artists" / "plants.json").exists() else (HERE / "artists" / "plants.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
