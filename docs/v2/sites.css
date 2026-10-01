@@ -1,0 +1,143 @@
+/* ---- Painted here (sites.js) ------------------------------------------------
+   The painting beside the place it was painted: side by side, never laid
+   into each other (no alignment is documented); credits under each; the
+   commentary in the serif; the sources. In the column, "Painted here" heads
+   "Where it has been" with the pair small; the plate opens it large — left
+   of the column on a desktop, across the top on a phone. */
+.site-stop { padding-bottom: var(--s-3); border-bottom: 1px solid rgba(157, 149, 230, 0.35); margin-bottom: var(--s-3); }
+.site-stop[hidden] { display: none; }
+.site-head { color: #9d95e6; }
+.site-exact {
+  margin: 2px 0 var(--s-2);
+  font-family: var(--mono, monospace);
+  font-size: var(--t-1, 11px);
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  color: #a8927a;
+}
+.site-credit { margin: 4px 0 var(--s-3); font-size: var(--t-1, 11px); line-height: 1.4; color: #a8927a; }
+
+.site-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: var(--s-2, 8px) 0 0;
+  cursor: zoom-in;
+}
+.site-pair-big { cursor: default; gap: 10px; }
+.site-fig {
+  position: relative;
+  margin: 0;
+  min-height: 72px;
+  background: rgba(234, 223, 205, 0.06);
+}
+.site-fig img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s steps(4, end);
+}
+.site-fig[data-on="true"] img { opacity: 1; }
+.site-fig[data-missing="true"] img { display: none; }
+.site-fig[data-missing="true"]::after {
+  content: "picture not reached";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.site-none { display: grid; place-items: center; padding: 8px; }
+.site-none p { margin: 0; font-size: var(--t-1, 11px); color: #a8927a; text-align: center; }
+.site-pair-big .site-fig img { height: auto; max-height: min(44vh, 420px); object-fit: contain; }
+.site-fig figcaption {
+  margin-top: 5px;
+  font-size: var(--t-1, 11px);
+  line-height: 1.4;
+  color: #a8927a;
+}
+.site-tabs { display: flex; gap: 4px; margin-top: 4px; }
+.site-tab {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(157, 149, 230, 0.5);
+  border-radius: 999px;
+  background: none;
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.site-tab[data-on="true"] { background: #9d95e6; color: #0f0a07; }
+
+.site-plate {
+  position: fixed;               /* in the column's place: the globe and the ring stay in view */
+  top: calc(var(--s-5, 21px) + 52px);
+  right: 0;
+  bottom: 0;
+  width: min(40vw, 440px);
+  z-index: 84;
+  box-sizing: border-box;
+  padding: 12px var(--s-5, 21px) 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-left: 1px solid rgba(157, 149, 230, 0.7);
+  background: rgba(15, 10, 7, 0.96);
+  color: #eadfcd;
+}
+.site-plate[hidden] { display: none; }
+.site-plate-head { position: relative; padding-right: 40px; }
+.site-kicker {
+  margin: 0 0 4px;
+  font-family: var(--mono, monospace);
+  font-size: var(--t-1, 11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9d95e6;
+}
+.site-title { margin: 0; font-family: "Newsreader", var(--serif, serif), serif; font-size: var(--t-3, 19px); line-height: 1.25; }
+.site-by { margin: 2px 0 10px; font-size: var(--t-1, 11px); color: #a8927a; }
+.site-x {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-size: 20px;
+  cursor: pointer;
+}
+.site-plate .site-exact { margin-top: 10px; }
+.site-plate-body { margin-top: 10px; }
+.site-plate .art-said-q { font-size: var(--t-2, 15px); }
+.site-src { margin-top: 12px; text-transform: none; letter-spacing: 0.02em; font-size: 10px; line-height: 1.5; color: #a8927a; }
+.site-src-a { color: #cbbba6; text-decoration: underline; text-decoration-color: rgba(157, 149, 230, 0.6); text-underline-offset: 3px; }
+.site-acts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
+.site-marks { pointer-events: none; }
+
+@media (max-width: 720px) {
+  .site-plate {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 52vh;
+    padding: 10px 16px 14px;
+    border-left: 0;
+    border-top: 1px solid rgba(157, 149, 230, 0.7);
+  }
+  .site-pair-big .site-fig img { max-height: 24vh; }
+  .site-fig img { max-height: 120px; }
+}

@@ -1,0 +1,84 @@
+{
+ "note": "Painting sites documented by hand, each with its sources (scripts/build_sites.py). ll is a source's point, never a guess: say in pr how exact it is (view, site, street, town) and in src where the point and the identification come from. Quotations are the source's own words.",
+ "sites": [
+  {
+   "q": "Q4233325",
+   "t": "Tree Roots",
+   "a": "Vincent van Gogh",
+   "pr": "street",
+   "ll": [
+    49.07138,
+    2.1738
+   ],
+   "what": "the rue Daubigny",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auvers-sur-Oise - Rue Daubigny 02.jpg",
+     "of": "the rue Daubigny today, by the porte crénelée (the photograph's own name)",
+     "d": 0
+    }
+   ],
+   "said": [
+    {
+     "q": "In 2020, Wouter Van der Veen, scientific director of Institut Van Gogh determined the probable location where the painting was made, based on an historical postcard, to be on the rue Daubigny in Auvers-sur-Oise. He confirmed his finding with a historical photograph from circa 1907 in 2021. The location is about 150 metres from Auberge Ravoux, Van Gogh's hotel at the time.",
+     "by": "Wikipedia",
+     "in": "“Tree Roots”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/Tree_Roots"
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “Tree Roots”",
+     "url": "https://en.wikipedia.org/wiki/Tree_Roots"
+    },
+    {
+     "name": "the street's point: OpenStreetMap (ODbL), way 362619895, rue Daubigny",
+     "url": "https://www.openstreetmap.org/way/362619895"
+    }
+   ]
+  },
+  {
+   "q": "Q922648",
+   "t": "The Town Hall at Auvers",
+   "a": "Vincent van Gogh",
+   "pr": "view",
+   "ll": [
+    49.07069,
+    2.17151
+   ],
+   "what": "the door of the Auberge Ravoux",
+   "place": "Auvers-sur-Oise",
+   "photos": [
+    {
+     "f": "Auberge ravoux.jpg",
+     "of": "the Auberge Ravoux, where he stood",
+     "d": 0
+    },
+    {
+     "f": "Auvers town hall.jpg",
+     "of": "the town hall he painted (Wikidata Q119298603)",
+     "d": 63
+    }
+   ],
+   "said": [
+    {
+     "q": "It is based on the view Van Gogh had when he stepped out on the street from the Auberge Ravoux, where he stayed.",
+     "by": "Wikipedia",
+     "in": "“The Town Hall at Auvers”, English Wikipedia (CC BY-SA)",
+     "url": "https://en.wikipedia.org/wiki/The_Town_Hall_at_Auvers"
+    }
+   ],
+   "src": [
+    {
+     "name": "English Wikipedia, “The Town Hall at Auvers”",
+     "url": "https://en.wikipedia.org/wiki/The_Town_Hall_at_Auvers"
+    },
+    {
+     "name": "the point: Wikidata Q4819026, Auberge Ravoux",
+     "url": "https://www.wikidata.org/wiki/Q4819026"
+    }
+   ]
+  }
+ ]
+}

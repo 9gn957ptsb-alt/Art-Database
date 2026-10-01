@@ -13957,12 +13957,24 @@
     var t = townBy[key];
     if (!t) { return; }
     closeFinder();
-    if (place && place === townCities[key]) { return; }   // already here
+    if (place && place === townCities[key]) {             // already here
+      if (via && via.at && art) { glideTo(art, via.at.lat * RAD, wrap(via.at.lon * RAD)); }
+      return;
+    }
     settleSwing();
     artAsked = null;                // a view still being read is not flown to after this
     if (t.pass) { openMuseum(t.museums[0], via); return; }
     var c = townCities[key] || (townCities[key] = townCity(t));
     var f = townFrame(t);
+    // Painted here (sites.js): the city, held on the site's own point, low.
+    var at = via && via.at;
+    if (at && isFinite(at.lat) && isFinite(at.lon)) {
+      var bs = artBand();
+      f.lat = at.lat * RAD;
+      f.lon = at.lon * RAD;
+      f.zoomTo = Math.min(0.4 * Math.min(bs.w, bs.h) / (Math.max(0.6, at.km || 1.6) / 6371), TOWN_R_MAX) / Math.max(1, baseR);
+    }
+    c.title = at && at.name ? at.name : t.name;     // a site far from its city is named for itself
     c.lat = f.lat;
     c.lon = wrap(f.lon);
     c.zoomTo = f.zoomTo;
@@ -14307,7 +14319,10 @@
     thread: function (id) { openArt({ thread: id }); },
     // The corpse (corpse.js): the world turned, rolled and drawn back so a route ([[lat, lon], ...]) is all in view.
     frame: function (pts, hold) { return frameRoute(pts, hold); },
-    unframe: function () { framing = null; }
+    unframe: function () { framing = null; },
+    // Painted here (sites.js): a city held low on a site's point; the world eased round to a point in a view.
+    site: function (key, lat, lon, km, name) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" } }); },
+    look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; }
   };
 
   function backName(up) {
@@ -16665,6 +16680,9 @@
     var np = Object.keys(places).length;
     route.appendChild(el("p", "art-section-head", np ? "Where it has been · " + np + (np === 1 ? " place" : " places") : "Its history"));
     var ol = el("ol", "art-stops");
+    // Painted here (sites.js): where the work was made, documented, first.
+    var painted = window.Sites && Sites.stop ? Sites.stop(h) : null;
+    if (painted) { ol.appendChild(painted); }
     a.groups.forEach(function (g) {
       var shown = g.events.filter(function (n) { return !quietLine(h, n); });
       if (!shown.length) { return; }

@@ -41,6 +41,13 @@ page can offer, when any exploration ends, those that begin (or pass) where
 it ended. Rows: [kind, id, title, artist, animal, voice, n, stops], each stop
 [key, year or 0, work index or -1]; a voice's route gives its first and last
 stops only. Public files only; the same bytes every run.
+
+Painted here. `sites` are the site explorations build_sites.py made from
+the documented painting sites (sites.json): per artist and place, and per
+artist — each stop one point, its works (indexes into sites.json's rows),
+its word for the sentence (the place painted, else the work's short title).
+They are added to the relay last ("s"), so the indexes of the rows before
+them, which codes carry, do not move.
 """
 import argparse
 import collections
@@ -72,7 +79,9 @@ NOTE = ("Explorations (docs/v2/explorations.js). hunts: a cataloguer's hunt — 
         "[kind, id], kind w work, t town, m museum, v voice, h thread, a animal). relay: every published "
         "exploration by its stops, for the handoffs — [kind h hunt, w walk, v a voice's route, x sent; id; "
         "title; artist; animal; voice; number of stops; stops [[key, year or 0, work index into finding.json "
-        "or -1]]], a voice's route by its first and last stops. Written by scripts/build_explorations.py.")
+        "or -1]]], a voice's route by its first and last stops; s a site exploration. sites: the site explorations "
+        "(Painted here, sites.json): stops [{key, ll, y, w word, s [sites.json rows]}]. Written by "
+        "scripts/build_explorations.py.")
 
 
 def load(*p):
@@ -373,6 +382,27 @@ def relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns):
     return rows
 
 
+def site_explorations(finding_ix):
+    path = os.path.join(V2, "sites.json")
+    if not os.path.exists(path):
+        return [], []
+    d = load("sites.json")
+    rows = d["sites"]
+    out, relay = [], []
+    for e in d["explorations"]:
+        stops = []
+        for ll, key, ids in e["stops"]:
+            first = rows[ids[0]]
+            word = (first.get("what") if first.get("pr") in ("site", "street") else None) or \
+                re.split(r"[,:(]", first.get("t") or "Untitled")[0].strip()
+            stops.append({"key": key, "ll": ll, "y": first.get("d") or 0, "w": word, "s": ids})
+        out.append({"id": e["id"], "kind": "sites", "title": e["title"], "artist": e["artist"],
+                    "place": e["place"], "stops": stops})
+        relay.append(["s", e["id"], e["title"], e["artist"], "", "", len(stops),
+                      [[st["key"], st["y"], finding_ix.get(rows[st["s"][0]].get("w") or "", -1)] for st in stops]])
+    return out, relay
+
+
 def sentence_words(h, name_of):
     return [name_of.get(s["key"], s["key"]).split(",")[0] for s in h["stops"]]
 
@@ -425,8 +455,9 @@ def main():
             hunts.append(h)
     hunts.sort(key=lambda h: (-len(h["stops"]), h["id"]))
     made = sent_list(finding_ix)
-    out = {"note": NOTE, "hunts": hunts, "made": made,
-           "relay": relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns)}
+    sites, site_relay = site_explorations(finding_ix)
+    out = {"note": NOTE, "hunts": hunts, "made": made, "sites": sites,
+           "relay": relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns) + site_relay}
     with open(OUT, "w") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
         f.write("\n")
@@ -435,7 +466,10 @@ def main():
         print("%-40s %-28s %3d stops, %2d found-places, by %s (%s order)" % (h["title"], h["artist"], len(h["stops"]),
               known, h["by"], h["order"]))
         print("     ", " | ".join(h["stops"][0]["lines"]))
+    print("site explorations:", len(sites))
     print("relay rows:", len(out["relay"]), " bytes:", os.path.getsize(OUT))
+    if len(out["relay"]) > 511:
+        sys.exit("the relay has more rows than a code's 9 bits can name: " + str(len(out["relay"])))
 
 
 if __name__ == "__main__":

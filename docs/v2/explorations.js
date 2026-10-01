@@ -132,6 +132,7 @@
         d.relayIx = ix(d.relay, function (r) { return r[0] + ":" + r[1]; });
         d.huntBy = ix(d.ex.hunts, function (h) { return h.id; });
         d.walkBy = ix(d.walks, function (w) { return w.id; });
+        d.siteBy = ix(d.ex.sites || [], function (x) { return x.id; });
         d.museumTown = {};
         d.towns.forEach(function (t) { (t[6] || []).forEach(function (slug) { d.museumTown[slug] = t[0]; }); });
         D = d;
@@ -141,6 +142,7 @@
   }
 
   function hunt(id) { var i = D.huntBy[id]; return i === undefined ? null : D.ex.hunts[i]; }
+  function siteX(id) { var i = D.siteBy[id]; return i === undefined ? null : D.ex.sites[i]; }
   function town(key) { var i = D.townIx[key]; return i === undefined ? null : D.towns[i]; }
   function townName(key) { var t = town(key); return t ? String(t[1]).split(",")[0] : key; }
   function workRow(id) { var i = D.workIx[id]; return i === undefined ? null : D.works[i]; }
@@ -215,6 +217,10 @@
     }
     if (r[0] === "v") {
       return [{ w: townName(r[7][0][0]), p: " …" }, { w: townName(r[7][r[7].length - 1][0]), p: "." }];
+    }
+    if (r[0] === "s") {
+      var sx = siteX(r[1]);
+      if (sx) { return sx.stops.slice(from).map(function (st) { return { w: shortTitle(st.w), p: st.s.length > 1 ? "." : "," }; }); }
     }
     return r[7].slice(from).map(function (st) { return { w: st[0] ? townName(st[0]) : shortTitle((D.works[st[2]] || [])[1]), p: "," }; });
   }
@@ -777,6 +783,15 @@
           });
           return;
         }
+        if (r[0] === "s") {
+          var sx = siteX(r[1]);
+          if (sx) {
+            sx.stops.slice(from).forEach(function (st, i) {
+              out.push({ k: "site", key: st.key, ll: st.ll, y: st.y, ids: st.s, word: st.w, sx: sx, n: from + i, of: sx.stops.length, leg: leg });
+            });
+          }
+          return;
+        }
         if (r[0] === "w") {
           var w = D.walks[D.walkBy[r[1]]];
           if (w) { out.push({ k: "walk", walk: w, from: from, leg: leg }); }
@@ -857,7 +872,7 @@
   function progress() {
     var s = step(), n = run.steps.filter(function (q) { return q.k !== "|"; }).length;
     var k = run.steps.slice(0, run.i + 1).filter(function (q) { return q.k !== "|"; }).length;
-    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
+    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.k === "site" ? s.word : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
     var inHunt = s.hunt ? " · No. " + (s.hunt.stops[s.n].no || s.n + 1) : "";
     return (run.paused ? "Paused · " : "") + k + " of " + n + " · " + where + inHunt;
   }
@@ -897,10 +912,14 @@
       return;
     }
     if (still) { stillStep(s); return; }
-    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep }[s.k] || next)(s);
+    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep, site: siteStep }[s.k] || next)(s);
   }
 
-  function asStop(s) { return s.k === "walk" ? { k: "r", id: "w:" + s.walk.id, from: s.from } : { k: s.k, id: s.id, key: s.key }; }
+  function asStop(s) {
+    if (s.k === "walk") { return { k: "r", id: "w:" + s.walk.id, from: s.from }; }
+    if (s.k === "site") { return { k: "t", id: s.key }; }
+    return { k: s.k, id: s.id, key: s.key };
+  }
 
   // Under reduced motion: no clock, each stop opened by hand ("Next stop →").
   function stillStep(s) {
@@ -909,6 +928,10 @@
     if (s.k === "m") { Land.museum(s.id); told(label(s)); return; }
     if (s.k === "h") { Land.thread(s.id); told(label(s)); return; }
     if (s.k === "v" && window.Voices) { Voices.follow(s.id); told(label(s)); return; }
+    if (s.k === "site" && window.Sites) {
+      Sites.visit(s.ids).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : s.word); } });
+      return;
+    }
     told(label(asStop(s)));
   }
 
@@ -982,6 +1005,28 @@
       var t = town(s.id);
       told(s.voice ? townName(s.id) + (s.y ? " · " + s.y : "") : t ? t[1] + " · " + plural(t[5], "work has", "works have") + " been here" : "");
       afterStill(next, ok ? (s.voice ? HOLD_MS : TOWN_MS) : 1000);
+    });
+  }
+
+  /* Painted here (sites.js): flown to low, the plate open — the painting
+     beside the site — and said on the reading's clock: the work, how exact
+     the point is, the sentence that documents it. Several works painted at
+     one point are shown in turn. */
+  function siteStep(s) {
+    run.down = true;
+    if (!window.Sites || !Sites.visit) { next(); return; }
+    var token = run;
+    Sites.visit(s.ids).then(function (got) {
+      if (run !== token) { return; }
+      if (!got) { afterStill(next, 1000); return; }
+      run.arrived = run.i;
+      told("");
+      var lines = got.lines, per = Math.max(1, Math.min(3, s.ids.length));   // three works a point at most
+      SAY_AT.forEach(function (at, k) { afterStill(function () { if (lines[k]) { setSaid(lines[k]); } }, at); });
+      s.ids.slice(1, per).forEach(function (id, k) {
+        afterStill(function () { Sites.show(id); setSaid(got.titles[k + 1]); }, LOOK * (k + 1));
+      });
+      afterStill(next, LOOK * per);
     });
   }
 
@@ -1131,6 +1176,12 @@
         s.hunt.voices.forEach(function (v) { c.skip["v:" + v] = true; });
       }
       if (s.k === "walk") { return contextOf({ walk: s.walk }).then(function (wc) { wc.rep = o.rep; return wc; }); }
+      if (s.k === "site") {
+        if (s.sx) { c.skip["s:" + s.sx.id] = true; c.artist = s.sx.artist; }
+        c.key = s.key || null;
+        c.year = s.y || 0;
+        return Promise.resolve(c);
+      }
       if (s.k === "w") {
         var r = workRow(s.id);
         c.work = D.workIx[s.id] === undefined ? -1 : D.workIx[s.id];
@@ -1191,7 +1242,7 @@
       if (best && best.sc >= 20) { out.push({ row: r, key: key, b: best }); }
     });
     // A hunt, a walk, a kept or sent one before a voice's route; then the shorter.
-    var PREF = { h: 5, w: 4, k: 3, x: 3, v: 0 };
+    var PREF = { h: 5, w: 4, s: 4, k: 3, x: 3, v: 0 };
     out.sort(function (a, b) {
       return (b.b.sc + PREF[b.row[0]]) - (a.b.sc + PREF[a.row[0]]) || a.row[6] - b.row[6] || (a.key < b.key ? -1 : 1);
     });
@@ -1265,7 +1316,7 @@
       leg = x.stops.slice(f.b.i ? indexAtStop(x, f.b.i) : 0);
     } else {
       leg = [{ k: "r", id: f.key, from: f.b.i || 0 }];
-      x = { id: f.row[1], kind: f.row[0] === "h" ? "hunt" : "ref", title: rowTitle(f.row), by: f.row[0] === "h" ? (hunt(f.row[1]) || {}).by : "",
+      x = { id: f.row[1], kind: f.row[0] === "h" ? "hunt" : f.row[0] === "s" ? "sites" : "ref", title: rowTitle(f.row), by: f.row[0] === "h" ? (hunt(f.row[1]) || {}).by : "",
             stops: leg };
     }
     var chain = rep.concat([{ k: "|" }]).concat(leg);
@@ -1319,7 +1370,9 @@
         }, function () {}));
       } else if (s.k === "r") {
         var r = relayRow(s.id);
-        if (r) { r[7].slice(r[0] === "v" ? 0 : s.from || 0).forEach(function (q) { if (q[0]) { at(q[0]); } }); }
+        var sx2 = r && r[0] === "s" ? siteX(r[1]) : null;
+        if (sx2) { sx2.stops.slice(s.from || 0).forEach(function (st) { leg.push(st.ll); }); }
+        else if (r) { r[7].slice(r[0] === "v" ? 0 : s.from || 0).forEach(function (q) { if (q[0]) { at(q[0]); } }); }
       }
     });
     Promise.all(waits).then(function () {
