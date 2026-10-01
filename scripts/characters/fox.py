@@ -14,7 +14,7 @@ Letters: d R r g the coat, deepest to lightest; W w the white; k K the black
 
 import math
 
-from draw import Part, capsule, ellipse, path, ramp, raster, triangle, two_bone, union
+from draw import Part, capsule, ellipse, limb, path, ramp, raster, triangle, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6                  # the soles stand on this line
@@ -89,8 +89,9 @@ def body_parts(dy=0.0, tail_lift=0.0, head=None):
     return parts
 
 
-def head_profile(cx, cy, facing=1):
-    """The head side on: skull, long muzzle, two ears. facing 1 is right, -1 left."""
+def head_profile(cx, cy, facing=1, ear=0.0):
+    """The head side on: skull, long muzzle, two ears. facing 1 is right, -1 left;
+    `ear` lays the near ear back by that many cells at its tip."""
     f = facing
     skull = ellipse(cx, cy, 3.0, 2.6)
     snout = capsule((cx + f * 1.6, cy + 0.7), (cx + f * 5.8, cy + 1.6), 1.7, 0.7)
@@ -103,7 +104,7 @@ def head_profile(cx, cy, facing=1):
         if y > cy + 1.2 + 0.18 * (x - cx) * f:
             return WHITE(x, y, light, i, j)
         return COAT(x, y, light, i, j)
-    near_ear = triangle((cx - f * 2.0, cy - 1.0), (cx + f * 0.4, cy - 2.0), (cx - f * 1.3, cy - 6.4))
+    near_ear = triangle((cx - f * 2.0, cy - 1.0), (cx + f * 0.4, cy - 2.0), (cx - f * (1.3 + ear), cy - 6.4 + ear * 0.5))
     far_ear = triangle((cx + f * 0.3, cy - 1.8), (cx + f * 2.2, cy - 1.0), (cx + f * 1.5, cy - 5.8))
 
     def ear_paint(x, y, light, i, j):
@@ -150,6 +151,7 @@ def legs_at(phases, dy=0.0, reach=3.0, lift=2.2):
            leg((hp[0] + 1.0, hp[1]), stride(fh, (hp[0] + 1.0, 0), reach, lift), 4.4, 5.2, -1, 1.5, 0.65, False, 0))
     near = (leg(hp, stride(nh, hp, reach, lift), 4.4, 5.2, -1, 1.8, 0.7, True, 7) +
             leg(sh, stride(nf, sh, reach, lift), 4.4, 4.7, 1, 1.2, 0.7, True, 7))
+    limb(far[:2], "body"), limb(far[2:], "hind"), limb(near[:2], "hind"), limb(near[2:], "body")
     return far, near
 
 
@@ -160,30 +162,42 @@ def neck(a, b):
     return Part(capsule(a, b, 2.3, 1.9), paint, 3)
 
 
+def trot_parts(p, phases=None, up=None):
+    """One of the frames of the trot, as parts (a walk, given its phases)."""
+    up = (p in (0.25, 0.75)) if up is None else up
+    dy = -0.5 if up else 0.0          # up between the beats
+    far, near = legs_at(phases or (p + 0.5, p, p, p + 0.5), dy)
+    hx, hy = 30.4, 10.4 + dy
+    parts = far + body_parts(dy, tail_lift=0.4 if up else 0.0)
+    parts += [neck((25.4, 13.4 + dy), (hx - 1.2, hy + 0.6))] + head_profile(hx, hy) + near
+    return parts
+
+
 def trot(p):
     """One of four frames of the trot."""
-    dy = -0.5 if p in (0.25, 0.75) else 0.0          # up between the beats
-    far, near = legs_at((p + 0.5, p, p, p + 0.5), dy)
-    hx, hy = 30.4, 10.4 + dy
-    parts = far + body_parts(dy, tail_lift=0.4 if p in (0.25, 0.75) else 0.0)
-    parts += [neck((25.4, 13.4 + dy), (hx - 1.2, hy + 0.6))] + head_profile(hx, hy) + near
-    return raster(parts, W, H)
+    return raster(trot_parts(p), W, H)
 
 
-def stand(head="profile"):
+def stand_parts(head="profile", tail_lift=-0.6, ear=0.0):
     """Standing square, all four feet down; the head side on, turned back,
-    or turned to look out."""
+    or turned to look out (`ear` lays the near ear back, a flick)."""
     far, near = legs_at((0.1, 0.6, 0.6, 0.1), 0.0, reach=1.2)
-    parts = far + body_parts(0.0, tail_lift=-0.6)
+    parts = far + body_parts(0.0, tail_lift=tail_lift)
     if head == "profile":
-        parts += [neck((25.4, 13.2), (29.4, 9.6))] + head_profile(30.4, 8.8)
+        parts += [neck((25.4, 13.2), (29.4, 9.6))] + head_profile(30.4, 8.8, ear=ear)
+    elif head == "up":
+        parts += [neck((25.4, 13.2), (29.8, 8.2))] + head_profile(31.0, 6.8)
     elif head == "back":
         # Over the shoulder: the head turned back along the body.
         parts += [neck((25.4, 13.2), (25.6, 8.8))] + head_profile(25.0, 7.2, facing=-1)
     else:
         parts += [neck((25.4, 13.2), (27.6, 9.8))] + head_front(28.0, 8.6)
     parts += near
-    return raster(parts, W, H)
+    return parts
+
+
+def stand(head="profile"):
+    return raster(stand_parts(head), W, H)
 
 
 def sit():
@@ -225,3 +239,38 @@ def poses():
         "look": [stand("front")],
         "sit": [sit()],
     }
+
+
+# ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
+
+SEAMS = {"neck": (27.4, 12.4), "hip": (17.6, 14.8)}     # x of each fold, and a height inside the body there
+CHIMERA_SCALE = 1.0
+
+
+def lie_parts(head="profile"):
+    """Lying down, legs folded under, the brush round, the head up."""
+    dy = 6.4
+    parts = [Part(capsule((11.6, GROUND - 0.8), (17.0, GROUND - 0.6), 1.0, 0.7), FAR_COAT, 0)]
+    parts += body_parts(dy, tail_lift=-2.0)
+    parts.append(Part(capsule((22.4, GROUND - 0.7), (29.0, GROUND - 0.6), 1.0, 0.7), BLACK, 6))
+    if head == "front":
+        parts += [neck((25.4, 13.2 + dy), (27.4, 9.8 + dy))] + head_front(28.0, 8.6 + dy)
+    else:
+        parts += [neck((25.4, 13.2 + dy), (29.4, 10.0 + dy))] + head_profile(30.4, 9.2 + dy)
+    return parts, dy
+
+
+def rig(pose, k=0):
+    """The whole fox in a chimera's pose, as parts, and how far it is lowered."""
+    if pose == "walk":
+        p = k / 6.0
+        return trot_parts(p, (p + 0.75, p + 0.5, p + 0.25, p), up=k in (1, 4)), 0.0
+    if pose == "stand":
+        return stand_parts("profile", tail_lift=(-0.6, -1.2, 0.6)[k], ear=(0, 0, 1.6)[k]), 0.0
+    if pose == "back":
+        return stand_parts("profile", tail_lift=0.2, ear=0.8), 0.0
+    if pose == "look":
+        return stand_parts("front"), 0.0
+    if pose == "rest":
+        return lie_parts()
+    return stand_parts("up", tail_lift=1.4), 0.0

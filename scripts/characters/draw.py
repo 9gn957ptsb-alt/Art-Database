@@ -124,6 +124,16 @@ class Part:
         self.group = group
 
 
+def limb(parts, slot):
+    """Mark parts as a limb of one of a chimera's three parts ("head", "body",
+    "hind"): a limb is drawn whole by its part even where it reaches a little
+    past the fold (scripts/characters/chimera.py), where everything else is
+    cut at the crease. Drawn whole, nothing changes."""
+    for part in parts:
+        part.limb = slot
+    return parts
+
+
 def light_at(sdf, x, y, d, reach=2.6):
     e = 0.25
     gx = sdf(x + e, y) - sdf(x - e, y)

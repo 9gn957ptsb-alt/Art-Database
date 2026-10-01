@@ -923,7 +923,11 @@
     }, 15000);
   }
 
-  function inTown(key) { return function (w) { return (w.at === "town" || w.at === "museum") && w.key === key; }; }
+  // In the city itself; a city that is only its museum opens as the museum.
+  function inTown(key) {
+    var t = town(key), pass = t && t[8];
+    return function (w) { return w.key === key && (w.at === "town" || (pass && w.at === "museum")); };
+  }
 
   function workStep(s) {
     run.down = true;
