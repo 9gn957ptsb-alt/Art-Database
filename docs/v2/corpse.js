@@ -459,11 +459,9 @@
       });
     })).then(function () { return VERB[best || "other"]; });
   }
+  // A title is a name: no article before it ("London sold The Battle of Love", "held Under a Palm Tree").
   function objectOf(title) {
-    var t = shortTitle(title) || "Untitled";
-    if (/^untitled/i.test(t)) { return { art: "an", t: t }; }
-    if (/^(the|a|an)\s/i.test(t)) { return { art: "", t: t }; }
-    return { art: "the", t: t };
+    return { art: "", t: shortTitle(title) || "Untitled" };
   }
   function sentenceOf(c) {
     if (c.legs.length < 3) { return Promise.resolve(null); }
@@ -586,10 +584,28 @@
     if (leg.stops.length && leg.met.length) {
       pool = pool.filter(function (a) { return a === leg.a || leg.met.indexOf(a) >= 0; });
     }
+    // The animal is chosen for the player (the one followed, else the one
+    // whose artist the leg meets most); choosing another is a quiet change.
+    if (!leg.chosen && leg.stops.length) {
+      var auto = carrier(leg);
+      if (auto !== leg.a && leg.stops.length < legMax(auto)) { leg.a = auto; }
+    }
+    var carried = el("p", "corpse-carried");
+    carried.appendChild(el("span", "", "carried by the " + animalWord(leg.a)));
+    if (pool.length > 1) {
+      var ch = button(leg.showPick ? "keep it" : "change", "corpse-change", function () { leg.showPick = !leg.showPick; render(); });
+      ch.setAttribute("aria-expanded", leg.showPick ? "true" : "false");
+      carried.appendChild(document.createTextNode(" · "));
+      carried.appendChild(ch);
+    }
+    panel.appendChild(carried);
+    if (!leg.showPick) { chips.hidden = true; }
     pool.forEach(function (a) {
       var b = button(animalWord(a), "corpse-animal", function () {
         if (leg.a === a) { return; }
         leg.a = a;
+        leg.chosen = true;
+        leg.showPick = false;
         store(DRAFT, { corpse: corpse, leg: leg });
         if (leg.stops.length >= legMax(a)) { leg.stops = leg.stops.slice(0, legMax(a)); lastOffers = []; render(); return; }
         refresh();
@@ -645,13 +661,12 @@
 
   // At the fold: who carried it, if more than one was met; the squirrel's burial.
   function foldLeg() {
-    var choices = leg.met.filter(function (a) { return animalsOf(corpse).indexOf(a) < 0; });
-    if (choices.indexOf(leg.a) < 0) { choices.unshift(leg.a); }
-    if (choices.length > 1 && !leg.chosen) {
-      ask("Who carried this leg?", choices.map(function (a) {
-        return { text: animalWord(a) + " — " + rule(a), fn: function () { leg.a = a; leg.chosen = true; if (leg.stops.length > legMax(a)) { leg.stops = leg.stops.slice(0, legMax(a)); } foldLeg(); } };
-      }));
-      return;
+    // Who carried it is chosen, not asked: the animal followed, else the one
+    // whose artist the leg met most (a quiet "change" under the animal lets
+    // the player choose before folding).
+    if (!leg.chosen) {
+      var a = carrier(leg);
+      if (a !== leg.a) { leg.a = a; if (leg.stops.length > legMax(a)) { leg.stops = leg.stops.slice(0, legMax(a)); } }
     }
     if (leg.a === "squirrel" && !leg.buried.length && leg.stops.length > 1) {
       ask("The squirrel buries one", leg.stops.map(function (s, i) {
@@ -660,6 +675,19 @@
       return;
     }
     folded();
+  }
+
+  function carrier(l) {
+    var have = animalsOf(corpse), f = window.Land && Land.following && Land.following();
+    if (f && f.cast && have.indexOf(f.cast) < 0 && (l.met || []).indexOf(f.cast) >= 0) { return f.cast; }
+    var n = {};
+    [edgeOf(corpse)].concat(l.stops).forEach(function (s) {
+      if (!s) { return; }
+      metHere(s.k).forEach(function (a) { if (have.indexOf(a) < 0) { n[a] = (n[a] || 0) + 1; } });
+    });
+    var best = l.a, most = n[l.a] || 0;
+    Object.keys(n).forEach(function (a) { if (n[a] > most) { best = a; most = n[a]; } });
+    return best;
   }
 
   function bury(i) {
@@ -683,6 +711,7 @@
   function folded() {
     delete leg.met;
     delete leg.chosen;
+    delete leg.showPick;
     corpse.legs.push(leg);
     if (leg.a === "slug") {
       var list = stored(TRAILS, []);
@@ -1173,7 +1202,15 @@
       routeAt = performance.now();
       kick();
       var ids = animalsOf(c);
-      Promise.all([makeChimera(ids, c.id, c), sentenceOf(c)]).then(function (g) {
+      // The world turned and drawn back until all three legs are in view,
+      // lit at once; only then does the chimera come out of the fold.
+      var all = [];
+      route.forEach(function (pts) { pts.forEach(function (p) { all.push(p); }); });
+      var framed = false;
+      try { framed = !!(window.Land && Land.frame && Land.frame(all, 120000)); } catch (e) { framed = false; }
+      var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var look = new Promise(function (r) { window.setTimeout(r, framed && !still ? 3400 : 0); });
+      Promise.all([makeChimera(ids, c.id, c), sentenceOf(c), look]).then(function (g) {
         var ch = g[0], sn = g[1];
         c.title = sn ? sn.text : c.title;
         stage.hidden = false;
@@ -1198,7 +1235,13 @@
           walker.lit = null;
           walker.w0 = performance.now();
           part.textContent = "";
-          if (ch.real) { try { ch.real.walk(route, 13000 * slow); } catch (e) { /* it stays where it settled */ } }
+          // It holds the rest none of the three would hold alone a while, large, then walks the route.
+          if (ch.real) {
+            saidTimers.push(window.setTimeout(function () {
+              if (walker === null || walker.c !== c) { return; }
+              try { ch.real.walk(route, 13000 * slow); } catch (e) { /* it stays where it settled */ }
+            }, 4200));
+          }
           if (sn) {
             var bits = [sn.s, " " + sn.v, " " + (sn.o.art ? sn.o.art + " " : "")];
             SAY_AT.forEach(function (ms, i) {
@@ -1257,6 +1300,7 @@
     if (stageCv) { stageCv.hidden = true; }
     if (stage) { stage.hidden = true; stage.dataset.on = ""; var p = stage.querySelector(".corpse-code"); if (p) { p.remove(); } }
     if (walker && walker.ch && walker.ch.real) { try { walker.ch.real.close(); } catch (e) { /* gone */ } }
+    if (window.Land && Land.unframe) { Land.unframe(); }
     walker = null;
     var mine = route;
     window.setTimeout(function () { if (route === mine) { route = null; } }, 20000);

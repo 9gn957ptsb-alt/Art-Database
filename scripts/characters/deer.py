@@ -115,15 +115,22 @@ def antler_paint(x, y, light, i, j):
 
 def head_side(cx, cy, f=1, dy=0.0):
     cy += dy
-    skull = union(ellipse(cx, cy, 2.0, 1.7), capsule((cx + f * 0.8, cy + 0.4), (cx + f * 3.6, cy + 1.6), 1.2, 0.8))
+    K = HEAD_K                  # a chimera's head is the stag's head grown to the bodies it meets
+    skull = union(ellipse(cx, cy, 2.0 * K, 1.7 * K),
+                  capsule((cx + f * 0.8 * K, cy + 0.4 * K), (cx + f * 3.6 * K, cy + 1.6 * K), 1.2 * K, 0.8 * K))
 
     def paint(x, y, light, i, j):
-        if math.hypot(x - (cx + f * 3.4), y - (cy + 1.5)) < 0.8:
+        if math.hypot(x - (cx + f * 3.4 * K), y - (cy + 1.5 * K)) < 0.8 * K:
             return "k"
         return BASE(x, y, light, i, j)
-    ear = triangle((cx - f * 1.2, cy - 0.6), (cx - f * 0.2, cy - 1.2), (cx - f * 2.8, cy - 2.6))
-    return [Part(antlers(cx - f * 0.2, cy - 1.4, f), antler_paint, 3), Part(ear, BASE, 4), Part(skull, paint, 5),
-            Part(ellipse(cx + f * 0.8, cy - 0.3, 0.45, 0.4), lambda *a: "y", 6)]
+    ear = triangle((cx - f * 1.2 * K, cy - 0.6 * K), (cx - f * 0.2 * K, cy - 1.2 * K), (cx - f * 2.8 * K, cy - 2.6 * K))
+    eye = [Part(ellipse(cx + f * 0.8 * K, cy - 0.3 * K, 0.45 * K, 0.4 * K), lambda *a: "y", 6)]
+    if K > 1:
+        # the eye given its dark, and the stag's pale muzzle and throat patch
+        eye = [Part(ellipse(cx + f * 0.8 * K, cy - 0.3 * K, 0.62, 0.55), lambda *a: "k", 6),
+               Part(ellipse(cx + f * 0.65 * K, cy - 0.45 * K, 0.3, 0.3), lambda *a: "y", 7),
+               Part(ellipse(cx + f * 3.0 * K, cy + 2.0 * K, 0.9, 0.5), lambda *a: "W", 6)]
+    return [Part(antlers(cx - f * 0.2 * K, cy - 1.4 * K, f), antler_paint, 3), Part(ear, BASE, 4), Part(skull, paint, 5)] + eye
 
 
 def head_front(cx, cy):
@@ -137,6 +144,7 @@ def head_front(cx, cy):
 
 
 NECK_K = 1.0                   # the neck's thickness (a chimera's head is given the stag's autumn neck)
+HEAD_K = 1.0                   # the head's size (a chimera's head, a little more than life)
 
 
 def neck(a, b, dy=0.0):
@@ -239,12 +247,14 @@ def roar_parts(k):
 
 
 def rig(pose, k=0, slot="body"):
-    global NECK_K
-    NECK_K = 1.45 if slot == "head" else 1.0
+    global NECK_K, HEAD_K
+    NECK_K = 1.75 if slot == "head" else 1.0
+    HEAD_K = 1.3 if slot == "head" else 1.0
     try:
         return rig_(pose, k)
     finally:
         NECK_K = 1.0
+        HEAD_K = 1.0
 
 
 def rig_(pose, k=0):

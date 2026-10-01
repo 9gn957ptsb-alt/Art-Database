@@ -50,7 +50,20 @@ def head(cx, cy, front=False):
 
     def paint(x, y, light, i, j):
         return "k" if y < cy - 4.2 else "R"
+    if HEAD:
+        # A chimera's head is seen on its own: the red squirrel's own marks,
+        # cut as Matisse cut them — the ear's long dark tuft, a cream ring
+        # round the eye, the cream of the chin, the nose a dark spot.
+        tuft = union(ear, triangle((cx - 2.0, cy - 4.4), (cx - 0.4, cy - 4.8), (cx - 1.9, cy - 8.0)))
+        return [Part(union(tuft, skull), lambda x, y, l, i, j: "k" if y < cy - 4.6 else "R", 3),
+                Part(ellipse(cx + 2.4, cy + 1.6, 1.5, 0.8), BELLY, 6),
+                Part(ellipse(cx + 1.0, cy - 0.5, 1.0, 0.95), BELLY, 7),
+                Part(ellipse(cx + 1.1, cy - 0.5, 0.6, 0.62), DARK, 8),
+                Part(ellipse(cx + 3.5, cy + 0.5, 0.45, 0.4), DARK, 8)]
     return [Part(union(ear, skull), paint, 3), Part(ellipse(cx + 1.0, cy - 0.4, 0.55, 0.55), DARK, 8)]
+
+
+HEAD = False          # drawing a chimera's head (rig, slot "head")
 
 
 def tail(points, r0=1.7, r1=2.5):
@@ -142,6 +155,7 @@ def poses():
 
 SEAMS = {"neck": (22.8, 18.0), "hip": (17.4, 18.6)}
 CHIMERA_SCALE = 1.45
+CHIMERA_SLOT_K = {"hind": 0.78}   # its tail, as a chimera's hindquarters, is not to outweigh the rest
 DEEP = "."
 
 
@@ -169,10 +183,23 @@ def bury_parts(k):
 
 
 def rig(pose, k=0, slot="body"):
-    parts, drop = rig_(pose, k)
+    global HEAD
+    HEAD = slot == "head"
+    try:
+        parts, drop = rig_(pose, k)
+    finally:
+        HEAD = False
     if slot == "body":
-        # Cut out of the body, the cream belly reads as a face: the body is all coat.
+        # Cut out of the body, the cream belly reads as a face: the body is all
+        # coat, in two papers, the darker laid over the back as Matisse laid
+        # one cut colour on another, so the body has a top and a side.
         parts = [p for p in parts if p.paint is not BELLY]
+        trunk = [p for p in parts if p.paint is COAT and getattr(p, "limb", None) is None]
+        if trunk:
+            body = trunk[0]
+            back = Part(lambda x, y, b=body.sdf: max(b(x, y), y - (16.6 if pose != "rest" else 17.6) - 0.35 * math.sin(x * 0.9)),
+                        lambda *a: "d", body.group + 0.5)
+            parts.append(back)
     return parts, drop
 
 

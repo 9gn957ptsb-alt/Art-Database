@@ -304,9 +304,16 @@ def toss_parts(k):
     return parts
 
 
-def rig(pose, k=0):
+def rig(pose, k=0, slot="body"):
     """The whole fox in a chimera's pose, as parts, and how far it is lowered."""
     if pose == "act":
+        # Cut at the folds, the whole fox's arc would fling its part off the
+        # others: in a chimera the leap is the same crouch, a smaller lift
+        # (the part rises, tipped up), and the dive a short tip nose-down.
+        if k == 2:
+            return turned(trot_parts(0.25, (0.6, 0.1, 0.6, 0.1), up=True), -0.16, (20.0, 14.0), (0.0, -2.2)), 0.0
+        if k == 3:
+            return turned(trot_parts(0.5, (0.85, 0.35, 0.85, 0.35), up=False), 0.22, (20.0, 14.0), (0.6, 0.0)), 0.0
         return pounce_parts(k), (1.2 if k == 1 else 0.0)
     if pose == "ritual":
         return gekker_parts(k), 0.0

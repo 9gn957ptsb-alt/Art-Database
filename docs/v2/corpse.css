@@ -247,3 +247,8 @@
   font-size: 12px;
 }
 @media (prefers-reduced-motion: reduce) { .corpse-word { animation: none; } }
+
+/* Who carries the leg: chosen for you, changed quietly. */
+.corpse-carried { margin: 6px 0 2px; font-family: var(--mono, monospace); font-size: 10px; letter-spacing: 0.06em; color: rgba(234, 223, 205, 0.72); }
+.corpse-change { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.corpse-animals[hidden] { display: none; }

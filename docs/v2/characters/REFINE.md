@@ -272,7 +272,14 @@ three parts the day it is drawn**:
   one as body and as hindquarters (`bison,<new>,fox`, `fox,deer,<new>`):
   each must read as one creature, the masses running on across the folds.
   Fix the part's drawing or its `SEAMS`, never the agreed marks — changing
-  `NECK`/`HIP` redraws every chimera.
+  `NECK`/`HIP` redraws every chimera. A part may be drawn differently for
+  its slot (`rig(..., slot)`): the stag's head and neck are grown (`HEAD_K`
+  1.3, `NECK_K` 1.75) with a dark eye and pale muzzle, so a stag's head does
+  not read thin on a bison's body; the squirrel's head carries its own marks
+  (the ear's long tuft, a cream eye-ring, the chin, the nose), its body two
+  papers (a darker back over the coat), and its tail as hindquarters is
+  scaled down (`CHIMERA_SLOT_K`); the fox's pounce, cut at the folds, is a
+  smaller lift and a short tip, not the whole fox's arc.
 
 **The ethogram** (each character's row in `characters.json`): its documented
 behaviours, never invented — `name`, `what`, `source` (a published study or
@@ -284,10 +291,47 @@ a chimera: `head` an adjective ("Bowed"), `body` a noun ("Mantle"), `hind` a
 clause ("That Leaves a Trace") — "The Bowed Mantle That Leaves a Trace" —
 and `gaze`, `carriage`, `pace`.
 
+**The canonical chimera, drawn fine** (`scripts/characters/canonical.py`,
+`docs/v2/characters/parts/canonical/bison-eagle-slug.json`). The bison, eagle,
+slug chimera is not cut from the parts: it is a drawing of its own, traced
+from references made with OpenAI's gpt-image-2.5 (one design, then every pose
+an *edit* of it, so all of them stay in register: stand, present (the wing
+raised), mantle, wind (the head into the wind, a breath of vapour), walkA,
+passB, walkB, passA, look, rest, settle) and kept outside the repository.
+The tracer takes each reference down to two grids — large, 8 source px a
+cell, about 190 cells long, for the unfolding (≤ 3 CSS px a cell); small, 21
+px a cell, about 73 long, for the city and the globe (4/3 CSS px) — and to a
+restrained palette of the three artists' inks (`INKS`: de Kooning's cave
+dark, umbers, burnt and pale ochre, warm grey; Warhol's plum plates, his
+yellow key, the feet; Kapoor's four pigment bands, the violet foot, the
+trace). Each cell first takes an artist (whose inks most of its pixels are
+nearest, the dark ones abstaining; nothing right of `hip` is the slug's),
+then one of that artist's inks. Then by hand, in code: orphans folded into
+their neighbours, stray hairs and pinholes cleaned; Warhol's line found where
+the reference draws it thin, kept as `key` (round the plates, not round the
+feet, not where the head meets them) and `inner` (the feathers' edges,
+printed fainter), and printed a cell off register on the page; the eye found
+by its light (a dark round it, its light at the upper left; small, one dark
+cell and its light before it); talons hooked at each toe's end; the belly
+behind the slug's cut filled with the deepest plate; the folds where the
+stand puts them (`largeFolds`, `smallFolds`), every pose shifted (`dx`) so its
+slug meets the hip's fold there. Rows are run-length coded, so no ink is a
+digit. The page lays over the poses what lives: a blink, a breath (the back
+up a cell), the slug's ripple (a crest a cell high running back, the foot
+paled under it) and its trace drying in steps behind it.
+
+To redraw it: generate or edit references (the edit endpoint keeps the
+register; at most five reference images a minute), add a pose to `POSES`,
+`python3 scripts/characters/canonical.py REF_DIR`, and check with
+`preview_character.js bison,eagle,slug out.png --fine`. A new pose the page
+should use goes into `fineNow` in characters.js. Another triple drawn fine is
+another file and one more key in `FINE`.
+
 **Refining the chimera.** Each day, after the three characters, take the
 canonical chimera (bison, eagle, slug) and one other triple at random, and
 refine as the characters are refined: render them
-(`preview_character.js bison,eagle,slug`), list the five biggest flaws
+(`preview_character.js bison,eagle,slug --fine` for the canonical one, its
+references beside it), list the five biggest flaws
 against the references (the artist's own works; the generated design
 references are kept outside the repository) and against the three artists'
 hands (de Kooning's leaning strokes, Warhol's flat plates and off-register

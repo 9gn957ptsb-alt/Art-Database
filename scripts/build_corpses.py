@@ -56,8 +56,8 @@ def sentence(legs, titles, towns):
                     if v in VERB and (best is None or VERB_ORDER.index(v) < VERB_ORDER.index(best)):
                         best = v
     t = short_title(titles.get(legs[2]["stops"][-1][0], "")) or "Untitled"
-    art = "an " if t.lower().startswith("untitled") else "" if t.split(" ")[0].lower() in ("the", "a", "an") else "the "
-    return "%s %s %s%s." % (towns[legs[0]["stops"][0][1]], VERB[best or "other"], art, t)
+    # No article before a title: "London sold The Battle of Love." (corpse.js keeps the same rule).
+    return "%s %s %s." % (towns[legs[0]["stops"][0][1]], VERB[best or "other"], t)
 
 
 def main():

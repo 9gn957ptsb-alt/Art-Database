@@ -117,6 +117,8 @@ class Rig:
             "hind": self.base * clamp(math.sqrt(rh), 0.82, 1.22),
             "body": self.base * clamp(math.sqrt(math.sqrt(rn * rh)), 0.82, 1.22),
         }
+        for slot, k in getattr(m, "CHIMERA_SLOT_K", {}).items():
+            self.s[slot] *= k
         self.cols = max(9, int(round((nx - hx) * self.s["body"] * RES)))
         self.len = self.cols / RES
 

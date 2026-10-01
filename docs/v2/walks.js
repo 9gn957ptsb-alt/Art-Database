@@ -923,6 +923,45 @@
       .observe(found, { childList: true });
   }
 
+  /* The strips (a walk's, an exploration's and its relay's offers) stand
+     clear of the work's picture in the art view, and of the column beside
+     it: where they are if nothing is in the way; else narrowed to the room
+     left of the picture, else beside it on the right (short of the column),
+     else under it, else at the foot of the window. At least 180 px wide.
+     Checked twice a second while one shows. */
+  function clearOfPicture() {
+    var strips = document.querySelectorAll(".walk-strip");
+    var pic = document.getElementById("art-plate");
+    var r = pic && !pic.hidden ? pic.getBoundingClientRect() : null;
+    if (r && (!r.width || !r.height)) { r = null; }
+    var colEl = document.querySelector(".art[data-on=\"true\"] .art-body");
+    var col = colEl && window.getComputedStyle(colEl).visibility !== "hidden" ? colEl.getBoundingClientRect() : null;
+    var colLeft = col && col.width && col.left > (r ? r.right : 0) ? col.left : window.innerWidth - 16;
+    Array.prototype.forEach.call(strips, function (st) {
+      if (st.hidden) { return; }
+      st.style.maxWidth = ""; st.style.top = ""; st.style.bottom = ""; st.style.left = "";
+      if (!r) { return; }
+      var hit = function () {
+        var b = st.getBoundingClientRect();
+        return b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom;
+      };
+      if (!hit()) { return; }
+      var b0 = st.getBoundingClientRect();
+      if (r.left - b0.left - 12 >= 180) { st.style.maxWidth = Math.floor(r.left - b0.left - 12) + "px"; if (!hit()) { return; } }
+      st.style.maxWidth = "";
+      if (colLeft - r.right - 24 >= 180) {
+        st.style.left = Math.round(r.right + 12) + "px";
+        st.style.maxWidth = Math.floor(Math.min(380, colLeft - r.right - 24)) + "px";
+        if (!hit()) { return; }
+      }
+      st.style.left = ""; st.style.maxWidth = "";
+      if (r.bottom + 8 + b0.height <= window.innerHeight - 16) { st.style.top = Math.round(r.bottom + 8) + "px"; return; }
+      st.style.top = "auto";
+      st.style.bottom = "16px";
+    });
+  }
+  window.setInterval(function () { if (document.querySelector(".walk-strip:not([hidden])")) { clearOfPicture(); } }, 500);
+
   window.Walks = {
     play: play,
     kept: kept,

@@ -18,8 +18,10 @@ idea of ritual and using the animals to generate games".
   it came from, the cities next door, a squirrel's cache, a slug's trail.
 - **The animal.** Each leg is carried by an animal: the one followed, else the
   animals of artists whose works have been in the edge's city (marked), else
-  any not yet in this corpse. If the leg meets more than one, the player
-  chooses at the fold.
+  any not yet in this corpse. It is chosen for the player, never asked: the
+  animal followed, else the one whose artist the leg has met most (counted
+  over its edge and its stops); "carried by the bison · change" under the
+  fold is the quiet way to choose another before folding.
 - **The instincts** (one rule each, said in one line):
   - fox — mousing pounces face north-east (Červený et al. 2011): offers lean
     north-east.
@@ -41,8 +43,15 @@ idea of ritual and using the animals to generate games".
     the month's (`head@cast`, `head@velvet` in `characters/parts/deer.json`).
 - **The sentence.** Leg one's first city, the rarest verb in leg two's record
   (sold, offered, made, held, kept, showed, listed), leg three's last title:
-  "Sarajevo showed the *Clouds, Sun and Sea*." True in parts, never whole.
-- **The unfolding.** The whole route at once on the globe, each leg its tone;
+  "Sarajevo showed *Clouds, Sun and Sea*." No article before a title (a title
+  is a name: "London sold *The Battle of Love*", "held *Under a Palm Tree*");
+  `build_corpses.py` keeps the same rule. True in parts, never whole.
+- **The unfolding.** The whole route at once on the globe, each leg its tone,
+  the world first turned, rolled and drawn back until all three legs are in
+  view (`Land.frame(points)`, held still while the corpse is out; `Land.unframe`
+  when it is put away), and only after 3.4 s of that the chimera, presented
+  large at the middle over a calm ground (the world dimmed behind it, a band
+  of its soil under its feet); it holds its settled rest 4.2 s before it walks;
   the chimera (`Characters.chimera([head, body, hind], {seed, month})`, else
   drawn here from `characters/parts/`) is presented large, each part acting
   out its parent's instinct in turn, then walks the route; the sentence comes

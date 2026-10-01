@@ -4623,6 +4623,56 @@
     swingTo(dealSeat(), FLY * PHI * PHI, "drift");
   }
 
+  /* Framing a route (the exquisite corpse's unfolding, corpse.js, through
+     Land.frame): the world turned so the route's middle faces you, rolled
+     so it stands a little above the window's middle, and drawn back, once,
+     until every point of it is on the screen with room round it. The world
+     holds still while it is framed (no drift) for `hold` ms. */
+  var framing = null;
+
+  function frameRoute(pts, hold) {
+    if (place || flying || !pts || !pts.length) { return false; }
+    var x = 0, y = 0, z = 0;
+    pts.forEach(function (p) {
+      var la = p[0] * RAD, lo = p[1] * RAD;
+      x += Math.cos(la) * Math.cos(lo); y += Math.cos(la) * Math.sin(lo); z += Math.sin(la);
+    });
+    var lat = Math.atan2(z, Math.sqrt(x * x + y * y)), lon = Math.atan2(y, x);
+    var now = performance.now();
+    framing = { pts: pts, lat: lat, lon: lon, at: now, until: now + (hold || 30000), sized: 0 };
+    wanted = lon;
+    nextSwing = now + (hold || 30000);
+    return true;
+  }
+
+  function stepFraming(now) {
+    if (!framing) { return; }
+    if (place || flying || turning || pinch || now > framing.until) { framing = null; return; }
+    nextSwing = Math.max(nextSwing, now + 1500);
+    var p = project(framing.lat, framing.lon);
+    if (p.z > 0) {
+      var err = (p.y - H * 0.42) / Math.max(R, 1);
+      if (Math.abs(err) > 0.002) { lean(tilt - Math.max(-0.03, Math.min(0.03, err * 0.25))); reframe(); }
+    }
+    // Drawn back until it all fits: twice, a beat apart, as the roll settles.
+    if (!swing && framing.sized < 2 && now - framing.at > 700 + framing.sized * 1400) {
+      framing.sized += 1;
+      var x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, behind = 0;
+      framing.pts.forEach(function (q) {
+        var s2 = project(q[0] * RAD, wrap(q[1] * RAD));
+        if (s2.z <= 0.05) { behind += 1; return; }
+        x0 = Math.min(x0, s2.x); x1 = Math.max(x1, s2.x); y0 = Math.min(y0, s2.y); y1 = Math.max(y1, s2.y);
+      });
+      var k = 1;
+      if (behind) { k = 0.62; }
+      else if (x1 > x0 || y1 > y0) { k = Math.min(1.25, (W * 0.72) / Math.max(1, x1 - x0), (H * 0.5) / Math.max(1, y1 - y0)); }
+      if (Math.abs(k - 1) > 0.06) {
+        var size = Math.max(SIZE_FAR, Math.min(SIZE_NEAR, seat.size * k));
+        swingTo({ size: size, dx: 0, dy: 0 }, FLY * PHI, "drift");
+      }
+    }
+  }
+
   /* A press on a small world fires it at you, round the point pressed. */
   function pressGlobe(x, y) {
     if (place || flying || swing || deckMode) { return false; }
@@ -5326,6 +5376,7 @@
 
   function frame(now) {
     autoSwing(now);
+    stepFraming(now);
     stepSwing(now);
     sharpen(now);
     // While collages are laid over it the world holds still: it is behind
@@ -13849,7 +13900,10 @@
       return { from: journey.fromKey, to: journey.toKey, u: route.u, done: route.doneAt !== null,
                passed: route.towns.map(function (t) { return t.key; }) };
     },
-    thread: function (id) { openArt({ thread: id }); }
+    thread: function (id) { openArt({ thread: id }); },
+    // The corpse (corpse.js): the world turned, rolled and drawn back so a route ([[lat, lon], ...]) is all in view.
+    frame: function (pts, hold) { return frameRoute(pts, hold); },
+    unframe: function () { framing = null; }
   };
 
   function backName(up) {

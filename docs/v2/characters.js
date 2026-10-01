@@ -1624,6 +1624,338 @@
     return chCache[key];
   }
 
+  /* ---- the canonical chimera, drawn fine -------------------------------------
+
+     "The Bowed Mantle That Leaves a Trace" (the bison's head after de
+     Kooning, the eagle's body after Warhol, the slug's hindquarters after
+     Kapoor) is drawn twice over, cell by cell (parts/canonical/, by
+     scripts/characters/canonical.py from references kept out of the
+     repository): large, about 190 cells long, for its unfolding and
+     whenever it is presented, and small, about 70, for walking in a city
+     and along the globe. Each pose is a whole drawing, the three parts in
+     register: standing, the wing raised (present), mantled, the head into
+     the wind, four of a walk, looking at you, lying down, and the rest none
+     of the three would hold alone (settle). Living things are laid over
+     them here: a blink, a breath, the slug's foot rippling, its trace
+     drying in steps behind it. Each cell is its artist's ink, worked a
+     little with the soil it stands on: de Kooning's strokes keep a grain,
+     Warhol's plates and Kapoor's bands are flat; Warhol's key line is
+     printed a cell off register. The folds are creases of the paper: a
+     pale line, the cells just before it a step darker, and a few dots of
+     it above and below the figure. */
+
+  var FINE = { "bison-eagle-slug": true };
+  var fineFiles = {};
+  var WALK_FINE = ["walkA", "passB", "walkB", "passA"];
+
+  function unrle(s) {
+    var out = [], n = "";
+    for (var i = 0; i < s.length; i += 1) {
+      var c = s.charAt(i);
+      if (c >= "0" && c <= "9") { n += c; continue; }
+      var k = n ? parseInt(n, 10) : 1;
+      for (var q = 0; q < k; q += 1) { out.push(c); }
+      n = "";
+    }
+    return out;
+  }
+
+  function fineOf(ids) {
+    var key = ids.join("-");
+    if (!FINE[key]) { return Promise.resolve(null); }
+    if (!fineFiles[key]) {
+      fineFiles[key] = get(BASE + "parts/canonical/" + key + ".json").then(function (J) {
+        var F = { id: key, rgb: {}, slot: J.slots, memo: {} };
+        Object.keys(J.inks).forEach(function (k) { F.rgb[k] = rgb(J.inks[k]); });
+        ["large", "small"].forEach(function (sc) {
+          var S = { frames: {}, folds: J[sc + "Folds"], w: 0, h: 0, ground: 0 };
+          Object.keys(J[sc]).forEach(function (name) {
+            var fr = J[sc][name], rows = fr.rows.map(unrle);
+            var w = 0;
+            rows.forEach(function (r) { w = Math.max(w, r.length); });
+            rows.forEach(function (r) { while (r.length < w) { r.push("."); } });
+            S.frames[name] = { rows: rows, key: fr.key, inner: fr.inner || [], ground: fr.ground, dx: fr.dx || 0 };
+            S.w = Math.max(S.w, w); S.h = Math.max(S.h, rows.length); S.ground = fr.ground;
+          });
+          // Where the slug's tail ends, on the ground: where its trace begins.
+          var st = S.frames.stand, tail = S.w;
+          for (var j = Math.max(0, st.ground - 3); j < Math.min(st.rows.length, st.ground + 1); j += 1) {
+            st.rows[j].forEach(function (k, i) { if (k !== "." && F.slot[k] === 2) { tail = Math.min(tail, i); } });
+          }
+          S.tail = tail;
+          F[sc] = S;
+        });
+        return F;
+      }).catch(function () { return null; });
+    }
+    return fineFiles[key];
+  }
+
+  // A pose's cells with the living changes laid over: a blink, a breath, the slug's ripple (0-7).
+  function fineCells(F, sc, name, v) {
+    var S = F[sc], fr = S.frames[name] || S.frames.stand;
+    var mk = sc + name + (v.blink ? "b" : "") + (v.breath ? "r" : "") + (v.ripple >= 0 ? "w" + v.ripple : "");
+    if (F.memo[mk]) { return F.memo[mk]; }
+    var rows = fr.rows.map(function (r) { return r.slice(); });
+    var h = rows.length, w = rows[0].length, g = fr.ground;
+    var slotOf = function (k) { return k === "." ? -1 : F.slot[k]; };
+    if (v.blink) {
+      // The lid comes down: the eye's dark and light become the coat, a dark lash under.
+      for (var j = 0; j < h; j += 1) {
+        for (var i = 0; i < w; i += 1) {
+          if (rows[j][i] === "K" || rows[j][i] === "W") {
+            rows[j][i] = j + 1 < h && (rows[j + 1][i] === "K" || rows[j + 1][i] === "W") ? "C" : "A";
+          }
+        }
+      }
+    }
+    if (v.breath) {
+      // The eagle's back rises a cell (not its feet, not the head).
+      var cut = g - Math.round(g * 0.18);
+      var out = rows.map(function (r) { return r.slice(); });
+      for (var j2 = 1; j2 < cut; j2 += 1) {
+        for (var i2 = 0; i2 < w; i2 += 1) {
+          var k2 = rows[j2][i2];
+          if (slotOf(k2) === 1 && "lmntu".indexOf(k2) < 0) { out[j2 - 1][i2] = k2; }
+        }
+      }
+      rows = out;
+    }
+    if (v.ripple >= 0) {
+      // The slug's foot ripples: a long wave runs back along it, its crest
+      // lifting the back a cell and paling the foot's edge under it.
+      var hip = S.folds.hip - fr.dx, lam = Math.max(8, Math.round(w * 0.11));
+      var out3 = rows.map(function (r) { return r.slice(); });
+      for (var i3 = 0; i3 < Math.min(w, hip - 1); i3 += 1) {
+        var ph = Math.sin((i3 / lam) * Math.PI * 2 + v.ripple * Math.PI / 4);
+        if (ph < 0.7) { continue; }
+        for (var j3 = 1; j3 < g; j3 += 1) {
+          if (slotOf(rows[j3][i3]) === 2) {
+            if (rows[j3 - 1][i3] === ".") { out3[j3 - 1][i3] = rows[j3][i3]; }
+            break;
+          }
+        }
+        for (var j5 = g + 1; j5 > 0; j5 -= 1) {
+          if (rows[j5] && rows[j5][i3] === "O") { out3[j5][i3] = "R"; break; }
+        }
+      }
+      rows = out3;
+    }
+    F.memo[mk] = rows;
+    return rows;
+  }
+
+  var FINE_OX = 2, FINE_OY = 1;           // room round it for the key line off register
+
+  function fineSprite(o, sc, name, v, dir, px) {
+    var F = o.fine, ch = o.ch, S = F[sc], fr = S.frames[name] || S.frames.stand;
+    var fold = ch.folded ? ch.folded.join("") : "";
+    var key = "F" + sc + name + JSON.stringify(v) + dir + "|" + px + "|" + (ch.here ? ch.here.soil : "") + fold;
+    if (chCache[key]) { return chCache[key]; }
+    var rows = fineCells(F, sc, name, v);
+    var W = S.w + FINE_OX * 2, H = S.h + FINE_OY + 1;
+    var cv = document.createElement("canvas");
+    cv.width = W * px;
+    cv.height = H * px;
+    var x = cv.getContext("2d");
+    var soil = ch.here ? ch.here.soilRgb : [120, 100, 80];
+    var paper = [234, 223, 205];
+    var folds = [S.folds.hip, S.folds.neck];
+    var hidden = function (k) { return ch.folded && ch.folded[F.slot[k]]; };
+    var X = function (i) { var c = i + fr.dx + FINE_OX; return dir > 0 ? c : W - 1 - c; };
+    var top = H, bottom = 0;
+    for (var j = 0; j < rows.length; j += 1) {
+      for (var i = 0; i < rows[j].length; i += 1) {
+        var k = rows[j][i];
+        if (k === "." || hidden(k)) { continue; }
+        var slot = F.slot[k], col = mix(F.rgb[k], soil, slot === 0 ? 0.1 : 0.05);
+        var c = i + fr.dx;
+        if (folds.indexOf(c) >= 0) { col = mix(col, paper, 0.11); }
+        else if (folds.indexOf(c + 1) >= 0) { col = mix(col, [0, 0, 0], 0.1); }
+        top = Math.min(top, j); bottom = Math.max(bottom, j);
+        x.fillStyle = css(col, slot === 0 ? (hash(i, j, 7) - 0.5) * 12 : 0);
+        x.fillRect(X(i) * px, (j + FINE_OY) * px, px, px);
+      }
+    }
+    // Warhol's key line, a cell off register (up, and back from the way it faces).
+    if (!hidden("Y")) {
+      // The drawn line inside the plates (the feathers' edges) printed fainter than the one round it.
+      x.fillStyle = css(mix(mix(F.rgb.Y, F.rgb.c, 0.38), soil, 0.05));
+      fr.inner.forEach(function (p) {
+        var r1 = p[1] - 1;
+        if (r1 < 0) { return; }
+        x.fillRect(X(p[0] - 1) * px, (r1 + FINE_OY) * px, px, px);
+      });
+      x.fillStyle = css(mix(F.rgb.Y, soil, 0.05));
+      fr.key.forEach(function (p) {
+        var c2 = p[0] - 1, r2 = p[1] - 1;
+        if (r2 < 0 || (rows[p[1]] && rows[p[1]][p[0]] !== "." && hidden(rows[p[1]][p[0]]))) { return; }
+        x.fillRect(X(c2) * px, (r2 + FINE_OY) * px, px, px);
+      });
+    }
+    // The folds: a few dots of the crease above and below the figure.
+    if (top <= bottom) {
+      folds.forEach(function (c3) {
+        for (var j4 = Math.max(0, top - 4); j4 <= Math.min(S.h, bottom + 2); j4 += 2) {
+          var r4 = rows[j4];
+          if (r4 && r4[c3 - fr.dx] && r4[c3 - fr.dx] !== "." && !hidden(r4[c3 - fr.dx])) { continue; }
+          x.globalAlpha = 0.14;
+          x.fillStyle = css(paper);
+          x.fillRect(X(c3 - fr.dx) * px + Math.floor(px / 3), (j4 + FINE_OY) * px, Math.max(1, Math.round(px / 3)), px);
+        }
+      });
+      x.globalAlpha = 1;
+    }
+    var keys = Object.keys(chCache);
+    if (keys.length > 240) { keys.slice(0, 120).forEach(function (k5) { delete chCache[k5]; }); }
+    chCache[key] = { cv: cv, w: W, h: H, ground: fr.ground + FINE_OY };
+    return chCache[key];
+  }
+
+  // Which pose, and what lives over it, now.
+  function fineNow(o, now) {
+    var t = now - o.since, v = { blink: false, breath: false, ripple: -1 };
+    var fps = Math.max(3, o.pace.fps * 0.55);
+    var step = Math.floor(now / (1000 / fps));
+    if (o.state === "walk") {
+      v.ripple = (64 - (step % 8)) % 8;
+      return { name: WALK_FINE[step % 4], v: v };
+    }
+    if (o.state === "act") {
+      var u = t / o.actMs;
+      if (o.actSlot === 0) { return { name: u < 0.14 || u > 0.88 ? "stand" : "wind", v: v }; }
+      if (o.actSlot === 1) { return { name: u < 0.12 ? "stand" : u < 0.26 || u > 0.9 ? "present" : "mantle", v: v }; }
+      v.ripple = (64 - (step % 8)) % 8;
+      return { name: "stand", v: v };
+    }
+    if (o.state === "settle") { return { name: "settle", v: { blink: false, breath: Math.floor(now / 1700) % 2 === 1, ripple: -1 } }; }
+    if (o.state === "rest") { return { name: "rest", v: v }; }
+    if (o.state === "present") { return { name: "present", v: v }; }
+    if (o.state === "ritual") { return { name: Math.floor(t / 420) % 2 ? "wind" : "stand", v: v }; }
+    if (o.state === "pressed") {
+      if (t > 3600 && t < 5200) { v.ripple = (64 - (step % 8)) % 8; }
+      return { name: t > 450 && t < 3600 ? "look" : t >= 3600 && t < 4300 ? "present" : "stand", v: v };
+    }
+    // Standing: it breathes; now and then a blink, the wing raised and settled, a look.
+    var idle = o.idle;
+    if (now > idle.next) {
+      var r = Math.random();
+      idle.name = r < 0.45 ? "blink" : r < 0.75 ? "present" : r < 0.9 ? "look" : "wind";
+      idle.until = now + ({ blink: 170, present: 1100, look: 2200, wind: 1500 })[idle.name];
+      idle.next = now + Math.pow(PHI, 3) * 1000 * (0.5 + Math.random() * 0.8);
+    }
+    v.breath = Math.floor(now / 1700) % 2 === 1;
+    var name = "stand";
+    if (now < idle.until) { if (idle.name === "blink") { v.blink = true; } else { name = idle.name; v.breath = false; } }
+    if (o.look && now < o.look) { name = "look"; }
+    return { name: name, v: v };
+  }
+
+  function fineScale(o) { return o.big ? "large" : "small"; }
+
+  function finePx(o) {
+    var S = o.fine[fineScale(o)];
+    if (o.big) {
+      var fitW = (window.innerWidth - 32) * chDpr / (S.w + FINE_OX * 2);
+      var fitH = window.innerHeight * 0.46 * chDpr / (S.h + 2);
+      return Math.max(1, Math.floor(Math.min(3 * chDpr, fitW, fitH)));
+    }
+    return Math.max(1, Math.round((o.far ? 1 : 4 / 3) * chDpr));
+  }
+
+  function fineBounds(o) {
+    var S = o.fine[fineScale(o)], px = finePx(o) / chDpr;
+    var W = S.w + FINE_OX * 2, c = (S.folds.hip + S.folds.neck) / 2 + FINE_OX;
+    return { x: o.x - (o.dir > 0 ? c : W - c) * px, y: o.y - (S.ground + FINE_OY) * px, w: W * px, h: (S.h + FINE_OY + 1) * px, px: px };
+  }
+
+  // The calm ground it is presented on: the soil laid in a band of dots,
+  // fading at its ends, the world behind dimmed, so it stands clear of the globe.
+  function fineGround(o, b, now) {
+    var a = Math.min(1, (now - o.born) / 700);
+    var cx = (b.x + b.w / 2) * chDpr, gy = o.y * chDpr, rw = b.w * 0.62 * chDpr, rh = b.h * 0.8 * chDpr;
+    var rad = Math.max(rw, rh) * 1.15;
+    var grad = chG.createRadialGradient(cx, gy - rh * 0.35, 0, cx, gy - rh * 0.35, rad);
+    grad.addColorStop(0, "rgba(16,11,8," + (0.9 * a) + ")");
+    grad.addColorStop(0.6, "rgba(16,11,8," + (0.72 * a) + ")");
+    grad.addColorStop(1, "rgba(16,11,8,0)");
+    chG.fillStyle = grad;
+    chG.fillRect(cx - rad, gy - rh * 0.35 - rad, rad * 2, rad * 2);       // the whole of it: no edge
+    var soil = o.ch.here ? o.ch.here.soilRgb : [96, 66, 44];
+    var px = finePx(o), n = Math.round(b.w * chDpr / px);
+    var x0 = Math.round(b.x * chDpr);
+    for (var i = -6; i < n + 6; i += 1) {
+      var edge = Math.min(1, Math.min(i + 6, n + 6 - i) / 18);
+      for (var j = 0; j < 4; j += 1) {
+        var hsh = hash(i, j, 41);
+        if (hsh > 0.62 - j * 0.1) { continue; }
+        chG.globalAlpha = a * edge * (0.55 - j * 0.1);
+        chG.fillStyle = css(mix(soil, [24, 16, 11], 0.15 + j * 0.15), (hash(i, j, 5) - 0.5) * 14);
+        chG.fillRect(x0 + i * px, gy + j * px, px, px);
+      }
+    }
+    chG.globalAlpha = 1;
+  }
+
+  // Its trace on the ground behind it, drying in steps: wet with a glint,
+  // dark, half gone into the soil, a ghost, gone.
+  function fineTrail(o, b, now) {
+    if (!o.trail || !o.trail.length) { return; }
+    var px = finePx(o), F = o.fine;
+    var wet = F.rgb.x, glint = F.rgb.z, soil = o.ch.here ? o.ch.here.soilRgb : [96, 66, 44];
+    o.trail = o.trail.filter(function (t) { return now - t.at < 9000; });
+    o.trail.forEach(function (t, n) {
+      var age = Math.floor((now - t.at) / 1500);
+      var col = age === 0 && n % 5 === 0 ? glint : age <= 1 ? wet : mix(wet, soil, Math.min(0.85, (age - 1) * 0.28));
+      chG.globalAlpha = age <= 2 ? 0.9 : Math.max(0, 0.9 - (age - 2) * 0.22);
+      chG.fillStyle = css(col);
+      var gx = Math.round(t.x * chDpr / px) * px, gy = Math.round(t.y * chDpr / px) * px;
+      chG.fillRect(gx, gy - px, px * (o.big ? 2 : 1), px);
+    });
+    chG.globalAlpha = 1;
+  }
+
+  // A cell of trace where its tail is now, when it has moved a cell.
+  function layTrail(o, now) {
+    if (!o.trail) { return; }
+    var b = fineBounds(o), S = o.fine[fineScale(o)];
+    var tx = o.dir > 0 ? b.x + (S.tail + FINE_OX) * b.px : b.x + b.w - (S.tail + FINE_OX) * b.px;
+    var last = o.trail[o.trail.length - 1];
+    if (!last || Math.abs(last.x - tx) >= b.px || Math.abs(last.y - o.y) >= b.px) { o.trail.push({ x: tx, y: o.y, at: now }); }
+  }
+
+  function drawFine(o, now) {
+    var sc = fineScale(o), px = finePx(o), f = fineNow(o, now);
+    var sp = fineSprite(o, sc, f.name, f.v, o.dir, px);
+    var b = fineBounds(o);
+    if (o.big) { fineGround(o, b, now); }
+    if (o.state === "walk") { layTrail(o, now); }
+    fineTrail(o, b, now);
+    var x = Math.round(b.x * chDpr), y = Math.round(b.y * chDpr);
+    if (o.state === "ritual" && o.spin) {
+      chG.save();
+      chG.translate(x + sp.cv.width / 2, y + sp.cv.height / 2);
+      chG.rotate(o.spin(now));
+      chG.drawImage(sp.cv, -sp.cv.width / 2, -sp.cv.height / 2);
+      chG.restore();
+    } else {
+      chG.globalAlpha = o.unfolding ? Math.min(1, (now - o.born) / 600) : 1;
+      chG.drawImage(sp.cv, x, y);
+      chG.globalAlpha = 1;
+    }
+    if (o.hit) {
+      o.hit.hidden = !!o.big;
+      o.hit.style.transform = "translate(" + Math.round(b.x + b.w * 0.1) + "px," + Math.round(b.y + b.h * 0.3) + "px)";
+      o.hit.style.width = Math.round(b.w * 0.8) + "px";
+      o.hit.style.height = Math.round(b.h * 0.6) + "px";
+    }
+    if (o.says && !o.says.hidden) {
+      var sw = o.says.offsetWidth || 220;
+      var left = Math.max(16, Math.min(window.innerWidth - sw - 16, b.x + b.w / 2 - sw / 2));
+      o.says.style.transform = "translate(" + Math.round(left) + "px," + Math.round(Math.max(16, b.y + b.h * 0.25 - 34)) + "px)";
+    }
+  }
+
   function chSetUp() {
     if (chCv) { return; }
     chCv = document.createElement("canvas");
@@ -1647,6 +1979,7 @@
   }
 
   function chBounds(o) {
+    if (o.fine) { return fineBounds(o); }
     // Its feet's middle is the middle of its body.
     var L = o.L, px = cellPx(o) / chDpr, c = L.hip + o.ch.P[1].len / 2;
     return { x: o.x - (o.dir > 0 ? c : L.w - c) * px, y: o.y - L.ground * px, w: L.w * px, h: L.h * px, px: px };
@@ -1724,6 +2057,11 @@
         if (Math.abs(dx) > 1) { o.dir = dx > 0 ? 1 : -1; }
       }
     }
+    // The slug's hindquarters glide in their act: it eases forward and lays its trace.
+    if (o.fine && o.state === "act" && o.actSlot === 2) {
+      o.x += o.dir * (o.big ? 7 : 3) * dt / 1000;
+      layTrail(o, now);
+    }
     if (o.state === "act" && now - o.since > o.actMs) { o.state = "stand"; o.since = now; if (o.actDone) { var f = o.actDone; o.actDone = null; f(); } }
     if (o.state === "pressed" && now - o.since > 6000) { o.state = "stand"; o.since = now; if (o.says) { o.says.hidden = true; } }
   }
@@ -1748,6 +2086,7 @@
 
   function drawChimera(o, now) {
     if (!o.ready || o.hidden) { if (o.hit) { o.hit.hidden = true; } return; }
+    if (o.fine) { drawFine(o, now); return; }
     var px = cellPx(o);
     var names = namesNow(o, now);
     var sp = chimeraSprite(o.ch, names, o.dir, px);
@@ -1767,6 +2106,7 @@
       chG.drawImage(sp.cv, x, y);
     }
     if (o.trail && o.state === "walk") { o.trail.push({ x: o.x - o.dir * b.w * 0.42, y: o.y, at: now }); }
+    if (o.trail && o.fine) { return; }
     if (o.trail) {
       o.trail = o.trail.filter(function (t) { return now - t.at < 9000; });
       chG.fillStyle = css(rgb(o.ch.cs[2].after.inks.black[0]));
@@ -1805,8 +2145,9 @@
       big: false, far: false, hidden: !!opts.hidden, ready: false, legs: opts.legs || null,
       month: opts.month || (new Date().getMonth() + 1), trail: null
     };
-    o.ready_ = Promise.all([load(), partsOf(ids[0]), partsOf(ids[1]), partsOf(ids[2])]).then(function (got) {
-      var P = got.slice(1);
+    o.ready_ = Promise.all([load(), partsOf(ids[0]), partsOf(ids[1]), partsOf(ids[2]), fineOf(ids)]).then(function (got) {
+      var P = got.slice(1, 4);
+      o.fine = got[4] || null;
       var cs = ids.map(castOf);
       if (P.some(function (p) { return !p; }) || cs.some(function (c) { return !c; })) { return false; }
       var season = ids[0] === "deer" ? seasonOf(o.month) : null;
@@ -1974,6 +2315,16 @@
         var sp = chimeraSprite(o.ch, names, dir || 1, px || 4);
         ctx.drawImage(sp.cv, x, y);
         return { w: sp.cv.width, h: sp.cv.height, ground: sp.ground * (px || 4) };
+      },
+      // The canonical one, drawn fine: a pose of the large or small drawing
+      // ("stand", "mantle", "walkA" ...), with { blink, breath, ripple 0-7 }.
+      fine: function () { return o.fine ? Object.keys(o.fine.large.frames) : null; },
+      drawFine: function (ctx, x, y, name, px, dir, scale, v) {
+        if (!o.ready || !o.fine) { return null; }
+        v = v || {};
+        var sp = fineSprite(o, scale || "large", name, { blink: !!v.blink, breath: !!v.breath, ripple: v.ripple >= 0 ? v.ripple : -1 }, dir || 1, px || 3);
+        ctx.drawImage(sp.cv, x, y);
+        return { w: sp.cv.width, h: sp.cv.height, ground: sp.ground * (px || 3) };
       },
       // Where it is, for the game and the checks.
       state: function () { return { name: o.name, ids: ids, x: o.x, y: o.y, state: o.state, big: o.big, hidden: !!o.hidden, w: o.L ? o.L.w : 0 }; },

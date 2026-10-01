@@ -94,10 +94,83 @@ async function chimeraSheet(ids, out, px) {
   process.exit(errors.length ? 1 : 0);
 }
 
+/* The canonical chimera drawn fine (parts/canonical/, scripts/characters/canonical.py):
+   every pose of the large drawing, the living changes (blink, breath, the
+   slug's ripple), and the small drawing at its own size and enlarged.
+
+     NODE_PATH=/opt/node22/lib/node_modules node scripts/preview_character.js bison,eagle,slug /tmp/fine.png --fine [--scale 3] */
+async function fineSheet(ids, out, px) {
+  const browser = await chromium.launch(fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+    ? { executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" } : {});
+  const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+  await page.route("http://preview.local/**", (r) => {
+    const f = path.join(V2, decodeURIComponent(new URL(r.request().url()).pathname));
+    if (!fs.existsSync(f)) { return r.fulfill({ status: 404, body: "" }); }
+    r.fulfill({ status: 200, body: fs.readFileSync(f),
+                contentType: f.endsWith(".js") ? "text/javascript" : f.endsWith(".json") ? "application/json" : "text/html" });
+  });
+  await page.route("http://preview.local/", (r) => r.fulfill({ status: 200, contentType: "text/html",
+    body: "<!doctype html><meta charset=utf-8><body style='margin:0;background:#15100c'><canvas id=c></canvas><script src='characters.js'></script>" }));
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("http://preview.local/");
+  const size = await page.evaluate(async ({ ids, px, lat, lon }) => {
+    const ch = window.Characters.chimera(ids, { lat, lon, hidden: true });
+    await ch.ready;
+    const names = ch.fine();
+    if (!names) { return null; }
+    const cells = names.map((n) => [n, "large", {}]).concat([
+      ["stand", "large", { blink: true }], ["stand", "large", { breath: true }],
+      ["stand", "large", { ripple: 0 }], ["stand", "large", { ripple: 2 }], ["stand", "large", { ripple: 4 }]]);
+    const small = names.map((n) => [n, "small", {}]);
+    const probe = document.createElement("canvas").getContext("2d");
+    const one = ch.drawFine(probe, 0, 0, "stand", px, 1, "large");
+    const sm = ch.drawFine(probe, 0, 0, "stand", px, 1, "small");
+    const per = 4, cw = one.w + 10, chh = one.h + 18, rows = Math.ceil(cells.length / per);
+    const sper = 8, scw = sm.w + 8, sch = sm.h + 18, srows = Math.ceil(small.length / sper);
+    const cv = document.getElementById("c");
+    cv.width = Math.max(per * cw, sper * scw) + 20; cv.height = rows * chh + srows * sch + 150;
+    const g = cv.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#2a1d14"; g.fillRect(0, 0, cv.width, cv.height);
+    g.font = "12px monospace";
+    g.fillStyle = "#eadfcd";
+    g.fillText(ch.name + " · large, a cell " + px + " px", 10, 18);
+    cells.forEach(([n, sc, v], k) => {
+      const x = 10 + (k % per) * cw, y = 26 + Math.floor(k / per) * chh;
+      ch.drawFine(g, x, y, n, px, 1, sc, v);
+      g.fillStyle = "rgba(234,223,205,0.6)";
+      g.fillText(n + (v.blink ? " blink" : v.breath ? " breath" : v.ripple >= 0 ? " ripple " + v.ripple : ""), x + 4, y + chh - 6);
+    });
+    let y0 = 26 + rows * chh + 10;
+    g.fillStyle = "#eadfcd";
+    g.fillText("small, a cell " + px + " px; and at its size in a city (4/3 CSS px a cell)", 10, y0);
+    small.forEach(([n, sc, v], k) => {
+      const x = 10 + (k % sper) * scw, y = y0 + 8 + Math.floor(k / sper) * sch;
+      ch.drawFine(g, x, y, n, px, 1, sc, v);
+      g.fillStyle = "rgba(234,223,205,0.6)";
+      g.fillText(n, x + 4, y + sch - 6);
+    });
+    y0 += 8 + srows * sch + 6;
+    ["stand", "walkA", "passB", "walkB", "passA", "look", "mantle", "rest"].forEach((n, k) => {
+      ch.drawFine(g, 10 + k * 110, y0, n, 2, 1, "small");
+    });
+    return [cv.width, cv.height];
+  }, { ids, px, lat: 51.5074, lon: -0.1278 });
+  if (!size) { console.log("no fine drawing for " + ids.join("-")); await browser.close(); process.exit(1); }
+  await page.setViewportSize({ width: Math.min(size[0], 4000), height: Math.min(size[1], 6000) });
+  await page.locator("#c").screenshot({ path: out });
+  if (errors.length) { console.log("errors: " + errors.join("; ")); }
+  console.log("wrote " + out);
+  await browser.close();
+  process.exit(errors.length ? 1 : 0);
+}
+
 (async () => {
   const args = process.argv.slice(2);
   const id = args[0] || "fox", out = args[1] || "/tmp/" + id + ".png";
   const k = args.indexOf("--scale");
+  if (id.indexOf(",") > 0 && args.indexOf("--fine") >= 0) { return fineSheet(id.split(","), out, k >= 0 ? Number(args[k + 1]) : 3); }
   if (id.indexOf(",") > 0) { return chimeraSheet(id.split(","), out, k >= 0 ? Number(args[k + 1]) : 4); }
   const scale = k >= 0 ? Number(args[k + 1]) : 6;
   const sprite = JSON.parse(fs.readFileSync(path.join(V2, "characters", id + ".json"), "utf8"));
