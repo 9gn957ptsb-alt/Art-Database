@@ -7956,6 +7956,12 @@
 
   function squash(x, y, r) {
     pulse(x, y, [LIGHT], 1, r * PHI);
+    // Now and then someone comes out of the wave (characters.js): only in a
+    // city, never while a collage is being read or a flight is on.
+    if (window.Characters && place && !flying && !reading && !deckMode &&
+        (place.work || (art && art.kind === "town"))) {
+      Characters.wave(x, y, { key: place.townKey || place.slug, lat: place.lat / RAD, lon: place.lon / RAD, r: r });
+    }
     var caught = [];
     spawns.forEach(function (born) {
       if (born.el.style.visibility === "hidden") { return; }

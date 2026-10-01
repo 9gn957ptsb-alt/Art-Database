@@ -3241,3 +3241,42 @@ button.art-venue:focus-visible { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   .route-work, .route-work-cap { transition: none; }
 }
+
+/* ---- the characters (characters.js) ----------------------------------------
+   Who comes out of the wave in a city: drawn on its own canvas just over the
+   pixel light; pressed through a bare button that follows it; and the quiet
+   line that says what it is, in the caption style of a gallery's name. */
+.characters { pointer-events: none; }
+.character {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.character:focus-visible { outline: 1px solid #a72720; outline-offset: 2px; }
+.character-says {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 58;
+  box-sizing: border-box;
+  max-width: min(260px, calc(100vw - 32px));
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.8);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.character[hidden], .character-says[hidden],
+.land-body:has(.land:not([data-at="city"])) .character-says { display: none; }

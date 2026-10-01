@@ -1,1 +1,48 @@
-{"cast":[{"id":"fox"}]}
+{
+  "note": "The characters who come out of the wave in a city (docs/v2/characters.js), one at a time. The cast: each drawn after one of DIRT's artists, from a species in DIRT's grammar of places, with its plants always the place's own (plants.json). Drawings in scripts/characters/<id>.py; scripts/build_characters.py writes <id>.json. The daily characters pass (REFINE.md) adds one from the backlog and refines the three refined longest ago.",
+  "cast": [
+    {
+      "id": "fox",
+      "name": "Red fox",
+      "species": "Vulpes vulpes",
+      "kind": "hunters",
+      "from": {"biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "grammar": "dirt/earth/out/grammar.json, biome 4, life.understory.hunters: red foxes"},
+      "why": "The most widespread wild carnivore on Earth, and a city animal in London, New York, Paris and Melbourne, so it belongs wherever the site's cities are.",
+      "artist": "Cy Twombly",
+      "after": {
+        "why": "DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its coat is in the ochres and rusts of Some Trees of Italy (Title Print), its white in his papers, its black and its pen in the Mushrooms' graphite; the line it leaves is his writing (Roman Notes II), a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses).",
+        "inks": {
+          "coat": ["#9a5426", "#be752f", "#cf8f46", "#e2ae67"],
+          "white": ["#d9cbbd", "#f0ece2"],
+          "black": ["#201e15", "#4a4446"],
+          "eye": "#e2ae67",
+          "pen": ["#2c2a27", "#7a4a2a"],
+          "writing": ["#4e6f79", "#285067"],
+          "box": "#a72720"
+        },
+        "works": ["Natural History Part II: Some Trees of Italy (Title Print)", "Natural History Part I, Mushrooms", "Roman Notes II", "Untitled (Roses)"]
+      },
+      "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back over its shoulder), look (turned to you), sit",
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "Side on, 40 by 26 cells, two CSS pixels a cell. Guessed still: the trot's knee and hock angles are a two-bone reach, not traced from film; the sitting brush hardly shows round the feet; the turned-back head reads at its size but only just.",
+      "log": [
+        "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)"
+      ]
+    }
+  ],
+  "backlog": [
+    {"artist": "Elaine de Kooning", "species": "American bison", "kind": "herds", "biome": "Temperate Grasslands, Savannas & Shrublands", "realm": "Nearctic", "why": "Her Cave paintings after the bison of Lascaux and Altamira (1980s), and the bulls before them; strokes."},
+    {"artist": "Henri Matisse", "species": "grey squirrel", "kind": "troops", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Cut shapes: a squirrel leaping the gaps between crowns as a paper cut-out leaps (Jazz, 1947)."},
+    {"artist": "Jackson Pollock", "species": "starlings (a murmuration)", "kind": "flocks", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Scattered marks: a murmuration is a poured, flung field of dots that turns as one."},
+    {"artist": "Salvador Dalí", "species": "ocellated lizard", "kind": "frogs", "biome": "Mediterranean Forests, Woodlands & Scrub", "realm": "Palearctic", "why": "A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground."},
+    {"artist": "Helen Frankenthaler", "species": "Anna's hummingbird", "kind": "hummers", "biome": "Mediterranean Forests, Woodlands & Scrub", "realm": "Nearctic", "why": "Stacked fields: the gorget's colour soaks and floods as it turns, the way her stain soaks the canvas."},
+    {"artist": "Andy Warhol", "species": "bald eagle", "kind": "eagles", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Warhol's Endangered Species (1983) has the bald eagle; a grid: seen only as its shadow, repeated."},
+    {"artist": "Paul Caponigro", "species": "fireflies", "kind": "fireflies", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Dots: points of light in the dark, as his silver prints hold light."},
+    {"artist": "David Hockney", "species": "red deer", "kind": "herds", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Woldgate Woods and the hawthorn of his garden in DIRT; deer at the edge of an English wood."},
+    {"artist": "J. M. W. Turner", "species": "greylag geese", "kind": "vees", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Stacked fields of sky: a skein crossing an evening light."},
+    {"artist": "Anish Kapoor", "species": "banana slug", "kind": "snakes", "biome": "Temperate Conifer Forests", "realm": "Nearctic", "why": "Svayambh (2007): a slow red mass that moves on its own through the place."},
+    {"artist": "Henri Cartier-Bresson", "species": "white-tailed deer", "kind": "herds", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "The decisive moment: a deer that stops at the edge of the frame and is gone."}
+  ]
+}
