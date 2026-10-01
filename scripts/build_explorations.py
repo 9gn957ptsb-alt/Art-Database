@@ -46,8 +46,12 @@ Painted here. `sites` are the site explorations build_sites.py made from
 the documented painting sites (sites.json): per artist and place, and per
 artist — each stop one point, its works (indexes into sites.json's rows),
 its word for the sentence (the place painted, else the work's short title).
-They are added to the relay last ("s"), so the indexes of the rows before
-them, which codes carry, do not move.
+They are added to the relay after the rest ("s"), so the indexes of the rows
+before them, which codes carry, do not move.
+
+The studios. After them, `o` rows: one a catalogued artist of studios.json
+(build_studios.py), each of their places a stop in time order. The stops
+themselves are read from studios.json by the page (studios.js).
 """
 import argparse
 import collections
@@ -79,7 +83,7 @@ NOTE = ("Explorations (docs/v2/explorations.js). hunts: a cataloguer's hunt — 
         "[kind, id], kind w work, t town, m museum, v voice, h thread, a animal). relay: every published "
         "exploration by its stops, for the handoffs — [kind h hunt, w walk, v a voice's route, x sent; id; "
         "title; artist; animal; voice; number of stops; stops [[key, year or 0, work index into finding.json "
-        "or -1]]], a voice's route by its first and last stops; s a site exploration. sites: the site explorations "
+        "or -1]]], a voice's route by its first and last stops; s a site exploration; o an artist's studios (stops in studios.json). sites: the site explorations "
         "(Painted here, sites.json): stops [{key, ll, y, w word, s [sites.json rows]}]. Written by "
         "scripts/build_explorations.py.")
 
@@ -403,6 +407,18 @@ def site_explorations(finding_ix):
     return out, relay
 
 
+def studio_explorations(cast_by_artist):
+    """The studios (studios.json, build_studios.py): one exploration an artist, each of their places a
+    stop in time order. Only their relay rows are written here ("o"); explorations.js reads the stops
+    from studios.json itself (Studios.exploration), so they are not carried twice."""
+    path = os.path.join(V2, "studios.json")
+    if not os.path.exists(path):
+        return []
+    d = load("studios.json")
+    return [["o", e["id"], e["title"], e["artist"], cast_by_artist.get(e["artist"], ""), "", len(e["stops"]),
+             [[st["key"], st["y"] or 0, -1] for st in e["stops"]]] for e in d["explorations"]]
+
+
 def sentence_words(h, name_of):
     return [name_of.get(s["key"], s["key"]).split(",")[0] for s in h["stops"]]
 
@@ -458,6 +474,8 @@ def main():
     sites, site_relay = site_explorations(finding_ix)
     out = {"note": NOTE, "hunts": hunts, "made": made, "sites": sites,
            "relay": relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns) + site_relay}
+    # The studios last, the most saved artists first, as many as a code's 9 bits can still name.
+    out["relay"] += studio_explorations(cast_by_artist)[:max(0, 511 - len(out["relay"]))]
     with open(OUT, "w") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
         f.write("\n")

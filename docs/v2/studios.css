@@ -21,7 +21,7 @@
   box-shadow: inset 0 0 0 1.5px rgba(15, 10, 7, 0.82), inset 0 0 0 4px rgba(157, 149, 230, 0.55);
 }
 .city[data-kind="studio"] .city-name { font-style: italic; }
-.city[data-kind="studio"][data-pr="town"] .city-name { opacity: 0.86; }
+.city[data-kind="studio"][data-pr="town"] .city-name { color: #cbbba6; }
 .city[data-kind="studio"]:hover .city-dot,
 .city[data-kind="studio"]:focus-visible .city-dot { transform: scale(1.5); }
 

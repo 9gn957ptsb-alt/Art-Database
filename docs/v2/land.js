@@ -819,6 +819,7 @@
       raiseCity({
         work: null, slug: "studio-" + k, title: m[2], label: m[2], aria: "Go down to " + m[3], where: m[3],
         lat: m[0] * RAD, lon: wrap(m[1] * RAD), studio: m, real: true,
+        rank: 1 + 0.6 * Math.log(1 + (m[6] || 0)) / Math.LN10 + (m[5] === "town" ? 0 : 0.5),
         layer: "studios", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
         open: function () { if (window.Studios) { Studios.openMark(m); } }
       }, true);
@@ -1073,7 +1074,7 @@
     // dot is never let go. The rest are named as many at a time as the
     // window has room for.
     var rules = layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
-      : layerOn === "architecture" || layerOn === "studios" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
+      : layerOn === "architecture" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
     rules.box = S;
     nameBoxes = nameMarks(items, rules);
 

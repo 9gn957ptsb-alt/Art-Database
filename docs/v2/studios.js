@@ -369,6 +369,54 @@
     });
   }
 
+  /* ---- the studio's point, in its city: an atelier of pixel light ------------ */
+
+  var cv = null, ctx = null, raf = 0, C = 13;
+  function kick() { if (!raf) { raf = window.requestAnimationFrame(draw); } }
+  function draw(now) {
+    raf = 0;
+    if (!cv) {
+      var tiles = document.getElementById("tiles");
+      cv = el("canvas", "world world-tiles studio-ring");
+      cv.setAttribute("aria-hidden", "true");
+      if (tiles && tiles.parentNode) { tiles.parentNode.insertBefore(cv, tiles.nextSibling); } else { document.body.appendChild(cv); }
+      ctx = cv.getContext("2d");
+    }
+    var W = window.innerWidth, H = window.innerHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    var w = where();
+    var r = current && current.box && current.box.isConnected && D ? D.studios[current.pay.i] : null;
+    if (!r || w.at !== "town" || w.flying || !Land.at) { return; }
+    var p = Land.at(r.ll[0], r.ll[1]);
+    if (!p || p.z < 0.02) { kick(); return; }
+    var gx = Math.floor(p.x / C) * C, gy = Math.floor(p.y / C) * C;
+    var t = still ? 0 : Math.floor((now || 0) / (1000 / 24));
+    // A square in a square, the layer's glyph, with a ragged ring of light round it
+    // (only the town: a ring the size of the town for a place the record gives no closer).
+    var rr = r.pr === "town" ? 3 : 1;
+    ctx.fillStyle = "#9d95e6";
+    for (var e = 0; e < 2; e += 1) {
+      var R = rr + e;
+      ctx.globalAlpha = [0.7, 0.32][e];
+      for (var dx = -R; dx <= R; dx += 1) {
+        for (var dy = -R; dy <= R; dy += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== R) { continue; }
+          if ((dx + dy + (t >> 2)) & 1) { continue; }
+          ctx.fillRect(gx + dx * C + 3, gy + dy * C + 3, C - 6, C - 6);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#eadfcd";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(gx + 1.5, gy + 1.5, C - 3, C - 3);
+    ctx.fillRect(gx + 4, gy + 4, C - 8, C - 8);
+    if (!still) { kick(); }
+  }
+  window.setInterval(function () { if (current && current.box && current.box.isConnected) { kick(); } }, 500);
+
   /* ---- Find: the catalogue, and an artist's studios --------------------------- */
 
   var field = document.getElementById("finder-field");
