@@ -156,7 +156,9 @@ def speaker_of(text, m, artists):
     # "…" — Antony Gormley   /   "…" -Brice Marden
     dm = re.match(r"[ ]*[,.]?[ ]*[—–-]{1,2}[ ]*([A-Z][\w'’.-]+(?: [A-Z][\w'’.-]+){0,3})", after)
     if dm and is_person(dm.group(1)) and not re.match(r"Courtesy|Photo|Image|Source", dm.group(1)):
-        return dm.group(1).strip(), ""
+        # "…"—Harald Szeemann in Exh. Cat., Zurich Kunsthaus, …, 1987, p. 12: the citation runs to the line's end.
+        cm = re.match(r"[ ]*,?[ ]+(in\s+[^\n“\"]{6,220})", after[dm.end():])
+        return dm.group(1).strip(), flat(cm.group(1)).rstrip(" .") if cm else ""
     # "…," Kapoor said.   /   "…," said Kapoor.
     sm = re.match(r"\s*,?\s*" + NAME + r"\s+" + SAYS + r"\b", after)
     if sm and is_person(sm.group(1)):
