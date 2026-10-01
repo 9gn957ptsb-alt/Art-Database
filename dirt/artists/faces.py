@@ -8,6 +8,12 @@ register over torsos and feet) and blurs them as a panned camera does. The image
 committed) and are published beside the page, as the quilts are.
 
     python3 dirt/artists/faces.py --db data/artworks.db --cache dirt/private/faces/src --out dirt/private/faces
+    python3 dirt/artists/faces.py --pairs dirt/private/faces      # only (re)find the pairs, in an atlas already made
+
+It also finds the pairs that weld: two faces from different paintings whose eyes, mouths and light fall in the same
+places (their blurred greys correlate, their colours are near), 13 of them, no face in two, for DRIFT's welds, a pair
+dissolving into each other in a Rothko (ground-gl.js, weld()). Crops with almost no contrast are not faces (a Rothko
+read as one) and are never paired.
 """
 
 import argparse
@@ -38,13 +44,47 @@ def detect(img):
     return kept
 
 
+def pairs(F, works, keep=13):
+    """The pairs of faces that weld best, [[a, b, score]], each face in one pair at most."""
+    def feat(im):
+        g = cv2.GaussianBlur(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY).astype(float), (0, 0), 4)[12:108, 10:86]
+        g = (g - g.mean()) / (g.std() + 1e-6)
+        return g.ravel() / np.sqrt(g.size)
+    fs = [feat(f) for f in F]
+    mc = [f.reshape(-1, 3).mean(0) for f in F]
+    ok = [cv2.cvtColor(f, cv2.COLOR_BGR2GRAY).std() > 14 for f in F]   # flat crops are not faces
+    sc = [(float(fs[i] @ fs[j] - 0.5 * np.linalg.norm(mc[i] - mc[j]) / 255), i, j)
+          for i in range(len(F)) for j in range(i + 1, len(F)) if ok[i] and ok[j] and works[i] != works[j]]
+    used, out = set(), []
+    for v, i, j in sorted(sc, reverse=True):
+        if i in used or j in used:
+            continue
+        out.append([i, j, round(v, 3)])
+        used |= {i, j}
+        if len(out) == keep:
+            break
+    return out
+
+
+def cells(atlas, n):
+    return [atlas[(k // COLS) * CH:(k // COLS + 1) * CH, (k % COLS) * CW:(k % COLS + 1) * CW] for k in range(n)]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--db", required=True)
-    ap.add_argument("--cache", required=True, help="where the paintings' images are kept (downloaded if missing)")
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--db")
+    ap.add_argument("--cache", help="where the paintings' images are kept (downloaded if missing)")
+    ap.add_argument("--out")
     ap.add_argument("--max", type=int, default=89)
+    ap.add_argument("--pairs", help="an atlas's folder: only find its pairs")
     a = ap.parse_args()
+    if a.pairs:
+        meta = json.load(open(Path(a.pairs) / "faces.json"))
+        F = cells(cv2.imread(str(Path(a.pairs) / meta["file"])), meta["n"])
+        meta["pairs"] = pairs(F, [w["work"] for w in meta["from"]])
+        json.dump(meta, open(Path(a.pairs) / "faces.json", "w"), indent=1)
+        print(len(meta["pairs"]), "pairs")
+        return
     cache, out = Path(a.cache), Path(a.out)
     cache.mkdir(parents=True, exist_ok=True)
     out.mkdir(parents=True, exist_ok=True)
@@ -78,7 +118,8 @@ def main():
         atlas[(k // COLS) * CH:(k // COLS + 1) * CH, (k % COLS) * CW:(k % COLS + 1) * CW] = im
     cv2.imwrite(str(out / "faces.jpg"), atlas, [cv2.IMWRITE_JPEG_QUALITY, 88])
     json.dump({"file": "faces.jpg", "n": len(faces), "cols": COLS, "rows": rows_n, "cell": [CW, CH],
-               "from": [{"work": w, "artist": ar} for _, w, ar in faces]}, open(out / "faces.json", "w"), indent=1)
+               "from": [{"work": w, "artist": ar} for _, w, ar in faces],
+               "pairs": pairs([im for im, _, _ in faces], [w for _, w, _ in faces])}, open(out / "faces.json", "w"), indent=1)
     print(len(faces), "faces from", len({w for _, w, _ in faces}), "paintings")
 
 

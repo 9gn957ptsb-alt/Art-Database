@@ -337,6 +337,18 @@ the clouds are feathered, no longer broken into speckle, and the posterized patc
 pieces are φ⁻¹ as many. Measured at six places against the kept still (34 texels across): calm 0.365 → 0.615 (the
 still: 0.614), life 0.113 → 0.077 (0.091), busy 0.282 → 0.203 (0.195).
 
+**Halved again, and the welds lead** (2 October 2026: "really focus on particular instances where faces weld
+together ... more on the Rothko paintings than Silvers"). The collage's country halved again (its mean strength 0.36 to
+0.18, about a quarter of the plane), and with it the streaks, the posterized patches, the large pieces (φ⁻² as many as
+at first), the dapples and Weil's shards; the friezes come rarer, a crowd now and then. The Silvers portraits and the
+exquisite corpses fall to φ⁻⁶ of their squares. What leads now is the **weld**: `faces.py` finds the 13 pairs of faces,
+from different paintings, whose eyes, mouths and light fall in the same places (their blurred greys correlate, their
+colours are near; crops with no contrast, a Rothko read as a face, are left out), and in φ⁻² of the plane's squares
+(1597 cells across, scaled) one pair hangs as a Rothko: a canvas φ tall as it is wide, his maroon ground, the upper
+field (to φ⁻¹ of the height) holding the pair, blurred a little and breathing from one face into the other over 34
+seconds, the lower field the pair's colour pushed to ochre or red, every edge brushed out, never ruled; round it a pale
+wall 89 cells deep, so it is seen alone. Weld is Old English *wellan*, "to boil, well up": joined by being made liquid.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later

@@ -2518,7 +2518,7 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
 vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
 int weil(vec2 p, float T, out vec3 col, out float a) {
   col = vec3(0); a = 0.0;
-  if (vnoise(askew(p), 1597.0, 28681u) < 0.7 || regime(p, T) < 0.4) return 0;   // (rarer since 2 Oct 2026)   // not in the plane's own country
+  if (vnoise(askew(p), 1597.0, 28681u) < 0.76 || regime(p, T) < 0.4) return 0;   // (rarer since 2 Oct 2026)   // not in the plane's own country
   // the shards: the nearest of seeds scattered 89 cells apart, the plane warped a little first so no edge is straight
   const float S = 144.0;
   vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
@@ -2559,7 +2559,7 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
  * a wind. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
 vec4 dapples(vec2 p, float T) {
   if (uAN == 0) return vec4(0.0);
-  float dens = smoothstep(0.58, 0.8, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));   // (halved, 2 Oct 2026)
+  float dens = smoothstep(0.66, 0.84, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));   // (halved twice, 2 Oct 2026)
   if (dens <= 0.0) return vec4(0.0);
   vec2 wind = vec2(sin(T * 0.7) + 0.4 * sin(T * 1.9 + 1.3), 0.6 * cos(T * 0.5) + 0.3 * sin(T * 2.3)) * 4.0;
   const float G = 34.0;
@@ -2655,7 +2655,7 @@ void main() {
 //  - clouds: white cumulus masses, lit from above and grey-blue beneath, the high key the whole is set in;
 //  - slivers: thin bands of spectrum where the light has been split, the colours of the frame parted within them;
 //  - and in patches, the colour reduced to a few flat levels, as a poster is.
-// Its country covers about half the plane, strongest where a slow field is high, and it opens onto
+// Its country covers about a quarter of the plane, strongest where a slow field is high, and it opens onto
 // the plane as speckle, not along a line. Its own small program, drawn over the rest; where it covers, the grey
 // gradient edge pass stands aside, so the cuts stay cuts.
 const GROUND_COLLAGE = `#version 300 es
@@ -2678,6 +2678,8 @@ uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells 
 uniform sampler2D uFace;            // the faces in the saved paintings (dirt/artists/faces.py), an atlas uFG cells across, down
 uniform int uFN;
 uniform vec2 uFG;
+uniform int uPair[26];                // the pairs of faces that weld (faces.py), two indices each
+uniform int uPN;
 uniform sampler2D uFaceLut;         // which face's mean is nearest a colour: 8 levels a channel, 64 by 8 (r + 8 g, b)
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
@@ -2706,9 +2708,9 @@ void over(inout vec3 col, inout float a, vec3 c, float m) {
 /** How strongly the collage is here: most of the plane at some strength, drifting. */
 float torn(vec2 p, float T) {
   vec2 q = askew(p * 0.8) + T * vec2(-2.1, 1.3);
-  // (from 2 Oct 2026 over half the plane, not nearly all of it: its strength there halved, 0.69 to 0.36, so the rest is
-  // one passage at a time)
-  return smoothstep(0.5, 0.62, 0.7 * vnoise(q, 1597.0, 40101u) + 0.3 * vnoise(q, 377.0, 40102u));
+  // (from 2 Oct 2026 over a quarter of the plane, not nearly all of it: its mean strength halved twice, 0.69 to 0.36 to
+  // 0.18, so the rest is one passage at a time)
+  return smoothstep(0.6, 0.7, 0.7 * vnoise(q, 1597.0, 40101u) + 0.3 * vnoise(q, 377.0, 40102u));
 }
 /** The cumulus: density, warped so it billows. */
 float cloudD(vec2 p, float T) {
@@ -2789,7 +2791,7 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
   float z = vnoise(p + 34.0 * (vec2(vnoise(p, 89.0, 52003u), vnoise(p, 89.0, 52004u)) - 0.5), 987.0, 52001u);
-  float m = smoothstep(0.74, 0.78, z);                               // (rarer: a crowd now and then, not the rule)
+  float m = smoothstep(0.8, 0.84, z);                                // (rarer: a crowd now and then; the welds lead)
   if (m <= 0.0) return 0.0;
   float d = smoothstep(0.3, 0.8, vnoise(p, 610.0, 52002u));        // how far dissolved toward the fields
   float row = floor(p.y / FZH), y = p.y / FZH - row;                 // 0 at a frieze's top, 1 at its foot
@@ -2846,6 +2848,59 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = mix(canvas, c, smoothstep(0.6, 1.6 + 6.0 * d, seam));
   return m;
 }
+// ---- welds: two faces dissolving into each other in a Rothko -----------------------------------------------------
+// Most of what DRIFT does with faces now: one pair at a time. Of the faces in the saved paintings, faces.py finds the
+// pairs that weld, two faces from different paintings whose eyes, mouths and light fall in the same places (a
+// Velazquez into a Durer, an old woman's bonnet into Van Gogh's hat). Each weld is a canvas phi tall as it is wide, as
+// Rothko's classic paintings are (from 1949: two or three soft rectangles floating on a ground, their edges brushed
+// out, never ruled): the upper field, to phi^-1 of the height, holds the pair, blurred as the Blurred photographs are,
+// breathing from one face into the other and back over 34 seconds; the lower field is the pair's own colour pushed
+// toward his maroons and ochres; the ground between is darker still. Weld is from Old English wellan, "to boil, to
+// well up": metal joined by being made liquid, as the faces are here.
+float weld(vec2 p, float T, out vec3 col) {
+  col = vec3(0.0);
+  if (uPN <= 0) return 0.0;
+  const float G = 1597.0 * ${FKS}, W = 233.0, H = 377.0;
+  ivec2 sq = ivec2(floor(p / G));
+  uint h = h3(sq.x, sq.y, 55001u);
+  if (unit(h) > 0.382) return 0.0;                                   // in phi^-2 of the squares
+  vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - H - 34.0, 0.0);
+  vec2 q = p - o;
+  float ed = 4.0 * (vnoise(p, 13.0, 55002u) - 0.5) + 3.0 * (vnoise(p, 55.0, 55003u) - 0.5);   // brushed, not ruled
+  float e = max(abs(q.x) - W * 0.5, abs(q.y) - H * 0.5) + ed;
+  if (e > 89.0) return 0.0;
+  float u = q.x / W + 0.5, v = q.y / H + 0.5;                       // 0 at the canvas's top left
+  int k = int(mixh(h + 3u) % uint(uPN));
+  int fa = uPair[2 * k], fb = uPair[2 * k + 1];
+  if (unit(mixh(h + 4u)) < 0.5) { int t = fa; fa = fb; fb = t; }
+  vec3 ma = faceAt(fa, vec2(0.5), 7.0), mb = faceAt(fb, vec2(0.5), 7.0), mm = 0.5 * (ma + mb);
+  vec3 ground = mix(mm * 0.35, vec3(58, 20, 22), 0.6);              // his dark maroon, warmed by the pair
+  vec3 low = mix(mm, unit(mixh(h + 5u)) < 0.5 ? vec3(196, 132, 52) : vec3(150, 40, 34), 0.55);   // ochre or red
+  // the upper field: the pair, one breathing into the other
+  float w = 0.5 + 0.45 * sin(6.2832 * T / 34.0 + 6.2832 * unit(mixh(h + 6u)));
+  vec2 fu = vec2((u - 0.08) / 0.84, (v - 0.05) / (FR1 - 0.05));
+  float pan = 3.0 / W;                                               // a short pan, so the faces still read
+  vec3 c = vec3(0.0);
+  for (int t = 0; t < 5; t++) { if (uLite == 1 && t % 2 == 1) continue;
+    vec2 tu = fu + vec2((float(t) - 2.0) * pan, 0.0);
+    c += mix(faceAt(fa, tu, 1.5), faceAt(fb, tu, 1.5), w); }
+  c /= uLite == 1 ? 3.0 : 5.0;
+  c = mix(c, mix(ground, vec3(238, 196, 146), smoothstep(30.0, 220.0, lum(c))), 0.18);   // into the canvas's light
+  // each field's edge brushed out a few cells, as his are
+  float f1 = min(min(fu.x, 1.0 - fu.x) * W * 0.84, min(fu.y, 1.0 - fu.y) * H * (FR1 - 0.05)) + ed;
+  float f2 = min(min(u - 0.08, 0.92 - u) * W, min(v - FR1 - 0.04, 0.95 - v) * H) + ed;
+  // scumbled: each field's light wanders a little, thin paint over thin paint
+  float sc = 0.92 + 0.16 * vnoise(p, 34.0, 55004u);
+  col = ground * (0.85 + 0.3 * vnoise(p, 89.0, 55005u));
+  col = mix(col, low * sc, smoothstep(-2.0, 13.0, f2) * 0.92);
+  col = mix(col, c, smoothstep(-3.0, 21.0, f1));
+  // and round it a wall, the pair's colour gone pale, so the one painting is seen alone and the plane comes back after
+  if (e > 0.0) {
+    col = mix(vec3(232, 226, 214), mm, 0.12) * (0.97 + 0.04 * vnoise(p, 233.0, 55006u));
+    return 1.0 - smoothstep(21.0, 89.0, e);
+  }
+  return 1.0;
+}
 // ---- photomosaics, after Robert Silvers ------------------------------------------------------------------------
 // Silvers made a picture out of many small pictures (the Photomosaic, from his years at the MIT Media Lab in the 1990s),
 // each chosen because its colour matches that spot of the large one. In DRIFT, in a disc here and there, the faces from
@@ -2864,7 +2919,7 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 q = sq + ivec2(i, j);
     uint hq = h3(q.x, q.y, 53001u);
-    if (unit(hq) > 0.146) continue;                                 // phi^-4 of the squares have one
+    if (unit(hq) > 0.056) continue;                                 // phi^-6 of the squares have one (the welds lead now)
     vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
     // a portrait, as tall as a face crop is (5 to 4), torn out like a photograph: its edge wanders by a few cells
     float r = 89.0 + 55.0 * unit(mixh(hq + 3u));
@@ -2910,7 +2965,7 @@ float corpse(vec2 p, float T, out vec3 col) {
   const float G = 610.0 * ${FKS}, W = 55.0, H = 144.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 54001u);
-  if (unit(h) > 0.146) return 0.0;                                   // in phi^-4 of the squares
+  if (unit(h) > 0.056) return 0.0;                                   // in phi^-6 of the squares
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - 160.0, 0.0);
   float a = (unit(mixh(h + 3u)) - 0.5) * 0.3;
   vec2 q = mat2(cos(a), -sin(a), sin(a), cos(a)) * (p - o);
@@ -2950,6 +3005,8 @@ void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
   { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
+  { vec3 wz; float wm = weld(p, T, wz);                              // a weld, where there is one
+    if (wm > 0.0) { outA = outB = vec4(clamp(wz, 0.0, 255.0) / 255.0, wm); return; } }
   { vec3 mz; float mm = mosaic(p, lp, T, mz);                         // a photomosaic, where there is one
     if (mm > 0.0) { outA = outB = vec4(clamp(mz, 0.0, 255.0) / 255.0, mm); return; } }   // (feathered, not speckled)
   { vec3 fz; float fm = frieze(p, T, fz);                             // a frieze, where there is one, over everything here
@@ -2993,7 +3050,7 @@ void main() {
     over(col, a, cellWas(lp - v), mo * 0.97);
   }
   // streaks: a colour dragged down a column, from where the streak starts
-  float sz = smoothstep(0.64 - 0.2 * ew, 0.8 - 0.2 * ew, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));   // (halved, 2 Oct 2026)
+  float sz = smoothstep(0.72 - 0.2 * ew, 0.84 - 0.2 * ew, vnoise(pa + T * vec2(-2.0, 0.7), 377.0, 40121u));   // (halved, 2 Oct 2026)
   if (sz > 0.0) {
     float an = 1.5708 + 1.3 * (vnoise(pa, 987.0, 40122u) - 0.5);
     vec2 d = vec2(cos(an), sin(an));
@@ -3028,7 +3085,7 @@ void main() {
   float bestZ = -1.0, bR = 0.0, bTorn = 0.0;
   uint bh = 0u;
   vec2 bC = vec2(0.0);
-  pieces(p, T, 377.0, 55.0, 233.0, 0.7 / PHI, 40141u, bestZ, bh, bC, bR, bTorn);
+  pieces(p, T, 377.0, 55.0, 233.0, 0.7 / (PHI * PHI), 40141u, bestZ, bh, bC, bR, bTorn);
   // (the smaller pieces: off since 2 Oct 2026; only the large ones are glued in, so each can be seen as chosen)
   if (bestZ >= 0.0) {
     uint h = bh;
@@ -3087,7 +3144,7 @@ void main() {
   }
   if (a <= 0.0 && am <= 0.0) discard;
   // in patches, the colour reduced to five flat levels (no dither since 2 Oct 2026: a poster, not noise)
-  float po = smoothstep(0.72, 0.8, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));   // (halved, 2 Oct 2026)
+  float po = smoothstep(0.8, 0.86, vnoise(pa + T * vec2(1.7, 0.4), 233.0, 40161u));   // (halved twice, 2 Oct 2026)
   if (po > 0.0) col = mix(col, floor(col / 255.0 * 4.0 + 0.5) / 4.0 * 255.0, po);   // (flat, not dithered)
   // it opens onto the plane feathered, at the edge of its country only (once speckle; the speckle was noise)
   float m = a * smoothstep(0.1, 0.9, t);                             // (feathered, not speckled: 2 Oct 2026)
@@ -3811,7 +3868,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut"]);
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut", "uPair", "uPN"]);
     if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); gl.uniform1i(Co.uFaceLut, 14); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -4034,6 +4091,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1f(Co.uThingOn, thingOn * thingShare);
       gl.uniform1i(Co.uFN, faceOn && faces ? faces.n : 0);
       if (faces) gl.uniform2f(Co.uFG, faces.cols, faces.rows);
+      const pairs = faceOn && faces && faces.pairs ? faces.pairs.slice(0, 13) : [];
+      gl.uniform1i(Co.uPN, pairs.length);
+      if (pairs.length) gl.uniform1iv(Co.uPair, new Int32Array(26).map((_, i) => (pairs[i >> 1] || [0, 0])[i & 1]));
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
       gl.uniform2f(Co.uThrust, thrust[0], thrust[1]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
