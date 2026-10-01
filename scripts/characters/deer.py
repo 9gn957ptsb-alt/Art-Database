@@ -85,9 +85,20 @@ def body(dy=0.0):
     return [Part(tail, lambda *a: "W", 1), Part(torso, paint, 2)]
 
 
+SEASON = "hard"                # the antlers: "hard" (Sep-Mar), "cast" (Mar-Apr), "velvet" (May-Aug)
+
+
 def antlers(cx, cy, f=1):
     """The beam sweeping back and up from the skull, with brow, bez and trez
-    tines forward, and a crown at the top."""
+    tines forward, and a crown at the top. Cast in spring, only the pedicles
+    are left; growing again through the summer, in velvet, shorter and
+    blunt and the coat's own colour."""
+    if SEASON == "cast":
+        return capsule((cx, cy), (cx - f * 0.3, cy - 0.6), 0.45, 0.4)
+    if SEASON == "velvet":
+        return union(path([(cx, cy), (cx - f * 1.0, cy - 2.0), (cx - f * 1.4, cy - 3.6)], 0.7, 0.6),
+                     capsule((cx - f * 0.3, cy - 0.6), (cx + f * 1.2, cy - 1.2), 0.55, 0.5),
+                     capsule((cx - f * 1.0, cy - 2.2), (cx + f * 0.4, cy - 2.8), 0.5, 0.45))
     beam = path([(cx, cy), (cx - f * 1.2, cy - 2.2), (cx - f * 1.9, cy - 4.2), (cx - f * 1.4, cy - 5.8)], 0.5, 0.35)
     tines = union(capsule((cx - f * 0.3, cy - 0.6), (cx + f * 1.6, cy - 1.2), 0.4, 0.3),
                   capsule((cx - f * 0.9, cy - 1.8), (cx + f * 0.9, cy - 2.6), 0.35, 0.3),
@@ -97,6 +108,8 @@ def antlers(cx, cy, f=1):
 
 
 def antler_paint(x, y, light, i, j):
+    if SEASON == "velvet":
+        return "r" if light > 0.6 else "R"
     return "w" if y < 4.4 else "W"
 
 
@@ -123,8 +136,11 @@ def head_front(cx, cy):
             Part(ellipse(cx, cy + 2.6, 0.7, 0.5), lambda *a: "k", 6), Part(eyes, lambda *a: "y", 6)]
 
 
+NECK_K = 1.0                   # the neck's thickness (a chimera's head is given the stag's autumn neck)
+
+
 def neck(a, b, dy=0.0):
-    return Part(capsule((a[0], a[1] + dy), (b[0], b[1] + dy), 2.4, 1.6), MANE, 3)
+    return Part(capsule((a[0], a[1] + dy), (b[0], b[1] + dy), 2.4 * NECK_K, 1.6 * NECK_K), MANE, 3)
 
 
 def trot_parts(p, phases=None, up=None):
@@ -179,16 +195,63 @@ def poses():
         "back": [stand("back")],
         "look": [stand("front")],
         "sit": [lie()],
+        # The ethogram (characters.json): its instinct (the freeze) and its ritual.
+        "act": [raster(freeze_parts(k), W, H) for k in range(4)],
+        "ritual": [raster(roar_parts(k), W, H) for k in range(2)],
     }
+
+
+def seasons():
+    """The antlers by month: every pose again as the stag is in spring
+    (cast) and summer (in velvet); the poses above are autumn and winter's."""
+    global SEASON
+    out = {}
+    for season in ("cast", "velvet"):
+        SEASON = season
+        out[season] = poses()
+    SEASON = "hard"
+    return out
 
 
 # ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
 
-SEAMS = {"neck": (27.4, 11.0), "hip": (17.4, 12.6)}
+SEAMS = {"neck": (25.8, 12.0), "hip": (17.4, 12.6)}
 CHIMERA_SCALE = 1.0
 
 
-def rig(pose, k=0):
+def freeze_parts(k):
+    """Watched, it freezes: head up, ears up and turned to you, not a muscle moving."""
+    far, near = legs((0.1, 0.6, 0.6, 0.1), 0.0, reach=1.0)
+    parts = far + body() + [neck((25.6, 11.6), (28.0, 7.4))] + head_side(29.0, 6.4)
+    if k % 2:
+        parts.append(Part(triangle((27.2, 5.2), (28.2, 4.8), (26.4, 3.4)), BASE, 6))
+    return parts + near
+
+
+def roar_parts(k):
+    """The rut: the roar, neck stretched out and up, mouth open; walking
+    alongside a rival, step for step (the parallel walk)."""
+    p = k / 2.0
+    far, near = legs((p + 0.75, p + 0.5, p + 0.25, p), 0.0, reach=1.6)
+    parts = far + body() + [neck((25.6, 11.6), (29.6, 7.6))] + head_side(31.0, 6.6)
+    parts.append(Part(triangle((32.8, 7.6), (35.6, 6.4), (35.2, 8.6)), lambda *a: "k", 7))
+    return parts + near
+
+
+def rig(pose, k=0, slot="body"):
+    global NECK_K
+    NECK_K = 1.45 if slot == "head" else 1.0
+    try:
+        return rig_(pose, k)
+    finally:
+        NECK_K = 1.0
+
+
+def rig_(pose, k=0):
+    if pose == "act":
+        return freeze_parts(k), 0.0
+    if pose == "ritual":
+        return roar_parts(k), 0.0
     if pose == "walk":
         p = k / 6.0
         return trot_parts(p, (p + 0.75, p + 0.5, p + 0.25, p), up=k in (1, 4)), 0.0

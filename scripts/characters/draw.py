@@ -89,6 +89,27 @@ def triangle(a, b, c):
     return d
 
 
+def poly(points):
+    """A closed polygon's signed distance (negative inside)."""
+    pts = list(points)
+    n = len(pts)
+
+    def d(x, y):
+        best = 1e9
+        inside = False
+        for k in range(n):
+            (x0, y0), (x1, y1) = pts[k], pts[(k + 1) % n]
+            vx, vy = x1 - x0, y1 - y0
+            px, py = x - x0, y - y0
+            L = vx * vx + vy * vy or 1e-9
+            t = max(0.0, min(1.0, (px * vx + py * vy) / L))
+            best = min(best, math.hypot(px - vx * t, py - vy * t))
+            if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * vx / (vy or 1e-9):
+                inside = not inside
+        return -best if inside else best
+    return d
+
+
 def union(*fs):
     def d(x, y):
         return min(f(x, y) for f in fs)
@@ -131,6 +152,47 @@ def shaggy(sdf, amp=0.45, freq=1.7, seed=0.0):
              0.5 * math.sin((x + y) * freq * 2.13 + seed * 1.9))
         return sdf(x, y) + amp * n
     return d
+
+
+def scaled(parts, k, about):
+    """Parts drawn k times as large about a point (their fields and their
+    paints both): a part drawn again bigger for a chimera."""
+    ax, ay = about
+    out = []
+    for p in parts:
+        def sdf(x, y, f=p.sdf):
+            return f(ax + (x - ax) / k, ay + (y - ay) / k) * k
+
+        def paint(x, y, light, i, j, f=p.paint):
+            return f(ax + (x - ax) / k, ay + (y - ay) / k, light, i, j)
+        q = Part(sdf, paint, p.group)
+        if hasattr(p, "limb"):
+            q.limb = p.limb
+        out.append(q)
+    return out
+
+
+def turned(parts, angle, about, shift=(0.0, 0.0)):
+    """Parts turned by `angle` radians about a point (clockwise on the
+    page for a positive angle) and moved by `shift`: a leap, a roll."""
+    ax, ay = about
+    c, s_ = math.cos(angle), math.sin(angle)
+    out = []
+    for p in parts:
+        def back(x, y):
+            x, y = x - shift[0] - ax, y - shift[1] - ay
+            return ax + x * c + y * s_, ay - x * s_ + y * c
+
+        def sdf(x, y, f=p.sdf):
+            return f(*back(x, y))
+
+        def paint(x, y, light, i, j, f=p.paint):
+            return f(*back(x, y), light, i, j)
+        q = Part(sdf, paint, p.group)
+        if hasattr(p, "limb"):
+            q.limb = p.limb
+        out.append(q)
+    return out
 
 
 def limb(parts, slot):

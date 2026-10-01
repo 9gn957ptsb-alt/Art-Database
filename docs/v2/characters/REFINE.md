@@ -234,6 +234,66 @@ overwhelming and distracting."
   is pressed, and then it says what it is, whose hand it is in, and what
   plants it came up among.
 
+## The chimera
+
+The artist, 1 Oct 2026, of the exquisite-corpse relay: "really work on the
+three Artist Chimera, it should be the most refined and well portrayed
+character on the entire site. It's gotta be good, like really good"; and:
+"Yeah build it that way, I like the idea of ritual and using the animals to
+generate games".
+
+Any three of the cast make a chimera: the head of one, the body of another,
+the hindquarters of a third (`scripts/characters/chimera.py`; the page lays
+them together, `Characters.chimera`). So **every new character is drawn in
+three parts the day it is drawn**:
+
+- In its `<id>.py`, besides `poses()`, give `rig(pose, k, slot="body")`: the
+  whole figure, as parts, in each of the chimera's poses — `walk` (k 0–5, a
+  walk's phases: near hind 0, near fore ¼, far hind ½, far fore ¾), `stand`
+  (k 0 still, 1 and 2 its idles: a breath, a blink, an ear, a tail), `back`
+  (its pause), `look` (at you), `rest`, `present` (proud, for the unfolding),
+  `act` (k 0–3, its instinct from the ethogram) and `ritual` (k 0–1) — and
+  how far it is lowered at rest. `slot` lets a part be drawn again for its
+  place in a chimera (the bison's finer head, the eagle's walking body).
+- `SEAMS`: the x of its neck's fold (the head and neck forward of it) and its
+  hip's (the hindquarters behind it), each with a height inside the body
+  there. Put the neck's fold at the base of the neck so the whole head goes
+  with it; the hip's just forward of the hip joint. `CHIMERA_SCALE` makes a
+  small animal (the squirrel, 1.45) the size of the rest.
+- Mark legs with `limb(parts, "body" | "hind")` so they are drawn whole when
+  they step past a fold. A raster finish (`finish`, or `finish_chimera`)
+  runs on each part as on the whole.
+- A character that is not one body (a murmuration) gives one of the flock
+  for its parts.
+- Write its `ethogram` and its `chimera` words in `characters.json` (below).
+- Check: the whole animal's poses unchanged where they were (compare the
+  rows), then `NODE_PATH=/opt/node22/lib/node_modules node
+  scripts/preview_character.js <new>,eagle,slug /tmp/c1.png`, and the new
+  one as body and as hindquarters (`bison,<new>,fox`, `fox,deer,<new>`):
+  each must read as one creature, the masses running on across the folds.
+  Fix the part's drawing or its `SEAMS`, never the agreed marks — changing
+  `NECK`/`HIP` redraws every chimera.
+
+**The ethogram** (each character's row in `characters.json`): its documented
+behaviours, never invented — `name`, `what`, `source` (a published study or
+a standard natural history; a widely told observation is said to be one),
+`role` (`instinct`, the game's rule for that animal's leg; `play`, an idle;
+`ritual`, when two meet), `pose` (which pose shows it) and `said`, one plain
+line ("the squirrel buried something here"). Its `chimera` words name it in
+a chimera: `head` an adjective ("Bowed"), `body` a noun ("Mantle"), `hind` a
+clause ("That Leaves a Trace") — "The Bowed Mantle That Leaves a Trace" —
+and `gaze`, `carriage`, `pace`.
+
+**Refining the chimera.** Each day, after the three characters, take the
+canonical chimera (bison, eagle, slug) and one other triple at random, and
+refine as the characters are refined: render them
+(`preview_character.js bison,eagle,slug`), list the five biggest flaws
+against the references (the artist's own works; the generated design
+references are kept outside the repository) and against the three artists'
+hands (de Kooning's leaning strokes, Warhol's flat plates and off-register
+line, Kapoor's stacked bands), fix them in the parts' drawings, at least
+three rounds. Log it under the three characters whose parts changed.
+
 ## Keep
 
 - Public files only; nothing from `data/`, no network in the build, the same

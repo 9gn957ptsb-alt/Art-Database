@@ -90,6 +90,10 @@ def poses():
         "back": [slug(4.0, 34.6, stalks=1.35)],
         "look": [slug(4.0, 33.8, lift=3.4, front=True)],
         "sit": [slug(9.0, 30.0, rise=1.0, stalks=0.0)],
+        # The ethogram (characters.json): its instinct (the glide along a
+        # trail, the wave running the length of the foot) and its ritual.
+        "act": [slug(4.0 + 0.3 * k, 34.0 + 0.3 * k, hump=(k + 0.5) / 4.0, stalks=1.2) for k in range(4)],
+        "ritual": [raster(court_parts(k), W, H) for k in range(2)],
     }
 
 
@@ -99,7 +103,17 @@ SEAMS = {"neck": (32.0, 21.6), "hip": (20.0, 22.4)}
 CHIMERA_SCALE = 1.0
 
 
+def court_parts(k):
+    """Courtship: two circle each other, and lunge; the front lifted and
+    curled toward the other, the tentacles out."""
+    return slug_parts(6.0 + k, 32.0 + k, lift=2.6 + 1.2 * k, stalks=1.3, hump=0.5)
+
+
 def rig(pose, k=0):
+    if pose == "act":
+        return slug_parts(4.0 + 0.3 * k, 34.0 + 0.3 * k, hump=(k + 0.5) / 4.0, stalks=1.2), 0.0
+    if pose == "ritual":
+        return court_parts(k), 0.0
     if pose == "walk":
         # The wave runs along the foot from the tail to the head.
         return slug_parts(4.0 + 0.2 * k, 34.0 + 0.2 * (k % 3), hump=k / 6.0), 0.0

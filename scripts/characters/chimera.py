@@ -56,8 +56,10 @@ DROP = 4.6                     # how far the folds' marks come down when it rest
 FALL = 3.6                     # cells over which a part comes back to itself from a fold
 MARGIN = 5                     # how far a limb may reach past its fold
 POSES = [("walk", k) for k in range(6)] + [("stand", 0), ("stand", 1), ("stand", 2),
-                                            ("back", 0), ("look", 0), ("rest", 0), ("present", 0)]
-NAMES = ["walk%d" % k for k in range(6)] + ["stand0", "stand1", "stand2", "back", "look", "rest", "present"]
+                                            ("back", 0), ("look", 0), ("rest", 0), ("present", 0)] + \
+    [("act", k) for k in range(4)] + [("ritual", k) for k in range(2)]
+NAMES = ["walk%d" % k for k in range(6)] + ["stand0", "stand1", "stand2", "back", "look", "rest", "present"] + \
+    ["act%d" % k for k in range(4)] + ["ritual%d" % k for k in range(2)]
 SLOTS = ("head", "body", "hind")
 
 
@@ -145,6 +147,7 @@ class Rig:
             # deeper than the marks keeps some of it (a hump over the fold).
             ft, fb = G - (self.g - t) * s, G - (self.g - b) * s
             T, B = T + (ft - T) * GIVE, B + (fb - B) * GIVE
+            T, B = min(T, G - 3.0), min(B, G - 1.2)
             if Y < T:
                 return t - (T - Y) / s
             if Y <= B:
@@ -210,9 +213,8 @@ class Rig:
                 for n, part in enumerate(parts):
                     if not inside and not is_limb(part, slot):
                         continue
-                    if inside and getattr(part, "limb", None) not in (None, slot) and \
-                            not self.reaches(part, slot, X):
-                        continue
+                    if inside and getattr(part, "limb", None) not in (None, slot):
+                        continue                 # another part's limb: not ours to draw
                     d = part.sdf(x, y)
                     if d > 0.0:
                         continue
@@ -250,11 +252,9 @@ class Rig:
                 if near:
                     out[j][c] = "p" if lit > 0 else "o"
         rows = ["".join(r) for r in out]
-        finish = getattr(m, "finish", None)
+        finish = getattr(m, "finish_chimera", None) or getattr(m, "finish", None)
         if finish:
             rows = finish(rows)
-            if slot != "hind" or True:
-                rows = self.clip_finish(rows, lo, keep, parts, slot)
         # Crop to the columns used.
         used = [c for c in range(w) if any(r[c] != "." for r in rows)]
         if not used:
@@ -262,29 +262,19 @@ class Rig:
         a, b = used[0], used[-1] + 1
         return [lo + a, [r[a:b] for r in rows]]
 
-    def reaches(self, part, slot, X):
-        # A limb of another part, inside this part's columns: not ours to draw.
-        return False
-
-    def clip_finish(self, rows, lo, keep, parts, slot):
-        """A finish (a key line printed off register) may push a cell over
-        the fold: it stays on its own side."""
-        out = []
-        for r in rows:
-            line = list(r)
-            for c, ch in enumerate(line):
-                X = lo + c + 0.5
-                if ch != "." and not (keep[0] - 1 <= X < keep[1] + 1) and ch in "y":
-                    pass
-            out.append("".join(line))
-        return out
-
 
 def build(cid):
     rig = Rig(cid)
-    out = {"id": cid, "len": rig.cols, "scale": {k: round(v, 3) for k, v in rig.s.items()}}
+    out = {"id": cid, "len": rig.cols, "rows": ROWS, "ground": round(G * RES, 2), "res": RES,
+           "scale": {k: round(v, 3) for k, v in rig.s.items()}}
     for slot in SLOTS:
         out[slot] = {name: rig.layer(slot, pose, k) for name, (pose, k) in zip(NAMES, POSES)}
+    # A stag's antlers by month: the head again for spring (cast) and summer (velvet).
+    if hasattr(rig.mod, "SEASON"):
+        for season in ("cast", "velvet"):
+            rig.mod.SEASON = season
+            out["head@" + season] = {name: rig.layer("head", pose, k) for name, (pose, k) in zip(NAMES, POSES)}
+        rig.mod.SEASON = "hard"
     return out
 
 

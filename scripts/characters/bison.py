@@ -21,7 +21,7 @@ horn's light and the muzzle; y the eye; o p the outline.
 
 import math
 
-from draw import Part, capsule, ellipse, foot_at, limb, path, raster, shaggy, strokes, triangle, two_bone, union
+from draw import Part, capsule, ellipse, foot_at, limb, path, poly, raster, scaled, shaggy, strokes, triangle, turned, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6
@@ -152,6 +152,10 @@ def poses():
         "back": [stand("graze")],
         "look": [stand("front")],
         "sit": [lie()],
+        # The ethogram (characters.json): its instinct, its play, its ritual.
+        "act": [raster(wind_parts(k), W, H) for k in range(4)],
+        "play": [raster(wallow_parts(k), W, H) for k in range(2)],
+        "ritual": [raster(rut_parts(k), W, H) for k in range(2)],
     }
 
 
@@ -168,47 +172,51 @@ CHIMERA_SCALE = 1.0
 # beard hanging, a short black horn, the pale muzzle, a dark eye with its
 # light in it.
 
-CAPE = strokes("dRrg", angle=1.9, width=2.2, swing=1.0)
-FACE = strokes("kKdR", angle=1.75, width=1.8, swing=1.2)
-MOP = strokes("kKKd", angle=2.1, width=1.6, swing=1.0)
-HORN = lambda x, y, l, i, j: "w" if l > 0.72 else "K" if l > 0.5 else "k"
+HEAD_K = 1.22                  # the head drawn this much larger in a chimera
+CAPE = strokes("dRrg", angle=1.9, width=2.4, swing=0.8)
+FACE = strokes("kkKdR", angle=1.75, width=2.4, swing=0.45)
+MOP = strokes("kkKd", angle=2.1, width=2.0, swing=0.6)
+HORN = lambda x, y, l, i, j: "W" if l > 0.66 else "k"
 
 
 def head_part(pose="side", k=0):
-    """The head and its cape, from the neck's fold (x 28) forward."""
-    nod = {"walk": (0.0, 0.25, 0.5, 0.0, 0.25, 0.5)[k % 6]}.get(pose, 0.0)
-    down = {"back": 3.4, "wind": 1.6, "rest": 4.2, "present": -1.6}.get(pose, 0.0) + nod
-    fwd = {"wind": 0.9, "present": 0.4}.get(pose, 0.0)
-    blown = 1.0 if pose == "wind" else 0.0
-    sway = 0.4 * math.sin(k * 1.05) if pose == "walk" else 0.0
-    cx, cy = 33.0 + fwd, 17.2 + down
-    lowered = 2.0 if pose == "rest" else 0.0
+    """The head and its mane, from the neck's fold (x 28) forward: the mane
+    rising off the fold and rolling over into the forelock, the long face
+    falling steeply to the muzzle, the beard under the jaw."""
+    nod = (0.0, 0.3, 0.6, 0.0, 0.3, 0.6)[k % 6] if pose == "walk" else 0.0
+    down = {"back": 2.6, "act": (0.6, 1.2, 1.6, 1.6)[k % 4], "rest": 3.4, "present": -1.6}.get(pose, 0.0) + nod
+    fwd = {"act": 0.8, "present": 0.2, "back": 0.6}.get(pose, 0.0)
+    blown = (0.3, 0.7, 1.0, 1.0)[k % 4] if pose == "act" else 0.0
+    sway = 0.35 * math.sin(k * 1.05) if pose == "walk" else (0.4 if pose == "stand" and k == 1 else 0.0)
+    dx, dy = fwd, down
+    P = lambda pts: [(x + dx * (x - 28) / 9.0, y + dy * (x - 28) / 9.0) for x, y in pts]   # the head swings from the fold
     parts = []
-    cape = shaggy(union(ellipse(28.8, 12.6 + lowered, 4.0, 7.0, 0.12), ellipse(30.4, 15.4 + down * 0.4 + lowered, 3.4, 4.6, 0.3)),
-                  0.35, 1.9, 1.3)
-    parts.append(Part(cape, CAPE, 2))
+    mane = shaggy(poly(P([(27.4, 11.2), (29.0, 9.0), (31.2, 7.8), (33.6, 9.4), (34.6, 12.0), (33.0, 16.4),
+                          (32.6, 20.4), (31.0, 22.4), (29.6, 21.0), (27.4, 21.0)])), 0.5, 1.7, 1.3 + blown)
+    parts.append(Part(mane, CAPE, 2))
     if pose == "look":
-        return parts + head_front_part(32.2, 16.0)
-    # The beard, under the jaw, hanging (blown back in the wind).
-    beard = shaggy(triangle((cx - 2.4, cy + 1.6), (cx + 1.8, cy + 2.6), (cx - 1.0 - blown * 1.6 + sway, cy + 6.6 - blown * 1.0)), 0.4, 2.3, 0.4)
+        return parts + head_front_part(32.6, 15.6 + down)
+    beard = shaggy(poly(P([(31.6, 18.6), (35.4, 20.4), (34.2, 22.4), (32.8 - blown * 1.6 + sway, 25.0 - blown * 0.8),
+                           (31.0, 22.0)])), 0.38, 2.3, 0.4)
     parts.append(Part(beard, MOP, 3))
-    skull = union(ellipse(cx, cy, 3.3, 3.7, 0.42), ellipse(cx + 2.3, cy + 2.6, 2.0, 1.75, 0.2))
-    parts.append(Part(skull, FACE, 4))
-    muzzle = ellipse(cx + 3.3, cy + 3.0, 1.15, 1.05)
-    parts.append(Part(muzzle, lambda x, y, l, i, j: "w" if l > 0.7 else "W", 5))
-    parts.append(Part(ellipse(cx + 3.9, cy + 2.6, 0.38, 0.32), lambda *a: "k", 6))
-    # The forelock: a mop over the brow, lifting off it in the wind.
-    mop = shaggy(ellipse(cx - 1.0 - blown * 0.8, cy - 2.2, 2.8, 2.2, -0.3), 0.45, 2.1, 2.2)
+    face = poly(P([(33.0, 11.4), (35.0, 12.4), (36.4, 16.6), (37.4, 19.3), (36.6, 20.8), (34.4, 20.8), (32.2, 17.6)]))
+    parts.append(Part(face, FACE, 4))
+    mx, my = P([(36.4, 19.6)])[0]
+    parts.append(Part(ellipse(mx, my, 1.15, 1.05), lambda x, y, l, i, j: "w" if l > 0.72 else "W", 5))
+    parts.append(Part(ellipse(mx + 0.55, my - 0.35, 0.34, 0.3), lambda *a: "k", 6))
+    tx, ty = P([(33.4, 12.2)])[0]
+    mop = shaggy(ellipse(tx - blown * 0.6, ty, 2.1, 1.6, -0.2), 0.4, 2.1, 2.2 + blown)
     parts.append(Part(mop, MOP, 5))
-    ear = ellipse(cx - 2.6, cy - 0.4 - (0.9 if (pose == "stand" and k == 2) else 0.0), 1.1, 0.6, -0.5 - (0.6 if (pose == "stand" and k == 2) else 0))
+    flick = pose == "stand" and k == 2
+    ex, ey = P([(34.5, 14.6)])[0]
+    ear = ellipse(ex - 2.1, ey - 0.6 - (0.8 if flick else 0.0), 1.05, 0.5, -0.3 - (0.7 if flick else 0.0))
     parts.append(Part(ear, FACE, 6))
-    horn = path([(cx - 1.5, cy - 1.4), (cx - 1.9, cy - 3.2), (cx - 1.0, cy - 4.4)], 0.62, 0.28)
+    horn = path(P([(33.4, 12.8), (31.8, 12.2), (30.9, 10.6), (31.2, 8.8)]), 0.9, 0.34)
     parts.append(Part(horn, HORN, 7))
-    shut = (pose == "stand" and k == 1) or pose == "wind"
-    ex, ey = cx + 0.9, cy - 0.1
-    parts.append(Part(ellipse(ex, ey, 0.62, 0.22 if shut else 0.52), lambda *a: "k", 8))
+    shut = (pose == "stand" and k == 1) or (pose == "act" and k >= 2)
+    parts.append(Part(ellipse(ex, ey, 0.62, 0.2 if shut else 0.5), lambda *a: "k", 8))
     if not shut:
-        parts.append(Part(ellipse(ex - 0.25, ey - 0.22, 0.3, 0.26), lambda *a: "y", 9))
+        parts.append(Part(ellipse(ex - 0.26, ey - 0.24, 0.26, 0.24), lambda *a: "y", 9))
     return parts
 
 
@@ -228,9 +236,33 @@ def head_front_part(cx, cy):
             Part(eyes, lambda *a: "k", 7), Part(lights, lambda *a: "y", 8)]
 
 
+def wind_parts(k):
+    """Into the blizzard: it walks on with its head low into the wind."""
+    p = k / 4.0
+    far, near = legs((p + 0.75, p + 0.5, p + 0.25, p), 0.0)
+    return far + body(0.0, tail=1.2) + head_side(33.4, 17.0, down=1.8, blink=k % 2 == 1) + near
+
+
+def wallow_parts(k):
+    """Wallowing: down on its side in the dust and rolling, legs in the air."""
+    return turned(stand_parts("side"), (2.5, 2.9)[k], (20.0, 16.0), (0.0, 3.8))
+
+
+def rut_parts(k):
+    """The rut: head down, horns forward, braced to meet another head on."""
+    far, near = legs((0.2, 0.7, 0.7, 0.2), 0.3, reach=1.6)
+    return far + body(0.3) + head_side(33.8, 17.6, down=2.6 + 0.6 * k) + near
+
+
 def rig(pose, k=0, slot="body"):
+    if pose == "ritual" and slot != "head":
+        return rut_parts(k), 0.0
+    if pose == "act" and slot != "head":
+        return wind_parts(k), 0.0
+    if pose == "ritual":
+        return scaled(head_part("back", 0), HEAD_K, (28.0, 18.0)), 0.0
     if slot == "head":
-        return head_part(pose, k), {"rest": 4.6}.get(pose, 0.0)
+        return scaled(head_part(pose, k), HEAD_K, (28.0, 18.0)), {"rest": 4.6}.get(pose, 0.0)
     if pose == "walk":
         p = k / 6.0
         return walk_parts(p, up=k in (1, 4), nod=(0.0, -0.3, -0.6, 0.0, -0.3, -0.6)[k]), 0.0

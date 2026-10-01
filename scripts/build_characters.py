@@ -330,15 +330,23 @@ def artist_pairs(cast):
 
 def main():
     cast = json.loads((OUT / "characters.json").read_text())
+    import chimera
+    (OUT / "parts").mkdir(exist_ok=True)
     for c in cast["cast"]:
         mod = importlib.import_module(c["id"])
         poses = mod.poses()
-        n = dump(OUT / (c["id"] + ".json"), {
-            "id": c["id"], "w": mod.W, "h": mod.H, "cell": mod.CELL,
-            "foot": [mod.W // 2, int(mod.GROUND)],
-            "poses": poses,
-        })
+        sprite = {"id": c["id"], "w": mod.W, "h": mod.H, "cell": mod.CELL,
+                  "foot": [mod.W // 2, int(mod.GROUND)], "poses": poses}
+        if hasattr(mod, "seasons"):
+            sprite["seasons"] = mod.seasons()        # the stag's antlers by month
+        n = dump(OUT / (c["id"] + ".json"), sprite)
         print(f"{c['id']}: {sum(len(v) for v in poses.values())} frames, {n} bytes")
+        # Its three parts, for a chimera (scripts/characters/chimera.py).
+        if hasattr(mod, "rig"):
+            n = dump(OUT / "parts" / (c["id"] + ".json"), chimera.build(c["id"]))
+            print(f"{c['id']}: in three parts, {n} bytes")
+    if "--sprites" in sys.argv:
+        return
     home_of = homes()
     extra = [(h["born"]["where"], h["born"]["ll"][0], h["born"]["ll"][1])
              for _, h in sorted(home_of.items()) if h.get("born")]

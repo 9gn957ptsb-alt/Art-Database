@@ -132,12 +132,15 @@ def poses():
         "back": [upright()],
         "look": [upright(front=True)],
         "sit": [upright(eating=True)],
+        # The ethogram (characters.json): its instinct and its play (the tail flicked).
+        "act": [unline(raster(bury_parts(k), W, H, deep=".")) for k in range(4)],
+        "play": [unline(raster(stand_parts(flick=bool(k)), W, H, deep=".")) for k in range(2)],
     }
 
 
 # ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
 
-SEAMS = {"neck": (24.6, 18.0), "hip": (17.8, 18.6)}
+SEAMS = {"neck": (22.8, 18.0), "hip": (17.4, 18.6)}
 CHIMERA_SCALE = 1.45
 DEEP = "."
 
@@ -146,7 +149,38 @@ def finish(rows):
     return unline(rows)
 
 
-def rig(pose, k=0):
+def bury_parts(k):
+    """Scatter-hoarding: a nut in its mouth, it digs, pushes the nut in with
+    its nose, and pats the earth down over it."""
+    if k == 0:
+        parts = stand_parts(cy=15.0)
+        parts.append(Part(ellipse(28.6, 16.4, 1.0, 0.9), lambda *a: "k", 9))
+        return parts
+    bd = [Part(union(ellipse(19.6, 19.8, 4.8, 3.2, 0.25), ellipse(23.2, 20.6, 2.4, 2.4)), COAT, 3)]
+    hind = [Part(ellipse(17.0, 20.4, 2.8, 2.6), COAT, 3), Part(capsule((17.2, 23.6), (21.0, 24.0), 0.8, 0.6), COAT, 3)]
+    reach = (0, (25.2, 24.2), (24.4, 23.6), (25.6, 23.8))[k]
+    fore = [Part(capsule((23.6, 21.2), reach, 0.7, 0.6), COAT, 3)]
+    t = tail([(14.8, 19.4), (10.6, 16.6), (10.4, 11.4), (13.8, 8.0 + (0.6 if k == 3 else 0))])
+    limb(fore, "body"), limb(hind[1:], "hind")
+    parts = [t] + fore + bd + hind + head(26.4, 21.4 + (0.6 if k == 2 else 0))
+    if k == 1:
+        parts.append(Part(ellipse(27.6, 24.2, 1.6, 0.5), lambda *a: "k", 9))       # the earth thrown up
+    return parts
+
+
+def rig(pose, k=0, slot="body"):
+    parts, drop = rig_(pose, k)
+    if slot == "body":
+        # Cut out of the body, the cream belly reads as a face: the body is all coat.
+        parts = [p for p in parts if p.paint is not BELLY]
+    return parts, drop
+
+
+def rig_(pose, k=0):
+    if pose == "act":
+        return bury_parts(k), 0.0
+    if pose == "ritual":
+        return stand_parts(flick=k == 1, cy=14.6), 0.0
     if pose == "walk":
         return bound_parts((0, 1, 1, 2, 3, 3)[k]), 0.0
     if pose == "stand":

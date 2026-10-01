@@ -14,7 +14,7 @@ Letters: d R r g the coat, deepest to lightest; W w the white; k K the black
 
 import math
 
-from draw import Part, capsule, ellipse, limb, path, ramp, raster, triangle, two_bone, union
+from draw import Part, capsule, ellipse, limb, path, ramp, raster, triangle, turned, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6                  # the soles stand on this line
@@ -238,6 +238,10 @@ def poses():
         "back": [stand("back")],
         "look": [stand("front")],
         "sit": [sit()],
+        # The ethogram (characters.json): its instinct, its play, its ritual.
+        "act": [raster(pounce_parts(k), W, H) for k in range(4)],
+        "play": [raster(toss_parts(k), W, H) for k in range(2)],
+        "ritual": [raster(gekker_parts(k), W, H) for k in range(2)],
     }
 
 
@@ -260,8 +264,52 @@ def lie_parts(head="profile"):
     return parts, dy
 
 
+def listen_parts(k=0):
+    """Mousing: it stands stock still, head cocked down, ears forward, listening."""
+    far, near = legs_at((0.1, 0.6, 0.6, 0.1), 0.0, reach=1.0)
+    hx, hy = 31.2, 11.6 + 0.6 * k
+    return far + body_parts(0.0, tail_lift=-0.2) + [neck((25.4, 13.2), (hx - 1.0, hy - 0.4))] + \
+        head_profile(hx, hy, ear=-0.6) + near
+
+
+def pounce_parts(k):
+    """The mouse jump (Červený et al. 2011): from listening, a crouch, the
+    leap up in a high arc, and down nose-first into the ground."""
+    if k == 0:
+        return listen_parts(1)
+    if k == 1:
+        far, near = legs_at((0.25, 0.75, 0.75, 0.25), 1.2, reach=1.6, lift=0.0)
+        return far + body_parts(1.2, tail_lift=0.6) + [neck((25.4, 14.4), (29.8, 13.2))] + head_profile(30.8, 13.4, ear=-0.6) + near
+    if k == 2:
+        return turned(trot_parts(0.25, (0.6, 0.1, 0.6, 0.1), up=True), -0.42, (20.0, 14.0), (0.0, -5.2))
+    return turned(trot_parts(0.5, (0.85, 0.35, 0.85, 0.35), up=False), 0.62, (20.0, 14.0), (2.0, -1.4))
+
+
+def gekker_parts(k):
+    """Gekkering: side on to a rival, back arched, ears flat, mouth open."""
+    far, near = legs_at((0.1, 0.6, 0.6, 0.1), -0.6, reach=1.0)
+    hx, hy = 30.6, 10.0
+    parts = far + body_parts(-0.9, tail_lift=1.8) + [neck((25.4, 12.4), (hx - 1.2, hy + 0.6))]
+    parts += head_profile(hx, hy, ear=2.2)
+    if k:
+        parts.append(Part(triangle((hx + 2.2, hy + 1.8), (hx + 5.4, hy + 2.6), (hx + 4.6, hy + 3.4)), lambda *a: "k", 6))
+    return parts + near
+
+
+def toss_parts(k):
+    """Play: tossing a vole, head flung up, the vole in the air."""
+    parts = stand_parts("up" if k else "profile", tail_lift=0.8)
+    vx, vy = (34.6, 3.0) if k else (35.6, 11.4)
+    parts.append(Part(ellipse(vx, vy, 1.2, 0.8, 0.5 if k else 0.0), lambda *a: "d", 8))
+    return parts
+
+
 def rig(pose, k=0):
     """The whole fox in a chimera's pose, as parts, and how far it is lowered."""
+    if pose == "act":
+        return pounce_parts(k), (1.2 if k == 1 else 0.0)
+    if pose == "ritual":
+        return gekker_parts(k), 0.0
     if pose == "walk":
         p = k / 6.0
         return trot_parts(p, (p + 0.75, p + 0.5, p + 0.25, p), up=k in (1, 4)), 0.0

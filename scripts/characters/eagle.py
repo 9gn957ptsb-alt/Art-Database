@@ -22,7 +22,7 @@ printed out of register.
 
 import math
 
-from draw import Part, capsule, ellipse, flat, foot_at, limb, offset_line, path, raster, triangle, union
+from draw import Part, capsule, ellipse, flat, foot_at, limb, offset_line, path, poly, raster, shaggy, triangle, turned, union
 
 W, H = 40, 26
 GROUND = 24.6
@@ -71,6 +71,10 @@ def wing(stroke):
 
 
 def fly(stroke):
+    return offset_line(raster(fly_parts(stroke), W, H))
+
+
+def fly_parts(stroke):
     body = union(ellipse(19.6, 14.4, 6.8, 3.1, -0.08), ellipse(24.6, 13.4, 2.8, 2.6))
     tail = triangle((14.0, 13.4), (6.4, 12.4), (7.0, 16.6))
     feet = capsule((17.0, 16.0), (14.6, 16.8), 0.6, 0.5)
@@ -79,7 +83,7 @@ def fly(stroke):
              Part(body, BROWN, 3)]
     parts += head(27.6, 12.2)
     parts.append(wing(stroke))
-    return offset_line(raster(parts, W, H))
+    return parts
 
 
 def perched(head_kind="side", fluff=0.0):
@@ -107,6 +111,10 @@ def poses():
         "back": [perched("back")],
         "look": [perched("front")],
         "sit": [perched("front", fluff=0.9)],
+        # The ethogram (characters.json): its instinct, its play, its ritual.
+        "act": [offset_line(raster(mantle_parts(k), W, H)) for k in range(4)],
+        "play": [offset_line(raster(soar_parts(k), W, H)) for k in range(2)],
+        "ritual": [offset_line(raster(cartwheel_parts(k), W, H)) for k in range(2)],
     }
 
 
@@ -180,6 +188,134 @@ def mantle_wing(m, far=False):
     return Part(sdf, feathers(sh, math.atan2(top[1] - sh[1], top[0] - sh[0])), 8)
 
 
+LINE = lambda *a: "k"
+
+
+def wing_paint(shoulder, angle, m=0.0):
+    """The wing's plate, flat, with Warhol's drawn line over it: rows of
+    scalloped coverts near the shoulder, then the long flight feathers
+    (their lines fanning as the wing opens), the lit edge one step up."""
+    ca, sa = math.cos(angle), math.sin(angle)
+
+    def paint(x, y, light, i, j):
+        u = (x - shoulder[0]) * ca + (y - shoulder[1]) * sa
+        v = -(x - shoulder[0]) * sa + (y - shoulder[1]) * ca
+        if light > 0.9:
+            return "r"
+        if u < 4.6 + 1.5 * m:
+            row = (u + 0.8 * math.cos(v * 1.4)) / 2.1
+            if abs(row - round(row)) < 0.09 and u > 1.2:
+                return "k"
+            return "R"
+        lane = (v * (1.0 - 0.45 * m) - 0.12 * (u - 4.6)) / 1.7
+        if abs(lane - round(lane)) < 0.09:
+            return "k"
+        return "d"
+    return paint
+
+
+def body_part(pose="stand", k=0):
+    """The eagle as a chimera's body: breast and belly in the flat brown,
+    the folded wing (or the mantle) over the back, the feathered trousers,
+    the short yellow legs and the talons."""
+    walk = pose == "walk"
+    p = k / 6.0 + 0.25 if walk else 0.1
+    bob = (0.0, -0.25, -0.4, 0.0, -0.25, -0.4)[k] if walk else 0.0
+    # At rest its wings are held a little off the back, as the eagle stands
+    # over what it has; half raised as an idle; fully, presented.
+    mantle = {"present": 1.0, "back": 0.45, "stand": 0.28, "look": 0.28, "ritual": 0.28}.get(pose, 0.0)
+    if pose == "stand" and k == 2:
+        mantle = 0.62
+    if pose == "act":
+        mantle = (0.25, 0.6, 1.0, 1.0)[k]
+    sit = pose == "rest"
+    dy = (3.2 if sit else 0.0) + bob
+    parts = []
+    if mantle > 0:
+        parts.append(mantle_wing_part(mantle * 0.85, dy, far=True))
+    lx = 21.0
+    if not sit:
+        parts += talons_part((lx - 1.0, 17.0 + dy), foot_at(p + 0.5, lx - 0.8, 1.7, 1.3, GROUND, 0.6), False)
+    breast = poly([(12.6, 11.6 + dy), (18.0, 10.6 + dy), (23.0, 10.0 + dy), (26.4, 10.6 + dy), (26.4, 16.6 + dy),
+                   (23.6, 18.4 + dy), (18.0, 18.6 + dy), (12.6, 17.6 + dy)])
+    parts.append(Part(breast, flat("Rr", 0.66), 3))
+    if not sit:
+        parts += talons_part((lx + 0.4, 16.8 + dy), foot_at(p, lx + 0.6, 1.7, 1.3, GROUND, 0.6), True)
+    else:
+        toes = capsule((lx - 0.4, GROUND - 0.45), (lx + 2.4, GROUND - 0.4), 0.45, 0.35)
+        parts.append(limb([Part(toes, YELLOW, 4)], "body")[0])
+        parts.append(Part(shaggy(ellipse(lx + 0.2, 18.6 + dy * 0.6, 2.6, 1.6), 0.3, 2.4), lambda *a: "d", 4))
+    if mantle > 0:
+        parts += mantle_wing_part(mantle, dy)
+    else:
+        fold = poly([(24.6, 10.6 + dy), (20.4, 9.4 + dy), (15.0, 10.2 + dy), (9.0, 12.4 + dy), (8.4, 14.2 + dy),
+                     (15.2, 15.8 + dy), (21.4, 15.6 + dy), (24.8, 13.6 + dy)])
+        parts.append(Part(fold, flat("Rr", 0.8), 8))
+        # Warhol's drawn line: two rows of scalloped coverts, the long
+        # flight feathers below them running back to the tips.
+        def scallops(x0, x1, y, n):
+            pts = []
+            for q in range(n * 2 + 1):
+                pts.append((x0 + (x1 - x0) * q / (n * 2), y + (0.0 if q % 2 == 0 else 0.75)))
+            return pts
+        for line in (scallops(23.8, 17.0, 12.0, 3), scallops(22.6, 15.6, 13.9, 3),
+                     [(16.6, 14.6), (12.0, 14.4), (8.6, 14.0)], [(17.4, 12.6), (12.4, 12.9), (9.2, 13.2)]):
+            parts.append(Part(path([(x, y + dy) for x, y in line], 0.2), LINE, 9))
+    return parts
+
+
+def mantle_wing_part(m, dy, far=False):
+    """Mantling: the wing raised at the wrist, the hand and its primaries
+    hanging down in front like a curtain over what it hides."""
+    lift = 7.4 * m
+    sh = (22.0, 11.2 + dy) if not far else (22.8, 10.8 + dy)
+    wrist = (19.0, 10.6 + dy - lift)
+    hand = (19.0 + 4.2 * m, 11.0 + dy - lift)
+    if far:
+        wrist, hand = (wrist[0] + 1.2, wrist[1] + 0.8), (hand[0] + 0.6, hand[1] + 0.8)
+    pts = [sh, wrist, hand, (hand[0] + 0.6, hand[1] + 1.0)]
+    # primaries hanging from the hand, as fingers
+    hang = 3.6 + 2.0 * m
+    fingers = []
+    for q in range(4):
+        x = hand[0] + 0.4 - 1.2 * q
+        fingers.append(capsule((x, hand[1] + 0.4), (x - 0.4, hand[1] + hang - 0.6 * q), 0.6, 0.36))
+    curtain = poly([sh, wrist, (wrist[0] - 3.6, wrist[1] + 2.4 + 1.6 * (1 - m)), (13.4, 11.8 + dy), (16.0, 13.2 + dy)])
+    sdf = union(path(pts, 1.4, 1.0), curtain, *fingers)
+    if far:
+        return Part(sdf, lambda *a: "d", 0)
+
+    def paint(x, y, light, i, j):
+        if light > 0.88:
+            return "r"
+        if (y - wrist[1]) < 2.2 and x > wrist[0] - 3.0:
+            return "R"                               # the coverts along the arm
+        return "d" if x > hand[0] - 4.6 and y > hand[1] + 0.8 else "R"
+    lines = []
+    for q in range(1, 4):
+        x = hand[0] + 0.4 - 1.2 * q + 0.6
+        lines.append(path([(x, hand[1] + 0.9), (x - 0.4, hand[1] + hang - 0.6 * q - 0.4)], 0.17))
+    for q in range(3):
+        a = (wrist[0] - 0.6 - 1.4 * q, wrist[1] + 1.4 + 0.6 * q)
+        lines.append(path([a, (a[0] - 1.8, a[1] + 3.0 + q)], 0.17))
+    return [Part(sdf, paint, 8), Part(union(*lines), LINE, 9)]
+
+
+def talons_part(hip, foot, near):
+    fx, fy = foot
+    trouser = shaggy(ellipse(hip[0] - 0.2, hip[1] + 0.9, 1.9, 2.7, 0.15), 0.3, 2.4, 0.7)
+    shank = capsule((hip[0] + 0.3, hip[1] + 1.2), (fx, fy - 0.9), 0.5, 0.4)
+    toes = union(capsule((fx - 0.1, fy - 0.45), (fx + 1.8, fy - 0.35), 0.42, 0.3),
+                 capsule((fx - 0.1, fy - 0.45), (fx + 1.2, fy - 0.15), 0.38, 0.28),
+                 capsule((fx - 0.1, fy - 0.45), (fx - 1.2, fy - 0.25), 0.36, 0.28))
+    claws = union(ellipse(fx + 2.1, fy - 0.15, 0.36, 0.3), ellipse(fx - 1.5, fy - 0.15, 0.32, 0.28))
+    g = 7 if near else 0
+    gold = YELLOW if near else (lambda x, y, l, i, j: "y" if l > 0.75 else "d")
+    parts = [Part(shank, gold, g), Part(toes, gold, g), Part(claws, lambda *a: "k", g),
+             Part(trouser, (lambda x, y, l, i, j: "R" if l > 0.7 else "d") if near else (lambda *a: "d"), g)]
+    return limb(parts, "body")
+
+
 def walker(phase=0.0, legs_at="body", mantle=0.0, head_kind="side", lower=0.0, up=0.0, fluff=0.0, sit=False):
     """The walking eagle, as parts. `legs_at` puts the legs under the breast
     (as a body) or under the rump (as hindquarters)."""
@@ -214,8 +350,32 @@ def walker(phase=0.0, legs_at="body", mantle=0.0, head_kind="side", lower=0.0, u
     return parts
 
 
+def mantle_parts(k):
+    """Mantling, whole: standing over what it has, wings raised and spread down round it."""
+    return walker(0.1, "body", mantle=(0.3, 0.65, 1.0, 1.0)[k], head_kind="down" if k >= 2 else "side")
+
+
+def soar_parts(k):
+    """Soaring on a thermal: wings level and still, the primaries spread, tilting."""
+    return turned(fly_parts(1), (-0.08, 0.08)[k], (20.0, 13.0))
+
+
+def cartwheel_parts(k):
+    """The courtship cartwheel: talons locked with its mate, it turns over
+    and over as the two fall."""
+    return turned(fly_parts(2 if k else 0), (2.4, 3.6)[k], (20.0, 13.0))
+
+
 def rig(pose, k=0, slot="body"):
     legs_at = "hind" if slot == "hind" else "body"
+    if slot == "body":
+        return body_part("stand" if pose == "ritual" else pose, k), (3.2 if pose == "rest" else 0.0)
+    if pose == "ritual":
+        return walker(0.1, legs_at, mantle=0.2 * k, up=1.0 + 0.4 * k), 0.0
+    if pose == "act" and slot != "body":
+        return walker(0.1, legs_at, mantle=(0.3, 0.65, 1.0, 1.0)[k], head_kind="down" if k >= 2 else "side"), 0.0
+    if slot == "body":
+        return body_part(pose, k), (3.2 if pose == "rest" else 0.0)
     if pose == "walk":
         p = k / 6.0 + 0.25
         return walker(p, legs_at, mantle=(0.0, 0.08, 0.16, 0.0, 0.08, 0.16)[k] * 0), 0.0
@@ -232,6 +392,27 @@ def rig(pose, k=0, slot="body"):
 
 def finish(rows):
     return offset_line(rows)
+
+
+def finish_chimera(rows):
+    """In a chimera, drawn at half as many cells again, the key plate is
+    laid off register up and to the left, over the chalk edge, so the
+    yellow line runs along the lit side of every shape a cell off it."""
+    h, w = len(rows), len(rows[0])
+    solid = [[ch not in ".op" for ch in r] for r in rows]
+    out = [list(r) for r in rows]
+    for j in range(h):
+        for i in range(w):
+            if not solid[j][i]:
+                continue
+            edge = any(not (0 <= i + a < w and 0 <= j + b < h and solid[j + b][i + a])
+                       for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            if not edge:
+                continue
+            ti, tj = i - 1, j - 1
+            if 0 <= ti < w and 0 <= tj < h and rows[tj][ti] in ".op":
+                out[tj][ti] = "y"
+    return ["".join(r) for r in out]
 
 
 INKS = {"coat": ["#3a2a2d", "#523d41", "#6e5552", "#a0918a"], "white": ["#c9c0ad", "#ece6d4"],

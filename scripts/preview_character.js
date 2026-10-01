@@ -6,6 +6,15 @@
 
      NODE_PATH=/opt/node22/lib/node_modules node scripts/preview_character.js fox /tmp/fox.png [--scale 8]
 
+   A chimera (three of the cast, head, body, hindquarters, as the corpse
+   game makes them: scripts/characters/chimera.py) is drawn by naming three:
+
+     NODE_PATH=/opt/node22/lib/node_modules node scripts/preview_character.js bison,eagle,slug /tmp/chimera.png [--scale 4]
+
+   every pose of it (the walk, the idles, the pause, the look, the rest, the
+   presentation, each part's instinct, the ritual, the settled rest of the
+   unfolding) on the soil of London, New York and Sydney.
+
    Writes one picture: a row per city (London, New York, Sydney, San Francisco,
    São Paulo, Phoenix), each pose in order, then the city's plants, one crown
    per stratum; and prints what each city is in DIRT (biome, realm, soil,
@@ -22,10 +31,74 @@ const CITIES = [
   ["San Francisco", 37.7749, -122.4194], ["São Paulo", -23.55, -46.63], ["Phoenix", 33.45, -112.07]
 ];
 
+async function chimeraSheet(ids, out, px) {
+  const NAMES = ["stand0", "stand1", "stand2", "back", "look", "rest", "present", "settle",
+                 "walk0", "walk1", "walk2", "walk3", "walk4", "walk5", "act0", "act1", "act2", "act3", "ritual0", "ritual1"];
+  const cities = CITIES.slice(0, 3);
+  const browser = await chromium.launch(fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+    ? { executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" } : {});
+  const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+  await page.route("http://preview.local/**", (r) => {
+    const f = path.join(V2, decodeURIComponent(new URL(r.request().url()).pathname));
+    if (!fs.existsSync(f)) { return r.fulfill({ status: 404, body: "" }); }
+    r.fulfill({ status: 200, body: fs.readFileSync(f),
+                contentType: f.endsWith(".js") ? "text/javascript" : f.endsWith(".json") ? "application/json" : "text/html" });
+  });
+  await page.route("http://preview.local/", (r) => r.fulfill({ status: 200, contentType: "text/html",
+    body: "<!doctype html><meta charset=utf-8><body style='margin:0;background:#15100c'><canvas id=c></canvas><script src='characters.js'></script>" }));
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("http://preview.local/");
+  const size = await page.evaluate(async ({ ids, NAMES, cities, px }) => {
+    const per = 10, rowsOf = Math.ceil(NAMES.length / per);
+    const chs = [];
+    for (const [name, lat, lon] of cities) {
+      const ch = window.Characters.chimera(ids, { lat, lon, hidden: true });
+      await ch.ready;
+      chs.push(ch);
+    }
+    const probe = document.createElement("canvas").getContext("2d");
+    const one = chs[0].draw(probe, 0, 0, "stand0", px);
+    const cw = one.w + 8, chh = one.h + 18;
+    const cv = document.getElementById("c");
+    cv.width = per * cw + 130; cv.height = cities.length * rowsOf * chh + 40;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#15100c"; g.fillRect(0, 0, cv.width, cv.height);
+    g.font = "12px monospace";
+    g.fillStyle = "#eadfcd";
+    g.fillText(chs[0].name + " · " + ids.join(" / "), 8, 20);
+    cities.forEach(([name, lat, lon], r) => {
+      const here = window.Characters.preview(probe, { id: ids[0], pose: "stand", n: 0, lat, lon, scale: 1, x: -9999, y: -9999 });
+      const soil = here ? here.soilRgb : [80, 60, 40];
+      for (let q = 0; q < rowsOf; q += 1) {
+        const y = 32 + (r * rowsOf + q) * chh;
+        g.fillStyle = "rgb(" + soil.map((v) => Math.round(v * 0.32 + 12)).join(",") + ")";
+        g.fillRect(0, y, cv.width, chh - 4);
+        g.fillStyle = "#eadfcd";
+        if (!q) { g.fillText(name, 8, y + 16); }
+        NAMES.slice(q * per, q * per + per).forEach((n, i) => {
+          const names = n === "settle" ? ["rest", "act3", "rest"] : n;
+          chs[r].draw(g, 130 + i * cw, y + 4, names, px);
+          g.fillStyle = "rgba(234,223,205,0.55)";
+          g.fillText(n, 130 + i * cw + 2, y + chh - 8);
+        });
+      }
+    });
+    return [cv.width, cv.height];
+  }, { ids, NAMES, cities, px });
+  await page.setViewportSize({ width: Math.min(size[0], 4000), height: Math.min(size[1], 4000) });
+  await page.locator("#c").screenshot({ path: out });
+  if (errors.length) { console.log("errors: " + errors.join("; ")); }
+  console.log("wrote " + out);
+  await browser.close();
+  process.exit(errors.length ? 1 : 0);
+}
+
 (async () => {
   const args = process.argv.slice(2);
   const id = args[0] || "fox", out = args[1] || "/tmp/" + id + ".png";
   const k = args.indexOf("--scale");
+  if (id.indexOf(",") > 0) { return chimeraSheet(id.split(","), out, k >= 0 ? Number(args[k + 1]) : 4); }
   const scale = k >= 0 ? Number(args[k + 1]) : 6;
   const sprite = JSON.parse(fs.readFileSync(path.join(V2, "characters", id + ".json"), "utf8"));
   const poses = [];

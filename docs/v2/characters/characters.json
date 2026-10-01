@@ -35,7 +35,13 @@
         "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)",
         "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it"
       ],
-      "moves": {"speed": 1, "fps": 8, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"}
+      "moves": {"speed": 1, "fps": 8, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"},
+      "chimera": {"head": "Listening", "body": "Russet", "hind": "That Writes as It Goes", "gaze": "cocked, listening", "carriage": "low and level", "pace": "a trot"},
+      "ethogram": [
+        {"name": "mousing pounce", "role": "instinct", "pose": "act", "what": "It stands still with its head cocked, listening for a vole under snow or soil, then leaps in a high arc and comes down nose first. Pounces made facing north-east are far more often successful, which suggests foxes use the Earth's magnetic field to judge the distance.", "source": "Červený, J., Begall, S., Koubek, P., Nováková, P. & Burda, H. (2011). Directional preference may enhance hunting accuracy in foraging foxes. Biology Letters 7(3), 355–357.", "said": "the fox listened, then dived nose first into the ground here"},
+        {"name": "tossing prey", "role": "play", "pose": "play", "what": "Foxes, the young especially, toss a caught vole into the air and pounce on it again, over and over.", "source": "Macdonald, D. W. (1987). Running with the Fox. London: Unwin Hyman.", "said": "the fox tossed something into the air"},
+        {"name": "gekkering", "role": "ritual", "pose": "ritual", "what": "Two foxes meet side on, backs arched, ears flat, mouths open, and chatter at each other — the gekker, given in fights and in play.", "source": "Newton-Fisher, N., Harris, S., White, P. & Jones, G. (1993). Structure and function of red fox Vulpes vulpes vocalisations. Bioacoustics 5, 1–31.", "said": "the foxes gekkered, side on, mouths open"}
+      ]
     },
     {
       "id": "bison",
@@ -63,6 +69,12 @@
       },
       "poses": "walk (four frames, the four-beat walk, three feet down at a time), stand, graze (its pause: the head down), look (turned to you), lie (its rest: legs folded under)",
       "moves": {"speed": 0.62, "fps": 6, "pause": "back", "leave": "edge", "gait": "walk"},
+      "chimera": {"head": "Bowed", "body": "Hump", "hind": "That Walks Into the Wind", "gaze": "low, to the ground and past it", "carriage": "heavy in front", "pace": "a plod"},
+      "ethogram": [
+        {"name": "into the wind", "role": "instinct", "pose": "act", "what": "In winter storms bison stand and move facing into the wind, heads low, the thick wool of the head and hump taking it. The telling that cattle run before a storm and bison walk through it is ranchers' and guides' observation, widely repeated, not a measured result.", "source": "Meagher, M. M. (1973). The Bison of Yellowstone National Park. National Park Service Scientific Monograph Series 1; the storm saying as ranchers' lore.", "said": "the bison walked on into the wind"},
+        {"name": "wallowing", "role": "instinct", "pose": "play", "what": "It drops and rolls in bare dust or mud, again and again in the same places, wearing shallow bowls of bare ground — wallows — into the prairie.", "source": "McMillan, B. R., Cottam, M. R. & Kaufman, D. W. (2000). Wallowing behavior of American bison (Bos bison) in tallgrass prairie. Journal of Mammalogy 81(2).", "said": "the bison rolled in the dust and left a wallow"},
+        {"name": "the rut's head-to-head", "role": "ritual", "pose": "ritual", "what": "In the rut, bulls face each other, heads down, and push forehead to forehead.", "source": "Lott, D. F. (2002). American Bison: A Natural History. Berkeley: University of California Press.", "said": "the bison met head to head"}
+      ],
       "added": "2026-10-01",
       "refined": "2026-10-01",
       "passes": 1,
@@ -95,6 +107,11 @@
       },
       "poses": "bound (four frames of the half-bound: gathered, pushing off, stretched, landing), stand, up (its pause: sitting up on its haunches), look (turned to you), eat (its rest: the tail curled up its back, paws at its mouth)",
       "moves": {"speed": 1.7, "fps": 10, "pause": "back", "leave": "edge", "gait": "bound"},
+      "chimera": {"head": "Quick", "body": "Hoarding", "hind": "That Forgets", "gaze": "bright, darting", "carriage": "coiled", "pace": "a bound"},
+      "ethogram": [
+        {"name": "scatter-hoarding", "role": "instinct", "pose": "act", "what": "In autumn it buries seeds and nuts one at a time in many small caches, pushing each in with its nose and patting the earth down; it finds many again by memory and smell, and forgets some, which grow.", "source": "Wauters, L. A., Suhonen, J. & Dhondt, A. A. (1995). Fitness consequences of hoarding behaviour in the Eurasian red squirrel. Proceedings of the Royal Society B 262, 277–281.", "said": "the squirrel buried something here"},
+        {"name": "tail-flicking and the spiral chase", "role": "play", "pose": "play", "what": "It flicks its tail when alarmed or excited, and squirrels chase each other in spirals round a trunk (in the mating chases of late winter).", "source": "Gurnell, J. (1987). The Natural History of Squirrels. London: Christopher Helm.", "said": "the squirrel flicked its tail"}
+      ],
       "added": "2026-10-01",
       "refined": "2026-10-01",
       "passes": 1,
@@ -127,6 +144,12 @@
       },
       "poses": "fly (four frames of the wingbeat: up, level, down, level), stand, back (looks back over its shoulder), look (its white head turned to you), settle (its rest: wings folded, feathers fluffed)",
       "moves": {"speed": 2.6, "fps": 8, "pause": null, "leave": "rise", "lift": 30, "gait": "fly"},
+      "chimera": {"head": "Watchful", "body": "Mantle", "hind": "That Falls Turning", "gaze": "high, ahead", "carriage": "mantling", "pace": "a long stride"},
+      "ethogram": [
+        {"name": "mantling", "role": "instinct", "pose": "act", "what": "Over food it has caught, it spreads and lowers its wings round it, hiding it from other eagles.", "source": "Buehler, D. A. (2020). Bald Eagle (Haliaeetus leucocephalus), version 1.0. In Birds of the World (A. F. Poole, ed.). Ithaca: Cornell Lab of Ornithology.", "said": "the eagle spread its wings over what it had"},
+        {"name": "soaring", "role": "play", "pose": "play", "what": "It rides rising warm air on still, flat wings, the primaries spread like fingers, for long spells between perches.", "source": "Buehler, D. A. (2020). Bald Eagle, Birds of the World.", "said": "the eagle rose on warm air, its wings still"},
+        {"name": "the cartwheel", "role": "ritual", "pose": "ritual", "what": "In courtship a pair lock talons high up and fall turning over and over, letting go before the ground.", "source": "Buehler, D. A. (2020). Bald Eagle, Birds of the World.", "said": "the eagles locked talons and fell, turning"}
+      ],
       "added": "2026-10-01",
       "refined": "2026-10-01",
       "passes": 1,
@@ -156,6 +179,11 @@
       },
       "poses": "crawl (four frames: a wave along the foot, the body stretching and gathering), stand (tentacles out), reach (its pause: the eye stalks up), look (its head lifted toward you), rest (drawn up short, tentacles in)",
       "moves": {"speed": 0.16, "fps": 4, "pause": "back", "leave": "sink", "trail": "slime", "gait": "crawl"},
+      "chimera": {"head": "Feeling", "body": "Saddle", "hind": "That Leaves a Trace", "gaze": "feeling its way, low", "carriage": "low and long", "pace": "a glide"},
+      "ethogram": [
+        {"name": "trail-following", "role": "instinct", "pose": "act", "what": "It glides on a wave of muscle along its foot over a film of mucus, slowly, and follows the mucus trails other slugs have left.", "source": "Ng, T. P. T. et al. (2013). Snails and their trails: the multiple functions of trail-following in gastropods. Biological Reviews 88, 683–700.", "said": "the slug left a trail here for others to follow"},
+        {"name": "courtship", "role": "ritual", "pose": "ritual", "what": "Two banana slugs circle each other, nosing and lunging, for hours before they mate.", "source": "Leonard, J. L., Pearse, J. S. & Harper, A. B. (2002). Comparative reproductive biology of Ariolimax californicus and A. dolichophallus. Invertebrate Reproduction & Development 41, 83–93.", "said": "the slugs circled each other, and lunged"}
+      ],
       "added": "2026-10-01",
       "refined": "2026-10-01",
       "passes": 1,
@@ -188,6 +216,12 @@
       },
       "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back), look (turned to you, antlers either side), lie (its rest: legs folded, head up)",
       "moves": {"speed": 1.25, "fps": 8, "pause": "back", "leave": "edge", "gait": "trot"},
+      "chimera": {"head": "Crowned", "body": "Hart", "hind": "That Freezes When Watched", "gaze": "up, alert", "carriage": "upright", "pace": "a trot"},
+      "ethogram": [
+        {"name": "the antler cycle", "role": "instinct", "pose": "seasons", "what": "A stag casts its antlers in late winter or spring, grows new ones in velvet through the summer, cleans the velvet off in late summer and carries hard antler through the autumn rut and the winter.", "source": "Clutton-Brock, T. H., Guinness, F. E. & Albon, S. D. (1982). Red Deer: Behavior and Ecology of Two Sexes. Chicago: University of Chicago Press.", "said": "the stag's antlers are as they are this month"},
+        {"name": "freezing", "role": "instinct", "pose": "act", "what": "Watched, it stops dead, head up and ears turned toward what it has seen.", "source": "Clutton-Brock, T. H., Guinness, F. E. & Albon, S. D. (1982). Red Deer: Behavior and Ecology of Two Sexes.", "said": "the stag froze, watched"},
+        {"name": "roaring and the parallel walk", "role": "ritual", "pose": "ritual", "what": "In the rut stags roar at each other, and two well matched walk side by side, step for step, sizing each other up before they fight or one gives way.", "source": "Clutton-Brock, T. H. & Albon, S. D. (1979). The roaring of red deer and the evolution of honest advertisement. Behaviour 69, 145–170.", "said": "the stags roared and walked side by side"}
+      ],
       "added": "2026-10-01",
       "refined": "2026-10-01",
       "passes": 1,

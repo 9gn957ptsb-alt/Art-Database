@@ -1474,6 +1474,570 @@
     if (g && !crowd.length) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height); }
   }
 
+  /* ---- the chimera: any three of the cast, as an exquisite corpse ------------
+
+     The artist, 1 Oct 2026, of the relay he approved: "really work on the
+     three Artist Chimera, it should be the most refined and well portrayed
+     character on the entire site"; and of what it is for: "I like the idea
+     of ritual and using the animals to generate games".
+
+     Every character is drawn in three parts (characters/parts/<id>.json,
+     by scripts/characters/chimera.py): its head, its body, its
+     hindquarters, each part drawn so that its back and its belly cross the
+     two folds at the marks every part agrees on, so any head joins any body
+     joins any hindquarters. Here the three are laid side by side at the
+     folds, each part's cells in its own artist's inks worked with the soil,
+     the folds drawn faintly through it, as creases in the paper.
+
+     The head sets the gaze, the body the carriage, the hindquarters the
+     pace: it walks at its hindquarters' speed and frames (the slug's glide
+     is slow, the bison's plod is steady), and every part keeps its own
+     idles (the bison's blink and ear, the eagle's breath and its wings half
+     raised, the slug's foot rippling). Pressed, it stops, the head turns to
+     you, the body eases, the hindquarters answer last, and its line says
+     what it is.
+
+     The game (corpse.js) asks for one with Characters.chimera([head, body,
+     tail], { seed, month }); unfold() is its metamorphosis, after Ovid:
+     each parent's instinct in turn, head, body, hindquarters, then a rest
+     none of the three alone would hold. Characters.meet(a, b) is the
+     ritual of two that meet, by their heads' animals. Each behaviour is in
+     the character's ethogram (characters.json): documented, never invented. */
+
+  var RES = 1.5;                           // a chimera's cells to a character's (chimera.py)
+  var partsData = {};
+  var chimeras = [];
+  var chCv = null, chG = null, chRaf = 0, chDpr = 1;
+  var SLOTS = ["head", "body", "hind"];
+  var chCache = {};
+
+  function partsOf(id) {
+    if (!partsData[id]) { partsData[id] = get(BASE + "parts/" + id + ".json").catch(function () { return null; }); }
+    return partsData[id];
+  }
+
+  function castOf(id) { return cast ? cast.cast.filter(function (c) { return c.id === id; })[0] : null; }
+
+  function seasonOf(month) {
+    // The stag's antlers: cast in March and April, in velvet May to August, hard the rest.
+    return month >= 3 && month <= 4 ? "cast" : month >= 5 && month <= 8 ? "velvet" : null;
+  }
+
+  function behaviour(c, role) {
+    var e = (c && c.ethogram) || [];
+    return e.filter(function (b) { return b.role === role; })[0] || null;
+  }
+
+  // The name, in the Surrealist manner, from what each part brings:
+  // "The Bowed Mantle That Leaves a Trace".
+  function chimeraName(cs) {
+    var w = function (c, k) { return (c.chimera && c.chimera[k]) || c.name; };
+    return "The " + w(cs[0], "head") + " " + w(cs[1], "body") + " " + w(cs[2], "hind");
+  }
+
+  // Three parts side by side at the folds: rows of letters, which part each cell is, the folds.
+  function layout(P, season) {
+    var head = P[0], body = P[1], hind = P[2];
+    if (!layout.memo) { layout.memo = {}; }
+    var key = head.id + body.id + hind.id + (season || "");
+    if (layout.memo[key]) { return layout.memo[key]; }
+    var left = 0, right = 0, heads = head[(season && head["head@" + season]) ? "head@" + season : "head"];
+    Object.keys(hind.hind).forEach(function (n) { left = Math.max(left, -hind.hind[n][0] + 1); });
+    Object.keys(heads).forEach(function (n) { right = Math.max(right, heads[n][0] + (heads[n][1][0] || "").length); });
+    var hip = left, neck = left + body.len;
+    var out = { hip: hip, neck: neck, w: neck + right + 1, h: body.rows, ground: body.ground, heads: heads };
+    layout.memo[key] = out;
+    return out;
+  }
+
+  function compose(ch, names) {
+    var L = ch.L, w = L.w, h = L.h;
+    var cells = [], who = [];
+    for (var j = 0; j < h; j += 1) { cells.push(new Array(w).fill(".")); who.push(new Array(w).fill(-1)); }
+    var order = [[2, ch.P[2].hind, L.hip], [1, ch.P[1].body, L.hip], [0, L.heads, L.neck]];
+    order.forEach(function (o) {
+      var slot = o[0], src = o[1], at = o[2];
+      if (ch.folded && ch.folded[slot]) { return; }
+      var got = src[names[slot]] || src.stand0;
+      var x0 = got[0], rows = got[1];
+      for (var j = 0; j < rows.length; j += 1) {
+        var r = rows[j];
+        for (var i = 0; i < r.length; i += 1) {
+          var k = r.charAt(i);
+          if (k === ".") { continue; }
+          var c = at + x0 + i;
+          if (c < 0 || c >= w) { continue; }
+          if ((k === "o" || k === "p") && cells[j][c] !== "." && cells[j][c] !== "o" && cells[j][c] !== "p") { continue; }
+          cells[j][c] = k;
+          who[j][c] = slot;
+        }
+      }
+    });
+    return { cells: cells, who: who };
+  }
+
+  // Drawn in DIRT, as sprite() draws a character: each cell a dot of its
+  // part's artist's ink worked with the soil, a little grain, now and then
+  // a dot a size smaller; and the two folds, faint, through it and past it.
+  function chimeraSprite(ch, names, dir, px) {
+    var key = ch.key + "|" + names.join(",") + "|" + dir + "|" + px + "|" + (ch.here ? ch.here.soil : "") + "|" + (ch.folded || []).join("");
+    if (chCache[key]) { return chCache[key]; }
+    var L = ch.L, got = compose(ch, names);
+    var cv = document.createElement("canvas");
+    cv.width = L.w * px;
+    cv.height = L.h * px;
+    var x = cv.getContext("2d");
+    var soil = ch.here ? ch.here.soilRgb : [120, 100, 80];
+    var top = L.h, bottom = 0;
+    for (var j = 0; j < L.h; j += 1) {
+      for (var i = 0; i < L.w; i += 1) {
+        var k = got.cells[j][i];
+        if (k === ".") { continue; }
+        top = Math.min(top, j); bottom = Math.max(bottom, j);
+        var ink = ch.inks[got.who[j][i]][k];
+        if (!ink) { continue; }
+        var line = k === "o" || k === "p";
+        var col = mix(ink, soil, line ? 0.08 : 0.2);
+        x.fillStyle = css(col, line ? 0 : (hash(i, j, 7) - 0.5) * 10);
+        var ii = dir > 0 ? i : L.w - 1 - i;
+        var d = !line && px > 3 && hash(i, j, 3) < 0.1 ? px - 1 : px;
+        x.fillRect(ii * px, j * px, d, d);
+      }
+    }
+    // The folds: a crease of the paper's pale through the figure, every
+    // other cell, and a little past it above and below.
+    var paper = [234, 223, 205];
+    [L.hip, L.neck].forEach(function (c) {
+      var cc = dir > 0 ? c : L.w - c;
+      for (var j = Math.max(0, top - 3); j <= Math.min(L.h - 1, bottom + 2); j += 1) {
+        if (j % 2) { continue; }
+        var on = got.cells[j][Math.min(L.w - 1, c)] !== "." || got.cells[j][Math.max(0, c - 1)] !== ".";
+        x.globalAlpha = on ? 0.3 : 0.16;
+        x.fillStyle = css(paper);
+        x.fillRect(Math.round(cc * px - Math.max(1, px / 3) / 2), j * px, Math.max(1, Math.round(px / 3)), px);
+      }
+      x.globalAlpha = 1;
+    });
+    var keys = Object.keys(chCache);
+    if (keys.length > 240) { keys.slice(0, 120).forEach(function (k2) { delete chCache[k2]; }); }
+    chCache[key] = { cv: cv, w: L.w, h: L.h, ground: L.ground };
+    return chCache[key];
+  }
+
+  function chSetUp() {
+    if (chCv) { return; }
+    chCv = document.createElement("canvas");
+    chCv.className = "chimeras";
+    chCv.setAttribute("aria-hidden", "true");
+    chCv.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:86;image-rendering:pixelated";
+    document.body.appendChild(chCv);
+    chG = chCv.getContext("2d");
+  }
+
+  function chSize() {
+    var d = Math.min(3, window.devicePixelRatio || 1);
+    var w = Math.round(window.innerWidth * d), h = Math.round(window.innerHeight * d);
+    if (chCv.width !== w || chCv.height !== h || d !== chDpr) { chCv.width = w; chCv.height = h; chDpr = d; chCache = {}; }
+  }
+
+  // Where its feet are, its size: `big` a presentation (the unfolding), else a city's.
+  function cellPx(o) {
+    var css_ = o.big ? (window.innerWidth < 720 ? 3.2 : 4.4) : (o.far ? 1 : 2 / RES);
+    return Math.max(1, Math.round(css_ * chDpr));
+  }
+
+  function chBounds(o) {
+    // Its feet's middle is the middle of its body.
+    var L = o.L, px = cellPx(o) / chDpr, c = L.hip + o.ch.P[1].len / 2;
+    return { x: o.x - (o.dir > 0 ? c : L.w - c) * px, y: o.y - L.ground * px, w: L.w * px, h: L.h * px, px: px };
+  }
+
+  // Which frame each part shows now.
+  function namesNow(o, now) {
+    var t = now - o.since;
+    var pace = o.pace;
+    if (o.state === "walk") {
+      var f = Math.floor(now / (1000 / pace.fps)) % 6;
+      return ["walk" + f, "walk" + f, "walk" + f];
+    }
+    if (o.state === "act") {
+      var a = Math.min(3, Math.floor(t / (o.actMs / 4)));
+      var n = ["stand0", "stand0", "stand0"];
+      n[o.actSlot] = "act" + a;
+      return n;
+    }
+    if (o.state === "settle") { return ["rest", "act3", "rest"]; }
+    if (o.state === "ritual") { return o.ritualNames || ["ritual" + (Math.floor(t / 420) % 2), "stand0", "stand0"]; }
+    if (o.state === "pressed") {
+      return [t > 500 && t < 4200 ? "look" : "stand0", t > 2000 && t < 5000 ? "stand2" : "stand0",
+              t > 3500 && t < 5000 ? "stand2" : "stand0"];
+    }
+    if (o.state === "rest") { return ["rest", "rest", "rest"]; }
+    if (o.state === "present") { return ["present", "present", "present"]; }
+    // Standing: breathing in the body, a blink, an ear, the wings half
+    // raised now and then, the foot or the tail moving: each part its own.
+    var idle = o.idle;
+    if (now > idle.next) {
+      var slot = Math.floor(Math.random() * 4);
+      idle.slot = slot === 3 ? 0 : slot;
+      idle.name = slot === 3 ? "stand1" : "stand2";
+      idle.until = now + (idle.slot === 1 ? 2400 : idle.name === "stand1" ? 160 : 700);
+      idle.next = now + Math.pow(PHI, 3) * 1000 * (0.6 + Math.random() * 0.8);
+    }
+    var names = ["stand0", Math.floor(now / 1600) % 2 ? "stand1" : "stand0", "stand0"];
+    if (now < idle.until) { names[idle.slot] = idle.name; }
+    if (o.look && now < o.look) { names[0] = "look"; }
+    return names;
+  }
+
+  function chLoop() {
+    if (chRaf) { return; }
+    var tick = function (now) {
+      chRaf = 0;
+      chimeras = chimeras.filter(function (o) { return !o.gone; });
+      if (!chimeras.length) { if (chG) { chG.clearRect(0, 0, chCv.width, chCv.height); } return; }
+      chSize();
+      chG.setTransform(1, 0, 0, 1, 0, 0);
+      chG.clearRect(0, 0, chCv.width, chCv.height);
+      chG.imageSmoothingEnabled = false;
+      chimeras.forEach(function (o) { stepChimera(o, now); drawChimera(o, now); });
+      chRaf = requestAnimationFrame(tick);
+    };
+    chRaf = requestAnimationFrame(tick);
+  }
+
+  function stepChimera(o, now) {
+    if (!o.ready) { return; }
+    // The game's stage put away: so is the chimera on it.
+    if (o.big && o.stageEl && o.stageEl.hidden && now - o.born > 1500) { o.big = false; o.hidden = true; }
+    var dt = Math.min(80, now - (o.last || now));
+    o.last = now;
+    if (o.route) { stepRoute(o, now); return; }
+    if (o.target && o.state === "walk") {
+      var dx = o.target.x - o.x, dy = o.target.y - o.y, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 1.5) {
+        o.x = o.target.x; o.y = o.target.y; o.state = "stand"; o.since = now;
+        var done = o.target.done; o.target = null; if (done) { done(); }
+      } else {
+        var go = Math.min(d, SPEED * o.pace.speed * dt / 1000);
+        o.x += dx / d * go; o.y += dy / d * go;
+        if (Math.abs(dx) > 1) { o.dir = dx > 0 ? 1 : -1; }
+      }
+    }
+    if (o.state === "act" && now - o.since > o.actMs) { o.state = "stand"; o.since = now; if (o.actDone) { var f = o.actDone; o.actDone = null; f(); } }
+    if (o.state === "pressed" && now - o.since > 6000) { o.state = "stand"; o.since = now; if (o.says) { o.says.hidden = true; } }
+  }
+
+  // Along a route on the globe (the corpse's legs), small, at its hindquarters' pace.
+  function stepRoute(o, now) {
+    var R = o.route, w = window.Land;
+    if (!w || !w.at) { return; }
+    var u = Math.min(1, (now - R.t0) / R.dur);
+    var pts = R.pts, seg = Math.min(pts.length - 2, Math.floor(u * (pts.length - 1)));
+    if (seg < 0) { return; }
+    var f = u * (pts.length - 1) - seg, a = pts[seg], b = pts[seg + 1];
+    var lat = a[0] + (b[0] - a[0]) * f, lon = a[1] + ((((b[1] - a[1]) + 540) % 360) - 180) * f;
+    var p = w.at(lat, lon), q = w.at(b[0], b[1]);
+    o.hidden = !p || p.z <= 0;
+    if (p) { o.x = p.x; o.y = p.y - 2; }
+    if (q && p && Math.abs(q.x - p.x) > 0.5) { o.dir = q.x > p.x ? 1 : -1; }
+    o.state = u < 1 ? "walk" : "stand";
+    if (u >= 1 && !R.ended) { R.ended = now; if (R.done) { R.done(); } }
+    if (R.ended && now - R.ended > Math.pow(PHI, 6) * 1000) { o.route = null; o.hidden = true; }
+  }
+
+  function drawChimera(o, now) {
+    if (!o.ready || o.hidden) { if (o.hit) { o.hit.hidden = true; } return; }
+    var px = cellPx(o);
+    var names = namesNow(o, now);
+    var sp = chimeraSprite(o.ch, names, o.dir, px);
+    var b = chBounds(o);
+    var x = Math.round(b.x * chDpr), y = Math.round(b.y * chDpr);
+    if (o.state === "ritual" && o.spin) {
+      chG.save();
+      chG.translate(x + sp.cv.width / 2, y + sp.cv.height / 2);
+      chG.rotate(o.spin(now));
+      chG.drawImage(sp.cv, -sp.cv.width / 2, -sp.cv.height / 2);
+      chG.restore();
+    } else if (o.unfolding) {
+      chG.globalAlpha = Math.min(1, (now - o.born) / 600);
+      chG.drawImage(sp.cv, x, y);
+      chG.globalAlpha = 1;
+    } else {
+      chG.drawImage(sp.cv, x, y);
+    }
+    if (o.trail && o.state === "walk") { o.trail.push({ x: o.x - o.dir * b.w * 0.42, y: o.y, at: now }); }
+    if (o.trail) {
+      o.trail = o.trail.filter(function (t) { return now - t.at < 9000; });
+      chG.fillStyle = css(rgb(o.ch.cs[2].after.inks.black[0]));
+      o.trail.forEach(function (t) {
+        chG.globalAlpha = 0.5 * Math.max(0, 1 - Math.floor((now - t.at) / 1500) / 6);
+        chG.fillRect(Math.round(t.x * chDpr), Math.round(t.y * chDpr) - px, px * 2, px);
+      });
+      chG.globalAlpha = 1;
+    }
+    if (o.hit) {
+      o.hit.hidden = !!o.big;
+      o.hit.style.transform = "translate(" + Math.round(b.x + b.w * 0.1) + "px," + Math.round(b.y + b.h * 0.3) + "px)";
+      o.hit.style.width = Math.round(b.w * 0.8) + "px";
+      o.hit.style.height = Math.round(b.h * 0.6) + "px";
+    }
+    if (o.says && !o.says.hidden) {
+      var sw = o.says.offsetWidth || 220;
+      var left = Math.max(16, Math.min(window.innerWidth - sw - 16, b.x + b.w / 2 - sw / 2));
+      o.says.style.transform = "translate(" + Math.round(left) + "px," + Math.round(Math.max(16, b.y + b.h * 0.25 - 34)) + "px)";
+    }
+  }
+
+  // The tempo of everything it does: its hindquarters' (the slug's φ² slower).
+  function tempoOf(c) {
+    var s = moves(c).speed;
+    return Math.max(1, Math.min(PHI * PHI, 1 / Math.sqrt(s)));
+  }
+
+  function chimera(ids, opts) {
+    opts = opts || {};
+    ids = (ids || []).slice(0, 3);
+    if (ids.length !== 3) { return null; }
+    var o = {
+      ids: ids, x: opts.x || window.innerWidth / 2, y: opts.y || window.innerHeight * 0.6, dir: opts.dir || 1,
+      state: "stand", since: performance.now(), born: performance.now(), idle: { next: 0, until: 0 },
+      big: false, far: false, hidden: !!opts.hidden, ready: false, legs: opts.legs || null,
+      month: opts.month || (new Date().getMonth() + 1), trail: null
+    };
+    o.ready_ = Promise.all([load(), partsOf(ids[0]), partsOf(ids[1]), partsOf(ids[2])]).then(function (got) {
+      var P = got.slice(1);
+      var cs = ids.map(castOf);
+      if (P.some(function (p) { return !p; }) || cs.some(function (c) { return !c; })) { return false; }
+      var season = ids[0] === "deer" ? seasonOf(o.month) : null;
+      o.ch = { P: P, cs: cs, L: layout(P, season), key: ids.join("-") + (season || ""),
+               inks: cs.map(function (c) { return c._ink || (c._ink = inkFor(c)); }),
+               here: opts.lat !== undefined ? placeAt(opts.lat, opts.lon) : (opts.here || null) };
+      o.L = o.ch.L;
+      o.name = chimeraName(cs);
+      var hm = moves(cs[2]);
+      o.pace = { speed: hm.speed, fps: Math.max(4, Math.min(10, hm.fps * 1.5)), tempo: tempoOf(cs[2]) };
+      if (hm.trail === "slime") { o.trail = []; }
+      o.ready = true;
+      return true;
+    });
+    chSetUp();
+    var stage = document.getElementById("stage") || document.body;
+    var hit = document.createElement("button");
+    hit.type = "button";
+    hit.className = "character";
+    hit.hidden = true;
+    hit.style.position = "fixed";
+    hit.style.zIndex = "87";
+    hit.setAttribute("aria-label", "A chimera — press to see what it is");
+    hit.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    hit.addEventListener("click", function (e) { e.stopPropagation(); api.press(); });
+    document.body.appendChild(hit);
+    o.hit = hit;
+    chimeras.push(o);
+    chLoop();
+
+    function pressLine() {
+      var cs = o.ch.cs, legs = o.legs || [];
+      var part = ["its head", "its body", "its tail"];
+      var bits = [o.name, cs.map(function (c, i) {
+        return (i ? c.name.charAt(0).toLowerCase() + c.name.slice(1) : c.name) + " after " + surname(c.artist);
+      }).join(", ").replace(/american/, "American")];
+      var where = legs.map(function (l, i) { return l && l.name ? part[i] + " from " + l.name.split(",")[0] : null; }).filter(Boolean);
+      if (where.length) { bits.push(where.join(", ")); }
+      return bits.join(" · ");
+    }
+
+    var api = {
+      ids: ids,
+      ready: o.ready_,
+      get name() { return o.name || ""; },
+      // Where its feet stand (CSS px), and which way it faces.
+      at: function (x, y, dir) { o.x = x; o.y = y; if (dir) { o.dir = dir; } o.hidden = false; o.route = null; return api; },
+      face: function (dir) { o.dir = dir < 0 ? -1 : 1; return api; },
+      show: function () { o.hidden = false; return api; },
+      hide: function () { o.hidden = true; return api; },
+      // On a city's soil: its dots take the soil there.
+      soil: function (lat, lon) { o.ready_.then(function () { o.ch.here = placeAt(lat, lon); chCache = {}; }); return api; },
+      // A pose held: "stand", "look", "back", "rest", "present", "settle".
+      pose: function (name) { o.state = name === "look" ? "stand" : name; o.since = performance.now(); if (name === "look") { o.look = performance.now() + 4000; } return api; },
+      // Walk to a point on the screen, or along a route on the globe ([[lat, lon], ...] or legs of them).
+      walk: function (to, ms) {
+        return o.ready_.then(function () {
+          return new Promise(function (done) {
+            o.hidden = false;
+            if (Array.isArray(to)) {
+              var pts = [];
+              (Array.isArray(to[0] && to[0][0]) ? to : [to]).forEach(function (leg) {
+                leg.forEach(function (p) { if (!pts.length || pts[pts.length - 1] !== p) { pts.push(p); } });
+              });
+              if (pts.length < 2) { done(); return; }
+              o.big = false;
+              o.far = true;
+              o.unfolding = false;
+              o.route = { pts: pts, t0: performance.now(), dur: ms || 13000 * o.pace.tempo, done: done };
+            } else {
+              o.route = null;
+              o.state = "walk";
+              o.since = performance.now();
+              o.target = { x: to.x, y: to.y, done: done };
+            }
+          });
+        });
+      },
+      // One part's instinct (its ethogram's), as the unfolding plays it.
+      act: function (slot) {
+        var i = typeof slot === "number" ? slot : SLOTS.indexOf(slot);
+        return o.ready_.then(function () {
+          return new Promise(function (done) {
+            o.state = "act"; o.actSlot = i; o.since = performance.now();
+            o.actMs = 2600 * o.pace.tempo * 0.8;
+            o.actDone = done;
+          });
+        });
+      },
+      // What a behaviour of one part is called, in plain words ("the squirrel buried something here").
+      said: function (slot, role) {
+        var c = o.ch && o.ch.cs[typeof slot === "number" ? slot : SLOTS.indexOf(slot)];
+        var b = behaviour(c, role || "instinct");
+        return b ? b.said : "";
+      },
+      /* The unfolding: the sheet opened a part at a time, and each parent
+         doing what it does by instinct as it is seen, head, body,
+         hindquarters; then the whole settles into a rest none of the three
+         alone would hold (the head down, the body still doing its own, the
+         hindquarters at rest). Large, at the middle of the screen, or at
+         { x, y }. onStep(i, { slot, id, animal, artist, behaviour, said })
+         for i 0, 1, 2, and 3 when it has settled. Its tempo is its
+         hindquarters'. */
+      unfold: function (onStep, at) {
+        return o.ready_.then(function (ok) {
+          if (!ok) { return false; }
+          var W = window.innerWidth, H = window.innerHeight;
+          o.big = true; o.far = false; o.route = null; o.hidden = false; o.unfolding = true;
+          if (o.says) { o.says.hidden = true; }
+          o.x = at && at.x !== undefined ? at.x : W / 2;
+          o.y = at && at.y !== undefined ? at.y : (W <= 720 ? H * 0.42 : H * 0.62);
+          o.dir = 1;
+          o.born = performance.now();
+          o.stageEl = document.querySelector(".corpse-stage");
+          o.ch.folded = [true, true, true];
+          chCache = {};
+          var step = 2600 * o.pace.tempo;
+          var tell = function (i) {
+            var c = o.ch.cs[i], b = behaviour(c, "instinct");
+            if (onStep) {
+              try { onStep(i, { slot: SLOTS[i], id: c.id, animal: c.name, artist: c.artist, behaviour: b ? b.name : "", said: b ? b.said : "" }); } catch (e) { /* the game's own */ }
+            }
+          };
+          return new Promise(function (done) {
+            [0, 1, 2].forEach(function (i) {
+              window.setTimeout(function () {
+                o.ch.folded[i] = false;
+                o.state = "act"; o.actSlot = i; o.since = performance.now(); o.actMs = step * 0.8;
+                tell(i);
+              }, 600 * o.pace.tempo + i * step);
+            });
+            window.setTimeout(function () {
+              o.ch.folded = null;
+              o.state = "settle"; o.since = performance.now();
+              if (onStep) { try { onStep(3, { slot: null, name: o.name, said: "it settled as none of the three would alone" }); } catch (e) { /* the game's own */ } }
+              done(true);
+            }, 600 * o.pace.tempo + 3 * step);
+          });
+        });
+      },
+      // Large and still, for a moment of its own (the unfolding's end, a sheet).
+      present: function (on) { o.big = on !== false; o.state = o.big ? "present" : "stand"; o.since = performance.now(); return api; },
+      // Pressed: it stops, the head turns to you, the body eases its wings
+      // or its coat, the hindquarters answer last; the line says what it is.
+      press: function () {
+        if (!o.ready || o.big) { return; }
+        o.state = "pressed"; o.since = performance.now(); o.target = null;
+        if (!o.says) {
+          o.says = document.createElement("p");
+          o.says.className = "chimera-says";
+          o.says.style.cssText = "position:fixed;left:0;top:0;z-index:88;margin:0;padding:3px 8px;border-radius:3px;" +
+            "background:rgba(15,10,7,0.8);color:#eadfcd;font-family:var(--mono,monospace);font-size:10px;line-height:1.4;" +
+            "letter-spacing:0.04em;pointer-events:none;max-width:min(300px,calc(100vw - 32px));box-sizing:border-box";
+          document.body.appendChild(o.says);
+        }
+        o.says.textContent = pressLine();
+        o.says.hidden = false;
+      },
+      line: function () { return o.ready ? pressLine() : ""; },
+      // Drawn once into a canvas of one's own (the preview, a sheet): the
+      // pose of each part ("walk3", or [head, body, hind]), a cell `px` device px.
+      draw: function (ctx, x, y, names, px, dir) {
+        if (!o.ready) { return null; }
+        if (typeof names === "string") { names = [names, names, names]; }
+        var sp = chimeraSprite(o.ch, names, dir || 1, px || 4);
+        ctx.drawImage(sp.cv, x, y);
+        return { w: sp.cv.width, h: sp.cv.height, ground: sp.ground * (px || 4) };
+      },
+      // Where it is, for the game and the checks.
+      state: function () { return { name: o.name, ids: ids, x: o.x, y: o.y, state: o.state, big: o.big, hidden: !!o.hidden, w: o.L ? o.L.w : 0 }; },
+      close: function () {
+        o.gone = true;
+        if (o.hit && o.hit.parentNode) { o.hit.parentNode.removeChild(o.hit); }
+        if (o.says && o.says.parentNode) { o.says.parentNode.removeChild(o.says); }
+      },
+      _o: o
+    };
+    api.remove = api.close;
+    return api;
+  }
+
+  /* Two that meet: the ritual of their heads' animals (each a documented
+     courtship or contest, in the ethogram). Two foxes' heads gekker, side
+     on; eagles lock talons and fall turning; bison meet head to head;
+     stags roar and walk side by side; slugs circle and lunge; squirrels
+     chase round and round. Drawn where the game's ritual box is, else at
+     the middle of the screen. Resolves when it is over, with the line. */
+  function meet(a, b, opts) {
+    opts = opts || {};
+    if (Array.isArray(a)) { a = chimera(a); }
+    if (Array.isArray(b)) { b = chimera(b); }
+    if (!a || !b) { return Promise.resolve(null); }
+    return Promise.all([a.ready, b.ready]).then(function () {
+      var A = a._o, B = b._o;
+      var kind = A.ch.cs[0].id;
+      var W = window.innerWidth, H = window.innerHeight;
+      var box = document.querySelector(".corpse-ritual:not([hidden])");
+      var r = box ? box.getBoundingClientRect() : null;
+      var cx = opts.x || (r ? r.left + r.width / 2 : W / 2), cy = opts.y || (r ? r.top + 66 : H * 0.6);
+      var t0 = performance.now(), dur = 7000 * Math.max(A.pace.tempo, B.pace.tempo);
+      [A, B].forEach(function (o, n) {
+        o.big = false; o.far = false; o.route = null; o.hidden = false;
+        o.x = cx + (n ? 70 : -70); o.y = cy; o.dir = n ? -1 : 1;
+        o.state = "ritual"; o.since = t0; o.spin = null;
+      });
+      var path_ = {
+        fox: function (o, n, u) { o.x = cx + (n ? 1 : -1) * (46 - 10 * Math.min(1, u * 3)); o.ritualNames = ["ritual" + (Math.floor(u * 22 + n) % 2), "stand0", "stand2"]; },
+        eagle: function (o, n, u) {
+          var fall = Math.max(0, u - 0.3) / 0.7;
+          o.y = cy - 40 + fall * 40; o.x = cx + (n ? 16 : -16);
+          o.spin = fall > 0 && fall < 1 ? function (now) { return ((now - t0) / 400) * (n ? -1 : 1); } : null;
+          o.ritualNames = ["ritual1", fall > 0 ? "present" : "act3", "stand0"];
+        },
+        bison: function (o, n, u) { var p = u < 0.4 ? u / 0.4 : 1; o.x = cx + (n ? 1 : -1) * (70 - 40 * p + (u > 0.4 ? 3 * Math.abs(Math.sin(u * 30)) : 0)); o.ritualNames = ["ritual" + (u > 0.4 ? 1 : 0), "stand0", "stand0"]; },
+        deer: function (o, n, u) { o.dir = 1; o.y = cy + (n ? 10 : -10); o.x = cx - 60 + u * 120; o.ritualNames = u > 0.5 && u < 0.7 ? ["ritual1", "stand0", "stand0"] : ["walk" + (Math.floor(u * 60) % 6), "walk" + (Math.floor(u * 60) % 6), "walk" + (Math.floor(u * 60) % 6)]; },
+        slug: function (o, n, u) { var a2 = u * Math.PI * 2 + (n ? Math.PI : 0); o.x = cx + Math.cos(a2) * 40; o.y = cy + Math.sin(a2) * 8; o.dir = Math.sin(a2) > 0 ? -1 : 1; o.ritualNames = ["ritual" + (u > 0.8 ? 1 : 0), "stand0", "walk" + (Math.floor(u * 40) % 6)]; },
+        squirrel: function (o, n, u) { var a2 = u * Math.PI * 6 + (n ? 0.9 : 0); o.x = cx + Math.cos(a2) * 50; o.y = cy + Math.sin(a2) * 10; o.dir = Math.sin(a2) > 0 ? -1 : 1; o.ritualNames = ["stand0", "walk" + (Math.floor(u * 90) % 6), "walk" + (Math.floor(u * 90) % 6)]; }
+      }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
+      var rit = behaviour(A.ch.cs[0], "ritual");
+      return new Promise(function (done) {
+        (function tick() {
+          var u = Math.min(1, (performance.now() - t0) / dur);
+          [A, B].forEach(function (o, n) { path_(o, n, u); });
+          if (u < 1) { window.setTimeout(tick, 40); return; }
+          [A, B].forEach(function (o, n) { o.state = "stand"; o.spin = null; o.dir = n ? -1 : 1; o.since = performance.now(); });
+          done({ ritual: rit ? rit.name : "", said: rit ? rit.said : "" });
+        })();
+      });
+    });
+  }
+
   window.Characters = {
     wave: wave,
     // land.js, while following: where the animal is to be, and the end of it.
@@ -1484,6 +2048,11 @@
     cast: function () { return load().then(function () { return cast && cast.cast; }); },
     artists: function () { return load().then(function () { return artists; }); },
     unfollowed: function () { var f = follower(); if (f) { release(f, performance.now()); } },
+    // The exquisite corpse (corpse.js): a chimera of three of the cast, the
+    // ritual of two that meet, and each animal's documented behaviours.
+    chimera: chimera,
+    meet: meet,
+    ethogram: function (id) { var c = castOf(id); return (c && c.ethogram) || []; },
     // For the preview (scripts/preview_character.js): the files, read,
     // and one pose drawn as the page draws it, on a place's soil and plants.
     load: load,
