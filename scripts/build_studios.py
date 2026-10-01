@@ -136,6 +136,16 @@ REJECT = ('street', 'avenue', 'school', 'lycée', 'educational', 'crater', 'park
           'theatre', 'theater', 'cinema', 'square', 'garden', 'roundabout', 'traffic circle', 'road', 'boulevard',
           'institut', 'painting', 'work of art', 'artwork', 'film', 'promenade', 'reservoir', 'archive', 'prize',
           'foundation', 'tram', 'bus', 'municipality', 'commune', 'city', 'town', 'village', 'gallery')
+SETTLED = ('village', 'town', 'city', 'municipality', 'commune', 'civil parish', 'populated place', 'hamlet',
+           'human settlement', 'borough', 'quarter', 'neighborhood', 'neighbourhood', 'old town', 'suburb',
+           'capital', 'metropolis', 'locality', 'district', 'cadastral populated place in the netherlands',
+           'comune of italy', 'urban area', 'census-designated place', 'unincorporated community')
+TOWNISH = ('village', 'town', 'city', 'municipality', 'commune', 'capital', 'metropolis', 'comune', 'big city',
+           'urban municipality of germany', 'independent city', 'county seat', 'populated place', 'hamlet',
+           'human settlement', 'civil parish', 'locality', 'census-designated place')
+MUSEUMISH = ('museum', 'glyptotheque', 'historic house museum', 'house museum', 'art museum', 'tourist attraction')
+HOUSEISH = ('house', 'villa', 'historic house museum', 'house museum', 'mansion', 'mas', 'studio', 'atelier',
+            'farmhouse', 'manor house', 'cottage', 'château', 'castle', 'residential building', 'townhouse')
 PUBLIC = ('museum', 'glyptotheque', 'historic house museum', 'house museum', 'tourist attraction',
           'cultural property', 'national historic landmark', 'heritage', 'monument historique')
 STUDIO_RE = re.compile(r'\b(studios?|atelier|ateliers|estudio|taller|werkstatt|factory)\b', re.I)
@@ -226,10 +236,13 @@ def main():
         return p['region'] or bool(p['cls'] & REGION) or any(c.startswith('county') for c in p['cls'])
 
     def has(cls, words):
-        return any(any(w in c for w in words) for c in cls)
+        pat = re.compile(r'\b(' + '|'.join(re.escape(w.strip()) for w in words) + r')\b')
+        return any(pat.search(c) for c in cls)
 
     def is_building(d):
         text = ' '.join([d.get('label') or '', d.get('desc') or ''])
+        if has(d['cls'], SETTLED) or re.search(r'\b(street|road|avenue|school|village|town|commune)\b', d.get('desc') or '', re.I):
+            return False
         if not (has(d['cls'], BUILT) or STUDIO_RE.search(text)):
             return False
         if d['cls'] and all(any(w in c for w in REJECT) for c in d['cls']) and not STUDIO_RE.search(text):
@@ -309,9 +322,10 @@ def main():
             rows[a].append({'from': 'building', 'q': pl, 'd': d, 'how': g['props'], 'kind0': kind,
                             'y0': y0, 'y1': y1, 'src': src})
             continue
-        if not p or not p['ll'] or is_region(p):
+        if not p or not p['ll'] or not p['label'] or is_region(p):
             continue
-        pr = 'street' if has(p['cls'], STREETY) else 'district' if has(p['cls'], DISTRICTY) else 'town'
+        pr = ('town' if has(p['cls'], TOWNISH) else 'street' if has(p['cls'], STREETY)
+              else 'district' if has(p['cls'], DISTRICTY) else 'town')
         rows[a].append({'from': 'claim', 'q': pl, 'name': p['label'], 'place': p['label'], 'country': p['country'],
                         'll': p['ll'], 'pr': pr, 'kind': kind, 'y0': y0, 'y1': y1, 'src': src})
 
@@ -329,12 +343,13 @@ def main():
         d = item.get(s)
         if not art or not d or not d['ll'] or (a, s) in drop or not is_building(d):
             continue
-        if g['how'] == {'P138'}:
-            # Named after the artist, and nothing more: only when the artist's own record has them
-            # working or living within 30 km, or the item says it was their studio.
-            near = any(x.get('ll') and dist(x['ll'], d['ll']) < 30 for x in rows[a] if x['from'] == 'claim')
+        if 'P466' not in g['how']:
+            # Named after the artist, or owned by them, and nothing more: only when the item says it
+            # was their studio, or it is a house within 5 km of a town the artist's own record has
+            # them working or living in (a street, a school, a theatre named after them never).
+            near = any(x.get('ll') and dist(x['ll'], d['ll']) < 5 for x in rows[a] if x['from'] == 'claim')
             text = (d['label'] or '') + ' ' + (d['desc'] or '')
-            if not (near or STUDIO_RE.search(text)):
+            if not (STUDIO_RE.search(text) or (near and has(d['cls'], HOUSEISH))):
                 continue
         y0, y1 = years_of(g['y'])
         what = ' · '.join(sorted({'P466': 'occupant', 'P127': 'owned by', 'P138': 'named after'}[h] for h in g['how']))
@@ -366,14 +381,16 @@ def main():
                 kind = h.get('kind') or ('studio' if STUDIO_RE.search(text) else 'house')
                 ll = d['ll']
                 public = is_public(d) or h.get('public')
+                if public and living(art) and not has(d['cls'], MUSEUMISH):
+                    public = False      # a living artist's place in a listed building is still theirs
                 if public:
                     pr, why = 'exact', 'open to visitors' if has(d['cls'], ('museum', 'glyptotheque')) or d['site'] else 'a listed building'
-                elif died_by(art, NOW - 50):
-                    pr, why = 'exact', 'a historic place: the artist died in %d' % art['death']
+                elif kind == 'studio' and died_by(art, NOW - 50):
+                    pr, why = 'exact', 'a historic studio: the artist died in %d' % art['death']
                 elif kind == 'studio' and died_by(art, NOW - 30):
                     pr, why = 'exact', 'a historic studio: the artist died in %d' % art['death']
                 else:
-                    pr, why = 'town', ('the studio’s address is private' if kind == 'studio' else 'a home: its address is private')
+                    pr, why = 'town', ('the studio’s address is private' if kind == 'studio' else 'a home, not open to visitors: placed at its town')
                 label = h.get('name') or d['label'] or ''
                 inn = d.get('in')
                 if pr == 'town':
@@ -383,7 +400,7 @@ def main():
                     row = {'kind': kind, 'name': tn, 'place': tn, 'll': list(tll), 'pr': 'town', 'why': why,
                            'q': None}
                 else:
-                    row = {'kind': kind, 'name': label, 'place': h.get('place') or inn or '', 'll': list(ll), 'pr': pr,
+                    row = {'kind': kind, 'name': label, 'place': h.get('place') or inn or nearest(ll)[0][1], 'll': list(ll), 'pr': pr,
                            'why': why, 'q': x['q']}
                     if d.get('inception'):
                         row['built'] = d['inception']
@@ -414,8 +431,19 @@ def main():
                     if d.get('site'):
                         x['src'] = x['src'] + [{'name': urllib.parse.urlparse(d['site']).netloc.replace('www.', ''), 'url': d['site']}]
             elif h:
+                ll = h['ll']
+                if h.get('pr', 'town') == 'town':
+                    # A town is placed on the town's own point: Wikidata's, where the artist's record
+                    # names it, else the nearest city of cities.json within 20 km.
+                    same = [x2 for x2 in rows[a] if x2['from'] == 'claim' and fold(x2.get('place')) == fold(h.get('place'))]
+                    if same:
+                        ll = same[0]['ll']
+                    else:
+                        t, k = nearest(ll)
+                        if k <= 20:
+                            ll = (t[3], t[4])
                 row = {'kind': h.get('kind', 'studio'), 'name': h.get('name') or h.get('place'), 'place': h.get('place'),
-                       'll': h['ll'], 'pr': h.get('pr', 'town'), 'why': h.get('why') or 'only the town is given', 'q': None}
+                       'll': list(ll), 'pr': h.get('pr', 'town'), 'why': h.get('why') or 'only the town is given', 'q': None}
                 if h.get('said'):
                     row['said'] = h['said']
             else:
@@ -442,7 +470,28 @@ def main():
                 row['yt'] = h['yt']
             row['src'] = x['src'] + ([] if x['from'] != 'building' or not x.get('kind0') else [])
             row['_from'] = x['from']
+            if not (row.get('place') or row.get('name')):
+                continue
+            row['place'] = row.get('place') or row['name']
+            row['name'] = row.get('name') or row['place']
             made.append(row)
+
+        # One place under two statements (a residence and an occupant; two items of one house): one row.
+        one = []
+        for r in made:
+            same = [k for k in one if (r.get('q') and k.get('q') == r['q']) or
+                    (r['pr'] != 'town' and k['pr'] != 'town' and dist(k['ll'], r['ll']) < 0.06)]
+            if same:
+                k = same[0]
+                k['src'] = k['src'] + [x2 for x2 in r['src'] if x2 not in k['src']]
+                if k.get('y0') is None and r.get('y0') is not None:
+                    k['y0'], k['y1'] = r['y0'], r['y1']
+                for f2 in ('photos', 'said', 'built'):
+                    if not k.get(f2) and r.get(f2):
+                        k[f2] = r[f2]
+                continue
+            one.append(r)
+        made = one
 
         # A town of the record with a building of the artist's in it is that building.
         keep = []
@@ -456,7 +505,7 @@ def main():
                         b['src'] = b['src'] + [s for s in r['src'] if s not in b['src']]
                     continue
             # Two rows of one place, the same town (a private building and the record's town): one.
-            twin = [k for k in keep if k['pr'] == 'town' and r['pr'] == 'town' and dist(k['ll'], r['ll']) < 2]
+            twin = [k for k in keep if k['pr'] == 'town' and r['pr'] == 'town' and (dist(k['ll'], r['ll']) < 2 or (fold(k.get('place')) == fold(r.get('place')) and dist(k['ll'], r['ll']) < 25))]
             if twin:
                 k = twin[0]
                 k['src'] = k['src'] + [s for s in r['src'] if s not in k['src']]
@@ -546,7 +595,7 @@ def main():
         first = cat[out_rows[ids[0]]['a']][1]
         n = len({out_rows[i]['a'] for i in ids})
         label = surname(first) + (' +%d' % (n - 1) if n > 1 else '')
-        aria = out_rows[ids[0]]['place'] + ': ' + ', '.join(sorted({cat[out_rows[i]['a']][1] for i in ids})[:6]) + (' and others' if n > 6 else '')
+        aria = (out_rows[ids[0]].get('place') or out_rows[ids[0]].get('name') or '') + ': ' + ', '.join(sorted({cat[out_rows[i]['a']][1] for i in ids})[:6]) + (' and others' if n > 6 else '')
         marks.append([lat, lon, label, aria, ids, 'town'])
     # The most saved first: they are named first when there is room.
     marks.sort(key=lambda m: (-max(cat[out_rows[i]['a']][5] for i in m[4]), m[5] == 'town', m[2]))
@@ -557,7 +606,7 @@ def main():
         rs = [out_rows[i] for i in c[6]]
         stops, last = [], None
         for i, r in zip(c[6], rs):
-            if last is not None and stops and stops[-1]['w'] == r['place']:
+            if last is not None and stops and stops[-1]['w'] == (r.get('place') or r.get('name')):
                 stops[-1]['o'].append(i)
                 continue
             stops.append({'key': r['key'], 'll': r['ll'], 'y': r.get('y0') or r.get('y1') or 0, 'w': r.get('place') or r.get('name'), 'o': [i]})
