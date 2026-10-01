@@ -337,6 +337,22 @@ the collage glues in a sheet, it is a character's title card (`engine/drift.js`,
 plant and artist, its place on Earth with latitude and longitude, its climate, and the performance it is written
 after, over its flower and its leaves' spectrum, to be melted and torn into the plane with everything else.
 
+**Five connections between them**, each measured in phi:
+- *Shade as an appetite.* Plectra turns toward the deeper canopy round her, and while she is in view the ultracode adds
+  her pull toward shade to its thrust at phi^-1: DRIFT is steered by her as well as by novelty.
+- *Hybrids as plot.* Where two gardens cross, the two characters meet at the hybrid, a golden 21 cells apart, facing,
+  throwing what they do across to each other every 13 frames on arcs of 55. Meetings claim characters before solo
+  walks do, being rarer.
+- *Cards as continuity.* Each title card's leaf colours are taken up by the gardens that grow after it, at phi^-2,
+  fading over 89 seconds: the credits become the soil.
+- *Climate as light.* Each plant's leaves are lit by the noon sun over its character's real home today, from the
+  latitude and the sun's declination: from the south (down) north of the sun, from the north south of it, and the
+  cool far side as strong as the cosine of the sun's height, so the equator's plants are lit all round and the
+  Yorkshire hawthorn is half in shadow in winter.
+- *The countdown.* 89 seconds in (5 with `#finale` in the link) and every 610 after, three numerals count down in the
+  middle of the view, a beat of phi seconds each (3! 2! 1!), then for 34 seconds every flower is open at once, every
+  character acts phi^2 times as often, and Plectra comes.
+
 **Ultracode: a self-reflective propulsion.** *Code* is Latin *cōdex*, earlier *caudex*, a tree's trunk, then the
 wooden tablets split from it and bound into a book, then a book of laws, then a cipher; *ultra-* is "beyond, on the
 far side of." Ultracode (Aries's word) is code that goes beyond itself by reading itself. As a dynamic: a thing whose

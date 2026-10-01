@@ -1683,7 +1683,18 @@ function coolOf(c) {
   const t = [c[0] * 0.72, c[1] * 0.9, Math.min(255, c[2] * 1.15 + 24)], f = PHI ** -0.5 * lum(c) / Math.max(1, lum(t));
   return t.map((v) => Math.min(255, v * f));
 }
-const LIGHT = [-Math.SQRT1_2, -Math.SQRT1_2];                    // the light comes from the upper left
+/** The noon sun over a plant's real home today (its character's latitude, cast.json): the direction it comes from on
+ * the plane (south is down, and a little from the left) and how much of a leaf's far side it leaves in cool shadow,
+ * the cosine of its height: under the equator's overhead sun almost none, in the Yorkshire Wolds in winter nearly all. */
+function sunOf(plant) {
+  const c = CAST && CAST.cast.find((q) => q.plant === plant), lat = c ? c.lat : 45;
+  const d = new Date(), doy = (d - new Date(d.getFullYear(), 0, 0)) / 864e5, decl = 23.44 * Math.sin(TAU * (doy - 81) / 365);
+  const elev = Math.max(0, 90 - Math.abs(lat - decl)) * Math.PI / 180, from = lat >= decl ? 1 : -1, n = Math.hypot(PHI ** -1, 1);
+  return { L: [-(PHI ** -1) / n, from / n], k: Math.cos(elev) };
+}
+/** The colours of the last title card shown (drift.js, castCard) and when: the next gardens grow up leaning to them, the
+ * credits becoming the soil. */
+let SEED = null;
 /** A colour turned by a radians round the hue wheel, its lightness kept. */
 function hueTurn(c, a) {
   const k = Math.cos(a), q = Math.sin(a) / Math.sqrt(3), w = (1 - k) / 3, m = (v) => Math.max(0, Math.min(255, v));
@@ -1701,7 +1712,10 @@ LIFE.garden = {
     const F = B || A, form = F.form, size = F.size;
     let fl = B ? [A.flower[0], A.flower[1], B.flower[2]] : F.flower;
     if (F.alt) { const P = paletteOf(s.w, s.turn); if (P.mid[0] > P.mid[2]) fl = B ? [A.flower[0], A.flower[1], F.alt[2]] : F.alt; }   // the soil decides
-    const leaf = A.leaf.map((c) => [c, coolOf(c)]), edge = (B || A).leaf.map((c) => [c, coolOf(c)]);
+    const sun = sunOf(A.plant), now = performance.now(), sd = SEED && now - SEED.at < 89000 ? PHI ** -2 * (1 - (now - SEED.at) / 89000) : 0;
+    const seeded = (c, k) => sd ? mixRGB(c, SEED.leaf[k % SEED.leaf.length], sd) : c;   // a card's colours, taken up as they fade
+    const leaf = A.leaf.map((c, k) => { c = seeded(c, k); return [c, mixRGB(c, coolOf(c), sun.k)]; }),
+      edge = (B || A).leaf.map((c, k) => { c = seeded(c, k); return [c, mixRGB(c, coolOf(c), sun.k)]; });
     const deep = mixRGB(A.leaf[1], [36, 56, 128], 0.45), deepC = coolOf(deep);
     const L = [], Fl = [], z = s.h + PHI ** -5, a0 = unitOf(s.seed) * TAU, len = 11 + (s.seed >>> 3) % 7;
     // Leaves: a rosette of five to seven, each a golden angle round from the last, the outer (older, larger) first.
@@ -1717,7 +1731,7 @@ LIFE.garden = {
         // an ovate leaf, broadest a third of the way out, its margin scalloped (a coleus's crenate edge)
         const hw = 0.5 * ll * Math.sin(Math.PI * u ** 0.62) ** 0.8 * (1 - 0.13 * Math.abs(Math.sin(u * Math.PI * 7))), t = Math.abs(v) / Math.max(hw, 1e-3);
         if (t > 1) continue;
-        const nx = -dy * Math.sign(v || 1), ny = dx * Math.sign(v || 1), shade = nx * LIGHT[0] + ny * LIGHT[1] < 0 ? 1 : 0;
+        const nx = -dy * Math.sign(v || 1), ny = dx * Math.sign(v || 1), shade = nx * sun.L[0] + ny * sun.L[1] < 0 ? 1 : 0;
         const zone = Math.abs(v) < 0.5 && u < 0.85 ? lk[0] : t < 0.4 ? lk[0] : t < 0.68 ? lk[1] : t < 0.86 ? ek[2] : t < 0.93 ? ek[3] : [deep, deepC];
         L.push(s.x + x, s.y + y, (k + u) * 3 / nl, zone[shade]);
       }
@@ -1786,7 +1800,7 @@ LIFE.garden = {
     const n = L.length / 4, lx = new Float32Array(n), ly = new Float32Array(n), lo = new Float32Array(n), lc = [];
     for (let k = 0; k < n; k++) { lx[k] = L[k * 4]; ly[k] = L[k * 4 + 1]; lo[k] = L[k * 4 + 2]; lc.push(L[k * 4 + 3]); }
     const stem = coolOf(A.leaf[1]);
-    return { x: s.x, y: s.y, z, w: s.w, n, lx, ly, lo, lc, fl: Fl, pal: [...fl, stem], plant: F.plant, hybrid: !!B, leaf: A.leaf, gi, gj, swap: F.swap, brief: F.brief, fling: F.fling,
+    return { x: s.x, y: s.y, z, w: s.w, n, lx, ly, lo, lc, fl: Fl, pal: [...fl, stem], plant: F.plant, hybrid: !!B, pa: A.plant, pb: B ? B.plant : null, leaf: A.leaf, gi, gj, swap: F.swap, brief: F.brief, fling: F.fling,
              seeds: F.fling ? Array.from({ length: 13 }, (_, k) => [k * GOLDEN_ANGLE + a0, 8 + 13 * unitOf(s.seed + 31 * k), A.leaf[k % 4]]) : null,
              t: REDUCED ? GROW + F_OPEN : -Math.floor(rnd() * 233), ph: Math.floor(rnd() * FLOWER) };
   },
@@ -1802,7 +1816,7 @@ LIFE.garden = {
       if (g.t < GROW) continue;
       // The flower: it opens, stands, falls and comes again; a brief one (the cereus) stands for a moment only.
       const c = g.ph % FLOWER, stand = g.brief ? 89 : 1597, cyc = Math.floor(g.ph / FLOWER);
-      const open = REDUCED ? 1 : c < F_OPEN ? c / F_OPEN : c < F_OPEN + stand ? 1 : c < F_OPEN + stand + F_FALL ? 1 - (c - F_OPEN - stand) / F_FALL : 0;
+      const open = REDUCED || (typeof STAR !== "undefined" && STAR.finale) ? 1 : c < F_OPEN ? c / F_OPEN : c < F_OPEN + stand ? 1 : c < F_OPEN + stand + F_FALL ? 1 - (c - F_OPEN - stand) / F_FALL : 0;
       const pal = g.swap ? [g.pal[0], g.swap[cyc % g.swap.length], g.swap[(cyc + 2) % g.swap.length], g.pal[3]] : g.pal;   // Warhol's, in every colour
       const reach = open * 34, z = g.z + PHI ** -4, F = g.fl;
       for (let k = 0; k < F.length; k += 4) {

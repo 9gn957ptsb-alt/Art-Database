@@ -428,7 +428,9 @@ For "go", give a real website you are certain exists (a museum or collection pag
     const alone = !!UC.seen && onPlane() && now - UC.idleAt > WAIT && !flight && !(typeof ANOM !== "undefined" && ANOM.at) && !REDUCED
       && !(typeof down !== "undefined" && down) && !document.hidden && !(!at.hidden && now - UC.shownAt < 34000);
     // toward what is most alive and new, and away from where it has been
-    const tx = UC.dir[0] * 3 + UC.mem[0] * 0.618, ty = UC.dir[1] * 3 + UC.mem[1] * 0.618, tm = Math.hypot(tx, ty);
+    // and, while Plectra (cast.js) is in view, toward the shade she wants, at phi^-1
+    const sp = typeof STAR !== "undefined" && STAR.shadePull ? STAR.shadePull : [0, 0];
+    const tx = UC.dir[0] * 3 + UC.mem[0] * 0.618 + sp[0] / PHI, ty = UC.dir[1] * 3 + UC.mem[1] * 0.618 + sp[1] / PHI, tm = Math.hypot(tx, ty);
     const fuel = Math.min(1, Math.max(0.236, UC.life * 2.6 + UC.novelty * 8));
     const want = alone && tm > 0.02 ? TOP * fuel * Math.min(1, tm) : 0;
     // the rudder: the heading turns toward the thrust over phi^-1 seconds (from rest it takes the thrust's heading at once)
@@ -477,6 +479,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
     const css = getComputedStyle(document.documentElement), serif = css.getPropertyValue("--serif").trim() || "Georgia, serif",
       mono = css.getPropertyValue("--mono").trim() || "ui-monospace, Menlo, monospace";
     const dark = leaf.slice().sort((p, q) => lum(p) - lum(q))[0];
+    if (typeof SEED !== "undefined") SEED = { leaf: leaf.slice(), at: performance.now() };   // the credits become the soil
     x.fillStyle = rgb(dark.map((v) => v * 0.35)); x.fillRect(0, 0, 1024, 640);
     // the flower, large, on the left: petals round a heart
     const n = c.action === "void" ? 0 : 7, R = 190;
