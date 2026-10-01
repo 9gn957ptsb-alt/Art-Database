@@ -13244,7 +13244,16 @@
   };
 
   function backName(up) {
-    return up ? up.name : following ? "following " + following.artist : "The world";
+    if (up) { return up.name; }
+    if (!following) { return "The world"; }
+    // On a phone the banner has room for the artist's surname only ("de Kooning").
+    var name = following.artist;
+    if (W <= 720) {
+      var words = name.split(" "), k = words.length - 1;
+      while (k > 0 && /^(de|van|von|da|di|del|der|le|la)$/i.test(words[k - 1])) { k -= 1; }
+      return "following " + words.slice(k).join(" ");
+    }
+    return "following " + name;
   }
 
   function followRow(key) {
