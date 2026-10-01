@@ -1,0 +1,1055 @@
+{
+ "artists": {
+  "Andy Warhol": {
+   "born": {
+    "ll": [
+     40.4417,
+     -80
+    ],
+    "name": "Pittsburgh",
+    "wd": "Q1342",
+    "where": "Pittsburgh"
+   },
+   "label": "Andy Warhol",
+   "source": "Wikidata Q5603: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1928 on both",
+   "wd": "Q5603",
+   "worked": [
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      40.4417,
+      -80
+     ],
+     "name": "Pittsburgh",
+     "wd": "Q1342",
+     "where": "Pittsburgh"
+    },
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    }
+   ]
+  },
+  "Anish Kapoor": {
+   "born": {
+    "ll": [
+     19.0758,
+     72.8775
+    ],
+    "name": "Mumbai",
+    "wd": "Q1156",
+    "where": "Mumbai, India"
+   },
+   "label": "Anish Kapoor",
+   "lived": [
+    {
+     "ll": [
+      51.5072,
+      -0.1275
+     ],
+     "name": "London",
+     "wd": "Q84",
+     "where": "London, Roman Empire"
+    }
+   ],
+   "source": "Wikidata Q327293: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1954 on both",
+   "wd": "Q327293",
+   "worked": [
+    {
+     "ll": [
+      51.5072,
+      -0.1275
+     ],
+     "name": "London",
+     "wd": "Q84",
+     "where": "London, Roman Empire"
+    }
+   ]
+  },
+  "Cy Twombly": {
+   "born": {
+    "ll": [
+     37.784,
+     -79.4428
+    ],
+    "name": "Lexington",
+    "wd": "Q501761",
+    "where": "Lexington, Virginia"
+   },
+   "label": "Cy Twombly",
+   "source": "Wikidata Q159566: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1928 on both",
+   "wd": "Q159566",
+   "worked": [
+    {
+     "ll": [
+      48.1375,
+      11.575
+     ],
+     "name": "Munich",
+     "wd": "Q1726",
+     "where": "Munich, Germany"
+    },
+    {
+     "ll": [
+      41.2564,
+      13.6069
+     ],
+     "name": "Formia",
+     "wd": "Q128086",
+     "where": "Formia, Italy"
+    },
+    {
+     "ll": [
+      41.2167,
+      13.5667
+     ],
+     "name": "Gaeta",
+     "wd": "Q128089",
+     "where": "Gaeta, Italy"
+    },
+    {
+     "ll": [
+      40.7333,
+      13.95
+     ],
+     "name": "Ischia",
+     "wd": "Q72134",
+     "where": "Ischia, Italy"
+    },
+    {
+     "ll": [
+      41.8931,
+      12.4828
+     ],
+     "name": "Rome",
+     "wd": "Q220",
+     "where": "Rome, Italy"
+    },
+    {
+     "ll": [
+      35.7696,
+      -5.8034
+     ],
+     "name": "Tangier",
+     "wd": "Q126148",
+     "where": "Tangier, Morocco"
+    },
+    {
+     "ll": [
+      28.1333,
+      -81.6317
+     ],
+     "name": "Florida",
+     "wd": "Q812",
+     "where": "Florida"
+    },
+    {
+     "ll": [
+      37.7344,
+      -79.3542
+     ],
+     "name": "Buena Vista",
+     "wd": "Q503014",
+     "where": "Buena Vista, Virginia"
+    },
+    {
+     "ll": [
+      42.3603,
+      -71.0578
+     ],
+     "name": "Boston",
+     "wd": "Q100",
+     "where": "Boston"
+    },
+    {
+     "ll": [
+      42.4475,
+      -71.2275
+     ],
+     "name": "Lexington",
+     "wd": "Q929667",
+     "where": "Lexington"
+    },
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    },
+    {
+     "ll": [
+      35.5956,
+      -82.5519
+     ],
+     "name": "Asheville",
+     "wd": "Q648501",
+     "where": "Asheville"
+    }
+   ]
+  },
+  "David Hockney": {
+   "label": "David Hockney",
+   "source": "Wikidata Q159907: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1937 on both",
+   "wd": "Q159907",
+   "worked": [
+    {
+     "ll": [
+      51.5072,
+      -0.1275
+     ],
+     "name": "London",
+     "wd": "Q84",
+     "where": "London, Roman Empire"
+    },
+    {
+     "ll": [
+      34.0522,
+      -118.2437
+     ],
+     "name": "Los Angeles",
+     "wd": "Q65",
+     "where": "Los Angeles"
+    },
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      53.55,
+      10
+     ],
+     "name": "Hamburg",
+     "wd": "Q1055",
+     "where": "Hamburg, Holy Roman Empire"
+    },
+    {
+     "ll": [
+      54.088,
+      -0.2004
+     ],
+     "name": "Bridlington",
+     "wd": "Q527391",
+     "where": "Bridlington, United Kingdom"
+    },
+    {
+     "ll": [
+      49.1847,
+      0.0294
+     ],
+     "name": "Rumesnil",
+     "wd": "Q1018178",
+     "where": "Rumesnil, France"
+    }
+   ]
+  },
+  "Elaine de Kooning": {
+   "born": {
+    "ll": [
+     40.6508,
+     -73.9497
+    ],
+    "name": "Brooklyn",
+    "wd": "Q18419",
+    "where": "Brooklyn"
+   },
+   "label": "Elaine de Kooning",
+   "source": "Wikidata Q449536: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1918 on both",
+   "wd": "Q449536",
+   "worked": [
+    {
+     "ll": [
+      35.0844,
+      -106.6503
+     ],
+     "name": "Albuquerque",
+     "wd": "Q34804",
+     "where": "Albuquerque"
+    },
+    {
+     "ll": [
+      40.7283,
+      -73.9942
+     ],
+     "name": "Manhattan",
+     "wd": "Q11299",
+     "where": "Manhattan"
+    }
+   ]
+  },
+  "Helen Frankenthaler": {
+   "born": {
+    "ll": [
+     40.7128,
+     -74.0061
+    ],
+    "name": "New York City",
+    "wd": "Q60",
+    "where": "New York City, New York"
+   },
+   "label": "Helen Frankenthaler",
+   "source": "Wikidata Q235281: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1928 on both",
+   "wd": "Q235281",
+   "worked": [
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    },
+    {
+     "ll": [
+      42.8852,
+      -73.2132
+     ],
+     "name": "Bennington",
+     "wd": "Q817921",
+     "where": "Bennington"
+    },
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      41.0787,
+      -73.4693
+     ],
+     "name": "Darien",
+     "wd": "Q165613",
+     "where": "Darien"
+    }
+   ]
+  },
+  "Henri Cartier-Bresson": {
+   "born": {
+    "ll": [
+     48.855,
+     2.7392
+    ],
+    "name": "Chanteloup-en-Brie",
+    "wd": "Q419367",
+    "where": "Chanteloup-en-Brie, France"
+   },
+   "label": "Henri Cartier-Bresson",
+   "source": "Wikidata Q156567: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1908 on both",
+   "wd": "Q156567"
+  },
+  "Henri Matisse": {
+   "born": {
+    "ll": [
+     50.1053,
+     3.5411
+    ],
+    "name": "Le Cateau-Cambrésis",
+    "wd": "Q329103",
+    "where": "Le Cateau-Cambrésis, France"
+   },
+   "label": "Henri Matisse",
+   "lived": [
+    {
+     "ll": [
+      49.9864,
+      3.4547
+     ],
+     "name": "Bohain-en-Vermandois",
+     "wd": "Q271329",
+     "where": "Bohain-en-Vermandois, France"
+    },
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      48.8231,
+      2.2692
+     ],
+     "name": "Issy-les-Moulineaux",
+     "wd": "Q135265",
+     "where": "Issy-les-Moulineaux, France"
+    },
+    {
+     "ll": [
+      43.7019,
+      7.2683
+     ],
+     "name": "Nice",
+     "wd": "Q33959",
+     "where": "Nice, France"
+    },
+    {
+     "ll": [
+      43.7273,
+      7.1107
+     ],
+     "name": "villa Le Rêve",
+     "wd": "Q122222531",
+     "where": "villa Le Rêve, France"
+    },
+    {
+     "ll": [
+      43.1519,
+      6.4261
+     ],
+     "name": "Cavalière (Var)",
+     "wd": "Q140984047",
+     "where": "Cavalière (Var), France"
+    }
+   ],
+   "source": "Wikidata Q5589: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1869 on both",
+   "wd": "Q5589",
+   "worked": [
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      49.8478,
+      3.2856
+     ],
+     "name": "Saint-Quentin",
+     "wd": "Q182744",
+     "where": "Saint-Quentin, France"
+    },
+    {
+     "ll": [
+      51.5072,
+      -0.1275
+     ],
+     "name": "London",
+     "wd": "Q84",
+     "where": "London, Roman Empire"
+    },
+    {
+     "ll": [
+      43.2697,
+      6.6386
+     ],
+     "name": "Saint-Tropez",
+     "wd": "Q1813",
+     "where": "Saint-Tropez, France"
+    },
+    {
+     "ll": [
+      42.5256,
+      3.0808
+     ],
+     "name": "Collioure",
+     "wd": "Q254829",
+     "where": "Collioure, France"
+    },
+    {
+     "ll": [
+      48.8231,
+      2.2692
+     ],
+     "name": "Issy-les-Moulineaux",
+     "wd": "Q135265",
+     "where": "Issy-les-Moulineaux, France"
+    },
+    {
+     "ll": [
+      32,
+      -6
+     ],
+     "name": "Morocco",
+     "wd": "Q1028",
+     "where": "Morocco"
+    },
+    {
+     "ll": [
+      43.7019,
+      7.2683
+     ],
+     "name": "Nice",
+     "wd": "Q33959",
+     "where": "Nice, France"
+    },
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    },
+    {
+     "ll": [
+      43.7225,
+      7.1119
+     ],
+     "name": "Vence",
+     "wd": "Q192368",
+     "where": "Vence, France"
+    },
+    {
+     "ll": [
+      43.1519,
+      6.4261
+     ],
+     "name": "Cavalière (Var)",
+     "wd": "Q140984047",
+     "where": "Cavalière (Var), France"
+    }
+   ]
+  },
+  "J. M. W. Turner": {
+   "born": {
+    "ll": [
+     51.5125,
+     -0.1225
+    ],
+    "name": "Covent Garden",
+    "wd": "Q55019",
+    "where": "Covent Garden, United Kingdom"
+   },
+   "label": "J. M. W. Turner",
+   "source": "Wikidata Q159758: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1775 on both",
+   "wd": "Q159758",
+   "worked": [
+    {
+     "ll": [
+      48.2083,
+      16.3725
+     ],
+     "name": "Vienna",
+     "wd": "Q1741",
+     "where": "Vienna, Austria"
+    },
+    {
+     "ll": [
+      50.6411,
+      4.6681
+     ],
+     "name": "Belgium",
+     "wd": "Q31",
+     "where": "Belgium"
+    },
+    {
+     "ll": [
+      50.0875,
+      14.4214
+     ],
+     "name": "Prague",
+     "wd": "Q1085",
+     "where": "Prague, Czech Republic"
+    },
+    {
+     "ll": [
+      49.925,
+      1.075
+     ],
+     "name": "Dieppe",
+     "wd": "Q183557",
+     "where": "Dieppe, France"
+    },
+    {
+     "ll": [
+      45.7675,
+      4.835
+     ],
+     "name": "Lyon",
+     "wd": "Q456",
+     "where": "Lyon, France"
+    },
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      49.4431,
+      1.1025
+     ],
+     "name": "Rouen",
+     "wd": "Q30974",
+     "where": "Rouen, France"
+    },
+    {
+     "ll": [
+      52.5167,
+      13.3833
+     ],
+     "name": "Berlin",
+     "wd": "Q64",
+     "where": "Berlin, Margraviate of Brandenburg"
+    },
+    {
+     "ll": [
+      51.0493,
+      13.7381
+     ],
+     "name": "Dresden",
+     "wd": "Q1731",
+     "where": "Dresden, Germany"
+    },
+    {
+     "ll": [
+      49.4094,
+      8.6947
+     ],
+     "name": "Heidelberg",
+     "wd": "Q2966",
+     "where": "Heidelberg, Germany"
+    },
+    {
+     "ll": [
+      47.6633,
+      9.1753
+     ],
+     "name": "Constance",
+     "wd": "Q3834",
+     "where": "Constance, Germany"
+    },
+    {
+     "ll": [
+      44.4939,
+      11.3428
+     ],
+     "name": "Bologna",
+     "wd": "Q1891",
+     "where": "Bologna, Italy"
+    },
+    {
+     "ll": [
+      43.7714,
+      11.2542
+     ],
+     "name": "Florence",
+     "wd": "Q2044",
+     "where": "Florence, Kingdom of Italy"
+    },
+    {
+     "ll": [
+      40.8358,
+      14.2486
+     ],
+     "name": "Naples",
+     "wd": "Q2634",
+     "where": "Naples, Italy"
+    },
+    {
+     "ll": [
+      41.8931,
+      12.4828
+     ],
+     "name": "Rome",
+     "wd": "Q220",
+     "where": "Rome, Italy"
+    },
+    {
+     "ll": [
+      45.0792,
+      7.6761
+     ],
+     "name": "Turin",
+     "wd": "Q495",
+     "where": "Turin, Italy"
+    },
+    {
+     "ll": [
+      45.4397,
+      12.3319
+     ],
+     "name": "Venice",
+     "wd": "Q641",
+     "where": "Venice, Italy"
+    },
+    {
+     "ll": [
+      52.3667,
+      4.8833
+     ],
+     "name": "Amsterdam",
+     "wd": "Q727",
+     "where": "Amsterdam, Netherlands"
+    },
+    {
+     "ll": [
+      52.0117,
+      4.3592
+     ],
+     "name": "Delft",
+     "wd": "Q690",
+     "where": "Delft, Netherlands"
+    },
+    {
+     "ll": [
+      51.7958,
+      4.6783
+     ],
+     "name": "Dordrecht",
+     "wd": "Q26421",
+     "where": "Dordrecht, Netherlands"
+    },
+    {
+     "ll": [
+      52.3814,
+      4.6356
+     ],
+     "name": "Haarlem",
+     "wd": "Q9920",
+     "where": "Haarlem, Netherlands"
+    },
+    {
+     "ll": [
+      52.16,
+      4.49
+     ],
+     "name": "Leiden",
+     "wd": "Q43631",
+     "where": "Leiden, Netherlands"
+    },
+    {
+     "ll": [
+      51.92,
+      4.48
+     ],
+     "name": "Rotterdam",
+     "wd": "Q34370",
+     "where": "Rotterdam, Netherlands"
+    },
+    {
+     "ll": [
+      52.08,
+      4.31
+     ],
+     "name": "The Hague",
+     "wd": "Q36600",
+     "where": "The Hague, Netherlands"
+    },
+    {
+     "ll": [
+      52.0908,
+      5.1217
+     ],
+     "name": "Utrecht",
+     "wd": "Q803",
+     "where": "Utrecht, Netherlands"
+    },
+    {
+     "ll": [
+      47.0523,
+      8.3059
+     ],
+     "name": "Lucerne",
+     "wd": "Q4191",
+     "where": "Lucerne, Switzerland"
+    },
+    {
+     "ll": [
+      47.5539,
+      7.7958
+     ],
+     "name": "Rheinfelden",
+     "wd": "Q269667",
+     "where": "Rheinfelden, Switzerland"
+    },
+    {
+     "ll": [
+      47.3744,
+      8.5411
+     ],
+     "name": "Zurich",
+     "wd": "Q72",
+     "where": "Zurich, Switzerland"
+    },
+    {
+     "ll": [
+      51.4536,
+      -2.5975
+     ],
+     "name": "Bristol",
+     "wd": "Q23154",
+     "where": "Bristol, United Kingdom"
+    },
+    {
+     "ll": [
+      53.2,
+      -2.8833
+     ],
+     "name": "Chester",
+     "wd": "Q170263",
+     "where": "Chester, United Kingdom"
+    },
+    {
+     "ll": [
+      55.9533,
+      -3.1892
+     ],
+     "name": "Edinburgh",
+     "wd": "Q23436",
+     "where": "Edinburgh, United Kingdom"
+    },
+    {
+     "ll": [
+      51.5072,
+      -0.1275
+     ],
+     "name": "London",
+     "wd": "Q84",
+     "where": "London, Roman Empire"
+    },
+    {
+     "ll": [
+      51.5848,
+      -2.0996
+     ],
+     "name": "Malmesbury",
+     "wd": "Q570153",
+     "where": "Malmesbury, United Kingdom"
+    },
+    {
+     "ll": [
+      51.4486,
+      -0.3369
+     ],
+     "name": "Twickenham",
+     "wd": "Q1143278",
+     "where": "Twickenham, United Kingdom"
+    }
+   ]
+  },
+  "Jackson Pollock": {
+   "born": {
+    "ll": [
+     44.5233,
+     -109.0572
+    ],
+    "name": "Cody",
+    "wd": "Q916603",
+    "where": "Cody"
+   },
+   "label": "Jackson Pollock",
+   "source": "Wikidata Q37571: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1912 on both",
+   "wd": "Q37571",
+   "worked": [
+    {
+     "ll": [
+      40.9634,
+      -72.1848
+     ],
+     "name": "East Hampton",
+     "wd": "Q994372",
+     "where": "East Hampton"
+    },
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    }
+   ]
+  },
+  "Paul Caponigro": {
+   "born": {
+    "ll": [
+     42.3603,
+     -71.0578
+    ],
+    "name": "Boston",
+    "wd": "Q100",
+    "where": "Boston"
+   },
+   "label": "Paul Caponigro",
+   "source": "Wikidata Q15516576: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1932 on both",
+   "wd": "Q15516576"
+  },
+  "Salvador Dalí": {
+   "born": {
+    "ll": [
+     42.2667,
+     2.95
+    ],
+    "name": "Figueres",
+    "wd": "Q6839",
+    "where": "Figueres, Spain"
+   },
+   "label": "Salvador Dalí",
+   "lived": [
+    {
+     "ll": [
+      42.2667,
+      2.95
+     ],
+     "name": "Figueres",
+     "wd": "Q6839",
+     "where": "Figueres, Spain"
+    },
+    {
+     "ll": [
+      40.7128,
+      -74.0061
+     ],
+     "name": "New York City",
+     "wd": "Q60",
+     "where": "New York City, New York"
+    }
+   ],
+   "source": "Wikidata Q5577: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1904 on both",
+   "wd": "Q5577",
+   "worked": [
+    {
+     "ll": [
+      40.4169,
+      -3.7033
+     ],
+     "name": "Madrid",
+     "wd": "Q2807",
+     "where": "Madrid, Spain"
+    },
+    {
+     "ll": [
+      48.8567,
+      2.3522
+     ],
+     "name": "Paris",
+     "wd": "Q90",
+     "where": "Paris, France"
+    },
+    {
+     "ll": [
+      52.0804,
+      4.3143
+     ],
+     "name": "Mauritshuis",
+     "wd": "Q221092",
+     "where": "Mauritshuis, Netherlands"
+    },
+    {
+     "ll": [
+      52.0117,
+      4.3544
+     ],
+     "name": "Prinsenhof",
+     "wd": "Q281903",
+     "where": "Prinsenhof, Netherlands"
+    },
+    {
+     "ll": [
+      47,
+      2
+     ],
+     "name": "France",
+     "wd": "Q142",
+     "where": "France"
+    },
+    {
+     "ll": [
+      39.8282,
+      -98.5795
+     ],
+     "name": "United States",
+     "wd": "Q30",
+     "where": "United States"
+    },
+    {
+     "ll": [
+      40.2,
+      -3.5
+     ],
+     "name": "Spain",
+     "wd": "Q29",
+     "where": "Spain"
+    },
+    {
+     "ll": [
+      32.08,
+      34.78
+     ],
+     "name": "Tel Aviv",
+     "wd": "Q33935",
+     "where": "Tel Aviv, Israel"
+    },
+    {
+     "ll": [
+      1.3,
+      103.8
+     ],
+     "name": "Singapore",
+     "wd": "Q334",
+     "where": "Singapore, British Empire"
+    },
+    {
+     "ll": [
+      40.7283,
+      -73.9942
+     ],
+     "name": "Manhattan",
+     "wd": "Q11299",
+     "where": "Manhattan"
+    },
+    {
+     "ll": [
+      52.0117,
+      4.3592
+     ],
+     "name": "Delft",
+     "wd": "Q690",
+     "where": "Delft, Netherlands"
+    },
+    {
+     "ll": [
+      52.08,
+      4.31
+     ],
+     "name": "The Hague",
+     "wd": "Q36600",
+     "where": "The Hague, Netherlands"
+    }
+   ]
+  }
+ },
+ "licence": "Wikidata's data: CC0 1.0 Universal",
+ "note": "Where each character's artist was born, worked and lived, from Wikidata (CC0 1.0), written by scripts/fetch_artist_homes.py. The plants of home are the birthplace's (scripts/build_characters.py)."
+}
