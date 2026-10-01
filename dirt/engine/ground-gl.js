@@ -2509,12 +2509,9 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
  * so the whole appears between them, e.g. Bicircle, 2007; and who cracks glass and mirror on purpose and fills the
  * cracks with white grout, e.g. Quarter Past Four). In stretches of the plane (where a field 1597 cells across, turned
  * off the lattice and warped, is high: their edges wander, never straight) the light is broken into shards, about
- * 144 cells across, with
- * fissures between them that wander (the shards are cells round scattered seeds, their edges warped), each fissure
- * a grey gradient, dark on one side to light on the other, never a line. Every shard shows the same large composition out of step by up
+ * 144 cells across (cells round scattered seeds, their edges warped), meeting with no fissure between them. Every shard shows the same large composition out of step by up
  * to 17 cells and a few seconds; across them lies one great circle through which the light is seen magnified, as
- * through a lens, its rim a grey gradient from dark outside to light within, so the circle breaks at every crack and is
- * still one circle. A few shards are a painting instead (a quilt, tinted by the light it stands in for), and a few
+ * through a lens, with no rim: only the magnification shows where it is. A few shards are a painting instead (a quilt, tinted by the light it stands in for), and a few
  * are clear: the plane itself. No grid: straight lines and right angles are kept for when the plane turns to
  * architecture. Returns 0 outside them; 1 on a shard (colour in col, alpha in a); 2 in a fissure; 3 clear. */
 /** p turned off the lattice and warped, so fields made of it have no straight contours. */
@@ -2535,15 +2532,8 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
     float d = length(pw - sd);
     if (d < d1) { d2 = d1; h2 = h; d1 = d; h = hc; } else if (d < d2) { d2 = d; h2 = hc; }
   }
-  float edge = (d2 - d1) * 0.5;                                      // cells to the fissure
-  float wide = 0.8 + 1.4 * vnoise(p, 21.0, 28697u);                  // the crack wanders in width too
-  if (edge < wide + 2.0) {
-    // the fissure: no line, a grey gradient across it, dark on one shard's side to light on the other's
-    float x = (h < h2 ? 1.0 : -1.0) * edge / (wide + 2.0);
-    col = vec3(255.0 * (0.04 + 0.92 * (0.5 + 0.5 * x)));
-    a = 0.85 * (1.0 - x * x);
-    return 2;
-  }
+  // (no fissures between them, and no grey in them, since 2 October 2026: Aries could not stand the grey lines; the
+  // shards simply meet, each a little out of step with the next)
   float u = unit(mixh(h + 3u));
   if (u < P4) return 3;                                              // clear: the plane itself
   vec2 off = (vec2(unit(mixh(h + 4u)), unit(mixh(h + 5u))) - 0.5) * 34.0;   // a little out of step with its neighbours
@@ -2556,8 +2546,6 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
   float fd = length(p + off - fc) - fr - 8.0 * sin(T / 13.0 + unit(ht) * 6.2832);
   vec2 pl = fd < 0.0 ? fc + (p + off - fc) * (0.62 + 0.2 * (1.0 + fd / fr)) : p + off;
   col = lightAt(pl, T + dt);
-  // the lens's rim: a grey gradient across it, dark outside to light within
-  col = mix(col, vec3(255.0 * (0.04 + 0.92 * clamp(0.5 - fd / 10.0, 0.0, 1.0))), 0.6 * (1.0 - smoothstep(3.0, 6.0, abs(fd))));
   if (u < P4 + P3 && uQN > 0) {                                      // a painting, in the light it replaces
     vec3 q = texture(uQuilt, vec3((p + off) / (uQS * 1.2), float(mixh(h + 8u) % uint(max(uQN, 1))))).rgb * 255.0;
     col = mix(q, col * (0.35 + 0.9 * lum(q) / 255.0), 0.5);

@@ -601,12 +601,11 @@ beside the page in `antiquity/`.
 so the whole appears between them (a cyclist in *Bicircle*, 2007; a tree in *Baroque Tree*, 2006), and who cracks
 glass and mirror on purpose and fills the cracks with white grout (*Quarter Past Four*). In stretches of the plane
 (where a field 1597 cells across, turned off the lattice and warped, is high, so their edges wander) the light is broken
-into shards about 144 cells across: cells round scattered seeds, their edges warped, with fissures between them that
-wander in course and width, each a grey gradient across it, dark on one shard's side to light on the other's, never
-a line. Every shard shows the same large
-composition out of step by up to 17 cells and a few seconds, and across them lies one great circle, 144 to 254 cells
-across, through which the light is seen magnified, as through a lens, its rim a grey gradient from dark outside to
-light within, so the circle breaks at every crack and is still one circle. A few shards are paintings instead (a quilt,
+into shards about 144 cells across: cells round scattered seeds, their edges warped. They meet with nothing between
+them: no fissure, no grey (taken out on 2 October 2026; Aries could not stand the grey lines). Every shard shows the
+same large composition out of step by up to 17 cells and a few seconds, and across them lies one great circle, 144 to
+254 cells across, through which the light is seen magnified, as through a lens, with no rim: the magnification alone
+shows where it is. A few shards are paintings instead (a quilt,
 tinted by the light it stands in for), and a few are clear: the plane itself. There is no grid: straight lines and
 right angles are kept for when the plane turns to architecture.
 
