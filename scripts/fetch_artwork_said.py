@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fetch what museums and Wikipedia say about the saved works, for the art view's "Said of it"
-(artist, 1 Oct 2026; see artwork_said.py). Writes data/histories/said/<artsy-slug>.json, a cache:
+(artist, 1 Oct 2026; see artwork_said.py). Writes data/said/<artsy-slug>.json, a cache:
 each {"id", "said": [{"k", "q", "by", "in", "u"}], "fetched"}.
 
   - The Art Institute of Chicago (api.artic.edu): the work's description — its label — for every
@@ -31,13 +31,14 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "histories"
-OUT = DATA / "said"
+OUT = ROOT / "data" / "said"
 UA = {"User-Agent": "ArtistWebsite-histories/1.0 (https://9gn957ptsb-alt.github.io/Art-Database/v2/; research)"}
 S = requests.Session()
 S.headers.update(UA)
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from artwork_said import sentences, flat  # noqa: E402
+from fetch_artwork_histories import filename  # noqa: E402
 
 
 def get(url, **kw):
@@ -187,7 +188,7 @@ def main():
         jobs = {k: v for k, v in jobs.items() if k == args.only}
         qids = {k: v for k, v in qids.items() if k == args.only}
     titles = enwiki_titles(set(qids.values()))
-    todo = {slug: titles[q] for slug, q in qids.items() if q in titles and (args.refresh or not (OUT / f"{slug}.json").exists())}
+    todo = {slug: titles[q] for slug, q in qids.items() if q in titles and (args.refresh or not (OUT / filename(slug)).exists())}
     intros = wikipedia_intros(todo.values()) if todo else {}
     for slug, q in qids.items():
         if q in titles:
@@ -196,7 +197,7 @@ def main():
     print(f"{len(jobs)} works to ask about ({len(titles)} with an English Wikipedia article)", flush=True)
     got = 0
     for n, (slug, todo) in enumerate(sorted(jobs.items())):
-        path = OUT / f"{slug}.json"
+        path = OUT / filename(slug)
         if path.exists() and not args.refresh:
             got += bool(json.loads(path.read_text()).get("said"))
             continue

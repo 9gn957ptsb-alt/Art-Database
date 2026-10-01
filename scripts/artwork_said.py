@@ -14,7 +14,7 @@ Sources, read by build_artwork_histories.py:
     whose speaker the text names — the artist, or a named writer, critic or curator, with the
     citation the text gives — and (b) a sentence or two the partner wrote about this very work
     ("the present work", its title), credited to the partner. Never the record itself.
-  - Museum label texts fetched by fetch_artwork_said.py into data/histories/said/ (the Art
+  - Museum label texts fetched by fetch_artwork_said.py into data/said/ (the Art
     Institute of Chicago's description, the Cleveland Museum of Art's wall text), credited to the
     museum, and the opening of the work's English Wikipedia article (CC BY-SA), credited to it.
 
@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "histories"
-SAID = DATA / "said"
+SAID = ROOT / "data" / "said"
 
 # Words that mark a sentence as trade, not thought: never kept.
 TRADE = re.compile(
@@ -277,7 +277,8 @@ def from_artsy(w, common=frozenset()):
 
 def from_fetched(slug):
     """The museum labels and Wikipedia's opening, fetched by fetch_artwork_said.py."""
-    p = SAID / f"{slug}.json"
+    from fetch_artwork_histories import filename
+    p = SAID / filename(slug)
     if not p.exists():
         return []
     rec = json.loads(p.read_text())
