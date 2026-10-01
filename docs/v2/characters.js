@@ -1,4 +1,4 @@
-/* The characters — who comes out of the wave in a city.
+/* The characters — who comes out of the wave in a city, and who lives where.
 
    The artist, 1 Oct 2026: "When I click on the screen when viewing a city
    there's a cool wave of purple or blue pixels that echo from the places I
@@ -7,102 +7,160 @@
    artists … Nothing too much, start with one character."
 
    So: now and then, out of that wave, one character steps from the middle
-   of the ring and trots off along the ground and out of view, and round the
+   of the ring and goes off along the ground and out of view, and round the
    ring the plants of that city's own biome and realm rise in DIRT dots,
    crowns seen from above in their stratum's shape, and after a while sink
-   back. The first is a red fox, drawn after Cy Twombly (characters/
-   characters.json says why): its dots are the soil where it stands worked
-   into his inks, and behind it it leaves a line of his writing — a looping
-   pen leaning right, two lines in two inks, lifting between phrases — that
-   fades. Pressed, it stops and looks at you, is boxed in red as he boxed
-   his plates, and a quiet line says what it is: "Red fox · after Cy
-   Twombly · among hazel, European beech and ancient oaks · Temperate
-   Broadleaf & Mixed Forests". Nothing links anywhere.
-
-   Sparingly (the artist, 23 Sep 2026: "go a little bit easier … it still
-   gimmicky"): one at a time, never two; at most once a visit to a city, the
-   first wave there; and after one has gone, none for φ⁸–φ⁹ s anywhere.
-   land.js says when a wave is fired in a city and nothing is being read
-   (`Characters.wave`); everything else is here. Under reduced motion no
-   one comes.
+   back. Each is an animal of DIRT's grammar drawn after one of DIRT's
+   artists (characters/characters.json says why): its dots are the soil
+   where it stands worked into the artist's inks, it moves in its own gait
+   (the fox trots, the bison walks, the squirrel bounds, the eagle flies up
+   and away, the slug crawls and goes back into the soil), and some leave
+   something of their artist behind (Twombly's writing after the fox, the
+   dark trace of Kapoor's wax after the slug). Pressed, one stops and looks
+   at you, is framed in its artist's ink, and a quiet line says what it is.
+   Nothing links anywhere.
 
    The correspondence (the artist, 1 Oct 2026: "Establish a correspondence
    between the Artist associated with animals and plants and where their
-   artwork is located throughout the world … implement both a local aspect
-   of where the museum is in addition to the transcendental aspect of
-   non-native artist and their plants and animals to that area. When an
-   animal comes up that is associated with an artist, I want you to be able
-   to use that animal as an additional way to navigate through the globe").
-   Each character's artist has a map (characters/artists.json): every city
-   where the artist's saved works are held or have been, as a route from
-   home, and the home itself, from Wikidata, with the plants of home. A
-   character comes to the cities on its artist's map: the first wave in one
-   of them brings it. Anywhere else it comes only now and then, and then it
-   is a guide, trotting off toward the nearest city of its artist. Round the
-   ring rise two plantings: the city's own plants (local, worked with the
-   city's soil) and, among them, the plants of the artist's home
-   (transcendental: in the artist's inks, outlined in chalk, of no soil
-   here). Pressed, it says both — "Red fox · after Cy Twombly, of Lexington,
-   Virginia · dogwood from Lexington among Munich's European beech and
-   pedunculate oak" — and offers to be followed. Following, land.js turns
-   the city's column into the artist's map and the animal runs ahead along
-   every journey and waits at the museum or gallery that holds the work
-   (`Land.follow`, `Characters.guide`). Pressing it again lets it go.
+   artwork is located throughout the world … When an animal comes up that
+   is associated with an artist, I want you to be able to use that animal as
+   an additional way to navigate through the globe"). Each character's
+   artist has a map (characters/artists.json): every city where the artist's
+   saved works are held or have been, and home, from Wikidata, with the
+   plants of home. A character comes to the cities on its artist's map: the
+   first wave in one of them brings it. Anywhere else it comes only now and
+   then, as a guide toward the nearest. Round the ring rise two plantings:
+   the city's own and, among them, home's (in the artist's inks, outlined in
+   chalk). Pressed, it offers to be followed (land.js, `Land.follow`).
 
-   Data: characters/characters.json (the cast), characters/<id>.json (its
-   poses, a letter a cell), characters/plants.json (each city's and each
-   artist's home's biome, realm, soil and plants), characters/artists.json
-   (each artist's map and home), all written by
-   scripts/build_characters.py; characters/homes.json by
-   scripts/fetch_artist_homes.py. */
+   Hometowns (the artist, 1 Oct 2026: "I want there to be other animals
+   besides the fox as well. Perhaps attributing artists to their hometown is
+   a good way to introduce new animals to scenes when on route of an
+   artwork. It's okay to have more than one animal present at a time, but
+   too many can be overwhelming and distracting"). An artist's home town is
+   the city of the site within 25 km of the birthplace (artists.json's
+   home.key: Brooklyn is New York, Bradford is Leeds, Pittsburgh is
+   Pittsburgh); the artist's animal lives there:
+   - a journey that arrives there (a door, Near here, a history's stop, a
+     walk, following) is met by it: it comes in from the side the journey
+     came from (a slow one comes up out of the soil there) and stands by
+     the city's middle, looks, sits, and after φ⁶ s goes on;
+   - a journey that passes over it (a town the way names as it goes) shows
+     it there, small, far below, looking up, while the town is named;
+   - a work's history that has been there shows it, small, sitting at that
+     stop, once the work's first look is over;
+   - going down into it any other way, it is there at rest, sitting, one
+     visit in φ²;
+   - a wave there brings it before any other.
+   Only drawn characters, each once a visit to a city.
+
+   A crowd, never: at most two animals on a phone and three on a desktop,
+   counting one being followed; a second never comes within φ³ s of the
+   last; each keeps its own height and side (one comes in below or across
+   from another, never on it). Two that meet face each other a while, and if
+   their artists' works share something the threads know (a show, an owner,
+   a writing, a sale, a museum: artists.json's pairs), a line between them
+   says it, the thing itself a door to its thread. After a wave's animal
+   has gone, no wave brings one for φ⁸–φ⁹ s. Under reduced motion no one
+   comes.
+
+   Data: characters/characters.json (the cast, each with its moves),
+   characters/<id>.json (its poses, a letter a cell), characters/plants.json,
+   characters/artists.json (each artist's map and home, and the pairs), all
+   written by scripts/build_characters.py; cities.json for where the home
+   towns are. land.js says when a wave is fired (`Characters.wave`), where
+   a followed animal is to be (`Characters.guide`), and, through
+   `Land.where`, `Land.journey` and `Land.at`, where you are and are going. */
 
 (function () {
   "use strict";
 
   var PHI = (1 + Math.sqrt(5)) / 2;
   var BASE = "characters/";
-  var FPS = 8;                         // the trot's held frames, steps() timing
+  var FPS = 8;                         // the trot's held frames, steps() timing (a character's moves.fps)
   var SPEED = 58;                      // CSS px a second at the trot: a journey, not a race
   var RISE = 1100;                     // plants rising or sinking, ms
   var STAND = Math.pow(PHI, 4) * 1000; // plants stand at least this long
   var SAY = Math.pow(PHI, 5) * 1000;   // the line stays this long when pressed
   var REST = [Math.pow(PHI, 8) * 1000, Math.pow(PHI, 9) * 1000];
+  var GAP = Math.pow(PHI, 3) * 1000;   // never two comings closer than this
+  var HOME_STAY = Math.pow(PHI, 6) * 1000;   // a home animal that met a journey stays this long
+  var AT_REST = 1 / (PHI * PHI);       // the chance a home animal is seen at rest, going down any other way
   var LIGHT = [-0.62, -0.78];          // toward the light: up and to the left
   var CELL = 2;                        // CSS px a dot of the plants
+  var APART = 120;                     // CSS px: two animals never stand nearer than this
+  var MEET = 104;                      // ... except two that meet, this far apart, facing
 
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var GUIDE = 1 / Math.pow(PHI, 3);    // the chance one comes, as a guide, to a city not on its artist's map
   var NEAR_KM = 30;                    // a collage's city is a city of the map this near
   var cast = null, plants = null, artists = null, sprites = {};
-  var loading = null;
-  var one = null;                      // the character out now, if any
-  var restUntil = 0;
-  var visit = { key: null, done: false };
+  var towns = null, townIx = null;     // cities.json, read when a home town is needed
+  var loading = null, townsLoading = null;
+  var crowd = [];                      // the characters out now
+  var restUntil = 0, lastCame = -1e9;
+  var visit = { key: null, waved: false, seen: {} };
   var canvas = null, g = null, dpr = 1, W = 0, H = 0;
-  var hit = null, says = null;
-  var raf = 0, lastDrawn = -1;
+  var says = null, saying = null, pair = null;
+  var prefer = null;                   // the checks: the one a wave brings, when it may
+  var raf = 0;
   var spriteCache = {};
 
   /* ---- reading the files ----------------------------------------------- */
 
+  function get(name) {
+    return fetch(name).then(function (r) {
+      if (!r.ok) { throw new Error(name + " " + r.status); }
+      return r.json();
+    });
+  }
+
   function load() {
     if (loading) { return loading; }
-    function get(name) {
-      return fetch(BASE + name).then(function (r) {
-        if (!r.ok) { throw new Error(name + " " + r.status); }
-        return r.json();
-      });
-    }
-    loading = Promise.all([get("characters.json"), get("plants.json"),
-                           get("artists.json").catch(function () { return null; })]).then(function (got) {
+    loading = Promise.all([get(BASE + "characters.json"), get(BASE + "plants.json"),
+                           get(BASE + "artists.json").catch(function () { return null; })]).then(function (got) {
       cast = got[0];
       plants = got[1];
       artists = got[2];
       return Promise.all(cast.cast.map(function (c) {
-        return get(c.id + ".json").then(function (s) { sprites[c.id] = s; });
+        return get(BASE + c.id + ".json").then(function (s) { sprites[c.id] = s; }, function () {});
       }));
     }).catch(function () { cast = null; });
     return loading;
+  }
+
+  function loadTowns() {
+    if (townsLoading) { return townsLoading; }
+    townsLoading = get("cities.json").then(function (c) {
+      towns = c.towns;
+      townIx = {};
+      towns.forEach(function (t, i) { townIx[t[0]] = i; });
+    }, function () { towns = []; townIx = {}; });
+    return townsLoading;
+  }
+
+  function townOf(key) {
+    var i = townIx && townIx[key];
+    return i === undefined || !towns ? null : { key: key, name: towns[i][1], lat: towns[i][3], lon: towns[i][4] };
+  }
+
+  // A character's moves: its gait's speed and frames, its pause, how it leaves, what it leaves behind.
+  function moves(c) {
+    var m = c.moves || {};
+    return { speed: m.speed || 1, fps: m.fps || FPS, pause: m.pause === undefined ? "back" : m.pause,
+             leave: m.leave || "edge", lift: m.lift || 0, trail: m.trail || null };
+  }
+
+  function drawn() { return cast ? cast.cast.filter(function (c) { return sprites[c.id]; }) : []; }
+
+  function cap() { return W && W < 720 ? 2 : 3; }
+
+  function outNow(id) { return crowd.filter(function (o) { return o.c.id === id && o.state !== "gone"; })[0]; }
+
+  // Whether one more may come now: room in the crowd, not the same animal, not too soon.
+  function room(id, now) {
+    var live = crowd.filter(function (o) { return o.state !== "gone"; });
+    return !still && live.length < cap() && !outNow(id) && now - lastCame >= GAP;
   }
 
   /* ---- colour ------------------------------------------------------------ */
@@ -203,6 +261,25 @@
     return [k.black[0], w[w.length - 1], w[0]];
   }
 
+  // The site's city an artist was born in (or within 25 km of), if any.
+  function homeKey(c) {
+    var a = artists && artists.artists && artists.artists[c.artist];
+    return a && a.home && a.home.key || null;
+  }
+
+  function homesOf(key) {
+    return drawn().filter(function (c) { return homeKey(c) === key; });
+  }
+
+  // What two artists' saved works share, as the threads know it (artists.json's pairs).
+  function pairOf(a, b) {
+    var p = artists && artists.pairs;
+    if (!p) { return null; }
+    var k = [a, b].sort().join("|");
+    var got = p[k];
+    return got && got.length ? got[0] : null;
+  }
+
   /* ---- the canvas -------------------------------------------------------- */
 
   function setUp() {
@@ -217,32 +294,42 @@
     tiles.parentNode.insertBefore(canvas, tiles.nextSibling);
     g = canvas.getContext("2d");
 
-    hit = document.createElement("button");
-    hit.type = "button";
-    hit.className = "character";
-    hit.hidden = true;
-    stage.appendChild(hit);
-    // Its own press: the stage must not take it for a turn or a squash.
-    hit.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
-    hit.addEventListener("click", function (event) {
-      event.stopPropagation();
-      press();
-    });
-
     says = document.createElement("p");
     says.className = "character-says";
     says.setAttribute("aria-live", "polite");
     says.hidden = true;
     stage.appendChild(says);
 
-    // Leaving the city ends the visit and takes everyone with it.
+    pair = document.createElement("p");
+    pair.className = "character-pair";
+    pair.setAttribute("aria-live", "polite");
+    pair.hidden = true;
+    pair.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    stage.appendChild(pair);
+
+    // Leaving the city ends the visit and takes everyone with it, but the
+    // one being followed, and the ones seen from a journey or a history.
     var land = document.getElementById("land");
     if (land && window.MutationObserver) {
       new MutationObserver(function () {
-        if (land.dataset.at !== "city" && !(one && one.mode === "follow")) { endVisit(); }
+        if (land.dataset.at !== "city") { endVisit(); }
       }).observe(land, { attributes: true, attributeFilter: ["data-at"] });
     }
     return true;
+  }
+
+  // Each character pressed through its own bare button, which follows it.
+  function hitFor(o) {
+    var stage = document.getElementById("stage");
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "character";
+    b.hidden = true;
+    b.setAttribute("aria-label", o.c.name + " — press to see what it is");
+    b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    b.addEventListener("click", function (event) { event.stopPropagation(); press(o); });
+    if (stage) { stage.appendChild(b); }
+    return b;
   }
 
   function size() {
@@ -250,8 +337,10 @@
     var w = window.innerWidth, h = window.innerHeight;
     if (w !== W || h !== H || d !== dpr) {
       W = w; H = h; dpr = d;
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
+      if (canvas) {
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+      }
       spriteCache = {};
     }
   }
@@ -261,8 +350,10 @@
      Each cell of a pose is one dot: the artist's ink for what it is (the
      coat, the white, the black, the eye, the pen), the soil of the place
      worked a fifth of the way into it, a little grain per dot, and every
-     fourth dot or so a size smaller, so it reads as DIRT's weave and not as
-     paint. Drawn once per pose, way and place, at the screen's own pixels. */
+     tenth dot or so a size smaller, so it reads as DIRT's weave and not as
+     paint. Drawn once per pose, way, size and place, at the screen's own
+     pixels. One seen far below (from a journey, at a history's stop) is
+     drawn at half size: one screen pixel a cell. */
 
   function inkFor(c) {
     var k = c.after.inks;
@@ -274,13 +365,15 @@
     };
   }
 
-  function sprite(c, pose, n, dir, here) {
-    n = n % sprites[c.id].poses[pose].length;
-    var key = c.id + "|" + pose + "|" + n + "|" + dir + "|" + (here ? here.soil : "");
-    if (spriteCache[key]) { return spriteCache[key]; }
+  function sprite(c, pose, n, dir, here, scale) {
     var s = sprites[c.id];
+    if (!s.poses[pose]) { pose = "stand"; }
+    n = n % s.poses[pose].length;
+    scale = scale || 1;
+    var key = c.id + "|" + pose + "|" + n + "|" + dir + "|" + scale + "|" + (here ? here.soil : "");
+    if (spriteCache[key]) { return spriteCache[key]; }
     var rows = s.poses[pose][n];
-    var px = Math.max(1, Math.round(s.cell * dpr));
+    var px = Math.max(1, Math.round(s.cell * dpr * scale));
     var cv = document.createElement("canvas");
     cv.width = s.w * px;
     cv.height = s.h * px;
@@ -447,15 +540,15 @@
     return Math.floor(up * 8) / 8;                  // in held steps
   }
 
-  function drawPlants(now) {
+  function drawPlants(o, now) {
     var px = Math.max(1, Math.round(CELL * dpr));
     var anyUp = false;
     // Following, the plantings stand where it waits, and move with the city under it.
     var sx = 0, sy = 0;
-    if (one.anchor && one.target) { sx = one.target.x - one.anchor.x; sy = one.target.y - one.anchor.y; }
-    if (one.mode === "follow" && (one.hidden || one.state === "run")) { return false; }
-    one.plants.forEach(function (c) {
-      var up = upness({ born: one.plantBorn || one.born, crownDelay: c.delay, sinkAt: one.sinkAt }, now);
+    if (o.anchor && o.target) { sx = o.target.x - o.anchor.x; sy = o.target.y - o.anchor.y; }
+    if (o.mode === "follow" && (o.hidden || o.state === "run")) { return false; }
+    o.plants.forEach(function (c) {
+      var up = upness({ born: o.plantBorn || o.born, crownDelay: c.delay, sinkAt: o.sinkAt }, now);
       if (up <= 0) { return; }
       anyUp = true;
       var rows = c.bottom - c.top + 1;
@@ -478,17 +571,23 @@
     return anyUp;
   }
 
-  /* ---- his writing, behind it ----------------------------------------------
+  /* ---- what it leaves behind ------------------------------------------------
 
-     Twombly's line: a pen that loops as it goes, leaning right, pointed at
-     the turns, two lines to a row in two inks, lifting between phrases.
-     Here it is the way the fox came, written along the ground behind it in
-     single pixels, and it fades in steps. */
+     Twombly's line, after the fox: a pen that loops as it goes, leaning
+     right, pointed at the turns, two lines to a row in two inks, lifting
+     between phrases, in single pixels, fading in steps. Kapoor's trace,
+     after the slug: a line of his dark along the ground, a glint in it now
+     and then, drying in steps, slower. The others leave nothing. */
 
-  function drawWriting(now) {
-    var w = one.writing;
+  function drawTrail(o, now) {
+    var w = o.writing;
     if (!w.length) { return false; }
-    var inks = one.c.after.inks.writing;
+    return o.mv.trail === "slime" ? drawSlime(o, now) : drawWriting(o, now);
+  }
+
+  function drawWriting(o, now) {
+    var w = o.writing;
+    var inks = o.c.after.inks.writing || [o.c.after.inks.pen[0]];
     var px = Math.max(1, Math.round(dpr));
     var live = false;
     for (var line = 0; line < 2; line += 1) {
@@ -504,57 +603,183 @@
           var u = s / 5.2 + line * 2.1;
           // Lifting between phrases: every fifth loop or so the pen is up.
           if (Math.floor(u / (Math.PI * 2)) % 5 === 4) { continue; }
-          var lx = s - one.dir * 8 * Math.sin(u);
+          var lx = s - o.dir * 8 * Math.sin(u);
           var ly = -4.2 * (1 - Math.cos(u)) + line * 4;
-          lx += one.dir * 0.32 * -ly;               // leaning right as it writes
-          var x = Math.round((one.x0 + one.dir * lx) * dpr), y = Math.round((w[k].y + 6 + ly) * dpr);
+          lx += o.dir * 0.32 * -ly;               // leaning right as it writes
+          var x = Math.round((o.x0 + o.dir * lx) * dpr), y = Math.round((w[k].y + 6 + ly) * dpr);
           g.fillRect(x, y, px, px);
         }
       }
     }
     g.globalAlpha = 1;
-    // Forget what has faded.
     while (w.length && now - w[0].at > 4400) { w.shift(); }
     return live;
   }
 
-  /* ---- the character ------------------------------------------------------ */
+  function drawSlime(o, now) {
+    var w = o.writing, inks = o.c.after.inks.writing;
+    var px = Math.max(1, Math.round(dpr)), life = 9000, live = false;
+    for (var k = 1; k < w.length; k += 1) {
+      var age = now - w[k].at;
+      if (age > life) { continue; }
+      live = true;
+      g.globalAlpha = [0.85, 0.6, 0.38, 0.18][Math.min(3, Math.floor(age / life * 4))];
+      for (var q = 0; q < 1; q += 0.25) {
+        var s = w[k - 1].s + (w[k].s - w[k - 1].s) * q;
+        var x = Math.round((o.x0 + o.dir * s) * dpr), y = Math.round((w[k].y - 1) * dpr);
+        g.fillStyle = Math.round(s) % 11 === 0 ? inks[1] : inks[0];
+        g.fillRect(x, y, px, px * 2);
+      }
+    }
+    g.globalAlpha = 1;
+    while (w.length && now - w[0].at > life + 200) { w.shift(); }
+    return live;
+  }
+
+  /* ---- where they stand ---------------------------------------------------- */
+
+  function live() { return crowd.filter(function (o) { return o.state !== "gone"; }); }
+
+  // What is in the way on the screen: the city's column, the dial of years,
+  // the banner, the walk's strip. A character never stands under them.
+  function obstacles() {
+    var out = [];
+    ["#art-col", "#art-time", "#building-time", ".walk-strip", "#banner"].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el || el.hidden || !el.getClientRects().length) { return; }
+      var r = el.getBoundingClientRect();
+      if (r.width && r.height) { out.push(r); }
+    });
+    // The city's own marks: a museum's diamond and its name are its way in.
+    var land = document.getElementById("land");
+    if (land) {
+      Array.prototype.forEach.call(land.querySelectorAll(".city"), function (el) {
+        if (el.hidden || el.style.visibility === "hidden" || el.dataset.on === "false") { return; }
+        var r = el.getBoundingClientRect();
+        if (r.width && r.height && r.right > 0 && r.left < W && r.bottom > 0 && r.top < H) { out.push(r); }
+      });
+    }
+    return out;
+  }
+
+  // A place to stand near (x, y) that keeps clear of the others and of what
+  // is on the screen: there, below, above, across.
+  function seat(x, y, except) {
+    var tries = [[0, 0], [0, 52], [0, -52], [APART, 26], [-APART, 26], [APART, -26], [-APART, -26], [0, 104],
+                 [-APART * 1.6, 0], [APART * 1.6, 0], [0, -104], [-APART, -78]];
+    var obs = obstacles();
+    for (var k = 0; k < tries.length; k += 1) {
+      var cx = Math.max(48, Math.min(W - 48, x + tries[k][0]));
+      var cy = Math.max(110, Math.min(H - 24, y + tries[k][1]));
+      var under = obs.some(function (r) { return cx + 44 > r.left && cx - 44 < r.right && cy + 6 > r.top && cy - 56 < r.bottom; });
+      if (under) { continue; }
+      var clear = live().every(function (o) {
+        return o === except || o.mode === "far" || o.hidden ||
+          Math.abs(o.x - cx) >= APART || Math.abs(o.y - cy) >= 44;
+      });
+      if (clear) { return { x: cx, y: cy }; }
+    }
+    return null;
+  }
+
+  // One standing still on the screen, that a newcomer could go and meet.
+  function standing(except) {
+    return live().filter(function (o) {
+      return o !== except && o.mode !== "far" && !o.hidden && !o.meet &&
+        (o.state === "wait" || o.stopped) && o.x > 40 && o.x < W - 40;
+    })[0] || null;
+  }
+
+  function aim(o) {
+    if (o.meet && o.meet.state !== "gone") {
+      if (!o.meetOff) {
+        // Beside it, facing, a little lower: the side with room, clear of the dial and the names.
+        var side = o.meet.x > W / 2 ? -1 : 1, obs = obstacles();
+        var tries = [[side, 14], [-side, 14], [side, -44], [-side, -44], [side, 64], [-side, 64]];
+        o.meetOff = { x: side * MEET, y: 14 };
+        for (var k = 0; k < tries.length; k += 1) {
+          var cx = o.meet.x + tries[k][0] * MEET, cy = o.meet.y + tries[k][1];
+          if (cx < 48 || cx > W - 48 || cy < 110 || cy > H - 24) { continue; }
+          if (obs.some(function (r) { return cx + 44 > r.left && cx - 44 < r.right && cy + 6 > r.top && cy - 56 < r.bottom; })) { continue; }
+          o.meetOff = { x: tries[k][0] * MEET, y: tries[k][1] };
+          break;
+        }
+      }
+      return { x: o.meet.x + o.meetOff.x, y: o.meet.y + o.meetOff.y };
+    }
+    if (o.geo && window.Land && Land.at) {
+      var p = Land.at(o.geo.lat, o.geo.lon);
+      if (!p || p.z <= 0) { return null; }
+      return { x: p.x + o.geo.dx, y: p.y + o.geo.dy };
+    }
+    return o.tx !== undefined ? { x: o.tx, y: o.ty } : null;
+  }
+
+  /* ---- coming ------------------------------------------------------------- */
+
+  function make(c, mode, x, y, extra) {
+    var now = performance.now();
+    var m = mapOf(c);
+    var home = homeOf(m);
+    if (home) { home.look = homeLook(c); home.chalk = c.after.inks.pen[0]; }
+    var o = {
+      c: c, mv: moves(c), mode: mode, here: null, born: now, x0: x, x: x, y: y, dir: 1, alt: 0,
+      city: null, map: m, home: home, row: null, guide: null, scale: 1,
+      pose: "stand", n: 0, state: "out", since: now, s: 0, looked: false,
+      plants: [], writing: [], sinkAt: 0, stopped: false, hidden: false
+    };
+    for (var k in extra || {}) { if (Object.prototype.hasOwnProperty.call(extra, k)) { o[k] = extra[k]; } }
+    if (mode !== "far") { o.hit = hitFor(o); }
+    crowd.push(o);
+    lastCame = now;
+    visit.seen[c.id] = true;
+    loop();
+    return o;
+  }
+
+  function newVisit(key) {
+    visit = { key: key, waved: false, seen: {}, said: {} };
+  }
 
   function wave(x, y, city) {
-    if (still || one || !city || !isFinite(x) || !isFinite(y)) { return; }
+    if (still || !city || !isFinite(x) || !isFinite(y)) { return; }
     var key = city.key || "";
-    if (visit.key !== key) { visit = { key: key, done: false }; }
-    if (visit.done) { return; }
+    if (visit.key !== key) { newVisit(key); }
+    if (visit.waved) { return; }
     var now = performance.now();
     if (now < restUntil) { return; }
     if (!setUp()) { return; }
-    visit.done = true;
+    size();
+    if (!room("", now)) { return; }
+    visit.waved = true;
     load().then(function () {
-      if (!cast || !cast.cast.length || one) { return; }
+      if (!cast || !cast.cast.length) { return; }
       var land = document.getElementById("land");
       if (land && land.dataset.at !== "city") { return; }
-      // The correspondence: a city on an artist's map brings that artist's
-      // character. Anywhere else one comes only now and then, as a guide.
-      var drawn = cast.cast.filter(function (c) { return sprites[c.id]; });
-      var mine = drawn.filter(function (c) { return rowHere(mapOf(c), city); });
+      // A home town's own animal first; then the animals of the artists
+      // whose maps the city is on; anywhere else, now and then, a guide.
+      var free = drawn().filter(function (c) { return !visit.seen[c.id] && !outNow(c.id); });
+      if (prefer) { free.sort(function (p, q) { return (q.id === prefer) - (p.id === prefer); }); }
+      var mine = free.filter(function (c) { return homeKey(c) === key; });
+      if (!mine.length) { mine = free.filter(function (c) { return rowHere(mapOf(c), city); }); }
       var c, guide = null;
       if (mine.length) {
-        c = mine[Math.floor(Math.random() * mine.length)];
+        c = prefer && mine[0].id === prefer ? mine[0] : mine[Math.floor(Math.random() * mine.length)];
       } else {
-        if (!drawn.length || Math.random() > GUIDE) { return; }
-        c = drawn[Math.floor(Math.random() * drawn.length)];
+        if (!free.length || Math.random() > GUIDE) { return; }
+        c = free[Math.floor(Math.random() * free.length)];
         if (mapOf(c)) { guide = nearestRow(mapOf(c), city.lat, city.lon); }
       }
+      if (!room(c.id, performance.now())) { return; }
       come(c, x, y, city.r || 60, placeAt(city.lat, city.lon), city, guide);
     });
   }
 
+  // Out of the wave: off by the nearer side, unless that is too close to be
+  // seen going; on a phone, always to the left, away from the dial of years.
+  // A guide goes the way its artist's nearest city lies, east or west. If
+  // another stands still on the screen, it goes to meet it instead.
   function come(c, x, y, r, here, city, guide) {
-    size();
-    var now = performance.now();
-    // Off by the nearer side, unless that is too close to be seen going; on
-    // a phone, always to the left, away from the dial of years at the right.
-    // A guide goes the way its artist's nearest city lies, east or west.
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
@@ -562,96 +787,229 @@
       dir = ((guide.row[4] - city.lon + 540) % 360) - 180 >= 0 ? 1 : -1;
       guide.way = dir > 0 ? "east" : "west";
     }
-    var seed = Math.random();
-    var m = mapOf(c);
-    var home = homeOf(m);
-    if (home) { home.look = homeLook(c); home.chalk = c.after.inks.pen[0]; }
-    one = {
-      c: c, here: here, born: now, x0: x, x: x, y: y, dir: dir, mode: "wave",
-      city: city || null, map: m, home: home, row: rowHere(m, city), guide: guide,
-      pose: "stand", n: 0, state: "out", since: now, s: 0, looked: false,
-      plants: growPlants(x, y, r, here, seed, home), writing: [], sinkAt: 0, stopped: false
-    };
-    hit.setAttribute("aria-label", c.name + " — press to see what it is");
-    loop();
+    var at = seat(x, y) || { x: x, y: y };
+    var o = make(c, "wave", at.x, at.y, { dir: dir, here: here, city: city || null, guide: guide });
+    o.row = rowHere(o.map, city);
+    o.plants = growPlants(x, y, r, here, Math.random(), o.home);
+    var other = standing(o);
+    if (other) { o.meet = other; }
   }
 
-  function press() {
-    if (!one || one.state === "gone") { return; }
-    var now = performance.now();
-    // Following: pressed again, it is let go, and goes its own way.
-    if (one.mode === "follow") {
-      if (window.Land && Land.unfollow) { Land.unfollow(); } else { release(now); }
+  // A journey arrived in an artist's home town: its animal comes to meet it.
+  function comeHome(c, t, trip) {
+    var from = trip && townOf(trip.from);
+    var dir = from ? (((t.lon - from.lon + 540) % 360) - 180 >= 0 ? 1 : -1) : (Math.random() < 0.5 ? 1 : -1);
+    var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
+    if (!p || p.z <= 0) { return; }
+    var spot = seat(p.x + 56, p.y + 72);
+    if (!spot) { return; }
+    var slow = moves(c).speed < 0.5;
+    var here = placeAt(t.lat, t.lon);
+    var o = make(c, "home", slow ? spot.x : dir > 0 ? -50 : W + 50, spot.y, {
+      dir: dir, here: here, city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, state: slow ? "out" : "in",
+      alt: moves(c).lift, atHome: true
+    });
+    o.row = rowHere(o.map, o.city);
+    var other = standing(o);
+    if (other) { o.meet = other; }
+    o.plants = growPlants(spot.x, spot.y, 64, here, Math.random(), o.home);
+    o.plantBorn = performance.now() + 900;
+  }
+
+  // Gone down into an artist's home town another way: now and then it is there, at rest.
+  function comeRest(c, t) {
+    var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
+    if (!p || p.z <= 0) { return; }
+    var spot = seat(p.x + 56, p.y + 72);
+    if (!spot) { return; }
+    var o = make(c, "rest", spot.x, spot.y, {
+      dir: p.x + 56 > W / 2 ? -1 : 1, here: placeAt(t.lat, t.lon),
+      city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, atHome: true
+    });
+    o.row = rowHere(o.map, o.city);
+  }
+
+  // Seen far below, from a journey passing over its home or at a history's stop.
+  function comeFar(c, t, kind, until) {
+    var o = make(c, "far", 0, 0, {
+      scale: 0.5, geo: { lat: t.lat, lon: t.lon, dx: -22, dy: 2 }, here: placeAt(t.lat, t.lon),
+      farKind: kind, until: until, dir: -1, city: { key: t.key, name: t.name }
+    });
+    return o;
+  }
+
+  /* ---- hometowns, from where you are and where you are going --------------- */
+
+  var trip = null;                     // the journey under way: { from, to, passed }
+  var hist = null;                     // the work whose history is open: { id, at, keys, done }
+
+  function arrive(key, viaTrip) {
+    loadTowns().then(function () {
+      var t = townOf(key);
+      if (!t || visit.key !== key) { return; }
+      var homes = homesOf(key).filter(function (c) { return !visit.seen[c.id] && !outNow(c.id); });
+      if (!homes.length) { return; }
+      var c = homes[Math.floor(Math.random() * homes.length)];
+      if (!setUp()) { return; }
+      size();
+      if (!room(c.id, performance.now())) { return; }
+      if (viaTrip) {
+        visit.seen[c.id] = true;
+        window.setTimeout(function () {
+          if (visit.key === key && room(c.id, performance.now() + GAP)) { comeHome(c, t, viaTrip); }
+        }, 900);
+      } else {
+        visit.seen[c.id] = true;            // decided once a visit, seen or not
+        if (Math.random() < AT_REST) { comeRest(c, t); }
+      }
+    });
+  }
+
+  function passOver(key) {
+    loadTowns().then(function () {
+      var t = townOf(key);
+      if (!t || !setUp()) { return; }
+      size();
+      if (live().some(function (o) { return o.mode === "far"; })) { return; }
+      var c = homesOf(key).filter(function (k) { return room(k.id, performance.now()); })[0];
+      if (c) { comeFar(c, t, "pass", performance.now() + 3200); }
+    });
+  }
+
+  function historyStops(id, now) {
+    if (!hist || hist.id !== id) {
+      hist = { id: id, at: now, keys: null, done: false };
+      var h = hist;
+      Promise.all([get("histories/" + id + ".json"), loadTowns()]).then(function (got) {
+        var keys = [];
+        (got[0].events || []).forEach(function (e) { if (e.p && keys.indexOf(e.p) < 0) { keys.push(e.p); } });
+        h.keys = keys;
+      }, function () { h.keys = []; });
       return;
     }
-    if (one.stopped) { goOn(now); return; }
-    one.stopped = true;
-    one.stopAt = now;
-    one.pose = "look";
-    one.n = 0;
-    says.textContent = line(one);
-    // And it can be followed, through its artist's map.
-    var canFollow = one.map && window.Land && Land.follow;
+    // After the work's first look (9 s), once.
+    if (hist.done || !hist.keys || now - hist.at < 9000) { return; }
+    hist.done = true;
+    if (!setUp()) { return; }
+    size();
+    for (var k = 0; k < hist.keys.length; k += 1) {
+      var t = townOf(hist.keys[k]);
+      var c = t && homesOf(t.key).filter(function (x) { return room(x.id, now); })[0];
+      if (c) { comeFar(c, t, "stop", 0).work = id; return; }
+    }
+  }
+
+  function poll() {
+    if (still || !window.Land || !Land.where) { return; }
+    if (!cast) { load(); return; }
+    var w = Land.where(), now = performance.now();
+    var j = Land.journey ? Land.journey() : null;
+    if (j && !j.done && j.to) {
+      if (!trip || trip.to !== j.to) { trip = { from: j.from, to: j.to, passed: {} }; }
+      (j.passed || []).forEach(function (key) {
+        if (!trip.passed[key]) { trip.passed[key] = true; passOver(key); }
+      });
+    }
+    if (w.at === "work" && !w.flying && w.work) { historyStops(w.work, now); } else { hist = null; }
+    if (!w.flying && w.at === "town" && w.key) {
+      var back = visit.key === w.key && visit.left && now - visit.left < 60000;
+      if (visit.key !== w.key || (visit.left && !back)) {
+        var via = trip && trip.to === w.key ? trip : null;
+        newVisit(w.key);
+        arrive(w.key, via);
+      }
+      visit.left = 0;
+      trip = null;
+    }
+  }
+
+  /* ---- pressed ------------------------------------------------------------- */
+
+  function press(o) {
+    if (!o || o.state === "gone") { return; }
+    var now = performance.now();
+    // Following: pressed again, it is let go, and goes its own way.
+    if (o.mode === "follow") {
+      if (window.Land && Land.unfollow) { Land.unfollow(); } else { release(o, now); }
+      return;
+    }
+    if (o.stopped) { goOn(o, now); return; }
+    if (saying && saying !== o && saying.stopped) { goOn(saying, now); }
+    o.stopped = true;
+    o.stopAt = now;
+    o.pose = "look";
+    o.n = 0;
+    o.alt = 0;
+    saying = o;
+    says.textContent = line(o);
+    var canFollow = o.map && window.Land && Land.follow;
     if (canFollow) {
       var go = document.createElement("button");
       go.type = "button";
       go.className = "character-follow";
       go.textContent = "Follow";
-      go.setAttribute("aria-label", "Follow the " + one.c.name.toLowerCase() + " through " + one.c.artist + "'s works");
+      go.setAttribute("aria-label", "Follow the " + o.c.name.toLowerCase() + " through " + o.c.artist + "'s works");
       go.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
-      go.addEventListener("click", function (event) { event.stopPropagation(); follow(); });
+      go.addEventListener("click", function (event) { event.stopPropagation(); follow(o); });
       says.appendChild(document.createTextNode(" "));
       says.appendChild(go);
     }
     says.hidden = false;
-    placeSays();
-    one.sayUntil = now + SAY * (canFollow ? PHI : 1);
+    placeSays(o);
+    o.sayUntil = now + SAY * (canFollow ? PHI : 1);
   }
 
   /* Following: land.js turns the column into the artist's map and says
-     where the animal is to be (guide); here it only runs and waits. */
-  function follow() {
-    var o = one;
+     where the animal is to be (guide); here it only runs and waits. One is
+     followed at a time: another being followed is let go. */
+  function follow(o) {
     if (!o || !o.map || !window.Land) { return; }
     var now = performance.now();
+    crowd.forEach(function (x) { if (x !== o && x.mode === "follow") { release(x, now); } });
     o.mode = "follow";
     o.stopped = false;
+    o.meet = null;
+    o.geo = null;
     o.state = "wait";
     o.waitSince = now;
     o.atKey = o.city ? (o.row ? o.row[0] : o.city.key) : null;
     o.sinkAt = Math.max(now, o.born + RISE);      // the wave's plantings go back down
     o.writing = [];
     says.hidden = true;
-    hit.setAttribute("aria-label", o.c.name + " — press to let it go, and stop following " + o.c.artist);
+    saying = null;
+    o.hit.setAttribute("aria-label", o.c.name + " — press to let it go, and stop following " + o.c.artist);
     var ids = {};
     o.map.works.forEach(function (w) { ids[w[0]] = true; });
     Land.follow({ artist: o.c.artist, animal: o.c.name, map: o.map, ids: ids, home: o.home ? o.home.where : "", cast: o.c.id });
   }
 
+  function follower() { return crowd.filter(function (o) { return o.mode === "follow" && o.state !== "gone"; })[0] || null; }
+
   /* A walk (walks.js) is led by its animal without a wave: the character
-     comes out following, hidden until land.js says where it is to be (on
-     the way, or where it waits). What is handed back is what Land.follow
-     takes. A character already following is kept. Under reduced motion
-     nothing is drawn, and the walk still has its map. */
+     comes out following, hidden until land.js says where it is to be. What
+     is handed back is what Land.follow takes. A character already following
+     is kept. Under reduced motion nothing is drawn, and the walk still has
+     its map. A walk is asked for, so it is let in even to a full crowd: the
+     one out longest makes way. */
   function lead(id) {
     return load().then(function () {
       var c = cast && cast.cast.filter(function (k) { return k.id === id; })[0];
       var m = c && mapOf(c);
       if (!m) { return null; }
       var home = homeOf(m);
-      var now = performance.now();
-      if (!(one && one.mode === "follow" && one.c.id === id) && !still && sprites[c.id] && setUp()) {
-        if (one) { end(); }
+      var f = follower();
+      if (!(f && f.c.id === id) && !still && sprites[c.id] && setUp()) {
+        var now = performance.now();
+        if (f) { remove(f); }
+        var mine = outNow(id);
+        if (mine) { remove(mine); }
         size();
-        if (home) { home.look = homeLook(c); home.chalk = c.after.inks.pen[0]; }
-        one = {
-          c: c, here: null, born: now, x0: W / 2, x: W / 2, y: H * 0.7, dir: 1, mode: "follow",
-          city: null, map: m, home: home, row: null, guide: null,
-          pose: "stand", n: 0, state: "wait", since: now, waitSince: now, s: 0, looked: true,
-          plants: [], writing: [], sinkAt: 0, stopped: false, hidden: true, atKey: null
-        };
-        hit.setAttribute("aria-label", c.name + " — press to let it go, and stop following " + c.artist);
-        loop();
+        while (live().length >= cap()) { remove(live()[0]); }
+        var o = make(c, "follow", W / 2, H * 0.7, { state: "wait", waitSince: now, looked: true, hidden: true, atKey: null });
+        if (home) { o.home = home; }
+        o.hit.setAttribute("aria-label", c.name + " — press to let it go, and stop following " + c.artist);
       }
       var ids = {};
       m.works.forEach(function (w) { ids[w[0]] = true; });
@@ -659,34 +1017,27 @@
     });
   }
 
-  // Let go: off by the nearer side, its plantings sinking, and the long rest after.
-  function release(now) {
-    var o = one;
+  // Let go: off by the nearer side, its plantings sinking.
+  function release(o, now) {
     if (!o) { return; }
     o.mode = "wave";
     o.hidden = false;
     o.stopped = false;
-    o.state = "trot";
+    leave(o, now);
     o.looked = true;
-    o.x0 = o.x;
-    o.s = 0;
-    o.since = now;
-    o.lastMove = now;
-    o.dir = o.x > W / 2 ? 1 : -1;
-    o.writing = [];
     o.sinkAt = Math.max(now, (o.plantBorn || o.born) + RISE);
-    says.hidden = true;
+    if (saying === o) { says.hidden = true; saying = null; }
     loop();
   }
 
-  /* Where land.js wants it, each frame while following: running ahead
-     along a journey ({x, y, dir, run}), waiting by the museum or gallery
-     holding the work ({x, y, key, lat, lon, name}), or nowhere (null: in a
-     museum, a work's history). Arriving in a city of the map, the two
-     plantings rise round where it waits. */
+  /* Where land.js wants the followed one, each frame: running ahead along a
+     journey ({x, y, dir, run}), waiting by the museum or gallery holding the
+     work ({x, y, key, lat, lon, name}), or nowhere (null: in a museum, a
+     work's history). Arriving in a city of the map, the two plantings rise
+     round where it waits. */
   function guide(p) {
-    var o = one;
-    if (!o || o.mode !== "follow") { return; }
+    var o = follower();
+    if (!o) { return; }
     if (!p) { o.hidden = true; return; }
     size();
     o.hidden = false;
@@ -706,6 +1057,7 @@
       o.city = { key: p.key, lat: p.lat, lon: p.lon, name: p.name };
       o.here = placeAt(p.lat, p.lon);
       o.row = rowHere(o.map, o.city);
+      o.atHome = homeKey(o.c) === p.key;
       o.anchor = { x: p.x, y: p.y };
       o.plants = still ? [] : growPlants(p.x, p.y, 72, o.here, Math.random(), o.home);
       o.plantBorn = now + 600;
@@ -714,21 +1066,45 @@
     loop();
   }
 
-  function goOn(now) {
-    one.stopped = false;
-    one.lastMove = now;
-    one.state = "trot";
-    one.since = now;
-    says.hidden = true;
+  function goOn(o, now) {
+    o.stopped = false;
+    if (saying === o) { says.hidden = true; saying = null; }
+    if (o.mode === "home" || o.mode === "rest" || o.meet) { o.meet = null; leave(o, now); return; }
+    o.lastMove = now;
+    o.state = "trot";
+    o.since = now;
+  }
+
+  // Off, its own way: along the ground and out of view, up into the sky, or back into the soil.
+  function leave(o, now) {
+    o.state = "trot";
+    o.geo = null;
+    o.x0 = o.x;
+    o.s = 0;
+    o.since = now;
+    o.lastMove = now;
+    o.dir = o.x > W / 2 ? 1 : -1;
+    if (W < 600) { o.dir = -1; }
+    o.writing = [];
+    o.looked = true;
+    if (!o.sinkAt && o.plants.length) { o.sinkAt = Math.max(now, (o.plantBorn || o.born) + STAND); }
   }
 
   function andList(names) {
     return names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0];
   }
 
+  function surname(name) {
+    var words = name.split(" "), k = words.length - 1;
+    while (k > 0 && /^(de|van|von|da|di|del|der|le|la)$/i.test(words[k - 1])) { k -= 1; }
+    return words.slice(k).join(" ");
+  }
+
   /* What it is, whose hand, and the two plantings: "Red fox · after Cy
      Twombly, of Lexington, Virginia · dogwood from Lexington among Munich's
-     European beech and pedunculate oak · 10 of his works have been here". */
+     European beech and pedunculate oak · 10 of the artist's works have been
+     here"; at home: "Bald eagle · after Andy Warhol, of Pittsburgh,
+     Pennsylvania · at home in Pittsburgh". */
   function line(o) {
     var bits = [o.c.name, "after " + o.c.artist + (o.home ? ", of " + o.home.where : "")];
     var names = [], homes = [];
@@ -739,7 +1115,9 @@
     });
     var town = o.city && o.city.name ? o.city.name.split(",")[0] : "";
     var local = names.length ? (town ? town + "’s " : "") + andList(names.slice(0, 3)) : "";
-    if (homes.length) {
+    if (o.atHome && town) {
+      bits.push("at home in " + town + (names.length ? ", among " + andList(names.slice(0, 2)) : ""));
+    } else if (homes.length) {
       bits.push(andList(homes.slice(0, 2)) + " from " + o.home.name + (local ? " among " + local : ""));
     } else if (o.home && o.here && o.home.set === o.here.set && names.length) {
       bits.push("at home among " + andList(names.slice(0, 3)));
@@ -757,66 +1135,205 @@
     return bits.join(" · ");
   }
 
-  function bounds() {
-    var s = sprites[one.c.id];
-    var w = s.w * s.cell, h = s.h * s.cell;
-    return { x: one.x - w / 2, y: one.y - s.foot[1] * s.cell, w: w, h: h };
+  function bounds(o) {
+    var s = sprites[o.c.id];
+    var k = o.scale || 1;
+    var w = s.w * s.cell * k, h = s.h * s.cell * k;
+    return { x: o.x - w / 2, y: o.y - o.alt - s.foot[1] * s.cell * k, w: w, h: h };
   }
 
-  function placeSays() {
-    var b = bounds();
+  function placeSays(o) {
+    var b = bounds(o);
     var sw = says.offsetWidth || 220, sh = says.offsetHeight || 30;
-    var left = one.dir > 0 ? b.x - sw - 10 : b.x + b.w + 10;
+    var left = o.dir > 0 ? b.x - sw - 10 : b.x + b.w + 10;
     if (left < 16) { left = b.x + b.w + 10; }
     if (left + sw > W - 16) { left = Math.max(16, b.x - sw - 10); }
     var top = Math.max(16, Math.min(H - sh - 16, b.y + b.h / 2 - sh / 2));
     says.style.transform = "translate(" + Math.round(left) + "px," + Math.round(top) + "px)";
   }
 
-  function step(now) {
-    var o = one, t = now - o.since;
-    if (o.mode === "follow") { stepFollow(o, now); return; }
+  /* ---- two that meet --------------------------------------------------------
+
+     A newcomer that went to meet one standing still: once both are still,
+     facing, a line between them names what their artists' works share, if
+     the threads know: "Red fox and bald eagle · Twombly and Warhol: both
+     written of in Forty Are Better Than One, 2009", the thing itself a door
+     to its thread. Once a visit for a pair; nothing if nothing is known. */
+
+  var KIND_SAID = {
+    show: function (p) { return "both shown in “" + p[2] + "”" + (p[3] ? ", " + p[3].split(",")[0] : "") + (p[4] ? ", " + p[4] : ""); },
+    owner: function (p) { return "both owned by " + p[2]; },
+    writing: function (p) { return "both written of in " + p[2] + (p[4] ? ", " + p[4] : ""); },
+    sale: function (p) { return "both offered in " + p[2]; },
+    museum: function (p) { return "both held by " + p[2]; }
+  };
+
+  function meetings(now) {
+    if (!pair) { return; }
+    if (!pair.hidden) {
+      var a = pair._a, b = pair._b;
+      if (now > pair._until || !a || !b || a.state === "gone" || b.state === "gone" || a.hidden || b.hidden) {
+        pair.hidden = true;
+        return;
+      }
+      placePair(a, b);
+      return;
+    }
+    live().forEach(function (o) {
+      var m = o.meet;
+      if (!pair.hidden || !m || m.state === "gone" || o.state !== "wait" || m.hidden) { return; }
+      var key = [o.c.artist, m.c.artist].sort().join("|");
+      visit.said = visit.said || {};
+      if (visit.said[key]) { return; }
+      visit.said[key] = true;
+      var p = pairOf(o.c.artist, m.c.artist);
+      o.until = Math.max(o.until || 0, now + (p ? SAY * PHI : SAY));
+      if (m.until) { m.until = Math.max(m.until, o.until); }
+      if (!p) { return; }
+      pair.textContent = "";
+      pair.appendChild(document.createTextNode(m.c.name + " and " + o.c.name.toLowerCase() + " · " +
+        surname(m.c.artist) + " and " + surname(o.c.artist) + ": "));
+      var said = (KIND_SAID[p[1]] || KIND_SAID.museum)(p);
+      if (window.Land && Land.thread) {
+        var door = document.createElement("button");
+        door.type = "button";
+        door.className = "character-pair-door";
+        door.textContent = said;
+        door.addEventListener("click", function (event) { event.stopPropagation(); pair.hidden = true; Land.thread(p[0]); });
+        pair.appendChild(door);
+      } else {
+        pair.appendChild(document.createTextNode(said));
+      }
+      pair._a = m; pair._b = o; pair._until = now + SAY * PHI; pair._obs = null;
+      pair.hidden = false;
+      placePair(m, o);
+    });
+  }
+
+  function placePair(a, b) {
+    var ba = bounds(a), bb = bounds(b);
+    var pw = pair.offsetWidth || 240, ph = pair.offsetHeight || 30;
+    var mid = (ba.x + ba.w / 2 + bb.x + bb.w / 2) / 2;
+    // Under the two, where the ground is theirs; above them if there is no
+    // room, or if the dial or the column is there.
+    var left = Math.max(16, Math.min(W - pw - 16, mid - pw / 2));
+    var below = Math.max(ba.y + ba.h, bb.y + bb.h) + 8, above = Math.min(ba.y, bb.y) - ph - 6;
+    var obs = pair._obs || (pair._obs = obstacles());
+    var hits = function (t) {
+      if (t < 70 || t + ph > H - 16) { return 99; }
+      // The column and the dial count for more than any number of names.
+      return obs.reduce(function (n, r) {
+        var over = left + pw > r.left && left < r.right && t + ph > r.top && t < r.bottom;
+        return n + (over ? (r.width > 120 && r.height > 120 ? 50 : 1) : 0);
+      }, 0);
+    };
+    var top = hits(below) <= hits(above) ? below : above;
+    pair.style.transform = "translate(" + Math.round(left) + "px," + Math.round(top) + "px)";
+  }
+
+  /* ---- moving -------------------------------------------------------------- */
+
+  function gaitFrame(o, now) { return Math.floor(now / (1000 / o.mv.fps)) % 4; }
+
+  function step(o, now) {
+    var t = now - o.since;
+    var dt = Math.min(80, now - (o.lastMove || now));
+    o.lastMove = now;
+    if (o.mode === "follow") { stepFollow(o, now, dt); return; }
+    if (o.mode === "far") { stepFar(o, now); return; }
     if (o.stopped) {
-      // Looking at you; then it sits; then it goes on.
+      // Looking at you; then it rests; then it goes on.
       if (now - o.stopAt > 2600) { o.pose = "sit"; }
-      if (now > o.sayUntil) { goOn(now); }
+      if (now > o.sayUntil) { goOn(o, now); }
       return;
     }
+    var mv = o.mv;
     if (o.state === "out") {
-      o.pose = "stand";
-      if (t > 700) { o.state = "trot"; o.since = now; }
+      o.pose = o.mode === "rest" ? "sit" : "stand";
+      if (o.geo) { var a0 = aim(o); if (a0) { o.x = a0.x; o.y = a0.y; } }
+      if (t > 700) {
+        o.since = now;
+        if (o.mode === "rest") { o.state = "wait"; o.waitSince = now - 6000; }
+        else if (o.meet || o.mode === "home") {
+          o.state = o.mode === "home" && !o.meet ? "wait" : "in";
+          o.waitSince = now;
+          if (o.state === "wait") { o.until = now + HOME_STAY; }
+        }
+        else { o.state = "trot"; o.x0 = o.x; }
+      }
       return;
     }
-    if (o.state === "back") {
-      o.pose = "back";
-      o.lastMove = now;
+    if (o.state === "in") {
+      var tg = aim(o);
+      if (!tg) { leave(o, now); return; }
+      var dx = tg.x - o.x, dy = tg.y - o.y, d = Math.sqrt(dx * dx + dy * dy);
+      if (d > 1.5) {
+        var go = Math.min(d, SPEED * mv.speed * PHI * dt / 1000);
+        o.x += dx / d * go;
+        o.y += dy / d * go;
+        if (Math.abs(dx) > 1) { o.dir = dx > 0 ? 1 : -1; }
+        o.alt = mv.lift * Math.min(1, d / 120);
+        o.pose = "trot";
+        o.n = gaitFrame(o, now);
+      } else {
+        o.x = tg.x; o.y = tg.y; o.alt = 0;
+        o.state = "wait";
+        o.waitSince = now;
+        if (o.mode === "home") { o.until = now + HOME_STAY; }
+        if (o.meet) {
+          o.dir = o.meet.x > o.x ? 1 : -1;
+          if (o.meet.mode !== "follow" || o.meet.state === "wait") { o.meet.dir = -o.dir; }
+          o.until = Math.max(o.until || 0, now + SAY);
+        }
+      }
+      return;
+    }
+    if (o.state === "wait") {
+      var at = aim(o);
+      if (at && !o.meet) { o.x = at.x; o.y = at.y; }
+      var waited = now - (o.waitSince || now);
+      o.pose = o.meet ? (waited > 2400 ? "look" : "stand") : waited > 4200 ? "sit" : waited > 1600 ? "look" : "stand";
+      o.n = 0;
+      if (o.meet && o.meet.state === "gone") { o.meet = null; }
+      if (o.until && now > o.until && o.mode !== "rest") { o.meet = null; leave(o, now); }
+      return;
+    }
+    if (o.state === "pause") {
+      o.pose = mv.pause;
       if (t > 1500) { o.state = "trot"; o.since = now; }
       return;
     }
+    if (o.state === "sink") {
+      if (t > 1200) { gone(o, now); }
+      return;
+    }
     if (o.state === "trot") {
-      var dt = Math.min(80, now - (o.lastMove || now));
-      o.lastMove = now;
-      o.s += SPEED * Math.max(1 / PHI, Math.min(1, W / 1000)) * dt / 1000;   // slower across a phone
+      o.s += SPEED * mv.speed * Math.max(1 / PHI, Math.min(1, W / 1000)) * dt / 1000;   // slower across a phone
       o.x = o.x0 + o.dir * o.s;
       o.pose = "trot";
-      o.n = Math.floor(now / (1000 / FPS)) % 4;
-      if (!o.writing.length || o.s - 18 - o.writing[o.writing.length - 1].s >= 3) { o.writing.push({ s: o.s - 18, y: o.y, at: now }); }
-      // Once, a little way off, it stops and looks back.
-      if (!o.looked && o.s > 110) { o.looked = true; o.state = "back"; o.since = now; }
-      var half = sprites[o.c.id].w * sprites[o.c.id].cell / 2;
-      if (o.x < -half - 10 || o.x > W + half + 10) {
-        o.state = "gone";
-        if (!o.sinkAt) { o.sinkAt = Math.max(now, o.born + STAND); }
+      o.n = gaitFrame(o, now);
+      if (mv.leave === "rise") { o.alt = Math.min(mv.lift, o.s * 0.6) + Math.max(0, o.s - 60) * 0.5; }
+      if (mv.trail && (!o.writing.length || o.s - (mv.trail === "slime" ? 6 : 18) - o.writing[o.writing.length - 1].s >= (mv.trail === "slime" ? 2 : 3))) {
+        o.writing.push({ s: o.s - (mv.trail === "slime" ? 6 : 18), y: o.y, at: now });
       }
+      // Once, a little way off, it stops and looks back (or grazes, or sits up).
+      if (mv.pause && !o.looked && o.s > 110 * Math.min(1, mv.speed)) { o.looked = true; o.state = "pause"; o.since = now; return; }
+      if (mv.leave === "sink" && t > Math.pow(PHI, 6) * 1000) { o.state = "sink"; o.since = now; return; }
+      var half = sprites[o.c.id].w * sprites[o.c.id].cell / 2;
+      if (o.x < -half - 10 || o.x > W + half + 10 || o.y - o.alt < -60) { gone(o, now); }
     }
   }
 
-  // Following: trotting along the way, or to where it waits, then standing, then sitting.
-  function stepFollow(o, now) {
-    var dt = Math.min(80, now - (o.lastMove || now));
-    o.lastMove = now;
+  function gone(o, now) {
+    o.state = "gone";
+    if (o.hit) { o.hit.hidden = true; }
+    if (!o.sinkAt) { o.sinkAt = Math.max(now, o.born + STAND); }
+  }
+
+  // Following: running along the way, or to where it waits, then standing, then sitting.
+  function stepFollow(o, now, dt) {
     if (o.hidden) { return; }
-    if (o.state === "run") { o.pose = "trot"; o.n = Math.floor(now / (1000 / FPS)) % 4; return; }
+    if (o.state === "run") { o.pose = "trot"; o.n = gaitFrame(o, now); o.alt = o.mv.lift; return; }
     var tg = o.target;
     if (!tg) { o.pose = "stand"; return; }
     var dx = tg.x - o.x, dy = tg.y - o.y, d = Math.sqrt(dx * dx + dy * dy);
@@ -825,52 +1342,76 @@
       o.x += dx / d * go;
       o.y += dy / d * go;
       if (Math.abs(dx) > 1) { o.dir = dx > 0 ? 1 : -1; }
+      o.alt = o.mv.lift * Math.min(1, d / 120);
       o.pose = "trot";
-      o.n = Math.floor(now / (1000 / FPS)) % 4;
+      o.n = gaitFrame(o, now);
       o.waitSince = now;
     } else {
-      o.x = tg.x; o.y = tg.y;
+      o.x = tg.x; o.y = tg.y; o.alt = 0;
       var waited = now - (o.waitSince || now);
       o.pose = waited > 4200 ? "sit" : waited > 1600 ? "look" : "stand";
       o.n = 0;
     }
   }
 
+  // Far below: held to its town as the world turns; a passing one looks up, a history's sits.
+  function stepFar(o, now) {
+    var p = window.Land && Land.at ? Land.at(o.geo.lat, o.geo.lon) : null;
+    var w = window.Land && Land.where ? Land.where() : {};
+    var over = o.farKind === "pass" ? now > o.until : !(w.at === "work" && w.work === o.work);
+    if (over) { remove(o); return; }
+    o.hidden = !p || p.z < 0.08;
+    if (!o.hidden) { o.x = p.x + o.geo.dx; o.y = p.y + o.geo.dy; }
+    o.pose = o.farKind === "pass" ? "look" : "sit";
+    if (o.state === "out" && now - o.born > 700) { o.state = "wait"; }
+  }
+
+  /* ---- drawn ---------------------------------------------------------------- */
+
   function draw(now) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
     g.imageSmoothingEnabled = false;
-    var busy = drawPlants(now);
-    busy = drawWriting(now) || busy;
-    var o = one;
-    if (o.state !== "gone" && !o.hidden) {
+    var busy = false;
+    // The nearer (lower on the screen) over the farther.
+    crowd.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (o) {
+      busy = drawPlants(o, now) || busy;
+      busy = drawTrail(o, now) || busy;
+      if (o.state === "gone" || o.hidden) { if (o.hit) { o.hit.hidden = true; } return; }
       busy = true;
-      var sp = sprite(o.c, o.pose, o.n, o.dir, o.here);
-      var b = bounds();
+      var sp = sprite(o.c, o.pose, o.n, o.dir, o.here, o.scale);
+      var b = bounds(o);
       var x = Math.round(b.x * dpr), y = Math.round(b.y * dpr);
-      // Coming out: it rises out of the soil a row at a time.
+      var h = sp.cv.height;
       if (o.state === "out" && !o.stopped) {
+        // Coming out: it rises out of the soil a row at a time.
         var up = Math.min(1, Math.floor((now - o.born) / 600 * 8) / 8);
-        var hh = Math.round(sp.cv.height * up);
-        if (hh > 0) { g.drawImage(sp.cv, 0, sp.cv.height - hh, sp.cv.width, hh, x, y + sp.cv.height - hh, sp.cv.width, hh); }
+        var hh = Math.round(h * up);
+        if (hh > 0) { g.drawImage(sp.cv, 0, h - hh, sp.cv.width, hh, x, y + h - hh, sp.cv.width, hh); }
+      } else if (o.state === "sink") {
+        // Going back into it, a row at a time.
+        var down = Math.min(1, Math.floor((now - o.since) / 1200 * 8) / 8);
+        var keep = Math.round(h * (1 - down));
+        if (keep > 0) { g.drawImage(sp.cv, 0, 0, sp.cv.width, keep, x, y + h - keep, sp.cv.width, keep); }
       } else {
         g.drawImage(sp.cv, x, y);
       }
-      if (o.stopped) { box(b); }
-      hit.hidden = false;
-      hit.style.transform = "translate(" + Math.round(b.x + b.w * 0.15) + "px," + Math.round(b.y + b.h * 0.2) + "px)";
-      hit.style.width = Math.round(b.w * 0.7) + "px";
-      hit.style.height = Math.round(b.h * 0.8) + "px";
-    } else {
-      hit.hidden = true;
-    }
+      if (o.stopped) { box(o, b); }
+      if (o.hit) {
+        o.hit.hidden = false;
+        o.hit.style.transform = "translate(" + Math.round(b.x + b.w * 0.15) + "px," + Math.round(b.y + b.h * 0.2) + "px)";
+        o.hit.style.width = Math.round(b.w * 0.7) + "px";
+        o.hit.style.height = Math.round(b.h * 0.8) + "px";
+      }
+    });
     return busy;
   }
 
-  // Twombly's red box round a plate: drawn by hand, a little over at the corners.
-  function box(b) {
+  // A frame round it in its artist's ink (Twombly's red box round a plate),
+  // drawn by hand, a little over at the corners.
+  function box(o, b) {
     var px = Math.max(1, Math.round(dpr));
-    g.fillStyle = one.c.after.inks.box;
+    g.fillStyle = o.c.after.inks.box;
     var x0 = Math.round((b.x + 2) * dpr), y0 = Math.round((b.y + 4) * dpr);
     var x1 = Math.round((b.x + b.w - 2) * dpr), y1 = Math.round((b.y + b.h + 2) * dpr);
     var over = Math.round(3 * dpr);
@@ -884,43 +1425,58 @@
     if (raf) { return; }
     var tick = function (now) {
       raf = 0;
-      if (!one) { return; }
+      if (!crowd.length) { return; }
       size();
-      step(now);
-      if (now - (one.lastStep || 0) >= 1000 / 24 || one.stopped) {
-        var busy = draw(now);
-        one.lastStep = now;
-        if (!busy && one.mode !== "follow" && one.state === "gone" && one.sinkAt && now > one.sinkAt + RISE + 1400) { end(); return; }
+      crowd.slice().forEach(function (o) { step(o, now); });
+      var any = crowd.some(function (o) { return o.stopped; });
+      if (now - (loop.last || 0) >= 1000 / 24 || any) {
+        draw(now);
+        loop.last = now;
+        meetings(now);
+        // Gone, and nothing of it left on the ground: forgotten.
+        crowd.slice().forEach(function (o) {
+          if (o.state === "gone" && o.mode !== "follow" && o.sinkAt && now > o.sinkAt + RISE + 1400 &&
+              !(o.writing.length && now - o.writing[o.writing.length - 1].at < 9200)) { remove(o); }
+        });
+        if (!crowd.length) { g.clearRect(0, 0, canvas.width, canvas.height); return; }
       }
-      if (one.stopped) { placeSays(); }
+      if (saying && saying.stopped) { placeSays(saying); }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
   }
 
-  function end() {
-    one = null;
-    restUntil = performance.now() + REST[0] + Math.random() * (REST[1] - REST[0]);
-    if (g) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height); }
-    if (hit) { hit.hidden = true; }
-    if (says) { says.hidden = true; }
+  function remove(o) {
+    var k = crowd.indexOf(o);
+    if (k < 0) { return; }
+    crowd.splice(k, 1);
+    if (o.hit && o.hit.parentNode) { o.hit.parentNode.removeChild(o.hit); }
+    if (saying === o) { says.hidden = true; saying = null; }
+    if (pair && (pair._a === o || pair._b === o)) { pair.hidden = true; }
+    crowd.forEach(function (x) { if (x.meet === o) { x.meet = null; } });
+    // After a wave's animal, the long rest before a wave brings another.
+    if (o.mode === "wave") { restUntil = Math.max(restUntil, performance.now() + REST[0] + Math.random() * (REST[1] - REST[0])); }
   }
 
+  // Out of the city: all go but the followed one and those seen from a journey or a history.
   function endVisit() {
-    visit = { key: null, done: false };
-    if (one) { end(); }
+    visit.left = performance.now();
+    crowd.slice().forEach(function (o) { if (o.mode !== "follow" && o.mode !== "far") { remove(o); } });
+    if (says) { says.hidden = true; saying = null; }
+    if (pair) { pair.hidden = true; }
+    if (g && !crowd.length) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height); }
   }
 
   window.Characters = {
     wave: wave,
     // land.js, while following: where the animal is to be, and the end of it.
     guide: guide,
-    following: function () { return !!(one && one.mode === "follow"); },
+    following: function () { return !!follower(); },
     // walks.js: the animal leads a walk; and the cast, read.
     lead: lead,
     cast: function () { return load().then(function () { return cast && cast.cast; }); },
     artists: function () { return load().then(function () { return artists; }); },
-    unfollowed: function () { if (one && one.mode === "follow") { release(performance.now()); } },
+    unfollowed: function () { var f = follower(); if (f) { release(f, performance.now()); } },
     // For the preview (scripts/preview_character.js): the files, read,
     // and one pose drawn as the page draws it, on a place's soil and plants.
     load: load,
@@ -941,7 +1497,7 @@
           cr.dots.forEach(function (d) { ctx.fillStyle = d.c; ctx.fillRect(ox + d.i * px, oy + d.j * px, px, px); });
         });
       } else {
-        var sp = sprite(c, o.pose, o.n || 0, o.dir || 1, here);
+        var sp = sprite(c, o.pose, o.n || 0, o.dir || 1, here, 1);
         ctx.drawImage(sp.cv, o.x, o.y);
       }
       dpr = keep;
@@ -950,15 +1506,34 @@
                        eco: here.eco, strata: here.set.strata.map(function (st) { return st[0] + " (" + st[1] + "): " + st[4].join(", "); }) };
     },
     _state: function () {
-      return one && { id: one.c.id, pose: one.pose, state: one.state, mode: one.mode, x: one.x, y: one.y, hidden: !!one.hidden,
-                      line: line(one), plants: one.plants.length,
-                      home: one.plants.filter(function (p) { return p.home; }).length, guide: !!one.guide };
+      var all = crowd.map(function (o) {
+        return { id: o.c.id, pose: o.pose, state: o.state, mode: o.mode, x: o.x, y: o.y, hidden: !!o.hidden,
+                 line: line(o), plants: o.plants.length, meet: o.meet ? o.meet.c.id : null, far: o.farKind || null,
+                 home: o.plants.filter(function (p) { return p.home; }).length, guide: !!o.guide };
+      });
+      var first = all[0] ? Object.assign({}, all[0]) : null;
+      if (first) { first.crowd = all; first.pair = pair && !pair.hidden ? pair.textContent : null; first.visit = visit.key; }
+      return first;
+    },
+    _prefer: function (id) { prefer = id || null; },
+    // The checks: bring one now, by id, in a mode ("home" in the city you are in, "rest", or a wave).
+    _come: function (id, mode) {
+      return Promise.all([load(), loadTowns()]).then(function () {
+        var c = cast.cast.filter(function (k) { return k.id === id; })[0];
+        var w = window.Land && Land.where ? Land.where() : {};
+        var t = w.key && townOf(w.key);
+        if (!c || !t || !setUp()) { return false; }
+        size();
+        lastCame = -1e9;
+        if (mode === "rest") { comeRest(c, t); } else { comeHome(c, t, null); }
+        return true;
+      });
     }
   };
 
-  // Read the small files once the page has settled, so the first wave
-  // does not wait on them.
+  // Where you are and where you are going, read a few times a second.
   if (!still) {
     window.addEventListener("load", function () { window.setTimeout(load, 4000); });
+    window.setInterval(poll, 300);
   }
 })();

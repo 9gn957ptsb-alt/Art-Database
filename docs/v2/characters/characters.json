@@ -6,7 +6,11 @@
       "name": "Red fox",
       "species": "Vulpes vulpes",
       "kind": "hunters",
-      "from": {"biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "grammar": "dirt/earth/out/grammar.json, biome 4, life.understory.hunters: red foxes"},
+      "from": {
+        "biome": "Temperate Broadleaf & Mixed Forests",
+        "realm": "Palearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 4, life.understory.hunters: red foxes"
+      },
       "why": "The most widespread wild carnivore on Earth, and a city animal in London, New York, Paris and Melbourne, so it belongs wherever the site's cities are.",
       "artist": "Cy Twombly",
       "after": {
@@ -30,20 +34,215 @@
       "log": [
         "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)",
         "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it"
-      ]
+      ],
+      "moves": {"speed": 1, "fps": 8, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"}
+    },
+    {
+      "id": "bison",
+      "name": "American bison",
+      "species": "Bison bison",
+      "kind": "herds",
+      "from": {
+        "biome": "Temperate Grasslands, Savannas & Shrublands",
+        "realm": "Nearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 8, life.understory.herds: American bison"
+      },
+      "why": "The grazer of the Nearctic prairie, the herd animal of the open ground; and, after Lascaux, the first animal anyone painted.",
+      "artist": "Elaine de Kooning",
+      "after": {
+        "why": "Her Cave paintings (1983-85), made after the bison of Lascaux and Altamira, and the bulls before them (Bullfight, 1959-60): a few broad, leaning strokes. DIRT's roster gives her grammar 4, strokes, so the bison is laid in strokes, not dithered: each band across the coat a step lighter or darker than the light alone gives. The cave's burnt ochre (her saved works' most vivid ink) for the summer coat of the hindquarters, her umbers for the wool of the hump, head and beard, her warm grey for the chalk line; pressed, it is framed in the ochre.",
+        "inks": {
+          "coat": ["#5a2c10", "#8a4216", "#b15519", "#c98b5c"],
+          "white": ["#9e8880", "#cdc5b4"],
+          "black": ["#2b211b", "#4f4036"],
+          "eye": "#e2c9a0",
+          "pen": ["#9e8880", "#5a2c10"],
+          "box": "#b15519"
+        },
+        "works": ["Cave paintings (after Lascaux and Altamira), 1983-85", "Bullfight, 1959-60"]
+      },
+      "poses": "walk (four frames, the four-beat walk, three feet down at a time), stand, graze (its pause: the head down), look (turned to you), lie (its rest: legs folded under)",
+      "moves": {"speed": 0.62, "fps": 6, "pause": "back", "leave": "edge", "gait": "walk"},
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "Side on, 40 by 26 cells. Guessed still: the walk's leg phases are the textbook lateral sequence, not traced from film; the horns read only as two pale marks at this size; the lying pose's folded legs are two capsules.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+    },
+    {
+      "id": "squirrel",
+      "name": "Red squirrel",
+      "species": "Sciurus vulgaris",
+      "kind": "troops",
+      "from": {
+        "biome": "Temperate Broadleaf & Mixed Forests",
+        "realm": "Palearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 4, life.crowns.troops: red squirrels"
+      },
+      "why": "The backlog paired Matisse with the grey squirrel, a Nearctic animal; the red is the squirrel of his own country, of the crowns of the Nord where he was born (Le Cateau-Cambrésis), and the grammar's Palearctic troop.",
+      "artist": "Henri Matisse",
+      "after": {
+        "why": "He cut his late pictures out of painted paper (Jazz, 1947; Oceania, the Sky, 1946): flat shapes, one colour each, laid edge to edge with the ground between them. DIRT's roster gives him grammar 9, cut shapes. So the squirrel is cut, not drawn: no outline, no shading, each part one flat ink, and where one piece lies over another a gap of the ground between them, as between two pieces of paper. The yellow of his saved works for the tail, the same yellow worked toward their dark for the coat, their cream for the belly, their dark for the ear tufts and the eye; pressed, it is framed in the yellow.",
+        "inks": {
+          "coat": ["#a5641e", "#c7792a", "#eec027", "#eec027"],
+          "white": ["#e5ddc9", "#e5ddc9"],
+          "black": ["#3f3134", "#51414a"],
+          "eye": "#3f3134",
+          "pen": ["#e5ddc9", "#e5ddc9"],
+          "box": "#eec027"
+        },
+        "works": ["Jazz, 1947", "Oceania, the Sky, 1946"]
+      },
+      "poses": "bound (four frames of the half-bound: gathered, pushing off, stretched, landing), stand, up (its pause: sitting up on its haunches), look (turned to you), eat (its rest: the tail curled up its back, paws at its mouth)",
+      "moves": {"speed": 1.7, "fps": 10, "pause": "back", "leave": "edge", "gait": "bound"},
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "Side on, about 30 by 20 cells of the 40 by 26. Guessed still: the bound's frames are drawn from stills of a squirrel crossing a lawn, not traced; the front-on head is a circle with two tufts.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+    },
+    {
+      "id": "eagle",
+      "name": "Bald eagle",
+      "species": "Haliaeetus leucocephalus",
+      "kind": "eagles",
+      "from": {
+        "biome": "Temperate Broadleaf & Mixed Forests",
+        "realm": "Nearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 4, life.above.eagles: bald eagle"
+      },
+      "why": "The raptor of the Nearctic broadleaf and conifer forests and of the rivers of western Pennsylvania, where Warhol was born.",
+      "artist": "Andy Warhol",
+      "after": {
+        "why": "Warhol's Endangered Species (1983) has the bald eagle: a drawn line printed over flat fields of colour, out of register. So the eagle is in flat inks, no dither (a screenprint's plates), with a chalk edge so it reads on the dark ground, and its key line laid again one cell off, down and to the right, in his yellow, showing only where it falls off the colour. The plum-brown dark of his saved works for the body, their cream for the head and tail, their yellow for the bill, the eye, the feet and the key line; pressed, it is framed in the yellow.",
+        "inks": {
+          "coat": ["#3a2a2d", "#523d41", "#6e5552", "#a0918a"],
+          "white": ["#c9c0ad", "#ece6d4"],
+          "black": ["#241a1c", "#523d41"],
+          "eye": "#e1c31d",
+          "pen": ["#8a7a74", "#b3a69c"],
+          "box": "#e1c31d"
+        },
+        "works": ["Endangered Species: Bald Eagle, 1983"]
+      },
+      "poses": "fly (four frames of the wingbeat: up, level, down, level), stand, back (looks back over its shoulder), look (its white head turned to you), settle (its rest: wings folded, feathers fluffed)",
+      "moves": {"speed": 2.6, "fps": 8, "pause": null, "leave": "rise", "lift": 30, "gait": "fly"},
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "Side on, 40 by 26 cells. It comes out of the wave standing, then flies up and away; it is the one character that leaves by the sky. Guessed still: a wing seen side on is a long band; the far wing is a single dark stroke.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+    },
+    {
+      "id": "slug",
+      "name": "Banana slug",
+      "species": "Ariolimax",
+      "kind": "snakes",
+      "from": {"biome": "Temperate Conifer Forests", "realm": "Nearctic", "grammar": "dirt/earth/out/grammar.json, biome 5, floor.snakes: banana slugs"},
+      "why": "The slowest of the grammar's floor animals, a single soft mass of one colour that moves of its own accord.",
+      "artist": "Anish Kapoor",
+      "after": {
+        "why": "Svayambh (2007): a mass of wax that moves through the museum on its own, slowly, leaving its trace on the doorways; Yellow (1999), a field of one colour with no edge. DIRT's roster gives him grammar 6, stacked fields. So the slug is in fields, not light and shade: stacked bands of one yellow from the dark of the foot's fringe to the pale of its back, flat, the steps clean. The deep yellow of his saved works (his pigment), their pale, their violet-grey dark for the fringe, the spots and the eyes; behind it, a trace of that dark along the ground with a glint in it, drying in steps. Pressed, it is framed in the yellow.",
+        "inks": {
+          "coat": ["#3c3741", "#c98a10", "#ffa801", "#ffd27a"],
+          "white": ["#e4e2dd", "#e4e2dd"],
+          "black": ["#3c3741", "#3c3741"],
+          "eye": "#3c3741",
+          "pen": ["#aca69a", "#7a5a10"],
+          "box": "#ffa801",
+          "writing": ["#3c3741", "#e4e2dd"]
+        },
+        "works": ["Svayambh, 2007", "Yellow, 1999"]
+      },
+      "poses": "crawl (four frames: a wave along the foot, the body stretching and gathering), stand (tentacles out), reach (its pause: the eye stalks up), look (its head lifted toward you), rest (drawn up short, tentacles in)",
+      "moves": {"speed": 0.16, "fps": 4, "pause": "back", "leave": "sink", "trail": "slime", "gait": "crawl"},
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "Side on, 31 by 9 cells of the 40 by 26. It does not leave the screen: it crawls a while and goes back into the soil a row at a time. Guessed still: the crawl's wave is a single hump; a real slug's foot waves are many and fine.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+    },
+    {
+      "id": "deer",
+      "name": "Red deer",
+      "species": "Cervus elaphus",
+      "kind": "herds",
+      "from": {
+        "biome": "Temperate Broadleaf & Mixed Forests",
+        "realm": "Palearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 4, life.understory.herds: red deer"
+      },
+      "why": "The deer of the edges of English woods, Woldgate's and the Wolds'.",
+      "artist": "David Hockney",
+      "after": {
+        "why": "He went home to the Yorkshire Wolds to paint them (Woldgate Woods, 2006; the iPad drawings of the East Riding, 2008-11): lanes and the edges of woods drawn in a bent net of strokes. DIRT's roster gives him grammar 3, a net: even structure, the cells bent, never a grid. So the coat is crossed by a bent net of its darker step. The red of his saved works worked into their olive dark for the coat, their pale for the rump and the antlers, their olive for the hooves and the line; pressed, it is framed in the red.",
+        "inks": {
+          "coat": ["#4e2a1c", "#7d3622", "#a8452c", "#c56a48"],
+          "white": ["#979580", "#d5d4cb"],
+          "black": ["#45432f", "#5d5b42"],
+          "eye": "#d5d4cb",
+          "pen": ["#979580", "#45432f"],
+          "box": "#eb1d14"
+        },
+        "works": ["Woldgate Woods, 2006", "The Arrival of Spring in Woldgate, East Yorkshire, 2011"]
+      },
+      "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back), look (turned to you, antlers either side), lie (its rest: legs folded, head up)",
+      "moves": {"speed": 1.25, "fps": 8, "pause": "back", "leave": "edge", "gait": "trot"},
+      "added": "2026-10-01",
+      "refined": "2026-10-01",
+      "passes": 1,
+      "notes": "A stag, side on, 40 by 26 cells. Guessed still: the antlers are a stylised twelve-pointer at four tines a side; the rump patch is small at this size.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
     }
   ],
   "backlog": [
-    {"artist": "Elaine de Kooning", "species": "American bison", "kind": "herds", "biome": "Temperate Grasslands, Savannas & Shrublands", "realm": "Nearctic", "why": "Her Cave paintings after the bison of Lascaux and Altamira (1980s), and the bulls before them; strokes."},
-    {"artist": "Henri Matisse", "species": "grey squirrel", "kind": "troops", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Cut shapes: a squirrel leaping the gaps between crowns as a paper cut-out leaps (Jazz, 1947)."},
-    {"artist": "Jackson Pollock", "species": "starlings (a murmuration)", "kind": "flocks", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Scattered marks: a murmuration is a poured, flung field of dots that turns as one."},
-    {"artist": "Salvador Dalí", "species": "ocellated lizard", "kind": "frogs", "biome": "Mediterranean Forests, Woodlands & Scrub", "realm": "Palearctic", "why": "A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground."},
-    {"artist": "Helen Frankenthaler", "species": "Anna's hummingbird", "kind": "hummers", "biome": "Mediterranean Forests, Woodlands & Scrub", "realm": "Nearctic", "why": "Stacked fields: the gorget's colour soaks and floods as it turns, the way her stain soaks the canvas."},
-    {"artist": "Andy Warhol", "species": "bald eagle", "kind": "eagles", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Warhol's Endangered Species (1983) has the bald eagle; a grid: seen only as its shadow, repeated."},
-    {"artist": "Paul Caponigro", "species": "fireflies", "kind": "fireflies", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "Dots: points of light in the dark, as his silver prints hold light."},
-    {"artist": "David Hockney", "species": "red deer", "kind": "herds", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Woldgate Woods and the hawthorn of his garden in DIRT; deer at the edge of an English wood."},
-    {"artist": "J. M. W. Turner", "species": "greylag geese", "kind": "vees", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Palearctic", "why": "Stacked fields of sky: a skein crossing an evening light."},
-    {"artist": "Anish Kapoor", "species": "banana slug", "kind": "snakes", "biome": "Temperate Conifer Forests", "realm": "Nearctic", "why": "Svayambh (2007): a slow red mass that moves on its own through the place."},
-    {"artist": "Henri Cartier-Bresson", "species": "white-tailed deer", "kind": "herds", "biome": "Temperate Broadleaf & Mixed Forests", "realm": "Nearctic", "why": "The decisive moment: a deer that stops at the edge of the frame and is gone."}
+    {
+      "artist": "Jackson Pollock",
+      "species": "starlings (a murmuration)",
+      "kind": "flocks",
+      "biome": "Temperate Broadleaf & Mixed Forests",
+      "realm": "Palearctic",
+      "why": "Scattered marks: a murmuration is a poured, flung field of dots that turns as one."
+    },
+    {
+      "artist": "Salvador Dalí",
+      "species": "ocellated lizard",
+      "kind": "frogs",
+      "biome": "Mediterranean Forests, Woodlands & Scrub",
+      "realm": "Palearctic",
+      "why": "A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground."
+    },
+    {
+      "artist": "Helen Frankenthaler",
+      "species": "Anna's hummingbird",
+      "kind": "hummers",
+      "biome": "Mediterranean Forests, Woodlands & Scrub",
+      "realm": "Nearctic",
+      "why": "Stacked fields: the gorget's colour soaks and floods as it turns, the way her stain soaks the canvas."
+    },
+    {
+      "artist": "Paul Caponigro",
+      "species": "fireflies",
+      "kind": "fireflies",
+      "biome": "Temperate Broadleaf & Mixed Forests",
+      "realm": "Nearctic",
+      "why": "Dots: points of light in the dark, as his silver prints hold light."
+    },
+    {
+      "artist": "J. M. W. Turner",
+      "species": "greylag geese",
+      "kind": "vees",
+      "biome": "Temperate Broadleaf & Mixed Forests",
+      "realm": "Palearctic",
+      "why": "Stacked fields of sky: a skein crossing an evening light."
+    },
+    {
+      "artist": "Henri Cartier-Bresson",
+      "species": "white-tailed deer",
+      "kind": "herds",
+      "biome": "Temperate Broadleaf & Mixed Forests",
+      "realm": "Nearctic",
+      "why": "The decisive moment: a deer that stops at the edge of the frame and is gone."
+    }
   ]
 }

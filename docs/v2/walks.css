@@ -90,6 +90,19 @@
 }
 .walk-title:focus { outline: none; border-bottom-color: #9d95e6; }
 .walk-code { user-select: all; -webkit-user-select: all; color: #eadfcd; letter-spacing: 0.1em; }
-@media (prefers-reduced-motion: reduce) { .walk-said { transition: none; } }
+/* A walk as a sentence: each stop a word, its city; lingering the
+   punctuation; a city said again in italics. The site's serif, quiet,
+   the newest word stepping in. */
+.walk-sentence { margin: 0; font-family: var(--serif, serif); color: #eadfcd; letter-spacing: 0; }
+.walk-line { margin: 0; font-size: 14px; line-height: 1.4; }
+.walk-word[data-fresh="true"] { animation: walk-word 1.2s steps(6) both; }
+@keyframes walk-word { from { opacity: 0; } to { opacity: 1; } }
+.walk-lines { margin: 4px 0 2px; }
+.walk-lines:empty { display: none; }
+.walk-sentence-whole { max-height: 8.6em; overflow-y: auto; overscroll-behavior: contain; }
+.walk-row-sentence { margin-top: 3px; }
+.walk-row-sentence .walk-line { font-size: 12px; color: #a99c8a; }
+.walk-rhyme { text-transform: none; letter-spacing: 0.02em; }
+@media (prefers-reduced-motion: reduce) { .walk-said { transition: none; } .walk-word[data-fresh="true"] { animation: none; } }
 /* A phone: under the banner's second line, which wraps there. */
 @media (max-width: 720px) { .walk-strip { top: 84px; } }

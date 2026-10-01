@@ -8589,8 +8589,24 @@
     if (!turning || event.pointerId !== turning.id) { return; }
     // The world is turned from up on the globe. Down in a city you are
     // standing on one patch of ground, woven for that patch, and turning
-    // would only walk you off the edge of it.
-    if (place) { return; }
+    // would only walk you off the edge of it. A work's view is the whole
+    // world: there it moves under the finger, one to one (artist, 1 Oct
+    // 2026: "you should always be free to move around the globe").
+    if (place) {
+      if (!(ARTWORKS && art && art.kind === "work") || flying) { return; }
+      var wx = event.clientX - turning.x, wy = event.clientY - turning.y;
+      turning.moved = Math.max(turning.moved, Math.abs(wx), Math.abs(wy));
+      if (turning.moved < 6) { return; }
+      squashing = null;
+      art.glide = null;
+      var rr = Math.max(R, 1);
+      wanted = spin = turning.spin - wx / rr / Math.max(0.25, Math.cos(focus.lat));
+      lean(turning.lean + wy / rr);
+      focus.lat = tilt;
+      reframe();
+      art.dirty = true;
+      return;
+    }
     var dx = event.clientX - turning.x;
     var dy = event.clientY - turning.y;
     turning.moved = Math.max(turning.moved, Math.abs(dx), Math.abs(dy));
@@ -11009,6 +11025,12 @@
         f.setAttribute("aria-expanded", "false");
       });
       fig.setAttribute("aria-expanded", String(!was));
+      if (!was && opts.big && img.getAttribute("src") && img.src !== opts.big) {
+        var big = new Image();
+        big.referrerPolicy = "no-referrer";
+        big.onload = function () { img.src = opts.big; };
+        big.src = opts.big;
+      }
       var r = fig.getBoundingClientRect();
       pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.4, Math.max(r.width, r.height));
     }
@@ -11050,11 +11072,16 @@
     saved.className = "held-rows";
     buildingWorks.appendChild(saved);
     pageRows(saved, works, function (w, i) {
-      var cdn = museums.cdn || "", key = w.i.split("/")[0];
-      var alts = ["medium", "square", "small"].map(function (v) { return cdn + key + "/" + v + ".jpg"; })
-        .filter(function (u) { return u !== cdn + w.i + ".jpg"; });
-      var fig = heldFigure(w, cdn + w.i + ".jpg", i, false, alts, ARTWORKS && w.id ? { history: m } : null);
-      if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); }
+      // A row is 72-89 px: Artsy's medium, not its large (34 large pictures
+      // at once were more than a phone would keep painted); the large one
+      // when the work is brought up.
+      var cdn = museums.cdn || "", key = String(w.i || "").split("/")[0], big = cdn + w.i + ".jpg";
+      var alts = ["square", "small", "large"].map(function (v) { return cdn + key + "/" + v + ".jpg"; })
+        .filter(function (u) { return u !== big; }).concat([big]);
+      var opts = { big: big };
+      if (ARTWORKS && w.id) { opts.history = m; }
+      var fig = heldFigure(w, cdn + key + "/medium.jpg", i, false, alts, opts);
+      if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); fig.querySelector("img").src = big; }
       if (w.id) { fig.dataset.work = w.id; walkWhere(fig, w); }
       return fig;
     }, paging);
@@ -13792,7 +13819,16 @@
     up: function () { comeUp(); },
     // Walk the building: a museum by its slug, and where you are inside it.
     museum: function (slug, via) { openMuseum(slug, via || {}); },
-    inside: function () { return walkOn && window.Walk ? window.Walk.state() : null; }
+    inside: function () { return walkOn && window.Walk ? window.Walk.state() : null; },
+    // The characters (characters.js): a point on the screen, the journey
+    // under way (from, to, and the towns it has named passing), a thread.
+    at: function (lat, lon) { var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z }; },
+    journey: function () {
+      if (!journey || !route) { return null; }
+      return { from: journey.fromKey, to: journey.toKey, u: route.u, done: route.doneAt !== null,
+               passed: route.towns.map(function (t) { return t.key; }) };
+    },
+    thread: function (id) { openArt({ thread: id }); }
   };
 
   function backName(up) {
@@ -14440,16 +14476,60 @@
 
   /* Where the globe is framed beside the column: on a phone the band above
      the column; on a desktop, left of it. */
-  function artBand() {
+  function artBand(kind) {
+    kind = kind || (art && art.kind);
+    if (kind === "work" && workImage) { return workBands().globe; }
     if (W <= 720) { return { x: 0, y: 68, w: W, h: H * 0.5 - 120 }; }
     return { x: 0, y: 68, w: W - Math.min(0.4 * W, 440), h: H - 148 };
+  }
+
+  /* A work's view keeps the work in sight (artist, 1 Oct 2026: "I want a
+     viewer to be able to look at a big enough image of the artwork"): the
+     photograph has its own place for as long as the work is open — left of
+     the globe on a desktop, over it on a phone — the globe its band beside
+     it, the column its side. `look` is where the photograph is first seen
+     alone, `plate` where it rests after, `globe` where the world is framed. */
+  var workImage = false;
+  function workBands() {
+    var colW = Math.min(0.4 * W, 440);
+    if (W <= 720) {
+      // Under the banner, which a long title takes to two lines; the globe
+      // framed left of the dial, which stands at the right of its band.
+      var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
+      var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
+      var gy = top + ph + 6;
+      return { plate: { x: 16, y: top, w: W - 32, h: ph }, look: { x: 16, y: top, w: W - 32, h: colTop - top - 14 },
+               globe: { x: 0, y: gy, w: W - 148, h: Math.max(96, colTop - gy) }, colTop: colTop };
+    }
+    var pw = Math.round(Math.min(0.34 * W, 560));
+    var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 };
+    var gx = plate.x + pw + 16;
+    return { plate: plate, look: { x: 21, y: 76, w: W - colW - 42, h: H - 76 - 36 },
+             globe: { x: gx, y: 68, w: Math.max(200, W - colW - gx), h: H - 148 }, colTop: 0 };
+  }
+
+  /* The view's measures, for the column, the dial and the ground under the
+     photograph (land.css, "a work's view"). */
+  function layoutWork() {
+    var st = artEl.style;
+    ["--work-col-top", "--work-dial-left", "--work-dial-top", "--work-edge-x", "--work-edge-y"].forEach(function (k) {
+      st.removeProperty(k);
+    });
+    if (!art || art.kind !== "work" || !workImage) { delete artEl.dataset.plate; return; }
+    artEl.dataset.plate = "true";
+    var b = workBands(), g = b.globe, phone = W <= 720, dial = phone ? 136 : 168;
+    if (b.colTop) { st.setProperty("--work-col-top", b.colTop + "px"); }
+    st.setProperty("--work-dial-left", Math.round(phone ? W - dial - 12 : g.x + (g.w - dial) / 2) + "px");
+    st.setProperty("--work-dial-top", Math.round(phone ? g.y + (g.h - dial) / 2 : g.y + g.h - dial + 44) + "px");
+    if (phone) { st.setProperty("--work-edge-y", (b.plate.y + b.plate.h + 4) + "px"); }
+    else { st.setProperty("--work-edge-x", (b.plate.x + b.plate.w + 8) + "px"); }
   }
 
   /* The framing for a set of points: centred on their mean (or the centre
      given), near enough that the furthest (or the angle given) fits the
      band — never nearer than a hand can bring the globe, so its weave holds,
      and a work with one place sits at that nearest. */
-  function frameOf(vecs, centre, theta) {
+  function frameOf(vecs, centre, theta, kind) {
     var c = centre;
     if (!c) {
       var sum = [0, 0, 0];
@@ -14461,7 +14541,7 @@
       vecs.forEach(function (v) { theta = Math.max(theta, Math.acos(Math.max(-1, Math.min(1, dot3(c, v))))); });
     }
     theta = Math.max(theta, 3 * RAD);
-    var b = artBand(), m = Math.min(b.w, b.h);
+    var b = artBand(kind), m = Math.min(b.w, b.h);
     var r = 0.4 * m / Math.sin(Math.min(theta, 80 * RAD));
     r = Math.max(0.42 * m, Math.min(base0 * SIZE_MOST, r));
     return { lat: latOf(c), lon: lonOf(c), zoomTo: r / Math.max(1, baseR),
@@ -14469,9 +14549,9 @@
   }
 
   /* No place to go to: the world is washed where it already is. */
-  function frameHere() {
+  function frameHere(kind) {
     var at = unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
-    var b = artBand();
+    var b = artBand(kind);
     return { lat: at.lat, lon: at.lon, zoomTo: zoom,
              seatAt: { x: (b.x + b.w / 2) / W, y: (b.y + b.h / 2) / H } };
   }
@@ -14490,7 +14570,8 @@
 
   function workCity(h) {
     var stops = stopsOf(h).stops;
-    var f = stops.length ? frameOf(stops.map(function (s) { return s.v; })) : frameHere();
+    workImage = !!h.image;
+    var f = stops.length ? frameOf(stops.map(function (s) { return s.v; }), null, undefined, "work") : frameHere("work");
     return {
       slug: "art-" + h.id, title: h.title || "Untitled",
       where: [(h.artists || []).join(", "), h.date].filter(Boolean).join(" · "),
@@ -14539,7 +14620,7 @@
       held: null, timers: [], order: [], n: 0, gap: WORD_GAP, dirty: true, ring: -1,
       flipped: false, names: {}, lines: [], heads: [], last: 0, stage: null,
       at: performance.now(), cons: null, rows: [], yearNow: 0, begun: false,
-      town: a.town || null, pagers: []
+      town: a.town || null, pagers: [], pin: -1, ringShown: -2, glide: null
     };
     art.stopNow = function () {
       var s = art && art.stops[Math.max(0, art.ring)];
@@ -14552,6 +14633,7 @@
     artPlate.hidden = true;
     artTime.hidden = true;
     artEl.dataset.kind = a.kind;
+    layoutWork();
     if (a.kind === "work") {
       buildJourney(art);
       artColumn(art.data, art.via);
@@ -14599,10 +14681,13 @@
     delete artEl.dataset.kind;
     delete artEl.dataset.held;
     delete artEl.dataset.came;
+    delete artEl.dataset.full;
+    layoutWork();
     artCol.textContent = "";
     artPlate.textContent = "";
     artPlate.hidden = true;
     artPlate.style.transform = "";
+    delete artPlate.dataset.mode;
     artTime.hidden = true;
     tilesDirty = true;
   }
@@ -14917,6 +15002,8 @@
       showArtYear();
       a.dirty = true;
     }
+    stepGlide(a, now);
+    if (a.ring !== a.ringShown) { markCurrent(a); }
     // The world may still be settling from the flight.
     if (Math.abs(shortest(spin, wanted)) > 1e-5) { a.dirty = true; }
   }
@@ -14947,6 +15034,10 @@
       if (leg.litAt === null) { fresh.push(leg); }
     });
     fresh.forEach(function (leg, n) { leg.litAt = n === fresh.length - 1 && forward ? now : now - LEG_MS; });
+    // A stop chosen by hand stays ringed while the dial stands at its time:
+    // several stops can share one (undated events take the time before them).
+    var pinned = a.pin >= 0 && a.stops[a.pin] ? a.evs[a.stops[a.pin].first].pos : -1;
+    if (pinned >= 0 && Math.abs(pinned - a.whenTo) < 1e-6) { ring = a.pin; } else { a.pin = -1; }
     if (ring !== a.ring) { a.ring = ring; }
     if (forward && !still) {
       arrived.forEach(function (k) {
@@ -15016,14 +15107,64 @@
     var a = art;
     var s = a && a.stops[k];
     if (!s) { return; }
-    setWhen(a, a.evs[s.first].pos);
-    a.ring = k;
-    a.dirty = true;
+    showStop(k, true);
     var head = null;
     a.heads.forEach(function (hd) { if (!head && Number(hd.dataset.stop) === k) { head = hd; } });
-    if (head) { artCol.scrollTo({ top: Math.max(0, head.offsetTop - 8), behavior: still ? "auto" : "smooth" }); }
-    var p = project(s.lat, s.lon);
-    pulse(p.x, p.y, [a.tone, LIGHT], 0.6, 144);
+    if (head) {
+      a.scrolledAt = performance.now();
+      artCol.scrollTo({ top: Math.max(0, head.closest(".art-stop").offsetTop - 8), behavior: still ? "auto" : "smooth" });
+    }
+  }
+
+  /* A stop read (its head pressed, a line of it opened, or scrolled to): the
+     dial to its year, its place ringed and lit, and the world eased round so
+     the place stands in the middle of the band. The map answers the text
+     (artist, 1 Oct 2026: "right now it doesn't quite connect to the map"). */
+  function showStop(k, pressedOnGlobe) {
+    var a = art;
+    var s = a && a.stops[k];
+    if (!s) { return; }
+    setWhen(a, a.evs[s.first].pos);
+    a.ring = a.pin = k;
+    a.dirty = true;
+    glideTo(a, s.lat, s.lon);
+    later(function () { if (art === a && a.ring === k) { pulseStop(k, pressedOnGlobe ? 0.6 : 0.5); } }, still ? 0 : 720, a);
+  }
+
+  /* The world turned so a point stands at the band's middle, in 820 ms: down
+     in a place the point held there is the focus, at the lean (reframe). */
+  function glideTo(a, lat, lon) {
+    if (flying || !place) { return; }
+    if (still) {
+      focus.lat = lat;
+      lean(lat);
+      spin = wanted = lon;
+      reframe();
+      a.dirty = true;
+      return;
+    }
+    a.glide = { lat0: focus.lat, lon0: spin, lat1: lat, dLon: shortest(spin, lon), at: performance.now(), dur: 820 };
+  }
+
+  function stepGlide(a, now) {
+    var gd = a.glide;
+    if (!gd || flying) { return; }
+    var q = Math.min(1, (now - gd.at) / gd.dur), e = q * q * (3 - 2 * q);
+    var lat = gd.lat0 + (gd.lat1 - gd.lat0) * e;
+    focus.lat = lat;
+    lean(lat);
+    spin = wanted = gd.lon0 + gd.dLon * e;
+    reframe();
+    a.dirty = true;
+    if (q >= 1) { a.glide = null; }
+  }
+
+  /* The stop being read is marked in the column too. */
+  function markCurrent(a) {
+    a.ringShown = a.ring;
+    artCol.querySelectorAll(".art-stop[data-stop]").forEach(function (li) {
+      if (Number(li.dataset.stop) === a.ring) { li.dataset.current = "true"; } else { delete li.dataset.current; }
+    });
   }
 
   /* ---- the slider ----------------------------------------------------------
@@ -15310,21 +15451,18 @@
      group nearest the column's top sets the slider, and its stop is ringed. */
   var artTouched = 0;                   // when the column was last moved by hand
   function watchStops(a) {
-    if (W > 720 || !window.IntersectionObserver) { return; }
+    if (!window.IntersectionObserver) { return; }
     a.watch = new IntersectionObserver(function (entries) {
-      if (art !== a || a.playing || !a.flipped || performance.now() - artTouched > 1200) { return; }
+      // Only a hand on the column (not the column scrolled to a stop pressed on the globe).
+      if (art !== a || !a.flipped || performance.now() - artTouched > 1200 ||
+          performance.now() - (a.scrolledAt || 0) < 900) { return; }
       entries.forEach(function (e) {
         if (!e.isIntersecting) { return; }
-        var ev = a.evs[Number(e.target.dataset.at)];
-        if (!ev) { return; }
-        a.byHand = true;
-        a.whenTo = ev.pos;
-        // A place not recorded rings no stop of its own: the slider rings
-        // the last one reached.
-        if (e.target.dataset.stop !== undefined) { a.ring = Number(e.target.dataset.stop); }
-        a.dirty = true;
+        var k = Number(e.target.dataset.stop);
+        if (e.target.dataset.stop === undefined || !a.stops[k] || k === a.ring) { return; }
+        showStop(k);
       });
-    }, { root: artCol, rootMargin: "0px 0px -80% 0px" });
+    }, { root: artCol, rootMargin: "0px 0px -72% 0px" });
     a.heads.forEach(function (h) { a.watch.observe(h); });
   }
 
@@ -15338,16 +15476,16 @@
   function lookAt(a) {
     var h = a.data;
     artEl.dataset.look = still ? "done" : "plate";
-    if (still || !h.image) {
+    reveal(a.headCap, still ? 0 : OPEN_AT[0], a);
+    if (!h.image) {
       a.flipped = true;
-      if (a.headFig) { a.headFig.dataset.on = "true"; }
-      reveal(a.headCap, 0, a);
+      artEl.dataset.look = "done";
       playArt();
       return;
     }
     var go = el("span", "deal-go");
     var img = el("img");
-    img.alt = "";
+    img.alt = [h.title || "Untitled", (h.artists || []).join(", ")].filter(Boolean).join(", by ");
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
     var tries = ["medium", "square"].map(function (v) { return ART_CDN + h.image + "/" + v + ".jpg"; });
@@ -15356,64 +15494,118 @@
       artPlate.hidden = true;
     });
     img.addEventListener("load", function () {
-      if (art !== a || a.flipped) { return; }
-      layoutPlate(img.naturalWidth / Math.max(1, img.naturalHeight));
+      if (art !== a || artPlate.dataset.shown === img.src) { return; }
+      artPlate.dataset.shown = img.src;
+      layoutPlate(img.naturalWidth / Math.max(1, img.naturalHeight), a.flipped ? "rest" : "look");
+      var first = artPlate.hidden;
       artPlate.hidden = false;
-      bringIn(artPlate, 0);
+      if (first && !still) { bringIn(artPlate, 0); }
     });
     img.src = ART_CDN + h.image + "/large.jpg";
     go.appendChild(img);
     artPlate.appendChild(go);
     artPlate.dataset.aspect = "1";
-    reveal(a.headCap, OPEN_AT[0], a);
+    artPlate.dataset.mode = "look";
+    artPlate.tabIndex = 0;
+    artPlate.setAttribute("role", "button");
+    artPlate.setAttribute("aria-label", "Look at " + (h.title || "the work") + " on the whole screen");
+    if (still) {
+      a.flipped = true;
+      artPlate.dataset.mode = "rest";
+      playArt();
+      return;
+    }
     later(function () { enterText(a.headCap, 0); }, OPEN_AT[0], a);
     later(flipToHead, OPEN_AT[1], a);
   }
 
-  /* The photograph as large as the band allows, never cropped. */
-  function layoutPlate(aspect) {
+  /* The photograph as large as its place allows, never cropped: alone at
+     first (`look`), then at rest beside the globe (`rest`). */
+  function layoutPlate(aspect, mode) {
     if (aspect) { artPlate.dataset.aspect = String(aspect); }
     aspect = Number(artPlate.dataset.aspect) || 1;
-    var b = artBand(), pad = 21;
-    var mw = Math.max(40, b.w - 2 * pad), mh = Math.max(40, b.h - pad);
-    var w = Math.min(mw, mh * aspect), hh = w / aspect;
+    mode = mode || artPlate.dataset.mode || "look";
+    artPlate.dataset.mode = mode;
+    var bands = workBands(), b = mode === "rest" ? bands.plate : bands.look;
+    var w = Math.max(40, Math.min(b.w, b.h * aspect)), hh = w / aspect;
+    var x = b.x + (b.w - w) / 2, y = b.y + (b.h - hh) / 2;
+    // At rest it keeps to its edge: against the left on a desktop, the globe
+    // beside it; under the banner on a phone, the globe below it.
+    if (mode === "rest") { if (W > 720) { x = b.x; } else { y = b.y; } }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
-    artPlate.style.left = (b.x + (b.w - w) / 2).toFixed(1) + "px";
-    artPlate.style.top = (b.y + (b.h - hh) / 2).toFixed(1) + "px";
+    artPlate.style.left = x.toFixed(1) + "px";
+    artPlate.style.top = y.toFixed(1) + "px";
   }
 
-  /* The photograph into the column head (a FLIP at beat-6), and the play. */
+  /* The end of the look: the photograph steps aside to its place and stays
+     there, as large as the view allows (a FLIP at beat-6), the wash lifts,
+     the column's body comes in and the journey plays. (It used to go into
+     the column as a thumbnail; the artist, 1 Oct 2026: "I want to find a
+     better balance between the image of the artwork and the places it has
+     traveled".) */
   function flipToHead() {
     var a = art;
     if (!a || a.flipped || a.kind !== "work") { return; }
     a.flipped = true;
+    a.settledAt = performance.now();
     reveal(a.headCap, 0, a);
-    var img = a.headFig && a.headFig.querySelector("img");
-    var from = artPlate.getBoundingClientRect();
-    function done() {
-      if (art !== a) { return; }
-      if (a.headFig) { a.headFig.dataset.on = "true"; }
-      delete artPlate.dataset.flip;
-      artPlate.hidden = true;
-      artPlate.style.transform = "";
-      artEl.dataset.look = "done";
-    }
-    // The wash lifts and the column's body comes in as the journey starts.
     artEl.dataset.look = "flip";
     if (a.count && !still) { enterText(a.count, 0); }
     playArt();
-    var to = img ? img.getBoundingClientRect() : null;
-    if (still || artPlate.hidden || !to || !to.width || !from.width) { done(); return; }
-    // Contained in the head's square, as the head shows it: top, centred.
-    var ar = from.width / from.height, tw, th, tx, ty;
-    if (ar >= 1) { tw = to.width; th = tw / ar; tx = to.left; ty = to.top; }
-    else { th = to.height; tw = th * ar; tx = to.left + (to.width - tw) / 2; ty = to.top; }
-    a.headFig.dataset.on = "waiting";
+    function done() { if (art === a) { artEl.dataset.look = "done"; } }
+    if (artPlate.hidden || still) { layoutPlate(null, "rest"); done(); return; }
+    var from = artPlate.getBoundingClientRect();
+    layoutPlate(null, "rest");
+    var to = artPlate.getBoundingClientRect();
+    if (!to.width || !from.width) { done(); return; }
     artPlate.dataset.flip = "true";
-    artPlate.style.transform = "translate(" + (tx - from.left).toFixed(1) + "px," + (ty - from.top).toFixed(1) +
-      "px) scale(" + (tw / from.width).toFixed(4) + ")";
-    later(done, 1775, a);
+    artPlate.style.transition = "none";
+    artPlate.style.transform = "translate(" + (from.left - to.left).toFixed(1) + "px," + (from.top - to.top).toFixed(1) +
+      "px) scale(" + (from.width / to.width).toFixed(4) + ")";
+    void artPlate.offsetWidth;
+    artPlate.style.transition = "";
+    artPlate.style.transform = "";
+    later(function () { delete artPlate.dataset.flip; done(); }, 1100, a);
+  }
+
+  /* Pressed (or Enter), the photograph fills the screen; pressed again, or
+     Escape, it goes back to its place. Never on the press that ended the
+     look. */
+  function setFull(on) {
+    var a = art;
+    if (!on || !a || a.kind !== "work") { delete artEl.dataset.full; return; }
+    artEl.dataset.full = "true";
+    var img = artPlate.querySelector("img");
+    if (img && a.data.image && !img.dataset.big) {
+      img.dataset.big = "asked";
+      var big = new Image();
+      big.referrerPolicy = "no-referrer";
+      big.addEventListener("load", function () { if (art === a && img.isConnected) { img.src = big.src; } });
+      big.src = ART_CDN + a.data.image + "/larger.jpg";
+    }
+  }
+
+  if (artPlate) {
+    artPlate.addEventListener("click", function (event) {
+      event.stopPropagation();
+      var a = art;
+      if (!a || a.kind !== "work" || !a.flipped || performance.now() - (a.settledAt || 0) < 450) { return; }
+      setFull(!artEl.dataset.full);
+    });
+    artPlate.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " ") { return; }
+      event.preventDefault();
+      flipToHead();
+      setFull(!artEl.dataset.full);
+    });
+    window.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && artEl.dataset.full) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setFull(false);
+      }
+    }, true);
   }
 
   function playArt() {
@@ -15443,7 +15635,11 @@
     artEl.addEventListener("pointerdown", function () { flipToHead(); }, true);
     artCol.addEventListener("wheel", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
     artCol.addEventListener("touchmove", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
-    window.addEventListener("resize", function () { if (art && !art.flipped) { layoutPlate(); } });
+    window.addEventListener("resize", function () {
+      if (!art || art.kind !== "work") { return; }
+      layoutWork();
+      if (!artPlate.hidden) { layoutPlate(null, art.flipped ? "rest" : "look"); }
+    });
   }
 
   /* ---- the column ----------------------------------------------------------
@@ -15532,8 +15728,11 @@
     var out = document.createDocumentFragment();
     function t(s) { out.appendChild(document.createTextNode(s)); }
     function i(s) { out.appendChild(el("i", "", s)); }
-    var note = ev.n ? " (" + ev.n + ")" : "";
-    var own = ev.n || ev.q ? " — " + (ev.n || ev.q) : "";
+    // A long note (a footnote, a whole paragraph of provenance) is opened
+    // under the line, never written into it.
+    var note = ev.n && ev.n.length <= 90 ? " (" + ev.n + ")" : "";
+    var said_ = ev.n && ev.n.length <= 140 ? ev.n : ev.q && ev.q.length <= 140 ? ev.q : "";
+    var own = said_ ? " — " + said_ : "";
     switch (ev.k) {
       case "made":
         var at = placeSaid(ev.w);
@@ -15636,28 +15835,20 @@
 
   function artColumn(h, via) {
     var a = art;
-    var cdn = ART_CDN;
     var col = artCol;
 
-    // The work: its photograph goes here at the end of the look.
-    var head = h.image
-      ? heldFigure({ t: h.title, a: (h.artists || []).join(", "), y: h.date,
-                     m: [h.medium, h.dimensions].filter(Boolean).join(" · ") },
-                   cdn + h.image + "/large.jpg", 0, false,
-                   ["medium", "square"].map(function (v) { return cdn + h.image + "/" + v + ".jpg"; }))
-      : null;
-    if (head) {
-      head.classList.add("art-head");
-      col.appendChild(head);
-      a.headFig = head;
-      a.headCap = head.querySelector("figcaption");
-    } else {
-      var cap = el("p", "art-head-text");
-      cap.appendChild(el("i", "", h.title || "Untitled"));
-      cap.appendChild(document.createTextNode([" — " + (h.artists || []).join(", "), h.date].filter(Boolean).join(", ")));
-      col.appendChild(cap);
-      a.headCap = cap;
-    }
+    // The work, in words: its photograph has its own place beside the column.
+    var head = el("header", "art-head-text");
+    var title = el("p", "art-title");
+    title.appendChild(el("i", "", h.title || "Untitled"));
+    head.appendChild(title);
+    var by = [(h.artists || []).join(", "), h.date].filter(Boolean).join(" · ");
+    if (by) { head.appendChild(el("p", "art-by", by)); }
+    var made = [h.medium, h.dimensions].filter(Boolean).join(" · ");
+    if (made) { head.appendChild(el("p", "art-made", made)); }
+    col.appendChild(head);
+    a.headCap = head;
+    a.headFig = null;
 
     var body = el("div", "art-body");
     col.appendChild(body);
@@ -15676,54 +15867,58 @@
     body.appendChild(stageW);
     a.stage = stageW;
 
-    // The stops, a group at a time, a line an event.
+    // What has been said of it: the artist's own words first, then the
+    // writers', the museum's label, the catalogue's note.
+    var said = saidSection(h);
+    if (said) { body.appendChild(said); }
+
+    // Where it has been: the places in order, each a door on the globe and
+    // a way in; between them, quietly, what the record does not place.
+    var route = el("section", "art-route");
+    var places = {};
+    a.stops.forEach(function (st) { places[st.p] = true; });
+    var np = Object.keys(places).length;
+    route.appendChild(el("p", "art-section-head", np ? "Where it has been · " + np + (np === 1 ? " place" : " places") : "Its history"));
     var ol = el("ol", "art-stops");
     a.groups.forEach(function (g) {
-      var li = el("li", "art-stop");
-      var years = yearsOf(g.events, h);
-      var office = !g.unplaced && g.events.every(function (n) { return h.events[n].pr === "office"; });
-      var headText = g.unplaced ? "Place not recorded" + (years ? " · " + years : "")
-        : office ? (g.name || g.p) + " · where the gallery is"
-        : [g.name || g.p, years].filter(Boolean).join(" · ");
-      var hd;
-      if (g.unplaced) {
-        hd = el("p", "art-stop-head", headText);
-        hd.dataset.unplaced = "true";
-      } else {
-        hd = el("button", "art-stop-head", headText);
+      var shown = g.events.filter(function (n) { return !quietLine(h, n); });
+      if (!shown.length) { return; }
+      var li = el("li", g.unplaced ? "art-stop art-between" : "art-stop");
+      if (!g.unplaced) {
+        var years = yearsOf(g.events, h);
+        var office = g.events.every(function (n) { return h.events[n].pr === "office"; });
+        var name = g.name || g.p;
+        var row = el("div", "art-stop-row");
+        var hd = el("button", "art-stop-head",
+          office ? name + " · where the gallery is" : [name, years].filter(Boolean).join(" · "));
         hd.type = "button";
         hd.dataset.stop = String(g.stop);
-        hd.addEventListener("click", function (event) { event.stopPropagation(); stopDoor(g, h); });
+        hd.setAttribute("aria-label", (placeSaid(name) || name) + (years ? ", " + years : "") + ": show it on the globe");
+        hd.addEventListener("click", function (event) { event.stopPropagation(); showStop(g.stop); });
         hd.addEventListener("pointerenter", function (event) {
           if (event.pointerType === "mouse") { pulseStop(g.stop, 0.3); }
         });
+        // The time this group is at, for scrolling: its first dated line (a
+        // return to a place is its own group, with its own years).
+        var dated = g.events.filter(function (n) { return yearNum(h.events[n].y) !== null; })[0];
+        hd.dataset.at = String(dated === undefined ? g.events[0] : dated);
+        a.heads.push(hd);
+        var into = el("button", "art-stop-in", "Enter ›");
+        into.type = "button";
+        into.setAttribute("aria-label", "Go into " + (String(name).split(",")[0]) + (years ? " in " + years.split("–")[0] : ""));
+        into.addEventListener("click", function (event) { event.stopPropagation(); stopDoor(g, h); });
+        row.appendChild(hd);
+        row.appendChild(into);
+        li.appendChild(row);
+        li.dataset.stop = String(g.stop);
+      } else {
+        li.setAttribute("aria-label", "Where this happened is not recorded");
       }
-      // The time this group is at, for scrolling: its first dated line (a
-      // return to a place is its own group, with its own years).
-      var dated = g.events.filter(function (n) { return yearNum(h.events[n].y) !== null; })[0];
-      hd.dataset.at = String(dated === undefined ? g.events[0] : dated);
-      a.heads.push(hd);
-      li.appendChild(hd);
-      g.events.forEach(function (n) {
-        li.appendChild(artLine(h, n));
-      });
+      shown.forEach(function (n) { li.appendChild(artLine(h, n)); });
       ol.appendChild(li);
     });
-    body.appendChild(ol);
-
-    // The writings: citations, linked to their originals where there is one.
-    var written = [];
-    h.events.forEach(function (ev, n) { if (ev.k === "written") { written.push(n); } });
-    if (written.length) {
-      var cites = el("section", "art-cites");
-      cites.appendChild(el("p", "art-cites-head", "Written · " + written.length));
-      written.forEach(function (n) {
-        var c = citeOf(h.events[n]);
-        a.lines[n] = c;
-        cites.appendChild(c);
-      });
-      body.appendChild(cites);
-    }
+    route.appendChild(ol);
+    body.appendChild(route);
 
     // All the threads, once each has been said (the next pass shows them).
     var line = el("div", "read-words art-words");
@@ -15739,9 +15934,30 @@
     a.line = line;
     a.order = (h.threads || []).slice();
 
+    // The writings: citations, linked to their originals where there is one;
+    // the first five, and the rest a press away.
+    var written = [];
+    h.events.forEach(function (ev, n) { if (ev.k === "written") { written.push(n); } });
+    if (written.length) {
+      var cites = el("section", "art-cites");
+      cites.appendChild(el("p", "art-cites-head", "Written · " + written.length));
+      written.forEach(function (n, i) {
+        var c = citeOf(h.events[n]);
+        if (i >= 5) { c.hidden = true; }
+        a.lines[n] = c;
+        cites.appendChild(c);
+      });
+      if (written.length > 5) { cites.appendChild(moreButton(cites, ".art-cite", "All " + written.length + " writings")); }
+      body.appendChild(cites);
+    }
+
     // Where it is all from, in plain words; and putting it away.
     var names = [];
     (h.sources || []).forEach(function (s) { if (s.name && names.indexOf(s.name) < 0) { names.push(s.name); } });
+    (h.said || []).forEach(function (e) {
+      var n = e.k === "note" ? e.by : e.k === "museum" || e.k === "wiki" ? e.by : e.via;
+      if (n && names.indexOf(n) < 0) { names.push(n); }
+    });
     var from = el("p", "art-sources",
       (names.length ? "From " + names.join("; ") + ". " : "") + (h.asof ? "Known to " + dayOf(h.asof) + "." : ""));
     body.appendChild(from);
@@ -15751,6 +15967,68 @@
     body.appendChild(away);
 
     a.count = count;
+  }
+
+  /* A line the column leaves out: "Made" with no place, whose year the head
+     already gives; a holding that names no holder beside one that does. Its
+     tick stays on the dial. */
+  function quietLine(h, n) {
+    var ev = h.events[n];
+    // And "In the collection" that names no one, when another line names the holder.
+    if (ev.k === "held" && !ev.who && !ev.v) {
+      return h.events.some(function (o) { return o.k === "held" && (o.who || o.v); });
+    }
+    return ev.k === "made" && !(ev.ll && ev.p);
+  }
+
+  /* "3 more": the hidden ones of a list shown, and the button gone. */
+  function moreButton(box, sel, words) {
+    var more = el("button", "art-more-all", words);
+    more.type = "button";
+    more.addEventListener("click", function (event) {
+      event.stopPropagation();
+      box.querySelectorAll(sel).forEach(function (n) { n.hidden = false; });
+      more.remove();
+    });
+    return more;
+  }
+
+  /* What has been said of the work (build_artwork_histories.py, from
+     artwork_said.py): each a quotation in the words of who said it, never a
+     paraphrase, with who and where. The artist's words under their own head;
+     the rest — writers, critics and curators, the museum's label, the
+     catalogue's note, Wikipedia's opening — under "Said of it". Two of each
+     at first, the rest a press away. The artist, 1 Oct 2026: "feature key
+     points from prominent writers on the works or even notes from the
+     artists themselves". */
+  function saidSection(h) {
+    var list = h.said || [];
+    if (!list.length) { return null; }
+    var box = el("section", "art-said");
+    var mine = list.filter(function (e) { return e.k === "artist"; });
+    var theirs = list.filter(function (e) { return e.k !== "artist"; });
+    [[mine, "The artist’s words"], [theirs, "Said of it"]].forEach(function (pair) {
+      var items = pair[0];
+      if (!items.length) { return; }
+      var part = el("div", "art-said-part");
+      part.appendChild(el("p", "art-section-head", pair[1]));
+      items.forEach(function (e, i) {
+        var f = el("figure", "art-said-one");
+        f.dataset.k = e.k;
+        if (i >= 2) { f.hidden = true; }
+        f.appendChild(el("blockquote", "art-said-q", "“" + e.q + "”"));
+        var cap = el("figcaption", "art-said-by");
+        cap.appendChild(el("span", "art-said-who", e.by || ""));
+        var where = [e.in || "", e.via && e.via !== e.by ? "as quoted by " + e.via : ""].filter(Boolean).join(" · ");
+        if (e.k === "note" && !where) { where = "the catalogue note"; }
+        if (where) { cap.appendChild(el("span", "art-said-in", where)); }
+        f.appendChild(cap);
+        part.appendChild(f);
+      });
+      if (items.length > 2) { part.appendChild(moreButton(part, ".art-said-one", (items.length - 2) + " more")); }
+      box.appendChild(part);
+    });
+    return box;
   }
 
   function dayOf(iso) {
@@ -15844,9 +16122,14 @@
         var s = h.sources && h.sources[k];
         if (s && s.name && srcs.indexOf(s.name) < 0) { srcs.push(s.name); }
       });
+      if (ev.n && ev.n.length > 90 && ev.n !== ev.q) {
+        var nt = el("p", "art-q art-note");
+        italics(ev.n, nt);
+        more.appendChild(nt);
+      }
       if (srcs.length) { more.appendChild(el("p", "art-src", "— " + srcs.join("; "))); }
       more.appendChild(el("p", "art-how", ev.k === "written" ? "a writing, not a place" :
-        (ev.ll && HOW[ev.pr]) || "no place given"));
+        (ev.ll && HOW[ev.pr]) || "the record gives no place"));
       (ev.x || []).forEach(function (x) {
         var t = h.threads && h.threads[x];
         if (!t) { return; }
@@ -15860,10 +16143,10 @@
       line.more = more;
       if (!still) { enterText(more.firstChild, 0); }
     }
-    setWhen(a, a.evs[n].pos);
     var k = -1;
     a.stops.forEach(function (s, i) { if (s.events.indexOf(n) >= 0) { k = i; } });
-    if (k >= 0) { a.ring = k; pulseStop(k, 0.5); }
+    if (k >= 0) { showStop(k); }
+    setWhen(a, a.evs[n].pos);
   }
 
   function pulseStop(k, strength) {

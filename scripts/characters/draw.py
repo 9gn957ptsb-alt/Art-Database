@@ -191,3 +191,81 @@ def raster(parts, w, h, ink_dark="o", ink_light="p", deep="d"):
             if near:
                 out[j][i] = ink_light if lit > 0 else ink_dark
     return ["".join(r) for r in out]
+
+
+# ---- shared by the cast after the fox ---------------------------------------------
+
+def foot_at(phase, x, reach, lift, ground, duty=0.5):
+    """Where a foot is at a phase of a gait: on the ground going back for the
+    first `duty` of the cycle (0.5 a trot, 0.75 a walk), in the air coming
+    forward for the rest."""
+    p = phase % 1.0
+    if p < duty:
+        return (x + reach * (1 - 2 * p / duty), ground)
+    q = (p - duty) / (1 - duty)
+    return (x - reach + 2 * reach * q, ground - lift * math.sin(math.pi * q))
+
+
+def strokes(steps, angle=1.68, width=2.4, swing=0.9):
+    """A ramp laid in broad strokes, not dithered: the cells across each
+    stroke band (`width` cells wide, the marks running at `angle` radians)
+    share a step, each band a little lighter or darker than the light alone
+    would give, by the golden ratio's fractions, so it reads as a few broad
+    marks of a brush (DIRT's grammar 4)."""
+    a = angle - math.pi / 2
+
+    def paint(x, y, light, i, j):
+        n = len(steps)
+        u = x * math.cos(a) + y * math.sin(a)
+        band = math.floor(u / width)
+        off = ((band * 0.6180339) % 1.0 - 0.5) * swing
+        k = int(math.floor(light * n - 0.5 + off + 0.5))
+        return steps[max(0, min(n - 1, k))]
+    return paint
+
+
+def flat(steps, cut=0.5):
+    """Flat colour, no dither: the lit side one ink, the other its neighbour,
+    cut where the light passes `cut` (a cut paper, a screenprint's plate)."""
+    def paint(x, y, light, i, j):
+        if len(steps) == 1:
+            return steps[0]
+        return steps[1] if light >= cut else steps[0]
+    return paint
+
+
+def unline(rows):
+    """Rows without their outline (o, p): a cut shape has only its edge."""
+    return ["".join("." if ch in "op" else ch for ch in r) for r in rows]
+
+
+def offset_line(rows, dx=1, dy=1, ink="y"):
+    """A screenprint's key plate printed out of register: the outline taken
+    from the shape itself, shifted by (dx, dy) cells, showing where it falls
+    off the colour, so line and colour never quite meet (Warhol's
+    misregistration). The shape keeps its own chalk edge; at two pixels a
+    cell a line printed over the fills would bury them."""
+    h, w = len(rows), len(rows[0])
+    base = unline(rows)
+    filled = [[ch != "." for ch in r] for r in base]
+    out = [list(r) for r in base]
+    for j in range(h):
+        for i in range(w):
+            sj, si = j - dy, i - dx
+            inside = 0 <= sj < h and 0 <= si < w and filled[sj][si]
+            if not inside:
+                continue
+            edge = False
+            for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                aa, bb = si + a, sj + b
+                if not (0 <= aa < w and 0 <= bb < h and filled[bb][aa]):
+                    edge = True
+            if edge and rows[j][i] == ".":
+                out[j][i] = ink
+            elif rows[j][i] in "op":
+                out[j][i] = rows[j][i]
+    for j in range(h):
+        for i in range(w):
+            if rows[j][i] in "op" and out[j][i] == ".":
+                out[j][i] = rows[j][i]
+    return ["".join(r) for r in out]

@@ -14,7 +14,9 @@ Reads, all private in data/histories/:
 
 and writes, public:
   docs/v2/histories/<_id>.json     one work's events in order, merged across sources, each with a
-                                   place where one is known, its sources and its threads
+                                   place where one is known, its sources and its threads; and what
+                                   has been said of it, quoted (`said`: artwork_said.py, with the
+                                   museum labels and Wikipedia openings fetch_artwork_said.py caches)
   docs/v2/threads/<tid>.json       a thread: the works that share one show, sale, owner, museum,
                                    writing or artist, in the order they arrived
   docs/v2/places.json              every place a work has been, most visited first
@@ -54,6 +56,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from fetch_artwork_histories import filename  # noqa: E402
 from check_parsed_histories import problems  # noqa: E402
 from build_museums import ALIASES as MUSEUM_ALIASES  # noqa: E402
+import artwork_said  # noqa: E402
 
 DATA = ROOT / "data" / "histories"
 SAVES = ROOT / "data" / "artsy_saves_raw.json"
@@ -707,6 +710,21 @@ def mend_year(ev, made):
         ev.pop("end", None)
 
 
+_COMMON = None
+
+
+def common_texts():
+    """The partners' texts given to three works or more: a series' standard paragraph, not this work's."""
+    global _COMMON
+    if _COMMON is None:
+        texts = []
+        for f in (DATA / "artsy" / "works").glob("*.json"):
+            w = json.loads(f.read_text())
+            texts += [w.get("additional_information") or "", w.get("blurb") or ""]
+        _COMMON = artwork_said.generic(texts)
+    return _COMMON
+
+
 def build(saved, parsed, places):
     """One work's record, in memory: its public events and, beside them, what the threads need."""
     w = json.loads((DATA / "artsy" / "works" / filename(saved["id"])).read_text())
@@ -748,6 +766,8 @@ def build(saved, parsed, places):
             "dimensions": (w.get("dimensions") or {}).get("in") if isinstance(w.get("dimensions"), dict) else "",
             "image": img, "c": [c for c in (saved.get("dominant_colors") or []) if re.fullmatch(r"#[0-9a-fA-F]{6}", c or "")][:3],
             "events": pub, "sources": sources,
+            # What has been said of it, in the words of who said it (artwork_said.py).
+            "said": artwork_said.said_of(w, common_texts()),
             "_ev": events, "_cat": w.get("category") or ""}
 
 
@@ -940,6 +960,8 @@ def history_of(rec):
     out = {k: rec[k] for k in ("id", "slug", "title", "artists", "date", "medium", "dimensions", "image")}
     if rec["c"]:
         out["c"] = rec["c"]
+    if rec.get("said"):
+        out["said"] = rec["said"]
     out["events"] = rec["events"]
     out["sources"] = rec["sources"]
     out["threads"] = rec.get("threads", [])

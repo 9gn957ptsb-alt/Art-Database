@@ -2073,8 +2073,10 @@
   margin: 0 0 var(--s-3);
   padding: 0;
   cursor: zoom-in;
-  opacity: 0;
-  animation: held-in 0.61s steps(5) forwards;
+  /* Seen whether or not the fade runs: a saved work waits unseen only for
+     its delay (backwards), never on the animation finishing. Resting at 0
+     until animated had left a museum's saved works blank on an iPhone. */
+  animation: held-rise 0.61s steps(5) backwards;
 }
 .held img {
   width: 89px;
@@ -2094,6 +2096,7 @@
 .held[aria-expanded="true"] .held-medium { display: block; color: var(--ink-dim); }
 .held:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 3px; }
 @keyframes held-in { to { opacity: 1; } }
+@keyframes held-rise { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .held { animation: none; opacity: 1; } }
 
 /* On a phone the works are a strip along the bottom, the building above. */
@@ -3356,6 +3359,44 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .character[hidden], .character-says[hidden],
 .land-body:has(.land:not([data-at="city"])) .character-says { display: none; }
+/* Two that meet: what their artists share, between them, the thing a door. */
+.character-pair {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 64;
+  box-sizing: border-box;
+  max-width: min(300px, calc(100vw - 32px));
+  margin: 0;
+  padding: 3px 8px 4px;
+  border-left: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 0 3px 3px 0;
+  background: rgba(15, 10, 7, 0.8);
+  color: #cbbba6;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+.character-pair-door {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.8);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.character-pair-door:hover, .character-pair-door:focus-visible { color: #fff; outline: none; }
+@media (max-width: 720px) { .character-pair { max-width: 220px; } }
+.character-pair[hidden],
+.land-body:has(.land:not([data-at="city"])) .character-pair { display: none; }
 
 /* ---- following an animal (land.js, "following"; characters.js) -------------
    Pressed, a character offers one quiet word; followed, the city's column
@@ -3413,3 +3454,156 @@ button.art-venue:focus-visible { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .door-label { transition: none; } }
 
 .world-body { pointer-events: none; }
+
+/* ---- a work's view (land.js, "the histories": workBands, layoutWork) ------
+   The artist, 1 Oct 2026: "I want a viewer to be able to look at a big enough
+   image of the artwork". The photograph keeps its place after the look — left
+   of the globe on a desktop, above it on a phone — on a calm ground, and fills
+   the screen when pressed. The column reads as research: the work in words,
+   what has been said of it, then the places in order. */
+.art[data-kind="work"][data-plate="true"]:not([data-look="plate"]) .art-wash {
+  background: linear-gradient(to right, rgba(15, 10, 7, 0.86) 0, rgba(15, 10, 7, 0.86) var(--work-edge-x, 0px),
+              rgba(15, 10, 7, 0) calc(var(--work-edge-x, 0px) + 89px));
+}
+@media (max-width: 720px) {
+  .art[data-kind="work"][data-plate="true"]:not([data-look="plate"]) .art-wash {
+    background: linear-gradient(to bottom, rgba(15, 10, 7, 0.86) 0, rgba(15, 10, 7, 0.86) var(--work-edge-y, 0px),
+                rgba(15, 10, 7, 0) calc(var(--work-edge-y, 0px) + 34px));
+  }
+  .art[data-kind="work"][data-plate="true"] .art-col { top: var(--work-col-top, 64vh); }
+}
+.art[data-kind="work"] .art-plate[data-mode="rest"] { cursor: zoom-in; }
+.art[data-kind="work"] .art-plate:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 3px; }
+.art[data-kind="work"][data-plate="true"] .art-time.dial {
+  left: var(--work-dial-left);
+  top: var(--work-dial-top);
+  right: auto;
+  bottom: auto;
+  transform: none;
+}
+.art[data-kind="work"][data-plate="true"] .art-col::before { content: none; }
+.art[data-held] .art-plate { opacity: 0.618; transition: opacity var(--beat-5) ease, transform var(--beat-6) cubic-bezier(0.2, 0.7, 0.2, 1); }
+/* The whole screen, pressed: the photograph alone, as large as it goes. */
+.art[data-full] .art-plate {
+  position: fixed;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 20;
+  transform: none !important;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(15, 10, 7, 0.97);
+  box-shadow: none;
+  cursor: zoom-out;
+}
+.art[data-full] .art-plate .deal-go { background: transparent; }
+.art[data-full] .art-col,
+.art[data-full] .art-time { visibility: hidden; }
+
+/* The work, in words, at the head of the column. */
+.art-head-text .art-title { margin: 0; font-family: var(--serif); font-size: var(--t-4); line-height: 1.2; color: #eadfcd; }
+.art-head-text .art-by {
+  margin: var(--s-2) 0 0;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #eadfcd;
+}
+.art-head-text .art-made { margin: var(--s-1) 0 0; font-size: var(--t-2); line-height: 1.38; color: #a8927a; }
+.art-section-head {
+  margin: var(--s-5) 0 var(--s-3);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+
+/* What has been said of it: a quotation, and who said it, where. */
+.art-said-one { margin: 0 0 var(--s-4); }
+.art-said-one[hidden] { display: none; }
+.art-said-q {
+  margin: 0;
+  font-family: "Newsreader", var(--serif), serif;
+  font-size: var(--t-3);
+  line-height: 1.42;
+  color: #eadfcd;
+}
+.art-said-one[data-k="note"] .art-said-q,
+.art-said-one[data-k="wiki"] .art-said-q { font-size: var(--t-2); color: #d9ccb6; }
+.art-said-by { margin-top: var(--s-2); font-size: var(--t-1); line-height: 1.45; color: #a8927a; }
+.art-said-who {
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #eadfcd;
+}
+.art-said-who::before { content: "— "; }
+.art-said-in { display: block; margin-top: 2px; }
+.art-more-all {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9d95e6;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+.art-more-all:hover,
+.art-more-all:focus-visible { text-decoration: underline; }
+.art-cites .art-cite[hidden] { display: none; }
+
+/* The places in order: a head that shows the place on the globe, and a way in;
+   the stop being read marked in lilac, as its ring on the globe. Between
+   places, what the record does not place, on a dotted rule — the globe's
+   unrecorded way is every other tile. */
+.art-stop { position: relative; }
+.art-stop-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.art-stop-in {
+  flex: none;
+  min-height: 32px;
+  padding: 0 0 0 var(--s-3);
+  border: 0;
+  background: none;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+  cursor: pointer;
+  opacity: 0.72;
+}
+.art-stop-in:hover,
+.art-stop-in:focus-visible,
+.art-stop[data-current] .art-stop-in { color: #9d95e6; opacity: 1; }
+.art-stop[data-current]::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 9px;
+  width: 5px;
+  height: 5px;
+  background: #9d95e6;
+  box-shadow: 0 0 8px rgba(157, 149, 230, 0.8);
+}
+.art-stop[data-current] .art-stop-head { color: #ffffff; }
+.art-between { margin-left: 2px; padding-left: calc(var(--s-3) - 1px); border-left: 1px dotted rgba(168, 146, 122, 0.55); }
+.art-between .art-line { grid-template-columns: calc(4.5ch - var(--s-3)) 1fr; }
+.art-note { font-size: var(--t-1); }
+@media (max-width: 720px) {
+  .art[data-kind="work"][data-plate="true"] .art-col {
+    background: linear-gradient(to bottom, rgba(15, 10, 7, 0) 0, rgba(15, 10, 7, 0.95) 13px);
+  }
+}
+@media (min-width: 721px) {
+  .art[data-kind="work"][data-plate="true"] .art-col {
+    background: linear-gradient(to right, rgba(15, 10, 7, 0), rgba(15, 10, 7, 0.94) 21px);
+  }
+}

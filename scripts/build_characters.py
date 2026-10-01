@@ -59,6 +59,8 @@ sys.path.insert(0, str(ROOT / "scripts" / "characters"))
 OUT = ROOT / "docs" / "v2" / "characters"
 EARTH = ROOT / "dirt" / "earth" / "out"
 NEAR_LAND = 12                 # cells (a quarter degree each) to look for land
+HOME_KM = 25                   # a birthplace this near a city of the site makes it the artist's home town
+PAIR_KINDS = ["show", "owner", "writing", "sale", "museum"]   # what two artists can share, most telling first
 
 
 def dump(path, obj):
@@ -278,6 +280,12 @@ def artist_maps(cast, home_of, plant_rows):
             got = plant_rows.get((round(home["ll"][0], 2), round(home["ll"][1], 2)))
             rec["home"] = {"where": home["where"], "name": home["name"], "ll": home["ll"], "wd": home["wd"],
                            "plants": got[2:5] if got else None}
+            # Home on the site: the city of cities.json within HOME_KM of the birthplace, if any
+            # (Brooklyn is New York, Bradford is Leeds; Figueres, 29 km from Céret across the
+            # border, is none). Its animal lives there (characters.js, "hometowns").
+            near = min(cities["towns"], key=lambda r: (km(home["ll"], (r[3], r[4])), r[0]))
+            if km(home["ll"], (near[3], near[4])) <= HOME_KM:
+                rec["home"]["key"] = near[0]
         if h.get("worked") or h.get("lived"):
             seen = []
             for w in h.get("worked", []) + h.get("lived", []):
@@ -288,6 +296,35 @@ def artist_maps(cast, home_of, plant_rows):
         out[name] = rec
         print(f"{name}: {len(works)} works, {len(route)} cities, {rec['held']} held"
               f"{', of ' + home['where'] if home else ', no home'}")
+    return out
+
+
+def artist_pairs(cast):
+    """For every two artists (the cast's and the backlog's), the threads their saved works share:
+    a show both were in, an owner who had both, a writing on both, a sale, a museum holding both.
+    Read when two animals meet (characters.js): the pair line names the first, a door to it."""
+    finding = json.loads((V2 / "finding.json").read_text())
+    names = artist_names(cast)
+    of = {}                                    # thread -> {artist: works}
+    for t in finding["t"]:
+        if t[1] not in PAIR_KINDS:
+            continue
+        th = json.loads((V2 / "threads" / (t[0] + ".json")).read_text())
+        got = {}
+        for w in th["works"]:
+            if w[2] in names:
+                got[w[2]] = got.get(w[2], 0) + 1
+        if len(got) >= 2:
+            of[t[0]] = (t, got)
+    out = {}
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            x, y = sorted((a, b))
+            shared = [(t, got) for t, got in of.values() if x in got and y in got]
+            shared.sort(key=lambda tg: (PAIR_KINDS.index(tg[0][1]), tg[0][5], tg[0][0]))
+            if shared:
+                out[x + "|" + y] = [[t[0], t[1], t[2], t[3], t[4], got[x], got[y]] for t, got in shared[:3]]
+    print(f"pairs: {len(out)} pairs of artists share a thread")
     return out
 
 
@@ -310,16 +347,21 @@ def main():
     print(f"plants: {len(p['places'])} places, {len(p['sets'])} biome-realm sets, {n} bytes")
     rows = {(r[0], r[1]): r for r in p["places"]}
     maps = artist_maps(cast, home_of, rows)
+    pairs = artist_pairs(cast)
     n = dump(OUT / "artists.json", {
         "note": "Each character's artist (the cast's and the backlog's): every city on the site where the artist's "
                 "saved works are held now or have been, as a route from home (nearest first), and the artist's "
-                "home with the plants of home. Written by scripts/build_characters.py from public files: "
+                "home with the plants of home (home.key: the site's city within 25 km of the birthplace, where the "
+                "artist's animal lives). pairs: for two artists, what their saved works share — [thread, kind, "
+                "name, where, year, works of the first, works of the second], a show first, then an owner, a "
+                "writing, a sale, a museum, the rarest first; three at most. Written by scripts/build_characters.py from public files: "
                 "finding.json, threads/, histories/, museums.json, cities.json, places/, homes.json (Wikidata). "
                 "works: [id, title, image, year]; places: [city key, name, country, lat, lon, [works there, by "
                 "index, earliest first], [[museum slug, works it holds]], where the animal waits (['m', museum "
                 "slug] or ['v', venue, lat, lon] or null), first year]; home.plants: [set, ecoregion, soil] "
                 "in plants.json.",
         "artists": maps,
+        "pairs": pairs,
     })
     print(f"artists: {len(maps)} artists, {n} bytes")
 

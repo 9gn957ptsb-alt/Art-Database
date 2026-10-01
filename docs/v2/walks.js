@@ -40,7 +40,28 @@
    work each is 18 characters. Pasted into Find, it is offered first:
    "Walk: Twombly by fox · 4 cities". Find also offers the published walks
    to "walks" or a cast artist's name ("Twombly") — the way in under
-   reduced motion, where no animal comes out of the wave. */
+   reduced motion, where no animal comes out of the wave.
+
+   A walk as a sentence (the artist, 1 Oct 2026, on "a walk as a sentence:
+   each stop is a word and how long you linger is the punctuation": "A walk
+   as a sentence is a great idea. Seeking the poetic aspect from the very
+   forms defining a path of travel is directly applicable to continuing to
+   find new ways to make interesting connections"). Each stop is a word,
+   its city's name: the city is what the walk itself is made of, where a
+   work's title is as often as not "Untitled" (61 of Twombly's 94). How
+   long one lingers is the punctuation: where nothing was opened, a dash (a
+   city passed through); less than two median looks (34 s, Smith & Smith's
+   17 s twice), a comma; two or more, a full stop. The last word ends the
+   sentence with a full stop, or with its dash. A line ends at a full stop
+   and holds five words at most; a walk of three stops is a tercet, a line
+   a stop, the haiku of cities (syllables are not counted: city names would
+   strain any count). A city said again is a refrain, set in italics. As a
+   walk is walked its sentence writes itself in the strip, a word on
+   arriving and its stop when it is left; a finished walk, a following
+   kept, and every walk in the animal's column are given as their
+   sentences: "Rome, New York — London. / Munich, Munich." Two walks that
+   end on the same city rhyme, and are offered as each other's rhyme; else
+   two that share a word. */
 (function () {
   "use strict";
 
@@ -56,6 +77,8 @@
   var KEEP_FOR = Math.pow(PHI, 6) * 1000;
   var LOOKS = [0, 9, 13, 17, 24, 34, 48, 68];   // seconds, the code's eight steps (0: the default)
   var B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  var FULL_S = 34;                     // seconds: lingering this long is a full stop (two median looks)
+  var LINE_WORDS = 5;                  // a line holds this many words at most
   var STORE = "walks.kept";
 
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -65,7 +88,7 @@
   var rec = null;                      // the walk being recorded
   var fromWalk = false;                // following that a walk began is not recorded
   var walk = null;                     // the walk being walked
-  var strip = null, stripP = null, stripSaid = null, stripActs = null;
+  var strip = null, stripP = null, stripSaid = null, stripActs = null, stripLines = null;
   var hideTimer = 0;
   var PACE = 1;                        // the checks walk faster (Walks._pace)
 
@@ -117,6 +140,97 @@
     var hit = null;
     m.works.forEach(function (w) { if (!hit && w[0] === id) { hit = w; } });
     return hit;
+  }
+
+  /* ---- the sentence --------------------------------------------------------- */
+
+  function shortName(key) { return String(townName(key)).split(",")[0]; }
+
+  // Seconds lingered at a stop: each work's look as kept, else the calm default; -1 if nothing was opened.
+  function linger(st) {
+    if (!st.works || !st.works.length) { return -1; }
+    return st.works.reduce(function (a, id, k) { return a + (((st.s || [])[k]) || LOOK / 1000); }, 0);
+  }
+
+  /* The walk's words, each with its stop: [{w, p, refrain}], and its lines.
+     `said` stops are given (all, by default); `closed` of them have their
+     stop (all, by default) — while walking, the stop one is at is still open. */
+  function sentence(w, said, closed) {
+    var n = w.stops.length;
+    said = said === undefined ? n : said;
+    closed = closed === undefined ? said : closed;
+    var seen = {}, words = [];
+    for (var i = 0; i < said; i += 1) {
+      var st = w.stops[i], L = linger(st);
+      var p = L < 0 ? " —" : i === n - 1 || L >= FULL_S ? "." : ",";
+      words.push({ w: shortName(st.key), p: i < closed ? p : "", refrain: !!seen[st.key] });
+      seen[st.key] = true;
+    }
+    var lines = [], cur = [];
+    words.forEach(function (x) {
+      cur.push(x);
+      if (n === 3 || x.p === "." || (cur.length >= LINE_WORDS && x.p)) { lines.push(cur); cur = []; }
+    });
+    if (cur.length) { lines.push(cur); }
+    return lines;
+  }
+
+  function sentenceText(lines) {
+    return lines.map(function (l) { return l.map(function (x) { return x.w + x.p; }).join(" "); }).join(" / ");
+  }
+
+  // The sentence as lines of the serif; a refrain in italics; the newest word arriving.
+  function sentenceEl(lines, cls, fresh) {
+    var box = document.createElement("div");
+    box.className = "walk-sentence" + (cls ? " " + cls : "");
+    lines.forEach(function (l, li) {
+      var line = document.createElement("p");
+      line.className = "walk-line";
+      l.forEach(function (x, k) {
+        var word = document.createElement(x.refrain ? "em" : "span");
+        word.className = "walk-word";
+        word.textContent = x.w;
+        if (fresh && li === lines.length - 1 && k === l.length - 1) { word.dataset.fresh = "true"; }
+        line.appendChild(word);
+        if (x.p) { line.appendChild(document.createTextNode(x.p)); }
+        if (k < l.length - 1) { line.appendChild(document.createTextNode(" ")); }
+      });
+      box.appendChild(line);
+    });
+    return box;
+  }
+
+  function lastKey(w) { return w.stops.length ? w.stops[w.stops.length - 1].key : null; }
+
+  /* Its rhyme: another walk (another animal's first) that ends on the same
+     city; else one that shares a word, the rarest shared word first. */
+  function rhymeFor(w) {
+    if (!data) { return null; }
+    var pool = data.published.concat(kept()).filter(function (x) {
+      return x.id !== w.id && x.title !== w.title && x.stops && x.stops.length;
+    });
+    pool.sort(function (a, b) { return (a.animal === w.animal) - (b.animal === w.animal); });
+    var end = lastKey(w);
+    var hit = pool.filter(function (x) { return lastKey(x) === end; })[0];
+    if (hit) { return { walk: hit, how: "rhymes on " + shortName(end) }; }
+    var mine = {};
+    w.stops.forEach(function (st) { mine[st.key] = true; });
+    var best = null;
+    pool.forEach(function (x) {
+      x.stops.forEach(function (st) {
+        if (!mine[st.key]) { return; }
+        var used = pool.filter(function (y) { return y.stops.some(function (z) { return z.key === st.key; }); }).length;
+        if (!best || used < best.used) { best = { walk: x, key: st.key, used: used }; }
+      });
+    });
+    return best && { walk: best.walk, how: "shares " + shortName(best.key) };
+  }
+
+  function rhymeButton(w) {
+    var r = rhymeFor(w);
+    if (!r) { return null; }
+    var t = r.walk.title;
+    return button("Its rhyme: " + t + " · " + r.how, "walk-rhyme", function () { play(r.walk); });
   }
 
   /* ---- kept walks (this browser only) -------------------------------------- */
@@ -248,7 +362,10 @@
     stripSaid.setAttribute("aria-live", "polite");
     stripActs = document.createElement("div");
     stripActs.className = "walk-acts";
+    stripLines = document.createElement("div");
+    stripLines.className = "walk-lines";
     strip.appendChild(stripP);
+    strip.appendChild(stripLines);
     strip.appendChild(stripSaid);
     strip.appendChild(stripActs);
     // Its own presses: neither the stage's, nor a press that takes over the walk.
@@ -276,6 +393,14 @@
     (acts || []).forEach(function (a) { stripActs.appendChild(a); });
     strip.hidden = false;
     if (forMs) { hideTimer = window.setTimeout(hide, forMs); }
+  }
+
+  // The sentence in the strip: while walking, its last three lines, writing themselves.
+  function setLines(lines, fresh, all) {
+    setUp();
+    stripLines.textContent = "";
+    if (!lines || !lines.length) { return; }
+    stripLines.appendChild(sentenceEl(all ? lines : lines.slice(-3), all ? "walk-sentence-whole" : "", fresh));
   }
 
   function setSaid(text) {
@@ -359,6 +484,7 @@
     field.addEventListener("focus", function () { window.clearTimeout(hideTimer); });
     show("", "", [field, keep, button("×", "walk-x", hide)], KEEP_FOR);
     stripP.textContent = "The way you followed · " + cities(w.stops.length);
+    setLines(sentence(w), false, true);
   }
 
   function keptShown(w, field) {
@@ -376,7 +502,10 @@
       list.forEach(function (k) { if (k.id === w.id) { k.title = field.value.trim() || autoTitle(w); } });
       keepAll(list);
     });
-    show("Kept · " + cities(w.stops.length), "Typed into Find, the code is the walk, for anyone.", [field, code, copy, button("×", "walk-x", hide)], KEEP_FOR * PHI);
+    var rh = rhymeButton(w);
+    show("Kept · " + cities(w.stops.length), "Typed into Find, the code is the walk, for anyone.",
+         [field, code, copy].concat(rh ? [rh] : []).concat([button("×", "walk-x", hide)]), KEEP_FOR * PHI);
+    setLines(sentence(w), false, true);
   }
 
   /* ---- walking ------------------------------------------------------------ */
@@ -455,7 +584,8 @@
       return Characters.lead(c.id).then(function (f) {
         if (!f) { return; }
         fromWalk = true;
-        walk = { w: w, i: 0, j: -1, map: f.map, timers: [], paused: false, down: false, said: [] };
+        walk = { w: w, i: 0, j: -1, map: f.map, timers: [], paused: false, down: false, said: [], upto: 0, closed: 0 };
+        setLines([]);
         told(w.title + (w.by ? " · by " + w.by : ""));
         var first = w.stops[0].key;
         if (Land.following()) { goStop(0, -1); }
@@ -486,6 +616,12 @@
   // Arrived: the animal trots to where the work is held; then the works.
   function arrived(j) {
     walk.down = true;
+    // A word on arriving.
+    if (walk.upto < walk.i + 1) {
+      walk.upto = walk.i + 1;
+      walk.closed = Math.min(walk.closed, walk.i);
+      setLines(sentence(walk.w, walk.upto, walk.closed), true);
+    }
     if (still) { told(waitsBy()); return; }
     told(waitsBy());
     var st = stopOf();
@@ -563,6 +699,10 @@
   }
 
   function next() {
+    // Its stop on leaving: a comma, a full stop, a dash.
+    walk.closed = Math.max(walk.closed, walk.i + 1);
+    walk.upto = Math.max(walk.upto, walk.i + 1);
+    setLines(sentence(walk.w, walk.upto, walk.closed), false);
     if (walk.i + 1 >= walk.w.stops.length) { done(); return; }
     goStop(walk.i + 1, -1);
   }
@@ -571,11 +711,14 @@
     var w = walk.w;
     clearTimers();
     walk = null;
-    show("Walked · " + w.title, cities(w.stops.length) + ". The animal is still yours to follow.",
-         [button("Walk it again", "", function () { play(w); }), button("×", "walk-x", hide)], KEEP_FOR);
+    var rh = rhymeButton(w);
+    show("Walked · " + w.title, "The animal is still yours to follow.",
+         [button("Walk it again", "", function () { play(w); })].concat(rh ? [rh] : []).concat([button("×", "walk-x", hide)]), KEEP_FOR);
+    setLines(sentence(w), false, true);
   }
 
   function stepTo(i) {
+    walk.closed = Math.max(walk.closed, Math.min(i, walk.i + 1));
     walk.i = i;
     walk.j = -1;
     told("");
@@ -655,6 +798,11 @@
         meta.className = "walk-row-by";
         meta.textContent = w.by === "the route" ? "by the route" : w.code ? "kept · " + w.code : "kept";
         b.appendChild(meta);
+        // Its sentence, the first two lines of it.
+        var lines = sentence(w);
+        var sent = sentenceEl(lines.slice(0, 2), "walk-row-sentence");
+        if (lines.length > 2) { sent.lastChild.appendChild(document.createTextNode(" …")); }
+        b.appendChild(sent);
         b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
         b.addEventListener("click", function (event) { event.stopPropagation(); play(w); });
         sec.appendChild(b);
@@ -768,9 +916,13 @@
     kept: kept,
     encode: function (w) { return load().then(function () { return encode(w); }); },
     decode: function (code) { return load().then(function () { return decode(code); }); },
+    // A walk's sentence, as text ("Rome, New York — London. / Munich, Munich."), and its rhyme.
+    sentence: function (w) { return load().then(function () { return sentenceText(sentence(w)); }); },
+    rhyme: function (w) { return load().then(function () { var r = rhymeFor(w); return r && { title: r.walk.title, how: r.how }; }); },
     _pace: function (k) { PACE = k; },
     _state: function () {
-      return { walking: walk && { title: walk.w.title, i: walk.i, j: walk.j, n: walk.w.stops.length, paused: walk.paused },
+      return { walking: walk && { title: walk.w.title, i: walk.i, j: walk.j, n: walk.w.stops.length, paused: walk.paused,
+                                  sentence: data ? sentenceText(sentence(walk.w, walk.upto, walk.closed)) : "" },
                recording: rec && { stops: rec.stops.map(function (s) { return [s.key, s.works.length, s.s]; }) } };
     }
   };
