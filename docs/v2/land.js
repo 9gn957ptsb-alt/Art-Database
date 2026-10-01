@@ -13436,7 +13436,20 @@
   window.Land = {
     follow: function (f) { startFollowing(f); },
     unfollow: function () { endFollowing(true); },
-    following: function () { return following && { artist: following.artist, animal: following.animal }; }
+    following: function () { return following && { artist: following.artist, animal: following.animal, cast: following.cast }; },
+    // The walks (walks.js): where you are, and the moves a walk is made of.
+    where: function () {
+      if (!place) { return { at: flying ? "flying" : "world", flying: flying }; }
+      var a = art, o = { flying: flying, key: place.townKey || null, at: "place" };
+      if (a && a.kind === "town" && a.town) { o.at = "town"; o.key = a.town.key; o.name = a.town.name; }
+      else if (a && a.kind === "work" && a.data) { o.at = "work"; o.work = a.data.id; o.key = a.via && a.via.place || null; }
+      else if (place.museum) { o.at = "museum"; }
+      else if (a) { o.at = a.kind; }
+      return o;
+    },
+    go: function (key) { followGo([key]); },
+    work: function (id, key) { openArt({ work: id }, key ? { place: key } : {}); },
+    up: function () { comeUp(); }
   };
 
   function backName(up) {
@@ -13476,8 +13489,10 @@
     if (place && art && art.kind === "town" && !flying) {
       followSection(art, art.town);
       if (bannerBackTo && !levelUp()) { bannerBackTo.textContent = backName(null); }
-      return;
+      if (!f.to || f.to === art.town.key) { return; }
     }
+    // A walk (walks.js) begins at its first stop.
+    if (f.to) { followGo([f.to]); return; }
     // Not in a city (a collage's city, a museum, a history): to the artist's nearest.
     var n = followNearest();
     if (n) { followGo(n.row); }

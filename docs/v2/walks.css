@@ -1,0 +1,95 @@
+/* ---- the walks (walks.js) ---------------------------------------------------
+   Following as a form of reading. In the animal's column, its walks: each a
+   line, its title and who walked it. On the page, while one is walked, a
+   quiet strip: how far ("3 of 32 · London"), what is said, and the way to
+   take over or end it; after a following, the offer to keep it, its title
+   editable in place, and its code. The lilac of following, the caption
+   hand of the character's line. */
+.walks { margin: var(--s-4) 0 0; }
+.walk-row {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 149, 230, 0.22);
+  background: none;
+  color: #cbbba6;
+  font-family: var(--serif, serif);
+  font-size: var(--t-2);
+  line-height: 1.38;
+  text-align: left;
+  cursor: pointer;
+}
+.walk-row:hover, .walk-row:focus-visible { color: #eadfcd; outline: none; }
+.walk-row-by {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #9d95e6;
+}
+.walk-strip {
+  position: fixed;
+  left: 16px;
+  top: 64px;
+  z-index: 88;                   /* over the city and its column, under the banner's menus */
+  box-sizing: border-box;
+  max-width: min(380px, calc(100vw - 32px));
+  margin: 0;
+  padding: 6px 10px 8px;
+  border-left: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 0 3px 3px 0;
+  background: rgba(15, 10, 7, 0.82);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+.walk-strip[hidden] { display: none; }
+.walk-progress { margin: 0; color: #9d95e6; text-transform: uppercase; letter-spacing: 0.08em; }
+.walk-progress:empty { display: none; }
+.walk-said {
+  margin: 3px 0 0;
+  font-family: var(--serif, serif);
+  font-size: 12px;
+  letter-spacing: 0;
+  opacity: 0;
+  transition: opacity 0.9s steps(6);
+}
+.walk-said[data-on="true"] { opacity: 1; }
+.walk-said:empty { display: none; }
+.walk-acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.walk-acts:empty { display: none; }
+.walk-act {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: #eadfcd;
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.walk-act:hover, .walk-act:focus-visible { border-color: #eadfcd; outline: none; }
+.walk-x { border-color: transparent; padding: 0 4px; }
+.walk-work { text-transform: none; letter-spacing: 0.02em; }
+.walk-title {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px dotted rgba(234, 223, 205, 0.5);
+  background: transparent;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 13px;
+}
+.walk-title:focus { outline: none; border-bottom-color: #9d95e6; }
+.walk-code { user-select: all; -webkit-user-select: all; color: #eadfcd; letter-spacing: 0.1em; }
+@media (prefers-reduced-motion: reduce) { .walk-said { transition: none; } }
+/* A phone: under the banner's second line, which wraps there. */
+@media (max-width: 720px) { .walk-strip { top: 84px; } }

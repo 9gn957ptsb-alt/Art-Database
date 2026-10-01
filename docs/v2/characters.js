@@ -625,7 +625,38 @@
     hit.setAttribute("aria-label", o.c.name + " — press to let it go, and stop following " + o.c.artist);
     var ids = {};
     o.map.works.forEach(function (w) { ids[w[0]] = true; });
-    Land.follow({ artist: o.c.artist, animal: o.c.name, map: o.map, ids: ids, home: o.home ? o.home.where : "" });
+    Land.follow({ artist: o.c.artist, animal: o.c.name, map: o.map, ids: ids, home: o.home ? o.home.where : "", cast: o.c.id });
+  }
+
+  /* A walk (walks.js) is led by its animal without a wave: the character
+     comes out following, hidden until land.js says where it is to be (on
+     the way, or where it waits). What is handed back is what Land.follow
+     takes. A character already following is kept. Under reduced motion
+     nothing is drawn, and the walk still has its map. */
+  function lead(id) {
+    return load().then(function () {
+      var c = cast && cast.cast.filter(function (k) { return k.id === id; })[0];
+      var m = c && mapOf(c);
+      if (!m) { return null; }
+      var home = homeOf(m);
+      var now = performance.now();
+      if (!(one && one.mode === "follow" && one.c.id === id) && !still && sprites[c.id] && setUp()) {
+        if (one) { end(); }
+        size();
+        if (home) { home.look = homeLook(c); home.chalk = c.after.inks.pen[0]; }
+        one = {
+          c: c, here: null, born: now, x0: W / 2, x: W / 2, y: H * 0.7, dir: 1, mode: "follow",
+          city: null, map: m, home: home, row: null, guide: null,
+          pose: "stand", n: 0, state: "wait", since: now, waitSince: now, s: 0, looked: true,
+          plants: [], writing: [], sinkAt: 0, stopped: false, hidden: true, atKey: null
+        };
+        hit.setAttribute("aria-label", c.name + " — press to let it go, and stop following " + c.artist);
+        loop();
+      }
+      var ids = {};
+      m.works.forEach(function (w) { ids[w[0]] = true; });
+      return { artist: c.artist, animal: c.name, map: m, ids: ids, home: home ? home.where : "", cast: c.id };
+    });
   }
 
   // Let go: off by the nearer side, its plantings sinking, and the long rest after.
@@ -885,6 +916,10 @@
     // land.js, while following: where the animal is to be, and the end of it.
     guide: guide,
     following: function () { return !!(one && one.mode === "follow"); },
+    // walks.js: the animal leads a walk; and the cast, read.
+    lead: lead,
+    cast: function () { return load().then(function () { return cast && cast.cast; }); },
+    artists: function () { return load().then(function () { return artists; }); },
     unfollowed: function () { if (one && one.mode === "follow") { release(performance.now()); } },
     // For the preview (scripts/preview_character.js): the files, read,
     // and one pose drawn as the page draws it, on a place's soil and plants.
