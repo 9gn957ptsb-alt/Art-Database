@@ -315,6 +315,17 @@ after a photograph of Aries's. Across a few hundred cells the friezes dissolve i
 own field with feathered edges: Rothko's later fields are those friezes with the figures gone, and DRIFT walks from one
 to the other in space, so the plane now runs from its densest collage to near-empty bands within a swipe.
 
+**Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
+its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
+taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later
+session can look at exactly what was kept. The measures are the ultracode's own: life (the mean colour change between
+neighbours, read 34 texels across), the calm and busy shares (below φ⁻¹ and above φ times that), and the dark, light
+and vivid shares. The first reference, sent in conversation on 1 October 2026, measures life 0.091, calm 0.614 (φ⁻¹),
+busy 0.195, dark 0.43, accent 0.007: three big calm masses with speckled edges, a few thin lines, a few small sharp
+accents (`artists/taste.json`; the image stays in `private/references/`). The ultracode steers by them: it is drawn to
+the parts of the view as alive as the kept frames and slows to φ⁻² of its speed as the whole view comes near them, so
+it lingers where Aries would have kept the frame. Every still kept joins the taste as the page loads.
+
 **Photomosaics, after Robert Silvers.** Silvers made pictures out of many small pictures (the Photomosaic, from his
 years at the MIT Media Lab in the 1990s), each tile chosen because its colour matches that spot of the large picture.
 Here and there (in φ⁻³ of the 377-cell squares) a disc 89 to 144 cells across is made of the faces from the saved

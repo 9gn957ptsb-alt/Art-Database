@@ -124,5 +124,22 @@ for (const MODE of ['earth', undefined]) {
   check('touched: the view stops at once; the wake fades to under 2% in 0.9 s', e.vx === x0 && w1 < 0.02 * w0, `wake ${w0.toFixed(1)} → ${w1.toFixed(2)} (${(w1 / w0 * 100).toFixed(2)}%)`);
   for (let i = 0; i < 66; i++) { e.now += 16.7; e.propel(e.now); }
   check('left alone a second: it takes over again', e.vx - x0 > 1, `moved ${(e.vx - x0).toFixed(1)} cells in the next 1.1 s`); }
+// 8. taste: drawn to the part of the view as alive as the kept stills, and slower once the whole view is near them
+{ const C = 8, calm = (X, Y) => world(X, Y).map((v) => 110 + v * 0.03), busy = (X, Y) => world(X, Y);   // calm: a faint grain
+  // left half busy (grain), right half calm and flat: a taste for busy pulls left, a taste for calm pulls right
+  const img = (X, Y, x) => x < 17 ? busy(X, Y) : calm(X, Y);
+  const e = harness(); e.TASTE = { stills: [{ life: 0.6 }] };
+  e.reflectOn(reading(0, 0, 34, 21, C, img)); e.reflectOn(reading(0, 0, 34, 21, C, img));
+  const f = harness(); f.TASTE = { stills: [{ life: 0.01 }] };
+  f.reflectOn(reading(0, 0, 34, 21, C, img)); f.reflectOn(reading(0, 0, 34, 21, C, img));
+  check('taste for the busy pulls to the busy side, for the calm to the calm side', e.UC.dir[0] < -0.05 && f.UC.dir[0] > 0.05, 'dir ' + fmt(e.UC.dir) + ' / ' + fmt(f.UC.dir)); }
+{ const C = 8, img = (X, Y) => world(X, Y), changed = (X, Y, x) => x >= 26 ? world(X, Y, 3) : img(X, Y);
+  const run = (taste) => { const e = harness(); if (taste) e.TASTE = taste;
+    e.reading = reading(0, 0, 34, 21, C, img); e.UC.idleAt = 0; e.propel(e.now);
+    e.reading = reading(0, 0, 34, 21, C, changed);
+    for (let i = 0; i < 300; i++) { e.now += 16.7; e.propel(e.now); }
+    return [e.UC.speed, e.UC.life]; };
+  const [free, life] = run(null), [held] = run({ stills: [{ life }] });
+  check('a view as alive as the kept stills: it lingers (phi^-2 of its speed)', Math.abs(held / free - 0.382) < 0.05, `${held.toFixed(1)} against ${free.toFixed(1)} cells a second`); }
 console.log(fails ? fails + ' FAILED' : 'all passed');
 process.exit(fails ? 1 : 0);

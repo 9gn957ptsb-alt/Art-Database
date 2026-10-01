@@ -1,0 +1,6 @@
+{
+ "about": "What Aries has kept of DRIFT, measured, for the ultracode to steer toward (drift.js, taste). life: the mean colour change between neighbours over the view read 34 texels across (the ultracode's own measure), in 255ths; calm and busy: the shares of the view below phi^-1 and above phi times that; dark and light: shares darker than 60 and lighter than 200; accent: the share of vivid colour (chroma over 90). The images stay private (dirt/private/references/); stills kept with DRIFT's Still and Record buttons are stored with the artifact (assets, and db collection references) and join these when the page loads.",
+ "stills": [
+  {"name": "2026-10-01, sent in conversation", "life": 0.0906, "calm": 0.614, "busy": 0.195, "dark": 0.43, "light": 0.18, "accent": 0.007}
+ ]
+}

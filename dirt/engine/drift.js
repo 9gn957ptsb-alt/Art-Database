@@ -347,7 +347,15 @@ For "go", give a real website you are certain exists (a museum or collection pag
   //                as texture, taken back to the trunk it was split from.
   const UC = { hist: [], dir: [0, 0], mem: [0, 0], life: 0, novelty: 0, vx: 0, vy: 0, hx: 0, hy: 0, speed: 0, idleAt: performance.now(),
     last: 0, seen: null, given: false, sheetAt: -1e9, line: 0, shownAt: -1e9 };
-  const TOP = 105, WAIT = 1000, RUDDER = 1 / PHI, THROTTLE = PHI / 5, LOOKBACK = 377;   // (5 times as propulsive as it was)
+  const TOP = 105, WAIT = 1000, RUDDER = 1 / PHI, THROTTLE = PHI / 5, LOOKBACK = 377;
+  // Taste: the life of the views Aries has kept (dirt/artists/taste.json, and the stills kept with the Still and Record
+  // buttons, which the page adds as it loads them). Where there is one, the ultracode is drawn to the parts of the view
+  // whose life is nearest it, and slows to phi^-2 of its speed as the whole view comes near it: it lingers where Aries
+  // would have kept the frame.
+  const tasteLife = () => {
+    const s = (typeof TASTE !== "undefined" && TASTE && TASTE.stills) || [];
+    return s.length ? s.reduce((a, b) => a + b.life, 0) / s.length : 0;
+  };   // (5 times as propulsive as it was)
   for (const ev of ["pointerdown", "wheel", "keydown", "touchstart"]) addEventListener(ev, () => { UC.idleAt = performance.now(); }, { passive: true, capture: true });
   const onPlane = () => typeof MODE === "undefined" || MODE === "plane";
   /** How far apart two colours are (0 to 255): the one at i in A and the one at j in B. */
@@ -388,7 +396,15 @@ For "go", give a real website you are certain exists (a museum or collection pag
       }
       return s > 0 ? [cx / s, cy / s] : [0, 0];
     };
-    const tn = both ? toward(D, nov / both) : [0, 0], tl = toward(G, life / n);
+    const want = tasteLife();
+    let tl;
+    if (want > 0) {                                                  // toward what is as alive as the kept frames
+      const F = new Float32Array(n);
+      let fm = 0;
+      for (let k = 0; k < n; k++) { F[k] = Math.max(0, 1 - Math.abs(G[k] / 255 - want) / want); fm += F[k]; }
+      tl = toward(F, fm / n);
+    } else tl = toward(G, life / n);
+    const tn = both ? toward(D, nov / both) : [0, 0];
     H.push({ C, uw, uh, px: r.x0, py: r.y0, at });
     while (H.length > 2 && at - H[1].at >= LOOKBACK) H.shift();       // (keep what is needed to look a third of a second back)
     UC.life = life / n / 255;
@@ -431,7 +447,8 @@ For "go", give a real website you are certain exists (a museum or collection pag
     // and, while Plectra (cast.js) is in view, toward the shade she wants, at phi^-1
     const sp = typeof STAR !== "undefined" && STAR.shadePull ? STAR.shadePull : [0, 0];
     const tx = UC.dir[0] * 3 + UC.mem[0] * 0.618 + sp[0] / PHI, ty = UC.dir[1] * 3 + UC.mem[1] * 0.618 + sp[1] / PHI, tm = Math.hypot(tx, ty);
-    const fuel = Math.min(1, Math.max(0.236, UC.life * 2.6 + UC.novelty * 8));
+    const liked = tasteLife(), near = liked > 0 ? PHI ** -2 + (1 - PHI ** -2) * Math.min(1, Math.abs(UC.life - liked) / liked) : 1;
+    const fuel = Math.min(1, Math.max(0.236, UC.life * 2.6 + UC.novelty * 8)) * near;
     const want = alone && tm > 0.02 ? TOP * fuel * Math.min(1, tm) : 0;
     // the rudder: the heading turns toward the thrust over phi^-1 seconds (from rest it takes the thrust's heading at once)
     if (tm > 0.02) {

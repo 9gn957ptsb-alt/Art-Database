@@ -798,6 +798,7 @@ onmessage = (e) => {
 const PL = __PLANE__;
 const ART = __ART__;                                            // the artist DIRT is drawn after, as measured (dirt/artists/)
 const QUILTS = __QUILTS__;
+const TASTE = __TASTE__;                                        // what Aries has kept of DRIFT, measured (dirt/artists/taste.json); kept stills join it
 const FACES = __FACES__;                                        // the faces in the saved paintings, for the friezes (dirt/artists/faces.py), in faces/
 const ANTIQUITY = __ANTIQUITY__;                                // the history of Greece and Rome (dirt/artists/antiquity.py), in antiquity/                                      // the saved paintings quilted (dirt/artists/quilt.py), in quilts/
 const ROSTER = __ROSTER__;                                      // artists brought in one by one (dirt/artists/roster.py)
@@ -2390,6 +2391,43 @@ function captured() {                                              // called at 
   if (SNAP.rec && performance.now() - SNAP.at > 89000) stopRecording();
 }
 let saver = null;
+// What Aries keeps is kept for DRIFT too: a still or a recording made with the buttons is also stored with the artifact
+// (its assets), with where and when it was taken, the ultracode's readings and the frame's own measures (db collection
+// "references"), so later sessions can look at what was chosen, and its life joins the taste the ultracode steers by
+// (drift.js). Only for a viewer who can write to the artifact (its owner); everyone else just gets the download.
+const KEPT = { assets: null, db: null };
+/** The frame's measures, as in dirt/artists/taste.json: its life read 34 texels across, and its shares. */
+function measureFrame(c) {
+  const w = 34, h = Math.max(1, Math.round(c.height * w / c.width)), t = document.createElement("canvas");
+  t.width = w; t.height = h;
+  const x = t.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(c, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, G = new Float32Array(w * h), px = (i) => [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]];
+  const diff = (a, b) => (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2])) / 3;
+  for (let y = 0; y < h; y++) for (let k = 0; k < w; k++) {
+    const i = y * w + k;
+    G[i] = (k + 1 < w ? diff(px(i), px(i + 1)) : 0) + (y + 1 < h ? diff(px(i), px(i + w)) : 0);
+  }
+  const life = G.reduce((a, b) => a + b, 0) / G.length / 255;
+  let calm = 0, busy = 0, dark = 0, light = 0, accent = 0;
+  for (let i = 0; i < G.length; i++) {
+    if (G[i] / 255 < life / PHI) calm++; else if (G[i] / 255 > life * PHI) busy++;
+    const c3 = px(i), l = 0.3 * c3[0] + 0.59 * c3[1] + 0.11 * c3[2];
+    if (l < 60) dark++; if (l > 200) light++; if (Math.max(...c3) - Math.min(...c3) > 90) accent++;
+  }
+  const n = G.length, r = (v) => Math.round(v * 1e4) / 1e4;
+  return { life: r(life), calm: r(calm / n), busy: r(busy / n), dark: r(dark / n), light: r(light / n), accent: r(accent / n) };
+}
+async function keep(blob, kind, measures) {
+  if (!KEPT.assets || !KEPT.db || !blob || blob.size > 20 * 1048576) return;
+  try {
+    const a = await KEPT.assets.upload(blob, { type: blob.type.split(";")[0] });
+    const U = typeof ULTRACODE !== "undefined" ? ULTRACODE : null;
+    const row = { kind, asset: a.id, type: a.contentType, at: new Date().toISOString(), x: Math.round(vx + VW / 2), y: Math.round(vy + VH / 2),
+                  measures, ultracode: U ? { life: +U.life.toFixed(4), novelty: +U.novelty.toFixed(4), speed: +Math.hypot(U.vx, U.vy).toFixed(1) } : null };
+    await KEPT.db.collection("references").add(row);
+    if (kind === "still" && TASTE && TASTE.stills) TASTE.stills.push({ name: row.at, life: measures.life });
+  } catch (e) { /* not kept this time (quota, rights, the network): the download still happened */ }
+}
 const place = () => `drift ${Math.round(vx + VW / 2)} ${Math.round(vy + VH / 2)}`;
 async function offer(filename, data) {
   try { await saver.save({ filename, data }); } catch (e) { /* declined, or not here: nothing to do */ }
@@ -2415,15 +2453,19 @@ if (!SITE) {
   bElse.hidden = !GLG || REDUCED;
   bElse.addEventListener("click", elsewhere);
   (async () => {
-    const p = window.claude && window.claude.use ? window.claude.use("downloads") : null;
-    saver = p ? await p.catch(() => null) : null;
-    if (!saver) return;
+    const use = (n) => (window.claude && window.claude.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null));
+    [saver, KEPT.assets, KEPT.db] = await Promise.all([use("downloads"), use("assets"), use("db")]);
+    if (KEPT.db && TASTE && TASTE.stills) {                                // the stills kept before join the taste
+      try { (await KEPT.db.collection("references").get()).docs.forEach((d) => { const v = d.data(); if (v && v.kind === "still" && v.measures) TASTE.stills.push({ name: v.at, life: v.measures.life }); }); }
+      catch (e) { /* the taste stays as committed */ }
+    }
+    if (!saver && !(KEPT.assets && KEPT.db)) return;
     bStill.hidden = false;
     bRec.hidden = !(SNAP.cv.captureStream && window.MediaRecorder);
   })();
   bStill.addEventListener("click", () => {
     const name = place();
-    SNAP.still = (blob) => { if (blob) offer(name + ".png", blob); };
+    SNAP.still = (blob) => { if (!blob) return; const m = measureFrame(SNAP.cv); if (saver) offer(name + ".png", blob); keep(blob, "still", m); };
   });
   bRec.addEventListener("click", () => {
     if (SNAP.rec) { stopRecording(); return; }
@@ -2439,7 +2481,11 @@ if (!SITE) {
       SNAP.rec = null;
       bRec.classList.remove("on"); bRec.textContent = "Record";
       const mime = rec.mimeType || type || "video/webm";
-      if (SNAP.chunks.length) offer(name + (/mp4/.test(mime) ? ".mp4" : ".webm"), new Blob(SNAP.chunks, { type: mime }));
+      if (SNAP.chunks.length) {
+        const video = new Blob(SNAP.chunks, { type: mime }), m = measureFrame(SNAP.cv);
+        if (saver) offer(name + (/mp4/.test(mime) ? ".mp4" : ".webm"), video);
+        keep(video, "video", m);                                       // (kept if it is under 20 MB; the last frame's measures)
+      }
     };
     SNAP.rec = rec; SNAP.at = performance.now();
     rec.start(1000);
@@ -2543,6 +2589,7 @@ def main():
                 .replace("__ROSTER__", "null" if site or not (HERE / "artists" / "roster.json").exists() else (HERE / "artists" / "roster.json").read_text().replace("</", "<\\/"))
                 .replace("__CAST__", "null" if site or not (HERE / "artists" / "cast.json").exists() else (HERE / "artists" / "cast.json").read_text().replace("</", "<\\/"))
                 .replace("__PLANTS__", "null" if site or not (HERE / "artists" / "plants.json").exists() else (HERE / "artists" / "plants.json").read_text().replace("</", "<\\/"))
+                .replace("__TASTE__", "null" if site or not (HERE / "artists" / "taste.json").exists() else (HERE / "artists" / "taste.json").read_text().replace("</", "<\\/"))
                 .replace("__FACES__", "null" if site or not (priv / "faces" / "faces.json").exists() else (priv / "faces" / "faces.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
