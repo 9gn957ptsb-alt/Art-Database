@@ -558,7 +558,10 @@
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
-    if (guide && city) { dir = ((guide.row[4] - city.lon + 540) % 360) - 180 >= 0 ? 1 : -1; }
+    if (guide && city) {
+      dir = ((guide.row[4] - city.lon + 540) % 360) - 180 >= 0 ? 1 : -1;
+      guide.way = dir > 0 ? "east" : "west";
+    }
     var seed = Math.random();
     var m = mapOf(c);
     var home = homeOf(m);
@@ -718,7 +721,7 @@
       bits.push(n + (n === 1 ? " of the artist’s works has" : " of the artist’s works have") + " been here");
     } else if (o.guide) {
       bits.push("the nearest of the artist’s works: " + o.guide.row[1] + ", " +
-                Math.round(o.guide.km).toLocaleString("en") + " km " + (o.dir > 0 ? "east" : "west"));
+                Math.round(o.guide.km).toLocaleString("en") + " km " + o.guide.way);
     }
     return bits.join(" · ");
   }

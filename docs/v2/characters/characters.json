@@ -1,5 +1,5 @@
 {
-  "note": "The characters who come out of the wave in a city (docs/v2/characters.js), one at a time. The cast: each drawn after one of DIRT's artists, from a species in DIRT's grammar of places, with its plants always the place's own (plants.json). Drawings in scripts/characters/<id>.py; scripts/build_characters.py writes <id>.json. The daily characters pass (REFINE.md) adds one from the backlog and refines the three refined longest ago.",
+  "note": "The characters who come out of the wave in a city (docs/v2/characters.js), one at a time. The cast: each drawn after one of DIRT's artists, from a species in DIRT's grammar of places, with the place's own plants and, among them, its artist's home's (plants.json, artists.json); it comes to the cities on its artist's map and can be followed through them (characters.js, land.js). Drawings in scripts/characters/<id>.py; scripts/build_characters.py writes <id>.json. The daily characters pass (REFINE.md) adds one from the backlog and refines the three refined longest ago.",
   "cast": [
     {
       "id": "fox",
