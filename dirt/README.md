@@ -321,8 +321,8 @@ Here and there (in φ⁻³ of the 377-cell squares) a disc 89 to 144 cells acros
 paintings: either one face made of all the others, as his portraits are, or the plane itself, its own last frame
 recomposed out of faces, which up close are faces and from afar the place (as Dalí's *Gala Contemplating the
 Mediterranean Sea*, 1976, becomes Lincoln from twenty metres). Never a grid: the tiles lie on a sunflower, each a
-golden angle round from the last, each cell the part of the disc nearest its tile's middle, its neighbours found among
-the tiles a Fibonacci number away in the spiral. Which face best matches a colour is worked out once, on loading, into
+golden angle round from the last, each cell the part of the disc nearest its tile's middle, found among the tiles at
+about the same distance from the middle whose turn (k × φ⁻² of a full turn) is near the point's. Which face best matches a colour is worked out once, on loading, into
 a table of 8 × 8 × 8 colours, so a tile costs one look-up. The large picture shows through its tiles more and less
 over time.
 

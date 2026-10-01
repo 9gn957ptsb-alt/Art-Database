@@ -2862,11 +2862,9 @@ float frieze(vec2 p, float T, out vec3 col) {
 // the saved paintings make another picture: one face out of all the others (his portraits), or the plane itself, its
 // own last frame recomposed out of faces, which up close are faces and from afar the place (as Dali's Lincoln, 1976,
 // is a woman at the window near and Lincoln far). Never a grid: the tiles lie on a sunflower, each a golden angle round
-// from the last, each cell the part of the disc nearest its tile's middle, and a tile's neighbours are found among the
-// tiles a Fibonacci number away in the spiral. The large picture shows through its tiles more and less over time.
+// from the last, each cell the part of the disc nearest its tile's middle (found among the tiles at about the same
+// distance from the middle whose turn, k phi^-2, is near this point's). The large picture shows through its tiles more and less over time.
 int faceFor(vec3 c) { ivec3 q = ivec3(clamp(floor(c / 32.0), 0.0, 7.0)); return int(texelFetch(uFaceLut, ivec2(q.r + 8 * q.g, q.b), 0).r * 255.0 + 0.5) % max(uFN, 1); }
-const int FIB_N = 21;
-const float FIB[21] = float[21](0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 5.0, -5.0, 8.0, -8.0, 13.0, -13.0, 21.0, -21.0, 34.0, -34.0, 55.0, -55.0, 89.0, -89.0);
 float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
@@ -2883,11 +2881,15 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   }
   if (bd >= 1.0) return 0.0;
   vec2 d = p - C;
-  float sp = 6.5 + 2.0 * unit(mixh(h + 4u)), th = 6.2832 * unit(mixh(h + 5u)), rr = length(d) / sp, k0 = floor(rr * rr);
+  float sp = 6.5 + 2.0 * unit(mixh(h + 4u)), th = 6.2832 * unit(mixh(h + 5u)), rr = length(d) / sp;
+  // the tiles at about this distance from the middle (index k lies at radius sqrt(k + 1/2)); of those, only the ones
+  // whose turn (k phi^-2 of a full turn: the golden angle) is near this point's are measured exactly
+  float lo = max(0.0, floor((rr - 1.5) * (rr - 1.5))), hi = ceil((rr + 1.5) * (rr + 1.5)), at = fract((atan(d.y, d.x) - th) / 6.2832);
   float d1 = 1e9, d2 = 1e9; vec2 tc = C;
-  for (int n = 0; n < FIB_N; n++) {
-    float k = k0 + FIB[n];
-    if (k < 0.0) continue;
+  for (int n = 0; n < 160; n++) {
+    float k = lo + float(n);
+    if (k > hi) break;
+    if (abs(fract(k * 0.381966011250105 - at + 0.5) - 0.5) * 6.2832 * max(rr, 1.0) > 3.0) continue;
     float a = k * 2.399963229728653 + th;
     vec2 q = C + sp * sqrt(k + 0.5) * vec2(cos(a), sin(a));
     float e = length(p - q);
