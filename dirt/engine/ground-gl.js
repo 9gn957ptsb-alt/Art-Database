@@ -1,3 +1,6 @@
+// How near the plane's large fields are drawn (FIELD_K, set by the page: phi^-2 on the plane, 1 on the Earth), as a
+// GLSL literal.
+const FKS = (typeof FIELD_K !== "undefined" ? FIELD_K : 1).toFixed(9);
 // ---- DIRT's ground on the GPU ----------------------------------------------------------------------------
 // Where the page has WebGL2 it paints the ground itself, every frame, from what each cell is made of (the workers
 // send that instead of pixels), so the ground's colours can change as they are watched. Left as grown, it paints
@@ -226,7 +229,7 @@ vec3 crownE(int layer, Cell c, State S) {
 // blackboard (On the Bowery), 2 blooms that drip (Summer Madness, the Roses), 3 writing (Roman Notes), 4 a wash that
 // runs down in drips over bushes of colour (Lepanto, Camino Real).
 float vnoise(vec2 p, float g, uint s) {
-  vec2 f = p / g, i = floor(f), t = f - i;
+  vec2 f = p / (g < 233.0 ? g : g * ${FKS}), i = floor(f), t = f - i;   // the large fields nearer (FIELD_K), the fine grain as it was
   t = t * t * (3.0 - 2.0 * t);
   ivec2 q = ivec2(i);
   return mix(mix(unit(h3(q.x, q.y, s)), unit(h3(q.x + 1, q.y, s)), t.x), mix(unit(h3(q.x, q.y + 1, s)), unit(h3(q.x + 1, q.y + 1, s)), t.x), t.y);
@@ -894,7 +897,7 @@ void sheet(int layer, Cell c, int kind, State S, out vec3 A, out vec3 B) {
 // one world into the next without a break: the relation drawn.
 void gesture(Cell c, State S, inout vec3 A, inout vec3 B) {
   vec2 p = gP;
-  const float GAPY = 610.0;
+  const float GAPY = 610.0 * ${FKS};
   int band = int(floor(p.y / GAPY + 0.5));
   uint h = h3(band, 0, 991u);
   float ph = 6.2832 * unit(h), ph2 = 6.2832 * unit(mixh(h + 1u));
@@ -1102,7 +1105,7 @@ const int BY_RANK[25] = int[25](9, 19, 5, 17, 7, 10, 13, 14, 23, 24, 8, 6, 18, 1
 const int RSTART[14] = int[14](0, 2, 4, 5, 8, 9, 10, 11, 13, 16, 17, 18, 19, 25);
 // how light each world is as it draws itself, before it is set to its artist's shade
 const float NATL[25] = float[25](0.8, 0.2, 0.75, 0.88, 0.8, 0.12, 0.5, 0.3, 0.4, 0.08, 0.3, 0.55, 0.6, 0.65, 0.35, 0.72, 0.45, 0.6, 0.5, 0.9, 0.65, 0.72, 0.68, 0.42, 0.45);
-const float MB = 610.0;                                              // a meta form to a square this wide, overlapping its neighbours
+const float MB = 610.0 * ${FKS};                                              // a meta form to a square this wide, overlapping its neighbours
 float shadeOf(int g) { return g < 25 ? (float(RANK_OF[g]) + 0.5) / 13.0 : 0.5; }
 float metaLightAngle(float t) { return t * 6.2832 / 377.0; }         // the light goes round once in 377 seconds
 /**
@@ -1249,7 +1252,7 @@ const float RUNG_C[4] = float[4](0.16, 0.28, 0.40, 0.50);             // the com
 struct Void { bool on; vec2 C; float R; uint h; };
 /** The void nearest p: one in each 1597-cell square, phi^-1 of them kept, 233 to 610 cells across its heart. */
 Void voidAt(vec2 p) {
-  const float G = 1597.0;
+  const float G = 1597.0 * ${FKS};
   ivec2 sq = ivec2(floor(p / G));
   Void best = Void(false, vec2(0), 0.0, 0u);
   float bd = 1e9;
@@ -1259,7 +1262,7 @@ Void voidAt(vec2 p) {
     if (unit(h) > P1) continue;
     vec2 C = (vec2(q) + 0.5 + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * P2) * G;
     float d = length(p - C);
-    if (d < bd) { bd = d; best = Void(true, C, 233.0 + 377.0 * unit(mixh(h + 3u)), h); }
+    if (d < bd) { bd = d; best = Void(true, C, (233.0 + 377.0 * unit(mixh(h + 3u))) * ${FKS}, h); }
   }
   return best;
 }
@@ -1267,7 +1270,7 @@ Void voidAt(vec2 p) {
 float complexityAt(vec2 p) {
   float b = smoothstep(0.2, 0.8, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u));
   Void v = voidAt(p);
-  if (v.on) b *= smoothstep(v.R, v.R + 377.0, length(p - v.C));
+  if (v.on) b *= smoothstep(v.R, v.R + 377.0 * ${FKS}, length(p - v.C));
   return b;
 }
 float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }

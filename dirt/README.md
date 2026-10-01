@@ -298,6 +298,12 @@ until another photo takes its place. Where the view cannot send Claude pictures,
 colours most to least, its light, contrast, saturation, warmth and grain, and its shape) and the drift follows that,
 with any name you add. The photo stays in the viewer's browser, and goes to Claude only when the view can send it.
 
+**Somewhere else, soon.** Every large field of the plane is drawn φ⁻² nearer than it was, two Fibonacci steps down
+(`FIELD_K` in the page's shared script, and as a literal in `ground-gl.js`): the ladder of complexity and its voids,
+the calm islands, the passages and their oversprays, the collage's and the worlds' slow fields, the meta forms and
+the gardens all change in 377 to 987 cells where they took 987 to 2584, so a swipe of a phone's width or two is
+already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1.
+
 **The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
 (`artists/plants.json`; the coworker chooses it, `artists/COWORKER.md` step 3a). Each artist keeps a garden, a square of
 the plane 610 cells a side, where their plant grows on the floor and among the shrubs: a rosette of five to seven
@@ -454,8 +460,9 @@ dark, and the flip: it comes nearer until it is all there is, and the object is 
 | the painting | (no collapse) the plane shrinks to a painting in a frame on a gallery wall, casting its shadow | the painting |
 | the voyage | (a third of the time; 89 seconds) a quick collapse, then a long night in deep space: a wind-up tin rocket (red nose, red fins, brass porthole, its key on its back) passes far off, left to right, trailing sparks; later a space ranger flies by near and large, right to left (an original toy: orange suit, cream chest plate with a teal emblem, teal boots and gloves, a teal jetpack with two swept fins and a flame, a bubble helmet), one arm reaching ahead, leaving three fading after-images. Both are made of the plane as it was the moment before the dark (that frame is held while the voyage lasts): the rocket's tin a mirror with the plane bent round it, red enamel over the mirror, fins of red glass, a flame of the plane burnt bright; the ranger's suit, plate, boots and face the plane under them in each colour's range (a duotone); through the porthole the plane, and in his helmet the plane in a small six-mirror kaleidoscope | one star, out of which the plane opens again, ringed by a grey gradient |
 
-`#anomaly=N` starts kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet, 4 the voyage) five seconds in. The
-**Elsewhere** button (or the E key) starts the next one at once, the toys and the voyage in turn, now and then another.
+**Off for now** (1 Oct 2026): DRIFT stays a flat surface of textures, with no toys and no voyage into space; the code
+is kept. `#anomaly=N` still shows kind N (0 the eye, 1 the toys, 2 the painting, 3 the planet, 4 the voyage) five
+seconds in, to look at; the **Elsewhere** button is hidden while they are off.
 Deep space and the voyage are drawn by a sixth small shader over the rest.
 
 **Keeping what is seen.** **Still** keeps the view as it is (a PNG); **Record** keeps it moving (a video, MP4 or

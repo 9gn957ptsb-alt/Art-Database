@@ -118,8 +118,11 @@ PAGE = r"""<meta charset="utf-8">
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 const GOLDEN_ANGLE = (2 * Math.PI) / (PHI * PHI);          // 137.5 degrees
+// How near the plane's large fields are drawn: phi^-2 on the plane, two Fibonacci steps down (2584 cells to 987, 1597
+// to 610, 987 to 377, 610 to 233, 233 to 89), so that a short swipe is already somewhere else; 1 on the Earth.
+const FIELD_K = __FIELD_K__;
 const N = 256;                                              // cells a tile
-const ISLE = 1597, ISLE_R = 610;                            // calm islands: one a 1597-cell square, reaching about 610 cells
+const ISLE = 1597 * FIELD_K, ISLE_R = 610 * FIELD_K;                            // calm islands: one a 1597-cell square, reaching about 610 cells
 const SEG = 21;                                             // drips are sorted within 21-cell segments
 
 function mix(h) {
@@ -135,6 +138,7 @@ const mod = (a, n) => ((a % n) + n) % n;
 
 /** Smooth value noise over the plane, lattice spacing g cells, in [0, 1]. */
 function vnoise(x, y, g, s) {
+  if (g >= 233) g *= FIELD_K;                               // the large fields, nearer (FIELD_K); the fine grain as it was
   const fx = x / g, fy = y / g, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
   const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
   const a = u3(x0, y0, s), b = u3(x0 + 1, y0, s), c = u3(x0, y0 + 1, s), d = u3(x0 + 1, y0 + 1, s);
@@ -341,7 +345,7 @@ const blockOf = (d) => (d < PHI ** -2 ? 1 : d < PHI ** -2 + PHI ** -4 ? 2 : d < 
 // ground's lights and darks as a gradient map. The passages' edges wander, and where two meet, each
 // cell belongs to one or the other by chance, the likelier the nearer: an overspray, as where two
 // sprayed colours meet.
-const PASS = 233, OVERSPRAY = 55, WANDER = 55;
+const PASS = 233 * FIELD_K, OVERSPRAY = 55 * FIELD_K, WANDER = 55 * FIELD_K;
 const MOSAIC = 0, NOCTURNE = 1, SPRAY = 2, WEAVE = 3, DRIP = 4;
 // Their shares: mosaic phi^-2, nocturne phi^-3, spray and weave phi^-4 each, drip phi^-5. They sum to 1.
 const KIND_UPTO = [PHI ** -2, PHI ** -1, PHI ** -1 + PHI ** -4, 1 - PHI ** -5, 1];
@@ -1668,7 +1672,7 @@ LIFE.blooms = {
 // border a plant may be a hybrid, its leaves the one artist's edged in the other's, its flower the other's form in the
 // first one's colours. Every artist on the roster has a plant: one not yet in plants.json grows a flower of its own
 // colours until the coworker gives it one (COWORKER.md).
-const GARDEN = 610, CROSS = 89, GROW = 610, FLOWER = 2584, F_OPEN = 233, F_FALL = 144;
+const GARDEN = 610 * FIELD_K, CROSS = 89 * FIELD_K, GROW = 610, FLOWER = 2584, F_OPEN = 233, F_FALL = 144;
 const PLANT = (() => {
   const by = new Map(((PLANTS && PLANTS.plants) || []).map((p) => [p.artist, p])), out = [];
   for (const a of (ROSTER && ROSTER.artists) || []) {
@@ -2186,12 +2190,14 @@ function govern(now) {
 const ANOM = { at: 0, kind: 0, next: 0, dur: 34000 };
 {
   const m = /(?:^|&)anomaly=(\d)/.exec(location.hash.slice(1));
-  ANOM.next = performance.now() + (m ? 5000 : (55 + 89 * Math.random()) * 1000);
+  // Off for now (Aries, 1 Oct 2026): DRIFT stays a flat surface of textures; #anomaly=N still shows one, to look at.
+  ANOM.next = m ? performance.now() + 5000 : Infinity;
   ANOM.forced = m ? +m[1] : -1;
 }
 ANOM.asked = -1; ANOM.round = 0;
 /** Elsewhere, now: the next anomaly at once (the toys, the voyage, then the eye, the painting, the planet, in turn). */
 function elsewhere() {
+  if (ANOM.forced < 0) return;                                       // (off for now, with the anomalies)
   if (ANOM.at || !GLG || !GLG.anomaly || REDUCED) return;
   ANOM.asked = [1, 4, 0, 1, 4, 2, 1, 4, 3][ANOM.round++ % 9];
   ANOM.next = performance.now();
@@ -2210,7 +2216,7 @@ function anomalyNow(now) {
   const ph = ANOM.hold != null ? ANOM.hold : (now - ANOM.at) / ANOM.dur;   // hold: a phase held still, for looking at one
   if (ph >= 1) {
     ANOM.at = 0;
-    ANOM.next = now + (55 + 89 * Math.random()) * 1000;
+    ANOM.next = ANOM.forced >= 0 ? now + (55 + 89 * Math.random()) * 1000 : Infinity;
     GLG.anomaly([0, 0, 0, 0]);
     return 0;
   }
@@ -2224,14 +2230,14 @@ function anomalyNow(now) {
 const LADDER = !!GLG && !!ART && !/(?:^|&)g[0-9]+(?:&|$)/.test(location.hash.slice(1));
 const unitH = (h) => (h >>> 8) / 16777216;
 function voidNear(x, y) {
-  const G = 1597, i0 = Math.floor(x / G), j0 = Math.floor(y / G);
+  const G = 1597 * FIELD_K, i0 = Math.floor(x / G), j0 = Math.floor(y / G);
   let best = null, bd = Infinity;
   for (let j = j0 - 1; j <= j0 + 1; j++) for (let i = i0 - 1; i <= i0 + 1; i++) {
     const h = h3(i, j, 2584);
     if (unitH(h) > 1 / PHI) continue;
     const cx0 = (i + 0.5 + (unitH(mix((h + 1) >>> 0)) - 0.5) * PHI ** -2) * G, cy0 = (j + 0.5 + (unitH(mix((h + 2) >>> 0)) - 0.5) * PHI ** -2) * G;
     const d = Math.hypot(x - cx0, y - cy0);
-    if (d < bd) { bd = d; best = { x: cx0, y: cy0, d, R: 233 + 377 * unitH(mix((h + 3) >>> 0)) }; }
+    if (d < bd) { bd = d; best = { x: cx0, y: cy0, d, R: (233 + 377 * unitH(mix((h + 3) >>> 0))) * FIELD_K }; }
   }
   return best;
 }
@@ -2239,7 +2245,7 @@ function complexityJS(x, y) {
   const n = 0.62 * vnoise(x, y, 987, 3001) + 0.38 * vnoise(x, y, 377, 3002);
   let b = smooth(0.2, 0.8, n);
   const v = voidNear(x, y);
-  if (v) b *= smooth(v.R, v.R + 377, v.d);
+  if (v) b *= smooth(v.R, v.R + 377 * FIELD_K, v.d);
   return b;
 }
 // The hangs (the formal pass, in ground-gl.js): how much of a hang's wall is at x, y, once the quilts are in. Life
@@ -2394,7 +2400,7 @@ function stopRecording() {
 if (!SITE) {
   const box = document.createElement("div");
   box.className = "cap";
-  box.innerHTML = `<button type="button" id="cap-else" title="Somewhere else, now (E)">Elsewhere</button>
+  box.innerHTML = `<button type="button" id="cap-else" title="Somewhere else, now (E)" hidden>Elsewhere</button>
     <button type="button" id="cap-still" title="Keep this view as a picture" hidden>Still</button>
     <button type="button" id="cap-rec" title="Keep this view moving, as a video" hidden>Record</button>`;
   document.querySelector(".bar").appendChild(box);
@@ -2538,6 +2544,7 @@ def main():
                 .replace("__PLANTS__", "null" if site or not (HERE / "artists" / "plants.json").exists() else (HERE / "artists" / "plants.json").read_text().replace("</", "<\\/"))
                 .replace("__QUILTS__", "null" if site or not (priv / "quilts" / "quilts.json").exists() else (priv / "quilts" / "quilts.json").read_text().replace("</", "<\\/"))
                 .replace("__ANTIQUITY__", "null" if site or not (priv / "antiquity" / "antiquity.json").exists() else (priv / "antiquity" / "antiquity.json").read_text().replace("</", "<\\/"))
+                .replace("__FIELD_K__", "1" if site else "0.381966011250105")
                 .replace("__PLANE__", json.dumps(pl, ensure_ascii=False).replace("</", "<\\/"))
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
