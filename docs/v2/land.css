@@ -543,6 +543,17 @@
 
 .banner-back:hover,
 .banner-back:focus-visible { background: #ffffff; }
+/* One level up may be a museum's whole name ("National Gallery of Art"):
+   on a phone it is cut short, so the place's own title keeps its room. */
+@media (max-width: 720px) {
+  #banner-back-to {
+    display: inline-block;
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+}
 
 .banner-where {
   margin: 0;
