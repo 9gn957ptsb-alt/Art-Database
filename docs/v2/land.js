@@ -151,6 +151,7 @@
   var supply = null;    // land.json — the tokens
   var architecture = null;   // architecture.json — the buildings (scripts/build_architecture.py)
   var museums = null;        // museums.json — the museums that hold the saved works (scripts/build_museums.py)
+  var studios = null;        // studios.json — where the saved artists worked (scripts/build_studios.py; read when its layer is on)
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
@@ -665,7 +666,8 @@
     var el = document.createElement("button");
     el.className = "city";
     el.type = "button";
-    el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : real ? "landmark" : "work";
+    el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : city.studio ? "studio" : real ? "landmark" : "work";
+    if (city.studio) { el.dataset.pr = city.studio[5]; }   // an exact studio, or a town of studios (land.css)
     if (city.layer) { el.dataset.layer = city.layer; }
     if (city.inTown) { el.dataset.intown = "true"; }     // named in its city, in the serif (land.css)
     // Unnamed until a naming pass gives it its name: made again (the window
@@ -810,10 +812,33 @@
       }, true);
     });
 
+    // And the studios, once studios.json has been read (the Studios layer):
+    // an exact one named by its artist, a town of several by the most saved
+    // of them (studios.js opens them; the column is its).
+    ((studios && studios.marks) || []).forEach(function (m, k) {
+      raiseCity({
+        work: null, slug: "studio-" + k, title: m[2], label: m[2], aria: "Go down to " + m[3], where: m[3],
+        lat: m[0] * RAD, lon: wrap(m[1] * RAD), studio: m, real: true,
+        layer: "studios", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
+        open: function () { if (window.Studios) { Studios.openMark(m); } }
+      }, true);
+    });
+
     // And the cities, once cities.json has been read (the Museums layer).
     if (towns) { raiseTowns(); }
     filterGlobe();
     measureNames();
+  }
+
+  /* The Studios layer's file, read the first time the layer is on. */
+  var studiosAsk = null;
+  function studiosLayer() {
+    if (layerOn !== "studios" || studios || studiosAsk) { return; }
+    studiosAsk = read("studios.json").then(function (d) {
+      studios = d;
+      found();
+      if (layerOn === "studios") { placeMarks(); groundPlaces(); }
+    }).catch(function () { studiosAsk = null; });
   }
 
   /* ---- the filter -----------------------------------------------------------
@@ -832,7 +857,10 @@
   var LAYERS = [
     { key: "collages", label: "Collages" },
     { key: "museums", label: "Museums" },
-    { key: "architecture", label: "Architecture" }
+    { key: "architecture", label: "Architecture" },
+    // The studios (artist, 1 Oct 2026: "Give a site to artist studios to
+    // catalogue individual artists with specific locations"): studios.js.
+    { key: "studios", label: "Studios" }
   ];
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
@@ -876,6 +904,7 @@
         placeMarks();
         groundPlaces();
         museumsLayer();
+        studiosLayer();
         var r = b.getBoundingClientRect();
         pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
       });
@@ -1044,7 +1073,7 @@
     // dot is never let go. The rest are named as many at a time as the
     // window has room for.
     var rules = layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
-      : layerOn === "architecture" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
+      : layerOn === "architecture" || layerOn === "studios" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
     rules.box = S;
     nameBoxes = nameMarks(items, rules);
 
@@ -13740,6 +13769,12 @@
       if (artFind) { artFind.hidden = true; }
       closeFinder();
       if (passing) { endPassing(performance.now()); }
+      // On Studios, Find opens on the catalogue of artists (studios.js).
+      if (layerOn === "studios" && ARTWORKS && artFind) {
+        artFind.disabled = false;
+        artFind.textContent = "Find a studio";
+        artFind.hidden = false;
+      }
       measureSafe();
       return;
     }
@@ -13959,11 +13994,20 @@
     closeFinder();
     if (place && place === townCities[key]) {             // already here
       if (via && via.at && art) { glideTo(art, via.at.lat * RAD, wrap(via.at.lon * RAD)); }
+      // A studio here (studios.js): its column at the head of the city's.
+      var sb = via && via.studio && art && art.kind === "town" && window.Studios && Studios.column ? Studios.column(via.studio) : null;
+      if (sb) {
+        var was = artCol.querySelector(".studio-box");
+        if (was) { artCol.replaceChild(sb, was); } else { artCol.insertBefore(sb, artCol.firstChild); }
+        art.via = art.via || {};
+        art.via.studio = via.studio;
+        artCol.scrollTop = 0;
+      }
       return;
     }
     settleSwing();
     artAsked = null;                // a view still being read is not flown to after this
-    if (t.pass) { openMuseum(t.museums[0], via); return; }
+    if (t.pass && !(via && via.studio)) { openMuseum(t.museums[0], via); return; }
     var c = townCities[key] || (townCities[key] = townCity(t));
     var f = townFrame(t);
     // Painted here (sites.js): the city, held on the site's own point, low.
@@ -14033,7 +14077,7 @@
     townDirty = true;
     townAt = {};
     townColumn(a, t, a.via);
-    if (!t.file) { return; }
+    if (!t.file || (a.via && a.via.studio && a.via.studio.alone)) { return; }
     readArt("places/" + t.key + ".json").then(function (pf) {
       if (art !== a) { return; }
       if (!pf) {
@@ -14113,6 +14157,13 @@
     if (via && via.from) {
       var came = cameLine({ from: via.from });
       if (came) { col.appendChild(came); }
+    }
+    // A studio (studios.js) heads the column; one far from any city of the
+    // record's is its column alone.
+    var sb = via && via.studio && window.Studios && Studios.column ? Studios.column(via.studio) : null;
+    if (sb) {
+      col.appendChild(sb);
+      if (via.studio.alone) { a.foot = artFoot(); return; }
     }
     a.head = el("p", "art-count", "Here · " + t.n.toLocaleString("en") + (t.n === 1 ? " work" : " works"));
     col.appendChild(a.head);
@@ -14322,6 +14373,8 @@
     unframe: function () { framing = null; },
     // Painted here (sites.js): a city held low on a site's point; the world eased round to a point in a view.
     site: function (key, lat, lon, km, name) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" } }); },
+    // The studios (studios.js): a studio's point, low, its column at the head of the city's.
+    studio: function (key, lat, lon, km, name, pay) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" }, studio: pay }); },
     look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; }
   };
 
@@ -14562,6 +14615,10 @@
     } else if (wait && wait[0] === "v") {
       lat = wait[2] * RAD; lon = wrap(wait[3] * RAD);
     }
+    // At a studio of the artist's (studios.js), it waits by the studio.
+    var sv = art.via && art.via.studio && window.Studios && Studios.data && Studios.data();
+    var srow = sv && sv.studios[art.via.studio.i];
+    if (srow && sv.artists[srow.a][1] === following.artist) { lat = srow.ll[0] * RAD; lon = wrap(srow.ll[1] * RAD); }
     var at = project(lat, lon);
     if (at.z <= 0) { Characters.guide(null); return; }
     // Below the door and to its left, so its name, its diamond and the names above stay clear.
@@ -17659,7 +17716,7 @@
   }
 
   function openFinder() {
-    if (!ARTWORKS || !finderEl || layerOn !== "museums" || place || flying) { return; }
+    if (!ARTWORKS || !finderEl || (layerOn !== "museums" && layerOn !== "studios") || place || flying) { return; }
     finderEl.hidden = false;
     finder.open = true;
     if (artFind) { artFind.setAttribute("aria-expanded", "true"); }
@@ -17929,6 +17986,7 @@
       if (layerOn === "museums") {
         (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(museumsLayer);
       }
+      if (layerOn === "studios") { museumsLayer(); studiosLayer(); }
 
       // An old link to the works page, forwarded here.
       followHash();
