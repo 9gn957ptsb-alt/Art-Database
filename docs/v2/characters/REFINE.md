@@ -67,7 +67,25 @@ by the museum or gallery that holds the work.
      (`twombly.json` for Twombly, the roster's `palette` for the others); the
      artist's grammar where it can show (Twombly's looping writing, Matisse's
      cut edge, Pollock's flung dots …) — in the drawing or in what it leaves
-     behind, never as decoration.
+     behind, never as decoration. The roster's `grammar` number names the
+     hand (0 a field, 1 stripes, 2 dots, 3 a net, 4 strokes, 5 rings, 6
+     stacked fields, 7 scattered marks, 8 poured stains, 9 cut shapes);
+     `draw.py` has the paints already made for some: `strokes` (de Kooning's
+     bison), `flat` and `offset_line` (Warhol's eagle, printed out of
+     register), `unline` with `raster(..., deep=".")` (Matisse's squirrel,
+     cut paper with the ground between the pieces); the deer's `net`
+     (Hockney) and the slug's `bands` (Kapoor's stacked fields) are in their
+     own files. The pose names are roles the page reads: `trot` is its gait
+     (four frames, whatever the gait is: a walk, a bound, a wingbeat, a
+     crawl), `stand`, `back` its pause (a look back, grazing, sitting up),
+     `look` (at you), `sit` its rest. Put the inks in the drawing's `INKS`
+     too, so the quick preview works before it is in the cast.
+   - Give it `moves` in `characters.json`: `speed` (× the fox's trot: the
+     bison 0.62, the squirrel 1.7, the eagle 2.6, the slug 0.16), `fps` of
+     its gait, `pause` (`"back"` or `null`), `leave` (`"edge"`, off along
+     the ground; `"rise"`, up and away, with `lift` its flying height in
+     CSS px; `"sink"`, back into the soil after φ⁶ s, for a slow one), and
+     `trail` (`"writing"`, Twombly's; `"slime"`, Kapoor's trace; or none).
    - Add it to `cast` with `added` and `refined` today, `passes: 1`, its
      notes and a first log line; take it off `backlog`; run
      `python3 scripts/build_characters.py`.
@@ -144,18 +162,70 @@ plays them; `walks.json` here holds the ones published for everyone.
   run. Never put a code or a walk in a URL: the site has one link.
 - The walks follow the reading's clock and never hurry: change the timings
   only in `walks.js` and say why.
+- **A walk is a sentence** (the artist, 1 Oct 2026: "A walk as a sentence
+  is a great idea. Seeking the poetic aspect from the very forms defining a
+  path of travel is directly applicable to continuing to find new ways to
+  make interesting connections"). Each stop is a word, its city; lingering
+  is the punctuation (nothing opened: a dash; under 34 s, two median looks:
+  a comma; more: a full stop; the last word a full stop); a line ends at a
+  full stop and holds five words; three stops are a tercet; a city said
+  again is a refrain, in italics. `walks.js` writes it (as the walk is
+  walked, in the strip; finished, kept, and in the column) and
+  `build_walks.py` writes the same into each published walk's `sentence` —
+  keep the two in step. Two walks ending on the same city rhyme; failing
+  that, two sharing a word: each is offered as the other's rhyme. A new
+  character's walks get their sentences when `build_walks.py` runs.
 
 ## How the cast comes onto the page
 
-- **One at a time, never two.** A wave in a city on artists' maps brings the
-  character of one of those artists; in a city on no map, now and then
-  (1/φ³) one from the whole cast, as a guide. While one is out (or being
-  followed) no other comes.
-- **At most once a visit to a city**: the first wave there. After one has
-  gone, none comes anywhere for φ⁸–φ⁹ s (47–76 s).
-- **Only in a city** — a collage's city with the collage put away, or a city
-  on the Museums layer — never while a collage is being read, a flight is
-  on, or in a museum or building.
+The artist, 1 Oct 2026: "I want there to be other animals besides the fox
+as well. Perhaps attributing artists to their hometown is a good way to
+introduce new animals to scenes when on route of an artwork. It's okay to
+have more than one animal present at a time, but too many can be
+overwhelming and distracting."
+
+- **The wave.** A wave in a city brings, first, the animal whose artist was
+  born there; else one whose artist's map the city is on; in a city on no
+  map, now and then (1/φ³), one from the whole cast, as a guide. The first
+  wave of a visit only; after a wave's animal has gone, no wave brings one
+  for φ⁸–φ⁹ s (47–76 s).
+- **Hometowns.** An artist's home town is the city of the site within 25 km
+  of the birthplace (`artists.json` `home.key`, by `build_characters.py`:
+  Brooklyn → New York for Elaine de Kooning, Pittsburgh for Warhol,
+  Bradford → Leeds for Hockney, Mumbai for Kapoor; Twombly's Lexington and
+  Matisse's Le Cateau have none). The animal lives there:
+  - a **journey arriving** there (a door, Near here, a history's stop, a
+    walk, following) is met by it — it comes in from the side the journey
+    came from (a slow one comes up out of the soil there), stands by the
+    city's middle, looks, sits, and after φ⁶ s goes on;
+  - a **journey passing over** it (a town the way names as it passes)
+    shows it there, small (one screen pixel a cell), far below, looking up,
+    for as long as the town is named (3.2 s);
+  - a **work's history** that has been there shows it, small, sitting at
+    that stop, after the work's first look (9 s), until the history is
+    left;
+  - **going down into it any other way**, it is there at rest, sitting, one
+    visit in φ² (38 %), until pressed or the visit ends.
+- **A crowd, never.** At most two on a phone and three on a desktop on the
+  screen at once, the followed one counted; a second never comes within
+  φ³ s (4.2 s) of the last; each animal once a visit to a city. Each keeps
+  its own place: none stands within 120 px across and 44 px up or down of
+  another, nor under the city's column, the dial of years, the banner, the
+  walk's strip, or a museum's diamond and name (`seat` in characters.js).
+  The nearer (lower) is drawn over the farther. A walk's animal is asked
+  for, so it is always let in: the one out longest makes way.
+- **Two that meet.** One that comes while another stands still goes to it
+  and stands beside it, facing, a little lower. If their artists' saved
+  works share a thread (`artists.json` `pairs`: a show, else an owner, a
+  writing, a sale, a museum, the rarest first), a line between them, under
+  them or over them where there is room, says it — "American bison and
+  bald eagle · de Kooning and Warhol: both offered in Heritage: Modern &
+  Contemporary Art (November 29, 2018)" — the thing itself a door to its
+  thread (`Land.thread`). Once a visit a pair; nothing is said where
+  nothing is shared.
+- **Only in a city** for the wave and the home ones (a collage's city with
+  the collage put away, or a city on the Museums layer); the far ones only
+  from a journey or a history. Never while a collage is being read.
 - **Nothing under reduced motion.**
 - A new character changes none of this: the cast grows, the rhythm stays.
   The artist's standing steer is "go a little bit easier … it still

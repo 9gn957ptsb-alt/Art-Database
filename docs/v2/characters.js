@@ -805,7 +805,14 @@
     if (!spot) { return; }
     var slow = moves(c).speed < 0.5;
     var here = placeAt(t.lat, t.lon);
-    var o = make(c, "home", slow ? spot.x : dir > 0 ? -50 : W + 50, spot.y, {
+    // In from that edge, or from behind the city's column where the column is.
+    var edge = dir > 0 ? -50 : W + 50;
+    var col = document.getElementById("art-col");
+    if (dir < 0 && col && !col.hidden && col.getClientRects().length) {
+      var cr = col.getBoundingClientRect();
+      if (cr.height > H / 2 && cr.left > W / 2) { edge = cr.left + 30; }
+    }
+    var o = make(c, "home", slow ? spot.x : edge, spot.y, {
       dir: dir, here: here, city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
       geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, state: slow ? "out" : "in",
       alt: moves(c).lift, atHome: true
@@ -1008,7 +1015,6 @@
         size();
         while (live().length >= cap()) { remove(live()[0]); }
         var o = make(c, "follow", W / 2, H * 0.7, { state: "wait", waitSince: now, looked: true, hidden: true, atKey: null });
-        if (home) { o.home = home; }
         o.hit.setAttribute("aria-label", c.name + " — press to let it go, and stop following " + c.artist);
       }
       var ids = {};
@@ -1059,7 +1065,8 @@
       o.row = rowHere(o.map, o.city);
       o.atHome = homeKey(o.c) === p.key;
       o.anchor = { x: p.x, y: p.y };
-      o.plants = still ? [] : growPlants(p.x, p.y, 72, o.here, Math.random(), o.home);
+      // Never let a planting break the frame that called it (land.js's).
+      try { o.plants = still ? [] : growPlants(p.x, p.y, 72, o.here, Math.random(), o.home); } catch (e) { o.plants = []; }
       o.plantBorn = now + 600;
       o.sinkAt = now + 600 + STAND + RISE;
     }
