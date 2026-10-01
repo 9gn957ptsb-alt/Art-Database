@@ -756,7 +756,8 @@
     var w = walk.w, i = walk.i, onEnd = walk.onEnd;
     clearTimers();
     walk = null;
-    if (onEnd) { onEnd(why, w); }
+    // In a relay (explorations.js) the exploration says how it ended.
+    if (onEnd) { onEnd(why, w); hide(); return; }
     show("The walk ends · " + (i + 1) + " of " + w.stops.length,
          why === "up" ? "Up to the world." : why === "away" ? "The animal was let go." : "", [], 6000);
   }
