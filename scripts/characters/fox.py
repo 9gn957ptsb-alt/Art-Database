@@ -20,7 +20,7 @@ W, H = 40, 26
 GROUND = 24.6                  # the soles stand on this line
 CELL = 2                       # CSS pixels a cell, on the page
 
-COAT = ramp("dRrg")
+COAT = ramp("Rrg")
 COAT_SOFT = ramp("Rrg")
 WHITE = ramp("Ww")
 BLACK = ramp("kK")

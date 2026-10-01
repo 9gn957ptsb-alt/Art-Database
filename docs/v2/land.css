@@ -3264,7 +3264,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
   position: absolute;
   left: 0;
   top: 0;
-  z-index: 58;
+  z-index: 64;
   box-sizing: border-box;
   max-width: min(260px, calc(100vw - 32px));
   margin: 0;

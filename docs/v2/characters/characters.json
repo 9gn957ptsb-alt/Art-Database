@@ -10,14 +10,14 @@
       "why": "The most widespread wild carnivore on Earth, and a city animal in London, New York, Paris and Melbourne, so it belongs wherever the site's cities are.",
       "artist": "Cy Twombly",
       "after": {
-        "why": "DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its coat is in the ochres and rusts of Some Trees of Italy (Title Print), its white in his papers, its black and its pen in the Mushrooms' graphite; the line it leaves is his writing (Roman Notes II), a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses).",
+        "why": "DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its coat is in the ochres and rusts of Some Trees of Italy (Title Print), its white in his papers, its black in the Mushrooms' graphite and its outline in their pale grey, a chalk line, as he wrote on his blackboards, so it reads on the city's dark ground; the line it leaves is his writing, in the pale greens of Roman Notes II (light enough to read on the dark ground), a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses).",
         "inks": {
           "coat": ["#9a5426", "#be752f", "#cf8f46", "#e2ae67"],
           "white": ["#d9cbbd", "#f0ece2"],
           "black": ["#201e15", "#4a4446"],
           "eye": "#e2ae67",
-          "pen": ["#2c2a27", "#7a4a2a"],
-          "writing": ["#4e6f79", "#285067"],
+          "pen": ["#8e8a89", "#7a4a2a"],
+          "writing": ["#99ae9e", "#859d95"],
           "box": "#a72720"
         },
         "works": ["Natural History Part II: Some Trees of Italy (Title Print)", "Natural History Part I, Mushrooms", "Roman Notes II", "Untitled (Roses)"]
@@ -28,7 +28,8 @@
       "passes": 1,
       "notes": "Side on, 40 by 26 cells, two CSS pixels a cell. Guessed still: the trot's knee and hock angles are a two-bone reach, not traced from film; the sitting brush hardly shows round the feet; the turned-back head reads at its size but only just.",
       "log": [
-        "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)"
+        "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)",
+        "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it"
       ]
     }
   ],

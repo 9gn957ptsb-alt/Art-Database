@@ -192,6 +192,7 @@
   }
 
   function sprite(c, pose, n, dir, here) {
+    n = n % sprites[c.id].poses[pose].length;
     var key = c.id + "|" + pose + "|" + n + "|" + dir + "|" + (here ? here.soil : "");
     if (spriteCache[key]) { return spriteCache[key]; }
     var s = sprites[c.id];
@@ -210,10 +211,12 @@
         var line = ch === "o" || ch === "p";
         var col = mix(ink[ch], soil, line ? 0.08 : 0.2);
         var h = hash(i, j, 7);
-        x.fillStyle = css(col, line ? 0 : (h - 0.5) * 18);
+        x.fillStyle = css(col, line ? 0 : (h - 0.5) * 10);
         var ii = dir > 0 ? i : s.w - 1 - i;
         var d = px;
-        if (!line && px > 1 && hash(i, j, 3) < 0.24) { d = px - Math.max(1, Math.round(px / 3)); }
+        // A dot now and then a little smaller, as DIRT's are, never leaving a gap
+        // wide enough to read as a mark of its own.
+        if (!line && px > 3 && hash(i, j, 3) < 0.1) { d = px - 1; }
         x.fillRect(ii * px, j * px, d, d);
       }
     }
@@ -368,21 +371,23 @@
     var live = false;
     for (var line = 0; line < 2; line += 1) {
       g.fillStyle = inks[line % inks.length];
-      for (var k = 0; k < w.length; k += 1) {
-        var p = w[k];
-        var age = now - p.at;
-        var life = 4200;
+      for (var k = 1; k < w.length; k += 1) {
+        var age = now - w[k].at, life = 4200;
         if (age > life) { continue; }
         live = true;
-        g.globalAlpha = [0.85, 0.6, 0.38, 0.18][Math.min(3, Math.floor(age / life * 4))];
-        var u = p.s / 5.2 + line * 2.1;
-        // Lifting between phrases: every fifth loop or so the pen is up.
-        if (Math.floor(u / (Math.PI * 2)) % 5 === 4) { continue; }
-        var lx = p.s - one.dir * 5.5 * Math.sin(u);
-        var ly = -4.2 * (1 - Math.cos(u)) + line * 4;
-        lx += one.dir * 0.32 * -ly;                 // leaning right as it writes
-        var x = Math.round((one.x0 + one.dir * lx) * dpr), y = Math.round((p.y + 6 + ly) * dpr);
-        g.fillRect(x, y, px, px);
+        g.globalAlpha = [0.9, 0.66, 0.42, 0.2][Math.min(3, Math.floor(age / life * 4))];
+        // Between two samples the pen goes on in fine steps, so it is a line.
+        for (var q = 0; q < 1; q += 0.125) {
+          var s = w[k - 1].s + (w[k].s - w[k - 1].s) * q;
+          var u = s / 5.2 + line * 2.1;
+          // Lifting between phrases: every fifth loop or so the pen is up.
+          if (Math.floor(u / (Math.PI * 2)) % 5 === 4) { continue; }
+          var lx = s - one.dir * 8 * Math.sin(u);
+          var ly = -4.2 * (1 - Math.cos(u)) + line * 4;
+          lx += one.dir * 0.32 * -ly;               // leaning right as it writes
+          var x = Math.round((one.x0 + one.dir * lx) * dpr), y = Math.round((w[k].y + 6 + ly) * dpr);
+          g.fillRect(x, y, px, px);
+        }
       }
     }
     g.globalAlpha = 1;
@@ -416,8 +421,11 @@
   function come(c, x, y, r, here) {
     size();
     var now = performance.now();
+    // Off by the nearer side, unless that is too close to be seen going; on
+    // a phone, always to the left, away from the dial of years at the right.
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
+    if (W < 600) { dir = -1; }
     var seed = Math.random();
     one = {
       c: c, here: here, born: now, x0: x, x: x, y: y, dir: dir,
@@ -503,11 +511,11 @@
     if (o.state === "trot") {
       var dt = Math.min(80, now - (o.lastMove || now));
       o.lastMove = now;
-      o.s += SPEED * dt / 1000;
+      o.s += SPEED * Math.max(1 / PHI, Math.min(1, W / 1000)) * dt / 1000;   // slower across a phone
       o.x = o.x0 + o.dir * o.s;
       o.pose = "trot";
       o.n = Math.floor(now / (1000 / FPS)) % 4;
-      if (Math.floor(o.s) % 3 === 0) { o.writing.push({ s: o.s - 18, y: o.y, at: now }); }
+      if (!o.writing.length || o.s - 18 - o.writing[o.writing.length - 1].s >= 3) { o.writing.push({ s: o.s - 18, y: o.y, at: now }); }
       // Once, a little way off, it stops and looks back.
       if (!o.looked && o.s > 110) { o.looked = true; o.state = "back"; o.since = now; }
       var half = sprites[o.c.id].w * sprites[o.c.id].cell / 2;
@@ -595,8 +603,34 @@
 
   window.Characters = {
     wave: wave,
-    // For the preview (scripts/preview_character.js): the files, read.
+    // For the preview (scripts/preview_character.js): the files, read,
+    // and one pose drawn as the page draws it, on a place's soil and plants.
     load: load,
+    preview: function (ctx, o) {
+      var c = cast.cast.filter(function (k) { return k.id === o.id; })[0];
+      var here = placeAt(o.lat, o.lon);
+      var keep = dpr;
+      dpr = o.scale;
+      spriteCache = {};
+      if (o.plants && here) {
+        here.set.strata.forEach(function (st, k) {
+          var cr = makeCrown(st[1], Math.max(5, Math.min(18, 4 + st[2] * 0.3)), here.set.look, here.soilRgb, 0.3 + k * 0.2);
+          var px = Math.max(1, Math.round(CELL * dpr));
+          var ox = o.x + k * 44 * dpr, oy = o.y;
+          ctx.globalAlpha = 0.42; ctx.fillStyle = cr.shadeC;
+          cr.shade.forEach(function (d) { ctx.fillRect(ox + d.i * px, oy + d.j * px, px, px); });
+          ctx.globalAlpha = 1;
+          cr.dots.forEach(function (d) { ctx.fillStyle = d.c; ctx.fillRect(ox + d.i * px, oy + d.j * px, px, px); });
+        });
+      } else {
+        var sp = sprite(c, o.pose, o.n || 0, o.dir || 1, here);
+        ctx.drawImage(sp.cv, o.x, o.y);
+      }
+      dpr = keep;
+      spriteCache = {};
+      return here && { soil: here.soil, soilRgb: here.soilRgb, biome: here.set.biome, realm: here.set.realm,
+                       eco: here.eco, strata: here.set.strata.map(function (st) { return st[0] + " (" + st[1] + "): " + st[4].join(", "); }) };
+    },
     _state: function () { return one && { id: one.c.id, pose: one.pose, state: one.state, x: one.x, y: one.y, line: line(one), plants: one.plants.length }; }
   };
 
