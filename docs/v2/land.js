@@ -16037,7 +16037,16 @@
         var f = el("figure", "art-said-one");
         f.dataset.k = e.k;
         if (i >= 2) { f.hidden = true; }
-        f.appendChild(el("blockquote", "art-said-q", "“" + e.q + "”"));
+        var bq = el("blockquote", "art-said-q", "“" + e.q + "”");
+        // A long quotation is held to six lines until it is pressed.
+        if (e.q.length > 300) {
+          bq.dataset.long = "true";
+          bq.addEventListener("click", function (event) {
+            event.stopPropagation();
+            if (bq.dataset.open) { delete bq.dataset.open; } else { bq.dataset.open = "true"; }
+          });
+        }
+        f.appendChild(bq);
         var cap = el("figcaption", "art-said-by");
         cap.appendChild(el("span", "art-said-who", e.by || ""));
         var where = [e.in || "", e.via && e.via !== e.by ? "as quoted by " + e.via : ""].filter(Boolean).join(" · ");

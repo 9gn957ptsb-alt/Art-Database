@@ -3610,3 +3610,5 @@ button.art-venue:focus-visible { text-decoration: underline; }
     background: linear-gradient(to right, rgba(15, 10, 7, 0), rgba(15, 10, 7, 0.94) 21px);
   }
 }
+.art-said-q[data-long] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; cursor: pointer; }
+.art-said-q[data-long][data-open] { display: block; -webkit-line-clamp: none; }
