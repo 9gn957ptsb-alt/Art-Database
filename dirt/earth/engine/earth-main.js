@@ -100,6 +100,7 @@ async function toEarth(lat, lon, month) {
   clearGround();
   vx = xOfLon(lon) - VW / 2; vy = yOfLat(lat) - VH / 2; velX = velY = 0;
   showMode();
+  lookNow();
 }
 function toPlane() {
   for (const wk of workers) wk.w.postMessage({ type: "plane" });
@@ -1463,7 +1464,7 @@ const MARKS = { list: [], layer: null, edge: null, chips: [], shown: true, glide
     .site-edge span { max-width: min(46ch, 62vw); overflow: hidden; text-overflow: ellipsis; }
     .site-mark.nameless span { visibility: hidden; }
     .site-edge:hover, .site-edge:focus-visible { background: #f3ecdf; color: #0f0a07; }
-    body.backdrop .bar, body.backdrop .site-marks { display: none; }
+    body.backdrop .bar, body.backdrop .site-marks, body.backdrop .place { display: none; }
   `;
   document.head.appendChild(css);
   MARKS.layer = document.createElement("div");
@@ -1580,14 +1581,58 @@ window.addEventListener("message", (ev) => {
   if (!m || ev.source !== window.parent) return;
   if (m.dirt === "places") { setMarks(m.list); return; }
   if (m.dirt === "chrome") { document.body.classList.toggle("backdrop", !m.on); return; }
+  // The site's dive, aimed (land.js, "the dive"): the ground moved to where the aim has been steered, without
+  // growing it again (the chunks are kept), and once arrived the readout is the middle's, not a stale pointer's.
+  if (m.dirt === "look") { lookAt(+m.lat, +m.lon, !!m.settle); return; }
+  // What the atlas calls a place, for the site's ring before the ground is reached.
+  if (m.dirt === "name") {
+    const go = () => (EDATA ? ev.source.postMessage({ dirt: "named", key: m.key, name: nameAt(+m.lat, +m.lon) }, "*") : ELOAD ? setTimeout(go, 89) : null);
+    go();
+    return;
+  }
   if (m.dirt !== "goto") return;
+  lookPending = null;
+  lastPointer = null;
   const go = () => {
     if (!placed) return setTimeout(go, 55);
     if (MODE === "city") upFromCity();
-    toEarth(+m.lat, +m.lon, m.month).then(() => { if (m.streets) toCity(+m.lat, +m.lon); });
+    toEarth(+m.lat, +m.lon, m.month).then(() => { lookNow(); if (m.streets) toCity(+m.lat, +m.lon); });
   };
   go();
 });
+let lookPending = null;
+// How much of the ground in view has grown, told to the site while it waits to land (it fades the ground in as
+// it comes, and holds the last of its dive until there is ground to land on).
+if (SITE && window.parent !== window) {
+  let grownSaid = -1;
+  setInterval(() => {
+    if (MODE !== "earth" || !EDATA) return;
+    const list = wanted().filter((w) => w.d < Math.hypot(VW, VH) / 2);
+    const f = list.length ? list.filter((w) => { const c = chunks.get(w.k); return c && c.spawned; }).length / list.length : 0;
+    const said = Math.round(f * 20) / 20;
+    if (said === grownSaid) return;
+    grownSaid = said;
+    window.parent.postMessage({ dirt: "grown", f: said, lat: latOfY(vy + VH / 2), lon: lonOfX(vx + VW / 2) }, "*");
+  }, 144);
+}
+function lookAt(lat, lon, settle) {
+  lookPending = { lat, lon, settle };
+  if (placed && MODE === "earth" && EDATA) lookNow();
+}
+function lookNow() {
+  const l = lookPending;
+  if (!l || MODE !== "earth") return;
+  lookPending = null;
+  vx = xOfLon(l.lon) - VW / 2; vy = yOfLat(l.lat) - VH / 2; velX = velY = 0;
+  if (l.settle) { lastPointer = null; readTick = 0; placeText(describe(vx + VW / 2, vy + VH / 2, "")); }
+}
+/** The name the readout gives a place: its sea, or its lake, or its ecoregion, or its biome. */
+function nameAt(lat, lon) {
+  const E = EDATA, M = E.meta, x = xOfLon(lon), y = yOfLat(lat), pr = eSite(x, y, {}, true), k = pr.k;
+  if (pr.surf === SEA) { const sea = E.seaName[k] ? M.seas[E.seaName[k] - 1] : null; return sea ? sea.name : "The open ocean"; }
+  const eco = M.ecoregions[E.eco[k]], B = M.biomes[pr.surf];
+  return pr.surf === LAKE ? "A lake" + (eco ? " in the " + eco.name : "") : eco ? eco.name : B || "Land";
+}
 followHash();
 window.addEventListener("hashchange", followHash);
 showMode();

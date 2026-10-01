@@ -1020,10 +1020,14 @@
       items.filter(function (it) { return it.city.town && !it.city.tile; })
         .sort(function (a, b) { return a.city.town.i - b.city.town.i; })
         .forEach(function (it) {
+          var into = null;
           var tied = kept.some(function (k) {
             var dx = k.x - it.x, dy = k.y - it.y;
-            return dx * dx + dy * dy < KNOT * KNOT;
+            if (dx * dx + dy * dy < KNOT * KNOT) { into = k.city; return true; }
+            return false;
           });
+          // Which diamond it is tied into: a press on its tile is that city's.
+          it.city.knotTo = into;
           if (tied !== !!it.city.knot) {
             it.city.knot = tied;
             if (tied) { it.city.el.dataset.knot = "true"; } else { delete it.city.el.dataset.knot; }
@@ -3344,7 +3348,9 @@
     // On a journey the land is drawn where the world is now, every frame,
     // not magnified from where it was: it is what you are travelling over.
     var live = !!journey || !!landFade.old;
-    if (!live) {
+    // On the dive the body of works is the world: the woven dots, magnified
+    // a hundred times over, would only be streaks across it.
+    if (!live && !(dive.on && bodyOn())) {
       gctx.globalAlpha = down;
       gctx.drawImage(cloth, 0, 0, W, H);
       gctx.globalAlpha = round;
@@ -4855,8 +4861,8 @@
       // Past the globe's nearest: scrolling on is the dive; it settles when the scrolling stops.
       diveTo(dive.log - event.deltaY * step * (event.deltaMode === 1 ? 16 : 1), event.clientX, event.clientY);
       window.clearTimeout(dive.timer);
-      if (dive.p >= 1 || dive.log <= 0) { diveEnd(); }
-      else { dive.timer = window.setTimeout(diveEnd, 380); }
+      if (dive.raw >= 1 || dive.log <= 0) { diveEnd(); }
+      else { dive.timer = window.setTimeout(diveEnd, 520); }
       return;
     }
     var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST,
@@ -5441,6 +5447,9 @@
     beast.lat += (goal.lat - beast.lat) * ease;
     beast.lon += shortest(beast.lon, goal.lon) * ease;
 
+    // The dive draws the world where the fingers have taken it (see the dive).
+    if (dive.on) { diveFrame(now); } else { stepAim(now); }
+
     var moved = beast.lon - last.x;
     if (Math.abs(moved) > 0.0015) {
       creature.dataset.facing = moved > 0 ? "right" : "left";
@@ -5460,7 +5469,7 @@
     if (!place) { placeWords(); }
     if (!place || flying) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
-    if (art) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
+    if (art && !dive.on) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
 
     stepCompany(now);
     placeSpawns();
@@ -8706,7 +8715,7 @@
           showVenue(hit);
           return;
         }
-        if (layerOn === "museums" && !place && !flying && (hit = hitTown(event.clientX, event.clientY))) {
+        if (layerOn === "museums" && !place && !flying && (hit = hitTown(event.clientX, event.clientY, event.pointerType !== "mouse"))) {
           squashing = null;
           openTown(hit.key);
           return;
@@ -8734,6 +8743,10 @@
         if (reach) { squash(where.x, where.y, reach); return; }
       }
 
+      // A plain quick tap on the world, with a finger: the spot is ringed
+      // and named, and spreading two fingers next dives there (the dive).
+      if (name === "pointerup" && was.moved < 6 && performance.now() - was.at < 450 &&
+          event.pointerType !== "mouse") { setAim(event.clientX, event.clientY); }
       // A plain quick tap on bare land or sea: the work in that cell.
       if (name === "pointerup" && was.moved < 6 && performance.now() - was.at < 450 &&
           pressDoor(event.clientX, event.clientY)) { return; }
@@ -12931,6 +12944,8 @@
   }
   groundFrame.addEventListener("load", function () {
     groundLoaded = true;
+    // A dive under way asks what the atlas calls its aim.
+    if (aimName && aimName.dataset.key && !aimName.hidden) { delete aimName.dataset.key; }
     groundPlaces();
     groundSay({ dirt: "chrome", on: groundOn });
   });
@@ -12966,66 +12981,402 @@
     groundUp(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
   }
 
-  /* The dive: from the globe's nearest, pinching (or scrolling) on in carries
-     you down into the ground under your fingers, the globe swelling and
-     thinning away as the ground comes up, as far as your fingers have gone;
-     let go past half way and you are down, short of it and the globe comes
-     back. What you learn is in how you got there. */
-  var dive = { log: 0, p: 0, on: false, x: 0, y: 0, timer: 0 };
-  var DIVE_SPAN = Math.log(PHI * PHI);          // a further phi-squared of pinch
-  function diveTo(logAmount, x, y) {
-    dive.log = Math.max(0, logAmount);
-    dive.p = Math.min(1, dive.log / DIVE_SPAN);
-    if (dive.p > 0 && !dive.on) {
-      var at = unproject(x, y) || unproject(W / 2, H / 2) || { lat: tilt, lon: spin };
-      groundAt(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
-      groundDirt.hidden = false;
-      // Not to be touched until it is reached: the fingers are still on the globe.
-      groundDirt.style.pointerEvents = "none";
-      groundDirt.style.transition = "none";
-      stage.style.transition = "none";
-      dive.on = true;
-      dive.x = x; dive.y = y;
-    }
-    if (!dive.on) { return; }
-    var e = dive.p;
-    stage.style.transformOrigin = dive.x.toFixed(0) + "px " + dive.y.toFixed(0) + "px";
-    stage.style.transform = "scale(" + (1 + e * PHI * PHI * PHI).toFixed(3) + ")";
-    stage.style.opacity = (1 - e).toFixed(3);
-    groundDirt.style.opacity = e.toFixed(3);
-    groundDirt.style.transform = "scale(" + (INV2 + (1 - INV2) * e).toFixed(3) + ")";
+  /* The dive: from the globe's nearest — or from any view where the globe is
+     seen from far off, the small globe of a work's history among them —
+     spreading two fingers (or scrolling, or a trackpad's pinch) on in
+     carries you down into the ground of DIRT Earth. The artist, 1 Oct 2026:
+     "I want to further explore that's extreme zoom in from the globe at a
+     distance and then up close instantly to an aspect of the Earth. I want
+     to make it a bit smoother and a bit more controlled … there to be some
+     sort of control that is can be done by the viewer to pick specifically
+     where they are looking to perhaps it's not as extreme."
+
+     Aimed: the place it will land is ringed in pixel light the moment a dive
+     begins, and named (what DIRT Earth's atlas calls it, and the nearest of
+     the site's cities); the ring is the point between the fingers, and
+     moving the fingers together carries it across the world before you are
+     committed. A tap on the globe first sets it (the first tap rings and
+     names the spot; spreading then dives there, wherever the fingers are).
+     With a mouse the pointer is the aim.
+
+     Smooth: the world itself is drawn nearer, in log space, about the aim,
+     which stays under the fingers — the body of works sharpening as it
+     comes — and the ground comes up into it through a lens, the same size
+     as the world it lies in and at the same place, never a cut. Let go past
+     half way and it carries on down; short of it, the world springs back.
+
+     Less extreme: the last of the way down is slow, so the region is seen
+     whole before the ground settles at DIRT Earth's own scale, which is its
+     widest; spreading again goes closer, to the streets, as before. */
+  var dive = { log: 0, p: 0, on: false, fx: 0, fy: 0, ax: 0, ay: 0, timer: 0, aim: null, from: null,
+               Rg: 0, settle: null, sent: "", sentAt: 0, named: "", tidy: 0, raw: 0 };
+  var DIVE_SPAN = Math.log(PHI * PHI);          // a further phi-squared of pinch is as far as the hand goes
+  var DIVE_HAND = 0.75;                         // and that is three quarters of the way down
+  var AIM_KEEP = Math.pow(PHI, 5) * 1000;      // a tapped aim is kept 11 s
+  var aimTap = null;                            // { lat, lon, at }: the spot a tap set
+  var aimEl = null, aimName = null, aimRing = null;
+  var LN_PHI = Math.log(PHI);
+
+  /* How big the world is when it is drawn at the ground's own scale: DIRT
+     Earth lays 932 cells to a degree, 2 device pixels a cell, so a degree is
+     1864 device pixels; the globe's is R·π/180 CSS pixels. */
+  function groundR() { return 1864 * 180 / Math.PI / (window.devicePixelRatio || 1); }
+  /* Whether a dive is the way down from here: the world seen from far enough
+     off that the ground is well nearer (in a city of museums, framed nearer
+     than the ground, down is to the ground at the city, as before). */
+  function diveCan() {
+    if (flying || groundOn || deckMode || walkOn) { return false; }
+    if (place && (place.museum || place.stage || buildingOn)) { return false; }
+    return R > 0 && R < groundR() * INV2;
   }
+
+  function aimSetup() {
+    if (aimEl) { return; }
+    aimEl = document.createElement("div");
+    aimEl.className = "dive-aim";
+    aimEl.hidden = true;
+    aimEl.setAttribute("aria-hidden", "true");
+    aimRing = document.createElement("canvas");
+    aimRing.className = "dive-aim-ring";
+    aimName = document.createElement("p");
+    aimName.className = "dive-aim-name";
+    aimName.setAttribute("aria-live", "polite");
+    aimEl.appendChild(aimRing);
+    land.appendChild(aimEl);
+    land.appendChild(aimName);
+    aimName.hidden = true;
+  }
+  /* The ring: the 13 px tiles of the pixel light round the point, on the
+     screen's own grid, three brightnesses by how near each lies to the ring's
+     middle line, stepping in. */
+  var aimDrawn = "";
+  function drawAim(x, y, k, now) {
+    aimSetup();
+    var c = CELL_PX, i0 = Math.floor(x / c), j0 = Math.floor(y / c);
+    var step = still ? 3 : Math.min(3, Math.floor((now - (drawAim.at || now)) / 70) + 1);
+    var r = 2.2 - 0.5 * k;                     // tightens as you come down
+    var key = i0 + "," + j0 + "," + step + "," + r.toFixed(2);
+    aimEl.hidden = false;
+    aimEl.style.transform = "translate(" + ((i0 - 3) * c) + "px," + ((j0 - 3) * c) + "px)";
+    if (key === aimDrawn) { return; }
+    aimDrawn = key;
+    var size = 7 * c, d = Math.min(window.devicePixelRatio || 1, 3);
+    if (aimRing.width !== Math.round(size * d)) { aimRing.width = aimRing.height = Math.round(size * d); }
+    var g = aimRing.getContext("2d");
+    g.setTransform(d, 0, 0, d, 0, 0);
+    g.clearRect(0, 0, size, size);
+    var px = x - (i0 - 3) * c, py = y - (j0 - 3) * c;
+    for (var j = 0; j < 7; j += 1) {
+      for (var i = 0; i < 7; i += 1) {
+        var dd = Math.sqrt(Math.pow((i + 0.5) * c - px, 2) + Math.pow((j + 0.5) * c - py, 2)) / c;
+        var off = Math.abs(dd - r);
+        if (off > 0.62) { continue; }
+        var level = off < 0.2 ? 3 : off < 0.42 ? 2 : 1;
+        if (level < 4 - step) { continue; }
+        g.globalAlpha = LEVELS[level];
+        g.fillStyle = level === 3 ? LILAC : LIGHT;
+        g.fillRect(i * c + 1, j * c + 1, c - 2, c - 2);
+      }
+    }
+    g.globalAlpha = 1;
+  }
+  function hideAim() {
+    if (aimEl) { aimEl.hidden = true; aimDrawn = ""; }
+    if (aimName) { aimName.hidden = true; delete aimName.dataset.on; }
+    drawAim.at = 0;
+  }
+  /* Its name: what the place is (DIRT Earth's atlas, once the ground is
+     there; until then what the body of works is made of there), and the
+     nearest of the site's cities. */
+  function nearTown(lat, lon) {
+    if (!towns) { return null; }
+    var v = toVec(lat, lon), best = null, bd = 9;
+    towns.forEach(function (t) {
+      var d = Math.acos(Math.max(-1, Math.min(1, dot3(v, t.v))));
+      if (d < bd) { bd = d; best = t; }
+    });
+    return best ? { t: best, km: bd * 6371 } : null;
+  }
+  function aimWords(lat, lon) {
+    var n = nearTown(lat, lon);
+    var near = !n ? "" : n.km < 60 ? "near " + n.t.name
+      : Math.round(n.km).toLocaleString("en") + " km from " + n.t.name;
+    return near;
+  }
+  function sayAim(lat, lon, x, y) {
+    aimSetup();
+    var key = (lat / RAD).toFixed(2) + "," + (lon / RAD).toFixed(2);
+    if (aimName.dataset.key !== key) {
+      aimName.dataset.key = key;
+      var kind = window.EarthBody && EarthBody.kindAt ? EarthBody.kindAt(lat, lon) : null;
+      var what = dive.atlas && dive.atlas.key === key ? dive.atlas.name
+        : kind ? (kind.snow ? "Snow" : kind.kind.charAt(0).toUpperCase() + kind.kind.slice(1)) : "";
+      var near = aimWords(lat, lon);
+      aimName.innerHTML = "";
+      var a = document.createElement("span"); a.className = "dive-aim-what"; a.textContent = what;
+      var b = document.createElement("span"); b.className = "dive-aim-near"; b.textContent = near;
+      aimName.appendChild(a);
+      if (near) { aimName.appendChild(b); }
+      // Ask the ground what the atlas calls it.
+      if (groundLoaded) { groundSay({ dirt: "name", lat: lat / RAD, lon: wrap(lon) / RAD, key: key }); }
+    }
+    aimName.hidden = false;
+    aimName.dataset.on = "true";
+    // Under the ring, kept on the screen and clear of the foot.
+    var w = aimName.offsetWidth || 160, h = aimName.offsetHeight || 34;
+    var lx = Math.max(16, Math.min(W - 16 - w, x - w / 2));
+    var ly = y + 2.6 * CELL_PX;
+    if (ly + h > H - 16) { ly = y - 2.6 * CELL_PX - h; }
+    aimName.style.transform = "translate(" + lx.toFixed(0) + "px," + ly.toFixed(0) + "px)";
+  }
+  var groundGrown = 0;                          // how much of the ground in view has grown (DIRT says)
+  window.addEventListener("message", function (event) {
+    if (event.source !== groundFrame.contentWindow || !event.data) { return; }
+    if (event.data.dirt === "grown") { groundGrown = +event.data.f || 0; return; }
+    if (event.data.dirt !== "named") { return; }
+    dive.atlas = { key: event.data.key, name: event.data.name };
+    if (aimName && aimName.dataset.key === event.data.key && aimName.firstChild) {
+      aimName.firstChild.textContent = event.data.name;
+    }
+  });
+
+  /* A tap on the world, where a dive could start: the spot is ringed and
+     named, and the next spreading of two fingers dives there. */
+  function setAim(x, y) {
+    if (!diveCan() || dive.on) { return; }
+    var at = unproject(x, y);
+    if (!at) { return; }
+    aimTap = { lat: at.lat, lon: at.lon, at: performance.now() };
+    drawAim.at = performance.now();
+  }
+  /* Drawn every frame while it is kept, where the world has it now. */
+  function stepAim(now) {
+    if (dive.on) { return; }
+    if (!aimTap) { return; }
+    var gone = now - aimTap.at > AIM_KEEP || !diveCan();
+    var q = gone ? null : project(aimTap.lat, aimTap.lon);
+    if (!q || q.z < 0.08) { if (gone) { aimTap = null; } hideAim(); return; }
+    drawAim(q.x, q.y, 0, now);
+    sayAim(aimTap.lat, aimTap.lon, q.x, q.y);
+  }
+
+  /* The world as it is drawn p of the way down, the aim held at (tx, ty):
+     the radius in log space from where it was to the ground's own; the world
+     turned to face the aim over the first part of the way; and slid so the
+     aim is exactly where it is held. */
+  function diveView(p, tx, ty) {
+    var f = dive.from;
+    R = Math.exp(Math.log(f.R) + (Math.log(dive.Rg) - Math.log(f.R)) * p);
+    var k = smooth01(p / 0.62);
+    spin = f.spin + shortest(f.spin, dive.aim.lon) * k;
+    wanted = spin;
+    tilt = f.tilt + (Math.max(-89 * RAD, Math.min(89 * RAD, dive.aim.lat)) - f.tilt) * k;
+    COS_T = Math.cos(tilt);
+    SIN_T = Math.sin(tilt);
+    cx = 0; cy = 0;
+    var q = project(dive.aim.lat, dive.aim.lon);
+    var c = smooth01(p / 0.08);
+    cx = (tx - q.x) * c + f.cx * (1 - c);
+    cy = (ty - q.y) * c + f.cy * (1 - c);
+  }
+  /* The ground, through a lens at the aim: at the world's scale there (a
+     degree of longitude narrower than one of latitude, as on the globe,
+     until the end, where it is the ground's own), coming in between phi⁻³
+     and phi⁻¹ of the ground's scale, and opening to the whole window on the
+     last stretch. */
+  function diveGround(p, tx, ty) {
+    var s = R / dive.Rg;
+    var ls = Math.log(Math.max(1e-6, s));
+    var g = smooth01((ls + 3 * LN_PHI) / (2 * LN_PHI));
+    var u = smooth01((ls + LN_PHI) / LN_PHI);
+    var cl = Math.cos(dive.aim.lat);
+    var sx = s * (cl + (1 - cl) * u), sy = s;
+    groundDirt.style.transform = "translate(" + (tx - W / 2).toFixed(1) + "px," + (ty - H / 2).toFixed(1) + "px) scale(" +
+      sx.toFixed(4) + "," + sy.toFixed(4) + ")";
+    groundDirt.style.opacity = (g * smooth01(groundGrown / 0.5)).toFixed(3);
+    // The lens, in the ground's own pixels: soft all the way in from its
+    // edges at first, so it is a glow at the aim, and sharpening out to the
+    // edges as it comes to fill the window; its edge is never seen.
+    var f = Math.min(W, H) * 0.5 * (1 - u);
+    var lens = f < 0.5 ? "none"
+      : "linear-gradient(to right, transparent, #000 " + f.toFixed(0) + "px, #000 calc(100% - " + f.toFixed(0) + "px), transparent)," +
+        "linear-gradient(to bottom, transparent, #000 " + f.toFixed(0) + "px, #000 calc(100% - " + f.toFixed(0) + "px), transparent)";
+    groundDirt.style.webkitMaskImage = lens;
+    groundDirt.style.maskImage = lens;
+    groundDirt.style.webkitMaskComposite = "source-in";
+    groundDirt.style.maskComposite = "intersect";
+    // The views laid over the world give way to it on the way down.
+    var o = (1 - smooth01(p / 0.3)).toFixed(3);
+    overStage.forEach(function (el) { el.style.opacity = o; });
+  }
+  function diveTell() {
+    // The ground told where to look: once, to start growing there, then
+    // only moved (no regrowing) as the aim is steered.
+    var key = (dive.aim.lat / RAD).toFixed(3) + "," + (wrap(dive.aim.lon) / RAD).toFixed(3);
+    var now = performance.now();
+    if (key === dive.sent || now - dive.sentAt < 120) { return; }
+    dive.sent = key;
+    dive.sentAt = now;
+    groundSay({ dirt: "look", lat: dive.aim.lat / RAD, lon: wrap(dive.aim.lon) / RAD });
+  }
+
+  function diveBegin(x, y) {
+    var now = performance.now();
+    var tap = aimTap && now - aimTap.at < AIM_KEEP ? aimTap : null;
+    var q = tap ? project(tap.lat, tap.lon) : null;
+    if (q && q.z < 0.08) { tap = null; }
+    var at = tap ? { lat: tap.lat, lon: tap.lon } : unproject(x, y);
+    var ax = tap ? q.x : x, ay = tap ? q.y : y;
+    if (!at) {
+      // From the sky: the point of the world nearest the fingers.
+      var dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      ax = cx + dx / d * R * 0.97;
+      ay = cy + dy / d * R * 0.97;
+      at = unproject(ax, ay) || { lat: tilt, lon: spin };
+    }
+    aimTap = null;
+    dive.aim = at;
+    dive.from = { R: R, cx: cx, cy: cy, spin: spin, tilt: tilt, wanted: wanted };
+    dive.Rg = groundR();
+    dive.fx = x; dive.fy = y;
+    dive.ax = ax; dive.ay = ay;
+    dive.settle = null;
+    dive.on = true;
+    drawAim.at = drawAim.at || now;
+    window.clearTimeout(dive.tidy);
+    if (art) { art.glide = null; }
+    hideDoor();
+    var lat = at.lat / RAD, lon = wrap(at.lon) / RAD;
+    if (!groundFrame.src || lat.toFixed(4) + "," + lon.toFixed(4) !== groundAtWas) { groundGrown = 0; }
+    groundAt(lat, lon, false);
+    dive.sent = lat.toFixed(3) + "," + lon.toFixed(3);
+    dive.sentAt = now;
+    groundDirt.hidden = false;
+    groundDirt.classList.remove("on");
+    groundDirt.dataset.diving = "true";
+    // Not to be touched until it is reached: the fingers are still on the globe.
+    groundDirt.style.pointerEvents = "none";
+    groundDirt.style.transition = "none";
+    groundDirt.style.transformOrigin = "50% 50%";
+    stage.style.transition = "none";
+    overStage.forEach(function (el) { el.style.transition = "none"; });
+  }
+
+  function diveTo(logAmount, x, y) {
+    if (dive.settle) { return; }
+    if (!dive.on && !diveCan()) { return; }
+    dive.log = Math.max(0, logAmount);
+    // The fingers take you three quarters of the way, to where the region
+    // reads whole; the rest is the landing, always at its own pace.
+    dive.raw = Math.min(1, dive.log / DIVE_SPAN);
+    dive.p = DIVE_HAND * dive.raw;
+    if (dive.p > 0 && !dive.on) { diveBegin(x, y); }
+    if (!dive.on) { return; }
+    // Steering: the aim's ring goes with the fingers, over the world as it is
+    // drawn now, and the world is drawn nearer about wherever it has got to.
+    var mx = x - dive.fx, my = y - dive.fy;
+    dive.fx = x; dive.fy = y;
+    if (mx || my) {
+      dive.ax = Math.max(16, Math.min(W - 16, dive.ax + mx));
+      dive.ay = Math.max(16, Math.min(H - 16, dive.ay + my));
+      diveView(dive.p, dive.ax, dive.ay);
+      var at = unproject(dive.ax, dive.ay);
+      if (at) { dive.aim = at; }
+    }
+    lastTouch = handledAt = performance.now();
+    if (dive.raw >= 1) { diveEnd(); }
+  }
+  /* Let go: past half way, on down (slowly at the end, so the region is
+     seen before the ground settles); short of it, back. */
   function diveEnd() {
     window.clearTimeout(dive.timer);
-    if (!dive.on) { return; }
-    var down = dive.p >= 0.5;
+    if (!dive.on || dive.settle) { return; }
+    var down = dive.raw >= 0.5;
+    var now = performance.now();
+    // Where the landing waits, if it must, for the ground to grow: phi⁻²
+    // of the ground's scale, before the lens opens.
+    var span = Math.log(dive.Rg) - Math.log(dive.from.R);
+    dive.settle = { at: now, clock: 0, last: now, p0: dive.p, p1: down ? 1 : 0, x0: dive.ax, y0: dive.ay,
+                    hold: span > 0 ? 1 - 2 * LN_PHI / span : 1,
+                    dur: still ? 1 : down ? 1300 + 900 * (1 - dive.p) : 520 };
+    dive.log = 0;
+  }
+  function diveFrame(now) {
+    var p = dive.p, tx = dive.ax, ty = dive.ay;
+    var s = dive.settle;
+    if (s) {
+      // The clock stands while the ground has not grown (six seconds at most).
+      var dt = now - s.last;
+      s.last = now;
+      if (!(s.p1 === 1 && dive.p >= s.hold && groundGrown < 0.8 && now - s.at < 6000)) { s.clock += dt; }
+      var u = Math.min(1, s.clock / s.dur);
+      // Down: quick to leave and slow to arrive. Back: a spring's ease.
+      var e = s.p1 === 1 ? 1 - Math.pow(1 - u, 3) : u * u * (3 - 2 * u);
+      p = dive.p = s.p0 + (s.p1 - s.p0) * e;
+      if (s.p1 === 1) {
+        // The aim comes to the middle, where the ground is centred.
+        var m = smooth01(u * 1.6);
+        tx = s.x0 + (W / 2 - s.x0) * m;
+        ty = s.y0 + (H / 2 - s.y0) * m;
+        dive.ax = tx; dive.ay = ty;
+      }
+      if (u >= 1) { diveDone(s.p1 === 1); return; }
+    }
+    diveView(p, tx, ty);
+    diveGround(p, tx, ty);
+    handledAt = now;                 // moving: the world is magnified, not woven again, on the way
+    var gone = smooth01((Math.log(R / dive.Rg) + 2 * LN_PHI) / LN_PHI);   // the ring goes as the ground comes
+    if (gone < 0.98) {
+      drawAim(tx, ty, p, now);
+      aimEl.style.opacity = (1 - gone).toFixed(3);
+      sayAim(dive.aim.lat, dive.aim.lon, tx, ty);
+      aimName.style.opacity = (1 - gone).toFixed(3);
+    } else { hideAim(); }
+    if (groundLoaded) { diveTell(); }
+  }
+  /* Arrived, or come back: either way the world is put back as it was
+     beneath, for coming up to. */
+  function diveDone(down) {
+    var f = dive.from;
     dive.on = false;
-    dive.log = dive.p = 0;
-    stage.style.transition = "transform 0.61s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.61s ease";
-    groundDirt.style.transition = "opacity 0.61s ease, transform 0.61s cubic-bezier(0.2, 0.7, 0.2, 1)";
+    dive.settle = null;
+    dive.p = dive.log = dive.raw = 0;
+    hideAim();
+    if (aimEl) { aimEl.style.opacity = ""; aimName.style.opacity = ""; }
+    spin = f.spin;
+    wanted = f.wanted;
+    lean(f.tilt);
+    reframe();
+    if (!place) { setSeat(seat); }
+    drawn.r = 0;
+    marksDirty = true;
+    overStage.forEach(function (el) { el.style.opacity = ""; });
+    stage.style.transition = "";
+    delete groundDirt.dataset.diving;
+    groundDirt.style.webkitMaskImage = groundDirt.style.maskImage = "";
+    groundDirt.style.webkitMaskComposite = groundDirt.style.maskComposite = "";
     if (down) {
-      groundDirt.style.pointerEvents = "";
+      groundSay({ dirt: "look", lat: dive.aim.lat / RAD, lon: wrap(dive.aim.lon) / RAD, settle: true });
+      groundDirt.classList.add("on");
+      groundDirt.style.transform = groundDirt.style.opacity = "";
       groundOn = true;
       groundSay({ dirt: "chrome", on: true });
       groundPlaces();
-      groundDirt.classList.add("on");
-      groundDirt.style.opacity = "";
-      groundDirt.style.transform = "";
-      stage.style.opacity = "0";
       groundFrame.focus();
     } else {
       groundDirt.style.opacity = "0";
-      groundDirt.style.transform = "scale(" + INV2 + ")";
-      stage.style.transform = "";
-      stage.style.opacity = "";
+      groundDirt.hidden = true;
     }
-    window.setTimeout(function () {
-      // Tidy: the stage is itself again beneath, the ground hidden if not down.
-      stage.style.transition = stage.style.transform = stage.style.opacity = stage.style.transformOrigin = "";
-      groundDirt.style.transition = groundDirt.style.opacity = groundDirt.style.transform = groundDirt.style.pointerEvents = "";
-      if (!groundOn) { groundDirt.hidden = true; }
-    }, 700);
+    dive.tidy = window.setTimeout(function () {
+      groundDirt.style.transition = groundDirt.style.transform = groundDirt.style.opacity = "";
+      overStage.forEach(function (el) { el.style.transition = ""; });
+    }, 60);
+    // The ground is touched only once the fingers (or a trackpad's last
+    // scrolling) have let go of the dive: a pinch that carried on would
+    // otherwise go straight on down to the streets.
+    window.setTimeout(function () { if (!dive.on) { groundDirt.style.pointerEvents = ""; } }, 700);
   }
+
   function comeUpFromGround() {
     if (!groundOn) { return; }
     groundOn = false;
@@ -13096,6 +13447,13 @@
     if (!place || flying || groundOn) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
+    if (dive.on) {
+      var dstep = event.ctrlKey ? 0.012 : 0.0016;
+      diveTo(dive.log - event.deltaY * dstep * (event.deltaMode === 1 ? 16 : 1), event.clientX, event.clientY);
+      window.clearTimeout(dive.timer);
+      if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
+      return;
+    }
     // Scrolling out of a place goes back up to the world — but not while
     // scrolling a column of works or a reading, which scroll themselves.
     if (event.deltaY > 0) {
@@ -13106,6 +13464,14 @@
       return;
     }
     upPush = 0;
+    if (dive.on || diveCan()) {
+      // Seen from far off: scrolling in is the dive, toward the pointer.
+      var step = event.ctrlKey ? 0.012 : 0.0016;
+      diveTo(dive.log - event.deltaY * step * (event.deltaMode === 1 ? 16 : 1), event.clientX, event.clientY);
+      window.clearTimeout(dive.timer);
+      if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
+      return;
+    }
     downPush += -event.deltaY * (event.ctrlKey ? 8 : 1);
     if (downPush > 233) { downPush = 0; goDeeper(false, event.clientX, event.clientY); }
   }
@@ -13123,7 +13489,11 @@
     o.addEventListener("pointermove", fingerMove, true);
     ["pointerup", "pointercancel"].forEach(function (name) { o.addEventListener(name, fingerUp, true); });
   });
-  function fingerUp(event) { delete downFingers[event.pointerId]; downFrom = downSpread(); }
+  function fingerUp(event) {
+    delete downFingers[event.pointerId];
+    downFrom = downSpread();
+    if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
+  }
   function fingerDown(event) {
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
@@ -13132,6 +13502,13 @@
     if (!downFingers[event.pointerId]) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
+    // Spreading on a world seen from far off (a work's history, a collage's
+    // city): the dive, aimed between the fingers, as far as they have gone.
+    if (place && !flying && !groundOn && downFrom > 0 && (dive.on || (diveCan() && d / downFrom > 1.04))) {
+      var gi = Object.keys(downFingers), ga = downFingers[gi[0]], gb = downFingers[gi[1]];
+      diveTo(Math.log(d / downFrom / 1.04), (ga.x + gb.x) / 2, (ga.y + gb.y) / 2);
+      return;
+    }
     if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) {
       var fi = Object.keys(downFingers), fa = downFingers[fi[0]], fb = downFingers[fi[1]];
       downFrom = 0;
@@ -13420,8 +13797,9 @@
       var a = LEVELS[level] * Math.min(1, (p.z - 0.08) * 6) * up;
       var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
       var key = i * 4096 + j;
-      if (!best[key] || best[key].a < a) { best[key] = { i: i, j: j, a: a }; }
+      if (!best[key] || best[key].a < a) { best[key] = { i: i, j: j, a: a, t: t }; }
     }
+    tilesShown = best;          // what a press can reach (hitTown)
     ctx.fillStyle = LIGHT;
     Object.keys(best).forEach(function (key) {
       var b = best[key];
@@ -13439,43 +13817,60 @@
     return false;
   }
 
-  /* The city a press on the globe landed on, named or not: first the one
-     whose own tile the press is in (a city of galleries, or a diamond tied
-     into a larger one), or the square its diamond stands in, so a city tied
-     into a neighbour is still pressed on its own tile; then, on a world near
-     enough, the one that matters most within 16 px, else the nearest within
-     a finger's reach. A small world, one a press fires in (pressGlobe), is
-     not reached across: a press between its tiles is the world's. A tile is
-     measured from the middle of the cell it is lit in. */
-  function hitTown(x, y) {
+  /* The city a press on the globe landed on: only a city that is shown
+     (artist, 1 Oct 2026: "I want to make sure that only the cities
+     displayed on the surface of the globe are ones to click into or else you
+     end up going to a small city just right next to it"). Shown is a
+     diamond drawn (not tied into a knot), a name written, or a tile lit this
+     frame (a city of galleries' own; a knot's tile is the diamond it is tied
+     into). A diamond or a name within a finger's reach wins over any tile;
+     among them the nearest, and on a tie the one that matters more; failing
+     those, the lit tile the press is in, or the nearest within reach. A city
+     whose mark is hidden, tied away or under another's name is never
+     reached: pinching nearer shows it, or the big city's Near here. A small
+     world, one a press fires in (pressGlobe), is not reached across. */
+  var tilesShown = {};
+  function hitTown(x, y, touch) {
     if (!towns) { return null; }
     var S = safeBox();
     var small = R <= Math.min(W, H) * 0.5;
-    var reach = W <= 720 ? 26 : 18;
+    var reach = small ? 9 : touch ? 24 : 10;
     var half = CELL_PX / 2;
-    var own = null, ownD = Infinity, best = null, near = null, nearD = Infinity;
+    var best = null, bestD = Infinity, bestKind = 9;
+    function consider(t, d, kind) {
+      if (!t || d > reach) { return; }
+      if (kind < bestKind || (kind === bestKind && (d < bestD - 0.5 || (d <= bestD + 0.5 && t.rank > best.rank)))) {
+        best = t; bestD = d; bestKind = kind;
+      }
+    }
+    function toRect(el) {
+      var r = el.getBoundingClientRect();
+      if (!r.width) { return Infinity; }
+      var dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom);
+      return Math.sqrt(dx * dx + dy * dy);
+    }
     towns.forEach(function (t) {
+      var m = t.mark;
+      if (!m || !m.el || m.shown !== true || m.knot) { return; }
+      if (m.wasNamed) { consider(t, toRect(m.name), 0); }
+      if (m.tile) { return; }                    // a city of galleries' dot is its tile, below
       var p = project(t.lat, t.lon);
       if (p.z <= 0.08 || p.x < S.x0 || p.x > S.x1 || p.y < S.y0 || p.y > S.y1) { return; }
-      var px = p.x, py = p.y;
-      var lit = !t.museums.length || (t.mark && t.mark.knot);
-      if (lit) {
-        px = (Math.floor(px / CELL_PX) + 0.5) * CELL_PX;
-        py = (Math.floor(py / CELL_PX) + 0.5) * CELL_PX;
-      }
-      // Of the diamonds and tiles whose own square the press is in, the
-      // one whose middle it is nearest (a knot's tile can share a square
-      // with the diamond it is tied into); on a tie, the one that matters more.
-      if (Math.abs(px - x) <= half && Math.abs(py - y) <= half && (lit || (t.mark && t.mark.shown))) {
-        var dOwn = Math.max(Math.abs(px - x), Math.abs(py - y));
-        if (dOwn < ownD - 0.5 || (dOwn < ownD + 0.5 && own && t.rank > own.rank)) { own = t; ownD = Math.min(ownD, dOwn); }
-      }
-      if (small) { return; }
-      var d = Math.sqrt((px - x) * (px - x) + (py - y) * (py - y));
-      if (d <= 16 && (!best || t.rank > best.rank)) { best = t; }
-      if (d <= reach && d < nearD) { nearD = d; near = t; }
+      // A dot is the smaller target: it is given a few pixels over a name's box.
+      consider(t, Math.max(0, Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y)) - 4), 0);
     });
-    return own || best || near;
+    if (best) { return best; }
+    Object.keys(tilesShown).forEach(function (key) {
+      var b = tilesShown[key], t = b.t;
+      var m = t.mark;
+      // A knot's tile stands for the diamond it is tied into.
+      if (t.museums.length && m && m.knot) { t = m.knotTo && m.knotTo.town; }
+      var tx = (b.i + 0.5) * CELL_PX, ty = (b.j + 0.5) * CELL_PX;
+      var d = Math.max(0, Math.max(Math.abs(tx - x), Math.abs(ty - y)) - half);
+      if (d > 0 && (small || !touch)) { return; }
+      consider(t, d, 1);
+    });
+    return best;
   }
 
   /* The galleries, fairs and sale rooms of a city whose address is known:

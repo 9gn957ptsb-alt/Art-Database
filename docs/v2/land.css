@@ -3474,6 +3474,39 @@ button.art-venue:focus-visible { text-decoration: underline; }
 
 .world-body { pointer-events: none; }
 
+/* The dive's aim (land.js, "the dive"): a ring of pixel light where the dive
+   will land, and under it what the place is and the nearest of the site's
+   cities. Over the world and its names, under the banner and the columns. */
+.dive-aim {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 59;
+  width: 91px;
+  height: 91px;
+  pointer-events: none;
+}
+.dive-aim[hidden] { display: none; }
+.dive-aim-ring { display: block; width: 91px; height: 91px; image-rendering: pixelated; }
+.dive-aim-name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 59;
+  box-sizing: border-box;
+  max-width: min(260px, calc(100vw - 32px));
+  margin: 0;
+  padding: 4px 8px 5px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.8);
+  color: #eadfcd;
+  text-align: center;
+  pointer-events: none;
+}
+.dive-aim-name[hidden] { display: none; }
+.dive-aim-what { display: block; font-family: var(--serif, Georgia, serif); font-style: italic; font-size: 13px; line-height: 1.3; }
+.dive-aim-near { display: block; font-family: var(--mono); font-size: 10px; line-height: 1.4; letter-spacing: 0.04em; color: #a8927a; }
+
 /* ---- a work's view (land.js, "the histories": workBands, layoutWork) ------
    The artist, 1 Oct 2026: "I want a viewer to be able to look at a big enough
    image of the artwork". The photograph keeps its place after the look — left
