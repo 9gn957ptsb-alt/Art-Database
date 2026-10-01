@@ -1,0 +1,115 @@
+/* ---- the voices (voices.js) -------------------------------------------------
+   Following a writer, a critic or a curator. In a work's view their names are
+   quiet doors (a lilac hairline under the name); following, the column's box
+   is the animal's (lilac rule), with their words in the site's serif, their
+   places in time as the follow route's pills, and their works small; arrived
+   in one of their cities, a quiet strip says their words there, one at a
+   time, with the work's square beside them. */
+.voice-door {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.75);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.voice-door:hover, .voice-door:focus-visible { color: #eadfcd; text-decoration-color: #9d95e6; outline: none; }
+.voice-box .follow-head { color: #9d95e6; }
+.voice-q { margin: 0 0 var(--s-4); }
+.voice-q[hidden] { display: none; }
+.voice-q blockquote {
+  margin: 0;
+  font-family: "Newsreader", var(--serif), serif;
+  font-size: var(--t-2);
+  line-height: 1.42;
+  color: #eadfcd;
+}
+.voice-q blockquote[data-long] { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.voice-q blockquote[data-long][data-open] { display: block; }
+.voice-q-on { margin-top: var(--s-2); font-size: var(--t-1); line-height: 1.45; color: #a8927a; }
+.voice-q-in { display: block; margin-top: 2px; }
+.voice-inline {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #cbbba6;
+  font: inherit;
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.6);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.voice-works { display: grid; gap: 2px; }
+.voice-work {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 5px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 149, 230, 0.18);
+  background: none;
+  color: #cbbba6;
+  font-family: var(--serif, serif);
+  font-size: var(--t-2);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.voice-work[hidden] { display: none; }
+.voice-work img { width: 40px; height: 40px; object-fit: cover; background: #1d1611; }
+.voice-work:hover, .voice-work:focus-visible { color: #eadfcd; outline: none; }
+.voice-work-what { display: block; margin-top: 2px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; color: #9d95e6; }
+.voices-on { margin-top: var(--s-4); }
+
+.voice-strip {
+  position: fixed;
+  left: 16px;
+  top: 64px;
+  z-index: 88;
+  box-sizing: border-box;
+  width: min(400px, calc(100vw - 32px));
+  margin: 0;
+  padding: 8px 12px 10px;
+  border-left: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 0 3px 3px 0;
+  background: rgba(15, 10, 7, 0.86);
+  color: #eadfcd;
+  opacity: 0;
+  transition: opacity 1.2s steps(8);
+}
+.voice-strip[hidden] { display: none; }
+.voice-strip[data-on="true"] { opacity: 1; }
+.voice-strip-head { margin: 0 0 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9d95e6; }
+.voice-strip-row { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start; }
+.voice-strip-pic { width: 64px; height: 64px; padding: 0; border: 0; background: #1d1611; cursor: pointer; }
+.voice-strip-pic img { display: block; width: 64px; height: 64px; object-fit: cover; }
+.voice-strip-said { margin: 0; font-family: "Newsreader", var(--serif), serif; font-size: 15px; line-height: 1.4; }
+.voice-strip-said[data-long] { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.voice-strip-said[data-long][data-open] { display: block; max-height: 40vh; overflow-y: auto; }
+.voice-strip-on { margin: 6px 0 0; font-family: var(--mono); font-size: 10px; line-height: 1.45; letter-spacing: 0.03em; color: #a8927a; }
+.voice-strip-on i { font-family: var(--serif, serif); font-size: 12px; letter-spacing: 0; color: #cbbba6; }
+.voice-strip-in { display: block; }
+.voice-next { margin-top: 6px; }
+@media (max-width: 720px) {
+  .voice-strip { top: 84px; }
+  .voice-strip-row { grid-template-columns: 48px 1fr; gap: 10px; }
+  .voice-strip-pic, .voice-strip-pic img { width: 48px; height: 48px; }
+  .voice-strip-said { font-size: 14px; }
+  .voice-strip-said[data-long] { -webkit-line-clamp: 5; }
+}
+@media (prefers-reduced-motion: reduce) { .voice-strip { transition: none; } }
+.voice-also { margin: 0 0 var(--s-5); }
+.voice-also-one { margin: 0 0 4px; font-size: var(--t-1); line-height: 1.5; color: #a8927a; }
+.voice-also-one .voice-door { font-family: "Newsreader", var(--serif), serif; font-size: var(--t-2); color: #eadfcd; }

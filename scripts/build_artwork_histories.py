@@ -1144,6 +1144,8 @@ def main():
     write_finding(records, threads, listing)
     import build_cities                                 # the Museums layer's towns come from these places
     build_cities.main()
+    import build_voices                                 # the writers and curators, from the histories
+    build_voices.main()
     stale = SITE / "artworks.json"                      # superseded by places.json and finding.json
     if stale.exists():
         stale.unlink()

@@ -13824,7 +13824,7 @@
   window.Land = {
     follow: function (f) { startFollowing(f); },
     unfollow: function () { endFollowing(true); },
-    following: function () { return following && { artist: following.artist, animal: following.animal, cast: following.cast }; },
+    following: function () { return following && { artist: following.artist, animal: following.animal, cast: following.cast, voice: following.voice || null }; },
     // The walks (walks.js): where you are, and the moves a walk is made of.
     where: function () {
       if (!place) { return { at: flying ? "flying" : "world", flying: flying }; }
@@ -13884,6 +13884,7 @@
 
   function startFollowing(f) {
     if (!f || !f.map || !f.map.places || !f.map.places.length) { return; }
+    if (f.voice) { startVoice(f); return; }
     following = f;
     tilesDirty = true;
     if (place && art && art.kind === "town" && !flying) {
@@ -13900,6 +13901,7 @@
 
   function endFollowing(tell) {
     if (!following) { return; }
+    var was = following;
     following = null;
     tilesDirty = true;
     var box = artCol.querySelector(".follow-box");
@@ -13908,7 +13910,69 @@
       Object.keys(art.museumRows).forEach(function (slug) { delete art.museumRows[slug].row.dataset.followed; });
     }
     if (bannerBackTo && place && !flying) { bannerBackTo.textContent = backName(levelUp()); }
-    if (tell && window.Characters && Characters.unfollowed) { Characters.unfollowed(); }
+    if (was && was.voice) {
+      if (window.Voices && Voices.unfollowed) { Voices.unfollowed(); }
+    } else if (tell && window.Characters && Characters.unfollowed) { Characters.unfollowed(); }
+  }
+
+  /* ---- following a voice (voices.js) -----------------------------------------
+
+     The artist, 1 Oct 2026: "Implement your idea about using writers and
+     curators as other ways of navigating the globe". A voice is followed
+     in the grammar of an animal, but it is not drawn: it is heard. Its
+     cities are lit as an artist's are, and its path is drawn in time
+     order, a faint dotted line of pixel light (a career is a route). The
+     column's box is voices.js's (Voices.box); pressed from a work's view
+     it opens there, over the work, with no flight; from the world, the
+     first city of the route is flown to. Arrived, voices.js says the
+     voice's words about the works there on the reading's slow clock. */
+  function startVoice(f) {
+    if (following && !following.voice) { endFollowing(true); }
+    following = f;
+    tilesDirty = true;
+    if (place && !flying) {
+      voiceBoxHere();
+      if (bannerBackTo && !levelUp()) { bannerBackTo.textContent = backName(null); }
+      return;
+    }
+    if (f.map.places[0]) { followGo(f.map.places[0]); }
+  }
+
+  function voiceBoxHere() {
+    if (!following || !following.voice || !window.Voices || !Voices.box) { return; }
+    var old = artCol.querySelector(".follow-box");
+    if (old && old.parentNode) { old.parentNode.removeChild(old); }
+    var key = art && art.kind === "town" && art.town ? art.town.key : null;
+    var box = Voices.box(key);
+    if (!box) { return; }
+    var at = art && art.head && art.head.parentNode === artCol ? art.head.nextSibling : artCol.firstChild;
+    artCol.insertBefore(box, at);
+    if (!key) { artCol.scrollTop = 0; }
+  }
+
+  // The voice's path, in the order of its years: every other tile along each leg, faint.
+  function drawVoicePath() {
+    var path = following.path || [];
+    if (path.length < 2) { return; }
+    var S = safeBox(), seen = {};
+    ctx.fillStyle = LILAC;
+    for (var k = 1; k < path.length; k += 1) {
+      var av = toVec(path[k - 1][1] * RAD, path[k - 1][2] * RAD), bv = toVec(path[k][1] * RAD, path[k][2] * RAD);
+      var om = Math.acos(Math.max(-1, Math.min(1, dot3(av, bv))));
+      if (om < 1e-4) { continue; }
+      var steps = Math.max(8, Math.ceil(om * 240));
+      for (var s = 0; s <= steps; s += 1) {
+        var v = slerp3(av, bv, om, s / steps);
+        var p = project(latOf(v), lonOf(v));
+        if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1) { continue; }
+        var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX), id = i + "," + j;
+        if (seen[id] || (i + j) % 2) { continue; }
+        seen[id] = true;
+        ctx.globalAlpha = LEVELS[1] * Math.min(1, (p.z - 0.08) * 6);
+        ctx.fillRect(i * CELL_PX + 4, j * CELL_PX + 4, CELL_PX - 8, CELL_PX - 8);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   function followGo(row) {
@@ -13928,6 +13992,7 @@
   function followSection(a, t) {
     var f = following;
     if (!f || !a || a.kind !== "town") { return; }
+    if (f.voice) { voiceBoxHere(); return; }
     var old = artCol.querySelector(".follow-box");
     if (old && old.parentNode) { old.parentNode.removeChild(old); }
     var m = f.map;
@@ -13999,7 +14064,7 @@
      museum or gallery that holds the artist's work in a city of the map
      (else the city's middle); nowhere in a museum or a history. */
   function guideFrame(now) {
-    if (!window.Characters || !Characters.guide) { return; }
+    if (!window.Characters || !Characters.guide || following.voice) { return; }
     if (flying && journey && route) {
       // A little ahead of the head of the way, along it, on the screen.
       var r = route;
@@ -14032,6 +14097,7 @@
 
   // The artist's cities, lit: a tile each, in lilac, the city you are in left out.
   function drawFollowed() {
+    if (following.voice) { drawVoicePath(); }
     var S = safeBox();
     ctx.fillStyle = LILAC;
     following.map.places.forEach(function (r) {

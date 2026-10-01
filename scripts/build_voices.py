@@ -25,9 +25,10 @@ A voice with two connections or more (two works, or two acts on one) can be foll
 single connection stays plain text, found by Find and leading to its one work.
 
 Places. A show's place is the history's own (its `p`); a writing's is the city it was published in
-when the citation says (its `w`, or a town named in a quotation's citation, "Zurich Kunsthaus"), else
-where the work was at that time (the latest placed event no later than the writing's year), marked
-so. Each voice's places come in time order — a career is a route.
+when the citation says (its `w`; a town named in a quotation's citation, "Zurich Kunsthaus"; a town said
+as an imprint in a writing's, "(Houston: Museum of Fine Arts, 1976)", "New York, 1994"), else the
+museum's town that holds the work, else where the work was at that time (the latest placed event no
+later than the writing's year); each marked so (`pr`: pub, said, held, work, show). Each voice's places come in time order — a career is a route.
 
 Reads only public files in docs/v2/ — histories/, cities.json and voices/credits.json — and writes:
 
@@ -64,6 +65,8 @@ NOTE = ("The writers, critics and curators of the saved works, from their histor
 ALIASES = {
     # Cy Twombly: A Retrospective (The Museum of Modern Art, New York, 1994) is Kirk Varnedoe's catalogue.
     "Kurt Varnedoe": "Kirk Varnedoe",
+    # The critic writes his name with its hyphen; one catalogue dropped it.
+    "Edward Lucie Smith": "Edward Lucie-Smith",
 }
 
 PARTICLES = {"van", "von", "de", "der", "den", "la", "le", "di", "da", "del", "della", "dos", "du", "ten", "ter",
@@ -77,7 +80,10 @@ NOT_A_PERSON = re.compile(
     r"press|books|publishing|publishers?|editions?|edizioni|éditions|verlag|hudson|abrams|phaidon|rizzoli|skira|"
     r"taschen|magazine|times|journal|review|news|gazette|herald|tribune|post|bulletin|quarterly|monthly|weekly|"
     r"sotheby|christie|phillips|bonhams|dorotheum|auction|auctions|catalogue|catalog|exhibition|anonymous|unknown|"
-    r"various|unsigned|editors?|staff|national|nga|cma|moma|the)\b", re.I)
+    r"various|unsigned|editors?|staff|national|nga|cma|moma|the|hollstein|cantz|hatje|dumont|prestel|"
+    r"yale|harvard|princeton|chicago|oxford|cambridge|flammarion|gallimard|hazan|electa|mondadori|einaudi|"
+    r"lund|humphries|scala|wiley|norton|knopf|random|penguin|viking|braziller|hirmer|kehrer|steidl|aperture|"
+    r"ludion|snoeck|wienand|könig|koenig|kerber|bijutsu|shuppan|shinbun|shimbun)\b", re.I)
 
 
 def fold(t):
@@ -232,11 +238,26 @@ class Towns:
             rows = [r for r in rows if r[2] == cc] or []
         return rows[0] if rows else None
 
-    def said_in(self, text):
+    def said_in(self, text, strict=False):
+        """The town a citation says it was published in, its titles left out ("Paris Street" is a title).
+        Strict (a writing's citation, whose untagged titles may name towns): only where a town is said
+        as an imprint is — "(Houston: Museum of Fine Arts, 1976)", "Milan 1993", "New York, 1994"."""
+        text = re.sub(r"“[^”]*”|\"[^\"]*\"|\*[^*]*\*|_[^_]*_", " ", text or "")
         for n in self.sayable:
-            if re.search(r"(?<![\w])" + re.escape(n) + r"(?![\w])", text or ""):
+            e = re.escape(n)
+            pat = (r"(?:\(\s*|[,;.]\s+)" + e + r"(?:\s*:|(?:,\s*[A-Z][A-Za-z.]{0,5})?,?\s+(?:\d{1,2}\s+\w+\s+)?(?:1[5-9]|20)\d\d\b)") if strict \
+                else r"(?<![\w])" + e + r"(?![\w])"
+            if re.search(pat, text):
                 return self.by_name[fold(n)][0]
         return None
+
+
+def holder(h):
+    """Where the museum that holds the work now is (a `held` event with a place), or None."""
+    for e in h["events"]:
+        if e["k"] == "held" and e.get("p"):
+            return e["p"]
+    return None
 
 
 def where_then(h, year):
@@ -295,8 +316,10 @@ def main():
         for ev in h["events"]:
             if ev["k"] == "written" and ev.get("who") and not ev.get("v"):
                 y = year_of(ev.get("y"))
-                t = towns.named(ev.get("w"))
-                key, pr = (t[0], "pub") if t else (where_then(h, y), "work")
+                # Where it was published, as the citation says; else where the work is held; else where
+                # it was at the time (the histories' exhibitions are the least sure of these).
+                t = towns.named(ev.get("w")) or towns.said_in(ev.get("q"), strict=True)
+                key, pr = (t[0], "pub") if t else (holder(h), "held") if holder(h) else (where_then(h, y), "work")
                 for n in authors(ev["who"]):
                     if not name_like(n, bare_ok=True) or is_artist(n, h):
                         continue
@@ -361,8 +384,8 @@ def main():
                 fits[0].append(n)
         for c in clusters:
             # Its name: the spelling written most, with a given name in words where there is one.
-            best = sorted(c, key=lambda m: (-spell[m] - 1000 * any(w for _, w in given_parts(split_name(m)[0])),
-                                            -len(m), m))[0]
+            best = sorted(c, key=lambda m: (-bool(split_name(m)[0]), -any(w for _, w in given_parts(split_name(m)[0])),
+                                            -spell[m], -len(m), m))[0]
             for m in c:
                 person_of[m] = best
 
@@ -389,7 +412,7 @@ def main():
             conns.append((wid, c))
         works = sorted({w for w, _ in conns}, key=lambda w: (hist[w].get("title") or "", w))
         roles = "".join(r for r in "cws" if any(c["r"] == r for _, c in conns))
-        follow = len(conns) >= 2
+        follow = len(conns) >= 2 and any(c.get("p") in towns.rows for _, c in conns)
         # Places in time order (a connection with no year keeps its work's order, after the dated).
         timed = sorted(conns, key=lambda wc: (wc[1]["y"] or 9999, hist[wc[0]].get("title") or "", wc[0]))
         order = []
