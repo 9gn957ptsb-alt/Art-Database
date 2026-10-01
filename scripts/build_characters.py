@@ -12,10 +12,26 @@ This writes, from public files only (no network, never data/):
                                 that has a drawing in scripts/characters/<id>.py:
                                 its poses, one letter a cell (see draw.py)
   docs/v2/characters/plants.json  for every place the page can be down in (the
-                                collages' cities and the Museums layer's cities):
-                                DIRT Earth's biome, realm, ecoregion and soil
-                                there, and that biome's plants for that realm,
-                                stratum by stratum, with their crowns' shapes
+                                collages' cities and the Museums layer's cities)
+                                and every artist's birthplace: DIRT Earth's biome,
+                                realm, ecoregion and soil there, and that biome's
+                                plants for that realm, stratum by stratum, with
+                                their crowns' shapes
+  docs/v2/characters/artists.json  each artist's map (the cast's and the backlog's,
+                                so a new character works the day it is drawn):
+                                every city on the site where the artist's saved
+                                works are held now or have been, in the order of a
+                                route from home, with the works and the museums
+                                holding them; and the artist's home (homes.json,
+                                from Wikidata) with the plants of home
+
+The artist, 1 Oct 2026: "Establish a correspondence between the Artist
+associated with animals and plants and where their artwork is located
+throughout the world … implement both a local aspect of where the museum is
+in addition to the transcendental aspect of non-native artist and their
+plants and animals to that area. When an animal comes up that is associated
+with an artist, I want you to be able to use that animal as an additional
+way to navigate through the globe."
 
 The plants come from DIRT's grammar of places (dirt/earth/out/grammar.json,
 dirt/earth/GRAMMAR.md); the place from DIRT Earth's atlas (dirt/earth/out/,
@@ -113,14 +129,14 @@ def places():
     return out
 
 
-def plants():
+def plants(extra=()):
     grammar = json.loads((EARTH / "grammar.json").read_text())
     atlas = Atlas()
     sets, set_index = [], {}
     ecos, eco_index = [], {}
     soils, soil_index = [], {}
     rows, seen = [], set()
-    for name, lat, lon in places():
+    for name, lat, lon in list(places()) + list(extra):
         key = (round(lat, 2), round(lon, 2))
         if key in seen:
             continue
@@ -160,6 +176,121 @@ def plants():
     }
 
 
+V2 = ROOT / "docs" / "v2"
+
+
+def km(a, b):
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371 * math.asin(min(1, math.sqrt(h)))
+
+
+def year_of(text):
+    m = re.search(r"\d{4}", str(text or ""))
+    return int(m.group(0)) if m else 0
+
+
+def artist_names(cast):
+    return [c["artist"] for c in cast["cast"]] + [b["artist"] for b in cast.get("backlog", [])]
+
+
+def homes():
+    path = OUT / "homes.json"
+    return json.loads(path.read_text())["artists"] if path.exists() else {}
+
+
+def artist_maps(cast, home_of, plant_rows):
+    """For each artist, every city of the site where the artist's saved works are held or have
+    been, as a route from home: nearest first, then the nearest to that, and on. The artist's
+    works are the members of the artist's thread (threads/, by the name the histories give);
+    where each has been, its history's events with a place; what is held now, museums.json."""
+    finding = json.loads((V2 / "finding.json").read_text())
+    thread_of = {t[2]: t[0] for t in finding["t"] if t[1] == "artist"}
+    cities = json.loads((V2 / "cities.json").read_text())
+    town = {r[0]: r for r in cities["towns"]}
+    venue_ll = {k: {v[0]: (v[1], v[2]) for v in vs} for k, vs in cities["venues"].items()}
+    museums = json.loads((V2 / "museums.json").read_text())["museums"]
+    out = {}
+    for name in artist_names(cast):
+        tid = thread_of.get(name)
+        if not tid:
+            out[name] = {"note": "no saved works by this artist on the site"}
+            continue
+        thread = json.loads((V2 / "threads" / (tid + ".json")).read_text())
+        works = sorted(thread["works"], key=lambda w: (w[4] or 9999, w[0]))
+        index = {w[0]: i for i, w in enumerate(works)}
+        at = {}                                   # town key -> {work index: first year there}
+        for w in works:
+            h = json.loads((V2 / "histories" / (w[0] + ".json")).read_text())
+            for e in h.get("events", []):
+                k = e.get("p")
+                if k not in town:
+                    continue
+                y = year_of(e.get("y"))
+                got = at.setdefault(k, {})
+                i = index[w[0]]
+                if i not in got or (y and (not got[i] or y < got[i])):
+                    got[i] = y
+        held = {}                                 # museum slug -> its works by the artist, held now
+        for m in museums:
+            ids = sorted(index[x["id"]] for x in m.get("works", []) if x["id"] in index)
+            if ids:
+                held[m["slug"]] = ids
+        rows = {}
+        for k, got in at.items():
+            r = town[k]
+            mus = sorted(([slug, held[slug]] for slug in r[6] if slug in held),
+                         key=lambda x: (-len(x[1]), x[0]))
+            wait = ["m", mus[0][0]] if mus else None
+            if not wait and r[9]:
+                # Else the gallery, fair or sale room here that has had most of the artist's works,
+                # where it has a point.
+                pf = json.loads((V2 / "places" / (k + ".json")).read_text())
+                count = {}
+                for row in pf["works"]:
+                    if row[0] in index and row[5] in venue_ll.get(k, {}):
+                        count.setdefault(row[5], set()).add(row[0])
+                if count:
+                    vi = sorted(count, key=lambda v: (-len(count[v]), v))[0]
+                    ll = venue_ll[k][vi]
+                    wait = ["v", pf["venues"][vi][0], ll[0], ll[1]]
+            ids = sorted(got, key=lambda i: (got[i] or 9999, i))
+            first = min((y for y in got.values() if y), default=0)
+            rows[k] = [k, r[1], r[2], r[3], r[4], ids, [[m[0], len(m[1])] for m in mus], wait, first]
+        # The route: from home, or else from the city with most of the artist's works.
+        home = home_of.get(name, {}).get("born")
+        left = sorted(rows.values(), key=lambda r: (-len(r[5]), r[0]))
+        here = tuple(home["ll"]) if home else (left[0][3], left[0][4]) if left else None
+        route = []
+        while left:
+            nxt = min(left, key=lambda r: (km(here, (r[3], r[4])), r[0]))
+            route.append(nxt)
+            left.remove(nxt)
+            here = (nxt[3], nxt[4])
+        rec = {
+            "thread": tid,
+            "works": [[w[0], w[1], w[3], w[4] or 0] for w in works],
+            "held": sum(len(v) for v in held.values()),
+            "places": [[r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]] for r in route],
+        }
+        h = home_of.get(name, {})
+        if home:
+            got = plant_rows.get((round(home["ll"][0], 2), round(home["ll"][1], 2)))
+            rec["home"] = {"where": home["where"], "name": home["name"], "ll": home["ll"], "wd": home["wd"],
+                           "plants": got[2:5] if got else None}
+        if h.get("worked") or h.get("lived"):
+            seen = []
+            for w in h.get("worked", []) + h.get("lived", []):
+                if w["where"] not in seen and w["where"] != (home or {}).get("where"):
+                    seen.append(w["where"])
+            rec["worked"] = seen
+        rec["source"] = h.get("source") or h.get("note") or "no home found on Wikidata"
+        out[name] = rec
+        print(f"{name}: {len(works)} works, {len(route)} cities, {rec['held']} held"
+              f"{', of ' + home['where'] if home else ', no home'}")
+    return out
+
+
 def main():
     cast = json.loads((OUT / "characters.json").read_text())
     for c in cast["cast"]:
@@ -171,9 +302,26 @@ def main():
             "poses": poses,
         })
         print(f"{c['id']}: {sum(len(v) for v in poses.values())} frames, {n} bytes")
-    p = plants()
+    home_of = homes()
+    extra = [(h["born"]["where"], h["born"]["ll"][0], h["born"]["ll"][1])
+             for _, h in sorted(home_of.items()) if h.get("born")]
+    p = plants(extra)
     n = dump(OUT / "plants.json", p)
     print(f"plants: {len(p['places'])} places, {len(p['sets'])} biome-realm sets, {n} bytes")
+    rows = {(r[0], r[1]): r for r in p["places"]}
+    maps = artist_maps(cast, home_of, rows)
+    n = dump(OUT / "artists.json", {
+        "note": "Each character's artist (the cast's and the backlog's): every city on the site where the artist's "
+                "saved works are held now or have been, as a route from home (nearest first), and the artist's "
+                "home with the plants of home. Written by scripts/build_characters.py from public files: "
+                "finding.json, threads/, histories/, museums.json, cities.json, places/, homes.json (Wikidata). "
+                "works: [id, title, image, year]; places: [city key, name, country, lat, lon, [works there, by "
+                "index, earliest first], [[museum slug, works it holds]], where the animal waits (['m', museum "
+                "slug] or ['v', venue, lat, lon] or null), first year]; home.plants: [set, ecoregion, soil] "
+                "in plants.json.",
+        "artists": maps,
+    })
+    print(f"artists: {len(maps)} artists, {n} bytes")
 
 
 if __name__ == "__main__":

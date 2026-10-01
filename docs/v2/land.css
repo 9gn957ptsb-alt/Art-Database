@@ -3280,3 +3280,34 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .character[hidden], .character-says[hidden],
 .land-body:has(.land:not([data-at="city"])) .character-says { display: none; }
+
+/* ---- following an animal (land.js, "following"; characters.js) -------------
+   Pressed, a character offers one quiet word; followed, the city's column
+   opens on its artist's map, a lilac rule at its side, the way the work you
+   came by is marked. */
+.character-follow {
+  margin: 0 0 0 4px;
+  padding: 0 6px;
+  border: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: #eadfcd;
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.character-follow:hover,
+.character-follow:focus-visible { border-color: #eadfcd; outline: none; }
+.follow-box {
+  margin: var(--s-4) 0 var(--s-5);
+  padding-left: var(--s-3);
+  border-left: 1px solid rgba(157, 149, 230, 0.6);
+}
+.follow-box .town-section:first-child { margin-top: 0; color: #9d95e6; }
+.follow-box .follow-said { margin-left: 0; }
+.follow-box .town-museum-meta { margin-left: 0; }
+.follow-route .town-near[data-here] { color: #eadfcd; border-color: #9d95e6; }
+.follow-away { margin-top: var(--s-4); }
+.town-museum-row[data-followed] .town-museum-name { text-decoration: underline; text-decoration-color: #9d95e6; text-underline-offset: 4px; }

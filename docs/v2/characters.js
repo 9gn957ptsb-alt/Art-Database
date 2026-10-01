@@ -26,9 +26,35 @@
    (`Characters.wave`); everything else is here. Under reduced motion no
    one comes.
 
+   The correspondence (the artist, 1 Oct 2026: "Establish a correspondence
+   between the Artist associated with animals and plants and where their
+   artwork is located throughout the world … implement both a local aspect
+   of where the museum is in addition to the transcendental aspect of
+   non-native artist and their plants and animals to that area. When an
+   animal comes up that is associated with an artist, I want you to be able
+   to use that animal as an additional way to navigate through the globe").
+   Each character's artist has a map (characters/artists.json): every city
+   where the artist's saved works are held or have been, as a route from
+   home, and the home itself, from Wikidata, with the plants of home. A
+   character comes to the cities on its artist's map: the first wave in one
+   of them brings it. Anywhere else it comes only now and then, and then it
+   is a guide, trotting off toward the nearest city of its artist. Round the
+   ring rise two plantings: the city's own plants (local, worked with the
+   city's soil) and, among them, the plants of the artist's home
+   (transcendental: in the artist's inks, outlined in chalk, of no soil
+   here). Pressed, it says both — "Red fox · after Cy Twombly, of Lexington,
+   Virginia · dogwood from Lexington among Munich's European beech and
+   pedunculate oak" — and offers to be followed. Following, land.js turns
+   the city's column into the artist's map and the animal runs ahead along
+   every journey and waits at the museum or gallery that holds the work
+   (`Land.follow`, `Characters.guide`). Pressing it again lets it go.
+
    Data: characters/characters.json (the cast), characters/<id>.json (its
-   poses, a letter a cell), characters/plants.json (each city's biome,
-   realm, soil and plants), all written by scripts/build_characters.py. */
+   poses, a letter a cell), characters/plants.json (each city's and each
+   artist's home's biome, realm, soil and plants), characters/artists.json
+   (each artist's map and home), all written by
+   scripts/build_characters.py; characters/homes.json by
+   scripts/fetch_artist_homes.py. */
 
 (function () {
   "use strict";
@@ -45,7 +71,9 @@
   var CELL = 2;                        // CSS px a dot of the plants
 
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var cast = null, plants = null, sprites = {};
+  var GUIDE = 1 / Math.pow(PHI, 3);    // the chance one comes, as a guide, to a city not on its artist's map
+  var NEAR_KM = 30;                    // a collage's city is a city of the map this near
+  var cast = null, plants = null, artists = null, sprites = {};
   var loading = null;
   var one = null;                      // the character out now, if any
   var restUntil = 0;
@@ -65,9 +93,11 @@
         return r.json();
       });
     }
-    loading = Promise.all([get("characters.json"), get("plants.json")]).then(function (got) {
+    loading = Promise.all([get("characters.json"), get("plants.json"),
+                           get("artists.json").catch(function () { return null; })]).then(function (got) {
       cast = got[0];
       plants = got[1];
+      artists = got[2];
       return Promise.all(cast.cast.map(function (c) {
         return get(c.id + ".json").then(function (s) { sprites[c.id] = s; });
       }));
@@ -120,6 +150,59 @@
     return { set: set, eco: plants.ecoregions[best[3]], soil: soil[0], soilRgb: rgb(soil[1]) };
   }
 
+  /* ---- the artist's map ----------------------------------------------------
+
+     Where the artist's works are or have been (artists.json), and home. */
+
+  function mapOf(c) {
+    var m = artists && artists.artists && artists.artists[c.artist];
+    return m && m.places && m.places.length ? m : null;
+  }
+
+  function km(lat1, lon1, lat2, lon2) {
+    var r = Math.PI / 180;
+    var h = Math.pow(Math.sin((lat2 - lat1) * r / 2), 2) +
+      Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.pow(Math.sin((lon2 - lon1) * r / 2), 2);
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  // The map's row for a city: by its key, or (a collage's city) within 30 km.
+  function rowHere(m, city) {
+    if (!m || !city) { return null; }
+    var hit = null;
+    m.places.forEach(function (r) {
+      if (hit) { return; }
+      if (r[0] === city.key || km(r[3], r[4], city.lat, city.lon) < NEAR_KM) { hit = r; }
+    });
+    return hit;
+  }
+
+  function nearestRow(m, lat, lon) {
+    var best = null;
+    m.places.forEach(function (r) {
+      var d = km(r[3], r[4], lat, lon);
+      if (!best || d < best.km) { best = { row: r, km: d }; }
+    });
+    return best;
+  }
+
+  // Home: where the artist was born, and the plants there (plants.json's set).
+  function homeOf(m) {
+    var h = m && m.home;
+    if (!h || !h.plants || !plants) { return null; }
+    var set = plants.sets[h.plants[0]];
+    return set ? { where: h.where, name: h.name, set: set } : null;
+  }
+
+  // The artist's inks for the plants of home: the dark of the drawing, then
+  // the writing's two inks (Twombly's pale greens of Roman Notes), else the coat.
+  function homeLook(c) {
+    var k = c.after.inks;
+    if (k.home) { return k.home; }
+    var w = k.writing || [k.coat[2], k.coat[1]];
+    return [k.black[0], w[w.length - 1], w[0]];
+  }
+
   /* ---- the canvas -------------------------------------------------------- */
 
   function setUp() {
@@ -156,7 +239,7 @@
     var land = document.getElementById("land");
     if (land && window.MutationObserver) {
       new MutationObserver(function () {
-        if (land.dataset.at !== "city") { endVisit(); }
+        if (land.dataset.at !== "city" && !(one && one.mode === "follow")) { endVisit(); }
       }).observe(land, { attributes: true, attributeFilter: ["data-at"] });
     }
     return true;
@@ -270,11 +353,20 @@
     }
   }
 
-  function makeCrown(shape, R, look, soil, seed) {
+  function makeCrown(shape, R, look, soil, seed, opts) {
     // In plant cells (CELL px), relative to the crown's middle.
+    opts = opts || {};
     var n = Math.ceil(R / CELL) + 1;
     var dots = [], shade = [];
     var lo = look.map(rgb);
+    var worked = opts.soil === undefined ? 0.15 : opts.soil;   // how much of the soil here is in it
+    var inside = {};
+    for (var jj = -n; jj <= n; jj += 1) {
+      for (var ii = -n; ii <= n; ii += 1) {
+        if (crownAt(shape, ii * CELL, jj * CELL, R, seed)) { inside[ii + "," + jj] = true; }
+      }
+    }
+    var line = opts.outline ? css(rgb(opts.outline)) : null;
     var drop = Math.max(1, Math.round((shape === "umbrella" ? 0.6 : shape === "column" ? 0.7 : 0.3) * R / CELL));
     for (var j = -n; j <= n; j += 1) {
       for (var i = -n; i <= n; i += 1) {
@@ -285,8 +377,11 @@
         var v = l * 3 - 0.5, k = Math.floor(v);
         if (v - k > bayer(i, j)) { k += 1; }
         k = Math.max(0, Math.min(2, k));
-        dots.push({ i: i, j: j, c: css(mix(lo[k], soil, 0.15), (hash(i, j, seed * 97 | 0) - 0.5) * 16),
-                    small: hash(i, j, 5) < 0.3 });
+        // A crown from elsewhere is outlined in chalk, as the fox is.
+        // Drawn on its shadow side only, so the inks show.
+        var edge = line && !(inside[(i + 1) + "," + j] && inside[i + "," + (j + 1)]);
+        dots.push({ i: i, j: j, c: edge ? line : css(mix(lo[k], soil, worked), (hash(i, j, seed * 97 | 0) - 0.5) * 16),
+                    small: !edge && hash(i, j, 5) < 0.3 });
         shade.push({ i: i + drop, j: j + drop });
       }
     }
@@ -294,7 +389,7 @@
     return { dots: dots, shade: shade, shadeC: css(mix(lo[0], [0, 0, 0], 0.45)), top: lowest, bottom: highest };
   }
 
-  function growPlants(x, y, r, here, seed) {
+  function growPlants(x, y, r, here, seed, home) {
     var out = [];
     if (!here || !here.set.strata.length) { return out; }
     var strata = here.set.strata;
@@ -302,8 +397,14 @@
     var n = Math.min(13, 7 + Math.round(total * 3));
     var ring = Math.max(56, r);
     var a = seed * 6.283;
+    // The plants of the artist's home, among the city's own: a few, in the
+    // artist's inks, outlined in chalk, of no soil here, each half a golden
+    // angle from a native crown; and only where home is not this same ground.
+    var away = home && home.set !== here.set && home.set.strata.length ? home : null;
+    var homeEvery = away ? Math.max(2, Math.floor(n / 3)) : 0;
     for (var k = 0; k < n; k += 1) {
       a += 2.39996;                                  // the golden angle
+      if (away && k % homeEvery === 1) { out.push.apply(out, homeCrown(x, y, ring, away, a + 1.19998, k, seed)); }
       var pick = hash(k, 1, seed * 1000 | 0) * total, s = strata[0];
       for (var q = 0; q < strata.length; q += 1) { pick -= strata[q][3]; if (pick <= 0) { s = strata[q]; break; } }
       var R = Math.max(5, Math.min(18, 4 + s[2] * 0.3));
@@ -320,6 +421,23 @@
     return out;
   }
 
+  function homeCrown(x, y, ring, home, a, k, seed) {
+    var hs = home.set.strata;
+    var s = hs[Math.floor(hash(k, 4, seed * 1000 | 0) * hs.length) % hs.length];
+    var R = Math.max(9, Math.min(16, 6 + s[2] * 0.3));
+    var d = ring * (0.98 + 0.3 * hash(k, 5, seed * 1000 | 0)) + R * 0.5;
+    var cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d * 0.82;
+    if (cx < -R || cx > W + R || cy < -R || cy > H + R) { return []; }
+    var crown = makeCrown(s[1], R, home.look, [0, 0, 0], hash(k, 6, seed * 1000 | 0),
+                          { soil: 0, outline: home.chalk });
+    crown.x = Math.round(cx / CELL) * CELL;
+    crown.y = Math.round(cy / CELL) * CELL;
+    crown.delay = k * 90 + 140;
+    crown.stratum = s;
+    crown.home = true;
+    return [crown];
+  }
+
   // How much of a crown is up: 0 to 1 coming up, and back down again.
   function upness(p, now) {
     var t = now - p.born - p.crownDelay;
@@ -332,13 +450,17 @@
   function drawPlants(now) {
     var px = Math.max(1, Math.round(CELL * dpr));
     var anyUp = false;
+    // Following, the plantings stand where it waits, and move with the city under it.
+    var sx = 0, sy = 0;
+    if (one.anchor && one.target) { sx = one.target.x - one.anchor.x; sy = one.target.y - one.anchor.y; }
+    if (one.mode === "follow" && (one.hidden || one.state === "run")) { return false; }
     one.plants.forEach(function (c) {
-      var up = upness({ born: one.born, crownDelay: c.delay, sinkAt: one.sinkAt }, now);
+      var up = upness({ born: one.plantBorn || one.born, crownDelay: c.delay, sinkAt: one.sinkAt }, now);
       if (up <= 0) { return; }
       anyUp = true;
       var rows = c.bottom - c.top + 1;
       var cut = c.bottom - Math.ceil(rows * up);    // rows above this are not up yet
-      var ox = Math.round(c.x * dpr), oy = Math.round(c.y * dpr);
+      var ox = Math.round((c.x + sx) * dpr), oy = Math.round((c.y + sy) * dpr);
       g.globalAlpha = 0.42;
       g.fillStyle = c.shadeC;
       c.shade.forEach(function (s) {
@@ -411,26 +533,41 @@
       if (!cast || !cast.cast.length || one) { return; }
       var land = document.getElementById("land");
       if (land && land.dataset.at !== "city") { return; }
-      // One of the cast; while there is one, it is always that one.
-      var c = cast.cast[Math.floor(Math.random() * cast.cast.length)];
-      if (!sprites[c.id]) { return; }
-      come(c, x, y, city.r || 60, placeAt(city.lat, city.lon));
+      // The correspondence: a city on an artist's map brings that artist's
+      // character. Anywhere else one comes only now and then, as a guide.
+      var drawn = cast.cast.filter(function (c) { return sprites[c.id]; });
+      var mine = drawn.filter(function (c) { return rowHere(mapOf(c), city); });
+      var c, guide = null;
+      if (mine.length) {
+        c = mine[Math.floor(Math.random() * mine.length)];
+      } else {
+        if (!drawn.length || Math.random() > GUIDE) { return; }
+        c = drawn[Math.floor(Math.random() * drawn.length)];
+        if (mapOf(c)) { guide = nearestRow(mapOf(c), city.lat, city.lon); }
+      }
+      come(c, x, y, city.r || 60, placeAt(city.lat, city.lon), city, guide);
     });
   }
 
-  function come(c, x, y, r, here) {
+  function come(c, x, y, r, here, city, guide) {
     size();
     var now = performance.now();
     // Off by the nearer side, unless that is too close to be seen going; on
     // a phone, always to the left, away from the dial of years at the right.
+    // A guide goes the way its artist's nearest city lies, east or west.
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
+    if (guide && city) { dir = ((guide.row[4] - city.lon + 540) % 360) - 180 >= 0 ? 1 : -1; }
     var seed = Math.random();
+    var m = mapOf(c);
+    var home = homeOf(m);
+    if (home) { home.look = homeLook(c); home.chalk = c.after.inks.pen[0]; }
     one = {
-      c: c, here: here, born: now, x0: x, x: x, y: y, dir: dir,
+      c: c, here: here, born: now, x0: x, x: x, y: y, dir: dir, mode: "wave",
+      city: city || null, map: m, home: home, row: rowHere(m, city), guide: guide,
       pose: "stand", n: 0, state: "out", since: now, s: 0, looked: false,
-      plants: growPlants(x, y, r, here, seed), writing: [], sinkAt: 0, stopped: false
+      plants: growPlants(x, y, r, here, seed, home), writing: [], sinkAt: 0, stopped: false
     };
     hit.setAttribute("aria-label", c.name + " — press to see what it is");
     loop();
@@ -439,15 +576,108 @@
   function press() {
     if (!one || one.state === "gone") { return; }
     var now = performance.now();
+    // Following: pressed again, it is let go, and goes its own way.
+    if (one.mode === "follow") {
+      if (window.Land && Land.unfollow) { Land.unfollow(); } else { release(now); }
+      return;
+    }
     if (one.stopped) { goOn(now); return; }
     one.stopped = true;
     one.stopAt = now;
     one.pose = "look";
     one.n = 0;
     says.textContent = line(one);
+    // And it can be followed, through its artist's map.
+    var canFollow = one.map && window.Land && Land.follow;
+    if (canFollow) {
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "character-follow";
+      go.textContent = "Follow";
+      go.setAttribute("aria-label", "Follow the " + one.c.name.toLowerCase() + " through " + one.c.artist + "'s works");
+      go.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      go.addEventListener("click", function (event) { event.stopPropagation(); follow(); });
+      says.appendChild(document.createTextNode(" "));
+      says.appendChild(go);
+    }
     says.hidden = false;
     placeSays();
-    one.sayUntil = now + SAY;
+    one.sayUntil = now + SAY * (canFollow ? PHI : 1);
+  }
+
+  /* Following: land.js turns the column into the artist's map and says
+     where the animal is to be (guide); here it only runs and waits. */
+  function follow() {
+    var o = one;
+    if (!o || !o.map || !window.Land) { return; }
+    var now = performance.now();
+    o.mode = "follow";
+    o.stopped = false;
+    o.state = "wait";
+    o.waitSince = now;
+    o.atKey = o.city ? (o.row ? o.row[0] : o.city.key) : null;
+    o.sinkAt = Math.max(now, o.born + RISE);      // the wave's plantings go back down
+    o.writing = [];
+    says.hidden = true;
+    hit.setAttribute("aria-label", o.c.name + " — press to let it go, and stop following " + o.c.artist);
+    var ids = {};
+    o.map.works.forEach(function (w) { ids[w[0]] = true; });
+    Land.follow({ artist: o.c.artist, animal: o.c.name, map: o.map, ids: ids, home: o.home ? o.home.where : "" });
+  }
+
+  // Let go: off by the nearer side, its plantings sinking, and the long rest after.
+  function release(now) {
+    var o = one;
+    if (!o) { return; }
+    o.mode = "wave";
+    o.hidden = false;
+    o.stopped = false;
+    o.state = "trot";
+    o.looked = true;
+    o.x0 = o.x;
+    o.s = 0;
+    o.since = now;
+    o.lastMove = now;
+    o.dir = o.x > W / 2 ? 1 : -1;
+    o.writing = [];
+    o.sinkAt = Math.max(now, (o.plantBorn || o.born) + RISE);
+    says.hidden = true;
+    loop();
+  }
+
+  /* Where land.js wants it, each frame while following: running ahead
+     along a journey ({x, y, dir, run}), waiting by the museum or gallery
+     holding the work ({x, y, key, lat, lon, name}), or nowhere (null: in a
+     museum, a work's history). Arriving in a city of the map, the two
+     plantings rise round where it waits. */
+  function guide(p) {
+    var o = one;
+    if (!o || o.mode !== "follow") { return; }
+    if (!p) { o.hidden = true; return; }
+    size();
+    o.hidden = false;
+    var now = performance.now();
+    if (p.run) {
+      o.state = "run";
+      o.x = p.x; o.y = p.y;
+      if (p.dir) { o.dir = p.dir; }
+      o.target = null;
+      o.atKey = null;
+      return;
+    }
+    if (o.state === "run") { o.state = "wait"; o.waitSince = now; }
+    o.target = p;
+    if (o.atKey !== p.key) {
+      o.atKey = p.key;
+      o.city = { key: p.key, lat: p.lat, lon: p.lon, name: p.name };
+      o.here = placeAt(p.lat, p.lon);
+      o.row = rowHere(o.map, o.city);
+      o.anchor = { x: p.x, y: p.y };
+      o.plants = still ? [] : growPlants(p.x, p.y, 72, o.here, Math.random(), o.home);
+      o.plantBorn = now + 600;
+      o.sinkAt = now + 600 + STAND + RISE;
+    }
+    loop();
   }
 
   function goOn(now) {
@@ -458,18 +688,38 @@
     says.hidden = true;
   }
 
+  function andList(names) {
+    return names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0];
+  }
+
+  /* What it is, whose hand, and the two plantings: "Red fox · after Cy
+     Twombly, of Lexington, Virginia · dogwood from Lexington among Munich's
+     European beech and pedunculate oak · 10 of his works have been here". */
   function line(o) {
-    var bits = [o.c.name, "after " + o.c.artist];
-    var names = [];
+    var bits = [o.c.name, "after " + o.c.artist + (o.home ? ", of " + o.home.where : "")];
+    var names = [], homes = [];
     o.plants.forEach(function (p) {
       var nm = p.stratum[4][0];
-      if (nm && names.indexOf(nm) < 0) { names.push(nm); }
+      var list = p.home ? homes : names;
+      if (nm && list.indexOf(nm) < 0) { list.push(nm); }
     });
-    if (names.length) {
-      names = names.slice(0, 3);
-      bits.push("among " + (names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0]));
+    var town = o.city && o.city.name ? o.city.name.split(",")[0] : "";
+    var local = names.length ? (town ? town + "’s " : "") + andList(names.slice(0, 3)) : "";
+    if (homes.length) {
+      bits.push(andList(homes.slice(0, 2)) + " from " + o.home.name + (local ? " among " + local : ""));
+    } else if (o.home && o.here && o.home.set === o.here.set && names.length) {
+      bits.push("at home among " + andList(names.slice(0, 3)));
+    } else if (names.length) {
+      bits.push("among " + local);
     }
-    if (o.here) { bits.push(o.here.set.biome); }
+    if (!o.home && o.here) { bits.push(o.here.set.biome); }
+    var n = o.row ? o.row[5].length : 0;
+    if (n) {
+      bits.push(n + (n === 1 ? " of the artist’s works has" : " of the artist’s works have") + " been here");
+    } else if (o.guide) {
+      bits.push("the nearest of the artist’s works: " + o.guide.row[1] + ", " +
+                Math.round(o.guide.km).toLocaleString("en") + " km " + (o.dir > 0 ? "east" : "west"));
+    }
     return bits.join(" · ");
   }
 
@@ -491,6 +741,7 @@
 
   function step(now) {
     var o = one, t = now - o.since;
+    if (o.mode === "follow") { stepFollow(o, now); return; }
     if (o.stopped) {
       // Looking at you; then it sits; then it goes on.
       if (now - o.stopAt > 2600) { o.pose = "sit"; }
@@ -526,6 +777,31 @@
     }
   }
 
+  // Following: trotting along the way, or to where it waits, then standing, then sitting.
+  function stepFollow(o, now) {
+    var dt = Math.min(80, now - (o.lastMove || now));
+    o.lastMove = now;
+    if (o.hidden) { return; }
+    if (o.state === "run") { o.pose = "trot"; o.n = Math.floor(now / (1000 / FPS)) % 4; return; }
+    var tg = o.target;
+    if (!tg) { o.pose = "stand"; return; }
+    var dx = tg.x - o.x, dy = tg.y - o.y, d = Math.sqrt(dx * dx + dy * dy);
+    if (d > 1.5) {
+      var go = Math.min(d, SPEED * PHI * PHI * dt / 1000);
+      o.x += dx / d * go;
+      o.y += dy / d * go;
+      if (Math.abs(dx) > 1) { o.dir = dx > 0 ? 1 : -1; }
+      o.pose = "trot";
+      o.n = Math.floor(now / (1000 / FPS)) % 4;
+      o.waitSince = now;
+    } else {
+      o.x = tg.x; o.y = tg.y;
+      var waited = now - (o.waitSince || now);
+      o.pose = waited > 4200 ? "sit" : waited > 1600 ? "look" : "stand";
+      o.n = 0;
+    }
+  }
+
   function draw(now) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
@@ -533,7 +809,7 @@
     var busy = drawPlants(now);
     busy = drawWriting(now) || busy;
     var o = one;
-    if (o.state !== "gone") {
+    if (o.state !== "gone" && !o.hidden) {
       busy = true;
       var sp = sprite(o.c, o.pose, o.n, o.dir, o.here);
       var b = bounds();
@@ -580,7 +856,7 @@
       if (now - (one.lastStep || 0) >= 1000 / 24 || one.stopped) {
         var busy = draw(now);
         one.lastStep = now;
-        if (!busy && one.state === "gone" && one.sinkAt && now > one.sinkAt + RISE + 1400) { end(); return; }
+        if (!busy && one.mode !== "follow" && one.state === "gone" && one.sinkAt && now > one.sinkAt + RISE + 1400) { end(); return; }
       }
       if (one.stopped) { placeSays(); }
       raf = requestAnimationFrame(tick);
@@ -603,6 +879,10 @@
 
   window.Characters = {
     wave: wave,
+    // land.js, while following: where the animal is to be, and the end of it.
+    guide: guide,
+    following: function () { return !!(one && one.mode === "follow"); },
+    unfollowed: function () { if (one && one.mode === "follow") { release(performance.now()); } },
     // For the preview (scripts/preview_character.js): the files, read,
     // and one pose drawn as the page draws it, on a place's soil and plants.
     load: load,
@@ -631,7 +911,11 @@
       return here && { soil: here.soil, soilRgb: here.soilRgb, biome: here.set.biome, realm: here.set.realm,
                        eco: here.eco, strata: here.set.strata.map(function (st) { return st[0] + " (" + st[1] + "): " + st[4].join(", "); }) };
     },
-    _state: function () { return one && { id: one.c.id, pose: one.pose, state: one.state, x: one.x, y: one.y, line: line(one), plants: one.plants.length }; }
+    _state: function () {
+      return one && { id: one.c.id, pose: one.pose, state: one.state, mode: one.mode, x: one.x, y: one.y, hidden: !!one.hidden,
+                      line: line(one), plants: one.plants.length,
+                      home: one.plants.filter(function (p) { return p.home; }).length, guide: !!one.guide };
+    }
   };
 
   // Read the small files once the page has settled, so the first wave

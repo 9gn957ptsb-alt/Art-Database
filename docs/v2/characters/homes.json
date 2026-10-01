@@ -8,7 +8,7 @@
     ],
     "name": "Pittsburgh",
     "wd": "Q1342",
-    "where": "Pittsburgh"
+    "where": "Pittsburgh, Pennsylvania"
    },
    "label": "Andy Warhol",
    "source": "Wikidata Q5603: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1928 on both",
@@ -30,7 +30,7 @@
      ],
      "name": "Pittsburgh",
      "wd": "Q1342",
-     "where": "Pittsburgh"
+     "where": "Pittsburgh, Pennsylvania"
     },
     {
      "ll": [
@@ -62,7 +62,7 @@
      ],
      "name": "London",
      "wd": "Q84",
-     "where": "London, Roman Empire"
+     "where": "London, United Kingdom"
     }
    ],
    "source": "Wikidata Q327293: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1954 on both",
@@ -75,7 +75,16 @@
      ],
      "name": "London",
      "wd": "Q84",
-     "where": "London, Roman Empire"
+     "where": "London, United Kingdom"
+    },
+    {
+     "ll": [
+      51.7,
+      5.3167
+     ],
+     "name": "'s-Hertogenbosch",
+     "wd": "Q2766547",
+     "where": "'s-Hertogenbosch, Netherlands"
     }
    ]
   },
@@ -172,7 +181,7 @@
      ],
      "name": "Boston",
      "wd": "Q100",
-     "where": "Boston"
+     "where": "Boston, Massachusetts"
     },
     {
      "ll": [
@@ -181,7 +190,7 @@
      ],
      "name": "Lexington",
      "wd": "Q929667",
-     "where": "Lexington"
+     "where": "Lexington, Massachusetts"
     },
     {
      "ll": [
@@ -199,11 +208,20 @@
      ],
      "name": "Asheville",
      "wd": "Q648501",
-     "where": "Asheville"
+     "where": "Asheville, North Carolina"
     }
    ]
   },
   "David Hockney": {
+   "born": {
+    "ll": [
+     53.7944,
+     -1.7519
+    ],
+    "name": "Bradford",
+    "wd": "Q22905",
+    "where": "Bradford, United Kingdom"
+   },
    "label": "David Hockney",
    "source": "Wikidata Q159907: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1937 on both",
    "wd": "Q159907",
@@ -215,7 +233,7 @@
      ],
      "name": "London",
      "wd": "Q84",
-     "where": "London, Roman Empire"
+     "where": "London, United Kingdom"
     },
     {
      "ll": [
@@ -224,7 +242,7 @@
      ],
      "name": "Los Angeles",
      "wd": "Q65",
-     "where": "Los Angeles"
+     "where": "Los Angeles, California"
     },
     {
      "ll": [
@@ -242,7 +260,7 @@
      ],
      "name": "Hamburg",
      "wd": "Q1055",
-     "where": "Hamburg, Holy Roman Empire"
+     "where": "Hamburg, Germany"
     },
     {
      "ll": [
@@ -272,7 +290,7 @@
     ],
     "name": "Brooklyn",
     "wd": "Q18419",
-    "where": "Brooklyn"
+    "where": "Brooklyn, New York"
    },
    "label": "Elaine de Kooning",
    "source": "Wikidata Q449536: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1918 on both",
@@ -285,7 +303,7 @@
      ],
      "name": "Albuquerque",
      "wd": "Q34804",
-     "where": "Albuquerque"
+     "where": "Albuquerque, New Mexico"
     },
     {
      "ll": [
@@ -294,7 +312,7 @@
      ],
      "name": "Manhattan",
      "wd": "Q11299",
-     "where": "Manhattan"
+     "where": "Manhattan, New York"
     }
    ]
   },
@@ -328,7 +346,7 @@
      ],
      "name": "Bennington",
      "wd": "Q817921",
-     "where": "Bennington"
+     "where": "Bennington, Vermont"
     },
     {
      "ll": [
@@ -346,7 +364,7 @@
      ],
      "name": "Darien",
      "wd": "Q165613",
-     "where": "Darien"
+     "where": "Darien, Connecticut"
     }
    ]
   },
@@ -459,7 +477,7 @@
      ],
      "name": "London",
      "wd": "Q84",
-     "where": "London, Roman Empire"
+     "where": "London, United Kingdom"
     },
     {
      "ll": [
@@ -619,7 +637,7 @@
      ],
      "name": "Berlin",
      "wd": "Q64",
-     "where": "Berlin, Margraviate of Brandenburg"
+     "where": "Berlin, Germany"
     },
     {
      "ll": [
@@ -664,7 +682,7 @@
      ],
      "name": "Florence",
      "wd": "Q2044",
-     "where": "Florence, Kingdom of Italy"
+     "where": "Florence, Italy"
     },
     {
      "ll": [
@@ -835,7 +853,7 @@
      ],
      "name": "London",
      "wd": "Q84",
-     "where": "London, Roman Empire"
+     "where": "London, United Kingdom"
     },
     {
      "ll": [
@@ -865,7 +883,7 @@
     ],
     "name": "Cody",
     "wd": "Q916603",
-    "where": "Cody"
+    "where": "Cody, Wyoming"
    },
    "label": "Jackson Pollock",
    "source": "Wikidata Q37571: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1912 on both",
@@ -878,7 +896,7 @@
      ],
      "name": "East Hampton",
      "wd": "Q994372",
-     "where": "East Hampton"
+     "where": "East Hampton, New York"
     },
     {
      "ll": [
@@ -899,7 +917,7 @@
     ],
     "name": "Boston",
     "wd": "Q100",
-    "where": "Boston"
+    "where": "Boston, Massachusetts"
    },
    "label": "Paul Caponigro",
    "source": "Wikidata Q15516576: place of birth (P19), work location (P937), residence (P551), each place's coordinates (P625); matched to the Artsy artist by Artsy artist ID (P2042) on the item; born 1932 on both",
@@ -1018,7 +1036,7 @@
      ],
      "name": "Singapore",
      "wd": "Q334",
-     "where": "Singapore, British Empire"
+     "where": "Singapore"
     },
     {
      "ll": [
@@ -1027,7 +1045,7 @@
      ],
      "name": "Manhattan",
      "wd": "Q11299",
-     "where": "Manhattan"
+     "where": "Manhattan, New York"
     },
     {
      "ll": [

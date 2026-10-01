@@ -1606,6 +1606,12 @@
         seen[row[0]] = true;
         picked.push({ id: row[0], t: row[1], a: row[2], img: row[3], line: line });
       }
+      // Following an animal, the artist's works lead: those that have been where you are going.
+      if (following) {
+        B.works.forEach(function (row) {
+          if (following.ids[row[0]]) { add(row, following.artist + " \u00b7 " + nameB + (row[6] ? ", " + row[6] : "")); }
+        });
+      }
       A.works.forEach(function (row) {
         if (row[10] === toKey) { add(row, "left " + nameA + " for " + nameB + (row[7] ? ", " + row[7] : "")); }
       });
@@ -1720,6 +1726,8 @@
     // passed through both ways.
     var up = !groundOn && levelUp();
     if (up) { up.go(); return; }
+    // Up to the world: following an animal ends here (characters.js).
+    if (following) { endFollowing(true); }
     comeUpFromGround();
     stopTheatre();
     stopBuilding();
@@ -1759,7 +1767,7 @@
     // The way back is one level up: a museum's city, unless the city is
     // only that museum; everywhere else, the world.
     var up = levelUp();
-    if (bannerBackTo) { bannerBackTo.textContent = up ? up.name : "The world"; }
+    if (bannerBackTo) { bannerBackTo.textContent = backName(up); }
     scramble(bannerCity, "decode", 120, 760);
     scramble(bannerUnder, "type", 380, 640);
     creature.hidden = !CREATURE;
@@ -3137,10 +3145,14 @@
     }
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     sctx.clearRect(0, 0, W, H);
-    paintSphere(sctx, lit);
-    // The grit is baked into the body of the globe when it is painted, not
-    // laid over it every frame; it only changes when the globe does.
-    grit(sctx, nearness());
+    // With the body of materials (earth-body.js) the globe's body is painted
+    // live in paint(), and its own grain is the grit.
+    if (!bodyOn()) {
+      paintSphere(sctx, lit);
+      // The grit is baked into the body of the globe when it is painted, not
+      // laid over it every frame; it only changes when the globe does.
+      grit(sctx, nearness());
+    }
     if (clothStale()) { drawCloth(); }
     drawn.x = lit.x;
     drawn.y = lit.y;
@@ -3151,6 +3163,57 @@
     drawn.r = R;
     drawn.masses = masses.length;
   }
+
+  /* ---- the body of materials ----------------------------------------------
+
+     The artist, 1 Oct 2026: "the colors overall in the entire globe need to
+     be less pixelated and more reflective of the materials the represent".
+     The body of the globe is what each place is made of, in the collection's
+     own colours, painted smoothly by earth-body.js and lit by the real sun;
+     DIRT's dots are woven over it as before. On a journey it carries the
+     depth ("a bit more clarity, a bit more depth in space"): sharp where you
+     are headed and soft round the edges, the month's cloud on a layer above
+     the ground that swells past you as you come down, the land sharpening as
+     you descend, the air thick at the limb, and stars far behind when high. */
+  function bodyOn() { return DIRT_LOOK && !!window.EarthBody && EarthBody.ready(); }
+
+  // How high a journey is, 0 on the ground of a city to 1 with the world whole.
+  function journeyHigh() { return Math.max(0, Math.min(1, 1 - Math.log(Math.max(1, zoom)) / Math.log(600))); }
+
+  // On a journey: where it is sharp (a little ahead of you on the way), and how much.
+  function journeyFocus() {
+    if (!journey || !route) { return null; }
+    var went = journey.went || 0;
+    var v = slerp3(journey.av, journey.bv, journey.om, Math.min(1, route.u + 0.1));
+    var p = project(latOf(v), lonOf(v));
+    var amt = Math.min(1, went / 0.14) * (1 - Math.max(0, Math.min(1, (went - 0.78) / 0.2)));
+    return { x: Math.max(0.2 * W, Math.min(0.8 * W, p.x)), y: Math.max(0.2 * H, Math.min(0.8 * H, p.y)),
+             amt: 0.85 * amt * amt * (3 - 2 * amt), r: 0.5 * Math.sqrt(W * W + H * H) };
+  }
+
+  function drawBody(now) {
+    if (sun.at < 0 || now - sun.at > 20000) {
+      var s = sunNow(Date.now());
+      sun.lat = s.lat; sun.lon = s.lon; sun.at = now;
+    }
+    var on = journey ? 1 : 0;
+    var went = journey ? journey.went || 0 : 1;
+    var high = on ? journeyHigh() : 0;
+    // The cloud layer: as you come down it lies nearer you than the ground,
+    // so it swells and slides past faster, and is gone before you land.
+    var kc = Math.min(0.62, zoom / 260);
+    var cloud = on * Math.max(0, Math.min(1, (zoom - 1.1) / 1.3)) * (1 - smooth01((kc - 0.32) / 0.3)) *
+                (1 - smooth01((went - 0.8) / 0.17)) * 0.8;
+    var stars = on * smooth01((high - 0.35) / 0.45) * (1 - smooth01((went - 0.85) / 0.15)) * 0.9;
+    var sv = toVec(sun.lat, sun.lon);
+    return EarthBody.draw({
+      W: W, H: H, dpr: Math.min(dpr, 2), cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
+      sun: sv, near: nearness(), high: high, journey: on, time: still ? 0 : now / 1000,
+      focus: journeyFocus(), cloud: cloud, shell: 1 / (1 - kc), stars: stars,
+      starX: ((spin * 140) % 4000 + 4000) % 4000, starY: tilt * 140, light: 1
+    });
+  }
+  function smooth01(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
 
   function paint(now) {
     erupt(now);
@@ -3196,6 +3259,9 @@
     gctx.globalCompositeOperation = "source-over";
     gctx.globalAlpha = 1;
     gctx.clearRect(0, 0, W, H);
+    // The body, by what each place is made of, where the world is now.
+    var bodyCanvas = bodyOn() ? drawBody(now) : null;
+    if (bodyCanvas) { gctx.drawImage(bodyCanvas, 0, 0, W, H); }
 
     gctx.save();
     if ((flying || moving()) && drawn.r) {
@@ -3298,6 +3364,7 @@
     living(now);
     if (layerOn === "museums" && !place && towns) { drawTowns(now); }
     if (place && !flying && art && art.kind === "town") { drawVenues(); }
+    if (following && place) { drawFollowed(); }
     placeGloss();
     placeHubble(now);
 
@@ -5131,6 +5198,7 @@
 
     paint(now);
     if (route) { placeRouteNames(now); placeRiders(now); }
+    if (following) { guideFrame(now); }
     drawDials();
 
     // Up on the globe: the world, its words and its cities, and none of the
@@ -7960,7 +8028,8 @@
     // city, never while a collage is being read or a flight is on.
     if (window.Characters && place && !flying && !reading && !deckMode &&
         (place.work || (art && art.kind === "town"))) {
-      Characters.wave(x, y, { key: place.townKey || place.slug, lat: place.lat / RAD, lon: place.lon / RAD, r: r });
+      Characters.wave(x, y, { key: place.townKey || place.slug, lat: place.lat / RAD, lon: place.lon / RAD, r: r,
+                              name: place.title });
     }
     var caught = [];
     spawns.forEach(function (born) {
@@ -13009,6 +13078,7 @@
     var near = nearRow(t);
     if (near) { col.appendChild(near); }
     a.foot = artFoot();
+    if (following) { followSection(a, t); }
     // Up from one of its museums: that museum's row, lit, and its mark answers.
     var from = via && typeof via.museum === "string" ? via.museum : null;
     if (from && a.museumRows[from]) {
@@ -13141,6 +13211,218 @@
     });
     box.appendChild(row);
     return box;
+  }
+
+  /* ---- following an animal (characters.js) ---------------------------------
+
+     The artist, 1 Oct 2026: "When an animal comes up that is associated
+     with an artist, I want you to be able to use that animal as an
+     additional way to navigate through the globe. Instead of navigating
+     through the museums collection and its relation to my Artsy, saved
+     artworks, you now have an animal that pertains to a specific artist in
+     which you can explore their work. You see how through the global
+     interface we were able to generate a context to develop an additional
+     interface?"
+
+     Pressed, a character offers to be followed (characters.js). Following,
+     the city's column opens on the artist's map (characters/artists.json):
+     the artist's works that have been here, each a door to its history;
+     then every city the artist's works are or have been in, in the order
+     of a route from the artist's home, each a door. Going to one is a
+     journey, the animal running ahead along the way and the artist's works
+     riding first; arrived, it waits by the museum (or the gallery) that
+     holds the work, and the two plantings rise round it. The artist's
+     cities are lit wherever the world is seen. Up to the world, or the
+     animal pressed again, or "Let it go", and it is over; up from a
+     museum to its city, or from a work's history, it goes on. */
+  var following = null;                 // { artist, animal, map, ids, home }
+
+  window.Land = {
+    follow: function (f) { startFollowing(f); },
+    unfollow: function () { endFollowing(true); },
+    following: function () { return following && { artist: following.artist, animal: following.animal }; }
+  };
+
+  function backName(up) {
+    return up ? up.name : following ? "following " + following.artist : "The world";
+  }
+
+  function followRow(key) {
+    if (!following) { return null; }
+    var hit = null;
+    following.map.places.forEach(function (r) { if (!hit && r[0] === key) { hit = r; } });
+    return hit;
+  }
+
+  // The artist's city nearest where you are.
+  function followNearest() {
+    var here = toVec(focus.lat, focus.lon), best = null, bd = Infinity;
+    following.map.places.forEach(function (r) {
+      var d = Math.acos(Math.max(-1, Math.min(1, dot3(here, toVec(r[3] * RAD, r[4] * RAD)))));
+      if (d < bd) { bd = d; best = r; }
+    });
+    return best && { row: best, km: bd * 6371 };
+  }
+
+  function startFollowing(f) {
+    if (!f || !f.map || !f.map.places || !f.map.places.length) { return; }
+    following = f;
+    tilesDirty = true;
+    if (place && art && art.kind === "town" && !flying) {
+      followSection(art, art.town);
+      if (bannerBackTo && !levelUp()) { bannerBackTo.textContent = backName(null); }
+      return;
+    }
+    // Not in a city (a collage's city, a museum, a history): to the artist's nearest.
+    var n = followNearest();
+    if (n) { followGo(n.row); }
+  }
+
+  function endFollowing(tell) {
+    if (!following) { return; }
+    following = null;
+    tilesDirty = true;
+    var box = artCol.querySelector(".follow-box");
+    if (box && box.parentNode) { box.parentNode.removeChild(box); }
+    if (art && art.museumRows) {
+      Object.keys(art.museumRows).forEach(function (slug) { delete art.museumRows[slug].row.dataset.followed; });
+    }
+    if (bannerBackTo && place && !flying) { bannerBackTo.textContent = backName(levelUp()); }
+    if (tell && window.Characters && Characters.unfollowed) { Characters.unfollowed(); }
+  }
+
+  function followGo(row) {
+    if (!row || flying) { return; }
+    var t = towns && townBy[row[0]];
+    if (!t) {
+      readTowns().then(function () { if (towns && townBy[row[0]]) { followGo(row); } });
+      return;
+    }
+    openTown(row[0], { follow: true });
+  }
+
+  /* The artist's map, at the head of a city's column: whose, from where;
+     the artist's works that have been here, each a door to its history;
+     then the artist's cities, in the order of the route from home, each a
+     door; and the way to let it go. */
+  function followSection(a, t) {
+    var f = following;
+    if (!f || !a || a.kind !== "town") { return; }
+    var old = artCol.querySelector(".follow-box");
+    if (old && old.parentNode) { old.parentNode.removeChild(old); }
+    var m = f.map;
+    var row = followRow(t.key);
+    var box = el("section", "follow-box");
+    box.appendChild(el("p", "town-section follow-head",
+      "Following the " + f.animal.toLowerCase() + " · " + f.artist));
+    var mine = row ? row[5] : [];
+    var said = [];
+    if (f.home) { said.push("of " + f.home); }
+    said.push(m.works.length + (m.works.length === 1 ? " saved work" : " saved works") + " in " +
+              m.places.length + (m.places.length === 1 ? " city" : " cities"));
+    box.appendChild(el("p", "town-museum-meta follow-said", said.join(" · ")));
+    if (mine.length) {
+      box.appendChild(el("p", "town-section", "Here · " + mine.length));
+      var held = {};
+      (row[6] || []).forEach(function (h) {
+        var mu = museumOf(h[0]);
+        (mu && mu.works || []).forEach(function (w) { held[w.id] = shortName(mu); });
+      });
+      var list = el("div", "art-rows follow-works");
+      mine.forEach(function (i, k) {
+        var w = m.works[i];
+        if (!w) { return; }
+        var what = held[w[0]] ? "Held · " + held[w[0]] : w[3] ? String(w[3]) : "";
+        list.appendChild(artRow(w[0], w[1], f.artist, w[2], what, 0, { place: t.key }, k));
+      });
+      box.appendChild(list);
+      (row[6] || []).forEach(function (h) {
+        var r = a.museumRows && a.museumRows[h[0]];
+        if (r) { r.row.dataset.followed = "true"; }
+      });
+    } else {
+      var n = followNearest();
+      box.appendChild(el("p", "town-museum-meta",
+        "None of " + f.artist + "’s saved works here" +
+        (n ? " · the nearest: " + n.row[1] + ", " + Math.round(n.km).toLocaleString("en") + " km" : "")));
+    }
+    box.appendChild(el("p", "town-section", f.artist + "’s cities · " + m.places.length));
+    var go = el("div", "town-near-row follow-route");
+    m.places.forEach(function (r) {
+      var b = el("button", "town-near");
+      b.type = "button";
+      if (r[6] && r[6].length) {
+        var d = el("span", "town-near-dia", "◆ ");
+        d.setAttribute("aria-hidden", "true");
+        b.appendChild(d);
+      }
+      b.appendChild(document.createTextNode(r[1] + " · " + r[5].length));
+      b.setAttribute("aria-label", r[1] + ", " + r[2] + " — " + r[5].length +
+                     (r[5].length === 1 ? " work" : " works") + " by " + f.artist);
+      if (r[0] === t.key) { b.setAttribute("aria-current", "true"); b.dataset.here = "true"; }
+      b.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (r[0] !== t.key) { followGo(r); }
+      });
+      go.appendChild(b);
+    });
+    box.appendChild(go);
+    var away = el("button", "read-quiet follow-away", "Let the " + f.animal.toLowerCase() + " go");
+    away.type = "button";
+    away.addEventListener("click", function (event) { event.stopPropagation(); endFollowing(true); });
+    box.appendChild(away);
+    var at = a.head && a.head.parentNode === artCol ? a.head.nextSibling : artCol.firstChild;
+    artCol.insertBefore(box, at);
+  }
+
+  /* Where the animal is, each frame: ahead of you along a journey; by the
+     museum or gallery that holds the artist's work in a city of the map
+     (else the city's middle); nowhere in a museum or a history. */
+  function guideFrame(now) {
+    if (!window.Characters || !Characters.guide) { return; }
+    if (flying && journey && route) {
+      // A little ahead of the head of the way, along it, on the screen.
+      var r = route;
+      var v = slerp3(r.av, r.bv, r.om, Math.min(0.996, r.u)), v2 = slerp3(r.av, r.bv, r.om, Math.min(1, r.u + 0.004));
+      var p = project(latOf(v), lonOf(v)), q = project(latOf(v2), lonOf(v2));
+      var dx = q.x - p.x, dy = q.y - p.y, len = Math.sqrt(dx * dx + dy * dy);
+      if (p.z < 0.08 || r.u <= 0.005 || len < 1e-6) { Characters.guide(null); return; }
+      var ahead = 48 * Math.min(1, (1 - r.u) * 8);
+      var gx = p.x + dx / len * ahead, gy = p.y + dy / len * ahead;
+      if (gx < -60 || gy < -60 || gx > W + 60 || gy > H + 60) { Characters.guide(null); return; }
+      Characters.guide({ x: gx, y: gy, dir: dx >= 0 ? 1 : -1, run: true });
+      return;
+    }
+    if (flying || !place || !art || art.kind !== "town") { Characters.guide(null); return; }
+    var t = art.town;
+    var row = followRow(t.key);
+    var lat = t.lat, lon = t.lon;
+    var wait = row && row[7];
+    if (wait && wait[0] === "m") {
+      var mc = cityOf(wait[1]);
+      if (mc) { lat = mc.lat; lon = mc.lon; }
+    } else if (wait && wait[0] === "v") {
+      lat = wait[2] * RAD; lon = wrap(wait[3] * RAD);
+    }
+    var at = project(lat, lon);
+    if (at.z <= 0) { Characters.guide(null); return; }
+    // Below the door and to its left, so its name, its diamond and the names above stay clear.
+    Characters.guide({ x: at.x - 40, y: at.y + 40, key: t.key, lat: t.lat / RAD, lon: t.lon / RAD, name: t.name });
+  }
+
+  // The artist's cities, lit: a tile each, in lilac, the city you are in left out.
+  function drawFollowed() {
+    var S = safeBox();
+    ctx.fillStyle = LILAC;
+    following.map.places.forEach(function (r) {
+      if (place && place.townKey === r[0] && !flying) { return; }
+      var p = project(r[3] * RAD, wrap(r[4] * RAD));
+      if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1) { return; }
+      var i = Math.floor(p.x / CELL_PX), j = Math.floor(p.y / CELL_PX);
+      ctx.globalAlpha = LEVELS[r[6] && r[6].length ? 4 : 3] * Math.min(1, (p.z - 0.08) * 6);
+      ctx.fillRect(i * CELL_PX + 1, j * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
+    });
+    ctx.globalAlpha = 1;
   }
 
   /* Every gallery, fair and sale room a saved work has been in here, the
@@ -15908,6 +16190,12 @@
       }
       return response.json();
     });
+  }
+
+  // The body of the globe, by what each place is made of (earth-body.js);
+  // until it has come, or where it cannot, the dark body of before.
+  if (DIRT_LOOK && window.EarthBody) {
+    EarthBody.start(Number(MONTH)).then(function (ok) { if (ok) { drawn.w = 0; } });
   }
 
   Promise.all([read("../works.json"), read("land.json"), read("earth.json"),

@@ -47,7 +47,7 @@ def get(ids, props="labels|claims"):
     ids = [q for q in ids if q not in _cache]
     for k in range(0, len(ids), 40):
         q = urllib.parse.urlencode({"action": "wbgetentities", "ids": "|".join(ids[k:k + 40]),
-                                    "props": props, "languages": "en", "format": "json"})
+                                    "props": props, "languages": "en|mul", "format": "json"})
         req = urllib.request.Request(API + "?" + q, headers={"User-Agent": UA})
         for attempt in range(6):
             try:
@@ -67,7 +67,9 @@ def get(ids, props="labels|claims"):
 
 
 def label(e):
-    return (e.get("labels", {}).get("en") or {}).get("value")
+    # English, else the item's default label for all languages ("mul"), which many places now carry.
+    labels = e.get("labels", {})
+    return (labels.get("en") or labels.get("mul") or {}).get("value")
 
 
 def values(e, p):
@@ -147,6 +149,7 @@ def main():
             return None
         name = label(e)
         if not name:
+            print("  no name:", q)
             return None
         country = (current(e, "P17") or [None])[0]
         tail = None
