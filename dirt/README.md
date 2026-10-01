@@ -315,7 +315,18 @@ after a photograph of Aries's. Across a few hundred cells the friezes dissolve i
 own field with feathered edges: Rothko's later fields are those friezes with the figures gone, and DRIFT walks from one
 to the other in space, so the plane now runs from its densest collage to near-empty bands within a swipe.
 
-**The artists' garden.****The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
+**Photomosaics, after Robert Silvers.** Silvers made pictures out of many small pictures (the Photomosaic, from his
+years at the MIT Media Lab in the 1990s), each tile chosen because its colour matches that spot of the large picture.
+Here and there (in φ⁻³ of the 377-cell squares) a disc 89 to 144 cells across is made of the faces from the saved
+paintings: either one face made of all the others, as his portraits are, or the plane itself, its own last frame
+recomposed out of faces, which up close are faces and from afar the place (as Dalí's *Gala Contemplating the
+Mediterranean Sea*, 1976, becomes Lincoln from twenty metres). Never a grid: the tiles lie on a sunflower, each a
+golden angle round from the last, each cell the part of the disc nearest its tile's middle, its neighbours found among
+the tiles a Fibonacci number away in the spiral. Which face best matches a colour is worked out once, on loading, into
+a table of 8 × 8 × 8 colours, so a tile costs one look-up. The large picture shows through its tiles more and less
+over time.
+
+**The artists' garden.** Every artist in DIRT has a plant, and every artist the roster adds gets one
 (`artists/plants.json`; the coworker chooses it, `artists/COWORKER.md` step 3a). Each artist keeps a garden, a square of
 the plane 610 cells a side, where their plant grows on the floor and among the shrubs: a rosette of five to seven
 coleus leaves (*Plectranthus scutellarioides*, whose leaves run the widest spectrum of any foliage) in the artist's
