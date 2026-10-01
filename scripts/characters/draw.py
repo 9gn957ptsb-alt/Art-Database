@@ -124,6 +124,15 @@ class Part:
         self.group = group
 
 
+def shaggy(sdf, amp=0.45, freq=1.7, seed=0.0):
+    """A distance field with a ragged edge: wool, a mane, a beard."""
+    def d(x, y):
+        n = (math.sin(x * freq + seed) * math.cos(y * freq * 1.31 - seed * 0.7) +
+             0.5 * math.sin((x + y) * freq * 2.13 + seed * 1.9))
+        return sdf(x, y) + amp * n
+    return d
+
+
 def limb(parts, slot):
     """Mark parts as a limb of one of a chimera's three parts ("head", "body",
     "hind"): a limb is drawn whole by its part even where it reaches a little

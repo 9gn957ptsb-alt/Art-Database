@@ -45,7 +45,7 @@ def bands(top, bottom):
     return paint
 
 
-def slug(tail_x, head_x, hump=None, rise=0.0, stalks=1.0, lift=0.0, front=False):
+def slug_parts(tail_x, head_x, hump=None, rise=0.0, stalks=1.0, lift=0.0, front=False):
     """The body from tail to head along the ground; `hump` lifts it where the
     wave is; `lift` raises the head; `stalks` how far the tentacles are out."""
     base = GROUND - 2.1
@@ -75,7 +75,11 @@ def slug(tail_x, head_x, hump=None, rise=0.0, stalks=1.0, lift=0.0, front=False)
             tips = ellipse(hx + 2.4 * stalks, hy - 1.4 - 3.4 * stalks, 0.55, 0.55)
         parts.append(Part(st, lambda *a: "r", 3))
         parts.append(Part(tips, lambda *a: "k", 4))
-    return raster(parts, W, H)
+    return parts
+
+
+def slug(*a, **k):
+    return raster(slug_parts(*a, **k), W, H)
 
 
 def poses():
@@ -87,6 +91,27 @@ def poses():
         "look": [slug(4.0, 33.8, lift=3.4, front=True)],
         "sit": [slug(9.0, 30.0, rise=1.0, stalks=0.0)],
     }
+
+
+# ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
+
+SEAMS = {"neck": (32.0, 21.6), "hip": (20.0, 22.4)}
+CHIMERA_SCALE = 1.0
+
+
+def rig(pose, k=0):
+    if pose == "walk":
+        # The wave runs along the foot from the tail to the head.
+        return slug_parts(4.0 + 0.2 * k, 34.0 + 0.2 * (k % 3), hump=k / 6.0), 0.0
+    if pose == "stand":
+        return slug_parts(4.0, 34.6, hump=(None, None, 0.3)[k], stalks=(1.0, 0.85, 1.0)[k]), 0.0
+    if pose == "back":
+        return slug_parts(4.0, 34.6, stalks=1.35), 0.0
+    if pose == "look":
+        return slug_parts(4.0, 33.8, lift=3.4, front=True), 0.0
+    if pose == "rest":
+        return slug_parts(6.0, 33.0, rise=0.6, stalks=0.3), 0.0
+    return slug_parts(4.0, 34.6, lift=2.0, stalks=1.4), 0.0
 
 
 INKS = {"coat": ["#3c3741", "#c98a10", "#ffa801", "#ffd27a"], "white": ["#e4e2dd", "#e4e2dd"],

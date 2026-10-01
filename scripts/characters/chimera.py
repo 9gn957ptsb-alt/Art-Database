@@ -40,16 +40,20 @@ soil, and draws the creases faintly, as folds in the paper.
 """
 
 import importlib
+import inspect
 import math
 
 from draw import light_at
 
-CH = 30                        # rows in a chimera's picture
+RES = 1.5                      # cells of a chimera's picture to a cell of a character's own
+CH = 30                        # the picture's height, in a character's cells
+ROWS = int(CH * RES)           # ... and in its own
 G = 28.6                       # the ground line, in cells from the top
 NECK = (G - 15.2, G - 7.4)     # where the back and the belly cross the neck's fold
 HIP = (G - 13.6, G - 6.8)      # ... and the hip's
+GIVE = 0.35                    # how much of its own height a part keeps at a fold
 DROP = 4.6                     # how far the folds' marks come down when it rests
-FALL = 5.0                     # cells over which a part comes back to itself from a fold
+FALL = 3.6                     # cells over which a part comes back to itself from a fold
 MARGIN = 5                     # how far a limb may reach past its fold
 POSES = [("walk", k) for k in range(6)] + [("stand", 0), ("stand", 1), ("stand", 2),
                                             ("back", 0), ("look", 0), ("rest", 0), ("present", 0)]
@@ -100,18 +104,24 @@ class Rig:
         m = self.mod
         self.g = m.GROUND
         self.base = getattr(m, "CHIMERA_SCALE", 1.0)
-        parts, _ = m.rig("stand", 0)
+        parts, _ = self.pose("stand", 0, "body")
         (nx, ny), (hx, hy) = m.SEAMS["neck"], m.SEAMS["hip"]
         tn, bn = section(parts, nx, ny, m.H)
         th, bh = section(parts, hx, hy, m.H)
         rn = (NECK[1] - NECK[0]) / ((bn - tn) * self.base)
         rh = (HIP[1] - HIP[0]) / ((bh - th) * self.base)
         self.s = {
-            "head": self.base * clamp(math.sqrt(rn), 0.82, 1.22),
+            "head": self.base * clamp(math.sqrt(rn), 1.0, 1.22),
             "hind": self.base * clamp(math.sqrt(rh), 0.82, 1.22),
             "body": self.base * clamp(math.sqrt(math.sqrt(rn * rh)), 0.82, 1.22),
         }
-        self.len = max(6, int(round((nx - hx) * self.s["body"])))
+        self.cols = max(9, int(round((nx - hx) * self.s["body"] * RES)))
+        self.len = self.cols / RES
+
+    def pose(self, pose, k, slot):
+        if "slot" in inspect.signature(self.mod.rig).parameters:
+            return self.mod.rig(pose, k, slot=slot)
+        return self.mod.rig(pose, k)
 
     def native(self, slot, X, Y, secs, drop):
         """The point of the character's own picture under (X, Y) of the
@@ -131,6 +141,10 @@ class Rig:
         def seam(std, sec):
             T, B = std[0] + drop, std[1] + drop
             t, b = sec
+            # The agreed marks hold, but give a little: a part much taller or
+            # deeper than the marks keeps some of it (a hump over the fold).
+            ft, fb = G - (self.g - t) * s, G - (self.g - b) * s
+            T, B = T + (ft - T) * GIVE, B + (fb - B) * GIVE
             if Y < T:
                 return t - (T - Y) / s
             if Y <= B:
@@ -152,7 +166,7 @@ class Rig:
 
     def hind_len(self):
         if not hasattr(self, "_hl"):
-            parts, _ = self.mod.rig("stand", 0)
+            parts, _ = self.pose("stand", 0, "hind")
             hx = self.mod.SEAMS["hip"][0]
             left = hx
             for i in range(int(hx * 4)):
@@ -167,30 +181,31 @@ class Rig:
         """One part in one pose: rows of letters over the columns it covers,
         and the first column's place from its anchor."""
         m = self.mod
-        parts, ndrop = m.rig(pose, k)
+        parts, ndrop = self.pose(pose, k, slot)
         drop = DROP if pose == "rest" else 0.0
         secs = {
             "neck": section(parts, m.SEAMS["neck"][0], m.SEAMS["neck"][1] + ndrop, m.H),
             "hip": section(parts, m.SEAMS["hip"][0], m.SEAMS["hip"][1] + ndrop, m.H),
         }
+        M = int(MARGIN * RES)
         if slot == "head":
-            lo, hi = -MARGIN, 34
+            lo, hi = -M, int(34 * RES)
             keep = (0, 99)
         elif slot == "body":
-            lo, hi = -MARGIN, self.len + MARGIN
+            lo, hi = -M, self.cols + M
             keep = (0, self.len)
         else:
-            lo, hi = -34, MARGIN
+            lo, hi = -int(34 * RES), M
             keep = (-99, 0)
         w = hi - lo
-        cells = [["." for _ in range(w)] for _ in range(CH)]
-        owner = [[-1] * w for _ in range(CH)]
-        edge = [[False] * w for _ in range(CH)]
+        cells = [["." for _ in range(w)] for _ in range(ROWS)]
+        owner = [[-1] * w for _ in range(ROWS)]
+        edge = [[False] * w for _ in range(ROWS)]
         for c in range(w):
-            X = lo + c + 0.5
+            X = (lo + c + 0.5) / RES
             inside = keep[0] <= X < keep[1]
-            for j in range(CH):
-                Y = j + 0.5
+            for j in range(ROWS):
+                Y = (j + 0.5) / RES
                 x, y = self.native(slot, X, Y, secs, drop)
                 for n, part in enumerate(parts):
                     if not inside and not is_limb(part, slot):
@@ -203,32 +218,32 @@ class Rig:
                         continue
                     cells[j][c] = part.paint(x, y, light_at(part.sdf, x, y, d), c + lo + 64, j)
                     owner[j][c] = n
-                    edge[j][c] = d > -0.9
+                    edge[j][c] = d > -0.9 / RES
         deep = getattr(m, "DEEP", "d")
-        for j in range(CH):
+        for j in range(ROWS):
             for c in range(w):
                 n = owner[j][c]
                 if n < 0 or not edge[j][c]:
                     continue
                 for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     a, b = c + di, j + dj
-                    if 0 <= a < w and 0 <= b < CH and owner[b][a] >= 0 and \
+                    if 0 <= a < w and 0 <= b < ROWS and owner[b][a] >= 0 and \
                             parts[owner[b][a]].group < parts[n].group and cells[j][c] not in "kKy":
                         cells[j][c] = deep
                         break
         # The outline, as raster draws it, but never on the far side of a fold
         # (unless round a limb that reaches over it).
         out = [row[:] for row in cells]
-        for j in range(CH):
+        for j in range(ROWS):
             for c in range(w):
                 if cells[j][c] != ".":
                     continue
-                X = lo + c + 0.5
+                X = (lo + c + 0.5) / RES
                 own = keep[0] <= X < keep[1]
                 lit, near = 0, False
                 for di, dj, kk in ((1, 0, 1), (0, 1, 1), (-1, 0, -1), (0, -1, -1)):
                     a, b = c + di, j + dj
-                    if 0 <= a < w and 0 <= b < CH and cells[b][a] != ".":
+                    if 0 <= a < w and 0 <= b < ROWS and cells[b][a] != ".":
                         if own or (owner[b][a] >= 0 and is_limb(parts[owner[b][a]], slot)):
                             near = True
                             lit += kk
@@ -243,7 +258,7 @@ class Rig:
         # Crop to the columns used.
         used = [c for c in range(w) if any(r[c] != "." for r in rows)]
         if not used:
-            return [0, [""] * CH]
+            return [0, [""] * ROWS]
         a, b = used[0], used[-1] + 1
         return [lo + a, [r[a:b] for r in rows]]
 
@@ -267,7 +282,7 @@ class Rig:
 
 def build(cid):
     rig = Rig(cid)
-    out = {"id": cid, "len": rig.len, "scale": {k: round(v, 3) for k, v in rig.s.items()}}
+    out = {"id": cid, "len": rig.cols, "scale": {k: round(v, 3) for k, v in rig.s.items()}}
     for slot in SLOTS:
         out[slot] = {name: rig.layer(slot, pose, k) for name, (pose, k) in zip(NAMES, POSES)}
     return out
@@ -285,8 +300,8 @@ def compose(layers, names=None):
     right = max(head["head"][n][0] + len(head["head"][n][1][0]) for n in NAMES)
     hip, neck = left, left + body["len"]
     w = neck + right + 1
-    cells = [["."] * w for _ in range(CH)]
-    who = [["."] * w for _ in range(CH)]
+    cells = [["."] * w for _ in range(ROWS)]
+    who = [["."] * w for _ in range(ROWS)]
     for slot, src, at, name, tag in (("hind", hind, hip, names[2], "2"), ("body", body, hip, names[1], "1"),
                                      ("head", head, neck, names[0], "0")):
         x0, rows = src[slot][name]

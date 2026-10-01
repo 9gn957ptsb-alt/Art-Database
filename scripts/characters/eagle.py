@@ -137,13 +137,34 @@ def talons(hip, foot, near, slot):
     return limb(parts, slot)
 
 
+def feathers(shoulder, angle):
+    """Warhol's drawn line over the flat plates: rows of scalloped coverts
+    near the shoulder, then the long flight feathers, each edged in the
+    dark, the line drawn freely (it never quite follows the colour)."""
+    ca, sa = math.cos(angle), math.sin(angle)
+
+    def paint(x, y, light, i, j):
+        u = (x - shoulder[0]) * ca + (y - shoulder[1]) * sa      # along the wing, from the shoulder
+        v = -(x - shoulder[0]) * sa + (y - shoulder[1]) * ca     # across it
+        if u < 5.0:
+            row = (v + 0.6 * math.sin(u * 1.9)) / 1.7
+            if abs(row - round(row)) < 0.16:
+                return "d"
+            return "R" if light >= 0.6 else "d" if light < 0.3 else "R"
+        lane = (v - 0.18 * (u - 5.0)) / 1.25
+        if abs(lane - round(lane)) < 0.13:
+            return "d"
+        return "r" if light >= 0.66 else "R"
+    return paint
+
+
 def mantle_wing(m, far=False):
     """The near wing raised in a mantle: m 0 folded along the back, 1 high
     and spread; the far wing is its dark shadow behind the back."""
     sh = (21.6, 11.6) if not far else (22.6, 11.2)
     if m <= 0:
-        fold = union(ellipse(17.6, 13.0, 6.6, 2.5, 0.1), capsule((13.0, 13.6), (7.6, 14.6), 1.3, 0.6))
-        return Part(fold, DARK, 8 if not far else 0)
+        fold = union(ellipse(17.6, 13.0, 6.6, 2.6, 0.1), capsule((13.0, 13.6), (7.6, 14.6), 1.3, 0.6))
+        return Part(fold, feathers((23.0, 12.0), math.pi + 0.1), 8 if not far else 0)
     top = (19.0 - 2.0 * m, 11.0 - 7.4 * m)
     tip = (12.4 - 4.8 * m, 10.6 - 4.2 * m)
     arm = path([sh, top, tip], 2.6, 1.6)
@@ -156,7 +177,7 @@ def mantle_wing(m, far=False):
     sdf = union(arm, secondaries, *fingers)
     if far:
         return Part(sdf, lambda *a: "d", 0)
-    return Part(sdf, DARK, 8)
+    return Part(sdf, feathers(sh, math.atan2(top[1] - sh[1], top[0] - sh[0])), 8)
 
 
 def walker(phase=0.0, legs_at="body", mantle=0.0, head_kind="side", lower=0.0, up=0.0, fluff=0.0, sit=False):
@@ -179,7 +200,7 @@ def walker(phase=0.0, legs_at="body", mantle=0.0, head_kind="side", lower=0.0, u
     body = union(ellipse(19.2, 15.0 + dy, 7.4 + fluff, 3.9 + fluff * 0.5, -0.1),
                  ellipse(24.2, 13.8 + dy, 2.9, 3.0))
     parts.append(Part(body, BROWN, 3))
-    neck = capsule((24.6, 13.0 + dy), (27.0, 10.6 + dy - up), 2.5, 2.1)
+    neck = capsule((26.0, 12.4 + dy), (27.2, 10.6 + dy - up), 2.5, 2.1)
     parts.append(Part(neck, WHITE, 4))
     if head_kind == "front":
         parts += head_front(28.0, 9.4 + dy - up)
@@ -193,7 +214,8 @@ def walker(phase=0.0, legs_at="body", mantle=0.0, head_kind="side", lower=0.0, u
     return parts
 
 
-def rig(pose, k=0, legs_at="body"):
+def rig(pose, k=0, slot="body"):
+    legs_at = "hind" if slot == "hind" else "body"
     if pose == "walk":
         p = k / 6.0 + 0.25
         return walker(p, legs_at, mantle=(0.0, 0.08, 0.16, 0.0, 0.08, 0.16)[k] * 0), 0.0
