@@ -857,7 +857,7 @@
   function progress() {
     var s = step(), n = run.steps.filter(function (q) { return q.k !== "|"; }).length;
     var k = run.steps.slice(0, run.i + 1).filter(function (q) { return q.k !== "|"; }).length;
-    var where = s.k === "walk" ? s.walk.title : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
+    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
     var inHunt = s.hunt ? " · No. " + (s.hunt.stops[s.n].no || s.n + 1) : "";
     return (run.paused ? "Paused · " : "") + k + " of " + n + " · " + where + inHunt;
   }
@@ -1533,6 +1533,7 @@
     encode: function (x) { return load().then(function () { return encode(x); }); },
     decode: function (code) { return load().then(function () { return decode(code); }); },
     sentence: function (stops) { return load().then(function () { return sentenceText(sentence(stops)); }); },
+    end: function () { end("ended"); },
     _pace: function (k) { PACE = k; },
     _state: function () {
       return { playing: run && { title: run.x.title, i: run.i, n: run.steps.length, paused: run.paused, inWalk: !!run.inWalk, arrived: run.arrived,

@@ -25,7 +25,7 @@ o p the outline.
 
 import math
 
-from draw import Part, capsule, ellipse, foot_at, path, ramp, raster, triangle, two_bone, union
+from draw import Part, capsule, ellipse, foot_at, limb, path, ramp, raster, triangle, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6
@@ -70,6 +70,7 @@ def legs(phases, dy=0.0, reach=2.6, lift=2.0):
            leg((hp[0] + 0.8, hp[1]), foot_at(fh, hp[0] + 0.8, reach, lift, GROUND), 4.6, 5.4, -1, 1.4, 0.5, FAR_COAT, 0))
     near = (leg(hp, foot_at(nh, hp[0], reach, lift, GROUND), 4.6, 5.4, -1, 1.8, 0.55, COAT, 7) +
             leg(sh, foot_at(nf, sh[0], reach, lift, GROUND), 4.6, 5.0, 1, 1.4, 0.55, COAT, 7))
+    limb(far[:2], "body"), limb(far[2:], "hind"), limb(near[:2], "hind"), limb(near[2:], "body")
     return far, near
 
 
@@ -126,33 +127,49 @@ def neck(a, b, dy=0.0):
     return Part(capsule((a[0], a[1] + dy), (b[0], b[1] + dy), 2.4, 1.6), MANE, 3)
 
 
+def trot_parts(p, phases=None, up=None):
+    up = (p in (0.25, 0.75)) if up is None else up
+    dy = -0.5 if up else 0.0
+    far, near = legs(phases or (p + 0.5, p, p, p + 0.5), dy)
+    return far + body(dy) + [neck((25.6, 11.6), (28.8, 8.6), dy)] + head_side(30.0, 7.8, dy=dy) + near
+
+
 def trot(p):
-    dy = -0.5 if p in (0.25, 0.75) else 0.0
-    far, near = legs((p + 0.5, p, p, p + 0.5), dy)
-    parts = far + body(dy) + [neck((25.6, 11.6), (28.8, 8.6), dy)] + head_side(30.0, 7.8, dy=dy) + near
-    return raster(parts, W, H)
+    return raster(trot_parts(p), W, H)
 
 
-def stand(head="side"):
+def stand_parts(head="side"):
     far, near = legs((0.1, 0.6, 0.6, 0.1), 0.0, reach=1.0)
     parts = far + body()
     if head == "side":
         parts += [neck((25.6, 11.6), (28.4, 8.2))] + head_side(29.6, 7.4)
+    elif head == "up":
+        parts += [neck((25.6, 11.6), (28.8, 7.0))] + head_side(30.2, 5.8)
+    elif head == "down":
+        parts += [neck((25.6, 11.6), (29.0, 11.8))] + head_side(30.4, 12.6)
     elif head == "back":
         parts += [neck((25.0, 11.6), (24.4, 8.2))] + head_side(23.2, 7.4, f=-1)
     else:
         parts += [neck((25.6, 11.6), (27.4, 8.6))] + head_front(27.8, 7.6)
-    return raster(parts + near, W, H)
+    return parts + near
 
 
-def lie():
+def stand(head="side"):
+    return raster(stand_parts(head), W, H)
+
+
+def lie_parts():
     dy = 7.2
     parts = [Part(capsule((11.6, GROUND - 0.8), (18.0, GROUND - 0.6), 1.0, 0.7), FAR_COAT, 0)]
     parts += body(dy)
     parts.append(Part(capsule((22.0, GROUND - 0.7), (28.0, GROUND - 0.7), 1.0, 0.7), COAT, 6))
     parts.append(Part(ellipse(28.4, GROUND - 0.6, 0.7, 0.5), lambda *a: "k", 6))
     parts += [neck((24.6, 18.4), (26.2, 13.6))] + head_front(26.6, 12.4)
-    return raster(parts, W, H)
+    return parts
+
+
+def lie():
+    return raster(lie_parts(), W, H)
 
 
 def poses():
@@ -163,6 +180,27 @@ def poses():
         "look": [stand("front")],
         "sit": [lie()],
     }
+
+
+# ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
+
+SEAMS = {"neck": (27.4, 11.0), "hip": (17.4, 12.6)}
+CHIMERA_SCALE = 1.0
+
+
+def rig(pose, k=0):
+    if pose == "walk":
+        p = k / 6.0
+        return trot_parts(p, (p + 0.75, p + 0.5, p + 0.25, p), up=k in (1, 4)), 0.0
+    if pose == "stand":
+        return stand_parts(("side", "side", "up")[k]), 0.0
+    if pose == "back":
+        return stand_parts("down"), 0.0
+    if pose == "look":
+        return stand_parts("front"), 0.0
+    if pose == "rest":
+        return lie_parts(), 7.2
+    return stand_parts("up"), 0.0
 
 
 INKS = {"coat": ["#4e2a1c", "#7d3622", "#a8452c", "#c56a48"], "white": ["#979580", "#d5d4cb"],

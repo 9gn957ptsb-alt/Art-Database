@@ -25,7 +25,7 @@ claws.
 
 import math
 
-from draw import Part, capsule, ellipse, path, raster, triangle, union, unline
+from draw import Part, capsule, ellipse, limb, path, raster, triangle, union, unline
 
 W, H = 40, 26
 GROUND = 24.6
@@ -57,7 +57,7 @@ def tail(points, r0=1.7, r1=2.5):
     return Part(path(points, r0, r1), TAIL, 1)
 
 
-def bound(k):
+def bound_parts(k):
     """The half-bound: 0 gathered, 1 pushing off, 2 stretched, 3 landing."""
     if k == 0:
         bd = [Part(union(ellipse(19.0, 18.4, 4.6, 3.8), ellipse(22.6, 18.0, 2.6, 2.6)), COAT, 3)]
@@ -84,8 +84,12 @@ def bound(k):
         t = tail([(14.0, 14.6), (10.0, 12.6), (9.0, 8.4), (11.6, 5.6)])
         h = head(27.2, 15.6)
     belly = Part(ellipse(21.6, (18.6 if k == 0 else 17.2), 2.6, 1.2), BELLY, 3.5)
-    parts = [t] + fore + bd + [belly] + hind + h
-    return unline(raster(parts, W, H, deep="."))
+    limb(fore, "body"), limb(hind[1:], "hind")
+    return [t] + fore + bd + [belly] + hind + h
+
+
+def bound(k):
+    return unline(raster(bound_parts(k), W, H, deep="."))
 
 
 def upright(front=False, eating=False):
@@ -105,13 +109,20 @@ def upright(front=False, eating=False):
     return unline(raster(parts, W, H, deep="."))
 
 
-def stand():
+def stand_parts(cy=15.4, flick=False, front=False, cx=25.8):
     bd = [Part(union(ellipse(19.6, 18.6, 4.8, 3.4), ellipse(23.0, 18.0, 2.4, 2.6)), COAT, 3)]
     hind = [Part(ellipse(17.0, 20.0, 2.8, 2.6), COAT, 3), Part(capsule((17.2, 23.6), (21.0, 24.0), 0.8, 0.6), COAT, 3)]
     fore = [Part(capsule((23.6, 20.2), (24.0, 24.0), 0.7, 0.6), COAT, 3)]
-    t = tail([(14.8, 18.8), (10.8, 16.0), (10.8, 10.8), (14.4, 7.6)])
-    parts = [t] + fore + bd + [Part(ellipse(21.4, 20.2, 2.4, 1.0), BELLY, 3.5)] + hind + head(25.8, 15.4)
-    return unline(raster(parts, W, H, deep="."))
+    if flick:
+        t = tail([(14.8, 18.8), (10.2, 16.6), (9.2, 11.2), (11.4, 7.0)])
+    else:
+        t = tail([(14.8, 18.8), (10.8, 16.0), (10.8, 10.8), (14.4, 7.6)])
+    limb(fore, "body"), limb(hind[1:], "hind")
+    return [t] + fore + bd + [Part(ellipse(21.4, 20.2, 2.4, 1.0), BELLY, 3.5)] + hind + head(cx, cy, front=front)
+
+
+def stand():
+    return unline(raster(stand_parts(), W, H, deep="."))
 
 
 def poses():
@@ -122,6 +133,31 @@ def poses():
         "look": [upright(front=True)],
         "sit": [upright(eating=True)],
     }
+
+
+# ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
+
+SEAMS = {"neck": (24.6, 18.0), "hip": (17.8, 18.6)}
+CHIMERA_SCALE = 1.45
+DEEP = "."
+
+
+def finish(rows):
+    return unline(rows)
+
+
+def rig(pose, k=0):
+    if pose == "walk":
+        return bound_parts((0, 1, 1, 2, 3, 3)[k]), 0.0
+    if pose == "stand":
+        return stand_parts(flick=k == 2, cy=(15.4, 15.0, 15.4)[k]), 0.0
+    if pose == "back":
+        return stand_parts(cy=13.8, cx=26.2), 0.0
+    if pose == "look":
+        return stand_parts(front=True, cx=25.4, cy=14.8), 0.0
+    if pose == "rest":
+        return bound_parts(0), 0.0
+    return stand_parts(cy=13.4, cx=26.4, flick=True), 0.0
 
 
 INKS = {"coat": ["#a5641e", "#c7792a", "#eec027", "#eec027"], "white": ["#e5ddc9", "#e5ddc9"],

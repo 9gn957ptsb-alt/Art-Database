@@ -21,7 +21,7 @@ horn's light and the muzzle; y the eye; o p the outline.
 
 import math
 
-from draw import Part, capsule, ellipse, foot_at, path, raster, strokes, triangle, two_bone, union
+from draw import Part, capsule, ellipse, foot_at, limb, path, raster, strokes, triangle, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6
@@ -52,6 +52,7 @@ def legs(phases, dy=0.0, reach=2.4, lift=1.6):
            leg((hp[0] - 1.4, hp[1]), foot_at(fh, hp[0] - 1.4, reach, lift, GROUND, 0.75), 3.6, 4.0, -1, 1.6, 0.75, FAR_COAT, 0))
     near = (leg(hp, foot_at(nh, hp[0], reach, lift, GROUND, 0.75), 3.4, 4.0, -1, 2.0, 0.85, COAT, 7) +
             leg(sh, foot_at(nf, sh[0], reach, lift, GROUND, 0.75), 3.4, 3.8, 1, 1.6, 0.8, WOOL, 7, chaps=True))
+    limb(far[:2], "body"), limb(far[2:], "hind"), limb(near[:2], "hind"), limb(near[2:], "body")
     return far, near
 
 
@@ -68,8 +69,9 @@ def body(dy=0.0, tail=0.0):
     return parts
 
 
-def head_side(cx, cy, down=0.0):
-    """The head side on, low, the beard under it; `down` lowers it to graze."""
+def head_side(cx, cy, down=0.0, ear=0.0, blink=False):
+    """The head side on, low, the beard under it; `down` lowers it to graze;
+    `ear` flicks the ear up; `blink` closes the eye."""
     cy += down
     skull = union(ellipse(cx, cy, 3.6, 3.8, 0.4), ellipse(cx + 2.4, cy + 2.8, 2.1, 1.8))
     beard = triangle((cx - 1.6, cy + 2.0), (cx + 2.2, cy + 2.6), (cx - 0.4, cy + 6.2))
@@ -79,8 +81,11 @@ def head_side(cx, cy, down=0.0):
         if math.hypot(x - (cx + 3.8), y - (cy + 2.6)) < 0.9:
             return "W"                       # the muzzle, pale
         return WOOL(x, y, light, i, j)
-    return [Part(beard, WOOL, 4), Part(skull, paint, 5), Part(horn, lambda x, y, l, i, j: "w" if l > 0.7 else "k", 6),
-            Part(ellipse(cx + 1.0, cy + 0.2, 0.55, 0.45), lambda *a: "y", 7)]
+    parts = [Part(beard, WOOL, 4), Part(skull, paint, 5), Part(horn, lambda x, y, l, i, j: "w" if l > 0.7 else "k", 6)]
+    if ear:
+        parts.append(Part(ellipse(cx - 2.2, cy - 1.4 - ear, 1.0, 0.6, -0.5), WOOL, 6))
+    parts.append(Part(ellipse(cx + 1.0, cy + 0.2, 0.55, 0.45 if not blink else 0.2), (lambda *a: "y") if not blink else (lambda *a: "k"), 7))
+    return parts
 
 
 def head_front(cx, cy):
@@ -94,35 +99,50 @@ def head_front(cx, cy):
             Part(skull, WOOL, 5), Part(muzzle, lambda *a: "W", 6), Part(eyes, lambda *a: "y", 7)]
 
 
-def walk(p):
-    dy = -0.4 if p in (0.25, 0.75) else 0.0
+def walk_parts(p, up=None, nod=0.0):
+    up = (p in (0.25, 0.75)) if up is None else up
+    dy = -0.4 if up else 0.0
     far, near = legs((p + 0.75, p + 0.5, p + 0.25, p), dy)
-    parts = far + body(dy, tail=0.3 if p in (0.25, 0.75) else 0.0) + head_side(32.8, 17.0 + dy) + near
-    return raster(parts, W, H)
+    return far + body(dy, tail=0.3 if up else 0.0) + head_side(32.8, 17.0 + dy + nod) + near
 
 
-def stand(head="side"):
+def walk(p):
+    return raster(walk_parts(p), W, H)
+
+
+def stand_parts(head="side", ear=0.0, blink=False, tail=0.0):
     far, near = legs((0.15, 0.62, 0.62, 0.15), 0.0, reach=1.0)
-    parts = far + body()
+    parts = far + body(tail=tail)
     if head == "side":
-        parts += head_side(32.8, 16.8)
+        parts += head_side(32.8, 16.8, ear=ear, blink=blink)
+    elif head == "up":
+        parts += head_side(33.2, 15.0)
     elif head == "graze":
         parts += head_side(32.4, 16.8, down=3.2)
     else:
         parts += head_front(32.0, 15.2)
     parts += near
-    return raster(parts, W, H)
+    return parts
 
 
-def lie():
-    """Lying down, legs folded under, the head up and turned to you."""
+def stand(head="side"):
+    return raster(stand_parts(head), W, H)
+
+
+def lie_parts(head="front"):
+    """Lying down, legs folded under, the head up and turned to you (or, at
+    rest in a chimera, the chin down on the ground)."""
     dy = 4.6
     parts = [Part(capsule((10.0, GROUND - 1.0), (16.0, GROUND - 0.6), 1.0, 0.8), FAR_COAT, 0)]
     parts += body(dy, tail=-1.6)
     parts.append(Part(capsule((24.0, GROUND - 0.8), (30.4, GROUND - 0.8), 1.3, 1.0), WOOL, 6))
     parts.append(Part(ellipse(31.0, GROUND - 0.6, 0.9, 0.6), lambda *a: "k", 6))
-    parts += head_front(31.6, 15.6)
-    return raster(parts, W, H)
+    parts += head_front(31.6, 15.6) if head == "front" else head_side(32.8, 18.6, down=0.4)
+    return parts
+
+
+def lie():
+    return raster(lie_parts(), W, H)
 
 
 def poses():
@@ -133,6 +153,27 @@ def poses():
         "look": [stand("front")],
         "sit": [lie()],
     }
+
+
+# ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------
+
+SEAMS = {"neck": (30.2, 14.0), "hip": (18.0, 15.0)}
+CHIMERA_SCALE = 1.0
+
+
+def rig(pose, k=0):
+    if pose == "walk":
+        p = k / 6.0
+        return walk_parts(p, up=k in (1, 4), nod=(0.0, -0.3, -0.6, 0.0, -0.3, -0.6)[k]), 0.0
+    if pose == "stand":
+        return stand_parts("side", ear=(0, 0, 1.0)[k], blink=k == 1, tail=(0, 0.6, 0)[k]), 0.0
+    if pose == "back":
+        return stand_parts("graze"), 0.0
+    if pose == "look":
+        return stand_parts("front"), 0.0
+    if pose == "rest":
+        return lie_parts("side"), 4.6
+    return stand_parts("up"), 0.0
 
 
 INKS = {"coat": ["#5a2c10", "#8a4216", "#b15519", "#c98b5c"], "white": ["#9e8880", "#cdc5b4"],

@@ -155,8 +155,10 @@
 
 /* A phone: under the banner, which keeps its row (it wraps there). */
 @media (max-width: 720px) {
-  .explore-dock { top: 80px; right: 16px; }
-  .explore-tray { top: 150px; right: 16px; max-height: calc(100vh - 180px); }
+  .explore-dock { top: 80px; right: 16px; flex-direction: row-reverse; align-items: center; }
+  .explore-menu { position: absolute; top: 38px; right: 0; }
+  .explore-tray { top: 120px; right: 16px; max-height: calc(100vh - 150px); }
+  .walk-strip.explore-strip { top: 120px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-chip[data-pulse="true"] { animation: none; }
