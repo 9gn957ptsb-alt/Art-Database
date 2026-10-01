@@ -328,7 +328,7 @@
   }
 
   function titleChars(t) {
-    return fold(t).split("").map(function (c) { return TITLE_ABC.indexOf(c); })
+    return fold(String(t).replace(/[’‘]/g, "'")).split("").map(function (c) { return TITLE_ABC.indexOf(c); })
       .filter(function (i) { return i >= 0; }).slice(0, 31);
   }
 
@@ -384,7 +384,10 @@
     if (take(1)) {
       var nc = take(5);
       for (var c = 0; c < nc; c += 1) { title += TITLE_ABC.charAt(take(5)); }
-      title = title.charAt(0).toUpperCase() + title.slice(1);
+      // Letters travel in one case: each word but the small ones is given its capital back.
+      title = title.split(" ").map(function (w, i) {
+        return i && /^(of|the|and|by|in|to|a|at|on|for|from|with|de|la|le|van|von)$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(" ");
     }
     var n = take(6), stops = [];
     for (var s = 0; s < n && !bad; s += 1) {
@@ -515,7 +518,8 @@
     }
     if (!can.length) { menu.hidden = true; }
     var n = draft.stops.filter(function (s) { return s.k !== "|"; }).length;
-    chip.hidden = !n;
+    // On a phone the strip of a playing exploration has the top: the chip waits.
+    chip.hidden = !n || (playing && window.innerWidth <= 720);
     chip.textContent = "Exploration · " + n;
     chip.setAttribute("aria-label", "Your exploration, " + plural(n, "stop", "stops") + " — open");
     if (pulse) { chip.dataset.pulse = ""; window.requestAnimationFrame(function () { chip.dataset.pulse = "true"; }); }
@@ -747,10 +751,13 @@
     if (text) { window.requestAnimationFrame(function () { sSaid.dataset.on = "true"; }); }
   }
 
-  function setLines(stops, max) {
+  function setLines(stops, max, whole) {
     setUpStrip();
     sLines.textContent = "";
-    if (stops && stops.length) { sLines.appendChild(sentenceEl(sentence(stops), max)); }
+    if (!stops || !stops.length) { return; }
+    var e = sentenceEl(sentence(stops), max);
+    if (whole) { e.classList.add("walk-sentence-whole"); }
+    sLines.appendChild(e);
   }
 
   function expand(stops) {
@@ -777,8 +784,10 @@
         }
         if (r[0] === "x") {
           var x = D.ex.made.filter(function (m) { return m.id === r[1]; })[0];
-          (x ? x.stops : []).slice(from).forEach(function (st) { out.push({ k: st[0], id: st[1], leg: leg }); });
-          return;
+          var sub = (x ? x.stops : []).slice(from).map(function (st) { return { k: st[0], id: st[1], from: st[2] || 0 }; });
+          return expand(sub).then(function (got) {
+            got.forEach(function (g) { if (g.k !== "|") { g.leg = leg; out.push(g); } });
+          });
         }
         if (r[0] === "v") {
           return get("voices/" + r[1] + ".json").then(function (v) {
@@ -814,6 +823,7 @@
 
   function stopRun() {
     if (!run) { return; }
+    legsAt = performance.now();         // the chain's legs fade from when it stopped being played
     run.timers.forEach(function (t) { window.clearTimeout(t); });
     run = null;
   }
@@ -1048,10 +1058,10 @@
     var rep = run.rep, x = run.x, ctxStep = run.steps[Math.max(0, Math.min(run.arrived === undefined ? 0 : run.arrived, n - 1))];
     stopRun();
     renderDock();
-    show("The exploration ends · " + (k + 1) + " of " + n,
+    show("Ended · " + x.title + (n > 1 ? " · " + (k + 1) + " of " + n : ""),
          why === "up" ? "Up to the world." : "", relayActs(rep).concat([handoffs({ step: ctxStep, rep: rep, x: x }),
          button("×", "walk-x", function () { strip.hidden = true; })]), chainOf(rep) ? 60000 : 20000);
-    if (chainOf(rep)) { setLines(rep, 0); }
+    if (chainOf(rep)) { setLines(rep, 0, true); }
   }
 
   function done() {
@@ -1063,7 +1073,7 @@
     list.push(handoffs({ step: last, rep: rep, x: x }));
     list.push(button("×", "walk-x", function () { strip.hidden = true; }));
     show("Explored · " + x.title, chainOf(rep) ? "A relay of " + plural(legCount(rep), "leg", "legs") : "", list, Math.pow(PHI, 7) * 1000);
-    setLines(rep, 0);
+    setLines(rep, 0, true);
   }
 
   // A chain of two legs or more: kept, and shared as one code.
@@ -1110,7 +1120,12 @@
       c.rep = o.rep;
       if (o.x) { c.skip[(o.x.kind === "hunt" ? "h:" : "x:") + o.x.id] = true; }
       (o.rep || []).forEach(function (q) { if (q.k === "r") { c.skip[q.id] = true; } });
-      if (s.hunt) { c.skip["h:" + s.hunt.id] = true; c.voice = s.hunt.voice; }
+      if (s.hunt) {
+        c.skip["h:" + s.hunt.id] = true;
+        c.voice = s.hunt.voice;
+        // Not the cataloguer's own route: a hunt is already theirs.
+        s.hunt.voices.forEach(function (v) { c.skip["v:" + v] = true; });
+      }
       if (s.k === "walk") { return contextOf({ walk: s.walk }).then(function (wc) { wc.rep = o.rep; return wc; }); }
       if (s.k === "w") {
         var r = workRow(s.id);

@@ -4,7 +4,7 @@
    being made; under it, its chip ("Exploration · 3") opens the tray: the
    stops as squares and words, dragged into order, a title written in place,
    the sentence, and Play, Keep, Share. The walks' strip, hand and lilac. */
-#land .banner { right: calc(var(--s-5) + 44px); }
+@media (min-width: 721px) { #land .banner { right: calc(var(--s-5) + 44px); } }
 
 .explore-dock {
   position: fixed;
@@ -153,8 +153,10 @@
 .explore-take { display: block; margin-top: 6px; }
 .explore-legs { pointer-events: none; }
 
+/* A phone: under the banner, which keeps its row (it wraps there). */
 @media (max-width: 720px) {
-  .explore-tray { top: 92px; right: 16px; max-height: calc(100vh - 150px); }
+  .explore-dock { top: 80px; right: 16px; }
+  .explore-tray { top: 150px; right: 16px; max-height: calc(100vh - 180px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-chip[data-pulse="true"] { animation: none; }

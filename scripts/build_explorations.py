@@ -338,6 +338,7 @@ def sent_list(work_ix):
 
 def relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns):
     rows = []
+    museum_town = {slug: k for k, t in towns.items() for slug in (t[6] or [])}
     for h in hunts:
         rows.append(["h", h["id"], h["title"], h["artist"], (cast_by_artist.get(h["artist"]) or ""), h["voice"],
                      len(h["stops"]), [[s["key"], s["y"], finding_ix.get(s["w"], -1)] for s in h["stops"]]])
@@ -346,11 +347,14 @@ def relay_index(hunts, walks, made, index, finding_ix, cast_by_artist, towns):
                      [[s["key"], 0, finding_ix.get((s.get("works") or [None])[0], -1)] for s in w["stops"]]])
     for x in made:
         st = []
-        for k, i in x["stops"]:
+        for s in x["stops"]:
+            k, i = s[0], s[1]
             if k == "t" and i in towns:
                 st.append([i, 0, -1])
             elif k == "w" and i in finding_ix:
                 st.append(["", 0, finding_ix[i]])
+            elif k == "m" and i in museum_town:
+                st.append([museum_town[i], 0, -1])
         if st:
             rows.append(["x", x["id"], x["title"], "", "", "", len(x["stops"]), st])
     for row in index["voices"]:
@@ -378,8 +382,8 @@ def add_sent(code, title, by):
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
     from explorations_code import decode  # noqa: E402
     x = decode(code)
-    if not x:
-        sys.exit("not an exploration code this map knows: " + code)
+    if not x or x["stale"]:
+        sys.exit("not an exploration code this map knows (made against an earlier map, or a letter out): " + code)
     data = {"note": "Explorations sent in by visitors and published by the artist (docs/v2/EXPLORATIONS.md). "
                     "Decoded: stops [kind, id]; never edited by hand except a title or a credit.",
             "explorations": []}
