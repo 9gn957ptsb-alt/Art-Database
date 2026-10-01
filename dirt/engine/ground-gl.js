@@ -2855,8 +2855,9 @@ float frieze(vec2 p, float T, out vec3 col) {
 // Rothko's classic paintings are (from 1949: two or three soft rectangles floating on a ground, their edges brushed
 // out, never ruled): the upper field, to phi^-1 of the height, holds the pair, blurred as the Blurred photographs are,
 // breathing from one face into the other and back over 34 seconds; the lower field is the pair's own colour pushed
-// toward his maroons and ochres; the ground between is darker still. Weld is from Old English wellan, "to boil, to
-// well up": metal joined by being made liquid, as the faces are here.
+// toward his maroons and ochres; the ground between is darker still. Weld is the verb well
+// (Middle English wellen, "to boil, melt"; Old English weallan, "to boil, well up"), its d from 1590s English: metal
+// joined by being made liquid, as the faces are here.
 float weld(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uPN <= 0) return 0.0;
