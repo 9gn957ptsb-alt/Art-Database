@@ -236,7 +236,7 @@ body[data-reading] .walk-strip .walk-sentence:not(.walk-sentence-whole) .walk-li
 @media (max-width: 720px) {
   body[data-reading] .walk-strip { padding-top: 8px; padding-bottom: 8px; }
 }
-body[data-reading] .walk-strip { background: rgba(15, 10, 7, 0.96); box-shadow: 0 -10px 28px rgba(15, 10, 7, 0.85); }
+body[data-reading] .walk-strip { background: rgba(15, 10, 7, 0.985); box-shadow: 0 -10px 28px rgba(15, 10, 7, 0.85); }
 
 /* The dial's readout (dialhub.js) in the reading layout: under the dial, where the text is, never
    over the picture's sentence or the lens. */

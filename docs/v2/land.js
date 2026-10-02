@@ -14035,7 +14035,7 @@
       theta = PHI * ds[Math.floor(ds.length / 2)];
     }
     theta = Math.max(TOWN_MIN_KM, Math.min(TOWN_MAX_KM, theta));
-    var b = artBand();
+    var b = artBand("town");           // a city's own band, whatever view it is opened from
     var r = Math.min(0.4 * Math.min(b.w, b.h) / (theta / 6371), TOWN_R_MAX);
     return { lat: latOf(c), lon: lonOf(c), zoomTo: r / Math.max(1, baseR),
              seatAt: { x: (b.x + b.w / 2) / W, y: (b.y + b.h / 2) / H } };
@@ -14088,7 +14088,7 @@
     // Painted here (sites.js): the city, held on the site's own point, low.
     var at = via && via.at;
     if (at && isFinite(at.lat) && isFinite(at.lon)) {
-      var bs = artBand();
+      var bs = artBand("town");
       f.lat = at.lat * RAD;
       f.lon = at.lon * RAD;
       f.zoomTo = Math.min(0.4 * Math.min(bs.w, bs.h) / (Math.max(0.6, at.km || 1.6) / 6371), TOWN_R_MAX) / Math.max(1, baseR);
