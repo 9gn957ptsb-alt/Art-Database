@@ -47,6 +47,9 @@ FAIR = re.compile(r"\b(fair|frieze|art basel|armory show|fiac|expo chicago|tefaf
 SALEROOM = re.compile(r"\b(christie|sotheby|phillips|bonhams|heritage|dorotheum|drouot|doyle|swann|"
                       r"rago|wright|freeman|hindman|lempertz|ketterer|tajan|artcurial|koller|grisebach|"
                       r"bukowskis|bruun|forum auctions|auction|auktion|enchères|subastas|aste)\b", re.I)
+# A gallery's stand: "<gallery> at <fair> 2026", or a fair named in the title.
+STAND = re.compile(r"(\bat\b.+\b(19|20)\d\d\s*$|\b(abu dhabi art|art gstaad|art week|art fair|"
+                   r"tefaf|frieze|art basel|fiac|armory show)\b)", re.I)
 MUSEUM = re.compile(r"\b(museum|musée|musee|museo|museu|muzeum|kunsthalle|kunstmuseum|national gallery|"
                     r"gallery of art|art institute|institute of art|kunsthaus|pinakothek|tate|moma|"
                     r"whitney|guggenheim|biennale|biennial|documenta|smithsonian|academy|akademie)\b", re.I)
@@ -114,7 +117,7 @@ def main():
                 vi = venue(name, e.get("p"), "g", e.get("m", ""))
                 title = e.get("t") or ""
                 # A gallery's stand at a fair is the gallery's, shown at the fair.
-                typ = "f" if FAIR.search(title) and venues[vi][2] != "m" else "x"
+                typ = "f" if (FAIR.search(title) or STAND.search(title)) and venues[vi][2] != "m" else "x"
             elif k == "listed":
                 if not e.get("who"):
                     continue
