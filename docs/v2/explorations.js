@@ -1717,6 +1717,15 @@
     decode: function (code) { return load().then(function () { return decode(code); }); },
     sentence: function (stops) { return load().then(function () { return sentenceText(sentence(stops)); }); },
     end: function () { end("ended"); },
+    // What is being played, for the marks that belong to it (sites.js): a site exploration's own
+    // sites (sites.json rows), a hunt's artist.
+    playing: function () {
+      var s = run && run.steps[run.i];
+      if (!s) { return null; }
+      var sites = null;
+      if (s.sx) { sites = []; s.sx.stops.forEach(function (st) { sites = sites.concat(st.s || []); }); }
+      return { k: s.k, artist: s.hunt ? s.hunt.artist : null, sites: sites };
+    },
     _pace: function (k) { PACE = k; },
     _state: function () {
       return { playing: run && { title: run.x.title, i: run.i, n: run.steps.length, paused: run.paused, inWalk: !!run.inWalk, arrived: run.arrived,

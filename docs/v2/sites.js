@@ -20,10 +20,14 @@
    down to it, the pair opens the plate. The plate: the painting and the
    site side by side (never laid into each other: no alignment is
    documented), credits under each, the commentary quoted, the sources. In
-   a city, the sites near it are quiet hollow tiles; pressing one opens its
-   plate. Site explorations (explorations.json "sites", played by
-   explorations.js) visit each site low, the plate open, on the reading's
-   clock. Find offers them ("painted here", "sites", an artist, a place). */
+   a city at rest no site is drawn (artist, 2 Oct 2026: "way too many
+   dots"); the sites that belong to what is selected — a life entered, a
+   studio, an animal followed, an exploration played, the artists the dial
+   lights in its year, or in Explore the sites painted in its year, faint —
+   are quiet hollow tiles; pressing one opens its plate. Site explorations
+   (explorations.json "sites", played by explorations.js) visit each site
+   low, the plate open, on the reading's clock. Find offers them ("painted
+   here", "sites", an artist, a place). */
 (function () {
   "use strict";
 
@@ -33,6 +37,8 @@
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var D = null, loading = null, CDN = "https://d32dm0rphc51dk.cloudfront.net/";
   var current = null;                           // the site ringed: a row
+  var visited = null;                           // the city it was gone to (visit): { key, at, reached }
+  var ringOn = false;                           // the ring drawn last frame (for checking)
   var plate = null, cv = null, ctx = null, raf = 0, marks = [];
   var waiting = [];                             // column stops made before sites.json came
 
@@ -308,6 +314,7 @@
     return load().then(function () {
       if (!window.Land || !Land.site || !s.key) { return false; }
       ring(s);
+      visited = { key: s.key, at: performance.now(), reached: false };   // ringed in that city until it is left
       Land.site(s.key, s.ll[0], s.ll[1], kmFor(s), s.km > 15 && s.place ? s.place : "");
       return new Promise(function (done) {
         var t0 = performance.now();
@@ -336,6 +343,56 @@
 
   function kick() { if (!raf) { raf = window.requestAnimationFrame(draw); } }
 
+  /* What is selected, and so which documented sites a city draws (artist, 2 Oct 2026:
+     "there's way too many dots right now … Perhaps when an artist is selected then all the
+     places relevant to them … show up and all the other places for other artists do not show
+     up"). At rest a city draws none: its museums' diamonds and its galleries' tiles are its
+     own marks. Each rule names the sites it takes (by id, or by artist), the year they must
+     be painted in, if any, and how bright: a life entered here (lives.js) its sites; a
+     studio's column open, or an animal followed, its artist's; a site exploration played its
+     own sites, a hunt its artist's; the dial, in its year, the artists it lights (Artists; a
+     movement's members, Movements) — and in Explore every site painted in its year, faint. */
+  function names(list) {
+    var o = {};
+    list.forEach(function (n) { keysOf(n).forEach(function (k) { o[k] = true; }); });
+    return o;
+  }
+  // An artist's name as two keys: whole, and first and last word (Wikidata's "Anders Zorn" is
+  // the lives' "Anders Leonard Zorn").
+  function keysOf(n) {
+    var t = fold(n).replace(/[-‐–.,]/g, " ").trim().split(/\s+/).filter(Boolean);
+    return t.length ? [t.join(" "), t[0] + " " + t[t.length - 1]] : [];
+  }
+  function chosen(w) {
+    var rules = [];
+    var life = window.Lives && Lives.visiting ? Lives.visiting() : null;
+    if (life && life.sites) { var lids = {}; life.sites.forEach(function (id) { lids[id] = true; }); rules.push({ sid: lids, a: 0.62 }); }
+    var st = window.Studios && Studios.showing ? Studios.showing() : null;
+    if (st && st.artist) { rules.push({ who: names([st.artist]), a: 0.62 }); }
+    var f = window.Land && Land.following ? Land.following() : null;
+    if (f && f.artist && !f.voice) { rules.push({ who: names([f.artist]), a: 0.62 }); }
+    var p = window.Explorations && Explorations.playing ? Explorations.playing() : null;
+    if (p && p.sites) { var ix = {}; p.sites.forEach(function (i) { ix[i] = true; }); rules.push({ ix: ix, a: 0.62 }); }
+    if (p && p.artist) { rules.push({ who: names([p.artist]), a: 0.62 }); }
+    var d = window.DialHub && DialHub.lit ? DialHub.lit() : null;
+    if (d && d.key === w.key && d.year) {
+      if (d.mode === "explore") { rules.push({ year: d.year, a: 0.3 }); }
+      else if (d.names.length) { rules.push({ who: names(d.names), year: d.year, a: 0.62 }); }
+    }
+    return rules;
+  }
+  function takes(rules, s, i) {
+    var a = 0;
+    rules.forEach(function (r) {
+      if (r.sid && !r.sid[s.id]) { return; }
+      if (r.ix && !r.ix[i]) { return; }
+      if (r.year && s.d !== r.year) { return; }
+      if (r.who && !(s.keys || (s.keys = keysOf(s.a))).some(function (k) { return r.who[k]; })) { return; }
+      a = Math.max(a, r.a);
+    });
+    return a;
+  }
+
   function draw(now) {
     raf = 0;
     setUpCanvas();
@@ -346,29 +403,38 @@
     marks = [];
     var w = where();
     if (!window.Land || !Land.at || !D) { return; }
-    var showRing = current && (w.at === "work" || w.at === "town" || (plate && !plate.hidden && plate.dataset.site === current.id));
-    if (w.at === "world" && !(plate && !plate.hidden)) { showRing = false; }
+    // The ring is the site selected: in a work's view its own; in a city the one gone to, or
+    // whose plate is open; elsewhere only while its plate is open.
+    var plateOn = !!(current && plate && !plate.hidden && plate.dataset.site === current.id);
+    var showRing = !!current && (plateOn || (w.at === "work" && current.w === w.work) ||
+                                 (w.at === "town" && !!visited && visited.key === current.key && w.key === visited.key));
+    ringOn = showRing;
     var any = false;
-    // The quiet marks: in a city, every documented site in view.
-    if (w.at === "town" && !w.flying) {
+    // The quiet marks: in a city, only the documented sites that belong to what is selected.
+    var rules = w.at === "town" && !w.flying ? chosen(w) : [];
+    if (rules.length) {
       var seen = {};
       D.sites.forEach(function (s, i) {
         if (s.pr === "town") { return; }
+        var a = takes(rules, s, i);
+        if (!a) { return; }
         var p = Land.at(s.ll[0], s.ll[1]);
         if (!p || p.z < 0.05 || p.x < 0 || p.y < 0 || p.x > W || p.y > H) { return; }
         var gx = Math.floor(p.x / C), gy = Math.floor(p.y / C), id = gx + "," + gy;
-        if (seen[id]) { seen[id].push(i); return; }
-        seen[id] = [i];
-        marks.push({ x: gx * C + C / 2, y: gy * C + C / 2, ids: seen[id] });
-        ctx.globalAlpha = 0.62;
+        if (seen[id]) { seen[id].ids.push(i); seen[id].a = Math.max(seen[id].a, a); return; }
+        seen[id] = { x: gx * C + C / 2, y: gy * C + C / 2, ids: [i], a: a, gx: gx, gy: gy };
+        marks.push(seen[id]);
+      });
+      marks.forEach(function (m) {
+        ctx.globalAlpha = m.a;
         ctx.strokeStyle = CREAM;
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(gx * C + 3.5, gy * C + 3.5, C - 7, C - 7);
+        ctx.strokeRect(m.gx * C + 3.5, m.gy * C + 3.5, C - 7, C - 7);
         // the easel's foot: one step of light under the tile
         ctx.fillStyle = CREAM;
-        ctx.fillRect(gx * C + 6, gy * C + C - 2, 1, 3);
-        any = true;
+        ctx.fillRect(m.gx * C + 6, m.gy * C + C - 2, 1, 3);
       });
+      any = marks.length > 0;
     }
     if (showRing && current) {
       var q = Land.at(current.ll[0], current.ll[1]);
@@ -426,6 +492,12 @@
       lastWork = null;
     }
     if (w.at === "world" && !w.flying && plate && !plate.hidden && !(window.Explorations && Explorations._state && (Explorations._state().playing || {}).title)) { closePlate(); }
+    // The city gone to is left (for the world, another city or any other view): its site is no longer ringed there.
+    if (visited && !w.flying) {
+      var there = w.at === "town" && w.key === visited.key;
+      if (there) { visited.reached = true; }
+      else if (visited.reached || performance.now() - visited.at > 20000) { visited = null; }
+    }
     if (w.at === "town" || w.at === "work" || (plate && !plate.hidden)) { kick(); }
   }
   window.setInterval(poll, 400);
@@ -501,7 +573,9 @@
     show: function (i) { return load().then(function () { var s = D && D.sites[i]; if (s) { openPlate(s, { here: true, quiet: true }); } }); },
     close: closePlate,
     _state: function () {
-      return { loaded: !!D, n: D ? D.sites.length : 0, current: current && current.id, plate: plate && !plate.hidden ? plate.innerText.slice(0, 400) : "", marks: marks.length };
+      var w = where();
+      return { loaded: !!D, n: D ? D.sites.length : 0, current: current && current.id, plate: plate && !plate.hidden ? plate.innerText.slice(0, 400) : "", marks: marks.length,
+               ringed: ringOn, rules: w.at === "town" ? chosen(w).map(function (r) { return Object.keys(r).filter(function (k) { return k !== "a"; }).join("+") + " " + r.a; }) : [] };
     }
   };
 })();

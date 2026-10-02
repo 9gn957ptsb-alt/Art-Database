@@ -1006,6 +1006,11 @@
     showWork: showWork,
     made: made,
     has: function (name) { return !!rowOf(name); },
+    // A period entered here: the life's artist and its Painted here sites (sites.js draws them in the city).
+    visiting: function () {
+      if (!visit_ || !visit_.box.isConnected) { return null; }
+      return { id: visit_.L.id, name: visit_.L.name, k: visit_.k, sites: (visit_.L.sites || []).map(function (s) { return s[0]; }) };
+    },
     _state: function () {
       var col = document.getElementById("art-col");
       return { loaded: !!D, lives: D ? D.lives.length : 0, open: view ? view.L.id : null, year: view ? view.y : null,

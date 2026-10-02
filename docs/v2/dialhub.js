@@ -574,13 +574,35 @@
 
   /* ---- in a city: the artists there that year, on the globe ---------------------- */
 
+  /* A city at rest draws only its own marks (artist, 2 Oct 2026: "way too many dots"); the
+     artists' marks come with a mode the viewer turned to. Artists: everyone there in the
+     dial's year; Movements: the members of a movement under the year, there then; Explore:
+     only those who came in the year, faint. lit() says which (sites.js draws their sites
+     painted that year; in Explore every site painted in it, faint). */
+  function lit() {
+    var v = hub.v && window.Land && Land.dial ? Land.dial() : null;
+    var mode = v && hub.modes[hub.mode];
+    if (!v || v.kind !== "town" || v.flying || !hub.mode || !hub.view) { return null; }
+    var y = v.year, M = window.Movements && Movements.data(), names = [];
+    var add = function (n) { if (n && names.indexOf(n) < 0) { names.push(n); } };
+    if (mode === "artists") {
+      (hub.items || []).forEach(function (it) { if (isAt(it, y)) { add(it.name); } });
+    } else if (mode === "movements" && M) {
+      (hub.items || []).forEach(function (it) {
+        var m = isAt(it, y) && M.movements[M.byId[it.id]];
+        if (m) { m.members.forEach(function (r) { if (r[1] <= y && y <= r[2]) { add(M.artists[r[0]][1]); } }); }
+      });
+    }
+    return { mode: mode, key: v.key, year: y, names: names };
+  }
+
   var cv = null, ctx = null, raf = 0;
   function kick() { if (!raf) { raf = window.requestAnimationFrame(drawGlobe); } }
   function drawGlobe() {
     raf = 0;
     var v = hub.v && window.Land && Land.dial ? Land.dial() : null;
     var mode = v && hub.modes[hub.mode];
-    var on = v && v.kind === "town" && !v.flying && (mode === "artists" || mode === "movements");
+    var on = v && v.kind === "town" && !v.flying && (mode === "artists" || mode === "movements" || mode === "explore");
     if (!cv && !on) { return; }
     if (!cv) {
       var tiles = document.getElementById("tiles");
@@ -595,9 +617,12 @@
     ctx.clearRect(0, 0, W, H);
     if (!on) { return; }
     var y = v.year, M = Movements.data();
-    var lit = [];
+    var lit = [], faint = mode === "explore";
     if (mode === "artists") {
       (hub.items || []).forEach(function (it) { if (isAt(it, y) && it.ll) { lit.push(it.ll); } });
+    } else if (faint) {
+      // Explore: the hand-offs are on the band; on the globe only the artists who came in the year.
+      Movements.here(v.key).forEach(function (p) { if (p[1] === y) { lit.push([p[4], p[5]]); } });
     } else {
       // A movement under the year: its artists where they were then.
       (hub.items || []).forEach(function (it) {
@@ -615,7 +640,7 @@
       var gx = Math.floor(q.x / C) * C, gy = Math.floor(q.y / C) * C;
       if (done[gx + "," + gy]) { return; }
       done[gx + "," + gy] = true;
-      ctx.globalAlpha = 0.95;
+      ctx.globalAlpha = faint ? 0.4 : 0.95;
       ctx.strokeStyle = CREAM;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(gx + 1.5, gy + 1.5, C - 3, C - 3);
@@ -633,6 +658,7 @@
     // The band in use (a mode other than the view's own, with marks): the face's carrying circle is smaller.
     busy: function () { return hub.mode > 0 && !!(hub.items && hub.items.length) && !!hub.view; },
     hover: hover,
+    lit: lit,
     cycle: cycle,
     mode: function () { return hub.modes[hub.mode] || null; },
     modes: function () { return hub.modes.slice(); },

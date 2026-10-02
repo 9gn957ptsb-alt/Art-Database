@@ -52,10 +52,13 @@ The legend is the line under the word while the dial has focus or the pointer re
 ## Turning
 
 Turning reads the band at the year: the arcs under the handle glow, and the **readout** — one
-line beside the dial, two doors at most — says them ("Movement · Paris, 1886–1895 · van Gogh,
-Gauguin, Cézanne …", "Begins here · Wildenstein's hunt"). In a city, the artists who were there
-that year are lit on the globe at their studios or schools (an atelier, the lives' mark). Nothing
-moves the year but the hand; the readout follows it.
+line beside the dial, two doors at most — says them ("Movement · Paris, 1887 · van Gogh,
+Matisse, Hale", "Begins here · Wildenstein's hunt"). In a city, the artists who were there
+that year are lit on the globe at their studios or schools (an atelier, the lives' mark) — in
+Artists or Movements, the mode the viewer turned to, with their Painted here sites of that year;
+in Explore only those who came in the year, faint, and the sites painted in it. A city at rest
+draws none of them: its own marks are its museums and galleries. Nothing moves the year but the
+hand; the readout follows it.
 
 ## Pressing
 

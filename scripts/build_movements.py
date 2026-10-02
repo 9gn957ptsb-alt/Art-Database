@@ -19,12 +19,24 @@ the same years, each by evidence —
   school   a dated Wikidata P69 educated at or P108 employer whose institution stands in the city
            (fetch_movements.py; the Académie Julian, the Bauhaus, Black Mountain College).
 
-Only years the artist was fifteen or older and alive. The overlaps are the maximal sets of artists
-together in a city in some year (the cliques of an interval graph); sets that share most of their
-artists a few years apart are one movement. Each is said by what supports it: "Paris, 1904–1914 ·
-Picasso, Matisse, Braque …"; a movement's name is added only where most of its artists (half or
-more, three or more) share a Wikidata P135 movement whose own years (P580/P582, else P571/P576)
-overlap the cluster's — "Cubism, by Wikidata's movement of 6 of 8 artists" — never otherwise.
+Only years the artist was fifteen or older and alive. Only a placement that is evidence of presence
+defines a movement (2 Oct 2026: long residents had padded the big Paris and New York clusters):
+twelve years or fewer, or longer and bounded by its own record (a building's occupancy, a hand
+table's sentences, a school's or an employer's start and end, a residence with its own dates) and
+overlapping the movement two years or more. An open span — a Wikidata work location naming only the
+town, often RKD's whole career (Erwitt's New York 1948–2002, Atget's Paris 1878–1927) — never defines
+one; its artist joins one only where another dated source puts them in the city in those years
+(within two). The lives keep each year's strongest evidence only, so the sentences a life passes over
+under such a span ("In 1886, he moved to Paris") are read again here, by the lives' own reading.
+
+The overlaps are the maximal sets of artists together in a city in some year (the cliques of an
+interval graph); sets that share most of their artists a few years apart are one movement. Its
+members are in order of how much they are the movement: the years they overlap it × their weight on
+the site (saved works and catalogue entries), so Picasso and Matisse lead Paris, 1905. Each is said
+by what supports it: "Paris, 1908–1910 · Picasso, Le Corbusier, Braque …"; a movement's name is
+added only where most of its artists (half or more, three or more) share a Wikidata P135 movement
+whose own years (P580/P582, else P571/P576) overlap the cluster's — "Cubism, by Wikidata's movement
+of 3 of 6 artists" — never otherwise.
 
 The evidence of contact among them, from the public files: the shows, sales, owners and writings
 two members' saved works shared (threads/), then (within three years of the span) or later (a
@@ -35,12 +47,15 @@ Also the dial's index: for every city, the movements there with their years, so 
 them as the dial turns without reading anything else; and the relay's rows (kind "m"), each
 movement a walk through its members' dated places in those years.
 
-Public inputs (docs/v2/) and the Wikidata cache in data/movements/ (CC0, fetch_movements.py).
-Same bytes every run. No network.
+Public inputs (docs/v2/), the Wikidata cache in data/movements/ (CC0, fetch_movements.py) and the
+Wikipedia caches the lives read (data/lives/, data/studios/). Same bytes every run. No network.
 
     python3 scripts/build_movements.py
 """
-import collections, glob, json, math, os, re, sys
+import collections, glob, json, math, os, re, sys, unicodedata
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_lives as BL               # its reading of a Wikipedia sentence (said_presences)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 V2 = os.path.join(ROOT, 'docs', 'v2')
@@ -52,11 +67,17 @@ NEAR_KM = 30
 MERGE_GAP = 3          # years between two sets that are one movement
 MERGE_SHARE = 0.6      # of the smaller set's artists shared
 MOST_SPAN = 12         # a movement is never longer than this; a longer run is two
+SEED_SPAN = 12         # a placement longer than this is not, alone, evidence of presence in a given year
+SEED_OVERLAP = 2       # one longer, bounded by its own record, seeds only where it overlaps the movement this long
+OPEN_KINDS = ('worked', 'lived and worked')   # a Wikidata work location (with or without a residence), the town only
 
 NOTE = ("The movements (docs/v2/movements.js): three saved artists or more in one city in the same years, "
         "each placed there by evidence — a dated place of the studios, a year a life places them by evidence "
         "(never a carried year), or a dated Wikidata 'educated at' or 'employer' whose institution stands in the "
-        "city (CC0). Named by the city, the years and the artists; a movement's name only where most of its "
+        "city (CC0). Only a placement of twelve years or fewer, or a longer one bounded by its own record, defines "
+        "one; a work location spanning a career joins only where another dated source puts the artist there then. "
+        "Members most the movement first (years there × saved works and catalogue entries). "
+        "Named by the city, the years and the artists; a movement's name only where most of its "
         "artists share a Wikidata P135 movement whose years overlap, with that count. The evidence of contact: "
         "the shows, sales, owners and writings their saved works shared, the voices who wrote on several of them, "
         "the works dated there then. Written by scripts/build_movements.py.")
@@ -157,21 +178,38 @@ def main():
         y1 = y1 if y1 and y1 >= y0 else y0
         if y1 - y0 > 60:
             return
+        # How long the placement is: short enough to be evidence of presence in each of its years,
+        # or long — bounded by its own record (a building's occupancy, a hand table's sentences, a
+        # school's or an employer's start and end, a residence with its dates), or open (a Wikidata
+        # work location naming only the town, often a career: Erwitt's New York 1948–2002).
+        ev['long'] = y1 - y0 + 1 > SEED_SPAN
+        ev['open'] = ev['long'] and ev.get('open', False)
         for y in range(y0, y1 + 1):
             if fits(pid, y):
                 pres[(pid, key)][y].append(ev)
 
+    def wd_town(s):
+        """A studios row whose years are a Wikidata work location's (P937, often RKD's career span), naming
+        only the town, not a building. A residence (P551) with its own start and end is bounded."""
+        name = (s.get('src') or [{}])[0].get('name', '')
+        return (s.get('kind') in OPEN_KINDS and s.get('pr') in ('town', 'district') and
+                name.startswith('Wikidata') and 'work location' in name)
+
+    open_spans = set()                   # (artist's item, y0, y1): the same statement, echoed by a life
     for i, s in enumerate(st['studios']):
         if not s.get('y0') or s.get('km', 0) > NEAR_KM:
             continue
         a = arts[s['a']]
         src = (s.get('src') or [{}])[0]
+        if wd_town(s):
+            open_spans.add((a[2] or a[0], s['y0'], s.get('y1') or s['y0']))
         put(a[0], s.get('key'), s['y0'], s.get('y1') or s['y0'],
             {'how': 'studio', 'y': [s['y0'], s.get('y1') or s['y0']], 'what': s.get('kind', ''), 'place': s.get('name', ''),
-             'src': src.get('name', ''), 'url': src.get('url', ''), 'studio': i, 'll': s.get('ll')})
+             'src': src.get('name', ''), 'url': src.get('url', ''), 'studio': i, 'll': s.get('ll'), 'open': wd_town(s)})
 
     lives = []
     life_at = collections.defaultdict(list)
+    kept_q = set()                       # (artist, sentence): the sentences the lives keep
     if os.path.exists(os.path.join(V2, 'lives.json')):
         for row in load('lives.json')['lives']:
             path = os.path.join(V2, 'lives', row[0] + '.json')
@@ -202,9 +240,43 @@ def main():
                     y0, y1 = (y[0], y[1]) if isinstance(y, list) else (y, y)
                     if not y0:
                         continue
+                    echo = s.get('how') == 'range' and (people[pid]['q'] or pid, y0, y1 or y0) in open_spans
+                    if s.get('q'):
+                        kept_q.add((pid, s['q']))
                     put(pid, p.get('key'), y0, y1, {'how': 'life', 'y': [y0, y1], 'what': s.get('how', ''),
                                                    'place': p.get('place', ''), 'src': s.get('name', ''),
-                                                   'url': s.get('url', ''), 'q': s.get('q', '')[:240], 'll': p.get('ll')})
+                                                   'url': s.get('url', ''), 'q': s.get('q', '')[:240], 'll': p.get('ll'),
+                                                   'open': echo})
+
+    # The sentences a life passes over. Each year of a life keeps only its strongest evidence, so where a
+    # work location spans the year, "In 1886, he moved to Paris" is not in the life's file; and an open span
+    # joins a movement only where another dated source puts the artist there. The lives' own reading of the
+    # article (build_lives.said_presences, the same cached text and the hand table's drops), for the artists
+    # with an open span; a sentence the life already keeps is not read twice.
+    with_open = sorted({pid for (pid, _), ys in pres.items() if any(ev['open'] for evs in ys.values() for ev in evs)})
+    if with_open:
+        wiki = dict(BL.load(os.path.join(BL.DS, 'artist_wiki.json'), {}))
+        for k_, v_ in BL.load(os.path.join(BL.DL, 'wiki.json'), {}).items():
+            if v_.get('text'):
+                wiki[k_] = v_
+        gaz = BL.gazetteer(towns, BL.load(os.path.join(BL.DS, 'places.json'), []))
+        others = sorted({BL.surname(a[1]) for a in arts if a[5] >= 3})
+        drops = BL.load(BL.HAND, {}).get('drop', [])
+        for pid in with_open:
+            P = people[pid]
+            art = wiki.get(P['q']) or {}
+            if not art.get('text') or not P['b']:
+                continue
+            gone = [d['q'] for d in drops if d.get('artist') == P['name']]
+            for sp in BL.said_presences(P['name'], art['text'], art.get('url'), art.get('title') or P['name'], gaz,
+                                        P['b'], P['d'], others):
+                q_ = sp['src']['q']
+                t = nearest(sp['ll'])
+                if not t or (pid, q_) in kept_q or any(d in q_ for d in gone):
+                    continue
+                put(pid, t[0], sp['y0'], sp['y1'], {'how': 'life', 'y': [sp['y0'], sp['y1']], 'what': 'said',
+                                                    'place': sp['place'], 'src': sp['src']['name'], 'url': sp['src'].get('url') or '',
+                                                    'q': q_[:240], 'll': sp['ll']})
 
     orgs = {}
     for o in wd['orgs']:
@@ -232,10 +304,48 @@ def main():
                                  'url': 'https://www.wikidata.org/wiki/' + r['a'], 'll': list(o['ll'])})
 
     # ---- the overlaps, city by city
-    city_years = collections.defaultdict(lambda: collections.defaultdict(set))
+    # Only a placement that is evidence of presence seeds one: short (SEED_SPAN years or fewer), or
+    # longer but bounded by its own record and overlapping the movement SEED_OVERLAP years or more. An
+    # open span — a Wikidata work location naming only the town — never defines a movement; its artist
+    # joins one only when another dated source puts them in the city in those years.
+    anchor = collections.defaultdict(dict)       # (pid, key) -> {year: 'short' | 'long'}
+    opened = collections.defaultdict(set)        # (pid, key) -> {year}: open spans only
     for (pid, key), ys in pres.items():
+        for y, evs in ys.items():
+            for ev in evs:
+                if ev['open']:
+                    opened[(pid, key)].add(y)
+                elif not ev['long']:
+                    anchor[(pid, key)][y] = 'short'
+                else:
+                    anchor[(pid, key)].setdefault(y, 'long')
+    city_years = collections.defaultdict(lambda: collections.defaultdict(set))
+    for (pid, key), ys in anchor.items():
         for y in ys:
             city_years[key][y].add(pid)
+
+    # How much an artist weighs on the site: saved works and catalogue entries (the hunts' numbers).
+    def fold(t):
+        return re.sub(r'[\u0300-\u036f]', '', unicodedata.normalize('NFD', clean_name(t or ''))).lower()
+    catalogued = collections.Counter()
+    if os.path.exists(os.path.join(V2, 'explorations.json')):
+        for h in load('explorations.json').get('hunts', []):
+            catalogued[fold(h.get('artist'))] += sum(1 for st_ in h.get('stops', []) if st_.get('no'))
+
+    def weight(pid):
+        return people[pid]['n'] + catalogued.get(fold(people[pid]['name']), 0)
+
+    def evidence(pid, key, y0, y1):
+        """Their evidence here, what puts them there in the movement's years first, an open span last."""
+        evs, seen = [], set()
+        for y in sorted(pres[(pid, key)]):
+            for ev in pres[(pid, key)][y]:
+                k_ = (ev['how'], ev['src'], ev['place'], tuple(ev['y']))
+                if k_ not in seen:
+                    seen.add(k_)
+                    evs.append(ev)
+        far = lambda ev: 0 if ev['y'][0] <= y1 + 2 and (ev['y'][1] or ev['y'][0]) >= y0 - 2 else 1
+        return sorted(evs, key=lambda ev: (ev['open'], far(ev), ev['y'][0]))
 
     clusters = []
     for key in sorted(city_years):
@@ -266,25 +376,41 @@ def main():
                 if merged:
                     break
         for g in groups:
+            # The seeds: a short placement in the movement's years, or a bounded long one overlapping
+            # them SEED_OVERLAP years or more; the years are those where three seeds or more were there.
             y0, y1 = min(g['years']), max(g['years'])
-            # Each member's own years here, and whether they were here in the movement's years.
-            members = []
+            seeds = set()
             for pid in g['who']:
-                ys = sorted(y for y in pres[(pid, key)] if y0 - 2 <= y <= y1 + 2)
+                a_ = anchor[(pid, key)]
+                inside = [y for y in a_ if y0 <= y <= y1]
+                if any(a_[y] == 'short' for y in inside) or len(inside) >= SEED_OVERLAP:
+                    seeds.add(pid)
+            years = sorted(y for y in g['years'] if sum(1 for pid in seeds if y in anchor[(pid, key)]) >= MIN_ARTISTS)
+            if not years:
+                continue
+            y0, y1 = years[0], years[-1]
+            # Who else joins: an open span over those years, with another dated source in the city then.
+            joiners = set()
+            for (pid, k_), ys in opened.items():
+                if k_ != key or pid in seeds or not any(y0 <= y <= y1 for y in ys):
+                    continue
+                if any(y0 - 2 <= y <= y1 + 2 for y in anchor.get((pid, key), {})):
+                    joiners.add(pid)
+            # Each member's own years here, and how much they are the movement: the years they overlap
+            # it × their weight on the site (saved works and catalogue entries).
+            members = []
+            for pid in seeds | joiners:
+                # Their years: what puts them there, two years either side; an open span only within the movement's.
+                a_ = anchor.get((pid, key), {})
+                ys = sorted(y for y in pres[(pid, key)] if y0 <= y <= y1 or (y0 - 2 <= y <= y1 + 2 and y in a_))
                 if not ys:
                     continue
-                evs = []
-                seen = set()
-                for y in sorted(pres[(pid, key)]):
-                    for ev in pres[(pid, key)][y]:
-                        k_ = (ev['how'], ev['src'], ev['place'], tuple(ev['y']))
-                        if k_ not in seen:
-                            seen.add(k_)
-                            evs.append(ev)
                 allys = sorted(pres[(pid, key)])
-                members.append({'id': pid, 'y0': ys[0], 'y1': ys[-1], 'all': [allys[0], allys[-1]], 'ev': evs})
-            members.sort(key=lambda m: (m['y0'], -people[m['id']]['n'], m['id']))
-            if len(members) < MIN_ARTISTS:
+                over = sum(1 for y in ys if y0 <= y <= y1)
+                members.append({'id': pid, 'y0': ys[0], 'y1': ys[-1], 'all': [allys[0], allys[-1]], 'ev': evidence(pid, key, y0, y1),
+                                'joined': pid in joiners, 'score': over * weight(pid)})
+            members.sort(key=lambda m: (-m['score'], m['y0'], m['id']))
+            if sum(1 for m in members if not m['joined']) < MIN_ARTISTS:
                 continue
             clusters.append({'key': key, 'y0': y0, 'y1': y1, 'members': members})
 
@@ -481,7 +607,7 @@ def main():
     homes_path = os.path.join(V2, 'characters', 'homes.json')
     out_rows = []
     for c in rows:
-        names = [surname(clean_name(people[m['id']]['name'])) for m in sorted(c['members'], key=lambda m: (-people[m['id']]['n'], m['id']))]
+        names = [surname(clean_name(people[m['id']]['name'])) for m in c['members']]      # most the movement first
         title = c['at'] + ', ' + (str(c['y0']) if c['y0'] == c['y1'] else '%d–%d' % (c['y0'], c['y1']))
         out_rows.append({
             'id': c['id'], 'key': c['key'], 'city': c['city'], 'at': c['at'] if c['at'] != c['city'] else '', 'y0': c['y0'], 'y1': c['y1'],

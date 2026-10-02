@@ -475,6 +475,11 @@
     visit: visit,
     play: function (id) { return load().then(function () { var x = D && D.explorations[D.byEx[id]]; if (x) { play(x); } }); },
     exploration: function (id) { return D ? D.explorations[D.byEx[id]] || null : null; },
+    // A studio's column open: its artist (sites.js draws that artist's Painted here sites in the city).
+    showing: function () {
+      var r = current && current.box && current.box.isConnected && D ? D.studios[current.pay.i] : null;
+      return r ? { i: current.pay.i, artist: artistOf(r)[1] } : null;
+    },
     _state: function () {
       var b = current && current.box && current.box.isConnected ? current.box.innerText.slice(0, 600) : "";
       return { loaded: !!D, artists: D ? D.artists.length : 0, studios: D ? D.studios.length : 0, column: b };

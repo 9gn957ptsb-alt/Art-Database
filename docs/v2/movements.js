@@ -190,7 +190,8 @@
     }
     col.appendChild(box);
 
-    // Who was here, in order of coming: each a head that turns the dial to them.
+    // Who was here, most the movement first (years there × saved works and catalogue entries,
+    // build_movements.py): each a head that turns the dial to them.
     col.appendChild(el("p", "art-section-head", "Who was here · " + m.members.length));
     var ol = el("ol", "life-periods movement-members");
     v.rows = m.members.map(function (r) {
