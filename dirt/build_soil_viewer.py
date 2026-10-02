@@ -92,9 +92,13 @@ PAGE = r"""<meta charset="utf-8">
   }
   button:hover { border-color: var(--muted); }
   :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-  .art { display: flex; gap: 13px; align-items: baseline; min-width: 0; flex: 1; white-space: nowrap; }
-  .title { font: italic 400 19px/1.2 var(--serif); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .who { color: var(--muted); }
+  /* the caption never runs under the buttons: it keeps to its own box, each part cut short with an ellipsis, and
+     where there is not room for 144px of it beside the buttons, the buttons go to a row of their own */
+  .art { display: flex; gap: 13px; align-items: baseline; min-width: 0; flex: 1 1 144px; white-space: nowrap; overflow: hidden; }
+  .art > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .title { font: italic 400 19px/1.2 var(--serif); flex: 0 3 auto; }
+  .who { color: var(--muted); flex: 0 1 auto; }
+  #c-link { flex: 0 8 auto; }
   a { color: var(--ink); text-underline-offset: 3px; }
   .stage { flex: 1; min-height: 0; position: relative; }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
