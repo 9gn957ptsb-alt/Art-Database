@@ -96,6 +96,12 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   refining your responses to be shorter and more to the point so that we can really benefit and map out all the
   novel connections to be made in what we build"). Short. Lead with the idea, not the process; offer a connection
   or two he hasn't made, and say plainly where an idea is weak.
+- **The dial is the hub of every way of exploring** (artist, 2 Oct 2026: "Maximizing the utility of the dial is
+  pertinent to enabling the inherent complexity of modalities of connecting information to be accessible and easily
+  utilized by viewers. So when we find new ways of defining explorations I want you to really develop an efficient
+  and dynamic way it can be incorporated into the functionality of the dial"). Every new kind of exploration
+  (lives, movements, hunts, walks, voices, sites, corpses …) gets a place on the dial: what its years mean, what its
+  marks are, what turning it does, and how it hands on to the others — designed with it, not added after.
 - Don't paste a bare URL on every update — say it's done; the linked words
   carry the link. Keep publishing the updated artifact each time.
 - The work photographs are placeholders until shot properly. Don't crop or
