@@ -117,7 +117,8 @@
     var missing = false;
     s = s.replace(/\{(\w+)\}/g, function (m, k) { if (!has(f[k])) { missing = true; return ""; } return String(f[k]); });
     if (missing) { return null; }
-    return s.replace(/\s+/g, " ").replace(/\s+([.,;:])/g, "$1").trim();
+    // A fact that ends a sentence itself ("Washington, D.C.") is not stopped twice.
+    return s.replace(/\s+/g, " ").replace(/\s+([.,;:])/g, "$1").replace(/\.\.(?!\.)/g, ".").trim();
   }
   // "*a title*" in italics; text only, never markup from the data.
   function italics(text, into) {
@@ -382,8 +383,9 @@
     S.voice = rule.voice;
     S.path = s.path;
     S.step = s.step;
-    // Where a work was painted is told at the year it was painted: the dial goes there.
-    if (flyIt && r.kind === "work" && /^site/.test(s.step) && has(s.f.year) && Land.dialYear &&
+    // A work's step told at a year of its own (where it was painted, the year a cataloguer found it):
+    // the dial goes there, so the tense under it is the tense of that year.
+    if (flyIt && r.kind === "work" && (/^site/.test(s.step) || s.step === "finding") && has(s.f.year) && Land.dialYear &&
         s.f.year >= r.y0 && s.f.year <= r.y1) { Land.dialYear(s.f.year); }
     if (flyIt) {
       var spec = frameSpec(rule.frame, s.f, dist);
@@ -419,6 +421,8 @@
 
   function tick() {
     var r = window.Land && Land.reading ? Land.reading() : null;
+    // For the strips (walks.js, explorations.js): a view is being read, its sentence under the picture.
+    if (r && r.lens) { document.body.dataset.reading = "true"; } else { delete document.body.dataset.reading; }
     if (!r || !r.lens) { hideLens(); chipTick(r); return; }
     if (!T) { load().then(kick); return; }
     hideChip();
@@ -522,7 +526,8 @@
       return { path: "work", step: "city", key: "c" + k,
                f: { year: yr(s.y), verb: verbOf(s.k), place: short(s.name), ll: [s.lat, s.lon] } };
     }
-    if (w.pin >= 0 && stops[w.pin]) { return city(w.pin); }
+    // A place read (pressed, scrolled to): told at once.
+    if (w.pin >= 0 && stops[w.pin]) { var cp = city(w.pin); cp.wait = 0; return cp; }
     // Turned by hand: the voice it had holds until the dial rests.
     if (r.byHand && r.moving && S.key) { return null; }
     if (r.byHand && !r.moving && stops.length) {
@@ -778,6 +783,18 @@
       return row ? siteStep("sites", row, surname(row.a)) : null;
     }
     if (o.path === "life" && r.kind === "life") { return deriveLife(r, now, o); }
+    // A movement's walk: at its own city, the movement as the dial has it; away, the one who was there.
+    if (o.path === "movement" && r.kind === "movement") {
+      var MD = window.Movements && Movements.data ? Movements.data() : null;
+      var mm = MD && MD.byId && MD.byId[o.mv] !== undefined ? MD.movements[MD.byId[o.mv]] : null;
+      if (!mm || o.key === mm.key) { return deriveMovement(r, now); }
+      var city = MD.town && MD.town[mm.key], there = town(o.key), art_ = o.who >= 0 ? MD.artists[o.who] : null;
+      var stepA = has(o.y) && o.y < mm.y0 ? "away" : "elsewhere";
+      return { path: "movement", step: stepA, key: o.key + o.y, fk: "away" + o.key,
+               f: { who: art_ ? surname(art_[1]) : null, place: there ? there.name : null, year: o.y, city: city ? city.name : null,
+                    fromLL: there ? there.ll : null, toLL: city ? city.ll : null },
+               pic: movementPic(mm, MD, o.y) };
+    }
     if (r.kind === "work" && r.work) {
       var w = r.work, who = surname(w.artists[0] || "");
       var last = w.stops[w.stops.length - 1];
@@ -935,9 +952,10 @@
     sitesReady: function () { sites(); return sitesAsk || Promise.resolve(); },
     _state: function () {
       var r = window.Land && Land.reading ? Land.reading() : null;
-      return { loaded: !!T, rules: T ? T.n : 0, view: S.view, path: S.path || "", step: S.step || "", voice: S.voice || "",
-               distance: S.dist || "", held: held ? RANKS[held.rank] : null, label: rimWord ? rimWord._to || "" : "",
-               caption: S.said || "", tense: r && r.on ? null : null,
+      var live = S.view !== -1 && !!(r && r.lens);
+      return { loaded: !!T, rules: T ? T.n : 0, view: S.view, path: live && S.path || "", step: live && S.step || "", voice: live && S.voice || "",
+               distance: live && S.dist || "", held: held ? RANKS[held.rank] : null, label: live && rimWord ? rimWord._to || "" : "",
+               caption: live && S.said || "", tense: r && r.on ? null : null,
                chip: chip && !chip.hidden ? chip.textContent : "", lens: r ? { at: r.at, swapped: r.swapped, ground: r.ground } : null };
     }
   };

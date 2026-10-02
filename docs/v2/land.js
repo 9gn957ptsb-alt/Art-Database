@@ -15376,7 +15376,11 @@
      "--hole-x", "--hole-y", "--hole-w", "--hole-h", "--hole-round"].forEach(function (k) {
       st.removeProperty(k);
     });
-    if (!art || !readKind(art.kind)) { delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped; return; }
+    if (!art || !readKind(art.kind)) {
+      delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped;
+      clipWorld(null);
+      return;
+    }
     artEl.dataset.plate = "true";
     if (LENS) { artEl.dataset.read = "true"; } else { delete artEl.dataset.read; }
     if (lensSwapped) { artEl.dataset.swapped = "true"; } else { delete artEl.dataset.swapped; }
@@ -16320,6 +16324,12 @@
      in a place the point held there is the focus, at the lean (reframe). */
   function glideTo(a, lat, lon) {
     if (flying || !place) { return; }
+    // In the reading layout the lens is turned there, as near as its voice already stands.
+    if (LENS && a === art && readingOn() && a.lensSpec) {
+      var to = [lat / RAD, wrap(lon) / RAD];
+      lensTo({ voice: a.lensSpec.voice === "first" ? "close" : a.lensSpec.voice, at: to, pts: [to] });
+      return;
+    }
     if (still) {
       focus.lat = lat;
       lean(lat);

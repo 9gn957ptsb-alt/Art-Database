@@ -762,12 +762,15 @@
       .filter(function (s) { return s && s[4] && s[2] && rank[s[5]] !== undefined; })
       .sort(function (a, z) { return rank[a[5]] - rank[z[5]]; })[0];
     if (si) { add(9500, si[1] + ", " + si[2] + " · painted here", { path: "life", step: "site", y: si[2] }); }
-    p.works.slice(0, 3).forEach(function (i) {
+    var deathHere = L.died && p.y0 <= L.died && L.died <= p.y1 && k === L.periods.length - 1;
+    p.works.slice(0, deathHere ? 2 : 3).forEach(function (i) {
       var w = L.works[i];
       var line = w[1] + (w[2] ? ", " + w[2] : "") + ((w[7] || []).length ? " · " + w[7][0] : "") +
         (w.length > 8 ? " · pulled at " + w[8][0] + (w[8][1] ? ", " + w[8][1] : "") : "");
       add(9000, line, { path: "life", step: "work", y: w[2] && w[2] >= p.y0 && w[2] <= p.y1 ? w[2] : p.y0, work: w[0] }, w[0]);
     });
+    // The last place a life is told in ends with the death (the dial's long white mark).
+    if (deathHere) { add(7000, who + " dies" + (L.d ? " · " + L.d[0] : "") + ", " + L.died, { path: "life", step: "died", y: L.died }); }
     return { lines: [first], works: [], key: p.key, beats: b, end: t + 2000 };
   }
   // After the death: where the works went, a few years of it (will be).

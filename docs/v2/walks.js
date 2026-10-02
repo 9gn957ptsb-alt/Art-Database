@@ -963,7 +963,8 @@
         if (rd.phone) { st.style.left = "12px"; st.style.maxWidth = (window.innerWidth - 24) + "px"; return; }
         var colBox = document.getElementById("art-col"), cb = colBox ? colBox.getBoundingClientRect() : null;
         var left = rd.cap.x + rd.cap.w + 16, right = (cb && cb.width ? cb.left : colLeft) - 12;
-        if (dial && dial.width && dial.bottom + 8 > window.innerHeight - 12 - 96) { left = Math.max(left, dial.right + 12); }
+        var sh = st.getBoundingClientRect().height || 96;
+        if (dial && dial.width && dial.bottom + 8 > window.innerHeight - 12 - sh) { left = Math.max(left, dial.right + 12); }
         st.style.left = Math.round(left) + "px";
         st.style.maxWidth = Math.max(220, Math.floor(right - left)) + "px";
         return;

@@ -110,6 +110,8 @@ of the voice's.
 | movement | before | omniscient | past | movement |  | {year}: none of them was in {place} yet. |
 | movement | after | omniscient | past | movement |  | {year}: they had gone from {place}. |
 | movement | quiet | omniscient | past | movement |  | {year}: none of them is recorded in {place}. |
+| movement | away | panoramic | past | leg |  | {year}: {who} was in {place}[, before {city}]. |
+| movement | elsewhere | panoramic | past | leg |  | {year}: {who} was in {place}, while the others were in {city}. |
 | thread | rest | omniscient | past | route |  | {n} works, {years}: {name}. |
 | walk | work | close | present | stop |  | {animal} waits in {place}: *{title}*. |
 | walk | site | first | past | standing |  | Here {who} stood to paint it, {year}. {facing} |
@@ -131,7 +133,6 @@ of the voice's.
 | own | animal | second | present | stop |  | You follow {animal}. |
 | corpse | edge | second | present | stop |  | You see only the edge: {place}[, {year}]. You walk on. |
 | corpse | stop | second | present | stop |  | You walk on to {place}[, {year}]. |
-| building | room | first | present | standing | where you stand | You stand in {room}. |
 
 ## How a step is known
 
@@ -148,11 +149,15 @@ of the voice's.
   else `place`, `arrives in` on a place's first year, `is in` after. Played ("Play the life"), each
   place is a stop said in beats — arriving, the crossing, the movement, a site, then the works in
   turn (`work`, the picture the work said) — and the lens moves at each beat.
-- **A movement**: before, during (`overview`), after; a member's first year there, once rested,
-  `arrival`, the lens leaning in to them for a while, then out again.
+- **A movement**: before, during (`overview`), after; a member's first year there, turned to by
+  hand, `arrival`, the lens leaning in to them for a while, then out again. Walked, a stop away from
+  its city is `away` (before it) or `elsewhere` (during it): from afar, both places in the lens.
 - **Played** (`explorations.js` tells `voice.js` each line it says): a hunt's stop `arrive`, then
   `finding` (or `unfound`), then a site if it has one; a viewer's own or a relay `own` (second
   person, the lens as far as what each stop is); a sites exploration `sites`; a studios one
   `studios`; a walk's works `walk`; a voice's places `voice`.
-- Where a path passes through a view with no lens (a city, a museum, the building walked), its name
-  and sentence are said beside the dial (`.voice-chip`).
+- Where a path passes through a view with no lens (a city, a museum), its name and sentence are said
+  beside the dial (`.voice-chip`): a hunt's way on, a viewer's own city or museum, a site in its city,
+  a studio, a writer's place, the animal followed, the corpse's edge and its walk.
+- **Walk the building** is the first person already — eye height, the room said in the banner's
+  under-line as you enter it — so nothing is added there.

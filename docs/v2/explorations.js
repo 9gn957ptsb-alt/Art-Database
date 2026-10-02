@@ -1191,6 +1191,8 @@
     run.down = true;
     if (!window.Studios || !Studios.visit) { next(); return; }
     var token = run;
+    voiceSay({ path: "studios", step: "studio", key: s.key, place: s.word || townName(s.key),
+               f: { who: surname(s.ox && s.ox.artist || ""), years: s.y ? String(s.y) : null } });
     Studios.visit(s.ids).then(function (got) {
       if (run !== token) { return; }
       if (!got) { afterStill(next, 1000); return; }
@@ -1238,6 +1240,8 @@
     run.down = true;
     if (!window.Movements || !Movements.visit) { next(); return; }
     var token = run;
+    // Where one of them was, away from the movement's city: from afar, both in view (voice.js).
+    voiceSay({ path: "movement", step: "away", mv: s.mv, key: s.key, who: s.who, y: s.y });
     Movements.visit(s).then(function (got) {
       if (run !== token) { return; }
       if (!got) { afterStill(next, 1000); return; }
