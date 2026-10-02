@@ -786,6 +786,13 @@
       chain = chain.then(function () {
         if (s.k === "|") { leg += 1; out.push({ k: "|", leg: leg }); return; }
         if (s.k !== "r") { out.push({ k: s.k, id: s.id, key: s.key, leg: leg }); return; }
+        // A life (lives.js): each of its places a stop.
+        if (/^l:/.test(s.id)) {
+          var ll_ = leg;
+          return (window.Lives ? Lives.steps(s.id.slice(2)) : Promise.resolve([])).then(function (got) {
+            got.slice(s.from || 0).forEach(function (g) { g.leg = ll_; out.push(g); });
+          });
+        }
         var r = relayRow(s.id), from = s.from || 0;
         if (!r) { return; }
         if (r[0] === "h") {
@@ -895,7 +902,7 @@
   function progress() {
     var s = step(), n = run.steps.filter(function (q) { return q.k !== "|"; }).length;
     var k = run.steps.slice(0, run.i + 1).filter(function (q) { return q.k !== "|"; }).length;
-    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.k === "site" || s.k === "studio" ? s.word : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
+    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.k === "site" || s.k === "studio" ? s.word : s.k === "life" ? s.word + " · " + s.y : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
     var inHunt = s.hunt ? " · No. " + (s.hunt.stops[s.n].no || s.n + 1) : "";
     return (run.paused ? "Paused · " : "") + k + " of " + n + " · " + where + inHunt;
   }
@@ -935,12 +942,12 @@
       return;
     }
     if (still) { stillStep(s); return; }
-    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep, site: siteStep, studio: studioStep }[s.k] || next)(s);
+    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep, site: siteStep, studio: studioStep, life: lifeStep }[s.k] || next)(s);
   }
 
   function asStop(s) {
     if (s.k === "walk") { return { k: "r", id: "w:" + s.walk.id, from: s.from }; }
-    if (s.k === "site" || s.k === "studio") { return { k: "t", id: s.key }; }
+    if (s.k === "site" || s.k === "studio" || s.k === "life") { return { k: "t", id: s.key }; }
     return { k: s.k, id: s.id, key: s.key };
   }
 
@@ -951,6 +958,10 @@
     if (s.k === "m") { Land.museum(s.id); told(label(s)); return; }
     if (s.k === "h") { Land.thread(s.id); told(label(s)); return; }
     if (s.k === "v" && window.Voices) { Voices.follow(s.id); told(label(s)); return; }
+    if (s.k === "life" && window.Lives) {
+      Lives.visit(s.life, s.p).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : s.word); } });
+      return;
+    }
     if (s.k === "studio" && window.Studios) {
       Studios.visit(s.ids).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : s.word); } });
       return;
@@ -985,7 +996,8 @@
     // A hunt's stop: first the city it was found in, its number said there.
     if (s.hunt && s.key) {
       arrive(inTown(s.key), function () { Land.go(s.key); }, function (ok) {
-        told(s.lines[0]);
+        var mk = window.Lives && Lives.made ? Lives.made(s.id) : "";
+        told(s.lines[0] + (mk ? " · " + mk : ""));
         if (!ok) { then(); return; }
         afterStill(then, ARRIVE_MS);
       });
@@ -1003,7 +1015,12 @@
       var r = workRow(s.id);
       var lines = [(r ? r[1] + (r[3] ? ", " + r[3] : "") : "Untitled")];
       told("");
-      if (s.lines) { lines = lines.concat(s.lines.slice(1)); }
+      if (s.lines) {
+        lines = lines.concat(s.lines.slice(1));
+        // Where it was made beside where it was found (lives.js: the workshop, the studio of its years).
+        var mk2 = s.hunt && window.Lives && Lives.made ? Lives.made(s.id) : "";
+        if (mk2) { lines.splice(2, 0, mk2); }
+      }
       else {
         get("histories/" + s.id + ".json").then(function (h) { lines = lines.concat(firstLines(h)); }, function () {});
       }
@@ -1071,6 +1088,28 @@
       told("");
       SAY_AT.forEach(function (at, k) { afterStill(function () { if (got.lines[k]) { setSaid(got.lines[k]); } }, at); });
       afterStill(next, LOOK);
+    });
+  }
+
+  /* A life (lives.js): the place entered, its period's column alone; said on
+     the reading's clock — the place, its years and the artist's age; the
+     sentence that puts the artist there; a life it crosses — then the works
+     of the period in turn, one line each, their squares lit as they are said. */
+  function lifeStep(s) {
+    run.down = true;
+    if (!window.Lives || !Lives.visit) { next(); return; }
+    var token = run;
+    Lives.visit(s.life, s.p).then(function (got) {
+      if (run !== token) { return; }
+      if (!got) { afterStill(next, 1000); return; }
+      run.arrived = run.i;
+      told("");
+      SAY_AT.forEach(function (at, k) { afterStill(function () { if (got.lines[k]) { setSaid(got.lines[k]); } }, at); });
+      var t0 = SAY_AT[SAY_AT.length - 1] + 6000;
+      got.works.forEach(function (w, k) {
+        afterStill(function () { Lives.showWork(w.id); setSaid(w.line); }, t0 + k * 9000);
+      });
+      afterStill(next, Math.max(LOOK, t0 + got.works.length * 9000 + 4000));
     });
   }
 
@@ -1188,6 +1227,8 @@
   // How an exploration stands in a chain: a published one by its reference; anything else, its stops.
   function repOf(x) {
     if (x.kind === "hunt") { return [{ k: "r", id: "h:" + x.id, from: x.from || 0 }]; }
+    // A life is kept and shared as its places (a code knows towns, not lives).
+    if (x.kind === "life" && x.towns) { return x.towns.map(function (k) { return { k: "t", id: k }; }); }
     return x.stops.slice();
   }
 
@@ -1224,6 +1265,12 @@
         if (s.ox) { c.skip["o:" + s.ox.id] = true; c.artist = s.ox.artist; }
         c.key = s.key || null;
         c.year = s.y || 0;
+        return Promise.resolve(c);
+      }
+      if (s.k === "life") {
+        c.key = s.key || null;
+        c.year = s.y || 0;
+        c.skip["l:" + s.life] = true;
         return Promise.resolve(c);
       }
       if (s.k === "site") {

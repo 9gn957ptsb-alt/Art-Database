@@ -1,0 +1,76 @@
+/* ---- The lives (lives.js) ----------------------------------------------------
+   A life in the column: the artist, born and died, the places in order — the
+   one of the dial's year open, its evidence quoted, the works made then (later
+   ones let down), the prints with their numbers and the workshop that pulled
+   them — then the workshops, and the works' afterlife. Lilac is the life's
+   line, as the studios'. */
+.life-box { margin: 0 0 var(--s-4); padding-left: var(--s-3); border-left: 1px solid rgba(157, 149, 230, 0.6); }
+.life-kicker { margin-top: 0; color: #9d95e6; }
+.life-year {
+  min-height: 1.4em;
+  margin: var(--s-2) 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #eadfcd;
+}
+.life-play { margin-top: var(--s-3); }
+.life-periods { list-style: none; margin: 0 0 var(--s-4); padding: 0; }
+.life-period { position: relative; margin: 0; padding: 2px 0; }
+.life-period-head {
+  display: grid;
+  width: calc(100% - 64px);
+  min-height: 44px;
+  padding: 6px 0 6px var(--s-3);
+  border: 0;
+  border-left: 2px solid transparent;
+  background: none;
+  text-align: left;
+  color: #eadfcd;
+  cursor: pointer;
+}
+.life-period-head:hover,
+.life-period-head:focus-visible { border-left-color: rgba(157, 149, 230, 0.6); outline: none; }
+.life-period[data-current] > .life-period-head { border-left-color: #9d95e6; }
+.life-period[data-current] .studio-stop-name { color: #ffffff; }
+.life-enter { position: absolute; top: 10px; right: 0; }
+.life-period-body { padding: 0 0 var(--s-3) var(--s-3); }
+.life-period-body[hidden] { display: none; }
+.life-q { margin: var(--s-2) 0 var(--s-3); }
+.life-q .art-said-q { font-size: var(--t-2); }
+.life-at { margin-left: 0; }
+.life-studio { margin: 0 0 var(--s-2); text-align: left; }
+.life-box .town-thumbs, .life-works { flex-wrap: wrap; margin-left: 0; }
+.life-period-body [data-later], .life-box [data-later] { opacity: 0.32; transition: opacity 377ms; }
+.town-thumb[data-said], .life-print[data-said] { outline: 2px solid #9d95e6; outline-offset: 2px; }
+.life-prints { display: grid; gap: 6px; margin: var(--s-2) 0 0; }
+.life-print {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: start;
+  min-height: 44px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: #eadfcd;
+  cursor: pointer;
+}
+.life-print-sq { grid-row: 1 / span 2; width: 40px; height: 40px; background: rgba(234, 223, 205, 0.08); overflow: hidden; }
+.life-print-sq img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.life-print-sq[data-none] img { visibility: hidden; }
+.life-print-t { font-family: var(--serif, serif); font-size: 14px; line-height: 1.3; }
+.life-print-m { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; line-height: 1.4; color: #a8927a; }
+.life-print:hover .life-print-t, .life-print:focus-visible .life-print-t { color: #ffffff; }
+.life-sites, .life-voices { flex-wrap: wrap; }
+.life-shows { margin-left: 0; line-height: 1.45; }
+.life-cross-head { color: #9d95e6; }
+.life-crosses, .life-doors { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: var(--s-2) 0 var(--s-3); }
+.life-cross, .life-door { text-align: left; }
+.life-open { display: block; margin: var(--s-2) 0 0; }
+.art-head-text .life-open { margin-top: var(--s-2); }
+.life-undated, .life-after { margin-left: 0; line-height: 1.45; }
+.life-cat { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+@media (prefers-reduced-motion: reduce) { .life-period-body [data-later] { transition: none; } }

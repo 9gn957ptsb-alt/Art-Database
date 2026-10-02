@@ -14376,8 +14376,77 @@
     site: function (key, lat, lon, km, name) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" } }); },
     // The studios (studios.js): a studio's point, low, its column at the head of the city's.
     studio: function (key, lat, lon, km, name, pay) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" }, studio: pay }); },
-    look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; }
+    look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; },
+    // The lives (lives.js): a life framed on its route, the dial its years.
+    life: function (spec) { openLife(spec); }
   };
+
+  /* ---- a life (lives.js) ----------------------------------------------------
+
+     The artist, 2 Oct 2026: "Implement your idea for Picasso. Find other
+     similar instances for notable artists alike so that viewers can focus
+     on lives of artists". A life is a view like a thread's: the world framed
+     on the whole route, the column and the route on the globe lives.js's,
+     the dial the life's years (born to now: after the death, the works'
+     afterlife, its ticks quieter). */
+  function openLife(spec) {
+    if (!spec || flying) { return; }
+    closeFinder();
+    settleSwing();
+    artAsked = null;
+    var vecs = (spec.pts || []).map(function (p) { return toVec(p[0] * RAD, p[1] * RAD); });
+    var f = vecs.length ? frameOf(vecs, null, undefined, "life") : frameHere("life");
+    var c = {
+      slug: "life-" + spec.id, title: spec.title, where: spec.where || "",
+      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
+      art: { kind: "life", data: spec, via: {} }
+    };
+    if (place) { hopTo(c); } else { goDown(c); }
+  }
+
+  function lifeApi(a) {
+    return {
+      data: a.data, col: artCol, foot: artFoot,
+      live: function () { return art === a && a.live; },
+      // The dial: the years, the ticks ([{y, kind}]), where it stands, and the first play.
+      years: function (y0, y1, ticks, at, first) {
+        a.y0 = y0;
+        a.y1 = y1 + 0.999;
+        a.dated = true;
+        a.ticks = [];
+        artTicks.textContent = "";
+        (ticks || []).forEach(function (tk) {
+          var pos = (tk.y - y0) / (a.y1 - y0);
+          if (pos < 0 || pos > 1) { return; }
+          a.ticks.push(pos);
+          var e = el("span", "art-tick");
+          e.style.left = (pos * 100).toFixed(2) + "%";
+          if (tk.kind) { e.dataset.kind = tk.kind; }
+          artTicks.appendChild(e);
+        });
+        a.ticks.sort(function (m, n) { return m - n; });
+        var to = at ? Math.max(0, Math.min(1, (at - y0) / (a.y1 - y0))) : 1;
+        a.when = a.whenTo = to;
+        a.yearNow = yearAt(a, to);
+        if (first && !still && !dialDriven() && firstSeen("l:" + a.data.id)) {
+          a.when = a.whenTo = 0;
+          a.auto = { at: performance.now() + 900, dur: Math.max(9000, Math.min(16000, 9000 + (y1 - y0) * 45)) };
+        }
+        artTime.hidden = false;
+        showArtYear();
+      },
+      year: function () { return art === a ? yearAt(a, Math.max(0, a.when)) : null; },
+      setYear: function (y) {
+        if (art !== a || !a.dated) { return; }
+        a.auto = null;
+        a.byHand = true;
+        a.whenTo = Math.max(0, Math.min(1, (y + 0.5 - a.y0) / (a.y1 - a.y0)));
+      },
+      glide: function (lat, lon) { if (art === a) { glideTo(a, lat * RAD, wrap(lon * RAD)); } },
+      at: function (lat, lon) { var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z }; },
+      band: function () { return artBand("life"); }
+    };
+  }
 
   function backName(up) {
     if (up) { return up.name; }
@@ -15268,6 +15337,10 @@
     } else if (a.kind === "town") {
       artEl.dataset.look = "done";
       startTown(art);
+    } else if (a.kind === "life") {
+      // The lives (lives.js): the column, the dial's years and the route are its.
+      artEl.dataset.look = "done";
+      if (window.Lives && Lives.start) { Lives.start(lifeApi(art)); }
     } else {
       artEl.dataset.look = "done";
       threadColumn(art.data, art.via);
@@ -15287,6 +15360,7 @@
     if (a.watch) { a.watch.disconnect(); }
     a.pagers.forEach(function (p) { p.disconnect(); });
     if (a.kind === "town") { stopTown(); }
+    if (a.kind === "life" && window.Lives && Lives.stop) { Lives.stop(); }
     a.cons = null;
     Object.keys(a.names).forEach(function (p) {
       var n = a.names[p];
@@ -16214,7 +16288,8 @@
       var a = DIAL_START + tk.pos * DIAL_SWEEP;
       var lit = tk.pos <= t + 1e-6;
       var len = tk.written ? 9 : 6;
-      g.strokeStyle = lit ? (tk.written ? "#ffffff" : "rgba(234, 223, 205, 0.9)") : "rgba(168, 146, 122, 0.45)";
+      g.strokeStyle = tk.after ? (lit ? "rgba(157, 149, 230, 0.6)" : "rgba(157, 149, 230, 0.22)") :
+        lit ? (tk.written ? "#ffffff" : "rgba(234, 223, 205, 0.9)") : "rgba(168, 146, 122, 0.45)";
       g.lineWidth = tk.written ? 1.25 : 1;
       g.beginPath();
       g.moveTo(c + Math.cos(a) * (R1 - 3), c + Math.sin(a) * (R1 - 3));
@@ -16288,7 +16363,7 @@
       tickCache.n = kids.length;
       tickCache.first = kids[0];
       tickCache.list = Array.prototype.map.call(kids, function (e) {
-        return { pos: parseFloat(e.style.left) / 100, written: e.dataset.kind === "written" };
+        return { pos: parseFloat(e.style.left) / 100, written: e.dataset.kind === "written", after: e.dataset.kind === "after" };
       });
     }
     return tickCache.list;
