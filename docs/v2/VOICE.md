@@ -24,10 +24,20 @@ Every path is read in one layout: the **picture** (the work being read, or the w
 above on a phone, left on a desktop; the **lens** — the world in a round window — beside the **dial**;
 the text below (phone) or right (desktop). A tap on the lens swaps it with the picture (the big place
 is the world's, at the same distance); a tap on the picture in the lens's place, or Escape, swaps them
-back. Two fingers on the lens (a wheel or a trackpad's pinch over it) move between the voices without
-leaving the path — nearer is more personal — and **hold** that voice for the rest of the path; a press
-on the voice's name, engraved on the lens's rim, lets it go. Under reduced motion nothing flies: the
-lens jumps, the name and the sentence change with each step.
+back. Under reduced motion nothing flies: the lens jumps, the name and the sentence change with each
+step.
+
+**The distance is the viewer's; the voice only aims** (artist, 2 Oct 2026: "The small globe … has
+changed to a sort of microscope when I want it to be how it was before, an entire globe you can
+twirl around with small swipes on it … but you can pinch it to make it as big or small as you want and
+implement a snap"). The lens rests on the whole Earth, small, its places marked, turned 1:1 by a drag;
+each step's voice turns it to face what it tells, but never brings it nearer or puts DIRT's ground in
+it. Two fingers on it (a wheel, a trackpad's pinch, "+" and "−") make it bigger or smaller, about the
+fingers, out of its window and over the layout up to the front globe's nearest, and on into the dive;
+let go near its resting size it springs back; a double tap, its home mark (one tile of pixel light
+beside it) or Escape bring it home. So the `rank` and `distance` columns below are what each voice
+*would* stand at, kept for the words — the rim's name, the caption, the chip — which are unchanged
+(`LENS_GLOBE = false` in `land.js` gives the distances back, and the pinch back to the voices).
 
 ## The voices
 
