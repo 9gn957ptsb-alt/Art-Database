@@ -332,7 +332,7 @@
       Object.keys(hub.hist).forEach(function (y) {
         y = +y;
         if (y < span[0] || y > span[1]) { return; }
-        var a = angle(pos(y + 0.5, span)), len = 2 + 9 * hub.hist[y] / most, r0 = R1 - 15;
+        var a = angle(pos(y + 0.5, span)), len = 2 + 6 * hub.hist[y] / most, r0 = R1 - 14;
         var lit = Math.abs(y - year) < 0.5;
         g.strokeStyle = lit ? "#ffffff" : CREAM;
         g.globalAlpha = lit ? 1 : 0.22 + 0.5 * hub.hist[y] / most;
