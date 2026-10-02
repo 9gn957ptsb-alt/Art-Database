@@ -37,14 +37,14 @@
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var MODES = {
-    town: ["place", "movements", "artists", "explore"],
+    town: ["place", "made", "movements", "artists", "explore"],
     work: ["work", "artist", "movements", "explore"],
     life: ["life", "movements", "explore"],
     movement: ["movement", "artists", "explore"],
     thread: ["thread", "explore"]
   };
   var WORD = { place: "Place", work: "Work", life: "Life", movement: "Movement", thread: "Thread",
-               movements: "Movements", artists: "Artists", artist: "Artist", explore: "Explore" };
+               movements: "Movements", artists: "Artists", artist: "Artist", explore: "Explore", made: "Made here" };
   // Each kind of mark: its glyph and tone (DIAL.md, "the marks by kind").
   var KINDS = {
     movement: { tone: LILAC, glyph: "arc", word: "movement" },
@@ -55,7 +55,8 @@
     s: { tone: SEA, glyph: "hollow", word: "painted here" },
     o: { tone: CREAM, glyph: "atelier", word: "studios" },
     m: { tone: LILAC, glyph: "diamond", word: "movement walk" },
-    l: { tone: CREAM, glyph: "round", word: "life" }
+    l: { tone: CREAM, glyph: "round", word: "life" },
+    made: { tone: CREAM, glyph: "square", word: "made here" }
   };
   var SIGN = { arc: "◜", square: "■", dot: "●", tick: "╵", hollow: "□", atelier: "▣", diamond: "◆", round: "○" };
 
@@ -148,6 +149,16 @@
   function compute(v, mode) {
     var M = window.Movements && Movements.data();
     var out = [];
+    // A place in a life, as it stood (placethen.js): the works made there, each at its year;
+    // a press brings it up. Its paintings at documented sites are painted here's hollow squares.
+    if (mode === "made") {
+      if (v.kind === "town" && window.PlaceThen && PlaceThen.marks) {
+        PlaceThen.marks().forEach(function (m) {
+          out.push({ kind: m.site ? "s" : "made", y: m.y, label: m.label, open: function () { PlaceThen.show(m.i); } });
+        });
+      }
+      return out;
+    }
     if (!M) { return out; }
     var names = artistsOf(v);
     if (mode === "movements" || mode === v.kind || (mode === "place" && v.kind === "town")) {
@@ -269,7 +280,7 @@
     var v = window.Land && Land.dial ? Land.dial() : null;
     if (!v || !span || !(span[1] > span[0])) { hide(); return null; }
     ui(v.box);
-    var vk = v.kind + "|" + (v.id || "") + "|" + (v.key || "");
+    var vk = v.kind + "|" + (v.id || "") + "|" + (v.key || "") + (window.PlaceThen && PlaceThen.key ? "|" + PlaceThen.key() : "");
     if (vk !== hub.view) {
       hub.view = vk;
       hub.mode = 0;

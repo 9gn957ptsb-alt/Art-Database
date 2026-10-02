@@ -4762,6 +4762,9 @@
     if (!place) { return true; }
     // In a city of museums or a work's history the ground is the globe's; not
     // in a collage's city (where a collage is read), a museum or a building.
+    // Nor over a place gone down to in a life or a studio: it is that place,
+    // in that year, and a saved work named at random over it is noise.
+    if (art && art.kind === "town" && art.via && art.via.studio) { return false; }
     return !!(place.art && !buildingOn && !place.museum && !place.stage);
   }
 
@@ -14476,7 +14479,16 @@
     where: function () {
       if (!place) { return { at: flying ? "flying" : "world", flying: flying }; }
       var a = art, o = { flying: flying, key: place.townKey || null, at: "place" };
-      if (a && a.kind === "town" && a.town) { o.at = "town"; o.key = a.town.key; o.name = a.town.name; }
+      if (a && a.kind === "town" && a.town) {
+        o.at = "town"; o.key = a.town.key; o.name = a.town.name;
+        // Gone down to a place in a life or a studio (Land.studio): the view is
+        // that place, named for itself, not for the city of the record nearest it
+        // (Fontainebleau is not Yerres). o.town is the city the view stands in.
+        var vat = a.via && a.via.at, vst = a.via && a.via.studio;
+        if (vat && vat.name) { o.town = a.town.name; o.name = vat.name; o.ll = [vat.lat, vat.lon]; }
+        if (vst && vst.life) { o.life = { id: vst.life, k: vst.p, name: vst.name || "" }; }
+        else if (vst && vst.i !== undefined) { o.studio = vst.i; }
+      }
       else if (a && a.kind === "work" && a.data) { o.at = "work"; o.work = a.data.id; o.key = a.via && a.via.place || null; }
       else if (place.museum) { o.at = "museum"; o.museum = place.museum.slug || null; }
       else if (a) { o.at = a.kind; if (a.data && a.data.id) { o.id = a.data.id; } }
@@ -14517,6 +14529,20 @@
     site: function (key, lat, lon, km, name) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" } }); },
     // The studios (studios.js): a studio's point, low, its column at the head of the city's.
     studio: function (key, lat, lon, km, name, pay) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" }, studio: pay }); },
+    // The place, then (placethen.js): a ground's clod as dots (shapeClod, the
+    // museums' and buildings' own), and the city's dial spanned over a period.
+    ground: function (slug, lat, lon) {
+      return readGround(slug).then(function (g) {
+        if (!g || !g.n) { return null; }
+        return { g: g, dots: shapeClod({ slug: slug, lat: lat, lon: lon }, g) };
+      });
+    },
+    periodYears: function (y0, y1, ys, at) {
+      var a = art;
+      if (!a || a.kind !== "town" || !a.live || !(y1 >= y0)) { return false; }
+      spanYears(a, y0, y1, ys || [], at);
+      return true;
+    },
     look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; },
     // The lives (lives.js): a life framed on its route, the dial its years.
     life: function (spec) { openLife(spec); },
@@ -18433,6 +18459,40 @@
       a.whenTo = (at - lo) / (a.y1 - lo);
       a.byHand = true;
     }
+    artTime.hidden = false;
+    showArtYear();
+  }
+
+  /* A city's dial over a period of a life (placethen.js): from y0 to y1,
+     ticked at the years given, standing at `at`. The city's own years give way
+     while the place is read as it was then; its rows later than the year dim. */
+  function spanYears(a, lo, hi, ys, at) {
+    if (hi <= lo) { hi = lo + 1; }
+    artTicks.textContent = "";
+    a.y0 = lo;
+    a.y1 = hi + 0.999;
+    a.dated = true;
+    a.ticks = [];
+    var seen = {};
+    ys.forEach(function (y) {
+      if (!y || seen[y] || y < lo || y > hi) { return; }
+      seen[y] = true;
+      var pos = (y - lo) / (a.y1 - lo);
+      a.ticks.push(pos);
+      var tk = el("span", "art-tick");
+      tk.style.left = (pos * 100).toFixed(2) + "%";
+      artTicks.appendChild(tk);
+    });
+    a.ticks.sort(function (m, n) { return m - n; });
+    a.auto = null;
+    a.firstPlay = false;
+    a.playing = false;
+    a.seg = null;
+    a.byHand = true;
+    var y = at && at >= lo && at <= hi ? at : lo;
+    a.when = a.whenTo = Math.max(0, Math.min(1, (y + 0.5 - lo) / (a.y1 - lo)));
+    a.yearNow = y;
+    a.dirty = true;
     artTime.hidden = false;
     showArtYear();
   }

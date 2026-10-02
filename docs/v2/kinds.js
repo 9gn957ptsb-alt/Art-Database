@@ -188,6 +188,7 @@
   function writerItem(id) { var v = D.voice[id]; return v ? { k: "writer", id: id, name: v.name } : null; }
   function movementItem(m) { return { k: "movement", id: m.id, name: m.title }; }
   function buildingItem(b) { return { k: "building", id: b.slug, name: b.name || b.title }; }
+  function lifePlaceItem(id, k, name, artist) { return { k: "lifeplace", id: id + ":" + k, life: id, p: k, name: name || "A place", artist: artist || "" }; }
 
   // An item by its kind and id, as Kinds.go is given them.
   function itemOf(k, id) {
@@ -201,6 +202,7 @@
     if (k === "movement") { var m = movement(id); return m ? movementItem(m) : null; }
     if (k === "building") { var b = D.arch.filter(function (x) { return x.slug === id; })[0]; return b ? buildingItem(b) : null; }
     if (k === "animal") { return { k: "animal", id: id, name: id }; }
+    if (k === "lifeplace") { var lp = String(id).split(":"); return lifePlaceItem(lp[0], +lp[1], ""); }
     return null;
   }
 
@@ -208,6 +210,16 @@
   function viewItem(w) {
     if (!w || !D) { return Promise.resolve(null); }
     if (w.at === "work" && w.work && D.workIdx[w.work] !== undefined) { return Promise.resolve(workItem(D.workIdx[w.work])); }
+    // A place in a life (Lives' "Enter ›"), or a studio's: that place, named for itself
+    // (Fontainebleau, not Yerres, the city of the record nearest it), with its own three.
+    if (w.at === "town" && w.life) {
+      var lpi = lifePlaceItem(w.life.id, w.life.k, w.name, w.life.name);
+      return lifePeriod(lpi).then(function () { return lpi; });
+    }
+    if (w.at === "town" && w.key && w.name && w.studio !== undefined) {
+      var pi = placeItem(w.key);
+      return Promise.resolve(pi ? { k: "place", id: w.key, name: w.name, town: pi.name } : null);
+    }
     if (w.at === "town" && w.key) { return Promise.resolve(placeItem(w.key)); }
     if (w.at === "museum" && w.museum) {
       return Promise.resolve(museumItem(w.museum) || { k: "museum", id: w.museum, name: w.museum === "folger" ? "Folger Shakespeare Library" : w.museum });
@@ -256,6 +268,7 @@
     if (it.k === "work") { return function () { L.work(it.id); }; }
     if (it.k === "museum" && D.museum[it.id]) { return function () { L.museum(it.id); }; }
     if (it.k === "place") { return function () { L.town(it.id); }; }
+    if (it.k === "lifeplace" && window.Lives && Lives.enter) { return function () { Lives.enter(it.life, it.p); }; }
     if (it.k === "movement" && window.Movements) { return function () { Movements.open(it.id); }; }
     if (it.k === "building") { return function () { L.open("building-" + it.id); }; }
     if (it.k === "artist" && window.Lives && Lives.has(it.id)) { return function () { Lives.open(Lives.idOf(it.id)); }; }
@@ -294,6 +307,7 @@
       (D.townVenues[it.id] || []).forEach(function (vi) { add(venueOf(vi)[4]); add(venueOf(vi)[5]); });
     } else if (it.k === "writer" && it.detail) { (it.detail.path || []).forEach(function (p) { add(p[3]); }); }
     else if (it.thread) { add(it.thread.y); }
+    else if (it.k === "lifeplace" && it.y0) { add(it.y0); add(it.y1); }
     if (!ys.length) { return null; }
     ys.sort(function (a, b) { return a - b; });
     // The middle of what the record has, not its strays: the 5th to the 95th percentile.
@@ -536,7 +550,71 @@
     return m.members.map(function (r) { return M.artists[r[0]] ? M.artists[r[0]][1] : ""; }).filter(Boolean);
   }
 
+  /* A place in a life: its period, from the life's own file (lives/<id>.json). */
+  function lifePeriod(it) {
+    return json("lives/" + it.life + ".json").then(function (L) {
+      var p = L && L.periods[it.p];
+      if (p) { it.y0 = p.y0; it.y1 = p.y1; if (!it.artist) { it.artist = L.name; } }
+      return p ? { L: L, p: p } : null;
+    });
+  }
+  function surnameOf(a) { var w = String(a || "").split(" "); return w[w.length - 1]; }
+
   var LISTS = {
+    // The three of a place in a life (KINDS.md, "lifeplace"): the works made there then,
+    // who else was there then, and where those works are now.
+    made: function (it) {
+      return lifePeriod(it).then(function (r) {
+        if (!r) { return { rows: [] }; }
+        var L = r.L, p = r.p, rows = [];
+        p.works.concat(p.prints).forEach(function (i) {
+          var w = L.works[i], wi = w ? D.workIdx[w[0]] : undefined;
+          if (wi === undefined) { return; }
+          var how = w.length > 8 ? "pulled at " + w[8][0] : ({ record: "by its own record", site: "painted at a documented site", dated: "dated within these years" }[String(w[4] || "dated").split(":")[0]] || "");
+          rows.push(workRow(wi, [w[2], how].filter(Boolean).join(" · ")));
+        });
+        return { rows: rows, note: rows.length ? "" : "No saved work is placed in " + p.place + " in these years." };
+      });
+    },
+    herethen: function (it) {
+      return Promise.all([lifePeriod(it), json("movements.json")]).then(function (r) {
+        if (!r[0]) { return { rows: [] }; }
+        var L = r[0].L, p = r[0].p, M = r[1], seen = {}, rows = [];
+        (p.cross || []).forEach(function (ci) {
+          var c = L.cross[ci];
+          if (!c || seen[c[1]]) { return; }
+          seen[c[1]] = true;
+          rows.push(artistRow(c[1], "here " + years(c[4], c[5]) + " · both lives place them here"));
+        });
+        ((M && M.here && M.here[p.key]) || []).forEach(function (row) {
+          var a = M.artists[row[0]];
+          if (!a || a[1] === L.name || seen[a[1]] || row[2] < p.y0 - 1 || row[1] > p.y1 + 1) { return; }
+          if (p.ll && isFinite(row[4]) && dist(p.ll[0], p.ll[1], row[4], row[5]) > 30) { return; }
+          seen[a[1]] = true;
+          var ya = Math.max(row[1], p.y0 - 1), yb = Math.min(row[2], p.y1 + 1);
+          rows.push(artistRow(a[1], "here " + years(Math.min(ya, yb), Math.max(ya, yb)) + " · " + (row[7] || row[3])));
+        });
+        return { rows: rows, note: rows.length ? "" : "No other saved artist is placed in " + p.place + " in " + years(p.y0, p.y1) + " by the record." };
+      });
+    },
+    nowat: function (it) {
+      return lifePeriod(it).then(function (r) {
+        if (!r) { return { rows: [] }; }
+        var L = r.L, p = r.p, count = {}, loose = 0;
+        p.works.concat(p.prints).forEach(function (i) {
+          var w = L.works[i];
+          if (!w) { return; }
+          var held = D.heldBy[w[0]] || [];
+          if (!held.length) { loose += 1; }
+          held.forEach(function (slug) { count[slug] = (count[slug] || 0) + 1; });
+        });
+        var rows = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; }).map(function (slug) {
+          return museumRow(slug, "holds " + plural(count[slug], "of them", "of them") + " · " + townName(D.townOf[slug]));
+        }).filter(Boolean);
+        return { rows: rows, note: loose ? plural(loose, "work", "works") + " from here " + (loose === 1 ? "is" : "are") +
+          " held by no museum the site knows; each one’s history says where it went." : "" };
+      });
+    },
     works: function (it) {
       return worksIn(it).then(function (idx) {
         return { rows: worksOf(idx, it.k === "artist" ? function (i) { return D.works[i].y; } : null) };
@@ -971,8 +1049,15 @@
     writer: function (it) { var v = D.voice[it.id]; return v ? ({ c: "curator", w: "writer", s: "writer" }[v.roles.charAt(0)] || "writer") : "writer"; },
     publication: function () { return "a writing"; },
     building: function () { return "a building"; },
-    animal: function () { return "an animal"; }
+    animal: function () { return "an animal"; },
+    lifeplace: function (it) { return it.artist ? "in " + possessive(it.artist) + " life" : "a place in a life"; }
   };
+  function possessive(a) {
+    var w = String(a || "").split(" "), k = w.length - 1;
+    while (k > 0 && /^(de|van|von|da|di|del|der|le|la)$/i.test(w[k - 1])) { k -= 1; }
+    var sn = w.slice(k).join(" ");
+    return sn + (/s$/.test(sn) ? "’" : "’s");
+  }
   function shortName(n) { n = String(n || ""); return n.length > 26 ? n.slice(0, 24).replace(/\s+\S*$/, "") + "…" : n; }
 
   // A tab's list: the note, the search field, the rows 34 at a time.
@@ -1102,7 +1187,7 @@
   function tick() {
     if (!window.Land || !Land.where) { return; }
     var w = Land.where();
-    var key = w.flying ? viewKey : [w.at, w.key, w.work, w.museum, w.id, w.building].join("|");
+    var key = w.flying ? viewKey : [w.at, w.key, w.work, w.museum, w.id, w.building, w.name, w.life ? w.life.id + ":" + w.life.k : ""].join("|");
     if (w.flying) { return; }
     if (key === viewKey) { keep(); return; }
     viewKey = key;
@@ -1198,6 +1283,7 @@
 
   window.Kinds = {
     load: load,
+    kind: function (k) { var x = T && T.kinds[k]; return x ? { glyph: x.glyph, tone: x.tone, name: x.name } : null; },
     go: function (k, id) { return load().then(function () { var it = itemOf(k, id); if (it) { go(it); } return !!it; }); },
     current: function () { return cur && { k: cur.item.k, id: cur.item.id, name: cur.item.name, tab: cur.tab, solo: cur.solo }; },
     trail: function () { return trail.map(function (t) { return t.item.name; }); },

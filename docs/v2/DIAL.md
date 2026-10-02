@@ -26,6 +26,12 @@ from 30 % of the dial to 22 %, so the band's two lanes can be pressed.
 
 ## The face is the selector
 
+**A place in a life** ("The place, then", `placethen.js`; 2 Oct 2026): entered from a life, a city's dial
+is spanned over that period (a year either side), its ticks the years of the works made there; the
+works come up one at a time and the dial turns to each one's year, the clod of the place standing as
+it stood then; turned by hand, the clod follows. Its band's mode **Made here** marks each of those
+works at its year, and a press on one brings it up.
+
 A small word over the year names what the dial is about: **Place · Work · Life · Movement** (the
 view's own, as before) and then **Movements**, **Artists** (in a city: whose years were here; in a
 work: its artist's places), **Explore**. Pressing the word, or Enter on it, or `M` on the dial's
@@ -46,6 +52,7 @@ starts on its own.
 | studios | a square in a square (the atelier) | cream |
 | movement (as an exploration) | a diamond | lilac |
 | life | an arc's end, a round | cream |
+| made here (a place in a life, "The place, then") | a square at the work's year (a painting at a documented site: painted here's hollow square) | cream |
 
 The legend is the line under the word while the dial has focus or the pointer rests on it.
 

@@ -759,6 +759,14 @@
       // A home town's own animal first; then the animals of the artists
       // whose maps the city is on; anywhere else, now and then, a guide.
       var free = drawn().filter(function (c) { return !visit.seen[c.id] && !outNow(c.id); });
+      // In a place of a life (Lives' "Enter ›"): only that artist's own animal, never a guide
+      // of another's — a Twombly fox trotting off over Picasso's Fontainebleau left its pen
+      // line there with nothing to say for it (2 Oct 2026).
+      var lw = window.Land && Land.where ? Land.where() : null;
+      if (lw && lw.life) {
+        free = free.filter(function (c) { return c.artist === lw.life.name; });
+        if (!free.length) { return; }
+      }
       if (prefer) { free.sort(function (p, q) { return (q.id === prefer) - (p.id === prefer); }); }
       var mine = free.filter(function (c) { return homeKey(c) === key; });
       if (!mine.length) { mine = free.filter(function (c) { return rowHere(mapOf(c), city); }); }
@@ -766,7 +774,7 @@
       if (mine.length) {
         c = prefer && mine[0].id === prefer ? mine[0] : mine[Math.floor(Math.random() * mine.length)];
       } else {
-        if (!free.length || Math.random() > GUIDE) { return; }
+        if (!free.length || Math.random() > GUIDE || (lw && lw.life)) { return; }
         c = free[Math.floor(Math.random() * free.length)];
         if (mapOf(c)) { guide = nearestRow(mapOf(c), city.lat, city.lon); }
       }

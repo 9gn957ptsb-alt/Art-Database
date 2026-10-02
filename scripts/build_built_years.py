@@ -47,7 +47,8 @@ from build_grounds import SIDE, local  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 GROUNDS = ROOT / "docs" / "v2" / "grounds"
-PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json"]
+PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json",
+          ROOT / "docs" / "v2" / "lifeplaces.json"]
 CACHE = ROOT / "data"
 
 WSF = "https://download.geoservice.dlr.de/WSF_EVO/files/WSFevolution_v1_{x}_{y}/WSFevolution_v1_{x}_{y}.tif"
@@ -1110,7 +1111,7 @@ def main():
     for f in PLACES:
         if f.exists():
             d = json.loads(f.read_text(encoding="utf-8"))
-            places += d.get("buildings", d.get("museums", []))
+            places += d.get("buildings", d.get("museums", d.get("places", [])))
     places = [p for p in places if isinstance(p.get("lat"), (int, float))]
     if args.only:
         places = [p for p in places if p["slug"] == args.only]

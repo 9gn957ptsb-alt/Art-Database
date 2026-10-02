@@ -248,6 +248,7 @@
   var placedKey = "";
   function place(r) {
     setUp();
+    cap.hidden = false;
     var h = r.hole, round = h.round < 0;
     var key = [h.x, h.y, h.w, h.h, round, r.cap.x, r.cap.y, r.cap.w, r.cap.h].map(function (v) { return Math.round(v); }).join(",");
     if (key === placedKey) { return; }
@@ -645,19 +646,27 @@
     }
     return -1;
   }
-  // The works of the moment: the latest made by then in this place, else by then anywhere, else the first.
+  // The works of the moment: the latest made by then in this place, else by then anywhere, else the first;
+  // a titled one before an "Untitled" where the place has one (2 Oct 2026: "UNTITLED, 1921" stood for Fontainebleau).
+  function untitled(t) { return !t || /^(untitled|sans titre|ohne titel|senza titolo|sin título)\b/i.test(String(t).trim()); }
   function lifePic(L, y, k, wantId) {
-    var ws = (L.works || []).filter(function (w) { return w[3]; });
+    var all = (L.works || []).filter(function (w) { return w[3]; });
     var hit = null;
-    if (wantId) { hit = ws.filter(function (w) { return w[0] === wantId; })[0] || null; }
-    if (!hit) {
+    if (wantId) { hit = all.filter(function (w) { return w[0] === wantId; })[0] || null; }
+    function pick(ws) {
+      var h = null;
       ws.forEach(function (w) {
         if (!w[2] || w[2] > y) { return; }
-        var better = !hit || w[2] > hit[2] || (w[2] === hit[2] && w[5] === k && hit[5] !== k);
-        if (better && (w[5] === k || !hit || hit[5] !== k)) { hit = w; }
+        var better = !h || w[2] > h[2] || (w[2] === h[2] && w[5] === k && h[5] !== k);
+        if (better && (w[5] === k || !h || h[5] !== k)) { h = w; }
       });
+      return h;
     }
-    if (!hit) { ws.forEach(function (w) { if (!hit || (w[2] || 9999) < (hit[2] || 9999)) { hit = w; } }); }
+    if (!hit) {
+      var named = pick(all.filter(function (w) { return !untitled(w[1]); })), any = pick(all);
+      hit = named && (named[5] === k || !any || any[5] !== k) ? named : any;
+    }
+    if (!hit) { all.forEach(function (w) { if (!hit || (w[2] || 9999) < (hit[2] || 9999)) { hit = w; } }); }
     return hit ? { id: hit[0], image: hit[3], title: hit[1], year: hit[2] || null, by: L.name } : null;
   }
   // Painted here's points of the year, the most exact first (where the painter stood, the street, the place painted).
@@ -893,6 +902,9 @@
   function hideLens() {
     if (!rim) { return; }
     rim.dataset.on = "false";
+    // The caption under the picture goes with the lens: left up, a life's
+    // sentence stood over the city entered from it (2 Oct 2026).
+    if (cap && !cap.hidden) { cap.hidden = true; capSay._was = null; capSay.textContent = ""; capPic.hidden = true; }
     if (release) { release.hidden = true; }
     S.view = -1;
   }

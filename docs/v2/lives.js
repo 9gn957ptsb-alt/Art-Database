@@ -529,7 +529,7 @@
     return life(id).then(function (L) {
       var p = L && L.periods[k];
       if (!p || !window.Land || !Land.studio || !p.key) { return; }
-      Land.studio(p.key, p.ll[0], p.ll[1], 6, p.place, { life: id, p: k, alone: true });
+      Land.studio(p.key, p.ll[0], p.ll[1], 6, p.place, { life: id, p: k, alone: true, name: L.name });
     });
   }
 
@@ -542,6 +542,8 @@
       if (pay && pay.life) { return periodColumn(pay); }
       var box = orig(pay);
       if (box) { studioDoor(box, pay); }
+      // The place, then (placethen.js): the studio's place in the artist's life, as it stood.
+      if (box && pay && pay.i !== undefined && window.PlaceThen) { PlaceThen.studio(pay.i, box); }
       return box;
     };
   }
@@ -573,6 +575,8 @@
       }
       nav.appendChild(button("The whole life ›", "read-quiet life-door", function () { open(L.id, { year: p.y0 }); }));
       box.appendChild(nav);
+      // The place, then (placethen.js): the neighbourhood in those years, and the works made there.
+      if (window.PlaceThen) { PlaceThen.open({ L: L, k: pay.p, box: box }); }
       kick();
     });
     return box;

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """The ground under each building, for the DIRT view — free data, read once.
 
-For every building in docs/v2/architecture.json, and every museum in
-docs/v2/museums.json (scripts/build_museums.py), this writes
+For every building in docs/v2/architecture.json, every museum in
+docs/v2/museums.json (scripts/build_museums.py), and every place of a notable
+life in docs/v2/lifeplaces.json (scripts/build_life_places.py), this writes
 docs/v2/grounds/<slug>.json: a square of the Earth round its point, cut into
 a grid, each cell saying what it is (land, water, road or building), how high
 the ground is there and how tall anything standing on it is. land.js draws it
@@ -41,6 +42,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 BUILDINGS = ROOT / "docs" / "v2" / "architecture.json"
 MUSEUMS = ROOT / "docs" / "v2" / "museums.json"
+LIFEPLACES = ROOT / "docs" / "v2" / "lifeplaces.json"     # the notable lives' places (build_life_places.py)
 OUT = ROOT / "docs" / "v2" / "grounds"
 
 RELEASE = "2026-09-23.0"
@@ -246,6 +248,8 @@ def main():
     places = json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]
     if MUSEUMS.exists():
         places += json.loads(MUSEUMS.read_text(encoding="utf-8"))["museums"]
+    if LIFEPLACES.exists():
+        places += json.loads(LIFEPLACES.read_text(encoding="utf-8"))["places"]
     buildings = [b for b in places if isinstance(b.get("lat"), (int, float))]
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]

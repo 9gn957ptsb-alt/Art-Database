@@ -68,7 +68,7 @@ every list.
 | work | Works | ■ | #eadfcd | 0.45 | an artwork: its history, where it was painted, where it hangs |
 | artist | Artists | ○ | #c98fb5 | 0.55 | an artist: a life, studios, a birthplace, an animal |
 | writing | Writings | ¶ | #9d95e6 | 0.5 | writers, critics, curators, and the writings themselves: the spectrum that runs from museums to galleries |
-| place | Places | ◎ | #8fa7c7 | 0.6 | cities, and the sites on the globe: painted here, studios as places |
+| place | Places | ◎ | #8fa7c7 | 0.6 | cities, and the sites on the globe: painted here, studios as places, a place in a life (the town or studio a period of a life is entered at, as it stood then) |
 | building | Architecture | △ | #b8a48a | 0.65 | buildings, and the buildings that house art |
 | gallery | Galleries & shows | ▢ | #8fc7bd | 0.92 | the contemporary: galleries, fairs, sale rooms, exhibitions now and recent |
 | animal | Animals | ∴ | #a3b87a | 0.7 | the companions that carry paths, and the chimera |
@@ -92,6 +92,7 @@ shows, a collection is Museums, a publication is Writings). `why` says how the t
 | publication | writing | works | artists | places | a writing (a book, a catalogue): the works it names, their artists, where they are |
 | movement | movement | artists | works | places | who was there; their works of those years; the city and where its artists came from |
 | place | place | museums | galleries | artists | a city: its museums (history), its galleries, fairs and sale rooms (now), the artists born, working and shown there |
+| lifeplace | place | made | herethen | nowat | a place in a life, entered from it ("The place, then"): the works made there in those years; who else was there then; where those works are now |
 | building | building | places | museums | buildings | a building: its town, the museums near it, the other buildings near it |
 | animal | animal | artist | walks | places | an animal: the artist it is drawn after, its walks, the cities on its artist's map |
 
@@ -116,6 +117,9 @@ Each tab: its label, the category its rows are, and what it lists. The label is 
 | galleries | Galleries & shows | gallery | the galleries, fairs and sale rooms in the city, and the shows there, newest first |
 | buildings | Architecture | building | the other buildings, nearest first |
 | walks | Walks | path | the animal's published walks |
+| made | Made here | work | a place in a life: the saved works its period places there — made, printed, painted at a documented site — each with how it is known |
+| herethen | Here then | artist | a place in a life: the other saved artists placed there in the same years (lives that cross, the movements' presences), each with the evidence |
+| nowat | Where they are now | museum | a place in a life: the museums holding the works made there then, most first; the rest said |
 
 ## Find
 
