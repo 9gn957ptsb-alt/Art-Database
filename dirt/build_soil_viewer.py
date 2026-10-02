@@ -2064,7 +2064,8 @@ const STILL = new Set(["blooms", "ferns", "garden"]);                     // wit
 // of the life over the plane, only what carries an idea of its own is kept: the artists' garden and its cast, the
 // blooms and ferns, and the morpho butterflies. The rest (ants, mould, frogs, snakes, fireflies, wind, troops,
 // hummingbirds, macaws, eagles, and the wanderers) stay in the code, off.
-const KEPT_LIFE = new Set(["ferns", "morphos", "garden", "blooms", "cast"]);
+// (and halved again the same day: the ferns, whose curling fronds read as scribble over the fields, are off too)
+const KEPT_LIFE = new Set(["morphos", "garden", "blooms", "cast"]);
 function spawnLife(c) {
   for (const s of c.sites) {
     const g = LIFE[s.kind];

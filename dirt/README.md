@@ -349,6 +349,17 @@ field (to φ⁻¹ of the height) holding the pair, blurred a little and breathin
 seconds, the lower field the pair's colour pushed to ochre or red, every edge brushed out, never ruled; round it a pale
 wall 89 cells deep, so it is seen alone. Weld is an alteration (1590s) of the verb *well*, Middle English *wellen*, "to boil, melt, weld", from Old English *weallan*, "to boil, well up": joined by being made liquid.
 
+**Frameless, and halved a third time** (2 October 2026: "everything should have a sense of being frameless ... it just
+looks like a frame around it"). The weld lost its maroon ground and its wall: its two fields now float on the plane
+itself, as Rothko's float on theirs. Each edge is one slow swell (a single wide wave, never a jag) that thins out over
+34 cells, rounded at the corners as a brush turns; the faces give way to the
+field's own colour before the field gives way to the plane, and where the two fields meet they bleed into each other.
+A portrait or frieze, too, now lies over the collage at its feathered edge instead of cutting it off. Halved again: the
+collage's country (mean strength 0.18 to 0.09, about a seventh of the plane), the streaks, the posterized patches, the
+pieces (φ⁻³ as many as at first), the dapples and Weil's shards; the marks on the artists' sheets (Twombly's writing,
+blooms and collage) at half their density; the gesture lines one in every 987 cells, not 610; and the ferns are off,
+their curling fronds having read as scribble over everything.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later
