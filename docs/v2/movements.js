@@ -264,7 +264,7 @@
     if (!m.then.length && !m.later.length && !m.voices.length) {
       col.appendChild(el("p", "town-museum-meta", "No show, sale, owner or writing in the saved works’ records joins them: what joins them here is the place and the years."));
     }
-    col.appendChild(el("p", "art-sources life-src", "Found, not declared: three saved artists or more placed in one city in the same years by a dated studio (Wikidata, the studios’ sources), a life’s evidenced year, or a dated school or employer on Wikidata. A movement’s name only where most of them share it on Wikidata in those years."));
+    col.appendChild(el("p", "art-sources life-src", "Found, not declared: three saved artists or more placed in one city in the same years by a dated studio (Wikidata, the studios’ sources), a life’s evidenced year, or a dated school or employer on Wikidata; a work location spanning a career counts only beside another dated source. Most the movement first: years here × saved works and catalogue entries. A movement’s name only where most of them share it on Wikidata in those years."));
     v.api.foot();
   }
 
