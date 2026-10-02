@@ -8693,12 +8693,17 @@
     // world: there it moves under the finger, one to one (artist, 1 Oct
     // 2026: "you should always be free to move around the globe").
     if (place) {
-      if (!(ARTWORKS && art && art.kind === "work") || flying) { return; }
+      if (!(ARTWORKS && art && (art.kind === "work" || readingOn())) || flying) { return; }
+      // In the reading layout the world is only in the lens: a drag begun there.
+      if (readingOn() && LENS && turning.lens === undefined) { turning.lens = inLens(turning.x, turning.y); }
+      if (turning.lens === false) { return; }
       var wx = event.clientX - turning.x, wy = event.clientY - turning.y;
       turning.moved = Math.max(turning.moved, Math.abs(wx), Math.abs(wy));
       if (turning.moved < 6) { return; }
       squashing = null;
       art.glide = null;
+      art.lens = null;
+      if (window.Voice && Voice.handled) { Voice.handled(); }
       var rr = Math.max(R, 1);
       wanted = spin = turning.spin - wx / rr / Math.max(0.25, Math.cos(focus.lat));
       lean(turning.lean + wy / rr);
@@ -8760,6 +8765,19 @@
         if (ARTWORKS && art && !flying && (k = hitStop(event.clientX, event.clientY)) >= 0) {
           squashing = null;
           chooseStop(k);
+          return;
+        }
+      }
+
+      // The reading layout: the world is only in the lens. A plain tap on
+      // the lens changes it with the picture (the big place the world's); a
+      // press outside it, on the dark, is nobody's.
+      if (readingOn() && LENS && name === "pointerup" && !flying) {
+        if (!inLens(event.clientX, event.clientY)) { squashing = null; hideDoor(); return; }
+        if (!lensSwapped && was.moved < 6 && performance.now() - was.at < 450) {
+          squashing = null;
+          hideDoor();
+          setSwap(true);
           return;
         }
       }
@@ -13480,10 +13498,26 @@
     }
     return false;
   }
+  var lensWheel = 0, lensWheelAt = 0;
   function placeWheel(event) {
     if (!place || flying || groundOn) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
+    // Over the lens a wheel (or a trackpad's pinch) moves between its voices,
+    // as two fingers do: in nearer, out further off; never out of the path.
+    if (!dive.on && readingOn() && LENS && inLens(event.clientX, event.clientY)) {
+      var nowW = performance.now();
+      if (nowW - lensWheelAt > 600) { lensWheel = 0; }
+      lensWheelAt = nowW;
+      lensWheel += event.deltaY * (event.ctrlKey ? 8 : 1) * (event.deltaMode === 1 ? 16 : 1);
+      if (Math.abs(lensWheel) > 140) {
+        var wdir = lensWheel < 0 ? 1 : -1;
+        lensWheel = 0;
+        var wmoved = window.Voice && Voice.nudge ? Voice.nudge(wdir) : false;
+        if (!wmoved && wdir > 0 && lensGround.on) { lensGroundWhole(); }
+      }
+      return;
+    }
     if (dive.on) {
       var dstep = event.ctrlKey ? 0.012 : 0.0016;
       diveTo(dive.log - event.deltaY * dstep * (event.deltaMode === 1 ? 16 : 1), event.clientX, event.clientY);
@@ -13526,19 +13560,41 @@
     o.addEventListener("pointermove", fingerMove, true);
     ["pointerup", "pointercancel"].forEach(function (name) { o.addEventListener(name, fingerUp, true); });
   });
+  var lensPinch = null;                 // two fingers that came down on the lens: { d }
   function fingerUp(event) {
     delete downFingers[event.pointerId];
     downFrom = downSpread();
+    if (Object.keys(downFingers).length < 2) { lensPinch = null; }
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
   }
   function fingerDown(event) {
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
+    lensPinch = null;
+    var ids = Object.keys(downFingers);
+    if (ids.length === 2 && readingOn() && LENS) {
+      var p = downFingers[ids[0]], q = downFingers[ids[1]];
+      if (inLens((p.x + q.x) / 2, (p.y + q.y) / 2)) { lensPinch = { d: Math.max(1, downFrom) }; }
+    }
   }
   function fingerMove(event) {
     if (!downFingers[event.pointerId]) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
+    // Two fingers on the lens move between its voices without leaving the
+    // path: spread nearer (more personal), pinch further off; the voice is
+    // held for the rest of the path (voice.js). Past the nearest, the
+    // ground there, the whole window.
+    if (lensPinch && place && !flying && !groundOn && d > 0) {
+      var ratio = d / lensPinch.d;
+      if (ratio > 1.32 || ratio < 1 / 1.32) {
+        var dir = ratio > 1 ? 1 : -1;
+        lensPinch.d = d;
+        var moved = window.Voice && Voice.nudge ? Voice.nudge(dir) : false;
+        if (!moved && dir > 0 && lensGround.on) { lensPinch = null; lensGroundWhole(); }
+      }
+      return;
+    }
     // Spreading on a world seen from far off (a work's history, a collage's
     // city): the dive, aimed between the fingers, as far as they have gone.
     if (place && !flying && !groundOn && downFrom > 0 && (dive.on || (diveCan() && d / downFrom > 1.04))) {
@@ -14406,7 +14462,15 @@
       a.byHand = true;
       a.whenTo = Math.max(0, Math.min(1, (y + 0.5 - a.y0) / (a.y1 - a.y0)));
       a.dirty = true;
-    }
+    },
+    // The reading layout and its voice (voice.js): what is being read and where
+    // the lens is; the lens flown to a voice's distance; the picture of the
+    // moment; the tense under the dial's years; the lens and picture swapped.
+    reading: function () { return readingState(); },
+    lens: function (spec) { return lensTo(spec); },
+    picture: function (spec) { showPicture(spec || null); },
+    tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
+    swap: function (on) { setSwap(on === undefined ? !lensSwapped : !!on); }
   };
 
   /* ---- a movement (movements.js) ----------------------------------------------
@@ -15213,54 +15277,413 @@
   }
 
   /* Where the globe is framed beside the column: on a phone the band above
-     the column; on a desktop, left of it. */
+     the column; on a desktop, left of it. In the reading layout, the lens. */
   function artBand(kind) {
     kind = kind || (art && art.kind);
-    if (kind === "work" && workImage) { return workBands().globe; }
+    if (readKind(kind)) { return workBands().globe; }
     if (W <= 720) { return { x: 0, y: 68, w: W, h: H * 0.5 - 120 }; }
     return { x: 0, y: 68, w: W - Math.min(0.4 * W, 440), h: H - 148 };
   }
 
-  /* A work's view keeps the work in sight (artist, 1 Oct 2026: "I want a
-     viewer to be able to look at a big enough image of the artwork"): the
-     photograph has its own place for as long as the work is open — left of
-     the globe on a desktop, over it on a phone — the globe its band beside
-     it, the column its side. `look` is where the photograph is first seen
-     alone, `plate` where it rests after, `globe` where the world is framed. */
+  /* ---- the reading layout, and the lens ------------------------------------
+
+     A work's view keeps the work in sight (artist, 1 Oct 2026: "I want a
+     viewer to be able to look at a big enough image of the artwork"). And
+     every path is read so (artist, 2 Oct 2026, of a work's view on his
+     phone: "I really liked the layout in this perspective with the globe
+     that small next to the dial and a big image above it with scrollable
+     text below. Find a way to incorporate [this]. Think about the different
+     ways we are defining these paths and how that relates to the viewers
+     distance from the globe … Think about different tenses and perspectives
+     novels are written in"): a work, a life, a movement, a thread — the
+     picture (the work being read, or the work of that moment) above or
+     left, the lens (the world in a round window) beside the dial, the text
+     below or right. How far the lens stands from the world is the voice the
+     path is told in (voice.js, VOICE.md): from above, from afar, over the
+     shoulder, where they stood. `look` is where a work's photograph is first
+     seen alone, `plate` where the picture rests, `globe` the box the world is
+     framed in (the lens's square), `lens` the round window, `cap` the line
+     under the picture where the voice speaks. A tap on the lens swaps it
+     with the picture: the big place is the world's, at the same distance. */
   var workImage = false;
+  var LENS = true;                         // false: only a work's view keeps its picture, and no lens
+  var READ_KINDS = { life: 1, movement: 1, thread: 1 };
+  var lensSwapped = false;                 // the lens and the picture swapped (a tap on the lens)
+  var readSerial = 0;                      // each view read, for voice.js
+  function readKind(kind) {
+    if (kind === "work") { return workImage; }
+    return LENS && !!READ_KINDS[kind];
+  }
+  function readingOn() { return !!(art && art.live && readKind(art.kind)); }
   function workBands() {
-    var colW = Math.min(0.4 * W, 440);
+    var colW = Math.min(0.4 * W, 440), lens = LENS;
+    var b;
     if (W <= 720) {
       // Under the banner, which a long title takes to two lines; the globe
       // framed left of the dial, which stands at the right of its band.
       var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
-      var gy = top + ph + 6;
-      return { plate: { x: 16, y: top, w: W - 32, h: ph }, look: { x: 16, y: top, w: W - 32, h: colTop - top - 14 },
-               globe: { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) }, colTop: colTop };
+      var gy = top + ph + 6, cap = lens ? 46 : 0;
+      var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
+      var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
+      b = { plate: { x: 16, y: top, w: W - 32, h: ph - cap }, look: { x: 16, y: top, w: W - 32, h: colTop - top - 14 },
+            cap: { x: 16, y: top + ph - cap + 2, w: W - 32, h: cap - 2 },
+            lens: { x: globe.x + globe.w / 2, y: globe.y + globe.h / 2 + 3, r: lr },
+            dial: { x: W - 136 - 12, y: Math.round(gy + (globe.h - 136) / 2) },
+            colTop: colTop, phone: true };
+    } else {
+      var pw = Math.round(Math.min(0.34 * W, 560)), capD = lens ? 64 : 0;
+      var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 - capD };
+      var gx = plate.x + pw + 16, band = { x: gx, y: 68, w: Math.max(200, W - colW - gx), h: H - 148 };
+      // The lens over the dial, the pair in the middle of the band's height.
+      var avail = H - 24 - 88;
+      var r = Math.max(60, Math.min(band.w / 2 - 30, (avail - 168 - 26) / 2));
+      var groupTop = 88 + Math.max(0, (avail - (2 * r + 26 + 168)) / 2);
+      b = { plate: plate, look: { x: 21, y: 76, w: W - colW - 42, h: H - 76 - 36 },
+            cap: { x: plate.x, y: plate.y + plate.h + 6, w: pw, h: capD - 6 },
+            lens: { x: band.x + band.w / 2, y: groupTop + r, r: r },
+            dial: { x: Math.round(band.x + band.w / 2 - 84), y: Math.round(groupTop + 2 * r + 26) },
+            colTop: 0, phone: false };
+      if (!lens) { b.dial = { x: Math.round(gx + (band.w - 168) / 2), y: Math.round(band.y + band.h - 168 + 44) }; }
+      b.band = band;
     }
-    var pw = Math.round(Math.min(0.34 * W, 560));
-    var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 };
-    var gx = plate.x + pw + 16;
-    return { plate: plate, look: { x: 21, y: 76, w: W - colW - 42, h: H - 76 - 36 },
-             globe: { x: gx, y: 68, w: Math.max(200, W - colW - gx), h: H - 148 }, colTop: 0 };
+    if (!lens) {
+      b.globe = W <= 720 ? globe : b.band;
+      return b;
+    }
+    // Swapped: the world takes the picture's place, and the picture the lens's.
+    var L = b.lens;
+    var sq = { x: L.x - L.r, y: L.y - L.r, w: 2 * L.r, h: 2 * L.r };
+    if (lensSwapped) {
+      var big = { x: b.plate.x, y: b.plate.y, w: b.plate.w, h: b.plate.h + (b.cap.h || 0) };
+      b.hole = { x: big.x, y: big.y, w: big.w, h: big.h, round: 4 };
+      b.globe = big;
+      b.lensAt = { x: big.x + big.w / 2, y: big.y + big.h / 2, r: Math.min(big.w, big.h) / 2 };
+      b.plate = { x: sq.x + 8, y: sq.y + 8, w: sq.w - 16, h: sq.h - 16 };
+    } else {
+      b.hole = { x: sq.x, y: sq.y, w: sq.w, h: sq.h, round: -1 };
+      b.globe = sq;
+      b.lensAt = L;
+    }
+    return b;
   }
 
-  /* The view's measures, for the column, the dial and the ground under the
-     photograph (land.css, "a work's view"). */
+  /* The view's measures, for the column, the dial, the lens and the ground
+     under the picture (land.css, "a work's view"; voice.css). */
   function layoutWork() {
     var st = artEl.style;
-    ["--work-col-top", "--work-dial-left", "--work-dial-top", "--work-edge-x", "--work-edge-y"].forEach(function (k) {
+    ["--work-col-top", "--work-dial-left", "--work-dial-top", "--work-edge-x", "--work-edge-y",
+     "--hole-x", "--hole-y", "--hole-w", "--hole-h", "--hole-round"].forEach(function (k) {
       st.removeProperty(k);
     });
-    if (!art || art.kind !== "work" || !workImage) { delete artEl.dataset.plate; return; }
+    if (!art || !readKind(art.kind)) { delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped; return; }
     artEl.dataset.plate = "true";
-    var b = workBands(), g = b.globe, phone = W <= 720, dial = phone ? 136 : 168;
+    if (LENS) { artEl.dataset.read = "true"; } else { delete artEl.dataset.read; }
+    if (lensSwapped) { artEl.dataset.swapped = "true"; } else { delete artEl.dataset.swapped; }
+    var b = workBands(), phone = b.phone;
     if (b.colTop) { st.setProperty("--work-col-top", b.colTop + "px"); }
-    st.setProperty("--work-dial-left", Math.round(phone ? W - dial - 12 : g.x + (g.w - dial) / 2) + "px");
-    st.setProperty("--work-dial-top", Math.round(phone ? g.y + (g.h - dial) / 2 : g.y + g.h - dial + 44) + "px");
+    st.setProperty("--work-dial-left", b.dial.x + "px");
+    st.setProperty("--work-dial-top", b.dial.y + "px");
     if (phone) { st.setProperty("--work-edge-y", (b.plate.y + b.plate.h + 4) + "px"); }
     else { st.setProperty("--work-edge-x", (b.plate.x + b.plate.w + 8) + "px"); }
+    if (b.hole) {
+      st.setProperty("--hole-x", b.hole.x.toFixed(1) + "px");
+      st.setProperty("--hole-y", b.hole.y.toFixed(1) + "px");
+      st.setProperty("--hole-w", b.hole.w.toFixed(1) + "px");
+      st.setProperty("--hole-h", b.hole.h.toFixed(1) + "px");
+      st.setProperty("--hole-round", b.hole.round < 0 ? "50%" : b.hole.round + "px");
+    }
+    if (lensVeil) { lensVeil.hidden = !LENS; }
+    clipWorld(b);
+  }
+
+  /* The world itself is drawn only in the lens (every canvas of the stage
+     that is the world's: its body, its weave, its light, the routes drawn on
+     it), so nothing of it shows round the banner. Growing into the big
+     place it is let out at once, the window opening over it; shrinking back
+     it is closed in once the window has. */
+  var clipShut = 0;
+  function clipWorld(b) {
+    window.clearTimeout(clipShut);
+    var on = !!(b && b.hole && LENS && art && art.live && readKind(art.kind));
+    if (!on) {
+      delete stage.dataset.lens;
+      stage.style.removeProperty("--lens-clip");
+      return;
+    }
+    var h = b.hole;
+    var clip = h.round < 0
+      ? "circle(" + (h.w / 2).toFixed(1) + "px at " + (h.x + h.w / 2).toFixed(1) + "px " + (h.y + h.h / 2).toFixed(1) + "px)"
+      : "inset(" + h.y.toFixed(1) + "px " + (W - h.x - h.w).toFixed(1) + "px " + (H - h.y - h.h).toFixed(1) + "px " + h.x.toFixed(1) + "px round 4px)";
+    var shrinking = stage.dataset.lens === "rect" && h.round < 0 && !still;
+    function put() {
+      stage.dataset.lens = h.round < 0 ? "round" : "rect";
+      stage.style.setProperty("--lens-clip", clip);
+    }
+    if (shrinking) { clipShut = window.setTimeout(put, 820); } else { put(); }
+  }
+
+  /* Whether a point of the screen is in the lens (or, swapped, in the big
+     place the world has taken). */
+  function inLens(x, y) {
+    if (!readingOn() || !LENS) { return false; }
+    var b = workBands(), h = b.hole;
+    if (h.round < 0) {
+      var L = b.lensAt;
+      return Math.sqrt((x - L.x) * (x - L.x) + (y - L.y) * (y - L.y)) <= L.r;
+    }
+    return x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h;
+  }
+
+  /* The lens's veil: the dark the lens is a window in (a hole whose shadow
+     is the dark, so the round window and the swapped rectangle are one
+     element, and the swap is one transition). Laid in once, under the
+     picture, the column and the dial. */
+  var lensVeil = null;
+  if (artEl) {
+    lensVeil = el("div", "lens-veil");
+    lensVeil.setAttribute("aria-hidden", "true");
+    lensVeil.appendChild(el("div", "lens-hole"));
+    var washEl = artEl.querySelector(".art-wash");
+    artEl.insertBefore(lensVeil, washEl ? washEl.nextSibling : artEl.firstChild);
+  }
+
+  /* ---- the lens's distance: the narrative voice ----------------------------
+
+     voice.js says which voice a step is told in (VOICE.md); here it is a
+     distance. omniscient: the Earth, or everything the step names, from as
+     far as it takes — a movement whose artists came from all over is seen
+     whole. panoramic: a region, both ends of a way. close: the city, over
+     the shoulder — the figure a little behind the middle, the way ahead in
+     front. first: the ground where they stood (DIRT Earth, in the lens).
+     Between two, a flight in log space, rising to see both where they are
+     far apart, as a journey does; calm, never a cut (under reduced motion,
+     a jump). */
+  var KM_CLOSE = 48;                       // the city, across the lens
+  function closeKm(rl) {
+    // Always wider than the ground of the first person, which is DIRT
+    // Earth's at its own scale (two device pixels a cell, 932 cells a degree).
+    var dirtKm = 2 * rl * (window.devicePixelRatio || 1) / 2 * (111.2 / 932);
+    return Math.max(KM_CLOSE, 1.5 * dirtKm);
+  }
+  function lensTarget(spec) {
+    var b = workBands(), L = b.lensAt, rl = L.r;
+    var pts = (spec.pts || []).filter(function (p) { return p && isFinite(p[0]) && isFinite(p[1]); })
+      .map(function (p) { return toVec(p[0] * RAD, p[1] * RAD); });
+    var c = spec.at && isFinite(spec.at[0]) ? toVec(spec.at[0] * RAD, spec.at[1] * RAD) : null;
+    if (!c && pts.length) {
+      var sum = [0, 0, 0];
+      pts.forEach(function (v) { sum[0] += v[0]; sum[1] += v[1]; sum[2] += v[2]; });
+      c = norm3(sum);
+    }
+    if (!c) { c = toVec(focus.lat, focus.lon); }
+    var theta = 0;
+    pts.forEach(function (v) { theta = Math.max(theta, Math.acos(Math.max(-1, Math.min(1, dot3(c, v))))); });
+    var voice = spec.voice || "panoramic", Rt;
+    if (voice === "first") {
+      Rt = groundR();
+    } else if (voice === "close") {
+      var Rc = rl / (closeKm(rl) / 2 / 6371);
+      Rt = pts.length > 1 && theta > 1e-4 ? Math.min(Rc, 0.72 * rl / Math.sin(Math.min(theta, 1.2))) : Rc;
+      Rt = Math.max(Rt, rl / (900 / 6371));
+    } else if (voice === "panoramic") {
+      var th = Math.max(4 * RAD, Math.min(40 * RAD, theta * 1.08));
+      Rt = 0.8 * rl / Math.sin(th);
+    } else {
+      var to = Math.max(14 * RAD, theta * 1.06);
+      Rt = to >= 72 * RAD ? 0.56 * rl : Math.max(0.56 * rl, 0.8 * rl / Math.sin(to));
+    }
+    // Over the shoulder: the figure a little behind the middle, so more of
+    // the way ahead is in the lens (from where they came, on the screen).
+    var sx = L.x, sy = L.y;
+    if (voice === "close" && spec.from && c && pts.length <= 1) {
+      var fv = toVec(spec.from[0] * RAD, spec.from[1] * RAD);
+      var far = Math.acos(Math.max(-1, Math.min(1, dot3(c, fv))));
+      if (far > 0.002) {
+        var dx = shortest(spec.from[1] * RAD, lonOf(c)) * Math.cos(latOf(c)), dy = -(latOf(c) - spec.from[0] * RAD);
+        var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        sx -= dx / len * 0.3 * rl;
+        sy -= dy / len * 0.3 * rl;
+      }
+    }
+    return { lat: latOf(c), lon: lonOf(c), R: Rt, seat: { x: sx / W, y: sy / H }, voice: voice };
+  }
+
+  function lensTo(spec) {
+    var a = art;
+    if (!a || !place || !readingOn() || !spec) { return false; }
+    a.lensSpec = spec;
+    var t = lensTarget(spec);
+    a.glide = null;
+    var z1 = t.R / Math.max(1, baseR);
+    if (t.voice !== "first") { lensGroundOff(); }
+    if (still || spec.now || flying || dive.on) {
+      a.lens = null;
+      if (flying || dive.on) { return true; }
+      zoom = z1;
+      focus.lat = t.lat;
+      lean(t.lat);
+      spin = wanted = t.lon;
+      place.seatAt = t.seat;
+      place.zoomTo = zoom;
+      reframe();
+      lensArrived(a, t);
+      return true;
+    }
+    var la = Math.log(Math.max(1e-6, zoom)), lb = Math.log(z1);
+    var from = toVec(focus.lat, spin), to = toVec(t.lat, t.lon);
+    var apart = Math.acos(Math.max(-1, Math.min(1, dot3(from, to))));
+    var rl = workBands().lensAt.r;
+    var zFit = apart > 1e-5 ? 0.8 * rl / Math.sin(Math.min(apart, 80 * RAD)) / Math.max(1, baseR) : Infinity;
+    var m = (la + lb) / 2, dip = zFit < 0.8 * Math.min(zoom, z1);
+    if (dip) { m = 2 * Math.log(zFit) - (la + lb) / 2; }
+    var travel = Math.abs(la - m) + Math.abs(m - lb);
+    var seat0 = place.seatAt ? { x: place.seatAt.x, y: place.seatAt.y } : { x: 0.5, y: 0.5 };
+    a.lens = { la: la, lb: lb, m: m, dip: dip, lat0: focus.lat, lat1: t.lat, lon0: spin, dLon: shortest(spin, t.lon),
+               s0: seat0, s1: t.seat, at: performance.now(), t: t,
+               dur: Math.max(1100, Math.min(4200, 1100 + 560 * travel)) };
+    return true;
+  }
+
+  function stepLens(a, now) {
+    var f = a.lens;
+    if (!f || flying || dive.on) { return; }
+    var q = Math.min(1, (now - f.at) / f.dur), s = q * q * (3 - 2 * q);
+    var lz = (1 - s) * (1 - s) * f.la + 2 * s * (1 - s) * f.m + s * s * f.lb;
+    zoom = Math.exp(lz);
+    // Rising to see both, the turning is done up high.
+    var u = f.dip ? smooth01((s - 0.12) / 0.76) : s;
+    focus.lat = f.lat0 + (f.lat1 - f.lat0) * u;
+    lean(focus.lat);
+    spin = wanted = f.lon0 + f.dLon * u;
+    place.seatAt = { x: f.s0.x + (f.s1.x - f.s0.x) * s, y: f.s0.y + (f.s1.y - f.s0.y) * s };
+    reframe();
+    handledAt = now;                 // magnified on the way, laid down whole on arrival
+    a.dirty = true;
+    tilesDirty = true;
+    if (q >= 1) {
+      a.lens = null;
+      place.zoomTo = zoom;
+      lensArrived(a, f.t);
+    }
+  }
+
+  function lensArrived(a, t) {
+    drawn.r = 0;
+    marksDirty = true;
+    a.dirty = true;
+    if (!bodyOn()) { weave(t.voice === "close" || t.voice === "first" ? { lat: t.lat, lon: t.lon } : null); }
+    if (t.voice === "first") { lensGroundOn(t.lat / RAD, wrap(t.lon) / RAD); }
+  }
+
+  /* The first person: the ground where they stood, DIRT Earth's, in the
+     lens — laid over the world at the same scale (the globe has flown to
+     the ground's own), fading in as the ground grows. North is up: no
+     source gives the way a painter faced, and the caption says so. */
+  var lensGround = { on: false, at: null, since: 0 };
+  function lensGroundOn(lat, lon) {
+    if (groundOn || dive.on || !groundDirt) { return; }
+    var key = lat.toFixed(4) + "," + lon.toFixed(4);
+    if (!groundFrame.src || key !== groundAtWas) { groundGrown = 0; }
+    groundAt(lat, lon, false);
+    groundSay({ dirt: "look", lat: lat, lon: lon, settle: true });
+    groundSay({ dirt: "chrome", on: false });
+    lensGround.on = true;
+    lensGround.at = { lat: lat, lon: lon };
+    lensGround.since = performance.now();
+    groundDirt.hidden = false;
+    groundDirt.classList.remove("on");
+    groundDirt.dataset.lens = "true";
+    groundDirt.style.pointerEvents = "none";
+    groundDirt.style.transition = "none";
+    placeLensGround();
+  }
+  function lensGroundOff() {
+    if (!lensGround.on) { return; }
+    lensGround.on = false;
+    if (groundOn) { return; }
+    delete groundDirt.dataset.lens;
+    groundDirt.style.opacity = "0";
+    groundDirt.style.clipPath = groundDirt.style.webkitClipPath = "";
+    groundDirt.style.transform = "";
+    groundDirt.hidden = true;
+    groundDirt.style.pointerEvents = "";
+    groundDirt.style.transition = "";
+    groundDirt.style.opacity = "";
+  }
+  function placeLensGround() {
+    if (!lensGround.on || groundOn) { return; }
+    if (!readingOn()) { lensGroundOff(); return; }
+    var b = workBands(), h = b.hole;
+    var cxL = h.x + h.w / 2, cyL = h.y + h.h / 2;
+    groundDirt.style.transform = "translate(" + (cxL - W / 2).toFixed(1) + "px," + (cyL - H / 2).toFixed(1) + "px)";
+    var clip = h.round < 0 ? "circle(" + (h.w / 2).toFixed(1) + "px at 50% 50%)"
+      : "inset(" + ((H - h.h) / 2).toFixed(1) + "px " + ((W - h.w) / 2).toFixed(1) + "px round 4px)";
+    groundDirt.style.clipPath = clip;
+    groundDirt.style.webkitClipPath = clip;
+    var since = performance.now() - lensGround.since;
+    var grown = groundLoaded ? smooth01(groundGrown / 0.6) : 0;
+    if (since > 6000 && groundLoaded) { grown = Math.max(grown, 1); }
+    groundDirt.style.opacity = (art && artEl.dataset.full ? 0 : grown).toFixed(3);
+  }
+  // Out of the lens and down: the ground there, the whole window (the dive's ground).
+  function lensGroundWhole() {
+    if (!lensGround.on) { return false; }
+    var at = lensGround.at;
+    lensGround.on = false;
+    delete groundDirt.dataset.lens;
+    groundDirt.style.clipPath = groundDirt.style.webkitClipPath = "";
+    groundDirt.style.transform = "";
+    groundDirt.style.opacity = "";
+    groundDirt.style.transition = "";
+    groundDirt.style.pointerEvents = "";
+    groundUp(at.lat, at.lon, false);
+    return true;
+  }
+
+  /* A tap on the lens: the lens and the picture change places (the big
+     place is the world's, at the same distance); a tap on the picture in the
+     lens's place, or Escape, changes them back. */
+  function setSwap(on) {
+    var a = art;
+    on = !!on && readingOn() && LENS;
+    if (on === lensSwapped) { return; }
+    lensSwapped = on;
+    layoutWork();
+    if (a && !artPlate.hidden) { layoutPlate(null, a.kind === "work" && !a.flipped ? "look" : "rest"); }
+    if (a && a.lensSpec) {
+      var spec = {};
+      Object.keys(a.lensSpec).forEach(function (k) { spec[k] = a.lensSpec[k]; });
+      spec.now = false;
+      lensTo(spec);
+    }
+    if (window.Voice && Voice.swapped) { Voice.swapped(on); }
+  }
+
+  /* What is being read, for voice.js (Land.reading): the view, its year,
+     the lens and the line under the picture; a work's stops. */
+  function readingState() {
+    var a = art;
+    if (!a || !place || !readingOn()) { return null; }
+    var b = workBands();
+    var o = { on: true, lens: LENS, kind: a.kind, id: a.data && a.data.id || null, view: a.serial || 0, flying: flying,
+              dated: !!a.dated, y0: a.y0, y1: a.y1, year: a.dated ? yearAt(a, Math.max(0, a.when)) : null,
+              moving: !!(a.moving || a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
+              at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
+              picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
+              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full };
+    if (a.kind === "work") {
+      var evs = a.data.events;
+      o.work = { pin: a.pin, ring: a.ring, when: a.when, flipped: !!a.flipped, title: a.data.title || "",
+                 artists: a.data.artists || [], date: a.data.date || "",
+                 stops: a.stops.map(function (s) {
+                   return { p: s.p, name: s.name, lat: s.lat / RAD, lon: wrap(s.lon) / RAD,
+                            pos: a.evs[s.first].pos, end: a.evs[s.last].pos,
+                            y: yearNum(evs[s.first].y), y1: yearNum(evs[s.last].y),
+                            k: s.events.map(function (n) { return evs[n].k; }), m: s.m || null };
+                 }) };
+    }
+    return o;
   }
 
   /* The framing for a set of points: centred on their mean (or the centre
@@ -15328,7 +15751,7 @@
     var c = null;
     if (tf.ll) { c = toVec(tf.ll[0] * RAD, tf.ll[1] * RAD); }
     var vecs = ends.filter(function (k) { return k && artPlaceBy[k]; }).map(function (k) { return artPlaceBy[k].v; });
-    var f = c ? frameOf([], c, medianAngle(c, ends)) : vecs.length ? frameOf(vecs) : frameHere();
+    var f = c ? frameOf([], c, medianAngle(c, ends), "thread") : vecs.length ? frameOf(vecs, null, undefined, "thread") : frameHere("thread");
     var n = tf.works.length;
     return {
       slug: "art-thread-" + tf.id, title: tf.name,
@@ -15358,9 +15781,11 @@
       held: null, timers: [], order: [], n: 0, gap: WORD_GAP, dirty: true, ring: -1,
       flipped: false, names: {}, lines: [], heads: [], last: 0, stage: null,
       at: performance.now(), cons: null, rows: [], yearNow: 0, begun: false,
-      town: a.town || null, pagers: [], pin: -1, ringShown: -2, glide: null
+      town: a.town || null, pagers: [], pin: -1, ringShown: -2, glide: null,
+      serial: ++readSerial, picture: null, lens: null, lensSpec: null, tense: ""
     };
     art.stopNow = function () {
+      if (lensGround.on && lensGround.at) { return { lat: lensGround.at.lat * RAD, lon: lensGround.at.lon * RAD }; }
       var s = art && art.stops[Math.max(0, art.ring)];
       return s ? { lat: s.lat, lon: s.lon } : { lat: place.lat, lon: place.lon };
     };
@@ -15371,6 +15796,7 @@
     artPlate.hidden = true;
     artTime.hidden = true;
     artEl.dataset.kind = a.kind;
+    lensSwapped = false;
     layoutWork();
     if (a.kind === "work") {
       buildJourney(art);
@@ -15418,6 +15844,9 @@
     if (a.kind === "life" && window.Lives && Lives.stop) { Lives.stop(); }
     if (a.kind === "movement" && window.Movements && Movements.stop) { Movements.stop(); }
     a.cons = null;
+    a.lens = null;
+    lensGroundOff();
+    lensSwapped = false;
     Object.keys(a.names).forEach(function (p) {
       var n = a.names[p];
       if (n.parentNode) { n.parentNode.removeChild(n); }
@@ -15704,6 +16133,9 @@
     var dt = Math.min(100, now - (a.last || now));
     a.last = now;
     var was = a.when;
+    // The lens's distance, flown between voices (voice.js); the ground in it.
+    stepLens(a, now);
+    if (lensGround.on) { placeLensGround(); }
     if (a.kind !== "work") {
       // A place's or a thread's years: by hand only. Works not yet there
       // step back, and the constellation keeps to those that had arrived.
@@ -16304,8 +16736,10 @@
     var lifted = !!d.box.dataset.lifted;
     // The hub (dialhub.js): the band of marks by kind for the mode the face is set to.
     var hub = d.range === artRange && window.DialHub && DialHub.layer ? DialHub.layer(d, t, span) : null;
+    // The tense the path is told in, under the years (voice.js): was, is, will be.
+    var tense = d.range === artRange && art && art.tense ? art.tense : "";
     var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
-               hub ? hub.key : ""].join("|");
+               hub ? hub.key : "", tense].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
     var px = Math.round(S * dpr);
@@ -16426,6 +16860,11 @@
       g.font = Math.max(8, Math.round(S * 0.058)) + "px " + dialFont;
       g.fillText(Math.floor(span[0]) + " — " + Math.floor(span[1]), c, c + S * 0.05 + S * 0.12);
     }
+    if (tense) {
+      g.fillStyle = tense === "will be" ? LILAC : tense === "is" ? "#eadfcd" : "#a8927a";
+      g.font = "italic " + Math.max(9, Math.round(S * 0.07)) + "px " + (getComputedStyle(document.documentElement).getPropertyValue("--serif") || "serif");
+      g.fillText(tense, c, c + S * 0.05 + S * 0.215);
+    }
   }
 
   var tickCache = { n: -1, list: [] };
@@ -16532,8 +16971,9 @@
     var w = Math.max(40, Math.min(b.w, b.h * aspect)), hh = w / aspect;
     var x = b.x + (b.w - w) / 2, y = b.y + (b.h - hh) / 2;
     // At rest it keeps to its edge: against the left on a desktop, the globe
-    // beside it; under the banner on a phone, the globe below it.
-    if (mode === "rest") { if (W > 720) { x = b.x; } else { y = b.y; } }
+    // beside it; under the banner on a phone, the globe below it. Swapped
+    // into the lens's place, it stands in the middle of it.
+    if (mode === "rest" && !lensSwapped) { if (W > 720) { x = b.x; } else { y = b.y; } }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
@@ -16576,15 +17016,17 @@
      look. */
   function setFull(on) {
     var a = art;
-    if (!on || !a || a.kind !== "work") { delete artEl.dataset.full; return; }
+    if (!on || !a || !readKind(a.kind)) { delete artEl.dataset.full; return; }
+    var image = a.kind === "work" ? a.data.image : a.picture && a.picture.image;
+    if (!image) { return; }
     artEl.dataset.full = "true";
-    var img = artPlate.querySelector("img");
-    if (img && a.data.image && !img.dataset.big) {
+    var img = artPlate.querySelector(".deal-go:last-child img") || artPlate.querySelector("img");
+    if (img && !img.dataset.big) {
       img.dataset.big = "asked";
       var big = new Image();
       big.referrerPolicy = "no-referrer";
       big.addEventListener("load", function () { if (art === a && img.isConnected) { img.src = big.src; } });
-      big.src = ART_CDN + a.data.image + "/larger.jpg";
+      big.src = ART_CDN + image + "/larger.jpg";
     }
   }
 
@@ -16592,12 +17034,16 @@
     artPlate.addEventListener("click", function (event) {
       event.stopPropagation();
       var a = art;
-      if (!a || a.kind !== "work" || !a.flipped || performance.now() - (a.settledAt || 0) < 450) { return; }
+      if (!a || !readKind(a.kind)) { return; }
+      // In the lens's place (swapped): back to its own.
+      if (lensSwapped) { setSwap(false); return; }
+      if (a.kind === "work" && (!a.flipped || performance.now() - (a.settledAt || 0) < 450)) { return; }
       setFull(!artEl.dataset.full);
     });
     artPlate.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== " ") { return; }
       event.preventDefault();
+      if (lensSwapped) { setSwap(false); return; }
       flipToHead();
       setFull(!artEl.dataset.full);
     });
@@ -16606,8 +17052,55 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         setFull(false);
+      } else if (event.key === "Escape" && lensSwapped && art) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setSwap(false);
       }
     }, true);
+  }
+
+  /* The picture of the moment, in a view that is not one work's (a life, a
+     movement, a thread): the work being read, chosen by voice.js
+     (Land.picture) — the work made then, the work said. The last gives way
+     to the next as it comes. Pressed, it fills the screen, as a work's does. */
+  function showPicture(spec) {
+    var a = art;
+    if (!a || a.kind === "work" || !readingOn()) { return; }
+    var id = spec && spec.id || null;
+    if ((a.picture ? a.picture.id : null) === id) { return; }
+    a.picture = spec && spec.image ? spec : null;
+    if (!a.picture) {
+      artPlate.textContent = "";
+      artPlate.hidden = true;
+      return;
+    }
+    var go = el("span", "deal-go");
+    var img = el("img");
+    img.alt = [spec.title || "Untitled", spec.by || ""].filter(Boolean).join(", by ");
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    var tries = ["medium", "square"].map(function (v) { return ART_CDN + spec.image + "/" + v + ".jpg"; });
+    img.addEventListener("error", function () {
+      if (tries.length) { img.src = tries.shift(); return; }
+      if (art === a && a.picture === spec) { go.remove(); if (!artPlate.querySelector(".deal-go")) { artPlate.hidden = true; } }
+    });
+    img.addEventListener("load", function () {
+      if (art !== a || a.picture !== spec) { go.remove(); return; }
+      artPlate.querySelectorAll(".deal-go").forEach(function (o) { if (o !== go) { o.remove(); } });
+      go.dataset.on = "true";
+      layoutPlate(img.naturalWidth / Math.max(1, img.naturalHeight), "rest");
+      var first = artPlate.hidden;
+      artPlate.hidden = false;
+      if (first && !still) { bringIn(artPlate, 0); }
+    });
+    img.src = ART_CDN + spec.image + "/large.jpg";
+    go.appendChild(img);
+    artPlate.appendChild(go);
+    artPlate.dataset.mode = "rest";
+    artPlate.tabIndex = 0;
+    artPlate.setAttribute("role", "button");
+    artPlate.setAttribute("aria-label", "Look at " + (spec.title || "the work") + " on the whole screen");
   }
 
   function playArt() {
@@ -16642,9 +17135,16 @@
     artCol.addEventListener("wheel", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
     artCol.addEventListener("touchmove", function () { artTouched = performance.now(); flipToHead(); }, { passive: true });
     window.addEventListener("resize", function () {
-      if (!art || art.kind !== "work") { return; }
+      if (!art || !readKind(art.kind)) { return; }
       layoutWork();
-      if (!artPlate.hidden) { layoutPlate(null, art.flipped ? "rest" : "look"); }
+      if (!artPlate.hidden) { layoutPlate(null, art.kind !== "work" || art.flipped ? "rest" : "look"); }
+      // The lens where it now is, at the distance it was.
+      if (art.lensSpec && place && !flying) {
+        var sp = {};
+        Object.keys(art.lensSpec).forEach(function (k) { sp[k] = art.lensSpec[k]; });
+        sp.now = true;
+        lensTo(sp);
+      }
     });
   }
 
