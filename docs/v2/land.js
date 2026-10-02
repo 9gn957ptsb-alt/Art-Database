@@ -14491,7 +14491,7 @@
         if (art !== a || !a.dated) { return; }
         a.auto = null;
         a.byHand = true;
-        a.whenTo = Math.max(0, Math.min(1, (y + 0.5 - a.y0) / (a.y1 - a.y0)));
+        a.whenTo = Math.max(0, Math.min(1, (y + 0.1 - a.y0) / (a.y1 - a.y0)));
       },
       glide: function (lat, lon) { if (art === a) { glideTo(a, lat * RAD, wrap(lon * RAD)); } },
       at: function (lat, lon) { var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z }; },
@@ -16136,6 +16136,8 @@
     a.dirty = true;
   }
 
+  function dialInner(d) { return d.range === artRange && window.DialHub && DialHub.busy && DialHub.busy() ? 0.22 : 0.3; }
+
   function makeDial(box, range, span, ticksOf) {
     if (!box || !range) { return; }
     box.classList.add("dial");
@@ -16172,7 +16174,8 @@
       event.stopPropagation();
       event.preventDefault();
       var r = face.getBoundingClientRect();
-      var inner = Math.hypot(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2) < r.width * 0.3;
+      // The face carries it: the inner 30 %, or 22 % while the hub's band is in use there (dialhub.js).
+      var inner = Math.hypot(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2) < r.width * dialInner(d);
       face.setPointerCapture(event.pointerId);
       d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: inner, far: false };
       // The face carries the dial; the ring turns time, as it always has.
@@ -16196,7 +16199,7 @@
     face.addEventListener("pointermove", function (event) {
       if (!d.down && event.pointerType === "mouse") {
         var fr = face.getBoundingClientRect();
-        var over = Math.hypot(event.clientX - fr.left - fr.width / 2, event.clientY - fr.top - fr.height / 2) < fr.width * 0.3;
+        var over = Math.hypot(event.clientX - fr.left - fr.width / 2, event.clientY - fr.top - fr.height / 2) < fr.width * dialInner(d);
         if (over) { face.dataset.over = "face"; } else { delete face.dataset.over; }
         if (d.range === artRange && window.DialHub && DialHub.hover) { DialHub.hover(d, event.clientX - fr.left, event.clientY - fr.top, fr.width); }
       }

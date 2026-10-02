@@ -555,7 +555,7 @@
       visit_ = { L: L, k: pay.p, box: box };
       box.appendChild(el("p", "town-section life-kicker", "A life · " + L.name));
       box.appendChild(el("p", "studio-title", p.place));
-      box.appendChild(el("p", "studio-by", span(p) + " · age " + (p.y0 - L.born) + (p.y1 > p.y0 ? "–" + (p.y1 - L.born) : "")));
+      box.appendChild(el("p", "studio-by", span(p) + " · " + (p.y0 === L.born ? "born" : "age " + (p.y0 - L.born) + (p.y1 > p.y0 ? "–" + (p.y1 - L.born) : ""))));
       box.appendChild(el("p", "studio-exact", howLine(p)));
       var body = el("div", "life-period-body");
       box.appendChild(body);
@@ -718,7 +718,7 @@
           window.setTimeout(tick, 250);
         })();
       }).then(function () {
-        var lines = [p.place + " · " + span(p) + " · " + surname(L.name) + " " + (p.y0 - L.born)];
+        var lines = [p.place + " · " + span(p) + " · " + surname(L.name) + (p.y0 === L.born ? " born" : ", " + (p.y0 - L.born))];
         var q = firstQuote(p);
         lines.push(q ? "“" + q.q.split(/(?<=\.)\s/)[0] + "”" : howLine(p));
         var c = p.cross[0] !== undefined ? L.cross[p.cross[0]] : null;
@@ -930,6 +930,7 @@
     ctx.textBaseline = "middle";
     var tx = gx + 3 * C + 4, w = ctx.measureText(text).width;
     if (tx + w > window.innerWidth - 8) { tx = gx - 2 * C - 4 - w; }
+    tx = Math.max(8, Math.min(window.innerWidth - 8 - w, tx));
     ctx.fillStyle = "rgba(15, 10, 7, 0.72)";
     ctx.fillRect(tx - 4, gy - 2, w + 8, C + 4);
     ctx.fillStyle = CREAM;
