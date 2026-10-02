@@ -14426,7 +14426,20 @@
       else if (a && a.kind === "work" && a.data) { o.at = "work"; o.work = a.data.id; o.key = a.via && a.via.place || null; }
       else if (place.museum) { o.at = "museum"; o.museum = place.museum.slug || null; }
       else if (a) { o.at = a.kind; if (a.data && a.data.id) { o.id = a.data.id; } }
+      else if (place.building) { o.at = "building"; o.building = place.building.slug || null; }
       return o;
+    },
+    // The categories (kinds.js): a city, and any mark on the globe by its slug (a building's is "building-<slug>").
+    town: function (key) { openTown(key); },
+    open: function (slug) {
+      var c = cityOf(slug);
+      if (!c || flying) { return false; }
+      if (c.museum) { openMuseum(slug, {}); return true; }
+      closeFinder();
+      settleSwing();
+      if (place === c) { return true; }
+      if (place) { hopTo(c); } else { goDown(c); }
+      return true;
     },
     go: function (key) { followGo([key]); },
     work: function (id, key) { openArt({ work: id }, key ? { place: key } : {}); },
