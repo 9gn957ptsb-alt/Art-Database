@@ -422,7 +422,10 @@
   function tick() {
     var r = window.Land && Land.reading ? Land.reading() : null;
     // For the strips (walks.js, explorations.js): a view is being read, its sentence under the picture.
-    if (r && r.lens) { document.body.dataset.reading = "true"; } else { delete document.body.dataset.reading; }
+    var on = !!(r && r.lens);
+    if (on !== (document.body.dataset.reading === "true")) {
+      if (on) { document.body.dataset.reading = "true"; } else { delete document.body.dataset.reading; }
+    }
     if (!r || !r.lens) { hideLens(); chipTick(r); return; }
     if (!T) { load().then(kick); return; }
     hideChip();
@@ -570,7 +573,7 @@
     // While the dial plays the life by itself, or is turned on and on: the life seen whole;
     // a glide to a year holds the voice it had until it rests.
     if (!force && r.moving) {
-      if (now - movingSince < 1800) { return null; }
+      if (!r.playing && now - movingSince < 3200) { return null; }
       return out("route", { who: who, years: span(L.born, L.died || ""), pts: route }, "route");
     }
     if (L.died && y > L.died && (!want || want === "after")) {
@@ -616,7 +619,8 @@
     // A movement of the artist's in this city, this year: the whole of it, from above.
     var mv = movementOf(L.name, p.key, y);
     if (mv && (!want || want === "movement")) {
-      return out("movement", { place: mv.place, year: y, others: and(mv.here), pts: mv.pts, ll: mv.ll },
+      return out("movement", { place: mv.place, year: y, others: and(mv.here), are: mv.here.length === 1 ? "is" : "are",
+                               pts: mv.pts, ll: mv.ll },
                  "m" + mv.id, { fk: "m" + mv.id });
     }
     var c = crossingOf(L, p, y);
@@ -706,7 +710,7 @@
     if (!m || !has(y)) { return null; }
     var mf = movementFacts(D, m, y);
     var pic = movementPic(m, D, y);
-    var f = { place: mf.place, year: y, others: and(mf.here), pts: mf.pts, ll: mf.ll };
+    var f = { place: mf.place, year: y, others: and(mf.here), were: mf.here.length === 1 ? "was" : "were", pts: mf.pts, ll: mf.ll };
     if (!mf.here.length) {
       var step = y < m.y0 ? "before" : y > m.y1 ? "after" : "quiet";
       return { path: "movement", step: step, f: f, key: step + y, fk: "m", pic: pic };
@@ -847,7 +851,9 @@
           : { path: "follow", step: "city", place: w.name || "", f: { animal: fol.animal ? "The " + String(fol.animal).toLowerCase() : "" } };
       }
     }
-    if (!T || !b || w.at === "world" || w.flying || (r && r.lens)) { hideChip(); return; }
+    // A way on (a walk's journey, a hunt's) is told while it is travelled; anything else once arrived.
+    var onTheWay = b && (b.step === "journey" || b.step === "arrive");
+    if (!T || !b || (w.at === "world" && !w.flying) || (w.flying && !onTheWay) || (r && r.lens)) { hideChip(); return; }
     var path = b.path, step = b.step, f = {};
     Object.keys(b.f || {}).forEach(function (k) { f[k] = b.f[k]; });
     if (b.place && !f.place) { f.place = b.place; }

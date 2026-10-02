@@ -72,7 +72,8 @@ close; `leg`, `after` → panoramic; `route`, `movement` → omniscient; `standi
 
 The caption is the sentence under the picture: `{…}` are facts the data holds (never invented, never
 a pronoun the data cannot give: the artist is named), `*{title}*` is a title in italics, `[…]` is said
-only when every fact inside it is known. `label`, where given, is the rim's name for that step instead
+only when every fact inside it is known. `{are}` and `{were}` agree with how many `{others}` there are
+(is/are, was/were). `label`, where given, is the rim's name for that step instead
 of the voice's.
 
 | path | step | voice | tense | frame | label | caption |
@@ -95,7 +96,7 @@ of the voice's.
 | life | born | close | present | shoulder |  | {who} is born in {place}, {year}. |
 | life | place | close | present | shoulder |  | {who} {goes} {place}, {year}[, aged {age}]. |
 | life | crossing | close | present | two |  | {who} {goes} {place}, {year}. {other} is here. |
-| life | movement | omniscient | present | movement |  | {place}, {year}. {others} are here. |
+| life | movement | omniscient | present | movement |  | {place}, {year}. {others} {are} here. |
 | life | site | first | present | standing |  | {who} stands here to paint *{title}*, {year}. {facing} |
 | life | site-made | first | present | standing | where {who} worked | {who} paints *{title}* here, at {what}, {year}. |
 | life | site-place | first | present | standing | the place painted | {who} paints *{title}*, {year}: {what}, the place painted. |
@@ -105,7 +106,7 @@ of the voice's.
 | life | gap | panoramic | present | route |  | {year}: no record says where {who} is. |
 | life | after | panoramic | future | after |  | {year}: {whose} works will be in {cities}. |
 | life | after-quiet | panoramic | future | route |  | {year}: {whose} works will go on. |
-| movement | overview | omniscient | past | movement |  | {place}, {year}. {others} were here. |
+| movement | overview | omniscient | past | movement |  | {place}, {year}. {others} {were} here. |
 | movement | arrival | close | past | arrival |  | {who} came to {place} in {year}. |
 | movement | before | omniscient | past | movement |  | {year}: none of them was in {place} yet. |
 | movement | after | omniscient | past | movement |  | {year}: they had gone from {place}. |
@@ -143,19 +144,24 @@ of the voice's.
   `journey`; its Painted here head pressed, `site` (where the painter stood: Wikidata's point of view),
   `site-made` (the building it was made in), `site-street` (the street) or `site-place` (only the
   place painted). While the journey plays the first time nothing moves the lens.
-- **A life** (the dial's year, once it has rested a second; first play and fast turning keep the
-  route): past the death, `after`; on a documented site's year, once rested 2.4 s, `site`; in a
-  movement of the artist's in that city, `movement`; a life crossing it, `crossing`; born, died;
-  else `place`, `arrives in` on a place's first year, `is in` after. Played ("Play the life"), each
-  place is a stop said in beats — arriving, the crossing, the movement, a site, then the works in
-  turn (`work`, the picture the work said) — and the lens moves at each beat.
+- **A life** (the dial's year, once it has rested a second; while the dial plays the life by itself,
+  or is turned on and on for more than three seconds, `route`, the life seen whole): past the death,
+  `after`; on a documented site's year, once rested 2.4 s, `site` (`site-made`, `site-street`,
+  `site-place`); in a movement of the artist's in that city, `movement`; a life crossing it,
+  `crossing`; born, died; else `place`, `arrives in` on a place's first year, `is in` after.
+  Played ("Play the life", lives.js), the life stays in its own view and each place is a stop said
+  in beats, the dial turned to each beat's year — arriving, the crossing, the movement, a site, the
+  works in turn (`work`, the picture the work said), and in the last place the death — then a stop
+  **After**, the works' journeys a year at a time (`after`); the lens moves at each beat.
 - **A movement**: before, during (`overview`), after; a member's first year there, turned to by
   hand, `arrival`, the lens leaning in to them for a while, then out again. Walked, a stop away from
   its city is `away` (before it) or `elsewhere` (during it): from afar, both places in the lens.
-- **Played** (`explorations.js` tells `voice.js` each line it says): a hunt's stop `arrive`, then
-  `finding` (or `unfound`), then a site if it has one; a viewer's own or a relay `own` (second
-  person, the lens as far as what each stop is); a sites exploration `sites`; a studios one
-  `studios`; a walk's works `walk`; a voice's places `voice`.
+- **Played** (`explorations.js` tells `voice.js` each line it says): a hunt's stop `arrive` (on the
+  way), then `finding` (the dial to the catalogue's year) or `unfound`, then a site if it has one; a
+  viewer's own or a relay `own` (second person, the lens as far as what each stop is); a sites
+  exploration `sites`, read in the work's view when the painting is saved, else in the artist's life
+  at its year, else in its city; a studios one `studios`; a walk's works `walk` (walks.js), its way
+  on `journey`, its arrival `follow`; a voice's places `voice`; a movement's walk `away`.
 - Where a path passes through a view with no lens (a city, a museum), its name and sentence are said
   beside the dial (`.voice-chip`): a hunt's way on, a viewer's own city or museum, a site in its city,
   a studio, a writer's place, the animal followed, the corpse's edge and its walk.

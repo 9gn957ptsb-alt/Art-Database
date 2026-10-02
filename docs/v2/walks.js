@@ -605,6 +605,8 @@
     told("");
     var w = Land.where();
     if (!w.flying && atStop(w)) { arrived(j); return; }
+    // The way on, told from afar while it is travelled (voice.js says it beside the journey).
+    voiceSay({ path: "walk", step: "journey", key: stopOf().key, place: shortName(stopOf().key), f: { animal: animalWord() } });
     waitFor(function (x) { return !x.flying; }, function () {
       if (!atStop(Land.where())) { Land.go(stopOf().key); }
       waitArrive(j);
@@ -621,7 +623,7 @@
   // Arrived: the animal trots to where the work is held; then the works.
   function arrived(j) {
     walk.down = true;
-    voiceSay({ path: "walk", step: "journey", key: stopOf().key, place: shortName(stopOf().key), f: { animal: animalWord() } });
+    voiceSay({ path: "follow", step: "city", key: stopOf().key, place: shortName(stopOf().key), f: { animal: animalWord() } });
     // A word on arriving.
     if (walk.upto < walk.i + 1) {
       walk.upto = walk.i + 1;

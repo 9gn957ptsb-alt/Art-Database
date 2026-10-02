@@ -13458,7 +13458,14 @@
   document.addEventListener("keydown", function (event) {
     if (event.target && /INPUT|TEXTAREA/.test(event.target.tagName)) { return; }
     if (groundOn || flying || deckMode) { return; }
-    if (event.key === "+" || event.key === "=") { if (place) { goDeeper(false); } else { flyOver(); } }
+    if (event.key === "+" || event.key === "=") {
+      // In the reading layout "+" is the lens's next voice nearer; past the nearest, the ground there.
+      if (place && readingOn() && LENS) {
+        if (!(window.Voice && Voice.nudge && Voice.nudge(1)) && !lensGroundWhole()) { goDeeper(false); }
+        return;
+      }
+      if (place) { goDeeper(false); } else { flyOver(); }
+    }
     else if ((event.key === "-" || event.key === "_") && place) { comeUp(); }
   });
   // The reading lies over the banner (it is another layer, above the
@@ -13535,6 +13542,8 @@
       return;
     }
     upPush = 0;
+    // In the reading layout the way down is through the lens's voices (above); elsewhere, nothing.
+    if (!dive.on && readingOn() && LENS) { return; }
     if (dive.on || diveCan()) {
       // Seen from far off: scrolling in is the dive, toward the pointer.
       var step = event.ctrlKey ? 0.012 : 0.0016;
@@ -13595,6 +13604,8 @@
       }
       return;
     }
+    // In the reading layout spreading begun off the lens does not dive: the world is in the lens.
+    if (readingOn() && LENS && !dive.on && downFrom > 0 && d / downFrom > 1) { return; }
     // Spreading on a world seen from far off (a work's history, a collage's
     // city): the dive, aimed between the fingers, as far as they have gone.
     if (place && !flying && !groundOn && downFrom > 0 && (dive.on || (diveCan() && d / downFrom > 1.04))) {
@@ -15672,7 +15683,7 @@
     var b = workBands();
     var o = { on: true, lens: LENS, kind: a.kind, id: a.data && a.data.id || null, view: a.serial || 0, flying: flying,
               dated: !!a.dated, y0: a.y0, y1: a.y1, year: a.dated ? yearAt(a, Math.max(0, a.when)) : null,
-              moving: !!(a.moving || a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
+              moving: !!(a.moving || a.auto || a.playing), playing: !!(a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
               at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
               picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
               ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full };
