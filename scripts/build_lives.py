@@ -47,6 +47,9 @@ every run. No network.
 """
 import collections, glob, json, math, os, re, sys, unicodedata
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_studios import REGION  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 V2 = os.path.join(ROOT, 'docs', 'v2')
 DL = os.path.join(ROOT, 'data', 'lives')
@@ -125,9 +128,16 @@ def gazetteer(towns, places_cache):
     g = {}
     for t in towns:
         g.setdefault(t[1], [t[3], t[4]])
+    region = {}
+    for p in places_cache or []:
+        cls = (p.get('clsLabel') or '').lower()
+        region.setdefault(p.get('label'), []).append(cls)
     for p in places_cache or []:
         ll = point(p.get('coord'))
         lab = p.get('label') or ''
+        # A town, never a country or a region (the studios' list of what is a region).
+        if any(c in REGION or 'country' in c or 'state' in c or 'region' in c or 'province' in c for c in region.get(lab, [])):
+            continue
         if ll and lab and not re.match(r'^Q\d+$', lab):
             g.setdefault(lab, ll)
     return {k: v for k, v in g.items() if k not in NOT_TOWNS and len(k) >= 3 and k[0].isupper()}
@@ -147,7 +157,7 @@ def nearest_town(ll, towns, within=150):
 MOVE = (r"(?:moved|relocated|returned|went|travell?ed|journeyed|emigrated|fled|arrived|came|retired|withdrew|"
         r"left for|settled|set up (?:a |his |her )?(?:studio|home|house)|took (?:a |up a )?(?:studio|house|flat|apartment)|"
         r"bought (?:a |the )?(?:house|villa|château|chateau|farmhouse|property|estate)|rented (?:a |an )?\w+)")
-STAY = (r"(?:lived|living|stayed|staying|resided|residing|settled|based|studied|studying|spent (?:[^.,;]{0,40}?)|"
+STAY = (r"(?:lived|living|stayed|staying|resided|residing|settled|studied|studying|spent (?:[^.,;]{0,40}?)|"
         r"(?:his|her|a|the) (?:new )?studio|studios?|worked|working|painted|painting)")
 PREP_MOVE = r"\s+(?:back\s+)?(?:to|in|at|into)\s+(?:the\s+)?(?:city\s+of\s+|town\s+of\s+|village\s+of\s+)?"
 PREP_STAY = r"(?:\s+[^.;,]{0,30}?)?\s+(?:in|at|near)\s+(?:the\s+)?(?:city\s+of\s+|town\s+of\s+|village\s+of\s+)?"
@@ -167,7 +177,7 @@ def said_presences(name, text, url, title, gaz, born, died, others):
     for s in sentences(text):
         if len(s) > 600:
             continue
-        yrs = [(m.start(), int(m.group(1))) for m in re.finditer(r'(?<![\d,.])(1\d{3}|20[0-2]\d)(?![\d,])(?!\s*(?:km|m|works|paintings))', s)]
+        yrs = [(m.start(), int(m.group(1))) for m in re.finditer(r'(?<![\d,.])(1\d{3}|20[0-2]\d)(?!\d|,\d)(?!\s*(?:km|m|works|paintings))', s)]
         yrs = [(p, y) for p, y in yrs if (born or 0) - 1 <= y <= hi]
         if not yrs:
             continue
@@ -265,6 +275,8 @@ def read_work(h, born, died):
 # ---- the life, year by year ---------------------------------------------------------------------
 
 RANK = {'died': 5, 'born': 5, 'range': 4, 'said': 3, 'record': 2}
+NAMING = ['range', 'said', 'record', 'born', 'died']   # whose name a town goes by: a studio's before a birth record's
+CARRY = 2       # a place is carried at most this many years past its evidence; after that the record names none
 
 
 def build_years(evid, born, end):
@@ -280,8 +292,8 @@ def build_years(evid, born, end):
             # The strongest; among equals the latest begun (a move), then the last named.
             i = max(c, key=lambda i: (RANK[evid[i]['how']], evid[i]['y0'], i))
             years[y] = (evid[i]['town'], i, False)
-            last = (evid[i]['town'], i)
-        elif last:
+            last = (evid[i]['town'], i, y)
+        elif last and y - last[2] <= CARRY and evid[last[1]]['how'] != 'born':
             years[y] = (last[0], last[1], True)
     return years
 
@@ -329,11 +341,18 @@ def main():
         if s.get('pr') in ('view', 'site', 'street'):
             sites_by[s['a']].append(s)
 
-    candidates = []
+    # Every saved artist whose Wikidata item is matched: the studios' catalogue first, then the rest.
     hunt_artists = set(hunts_by)
+    matched = load(os.path.join(DS, 'artists.json'), {})
+    candidates, have = [], set()
     for A in studios['artists']:
-        if A[5] >= 10 or A[1] in hunt_artists:
-            candidates.append(A)
+        candidates.append(A)
+        have.add(A[2])
+    for q_ in sorted(matched):
+        m = matched[q_]
+        if q_ in have or not works_by.get(m['name']):
+            continue
+        candidates.append([m['slug'], m['name'], q_, m.get('birth'), m.get('death'), len(works_by[m['name']]), [], ''])
     surnames = sorted({surname(A[1]) for A in studios['artists'] if A[5] >= 3})
 
     # Voices: which voices touched which works.
@@ -382,7 +401,7 @@ def main():
                 undated.append(i)
         for h in hand.get('add', []):
             if h['artist'] == name:
-                add('range', h['y0'], h.get('y1') or h['y0'], h['place'], h['ll'], h['src'][0], name_=h.get('name'),
+                add('range', h['y0'], h.get('y1') or h['y0'], h['place'], h.get('ll') or gaz.get(h['place']), h['src'][0], name_=h.get('name'),
                     extra={'srcs': h['src'], 'kind': h.get('kind', 'lived and worked'), 'pr': h.get('pr', 'town')})
         art = wiki.get(q) or {}
         drops = [d['q'] for d in hand.get('drop', []) if d['artist'] == name]
@@ -396,6 +415,8 @@ def main():
         hunt_no = {}
         for h in hunts_by.get(name, []):
             for s in h['stops']:
+                if not str(s.get('no') or '').strip():
+                    continue
                 hunt_no.setdefault(s['w'], []).append(surname(h['by'].split(' with ')[0]) + ' No. ' + str(s['no']))
         work_info = {}
         for w in rows:
@@ -407,11 +428,11 @@ def main():
                 add('record', made['y'], made['y'], made['w'] or (town_by.get(made['key']) or [0, made['key']])[1],
                     made['ll'], {'name': 'the record of “' + (w[1] or 'Untitled') + '”', 'q': made['q'], 'work': w[0]},
                     extra={'work': w[0], 'v': made.get('v')})
-        # One town under one name: a place within 8 km of an earlier one takes its name (Juan-les-Pins is Antibes's).
+        # One town under one name: a place within 3 km of an earlier one takes its name (Juan-les-Pins is Antibes's).
         named = []
-        for e in sorted(evid, key=lambda e: (-RANK[e['how']], e['y0'], e['place'])):
+        for e in sorted(evid, key=lambda e: (NAMING.index(e['how']), e['y0'], e['place'])):
             for n in named:
-                if dist(n['ll'], e['ll']) <= 8:
+                if dist(n['ll'], e['ll']) <= 3:
                     e['town'], e['tll'] = n['town'], n['ll']
                     break
             else:
@@ -434,10 +455,10 @@ def main():
                 p['carried'] += 1 if carried else 0
             else:
                 periods.append({'town': town, 'y0': y, 'y1': y, 'ev': {i}, 'carried': 1 if carried else 0})
-        attested_towns = {evid[i]['town'] for p in periods for i in p['ev'] if not (evid[i]['how'] in ('born', 'died'))}
+        attested_towns = {e['town'] for e in evid if e['how'] not in ('born', 'died')}
         nworks = len(rows)
-        if len(attested_towns) < 3 or (nworks < 10 and name not in hunt_artists):
-            continue
+        # A notable life (Find's "lives", the report): three dated towns or more, and ten saved works or a hunt.
+        notable = len(attested_towns | {e['town'] for e in evid}) >= 3 and (nworks >= 10 or name in hunt_artists)
 
         out_p = []
         for p in periods:
@@ -483,14 +504,18 @@ def main():
         works, shops_all, after = [], collections.OrderedDict(), collections.Counter()
         for w in sorted(rows, key=lambda w: (year_of(w[3]) or 9999, w[0])):
             h, made, shops, cats, y = work_info[w[0]]
-            cats = list(dict.fromkeys(hunt_no.get(w[0], []) + cats))[:4]
+            # The hunt's number and the record's citations, each once ("Bloch No. 1340" is "Bloch 1340").
+            cats, seen_c = [c for c in hunt_no.get(w[0], []) + cats], set()
+            cats = [c for c in cats if not (fold(c).replace('no. ', '') in seen_c or seen_c.add(fold(c).replace('no. ', '')))][:4]
             shop = shops[0] if shops else None
             k = period_at(y) if y else None
             how = None
+            rec_town = next((e['town'] for e in evid if e['how'] == 'record' and e.get('work') == w[0]), None)
             if k is not None:
-                if made and made.get('y') == y and evid and out_p[k]['place'] == next(
-                        (e['town'] for e in evid if e['how'] == 'record' and e.get('work') == w[0]), None):
+                if rec_town and rec_town == out_p[k]['place']:
                     how = 'record'
+                elif rec_town:
+                    how = 'record:' + rec_town       # its own record puts its making elsewhere than the year's place
                 elif any(s.get('w') == w[0] for s in sites_by.get(name, [])):
                     how = 'site'
                 else:
@@ -588,7 +613,7 @@ def main():
                 for y in range(e['y0'], min(e['y1'], end) + 1):
                     att[e['key']].add(y)
         lives.append({
-            'id': slug, 'name': name, 'q': q, 'born': born_y, 'died': died_y,
+            'id': slug, 'name': name, 'q': q, 'born': born_y, 'died': died_y, 'notable': 1 if notable else 0,
             'b': [info['born']['place'], info['born']['ll']] if info.get('born') else None,
             'd': [info['died']['place'], info['died']['ll']] if died_y and info.get('died') else None,
             'periods': out_p, 'works': works, 'sites': sites_rows, 'voices': vrows, 'shows': show_rows,
@@ -602,11 +627,11 @@ def main():
         })
 
     # Lives that cross: one city, the same years, by evidence in both.
-    by_id = {L['id']: L for L in lives}
     for L in lives:
         L['cross'] = []
-    for i, A_ in enumerate(lives):
-        for B in lives[i + 1:]:
+    crossing = [L for L in lives if L['notable']]
+    for i, A_ in enumerate(crossing):
+        for B in crossing[i + 1:]:
             for key in sorted(set(A_['_att']) & set(B['_att'])):
                 ys = sorted(A_['_att'][key] & B['_att'][key])
                 if not ys:
@@ -628,26 +653,72 @@ def main():
                 if p['y0'] <= c[5] and c[4] <= p['y1'] and p['key'] == c[2]:
                     p['cross'].append(ci)
 
+    # Where the works are and have been (finding.json's places, places.json's points).
+    pl = load(os.path.join(V2, 'places.json'))['places']
+    wplaces = {w[0]: w[5] or [] for w in finding['w']}
+    for L in lives:
+        n = collections.Counter()
+        for w in L['works']:
+            for i in wplaces.get(w[0], []):
+                n[i] += 1
+        L['places'] = [[pl[i][0], pl[i][1], pl[i][3], pl[i][4], c] for i, c in sorted(n.items(), key=lambda x: (-x[1], x[0])) if i < len(pl)]
+
     os.makedirs(OUTD, exist_ok=True)
     for f in glob.glob(os.path.join(OUTD, '*.json')):
         os.remove(f)
+    lives.sort(key=lambda L: (-len(L['works']), L['name']))
+    # The Artists layer: one mark an artist, at the birthplace; a town where several were born, one mark.
+    clusters = collections.OrderedDict()
+    for k, L in enumerate(lives):
+        if not L['b']:
+            continue
+        ll = L['b'][1]
+        # A birthplace within 40 km of a city of the site is the busiest such city's (Brooklyn is New York's);
+        # else within 40 km of another birthplace already marked; else its own.
+        near_t = [t for t in towns if dist(ll, (t[3], t[4])) <= 40]
+        key = max(near_t, key=lambda t: (t[5], -dist(ll, (t[3], t[4]))))[0] if near_t else None
+        if key:
+            t = town_by[key]
+            ck, cname, cll = 't:' + key, t[1], [t[3], t[4]]
+        else:
+            near = next((k_ for k_, c_ in clusters.items() if k_.startswith('p:') and dist(c_['ll'], ll) <= 40), None)
+            ck = near or 'p:' + L['b'][0] + '@%.1f,%.1f' % (ll[0], ll[1])
+            cname, cll = (clusters[near]['name'], clusters[near]['ll']) if near else (L['b'][0], ll)
+        c = clusters.setdefault(ck, {'name': cname, 'll': cll, 'lives': [], 'n': 0})
+        c['lives'].append(k)
+        c['n'] += len(L['works'])
+    marks = []
+    for ck, c in clusters.items():
+        one = len(c['lives']) == 1
+        L0 = lives[c['lives'][0]]
+        label = surname(L0['name']) if one else c['name'] + ' · ' + str(len(c['lives']))
+        aria = (L0['name'] + ', born in ' + L0['b'][0] + ', ' + str(L0['born'])) if one else \
+            str(len(c['lives'])) + ' saved artists born in ' + c['name']
+        ll = L0['b'][1] if one else c['ll']
+        marks.append([ll[0], ll[1], label, aria, c['lives'], 'exact' if one else 'town', c['n'], c['name']])
+    marks.sort(key=lambda m: (-m[6], m[2]))
     index, made = [], {}
-    for L in sorted(lives, key=lambda L: (-len(L['works']), L['name'])):
+    for L in lives:
         del L['_att'], L['_evid']
         json.dump(L, open(os.path.join(OUTD, L['id'] + '.json'), 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
         n_prints = sum(1 for w in L['works'] if len(w) > 8)
         index.append([L['id'], L['name'], L['born'], L['died'], len(L['periods']), len(L['works']), n_prints,
-                      len({c[0] for c in L['cross']}), [h[0] for h in L['hunts']],
-                      [[p['ll'][0], p['ll'][1], p['y0']] for p in L['periods']]])
+                      len({c[0] for c in L['cross']}), [h[0] for h in L['hunts']], L['notable'],
+                      L['b'][0] if L['b'] else ''])
         for w in L['works']:
             if len(w) > 8 or w[5] >= 0:
                 p = L['periods'][w[5]] if w[5] >= 0 else None
+                how = w[4]
+                at = how.split(':', 1)[1] if how.startswith('record:') else (p['place'] if p else '')
                 made[w[0]] = [L['id'], w[8][0] if len(w) > 8 else '', w[8][1] if len(w) > 8 else '', w[2],
-                              p['place'] if p else '', w[4]]
-    json.dump({'note': NOTE, 'lives': index, 'made': made}, open(OUT, 'w'), ensure_ascii=False,
+                              at, how.split(':', 1)[0]]
+    json.dump({'note': NOTE, 'lives': index, 'made': made, 'marks': marks}, open(OUT, 'w'), ensure_ascii=False,
               separators=(',', ':'), sort_keys=True)
-    print(f'{len(index)} lives')
+    print(f'{len(index)} lives, {sum(r[9] for r in index)} notable; {len(marks)} birthplace marks for '
+          f'{sum(len(m[4]) for m in marks)} artists')
     for r in index:
+        if not r[9]:
+            continue
         print(f'  {r[1]:28} {r[2]}–{r[3] or ""}  periods {r[4]:3}  works {r[5]:4}  printed {r[6]:3}  crosses {r[7]:3}  hunts {len(r[8])}')
 
 

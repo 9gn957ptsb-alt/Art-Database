@@ -441,7 +441,8 @@
     if (!field || !found) { return; }
     var text = field.value, t = fold(text).trim();
     var onLayer = landEl && landEl.dataset.layerOn === "studios";
-    var all = /^(studios?|ateliers?|catalogue|the studios|artists'? studios?)$/.test(t) || (!t && onLayer);
+    // The Artists layer opens Find on the artists (lives.js); "studios" is still the catalogue.
+    var all = /^(studios?|ateliers?|catalogue|the studios|artists'? studios?)$/.test(t);
     var m = t.match(/^(.+?)\s+(studios?|ateliers?)$/);
     if (!all && !m) { return; }
     load().then(function () {

@@ -8,7 +8,8 @@ For each artist a life may be drawn for — every saved artist with ten saved wo
 Wikidata item scripts/fetch_studios.py matched (data/studios/artists.json), and every artist of a
 cataloguer's hunt (docs/v2/explorations.json) — this reads:
 
-  1. from Wikidata (CC0): place of birth (P19), place of death (P20), date of birth (P569) and of
+  1. for every saved artist whose item fetch_studios.py matched (the Artists layer marks each at
+     their birthplace), from Wikidata (CC0): place of birth (P19), place of death (P20), date of birth (P569) and of
      death (P570), and each place's point (P625) and label;
   2. the artist's English Wikipedia article as plain text (CC BY-SA), where data/studios/ has not
      read it already — build_lives.py quotes from it only whole sentences that put the artist in a
@@ -57,9 +58,10 @@ SELECT ?a ?enwiki WHERE {{ VALUES ?a {{ {vals} }}
 def main():
     os.makedirs(OUT, exist_ok=True)
     qs = candidates()
-    print(f'{len(qs)} artists')
+    every = sorted(json.load(open(os.path.join(ROOT, 'data', 'studios', 'artists.json'))))
+    print(f'{len(qs)} artists for their articles; {len(every)} for birth and death')
     rows = []
-    for ch in fs.chunks(qs, 40):
+    for ch in fs.chunks(every, 40):
         rows += fs.sparql(BD.format(vals=fs.vals(ch)))
     json.dump(rows, open(os.path.join(OUT, 'wd.json'), 'w'), indent=0, sort_keys=True)
     print(f'  birth and death: {len(rows)} rows')
@@ -67,6 +69,8 @@ def main():
     path = os.path.join(OUT, 'wiki.json')
     have = json.load(open(path)) if os.path.exists(path) else {}
     links = []
+    if '--births' in sys.argv:
+        return
     for ch in fs.chunks(qs, 150):
         links += fs.sparql(ARTWIKI.format(vals=fs.vals(ch)))
     todo = [r for r in links if r['a'] not in have and not (have_st.get(r['a']) or {}).get('text')]

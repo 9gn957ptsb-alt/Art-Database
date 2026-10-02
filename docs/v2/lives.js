@@ -115,8 +115,49 @@
   }
   var pending = null;
 
+  // The Artists layer: a mark is one artist's birthplace (their life), or a town where several were born (the list).
+  function openMark(m) {
+    return load().then(function () {
+      if (!D || !window.Land) { return; }
+      if (m[4].length === 1) { open(D.lives[m[4][0]][0]); return; }
+      Land.life({ id: "born:" + m[7], title: "Born in " + m[7], where: plural(m[4].length, "saved artist", "saved artists"),
+                  pts: [[m[0], m[1]]], born: m });
+    });
+  }
+
+  function bornColumn(api) {
+    var m = api.data.born, col = api.col;
+    col.textContent = "";
+    var box = el("section", "life-box");
+    box.appendChild(el("p", "town-section life-kicker", "Born here"));
+    box.appendChild(el("p", "studio-title", m[7]));
+    box.appendChild(el("p", "studio-exact", plural(m[4].length, "saved artist was", "saved artists were") +
+      " born in or near " + m[7] + ", as Wikidata has it · most saved first"));
+    col.appendChild(box);
+    var list = el("ol", "studio-route life-born");
+    m[4].forEach(function (i) {
+      var r = D.lives[i];
+      var li = el("li");
+      var b = button("", "studio-stop", function () { open(r[0]); });
+      b.appendChild(el("span", "studio-stop-name", r[1]));
+      b.appendChild(el("span", "studio-stop-meta", [r[10], r[2] + "–" + (r[3] || ""), plural(r[5], "saved work", "saved works"),
+        r[9] ? plural(r[4], "place", "places") : ""].filter(Boolean).join(" · ")));
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    col.appendChild(list);
+    api.foot();
+  }
+
   // land.js: down at the life's view.
   function start(api) {
+    if (api.data.born) {
+      view = null;
+      bornAt = api;
+      load().then(function () { if (api.live()) { bornColumn(api); kick(); } });
+      return;
+    }
+    bornAt = null;
     var id = api.data.id;
     life(id).then(function (L) {
       if (!L || !api.live()) { return; }
@@ -136,8 +177,10 @@
       kick();
     });
   }
+  var bornAt = null;
   function stop() {
     view = null;
+    bornAt = null;
     kick();
   }
 
@@ -354,10 +397,10 @@
     var printed = p.prints;
     if (made.length) {
       var hows = {};
-      made.forEach(function (i) { var h = L.works[i][4] || "dated"; hows[h] = (hows[h] || 0) + 1; });
+      made.forEach(function (i) { var h = (L.works[i][4] || "dated").split(":")[0]; hows[h] = (hows[h] || 0) + 1; });
       body.appendChild(el("p", "town-section", "Made then · " + made.length));
       body.appendChild(el("p", "town-museum-meta studio-how", Object.keys(hows).sort().map(function (h) {
-        return hows[h] + " " + ({ record: "by its own record, here", site: "painted at a documented site", dated: "dated within these years" }[h] || h);
+        return hows[h] + " " + ({ record: "by its own record", site: "painted at a documented site", dated: "dated within these years" }[h] || h);
       }).join(" · ")));
       var th = el("div", "town-thumbs studio-works life-works");
       made.slice(0, 55).forEach(function (i) { th.appendChild(square(L, i, p)); });
@@ -440,7 +483,8 @@
     var b = el("button", "town-thumb");
     b.type = "button";
     b.dataset.y = String(w[2] || 0);
-    var line = w[1] + (w[2] ? ", " + w[2] : "") + ((w[7] || []).length ? " · " + w[7].join(" · ") : "");
+    var line = w[1] + (w[2] ? ", " + w[2] : "") + ((w[7] || []).length ? " · " + w[7].join(" · ") : "") +
+      (/^record:/.test(w[4] || "") ? " · made in " + w[4].slice(7) + ", its record says" : "");
     b.title = line;
     b.setAttribute("aria-label", line + " — where it has been");
     if (w[3]) {
@@ -600,22 +644,27 @@
   function offer() {
     if (!field || !found) { return; }
     var text = field.value, t = fold(text);
-    if (t.trim().length < 3) { return; }
+    var landEl = document.getElementById("land");
+    var onLayer = landEl && landEl.dataset.layerOn === "studios";
+    if (t.trim().length < 3 && !(onLayer && !t.trim())) { return; }
     load().then(function () {
       if (!D || field.value !== text) { return; }
       var old = found.querySelector(".life-found");
       if (old) { old.remove(); }
       var all = /^ (lives?|a life|artists'? lives) $/.test(t);
+      var every = onLayer && !t.trim();
       var q = t.replace(/ (lives?|a life|s life) $/, " ");
       var rows = D.lives.filter(function (r) {
-        if (all) { return true; }
+        if (every) { return true; }
+        if (all) { return r[9]; }
         var hay = fold(r[1]);
         return hay.indexOf(q) >= 0 || fold(surname(r[1])) === q;
       });
       if (!rows.length) { return; }
       var box = el("div", "explore-found life-found");
-      box.appendChild(el("p", "finder-group", all ? "Lives · " + D.lives.length : "A life"));
-      rows.slice(0, all ? 99 : 4).forEach(function (r, k) {
+      box.appendChild(el("p", "finder-group", every ? "Artists · " + D.lives.length + " · each a life, most saved first" :
+        all ? "Lives · " + rows.length + " drawn fullest" : "A life"));
+      rows.slice(0, every ? 400 : all ? 99 : 4).forEach(function (r, k) {
         var b = el("button", "finder-row finder-line studio-cat life-cat");
         b.type = "button";
         b.appendChild(el("span", "studio-cat-name", r[1]));
@@ -630,7 +679,7 @@
   }
   if (field) { field.addEventListener("input", function () { window.setTimeout(offer, 360); }); }
   if (found && window.MutationObserver) {
-    new MutationObserver(function () { if (field && field.value && !found.querySelector(".life-found")) { offer(); } })
+    new MutationObserver(function () { if (field && !found.querySelector(".life-found")) { offer(); } })
       .observe(found, { childList: true });
   }
 
@@ -745,6 +794,12 @@
       kick();
       return;
     }
+    if (bornAt && bornAt.live() && w.at === "life") {
+      var bm = bornAt.data.born, bq = bornAt.at(bm[0], bm[1]);
+      if (bq.z > 0.02) { ring(bq.x, bq.y, 2, t); atelier(bq.x, bq.y, 1); }
+      kick();
+      return;
+    }
     if (visit_ && visit_.box.isConnected && w.at === "town" && !w.flying) {
       var p = visit_.L.periods[visit_.k];
       if (p && Land.at) {
@@ -782,6 +837,33 @@
         tile(q.x, q.y, (come ? (after ? 0.28 : 0.5) : 0.16) * Math.min(1, (q.z - 0.08) * 6), 4);
       }
     }
+    // Where the works are and have been: quiet cream tiles, brighter where more have been.
+    ctx.fillStyle = CREAM;
+    (L.places || []).forEach(function (r) {
+      var q = project(api, [r[2], r[3]]);
+      if (q.z < 0.05) { return; }
+      tile(q.x, q.y, (after ? 0.34 : 0.16) + Math.min(0.3, Math.log(1 + r[4]) * 0.08), 5);
+    });
+    // Painted here: the outings, small lilac points, lit once their year is passed.
+    ctx.fillStyle = LILAC;
+    (L.sites || []).forEach(function (s) {
+      var q = project(api, s[4]);
+      if (q.z < 0.05) { return; }
+      var gx = Math.floor(q.x / C) * C, gy = Math.floor(q.y / C) * C;
+      ctx.globalAlpha = s[2] && s[2] <= y ? 0.85 : 0.3;
+      ctx.fillRect(gx + 5, gy + 5, 3, 3);
+    });
+    // The studios the record gives no years: hollow ateliers, quiet.
+    (L.undated || []).forEach(function (u) {
+      if (!u[2]) { return; }
+      var q = project(api, u[2]);
+      if (q.z < 0.05) { return; }
+      var gx = Math.floor(q.x / C) * C, gy = Math.floor(q.y / C) * C;
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = CREAM;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(gx + 2.5, gy + 2.5, C - 5, C - 5);
+    });
     // The workshops: a hollow lilac tile, lit in their years.
     (L.workshops || []).forEach(function (s) {
       if (!s[3]) { return; }
@@ -810,7 +892,13 @@
       var q = project(api, p.ll);
       if (q.z < 0.05) { return; }
       atelier(q.x, q.y, p.y0 <= y ? 1 : 0.35);
-      if (k === v.k && !after) { ring(q.x, q.y, 1, t); }
+      if (k === v.k && !after) {
+        ring(q.x, q.y, 1, t);
+        // A life that crosses here this year: a second ring, cream.
+        var c = p.cross.map(function (ci) { return L.cross[ci]; }).filter(function (c) { return c[4] <= y && y <= c[5]; })[0];
+        if (c) { ctx.fillStyle = CREAM; ring2(q.x, q.y, 3, t); }
+        name(q.x, q.y, p.place + (c ? " · " + surname(c[1]) + " here" : ""));
+      }
     });
     ["b", "d"].forEach(function (e) {
       var r = L[e];
@@ -833,6 +921,29 @@
     ctx.strokeRect(gx + 1.5, gy + 1.5, C - 3, C - 3);
     ctx.fillStyle = LILAC;
     ctx.fillRect(gx + 4, gy + 4, C - 8, C - 8);
+    ctx.globalAlpha = 1;
+  }
+  function name(x, y, text) {
+    var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    ctx.globalAlpha = 1;
+    ctx.font = "11px " + (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace");
+    ctx.textBaseline = "middle";
+    var tx = gx + 3 * C + 4, w = ctx.measureText(text).width;
+    if (tx + w > window.innerWidth - 8) { tx = gx - 2 * C - 4 - w; }
+    ctx.fillStyle = "rgba(15, 10, 7, 0.72)";
+    ctx.fillRect(tx - 4, gy - 2, w + 8, C + 4);
+    ctx.fillStyle = CREAM;
+    ctx.fillText(text, tx, gy + C / 2 + 0.5);
+  }
+  function ring2(x, y, R, t) {
+    var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    ctx.globalAlpha = 0.5;
+    for (var dx = -R; dx <= R; dx += 1) {
+      for (var dy = -R; dy <= R; dy += 1) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== R || ((dx + dy + (t >> 3)) & 1)) { continue; }
+        ctx.fillRect(gx + dx * C + 5, gy + dy * C + 5, C - 10, C - 10);
+      }
+    }
     ctx.globalAlpha = 1;
   }
   function ring(x, y, rr, t) {
@@ -885,6 +996,7 @@
   window.Lives = {
     load: load,
     open: open,
+    openMark: openMark,
     start: start,
     stop: stop,
     enter: enter,

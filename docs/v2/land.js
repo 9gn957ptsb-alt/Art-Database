@@ -812,16 +812,17 @@
       }, true);
     });
 
-    // And the studios, once studios.json has been read (the Studios layer):
-    // an exact one named by its artist, a town of several by the most saved
-    // of them (studios.js opens them; the column is its).
+    // And the artists, once lives.json has been read (the Artists layer):
+    // each at the birthplace, named by surname; a town where several saved
+    // artists were born one mark, "Paris · 47" (lives.js opens them: a life,
+    // or the list of those born there).
     ((studios && studios.marks) || []).forEach(function (m, k) {
       raiseCity({
-        work: null, slug: "studio-" + k, title: m[2], label: m[2], aria: "Go down to " + m[3], where: m[3],
+        work: null, slug: "born-" + k, title: m[2], label: m[2], aria: m[3], where: m[7] || m[3],
         lat: m[0] * RAD, lon: wrap(m[1] * RAD), studio: m, real: true,
-        rank: 1 + 0.6 * Math.log(1 + (m[6] || 0)) / Math.LN10 + (m[5] === "town" ? 0 : 0.5),
+        rank: 1 + 0.6 * Math.log(1 + (m[6] || 0)) / Math.LN10 + (m[5] === "town" ? 0.3 : 0.5),
         layer: "studios", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
-        open: function () { if (window.Studios) { Studios.openMark(m); } }
+        open: function () { if (window.Lives && Lives.openMark) { Lives.openMark(m); } }
       }, true);
     });
 
@@ -831,11 +832,11 @@
     measureNames();
   }
 
-  /* The Studios layer's file, read the first time the layer is on. */
+  /* The Artists layer's file (lives.json: the birthplaces), read the first time the layer is on. */
   var studiosAsk = null;
   function studiosLayer() {
     if (layerOn !== "studios" || studios || studiosAsk) { return; }
-    studiosAsk = read("studios.json").then(function (d) {
+    studiosAsk = read("lives.json").then(function (d) {
       studios = d;
       found();
       if (layerOn === "studios") { placeMarks(); groundPlaces(); }
@@ -861,7 +862,13 @@
     { key: "architecture", label: "Architecture" },
     // The studios (artist, 1 Oct 2026: "Give a site to artist studios to
     // catalogue individual artists with specific locations"): studios.js.
-    { key: "studios", label: "Studios" }
+    // Since 2 Oct 2026 the Artists (artist: "I just want the Artist to be
+    // located where they are born … when an artist is selected then all the
+    // places relevant to them … show up and all the other places for other
+    // artists do not show up"): one mark an artist, at the birthplace, a town
+    // of several one mark with its count (lives.js); the studios are stops
+    // inside a life. The key stays "studios", so a viewer's choice holds.
+    { key: "studios", label: "Artists" }
   ];
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
@@ -13770,10 +13777,10 @@
       if (artFind) { artFind.hidden = true; }
       closeFinder();
       if (passing) { endPassing(performance.now()); }
-      // On Studios, Find opens on the catalogue of artists (studios.js).
+      // On Artists, Find opens on the artists, each a life (lives.js).
       if (layerOn === "studios" && ARTWORKS && artFind) {
         artFind.disabled = false;
-        artFind.textContent = "Find a studio";
+        artFind.textContent = "Find an artist";
         artFind.hidden = false;
       }
       measureSafe();
@@ -14378,8 +14385,52 @@
     studio: function (key, lat, lon, km, name, pay) { openTown(key, { at: { lat: lat, lon: lon, km: km, name: name || "" }, studio: pay }); },
     look: function (lat, lon) { if (!art || !place || flying) { return false; } glideTo(art, lat * RAD, wrap(lon * RAD)); return true; },
     // The lives (lives.js): a life framed on its route, the dial its years.
-    life: function (spec) { openLife(spec); }
+    life: function (spec) { openLife(spec); },
+    // The movements (movements.js): a movement framed on its city and its artists' places, the dial its years.
+    movement: function (spec) { openMovement(spec); },
+    // The dial as the hub (dialhub.js): what the view's dial is about, its span and its year; and the year set.
+    dial: function () {
+      var a = art;
+      if (!a || !a.live || !artTime || artTime.hidden || !a.dated) { return null; }
+      return { kind: a.kind, id: a.data && a.data.id || null, key: a.town ? a.town.key : (a.via && a.via.place) || null,
+               artists: a.data && a.data.artists || null, y0: a.y0, y1: a.y1, year: yearAt(a, Math.max(0, a.when)),
+               box: artTime, flying: flying };
+    },
+    dialYear: function (y) {
+      var a = art;
+      if (!a || !a.dated) { return; }
+      a.auto = null;
+      a.firstPlay = false;
+      a.playing = false;
+      a.seg = null;
+      a.byHand = true;
+      a.whenTo = Math.max(0, Math.min(1, (y + 0.5 - a.y0) / (a.y1 - a.y0)));
+      a.dirty = true;
+    }
   };
+
+  /* ---- a movement (movements.js) ----------------------------------------------
+
+     The artist, 2 Oct 2026: "using overlaps of artist residencies during a
+     time period to define art and social movements … I like the idea I've
+     incorporating it on the dial given it's specification of time". A
+     movement is a view like a life's: the world framed on its city and its
+     artists' places, the column and the marks on the globe movements.js's,
+     the dial the movement's years (lifeApi serves both). */
+  function openMovement(spec) {
+    if (!spec || flying) { return; }
+    closeFinder();
+    settleSwing();
+    artAsked = null;
+    var vecs = (spec.pts || []).map(function (p) { return toVec(p[0] * RAD, p[1] * RAD); });
+    var f = vecs.length ? frameOf(vecs, null, undefined, "life") : frameHere("life");
+    var c = {
+      slug: "movement-" + spec.id, title: spec.title, where: spec.where || "",
+      lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
+      art: { kind: "movement", data: spec, via: {} }
+    };
+    if (place) { hopTo(c); } else { goDown(c); }
+  }
 
   /* ---- a life (lives.js) ----------------------------------------------------
 
@@ -15341,6 +15392,10 @@
       // The lives (lives.js): the column, the dial's years and the route are its.
       artEl.dataset.look = "done";
       if (window.Lives && Lives.start) { Lives.start(lifeApi(art)); }
+    } else if (a.kind === "movement") {
+      // The movements (movements.js): the column, the dial's years and the marks are its.
+      artEl.dataset.look = "done";
+      if (window.Movements && Movements.start) { Movements.start(lifeApi(art)); }
     } else {
       artEl.dataset.look = "done";
       threadColumn(art.data, art.via);
@@ -15361,6 +15416,7 @@
     a.pagers.forEach(function (p) { p.disconnect(); });
     if (a.kind === "town") { stopTown(); }
     if (a.kind === "life" && window.Lives && Lives.stop) { Lives.stop(); }
+    if (a.kind === "movement" && window.Movements && Movements.stop) { Movements.stop(); }
     a.cons = null;
     Object.keys(a.names).forEach(function (p) {
       var n = a.names[p];
@@ -15913,8 +15969,9 @@
       var a = art;
       if (!a || !a.ticks.length) { return; }
       var raw = Number(artRange.value) / 1000, v = raw;
-      // It snaps to an event within one and a half per cent of the span.
-      var near = 0.015;
+      // It snaps to an event within one and a half per cent of the span
+      // (a life, whose span is a century, to a year either side).
+      var near = a.kind === "life" ? 1.2 / Math.max(1, a.y1 - a.y0) : 0.015;
       a.ticks.forEach(function (t) { if (Math.abs(t - raw) < near) { near = Math.abs(t - raw); v = t; } });
       setWhen(a, v);
       artYear.textContent = String(yearAt(a, v));
@@ -16141,6 +16198,7 @@
         var fr = face.getBoundingClientRect();
         var over = Math.hypot(event.clientX - fr.left - fr.width / 2, event.clientY - fr.top - fr.height / 2) < fr.width * 0.3;
         if (over) { face.dataset.over = "face"; } else { delete face.dataset.over; }
+        if (d.range === artRange && window.DialHub && DialHub.hover) { DialHub.hover(d, event.clientX - fr.left, event.clientY - fr.top, fr.width); }
       }
       if (d.down && Math.hypot(event.clientX - d.down.x, event.clientY - d.down.y) > 6) {
         d.down.far = true;
@@ -16194,6 +16252,11 @@
       d.last = null;
       delete box.dataset.turning;
       range.dispatchEvent(new Event("change", { bubbles: true }));
+      // A press on the hub's band that was not a turn opens the mark under it (dialhub.js).
+      if (down && !down.far && event.type === "pointerup" && range === artRange && window.DialHub && DialHub.tap) {
+        var tr = face.getBoundingClientRect();
+        DialHub.tap(d, event.clientX - tr.left, event.clientY - tr.top, tr.width);
+      }
     }
     face.addEventListener("pointerup", let_);
     face.addEventListener("pointercancel", let_);
@@ -16236,7 +16299,10 @@
     var year = d.box.querySelector(".building-time-year").textContent;
     var focused = document.activeElement === d.range;
     var lifted = !!d.box.dataset.lifted;
-    var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted].join("|");
+    // The hub (dialhub.js): the band of marks by kind for the mode the face is set to.
+    var hub = d.range === artRange && window.DialHub && DialHub.layer ? DialHub.layer(d, t, span) : null;
+    var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
+               hub ? hub.key : ""].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
     var px = Math.round(S * dpr);
@@ -16260,7 +16326,9 @@
       g.stroke();
     }
 
-    // Two rings geared to time, turning against each other at phi.
+    // Two rings geared to time, turning against each other at phi (resting while the hub's band is in use).
+    g.save();
+    if (hub && hub.quiet) { g.globalAlpha = 0.25; }
     g.setLineDash([2, 5]);
     g.strokeStyle = "rgba(234, 223, 205, 0.22)";
     g.lineWidth = 1;
@@ -16273,6 +16341,7 @@
     g.arc(c, c, R1 - 21, -t * TAU, -t * TAU + TAU);
     g.stroke();
     g.setLineDash([]);
+    g.restore();
 
     // The whole of the time, and where now meets the beginning.
     g.strokeStyle = "rgba(168, 146, 122, 0.4)";
@@ -16296,6 +16365,7 @@
       g.lineTo(c + Math.cos(a) * (R1 - 3 - len), c + Math.sin(a) * (R1 - 3 - len));
       g.stroke();
     });
+    if (hub) { hub.draw(g, c, R1, t, S); }
 
     // The way come, a line of light, and a comet's tail behind the handle.
     if (t > 0) {

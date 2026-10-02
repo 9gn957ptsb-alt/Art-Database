@@ -1,0 +1,145 @@
+{
+ "note": "Hand table for the lives (scripts/build_lives.py): places in an artist’s life that the studios and the extraction miss, each with its source quoted exactly (checked against the cached article text when written), and extracted sentences dropped with the reason. A point not given is the town’s from the gazetteer (cities.json, Wikidata). Private homes are placed at their town.",
+ "add": [
+  {
+   "artist": "Pablo Picasso",
+   "place": "Paris",
+   "name": "Bateau-Lavoir",
+   "kind": "studio",
+   "y0": 1905,
+   "y1": 1908,
+   "src": [
+    {
+     "name": "Wikipedia · Bateau-Lavoir",
+     "url": "https://en.wikipedia.org/wiki/Bateau-Lavoir",
+     "q": "While residing at the Bateau-Lavoir, Picasso painted works such as Young Girl with a Flower Basket, and Garçon à la pipe (Boy with a Pipe) in 1905, and one of his most noted works, Les Demoiselles d'Avignon in 1907, considered by art historians as a proto-Cubist painting (the precursor of a movement that became known as Cubism)."
+    },
+    {
+     "name": "Wikipedia · Bateau-Lavoir",
+     "url": "https://en.wikipedia.org/wiki/Bateau-Lavoir",
+     "q": "In 1908, a celebration banquet for Henri Rousseau was organised in Picasso's studio in the Bateau-Lavoir."
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Gósol",
+   "ll": [
+    42.23697,
+    1.6601
+   ],
+   "ll_src": "Wikidata Q24001124",
+   "kind": "worked",
+   "y0": 1906,
+   "y1": 1906,
+   "src": [
+    {
+     "name": "Wikipedia · Gósol",
+     "url": "https://en.wikipedia.org/wiki/G%C3%B3sol",
+     "q": "Gosol's emblematic cultural institution is the Picasso Museum, which owes its existence to the visit of Pablo Picasso to the village from the spring of 1906 to mid-August of that same year."
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Céret",
+   "kind": "lived",
+   "y0": 1911,
+   "y1": 1912,
+   "src": [
+    {
+     "name": "Wikipedia · Céret",
+     "url": "https://en.wikipedia.org/wiki/C%C3%A9ret",
+     "q": "Pablo Picasso (resident 1911 - 1912)"
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Gisors",
+   "name": "Château de Boisgeloup",
+   "ll": [
+    49.280555555,
+    1.776388888
+   ],
+   "ll_src": "Wikidata Q271072 (the town: a home, placed at its town)",
+   "kind": "house",
+   "y0": 1930,
+   "y1": 1937,
+   "src": [
+    {
+     "name": "Wikipedia · Château de Boisgeloup",
+     "url": "https://en.wikipedia.org/wiki/Ch%C3%A2teau_de_Boisgeloup",
+     "q": "Picasso bought Château de Boisgeloup with his wife Olga Khokhlova in June 1930."
+    },
+    {
+     "name": "Wikipedia · Château de Boisgeloup",
+     "url": "https://en.wikipedia.org/wiki/Ch%C3%A2teau_de_Boisgeloup",
+     "q": "Picasso left Boisgeloup before World War II after his break-up with Olga Khokhlova in 1937."
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Paris",
+   "name": "Rue des Grands Augustins",
+   "kind": "lived and worked",
+   "y0": 1937,
+   "y1": 1937,
+   "src": [
+    {
+     "name": "Wikipedia · Guernica (Picasso)",
+     "url": "https://en.wikipedia.org/wiki/Guernica_%28Picasso%29",
+     "q": "In January 1937, while Pablo Picasso was living in Paris on Rue des Grands Augustins, he was commissioned by the Spanish Republican government to create a large artwork for the Spanish pavilion at the Exposition Internationale des Arts et Techniques dans la Vie Moderne, a 1937 Paris International Exposition."
+    },
+    {
+     "name": "Wikipedia · Guernica (Picasso)",
+     "url": "https://en.wikipedia.org/wiki/Guernica_%28Picasso%29",
+     "q": "Picasso painted Guernica at his home in Paris in response to the 26 April 1937 bombing of Guernica, a town in the Basque Country in northern Spain, by Nazi Germany's Condor Legion and the fascist government of Italy."
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Antibes",
+   "name": "Château Grimaldi",
+   "kind": "worked",
+   "y0": 1946,
+   "y1": 1946,
+   "src": [
+    {
+     "name": "Wikipedia · Musée Picasso (Antibes)",
+     "url": "https://en.wikipedia.org/wiki/Mus%C3%A9e_Picasso_%28Antibes%29",
+     "q": "In 1925, the château was acquired by the City of Antibes and became known as the Grimaldi Museum, and for six months in 1946, it was the home of the famous artist Pablo Picasso."
+    }
+   ]
+  },
+  {
+   "artist": "Pablo Picasso",
+   "place": "Cannes",
+   "name": "Villa La Californie",
+   "kind": "house",
+   "y0": 1955,
+   "y1": 1961,
+   "src": [
+    {
+     "name": "Wikipedia · Villa La Californie",
+     "url": "https://en.wikipedia.org/wiki/Villa_La_Californie",
+     "q": "The villa was built in 1920 and served as the residence of artist Pablo Picasso from 1955 to 1961."
+    },
+    {
+     "name": "Wikipedia · Villa La Californie",
+     "url": "https://en.wikipedia.org/wiki/Villa_La_Californie",
+     "q": "Pablo Picasso, who had been living in the quarter of La Californie since the 1940s, bought the villa in 1955 and moved there with Jacqueline Roque."
+    }
+   ]
+  }
+ ],
+ "drop": [
+  {
+   "artist": "Pablo Picasso",
+   "q": "a Swiss insurance company based in Basel",
+   "why": "the company was based in Basel, not Picasso"
+  }
+ ]
+}

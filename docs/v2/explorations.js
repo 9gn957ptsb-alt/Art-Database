@@ -155,6 +155,8 @@
     if (i !== undefined) { return D.relay[i]; }
     // The studios (studios.js): an artist's studios not in the relay (a code's 9 bits name 511 rows)
     // are still played, from studios.json.
+    // The movements (movements.js): kind "m", matched beside the index, never in it.
+    if (/^m:/.test(key)) { return window.Movements && Movements.relayRow ? Movements.relayRow(key.slice(2)) : null; }
     var ox = /^o:/.test(key) && studioX(key.slice(2));
     return ox ? ["o", ox.id, ox.title, ox.artist, "", "", ox.n, ox.stops.map(function (st) { return [st.key, st.y || 0, -1]; })] : null;
   }
@@ -786,6 +788,13 @@
       chain = chain.then(function () {
         if (s.k === "|") { leg += 1; out.push({ k: "|", leg: leg }); return; }
         if (s.k !== "r") { out.push({ k: s.k, id: s.id, key: s.key, leg: leg }); return; }
+        // A movement (movements.js): its walk, each stop the movement's view at that year.
+        if (/^m:/.test(s.id)) {
+          var lm = leg;
+          return (window.Movements ? Movements.steps(s.id.slice(2), s.from || 0) : Promise.resolve([])).then(function (got) {
+            got.forEach(function (g) { g.leg = lm; out.push(g); });
+          });
+        }
         // A life (lives.js): each of its places a stop.
         if (/^l:/.test(s.id)) {
           var ll_ = leg;
@@ -942,7 +951,7 @@
       return;
     }
     if (still) { stillStep(s); return; }
-    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep, site: siteStep, studio: studioStep, life: lifeStep }[s.k] || next)(s);
+    ({ w: workStep, t: townStep, m: museumStep, v: voiceStep, h: threadStep, a: animalStep, walk: walkStep, site: siteStep, studio: studioStep, life: lifeStep, movement: movementStep }[s.k] || next)(s);
   }
 
   function asStop(s) {
@@ -1113,6 +1122,22 @@
     });
   }
 
+  /* A movement (movements.js): its view at the stop's year, the world eased
+     to the place; said on the reading's clock. */
+  function movementStep(s) {
+    run.down = true;
+    if (!window.Movements || !Movements.visit) { next(); return; }
+    var token = run;
+    Movements.visit(s).then(function (got) {
+      if (run !== token) { return; }
+      if (!got) { afterStill(next, 1000); return; }
+      run.arrived = run.i;
+      told("");
+      SAY_AT.forEach(function (at, k) { afterStill(function () { if (got.lines[k]) { setSaid(got.lines[k]); } }, at); });
+      afterStill(next, LOOK);
+    });
+  }
+
   function museumStep(s) {
     run.down = true;
     arrive(function (w) { return w.at === "museum" && w.museum === s.id; }, function () { Land.museum(s.id); }, function (ok) {
@@ -1267,6 +1292,12 @@
         c.year = s.y || 0;
         return Promise.resolve(c);
       }
+      if (s.k === "movement") {
+        c.key = s.key || null;
+        c.year = s.y || 0;
+        c.skip["m:" + s.mv] = true;
+        return Promise.resolve(c);
+      }
       if (s.k === "life") {
         c.key = s.key || null;
         c.year = s.y || 0;
@@ -1305,6 +1336,8 @@
   // The rows to match: the published, and the viewer's own kept explorations.
   function candidates() {
     var rows = D.relay.slice();
+    // The movements (movements.js), beside the index: a code's 9 bits are spent.
+    if (window.Movements && Movements.relayRows) { rows = rows.concat(Movements.relayRows()); }
     kept().forEach(function (x) {
       var st = x.stops.filter(function (s) { return s.k === "w" || s.k === "t" || s.k === "m"; }).map(function (s) {
         return [s.k === "t" ? s.id : s.k === "m" ? D.museumTown[s.id] || "" : s.key || "", 0,
