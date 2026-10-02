@@ -360,6 +360,18 @@ pieces (φ⁻³ as many as at first), the dapples and Weil's shards; the marks o
 blooms and collage) at half their density; the gesture lines one in every 987 cells, not 610; and the ferns are off,
 their curling fronds having read as scribble over everything.
 
+**Watercolour** (2 October 2026: "the overall texture to feel a lot more like watercolor, and how spatial the fading
+and transparencies of overlap occur"). The last pass, which lays every cell onto the screen, now lays the whole frame
+as a wash on paper, after Bousseau, Kaplan, Thollot and Sillion, "Interactive watercolor rendering with temporal
+coherence and abstraction" (NPAR 2006). Colours bleed a little into their neighbours, as wet paint does, so no cell's
+square shows. The pigment's density follows their model, C' = C − (C − C²)(d − 1): denser and thinner over the
+paper's tooth, in slow uneven pools as it dries, and gathered at the rim of every wash, where one colour gives way to
+another, as a wash dries from its edge inward (this replaces the grey gradient that lay across every edge). The paper
+shows through all of it, and toward the margins of the view the paint thins to paper and cool air, so the picture has
+no frame and its space opens from the middle, as in Cézanne's late watercolours, where the white paper is the air. The
+welds' fields are glazes now (about 0.8 to 0.9 opaque), so what lies under them shows faintly through, one transparent
+layer over another. Six places measured: busy 0.188 → 0.120, calm 0.517 → 0.622. `#nowater` turns it off.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later

@@ -30,7 +30,8 @@ precision highp int;
 precision highp sampler2D;
 uniform sampler2D uA, uB;
 uniform ivec2 uOff, uCell0;
-uniform int uH, uEdge;
+uniform int uH, uEdge, uWater;
+uniform vec2 uView;
 out vec4 outColour;
 // Drawn after the artists, no edge is a hard line. Across every edge of every shape, in every world, lies a grey
 // gradient running the whole scale from dark to light, the same scale the artists make over the whole plane: the
@@ -38,12 +39,55 @@ out vec4 outColour;
 // (five by five, weighted by nearness to the pixel itself, so it runs smoothly at the pixel's own size): where they
 // span a wide range of light, the pixel takes the grey of where it stands between their darkest and lightest,
 // strongest halfway across the edge and fading into the colours on either side.
+//
+// Watercolour (from 2 Oct 2026, on the plane): instead of that grey, the whole frame is laid as a wash on paper,
+// after Bousseau, Kaplan, Thollot and Sillion, "Interactive watercolor rendering with temporal coherence and
+// abstraction" (NPAR 2006), whose pigment-density model this follows. The colours bleed a little into their
+// neighbours, as wet paint does, so no cell's square shows; the pigment is denser and thinner over the paper's grain
+// and in slow uneven pools (C' = C - (C - C^2)(d - 1), d the density), and gathers at the edge of every wash, darker
+// where one colour gives way to another, as a wash dries from its rim inward; the paper shows through all of it, and
+// toward the margins of the view the paint thins to paper and cool air, so the picture has no frame and the eye
+// is drawn in, as in Cezanne's late watercolours, where the paper's white is the space.
+uint wh(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+float wn(vec2 p, float g, uint s) {
+  vec2 f = p / g, i = floor(f), t = f - i; t = t * t * (3.0 - 2.0 * t);
+  ivec2 q = ivec2(i);
+  #define WH(a, b) (float(wh(uint(a) * 0x9E3779B1u ^ wh(uint(b) + s)) & 0xFFFFu) / 65535.0)
+  return mix(mix(WH(q.x, q.y), WH(q.x + 1, q.y), t.x), mix(WH(q.x, q.y + 1), WH(q.x + 1, q.y + 1), t.x), t.y);
+}
 void main() {
   ivec2 X = ivec2(gl_FragCoord.xy);
   X.y = uH - 1 - X.y;
   ivec2 G = X + uOff, t = (G >> 1) - uCell0;
   vec4 own = (G & 1) == ivec2(0) ? texelFetch(uA, t, 0) : texelFetch(uB, t, 0);
   outColour = vec4(own.rgb, 1.0);
+  if (uWater == 1) {
+    ivec2 sz = textureSize(uB, 0) - 1;
+    vec2 P = vec2(G) + 0.5;
+    vec3 soft = vec3(0.0); float sw = 0.0; vec2 gl = vec2(0.0);
+    for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+      ivec2 c = t + ivec2(dx, dy);
+      vec3 k = texelFetch(uB, clamp(c, ivec2(0), sz), 0).rgb;
+      vec2 d = (vec2(c + uCell0) * 2.0 + 1.0 - P) / 2.0;
+      float w = exp(-dot(d, d));
+      soft += w * k; sw += w;
+      gl += vec2(dx, dy) * dot(k, vec3(0.3, 0.59, 0.11));            // which way the light changes
+    }
+    soft /= sw;
+    vec3 c = mix(own.rgb, soft, 0.62);                                // wet: the colours bleed a little
+    float edge = smoothstep(0.06, 0.5, length(gl) / 3.0);             // the rim of a wash
+    float grain = wn(P, 2.0, 7u) * 0.6 + wn(P, 5.0, 8u) * 0.4;        // the paper's tooth, fixed to the plane
+    float pool = wn(P, 89.0, 9u) * 0.62 + wn(P, 34.0, 10u) * 0.38;    // pigment settling unevenly as it dries
+    float d = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.38 * edge;
+    c = clamp(c - (c - c * c) * (d - 1.0), 0.0, 1.0);
+    vec3 paper = vec3(0.957, 0.937, 0.894) * (0.985 + 0.03 * grain);
+    c = mix(c, paper, 0.06);                                          // never opaque: the paper through it all
+    vec2 r = (gl_FragCoord.xy - 0.5 * uView) / (0.5 * uView);
+    float far = smoothstep(0.62, 1.5, length(r * vec2(1.0, 0.8)) + 0.12 * (pool - 0.5));
+    c = mix(c, mix(paper, vec3(0.86, 0.9, 0.95), 0.35), far * 0.55);  // to paper and cool air at the margins
+    outColour = vec4(c, 1.0);
+    return;
+  }
   if (uEdge == 0 || texelFetch(uB, t, 0).a < 0.75) return;
   ivec2 sz = textureSize(uB, 0) - 1;
   vec2 P = vec2(G) + 0.5;
@@ -2900,7 +2944,7 @@ float weld(vec2 p, float T, out vec3 col) {
   col = au >= al ? c : low * sc;
   float a = max(au, al);
   if (au > 0.0 && al > 0.0) col = mix(low * sc, c, au / (au + al));  // where the two fields meet, they bleed
-  return a;
+  return a * (0.8 + 0.1 * vnoise(p, 55.0, 55007u));                 // a glaze: what lies under it shows faintly through
 }
 // ---- photomosaics, after Robert Silvers ------------------------------------------------------------------------
 // Silvers made a picture out of many small pictures (the Photomosaic, from his years at the MIT Media Lab in the 1990s),
@@ -3612,6 +3656,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
+  const noWater = /(?:^|&)nowater(?:&|$)/.test(location.hash.slice(1));   // #nowater: without the watercolour
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -3850,7 +3895,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -4156,6 +4201,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform2i(V.uCell0, cx0, cy0);
     gl.uniform1i(V.uH, H);
     gl.uniform1i(V.uEdge, edgeOn && !earth && tier >= 3 ? 1 : 0);
+    gl.uniform1i(V.uWater, !earth && !noWater ? 1 : 0);                  // watercolour on the plane
+    gl.uniform2f(V.uView, W, H);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!earth) reflect(now);
   }
