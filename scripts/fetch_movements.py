@@ -16,7 +16,9 @@ fetch_studios.py), this reads through the query service:
      employer, P463 member of, P1416 affiliation — each statement with its P580/P582/P585
      qualifiers — and of each institution its point (P625, else its P131 town's, else its P159
      headquarters') and English label. A school, an academy, a workshop or a college with dates is
-     where the artist was then: the Bauhaus, Black Mountain College, the Académie Julian.
+     where the artist was then: the Bauhaus, Black Mountain College, the Académie Julian;
+  3. P19 place of birth, with its point and label: a movement's artists' birthplaces, lit on the
+     globe when it is opened (where they came from).
 
 Everything is cached in data/movements/ (gitignored, like all of data/). build_movements.py distils
 it, with the studios and the lives, into docs/v2/movements.json.
@@ -88,6 +90,10 @@ AFFIL = '''SELECT ?a ?org ?start ?end ?pit ("{p}" AS ?prop) WHERE {{ VALUES ?a {
   OPTIONAL {{ ?st pq:P580 ?start }} OPTIONAL {{ ?st pq:P582 ?end }} OPTIONAL {{ ?st pq:P585 ?pit }}
   FILTER(BOUND(?start) || BOUND(?end) || BOUND(?pit)) }}'''
 
+BORN = '''SELECT ?a ?pl ?label ?coord WHERE {{ VALUES ?a {{ {vals} }}
+  ?a wdt:P19 ?pl . ?pl wdt:P625 ?coord .
+  OPTIONAL {{ ?pl rdfs:label ?label FILTER(LANG(?label) = "en") }} }}'''
+
 ORGS = '''
 SELECT ?o ?label ?coord ?inCoord ?inLabel ?hqCoord WHERE {{
   VALUES ?o {{ {vals} }}
@@ -121,7 +127,11 @@ def main():
     for part in chunks(oq, 120):
         orgs += sparql(ORGS.format(vals=' '.join('wd:' + q for q in part)))
     print('dated affiliations', len(affil), 'institutions', len(oq), file=sys.stderr)
-    json.dump({'moves': moves, 'details': details, 'affil': affil, 'orgs': orgs},
+    born = []
+    for part in chunks(qids, 150):
+        born += sparql(BORN.format(vals=' '.join('wd:' + q for q in part)))
+    print('birthplaces', len({r['a'] for r in born}), file=sys.stderr)
+    json.dump({'moves': moves, 'details': details, 'affil': affil, 'orgs': orgs, 'born': born},
               open(os.path.join(OUT, 'wd.json'), 'w'), ensure_ascii=False, indent=0, sort_keys=True)
 
 

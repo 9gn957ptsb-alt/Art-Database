@@ -1,0 +1,92 @@
+/* ---- The dial as the hub (dialhub.js; docs/v2/DIAL.md) --------------------------
+   The face's word over the year — what the dial is about — and the readout
+   beside the dial: what the year holds in that mode, two doors at most, the
+   legend on focus. Quiet: mono, small, the site's lilac and cream. */
+.building-time.dial .dial-mode {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 44px;
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #9d95e6;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.building-time.dial .dial-mode::after { content: " ›"; color: rgba(157, 149, 230, 0.6); }
+.building-time.dial .dial-mode:hover,
+.building-time.dial .dial-mode:focus-visible { color: #ffffff; outline: 1px solid rgba(157, 149, 230, 0.6); outline-offset: 0; }
+.building-time.dial .dial-mode[hidden] { display: none; }
+@media (max-width: 720px) {
+  .building-time.dial .dial-mode { font-size: 8px; top: 23%; }
+}
+
+.building-time.dial .dial-say {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  justify-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+.building-time.dial .dial-say[data-side="right"] { left: auto; right: 0; transform: none; justify-items: end; }
+.building-time.dial .dial-say[data-side="left"] { left: 0; transform: none; justify-items: start; }
+.building-time.dial .dial-say[data-below] { bottom: auto; top: calc(100% + 8px); }
+.building-time.dial .dial-say[hidden] { display: none; }
+.dial-say .dial-said,
+.dial-say .dial-door {
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+.dial-say .dial-door {
+  --tone: #9d95e6;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.dial-say .dial-door[data-glyph]::before { content: attr(data-glyph) " "; color: var(--tone); }
+.dial-say .dial-door:hover,
+.dial-say .dial-door:focus-visible { border-color: var(--tone); color: #ffffff; outline: none; }
+.dial-say .dial-more,
+.dial-say .dial-legend { color: #a8927a; font-size: 9px; }
+@media (prefers-reduced-motion: reduce) {
+  .dial-say .dial-said, .dial-say .dial-door { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* ---- The movements (movements.js) ----------------------------------------------
+   A movement in the column: the city and the years, the name only with its
+   support, who was here (lit while the dial's year has them here), what they
+   shared, the works dated here then. The life's lilac line. */
+.movement-label { color: #9d95e6; }
+.movement-member[data-here] > .life-period-head { border-left-color: rgba(234, 223, 205, 0.7); }
+.movement-member[data-here] .studio-stop-name { color: #ffffff; }
+.movement-member:not([data-here]) .studio-stop-name { opacity: 0.6; }
+.movement-threads { display: grid; gap: 6px; margin-bottom: var(--s-4); }
+.movement-thread { display: grid; text-align: left; }
+.movement-who { color: #a8927a; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; }

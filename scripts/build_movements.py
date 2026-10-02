@@ -168,9 +168,10 @@ def main():
         src = (s.get('src') or [{}])[0]
         put(a[0], s.get('key'), s['y0'], s.get('y1') or s['y0'],
             {'how': 'studio', 'y': [s['y0'], s.get('y1') or s['y0']], 'what': s.get('kind', ''), 'place': s.get('name', ''),
-             'src': src.get('name', ''), 'url': src.get('url', ''), 'studio': i})
+             'src': src.get('name', ''), 'url': src.get('url', ''), 'studio': i, 'll': s.get('ll')})
 
     lives = []
+    life_at = collections.defaultdict(list)
     if os.path.exists(os.path.join(V2, 'lives.json')):
         for row in load('lives.json')['lives']:
             path = os.path.join(V2, 'lives', row[0] + '.json')
@@ -180,7 +181,19 @@ def main():
             lives.append(L['id'])
             pid = L['id'] if L['id'] in people else q_to_id.get(L.get('q'))
             if not pid:
-                continue
+                pid = L['id']
+                people[pid] = {'id': pid, 'name': L['name'], 'q': L.get('q') or '', 'b': L.get('born'), 'd': L.get('died'),
+                               'n': len(works_by_artist.get(L['name'], []))}
+                if L.get('q'):
+                    q_to_id[L['q']] = pid
+            # Where the life is, city by city, by evidence: the hub's marks for a life passing through a city.
+            for p in L['periods']:
+                ev = [s_ for s_ in p.get('src', []) if s_.get('how') not in ('born', 'died')]
+                if p.get('key') and ev:
+                    ys = [(s_['y'][0] if isinstance(s_.get('y'), list) else s_.get('y')) for s_ in ev]
+                    ys = [y for y in ys if y]
+                    if ys:
+                        life_at[p['key']].append([L['id'], L['name'], min(ys)])
             for p in L['periods']:
                 for s in p.get('src', []):
                     if s.get('how') in ('born', 'died'):
@@ -191,7 +204,7 @@ def main():
                         continue
                     put(pid, p.get('key'), y0, y1, {'how': 'life', 'y': [y0, y1], 'what': s.get('how', ''),
                                                    'place': p.get('place', ''), 'src': s.get('name', ''),
-                                                   'url': s.get('url', ''), 'q': s.get('q', '')[:240]})
+                                                   'url': s.get('url', ''), 'q': s.get('q', '')[:240], 'll': p.get('ll')})
 
     orgs = {}
     for o in wd['orgs']:
@@ -216,7 +229,7 @@ def main():
             continue
         put(pid, t[0], y0, y1, {'how': 'school', 'y': [y0, y1], 'what': 'studied at' if r['prop'] == 'P69' else 'worked for',
                                  'place': o['label'], 'src': 'Wikidata ' + r['a'] + ' · ' + ('educated at' if r['prop'] == 'P69' else 'employer'),
-                                 'url': 'https://www.wikidata.org/wiki/' + r['a']})
+                                 'url': 'https://www.wikidata.org/wiki/' + r['a'], 'll': list(o['ll'])})
 
     # ---- the overlaps, city by city
     city_years = collections.defaultdict(lambda: collections.defaultdict(set))
@@ -291,6 +304,25 @@ def main():
         pid = q_to_id.get(r['a'])
         if pid:
             moves_of[pid].add(r['m'])
+
+    def overlaps(mv, c):
+        ys = mv_years.get(mv)
+        if not ys:
+            return False
+        a = ys[0] or ys[1] - 30
+        b = ys[1] or ys[0] + 30
+        return not (a > c['y1'] + 2 or b < c['y0'] - 2)
+
+    def among(c):
+        """Movements three of its artists or more share on Wikidata in its years, short of most of them:
+        said with their counts ("among them"), never as the movement's name."""
+        ids = [m['id'] for m in c['members']]
+        count = collections.Counter(mv for pid in ids for mv in moves_of.get(pid, ()))
+        out = []
+        for mv, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])):
+            if n >= 3 and overlaps(mv, c) and not (c['label'] and c['label']['q'] == mv):
+                out.append([mv, mv_label[mv][:1].upper() + mv_label[mv][1:], n])
+        return out[:3]
 
     def label(c):
         ids = [m['id'] for m in c['members']]
@@ -410,6 +442,7 @@ def main():
         c['city'] = city
         c['at'] = place_name(c)
         c['label'] = label(c)
+        c['among'] = among(c)
         then, later, vs, made, nmade = contact(c)
         c['then'], c['later'], c['voices'], c['made'], c['nmade'] = then, later, vs, made, nmade
         c['walk'] = walk(c)
@@ -418,10 +451,32 @@ def main():
     rows.sort(key=lambda c: (-c['weight'], c['y0'], c['id']))
 
     # ---- write: the artists, the movements, the cities' index, the relay rows
-    pids = sorted({m['id'] for c in rows for m in c['members']}, key=lambda p: (-people[p]['n'], p))
+    born = {}
+    for r in sorted(wd.get('born', []), key=lambda r: (r['a'], r['pl'])):
+        ll = point(r.get('coord'))
+        if ll and r['a'] not in born:
+            born[r['a']] = [r.get('label', ''), round(ll[0], 4), round(ll[1], 4)]
+    pids = sorted({p for p, _ in pres} | {m['id'] for c in rows for m in c['members']}, key=lambda p: (-people[p]['n'], p))
     pix = {p: i for i, p in enumerate(pids)}
     artists = [[p, clean_name(people[p]['name']), people[p]['q'] or '', people[p]['b'] or 0, people[p]['d'] or 0,
-                people[p]['n'], 1 if p in lives else 0] for p in pids]
+                people[p]['n'], 1 if p in lives else 0, born.get(people[p]['q']) or []] for p in pids]
+    # Every presence, city by city: the artist, the years (runs), how, where (a point), what.
+    here = collections.defaultdict(list)
+    for (pid, key), ys in sorted(pres.items()):
+        yl = sorted(ys)
+        runs, a0 = [], yl[0]
+        for i in range(1, len(yl) + 1):
+            if i == len(yl) or yl[i] != yl[i - 1] + 1:
+                runs.append((a0, yl[i - 1]))
+                if i < len(yl):
+                    a0 = yl[i]
+        for y0, y1 in runs:
+            evs = [e for y in range(y0, y1 + 1) for e in ys[y]]
+            e = sorted(evs, key=lambda e: ({'studio': 0, 'school': 1, 'life': 2}[e['how']], e['src']))[0]
+            ll = e.get('ll') or [town_by[key][3], town_by[key][4]]
+            here[key].append([pix[pid], y0, y1, e['how'], round(ll[0], 4), round(ll[1], 4), e['place'] or '', e['what'] or '',
+                              e.get('studio', -1)])
+    here = {k: sorted(v, key=lambda r: (r[1], r[0])) for k, v in sorted(here.items())}
     birth = {}
     homes_path = os.path.join(V2, 'characters', 'homes.json')
     out_rows = []
@@ -433,13 +488,15 @@ def main():
             'title': title, 'who': ', '.join(names[:4]) + (' …' if len(names) > 4 else ''),
             'label': c['label'] and {k: c['label'][k] for k in ('q', 'name', 'n', 'of', 'years', 'url')},
             'labelWho': c['label'] and [pix[p] for p in c['label']['who']],
+            'among': c['among'],
             'members': [[pix[m['id']], m['y0'], m['y1'], m['all'][0], m['all'][1],
                          [[e['how'], e['y'][0], e['y'][1], e['what'], e['place'], e['src'], e['url']] +
                           ([e['studio']] if 'studio' in e else []) for e in m['ev'][:4]]] for m in c['members']],
             'then': [[r[0], r[1], r[2], r[3], r[4], [pix[names_id] for names_id in r[5]]] for r in c['then']],
             'later': [[r[0], r[1], r[2], r[3], r[4], [pix[x] for x in r[5]]] for r in c['later']],
             'voices': [[v[0], v[1], [pix[x] for x in v[2]]] for v in c['voices']],
-            'made': [[w[0], pix[w[1]], w[2]] for w in c['made']], 'nmade': c['nmade'],
+            'made': [[w[0], pix[w[1]], w[2], finding['w'][work_ix[w[0]]][1], finding['w'][work_ix[w[0]]][4] or '']
+                     for w in c['made']], 'nmade': c['nmade'],
             'walk': [[s[0], s[1], pix[s[2]] if s[2] else -1] for s in c['walk']],
             'w': c['weight'],
         })
@@ -450,7 +507,8 @@ def main():
     relay = [['m', r['id'], (r['label']['name'] + ' · ' if r['label'] else '') + r['title'], '', '', '', len(r['walk']),
               [[s[0], s[1], -1] for s in r['walk']]] for r in out_rows]
     out = {'note': NOTE, 'artists': artists, 'movements': out_rows,
-           'cities': {k: v for k, v in sorted(by_city.items())}, 'relay': relay}
+           'cities': {k: v for k, v in sorted(by_city.items())}, 'here': here, 'relay': relay,
+           'lifeAt': {k: sorted(v, key=lambda r: (r[2], r[0])) for k, v in sorted(life_at.items())}}
     with open(OUT, 'w') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
         f.write('\n')
