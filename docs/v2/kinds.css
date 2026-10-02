@@ -42,7 +42,7 @@
   text-underline-offset: 3px;
 }
 .kinds-crumb:hover, .kinds-crumb:focus-visible { color: #eadfcd; }
-.kinds-crumb-here { text-decoration: none; cursor: default; color: #eadfcd; }
+.kinds-crumb-here { flex: 0 0 auto; max-width: 45%; text-decoration: none; cursor: default; color: #eadfcd; }
 .kinds-crumb-tab { text-decoration: none; cursor: default; color: var(--kt); flex-shrink: 0; }
 .kinds-sep { flex: 0 0 auto; padding: 0 2px; opacity: 0.6; }
 .kinds-crumb-more { flex: 0 0 auto; }

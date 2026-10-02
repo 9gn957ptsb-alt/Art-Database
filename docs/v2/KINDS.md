@@ -110,7 +110,7 @@ Each tab: its label, the category its rows are, and what it lists. The label is 
 | held | Works held | work | the saved works it holds (or held); search by title, artist or year |
 | shows | Shows | gallery | the exhibitions (and listings and sales) there, newest first; search |
 | artists | Artists | artist | the artists in its holdings, shows or rows, most works first; search |
-| curated | Shows curated | gallery | the shows the voice curated, as the record credits them |
+| curated | Curated | gallery | the shows the voice curated, as the record credits them |
 | places | Places | place | the cities: a movement's city and its artists' birthplaces; an animal's artist's map; a sale's or a collection's works' cities |
 | museums | Museums | museum | the museums in the city (or near the building) |
 | galleries | Galleries & shows | gallery | the galleries, fairs and sale rooms in the city, and the shows there, newest first |
@@ -130,6 +130,7 @@ group's own heading (as land.js and the modules write it); the group goes under 
 | Works | work |
 | Dealt from the longest journeys | work |
 | Artists | artist |
+| A life | artist |
 | Studios | place |
 | Voices | writing |
 | Writings | writing |
@@ -147,7 +148,7 @@ group's own heading (as land.js and the modules write it); the group goes under 
 
 - **"Now" is thin.** The histories are as of their last read (1 Oct 2026); 31 shows were open on that day.
   Most of what "Showing" can say is recent rather than current: Artsy's listings by galleries (2,078, most
-  2021–2026), fair stands (497) and exhibitions, newest first. Nothing reads a gallery's programme ahead.
+  2021–2026), fair stands (814) and exhibitions, newest first. Nothing reads a gallery's programme ahead.
 - **Venue types are read from names.** A venue is a museum when it is a site museum or its name says so,
   a sale room by the auction houses' names, a fair stand by the show's title; the rest are galleries.
   Some institutions that are not museums (a Kunsthalle, a foundation) sit with the galleries.

@@ -565,13 +565,15 @@
       var rows = [];
       var found = window.Movements ? Movements.ofArtistName(it.id) : [];
       found.forEach(function (m) {
-        rows.push({ kind: "movement", title: m.title, sub: [m.who, m.label || ""].filter(Boolean).join(" · "),
+        var named = m.label && m.label.name ? m.label.name + ", by Wikidata's movement of " + m.label.n + " of " + m.label.of : "";
+        rows.push({ kind: "movement", title: m.title, sub: [m.who, named].filter(Boolean).join(" · "),
                     item: movementItem(m), hay: fold(m.title + " " + (m.who || "")), year: m.y0 });
       });
       var a = D.k.artists[it.id];
       (a ? a[3] : []).forEach(function (r) {
         var name = r[0].charAt(0).toUpperCase() + r[0].slice(1);
-        rows.push({ kind: "movement", title: name, sub: [years(r[1], r[2]) || "years not given", "Wikidata (P135)"].join(" · "),
+        var when = r[1] && r[2] ? years(r[1], r[2]) : r[1] ? "from " + r[1] : r[2] ? "to " + r[2] : "years not given";
+        rows.push({ kind: "movement", title: name, sub: [when, "Wikidata (P135)"].join(" · "),
                     hay: fold(name), year: r[1] });
       });
       if (rows.length) { return Promise.resolve({ rows: rows, label: "Movements" }); }
@@ -589,7 +591,7 @@
           "No movement is recorded, and no one shown beside them." });
     },
     artist: function (it) {
-      var w = D.works[D.workIdx[it.id]], rows = [];
+      var w = it.k === "work" ? D.works[D.workIdx[it.id]] : { i: -1, names: it.artist ? [it.artist] : [] }, rows = [];
       w.names.forEach(function (n) {
         var mine = D.byArtist[n] || [];
         rows.push(artistRow(n, plural(mine.length, "saved work", "saved works") + lifeSpan(n)));
@@ -668,6 +670,14 @@
     places: function (it) {
       if (it.k === "movement") { return movementPlaces(it); }
       if (it.k === "animal") { return animalPlaces(it); }
+      if (it.k === "building") {
+        var b = D.arch.filter(function (x) { return x.slug === it.id; })[0];
+        var near = Object.keys(D.towns).map(function (k) { var t = D.towns[k]; return { t: t, km: dist(b.lat, b.lon, t.lat, t.lon) }; })
+          .filter(function (o) { return o.km <= 150; }).sort(function (x, y) { return x.km - y.km; }).slice(0, 13);
+        return Promise.resolve({ rows: near.map(function (o) { return placeRow(o.t.key, Math.round(o.km) + " km · " + plural(o.t.n, "work", "works")); }),
+          note: (b.where ? b.where + (b.precision === "town" ? " · placed at its town" : "") : "") +
+            (near.length ? "" : " · no city of the site's within 150 km") });
+      }
       return worksIn(it).then(function (idx) {
         var count = {};
         idx.forEach(function (i) {
@@ -725,6 +735,12 @@
       });
     }
   };
+  // A list, whatever goes wrong in it said rather than thrown.
+  function list(tab, it) {
+    return Promise.resolve().then(function () { return LISTS[tab](it); })
+      .catch(function () { return { rows: [], note: "This list could not be read just now." }; })
+      .then(function (r) { return r || { rows: [] }; });
+  }
   // The shows' writers: its curators, then the voices on its works.
   function showWritings(it) {
     var rows = [], seen = {};
@@ -908,7 +924,7 @@
       });
       tabs.appendChild(b);
       // Counts, and a label the list may change (Movements → Circle).
-      LISTS[tab] && LISTS[tab](it).then(function (res) {
+      LISTS[tab] && list(tab, it).then(function (res) {
         if (!res) { return; }
         var c = res.count !== undefined ? res.count : res.rows.length;
         n.textContent = " " + c.toLocaleString("en");
@@ -966,7 +982,7 @@
     var tb = T.tabs[tab];
     var said = el("p", "kinds-note", "Reading…");
     panel.appendChild(said);
-    LISTS[tab](it).then(function (res) {
+    list(tab, it).then(function (res) {
       if (!cur || !same(cur.item, it) || cur.tab !== tab) { return; }
       said.textContent = res.note || "";
       if (!res.note) { said.hidden = true; }
@@ -1154,7 +1170,7 @@
       var kd = kindOf(s.kind);
       s.head.dataset.kinds = s.kind;
       s.head.style.setProperty("--kt", kd.tone);
-      var tag = el("span", "kinds-find-tag", kd.glyph + " " + kd.name);
+      var tag = el("span", "kinds-find-tag", kd.glyph + " " + kd.name + " ·");
       tag.setAttribute("aria-hidden", "true");
       if (s.head.textContent.indexOf(kd.name) !== 0) { s.head.insertBefore(tag, s.head.firstChild); }
       else { var gl = el("span", "kinds-find-tag kinds-find-glyph", kd.glyph); gl.setAttribute("aria-hidden", "true"); s.head.insertBefore(gl, s.head.firstChild); }
