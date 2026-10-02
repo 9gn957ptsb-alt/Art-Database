@@ -15323,7 +15323,7 @@
       // framed left of the dial, which stands at the right of its band.
       var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
-      var gy = top + ph + 6, cap = lens ? 46 : 0;
+      var gy = top + ph + 6, cap = lens ? 52 : 0;
       var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
       var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
       b = { plate: { x: 16, y: top, w: W - 32, h: ph - cap }, look: { x: 16, y: top, w: W - 32, h: colTop - top - 14 },
@@ -17018,7 +17018,8 @@
     var a = art;
     if (!on || !a || !readKind(a.kind)) { delete artEl.dataset.full; return; }
     var image = a.kind === "work" ? a.data.image : a.picture && a.picture.image;
-    if (!image) { return; }
+    var bigSrc = a.kind !== "work" && a.picture && a.picture.src ? a.picture.big || a.picture.src : null;
+    if (!image && !bigSrc) { return; }
     artEl.dataset.full = "true";
     var img = artPlate.querySelector(".deal-go:last-child img") || artPlate.querySelector("img");
     if (img && !img.dataset.big) {
@@ -17026,7 +17027,7 @@
       var big = new Image();
       big.referrerPolicy = "no-referrer";
       big.addEventListener("load", function () { if (art === a && img.isConnected) { img.src = big.src; } });
-      big.src = ART_CDN + image + "/larger.jpg";
+      big.src = bigSrc || ART_CDN + image + "/larger.jpg";
     }
   }
 
@@ -17069,7 +17070,7 @@
     if (!a || a.kind === "work" || !readingOn()) { return; }
     var id = spec && spec.id || null;
     if ((a.picture ? a.picture.id : null) === id) { return; }
-    a.picture = spec && spec.image ? spec : null;
+    a.picture = spec && (spec.image || spec.src) ? spec : null;
     if (!a.picture) {
       artPlate.textContent = "";
       artPlate.hidden = true;
@@ -17080,7 +17081,8 @@
     img.alt = [spec.title || "Untitled", spec.by || ""].filter(Boolean).join(", by ");
     img.decoding = "async";
     img.referrerPolicy = "no-referrer";
-    var tries = ["medium", "square"].map(function (v) { return ART_CDN + spec.image + "/" + v + ".jpg"; });
+    // A saved work from Artsy's pictures; a painting that is not saved (Painted here) from Commons, live.
+    var tries = spec.src ? [] : ["medium", "square"].map(function (v) { return ART_CDN + spec.image + "/" + v + ".jpg"; });
     img.addEventListener("error", function () {
       if (tries.length) { img.src = tries.shift(); return; }
       if (art === a && a.picture === spec) { go.remove(); if (!artPlate.querySelector(".deal-go")) { artPlate.hidden = true; } }
@@ -17094,7 +17096,7 @@
       artPlate.hidden = false;
       if (first && !still) { bringIn(artPlate, 0); }
     });
-    img.src = ART_CDN + spec.image + "/large.jpg";
+    img.src = spec.src || ART_CDN + spec.image + "/large.jpg";
     go.appendChild(img);
     artPlate.appendChild(go);
     artPlate.dataset.mode = "rest";

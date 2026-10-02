@@ -125,8 +125,8 @@
 .voice-say {
   margin: 0;
   font-family: "Newsreader", var(--serif, serif);
-  font-size: 15px;
-  line-height: 1.3;
+  font-size: 14px;
+  line-height: 1.25;
   color: #eadfcd;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -210,3 +210,22 @@
 /* The world drawn only in the lens (land.js clipWorld): every canvas of the
    stage that is the world's. */
 .stage[data-lens] > canvas.world { clip-path: var(--lens-clip); -webkit-clip-path: var(--lens-clip); }
+
+/* Where they stood: one tile of the pixel light in the middle of the lens. */
+.voice-stand {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  box-sizing: border-box;
+  border: 1.5px solid #eadfcd;
+  background: radial-gradient(circle, #9d95e6 0 2.5px, transparent 3px);
+  box-shadow: 0 0 0 1px rgba(15, 10, 7, 0.6), 0 0 10px rgba(157, 149, 230, 0.7);
+  pointer-events: none;
+}
+.voice-stand[hidden] { display: none; }
+.art[data-full] .voice-stand, .art[data-look="plate"] .voice-stand { visibility: hidden; }
+.voice-pic:disabled { cursor: default; color: #8c7a66; }
+.voice-pic:disabled:hover { color: #8c7a66; }
+/* Swapped, the sentence is said over the world: a shadow under it. */
+.art[data-swapped] .voice-say,
+.art[data-swapped] .voice-pic { text-shadow: 0 1px 3px rgba(15, 10, 7, 0.95), 0 0 12px rgba(15, 10, 7, 0.8); }

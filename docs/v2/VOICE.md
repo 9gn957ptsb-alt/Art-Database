@@ -34,14 +34,18 @@ lens jumps, the name and the sentence change with each step.
 The lens's distance is the voice. `rank` orders them for the pinch, far to near (`second` and
 `letters` take their distance from the step's frame, below).
 
-| voice | label | rank | distance |
-|---|---|---|---|
-| omniscient | from above | 0 | the Earth, or everything the step names: as far out as it takes, so a movement whose artists came from all over is seen whole |
-| panoramic | from afar | 1 | a region: both ends of a way |
-| close | following | 2 | the city, over the shoulder: the figure a little behind the middle, the way ahead in front |
-| first | where {who} stood | 3 | the ground where they stood: DIRT Earth's, in the lens, north up |
-| second | you | - | as far as what the stop is (its frame) |
-| letters | in their words | - | as far as what the stop is (its frame) |
+| voice | label | held | rank | distance |
+|---|---|---|---|---|
+| omniscient | from above | from above | 0 | the Earth, or everything the step names: as far out as it takes, so a movement whose artists came from all over is seen whole |
+| panoramic | from afar | from afar | 1 | a region: both ends of a way |
+| close | following | following | 2 | the city, over the shoulder: the figure a little behind the middle, the way ahead in front |
+| first | where {who} stood | where {who} was | 3 | the ground where they stood: DIRT Earth's, in the lens, north up |
+| second | you | you | - | as far as what the stop is (its frame) |
+| letters | in their words | in their words | - | as far as what the stop is (its frame) |
+
+`held` is the rim's name when the viewer holds that voice on a step that is not its own (held in the
+first person on a life's year that is no painted site, the lens is on the ground where the artist was,
+not where they stood to paint).
 
 ## The tenses
 
@@ -77,12 +81,14 @@ of the voice's.
 | work | city | close | past | stop |  | {year}: it was {verb} in {place}. |
 | work | journey | panoramic | past | leg |  | {years}: it went from {from} to {to}. |
 | work | site | first | past | standing |  | Here {who} stood to paint it, {year}. {facing} |
+| work | site-made | first | past | standing | where {who} worked | It was made here, at {what}[, {year}]. |
 | work | site-place | first | past | standing | the place painted | It shows {what}[, {year}] — the place painted, not where {who} stood. |
 | work | site-street | first | past | standing | on the street | It was painted on {what}[, {year}] — the street is documented, not the spot. |
 | hunt | arrive | panoramic | present | leg |  | {cataloguer}’s No. {no}: on to {place}. |
 | hunt | finding | close | present | stop |  | {cataloguer} finds it with {holder}, {year}. |
 | hunt | unfound | panoramic | present | leg |  | Where {cataloguer} found it is not recorded[; it is in {place} now]. |
 | hunt | site | first | past | standing |  | Here {who} stood to paint it, {year}. {facing} |
+| hunt | site-made | first | past | standing | where {who} worked | It was made here, at {what}[, {year}]. |
 | hunt | site-place | first | past | standing | the place painted | It shows {what}[, {year}] — the place painted, not where {who} stood. |
 | hunt | site-street | first | past | standing | on the street | It was painted on {what}[, {year}] — the street is documented, not the spot. |
 | life | route | panoramic | present | route |  | {who}, {years}. |
@@ -91,6 +97,7 @@ of the voice's.
 | life | crossing | close | present | two |  | {who} {goes} {place}, {year}. {other} is here. |
 | life | movement | omniscient | present | movement |  | {place}, {year}. {others} are here. |
 | life | site | first | present | standing |  | {who} stands here to paint *{title}*, {year}. {facing} |
+| life | site-made | first | present | standing | where {who} worked | {who} paints *{title}* here, at {what}, {year}. |
 | life | site-place | first | present | standing | the place painted | {who} paints *{title}*, {year}: {what}, the place painted. |
 | life | site-street | first | present | standing | on the street | {who} paints *{title}* on {what}, {year}: the street, not the spot. |
 | life | work | close | present | shoulder |  | {who} {goes} {place}, {year}: *{title}*. |
@@ -111,6 +118,7 @@ of the voice's.
 | voice | place | letters | past | route |  | {voice} wrote from {place}[, {year}]. |
 | voice | work | letters | past | stop |  | {voice}, on *{title}*. |
 | sites | site | first | past | standing |  | *{title}*[, {year}]: here {who} stood. {facing} |
+| sites | site-made | first | past | standing | where {who} worked | *{title}*[, {year}] was made here, at {what}. |
 | sites | site-place | first | past | standing | the place painted | *{title}*[, {year}] shows {what}, the place painted. |
 | sites | site-street | first | past | standing | on the street | *{title}*[, {year}] was painted on {what}: the street, not the spot. |
 | studios | studio | close | present | stop |  | {who} works in {place}[, {years}]. |
@@ -121,7 +129,7 @@ of the voice's.
 | own | voice | second | present | route |  | You follow {voice}. |
 | own | thread | second | present | route |  | You follow {name}. |
 | own | animal | second | present | stop |  | You follow {animal}. |
-| corpse | edge | second | present | stop |  | You see only the edge: {place}, {year}. You walk on. |
+| corpse | edge | second | present | stop |  | You see only the edge: {place}[, {year}]. You walk on. |
 | corpse | stop | second | present | stop |  | You walk on to {place}[, {year}]. |
 | building | room | first | present | standing | where you stand | You stand in {room}. |
 
@@ -131,8 +139,9 @@ of the voice's.
 
 - **A work's history** (hand): at rest, `rest`; a place read (its head pressed, scrolled to, or its
   lit place pressed on the globe), `city`; the dial turned by hand and left between two places,
-  `journey`; its Painted here head pressed, `site` (or `site-place`, `site-street`, by how exact the
-  point is). While the journey plays the first time nothing moves the lens.
+  `journey`; its Painted here head pressed, `site` (where the painter stood: Wikidata's point of view),
+  `site-made` (the building it was made in), `site-street` (the street) or `site-place` (only the
+  place painted). While the journey plays the first time nothing moves the lens.
 - **A life** (the dial's year, once it has rested a second; first play and fast turning keep the
   route): past the death, `after`; on a documented site's year, once rested 2.4 s, `site`; in a
   movement of the artist's in that city, `movement`; a life crossing it, `crossing`; born, died;

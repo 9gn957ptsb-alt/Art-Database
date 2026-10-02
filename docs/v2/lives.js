@@ -105,6 +105,8 @@
     opts = opts || {};
     return load().then(function () { return life(id); }).then(function (L) {
       if (!L || !window.Land || !Land.life) { return; }
+      // Already open: only the year.
+      if (view && view.L.id === id && view.api.live()) { if (opts.year) { view.api.setYear(opts.year); } return; }
       var pts = [];
       if (L.b) { pts.push(L.b[1]); }
       L.periods.forEach(function (p) { pts.push(p.ll); });
@@ -692,18 +694,124 @@
                         stops: [{ k: "r", id: "l:" + L.id, from: 0 }] });
   }
 
-  // explorations.js: the steps of a life.
+  // explorations.js: the steps of a life — each place, and, after the death, the works going on.
   function steps(id) {
     return life(id).then(function (L) {
       if (!L) { return []; }
-      return L.periods.map(function (p, k) {
+      var out = L.periods.map(function (p, k) {
         return { k: "life", life: id, p: k, key: p.key, ll: p.ll, y: p.y0, word: p.place, n: k, of: L.periods.length };
       });
+      var af = READ ? afterOf(L) : null;
+      if (af) { out.push({ k: "life", life: id, p: -1, after: true, key: af.key, ll: null, y: af.y, word: "After", n: L.periods.length, of: L.periods.length }); }
+      return out;
     });
   }
 
-  // explorations.js: a stop — the place entered; the lines to say, then the works in turn.
+  /* The reading layout (land.js, voice.js): a life played stays in its own
+     view — the dial turned place to place, the picture the work being said,
+     the lens moving between voices as each place is told in beats: arriving
+     (over the shoulder), a life that crosses it (two figures), a movement it
+     was part of (from above), a painted site (where the artist stood), the
+     works in turn; after the death, the works' journeys (will be). With READ
+     false, each place is entered, as before. */
+  var READ = true;
+  function afterOf(L) {
+    if (!L.died) { return null; }
+    var rows = (L.after || []).filter(function (a) { return a[0] > L.died; }).sort(function (a, b) { return a[0] - b[0] || b[2] - a[2]; });
+    return rows.length ? { y: rows[0][0], key: rows[0][1], rows: rows } : null;
+  }
   function visit(id, k) {
+    if (!READ || !window.Land || !Land.reading) { return visitCity(id, k); }
+    var mvReady = window.Movements && Movements.load ? Movements.load() : Promise.resolve(null);
+    return Promise.all([life(id), mvReady]).then(function (got) {
+      var L = got[0];
+      if (!L) { return null; }
+      var p = k >= 0 ? L.periods[k] : null, af = k < 0 ? afterOf(L) : null;
+      if (!p && !af) { return null; }
+      var y = p ? p.y0 : af.y;
+      if (!(view && view.L.id === id && view.api.live())) { open(id, { year: y }); }
+      return new Promise(function (done) {
+        var t0 = performance.now();
+        (function tick() {
+          var w = where();
+          if (view && view.L.id === id && view.api.live() && !w.flying && w.at === "life") { done(true); return; }
+          if (performance.now() - t0 > 16000) { done(false); return; }
+          window.setTimeout(tick, 250);
+        })();
+      }).then(function (ok) {
+        if (!ok) { return null; }
+        view.api.setYear(y);
+        return p ? beatsOf(L, k) : afterBeats(L, af);
+      });
+    });
+  }
+  // A place told in beats, each with the voice it is told in (voice.js reads VOICE.md).
+  function beatsOf(L, k) {
+    var p = L.periods[k], who = surname(L.name), b = [], t = 2500;
+    function add(ms, say, voice, work) { b.push({ at: t, say: say, voice: voice, work: work || null }); t += ms; }
+    var first = p.place + " · " + span(p) + " · " + who + (p.y0 === L.born ? " born" : ", " + (p.y0 - L.born));
+    add(6500, first, { path: "life", step: p.y0 === L.born ? "born" : "place", y: p.y0 });
+    var q = firstQuote(p);
+    add(7000, q ? "“" + q.q.split(/(?<=\.)\s/)[0] + "”" : howLine(p), null);
+    var c = p.cross[0] !== undefined ? L.cross[p.cross[0]] : null;
+    if (c) { add(7500, who + " and " + c[1] + " in " + c[3] + ", " + (c[4] === c[5] ? c[4] : c[4] + "–" + c[5]), { path: "life", step: "crossing", y: c[4] }); }
+    var mv = movementIn(L, p);
+    if (mv) { add(8000, mv.line, { path: "life", step: "movement", y: mv.y }); }
+    var rank = { view: 0, street: 1, site: 2 };
+    var si = (p.sites || []).map(function (i) { return L.sites[i]; })
+      .filter(function (s) { return s && s[4] && s[2] && rank[s[5]] !== undefined; })
+      .sort(function (a, z) { return rank[a[5]] - rank[z[5]]; })[0];
+    if (si) { add(9500, si[1] + ", " + si[2] + " · painted here", { path: "life", step: "site", y: si[2] }); }
+    p.works.slice(0, 3).forEach(function (i) {
+      var w = L.works[i];
+      var line = w[1] + (w[2] ? ", " + w[2] : "") + ((w[7] || []).length ? " · " + w[7][0] : "") +
+        (w.length > 8 ? " · pulled at " + w[8][0] + (w[8][1] ? ", " + w[8][1] : "") : "");
+      add(9000, line, { path: "life", step: "work", y: w[2] && w[2] >= p.y0 && w[2] <= p.y1 ? w[2] : p.y0, work: w[0] }, w[0]);
+    });
+    return { lines: [first], works: [], key: p.key, beats: b, end: t + 2000 };
+  }
+  // After the death: where the works went, a few years of it (will be).
+  function afterBeats(L, af) {
+    var b = [], t = 2500, years = [];
+    af.rows.forEach(function (r) { if (years.indexOf(r[0]) < 0 && years.length < 3) { years.push(r[0]); } });
+    b.push({ at: t, say: "After " + L.died + " · the works go on", voice: { path: "life", step: "after", y: years[0] } });
+    t += 7000;
+    years.forEach(function (y, n) {
+      var here = af.rows.filter(function (r) { return r[0] === y; });
+      var line = y + " · " + here.map(function (r) { return townWord(r[1]) + (r[2] > 1 ? " (" + r[2] + ")" : ""); }).join(" · ");
+      if (n) { b.push({ at: t, say: line, voice: { path: "life", step: "after", y: y } }); }
+      else { b[0].say = b[0].say + " · " + line; }
+      t += n ? 8000 : 0;
+    });
+    return { lines: [b[0].say], works: [], key: af.key, beats: b, end: t + 2000 };
+  }
+  function townWord(key) {
+    var pl = null;
+    (view && view.L.places || []).forEach(function (q) { if (q[0] === key) { pl = q[1]; } });
+    return pl || String(key || "").replace(/-[a-z]{2}$/, "").replace(/-/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+  // A movement of the artist's in this place, during this stay (movements.js): its line, its first year here.
+  function movementIn(L, p) {
+    if (!window.Movements || !Movements.ofArtistName) { return null; }
+    var ms = Movements.ofArtistName(L.name).filter(function (m) { return m.key === p.key && m.y0 <= p.y1 && p.y0 <= m.y1; });
+    var m = ms[0];
+    if (!m) { return null; }
+    var y = Math.max(m.y0, p.y0);
+    var D = Movements.data();
+    var who = m.members.filter(function (r) { return r[1] <= y && y <= r[2]; }).map(function (r) { return surname(D.artists[r[0]][1]); });
+    return { y: y, line: (m.label ? m.label.name + " · " : "") + m.title + " · " + who.slice(0, 5).join(", ") + (who.length > 5 ? " …" : "") };
+  }
+  // A beat said (explorations.js): the dial to its year, the work said lit, the voice told.
+  function beat(bt) {
+    if (!bt) { return; }
+    var v = bt.voice;
+    if (v && v.y && view && view.api.live() && view.api.year() !== v.y) { view.api.setYear(v.y); }
+    if (bt.work) { showWork(bt.work); }
+    if (v && window.Voice && Voice.said) { Voice.said(v); }
+  }
+
+  // explorations.js (READ false): a stop — the place entered; the lines to say, then the works in turn.
+  function visitCity(id, k) {
     return enter(id, k).then(function () {
       return life(id);
     }).then(function (L) {
@@ -733,15 +841,17 @@
     });
   }
 
-  // The square of a work in the entered period, lit while it is said.
+  // The square of a work in the entered period (or, in the life's own view, its place's row), lit while it is said.
   function showWork(id) {
-    if (!visit_ || !visit_.box.isConnected) { return; }
-    visit_.box.querySelectorAll("[data-said]").forEach(function (e) { delete e.dataset.said; });
-    var L = visit_.L, i = -1;
+    var inView = !(visit_ && visit_.box.isConnected) && view && view.api.live();
+    if (!inView && (!visit_ || !visit_.box.isConnected)) { return; }
+    var host = inView ? view.api.col : visit_.box;
+    host.querySelectorAll("[data-said]").forEach(function (e) { delete e.dataset.said; });
+    var L = inView ? view.L : visit_.L, i = -1;
     L.works.forEach(function (w, j) { if (w[0] === id) { i = j; } });
     if (i < 0) { return; }
     var y = String(L.works[i][2] || 0);
-    var all = visit_.box.querySelectorAll(".town-thumb, .life-print");
+    var all = host.querySelectorAll(".town-thumb, .life-print");
     for (var n = 0; n < all.length; n += 1) {
       var t = all[n].getAttribute("title") || all[n].textContent || "";
       if (all[n].dataset.y === y && t.indexOf(L.works[i][1]) >= 0) {
@@ -1003,6 +1113,8 @@
     enter: enter,
     steps: steps,
     visit: visit,
+    beat: beat,
+    idOf: function (name) { var r = rowOf(name); return r ? r[0] : null; },
     showWork: showWork,
     made: made,
     has: function (name) { return !!rowOf(name); },

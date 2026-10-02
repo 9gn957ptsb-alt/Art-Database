@@ -968,7 +968,17 @@
     if (s.k === "h") { Land.thread(s.id); told(label(s)); return; }
     if (s.k === "v" && window.Voices) { Voices.follow(s.id); told(label(s)); return; }
     if (s.k === "life" && window.Lives) {
-      Lives.visit(s.life, s.p).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : s.word); } });
+      Lives.visit(s.life, s.p).then(function (got) {
+        if (!run) { return; }
+        run.arrived = run.i;
+        // In the life's view: the place's first beat (its year, its voice), and what the beats say, at once.
+        if (got && got.beats && Lives.beat) {
+          Lives.beat(got.beats[0]);
+          told(got.beats.map(function (b) { return b.say; }).filter(Boolean).slice(0, 4).join(" · "));
+          return;
+        }
+        told(got ? got.lines.join(" · ") : s.word);
+      });
       return;
     }
     if (s.k === "studio" && window.Studios) {
@@ -1004,6 +1014,9 @@
     var then = function () { openWork(s); };
     // A hunt's stop: first the city it was found in, its number said there.
     if (s.hunt && s.key) {
+      var hst = s.hunt.stops[s.n] || {}, hprev = s.n > 0 ? s.hunt.stops[s.n - 1] : null;
+      voiceSay({ path: "hunt", step: "arrive", key: s.key, fromKey: hprev && hprev.key, place: townName(s.key),
+                 f: { cataloguer: surname(s.hunt.by || ""), no: hst.no || null } });
       arrive(inTown(s.key), function () { Land.go(s.key); }, function (ok) {
         var mk = window.Lives && Lives.made ? Lives.made(s.id) : "";
         told(s.lines[0] + (mk ? " · " + mk : ""));
@@ -1033,9 +1046,41 @@
       else {
         get("histories/" + s.id + ".json").then(function (h) { lines = lines.concat(firstLines(h)); }, function () {});
       }
-      SAY_AT.forEach(function (at, k) { afterStill(function () { if (lines[k]) { setSaid(lines[k]); } }, at); });
+      SAY_AT.forEach(function (at, k) { afterStill(function () { if (lines[k]) { setSaid(lines[k]); } voiceLine(s, k, lines); }, at); });
       afterStill(next, LOOK);
     });
+  }
+
+  /* The voice each line is told in (voice.js reads VOICE.md): a hunt's stop
+     goes on to the city from afar, then finds the work there close by (or
+     says it is not recorded where), then, where it was painted is
+     documented, stands there; a viewer's own exploration is told to "you",
+     the lens as near as what each stop is. */
+  function ownRun() {
+    var k = run && run.x && run.x.kind;
+    return k === "made" || k === "relay" || k === "corpse";
+  }
+  function voiceSay(v) { if (v && window.Voice && Voice.said) { Voice.said(v); } }
+  function voiceLine(s, k, lines) {
+    if (!run) { return; }
+    if (s.k === "w" && s.hunt) {
+      var st = s.hunt.stops[s.n] || {}, prev = s.n > 0 ? s.hunt.stops[s.n - 1] : null;
+      var cat = surname(s.hunt.by || "");
+      if (k === 1) {
+        var line = st.lines && st.lines[1] || "";
+        var m = /found it with (.+?)(?: · |$)/.exec(line), y = /^In (\d{4})/.exec(line);
+        var now = st.now || s.key;
+        voiceSay(m ? { path: "hunt", step: "finding", key: s.key, f: { cataloguer: cat, holder: m[1], year: y ? +y[1] : st.y } }
+                   : { path: "hunt", step: "unfound", key: now, fromKey: prev && prev.key, place: townName(now), f: { cataloguer: cat } });
+      } else if (k === 2) {
+        voiceSay({ path: "hunt", step: "site", key: s.key });
+      }
+      return;
+    }
+    if (ownRun() && s.k === "w") {
+      if (k === 0) { voiceSay({ path: "own", step: "work", key: s.key, place: s.key ? townName(s.key) : null }); }
+      else if (k === 2) { voiceSay({ path: "own", step: "site", key: s.key }); }
+    }
   }
 
   var KIND = { made: "Made", owned: "Owned", held: "Held", listed: "Listed", exhibited: "Shown", sold: "Sold", written: "Written" };
@@ -1054,6 +1099,12 @@
 
   function townStep(s) {
     run.down = true;
+    if (s.voice) {
+      var vr = voiceRow(s.voice);
+      voiceSay({ path: "voice", step: "place", key: s.id, place: townName(s.id), f: { voice: vr ? vr[1] : "", year: s.y || null } });
+    } else if (ownRun()) {
+      voiceSay({ path: "own", step: "city", key: s.id, place: townName(s.id) });
+    }
     arrive(inTown(s.id), function () { Land.go(s.id); }, function (ok) {
       var t = town(s.id);
       told(s.voice ? townName(s.id) + (s.y ? " · " + s.y : "") : t ? t[1] + " · " + plural(t[5], "work has", "works have") + " been here" : "");
@@ -1069,6 +1120,56 @@
     run.down = true;
     if (!window.Sites || !Sites.visit) { next(); return; }
     var token = run;
+    // The reading layout (voice.js): a site whose painting is saved is read in its work's view, one by
+    // an artist with a life in the life's view at its year — the lens on the ground where the painter
+    // stood, the painting above it. Any other, as before: its city, low on the point, the plate open.
+    if (window.Voice && Voice.sitesReady) {
+      Promise.all([Voice.sitesReady(), window.Lives && Lives.load ? Lives.load() : null]).then(function () {
+        if (run !== token) { return; }
+        var row = Voice.siteRow(s.ids[0]);
+        var lifeId = row && !row.w && window.Lives && Lives.idOf ? Lives.idOf(row.a) : null;
+        if (row && row.ll && (row.w || lifeId)) { siteRead(s, row, lifeId, token); } else { siteCity(s, token); }
+      });
+      return;
+    }
+    siteCity(s, token);
+  }
+  function siteLines(row) {
+    var what = row.what || "";
+    var how = row.pr === "view" ? "Where the painter stood · Wikidata’s point of view"
+      : row.pr === "street" ? "On " + (what || "the street") + " · the street is documented, not the spot"
+      : row.pr === "site" ? (row.how === "made" ? "Made at " : "It shows ") + (what || "the place") + " · the ring is on the place painted, not the easel"
+      : "Painted in " + (what || "the town") + " · only the town is documented";
+    var lines = [row.t + (row.d ? ", " + row.d : ""), how];
+    if (row.said && row.said[0]) { lines.push("“" + row.said[0].q.split(/(?<=\.)\s/)[0] + "”"); }
+    return lines;
+  }
+  function siteRead(s, row, lifeId, token) {
+    var w0 = Land.where();
+    if (row.w) { if (!(w0.at === "work" && w0.work === row.w)) { Land.work(row.w, row.key); } }
+    else { Lives.open(lifeId, { year: row.d || undefined }); }
+    waitFor(function (x) { return row.w ? x.at === "work" && x.work === row.w : x.at === "life" && x.id === lifeId; }, function (ok) {
+      if (run !== token) { return; }
+      if (!ok) { siteCity(s, token); return; }
+      run.arrived = run.i;
+      told("");
+      voiceSay({ path: "sites", step: "site", site: row.id });
+      var lines = siteLines(row), per = Math.max(1, Math.min(3, s.ids.length));
+      SAY_AT.forEach(function (at, k) { afterStill(function () { if (lines[k]) { setSaid(lines[k]); } }, at); });
+      s.ids.slice(1, per).forEach(function (id, k) {
+        afterStill(function () {
+          var r2 = Voice.siteRow(id);
+          if (!r2) { return; }
+          voiceSay({ path: "sites", step: "site", site: r2.id });
+          setSaid(r2.t + (r2.d ? ", " + r2.d : ""));
+        }, LOOK * (k + 1));
+      });
+      afterStill(next, LOOK * per);
+    }, 20000);
+  }
+  function siteCity(s, token) {
+    var row0 = window.Voice && Voice.siteRow ? Voice.siteRow(s.ids[0]) : null;
+    if (row0) { voiceSay({ path: "sites", step: "site", site: row0.id, key: row0.key, f: { title: row0.t, year: row0.d || null, who: surname(row0.a), what: row0.what || null } }); }
     Sites.visit(s.ids).then(function (got) {
       if (run !== token) { return; }
       if (!got) { afterStill(next, 1000); return; }
@@ -1113,6 +1214,15 @@
       if (!got) { afterStill(next, 1000); return; }
       run.arrived = run.i;
       told("");
+      // Told in beats in the life's own view (lives.js): each with its year on the dial and its voice in the lens.
+      if (got.beats) {
+        got.beats.forEach(function (b, n) {
+          if (!n && Lives.beat) { Lives.beat(b); }
+          afterStill(function () { if (n && Lives.beat) { Lives.beat(b); } if (b.say) { setSaid(b.say); } }, b.at);
+        });
+        afterStill(next, Math.max(LOOK, got.end));
+        return;
+      }
       SAY_AT.forEach(function (at, k) { afterStill(function () { if (got.lines[k]) { setSaid(got.lines[k]); } }, at); });
       var t0 = SAY_AT[SAY_AT.length - 1] + 6000;
       got.works.forEach(function (w, k) {
@@ -1140,6 +1250,7 @@
 
   function museumStep(s) {
     run.down = true;
+    if (ownRun()) { var mm = museum(s.id); voiceSay({ path: "own", step: "museum", f: { museum: mm ? mm.name : "" } }); }
     arrive(function (w) { return w.at === "museum" && w.museum === s.id; }, function () { Land.museum(s.id); }, function (ok) {
       var m = museum(s.id);
       told(m ? m.name + " · " + m.where : "");
@@ -1149,6 +1260,7 @@
 
   function threadStep(s) {
     run.down = true;
+    if (ownRun()) { var tt = threadRow(s.id); voiceSay({ path: "own", step: "thread", f: { name: tt ? tt[2] : "" } }); }
     arrive(function (w) { return w.at === "thread" && w.id === s.id; }, function () { Land.thread(s.id); }, function (ok) {
       var t = threadRow(s.id);
       told(t ? t[2] + (t[3] ? " · " + t[3] : "") + (t[4] ? ", " + t[4] : "") + " · " + plural(t[5], "work", "works") : "");
@@ -1158,6 +1270,7 @@
 
   function voiceStep(s) {
     if (!window.Voices || !Voices.follow) { next(); return; }
+    if (ownRun()) { var vv = voiceRow(s.id); voiceSay({ path: "own", step: "voice", f: { voice: vv ? vv[1] : "" } }); }
     Voices.follow(s.id).then(function () {
       if (run) { run.arrived = run.i; }
       var v = voiceRow(s.id);
@@ -1168,6 +1281,7 @@
 
   function animalStep(s) {
     if (!window.Characters || !Characters.lead) { next(); return; }
+    if (ownRun()) { var cc = castRow(s.id); voiceSay({ path: "own", step: "animal", f: { animal: cc ? "the " + cc.name.toLowerCase() : "" } }); }
     Characters.lead(s.id).then(function (f) {
       if (!run) { return; }
       if (f && !Land.following()) { Land.follow(f); }

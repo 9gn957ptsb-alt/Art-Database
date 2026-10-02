@@ -621,6 +621,7 @@
   // Arrived: the animal trots to where the work is held; then the works.
   function arrived(j) {
     walk.down = true;
+    voiceSay({ path: "walk", step: "journey", key: stopOf().key, place: shortName(stopOf().key), f: { animal: animalWord() } });
     // A word on arriving.
     if (walk.upto < walk.i + 1) {
       walk.upto = walk.i + 1;
@@ -665,11 +666,22 @@
     told("");
     var lines = [(x ? x[1] : "Untitled") + (x && x[3] ? ", " + x[3] : "")];
     get("histories/" + id + ".json").then(function (h) { lines = lines.concat(firstLines(h)); }, function () {});
+    // The voice it is told in (voice.js, VOICE.md): close by, with the animal; where it was painted, there.
+    voiceSay({ path: "walk", step: "work", key: st.key, place: shortName(st.key),
+               f: { animal: animalWord(), title: x ? x[1] : "Untitled" } });
     SAY_AT.forEach(function (at, k) {
       if (at > look - 3000 && k) { return; }
-      afterStill(function () { if (lines[k]) { setSaid(lines[k]); } }, at);
+      afterStill(function () {
+        if (lines[k]) { setSaid(lines[k]); }
+        if (k === 2) { voiceSay({ path: "walk", step: "site", key: st.key }); }
+      }, at);
     });
     afterStill(afterWork, look);
+  }
+  function voiceSay(v) { if (window.Voice && Voice.said) { Voice.said(v); } }
+  function animalWord() {
+    var c = walk && castBy(walk.w.animal);
+    return c ? "The " + c.name.toLowerCase() : "";
   }
 
   var KIND = { made: "Made", owned: "Owned", held: "Held", listed: "Listed", exhibited: "Shown",
@@ -937,9 +949,25 @@
     var colEl = document.querySelector(".art[data-on=\"true\"] .art-body");
     var col = colEl && window.getComputedStyle(colEl).visibility !== "hidden" ? colEl.getBoundingClientRect() : null;
     var colLeft = col && col.width && col.left > (r ? r.right : 0) ? col.left : window.innerWidth - 16;
+    // The reading layout (land.js, voice.js): the picture, its sentence, the lens and the dial are
+    // the view; the strip keeps to the foot — under the dial on a desktop, over the text on a phone.
+    var rd = window.Land && Land.reading ? Land.reading() : null;
+    var dialEl = document.getElementById("art-time");
+    var dial = dialEl && !dialEl.hidden ? dialEl.getBoundingClientRect() : null;
     Array.prototype.forEach.call(strips, function (st) {
       if (st.hidden) { return; }
       st.style.maxWidth = ""; st.style.top = ""; st.style.bottom = ""; st.style.left = "";
+      if (rd && rd.lens && !rd.full) {
+        st.style.top = "auto";
+        st.style.bottom = "12px";
+        if (rd.phone) { st.style.left = "12px"; st.style.maxWidth = (window.innerWidth - 24) + "px"; return; }
+        var colBox = document.getElementById("art-col"), cb = colBox ? colBox.getBoundingClientRect() : null;
+        var left = rd.cap.x + rd.cap.w + 16, right = (cb && cb.width ? cb.left : colLeft) - 12;
+        if (dial && dial.width && dial.bottom + 8 > window.innerHeight - 12 - 96) { left = Math.max(left, dial.right + 12); }
+        st.style.left = Math.round(left) + "px";
+        st.style.maxWidth = Math.max(220, Math.floor(right - left)) + "px";
+        return;
+      }
       if (!r) { return; }
       var hit = function () {
         var b = st.getBoundingClientRect();

@@ -152,7 +152,8 @@
     if (!sitesAsk) {
       sitesAsk = get("sites.json").then(function (d) {
         d.byW = {};
-        d.sites.forEach(function (s, i) { if (s.w) { d.byW[s.w] = i; } });
+        d.byId = {};
+        d.sites.forEach(function (s, i) { if (s.w) { d.byW[s.w] = i; } d.byId[s.id] = i; });
         sitesD = d;
         kick();
       }, function () { sitesAsk = null; });
@@ -175,7 +176,7 @@
 
   var NS = "http://www.w3.org/2000/svg";
   var rim = null, rimText = null, rimWord = null, rimHeld = null, release = null;
-  var cap = null, capSay = null, capPic = null, chip = null, chipWord = null, chipSay = null;
+  var cap = null, capSay = null, capPic = null, chip = null, chipWord = null, chipSay = null, stand = null;
   var artEl = document.getElementById("art");
   function setUp() {
     if (rim || !artEl) { return; }
@@ -227,6 +228,11 @@
     cap.appendChild(capSay);
     cap.appendChild(capPic);
     artEl.appendChild(cap);
+    // The first person's standing point: where they stood, in the middle of the lens.
+    stand = el("div", "voice-stand");
+    stand.setAttribute("aria-hidden", "true");
+    stand.hidden = true;
+    artEl.appendChild(stand);
     chip = el("p", "voice-chip");
     chip.hidden = true;
     chip.setAttribute("aria-live", "polite");
@@ -262,8 +268,10 @@
       d = "M " + pad + " " + (pad - 5) + " L " + (w - pad) + " " + (pad - 5);
     }
     rim.querySelector("#voice-rim-arc").setAttribute("d", d);
-    release.style.left = Math.round(Math.max(8, h.x - 6)) + "px";
-    release.style.top = Math.round(h.y + h.h - 30) + "px";
+    release.style.left = Math.round(Math.max(8, h.x - 12)) + "px";
+    release.style.top = Math.round(h.y + h.h - 24) + "px";
+    stand.style.left = Math.round(h.x + h.w / 2 - 6.5) + "px";
+    stand.style.top = Math.round(h.y + h.h / 2 - 6.5) + "px";
     cap.style.left = r.cap.x + "px";
     cap.style.top = r.cap.y + "px";
     cap.style.width = r.cap.w + "px";
@@ -295,8 +303,8 @@
     rim.dataset.held = isHeld ? "true" : "false";
     rim.dataset.on = word ? "true" : "false";
     release.hidden = !isHeld;
-    release.textContent = isHeld ? "Let " + word + " go" : "";
-    release.setAttribute("aria-label", isHeld ? "The lens is held " + word + ": let it go back to the path’s own voice" : "");
+    release.textContent = isHeld ? "× held" : "";
+    release.setAttribute("aria-label", isHeld ? "The lens is held: " + word + ". Let it go back to the path’s own voice" : "");
   }
   function setCaption(text, pic, isWork) {
     setUp();
@@ -308,11 +316,15 @@
       if (text) { italics(text, capSay); }
       if (text) { window.requestAnimationFrame(function () { capSay.dataset.on = "true"; }); }
     }
-    var line = !isWork && pic ? [pic.title + (pic.year ? ", " + pic.year : ""), pic.by ? surname(pic.by) : ""].filter(Boolean).join(" · ") + " ›" : "";
+    // The picture's own line: a saved work's is a door to its history; a
+    // painting that is not saved (Painted here's) says only where it is.
+    var line = !isWork && pic ? [pic.title + (pic.year ? ", " + pic.year : ""), pic.by ? surname(pic.by) : "",
+                                 pic.id ? "" : pic.where || ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "") : "";
     capPic.hidden = !line;
     if (line && capPic.textContent !== line) { capPic.textContent = line; }
     capPic.dataset.id = pic && pic.id || "";
-    capPic.setAttribute("aria-label", line ? "Where " + (pic.title || "it") + " has been" : "");
+    capPic.disabled = !(pic && pic.id);
+    capPic.setAttribute("aria-label", line && pic.id ? "Where " + (pic.title || "it") + " has been" : line);
   }
 
   /* ---- the narrator ------------------------------------------------------------- */
@@ -322,6 +334,7 @@
   var beat = null;            // { view, path, step, f, pic, at }: what a player says it is saying
   var cand = { key: "", at: 0 };
   var yearSince = { y: null, at: 0, view: -1 };
+  var movingSince = 0;        // since when the dial has been still (or, while it moves, since it began)
   var siteTap = null;         // a work's Painted here pressed: { view, s, at }
 
   function distOf(voice, frame) {
@@ -330,7 +343,8 @@
   }
   function labelOf(rule, dist, f, isHeld) {
     var v = T.voices[isHeld ? dist : rule.voice] || T.voices[dist] || {};
-    var word = !isHeld && rule.label ? rule.label : v.label || dist;
+    // Held at a distance that is not the step's own: the voices' "held" names (where they were, not stood).
+    var word = !isHeld && rule.label ? rule.label : isHeld && dist !== distOf(rule.voice, rule.frame) && v.held ? v.held : v.label || dist;
     return fill(word, f) || word.replace(/\{who\}/, "the painter");
   }
   // What the lens frames, for a voice's distance.
@@ -368,6 +382,9 @@
     S.voice = rule.voice;
     S.path = s.path;
     S.step = s.step;
+    // Where a work was painted is told at the year it was painted: the dial goes there.
+    if (flyIt && r.kind === "work" && /^site/.test(s.step) && has(s.f.year) && Land.dialYear &&
+        s.f.year >= r.y0 && s.f.year <= r.y1) { Land.dialYear(s.f.year); }
     if (flyIt) {
       var spec = frameSpec(rule.frame, s.f, dist);
       if (spec) {
@@ -378,6 +395,7 @@
       }
     }
     setLabel(labelOf(rule, dist, s.f, isHeld), isHeld);
+    stand.hidden = dist !== "first";
     var text = fill(rule.caption, s.f);
     S.said = text || "";
     setCaption(text, s.pic || null, r.kind === "work");
@@ -416,6 +434,7 @@
       setCaption("", null, true);
     }
     if (r.year !== yearSince.y || r.view !== yearSince.view) { yearSince = { y: r.year, at: now, view: r.view }; }
+    if (!r.moving) { movingSince = now; }
     if (r.flying || r.look === "plate") { return; }
     var s = null, told = false;
     if (beat && (beat.view === r.view || beat.view === -2) && playing() && now - beat.at < BEAT_KEEP) {
@@ -438,6 +457,13 @@
   /* ---- each kind of view, its step ---------------------------------------------- */
 
   function derive(r, now) {
+    // A work opened while following a writer: in their words.
+    var fol = r.kind === "work" && window.Land && Land.following ? Land.following() : null;
+    if (fol && fol.voice && r.work && r.work.flipped) {
+      var st = r.work.stops[r.work.stops.length - 1];
+      return { path: "voice", step: "work", key: "v" + fol.voice,
+               f: { voice: fol.artist, title: r.work.title, ll: st ? [st.lat, st.lon] : null, place: st ? short(st.name) : null } };
+    }
     if (r.kind === "work") { return deriveWork(r, now); }
     if (r.kind === "life") { return deriveLife(r, now, null); }
     if (r.kind === "movement") { return deriveMovement(r, now); }
@@ -454,13 +480,21 @@
   }
   function yr(v) { return has(v) ? Math.floor(v) : null; }
 
-  // A work's Painted here, as a step: how exact the point is says which.
+  /* A work's Painted here, as a step: how exact the point is says which —
+     where the painter stood (Wikidata's point of view), the building it was
+     made in, the street, or only the place painted. North is up in the
+     lens; no source gives the way a painter faced, and that is said. */
+  var COMMONS = "https://commons.wikimedia.org/wiki/Special:FilePath/";
   function siteStep(path, s, who, extra) {
-    var step = s.pr === "view" ? "site" : s.pr === "street" ? "site-street" : "site-place";
+    var step = s.pr === "view" ? "site" : s.pr === "street" ? "site-street" : s.how === "made" ? "site-made" : "site-place";
+    if (!ruleOf(path, step)) { step = "site"; }
     var f = { who: who || surname(s.a), title: s.t, year: s.d || null, what: s.what || s.place || null, ll: s.ll,
               facing: "Facing north: the way " + (who || surname(s.a) || "the painter") + " faced is not recorded." };
     Object.keys(extra || {}).forEach(function (k) { f[k] = extra[k]; });
-    return { path: path, step: step, f: f, key: "site:" + s.id };
+    var pic = s.img ? { id: s.w || null, src: COMMONS + encodeURIComponent(s.img) + "?width=960",
+                        big: COMMONS + encodeURIComponent(s.img) + "?width=2000", title: s.t, year: s.d || null, by: s.a,
+                        where: s.m || "" } : undefined;
+    return { path: path, step: step, f: f, key: "site:" + s.id, pic: pic, stand: true };
   }
 
   function deriveWork(r, now) {
@@ -470,7 +504,12 @@
     var stops = w.stops;
     // Its Painted here pressed: where it was painted, until another place is read.
     if (siteTap && siteTap.view === r.view && siteTap.pin === w.pin) {
-      return siteStep("work", siteTap.s, who);
+      // Until another place is read, or the dial is turned away from the year it was painted.
+      if (!(r.byHand && !r.moving && has(siteTap.s.d) && has(r.year) && Math.abs(r.year - siteTap.s.d) > 1 &&
+            performance.now() - siteTap.at > 4000)) {
+        return siteStep("work", siteTap.s, who);
+      }
+      siteTap = null;
     }
     var pts = stops.map(function (s) { return [s.lat, s.lon]; });
     var seen = {}, n = 0, y0 = null, y1 = null;
@@ -484,6 +523,8 @@
                f: { year: yr(s.y), verb: verbOf(s.k), place: short(s.name), ll: [s.lat, s.lon] } };
     }
     if (w.pin >= 0 && stops[w.pin]) { return city(w.pin); }
+    // Turned by hand: the voice it had holds until the dial rests.
+    if (r.byHand && r.moving && S.key) { return null; }
     if (r.byHand && !r.moving && stops.length) {
       var k = -1, next = -1;
       stops.forEach(function (s, i) { if (s.pos <= w.when + 1e-6) { k = i; } else if (next < 0) { next = i; } });
@@ -521,8 +562,12 @@
       return o;
     }
     var want = force && force.step;
-    // While the dial plays the life by itself, or is turned fast: the life seen whole.
-    if (!force && r.moving) { return out("route", { who: who, years: span(L.born, L.died || ""), pts: route }, "route"); }
+    // While the dial plays the life by itself, or is turned on and on: the life seen whole;
+    // a glide to a year holds the voice it had until it rests.
+    if (!force && r.moving) {
+      if (now - movingSince < 1800) { return null; }
+      return out("route", { who: who, years: span(L.born, L.died || ""), pts: route }, "route");
+    }
     if (L.died && y > L.died && (!want || want === "after")) {
       var rows = (L.after || []).filter(function (a) { return a[0] <= y && a[0] >= y - 4; });
       var names = [], pts = [];
@@ -540,10 +585,15 @@
     }
     // A painted site in this year: the first person, once the dial has rested on it.
     var site = sitesOfYear(L, y)[0];
+    if (force && force.site) { site = (L.sites || []).filter(function (x) { return x[0] === force.site; })[0] || site; }
     if (site && (want === "site" || (!want && now - yearSince.at > SITE_REST - STEADY))) {
-      var row = { id: site[0], t: site[1], d: site[2], what: site[3], ll: site[4], pr: site[5], a: L.name };
+      var SD = sites(), full = SD && SD.byId[site[0]] !== undefined ? SD.sites[SD.byId[site[0]]] : null;
+      var row = full || { id: site[0], t: site[1], d: site[2], what: site[3], ll: site[4], pr: site[5], a: L.name };
       var st = siteStep("life", row, who);
-      st.pic = pic;
+      // Its picture: the saved work's own, else the painting from Commons.
+      var saved = row.w && (L.works || []).filter(function (w) { return w[0] === row.w && w[3]; })[0];
+      if (saved) { st.pic = { id: saved[0], image: saved[3], title: saved[1], year: saved[2] || null, by: L.name }; }
+      else if (!st.pic) { st.pic = pic; }
       st.wait = 0;
       return st;
     }
@@ -572,7 +622,7 @@
     if (want === "work" && force.work) {
       var wk = (L.works || []).filter(function (w) { return w[0] === force.work; })[0];
       if (wk) {
-        return out("work", { who: who, goes: goes, place: p.place, year: wk[2] || y, title: wk[1], ll: p.ll, fromLL: prev },
+        return out("work", { who: who, goes: "is in", place: p.place, year: wk[2] || y, title: wk[1], ll: p.ll, fromLL: prev },
                    "w" + wk[0], { fk: "p" + k });
       }
     }
@@ -657,7 +707,9 @@
       return { path: "movement", step: step, f: f, key: step + y, fk: "m", pic: pic };
     }
     var arr = m.members.filter(function (row) { return row[1] === y; })[0];
-    if (arr && !r.moving && now - yearSince.at < LEAN_MS) {
+    // Leaning in to a member's arrival only when the dial was turned there (by hand, or by a walk):
+    // a movement opens from above.
+    if (arr && r.byHand && !r.moving && now - yearSince.at < LEAN_MS) {
       var a = D.artists[arr[0]];
       var pres = Movements.presencesOf ? (Movements.presencesOf(a[1]) || []).filter(function (q) { return q[0] === m.key; }) : [];
       var best = null;
@@ -708,6 +760,11 @@
   function said(o) {
     if (!o) { return; }
     var r = window.Land && Land.reading ? Land.reading() : null;
+    // A site said of a work with no documented site is no step at all: the last one stands.
+    if (o.step === "site" && o.path !== "life" && o.path !== "sites" && r && r.kind === "work") {
+      var SD = sites();
+      if (!SD || SD.byW[r.id] === undefined) { return; }
+    }
     beat = { view: r ? r.view : -2, o: o, at: performance.now() };
     // A beat said where there is no lens (a city, a museum): said beside the dial.
     kick();
@@ -715,6 +772,11 @@
   function resolveBeat(r, b) {
     var o = b.o;
     var now = performance.now();
+    // A site exploration's stop, wherever it is read (the work's view, or the life's): where they stood.
+    if (o.path === "sites" && o.site) {
+      var SR = sites(), row = SR && SR.byId[o.site] !== undefined ? SR.sites[SR.byId[o.site]] : null;
+      return row ? siteStep("sites", row, surname(row.a)) : null;
+    }
     if (o.path === "life" && r.kind === "life") { return deriveLife(r, now, o); }
     if (r.kind === "work" && r.work) {
       var w = r.work, who = surname(w.artists[0] || "");
@@ -750,12 +812,36 @@
   function chipTick(r) {
     var w = where();
     var b = beat && playing() && performance.now() - beat.at < BEAT_KEEP ? beat.o : null;
+    // An exquisite corpse being walked (corpse.js): you, at its edge, then on.
+    if (!b && (w.at === "town" || w.at === "museum") && !w.flying && window.Corpse && Corpse._state) {
+      var cs = null;
+      try { cs = Corpse._state(); } catch (e) { cs = null; }
+      if (cs && cs.leg) {
+        var lst = cs.leg.stops[cs.leg.stops.length - 1];
+        b = lst ? { path: "corpse", step: "stop", key: lst.k, f: { year: lst.y || null } }
+          : { path: "corpse", step: "edge", place: w.name || "", f: {} };
+      }
+    }
+    // Following (an animal, or a writer) in a city: close by, with the animal; in their words.
+    if (!b && (w.at === "town" || w.at === "museum") && !w.flying) {
+      var fol = window.Land && Land.following ? Land.following() : null;
+      if (fol) {
+        b = fol.voice ? { path: "voice", step: "place", place: w.name || "", f: { voice: fol.artist } }
+          : { path: "follow", step: "city", place: w.name || "", f: { animal: fol.animal ? "The " + String(fol.animal).toLowerCase() : "" } };
+      }
+    }
     if (!T || !b || w.at === "world" || w.flying || (r && r.lens)) { hideChip(); return; }
-    var rule = ruleOf(b.path, b.step);
-    if (!rule) { hideChip(); return; }
-    var f = {};
+    var path = b.path, step = b.step, f = {};
     Object.keys(b.f || {}).forEach(function (k) { f[k] = b.f[k]; });
+    if (b.place && !f.place) { f.place = b.place; }
     if (!f.place && b.key && town(b.key)) { f.place = town(b.key).name; }
+    // A site exploration's stop in its city (no lens there): told as where it is documented.
+    if (b.site) {
+      var SR = sites(), row = SR && SR.byId[b.site] !== undefined ? SR.sites[SR.byId[b.site]] : null;
+      if (row) { var st = siteStep(path, row, surname(row.a)); step = st.step; f = st.f; }
+    }
+    var rule = ruleOf(path, step);
+    if (!rule) { hideChip(); return; }
     var text = fill(rule.caption, f);
     var word = labelOf(rule, distOf(rule.voice, rule.frame), f, false);
     var k = word + "|" + (text || "");
@@ -803,6 +889,7 @@
     if (!spec && S.spec) { spec = { voice: RANKS[to], at: S.spec.at, pts: S.spec.pts }; }
     if (spec) { S.spec = spec; S.dist = RANKS[to]; Land.lens(spec); }
     if (S.rule) { setLabel(labelOf(S.rule, RANKS[to], f, true), true); }
+    if (stand) { stand.hidden = RANKS[to] !== "first"; }
     return true;
   }
   // A press on the held name: the path's own voice again.
@@ -843,6 +930,9 @@
     handled: handled,
     swapped: function () { placedKey = ""; kick(); },
     rules: function () { return T; },
+    // explorations.js: a sites.json row by its index (a site exploration's stop), once read.
+    siteRow: function (i) { var D = sites(); return D ? D.sites[i] || null : null; },
+    sitesReady: function () { sites(); return sitesAsk || Promise.resolve(); },
     _state: function () {
       var r = window.Land && Land.reading ? Land.reading() : null;
       return { loaded: !!T, rules: T ? T.n : 0, view: S.view, path: S.path || "", step: S.step || "", voice: S.voice || "",
