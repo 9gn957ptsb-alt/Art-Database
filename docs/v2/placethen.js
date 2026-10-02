@@ -98,7 +98,10 @@
     return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((a + 360) % 360) / 45) % 8];
   }
   function kmText(d) { return d < 1 ? Math.round(d * 1000) + " m" : d < 10 ? d.toFixed(1) + " km" : Math.round(d) + " km"; }
-  function yspan(a, b) { return a === b || !b ? String(a) : a + "–" + b; }
+  function yspan(a, b) {
+    if (!b || a === b) { return String(a); }
+    return Math.min(a, b) + "–" + Math.max(a, b);
+  }
   function glyph(kind) {
     var k = window.Kinds && Kinds.kind ? Kinds.kind(kind) : null;
     return k ? [k.glyph, k.tone] : GLYPH[kind] || ["·", "#a8927a"];

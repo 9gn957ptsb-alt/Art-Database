@@ -55,7 +55,7 @@
 .pt-head { position: absolute; left: 16px; top: 10px; right: 16px; pointer-events: none; }
 .pt-foot { position: absolute; left: 16px; right: 16px; top: 38px; pointer-events: none; }
 .pt[data-phone] .pt-head { top: 6px; right: 60px; }
-.pt[data-phone] .pt-foot { top: auto; bottom: 4px; right: 46%; padding: 2px 4px; border-radius: 2px; background: rgba(15, 10, 7, 0.72); }
+.pt[data-phone] .pt-foot { top: 28px; bottom: auto; right: 60px; padding: 2px 4px; border-radius: 2px; background: rgba(15, 10, 7, 0.72); }
 .pt[data-phone] .pt-title { font-size: 15px; }
 .pt[data-phone] .pt-where, .pt[data-phone] .pt-note { font-size: 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .pt[data-phone] .pt-note { -webkit-line-clamp: 2; }

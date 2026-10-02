@@ -125,8 +125,9 @@ def ghsl_tile(epoch, lat, lon):
     c = int(math.floor((lon + 180.0079) / 10)) + 1
     key = ("ghsl", epoch, r, c)
     if key not in _tiles:
-        # Only one GHSL tile is held at a time: each is 288 MB unpacked.
-        for k in [k for k in _tiles if k[0] == "ghsl"]:
+        # One GHSL tile an epoch is held at a time: each is 288 MB unpacked. (Holding one in all
+        # had the 1975 and 1980 tiles fetched again for every place, 32 MB a place.)
+        for k in [k for k in _tiles if k[0] == "ghsl" and k[1] == epoch]:
             del _tiles[k]
         path = CACHE / "ghsl" / f"E{epoch}_R{r}_C{c}.zip"
         if not path.exists():
