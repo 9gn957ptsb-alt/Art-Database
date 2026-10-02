@@ -241,3 +241,39 @@ body[data-reading] .walk-strip { background: rgba(15, 10, 7, 0.985); box-shadow:
 /* The dial's readout (dialhub.js) in the reading layout: under the dial, where the text is, never
    over the picture's sentence or the lens. */
 .art[data-read] .art-time.dial .dial-say { top: calc(100% + 6px); bottom: auto; }
+
+/* The small globe let out of its window (land.js, "the small globe, the
+   viewer's"; artist, 2 Oct 2026: "potentially become bigger and break that
+   kind of for plane"): the veil lifts, the rim's word goes, and the picture
+   steps back under the world, untouchable until the globe is home. */
+.art[data-read][data-out] > .lens-veil { opacity: 0; }
+.art[data-out] .voice-rim, .art[data-out] .voice-stand, .art[data-out] .voice-release { opacity: 0; pointer-events: none; }
+.art[data-read][data-out] .art-plate { opacity: 0.12; pointer-events: none; }
+
+/* A home mark: one 13 px tile of the pixel light, beside the small globe or
+   the dial, only while it is away from its place; pressed, it snaps home. */
+.snap-home {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin: 0;
+  border: 1.5px solid #eadfcd;
+  border-radius: 0;
+  background: radial-gradient(circle, #9d95e6 0 2px, transparent 2.5px), rgba(15, 10, 7, 0.82);
+  box-shadow: 0 0 0 1px rgba(15, 10, 7, 0.6), 0 0 9px rgba(157, 149, 230, 0.55);
+  cursor: pointer;
+  z-index: 13;
+  pointer-events: auto;
+  animation: snap-home-in 0.42s steps(4, end) both;
+}
+.snap-home::before { content: ""; position: absolute; inset: -14px; }   /* a finger's reach */
+.snap-home:hover, .snap-home:focus-visible { background: radial-gradient(circle, #ffffff 0 2px, transparent 2.5px), rgba(94, 82, 199, 0.85); outline: none; }
+.snap-home[hidden] { display: none; }
+@keyframes snap-home-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: none; } }
+.lens-home { position: fixed; }
+.building-time.dial > .dial-home { display: none; top: -6px; left: -21px; }
+.building-time.dial[data-moved] > .dial-home { display: block; }
+.building-time.dial[data-home-side="right"] > .dial-home { left: auto; right: -21px; }
+.building-time.dial[data-settling] > .dial-home, .building-time.dial[data-lifted] > .dial-home { display: none; }
+@media (prefers-reduced-motion: reduce) { .snap-home { animation: none; } }

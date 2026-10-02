@@ -8774,7 +8774,27 @@
       // press outside it, on the dark, is nobody's.
       if (readingOn() && LENS && name === "pointerup" && !flying) {
         if (!inLens(event.clientX, event.clientY)) { squashing = null; hideDoor(); return; }
-        if (!lensSwapped && was.moved < 6 && performance.now() - was.at < 450) {
+        if (LENS_GLOBE && was.moved < 6 && performance.now() - was.at < 450) {
+          // Two taps bring it home; one, at rest, changes it with the picture
+          // once it is plain that no second is coming.
+          var nowT = performance.now();
+          window.clearTimeout(lensTapT);
+          if (nowT - lensTapAt < 320) {
+            lensTapAt = 0;
+            squashing = null;
+            hideDoor();
+            lensHome();
+            return;
+          }
+          lensTapAt = nowT;
+          if (!lensSwapped && !lensAway()) {
+            squashing = null;
+            hideDoor();
+            lensTapT = window.setTimeout(function () { if (!lensAway()) { setSwap(true); } }, 320);
+            return;
+          }
+        }
+        if (!LENS_GLOBE && !lensSwapped && was.moved < 6 && performance.now() - was.at < 450) {
           squashing = null;
           hideDoor();
           setSwap(true);
@@ -13461,12 +13481,17 @@
     if (event.key === "+" || event.key === "=") {
       // In the reading layout "+" is the lens's next voice nearer; past the nearest, the ground there.
       if (place && readingOn() && LENS) {
+        if (LENS_GLOBE) { if (!lensZoomBy(PHI)) { goDeeper(false); } return; }
         if (!(window.Voice && Voice.nudge && Voice.nudge(1)) && !lensGroundWhole()) { goDeeper(false); }
         return;
       }
       if (place) { goDeeper(false); } else { flyOver(); }
     }
-    else if ((event.key === "-" || event.key === "_") && place) { comeUp(); }
+    else if ((event.key === "-" || event.key === "_") && place) {
+      // A small globe brought nearer is made smaller first; at rest, up a level.
+      if (lensAway() && lensK() > 1.001) { lensZoomBy(INV); if (lensK() < LENS_MAGNET) { lensSize(1); } return; }
+      comeUp();
+    }
   });
   // The reading lies over the banner (it is another layer, above the
   // stage): a press on its empty band at the top goes to whichever of the
@@ -13512,6 +13537,19 @@
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
     // Over the lens a wheel (or a trackpad's pinch) moves between its voices,
     // as two fingers do: in nearer, out further off; never out of the path.
+    if (!dive.on && readingOn() && LENS && LENS_GLOBE && inLens(event.clientX, event.clientY)) {
+      var wstep = event.ctrlKey ? 0.012 : 0.0016, wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
+      if (!lensZoomBy(Math.exp(-wd * wstep), event.clientX, event.clientY) && wd < 0 && diveCan()) {
+        // Past its nearest, scrolling on is the dive, as on the front page.
+        diveTo(dive.log - wd * wstep, event.clientX, event.clientY);
+        window.clearTimeout(dive.timer);
+        if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
+        return;
+      }
+      window.clearTimeout(lensWheelT);
+      lensWheelT = window.setTimeout(lensRelease, 300);
+      return;
+    }
     if (!dive.on && readingOn() && LENS && inLens(event.clientX, event.clientY)) {
       var nowW = performance.now();
       if (nowW - lensWheelAt > 600) { lensWheel = 0; }
@@ -13573,7 +13611,10 @@
   function fingerUp(event) {
     delete downFingers[event.pointerId];
     downFrom = downSpread();
-    if (Object.keys(downFingers).length < 2) { lensPinch = null; }
+    if (Object.keys(downFingers).length < 2) {
+      if (lensPinch && lensPinch.zoomed && !dive.on) { lensRelease(); }
+      lensPinch = null;
+    }
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
   }
   function fingerDown(event) {
@@ -13594,6 +13635,19 @@
     // path: spread nearer (more personal), pinch further off; the voice is
     // held for the rest of the path (voice.js). Past the nearest, the
     // ground there, the whole window.
+    if (lensPinch && LENS_GLOBE && place && !flying && !groundOn && d > 0) {
+      var li = Object.keys(downFingers), la = downFingers[li[0]], lb = downFingers[li[1]];
+      var mx = (la.x + lb.x) / 2, my = (la.y + lb.y) / 2;
+      if (lensPinch.dive || (!dive.on && d > lensPinch.d && lensK() >= lensMostK() - 1e-6 && diveCan())) {
+        // Spread on past the nearest: the dive, aimed between the fingers.
+        if (!lensPinch.dive) { lensPinch.dive = d; }
+        diveTo(Math.log(d / lensPinch.dive), mx, my);
+        return;
+      }
+      if (lensZoomBy(d / lensPinch.d, mx, my)) { lensPinch.zoomed = true; }
+      lensPinch.d = d;
+      return;
+    }
     if (lensPinch && place && !flying && !groundOn && d > 0) {
       var ratio = d / lensPinch.d;
       if (ratio > 1.32 || ratio < 1 / 1.32) {
@@ -15402,7 +15456,10 @@
     });
     if (!art || !readKind(art.kind)) {
       delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped;
+      lensOut = false;
+      delete artEl.dataset.out;
       clipWorld(null);
+      placeLensHome();
       return;
     }
     artEl.dataset.plate = "true";
@@ -15433,7 +15490,7 @@
   var clipShut = 0;
   function clipWorld(b) {
     window.clearTimeout(clipShut);
-    var on = !!(b && b.hole && LENS && art && art.live && readKind(art.kind));
+    var on = !!(b && b.hole && LENS && art && art.live && readKind(art.kind)) && !lensOut;
     if (!on) {
       delete stage.dataset.lens;
       stage.style.removeProperty("--lens-clip");
@@ -15455,6 +15512,7 @@
      place the world has taken). */
   function inLens(x, y) {
     if (!readingOn() || !LENS) { return false; }
+    if (lensOut) { return Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) <= R; }
     var b = workBands(), h = b.hole;
     if (h.round < 0) {
       var L = b.lensAt;
@@ -15508,6 +15566,12 @@
     var theta = 0;
     pts.forEach(function (v) { theta = Math.max(theta, Math.acos(Math.max(-1, Math.min(1, dot3(c, v))))); });
     var voice = spec.voice || "panoramic", Rt;
+    if (LENS_GLOBE) {
+      // The distance is the viewer's (artist, 2 Oct 2026): the whole small
+      // globe at rest, as near as two fingers have brought it; the voice
+      // only turns it to face what is being read.
+      return { lat: latOf(c), lon: lonOf(c), R: lensRestR(b) * lensK(), seat: { x: L.x / W, y: L.y / H }, voice: voice };
+    }
     if (voice === "first") {
       Rt = groundR();
     } else if (voice === "close") {
@@ -15543,8 +15607,9 @@
     a.lensSpec = spec;
     var t = lensTarget(spec);
     a.glide = null;
+    a.snap = null;
     var z1 = t.R / Math.max(1, baseR);
-    if (t.voice !== "first") { lensGroundOff(); }
+    if (t.voice !== "first" || LENS_GLOBE) { lensGroundOff(); }
     if (still || spec.now || flying || dive.on) {
       a.lens = null;
       if (flying || dive.on) { return true; }
@@ -15556,6 +15621,7 @@
       place.zoomTo = zoom;
       reframe();
       lensArrived(a, t);
+      lensOutCheck();
       return true;
     }
     var la = Math.log(Math.max(1e-6, zoom)), lb = Math.log(z1);
@@ -15569,14 +15635,26 @@
     var seat0 = place.seatAt ? { x: place.seatAt.x, y: place.seatAt.y } : { x: 0.5, y: 0.5 };
     a.lens = { la: la, lb: lb, m: m, dip: dip, lat0: focus.lat, lat1: t.lat, lon0: spin, dLon: shortest(spin, t.lon),
                s0: seat0, s1: t.seat, at: performance.now(), t: t,
-               dur: Math.max(1100, Math.min(4200, 1100 + 560 * travel)) };
+               dur: spec.snap ? LENS_SNAP_MS : Math.max(1100, Math.min(4200, 1100 + 560 * travel)), snap: !!spec.snap };
     return true;
   }
 
   function stepLens(a, now) {
+    if (a.snap && !flying && !dive.on) {
+      // The size sprung back to rest, where it was turned.
+      var qs = Math.min(1, (now - a.snap.at) / LENS_SNAP_MS);
+      zoom = Math.exp(a.snap.la + (a.snap.lb - a.snap.la) * springEase(qs));
+      reframe();
+      handledAt = now;
+      a.dirty = true;
+      tilesDirty = true;
+      marksDirty = true;
+      if (qs >= 1) { a.snap = null; place.zoomTo = zoom; drawn.r = 0; }
+      lensOutCheck();
+    }
     var f = a.lens;
     if (!f || flying || dive.on) { return; }
-    var q = Math.min(1, (now - f.at) / f.dur), s = q * q * (3 - 2 * q);
+    var q = Math.min(1, (now - f.at) / f.dur), s = f.snap ? springEase(q) : q * q * (3 - 2 * q);
     var lz = (1 - s) * (1 - s) * f.la + 2 * s * (1 - s) * f.m + s * s * f.lb;
     zoom = Math.exp(lz);
     // Rising to see both, the turning is done up high.
@@ -15594,14 +15672,169 @@
       place.zoomTo = zoom;
       lensArrived(a, f.t);
     }
+    lensOutCheck();
   }
 
   function lensArrived(a, t) {
     drawn.r = 0;
     marksDirty = true;
     a.dirty = true;
+    if (LENS_GLOBE) { if (!bodyOn()) { weave(R > 2 * Math.max(W, H) ? { lat: t.lat, lon: t.lon } : null); } return; }
     if (!bodyOn()) { weave(t.voice === "close" || t.voice === "first" ? { lat: t.lat, lon: t.lon } : null); }
     if (t.voice === "first") { lensGroundOn(t.lat / RAD, wrap(t.lon) / RAD); }
+  }
+
+  /* ---- the small globe, the viewer's ---------------------------------------
+
+     The artist, 2 Oct 2026, of the lens: "it has changed to a sort of
+     microscope when I want it to be how it was before, an entire globe you
+     can twirl around with small swipes on it while it's still displayed the
+     cities … potentially become bigger and break that kind of for plane …
+     make it as big and small as you want … its resting form is as that small
+     globe that you can rotate, but you can pinch it … and implement a snap".
+     So the lens rests on the whole Earth, small (LENS_REST of the window);
+     the voices only turn it to face what is read. Two fingers, a wheel or a
+     trackpad's pinch on it make it bigger or smaller, about the point
+     between the fingers, from LENS_LEAST of rest to the front globe's own
+     nearest; past the window it is let out (the veil lifts, the clip is
+     off, the picture steps back) and lies over the layout, under the banner,
+     the dial and the column. Let go within LENS_MAGNET of rest and it springs
+     back; a double tap on it, its home mark or Escape bring it home. Spread
+     on past the nearest and it is the dive, as on the front page.
+     LENS_GLOBE = false brings back the distances of the voices. */
+  var LENS_GLOBE = true;
+  var LENS_REST = 0.86, LENS_LEAST = 0.62, LENS_MAGNET = 1.22, LENS_SNAP_MS = 420;
+  var lensOut = false, lensTapT = 0, lensTapAt = 0, lensWheelT = 0;
+  function springEase(q) { var c = 0.9, u = q - 1; return 1 + (c + 1) * u * u * u + c * u * u; }
+  function lensRestR(b) { return LENS_REST * (b || workBands()).lensAt.r; }
+  function lensK() { return art && art.zoomK ? art.zoomK : 1; }
+  function lensMostK(b) { return Math.max(1.5, base0 * SIZE_MOST / Math.max(1, lensRestR(b))); }
+  function lensAway() {
+    return !!(LENS_GLOBE && art && place && readingOn() && (Math.abs(Math.log(lensK())) > 0.01 || lensOut));
+  }
+  function lensOutCheck() {
+    // Out only when the viewer has grown it (a view's own arrival flies in from nearer).
+    var on = !!(LENS_GLOBE && art && place && readingOn() && !flying && lensK() > 1.001 && R > workBands().lensAt.r * 1.02);
+    if (on !== lensOut) {
+      lensOut = on;
+      if (on) { artEl.dataset.out = "true"; } else { delete artEl.dataset.out; }
+      clipWorld(on ? null : workBands());
+    }
+    placeLensHome();
+  }
+  /* Bigger or smaller by f, about (x, y): what is under the fingers stays
+     under them. False when it can go no further that way. */
+  function lensZoomBy(f, x, y) {
+    var a = art;
+    if (!LENS_GLOBE || !a || !place || flying || dive.on || !readingOn()) { return false; }
+    var b = workBands(), k0 = lensK();
+    var k1 = Math.max(LENS_LEAST, Math.min(lensMostK(b), k0 * f));
+    if (Math.abs(k1 - k0) < 1e-6) { return false; }
+    a.lens = null;
+    a.snap = null;
+    a.glide = null;
+    a.zoomK = k1;
+    var R0 = Math.max(1, R);
+    zoom = lensRestR(b) * k1 / Math.max(1, baseR);
+    var R1 = Math.max(1, baseR * zoom);
+    if (x !== undefined) {
+      var dx = x - cx, dy = y - cy;
+      if (dx * dx + dy * dy < R0 * R0) {
+        var wx = dx * (1 - R1 / R0), wy = dy * (1 - R1 / R0);
+        wanted = spin = spin - wx / R1 / Math.max(0.25, Math.cos(focus.lat));
+        lean(tilt + wy / R1);
+        focus.lat = tilt;
+      }
+    }
+    place.zoomTo = zoom;
+    reframe();
+    handledAt = lastTouch = performance.now();
+    drawn.r = 0;
+    a.dirty = true;
+    tilesDirty = true;
+    marksDirty = true;
+    if (window.Voice && Voice.handled) { Voice.handled(); }
+    lensOutCheck();
+    return true;
+  }
+  /* The size eased to k times rest, where the world has been turned. */
+  function lensSize(k) {
+    var a = art;
+    if (!a || !place) { return; }
+    a.zoomK = k;
+    var lb = Math.log(Math.max(1e-6, lensRestR() * k / Math.max(1, baseR)));
+    a.lens = null;
+    if (still) {
+      zoom = Math.exp(lb);
+      place.zoomTo = zoom;
+      reframe();
+      a.dirty = true;
+      drawn.r = 0;
+      marksDirty = true;
+      lensOutCheck();
+      return;
+    }
+    a.snap = { la: Math.log(Math.max(1e-6, zoom)), lb: lb, at: performance.now() };
+  }
+  /* Let go: near rest, it springs there (the magnet). */
+  function lensRelease() {
+    var a = art;
+    if (!LENS_GLOBE || !a || !place || !readingOn()) { return; }
+    var k = lensK();
+    if (Math.abs(Math.log(k)) > 1e-3 && Math.abs(Math.log(k)) < Math.log(LENS_MAGNET)) { lensSize(1); }
+    else if (!bodyOn()) { weave(R > 2 * Math.max(W, H) ? { lat: focus.lat, lon: spin } : null); }
+  }
+  /* Home: the small globe at rest, in its window, facing what is read. */
+  function lensHome() {
+    var a = art;
+    if (!LENS_GLOBE || !a || !place || !readingOn() || flying) { return false; }
+    window.clearTimeout(lensTapT);
+    a.zoomK = 1;
+    if (lensSwapped) { setSwap(false); }
+    if (a.lensSpec) {
+      var spec = {};
+      Object.keys(a.lensSpec).forEach(function (k) { spec[k] = a.lensSpec[k]; });
+      spec.now = still;
+      spec.snap = true;
+      lensTo(spec);
+    } else {
+      lensSize(1);
+    }
+    var L = workBands().lensAt;
+    if (!still) { pulse(L.x, L.y, [LIGHT], 0.35, L.r * 1.3); }
+    return true;
+  }
+  /* Its home mark: one quiet tile of the pixel light beside the window,
+     only while the globe is away from rest. */
+  var lensHomeEl = null;
+  if (artEl) {
+    lensHomeEl = el("button", "snap-home lens-home");
+    lensHomeEl.type = "button";
+    lensHomeEl.hidden = true;
+    lensHomeEl.setAttribute("aria-label", "The small globe, back to rest");
+    lensHomeEl.title = "Back to rest";
+    lensHomeEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    lensHomeEl.addEventListener("click", function (event) { event.stopPropagation(); lensHome(); });
+    artEl.appendChild(lensHomeEl);
+  }
+  function placeLensHome() {
+    if (!lensHomeEl) { return; }
+    var show = lensAway() && !artEl.dataset.full;
+    lensHomeEl.hidden = !show;
+    if (!show) { return; }
+    var b = workBands(), x, y;
+    if (lensSwapped) {
+      x = b.hole.x + 6; y = b.hole.y + 6;
+    } else {
+      var L = b.lens, o = 0.707 * L.r;
+      x = L.x - o - 19; y = L.y - o - 19;
+      // Clear of the dial's own home mark.
+      var dh = artTime && artTime.querySelector(".dial-home");
+      var r = dh && dh.offsetParent ? dh.getBoundingClientRect() : null;
+      if (r && r.width && x < r.right + 8 && x + 13 > r.left - 8 && y < r.bottom + 8 && y + 13 > r.top - 8) { y = L.y + o + 6; }
+    }
+    lensHomeEl.style.left = Math.max(6, Math.min(W - 19, x)).toFixed(0) + "px";
+    lensHomeEl.style.top = Math.max(6, Math.min(H - 19, y)).toFixed(0) + "px";
   }
 
   /* The first person: the ground where they stood, DIRT Earth's, in the
@@ -15699,7 +15932,7 @@
               moving: !!(a.moving || a.auto || a.playing), playing: !!(a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
               at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
               picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
-              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full };
+              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut };
     if (a.kind === "work") {
       var evs = a.data.events;
       o.work = { pin: a.pin, ring: a.ring, when: a.when, flipped: !!a.flipped, title: a.data.title || "",
@@ -16282,6 +16515,9 @@
     var a = art;
     if (!a) { return; }
     var taken = [];
+    // The small globe let out over the reading: never a name over the column.
+    var col = lensOut && artCol ? artCol.getBoundingClientRect() : null;
+    var top = lensOut && banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom + 4 : -1e9;
     a.stops.forEach(function (s) {
       var n = a.names[s.p];
       if (!n || n.placed === a.frame) { return; }
@@ -16289,7 +16525,7 @@
       var p = project(s.lat, s.lon);
       var x = Math.floor(p.x / CELL_PX) * CELL_PX + CELL_PX + 5, y = Math.floor(p.y / CELL_PX) * CELL_PX;
       var w = n.offsetWidth || 60;
-      var clear = p.z > 0.18 && !taken.some(function (b) {
+      var clear = p.z > 0.18 && y > top && !(col && x + w > col.left && x < col.right && y + 12 > col.top && y < col.bottom) && !taken.some(function (b) {
         return x < b.x + b.w && b.x < x + w && Math.abs(b.y - y) < 12;
       });
       if (clear) { taken.push({ x: x, y: y, w: w }); }
@@ -16475,7 +16711,7 @@
      as a fraction of the window, one for a phone-sized window and one for a
      larger, and every dial on the site stands there. A double tap on its
      face sends it home; Shift and the arrows nudge it. */
-  var DIAL_MARGIN = 12, DIAL_MAGNET = 24, DIAL_HOLD = 350;
+  var DIAL_MARGIN = 12, DIAL_MAGNET = 24, DIAL_HOLD = 350, DIAL_HOME_MAGNET = 40;
   var dialPlaceVer = 0;
   function dialPlaceKey() { return "dial.place." + (window.innerWidth <= 720 ? "phone" : "desk"); }
   function dialPlace() {
@@ -16515,6 +16751,7 @@
     st.setProperty("bottom", "auto", "important");
     st.setProperty("transform", "none", "important");
     d.box.dataset.moved = "true";
+    if (c.x - S / 2 < 34) { d.box.dataset.homeSide = "right"; } else { delete d.box.dataset.homeSide; }
     return c;
   }
   function dialHome(d) {
@@ -16547,6 +16784,23 @@
     dialSettle(d);
     dialPut(d, home.left + home.width / 2, home.top + home.height / 2);
     window.setTimeout(function () { if (!dialPlace()) { dialHome(d); d.placed = ""; } }, 340);
+  }
+  /* Home, from its double tap, its home mark or the magnet: the other dials
+     and the reading's lens (which keeps room for it on a phone) are told. */
+  function dialGoHome(d) {
+    dialSendHome(d);
+    dials.forEach(function (o) { if (o !== d) { o.placed = ""; } });
+    dialRelens();
+  }
+  function dialRelens() {
+    if (!art || !readKind(art.kind)) { return; }
+    layoutWork();
+    if (art.lensSpec && place && !flying) {
+      var sp = {};
+      Object.keys(art.lensSpec).forEach(function (k) { sp[k] = art.lensSpec[k]; });
+      sp.now = still;
+      lensTo(sp);
+    }
   }
 
   /* The first time (artist, 1 Oct 2026: "It also should play automatically
@@ -16613,6 +16867,16 @@
     box.appendChild(face);
     var d = { box: box, range: range, face: face, g: face.getContext("2d"), span: span, ticksOf: ticksOf,
               drawn: "", grab: null, last: null, down: null, move: null, hold: 0, lastTap: 0, placed: "" };
+    // Its home mark (artist, 2 Oct 2026: "I can make them go back to that
+    // initial place with some sort of snap function"): shown while it is moved.
+    var homeMark = document.createElement("button");
+    homeMark.type = "button";
+    homeMark.className = "snap-home dial-home";
+    homeMark.setAttribute("aria-label", "The dial, back to its place");
+    homeMark.title = "Back to its place";
+    homeMark.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    homeMark.addEventListener("click", function (event) { event.stopPropagation(); dialGoHome(d); });
+    box.appendChild(homeMark);
     function tAt(event) {
       var r = face.getBoundingClientRect();
       var a = Math.atan2(event.clientY - r.top - r.height / 2, event.clientX - r.left - r.width / 2);
@@ -16695,6 +16959,15 @@
         delete box.dataset.lifted;
         d.drawn = "";
         if (m.moved && m.at) {
+          // Let go near home, it is drawn home (and forgets where it was put).
+          var r1 = box.getBoundingClientRect();
+          dialHome(d);
+          var hr = box.getBoundingClientRect();
+          dialPut(d, r1.left + r1.width / 2, r1.top + r1.height / 2);
+          if (Math.hypot(m.at.x - hr.left - hr.width / 2, m.at.y - hr.top - hr.height / 2) < DIAL_HOME_MAGNET) {
+            dialGoHome(d);
+            return;
+          }
           // Eased into place; an edge within 24 px draws it the rest of the way.
           var lo = dialClamp(d, -1e5, -1e5), hi = dialClamp(d, 1e5, 1e5);
           var x = m.at.x, y = m.at.y;
@@ -16706,11 +16979,11 @@
           d.placed = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
           dials.forEach(function (o) { if (o !== d) { o.placed = ""; } });
           // The work's globe no longer keeps room for it where it was.
-          if (art && art.kind === "work") { layoutWork(); }
+          dialRelens();
         } else if (down && down.inner && event.type === "pointerup") {
           // Two taps on its face send it home.
           var now = performance.now();
-          if (now - d.lastTap < 320) { d.lastTap = 0; dialSendHome(d); dials.forEach(function (o) { if (o !== d) { o.placed = ""; } }); }
+          if (now - d.lastTap < 320) { d.lastTap = 0; dialGoHome(d); }
           else { d.lastTap = now; }
         }
         return;
@@ -17083,7 +17356,11 @@
       setFull(!artEl.dataset.full);
     });
     window.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && artEl.dataset.full) {
+      if (event.key === "Escape" && art && lensAway()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        lensHome();
+      } else if (event.key === "Escape" && artEl.dataset.full) {
         event.preventDefault();
         event.stopImmediatePropagation();
         setFull(false);
