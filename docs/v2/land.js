@@ -705,7 +705,13 @@
         pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT, LILAC], 0.5, 89);
         return;
       }
-      if (city.open) { city.open(); } else { goDown(city); }
+      // Pressed on a reading's grown globe: the path goes on through this layer.
+      if (grown) {
+        cameLayer = layerOn;
+        var rg = el.firstChild.getBoundingClientRect();
+        pulse(rg.left + rg.width / 2, rg.top + rg.height / 2, [LIGHT, LILAC], 0.6, 144);
+      }
+      if (city.open) { city.open(); } else if (place) { hopTo(city); } else { goDown(city); }
     });
     el.addEventListener("pointerdown", function (event) {
       city.touched = event.pointerType === "touch";
@@ -881,6 +887,10 @@
   }
   if (!LAYERS.some(function (l) { return l.key === layerOn; })) { layerOn = LAYERS[0].key; }
   var filterEl = document.getElementById("filter");
+  // The viewer's stored choice (the front globe's), and the layer the path
+  // being read came through: set by every press on a globe (the front one or
+  // the reading's grown one), so a view opens its grown globe on it.
+  var layerKept = layerOn, cameLayer = null;
 
   function filterGlobe() {
     cities.forEach(function (city) {
@@ -891,7 +901,11 @@
     marksDirty = true;
     if (!filterEl) { return; }
     Array.prototype.forEach.call(filterEl.children, function (b) {
-      if (b.dataset.layer) { b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn)); }
+      if (!b.dataset.layer) { return; }
+      b.setAttribute("aria-pressed", String(b.dataset.layer === layerOn));
+      // On a reading's grown globe, the layer the path came through is marked.
+      var came = grown && b.dataset.layer === (cameLayer || layerKept);
+      if (came) { b.dataset.came = "true"; b.title = "The way you came"; } else { delete b.dataset.came; b.removeAttribute("title"); }
     });
   }
 
@@ -907,6 +921,15 @@
         // Pressed again while its cities could not be read: read them again.
         if (layerOn === l.key && !(l.key === "museums" && !towns)) { return; }
         layerOn = l.key;
+        var r0 = b.getBoundingClientRect();
+        // On a reading's grown globe the choice is the reading's: not stored,
+        // and the stored one comes back when the viewer goes up to the world.
+        if (grown) {
+          grownLayer();
+          pulse(r0.left + r0.width / 2, r0.top + r0.height / 2, [LIGHT], 0.4, Math.max(W, H) * INV3);
+          return;
+        }
+        layerKept = layerOn;
         try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
         filterGlobe();
         placeMarks();
@@ -973,7 +996,10 @@
     marksDirty = true;
   }
 
-  function safeBox() { return { x0: 16, y0: 16, x1: W - 16, y1: H - safeFoot }; }
+  function safeBox() {
+    if (grown && grownAt) { return grownAt.box; }
+    return { x0: 16, y0: 16, x1: W - 16, y1: H - safeFoot };
+  }
 
   /* Every mark's measurements, in one pass: its width, its name's width and
      height, where its dot's middle is and how far the name starts from it. */
@@ -1026,7 +1052,14 @@
   }
 
   // How many names the window has room for: seven on a phone, 21 at most.
-  function nameBudget() { return Math.max(5, Math.min(21, Math.round(W * H / 46000))); }
+  function nameBudget() {
+    // On a reading's grown globe, as many as the area it is seen in has room for.
+    if (grown && grownAt) {
+      var g = grownAt.box;
+      return Math.max(3, Math.min(21, Math.round(Math.max(0, g.x1 - g.x0) * Math.max(0, g.y1 - g.y0) / 46000)));
+    }
+    return Math.max(5, Math.min(21, Math.round(W * H / 46000)));
+  }
 
   function placeMarks() {
     if (!marksDirty && marksAt.spin === spin && marksAt.tilt === tilt && marksAt.R === R &&
@@ -1042,7 +1075,7 @@
       var x = p.x, y = p.y;
       // A city of galleries is its tile: its name sits beside the lit cell.
       if (city.tile) { x = (Math.floor(x / CELL_PX) + 0.5) * CELL_PX; y = (Math.floor(y / CELL_PX) + 0.5) * CELL_PX; }
-      if (p.z <= 0.12 || x < S.x0 || x > S.x1 || y < S.y0 || y > S.y1) {
+      if (p.z <= 0.12 || x < S.x0 || x > S.x1 || y < S.y0 || y > S.y1 || inAvoid(x, y, 6)) {
         if (city.knot) { city.knot = false; delete city.el.dataset.knot; }
         hideMark(city);
         return;
@@ -1182,6 +1215,7 @@
     }
     function fits(b, lead, keep) {
       if (b.x0 < S.x0 || b.x1 > S.x1 || b.y0 < S.y0 || b.y1 > S.y1) { return false; }
+      if (boxAvoid(b)) { return false; }
       if (!onEarth(b.x0, b.y0) || !onEarth(b.x1, b.y0) || !onEarth(b.x0, b.y1) || !onEarth(b.x1, b.y1)) { return false; }
       for (var k = 0; k < given.length; k += 1) {
         var o = given[k];
@@ -1317,6 +1351,7 @@
 
   function goDown(city) {
     if (flying || place) { return; }
+    cameLayer = layerOn;            // the layer this path came through (the grown globe opens on it)
     settleSwing();
     if (route) { endRoute(); }
     if (!city.art) { artAsked = null; }   // pressed elsewhere: a view still being read is not flown to
@@ -1869,6 +1904,15 @@
     banner.hidden = true;
     land.dataset.at = "globe";
     showHere(false);
+    grownOff();
+    // A layer chosen in a reading was the reading's: up at the world, the viewer's own comes back.
+    cameLayer = null;
+    if (layerOn !== layerKept) {
+      layerOn = layerKept;
+      filterGlobe();
+      museumsLayer();
+      studiosLayer();
+    }
     measureSafe();                  // the pills are there to be measured again
     // How you got here, drawn once on the way out (the walk).
     if (artWalk.length > 1) { drawWalkOnce(); }
@@ -3481,7 +3525,7 @@
       ctx.globalCompositeOperation = "source-over";
     }
     living(now);
-    if (layerOn === "museums" && !place && towns) { drawTowns(now); }
+    if (layerOn === "museums" && (!place || grown) && towns) { drawTowns(now); }
     if (place && !flying && art && art.kind === "town") { drawVenues(); }
     if (following && place) { drawFollowed(); }
     placeGloss();
@@ -5507,7 +5551,8 @@
     // replanting them at seven times the size would churn the whole
     // vocabulary every frame for something nobody can see.
     if (!place) { placeWords(); }
-    if (!place || flying) { placeMarks(); }
+    if (place && !flying) { stepGrown(); } else if (grown) { grownOff(); }
+    if (!place || flying || grown) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
     if (art && !dive.on) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
 
@@ -8760,8 +8805,17 @@
           showVenue(hit);
           return;
         }
-        if (layerOn === "museums" && !place && !flying && (hit = hitTown(event.clientX, event.clientY, event.pointerType !== "mouse"))) {
+        if (grown && ARTWORKS && art && (k = hitStop(event.clientX, event.clientY)) >= 0) {
           squashing = null;
+          chooseStop(k);
+          return;
+        }
+        if (layerOn === "museums" && (!place || grown) && !flying && (hit = hitTown(event.clientX, event.clientY, event.pointerType !== "mouse"))) {
+          squashing = null;
+          if (grown) {
+            cameLayer = layerOn;
+            pulse(event.clientX, event.clientY, [LIGHT, LILAC], 0.6, 144);
+          }
           openTown(hit.key);
           return;
         }
@@ -13957,7 +14011,7 @@
       var knot = !!(t.mark && t.mark.knot);
       if (t.museums.length && !knot) { continue; }          // a diamond is its own mark
       var p = project(t.lat, t.lon);
-      if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1) { continue; }
+      if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1 || inAvoid(p.x, p.y, 7)) { continue; }
       // A tile under a name is let go while the name is there, as a dot is.
       if (!(t.mark && t.mark.wasNamed) && underName(p.x, p.y)) { continue; }
       var level = hits ? (hits[t.key] ? 4 : 1) : knot ? 3 : t.n >= TOWN_NAMED_N ? 2 : 1;
@@ -14571,6 +14625,9 @@
     // the lens is; the lens flown to a voice's distance; the picture of the
     // moment; the tense under the dial's years; the lens and picture swapped.
     reading: function () { return readingState(); },
+    // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
+    grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
+                                  tiles: Object.keys(tilesShown).length }; },
     lens: function (spec) { return lensTo(spec); },
     picture: function (spec) { showPicture(spec || null); },
     tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
@@ -15861,6 +15918,158 @@
     }
     lensHomeEl.style.left = Math.max(6, Math.min(W - 19, x)).toFixed(0) + "px";
     lensHomeEl.style.top = Math.max(6, Math.min(H - 19, y)).toFixed(0) + "px";
+  }
+
+  /* ---- the grown globe, a globe you can use --------------------------------
+
+     The artist, 3 Oct 2026, of Li Qing's life with the small globe pinched
+     big out of its window: "When I zoom in on the globe like this I want to
+     be able to select things on the globe. It should show the overall
+     filter initially used to get to this point, but then I should be able
+     to change to the other globe filters as well". Grown out of its window
+     (lensOut) or swapped into the big place, the reading's globe carries the
+     front globe's marks of one layer — cities, collages, buildings,
+     birthplaces — named by the same calm rules for the area it is seen in,
+     pressed as there (only what is shown; a press leaves the reading for
+     that place, and the categories' way back keeps the reading one press
+     away), with the filter's pills at its foot (the same element, moved
+     into the reading). It opens on the layer the path came through
+     (`cameLayer`, set by every press on a globe), marked; a choice made
+     here is the reading's, and the viewer's stored one comes back at the
+     world. At rest, in its window, it is as it was: too small to press. */
+  var grown = false, grownAt = null, grownMeasured = 0, grownKey = "", grownArt = null;
+  var filterHome = null, filterNext = null;
+  function grownNow() {
+    return !!(LENS_GLOBE && LENS && place && art && readingOn() && !flying && !dive.on &&
+              (lensOut || lensSwapped) && !artEl.dataset.full && artEl.dataset.look !== "plate");
+  }
+  function stepGrown() {
+    // A new view: its grown globe opens on the layer the path came through.
+    if (art !== grownArt) {
+      grownArt = art;
+      var want = cameLayer || layerKept;
+      if (art && layerOn !== want && LAYERS.some(function (l) { return l.key === want; })) {
+        layerOn = want;
+        if (grown) { grownLayer(); } else { filterGlobe(); }
+      }
+    }
+    var on = grownNow();
+    if (on && !grown) {
+      grown = true;
+      land.dataset.grown = "true";
+      if (filterEl && artEl) {
+        filterHome = filterEl.parentNode;
+        filterNext = filterEl.nextSibling;
+        artEl.appendChild(filterEl);
+        filterEl.dataset.grown = "true";
+      }
+      grownMeasured = 0;
+      grownLayer();
+      measureNames();
+    } else if (!on && grown) {
+      grownOff();
+    }
+    if (grown) { grownMeasure(); }
+  }
+  function grownOff() {
+    if (!grown) { return; }
+    grown = false;
+    grownAt = null;
+    grownKey = "";
+    delete land.dataset.grown;
+    if (filterEl && filterHome) {
+      filterHome.insertBefore(filterEl, filterNext && filterNext.parentNode === filterHome ? filterNext : null);
+      delete filterEl.dataset.grown;
+      filterEl.style.removeProperty("left");
+      filterEl.style.removeProperty("top");
+    }
+    tilesShown = {};
+    nameBoxes = [];
+    filterGlobe();
+    marksDirty = true;
+  }
+  /* The layer chosen (or come back to) on the grown globe: its marks read and raised. */
+  function grownLayer() {
+    filterGlobe();
+    if (layerOn === "museums") {
+      readTowns().then(function () {
+        if (!towns || cities.some(function (c) { return c.town; })) { return; }
+        townsLitAt = performance.now();
+        raiseTowns();
+        filterGlobe();
+        measureNames();
+      });
+    }
+    studiosLayer();
+    marksDirty = true;
+  }
+  /* Where the grown globe is seen: the band it has (a phone: under the
+     banner to the column; a desktop: left of the column; swapped: the big
+     place), less what lies over it — the dial, the home marks, the
+     sentence, the pills — and where the pills go: at its foot, clear of
+     those. Measured five times a second at most. */
+  function grownMeasure() {
+    var now = performance.now();
+    if (grownAt && now - grownMeasured < 200) { return; }
+    grownMeasured = now;
+    var b = workBands();
+    var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 60;
+    var box;
+    if (lensSwapped) {
+      var h = b.hole;
+      box = { x0: h.x + 8, y0: Math.max(h.y + 8, under + 6), x1: h.x + h.w - 8, y1: h.y + h.h - 8 };
+    } else if (b.phone) {
+      box = { x0: 12, y0: under + 8, x1: W - 12, y1: (b.colTop || Math.round(0.64 * H)) - 6 };
+    } else {
+      var cr = artCol && artCol.offsetParent ? artCol.getBoundingClientRect() : null;
+      box = { x0: 16, y0: under + 8, x1: (cr && cr.width ? cr.left : W) - 10, y1: H - 16 };
+    }
+    var avoid = [];
+    function rectOf(e, pad) {
+      if (!e || e.hidden || !e.offsetParent) { return; }
+      var r = e.getBoundingClientRect();
+      if (r.width && r.height) { avoid.push({ x0: r.left - pad, y0: r.top - pad, x1: r.right + pad, y1: r.bottom + pad }); }
+    }
+    rectOf(artTime, 4);
+    rectOf(lensHomeEl, 4);
+    Array.prototype.forEach.call(artEl.querySelectorAll(".voice-cap, .voice-chip, .dial-home"), function (e) {
+      if ((e.textContent || "").trim() || e.classList.contains("dial-home")) { rectOf(e, 4); }
+    });
+    // The pills: at the foot, in the middle; else to a side; else up, clear of what lies there.
+    if (filterEl && filterEl.dataset.grown) {
+      var fw = filterEl.offsetWidth, fh = filterEl.offsetHeight;
+      var hit = function (x, y) {
+        return avoid.some(function (a) { return x < a.x1 && a.x0 < x + fw && y < a.y1 && a.y0 < y + fh; });
+      };
+      var lo = box.x0, hi = Math.max(box.x0, box.x1 - fw);
+      var xs = [Math.round((box.x0 + box.x1 - fw) / 2), lo, hi];
+      var fx = xs[0], fy = box.y1 - fh, found = false;
+      for (var yy = box.y1 - fh; yy >= box.y0 && !found; yy -= 8) {
+        for (var q = 0; q < xs.length; q += 1) {
+          var xx = Math.max(lo, Math.min(hi, xs[q]));
+          if (!hit(xx, yy)) { fx = xx; fy = yy; found = true; break; }
+        }
+      }
+      fx = Math.max(4, Math.min(W - fw - 4, fx));
+      filterEl.style.left = fx.toFixed(0) + "px";
+      filterEl.style.top = fy.toFixed(0) + "px";
+      avoid.push({ x0: fx - 6, y0: fy - 6, x1: fx + fw + 6, y1: fy + fh + 6 });
+      // What is under the pills, across the whole foot, is no place for a name.
+      if (fy + fh >= box.y1 - 2) { box.y1 = Math.min(box.y1, fy - 6); }
+    }
+    grownAt = { box: box, avoid: avoid };
+    var key = [box.x0, box.y0, box.x1, box.y1].map(Math.round).join(",") + "|" +
+      avoid.map(function (a) { return [a.x0, a.y0, a.x1, a.y1].map(Math.round).join(","); }).join(";");
+    if (key !== grownKey) { grownKey = key; marksDirty = true; }
+  }
+  function inAvoid(x, y, pad) {
+    if (!grown || !grownAt) { return false; }
+    pad = pad || 0;
+    return grownAt.avoid.some(function (a) { return x > a.x0 - pad && x < a.x1 + pad && y > a.y0 - pad && y < a.y1 + pad; });
+  }
+  function boxAvoid(b) {
+    if (!grown || !grownAt) { return false; }
+    return grownAt.avoid.some(function (a) { return b.x0 < a.x1 && a.x0 < b.x1 && b.y0 < a.y1 && a.y0 < b.y1; });
   }
 
   /* The first person: the ground where they stood, DIRT Earth's, in the

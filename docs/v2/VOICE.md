@@ -114,6 +114,7 @@ of the voice's.
 | life | work | close | present | shoulder |  | {who} {goes} {place}, {year}: *{title}*. |
 | life | died | close | present | shoulder |  | {who} dies in {place}, {year}. |
 | life | gap | panoramic | present | route |  | {year}: no record says where {who} is. |
+| life | since | panoramic | present | route |  | {who}: no place is recorded after {place}, {last}. |
 | life | after | panoramic | future | after |  | {year}: {whose} works will be in {cities}. |
 | life | after-quiet | panoramic | future | route |  | {year}: {whose} works will go on. |
 | movement | overview | omniscient | past | movement |  | {place}, {year}. {others} {were} here. |

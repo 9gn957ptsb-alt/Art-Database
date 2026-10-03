@@ -52,8 +52,16 @@
     return b;
   }
   function fold(t) { return " " + String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() + " "; }
+  /* A name bare of a trailing parenthesis ("(b. 1981)", "(1757-1827)"). */
+  function bareName(a) { return String(a || "").replace(/\s*\([^)]*\)\s*$/, "").trim(); }
+  var CJK = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/;
+  /* The name a sentence calls them by: the surname, or for a name written in
+     its own script as well ("Li Qing 李青") the whole Latin name, since the
+     family name may come first. */
   function surname(a) {
-    var w = String(a || "").split(" "), k = w.length - 1;
+    var s = bareName(a), east = CJK.test(s);
+    var w = s.split(/\s+/).filter(function (x) { return x && !CJK.test(x); }), k = w.length - 1;
+    if (east || k < 0) { return w.join(" ") || s; }
     while (k > 0 && /^(de|van|von|da|di|del|der|le|la)$/i.test(w[k - 1])) { k -= 1; }
     return w.slice(k).join(" ");
   }
@@ -70,6 +78,8 @@
         d.byName = {};
         d.byId = {};
         d.lives.forEach(function (r, i) { d.byName[r[1]] = i; d.byId[r[0]] = i; });
+        // Also by the name bare of its trailing years ("Li Qing 李青 (b. 1981)" is kinds.json's "Li Qing 李青").
+        d.lives.forEach(function (r, i) { var b = bareName(r[1]); if (d.byName[b] === undefined) { d.byName[b] = i; } });
         D = d;
         return D;
       }).catch(function () { loading = null; return null; });

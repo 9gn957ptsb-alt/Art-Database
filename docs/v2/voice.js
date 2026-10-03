@@ -49,8 +49,15 @@
     if (text !== undefined && text !== null) { e.textContent = text; }
     return e;
   }
+  /* The name a sentence calls them by: the surname, bare of a trailing
+     "(b. 1981)" or "(1757-1827)"; for a name written in its own script as
+     well ("Li Qing 李青") the whole Latin name, since the family name may
+     come first. */
+  var CJK = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/;
   function surname(a) {
-    var w = String(a || "").trim().split(/\s+/), k = w.length - 1;
+    var s = String(a || "").replace(/\s*\([^)]*\)\s*$/, "").trim(), east = CJK.test(s);
+    var w = s.split(/\s+/).filter(function (x) { return x && !CJK.test(x); }), k = w.length - 1;
+    if (east || k < 0) { return w.join(" ") || s; }
     while (k > 0 && /^(de|van|von|da|di|del|der|le|la|du|ter|ten)$/i.test(w[k - 1])) { k -= 1; }
     return w.slice(k).join(" ");
   }
@@ -608,6 +615,11 @@
     }
     if (!p) {
       if (y === L.born && L.b) { return out("born", { who: who, place: short(L.b[0]), year: y, ll: L.b[1] }, "born"); }
+      // A living artist past the last place the record names: said once, plainly, not "where … is".
+      var lastP = L.periods.length ? L.periods[L.periods.length - 1] : null;
+      if (!L.died && lastP && y > lastP.y1) {
+        return out("since", { who: who, place: short(lastP.place), last: lastP.y1, pts: route }, "since");
+      }
       return out("gap", { year: y, who: who, pts: route }, "gap");
     }
     if (y === L.died && L.d && (!want || want === "died")) {

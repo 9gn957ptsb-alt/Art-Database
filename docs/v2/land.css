@@ -386,14 +386,22 @@
   pointer-events: none;
 }
 
-.land[data-at="city"] .city,
-.land[data-at="flying"] .city {
+.land[data-at="city"]:not([data-grown]) .city,
+.land[data-at="flying"] .city,
+.land[data-grown] .city[data-intown] {
   opacity: 0 !important;
   pointer-events: none;
 }
 
-.land[data-at="city"] .city > *,
-.land[data-at="flying"] .city > * { pointer-events: none; }
+.land[data-at="city"]:not([data-grown]) .city > *,
+.land[data-at="flying"] .city > *,
+.land[data-grown] .city[data-intown] > * { pointer-events: none; }
+
+/* A reading's grown globe (land.js, "the grown globe"): the marks of its
+   layer, light on the dark, pressed as on the front globe. */
+.land[data-grown] .city { color: #eadfcd; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75); }
+.land[data-grown] .city:hover,
+.land[data-grown] .city:focus-visible { color: #ffffff; }
 
 .land[data-at="globe"] .creature,
 .land[data-at="flying"] .creature,
@@ -2023,6 +2031,32 @@
 .filter-layer:hover,
 .filter-layer:focus-visible { color: #eadfcd; }
 .filter-layer[aria-pressed="true"] { background: #eadfcd; color: #0f0a07; }
+/* The pills on a reading's grown globe: the same element, moved to the foot
+   of what of the globe is seen, smaller; the layer the path came through
+   carries a lilac tile. */
+.filter[data-grown] {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: none;
+  z-index: 13;
+  background: rgba(15, 10, 7, 0.78);
+}
+.filter[data-grown] .filter-layer { min-height: 26px; padding: 4px 9px; font-size: 10px; letter-spacing: 0.05em; }
+@media (max-width: 720px) {
+  .filter[data-grown] .filter-layer { padding: 4px 7px; letter-spacing: 0.03em; }
+}
+.filter-layer[data-came] { position: relative; }
+.filter-layer[data-came]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  background: #9d95e6;
+}
 
 /* A museum that holds saved works: a diamond, so it reads as neither a
    collage, the library, nor a building from the Architectural Authority. */

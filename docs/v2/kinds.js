@@ -171,7 +171,14 @@
   function itemKey(it) { return it ? it.k + ":" + it.id : ""; }
   function same(a, b) { return !!a && !!b && itemKey(a) === itemKey(b); }
 
-  function artistItem(name) { return { k: "artist", id: name, name: name }; }
+  /* An artist is keyed as kinds.json and finding.json name them: bare of a
+     trailing "(b. 1981)" or "(1757-1827)", which a life's name may carry
+     ("Li Qing 李青 (b. 1981)" is "Li Qing 李青" there). */
+  function artistItem(name) {
+    var n = String(name || ""), bare = n.replace(/\s*\([^)]*\)\s*$/, "").trim();
+    var id = D && bare !== n && !D.k.artists[n] && !D.byArtist[n] && (D.k.artists[bare] || D.byArtist[bare]) ? bare : n;
+    return { k: "artist", id: id, name: id === bare ? bare : n };
+  }
   function workItem(i) { var w = D.works[i]; return { k: "work", id: w.id, name: w.t }; }
   function museumItem(slug) { var m = D.museum[slug]; return m ? { k: "museum", id: slug, name: m.name } : null; }
   function placeItem(key) { var t = D.towns[key]; return t ? { k: "place", id: key, name: t.name } : null; }
