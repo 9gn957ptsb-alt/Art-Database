@@ -1113,14 +1113,20 @@
     // The collages are seven: each is named whenever it has room, and its
     // dot is never let go. The rest are named as many at a time as the
     // window has room for.
+    // The Artists are names only (artist, 3 Oct 2026: "There's still way too
+    // many dots on the globe for the artist filter. I just want artist names
+    // to be where they were born"): no mark stands for an artist unnamed, so
+    // the window takes more names, and more as the world comes nearer.
     var rules = layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
-      : layerOn === "architecture" ? { stack: true, budget: nameBudget() } : { budget: nameBudget() };
+      : layerOn === "architecture" ? { stack: true, budget: nameBudget() }
+      : layerOn === "studios" ? { namesOnly: true, budget: Math.round(nameBudget() * Math.min(2.6, Math.max(1.3, R / Math.max(1, base0)))) }
+      : { budget: nameBudget() };
     rules.box = S;
     nameBoxes = nameMarks(items, rules);
 
     items.forEach(function (it) {
       var c = it.city;
-      if (it.hidden) { hideMark(c); nameShown(c, false); return; }
+      if (it.hidden || (rules.namesOnly && !it.side)) { hideMark(c); nameShown(c, false); return; }
       var dim = finding && c.town && !finder.found[c.town.key] ? 0.3 : 1;
       putMark(c, it.x, it.y, it.side || (c.el.dataset.side === "left" ? "left" : "right"),
               (INV2 + INV * Math.min(1, (it.z - 0.12) / 0.3)) * dim);
@@ -1292,7 +1298,8 @@
           }
         }
       }
-      if (!rules.keepDots) { g.members.forEach(function (m) { dots.push(dotOf(m)); }); }
+      // Names only: an artist unnamed is not drawn, so keeps nothing clear.
+      if (!rules.keepDots && !(rules.namesOnly && !g.lead.side)) { g.members.forEach(function (m) { dots.push(dotOf(m)); }); }
     });
     return given;
   }
@@ -3791,7 +3798,11 @@
     vocabulary.forEach(function (g) { nightLights.push({ lat: g.lat, lon: g.lon, b: 1, k: Math.random() * TAU }); });
     cities.forEach(function (c) {
       if (c.town) { return; }                      // a city of the Museums layer is its own mark
-      nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true });
+      // Nor a birthplace, a building or a museum: a layer's marks are its own
+      // (3 Oct 2026: the Artists layer carries only its names, and every
+      // birthplace had been a gold cross on the night side).
+      if (c.studio || c.building || c.museum) { return; }
+      nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true, city: c });
     });
   }
 
@@ -3802,6 +3813,7 @@
     ctx.save();
     ctx.globalAlpha = fade;
     nightLights.forEach(function (l) {
+      if (l.city && l.city.off) { return; }        // a collage's light only on the Collages layer
       var dark = darkAt(l.lat, l.lon);
       if (dark <= 0.2) { return; }
       var p = project(l.lat, l.lon);
