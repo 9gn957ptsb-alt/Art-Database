@@ -235,6 +235,12 @@
       var b = D.arch.filter(function (x) { return x.slug === w.building; })[0];
       return Promise.resolve(b ? buildingItem(b) : null);
     }
+    // The artists born in a town (the Artists layer's mark of several): that town, as a place.
+    if (w.at === "life" && w.id && String(w.id).indexOf("born:") === 0) {
+      var bn = fold(String(w.id).slice(5)), bk = null;
+      Object.keys(D.towns).forEach(function (key) { if (!bk && fold(D.towns[key].name) === bn) { bk = key; } });
+      return Promise.resolve(bk ? placeItem(bk) : null);
+    }
     if (w.at === "life" && w.id && window.Lives) {
       return Lives.load().then(function (L) {
         var i = L && L.byId[w.id];

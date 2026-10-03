@@ -2042,9 +2042,9 @@
   z-index: 13;
   background: rgba(15, 10, 7, 0.78);
 }
-.filter[data-grown] .filter-layer { min-height: 26px; padding: 4px 9px; font-size: 10px; letter-spacing: 0.05em; }
+.filter[data-grown] .filter-layer { min-height: 24px; padding: 3px 9px; font-size: 10px; letter-spacing: 0.05em; }
 @media (max-width: 720px) {
-  .filter[data-grown] .filter-layer { padding: 4px 7px; letter-spacing: 0.03em; }
+  .filter[data-grown] .filter-layer { min-height: 22px; padding: 3px 7px; letter-spacing: 0.03em; }
 }
 .filter-layer[data-came] { position: relative; }
 .filter-layer[data-came]::after {

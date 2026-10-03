@@ -96,8 +96,16 @@ def year_of(v):
     return int(m.group(1)) if m else None
 
 
+CJK = re.compile('[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]')
+
+
 def surname(name):
-    w = name.split()
+    # Bare of a trailing '(b. 1981)' or '(1757-1827)'; a name also written in its own script
+    # ('Li Qing 李青') is called by its whole Latin name, since the family name may come first.
+    bare = re.sub(r'\s*\([^)]*\)\s*$', '', name).strip()
+    w = [x for x in bare.split() if not CJK.search(x)]
+    if CJK.search(bare) or not w:
+        return ' '.join(w) or bare
     k = len(w) - 1
     while k > 0 and w[k - 1].lower() in ('de', 'van', 'von', 'da', 'di', 'del', 'der', 'le', 'la'):
         k -= 1

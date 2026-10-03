@@ -16019,7 +16019,7 @@
       var h = b.hole;
       box = { x0: h.x + 8, y0: Math.max(h.y + 8, under + 6), x1: h.x + h.w - 8, y1: h.y + h.h - 8 };
     } else if (b.phone) {
-      box = { x0: 12, y0: under + 8, x1: W - 12, y1: (b.colTop || Math.round(0.64 * H)) - 6 };
+      box = { x0: 12, y0: under + 8, x1: W - 12, y1: (b.colTop || Math.round(0.64 * H)) - 3 };
     } else {
       var cr = artCol && artCol.offsetParent ? artCol.getBoundingClientRect() : null;
       box = { x0: 16, y0: under + 8, x1: (cr && cr.width ? cr.left : W) - 10, y1: H - 16 };
@@ -16030,7 +16030,7 @@
       var r = e.getBoundingClientRect();
       if (r.width && r.height) { avoid.push({ x0: r.left - pad, y0: r.top - pad, x1: r.right + pad, y1: r.bottom + pad }); }
     }
-    rectOf(artTime, 4);
+    rectOf(artTime, 2);
     rectOf(lensHomeEl, 4);
     Array.prototype.forEach.call(artEl.querySelectorAll(".voice-cap, .voice-chip, .dial-home"), function (e) {
       if ((e.textContent || "").trim() || e.classList.contains("dial-home")) { rectOf(e, 4); }
