@@ -76,6 +76,21 @@
    "place": "Giverny, Normandy", "lat": 49.08, "lon": 1.53, "climate": "temperate oceanic; the pond warmed by summer",
    "scene": "Her eyes clouding (Monet's cataract was operated on in 1923), she paints the pond from memory and the colours run together as the water does.",
    "after": "Katharine Hepburn", "performance": "On Golden Pond", "year": 1981,
-   "why": "Age, love and water (her fourth Best Actress Oscar, the record).", "action": "ripple"}
+   "why": "Age, love and water (her fourth Best Actress Oscar, the record).", "action": "ripple"},
+  {"plant": "wax plant", "artist": "Frank Stella", "name": "Sakura Ran", "role": "an engineer of stars who says what you see is what you see",
+   "place": "the Yanbaru forest, northern Okinawa", "lat": 26.75, "lon": 128.2, "climate": "humid subtropical, about 22 °C on average, wet all year",
+   "scene": "She climbs into the canopy and hangs her stars, each a star within a star, where Noguchi's Okinawa woodpecker drums; at night they drip nectar and scent the dark.",
+   "after": "Peter Sellers", "performance": "Being There", "year": 1979,
+   "why": "Chance the gardener, who says only what he sees and is taken for a sage (Golden Globe for Best Actor; nominated for the Oscar).", "action": "rain"},
+  {"plant": "sunflower", "artist": "Karel Appel", "name": "Zonnebloem", "role": "a barefoot child-painter who gives everything a face",
+   "place": "the prairie of Kansas, the Sunflower State", "lat": 38.5, "lon": -98.0, "climate": "continental, hot summers of 30 to 35 °C under full sun",
+   "scene": "From dawn she turns with the sun across the prairie, east to west, and every flower she passes is given two eyes and a mouth.",
+   "after": "Roberto Benigni", "performance": "Life Is Beautiful", "year": 1997,
+   "why": "A father who turns a dark time into a game for his child, all clowning and love (Best Actor Oscar, 1999, the first for a man in a role not in English).", "action": "fling"},
+  {"plant": "tulip", "artist": "Wayne Thiebaud", "name": "Semper", "role": "a counterman who sets out every tulip in its row like a cake in a case",
+   "place": "the bulb fields round Lisse, Netherlands", "lat": 52.27, "lon": 4.55, "climate": "temperate maritime, cool springs of about 10 °C; the bulbs need a cold winter",
+   "scene": "Every April he lays out the beds, one colour to a row, each tulip lit from one side with its own blue shadow; when the flowers are open he cuts their heads, so the bulbs keep their strength.",
+   "after": "Jacques Tati", "performance": "Mon Oncle", "year": 1958,
+   "why": "Monsieur Hulot, deadpan among bright displays and shop-window modernity (Special Jury Prize at Cannes 1958; the Oscar for Best Foreign Language Film).", "action": "cut"}
  ]
 }

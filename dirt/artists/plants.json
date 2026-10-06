@@ -47,6 +47,15 @@
   {"artist": "Claude Monet", "plant": "water lily", "latin": "Nymphaea", "tie": "work",
    "why": "The Nymphéas of his pond at Giverny, painted for the last thirty years of his life.",
    "form": "pad", "petals": 13, "size": 6, "flower": [[250, 210, 80], [250, 222, 226], [230, 140, 170]],
-   "leaf": [[220, 120, 150], [90, 70, 130], [120, 160, 130], [200, 210, 170]]}
+   "leaf": [[220, 120, 150], [90, 70, 130], [120, 160, 130], [200, 210, 170]]},
+  {"artist": "Frank Stella", "plant": "wax plant", "latin": "Hoya carnosa", "tie": "form",
+   "why": "Botanical Star on Stainless Background (2018), elasto plastic, paint and steel, among Aries's saved works: a star at once botanical and manufactured, as the wax plant's flowers are, stars within stars so regular they look moulded.",
+   "form": "cluster", "petals": 5, "size": 6, "florets": 21, "flower": [[168, 28, 58], [242, 206, 214], [252, 240, 242]]},
+  {"artist": "Karel Appel", "plant": "sunflower", "latin": "Helianthus annuus", "tie": "form",
+   "why": "His flowers are faces, as in Face and Yellow Flower Head (1977), among Aries's saved works; a sunflower is a flower head, hundreds of florets packed in a golden spiral round one face that follows the sun.",
+   "form": "radial", "petals": 34, "size": 8, "flower": [[86, 52, 22], [244, 190, 24], [250, 222, 92]]},
+  {"artist": "Wayne Thiebaud", "plant": "tulip", "latin": "Tulipa gesneriana", "tie": "work",
+   "why": "Tulip Sunday (2015), a sugar-lift aquatint with drypoint, among Aries's saved works: tulips set out in a row as his Display Cakes (1963) are set out in a case.",
+   "form": "radial", "petals": 6, "size": 5, "flower": [[52, 30, 40], [222, 72, 88], [246, 150, 140]]}
  ]
 }
