@@ -106,6 +106,14 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   at all times"): its row in `docs/v2/KINDS.md`'s categories (glyph, tone, place on the spectrum from museums to
   galleries) and its three subcategories from it (a row in "The three from each", its lists in `kinds.js`'s `LISTS`),
   designed with it, as its place on the dial is.
+- **WCAG 2.2 is the reference for how information is categorized and shown** (artist, 7 Oct 2026, sending the
+  WCAG 2.2 Quick Reference: "Read through this website and use it as a reference on how to best categorize and
+  display information"). `docs/v2/DISPLAY.md` is that reference — what the Quick Reference's own structure teaches
+  (few stable principles, a level on every item, one sentence first, facets not pages) and the rules criterion by
+  criterion (Level A and AA, and the AAA ones that fit), ending in a checklist every new view, path or mark meets:
+  meaning in text as well as drawing, never colour alone, contrast measured, a one-tap way for every gesture,
+  24 px targets, a pause for anything that moves by itself, keyboard all through, a title per view on one address.
+  www.w3.org is blocked from the sessions; WCAG's source is read from github.com/w3c/wcag.
 - **The dial is the hub of every way of exploring** (artist, 2 Oct 2026: "Maximizing the utility of the dial is
   pertinent to enabling the inherent complexity of modalities of connecting information to be accessible and easily
   utilized by viewers. So when we find new ways of defining explorations I want you to really develop an efficient
