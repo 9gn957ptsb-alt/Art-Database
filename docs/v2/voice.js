@@ -657,9 +657,9 @@
     var f = { who: who || surname(s.a), title: s.t, year: s.d || null, what: s.what || s.place || null, ll: s.ll,
               facing: "Facing north: the way " + (who || surname(s.a) || "the painter") + " faced is not recorded." };
     Object.keys(extra || {}).forEach(function (k) { f[k] = extra[k]; });
-    var pic = s.img ? { id: s.w || null, src: COMMONS + encodeURIComponent(s.img) + "?width=960",
+    var pic = s.img ? { id: s.w || null, site: s.id || null, src: COMMONS + encodeURIComponent(s.img) + "?width=960",
                         big: COMMONS + encodeURIComponent(s.img) + "?width=2000", title: s.t, year: s.d || null, by: s.a,
-                        where: s.m || "" } : undefined;
+                        where: s.m || "", notSaved: !s.w } : undefined;
     return { path: path, step: step, f: f, key: "site:" + s.id, pic: pic, stand: true };
   }
 
@@ -764,7 +764,7 @@
       var st = siteStep("life", row, who);
       // Its picture: the saved work's own, else the painting from Commons.
       var saved = row.w && (L.works || []).filter(function (w) { return w[0] === row.w && w[3]; })[0];
-      if (saved) { st.pic = { id: saved[0], image: saved[3], title: saved[1], year: saved[2] || null, by: L.name }; }
+      if (saved) { st.pic = savedPic(L, saved); }
       else if (!st.pic) { st.pic = pic; }
       st.wait = 0;
       return st;
@@ -800,7 +800,8 @@
     if (want === "work" && force.work) {
       var wk = (L.works || []).filter(function (w) { return w[0] === force.work; })[0];
       if (wk) {
-        return out("work", { who: who, goes: "is in", place: p.place, year: wk[2] || y, title: wk[1], ll: p.ll, fromLL: prev },
+        return out("work", { who: who, goes: "is in", place: p.place, year: wk[2] || y, title: String(wk[1] || "Untitled").replace(CIRCA, ""),
+                             ll: p.ll, fromLL: prev },
                    "w" + wk[0], { fk: "p" + k });
       }
     }
