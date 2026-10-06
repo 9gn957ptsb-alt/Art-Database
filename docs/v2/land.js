@@ -17645,8 +17645,9 @@
   function showPicture(spec) {
     var a = art;
     if (!a || a.kind === "work" || !readingOn()) { return; }
-    var id = spec && spec.id || null;
-    if ((a.picture ? a.picture.id : null) === id) { return; }
+    // The same picture: a saved work by its id, a painting not saved (Commons) by its file.
+    var key = function (p) { return p ? p.id || p.src || p.image || null : null; };
+    if (key(a.picture) === key(spec)) { return; }
     a.picture = spec && (spec.image || spec.src) ? spec : null;
     if (!a.picture) {
       artPlate.textContent = "";
