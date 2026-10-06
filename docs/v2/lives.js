@@ -425,6 +425,7 @@
         var w = L.works[i];
         var r = button("", "life-print", function () { if (window.Land) { Land.work(w[0], p.key); } });
         r.dataset.y = String(w[2] || 0);
+        r.dataset.work = w[0];
         var sq = el("span", "life-print-sq");
         if (w[3]) {
           var im = el("img");
@@ -495,6 +496,7 @@
     var b = el("button", "town-thumb");
     b.type = "button";
     b.dataset.y = String(w[2] || 0);
+    b.dataset.work = w[0];
     var line = w[1] + (w[2] ? ", " + w[2] : "") + ((w[7] || []).length ? " · " + w[7].join(" · ") : "") +
       (/^record:/.test(w[4] || "") ? " · made in " + w[4].slice(7) + ", its record says" : "");
     b.title = line;
@@ -1056,8 +1058,20 @@
     ctx.font = "11px " + (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace");
     ctx.textBaseline = "middle";
     var tx = gx + 3 * C + 4, w = ctx.measureText(text).width;
-    if (tx + w > window.innerWidth - 8) { tx = gx - 2 * C - 4 - w; }
-    tx = Math.max(8, Math.min(window.innerWidth - 8 - w, tx));
+    // In the small globe at rest (the reading layout's lens): the name fits
+    // inside its round window — right of the place, else left, else moved in
+    // (3 Oct 2026: "Greenw…" was cut by the rim).
+    var rd = window.Land && Land.reading ? Land.reading() : null, L = rd && !rd.out && !rd.swapped && rd.at;
+    if (L && L.r) {
+      var top = gy - 2, bot = gy + C + 2;
+      var half = Math.sqrt(Math.max(0, L.r * L.r - Math.max((top - L.y) * (top - L.y), (bot - L.y) * (bot - L.y)))) - 4;
+      var x0 = L.x - half, x1 = L.x + half;
+      if (tx + w + 4 > x1) { tx = gx - 2 * C - 4 - w; }
+      tx = Math.max(x0 + 4, Math.min(x1 - 4 - w, tx));
+    } else {
+      if (tx + w > window.innerWidth - 8) { tx = gx - 2 * C - 4 - w; }
+      tx = Math.max(8, Math.min(window.innerWidth - 8 - w, tx));
+    }
     ctx.fillStyle = "rgba(15, 10, 7, 0.72)";
     ctx.fillRect(tx - 4, gy - 2, w + 8, C + 4);
     ctx.fillStyle = CREAM;

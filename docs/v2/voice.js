@@ -184,7 +184,7 @@
 
   var NS = "http://www.w3.org/2000/svg";
   var rim = null, rimText = null, rimWord = null, rimHeld = null, release = null;
-  var cap = null, capSay = null, capPic = null, chip = null, chipWord = null, chipSay = null, stand = null;
+  var cap = null, capSay = null, capPic = null, capCount = null, chip = null, chipWord = null, chipSay = null, stand = null;
   var artEl = document.getElementById("art");
   function setUp() {
     if (rim || !artEl) { return; }
@@ -234,8 +234,15 @@
       if (id && window.Land && Land.work) { Land.work(id, capPic.dataset.key || undefined); }
     });
     cap.appendChild(capSay);
-    cap.appendChild(capPic);
+    // The picture's line, and where it stands among its period's works ("2 of 7 · 1938–1941").
+    var row = el("div", "voice-pic-row");
+    row.appendChild(capPic);
+    capCount = el("span", "voice-count");
+    capCount.hidden = true;
+    row.appendChild(capCount);
+    cap.appendChild(row);
     artEl.appendChild(cap);
+    swipeSetUp();
     // The first person's standing point: where they stood, in the middle of the lens.
     stand = el("div", "voice-stand");
     stand.setAttribute("aria-hidden", "true");
@@ -327,13 +334,154 @@
     }
     // The picture's own line: a saved work's is a door to its history; a
     // painting that is not saved (Painted here's) says only where it is.
-    var line = !isWork && pic ? [pic.title + (pic.year ? ", " + pic.year : ""), pic.by ? surname(pic.by) : "",
-                                 pic.id ? "" : pic.where || ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "") : "";
+    var t = pic ? String(pic.title || "Untitled") : "", circa = pic && (pic.circa || CIRCA.test(t));
+    if (circa) { t = t.replace(CIRCA, ""); }
+    var line = !isWork && pic ? [t + (pic.year ? ", " + (circa ? "c. " : "") + pic.year : ""), pic.by ? surname(pic.by) : "",
+                                 pic.id ? "" : pic.where || "", pic.near ? "the nearest dated" : "",
+                                 pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "") : "";
     capPic.hidden = !line;
     if (line && capPic.textContent !== line) { capPic.textContent = line; }
     capPic.dataset.id = pic && pic.id || "";
     capPic.disabled = !(pic && pic.id);
     capPic.setAttribute("aria-label", line && pic.id ? "Where " + (pic.title || "it") + " has been" : line);
+  }
+
+  /* ---- swiping through the period's works ---------------------------------------
+
+     A horizontal swipe on the picture (a drag of 40 px or more, a trackpad's
+     sideways scroll, ←/→ while it has focus, or the faint ‹ › at its edges on
+     a desktop) steps through the works of the period the dial is in
+     (periodPics), from the one shown; the caption, the sentence and the
+     column's square follow; the dial moves only when the work's year is not
+     the year shown, and then only within the period. A press still fills the
+     screen with it; a vertical scroll is not a swipe. */
+  var swipe = null;            // { view, life, k, key }: the work swiped to, told until the period is left
+  var swipedAt = 0, swipeArrows = null, swipeList = null;
+  function picKey(pic) { return !pic ? "" : pic.site && !pic.id ? "s:" + pic.site : pic.id || (pic.site ? "s:" + pic.site : ""); }
+  function swipeNow(r) {
+    r = r || (window.Land && Land.reading ? Land.reading() : null);
+    if (!r || r.kind !== "life" || !r.id || !has(r.year)) { return null; }
+    var L = lifeOf(r.id);
+    if (!L) { return null; }
+    var k = periodAt(L, r.year);
+    if (k < 0) { return null; }
+    var list = periodPics(L, k);
+    var cur = picKey(S.pic), i = -1;
+    list.forEach(function (q, n) { if (i < 0 && (picKey(q) === cur || (S.pic && q.id && q.id === S.pic.id))) { i = n; } });
+    return { r: r, L: L, k: k, p: L.periods[k], list: list, i: i };
+  }
+  function swipeBy(d) {
+    var w = swipeNow();
+    if (!w || w.list.length < 2 || w.r.flying || w.r.full) { return false; }
+    var i = w.i < 0 ? (d > 0 ? 0 : w.list.length - 1) : (w.i + d + w.list.length) % w.list.length;
+    var q = w.list[i];
+    swipe = { view: w.r.view, life: w.L.id, k: w.k, key: picKey(q) };
+    swipedAt = performance.now();
+    var plate = artEl && artEl.querySelector(".art-plate");
+    if (plate && !still) {
+      plate.dataset.swipe = d > 0 ? "next" : "prev";
+      window.clearTimeout(plate._sw);
+      plate._sw = window.setTimeout(function () { delete plate.dataset.swipe; }, 900);
+    }
+    // The dial stays unless the work's own year is not the year shown, and then only within the period.
+    if (q.year && q.year !== w.r.year && q.year >= w.p.y0 && q.year <= w.p.y1 && Land.dialYear) { Land.dialYear(q.year); }
+    S.key = "";
+    cand = { key: "", at: 0 };
+    handled();
+    kick();
+    return true;
+  }
+  // The count under the sentence, the column's square, the arrows.
+  function swipeSay(r) {
+    var w = r && r.kind === "life" ? swipeNow(r) : null;
+    var n = w ? w.list.length : 0;
+    swipeList = w;
+    if (capCount) {
+      var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + " · " + (w.p.y0 === w.p.y1 ? w.p.y0 : w.p.y0 + "–" + w.p.y1) : "";
+      capCount.hidden = !line;
+      if (capCount.textContent !== line) { capCount.textContent = line; }
+    }
+    var id = S.pic && S.pic.id || "";
+    var col = document.getElementById("art-col");
+    if (col) {
+      Array.prototype.forEach.call(col.querySelectorAll("[data-work]"), function (b) {
+        if (b.dataset.work === id && r && r.kind === "life") { b.dataset.now = "true"; } else { delete b.dataset.now; }
+      });
+    }
+    swipeArrowsPlace();
+  }
+  function swipeArrowsPlace() {
+    if (!swipeArrows) { return; }
+    var w = swipeList, plate = artEl.querySelector(".art-plate");
+    var on = !!(w && w.list.length > 1 && w.i >= 0 && window.innerWidth > 720 && plate && !plate.hidden &&
+                !artEl.dataset.full && !artEl.dataset.swapped && !artEl.dataset.out && artEl.dataset.look !== "plate");
+    var rc = on ? plate.getBoundingClientRect() : null;
+    if (rc && (!rc.width || !rc.height)) { on = false; }
+    swipeArrows.forEach(function (b, n) {
+      b.hidden = !on;
+      if (!on) { return; }
+      b.style.left = Math.round(n ? rc.right - 30 : rc.left + 6) + "px";
+      b.style.top = Math.round(rc.top + rc.height / 2 - 16) + "px";
+    });
+  }
+  function swipeSetUp() {
+    var plate = artEl && artEl.querySelector(".art-plate");
+    if (!plate) { return; }
+    // A drag sideways (a finger, a pen): 40 px and more across than down.
+    var sw = null;
+    plate.addEventListener("pointerdown", function (event) {
+      if (event.pointerType === "mouse") { return; }
+      sw = { id: event.pointerId, x: event.clientX, y: event.clientY, done: false };
+    });
+    plate.addEventListener("pointermove", function (event) {
+      if (!sw || sw.id !== event.pointerId || sw.done) { return; }
+      var dx = event.clientX - sw.x, dy = event.clientY - sw.y;
+      if (Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }    // a scroll, not a swipe
+      if (Math.abs(dx) >= 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+        sw.done = true;
+        if (swipeBy(dx < 0 ? 1 : -1)) { swipedAt = performance.now(); }
+      }
+    });
+    ["pointerup", "pointercancel"].forEach(function (t) {
+      plate.addEventListener(t, function (event) { if (sw && sw.id === event.pointerId) { if (sw.done) { swipedAt = performance.now(); } sw = null; } });
+    });
+    // The press that ended a swipe is not a press on the picture.
+    artEl.addEventListener("click", function (event) {
+      if (plate.contains(event.target) && performance.now() - swipedAt < 600) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    }, true);
+    // A trackpad's sideways scroll.
+    var acc = 0, accAt = 0;
+    plate.addEventListener("wheel", function (event) {
+      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) { return; }
+      event.preventDefault();
+      var now = performance.now();
+      if (now - accAt > 300) { acc = 0; }
+      accAt = now;
+      acc += event.deltaX;
+      if (Math.abs(acc) >= 40 && now - swipedAt > 450) {
+        var d = acc > 0 ? 1 : -1;
+        acc = 0;
+        swipeBy(d);
+      }
+    }, { passive: false });
+    plate.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") { return; }
+      if (swipeBy(event.key === "ArrowRight" ? 1 : -1)) { event.preventDefault(); event.stopPropagation(); }
+    });
+    // On a desktop, faint ‹ › at its edges.
+    swipeArrows = ["‹", "›"].map(function (g, n) {
+      var b = el("button", "voice-swipe", g);
+      b.type = "button";
+      b.hidden = true;
+      b.setAttribute("aria-label", n ? "The next work of these years" : "The work before, of these years");
+      b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      b.addEventListener("click", function (event) { event.stopPropagation(); event.preventDefault(); swipeBy(n ? 1 : -1); });
+      artEl.appendChild(b);
+      return b;
+    });
   }
 
   /* ---- the narrator ------------------------------------------------------------- */
@@ -410,6 +558,8 @@
     S.said = text || "";
     setCaption(text, s.pic || null, r.kind === "work");
     if (r.kind !== "work" && s.pic !== undefined && Land.picture) { Land.picture(s.pic); }
+    if (s.pic !== undefined) { S.pic = s.pic || null; }
+    swipeSay(r);
     var word = T.tenses[rule.tense] || "";
     Land.tense(word);
   }
@@ -438,6 +588,7 @@
     if (!T) { load().then(kick); return; }
     hideChip();
     place(r);
+    swipeArrowsPlace();
     var now = performance.now();
     if (r.view !== S.view) {
       S = { view: r.view, key: "", fk: "", said: "", rule: null, voice: "", dist: "", spec: null, f: null };
@@ -570,6 +721,11 @@
     if (L.b && L.b[1]) { route.push(L.b[1]); }
     L.periods.forEach(function (p) { route.push(p.ll); });
     var k = periodAt(L, y), p = k >= 0 ? L.periods[k] : null;
+    // Swiped to: that work of the period is the one told, until the dial leaves the period.
+    if (!force && swipe && swipe.view === r.view && swipe.life === L.id) {
+      if (swipe.k !== k) { swipe = null; }
+      else { force = swipe.key.indexOf("s:") === 0 ? { step: "site", site: swipe.key.slice(2) } : { step: "work", work: swipe.key }; }
+    }
     var prev = k > 0 ? L.periods[k - 1].ll : L.b ? L.b[1] : null;
     var pic = lifePic(L, y, k, force && force.work);
     function out(step, f, key, extra) {
@@ -661,10 +817,69 @@
   // The works of the moment: the latest made by then in this place, else by then anywhere, else the first;
   // a titled one before an "Untitled" where the place has one (2 Oct 2026: "UNTITLED, 1921" stood for Fontainebleau).
   function untitled(t) { return !t || /^(untitled|sans titre|ohne titel|senza titolo|sin título)\b/i.test(String(t).trim()); }
+  // A saved work as the picture: a title that ends in the date's "circa" (the record's split) reads "c. 1945".
+  var CIRCA = /,?\s*\b(circa|ca\.|c\.)\s*$/i;
+  function savedPic(L, w, near) {
+    var c = CIRCA.test(w[1] || "");
+    return { id: w[0], image: w[3], title: c ? String(w[1]).replace(CIRCA, "") : w[1], circa: c, year: w[2] || null,
+             by: L.name, near: !!near };
+  }
+  /* The works of a period, for the picture to be swiped through (artist, 3 Oct
+     2026: "I want to be able to swipe through artworks by the artist with that
+     top image. The artworks in rotation should be relevant to what time period
+     of the artist you are looking in"): Made then and Printed then, saved, in
+     date order; then Painted here's outings of the period that are not saved,
+     from Commons, marked so. The next period's do not mix in. */
+  function periodPics(L, k) {
+    var p = k >= 0 ? L.periods[k] : null;
+    if (!p) { return []; }
+    var seen = {}, saved = [];
+    p.works.concat(p.prints || []).forEach(function (i) {
+      var w = L.works[i];
+      if (w && w[3] && !seen[w[0]]) { seen[w[0]] = 1; saved.push(w); }
+    });
+    saved.sort(function (a, b) { return (a[2] || 9999) - (b[2] || 9999); });
+    var out = saved.map(function (w) { return savedPic(L, w); });
+    var SD = sites(), more = [];
+    (p.sites || []).forEach(function (i) {
+      var x = (L.sites || [])[i];
+      var full = x && SD && SD.byId[x[0]] !== undefined ? SD.sites[SD.byId[x[0]]] : null;
+      if (!full || !full.img || (full.w && seen[full.w])) { return; }
+      more.push({ id: full.w || null, site: x[0], src: COMMONS + encodeURIComponent(full.img) + "?width=960",
+                  big: COMMONS + encodeURIComponent(full.img) + "?width=2000", title: x[1], year: x[2] || null, by: L.name,
+                  where: full.m || "", notSaved: !full.w });
+    });
+    more.sort(function (a, b) { return (a.year || 9999) - (b.year || 9999); });
+    return out.concat(more);
+  }
   function lifePic(L, y, k, wantId) {
     var all = (L.works || []).filter(function (w) { return w[3]; });
     var hit = null;
     if (wantId) { hit = all.filter(function (w) { return w[0] === wantId; })[0] || null; }
+    if (hit) { return savedPic(L, hit); }
+    // In a period: a work of the period (3 Oct 2026: a 1945 work had stood for Greenwich, 1940) — the
+    // latest made by the year, a titled one first, else the period's first; a period of outings only, its
+    // first outing; a period with none, the dated work nearest its years, said so.
+    if (k >= 0) {
+      var p = L.periods[k], inP = [];
+      p.works.concat(p.prints || []).forEach(function (i) { var w = L.works[i]; if (w && w[3]) { inP.push(w); } });
+      if (inP.length) {
+        var by = inP.filter(function (w) { return w[2] && w[2] <= y; });
+        var nm = by.filter(function (w) { return !untitled(w[1]); });
+        var late = function (ws) { return ws.reduce(function (h, w) { return !h || w[2] > h[2] ? w : h; }, null); };
+        var first = inP.slice().sort(function (a, b) { return (a[2] || 9999) - (b[2] || 9999); })[0];
+        return savedPic(L, late(nm) || late(by) || first);
+      }
+      var outs = periodPics(L, k);
+      if (outs.length) { return outs[0]; }
+      var near = null, nd = Infinity;
+      all.forEach(function (w) {
+        if (!w[2]) { return; }
+        var d = w[2] < p.y0 ? p.y0 - w[2] : w[2] > p.y1 ? w[2] - p.y1 : 0;
+        if (d < nd || (d === nd && near && untitled(near[1]) && !untitled(w[1]))) { near = w; nd = d; }
+      });
+      if (near) { return savedPic(L, near, true); }
+    }
     function pick(ws) {
       var h = null;
       ws.forEach(function (w) {
@@ -679,7 +894,7 @@
       hit = named && (named[5] === k || !any || any[5] !== k) ? named : any;
     }
     if (!hit) { all.forEach(function (w) { if (!hit || (w[2] || 9999) < (hit[2] || 9999)) { hit = w; } }); }
-    return hit ? { id: hit[0], image: hit[3], title: hit[1], year: hit[2] || null, by: L.name } : null;
+    return hit ? savedPic(L, hit) : null;
   }
   // Painted here's points of the year, the most exact first (where the painter stood, the street, the place painted).
   function sitesOfYear(L, y) {
