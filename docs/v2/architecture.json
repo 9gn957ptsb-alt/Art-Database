@@ -253,6 +253,18 @@
       "precision": "district"
     },
     {
+      "title": "Harmonious Habitat – Woodsong by Alfred Browning Parker",
+      "name": "Woodsong",
+      "slug": "harmonious-habitat-woodsong-by-alfred-browning-parker",
+      "url": "https://www.thearchitecturalauthority.com/article/harmonious-habitat-woodsong-by-alfred-browning-parker",
+      "city": "Coconut Grove",
+      "country": "United States",
+      "where": "Coconut Grove, United States",
+      "lat": 25.7126,
+      "lon": -80.257,
+      "precision": "town"
+    },
+    {
       "title": "The Da Vinci of Architecture — Frank Gehry 1929–2025",
       "name": "Frank Gehry 1929–2025",
       "slug": "the-da-vinci-of-architecture-frank-gehry-19292025",
