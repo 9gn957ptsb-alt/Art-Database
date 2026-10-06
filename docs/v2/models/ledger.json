@@ -1590,13 +1590,14 @@
   },
   "museum-newark-museum": {
     "name": "Newark Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: 1926 limestone palazzo on Washington Street with arched entrance and cornice, atrium and rear wing, the Ballantine House beside it, Washington Park",
-      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): buildings 14 m east, Washington Street and the park 24 m east, a sculpture garden; on its ground 59% → 73%"
     ],
     "interior": {
       "tier": "shell",
@@ -2053,13 +2054,14 @@
   },
   "museum-museum-of-fine-arts-boston": {
     "name": "Museum of Fine Arts, Boston",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Lowell's granite Huntington Avenue front with portico and Rotunda dome, the Evans Wing colonnade on the Fenway, courts, Pei's West Wing galleria, Foster's Americas Wing and glass courtyard",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): pulled in to its 190 × 140 m outline; the Huntington front set back behind its lawn with the portico and Dallin statue; paved city side, grass to the Fens; on its ground 59% → 78%"
     ],
     "interior": {
       "tier": "shell",
@@ -2134,13 +2136,14 @@
   },
   "museum-museo-nacional-del-prado": {
     "name": "Museo del Prado",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Villanueva's 190 m brick-and-stone range with the Velázquez portico, Goya loggia and Murillo portico, the central gallery skylight, the rotunda; Moneo's brick cube and box-garden roof; San Jerónimo el Real; the Paseo's trees and the Botanical Garden",
-      "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): Villanueva's building moved about 55 m east onto its outline at its 10° tilt; Moneo's cube, the link, San Jerónimo, the Paseo trees and the Botanical Garden rebuilt round it; on its ground 15% → 81%"
     ],
     "interior": {
       "tier": "shell",
@@ -2324,13 +2327,14 @@
   },
   "museum-museum-folkwang": {
     "name": "Museum Folkwang",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Chipperfield's milky-glass cubes round courts with the steps from Bismarckstraße, the low 1960 building to the south, one stone plinth",
-      "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): narrowed to its 76 m outline; glass fronts on the 1960 wing, tall windows on Chipperfield's; entrance steps east (the street's name guessed); on its ground 72% → 82%"
     ],
     "interior": {
       "tier": "shell",
@@ -2950,13 +2954,14 @@
   },
   "museum-national-portrait-gallery": {
     "name": "National Portrait Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Ewan Christian's Portland-stone palazzo: rusticated base, arched piano nobile windows, cornice and balustrade, projecting entrance on St Martin's Place, lanterns and the Ondaatje rooftop restaurant; the NG's back to the south.",
-      "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): London's NPG rebuilt on its wedge 45 m south between Charing Cross Road and St Martin's Place, the National Gallery's back and the Cavell memorial beside it; on its ground 52% → 80%"
     ],
     "interior": {
       "tier": "shell",
@@ -2977,13 +2982,14 @@
   },
   "museum-museum-kunstpalast": {
     "name": "Museum Kunstpalast",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries.",
-      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Ehrenhof ranges moved 38 m west and stretched onto the closed outline, the court's pool squared, Ungers's block added; on its ground 42% → 87%"
     ],
     "interior": {
       "tier": "shell",
@@ -3059,13 +3065,14 @@
   },
   "museum-museum-ludwig": {
     "name": "Museum Ludwig",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Busmann + Haberer's dark red brick block under two ranks of curved zinc north-light sheds, stair towers, the glass porch, Heinrich-Böll-Platz, the railway viaduct and the Rhine garden",
-      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt as its 165 × 55 m strip with the zinc sheds, towers, Heinrich-Böll-Platz, the viaduct, a span of the Hohenzollern Bridge and the Rhine; on its ground 21% → 66%"
     ],
     "interior": {
       "tier": "shell",
@@ -3142,13 +3149,14 @@
   },
   "museum-national-museum-of-women-in-the-arts": {
     "name": "National Museum of Women in the Arts",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former Masonic Temple on its wedge between New York Avenue, H and 13th Streets — limestone, arched base, giant pilasters and tall windows, heavy cornice, corner entrance, the Great Hall skylight",
-      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): position confirmed, New York Avenue along its front with its trees, limestone walls; on its ground 75% → 74%"
     ],
     "interior": {
       "tier": "shell",
@@ -3467,13 +3475,14 @@
   },
   "museum-national-museum-of-western-art": {
     "name": "National Museum of Western Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Le Corbusier's pebble-panel box on pilotis over a glazed lobby, the roof's ring of lighting galleries round the hall's lantern, the Rodins in the forecourt, Maekawa's tiled wing.",
-      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): Maekawa's wing moved to the U round its court, panels to rubble, thicker pilotis; covers 81% → 90% of its outline"
     ],
     "interior": {
       "tier": "shell",
@@ -3521,13 +3530,14 @@
   },
   "museum-new-museum-1": {
     "name": "New Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: SANAA's seven shifted aluminium-clad boxes over a glass ground floor on the Bowery, skylights at the setbacks; OMA's 2025 stepped glass-and-mesh expansion to the north (form guessed).",
-      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): SANAA's stack onto its lot in pale silver-white, the OMA extension to the south (its lot still cleared in the outlines), walk-ups north; on its ground 51% → 54%"
     ],
     "interior": {
       "tier": "shell",
