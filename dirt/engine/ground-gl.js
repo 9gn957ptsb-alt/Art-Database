@@ -2722,6 +2722,8 @@ uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells 
 uniform sampler2D uFace;            // the faces in the saved paintings (dirt/artists/faces.py), an atlas uFG cells across, down
 uniform int uFN;
 uniform vec2 uFG;
+uniform vec4 uTS[40], uTW[40], uTL[27], uTB;   // the tree of many focal points (focus-tree.js): branches, widths, leaves, its box
+uniform int uTN;
 uniform int uPair[26];                // the pairs of faces that weld (faces.py), two indices each
 uniform int uPN;
 uniform sampler2D uFaceLut;         // which face's mean is nearest a colour: 8 levels a channel, 64 by 8 (r + 8 g, b)
@@ -2892,6 +2894,63 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = mix(canvas, c, smoothstep(0.6, 1.6 + 6.0 * d, seam));
   return m;
 }
+// ---- the tree of many focal points (focus-tree.js) ---------------------------------------------------------------
+// The tree nearest the view, as the page works it out each frame: its 40 branches, each drawn in the perspective of
+// the hearth it grows from (uTS: from, to; uTW: widths, depths), and the washes of leaves at its 27 twigs' ends (uTL:
+// where, how wide, which pigment and how deep). Painted in watercolour: a branch is sepia near and indigo far, as
+// Cezanne's blue is the air between; it is laid in one stroke, its edge a little dry; the leaves are transparent washes
+// of sap green, olive ochre, viridian, now and then cerulean or a coleus red, each pooling at its rim as a wash dries,
+// and where they overlap they deepen, one glaze through another.
+float tree(vec2 p, float T, out vec3 col) {
+  col = vec3(0.0);
+  if (uTN <= 0 || p.x < uTB.x || p.y < uTB.y || p.x > uTB.z || p.y > uTB.w) return 0.0;
+  // first its air: a wash laid behind it, sky above and warm ground below, thinning to nothing well before the edge of
+  // its box, its outline wandering, so the tree has room to be seen and no frame round it
+  vec2 mid = 0.5 * (uTB.xy + uTB.zw), hx = 0.5 * (uTB.zw - uTB.xy);
+  vec2 q = abs(p - mid) / hx;
+  float rr = pow(pow(q.x, 2.6) + pow(q.y, 2.6), 1.0 / 2.6) + 0.14 * (vnoise(p, 89.0, 61103u) - 0.5) + 0.05 * (vnoise(p, 21.0, 61104u) - 0.5);
+  float air = 1.0 - smoothstep(0.62, 0.97, rr);
+  vec3 sky = mix(vec3(222, 230, 236), vec3(240, 232, 214), smoothstep(-0.2, 0.8, (p.y - mid.y) / hx.y));
+  vec3 c = sky; float a = 0.9 * air;
+  float dry = vnoise(p, 3.0, 61101u) - 0.5;
+  for (int i = 0; i < 40; i++) {
+    if (i >= uTN) break;
+    vec4 s = uTS[i], w = uTW[i];
+    vec2 ab = s.zw - s.xy;
+    float L = max(length(ab), 1e-3);
+    vec2 nrm = vec2(-ab.y, ab.x) / L;
+    float bend = L * 0.07 * (fract(sin(float(i) * 12.9898) * 43758.5453) - 0.5) * 2.0;   // each branch bowed a little, its own way
+    float t = clamp(dot(p - s.xy, ab) / (L * L), 0.0, 1.0);
+    vec2 pq = p - nrm * bend * sin(3.14159 * t);                     // the bow taken out, so the straight test serves
+    t = clamp(dot(pq - s.xy, ab) / (L * L), 0.0, 1.0);
+    float d = length(pq - s.xy - ab * t), hw = 0.5 * mix(w.x, w.y, t) + 0.6;
+    if (d > hw + 2.0) continue;
+    float m = 1.0 - smoothstep(hw - 1.0, hw + 1.0, d + 1.2 * dry);
+    float z = clamp(mix(w.z, w.w, t) / 233.0 + 0.5, 0.0, 1.0);    // near 0, far 1
+    vec3 ink = mix(vec3(92, 66, 50), vec3(70, 80, 122), z);         // sepia near, indigo far
+    ink = mix(ink, vec3(232, 226, 214), 0.22 * z);                   // and paler with the air between
+    ink *= 0.86 + 0.28 * vnoise(vec2(t * L, float(i) * 55.0), 21.0, 61105u);   // the pigment heavier and lighter along the stroke
+    over(c, a, ink, m * 0.9);
+  }
+  const vec3 PIG[5] = vec3[5](vec3(96, 138, 72), vec3(178, 158, 84), vec3(66, 128, 116), vec3(170, 64, 96), vec3(116, 156, 196));
+  for (int i = 0; i < 27; i++) {
+    vec4 l = uTL[i];
+    if (l.z <= 0.0) continue;
+    float d = length(p - l.xy);
+    if (d > l.z + 3.0) continue;
+    vec2 lv = p - l.xy;
+    float ang = atan(lv.y, lv.x);
+    d *= 1.0 + 0.3 * (vnoise(vec2(ang * 3.0, float(i) * 7.0), 1.0, 61102u) - 0.5) * 2.0;   // a blot, not a disc: its edge goes in and out
+    d += 0.12 * l.z * (vnoise(p, 8.0, 61106u + uint(i)) - 0.5);       // and wanders a little on the paper's tooth
+    float inside = 1.0 - smoothstep(l.z - 1.5, l.z + 1.0, d);
+    float rim = smoothstep(l.z * 0.55, l.z, d);                       // the pigment pools at the rim as it dries
+    float z = fract(l.w);
+    vec3 pg = mix(PIG[int(l.w)], vec3(214, 222, 228), 0.35 * z);     // the far leaves paler and cooler
+    over(c, a, pg, inside * (0.22 + 0.24 * rim) * (1.0 - 0.3 * z));
+  }
+  col = c;
+  return a;
+}
 // ---- welds: two faces dissolving into each other in a Rothko -----------------------------------------------------
 // Most of what DRIFT does with faces now: one pair at a time. Of the faces in the saved paintings, faces.py finds the
 // pairs that weld, two faces from different paintings whose eyes, mouths and light fall in the same places (a
@@ -3052,7 +3111,8 @@ void main() {
   { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
   // a weld, a portrait or a frieze, where there is one: whole, it stands alone; at its feathered edge it lies over the
   // collage, so nothing is cut where it thins out
-  vec3 oz = vec3(0.0); float om = weld(p, T, oz);
+  vec3 oz = vec3(0.0); float om = tree(p, T, oz);
+  if (om <= 0.0) om = weld(p, T, oz);
   if (om <= 0.0) om = mosaic(p, lp, T, oz);
   if (om <= 0.0) om = frieze(p, T, oz);
   if (om >= 0.999) { outA = outB = vec4(clamp(oz, 0.0, 255.0) / 255.0, 1.0); return; }
@@ -3657,6 +3717,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
   const noWater = /(?:^|&)nowater(?:&|$)/.test(location.hash.slice(1));   // #nowater: without the watercolour
+  const noTree = /(?:^|&)notree(?:&|$)/.test(location.hash.slice(1));   // #notree: without the tree of many focal points
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -3915,7 +3976,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut", "uPair", "uPN"]);
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut", "uPair", "uPN", "uTS", "uTW", "uTL", "uTB", "uTN"]);
     if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); gl.uniform1i(Co.uFaceLut, 14); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -4142,6 +4203,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Co.uPN, pairs.length);
       if (pairs.length) gl.uniform1iv(Co.uPair, new Int32Array(26).map((_, i) => (pairs[i >> 1] || [0, 0])[i & 1]));
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
+      const ft = typeof FOCUS_TREE !== "undefined" && !noTree ? FOCUS_TREE.draw(cx0 + cw / 2, cy0 + ch / 2, t, typeof FIELD_K !== "undefined" ? FIELD_K : 1) : null;   // the tree of many focal points
+      gl.uniform1i(Co.uTN, ft ? ft.n : 0);
+      if (ft) {
+        gl.uniform4fv(Co.uTS, ft.seg); gl.uniform4fv(Co.uTW, ft.wid); gl.uniform4fv(Co.uTL, ft.leaf);
+        gl.uniform4f(Co.uTB, ft.box[0], ft.box[1], ft.box[2], ft.box[3]);
+      }
       gl.uniform2f(Co.uThrust, thrust[0], thrust[1]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);

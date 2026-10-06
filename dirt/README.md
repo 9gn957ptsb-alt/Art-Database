@@ -372,6 +372,26 @@ no frame and its space opens from the middle, as in Cézanne's late watercolours
 welds' fields are glazes now (about 0.8 to 0.9 opaque), so what lies under them shows faintly through, one transparent
 layer over another. Six places measured: busy 0.188 → 0.120, calm 0.517 → 0.622. `#nowater` turns it off.
 
+**The tree of many focal points** (2 October 2026: "is it possible to depict a tree ... where it has multiple focus
+points ... the series of branches that stem from that focal point make the most sense when focusing on that point ...
+looking at the tree as a whole ... it warps ... it sways as you look at it"). *Focus* is Latin for a hearth; Kepler
+(1604) made it the point where rays meet. Here and there on the plane (in φ⁻³ of the squares 2584 cells across, at
+φ⁻² nearness) stands a tree with thirteen hearths, one at every place it branches: the top of the trunk, the three
+limbs' ends, the nine boughs' ends (1 + 3 + 9). It grows in three dimensions, each branch about φ⁻¹ the length of
+the one before (144, 89, 55, 34 cells), each fork turned the golden angle. No single eye draws it: every branch is
+drawn in the perspective of the hearth it grows from, and each hearth looks from the side where its own branches
+spread widest, so at each hearth they read (which reach toward you, which away, how they fork). Each branch starts
+where its hearth was drawn, so the tree never comes apart, but no one perspective holds the whole, as in Cézanne's
+tables and Hockney's joiners (Merleau-Ponty, "Cézanne's Doubt", 1945; Hockney, *Pearblossom Hwy.*, 1986). The
+hearth nearest the middle of the view lends its perspective to its neighbours, less the further they are along the
+branches, so the tree comes together round wherever one looks and warps elsewhere: swiping across it, it sways
+(between one hearth and another, its branches move 18 cells on average, up to 40); a little wind moves every
+hearth's eye too. It is worked out on the main thread each frame (`engine/focus-tree.js`, 41 points) and painted by
+the collage pass in watercolour: branches sepia near and indigo far, paler with the air between; leaves as
+transparent washes of sap green, olive ochre and viridian, now and then cerulean or a coleus red, each pooling at
+its rim, deepening where they overlap. `node dirt/engine/focus-tree.test.mjs` checks that it never comes apart, has
+thirteen hearths, and sways; `#notree` hides it.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later
