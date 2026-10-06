@@ -44,7 +44,14 @@ KINDS = [
     {"kind": "architecture", "file": "architecture.json", "key": "buildings",
      "steps": ["fetch_architecture_saves.py", "build_architecture.py"]},
     {"kind": "museums", "file": "museums.json", "key": "museums",
-     "steps": ["fetch_artsy_saves.py", "build_museums.py"]},
+     "steps": ["fetch_artsy_saves.py", "build_museums.py"],
+     # Paused 6 Oct 2026: the artist asked for every work by the 878 artists he follows to be
+     # saved on Artsy (scripts/save_followed_artworks.py, ~100,000 works, a day's run). Read
+     # back daily, they would all flow into museums.json — a half-saved set, too large to fetch
+     # or build in one pass — before he has decided how they belong on the site. museums.json
+     # stays as it is (built from the works he saved himself); delete this key to resume.
+     "paused": "the Artsy saves now hold every work by the artists he follows; "
+               "waiting on the artist's decision about how they appear on the site"},
 ]
 
 
@@ -62,6 +69,10 @@ def main():
     failed, new = [], {}
     for k in KINDS:
         before = {p["slug"] for p in places(k)}
+        if k.get("paused"):
+            print(f"\n{k['kind']}: intake paused — {k['paused']} (KINDS in update_buildings.py)", flush=True)
+            new[k["kind"]] = []
+            continue
         if all(run(str(SCRIPTS / step)) for step in k["steps"]):
             new[k["kind"]] = [p for p in places(k) if p["slug"] not in before]
         else:

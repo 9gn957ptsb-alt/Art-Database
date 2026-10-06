@@ -30,6 +30,11 @@ then covers it without change.
    buildings' photographs, and lists, kind by kind, the buildings with no
    model yet. A kind that fails is reported and the rest carry on — say so at
    the end (a refused refresh token means the artist copies a fresh one).
+   A kind can be **paused** (`"paused"` on its entry in `KINDS`): its intake is
+   skipped and says why. The museums' intake is paused since 6 Oct 2026, while
+   every work by the artists he follows is saved on Artsy and until he decides
+   how those works belong on the site; the existing museums are still modelled
+   and refined as before.
    - **First models.** Every new Architectural Authority building gets its
      first model this run. For the other kinds, model the **three** without a
      model that matter most — the order of their file (the museums holding
