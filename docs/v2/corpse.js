@@ -1222,8 +1222,15 @@
         acts.textContent = "";
         var slots = ["head", "body", "hindquarters"];
         walker = { ch: ch, c: c, t0: performance.now(), slow: slow, lit: null, phase: "present" };
+        // On the dial (transport.js): the three parts and the route as its stops; × puts it away.
+        walker.tp = window.Dial && Dial.path ? Dial.path({
+          kind: "corpse", title: c.title || "The corpse", at: 0,
+          stops: slots.map(function (sl, i) { return { label: sl + " · " + animalWord(ids[i]) }; }).concat([{ label: "the route" }]),
+          onEnd: closeStage
+        }) : null;
         var stepMs = 2600 * slow, after = false;
         function lightPart(i, said) {
+          if (walker && walker.tp) { walker.tp.set({ at: i }); }
           walker.lit = ["head", "body", "hind"][i];
           part.textContent = slots[i] + " · " + animalWord(ids[i]) + " · " + (said || rule(ids[i]));
         }
@@ -1232,6 +1239,7 @@
           if (after || walker === null || walker.c !== c) { return; }
           after = true;
           walker.phase = "walk";
+          if (walker.tp) { walker.tp.set({ at: 3 }); }
           walker.lit = null;
           walker.w0 = performance.now();
           part.textContent = "";
@@ -1300,6 +1308,7 @@
     if (stageCv) { stageCv.hidden = true; }
     if (stage) { stage.hidden = true; stage.dataset.on = ""; var p = stage.querySelector(".corpse-code"); if (p) { p.remove(); } }
     if (walker && walker.ch && walker.ch.real) { try { walker.ch.real.close(); } catch (e) { /* gone */ } }
+    if (walker && walker.tp) { walker.tp.close(); }
     if (window.Land && Land.unframe) { Land.unframe(); }
     walker = null;
     var mine = route;
