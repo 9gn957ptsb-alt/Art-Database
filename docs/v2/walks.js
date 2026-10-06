@@ -372,8 +372,14 @@
     ["pointerdown", "wheel", "keydown"].forEach(function (t) {
       strip.addEventListener(t, function (event) { event.stopPropagation(); }, { passive: t === "wheel" });
     });
-    document.body.appendChild(strip);
+    place();
   }
+  // The strip is the dial's readout now (transport.js): placed beside the dial, never over the picture.
+  function place() {
+    if (window.Dial && Dial.read) { Dial.read(strip); } else if (!strip.parentNode) { document.body.appendChild(strip); }
+  }
+  // A press on the dial or its readout is not one that takes over the walk.
+  function mine(t) { return (strip && strip.contains(t)) || !!(window.Dial && Dial.owns && Dial.owns(t)); }
 
   function button(text, cls, fn) {
     var b = document.createElement("button");
@@ -392,15 +398,17 @@
     stripActs.textContent = "";
     (acts || []).forEach(function (a) { stripActs.appendChild(a); });
     strip.hidden = false;
+    place();
     if (forMs) { hideTimer = window.setTimeout(hide, forMs); }
   }
 
-  // The sentence in the strip: while walking, its last three lines, writing themselves.
+  // The sentence in the dial's readout: while walking, writing itself — its newest line shown, the whole
+  // a press on the count away (transport.css).
   function setLines(lines, fresh, all) {
     setUp();
     stripLines.textContent = "";
     if (!lines || !lines.length) { return; }
-    stripLines.appendChild(sentenceEl(all ? lines : lines.slice(-3), all ? "walk-sentence-whole" : "", fresh));
+    stripLines.appendChild(sentenceEl(lines, all ? "walk-sentence-whole" : "", fresh));
   }
 
   function setSaid(text) {
@@ -549,27 +557,42 @@
     return (walk.paused ? "Paused · " : "") + (walk.i + 1) + " of " + n + " · " + townName(stopOf().key);
   }
 
+  /* The transport is the dial's (transport.js): play, pause, the next stop and the end are
+     there. Under reduced motion the stop's works are still doors here. */
   function acts() {
     if (still) {
       var list = [];
-      if (walk.i > 0) { list.push(button("← Before", "", function () { stepTo(walk.i - 1); })); }
-      if (walk.i + 1 < walk.w.stops.length) { list.push(button("Next stop →", "", function () { stepTo(walk.i + 1); })); }
       var m = walk.map;
       stopOf().works.forEach(function (id) {
         var x = workOf(m, id);
         list.push(button((x ? x[1] : "A work") + (x && x[3] ? ", " + x[3] : ""), "walk-work",
                          function () { Land.work(id, stopOf().key); }));
       });
-      list.push(button("End the walk", "walk-end", function () { end("ended"); }));
       return list;
     }
-    if (walk.paused) {
-      return [button("Resume the walk", "walk-resume", resume), button("End", "walk-end", function () { end("ended"); })];
-    }
-    return [button("End", "walk-end", function () { end("ended"); })];
+    return [];
   }
 
-  function told(said) { show(progress(), said, acts()); }
+  function told(said) {
+    show(progress(), said, acts());
+    if (walk && walk.dial) { walk.dial.set({ at: walk.i, paused: walk.paused }); }
+  }
+
+  // The walk on the dial: its cities as the stops (a walk has no years: in order). Under reduced
+  // motion a tap on the face is the next stop, and at the last the walk's end.
+  function onDial() {
+    if (!window.Dial || !Dial.path) { return null; }
+    var token = walk;
+    function live() { return walk === token; }
+    return Dial.path({
+      kind: "walk", title: walk.w.title, at: walk.i, read: strip,
+      stops: walk.w.stops.map(function (st) { return { label: shortName(st.key) }; }),
+      onToggle: function () { if (!live()) { return; } if (walk.paused) { resume(); } else { pause(); } },
+      onSeek: function (i, play) { if (live()) { seekTo(i, play); } },
+      onNext: function () { if (live()) { clearTimers(); next(); } },
+      onEnd: function () { if (live()) { end("ended"); } }
+    });
+  }
 
   /* opts (explorations.js, the relay): from, the stop to join it at; onEnd,
      told when it ends ("done", "up", "away", "ended") with the walk. */
@@ -581,7 +604,7 @@
       if (!c || !window.Land || !Land.where) { return; }
       var f0 = Land.following();
       if (f0 && f0.artist !== c.artist) { Land.unfollow(); }
-      if (walk) { clearTimers(); walk = null; }
+      if (walk) { if (walk.dial) { walk.dial.close(); } clearTimers(); walk = null; }
       if (rec && rec.stops.length >= 2) { finish(rec); }
       rec = null;
       return Characters.lead(c.id).then(function (f) {
@@ -590,6 +613,8 @@
         var from = Math.max(0, Math.min(w.stops.length - 1, opts.from || 0));
         walk = { w: w, i: from, j: -1, map: f.map, timers: [], paused: false, down: false, said: [], upto: from, closed: from,
                  onEnd: opts.onEnd || null };
+        setUp();
+        walk.dial = onDial();
         setLines([]);
         told(w.title + (w.by ? " · by " + w.by : "") + (from ? " · joined at stop " + (from + 1) + " of " + w.stops.length : ""));
         var first = w.stops[from].key;
@@ -654,6 +679,8 @@
     var st = stopOf(), id = st.works[j];
     walk.j = j;
     var w = Land.where();
+    // The work in the picture's place, never left full screen from the one before.
+    if (Land.full) { Land.full(false); }
     if (!(w.at === "work" && w.work === id)) { Land.work(id, st.key); }
     waitFor(function (x) { return x.at === "work" && x.work === id; }, function (ok) {
       if (!ok) { afterWork(); return; }
@@ -728,6 +755,7 @@
 
   function done() {
     var w = walk.w, onEnd = walk.onEnd;
+    if (walk.dial) { walk.dial.close(); }
     clearTimers();
     walk = null;
     // In a relay (explorations.js) the next leg goes on from here.
@@ -749,6 +777,19 @@
     Land.go(stopOf().key);
   }
 
+  // Turned to a stop on the dial: there, and on from it if it was playing; held there if it was paused
+  // (a tap on the face goes on from it).
+  function seekTo(i, play) {
+    clearTimers();
+    walk.closed = Math.max(walk.closed, Math.min(i, walk.i + 1));
+    if (still || play || !walk.paused) { walk.paused = false; goStop(i, -1); return; }
+    walk.i = i;
+    walk.j = -1;
+    told("");
+    var w = Land.where();
+    if (w.flying || !atStop(w)) { Land.go(stopOf().key); }
+  }
+
   function pause() {
     if (!walk || walk.paused || still) { return; }
     walk.paused = true;
@@ -768,6 +809,7 @@
   function end(why) {
     if (!walk) { return; }
     var w = walk.w, i = walk.i, onEnd = walk.onEnd;
+    if (walk.dial) { walk.dial.close(); }
     clearTimers();
     walk = null;
     // In a relay (explorations.js) the exploration says how it ended.
@@ -912,13 +954,13 @@
   // Pressing anything takes over: the walk waits.
   window.addEventListener("pointerdown", function (event) {
     movedAt = performance.now();
-    if (walk && !(strip && strip.contains(event.target))) { pause(); }
+    if (walk && !mine(event.target)) { pause(); }
   }, true);
   window.addEventListener("wheel", function (event) {
-    if (walk && !(strip && strip.contains(event.target))) { pause(); }
+    if (walk && !mine(event.target)) { pause(); }
   }, { capture: true, passive: true });
   window.addEventListener("keydown", function (event) {
-    if (!walk || (strip && strip.contains(event.target)) || /^(Shift|Control|Alt|Meta|Tab)$/.test(event.key)) { return; }
+    if (!walk || mine(event.target) || /^(Shift|Control|Alt|Meta|Tab)$/.test(event.key)) { return; }
     pause();
   }, true);
 
@@ -936,62 +978,6 @@
     new MutationObserver(function () { if (field && asked(field.value)) { offerInFind(); } })
       .observe(found, { childList: true });
   }
-
-  /* The strips (a walk's, an exploration's and its relay's offers) stand
-     clear of the work's picture in the art view, and of the column beside
-     it: where they are if nothing is in the way; else narrowed to the room
-     left of the picture, else beside it on the right (short of the column),
-     else under it, else at the foot of the window. At least 180 px wide.
-     Checked twice a second while one shows. */
-  function clearOfPicture() {
-    var strips = document.querySelectorAll(".walk-strip");
-    var pic = document.getElementById("art-plate");
-    var r = pic && !pic.hidden ? pic.getBoundingClientRect() : null;
-    if (r && (!r.width || !r.height)) { r = null; }
-    var colEl = document.querySelector(".art[data-on=\"true\"] .art-body");
-    var col = colEl && window.getComputedStyle(colEl).visibility !== "hidden" ? colEl.getBoundingClientRect() : null;
-    var colLeft = col && col.width && col.left > (r ? r.right : 0) ? col.left : window.innerWidth - 16;
-    // The reading layout (land.js, voice.js): the picture, its sentence, the lens and the dial are
-    // the view; the strip keeps to the foot — under the dial on a desktop, over the text on a phone.
-    var rd = window.Land && Land.reading ? Land.reading() : null;
-    var dialEl = document.getElementById("art-time");
-    var dial = dialEl && !dialEl.hidden ? dialEl.getBoundingClientRect() : null;
-    Array.prototype.forEach.call(strips, function (st) {
-      if (st.hidden) { return; }
-      st.style.maxWidth = ""; st.style.top = ""; st.style.bottom = ""; st.style.left = "";
-      if (rd && rd.lens && !rd.full) {
-        st.style.top = "auto";
-        st.style.bottom = "12px";
-        if (rd.phone) { st.style.left = "12px"; st.style.maxWidth = (window.innerWidth - 24) + "px"; return; }
-        var colBox = document.getElementById("art-col"), cb = colBox ? colBox.getBoundingClientRect() : null;
-        var left = rd.cap.x + rd.cap.w + 16, right = (cb && cb.width ? cb.left : colLeft) - 12;
-        var sh = st.getBoundingClientRect().height || 96;
-        if (dial && dial.width && dial.bottom + 8 > window.innerHeight - 12 - sh) { left = Math.max(left, dial.right + 12); }
-        st.style.left = Math.round(left) + "px";
-        st.style.maxWidth = Math.max(220, Math.floor(right - left)) + "px";
-        return;
-      }
-      if (!r) { return; }
-      var hit = function () {
-        var b = st.getBoundingClientRect();
-        return b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom;
-      };
-      if (!hit()) { return; }
-      var b0 = st.getBoundingClientRect();
-      if (r.left - b0.left - 12 >= 180) { st.style.maxWidth = Math.floor(r.left - b0.left - 12) + "px"; if (!hit()) { return; } }
-      st.style.maxWidth = "";
-      if (colLeft - r.right - 24 >= 180) {
-        st.style.left = Math.round(r.right + 12) + "px";
-        st.style.maxWidth = Math.floor(Math.min(380, colLeft - r.right - 24)) + "px";
-        if (!hit()) { return; }
-      }
-      st.style.left = ""; st.style.maxWidth = "";
-      if (r.bottom + 8 + b0.height <= window.innerHeight - 16) { st.style.top = Math.round(r.bottom + 8) + "px"; return; }
-      st.style.top = "auto";
-      st.style.bottom = "16px";
-    });
-  }
-  window.setInterval(function () { if (document.querySelector(".walk-strip:not([hidden])")) { clearOfPicture(); } }, 500);
 
   window.Walks = {
     play: play,

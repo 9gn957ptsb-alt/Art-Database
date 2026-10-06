@@ -282,9 +282,42 @@
     strip.setAttribute("aria-live", "polite");
     strip.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     strip.addEventListener("wheel", function (event) { event.stopPropagation(); }, { passive: true });
-    document.body.appendChild(strip);
+    place();
     return strip;
   }
+  // The strip is the dial's readout now (transport.js): beside the dial, never over the picture.
+  function place() {
+    if (window.Dial && Dial.read) { Dial.read(strip, { join: !!said.joined }); } else if (!strip.parentNode) { document.body.appendChild(strip); }
+  }
+
+  /* Their words in a city are a path on the dial: each a stop (in order: words have no year of their
+     own here), the face pausing the slow clock, the ring going from one to another, × letting them go.
+     While another path plays (a voice's route, a walk), they are said under its lines instead, and its
+     pause holds their clock too. */
+  var dial = null;
+  function onDial() {
+    if (dial) { dial.close(); dial = null; }
+    if (!window.Dial || !Dial.path || !said.items.length) { return; }
+    // Under a path playing, or one just ended whose doors are up: said under it, not a path of their own.
+    if ((Dial.live && Dial.live()) || (Dial.ending && Dial.ending())) { said.joined = true; Dial.read(makeStrip(), { join: true }); return; }
+    said.joined = false;
+    var key = said.key;
+    function live() { return said.key === key && dial; }
+    dial = Dial.path({
+      kind: "voice", title: (cur ? surname(cur.name) : "Their words") + " in " + (placeName(key) || "this city"),
+      at: Math.max(0, said.i), read: makeStrip(), paused: !!said.paused,
+      stops: said.items.map(function (it) {
+        var w = cur && cur.works[it.q ? it.q.w : it.a.w];
+        return { label: w ? w[1] || "Untitled" : "" };
+      }),
+      onToggle: function () { if (!live()) { return; } said.paused = !said.paused; said.last = performance.now(); dial.set({ paused: said.paused }); },
+      onSeek: function (i, play) { if (!live()) { return; } said.paused = !play && !!said.paused; said.i = i - 1; step(true); },
+      onNext: function () { if (live()) { step(true); } },
+      onEnd: function () { if (live()) { said.items = []; hideStrip(); } }
+    });
+  }
+  // Held by the dial: their own pause, or the pause of the path they are said under.
+  function heldByDial() { return !!said.paused || !!(said.joined && window.Dial && Dial.paused && Dial.paused()); }
 
   function sayItem(it, n, of) {
     var s = makeStrip();
@@ -326,16 +359,21 @@
     txt.appendChild(on);
     row.appendChild(txt);
     s.appendChild(row);
-    if (still && said.i < said.items.length - 1) {
+    // Under reduced motion, said under a played path's count (whose dial steps the path, not them):
+    // the next of their words is a door here.
+    if (still && said.joined && said.i < said.items.length - 1) {
       s.appendChild(button("read-quiet voice-next", "Next ›", function () { step(true); }));
     }
     s.hidden = false;
+    place();
+    if (dial) { dial.set({ at: n - 1, paused: !!said.paused }); }
     s.dataset.on = "";
     window.requestAnimationFrame(function () { s.dataset.on = "true"; });
   }
 
   function hideStrip() {
     if (strip) { strip.hidden = true; strip.textContent = ""; }
+    if (dial) { dial.close(); dial = null; }
   }
 
   function arrive(key) {
@@ -345,7 +383,9 @@
     said.clock = 0;
     said.next = FIRST_AT;
     said.last = performance.now();
+    said.paused = false;
     hideStrip();
+    onDial();
     if (still && said.items.length) { step(true); }
   }
 
@@ -373,8 +413,9 @@
       return;
     }
     if (still || !said.items.length) { said.last = now; return; }
-    // The clock moves only while the pointer is still.
-    if (now - movedAt >= STILL_MS) { said.clock += now - said.last; }
+    // The clock moves only while the pointer is still, and not while the dial holds it. (Said under a
+    // path that has ended, they stay under its readout and its doors for the rest of this city.)
+    if (now - movedAt >= STILL_MS && !heldByDial()) { said.clock += now - said.last; }
     said.last = now;
     if (said.clock >= said.next) { step(false); }
   }
