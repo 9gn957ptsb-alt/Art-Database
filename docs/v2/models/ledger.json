@@ -1698,13 +1698,14 @@
   },
   "museum-contemporary-arts-museum-houston": {
     "name": "CAMH",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Birkerts' ribbed stainless-steel parallelogram, acute corner with the entrance notch at Montrose and Bissonnet",
-      "2026-09-30 interior finding: only 10% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 10% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved 40 m west onto its outline at Montrose and Bissonnet, the parallelogram sharpened toward the corner, denser ribs; on its ground 10% → 98%"
     ],
     "interior": {
       "tier": "shell",
@@ -1889,13 +1890,14 @@
   },
   "museum-davis-museum": {
     "name": "Davis Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Moneo's closed red-brick box with a precast band, the plaza window and entrance slot, four metal lanterns in a pinwheel on the roof; bridge to Jewett, Collins Cinema across the plaza.",
-      "2026-09-30 interior finding: only 43% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 43% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the brick box, bridge, Jewett, Collins Cinema and neighbour onto their outlines; taller grey lanterns; on its ground 41% → 78%"
     ],
     "interior": {
       "tier": "shell",
@@ -2241,12 +2243,13 @@
   },
   "museum-dia-art-foundation": {
     "name": "Dia Chelsea",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: three brick industrial buildings on West 22nd Street with skylit galleries and steel windows, Beuys 7000 Oaks trees and basalt columns on the sidewalk, turned to the Manhattan grid"
+      "2026-09-24 first model: three brick industrial buildings on West 22nd Street with skylit galleries and steel windows, Beuys 7000 Oaks trees and basalt columns on the sidewalk, turned to the Manhattan grid",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the block moved onto its outline with West 22nd Street and the 7000 Oaks on the ground's street; on its ground 81% → 95%"
     ],
     "interior": {
       "tier": "shell",
@@ -2348,13 +2351,14 @@
   },
   "museum-frye-art-museum": {
     "name": "Frye Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: low pale galleries with skylight monitors on Seattle's turned grid, the rotunda lobby, reflecting pool and column arcade on Terry Ave, the courtyard café.",
-      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): block, streets and planting moved onto the outline; on its ground 68% → 71%"
     ],
     "interior": {
       "tier": "shell",
@@ -2430,13 +2434,14 @@
   },
   "museum-fondation-louis-vuitton": {
     "name": "Fondation Louis Vuitton",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne",
-      "2026-09-30 interior finding: only 70% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 70% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): north sails pulled in off the avenue, the avenue to the north, trees thinned; on its ground 54% → 59% (the sails overhang the water); the sails' form still generated"
     ],
     "interior": {
       "tier": "shell",
@@ -2484,13 +2489,14 @@
   },
   "museum-frans-halsmuseum": {
     "name": "Frans Hals Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1608 Oudemannenhuis, two brick storeys under dark pitched roofs round the courtyard garden, stepped gables and the gate on Groot Heiligland, lower galleries behind",
-      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the almshouse west of Groot Heiligland with its long court, two-storey front range and gate, gabled neighbours; on its ground 60% → 68%"
     ],
     "interior": {
       "tier": "shell",
@@ -2890,13 +2896,14 @@
   },
   "museum-g2-kunsthalle": {
     "name": "G2 Kunsthalle",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the six-storey late-GDR data centre on Dittrichring with window rows between piers, floor bands, set-back top floor and glass lounge, the Pleißemühlgraben and ring road, on the real bearing",
-      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved across the millrace onto its outline, a long six-storey arm along the water widening south, Dittrichring placed; on its ground 9% → 85%"
     ],
     "interior": {
       "tier": "shell",
@@ -2997,13 +3004,14 @@
   },
   "museum-faurschou-foundation": {
     "name": "Faurschou Foundation Copenhagen",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: a four-storey yellow-brick harbour warehouse on the quay at Nordhavn (footprint from the ground file), glazed loading doors, the galleries opened up white at the east end, the harbour basin",
-      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline, the four-storey warehouse along the quay with the water to its north and the low hall east; on its ground 50% → 94%"
     ],
     "interior": {
       "tier": "shell",
@@ -3106,13 +3114,14 @@
   },
   "museum-el-museo-del-barrio": {
     "name": "El Museo del Barrio",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Heckscher Building on Manhattan's grid, red brick over a rusticated limestone base with quoins and cornice, the glass entrance on Fifth, the theatre block, the Conservatory Garden across the avenue",
-      "2026-09-30 interior finding: only 54% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 54% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): cut from 88 m to 61 m between its side streets, six storeys as published, Fifth Avenue forecourt and the park wall opposite; on its ground 53% → 74%"
     ],
     "interior": {
       "tier": "shell",
@@ -3430,13 +3439,14 @@
   },
   "museum-galleria-d-arte-moderna-di-bologna": {
     "name": "MAMbo (GAM Bologna)",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former Forno del Pane on Via Don Minzoni: long rendered front with taller centre under tile roofs, three brick bakery halls behind with ridge lights, the Cavaticcio park and canal.",
-      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its wedge along Via Don Minzoni, rendered front with a taller centre, brick halls to the slanting back, the canal on its line; on its ground 67% → 93%"
     ],
     "interior": {
       "tier": "shell",
