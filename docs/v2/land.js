@@ -1166,7 +1166,10 @@
      rules.keepDots never lets a dot go under a name (the collages). */
   function nameMarks(items, rules) {
     var S = rules.box;
-    var far = R < base0 * INV2;
+    // Far off, no names. On a reading's grown globe, far is the area's: a
+    // globe less than three fifths of the area across (a swapped one at
+    // rest fills its place, and is named).
+    var far = grown && grownAt ? R < 0.3 * Math.min(S.x1 - S.x0, S.y1 - S.y0) : R < base0 * INV2;
     var groups = [];
     items.forEach(function (it) {
       it.side = null;
@@ -3797,12 +3800,14 @@
     }
     vocabulary.forEach(function (g) { nightLights.push({ lat: g.lat, lon: g.lon, b: 1, k: Math.random() * TAU }); });
     cities.forEach(function (c) {
-      if (c.town) { return; }                      // a city of the Museums layer is its own mark
+      if (c.town || c.inTown) { return; }          // a city of the Museums layer is its own mark; a museum is in its city
       // Nor a birthplace, a building or a museum: a layer's marks are its own
       // (3 Oct 2026: the Artists layer carries only its names, and every
-      // birthplace had been a gold cross on the night side).
+      // birthplace had been a gold cross on the night side). Kept by its
+      // layer, not by the mark: found() makes the marks again, and the
+      // lights are made once.
       if (c.studio || c.building || c.museum) { return; }
-      nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true, city: c });
+      nightLights.push({ lat: c.lat, lon: c.lon, b: 1.5, k: Math.random() * TAU, big: true, layer: c.layer || "" });
     });
   }
 
@@ -3812,8 +3817,12 @@
     var lamp = Math.max(2, Math.round(block * 0.65));
     ctx.save();
     ctx.globalAlpha = fade;
-    nightLights.forEach(function (l) {
-      if (l.city && l.city.off) { return; }        // a collage's light only on the Collages layer
+    // The Artists layer is its names and nothing else (artist, 3 Oct 2026, of
+    // Europe at night: "There's still way too many dots on the globe for the
+    // artist filter. I just want artist names to be where they were born"):
+    // no lamps on its night side, only the lightning.
+    (layerOn === "studios" ? [] : nightLights).forEach(function (l) {
+      if (l.layer && l.layer !== layerOn) { return; }   // a collage's light only on the Collages layer
       var dark = darkAt(l.lat, l.lon);
       if (dark <= 0.2) { return; }
       var p = project(l.lat, l.lon);
@@ -4905,6 +4914,14 @@
     if (!finding && !pointDoor.asked && unproject(x, y)) { pointDoor.asked = true; readFinding(); }
     doorRest = setTimeout(function () {
       if (!doorable() || turning || panning || pinch) { return; }
+      // Only over the world itself: resting on a mark (a name on the globe, a
+      // pill), the column or the dial, that is what is pointed at, not the
+      // ground under it.
+      var over = document.elementFromPoint(x, y);
+      if (over && over !== canvas && over !== stage && over !== land && !(over.classList && over.classList.contains("world"))) {
+        hideDoor();
+        return;
+      }
       var d = doorAtPoint(x, y);
       if (d) { showDoor(d, x, y); } else { hideDoor(); }
     }, 320);
@@ -17628,8 +17645,9 @@
   function showPicture(spec) {
     var a = art;
     if (!a || a.kind === "work" || !readingOn()) { return; }
-    var id = spec && spec.id || null;
-    if ((a.picture ? a.picture.id : null) === id) { return; }
+    // The same picture: a saved work by its id, a painting not saved (Commons) by its file.
+    var key = function (p) { return p ? p.id || p.src || p.image || null : null; };
+    if (key(a.picture) === key(spec)) { return; }
     a.picture = spec && (spec.image || spec.src) ? spec : null;
     if (!a.picture) {
       artPlate.textContent = "";
