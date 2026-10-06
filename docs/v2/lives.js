@@ -885,6 +885,10 @@
 
   var cv = null, ctx = null, raf = 0;
   function kick() { if (!raf) { raf = window.requestAnimationFrame(draw); } }
+  // What the life drew on the globe last frame that matters (its places, rings, name, birth and death),
+  // as boxes: the reading's grown globe keeps the layer's marks and names off them (land.js, Lives.marks).
+  var drawn = [];
+  function keep(x0, y0, x1, y1) { drawn.push({ x0: x0, y0: y0, x1: x1, y1: y1 }); }
   function slerp(a, b, t) {
     var R = Math.PI / 180;
     var la1 = a[0] * R, lo1 = a[1] * R, la2 = b[0] * R, lo2 = b[1] * R;
@@ -915,6 +919,7 @@
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    drawn = [];
     var w = where();
     var t = still ? 0 : Math.floor((now || 0) / (1000 / 24));
     if (view && view.api.live() && w.at === "life") {
@@ -1026,7 +1031,7 @@
         // A life that crosses here this year: a second ring, cream.
         var c = p.cross.map(function (ci) { return L.cross[ci]; }).filter(function (c) { return c[4] <= y && y <= c[5]; })[0];
         if (c) { ctx.fillStyle = CREAM; ring2(q.x, q.y, 3, t); }
-        name(q.x, q.y, p.place + (c ? " · " + surname(c[1]) + " here" : ""));
+        name(q.x, q.y, p.place + (c ? " · " + surname(c[1]) + " here" : ""), c ? 3 : 2);
       }
     });
     ["b", "d"].forEach(function (e) {
@@ -1036,6 +1041,7 @@
       if (q.z < 0.05) { return; }
       ctx.fillStyle = e === "b" ? CREAM : (y >= L.died ? "#ffffff" : CREAM);
       var gx = Math.floor(q.x / C) * C, gy = Math.floor(q.y / C) * C;
+      keep(gx, gy, gx + C, gy + C);
       ctx.globalAlpha = (e === "b" || y >= L.died) ? 0.9 : 0.3;
       ctx.fillRect(gx + C / 2 - 1.5, gy + C / 2 - 1.5, 3, 3);
     });
@@ -1044,6 +1050,7 @@
 
   function atelier(x, y, a) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    keep(gx, gy, gx + C, gy + C);
     ctx.globalAlpha = a;
     ctx.strokeStyle = CREAM;
     ctx.lineWidth = 1.5;
@@ -1052,33 +1059,65 @@
     ctx.fillRect(gx + 4, gy + 4, C - 8, C - 8);
     ctx.globalAlpha = 1;
   }
-  function name(x, y, text) {
+  // A place's name beside its ring (rr: the ring's reach in tiles, 2, or 3 with a crossing's).
+  function name(x, y, text, rr) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    rr = rr || 2;
     ctx.globalAlpha = 1;
     ctx.font = "11px " + (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace");
     ctx.textBaseline = "middle";
-    var tx = gx + 3 * C + 4, w = ctx.measureText(text).width;
+    var w = ctx.measureText(text).width, tx = gx + (rr + 1) * C + 4, ty = gy;
     // In the small globe at rest (the reading layout's lens): the name fits
-    // inside its round window — right of the place, else left, else moved in
-    // (3 Oct 2026: "Greenw…" was cut by the rim).
+    // inside its round window — right of the place, else left, else under
+    // the ring (or over it), centred on the place (3 Oct 2026: "Greenw…" was
+    // cut by the rim, and a name moved in sat over its own place).
     var rd = window.Land && Land.reading ? Land.reading() : null, L = rd && !rd.out && !rd.swapped && rd.at;
     if (L && L.r) {
-      var top = gy - 2, bot = gy + C + 2;
-      var half = Math.sqrt(Math.max(0, L.r * L.r - Math.max((top - L.y) * (top - L.y), (bot - L.y) * (bot - L.y)))) - 4;
-      var x0 = L.x - half, x1 = L.x + half;
-      if (tx + w + 4 > x1) { tx = gx - 2 * C - 4 - w; }
-      tx = Math.max(x0 + 4, Math.min(x1 - 4 - w, tx));
+      var span = function (row) {
+        var dy = Math.max(Math.abs(row - 2 - L.y), Math.abs(row + C + 2 - L.y));
+        var half = Math.sqrt(Math.max(0, L.r * L.r - dy * dy)) - 4;
+        return [L.x - half + 4, L.x + half - 4];
+      };
+      var s0 = span(gy), left = gx - rr * C - 4 - w;
+      if (tx + w > s0[1]) {
+        if (left >= s0[0]) { tx = left; }
+        else {
+          var put = null;
+          [gy + (rr + 1) * C + 4, gy - (rr + 1) * C - 4].forEach(function (row) {
+            var sp = span(row);
+            if (!put && sp[1] - sp[0] >= w) { put = { row: row, sp: sp }; }
+          });
+          if (put) { ty = put.row; tx = Math.max(put.sp[0], Math.min(put.sp[1] - w, gx + C / 2 - w / 2)); }
+          else { tx = Math.max(s0[0], Math.min(s0[1] - w, tx)); }
+        }
+      }
     } else {
-      if (tx + w > window.innerWidth - 8) { tx = gx - 2 * C - 4 - w; }
+      // Out of its window, or on the front: right of the place, else left, never under the dial or the column.
+      var under = [document.getElementById("art-time"), document.getElementById("art-col")].map(function (e) {
+        var r = e && e.offsetParent ? e.getBoundingClientRect() : null;
+        return r && r.width ? r : null;
+      }).filter(Boolean);
+      var blocked = function (x0, y0) {
+        return x0 < 8 || x0 + w > window.innerWidth - 8 || y0 < 8 || y0 + C > window.innerHeight - 8 || under.some(function (r) {
+          return x0 - 4 < r.right && r.left < x0 + w + 4 && y0 - 2 < r.bottom && r.top < y0 + C + 2;
+        });
+      };
+      // Right, left, then under the ring and over it, centred on the place.
+      var mid = gx + C / 2 - w / 2;
+      var tries = [[tx, gy], [gx - rr * C - 4 - w, gy], [mid, gy + (rr + 1) * C + 4], [mid, gy - (rr + 1) * C - 4]];
+      var put = tries.filter(function (q) { return !blocked(q[0], q[1]); })[0];
+      if (put) { tx = put[0]; ty = put[1]; }
       tx = Math.max(8, Math.min(window.innerWidth - 8 - w, tx));
     }
     ctx.fillStyle = "rgba(15, 10, 7, 0.72)";
-    ctx.fillRect(tx - 4, gy - 2, w + 8, C + 4);
+    ctx.fillRect(tx - 4, ty - 2, w + 8, C + 4);
+    keep(tx - 4, ty - 2, tx + w + 4, ty + C + 2);
     ctx.fillStyle = CREAM;
-    ctx.fillText(text, tx, gy + C / 2 + 0.5);
+    ctx.fillText(text, tx, ty + C / 2 + 0.5);
   }
   function ring2(x, y, R, t) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    keep(gx - R * C, gy - R * C, gx + (R + 1) * C, gy + (R + 1) * C);
     ctx.globalAlpha = 0.5;
     for (var dx = -R; dx <= R; dx += 1) {
       for (var dy = -R; dy <= R; dy += 1) {
@@ -1090,6 +1129,7 @@
   }
   function ring(x, y, rr, t) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    keep(gx - (rr + 1) * C, gy - (rr + 1) * C, gx + (rr + 2) * C, gy + (rr + 2) * C);
     ctx.fillStyle = LILAC;
     for (var e = 0; e < 2; e += 1) {
       var R = rr + e;
@@ -1148,6 +1188,8 @@
     idOf: function (name) { var r = rowOf(name); return r ? r[0] : null; },
     showWork: showWork,
     made: made,
+    // What the life (or a town's "Born here") drew on the globe last frame, as boxes.
+    marks: function () { return drawn; },
     has: function (name) { return !!rowOf(name); },
     // A period entered here: the life's artist and its Painted here sites (sites.js draws them in the city).
     visiting: function () {

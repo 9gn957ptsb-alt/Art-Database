@@ -331,6 +331,10 @@
     ctx.globalAlpha = a;
     ctx.fillRect(gx + inset, gy + inset, C - 2 * inset, C - 2 * inset);
   }
+  // What the movement drew on the globe last frame that matters (the birthplaces, the ateliers, the
+  // city's ring), as boxes: the reading's grown globe keeps the layer's marks and names off them (land.js).
+  var drawn = [];
+  function keep(x0, y0, x1, y1) { drawn.push({ x0: x0, y0: y0, x1: x1, y1: y1 }); }
   function canvas() {
     if (cv) { return; }
     var tiles = document.getElementById("tiles");
@@ -346,6 +350,7 @@
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    drawn = [];
     var w = window.Land && Land.where ? Land.where() : {};
     if (view && view.api.live() && w.at === "movement") {
       follow();
@@ -381,6 +386,7 @@
       if (b.z > 0.05) {
         ctx.fillStyle = CREAM;
         var bx = Math.floor(b.x / C) * C, by = Math.floor(b.y / C) * C;
+        keep(bx, by, bx + C, by + C);
         ctx.globalAlpha = come ? 0.85 : 0.35;
         ctx.fillRect(bx + 4, by + 4, C - 8, C - 8);
       }
@@ -400,6 +406,7 @@
   }
   function atelier(x, y, a) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    keep(gx, gy, gx + C, gy + C);
     ctx.globalAlpha = a;
     ctx.strokeStyle = CREAM;
     ctx.lineWidth = 1.5;
@@ -410,6 +417,7 @@
   }
   function ring(x, y, rr, t, a) {
     var gx = Math.floor(x / C) * C, gy = Math.floor(y / C) * C;
+    keep(gx - (rr + 1) * C, gy - (rr + 1) * C, gx + (rr + 2) * C, gy + (rr + 2) * C);
     ctx.fillStyle = LILAC;
     for (var e = 0; e < 2; e += 1) {
       var R = rr + e;
@@ -532,6 +540,8 @@
     visit: visit,
     play: function (id) { return load().then(function () { var m = mv(id); if (m) { play(m); } }); },
     heading: function (id) { var m = mv(id); return m ? heading(m) : ""; },
+    // What the movement drew on the globe last frame, as boxes (the grown globe keeps its marks off them).
+    marks: function () { return drawn; },
     // For the dial's hub and the relay.
     data: function () { return D; },
     forCity: function (key) { return D && D.cities[key] ? D.cities[key].map(function (i) { return D.movements[i]; }) : []; },

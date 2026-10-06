@@ -1787,9 +1787,6 @@
     if (route) { route.doneAt = now; route.u = 1; }
   }
 
-  /* One level up from where you are: from a museum (or the theatre), its
-     city, unless the city is only that museum; from a work's history opened
-     in a museum or a city, that museum or city; else nothing, the world. */
   /* A collage's site pressed on a reading's grown globe: the categories'
      crumb that keeps the reading one press back everywhere else is not
      there (a collage is the artist's own, of no category), so the way back
@@ -1819,6 +1816,10 @@
     return { to: to, name: name, go: go };
   }
 
+  /* One level up from where you are: from a collage's site pressed on a
+     reading's grown globe, the reading; from a museum (or the theatre), its
+     city, unless the city is only that museum; from a work's history opened
+     in a museum or a city, that museum or city; else nothing, the world. */
   function levelUp() {
     if (!place) { return null; }
     if (readingBack && readingBack.to === place) { return { name: readingBack.name, go: readingBack.go }; }
@@ -14118,7 +14119,9 @@
   function hitTown(x, y, touch) {
     if (!towns) { return null; }
     var S = safeBox();
-    var small = R <= Math.min(W, H) * 0.5;
+    // A small world is one a press fires in (pressGlobe), so it is not reached across; a
+    // reading's grown globe never fires, and is pressed as a near one is.
+    var small = !grown && R <= Math.min(W, H) * 0.5;
     var reach = small ? 9 : touch ? 24 : 10;
     var half = CELL_PX / 2;
     var best = null, bestD = Infinity, bestKind = 9;
@@ -14691,7 +14694,11 @@
     reading: function () { return readingState(); },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
-                                  tiles: Object.keys(tilesShown).length }; },
+                                  tiles: Object.keys(tilesShown).length, own: ownBoxes.length,
+                                  tileAt: Object.keys(tilesShown).slice(0, 24).map(function (k) {
+                                    var b = tilesShown[k];
+                                    return [(b.i + 0.5) * CELL_PX, (b.j + 0.5) * CELL_PX, b.t.key];
+                                  }) }; },
     lens: function (spec) { return lensTo(spec); },
     picture: function (spec) { showPicture(spec || null); },
     tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
@@ -16033,7 +16040,39 @@
     } else if (!on && grown) {
       grownOff();
     }
-    if (grown) { grownMeasure(); }
+    if (grown) {
+      grownMeasure();
+      // The view's own marks, where they are this frame: names are given out again when they move.
+      ownBoxes = ownMarks();
+      var ok = ownBoxes.map(function (o) { return Math.round(o.x0) + "," + Math.round(o.y0) + "," + Math.round(o.x1) + "," + Math.round(o.y1); }).join(";");
+      if (ok !== ownKey) { ownKey = ok; marksDirty = true; }
+    }
+  }
+  /* The view's own marks on the grown globe, as boxes: a work's (or a
+     thread's) stops and their names, and what a life or a movement draws on
+     its own canvas (its places, rings, name, births: Lives.marks,
+     Movements.marks). The view's own come first: a layer's mark is not put
+     under one, nor a name over one. */
+  var ownBoxes = [], ownKey = "";
+  function ownMarks() {
+    var a = art, out = [];
+    if (!a) { return out; }
+    if ((a.kind === "work" || a.kind === "thread") && a.stops && a.names) {
+      a.stops.forEach(function (st) {
+        var p = project(st.lat, st.lon);
+        if (p.z <= 0.18) { return; }
+        var gx = Math.floor(p.x / CELL_PX) * CELL_PX, gy = Math.floor(p.y / CELL_PX) * CELL_PX;
+        out.push({ x0: gx, y0: gy, x1: gx + CELL_PX, y1: gy + CELL_PX });
+        var n = a.names[st.p];
+        if (n && n.style.visibility !== "hidden") {
+          var nw = n._w || (n._w = n.offsetWidth) || 60;
+          out.push({ x0: gx + CELL_PX + 5, y0: gy, x1: gx + CELL_PX + 5 + nw, y1: gy + CELL_PX });
+        }
+      });
+    }
+    var mod = a.kind === "life" ? window.Lives : a.kind === "movement" ? window.Movements : null;
+    if (mod && mod.marks) { out = out.concat(mod.marks() || []); }
+    return out;
   }
   function grownOff() {
     if (!grown) { return; }
@@ -16049,6 +16088,8 @@
     }
     tilesShown = {};
     nameBoxes = [];
+    ownBoxes = [];
+    ownKey = "";
     filterGlobe();
     marksDirty = true;
   }
@@ -16090,9 +16131,11 @@
     }
     var avoid = [];
     function rectOf(e, pad) {
-      if (!e || e.hidden || !e.offsetParent) { return; }
+      // (Not by offsetParent: the small globe's home mark is fixed, and has none.)
+      if (!e || e.hidden) { return; }
       var r = e.getBoundingClientRect();
-      if (r.width && r.height) { avoid.push({ x0: r.left - pad, y0: r.top - pad, x1: r.right + pad, y1: r.bottom + pad }); }
+      if (!r.width || !r.height || getComputedStyle(e).visibility === "hidden") { return; }
+      avoid.push({ x0: r.left - pad, y0: r.top - pad, x1: r.right + pad, y1: r.bottom + pad });
     }
     rectOf(artTime, 2);
     rectOf(lensHomeEl, 4);
@@ -16131,11 +16174,13 @@
   function inAvoid(x, y, pad) {
     if (!grown || !grownAt) { return false; }
     pad = pad || 0;
-    return grownAt.avoid.some(function (a) { return x > a.x0 - pad && x < a.x1 + pad && y > a.y0 - pad && y < a.y1 + pad; });
+    var hit = function (a) { return x > a.x0 - pad && x < a.x1 + pad && y > a.y0 - pad && y < a.y1 + pad; };
+    return grownAt.avoid.some(hit) || ownBoxes.some(hit);
   }
   function boxAvoid(b) {
     if (!grown || !grownAt) { return false; }
-    return grownAt.avoid.some(function (a) { return b.x0 < a.x1 && a.x0 < b.x1 && b.y0 < a.y1 && a.y0 < b.y1; });
+    var hit = function (a) { return b.x0 < a.x1 && a.x0 < b.x1 && b.y0 < a.y1 && a.y0 < b.y1; };
+    return grownAt.avoid.some(hit) || ownBoxes.some(hit);
   }
 
   /* The first person: the ground where they stood, DIRT Earth's, in the

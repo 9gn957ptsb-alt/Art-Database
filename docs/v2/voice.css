@@ -37,8 +37,10 @@
               width var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1), height var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1),
               border-radius var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-/* The view's own wash steps aside for the veil, but for a work's first look. */
-.art[data-read]:not([data-look="plate"]) .art-wash { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* The view's own wash steps aside for the veil, but for a work's first look ([data-kind]: as
+   particular as the work's calm ground in land.css, which had kept darkening the picture's side, and
+   with it the globe grown or swapped over it). */
+.art[data-read][data-kind]:not([data-look="plate"]) .art-wash { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .art[data-read] .art-time.dial {
   left: var(--work-dial-left);
   top: var(--work-dial-top);
