@@ -1645,13 +1645,14 @@
   },
   "museum-belvedere-museum": {
     "name": "Upper Belvedere",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Hildebrandt's white palace of stepped pavilions under green copper roofs, domed octagonal corner towers, three-arched south porch, the great pool and the northern parterres",
-      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the palace 14 m south, copper-green roofs and domes, forecourt and pond re-laid; on its ground 45% → 63%"
     ],
     "interior": {
       "tier": "shell",
@@ -1754,13 +1755,14 @@
   },
   "museum-statens-museum-for-kunst": {
     "name": "SMK",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1896 red-brick Neo-Renaissance front on Sølvgade with central and end pavilions and slate roofs, the glass Sculpture Street and Indrio's white wing toward Østre Anlæg, on the real bearing",
-      "2026-09-30 interior finding: only 67% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 67% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): it had been turned 32° the wrong way; rebuilt on the outline's bearing — the brick range, Sculpture Street, Indrio's white wing, the lake; on its ground 67% → 89%"
     ],
     "interior": {
       "tier": "shell",
@@ -1919,13 +1921,14 @@
   },
   "museum-centre-for-fine-arts-bozar": {
     "name": "Bozar (Palais des Beaux-Arts)",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Horta's low trapezoidal block of pale stone stepping back in bands, the glazed Rue Ravenstein arcade and corner entrance, the oval Henry Le Boeuf hall roof rising in the middle",
-      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): already on its trapezoid; Rue Ravenstein redrawn against the angled front, the short street north added; on its ground 60%"
     ],
     "interior": {
       "tier": "shell",
@@ -1974,13 +1977,14 @@
   },
   "museum-british-museum": {
     "name": "British Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Smirke's Portland-stone quadrangle on Bloomsbury's grid, the Great Court's glass roof round the Reading Room drum and dome, the Ionic colonnade, portico and pediment on Great Russell Street, the forecourt, the northern galleries",
-      "2026-09-30 interior finding: only 27% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 27% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the ground has no outline for it; moved off Great Russell Street to fill its block with the gates on the street, limestone; the plate is now very large and coarse — trim it next pass"
     ],
     "interior": {
       "tier": "shell",
@@ -2001,12 +2005,13 @@
   },
   "museum-parrish-art-museum": {
     "name": "Parrish Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Herzog and de Meuron long white-concrete building under twin corrugated-metal barn roofs with porches and north skylights, turned to its axis in the meadow"
+      "2026-09-24 first model: Herzog and de Meuron long white-concrete building under twin corrugated-metal barn roofs with porches and north skylights, turned to its axis in the meadow",
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned 2.5° and moved 6 m north onto its outline, hedgerows along the highway; on its ground 81% → 95%"
     ],
     "interior": {
       "tier": "shell",
@@ -2027,13 +2032,14 @@
   },
   "museum-art-gallery-of-ontario": {
     "name": "Art Gallery of Ontario",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gehry Galleria Italia bulging glass-and-fir facade on Dundas, the older wings and skylights, the blue titanium tower with its glass stair, the Grange in the park; turned to the street grid",
-      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): onto the Dundas block, the blue tower rising from it, the Grange on its outline, Grange Park shown; on its ground 65% → 85%"
     ],
     "interior": {
       "tier": "shell",
@@ -2109,13 +2115,14 @@
   },
   "museum-padiglione-darte-contemporanea-pac": {
     "name": "PAC Milan",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside.",
-      "2026-09-30 interior finding: only 5% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 5% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved south of Via Palestro, the public gardens north, windows on the Villa Reale wing; outlines sparse; on its ground 6% → 23%"
     ],
     "interior": {
       "tier": "shell",
@@ -2191,13 +2198,14 @@
   },
   "museum-saint-louis-art-museum": {
     "name": "Saint Louis Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gilbert's limestone Palace of Fine Arts at its true angle on Art Hill, skylit wings, the vaulted Sculpture Hall, the arched and columned front with the St. Louis statue, and Chipperfield's dark coffered East Building",
-      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto its outline, Cass Gilbert's building in pale limestone, the East Building blue-grey; on its ground 57% → 76%"
     ],
     "interior": {
       "tier": "shell",
@@ -2383,13 +2391,14 @@
   },
   "museum-albright-knox-art-gallery": {
     "name": "Albright-Knox (Buffalo AKG)",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner.",
-      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): one north–south range as the outlines show — the 1905 temple at its north end, the Knox plinth south, Common Sky over the court, the round Gundlach and the bridge; on its ground 57% → 90%"
     ],
     "interior": {
       "tier": "shell",
@@ -2466,13 +2475,14 @@
   },
   "museum-tate-britain": {
     "name": "Tate Britain",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Smith's Portland stone gallery squared to Millbank, the Corinthian portico and steps, end pavilions, the rotunda dome, the skylit roofs and the Duveen galleries, Stirling's Clore Gallery and pond, the planes and the Thames",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Clore Gallery to the north wing, the Manton ramp to Atterbury Street; the museum's point is about 110 m south-south-east of the building, out of the plate's reach — fix the point first; on its ground 43% → 40%"
     ],
     "interior": {
       "tier": "shell",
@@ -2548,13 +2558,14 @@
   },
   "museum-blanton-museum-of-art": {
     "name": "Blanton Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the two 2006 limestone buildings with roof monitors and glazed atria across the plaza, petal canopies and oaks, and Ellsworth Kelly's white vaulted cross, Austin",
-      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Michener building west, the Smith building narrowed, the plaza and Kelly's Austin re-set, the road to the east edge, lawns and oaks; on its ground 62% → 73%"
     ],
     "interior": {
       "tier": "shell",
@@ -2575,13 +2586,14 @@
   },
   "museum-pinacoteca-di-brera": {
     "name": "Pinacoteca di Brera",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Palazzo Brera, four rendered storeys under terracotta hips, the portal on via Brera, the arcaded cortile d'onore with Canova's Napoleon, the observatory domes and the Orto Botanico",
-      "2026-09-30 interior finding: only 49% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 49% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved 49 m east so the cortile lines up with the outline's courtyard, Via Brera and the quarter from the outlines; on its ground 49% → 68%"
     ],
     "interior": {
       "tier": "shell",
@@ -2683,13 +2695,14 @@
   },
   "museum-asia-society-hong-kong": {
     "name": "Asia Society Hong Kong",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Tod Williams Billie Tsien stone pavilion with roof garden and pool, the zig-zag roofed bridge over the ravine, the restored magazine buildings with tiled roofs on the wooded hillside",
-      "2026-09-30 interior finding: only 13% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 13% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the pavilion moved and widened onto its 28 × 60 m outline, the magazines re-set east of the path; on its ground 10% → 66%"
     ],
     "interior": {
       "tier": "shell",
@@ -2873,13 +2886,14 @@
   },
   "museum-ben-uri-gallery-and-museum": {
     "name": "Ben Uri",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model (largely guessed): a modest two-storey stock-brick gallery with a glazed street front and roof skylight on Boundary Road between taller houses",
-      "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned 55° to lie along its terrace; on its ground 36% → 72%"
     ],
     "interior": {
       "tier": "shell",
@@ -3204,13 +3218,14 @@
   },
   "museum-pera-museum": {
     "name": "Pera Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former Bristol Hotel's six-storey neoclassical front on Meşrutiyet Caddesi — stone ground floor, windows between pilasters, balconies, cornice and attic — the modern back, low Beyoğlu blocks round it",
-      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto the east side of Meşrutiyet Caddesi, Tepebaşı open to the west; which building is the museum still guessed; on its ground 35% → 59%"
     ],
     "interior": {
       "tier": "shell",
@@ -3231,13 +3246,14 @@
   },
   "museum-amon-carter-museum-of-american-art": {
     "name": "Amon Carter Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind",
-      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved off the car park onto the three-storey outline, the Johnson front to the east lawn, the galleries west, Camp Bowie Boulevard south; on its ground 7% → 72%"
     ],
     "interior": {
       "tier": "shell",
@@ -3285,13 +3301,14 @@
   },
   "museum-royal-collection-trust": {
     "name": "The King's Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Simpson's top-lit stone gallery with its Doric portico and pediment on Buckingham Gate, the palace's Portland-stone south wing and quadrangle behind, the Royal Mews and its clock-tower gate",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): Buckingham Palace 30 m east, the King's Gallery on its south-east tip, the Mews west, Portland stone with windows all round; on its ground 38% → 52%"
     ],
     "interior": {
       "tier": "shell",
@@ -3340,12 +3357,13 @@
   },
   "museum-smithsonian-freer-and-sackler-galleries": {
     "name": "Freer Gallery of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Platt's granite palazzo round its open court and fountain, the three-arched Mall entrance, balustraded cornice and roof lights, and the Sackler's pyramid-roofed pavilion in the Haupt Garden"
+      "2026-09-24 first model: Platt's granite palazzo round its open court and fountain, the three-arched Mall entrance, balustraded cornice and roof lights, and the Sackler's pyramid-roofed pavilion in the Haupt Garden",
+      "2026-10-06 refined (catch-up for 1–6 Oct): position kept, paler granite, a base course and upper windows; on its ground 80%"
     ],
     "interior": {
       "tier": "shell",
@@ -3366,12 +3384,13 @@
   },
   "museum-columbus-museum-of-art": {
     "name": "Columbus Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the 1931 Renaissance Revival front on East Broad Street with its three arched portals, the glass-roofed Derby Court, and the copper-clad Walter Wing to the east"
+      "2026-09-24 first model: the 1931 Renaissance Revival front on East Broad Street with its three arched portals, the glass-roofed Derby Court, and the copper-clad Walter Wing to the east",
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned to face East Broad Street with its steps, the Walter Wing lowered to 15 m with a glass link; on its ground 80% → 81%"
     ],
     "interior": {
       "tier": "shell",
@@ -3420,13 +3439,14 @@
   },
   "museum-princeton-university-art-museum": {
     "name": "Princeton University Art Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Adjaye's nine cantilevered pavilions in banded aggregate concrete with glass-and-bronze lenses between them",
-      "2026-09-30 interior finding: only 64% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 64% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): Adjaye's pavilions moved one by one onto their outline, gravel roofs; on its ground 62% → 73%"
     ],
     "interior": {
       "tier": "shell",
