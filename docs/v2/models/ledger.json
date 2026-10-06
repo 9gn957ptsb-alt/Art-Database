@@ -1618,13 +1618,14 @@
   },
   "museum-harn-museum-of-art": {
     "name": "Harn Museum of Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: white rotunda under its tetrahedral skylight, low gallery wings, the entrance gateway, Cofrin Pavilion and the Asian Art Wing's water garden (ground file empty: orientation guessed)",
-      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline — the clerestoried gallery range, the rotunda with its tetrahedral skylight, wings round the water garden, the south gateway; on its ground 66% → 83%"
     ],
     "interior": {
       "tier": "shell",
@@ -1673,13 +1674,14 @@
   },
   "museum-kunstmuseum-bern": {
     "name": "Kunstmuseum Bern",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Stettler's 1879 sandstone front on Hodlerstrasse with its taller central pavilion, arched entrance and end pavilions, and the Atelier 5 concrete extension stepping toward the Aare",
-      "2026-09-30 interior finding: only 42% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 42% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned to 47° and moved off Hodlerstrasse; Stettler's front with its three pavilions, the Atelier 5 extension behind; on its ground 43% → 76%"
     ],
     "interior": {
       "tier": "shell",
@@ -1866,13 +1868,14 @@
   },
   "museum-gemaldegalerie-alte-meister": {
     "name": "Gemäldegalerie",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Hilmer and Sattler's low block: terracotta plates over a rusticated base, rows of gallery lanterns either side of the raised Wandelhalle with its 32 round skylights.",
-      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): form only — flat glazed roof lights, the Kulturforum entrance hall; its point is open ground about 150 m north-east of the gallery, out of the plate's reach — fix the point first; on its ground 17% → 16%"
     ],
     "interior": {
       "tier": "shell",
@@ -2088,13 +2091,14 @@
   },
   "museum-langen-foundation": {
     "name": "Langen Foundation",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Ando's 76 m concrete core in its glass envelope, the pond, and the two sunken concrete wings at 45 degrees in their grass banks",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the long building and the wings onto their outlines; the glass envelope's roof on steel girders, sunken wings with earth banks; on its ground 39% → 60%"
     ],
     "interior": {
       "tier": "shell",
@@ -2171,13 +2175,14 @@
   },
   "museum-jean-paul-najar-foundation": {
     "name": "Jean-Paul Najar Foundation",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: a plain white two-level box with recessed entrance, window bands and roof light among Alserkal Avenue's low warehouse sheds (guessed; no footprint in the ground)",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the white south-east unit of its row of warehouses, the rest drawn as metal sheds with lanes and palms; which unit is the foundation guessed; on its ground 29% → 74%"
     ],
     "interior": {
       "tier": "shell",
@@ -2531,13 +2536,14 @@
   },
   "museum-kunstmuseum-basel": {
     "name": "Kunstmuseum Basel",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1936 limestone Hauptbau round its arcaded court with skylit top galleries and street arcade, and the 2016 grey-brick Neubau monolith with its frieze across Dufourstrasse",
-      "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Hauptbau east onto its courtyard ring with its rear range; the Neubau on its outline across Dufourstrasse with the dark frieze; on its ground 33% → 62%"
     ],
     "interior": {
       "tier": "shell",
@@ -2614,13 +2620,14 @@
   },
   "museum-grey-art-gallery": {
     "name": "Grey Art Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: NYU Silver Center on Washington Square East, stone base and brick-and-limestone shaft with arched top storeys, the gallery windows facing the park; turned to the Manhattan grid",
-      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved about 20 m east onto the Silver Center's outline; stone base with the gallery's windows, buff-brick shaft, cornice, light court, the park opposite; on its ground 69% → 87%"
     ],
     "interior": {
       "tier": "shell",
@@ -2641,13 +2648,14 @@
   },
   "museum-galleria-nazionale-d-arte-moderna-rome": {
     "name": "Galleria Nazionale d Arte Moderna",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Bazzani palace on Viale delle Belle Arti turned to the avenue, colossal columned entrance with attic and steps, top-lit wings, end pavilions, Villa Borghese pines behind",
-      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved and deepened to its 150 × 90 m outline with one central court; the front pavilion's paired columns, attic and steps, the 1933 ranges behind; on its ground 68% → 80%"
     ],
     "interior": {
       "tier": "shell",
@@ -2779,13 +2787,14 @@
   },
   "museum-lentos-museum-of-modern-art-linz": {
     "name": "Lentos Kunstmuseum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river",
-      "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): position confirmed; the 60 m passage through the ground floor, glass skin, roof light, LENTOS letters, riverside steps, more trees; on its ground 75%"
     ],
     "interior": {
       "tier": "shell",
@@ -2859,13 +2868,14 @@
   },
   "museum-galleria-dell-accademia": {
     "name": "Gallerie dell'Accademia",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-06",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Carità church's Gothic brick front and the Scuola's Istrian-stone front on the campo, rendered ranges round two courts under tile roofs, the Grand Canal and the wooden Accademia bridge, on the canal bearing",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline south of the campo — the brick church front, Massari's white Scuola front, the convent ranges round Palladio's cloister, the bridge to the campo; on its ground 46% → 59%"
     ],
     "interior": {
       "tier": "shell",
