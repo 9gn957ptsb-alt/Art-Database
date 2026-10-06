@@ -248,8 +248,10 @@ body[data-reading] .walk-strip { background: rgba(15, 10, 7, 0.985); box-shadow:
    steps back under the world, untouchable until the globe is home. */
 .art[data-read][data-out] > .lens-veil { opacity: 0; }
 .art[data-out] .voice-rim, .art[data-out] .voice-stand, .art[data-out] .voice-release { opacity: 0; pointer-events: none; }
-/* 3 Oct 2026: not a ghost of it either — the grown globe is clean. */
-.art[data-read][data-out] .art-plate { opacity: 0; visibility: hidden; pointer-events: none;
+/* 3 Oct 2026: not a ghost of it either — the grown globe is clean; and the
+   picture's line goes with it (the sentence stays). */
+.art[data-read][data-out] .art-plate,
+.art[data-read][data-out] .voice-pic-row { opacity: 0; visibility: hidden; pointer-events: none;
   transition: opacity var(--beat-5, 0.5s) ease, visibility 0s linear var(--beat-5, 0.5s); }
 
 /* A home mark: one 13 px tile of the pixel light, beside the small globe or

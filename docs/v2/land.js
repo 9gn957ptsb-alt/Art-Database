@@ -708,6 +708,8 @@
       // Pressed on a reading's grown globe: the path goes on through this layer.
       if (grown) {
         cameLayer = layerOn;
+        // A collage's site has no categories (no crumb back): its way back is the reading.
+        if (city.work && art) { readingBack = readingWay(art, city); }
         var rg = el.firstChild.getBoundingClientRect();
         pulse(rg.left + rg.width / 2, rg.top + rg.height / 2, [LIGHT, LILAC], 0.6, 144);
       }
@@ -1362,6 +1364,7 @@
   function goDown(city) {
     if (flying || place) { return; }
     cameLayer = layerOn;            // the layer this path came through (the grown globe opens on it)
+    if (readingBack && readingBack.to !== city) { readingBack = null; }
     settleSwing();
     if (route) { endRoute(); }
     if (!city.art) { artAsked = null; }   // pressed elsewhere: a view still being read is not flown to
@@ -1399,6 +1402,7 @@
   function hopTo(city) {
     if (flying) { return; }
     if (!place) { goDown(city); return; }
+    if (readingBack && readingBack.to !== city) { readingBack = null; }
     if (!city.art) { artAsked = null; }
     stopTheatre();
     stopArchive();
@@ -1786,8 +1790,38 @@
   /* One level up from where you are: from a museum (or the theatre), its
      city, unless the city is only that museum; from a work's history opened
      in a museum or a city, that museum or city; else nothing, the world. */
+  /* A collage's site pressed on a reading's grown globe: the categories'
+     crumb that keeps the reading one press back everywhere else is not
+     there (a collage is the artist's own, of no category), so the way back
+     from it, the banner's and the pinch's, is the reading. */
+  var readingBack = null;               // { to: the place, name, go }
+  function readingWay(a, to) {
+    var d = a.data || {}, title = String(d.title || (place && place.title) || "");
+    var go = a.kind === "life" ? function () { openLife(d); }
+      : a.kind === "movement" ? function () { openMovement(d); }
+      : a.kind === "work" && d.id ? function () { openArt({ work: d.id }, {}); }
+      : a.kind === "thread" && d.id ? function () { openArt({ thread: d.id }); }
+      : null;
+    if (!go || !title) { return null; }
+    // A life by its artist's surname, as the sentences call them (voice.js:
+    // bare of "(b. 1981)"; a name also in its own script, its whole Latin
+    // name); anything else by its title.
+    var name = title;
+    if (a.kind === "life" && !d.born) {
+      var bare = title.replace(/\s*\([^)]*\)\s*$/, "").trim(), east = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+      var w = bare.split(/\s+/).filter(function (x) { return x && !east.test(x); }), k = w.length - 1;
+      if (east.test(bare) || k < 0) { name = w.join(" ") || bare; }
+      else {
+        while (k > 0 && /^(de|van|von|da|di|del|der|le|la|du|ter|ten)$/i.test(w[k - 1])) { k -= 1; }
+        name = w.slice(k).join(" ");
+      }
+    }
+    return { to: to, name: name, go: go };
+  }
+
   function levelUp() {
     if (!place) { return null; }
+    if (readingBack && readingBack.to === place) { return { name: readingBack.name, go: readingBack.go }; }
     var home = (place.museum || place.stage) && towns && townBy[place.townKey];
     if (home) {
       return home.pass ? null : { name: home.name, go: function () { openTown(home.key, { museum: place.slug }); } };
@@ -1915,6 +1949,7 @@
     land.dataset.at = "globe";
     showHere(false);
     grownOff();
+    readingBack = null;
     // A layer chosen in a reading was the reading's: up at the world, the viewer's own comes back.
     cameLayer = null;
     if (layerOn !== layerKept) {
@@ -16321,6 +16356,8 @@
     artCol.scrollTop = 0;
     artPlate.textContent = "";
     artPlate.hidden = true;
+    // A work come back to (a crumb, a thread's door) shows its photograph again.
+    delete artPlate.dataset.shown;
     artTime.hidden = true;
     artEl.dataset.kind = a.kind;
     lensSwapped = false;
@@ -16392,6 +16429,7 @@
     artPlate.hidden = true;
     artPlate.style.transform = "";
     delete artPlate.dataset.mode;
+    delete artPlate.dataset.shown;
     artTime.hidden = true;
     tilesDirty = true;
   }
