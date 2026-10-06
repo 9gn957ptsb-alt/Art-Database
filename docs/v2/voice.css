@@ -279,3 +279,50 @@ body[data-reading] .walk-strip { background: rgba(15, 10, 7, 0.985); box-shadow:
 .building-time.dial[data-home-side="right"] > .dial-home { left: auto; right: -21px; }
 .building-time.dial[data-settling] > .dial-home, .building-time.dial[data-lifted] > .dial-home { display: none; }
 @media (prefers-reduced-motion: reduce) { .snap-home { animation: none; } }
+
+/* ---- swiping through the period's works (voice.js, "swiping"; artist, 3 Oct 2026:
+   "I want to be able to swipe through artworks by the artist with that top image") */
+.voice-pic-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.voice-pic-row .voice-pic { flex: 0 1 auto; min-width: 0; }
+.voice-count {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #9d95e6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.voice-count[hidden] { display: none; }
+.art[data-read] .art-plate { touch-action: pan-y; }
+.voice-swipe {
+  position: absolute;
+  z-index: 12;
+  width: 24px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(15, 10, 7, 0.45);
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 16px;
+  line-height: 32px;
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity 0.2s steps(3);
+}
+.voice-swipe[hidden] { display: none; }
+.voice-swipe:hover,
+.voice-swipe:focus-visible { opacity: 1; }
+.art-plate[data-swipe="next"] .deal-go[data-on] { animation: voice-swipe-next 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.art-plate[data-swipe="prev"] .deal-go[data-on] { animation: voice-swipe-prev 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes voice-swipe-next { from { transform: translateX(14%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes voice-swipe-prev { from { transform: translateX(-14%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .art-plate[data-swipe] .deal-go[data-on] { animation: none; }
+}
+/* The column's square of the work in the picture. */
+#art-col .town-thumb[data-now],
+#art-col .life-print[data-now] .life-print-sq { box-shadow: 0 0 0 2px #9d95e6; }

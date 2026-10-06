@@ -16055,8 +16055,10 @@
       };
       var lo = box.x0, hi = Math.max(box.x0, box.x1 - fw);
       var xs = [Math.round((box.x0 + box.x1 - fw) / 2), lo, hi];
-      var fx = xs[0], fy = box.y1 - fh, found = false;
-      for (var yy = box.y1 - fh; yy >= box.y0 && !found; yy -= 8) {
+      // On a phone the pills may sit on the column's top edge, under the dial, before they go up the globe.
+      var foot = b.phone && !lensSwapped ? Math.min(H - 4, box.y1 + 16) : box.y1;
+      var fx = xs[0], fy = foot - fh, found = false;
+      for (var yy = foot - fh; yy >= box.y0 && !found; yy -= 4) {
         for (var q = 0; q < xs.length; q += 1) {
           var xx = Math.max(lo, Math.min(hi, xs[q]));
           if (!hit(xx, yy)) { fx = xx; fy = yy; found = true; break; }
