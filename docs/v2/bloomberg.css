@@ -1,0 +1,108 @@
+/* Bloomberg Connects (bloomberg.js): a museum's own guide, a link off the site.
+   On DIRT's dark ground: the column's cream (#eadfcd) and its quiet (#a8927a), the lilac of a
+   door on hover and focus. Every target 24 px or more to press (WCAG 2.5.8). */
+
+.bb-guide[hidden] { display: none !important; }
+
+/* ---- a museum's view: one line near the head of its column, before Saved ---------- */
+p.bb-guide {
+  margin: 0 0 var(--s-4);
+  padding: 0;
+}
+.bb-link {
+  display: inline-block;             /* flows as a sentence when it wraps: ◆ … Bloomberg / Connects ↗ */
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 3px 0;
+  color: #eadfcd;
+  font-family: var(--serif, serif);
+  font-size: 15px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.bb-text {
+  text-decoration: underline;
+  text-decoration-color: rgba(168, 146, 122, 0.75);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.bb-glyph {
+  margin-right: 7px;
+  color: #eadfcd;
+  font-size: 11px;
+  line-height: 1;
+}
+.bb-out {
+  margin-left: 6px;
+  color: #a8927a;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+}
+.bb-link:hover,
+.bb-link:focus-visible { color: #ffffff; }
+.bb-link:hover .bb-text,
+.bb-link:focus-visible .bb-text { text-decoration-color: #9d95e6; }
+.bb-link:hover .bb-out,
+.bb-link:focus-visible .bb-out { color: #eadfcd; }
+.bb-note {
+  display: block;
+  margin: 1px 0 0 18px;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+
+/* ---- a city's column: Guide ↗ at the right of a museum's (or a venue's) name ------- */
+.bb-guide-small {
+  position: absolute;
+  top: 4px;
+  right: 0;
+}
+.bb-small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(168, 146, 122, 0.6);
+  border-radius: 999px;
+  color: #cbbba6;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  background: rgba(15, 10, 7, 0.6);
+}
+.bb-small .bb-out { margin-left: 0; font-size: 11px; color: inherit; }
+.bb-small:hover,
+.bb-small:focus-visible { color: #ffffff; border-color: #9d95e6; }
+.town-museum-row:has(> .bb-guide-small:not([hidden])),
+.town-venue-box:has(> .bb-guide-small:not([hidden])) { position: relative; }
+.town-museum-row:has(> .bb-guide-small:not([hidden])) > .town-museum,
+.town-venue-box:has(> .bb-guide-small:not([hidden])) > .town-venue { padding-right: 82px; box-sizing: border-box; }
+.town-venue-box > .bb-guide-small { top: 8px; }
+
+/* ---- the Folger's theatre: under the bill where there is room, else over the stage -- */
+.theatre > p.bb-guide {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  width: max-content;                /* not the half of the window a left: 50% leaves it */
+  max-width: min(26rem, calc(100vw - 32px));
+  margin: 0;
+  padding: 5px 13px 7px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.9);  /* 4.5:1 for its quiet line over the brightest ground */
+  text-align: center;
+  pointer-events: auto;
+  transform: translate(-50%, -300%);
+}
+.theatre > p.bb-guide .bb-link,
+.theatre > p.bb-guide .bb-note { text-wrap: balance; }
+.theatre > p.bb-guide .bb-note { margin-left: 0; }

@@ -1,0 +1,282 @@
+{
+ "guides": {
+  "folger": {
+   "holds": "an audio tour of its art and architecture, and its exhibitions",
+   "name": "Folger Shakespeare Library",
+   "seen": "https://www.folger.edu/visit/tours/digital-guide/",
+   "url": null
+  },
+  "museum-albright-knox-art-gallery": {
+   "name": "Albright-Knox Art Gallery",
+   "seen": "https://buffaloakg.org/node/42917",
+   "url": null
+  },
+  "museum-ben-uri-gallery-and-museum": {
+   "name": "Ben Uri Gallery and Museum",
+   "seen": "https://benuri.org/bloomberg-connects/",
+   "url": null
+  },
+  "museum-centre-for-fine-arts-bozar": {
+   "name": "Centre for Fine Arts (BOZAR)",
+   "seen": "https://www.bozar.be/en/watch-read-listen/discover-when-we-see-us-bloomberg-connects-app",
+   "url": null
+  },
+  "museum-clark-art-institute": {
+   "holds": "its collection, its grounds and its architecture",
+   "name": "Clark Art Institute",
+   "seen": "WebSearch, 7 Oct 2026: a result titled “Clark Art Institute” for “\"Clark Art Institute\" \"Bloomberg Connects\"”",
+   "url": "https://app.bloombergconnects.org/anMv3FA9OCb"
+  },
+  "museum-colby-college-museum-of-art": {
+   "name": "Colby College Museum of Art",
+   "seen": "https://museum.colby.edu/visit",
+   "url": null
+  },
+  "museum-cooper-hewitt-smithsonian-design-museum": {
+   "name": "Cooper Hewitt, Smithsonian Design Museum",
+   "seen": "https://www.cooperhewitt.org/digital-guide/",
+   "url": null
+  },
+  "museum-dia-art-foundation": {
+   "holds": "photographs, audio and video, among them artist interviews",
+   "name": "Dia Art Foundation",
+   "seen": "https://www.diaart.org/about/press/dia-art-foundation-launches-free-digital-guide-featuring-all-eleven-of-the-institutions-sites-and-locations",
+   "url": null
+  },
+  "museum-el-museo-del-barrio": {
+   "name": "El Museo del Barrio",
+   "seen": "https://elmuseo.org/visit/bloomberg-connects/",
+   "url": null
+  },
+  "museum-frye-art-museum": {
+   "name": "Frye Art Museum",
+   "seen": "https://www.cascadepbs.org/culture/2024/12/seattle-institution-debuts-global-arts-and-culture-app/",
+   "url": null
+  },
+  "museum-hammer-museum": {
+   "holds": "audio from its curators and artists, video profiles and exhibition texts",
+   "name": "Hammer Museum",
+   "seen": "https://hammer.ucla.edu/digital-museum-guide",
+   "url": null
+  },
+  "museum-los-angeles-county-museum-of-art": {
+   "holds": "more on the works in its galleries, to read or to hear",
+   "name": "Los Angeles County Museum of Art",
+   "seen": "https://github.com/AramZS/aramzs.xyz/blob/HEAD/src/content/amplify/2026/05/21/2026-05-21-httpswwwnytimescom20260521artsdesignsmithsonian-museum-wall-text-politicshtmlunlockedarticlecode1kfaaqknc43otr7ucd1fandsmidurl-share.md",
+   "url": "https://guides.bloombergconnects.org/en-US/guide/lacmaLosAngelesCountyMuseumOfArtDavidGeffenGalleries"
+  },
+  "museum-musee-du-petit-palais": {
+   "name": "Musée du Petit Palais",
+   "seen": "https://parismusees.paris.fr/es/node/6597",
+   "url": null
+  },
+  "museum-museum-of-contemporary-art-san-diego": {
+   "name": "Museum of Contemporary Art San Diego",
+   "seen": "https://mcasd.org/digital-guide",
+   "url": null
+  },
+  "museum-museum-of-fine-arts-boston": {
+   "holds": "audio and video tours of its collection and exhibitions",
+   "name": "Museum of Fine Arts, Boston",
+   "seen": "https://mfa.org/visit/mfa-mobile",
+   "url": null
+  },
+  "museum-national-portrait-gallery": {
+   "name": "National Portrait Gallery",
+   "seen": "https://www.npg.org.uk/visit/digital-guide/",
+   "url": null
+  },
+  "museum-newark-museum": {
+   "name": "Newark Museum",
+   "seen": "https://newarkmuseumart.org/visit/mobile-guide",
+   "url": null
+  },
+  "museum-parrish-art-museum": {
+   "name": "Parrish Art Museum",
+   "seen": "https://parrishart.org/bloomberg-connects/",
+   "url": null
+  },
+  "museum-phillips-collection": {
+   "holds": "audio and video on its collection and exhibitions, and its full audio tour",
+   "name": "Phillips Collection",
+   "seen": "https://www.phillipscollection.org/node/8086",
+   "url": null
+  },
+  "museum-phoenix-art-museum": {
+   "name": "Phoenix Art Museum",
+   "seen": "https://phxart.org/visit/digital-guide/",
+   "url": null
+  },
+  "museum-the-courtauld-gallery": {
+   "holds": "audio on the collection from curators and others, room by room",
+   "name": "The Courtauld Gallery",
+   "seen": "https://courtauld.ac.uk/gallery/plan-your-visit/bloomberg-connects",
+   "url": null
+  },
+  "museum-the-metropolitan-museum-of-art": {
+   "holds": "audio tours of its collection",
+   "name": "The Metropolitan Museum of Art",
+   "seen": "https://github.com/museum-at-home/astro-website/blob/HEAD/src/data/museums.json",
+   "url": "https://guides.bloombergconnects.org/en-US/guide/metropolitanMuseumOfArt"
+  },
+  "museum-the-museum-of-modern-art": {
+   "name": "The Museum of Modern Art",
+   "seen": "https://www.moma.org/support/bloomberg-connects",
+   "url": null
+  },
+  "museum-the-studio-museum-in-harlem": {
+   "name": "The Studio Museum in Harlem",
+   "seen": "https://studiomuseum.org/digital-guide",
+   "url": null
+  },
+  "museum-turner-contemporary": {
+   "holds": "exhibition audio tours and interviews with its artists",
+   "name": "Turner Contemporary",
+   "seen": "WebSearch, 7 Oct 2026: a result titled “Turner Contemporary” for “\"Turner Contemporary\" \"Bloomberg Connects\"”",
+   "url": "https://app.bloombergconnects.org/shTM8US5cob"
+  },
+  "museum-virginia-museum-of-contemporary-art": {
+   "name": "Virginia Museum of Contemporary Art",
+   "seen": "https://13newsnow.com/article/news/community/virginia-moca-move-wesleyan-university-virginia-beach-campus/291-0d601ba4-a11d-4e96-a3ce-bfcb20af2a75",
+   "url": null
+  },
+  "museum-whitney-museum-of-american-art-1": {
+   "holds": "interviews with artists, curators and other thinkers about the works on view",
+   "name": "Whitney Museum of American Art",
+   "seen": "https://github.com/claraharguindey/days-end/blob/HEAD/whitney/index.html",
+   "url": "https://app.bloombergconnects.org/h6R9OVRraHb"
+  },
+  "museum-yale-center-for-british-art": {
+   "name": "Yale Center for British Art",
+   "seen": "https://britishart.yale.edu/free-digital-guide",
+   "url": null
+  },
+  "venue:barcelona-es:Fundacio´ Joan Miro´": {
+   "name": "Fundacio´ Joan Miro´",
+   "seen": "https://fmirobcn.org/en/bloomberg-connects",
+   "url": null
+  },
+  "venue:bentonville-us:Crystal Bridges Museum of American Art": {
+   "name": "Crystal Bridges Museum of American Art",
+   "seen": "https://old.crystalbridges.org/digital-guide/",
+   "url": null
+  },
+  "venue:coral-gables-us:Lowe Art Museum": {
+   "name": "Lowe Art Museum",
+   "seen": "https://www.lowe.miami.edu/learn-engage/digital-engagement/bloomberg-connects/index.html",
+   "url": null
+  },
+  "venue:denver-us:Denver Art Museum": {
+   "name": "Denver Art Museum",
+   "seen": "https://www.denverartmuseum.org/bloomberg-connects",
+   "url": null
+  },
+  "venue:detroit-us:Detroit Institute of Arts": {
+   "name": "Detroit Institute of Arts",
+   "seen": "https://dia.org/about/media-room/news/dia-releases-new-audio-tours-bloomberg-connects-including-artist-mario-moores",
+   "url": null
+  },
+  "venue:london-gb:Serpentine Galleries": {
+   "name": "Serpentine Galleries",
+   "seen": "https://www.serpentinegalleries.org/bloomberg-connects/",
+   "url": null
+  },
+  "venue:london-gb:Serpentine Gallery": {
+   "name": "Serpentine Gallery",
+   "seen": "https://www.serpentinegalleries.org/bloomberg-connects/",
+   "url": null
+  },
+  "venue:los-angeles-us:MOCA": {
+   "name": "MOCA",
+   "seen": "https://Moca.org/visit/bloomberg-connects",
+   "url": null
+  },
+  "venue:milwaukee-us:Milwaukee Art Museum": {
+   "name": "Milwaukee Art Museum",
+   "seen": "https://mam.org/info/pressroom/?p=6597",
+   "url": null
+  },
+  "venue:minneapolis-us:Walker Art Center": {
+   "name": "Walker Art Center",
+   "seen": "https://walkerart.org/bloomberg-connects",
+   "url": null
+  },
+  "venue:mountainville-us:Storm King Art Center": {
+   "name": "Storm King Art Center",
+   "seen": "https://www.bloombergconnects.org/?p=3130",
+   "url": null
+  },
+  "venue:new-windsor-us:Storm King Art Center": {
+   "name": "Storm King Art Center",
+   "seen": "https://www.bloombergconnects.org/?p=3130",
+   "url": null
+  },
+  "venue:new-york-us:Brooklyn Museum": {
+   "name": "Brooklyn Museum",
+   "seen": "https://www.bloombergconnects.org/blog/your-brooklyn-museum-cheat-sheet/",
+   "url": null
+  },
+  "venue:new-york-us:Pierpont Morgan Library": {
+   "name": "Pierpont Morgan Library",
+   "seen": "https://www.themorgan.org/visit/audio-guide",
+   "url": null
+  },
+  "venue:new-york-us:The Frick Collection": {
+   "name": "The Frick Collection",
+   "seen": "https://www.bloombergconnects.org/blog/the-frick-collection-an-early-adopter/",
+   "url": null
+  },
+  "venue:new-york-us:The Pierpont Morgan Library": {
+   "name": "The Pierpont Morgan Library",
+   "seen": "https://www.themorgan.org/visit/audio-guide",
+   "url": null
+  },
+  "venue:paris-fr:Musée Carnavalet – Histoire de Paris": {
+   "name": "Musée Carnavalet – Histoire de Paris",
+   "seen": "https://parismusees.paris.fr/es/node/6597",
+   "url": null
+  },
+  "venue:philadelphia-us:Pennsylvania Academy of the Fine Arts": {
+   "name": "Pennsylvania Academy of the Fine Arts",
+   "seen": "https://pafa.org/museum/visit/digital-guide-pafa",
+   "url": null
+  },
+  "venue:philadelphia-us:The Pennsylvania Academy of the Fine Arts": {
+   "name": "The Pennsylvania Academy of the Fine Arts",
+   "seen": "https://pafa.org/museum/visit/digital-guide-pafa",
+   "url": null
+  },
+  "venue:quebec-ca:Montréal Museum of Fine Arts": {
+   "name": "Montréal Museum of Fine Arts",
+   "seen": "https://mmfa.org/visit/free-digital-guide/",
+   "url": null
+  },
+  "venue:ridgefield-us:Aldrich Museum of Contemporary Art": {
+   "name": "Aldrich Museum of Contemporary Art",
+   "seen": "https://aldrichart.org/page/bloomberg-connects",
+   "url": null
+  },
+  "venue:saint-louis-us:The Pulitzer Foundation for the Arts": {
+   "name": "The Pulitzer Foundation for the Arts",
+   "seen": "https://pulitzerarts.org/visit/digital-guide",
+   "url": null
+  },
+  "venue:san-jose-us:San Jose Museum of Art": {
+   "name": "San Jose Museum of Art",
+   "seen": "https://sjmusart.org/connect/bloomberg-connects",
+   "url": null
+  },
+  "venue:washington-us:The Kreeger Museum": {
+   "name": "The Kreeger Museum",
+   "seen": "https://kreegermuseum.org/explore/galleryguides",
+   "url": null
+  },
+  "venue:west-palm-beach-us:Norton Gallery & School of Art": {
+   "name": "Norton Gallery & School of Art",
+   "seen": "https://www.norton.org/visit/digital-guide",
+   "url": null
+  }
+ },
+ "note": "Bloomberg Connects (artist, 7 Oct 2026: “Link them for now to the Bloomberg site”): the museums and venues of the site with a guide of their own on Bloomberg Connects, by scripts/fetch_bloomberg_guides.py from scripts/bloomberg_hand.json and the institutions' own pages. url is the guide's address as it was seen, verbatim (a link into a guide cut to the guide), never made up; null where a guide is evidenced but its address has not been seen, and then the page shows nothing. seen: where the address (or, with none, the evidence) was seen. holds: what the guide holds, as the institution describes it, where that was seen. Keys: a museum's slug (museums.json), folger, or venue:<city key>:<venue name as in places/<city key>.json>.",
+ "read": "2026-10-07"
+}
