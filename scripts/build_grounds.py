@@ -2,8 +2,10 @@
 """The ground under each building, for the DIRT view — free data, read once.
 
 For every building in docs/v2/architecture.json, every museum in
-docs/v2/museums.json (scripts/build_museums.py), and every place of a notable
-life in docs/v2/lifeplaces.json (scripts/build_life_places.py), this writes
+docs/v2/museums.json (scripts/build_museums.py), every place of a notable
+life in docs/v2/lifeplaces.json (scripts/build_life_places.py), and every
+city's skyline in docs/v2/cityplaces.json (scripts/build_city_places.py: its
+own side and cell count, 3-8 km and ~40 m a cell), this writes
 docs/v2/grounds/<slug>.json: a square of the Earth round its point, cut into
 a grid, each cell saying what it is (land, water, road or building), how high
 the ground is there and how tall anything standing on it is. land.js draws it
@@ -43,13 +45,14 @@ ROOT = Path(__file__).resolve().parent.parent
 BUILDINGS = ROOT / "docs" / "v2" / "architecture.json"
 MUSEUMS = ROOT / "docs" / "v2" / "museums.json"
 LIFEPLACES = ROOT / "docs" / "v2" / "lifeplaces.json"     # the notable lives' places (build_life_places.py)
+CITYPLACES = ROOT / "docs" / "v2" / "cityplaces.json"     # the cities' skylines (build_city_places.py)
 OUT = ROOT / "docs" / "v2" / "grounds"
 
 RELEASE = "2026-09-23.0"
 BUCKET = "overturemaps-us-west-2/release/" + RELEASE
 TERRAIN = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 
-N = 80                        # cells a side
+GRID = 80                     # cells a side (a city's skyline gives its own n)
 SIDE = {                      # metres a side, by how exactly the point is known
     "exact": 560, "street": 700, "district": 3600, "town": 2400, "region": 9000,
 }
@@ -147,9 +150,14 @@ def terrain(box, cell, lat):
     return at
 
 
+def side_of(b):
+    """Metres a side: a city's skyline gives its own (build_city_places.py), else by precision."""
+    return b.get("side") or SIDE.get(b.get("precision"), SIDE["town"])
+
+
 def square(b):
     """The square round a place, in degrees: west, south, east, north."""
-    side = SIDE.get(b.get("precision"), SIDE["town"])
+    side = side_of(b)
     to_m, to_deg = local(b["lat"], b["lon"])
     w, s = to_deg(-side / 2, -side / 2)
     e, n = to_deg(side / 2, side / 2)
@@ -158,7 +166,8 @@ def square(b):
 
 def build(b):
     lat, lon = b["lat"], b["lon"]
-    side = SIDE.get(b.get("precision"), SIDE["town"])
+    side = side_of(b)
+    N = b.get("n") or GRID       # a city's skyline is finer than 80 a side
     cell = side / N
     to_m, to_deg = local(lat, lon)
     half = side / 2
@@ -189,7 +198,11 @@ def build(b):
         width = ROAD_WIDTH.get(row.get("class") or "", 0)
         if not width:
             continue
-        g = to_local(shapely.from_wkb(row["geometry"])).buffer(max(width / 2, cell * 0.45))
+        city = b.get("precision") == "city"
+        if city and width < 8:
+            continue            # a city's skyline keeps its streets, not every lane and drive
+        reach = width / 2 + cell * 0.12 if city else max(width / 2, cell * 0.45)
+        g = to_local(shapely.from_wkb(row["geometry"])).buffer(reach)
         inside = shapely.contains_xy(g, gx, gy) & (kind != "~")
         kind[inside] = "="
 
@@ -204,6 +217,10 @@ def build(b):
             continue
         inside = shapely.contains_xy(g, gx, gy)
         if not inside.any():
+            # A city's skyline (~40 m a cell) keeps a house that misses every cell's middle only
+            # if it is a good part of a cell: else the whole town would be roofs.
+            if b.get("precision") == "city" and g.area < 0.3 * cell * cell:
+                continue
             # Smaller than a cell: it still stands in the cell its middle is in.
             c = g.centroid
             i = int((half - c.y) // cell)
@@ -250,6 +267,8 @@ def main():
         places += json.loads(MUSEUMS.read_text(encoding="utf-8"))["museums"]
     if LIFEPLACES.exists():
         places += json.loads(LIFEPLACES.read_text(encoding="utf-8"))["places"]
+    if CITYPLACES.exists():
+        places += json.loads(CITYPLACES.read_text(encoding="utf-8"))["places"]
     buildings = [b for b in places if isinstance(b.get("lat"), (int, float))]
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]

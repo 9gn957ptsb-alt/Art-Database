@@ -153,3 +153,7 @@ default, and a private home never does.
 ## The city guides
 
 Each run, after the intake: `python3 scripts/fetch_city_guides.py` (about 10 minutes, paced) and commit `docs/v2/guides.json` and `docs/v2/guides/` — what is on in each city, from Artsy's public show listings (see `docs/v2/GUIDE.md`). Nothing else keeps the guides fresh; a guide read over 21 days ago says so on its pill.
+
+## The skylines
+
+A city pressed on the globe opens as its skyline (`docs/v2/skyline.js`; artist, 7 Oct 2026: "when I click on a city I want to see the city skyline like it shows in the timelapse of the urban development in the architecture section"), where its ground has been read; the rest open as the map they were and say so in the column. Each run, after the intake: `python3 scripts/update_skylines.py --max 3` — it lists three more cities — those with museums first, then the cities of galleries busy enough to be named on the globe (cities.json order, `build_city_places.py`: a square of 3-8 km framing the museums and most galleries, about 40 m a cell), reads each one's ground (`build_grounds.py --only city-<key>`, one at a time), dates it (`build_built_years.py --only city-<key>`) and rewrites who walks each city (`build_city_artists.py`). Commit `docs/v2/cityplaces.json`, `docs/v2/cityartists.json` and `docs/v2/grounds/city-*.json`. Check one new city with headless Chromium (the skyline on, its museums named and pressed into, the dial turning it).

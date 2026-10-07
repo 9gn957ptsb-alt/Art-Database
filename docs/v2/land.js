@@ -3577,7 +3577,7 @@
     }
     living(now);
     if (layerOn === "museums" && (!place || grown) && towns) { drawTowns(now); }
-    if (place && !flying && art && art.kind === "town") { drawVenues(); }
+    if (place && !flying && art && art.kind === "town" && !skyOn()) { drawVenues(); }
     if (following && place) { drawFollowed(); }
     placeGloss();
     placeHubble(now);
@@ -13548,6 +13548,8 @@
      the ground, as it did), Enter or Space opens the shown place nearest the
      middle. Up on the world only; anywhere else the keys are the view's own. */
   function globeKey(key) {
+    // A city's skyline (skyline.js): ← → turn it a quarter, + − nearer and farther, past the ends a level.
+    if (skyOn() && Skyline.key && Skyline.key(key)) { return true; }
     // A city's map (a city view): the arrows move it as a finger does, 48 px a press.
     if (cityMap() && /^Arrow/.test(key)) {
       var m = 48;
@@ -14304,6 +14306,8 @@
     // The map in the big place moves and zooms itself (and is never the way up).
     if (flat && !flat.cv.hidden && event.target === flat.cv) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    // The city's skyline takes its own two fingers (skyline.js).
+    if (skyOn() && event.target && event.target.closest && event.target.closest(".skyline")) { return; }
     var d = downSpread();
     if (cityPinch && d > 0) { cityPinchMove(d); return; }
     var md = markDrag;
@@ -14856,7 +14860,7 @@
     }
     settleSwing();
     artAsked = null;                // a view still being read is not flown to after this
-    if (t.pass && !(via && via.studio)) { openMuseum(t.museums[0], via); return; }
+    if (t.pass && !(via && (via.studio || via.born))) { openMuseum(t.museums[0], via); return; }
     var c = townCities[key] || (townCities[key] = townCity(t));
     var f = townFrame(t);
     // Painted here (sites.js): the city, held on the site's own point, low.
@@ -15213,7 +15217,7 @@
       return o;
     },
     // The categories (kinds.js): a city, and any mark on the globe by its slug (a building's is "building-<slug>").
-    town: function (key) { openTown(key); },
+    town: function (key, via) { openTown(key, via); },
     open: function (slug) {
       var c = cityOf(slug);
       if (!c || flying) { return false; }
@@ -15232,7 +15236,13 @@
     inside: function () { return walkOn && window.Walk ? window.Walk.state() : null; },
     // The characters (characters.js): a point on the screen, the journey
     // under way (from, to, and the towns it has named passing), a thread.
-    at: function (lat, lon) { var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z }; },
+    at: function (lat, lon) {
+      // Over a city's skyline a point is where it stands on the skyline (skyline.js), so what the
+      // other modules draw at a place (the guide's shows, the dial's ateliers, an animal) stands there too.
+      var sk = skyOn() && Skyline.at ? Skyline.at(lat, lon) : null;
+      if (sk) { return sk; }
+      var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z };
+    },
     journey: function () {
       if (!journey || !route) { return null; }
       return { from: journey.fromKey, to: journey.toKey, u: route.u, done: route.doneAt !== null,
@@ -16933,8 +16943,47 @@
   }
   function cityMap() {
     return !!(place && art && art.kind === "town" && art.live && !flying && !groundOn && !walkOn && !readingOn() &&
-              !deckMode && !(place.museum || place.stage));
+              !deckMode && !(place.museum || place.stage) && !skyOn());
   }
+  /* The city as its skyline (skyline.js; artist, 7 Oct 2026: "when I click
+     on a city I want to see the city skyline like it shows in the timelapse
+     of the urban development in the architecture section. Distinguish the
+     art buildings from the rest and label them so i can click on them"):
+     where a city's ground has been read, its view is that ground in true
+     isometric over the globe, and the skyline takes its own presses — the
+     map's gestures, its galleries' tiles and its marks stand down. */
+  function skyOn() { return !!(window.Skyline && Skyline.on && Skyline.on()); }
+  var skyVisits = 0;
+  var skylineApi = {
+    // The city view, as the skyline needs it; null when there is none.
+    state: function () {
+      var a = art;
+      if (!a || a.kind !== "town" || !a.live || !a.town || !place || flying || groundOn || walkOn) { return null; }
+      if (!a.skyVisit) { skyVisits += 1; a.skyVisit = skyVisits; }     // each visit to a city, its own number
+      return { visit: a.skyVisit, key: a.town.key, name: a.town.name, via: a.via || {}, pf: a.pf || null, venueWorks: a.venueWorks || null,
+               museums: a.town.museums.slice(), rows: a.museumRows || {}, venueBoxes: a.venueBoxes || [],
+               galleries: galleryPoints(a.town, a.pf).map(function (g) { return { vi: g.vi, lat: g.lat / RAD, lon: wrap(g.lon) / RAD }; }),
+               band: artBand("town"), col: artCol, foot: a.foot || null, reading: readingOn(), still: still,
+               dial: a.dated && artTime && !artTime.hidden ? { y0: a.y0, y1: a.y1, at: a.y0 + Math.max(0, Math.min(1, a.when)) * (a.y1 - a.y0),
+                                                       rest: a.when >= 0.999 && !a.byHand && !a.auto } : null };
+    },
+    museum: function (slug) { downToMuseum(slug, {}); },
+    venue: function (vi, x, y) {
+      var a = art;
+      if (!a || a.kind !== "town" || !a.pf) { return; }
+      var g = galleryPoints(a.town, a.pf).filter(function (o) { return o.vi === vi; })[0];
+      if (!g) { return; }
+      showVenue({ g: g, x: x, y: y });
+      if (venueLabel) { venueLabel.hidden = true; }      // the skyline names it itself
+    },
+    light: function (slug, on) { lightMuseum(slug, on); },
+    up: function () { if (place && !flying) { comeUp(); } },
+    deeper: function (x, y) { goDeeper(false, x, y); },
+    squash: function (x, y, r) { if (place && !flying) { squash(x, y, r); } },
+    pulse: function (x, y, r) { pulse(x, y, [LIGHT, LILAC], 0.5, r || 89); },
+    soil: function (lat, lon, i, j, sea) { return soilCell(sea ? dirt.sea : dirt.land, { lat: lat, lon: lon }, i, j); }
+  };
+  if (window.Land) { window.Land.city = skylineApi; }
   // Two fingers or a wheel are the map's anywhere but the column, the banner and the pills.
   function cityZone(x, y) {
     function inRect(e) {

@@ -1,0 +1,152 @@
+/* ---- the city as its skyline (skyline.js) ---------------------------------
+   Over the globe, under the pixel light, the column, the dial and the banner:
+   the city's ground in dots, its art buildings named beside them. */
+.skyline {
+  position: absolute;
+  inset: 0;
+  background: #0f0a07;
+  touch-action: none;
+  cursor: grab;
+}
+.skyline[hidden] { display: none; }
+.skyline:active { cursor: grabbing; }
+.skyline-clod {
+  position: absolute;
+  image-rendering: pixelated;
+  outline: none;
+}
+.skyline-clod:focus-visible { outline: 2px solid #9d95e6; outline-offset: -2px; }
+.skyline-light {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.skyline-names { position: absolute; inset: 0; pointer-events: none; }
+
+/* A name: beside its building, in the city's mono; a museum's in cream, a
+   gallery's a step quieter. Unnamed, it is a 24 px target on its building
+   whose name shows on hover or focus. */
+.skyline-name,
+.skyline-who {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #eadfcd;
+  font: 400 10px/24px var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.skyline-name[hidden], .skyline-who[hidden] { display: none; }
+/* What is named is pressed first: a name over any unnamed target, a museum's target over a gallery's. */
+.skyline-gallery { z-index: 1; }
+.skyline-museum { z-index: 2; }
+.skyline-who { z-index: 3; }
+.skyline-name[data-named] { z-index: 4; }
+.skyline-name[data-lit], .skyline-who[data-named], .skyline-name:focus-visible, .skyline-who:focus-visible { z-index: 5; }
+.skyline-name[data-named] { background: rgba(15, 10, 7, 0.72); }
+.skyline-gallery { color: #c4b29c; text-transform: none; letter-spacing: 0.02em; }
+.skyline-name[data-later] { color: #9b8b78; }
+.skyline-name:not([data-named]) .skyline-name-text,
+.skyline-who:not([data-named]) .skyline-who-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.skyline-name:not([data-named]):hover .skyline-name-text,
+.skyline-name:not([data-named]):focus-visible .skyline-name-text,
+.skyline-name[data-lit] .skyline-name-text {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.82);
+}
+.skyline-name[data-lit], .skyline-name:hover, .skyline-name:focus-visible { color: #fff; }
+.skyline-name[data-named][data-lit] { background: rgba(94, 82, 199, 0.86); }
+.skyline-name:focus-visible, .skyline-who:focus-visible { outline: 2px solid #9d95e6; outline-offset: 1px; }
+
+/* An artist walking: the target is the figure; the name beside it once named. */
+.skyline-who { padding: 0; width: 24px; text-transform: none; letter-spacing: 0.02em; }
+.skyline-who[data-named] .skyline-who-name {
+  position: absolute;
+  left: 22px;
+  top: 0;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.82);
+  color: #eadfcd;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 12px;
+  text-transform: none;
+}
+
+.skyline-note {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  margin: 0;
+  color: #c4b29c;
+  font: 400 10px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+.skyline-note:empty { display: none; }
+@media (max-width: 720px) {
+  .skyline-note { bottom: auto; top: 70px; }
+}
+
+/* While the skyline stands, the globe's own marks in the city stand down. */
+html[data-skyline] .stage .city,
+html[data-skyline] .venue-label { visibility: hidden !important; }
+
+/* The column: who walks here, who was born here. */
+.skyline-col { margin: 0 0 var(--s-4, 16px); }
+.skyline-said { margin: 2px 0 8px; color: #a8927a; font-size: 12px; line-height: 1.4; }
+.skyline-rows { list-style: none; margin: 0 0 12px; padding: 0; }
+.skyline-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 3px 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  text-align: left;
+  cursor: pointer;
+}
+.skyline-row-name { font-family: var(--serif, Georgia, serif); font-size: 15px; }
+.skyline-row-meta { color: #a8927a; font: 400 10px/1.4 var(--mono, ui-monospace, monospace); letter-spacing: 0.04em; }
+.skyline-row:hover .skyline-row-name, .skyline-row[data-lit] .skyline-row-name { color: #fff; text-decoration: underline; text-decoration-color: #9d95e6; }
+.skyline-row:focus-visible { outline: 2px solid #9d95e6; outline-offset: 2px; }
+.skyline-more {
+  min-height: 28px;
+  margin: 4px 0 0;
+  padding: 0 10px;
+  border: 1px solid rgba(157, 149, 230, 0.5);
+  border-radius: 14px;
+  background: none;
+  color: #c4b29c;
+  font: 400 10px/26px var(--mono, ui-monospace, monospace);
+  cursor: pointer;
+}
+.skyline-none { margin: 0 0 12px; color: #a8927a; font: 400 12px/1.45 var(--serif, Georgia, serif); letter-spacing: 0; text-transform: none; }
+.town-venue-box[data-lit] { box-shadow: inset 2px 0 0 #9d95e6; }

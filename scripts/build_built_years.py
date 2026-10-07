@@ -48,7 +48,7 @@ from build_grounds import SIDE, local  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 GROUNDS = ROOT / "docs" / "v2" / "grounds"
 PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json",
-          ROOT / "docs" / "v2" / "lifeplaces.json"]
+          ROOT / "docs" / "v2" / "lifeplaces.json", ROOT / "docs" / "v2" / "cityplaces.json"]
 CACHE = ROOT / "data"
 
 WSF = "https://download.geoservice.dlr.de/WSF_EVO/files/WSFevolution_v1_{x}_{y}/WSFevolution_v1_{x}_{y}.tif"
@@ -1046,6 +1046,9 @@ def osm_years(place, lat, lon, cell):
     return years
 
 
+NO_CITY = False     # --no-city
+
+
 def years_for(place, g):
     n, side = g["n"], g["side"]
     cell = side / n
@@ -1062,7 +1065,7 @@ def years_for(place, g):
     # The building's own year, where the city says.
     w, s = to_deg(-half, -half)
     e, nn = to_deg(half, half)
-    got, name = city_years(place, (s, w, nn, e), lat, lon, cell)
+    got, name = (None, None) if NO_CITY else city_years(place, (s, w, nn, e), lat, lon, cell)
     if got is not None:
         years = got
         if (got != 0).any():
@@ -1107,7 +1110,12 @@ def main():
     ap.add_argument("--only")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--cities", action="store_true", help="only the places a city source covers (with --force: re-date them)")
+    ap.add_argument("--no-city", action="store_true",
+                    help="leave the city's own source out (it refuses the session: Catastro answered 403 on 7 Oct 2026); "
+                         "OpenStreetMap's dates and the satellites only")
     args = ap.parse_args()
+    global NO_CITY
+    NO_CITY = args.no_city
     places = []
     for f in PLACES:
         if f.exists():
