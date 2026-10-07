@@ -211,7 +211,7 @@
     var r;
     switch (s.k) {
       case "w": return [{ w: s.key ? townName(s.key) : shortTitle((workRow(s.id) || [])[1]), p: "," }];
-      case "t": return [{ w: townName(s.id), p: " —" }];
+      case "t": return [{ w: s.word || townName(s.id), p: " —" }];
       case "m": r = museum(s.id); return [{ w: r ? r.name : s.id, p: "." }];
       case "v": r = voiceRow(s.id); return [{ w: r ? surname(r[1]) : s.id, p: "." }];
       case "h": r = threadRow(s.id); return [{ w: shortTitle(r ? r[2] : "a thread"), p: "." }];
@@ -759,7 +759,11 @@
     strip.appendChild(sSaid);
     strip.appendChild(sActs);
     shield(strip);
-    document.body.appendChild(strip);
+    place();
+  }
+  // The strip is the dial's readout now (transport.js): placed beside the dial, never over the picture.
+  function place() {
+    if (window.Dial && Dial.read) { Dial.read(strip); } else if (!strip.parentNode) { document.body.appendChild(strip); }
   }
 
   function show(progress, said, acts, forMs) {
@@ -770,6 +774,7 @@
     sActs.textContent = "";
     (acts || []).forEach(function (a) { if (a) { sActs.appendChild(a); } });
     strip.hidden = false;
+    place();
     if (forMs) { hideTimer = window.setTimeout(function () { strip.hidden = true; }, forMs); }
   }
 
@@ -795,7 +800,7 @@
     stops.forEach(function (s) {
       chain = chain.then(function () {
         if (s.k === "|") { leg += 1; out.push({ k: "|", leg: leg }); return; }
-        if (s.k !== "r") { out.push({ k: s.k, id: s.id, key: s.key, leg: leg }); return; }
+        if (s.k !== "r") { out.push({ k: s.k, id: s.id, key: s.key, word: s.word, leg: leg }); return; }
         // A movement (movements.js): its walk, each stop the movement's view at that year.
         if (/^m:/.test(s.id)) {
           var lm = leg;
@@ -873,7 +878,9 @@
         if (!steps.length) { return; }
         if (run) { stopRun(); }
         if (window.Walks && Walks.walking && Walks.walking()) { /* a walk under way is left to end itself */ }
-        run = { x: x, steps: steps, i: -1, timers: [], paused: false, down: false, rep: opts.rep || repOf(x) };
+        run = { x: x, steps: steps, i: -1, timers: [], paused: false, down: false, rep: opts.rep || repOf(x), ring: ringOf(steps) };
+        setUpStrip();
+        run.dial = onDial();
         legsFor(run.rep);
         setLines([], 0);
         show(x.title + (x.by ? " · by " + x.by : ""), "", acts());
@@ -885,6 +892,7 @@
 
   function stopRun() {
     if (!run) { return; }
+    if (run.dial) { run.dial.close(); }
     legsAt = performance.now();         // the chain's legs fade from when it stopped being played
     run.timers.forEach(function (t) { window.clearTimeout(t); });
     run = null;
@@ -893,6 +901,8 @@
   function afterStill(fn, ms) {
     var token = run;
     if (!token) { return; }
+    // Turned to on the dial while paused: arrived there, it is held (a tap on the face goes on).
+    if (token.hold && token.arrived === token.i) { token.hold = false; pause(); return; }
     function tick() {
       if (run !== token || token.paused) { return; }
       var moved = performance.now() - movedAt;
@@ -916,28 +926,87 @@
 
   function step() { return run.steps[run.i]; }
 
+  // The stop's place, as the dial and the count say it: a life's, a studio's or a site's own name (Dakar,
+  // not the nearest city of the record, Saint-Louis), a walk's title, else its city or its own name.
+  function whereOf(s) {
+    if (s.k === "walk") { return s.walk.title; }
+    if (s.k === "t" && s.word) { return s.word; }
+    if (s.k === "site" || s.k === "studio" || s.k === "life") { return s.word; }
+    if (s.k === "w" && !s.hunt) { return shortTitle((workRow(s.id) || [])[1]); }
+    if (s.key) { return townName(s.key); }
+    if (s.k === "t") { return townName(s.id); }
+    return label(s).split(" — ")[0];
+  }
+
+  /* The stops on the dial's ring: every step but the hand-offs, and but a voice taken up before its own
+     places (the route is its places in time). ring[k] is the step of stop k. */
+  function ringOf(steps) {
+    var out = [];
+    steps.forEach(function (s, i) {
+      if (s.k === "|") { return; }
+      if (s.k === "v" && steps[i + 1] && steps[i + 1].voice === s.id) { return; }
+      out.push(i);
+    });
+    return out;
+  }
+  function stopIndex(i) {
+    var k = 0;
+    run.ring.forEach(function (j, n) { if (j <= i) { k = n; } });
+    return k;
+  }
+  function stepIndex(k) { return run.ring[Math.max(0, Math.min(run.ring.length - 1, k))]; }
+
   function progress() {
-    var s = step(), n = run.steps.filter(function (q) { return q.k !== "|"; }).length;
-    var k = run.steps.slice(0, run.i + 1).filter(function (q) { return q.k !== "|"; }).length;
-    var where = s.k === "|" ? "handed on" : s.k === "walk" ? s.walk.title : s.k === "site" || s.k === "studio" ? s.word : s.k === "life" ? s.word + " · " + s.y : s.key ? townName(s.key) : s.k === "t" ? townName(s.id) : label(s).split(" — ")[0];
+    var s = step(), n = run.ring.length, k = stopIndex(run.i) + 1;
+    var where = s.k === "|" ? "handed on" : s.k === "v" && run.ring.indexOf(run.i) < 0 ? "Following " + label(s) : whereOf(s);
+    if (s.k === "life" && s.y) { where += " · " + s.y; }
+    else if (s.y && (s.k === "t" || s.k === "site" || s.k === "studio" || s.k === "movement")) { where += " · " + s.y; }
     var inHunt = s.hunt ? " · No. " + (s.hunt.stops[s.n].no || s.n + 1) : "";
-    return (run.paused ? "Paused · " : "") + k + " of " + n + " · " + where + inHunt;
+    return (run.paused || run.hold ? "Paused · " : "") + k + " of " + n + " · " + where + inHunt;
   }
 
-  function acts() {
-    if (!run) { return []; }
-    var list = [];
-    if (still) {
-      if (run.i + 1 < run.steps.length) { list.push(button("Next stop →", "", function () { next(); })); }
-      list.push(button("End", "walk-end", function () { end("ended"); }));
-      return list;
-    }
-    if (run.paused) { list.push(button("Resume", "walk-resume", resume)); }
-    list.push(button("End", "walk-end", function () { end("ended"); }));
-    return list;
+  /* Play, pause, the next stop (under reduced motion) and the end are the dial's (transport.js). */
+  function acts() { return []; }
+
+  function told(said) {
+    show(progress(), said, acts());
+    if (run && run.dial) { run.dial.set({ at: stopIndex(run.i), paused: run.paused || !!run.hold }); }
   }
 
-  function told(said) { show(progress(), said, acts()); }
+  // The stops on the dial: at their years where they have them.
+  function stopsOf(steps, ring) {
+    return ring.map(function (i) { var s = steps[i]; return { y: s.y, label: whereOf(s) }; });
+  }
+  function onDial() {
+    if (!window.Dial || !Dial.path) { return null; }
+    var token = run;
+    function live() { return run === token; }
+    return Dial.path({
+      kind: run.x.kind || "exploration", title: run.x.title, at: 0, read: strip, stops: stopsOf(run.steps, run.ring),
+      onToggle: function () {
+        if (!live()) { return; }
+        // Turned to while paused and still on its way there: it plays on when it arrives.
+        if (run.hold && !run.paused) { run.hold = false; told(undefined); return; }
+        if (run.paused) { resume(); } else { pause(); }
+      },
+      onSeek: function (k, play) { if (live()) { seekTo(stepIndex(k), play); } },
+      // Under reduced motion a tap on the face: the next stop, and at the last the end of it.
+      onNext: function () { if (live() && !run.inWalk) { run.timers.forEach(function (t) { window.clearTimeout(t); }); run.timers = []; next(); } },
+      onEnd: function () { if (live()) { end("ended"); } }
+    });
+  }
+  // Turned to a stop on the dial: there, and on from it if it was playing; held there once arrived if
+  // it was paused.
+  function seekTo(j, play) {
+    if (run.inWalk) { return; }
+    run.timers.forEach(function (t) { window.clearTimeout(t); });
+    run.timers = [];
+    var held = !still && !play && (run.paused || run.hold);
+    run.paused = false;
+    run.hold = held;
+    run.i = j - 1;
+    next();
+  }
 
   function next() {
     if (!run) { return; }
@@ -950,7 +1019,8 @@
     run.i += 1;
     if (run.i >= run.steps.length) { done(); return; }
     var s = step();
-    setLines(run.steps.slice(0, run.i + 1).map(asStop), 6);
+    // The sentence so far: its newest line in the readout, the whole a press on the count away.
+    setLines(run.steps.slice(0, run.i + 1).map(asStop), 0);
     if (s.k !== "|") { told(""); }
     if (s.k === "|") {
       var nx2 = run.steps[run.i + 1];
@@ -964,14 +1034,17 @@
 
   function asStop(s) {
     if (s.k === "walk") { return { k: "r", id: "w:" + s.walk.id, from: s.from }; }
-    if (s.k === "site" || s.k === "studio" || s.k === "life") { return { k: "t", id: s.key }; }
-    return { k: s.k, id: s.id, key: s.key };
+    // A place of a life, a studio or a site is said by its own name, not its nearest city's (Dakar, not Saint-Louis).
+    if (s.k === "site" || s.k === "studio" || s.k === "life") { return { k: "t", id: s.key, word: s.word }; }
+    // A movement's stop is the city its artists were in.
+    if (s.k === "movement") { return { k: "t", id: s.key }; }
+    return { k: s.k, id: s.id, key: s.key, word: s.word };
   }
 
   // Under reduced motion: no clock, each stop opened by hand ("Next stop →").
   function stillStep(s) {
     if (s.k === "w") { Land.work(s.id, s.key); told((s.lines || [label(s)]).join(" · ")); return; }
-    if (s.k === "t") { Land.go(s.id); told(townName(s.id)); return; }
+    if (s.k === "t") { Land.go(s.id); told(s.word || townName(s.id)); return; }
     if (s.k === "m") { Land.museum(s.id); told(label(s)); return; }
     if (s.k === "h") { Land.thread(s.id); told(label(s)); return; }
     if (s.k === "v" && window.Voices) { Voices.follow(s.id); told(label(s)); return; }
@@ -995,6 +1068,10 @@
     }
     if (s.k === "site" && window.Sites) {
       Sites.visit(s.ids).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : s.word); } });
+      return;
+    }
+    if (s.k === "movement" && window.Movements && Movements.visit) {
+      Movements.visit(s).then(function (got) { if (run) { run.arrived = run.i; told(got ? got.lines.join(" · ") : whereOf(s)); } });
       return;
     }
     told(label(asStop(s)));
@@ -1038,6 +1115,8 @@
 
   function openWork(s) {
     var w = Land.where();
+    // The work in the picture's place, never left full screen from the one before.
+    if (Land.full) { Land.full(false); }
     if (!(w.at === "work" && w.work === s.id)) { Land.work(s.id, s.key); }
     waitFor(function (x) { return x.at === "work" && x.work === s.id; }, function (ok) {
       if (!ok) { afterStill(next, 1000); return; }
@@ -1322,6 +1401,7 @@
   function pause() {
     if (!run || run.paused || still || run.inWalk) { return; }
     run.paused = true;
+    run.hold = false;
     run.timers.forEach(function (t) { window.clearTimeout(t); });
     run.timers = [];
     told(undefined);
@@ -1336,12 +1416,12 @@
 
   function end(why) {
     if (!run) { return; }
-    var k = run.i, n = run.steps.length;
+    var n = run.steps.length, k = stopIndex(run.i) + 1, of = run.ring.length;
     // Where it was ended: the last stop reached, not one still being flown to.
     var rep = run.rep, x = run.x, ctxStep = run.steps[Math.max(0, Math.min(run.arrived === undefined ? 0 : run.arrived, n - 1))];
     stopRun();
     renderDock();
-    show("Ended · " + x.title + (n > 1 ? " · " + (k + 1) + " of " + n : ""),
+    show("Ended · " + x.title + (of > 1 ? " · " + k + " of " + of : ""),
          why === "up" ? "Up to the world." : "", relayActs(rep).concat([handoffs({ step: ctxStep, rep: rep, x: x }),
          button("×", "walk-x", function () { strip.hidden = true; })]), chainOf(rep) ? 60000 : 20000);
     if (chainOf(rep)) { setLines(rep, 0, true); }
@@ -1350,13 +1430,15 @@
   function done() {
     var x = run.x, rep = run.rep, last = null;
     for (var i = run.steps.length - 1; i >= 0 && !last; i -= 1) { if (run.steps[i].k !== "|") { last = run.steps[i]; } }
+    // The sentence it made, each stop by its own word (a relay's, by its legs).
+    var said = chainOf(rep) ? rep : run.steps.map(asStop);
     stopRun();
     renderDock();
     var list = [button("Again", "", function () { play(x, { rep: rep }); })].concat(relayActs(rep));
     list.push(handoffs({ step: last, rep: rep, x: x }));
     list.push(button("×", "walk-x", function () { strip.hidden = true; }));
     show("Explored · " + x.title, chainOf(rep) ? "A relay of " + plural(legCount(rep), "leg", "legs") : "", list, Math.pow(PHI, 7) * 1000);
-    setLines(rep, 0, true);
+    setLines(said, 0, true);
   }
 
   // A chain of two legs or more: kept, and shared as one code.
@@ -1379,7 +1461,10 @@
   function repOf(x) {
     if (x.kind === "hunt") { return [{ k: "r", id: "h:" + x.id, from: x.from || 0 }]; }
     // A life is kept and shared as its places (a code knows towns, not lives).
-    if (x.kind === "life" && x.towns) { return x.towns.map(function (k) { return { k: "t", id: k }; }); }
+    // Each its own word where the life names it (Dakar, though the code knows its nearest city).
+    if (x.kind === "life" && x.towns) {
+      return x.towns.map(function (k) { return typeof k === "string" ? { k: "t", id: k } : { k: "t", id: k.key, word: k.word || undefined }; });
+    }
     return x.stops.slice();
   }
 
@@ -1545,6 +1630,14 @@
         var found = match(c);
         if (!found.length) { return; }
         box.appendChild(el("p", "walk-progress", "Where this ends, others begin"));
+        // The same hand-offs as marks on the dial's band (transport.js; the hub's Explore mode), each at
+        // the year of the stop it joins.
+        if (window.Dial && Dial.offers) {
+          Dial.offers(found.map(function (f) {
+            var r = reason(c, f), st = f.b.s || (f.row[7] || [])[f.b.i || 0] || [];
+            return { kind: f.row[0], y: st[1] || 0, label: r.lead + " → " + r.door, open: function () { take(c.rep || [], f); } };
+          }));
+        }
         found.forEach(function (f) {
           var r = reason(c, f);
           var b = el("button", "explore-handoff");
@@ -1811,7 +1904,10 @@
   }
 
   window.addEventListener("pointermove", function () { movedAt = performance.now(); }, { capture: true, passive: true });
-  function outside(t) { return !(strip && strip.contains(t)) && !(dock && dock.contains(t)) && !(tray && tray.contains(t)); }
+  function outside(t) {
+    return !(strip && strip.contains(t)) && !(dock && dock.contains(t)) && !(tray && tray.contains(t)) &&
+      !(window.Dial && Dial.owns && Dial.owns(t));
+  }
   window.addEventListener("pointerdown", function (event) {
     movedAt = performance.now();
     if (run && outside(event.target)) { pause(); }

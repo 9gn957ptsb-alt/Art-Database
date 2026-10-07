@@ -56,6 +56,8 @@
     o: { tone: CREAM, glyph: "atelier", word: "studios" },
     m: { tone: LILAC, glyph: "diamond", word: "movement walk" },
     l: { tone: CREAM, glyph: "round", word: "life" },
+    k: { tone: CREAM, glyph: "dot", word: "kept" },
+    x: { tone: CREAM, glyph: "dot", word: "sent" },
     made: { tone: CREAM, glyph: "square", word: "made here" }
   };
   var SIGN = { arc: "◜", square: "■", dot: "●", tick: "╵", hollow: "□", atelier: "▣", diamond: "◆", round: "○" };
@@ -201,6 +203,12 @@
     }
     if (mode === "explore" && X) {
       var add = function (it) { out.push(it); };
+      // Where a played path has just ended (transport.js): the relay's hand-offs, first.
+      if (window.Dial && Dial.handoffs) {
+        Dial.handoffs().forEach(function (o) {
+          add({ kind: KINDS[o.kind] ? o.kind : "x", y: o.y || 0, label: o.label, open: o.open, handoff: true });
+        });
+      }
       if (v.kind === "town") {
         (X.byStart[v.key] || []).forEach(function (r) { add(relayItem(r, r[7][0][1])); });
         Movements.forCity(v.key).forEach(function (m) {
@@ -292,7 +300,8 @@
     if (!X) { loadAll(); }
     if (hub.modesAt !== hub.ver) {
       hub.modesAt = hub.ver;
-      var was = hub.modes[hub.mode];
+      var was = hub.want || hub.modes[hub.mode];
+      hub.want = null;
       hub.modes = modesFor(v);
       hub.mode = Math.max(0, hub.modes.indexOf(was));
     }
@@ -539,7 +548,7 @@
     } else if (mode === "explore") {
       hub.act.forEach(function (i) {
         var it = items[i];
-        lines.push({ text: (it.kind === "l" ? "" : "Begins here · ") + it.label + " ›", open: it.open, kind: it.kind });
+        lines.push({ text: (it.kind === "l" || it.handoff ? "" : "Begins here · ") + it.label + " ›", open: it.open, kind: it.kind });
       });
       if (!lines.length) { nextOne(lines, items, year, "Nothing begins in " + year); }
       var undated = items.filter(function (it) { return it.y0 === undefined && !it.dated; });
@@ -672,8 +681,19 @@
     lit: lit,
     cycle: cycle,
     mode: function () { return hub.modes[hub.mode] || null; },
+    // The view the band was last worked out for (transport.js turns it to Explore once a view).
+    view: function () { return hub.view; },
     modes: function () { return hub.modes.slice(); },
-    setMode: function (name) { var k = hub.modes.indexOf(name); if (k >= 0) { hub.mode = k; hub.itemsFor = ""; hub.said = ""; } return k >= 0; },
+    // A mode by name; one not offered yet (its marks are coming: transport.js's hand-offs) is taken
+    // when the modes are next worked out.
+    setMode: function (name) {
+      var k = hub.modes.indexOf(name);
+      if (k >= 0) { hub.mode = k; hub.itemsFor = ""; hub.said = ""; } else { hub.want = name; hub.ver += 1; }
+      kick();
+      return k >= 0;
+    },
+    // What the band holds has changed (transport.js: hand-offs came or went): worked out again.
+    refresh: function () { hub.ver += 1; hub.itemsFor = ""; hub.said = ""; },
     // For checking: the marks drawn, the ones under the year, the readout.
     _state: function () {
       return { view: hub.view, modes: hub.modes.slice(), mode: hub.modes[hub.mode] || null,

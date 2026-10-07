@@ -706,7 +706,7 @@
   function play(L) {
     if (!window.Explorations || !Explorations.play) { return; }
     Explorations.play({ id: "life-" + L.id, kind: "life", title: possessive(L.name) + " life", by: "",
-                        towns: L.periods.map(function (p) { return p.key; }).filter(Boolean),
+                        towns: L.periods.filter(function (p) { return p.key; }).map(function (p) { return { key: p.key, word: p.place }; }),
                         stops: [{ k: "r", id: "l:" + L.id, from: 0 }] });
   }
 
@@ -825,7 +825,8 @@
     if (!bt) { return; }
     var v = bt.voice;
     if (v && v.y && view && view.api.live() && view.api.year() !== v.y) { view.api.setYear(v.y); }
-    if (bt.work) { showWork(bt.work); }
+    // A played beat shows its work in the picture's place, never left full screen over the layout.
+    if (bt.work) { showWork(bt.work); if (window.Land && Land.full) { Land.full(false); } }
     if (v && window.Voice && Voice.said) { Voice.said(v); }
   }
 

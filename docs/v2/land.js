@@ -14702,7 +14702,12 @@
     lens: function (spec) { return lensTo(spec); },
     picture: function (spec) { showPicture(spec || null); },
     tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
-    swap: function (on) { setSwap(on === undefined ? !lensSwapped : !!on); }
+    swap: function (on) { setSwap(on === undefined ? !lensSwapped : !!on); },
+    // The transport (transport.js): every dial, a dial of its own where no view's shows, and the
+    // picture let down from full screen when a played step brings the next.
+    dials: function () { return dials.slice(); },
+    makeDial: function (box, range, span, ticks) { return makeDial(box, range, span, ticks); },
+    full: function (on) { setFull(!!on); }
   };
 
   /* ---- a movement (movements.js) ----------------------------------------------
@@ -16142,6 +16147,10 @@
     Array.prototype.forEach.call(artEl.querySelectorAll(".voice-cap, .voice-chip, .dial-home"), function (e) {
       if ((e.textContent || "").trim() || e.classList.contains("dial-home")) { rectOf(e, 4); }
     });
+    // A path played on the dial (transport.js): the × out past its rim, and the path's own dial
+    // where the view has none showing.
+    Array.prototype.forEach.call(document.querySelectorAll(".building-time.dial > .dial-end"), function (e) { rectOf(e, 4); });
+    rectOf(document.querySelector(".building-time.path-time"), 2);
     // The pills: at the foot, in the middle; else to a side; else up, clear of what lies there.
     if (filterEl && filterEl.dataset.grown) {
       var fw = filterEl.offsetWidth, fh = filterEl.offsetHeight;
@@ -16166,6 +16175,9 @@
       // What is under the pills, across the whole foot, is no place for a name.
       if (fy + fh >= box.y1 - 2) { box.y1 = Math.min(box.y1, fy - 6); }
     }
+    // A played path's readout beside the dial (transport.js) lies over the globe: no name or mark
+    // under it. Not before the pills: the readout keeps off them, so neither chases the other.
+    rectOf(document.querySelector(".path-read"), 4);
     grownAt = { box: box, avoid: avoid };
     var key = [box.x0, box.y0, box.x1, box.y1].map(Math.round).join(",") + "|" +
       avoid.map(function (a) { return [a.x0, a.y0, a.x1, a.y1].map(Math.round).join(","); }).join(";");
@@ -16278,7 +16290,10 @@
               moving: !!(a.moving || a.auto || a.playing), playing: !!(a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
               at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
               picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
-              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut };
+              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut,
+              // The grown globe's own marks (a work's stops, a life's places), as boxes: kept clear by the
+              // path's readout (transport.js) as the lens is.
+              own: grown ? ownBoxes : null };
     if (a.kind === "work") {
       var evs = a.data.events;
       o.work = { pin: a.pin, ring: a.ring, when: a.when, flipped: !!a.flipped, title: a.data.title || "",
@@ -16996,7 +17011,8 @@
     if (!a || !artYear) { return; }
     var yr = String(yearAt(a, a.when < 0 ? 0 : a.when));
     if (!artYear.scrambling) { artYear.textContent = yr; }
-    if (document.activeElement !== artRange) { artRange.value = String(Math.round(Math.max(0, a.when) * 1000)); }
+    // Not under the keys turning it — unless a path plays (transport.js), whose keys step its stops.
+    if (document.activeElement !== artRange || (window.Dial && Dial.live && Dial.live())) { artRange.value = String(Math.round(Math.max(0, a.when) * 1000)); }
     artRange.setAttribute("aria-valuetext", yr);
   }
 
@@ -17259,14 +17275,19 @@
       d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: inner, far: false };
       // The face carries the dial; the ring turns time, as it always has.
       if (inner) { lift(event); return; }
-      range.dispatchEvent(new Event("pointerdown"));
-      d.last = null;
-      box.dataset.turning = "true";
-      turnTo(tAt(event));
+      // A path being played (transport.js): the ring scrubs its stops, not the view's years.
+      d.tp = !!(window.Dial && Dial.ring && Dial.ring(d, "down", event));
+      if (!d.tp) {
+        range.dispatchEvent(new Event("pointerdown"));
+        d.last = null;
+        box.dataset.turning = "true";
+        turnTo(tAt(event));
+      }
       if (event.pointerType !== "mouse") {
-        // Held still, a finger lifts it from anywhere on it.
+        // Held still, a finger lifts it from anywhere on it (a scrub it began let go).
         window.clearTimeout(d.hold);
         d.hold = window.setTimeout(function () {
+          if (d.tp && d.down && !d.down.far) { d.tp = false; Dial.ring(d, "cancel", {}); d.last = null; lift({ clientX: d.down.x, clientY: d.down.y }); return; }
           if (!d.down || d.down.far || d.grab === null) { return; }
           turnTo(Number(d.down.was) / 1000);
           d.last = null;
@@ -17286,6 +17307,7 @@
         d.down.far = true;
         window.clearTimeout(d.hold);
       }
+      if (d.tp) { event.stopPropagation(); Dial.ring(d, "move", event); return; }
       if (d.move) {
         event.stopPropagation();
         if (!d.down || !d.down.far) { return; }
@@ -17301,6 +17323,7 @@
       window.clearTimeout(d.hold);
       var down = d.down;
       d.down = null;
+      if (d.tp) { d.tp = false; event.stopPropagation(); Dial.ring(d, event.type === "pointerup" ? "up" : "cancel", event); return; }
       if (d.move) {
         event.stopPropagation();
         var m = d.move;
@@ -17332,8 +17355,11 @@
         } else if (down && down.inner && event.type === "pointerup") {
           // Two taps on its face send it home.
           var now = performance.now();
-          if (now - d.lastTap < 320) { d.lastTap = 0; dialGoHome(d); }
-          else { d.lastTap = now; }
+          // While a path plays (transport.js) one tap on the face pauses or resumes it, once the
+          // double tap's window has passed; two still send the dial home.
+          var tp = window.Dial && Dial.faceTap;
+          if (now - d.lastTap < 320) { d.lastTap = 0; if (tp) { Dial.faceTap(d, false); } dialGoHome(d); }
+          else { d.lastTap = now; if (tp) { Dial.faceTap(d, true); } }
         }
         return;
       }
@@ -17355,6 +17381,7 @@
     face.addEventListener("wheel", function (event) {
       event.preventDefault();
       event.stopPropagation();
+      if (window.Dial && Dial.ring && Dial.ring(d, "wheel", event)) { return; }
       range.dispatchEvent(new Event("pointerdown"));
       var t = Number(range.value) / 1000 + (event.deltaY + event.deltaX) * 0.0007;
       turnTo(t);
@@ -17374,6 +17401,7 @@
     }, true);
     dials.push(d);
     placeDial(d);
+    return d;
   }
 
   function drawDials() {
@@ -17394,8 +17422,10 @@
     var hub = d.range === artRange && window.DialHub && DialHub.layer ? DialHub.layer(d, t, span) : null;
     // The tense the path is told in, under the years (voice.js): was, is, will be.
     var tense = d.range === artRange && art && art.tense ? art.tense : "";
+    // A path being played (transport.js): its stops outside the ring, its play or pause on the face.
+    var tp = window.Dial && Dial.layer ? Dial.layer(d) : null;
     var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
-               hub ? hub.key : "", tense].join("|");
+               hub ? hub.key : "", tense, tp ? tp.key : ""].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
     var px = Math.round(S * dpr);
@@ -17407,8 +17437,9 @@
     var at = DIAL_START + t * DIAL_SWEEP;
     g.lineCap = "butt";
 
-    // The chronograph's scale, outside the ring, still.
-    for (var k = 0; k < 120; k += 1) {
+    // The chronograph's scale, outside the ring, still (a path's stops there while one plays).
+    if (tp) { tp.outer(g, c, R1, S); }
+    for (var k = 0; k < (tp ? 0 : 120); k += 1) {
       var ak = -Math.PI / 2 + k / 120 * TAU;
       var long = k % 10 === 0;
       g.strokeStyle = "rgba(168, 146, 122, " + (long ? 0.55 : 0.22) + ")";
@@ -17460,7 +17491,8 @@
     });
     if (hub) { hub.draw(g, c, R1, t, S); }
 
-    // The way come, a line of light, and a comet's tail behind the handle.
+    // The way come, a line of light, and a comet's tail behind the handle (a step dimmer, paused).
+    g.globalAlpha = tp && tp.dim ? 0.5 : 1;
     if (t > 0) {
       g.save();
       g.shadowColor = LIGHT;
@@ -17472,9 +17504,12 @@
       g.stroke();
       g.restore();
       var tail = Math.min(at - DIAL_START, 0.9);
+      // A path playing (transport.js): light runs down the tail in held frames; paused, it stills.
+      var flow = tp && tp.flow >= 0 ? tp.flow : -1;
       for (var q = 0; q < 12; q += 1) {
         var a0 = at - tail * (q + 1) / 12, a1 = at - tail * q / 12;
-        g.strokeStyle = "rgba(157, 149, 230, " + (0.55 * (1 - q / 12)).toFixed(3) + ")";
+        var run = flow < 0 ? 1 : 0.6 + 0.9 * Math.pow(Math.max(0, Math.cos(TAU * (q / 12 - flow))), 4);
+        g.strokeStyle = "rgba(157, 149, 230, " + Math.min(1, 0.55 * (1 - q / 12) * run).toFixed(3) + ")";
         g.lineWidth = 4;
         g.beginPath();
         g.arc(c, c, R1, a0, a1);
@@ -17496,6 +17531,7 @@
     g.fillStyle = "#eadfcd";
     g.fillRect(-4.5, -4.5, 9, 9);
     g.restore();
+    g.globalAlpha = 1;
 
     // Lifted to be carried: four tiles of pixel light round it.
     if (lifted) {
@@ -17511,7 +17547,8 @@
     g.fillStyle = "#eadfcd";
     g.font = "600 " + Math.round(S * 0.17) + "px " + dialFont;
     g.fillText(year, c, c + S * 0.05);
-    if (span[1] > span[0]) {
+    if (tp) { tp.face(g, c, S); }
+    else if (span[1] > span[0]) {
       g.fillStyle = "#a8927a";
       g.font = Math.max(8, Math.round(S * 0.058)) + "px " + dialFont;
       g.fillText(Math.floor(span[0]) + " — " + Math.floor(span[1]), c, c + S * 0.05 + S * 0.12);
@@ -17519,7 +17556,7 @@
     if (tense) {
       g.fillStyle = tense === "will be" ? LILAC : tense === "is" ? "#eadfcd" : "#a8927a";
       g.font = "italic " + Math.max(9, Math.round(S * 0.07)) + "px " + (getComputedStyle(document.documentElement).getPropertyValue("--serif") || "serif");
-      g.fillText(tense, c, c + S * 0.05 + S * 0.215);
+      g.fillText(tense, c, c + S * 0.05 + S * (tp ? 0.27 : 0.215));
     }
   }
 

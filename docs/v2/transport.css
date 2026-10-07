@@ -1,0 +1,200 @@
+/* ---- the transport (transport.js) ---------------------------------------------
+   A path played is driven from the dial; what the strips said is the dial's
+   readout: the count and the place in the dial's mono, the line being said
+   in the serif, the newest line of the sentence, and at the end the doors.
+   Pills like the hub's readout, beside the dial, never over the picture. */
+.path-read {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 89;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 340px;
+  margin: 0;
+  pointer-events: none;
+  color: #eadfcd;
+}
+.path-read[hidden] { display: none; }
+.path-read[data-side="left"] { justify-items: end; }
+.path-read > [data-behind] { display: none !important; }
+/* The module's element, its box gone: it is only the lines now. */
+.path-read > .walk-strip,
+.path-read > .voice-strip {
+  position: static;
+  inset: auto;
+  transform: none;
+  width: auto;
+  display: grid;
+  gap: 4px;
+  justify-items: inherit;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 1;
+  pointer-events: none;
+}
+.path-read > .walk-strip[hidden], .path-read > .voice-strip[hidden] { display: none; }
+.path-read .walk-progress,
+.path-read .walk-said,
+.path-read .walk-lines,
+.path-read .walk-acts > *,
+.path-read .explore-handoffs,
+.path-read .voice-strip-head,
+.path-read .voice-strip-row,
+.path-read .path-legend,
+.path-read[data-preview]::before {
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(15, 10, 7, 0.92);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+.path-read .walk-progress {
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9d95e6;
+  cursor: pointer;
+}
+/* The scrub: where letting go will go; held still on the face: that it is ending. */
+.path-read[data-preview]::before {
+  content: attr(data-preview);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(157, 149, 230, 0.7);
+}
+/* The line being said: one line in the serif, two at most. */
+.path-read .walk-said {
+  font-family: var(--serif, serif);
+  font-size: 13px;
+  line-height: 1.38;
+  letter-spacing: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.path-read[data-open] .walk-said { -webkit-line-clamp: 6; }
+.path-read .walk-said:empty, .path-read .walk-lines:empty, .path-read .walk-acts:empty { display: none; }
+/* The sentence: its newest line while it plays (on a phone none, the count says the place); a press
+   on the count opens the whole. */
+@media (max-width: 720px) {
+  .path-read:not([data-open]) .walk-lines:not(:has(.walk-sentence-whole)) { display: none; }
+}
+.path-read .walk-lines { padding: 3px 10px; }
+.path-read .walk-said, .path-read .walk-lines { cursor: pointer; }   /* pressed, the whole sentence */
+.path-read:not([data-open]) .walk-sentence:not(.walk-sentence-whole) .walk-line:not(:last-child) { display: none; }
+.path-read:not([data-open]) .walk-sentence:not(.walk-sentence-whole) .walk-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.path-read .walk-line { font-size: 13px; margin: 0; }
+.path-read .walk-sentence { margin: 0; }
+.path-read .walk-sentence-whole { max-height: 7em; overflow-y: auto; overscroll-behavior: contain; }
+.path-read[data-open] .walk-sentence { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+/* A voice's words said under a playing path's lines: they are the line being said. */
+.path-read[data-joined] > .walk-strip .walk-said { display: none; }
+@media (max-width: 720px) {
+  .path-read[data-joined]:not([data-open]) > .walk-strip .walk-lines { display: none; }
+  .path-read[data-joined] > .voice-strip .voice-strip-head { display: none; }
+}
+/* The doors: the hub's readout's pills. */
+.path-read .walk-acts { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; justify-content: inherit; pointer-events: none; }
+.path-read[data-side="left"] .walk-acts { justify-content: flex-end; }
+.path-read .walk-acts > .walk-act,
+.path-read .walk-acts > .explore-handoffs .explore-handoff {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid rgba(157, 149, 230, 0.55);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.92);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #eadfcd;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.path-read .walk-acts > .walk-act:hover, .path-read .walk-acts > .walk-act:focus-visible,
+.path-read .explore-handoff:hover, .path-read .explore-handoff:focus-visible { border-color: #eadfcd; color: #ffffff; outline: none; }
+.path-read .walk-acts > .walk-x { border-color: transparent; min-width: 28px; }
+.path-read .walk-acts > .walk-title, .path-read .walk-acts > .walk-code { border-radius: 8px; }
+.path-read .explore-handoffs { display: grid; gap: 4px; padding: 6px 8px; flex-basis: 100%; }
+.path-read .explore-handoffs:empty { display: none; }
+.path-read .explore-handoffs .walk-progress { padding: 0 2px; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; cursor: default; }
+.path-read .path-legend { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; color: #a8927a; }
+.path-read .path-legend[hidden] { display: none; }
+/* A voice's words, compact beside the dial. */
+.path-read .voice-strip-head { border-radius: 999px; font-size: 10px; margin: 0; cursor: pointer; }
+.path-read .voice-strip-row { grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 10px 6px 6px; }
+.path-read .voice-strip-pic, .path-read .voice-strip-pic img { width: 40px; height: 40px; }
+.path-read .voice-strip-said { font-size: 13px; }
+.path-read .voice-strip-said[data-long] { -webkit-line-clamp: 4; }
+.path-read .voice-next { pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .path-read .walk-progress, .path-read .walk-said, .path-read .walk-lines, .path-read .walk-acts > *,
+  .path-read .explore-handoffs, .path-read .voice-strip-head, .path-read .voice-strip-row, .path-read .path-legend {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+
+/* The dial playing a path: the hub's readout gives way to the path's while it is up. */
+.building-time.dial[data-path-read] .dial-say { display: none; }
+/* The × at its rim, out past the ring's stops so a turn begun there is not taken for it: ends the
+   path (opposite the home mark's side). */
+.building-time.dial > .dial-end {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  z-index: 13;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(234, 223, 205, 0.35);
+  border-radius: 50%;
+  background: rgba(15, 10, 7, 0.82);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+.building-time.dial[data-home-side="right"] > .dial-end { right: auto; left: -14px; }
+.building-time.dial > .dial-end::before { content: ""; position: absolute; inset: -6px; }   /* a finger's reach */
+.building-time.dial > .dial-end:hover, .building-time.dial > .dial-end:focus-visible { border-color: #9d95e6; color: #ffffff; outline: none; }
+.building-time.dial > .dial-end[hidden] { display: none; }
+.building-time.dial[data-lifted] > .dial-end { display: none; }
+/* The path's own dial, where no view's dial shows (a journey, the world, a museum without years). */
+.building-time.path-time.dial {
+  position: fixed;
+  left: auto;
+  top: auto;
+  right: 24px;
+  bottom: 24px;
+  transform: none;
+  z-index: 87;
+}
+@media (max-width: 720px) {
+  .building-time.path-time.dial { right: 12px; bottom: 96px; }
+}
+/* Where the view's dial last stood (transport.js sets it), unless the viewer has put the dial somewhere. */
+.building-time.path-time.dial[data-seat="view"]:not([data-moved]) { left: var(--x); top: var(--y); right: auto; bottom: auto; }
