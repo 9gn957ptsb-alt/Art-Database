@@ -139,6 +139,33 @@ artists came from, where else they were during it, the city at its last year —
 movement's view with the dial at that year. In Find: "movements", a city, a decade ("1950s"), a
 movement's name, an artist.
 
+## The dial unrolled
+
+The artist, 7 Oct 2026: "Change the shape of the dial to adapt to the rectangular form in some way."
+When the dial is put in the reading's big place (the three parts, land.js), it is a band of years,
+the same instrument laid flat: one drawing, through a projection (`bandCtx` in land.js), not a second
+implementation.
+
+| On the ring | Unrolled |
+| --- | --- |
+| the angle from the top | x, left to right over the dial's span |
+| the gap where now meets the beginning | the two ends of the line, each a lilac point |
+| the distance from the ring | the height over or under the line (`ky` px a ring px) |
+| the chronograph's scale outside | the decades above the line, named |
+| the event ticks inside | ticks under the line, lit once passed |
+| the way come and the comet's tail | a line of light to the handle, the tail behind it |
+| the handle (the museums' diamond) | the same diamond on the line, dragged along it |
+| the hub's band (dialhub.js) | lanes under the line: spans named under their starts (`g.unrolled`), strokes, glyphs |
+| the transport's stops outside the ring | marks above the line, the current a tile of pixel light |
+| the face: ❚❚ / ▶ | the band's left end, a tap plays or pauses |
+| the face's word (the mode) | at the band's right end, a tap turns to the next |
+| the year in the middle | the year at the top left, its span and its tense beside it |
+
+A press on the band is the press on the ring it stands for (`bandToRing`): a turn, a scrub of a
+played path, a press on a span (`DialHub.tap`). The range underneath keeps the keys. In the small
+place or its own the dial is a dial. A new kind of mark drawn with the ring's own calls is unrolled
+with it; text it wants written only unrolled asks `g.unrolled`.
+
 ## Rules kept
 
 - The dial draws only when something on it changed: the hub's layer gives a key.

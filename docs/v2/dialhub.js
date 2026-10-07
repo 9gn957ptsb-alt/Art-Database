@@ -364,6 +364,7 @@
       g.restore();
       return;
     }
+    var named = null;
     items.forEach(function (it, i) {
       if (!it.shown) { return; }
       var k = KINDS[it.kind] || KINDS.movement;
@@ -385,6 +386,22 @@
           g.shadowBlur = 0;
           g.fillStyle = k.tone;
           g.fillRect(c + Math.cos(a0) * r - 1.5, c + Math.sin(a0) * r - 1.5, 3, 3);
+          // Unrolled into a band (land.js, "the dial unrolled"), a span is named under its start where there is room.
+          if (g.unrolled && it.label) {
+            var p0 = g.map(c + Math.cos(a0) * r, c + Math.sin(a0) * r), p1 = g.map(c + Math.cos(a1) * r, c + Math.sin(a1) * r);
+            var name = String(it.label).split(" · ")[0];
+            g.font = "9px " + (getComputedStyle(document.documentElement).getPropertyValue("--mono") || "monospace").trim();
+            var tw = g.measureText(name).width;
+            named = named || [];
+            var box = { x0: p0.x, x1: p0.x + tw, y: p0.y };
+            if (!named.some(function (b) { return Math.abs(b.y - box.y) < 10 && box.x0 < b.x1 + 6 && b.x0 < box.x1 + 6; }) && tw < Math.max(60, p1.x - p0.x + 80)) {
+              named.push(box);
+              g.globalAlpha = on || hov ? 1 : 0.75;
+              g.textAlign = "left";
+              g.textBaseline = "top";
+              g.fillText(name, c + Math.cos(a0) * (r - 1.5), c + Math.sin(a0) * (r - 1.5));
+            }
+          }
         }
         return;
       }

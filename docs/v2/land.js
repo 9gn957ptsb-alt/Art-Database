@@ -16750,7 +16750,10 @@
     var r = flat.rect;
     return { lat: Math.max(-1.5, Math.min(1.5, flat.lat - (y - r.y - r.h / 2) / flat.k)), lon: wrap(flat.lon + (x - r.x - r.w / 2) / flat.k) };
   }
-  function mapKLimits() { var r = flat.rect; return { lo: r.w / TAU * 0.8, hi: r.w / TAU * 120 }; }
+  // As far out as fills the place (never a strip of world in the dark), in to 120 times the whole.
+  function mapKLimits() { var r = flat.rect, lo = Math.max(r.w / TAU * 0.8, r.h / Math.PI); return { lo: lo, hi: lo * 120 }; }
+  // The middle kept so the world reaches the top and the foot of the place.
+  function mapClampLat(lat) { var m = Math.max(0, Math.PI / 2 - flat.rect.h / 2 / flat.k); return Math.max(-m, Math.min(m, lat)); }
   function mapCheck(force) {
     var on = mapOn();
     if (!on) {
@@ -16769,7 +16772,7 @@
         flat.placed = true;
         flat.lat = focus.lat;
         flat.lon = wrap(spin);
-        flat.k = rect.w / TAU * 1.6;
+        flat.k = Math.max(rect.w / TAU * 1.6, rect.h / Math.PI);
       }
       clipWorld(workBands());
     }
@@ -16781,7 +16784,7 @@
     flat.dpr = d;
     var lim = mapKLimits();
     flat.k = Math.max(lim.lo, Math.min(lim.hi, flat.k));
-    flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat));
+    flat.lat = mapClampLat(flat.lat);
     mapDraw();
   }
   // Leaving the big place: the globe, about the map's middle.
@@ -16821,6 +16824,7 @@
   }
   function mapDraw() {
     var a = art, r = flat.rect, d = flat.dpr;
+    flat.lat = mapClampLat(flat.lat);
     var yr = a && a.dated ? yearAt(a, Math.max(0, a.when)) : null;
     var key = [r.x, r.y, r.w, r.h, flat.lat.toFixed(4), flat.lon.toFixed(4), flat.k.toFixed(2), a && a.when, layerOn, a && a.ring,
                flat.hover || "", d, flat.world ? 1 : 0].join("|");
@@ -16920,11 +16924,11 @@
       if (p2 && flat.pinch) {
         mapZoomAbout(p2.d / flat.pinch.d, p2.x, p2.y);
         flat.lon = wrap(flat.lon - (p2.x - flat.pinch.x) / flat.k);
-        flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat + (p2.y - flat.pinch.y) / flat.k));
+        flat.lat = mapClampLat(flat.lat + (p2.y - flat.pinch.y) / flat.k);
         flat.pinch = p2;
       } else if (!p2 && flat.moved > 4) {
         flat.lon = wrap(flat.lon - dx / flat.k);
-        flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat + dy / flat.k));
+        flat.lat = mapClampLat(flat.lat + dy / flat.k);
       }
       mapDraw();
     });
@@ -16957,7 +16961,7 @@
     // The point under the fingers stays under them.
     var q = mapXY(ll.lat, ll.lon);
     flat.lon = wrap(flat.lon + (q.x - x) / flat.k);
-    flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat - (q.y - y) / flat.k));
+    flat.lat = mapClampLat(flat.lat - (q.y - y) / flat.k);
     return Math.abs(k1 - flat.k) < 1e-9;
   }
   function mapStepBy(f) {
@@ -18494,7 +18498,7 @@
      there, so there is one drawing of the dial in two forms. */
   function bandGeo(w, h) {
     var y = Math.round(Math.max(64, Math.min(h * 0.38, h / 2)));
-    return { w: w, h: h, x0: 44, x1: w - 72, y: y, ky: Math.max(2, Math.min(3, h / 90)), c: w / 2, R1: w / 2 - 13 };
+    return { w: w, h: h, x0: 44, x1: w - 92, y: y, ky: Math.max(2, Math.min(3, h / 90)), c: w / 2, R1: w / 2 - 13 };
   }
   function bandT(geo, a) {
     var rel = ((a - DIAL_START) % TAU + TAU) % TAU;
@@ -18557,7 +18561,10 @@
         var p = bandXY(geo, x + w / 2, y + h / 2);
         g.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
       },
-      fillText: function (t, x, y) { if (local) { g.fillText(t, x, y); return; } var p = bandXY(geo, x, y); g.fillText(t, p.x, p.y); }
+      fillText: function (t, x, y) { if (local) { g.fillText(t, x, y); return; } var p = bandXY(geo, x, y); g.fillText(t, p.x, p.y); },
+      // For a layer that writes more when unrolled (dialhub.js: a span's name): where a point of the ring lands.
+      unrolled: true,
+      map: function (x, y) { return bandXY(geo, x, y); }
     };
     ["strokeStyle", "fillStyle", "lineWidth", "globalAlpha", "shadowColor", "shadowBlur", "font", "textAlign",
      "textBaseline", "lineCap", "lineJoin"].forEach(function (k) {
