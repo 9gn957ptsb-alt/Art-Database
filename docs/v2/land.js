@@ -14020,10 +14020,12 @@
       if (artFind) { artFind.hidden = true; }
       closeFinder();
       if (passing) { endPassing(performance.now()); }
-      // On Artists, Find opens on the artists, each a life (lives.js).
-      if (layerOn === "studios" && ARTWORKS && artFind) {
+      // One general Search on every layer (artist, 7 Oct 2026: "Get rid of the 'find an artist' and
+      // have a general 'search' bar"); on Artists its empty state is still the artists, each a life.
+      if (ARTWORKS && artFind) {
         artFind.disabled = false;
-        artFind.textContent = "Find an artist";
+        artFind.textContent = "Search";
+        artFind.setAttribute("aria-label", "Search works, artists, places, museums, shows and writers");
         artFind.hidden = false;
       }
       measureSafe();
@@ -14053,7 +14055,8 @@
         groundPlaces();
       }
       if (ARTWORKS && artFind && artInfo) {
-        artFind.textContent = "Find among " + artInfo.works.toLocaleString("en") + " works";
+        artFind.textContent = "Search";
+        artFind.setAttribute("aria-label", "Search works, artists, places, museums, shows and writers");
         artFind.hidden = false;
         scramble(artFind, oneOf(["decode", "type"]), 0, 640);
       }
@@ -19099,7 +19102,7 @@
   }
 
   function openFinder() {
-    if (!ARTWORKS || !finderEl || (layerOn !== "museums" && layerOn !== "studios") || place || flying) { return; }
+    if (!ARTWORKS || !finderEl || place || flying) { return; }   // Search opens on every layer (7 Oct 2026)
     finderEl.hidden = false;
     finder.open = true;
     if (artFind) { artFind.setAttribute("aria-expanded", "true"); }
@@ -19370,6 +19373,7 @@
         (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(museumsLayer);
       }
       if (layerOn === "studios") { museumsLayer(); studiosLayer(); }
+      else if (layerOn !== "museums") { museumsLayer(); }   // Search is on every layer from the start
 
       // An old link to the works page, forwarded here.
       followHash();

@@ -2569,8 +2569,7 @@
 .art-find:focus-visible,
 .art-find[aria-expanded="true"] { background: #eadfcd; color: #0f0a07; }
 .art-find[hidden],
-.land:not([data-at="globe"]) .art-find,
-.land:not([data-layer-on="museums"]):not([data-layer-on="studios"]) .art-find { display: none; }
+.land:not([data-at="globe"]) .art-find { display: none; }   /* Search: on every layer of the globe (7 Oct 2026) */
 
 .finder {
   position: fixed;
