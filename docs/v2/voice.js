@@ -360,6 +360,13 @@
   function picKey(pic) { return !pic ? "" : pic.site && !pic.id ? "s:" + pic.site : pic.id || (pic.site ? "s:" + pic.site : ""); }
   function swipeNow(r) {
     r = r || (window.Land && Land.reading ? Land.reading() : null);
+    if (r && r.kind === "life" && /^born:/.test(r.id || "")) {
+      var P = bornPics();
+      if (!P || !P.list.length) { return null; }
+      var bc = picKey(S.pic), bi = -1;
+      P.list.forEach(function (q, n) { if (bi < 0 && picKey(q) === bc) { bi = n; } });
+      return { r: r, born: P.town, list: P.list, i: bi };
+    }
     if (!r || r.kind !== "life" || !r.id || !has(r.year)) { return null; }
     var L = lifeOf(r.id);
     if (!L) { return null; }
@@ -375,6 +382,19 @@
     if (!w || w.list.length < 2 || w.r.flying || w.r.full) { return false; }
     var i = w.i < 0 ? (d > 0 ? 0 : w.list.length - 1) : (w.i + d + w.list.length) % w.list.length;
     var q = w.list[i];
+    if (w.born) {
+      bornPick = { view: w.r.view, i: i };
+      swipedAt = performance.now();
+      var bp = artEl && artEl.querySelector(".art-plate");
+      if (bp && !still) {
+        bp.dataset.swipe = d > 0 ? "next" : "prev";
+        window.clearTimeout(bp._sw);
+        bp._sw = window.setTimeout(function () { delete bp.dataset.swipe; }, 900);
+      }
+      handled();
+      kick();
+      return true;
+    }
     swipe = { view: w.r.view, life: w.L.id, k: w.k, key: picKey(q) };
     swipedAt = performance.now();
     var plate = artEl && artEl.querySelector(".art-plate");
@@ -397,7 +417,8 @@
     var n = w ? w.list.length : 0;
     swipeList = w;
     if (capCount) {
-      var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + " · " + (w.p.y0 === w.p.y1 ? w.p.y0 : w.p.y0 + "–" + w.p.y1) : "";
+      var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + " · " + (w.born ? "born in " + w.born :
+                 w.p.y0 === w.p.y1 ? w.p.y0 : w.p.y0 + "–" + w.p.y1) : "";
       capCount.hidden = !line;
       if (capCount.textContent !== line) { capCount.textContent = line; }
     }
@@ -712,6 +733,7 @@
      city; a life that crosses it; born, died; else the place, arriving or
      staying. `force` is a player's beat: the step it is saying. */
   function deriveLife(r, now, force) {
+    if (/^born:/.test(r.id || "")) { bornTell(r); return null; }
     var L = lifeOf(r.id);
     if (!L) { return null; }
     var y = force && has(force.y) ? force.y : r.year;
@@ -820,6 +842,45 @@
   function untitled(t) { return !t || /^(untitled|sans titre|ohne titel|senza titolo|sin título)\b/i.test(String(t).trim()); }
   // A saved work as the picture: a title that ends in the date's "circa" (the record's split) reads "c. 1945".
   var CIRCA = /,?\s*\b(circa|ca\.|c\.)\s*$/i;
+  /* A town's "Born here" (artist, 7 Oct 2026, of "Born in Memphis" with an
+     empty band above it): its picture is the work of the artists born there,
+     the most saved first, each artist's in date order, swiped through as a
+     life's period is; a town none of whose works has a picture closes the
+     band (Land.noPicture). */
+  var bornPick = null;            // { view, i }: the picture swiped to
+  function bornPics() {
+    var B = window.Lives && Lives.born ? Lives.born() : null;
+    if (!B) { return null; }
+    var out = [], waiting = false;
+    B.ids.slice(0, 13).forEach(function (id) {
+      var L = lifeOf(id);
+      if (!L) { waiting = true; return; }
+      (L.works || []).filter(function (w) { return w[3]; })
+        .sort(function (a, b) { return (a[2] || 9999) - (b[2] || 9999); })
+        .forEach(function (w) { out.push(savedPic(L, w)); });
+    });
+    return { town: B.town, list: out, waiting: waiting };
+  }
+  function bornTell(r) {
+    var P = bornPics();
+    if (!P || !Land.picture) { return; }
+    if (!P.list.length) {
+      if (!P.waiting && Land.noPicture) {
+        Land.noPicture(true);
+        if (S.said !== "none") { S.said = "none"; setCaption("Born in " + P.town + ". None of their saved works has a picture.", null, false); }
+      }
+      return;
+    }
+    if (Land.noPicture) { Land.noPicture(false); }
+    var i = bornPick && bornPick.view === r.view ? Math.min(bornPick.i, P.list.length - 1) : 0;
+    var pic = P.list[i];
+    if (S.pic && picKey(pic) === picKey(S.pic)) { return; }
+    S.pic = pic;
+    S.said = "born";
+    Land.picture(pic);
+    setCaption("Born in " + P.town + ": " + pic.by + ".", pic, false);
+    swipeSay(r);
+  }
   function savedPic(L, w, near) {
     var c = CIRCA.test(w[1] || "");
     return { id: w[0], image: w[3], title: c ? String(w[1]).replace(CIRCA, "") : w[1], circa: c, year: w[2] || null,

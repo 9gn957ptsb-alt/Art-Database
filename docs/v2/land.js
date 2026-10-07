@@ -13815,7 +13815,7 @@
   function fingerUp(event) {
     if (markDrag && markDrag.id === event.pointerId) {
       if (markDrag.moved > 8) {
-        cityLetGo(markDrag);
+        if (markDrag.city) { cityLetGo(markDrag); }
         // The press that moved the map is not also a press on the mark.
         var swallow = function (e) { e.stopPropagation(); e.preventDefault(); };
         document.addEventListener("click", swallow, true);
@@ -13851,8 +13851,12 @@
       }
     }
     // A press on a mark in a city that then moves is the map's too (the mark keeps its tap).
-    markDrag = ids.length === 1 && cityMap() && event.target && event.target.closest && event.target.closest(".city") ?
-      { id: event.pointerId, x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, lt: performance.now(), moved: 0 } : null;
+    // So is one begun on an animal or a name standing on the small globe: the world turns under it.
+    var tg = event.target && event.target.closest ? event.target : null;
+    var onMark = ids.length === 1 && tg && ((cityMap() && tg.closest(".city")) ||
+                 (readingOn() && LENS_GLOBE && tg.closest(".character, .city") && globeZone(event.clientX, event.clientY)));
+    markDrag = onMark ? { id: event.pointerId, x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY,
+                          lt: performance.now(), moved: 0, city: cityMap() } : null;
     cityPinch = null;
     if (ids.length === 2 && cityMap()) {
       var cp = downFingers[ids[0]], cq = downFingers[ids[1]];
@@ -13870,6 +13874,22 @@
     var d = downSpread();
     if (cityPinch && d > 0) { cityPinchMove(d); return; }
     var md = markDrag;
+    if (md && md.id === event.pointerId && !md.city && readingOn() && !flying) {
+      md.moved = Math.max(md.moved, Math.abs(event.clientX - md.x), Math.abs(event.clientY - md.y));
+      if (md.moved > 8) {
+        var mr = Math.max(R, 1);
+        art.glide = null;
+        art.lens = null;
+        wanted = spin = spin - (event.clientX - md.lx) / mr / Math.max(0.25, Math.cos(focus.lat));
+        lean(tilt + (event.clientY - md.ly) / mr);
+        focus.lat = tilt;
+        reframe();
+        art.dirty = true;
+        md.lx = event.clientX; md.ly = event.clientY;
+        if (window.Voice && Voice.handled) { Voice.handled(); }
+      }
+      return;
+    }
     if (md && md.id === event.pointerId && cityMap()) {
       md.moved = Math.max(md.moved, Math.abs(event.clientX - md.x), Math.abs(event.clientY - md.y));
       if (md.moved > 8) {
@@ -14837,6 +14857,15 @@
                                   }) }; },
     lens: function (spec) { return lensTo(spec); },
     picture: function (spec) { showPicture(spec || null); },
+    // A view with no picture at all (voice.js): its band is closed, the globe and the text take the room.
+    noPicture: function (on) {
+      var a = art;
+      if (!a || !readingOn() || !!a.noPicture === !!on) { return; }
+      a.noPicture = !!on;
+      layoutWork();
+      if (!artPlate.hidden) { layoutPlate(null, "rest"); }
+      a.keptAt = 0;
+    },
     tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
     swap: function (on) { setSwap(on === undefined ? !lensSwapped : !!on); },
     // The transport (transport.js): every dial, a dial of its own where no view's shows, and the
@@ -15696,6 +15725,8 @@
       // framed left of the dial, which stands at the right of its band.
       var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
+      // A view with no picture to show (artist, 7 Oct 2026): no empty band; its sentence, then the globe.
+      if (art && art.noPicture) { ph = lens ? 58 : 0; colTop = Math.round(0.56 * H); }
       var gy = top + ph + 6, cap = lens ? 52 : 0;
       var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
       var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
@@ -15705,7 +15736,7 @@
             dial: { x: W - 136 - 12, y: Math.round(gy + (globe.h - 136) / 2) },
             colTop: colTop, phone: true };
     } else {
-      var pw = Math.round(Math.min(0.34 * W, 560)), capD = lens ? 64 : 0;
+      var pw = art && art.noPicture ? 0 : Math.round(Math.min(0.34 * W, 560)), capD = lens ? 64 : 0;
       var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 - capD };
       var gx = plate.x + pw + 16, band = { x: gx, y: 68, w: Math.max(200, W - colW - gx), h: H - 148 };
       // The lens over the dial, the pair in the middle of the band's height.
@@ -15970,6 +16001,7 @@
       if (qs >= 1) { a.snap = null; place.zoomTo = zoom; drawn.r = 0; }
       lensOutCheck();
     }
+    if (LENS_GLOBE && !a.lens) { lensKeep(a, now); }
     var f = a.lens;
     if (!f || flying || dive.on) { return; }
     var q = Math.min(1, (now - f.at) / f.dur), s = f.snap ? springEase(q) : q * q * (3 - 2 * q);
@@ -16039,6 +16071,33 @@
       clipWorld(on ? null : workBands());
     }
     placeLensHome();
+  }
+  /* One globe in every reading (artist, 7 Oct 2026, of "Born in Memphis",
+     its lens a blurred close-up: "make sure the globe is consistent across
+     all types of layouts"): whatever framed the view on its way in — a
+     life's arrival, a town's born-here, a view no voice speaks for — the
+     small globe stands at the viewer's size (rest × the viewer's own k),
+     its middle at the window's: sprung there when it is not. */
+  function lensKeep(a, now) {
+    if (!place || !readingOn() || flying || dive.on || a.snap || a.lens || lensPinch || !a.live) { return; }
+    if (now - (a.keptAt || 0) < 160) { return; }
+    a.keptAt = now;
+    // A view with no picture of its own after it has settled: its band is closed (no empty dark box).
+    if (!a.readSince) { a.readSince = now; }
+    if (a.kind !== "work" && !a.picture && !a.noPicture && now - a.readSince > 3000) { Land.noPicture(true); }
+    var b = workBands(), L = b.lensAt;
+    var seat = { x: L.x / W, y: L.y / H };
+    if (!place.seatAt || Math.abs(place.seatAt.x - seat.x) * W > 1 || Math.abs(place.seatAt.y - seat.y) * H > 1) {
+      place.seatAt = seat;
+      reframe();
+      a.dirty = true;
+    }
+    var z = lensRestR(b) * lensK() / Math.max(1, baseR);
+    if (Math.abs(Math.log(Math.max(1e-9, zoom) / z)) > 0.02) {
+      lensGroundOff();
+      if (still) { zoom = place.zoomTo = z; reframe(); drawn.r = 0; a.dirty = true; marksDirty = true; lensOutCheck(); }
+      else { a.snap = { la: Math.log(Math.max(1e-6, zoom)), lb: Math.log(z), at: now }; }
+    }
   }
   /* Bigger or smaller by f, about (x, y): what is under the fingers stays
      under them. False when it can go no further that way. */
@@ -16866,6 +16925,9 @@
               at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
               picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
               ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut,
+              R: R, rest: LENS_GLOBE ? lensRestR(b) : null, cx: cx, cy: cy, noPicture: !!a.noPicture,
+              lat: focus.lat / RAD, lon: wrap(spin) / RAD, snapping: !!a.snap,
+              plateShown: !!(artPlate && !artPlate.hidden && artPlate.offsetWidth > 0 && artPlate.querySelector("img")),
               // The grown globe's own marks (a work's stops, a life's places), as boxes: kept clear by the
               // path's readout (transport.js) as the lens is.
               own: grown ? ownBoxes : null };
@@ -18344,6 +18406,7 @@
     var key = function (p) { return p ? p.id || p.src || p.image || null : null; };
     if (key(a.picture) === key(spec)) { return; }
     a.picture = spec && (spec.image || spec.src) ? spec : null;
+    if (a.picture && a.noPicture) { Land.noPicture(false); }
     if (!a.picture) {
       artPlate.textContent = "";
       artPlate.hidden = true;

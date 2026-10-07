@@ -1187,6 +1187,12 @@
     visit: visit,
     beat: beat,
     idOf: function (name) { var r = rowOf(name); return r ? r[0] : null; },
+    // A town's "Born here" (voice.js, its picture): the lives born there, most saved first.
+    born: function () {
+      var m = bornAt && bornAt.data && bornAt.data.born;
+      if (!m || !D || !bornAt.live()) { return null; }
+      return { town: m[7], ids: m[4].map(function (i) { return D.lives[i][0]; }) };
+    },
     showWork: showWork,
     made: made,
     // What the life (or a town's "Born here") drew on the globe last frame, as boxes.
