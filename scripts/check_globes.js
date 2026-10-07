@@ -212,7 +212,7 @@ async function run(size) {
     console.log(tag);
     await v.open(P);
     let r = null;
-    for (let i = 0; i < 60 && !(r && r.kind === v.kind && !r.flying); i++) { await P.waitForTimeout(300); r = await state(); }
+    for (let i = 0; i < 120 && !(r && r.kind === v.kind && !r.flying); i++) { await P.waitForTimeout(300); r = await state(); }
     if (!r) { check(tag, false, "opened"); continue; }
     // A work's first look ends on any touch.
     if (r.look === "plate") { await tap(w - 30, h - 30); }

@@ -123,6 +123,8 @@ def sentences(text):
 # ---- the gazetteer: towns a sentence may name ---------------------------------------------------
 
 # Names that are words or people far more often than the town in an artist's article.
+# Places Wikidata leaves without an English label come as their bare Q-number; named here by their item.
+UNLABELLED = {'Q16568': 'Jacksonville'}  # Q16568: Jacksonville, Florida (its item's own name)
 NOT_TOWNS = {'Orange', 'Reading', 'Bath', 'Mobile', 'Victoria', 'Lincoln', 'Florence Nightingale', 'Of', 'Van',
              'Union', 'Independence', 'Concord', 'Paradise', 'Hope', 'Normal', 'Bristol Channel', 'Sale', 'Wells',
              'Eye', 'Ware', 'Deal', 'March', 'Rye', 'Street', 'Wick', 'Holt', 'Banner', 'Ely', 'Gap', 'Vence?',
@@ -330,7 +332,7 @@ def main():
     for r in sorted(wd_rows, key=lambda r: json.dumps(r, sort_keys=True)):
         a = bd.setdefault(r['a'], {})
         if r.get('born') and point(r.get('bll')) and 'born' not in a:
-            a['born'] = {'place': r.get('bornLabel'), 'll': point(r['bll']), 'q': r['born']}
+            a['born'] = {'place': UNLABELLED.get(r.get('bornLabel'), r.get('bornLabel')), 'll': point(r['bll']), 'q': r['born']}
         if r.get('died') and point(r.get('dll')) and 'died' not in a:
             a['died'] = {'place': r.get('diedLabel'), 'll': point(r['dll']), 'q': r['died']}
         if r.get('b') and 'b' not in a:
