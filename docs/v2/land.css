@@ -3695,3 +3695,36 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .art-said-q[data-long] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; cursor: pointer; }
 .art-said-q[data-long][data-open] { display: block; -webkit-line-clamp: none; }
+
+/* Bigger and smaller, with one finger (land.js, "bigger and smaller, with one
+   finger"; artist, 7 Oct 2026: "if there is a globe in view … bigger and
+   smaller however they please"; WCAG 2.5.1 and 2.5.8). A quiet pair of round
+   buttons at the globe's edge: the small globe's beside its rim, the front
+   globe's at the foot, clear of the pills. */
+.globe-zoom { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 13; pointer-events: none; }
+.front-zoom { z-index: 86; }
+.globe-zoom[hidden] { display: none; }
+.globe-zoom-b {
+  position: fixed;
+  width: var(--zoom-size, 32px);
+  height: var(--zoom-size, 32px);
+  padding: 0;
+  margin: 0;
+  border: 1px solid rgba(234, 223, 205, 0.28);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.62);
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  opacity: 0.72;
+  transition: opacity 0.2s steps(3), background 0.2s steps(3);
+}
+.globe-zoom-b:hover, .globe-zoom-b:focus-visible { opacity: 1; background: rgba(94, 82, 199, 0.85); color: #ffffff; outline: none; }
+.globe-zoom-b:disabled { opacity: 0.3; cursor: default; background: rgba(15, 10, 7, 0.62); }
+.art[data-full] .lens-zoom, .art[data-look="plate"] .lens-zoom { display: none; }
+/* Nothing laid over the small globe takes two fingers for the browser's own zoom. */
+.character, .lens-home, .voice-release, .voice-rim, .voice-stand { touch-action: none; }

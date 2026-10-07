@@ -5617,6 +5617,7 @@
     // vocabulary every frame for something nobody can see.
     if (!place) { placeWords(); }
     if (place && !flying) { stepGrown(); } else if (grown) { grownOff(); }
+    placeZooms();
     if (!place || flying || grown) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
     if (art && !dive.on) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
@@ -8726,6 +8727,8 @@
     // world is being turned. Let go of the turn and the squash and leave the
     // gesture to it, or the world spins while someone is trying to zoom.
     fingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    // Two fingers that are the small globe's pinch (fingerDown): nothing else begins.
+    if (lensPinch) { return; }
     if ((turning || panning) && Object.keys(fingers).length >= 2) {
       turning = null;
       panning = null;
@@ -13657,21 +13660,8 @@
     if (!place || flying || groundOn) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
-    // Over the lens a wheel (or a trackpad's pinch) moves between its voices,
-    // as two fingers do: in nearer, out further off; never out of the path.
-    if (!dive.on && readingOn() && LENS && LENS_GLOBE && inLens(event.clientX, event.clientY)) {
-      var wstep = event.ctrlKey ? 0.012 : 0.0016, wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
-      if (!lensZoomBy(Math.exp(-wd * wstep), event.clientX, event.clientY) && wd < 0 && diveCan()) {
-        // Past its nearest, scrolling on is the dive, as on the front page.
-        diveTo(dive.log - wd * wstep, event.clientX, event.clientY);
-        window.clearTimeout(dive.timer);
-        if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
-        return;
-      }
-      window.clearTimeout(lensWheelT);
-      lensWheelT = window.setTimeout(lensRelease, 300);
-      return;
-    }
+    // Over the small globe's ground the wheel is zoneWheel's (below).
+    if (!dive.on && readingOn() && LENS && LENS_GLOBE && globeZone(event.clientX, event.clientY)) { return; }
     if (!dive.on && readingOn() && LENS && inLens(event.clientX, event.clientY)) {
       var nowW = performance.now();
       if (nowW - lensWheelAt > 600) { lensWheel = 0; }
@@ -13717,6 +13707,36 @@
   }
   stage.addEventListener("wheel", placeWheel, { passive: true });
   overStage.forEach(function (o) { o.addEventListener("wheel", placeWheel, { passive: true }); });
+  /* The small globe's wheel (artist, 7 Oct 2026: "Make sure that no matter
+     what, if there is a globe in view that the viewer is able to make it
+     bigger and smaller however they please"): anywhere in the reading layout
+     that is not the column, the picture or the banner — over the lens or
+     near it, over the dial (a trackpad's pinch there; a plain wheel on the
+     dial still turns it, a crown), over an animal — a wheel or a trackpad's
+     pinch makes the small globe bigger or smaller, about the pointer where
+     it is over the globe, else about its middle; never out of the path. Heard
+     first (capture) and not passive, so the browser's own zoom does not take
+     a trackpad's pinch as well. */
+  function zoneWheel(event) {
+    if (!place || flying || groundOn || dive.on || !readingOn() || !LENS || !LENS_GLOBE) { return; }
+    var t = event.target;
+    if (t && t.closest && t.closest(".art-col, .walk-look, .finder, .ground-dirt")) { return; }
+    if (!globeZone(event.clientX, event.clientY)) { return; }
+    if (!event.ctrlKey && t && t.closest && t.closest(".dial-face")) { return; }
+    event.preventDefault();
+    event.stopPropagation();
+    var wstep = event.ctrlKey ? 0.012 : 0.0016, wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
+    if (!lensZoomBy(Math.exp(-wd * wstep), event.clientX, event.clientY) && wd < 0 && diveCan()) {
+      // Past its nearest, scrolling on is the dive, as on the front page.
+      diveTo(dive.log - wd * wstep, event.clientX, event.clientY);
+      window.clearTimeout(dive.timer);
+      if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
+      return;
+    }
+    window.clearTimeout(lensWheelT);
+    lensWheelT = window.setTimeout(lensRelease, 300);
+  }
+  window.addEventListener("wheel", zoneWheel, { capture: true, passive: false });
   var downFingers = {}, downFrom = 0;
   function downSpread() {
     var ids = Object.keys(downFingers);
@@ -13729,6 +13749,41 @@
     o.addEventListener("pointermove", fingerMove, true);
     ["pointerup", "pointercancel"].forEach(function (name) { o.addEventListener(name, fingerUp, true); });
   });
+  // An animal laid over everything (a chimera's own button, on the page's
+  // body) never swallows two fingers: its touches are heard as the stage's.
+  function offStage(event) {
+    var t = event.target;
+    if (!t || !t.closest || !t.closest(".character")) { return false; }
+    return ![stage].concat(overStage).some(function (o) { return o.contains(t); });
+  }
+  document.addEventListener("pointerdown", function (event) { if (offStage(event)) { fingerDown(event); } }, true);
+  document.addEventListener("pointermove", function (event) { if (offStage(event)) { fingerMove(event); } }, true);
+  ["pointerup", "pointercancel"].forEach(function (name) {
+    document.addEventListener(name, function (event) { if (offStage(event)) { fingerUp(event); } }, true);
+  });
+  /* A pinch that is the small globe's takes the fingers from whatever the
+     first of them began: a turn of the world, a turn or a lift of the dial
+     (undone, as a lift undoes its turn), a squash. */
+  function lensPinchTakes(event) {
+    turning = null;
+    squashing = null;
+    delete stage.dataset.turning;
+    dials.forEach(function (o) {
+      if (!o.down && o.grab === null && !o.move && !o.tp) { return; }
+      window.clearTimeout(o.hold);
+      if (o.tp && window.Dial && Dial.ring) { try { Dial.ring(o, "cancel", {}); } catch (e) {} }
+      if (o.grab !== null && o.down) {
+        o.range.value = o.down.was;
+        o.range.dispatchEvent(new Event("input", { bubbles: true }));
+        o.range.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      o.tp = false; o.grab = null; o.last = null; o.move = null; o.down = null; o.drawn = "";
+      delete o.box.dataset.turning;
+      delete o.box.dataset.lifted;
+    });
+    // The second finger is not also a press on what it landed on.
+    if (event.currentTarget !== stage) { event.stopPropagation(); }
+  }
   var lensPinch = null;                 // two fingers that came down on the lens: { d }
   function fingerUp(event) {
     delete downFingers[event.pointerId];
@@ -13743,10 +13798,18 @@
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
     lensPinch = null;
+    // A work's first look ends on any touch, so its globe is in reach at once.
+    if (art && art.kind === "work" && !art.flipped && art.live) { flipToHead(); }
     var ids = Object.keys(downFingers);
     if (ids.length === 2 && readingOn() && LENS) {
       var p = downFingers[ids[0]], q = downFingers[ids[1]];
-      if (inLens((p.x + q.x) / 2, (p.y + q.y) / 2)) { lensPinch = { d: Math.max(1, downFrom) }; }
+      var mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+      // The small globe's, however the fingers land (artist, 7 Oct 2026): the
+      // point between them anywhere but the column, the picture or the banner.
+      if (LENS_GLOBE ? globeZone(mx, my) : inLens(mx, my)) {
+        lensPinch = { d: Math.max(1, downFrom) };
+        if (LENS_GLOBE) { lensPinchTakes(event); }
+      }
     }
   }
   function fingerMove(event) {
@@ -15680,6 +15743,29 @@
     return x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h;
   }
 
+  /* Whether a point is the small globe's ground for two fingers or a wheel
+     (artist, 7 Oct 2026: "no matter what, if there is a globe in view …
+     bigger and smaller however they please"): anywhere in the reading layout
+     but the text column, the picture (and its own pinch) and the banner —
+     the lens, round it, the dial, an animal on its rim, the dark between. */
+  function globeZone(x, y) {
+    if (!readingOn() || !LENS) { return false; }
+    if (artEl.dataset.full) { return false; }
+    function inRect(e) {
+      if (!e || e.hidden) { return false; }
+      var r = e.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+    if (banner && !banner.hidden && inRect(banner)) { return false; }
+    if (artCol && getComputedStyle(artCol).visibility !== "hidden" && inRect(artCol)) { return false; }
+    // The picture where it rests (its box without the step aside it may be taking).
+    if (artPlate && !artPlate.hidden && !lensOut && artEl.dataset.look !== "plate") {
+      var px = artPlate.offsetLeft, py = artPlate.offsetTop, pw = artPlate.offsetWidth, ph = artPlate.offsetHeight;
+      if (pw > 0 && x >= px && x <= px + pw && y >= py && y <= py + ph) { return false; }
+    }
+    return true;
+  }
+
   /* The lens's veil: the dark the lens is a window in (a hole whose shadow
      is the dark, so the round window and the swapped rectangle are one
      element, and the swap is one transition). Laid in once, under the
@@ -15862,7 +15948,7 @@
      on past the nearest and it is the dive, as on the front page.
      LENS_GLOBE = false brings back the distances of the voices. */
   var LENS_GLOBE = true;
-  var LENS_REST = 0.86, LENS_LEAST = 0.62, LENS_MAGNET = 1.22, LENS_SNAP_MS = 420;
+  var LENS_REST = 0.86, LENS_LEAST = 0.4, LENS_MAGNET = 1.22, LENS_SNAP_MS = 420;
   var lensOut = false, lensTapT = 0, lensTapAt = 0, lensWheelT = 0;
   function springEase(q) { var c = 0.9, u = q - 1; return 1 + (c + 1) * u * u * u + c * u * u; }
   function lensRestR(b) { return LENS_REST * (b || workBands()).lensAt.r; }
@@ -15994,6 +16080,171 @@
     }
     lensHomeEl.style.left = Math.max(6, Math.min(W - 19, x)).toFixed(0) + "px";
     lensHomeEl.style.top = Math.max(6, Math.min(H - 19, y)).toFixed(0) + "px";
+  }
+
+  /* ---- bigger and smaller, with one finger ----------------------------------
+
+     The artist, 7 Oct 2026: "Make sure that no matter what, if there is a
+     globe in view that the viewer is able to make it bigger and smaller
+     however they please". Two fingers are not everyone's (WCAG 2.5.1, a
+     single pointer for every gesture; 2.5.8, targets of 24 px or more): a
+     quiet pair of round buttons, "+" and "−" ("Bigger", "Smaller"), at the
+     globe's edge wherever a globe can be scaled — the small globe beside
+     its rim, clear of the dial, the column, the picture and its home mark
+     (44 px on a touch screen where there is room, else 32, never under 24),
+     in the swapped globe's corner, and on the front page at the foot,
+     clear of the pills. A step is √φ, eased; past the nearest, "+" goes on
+     down as the "+" key does; "−" stops at the least. */
+  var ZOOM_STEP = Math.sqrt(PHI);
+  var coarse = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  function zoomPair(cls, onBig, onSmall) {
+    var box = el("div", "globe-zoom " + cls);
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", "The globe's size");
+    var big = el("button", "globe-zoom-b", "+"), small = el("button", "globe-zoom-b", "−");
+    big.type = small.type = "button";
+    big.setAttribute("aria-label", "Bigger");
+    small.setAttribute("aria-label", "Smaller");
+    big.title = "Bigger";
+    small.title = "Smaller";
+    [[big, onBig], [small, onSmall]].forEach(function (pr) {
+      pr[0].addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      pr[0].addEventListener("click", function (event) { event.stopPropagation(); pr[1](); });
+    });
+    box.appendChild(big);
+    box.appendChild(small);
+    box.hidden = true;
+    return { box: box, big: big, small: small, key: "" };
+  }
+  var zoomTween = 0;
+  // The small globe a step bigger or smaller about its middle, eased; false at its end.
+  function lensStepBy(f) {
+    window.cancelAnimationFrame(zoomTween);
+    var k0 = lensK(), k1 = Math.max(LENS_LEAST, Math.min(lensMostK(), k0 * f));
+    if (Math.abs(k1 - k0) < 1e-4) { return false; }
+    if (still) { lensZoomBy(k1 / k0); return true; }
+    var t0 = performance.now(), done = 0, all = Math.log(k1 / k0);
+    (function step() {
+      if (!readingOn()) { return; }
+      var q = Math.min(1, (performance.now() - t0) / 260), want = all * q * (2 - q);
+      lensZoomBy(Math.exp(want - done));
+      done = want;
+      if (q < 1) { zoomTween = window.requestAnimationFrame(step); }
+    })();
+    return true;
+  }
+  // The front globe a step bigger or smaller about its middle; past the nearest, down.
+  function frontStepBy(f) {
+    if (place || flying || groundOn || deckMode || dive.on) { return; }
+    window.cancelAnimationFrame(zoomTween);
+    settleSwing();
+    var s0 = seat.size, s1 = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST, s0 * f));
+    if (f > 1 && s0 >= SIZE_MOST - 1e-6) { flyOver(); return; }
+    if (Math.abs(s1 - s0) < 1e-4) { return; }
+    var t0 = performance.now();
+    (function step() {
+      if (place || flying) { return; }
+      var q = still ? 1 : Math.min(1, (performance.now() - t0) / 300), e = q * (2 - q);
+      handle(seatAbout(cx, cy, s0 * Math.pow(s1 / s0, e)));
+      if (q < 1) { zoomTween = window.requestAnimationFrame(step); }
+    })();
+  }
+  var lensZoom = null, frontZoom = null;
+  if (artEl) {
+    lensZoom = zoomPair("lens-zoom", function () { if (!lensStepBy(ZOOM_STEP)) { goDeeper(false); } },
+                        function () { lensStepBy(1 / ZOOM_STEP); });
+    artEl.appendChild(lensZoom.box);
+  }
+  if (land) {
+    frontZoom = zoomPair("front-zoom", function () { frontStepBy(ZOOM_STEP); }, function () { frontStepBy(1 / ZOOM_STEP); });
+    land.appendChild(frontZoom.box);
+  }
+  function boxOf(e) {
+    if (!e || e.hidden || !e.isConnected) { return null; }
+    var r = e.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden" ? r : null;
+  }
+  function meets(a, r, pad) {
+    return !!r && a.x < r.right + pad && a.x + a.w > r.left - pad && a.y < r.bottom + pad && a.y + a.h > r.top - pad;
+  }
+  function putPair(z, on, x0, y0, x1, y1, s) {
+    var key = on ? [x0, y0, x1, y1, s].map(Math.round).join(",") : "";
+    if (key === z.key) { return; }
+    z.key = key;
+    z.box.hidden = !on;
+    if (!on) { return; }
+    z.box.style.setProperty("--zoom-size", s + "px");
+    [[z.big, x0, y0], [z.small, x1, y1]].forEach(function (b) {
+      b[0].style.left = Math.round(b[1]) + "px";
+      b[0].style.top = Math.round(b[2]) + "px";
+    });
+  }
+  function placeLensZoom() {
+    if (!lensZoom) { return; }
+    var on = !!(LENS_GLOBE && LENS && place && art && readingOn() && !flying && !dive.on && !groundOn &&
+                !artEl.dataset.full && artEl.dataset.look !== "plate");
+    if (on) {
+      var k = lensK();
+      lensZoom.small.disabled = k <= LENS_LEAST + 1e-3;
+    }
+    if (!on) { putPair(lensZoom, false); return; }
+    var b = workBands();
+    if (lensSwapped) {
+      var h = b.hole, ss = coarse ? 44 : 32;
+      putPair(lensZoom, true, h.x + h.w - ss - 8, h.y + h.h - 2 * ss - 14, h.x + h.w - ss - 8, h.y + h.h - ss - 8, ss);
+      return;
+    }
+    // Round the rim of the small globe at rest, where nothing else stands.
+    var L = b.lens, rr = LENS_REST * L.r;
+    var avoid = [boxOf(artTime), boxOf(artCol), boxOf(banner), boxOf(lensHomeEl), boxOf(filterEl)];
+    if (artPlate && !artPlate.hidden && !lensOut) {
+      avoid.push({ left: artPlate.offsetLeft, top: artPlate.offsetTop,
+                   right: artPlate.offsetLeft + artPlate.offsetWidth, bottom: artPlate.offsetTop + artPlate.offsetHeight });
+    }
+    var sizes = coarse ? [44, 36, 32, 28, 24] : [32, 28, 24];
+    var angles = [35, 145, -35, -145, 0, 180, 90, -90, 60, 120, -60, -120];
+    for (var i = 0; i < sizes.length; i += 1) {
+      var s = sizes[i], rho = rr + s / 2 + 3, half = Math.asin(Math.min(1, (s + 6) / (2 * rho)));
+      for (var j = 0; j < angles.length; j += 1) {
+        var th = angles[j] * Math.PI / 180, ok = true, pts = [];
+        [th - half, th + half].forEach(function (a) {
+          var bx = { x: L.x + rho * Math.cos(a) - s / 2, y: L.y + rho * Math.sin(a) - s / 2, w: s, h: s };
+          if (bx.x < 6 || bx.y < 6 || bx.x + s > W - 6 || bx.y + s > H - 6) { ok = false; }
+          avoid.forEach(function (r) { if (meets(bx, r, 3)) { ok = false; } });
+          pts.push(bx);
+        });
+        if (ok) {
+          // "+" the one nearer the top.
+          if (pts[0].y > pts[1].y) { pts.reverse(); }
+          putPair(lensZoom, true, pts[0].x, pts[0].y, pts[1].x, pts[1].y, s);
+          return;
+        }
+      }
+    }
+    // No room round it: in the lens's own square, at its lower right.
+    putPair(lensZoom, true, L.x + L.r - 24, L.y + L.r - 52, L.x + L.r - 24, L.y + L.r - 24, 24);
+  }
+  function placeFrontZoom() {
+    if (!frontZoom) { return; }
+    var on = !!(!place && !flying && !groundOn && !deckMode && !dive.on && land.dataset.at === "globe" && document.body.contains(land));
+    if (!on) { putPair(frontZoom, false); return; }
+    var s = coarse ? 44 : 32, x = W - 12 - s, y = H - 21 - 2 * s - 8;
+    frontZoom.small.disabled = seat.size <= SIZE_FAR * INV + 1e-3;
+    var avoid = [boxOf(filterEl), boxOf(artFind), boxOf(document.querySelector(".explore-dock"))];
+    for (var n = 0; n < 24; n += 1) {
+      var a = { x: x, y: y, w: s, h: 2 * s + 8 };
+      if (!avoid.some(function (r) { return meets(a, r, 6); })) { break; }
+      y -= 13;
+    }
+    putPair(frontZoom, true, x, y, x, y + s + 8, s);
+  }
+  var zoomsAt = 0;
+  function placeZooms() {
+    var now = performance.now();
+    if (now - zoomsAt < 120) { return; }
+    zoomsAt = now;
+    placeLensZoom();
+    placeFrontZoom();
   }
 
   /* ---- the grown globe, a globe you can use --------------------------------
