@@ -16147,6 +16147,10 @@
     Array.prototype.forEach.call(artEl.querySelectorAll(".voice-cap, .voice-chip, .dial-home"), function (e) {
       if ((e.textContent || "").trim() || e.classList.contains("dial-home")) { rectOf(e, 4); }
     });
+    // A path played on the dial (transport.js): the × out past its rim, and the path's own dial
+    // where the view has none showing.
+    Array.prototype.forEach.call(document.querySelectorAll(".building-time.dial > .dial-end"), function (e) { rectOf(e, 4); });
+    rectOf(document.querySelector(".building-time.path-time"), 2);
     // The pills: at the foot, in the middle; else to a side; else up, clear of what lies there.
     if (filterEl && filterEl.dataset.grown) {
       var fw = filterEl.offsetWidth, fh = filterEl.offsetHeight;
@@ -16171,6 +16175,9 @@
       // What is under the pills, across the whole foot, is no place for a name.
       if (fy + fh >= box.y1 - 2) { box.y1 = Math.min(box.y1, fy - 6); }
     }
+    // A played path's readout beside the dial (transport.js) lies over the globe: no name or mark
+    // under it. Not before the pills: the readout keeps off them, so neither chases the other.
+    rectOf(document.querySelector(".path-read"), 4);
     grownAt = { box: box, avoid: avoid };
     var key = [box.x0, box.y0, box.x1, box.y1].map(Math.round).join(",") + "|" +
       avoid.map(function (a) { return [a.x0, a.y0, a.x1, a.y1].map(Math.round).join(","); }).join(";");
@@ -16283,7 +16290,10 @@
               moving: !!(a.moving || a.auto || a.playing), playing: !!(a.auto || a.playing), byHand: !!a.byHand, swapped: lensSwapped,
               at: b.lensAt, hole: b.hole, cap: b.cap, plate: b.plate, phone: b.phone, look: artEl.dataset.look || "",
               picture: a.picture ? a.picture.id : (a.kind === "work" ? a.data.id : null),
-              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut };
+              ground: lensGround.on, travelling: !!a.lens, full: !!artEl.dataset.full, k: lensK(), out: lensOut,
+              // The grown globe's own marks (a work's stops, a life's places), as boxes: kept clear by the
+              // path's readout (transport.js) as the lens is.
+              own: grown ? ownBoxes : null };
     if (a.kind === "work") {
       var evs = a.data.events;
       o.work = { pin: a.pin, ring: a.ring, when: a.when, flipped: !!a.flipped, title: a.data.title || "",
