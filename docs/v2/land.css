@@ -3728,3 +3728,5 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .art[data-full] .lens-zoom, .art[data-look="plate"] .lens-zoom { display: none; }
 /* Nothing laid over the small globe takes two fingers for the browser's own zoom. */
 .character, .lens-home, .voice-release, .voice-rim, .voice-stand { touch-action: none; }
+
+.city-home { position: fixed; touch-action: none; }

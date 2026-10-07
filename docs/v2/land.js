@@ -5620,7 +5620,7 @@
     placeZooms();
     if (!place || flying || grown) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
-    if (art && !dive.on) { stepArt(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
+    if (art && !dive.on) { stepArt(now); stepCityMap(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
 
     stepCompany(now);
     placeSpawns();
@@ -8728,7 +8728,7 @@
     // gesture to it, or the world spins while someone is trying to zoom.
     fingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     // Two fingers that are the small globe's pinch (fingerDown): nothing else begins.
-    if (lensPinch) { return; }
+    if (lensPinch || cityPinch) { return; }
     if ((turning || panning) && Object.keys(fingers).length >= 2) {
       turning = null;
       panning = null;
@@ -8809,7 +8809,7 @@
     // world: there it moves under the finger, one to one (artist, 1 Oct
     // 2026: "you should always be free to move around the globe").
     if (place) {
-      if (!(ARTWORKS && art && (art.kind === "work" || readingOn())) || flying) { return; }
+      if (!(ARTWORKS && art && (art.kind === "work" || readingOn() || cityMap())) || flying) { return; }
       // In the reading layout the world is only in the lens: a drag begun there.
       if (readingOn() && LENS && turning.lens === undefined) { turning.lens = inLens(turning.x, turning.y); }
       if (turning.lens === false) { return; }
@@ -8821,6 +8821,17 @@
       art.lens = null;
       if (window.Voice && Voice.handled) { Voice.handled(); }
       var rr = Math.max(R, 1);
+      if (cityMap()) {
+        // The city is a map (artist, 7 Oct 2026): moved under the finger, and let go with its speed.
+        cityFling = null;
+        var tnow = performance.now(), tdt = Math.max(1, tnow - (turning.lt || turning.at));
+        var lx = turning.lx === undefined ? turning.x : turning.lx, ly = turning.ly === undefined ? turning.y : turning.ly;
+        turning.vx = 0.6 * (turning.vx || 0) + 0.4 * (event.clientX - lx) / tdt;
+        turning.vy = 0.6 * (turning.vy || 0) + 0.4 * (event.clientY - ly) / tdt;
+        turning.lx = event.clientX; turning.ly = event.clientY; turning.lt = tnow;
+        cityPan(event.clientX - lx, event.clientY - ly);
+        return;
+      }
       wanted = spin = turning.spin - wx / rr / Math.max(0.25, Math.cos(focus.lat));
       lean(turning.lean + wy / rr);
       focus.lat = tilt;
@@ -8860,6 +8871,11 @@
       var was = turning;
       turning = null;
       delete stage.dataset.turning;
+      if (cityMap() && was.moved >= 6) {
+        cityLetGo(was);
+        squashing = null;
+        return;
+      }
 
       // On the Museums layer a press on a city, named or not, goes down to
       // it; in a city, a press on a gallery's tile says what it is; in an
@@ -13610,9 +13626,11 @@
         if (!(window.Voice && Voice.nudge && Voice.nudge(1)) && !lensGroundWhole()) { goDeeper(false); }
         return;
       }
+      if (cityMap()) { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } return; }
       if (place) { goDeeper(false); } else { flyOver(); }
     }
     else if ((event.key === "-" || event.key === "_") && place) {
+      if (cityMap() && cityStepBy(1 / ZOOM_STEP)) { return; }
       // A small globe brought nearer is made smaller first; at rest, up a level.
       if (lensAway() && lensK() > 1.001) { lensZoomBy(INV); if (lensK() < LENS_MAGNET) { lensSize(1); } return; }
       comeUp();
@@ -13718,6 +13736,15 @@
      first (capture) and not passive, so the browser's own zoom does not take
      a trackpad's pinch as well. */
   function zoneWheel(event) {
+    if (cityMap() && !dive.on) {
+      var ct = event.target;
+      if (ct && ct.closest && ct.closest(".art-col, .finder, .ground-dirt, .dial-face, .building-works")) { return; }
+      if (!cityZone(event.clientX, event.clientY)) { return; }
+      event.preventDefault();
+      event.stopPropagation();
+      cityWheel(event);
+      return;
+    }
     if (!place || flying || groundOn || dive.on || !readingOn() || !LENS || !LENS_GLOBE) { return; }
     var t = event.target;
     if (t && t.closest && t.closest(".art-col, .walk-look, .finder, .ground-dirt")) { return; }
@@ -13786,11 +13813,23 @@
   }
   var lensPinch = null;                 // two fingers that came down on the lens: { d }
   function fingerUp(event) {
+    if (markDrag && markDrag.id === event.pointerId) {
+      if (markDrag.moved > 8) {
+        cityLetGo(markDrag);
+        // The press that moved the map is not also a press on the mark.
+        var swallow = function (e) { e.stopPropagation(); e.preventDefault(); };
+        document.addEventListener("click", swallow, true);
+        window.setTimeout(function () { document.removeEventListener("click", swallow, true); }, 400);
+      }
+      markDrag = null;
+    }
     delete downFingers[event.pointerId];
     downFrom = downSpread();
     if (Object.keys(downFingers).length < 2) {
       if (lensPinch && lensPinch.zoomed && !dive.on) { lensRelease(); }
       lensPinch = null;
+      if (cityPinch && !dive.on) { cityRelease(); }
+      cityPinch = null;
     }
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
   }
@@ -13811,11 +13850,38 @@
         if (LENS_GLOBE) { lensPinchTakes(event); }
       }
     }
+    // A press on a mark in a city that then moves is the map's too (the mark keeps its tap).
+    markDrag = ids.length === 1 && cityMap() && event.target && event.target.closest && event.target.closest(".city") ?
+      { id: event.pointerId, x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, lt: performance.now(), moved: 0 } : null;
+    cityPinch = null;
+    if (ids.length === 2 && cityMap()) {
+      var cp = downFingers[ids[0]], cq = downFingers[ids[1]];
+      var cmx = (cp.x + cq.x) / 2, cmy = (cp.y + cq.y) / 2;
+      if (cityZone(cmx, cmy)) {
+        cityFling = null;
+        cityPinch = { d: Math.max(1, downFrom), x: cmx, y: cmy, over: 1 };
+        lensPinchTakes(event);
+      }
+    }
   }
   function fingerMove(event) {
     if (!downFingers[event.pointerId]) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
+    if (cityPinch && d > 0) { cityPinchMove(d); return; }
+    var md = markDrag;
+    if (md && md.id === event.pointerId && cityMap()) {
+      md.moved = Math.max(md.moved, Math.abs(event.clientX - md.x), Math.abs(event.clientY - md.y));
+      if (md.moved > 8) {
+        cityFling = null;
+        var mnow = performance.now(), mdt = Math.max(1, mnow - md.lt);
+        md.vx = 0.6 * (md.vx || 0) + 0.4 * (event.clientX - md.lx) / mdt;
+        md.vy = 0.6 * (md.vy || 0) + 0.4 * (event.clientY - md.ly) / mdt;
+        cityPan(event.clientX - md.lx, event.clientY - md.ly);
+        md.lx = event.clientX; md.ly = event.clientY; md.lt = mnow;
+      }
+      return;
+    }
     // Two fingers on the lens move between its voices without leaving the
     // path: spread nearer (more personal), pinch further off; the voice is
     // held for the rest of the path (voice.js). Past the nearest, the
@@ -14755,6 +14821,13 @@
     // the lens is; the lens flown to a voice's distance; the picture of the
     // moment; the tense under the dial's years; the lens and picture swapped.
     reading: function () { return readingState(); },
+    // The city as a map (for the tests): its zoom, its framing, its ends, where it looks.
+    map: function () {
+      if (!cityMap()) { return null; }
+      var lim = cityLimits();
+      return { zoom: zoom, home: art.mapHome && art.mapHome.zoom, lo: lim.lo, hi: lim.hi, away: cityAway(),
+               lat: focus.lat / RAD, lon: wrap(spin) / RAD, R: R, fling: !!cityFling };
+    },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
                                   tiles: Object.keys(tilesShown).length, own: ownBoxes.length,
@@ -16238,6 +16311,256 @@
     }
     putPair(frontZoom, true, x, y, x, y + s + 8, s);
   }
+  /* ---- the city, a map you move ---------------------------------------------
+
+     The artist, 7 Oct 2026, of Seattle on the Museums layer: "I want to be
+     able to swipe around the globe and zoom in and out when I am viewing a
+     city". A city's view is a map: one finger moves it under the finger, one
+     to one, and lets it go with its speed; two fingers, a wheel or a
+     trackpad's pinch, "+" and "−", and the round buttons make it bigger or
+     smaller about the fingers (or the pointer), from a regional height
+     (CITY_WIDE_KM across the band) in to the nearest its ground is drawn
+     at. Its marks, names and galleries follow what is in view. The levels
+     are the ends of that zoom: pinched on out past the widest it goes up to
+     the world (comeUp, the view kept), spread on in past the nearest it goes
+     down into the ground (the dive where the world is far enough off, else
+     goDeeper) — no gesture lost, only further to go. A quick tap still
+     presses; held still, the wave. Moved far from its framing, a snap-home
+     tile brings it back. */
+  var CITY_WIDE_KM = 300;
+  var cityPinch = null, cityFling = null, cityHomeAnim = null, markDrag = null;
+  // Let go after a move: on with its speed if it was still moving, else laid where it is.
+  function cityLetGo(o) {
+    var fresh = performance.now() - (o.lt || 0) < 90;
+    var sp = Math.sqrt((o.vx || 0) * (o.vx || 0) + (o.vy || 0) * (o.vy || 0));
+    if (fresh && sp > 0.05 && !still) { cityFling = { vx: o.vx, vy: o.vy, at: performance.now() }; }
+    else { cityRelease(); }
+  }
+  function cityMap() {
+    return !!(place && art && art.kind === "town" && art.live && !flying && !groundOn && !walkOn && !readingOn() &&
+              !deckMode && !(place.museum || place.stage));
+  }
+  // Two fingers or a wheel are the map's anywhere but the column, the banner and the pills.
+  function cityZone(x, y) {
+    function inRect(e) {
+      if (!e || e.hidden) { return false; }
+      var r = e.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+    if (banner && !banner.hidden && inRect(banner)) { return false; }
+    if (artCol && getComputedStyle(artCol).visibility !== "hidden" && inRect(artCol)) { return false; }
+    return true;
+  }
+  function cityHome() {
+    var a = art;
+    if (!a.mapHome) { a.mapHome = { lat: focus.lat, lon: wanted, zoom: place.zoomTo || zoom }; }
+    return a.mapHome;
+  }
+  function cityLimits() {
+    var h = cityHome(), b = artBand("town");
+    var wide = 0.4 * Math.min(b.w, b.h) / (CITY_WIDE_KM / 2 / 6371) / Math.max(1, baseR);
+    // In to φ² nearer than the nearest a city is flown to: the body of works is drawn at any height.
+    return { lo: Math.min(h.zoom, wide), hi: Math.max(h.zoom, TOWN_R_MAX / Math.max(1, baseR)) * PHI * PHI };
+  }
+  function cityMoved() {
+    var a = art;
+    a.glide = null;
+    a.dirty = true;
+    tilesDirty = true;
+    marksDirty = true;
+    townDirty = true;
+    handledAt = lastTouch = performance.now();
+  }
+  // Moved by (dx, dy) screen pixels, as the finger moves.
+  function cityPan(dx, dy) {
+    cityHome();
+    var rr = Math.max(R, 1);
+    wanted = spin = spin - dx / rr / Math.max(0.25, Math.cos(focus.lat));
+    lean(tilt + dy / rr);
+    focus.lat = tilt;
+    reframe();
+    cityMoved();
+  }
+  // To zoom z1, holding the point (x, y) of the screen over the same ground.
+  function cityZoomTo(z1, x, y) {
+    cityHome();
+    var R0 = Math.max(1, R);
+    zoom = z1;
+    place.zoomTo = zoom;
+    var R1 = Math.max(1, baseR * zoom);
+    if (x !== undefined) {
+      var dx = x - cx, dy = y - cy;
+      var wx = dx * (1 - R1 / R0), wy = dy * (1 - R1 / R0);
+      wanted = spin = spin - wx / R1 / Math.max(0.25, Math.cos(focus.lat));
+      lean(tilt + wy / R1);
+      focus.lat = tilt;
+    }
+    reframe();
+    drawn.r = 0;
+    cityMoved();
+  }
+  function cityRelease() {
+    if (!place || !art || art.kind !== "town") { return; }
+    if (!bodyOn()) { weave(R > 2 * Math.max(W, H) ? { lat: focus.lat, lon: spin } : null); }
+    townDirty = true;
+  }
+  function cityPinchMove(d) {
+    var cp = cityPinch, ids = Object.keys(downFingers);
+    var fa = downFingers[ids[0]], fb = downFingers[ids[1]];
+    var mx = (fa.x + fb.x) / 2, my = (fa.y + fb.y) / 2;
+    if (cp.dive) { diveTo(Math.log(d / cp.dive), mx, my); return; }
+    if (!cityMap()) { cityPinch = null; return; }
+    cityPan(mx - cp.x, my - cp.y);
+    cp.x = mx; cp.y = my;
+    var g = d / cp.d;
+    cp.d = d;
+    // Back out of a push past an end before the zoom moves again.
+    if ((cp.over > 1 && g < 1) || (cp.over < 1 && g > 1)) {
+      var o = cp.over * g;
+      if ((cp.over > 1 && o >= 1) || (cp.over < 1 && o <= 1)) { cp.over = o; g = 1; } else { g = o; cp.over = 1; }
+    }
+    if (g !== 1) {
+      var lim = cityLimits(), want = zoom * g, z1 = Math.max(lim.lo, Math.min(lim.hi, want));
+      if (Math.abs(z1 - zoom) > 1e-9) { cityZoomTo(z1, mx, my); }
+      cp.over *= want / z1;
+    }
+    if (cp.over < INV) {
+      // Pinched on out past the widest: up to the world, the view kept.
+      cityPinch = null;
+      downFrom = 0;
+      comeUp();
+      return;
+    }
+    if (cp.over > 1.04 && diveCan()) { cp.dive = d / (cp.over / 1.04); diveTo(Math.log(d / cp.dive), mx, my); return; }
+    if (cp.over > 1.5) {
+      // Spread on in past the nearest: down into the ground there.
+      cityPinch = null;
+      downFrom = 0;
+      goDeeper(false, mx, my);
+    }
+  }
+  var cityWheelPush = 0, cityWheelAt = 0;
+  function cityWheel(event) {
+    var wstep = event.ctrlKey ? 0.012 : 0.0016, wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
+    var lim = cityLimits(), want = zoom * Math.exp(-wd * wstep), z1 = Math.max(lim.lo, Math.min(lim.hi, want));
+    var now = performance.now();
+    if (now - cityWheelAt > 600) { cityWheelPush = 0; }
+    cityWheelAt = now;
+    cityFling = null;
+    if (Math.abs(z1 - zoom) > 1e-9) { cityZoomTo(z1, event.clientX, event.clientY); cityWheelPush = 0; }
+    else if (wd > 0) {
+      cityWheelPush += wd * (event.ctrlKey ? 8 : 1);
+      if (cityWheelPush > 377) { cityWheelPush = 0; comeUp(); return; }
+    } else if (wd < 0) {
+      if (diveCan()) {
+        diveTo(dive.log - wd * wstep, event.clientX, event.clientY);
+        window.clearTimeout(dive.timer);
+        if (dive.raw >= 1) { diveEnd(); } else { dive.timer = window.setTimeout(diveEnd, 520); }
+        return;
+      }
+      cityWheelPush += -wd * (event.ctrlKey ? 8 : 1);
+      if (cityWheelPush > 233) { cityWheelPush = 0; goDeeper(false, event.clientX, event.clientY); return; }
+    }
+    window.clearTimeout(lensWheelT);
+    lensWheelT = window.setTimeout(cityRelease, 300);
+  }
+  // A step bigger or smaller about the band's middle, eased; false at its end.
+  function cityStepBy(f) {
+    if (!cityMap()) { return false; }
+    var lim = cityLimits(), z0 = zoom, z1 = Math.max(lim.lo, Math.min(lim.hi, z0 * f));
+    if (Math.abs(z1 - z0) / z0 < 1e-4) { return false; }
+    window.cancelAnimationFrame(zoomTween);
+    cityFling = null;
+    var b = artBand("town"), x = b.x + b.w / 2, y = b.y + b.h / 2, t0 = performance.now();
+    (function step() {
+      if (!cityMap()) { return; }
+      var q = still ? 1 : Math.min(1, (performance.now() - t0) / 280), e = q * (2 - q);
+      cityZoomTo(z0 * Math.pow(z1 / z0, e), x, y);
+      if (q < 1) { zoomTween = window.requestAnimationFrame(step); } else { cityRelease(); }
+    })();
+    return true;
+  }
+  function cityAway() {
+    var a = art, h = a && a.mapHome;
+    if (!h || !cityMap()) { return false; }
+    if (Math.abs(Math.log(zoom / h.zoom)) > Math.log(1.3)) { return true; }
+    var v0 = toVec(h.lat, h.lon), v1 = toVec(focus.lat, spin);
+    var ang = Math.acos(Math.max(-1, Math.min(1, dot3(v0, v1)))), b = artBand("town");
+    return ang * R > 0.3 * Math.min(b.w, b.h);
+  }
+  function cityGoHome() {
+    var a = art, h = a && a.mapHome;
+    if (!h || !cityMap()) { return; }
+    cityFling = null;
+    cityHomeAnim = { lat0: focus.lat, lon0: spin, z0: zoom, lat1: h.lat, dLon: shortest(spin, h.lon), z1: h.zoom,
+                     at: performance.now(), dur: still ? 1 : LENS_SNAP_MS * 1.4 };
+    var b = artBand("town");
+    if (!still) { pulse(b.x + b.w / 2, b.y + b.h / 2, [LIGHT], 0.35, 144); }
+  }
+  function stepCityMap(now) {
+    if (!cityMap()) { cityFling = null; cityHomeAnim = null; return; }
+    cityHome();
+    var hm = cityHomeAnim;
+    if (hm) {
+      var q = Math.min(1, (now - hm.at) / hm.dur), e = springEase(q);
+      zoom = place.zoomTo = hm.z0 * Math.pow(hm.z1 / hm.z0, Math.min(1.04, e));
+      focus.lat = hm.lat0 + (hm.lat1 - hm.lat0) * e;
+      lean(focus.lat);
+      spin = wanted = hm.lon0 + hm.dLon * e;
+      reframe();
+      drawn.r = 0;
+      cityMoved();
+      if (q >= 1) { cityHomeAnim = null; zoom = place.zoomTo = hm.z1; reframe(); cityRelease(); }
+    }
+    var fl = cityFling;
+    if (fl && !turning && !cityPinch) {
+      var dt = Math.min(50, now - (fl.last || fl.at));
+      fl.last = now;
+      var k = Math.exp(-dt / 325);
+      cityPan(fl.vx * dt, fl.vy * dt);
+      fl.vx *= k; fl.vy *= k;
+      if (Math.abs(fl.vx) + Math.abs(fl.vy) < 0.02) { cityFling = null; cityRelease(); }
+    }
+  }
+  var cityHomeEl = null, cityZoom = null;
+  if (artEl) {
+    cityHomeEl = el("button", "snap-home city-home");
+    cityHomeEl.type = "button";
+    cityHomeEl.hidden = true;
+    cityHomeEl.setAttribute("aria-label", "The city, back to its own framing");
+    cityHomeEl.title = "Back to the city";
+    cityHomeEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    cityHomeEl.addEventListener("click", function (event) { event.stopPropagation(); cityGoHome(); });
+    artEl.appendChild(cityHomeEl);
+    cityZoom = zoomPair("city-zoom", function () { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } },
+                       function () { cityStepBy(1 / ZOOM_STEP); });
+    artEl.appendChild(cityZoom.box);
+  }
+  function placeCityZoom() {
+    if (!cityZoom) { return; }
+    var on = cityMap() && !dive.on;
+    if (!on) { putPair(cityZoom, false); cityHomeEl.hidden = true; return; }
+    var lim = cityLimits();
+    cityZoom.small.disabled = zoom <= lim.lo * 1.0001;
+    var b = artBand("town"), s = coarse ? 44 : 32;
+    var avoid = [boxOf(artTime), boxOf(artCol), boxOf(banner), boxOf(filterEl), boxOf(document.querySelector(".explore-dock"))];
+    var xs = [b.x + 12, b.x + b.w - s - 12], spot = null;      // the left edge, clear of the dial
+    for (var i = 0; i < xs.length && !spot; i += 1) {
+      for (var y = b.y + b.h - 2 * s - 20; y > b.y + 8; y -= 13) {
+        var bx = { x: xs[i], y: y, w: s, h: 2 * s + 8 };
+        if (!avoid.some(function (r) { return meets(bx, r, 6); })) { spot = bx; break; }
+      }
+    }
+    if (!spot) { spot = { x: xs[0], y: b.y + 12 }; }
+    putPair(cityZoom, true, spot.x, spot.y, spot.x, spot.y + s + 8, s);
+    var away = cityAway();
+    cityHomeEl.hidden = !away;
+    if (away) {
+      cityHomeEl.style.left = Math.round(spot.x + s / 2 - 6) + "px";
+      cityHomeEl.style.top = Math.round(spot.y - 25) + "px";
+    }
+  }
+
   var zoomsAt = 0;
   function placeZooms() {
     var now = performance.now();
@@ -16245,6 +16568,7 @@
     zoomsAt = now;
     placeLensZoom();
     placeFrontZoom();
+    placeCityZoom();
   }
 
   /* ---- the grown globe, a globe you can use --------------------------------
