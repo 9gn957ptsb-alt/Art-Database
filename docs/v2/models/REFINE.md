@@ -149,3 +149,7 @@ default, and a private home never does.
   isometric.
 - Efficient and quiet: nothing redraws at rest; no model grows without
   showing more of its building.
+
+## The city guides
+
+Each run, after the intake: `python3 scripts/fetch_city_guides.py` (about 10 minutes, paced) and commit `docs/v2/guides.json` and `docs/v2/guides/` — what is on in each city, from Artsy's public show listings (see `docs/v2/GUIDE.md`). Nothing else keeps the guides fresh; a guide read over 21 days ago says so on its pill.
