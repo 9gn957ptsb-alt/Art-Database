@@ -1,0 +1,1636 @@
+{
+ "note": "Bloomberg Connects: which museums and venues of the Artist Website have a guide of their own, by hand from the searches, read by scripts/fetch_bloomberg_guides.py, which writes docs/v2/bloomberg.json. A url is only ever an address seen verbatim (seen: where; as_seen: the link it was the root of); never a guide id made up or guessed. status: guide (evidenced; url null until its address is seen, and then nothing shows), unconfirmed (one weak source: kept off the page until an own page confirms it), none (searched, nothing found). pages: the institution's own pages the fetch script may read for the address (their robots.txt kept); Bloomberg's own sites are never read (guides.bloombergconnects.org forbids all robots; www.bloombergconnects.org is behind bot protection). holds: what the guide holds, in the institution's own description, only where it was seen.",
+ "read": "2026-10-07",
+ "searched": "7 Oct 2026: a web search for “\"<name>\" \"Bloomberg Connects\"” for each of the 123 museums and the Folger (again with other words where the first was unclear), and, where a search was cheap, for about fifty of the cities' other museums and art centres (16 searches, several names each); GitHub code search for bloombergconnects.org links; the English Wikipedia's index of external links to bloombergconnects.org.",
+ "museums": {
+  "folger": {
+   "name": "Folger Shakespeare Library",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.folger.edu/visit/tours/digital-guide/",
+   "how": "Its own page, “Free digital guide to the Folger”, on Bloomberg Connects (an Art and Architecture audio tour; a browser version).",
+   "evidence": [
+    "https://www.folger.edu/visit/tours/digital-guide/"
+   ],
+   "pages": [
+    "https://www.folger.edu/visit/tours/digital-guide/"
+   ],
+   "holds": "an audio tour of its art and architecture, and its exhibitions"
+  },
+  "museum-albright-knox-art-gallery": {
+   "name": "Albright-Knox Art Gallery",
+   "status": "guide",
+   "url": null,
+   "seen": "https://buffaloakg.org/node/42917",
+   "how": "Its own page, “Free Digital Guide”, on Bloomberg Connects.",
+   "evidence": [
+    "https://buffaloakg.org/node/42917"
+   ],
+   "pages": [
+    "https://buffaloakg.org/node/42917"
+   ]
+  },
+  "museum-alte-nationalgalerie": {
+   "name": "Alte Nationalgalerie",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-amon-carter-museum-of-american-art": {
+   "name": "Amon Carter Museum of American Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-anderson-collection-at-stanford-university": {
+   "name": "Anderson Collection at Stanford University",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-art-gallery-of-ontario": {
+   "name": "Art Gallery of Ontario",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-art-institute-of-chicago": {
+   "name": "Art Institute of Chicago",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-asia-society-hong-kong": {
+   "name": "Asia Society Hong Kong",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-belvedere-museum": {
+   "name": "Belvedere Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-ben-uri-gallery-and-museum": {
+   "name": "Ben Uri Gallery and Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://benuri.org/bloomberg-connects/",
+   "how": "Its own page, “Ben Uri launched new digital guide”, and Art UK.",
+   "evidence": [
+    "https://benuri.org/bloomberg-connects/",
+    "https://batch.artuk.org/discover/stories/the-ben-uri-gallery-and-museum-guide-on-the-bloomberg-connects-app"
+   ],
+   "pages": [
+    "https://benuri.org/bloomberg-connects/"
+   ]
+  },
+  "museum-black-mountain-college-museum-and-arts-center": {
+   "name": "Black Mountain College Museum and Arts Center",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-blanton-museum-of-art": {
+   "name": "Blanton Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-british-museum": {
+   "name": "British Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-centre-for-fine-arts-bozar": {
+   "name": "Centre for Fine Arts (BOZAR)",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.bozar.be/en/watch-read-listen/discover-when-we-see-us-bloomberg-connects-app",
+   "how": "Its own page: the first Belgian institution with a guide on Bloomberg Connects.",
+   "evidence": [
+    "https://www.bozar.be/en/watch-read-listen/discover-when-we-see-us-bloomberg-connects-app"
+   ],
+   "pages": [
+    "https://www.bozar.be/en/watch-read-listen/discover-when-we-see-us-bloomberg-connects-app"
+   ]
+  },
+  "museum-centre-pompidou": {
+   "name": "Centre Pompidou",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Paris Musées (on the app) are the City of Paris's museums; the Pompidou is not one.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-clark-art-institute": {
+   "name": "Clark Art Institute",
+   "status": "guide",
+   "url": "https://app.bloombergconnects.org/anMv3FA9OCb",
+   "seen": "WebSearch, 7 Oct 2026: a result titled “Clark Art Institute” for “\"Clark Art Institute\" \"Bloomberg Connects\"”",
+   "how": "Its own page, “Clark app on Bloomberg Connects”; the guide's link (Bloomberg Connects' app link) was itself a search result titled “Clark Art Institute”.",
+   "evidence": [
+    "https://www.clarkart.edu/visit/bloomberg-connects"
+   ],
+   "pages": [
+    "https://www.clarkart.edu/visit/bloomberg-connects"
+   ],
+   "holds": "its collection, its grounds and its architecture"
+  },
+  "museum-cleveland-museum-of-art": {
+   "name": "Cleveland Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-colby-college-museum-of-art": {
+   "name": "Colby College Museum of Art",
+   "status": "guide",
+   "url": null,
+   "seen": "https://museum.colby.edu/visit",
+   "how": "Its visit page names its digital guide on Bloomberg Connects (“A Digital Companion for Joyful Connection”).",
+   "evidence": [
+    "https://museum.colby.edu/visit"
+   ],
+   "pages": [
+    "https://museum.colby.edu/visit"
+   ]
+  },
+  "museum-columbus-museum-of-art": {
+   "name": "Columbus Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-contemporary-arts-museum-houston": {
+   "name": "Contemporary Arts Museum Houston",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-cooper-hewitt-smithsonian-design-museum": {
+   "name": "Cooper Hewitt, Smithsonian Design Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.cooperhewitt.org/digital-guide/",
+   "how": "Its own page, “Digital Guide”, on Bloomberg Connects.",
+   "evidence": [
+    "https://www.cooperhewitt.org/digital-guide/"
+   ],
+   "pages": [
+    "https://www.cooperhewitt.org/digital-guide/"
+   ]
+  },
+  "museum-dallas-museum-of-art": {
+   "name": "Dallas Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-davis-museum": {
+   "name": "Davis Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-de-young-museum": {
+   "name": "de Young Museum",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://www.famsf.org/visit/legion-of-honor",
+   "how": "One search summary of the Fine Arts Museums' pages named audio tours on Bloomberg Connects; a second search found nothing.",
+   "evidence": [
+    "https://www.famsf.org/visit/legion-of-honor"
+   ],
+   "pages": []
+  },
+  "museum-dia-art-foundation": {
+   "name": "Dia Art Foundation",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.diaart.org/about/press/dia-art-foundation-launches-free-digital-guide-featuring-all-eleven-of-the-institutions-sites-and-locations",
+   "how": "Its own press release: a free digital guide to all eleven of its sites (February 2023).",
+   "evidence": [
+    "https://www.diaart.org/about/press/dia-art-foundation-launches-free-digital-guide-featuring-all-eleven-of-the-institutions-sites-and-locations",
+    "https://diaart.org/about/bloomberg"
+   ],
+   "pages": [
+    "https://www.diaart.org/about/press/dia-art-foundation-launches-free-digital-guide-featuring-all-eleven-of-the-institutions-sites-and-locations",
+    "https://diaart.org/about/bloomberg"
+   ],
+   "holds": "photographs, audio and video, among them artist interviews"
+  },
+  "museum-el-museo-del-barrio": {
+   "name": "El Museo del Barrio",
+   "status": "guide",
+   "url": null,
+   "seen": "https://elmuseo.org/visit/bloomberg-connects/",
+   "how": "Its own page and press release: the first fully bilingual guide on Bloomberg Connects (August 2021).",
+   "evidence": [
+    "https://elmuseo.org/visit/bloomberg-connects/",
+    "https://www.elmuseo.org/wp-content/uploads/2023/02/EMDB-BLOOMBERG-GUIDE-ANN.-Press-Release-.pdf"
+   ],
+   "pages": [
+    "https://elmuseo.org/visit/bloomberg-connects/"
+   ]
+  },
+  "museum-faurschou-foundation": {
+   "name": "Faurschou Foundation",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-fondation-louis-vuitton": {
+   "name": "Fondation Louis Vuitton",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-frans-halsmuseum": {
+   "name": "Frans Halsmuseum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-frye-art-museum": {
+   "name": "Frye Art Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.cascadepbs.org/culture/2024/12/seattle-institution-debuts-global-arts-and-culture-app/",
+   "how": "The first Washington-state organization on Bloomberg Connects (Cascade PBS, Dec 2024).",
+   "evidence": [
+    "https://www.cascadepbs.org/culture/2024/12/seattle-institution-debuts-global-arts-and-culture-app/"
+   ],
+   "pages": []
+  },
+  "museum-g2-kunsthalle": {
+   "name": "G2 Kunsthalle",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-galleria-d-arte-moderna-di-bologna": {
+   "name": "Galleria d'arte moderna di Bologna",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-galleria-dell-accademia": {
+   "name": "Galleria dell'Accademia",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-galleria-nazionale-d-arte-moderna-rome": {
+   "name": "Galleria Nazionale d'Arte Moderna Rome",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-gemaldegalerie-alte-meister": {
+   "name": "Gemäldegalerie Alte Meister",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-grey-art-gallery": {
+   "name": "Grey Art Gallery",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-guggenheim-museum": {
+   "name": "Guggenheim Museum",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://newarkmuseumart.org/wp-content/uploads/2021/12/FINAL-Newark-Bloomberg-Press-Release-12.2.21.pdf",
+   "how": "Only named among the network in the Newark Museum of Art's press release (December 2021); no page of its own seen.",
+   "evidence": [
+    "https://newarkmuseumart.org/wp-content/uploads/2021/12/FINAL-Newark-Bloomberg-Press-Release-12.2.21.pdf"
+   ],
+   "pages": []
+  },
+  "museum-guggenheim-museum-bilbao": {
+   "name": "Guggenheim Museum Bilbao",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-hammer-museum": {
+   "name": "Hammer Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://hammer.ucla.edu/digital-museum-guide",
+   "how": "Its own page, “digital museum guide”: its mobile guide on Bloomberg Connects.",
+   "evidence": [
+    "https://hammer.ucla.edu/digital-museum-guide"
+   ],
+   "pages": [
+    "https://hammer.ucla.edu/digital-museum-guide"
+   ],
+   "holds": "audio from its curators and artists, video profiles and exhibition texts"
+  },
+  "museum-harn-museum-of-art": {
+   "name": "Harn Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-indianapolis-museum-of-art": {
+   "name": "Indianapolis Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-isabella-stewart-gardner-museum": {
+   "name": "Isabella Stewart Gardner Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-j-paul-getty-museum": {
+   "name": "J. Paul Getty Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-jean-paul-najar-foundation": {
+   "name": "Jean-Paul Najar Foundation",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-kroller-muller-museum": {
+   "name": "Kröller-Müller Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-kunstmuseum-basel": {
+   "name": "Kunstmuseum Basel",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-kunstmuseum-bern": {
+   "name": "Kunstmuseum Bern",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-langen-foundation": {
+   "name": "Langen Foundation",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-leeum-samsung-museum-of-art": {
+   "name": "Leeum, Samsung Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-legion-of-honor": {
+   "name": "Legion of Honor",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://www.famsf.org/visit/legion-of-honor",
+   "how": "One search summary of the Fine Arts Museums' pages named audio tours on Bloomberg Connects; a second search found nothing.",
+   "evidence": [
+    "https://www.famsf.org/visit/legion-of-honor"
+   ],
+   "pages": [
+    "https://www.famsf.org/visit/legion-of-honor"
+   ]
+  },
+  "museum-lentos-museum-of-modern-art-linz": {
+   "name": "Lentos Museum of Modern Art Linz",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-los-angeles-county-museum-of-art": {
+   "name": "Los Angeles County Museum of Art",
+   "status": "guide",
+   "url": "https://guides.bloombergconnects.org/en-US/guide/lacmaLosAngelesCountyMuseumOfArtDavidGeffenGalleries",
+   "seen": "https://github.com/AramZS/aramzs.xyz/blob/HEAD/src/content/amplify/2026/05/21/2026-05-21-httpswwwnytimescom20260521artsdesignsmithsonian-museum-wall-text-politicshtmlunlockedarticlecode1kfaaqknc43otr7ucd1fandsmidurl-share.md",
+   "how": "The New York Times (21 May 2026, on museum wall texts) links LACMA's QR codes to an exhibition inside its guide; the guide's id is that link's, verbatim, and the address is its root. Seen in a public copy of the article on GitHub.",
+   "evidence": [
+    "https://www.lacma.org/visit/private-tours"
+   ],
+   "pages": [],
+   "holds": "more on the works in its galleries, to read or to hear",
+   "as_seen": "https://guides.bloombergconnects.org/en-US/guide/lacmaLosAngelesCountyMuseumOfArtDavidGeffenGalleries/exhibition/81fc8aa0-78a2-4ebb-a12f-fe8818a1ca23"
+  },
+  "museum-louisiana-museum-of-modern-art": {
+   "name": "Louisiana Museum of Modern Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-m-hka-museum-of-modern-art-antwerp": {
+   "name": "M HKA – Museum of Modern Art Antwerp",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-m-woods": {
+   "name": "M WOODS",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-mca-chicago": {
+   "name": "MCA Chicago",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "MOCA (Los Angeles) has one; MCA Chicago not seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-middelheim-museum": {
+   "name": "Middelheim Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-moderna-museet": {
+   "name": "Moderna Museet",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-montclair-art-museum": {
+   "name": "Montclair Art Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Montclair State University Galleries has one; the Montclair Art Museum not seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-munson-williams-proctor-arts-institute": {
+   "name": "Munson Williams Proctor Arts Institute",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musee-dixelles": {
+   "name": "Musée d'Ixelles",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musee-dorsay": {
+   "name": "Musée d'Orsay",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Not among Paris Musées or the Centre des monuments nationaux on the app.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musee-du-louvre": {
+   "name": "Musée du Louvre",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Not among the Paris guides of 2024.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musee-du-petit-palais": {
+   "name": "Musée du Petit Palais",
+   "status": "guide",
+   "url": null,
+   "seen": "https://parismusees.paris.fr/es/node/6597",
+   "how": "Paris Musées, whose fourteen museums include the Petit Palais, are on Bloomberg Connects (“Bloomberg Connects and Paris Musées”).",
+   "evidence": [
+    "https://parismusees.paris.fr/es/node/6597"
+   ],
+   "pages": []
+  },
+  "museum-musee-picasso-paris": {
+   "name": "Musée Picasso Paris",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Not among Paris Musées.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musee-rodin": {
+   "name": "Musée Rodin",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Not among Paris Musées.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-musei-vaticani": {
+   "name": "Musei Vaticani",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museo-de-arte-contemporaneo-de-buenos-aires": {
+   "name": "Museo de Arte Contemporáneo de Buenos Aires",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museo-nacional-del-prado": {
+   "name": "Museo Nacional del Prado",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museo-reina-sofia": {
+   "name": "Museo Reina Sofía",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museo-thyssen-bornemisza": {
+   "name": "Museo Thyssen-Bornemisza",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museum-brandhorst": {
+   "name": "Museum Brandhorst",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museum-folkwang": {
+   "name": "Museum Folkwang",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museum-kunstpalast": {
+   "name": "Museum Kunstpalast",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museum-ludwig": {
+   "name": "Museum Ludwig",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-museum-of-contemporary-art-san-diego": {
+   "name": "Museum of Contemporary Art San Diego",
+   "status": "guide",
+   "url": null,
+   "seen": "https://mcasd.org/digital-guide",
+   "how": "Its own page, “digital guide”, and Times of San Diego (29 Feb 2024).",
+   "evidence": [
+    "https://mcasd.org/digital-guide",
+    "https://timesofsandiego.com/arts/2024/02/29/art-on-your-app-tap-into-mcasds-vast-collection-with-museums-new-digital-guide/"
+   ],
+   "pages": [
+    "https://mcasd.org/digital-guide"
+   ]
+  },
+  "museum-museum-of-fine-arts-boston": {
+   "name": "Museum of Fine Arts, Boston",
+   "status": "guide",
+   "url": null,
+   "seen": "https://mfa.org/visit/mfa-mobile",
+   "how": "Its own press release and page, “MFA Mobile on Bloomberg Connects”.",
+   "evidence": [
+    "https://mfa.org/visit/mfa-mobile",
+    "https://mfa.org/press-release/mfa-mobile-on-bloomberg-connects"
+   ],
+   "pages": [
+    "https://mfa.org/visit/mfa-mobile",
+    "https://mfa.org/press-release/mfa-mobile-on-bloomberg-connects"
+   ],
+   "holds": "audio and video tours of its collection and exhibitions"
+  },
+  "museum-national-gallery-of-art-washington-dc": {
+   "name": "National Gallery of Art, Washington, D.C.",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-national-gallery-of-victoria": {
+   "name": "National Gallery of Victoria",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-national-museum-of-western-art": {
+   "name": "National Museum of Western Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-national-museum-of-women-in-the-arts": {
+   "name": "National Museum of Women in the Arts",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-national-portrait-gallery": {
+   "name": "National Portrait Gallery",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.npg.org.uk/visit/digital-guide/",
+   "how": "Its own page, “digital guide”, and “How Bloomberg Connects elevates the National Portrait Gallery experience”.",
+   "evidence": [
+    "https://www.npg.org.uk/visit/digital-guide/",
+    "https://aim-museums.co.uk/?p=2499"
+   ],
+   "pages": [
+    "https://www.npg.org.uk/visit/digital-guide/"
+   ]
+  },
+  "museum-new-museum-1": {
+   "name": "New Museum",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": null,
+   "how": "One search summary said it offers the Bloomberg Connects guide; no page of its own seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-newark-museum": {
+   "name": "Newark Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://newarkmuseumart.org/visit/mobile-guide",
+   "how": "Its own page and press release (December 2021): the first New Jersey museum on Bloomberg Connects.",
+   "evidence": [
+    "https://newarkmuseumart.org/visit/mobile-guide",
+    "https://newarkmuseumart.org/wp-content/uploads/2021/12/FINAL-Newark-Bloomberg-Press-Release-12.2.21.pdf"
+   ],
+   "pages": [
+    "https://newarkmuseumart.org/visit/mobile-guide"
+   ]
+  },
+  "museum-ordrupgaard": {
+   "name": "Ordrupgaard",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-padiglione-darte-contemporanea-pac": {
+   "name": "Padiglione d'Arte Contemporanea (PAC)",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-parrish-art-museum": {
+   "name": "Parrish Art Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://parrishart.org/bloomberg-connects/",
+   "how": "Its own page, “Free Digital Guide”.",
+   "evidence": [
+    "https://parrishart.org/bloomberg-connects/"
+   ],
+   "pages": [
+    "https://parrishart.org/bloomberg-connects/"
+   ]
+  },
+  "museum-pera-museum": {
+   "name": "Pera Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-philadelphia-museum-of-art": {
+   "name": "Philadelphia Museum of Art",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-phillips-collection": {
+   "name": "Phillips Collection",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.phillipscollection.org/node/8086",
+   "how": "Its own page, “Bloomberg Connects Mobile App” (the first D.C. institution on the app).",
+   "evidence": [
+    "https://www.phillipscollection.org/node/8086",
+    "https://www.thegeorgetowndish.com/articles/bloomberg-connects-phillips-collection"
+   ],
+   "pages": [
+    "https://www.phillipscollection.org/node/8086"
+   ],
+   "holds": "audio and video on its collection and exhibitions, and its full audio tour"
+  },
+  "museum-phoenix-art-museum": {
+   "name": "Phoenix Art Museum",
+   "status": "guide",
+   "url": null,
+   "seen": "https://phxart.org/visit/digital-guide/",
+   "how": "Its own announcement and page, “FREE DIGITAL GUIDE” (January 2024).",
+   "evidence": [
+    "https://phxart.org/visit/digital-guide/",
+    "https://phxart.org/phoenix-art-museum-launches-first-digital-guide-through-bloomberg-connects-app/"
+   ],
+   "pages": [
+    "https://phxart.org/visit/digital-guide/",
+    "https://phxart.org/phoenix-art-museum-launches-first-digital-guide-through-bloomberg-connects-app/"
+   ]
+  },
+  "museum-pinacoteca-di-brera": {
+   "name": "Pinacoteca di Brera",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-princeton-university-art-museum": {
+   "name": "Princeton University Art Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-pushkin-museum-of-fine-arts": {
+   "name": "Pushkin Museum of Fine Arts",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-rijksmuseum": {
+   "name": "Rijksmuseum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Its Bloomberg partnership is Collection Online, not a guide.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-risd-museum": {
+   "name": "RISD Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-royal-collection-trust": {
+   "name": "Royal Collection Trust",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-saint-louis-art-museum": {
+   "name": "Saint Louis Art Museum",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://www.slam.org/audio/",
+   "how": "Its audio page (a search summary named Bloomberg Connects among the platforms it lists); not seen in its own words.",
+   "evidence": [
+    "https://www.slam.org/audio/"
+   ],
+   "pages": [
+    "https://www.slam.org/audio/"
+   ]
+  },
+  "museum-san-francisco-museum-of-modern-art-sfmoma": {
+   "name": "San Francisco Museum of Modern Art (SFMOMA)",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Its 2015-16 “Bloomberg Connects” was Bloomberg's grant for its own app, not a guide on the app.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-seattle-art-museum": {
+   "name": "Seattle Art Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-smithsonian-freer-and-sackler-galleries": {
+   "name": "Smithsonian Freer and Sackler Galleries",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-statens-museum-for-kunst": {
+   "name": "Statens Museum for Kunst",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-stedelijk-museum-amsterdam": {
+   "name": "Stedelijk Museum Amsterdam",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-tate-britain": {
+   "name": "Tate Britain",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Tate's “Bloomberg Connects” (2013-16) was the grant behind the Tate app, not a guide on the app.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-tate-liverpool": {
+   "name": "Tate Liverpool",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Tate's “Bloomberg Connects” (2013-16) was the grant behind the Tate app, not a guide on the app.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-the-broad": {
+   "name": "The Broad",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-the-courtauld-gallery": {
+   "name": "The Courtauld Gallery",
+   "status": "guide",
+   "url": null,
+   "seen": "https://courtauld.ac.uk/gallery/plan-your-visit/bloomberg-connects",
+   "how": "Its own page, “Bloomberg Connects”.",
+   "evidence": [
+    "https://courtauld.ac.uk/gallery/plan-your-visit/bloomberg-connects"
+   ],
+   "pages": [
+    "https://courtauld.ac.uk/gallery/plan-your-visit/bloomberg-connects"
+   ],
+   "holds": "audio on the collection from curators and others, room by room"
+  },
+  "museum-the-menil-collection": {
+   "name": "The Menil Collection",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-the-metropolitan-museum-of-art": {
+   "name": "The Metropolitan Museum of Art",
+   "status": "guide",
+   "url": "https://guides.bloombergconnects.org/en-US/guide/metropolitanMuseumOfArt",
+   "seen": "https://github.com/museum-at-home/astro-website/blob/HEAD/src/data/museums.json",
+   "how": "The Met's own page, “Your Free Guide to The Met”, was a search result for its guide on Bloomberg Connects; the guide's address was seen verbatim as the Met's audio tour link in a public data file on GitHub (GitHub code search for guides.bloombergconnects.org).",
+   "evidence": [
+    "https://www.metmuseum.org/bloomberg-connects"
+   ],
+   "pages": [
+    "https://www.metmuseum.org/bloomberg-connects"
+   ],
+   "holds": "audio tours of its collection"
+  },
+  "museum-the-museum-of-modern-art": {
+   "name": "The Museum of Modern Art",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.moma.org/support/bloomberg-connects",
+   "how": "Its own page, “bloomberg connects”.",
+   "evidence": [
+    "https://www.moma.org/support/bloomberg-connects"
+   ],
+   "pages": [
+    "https://www.moma.org/support/bloomberg-connects"
+   ]
+  },
+  "museum-the-national-gallery-london": {
+   "name": "The National Gallery, London",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-the-state-hermitage-museum": {
+   "name": "The State Hermitage Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-the-studio-museum-in-harlem": {
+   "name": "The Studio Museum in Harlem",
+   "status": "guide",
+   "url": null,
+   "seen": "https://studiomuseum.org/digital-guide",
+   "how": "Its own page, “Digital Guide”, on Bloomberg Connects.",
+   "evidence": [
+    "https://studiomuseum.org/digital-guide"
+   ],
+   "pages": [
+    "https://studiomuseum.org/digital-guide"
+   ]
+  },
+  "museum-the-wellington-museum": {
+   "name": "The Wellington Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-triennale-design-museum": {
+   "name": "Triennale Design Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-turner-contemporary": {
+   "name": "Turner Contemporary",
+   "status": "guide",
+   "url": "https://app.bloombergconnects.org/shTM8US5cob",
+   "seen": "WebSearch, 7 Oct 2026: a result titled “Turner Contemporary” for “\"Turner Contemporary\" \"Bloomberg Connects\"”",
+   "how": "Its own page, “bloomberg connects”; the guide's link (Bloomberg Connects' app link) was itself a search result titled “Turner Contemporary”.",
+   "evidence": [
+    "https://turnercontemporary.org/bloomberg-connects"
+   ],
+   "pages": [
+    "https://turnercontemporary.org/bloomberg-connects"
+   ],
+   "holds": "exhibition audio tours and interviews with its artists"
+  },
+  "museum-van-gogh-museum": {
+   "name": "Van Gogh Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-vancouver-art-gallery": {
+   "name": "Vancouver Art Gallery",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-victoria-and-albert-museum-v-and-a": {
+   "name": "Victoria and Albert Museum (V&A)",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-virginia-museum-of-contemporary-art": {
+   "name": "Virginia Museum of Contemporary Art",
+   "status": "guide",
+   "url": null,
+   "seen": "https://13newsnow.com/article/news/community/virginia-moca-move-wesleyan-university-virginia-beach-campus/291-0d601ba4-a11d-4e96-a3ce-bfcb20af2a75",
+   "how": "13News Now: “the first Virginia art museum on the Bloomberg Connects app”.",
+   "evidence": [
+    "https://13newsnow.com/article/news/community/virginia-moca-move-wesleyan-university-virginia-beach-campus/291-0d601ba4-a11d-4e96-a3ce-bfcb20af2a75"
+   ],
+   "pages": []
+  },
+  "museum-whitney-museum-of-american-art-1": {
+   "name": "Whitney Museum of American Art",
+   "status": "guide",
+   "url": "https://app.bloombergconnects.org/h6R9OVRraHb",
+   "seen": "https://github.com/claraharguindey/days-end/blob/HEAD/whitney/index.html",
+   "how": "Its own page, “Bloomberg Connects”; the Whitney's text (“… on Bloomberg Connects, the free arts and culture app”) links its guide, seen verbatim in a public copy of the Whitney's Days End page on GitHub.",
+   "evidence": [
+    "https://whitney.org/visit/bloomberg-connects"
+   ],
+   "pages": [
+    "https://whitney.org/visit/bloomberg-connects"
+   ],
+   "holds": "interviews with artists, curators and other thinkers about the works on view"
+  },
+  "museum-yale-center-for-british-art": {
+   "name": "Yale Center for British Art",
+   "status": "guide",
+   "url": null,
+   "seen": "https://britishart.yale.edu/free-digital-guide",
+   "how": "Its own page, “free digital guide”, on Bloomberg Connects.",
+   "evidence": [
+    "https://britishart.yale.edu/free-digital-guide"
+   ],
+   "pages": [
+    "https://britishart.yale.edu/free-digital-guide"
+   ]
+  },
+  "museum-yale-university-art-gallery": {
+   "name": "Yale University Art Gallery",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  },
+  "museum-yuz-museum": {
+   "name": "Yuz Museum",
+   "status": "none",
+   "url": null,
+   "seen": null,
+   "how": "Searched; no guide seen.",
+   "evidence": [],
+   "pages": []
+  }
+ },
+ "venues": {
+  "venue:barcelona-es:Fundacio´ Joan Miro´": {
+   "name": "Fundacio´ Joan Miro´",
+   "town": "barcelona-es",
+   "status": "guide",
+   "url": null,
+   "seen": "https://fmirobcn.org/en/bloomberg-connects",
+   "how": "Its own page, “Bloomberg Connects”.",
+   "evidence": [
+    "https://fmirobcn.org/en/bloomberg-connects"
+   ],
+   "pages": [
+    "https://fmirobcn.org/en/bloomberg-connects"
+   ]
+  },
+  "venue:bentonville-us:Crystal Bridges Museum of American Art": {
+   "name": "Crystal Bridges Museum of American Art",
+   "town": "bentonville-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://old.crystalbridges.org/digital-guide/",
+   "how": "Its own page, “digital guide”: on Bloomberg Connects since its own apps closed (31 Dec 2024).",
+   "evidence": [
+    "https://old.crystalbridges.org/digital-guide/"
+   ],
+   "pages": [
+    "https://crystalbridges.org/digital-guide/"
+   ]
+  },
+  "venue:coral-gables-us:Lowe Art Museum": {
+   "name": "Lowe Art Museum",
+   "town": "coral-gables-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.lowe.miami.edu/learn-engage/digital-engagement/bloomberg-connects/index.html",
+   "how": "Its own page, “Your Digital Guide to the Lowe Art Museum”.",
+   "evidence": [
+    "https://www.lowe.miami.edu/learn-engage/digital-engagement/bloomberg-connects/index.html"
+   ],
+   "pages": [
+    "https://www.lowe.miami.edu/learn-engage/digital-engagement/bloomberg-connects/index.html"
+   ]
+  },
+  "venue:denver-us:Denver Art Museum": {
+   "name": "Denver Art Museum",
+   "town": "denver-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.denverartmuseum.org/bloomberg-connects",
+   "how": "Its own page, “Bloomberg Connects”.",
+   "evidence": [
+    "https://www.denverartmuseum.org/bloomberg-connects"
+   ],
+   "pages": [
+    "https://www.denverartmuseum.org/bloomberg-connects"
+   ]
+  },
+  "venue:detroit-us:Detroit Institute of Arts": {
+   "name": "Detroit Institute of Arts",
+   "town": "detroit-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://dia.org/about/media-room/news/dia-releases-new-audio-tours-bloomberg-connects-including-artist-mario-moores",
+   "how": "Its own news: new audio tours on Bloomberg Connects (December 2025).",
+   "evidence": [
+    "https://dia.org/about/media-room/news/dia-releases-new-audio-tours-bloomberg-connects-including-artist-mario-moores"
+   ],
+   "pages": [
+    "https://dia.org/about/media-room/news/dia-releases-new-audio-tours-bloomberg-connects-including-artist-mario-moores"
+   ]
+  },
+  "venue:london-gb:Serpentine Galleries": {
+   "name": "Serpentine Galleries",
+   "town": "london-gb",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.serpentinegalleries.org/bloomberg-connects/",
+   "how": "Its own page, “Bloomberg Connects digital guide”.",
+   "evidence": [
+    "https://www.serpentinegalleries.org/bloomberg-connects/"
+   ],
+   "pages": [
+    "https://www.serpentinegalleries.org/bloomberg-connects/"
+   ]
+  },
+  "venue:london-gb:Serpentine Gallery": {
+   "name": "Serpentine Gallery",
+   "town": "london-gb",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.serpentinegalleries.org/bloomberg-connects/",
+   "how": "Its own page, “Bloomberg Connects digital guide”.",
+   "evidence": [
+    "https://www.serpentinegalleries.org/bloomberg-connects/"
+   ],
+   "pages": [
+    "https://www.serpentinegalleries.org/bloomberg-connects/"
+   ]
+  },
+  "venue:los-angeles-us:MOCA": {
+   "name": "MOCA",
+   "town": "los-angeles-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://Moca.org/visit/bloomberg-connects",
+   "how": "Its own pages, “bloomberg connects” and its digital guide.",
+   "evidence": [
+    "https://Moca.org/visit/bloomberg-connects",
+    "https://www.moca.org/digitalguide?p=3040"
+   ],
+   "pages": [
+    "https://www.moca.org/visit/bloomberg-connects"
+   ]
+  },
+  "venue:milwaukee-us:Milwaukee Art Museum": {
+   "name": "Milwaukee Art Museum",
+   "town": "milwaukee-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://mam.org/info/pressroom/?p=6597",
+   "how": "Its own press release (26 Feb 2025).",
+   "evidence": [
+    "https://mam.org/info/pressroom/?p=6597"
+   ],
+   "pages": [
+    "https://mam.org/info/pressroom/?p=6597"
+   ]
+  },
+  "venue:minneapolis-us:Walker Art Center": {
+   "name": "Walker Art Center",
+   "town": "minneapolis-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://walkerart.org/bloomberg-connects",
+   "how": "Its own page, “Bloomberg Connects”.",
+   "evidence": [
+    "https://walkerart.org/bloomberg-connects"
+   ],
+   "pages": [
+    "https://walkerart.org/bloomberg-connects"
+   ]
+  },
+  "venue:mountainville-us:Storm King Art Center": {
+   "name": "Storm King Art Center",
+   "town": "mountainville-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.bloombergconnects.org/?p=3130",
+   "how": "Bloomberg Connects' own page on the Hudson Valley's guides names Storm King's.",
+   "evidence": [
+    "https://www.bloombergconnects.org/?p=3130"
+   ],
+   "pages": []
+  },
+  "venue:new-windsor-us:Storm King Art Center": {
+   "name": "Storm King Art Center",
+   "town": "new-windsor-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.bloombergconnects.org/?p=3130",
+   "how": "Bloomberg Connects' own page on the Hudson Valley's guides names Storm King's.",
+   "evidence": [
+    "https://www.bloombergconnects.org/?p=3130"
+   ],
+   "pages": []
+  },
+  "venue:new-york-us:Brooklyn Museum": {
+   "name": "Brooklyn Museum",
+   "town": "new-york-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.bloombergconnects.org/blog/your-brooklyn-museum-cheat-sheet/",
+   "how": "Bloomberg Connects' own blog: “10 Brooklyn Museum Facts Everyone Should Know”.",
+   "evidence": [
+    "https://www.bloombergconnects.org/blog/your-brooklyn-museum-cheat-sheet/"
+   ],
+   "pages": []
+  },
+  "venue:new-york-us:MoMA PS1": {
+   "name": "MoMA PS1",
+   "town": "new-york-us",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://newarkmuseumart.org/wp-content/uploads/2021/12/FINAL-Newark-Bloomberg-Press-Release-12.2.21.pdf",
+   "how": "Only named among the network in the Newark Museum of Art's press release (December 2021).",
+   "evidence": [
+    "https://newarkmuseumart.org/wp-content/uploads/2021/12/FINAL-Newark-Bloomberg-Press-Release-12.2.21.pdf"
+   ],
+   "pages": []
+  },
+  "venue:new-york-us:Pierpont Morgan Library": {
+   "name": "Pierpont Morgan Library",
+   "town": "new-york-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.themorgan.org/visit/audio-guide",
+   "how": "Its own page, “audio guide”, on the Bloomberg Connects app and its website.",
+   "evidence": [
+    "https://www.themorgan.org/visit/audio-guide"
+   ],
+   "pages": [
+    "https://www.themorgan.org/visit/audio-guide"
+   ]
+  },
+  "venue:new-york-us:The Frick Collection": {
+   "name": "The Frick Collection",
+   "town": "new-york-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.bloombergconnects.org/blog/the-frick-collection-an-early-adopter/",
+   "how": "Bloomberg Connects' own blog: “The Frick Collection: An early adopter”.",
+   "evidence": [
+    "https://www.bloombergconnects.org/blog/the-frick-collection-an-early-adopter/"
+   ],
+   "pages": []
+  },
+  "venue:new-york-us:The Pierpont Morgan Library": {
+   "name": "The Pierpont Morgan Library",
+   "town": "new-york-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.themorgan.org/visit/audio-guide",
+   "how": "Its own page, “audio guide”, on the Bloomberg Connects app and its website.",
+   "evidence": [
+    "https://www.themorgan.org/visit/audio-guide"
+   ],
+   "pages": [
+    "https://www.themorgan.org/visit/audio-guide"
+   ]
+  },
+  "venue:north-adams-us:MASS MoCA": {
+   "name": "MASS MoCA",
+   "town": "north-adams-us",
+   "status": "unconfirmed",
+   "url": null,
+   "seen": "https://massmoca.org/visit/digital-guide/",
+   "how": "Its own page, “digital guide”, found for Bloomberg Connects; the platform not named in what was seen.",
+   "evidence": [
+    "https://massmoca.org/visit/digital-guide/"
+   ],
+   "pages": [
+    "https://massmoca.org/visit/digital-guide/"
+   ]
+  },
+  "venue:paris-fr:Musée Carnavalet – Histoire de Paris": {
+   "name": "Musée Carnavalet – Histoire de Paris",
+   "town": "paris-fr",
+   "status": "guide",
+   "url": null,
+   "seen": "https://parismusees.paris.fr/es/node/6597",
+   "how": "Paris Musées, whose fourteen museums include the Carnavalet, are on Bloomberg Connects.",
+   "evidence": [
+    "https://parismusees.paris.fr/es/node/6597"
+   ],
+   "pages": []
+  },
+  "venue:philadelphia-us:Pennsylvania Academy of the Fine Arts": {
+   "name": "Pennsylvania Academy of the Fine Arts",
+   "town": "philadelphia-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://pafa.org/museum/visit/digital-guide-pafa",
+   "how": "Its own page, “Digital Guide to PAFA”: the first Philadelphia cultural organization on Bloomberg Connects.",
+   "evidence": [
+    "https://pafa.org/museum/visit/digital-guide-pafa",
+    "https://pafa.org/news/pennsylvania-academy-fine-arts-first-cultural-organization-philadelphia-join-free-bloomberg"
+   ],
+   "pages": [
+    "https://pafa.org/museum/visit/digital-guide-pafa",
+    "https://pafa.org/news/pennsylvania-academy-fine-arts-first-cultural-organization-philadelphia-join-free-bloomberg"
+   ]
+  },
+  "venue:philadelphia-us:The Pennsylvania Academy of the Fine Arts": {
+   "name": "The Pennsylvania Academy of the Fine Arts",
+   "town": "philadelphia-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://pafa.org/museum/visit/digital-guide-pafa",
+   "how": "Its own page, “Digital Guide to PAFA”: the first Philadelphia cultural organization on Bloomberg Connects.",
+   "evidence": [
+    "https://pafa.org/museum/visit/digital-guide-pafa",
+    "https://pafa.org/news/pennsylvania-academy-fine-arts-first-cultural-organization-philadelphia-join-free-bloomberg"
+   ],
+   "pages": [
+    "https://pafa.org/museum/visit/digital-guide-pafa",
+    "https://pafa.org/news/pennsylvania-academy-fine-arts-first-cultural-organization-philadelphia-join-free-bloomberg"
+   ]
+  },
+  "venue:quebec-ca:Montréal Museum of Fine Arts": {
+   "name": "Montréal Museum of Fine Arts",
+   "town": "quebec-ca",
+   "status": "guide",
+   "url": null,
+   "seen": "https://mmfa.org/visit/free-digital-guide/",
+   "how": "Its own page, “free digital guide”, found for Bloomberg Connects again and again.",
+   "evidence": [
+    "https://mmfa.org/visit/free-digital-guide/"
+   ],
+   "pages": [
+    "https://mmfa.org/visit/free-digital-guide/"
+   ]
+  },
+  "venue:ridgefield-us:Aldrich Museum of Contemporary Art": {
+   "name": "Aldrich Museum of Contemporary Art",
+   "town": "ridgefield-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://aldrichart.org/page/bloomberg-connects",
+   "how": "Its own page, “Bloomberg Connects”.",
+   "evidence": [
+    "https://aldrichart.org/page/bloomberg-connects"
+   ],
+   "pages": [
+    "https://aldrichart.org/page/bloomberg-connects"
+   ]
+  },
+  "venue:saint-louis-us:The Pulitzer Foundation for the Arts": {
+   "name": "The Pulitzer Foundation for the Arts",
+   "town": "saint-louis-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://pulitzerarts.org/visit/digital-guide",
+   "how": "Its own page, “Free Digital Guide on Bloomberg Connects”.",
+   "evidence": [
+    "https://pulitzerarts.org/visit/digital-guide"
+   ],
+   "pages": [
+    "https://pulitzerarts.org/visit/digital-guide"
+   ]
+  },
+  "venue:san-jose-us:San Jose Museum of Art": {
+   "name": "San Jose Museum of Art",
+   "town": "san-jose-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://sjmusart.org/connect/bloomberg-connects",
+   "how": "Its own page, “Free Digital Guide”.",
+   "evidence": [
+    "https://sjmusart.org/connect/bloomberg-connects"
+   ],
+   "pages": [
+    "https://sjmusart.org/connect/bloomberg-connects"
+   ]
+  },
+  "venue:washington-us:The Kreeger Museum": {
+   "name": "The Kreeger Museum",
+   "town": "washington-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://kreegermuseum.org/explore/galleryguides",
+   "how": "Its own page, “Collection Guides”, on Bloomberg Connects.",
+   "evidence": [
+    "https://kreegermuseum.org/explore/galleryguides"
+   ],
+   "pages": [
+    "https://kreegermuseum.org/explore/galleryguides"
+   ]
+  },
+  "venue:west-palm-beach-us:Norton Gallery & School of Art": {
+   "name": "Norton Gallery & School of Art",
+   "town": "west-palm-beach-us",
+   "status": "guide",
+   "url": null,
+   "seen": "https://www.norton.org/visit/digital-guide",
+   "how": "The Norton Museum of Art's own page, “Free Digital Guide on Bloomberg Connects”.",
+   "evidence": [
+    "https://www.norton.org/visit/digital-guide"
+   ],
+   "pages": [
+    "https://www.norton.org/visit/digital-guide"
+   ]
+  }
+ }
+}

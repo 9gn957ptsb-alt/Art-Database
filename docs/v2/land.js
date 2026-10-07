@@ -10534,7 +10534,38 @@
     stageCanvas.style.width = sw.toFixed(2) + "px";
     stageCanvas.style.height = sh.toFixed(2) + "px";
     stageCanvas.style.transform = "translate(" + stageBox.x + "px," + stageBox.y + "px)";
-    bill.style.transform = "translate(-50%," + Math.round(Math.min(H - billH - 12, stageBox.y + sh + 8)) + "px)";
+    var billY = Math.round(Math.min(H - billH - 12, stageBox.y + sh + 8));
+    bill.style.transform = "translate(-50%," + billY + "px)";
+    // The library's own guide (bloomberg.js): under the library where it stands in the corner,
+    // else under the bill where there is room, else over the stage.
+    if (theatreGuide && theatreGuide.parentNode === theatreEl) {
+      var gs = theatreGuide.style;
+      if (libW) {
+        gs.left = "auto";
+        gs.right = "18px";
+        gs.maxWidth = Math.round(Math.max(240, libW)) + "px";
+        gs.transform = "translate(0," + Math.round(top - 6 - rest + lib.h * lk + 10) + "px)";
+      } else {
+        gs.left = gs.right = gs.maxWidth = "";
+        var gh = theatreGuide.offsetHeight || 44, gy = billY + billH + 10;
+        if (gy + gh > H - 8) { gy = Math.max(top, stageBox.y - gh - 10); }
+        gs.transform = "translate(-50%," + Math.round(gy) + "px)";
+      }
+    }
+  }
+
+  /* Bloomberg Connects (bloomberg.js): the Folger's own guide, a link off the site, put in the
+     theatre once its address is known (none known, nothing). */
+  var theatreGuide = null;
+  function theatreGuideOn() {
+    if (!window.Bloomberg || theatreGuide) { return; }
+    Bloomberg.when(function () {
+      if (theatreGuide || !theatreEl) { return; }
+      theatreGuide = Bloomberg.link("folger");
+      if (!theatreGuide) { return; }
+      theatreEl.appendChild(theatreGuide);
+      if (theatreOn) { layoutTheatre(); }
+    });
   }
 
   function drawLibrary() {
@@ -10889,6 +10920,7 @@
     readPlaybill(function () {
       if (!theatreOn) { return; }
       theatreEl.hidden = false;
+      theatreGuideOn();
       drawLibrary();
       stageScene(dealScene());
       requestAnimationFrame(theatreFrame);
@@ -11670,6 +11702,10 @@
     buildingEl.dataset.museum = "true";
     if (!buildingWorks) { return; }
     buildingWorks.textContent = "";
+    // Bloomberg Connects (bloomberg.js): the museum's own guide, a link off the site, at the
+    // head of its column (the categories' header above it), before Saved. None, nothing.
+    var guide = window.Bloomberg && Bloomberg.link(m.slug);
+    if (guide) { buildingWorks.appendChild(guide); }
     // A museum that holds more than a page of saved works has the search of
     // its collection first, not at the foot of a list that grows as it is
     // scrolled toward (the National Gallery of Art holds 177).
@@ -15072,6 +15108,9 @@
     go.setAttribute("aria-hidden", "true");
     door.appendChild(go);
     row.appendChild(door);
+    // Its own guide on Bloomberg Connects, beside its name (bloomberg.js; none, nothing).
+    var guide = window.Bloomberg && Bloomberg.link(slug, { size: "small", name: m.name });
+    if (guide) { row.appendChild(guide); }
     var meta = el("p", "town-museum-meta", m.held + " saved");
     row.appendChild(meta);
     var thumbs = el("div", "town-thumbs");
@@ -15124,6 +15163,8 @@
     go.setAttribute("aria-hidden", "true");
     door.appendChild(go);
     row.appendChild(door);
+    var guide = window.Bloomberg && Bloomberg.link(mark.slug, { size: "small", name: mark.title });
+    if (guide) { row.appendChild(guide); }
     function enter(event) { if (event) { event.stopPropagation(); } openMuseum(mark.slug, {}); }
     door.addEventListener("click", enter);
     row.addEventListener("click", enter);
@@ -15793,6 +15834,10 @@
     b.appendChild(el("span", "town-venue-meta", kinds.concat([yearsText(y0, y1),
       rows.length + (rows.length === 1 ? " work" : " works")]).filter(Boolean).join(" · ")));
     box.appendChild(b);
+    // A venue with a guide of its own on Bloomberg Connects (bloomberg.js; by its name in this city).
+    var guide = vis.length === 1 && window.Bloomberg &&
+      Bloomberg.link(Bloomberg.venueKey(a.town.key, pf.venues[vis[0]][0]), { size: "small", name: label });
+    if (guide) { box.appendChild(guide); }
     box.rows = rows;
     box.vis = vis;
     box.y0 = y0;

@@ -153,6 +153,11 @@ module, `a11y.js` / `a11y.css`, loaded last, so no other module has to know it.
   not move (a played path); a life's or a movement's year line is said once the dial rests; in the
   place, then, only the work's line is said, not its whole wall label.
 - The full screen (zoom.js) is a modal dialog that keeps the focus and gives it back.
+- **2.4.4, 3.2.5, 2.5.8** — a link off the site (a museum's own guide on Bloomberg Connects,
+  bloomberg.js) says in its name where it goes and that it opens a new tab ("Its own guide ·
+  Bloomberg Connects — opens Bloomberg Connects in a new tab"; a city row's "Guide · The
+  Metropolitan Museum of Art's own guide on Bloomberg Connects, …"), shows ↗, is 24 px or more,
+  and a press on it never reaches the row under it.
 
 **Still open**
 - Contrast is measured on the pixels behind: text over the moving globe (names on the world, a
