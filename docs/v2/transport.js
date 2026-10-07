@@ -803,6 +803,15 @@
       var h = rd.hole;
       keep({ left: h.x, top: h.y, right: h.x + h.w, bottom: h.y + h.h, width: h.w, height: h.h }, rd.swapped ? 40 : ended ? 2 : 8, h.round < 0);
     }
+    // The reading's globe grown out of its window (land.js, "the grown globe"): its pills are pressed
+    // there, and its own marks (the place being told) are looked at, kept clear as the lens is.
+    var pills = document.querySelector(".filter[data-grown]");
+    if (pills && visibleBox(pills)) { keep(pills.getBoundingClientRect(), 40); }
+    if (rd && rd.own && rd.own.length) {
+      rd.own.forEach(function (o) {
+        keep({ left: o.x0, top: o.y0, right: o.x1, bottom: o.y1, width: o.x1 - o.x0, height: o.y1 - o.y0 }, ended ? 2 : 8);
+      });
+    }
     var cap = document.querySelector(".voice-cap:not([hidden])");
     if (cap && visibleBox(cap)) { keep(cap.getBoundingClientRect(), 30); }
     var chip = document.querySelector(".voice-chip[data-on=\"true\"]:not([hidden])");
