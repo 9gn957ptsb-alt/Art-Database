@@ -1914,6 +1914,37 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+/* The ring of pixel light round the building looked at, in its plot. */
+.building-light {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.building:not([data-view="ground"]) .building-light,
+.building[data-inside] .building-light { display: none; }
+/* Where a building has no cells of its own in its plot (a home placed at its town), it says so. */
+.building-note {
+  position: absolute;
+  left: 16px;
+  top: 76px;
+  max-width: min(520px, calc(100% - 32px));
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  color: #a8927a;
+  pointer-events: none;
+}
+.building-note:empty,
+.building:not([data-view="ground"]) .building-note { display: none; }
+.building[data-museum] .building-note { max-width: min(520px, calc(100% - min(40vw, 440px) - 32px)); }
+@media (max-width: 720px) {
+  .building-note { top: 112px; }   /* clear of a banner title on two lines */
+}
 .building-link {
   position: absolute;
   left: 50%;
@@ -2569,8 +2600,7 @@
 .art-find:focus-visible,
 .art-find[aria-expanded="true"] { background: #eadfcd; color: #0f0a07; }
 .art-find[hidden],
-.land:not([data-at="globe"]) .art-find,
-.land:not([data-layer-on="museums"]):not([data-layer-on="studios"]) .art-find { display: none; }
+.land:not([data-at="globe"]) .art-find { display: none; }   /* Search: on every layer of the globe (7 Oct 2026) */
 
 .finder {
   position: fixed;
@@ -3695,3 +3725,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .art-said-q[data-long] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; cursor: pointer; }
 .art-said-q[data-long][data-open] { display: block; -webkit-line-clamp: none; }
+
+/* The Sound switch is taken off the banner (artist, 7 Oct 2026: "Get rid of the sound button"); sound
+   stays off, its code (Systems.sound) kept. Delete this rule to bring the switch back. */
+.banner-sound { display: none !important; }

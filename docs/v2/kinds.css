@@ -268,3 +268,7 @@
 @media (prefers-reduced-motion: reduce) {
   .kinds-head * { transition: none !important; animation: none !important; }
 }
+
+/* The spectrum bar is off (artist, 7 Oct 2026: "I don't quite know what this bar is. Get rid of it").
+   Its code stays; the category's word and glyph still say what the thing is. */
+.kinds-spectrum { display: none !important; }
