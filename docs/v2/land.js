@@ -11280,10 +11280,12 @@
     }
     fig.appendChild(img);
     fig.appendChild(cap);
-    function open() {
+    function open(event) {
       // Something else to do when pressed: open its history, say (opts.onOpen).
       if (opts.onOpen) { opts.onOpen(fig); return; }
       var was = fig.getAttribute("aria-expanded") === "true";
+      // Brought up large, a press on its picture: twice as big, then the whole screen (zoom.js, 7 Oct 2026).
+      if (was && window.Zoom && event && event.target === img && img.getAttribute("src")) { zoomHeld(); return; }
       var host = fig.closest(".art-col") || buildingWorks;
       Array.prototype.forEach.call(host.querySelectorAll(".held"), function (f) {
         f.setAttribute("aria-expanded", "false");
@@ -11297,6 +11299,21 @@
       }
       var r = fig.getBoundingClientRect();
       pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.4, Math.max(r.width, r.height));
+    }
+    function heldLabel() {
+      if (!window.WallLabel) { return null; }
+      return WallLabel.fill(el("div", "wall-label"), WallLabel.fromItem({ title: w.t, by: w.a, year: w.y, medium: w.m,
+        where: opts.history ? opts.history.name : "", src: "Artsy" }));
+    }
+    function zoomHeld() {
+      var z = Zoom.big();
+      if (z && z.node === img) {
+        Zoom.open({ src: img.currentSrc || img.src, alt: img.alt, label: heldLabel,
+                    big: opts.big ? [opts.big.replace(/\/[a-z]+\.jpg$/, "/normalized.jpg"), opts.big.replace(/\/[a-z]+\.jpg$/, "/larger.jpg")] : [] });
+        return;
+      }
+      var r0 = img.getBoundingClientRect();
+      Zoom.twice({ node: img, img: img, label: heldLabel, base: function () { return r0; } });
     }
     fig.addEventListener("click", open);
     fig.addEventListener("keydown", function (event) {
@@ -17689,6 +17706,9 @@
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
     artPlate.style.top = y.toFixed(1) + "px";
+    plateRest = { left: x, top: y, width: w, height: hh };
+    var zb = window.Zoom && Zoom.big();
+    if (zb && zb.node === artPlate) { zb.relayout(); }
     if (lab) {
       var ls = artLabel.style;
       if (lab.side) {
@@ -17725,6 +17745,10 @@
     return h || 60;
   }
   function clearLabel() {
+    // The picture gone (another view, or none): not twice as big, nor on the whole screen.
+    var zb = window.Zoom && Zoom.big();
+    if (zb && zb.node === artPlate) { zb.undo(true); }
+    if (window.Zoom && artEl.dataset.full) { Zoom.close(true); delete artEl.dataset.full; }
     if (!artLabel) { return; }
     artLabel.hidden = true;
     artLabel.textContent = "";
@@ -17795,17 +17819,66 @@
     later(function () { delete artPlate.dataset.flip; done(); }, 1100, a);
   }
 
-  /* Pressed (or Enter), the photograph fills the screen; pressed again, or
-     Escape, it goes back to its place. Never on the press that ended the
-     look. */
+  /* Pressed once, the photograph is twice as big where it stands; pressed
+     again, the whole screen, where it can be brought as near as one likes
+     (zoom.js; artist, 7 Oct 2026: "When I click on an artwork once to make
+     it bigger, make it twice as big, don't make it take up the entire screen
+     … If I click on the artwork again after clicking on it once, then make it
+     full screen. When it full screen mode I should be able to zoom in to any
+     artwork as much as I please"). Escape, the close mark or a press on the
+     dark steps back: the whole screen to twice, twice to as it was. Never on
+     the press that ended the look. */
+  var plateRest = null;
+  function pressPlate() {
+    if (!window.Zoom) { setFull(!artEl.dataset.full); return; }
+    var z = Zoom.big();
+    if (z && z.node === artPlate) { setFull(true); return; }
+    Zoom.twice({
+      node: artPlate,
+      base: function () { return plateRest; },
+      label: function () {
+        if (!artLabel || artLabel.hidden || !artLabel.childNodes.length) { return null; }
+        var c = artLabel.cloneNode(true);
+        c.className = "wall-label";
+        c.removeAttribute("style");
+        c.removeAttribute("aria-live");
+        return c;
+      },
+      restore: function () { if (art && !artPlate.hidden) { layoutPlate(null, null); } }
+    });
+  }
   function setFull(on) {
     var a = art;
-    if (!on || !a || !readKind(a.kind)) { delete artEl.dataset.full; return; }
+    if (!on || !a || !readKind(a.kind)) {
+      // From outside (a path's next stop): everything back to its place.
+      delete artEl.dataset.full;
+      if (window.Zoom) { Zoom.close(true); var zb = Zoom.big(); if (zb && zb.node === artPlate) { zb.undo(true); } }
+      return;
+    }
     var image = a.kind === "work" ? a.data.image : a.picture && a.picture.image;
     var bigSrc = a.kind !== "work" && a.picture && a.picture.src ? a.picture.big || a.picture.src : null;
     if (!image && !bigSrc) { return; }
     artEl.dataset.full = "true";
     var img = artPlate.querySelector(".deal-go:last-child img") || artPlate.querySelector("img");
+    if (window.Zoom) {
+      // The largest pictures Artsy gives (`normalized` is the largest), else Commons' widest.
+      Zoom.open({
+        src: img ? img.currentSrc || img.src : bigSrc || ART_CDN + image + "/large.jpg",
+        big: image ? [ART_CDN + image + "/normalized.jpg", ART_CDN + image + "/larger.jpg"] : [bigSrc],
+        alt: img ? img.alt : "",
+        label: function () {
+          if (!artLabel || !artLabel.childNodes.length) { return null; }
+          var c = artLabel.cloneNode(true);
+          c.className = "wall-label";
+          c.removeAttribute("style");
+          c.removeAttribute("aria-live");
+          return c;
+        },
+        // Back from the whole screen: twice as big, as it was before it.
+        onClose: function () { delete artEl.dataset.full; }
+      });
+      return;
+    }
     if (img && !img.dataset.big) {
       img.dataset.big = "asked";
       var big = new Image();
@@ -17823,14 +17896,14 @@
       // In the lens's place (swapped): back to its own.
       if (lensSwapped) { setSwap(false); return; }
       if (a.kind === "work" && (!a.flipped || performance.now() - (a.settledAt || 0) < 450)) { return; }
-      setFull(!artEl.dataset.full);
+      pressPlate();
     });
     artPlate.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== " ") { return; }
       event.preventDefault();
       if (lensSwapped) { setSwap(false); return; }
       flipToHead();
-      setFull(!artEl.dataset.full);
+      pressPlate();
     });
     window.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && art && lensAway()) {

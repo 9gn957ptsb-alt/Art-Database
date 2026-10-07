@@ -245,26 +245,8 @@
 .pt[data-empty] .pt-pic, .pt[data-empty] .pt-cap { display: none; }
 .pt[data-empty] .pt-none { position: static; display: block; text-align: left; padding: 4px 0 0; }
 
-/* The whole screen: the picture alone, its wall label along its foot; a press or Escape, back. */
-.pt-full {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 8px;
-  padding: 16px 16px 14px;
-  box-sizing: border-box;
-  background: #0f0a07;
-  cursor: zoom-out;
-  touch-action: pan-y;
-  pointer-events: auto;
-}
-.pt-full[hidden] { display: none; }
-.pt-full img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
-.pt-full-cap { display: flex; align-items: flex-end; gap: 12px; min-width: 0; }
-.pt-full-t { flex: 1 1 auto; min-width: 0; }
-.pt-full-n { flex: none; font-family: var(--mono, monospace); font-size: 10px; color: #b8b1f0; }
+/* Twice as big, then the whole screen and as near as one likes: zoom.js, zoom.css. */
+.pt[data-zoom-lift] { z-index: 14 !important; }
 
 /* The dial and the column make room for it (land.css places them for a city). */
 body[data-placethen] .art .art-time.dial { left: var(--pt-dial-left, auto); top: var(--pt-dial-top, auto); right: auto; bottom: auto; transform: none; }

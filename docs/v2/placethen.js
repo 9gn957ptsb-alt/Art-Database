@@ -365,7 +365,7 @@
     // The works: the picture, its words, its doors.
     var work = el("div", "pt-work");
     var picbox = el("div", "pt-picbox");
-    var picBtn = button("pt-pic", function () { setFull(true); });
+    var picBtn = button("pt-pic", function () { pressPic(); });
     var img = el("img");
     img.alt = "";
     img.decoding = "async";
@@ -406,7 +406,7 @@
     var how = el("div", "wall-label pt-label");
     cap.appendChild(line);
     cap.appendChild(how);
-    img.addEventListener("load", function () { placeLabel(); });
+    img.addEventListener("load", function () { placeLabel(); var zb = window.Zoom && Zoom.big(); if (zb && zb.node === picBtn) { zb.relayout(); } });
     work.appendChild(cap);
     var doors = el("div", "pt-doors");
     doors.setAttribute("aria-label", "New ways on from this work, here");
@@ -604,7 +604,6 @@
     if (refs.count.textContent !== text) { refs.count.textContent = text; }
     refs.count.hidden = !text;
     refs.prev.hidden = refs.next.hidden = n < 2;
-    if (refs.full) { refs.fullCount.textContent = text; }
   }
 
   function showItem(first) {
@@ -646,7 +645,6 @@
     if (it.y) { setYear(it.y); }
     if (!still && !first) { refs.work.dataset.fresh = String(Date.now()); }
     markSquare(it);
-    if (refs.full && !refs.full.hidden) { fullShow(); }
     associations(it);
     S.dirty = true;
   }
@@ -667,8 +665,7 @@
       W.facts(it.id).then(function (f) {
         if (S !== mine || S.items[S.i] !== it || !f) { return; }
         W.fill(refs.how, f, { title: false, how: how });
-        if (refs.full && !refs.full.hidden) { fullShow(); }
-        placeLabel();
+            placeLabel();
       });
     }
     placeLabel();
@@ -717,87 +714,45 @@
     if (it.kind === "site" && it.ll && Land.site && it.key) { Land.site(it.key, it.ll[0], it.ll[1], 1.2, it.t); }
   }
 
-  /* ---- the whole screen: a press on the picture; again, or Escape, back ---- */
+  /* ---- a press: twice as big; again: the whole screen, as near as one likes ----
+     (zoom.js; artist, 7 Oct 2026). Escape, the close mark or a press on the
+     dark steps back. A swipe still changes the work at its size and at twice
+     it; on the whole screen one finger moves it. */
 
-  function setFull(on) {
-    var f = refs.full;
-    if (!on) {
-      if (f && !f.hidden) {
-        f.hidden = true;
-        if (refs.pic && refs.pic.isConnected) { try { refs.pic.focus({ preventScroll: true }); } catch (e) {} }
-      }
-      if (S) { S.full = false; }
-      return;
-    }
+  function labelNode() {
     var it = S && S.items[S.i];
-    if (!it || !it.img) { return; }
-    if (!f) {
-      f = fullEl();
-      refs.full = f;
-    }
-    f.hidden = false;
-    S.full = true;
-    fullShow();
-    try { f.focus({ preventScroll: true }); } catch (e) {}
-  }
-  // One for the page: laid once, under #art (over its column and its dial), swiped as the picture is.
-  var fullBox = null;
-  function fullEl() {
-    if (fullBox) {
-      refs.fullImg = fullBox._img; refs.fullCap = fullBox._cap; refs.fullCount = fullBox._count;
-      return fullBox;
-    }
-    var art = document.getElementById("art") || document.body;
-    var f = el("div", "pt-full");
-    f.hidden = true;
-    f.tabIndex = -1;
-    f.setAttribute("role", "dialog");
-    f.setAttribute("aria-label", "The work, on the whole screen; a press or Escape goes back");
-    var im = el("img");
-    im.alt = "";
-    im.decoding = "async";
-    im.referrerPolicy = "no-referrer";
-    var foot = el("div", "pt-full-cap");
-    var capT = el("div", "wall-label pt-full-t");
-    var capN = el("span", "pt-full-n");
-    foot.appendChild(capT);
-    foot.appendChild(capN);
-    f.appendChild(im);
-    f.appendChild(foot);
-    f.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
-    f.addEventListener("click", function (event) { event.stopPropagation(); event.preventDefault(); setFull(false); });
-    if (window.Voice && Voice.swipeable) { Voice.swipeable(f, function (d) { return step(d, true); }, art); }
-    f._img = im; f._cap = capT; f._count = capN;
-    art.appendChild(f);
-    fullBox = f;
-    refs.fullImg = im; refs.fullCap = capT; refs.fullCount = capN;
-    return f;
-  }
-  function fullShow() {
-    var it = S && S.items[S.i], im = refs.fullImg;
-    if (!it || !im) { return; }
-    im.src = it.img;
-    if (it.big && it.big !== it.img) {
-      var big = new Image();
-      big.referrerPolicy = "no-referrer";
-      big.addEventListener("load", function () { if (S && S.items[S.i] === it && refs.fullImg === im) { im.src = big.src; } });
-      big.src = it.big;
-    }
-    // Along its foot, its wall label (the title, then what is beside the picture).
-    var fl = refs.fullCap, tl = el("p", "wl-title");
-    fl.textContent = "";
+    if (!it) { return null; }
+    var n = el("div", "wall-label"), tl = el("p", "wl-title");
     tl.appendChild(el("i", "", it.t || "Untitled"));
-    fl.appendChild(tl);
-    Array.prototype.forEach.call(refs.how.childNodes, function (n) { fl.appendChild(n.cloneNode(true)); });
-    showCount();
+    n.appendChild(tl);
+    Array.prototype.forEach.call(refs.how.childNodes, function (c) { n.appendChild(c.cloneNode(true)); });
+    if (refs.count && refs.count.textContent) { n.appendChild(el("p", "wl-src", refs.count.textContent)); }
+    return n;
   }
-  window.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && S && S.full && refs.full && !refs.full.hidden) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      setFull(false);
-    }
-  }, true);
+  function pressPic() {
+    var it = S && S.items[S.i], Z = window.Zoom;
+    if (!it || !it.img || !Z) { return; }
+    var z = Z.big();
+    if (z && z.node === refs.pic) { fullOpen(); return; }
+    var box = refs.picbox;
+    Z.twice({ node: refs.pic, img: refs.img, lift: root, label: labelNode,
+              base: function () { return box.isConnected ? box.getBoundingClientRect() : null; } });
+  }
+  function fullOpen() {
+    var it = S && S.items[S.i];
+    if (!it || !window.Zoom) { return; }
+    Zoom.open({ src: refs.img.currentSrc || it.img, alt: refs.img.alt,
+                big: [it.big && it.big.replace(/\/larger\.jpg$/, "/normalized.jpg"), it.big].filter(Boolean),
+                label: labelNode });
+  }
+  // Out of the way: the place closed, or a path moving on.
+  function setFull(on) {
+    if (on || !window.Zoom) { return; }
+    var z = Zoom.big();
+    if (z && refs.pic && z.node === refs.pic) { z.undo(true); }
+    if (Zoom.on() && root) { Zoom.close(true); }
+  }
+  function zoomed() { var Z = window.Zoom; return !!(Z && (Z.on() || (Z.big() && refs.pic && Z.big().node === refs.pic))); }
 
   /* ---- associations: new paths from this work, here ------------------------ */
 
@@ -1004,7 +959,7 @@
     var dt = Math.min(250, now - S.last);
     S.last = now;
     // The slow clock: a work is held 17 s of stillness; nothing moves under reduced motion, nor while it fills the screen.
-    if (!still && S.items.length > 1 && !document.hidden && !S.full && now - lastMove > STILL_MS) {
+    if (!still && S.items.length > 1 && !document.hidden && !zoomed() && now - lastMove > STILL_MS) {
       S.held += dt;
       if (S.held >= HOLD) { step(1, false); }
     }
@@ -1166,7 +1121,7 @@
                items: S.items.length, own: S.own, i: S.i, work: it ? it.t + (it.y ? ", " + it.y : "") : null, how: it ? it.how : null,
                other: it && it.other ? it.by : null, count: refs.count ? refs.count.textContent : "", tag: refs.tag && !refs.tag.hidden ? refs.tag.textContent : "",
                list: S.items.map(function (x) { return (x.other ? surname(x.by) + ": " : "") + (x.t || "Untitled") + (x.y ? ", " + x.y : "") + (x.saved ? "" : " (not saved)"); }),
-               full: !!S.full, doors: refs.doors ? [].map.call(refs.doors.querySelectorAll(".pt-door"), function (b) { return b.textContent; }) : [],
+               full: window.Zoom ? Zoom._state() : null, doors: refs.doors ? [].map.call(refs.doors.querySelectorAll(".pt-door"), function (b) { return b.textContent; }) : [],
                title: refs.title ? refs.title.textContent : "", where: refs.where ? refs.where.textContent : "",
                note: refs.note ? refs.note.textContent : "", label: refs.label ? refs.label.textContent : "",
                dial: window.Land && Land.dial ? (Land.dial() || {}).year : null };
