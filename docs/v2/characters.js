@@ -229,6 +229,7 @@
      Where the artist's works are or have been (artists.json), and home. */
 
   function mapOf(c) {
+    if (c.gen) { return c.map; }
     var m = artists && artists.artists && artists.artists[c.artist];
     return m && m.places && m.places.length ? m : null;
   }
@@ -296,6 +297,87 @@
   function homesOf(key) {
     var t = townOf(key);
     return drawn().filter(function (c) { return isNative(c, key, t ? [t.lat, t.lon] : null); });
+  }
+
+  /* ---- every place its own: the natives ----------------------------------------
+
+     Every place of the site has a character of its own (characters/places/<key>.json,
+     by scripts/characters/natives.py): a species of DIRT's grammar for the place's
+     biome and realm, drawn by its body plan after its native artist (the saved artist
+     born there; else one of the region; else "after the ground"), in that artist's
+     hand and inks. plants.json's rows carry each place's key; a place is found by its
+     key, else as the nearest keyed place within 25 km. A place whose native is one of
+     the six drawn by hand names it (`cast`). One file a place, read on the wave. */
+
+  var natives = {};                    // key -> Promise of the character (or null)
+  var gens = {};                       // id -> a place's own character, built
+  var mapsRead = {};
+
+  function placeKey(city, ll) {
+    if (!plants) { return null; }
+    var rows = plants.places, k;
+    if (city && city.key) {
+      for (k = 0; k < rows.length; k += 1) { if (rows[k][5] === city.key) { return city.key; } }
+    }
+    var p = ll || (city ? [city.lat, city.lon] : null);
+    if (!p) { return null; }
+    var best = null, bd = NATIVE_KM;
+    rows.forEach(function (r) {
+      if (!r[5]) { return; }
+      var d = km(r[0], r[1], p[0], p[1]);
+      if (d <= bd) { bd = d; best = r[5]; }
+    });
+    return best;
+  }
+
+  function unrow(s) {
+    var out = "", n = "";
+    for (var i = 0; i < s.length; i += 1) {
+      var ch = s.charAt(i);
+      if (ch >= "0" && ch <= "9") { n += ch; continue; }
+      out += n ? new Array(parseInt(n, 10) + 1).join(ch) : ch;
+      n = "";
+    }
+    return out;
+  }
+
+  function mapRead(id) {
+    if (!mapsRead[id]) { mapsRead[id] = get(BASE + "maps/" + id + ".json").catch(function () { return null; }); }
+    return mapsRead[id];
+  }
+
+  // The place's character: one of the six (cast), or its own, built from its file.
+  function nativeFor(key) {
+    if (!key) { return Promise.resolve(null); }
+    if (!natives[key]) {
+      natives[key] = load().then(function () { return get(BASE + "places/" + key + ".json"); }).then(function (rec) {
+        if (rec.cast) {
+          var c0 = castOf(rec.cast);
+          return c0 && sprites[c0.id] ? { c: c0, rec: rec } : null;
+        }
+        if (!rec.sprite) { return null; }
+        var id = "p:" + key;
+        var poses = {};
+        Object.keys(rec.sprite.poses).forEach(function (pn) { poses[pn] = rec.sprite.poses[pn].map(function (fr) { return fr.map(unrow); }); });
+        sprites[id] = { id: id, w: rec.sprite.w, h: rec.sprite.h, cell: rec.sprite.cell, foot: rec.sprite.foot, poses: poses };
+        var n = rec.native || {};
+        var c = { id: id, gen: true, rec: rec, name: rec.species.name, species: rec.species.latin, artist: n.artist || null,
+                  after: { inks: rec.inks }, moves: rec.moves, native: { key: key, ll: rec.ll }, map: null };
+        gens[id] = c;
+        return (rec.map ? mapRead(rec.map) : Promise.resolve(null)).then(function (m) {
+          c.map = m && m.places && m.places.length ? m : null;
+          return { c: c, rec: rec };
+        });
+      }).catch(function () { return null; });
+    }
+    return natives[key];
+  }
+
+  // A place's native as a hometown animal: only where its artist was born (not one of the region, not the ground's).
+  function hometown(key) {
+    return nativeFor(key).then(function (got) {
+      return got && got.rec.native && got.rec.native.how === "born" ? got.c : null;
+    });
   }
 
   // What two artists' saved works share, as the threads know it (artists.json's pairs).
@@ -671,11 +753,17 @@
   // the banner, the walk's strip. A character never stands under them.
   function obstacles() {
     var out = [];
-    ["#art-col", "#art-time", "#building-time", ".walk-strip", "#banner"].forEach(function (sel) {
+    // In the reading layout also the lens (the small round globe), the picture and its sentence
+    // (7 Oct 2026: a fox sat on the lens's edge in a work's view and was in the way of its pinch).
+    ["#art-col", "#art-time", "#building-time", ".walk-strip", "#banner", "#art-plate", ".lens-hole",
+     ".voice-cap", ".dial-readout", ".lens-home", ".dial-home"].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el || el.hidden || !el.getClientRects().length) { return; }
       var r = el.getBoundingClientRect();
-      if (r.width && r.height) { out.push(r); }
+      if (r.width && r.height) {
+        out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height,
+                   reading: /art-plate|lens|voice-cap|art-time/.test(sel) });
+      }
     });
     // The city's own marks: a museum's diamond and its name are its way in.
     var land = document.getElementById("land");
@@ -792,21 +880,29 @@
       var lw = window.Land && Land.where ? Land.where() : null;
       var ll = lw && lw.ll ? lw.ll : null;
       var here = ll ? placeAt(ll[0], ll[1]) : placeAt(city.lat, city.lon);
-      var now = performance.now();
-      var c = null;
-      if (cast && now >= restUntil && room("", now)) {
-        var free = drawn().filter(function (k) { return !visit.seen[k.id] && !outNow(k.id); });
-        if (lw && lw.life) {
-          free = free.filter(function (k) { return k.artist === lw.life.name; });
-        } else {
-          var tk = townKeyNear(city), pt = ll || [city.lat, city.lon];
-          free = free.filter(function (k) { return isNative(k, tk, pt); });
-        }
-        if (prefer) { free.sort(function (p, q) { return (q.id === prefer) - (p.id === prefer); }); }
-        c = free[0] || null;
+      var pk = placeKey(ll ? null : city, ll);
+      var want;
+      if (lw && lw.life) {
+        // A life's place: the artist's own animal, chosen by whoever chose the life; else the place's own.
+        var own = drawn().filter(function (k) { return k.artist === lw.life.name; })[0];
+        var nk = plants && plants.natives && plants.natives[lw.life.name];
+        want = own ? Promise.resolve({ c: own, rec: null }) : nk ? nativeFor(nk) : nativeFor(pk);
+      } else {
+        want = nativeFor(pk);
       }
-      if (c && room(c.id, now)) { come(c, x, y, city.r || 60, here, city, isNative(c, townKeyNear(city), ll || [city.lat, city.lon])); return; }
-      bed(x, y, city.r || 60, here);
+      want.then(function (got) {
+        var now = performance.now();
+        var c = got && got.c;
+        if (c && prefer && c.id !== prefer) { c = null; }
+        if (c && (visit.seen[c.id] || outNow(c.id) || now < restUntil || !room(c.id, now))) { c = null; }
+        if (c) {
+          var home = got.rec ? got.rec.key === pk && got.rec.native && got.rec.native.how === "born"
+            : isNative(c, townKeyNear(city), ll || [city.lat, city.lon]);
+          come(c, x, y, city.r || 60, here, city, home);
+          return;
+        }
+        bed(x, y, city.r || 60, here);
+      });
     });
   }
 
@@ -895,13 +991,19 @@
   var trip = null;                     // the journey under way: { from, to, passed }
   var hist = null;                     // the work whose history is open: { id, at, keys, done }
 
+  // The native of a city whose artist was born there: its hometown animal (one of the six, or the place's own).
+  function homeAnimal(key) {
+    return Promise.all([load(), loadTowns()]).then(function () {
+      return hometown(placeKey({ key: key }, null)).then(function (c) {
+        return c || homesOf(key)[0] || null;
+      });
+    });
+  }
+
   function arrive(key, viaTrip) {
-    loadTowns().then(function () {
+    homeAnimal(key).then(function (c) {
       var t = townOf(key);
-      if (!t || visit.key !== key) { return; }
-      var homes = homesOf(key).filter(function (c) { return !visit.seen[c.id] && !outNow(c.id); });
-      if (!homes.length) { return; }
-      var c = homes[Math.floor(Math.random() * homes.length)];
+      if (!c || !t || visit.key !== key || visit.seen[c.id] || outNow(c.id)) { return; }
       if (!setUp()) { return; }
       size();
       if (!room(c.id, performance.now())) { return; }
@@ -920,13 +1022,12 @@
   }
 
   function passOver(key) {
-    loadTowns().then(function () {
+    homeAnimal(key).then(function (c) {
       var t = townOf(key);
-      if (!t || !setUp()) { return; }
+      if (!c || !t || !setUp()) { return; }
       size();
       if (live().some(function (o) { return o.mode === "far"; })) { return; }
-      var c = homesOf(key).filter(function (k) { return room(k.id, performance.now()); })[0];
-      if (c) { comeFar(c, t, "pass", performance.now() + 3200); }
+      if (room(c.id, performance.now())) { comeFar(c, t, "pass", performance.now() + 3200); }
     });
   }
 
@@ -946,11 +1047,17 @@
     hist.done = true;
     if (!setUp()) { return; }
     size();
-    for (var k = 0; k < hist.keys.length; k += 1) {
-      var t = townOf(hist.keys[k]);
-      var c = t && homesOf(t.key).filter(function (x) { return room(x.id, now); })[0];
-      if (c) { comeFar(c, t, "stop", 0).work = id; return; }
-    }
+    var keys = hist.keys.slice(0, 8), h = hist;
+    (function next(k) {
+      if (k >= keys.length || hist !== h) { return; }
+      var t = townOf(keys[k]);
+      if (!t) { next(k + 1); return; }
+      homeAnimal(t.key).then(function (c) {
+        if (hist !== h) { return; }
+        if (c && room(c.id, performance.now())) { comeFar(c, t, "stop", 0).work = id; return; }
+        next(k + 1);
+      });
+    })(0);
   }
 
   function poll() {
@@ -1157,8 +1264,17 @@
      European beech and pedunculate oak · 10 of the artist's works have been
      here"; at home: "Bald eagle · after Andy Warhol, of Pittsburgh,
      Pennsylvania · at home in Pittsburgh". */
+  // Who a native is after, from its place's file: "after Giorgio Morandi, born in Bologna",
+  // "after Joan Miró, of the region (born in Barcelona)", "after the ground: Bologna's terra rossa".
+  function afterSaid(o) {
+    var r = o.c.rec, n = r.native || {};
+    if (n.how === "born") { return "after " + n.artist + ", born in " + n.born; }
+    if (n.how === "region") { return "after " + n.artist + ", of the region (born in " + n.born + ")"; }
+    return "after the ground" + (o.here ? ": " + r.name.split(",")[0] + "’s " + o.here.soil : "");
+  }
+
   function line(o) {
-    var bits = [o.c.name, "after " + o.c.artist + (o.home ? ", of " + o.home.where : "")];
+    var bits = [o.c.name, o.c.gen ? afterSaid(o) : "after " + o.c.artist + (o.home ? ", of " + o.home.where : "")];
     var names = [], homes = [];
     o.plants.forEach(function (p) {
       var nm = p.stratum[4][0];
@@ -1166,8 +1282,11 @@
       if (nm && list.indexOf(nm) < 0) { list.push(nm); }
     });
     var town = o.city && o.city.name ? o.city.name.split(",")[0] : "";
+    if (o.c.gen && o.atHome) { town = o.c.rec.name.split(",")[0]; }
     var local = names.length ? (town ? town + "’s " : "") + andList(names.slice(0, 3)) : "";
-    if (o.atHome && town) {
+    if (o.c.gen && o.atHome) {
+      if (local) { bits.push("among " + local); }
+    } else if (o.atHome && town) {
       bits.push("at home in " + town + (names.length ? ", among " + andList(names.slice(0, 2)) : ""));
     } else if (homes.length) {
       bits.push(andList(homes.slice(0, 2)) + " from " + o.home.name + (local ? " among " + local : ""));
@@ -1176,7 +1295,7 @@
     } else if (names.length) {
       bits.push("among " + local);
     }
-    if (!o.home && o.here) { bits.push(o.here.set.biome); }
+    if (!o.home && o.here && !o.c.gen) { bits.push(o.here.set.biome); }
     var n = o.row ? o.row[5].length : 0;
     if (n) {
       bits.push(n + (n === 1 ? " of the artist’s works has" : " of the artist’s works have") + " been here");
@@ -1382,6 +1501,13 @@
   // Following: running along the way, or to where it waits, then standing, then sitting.
   function stepFollow(o, now, dt) {
     if (o.hidden) { return; }
+    // Waiting by the lens or the picture of a reading, it keeps out of sight rather than over them.
+    if (!stepFollow.obs || now - stepFollow.at > 500) {
+      stepFollow.obs = obstacles().filter(function (r) { return r.reading; });
+      stepFollow.at = now;
+    }
+    var bb = bounds(o);
+    o.covered = stepFollow.obs.some(function (r) { return bb.x + bb.w > r.left && bb.x < r.right && bb.y + bb.h > r.top && bb.y < r.bottom; });
     if (o.state === "run") { o.pose = "trot"; o.n = gaitFrame(o, now); o.alt = o.mv.lift; return; }
     var tg = o.target;
     if (!tg) { o.pose = "stand"; return; }
@@ -1411,6 +1537,12 @@
     if (over) { remove(o); return; }
     o.hidden = !p || p.z < 0.08;
     if (!o.hidden) { o.x = p.x + o.geo.dx; o.y = p.y + o.geo.dy; }
+    // Never over the lens, the picture, the dial, the column: there it is simply not seen.
+    if (!o.hidden) {
+      if (!stepFar.obs || now - stepFar.at > 500) { stepFar.obs = obstacles(); stepFar.at = now; }
+      var b = bounds(o);
+      o.hidden = stepFar.obs.some(function (r) { return b.x + b.w > r.left && b.x < r.right && b.y + b.h > r.top && b.y < r.bottom; });
+    }
     o.pose = o.farKind === "pass" ? "look" : "sit";
     if (o.state === "out" && now - o.born > 700) { o.state = "wait"; }
   }
@@ -1427,7 +1559,7 @@
     crowd.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (o) {
       busy = drawPlants(o, now) || busy;
       busy = drawTrail(o, now) || busy;
-      if (o.state === "gone" || o.hidden) { if (o.hit) { o.hit.hidden = true; } return; }
+      if (o.state === "gone" || o.hidden || (o.covered && o.mode === "follow")) { if (o.hit) { o.hit.hidden = true; } return; }
       busy = true;
       var sp = sprite(o.c, o.pose, o.n, o.dir, o.here, o.scale);
       var b = bounds(o);
@@ -2436,6 +2568,9 @@
 
   window.Characters = {
     wave: wave,
+    // A place's own character (characters/places/<key>.json): { c, rec }, for the checks and the preview.
+    native: function (key) { return load().then(function () { return nativeFor(key); }); },
+    placeKey: function (city, ll) { return placeKey(city, ll); },
     // land.js, while following: where the animal is to be, and the end of it.
     guide: guide,
     following: function () { return !!follower(); },
@@ -2453,7 +2588,7 @@
     // and one pose drawn as the page draws it, on a place's soil and plants.
     load: load,
     preview: function (ctx, o) {
-      var c = cast.cast.filter(function (k) { return k.id === o.id; })[0];
+      var c = cast.cast.filter(function (k) { return k.id === o.id; })[0] || gens[o.id];
       var here = placeAt(o.lat, o.lon);
       var keep = dpr;
       dpr = o.scale;
@@ -2490,6 +2625,7 @@
       return first;
     },
     _prefer: function (id) { prefer = id || null; },
+    _reset: function () { restUntil = 0; lastCame = -1e9; },
     // The checks: bring one now, by id, in a mode ("home" in the city you are in, "rest", or a wave).
     _come: function (id, mode) {
       return Promise.all([load(), loadTowns()]).then(function () {

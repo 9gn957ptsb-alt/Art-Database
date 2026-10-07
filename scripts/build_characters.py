@@ -131,16 +131,20 @@ def places():
     return out
 
 
-def plants(extra=()):
+def plants(extra=(), keyed=()):
+    """keyed: (name, lat, lon, key) for every place with a character of its own (natives.py); its row
+    carries the key, so the page finds the place's file."""
     grammar = json.loads((EARTH / "grammar.json").read_text())
     atlas = Atlas()
     sets, set_index = [], {}
     ecos, eco_index = [], {}
     soils, soil_index = [], {}
     rows, seen = [], set()
-    for name, lat, lon in list(places()) + list(extra):
+    info = {}
+    todo = [(n, la, lo, k) for n, la, lo, k in keyed] + [(n, la, lo, None) for n, la, lo in list(places()) + list(extra)]
+    for name, lat, lon, pkey in todo:
         key = (round(lat, 2), round(lon, 2))
-        if key in seen:
+        if key in seen and not pkey:
             continue
         seen.add(key)
         here = atlas.at(lat, lon)
@@ -164,12 +168,21 @@ def plants(extra=()):
         if here["soil"] not in soil_index:
             soil_index[here["soil"]] = len(soils)
             soils.append(list(here["soil"]))
-        rows.append([key[0], key[1], set_index[sk], eco_index[here["ecoregion"]], soil_index[here["soil"]]])
+        row = [key[0], key[1], set_index[sk], eco_index[here["ecoregion"]], soil_index[here["soil"]]]
+        if pkey:
+            row.append(pkey)
+            soil = here["soil"][1].lstrip("#")
+            info[pkey] = {"biome_n": here["biome"], "realm": here["realm"], "set": set_index[sk],
+                          "soil_rgb": tuple(int(soil[k:k + 2], 16) for k in (0, 2, 4)), "look": sets[set_index[sk]]["look"]}
+        rows.append(row)
+    plants.info = info
     return {
         "note": "For every city the page can be down in: DIRT Earth's biome, realm, ecoregion and soil there, "
                 "and the plants of that biome in that realm, stratum by stratum (name, crown shape, crown radius "
                 "in DIRT cells, cover, plants). From DIRT's atlas and grammar of places; written by "
-                "scripts/build_characters.py. places: [lat, lon, set, ecoregion, soil].",
+                "scripts/build_characters.py. places: [lat, lon, set, ecoregion, soil, key]: key, where the place has a "
+                "character of its own, characters/places/<key>.json. natives: an artist's name -> the place they are "
+                "the native of.",
         "crowns": grammar["crowns"],
         "sets": sets,
         "ecoregions": ecos,
@@ -350,10 +363,32 @@ def main():
     home_of = homes()
     extra = [(h["born"]["where"], h["born"]["ll"][0], h["born"]["ll"][1])
              for _, h in sorted(home_of.items()) if h.get("born")]
-    p = plants(extra)
+    import natives
+    grammar = json.loads((EARTH / "grammar.json").read_text())
+    nplaces, fixed, born, _ = natives.build(cast, None, None, grammar)
+    keyed = [(q["name"], q["ll"][0], q["ll"][1], q["key"]) for q in nplaces]
+    p = plants(extra, keyed)
+    info = plants.info
+    rows = {(r[0], r[1]): r for r in p["places"]}
+    # each artist's home plants: the row of the place nearest their birthplace
+    keyed_rows = [r for r in p["places"] if len(r) > 5]
+    plant_rows = {}
+    for b in born:
+        r = min(keyed_rows, key=lambda r: (km(b["ll"], (r[0], r[1])), r[5]))
+        plant_rows[b["id"]] = r[2:5]
+    index, natives_of, stats = natives.write_all(cast, nplaces, fixed, born, plant_rows, info, grammar)
+    have = {q["key"] for q in index}
+    for r in p["places"]:
+        if len(r) > 5 and r[5] not in have:
+            r[5] = 0
+    p["natives"] = dict(sorted(natives_of.items()))
     n = dump(OUT / "plants.json", p)
     print(f"plants: {len(p['places'])} places, {len(p['sets'])} biome-realm sets, {n} bytes")
-    rows = {(r[0], r[1]): r for r in p["places"]}
+    print(f"natives: {len(index)} places with a character ({stats['cast']} drawn by hand), native artist "
+          f"{stats['born']}, of the region {stats['region']}, after the ground {stats['ground']}, none {stats['none']}; "
+          f"{len(stats['species'])} species; hands {stats['modes']}; {stats['maps']} maps; places {stats['bytes']} bytes")
+    if natives.MISSING:
+        print("not yet drawn (no row in species.py): " + ", ".join(sorted(natives.MISSING)))
     maps = artist_maps(cast, home_of, rows)
     pairs = artist_pairs(cast)
     n = dump(OUT / "artists.json", {
