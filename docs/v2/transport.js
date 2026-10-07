@@ -85,9 +85,17 @@
   // over it; the dial and its readout come back with the view's own.
   function aloneNow() { return fullNow() || !!document.querySelector(".art[data-on=\"true\"][data-look=\"plate\"]"); }
   function picRect() {
+    // The reading layout's picture, else the place, then's (placethen.js); with its wall label, which touches it.
     var pic = document.getElementById("art-plate");
+    if (!pic || !visibleBox(pic)) { pic = document.querySelector(".pt-picbox"); }
     if (!pic || !visibleBox(pic)) { return null; }
     var r = pic.getBoundingClientRect();
+    var lab = document.querySelector(".art > .wall-label.wl-plate[data-on]:not([hidden])");
+    if (lab && pic.id === "art-plate" && visibleBox(lab)) {
+      var l = lab.getBoundingClientRect();
+      r = { left: Math.min(r.left, l.left), top: Math.min(r.top, l.top), right: Math.max(r.right, l.right), bottom: Math.max(r.bottom, l.bottom) };
+      r.width = r.right - r.left; r.height = r.bottom - r.top;
+    }
     return r.width && r.height ? r : null;
   }
   function hits(a, b) { return !!(a && b && a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom); }

@@ -401,9 +401,12 @@
     var count = el("span", "pt-count");
     line.appendChild(wt);
     line.appendChild(count);
-    var how = el("p", "pt-how");
+    // Its wall label (label.js): artist · date, medium · size, how it is known, where it is now.
+    // Under the picture, or beside it on a phone when the picture is upright (placeLabel).
+    var how = el("div", "wall-label pt-label");
     cap.appendChild(line);
     cap.appendChild(how);
+    img.addEventListener("load", function () { placeLabel(); });
     work.appendChild(cap);
     var doors = el("div", "pt-doors");
     doors.setAttribute("aria-label", "New ways on from this work, here");
@@ -459,7 +462,7 @@
     if (art) { art.insertBefore(root, art.firstChild); } else { document.body.appendChild(root); }
     refs = { head: head, stage: stage, canvas: canvas, tile: tile, label: label, title: title, quiet: quiet, where: where, info: info,
              more: moreBox, moreWhere: moreWhere, note: note, src: src, work: work, picbox: picbox, pic: picBtn, img: img, tag: tag,
-             none: none, wt: wt, how: how, count: count, doors: doors, prev: prev, next: next };
+             none: none, wt: wt, how: how, cap: cap, count: count, doors: doors, prev: prev, next: next };
     place();
   }
 
@@ -478,8 +481,8 @@
     var empty = !!(S && S.ready && !S.items.length);
     var bs = document.body.style, key;
     if (phone) {
-      var DIAL = 136, HEAD = 40, CLOD = 140, WORDS = 82;
-      var pic = Math.round(Math.max(120, Math.min(0.31 * H, H - top - WORDS - HEAD - CLOD - 8 - 0.28 * H)));
+      var DIAL = 136, HEAD = 40, CLOD = 140, WORDS = 128;   // the title and count, the wall label, the doors
+      var pic = Math.round(Math.max(120, Math.min(0.31 * H, H - top - WORDS - HEAD - CLOD - 8 - 0.25 * H)));
       var workH = empty ? 68 : pic + WORDS, bandTop = top + workH + 2;
       var bandH = empty ? pic + WORDS + HEAD + CLOD - 70 : HEAD + CLOD;
       key = ["p", W, H, top, empty].join(",");
@@ -639,14 +642,56 @@
     refs.wt.appendChild(document.createTextNode((it.y ? ", " + (it.circa ? "c. " : "") + it.y : "") + (it.saved && it.id || it.ll ? " ›" : "")));
     refs.wt.disabled = !(it.saved && it.id) && !(it.kind === "site" && it.ll);
     refs.wt.setAttribute("aria-label", it.saved && it.id ? "Where " + (it.t || "it") + " has been" : "Go to where " + (it.t || "it") + " was painted");
-    refs.how.textContent = [it.how, (it.cat || []).join(" · "), it.saved ? "" : "not saved" + (it.where ? " · " + it.where : "")].filter(Boolean).join(" · ");
-    refs.how.title = refs.how.textContent;
+    labelItem(it);
     if (it.y) { setYear(it.y); }
     if (!still && !first) { refs.work.dataset.fresh = String(Date.now()); }
     markSquare(it);
     if (refs.full && !refs.full.hidden) { fullShow(); }
     associations(it);
     S.dirty = true;
+  }
+
+  /* The work's wall label (label.js), which changes with the swipe: how it is known kept in it
+     ("dated within these years", "pulled at Lacourière, Paris", a catalogue number); a saved work's
+     facts are Artsy's and where it is now its history's; a painting not saved says so, by Wikidata. */
+  function howOf(it) {
+    return [it.how, (it.cat || []).join(" · "), it.saved ? "" : "not saved"].filter(Boolean).join(" · ");
+  }
+  function labelItem(it) {
+    var mine = S, how = howOf(it), W = window.WallLabel;
+    if (!W) { refs.how.textContent = how; return; }
+    var by = it.other ? it.by : S.L.name;
+    var quick = W.fromItem({ title: it.t, by: by, year: it.y, where: it.saved ? "" : it.where, src: it.saved ? "Artsy" : "Wikidata" });
+    W.fill(refs.how, quick, { title: false, how: how });
+    if (it.saved && it.id) {
+      W.facts(it.id).then(function (f) {
+        if (S !== mine || S.items[S.i] !== it || !f) { return; }
+        W.fill(refs.how, f, { title: false, how: how });
+        if (refs.full && !refs.full.hidden) { fullShow(); }
+        placeLabel();
+      });
+    }
+    placeLabel();
+  }
+  /* Beside the picture on a phone when it is upright and narrow enough to leave the label room
+     (picture left, label right); else under it, before its doors. */
+  function placeLabel() {
+    if (!S || !refs.pic) { return; }
+    var phone = root && root.dataset.phone === "true";
+    var im = refs.img, box = refs.picbox;
+    var aspect = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 0;
+    var bw = box.clientWidth, bh = box.clientHeight + (refs.how.parentNode === box ? 0 : refs.how.offsetHeight + 4);
+    var side = phone && aspect && aspect < 1 && !refs.pic.hidden && bw - 150 - 12 >= bh * aspect * 0.98;
+    if (side) {
+      if (refs.how.parentNode !== box) { box.appendChild(refs.how); }
+      var w = Math.round(Math.min(bw - 162, box.clientHeight * aspect));
+      refs.work.style.setProperty("--pt-pic-w", w + "px");
+      refs.work.dataset.side = "true";
+    } else {
+      if (refs.how.parentNode !== refs.cap) { refs.cap.appendChild(refs.how); }
+      delete refs.work.dataset.side;
+      refs.work.style.removeProperty("--pt-pic-w");
+    }
   }
 
   // The column's square of the work in the picture, lit (as the reading layout's swipe lights it).
@@ -712,8 +757,8 @@
     im.alt = "";
     im.decoding = "async";
     im.referrerPolicy = "no-referrer";
-    var foot = el("p", "pt-full-cap");
-    var capT = el("span", "pt-full-t");
+    var foot = el("div", "pt-full-cap");
+    var capT = el("div", "wall-label pt-full-t");
     var capN = el("span", "pt-full-n");
     foot.appendChild(capT);
     foot.appendChild(capN);
@@ -738,7 +783,12 @@
       big.addEventListener("load", function () { if (S && S.items[S.i] === it && refs.fullImg === im) { im.src = big.src; } });
       big.src = it.big;
     }
-    refs.fullCap.textContent = (it.other ? surname(it.by) + " · " : "") + (it.t || "Untitled") + (it.y ? ", " + it.y : "");
+    // Along its foot, its wall label (the title, then what is beside the picture).
+    var fl = refs.fullCap, tl = el("p", "wl-title");
+    fl.textContent = "";
+    tl.appendChild(el("i", "", it.t || "Untitled"));
+    fl.appendChild(tl);
+    Array.prototype.forEach.call(refs.how.childNodes, function (n) { fl.appendChild(n.cloneNode(true)); });
     showCount();
   }
   window.addEventListener("keydown", function (event) {

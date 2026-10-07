@@ -13849,6 +13849,17 @@
   var artKept = [];                     // the histories and threads read, oldest first
   var artEl = document.getElementById("art");
   var artPlate = document.getElementById("art-plate");
+  /* The wall label (label.js): touching the picture, wherever it stands
+     (artist, 7 Oct 2026: "Where the artwork is located along with its basic
+     information provided by artsy should always be adjacent to the thumbnail
+     of the artwork"). Placed by layoutPlate; the column no longer repeats it. */
+  var artLabel = null;
+  if (artPlate) {
+    artLabel = el("div", "wall-label wl-plate");
+    artLabel.hidden = true;
+    artLabel.setAttribute("aria-live", "polite");
+    artPlate.parentNode.insertBefore(artLabel, artPlate.nextSibling);
+  }
   var artCol = document.getElementById("art-col");
   var artTime = document.getElementById("art-time");
   var artYear = document.getElementById("art-time-year");
@@ -15559,7 +15570,7 @@
       // Under the banner, which a long title takes to two lines; the globe
       // framed left of the dial, which stands at the right of its band.
       var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
-      var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
+      var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.33 * H), colTop = Math.round(0.64 * H);
       var gy = top + ph + 6, cap = lens ? 52 : 0;
       var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
       var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
@@ -16416,6 +16427,7 @@
     artCol.scrollTop = 0;
     artPlate.textContent = "";
     artPlate.hidden = true;
+    clearLabel();
     // A work come back to (a crumb, a thread's door) shows its photograph again.
     delete artPlate.dataset.shown;
     artTime.hidden = true;
@@ -16487,6 +16499,7 @@
     artCol.textContent = "";
     artPlate.textContent = "";
     artPlate.hidden = true;
+    clearLabel();
     artPlate.style.transform = "";
     delete artPlate.dataset.mode;
     delete artPlate.dataset.shown;
@@ -17649,7 +17662,7 @@
       playArt();
       return;
     }
-    later(function () { enterText(a.headCap, 0); }, OPEN_AT[0], a);
+    // The label is revealed at 4 s (reveal above), not dealt in: its lines are not one text.
     later(flipToHead, OPEN_AT[1], a);
   }
 
@@ -17661,16 +17674,94 @@
     mode = mode || artPlate.dataset.mode || "look";
     artPlate.dataset.mode = mode;
     var bands = workBands(), b = mode === "rest" ? bands.plate : bands.look;
-    var w = Math.max(40, Math.min(b.w, b.h * aspect)), hh = w / aspect;
-    var x = b.x + (b.w - w) / 2, y = b.y + (b.h - hh) / 2;
+    // The wall label touches the picture: beside it on a phone when the picture is upright and narrow
+    // enough to leave it room (picture left, label right), else under it; under it on a desktop.
+    var lab = artLabel && !artLabel.hidden && !lensSwapped ? labelRoom(b, aspect) : null;
+    var room = !lab ? b : lab.side ? { x: b.x, y: b.y, w: b.w - lab.w - 12, h: b.h } : { x: b.x, y: b.y, w: b.w, h: b.h - lab.h - 6 };
+    var w = Math.max(40, Math.min(room.w, room.h * aspect)), hh = w / aspect;
+    var x = room.x + (room.w - w) / 2, y = room.y + (room.h - hh) / 2;
     // At rest it keeps to its edge: against the left on a desktop, the globe
     // beside it; under the banner on a phone, the globe below it. Swapped
     // into the lens's place, it stands in the middle of it.
     if (mode === "rest" && !lensSwapped) { if (W > 720) { x = b.x; } else { y = b.y; } }
+    if (lab && lab.side) { x = b.x; }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
     artPlate.style.top = y.toFixed(1) + "px";
+    if (lab) {
+      var ls = artLabel.style;
+      if (lab.side) {
+        ls.left = (x + w + 12).toFixed(1) + "px";
+        ls.top = y.toFixed(1) + "px";
+        ls.width = (b.x + b.w - x - w - 12).toFixed(1) + "px";
+        artLabel.dataset.side = "true";
+      } else {
+        ls.left = (W > 720 ? x : b.x).toFixed(1) + "px";
+        ls.top = (y + hh + 6).toFixed(1) + "px";
+        ls.width = b.w.toFixed(1) + "px";
+        delete artLabel.dataset.side;
+      }
+    }
+  }
+  // The label's room beside or under a picture of this aspect in band b: beside when that gives
+  // the picture at least as much width as standing over the label would.
+  function labelRoom(b, aspect) {
+    var SIDE = 150;
+    var under = Math.min(b.h * 0.45, labelHeight(b.w));
+    if (W <= 720 && aspect < 1) {
+      var wSide = Math.min(b.w - SIDE - 12, b.h * aspect), wUnder = Math.min(b.w, (b.h - under - 6) * aspect);
+      var sideW = b.w - 12 - wSide;
+      if (wSide >= wUnder && labelHeight(sideW) <= b.h) { return { side: true, w: sideW, h: 0 }; }
+    }
+    return { side: false, w: b.w, h: under };
+  }
+  // Its height at a width, measured before the picture is sized round it.
+  function labelHeight(w) {
+    var was = artLabel.style.width;
+    artLabel.style.width = Math.round(w) + "px";
+    var h = artLabel.offsetHeight;
+    artLabel.style.width = was;
+    return h || 60;
+  }
+  function clearLabel() {
+    if (!artLabel) { return; }
+    artLabel.hidden = true;
+    artLabel.textContent = "";
+    delete artLabel.dataset.on;
+    delete artLabel.dataset.side;
+    artLabel._for = null;
+  }
+  /* The label of the picture in the plate: a saved work's from its history (Artsy's facts and where
+     it is now), a painting not saved from what Painted here gives. Shown at once unless `later`
+     (a work's first look reveals it at 4 s, as its caption was). */
+  function labelPicture(spec, h, wait) {
+    if (!artLabel) { return; }
+    if (!window.WallLabel || (!spec && !h)) { clearLabel(); return; }
+    var key = h ? h.id : spec.id || spec.src || spec.image || "";
+    artLabel._for = key;
+    var a = art;
+    function put(f) {
+      if (art !== a || artLabel._for !== key) { return; }
+      if (!f) { clearLabel(); return; }
+      WallLabel.fill(artLabel, f);
+      if (!wait) { artLabel.dataset.on = "true"; }
+      if (!artPlate.hidden) { layoutPlate(null, null); return; }
+      // No photograph (yet, or at all): the label stands where it would begin.
+      var b = workBands().plate;
+      artLabel.style.left = b.x + "px";
+      artLabel.style.top = b.y + "px";
+      artLabel.style.width = b.w + "px";
+    }
+    if (h) {
+      put({ id: h.id, t: h.title || "Untitled", a: (h.artists || []).join(", "), d: h.date || "", m: h.medium || "",
+            s: h.dimensions || "", now: "", src: "Artsy" });
+      WallLabel.facts(h.id).then(function (f) { if (f) { put(f); } });
+    } else if (spec.id) {
+      WallLabel.facts(spec.id).then(function (f) { put(f || WallLabel.fromItem({ title: spec.title, by: spec.by, year: spec.year, src: "Artsy" })); });
+    } else {
+      put(WallLabel.fromItem({ title: spec.title, by: spec.by, year: spec.year, where: spec.where }));
+    }
   }
 
   /* The end of the look: the photograph steps aside to its place and stays
@@ -17772,8 +17863,11 @@
     if (!a.picture) {
       artPlate.textContent = "";
       artPlate.hidden = true;
+      clearLabel();
       return;
     }
+    // Its wall label, which changes with it (a swipe through the period, the work said).
+    labelPicture(spec, null);
     var go = el("span", "deal-go");
     var img = el("img");
     img.alt = [spec.title || "Untitled", spec.by || ""].filter(Boolean).join(", by ");
@@ -18043,17 +18137,10 @@
     var a = art;
     var col = artCol;
 
-    // The work, in words: its photograph has its own place beside the column.
-    var head = el("header", "art-head-text");
-    var title = el("p", "art-title");
-    title.appendChild(el("i", "", h.title || "Untitled"));
-    head.appendChild(title);
-    var by = [(h.artists || []).join(", "), h.date].filter(Boolean).join(" · ");
-    if (by) { head.appendChild(el("p", "art-by", by)); }
-    var made = [h.medium, h.dimensions].filter(Boolean).join(" · ");
-    if (made) { head.appendChild(el("p", "art-made", made)); }
-    col.appendChild(head);
-    a.headCap = head;
+    // The work, in words, is its wall label, touching its photograph (labelPicture, 7 Oct 2026); the
+    // column starts with the counts line, so the facts are not said twice.
+    labelPicture(null, h, true);
+    a.headCap = artLabel || el("div");
     a.headFig = null;
 
     var body = el("div", "art-body");
@@ -18061,6 +18148,8 @@
     a.body = body;
 
     var count = el("p", "art-count", countLine(h, a.stops));
+    // The artist, for the door into their life (lives.js) after this line.
+    count.dataset.artist = (h.artists || [])[0] || "";
     body.appendChild(count);
 
     // How you came: by a thread, from a work (FROM hops back).

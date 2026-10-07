@@ -70,7 +70,7 @@
 .life-crosses, .life-doors { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: var(--s-2) 0 var(--s-3); }
 .life-cross, .life-door { text-align: left; }
 .life-open { display: block; margin: var(--s-2) 0 0; }
-.art-head-text .life-open { margin-top: var(--s-2); }
+.art-head-text .life-open, .art-body > .life-in-work { margin-top: var(--s-2); }
 .life-undated, .life-after { margin-left: 0; line-height: 1.45; }
 .life-cat { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 @media (prefers-reduced-motion: reduce) { .life-period-body [data-later] { transition: none; } }
