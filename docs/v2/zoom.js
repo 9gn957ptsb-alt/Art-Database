@@ -63,11 +63,17 @@
       var w = Math.min(b.width, b.height * a), h = w / a;
       var cx = b.left + b.width / 2, cy = b.top + b.height / 2;
       var w2 = 2 * w, h2 = 2 * h;
+      // Once big, it stays that big (artist, 7 Oct 2026: "When I click on a painting to make it bigger and
+      // then swipe that bigger image, I want the artwork to remain at that size when it switches to the next
+      // artwork"): the next picture keeps the height it was given and the place it stood, not twice its own
+      // box at rest, which a wider label or another shape had made smaller. Only the screen limits it.
+      if (t.keep) { h2 = t.keep.h; w2 = h2 * a; cx = t.keep.cx; cy = t.keep.cy; }
       var labH = lab ? lab.offsetHeight + 6 : 0;
       var k = Math.min(1, (W - 2 * m) / w2, (H - m - top - labH) / h2);
       w2 *= k; h2 *= k;
       var x = Math.max(m, Math.min(W - m - w2, cx - w2 / 2));
       var y = Math.max(top, Math.min(H - m - h2 - labH, cy - h2 / 2));
+      if (!t.keep) { t.keep = { h: h2, cx: x + w2 / 2, cy: y + h2 / 2 }; }
       var s = o.node.style;
       s.setProperty("position", "fixed", "important");
       s.setProperty("left", x.toFixed(1) + "px", "important");
@@ -104,6 +110,8 @@
     apply();
     // Its box at rest or its picture changed (a swipe, a resize): twice as big again, its label anew.
     t.relayout = function () { makeLabel(); apply(); };
+    // A new screen (turned, resized): twice its box again, measured afresh.
+    t.resize = function () { t.keep = null; makeLabel(); apply(); };
     t.undo = function (quiet) {
       if (big !== t) { return; }
       big = null;
@@ -312,7 +320,7 @@
     event.preventDefault();
     event.stopImmediatePropagation();
   }, true);
-  window.addEventListener("resize", function () { if (V) { fit(); } if (big) { big.relayout(); } });
+  window.addEventListener("resize", function () { if (V) { fit(); } if (big) { big.resize(); } });
   // A press anywhere but on it puts a picture twice as big back to its size (the press goes on as it was).
   document.addEventListener("pointerdown", function (event) {
     if (!big || V) { return; }
