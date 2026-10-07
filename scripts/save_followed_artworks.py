@@ -173,6 +173,10 @@ def main():
                     continue
                 have.add(a["_id"])
                 time.sleep(DELAY)
+                # A big artist (Robert Indiana: 1,650 to save) outlasts the container; what is saved is kept
+                # every 25, so a restart goes on from there instead of saving the same works again.
+                if c["saved"] % 25 == 24:
+                    HAVE.write_text(json.dumps(sorted(have)))
             c["saved"] += 1
         state["counts"][artist["id"]] = c
         print(f"[{i}/{len(arts)}] {artist.get('name')}: {c}", flush=True)
