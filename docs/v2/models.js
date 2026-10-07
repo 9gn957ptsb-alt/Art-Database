@@ -269,8 +269,8 @@
   /* The dots: every voxel with open air beside it, and the plate of ground
      it stands on. soil(i, j) gives the DIRT at a cell of the plate as
      [r, g, b, size] (size 0 is a gap in the soil), or null. */
-  function build(spec, soil) {
-    var vx = voxelize(spec);
+  function build(spec, soil, filled) {
+    var vx = filled || voxelize(spec);
     var g = vx.grid, nx = vx.nx, ny = vx.ny, nz = vx.nz, v = vx.v;
     var dots = { x: [], y: [], z: [], size: [], ink: [], reveal: [] };
     var ground = MATERIALS[spec.ground || "soil"] || MATERIALS.soil;
@@ -372,6 +372,43 @@
     return dots;
   }
 
+  /* The building alone, to stand in the ground round it (land.js, the clod
+     of its plot): what is built and stands above a metre — no trees, pools,
+     lawns or paving, which the plot has of its own — as build()'s dots
+     without the plate, and the columns it stands on (foot, nx × ny), so the
+     plot can make room for it. Null when nothing built is left. */
+  var GROUNDS = { soil: 1, grass: 1, drygrass: 1, plant: 1, lavender: 1, sage: 1,
+                  sand: 1, gravel: 1, paving: 1, water: 1 };
+  function partTop(p) {
+    var a = p.box || p.gable || p.shed || p.hip, t = 0;
+    if (p.mesh) { for (var q = 2; q < p.mesh.v.length; q += 3) { t = Math.max(t, p.mesh.v[q]); } return t; }
+    if (a) { return a[2] + a[5] + (p.thick || 0); }
+    if (p.cyl) { return p.cyl[2] + p.cyl[4]; }
+    if (p.dome) { return p.dome[2] + p.dome[3]; }
+    if (p.blob) { return p.blob[2] + p.blob[5]; }
+    return 0;
+  }
+  function inset(spec, soil) {
+    var parts = (spec.parts || []).filter(function (p) {
+      return p.cut || (!p.tree && !p.pool && !GROUNDS[p.m || "concrete"] && partTop(p) > 1);
+    });
+    if (!parts.some(function (p) { return !p.cut; })) { return null; }
+    var s = {}, key;
+    for (key in spec) { if (Object.prototype.hasOwnProperty.call(spec, key)) { s[key] = spec[key]; } }
+    s.parts = parts;
+    var vx = voxelize(s), all = build(s, soil, vx);
+    var dots = { x: [], y: [], z: [], size: [], ink: [], reveal: [] };
+    for (var q = 0; q < all.count; q += 1) {
+      if (all.z[q] < 1) { continue; }               // the plate and its edges
+      dots.x.push(all.x[q]); dots.y.push(all.y[q]); dots.z.push(all.z[q]);
+      dots.size.push(all.size[q]); dots.ink.push(all.ink[q]); dots.reveal.push(all.reveal[q]);
+    }
+    dots.count = dots.x.length;
+    var foot = new Uint8Array(vx.nx * vx.ny), plane = vx.nx * vx.ny;
+    for (var c = 0; c < vx.grid.length; c += 1) { if (vx.grid[c]) { foot[c % plane] = 1; } }
+    return { dots: dots, foot: foot, nx: vx.nx, ny: vx.ny, nz: vx.nz, v: vx.v, site: vx.site };
+  }
+
   /* Draw the dots, turned to a heading, seen from a little above, on a
      canvas one pixel of which is a few of the screen's. shown (0–1) is how
      far it has risen. */
@@ -452,5 +489,5 @@
   }
 
   window.Models = { MATERIALS: MATERIALS, voxelize: voxelize, build: build, draw: draw,
-                    frame: frame, project: project, join: join, grain: grainAt };
+                    frame: frame, project: project, join: join, grain: grainAt, inset: inset };
 })();
