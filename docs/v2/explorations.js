@@ -65,6 +65,13 @@
   var CDN = "https://d32dm0rphc51dk.cloudfront.net/";
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var PACE = 1;
+  /* The viewer's own: the "+" and its chip ("Exploration · N") are hidden
+     for now (artist, 7 Oct 2026: "Get rid of the exploration button for now,
+     but keep the function in mind going forward"). Everything they lead to
+     is kept whole: true brings them back. The tray is reached only by them;
+     the published explorations, the relay, codes in Find and kept ones in
+     Find are unchanged. */
+  var MAKER = false;
 
   var D = null, reading = null, walksData = null;
   var movedAt = 0;
@@ -528,6 +535,7 @@
   }
 
   function renderDock(pulse) {
+    if (!MAKER) { return; }
     setUpDock();
     var can = D ? here() : [];
     var playing = !!run;

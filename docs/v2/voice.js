@@ -356,7 +356,7 @@
      the year shown, and then only within the period. A press still fills the
      screen with it; a vertical scroll is not a swipe. */
   var swipe = null;            // { view, life, k, key }: the work swiped to, told until the period is left
-  var swipedAt = 0, swipeArrows = null, swipeList = null;
+  var swipeArrows = null, swipeList = null;
   function picKey(pic) { return !pic ? "" : pic.site && !pic.id ? "s:" + pic.site : pic.id || (pic.site ? "s:" + pic.site : ""); }
   function swipeNow(r) {
     r = r || (window.Land && Land.reading ? Land.reading() : null);
@@ -376,7 +376,6 @@
     var i = w.i < 0 ? (d > 0 ? 0 : w.list.length - 1) : (w.i + d + w.list.length) % w.list.length;
     var q = w.list[i];
     swipe = { view: w.r.view, life: w.L.id, k: w.k, key: picKey(q) };
-    swipedAt = performance.now();
     var plate = artEl && artEl.querySelector(".art-plate");
     if (plate && !still) {
       plate.dataset.swipe = d > 0 ? "next" : "prev";
@@ -424,53 +423,60 @@
       b.style.top = Math.round(rc.top + rc.height / 2 - 16) + "px";
     });
   }
-  function swipeSetUp() {
-    var plate = artEl && artEl.querySelector(".art-plate");
-    if (!plate) { return; }
-    // A drag sideways (a finger, a pen): 40 px and more across than down.
-    var sw = null;
-    plate.addEventListener("pointerdown", function (event) {
+  /* A picture swiped sideways — the reading layout's (swipeSetUp) and the
+     place, then's (placethen.js, Voice.swipeable): a drag of 40 px or more,
+     more across than down, with a finger or a pen (a vertical scroll is not
+     one); a trackpad's sideways scroll; ←/→ while it has focus. `step(d)`
+     (1 the next, −1 the one before) says whether it moved. The press that
+     ended a swipe is not a press on the picture: it is caught at `guard`,
+     an element that holds the picture, before the picture's own. */
+  function swipeable(node, step, guard) {
+    var sw = null, at = 0, acc = 0, accAt = 0;
+    function go(d) { if (step(d)) { at = performance.now(); return true; } return false; }
+    node.addEventListener("pointerdown", function (event) {
       if (event.pointerType === "mouse") { return; }
       sw = { id: event.pointerId, x: event.clientX, y: event.clientY, done: false };
     });
-    plate.addEventListener("pointermove", function (event) {
+    node.addEventListener("pointermove", function (event) {
       if (!sw || sw.id !== event.pointerId || sw.done) { return; }
       var dx = event.clientX - sw.x, dy = event.clientY - sw.y;
       if (Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }    // a scroll, not a swipe
       if (Math.abs(dx) >= 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
         sw.done = true;
-        if (swipeBy(dx < 0 ? 1 : -1)) { swipedAt = performance.now(); }
+        go(dx < 0 ? 1 : -1);
       }
     });
     ["pointerup", "pointercancel"].forEach(function (t) {
-      plate.addEventListener(t, function (event) { if (sw && sw.id === event.pointerId) { if (sw.done) { swipedAt = performance.now(); } sw = null; } });
+      node.addEventListener(t, function (event) { if (sw && sw.id === event.pointerId) { if (sw.done) { at = performance.now(); } sw = null; } });
     });
-    // The press that ended a swipe is not a press on the picture.
-    artEl.addEventListener("click", function (event) {
-      if (plate.contains(event.target) && performance.now() - swipedAt < 600) {
+    (guard || node).addEventListener("click", function (event) {
+      if (node.contains(event.target) && performance.now() - at < 600) {
         event.stopPropagation();
         event.preventDefault();
       }
     }, true);
-    // A trackpad's sideways scroll.
-    var acc = 0, accAt = 0;
-    plate.addEventListener("wheel", function (event) {
+    node.addEventListener("wheel", function (event) {
       if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) { return; }
       event.preventDefault();
       var now = performance.now();
       if (now - accAt > 300) { acc = 0; }
       accAt = now;
       acc += event.deltaX;
-      if (Math.abs(acc) >= 40 && now - swipedAt > 450) {
+      if (Math.abs(acc) >= 40 && now - at > 450) {
         var d = acc > 0 ? 1 : -1;
         acc = 0;
-        swipeBy(d);
+        go(d);
       }
     }, { passive: false });
-    plate.addEventListener("keydown", function (event) {
+    node.addEventListener("keydown", function (event) {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") { return; }
-      if (swipeBy(event.key === "ArrowRight" ? 1 : -1)) { event.preventDefault(); event.stopPropagation(); }
+      if (go(event.key === "ArrowRight" ? 1 : -1)) { event.preventDefault(); event.stopPropagation(); }
     });
+  }
+  function swipeSetUp() {
+    var plate = artEl && artEl.querySelector(".art-plate");
+    if (!plate) { return; }
+    swipeable(plate, swipeBy, artEl);
     // On a desktop, faint ‹ › at its edges.
     swipeArrows = ["‹", "›"].map(function (g, n) {
       var b = el("button", "voice-swipe", g);
@@ -1196,6 +1202,9 @@
     // explorations.js: a sites.json row by its index (a site exploration's stop), once read.
     siteRow: function (i) { var D = sites(); return D ? D.sites[i] || null : null; },
     sitesReady: function () { sites(); return sitesAsk || Promise.resolve(); },
+    // placethen.js: a period's works, as the picture swipes through them (once sitesReady), and the swipe itself.
+    periodPics: periodPics,
+    swipeable: swipeable,
     _state: function () {
       var r = window.Land && Land.reading ? Land.reading() : null;
       var live = S.view !== -1 && !!(r && r.lens);

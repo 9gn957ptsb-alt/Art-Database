@@ -922,6 +922,20 @@
     if (w.at === "work" || w.at === "town" || w.at === "life" || w.at === "movement" || w.at === "thread") { return artCol; }
     return null;
   }
+  /* A life's views carry no header (artist, 7 Oct 2026, of Twombly's life
+     entered at Rome: "The information above A Life Cy Twombly and below the
+     time dial is clutter, take it out"): the whole life, a place in it (the
+     place, then: placethen.js marks the body while it is up, so a studio
+     opened in a life is one), not a town's "Born here". Such a view is still
+     a step on the way (its crumb leads back to it from what is opened next),
+     and a thing opened in place from it (a writer) still has its header. A
+     movement keeps its own. */
+  var quiet = false;
+  function quietView(w) {
+    if (!w) { return false; }
+    if (w.at === "life") { return !(w.id && String(w.id).indexOf("born:") === 0); }
+    return w.at === "town" && (!!w.life || document.body.dataset.placethen === "true");
+  }
 
   function render() {
     var h = head;
@@ -1181,7 +1195,11 @@
   function place() {
     if (!head) { render(); }
     var host = hostEl;
-    if (!host || !cur) { if (head && head.parentNode) { head.parentNode.removeChild(head); } return; }
+    if (!host || !cur || (quiet && !cur.solo)) {
+      if (head && head.parentNode) { head.parentNode.removeChild(head); }
+      if (host) { delete host.dataset.kindsSolo; }
+      return;
+    }
     render();
     if (head.parentNode !== host || host.firstChild !== head) { host.insertBefore(head, host.firstChild); }
     if (cur.solo) { host.dataset.kindsSolo = "true"; host.scrollTop = 0; } else { delete host.dataset.kindsSolo; }
@@ -1200,13 +1218,15 @@
   function tick() {
     if (!window.Land || !Land.where) { return; }
     var w = Land.where();
-    var key = w.flying ? viewKey : [w.at, w.key, w.work, w.museum, w.id, w.building, w.name, w.life ? w.life.id + ":" + w.life.k : ""].join("|");
+    var key = w.flying ? viewKey : [w.at, w.key, w.work, w.museum, w.id, w.building, w.name, w.life ? w.life.id + ":" + w.life.k : "",
+                                    document.body.dataset.placethen ? "then" : ""].join("|");
     if (w.flying) { return; }
     if (key === viewKey) { keep(); return; }
     viewKey = key;
     var host = hostFor(w);
     if (!host) {
       viewNow = null;
+      quiet = false;
       if (w.at === "world") { trail = []; }
       cur = null;
       [artCol, works].forEach(function (h) { if (h) { delete h.dataset.kindsSolo; delete h.dataset.kindsFold; } });
@@ -1224,13 +1244,14 @@
       if (pending && pending.k === it.k && pending.id === it.id) { it = pending; }
       pending = null;
       viewNow = it;
-      // An artist's life opens folded under its three.
-      if (it.k === "artist" && host === artCol) { host.dataset.kindsFold = "true"; } else { delete host.dataset.kindsFold; }
+      quiet = quietView(w);
+      // An artist's life opens folded under its three (a life's own views have none: not folded).
+      if (it.k === "artist" && host === artCol && !quiet) { host.dataset.kindsFold = "true"; } else { delete host.dataset.kindsFold; }
       enter(it, false, true);
     });
   }
   function keep() {
-    if (!cur || !hostEl || !head) { return; }
+    if (!cur || !hostEl || !head || (quiet && !cur.solo)) { return; }
     if (head.parentNode !== hostEl || hostEl.firstChild !== head) { hostEl.insertBefore(head, hostEl.firstChild); }
   }
   [artCol, works].forEach(function (h) {
