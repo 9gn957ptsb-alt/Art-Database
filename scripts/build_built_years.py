@@ -48,7 +48,7 @@ from build_grounds import SIDE, local  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 GROUNDS = ROOT / "docs" / "v2" / "grounds"
 PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json",
-          ROOT / "docs" / "v2" / "lifeplaces.json"]
+          ROOT / "docs" / "v2" / "lifeplaces.json", ROOT / "docs" / "v2" / "cityplaces.json"]
 CACHE = ROOT / "data"
 
 WSF = "https://download.geoservice.dlr.de/WSF_EVO/files/WSFevolution_v1_{x}_{y}/WSFevolution_v1_{x}_{y}.tif"

@@ -134,6 +134,19 @@
     return load().then(function () {
       if (!D || !window.Land) { return; }
       if (m[4].length === 1) { open(D.lives[m[4][0]][0]); return; }
+      // A town with a skyline (skyline.js; artist, 7 Oct 2026, of New York on this layer: "I want the
+      // isometric of the urban skyline to come up and for me to be able to select artists from that area
+      // walking around or art buildings housing art"): the city, its Born here at the head of its column.
+      var sky = window.Skyline && Skyline.bornTown ? Skyline.bornTown(m) : Promise.resolve(null);
+      return sky.then(function (key) {
+        if (key && Land.town) { Land.town(key, { born: m }); return; }
+        bornReading(m);
+      });
+    });
+  }
+  function bornReading(m) {
+    return load().then(function () {
+      if (!D || !window.Land) { return; }
       Land.life({ id: "born:" + m[7], title: "Born in " + m[7], where: plural(m[4].length, "saved artist", "saved artists"),
                   pts: [[m[0], m[1]]], born: m });
     });
