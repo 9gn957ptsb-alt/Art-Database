@@ -27,6 +27,9 @@
 <link rel="stylesheet" href="voice.css">
 <link rel="stylesheet" href="kinds.css">
 <link rel="stylesheet" href="transport.css">
+<link rel="stylesheet" href="label.css">
+<link rel="stylesheet" href="zoom.css">
+<link rel="stylesheet" href="guide.css">
 </head>
 <body class="land-body">
 
@@ -252,10 +255,10 @@
     <!-- Find, on the Museums layer: one quiet line above the pill, and the sheet it opens.
          land.js writes the count from places.json. -->
     <button class="art-find" id="art-find" type="button" hidden aria-controls="finder" aria-expanded="false"></button>
-    <section class="finder" id="finder" role="search" hidden aria-label="Find a work">
+    <section class="finder" id="finder" role="search" hidden aria-label="Search">
       <form class="finder-form" id="finder-form">
         <input class="collection-field" id="finder-field" type="search" autocomplete="off"
-               placeholder="Title, artist, place, show&hellip;" aria-label="Find a work among the saved works">
+               placeholder="Search a work, artist, place, museum, show or writer&hellip;" aria-label="Search">
       </form>
       <p class="collection-said" id="finder-said" aria-live="polite"></p>
       <div class="finder-found" id="finder-found"></div>
@@ -523,6 +526,8 @@
 <script src="earth-body.js"></script>
 <script src="sites.js"></script>
 <script src="studios.js"></script>
+<script src="label.js"></script>
+<script src="zoom.js"></script>
 <script src="land.js"></script>
 <script src="walks.js"></script>
 <script src="voices.js"></script>
@@ -535,5 +540,6 @@
 <script src="corpse.js"></script>
 <script src="voice.js"></script>
 <script src="kinds.js"></script>
+<script src="guide.js"></script>
 </body>
 </html>

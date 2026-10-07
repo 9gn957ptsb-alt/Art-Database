@@ -163,3 +163,8 @@
   .explore-chip[data-pulse="true"] { animation: none; }
   .explore-stop { transition: none; }
 }
+
+/* Hidden for now at the artist's request (7 Oct 2026: "Get rid of the exploration button, keep the
+   function in mind going forward though"): the "+" and its chip. The code is kept whole; delete this
+   rule to bring them back. Published explorations, the relay and codes in Find still work. */
+.explore-dock { display: none !important; }

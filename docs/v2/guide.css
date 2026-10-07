@@ -1,0 +1,211 @@
+/* The city guide (guide.js; docs/v2/GUIDE.md). In the site's own language:
+   serif titles, mono labels, lilac for the artist's own, the shows' tone the
+   galleries' sea-green (KINDS.md, ▢), no boxes in boxes. */
+
+/* While the guide is open it is the column: the directory is set aside
+   (the categories' header stays, so the spectrum is always navigable). */
+#art-col[data-guide] > :not(.kinds-head):not(.guide-box) { display: none !important; }
+
+/* The way in: a quiet pill at the head of the city's column. */
+.guide-pill {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-height: 32px;
+  margin: var(--s-2, 6px) 0 var(--s-3, 10px);
+  padding: 6px 14px;
+  border: 1px solid rgba(143, 199, 189, 0.45);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.55);
+  color: #eadfcd;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.26s steps(3), color 0.26s steps(3), border-color 0.26s steps(3);
+}
+.guide-pill-glyph { color: #8fc7bd; letter-spacing: 0; }
+.guide-pill-meta { color: #a8927a; text-transform: none; letter-spacing: 0.02em; }
+.guide-pill[data-stale] .guide-pill-meta { font-style: italic; }
+.guide-pill:hover,
+.guide-pill:focus-visible { border-color: #8fc7bd; background: rgba(143, 199, 189, 0.12); }
+.guide-pill:focus-visible { outline: 1px solid #8fc7bd; outline-offset: 3px; }
+
+/* On the world: beside Search, the guided city nearest the middle. */
+.guide-world {
+  position: fixed;
+  z-index: 86;
+  min-height: 32px;
+  padding: 6px 13px;
+  border: 1px solid rgba(143, 199, 189, 0.4);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.55);
+  color: #a8927a;
+  font-family: var(--mono, var(--sans));
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.26s steps(3), color 0.26s steps(3);
+}
+.guide-world:hover,
+.guide-world:focus-visible { background: #8fc7bd; color: #0f0a07; }
+.guide-world[hidden] { display: none; }
+
+/* The guide. */
+.guide-box { margin: 0 0 var(--s-5, 21px); color: #eadfcd; }
+.guide-back {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9d95e6;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.guide-back:hover,
+.guide-back:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+.guide-title,
+.guide-show-title {
+  margin: var(--s-2, 6px) 0 2px;
+  font: 400 1.35rem/1.15 var(--serif);
+  color: #eadfcd;
+}
+.guide-show-title:focus { outline: none; }
+.guide-read {
+  margin: 0 0 var(--s-3, 10px);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.guide-read[data-stale] { color: #d9a55b; }
+.guide-walk { min-height: 32px; margin: 0 0 var(--s-2, 6px); color: #eadfcd; }
+.guide-section[data-mine] { color: #9d95e6; }
+.guide-none, .guide-source, .guide-show-note {
+  margin: var(--s-4, 16px) 0 0;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+.guide-show-note { margin-top: 4px; }
+
+.guide-rows { display: grid; gap: 2px; }
+.guide-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.guide-row[hidden] { display: none; }
+.guide-row:hover .guide-row-title,
+.guide-row:focus-visible .guide-row-title { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #8fc7bd; }
+.guide-row:focus-visible { outline: 1px solid #8fc7bd; outline-offset: 2px; }
+.guide-cover {
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  background: rgba(143, 199, 189, 0.12);
+}
+.guide-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.guide-cover img[data-none] { display: none; }
+.guide-row-text { display: grid; gap: 2px; min-width: 0; }
+.guide-row-title {
+  font: 400 1rem/1.2 var(--serif);
+  color: #eadfcd;
+  overflow-wrap: anywhere;
+}
+.guide-row-meta {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  color: #a8927a;
+}
+.guide-row-mine {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.04em;
+  color: #9d95e6;
+}
+.guide-more { margin-top: 2px; }
+.guide-fair { margin: 0 0 var(--s-3, 10px); }
+.guide-fair-head { display: grid; gap: 2px; margin: 0 0 4px; }
+
+/* A show, open. */
+.guide-plate { margin: var(--s-3, 10px) 0 0; }
+.guide-plate img { display: block; max-width: 100%; max-height: 42vh; object-fit: contain; }
+.guide-plate img[data-none] { display: none; }
+.guide-show-partner {
+  margin: 4px 0;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8fc7bd;
+}
+.guide-show-line { margin: 2px 0; font-family: var(--mono); font-size: var(--t-1); letter-spacing: 0.04em; color: #cbbba6; }
+.guide-show-event { color: #eadfcd; }
+.guide-into { min-height: 32px; margin-top: var(--s-3, 10px); color: #eadfcd; }
+.guide-artists { margin: 0; font: 400 0.98rem/1.5 var(--serif); color: #cbbba6; }
+.guide-artist[data-mine] { color: #9d95e6; }
+.guide-artist-life {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: #eadfcd;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.6);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.guide-artist-life[data-mine] { color: #9d95e6; }
+.guide-artist-life:focus-visible { outline: 1px solid #9d95e6; outline-offset: 2px; }
+
+/* The walk's readout, beside the dial (transport.js places it). */
+.guide-out { display: grid; gap: 3px; max-width: 300px; }
+.guide-out[hidden] { display: none; }
+.guide-out-count {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8927a;
+}
+.guide-out-said { margin: 0; font: 400 1.05rem/1.25 var(--serif); color: #eadfcd; }
+.guide-out-line { margin: 0; font-family: var(--mono); font-size: var(--t-1); letter-spacing: 0.04em; color: #cbbba6; }
+.guide-out-mine { color: #9d95e6; }
+.guide-again { min-height: 32px; justify-self: start; color: #eadfcd; }
+
+/* On a phone the readout keeps to the count and the newest line, clear of the column under the dial. */
+@media (max-width: 720px) {
+  .guide-out { max-width: 210px; }
+  .guide-out > p:not(:first-child):not(:last-child) { display: none; }
+  .guide-out-said { font-size: 0.95rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-pill, .guide-world { transition: none; }
+}

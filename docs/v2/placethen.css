@@ -1,16 +1,192 @@
-/* The place, then (placethen.js): a life's place as it stood, and the works made there.
-   Inside #art, under its column and its dial. On a phone the band above the
-   column: the clod, and the work under it; on a desktop the work on the left
-   and the clod between it and the column. */
+/* The place, then (placethen.js): a life's place as it stood, and the works made there,
+   laid out as the reading layout is (artist, 7 Oct 2026: "the most important thumbnail is one
+   that I am able to swipe through all relevant artworks for that time and place"). On a phone:
+   the works across the top under the banner, their words and doors under them, then the place
+   — its sentence over the clod, the clod left of the dial — and the column below. On a desktop:
+   the works the left third, the place between them and the column, the dial under the clod. */
 .pt { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .pt-stage, .pt-work { position: fixed; box-sizing: border-box; }
-.pt-stage {
-  pointer-events: none;
-  background: radial-gradient(ellipse 70% 66% at 50% 54%, rgba(15, 10, 7, 0.96), rgba(15, 10, 7, 0.9) 72%, rgba(15, 10, 7, 0.7));
-  border-radius: 6px;
+
+/* ---- the works ---------------------------------------------------------- */
+.pt-work {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 16px 6px;
+  background: rgba(15, 10, 7, 0.95);
   overflow: hidden;
 }
-.pt[data-phone] .pt-stage { background: rgba(15, 10, 7, 0.94); border-radius: 0; }
+.pt-picbox { position: relative; flex: 1 1 auto; min-height: 0; }
+.pt-pic {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #0f0a07;
+  cursor: zoom-in;
+  touch-action: pan-y;
+  overflow: hidden;
+}
+.pt-pic[hidden] { display: none; }
+.pt-pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pt-pic[data-none] img { visibility: hidden; }
+.pt-pic[data-none]::after { content: "■"; position: absolute; inset: 0; display: grid; place-items: center; color: #5b4c40; font-size: 22px; }
+.pt-pic:focus-visible { outline: 2px solid #9d95e6; outline-offset: 2px; }
+.pt-work[data-other] .pt-pic { box-shadow: inset 0 0 0 1px rgba(201, 143, 181, 0.6); }
+.pt-picbox[data-swipe="next"] .pt-pic img { animation: pt-swipe-next 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.pt-picbox[data-swipe="prev"] .pt-pic img { animation: pt-swipe-prev 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes pt-swipe-next { from { transform: translateX(14%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pt-swipe-prev { from { transform: translateX(-14%); opacity: 0; } to { transform: none; opacity: 1; } }
+/* Another artist's work: whose it is, on it. */
+.pt-tag {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  max-width: calc(100% - 16px);
+  padding: 2px 7px 3px;
+  border-radius: 2px;
+  background: rgba(15, 10, 7, 0.88);
+  color: #e3b6d3;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.pt-tag[hidden] { display: none; }
+.pt-none { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; text-align: center; padding: 0 16px;
+           font-family: "Newsreader", var(--serif, serif); font-style: italic; font-size: 15px; color: #c4b29c; }
+.pt-none[hidden] { display: none; }
+/* The quiet ‹ › at its edges, on a desktop only (a finger swipes). */
+.pt-swipe { top: 50%; margin-top: -16px; }
+.pt-swipe-prev { left: 6px; }
+.pt-swipe-next { right: 6px; }
+@media (max-width: 720px) { .pt-swipe { display: none; } }
+
+/* Its words: the title (a door to its history) and where it stands among the period's, then its wall label. */
+.pt-cap { flex: none; display: grid; gap: 2px; min-width: 0; }
+.pt-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.pt-wt {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eadfcd;
+  font-family: "Newsreader", var(--serif, serif);
+  font-size: 16px;
+  line-height: 1.25;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.pt-wt:disabled { cursor: default; }
+.pt-wt:not(:disabled):hover, .pt-wt:focus-visible { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
+.pt-wt .pt-by { font-family: var(--mono, monospace); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #e3b6d3; }
+.pt-count {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #b8b1f0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt-count[hidden] { display: none; }
+.pt-label .wl-by, .pt-label .wl-made, .pt-label .wl-how, .pt-label .wl-now { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Beside an upright picture on a phone (placeLabel): picture left, label right. */
+.pt-work[data-side] .pt-pic { right: auto; width: var(--pt-pic-w); }
+.pt-work[data-side] .pt-picbox > .pt-label { position: absolute; top: 0; right: 0; left: calc(var(--pt-pic-w) + 12px); }
+.pt-work[data-side] .pt-picbox > .pt-label p { white-space: normal; }
+.pt-work[data-fresh] .pt-wt { animation: pt-in 0.6s steps(6) both; }
+@keyframes pt-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
+
+/* The doors: one row scrolling sideways on a phone, wrapping on a desktop; never under the dial. */
+.pt-doors { flex: none; display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; min-height: 28px; }
+.pt-doors::-webkit-scrollbar { display: none; }
+.pt-door {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 9px 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--kt, #a8927a) 55%, transparent);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.6);
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+}
+.pt-door-g { color: var(--kt, #a8927a); }
+.pt-door-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-door:hover, .pt-door:focus-visible { border-color: var(--kt, #9d95e6); color: #ffffff; }
+
+/* ---- the place: its sentence, a quiet line (the rest a tap away), the clod ---- */
+.pt-stage { pointer-events: none; background: rgba(15, 10, 7, 0.95); border-radius: 6px; overflow: hidden; }
+.pt[data-phone] .pt-stage { border-radius: 0; }
+.pt-head { position: absolute; left: 16px; right: 16px; top: 10px; display: grid; gap: 2px; pointer-events: none; }
+.pt[data-phone] .pt-head { top: 4px; }
+.pt-say { margin: 0; font-family: "Newsreader", var(--serif, serif); font-size: 18px; line-height: 1.2; color: #eadfcd;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt[data-phone] .pt-say { font-size: 15px; }
+.pt-quiet {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #c4b29c;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pt-quiet[hidden] { display: none; }
+.pt-where { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-info { flex: none; color: #b8b1f0; font-size: 12px; }
+.pt-quiet:hover .pt-where, .pt-quiet:focus-visible .pt-where { color: #eadfcd; }
+.pt-quiet:focus-visible { outline: 1px solid #9d95e6; outline-offset: 2px; }
+.pt-more {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 46px;
+  max-width: 520px;
+  z-index: 3;
+  padding: 8px 10px 9px;
+  border: 1px solid rgba(234, 223, 205, 0.2);
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.97);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.pt[data-phone] .pt-more { top: 40px; }
+.pt-more[hidden] { display: none; }
+.pt-more p { margin: 0 0 4px; font-family: var(--mono, monospace); font-size: 10px; line-height: 1.5; letter-spacing: 0.04em; color: #eadfcd; }
+.pt-more .pt-note, .pt-more .pt-src { color: #c4b29c; }
+.pt-more p:empty { display: none; }
 .pt-clod {
   position: absolute;
   left: 0;
@@ -21,6 +197,8 @@
   pointer-events: auto;
   cursor: pointer;
 }
+/* On a phone the clod stands left of the dial. */
+.pt[data-phone] .pt-clod { width: calc(100% - 160px); }
 .pt-here {
   position: absolute;
   left: 0;
@@ -42,7 +220,7 @@
   margin: 0;
   padding: 2px 6px 3px;
   border-radius: 2px;
-  background: rgba(15, 10, 7, 0.82);
+  background: rgba(15, 10, 7, 0.85);
   font-family: "Newsreader", var(--serif, serif);
   font-style: italic;
   font-size: 13px;
@@ -50,121 +228,34 @@
   color: #eadfcd;
   pointer-events: none;
 }
+.pt[data-phone] .pt-here-label { max-width: calc(100% - 176px); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pt-here-label[hidden], .pt-off[hidden] { display: none; }
 .pt-off { font-family: var(--mono, monospace); font-style: normal; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #8fc7bd; }
-.pt-head { position: absolute; left: 16px; top: 10px; right: 16px; pointer-events: none; }
-.pt-foot { position: absolute; left: 16px; right: 16px; top: 38px; pointer-events: none; }
-.pt[data-phone] .pt-head { top: 6px; right: 60px; }
-.pt[data-phone] .pt-foot { top: 28px; bottom: auto; right: 60px; padding: 2px 4px; border-radius: 2px; background: rgba(15, 10, 7, 0.72); }
-.pt[data-phone] .pt-title { font-size: 15px; }
-.pt[data-phone] .pt-where, .pt[data-phone] .pt-note { font-size: 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-.pt[data-phone] .pt-note { -webkit-line-clamp: 2; }
-.pt[data-phone] .pt-doors { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-.pt[data-phone] .pt-doors::-webkit-scrollbar { display: none; }
-.pt[data-phone] .pt-door { flex: none; }
-.pt-title { margin: 0; font-family: "Newsreader", var(--serif, serif); font-size: 17px; line-height: 1.2; color: #eadfcd; }
-.pt-where, .pt-note {
-  margin: 3px 0 0;
-  max-width: 560px;
-  font-family: var(--mono, monospace);
-  font-size: 9px;
-  line-height: 1.45;
-  letter-spacing: 0.06em;
-  color: #a8927a;
-}
-.pt-note { color: #8f8578; }
-.pt-note:empty { display: none; }
 
-.pt-work {
-  pointer-events: auto;
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  grid-template-rows: auto 1fr;
-  column-gap: 12px;
-  row-gap: 8px;
-  padding: 8px 16px 6px;
-  background: rgba(15, 10, 7, 0.92);
-  overflow: hidden;
-}
-.pt-work[data-fresh] .pt-pic img, .pt-work[data-fresh] .pt-wt { animation: pt-in 0.6s steps(6) both; }
-@keyframes pt-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
-.pt-pic {
-  position: relative;
-  width: 96px;
-  height: 96px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: #2a211b;
-  cursor: pointer;
-  overflow: hidden;
-}
-.pt-pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.pt-pic[data-none] img { visibility: hidden; }
-.pt-pic[data-none]::after { content: "■"; position: absolute; inset: 0; display: grid; place-items: center; color: #5b4c40; font-size: 22px; }
-.pt-pic:focus-visible { outline: 1px solid #9d95e6; outline-offset: 2px; }
-.pt-text { min-width: 0; display: grid; align-content: start; gap: 3px; }
-.pt-wt { margin: 0; font-family: "Newsreader", var(--serif, serif); font-size: 15px; line-height: 1.25; color: #eadfcd;
-         display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.pt-how { margin: 0; font-family: var(--mono, monospace); font-size: 9px; line-height: 1.45; letter-spacing: 0.06em; color: #a8927a;
-          display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.pt-work[data-kind="site"] .pt-how { color: #8fc7bd; }
-.pt-nav { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
-.pt-step {
-  min-width: 28px;
-  height: 24px;
-  padding: 0 6px;
-  border: 1px solid rgba(168, 146, 122, 0.4);
-  border-radius: 999px;
-  background: none;
-  color: #a8927a;
-  font: inherit;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-}
-.pt-step[hidden] { display: none; }
-.pt-step:hover, .pt-step:focus-visible { color: #ffffff; border-color: #9d95e6; }
-.pt-count { font-family: var(--mono, monospace); font-size: 9px; letter-spacing: 0.1em; color: #8f8578; text-transform: uppercase; }
-.pt-doors { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-content: start; min-height: 0; overflow: hidden; }
-.pt-door {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  max-width: 100%;
-  min-height: 26px;
-  padding: 4px 9px 4px 7px;
-  border: 1px solid color-mix(in srgb, var(--kt, #a8927a) 45%, transparent);
-  border-radius: 999px;
-  background: rgba(15, 10, 7, 0.6);
-  color: #eadfcd;
-  font-family: var(--mono, monospace);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-align: left;
-  cursor: pointer;
-}
-.pt-door-g { color: var(--kt, #a8927a); }
-.pt-door-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pt-door:hover, .pt-door:focus-visible { border-color: var(--kt, #9d95e6); color: #ffffff; }
-
-/* A desktop: the work large on the left, its words and doors under it. */
+/* ---- a desktop: the works large on the left, the doors wrapping under them ---- */
 @media (min-width: 721px) {
-  .pt-work {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    align-content: start;
-    padding: 14px 14px 10px;
-    background: rgba(15, 10, 7, 0.9);
-    border-radius: 6px;
-  }
-  .pt-pic { width: 100%; height: auto; aspect-ratio: 1 / 1; max-height: 46vh; background: rgba(42, 33, 27, 0.7); }
+  .pt-work { padding: 14px; gap: 8px; background: rgba(15, 10, 7, 0.92); border-radius: 6px; }
   .pt-wt { font-size: 19px; }
-  .pt-how { font-size: 10px; }
-  .pt-doors { flex-direction: column; flex-wrap: nowrap; }
-  .pt-door { font-size: 11px; min-height: 30px; }
-  .pt-title { font-size: 20px; }
-  .pt-where, .pt-note { font-size: 10px; }
+  .pt-label { font-size: 11px; }
+  .pt-doors { flex-wrap: wrap; overflow-x: hidden; overflow-y: auto; max-height: 66px; }
+  .pt-door { font-size: 11px; min-height: 28px; }
+}
+/* With no work to show, the clod has the picture's room; the words are one line. */
+.pt[data-empty] .pt-picbox { flex: 0 0 auto; min-height: 30px; }
+.pt[data-empty] .pt-pic, .pt[data-empty] .pt-cap { display: none; }
+.pt[data-empty] .pt-none { position: static; display: block; text-align: left; padding: 4px 0 0; }
+
+/* Twice as big, then the whole screen and as near as one likes: zoom.js, zoom.css. */
+.pt[data-zoom-lift] { z-index: 14 !important; }
+
+/* The dial and the column make room for it (land.css places them for a city). */
+body[data-placethen] .art .art-time.dial { left: var(--pt-dial-left, auto); top: var(--pt-dial-top, auto); right: auto; bottom: auto; transform: none; }
+@media (max-width: 720px) {
+  body[data-placethen] .art .art-col { top: var(--pt-col-top, 50vh); }
+  body[data-placethen] .art .art-col::before { content: none; }
+  /* The dial's readout at its left, over the clod, never over the place's sentence above it. */
+  body[data-placethen] .art .art-time.dial .dial-say { bottom: auto; top: 50%; left: auto; right: calc(100% + 8px);
+    transform: translateY(-50%); justify-items: end; max-width: calc(100vw - 172px); }
 }
 
 /* While it is up, the view's other captions give way to it. */
@@ -172,5 +263,5 @@ body[data-placethen] .voice-chip { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .pt-here[data-on="true"] { animation: none; }
-  .pt-work[data-fresh] .pt-pic img, .pt-work[data-fresh] .pt-wt { animation: none; }
+  .pt-work[data-fresh] .pt-wt, .pt-picbox[data-swipe] .pt-pic img { animation: none; }
 }

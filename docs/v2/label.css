@@ -1,0 +1,62 @@
+/* The wall label (label.js): beside every picture of a work — the reading
+   layout's, the place, then's, the whole-screen look — and, on hover, focus
+   or a held finger, over a list's small square. Text at 4.5:1 or more on its
+   own ground (#eadfcd 14:1, #c4b29c 9:1 on #0f0a07). */
+.wall-label {
+  box-sizing: border-box;
+  margin: 0;
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+.wall-label[hidden] { display: none; }
+.wall-label p { margin: 0; overflow-wrap: anywhere; }
+.wall-label .wl-title { font-family: "Newsreader", var(--serif, serif); font-size: 15px; line-height: 1.25; letter-spacing: 0; color: #eadfcd; }
+.wall-label .wl-by { color: #eadfcd; }
+.wall-label .wl-made, .wall-label .wl-how { color: #c4b29c; }
+.wall-label .wl-now { color: #eadfcd; }
+.wall-label .wl-where[data-kind="held"]::before { content: "◆ "; color: #d6b05c; }
+.wall-label .wl-src { color: #c4b29c; }
+
+/* In the reading layout: placed by land.js (layoutPlate), touching the picture. */
+.art > .wall-label.wl-plate {
+  position: absolute;
+  z-index: 2;
+  padding: 2px 0 0;
+  opacity: 0;
+  transition: opacity var(--beat-5, 0.5s) ease;
+  pointer-events: auto;
+}
+.art > .wall-label.wl-plate[data-on="true"] { opacity: 1; }
+.art > .wall-label.wl-plate[data-side="true"] .wl-title { font-size: 14px; }
+.art[data-swapped] > .wall-label.wl-plate,
+.art[data-out] > .wall-label.wl-plate { opacity: 0; visibility: hidden; }
+/* The whole screen: the label along its foot, the picture above it. */
+.art[data-full] .art-plate .deal-go { position: absolute !important; inset: 16px 16px 100px 16px !important; width: auto; height: auto; }
+.art[data-full] > .wall-label.wl-plate {
+  position: fixed;
+  left: 16px !important;
+  right: 16px;
+  top: auto !important;
+  bottom: 14px;
+  width: auto !important;
+  z-index: 21;
+  opacity: 1;
+  visibility: visible;
+}
+@media (min-width: 721px) { .art > .wall-label.wl-plate .wl-title { font-size: 18px; } .art > .wall-label.wl-plate { font-size: 11px; } }
+
+/* A list's small square: the label over it, dismissible (Escape), pointable. */
+.wl-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 120;
+  padding: 7px 10px 8px;
+  border: 1px solid rgba(234, 223, 205, 0.22);
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.97);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}

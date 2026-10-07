@@ -85,9 +85,17 @@
   // over it; the dial and its readout come back with the view's own.
   function aloneNow() { return fullNow() || !!document.querySelector(".art[data-on=\"true\"][data-look=\"plate\"]"); }
   function picRect() {
+    // The reading layout's picture, else the place, then's (placethen.js); with its wall label, which touches it.
     var pic = document.getElementById("art-plate");
+    if (!pic || !visibleBox(pic)) { pic = document.querySelector(".pt-picbox"); }
     if (!pic || !visibleBox(pic)) { return null; }
     var r = pic.getBoundingClientRect();
+    var lab = document.querySelector(".art > .wall-label.wl-plate[data-on]:not([hidden])");
+    if (lab && pic.id === "art-plate" && visibleBox(lab)) {
+      var l = lab.getBoundingClientRect();
+      r = { left: Math.min(r.left, l.left), top: Math.min(r.top, l.top), right: Math.max(r.right, l.right), bottom: Math.max(r.bottom, l.bottom) };
+      r.width = r.right - r.left; r.height = r.bottom - r.top;
+    }
     return r.width && r.height ? r : null;
   }
   function hits(a, b) { return !!(a && b && a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom); }
@@ -802,6 +810,15 @@
     if (rd && rd.lens && rd.hole && !rd.out) {
       var h = rd.hole;
       keep({ left: h.x, top: h.y, right: h.x + h.w, bottom: h.y + h.h, width: h.w, height: h.h }, rd.swapped ? 40 : ended ? 2 : 8, h.round < 0);
+    }
+    // The reading's globe grown out of its window (land.js, "the grown globe"): its pills are pressed
+    // there, and its own marks (the place being told) are looked at, kept clear as the lens is.
+    var pills = document.querySelector(".filter[data-grown]");
+    if (pills && visibleBox(pills)) { keep(pills.getBoundingClientRect(), 40); }
+    if (rd && rd.own && rd.own.length) {
+      rd.own.forEach(function (o) {
+        keep({ left: o.x0, top: o.y0, right: o.x1, bottom: o.y1, width: o.x1 - o.x0, height: o.y1 - o.y0 }, ended ? 2 : 8);
+      });
     }
     var cap = document.querySelector(".voice-cap:not([hidden])");
     if (cap && visibleBox(cap)) { keep(cap.getBoundingClientRect(), 30); }

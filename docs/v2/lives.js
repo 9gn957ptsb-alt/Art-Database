@@ -623,12 +623,13 @@
   function decorate() {
     var col = document.getElementById("art-col");
     if (!col || !D) { return; }
-    var head = col.querySelector(".art-head-text");
-    if (head && !head.querySelector(".life-open")) {
-      var by = head.querySelector(".art-by");
-      var name = by ? by.textContent.split(" · ")[0].split(", ")[0] : "";
+    // A work's column starts with its counts line (its facts are the wall label by the picture):
+    // the door into the artist's life comes right after it.
+    var head = col.querySelector(".art-count[data-artist]");
+    if (head && !col.querySelector(".life-in-work")) {
+      var name = head.dataset.artist.split(", ")[0];
       var d = name && door(name, "life-in-work");
-      if (d) { head.appendChild(d); }
+      if (d) { head.parentNode.insertBefore(d, head.nextSibling); }
     }
     var fb = col.querySelector(".follow-box");
     var f = window.Land && Land.following && Land.following();

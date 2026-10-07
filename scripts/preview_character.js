@@ -166,8 +166,68 @@ async function fineSheet(ids, out, px) {
   process.exit(errors.length ? 1 : 0);
 }
 
+/* Places' own characters (characters/places/<key>.json, scripts/characters/natives.py), a contact sheet:
+   each place a row — its gait's four frames, stand, its pause, the look, its rest — on its own soil, with
+   what it is and whose hand:
+
+     NODE_PATH=/opt/node22/lib/node_modules node scripts/preview_character.js --sheet paris-fr,bologna-it out.png [--scale 3] */
+async function placeSheet(keys, out, scale) {
+  const browser = await chromium.launch(fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome")
+    ? { executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" } : {});
+  const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  await page.route("http://preview.local/**", (r) => {
+    const f = path.join(V2, decodeURIComponent(new URL(r.request().url()).pathname));
+    if (!fs.existsSync(f)) { return r.fulfill({ status: 404, body: "" }); }
+    r.fulfill({ status: 200, body: fs.readFileSync(f),
+                contentType: f.endsWith(".js") ? "text/javascript" : f.endsWith(".json") ? "application/json" : "text/html" });
+  });
+  await page.route("http://preview.local/", (r) => r.fulfill({ status: 200, contentType: "text/html",
+    body: "<!doctype html><meta charset=utf-8><body style='margin:0;background:#15100c'><div class=stage id=stage><canvas id=tiles></canvas></div>" +
+          "<canvas id=c></canvas><script src='characters.js'></script>" }));
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("http://preview.local/");
+  const size = await page.evaluate(async ({ keys, scale }) => {
+    const POSES = [["trot", 0], ["trot", 1], ["trot", 2], ["trot", 3], ["stand", 0], ["back", 0], ["look", 0], ["sit", 0]];
+    const got = [];
+    for (const k of keys) { const g = await window.Characters.native(k); if (g) { got.push([k, g]); } }
+    const cw = 44 * 2 * scale, ch = 44 * 2 * scale;
+    const cv = document.getElementById("c");
+    cv.width = 360 + POSES.length * (cw + 6); cv.height = got.length * (ch + 8) + 8;
+    const g = cv.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#15100c"; g.fillRect(0, 0, cv.width, cv.height);
+    got.forEach(([k, n], r) => {
+      const y = 8 + r * (ch + 8), rec = n.rec, ll = rec.ll;
+      const here = window.Characters.preview(g, { id: n.c.id, pose: "stand", n: 0, lat: ll[0], lon: ll[1], scale, x: -9999, y: -9999 });
+      const soil = here ? here.soilRgb : [80, 60, 40];
+      g.fillStyle = "rgb(" + soil.map((v) => Math.round(v * 0.32 + 12)).join(",") + ")";
+      g.fillRect(0, y, cv.width, ch);
+      g.fillStyle = "#eadfcd"; g.font = "12px monospace";
+      const nat = rec.native || {};
+      const lines = [rec.name + (rec.cast ? " · drawn by hand" : ""), n.c.name, nat.artist ? "after " + nat.artist + " (" + nat.how + ")" : "after the ground",
+                     rec.hand ? rec.hand.mode + " · " + rec.species.plan : ""];
+      lines.forEach((t, i) => g.fillText(t.slice(0, 44), 8, y + 18 + i * 16));
+      POSES.forEach(([p, k2], i) => {
+        window.Characters.preview(g, { id: n.c.id, pose: p, n: k2, lat: ll[0], lon: ll[1], scale, x: 360 + i * (cw + 6), y: y + 4 });
+      });
+    });
+    return [cv.width, cv.height];
+  }, { keys, scale });
+  await page.setViewportSize({ width: Math.min(size[0], 4000), height: Math.min(size[1], 8000) });
+  await page.locator("#c").screenshot({ path: out });
+  if (errors.length) { console.log("errors: " + errors.join("; ")); }
+  console.log("wrote " + out);
+  await browser.close();
+  process.exit(errors.length ? 1 : 0);
+}
+
 (async () => {
   const args = process.argv.slice(2);
+  if (args[0] === "--sheet") {
+    const k0 = args.indexOf("--scale");
+    return placeSheet(args[1].split(","), args[2] || "/tmp/natives.png", k0 >= 0 ? Number(args[k0 + 1]) : 2);
+  }
   const id = args[0] || "fox", out = args[1] || "/tmp/" + id + ".png";
   const k = args.indexOf("--scale");
   if (id.indexOf(",") > 0 && args.indexOf("--fine") >= 0) { return fineSheet(id.split(","), out, k >= 0 ? Number(args[k + 1]) : 3); }

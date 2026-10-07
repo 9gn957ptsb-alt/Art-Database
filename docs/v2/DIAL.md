@@ -59,6 +59,7 @@ The last column is what the kind's stops are on the ring while it is played (see
 | a hand-off where a path ended (the relay) | the glyph of the kind it hands to | its kind's | — (marks on the band in Explore, at the year of the stop it joins; see **The transport**) |
 | the corpse's unfolding | — | lilac, cream, sea-green | head, body, hindquarters, the route; in order (no pause: it is a performance; × puts it away) |
 | made here (a place in a life, "The place, then") | a square at the work's year (a painting at a documented site: painted here's hollow square) | cream | — |
+| guide (a city's shows now, guide.js) | — (its years are now: every show of a guide is in this year or the next, so it marks nothing on a dial of years) | sea-green | each show of the walk, nearest next from the one open (else the city's middle); in order, evenly. Each stop eased to on the city and said on the reading's slow clock (title 4 s, partner and dates 11 s, its artists 20 s; 17 s × φ a stop, moving only while the pointer is still); a tap on the face pauses, the ring scrubs, × ends; under reduced motion a tap on the face is the next show. Its days (openings, closings) would need a dial of days, not years: see GUIDE.md |
 
 The legend is the line under the word while the dial has focus or the pointer rests on it.
 
