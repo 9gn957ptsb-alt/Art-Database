@@ -29,6 +29,16 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # A phone keeps an old stylesheet or script after a change (the artist kept seeing
+      # buttons already taken off, 7 Oct 2026): every local .css and .js the pages load is
+      # asked for with this commit's id, so a new deploy is always fetched fresh.
+      - name: Stamp the pages' own files with this commit
+        run: |
+          V=${GITHUB_SHA::8}
+          for f in docs/v2/index.html; do
+            [ -f "$f" ] && sed -i -E "s#((href|src)=\"[a-z0-9._/-]+\.(css|js))\"#\1?v=$V\"#g" "$f"
+          done
+          grep -c "?v=$V" docs/v2/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
