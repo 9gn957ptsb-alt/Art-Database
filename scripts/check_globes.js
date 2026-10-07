@@ -34,7 +34,7 @@ const PIC = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><d
 const VIEWS = [
   { name: "work, from a museum", open: async (P) => {
       await P.evaluate(() => Land.museum("museum-pushkin-museum-of-fine-arts"));
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 80; i++) {
         await P.waitForTimeout(500);
         const hit = await P.evaluate(() => {
           const b = [...document.querySelectorAll("button, a, [role=button], li, .held-work, [data-id]")]
@@ -57,8 +57,10 @@ const VIEWS = [
   { name: "born here", open: (P) => P.evaluate(() => fetch("lives.json").then((r) => r.json())
       .then((d) => Lives.openMark(d.marks.find((m) => m[7] === "Memphis")))), kind: "life" },
   // The artist's report of 7 Oct 2026: "Born in New York", 210 works, no dial and the arrows on the picture.
+  // Since the same day a town with a skyline opens as its city ("I want the isometric of the urban skyline to
+  // come up"), so New York's mark must open the skyline, Born here in its column; Memphis, with none, reads.
   { name: "born here, New York", open: (P) => P.evaluate(() => fetch("lives.json").then((r) => r.json())
-      .then((d) => Lives.openMark(d.marks.find((m) => m[7] === "New York" && m[4].length > 1)))), kind: "life" },
+      .then((d) => Lives.openMark(d.marks.find((m) => m[7] === "New York" && m[4].length > 1)))), kind: "life", skyline: true },
 ];
 
 const fails = [];
@@ -219,6 +221,14 @@ async function run(size) {
     const tag = size + " " + v.name;
     console.log(tag);
     await v.open(P);
+    if (v.skyline) {
+      // A town with a skyline is its city, not a reading: the skyline drawn, nothing else of the reading's to check.
+      let sk = null;
+      for (let i = 0; i < 120 && !sk; i++) { await P.waitForTimeout(300); sk = await P.evaluate(() => Land.city && Land.city.state && Land.city.state()); }
+      check(tag, !!sk, "opens as its skyline", sk && sk.name);
+      await P.keyboard.press("Escape"); await P.waitForTimeout(400);
+      continue;
+    }
     let r = null;
     for (let i = 0; i < 120 && !(r && r.kind === v.kind && !r.flying); i++) { await P.waitForTimeout(300); r = await state(); }
     if (!r) { check(tag, false, "opened"); continue; }
