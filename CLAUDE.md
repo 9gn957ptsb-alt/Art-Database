@@ -122,6 +122,9 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   and dynamic way it can be incorporated into the functionality of the dial"). Every new kind of exploration
   (lives, movements, hunts, walks, voices, sites, corpses …) gets a place on the dial: what its years mean, what its
   marks are, what turning it does, and how it hands on to the others — designed with it, not added after.
+- **Domains for Network access come as one block to copy** (artist, 7 Oct 2026: "When I ask you for the domains you need
+  Network access to, please send them to me in an easy list for me to copy and paste into the environment"): a single
+  fenced code block, one bare domain a line, nothing else in it — no bullets, no notes, no backticks round each.
 - Don't paste a bare URL on every update — say it's done; the linked words
   carry the link. Keep publishing the updated artifact each time.
 - The work photographs are placeholders until shot properly. Don't crop or
