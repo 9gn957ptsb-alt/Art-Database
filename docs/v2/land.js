@@ -10999,8 +10999,106 @@
            Math.round(Math.min(255, c[2] * light)) + ")";
   }
 
-  /* The ground, as dots: where each is, how big, what colour, which row. */
-  function shapeClod(b, g) {
+  /* The building looked at, in its plot (artist, 7 Oct 2026: "when I am
+     looking at a museum building or architecture building in the area view
+     of that city or town, I want the building I'm looking at to stand out
+     against the rest of the plot"). The ground names none of its buildings,
+     so the building's own cells are read from what is known of it: where its
+     model stands (each model is drawn in metres round the place's point,
+     north up, most of them off this same ground), else the block of building
+     cells at the point. Only where the point is the building's own door — a
+     private home is placed at its town, and no cells of its own are made up
+     for it (standNote says so instead). */
+  var STAND_COVER = 0.4;             // a cell is the building's when its model covers this much of it
+  var STAND_MAKE_ROOM = 0.25;        // the plot's building cells it covers this much of make room for it
+  var STAND_REACH = 63;              // metres from the point a building found without a model may reach
+  function standing(b, g, model) {
+    if (!b || b.precision !== "exact" || !g || !g.n || !window.Models || !Models.inset) { return null; }
+    var n = g.n, cell = g.side / n, half = g.side / 2, N = n * n, q, i, j;
+    var own = new Uint8Array(N), room = new Uint8Array(N), touch = new Float32Array(N);
+    var ins = model && model.parts ? Models.inset(model, function (vi, vj) { return soilCell(dirt.land, b, vj, vi); }) : null;
+    var count = 0;
+    if (ins) {
+      // How much of each cell of the plot the model's built columns cover.
+      var cols = new Float32Array(N), best = -1;
+      for (j = 0; j < ins.ny; j += 1) {
+        var gi = Math.floor(((j + 0.5) * ins.v - ins.site[1] / 2 + half) / cell);
+        if (gi < 0 || gi >= n) { continue; }
+        for (i = 0; i < ins.nx; i += 1) {
+          var gj = Math.floor(((i + 0.5) * ins.v - ins.site[0] / 2 + half) / cell);
+          if (gj < 0 || gj >= n) { continue; }
+          cols[gi * n + gj] += 1;
+          if (ins.foot[j * ins.nx + i]) { touch[gi * n + gj] += 1; }
+        }
+      }
+      for (q = 0; q < N; q += 1) {
+        if (cols[q]) { touch[q] /= cols[q]; }
+        if (touch[q] >= STAND_COVER) { own[q] = 1; count += 1; }
+        if (touch[q] >= STAND_MAKE_ROOM) { room[q] = 1; }
+        if (touch[q] > 0 && (best < 0 || touch[q] > touch[best])) { best = q; }
+      }
+      // A building smaller than a cell still has one.
+      if (!count && best >= 0) { own[best] = room[best] = 1; count = 1; }
+      // Its courtyards: whatever it encloses is its own ground, not a neighbour's.
+      var out = new Uint8Array(N), stack = [];
+      for (q = 0; q < N; q += 1) {
+        i = Math.floor(q / n); j = q % n;
+        if ((i === 0 || j === 0 || i === n - 1 || j === n - 1) && !own[q]) { out[q] = 1; stack.push(q); }
+      }
+      while (stack.length) {
+        q = stack.pop();
+        [q - n, q + n, (q % n) ? q - 1 : -1, (q % n) < n - 1 ? q + 1 : -1].forEach(function (p) {
+          if (p >= 0 && p < N && !out[p] && !own[p]) { out[p] = 1; stack.push(p); }
+        });
+      }
+      for (q = 0; q < N; q += 1) { if (!out[q]) { room[q] = 1; } }
+    } else {
+      // No model: the building cells at the point, and those joined to them,
+      // never further than a building could reach from its own door.
+      var seeds = [], near = -1, nearD = Infinity, reach = STAND_REACH / cell;
+      for (q = 0; q < N; q += 1) {
+        if (g.kind[q] !== "b") { continue; }
+        var dd = Math.hypot(Math.floor(q / n) + 0.5 - n / 2, q % n + 0.5 - n / 2);
+        if (dd <= 1.5) { seeds.push(q); }
+        if (dd < nearD) { nearD = dd; near = q; }
+      }
+      if (!seeds.length && near >= 0 && nearD <= 3) { seeds.push(near); }
+      while (seeds.length) {
+        q = seeds.pop();
+        if (own[q]) { continue; }
+        own[q] = 1; count += 1;
+        [q - n, q + n, (q % n) ? q - 1 : -1, (q % n) < n - 1 ? q + 1 : -1].forEach(function (p) {
+          if (p >= 0 && p < N && !own[p] && g.kind[p] === "b" &&
+              Math.hypot(Math.floor(p / n) + 0.5 - n / 2, p % n + 0.5 - n / 2) <= reach) { seeds.push(p); }
+        });
+      }
+    }
+    return count ? { own: own, room: ins ? room : null, inset: ins } : null;
+  }
+
+  /* Where a building has no cells of its own in its plot, the view says so,
+     in the words "the place, then" uses for a life's town. */
+  function standNote(b, model) {
+    if (!b || b.precision === "exact") { return ""; }
+    var name = (model && model.name) || b.name || b.title || "";
+    var town = b.city || String(b.where || "").split(",")[0];
+    var across = { street: "700 m", district: "3.6 km", town: "2.4 km", region: "9 km" }[b.precision] || "2.4 km";
+    if (b.precision === "street") { return "Where on its street " + name + " stands is not placed: the square is " + across + " across."; }
+    return "Where in " + town + " " + name + " stands is not placed: the square is " + town + "’s middle, " + across + " across.";
+  }
+
+  /* The ground, as dots: where each is, how big, what colour, which row.
+     With stand (standing(), above), the building looked at stands out: in
+     its own model where it has one, the plot's cells under it making room,
+     else its own cells in a brighter stone; every other building let down a
+     step, quieter and cooler, the DIRT dots still. */
+  var STAND_COOL = [148, 156, 170];  // what the other buildings are let down toward
+  function storeyInk(soil, top, f, how) {
+    if (how === "own") { return inkOf(mixTo(soil, PALE, 0.86), top ? 1.12 : 0.92 + 0.12 * f); }
+    if (how === "down") { return inkOf(mixTo(mixTo(soil, PALE, 0.3), STAND_COOL, 0.26), top ? 0.8 : 0.62 + 0.08 * f); }
+    return inkOf(mixTo(soil, PALE, 0.72), top ? 1.06 : 0.84 + 0.1 * f);
+  }
+  function shapeClod(b, g, stand) {
     var n = g.n, cell = g.side / n;
     var land = [], hi = 0, k;
     for (k = 0; k < n * n; k += 1) {
@@ -11034,6 +11132,7 @@
       var q = i * n + j;
       return g.kind[q] === "~" ? 0 : g.ground[q] / 2 * lift;
     }
+    var cellYear = new Int16Array(n * n), ownDots = [];
 
     for (var i = 0; i < n; i += 1) {
       for (var j = 0; j < n; j += 1) {
@@ -11054,14 +11153,18 @@
           // Raised a little, so a house still stands up out of a town; a
           // tower is kept to about a fifth of the clod.
           var up_ = Math.min(n / 5, Math.max(1, storeys * 3.2 / cell * 1.2));   // in cells
-          var layers = Math.max(1, Math.round(up_ * 2));
+          // Under the building's own model the plot keeps only its ground.
+          var layers = stand && stand.room && stand.room[q] ? 0 : Math.max(1, Math.round(up_ * 2));
           var built = years ? g.built[bi] || 0 : 0;
+          cellYear[q] = built;
           bi += 1;
+          var how = stand ? (stand.own[q] ? "own" : "down") : null;
           for (var l = 1; l <= layers; l += 1) {
             var top = l === layers;
-            put(x, y, z + l * 0.5, 2, inkOf(mixTo(soil, PALE, 0.72), top ? 1.06 : 0.84 + 0.1 * l / layers), i);
+            put(x, y, z + l * 0.5, 2, storeyInk(soil, top, l / layers, how), i);
             // Its storeys go up one after another within its year.
             if (built) { dots.reveal[dots.reveal.length - 1] = yearAt(built - 1) + (l / layers) * 0.97 / (years.y1 - years.y0); }
+            if (how === "own") { ownDots.push(dots.x.length - 1); }
           }
         } else if (size) {
           put(x, y, z, size, inkOf(soil, what === "~" ? 1 : light), i);
@@ -11076,11 +11179,66 @@
         }
       }
     }
+    if (stand) { standIn(stand, g, dots, cellYear, ownDots, years, zAt); }
     dots.count = dots.x.length;
     dots.span = n;
-    dots.lift = Math.min(highest, n / 4);
+    dots.lift = Math.min(Math.max(highest, dots.stand ? dots.stand.top : 0), n / 4);
     dots.years = years;
     return dots;
+  }
+
+  /* The building's own model, set into the plot at the point: metres to
+     cells, its heights raised as the plot's are (x1.2), on the plot's mean
+     ground under it. When the plot knows its years and most of the
+     building's own cells are dated, it goes up, storey by storey, in its
+     first year: the earliest that a fifth of its dated cells or more agree
+     on, so a stray neighbour's year does not bring it up early; else it
+     stands throughout, as an undated building of the plot does. (The model
+     is its form today: a later wing goes up with it.) */
+  function standIn(stand, g, dots, cellYear, ownDots, years, zAt) {
+    var n = g.n, cell = g.side / n, N = n * n, q;
+    var own = stand.own, z0 = 0, k = 0;
+    for (q = 0; q < N; q += 1) { if (own[q]) { z0 += zAt(Math.floor(q / n), q % n); k += 1; } }
+    z0 = k ? z0 / k : 0;
+    var st = { own: own, n: n, z0: z0, top: 0, first: Infinity, dots: ownDots };
+    var ins = stand.inset;
+    if (ins) {
+      var year = 0;
+      if (years) {
+        var all = 0, dated = [], tally = {};
+        for (q = 0; q < N; q += 1) {
+          if (!own[q] || g.kind[q] !== "b") { continue; }
+          all += 1;
+          if (cellYear[q]) { dated.push(cellYear[q]); tally[cellYear[q]] = (tally[cellYear[q]] || 0) + 1; }
+        }
+        if (all && dated.length * 2 >= all) {
+          dated.sort(function (a, c) { return a - c; });
+          for (var u = 0; u < dated.length && !year; u += 1) {
+            if (tally[dated[u]] * 5 >= dated.length) { year = dated[u]; }
+          }
+        }
+      }
+      var d = ins.dots, v = ins.v, rise = v / cell * 1.2, span = years ? years.y1 - years.y0 : 1;
+      for (var t = 0; t < d.count; t += 1) {
+        var mx = (d.x[t] + ins.nx / 2 + 0.5) * v - ins.site[0] / 2;
+        var my = (d.y[t] + ins.ny / 2 + 0.5) * v - ins.site[1] / 2;
+        var gi = Math.max(0, Math.min(n - 1, Math.floor((my + g.side / 2) / cell)));
+        var z = z0 + d.z[t] * rise, built = year;
+        dots.x.push(mx / cell); dots.y.push(my / cell); dots.z.push(z);
+        dots.size.push(d.size[t] * v / cell); dots.ink.push(d.ink[t]);
+        // Storey by storey, in its year; or, with no years, as its rows of the plot come up.
+        var reveal = years ? (built > 0 ? (built - 1 - years.y0) / span + (d.z[t] / ins.nz) * 0.97 / span : 0)
+                           : Math.min(0.98, gi / n + 0.3 * d.z[t] / ins.nz);
+        dots.reveal.push(reveal);
+        ownDots.push(dots.x.length - 1);
+        if (z > st.top) { st.top = z; }
+      }
+    }
+    ownDots.forEach(function (p) {
+      if (dots.reveal[p] < st.first) { st.first = dots.reveal[p]; }
+      if (dots.z[p] > st.top) { st.top = dots.z[p]; }
+    });
+    dots.stand = st;
   }
 
   function sizeClod() {
@@ -11101,6 +11259,124 @@
     if (dots.years) { shown = clod.when; }
     clod.frame = window.Models.draw(clod.canvas, dots, clod.heading, shown, 0.92);
     if (clod.interior) { placeDoor(); }
+    standTiles(clod.view === "ground" ? dots : null, shown);
+    standPaint(now);
+  }
+
+  /* The ring round the building looked at: pixel light on the screen's own
+     13 px grid (the tiles'), on the ground just outside its footprint where
+     the ground shows — what of the building has risen stands in front of
+     it. Quiet at rest, fainter round a bare footprint before the building
+     went up; once, when the view settles, it pulses (never under reduced
+     motion). */
+  var standCanvas = null;
+  var STAND_PULSE = 1100;            // ms the one pulse takes: three echoes, each 1/φ of the last
+  function standTiles(d, shown) {
+    var st = d && d.stand, f = clod.frame;
+    clod.ring = null;
+    if (!st || !f || walkOn) { return; }
+    var r = buildingMap.getBoundingClientRect(), k = buildingMap.clientWidth / clod.canvas.width;
+    var n = st.n, half = n / 2, z = st.z0, T = CELL_PX, q, p, sx = [], sy = [];
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (q = 0; q < n * n; q += 1) {
+      if (!st.own[q]) { continue; }
+      p = Models.project(f, q % n - half + 0.5, Math.floor(q / n) - half + 0.5, z);
+      sx.push(r.left + p.x * k); sy.push(r.top + p.y * k);
+      x0 = Math.min(x0, sx[sx.length - 1]); x1 = Math.max(x1, sx[sx.length - 1]);
+      y0 = Math.min(y0, sy[sy.length - 1]); y1 = Math.max(y1, sy[sy.length - 1]);
+    }
+    if (!sx.length) { return; }
+    var pad = f.scale * k + 2 * T;
+    var ti0 = Math.floor((x0 - pad) / T), tj0 = Math.floor((y0 - pad) / T);
+    var cols = Math.floor((x1 + pad) / T) - ti0 + 1, rows = Math.floor((y1 + pad) / T) - tj0 + 1;
+    if (cols * rows > 60000) { return; }
+    var on = new Uint8Array(cols * rows), hid = new Uint8Array(cols * rows), ti, tj, c;
+    // On the footprint: each tile whose middle lies over one of its cells,
+    // and the tile each of its cells' middles is in (a small one still has one).
+    for (tj = 0; tj < rows; tj += 1) {
+      for (ti = 0; ti < cols; ti += 1) {
+        var u = (((ti0 + ti) * T + T / 2 - r.left) / k - f.cx0) / f.scale;
+        var w = ((((tj0 + tj) * T + T / 2 - r.top) / k - f.cy0) / f.scale + z * f.ct) / f.st;
+        var gx = Math.floor(u * f.cos + w * f.sin + half), gy = Math.floor(w * f.cos - u * f.sin + half);
+        if (gx >= 0 && gy >= 0 && gx < n && gy < n && st.own[gy * n + gx]) { on[tj * cols + ti] = 1; }
+      }
+    }
+    for (q = 0; q < sx.length; q += 1) { on[(Math.floor(sy[q] / T) - tj0) * cols + Math.floor(sx[q] / T) - ti0] = 1; }
+    // What of the building has risen hides the ground behind it.
+    var built = false;
+    st.dots.forEach(function (t) {
+      if (d.reveal[t] > shown) { return; }
+      built = true;
+      if (d.z[t] < z + 0.5) { return; }
+      var s = Models.project(f, d.x[t], d.y[t], d.z[t]);
+      var a = Math.floor((r.left + s.x * k) / T) - ti0, b = Math.floor((r.top + s.y * k) / T) - tj0;
+      if (a >= 0 && b >= 0 && a < cols && b < rows) { hid[b * cols + a] = 1; }
+    });
+    var tiles = [];
+    for (tj = 0; tj < rows; tj += 1) {
+      for (ti = 0; ti < cols; ti += 1) {
+        c = tj * cols + ti;
+        if (on[c] || hid[c]) { continue; }
+        var by = false;
+        for (var dj = -1; dj <= 1 && !by; dj += 1) {
+          for (var di = -1; di <= 1 && !by; di += 1) {
+            var a2 = ti + di, b2 = tj + dj;
+            by = a2 >= 0 && b2 >= 0 && a2 < cols && b2 < rows && on[b2 * cols + a2] === 1;
+          }
+        }
+        if (by) { tiles.push(ti0 + ti, tj0 + tj); }
+      }
+    }
+    clod.ring = { tiles: tiles, built: built };
+  }
+
+  function standPaint(now) {
+    if (!standCanvas) {
+      if (!clod || !clod.ring) { return; }
+      standCanvas = document.createElement("canvas");
+      standCanvas.className = "building-light";
+      standCanvas.setAttribute("aria-hidden", "true");
+    }
+    if (standCanvas.parentNode !== buildingMap) { buildingMap.appendChild(standCanvas); }
+    var r = buildingMap.getBoundingClientRect(), k = Math.min(window.devicePixelRatio || 1, 3);
+    var pw = Math.max(1, Math.round(r.width * k)), ph = Math.max(1, Math.round(r.height * k));
+    if (standCanvas.width !== pw || standCanvas.height !== ph) { standCanvas.width = pw; standCanvas.height = ph; }
+    var g = standCanvas.getContext("2d");
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, pw, ph);
+    var ring = clod && clod.view === "ground" && !walkOn ? clod.ring : null;
+    if (!ring || !ring.tiles.length) { return; }
+    clod.ringPainted = now;
+    // Held frames, like all the pixel light; four steps of brightness.
+    var t = clod.pulseAt ? Math.floor((now - clod.pulseAt) / 42) * 42 : -1;
+    var rest = ring.built ? 2 : 1, T = CELL_PX;
+    g.setTransform(k, 0, 0, k, -r.left * k, -r.top * k);
+    g.fillStyle = LIGHT;
+    for (var m = 0; m < ring.tiles.length; m += 2) {
+      var ti = ring.tiles[m], tj = ring.tiles[m + 1], lv = rest;
+      if (t >= 0 && t < STAND_PULSE) {
+        [0, 330, 640].forEach(function (at, e) {
+          var age = t - at;
+          if (age >= 0 && age < 360) { lv = Math.max(lv, Math.ceil((1 - age / 360) * 4 * Math.pow(INV, e))); }
+        });
+        if (lv > rest && hash2(ti, tj) < 0.3) { lv -= 1; }   // a ragged edge
+      }
+      g.globalAlpha = LEVELS[Math.min(4, lv)];
+      g.fillRect(ti * T + 1, tj * T + 1, T - 2, T - 2);
+    }
+    g.globalAlpha = 1;
+  }
+
+  // The plot with its building standing out, made once a visit (the plain
+  // plot stays if anything in it fails).
+  var standNoteEl = null;
+  function standGround() {
+    if (!clod || clod.stood || !clod.g) { return; }
+    clod.stood = true;
+    try {
+      var st = standing(clod.b, clod.g, clod.model);
+      if (st) { clod.views.ground = shapeClod(clod.b, clod.g, st); clod.dirty = true; }
+    } catch (e) { /* the plot as it was */ }
   }
 
   /* Isometric: the building rests on one of its four 45° diagonals, where
@@ -11158,6 +11434,17 @@
       clod.ch = buildingMap.clientHeight;
       drawClod(now);
     }
+    // The ring round the building pulses once the plot has settled: risen,
+    // and its years come to rest.
+    if (clod.ring && !clod.pulsed && clod.view === "ground" && now - clod.at > CLOD_RISE + 120 &&
+        !(dotsNow && dotsNow.years && clod.when !== clod.whenTo)) {
+      clod.pulsed = true;
+      if (!still) { clod.pulseAt = now; }
+    }
+    if (clod.pulseAt && now - (clod.ringPainted || 0) >= 42) {
+      if (now - clod.pulseAt > STAND_PULSE) { clod.pulseAt = 0; }
+      standPaint(now);
+    }
     clod.raf = requestAnimationFrame(clodFrame);
   }
 
@@ -11213,8 +11500,23 @@
         at: performance.now(), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
         swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST,
         when: 1, whenTo: 1, byHand: false,
-        b: b, m: city.museum || null, model: model
+        b: b, m: city.museum || null, model: model, g: g
       };
+      // The building standing out in its plot: made now if the plot is shown
+      // first, else once the building has risen and the page is idle.
+      if (first === "ground") { standGround(); }
+      else if (views.ground) {
+        window.setTimeout(function () {
+          var go = function () { if (buildingOn === visit) { standGround(); } };
+          if (window.requestIdleCallback) { window.requestIdleCallback(go, { timeout: 2600 }); } else { go(); }
+        }, still ? 0 : CLOD_RISE + 300);
+      }
+      if (!standNoteEl) {
+        standNoteEl = document.createElement("p");
+        standNoteEl.className = "building-note";
+        buildingEl.appendChild(standNoteEl);
+      }
+      standNoteEl.textContent = views.ground ? standNote(b, model) : "";
       if (city.museum && views.building) { walkLoad(visit, b, city.museum, walkVia); }
       buildingEl.dataset.air = "up";
       buildingEl.dataset.view = first;
@@ -11540,9 +11842,12 @@
     if (!clod) { return; }
     var other = clod.view === "building" ? "ground" : "building";
     if (!clod.views[other]) { return; }
+    if (other === "ground") { standGround(); }
     clod.view = other;
     clod.at = performance.now();
     clod.dirty = true;
+    clod.pulsed = false;
+    clod.pulseAt = 0;
     buildingEl.dataset.view = other;
     startTime(clod.views[other]);
     showYear();
@@ -11559,6 +11864,11 @@
       cancelAnimationFrame(clod.raf);
       if (clod.canvas.parentNode) { clod.canvas.parentNode.removeChild(clod.canvas); }
       clod = null;
+    }
+    if (standCanvas) {
+      var sg = standCanvas.getContext("2d");
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.clearRect(0, 0, standCanvas.width, standCanvas.height);
     }
     if (buildingEl) { buildingEl.hidden = true; }
     if (buildingWorks) { buildingWorks.textContent = ""; }
