@@ -123,9 +123,12 @@
 
   var V = null;                // { box, img, s, x, y, ... }
   function open(o) {
+    // What had the focus gets it back when the whole screen is put away (WCAG 2.4.3).
+    var back = V ? V.back : document.activeElement;
     shut(true);
     var box = el("div", "zoom");
     box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
     box.setAttribute("aria-label", "The work on the whole screen: pinch, a wheel, + and − to come nearer; Escape to go back");
     box.tabIndex = -1;
     var stage = el("div", "zoom-stage");
@@ -145,7 +148,16 @@
     foot.appendChild(tools);
     box.appendChild(foot);
     document.body.appendChild(box);
-    V = { box: box, stage: stage, img: img, s: 1, x: 0, y: 0, fit: null, o: o, ptrs: {}, tapAt: 0, tapX: 0, tapY: 0 };
+    V = { box: box, stage: stage, img: img, s: 1, x: 0, y: 0, fit: null, o: o, ptrs: {}, tapAt: 0, tapX: 0, tapY: 0, back: back };
+    // The whole screen holds the focus while it is up: Tab goes round its own buttons.
+    box.addEventListener("keydown", function (event) {
+      if (event.key !== "Tab") { return; }
+      var bs = Array.prototype.slice.call(box.querySelectorAll("button, a[href], [tabindex='0']"));
+      if (!bs.length) { return; }
+      var i = bs.indexOf(document.activeElement);
+      event.preventDefault();
+      bs[(i + (event.shiftKey ? -1 : 1) + bs.length + (i < 0 && event.shiftKey ? 1 : 0)) % bs.length].focus();
+    });
     img.addEventListener("load", function () { fit(); });
     img.src = o.src;
     // The largest picture there is, in turn; the first that comes takes over.
@@ -288,6 +300,7 @@
     V = null;
     v.box.remove();
     if (!quiet && v.o.onClose) { v.o.onClose(); }
+    if (!quiet && v.back && v.back.isConnected && v.back.focus) { try { v.back.focus({ preventScroll: true }); } catch (e) {} }
   }
 
   // Escape steps back: the whole screen to twice as big, twice as big to as it was. First, before the page's own.

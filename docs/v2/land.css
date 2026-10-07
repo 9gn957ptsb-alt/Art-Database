@@ -2159,10 +2159,10 @@
   color: var(--ink);
 }
 .held-medium { display: none; }
-.held[aria-expanded="true"] { grid-template-columns: 1fr; cursor: zoom-out; }
-.held[aria-expanded="true"] img { width: 100%; height: auto; max-height: 61vh; }
-.held[aria-expanded="true"] .held-medium { display: block; color: var(--ink-dim); }
-.held:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: 3px; }
+.held[data-open="true"] { grid-template-columns: 1fr; cursor: zoom-out; }
+.held[data-open="true"] img { width: 100%; height: auto; max-height: 61vh; }
+.held[data-open="true"] .held-medium { display: block; color: var(--ink-dim); }
+.held img[role="button"]:focus-visible { outline: 2px solid #9d95e6; outline-offset: 3px; }
 @keyframes held-in { to { opacity: 1; } }
 @keyframes held-rise { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .held { animation: none; opacity: 1; } }
@@ -2189,7 +2189,7 @@
 }
 .dirt-look .building-credit,
 .dirt-look .held-count,
-.dirt-look .held[aria-expanded="true"] .held-medium { color: #a8927a; }
+.dirt-look .held[data-open="true"] .held-medium { color: #a8927a; }
 .dirt-look .held figcaption { color: #eadfcd; }
 .dirt-look .held img { background: rgba(234, 223, 205, 0.06); }
 .held img { color: transparent; overflow: hidden; }
@@ -2942,7 +2942,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 
 /* A saved work in a museum's column: the way to where it has been. */
 .held-history { display: none; margin-top: var(--s-3); }
-.held[aria-expanded="true"] .held-history { display: inline-block; }
+.held[data-open="true"] .held-history { display: inline-block; }
 .held-history {
   min-height: 32px;
   padding: var(--s-2) var(--s-3);
@@ -3028,10 +3028,10 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .held-where:hover,
 .held-where:focus-visible { color: #f3f1ee; border-color: #9d95e6; background: rgba(94, 82, 199, 0.5); }
-.held[aria-expanded="true"] .held-where { margin-right: var(--s-2); }
+.held[data-open="true"] .held-where { margin-right: var(--s-2); }
 .held-where-said { display: none; color: var(--ink-dim); font-size: var(--t-0); }
 .dirt-look .held-where-said { color: #a8927a; }
-.held[aria-expanded="true"] .held-where-said { display: block; margin-top: var(--s-2); }
+.held[data-open="true"] .held-where-said { display: block; margin-top: var(--s-2); }
 .walk-here-group { margin: 0 0 var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid rgba(157, 149, 230, 0.35); }
 .held-group { color: #9d95e6; }
 
@@ -3198,7 +3198,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 /* A place's and a thread's rows. */
 .art-rows .held { grid-template-columns: 55px 1fr; }
 .art-rows .held img { width: 55px; height: 55px; }
-.art-rows .held[aria-expanded="true"] { grid-template-columns: 1fr; }
+.art-rows .held[data-open="true"] { grid-template-columns: 1fr; }
 .art-row-what {
   display: block;
   margin-top: 2px;

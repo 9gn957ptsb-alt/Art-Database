@@ -183,7 +183,8 @@
       m.then.length ? plural(m.then.length, "show or sale they shared then", "shows or sales they shared then") : "",
       m.nmade ? plural(m.nmade, "saved work", "saved works") + " dated here then" : ""].filter(Boolean).join(" · ")));
     v.yearEl = el("p", "life-year");
-    v.yearEl.setAttribute("aria-live", "polite");
+    // Said once the dial rests, not on every year it passes (WCAG 4.1.3; a11y.js).
+    if (window.A11y) { A11y.settled(v.yearEl); } else { v.yearEl.setAttribute("aria-live", "polite"); }
     box.appendChild(v.yearEl);
     if (window.Explorations && Explorations.play) {
       box.appendChild(button("Walk the movement · " + plural(m.walk.length, "stop", "stops") + " ›", "read-quiet life-play", function () { play(m); }));

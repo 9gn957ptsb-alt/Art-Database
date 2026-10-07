@@ -30,8 +30,12 @@
 <link rel="stylesheet" href="label.css">
 <link rel="stylesheet" href="zoom.css">
 <link rel="stylesheet" href="guide.css">
+<link rel="stylesheet" href="a11y.css">
 </head>
 <body class="land-body">
+
+<!-- Hold still (WCAG 2.2.2; a11y.js): the first stop in the tab order, seen only while it has the focus. -->
+<button class="still-switch" id="still-switch" type="button" aria-pressed="false">Hold still</button>
 
 <!-- Nothing here but the world, what is written on it, and what walks on it. -->
 <div class="stage" id="stage">
@@ -39,7 +43,7 @@
   <!-- The sphere and its land. -->
   <!-- The same globe, small and out of focus, under the sharp one. -->
   <canvas class="world world-soft" id="world-soft" aria-hidden="true"></canvas>
-  <canvas class="world" id="world"></canvas>
+  <canvas class="world" id="world" aria-hidden="true"></canvas>
   <!-- The clear coat: highlights and the rim, over the globe. -->
   <canvas class="world world-gloss" id="world-gloss" aria-hidden="true"></canvas>
   <!-- Pixel light: the grid of tiles that lights up in waves. -->
@@ -114,7 +118,7 @@
   <!-- Everything that stands ON the world is DOM, not canvas, so the words
        stay legible, focusable and clickable. land.js projects each one onto
        the sphere every frame. -->
-  <div class="land" id="land" aria-label="The words the collages are made of">
+  <div class="land" id="land" aria-label="The globe" aria-describedby="creature-help">
     <!-- While the world is read: cells, growing and dividing, after Universal
          Everything's Primordial. -->
     <canvas class="primordial" id="primordial" aria-hidden="true"></canvas>
@@ -289,190 +293,24 @@
   </div>
 
   <p class="visually-hidden" id="creature-help">
-    There are two heights here. The globe is the view of the whole site: the
-    Earth, the words the collages are made of, and the places the collages
-    are in — each one at its real coordinates, where the artist put it.
-    Amadeus is in Sydney, Collage with Portraits and GAME BOY ADVANCE in
-    Washington, NYNY in New York, i in San Francisco, Boston Spring in
-    Boston, HEY AMATEUR: COLLAGE in Blacksburg. Drag sideways to turn the
-    world and up or down to roll it north or south, which is how anywhere on
-    the Earth is reached. Every landmass takes the colour of whichever of
-    those places is nearest it, so the boundary between two colours is a
-    coastline. Nothing happens up there. Press a city and the world grows until
-    that city is the ground under you, and everything that follows happens
-    down there. The back button, or Escape, brings you up again. What grows in
-    one city stays in that city.
-
-    It is all one page. Going down into a city where a collage is lays that
-    collage out there — its photograph, its title and year, where it is,
-    what it is made of and how big, its price and its notes, each as a
-    separate thing — beside wherever the creature is standing. Press any of
-    them and they are all dealt again to new places, at new sizes and new
-    widths; nothing is laid out the same way twice. The turn button hangs it
-    a quarter turn round, and the vote records the way it is hung. Put it
-    away, or press the city's name in the corner to bring it back. A word
-    on the globe lays out the collages it is written on, dealt afresh each
-    time; press a photograph there and you are taken to its city. Nothing
-    floats in the sky: every collage's name stands on the globe at the
-    real latitude and longitude of its place, and where two places are the
-    same point from orbit their names stack beside the one dot.
-
-    One of the cities is not a collage but a real building: the Folger
-    Shakespeare Library, on East Capitol Street in Washington. It is drawn
-    from the building — the long marble front, the nine pilasters with a
-    relief between each pair, the cornice, the reading room end, Puck in the
-    west garden — and it is where the plays are. Players are cast there and
-    nowhere else, and the scenes go up on its terrace. The other cities grow
-    towers, tubes, eggs and hatchlings, and are quiet. Three of the places
-    are within a few streets of each other in Washington; their marks are
-    pushed apart on the screen so each can be pressed, and their names are
-    given out nearest the middle first, so a name is left off rather than
-    printed across one already there.
-
-    Down in a city: press the creature to turn up one of the Hubble Space
-    Telescope's photographs, read live from NASA's image library and boiled
-    down to the three colours it is most made of; it stays up until you put it down.
-    Press again to take that work's palette, then drag it onto the creature and
-    let go to apply it. A palette that misses stays where it lands and can be
-    picked up again. With a keyboard, press Enter on the card to do both at
-    once, and Escape to put it down. Each throw repaints three of the creature's
-    twenty parts, so it carries several works at once; tab or hover onto a
-    painted part to hear which work gave it that colour, and open it. Tab
-    through the words to turn the world to the next of them; a word that has
-    gone round the back is hidden, so tabbing reaches the ones on this face
-    and the world brings more round as it turns. Drag anywhere to turn it by
-    hand. Down in a city the words are not shown — they are the language of
-    the whole world rather than of one place — but the creature still finds
-    the things that collage is made of underfoot, and the banner says which.
-    Seen from far off, the Earth is a marble with company: the Hubble Space
-    Telescope, in orbit round it, passing in front and behind; press it to
-    open one of its photographs. The world is the Earth, exactly: the land the threads thicken over is
-    Natural Earth's 50m outline at a quarter of a degree, with no line drawn
-    round it — the land is its own edge. It does not stay at one distance:
-    every so often, when nobody is doing anything, it swings nearer or
-    further off, sometimes to a small world far away in the sky, leaning in
-    perspective as it goes; and a world small enough to be seen whole can be
-    pressed, and is fired at you round the point pressed — it winds back,
-    then bursts forward with the air streaking past, a flash, a ring going
-    out and a shake as it lands. The view is yours to move as well: pinch
-    with two fingers, or scroll, to bring the world nearer or send it
-    further off; drag on the empty sky to carry it across; tap the sky to
-    bounce the view somewhere new. The world is never left stranded — there
-    is always ground in front of you or within reach. The world is woven in
-    threads of dots, and it is DIRT Earth's globe: every dot wears what
-    DIRT Earth dresses that place in this month, the saved paintings
-    nearest the place's own colours (its biome, its soil, its season, its
-    snow and sea ice), land and sea alike, and close to, in a city, each
-    finer dot is dressed in its place's palette the same way. Down in a
-    city, Closer (or scrolling or pinching further in) goes on down into
-    DIRT Earth itself at that place: the ground with everything that grows
-    and lives on it, its weather and its light; and further in again, the
-    streets, from OpenStreetMap, every building standing at its own height
-    in the place's colours, lit by a light that turns and casting its
-    shadow, the places people go to see named, and every edge a grey
-    gradient rather than a line. Going back out past the ground, or its
-    Globe button, comes back up here. No painting is in it but as its
-    three colours: its soil is these same dots. The soil is only
-    ever seen through the threads. The whole globe is always partly
-    see-through, and how much is never still: the body of it and each of
-    the two directions of thread fade between 0.382 and 0.618 — the golden
-    cut — on their own slow periods, so the threads running down and the
-    threads running round take the light in turn, like shot silk.
-    On top of that, the globe is shared out between the words on it: every
-    word is the middle of a patch that fades between 0.382 and fully there,
-    as big and as slow as the word itself, on golden-ratio periods, and
-    moves when the word is put down somewhere new; and a band of fading runs down the world from
-    the North Pole to the South every eleven seconds. Because the globe is
-    that much more see-through, it carries 1.618 times as many threads of
-    land and sea as it did. Where the globe sits and how big it is are
-    dealt afresh every time the page is opened, and coming back up from a
-    city returns you to exactly the view you went down from. The soil's
-    dots are drawn finer than DIRT's own, and wherever a word lies the land
-    thins out beneath it, so the words are read against a clearing rather
-    than competing with the ground. The globe is gritty and soft as well as fine: specks
-    of soil's browns and a few pale grains are baked into it, and part of it
-    is laid down again out of focus. Both grow as you go down into a city,
-    where the ground is gravel in a haze of itself; and when a word is
-    opened, the world behind its collages leans in and goes out of focus. Over the whole globe
-    lies a clear coat, lit as in a studio: a hard hot spot where the key
-    light lands, two long softbox strips bent to the curve, a dark band
-    where the coat turns away, and a knife-edge of sky at the rim. It lifts
-    off on the way down into a city. The page draws at every pixel the
-    screen has, up to three to one, and steps down only if the machine
-    cannot keep up.
-
-    Every palette applied also leaves something standing on the world, and
-    what it leaves is decided by the word the creature is standing on: things
-    that stack grow a tower, things wound or banded grow a tube, things that
-    are alive grow a hatchling, things with somebody in them grow a player
-    with a part to say, and a mark that is not yet anything grows an egg. So feed it a palette while it stands on
-    something, and the collage decides what comes up. The five words that
-    cast a part only cast one at the library. Five of the words
-    cast a particular part as well — handwriting brings on the Chorus, a
-    photograph Hamlet, a polaroid Juliet, a sketch Jaques, a playing card
-    Puck. These are yours to play with. Press a hatchling and it walks behind the
-    creature; press an egg three times to break it open; press one tube and
-    then another to pour the top band across, and a tube of a single colour
-    hatches; press a tower and the creature walks over to it. A palette can be dropped on any of them
-    instead of on the creature, which feeds it. Two of a kind that wander into
-    each other merge, and past the third size a thing becomes the next kind
-    along. Hold one, or press O with it focused, to open the work it came from
-    at NASA.
-
-    Some of what grows off the creature are players — twelve parts and sixteen
-    scenes, out of Romeo and Juliet, Hamlet, Macbeth, A Midsummer Night's
-    Dream, The Tempest and As You Like It. When the cast a scene needs is
-    standing on the world they walk to their marks and act it out, a line at a
-    time, and whichever scene has waited longest is the one that goes up;
-    press any player to cue a scene, or to hear its own line if it is alone. A palette fed to a
-    player dresses it again in that work's colours and it keeps its part.
-    A scene builds its own place first, a course at a time — a diorama on its
-    own plinth, out of the colours of the works the players came from: a
-    Verona street with an arched wall and a well, a tower with a balcony over
-    it, steps down to a tomb, the battlement at Elsinore, a graveyard, the
-    hall at Dunsinane, a chamber, the wood, the island, the forest of Arden.
-    Ten places for sixteen scenes, because a play's scenes mostly happen
-    somewhere the play has already been. Pressing it, or Escape, strikes the
-    scene and takes the place down with it.
-
-    The world also keeps making things on its own, whether or not anything is
-    being thrown at the creature. To clear it, press and hold anywhere on the
-    ground: a ring opens under the press and grows while it is held, and
-    letting go squashes everything inside it — the pixels burst, and two or
-    more of them come back down as a single egg. A press that moves is a turn
-    of the world instead, so nothing is lost by trying.
-
-    The Museums layer, the second on the filter, carries the cities: every
-    city that holds a museum with one of the artist's saved works is a
-    diamond, named with the city's name, and every other place the saved
-    works have been is a tile of light. A few names are written at a time,
-    each beside its dot, and more come as the world turns or comes nearer;
-    every city can be pressed, named or not. Pressing one flies down into
-    it: its museums stand at their own doors, the galleries whose address is
-    known are faint tiles, and beside it the city's directory lists its
-    museums, each a way into the museum, the cities near it, and then the
-    galleries, fairs and sale rooms where saved works have been, each opening
-    to its works, with a slider of the city's years. Up from a museum is its
-    city, and up from a city is the world. Above the filter, Find reaches any
-    of the works by title, artist, date or any place it has been, and any
-    city or museum by name, and the globe lights the cities of what it
-    finds. A work opens on its photograph alone;
-    then the world is framed on where it has been, its journey drawn in the
-    same light, a stop at a time, on a slider of its own years, and beside it
-    the history, a dated line an event, grouped by where it stayed, the
-    source's own words a press away on each line and every writing a
-    citation, linked to its original where there is one. Slowly, one at a
-    time, the column says what the work shares with other saved works — a
-    show, a sale, an owner, a museum, a book, and last its artist — each with
-    the works that share it as small doors. Press a thread to hold it and
-    see where each of its works came from and went; press a door to go to
-    that work, where the thread you came by is said first. In a museum, a
-    saved work brought up large has Where it has been, which opens its
-    history; a stop at one of the site's museums opens the museum, its town
-    as it stood that year, and any other stop opens its city at that year,
-    the work first among its gallery's. Pinch out to go
-    down to the ground at the stop the slider is at; pinch in, the back
-    button or Escape to come back up, where the way you walked is drawn once.
+    The Artist Website of Matthew Livingston is one page with one address.
+    The globe is the Earth. The pills at its foot choose what it carries:
+    Collages, the artist's own works at their places; Museums, the cities
+    that hold the museums with the works he saved; Architecture, the
+    buildings he keeps; or Artists, each saved artist at their birthplace.
+    Search, beside them, finds any work, artist, place, museum, show or
+    writer. With the globe focused, the arrow keys turn it, plus and minus
+    bring it nearer and farther, and Enter opens the place nearest the
+    middle; in a city the same keys move its map. Tab moves between the
+    places named. Pressing a place
+    goes down to it: a city with its museums, its galleries and a guide to
+    its shows; a museum with its saved works and a walk through the
+    building; a work with everywhere it has been; an artist's life; a
+    movement. Each view begins with its heading, then three ways on from
+    it. The round dial is the view's years: its arrow keys turn it, and
+    Space pauses or plays a path being played. Escape, minus or the way back
+    at the top go one level up. Hold still, the first stop in the tab order
+    or the word "still" in Search, stops everything that moves by itself.
   </p>
 
 </div>
@@ -541,5 +379,6 @@
 <script src="voice.js"></script>
 <script src="kinds.js"></script>
 <script src="guide.js"></script>
+<script src="a11y.js"></script>
 </body>
 </html>

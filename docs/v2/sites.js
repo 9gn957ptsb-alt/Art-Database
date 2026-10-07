@@ -222,7 +222,7 @@
     if (s.key && s.pr !== "town") {
       var into = el("button", "art-stop-in", "Enter ›");
       into.type = "button";
-      into.setAttribute("aria-label", "Go down to where it was painted");
+      into.setAttribute("aria-label", "Enter where it was painted");
       into.addEventListener("click", function (event) { event.stopPropagation(); visit(s); });
       row.appendChild(into);
     }

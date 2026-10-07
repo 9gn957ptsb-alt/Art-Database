@@ -68,7 +68,7 @@
 .pt-swipe { top: 50%; margin-top: -16px; }
 .pt-swipe-prev { left: 6px; }
 .pt-swipe-next { right: 6px; }
-@media (max-width: 720px) { .pt-swipe { display: none; } }
+/* Shown on a phone too (WCAG 2.5.1): the swipe has a one-tap way on every device. */
 
 /* Its words: the title (a door to its history) and where it stands among the period's, then its wall label. */
 .pt-cap { flex: none; display: grid; gap: 2px; min-width: 0; }

@@ -147,6 +147,9 @@
   var GRAZE_MAX = Math.round(2600 * PHI);      // …and at most, a golden step on
 
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Held still by the viewer (WCAG 2.2.2; a11y.js, "Hold still"): kept per viewer, on by default
+  // under reduced motion. Land.still(on) changes it while the page is open.
+  try { var stillKept = localStorage.getItem("site.still"); if (stillKept === "1") { still = true; } else if (stillKept === "0") { still = false; } } catch (e) {}
 
   var supply = null;    // land.json — the tokens
   var architecture = null;   // architecture.json — the buildings (scripts/build_architecture.py)
@@ -686,7 +689,9 @@
     // A museum is named short in its city (SFMOMA, National Gallery of
     // Art); its full name is what is read out and what the banner says.
     el.lastChild.textContent = city.label || city.title;
-    el.setAttribute("aria-label", city.aria || "Go down to " + city.title + ", " + city.where);
+    // Its visible name first (WCAG 2.5.3): what is read out begins with what is written.
+    var seenName = city.label || city.title, saidName = city.aria || "Go down to " + city.title + ", " + city.where;
+    el.setAttribute("aria-label", saidName.indexOf(seenName) === 0 ? saidName : seenName + " · " + saidName);
 
     city.el = el;
     city.name = el.lastChild;
@@ -11513,6 +11518,11 @@
       if (!first) { buildingEl.dataset.air = "none"; return; }
       var canvas = document.createElement("canvas");
       canvas.className = "building-clod";
+      // What the drawing is, in words (WCAG 1.1.1).
+      canvas.setAttribute("role", "img");
+      canvas.setAttribute("aria-label", (b.name || b.title || "The building") +
+        (views.building ? ", modelled in dots of its ground and seen from above; a press turns it to the ground round it"
+                        : ", its ground in dots, seen from above"));
       buildingMap.appendChild(canvas);
       clod = {
         canvas: canvas, views: views, view: first,
@@ -11556,11 +11566,15 @@
     opts = opts || {};
     var fig = document.createElement("figure");
     fig.className = found ? "held held-found" : "held";
-    fig.tabIndex = 0;
-    fig.setAttribute("role", "button");
-    fig.setAttribute("aria-expanded", "false");
+    // The picture is the control (WCAG 4.1.2): a figure that is a button cannot hold the
+    // buttons in its caption (Where it has been, Where it hangs). Brought up large: data-open.
+    fig.dataset.open = "false";
     var img = document.createElement("img");
     img.alt = w.t + (w.a ? ", " + w.a : "");
+    img.tabIndex = 0;
+    img.setAttribute("role", "button");
+    img.setAttribute("aria-label", img.alt);
+    img.setAttribute("aria-expanded", "false");
     // A saved work is never lost for want of its picture: another size of
     // it is tried, and failing all, it stays as its caption. (Dropping it had
     // emptied a museum's saved works on a phone where the pictures failed.)
@@ -11605,14 +11619,17 @@
     function open(event) {
       // Something else to do when pressed: open its history, say (opts.onOpen).
       if (opts.onOpen) { opts.onOpen(fig); return; }
-      var was = fig.getAttribute("aria-expanded") === "true";
+      var was = fig.dataset.open === "true";
       // Brought up large, a press on its picture: twice as big, then the whole screen (zoom.js, 7 Oct 2026).
       if (was && window.Zoom && event && event.target === img && img.getAttribute("src")) { zoomHeld(); return; }
       var host = fig.closest(".art-col") || buildingWorks;
       Array.prototype.forEach.call(host.querySelectorAll(".held"), function (f) {
-        f.setAttribute("aria-expanded", "false");
+        f.dataset.open = "false";
+        var fi = f.querySelector("img[role=button]");
+        if (fi) { fi.setAttribute("aria-expanded", "false"); }
       });
-      fig.setAttribute("aria-expanded", String(!was));
+      fig.dataset.open = String(!was);
+      img.setAttribute("aria-expanded", String(!was));
       if (!was && opts.big && img.getAttribute("src") && img.src !== opts.big) {
         var big = new Image();
         big.referrerPolicy = "no-referrer";
@@ -11638,7 +11655,7 @@
       Zoom.twice({ node: img, img: img, label: heldLabel, base: function () { return r0; } });
     }
     fig.addEventListener("click", open);
-    fig.addEventListener("keydown", function (event) {
+    img.addEventListener("keydown", function (event) {
       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
     });
     fig.style.animationDelay = (still ? 0 : 0.38 + Math.min(i, 13) * 0.09).toFixed(2) + "s";
@@ -11684,7 +11701,7 @@
       var opts = { big: big };
       if (ARTWORKS && w.id) { opts.history = m; }
       var fig = heldFigure(w, cdn + key + "/medium.jpg", i, false, alts, opts);
-      if (first && w.id === first) { fig.setAttribute("aria-expanded", "true"); fig.querySelector("img").src = big; }
+      if (first && w.id === first) { fig.dataset.open = "true"; fig.querySelector("img").setAttribute("aria-expanded", "true"); fig.querySelector("img").src = big; }
       if (w.id) { fig.dataset.work = w.id; walkWhere(fig, w); }
       return fig;
     }, paging);
@@ -12157,7 +12174,7 @@
     var outside = !walkOn && clod.view === "building" && !!clod.views.building;
     walkGoEl.hidden = !outside;
     if (outside) {
-      walkGoEl.setAttribute("aria-label", "Walk " + clod.m.name +
+      walkGoEl.setAttribute("aria-label", "Walk the building · " + clod.m.name +
         (clod.door && clod.door.shell ? " (its rooms are not known yet)" : ""));
     }
     if (!walkDoorEl) {
@@ -13525,6 +13542,61 @@
     groundUp(at.lat * 180 / Math.PI, wrap(at.lon) * 180 / Math.PI, false);
   }
 
+  /* The globe by keys (WCAG 2.1.1; a11y.js gives the globe a place in the tab
+     order and sends its keys here): ← → turn it, ↑ ↓ roll it north and south,
+     + and − bring it nearer and farther (past the nearest, "+" goes down into
+     the ground, as it did), Enter or Space opens the shown place nearest the
+     middle. Up on the world only; anywhere else the keys are the view's own. */
+  function globeKey(key) {
+    // A city's map (a city view): the arrows move it as a finger does, 48 px a press.
+    if (cityMap() && /^Arrow/.test(key)) {
+      var m = 48;
+      cityPan(key === "ArrowLeft" ? m : key === "ArrowRight" ? -m : 0, key === "ArrowUp" ? m : key === "ArrowDown" ? -m : 0);
+      return true;
+    }
+    if (cityMap() && (key === "+" || key === "=")) { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } return true; }
+    if (cityMap() && (key === "-" || key === "_")) { if (!cityStepBy(1 / ZOOM_STEP)) { comeUp(); } return true; }
+    if (place || flying || groundOn || deckMode) { return false; }
+    var now = performance.now();
+    if (/^Arrow/.test(key)) {
+      settleSwing();
+      var step = 0.16 / Math.max(0.6, seat.size);
+      if (key === "ArrowLeft") { wanted = spin + step; }
+      else if (key === "ArrowRight") { wanted = spin - step; }
+      else if (key === "ArrowUp") { lean(tilt + step * 0.62); }
+      else { lean(tilt - step * 0.62); }
+      handledAt = lastTouch = now;
+      return true;
+    }
+    if (key === "+" || key === "=") {
+      if (seat.size >= SIZE_MOST - 1e-6) { flyOver(); return true; }
+      settleSwing();
+      handle(seatAbout(W / 2, H / 2, Math.min(SIZE_MOST, seat.size * 1.25)));
+      return true;
+    }
+    if (key === "-" || key === "_") {
+      settleSwing();
+      handle(seatAbout(W / 2, H / 2, Math.max(SIZE_FAR * INV, seat.size / 1.25)));
+      return true;
+    }
+    if (key === "Enter" || key === " ") {
+      var best = null, bd = Infinity;
+      cities.forEach(function (c) {
+        if (!c.el || !c.el.isConnected || !c.el.firstChild) { return; }
+        var cs = getComputedStyle(c.el);
+        if (cs.visibility !== "visible" || cs.display === "none" || Number(cs.opacity) < 0.05) { return; }
+        var r = c.el.firstChild.getBoundingClientRect();
+        if (!r.width && !r.height) { return; }
+        var dx = r.left + r.width / 2 - W / 2, dy = r.top + r.height / 2 - H / 2, d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = c; }
+      });
+      if (!best) { return false; }
+      best.el.click();
+      return true;
+    }
+    return false;
+  }
+
   /* The dive: from the globe's nearest — or from any view where the globe is
      seen from far off, the small globe of a work's history among them —
      spreading two fingers (or scrolling, or a trackpad's pinch) on in
@@ -13661,6 +13733,21 @@
       var b = document.createElement("span"); b.className = "dive-aim-near"; b.textContent = near;
       aimName.appendChild(a);
       if (near) { aimName.appendChild(b); }
+      // One tap down (WCAG 2.5.1): the spread of two fingers has a press that does the same.
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "dive-aim-go";
+      go.textContent = "Go down here ↓";
+      go.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      go.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (!aimTap || dive.on || flying || groundOn) { return; }
+        var t = aimTap;
+        aimTap = null;
+        hideAim();
+        groundUp(t.lat / RAD, wrap(t.lon) / RAD, false);
+      });
+      aimName.appendChild(go);
       // Ask the ground what the atlas calls it.
       if (groundLoaded) { groundSay({ dirt: "name", lat: lat / RAD, lon: wrap(lon) / RAD, key: key }); }
     }
@@ -13943,10 +14030,24 @@
   }
   bannerDown.addEventListener("click", function () { goDeeper(false); });
   // Without fingers: "+" goes down a level (into the ground, from the globe or
-  // a place), "-" comes back up a level.
+  // a place), "-" comes back up a level. A one-key shortcut (WCAG 2.1.4): only
+  // while nothing in particular has the focus, or the globe, a mark, the lens or
+  // the walk does — never while a button or a list in a column has it.
+  function shortcutHere() {
+    var a = document.activeElement;
+    if (!a || a === document.body || a === document.documentElement || a === land) { return true; }
+    // The view's heading (a11y.js puts the focus there on arrival) is not a control: the view's keys hold there too.
+    return !!(a.closest && a.closest(".city, .lens-veil, .lens-hole, .lens-home, .walk, .dial-face, [data-a11y-h1], .a11y-h1"));
+  }
   document.addEventListener("keydown", function (event) {
     if (event.target && /INPUT|TEXTAREA/.test(event.target.tagName)) { return; }
+    if (event.ctrlKey || event.metaKey || event.altKey || !shortcutHere()) { return; }
     if (groundOn || flying || deckMode) { return; }
+    // Up on the world the globe's own keys (globeKey) take + and − first: nearer, farther.
+    if (!place && (event.key === "+" || event.key === "=" || event.key === "-" || event.key === "_")) {
+      if (globeKey(event.key)) { event.preventDefault(); }
+      return;
+    }
     if (event.key === "+" || event.key === "=") {
       // In the reading layout "+" is the lens's next voice nearer; past the nearest, the ground there.
       if (place && readingOn() && LENS) {
@@ -14958,7 +15059,7 @@
     var row = el("div", "town-museum-row");
     var door = el("button", "town-museum");
     door.type = "button";
-    door.setAttribute("aria-label", "Go into " + m.name + " — " + m.held + " saved");
+    door.setAttribute("aria-label", m.name + " — go into it · " + m.held + " saved");
     var dia = el("span", "town-dia");
     dia.setAttribute("aria-hidden", "true");
     door.appendChild(dia);
@@ -15225,7 +15326,16 @@
     // picture let down from full screen when a played step brings the next.
     dials: function () { return dials.slice(); },
     makeDial: function (box, range, span, ticks) { return makeDial(box, range, span, ticks); },
-    full: function (on) { setFull(!!on); }
+    full: function (on) { setFull(!!on); },
+    // Held still (a11y.js): the swing, the company, the weather, the shimmer and the first plays stop.
+    still: function (on) {
+      if (on === undefined) { return still; }
+      still = !!on;
+      if (still) { settleSwing(); stopFirstPlay(); }
+      return still;
+    },
+    // The globe by keys (a11y.js): turn, roll, nearer or farther, and the place nearest the middle.
+    keys: function (key) { return globeKey(key); }
   };
 
   /* ---- a movement (movements.js) ----------------------------------------------
@@ -16026,7 +16136,7 @@
       requestAnimationFrame(function () { box.dataset.on = "true"; });
     } else if (buildingOn && buildingWorks) {
       // In a museum: said on the work's own way to its history.
-      var go = buildingWorks.querySelector('.held[aria-expanded="true"] .held-history');
+      var go = buildingWorks.querySelector('.held[data-open="true"] .held-history');
       if (go) { go.textContent = words; }
     }
   }
@@ -19830,7 +19940,7 @@
         a.heads.push(hd);
         var into = el("button", "art-stop-in", "Enter ›");
         into.type = "button";
-        into.setAttribute("aria-label", "Go into " + (String(name).split(",")[0]) + (years ? " in " + years.split("–")[0] : ""));
+        into.setAttribute("aria-label", "Enter " + (String(name).split(",")[0]) + (years ? " in " + years.split("–")[0] : ""));
         into.addEventListener("click", function (event) { event.stopPropagation(); stopDoor(g, h); });
         row.appendChild(hd);
         row.appendChild(into);
@@ -20804,6 +20914,29 @@
     finderFound.textContent = "";
     showFinding(null);
     finderSaid.textContent = "";
+    // On Collages and Architecture, every mark of the layer as a list first (WCAG 2.5.1):
+    // a place on the far side of the globe is a press away, not a drag round to it.
+    var listed = 0;
+    if (layerOn === "collages" || layerOn === "architecture") {
+      var ours = cities.filter(function (c) { return c.layer === layerOn && !c.inTown && c.el; });
+      if (ours.length) {
+        finderHead((layerOn === "collages" ? "Collages on the globe · " : "Architecture on the globe · ") + ours.length);
+        // Its category (KINDS.md), so the categories' grouping keeps it whole: a collage is a work.
+        finderFound.lastChild.dataset.kinds = layerOn === "collages" ? "work" : "building";
+        ours.forEach(function (c) {
+          finderFound.appendChild(foundLine(listed, function (b) {
+            b.appendChild(el(c.work ? "i" : "span", "", c.title));
+            if (c.where) { b.appendChild(document.createTextNode(" · " + c.where)); }
+            b.addEventListener("click", function () {
+              closeFinder();
+              if (flying) { return; }
+              if (c.open) { c.open(); } else if (place) { hopTo(c); } else { settleSwing(); goDown(c); }
+            });
+          }));
+          listed += 1;
+        });
+      }
+    }
     var j = (artInfo && artInfo.j) || [];
     var pool = j.slice(0, 144), dealt = [];
     while (pool.length && dealt.length < 8) {
@@ -20826,8 +20959,9 @@
     Promise.all([readFinding(), readTowns()]).then(function () {
       if (!finder.open) { return; }
       if (!finding) { finderSaid.textContent = "The works could not be read just now."; return; }
-      if (finder.dealt) { return; }
+      if (finder.dealt && (finder.dealtOn === layerOn || (finderField && fold(finderField.value).trim()))) { return; }
       finder.dealt = true;
+      finder.dealtOn = layerOn;
       // Words typed while the works were still being read are the search.
       if (finderField && fold(finderField.value).trim()) { showFound(findIn(finderField.value)); }
       else { dealFound(); }
@@ -20892,6 +21026,10 @@
       if (event.key.length !== 1 || event.key === " " || document.activeElement === finderField) { return; }
       var tag = document.activeElement && document.activeElement.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") { return; }
+      // Only from Find itself, or from nowhere in particular (WCAG 2.1.4): a letter
+      // typed on a button elsewhere is not taken into the search.
+      var fa = document.activeElement;
+      if (fa && fa !== document.body && fa !== document.documentElement && !finderEl.contains(fa)) { return; }
       finderField.focus();
     });
   }

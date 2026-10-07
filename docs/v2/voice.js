@@ -343,7 +343,7 @@
     if (line && capPic.textContent !== line) { capPic.textContent = line; }
     capPic.dataset.id = pic && pic.id || "";
     capPic.disabled = !(pic && pic.id);
-    capPic.setAttribute("aria-label", line && pic.id ? "Where " + (pic.title || "it") + " has been" : line);
+    capPic.setAttribute("aria-label", line && pic.id ? line + " — where it has been" : line);
   }
 
   /* ---- swiping through the period's works ---------------------------------------
@@ -433,7 +433,7 @@
   function swipeArrowsPlace() {
     if (!swipeArrows) { return; }
     var w = swipeList, plate = artEl.querySelector(".art-plate");
-    var on = !!(w && w.list.length > 1 && w.i >= 0 && window.innerWidth > 720 && plate && !plate.hidden &&
+    var on = !!(w && w.list.length > 1 && w.i >= 0 && plate && !plate.hidden &&
                 !artEl.dataset.full && !artEl.dataset.swapped && !artEl.dataset.out && artEl.dataset.look !== "plate");
     var rc = on ? plate.getBoundingClientRect() : null;
     if (rc && (!rc.width || !rc.height)) { on = false; }
@@ -498,7 +498,7 @@
     var plate = artEl && artEl.querySelector(".art-plate");
     if (!plate) { return; }
     swipeable(plate, swipeBy, artEl);
-    // On a desktop, faint ‹ › at its edges.
+    // Faint ‹ › at its edges, on every device (WCAG 2.5.1: a swipe has a one-tap way).
     swipeArrows = ["‹", "›"].map(function (g, n) {
       var b = el("button", "voice-swipe", g);
       b.type = "button";

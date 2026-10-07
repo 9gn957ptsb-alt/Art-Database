@@ -250,7 +250,8 @@
     }
     box.appendChild(el("p", "studio-exact", counts.join(" · ")));
     v.yearEl = el("p", "life-year");
-    v.yearEl.setAttribute("aria-live", "polite");
+    // Said once the dial rests, not on every year it passes (WCAG 4.1.3; a11y.js).
+    if (window.A11y) { A11y.settled(v.yearEl); } else { v.yearEl.setAttribute("aria-live", "polite"); }
     box.appendChild(v.yearEl);
     if (window.Explorations && Explorations.play) {
       box.appendChild(button("Play the life · " + plural(L.periods.length, "stop", "stops") + " ›", "read-quiet life-play", function () { play(L); }));
@@ -272,7 +273,7 @@
       hd.appendChild(el("span", "studio-stop-meta", span(p) + " · " + howLine(p)));
       li.appendChild(hd);
       var go = button("Enter ›", "art-go life-enter", function () { enter(L.id, k); });
-      go.setAttribute("aria-label", "Go down into " + p.place + ", " + span(p));
+      go.setAttribute("aria-label", "Enter " + p.place + ", " + span(p));
       li.appendChild(go);
       var body = el("div", "life-period-body");
       body.hidden = true;

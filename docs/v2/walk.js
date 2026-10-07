@@ -836,7 +836,25 @@
     label.hidden = true;
     var look = el("div", "walk-look");
     look.hidden = true;
-    [box, plan, light, names, label, look].forEach(function (e) { root.appendChild(e); });
+    // The plan's floors by a press (WCAG 2.5.7): the vertical drag that changes floor has buttons too.
+    var floorsEl = el("div", "walk-floors");
+    floorsEl.setAttribute("role", "group");
+    floorsEl.setAttribute("aria-label", "Floors");
+    floorsEl.hidden = true;
+    [["up", "▲", "The floor above"], ["down", "▼", "The floor below"]].forEach(function (f) {
+      var fb = el("button", "walk-floor walk-floor-" + f[0], f[1]);
+      fb.type = "button";
+      fb.dataset.dir = f[0];
+      fb.setAttribute("aria-label", f[2]);
+      fb.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+      fb.addEventListener("click", function (event) {
+        event.stopPropagation();
+        var nx = floorNext(f[0] === "up" ? 1 : -1);
+        if (nx) { floorTo(nx.index); }
+      });
+      floorsEl.appendChild(fb);
+    });
+    [box, plan, light, names, label, look, floorsEl].forEach(function (e) { root.appendChild(e); });
     root.style.visibility = "hidden";
     (ctx.host || document.body).appendChild(root);
     var styled_ = styleOnce();
@@ -1641,6 +1659,33 @@
     }, 4000));
   }
 
+  // The nearest floor above (dir 1) or below (−1) the plan's, or null.
+  function floorNext(dir) {
+    var s = S;
+    if (!s || !s.world) { return null; }
+    var fl = s.world.floors[s.planFloor], next = null;
+    s.world.floors.forEach(function (o) {
+      if (dir > 0 ? o.z > fl.z : o.z < fl.z) {
+        if (!next || Math.abs(o.z - fl.z) < Math.abs(next.z - fl.z)) { next = o; }
+      }
+    });
+    return next;
+  }
+  function floorButtons() {
+    var s = S;
+    var box = s && s.root && s.root.querySelector(".walk-floors");
+    if (!box) { return; }
+    var on = !!(s.world && s.world.floors.length > 1 && s.level === "plan");
+    box.hidden = !on;
+    if (!on) { return; }
+    Array.prototype.forEach.call(box.children, function (b) {
+      var nx = floorNext(b.dataset.dir === "up" ? 1 : -1);
+      b.disabled = !nx;
+      b.setAttribute("aria-label", nx ? (b.dataset.dir === "up" ? "Up to " : "Down to ") + floorName(nx)
+        : (b.dataset.dir === "up" ? "No floor above" : "No floor below"));
+    });
+  }
+
   function floorTo(fi) {
     var s = S;
     if (s.leaving) { return; }
@@ -1652,6 +1697,7 @@
     if (s.host.still) { s.shown = cut; } else { s.planAnim = { from: was, to: cut, t0: performance.now(), dur: 610 }; s.shown = was; }
     s.planDirty = true;
     underline("plan");
+    floorButtons();
     wake();
   }
 
@@ -1662,6 +1708,7 @@
     if (s.level === lv) { return; }
     s.level = lv;
     s.root.dataset.level = lv;
+    floorButtons();
     if (s.ctx.onLevel) { s.ctx.onLevel(lv); }
   }
 
@@ -2379,6 +2426,13 @@
     if (s.level !== "walk" && s.level !== "look") { return; }
     if (event.key === "Shift") { s.keys.fast = true; return; }
     var k = KEYMAP[event.key];
+    // A letter (W A S D Q E) is a one-key shortcut (WCAG 2.1.4): only while the walk, or
+    // nothing in particular, has the focus. The arrows walk wherever the focus is in it.
+    if (k && event.key.length === 1) {
+      var fa = document.activeElement;
+      if (fa && fa !== document.body && fa !== document.documentElement && !(s.root && s.root.contains(fa)) &&
+          !(fa.hasAttribute && (fa.hasAttribute("data-a11y-h1") || fa.classList.contains("a11y-h1")))) { return; }
+    }
     if (k && s.level === "walk") {
       s.keys[k] = true;
       s.keys.fast = event.shiftKey;
