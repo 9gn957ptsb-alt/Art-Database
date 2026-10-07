@@ -20,6 +20,18 @@
    at you, is framed in its artist's ink, and a quiet line says what it is.
    Nothing links anywhere.
 
+   Each place its own (the artist, 7 Oct 2026: "The red fox is coming up
+   all around the globe. Remember that I want a different character for
+   each place based on native artists and vegetation"). A wave in a place
+   brings only that place's own character — its native animal, after its
+   native artist (characters.json's `native`: the drawn animals live in
+   their artists' home towns where the species is native) — and never a
+   visitor: no animal comes because its artist's works have been here, and
+   none comes as a guide. Where a place has no character of its own yet,
+   the wave raises only the place's own plants. A visitor comes only where
+   someone chose it: an animal followed (and a walk's), the chimera and the
+   corpse, and in a life's place that artist's own animal.
+
    The correspondence (the artist, 1 Oct 2026: "Establish a correspondence
    between the Artist associated with animals and plants and where their
    artwork is located throughout the world … When an animal comes up that
@@ -27,20 +39,20 @@
    an additional way to navigate through the globe"). Each character's
    artist has a map (characters/artists.json): every city where the artist's
    saved works are held or have been, and home, from Wikidata, with the
-   plants of home. A character comes to the cities on its artist's map: the
-   first wave in one of them brings it. Anywhere else it comes only now and
-   then, as a guide toward the nearest. Round the ring rise two plantings:
-   the city's own and, among them, home's (in the artist's inks, outlined in
-   chalk). Pressed, it offers to be followed (land.js, `Land.follow`).
+   plants of home. Pressed, a character offers to be followed (land.js,
+   `Land.follow`): followed, it goes to the cities on its artist's map, and
+   round it rise two plantings: the city's own and, among them, home's (in
+   the artist's inks, outlined in chalk).
 
    Hometowns (the artist, 1 Oct 2026: "I want there to be other animals
    besides the fox as well. Perhaps attributing artists to their hometown is
    a good way to introduce new animals to scenes when on route of an
    artwork. It's okay to have more than one animal present at a time, but
-   too many can be overwhelming and distracting"). An artist's home town is
-   the city of the site within 25 km of the birthplace (artists.json's
-   home.key: Brooklyn is New York, Bradford is Leeds, Pittsburgh is
-   Pittsburgh); the artist's animal lives there:
+   too many can be overwhelming and distracting"). A native animal's place
+   is its artist's home town (characters.json's native.key: Brooklyn is New
+   York, Bradford is Leeds, Pittsburgh is Pittsburgh; or, where no city of
+   the site is that near, the birthplace itself, native.ll: Lexington,
+   Virginia; Le Cateau-Cambrésis); the animal lives there:
    - a journey that arrives there (a door, Near here, a history's stop, a
      walk, following) is met by it: it comes in from the side the journey
      came from (a slow one comes up out of the soil there) and stands by
@@ -51,8 +63,11 @@
      stop, once the work's first look is over;
    - going down into it any other way, it is there at rest, sitting, one
      visit in φ²;
-   - a wave there brings it before any other.
-   Only drawn characters, each once a visit to a city.
+   - a wave there brings it, and no other.
+   Only drawn characters, each once a visit to a city. The banana slug is
+   no place's: Ariolimax lives on the Pacific coast of North America and
+   Kapoor was born in Mumbai, so it walks its walks, is followed, and is a
+   chimera's part, and never comes out of a wave.
 
    A crowd, never: at most two animals on a phone and three on a desktop,
    counting one being followed; a second never comes within φ³ s of the
@@ -61,8 +76,8 @@
    their artists' works share something the threads know (a show, an owner,
    a writing, a sale, a museum: artists.json's pairs), a line between them
    says it, the thing itself a door to its thread. After a wave's animal
-   has gone, no wave brings one for φ⁸–φ⁹ s. Under reduced motion no one
-   comes.
+   has gone, no wave brings one for φ⁸–φ⁹ s (the plants still rise). Under
+   reduced motion no one comes.
 
    Data: characters/characters.json (the cast, each with its moves),
    characters/<id>.json (its poses, a letter a cell), characters/plants.json,
@@ -92,12 +107,13 @@
   var MEET = 104;                      // ... except two that meet, this far apart, facing
 
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var GUIDE = 1 / Math.pow(PHI, 3);    // the chance one comes, as a guide, to a city not on its artist's map
   var NEAR_KM = 30;                    // a collage's city is a city of the map this near
+  var NATIVE_KM = 25;                  // a place this near a native animal's birthplace is its place
   var cast = null, plants = null, artists = null, sprites = {};
   var towns = null, townIx = null;     // cities.json, read when a home town is needed
   var loading = null, townsLoading = null;
   var crowd = [];                      // the characters out now
+  var beds = [];                       // a wave's plants with no animal: the place's own, rising and sinking
   var restUntil = 0, lastCame = -1e9;
   var visit = { key: null, waved: false, seen: {} };
   var canvas = null, g = null, dpr = 1, W = 0, H = 0;
@@ -235,13 +251,28 @@
     return hit;
   }
 
-  function nearestRow(m, lat, lon) {
-    var best = null;
-    m.places.forEach(function (r) {
-      var d = km(r[3], r[4], lat, lon);
-      if (!best || d < best.km) { best = { row: r, km: d }; }
+  // The city of the site a place stands in: its own key, or (a collage's city) the town within 25 km.
+  function townKeyNear(city) {
+    if (!city) { return null; }
+    if (townIx && townIx[city.key] !== undefined) { return city.key; }
+    if (!towns || !isFinite(city.lat)) { return city.key || null; }
+    var best = null, bd = NATIVE_KM;
+    towns.forEach(function (t) {
+      var d = km(t[3], t[4], city.lat, city.lon);
+      if (d <= bd) { bd = d; best = t[0]; }
     });
-    return best;
+    return best || city.key || null;
+  }
+
+  /* Whether a place is a drawn animal's own (characters.json's native): its
+     artist's home town by key, or, where no city of the site is that near,
+     within 25 km of the birthplace (a life's place, ll). The banana slug has
+     none. */
+  function isNative(c, key, ll) {
+    var n = c && c.native;
+    if (!n) { return false; }
+    if (n.key) { return !!key && n.key === key; }
+    return !!(ll && n.ll && km(n.ll[0], n.ll[1], ll[0], ll[1]) <= NATIVE_KM);
   }
 
   // Home: where the artist was born, and the plants there (plants.json's set).
@@ -261,14 +292,10 @@
     return [k.black[0], w[w.length - 1], w[0]];
   }
 
-  // The site's city an artist was born in (or within 25 km of), if any.
-  function homeKey(c) {
-    var a = artists && artists.artists && artists.artists[c.artist];
-    return a && a.home && a.home.key || null;
-  }
-
+  // The animals whose own place a city of the site is (each a native there).
   function homesOf(key) {
-    return drawn().filter(function (c) { return homeKey(c) === key; });
+    var t = townOf(key);
+    return drawn().filter(function (c) { return isNative(c, key, t ? [t.lat, t.lon] : null); });
   }
 
   // What two artists' saved works share, as the threads know it (artists.json's pairs).
@@ -741,66 +768,74 @@
     visit = { key: key, waved: false, seen: {}, said: {} };
   }
 
+  /* A wave in a place brings that place's own animal, and no other: its
+     native (characters.json's native), once a visit, when the crowd has
+     room and the rest after the last is over. Never a visitor because its
+     artist's works have been here, never a guide (the artist, 7 Oct 2026:
+     "The red fox is coming up all around the globe. Remember that I want a
+     different character for each place based on native artists and
+     vegetation"). In a place of a life (Lives' "Enter ›") only that
+     artist's own animal may come, chosen by whoever chose the life (a Twombly
+     fox trotting off over Picasso's Fontainebleau, 2 Oct 2026). Where none
+     comes, the place's own plants rise round the ring all the same. */
   function wave(x, y, city) {
     if (still || !city || !isFinite(x) || !isFinite(y)) { return; }
     var key = city.key || "";
     if (visit.key !== key) { newVisit(key); }
     if (visit.waved) { return; }
-    var now = performance.now();
-    if (now < restUntil) { return; }
     if (!setUp()) { return; }
     size();
-    if (!room("", now)) { return; }
     visit.waved = true;
-    load().then(function () {
-      if (!cast || !cast.cast.length) { return; }
+    Promise.all([load(), loadTowns()]).then(function () {
       var land = document.getElementById("land");
       if (land && land.dataset.at !== "city") { return; }
-      // A home town's own animal first; then the animals of the artists
-      // whose maps the city is on; anywhere else, now and then, a guide.
-      var free = drawn().filter(function (c) { return !visit.seen[c.id] && !outNow(c.id); });
-      // In a place of a life (Lives' "Enter ›"): only that artist's own animal, never a guide
-      // of another's — a Twombly fox trotting off over Picasso's Fontainebleau left its pen
-      // line there with nothing to say for it (2 Oct 2026).
       var lw = window.Land && Land.where ? Land.where() : null;
-      if (lw && lw.life) {
-        free = free.filter(function (c) { return c.artist === lw.life.name; });
-        if (!free.length) { return; }
+      var ll = lw && lw.ll ? lw.ll : null;
+      var here = ll ? placeAt(ll[0], ll[1]) : placeAt(city.lat, city.lon);
+      var now = performance.now();
+      var c = null;
+      if (cast && now >= restUntil && room("", now)) {
+        var free = drawn().filter(function (k) { return !visit.seen[k.id] && !outNow(k.id); });
+        if (lw && lw.life) {
+          free = free.filter(function (k) { return k.artist === lw.life.name; });
+        } else {
+          var tk = townKeyNear(city), pt = ll || [city.lat, city.lon];
+          free = free.filter(function (k) { return isNative(k, tk, pt); });
+        }
+        if (prefer) { free.sort(function (p, q) { return (q.id === prefer) - (p.id === prefer); }); }
+        c = free[0] || null;
       }
-      if (prefer) { free.sort(function (p, q) { return (q.id === prefer) - (p.id === prefer); }); }
-      var mine = free.filter(function (c) { return homeKey(c) === key; });
-      if (!mine.length) { mine = free.filter(function (c) { return rowHere(mapOf(c), city); }); }
-      var c, guide = null;
-      if (mine.length) {
-        c = prefer && mine[0].id === prefer ? mine[0] : mine[Math.floor(Math.random() * mine.length)];
-      } else {
-        if (!free.length || Math.random() > GUIDE || (lw && lw.life)) { return; }
-        c = free[Math.floor(Math.random() * free.length)];
-        if (mapOf(c)) { guide = nearestRow(mapOf(c), city.lat, city.lon); }
-      }
-      if (!room(c.id, performance.now())) { return; }
-      come(c, x, y, city.r || 60, placeAt(city.lat, city.lon), city, guide);
+      if (c && room(c.id, now)) { come(c, x, y, city.r || 60, here, city, isNative(c, townKeyNear(city), ll || [city.lat, city.lon])); return; }
+      bed(x, y, city.r || 60, here);
     });
   }
 
   // Out of the wave: off by the nearer side, unless that is too close to be
   // seen going; on a phone, always to the left, away from the dial of years.
-  // A guide goes the way its artist's nearest city lies, east or west. If
-  // another stands still on the screen, it goes to meet it instead.
-  function come(c, x, y, r, here, city, guide) {
+  // If another stands still on the screen, it goes to meet it instead.
+  function come(c, x, y, r, here, city, atHome) {
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
-    if (guide && city) {
-      dir = ((guide.row[4] - city.lon + 540) % 360) - 180 >= 0 ? 1 : -1;
-      guide.way = dir > 0 ? "east" : "west";
-    }
     var at = seat(x, y) || { x: x, y: y };
-    var o = make(c, "wave", at.x, at.y, { dir: dir, here: here, city: city || null, guide: guide });
+    var o = make(c, "wave", at.x, at.y, { dir: dir, here: here, city: city || null });
     o.row = rowHere(o.map, city);
+    o.atHome = !!atHome;
     o.plants = growPlants(x, y, r, here, Math.random(), o.home);
     var other = standing(o);
     if (other) { o.meet = other; }
+  }
+
+  // The place's own plants alone, round the ring: they rise a row at a time,
+  // stand, and go back down into the soil.
+  function bed(x, y, r, here) {
+    if (!here) { return; }
+    var now = performance.now();
+    var b = { plants: growPlants(x, y, r, here, Math.random(), null), born: now, sinkAt: now + RISE + STAND,
+              mode: "bed", state: "bed" };
+    if (!b.plants.length) { return; }
+    beds.push(b);
+    loop();
   }
 
   // A journey arrived in an artist's home town: its animal comes to meet it.
@@ -876,7 +911,9 @@
           if (visit.key === key && room(c.id, performance.now() + GAP)) { comeHome(c, t, viaTrip); }
         }, 900);
       } else {
-        visit.seen[c.id] = true;            // decided once a visit, seen or not
+        // Decided once a visit; when it is not there at rest, the visit's wave can still bring it.
+        if (visit.restDone) { return; }
+        visit.restDone = true;
         if (Math.random() < AT_REST) { comeRest(c, t); }
       }
     });
@@ -1071,7 +1108,7 @@
       o.city = { key: p.key, lat: p.lat, lon: p.lon, name: p.name };
       o.here = placeAt(p.lat, p.lon);
       o.row = rowHere(o.map, o.city);
-      o.atHome = homeKey(o.c) === p.key;
+      o.atHome = isNative(o.c, p.key, [p.lat, p.lon]);
       o.anchor = { x: p.x, y: p.y };
       // Never let a planting break the frame that called it (land.js's).
       try { o.plants = still ? [] : growPlants(p.x, p.y, 72, o.here, Math.random(), o.home); } catch (e) { o.plants = []; }
@@ -1143,9 +1180,6 @@
     var n = o.row ? o.row[5].length : 0;
     if (n) {
       bits.push(n + (n === 1 ? " of the artist’s works has" : " of the artist’s works have") + " been here");
-    } else if (o.guide) {
-      bits.push("the nearest of the artist’s works: " + o.guide.row[1] + ", " +
-                Math.round(o.guide.km).toLocaleString("en") + " km " + o.guide.way);
     }
     return bits.join(" · ");
   }
@@ -1388,6 +1422,7 @@
     g.clearRect(0, 0, canvas.width, canvas.height);
     g.imageSmoothingEnabled = false;
     var busy = false;
+    beds.forEach(function (b) { busy = drawPlants(b, now) || busy; });
     // The nearer (lower on the screen) over the farther.
     crowd.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (o) {
       busy = drawPlants(o, now) || busy;
@@ -1440,7 +1475,7 @@
     if (raf) { return; }
     var tick = function (now) {
       raf = 0;
-      if (!crowd.length) { return; }
+      if (!crowd.length && !beds.length) { return; }
       size();
       crowd.slice().forEach(function (o) { step(o, now); });
       var any = crowd.some(function (o) { return o.stopped; });
@@ -1453,7 +1488,8 @@
           if (o.state === "gone" && o.mode !== "follow" && o.sinkAt && now > o.sinkAt + RISE + 1400 &&
               !(o.writing.length && now - o.writing[o.writing.length - 1].at < 9200)) { remove(o); }
         });
-        if (!crowd.length) { g.clearRect(0, 0, canvas.width, canvas.height); return; }
+        beds = beds.filter(function (b) { return now < b.sinkAt + RISE + 1400; });
+        if (!crowd.length && !beds.length) { g.clearRect(0, 0, canvas.width, canvas.height); return; }
       }
       if (saying && saying.stopped) { placeSays(saying); }
       raf = requestAnimationFrame(tick);
@@ -1477,6 +1513,7 @@
   function endVisit() {
     visit.left = performance.now();
     crowd.slice().forEach(function (o) { if (o.mode !== "follow" && o.mode !== "far") { remove(o); } });
+    beds = [];
     if (says) { says.hidden = true; saying = null; }
     if (pair) { pair.hidden = true; }
     if (g && !crowd.length) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height); }
@@ -2444,10 +2481,12 @@
       var all = crowd.map(function (o) {
         return { id: o.c.id, pose: o.pose, state: o.state, mode: o.mode, x: o.x, y: o.y, hidden: !!o.hidden,
                  line: line(o), plants: o.plants.length, meet: o.meet ? o.meet.c.id : null, far: o.farKind || null,
-                 home: o.plants.filter(function (p) { return p.home; }).length, guide: !!o.guide };
+                 home: o.plants.filter(function (p) { return p.home; }).length };
       });
       var first = all[0] ? Object.assign({}, all[0]) : null;
       if (first) { first.crowd = all; first.pair = pair && !pair.hidden ? pair.textContent : null; first.visit = visit.key; }
+      if (!first && beds.length) { return { crowd: [], beds: beds.length, plants: beds[0].plants.length, visit: visit.key }; }
+      if (first) { first.beds = beds.length; }
       return first;
     },
     _prefer: function (id) { prefer = id || null; },

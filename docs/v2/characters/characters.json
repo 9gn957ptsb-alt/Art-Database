@@ -1,5 +1,5 @@
 {
-  "note": "The characters who come out of the wave in a city (docs/v2/characters.js), one at a time. The cast: each drawn after one of DIRT's artists, from a species in DIRT's grammar of places, with the place's own plants and, among them, its artist's home's (plants.json, artists.json); it comes to the cities on its artist's map and can be followed through them (characters.js, land.js). Drawings in scripts/characters/<id>.py; scripts/build_characters.py writes <id>.json. The daily characters pass (REFINE.md) adds one from the backlog and refines the three refined longest ago.",
+  "note": "The characters who come out of the wave in a city (docs/v2/characters.js), one at a time. The cast: each drawn after one of DIRT's artists, from a species in DIRT's grammar of places, with the place's own plants and, among them, its artist's home's (plants.json, artists.json); it lives in its native place (native: its artist's home town, where the species lives; the slug is no place's) and comes out of a wave only there; pressed, it can be followed through the cities on its artist's map (characters.js, land.js). Drawings in scripts/characters/<id>.py; scripts/build_characters.py writes <id>.json. The daily characters pass (REFINE.md) adds one from the backlog and refines the three refined longest ago.",
   "cast": [
     {
       "id": "fox",
@@ -13,6 +13,7 @@
       },
       "why": "The most widespread wild carnivore on Earth, and a city animal in London, New York, Paris and Melbourne, so it belongs wherever the site's cities are.",
       "artist": "Cy Twombly",
+      "native": {"key": null, "where": "Lexington, Virginia", "ll": [37.784, -79.4428], "why": "Cy Twombly was born in Lexington, Virginia (Wikidata P19, characters/homes.json); red foxes live throughout Virginia.", "source": "Lexington is DIRT's Temperate Broadleaf & Mixed Forests, Nearctic, whose grammar gives black bears and coyotes as its hunters, not the red fox (a Palearctic hunter of biome 4 there); the red fox's range covers most of North America, though whether the eastern foxes are native or descend from colonial introductions was long argued (Kamler, J. F. & Ballard, W. B. (2002). A review of native and nonnative red foxes in North America. Wildlife Society Bulletin 30(2): 370-379)."},
       "after": {
         "why": "DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its coat is in the ochres and rusts of Some Trees of Italy (Title Print), its white in his papers, its black in the Mushrooms' graphite and its outline in their pale grey, a chalk line, as he wrote on his blackboards, so it reads on the city's dark ground; the line it leaves is his writing, in the pale greens of Roman Notes II (light enough to read on the dark ground), a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses).",
         "inks": {
@@ -55,6 +56,7 @@
       },
       "why": "The grazer of the Nearctic prairie, the herd animal of the open ground; and, after Lascaux, the first animal anyone painted.",
       "artist": "Elaine de Kooning",
+      "native": {"key": "new-york-us", "where": "New York (Brooklyn)", "ll": [40.6508, -73.9497], "why": "Elaine de Kooning was born in Brooklyn (Wikidata P19); New York is the site's city within 25 km.", "source": "A stretch, said so: DIRT's grammar has the American bison on the Nearctic prairie (biome 8, herds), and New York is Nearctic temperate broadleaf forest (herds: white-tailed deer); the bison's range before 1800 reached western New York State and Pennsylvania, not the coast (Hornaday, W. T. (1889). The Extermination of the American Bison, its map of the original range)."},
       "after": {
         "why": "Her Cave paintings (1983-85), made after the bison of Lascaux and Altamira, and the bulls before them (Bullfight, 1959-60): a few broad, leaning strokes. DIRT's roster gives her grammar 4, strokes, so the bison is laid in strokes, not dithered: each band across the coat a step lighter or darker than the light alone gives. The cave's burnt ochre (her saved works' most vivid ink) for the summer coat of the hindquarters, her umbers for the wool of the hump, head and beard, her warm grey for the chalk line; pressed, it is framed in the ochre.",
         "inks": {
@@ -93,6 +95,7 @@
       },
       "why": "The backlog paired Matisse with the grey squirrel, a Nearctic animal; the red is the squirrel of his own country, of the crowns of the Nord where he was born (Le Cateau-Cambrésis), and the grammar's Palearctic troop.",
       "artist": "Henri Matisse",
+      "native": {"key": null, "where": "Le Cateau-Cambrésis", "ll": [50.1053, 3.5411], "why": "Henri Matisse was born in Le Cateau-Cambrésis (Wikidata P19).", "source": "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf & Mixed Forests), Palearctic, crowns.troops: red squirrels."},
       "after": {
         "why": "He cut his late pictures out of painted paper (Jazz, 1947; Oceania, the Sky, 1946): flat shapes, one colour each, laid edge to edge with the ground between them. DIRT's roster gives him grammar 9, cut shapes. So the squirrel is cut, not drawn: no outline, no shading, each part one flat ink, and where one piece lies over another a gap of the ground between them, as between two pieces of paper. The yellow of his saved works for the tail, the same yellow worked toward their dark for the coat, their cream for the belly, their dark for the ear tufts and the eye; pressed, it is framed in the yellow.",
         "inks": {
@@ -130,6 +133,7 @@
       },
       "why": "The raptor of the Nearctic broadleaf and conifer forests and of the rivers of western Pennsylvania, where Warhol was born.",
       "artist": "Andy Warhol",
+      "native": {"key": "pittsburgh-us", "where": "Pittsburgh", "ll": [40.4417, -80.0], "why": "Andy Warhol was born in Pittsburgh (Wikidata P19).", "source": "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf & Mixed Forests), Nearctic, above.eagles: bald eagle."},
       "after": {
         "why": "Warhol's Endangered Species (1983) has the bald eagle: a drawn line printed over flat fields of colour, out of register. So the eagle is in flat inks, no dither (a screenprint's plates), with a chalk edge so it reads on the dark ground, and its key line laid again one cell off, down and to the right, in his yellow, showing only where it falls off the colour. The plum-brown dark of his saved works for the body, their cream for the head and tail, their yellow for the bill, the eye, the feet and the key line; pressed, it is framed in the yellow.",
         "inks": {
@@ -164,6 +168,8 @@
       "from": {"biome": "Temperate Conifer Forests", "realm": "Nearctic", "grammar": "dirt/earth/out/grammar.json, biome 5, floor.snakes: banana slugs"},
       "why": "The slowest of the grammar's floor animals, a single soft mass of one colour that moves of its own accord.",
       "artist": "Anish Kapoor",
+      "native": null,
+      "belongs": "No place's native: Ariolimax lives on the Pacific coast of North America and Anish Kapoor was born in Mumbai, so the banana slug never comes out of a wave. It walks its walks, is led and followed (Characters.lead), and is a chimera's part.",
       "after": {
         "why": "Svayambh (2007): a mass of wax that moves through the museum on its own, slowly, leaving its trace on the doorways; Yellow (1999), a field of one colour with no edge. DIRT's roster gives him grammar 6, stacked fields. So the slug is in fields, not light and shade: stacked bands of one yellow from the dark of the foot's fringe to the pale of its back, flat, the steps clean. The deep yellow of his saved works (his pigment), their pale, their violet-grey dark for the fringe, the spots and the eyes; behind it, a trace of that dark along the ground with a glint in it, drying in steps. Pressed, it is framed in the yellow.",
         "inks": {
@@ -202,6 +208,7 @@
       },
       "why": "The deer of the edges of English woods, Woldgate's and the Wolds'.",
       "artist": "David Hockney",
+      "native": {"key": "leeds-gb", "where": "Leeds (Bradford)", "ll": [53.7944, -1.7519], "why": "David Hockney was born in Bradford (Wikidata P19); Leeds is the site's city within 25 km.", "source": "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf & Mixed Forests), Palearctic, understory.herds: red deer."},
       "after": {
         "why": "He went home to the Yorkshire Wolds to paint them (Woldgate Woods, 2006; the iPad drawings of the East Riding, 2008-11): lanes and the edges of woods drawn in a bent net of strokes. DIRT's roster gives him grammar 3, a net: even structure, the cells bent, never a grid. So the coat is crossed by a bent net of its darker step. The red of his saved works worked into their olive dark for the coat, their pale for the rump and the antlers, their olive for the hooves and the line; pressed, it is framed in the red.",
         "inks": {

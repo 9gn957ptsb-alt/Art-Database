@@ -24,9 +24,8 @@ associated with an artist, I want you to be able to use that animal as an
 additional way to navigate through the globe"). Each artist has a map in
 `artists.json`: every city where the artist's saved works are held or have
 been, in route order from home, and the home itself (Wikidata, `homes.json`).
-A character comes to the cities on its artist's map (the first wave there
-brings it); elsewhere only now and then (1/φ³), as a guide toward the
-nearest. Pressed, it offers **Follow**: the city's column becomes the
+A character comes out of a wave only in its own place (below, "Each place
+its own"); it is never a visitor elsewhere. Pressed, it offers **Follow**: the city's column becomes the
 artist's map, every press on one of the artist's cities is a journey with
 the animal running ahead and the artist's works riding first, and it waits
 by the museum or gallery that holds the work.
@@ -118,9 +117,8 @@ by the museum or gallery that holds the work.
    `passes`, add a line to its `log`, and update its `notes` (what changed,
    what is still guessed).
 5. **Check in the page.** `python3 -m http.server --directory docs`, open
-   `/v2/` at 390×844 and 1440×900, go down into a city on the new
-   character's artist's map (Find on the Museums layer; its first city in
-   `artists.json` with a museum), press and hold on the ground and let go:
+   `/v2/` at 390×844 and 1440×900, go down into the new
+   character's own place (its `native`; Find on the Museums layer), press and hold on the ground and let go:
    the wave, then the character steps out of it and both plantings rise
    round the ring (the city's own, and home's in the artist's inks); press it
    and the line says what it is, whose hand, from where, and the two
@@ -130,9 +128,9 @@ by the museum or gallery that holds the work.
    ahead along the way, the artist's works among the riders; arrived, it
    waits by the museum or gallery holding the work and the plantings rise
    round it; into the museum and back up keeps following; pressing the
-   animal lets it go; up to the world ends it. Also a city off the map
-   (force the guide: `Math.random = () => 0.1` just before the wave): its
-   line names the nearest city of the artist and which way. No page errors.
+   animal lets it go; up to the world ends it. Also a city that is not its
+   place: a wave there brings no other place's animal (only that place's
+   own, or its plants). No page errors.
    Then commit ("Characters: <new>; refine <names>") and push; if refused,
    fetch, merge and push again.
 
@@ -184,11 +182,19 @@ introduce new animals to scenes when on route of an artwork. It's okay to
 have more than one animal present at a time, but too many can be
 overwhelming and distracting."
 
-- **The wave.** A wave in a city brings, first, the animal whose artist was
-  born there; else one whose artist's map the city is on; in a city on no
-  map, now and then (1/φ³), one from the whole cast, as a guide. The first
-  wave of a visit only; after a wave's animal has gone, no wave brings one
-  for φ⁸–φ⁹ s (47–76 s).
+- **Each place its own.** The artist, 7 Oct 2026: "The red fox is coming up
+  all around the globe. Remember that I want a different character for each
+  place based on native artists and vegetation." A wave in a place brings
+  only that place's native character — never an animal because its artist's
+  works have been there, never a guide. A drawn animal is native where its
+  `native` in `characters.json` says (its artist's home town, where its
+  species lives, with the source; the banana slug is no place's, `belongs`).
+  Where a place has no character yet, the wave raises only its own plants.
+  A visitor comes only where someone chose it: an animal followed or a
+  walk's (`Characters.lead`), the chimera and the corpse, and in a life's
+  place that artist's own animal. The first wave of a visit only; after a
+  wave's animal has gone, no wave brings one for φ⁸–φ⁹ s (47–76 s); the
+  plants still rise.
 - **Hometowns.** An artist's home town is the city of the site within 25 km
   of the birthplace (`artists.json` `home.key`, by `build_characters.py`:
   Brooklyn → New York for Elaine de Kooning, Pittsburgh for Warhol,
