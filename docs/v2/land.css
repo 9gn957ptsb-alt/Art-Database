@@ -3788,6 +3788,10 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .art[data-read] .art-time.dial .dial-swap:hover,
 .art[data-read] .art-time.dial .dial-swap:focus-visible { opacity: 1; background: rgba(94, 82, 199, 0.85); outline: none; }
 .art[data-full] .art-time .dial-swap, .art[data-look="plate"] .art-time .dial-swap { display: none; }
+/* A path on the dial puts its × at the rim's upper corner (transport.css), where the ⤢ stood: the ⤢
+   goes to the lower corner, so neither is pressed for the other (7 Oct 2026: a Born here's path's ×
+   lay over the ⤢, and the dial could not be swapped in). */
+.art[data-read] .art-time.dial:not([data-form="band"]):has(> .dial-end:not([hidden])) .dial-swap { top: auto; bottom: -8px; }
 .art[data-read] .art-time.dial[data-form="band"] {
   width: var(--band-w);
   height: var(--band-h);

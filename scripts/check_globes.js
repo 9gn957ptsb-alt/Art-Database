@@ -26,6 +26,7 @@ function arg(name, dflt) { const i = args.indexOf("--" + name); return i < 0 ? d
 const PORT = +arg("port", 8898);
 const SIZES = String(arg("sizes", "390x844,1440x900")).split(",");
 const SHOTS = arg("shots", null);
+const ONLY = arg("only", null);       // a view's name, in part: --only born
 const EXE = process.env.CHROMIUM || (fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome") ? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" : undefined);
 // A stand-in picture (a flat gradient) for every picture asked for.
 const PIC = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><defs><linearGradient id="g"><stop offset="0" stop-color="#8a7a60"/><stop offset="1" stop-color="#3a3530"/></linearGradient></defs><rect width="300" height="400" fill="url(#g)"/></svg>';
@@ -55,6 +56,9 @@ const VIEWS = [
     }, kind: "work", after: (P) => P.evaluate(() => Land.dialYear(1933)) },
   { name: "born here", open: (P) => P.evaluate(() => fetch("lives.json").then((r) => r.json())
       .then((d) => Lives.openMark(d.marks.find((m) => m[7] === "Memphis")))), kind: "life" },
+  // The artist's report of 7 Oct 2026: "Born in New York", 210 works, no dial and the arrows on the picture.
+  { name: "born here, New York", open: (P) => P.evaluate(() => fetch("lives.json").then((r) => r.json())
+      .then((d) => Lives.openMark(d.marks.find((m) => m[7] === "New York" && m[4].length > 1)))), kind: "life" },
 ];
 
 const fails = [];
@@ -95,7 +99,7 @@ async function run(size) {
   const state = () => P.evaluate(() => Land.reading());
   const buttons = () => P.evaluate(() => {
     const box = document.querySelector(".lens-zoom");
-    return box && !box.hidden ? [...box.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }) : null;
+    return box && !box.hidden && box.querySelector("button") && box.querySelector("button").offsetWidth ? [...box.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }) : null;
   });
   const settle = async () => { for (let i = 0; i < 30; i++) { const r = await state(); if (r && !r.flying && !r.snapping && !r.travelling) { return r; } await P.waitForTimeout(200); } return state(); };
 
@@ -103,6 +107,8 @@ async function run(size) {
      adapt to its new shape but maintain its functionality"): every arrangement reached by its one-press
      way, each part drawn and its key gesture working in its new place and form. */
   const parts = () => P.evaluate(() => Land.parts().parts);
+  // What a turn of the dial changes: its year, or where a path on it stands (a Born here's works).
+  const turned = () => P.evaluate(() => { const p = window.Dial && Dial._state && Dial._state().path; return (Land.reading() || {}).year + "|" + (p ? p.at : ""); });
   const pk = (q) => q.globe.charAt(0) + q.picture.charAt(0) + q.dial.charAt(0);
   const dialBox = () => P.evaluate(() => { const t = document.getElementById("art-time"); return { r: t.getBoundingClientRect().toJSON(), form: t.dataset.form || "", slot: t.dataset.slot || "" }; });
   const lit = () => P.evaluate(() => {
@@ -132,25 +138,26 @@ async function run(size) {
       const f3 = await P.evaluate(() => Land.flat());
       check(tag, f3 && f3.k > f2.k * 1.3 && (await state()).kind === v.kind, "two fingers or a wheel make the map bigger, in the view", f3 && +(f3.k / f2.k).toFixed(2));
       const b = await buttons();
-      if (b) { await tap(b[1].x, b[1].y); await P.waitForTimeout(450); }
+      if (touch) { await pinch(cx0, cy0, 180, 70); } else { await P.mouse.move(cx0, cy0); for (let i = 0; i < 3; i++) { await P.mouse.wheel(0, 100); await P.waitForTimeout(40); } }
+      await P.waitForTimeout(300);
       const f4 = await P.evaluate(() => Land.flat());
-      check(tag, !!b && f4.k < f3.k, "its − makes the map smaller", f4 && +(f4.k / f3.k).toFixed(2));
+      check(tag, f4 && f4.k < f3.k && (await state()).kind === v.kind, "pinching in or a wheel make the map smaller, in the view", f4 && +(f4.k / f3.k).toFixed(2));
     }
     // The dial into the big place: its ⤢.
     let sw = await P.evaluate(() => { const b = document.querySelector("#art-time .dial-swap"); if (!b || !b.offsetWidth) { return null; } const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
     if (sw) { await tap(sw.x, sw.y); await P.waitForTimeout(1200); }
     q = await parts();
     let db = await dialBox();
-    // A view without years (a town's Born here) has no dial to move.
+    // Every reading view has its dial, so every one has the ⤢.
     const hasDial = !!sw;
-    if (hasDial) { check(tag, q.dial === "big" && db.form === "band", "the dial's ⤢ unrolls it in the big place", { parts: pk(q), form: db.form }); }
+    check(tag, hasDial && q.dial === "big" && db.form === "band", "the dial's ⤢ unrolls it in the big place", { parts: pk(q), form: db.form });
     if (db.form === "band") {
       const ax = db.r.y + Math.max(64, Math.min(db.r.height * 0.38, db.r.height / 2));
-      const y0 = (await state()).year;
+      const y0 = await turned();
       await drag(db.r.x + db.r.width * 0.5, ax, db.r.x + db.r.width * 0.3, ax);
       await P.waitForTimeout(700);
-      const y1 = (await state()).year;
-      check(tag, y0 !== y1, "its handle turns the year", [y0, y1]);
+      const y1 = await turned();
+      check(tag, y0 !== y1, "its handle turns the year (or, a path on it, its stop)", [y0, y1]);
       // Play and pause from the band's left end, with a path on the dial.
       await P.evaluate(() => {
         window.__p = Dial.path({ kind: "check", title: "Check", stops: [{ y: null, label: "one" }, { y: null, label: "two" }],
@@ -180,10 +187,10 @@ async function run(size) {
     check(tag, q.picture === "big" && (r.plateShown || r.noPicture), "a tap on the picture brings it back to the big place", pk(q));
     db = await dialBox();
     if (q.dial === "small") {
-      const y0 = r.year, c0 = { x: db.r.x + db.r.width / 2, y: db.r.y + db.r.height / 2 }, rr = db.r.width / 2 - 13;
+      const y0 = await turned(), c0 = { x: db.r.x + db.r.width / 2, y: db.r.y + db.r.height / 2 }, rr = db.r.width / 2 - 13;
       await drag(c0.x + rr * Math.cos(-0.3), c0.y + rr * Math.sin(-0.3), c0.x + rr * Math.cos(0.9), c0.y + rr * Math.sin(0.9));
       await P.waitForTimeout(700);
-      check(tag, (await state()).year !== y0, "the dial in the small place still turns", [y0, (await state()).year]);
+      { const y1 = await turned(); check(tag, y1 !== y0, "the dial in the small place still turns", [y0, y1]); }
     }
     // Away from home, Escape puts all three home (at home it would go up a level).
     if (pk(await parts()) === "sbd") { await P.evaluate(() => Land.swap(true)); await P.waitForTimeout(900); }
@@ -208,6 +215,7 @@ async function run(size) {
   await P.waitForFunction(() => document.getElementById("land").dataset.at === "globe", null, { timeout: 40000 });
   await P.waitForTimeout(800);
   for (const v of VIEWS) {
+    if (ONLY && v.name.indexOf(ONLY) < 0) { continue; }
     const tag = size + " " + v.name;
     console.log(tag);
     await v.open(P);
@@ -226,6 +234,30 @@ async function run(size) {
     check(tag, Math.hypot(r.cx - r.at.x, r.cy - r.at.y) < 2, "in the middle of its window", { cx: r.cx, cy: r.cy });
     check(tag, !r.ground, "no ground in it");
     check(tag, r.plateShown || r.noPicture, "no empty band", { plate: r.plateShown, closed: r.noPicture });
+    // The three constant parts (artist, 7 Oct 2026: "The dial has completely disappeared, bring it back"),
+    // the arrows outside the picture ("…should be outside the boundary of the thumbnail") and the label
+    // under it ("the info for the artwork should always be below the thumbnail of the artwork").
+    const lay = await P.evaluate(() => {
+      const box = (e) => { if (!e || e.hidden || !e.offsetParent && getComputedStyle(e).position !== "fixed") { return null; } const b = e.getBoundingClientRect(); return b.width && b.height ? b.toJSON() : null; };
+      const plate = document.getElementById("art-plate");
+      const lab = document.querySelector(".art > .wall-label.wl-plate[data-on]");
+      return { dial: box(document.getElementById("art-time")), plate: plate && !plate.hidden ? box(plate) : null,
+               label: lab && !lab.hidden ? box(lab) : null,
+               arrows: [...document.querySelectorAll(".art > .voice-swipe")].map(box).filter(Boolean) };
+    });
+    check(tag, !!lay.dial, "the dial is there at rest", lay.dial && { x: Math.round(lay.dial.x), y: Math.round(lay.dial.y), w: lay.dial.width });
+    if (lay.plate && lay.label) {
+      const P0 = lay.plate, Lb = lay.label;
+      check(tag, Lb.top >= P0.bottom - 1 && Lb.left < P0.right && Lb.right > P0.left, "the wall label is under the picture",
+            { plateBottom: Math.round(P0.bottom), labelTop: Math.round(Lb.top) });
+    }
+    if (lay.plate) {
+      const P0 = lay.plate;
+      const over = lay.arrows.filter((a) => a.right > P0.left + 0.5 && a.left < P0.right - 0.5 && a.bottom > P0.top && a.top < P0.bottom);
+      check(tag, !over.length && lay.arrows.every((a) => a.width >= 24 && a.height >= 24 && a.left >= 0 && a.right <= w),
+            "the ‹ › stand outside the picture, 24 px or more", { arrows: lay.arrows.map((a) => [Math.round(a.left), Math.round(a.width)]), plate: [Math.round(P0.left), Math.round(P0.right)] });
+      if (/born/.test(v.name)) { check(tag, lay.arrows.length === 2, "a picture that swipes has its ‹ ›", lay.arrows.length); }
+    }
     if (SHOTS) { await P.screenshot({ path: SHOTS + "/" + size + "-" + v.name.replace(/\W+/g, "-") + ".png" }); }
     const L = r.at;
     // A drag on it turns it.
@@ -245,8 +277,9 @@ async function run(size) {
     r2 = await settle();
     check(tag, r2 && Math.abs(r2.k - 1) < 0.01 && r2.kind === v.kind, "Escape brings it home", r2 && r2.k);
     // The buttons.
+    // The round + / − were hidden at the artist's request (7 Oct 2026: pinching scales it).
     const b = await buttons();
-    check(tag, !!b && b.length === 2 && b.every((x) => x.w >= 24), "a + and a − of 24 px or more", b && b.map((x) => x.w));
+    check(tag, !b, "the round + and − are hidden", b && b.map((x) => x.w));
     if (b) {
       await tap(b[0].x, b[0].y); await P.waitForTimeout(500);
       r2 = await state();

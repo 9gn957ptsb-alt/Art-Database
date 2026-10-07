@@ -65,7 +65,7 @@
            font-family: "Newsreader", var(--serif, serif); font-style: italic; font-size: 15px; color: #c4b29c; }
 .pt-none[hidden] { display: none; }
 /* The quiet ‹ › at its edges, on a desktop only (a finger swipes). */
-.pt-swipe { top: 50%; margin-top: -16px; }
+.pt-swipe { top: 50%; margin-top: -20px; }
 .pt-swipe-prev { left: 6px; }
 .pt-swipe-next { right: 6px; }
 /* Shown on a phone too (WCAG 2.5.1): the swipe has a one-tap way on every device. */
