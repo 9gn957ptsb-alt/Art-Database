@@ -39,6 +39,8 @@ BASE = "https://api.artsy.net/api/v1"
 USER = "5a296eb67622dd4a817fccf9"
 DIR = Path(__file__).resolve().parent.parent / "data" / "follow_saves"
 STATE = DIR / "state.json"
+# The saved set, kept between runs: listing it again (100 a page) took longer than the container lived.
+HAVE = DIR / "have.json"
 LOG = DIR / "log.jsonl"
 DELAY = 0.35
 
@@ -146,7 +148,8 @@ def main():
     done = set(state["done"])
     arts = followed()
     print(f"{len(arts)} artists followed", flush=True)
-    have = saved_ids()
+    have = set(json.loads(HAVE.read_text())) if HAVE.exists() else saved_ids()
+    HAVE.write_text(json.dumps(sorted(have)))
     print(f"{len(have)} already saved", flush=True)
     log = LOG.open("a")
     for i, artist in enumerate(arts, 1):
@@ -177,6 +180,7 @@ def main():
             done.add(artist["id"])
             state["done"] = sorted(done)
             STATE.write_text(json.dumps(state))
+            HAVE.write_text(json.dumps(sorted(have)))
     tot = {}
     for c in state["counts"].values():
         for k, v in c.items():
