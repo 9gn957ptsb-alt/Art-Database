@@ -3823,3 +3823,8 @@ body[data-flatmap] .land .city { visibility: hidden !important; }
 /* The Sound switch is taken off the banner (artist, 7 Oct 2026: "Get rid of the sound button"); sound
    stays off, its code (Systems.sound) kept. Delete this rule to bring the switch back. */
 .banner-sound { display: none !important; }
+
+/* The globe's round + and − are off (artist, 7 Oct 2026, of Born in Chicago: "Get rid of the plus minus buttons
+   on the globe and just allow me pinching to make it bigger and smaller"). Pinching, a wheel, a trackpad's pinch
+   and the keyboard's + / − still scale it; the code is kept. */
+.globe-zoom { display: none !important; }

@@ -165,3 +165,5 @@ module, `a11y.js` / `a11y.css`, loaded last, so no other module has to know it.
 - 1.4.4, 1.4.10, 1.4.12 (200 % text, 320 px, text spacing) and 1.4.11 (the dial's ticks at 3:1)
   have not been measured.
 - The exploration tray's ↑ / ↓ were not added (the tray's "+" is hidden, `MAKER = false`).
+
+- **7 Oct 2026, the artist's choice:** the globe's round + / − buttons are hidden at his request; pinching, a wheel, a trackpad and the keyboard's + / − remain. A pointer user without two fingers or a wheel now has no one-tap way to scale a globe (2.5.7) — raise this with him if it matters.
