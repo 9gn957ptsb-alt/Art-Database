@@ -5,7 +5,8 @@
    the Road* (its title, artist, date, medium and size only far below, in the
    column): "Where the artwork is located along with its basic information
    provided by artsy should always be adjacent to the thumbnail of the
-   artwork".
+   artwork"; and the same day: "Also the info for the artwork should always
+   be below the thumbnail of the artwork" — so it stands under every picture.
 
    A label is: the title (serif italic); artist · date; medium · size, as
    Artsy gives them; and where it is now — the museum holding it and its

@@ -383,8 +383,8 @@
     var i = w.i < 0 ? (d > 0 ? 0 : w.list.length - 1) : (w.i + d + w.list.length) % w.list.length;
     var q = w.list[i];
     if (w.born) {
-      bornPick = { view: w.r.view, i: i };
-      swipedAt = performance.now();
+      // (It had set an undeclared `swipedAt` here, which in strict mode threw: Born here never swiped.)
+      bornGo(w.r, i);
       var bp = artEl && artEl.querySelector(".art-plate");
       if (bp && !still) {
         bp.dataset.swipe = d > 0 ? "next" : "prev";
@@ -435,13 +435,21 @@
     var w = swipeList, plate = artEl.querySelector(".art-plate");
     var on = !!(w && w.list.length > 1 && w.i >= 0 && plate && !plate.hidden &&
                 !artEl.dataset.full && !artEl.dataset.swapped && !artEl.dataset.out && artEl.dataset.look !== "plate");
+    // Room is made for them beside the picture (land.js layoutPlate), and they stand in it, just
+    // outside its box (artist, 7 Oct 2026: "The arrows on either side of the artwork should be
+    // outside the boundary of the thumbnail"); where there is no room (twice as big), that one hides.
+    var want = !!(w && w.list.length > 1 && w.i >= 0);
+    if (window.Land && Land.swipes) { Land.swipes(want); }
     var rc = on ? plate.getBoundingClientRect() : null;
     if (rc && (!rc.width || !rc.height)) { on = false; }
+    var AW = 28, AH = 40, GAP = 6, VW = window.innerWidth;
     swipeArrows.forEach(function (b, n) {
-      b.hidden = !on;
-      if (!on) { return; }
-      b.style.left = Math.round(n ? rc.right - 30 : rc.left + 6) + "px";
-      b.style.top = Math.round(rc.top + rc.height / 2 - 16) + "px";
+      var x = on ? (n ? rc.right + GAP : rc.left - GAP - AW) : 0;
+      var fits = on && x >= 0 && x + AW <= VW;
+      b.hidden = !fits;
+      if (!fits) { return; }
+      b.style.left = Math.round(x) + "px";
+      b.style.top = Math.round(rc.top + rc.height / 2 - AH / 2) + "px";
     });
   }
   /* A picture swiped sideways — the reading layout's (swipeSetUp) and the
@@ -619,6 +627,7 @@
     var now = performance.now();
     if (r.view !== S.view) {
       S = { view: r.view, key: "", fk: "", said: "", rule: null, voice: "", dist: "", spec: null, f: null };
+      swipeList = null;
       cand = { key: "", at: now };
       if (held && held.view !== r.view && !(held.keep && playing())) { held = null; }
       if (held) { held.view = r.view; }
@@ -867,6 +876,85 @@
     });
     return { town: B.town, list: out, waiting: waiting };
   }
+  /* Its dial (artist, 7 Oct 2026, of "Born in New York": "The dial has completely disappeared, bring
+     it back"): the born artists' years (lives.js, bornYears), and the transport of the swipe — a path
+     on the dial (transport.js) whose stops are the works: the face plays or pauses them (a work every
+     φ⁵ s), the ring scrubs them. A swipe or a stop turns the dial to
+     the work's year (else its artist's birth); the dial turned by hand brings the picture to the work
+     of that year (the latest made by then, else the earliest); the artist of the picture is lit on
+     the globe (Lives.bornLight). */
+  var BORN_STEP = 11090;          // φ⁵ s a work, played
+  var bornSt = null;              // { view, lastY, setY, setAt, path, n, playing, next }
+  function bornYearOf(q) {
+    if (q && q.year) { return q.year; }
+    var L = q && q.lid ? lifeOf(q.lid) : null;
+    return L && L.born || null;
+  }
+  function bornAtYear(list, y) {
+    var best = -1, by = -Infinity, lo = -1, ly = Infinity;
+    list.forEach(function (q, n) {
+      var qy = q.year;
+      if (!qy) { return; }
+      if (qy <= y && qy > by) { by = qy; best = n; }
+      if (qy < ly) { ly = qy; lo = n; }
+    });
+    return best >= 0 ? best : lo;
+  }
+  function bornSetYear(y) {
+    var B = window.Lives && Lives.born ? Lives.born() : null;
+    if (!B || !y || !bornSt) { return; }
+    bornSt.setY = y;
+    bornSt.setAt = performance.now();
+    B.setYear(y);
+  }
+  // To the i-th work: the picture, the dial's year, the path's stop.
+  function bornGo(r, i) {
+    var P = bornPics();
+    if (!P || !P.list[i]) { return; }
+    bornPick = { view: r.view, i: i };
+    if (bornSt && bornSt.view === r.view) {
+      bornSetYear(bornYearOf(P.list[i]));
+      if (bornSt.path) { bornSt.path.set({ at: i }); }
+      bornSt.next = performance.now() + BORN_STEP;
+    }
+    kick();
+  }
+  function bornEnd() {
+    if (!bornSt) { return; }
+    if (bornSt.path) { var pa = bornSt.path; bornSt.path = null; pa.close(); }
+    if (window.Lives && Lives.bornLight) { Lives.bornLight(null); }
+    bornSt = null;
+  }
+  function bornPath(r, P) {
+    if (!window.Dial || !Dial.path) { return null; }
+    var stops = function () { return P.list.map(function (q) { return { y: q.year, label: surname(q.by) + " · " + (q.title || "Untitled") }; }); };
+    var st = bornSt;
+    var h = Dial.path({
+      kind: "born", title: "Born in " + P.town, stops: stops(), at: Math.max(0, bornPick && bornPick.view === r.view ? bornPick.i : 0),
+      paused: true,
+      onSeek: function (i, play) {
+        if (bornSt !== st) { return; }
+        st.playing = !!play && !still;
+        h.set({ paused: !st.playing });
+        bornGo(r, i);
+      },
+      onToggle: function () {
+        if (bornSt !== st) { return; }
+        st.playing = !st.playing && !still;
+        st.next = performance.now() + BORN_STEP;
+        h.set({ paused: !st.playing });
+      },
+      onNext: function () {
+        if (bornSt !== st) { return; }
+        var Q = bornPics();
+        if (Q && Q.list.length) { bornGo(r, ((bornPick ? bornPick.i : 0) + 1) % Q.list.length); }
+      },
+      onEnd: function () { if (bornSt === st) { st.path = null; st.playing = false; } }
+    });
+    st.n = P.list.length;
+    st.restops = function (Q) { if (st.path && Q.list.length !== st.n) { st.n = Q.list.length; P = Q; st.path.set({ stops: stops() }); } };
+    return h;
+  }
   function bornTell(r) {
     var P = bornPics();
     if (!P || !Land.picture) { return; }
@@ -878,8 +966,34 @@
       return;
     }
     if (Land.noPicture) { Land.noPicture(false); }
+    var now = performance.now();
+    if (!bornSt || bornSt.view !== r.view) {
+      bornEnd();
+      bornSt = { view: r.view, lastY: r.year, setY: null, setAt: 0, path: null, n: 0, playing: false, next: now + BORN_STEP };
+      bornSt.path = bornPath(r, P);
+      var i0 = bornPick && bornPick.view === r.view ? Math.min(bornPick.i, P.list.length - 1) : 0;
+      bornSetYear(bornYearOf(P.list[i0]));
+    } else if (bornSt.restops) { bornSt.restops(P); }
+    // The dial turned by hand (not easing to a year set here): the work of that year.
+    if (has(r.year) && r.year !== bornSt.lastY) {
+      bornSt.lastY = r.year;
+      var easing = bornSt.setY !== null && now - bornSt.setAt < 2600;
+      if (r.year === bornSt.setY) { bornSt.setY = null; }
+      else if (!easing) {
+        var k = bornAtYear(P.list, r.year);
+        if (k >= 0 && !(bornPick && bornPick.view === r.view && bornPick.i === k)) {
+          bornPick = { view: r.view, i: k };
+          if (bornSt.path) { bornSt.path.set({ at: k }); }
+        }
+      }
+    }
+    // Played: the next work, while the pointer is still.
+    if (bornSt.playing && bornSt.path && now >= bornSt.next) {
+      bornGo(r, ((bornPick ? bornPick.i : 0) + 1) % P.list.length);
+    }
     var i = bornPick && bornPick.view === r.view ? Math.min(bornPick.i, P.list.length - 1) : 0;
     var pic = P.list[i];
+    if (window.Lives && Lives.bornLight) { Lives.bornLight(pic.lid, has(r.year) ? r.year : null); }
     if (S.pic && picKey(pic) === picKey(S.pic)) { return; }
     S.pic = pic;
     S.said = "born";
@@ -890,7 +1004,7 @@
   function savedPic(L, w, near) {
     var c = CIRCA.test(w[1] || "");
     return { id: w[0], image: w[3], title: c ? String(w[1]).replace(CIRCA, "") : w[1], circa: c, year: w[2] || null,
-             by: L.name, near: !!near };
+             by: L.name, lid: L.id, near: !!near };
   }
   /* The works of a period, for the picture to be swiped through (artist, 3 Oct
      2026: "I want to be able to swipe through artworks by the artist with that
@@ -1202,6 +1316,7 @@
     if (cap && !cap.hidden) { cap.hidden = true; capSay._was = null; capSay.textContent = ""; capPic.hidden = true; }
     if (release) { release.hidden = true; }
     S.view = -1;
+    swipeList = null;
   }
 
   /* ---- the viewer in charge ------------------------------------------------------- */

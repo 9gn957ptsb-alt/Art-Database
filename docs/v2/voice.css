@@ -297,8 +297,8 @@
 .voice-swipe {
   position: absolute;
   z-index: 12;
-  width: 24px;
-  height: 32px;
+  width: 28px;
+  height: 40px;
   padding: 0;
   border: 0;
   border-radius: 2px;
@@ -306,7 +306,7 @@
   color: #eadfcd;
   font-family: var(--mono, monospace);
   font-size: 16px;
-  line-height: 32px;
+  line-height: 40px;
   opacity: 0.35;
   cursor: pointer;
   transition: opacity 0.2s steps(3);

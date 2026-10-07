@@ -168,7 +168,8 @@
     if (api.data.born) {
       view = null;
       bornAt = api;
-      load().then(function () { if (api.live()) { bornColumn(api); kick(); } });
+      bornLit = null;
+      load().then(function () { if (api.live()) { bornColumn(api); bornYears(api); kick(); } });
       return;
     }
     bornAt = null;
@@ -192,9 +193,25 @@
     });
   }
   var bornAt = null;
+  /* A town's Born here has the dial too (artist, 7 Oct 2026, of "Born in New York" with no dial: "The
+     dial has completely disappeared, bring it back"): its years are the born artists' lives, the
+     earliest birth to now, a tick at each birth and each death (white, a writing's); turning it brings
+     the picture to the work of that year (voice.js, bornTell), and that artist's places are lit. */
+  function bornYears(api) {
+    var m = api.data.born, lo = Infinity, ticks = [];
+    m[4].forEach(function (i) {
+      var r = D.lives[i];
+      if (r[2]) { lo = Math.min(lo, r[2]); ticks.push({ y: r[2] }); }
+      if (r[3]) { ticks.push({ y: r[3], kind: "written" }); }
+    });
+    if (lo === Infinity) { lo = NOW - 100; }
+    api.years(lo, NOW, ticks, NOW, false);
+  }
+  var bornLit = null;            // { id, y }: the artist the dial (or the picture) is at, lit on the globe
   function stop() {
     view = null;
     bornAt = null;
+    bornLit = null;
     kick();
   }
 
@@ -936,6 +953,16 @@
     if (bornAt && bornAt.live() && w.at === "life") {
       var bm = bornAt.data.born, bq = bornAt.at(bm[0], bm[1]);
       if (bq.z > 0.02) { ring(bq.x, bq.y, 2, t); atelier(bq.x, bq.y, 1); }
+      // The artist of the dial's year: their places, lit once the year has passed them, and their name.
+      var BL = bornLit && (lifeNow[bornLit.id] || (life(bornLit.id), null));
+      if (BL) {
+        var by = bornLit.y || NOW;
+        BL.periods.forEach(function (p) {
+          var q = bornAt.at(p.ll[0], p.ll[1]);
+          if (q.z > 0.05 && Math.hypot(q.x - bq.x, q.y - bq.y) > C) { atelier(q.x, q.y, p.y0 <= by ? 0.9 : 0.3); }
+        });
+        if (bq.z > 0.02) { name(bq.x, bq.y, surname(BL.name) + (BL.born ? " · " + BL.born : ""), 2); }
+      }
       kick();
       return;
     }
@@ -1197,8 +1224,11 @@
     born: function () {
       var m = bornAt && bornAt.data && bornAt.data.born;
       if (!m || !D || !bornAt.live()) { return null; }
-      return { town: m[7], ids: m[4].map(function (i) { return D.lives[i][0]; }) };
+      return { town: m[7], ids: m[4].map(function (i) { return D.lives[i][0]; }),
+               years: function () { return bornAt.year(); }, setYear: function (y) { bornAt.setYear(y); } };
     },
+    // The artist the Born here dial is at (voice.js): lit on the globe.
+    bornLight: function (id, y) { bornLit = id ? { id: id, y: y } : null; kick(); },
     showWork: showWork,
     made: made,
     // What the life (or a town's "Born here") drew on the globe last frame, as boxes.

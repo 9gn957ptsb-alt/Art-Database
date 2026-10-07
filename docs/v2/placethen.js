@@ -403,7 +403,7 @@
     line.appendChild(wt);
     line.appendChild(count);
     // Its wall label (label.js): artist · date, medium · size, how it is known, where it is now.
-    // Under the picture, or beside it on a phone when the picture is upright (placeLabel).
+    // Always under the picture (artist, 7 Oct 2026: "always be below the thumbnail of the artwork"; placeLabel).
     var how = el("div", "wall-label pt-label");
     cap.appendChild(line);
     cap.appendChild(how);
@@ -516,7 +516,7 @@
       bs.removeProperty("--pt-col-top");
     }
     if (empty) { root.dataset.empty = "true"; } else { delete root.dataset.empty; }
-    if (S) { S.dirty = true; }
+    if (S) { S.dirty = true; placeArrows(); }
   }
   function setBox(e, x, y, w, h) {
     e.style.left = Math.round(x) + "px";
@@ -674,25 +674,35 @@
     }
     placeLabel();
   }
-  /* Beside the picture on a phone when it is upright and narrow enough to leave the label room
-     (picture left, label right); else under it, before its doors. */
+  /* The label always under the picture, before its doors (artist, 7 Oct 2026: "the info for the
+     artwork should always be below the thumbnail of the artwork"); the ‹ › just outside the picture
+     as it is drawn (artist, same day: "The arrows on either side of the artwork should be outside the
+     boundary of the thumbnail"): the picture's box is narrowed by an arrow's width each side where it
+     swipes, and each arrow stands against the picture's drawn edge, never over it. */
+  var PT_ARROW = 28, PT_GAP = 6;
   function placeLabel() {
     if (!S || !refs.pic) { return; }
-    var phone = root && root.dataset.phone === "true";
-    var im = refs.img, box = refs.picbox;
+    if (refs.how.parentNode !== refs.cap) { refs.cap.appendChild(refs.how); }
+    delete refs.work.dataset.side;
+    refs.work.style.removeProperty("--pt-pic-w");
+    placeArrows();
+  }
+  function placeArrows() {
+    if (!S || !refs.pic) { return; }
+    var swipes = S.items && S.items.length > 1 && !refs.pic.hidden;
+    var room = swipes ? PT_ARROW + PT_GAP : 0;
+    refs.pic.style.left = room + "px";
+    refs.pic.style.right = room + "px";
+    refs.pic.style.width = "auto";
+    if (!swipes) { return; }
+    var im = refs.img, bw = refs.picbox.clientWidth - 2 * room, bh = refs.picbox.clientHeight;
     var aspect = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 0;
-    var bw = box.clientWidth, bh = box.clientHeight + (refs.how.parentNode === box ? 0 : refs.how.offsetHeight + 4);
-    var side = phone && aspect && aspect < 1 && !refs.pic.hidden && bw - 150 - 12 >= bh * aspect * 0.98;
-    if (side) {
-      if (refs.how.parentNode !== box) { box.appendChild(refs.how); }
-      var w = Math.round(Math.min(bw - 162, box.clientHeight * aspect));
-      refs.work.style.setProperty("--pt-pic-w", w + "px");
-      refs.work.dataset.side = "true";
-    } else {
-      if (refs.how.parentNode !== refs.cap) { refs.cap.appendChild(refs.how); }
-      delete refs.work.dataset.side;
-      refs.work.style.removeProperty("--pt-pic-w");
-    }
+    var dw = aspect ? Math.min(bw, bh * aspect) : bw;
+    var x0 = room + (bw - dw) / 2;
+    refs.prev.style.left = Math.round(x0 - PT_GAP - PT_ARROW) + "px";
+    refs.prev.style.right = "auto";
+    refs.next.style.left = Math.round(x0 + dw + PT_GAP) + "px";
+    refs.next.style.right = "auto";
   }
 
   // The column's square of the work in the picture, lit (as the reading layout's swipe lights it).

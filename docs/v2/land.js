@@ -15320,6 +15320,12 @@
       if (!artPlate.hidden) { layoutPlate(null, "rest"); }
       a.keptAt = 0;
     },
+    // The picture swipes (voice.js): room is made for its ‹ › outside it.
+    swipes: function (on) {
+      if (!!artEl.dataset.swipes === !!on) { return; }
+      if (on) { artEl.dataset.swipes = "true"; } else { delete artEl.dataset.swipes; }
+      if (art && readingOn() && !artPlate.hidden) { layoutPlate(null, null); }
+    },
     tense: function (word) { if (art && art.tense !== (word || "")) { art.tense = word || ""; } },
     swap: function (on) { setSwap(on === undefined ? !lensSwapped : !!on); },
     // The transport (transport.js): every dial, a dial of its own where no view's shows, and the
@@ -19350,17 +19356,21 @@
     mode = mode || artPlate.dataset.mode || "look";
     artPlate.dataset.mode = mode;
     var bands = workBands(), b = mode === "rest" ? bands.plate : bands.look;
-    // The wall label touches the picture: beside it on a phone when the picture is upright and narrow
-    // enough to leave it room (picture left, label right), else under it; under it on a desktop.
-    var lab = artLabel && !artLabel.hidden && !lensSwapped ? labelRoom(b, aspect) : null;
-    var room = !lab ? b : lab.side ? { x: b.x, y: b.y, w: b.w - lab.w - 12, h: b.h } : { x: b.x, y: b.y, w: b.w, h: b.h - lab.h - 6 };
+    // The wall label is always under the picture (artist, 7 Oct 2026: "the info for the artwork should
+    // always be below the thumbnail of the artwork"): the band is given to the picture and its label
+    // together, the picture shrunk (its aspect kept), never the label run on into the globe's band.
+    // Where the picture swipes, its ‹ › stand just outside it (artist, 7 Oct 2026: "The arrows on either
+    // side of the artwork should be outside the boundary of the thumbnail"): the room is narrowed by an
+    // arrow's width each side, so they never lie over it.
+    var A = mode === "rest" && artEl.dataset.swipes && !lensSwapped && partsNow().picture === "big" ? SWIPE_ROOM : 0;
+    var lab = artLabel && !artLabel.hidden && !lensSwapped ? labelRoom({ x: b.x + A, y: b.y, w: b.w - 2 * A, h: b.h }, aspect) : null;
+    var room = { x: b.x + A, y: b.y, w: b.w - 2 * A, h: b.h - (lab ? lab.h + 6 : 0) };
     var w = Math.max(40, Math.min(room.w, room.h * aspect)), hh = w / aspect;
     var x = room.x + (room.w - w) / 2, y = room.y + (room.h - hh) / 2;
     // At rest it keeps to its edge: against the left on a desktop, the globe
     // beside it; under the banner on a phone, the globe below it. Swapped
     // into the lens's place, it stands in the middle of it.
-    if (mode === "rest" && !lensSwapped) { if (W > 720) { x = b.x; } else { y = b.y; } }
-    if (lab && lab.side) { x = b.x; }
+    if (mode === "rest" && !lensSwapped) { if (W > 720) { x = room.x; } else { y = room.y; } }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
@@ -19370,30 +19380,16 @@
     if (zb && zb.node === artPlate) { zb.relayout(); }
     if (lab) {
       var ls = artLabel.style;
-      if (lab.side) {
-        ls.left = (x + w + 12).toFixed(1) + "px";
-        ls.top = y.toFixed(1) + "px";
-        ls.width = (b.x + b.w - x - w - 12).toFixed(1) + "px";
-        artLabel.dataset.side = "true";
-      } else {
-        ls.left = (W > 720 ? x : b.x).toFixed(1) + "px";
-        ls.top = (y + hh + 6).toFixed(1) + "px";
-        ls.width = b.w.toFixed(1) + "px";
-        delete artLabel.dataset.side;
-      }
+      ls.left = room.x.toFixed(1) + "px";
+      ls.top = (y + hh + 6).toFixed(1) + "px";
+      ls.width = room.w.toFixed(1) + "px";
+      delete artLabel.dataset.side;
     }
   }
-  // The label's room beside or under a picture of this aspect in band b: beside when that gives
-  // the picture at least as much width as standing over the label would.
+  var SWIPE_ROOM = 34;          // an arrow's width (28) and its gap (6), each side of a picture that swipes
+  // The label's room under a picture in band b: its height at the band's width, at most 45 % of it.
   function labelRoom(b, aspect) {
-    var SIDE = 150;
-    var under = Math.min(b.h * 0.45, labelHeight(b.w));
-    if (W <= 720 && aspect < 1) {
-      var wSide = Math.min(b.w - SIDE - 12, b.h * aspect), wUnder = Math.min(b.w, (b.h - under - 6) * aspect);
-      var sideW = b.w - 12 - wSide;
-      if (wSide >= wUnder && labelHeight(sideW) <= b.h) { return { side: true, w: sideW, h: 0 }; }
-    }
-    return { side: false, w: b.w, h: under };
+    return { side: false, w: b.w, h: Math.min(b.h * 0.45, labelHeight(b.w)) };
   }
   // Its height at a width, measured before the picture is sized round it.
   function labelHeight(w) {
