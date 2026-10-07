@@ -156,6 +156,16 @@
       built[q] = yr;
       if (yr > 0 && yr < y0) { y0 = yr; }
     }
+    // Where only the satellites date the city, their first year (1975) means "there by 1975", not
+    // "built in 1975": all that stood then stands from the start, and the column says so.
+    var floor1975 = y0 >= 1975 && y0 < NOW;
+    if (floor1975) {
+      y0 = Infinity;
+      for (q = 0; q < N; q += 1) {
+        if (built[q] && built[q] <= 1975) { built[q] = 0; }
+        if (built[q] > 0 && built[q] < y0) { y0 = built[q]; }
+      }
+    }
     var years = y0 < NOW ? { y0: y0 - 1, y1: NOW } : null;
     function rev(yr, f) { return years && yr > 0 ? (yr - 1 - years.y0) / (years.y1 - years.y0) + f * 0.97 / (years.y1 - years.y0) : 0; }
 
@@ -320,12 +330,14 @@
     D.count = D.x.length;
     D.span = n;
     D.lift = Math.min(highest, n / 4);
-    return { key: st.key, P: P, g: g, n: n, cell: cell, dots: D, years: years, arts: arts, owner: owner,
+    return { key: st.key, P: P, g: g, n: n, cell: cell, dots: D, years: years, floor1975: floor1975, from: g.builtFrom || [],
+             arts: arts, owner: owner,
              zAt: zAt, toCell: toCell, walk: walk, isWalk: isWalk };
   }
 
   /* ---- drawing ----------------------------------------------------------- */
 
+  var dialTop = Infinity;             // the top of the dial where it stands under the band's middle
   var view = { heading: TAU / 8, zoom: 1, px: 0, py: 0, from: 0, to: 0, swingAt: 0, nextTurn: 0, held: false };
   var sorted = { heading: null, order: null, key: null, count: 0 };
   var frameNow = null, drawnKey = "", band = null, shownNow = 1;
@@ -349,7 +361,8 @@
   function draw() {
     var D = city.dots, w = canvas.width, h = canvas.height, ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, w, h);
-    var f = frameFor(w, h);
+    // The dial standing under the middle of the band (a desktop's): the clod keeps above it.
+    var f = frameFor(w, Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6)));
     frameNow = f;
     if (sorted.heading !== view.heading || sorted.count !== D.count) {
       // Back to front, by a counting sort on depth in quarter cells: the order a heading needs,
@@ -767,9 +780,14 @@
       box.appendChild(el("p", "skyline-said", "Born here, or placed here by their record, each in their years: turn the dial to see who was here"));
       box.appendChild(rows(people, false));
     }
+    if (city && city.floor1975) {
+      box.appendChild(el("p", "skyline-said", "Buildings before 1975 are not dated here: all that stood by 1975 is shown."));
+    } else if (city && !city.years) {
+      box.appendChild(el("p", "skyline-said", "Its buildings' years have not been read yet: the city stands as it is now."));
+    }
     if (!box.children.length) { return; }
     // Born here heads the column (come from the Artists layer); who walks here follows the museums.
-    var head = col.querySelector(".kinds");
+    var head = col.querySelector(".kinds-head");
     var mus = col.querySelectorAll(":scope > .town-museum-row");
     var at = born ? (head && head.parentNode === col ? head.nextSibling : col.firstChild)
                   : mus.length ? mus[mus.length - 1].nextSibling : (st.foot && st.foot.parentNode === col ? st.foot : null);
@@ -853,7 +871,8 @@
       var ids = Object.keys(pointers);
       if (ids.length === 1) {
         gesture = { kind: "one", x: event.clientX, y: event.clientY, lx: event.clientX, at: performance.now(), moved: 0,
-                    touch: event.pointerType !== "mouse", onName: onName };
+                    touch: event.pointerType !== "mouse", onName: onName,
+                    h0: nearestDiagonal(view.swingAt ? view.to : view.heading) };
       } else if (ids.length === 2) {
         var a = pointers[ids[0]], b = pointers[ids[1]];
         gesture = { kind: "two", d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, over: 1 };
@@ -862,6 +881,8 @@
     });
     root.addEventListener("pointermove", function (event) {
       if (!city || !on_) { return; }
+      // The globe's own hover (a work named under the pointer) is not the skyline's.
+      event.stopPropagation();
       if (event.pointerType === "mouse" && !pointers[event.pointerId] && !event.target.closest(".skyline-name, .skyline-who")) {
         hover(event.clientX, event.clientY);
       }
@@ -901,7 +922,13 @@
       var g = gesture;
       if (g && g.kind === "one") {
         var held = performance.now() - g.at;
-        if (g.moved > 6) { settleTo(nearestDiagonal(view.heading)); swallowClick(); }
+        if (g.moved > 6) {
+          // Let go, it settles on a diagonal: the one it came from after a nudge, else the next the
+          // way it was turned (or as many quarters on as it was turned).
+          var dh = view.heading - g.h0;
+          settleTo(Math.abs(dh) < 0.25 ? g.h0 : g.h0 + (dh > 0 ? 1 : -1) * Math.max(1, Math.round(Math.abs(dh) / (TAU / 4))) * TAU / 4);
+          swallowClick();
+        }
         else if (g.onName) { /* the name's own click */ }
         else if (held < 380) { tap(g.x, g.y, g.touch); }
         else if (Land.city.squash) { Land.city.squash(g.x, g.y, Math.min(233, 55 + (held - 260) * 0.42)); }
@@ -935,18 +962,7 @@
       } else { wheelPush = 0; }
     }, { passive: false });
     canvas.addEventListener("keydown", function (event) {
-      if (!city || !on_) { return; }
-      var k = event.key;
-      if (k === "ArrowLeft" || k === "ArrowRight") {
-        event.preventDefault(); event.stopPropagation();
-        settleTo(nearestDiagonal(view.heading) + (k === "ArrowLeft" ? 1 : -1) * TAU / 4);
-      } else if (k === "+" || k === "=" || k === "-" || k === "_") {
-        event.preventDefault(); event.stopPropagation();
-        var inward = k === "+" || k === "=", g = { over: 1 };
-        zoomAbout(inward ? PHI / 1.2 : 1.2 / PHI, band.x + band.w / 2, band.y + band.h / 2, g);
-        dirty = true;
-        if (g.over !== 1) { if (inward) { down(band.x + band.w / 2, band.y + band.h / 2); } else { Land.city.up(); } }
-      }
+      if (keyed(event.key)) { event.preventDefault(); event.stopPropagation(); }
     });
   }
   // A drag begun on a name is not also a press on it.
@@ -954,6 +970,23 @@
     var eat = function (e) { if (e.target.closest && e.target.closest(".skyline")) { e.stopPropagation(); e.preventDefault(); } };
     document.addEventListener("click", eat, true);
     window.setTimeout(function () { document.removeEventListener("click", eat, true); }, 400);
+  }
+  // The keys (on the skyline, or on the globe's own tab stop while the skyline stands):
+  // ← → a quarter turn; + − nearer and farther, and past the ends the next level.
+  function keyed(k) {
+    if (!city || !on_ || !band) { return false; }
+    if (k === "ArrowLeft" || k === "ArrowRight") {
+      settleTo(nearestDiagonal(view.swingAt ? view.to : view.heading) + (k === "ArrowLeft" ? 1 : -1) * TAU / 4);
+      return true;
+    }
+    if (k === "+" || k === "=" || k === "-" || k === "_") {
+      var inward = k === "+" || k === "=", g = { over: 1 };
+      zoomAbout(inward ? 1.25 : 1 / 1.25, band.x + band.w / 2, band.y + band.h / 2, g);
+      dirty = true;
+      if (g.over !== 1) { if (inward) { down(band.x + band.w / 2, band.y + band.h / 2); } else { Land.city.up(); } }
+      return true;
+    }
+    return false;
   }
   function zoomAbout(r, sx, sy, g) {
     // Pushed past an end: the push grows until it is let go of or comes back.
@@ -1036,6 +1069,7 @@
 
   var on_ = false, dirty = true, last = 0, visit = null, drawnAt = 0, lightKey = "";
   var built = {};                     // a city's ground made into dots, kept for the visit after
+  var waiting = null;                 // the visit whose ground is in and is being made (or could not be read)
   function off() {
     if (!on_ && (!root || root.hidden)) { return; }
     on_ = false;
@@ -1048,7 +1082,7 @@
   function sayNoSkyline(st) {
     if (!st.col || st.col.querySelector(".skyline-none")) { return; }
     var p = el("p", "skyline-none", "No skyline has been read for " + st.name + " yet: its map, as it was.");
-    var head = st.col.querySelector(".kinds");
+    var head = st.col.querySelector(".kinds-head");
     st.col.insertBefore(p, head && head.parentNode === st.col ? head.nextSibling : st.col.firstChild);
   }
 
@@ -1062,12 +1096,12 @@
     var P = places[st.key];
     if (!P) {
       off();
-      if (visit !== st.via) { visit = st.via; window.setTimeout(function () { var s2 = Land.city.state(); if (s2 && s2.key === st.key) { sayNoSkyline(s2); } }, 400); }
+      if (visit !== st.visit) { visit = st.visit; window.setTimeout(function () { var s2 = Land.city.state(); if (s2 && s2.key === st.key) { sayNoSkyline(s2); } }, 400); }
       return;
     }
-    if (visit !== st.via || !city || city.key !== st.key) {
-      if (visit === st.via && building) { return; }
-      visit = st.via;
+    if (visit !== st.visit || !city || city.key !== st.key) {
+      if (visit === st.visit && (building || waiting === visit)) { return; }
+      visit = st.visit;
       city = null;
       off();
       var myVisit = visit;
@@ -1079,9 +1113,10 @@
           if (visit !== myVisit) { return; }
           var g = r[0];
           if (r[r.length - 1] && r[r.length - 1].lives) { livesRows = r[r.length - 1].lives; }
-          if (!g || !g.n) { sayNoSkyline(st); return; }
+          if (!g || !g.n) { waiting = myVisit; sayNoSkyline(st); return; }
           var models = {};
           slugs.forEach(function (s, k) { models[s] = r[k + 1]; });
+          waiting = myVisit;
           waitFor(myVisit, P, g, models, 0);
         });
       return;
@@ -1098,7 +1133,8 @@
         plural(city.arts.filter(function (a) { return a.kind === "gallery"; }).length, "gallery", "galleries") +
         " named; ← → turn it, + − nearer and farther");
       view.heading = nearestDiagonal(TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4);
-      view.zoom = 1; view.px = view.py = 0; view.swingAt = 0; view.nextTurn = now + REST_MS;
+      // A phone a little nearer: its window is narrow, and the museums are in the middle.
+      view.zoom = window.innerWidth <= 720 ? 1.15 : 1; view.px = view.py = 0; view.swingAt = 0; view.nextTurn = now + REST_MS;
       crowd = window.innerWidth <= 720 ? 6 : 10;
       roster = (artistsAll[st.key] || []).slice();
       walkers = [];
@@ -1112,13 +1148,29 @@
     var dt = Math.min(80, now - (last || now));
     last = now;
     // The band it is drawn in, and the canvas there.
-    var b = st.band;
-    if (!band || band.x !== b.x || band.y !== b.y || band.w !== b.w || band.h !== b.h) {
-      band = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h) };
+    var b = st.band, bh = b.h;
+    // On a phone the skyline has the band and the room under it down to the column's top.
+    if (window.innerWidth <= 720 && st.col && st.col.firstChild) {
+      var ct = st.col.getBoundingClientRect().top;
+      if (ct > b.y + b.h) { bh = ct - b.y - 6; }
+    }
+    var nb = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(bh) };
+    if (!band || band.x !== nb.x || band.y !== nb.y || band.w !== nb.w || band.h !== nb.h) {
+      band = nb;
       canvas.style.left = band.x + "px"; canvas.style.top = band.y + "px";
       canvas.style.width = band.w + "px"; canvas.style.height = band.h + "px";
       canvas.width = Math.max(1, band.w); canvas.height = Math.max(1, band.h);
       dirty = true;
+    }
+    // Where the dial stands, now and then (it can be carried anywhere).
+    if (!tick.dialAt || now - tick.dialAt > 500) {
+      tick.dialAt = now;
+      var de = document.getElementById("art-time"), dt0 = Infinity;
+      if (de && !de.hidden) {
+        var dr = de.getBoundingClientRect(), mid = (dr.left + dr.right) / 2;
+        if (dr.width && mid > band.x + band.w / 3 && mid < band.x + band.w * 2 / 3 && dr.top < band.y + band.h) { dt0 = Math.round(dr.top); }
+      }
+      if (dt0 !== dialTop) { dialTop = dt0; dirty = true; placed = ""; }
     }
     // The year: the city's dial (at rest, now; under reduced motion the dial does not play).
     var d = st.dial, yearF = !d || d.rest ? NOW + 1 : d.at - 0.5;
@@ -1177,12 +1229,14 @@
     // The galleries' points are exact once the city's file is in.
     if (!st.pf && tries < 40) { window.setTimeout(function () { waitFor(myVisit, P, g, models, tries + 1); }, 100); return; }
     try { city = built[st.key] || (built[st.key] = build(st, P, g, models)); } catch (e) { city = null; if (window.console) { console.warn("skyline", e); } }
+    waiting = city ? null : myVisit;
     lightKey = "";
     sorted.heading = null;
   }
 
   window.Skyline = {
     on: function () { return on_; },
+    key: function (k) { return keyed(k); },
     // The Artists layer: a town where several saved artists were born (lives.js) — its city key,
     // where the town has a skyline, else null (the town's Born here reading stays).
     bornTown: function (m) {

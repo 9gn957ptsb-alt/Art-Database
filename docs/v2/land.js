@@ -13548,6 +13548,8 @@
      the ground, as it did), Enter or Space opens the shown place nearest the
      middle. Up on the world only; anywhere else the keys are the view's own. */
   function globeKey(key) {
+    // A city's skyline (skyline.js): ← → turn it a quarter, + − nearer and farther, past the ends a level.
+    if (skyOn() && Skyline.key && Skyline.key(key)) { return true; }
     // A city's map (a city view): the arrows move it as a finger does, 48 px a press.
     if (cityMap() && /^Arrow/.test(key)) {
       var m = 48;
@@ -16945,12 +16947,14 @@
      isometric over the globe, and the skyline takes its own presses — the
      map's gestures, its galleries' tiles and its marks stand down. */
   function skyOn() { return !!(window.Skyline && Skyline.on && Skyline.on()); }
+  var skyVisits = 0;
   var skylineApi = {
     // The city view, as the skyline needs it; null when there is none.
     state: function () {
       var a = art;
       if (!a || a.kind !== "town" || !a.live || !a.town || !place || flying || groundOn || walkOn) { return null; }
-      return { key: a.town.key, name: a.town.name, via: a.via || {}, pf: a.pf || null, venueWorks: a.venueWorks || null,
+      if (!a.skyVisit) { skyVisits += 1; a.skyVisit = skyVisits; }     // each visit to a city, its own number
+      return { visit: a.skyVisit, key: a.town.key, name: a.town.name, via: a.via || {}, pf: a.pf || null, venueWorks: a.venueWorks || null,
                museums: a.town.museums.slice(), rows: a.museumRows || {}, venueBoxes: a.venueBoxes || [],
                galleries: galleryPoints(a.town, a.pf).map(function (g) { return { vi: g.vi, lat: g.lat / RAD, lon: wrap(g.lon) / RAD }; }),
                band: artBand("town"), col: artCol, foot: a.foot || null, reading: readingOn(), still: still,

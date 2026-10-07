@@ -51,6 +51,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 .skyline-name[hidden], .skyline-who[hidden] { display: none; }
+/* What is named is pressed first: a name over any unnamed target, a museum's target over a gallery's. */
+.skyline-gallery { z-index: 1; }
+.skyline-museum { z-index: 2; }
+.skyline-who { z-index: 3; }
+.skyline-name[data-named] { z-index: 4; }
+.skyline-name[data-lit], .skyline-who[data-named], .skyline-name:focus-visible, .skyline-who:focus-visible { z-index: 5; }
 .skyline-name[data-named] { background: rgba(15, 10, 7, 0.72); }
 .skyline-gallery { color: #c4b29c; text-transform: none; letter-spacing: 0.02em; }
 .skyline-name[data-later] { color: #9b8b78; }
@@ -101,7 +107,7 @@
 }
 .skyline-note:empty { display: none; }
 @media (max-width: 720px) {
-  .skyline-note { bottom: auto; top: calc(50vh - 44px); }
+  .skyline-note { bottom: auto; top: 70px; }
 }
 
 /* While the skyline stands, the globe's own marks in the city stand down. */

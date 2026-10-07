@@ -58,8 +58,11 @@ def to_m(lat0, lon0, lat, lon):
     return ((lon - lon0) * 111320 * math.cos(math.radians(lat0)), (lat - lat0) * 111320)
 
 
-def square_for(points):
-    """points: [(lat, lon, weight, slug or None)]. The centre and side of the square."""
+def square_for(points, middle=None):
+    """points: [(lat, lon, weight, slug or None)]. The centre and side of the square. `middle` is the
+    city's own point (cities.json: its middle, often its towers): where the square framing its art
+    leaves it out but could take it in within the 8 km, it is taken in (Houston's downtown, beside
+    the Menil and the Contemporary Arts Museum)."""
     best = None
     for la, lo, _, _ in points:
         inside = [p for p in points
@@ -68,6 +71,18 @@ def square_for(points):
         if best is None or w > best[0]:
             best = (w, inside)
     inside = best[1]
+    if middle:
+        lat0 = (min(p[0] for p in inside) + max(p[0] for p in inside)) / 2
+        lon0 = (min(p[1] for p in inside) + max(p[1] for p in inside)) / 2
+        ex0 = max(max(abs(v) for v in to_m(lat0, lon0, p[0], p[1])) for p in inside)
+        half0 = max(MIN_SIDE, min(MAX_SIDE, 2 * (ex0 + MARGIN))) / 2
+        if any(abs(v) > half0 - 300 for v in to_m(lat0, lon0, middle[0], middle[1])):
+            both = inside + [(middle[0], middle[1], 0, None)]
+            la_ = [p[0] for p in both]
+            lo_ = [p[1] for p in both]
+            c = ((min(la_) + max(la_)) / 2, (min(lo_) + max(lo_)) / 2)
+            if max(max(abs(v) for v in to_m(c[0], c[1], p[0], p[1])) for p in both) <= MAX_SIDE / 2 - MARGIN:
+                inside = both
     las = [p[0] for p in inside]
     los = [p[1] for p in inside]
     lat = (min(las) + max(las)) / 2
@@ -98,7 +113,7 @@ def main():
                 if (round(v[1], 4), round(v[2], 4)) not in mpts]
         if not pts:
             continue
-        lat, lon, side = square_for(pts)
+        lat, lon, side = square_for(pts, (row[3], row[4]))
         n = max(N_MIN, min(N_MAX, int(round(side / CELL / 8)) * 8))
         half = side / 2
         inside = [s for s in museums if s in mus and

@@ -32,6 +32,14 @@ works come up one at a time and the dial turns to each one's year, the clod of t
 it stood then; turned by hand, the clod follows. Its band's mode **Made here** marks each of those
 works at its year, and a press on one brings it up.
 
+**A city's skyline** (`skyline.js`; 7 Oct 2026): where a city's ground has been read, its view is the
+city as its skyline, and the city's own dial (Place) is that skyline's years as well — each building
+stands from its built year, storey by storey as the dial passes it; a gallery not yet open is named a
+step quieter; and the artists the record places there that year (born there, a life's period, a
+movements presence) walk its streets, coming and going as the dial turns. The first visit's play is
+the city growing and its artists arriving and leaving; at rest it stands at now. Nothing new is on
+the ring: its ticks stay the venues' first years.
+
 A small word over the year names what the dial is about: **Place · Work · Life · Movement** (the
 view's own, as before) and then **Movements**, **Artists** (in a city: whose years were here; in a
 work: its artist's places), **Explore**. Pressing the word, or Enter on it, or `M` on the dial's
