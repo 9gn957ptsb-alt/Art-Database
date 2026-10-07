@@ -160,7 +160,7 @@
     var said = n ? plural(row[2], "show", "shows") + " on" + (row[3] ? " · " + row[3] + " soon" : "") : "";
     if (index.read && stale(index.read)) { said = readSaid(index.read); p.dataset.stale = "true"; }
     if (said) { p.appendChild(el("span", "guide-pill-meta", said)); }
-    p.setAttribute("aria-label", row[0] + " Guide — what's on" + (said ? ", " + said : ""));
+    // Its name is its words (WCAG 2.5.3): "London Guide 59 shows on · 19 soon".
     p.dataset.key = key;
     return p;
   }
@@ -680,7 +680,7 @@
     if (worldPill.dataset.key !== key || worldPill.textContent !== words) {
       worldPill.dataset.key = key;
       worldPill.textContent = words;
-      worldPill.setAttribute("aria-label", c[0] + " Guide — " + plural(c[2], "show", "shows") + " on now; fly there and open it");
+      worldPill.setAttribute("aria-label", words + " — " + plural(c[2], "show", "shows") + " on now; fly there and open it");
     }
     worldPill.hidden = false;
     var W = window.innerWidth, pw = worldPill.offsetWidth, ph = worldPill.offsetHeight;

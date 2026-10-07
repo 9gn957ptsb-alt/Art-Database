@@ -395,8 +395,9 @@
     picbox.appendChild(next);
     work.appendChild(picbox);
     var cap = el("div", "pt-cap");
-    cap.setAttribute("aria-live", "polite");
+    // Only the work's line is said when it changes, not its whole wall label (WCAG 4.1.3; a11y.js).
     var line = el("div", "pt-line");
+    if (window.A11y) { A11y.settled(line); } else { line.setAttribute("aria-live", "polite"); }
     var wt = button("pt-wt", function () { var it = S && S.items[S.i]; if (it) { openItem(it); } });
     var count = el("span", "pt-count");
     line.appendChild(wt);
@@ -441,6 +442,8 @@
     moreBox.addEventListener("click", function (event) { event.stopPropagation(); more(false); });
     var canvas = el("canvas", "pt-clod");
     canvas.setAttribute("role", "img");
+    // Named as the place it is, from its sentence (WCAG 1.1.1); kept up as the place changes.
+    canvas.setAttribute("aria-label", "The place, its ground in dots seen from above");
     canvas.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     canvas.addEventListener("click", function (event) {
       event.stopPropagation();
@@ -640,7 +643,8 @@
     refs.wt.appendChild(el("i", "", it.t || "Untitled"));
     refs.wt.appendChild(document.createTextNode((it.y ? ", " + (it.circa ? "c. " : "") + it.y : "") + (it.saved && it.id || it.ll ? " ›" : "")));
     refs.wt.disabled = !(it.saved && it.id) && !(it.kind === "site" && it.ll);
-    refs.wt.setAttribute("aria-label", it.saved && it.id ? "Where " + (it.t || "it") + " has been" : "Go to where " + (it.t || "it") + " was painted");
+    // Its visible words first (WCAG 2.5.3), then what a press does.
+    refs.wt.setAttribute("aria-label", refs.wt.textContent.replace(/ ›$/, "") + (it.saved && it.id ? " — where it has been" : " — go to where it was painted"));
     labelItem(it);
     if (it.y) { setYear(it.y); }
     if (!still && !first) { refs.work.dataset.fresh = String(Date.now()); }

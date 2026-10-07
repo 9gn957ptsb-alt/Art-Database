@@ -103,3 +103,65 @@ AAA criteria named below where they fit the site.
 6. Anything that moves by itself can be paused from the dial; reduced motion respected.
 7. Keyboard all the way through, focus visible and never hidden.
 8. The title says the view; the address stays one link.
+
+## Status, 7 Oct 2026
+
+The audit's ten fixes, checked in headless Chromium at 390×844 and 1440×900 (axe-core, and a
+tab-through of a work, a life, a city and its guide). What is the same in every view lives in one
+module, `a11y.js` / `a11y.css`, loaded last, so no other module has to know it.
+
+**Met now**
+- **1.3.1, 2.4.6, 2.4.3** — every view has one h1 (the categories' title, else the life's or the
+  place's sentence, else the wall label; a hidden one only where a view gives none), its sections
+  h2, Find's groups h2; one `main` at a time (the view's column, else the stage, which is otherwise
+  a labelled region); the banner is a navigation landmark. Arriving, the focus goes to the h1 when
+  nothing visible holds it; coming back up it goes back to the mark or row that was pressed. The
+  globe's marks are `visibility: hidden` (not only faded) while you are down in a place, so a
+  work's tab order no longer runs through forty invisible cities.
+- **2.4.7** — one ring everywhere: 2 px `#9d95e6`, 2 px out; the dial is ringed when its range or
+  mode has the focus (and lights its tiles, as before); a mark whose name had no room shows it on
+  focus.
+- **2.1.1, 2.1.4** — the globe is the stop after Hold still: ← → turn it, ↑ ↓ roll it, + − nearer
+  and farther (past the nearest, down into the ground), Enter opens the shown place nearest the
+  middle; in a city the same keys move its map. + / − answer only when nothing in particular, the
+  globe, a mark, the lens or the walk has the focus; W A S D Q E only in the walk; a letter goes
+  into Search only from Search itself or from nowhere.
+- **2.2.2, 3.2.5** — **Hold still**, with no new button on the page: it is the first stop in the
+  tab order (seen only while it has the focus, as a skip link is), and the word "still" (or
+  "pause", "motion") in Search offers it on every layer and device; on by default under reduced
+  motion, kept per viewer (`site.still`). It stops the swing, the company, the weather, the
+  shimmer and every first play (`Land.still`).
+- **1.4.3** — "later" is the full `#a8927a` with a dotted rule, pictures alone let down to a third;
+  tab counts, crumbs, the spectrum's ends and the banner's under-line at full strength; the pills
+  on a deeper ground; a scrim of shadow under names over pictures (a stop's place, the place's
+  doors, the walk's names).
+- **2.5.8** — a globe mark's dot and name are 24 px to press (pseudo-elements: the drawn tile and
+  the measured name are unchanged); the home tiles 24 px; the grown pills 24 px tall.
+- **2.5.1, 2.5.7** — ‹ › beside a swipeable picture on a phone too; a tapped aim says "Go down
+  here ↓" (the spread's one tap); ▲ ▼ for the plan's floors; Collages and Architecture listed whole
+  in Search on their layers before a word is typed (Collages first; Architecture in its place in
+  the categories' order, after the works).
+- **1.1.1, 4.1.2, 2.5.3** — the globe's canvas is hidden from screen readers and the page described
+  in words that fit the site as it is now; the museum and place clods named; a saved work's
+  picture is the button (no button inside a button); the three are disclosure buttons that keep
+  the focus when the header is drawn again; names read out begin with the words written ("Enter
+  Paris in 1877", "Walk the building · …", a guide's pill); the "Q16568" birthplace mark is gone
+  (and `build_lives.py` drops a birthplace that is a bare Q-number); a name in Chinese, Japanese or
+  Korean script says its language.
+- **2.4.2, 4.1.3** — `document.title` says the view ("Paris Street; Rainy Day · Works — Matthew
+  Livingston"); the address never changes. A polite line says where you are when the focus did
+  not move (a played path); a life's or a movement's year line is said once the dial rests; in the
+  place, then, only the work's line is said, not its whole wall label.
+- The full screen (zoom.js) is a modal dialog that keeps the focus and gives it back.
+
+**Still open**
+- Contrast is measured on the pixels behind: text over the moving globe (names on the world, a
+  readout over a bright sea) can still dip under 4.5:1 for a moment.
+- Lists are marked only where the rows are wrappers (galleries, museums); rows that are buttons
+  (Search, the guide, threads) are not lists yet.
+- Other modules keep their own reduced-motion flag (guide.js, characters.js, walks.js): Hold still
+  stops land.js's motion and first plays, not a played walk's clock (the dial's face pauses that).
+- The globe's marks come in Tab order as they were made, not nearest first.
+- 1.4.4, 1.4.10, 1.4.12 (200 % text, 320 px, text spacing) and 1.4.11 (the dial's ticks at 3:1)
+  have not been measured.
+- The exploration tray's ↑ / ↓ were not added (the tray's "+" is hidden, `MAKER = false`).

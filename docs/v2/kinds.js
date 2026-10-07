@@ -998,9 +998,11 @@
     h.appendChild(spectrum(it, kd));
     // The three.
     var tabs = el("div", "kinds-tabs");
-    tabs.setAttribute("role", "tablist");
+    // Three disclosure buttons (WCAG 4.1.2): each opens its list in place, under them.
+    tabs.setAttribute("role", "group");
     tabs.setAttribute("aria-label", "Three ways on from here");
     var panel = el("div", "kinds-panel");
+    panel.id = "kinds-panel-" + (++panelSeq);
     panel.hidden = true;
     var three = row ? [row.first, row.second, row.third] : [];
     three.forEach(function (tab) {
@@ -1009,8 +1011,8 @@
       var tk = kindOf(tb.kind);
       var b = el("button", "kinds-tab");
       b.type = "button";
-      b.setAttribute("role", "tab");
       b.dataset.tab = tab;
+      b.setAttribute("aria-controls", panel.id);
       b.style.setProperty("--kt", tk.tone);
       var tg = el("span", "kinds-tab-glyph", tk.glyph);
       tg.setAttribute("aria-hidden", "true");
@@ -1019,13 +1021,15 @@
       b.appendChild(lab);
       var n = el("span", "kinds-tab-n", "");
       b.appendChild(n);
-      b.setAttribute("aria-selected", cur.tab === tab ? "true" : "false");
+      b.setAttribute("aria-expanded", cur.tab === tab ? "true" : "false");
       b.addEventListener("click", function (event) {
         event.stopPropagation();
-        if (cur.tab === tab) { cur.tab = null; panel.hidden = true; panel.textContent = ""; mark(); syncTrail(); render(); return; }
+        var keyed = b === document.activeElement;
+        if (cur.tab === tab) { cur.tab = null; panel.hidden = true; panel.textContent = ""; mark(); syncTrail(); render(); refocus(tab, keyed); return; }
         cur.tab = tab;
         syncTrail();
         render();
+        refocus(tab, keyed);
       });
       tabs.appendChild(b);
       // Counts, and a label the list may change (Movements → Circle).
@@ -1038,7 +1042,7 @@
       });
     });
     function mark() {
-      Array.prototype.forEach.call(tabs.children, function (b) { b.setAttribute("aria-selected", b.dataset.tab === cur.tab ? "true" : "false"); });
+      Array.prototype.forEach.call(tabs.children, function (b) { b.setAttribute("aria-expanded", b.dataset.tab === cur.tab ? "true" : "false"); });
     }
     h.appendChild(tabs);
     h.appendChild(panel);
@@ -1067,6 +1071,13 @@
     }
   }
   var viewNow = null;
+  var panelSeq = 0;
+  // The header is drawn again on every press: the button pressed keeps the focus (WCAG 2.4.3).
+  function refocus(tab, keyed) {
+    if (!keyed || !hostEl) { return; }
+    var nb = hostEl.querySelector('.kinds-tab[data-tab="' + tab + '"]');
+    if (nb) { nb.focus({ preventScroll: true }); }
+  }
   var SUBNAME = {
     institution: function () { return "a museum"; },
     collection: function () { return "a collection"; },
@@ -1276,7 +1287,10 @@
     grouping = true;
     // Segments: a heading and what follows it, or a box of a module's with its heading in it.
     var segs = [], seg = null;
+    // Hold still (a11y.js's row for "still") is no group's: it is kept first.
+    var stillEl = found.querySelector(":scope > .a11y-still-row");
     Array.prototype.slice.call(found.children).forEach(function (c) {
+      if (c === stillEl) { return; }
       var h = c.classList.contains("finder-group") ? c : c.querySelector && c.querySelector(".finder-group");
       if (h && !c.classList.contains("finder-foot") && !h.classList.contains("finder-foot")) {
         seg = { head: h, els: [c], kind: h.dataset.kinds || catOf(h.textContent.replace(/^\S\s/, "")) };
@@ -1295,6 +1309,7 @@
       else { var gl = el("span", "kinds-find-tag kinds-find-glyph", kd.glyph); gl.setAttribute("aria-hidden", "true"); s.head.insertBefore(gl, s.head.firstChild); }
     });
     // In the spectrum's order (KINDS.md's), what has no category last as it was.
+    // Hold still (a11y.js's row for "still") stays first.
     var rank = function (s) { var i = s.kind ? T.order.indexOf(s.kind) : -1; return i < 0 ? 99 : i; };
     var sorted = segs.map(function (s, i) { return { s: s, i: i }; })
       .sort(function (a, b) { return rank(a.s) - rank(b.s) || a.i - b.i; });
@@ -1304,6 +1319,7 @@
       sorted.forEach(function (o) { o.s.els.forEach(function (e) { if (foot.indexOf(e) < 0) { found.appendChild(e); } }); });
       foot.forEach(function (e) { found.appendChild(e); });
     }
+    if (stillEl && found.firstChild !== stillEl) { found.insertBefore(stillEl, found.firstChild); }
     grouping = false;
   }
   if (found && window.MutationObserver) {

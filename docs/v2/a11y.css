@@ -1,0 +1,227 @@
+/* WCAG 2.2, as DISPLAY.md reads it (artist, 7 Oct 2026). Loaded last: what is
+   here overrides the modules' own rules only where they fell under the line.
+   The look is kept: one focus ring (2 px lilac), hit areas that grow without
+   being drawn, quiet done by colour and a dotted rule instead of a fade. */
+
+/* ---- 2.4.7 Focus visible: one ring, everywhere ------------------------------ */
+:focus-visible {
+  outline: 2px solid #9d95e6 !important;
+  outline-offset: 2px;
+}
+/* The globe itself (a11y.js gives it a place in the tab order): the ring inside the window. */
+#land:focus-visible { outline-offset: -6px; }
+/* The view's heading takes the focus on arrival; it is a heading, not a control. */
+.a11y-h1:focus, [data-a11y-h1]:focus { outline: none !important; }
+[data-a11y-h1]:focus-visible { outline: 2px solid #9d95e6 !important; outline-offset: 3px; }
+/* The dial: its range is kept unseen, so the ring is the dial's, round its face. */
+.building-time.dial:has(.building-time-range:focus-visible),
+.building-time.dial:has(.dial-mode:focus-visible) {
+  outline: 2px solid #9d95e6;
+  outline-offset: 2px;
+}
+/* A mark whose name had no room says its name while it has the focus. */
+.city:focus-visible .city-name,
+.city[data-named="false"]:focus-visible .city-name {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.city[data-named="false"]:focus-visible .city-name {
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(15, 10, 7, 0.86);
+  color: #eadfcd;
+  text-shadow: none;
+}
+
+/* ---- 2.4.3 Focus order: what cannot be seen cannot be reached --------------- */
+/* The globe's marks while you are down in a place (they were only faded out). */
+.land[data-at="city"]:not([data-grown]) .city,
+.land[data-at="flying"] .city,
+.land[data-grown] .city[data-intown] { visibility: hidden !important; }
+
+/* ---- Hold still (2.2.2): the first stop in the tab order, seen when focused -- */
+.still-switch {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  min-height: 32px;
+  padding: 6px 13px;
+  border: 1px solid #9d95e6;
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.94);
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: translateY(-200%);
+}
+.still-switch:focus,
+.still-switch:focus-visible { transform: none; }
+.still-switch[aria-pressed="true"]::after { content: " · on"; color: #9d95e6; }
+/* Find's row for it ("still"). */
+.finder-row.a11y-still-row { border-left: 2px solid #9d95e6; padding-left: 8px; }
+
+/* ---- 1.4.3 Contrast: "later" by colour and a dotted rule, not by a fade ------ */
+.town-museum-row[data-later],
+.town-venue-box[data-later],
+.art-rows .held[data-later],
+.life-period-body [data-later],
+.life-box [data-later] { opacity: 1 !important; }
+.town-museum-row[data-later] img,
+.town-venue-box[data-later] img,
+.art-rows .held[data-later] img,
+.life-period-body [data-later] img,
+.life-box [data-later] img,
+img[data-later] { opacity: 0.34; }
+.town-museum-row[data-later] .town-dia { opacity: 0.34; }
+.town-museum-row[data-later] .town-museum-name,
+.town-museum-row[data-later] .town-go,
+.town-museum-row[data-later] .town-museum-meta,
+.town-venue-box[data-later] .town-venue-name,
+.town-venue-box[data-later] .town-venue-meta,
+.art-rows .held[data-later] figcaption,
+.life-period-body [data-later]:not(img),
+.life-box [data-later]:not(img) {
+  color: #a8927a !important;
+}
+.town-museum-row[data-later] .town-museum-name,
+.town-venue-box[data-later] .town-venue-name,
+.art-rows .held[data-later] figcaption i,
+.life-period-body p[data-later],
+.life-box p[data-later] {
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(168, 146, 122, 0.8);
+  text-underline-offset: 3px;
+}
+/* A museum's mark in its city, later than the dial's year. */
+.land[data-at="city"][data-art="town"] .city[data-in][data-later] { opacity: 1 !important; }
+.land[data-at="city"][data-art="town"] .city[data-in][data-later] .city-dot { opacity: 0.34; }
+.land[data-at="city"][data-art="town"] .city[data-in][data-later] .city-name {
+  color: #a8927a;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+/* The categories' counts, crumbs and the spectrum's ends: the full colour, not a tint of it. */
+.kinds-tab-n { color: #a8927a; }
+.kinds-crumbs { color: #a8927a; }
+.kinds-sep { opacity: 1; }
+.kinds-end { color: #a8927a; }
+/* The banner's under-line: its own colour, not two thirds of it. */
+.banner-under { opacity: 1; }
+/* The pills over a bright globe: a deeper ground under the words. */
+.filter { background: rgba(15, 10, 7, 0.8); }
+/* Words over pictures and the world: a scrim of shadow under them. */
+.art-stop-name {
+  text-shadow: 0 0 2px #0f0a07, 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.75);
+}
+.pt-door { background: rgba(15, 10, 7, 0.86); }
+/* The walk's names over its own drawing: a dark chip under the words (the shadow alone was 2.9:1). */
+.walk-name { text-shadow: 0 0 2px #0f0a07, 0 1px 3px rgba(0, 0, 0, 0.95); background: rgba(15, 10, 7, 0.78); background-clip: content-box; }
+.voice-swipe { opacity: 0.7; background: rgba(15, 10, 7, 0.7); }
+
+/* ---- 2.5.8 Target size: 24 px to press, whatever is drawn ------------------- */
+/* A globe mark's dot: the drawn dot is unchanged, the press reaches 24 px round it. */
+.city > .city-dot { position: relative; }
+.city > .city-dot::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  min-width: 100%;
+  min-height: 100%;
+  transform: translate(-50%, -50%);
+}
+/* Its name: 24 px tall to press (a pseudo-element, so the name's measured box is unchanged),
+   and the mark's own box 24 px tall without moving what is in it. */
+.city > .city-name { position: relative; }
+.city > .city-name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 24px;
+  transform: translateY(-50%);
+}
+.city {
+  padding-top: calc(var(--s-1) + 3.5px);
+  padding-bottom: calc(var(--s-1) + 3.5px);
+  margin-top: -3.5px;
+  margin-bottom: -3.5px;
+}
+/* The home marks (13 px tiles): pressed anywhere in 24 px round them. */
+.snap-home::after,
+.walk-door::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+}
+/* The pills on a grown globe: 24 px tall on a phone too. */
+.filter[data-grown] .filter-layer { min-height: 24px; }
+/* A button that leaves a ground: the aimed dive's one tap. */
+.dive-aim-go {
+  display: block;
+  margin: 4px auto 0;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid rgba(157, 149, 230, 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: #eadfcd;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.dive-aim-go:hover { border-color: #9d95e6; color: #ffffff; }
+/* The plan's floors by a press (walk.js). */
+.walk-floors {
+  position: absolute;
+  right: 12px;
+  top: 38%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.walk-floors[hidden] { display: none; }
+.walk-floor {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(234, 223, 205, 0.45);
+  border-radius: 2px;
+  background: rgba(15, 10, 7, 0.8);
+  color: #eadfcd;
+  font-size: 12px;
+  line-height: 30px;
+  cursor: pointer;
+}
+.walk-floor:disabled { opacity: 0.55; cursor: default; }
+.walk[data-level="walk"] .walk-floors,
+.walk[data-level="look"] .walk-floors { display: none; }
+
+/* A line said for a screen reader only (a11y.js). */
+.a11y-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

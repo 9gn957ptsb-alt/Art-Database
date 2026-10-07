@@ -678,7 +678,9 @@ def main():
     # The Artists layer: one mark an artist, at the birthplace; a town where several were born, one mark.
     clusters = collections.OrderedDict()
     for k, L in enumerate(lives):
-        if not L['b']:
+        # A birthplace Wikidata left without an English label comes as its bare Q-number:
+        # that is not a name to write on the globe (WCAG 1.1.1: the mark would say "Q16568").
+        if not L['b'] or re.match(r'^Q\d+$', str(L['b'][0] or '')):
             continue
         ll = L['b'][1]
         # A birthplace within 40 km of a city of the site is the busiest such city's (Brooklyn is New York's);

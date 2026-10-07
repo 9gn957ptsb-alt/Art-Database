@@ -147,7 +147,7 @@
 .kinds-tab-label { overflow: hidden; text-overflow: ellipsis; }
 .kinds-tab-n { color: rgba(168, 146, 122, 0.7); letter-spacing: 0; }
 .kinds-tab:hover, .kinds-tab:focus-visible { color: #eadfcd; }
-.kinds-tab[aria-selected="true"] { color: #eadfcd; border-bottom-color: var(--kt); }
+.kinds-tab[aria-expanded="true"] { color: #eadfcd; border-bottom-color: var(--kt); }
 .kinds-tab[data-empty] { opacity: 0.45; }
 .kinds-tab:focus-visible { outline: 1px solid var(--kt); outline-offset: 2px; }
 
