@@ -158,9 +158,13 @@
   .explore-dock { top: 80px; right: 16px; flex-direction: row-reverse; align-items: center; }
   .explore-menu { position: absolute; top: 38px; right: 0; }
   .explore-tray { top: 120px; right: 16px; max-height: calc(100vh - 150px); }
-  .walk-strip.explore-strip { top: 120px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-chip[data-pulse="true"] { animation: none; }
   .explore-stop { transition: none; }
 }
+
+/* Hidden for now at the artist's request (7 Oct 2026: "Get rid of the exploration button, keep the
+   function in mind going forward though"): the "+" and its chip. The code is kept whole; delete this
+   rule to bring them back. Published explorations, the relay and codes in Find still work. */
+.explore-dock { display: none !important; }
