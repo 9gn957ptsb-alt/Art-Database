@@ -19371,6 +19371,21 @@
     // beside it; under the banner on a phone, the globe below it. Swapped
     // into the lens's place, it stands in the middle of it.
     if (mode === "rest" && !lensSwapped) { if (W > 720) { x = room.x; } else { y = room.y; } }
+    // A picture narrower than its band stands in the middle of it: its label starts at its own left
+    // edge, as a wall label does, not at the band's, and is measured again at that width (narrower,
+    // so taller) — the picture giving up the height it takes, a few times until they agree.
+    var lx = room.x, lw = room.w;
+    for (var pass = 0; lab && pass < 3 && x > room.x + 1; pass++) {
+      lx = x; lw = room.x + room.w - x;
+      var lh = Math.min(b.h * 0.45, labelHeight(lw));
+      if (lh <= lab.h + 0.5) { break; }
+      lab.h = lh;
+      room.h = b.h - lh - 6;
+      w = Math.max(40, Math.min(room.w, room.h * aspect)); hh = w / aspect;
+      x = room.x + (room.w - w) / 2;
+      y = mode === "rest" && !lensSwapped ? room.y : room.y + (room.h - hh) / 2;
+      lx = x; lw = room.x + room.w - x;
+    }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
@@ -19380,9 +19395,9 @@
     if (zb && zb.node === artPlate) { zb.relayout(); }
     if (lab) {
       var ls = artLabel.style;
-      ls.left = room.x.toFixed(1) + "px";
+      ls.left = lx.toFixed(1) + "px";
       ls.top = (y + hh + 6).toFixed(1) + "px";
-      ls.width = room.w.toFixed(1) + "px";
+      ls.width = lw.toFixed(1) + "px";
       delete artLabel.dataset.side;
     }
   }
