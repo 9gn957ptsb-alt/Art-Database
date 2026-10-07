@@ -93,6 +93,7 @@ shows, a collection is Museums, a publication is Writings). `why` says how the t
 | movement | movement | artists | works | places | who was there; their works of those years; the city and where its artists came from |
 | place | place | museums | galleries | artists | a city: its museums (history), its galleries, fairs and sale rooms (now), the artists born, working and shown there |
 | lifeplace | place | made | herethen | nowat | a place in a life, entered from it ("The place, then"): the works made there in those years; who else was there then; where those works are now |
+| guide | gallery | shows | artists | places | a city's guide (guide.js, GUIDE.md): what is on there now and soon, the artists shown (the saved ones first), and the venues as places on the city. Drawn by guide.js in the city's column under the city's own three, not yet a kinds.js item |
 | building | building | places | museums | buildings | a building: its town, the museums near it, the other buildings near it |
 | animal | animal | artist | walks | places | an animal: the artist it is drawn after, its walks, the cities on its artist's map |
 
