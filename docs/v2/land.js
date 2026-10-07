@@ -5618,6 +5618,7 @@
     if (!place) { placeWords(); }
     if (place && !flying) { stepGrown(); } else if (grown) { grownOff(); }
     placeZooms();
+    stepParts();
     if (!place || flying || grown) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
     if (art && !dive.on) { stepArt(now); stepCityMap(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
@@ -8928,10 +8929,10 @@
             return;
           }
           lensTapAt = nowT;
-          if (!lensSwapped && !lensAway()) {
+          if (partsNow().globe !== "big" && !lensAway()) {
             squashing = null;
             hideDoor();
-            lensTapT = window.setTimeout(function () { if (!lensAway()) { setSwap(true); } }, 320);
+            lensTapT = window.setTimeout(function () { if (!lensAway()) { swapWithBig("globe"); } }, 320);
             return;
           }
         }
@@ -13834,6 +13835,8 @@
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
   }
   function fingerDown(event) {
+    // A first finger begins a new gesture: a finger whose lifting was never heard is not still down.
+    if (event.isPrimary) { downFingers = {}; lensPinch = null; cityPinch = null; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
     lensPinch = null;
@@ -13870,6 +13873,8 @@
   }
   function fingerMove(event) {
     if (!downFingers[event.pointerId]) { return; }
+    // The map in the big place moves and zooms itself (and is never the way up).
+    if (flat && !flat.cv.hidden && event.target === flat.cv) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     var d = downSpread();
     if (cityPinch && d > 0) { cityPinchMove(d); return; }
@@ -14841,6 +14846,13 @@
     // the lens is; the lens flown to a voice's distance; the picture of the
     // moment; the tense under the dial's years; the lens and picture swapped.
     reading: function () { return readingState(); },
+    // The three parts and the globe's map (for the tests).
+    parts: function () { return { parts: partsNow(), away: partsAway() }; },
+    flat: function () {
+      if (!flat || flat.cv.hidden || !flat.rect) { return null; }
+      return { rect: flat.rect, k: flat.k, lat: flat.lat / RAD, lon: flat.lon / RAD,
+               shown: (flat.shown || []).map(function (q) { return { x: q.x, y: q.y, named: q.named, title: q.c.title || "" }; }) };
+    },
     // The city as a map (for the tests): its zoom, its framing, its ends, where it looks.
     map: function () {
       if (!cityMap()) { return null; }
@@ -15726,7 +15738,7 @@
       var under = banner && !banner.hidden ? bannerUnder.getBoundingClientRect().bottom : 0;
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.3 * H), colTop = Math.round(0.64 * H);
       // A view with no picture to show (artist, 7 Oct 2026): no empty band; its sentence, then the globe.
-      if (art && art.noPicture) { ph = lens ? 58 : 0; colTop = Math.round(0.56 * H); }
+      if (art && art.noPicture && partsNow().picture === "big") { ph = lens ? 58 : 0; colTop = Math.round(0.56 * H); }
       var gy = top + ph + 6, cap = lens ? 52 : 0;
       var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
       var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
@@ -15736,7 +15748,7 @@
             dial: { x: W - 136 - 12, y: Math.round(gy + (globe.h - 136) / 2) },
             colTop: colTop, phone: true };
     } else {
-      var pw = art && art.noPicture ? 0 : Math.round(Math.min(0.34 * W, 560)), capD = lens ? 64 : 0;
+      var pw = art && art.noPicture && partsNow().picture === "big" ? 0 : Math.round(Math.min(0.34 * W, 560)), capD = lens ? 64 : 0;
       var plate = { x: 24, y: 84, w: pw, h: H - 84 - 36 - capD };
       var gx = plate.x + pw + 16, band = { x: gx, y: 68, w: Math.max(200, W - colW - gx), h: H - 148 };
       // The lens over the dial, the pair in the middle of the band's height.
@@ -15755,19 +15767,38 @@
       b.globe = W <= 720 ? globe : b.band;
       return b;
     }
-    // Swapped: the world takes the picture's place, and the picture the lens's.
-    var L = b.lens;
+    // Three places — the big one, the small one beside the dial, the dial's own — and three parts in
+    // them, the globe, the picture and the dial (artist, 7 Oct 2026: "throw the dial into the mix as
+    // far interchangeable parts … Each one should adapt to its new shape but maintain its
+    // functionality"). At home the picture is big, the globe small and the dial in its place.
+    var L = b.lens, DS = b.phone ? 136 : 168;
     var sq = { x: L.x - L.r, y: L.y - L.r, w: 2 * L.r, h: 2 * L.r };
-    if (lensSwapped) {
-      var big = { x: b.plate.x, y: b.plate.y, w: b.plate.w, h: b.plate.h + (b.cap.h || 0) };
+    var big = { x: b.plate.x, y: b.plate.y, w: b.plate.w, h: b.plate.h + (b.cap.h || 0) };
+    var dsl = { x: b.dial.x, y: b.dial.y, w: DS, h: DS };
+    var slots = { big: big, small: sq, dial: dsl };
+    var P = partsNow();
+    b.slots = slots;
+    b.parts = P;
+    if (P.globe === "big") {
       b.hole = { x: big.x, y: big.y, w: big.w, h: big.h, round: 4 };
       b.globe = big;
       b.lensAt = { x: big.x + big.w / 2, y: big.y + big.h / 2, r: Math.min(big.w, big.h) / 2 };
-      b.plate = { x: sq.x + 8, y: sq.y + 8, w: sq.w - 16, h: sq.h - 16 };
     } else {
-      b.hole = { x: sq.x, y: sq.y, w: sq.w, h: sq.h, round: -1 };
-      b.globe = sq;
-      b.lensAt = L;
+      var gs = slots[P.globe], gr = P.globe === "small" ? L.r : DS / 2 - 4;
+      var gx0 = gs.x + gs.w / 2, gy0 = gs.y + gs.h / 2;
+      b.hole = { x: gx0 - gr, y: gy0 - gr, w: 2 * gr, h: 2 * gr, round: -1 };
+      b.globe = { x: b.hole.x, y: b.hole.y, w: b.hole.w, h: b.hole.h };
+      b.lensAt = P.globe === "small" ? L : { x: gx0, y: gy0, r: gr };
+    }
+    if (P.picture !== "big") {
+      var ps = slots[P.picture];
+      b.plate = { x: ps.x + 8, y: ps.y + 8, w: ps.w - 16, h: ps.h - 16 };
+    }
+    if (P.dial === "big") {
+      b.dialBand = big;
+      b.dial = { x: Math.round(big.x), y: Math.round(big.y) };
+    } else if (P.dial === "small") {
+      b.dial = { x: Math.round(sq.x + (sq.w - DS) / 2), y: Math.round(sq.y + (sq.h - DS) / 2) };
     }
     return b;
   }
@@ -15777,11 +15808,12 @@
   function layoutWork() {
     var st = artEl.style;
     ["--work-col-top", "--work-dial-left", "--work-dial-top", "--work-edge-x", "--work-edge-y",
-     "--hole-x", "--hole-y", "--hole-w", "--hole-h", "--hole-round"].forEach(function (k) {
+     "--hole-x", "--hole-y", "--hole-w", "--hole-h", "--hole-round", "--band-w", "--band-h"].forEach(function (k) {
       st.removeProperty(k);
     });
     if (!art || !readKind(art.kind)) {
-      delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped;
+      delete artEl.dataset.plate; delete artEl.dataset.read; delete artEl.dataset.swapped; delete artEl.dataset.parts;
+      if (artTime) { delete artTime.dataset.slot; delete artTime.dataset.form; }
       lensOut = false;
       delete artEl.dataset.out;
       clipWorld(null);
@@ -15804,8 +15836,38 @@
       st.setProperty("--hole-h", b.hole.h.toFixed(1) + "px");
       st.setProperty("--hole-round", b.hole.round < 0 ? "50%" : b.hole.round + "px");
     }
+    // The three parts: where the dial stands, and in what form.
+    var PP = b.parts || PARTS0;
+    artEl.dataset.parts = PP.globe.charAt(0) + PP.picture.charAt(0) + PP.dial.charAt(0);
+    if (artTime) {
+      if (PP.dial !== "dial") { artTime.dataset.slot = PP.dial; } else { delete artTime.dataset.slot; }
+      if (b.dialBand) {
+        artTime.dataset.form = "band";
+        st.setProperty("--band-w", Math.round(b.dialBand.w) + "px");
+        st.setProperty("--band-h", Math.round(b.dialBand.h) + "px");
+      } else { delete artTime.dataset.form; }
+    }
+    if (dialSwapEl) {
+      var bigDial = PP.dial === "big";
+      dialSwapEl.textContent = bigDial ? "\u2199" : "\u2922";
+      dialSwapEl.setAttribute("aria-label", bigDial ? "The dial back to its place" : "The dial in the big place");
+      dialSwapEl.title = bigDial ? "Back to its place" : "The dial, large";
+    }
     if (lensVeil) { lensVeil.hidden = !LENS; }
     clipWorld(b);
+  }
+  // The dial's way into the big place (and back): one press, and the keyboard's (DISPLAY.md 2.5.7).
+  var dialSwapEl = null;
+  if (artTime) {
+    dialSwapEl = el("button", "dial-swap", "\u2922");
+    dialSwapEl.type = "button";
+    dialSwapEl.setAttribute("aria-label", "The dial in the big place");
+    dialSwapEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    dialSwapEl.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (partsNow().dial === "big") { partsHome(); } else { swapWithBig("dial"); }
+    });
+    artTime.appendChild(dialSwapEl);
   }
 
   /* The world itself is drawn only in the lens (every canvas of the stage
@@ -15817,6 +15879,12 @@
   function clipWorld(b) {
     window.clearTimeout(clipShut);
     var on = !!(b && b.hole && LENS && art && art.live && readKind(art.kind)) && !lensOut;
+    // The globe flattened into a map in the big place: the round world is not drawn at all.
+    if (on && mapOn()) {
+      stage.dataset.lens = "round";
+      stage.style.setProperty("--lens-clip", "circle(0px at -20px -20px)");
+      return;
+    }
     if (!on) {
       delete stage.dataset.lens;
       stage.style.removeProperty("--lens-clip");
@@ -15855,6 +15923,7 @@
   function globeZone(x, y) {
     if (!readingOn() || !LENS) { return false; }
     if (artEl.dataset.full) { return false; }
+    if (mapOn() && flat && flat.rect && x >= flat.rect.x && x <= flat.rect.x + flat.rect.w && y >= flat.rect.y && y <= flat.rect.y + flat.rect.h) { return false; }
     function inRect(e) {
       if (!e || e.hidden) { return false; }
       var r = e.getBoundingClientRect();
@@ -16167,7 +16236,7 @@
     if (!LENS_GLOBE || !a || !place || !readingOn() || flying) { return false; }
     window.clearTimeout(lensTapT);
     a.zoomK = 1;
-    if (lensSwapped) { setSwap(false); }
+    if (partsAway()) { partsHome(); }
     if (a.lensSpec) {
       var spec = {};
       Object.keys(a.lensSpec).forEach(function (k) { spec[k] = a.lensSpec[k]; });
@@ -16196,14 +16265,14 @@
   }
   function placeLensHome() {
     if (!lensHomeEl) { return; }
-    var show = lensAway() && !artEl.dataset.full;
+    var show = (lensAway() || partsAway()) && !artEl.dataset.full;
     lensHomeEl.hidden = !show;
     if (!show) { return; }
     var b = workBands(), x, y;
     if (lensSwapped) {
       x = b.hole.x + 6; y = b.hole.y + 6;
     } else {
-      var L = b.lens, o = 0.707 * L.r;
+      var L = b.lensAt, o = 0.707 * L.r;
       x = L.x - o - 19; y = L.y - o - 19;
       // Clear of the dial's own home mark.
       var dh = artTime && artTime.querySelector(".dial-home");
@@ -16283,8 +16352,8 @@
   }
   var lensZoom = null, frontZoom = null;
   if (artEl) {
-    lensZoom = zoomPair("lens-zoom", function () { if (!lensStepBy(ZOOM_STEP)) { goDeeper(false); } },
-                        function () { lensStepBy(1 / ZOOM_STEP); });
+    lensZoom = zoomPair("lens-zoom", function () { if (mapOn()) { mapStepBy(ZOOM_STEP); return; } if (!lensStepBy(ZOOM_STEP)) { goDeeper(false); } },
+                        function () { if (mapOn()) { mapStepBy(1 / ZOOM_STEP); return; } lensStepBy(1 / ZOOM_STEP); });
     artEl.appendChild(lensZoom.box);
   }
   if (land) {
@@ -16322,12 +16391,22 @@
     if (!on) { putPair(lensZoom, false); return; }
     var b = workBands();
     if (lensSwapped) {
-      var h = b.hole, ss = coarse ? 44 : 32;
-      putPair(lensZoom, true, h.x + h.w - ss - 8, h.y + h.h - 2 * ss - 14, h.x + h.w - ss - 8, h.y + h.h - ss - 8, ss);
+      // In the big place: down its right edge, clear of the pills, the sentence and the corner's buttons.
+      var h = b.hole, ss = coarse ? 44 : 32, ax = h.x + h.w - ss - 8;
+      var av = [boxOf(filterEl), boxOf(document.querySelector(".explore-dock")), boxOf(lensHomeEl), boxOf(banner)];
+      Array.prototype.forEach.call(artEl.querySelectorAll(".voice-cap"), function (e) { if ((e.textContent || "").trim()) { av.push(boxOf(e)); } });
+      for (var sy = h.y + h.h - 2 * ss - 16; sy >= h.y + 8; sy -= 8) {
+        var sb = { x: ax, y: sy, w: ss, h: 2 * ss + 8 };
+        if (!av.some(function (r) { return meets(sb, r, 4); })) {
+          putPair(lensZoom, true, ax, sy, ax, sy + ss + 8, ss);
+          return;
+        }
+      }
+      putPair(lensZoom, true, ax, h.y + 8, ax, h.y + ss + 16, ss);
       return;
     }
-    // Round the rim of the small globe at rest, where nothing else stands.
-    var L = b.lens, rr = LENS_REST * L.r;
+    // Round the rim of the small globe at rest (wherever it stands), where nothing else stands.
+    var L = b.lensAt, rr = LENS_REST * L.r;
     var avoid = [boxOf(artTime), boxOf(artCol), boxOf(banner), boxOf(lensHomeEl), boxOf(filterEl)];
     if (artPlate && !artPlate.hidden && !lensOut) {
       avoid.push({ left: artPlate.offsetLeft, top: artPlate.offsetTop,
@@ -16620,6 +16699,293 @@
     }
   }
 
+  /* ---- the globe flattened: the map ---------------------------------------------
+
+     In the big place the globe is a flat map (artist, 7 Oct 2026: "The
+     globe goes from a circle to a rectangular map … with time that outlines
+     corresponding histories and movements"): plate carrée, the body of works
+     cell by cell (EarthBody's own colours; without it, land and sea), centred
+     on what is told; a finger moves it, two fingers, a wheel or + and −
+     make it bigger or smaller; the layer's marks on it, named by the calm
+     rules' count and pressed as on the globe; the pills at its foot. Over it
+     the view's history in pixel light — a work's journey, a life's places, a
+     movement's or a thread's points — lit up to the dial's year, so turning
+     the year lights the way on the map. Back in a round place it is the
+     globe again, about the same middle. */
+  var MAP_FORM = true;
+  var flat = null;          // { cv, g, lat, lon, k (px a radian), key, world }
+  function mapOn() {
+    return !!(MAP_FORM && LENS && art && place && art.live && readingOn() && partsNow().globe === "big" && !dive.on);
+  }
+  function mapWorld() {
+    if (flat.world !== undefined) { return flat.world; }
+    var W0 = 1024, H0 = 512, cv = document.createElement("canvas");
+    cv.width = W0; cv.height = H0;
+    var g = cv.getContext("2d"), img = g.createImageData(W0, H0), dd = img.data;
+    var body = window.EarthBody && EarthBody.ready && EarthBody.ready();
+    for (var j = 0; j < H0; j += 1) {
+      var lat = (0.5 - (j + 0.5) / H0) * Math.PI;
+      for (var i = 0; i < W0; i += 1) {
+        var lon = ((i + 0.5) / W0 - 0.5) * TAU, o = (j * W0 + i) * 4, hex = null;
+        if (body) { var dr = EarthBody.doorAt(lat, lon, 60); hex = dr && dr.colour; }
+        if (hex) {
+          var n = parseInt(String(hex).replace("#", ""), 16);
+          dd[o] = n >> 16 & 255; dd[o + 1] = n >> 8 & 255; dd[o + 2] = n & 255;
+        } else if (onLand(lat, lon)) { dd[o] = 138; dd[o + 1] = 120; dd[o + 2] = 96; }
+        else { dd[o] = 28; dd[o + 1] = 36; dd[o + 2] = 46; }
+        dd[o + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    flat.world = cv;
+    return cv;
+  }
+  function mapRect() { var b = workBands(); return b.slots ? b.slots.big : null; }
+  function mapXY(lat, lon) {
+    var r = flat.rect;
+    var dl = shortest(flat.lon, lon);
+    return { x: r.x + r.w / 2 + dl * flat.k, y: r.y + r.h / 2 - (lat - flat.lat) * flat.k };
+  }
+  function mapLL(x, y) {
+    var r = flat.rect;
+    return { lat: Math.max(-1.5, Math.min(1.5, flat.lat - (y - r.y - r.h / 2) / flat.k)), lon: wrap(flat.lon + (x - r.x - r.w / 2) / flat.k) };
+  }
+  function mapKLimits() { var r = flat.rect; return { lo: r.w / TAU * 0.8, hi: r.w / TAU * 120 }; }
+  function mapCheck(force) {
+    var on = mapOn();
+    if (!on) {
+      if (flat && !flat.cv.hidden) { flat.cv.hidden = true; delete artEl.dataset.map; delete document.body.dataset.flatmap; }
+      return;
+    }
+    if (!flat) { mapSetUp(); }
+    var rect = mapRect();
+    if (!rect) { return; }
+    if (flat.cv.hidden || force) {
+      flat.cv.hidden = false;
+      artEl.dataset.map = "true";
+      document.body.dataset.flatmap = "true";
+      if (!flat.placed || flat.placedFor !== art) {
+        flat.placedFor = art;
+        flat.placed = true;
+        flat.lat = focus.lat;
+        flat.lon = wrap(spin);
+        flat.k = rect.w / TAU * 1.6;
+      }
+      clipWorld(workBands());
+    }
+    flat.rect = rect;
+    var st = flat.cv.style;
+    st.left = rect.x + "px"; st.top = rect.y + "px"; st.width = rect.w + "px"; st.height = rect.h + "px";
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    if (flat.cv.width !== Math.round(rect.w * d)) { flat.cv.width = Math.round(rect.w * d); flat.cv.height = Math.round(rect.h * d); flat.key = ""; }
+    flat.dpr = d;
+    var lim = mapKLimits();
+    flat.k = Math.max(lim.lo, Math.min(lim.hi, flat.k));
+    flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat));
+    mapDraw();
+  }
+  // Leaving the big place: the globe, about the map's middle.
+  function mapLeave() {
+    if (!flat || !flat.placed) { return; }
+    spin = wanted = flat.lon;
+    lean(flat.lat);
+    focus.lat = tilt;
+    reframe();
+    flat.placed = false;
+    if (art) { art.dirty = true; }
+  }
+  // The history the view tells, as ways in time: [[lat, lon, year|null], ...] runs.
+  function mapRoutes() {
+    var a = art, out = [];
+    if (!a) { return out; }
+    if (a.kind === "work" && a.stops) {
+      out.push(a.stops.map(function (s) { return { lat: s.lat, lon: s.lon, pos: a.evs[s.first].pos, name: (s.name || "").split(",")[0] }; }));
+      return out;
+    }
+    if (a.kind === "life" && a.data && a.data.id && !/^born:/.test(a.data.id) && window.Lives && Lives._life) {
+      var L = Lives._life(a.data.id);
+      if (L) {
+        var run = [];
+        if (L.b && L.b[1]) { run.push({ lat: L.b[1][0] * RAD, lon: L.b[1][1] * RAD, y: L.born, name: L.b[0] }); }
+        L.periods.forEach(function (p) { if (p.ll) { run.push({ lat: p.ll[0] * RAD, lon: p.ll[1] * RAD, y: p.y0, name: p.place }); } });
+        out.push(run);
+        return out;
+      }
+    }
+    var pts = a.data && a.data.pts;
+    if (pts && pts.length) { out.push(pts.map(function (q) { return { lat: q[0] * RAD, lon: q[1] * RAD, y: null }; })); }
+    return out;
+  }
+  function mapMarks() {
+    return cities.filter(function (c) { return !c.off && isFinite(c.lat) && c.el; });
+  }
+  function mapDraw() {
+    var a = art, r = flat.rect, d = flat.dpr;
+    var yr = a && a.dated ? yearAt(a, Math.max(0, a.when)) : null;
+    var key = [r.x, r.y, r.w, r.h, flat.lat.toFixed(4), flat.lon.toFixed(4), flat.k.toFixed(2), a && a.when, layerOn, a && a.ring,
+               flat.hover || "", d, flat.world ? 1 : 0].join("|");
+    if (key === flat.key) { return; }
+    flat.key = key;
+    var g = flat.g;
+    g.setTransform(d, 0, 0, d, 0, 0);
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = "#0f0a07";
+    g.fillRect(0, 0, r.w, r.h);
+    var world = mapWorld(), ww = TAU * flat.k, wh = Math.PI * flat.k;
+    var x0 = r.w / 2 - (flat.lon + Math.PI) * flat.k, y0 = r.h / 2 - (Math.PI / 2 - flat.lat) * flat.k;
+    x0 = ((x0 % ww) + ww) % ww - ww;
+    for (var x = x0; x < r.w; x += ww) { g.drawImage(world, x, y0, ww, wh); }
+    // A shade so the light reads.
+    g.fillStyle = "rgba(15, 10, 7, 0.28)";
+    g.fillRect(0, 0, r.w, r.h);
+    // The history, in pixel light: lit up to the dial's year, faint ahead.
+    var T = 6;
+    mapRoutes().forEach(function (run) {
+      for (var i = 0; i < run.length; i += 1) {
+        var p = run[i], lit = p.pos !== undefined ? p.pos <= (a.when || 0) + 1e-9 : p.y === null || p.y === undefined || yr === null || p.y <= yr;
+        var q = mapXY(p.lat, p.lon), qx = q.x - r.x, qy = q.y - r.y;
+        if (i > 0) {
+          var o = mapXY(run[i - 1].lat, run[i - 1].lon), ox = o.x - r.x, oy = o.y - r.y;
+          var n = Math.max(1, Math.round(Math.hypot(qx - ox, qy - oy) / T));
+          for (var k = 0; k <= n; k += 1) {
+            if (!lit && k % 2) { continue; }
+            var tx = ox + (qx - ox) * k / n, ty = oy + (qy - oy) * k / n;
+            g.fillStyle = lit ? "rgba(234, 223, 205, 0.85)" : "rgba(157, 149, 230, 0.35)";
+            g.fillRect(Math.round(tx) - 1.5, Math.round(ty) - 1.5, 3, 3);
+          }
+        }
+        var cur = a.kind === "work" ? a.ring === i : false;
+        g.fillStyle = lit ? (cur ? "#ffffff" : LIGHT) : "rgba(157, 149, 230, 0.45)";
+        g.fillRect(Math.round(qx) - 3, Math.round(qy) - 3, 6, 6);
+        if (cur) { g.strokeStyle = LILAC; g.lineWidth = 1.5; g.strokeRect(Math.round(qx) - 6.5, Math.round(qy) - 6.5, 13, 13); }
+      }
+    });
+    // The layer's marks; the biggest named, never over each other.
+    var marks = mapMarks(), shown = [], taken = [], most = Math.max(5, Math.min(14, Math.round(r.w * r.h / 16000)));
+    g.font = "10px " + dialFont;
+    g.textBaseline = "middle";
+    marks.map(function (c) { return { c: c, rank: c.town ? c.town.rank : 1 }; })
+      .sort(function (u, v) { return v.rank - u.rank; })
+      .forEach(function (m) {
+        var q = mapXY(m.c.lat, m.c.lon), qx = q.x - r.x, qy = q.y - r.y;
+        if (qx < 2 || qy < 2 || qx > r.w - 2 || qy > r.h - 2) { return; }
+        g.fillStyle = m.c.town && m.c.town.museums.length ? "#eadfcd" : "rgba(157, 149, 230, 0.8)";
+        g.fillRect(Math.round(qx) - 2, Math.round(qy) - 2, 4, 4);
+        var item = { c: m.c, x: q.x, y: q.y, named: false };
+        if (shown.filter(function (s2) { return s2.named; }).length < most) {
+          var label = String(m.c.label || m.c.title || "").split(",")[0].toUpperCase(), tw = g.measureText(label).width;
+          var bx = { x0: qx + 5, y0: qy - 6, x1: qx + 7 + tw, y1: qy + 6 };
+          if (bx.x1 < r.w - 2 && !taken.some(function (t) { return bx.x0 < t.x1 && t.x0 < bx.x1 && bx.y0 < t.y1 && t.y0 < bx.y1; })) {
+            taken.push(bx);
+            g.fillStyle = "rgba(234, 223, 205, 0.9)";
+            g.fillText(label, qx + 6, qy);
+            item.named = true;
+          }
+        }
+        shown.push(item);
+      });
+    flat.shown = shown;
+  }
+  function mapSetUp() {
+    var cv = el("canvas", "flat-map");
+    cv.hidden = true;
+    cv.setAttribute("role", "img");
+    cv.setAttribute("aria-label", "The world as a map, with the history told on it");
+    flat = { cv: cv, g: cv.getContext("2d"), lat: 0, lon: 0, k: 100, key: "", fingers: {}, world: undefined };
+    if (lensVeil && lensVeil.nextSibling) { artEl.insertBefore(cv, lensVeil.nextSibling); } else { artEl.appendChild(cv); }
+    function two() {
+      var ids = Object.keys(flat.fingers);
+      if (ids.length < 2) { return null; }
+      var p = flat.fingers[ids[0]], q = flat.fingers[ids[1]];
+      return { d: Math.max(10, Math.hypot(p.x - q.x, p.y - q.y)), x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+    }
+    cv.addEventListener("pointerdown", function (event) {
+      event.stopPropagation();
+      try { cv.setPointerCapture(event.pointerId); } catch (e) {}
+      if (event.isPrimary) { flat.fingers = {}; }     // a new gesture: nothing left over from the last
+      flat.fingers[event.pointerId] = { x: event.clientX, y: event.clientY, x0: event.clientX, y0: event.clientY, at: performance.now() };
+      flat.moved = Object.keys(flat.fingers).length > 1 ? 99 : 0;
+      flat.pinch = two();
+    });
+    cv.addEventListener("pointermove", function (event) {
+      var f = flat.fingers[event.pointerId];
+      if (!f) {
+        if (event.pointerType === "mouse") { var hv = mapHit(event.clientX, event.clientY, false); var hk = hv ? hv.slug || hv.title : ""; if (hk !== flat.hover) { flat.hover = hk; cv.style.cursor = hv ? "pointer" : "grab"; } }
+        return;
+      }
+      var dx = event.clientX - f.x, dy = event.clientY - f.y;
+      f.x = event.clientX; f.y = event.clientY;
+      flat.moved = Math.max(flat.moved, Math.abs(f.x - f.x0), Math.abs(f.y - f.y0));
+      var p2 = two();
+      if (p2 && flat.pinch) {
+        mapZoomAbout(p2.d / flat.pinch.d, p2.x, p2.y);
+        flat.lon = wrap(flat.lon - (p2.x - flat.pinch.x) / flat.k);
+        flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat + (p2.y - flat.pinch.y) / flat.k));
+        flat.pinch = p2;
+      } else if (!p2 && flat.moved > 4) {
+        flat.lon = wrap(flat.lon - dx / flat.k);
+        flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat + dy / flat.k));
+      }
+      mapDraw();
+    });
+    ["pointerup", "pointercancel"].forEach(function (name) {
+      cv.addEventListener(name, function (event) {
+        var f = flat.fingers[event.pointerId];
+        delete flat.fingers[event.pointerId];
+        flat.pinch = two();
+        if (!f || name !== "pointerup" || flat.moved > 6 || performance.now() - f.at > 600 || Object.keys(flat.fingers).length) { return; }
+        var hit = mapHit(event.clientX, event.clientY, event.pointerType !== "mouse");
+        if (hit && hit.el) {
+          cameLayer = layerOn;
+          pulse(event.clientX, event.clientY, [LIGHT, LILAC], 0.6, 144);
+          hit.el.click();
+        }
+      });
+    });
+    cv.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var step = event.ctrlKey ? 0.012 : 0.0016;
+      mapZoomAbout(Math.exp(-event.deltaY * (event.deltaMode === 1 ? 16 : 1) * step), event.clientX, event.clientY);
+      mapDraw();
+    }, { passive: false });
+  }
+  function mapZoomAbout(f, x, y) {
+    var lim = mapKLimits(), k1 = Math.max(lim.lo, Math.min(lim.hi, flat.k * f));
+    var ll = mapLL(x, y);
+    flat.k = k1;
+    // The point under the fingers stays under them.
+    var q = mapXY(ll.lat, ll.lon);
+    flat.lon = wrap(flat.lon + (q.x - x) / flat.k);
+    flat.lat = Math.max(-1.3, Math.min(1.3, flat.lat - (q.y - y) / flat.k));
+    return Math.abs(k1 - flat.k) < 1e-9;
+  }
+  function mapStepBy(f) {
+    if (!flat || !flat.rect) { return false; }
+    var lim = mapKLimits(), k0 = flat.k, k1 = Math.max(lim.lo, Math.min(lim.hi, k0 * f));
+    if (Math.abs(k1 - k0) < 1e-6) { return false; }
+    var r = flat.rect, t0 = performance.now();
+    window.cancelAnimationFrame(zoomTween);
+    (function step() {
+      var q = still ? 1 : Math.min(1, (performance.now() - t0) / 260), e = q * (2 - q);
+      flat.k = k0 * Math.pow(k1 / k0, e);
+      mapDraw();
+      if (q < 1) { zoomTween = window.requestAnimationFrame(step); }
+    })();
+    void r;
+    return true;
+  }
+  // The mark a press on the map lands on: within a finger's reach (24 px, 10 with a mouse).
+  function mapHit(x, y, touch) {
+    if (!flat || !flat.shown) { return null; }
+    var best = null, bd = touch ? 24 : 10;
+    flat.shown.forEach(function (s2) {
+      var dd = Math.hypot(s2.x - x, s2.y - y);
+      if (dd < bd) { bd = dd; best = s2.c; }
+    });
+    return best;
+  }
+
   var zoomsAt = 0;
   function placeZooms() {
     var now = performance.now();
@@ -16628,6 +16994,11 @@
     placeLensZoom();
     placeFrontZoom();
     placeCityZoom();
+  }
+  // Each frame: the map follows the view (its year, its layer); the parts go home at the world.
+  function stepParts() {
+    if (!place && parts) { parts = null; }
+    mapCheck(false);
   }
 
   /* ---- the grown globe, a globe you can use --------------------------------
@@ -16812,6 +17183,8 @@
     // A played path's readout beside the dial (transport.js) lies over the globe: no name or mark
     // under it. Not before the pills: the readout keeps off them, so neither chases the other.
     rectOf(document.querySelector(".path-read"), 4);
+    // The round + and − (after the pills, which they keep off).
+    [lensZoom && lensZoom.big, lensZoom && lensZoom.small].forEach(function (e) { rectOf(e, 4); });
     grownAt = { box: box, avoid: avoid };
     var key = [box.x0, box.y0, box.x1, box.y1].map(Math.round).join(",") + "|" +
       avoid.map(function (a) { return [a.x0, a.y0, a.x1, a.y1].map(Math.round).join(","); }).join(";");
@@ -16898,19 +17271,64 @@
      place is the world's, at the same distance); a tap on the picture in the
      lens's place, or Escape, changes them back. */
   function setSwap(on) {
-    var a = art;
     on = !!on && readingOn() && LENS;
-    if (on === lensSwapped) { return; }
+    if (on === (partsNow().globe === "big")) { return; }
+    if (on) { swapWithBig("globe"); } else { partsHome(); }
+  }
+  /* ---- the three parts -----------------------------------------------------------
+
+     The artist, 7 Oct 2026: "I like being able to switch the places of the
+     globe and the artwork, but make sure it works. I also want to throw the
+     dial into the mix as far interchangeable parts: 1) globe, 2) artwork
+     thumbnail, 3) dial. Each one should adapt to its new shape but maintain
+     its functionality". And: "Change the shape of the dial to adapt to the
+     rectangular form in some way. The globe goes from a circle to a
+     rectangular map, something like that but with time that outlines
+     corresponding histories and movements". Three places (workBands: big,
+     small, dial) and three parts: a tap on a part out of the big place
+     swaps it with the big one (the dial by its ⤢); in the big place the
+     globe is a flat map with the view's histories on it in time (the map,
+     below), the dial is unrolled into a band of years (drawDial's band),
+     the picture is the picture. Kept along a path of readings; Escape, the
+     home marks or snapping the small globe home put all three home. */
+  var PARTS0 = { globe: "small", picture: "big", dial: "dial" };
+  var parts = null;
+  function partsNow() { return parts || PARTS0; }
+  function partsAway() { return !!parts; }
+  function swapWithBig(part) {
+    var P = partsNow(), n = { globe: P.globe, picture: P.picture, dial: P.dial };
+    var from = n[part];
+    if (from === "big") { return; }
+    var other = Object.keys(n).filter(function (k) { return n[k] === "big"; })[0];
+    n[part] = "big";
+    n[other] = from;
+    applyParts(n);
+  }
+  function partsHome() { applyParts(null); }
+  function applyParts(n) {
+    var a = art;
+    if (n && n.globe === "small" && n.picture === "big" && n.dial === "dial") { n = null; }
+    if (!readingOn() || !LENS) { n = null; }
+    var wasMap = mapOn();
+    parts = n;
+    var on = partsNow().globe === "big";
+    var changed = on !== lensSwapped;
+    if (wasMap && !on) { mapLeave(); }
+    if (!on && flat) { flat.placed = false; }       // next time the map opens on the globe's middle
     lensSwapped = on;
     layoutWork();
     if (a && !artPlate.hidden) { layoutPlate(null, a.kind === "work" && !a.flipped ? "look" : "rest"); }
-    if (a && a.lensSpec) {
+    dials.forEach(function (o) { o.placed = ""; o.drawn = ""; });
+    if (a) { a.keptAt = 0; }
+    if (a && a.lensSpec && !mapOn()) {
       var spec = {};
       Object.keys(a.lensSpec).forEach(function (k) { spec[k] = a.lensSpec[k]; });
       spec.now = false;
       lensTo(spec);
     }
-    if (window.Voice && Voice.swapped) { Voice.swapped(on); }
+    if (changed && window.Voice && Voice.swapped) { Voice.swapped(on); }
+    zoomsAt = 0;
+    mapCheck(true);
   }
 
   /* What is being read, for voice.js (Land.reading): the view, its year,
@@ -17057,7 +17475,9 @@
     delete artPlate.dataset.shown;
     artTime.hidden = true;
     artEl.dataset.kind = a.kind;
-    lensSwapped = false;
+    // The three parts keep their places along a path of readings; anything else puts them home.
+    if (!readKind(a.kind)) { parts = null; }
+    lensSwapped = readKind(a.kind) && partsNow().globe === "big";
     layoutWork();
     if (a.kind === "work") {
       buildJourney(art);
@@ -17766,6 +18186,8 @@
     var key = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
     if (d.placed === key || d.move) { return; }
     d.placed = key;
+    // In another part's place (the three parts): where layoutWork puts it.
+    if (d.box.dataset.slot) { dialHome(d); return; }
     var p = dialPlace();
     if (p) { dialPut(d, p.x * window.innerWidth, p.y * window.innerHeight); } else { dialHome(d); }
   }
@@ -17879,7 +18301,22 @@
     homeMark.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     homeMark.addEventListener("click", function (event) { event.stopPropagation(); dialGoHome(d); });
     box.appendChild(homeMark);
+    // Unrolled into a band (drawDial): a press on the band as the press on the ring it stands for.
+    function ringEv(event) {
+      if (!d.geo || !event || event.clientX === undefined) { return event; }
+      var r = face.getBoundingClientRect(), p = bandToRing(d.geo, event.clientX - r.left, event.clientY - r.top);
+      return { clientX: r.left + r.width / 2 + (p.x - d.geo.c), clientY: r.top + r.height / 2 + (p.y - d.geo.c),
+               pointerId: event.pointerId, pointerType: event.pointerType, type: event.type, target: event.target,
+               deltaX: event.deltaX, deltaY: event.deltaY,
+               preventDefault: function () { event.preventDefault(); }, stopPropagation: function () { event.stopPropagation(); } };
+    }
+    function hubXY(event) {
+      var r = face.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top;
+      if (d.geo) { var p = bandToRing(d.geo, x, y); return { x: p.x, y: p.y, w: r.width }; }
+      return { x: x, y: y, w: r.width };
+    }
     function tAt(event) {
+      event = ringEv(event);
       var r = face.getBoundingClientRect();
       var a = Math.atan2(event.clientY - r.top - r.height / 2, event.clientX - r.left - r.width / 2);
       var rel = ((a - DIAL_START) % TAU + TAU) % TAU;
@@ -17907,13 +18344,16 @@
       event.preventDefault();
       var r = face.getBoundingClientRect();
       // The face carries it: the inner 30 %, or 22 % while the hub's band is in use there (dialhub.js).
-      var inner = Math.hypot(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2) < r.width * dialInner(d);
+      // Unrolled, the face is the band's left end (play or pause); in another part's place it is not carried.
+      var inner = d.geo ? event.clientX - r.left < d.geo.x0 - 6 :
+        Math.hypot(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2) < r.width * dialInner(d);
       face.setPointerCapture(event.pointerId);
       d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: inner, far: false };
       // The face carries the dial; the ring turns time, as it always has.
-      if (inner) { lift(event); return; }
+      if (inner && !box.dataset.slot) { lift(event); return; }
+      if (inner) { return; }
       // A path being played (transport.js): the ring scrubs its stops, not the view's years.
-      d.tp = !!(window.Dial && Dial.ring && Dial.ring(d, "down", event));
+      d.tp = !!(window.Dial && Dial.ring && Dial.ring(d, "down", ringEv(event)));
       if (!d.tp) {
         range.dispatchEvent(new Event("pointerdown"));
         d.last = null;
@@ -17938,13 +18378,13 @@
         var fr = face.getBoundingClientRect();
         var over = Math.hypot(event.clientX - fr.left - fr.width / 2, event.clientY - fr.top - fr.height / 2) < fr.width * dialInner(d);
         if (over) { face.dataset.over = "face"; } else { delete face.dataset.over; }
-        if (d.range === artRange && window.DialHub && DialHub.hover) { DialHub.hover(d, event.clientX - fr.left, event.clientY - fr.top, fr.width); }
+        if (d.range === artRange && window.DialHub && DialHub.hover) { var hx = hubXY(event); DialHub.hover(d, hx.x, hx.y, hx.w); }
       }
       if (d.down && Math.hypot(event.clientX - d.down.x, event.clientY - d.down.y) > 6) {
         d.down.far = true;
         window.clearTimeout(d.hold);
       }
-      if (d.tp) { event.stopPropagation(); Dial.ring(d, "move", event); return; }
+      if (d.tp) { event.stopPropagation(); Dial.ring(d, "move", ringEv(event)); return; }
       if (d.move) {
         event.stopPropagation();
         if (!d.down || !d.down.far) { return; }
@@ -17960,7 +18400,12 @@
       window.clearTimeout(d.hold);
       var down = d.down;
       d.down = null;
-      if (d.tp) { d.tp = false; event.stopPropagation(); Dial.ring(d, event.type === "pointerup" ? "up" : "cancel", event); return; }
+      if (d.tp) { d.tp = false; event.stopPropagation(); Dial.ring(d, event.type === "pointerup" ? "up" : "cancel", ringEv(event)); return; }
+      // In another part's place (or unrolled) the face is not carried: a tap on it plays or pauses.
+      if (down && down.inner && box.dataset.slot && !d.move) {
+        if (event.type === "pointerup" && window.Dial && Dial.live && Dial.live() && Dial.toggle) { Dial.toggle(); }
+        return;
+      }
       if (d.move) {
         event.stopPropagation();
         var m = d.move;
@@ -18008,8 +18453,8 @@
       range.dispatchEvent(new Event("change", { bubbles: true }));
       // A press on the hub's band that was not a turn opens the mark under it (dialhub.js).
       if (down && !down.far && event.type === "pointerup" && range === artRange && window.DialHub && DialHub.tap) {
-        var tr = face.getBoundingClientRect();
-        DialHub.tap(d, event.clientX - tr.left, event.clientY - tr.top, tr.width);
+        var tx = hubXY(event);
+        DialHub.tap(d, tx.x, tx.y, tx.w);
       }
     }
     face.addEventListener("pointerup", let_);
@@ -18018,7 +18463,7 @@
     face.addEventListener("wheel", function (event) {
       event.preventDefault();
       event.stopPropagation();
-      if (window.Dial && Dial.ring && Dial.ring(d, "wheel", event)) { return; }
+      if (window.Dial && Dial.ring && Dial.ring(d, "wheel", ringEv(event))) { return; }
       range.dispatchEvent(new Event("pointerdown"));
       var t = Number(range.value) / 1000 + (event.deltaY + event.deltaX) * 0.0007;
       turnTo(t);
@@ -18041,6 +18486,138 @@
     return d;
   }
 
+  /* The dial unrolled (DIAL.md, "The dial unrolled"): the ring's angle is the
+     band's x (where now meets the beginning, its two ends), the distance from
+     the ring the height over or under the line — the transport's stops above,
+     the events and the hub's lanes under. bandCtx takes the ring's drawing
+     (land.js's own, dialhub.js's band, transport.js's stops) and lays it
+     there, so there is one drawing of the dial in two forms. */
+  function bandGeo(w, h) {
+    var y = Math.round(Math.max(64, Math.min(h * 0.38, h / 2)));
+    return { w: w, h: h, x0: 44, x1: w - 72, y: y, ky: Math.max(2, Math.min(3, h / 90)), c: w / 2, R1: w / 2 - 13 };
+  }
+  function bandT(geo, a) {
+    var rel = ((a - DIAL_START) % TAU + TAU) % TAU;
+    return rel <= DIAL_SWEEP ? rel / DIAL_SWEEP : (rel - DIAL_SWEEP < DIAL_GAP / 2 ? 1 : 0);
+  }
+  function bandXY(geo, x, y) {
+    var dx = x - geo.c, dy = y - geo.c;
+    var t = bandT(geo, Math.atan2(dy, dx)), r = Math.sqrt(dx * dx + dy * dy);
+    return { x: geo.x0 + t * (geo.x1 - geo.x0), y: geo.y + (geo.R1 - r) * geo.ky };
+  }
+  // The other way: a point of the band as the point of the ring it stands for (presses, the hub's hits).
+  function bandToRing(geo, x, y) {
+    var t = Math.max(0, Math.min(1, (x - geo.x0) / Math.max(1, geo.x1 - geo.x0)));
+    var a = DIAL_START + t * DIAL_SWEEP, r = geo.R1 - (y - geo.y) / geo.ky;
+    return { x: geo.c + Math.cos(a) * r, y: geo.c + Math.sin(a) * r };
+  }
+  function bandCtx(g, geo) {
+    var local = 0, stack = [];
+    var o = {
+      save: function () { stack.push(local); g.save(); },
+      restore: function () { local = stack.length ? stack.pop() : 0; g.restore(); },
+      beginPath: function () { g.beginPath(); },
+      closePath: function () { g.closePath(); },
+      stroke: function () { g.stroke(); },
+      fill: function () { g.fill(); },
+      setLineDash: function (v) { g.setLineDash(v); },
+      measureText: function (t) { return g.measureText(t); },
+      rotate: function (a) { g.rotate(a); },
+      setTransform: function () {},
+      clearRect: function () {},
+      translate: function (x, y) {
+        if (local) { g.translate(x, y); return; }
+        var p = bandXY(geo, x, y);
+        g.translate(p.x, p.y);
+        local = 1;
+      },
+      moveTo: function (x, y) { if (local) { g.moveTo(x, y); return; } var p = bandXY(geo, x, y); g.moveTo(p.x, p.y); },
+      lineTo: function (x, y) { if (local) { g.lineTo(x, y); return; } var p = bandXY(geo, x, y); g.lineTo(p.x, p.y); },
+      arc: function (x, y, r, a0, a1) {
+        if (local) { g.arc(x, y, r, a0, a1); return; }
+        if (Math.abs(x - geo.c) < 0.5 && Math.abs(y - geo.c) < 0.5) {
+          var yy = geo.y + (geo.R1 - r) * geo.ky;
+          var t0 = a1 - a0 >= TAU - 1e-3 ? 0 : bandT(geo, a0), t1 = a1 - a0 >= TAU - 1e-3 ? 1 : bandT(geo, a1);
+          if (t1 < t0) { t1 = 1; }
+          g.moveTo(geo.x0 + t0 * (geo.x1 - geo.x0), yy);
+          g.lineTo(geo.x0 + t1 * (geo.x1 - geo.x0), yy);
+          return;
+        }
+        var p = bandXY(geo, x, y);
+        g.moveTo(p.x + r, p.y);
+        g.arc(p.x, p.y, r, a0, a1);
+      },
+      fillRect: function (x, y, w, h) {
+        if (local) { g.fillRect(x, y, w, h); return; }
+        var p = bandXY(geo, x + w / 2, y + h / 2);
+        g.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+      },
+      strokeRect: function (x, y, w, h) {
+        if (local) { g.strokeRect(x, y, w, h); return; }
+        var p = bandXY(geo, x + w / 2, y + h / 2);
+        g.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
+      },
+      fillText: function (t, x, y) { if (local) { g.fillText(t, x, y); return; } var p = bandXY(geo, x, y); g.fillText(t, p.x, p.y); }
+    };
+    ["strokeStyle", "fillStyle", "lineWidth", "globalAlpha", "shadowColor", "shadowBlur", "font", "textAlign",
+     "textBaseline", "lineCap", "lineJoin"].forEach(function (k) {
+      Object.defineProperty(o, k, { get: function () { return g[k]; }, set: function (v) { g[k] = v; } });
+    });
+    return o;
+  }
+  // Its decades, above the line.
+  function bandScale(g, geo, span) {
+    if (!(span[1] > span[0])) { return; }
+    var n = span[1] - span[0], step = n > 400 ? 100 : n > 120 ? 50 : n > 40 ? 10 : n > 12 ? 5 : 1;
+    g.save();
+    g.font = "9px " + dialFont;
+    g.textAlign = "center";
+    g.textBaseline = "alphabetic";
+    for (var y = Math.ceil(span[0] / step) * step; y <= span[1]; y += step) {
+      var x = geo.x0 + (y - span[0]) / n * (geo.x1 - geo.x0), big = y % (step * 5) === 0 || step >= 50;
+      g.strokeStyle = "rgba(168, 146, 122, " + (big ? 0.55 : 0.25) + ")";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(x + 0.5, geo.y - 5);
+      g.lineTo(x + 0.5, geo.y - (big ? 11 : 8));
+      g.stroke();
+      if (big) { g.fillStyle = "rgba(168, 146, 122, 0.7)"; g.fillText(String(y), x, geo.y - 14); }
+    }
+    g.restore();
+  }
+  // The year, its span and its tense over the band; play or pause at its left end.
+  function bandWords(g, geo, year, span, tense, tp, S) {
+    g.save();
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
+    g.fillStyle = "#eadfcd";
+    g.font = "600 " + Math.round(Math.min(34, geo.h * 0.13)) + "px " + dialFont;
+    var ty = Math.max(30, geo.y - 30);
+    g.fillText(year, 12, ty);
+    var xw = 18 + g.measureText(year).width;
+    if (span[1] > span[0]) {
+      g.fillStyle = "#a8927a";
+      g.font = "10px " + dialFont;
+      var sp = Math.floor(span[0]) + " — " + Math.floor(span[1]);
+      g.fillText(sp, xw, ty);
+      xw += g.measureText(sp).width + 10;
+    }
+    if (tense) {
+      g.fillStyle = tense === "will be" ? LILAC : tense === "is" ? "#eadfcd" : "#a8927a";
+      g.font = "italic 13px " + (getComputedStyle(document.documentElement).getPropertyValue("--serif") || "serif");
+      g.fillText(tense, xw, ty);
+    }
+    g.restore();
+    if (tp) {
+      var S2 = 120, c2 = S2 / 2;
+      g.save();
+      g.translate(22 - c2, geo.y - (c2 + S2 * 0.15));
+      tp.face(g, c2, S2);
+      g.restore();
+    }
+    void S;
+  }
+
   function drawDials() {
     for (var n = 0; n < dials.length; n += 1) { drawDial(dials[n]); }
   }
@@ -18049,6 +18626,9 @@
     if (d.box.hidden || !d.box.offsetWidth) { return; }
     placeDial(d);
     var S = d.box.offsetWidth;
+    // Unrolled in a long place: a band of years (artist, 7 Oct 2026: "Change the shape of the dial
+    // to adapt to the rectangular form"). The same drawing, through bandCtx.
+    var band = d.box.dataset.form === "band", BH = band ? d.box.offsetHeight : S;
     var t = d.grab !== null ? d.grab : Number(d.range.value) / 1000;
     var span = d.span() || [0, 0];
     var ticks = d.ticksOf ? d.ticksOf() : [];
@@ -18062,21 +18642,27 @@
     // A path being played (transport.js): its stops outside the ring, its play or pause on the face.
     var tp = window.Dial && Dial.layer ? Dial.layer(d) : null;
     var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
-               hub ? hub.key : "", tense, tp ? tp.key : ""].join("|");
+               hub ? hub.key : "", tense, tp ? tp.key : "", band, BH].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
-    var px = Math.round(S * dpr);
-    if (d.face.width !== px) { d.face.width = px; d.face.height = px; }
-    var g = d.g;
+    var px = Math.round(S * dpr), pxh = Math.round(BH * dpr);
+    if (d.face.width !== px || d.face.height !== pxh) { d.face.width = px; d.face.height = pxh; }
+    var g = d.g, real = d.g;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, S, S);
+    g.clearRect(0, 0, S, BH);
     var c = S / 2, R1 = S / 2 - 13;
     var at = DIAL_START + t * DIAL_SWEEP;
     g.lineCap = "butt";
+    var geo = null;
+    if (band) {
+      geo = bandGeo(S, BH);
+      d.geo = geo;
+      g = bandCtx(real, geo);
+    } else { d.geo = null; }
 
     // The chronograph's scale, outside the ring, still (a path's stops there while one plays).
     if (tp) { tp.outer(g, c, R1, S); }
-    for (var k = 0; k < (tp ? 0 : 120); k += 1) {
+    for (var k = 0; k < (tp ? 0 : band ? 0 : 120); k += 1) {
       var ak = -Math.PI / 2 + k / 120 * TAU;
       var long = k % 10 === 0;
       g.strokeStyle = "rgba(168, 146, 122, " + (long ? 0.55 : 0.22) + ")";
@@ -18087,8 +18673,11 @@
       g.stroke();
     }
 
+    // Unrolled: a scale of decades above the line instead of the chronograph's.
+    if (band && !tp) { bandScale(real, geo, span); }
     // Two rings geared to time, turning against each other at phi (resting while the hub's band is in use).
     g.save();
+    if (band) { g.globalAlpha = 0; }
     if (hub && hub.quiet) { g.globalAlpha = 0.25; }
     g.setLineDash([2, 5]);
     g.strokeStyle = "rgba(234, 223, 205, 0.22)";
@@ -18111,7 +18700,9 @@
     g.arc(c, c, R1, DIAL_START, DIAL_START + DIAL_SWEEP);
     g.stroke();
     g.fillStyle = LILAC;
-    g.fillRect(c - 1.5, c - R1 - 1.5, 3, 3);
+    // Where now meets the beginning: unrolled, the two ends.
+    if (band) { real.fillStyle = LILAC; real.fillRect(geo.x0 - 1.5, geo.y - 1.5, 3, 3); real.fillRect(geo.x1 - 1.5, geo.y - 1.5, 3, 3); }
+    else { g.fillRect(c - 1.5, c - R1 - 1.5, 3, 3); }
 
     // Every event, inside the ring: lit once it has been passed.
     ticks.forEach(function (tk) {
@@ -18170,6 +18761,7 @@
     g.restore();
     g.globalAlpha = 1;
 
+    if (band) { bandWords(real, geo, year, span, tense, tp, S); return; }
     // Lifted to be carried: four tiles of pixel light round it.
     if (lifted) {
       g.fillStyle = LIGHT;
@@ -18366,20 +18958,24 @@
       event.stopPropagation();
       var a = art;
       if (!a || !readKind(a.kind)) { return; }
-      // In the lens's place (swapped): back to its own.
-      if (lensSwapped) { setSwap(false); return; }
+      // In another part's place: back to the big one, swapped with what is there.
+      if (partsNow().picture !== "big") { swapWithBig("picture"); return; }
       if (a.kind === "work" && (!a.flipped || performance.now() - (a.settledAt || 0) < 450)) { return; }
       setFull(!artEl.dataset.full);
     });
     artPlate.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== " ") { return; }
       event.preventDefault();
-      if (lensSwapped) { setSwap(false); return; }
+      if (partsNow().picture !== "big") { swapWithBig("picture"); return; }
       flipToHead();
       setFull(!artEl.dataset.full);
     });
     window.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && art && lensAway()) {
+      if (event.key === "Escape" && art && partsAway() && !lensAway() && !artEl.dataset.full) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        partsHome();
+      } else if (event.key === "Escape" && art && lensAway()) {
         event.preventDefault();
         event.stopImmediatePropagation();
         lensHome();

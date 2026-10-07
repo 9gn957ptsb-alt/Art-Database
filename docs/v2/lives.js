@@ -85,9 +85,11 @@
       }).catch(function () { loading = null; return null; });
     return loading;
   }
+  var lifeNow = {};               // the lives read, for a caller that cannot wait (land.js's map)
   function life(id) {
     if (files[id]) { return files[id]; }
     files[id] = fetch("lives/" + id + ".json").then(function (r) { if (!r.ok) { throw new Error(id); } return r.json(); })
+      .then(function (L) { lifeNow[id] = L; return L; })
       .catch(function () { delete files[id]; return null; });
     return files[id];
   }
@@ -1187,6 +1189,8 @@
     visit: visit,
     beat: beat,
     idOf: function (name) { var r = rowOf(name); return r ? r[0] : null; },
+    // A life already read, at once (land.js's map draws its places); asked for if not.
+    _life: function (id) { if (!lifeNow[id]) { life(id); } return lifeNow[id] || null; },
     // A town's "Born here" (voice.js, its picture): the lives born there, most saved first.
     born: function () {
       var m = bornAt && bornAt.data && bornAt.data.born;

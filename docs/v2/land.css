@@ -3730,3 +3730,62 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .character, .lens-home, .voice-release, .voice-rim, .voice-stand { touch-action: none; }
 
 .city-home { position: fixed; touch-action: none; }
+
+/* The three parts (land.js, "the three parts"; artist, 7 Oct 2026: "1) globe,
+   2) artwork thumbnail, 3) dial. Each one should adapt to its new shape but
+   maintain its functionality"). The dial's way into the big place; the dial
+   unrolled into a band of years there; the globe flattened into a map. */
+.art-time .dial-swap { display: none; }
+.art[data-read] .art-time.dial .dial-swap {
+  display: block;
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(234, 223, 205, 0.28);
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.72);
+  color: #eadfcd;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: none;
+  opacity: 0.7;
+}
+.art[data-read] .art-time.dial .dial-swap:hover,
+.art[data-read] .art-time.dial .dial-swap:focus-visible { opacity: 1; background: rgba(94, 82, 199, 0.85); outline: none; }
+.art[data-full] .art-time .dial-swap, .art[data-look="plate"] .art-time .dial-swap { display: none; }
+.art[data-read] .art-time.dial[data-form="band"] {
+  width: var(--band-w);
+  height: var(--band-h);
+  border-radius: 4px;
+  background: rgba(15, 10, 7, 0.86);
+  animation: dial-unroll 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.art[data-read] .art-time.dial[data-form="band"] .dial-swap { right: 8px; top: auto; bottom: 8px; }
+.art[data-read] .art-time.dial[data-form="band"] .dial-mode { top: auto; bottom: auto; left: auto; right: 6px; transform: none;
+  top: calc(min(max(64px, var(--band-h) * 0.38), var(--band-h) / 2) - 10px); }
+.art[data-read] .art-time.dial[data-form="band"] .dial-say { left: 12px !important; right: 12px !important; top: auto !important;
+  bottom: 10px !important; width: auto !important; transform: none !important; }
+.art[data-read] .art-time.dial[data-form="band"] .dial-home { display: none; }
+@keyframes dial-unroll { from { clip-path: inset(0 45% 0 45% round 999px); opacity: 0.4; } to { clip-path: inset(0 0 0 0 round 4px); opacity: 1; } }
+.art[data-read] .art-time.dial[data-slot="small"] { z-index: 12; }
+.flat-map {
+  position: fixed;
+  z-index: 2;
+  border-radius: 4px;
+  touch-action: none;
+  cursor: grab;
+  image-rendering: pixelated;
+  animation: flat-in 0.36s ease both;
+}
+.flat-map[hidden] { display: none; }
+@keyframes flat-in { from { opacity: 0; clip-path: circle(20% at 50% 50%); } to { opacity: 1; clip-path: circle(75% at 50% 50%); } }
+body[data-flatmap] .land .city { visibility: hidden !important; }
+.art[data-map] .art-stop-name { visibility: hidden !important; }
+@media (prefers-reduced-motion: reduce) {
+  .art[data-read] .art-time.dial[data-form="band"], .flat-map { animation: none; }
+}
