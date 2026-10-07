@@ -3725,3 +3725,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
 }
 .art-said-q[data-long] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; cursor: pointer; }
 .art-said-q[data-long][data-open] { display: block; -webkit-line-clamp: none; }
+
+/* The Sound switch is taken off the banner (artist, 7 Oct 2026: "Get rid of the sound button"); sound
+   stays off, its code (Systems.sound) kept. Delete this rule to bring the switch back. */
+.banner-sound { display: none !important; }
