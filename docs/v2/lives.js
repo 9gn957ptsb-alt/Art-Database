@@ -407,29 +407,34 @@
     });
   }
 
+  // A quotation of the record, with where it is from and a way to read it there.
+  function quoteBlock(q, cls) {
+    var one = el("div", "art-said-one " + (cls || "life-q"));
+    one.dataset.k = "wiki";
+    one.appendChild(el("p", "art-said-q", "“" + q.q + "”"));
+    var by = el("p", "art-said-by");
+    by.appendChild(el("span", "art-said-who", q.name || ""));
+    if (q.url && /^https?:\/\//.test(q.url)) {
+      var a = el("a", "art-go", "Read it ↗");
+      a.href = q.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      by.appendChild(document.createTextNode(" "));
+      by.appendChild(a);
+    }
+    one.appendChild(by);
+    return one;
+  }
+
   // A period's own matter: its evidence, its studios, the works made then,
   // the prints and their workshops, the outings, who wrote, the crossings.
-  function fillPeriod(L, k, body, v) {
+  // Entered (opts.place: the place, then), what is under the works instead (placeColumn).
+  function fillPeriod(L, k, body, v, opts) {
+    if (opts && opts.place) { placeColumn(L, k, body); return; }
     body.textContent = "";
     var p = L.periods[k];
     var q = firstQuote(p);
-    if (q) {
-      var one = el("div", "art-said-one life-q");
-      one.dataset.k = "wiki";
-      one.appendChild(el("p", "art-said-q", "“" + q.q + "”"));
-      var by = el("p", "art-said-by");
-      by.appendChild(el("span", "art-said-who", q.name || ""));
-      if (q.url && /^https?:\/\//.test(q.url)) {
-        var a = el("a", "art-go", "Read it ↗");
-        a.href = q.url;
-        a.target = "_blank";
-        a.rel = "noopener";
-        by.appendChild(document.createTextNode(" "));
-        by.appendChild(a);
-      }
-      one.appendChild(by);
-      body.appendChild(one);
-    }
+    if (q) { body.appendChild(quoteBlock(q)); }
     (p.at || []).forEach(function (s) {
       var line = s.name + " · " + (s.y[0] === s.y[1] ? s.y[0] : s.y[0] + "–" + s.y[1]) + (s.kind ? " · " + s.kind : "");
       if (s.studio !== null && s.studio !== undefined && window.Studios && Studios.open) {
@@ -524,6 +529,92 @@
     }
   }
 
+  /* Entered, a period is the place, then (placethen.js), whose picture and strip carry every work of the
+     artist's there in those years; its column is what is under the works (artist, 8 Oct 2026: "When I am
+     looking at a specific city that I clicked on while viewing a specific artist, I want to know first and
+     foremost, all of the artworks that the artist made during their time in that city. That should be the
+     primary information. From there subordinate information like where their studio was, an overview of the
+     Artist time there in reference to historical writings or important art shows they participated in"):
+     where they worked (the studios the record places here then, the workshops their prints were pulled at),
+     then their time there — the record's own words, the article's sentences of those years on what they
+     showed and wrote and what was written of them (p.notes), the shows their works were in then, who wrote
+     on them then, the lives that cross. placethen.js adds who else was here, the works others made here,
+     after these. */
+  function placeColumn(L, k, body) {
+    body.textContent = "";
+    var p = L.periods[k], who = surname(L.name);
+    body.appendChild(el("p", "town-section life-where-head", "Where " + who + " worked"));
+    var told = 0;
+    (p.at || []).forEach(function (s) {
+      var line = s.name + " · " + (s.y[0] === s.y[1] ? s.y[0] : s.y[0] + "–" + s.y[1]) + (s.kind ? " · " + s.kind : "");
+      if (s.studio !== null && s.studio !== undefined && window.Studios && Studios.open) {
+        body.appendChild(button(line + " ›", "read-quiet life-studio", function () { Studios.open(s.studio); }));
+      } else {
+        body.appendChild(el("p", "town-museum-meta life-at", line));
+      }
+      told += 1;
+    });
+    var shops = {}, order = [];
+    (p.prints || []).forEach(function (i) {
+      var w = L.works[i], at = w && w[8] ? w[8][0] + (w[8][1] ? ", " + w[8][1] : "") : "";
+      if (!at) { return; }
+      if (!shops[at]) { shops[at] = 0; order.push(at); }
+      shops[at] += 1;
+    });
+    order.forEach(function (at) { body.appendChild(el("p", "town-museum-meta life-at", "Prints pulled at " + at + " · " + shops[at])); told += 1; });
+    if (!told) { body.appendChild(el("p", "town-museum-meta life-at", "Where " + who + " worked in " + p.place + " is not recorded.")); }
+
+    body.appendChild(el("p", "town-section life-then-head", who + " in " + p.place + ", " + span(p)));
+    var said = 0;
+    var q = firstQuote(p);
+    if (q) { body.appendChild(quoteBlock(q)); said += 1; }
+    (p.notes || []).forEach(function (n) {
+      if (q && n.q === q.q) { return; }
+      body.appendChild(quoteBlock(n, "life-q life-note"));
+      said += 1;
+    });
+    var sh = (p.shows || []).map(function (i) { return L.shows[i]; }).filter(Boolean);
+    if (sh.length) {
+      body.appendChild(el("p", "town-section life-shows-head", "Shown then · " + sh.length));
+      var list = el("ul", "life-show-list");
+      sh.slice(0, 8).forEach(function (r) {
+        list.appendChild(el("li", "town-museum-meta life-show", r[0] + " · " + r[1] + (r[3] ? " · " + r[3] : "")));
+      });
+      if (sh.length > 8) { list.appendChild(el("li", "town-museum-meta life-show", (sh.length - 8) + " more")); }
+      body.appendChild(list);
+      said += 1;
+    }
+    if (p.voices.length) {
+      var vs = p.voices.map(function (i) { return L.voices[i]; });
+      body.appendChild(el("p", "town-section", "Writing on " + who + " then · " + vs.length));
+      var vl = el("div", "town-near-row life-voices");
+      vs.slice(0, 8).forEach(function (r) {
+        var b = button(r[1] + " · " + r[2], "town-near", function () {
+          if (r[5] && window.Voices && Voices.follow) { Voices.follow(r[0]); }
+          else if (window.Land) { Land.work(r[4]); }
+        });
+        b.dataset.y = String(r[2]);
+        vl.appendChild(b);
+      });
+      body.appendChild(vl);
+      said += 1;
+    }
+    if (p.cross.length) {
+      body.appendChild(el("p", "town-section life-cross-head", "Lives that cross here"));
+      var cl = el("div", "life-crosses");
+      p.cross.forEach(function (ci) {
+        var c = L.cross[ci];
+        var yrs = c[4] === c[5] ? c[4] : c[4] + "–" + c[5];
+        cl.appendChild(button(who + " and " + c[1] + " in " + c[3] + ", " + yrs + " ›", "read-quiet life-cross", function () {
+          open(c[0], { year: c[4] });
+        }));
+      });
+      body.appendChild(cl);
+      said += 1;
+    }
+    if (!said) { body.appendChild(el("p", "town-museum-meta life-at", "No show, writing or sentence of the record is placed in these years yet.")); }
+  }
+
   function square(L, i, p) {
     var w = L.works[i];
     var b = el("button", "town-thumb");
@@ -608,7 +699,7 @@
       box.appendChild(el("p", "studio-exact", howLine(p)));
       var body = el("div", "life-period-body");
       box.appendChild(body);
-      fillPeriod(L, pay.p, body, null);
+      fillPeriod(L, pay.p, body, null, { place: true });
       var nav = el("div", "life-doors");
       if (pay.p > 0) {
         var a = L.periods[pay.p - 1];

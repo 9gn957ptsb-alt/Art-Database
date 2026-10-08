@@ -79,3 +79,8 @@
   .life-period-head { width: 100%; }
   .life-enter { position: static; margin: 0 0 var(--s-2) var(--s-3); }
 }
+
+/* The place, then's column (lives.js placeColumn): where they worked, then their time there. */
+.life-show-list { list-style: none; margin: var(--s-2, 6px) 0 0; padding: 0; display: grid; gap: 3px; }
+.life-show { margin: 0; }
+.life-note { margin-top: var(--s-2, 6px); }

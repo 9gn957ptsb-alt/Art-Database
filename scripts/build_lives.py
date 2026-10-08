@@ -222,6 +222,71 @@ def said_presences(name, text, url, title, gaz, born, died, others):
     return uniq
 
 
+# A period's notes (artist, 8 Oct 2026, of a city entered from Dalí's life: "an overview of the Artist time
+# there in reference to historical writings or important art shows they participated in"): the article's own
+# sentences whose every year falls in the period (a year either side), one at least within it, that speak of
+# a show or a writing — shows first, three at most, each sentence once a life, never a list or a bibliography.
+# A museum named is not a show (a work "now in the Cleveland Museum of Art"), nor a statement a writing.
+NOTE_SHOW = re.compile(r'\b(?:(?i:exhibit\w*|retrospectives?|biennale?|biennial|solo show|group show|one-man show|'
+                       r'show(?:n|ed)? (?:at|in)|galler(?:y|ies)|documenta)|Salon)\b')
+NOTE_WRITE = re.compile(r'\b(wrote|writes|published|publication|books?|essays?|articles?|reviews?|reviewed|'
+                        r'critics?|manifestos?|autobiograph\w*|memoirs?|diary|diaries|interviews?|'
+                        r'catalogues?|monographs?|magazines?|novels?)\b', re.I)
+NOTE_HELD = re.compile(r'\bnow (?:in|at) (?:the )?[A-Z]')
+NOTE_LIFE = re.compile(r'\b(born|died)\b')        # a birth's or a death's sentence, the article's opening
+NOTE_NOT = re.compile(r'\b(ISBN|pp\.|Retrieved|translated by|first published|University Press|Publishers?)\b|==|^\d{4}\s*[–—:-]|'
+                      r':\s*\d{4}$|\)\s*[–—]\s|^\d{1,2} [A-Z][a-z]+ \d{4}')
+NOTE_END = re.compile(r'[.!?]["”’]?$')          # a sentence, not a list's line
+YEAR_RX = re.compile(r'(?<![\d,.])(1\d{3}|20[0-2]\d)(?!\d|,\d)(?!\s*(?:km|m|works|paintings))')
+
+
+def period_notes(art, out_p, name):
+    text = (art or {}).get('text')
+    if not text:
+        return
+    # About the artist: named, or a pronoun standing for them.
+    who = re.compile(r'\b(' + re.escape(surname(name)) + r'|' + re.escape(name.split()[0]) + r'|[Hh]e|[Ss]he|[Tt]hey|[Hh]is|[Hh]er|'
+                     r'[Hh]im|[Tt]heir|the artist)\b')
+    title, url = art.get('title') or '', art.get('url')
+    quoted = {s.get('q') for p in out_p for s in p['src'] if s.get('q')}
+    used = set()
+    # The article's sentences, split again after a quotation's close ('… alive." In 1971 …').
+    parts = [q.strip() for s0 in sentences(text)
+             for q in re.split(r'(?<=[.!?]["”])\s+(?=[A-Z])|(?<=[.!?])\s+(?=\d{4}\b)', s0) if q.strip()]
+    for s in parts:
+        if len(s) > 420 or len(s.split()) < 7 or '\n' in s or NOTE_NOT.search(s) or NOTE_LIFE.search(s) or s in quoted or s in used:
+            continue
+        if not NOTE_END.search(s) or s.count('«') != s.count('»') or not who.search(s) or s.startswith(name + ':'):
+            continue
+        yrs = [int(y) for y in YEAR_RX.findall(s)]
+        if not yrs:
+            continue
+        show, write = NOTE_SHOW.search(s), NOTE_WRITE.search(s)
+        if show and NOTE_HELD.search(s) and not re.search(r'\b(exhibit\w*|retrospectives?|show(?:n|ed)?)\b', s, re.I):
+            show = None
+        if not show and not write:
+            continue
+        best, inside = None, 0
+        for p in out_p:
+            if not all(p['y0'] - 1 <= y <= p['y1'] + 1 for y in yrs):
+                continue
+            n = sum(1 for y in yrs if p['y0'] <= y <= p['y1'])
+            if n > inside:
+                best, inside = p, n
+        if not best:
+            continue
+        used.add(s)
+        note = {'q': s, 'name': 'Wikipedia · ' + title, 'k': 'show' if show else 'writing',
+                'y': min(y for y in yrs if best['y0'] <= y <= best['y1'])}
+        if url:
+            note['url'] = url
+        best.setdefault('notes', []).append(note)
+    for p in out_p:
+        if p.get('notes'):
+            # Shows first, then writings; in the article's order; those naming the place before the rest.
+            p['notes'] = sorted(p['notes'], key=lambda n: (n['k'] != 'show', p['place'] not in n['q']))[:3]
+
+
 # ---- the works' records -------------------------------------------------------------------------
 
 PRINTERISH = re.compile(r'\b(print(?:ed|er|ing)?|pulled|lithograph(?:ed)? by|atelier|imprimerie|workshop|press|'
@@ -504,6 +569,8 @@ def main():
             out_p.append({'y0': p['y0'], 'y1': p['y1'], 'place': p['town'], 'll': ll, 'key': key,
                           'km': first['km'], 'how': hows, 'carried': p['carried'], 'at': at, 'src': srcs[:12],
                           'works': [], 'prints': [], 'sites': [], 'voices': [], 'shows': [], 'cross': []})
+
+        period_notes(art, out_p, name)
 
         def period_at(y):
             for k, p in enumerate(out_p):

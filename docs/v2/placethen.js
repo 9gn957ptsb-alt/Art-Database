@@ -141,6 +141,7 @@
       var s = q.site ? sites[q.site] : null;
       if (s) {
         return { kind: "site", id: q.id || null, sid: q.site, t: q.title, y: q.year || null, img: q.src, big: q.big || q.src,
+                 sq: String(q.src || "").replace(/width=\d+/, "width=160"),
                  how: "painted at a documented site · " + (s[3] || "the place painted"), ll: s[4], key: s[7],
                  where: q.where || "", saved: !q.notSaved };
       }
@@ -148,7 +149,7 @@
       if (!w || !w[3]) { return null; }
       var h = String(w[4] || "dated"), base = h.split(":")[0], print = w.length > 8 && w[8];
       return { kind: print ? "print" : "made", id: w[0], t: q.title, circa: q.circa, y: w[2] || null,
-               img: CDN + w[3] + "/large.jpg", alt: CDN + w[3] + "/medium.jpg", big: CDN + w[3] + "/larger.jpg",
+               img: CDN + w[3] + "/large.jpg", alt: CDN + w[3] + "/medium.jpg", big: CDN + w[3] + "/larger.jpg", sq: CDN + w[3] + "/square.jpg",
                how: print ? "pulled at " + w[8][0] + (w[8][1] ? ", " + w[8][1] : "")
                  : base === "record" && h.indexOf(":") > 0 ? "made in " + h.slice(h.indexOf(":") + 1) + ", its record says" : HOW[base] || h,
                cat: w[7] || [], saved: true };
@@ -177,7 +178,7 @@
           if (!w || !w[4] || seen[id] || !a || surname(a) === mine) { return; }
           seen[id] = true;
           out.push({ kind: "made", id: id, t: w[1], y: y, img: cdn + w[4] + "/large.jpg", alt: cdn + w[4] + "/medium.jpg",
-                     big: cdn + w[4] + "/larger.jpg", how: how, cat: [], saved: true, other: true, by: a });
+                     big: cdn + w[4] + "/larger.jpg", sq: cdn + w[4] + "/square.jpg", how: how, cat: [], saved: true, other: true, by: a });
         }
         if (LV && LV.made) {
           Object.keys(LV.made).forEach(function (id) {
@@ -201,6 +202,7 @@
           seen[key] = true;
           out.push({ kind: "site", id: s.w || null, sid: s.id, t: s.t, y: s.d,
                      img: COMMONS + encodeURIComponent(s.img) + "?width=960", big: COMMONS + encodeURIComponent(s.img) + "?width=2000",
+                     sq: COMMONS + encodeURIComponent(s.img) + "?width=160",
                      how: "painted at a documented site · " + (s.what || s.place || "the place painted"), ll: s.ll, key: s.key,
                      where: s.m || "", saved: !!s.w, other: true, by: s.a });
         });
@@ -265,13 +267,18 @@
       S.town = also;
       say();
       setDial();
-      if (S.items.length) { S.ready = true; showItem(true); }
-      // Then the works by others made here then, after the artist's own.
+      fillStrip();
+      // Known at once: the works are the artist's alone, so none here is said before anything else loads.
+      S.ready = true;
+      showItem(true);
+      if (root) { root._k = ""; place(); }
+      overview();
+      // The works by others made here then are not the artist's: they come after, in the column, with who
+      // else was here, a movement here and the artist's animal (overview).
       othersOf(L, p, S.items).then(function (more) {
         if (S !== mine) { return; }
-        S.items = S.items.concat(more);
-        S.ready = true;
-        if (S.items.length === more.length) { S.i = 0; showItem(true); } else { showCount(); }
+        S.others = more;
+        overview();
         if (root) { root._k = ""; place(); }
       });
       if (!pick) { S.noGround = "No ground has been read for " + p.place + "."; say(); return; }
@@ -409,9 +416,12 @@
     cap.appendChild(line);
     img.addEventListener("load", function () { placeLabel(); var zb = window.Zoom && Zoom.big(); if (zb && zb.node === picBtn) { zb.relayout(); } });
     work.appendChild(cap);
-    var doors = el("div", "pt-doors");
-    doors.setAttribute("aria-label", "New ways on from this work, here");
-    work.appendChild(doors);
+    // Every work of the artist's here, then, in a strip under its words, the one in the picture ringed
+    // (artist, 8 Oct 2026: "I want to know first and foremost, all of the artworks that the artist made during
+    // their time in that city"); a press brings one up.
+    var strip = el("div", "pt-strip");
+    strip.setAttribute("role", "group");
+    work.appendChild(strip);
     root.appendChild(work);
     // A finger's sideways drag, a trackpad's sideways scroll, ←/→ (voice.js, the reading layout's own).
     if (window.Voice && Voice.swipeable) { Voice.swipeable(picBtn, function (d) { return step(d, true); }, root); }
@@ -468,7 +478,7 @@
     if (art) { art.insertBefore(root, art.firstChild); } else { document.body.appendChild(root); }
     refs = { head: head, stage: stage, canvas: canvas, tile: tile, label: label, title: title, quiet: quiet, where: where, info: info,
              more: moreBox, moreWhere: moreWhere, note: note, src: src, work: work, picbox: picbox, pic: picBtn, img: img, tag: tag,
-             none: none, wt: wt, how: how, cap: cap, count: count, doors: doors, prev: prev, next: next };
+             none: none, wt: wt, how: how, cap: cap, count: count, strip: strip, prev: prev, next: next };
     place();
   }
 
@@ -487,7 +497,7 @@
     var empty = !!(S && S.ready && !S.items.length);
     var bs = document.body.style, key;
     if (phone) {
-      var DIAL = 136, HEAD = 40, CLOD = 140, WORDS = 128;   // the title and count, the wall label, the doors
+      var DIAL = 136, HEAD = 40, CLOD = 140, WORDS = 120;   // the wall label, the line and count, the strip of works
       // The picture as big as it can be beside what goes with it (artist, 8 Oct 2026: "Make sure the
       // thumbnail for the artwork is as big as they can be given the information that goes along with
       // it"), as the reading layout's (land.js workBands): all but its words, the place's band and the
@@ -620,8 +630,8 @@
   function showItem(first) {
     if (!S || !refs.work) { return; }
     var it = S.items[S.i];
-    refs.doors.textContent = "";
     showCount();
+    markStrip();
     if (!it) {
       refs.pic.hidden = true;
       refs.tag.hidden = true;
@@ -629,7 +639,7 @@
       refs.wt.disabled = true;
       refs.how.textContent = "";
       refs.none.hidden = false;
-      refs.none.textContent = "No work is placed here in these years.";
+      refs.none.textContent = "No work of " + surname(S.L.name) + "’s is placed in " + S.p.place + " in these years.";
       markSquare(null);
       return;
     }
@@ -667,7 +677,6 @@
     if (it.y) { setYear(it.y); }
     if (!still && !first) { refs.work.dataset.fresh = String(Date.now()); }
     markSquare(it);
-    associations(it);
     S.dirty = true;
   }
 
@@ -801,178 +810,168 @@
   }
   function zoomed() { var Z = window.Zoom; return !!(Z && (Z.on() || (Z.big() && refs.pic && Z.big().node === refs.pic))); }
 
-  /* ---- associations: new paths from this work, here ------------------------ */
+  /* ---- the strip: every work of the artist's here, then ------------------- */
 
-  function associations(it) {
-    var mine = S, p = S.p, L = S.L;
-    Promise.all([json("movements.json"), json("lives.json"), json("museums.json"), json("finding.json"),
-                 it.saved && it.id ? json("histories/" + it.id + ".json") : null, historiesOf(S)])
-      .then(function (r) {
-        if (S !== mine || S.items[S.i] !== it) { return; }
-        var M = r[0], LV = r[1], MU = r[2], F = r[3], h = r[4], hs = r[5];
-        var cands = [];
-        var y = it.y || p.y0;
-        // Who else was here then: the lives that cross this one, the movements' presences.
-        var here = {};
-        (p.cross || []).forEach(function (ci) {
-          var c = L.cross[ci];
-          if (c && c[0] !== L.id) { here[c[0]] = { id: c[0], name: c[1], y0: c[4], y1: c[5], how: "both lives place them here" }; }
-        });
-        if (M && M.here && p.key) {
-          (M.here[p.key] || []).forEach(function (row) {
-            var a = M.artists[row[0]];
-            if (!a || a[0] === L.id || here[a[0]]) { return; }
-            if (row[2] < p.y0 - 1 || row[1] > p.y1 + 1) { return; }
-            if (p.ll && isFinite(row[4]) && km(p.ll, [row[4], row[5]]) > 30) { return; }
-            var y0 = Math.max(row[1], p.y0 - 1), y1 = Math.min(row[2], p.y1 + 1);
-            here[a[0]] = { id: a[0], name: a[1], y0: Math.min(y0, y1), y1: Math.max(y0, y1), how: row[7] || row[3] };
-          });
+  function fillStrip() {
+    if (!S || !refs.strip) { return; }
+    var mine = S;
+    refs.strip.textContent = "";
+    refs.strip.setAttribute("aria-label", "All of " + surname(S.L.name) + "’s works in " + S.p.place + ", " + yspan(S.p.y0, S.p.y1) +
+                            " · " + S.items.length);
+    refs.strip.hidden = S.items.length < 2;
+    S.items.forEach(function (it, i) {
+      var b = button("pt-sq", function () {
+        if (S !== mine || S.i === i) { return; }
+        var d = i > S.i ? 1 : -1;
+        S.i = i;
+        S.held = 0;
+        S.pinned = true;
+        if (!still && refs.picbox) {
+          refs.picbox.dataset.swipe = d > 0 ? "next" : "prev";
+          window.clearTimeout(refs.picbox._sw);
+          var box = refs.picbox;
+          box._sw = window.setTimeout(function () { delete box.dataset.swipe; }, 700);
         }
-        var hereList = Object.keys(here).map(function (id) { return here[id]; })
-          .sort(function (a, b) { return Math.abs(a.y0 - y) - Math.abs(b.y0 - y) || (a.name < b.name ? -1 : 1); });
-        if (hereList.length) {
-          var o = hereList[0];
-          cands.push({ kind: "artist", n: hereList.length, order: 0,
-                       text: surname(o.name) + " here, " + yspan(o.y0, o.y1) + (hereList.length > 1 ? " · +" + (hereList.length - 1) : ""),
+        showItem(false);
+      });
+      b.dataset.i = String(i);
+      var name = (it.t || "Untitled") + (it.y ? ", " + (it.circa ? "c. " : "") + it.y : "") + (it.saved ? "" : " · not saved");
+      b.setAttribute("aria-label", name + " — bring it up");
+      b.title = name;
+      if (it.sq) {
+        var im = el("img");
+        im.alt = "";
+        im.loading = "lazy";
+        im.decoding = "async";
+        im.referrerPolicy = "no-referrer";
+        im.src = it.sq;
+        im.addEventListener("error", function () { b.dataset.none = "true"; });
+        b.appendChild(im);
+      } else { b.dataset.none = "true"; }
+      refs.strip.appendChild(b);
+    });
+    markStrip();
+  }
+  // The one in the picture, ringed, and kept in view in the strip (without scrolling the page).
+  function markStrip() {
+    if (!S || !refs.strip) { return; }
+    var cur = null;
+    Array.prototype.forEach.call(refs.strip.children, function (b) {
+      if (Number(b.dataset.i) === S.i) { b.dataset.now = "true"; b.setAttribute("aria-current", "true"); cur = b; }
+      else { delete b.dataset.now; b.removeAttribute("aria-current"); }
+    });
+    if (cur && refs.strip.clientWidth) {
+      var l = cur.offsetLeft, r = l + cur.offsetWidth, sl = refs.strip.scrollLeft, w = refs.strip.clientWidth;
+      if (l < sl || r > sl + w) { refs.strip.scrollLeft = Math.max(0, l - (w - cur.offsetWidth) / 2); }
+    }
+  }
+
+  /* ---- after the works, in the column -----------------------------------------
+
+     Subordinate to the artist's own works (artist, 8 Oct 2026: "From there subordinate information like
+     where their studio was, an overview of the Artist time there in reference to historical writings or
+     important art shows they participated in"). lives.js puts where they worked and their time there (the
+     record's own words, the shows their works were in, who wrote on them, the lives that cross) at the head
+     of the column; this adds after them, before the way on: a movement found here, who else the record
+     places here then, the works others made here then, and the artist's animal. From the data only; drawn
+     again when the others' works have been read. */
+  function overview() {
+    var mine = S, p = S.p, L = S.L;
+    if (!S.box) { return; }
+    json("movements.json").then(function (M) {
+      if (S !== mine || !S.box || !S.box.isConnected) { return; }
+      var old = S.box.querySelector(".pt-col");
+      if (old) { old.parentNode.removeChild(old); }
+      var col = el("div", "pt-col");
+      var doors = [];
+      // A movement found here, in those years.
+      if (window.Movements && Movements.ofArtistName) {
+        var mv = Movements.ofArtistName(L.name).filter(function (m) { return m.key === p.key && m.y0 <= p.y1 + 1 && p.y0 - 1 <= m.y1; })[0];
+        if (mv) { doors.push({ kind: "movement", text: mv.title, title: "A movement found here: " + mv.title, go: function () { Movements.open(mv.id); } }); }
+      }
+      // Who else the record places here then (the lives that cross are said above, by lives.js; the
+      // categories' "Here then" list, kinds.js, has them all).
+      var crossed = {}, all = [];
+      (p.cross || []).forEach(function (ci) {
+        var c = L.cross[ci];
+        if (c && c[0] !== L.id) { crossed[c[0]] = true; all.push({ id: c[0], name: c[1], y0: c[4], y1: c[5], how: "both lives place them here" }); }
+      });
+      var here = {};
+      if (M && M.here && p.key) {
+        (M.here[p.key] || []).forEach(function (row) {
+          var a = M.artists[row[0]];
+          if (!a || a[0] === L.id || crossed[a[0]] || here[a[0]]) { return; }
+          if (row[2] < p.y0 - 1 || row[1] > p.y1 + 1) { return; }
+          if (p.ll && isFinite(row[4]) && km(p.ll, [row[4], row[5]]) > 30) { return; }
+          var y0 = Math.max(row[1], p.y0 - 1), y1 = Math.min(row[2], p.y1 + 1);
+          here[a[0]] = { id: a[0], name: a[1], y0: Math.min(y0, y1), y1: Math.max(y0, y1), how: row[7] || row[3] };
+        });
+      }
+      var others = S.others || [];
+      var present = Object.keys(here).map(function (id) { return here[id]; })
+        .sort(function (a, b) { return a.y0 - b.y0 || (a.name < b.name ? -1 : 1); });
+      S.assoc = { here: all.concat(present), others: others };
+      present.slice(0, 8).forEach(function (o) {
+          doors.push({ kind: "artist", text: surname(o.name) + ", " + yspan(o.y0, o.y1),
                        title: o.name + " was in " + p.place + " in " + yspan(o.y0, o.y1) + " (" + o.how + ")",
                        go: function () { if (window.Lives && Lives.open) { Lives.open(o.id, { year: o.y0 }); } } });
-        }
-        // A movement here, in the work's year.
-        if (window.Movements && Movements.ofArtistName) {
-          var mv = Movements.ofArtistName(L.name).filter(function (m) { return m.key === p.key && m.y0 <= y + 1 && y - 1 <= m.y1; })[0];
-          if (mv) {
-            cands.push({ kind: "movement", n: 1, order: 1, text: mv.title, title: "A movement found here: " + mv.title,
-                         go: function () { Movements.open(mv.id); } });
-          }
-        }
-        // Other works made in this town then, by anyone the saved list has.
-        var others = [];
-        if (LV && LV.made) {
-          Object.keys(LV.made).forEach(function (wid) {
-            var m = LV.made[wid];
-            if (m[0] === L.id || m[4] !== p.place || !m[3] || Math.abs(m[3] - y) > 6) { return; }
-            others.push({ id: wid, life: m[0], y: m[3] });
-          });
-        }
-        var fw = {};
-        if (F && F.w) { F.w.forEach(function (w) { fw[w[0]] = w; }); }
-        // And Painted here's paintings by others within the square.
-        var sitesNear = [];
-        if (S.allSites && S.place) {
-          var half = (SIDE[S.place.precision] || 2400) / 2000 * 1.4;
-          S.allSites.forEach(function (s) {
-            if (!s.ll || surname(s.a) === surname(L.name) || s.pr === "town") { return; }
-            if (km([S.place.lat, S.place.lon], s.ll) > half) { return; }
-            sitesNear.push(s);
-          });
-        }
-        others.sort(function (a, b) { return Math.abs(a.y - y) - Math.abs(b.y - y); });
-        if (others.length && fw[others[0].id]) {
-          var ow = fw[others[0].id];
-          cands.push({ kind: "work", n: others.length + sitesNear.length, order: 2,
-                       text: surname(String(ow[2] || "").split(",")[0]) + " · " + (ow[1] || "Untitled") + (others[0].y ? ", " + others[0].y : ""),
-                       title: "Also made in " + p.place + ": " + (ow[1] || "Untitled") + ", " + ow[2],
-                       go: function () { Land.work(others[0].id); } });
-        } else if (sitesNear.length) {
-          var sn = sitesNear[0];
-          cands.push({ kind: "work", n: sitesNear.length, order: 2,
-                       text: surname(sn.a) + " painted " + (sn.what || sn.t) + (sn.d ? ", " + sn.d : ""),
-                       title: sn.t + " by " + sn.a + " — painted here (Painted here; not saved)",
-                       go: function () { if (Land.site && sn.key) { Land.site(sn.key, sn.ll[0], sn.ll[1], 1.2, sn.what || sn.t); } } });
-        }
-        // Where this work is now.
-        if (it.saved && it.id) {
-          var held = ((MU && MU.museums) || []).filter(function (m) { return (m.works || []).some(function (w) { return w.id === it.id; }); })[0];
-          if (held) {
-            cands.push({ kind: "museum", n: 1, order: 3, text: "Now · " + held.name, title: "Held now by " + held.name,
-                         go: function () { Land.museum(held.slug); } });
-          } else if (h && h.events) {
-            var last = null;
-            h.events.forEach(function (ev) { if (ev.p && ev.ll && ev.k !== "written") { last = ev; } });
-            if (last && last.p !== p.key) {
-              cands.push({ kind: "place", n: 1, order: 3, text: "Last · " + String(last.w || last.p).split(",")[0] + (last.y ? ", " + String(last.y).slice(0, 4) : ""),
-                           title: "The last place its record names", go: function () { Land.town(last.p); } });
-            }
-          }
-        }
-        // The show that first put works from here together.
-        var together = firstTogether(hs, it);
-        if (together) {
-          cands.push({ kind: "gallery", n: together.n, order: 4, text: "Shown together · " + together.y, title: "The first show of two or more works from here",
-                       tid: together.tid, go: function () { Land.thread(together.tid); } });
-        }
-        // Who wrote on works from here.
-        var vs = (p.voices || []).map(function (i) { return L.voices[i]; }).filter(Boolean);
-        var v = vs.filter(function (r2) { return r2[4] === it.id; })[0] || vs[0];
-        if (v) {
-          cands.push({ kind: "writing", n: vs.length, order: 5, text: v[1] + " " + (v[3] || "wrote") + ", " + v[2], title: v[1] + " on works from here",
-                       go: function () {
-                         if (window.Kinds && Kinds.go) { Kinds.go("writer", v[0]).then(function (ok) { if (!ok && v[5] && window.Voices) { Voices.follow(v[0]); } }); }
-                         else if (v[5] && window.Voices && Voices.follow) { Voices.follow(v[0]); }
-                       } });
-        }
-        // The artist's animal, where one is drawn after them.
-        var cast = CAST[L.name];
-        if (cast && window.Characters && Characters.lead && Land.follow) {
-          cands.push({ kind: "animal", n: 1, order: 6, text: "Follow the " + ANIMAL[cast], title: "The " + ANIMAL[cast] + " after " + L.name,
-                       go: function () {
-                         Characters.lead(cast).then(function (got) {
-                           if (!got) { return; }
-                           got.studio = { lat: S && S.place ? S.place.lat : p.ll[0], lon: S && S.place ? S.place.lon : p.ll[1] };
-                           Land.follow(got);
-                         });
-                       } });
-        }
-        // Rarest first, three or four.
-        cands.sort(function (a, b) { return a.n - b.n || a.order - b.order; });
-        S.assoc = { list: cands.map(function (c) { return { kind: c.kind, text: c.text, n: c.n }; }), here: hereList, others: others, sitesNear: sitesNear };
-        drawDoors(cands.slice(0, window.innerWidth <= 720 ? 3 : 4), it);
-        if (together && together.tid) { nameThread(together, it); }
-      });
-  }
-
-  // The histories of the period's saved works (the first 13), for the shows they share.
-  function historiesOf(s) {
-    if (s.hs) { return s.hs; }
-    var ids = s.items.slice(0, s.own).filter(function (it) { return it.saved && it.id; }).slice(0, 13).map(function (it) { return it.id; });
-    s.hs = Promise.all(ids.map(function (id) { return json("histories/" + id + ".json").then(function (h) { return [id, h]; }); }));
-    return s.hs;
-  }
-  function firstTogether(hs, it) {
-    if (!hs) { return null; }
-    var seen = {};              // thread -> { works: {}, y }
-    hs.forEach(function (pair) {
-      var h = pair[1];
-      ((h && h.events) || []).forEach(function (ev) {
-        if (ev.k !== "exhibited" || !ev.x) { return; }
-        var y = parseInt(String(ev.y || ""), 10) || 9999;
-        [].concat(ev.x).forEach(function (t) {
-          var o = seen[t] || (seen[t] = { works: {}, y: y });
-          o.works[pair[0]] = true;
-          o.y = Math.min(o.y, y);
         });
-      });
+      if (doors.length) {
+        col.appendChild(el("p", "town-section", "Also in " + p.place + " then"));
+        col.appendChild(doorRow(doors));
+      }
+      // The works others made here then: theirs, not the artist's.
+      if (others.length) {
+        col.appendChild(el("p", "town-section", "Made here then, by others · " + others.length));
+        var th = el("div", "town-thumbs pt-others");
+        others.forEach(function (it) { th.appendChild(otherSquare(it)); });
+        col.appendChild(th);
+      }
+      // The artist's animal, where one is drawn after them.
+      var cast = CAST[L.name];
+      if (cast && window.Characters && Characters.lead && Land.follow) {
+        col.appendChild(doorRow([{ kind: "animal", text: "Follow the " + ANIMAL[cast], title: "The " + ANIMAL[cast] + " after " + L.name,
+          go: function () {
+            Characters.lead(cast).then(function (got) {
+              if (!got) { return; }
+              got.studio = { lat: S && S.place ? S.place.lat : p.ll[0], lon: S && S.place ? S.place.lon : p.ll[1] };
+              Land.follow(got);
+            });
+          } }]));
+      }
+      if (!col.children.length) { return; }
+      var nav = S.box.querySelector(".life-doors");
+      S.box.insertBefore(col, nav && nav.parentNode === S.box ? nav : null);
     });
-    var best = null;
-    Object.keys(seen).forEach(function (t) {
-      var o = seen[t], n = Object.keys(o.works).length;
-      if (n < 2) { return; }
-      var mineToo = it.id && o.works[it.id] ? 0 : 1;
-      if (!best || mineToo < best.m || (mineToo === best.m && o.y < best.y)) { best = { tid: t, y: o.y, n: n, m: mineToo }; }
-    });
-    return best && best.y < 9999 ? best : null;
   }
-  function nameThread(together, it) {
-    var mine = S;
-    json("threads/" + together.tid + ".json").then(function (t) {
-      if (S !== mine || S.items[S.i] !== it || !t || !t.name) { return; }
-      var b = refs.doors.querySelector('[data-tid="' + together.tid + '"] .pt-door-t');
-      if (b) { b.textContent = t.name + (together.y ? ", " + together.y : ""); }
+  function otherSquare(it) {
+    var b = el("button", "town-thumb");
+    b.type = "button";
+    var name = (it.t || "Untitled") + (it.y ? ", " + it.y : "") + " · " + it.by + (it.saved ? "" : " · not saved");
+    b.title = name;
+    if (it.saved && it.id) { b.dataset.work = it.id; }
+    b.setAttribute("aria-label", name + (it.saved && it.id ? " — where it has been" : " — where it was painted"));
+    if (it.sq) {
+      var im = el("img");
+      im.alt = "";
+      im.loading = "lazy";
+      im.decoding = "async";
+      im.referrerPolicy = "no-referrer";
+      im.src = it.sq;
+      im.addEventListener("error", function () { b.classList.add("town-thumb-none"); });
+      b.appendChild(im);
+    } else { b.classList.add("town-thumb-none"); }
+    b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    b.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (it.saved && it.id) { Land.work(it.id, S && S.p.key); }
+      else if (it.ll && it.key && Land.site) { Land.site(it.key, it.ll[0], it.ll[1], 1.2, it.t); }
     });
+    return b;
   }
 
-  function drawDoors(list, it) {
-    refs.doors.textContent = "";
+  function doorRow(list) {
+    var row = el("div", "pt-doors pt-col-doors");
     list.forEach(function (c) {
       var g = glyph(c.kind);
       var b = button("pt-door", function () { c.go(); });
@@ -984,8 +983,9 @@
       gl.setAttribute("aria-hidden", "true");
       b.appendChild(gl);
       b.appendChild(el("span", "pt-door-t", c.text));
-      refs.doors.appendChild(b);
+      row.appendChild(b);
     });
+    return row;
   }
 
   /* ---- the clod, drawn ---------------------------------------------------- */
@@ -1163,12 +1163,15 @@
     _state: function () {
       if (!S) { return null; }
       var it = S.items[S.i];
-      return { life: S.L.id, k: S.k, place: S.p.place, ground: S.slug, year: S.year, when: S.when,
+      return { life: S.L.id, k: S.k, place: S.p.place, ground: S.slug, year: S.year, when: S.when, ready: S.ready,
                floor: S.floor ? { lo: S.floor.lo, sat: S.floor.sat, from: S.floor.from, known: S.floor.known, all: S.floor.all } : null,
                items: S.items.length, own: S.own, i: S.i, work: it ? it.t + (it.y ? ", " + it.y : "") : null, how: it ? it.how : null,
                other: it && it.other ? it.by : null, count: refs.count ? refs.count.textContent : "", tag: refs.tag && !refs.tag.hidden ? refs.tag.textContent : "",
                list: S.items.map(function (x) { return (x.other ? surname(x.by) + ": " : "") + (x.t || "Untitled") + (x.y ? ", " + x.y : "") + (x.saved ? "" : " (not saved)"); }),
-               full: window.Zoom ? Zoom._state() : null, doors: refs.doors ? [].map.call(refs.doors.querySelectorAll(".pt-door"), function (b) { return b.textContent; }) : [],
+               full: window.Zoom ? Zoom._state() : null,
+               doors: S.box ? [].map.call(S.box.querySelectorAll(".pt-col .pt-door"), function (b) { return b.textContent; }) : [],
+               strip: refs.strip ? refs.strip.children.length : 0, others: (S.others || []).length,
+               othersShown: S.items.filter(function (x) { return x.other; }).length,
                title: refs.title ? refs.title.textContent : "", where: refs.where ? refs.where.textContent : "",
                note: refs.note ? refs.note.textContent : "", label: refs.label ? refs.label.textContent : "",
                dial: window.Land && Land.dial ? (Land.dial() || {}).year : null };

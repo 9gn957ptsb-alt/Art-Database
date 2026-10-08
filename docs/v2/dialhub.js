@@ -546,10 +546,11 @@
     if (hub.hover >= 0 && items[hub.hover]) {
       lines.push({ text: items[hub.hover].label, open: items[hub.hover].open });
     } else if (own) {
-      // The view's own: only a movement under the year is said.
+      // The view's own: only a movement under the year is said — not in a life's place, then, whose column
+      // names it among who else was there (8 Oct 2026: the line had stood over its clod and its words).
       hub.act.forEach(function (i) {
         var it = items[i];
-        if (it.kind === "movement") { lines.push({ text: "Movement here · " + it.label + " ›", open: it.open }); }
+        if (it.kind === "movement" && !document.body.dataset.placethen) { lines.push({ text: "Movement here · " + it.label + " ›", open: it.open }); }
       });
     } else if (mode === "movements") {
       hub.act.forEach(function (i) { var it = items[i]; lines.push({ text: it.label + (it.who ? " · " + it.who : "") + " ›", open: it.open }); });
