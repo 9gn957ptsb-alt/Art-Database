@@ -1140,7 +1140,8 @@
     s.dirty = false;
     s.cam = cam;
     seen(s);
-    names(now);
+    // In the look the walk is washed behind the work: no names over it.
+    if (s.level === "look") { clearNames("walk"); } else { names(now); }
     standCheck(now);
     // The whole frame, names and all, is what the dot grows by.
     pace(performance.now() - t0, now, [t1 - t0, t2 - t1, t3 - t2, performance.now() - t3]);
@@ -3192,7 +3193,10 @@
       // The label always directly under the picture (artist, 7 Oct 2026: "the info for the artwork
       // should always be below the thumbnail"): the picture takes the top 62% at most, its label the
       // width of the picture (never narrower than 18em), under it.
-      var maxW = phone ? r.width - 32 : Math.min(r.width - 64, 980), maxH = r.height * (phone ? 0.58 : 0.64);
+      // Measured on the look's own window (its inside grows with the label and scrolls), so the
+      // label's first lines are in view under the picture.
+      var vh = box.getBoundingClientRect().height || r.height;
+      var maxW = phone ? r.width - 32 : Math.min(r.width - 64, 980), maxH = vh * (phone ? 0.46 : 0.6);
       var wv = maxW, hv = wv / ar;
       if (hv > maxH) { hv = maxH; wv = hv * ar; }
       plate.style.width = Math.round(wv) + "px";
@@ -3569,6 +3573,19 @@
       if (!S || !S.cam || S.level !== "walk") { return null; }
       var p = S.caster.project(S.cam, x, y, z), r = S.view.getBoundingClientRect();
       return p ? { x: r.left + p.x * S.dot, y: r.top + p.y * S.dot, t: p.t } : null;
+    },
+    // Where a hung work is seen in the walk, in the page's pixels (its seen columns' middle, its
+    // middle's height), or null if it is not in view.
+    _workOnScreen: function (id) {
+      var s = S;
+      if (!s || !s.cam || s.level !== "walk" || !s.seenLo) { return null; }
+      var h = null;
+      s.hung.forEach(function (x) { if (x.id === id) { h = x; } });
+      if (!h || h.floor !== s.me.floor || s.seenLo[h.i] < 0) { return null; }
+      var p = s.caster.project(s.cam, h.cx, h.cy, (h.z0 + h.z1) / 2), r = s.view.getBoundingClientRect();
+      if (!p) { return null; }
+      return { x: r.left + (s.seenLo[h.i] + s.seenHi[h.i] + 1) / 2 * s.dot, y: r.top + p.y * s.dot,
+               d: Math.hypot(h.cx - s.me.x, h.cy - s.me.y) };
     },
     _resetStats: function () { if (S) { S.stats = { frames: 0, total: 0, max: 0, list: [], parts: [0, 0, 0, 0] }; S.planStats = { frames: 0, total: 0, max: 0 }; } }
   };

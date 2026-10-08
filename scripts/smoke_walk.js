@@ -136,12 +136,42 @@ async function one(s, slug, size) {
     await page.evaluate(i => Walk.goTo(i), id);
     await until(page, i => { const x = Land.inside(); return x.standing === i && !x.gliding; }, id, 25000);
     step("before a work");
-    await page.keyboard.press("Enter");
-    await until(page, () => Land.inside().level === "look", null, 6000);
-    step("look");
+    // What it is, at once, beside it: its title and its artist.
+    await until(page, () => { const l = document.querySelector(".walk-label");
+      return l && !l.hidden && l.querySelector(".walk-l-t[data-on=true]") && (!document.querySelector(".walk-label .walk-l-by") || l.querySelector(".walk-l-by[data-on=true]")); }, null, 4000);
+    step("label");
+    // Step back, then press the work itself (a tap on a phone, a click on a desktop): the look opens,
+    // walking there first if it is far.
+    const near = await page.evaluate(i => Walk._workOnScreen(i), id);
+    if (s.touch) { await touchDrag(page, band.x + band.width / 2, band.y + band.height * 0.4, 0, band.height * 0.15, 6); }
+    else { await page.keyboard.down("ArrowDown"); await page.waitForTimeout(700); await page.keyboard.up("ArrowDown"); }
+    await page.waitForTimeout(500);
+    const at = (await page.evaluate(i => Walk._workOnScreen(i), id)) || near;
+    r.pressedFrom = at ? +at.d.toFixed(1) : null;
+    if (at) {
+      if (s.touch) { await page.touchscreen.tap(at.x, at.y); } else { await page.mouse.click(at.x, at.y); }
+      await until(page, () => Land.inside().level === "look", null, 25000);
+      step("look by a press");
+    } else {
+      await page.keyboard.press("Enter");
+      await until(page, () => Land.inside().level === "look", null, 25000);
+      step("look by Enter");
+    }
+    // The label directly under the picture, whole at once.
+    const lab = await page.evaluate(() => {
+      const plate = document.querySelector(".walk-look-plate"), lines = document.querySelector(".walk-look-lines");
+      const t = lines && lines.querySelector(".walk-l-t");
+      if (!plate || !t) { return null; }
+      const pb = plate.getBoundingClientRect(), lb = lines.getBoundingClientRect();
+      return { title: t.textContent, on: lines.querySelectorAll(".walk-l[data-on=true]").length, under: lb.top >= pb.bottom - 2 };
+    });
+    if (!lab || !lab.title || !lab.under || lab.on < 3) { throw new Error("the look's label: " + JSON.stringify(lab)); }
+    r.title = lab.title;
+    step("label under the picture");
     if (SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: path.join(SHOTS, slug + "-3-look-" + size + ".png") }); }
-    await page.keyboard.press("Escape");
+    if (s.touch) { await page.tap(".walk-look-x"); } else { await page.keyboard.press("Escape"); }
     await until(page, () => Land.inside().level === "walk", null, 6000);
+    step("back to the walk");
   }
   // Up, a level at a time: pinching in on a phone, Escape on a desktop.
   if (s.touch) { await pinchIn(page, band.x + band.width / 2, band.y + band.height / 2); } else { await page.keyboard.press("Escape"); }
