@@ -392,6 +392,26 @@ transparent washes of sap green, olive ochre and viridian, now and then cerulean
 its rim, deepening where they overlap. `node dirt/engine/focus-tree.test.mjs` checks that it never comes apart, has
 thirteen hearths, and sways; `#notree` hides it.
 
+**Elsewhere, not blur** (8 October 2026: "instead of using blur to distinguish depth of field or objects from each
+other in space ... replacing all those moments of blur in a photograph with moments from other places ... that level
+or presentation of abstraction is the difference between the scenes"). Wherever DRIFT softened something to set it
+back in space, it now shows another place instead (`ELSEWHERE_GLSL` in `engine/ground-gl.js`): one of the history's
+sixteen moments (a jar from Cyprus, Troy, the Minotaur's Crete, Athens, Apulia, Baia, Agrippina landing at Brindisi,
+Commodus, the arch of Septimius Severus, ruins on a shore, Twombly's Rome), never softened but abstracted, the more
+the deeper it lies: in flat patches 2 cells across near and 34 far (on a lattice turned off the plane's, so no grid),
+each the colour of its own part of the picture, its lights and darks in 8 steps near and 2 far. The edge between the
+two scenes is always crisp and always one line, along the patches' own edges, never a scatter: what tells a face from
+what is round it, or the leaves from the distance behind them, is that it is another scene at another level of
+abstraction. Where it happens: through the gaps in the canopy (far: large patches, three tones); through Turrell's
+glass where it thickens (through thin glass the plane is now sharp); in the dapples' pinhole images; in the third of
+the collage's pieces of elsewhere that used to go out of focus, and of the photo put in; round the welds' faces (the
+face itself, eyes, nose and mouth, now sharp; the hair and backdrop, where a portrait photograph would blur, another
+place), after John Stezaker's *Masks*, where a postcard of a landscape lies over a film star's face; and in the
+friezes, which no longer pan-blur: the third of each face where its ghost trailed is now another place. Only the
+watercolour's wet edge (each cell bleeding a little into the next) stays soft: it is the medium, not distance. In
+Japanese the blur of a lens is *boke*, "haze", and the same word is used for the haze of age; here the haze is
+replaced by memory.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later

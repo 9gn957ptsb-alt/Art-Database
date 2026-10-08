@@ -2417,8 +2417,9 @@ void main() {
 // The history of Greece and Rome (dirt/artists/antiquity.py): sixteen saved works in the order of the time they show,
 // from a Cypriot jar of 1200-800 BCE through Troy, Ulysses, the Minotaur, Attic and Apulian vases, Bacchus, Baia,
 // Agrippina landing at Brindisi, Commodus, the arch of Septimius Severus, the amphitheatre and the ruins, to Twombly's
-// Rome. It is never shown as pictures: it is the light in the dapples under unseen leaves, the colour in the caustics,
-// and the colour through the leaves' gaps. Shared by the passes that show it.
+// Rome. Until 8 Oct 2026 it was never shown as pictures, only as light (in the dapples, the caustics, the leaves'
+// gaps), always softened; now it is the other places DRIFT shows wherever it would have blurred, abstracted in flat
+// patches (ELSEWHERE_GLSL), and the colour in the caustics. Shared by the passes that show it.
 const ANTIQUITY_GLSL = `
 uniform highp sampler2DArray uAnt;
 uniform int uAN;
@@ -2440,12 +2441,61 @@ vec3 historyBlur(float e, vec2 uv, float lod) {
   return mix(a, b, smoothstep(0.75, 1.0, fract(k))) * 255.0;
 }`;
 
+// ---- elsewhere: where a photograph would blur, another place -------------------------------------------------
+// Aries (8 October 2026): "Instead of using blur to distinguish depth of field or objects from each other in space ...
+// as if replacing all those moments of blur in a photograph with moments from other places. And so instead of the
+// definition between one and the other coming through blur, that level or presentation of abstraction is the
+// difference between the scenes." So wherever DRIFT used to soften something to set it back in space (the history far
+// behind the leaves, the plane through Turrell's thick glass, the pinhole images under the trees, a collage piece out
+// of focus, the welds' and the friezes' faces), it now shows another place, sharp-edged: one of the history's moments
+// (a jar from Cyprus, Troy, the Minotaur's Crete, Athens, Baia, Agrippina landing at Brindisi, the arch of Septimius
+// Severus, Twombly's Rome), abstracted the more the deeper it lies: in flat patches, 2 cells across near and 34 far,
+// each the colour of its own part of the picture, its lights and darks in fewer steps (8 near, 2 far), as a painter
+// sets down a far field in a few flat tones and a near one in many. What tells one thing from another is then not how
+// soft it is but that it is another scene, at another level of abstraction. In Japanese the blur of a lens is boke,
+// a haze, and the same word is the haze of age; the haze here is replaced by memory.
+const ELSEWHERE_GLSL = `
+/** How wide an abstraction's patches are at a depth (0: here, 1: as far as it goes), in cells: 2 near, 34 far. */
+float patchSize(float depth) { return 2.0 + 32.0 * depth * depth; }
+/** The patch p falls in, of patches s cells across on a lattice turned off the plane's (no grid, no seam): its seed
+ * point (in cells), and a number of its own, 0 to 1. */
+float patchAt(vec2 p, float s, out vec2 seed) {
+  vec2 q = mat2(0.94, 0.34, -0.34, 0.94) * p / s, i = floor(q), best = vec2(0.0);
+  float bd = 1e9, id = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 c = i + vec2(float(x), float(y));
+    uint h = h3(int(c.x), int(c.y), 70001u);
+    vec2 o = c + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5);
+    float d = dot(q - o, q - o);
+    if (d < bd) { bd = d; best = o; id = unit(mixh(h + 3u)); }
+  }
+  seed = mat2(0.94, -0.34, 0.34, 0.94) * best * s;
+  return id;
+}
+/** A colour's lights and darks set in fewer steps the deeper it lies (8 near, 2 far), its hue kept. */
+vec3 tones(vec3 c, float depth) {
+  float n = floor(mix(8.0, 2.0, depth) + 0.5), l = lum(c);
+  return c * (((floor(l / 255.0 * n) + 0.5) / n * 255.0) / max(l, 1.0));
+}
+/** Another place, where a photograph would blur: the history's moment e (as history() takes it), whose picture at p
+ * would be at uv and spans "span" cells; shown not softened but abstracted, the more the deeper: in flat patches,
+ * each the colour of its own part of the picture, in tones(). */
+vec3 elsewhere(vec2 p, float depth, float e, vec2 uv, float span) {
+  float s = patchSize(depth);
+  vec2 seed;
+  patchAt(p, s, seed);
+  vec2 at = fract(uv + (seed - p) / span);
+  float tx = float(textureSize(uAnt, 0).x);
+  return tones(historyBlur(e, at, max(0.0, log2(s * tx / span))), depth);   // the patch's own colour, flat
+}`;
+
 // The fifth pass: light and space, after James Turrell (the Ganzfelds, the Skyspaces, Aten Reign at the Guggenheim,
 // 2013): most of the plane is given over to coloured light with no edge and no object, the saved paintings seen through
-// it, blurred as through a haze, and here and there clear, where the light opens like an aperture. The light comes in
+// it, and here and there clear, where the light opens like an aperture. The light comes in
 // pairs of colour, as Turrell's rooms do: a warm field, a pale band where it turns, a dark core, and the warm field
-// again, the bands curving slowly and breathing, the pairs changing over the plane without a boundary. The blur is
-// the last frame at a coarse level of its detail, so the light also carries a memory of what was there.
+// again, the bands curving slowly and breathing, the pairs changing over the plane without a boundary. Through it, as
+// through glass, the last frame shows sharp, so the light also carries a memory of what was there; and where the glass
+// is thick, where it once went soft, it holds another place instead (ELSEWHERE_GLSL).
 const GROUND_LIGHT = `#version 300 es
 precision highp float;
 precision highp int;
@@ -2461,7 +2511,7 @@ uniform float uQS;
 uniform vec2 uView;                 // the middle of the view, in cells (the wallpapers lie deeper, and move less)
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
-${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}${ELSEWHERE_GLSL}
 // the pairs: a field and the colour it turns toward
 const vec3 PAIR[12] = vec3[12](
   vec3(198, 58, 34), vec3(160, 120, 196),                          // vermilion and lilac
@@ -2599,8 +2649,8 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
 }
 /** Komorebi: light through leaves. Every gap between leaves is a pinhole and throws an image of what lies beyond it (in
  * an eclipse the ground under a tree fills with crescent suns); so the dapples here are soft, overlapping pinhole
- * images of the history, upside down and out of focus, warm with sun, swaying and flickering as unseen leaves move in
- * a wind. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
+ * images of other places, upside down, warm with sun, swaying and flickering as unseen leaves move in a wind; not out of
+ * focus (as until 8 Oct 2026) but each a small abstraction of one of the history's moments, in flat patches. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
 vec4 dapples(vec2 p, float T) {
   if (uAN == 0) return vec4(0.0);
   float dens = smoothstep(0.74, 0.88, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));   // (halved three times, 2 Oct 2026)
@@ -2622,7 +2672,7 @@ vec4 dapples(vec2 p, float T) {
     float m = exp(-r * r * r * r * 2.2);                              // a disc with no edge, only a falling-off
     if (m < 0.01) continue;
     float flick = smoothstep(0.25, 0.75, vnoise(C + T * vec2(13.0, -8.0), 8.0, h));   // leaves passing over the gap
-    vec3 img = historyBlur(16.0 * unit(mixh(h + 5u)) + T / 21.0, clamp(0.5 - d / (2.2 * R), 0.0, 1.0), 2.5);
+    vec3 img = elsewhere(p, 0.42, 16.0 * unit(mixh(h + 5u)) + T / 21.0, clamp(0.5 - d / (2.2 * R), 0.0, 1.0), 2.2 * R);
     vec3 lightc = mix(vec3(255.0, 238.0, 206.0), img * 1.25, 0.55);
     acc += lightc * m * flick;
     sum += m * flick;
@@ -2666,11 +2716,14 @@ void main() {
   vec2 off; vec3 sheen;
   vec3 L = lightAt(p, uTime, off, sheen);
   // and through it, as through glass, the plane as it was: bent by the folds, its red, green and blue bent a little
-  // differently, softened where the glass is thick
+  // differently, and sharp; where the glass is thick, not the plane softened (as until 8 Oct 2026) but another place,
+  // abstracted (ELSEWHERE_GLSL), its edge a clean line where the glass thickens
   if (inPrev) {
-    float lod = 1.0 + 1.5 * clamp(length(off) / 34.0, 0.0, 1.0);
-    vec3 seen = vec3(textureLod(uPrev, (lp + off + 0.5) / uPrevTex, lod).r, textureLod(uPrev, (lp + off * 1.08 + 0.5) / uPrevTex, lod).g,
-                     textureLod(uPrev, (lp + off * 1.16 + 0.5) / uPrevTex, lod).b) * 255.0;
+    float g = clamp(length(off) / 34.0, 0.0, 1.0);
+    vec3 seen = vec3(textureLod(uPrev, (lp + off + 0.5) / uPrevTex, 0.0).r, textureLod(uPrev, (lp + off * 1.08 + 0.5) / uPrevTex, 0.0).g,
+                     textureLod(uPrev, (lp + off * 1.16 + 0.5) / uPrevTex, 0.0).b) * 255.0;
+    if (uAN > 0 && g > 0.55)                                         // a clean edge where the glass thickens, not a scatter
+      seen = elsewhere(p, 0.55, 16.0 * vnoise(p, 2584.0, 28671u) + uTime / 34.0, p / 610.0, 610.0);
     L = mix(L, seen * (0.45 + 0.75 * L / 255.0), 0.34);
   }
   L += sheen * 0.42;
@@ -2693,7 +2746,7 @@ void main() {
 //    lengths from a few cells to a few hundred, mostly falling, some aslant, like paint scraped down a sheet
 //    (Gerhard Richter's squeegee paintings);
 //  - pieces: triangles and four-sided scraps, some edges cut and some torn, glued over it all in no order: a piece
-//    of elsewhere in the view (larger, smaller, sharp or out of focus, its red, green and blue parted), a saved
+//    of elsewhere in the view (larger, smaller, its red, green and blue parted; or another place, abstracted), a saved
 //    painting, a fragment of the history of Greece and Rome, or flat coloured paper, each living a few tens of
 //    seconds and dissolving in and out as speckle (Hannah Hoch's photomontages; Kurt Schwitters' Merz collages);
 //  - clouds: white cumulus masses, lit from above and grey-blue beneath, the high key the whole is set in;
@@ -2729,7 +2782,7 @@ uniform int uPN;
 uniform sampler2D uFaceLut;         // which face's mean is nearest a colour: 8 levels a channel, 64 by 8 (r + 8 g, b)
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
-${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("float vnoise(", "vec3 artPaper(")}${ANTIQUITY_GLSL}${ELSEWHERE_GLSL}
 // coloured paper, from the reference: vermilion, salmon, cyan, sky, ochre, umber, magenta, yellow, ultramarine
 const vec3 PAPER[9] = vec3[9](vec3(240, 60, 44), vec3(238, 128, 104), vec3(96, 200, 214), vec3(136, 198, 238),
   vec3(226, 146, 70), vec3(170, 104, 62), vec3(232, 70, 156), vec3(248, 216, 92), vec3(64, 84, 214));
@@ -2822,9 +2875,10 @@ void pieces(vec2 p, float T, float S, float R0, float R1, float dens, uint seed,
 // golden proportion, as Rothko stacked heads over torsos over feet in his mythic paintings (Antigone, 1939-40): a
 // register of heads (to phi^-1 of the height), the faces from the saved paintings lined up and overlapping so that
 // neighbours share an eye or a mouth; a band of chevrons, his hatching, in red, blue and chalk (to 1 - phi^-3); and
-// the torsos, a painting smeared in his reds. Each row slides slowly sideways and is blurred as a panned camera blurs
-// it, along the row only, with a ghost a third of a face behind, teal in the shadows and amber in the light, grain in
-// the dark (after a photograph of Aries's). And the friezes dissolve, across a few hundred cells, into bands of colour,
+// the torsos, a painting in his reds. Each row slides slowly sideways, teal in the shadows and amber in the light,
+// grain in the dark (after a photograph of Aries's); until 8 Oct 2026 it was blurred as a panned camera blurs it, with
+// a ghost a third of a face behind, and now it is sharp, and where the ghost was, patches of another place
+// (ELSEWHERE_GLSL), so the faces are set off by another scene, not by softness. And the friezes dissolve, across a few hundred cells, into bands of colour,
 // each register its own colour with feathered edges: Rothko's later fields are those friezes with the figures gone, and
 // DRIFT goes from one to the other in space. Raw canvas between.
 vec3 faceAt(int f, vec2 uv, float lod) {
@@ -2844,20 +2898,23 @@ float frieze(vec2 p, float T, out vec3 col) {
   uint hr = h3(int(row), 7, 52005u);
   float x = p.x + T * (2.0 + 5.0 * unit(hr)) * (unit(mixh(hr + 1u)) < 0.5 ? -1.0 : 1.0);   // each row pans slowly
   vec3 canvas = vec3(224, 214, 192) + 12.0 * (cellHash(p, 52006u) - 0.5), c, band;
-  float blur = mix(2.0, 21.0, d);                                    // the pan's half-width, in cells
   if (y < FR1) {
     float hh = FR1 * FZH, fw = hh * 0.8, stp = fw * FR1, k0 = floor(x / stp);
     vec3 acc = vec3(0.0); float ws = 0.0;
-    int taps = uLite == 1 ? 3 : 7, f0 = 0;
+    int f0 = 0;
     for (int j = 0; j < 2; j++) {
       float k = k0 - float(j), u = (x - k * stp) / fw;
       if (u < 0.0 || u > 1.0) continue;
       int f = int(mixh(h3(int(k), int(row), 52007u)) % uint(uFN));
       if (j == 0) f0 = f;
       vec2 uv = vec2(u, y / FR1);
-      vec3 sm = vec3(0.0);
-      for (int q = 0; q < 7; q++) { if (q >= taps) break; sm += faceAt(f, uv + vec2((float(q) / float(taps - 1) - 0.5) * 2.0 * blur / fw, 0.0), 1.0 + 2.0 * d); }
-      sm = mix(sm / float(taps), faceAt(f, uv + vec2(0.38, 0.0), 2.0 + 2.0 * d), 0.38);   // and its ghost
+      vec3 sm = faceAt(f, uv, 0.0);                                  // sharp
+      vec2 sd, rp = vec2(x, p.y);                                    // (the patches ride along with the row)
+      if (uAN > 0) {
+        patchAt(rp, patchSize(0.42), sd);
+        if ((sd.x - k * stp) / fw > 0.62)                            // the third of it where its ghost was: another place
+          sm = elsewhere(rp, 0.42, 16.0 * unit(mixh(hr + 14u)), vec2(x / 233.0, y), 233.0);
+      }
       float wg = sin(3.14159 * u) + 0.05;                            // where one face fades, the next has come in
       acc += sm * wg; ws += wg;
     }
@@ -2869,23 +2926,18 @@ float frieze(vec2 p, float T, out vec3 col) {
     int fa = int(mixh(hr + 12u) % uint(uFN)), fb = int(mixh(hr + 13u) % uint(uFN));
     band = mix(mix(faceAt(fa, vec2(0.5), 7.0), faceAt(fb, vec2(0.5), 7.0), vnoise(vec2(x, row * 89.0), 233.0, 52012u)), vec3(238, 196, 146), 0.3);
   } else if (y < FR2) {
-    // chevrons as a hand draws them: the stroke wavers, and the pan drags it along the row
+    // chevrons as a hand draws them: the stroke wavers (no longer dragged soft by the pan)
     float yy = (y - FR1) / (FR2 - FR1) + 0.12 * (vnoise(vec2(x, row), 21.0, 52011u) - 0.5);
-    c = vec3(0.0);
-    for (int q = 0; q < 3; q++) {
-      float v = (x + (float(q) - 1.0) * blur * 0.6) / (5.0 + 1.5 * vnoise(vec2(x, row), 55.0, 52013u)) + abs(yy - 0.5) * (FR2 - FR1) * FZH / 2.5;
-      int b = int(mod(floor(v), 3.0));
-      c += b == 0 ? vec3(178, 66, 50) : b == 1 ? vec3(54, 74, 170) : vec3(228, 220, 202);
-    }
-    c /= 3.0;
+    float v = x / (5.0 + 1.5 * vnoise(vec2(x, row), 55.0, 52013u)) + abs(yy - 0.5) * (FR2 - FR1) * FZH / 2.5;
+    int b = int(mod(floor(v), 3.0));
+    c = b == 0 ? vec3(178, 66, 50) : b == 1 ? vec3(54, 74, 170) : vec3(228, 220, 202);
     band = vec3(150, 112, 132);
   } else {
     float yy = (y - FR2) / (1.0 - FR2);
     float ql = float(mixh(hr + 9u) % uint(max(uQN, 1)));
     vec2 o = vec2(unit(mixh(hr + 10u)), unit(mixh(hr + 11u)));
-    vec3 sm = vec3(0.0);
-    for (int q = 0; q < 5; q++) sm += texture(uQuilt, vec3(vec2(x + (float(q) - 2.0) * blur * 0.5, yy * 21.0) / (uQS * 0.8) + o, ql)).rgb * 255.0;
-    c = mix(sm / 5.0, vec3(206, 118, 104), 0.35);                   // torsos, in his reds
+    vec3 sm = texture(uQuilt, vec3(vec2(x, yy * 21.0) / (uQS * 0.8) + o, ql)).rgb * 255.0;
+    c = mix(sm, vec3(206, 118, 104), 0.35);                          // torsos, in his reds
     band = mix(textureLod(uQuilt, vec3(o, ql), 6.0).rgb * 255.0, vec3(196, 72, 58), 0.5);
   }
   // dissolved, each register becomes its own field of colour, its edges feathered wider the further it has gone
@@ -2956,8 +3008,9 @@ float tree(vec2 p, float T, out vec3 col) {
 // pairs that weld, two faces from different paintings whose eyes, mouths and light fall in the same places (a
 // Velazquez into a Durer, an old woman's bonnet into Van Gogh's hat). Each weld is laid out as a canvas phi tall as it is wide, as
 // Rothko's classic paintings are (from 1949: two or three soft rectangles floating, their edges brushed out, never
-// ruled): the upper field, to phi^-1 of the height, holds the pair, blurred as the Blurred photographs are,
-// breathing from one face into the other and back over 34 seconds; the lower field is the pair's own colour pushed
+// ruled): the upper field, to phi^-1 of the height, holds the pair, breathing from one face into the other and back
+// over 34 seconds, sharp, with another place where a photograph would blur round a face (once, blurred as the
+// Blurred photographs are); the lower field is the pair's own colour pushed
 // toward his ochres and reds. No frame and no ground (from 2 Oct 2026): the fields float on the plane and bleed into it. Weld is the verb well
 // (Middle English wellen, "to boil, melt"; Old English weallan, "to boil, well up"), its d from 1590s English: metal
 // joined by being made liquid, as the faces are here.
@@ -2986,18 +3039,25 @@ float weld(vec2 p, float T, out vec3 col) {
   float el = length(max(dl, 0.0)) + min(max(dl.x, dl.y), 0.0) + sw;
   float au = 1.0 - smoothstep(-21.0, 13.0, eu), al = 1.0 - smoothstep(-13.0, 21.0, el);
   if (au <= 0.0 && al <= 0.0) return 0.0;
-  // the upper field: the pair, one breathing into the other, coming out of the field's own colour toward its middle
+  // the upper field: the pair, one breathing into the other, sharp (no longer blurred, 8 Oct 2026); and where a
+  // portrait photograph would blur (the hair, the backdrop, toward the field's edge), another place, patch by patch
+  // (ELSEWHERE_GLSL): the face is set off from what is round it not by softness but by being another scene, at
+  // another level of abstraction, as in John Stezaker's Masks, where a postcard of a landscape lies over a film star
   vec3 c = mm;
   if (au > 0.0) {
     float w = 0.5 + 0.45 * sin(6.2832 * T / 34.0 + 6.2832 * unit(mixh(h + 6u)));
     vec2 fu = vec2(q.x / (W * 0.92) + 0.5, (q.y - cu) / hu + 0.5);
-    float pan = 3.0 / W;
-    c = vec3(0.0);
-    for (int t = 0; t < 5; t++) { if (uLite == 1 && t % 2 == 1) continue;
-      vec2 tu = fu + vec2((float(t) - 2.0) * pan, 0.0);
-      c += mix(faceAt(fa, tu, 1.5), faceAt(fb, tu, 1.5), w); }
-    c /= uLite == 1 ? 3.0 : 5.0;
-    c = mix(c, mm, smoothstep(-55.0, 0.0, eu) * 0.8);                 // the face gives way to colour before the edge does
+    c = mix(faceAt(fa, fu, 0.0), faceAt(fb, fu, 0.0), w);
+    if (uAN > 0) {
+      vec2 sd;
+      patchAt(p, patchSize(0.5), sd);
+      vec2 fs = vec2((sd.x - o.x) / (W * 0.92), (sd.y - o.y - cu) / hu - 0.05);   // the patch's middle, from the face's
+      // one boundary, along the patches' own edges: the face (its eyes, nose and mouth) inside, the other place
+      // outside, never mixed and never scattered
+      if (length(fs * vec2(1.0, 0.82)) > 0.31 + 0.05 * (vnoise(sd, 55.0, 55008u) - 0.5))
+        c = elsewhere(p, 0.5, 16.0 * unit(mixh(h + 7u)), (p - o) / W + 0.5, W);   // patches 10 cells across, five tones
+    }
+    c = mix(c, mm, smoothstep(-21.0, 0.0, eu) * 0.6);                 // and at the very edge, the field's own colour
   }
   float sc = 0.96 + 0.08 * vnoise(p, 89.0, 55004u);                  // its light wanders a little, slowly
   col = au >= al ? c : low * sc;
@@ -3201,15 +3261,20 @@ void main() {
     if (unit(mixh(h + 40u)) < thingShare) {
       float sc = 0.6 + 1.8 * unit(mixh(h + 41u));
       vec2 uv = 0.5 + (p - bC) / (bR * 2.0 * sc) / vec2(uThingP.w, 1.0) + 0.4 * (vec2(unit(mixh(h + 42u)), unit(mixh(h + 43u))) - 0.5);
-      float lod = unit(mixh(h + 44u)) < 0.25 ? 2.5 : 0.0;
-      c = thingAt(uv, lod);
+      if (unit(mixh(h + 44u)) < 0.25) {                                // where it once went out of focus: abstracted instead
+        vec2 sd;
+        patchAt(p, patchSize(0.45), sd);
+        c = tones(thingAt(uv + (sd - p) / (bR * 2.0 * sc) / vec2(uThingP.w, 1.0), 2.0), 0.45);
+      } else c = thingAt(uv, 0.0);
     } else if (kind < 0.36) {
-      // a piece of elsewhere in the view: moved, larger or smaller, sharp or out of focus, its colours parted
+      // a piece of elsewhere in the view: moved, larger or smaller, sharp, its colours parted; or, where it once went
+      // out of focus (until 8 Oct 2026), a place further off than the view, abstracted (ELSEWHERE_GLSL)
       vec2 sh = (vec2(unit(mixh(h + 21u)), unit(mixh(h + 22u))) - 0.5) * uPrevSize * 0.7;
       float zm = pow(PHI, 2.0 * unit(mixh(h + 23u)) - 1.0) * (unit(mixh(h + 24u)) < 0.2 ? PHI * PHI : 1.0);
       vec2 src = bC - vec2(uPrev0) + sh + (p - bC) / zm;
-      float lod = unit(mixh(h + 25u)) < 0.35 ? 2.5 : 0.0, ab = floor(1.0 + 4.0 * unit(mixh(h + 26u)));
-      c = vec3(was(src + vec2(ab, 0.0), lod).r, was(src, lod).g, was(src - vec2(ab, 0.0), lod).b);
+      float ab = floor(1.0 + 4.0 * unit(mixh(h + 26u)));
+      if (unit(mixh(h + 25u)) < 0.35 && uAN > 0) c = elsewhere(p, 0.5, 16.0 * unit(mixh(h + 37u)), (p - bC) / (bR * 2.0) + 0.5, bR * 2.0);
+      else c = vec3(was(src + vec2(ab, 0.0), 0.0).r, was(src, 0.0).g, was(src - vec2(ab, 0.0), 0.0).b);
     } else if (kind < 0.66 && uQN > 0) {
       // a saved painting
       int ql = int(mixh(h + 27u) % uint(max(uQN, 1)));
@@ -3344,7 +3409,7 @@ uniform vec2 uPrevSize, uPrevTex;
 uniform float uTime, uHaze;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
-${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("struct Cell {", "\n// A passage's colours")}${fsPart("float vnoise(", "vec3 artPaper(")}${fsPart("struct Void {", "float segD(")}${ANTIQUITY_GLSL}
+${fsPart("const float PHI", "const int MOSAIC")}${fsPart("uint mixh(uint h)", "float chroma(")}${fsPart("float lum(", "float smoothUp(")}${fsPart("float smoothUp(", "int fdiv(")}${fsPart("struct Cell {", "\n// A passage's colours")}${fsPart("float vnoise(", "vec3 artPaper(")}${fsPart("struct Void {", "float segD(")}${ANTIQUITY_GLSL}${ELSEWHERE_GLSL}
 const int PINE = 0, BROADLEAF = 1, MAGNOLIA = 2, OAK = 3, SPRUCE = 4, WILLOW = 5, PALM = 6, ASPEN = 7, CYPRESS = 8, BARE = 9;
 bool cellOf(ivec2 cell, out Cell c, out int layer) {
   ivec2 sl = (cell >> 8) - uC0;
@@ -3460,12 +3525,13 @@ void main() {
   // the canopy seen against the light: dark toward its edge, each leaf a little different
   float dark = (0.3 + 0.28 * (1.0 - clamp(m, 0.0, 1.0))) * (1.0 - smoothstep(0.0, 34.0, max(sc, 0.0)));
   vec3 warm = vec3(0.86, 0.8, 0.36);
-  // through the gaps in the leaves, the history, large and far off behind them, drifting as in a wind
+  // through the gaps in the leaves, another place, large and far off behind them, drifting as in a wind: not softened
+  // (as it was until 8 Oct 2026) but abstracted, in large flat patches of three tones (ELSEWHERE_GLSL)
   bool gap = !canopy && ownCanopy && sc > 0.0;
   if (gap && uAN > 0) {
     vec2 uv = (p - mo.xy) / 377.0 + 0.5 + vec2(uTime * 0.004 + 0.02 * sin(uTime * 0.6), 0.015 * sin(uTime * 0.9 + p.x * 0.01));
     float e = 16.0 * unit(h3(int(mo.x), int(mo.y), 30123u)) + uTime / 21.0;
-    vec3 hist = historyBlur(e, fract(uv), 3.5);                     // its colour and light, not its picture
+    vec3 hist = elsewhere(p, 0.8, e, uv, 377.0);                    // far: patches 22 cells across, three tones
     vec3 sky = across(p + n * (d + 46.0), int(mt.w)) * 255.0;
     outA = outB = vec4(mix(sky, hist, 0.6) / 255.0, 1.0);
     return;
