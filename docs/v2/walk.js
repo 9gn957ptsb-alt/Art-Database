@@ -969,6 +969,7 @@
     s.listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); });
     s.toClose.forEach(function (t) { window.clearTimeout(t); });
     if (s.here && s.here.parentNode) { s.here.parentNode.removeChild(s.here); }
+    if (s.host.banner.under) { s.host.banner.under.hidden = false; }   // a shell had emptied it
     if (s.root.parentNode) { s.root.parentNode.removeChild(s.root); }
     if (s.host.lightInto) { s.host.lightInto(null); }
     if (s.level !== null && s.ctx.onLevel) { s.ctx.onLevel(null); }
@@ -1651,6 +1652,7 @@
   function say(words) {
     var s = S, u = s.host.banner.under;
     if (!u) { return; }
+    u.hidden = false;
     u.textContent = words;
     s.host.scramble(u, "decode");
     s.sayUntil = performance.now() + 4000;
@@ -1824,13 +1826,27 @@
 
   /* ---------------------------------------------------------------- the banner */
 
+  var QUIET_LINE = true;   // false: the under-line says again how each room is known
+
   // Under the banner: the floor and how it is known on the plan; the floor,
   // the room and how it is known in the walk; the room part scrambled in.
   function underline(level, quiet) {
     var s = S, u = s.host.banner.under;
     if (!u) { return; }
     var text;
-    if (s.world.shell) {
+    // Only where you are: the floor and the room by its name (artist, 7 Oct 2026, of MoMA's shell, its line
+    // "Inside · nothing is known yet · the walls are the model's, the way in ours": "Get rid of this text when
+    // I'm inside"). How each is known — documented, reconstructed, the rule's way in — is kept for the column
+    // and the plan's sources, never written over the walk.
+    if (QUIET_LINE) {
+      if (s.world.shell) { text = ""; }
+      else if (level === "plan") { text = floorName(s.world.floors[s.planFloor]); }
+      else {
+        var rq = roomAt(s.world, s.me.floor, s.me.x, s.me.y), fq = s.world.floors[s.me.floor];
+        var nm = rq && !rq.pseudo && rq.name ? rq.name : "";
+        text = floorName(fq) + (nm ? " · " + nm : "");
+      }
+    } else if (s.world.shell) {
       // A shell's way in is ours (the rule's, on the model), not the museum's door.
       text = "Inside · nothing is known yet · the walls are the model's, the way in ours";
     } else if (level === "plan") {
@@ -1855,6 +1871,7 @@
       }
     }
     u.setAttribute("aria-live", "polite");
+    u.hidden = !text;
     if (u.textContent === text) { return; }
     u.textContent = text;
     if (!quiet) { s.host.scramble(u, "decode"); }
