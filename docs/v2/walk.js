@@ -53,6 +53,7 @@
   var PICTURE_TALL = 128, KEEP = 24, FLIGHT = 4;// a picture's offscreen copy; how many kept; loading at once
   var CENTRE = 1.45;                            // m: where a work's centre hangs
   var LOOK_NEAR = 4, FACE = 20 * Math.PI / 180; // before a work: within 4 m, facing it within 20°
+  var NEAR_LABEL = 2.5;                         // m: a work this near is named with its artist and year
   var CUT = 3.0;                                // m over the floor: where the roof comes off
   var PLAN_DOTS = 40000, PLAN_PIX = 2, PLAN_FPS = 12, PLAN_FIT = 0.92;
   var GLIDE_MIN = 1.4, GLIDE_SPAN = Math.pow(PHI, 4);   // m/s; s, the longest a glide takes
@@ -98,6 +99,8 @@
     return m ? (+m[3]) + " " + MONTHS[+m[2] - 1] + " " + m[1] : "";
   }
   function num(v) { return String(Math.round(v * 10) / 10); }
+  // A date as the label says it: "c. 1945" for a "circa", else the record's own.
+  function yearWords(y) { return String(y || "").replace(/^\s*(circa|ca\.?)\s*/i, "c. ").trim(); }
   function hash(i, j) {
     var h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263);
     h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -598,6 +601,9 @@
   // at most 128 dots tall, from which the frame takes one-dot slices. The
   // canvas they are drawn on is never read, so it does not matter that they
   // taint it. No crossOrigin, and no referrer.
+  // A work's picture: Artsy's key, else the museum's own image (a collection work's img).
+  function picKey(w) { return (w && (w.i || w.img)) || null; }
+
   function Pictures(cdn) {
     this.cdn = cdn || CDN;
     this.by = {};
@@ -626,7 +632,9 @@
         var img = new Image();
         img.decoding = "async";
         img.referrerPolicy = "no-referrer";
-        var tries = ["medium", "large", "square"];
+        // A museum's own picture (a collection work's img) is its whole address; Artsy's, a key.
+        var whole = /^https?:\/\//.test(entry.key);
+        var tries = whole ? [] : ["medium", "large", "square"];
         img.onload = function () {
           self.flying -= 1;
           var k = Math.min(1, PICTURE_TALL / Math.max(1, img.naturalHeight));
@@ -648,7 +656,7 @@
           entry.failed = true;
           self.pump();
         };
-        img.src = self.cdn + entry.key + "/" + tries.shift() + ".jpg";
+        img.src = whole ? entry.key : self.cdn + entry.key + "/" + tries.shift() + ".jpg";
       }(entry));
     }
   };
@@ -674,7 +682,7 @@
       var h = hung[i], x1 = x;
       while (x1 < W && cs.hitW[x1] === i) { x1 += 1; }
       var n = x1 - x;
-      var key = h.work && h.work.i;
+      var key = picKey(h.work);
       var near = cs.hitT[x] * cs.colRl[x] <= PICTURE_NEAR;
       var p = key && near && n >= 4 ? pics.get(key) : null;
       if (p) {
@@ -876,7 +884,7 @@
       // A work of no known size is 60 cm tall at its picture's proportions.
       var again = false;
       s.works.forEach(function (w) {
-        if (w.i === p.key && !(w.cm && w.cm[0] > 0 && w.cm[1] > 0) && Math.abs((w.ar || 1) - p.ar) > 0.02) { w.ar = p.ar; again = true; }
+        if (picKey(w) === p.key &&!(w.cm && w.cm[0] > 0 && w.cm[1] > 0) && Math.abs((w.ar || 1) - p.ar) > 0.02) { w.ar = p.ar; again = true; }
       });
       if (again && s.world) {
         var res = hangAll(s.world, s.works, s.ctx.interior && s.ctx.interior.pins);
@@ -1140,7 +1148,7 @@
 
   // With saveData, a work stays its three colours until you stand before it.
   function standingOnly(s) {
-    var key = s.standing && s.standing.work && s.standing.work.i;
+    var key = s.standing && picKey(s.standing.work);
     return { get: function (k) { return k === key ? s.pics.get(k) : null; },
              want: function (k) { if (k === key) { s.pics.want(k); } } };
   }
@@ -2395,13 +2403,39 @@
     return { kind: v >>> 24, i: v & 0xffffff, x: x, y: y };
   }
 
+  // To learn about a work: near it (within LOOK_NEAR), the look at once; else
+  // walk to stand before it, and the look opens on arriving.
+  function learn(h) {
+    var s = S;
+    if (!s || !h) { return; }
+    if (s.standing === h || (h.floor === s.me.floor && Math.hypot(h.cx - s.me.x, h.cy - s.me.y) <= LOOK_NEAR)) { look(h); return; }
+    if (!goTo(h.id, null, { then: "look" })) { look(h); }
+  }
+
+  // The work most nearly ahead, within NAME_NEAR and 30° of the way you face.
+  function ahead() {
+    var s = S, me = s.me, best = null, bd = Infinity;
+    s.hung.forEach(function (h, i) {
+      if (h.floor !== me.floor || !s.seenLo || s.seenLo[i] < 0) { return; }
+      var d = Math.hypot(h.cx - me.x, h.cy - me.y);
+      if (d > NAME_NEAR) { return; }
+      var ang = Math.abs(angleTo(Math.atan2(h.cy - me.y, h.cx - me.x) - me.a));
+      if (ang > Math.PI / 6) { return; }
+      var score = d + ang * 6;
+      if (score < bd) { bd = score; best = h; }
+    });
+    return best;
+  }
+
   function tapWalk(clientX, clientY) {
     var s = S, hit = pickAt(clientX, clientY);
     if (!hit) { return; }
     if (hit.kind === PICK_WORK) {
+      // One tap on a work (artist, 7 Oct 2026: "walk up to an artwork inside the museum and click on
+      // it and learn about it"): near, the look opens at once; far, you walk to stand before it and
+      // the look opens on arriving.
       var h = s.hung[hit.i];
-      if (s.standing === h) { look(h); return; }
-      goTo(h.id);
+      learn(h);
       return;
     }
     if (hit.kind === PICK_FLOOR) {
@@ -2461,8 +2495,8 @@
     if ((event.key === "Enter" || event.key === " ") && s.level === "walk") {
       var t = event.target;
       if (t && t.tagName === "BUTTON") { return; }
-      var h = s.standing || standable(true);
-      if (h) { event.preventDefault(); look(h); }
+      var h = s.standing || standable(true) || ahead();
+      if (h) { event.preventDefault(); learn(h); }
     }
   }
   function keyUp(event) {
@@ -2498,8 +2532,11 @@
       var p = cs.project(cam, h.cx, h.cy, h.z1);
       if (!p) { return; }
       var op = w.d <= 4 ? 1 : w.d <= 6 ? 0.66 : 0.4;
-      out.push({ key: "w:" + h.id, text: h.work.t || "Untitled", x: ox + midCol * dot, y: oy + p.y * dot - 6, rank: w.d,
-                 kind: "work", opacity: op, go: function () { if (s.standing === h) { look(h); } else { goTo(h.id); } } });
+      // Close to (within NEAR_LABEL), its small label: title · artist, year — what it is, before a press.
+      var who = [String(h.work.a || "").split(",")[0], yearWords(h.work.y)].filter(Boolean).join(", ");
+      var text = (h.work.t || "Untitled") + (w.d <= NEAR_LABEL && who ? " · " + who : "");
+      out.push({ key: "w:" + h.id, text: text, x: ox + midCol * dot, y: oy + p.y * dot - 6, rank: w.d,
+                 kind: "work", opacity: op, go: function () { learn(h); } });
     });
     // Rooms at their doorways.
     var here = roomAt(s.world, me.floor, me.x, me.y);
@@ -2559,7 +2596,7 @@
     var n = 0;
     list.forEach(function (it) {
       if (n >= 12) { return; }
-      var w = Math.min(12 * 11, 8 + it.text.length * (it.kind === "work" ? 6.2 : 6.6)), h = 22;
+      var w = Math.min(it.kind === "work" ? 240 : 12 * 11, 8 + it.text.length * (it.kind === "work" ? 6.2 : 6.6)), h = 22;
       var x = ox + it.x, y = oy + it.y;
       var left = it.align === "left" ? x : it.align === "right" ? x - w : x - w / 2;
       var topY = it.kind === "edge" ? y - h / 2 : y - h;
@@ -2589,7 +2626,7 @@
       e.classList.toggle("walk-edge", it.kind === "edge");
       if (it.passive) { e.dataset.passive = "true"; e.tabIndex = -1; } else if (e.dataset.passive) { delete e.dataset.passive; e.tabIndex = 0; }
       if (e.textContent !== it.text) { e.textContent = it.text; }
-      e.setAttribute("aria-label", it.kind === "work" ? "Walk to " + it.text : it.kind === "edge" ? "Through to " + it.text.replace(/[←→]/g, "").trim() : it.text);
+      e.setAttribute("aria-label", it.kind === "work" ? "Look at " + it.text : it.kind === "edge" ? "Through to " + it.text.replace(/[←→]/g, "").trim() : it.text);
       e.style.left = Math.round(left) + "px";
       e.style.top = Math.round(topY) + "px";
       e.style.opacity = it.opacity === undefined ? "" : String(it.opacity);
@@ -2684,6 +2721,8 @@
     R.lines.by = [w.a, w.y].filter(Boolean).join(", ");
     R.lines.made = madeLine(h, w.m);
     R.lines.where = whereLine(h, room);
+    // Beside the work in the walk, only where it hangs: how that is known is the look's and the column's.
+    R.lines.whereShort = (room && room.name ? room.name : floorName(s.world.floors[h.floor])) +(h.wall && WALL_WORDS[h.wall] ? ", " + WALL_WORDS[h.wall] : "");
     var phone = window.innerWidth <= 720;
     R.phone = phone;
     buildView(s.label, R, !phone, true);
@@ -2703,7 +2742,9 @@
     });
     var keys = ["t", "by", "made", "where"];
     keys.forEach(function (k, n) {
-      if (was.on[k]) { reveal(R, k); return; }
+      // What it is — title, artist and date — at once, so a visitor knows it before a press; the
+      // rest of its label on the reading's clock.
+      if (was.on[k] || k === "t" || k === "by") { reveal(R, k); return; }
       host.afterStill(function () { reveal(R, k); }, host.OPEN_AT[n], R);
     });
     if (R.came) {
@@ -2745,8 +2786,14 @@
     var s = S, w = h.work || {};
     var place = roomWords(room);
     if (h.wall && WALL_WORDS[h.wall]) { place += ", " + WALL_WORDS[h.wall]; }
-    var how = sourceWords(s.world, w.src);
     var parts = [place];
+    if (w.how === "arranged") {
+      // Hung by the site's rule (INTERIORS.md, "Arranged"): said as its file says it, in the look
+      // and the column, never over the walk.
+      parts.push(String(w.said || "hung here by the site"));
+      return parts.join(" · ");
+    }
+    var how = sourceWords(s.world, w.src);
     if (how) { parts.push(how + (w.asof ? ", read " + day(w.asof) : "")); }
     if (h.ours) {
       parts.push(h.wall === "centre" ? "its place in the room is ours" :
@@ -2854,14 +2901,14 @@
     host.appendChild(t);
     if (full) {
       ["by", "made", "where"].forEach(function (k) {
-        var e = el("p", "walk-l walk-l-" + k, R.lines[k]);
+        var e = el("p", "walk-l walk-l-" + k, k === "where" && isLabel ? R.lines.whereShort : R.lines[k]);
         v.lines[k] = e;
         host.appendChild(e);
       });
+      if (inLook) { lookExtras(host, R); }
       v.said = el("div", "walk-said");
       v.said.setAttribute("aria-live", "polite");
       host.appendChild(v.said);
-      if (inLook) { host.appendChild(historyButton(R)); }
     }
     Object.keys(v.lines).forEach(function (k) { if (R.was.on[k]) { v.lines[k].dataset.on = "true"; } });
     if (isLabel && !full) { v.lines.t.dataset.on = R.was.on.t ? "true" : "false"; }
@@ -2871,6 +2918,45 @@
     if (R.was.done && v.said) { lineInto(v, R); }
     return v;
   }
+
+  /* The rest of the wall label, in the look only: its credit line; for a work
+     shown here and not held, what its history says happened here; the
+     museum's own description, quoted, with whose words they are; then the
+     doors — 'Where it has been' for a work with a history on the site, the
+     museum's own record of a collection work (a link off the site, named). */
+  function lookExtras(host, R) {
+    var s = S, w = R.h.work || {};
+    var museum = (s.ctx.museum && s.ctx.museum.name) || "the museum";
+    if (w.credit) { host.appendChild(lineOn(el("p", "walk-l walk-l-credit", String(w.credit)))); }
+    if (w.also && w.also.q) {
+      var q = el("p", "walk-l walk-l-also");
+      q.appendChild(document.createTextNode("Its history: "));
+      q.appendChild(el("q", "", String(w.also.q)));
+      host.appendChild(lineOn(q));
+    }
+    if (w.desc) {
+      var d = el("div", "walk-desc");
+      d.appendChild(el("p", "walk-desc-h", "In " + (w.kind === "collection" ? "the museum's" : "its") + " own words"));
+      var bq = el("blockquote", "walk-desc-q", String(w.desc));
+      d.appendChild(bq);
+      if (w.descsrc) { d.appendChild(el("p", "walk-desc-src", "— " + String(w.descsrc))); }
+      host.appendChild(d);
+    }
+    var doors = el("div", "walk-look-doors");
+    if (w.kind !== "collection") { doors.appendChild(historyButton(R)); }
+    var url = w.ref && w.ref.url;
+    if (url && /^https:\/\//.test(url)) {
+      var a = el("a", "walk-record", museum + "'s own record ↗");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.setAttribute("aria-label", museum + "'s own record of " + (R.lines.t || "this work") + " (opens in a new tab)");
+      a.addEventListener("click", function (event) { event.stopPropagation(); });
+      doors.appendChild(a);
+    }
+    if (doors.children.length) { host.appendChild(doors); }
+  }
+  function lineOn(e) { e.dataset.on = "true"; return e; }
 
   function historyButton(R) {
     var s = S, b = el("button", "walk-history", "Where it has been");
@@ -3076,6 +3162,17 @@
     box.setAttribute("aria-label", w.t || "The work");
     var inner = el("div", "walk-look-in");
     box.appendChild(inner);
+    // Back to the walk, where you stood: ×, Escape, a pinch or a press on the dark round it.
+    var x = el("button", "walk-look-x", "×");
+    x.type = "button";
+    x.setAttribute("aria-label", "Back to the walk");
+    x.addEventListener("click", function (event) { event.stopPropagation(); unlook(); });
+    box.appendChild(x);
+    // A press never waits on the clock: its whole label is there at once.
+    if (s.reading && s.reading.h === h) {
+      ["t", "by", "made", "where"].forEach(function (k) { s.reading.was.on[k] = true; });
+      reveal(s.reading, "t");
+    }
     var plate = el("div", "walk-look-plate");
     var go = el("span", "deal-go");
     var img = el("img");
@@ -3092,11 +3189,15 @@
     var shown = false;
     function fit(ar) {
       var r = inner.getBoundingClientRect(), phone = window.innerWidth <= 720;
-      var maxW = phone ? r.width - 32 : r.width * 0.58, maxH = phone ? r.height * 0.62 : r.height - 42;
+      // The label always directly under the picture (artist, 7 Oct 2026: "the info for the artwork
+      // should always be below the thumbnail"): the picture takes the top 62% at most, its label the
+      // width of the picture (never narrower than 18em), under it.
+      var maxW = phone ? r.width - 32 : Math.min(r.width - 64, 980), maxH = r.height * (phone ? 0.58 : 0.64);
       var wv = maxW, hv = wv / ar;
       if (hv > maxH) { hv = maxH; wv = hv * ar; }
       plate.style.width = Math.round(wv) + "px";
       plate.style.height = Math.round(hv) + "px";
+      lines.style.width = Math.round(clamp(Math.max(wv, 300), 0, r.width - 32)) + "px";
     }
     img.addEventListener("load", function () {
       if (S !== s || s.look !== box || shown) { return; }
@@ -3124,13 +3225,16 @@
       go.classList.add("walk-look-bands");
       plate.dataset.on = "true";
     });
-    if (w.i) { img.src = host.cdn + w.i + "/large.jpg"; } else { img.dispatchEvent(new Event("error")); }
+    if (w.i) { img.src = host.cdn + w.i + "/large.jpg"; }
+    else if (w.img && /^https?:\/\//.test(w.img)) { img.src = w.img; }      // the museum's own picture
+    else { img.dispatchEvent(new Event("error")); }
     fit(h.w / Math.max(0.01, h.h));
     plate.addEventListener("click", function (event) { event.stopPropagation(); if (pressedInLook()) { zoom(); } });
     if (s.reading && s.reading.h === h) { buildView(lines, s.reading, true, false, true); }
     setLevel("look");
     s.label.hidden = true;
     clearNames("walk");
+    try { x.focus({ preventScroll: true }); } catch (e) {}
     s.dirty = true;
     wake();
   }

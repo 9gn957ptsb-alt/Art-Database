@@ -101,6 +101,7 @@
 /* Said, not pressed: the room you are in, on the plan. */
 .walk-name[data-passive] { pointer-events: none; cursor: default; }
 .walk-name[data-kind="work"] {
+  max-width: 18em;
   font-family: "Instrument Serif", var(--serif), serif;
   font-style: italic;
   font-size: var(--t-2);
@@ -231,14 +232,78 @@
   touch-action: pan-y;
 }
 .walk-look[hidden] { display: none; }
+/* The picture above, its label directly under it (artist, 7 Oct 2026: "the info for the artwork
+   should always be below the thumbnail"), on a phone and a desktop alike. */
 .walk-look-in {
   box-sizing: border-box;
   min-height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--s-5);
-  padding: var(--s-5);
+  gap: var(--s-4);
+  padding: var(--s-6) var(--s-5) var(--s-6);
 }
+.walk-look-x {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(168, 146, 122, 0.5);
+  border-radius: 50%;
+  background: rgba(15, 10, 7, 0.72);
+  color: #eadfcd;
+  font: 20px/1 var(--mono);
+  cursor: pointer;
+}
+.walk-look-x:hover,
+.walk-look-x:focus-visible { border-color: #eadfcd; }
+.walk-look-x:focus-visible { outline: 2px solid #9d95e6; outline-offset: 2px; }
+.walk-l-credit,
+.walk-l-also {
+  margin-top: var(--s-2);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  color: #c4b29c;
+}
+.walk-l-also q { font-family: var(--serif); font-size: var(--t-2); letter-spacing: 0; color: #eadfcd; }
+.walk-desc { margin-top: var(--s-4); }
+.walk-desc-h {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #c4b29c;
+}
+.walk-desc-q {
+  margin: var(--s-2) 0 0;
+  font-family: var(--serif);
+  font-size: var(--t-2);
+  line-height: 1.45;
+  color: #eadfcd;
+}
+.walk-desc-src { margin: var(--s-1) 0 0; font-family: var(--mono); font-size: 10px; color: #c4b29c; }
+.walk-look-doors { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin-top: var(--s-3); }
+.walk-look-doors .walk-history { margin-top: 0; }
+.walk-record {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-family: var(--mono);
+  font-size: var(--t-0);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c4b29c;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.6);
+  text-underline-offset: 3px;
+}
+.walk-record:hover,
+.walk-record:focus-visible { color: #eadfcd; }
 .walk-look-plate {
   position: relative;
   flex: none;
@@ -259,19 +324,16 @@
 .walk-look-bands { display: flex; flex-direction: column; }
 .walk-look-band { display: block; }
 .walk-look-lines {
-  flex: 1;
-  min-width: 12em;
-  max-width: 24em;
+  flex: none;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: min(18em, 100%);
   color: #eadfcd;
 }
 .walk-look-lines .walk-l-t { font-size: var(--t-5); }
 @media (max-width: 720px) {
-  .walk-look-in {
-    flex-direction: column;
-    align-items: center;
-    padding: var(--s-4) 16px var(--s-6);
-  }
-  .walk-look-lines { max-width: none; width: 100%; }
+  .walk-look-in { padding: var(--s-6) 16px var(--s-6); }
+  .walk-look-lines .walk-l-t { font-size: var(--t-4); }
 }
 
 /* While inside, the building's own drawing, its years and its blur go. */
