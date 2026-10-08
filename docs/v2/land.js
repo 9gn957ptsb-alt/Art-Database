@@ -1449,7 +1449,10 @@
     var inside = !!(was.town && was.town === city.townKey);
     if (still || inside) {
       planFlight("hop", zFit);
-      passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2);
+      // Gone into by the fingers from its skyline (skyline.js, in): no sweep, and the hop is quick,
+      // under the skyline still coming nearer; the building is faded in over it (startBuilding).
+      if (city.via && city.via.zoom) { fly.dur = Math.min(fly.dur, 420); holdEntry(); }
+      else { passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, H / 2); }
     } else {
       setOut(was, city, apart, zFit);
     }
@@ -11576,6 +11579,26 @@
     clod.raf = requestAnimationFrame(clodFrame);
   }
 
+  /* Gone into from the skyline: the building's own drawing starts where it stood in the city and as
+     tall as it stood there (skyline.js's Skyline.target), and grows into its own place as it fades in. */
+  function growFromSky() {
+    var t = window.Skyline && Skyline.target ? Skyline.target() : null;
+    var c = clod && clod.canvas, f = clod && clod.frame, dots = clod && clod.views[clod.view];
+    if (!t || !c || !f || still) { return; }
+    var r = c.getBoundingClientRect(), k = r.width / Math.max(1, c.width);
+    var ox = f.cx0 * k, oy = f.cy0 * k;
+    // As big as it stood there: the skyline's pixels a metre over its own (its ground under it, as there).
+    var ppm = f.scale * k / ((dots && dots.v) || 1);
+    var s0 = t.ppm > 0 && ppm > 0 ? Math.max(0.08, Math.min(1, t.ppm / ppm)) : 0.5;
+    c.style.transition = "none";
+    c.style.transformOrigin = ox.toFixed(1) + "px " + oy.toFixed(1) + "px";
+    c.style.transform = "translate(" + (t.fx - (r.left + ox)).toFixed(1) + "px," + (t.fy - (r.top + oy)).toFixed(1) + "px) scale(" + s0.toFixed(3) + ")";
+    void c.offsetWidth;
+    c.style.transition = "transform 680ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+    c.style.transform = "";
+    window.setTimeout(function () { c.style.transition = ""; c.style.transformOrigin = ""; }, 760);
+  }
+
   function readModel(slug) {
     var key = "model:" + slug;
     if (!grounds[key]) {
@@ -11595,6 +11618,19 @@
     if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
     var walkVia = city.via;
     delete city.via;
+    // Come in from the skyline by the fingers: on the heading the city had, already standing (the skyline
+    // showed it standing), faded in over the skyline once it is drawn — never a dark beat between them.
+    var fromSky = !!(walkVia && walkVia.zoom);
+    var fadeIn = function () {
+      if (buildingOn !== visit || buildingEl.dataset.came !== "wait") { return; }
+      growFromSky();
+      buildingEl.dataset.came = "zoom";
+      window.setTimeout(function () { if (buildingOn === visit && buildingEl.dataset.came === "zoom") { delete buildingEl.dataset.came; } }, 900);
+    };
+    if (fromSky && !still) {
+      buildingEl.dataset.came = "wait";
+      window.setTimeout(fadeIn, 2600);           // however long its model takes, never left unseen
+    } else { delete buildingEl.dataset.came; }
     // Come from a work's stop at this museum: its town opens at that year.
     var atYear = city.atYear;
     delete city.atYear;
@@ -11618,7 +11654,7 @@
       if (g && g.n) { views.ground = shapeClod(b, g); }
       var first = views.building ? "building" : views.ground ? "ground" : null;
       if (atYear && views.ground && views.ground.years) { first = "ground"; } else { atYear = 0; }
-      if (!first) { buildingEl.dataset.air = "none"; return; }
+      if (!first) { buildingEl.dataset.air = "none"; fadeIn(); return; }
       var canvas = document.createElement("canvas");
       canvas.className = "building-clod";
       // What the drawing is, in words (WCAG 1.1.1).
@@ -11629,8 +11665,9 @@
       buildingMap.appendChild(canvas);
       clod = {
         canvas: canvas, views: views, view: first,
-        heading: TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4,
-        at: performance.now(), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
+        heading: fromSky && typeof walkVia.heading === "number" ? isoNearest(walkVia.heading)
+                 : TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4,
+        at: performance.now() - (fromSky ? CLOD_RISE + 200 : 0), drawn: 0, last: 0, held: false, dirty: true, raf: 0,
         swingAt: null, from: 0, to: 0, nextTurn: performance.now() + CLOD_REST,
         when: 1, whenTo: 1, byHand: false,
         b: b, m: city.museum || null, model: model, g: g
@@ -11656,6 +11693,7 @@
       startTime(views[first], atYear);
       showYear();
       clod.raf = requestAnimationFrame(clodFrame);
+      if (fromSky) { requestAnimationFrame(function () { requestAnimationFrame(fadeIn); }); }
     });
   }
 
@@ -13647,8 +13685,10 @@
   }
   function goDeeper(streets, x, y) {
     if (walkOn) { window.Walk.down(x, y); return; }
-    if (WALK && place && place.museum && clod && clod.view === "building" && clod.interior && !flying && !groundOn) {
-      enterWalk({});
+    // In from a museum's building is its walk; its rooms still on their way, nothing yet — never DIRT
+    // Earth's flat ground from the building itself (8 Oct 2026). Its plot (the area view) still dives.
+    if (WALK && place && place.museum && clod && clod.view === "building" && clod.views.building && !flying && !groundOn) {
+      if (clod.interior) { enterWalk({}); }
       return;
     }
     if (!place || flying || groundOn) { return; }
@@ -13676,7 +13716,7 @@
       cityPan(key === "ArrowLeft" ? m : key === "ArrowRight" ? -m : 0, key === "ArrowUp" ? m : key === "ArrowDown" ? -m : 0);
       return true;
     }
-    if (cityMap() && (key === "+" || key === "=")) { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } return true; }
+    if (cityMap() && (key === "+" || key === "=")) { cityNearer(); return true; }
     if (cityMap() && (key === "-" || key === "_")) { if (!cityStepBy(1 / ZOOM_STEP) && !riseAll()) { comeUp(); } return true; }
     if (place || flying || groundOn || deckMode) { return false; }
     var now = performance.now();
@@ -14177,7 +14217,8 @@
         if (!(window.Voice && Voice.nudge && Voice.nudge(1)) && !lensGroundWhole()) { goDeeper(false); }
         return;
       }
-      if (cityMap()) { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } return; }
+      if (cityMap()) { cityNearer(); return; }
+      if (entryHeld("key")) { return; }
       if (place) { goDeeper(false); } else { flyOver(); }
     }
     else if ((event.key === "-" || event.key === "_") && place) {
@@ -14227,6 +14268,8 @@
   var lensWheel = 0, lensWheelAt = 0;
   function placeWheel(event) {
     if (!place || flying || groundOn) { return; }
+    // A wheel's run that went into a museum from its city is spent there.
+    if (entryHeld("wheel", event.timeStamp)) { return; }
     // An art view's column scrolls itself, both ways (and moves its time).
     if (event.target.closest && event.target.closest(".art-col, .walk-look")) { return; }
     // Over the small globe's ground the wheel is zoneWheel's (below).
@@ -14369,6 +14412,27 @@
     if (event.currentTarget !== stage) { event.stopPropagation(); }
   }
   var lensPinch = null;                 // two fingers that came down on the lens: { d }
+  var skyPinching = false;              // two fingers on a skyline, one off it: the skyline's pinch
+  /* The gesture that went into a museum from its city (the skyline's or the map's way in) is spent there:
+     the fingers that were down go on doing nothing until they lift, and a wheel's run (a trackpad's
+     momentum) or a held key for a moment after, so arriving is never also a step on into the walk or
+     DIRT Earth's ground. */
+  var entryHold = null;
+  function holdEntry() {
+    var now = performance.now();
+    entryHold = { ids: Object.keys(downFingers), until: now + 900, max: now + 3000 };
+  }
+  // A wheel event is judged by when it was made (its timeStamp), not when it is heard: a run queued
+  // behind the museum's first drawing (its model is built then) is still the same run.
+  function entryHeld(kind, id) {
+    var h = entryHold;
+    if (!h) { return false; }
+    if (kind === "finger") { return h.ids.indexOf(String(id)) >= 0; }
+    var now = kind === "wheel" && id > 0 ? Math.min(performance.now(), id) : performance.now();
+    if (now > h.until) { if (!h.ids.length && performance.now() > h.until) { entryHold = null; } return false; }
+    if (kind === "wheel") { h.until = Math.min(h.max, now + 600); }
+    return true;
+  }
   function fingerUp(event) {
     if (markDrag && markDrag.id === event.pointerId) {
       if (markDrag.moved > 8) {
@@ -14382,12 +14446,20 @@
     }
     delete downFingers[event.pointerId];
     downFrom = downSpread();
+    if (entryHold) {
+      entryHold.ids = entryHold.ids.filter(function (k) { return k !== String(event.pointerId); });
+      if (!entryHold.ids.length && performance.now() > entryHold.until) { entryHold = null; }
+    }
     if (Object.keys(downFingers).length < 2) {
       if (lensPinch && lensPinch.zoomed && !dive.on) { lensRelease(); }
       lensPinch = null;
       if (rise && rise.fingers && !rise.tween) { riseLifted(); }
+      if (cityPinch && cityPinch.target && cityPinch.target.kind === "museum") {
+        if (cityPinch.over >= 1.25) { mapIn(cityPinch); } else { lightMuseum(cityPinch.target.slug, false); enteringShow(0); }
+      }
       if (cityPinch && !dive.on && !rise) { cityRelease(); }
       cityPinch = null;
+      if (skyPinching) { skyPinching = false; if (window.Skyline && Skyline.pinchEnd) { Skyline.pinchEnd(); } }
     }
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
   }
@@ -14435,6 +14507,8 @@
     // The map in the big place moves and zooms itself (and is never the way up).
     if (flat && !flat.cv.hidden && event.target === flat.cv) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    // Gone into a museum by these fingers: spent there.
+    if (entryHold && entryHeld("finger", event.pointerId)) { return; }
     // Out of a city as far as the fingers go (rise): theirs before anything else's.
     if (rise && rise.fingers && !rise.tween) { riseFingers(); return; }
     // The city's skyline takes its own two fingers (skyline.js).
@@ -14495,6 +14569,14 @@
         var moved = window.Voice && Voice.nudge ? Voice.nudge(dir) : false;
         if (!moved && dir > 0 && lensGround.on) { lensPinch = null; lensGroundWhole(); }
       }
+      return;
+    }
+    // A skyline pinched with a finger off it (on the dial, the column): its own pinch — nearer and
+    // farther, out to the world, in to the museum nearest the fingers (skyline.js), never the ground.
+    if (skyOn() && window.Skyline && Skyline.pinch && !dive.on && d > 0) {
+      var si = Object.keys(downFingers), sa = downFingers[si[0]], sb = downFingers[si[1]];
+      if (!skyPinching) { skyPinching = true; lensPinchTakes(event); }
+      Skyline.pinch(d, (sa.x + sb.x) / 2, (sa.y + sb.y) / 2);
       return;
     }
     // In the reading layout spreading begun off the lens does not dive: the world is in the lens.
@@ -17197,7 +17279,10 @@
                dial: a.dated && artTime && !artTime.hidden ? { y0: a.y0, y1: a.y1, at: a.y0 + Math.max(0, Math.min(1, a.when)) * (a.y1 - a.y0),
                                                        rest: a.when >= 0.999 && !a.byHand && !a.auto } : null };
     },
-    museum: function (slug) { downToMuseum(slug, {}); },
+    museum: function (slug, via) { downToMuseum(slug, via || {}); },
+    // Going into a museum from the skyline (skyline.js, in): the city's column, dial and banner let go of
+    // over the way, s from 0 to 1, as the rise's are; 0 gives them back.
+    entering: function (s) { enteringShow(s); },
     venue: function (vi, x, y) {
       var a = art;
       if (!a || a.kind !== "town" || !a.pf) { return; }
@@ -17316,6 +17401,24 @@
       comeUp();
       return;
     }
+    // Spread on in past the nearest on a museum (or a gallery): into it, as a press does, never the ground
+    // (artist, 8 Oct 2026, of Seattle's skyline spread into DIRT Earth's flat ground). Back under it, nothing.
+    if (cp.over <= 1.02 && cp.target !== undefined) {
+      if (cp.target && cp.target.kind === "museum") { lightMuseum(cp.target.slug, false); enteringShow(0); }
+      cp.target = undefined;
+    }
+    if (cp.over > 1.04) {
+      if (cp.target === undefined) {
+        cp.target = mapTarget(mx, my);
+        if (cp.target && cp.target.kind === "museum") { lightMuseum(cp.target.slug, true); }
+      }
+      if (cp.target) {
+        if (cp.target.kind === "museum" && cp.over >= PHI) { mapIn(cp); return; }
+        if (cp.target.kind === "museum") { enteringShow(Math.log(cp.over) / Math.log(PHI)); }
+        if (cp.target.kind === "gallery" && cp.over >= 1.25 && !cp.target.pressed) { cp.target.pressed = true; showVenue(cp.target.hit); }
+        return;
+      }
+    }
     if (cp.over > 1.04 && diveCan()) { cp.dive = d / (cp.over / 1.04); diveTo(Math.log(d / cp.dive), mx, my); return; }
     if (cp.over > 1.5) {
       // Spread on in past the nearest: down into the ground there.
@@ -17342,6 +17445,16 @@
       cityWheelPush += wd * (event.ctrlKey ? 8 : 1);
       if (cityWheelPush > 377) { cityWheelPush = 0; comeUp(); return; }
     } else if (wd < 0) {
+      // In on a museum (or a gallery) under the pointer: into it, as a press does, never the ground.
+      var wt = mapTarget(event.clientX, event.clientY);
+      if (wt) {
+        cityWheelPush += -wd * (event.ctrlKey ? 8 : 1);
+        if (wt.kind === "museum" && cityWheelPush > 233) { cityWheelPush = 0; downToMuseum(wt.slug, { zoom: true }); return; }
+        if (wt.kind === "gallery" && cityWheelPush > 140) { cityWheelPush = 0; showVenue(wt.hit); }
+        window.clearTimeout(lensWheelT);
+        lensWheelT = window.setTimeout(cityRelease, 300);
+        return;
+      }
       if (diveCan()) {
         diveTo(dive.log - wd * wstep, event.clientX, event.clientY);
         window.clearTimeout(dive.timer);
@@ -17353,6 +17466,58 @@
     }
     window.clearTimeout(lensWheelT);
     lensWheelT = window.setTimeout(cityRelease, 300);
+  }
+  /* What a city's map is spread on past its nearest: the museum nearest the point (its mark within a
+     hand's reach, 0.3 of the band), else a gallery under it (a gallery right under it, much nearer than
+     any museum, is the gallery) — skyline.js's rule for a city without a skyline. */
+  function mapTarget(x, y) {
+    var a = art;
+    if (!a || a.kind !== "town" || !a.town) { return null; }
+    var b = artBand("town"), reach = Math.max(72, 0.3 * Math.min(b.w, b.h));
+    var mus = null, dm = Infinity, gal = null, dg = Infinity;
+    a.town.museums.forEach(function (slug) {
+      var c = cityOf(slug);
+      if (!c) { return; }
+      var p = project(c.lat, c.lon);
+      if (p.z <= 0) { return; }
+      var dd = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+      if (dd < dm) { dm = dd; mus = slug; }
+    });
+    if (a.pf) {
+      galleryPoints(a.town, a.pf).forEach(function (g) {
+        var p = project(g.lat, g.lon);
+        if (p.z <= 0) { return; }
+        var dd = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+        if (dd < dg) { dg = dd; gal = { g: g, x: p.x, y: p.y }; }
+      });
+    }
+    if (gal && dg < 36 && dg * 2.5 < dm) { return { kind: "gallery", hit: gal }; }
+    if (mus && dm <= reach) { return { kind: "museum", slug: mus }; }
+    if (gal && dg <= 48) { return { kind: "gallery", hit: gal }; }
+    return null;
+  }
+  function mapIn(cp) {
+    var slug = cp.target.slug;
+    lightMuseum(slug, false);
+    cityPinch = null;
+    downFrom = 0;
+    enteringShow(0);                  // the city's column goes with the hop (stopArt), the museum's banner is its own
+    downToMuseum(slug, { zoom: true });
+  }
+  // Going into a museum from its city by the fingers: the city's column, dial and banner let go of over
+  // the way, s from 0 to 1, as the rise's are (skyline.js's way in, and the map's); 0 gives them back.
+  function enteringShow(s) {
+    var de = document.documentElement;
+    if (!(s > 0)) { delete de.dataset.entering; de.style.removeProperty("--enter-show"); return; }
+    de.dataset.entering = "true";
+    de.style.setProperty("--enter-show", Math.max(0, 1 - s / 0.8).toFixed(3));
+  }
+  // "+" in a city's map: nearer; at the nearest, into the museum nearest the middle, else the ground.
+  function cityNearer() {
+    if (cityStepBy(ZOOM_STEP)) { return; }
+    var b = artBand("town"), t = mapTarget(b.x + b.w / 2, b.y + b.h / 2);
+    if (t && t.kind === "museum") { downToMuseum(t.slug, { zoom: true }); return; }
+    goDeeper(false);
   }
   // A step bigger or smaller about the band's middle, eased; false at its end.
   function cityStepBy(f) {
@@ -17671,7 +17836,7 @@
     cityHomeEl.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     cityHomeEl.addEventListener("click", function (event) { event.stopPropagation(); cityGoHome(); });
     artEl.appendChild(cityHomeEl);
-    cityZoom = zoomPair("city-zoom", function () { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } },
+    cityZoom = zoomPair("city-zoom", function () { cityNearer(); },
                        function () { cityStepBy(1 / ZOOM_STEP); });
     artEl.appendChild(cityZoom.box);
   }

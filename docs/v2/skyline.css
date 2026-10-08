@@ -24,6 +24,15 @@
   pointer-events: none;
 }
 .skyline-names { position: absolute; inset: 0; pointer-events: none; }
+/* Going into a museum (skyline.js, "in"): the city round it let go of under a veil, the other names with it. */
+.skyline-veil { position: absolute; inset: 0; pointer-events: none; }
+.skyline-veil[hidden] { display: none; }
+.skyline[data-into] .skyline-name:not([data-target]),
+.skyline[data-into] .skyline-who,
+.skyline[data-into] .skyline-light,
+.skyline[data-into] .skyline-note { opacity: var(--in-other, 1); }
+.skyline[data-leaving] { pointer-events: none; }
+.skyline[data-leaving] .skyline-names { opacity: 0; transition: opacity 240ms ease-out; }
 
 /* A name: beside its building, in the city's mono; a museum's in cream, a
    gallery's a step quieter. Unnamed, it is a 24 px target on its building

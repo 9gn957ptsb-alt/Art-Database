@@ -369,6 +369,7 @@
     dots.count = dots.x.length;
     dots.span = Math.max(nx, ny);
     dots.lift = nz;
+    dots.v = v;                 // metres a voxel (land.js's way in from a skyline matches scales by it)
     return dots;
   }
 

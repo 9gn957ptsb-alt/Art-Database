@@ -25,10 +25,12 @@
    (cityartists.json); pressed, their life opens at that year.
 
    Two fingers, a wheel or a trackpad's pinch bring it nearer, up to φ²;
-   pinched on out past the widest it goes up to the world, spread on in past
-   the nearest it goes into the museum under the fingers, else into the
-   ground. Held still and let go, the wave (and whoever comes out of it).
-   The keys: ← → a quarter turn, + − nearer and farther.
+   pinched on out past the widest it goes on out to the world (land.js's
+   rise), spread on in past the nearest it goes on nearer the museum nearest
+   the fingers and into it, its building on the skyline's heading (in, below)
+   — never into DIRT Earth's flat ground. Held still and let go, the wave
+   (and whoever comes out of it). The keys: ← → a quarter turn, + − nearer
+   and farther.
 
    A city whose ground has not been read is the map it was, and its column
    says so. Land.js's part is small: Land.city (state, museum, venue, light,
@@ -95,7 +97,7 @@
 
   /* ---- the elements ------------------------------------------------------ */
 
-  var root = null, canvas = null, light = null, names = null, note = null;
+  var root = null, canvas = null, light = null, veil = null, names = null, note = null;
   function make() {
     if (root) { return; }
     var stage = document.getElementById("stage"), tiles = document.getElementById("tiles");
@@ -107,11 +109,16 @@
     canvas.setAttribute("role", "img");
     light = el("canvas", "skyline-light");
     light.setAttribute("aria-hidden", "true");
+    // Going in to a museum, the city round it let go of (in, below).
+    veil = el("div", "skyline-veil");
+    veil.setAttribute("aria-hidden", "true");
+    veil.hidden = true;
     names = el("div", "skyline-names");
     // The year and who is here, quietly (not live: it changes with every year the dial passes).
     note = el("p", "skyline-note");
     root.appendChild(canvas);
     root.appendChild(light);
+    root.appendChild(veil);
     root.appendChild(names);
     root.appendChild(note);
     // Under the pixel light and whoever comes out of the wave, over the globe.
@@ -359,11 +366,12 @@
     return { x: u * f.cos + w * f.sin, y: w * f.cos - u * f.sin };
   }
 
+  // The dial standing under the middle of the band (a desktop's): the clod keeps above it.
+  function frameH() { var h = canvas.height; return Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6)); }
   function draw() {
     var D = city.dots, w = canvas.width, h = canvas.height, ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, w, h);
-    // The dial standing under the middle of the band (a desktop's): the clod keeps above it.
-    var f = frameFor(w, Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6)));
+    var f = frameFor(w, frameH());
     frameNow = f;
     if (sorted.heading !== view.heading || sorted.count !== D.count) {
       // Back to front, by a counting sort on depth in quarter cells: the order a heading needs,
@@ -427,8 +435,16 @@
       return { a: a, btn: b, named: false, x: 0, y: 0, w: 0, h: 0 };
     });
   }
+  // The view a museum was gone into from, for the way back up: the exact skyline you went down from.
+  var wentFrom = {};
+  function rememberView(slug, base) {
+    if (!city) { return; }
+    wentFrom[city.key] = { slug: slug, heading: view.swingAt ? view.to : view.heading,
+                           zoom: base ? base.zoom : view.zoom, px: base ? base.px : view.px, py: base ? base.py : view.py,
+                           w: band ? band.w : 0, h: band ? band.h : 0, at: performance.now() };
+  }
   function pressArt(a, x, y) {
-    if (a.kind === "museum") { Land.city.museum(a.slug); }
+    if (a.kind === "museum") { rememberView(a.slug); Land.city.museum(a.slug); }
     else { Land.city.venue(a.vi, x, y); if (Land.city.pulse) { Land.city.pulse(x, y, 55); } }
   }
   function lightArt(k, on) {
@@ -531,6 +547,7 @@
     g.clearRect(0, 0, pw, ph);
     g.setTransform(k, 0, 0, k, 0, 0);
     var f = frameNow, n = city.n, half = n / 2, age = now - pulseAt;
+    if (into && f.scale * 1.42 > T * 0.9) { return; }
     city.arts.forEach(function (a) {
       if (!a.cells.length) { return; }
       var risen = !city.years || a.kind !== "museum" || shownNow >= 0;
@@ -915,17 +932,7 @@
         var ids = Object.keys(pointers);
         if (ids.length < 2) { return; }
         var a = pointers[ids[0]], b = pointers[ids[1]];
-        var d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        view.px += mx - g.mx; view.py += my - g.my;
-        g.mx = mx; g.my = my;
-        var r = d / g.d;
-        g.d = d;
-        zoomAbout(r, mx, my, g);
-        dirty = true;
-        // Pinched on out past the widest: the world, as far as the fingers go (land.js's rise), else up.
-        if (g.over < 1 && Land.city.rise && Land.city.rise()) { gesture = null; pointers = {}; return; }
-        if (g.over < 1 / 1.45) { gesture = null; pointers = {}; Land.city.up(); }
-        else if (g.over > 1.5) { gesture = null; pointers = {}; down(mx, my); }
+        pinchStep(g, Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), (a.x + b.x) / 2, (a.y + b.y) / 2);
       }
     });
     function end(event) {
@@ -949,6 +956,8 @@
       } else if (g && g.kind === "two" && Object.keys(pointers).length < 2) {
         gesture = null;
         pointers = {};
+        // Let go on the way in: into the museum past IN_ON, else back to the nearest.
+        if (into && into.fingers) { intoLetGo(); }
       }
     }
     root.addEventListener("pointerup", end);
@@ -964,15 +973,30 @@
       if (now - wheelAt > 600) { wheelPush = 0; }
       wheelAt = now;
       var g = { over: 1 };
+      if (leaving) { return; }
+      if (into) {
+        // Going in by the wheel: each step on the way (or back out of it, the skyline again).
+        if (into.done || into.tween) { return; }
+        window.clearTimeout(into.wheelT);
+        var k2 = into.k * Math.exp(-wd * step);
+        if (k2 <= 1) { intoEnd(false); return; }
+        intoTo(k2, event.clientX, event.clientY, false);
+        if (into && !into.done && !into.tween) { into.wheelT = window.setTimeout(intoLetGo, IN_WAIT); }
+        return;
+      }
       zoomAbout(Math.exp(-wd * step), event.clientX, event.clientY, g);
       dirty = true;
       if (g.over !== 1) {
         if (wd > 0 && Land.city.rise && Land.city.rise(Math.exp(-wd * step))) { wheelPush = 0; return; }
-        wheelPush += Math.abs(wd) * (event.ctrlKey ? 8 : 1);
-        if (wheelPush > (wd > 0 ? 377 : 233)) {
+        if (wd < 0) {
+          // In past the nearest: on toward the museum nearest the pointer, and into it.
           wheelPush = 0;
-          if (wd > 0) { Land.city.up(); } else { down(event.clientX, event.clientY); }
+          intoTo(g.over, event.clientX, event.clientY, false);
+          if (into && !into.done && !into.tween) { into.wheelT = window.setTimeout(intoLetGo, IN_WAIT); }
+          return;
         }
+        wheelPush += Math.abs(wd) * (event.ctrlKey ? 8 : 1);
+        if (wheelPush > 377) { wheelPush = 0; Land.city.up(); }
       } else { wheelPush = 0; }
     }, { passive: false });
     canvas.addEventListener("keydown", function (event) {
@@ -994,11 +1018,12 @@
       return true;
     }
     if (k === "+" || k === "=" || k === "-" || k === "_") {
-      var inward = k === "+" || k === "=", g = { over: 1 };
-      zoomAbout(inward ? 1.25 : 1 / 1.25, band.x + band.w / 2, band.y + band.h / 2, g);
+      var nearer = k === "+" || k === "=", g = { over: 1 };
+      if (into || leaving) { return true; }
+      zoomAbout(nearer ? 1.25 : 1 / 1.25, band.x + band.w / 2, band.y + band.h / 2, g);
       dirty = true;
       if (g.over !== 1) {
-        if (inward) { down(band.x + band.w / 2, band.y + band.h / 2); }
+        if (nearer) { keyIn(); }
         else if (!(Land.city.riseAll && Land.city.riseAll())) { Land.city.up(); }
       }
       return true;
@@ -1031,11 +1056,247 @@
     view.held = false;
     view.nextTurn = performance.now() + REST_MS;
   }
-  // Spread on in past the nearest: into the museum under the fingers, else into the ground there.
-  function down(x, y) {
-    var a = artUnder(x, y, 40);
-    if (a && a.kind === "museum") { Land.city.museum(a.slug); return; }
-    Land.city.deeper(x, y);
+  /* ---- in: from the skyline into a museum ----------------------------------
+
+     The artist, 8 Oct 2026, with a recording of Seattle's skyline spread on
+     past its nearest into DIRT Earth's flat ground: "when I zoom in on a
+     specific art museum or gallery from a city view … it doesn't take me
+     where it is currently to that two dimensional texture that is not in the
+     isometric perspective … when I zoom in on a specific museum from the city
+     skyline, I want it to take me to the isometric perspective of the
+     building I get when clicking on the museum." Past the nearest the same
+     fingers (a wheel, "+") go on bringing the skyline nearer, about the
+     museum nearest them (a hand's reach: its top or its foot within 0.3 of
+     the band), drawing it toward the middle as the city round it is let go
+     of (the veil) and its column, dial and banner fade; let go past IN_ON, or
+     spread to IN_ALL, and the museum's own view comes — its building on the
+     skyline's heading, faded in over the skyline still coming nearer (no
+     sweep). Let go short of IN_ON and it springs back to the nearest. A
+     gallery spread on is pressed (its row opens, its building lit) and the
+     skyline springs back; open ground only gives a little and springs back.
+     Nothing on a skyline goes down into DIRT Earth's ground. */
+  var IN_ON = 1.25, IN_ALL = PHI, IN_WHEEL_ON = 1.15, IN_WAIT = 650, IN_BACK = 420, LEAVE_MS = 900;
+  var into = null, leaving = null;
+  function backOut(t) { var c1 = 1.1, c3 = c1 + 1, u = t - 1; return 1 + c3 * u * u * u + c1 * u * u; }
+  // The museum nearest a point of the screen (its top or its foot) within a hand's reach, else a gallery
+  // under the finger; a gallery right under it, much nearer than any museum, is the gallery.
+  function nearestArt(x, y) {
+    var f = frameNow;
+    if (!f || !city || !band) { return null; }
+    var reach = Math.max(72, 0.3 * Math.min(band.w, band.h));
+    var mus = null, dm = Infinity, gal = null, dg = Infinity;
+    city.arts.forEach(function (a) {
+      var top = toScreen(project(f, a.at.x, a.at.y, a.top)), foot = toScreen(project(f, a.at.x, a.at.y, a.z0 || 0));
+      var d = Math.min(Math.hypot(top.x - x, top.y - y), Math.hypot(foot.x - x, foot.y - y));
+      if (a.kind === "museum") { if (d < dm) { dm = d; mus = a; } }
+      else if (d < dg) { dg = d; gal = a; }
+    });
+    if (gal && dg < 36 && dg * 2.5 < dm) { return gal; }
+    if (mus && dm <= reach) { return mus; }
+    if (gal && dg <= 48) { return gal; }
+    return null;
+  }
+  function intoPoint(a) { return { x: a.at.x, y: a.at.y, z: ((a.z0 || 0) + a.top) / 2 }; }
+  // The view put so a point of the ground stands at (tx, ty) of the canvas, at the view's zoom.
+  function aimAt(p, tx, ty) {
+    view.px = 0; view.py = 0;
+    var q = project(frameFor(canvas.width, frameH()), p.x, p.y, p.z);
+    view.px = tx - q.x; view.py = ty - q.y;
+  }
+  function intoBegin(x, y, fingers, g) {
+    if (!city || !on_ || !frameNow || leaving) { return false; }
+    var a = nearestArt(x, y), from;
+    if (a) { var q = project(frameNow, intoPoint(a).x, intoPoint(a).y, intoPoint(a).z); from = { x: q.x, y: q.y }; }
+    else { from = { x: x - band.x, y: y - band.y }; }
+    // The heading eases onto its diagonal as it is gone into, so the building comes on the very one.
+    var h0 = view.heading, h1 = nearestDiagonal(view.swingAt ? view.to : view.heading);
+    into = { a: a, k: 1, fingers: !!fingers, base: { zoom: view.zoom, px: view.px, py: view.py }, from: from,
+             h0: h0, h1: a && a.kind === "museum" ? h1 : h0, tween: null, done: false, wheelT: 0, g: g || null };
+    view.held = true;                  // the heading holds while it is gone into
+    view.swingAt = 0;
+    root.dataset.into = a ? a.kind : "ground";
+    if (a && marks[a.k]) { marks[a.k].btn.dataset.target = "true"; lightArt(a.k, true); }
+    return true;
+  }
+  // How far in, 0 at the nearest to 1 at IN_ALL; the view, the veil and the city's chrome follow it.
+  function intoView() {
+    var w = into;
+    if (!w || !frameNow || !band) { return; }
+    var a = w.a, s = a ? Math.max(0, Math.min(1, Math.log(w.k) / Math.log(IN_ALL))) : 0;
+    // Open ground only gives a little.
+    var kv = a ? w.k : 1 + Math.min(0.2, (w.k - 1) * 0.3);
+    view.zoom = w.base.zoom * kv;
+    var hh = w.h0 + (w.h1 - w.h0) * Math.min(1, s * 1.4);
+    if (hh !== view.heading) { view.heading = hh; }
+    if (a) {
+      // The museum drawn toward the middle as it comes nearer, where its own view will stand it.
+      var tx = w.from.x + (canvas.width / 2 - w.from.x) * s, ty = w.from.y + (frameH() * 0.5 - w.from.y) * s;
+      aimAt(intoPoint(a), tx, ty);
+    } else {
+      // About the fingers (frameFor's cy0 less the view's own offset does not change with the zoom).
+      var C = frameFor(canvas.width, frameH()).cy0 - view.py;
+      view.px = w.from.x - canvas.width / 2 - (w.from.x - canvas.width / 2 - w.base.px) * kv;
+      view.py = w.from.y - C - (w.from.y - C - w.base.py) * kv;
+    }
+    dirty = true;
+    placed = "";
+    // The city round it let go of.
+    if (a && s > 0) {
+      var f = frameFor(canvas.width, frameH()), p = intoPoint(a);
+      var c = toScreen(project(f, p.x, p.y, p.z));
+      var rc = Math.sqrt(Math.max(1, a.cells.length) / Math.PI) * 1.42 * f.scale;
+      var r1 = Math.max(26, rc * 1.15, (a.top - (a.z0 || 0)) * f.ct * f.scale * 0.62), r2 = r1 * 1.8 + 40;
+      var alpha = (a.kind === "museum" ? 0.92 : 0.6) * s;
+      veil.hidden = false;
+      veil.style.background = "radial-gradient(circle at " + Math.round(c.x) + "px " + Math.round(c.y) + "px, rgba(15,10,7,0) " +
+        Math.round(r1) + "px, rgba(15,10,7," + alpha.toFixed(3) + ") " + Math.round(r2) + "px)";
+    } else { veil.hidden = true; }
+    root.style.setProperty("--in-other", (1 - s).toFixed(3));
+    // (Once gone, the museum's own banner is up: the city's are put away already.)
+    if (Land.city.entering && !(leaving && leaving.went)) { Land.city.entering(a && a.kind === "museum" ? s : 0); }
+  }
+  function intoTo(k, x, y, fingers, g) {
+    if (!into) {
+      if (!(k > 1) || !intoBegin(x, y, fingers, g)) { return; }
+    }
+    var w = into;
+    if (w.done || w.tween) { return; }
+    w.k = Math.max(1, k);
+    if (w.a && w.a.kind === "museum" && w.k >= IN_ALL) { intoIn(); return; }
+    if (w.a && w.a.kind === "gallery" && w.k >= IN_ALL) { intoLetGo(); return; }
+    intoView();
+  }
+  // Let go: into the museum past IN_ON, else back to the nearest (a gallery pressed on the way).
+  function intoLetGo() {
+    var w = into;
+    if (!w || w.tween || w.done) { return; }
+    window.clearTimeout(w.wheelT);
+    var on = w.fingers ? IN_ON : IN_WHEEL_ON;
+    if (w.a && w.a.kind === "museum" && w.k >= on) { intoIn(); return; }
+    if (w.a && w.a.kind === "gallery" && w.k >= on && !w.pressed) {
+      var mk = marks[w.a.k];
+      w.pressed = true;
+      if (w.g) { w.g.spent = true; }          // the gesture that pressed it goes no further in
+      pressArt(w.a, mk ? mk.x : band.x + w.from.x, mk ? mk.y : band.y + w.from.y);
+    }
+    w.tween = { from: w.k, to: 1, at: performance.now(), dur: still ? 1 : IN_BACK, back: true };
+  }
+  // In: the museum's own view, its building on this heading, faded in over the skyline still coming nearer.
+  function intoIn() {
+    var w = into;
+    if (!w || w.done || !w.a || w.a.kind !== "museum") { return; }
+    w.done = true;
+    w.tween = null;
+    window.clearTimeout(w.wheelT);
+    gesture = null;
+    pointers = {};
+    leaving = { at: performance.now(), k0: w.k, k1: Math.max(w.k, IN_ALL) * 1.12, went: false, upAt: 0 };
+    root.dataset.leaving = "true";
+    rememberView(w.a.slug, w.base);
+    view.heading = w.h1;
+    Land.city.museum(w.a.slug, { zoom: true, heading: w.h1 });
+  }
+  function intoEnd(gone) {
+    var w = into;
+    into = null;
+    if (!w) { return; }
+    window.clearTimeout(w.wheelT);
+    if (!gone) { view.zoom = w.base.zoom; view.px = w.base.px; view.py = w.base.py; view.heading = w.h0; }
+    view.held = false;
+    view.nextTurn = performance.now() + REST_MS;
+    if (root) {
+      delete root.dataset.into;
+      delete root.dataset.leaving;
+      root.style.removeProperty("--in-other");
+    }
+    if (veil) { veil.hidden = true; veil.style.background = ""; }
+    if (w.a && marks[w.a.k]) { delete marks[w.a.k].btn.dataset.target; lightArt(w.a.k, false); }
+    if (Land.city.entering) { Land.city.entering(0); }
+    dirty = true;
+    placed = "";
+  }
+  // One step of a pinch (two fingers on the skyline, or land.js's with one off it): nearer and farther about
+  // the fingers, out past the widest to the world, in past the nearest toward the museum nearest them.
+  function pinchStep(g, d, mx, my) {
+    if (leaving) { return; }
+    var r = d / g.d;
+    g.d = d;
+    if (into) {
+      if (into.done) { return; }
+      // Springing back, caught by the next stroke: it goes on from where it has got to (a gallery
+      // pressed by this gesture is done with).
+      if (into.tween) { if (into.tween.back && !into.pressed) { into.tween = null; } else { return; } }
+      // On the way in the spread is the way; spread back under the nearest, the skyline again.
+      var k = into.k * r;
+      g.mx = mx; g.my = my;
+      if (k <= 1) { intoEnd(false); g.over = 1; zoomAbout(k, mx, my, g); dirty = true; return; }
+      intoTo(k, mx, my, true);
+      return;
+    }
+    view.px += mx - g.mx; view.py += my - g.my;
+    g.mx = mx; g.my = my;
+    zoomAbout(r, mx, my, g);
+    dirty = true;
+    // Pinched on out past the widest: the world, as far as the fingers go (land.js's rise), else up.
+    if (g.over < 1 && Land.city.rise && Land.city.rise()) { gesture = null; pointers = {}; return; }
+    if (g.over < 1 / 1.45) { gesture = null; pointers = {}; Land.city.up(); return; }
+    // Spread on in past the nearest: on toward the museum nearest the fingers, and into it.
+    if (g.over > 1) { var o = g.over; g.over = 1; if (!g.spent) { intoTo(o, mx, my, true, g); } }
+  }
+  // "+" at the nearest: into the museum nearest the middle (a gallery there pressed; else nothing).
+  function keyIn() {
+    if (!band || !intoBegin(band.x + band.w / 2, band.y + frameH() / 2, false)) { return; }
+    var w = into;
+    if (!w.a || w.a.kind !== "museum") {
+      if (w.a && marks[w.a.k]) { pressArt(w.a, marks[w.a.k].x, marks[w.a.k].y); }
+      w.k = 1.08;
+      w.tween = { from: 1.08, to: 1, at: performance.now(), dur: still ? 1 : IN_BACK, back: true };
+      intoView();
+      return;
+    }
+    w.tween = { from: 1, to: IN_ALL, at: performance.now(), dur: still ? 1 : 560, back: false, then: intoIn };
+  }
+  function stepInto(now) {
+    var w = into, tw = w && w.tween;
+    if (!tw) { return; }
+    var q = Math.max(0, Math.min(1, (now - tw.at) / tw.dur));
+    var e = tw.back ? backOut(q) : 1 - Math.pow(1 - q, 3);
+    w.k = Math.max(0.9, tw.from + (tw.to - tw.from) * e);
+    intoView();
+    if (q >= 1) {
+      w.tween = null;
+      if (tw.back) { intoEnd(false); } else if (tw.then) { tw.then(); }
+    }
+  }
+  // Gone in: the skyline holds over the hop, still coming nearer, until the museum's view is up over it.
+  function stepLeaving(now) {
+    var L = leaving, w = into;
+    var q = Math.min(1, (now - L.at) / LEAVE_MS), e = 1 - Math.pow(1 - q, 3);
+    // (Under reduced motion it holds where the hand left it.)
+    if (w && !still) { w.k = L.k0 + (L.k1 - L.k0) * e; intoView(); }
+    if (now - drawnAt >= 1000 / 24) { drawnAt = now; dirty = false; draw(); }
+    var st = Land.city.state();
+    if (!st) {
+      // Gone: the city's column and dial are put away now, and the museum's banner is its own.
+      if (!L.went && Land.city.entering) { Land.city.entering(0); }
+      L.went = true;
+    }
+    else if (!L.went && now - L.at > 600) {
+      // It never went (the way in was refused): back to the nearest.
+      leaving = null;
+      if (root) { delete root.dataset.leaving; }
+      if (w) { w.done = false; w.tween = { from: w.k, to: 1, at: now, dur: IN_BACK, back: true }; }
+      return;
+    }
+    var b = document.getElementById("building");
+    var up = b && !b.hidden && (b.dataset.air === "up" || b.dataset.air === "none") && b.dataset.came !== "wait";
+    if (up && !L.upAt) { L.upAt = now; }
+    if ((L.upAt && now - L.upAt > 640) || now - L.at > 4200) {
+      leaving = null;
+      intoEnd(true);
+      off();
+      visit = null;
+    }
   }
   function artUnder(x, y, reach) {
     var best = null, bd = reach;
@@ -1085,9 +1346,13 @@
   /* ---- the loop ---------------------------------------------------------- */
 
   var on_ = false, dirty = true, last = 0, visit = null, drawnAt = 0, lightKey = "";
+  var extPinch = null;                // land.js's two fingers, one of them off the skyline (on the dial)
   var built = {};                     // a city's ground made into dots, kept for the visit after
   var waiting = null;                 // the visit whose ground is in and is being made (or could not be read)
   function off() {
+    if (into) { intoEnd(true); }
+    leaving = null;
+    extPinch = null;
     if (!on_ && (!root || root.hidden)) { return; }
     on_ = false;
     if (root) { root.hidden = true; }
@@ -1106,6 +1371,8 @@
   function tick(now) {
     requestAnimationFrame(tick);
     if (!window.Land || !Land.city) { return; }
+    // Gone into a museum: the skyline holds, coming nearer, until the museum's view is up over it.
+    if (leaving && city && on_ && band) { stepLeaving(now); return; }
     var st = Land.city.state();
     var ok = st && !st.reading && !(st.via && (st.via.at || st.via.studio));
     if (!ok) { off(); visit = null; return; }
@@ -1152,6 +1419,14 @@
       view.heading = nearestDiagonal(TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4);
       // A phone a little nearer: its window is narrow, and the museums are in the middle.
       view.zoom = window.innerWidth <= 720 ? 1.15 : 1; view.px = view.py = 0; view.swingAt = 0; view.nextTurn = now + REST_MS;
+      // Up from the museum gone into from here (within the half hour, the window as it was): that view again.
+      var wf = wentFrom[st.key], bnow = st.band;
+      if (wf && st.via && st.via.museum === wf.slug && now - wf.at < 1800000 &&
+          (!wf.w || (bnow && Math.abs(bnow.w - wf.w) < 2))) {
+        view.heading = nearestDiagonal(wf.heading);
+        view.zoom = Math.max(1, Math.min(ZOOM_MAX, wf.zoom));
+        view.px = wf.px; view.py = wf.py;
+      }
       crowd = window.innerWidth <= 720 ? 6 : 10;
       roster = (artistsAll[st.key] || []).slice();
       walkers = [];
@@ -1199,6 +1474,7 @@
     // dial's first year; a dated building rises in its year.
     var shown = city.years ? Math.max(0, (yearF - city.years.y0) / (city.years.y1 - city.years.y0)) : 1;
     if (Math.abs(shown - shownNow) > 1e-4) { shownNow = shown; dirty = true; }
+    if (into && into.tween) { stepInto(now); }
     // Resting on the diagonals, a quarter turn every so often; a drag turns it, let go it settles.
     if (!view.held && !gesture) {
       if (!still && !view.swingAt && now >= view.nextTurn && !document.hidden) { settleTo(nearestDiagonal(view.heading) + TAU / 4); }
@@ -1258,6 +1534,37 @@
   window.Skyline = {
     on: function () { return on_; },
     key: function (k) { return keyed(k); },
+    // land.js's two fingers when one is off the skyline (on the dial): the skyline's own pinch, by spread.
+    pinch: function (d, mx, my) {
+      if (!city || !on_ || leaving) { return false; }
+      if (!extPinch) {
+        extPinch = { kind: "two", d: Math.max(1, d), mx: mx, my: my, over: 1 };
+        gesture = null;
+        pointers = {};
+        settleTo(null);
+        return true;
+      }
+      pinchStep(extPinch, Math.max(1, d), mx, my);
+      return true;
+    },
+    pinchEnd: function () {
+      if (!extPinch) { return; }
+      extPinch = null;
+      if (into && into.fingers) { intoLetGo(); }
+    },
+    // Going into a museum: where its building stands on the screen now (foot and top), for its own
+    // view to grow from (land.js startBuilding); null otherwise.
+    target: function () {
+      if (!leaving || !into || !into.a || !frameNow || !band || !city) { return null; }
+      var a = into.a, foot = toScreen(project(frameNow, a.at.x, a.at.y, a.z0 || 0));
+      // Its ground's middle on the screen, and the skyline's pixels a metre there.
+      return { fx: foot.x, fy: foot.y, ppm: frameNow.scale / city.cell };
+    },
+    // For the tests: the way in, as it stands.
+    into: function () {
+      return into ? { kind: into.a ? into.a.kind : "ground", name: into.a ? into.a.name : null, slug: into.a ? into.a.slug || null : null,
+                      k: into.k, done: into.done, tween: !!into.tween, leaving: !!leaving } : (leaving ? { leaving: true } : null);
+    },
     // The city's story (chronicle.js): a moment's museum ({museum: slug}) or gallery ({venue: vi}) lit.
     light: function (l, on) {
       if (!city || !on_ || !l) { return; }
