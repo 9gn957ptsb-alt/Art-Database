@@ -6,7 +6,11 @@ art movement or style."
 
 Sources:
   - Artsy's own genes on each saved work (data/genes/<id>.json, fetched by fetch_work_genes.py; private
-    cache) — the tag is Artsy's, on that very work.
+    cache) — the tag is Artsy's, on that very work. Artsy tags only about a quarter of the saved works, so
+  - second, by the artist: Artsy's genes on the work's artist (data/genes/artists/), for a work whose own genes
+    name no style, dated within the style's years (Wikidata's start and end; else the directly tagged works' span; else
+    40 years from the start), ±5 years.
+    Each such row ends "a"; the page says "by its artist's tag".
   - Which genes are movements or styles: a gene whose name (or display name) is the English label or alias
     of a Wikidata item that is an art movement (Q968159) or an art style (Q1792644), or a subclass of one
     (data/styles/wd_genes.json, CC0, asked once with --wikidata), plus Artsy's own names for schools and
@@ -116,6 +120,25 @@ def genes():
     return out
 
 
+def artist_genes():
+    """{work id: genes of its artists} — Artsy's genes on the artist (fetch_work_genes.py)."""
+    of = ROOT / "data" / "genes_artists_of.json"
+    if not of.exists():
+        return {}
+    by_work = json.loads(of.read_text())
+    cache = {}
+    out = {}
+    for wid, arts in by_work.items():
+        gl = []
+        for a in arts:
+            if a not in cache:
+                f = GENES / "artists" / (a + ".json")
+                cache[a] = json.loads(f.read_text()) if f.exists() else []
+            gl += cache[a]
+        out[wid] = gl
+    return out
+
+
 def ask_wikidata(names):
     """Which of these names are an art movement's or style's English label or alias."""
     found = {}
@@ -141,10 +164,15 @@ def ask_wikidata(names):
         for b in d["results"]["bindings"]:
             l = b["l"]["value"].lower()
             qid = b["m"]["value"].rsplit("/", 1)[1]
+            y0 = year(b.get("s", {}).get("value", "")) or None
+            y1 = year(b.get("e", {}).get("value", "")) or None
             prev = found.get(l)
-            # The lowest Q number is the main item, as a rule.
-            if not prev or int(qid[1:]) < int(prev[1:]):
-                found[l] = qid
+            # The lowest Q number is the main item, as a rule; its earliest start and latest end.
+            if not prev or int(qid[1:]) < int(prev[0][1:]):
+                found[l] = [qid, y0, y1]
+            elif prev[0] == qid:
+                prev[1] = min(x for x in (prev[1], y0) if x) if (prev[1] or y0) else None
+                prev[2] = max(x for x in (prev[2], y1) if x) if (prev[2] or y1) else None
         time.sleep(1)
     return found
 
@@ -156,8 +184,9 @@ def year(d):
 
 def main():
     g = genes()
+    ga = artist_genes()
     names = set()
-    for gl in g.values():
+    for gl in list(g.values()) + list(ga.values()):
         for x in gl:
             names.add(x["name"])
             if x.get("display_name"):
@@ -165,19 +194,19 @@ def main():
     if "--wikidata" in sys.argv or not WD.exists():
         WD.parent.mkdir(parents=True, exist_ok=True)
         WD.write_text(json.dumps(ask_wikidata(names), indent=1, sort_keys=True))
-    wd = json.loads(WD.read_text())
+    wd = {k: (v if isinstance(v, list) else [v, None, None]) for k, v in json.loads(WD.read_text()).items()}
 
     def style_of(x):
         n = x["name"]
         if n in NOT:
             return None
         if n in HAND:
-            return n, wd.get(n.lower(), "")
+            return n, (wd.get(n.lower()) or [""])[0]
         # A period ("1860–1969"), never a style; nor an item made lately to mirror Artsy's genes (Q13…, 2025–26).
         if re.search(r"[0-9]", n):
             return None
         for cand in (n, x.get("display_name") or ""):
-            q = wd.get(cand.lower()) if cand else None
+            q = (wd.get(cand.lower()) or [None])[0] if cand else None
             if q and int(q[1:]) < 130000000:
                 return n, q
         return None
@@ -192,19 +221,53 @@ def main():
             s = style_of(x)
             if s:
                 styles.setdefault(s, set()).add(wid)
+    # The second tier, by the artist: a work whose own genes do not say, whose artist Artsy tags with the style,
+    # dated within the style's years — Wikidata's (start to end, or to now), else those of the works tagged
+    # directly — five years either side. Never a work Artsy tagged itself with other styles only.
+    by_artist = {}
+    qyears = {v[0]: (v[1], v[2]) for v in wd.values()}
+    for wid, gl in sorted(ga.items()):
+        if wid not in rows or any(style_of(x) for x in g.get(wid, [])):
+            continue
+        y = year(rows[wid][3])
+        if not y:
+            continue
+        for x in gl:
+            st = style_of(x)
+            if not st:
+                continue
+            y0, y1 = qyears.get(st[1], (None, None)) if st[1] else (None, None)
+            own = [year(rows[w][3]) for w in styles.get(st, ()) if year(rows[w][3])]
+            # Where Wikidata gives no end (or no start), the works Artsy tagged directly say it, else 40 years.
+            if not y0:
+                if len(own) < 3:
+                    continue
+                y0 = min(own)
+            if not y1:
+                y1 = max(own) if len(own) >= 3 else y0 + 40
+            if y0 - 5 <= y <= y1 + 5:
+                by_artist.setdefault(st, set()).add(wid)
+    for st, ids in by_artist.items():
+        styles.setdefault(st, set())
 
     out = []
-    for (name, qid), ids in sorted(styles.items(), key=lambda kv: (-len(kv[1]), kv[0][0])):
-        if len(ids) < 2:
+    total = lambda st: len(styles[st] | by_artist.get(st, set()))
+    for (name, qid) in sorted(styles, key=lambda st: (-total(st), st[0])):
+        ids = styles[(name, qid)]
+        more = by_artist.get((name, qid), set()) - ids
+        if len(ids) + len(more) < 2:
             continue
         sid = "style-" + slug(name)
         works = []
-        for wid in ids:
+        for wid in sorted(ids) + sorted(more):
             h = json.loads((SITE / "histories" / (wid + ".json")).read_text())
             r = rows[wid]
             made = next((e.get("p") for e in h.get("events", []) if e.get("k") == "made" and e.get("p")), 0) or 0
             now = next((e.get("p") for e in reversed(h.get("events", [])) if e.get("p") and e.get("k") != "written"), 0) or 0
-            works.append((year(r[3]) or 9999, r[1], [wid, r[1], r[2], r[4], year(r[3]), made, now]))
+            row = [wid, r[1], r[2], r[4], year(r[3]), made, now]
+            if wid in more:
+                row.append("a")                         # by its artist: Artsy tags the artist, not this work
+            works.append((year(r[3]) or 9999, r[1], row))
         works.sort(key=lambda w: (w[0], w[1]))
         ys = [w[0] for w in works if w[0] != 9999]
         artists = len({w[2][2] for w in works})
@@ -212,7 +275,7 @@ def main():
                   "qid": qid, "said": HAND.get(name) or "Artsy's gene on each work; a movement or style on Wikidata",
                   "works": [w[2] for w in works]}
         (SITE / "threads" / (sid + ".json")).write_text(json.dumps(thread, ensure_ascii=False, separators=(",", ":")))
-        out.append([sid, name, len(works), min(ys) if ys else 0, max(ys) if ys else 0, qid, artists])
+        out.append([sid, name, len(works), min(ys) if ys else 0, max(ys) if ys else 0, qid, artists, len(more)])
     keep = {r[0] for r in out}
     for f in (SITE / "threads").glob("style-*.json"):
         if f.stem not in keep:
@@ -220,7 +283,9 @@ def main():
     note = ("Styles and movements: Artsy's own genes on each saved work, kept where the gene is an art movement or "
             "style on Wikidata (CC0) or one of Artsy's school names. Written by scripts/build_styles.py.")
     (SITE / "styles.json").write_text(json.dumps({"note": note, "styles": out}, ensure_ascii=False, separators=(",", ":")))
-    print(len(out), "styles;", sum(r[2] for r in out), "placings;", len({w for ids in styles.values() for w in ids}), "works")
+    print(len(out), "styles;", sum(r[2] for r in out), "placings;",
+          len({w for ids in styles.values() for w in ids} | {w for ids in by_artist.values() for w in ids}), "works;",
+          sum(r[7] for r in out), "by the artist")
     for r in out[:40]:
         print(r)
 

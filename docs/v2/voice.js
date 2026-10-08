@@ -371,11 +371,32 @@
     var L = lifeOf(r.id);
     if (!L) { return null; }
     var k = periodAt(L, r.year);
-    if (k < 0) { return null; }
-    var list = periodPics(L, k);
+    // Every work of the artist's, in date order (artist, 8 Oct 2026, of Pollock's life at Cody, 1912, where
+    // no work of the period could be swiped: "When I have clicked on an artist I want to be able to swipe
+    // through all of their works through that top thumbnail of artworks").
+    var list = lifePics(L);
     var cur = picKey(S.pic), i = -1;
     list.forEach(function (q, n) { if (i < 0 && (picKey(q) === cur || (S.pic && q.id && q.id === S.pic.id))) { i = n; } });
-    return { r: r, L: L, k: k, p: L.periods[k], list: list, i: i };
+    return { r: r, L: L, k: k, p: k >= 0 ? L.periods[k] : null, list: list, i: i };
+  }
+  // All of a life's works for the picture: the saved works with a picture, and the Painted here outings not
+  // saved, together by date (undated last).
+  var lifePicsOf = {};
+  function lifePics(L) {
+    if (lifePicsOf[L.id]) { return lifePicsOf[L.id]; }
+    var seen = {}, out = [];
+    (L.works || []).forEach(function (w) { if (w && w[3] && !seen[w[0]]) { seen[w[0]] = 1; out.push(savedPic(L, w)); } });
+    var SD = sites();
+    (L.sites || []).forEach(function (x) {
+      var full = x && SD && SD.byId[x[0]] !== undefined ? SD.sites[SD.byId[x[0]]] : null;
+      if (!full || !full.img || (full.w && seen[full.w])) { return; }
+      out.push({ id: full.w || null, site: x[0], src: COMMONS + encodeURIComponent(full.img) + "?width=960",
+                 big: COMMONS + encodeURIComponent(full.img) + "?width=2000", title: x[1], year: x[2] || null, by: L.name,
+                 where: full.m || "", notSaved: !full.w });
+    });
+    out.sort(function (a, b) { return (a.year || 9999) - (b.year || 9999); });
+    if (SD) { lifePicsOf[L.id] = out; }
+    return out;
   }
   function swipeBy(d) {
     var w = swipeNow();
@@ -395,15 +416,15 @@
       kick();
       return true;
     }
-    swipe = { view: w.r.view, life: w.L.id, k: w.k, key: picKey(q) };
+    swipe = { view: w.r.view, life: w.L.id, y: q.year || w.r.year, key: picKey(q), at: performance.now() };
     var plate = artEl && artEl.querySelector(".art-plate");
     if (plate && !still) {
       plate.dataset.swipe = d > 0 ? "next" : "prev";
       window.clearTimeout(plate._sw);
       plate._sw = window.setTimeout(function () { delete plate.dataset.swipe; }, 900);
     }
-    // The dial stays unless the work's own year is not the year shown, and then only within the period.
-    if (q.year && q.year !== w.r.year && q.year >= w.p.y0 && q.year <= w.p.y1 && Land.dialYear) { Land.dialYear(q.year); }
+    // The dial goes to the work's own year: the life follows the works.
+    if (q.year && q.year !== w.r.year && Land.dialYear) { Land.dialYear(q.year); }
     S.key = "";
     cand = { key: "", at: 0 };
     handled();
@@ -416,8 +437,9 @@
     var n = w ? w.list.length : 0;
     swipeList = w;
     if (capCount) {
-      var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + " · " + (w.born ? "born in " + w.born :
-                 w.p.y0 === w.p.y1 ? w.p.y0 : w.p.y0 + "–" + w.p.y1) : "";
+      var qn = w && w.i >= 0 ? w.list[w.i] : null;
+      var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + (w.born ? " · born in " + w.born :
+                 qn && qn.year ? " · " + qn.year : "") : "";
       capCount.hidden = !line;
       if (capCount.textContent !== line) { capCount.textContent = line; }
     }
@@ -511,7 +533,7 @@
       var b = el("button", "voice-swipe", g);
       b.type = "button";
       b.hidden = true;
-      b.setAttribute("aria-label", n ? "The next work of these years" : "The work before, of these years");
+      b.setAttribute("aria-label", n ? "The next work" : "The work before");
       b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
       b.addEventListener("click", function (event) { event.stopPropagation(); event.preventDefault(); swipeBy(n ? 1 : -1); });
       artEl.appendChild(b);
@@ -758,9 +780,10 @@
     if (L.b && L.b[1]) { route.push(L.b[1]); }
     L.periods.forEach(function (p) { route.push(p.ll); });
     var k = periodAt(L, y), p = k >= 0 ? L.periods[k] : null;
-    // Swiped to: that work of the period is the one told, until the dial leaves the period.
+    // Swiped to: that work is the one told, until the dial is turned from its year.
     if (!force && swipe && swipe.view === r.view && swipe.life === L.id) {
-      if (swipe.k !== k) { swipe = null; }
+      // (the dial glides to the work's year: kept while it is on its way)
+      if (swipe.y !== y && !r.moving && performance.now() - swipe.at > 2600) { swipe = null; }
       else { force = swipe.key.indexOf("s:") === 0 ? { step: "site", site: swipe.key.slice(2) } : { step: "work", work: swipe.key }; }
     }
     var prev = k > 0 ? L.periods[k - 1].ll : L.b ? L.b[1] : null;

@@ -20891,7 +20891,12 @@
       : [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
          [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "));
     artCol.appendChild(head);
-    if (style) { artCol.appendChild(el("p", "art-came", "As Artsy tags each work · " + (tf.said || ""))); }
+    if (style) {
+      var byA = tf.works.filter(function (w) { return w[7] === "a"; }).length;
+      artCol.appendChild(el("p", "art-came", byA
+        ? (n - byA) + " tagged with it by Artsy · " + byA + " by their artist's tag, dated within its years"
+        : "As Artsy tags each work"));
+    }
     enterText(head, 0);
     var came = cameLine(via);
     if (came) { artCol.appendChild(came); }
@@ -20905,7 +20910,8 @@
     artCol.appendChild(host);
     pageRows(host, rows, function (w, k) {
       var prev = w[5] && artPlaceBy[w[5]], next = w[6] && artPlaceBy[w[6]];
-      var what = style ? [prev ? "Made in " + prev.name : "", next && next !== prev ? "Now " + next.name : ""].filter(Boolean).join(" · ")
+      var what = style ? [prev ? "Made in " + prev.name : "", next && next !== prev ? "Now " + next.name : "",
+                          w[7] === "a" ? "by its artist's tag" : ""].filter(Boolean).join(" · ")
         : [prev ? "From " + prev.name : "", next ? "To " + next.name : ""].filter(Boolean).join(" · ");
       return artRow(w[0], w[1], w[2], w[3], what, w[4], { thread: by }, k);
     });
