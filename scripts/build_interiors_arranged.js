@@ -35,21 +35,27 @@
      the names     Room 1, Room 2 … in walking order; the hall is Hall. Never a museum's own.
 
    Run after build_interiors.py (which rewrites the works from the museums' records): with no
-   argument it re-hangs the works of every arranged museum and lays out every shell left (the targets first).
+   argument it re-hangs the works of every museum with rooms (arranged, or beside the known) and
+   lays out every shell left (the targets first).
 
-     node scripts/build_interiors_arranged.js                 the targets (TARGETS) and re-hangs
+     node scripts/build_interiors_arranged.js                 the targets, every shell, and re-hangs
      node scripts/build_interiors_arranged.js --only slug,slug
-     node scripts/build_interiors_arranged.js --works         re-hang the arranged museums only
-     node scripts/build_interiors_arranged.js --all           every museum whose rooms no source gives
+     node scripts/build_interiors_arranged.js --works         re-hang the works of every museum with rooms
+     node scripts/build_interiors_arranged.js --all           every museum
      node scripts/build_interiors_arranged.js --dry           say what it would write
+     node scripts/build_interiors_arranged.js --to DIR        write into DIR instead
 
    Public files only (museums.json, models/, interiors/, histories/, places/, cities.json); never
    data/. A museum whose rooms a source gives (documented or reconstructed), or that the
-   museums' own data draws (the National Gallery of Art, the Met, the Art Institute, Cleveland),
-   or whose rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan:
-   then only the works no record places are hung in its galleries, by the same rule), is never
-   arranged. The same bytes every run on the same inputs, but for
-   the day's date. */
+   museums' own data draws (the National Gallery of Art, the Met, the Art Institute), or whose
+   rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan), is never
+   arranged: every work it holds that its record places in no room drawn is hung beside the works
+   its records do place — by the same artist, else of its period and kind, else in the nearest room
+   with wall free (hangBeside, below; INTERIORS.md, "Beside the known"; in a museum OpenStreetMap
+   draws and no record places a work in, by the arranged rule in its galleries). A museum whose own
+   data draws no room yet (Cleveland) is arranged. A model solid at the ground (a plinth, a podium)
+   has its ground floor laid on the plinth's top (basesOf, layAt). The same bytes every run on the
+   same inputs, but for the day's date. */
 "use strict";
 
 const fs = require("fs");
@@ -61,11 +67,6 @@ const V2 = path.join(ROOT, "docs", "v2");
 const OUT = path.join(V2, "interiors");
 const OSM_INDOOR = path.join(ROOT, "osm", "indoor");
 const TODAY = new Date().toISOString().slice(0, 10);
-
-// The museums whose own open data draws their rooms (build_interiors.py's passes): never arranged.
-const OWN_DATA = new Set([
-  "museum-national-gallery-of-art-washington-dc", "museum-the-metropolitan-museum-of-art",
-  "museum-art-institute-of-chicago", "museum-cleveland-museum-of-art"]);
 
 // The major museums in major cities (the skyline cities first) and the great European ones, by
 // saved works held and fame: the ones laid out by default.
