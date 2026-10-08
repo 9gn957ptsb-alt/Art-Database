@@ -2,12 +2,61 @@
  "v": 1,
  "grid": {"cell":0.5,"turn":0},
  "sources": [
-  {"id":"model","t":"this museum's exterior model","u":"models/museum-museum-folkwang.json","read":"2026-09-30"}],
- "enter": null,
- "floors": null,
+  {"id":"model","t":"this museum's exterior model","u":"models/museum-museum-folkwang.json","read":"2026-09-30"},
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"},
+  {"id":"histories","t":"the works' own histories on this site: when each was shown or held here","read":"2026-10-08"}],
+ "enter": {"floor":"level-1","at":[-3.25,-1],"face":0,"door":[-3.25,-3.25],"out":[[-6.25,-4,6,5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
+ "floors": [
+  {"id": "level-1",
+  "name": "Level 1",
+  "z": 0,
+  "sure": "arranged",
+  "src": ["arranged","model"],
+  "note": "the floor the way in opens on, at the model's ground",
+  "rooms": [
+   {"id":"L1-R01","name":"Room 2","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-29.5,15,13],"sure":"arranged","src":["arranged"]},
+   {"id":"L1-R02","name":"Room 1","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-16.5,15,12.5],"sure":"arranged","src":["arranged"]}],
+  "open": [
+   {"a":"L1-R01","b":"L1-R02","at":[-3.5,-16.5],"sure":"arranged","src":["arranged"]},
+   {"a":"L1-R02","b":"outside","cut":[-4.45,-4,2.4,1.5],"kind":"door","sure":"arranged","src":["arranged","model"],"note":"the way in by the rule: through the model's wall (1 m) from the room behind it, 2.4 m wide"}],
+  "things": [],
+  "stairs": [],
+  "lifts": [
+   {"id":"E1","name":null,"rect":[-10.5,-29,2.5,2.5],"floors":["level-1","level-2","level-3"],"sure":"arranged","src":["arranged"]}]},
+  {"id": "level-2",
+  "name": "Level 2",
+  "z": 5,
+  "sure": "arranged",
+  "src": ["arranged","model"],
+  "note": "a floor 5 m up, by the rule: 5 m a storey; its rooms only where the model stands",
+  "rooms": [
+   {"id":"L2-R01","name":"Room 3","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-29.5,15,13],"sure":"arranged","src":["arranged"]},
+   {"id":"L2-R02","name":"Room 5","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-16.5,15,12.5],"sure":"arranged","src":["arranged"]}],
+  "open": [
+   {"a":"L2-R01","b":"L2-R02","at":[-3.5,-16.5],"sure":"arranged","src":["arranged"]}],
+  "things": [],
+  "stairs": [],
+  "lifts": []},
+  {"id": "level-3",
+  "name": "Level 3",
+  "z": 10,
+  "sure": "arranged",
+  "src": ["arranged","model"],
+  "note": "a floor 10 m up, by the rule: 5 m a storey; its rooms only where the model stands",
+  "rooms": [
+   {"id":"L3-R01","name":"Room 4","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-29.5,15,13],"sure":"arranged","src":["arranged"]},
+   {"id":"L3-R02","name":"Room 6","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-11,-16.5,15,12.5],"sure":"arranged","src":["arranged"]}],
+  "open": [
+   {"a":"L3-R01","b":"L3-R02","at":[-3.5,-16.5],"sure":"arranged","src":["arranged"]}],
+  "things": [],
+  "stairs": [],
+  "lifts": []}],
  "pins": {},
- "notes": "Nothing published about its rooms has been read yet.",
+ "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 3 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 4 hung so, 3 of them shown here, not held.",
  "works": [
-  {"id":"4faaea1ac056c200010002b0","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"}],
- "asof": "2026-09-30",
- "tier": "shell"}
+  {"id":"4faaea1ac056c200010002b0","how":"arranged","room":"L1-R02","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Augustusbruecke in Dresden [Augustus Bridge in Dresden, Germany]","a":"Oskar Kokoschka","y":"1923","m":"Oil on canvas","i":"r5cAOQgxth4RQj6mKAabLg","c":["#3b4d40","#627c95","#aea798"],"cm":[95.8,65.5],"cmsrc":"artsy"},
+  {"id":"4eaeef8976e78f0001007a94","how":"arranged","room":"L1-R01","wall":null,"said":"Shown here, 2010, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-08","also":{"k":["exhibited"],"y":[2010,2010],"q":"Essen, Germany, Museum Folkwang, Bilder einer Metropole: Die Impressionisten in Paris, Oct. 2, 2010–Jan. 30, 2011, cat. 11 (ill.)."},"t":"Paris Street; Rainy Day","a":"Gustave Caillebotte","y":"1876-1877","m":"Oil on canvas","i":"UayNTgTSPJeNL5lGJDQWdw","c":["#bbb3a4","#666f77","#a0968b"],"cm":[276.1,212.1],"cmsrc":"artsy"},
+  {"id":"516dfa2a9ad2d32b27000c3d","how":"arranged","room":"L1-R01","wall":null,"said":"Shown here, 2004, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-08","also":{"k":["exhibited"],"y":[2004,2004],"q":"Cézanne: Aufbruch in die Moderne [Cézanne: The Dawn of Modern Art], Museum Folkwang, Essen, 2004-2005, unnumbered catalogue, repro."},"t":"Houses in Provence: The Riaux Valley near L'Estaque","a":"Paul Cézanne","y":"ca. 1883","m":"Oil on canvas","i":"srBCXyu6CNb_O37ZORz6sw","c":["#63705b","#6e7c85","#8c8467"],"cm":[81.3,64.9],"cmsrc":"artsy"},
+  {"id":"55d25a357261695a5a00005b","how":"arranged","room":"L1-R01","wall":null,"said":"Shown here, 2004, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-08","also":{"k":["exhibited"],"y":[2004,2004],"q":"Cézanne: Aufbruch in die Moderne [Cézanne: The Dawn of Modern Art], Museum Folkwang, Essen, 2004-2005, unnumbered catalogue, repro."},"t":"Still Life with Milk Jug and Fruit","a":"Paul Cézanne","y":"ca. 1900","m":"Oil on canvas","i":"JvkYJCAGM7lFvlCJyruNbQ","c":["#8e6b43","#32484b","#5b6250"],"cm":[54.9,45.9],"cmsrc":"artsy"}],
+ "asof": "2026-10-08",
+ "tier": "arranged"}

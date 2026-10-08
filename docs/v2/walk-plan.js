@@ -74,6 +74,11 @@
   var FREE_OUT = 1.0;            // m: a work that stands free stands this far out from its wall
   var VIEW = 1.2, VIEW_K = 1.5;  // the viewing spot: max(1.2 m, 1.5 x the larger side) out
   var UNSIZED = 0.6;             // m: how tall a work of no known size is drawn
+  // An arranged room (INTERIORS.md, "Arranged"): the site's, not the museum's.
+  // Its works hang one to every 2.5 m of a run of wall, never closer.
+  var ARR_SPACE = 2.5;
+  // An arranged room's name is a number or what it is, never a museum's own gallery name.
+  var ARR_NAME = /^(Room \d+|Hall|Entrance)$/;
   var SIDES = 24;                // a round room's sides
   var UNSURE = 0.25;             // how much more soil shows through a reconstructed surface
   var DOOR_W = 2.4, DOOR_H = 3.0;// the stated rule for an opening's size, where none is given
@@ -1095,7 +1100,8 @@
     var groups = {}, order = [], hung = [], spill = [];
     (works || []).forEach(function (w, n) {
       // A work that is another saved work's very object hangs once, as that one.
-      if (w.how !== "museum" || !w.room || w.same) { return; }
+      // An arranged work (INTERIORS.md, "Arranged") hangs in the room the site's rule gave it.
+      if ((w.how !== "museum" && w.how !== "arranged") || !w.room || w.same) { return; }
       var room = roomById(world, w.room);
       if (!room) { spill.push(w.id); return; }
       var pin = pins[w.id] || null;
@@ -1107,8 +1113,11 @@
     order.forEach(function (key) {
       var g = groups[key], room = g.room, fl = world.floors[room.floor], base = fl.z + room.fz;
       // The museum's order — its own record numbers — then by date; the
-      // order the file lists them in last, so it is always the same.
+      // order the file lists them in last, so it is always the same. Arranged
+      // works keep the file's order, which is the rule's: period, artist, date.
+      var arranged = g.list.every(function (it) { return it.w.how === "arranged"; });
       g.list.sort(function (a, b) {
+        if (arranged) { return a.n - b.n; }
         return byRecord(a.w, b.w) || String(a.w.y || "").localeCompare(String(b.w.y || "")) || a.n - b.n;
       });
       if (g.dir === "centre") { centre(g.list, room, fl, base); return; }
@@ -1133,14 +1142,17 @@
       avail.forEach(function (run) {
         if (!queue.length) { return; }
         var take = [];
-        for (var k = 0; k < queue.length; k += 1) {
+        // The arranged rule: one work to every 2.5 m of the run, never crowded.
+        var most = arranged ? max(1, floor((run.t1 - run.t0) / ARR_SPACE)) : Infinity;
+        for (var k = 0; k < queue.length && take.length < most; k += 1) {
           if (fits(take.concat([queue[k]]), run.t1 - run.t0)) { take.push(queue[k]); } else { break; }
         }
         queue = queue.slice(take.length);
         lay(take, run, 1, null);
       });
-      // A second tier over the longest run, for what is left.
-      if (queue.length && avail.length) {
+      // A second tier over the longest run, for what is left (never for the
+      // arranged: the rule gives a room no more than its walls hold).
+      if (queue.length && avail.length && !arranged) {
         var run0 = avail[0], top = base + HANG;
         hung.forEach(function (h) { if (h.room === room.index && h.floor === fl.index) { top = max(top, h.z1); } });
         var take2 = [];
@@ -2111,19 +2123,22 @@
     return world;
   }
 
+  // documented: at least 80% of the walkable floor in documented rooms;
+  // arranged: more than half of it in rooms the site arranged (INTERIORS.md,
+  // "Arranged"); reconstructed: any other rooms drawn; else the shell.
   function tierOf(world) {
     if (world.shell) { return "shell"; }
-    var doc = 0, all = 0;
+    var doc = 0, arr = 0, all = 0;
     world.floors.forEach(function (fl) {
       for (var q = 0; q < fl.n; q += 1) {
         if (fl.kind[q] !== FLOOR || fl.room[q] < 0) { continue; }
         var r = fl.rooms[fl.room[q]];
         if (r.pseudo) { continue; }
         all += 1;
-        if (r.sure === "documented") { doc += 1; }
+        if (r.sure === "documented") { doc += 1; } else if (r.sure === "arranged") { arr += 1; }
       }
     });
-    return !all ? "shell" : doc / all >= 0.8 ? "documented" : "reconstructed";
+    return !all ? "shell" : doc / all >= 0.8 ? "documented" : arr / all > 0.5 ? "arranged" : "reconstructed";
   }
 
   // A museum's shell alone, from its model: what an interior file with no
@@ -2337,7 +2352,12 @@
         else if (!src[id].read) { err(what + " cites " + id + ", which has not been read yet"); }
       });
     }
-    function sure(v, what) { if (!SURE[v]) { err(what + ": sure must be documented or reconstructed, not " + v); } }
+    // arrangedOK: a floor, room, opening, stair, lift or entrance the site arranged (INTERIORS.md,
+    // "Arranged") — never a height, a material, a thing or a pin, which only a source gives.
+    function sure(v, what, arrangedOK) {
+      if (SURE[v] || (arrangedOK && v === "arranged")) { return; }
+      err(what + ": sure must be documented or reconstructed" + (arrangedOK ? " (or arranged)" : "") + ", not " + v);
+    }
     function pair(p) { return Array.isArray(p) && p.length === 2 && typeof p[0] === "number" && typeof p[1] === "number"; }
     function rect(a, what, n) {
       n = n || 4;
@@ -2369,7 +2389,7 @@
       if (floorIds[fs.id]) { err(fw + " is listed twice"); }
       floorIds[fs.id] = fs;
       if (typeof fs.z !== "number") { err(fw + ": z must be a number"); }
-      sure(fs.sure, fw);
+      sure(fs.sure, fw, true);
       cites(fs.src, fw, true);
       var rc = 0;
       (fs.rooms || []).forEach(function (r, rn) {
@@ -2387,9 +2407,19 @@
           else if (selfCrossing(r.poly)) { err(rw + ": its poly crosses itself"); }
         }
         if (r.ref !== undefined && !Array.isArray(r.ref)) { err(rw + ": ref must be a list"); }
-        sure(r.sure, rw);
+        sure(r.sure, rw, true);
         cites(r.src, rw, true);
         if (r.name !== null && r.name !== undefined && typeof r.name !== "string") { err(rw + ": name must be words or null"); }
+        if (r.sure === "arranged") {
+          // The site's room, never the museum's: called by a number or by what it is, and it says so.
+          if (r.name !== null && r.name !== undefined && !ARR_NAME.test(r.name)) {
+            err(rw + ": an arranged room is called Room <n>, Hall or Entrance, never a museum's own gallery name (" + r.name + ")");
+          }
+          if (typeof r.said !== "string" || !/arranged by the site/.test(r.said)) {
+            err(rw + ": an arranged room's said must say it is arranged by the site");
+          }
+          if (r.ref && r.ref.length) { err(rw + ": an arranged room answers to no key of the museum's (ref)"); }
+        }
         if (r.ceil !== undefined && r.ceil !== "auto" && CEIL[r.ceil] === undefined) { err(rw + ": ceil " + r.ceil + " is not one of flat, skylight, sky, dome, vault, dark, auto"); }
         if (r.h !== null && r.h !== undefined) {
           if (!(r.h > 0)) { err(rw + ": h must be metres or null"); }
@@ -2410,7 +2440,7 @@
         if (o.cut) { rect(o.cut, ow + " cut"); }
         if (o.w !== undefined && o.w !== null && !(o.w > 0)) { err(ow + ": w must be metres"); }
         if (o.kind && o.kind !== "door" && o.kind !== "arch" && o.kind !== "part") { err(ow + ": kind must be door, arch or part"); }
-        sure(o.sure, ow);
+        sure(o.sure, ow, true);
         cites(o.src, ow, true);
       });
       (fs.things || []).forEach(function (t, tn) {
@@ -2427,7 +2457,7 @@
         if (!ids[st.id]) { uniq(st.id, sw); }
         rect(st.rect, sw + " rect");
         if (!/^[+-][xy]$/.test(st.rise || "")) { err(sw + ": rise must be +x, -x, +y or -y"); }
-        sure(st.sure, sw);
+        sure(st.sure, sw, true);
         cites(st.src, sw, true);
       });
       (fs.lifts || []).forEach(function (lf) {
@@ -2436,7 +2466,7 @@
         if (!ids[lf.id]) { uniq(lf.id, lw); }
         rect(lf.rect, lw + " rect");
         if (!Array.isArray(lf.floors) || lf.floors.length < 2) { err(lw + " must name at least two floors"); }
-        sure(lf.sure, lw);
+        sure(lf.sure, lw, true);
         cites(lf.src, lw, true);
       });
     });
@@ -2454,7 +2484,7 @@
       if (!pair(e.door)) { err("enter.door must be [x, y]"); }
       if (e.at && !pair(e.at)) { err("enter.at must be [x, y]"); }
       (e.out || []).forEach(function (r, n) { rect(r, "enter.out " + n); });
-      sure(e.sure, "the entrance");
+      sure(e.sure, "the entrance", true);
       cites(e.src, "the entrance", true);
     } else if (floors && floors.length) {
       err("a file with floors needs its entrance (enter)");
@@ -2468,21 +2498,28 @@
       sure(p.sure, pw);
       cites(p.src, pw, true);
     });
-    var HOW = { museum: 1, elsewhere: 1, off: 1, none: 1 };
-    var counts = { museum: 0, elsewhere: 0, off: 0, none: 0 }, oldWorks = 0, workIds = {};
+    var HOW = { museum: 1, elsewhere: 1, off: 1, none: 1, arranged: 1 };
+    var counts = { museum: 0, elsewhere: 0, off: 0, none: 0, arranged: 0 }, oldWorks = 0, workIds = {};
     if (!Array.isArray(I.works)) { err("works must be a list"); }
     (I.works || []).forEach(function (w, n) {
       var ww = "work " + (w && w.id || n);
       if (!w || typeof w.id !== "string") { err("work " + n + " has no id"); return; }
       if (workIds[w.id]) { err(ww + " is listed twice"); }
       workIds[w.id] = 1;
-      if (!HOW[w.how]) { err(ww + ": how must be museum, elsewhere, off or none"); return; }
+      if (!HOW[w.how]) { err(ww + ": how must be museum, elsewhere, off, none or arranged"); return; }
       counts[w.how] += 1;
       if (typeof w.said !== "string") { err(ww + ": said must be the source's own words"); }
       if (w.src !== null && w.src !== undefined) {
         if (!src[w.src]) { err(ww + " cites " + w.src + ", which is not in sources"); }
         else if (!src[w.src].read && w.how !== "none") { err(ww + " cites " + w.src + ", which has not been read yet"); }
-      } else if (w.how === "museum" || w.how === "elsewhere" || w.how === "off") { err(ww + ": a placement needs its src"); }
+      } else if (w.how === "museum" || w.how === "elsewhere" || w.how === "off" || w.how === "arranged") { err(ww + ": a placement needs its src"); }
+      if (w.how === "arranged") {
+        // Hung by the site's rule (INTERIORS.md, "Arranged"): in a room the site arranged, saying so;
+        // what the museum's own record says of it, if anything, kept in rec with its source.
+        if (!w.room) { err(ww + ": an arranged work needs its room"); }
+        if (!/the site/.test(w.said || "")) { err(ww + ": an arranged work's said must say the site hung it"); }
+        if (w.rec && w.rec.src && !src[w.rec.src]) { err(ww + ": its record cites " + w.rec.src + ", which is not in sources"); }
+      }
       if (w.wall !== undefined && w.wall !== null && !DIRS[w.wall] && w.wall !== "centre") { err(ww + ": wall must be n, e, s, w, centre or null"); }
       if (w.asof && days(w.asof, today) > 30) { oldWorks += 1; }
     });
@@ -2491,7 +2528,7 @@
       var missing = museum.works.filter(function (w) { return !workIds[w.id]; }).length;
       if (missing) { warn(missing + " of its saved works in museums.json are not in the file: run build_interiors.py"); }
     }
-    if (I.tier !== undefined && ["documented", "reconstructed", "shell"].indexOf(I.tier) < 0) { err("tier must be documented, reconstructed or shell"); }
+    if (I.tier !== undefined && ["documented", "reconstructed", "arranged", "shell"].indexOf(I.tier) < 0) { err("tier must be documented, reconstructed, arranged or shell"); }
 
     // Compiled, as the walk will have it.
     var world = null, hung = { hung: [], spill: [] };
@@ -2537,8 +2574,8 @@
         if (!n) { err("room " + r.id + " has no cells: it is smaller than the grid's cell"); return; }
         if (out / n <= 0.1) { return; }
         var ext = "x " + bb[0].toFixed(1) + " to " + bb[2].toFixed(1) + ", y " + bb[1].toFixed(1) + " to " + bb[3].toFixed(1);
-        if (r.sure === "reconstructed") {
-          err("reconstructed room " + r.id + " is " + round(100 * out / n) + "% outside the model at " + (fl.z + EYE).toFixed(1) + " m (" + ext + ")");
+        if (r.sure === "reconstructed" || r.sure === "arranged") {
+          err(r.sure + " room " + r.id + " is " + round(100 * out / n) + "% outside the model at " + (fl.z + EYE).toFixed(1) + " m (" + ext + ")");
         } else {
           warn("documented room " + r.id + " is " + round(100 * out / n) + "% outside the model (" + ext + ")");
           findings.push({ room: r.id, floor: fl.id, out: out / n, x0: bb[0], y0: bb[1], x1: bb[2], y1: bb[3] });
@@ -2596,9 +2633,12 @@
       err("its works could not be hung: " + (x && x.message || x));
     }
     (I.works || []).forEach(function (w) {
-      if (!w || w.how !== "museum") { return; }
+      if (!w || (w.how !== "museum" && w.how !== "arranged")) { return; }
       var r = w.room ? roomById(world, w.room) : null;
       if (!r) { err("work " + w.id + ": its room " + w.room + " is not drawn"); return; }
+      // The rule hangs only in rooms the site arranged; a record's work never in one.
+      if (w.how === "arranged" && r.sure !== "arranged") { err("work " + w.id + ": arranged, but room " + r.id + " is not an arranged room"); }
+      if (w.how === "museum" && r.sure === "arranged") { err("work " + w.id + ": a record's placement in room " + r.id + ", which the site arranged"); }
       var dir = (pins[w.id] && pins[w.id].wall) || w.wall;
       if (dir && dir !== "centre" && !compass(r, dir, world).length) { err("work " + w.id + ": room " + r.id + " has no " + dir + " wall"); }
       if (!dir && !r.walls.length) { err("work " + w.id + ": room " + r.id + " has no wall to hang on"); }
@@ -2640,17 +2680,17 @@
     }
     // What was drawn, floor by floor.
     world.floors.forEach(function (fl) {
-      var doc = 0, rec = 0, rooms = 0, reach = 0;
+      var doc = 0, rec = 0, arr = 0, rooms = 0, reach = 0;
       fl.rooms.forEach(function (r) { if (!r.pseudo) { rooms += 1; if (r.reach) { reach += 1; } } });
       for (var q = 0; q < fl.n; q += 1) {
         if (fl.kind[q] !== FLOOR || fl.room[q] < 0) { continue; }
         var r = fl.rooms[fl.room[q]];
         if (r.pseudo) { continue; }
-        if (r.sure === "documented") { doc += 1; } else { rec += 1; }
+        if (r.sure === "documented") { doc += 1; } else if (r.sure === "arranged") { arr += 1; } else { rec += 1; }
       }
       var a = fl.cell * fl.cell;
       stats.floors.push({ id: fl.id, name: fl.name, z: fl.z, cells: fl.n, rooms: rooms, reached: reach,
-                          documented: round(doc * a), reconstructed: round(rec * a) });
+                          documented: round(doc * a), reconstructed: round(rec * a), arranged: round(arr * a) });
     });
     stats.hung = hung.hung.length;
     stats.spill = hung.spill.length;
@@ -2702,7 +2742,8 @@
     // the rules the walk shares
     RULES: { EYE: EYE, CLEAR: CLEAR, STEP: STEP, HEAD: HEAD, RISER: RISER, THICK: THICK, HANG: HANG,
              TALL: TALL, APART: APART, INTO: INTO, FREE_OUT: FREE_OUT, VIEW: VIEW, VIEW_K: VIEW_K,
-             DOOR_W: DOOR_W, DOOR_H: DOOR_H, PLAN_DOTS: PLAN_DOTS },
+             DOOR_W: DOOR_W, DOOR_H: DOOR_H, PLAN_DOTS: PLAN_DOTS, ARR_SPACE: ARR_SPACE, OFF_OPEN: OFF_OPEN,
+             OFF_CORNER: OFF_CORNER, ARR_NAME: ARR_NAME },
     compile: compile, toGrid: toGrid, toWorld: toWorld, headingOf: headingOf, compassOf: compassOf,
     shape: shape, raster: raster, seal: seal, carve: carve, ramp: ramp, ceilings: ceilings, shell: shell,
     runs: runs, compass: compass, dims: dims, hang: hang, clearance: clearance, path: path, stand: stand,

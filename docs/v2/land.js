@@ -11782,6 +11782,9 @@
     fig.classList.add("held-also-row");
     fig.querySelector("img").loading = "lazy";
     fig.querySelector("figcaption").appendChild(el("span", "art-row-what", [what, yearsText(r[6], r[7])].filter(Boolean).join(" ")));
+    // Hung in the walk where the museum is arranged: a door to it, as a saved work's.
+    fig.dataset.work = r[0];
+    walkWhere(fig, { id: r[0] });
     return fig;
   }
 
@@ -12260,7 +12263,10 @@
     var iw = clod.where[w.id];
     if (iw && iw.same && clod.where[iw.same]) { iw = clod.where[iw.same]; }
     if (!iw) { return; }
-    if (iw.how === "museum" && iw.room && clod.roomName[iw.room] !== undefined) {
+    // An arranged work (INTERIORS.md, "Arranged") hangs where the site's rule put it: a door like any
+    // other, and said so under it — here in the column, never over the walk.
+    var arranged = iw.how === "arranged";
+    if ((iw.how === "museum" || arranged) && iw.room && clod.roomName[iw.room] !== undefined) {
       var b = document.createElement("button");
       b.type = "button";
       b.className = "held-where";
@@ -12271,6 +12277,7 @@
       });
       b.addEventListener("keydown", function (event) { event.stopPropagation(); });
       cap.appendChild(b);
+      if (arranged) { cap.appendChild(el("span", "held-where-said", "Hung there by the site: where the museum hangs it is not known")); }
     } else if (iw.said) {
       var said = String(iw.said);
       if (iw.how === "elsewhere") { said = "Elsewhere in the museum · " + said; }
@@ -12286,7 +12293,7 @@
     var byId = {};
     (clod.m.works || []).forEach(function (w) { byId[w.id] = w; });
     var here = (clod.interior.works || []).filter(function (w) {
-      return w.how === "museum" && w.room === roomId && !w.same;
+      return (w.how === "museum" || w.how === "arranged") && w.room === roomId && !w.same;
     });
     if (!here.length) { return; }
     var box = el("section", "walk-here-group");

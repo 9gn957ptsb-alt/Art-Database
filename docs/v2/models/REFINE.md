@@ -103,8 +103,22 @@ After the buildings, each run:
    interior log in `ledger.json`, and `update_buildings.py` lists the saved
    works placed in rooms not drawn yet.
 2. **Raise two museums a tier.** First any museum whose records place saved
-   works in rooms not drawn (most such works first); then shells, most saved
-   works held first. For each: research its public entrance (which façade,
+   works in rooms not drawn (most such works first); then **arranged**
+   museums (INTERIORS.md, "Arranged": the site's own rooms, laid out by rule
+   so the artist can walk up to every work — his ask of 7 Oct 2026), the
+   major museums in the major cities first and most saved works held first;
+   then any shell left. An arranged museum is raised by finding its plan,
+   its OpenStreetMap indoor mapping (`osm/indoor/<slug>.json`) or its own
+   data: its floors are then drawn from the source (its `sure` reconstructed
+   or documented, the arranged rooms and their `Room <n>` names dropped
+   whole, never mixed with the source's), its works re-placed by their
+   records, and `build_interiors_arranged.js` leaves it from then on. Where a
+   source only gives its floor count and storeys, put that in `FLOORS` in
+   `build_interiors_arranged.js` (with the source, quoted) and run it with
+   `--only <slug> --relayout`. After every intake, `node
+   scripts/build_interiors_arranged.js --works` re-hangs the arranged
+   museums' works (new saved works and new "Also here" works go up by the
+   rule), and with no flag it also lays out any new museum's shell. For each: research its public entrance (which façade,
    which door, its floor's level) and what its own pages say of where the
    saved works hang (`HANGS` in `build_interiors.py`, with each page's
    address and the day read); draw at least the entrance, the way in from it
@@ -126,8 +140,9 @@ After the buildings, each run:
    `said` against its source where it can be reached, and every
    reconstructed room against what it cites.
 5. **Record.** Each museum's entry in `ledger.json` has
-   `interior: {tier, refined, passes, rooms: {documented, reconstructed},
-   works: {hung, elsewhere, off, none}, log}`; the checker writes the tier,
+   `interior: {tier, refined, passes, rooms: {documented, reconstructed,
+   arranged}, works: {hung, elsewhere, off, none, arranged}, log}` (tier
+   documented, reconstructed, arranged or shell); the checker writes the tier,
    rooms and works. Set `refined` to today, add one to `passes`, and add a
    line to its `log`. A finding against the model (a documented room outside
    it, a footprint off its ground's buildings) goes into the model's own

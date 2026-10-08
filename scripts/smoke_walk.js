@@ -93,6 +93,7 @@ async function pinchIn(page, x, y) {
 async function one(s, slug, size) {
   const { page } = s;
   const r = { slug, size, ok: false, steps: [] };
+  s.steps = r.steps;
   const step = t => r.steps.push(t);
   const e0 = s.errors.length;
   await page.evaluate(sl => Land.museum(sl), slug);
@@ -136,12 +137,44 @@ async function one(s, slug, size) {
     await page.evaluate(i => Walk.goTo(i), id);
     await until(page, i => { const x = Land.inside(); return x.standing === i && !x.gliding; }, id, 25000);
     step("before a work");
-    await page.keyboard.press("Enter");
-    await until(page, () => Land.inside().level === "look", null, 6000);
-    step("look");
+    // What it is, at once, beside it: its title and its artist.
+    await until(page, () => { const l = document.querySelector(".walk-label");
+      return l && !l.hidden && l.querySelector(".walk-l-t[data-on=true]") && (!document.querySelector(".walk-label .walk-l-by") || l.querySelector(".walk-l-by[data-on=true]")); }, null, 4000);
+    step("label");
+    // Step back, then press the work itself (a tap on a phone, a click on a desktop): the look opens,
+    // walking there first if it is far.
+    const near = await page.evaluate(i => Walk._workOnScreen(i), id);
+    if (s.touch) { await touchDrag(page, band.x + band.width / 2, band.y + band.height * 0.3, 0, band.height * 0.4, 10); }
+    else { await page.keyboard.down("ArrowDown"); await page.waitForTimeout(2600); await page.keyboard.up("ArrowDown"); }
+    await page.waitForTimeout(500);
+    const at = (await page.evaluate(i => Walk._workOnScreen(i), id)) || near;
+    r.pressedFrom = at ? +at.d.toFixed(1) : null;
+    if (at) {
+      r.press = await page.evaluate(p => { const e = document.elementFromPoint(p.x, p.y); const pk = Walk._pickAt(p.x, p.y);
+        return { el: e ? e.className || e.tagName : null, pick: pk, state: Land.inside() }; }, at);
+      if (s.touch) { await page.touchscreen.tap(at.x, at.y); } else { await page.mouse.click(at.x, at.y); }
+      await until(page, () => Land.inside().level === "look", null, 25000);
+      step("look by a press");
+    } else {
+      await page.keyboard.press("Enter");
+      await until(page, () => Land.inside().level === "look", null, 25000);
+      step("look by Enter");
+    }
+    // The label directly under the picture, whole at once.
+    const lab = await page.evaluate(() => {
+      const plate = document.querySelector(".walk-look-plate"), lines = document.querySelector(".walk-look-lines");
+      const t = lines && lines.querySelector(".walk-l-t");
+      if (!plate || !t) { return null; }
+      const pb = plate.getBoundingClientRect(), lb = lines.getBoundingClientRect();
+      return { title: t.textContent, on: lines.querySelectorAll(".walk-l[data-on=true]").length, under: lb.top >= pb.bottom - 2 };
+    });
+    if (!lab || !lab.title || !lab.under || lab.on < 3) { throw new Error("the look's label: " + JSON.stringify(lab)); }
+    r.title = lab.title;
+    step("label under the picture");
     if (SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: path.join(SHOTS, slug + "-3-look-" + size + ".png") }); }
-    await page.keyboard.press("Escape");
+    if (s.touch) { await page.tap(".walk-look-x"); } else { await page.keyboard.press("Escape"); }
     await until(page, () => Land.inside().level === "walk", null, 6000);
+    step("back to the walk");
   }
   // Up, a level at a time: pinching in on a phone, Escape on a desktop.
   if (s.touch) { await pinchIn(page, band.x + band.width / 2, band.y + band.height / 2); } else { await page.keyboard.press("Escape"); }
@@ -171,13 +204,13 @@ async function one(s, slug, size) {
         let r;
         try { r = await one(s, slug, size); }
         catch (e) {
-          r = { slug, size, ok: false, error: String(e.message || e).split("\n")[0], errors: s.errors.slice(-3) };
+          r = { slug, size, ok: false, error: String(e.message || e).split("\n")[0], errors: s.errors.slice(-3), steps: s.steps };
           await s.ctx.close();
           s = await session(browser, size, jpg);
         }
         results.push(r);
         console.log((r.ok ? "ok  " : "FAIL") + " " + size + " " + slug +
-          (r.ok ? "  moved " + r.moved.toFixed(1) + " m · " + r.hung + " hung · " + r.res + " dots · " + r.mean + " ms" + (r.shell ? " · shell" : "")
+          (r.ok ? "  moved " + r.moved.toFixed(1) + " m · " + r.hung + " hung" + (r.pressedFrom !== undefined ? " · pressed from " + r.pressedFrom + " m" : "") + " · " + r.res + " dots · " + r.mean + " ms" + (r.shell ? " · shell" : "")
                 : "  " + (r.error || "") + " " + JSON.stringify(r.steps || []) + " " + JSON.stringify(r.errors || [])));
       }
       await s.ctx.close();

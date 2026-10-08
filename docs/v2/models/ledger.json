@@ -251,18 +251,20 @@
       "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 14
       },
       "works": {
-        "hung": 0,
+        "hung": 25,
         "elsewhere": 0,
         "off": 0,
-        "none": 15
+        "none": 0,
+        "arranged": 25
       },
       "log": []
     }
@@ -278,18 +280,20 @@
       "2026-09-24 refined: turned onto the SoMa grid (45 deg) with Third Street where the ground has it, cylinder slice cut along the rotated slope, Howard Street entrance and street, gallery skylights, height 62 m confirmed"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 56
       },
       "works": {
-        "hung": 0,
+        "hung": 36,
         "elsewhere": 0,
         "off": 0,
-        "none": 36
+        "none": 0,
+        "arranged": 36
       },
       "log": []
     }
@@ -334,18 +338,20 @@
       "2026-09-30 interior finding: only 46% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 171
       },
       "works": {
-        "hung": 0,
+        "hung": 14,
         "elsewhere": 0,
         "off": 0,
-        "none": 17
+        "none": 3,
+        "arranged": 14
       },
       "log": []
     }
@@ -361,18 +367,20 @@
       "2026-09-26 refined: a garden terrace with steps and planting along the north front, a steel eave/canopy ring round the entrance rotunda, forecourt planters, trees and bollard lights, a bigger LOVE sculpture"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 132
       },
       "works": {
-        "hung": 0,
+        "hung": 19,
         "elsewhere": 0,
         "off": 0,
-        "none": 18
+        "none": 0,
+        "arranged": 19
       },
       "log": []
     }
@@ -389,18 +397,20 @@
       "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 31
       },
       "works": {
-        "hung": 0,
+        "hung": 52,
         "elsewhere": 0,
         "off": 0,
-        "none": 31
+        "none": 0,
+        "arranged": 52
       },
       "log": []
     }
@@ -417,18 +427,20 @@
       "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 38
       },
       "works": {
-        "hung": 0,
+        "hung": 21,
         "elsewhere": 0,
         "off": 0,
-        "none": 21
+        "none": 0,
+        "arranged": 21
       },
       "log": []
     }
@@ -445,18 +457,20 @@
       "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 141
       },
       "works": {
-        "hung": 0,
+        "hung": 24,
         "elsewhere": 0,
         "off": 0,
-        "none": 16
+        "none": 0,
+        "arranged": 24
       },
       "log": []
     }
@@ -473,18 +487,20 @@
       "2026-09-30 interior finding: only 15% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 81
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 2,
+        "hung": 14,
+        "elsewhere": 0,
         "off": 0,
-        "none": 7
+        "none": 0,
+        "arranged": 14
       },
       "log": []
     }
@@ -501,18 +517,20 @@
       "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 158
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 1,
+        "hung": 42,
+        "elsewhere": 0,
         "off": 0,
-        "none": 31
+        "none": 2,
+        "arranged": 42
       },
       "log": []
     }
@@ -529,18 +547,20 @@
       "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 122
       },
       "works": {
-        "hung": 0,
+        "hung": 31,
         "elsewhere": 0,
         "off": 0,
-        "none": 16
+        "none": 0,
+        "arranged": 31
       },
       "log": []
     }
@@ -557,18 +577,20 @@
       "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 152
       },
       "works": {
-        "hung": 0,
+        "hung": 12,
         "elsewhere": 0,
         "off": 0,
-        "none": 11
+        "none": 0,
+        "arranged": 12
       },
       "log": []
     }
@@ -613,18 +635,20 @@
       "2026-09-30 interior finding: only 53% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 135
       },
       "works": {
-        "hung": 0,
+        "hung": 9,
         "elsewhere": 0,
         "off": 0,
-        "none": 6
+        "none": 0,
+        "arranged": 9
       },
       "log": []
     }
@@ -641,18 +665,20 @@
       "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 130
       },
       "works": {
-        "hung": 0,
+        "hung": 21,
         "elsewhere": 0,
         "off": 0,
-        "none": 20
+        "none": 0,
+        "arranged": 21
       },
       "log": []
     }
@@ -669,18 +695,20 @@
       "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 64
       },
       "works": {
-        "hung": 0,
+        "hung": 19,
         "elsewhere": 0,
         "off": 0,
-        "none": 15
+        "none": 0,
+        "arranged": 19
       },
       "log": []
     }
@@ -697,18 +725,20 @@
       "2026-09-30 interior finding: only 31% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 159
       },
       "works": {
-        "hung": 0,
+        "hung": 31,
         "elsewhere": 0,
         "off": 0,
-        "none": 11
+        "none": 0,
+        "arranged": 31
       },
       "log": []
     }
@@ -753,18 +783,20 @@
       "2026-09-30 interior finding: only 21% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 42
       },
       "works": {
-        "hung": 0,
+        "hung": 18,
         "elsewhere": 0,
         "off": 0,
-        "none": 18
+        "none": 0,
+        "arranged": 18
       },
       "log": []
     }
@@ -781,18 +813,20 @@
       "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 65
       },
       "works": {
-        "hung": 0,
+        "hung": 23,
         "elsewhere": 0,
         "off": 0,
-        "none": 14
+        "none": 0,
+        "arranged": 23
       },
       "log": []
     }
@@ -809,18 +843,20 @@
       "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 69
       },
       "works": {
-        "hung": 0,
+        "hung": 16,
         "elsewhere": 0,
         "off": 0,
-        "none": 7
+        "none": 1,
+        "arranged": 16
       },
       "log": []
     }
@@ -837,18 +873,20 @@
       "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 102
       },
       "works": {
-        "hung": 0,
+        "hung": 19,
         "elsewhere": 0,
         "off": 0,
-        "none": 17
+        "none": 0,
+        "arranged": 19
       },
       "log": []
     }
@@ -865,18 +903,20 @@
       "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 130
       },
       "works": {
-        "hung": 0,
+        "hung": 39,
         "elsewhere": 0,
         "off": 0,
-        "none": 18
+        "none": 0,
+        "arranged": 39
       },
       "log": []
     }
@@ -893,18 +933,20 @@
       "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 54
       },
       "works": {
-        "hung": 0,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 8
+        "none": 0,
+        "arranged": 17
       },
       "log": []
     }
@@ -920,18 +962,20 @@
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): gallery box in pale tan stone; a thin zinc lid over a taller clerestory; campus trees as broad low coast live oaks"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 33
       },
       "works": {
-        "hung": 0,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
-        "none": 6
+        "none": 0,
+        "arranged": 6
       },
       "log": []
     }
@@ -960,18 +1004,20 @@
       "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 30
       },
       "works": {
-        "hung": 0,
+        "hung": 10,
         "elsewhere": 0,
         "off": 0,
-        "none": 10
+        "none": 0,
+        "arranged": 10
       },
       "log": []
     }
@@ -988,18 +1034,20 @@
       "2026-09-30 interior finding: only 1% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 25
       },
       "works": {
-        "hung": 0,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 6
+        "none": 0,
+        "arranged": 7
       },
       "log": []
     }
@@ -1016,18 +1064,20 @@
       "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 9
       },
       "works": {
-        "hung": 0,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 1,
+        "arranged": 6
       },
       "log": []
     }
@@ -1072,18 +1122,20 @@
       "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 158
       },
       "works": {
-        "hung": 0,
+        "hung": 10,
         "elsewhere": 0,
         "off": 0,
-        "none": 6
+        "none": 1,
+        "arranged": 10
       },
       "log": []
     }
@@ -1100,18 +1152,20 @@
       "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 20
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1128,18 +1182,20 @@
       "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 42
       },
       "works": {
-        "hung": 0,
+        "hung": 9,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 9
       },
       "log": []
     }
@@ -1156,18 +1212,20 @@
       "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 58
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1183,18 +1241,20 @@
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): palace roof made slate; the extension's glass roof made a grey roof with four skylight strips; the Paseo del Prado's second row of trees"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 69
       },
       "works": {
-        "hung": 0,
+        "hung": 9,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 9
       },
       "log": []
     }
@@ -1210,18 +1270,20 @@
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): roofs made grey inside a stone coping, the exedra's too; Viale Alemagna's plane trees along the front"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 114
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1238,18 +1300,20 @@
       "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 101
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1266,18 +1330,20 @@
       "2026-09-30 interior finding: only 56% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 156
       },
       "works": {
-        "hung": 0,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
-        "none": 6
+        "none": 0,
+        "arranged": 6
       },
       "log": []
     }
@@ -1294,18 +1360,20 @@
       "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 33
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1321,18 +1389,20 @@
       "2026-09-30 refined (no photographs reachable; against the ground file's outlines): Alfond-Lunder Pavilion moved ~16 m west onto its outline and made smaller with its cantilevered top floor, a glass link to the wings, Bixler deepened north, the gallery wing shortened, corner posts and a recessed entrance beside the LeWitt wall; footprint on the ground's buildings 62% -> 81%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 61
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -1349,18 +1419,20 @@
       "2026-09-30 interior finding: only 53% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 39
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1377,18 +1449,20 @@
       "2026-09-30 interior finding: only 45% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 71
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -1405,18 +1479,20 @@
       "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 101
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 1,
+        "hung": 6,
+        "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 6
       },
       "log": []
     }
@@ -1433,18 +1509,20 @@
       "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 96
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1461,18 +1539,20 @@
       "2026-09-30 refined (no photographs reachable; published descriptions): Kapoor's Tall Tree & the Eye as some seventy mirror spheres in three stacks, stone band and slit window on the Botta block, the hillside's trees; the ground file cannot place the buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 1
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1489,18 +1569,20 @@
       "2026-09-30 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 136
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1517,18 +1599,20 @@
       "2026-09-30 interior finding: only 48% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 45
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1544,18 +1628,20 @@
       "2026-09-30 refined (no photographs reachable; ground outlines and water): ranges rebuilt to the outlines -- the Tate's range shortened to the water passage, the second range moved to its east end along the basin, the passage and basin placed, the warehouse block across the passage added; footprint 50% -> 81%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 8
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -1572,18 +1658,20 @@
       "2026-09-30 interior finding: only 73% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 107
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1596,22 +1684,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: 1926 limestone palazzo on Washington Street with arched entrance and cornice, atrium and rear wing, the Ballantine House beside it, Washington Park",
-      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): buildings 14 m east, Washington Street and the park 24 m east, a sculpture garden; on its ground 59% → 73%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): buildings 14 m east, Washington Street and the park 24 m east, a sculpture garden; on its ground 59% → 73%",
+      "2026-10-08 interior finding: only 72% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 69
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1624,22 +1714,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: white rotunda under its tetrahedral skylight, low gallery wings, the entrance gateway, Cofrin Pavilion and the Asian Art Wing's water garden (ground file empty: orientation guessed)",
-      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline — the clerestoried gallery range, the rotunda with its tetrahedral skylight, wings round the water garden, the south gateway; on its ground 66% → 83%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline — the clerestoried gallery range, the rotunda with its tetrahedral skylight, wings round the water garden, the south gateway; on its ground 66% → 83%",
+      "2026-10-08 interior finding: only 72% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 52
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1652,22 +1744,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Hildebrandt's white palace of stepped pavilions under green copper roofs, domed octagonal corner towers, three-arched south porch, the great pool and the northern parterres",
-      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the palace 14 m south, copper-green roofs and domes, forecourt and pond re-laid; on its ground 45% → 63%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the palace 14 m south, copper-green roofs and domes, forecourt and pond re-laid; on its ground 45% → 63%",
+      "2026-10-08 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 63
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1680,22 +1774,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Stettler's 1879 sandstone front on Hodlerstrasse with its taller central pavilion, arched entrance and end pavilions, and the Atelier 5 concrete extension stepping toward the Aare",
-      "2026-09-30 interior finding: only 42% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): turned to 47° and moved off Hodlerstrasse; Stettler's front with its three pavilions, the Atelier 5 extension behind; on its ground 43% → 76%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned to 47° and moved off Hodlerstrasse; Stettler's front with its three pavilions, the Atelier 5 extension behind; on its ground 43% → 76%",
+      "2026-10-08 interior finding: only 77% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 36
       },
       "works": {
-        "hung": 0,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 6
       },
       "log": []
     }
@@ -1708,22 +1804,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Birkerts' ribbed stainless-steel parallelogram, acute corner with the entrance notch at Montrose and Bissonnet",
-      "2026-09-30 interior finding: only 10% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): moved 40 m west onto its outline at Montrose and Bissonnet, the parallelogram sharpened toward the corner, denser ribs; on its ground 10% → 98%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 8
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -1739,18 +1836,20 @@
       "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 79
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1763,22 +1862,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1896 red-brick Neo-Renaissance front on Sølvgade with central and end pavilions and slate roofs, the glass Sculpture Street and Indrio's white wing toward Østre Anlæg, on the real bearing",
-      "2026-09-30 interior finding: only 67% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): it had been turned 32° the wrong way; rebuilt on the outline's bearing — the brick range, Sculpture Street, Indrio's white wing, the lake; on its ground 67% → 89%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 153
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 1,
+        "hung": 4,
+        "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -1794,18 +1894,20 @@
       "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 39
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1818,22 +1920,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Renaat Braem's 1971 pavilion: white rounded rooms round patios, bird-wing rooflights, curved entrance wall, in the sculpture park's lawns and trees.",
-      "2026-09-30 interior finding: only 31% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Braem pavilion onto its outline, a pond the ground lacks removed, old trees; on its ground 29% → 38%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Braem pavilion onto its outline, a pond the ground lacks removed, old trees; on its ground 29% → 38%",
+      "2026-10-08 interior finding: only 39% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 2
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -1846,22 +1950,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: a 15 m concrete front between party walls on Av. San Juan, its great 15 x 12 m glass plane in a concrete frame over a set-back entrance; MAMBA's brick warehouse next door.",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved 27 m south onto Avenida San Juan's south side, the avenue at its width, the viaduct behind; on its ground 47% → 74%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved 27 m south onto Avenida San Juan's south side, the avenue at its width, the viaduct behind; on its ground 47% → 74%",
+      "2026-10-08 interior finding: only 76% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 32
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1874,22 +1980,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Hilmer and Sattler's low block: terracotta plates over a rusticated base, rows of gallery lanterns either side of the raised Wandelhalle with its 32 round skylights.",
-      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): form only — flat glazed roof lights, the Kulturforum entrance hall; its point is open ground about 150 m north-east of the gallery, out of the plate's reach — fix the point first; on its ground 17% → 16%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): form only — flat glazed roof lights, the Kulturforum entrance hall; its point is open ground about 150 m north-east of the gallery, out of the plate's reach — fix the point first; on its ground 17% → 16%",
+      "2026-10-08 interior finding: only 16% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 121
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -1902,22 +2010,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Moneo's closed red-brick box with a precast band, the plaza window and entrance slot, four metal lanterns in a pinwheel on the roof; bridge to Jewett, Collins Cinema across the plaza.",
-      "2026-09-30 interior finding: only 43% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): the brick box, bridge, Jewett, Collins Cinema and neighbour onto their outlines; taller grey lanterns; on its ground 41% → 78%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 21
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -1934,18 +2043,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): already on its trapezoid; Rue Ravenstein redrawn against the angled front, the short street north added; on its ground 60%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 132
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -1958,22 +2069,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Zumthor's David Geffen Galleries as one long glass-wrapped level under a concrete roof on seven pavilions crossing Wilshire, Piano's BCAM and Resnick with their sawtooth roofs, Urban Light, Hancock Park and the Lake Pit",
-      "2026-09-30 interior finding: only 40% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): Wilshire put on the campus's south edge; Geffen Galleries, BCAM and Resnick moved onto their outlines; the Academy Museum added; on its ground 34% → 62%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): Wilshire put on the campus's south edge; Geffen Galleries, BCAM and Resnick moved onto their outlines; the Academy Museum added; on its ground 34% → 62%",
+      "2026-10-08 interior finding: only 56% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 42
       },
       "works": {
-        "hung": 0,
+        "hung": 21,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 21
       },
       "log": []
     }
@@ -1986,8 +2099,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Smirke's Portland-stone quadrangle on Bloomsbury's grid, the Great Court's glass roof round the Reading Room drum and dome, the Ionic colonnade, portico and pediment on Great Russell Street, the forecourt, the northern galleries",
-      "2026-09-30 interior finding: only 27% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the ground has no outline for it; moved off Great Russell Street to fill its block with the gates on the street, limestone; the plate is now very large and coarse — trim it next pass"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the ground has no outline for it; moved off Great Russell Street to fill its block with the gates on the street, limestone; the plate is now very large and coarse — trim it next pass",
+      "2026-10-08 interior finding: only 9% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -2017,18 +2130,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): turned 2.5° and moved 6 m north onto its outline, hedgerows along the highway; on its ground 81% → 95%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 45
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -2041,22 +2156,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gehry Galleria Italia bulging glass-and-fir facade on Dundas, the older wings and skylights, the blue titanium tower with its glass stair, the Grange in the park; turned to the street grid",
-      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): onto the Dundas block, the blue tower rising from it, the Grange on its outline, Grange Park shown; on its ground 65% → 85%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): onto the Dundas block, the blue tower rising from it, the Grange on its outline, Grange Park shown; on its ground 65% → 85%",
+      "2026-10-08 interior finding: only 75% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 114
       },
       "works": {
-        "hung": 0,
+        "hung": 13,
         "elsewhere": 0,
         "off": 0,
-        "none": 5
+        "none": 0,
+        "arranged": 13
       },
       "log": []
     }
@@ -2069,22 +2186,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Lowell's granite Huntington Avenue front with portico and Rotunda dome, the Evans Wing colonnade on the Fenway, courts, Pei's West Wing galleria, Foster's Americas Wing and glass courtyard",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): pulled in to its 190 × 140 m outline; the Huntington front set back behind its lawn with the portico and Dallin statue; paved city side, grass to the Fens; on its ground 59% → 78%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): pulled in to its 190 × 140 m outline; the Huntington front set back behind its lawn with the portico and Dallin statue; paved city side, grass to the Fens; on its ground 59% → 78%",
+      "2026-10-08 interior finding: only 59% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 42
       },
       "works": {
-        "hung": 0,
+        "hung": 13,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 13
       },
       "log": []
     }
@@ -2097,22 +2216,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Ando's 76 m concrete core in its glass envelope, the pond, and the two sunken concrete wings at 45 degrees in their grass banks",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the long building and the wings onto their outlines; the glass envelope's roof on steel girders, sunken wings with earth banks; on its ground 39% → 60%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the long building and the wings onto their outlines; the glass envelope's roof on steel girders, sunken wings with earth banks; on its ground 39% → 60%",
+      "2026-10-08 interior finding: only 60% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 27
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2125,22 +2246,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gardella's three-level pavilion: plastered street block with cornice and roof lights, raised middle gallery, lower hall's long glass wall onto the Villa Reale garden; a slice of the villa beside.",
-      "2026-09-30 interior finding: only 5% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved south of Via Palestro, the public gardens north, windows on the Villa Reale wing; outlines sparse; on its ground 6% → 23%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved south of Via Palestro, the public gardens north, windows on the Villa Reale wing; outlines sparse; on its ground 6% → 23%",
+      "2026-10-08 interior finding: only 24% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 17
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2153,22 +2276,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Villanueva's 190 m brick-and-stone range with the Velázquez portico, Goya loggia and Murillo portico, the central gallery skylight, the rotunda; Moneo's brick cube and box-garden roof; San Jerónimo el Real; the Paseo's trees and the Botanical Garden",
-      "2026-09-30 interior finding: only 22% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): Villanueva's building moved about 55 m east onto its outline at its 10° tilt; Moneo's cube, the link, San Jerónimo, the Paseo trees and the Botanical Garden rebuilt round it; on its ground 15% → 81%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): Villanueva's building moved about 55 m east onto its outline at its 10° tilt; Moneo's cube, the link, San Jerónimo, the Paseo trees and the Botanical Garden rebuilt round it; on its ground 15% → 81%",
+      "2026-10-08 interior finding: only 50% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 144
       },
       "works": {
-        "hung": 0,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
-        "none": 4
+        "none": 0,
+        "arranged": 5
       },
       "log": []
     }
@@ -2181,22 +2306,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: a plain white two-level box with recessed entrance, window bands and roof light among Alserkal Avenue's low warehouse sheds (guessed; no footprint in the ground)",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the white south-east unit of its row of warehouses, the rest drawn as metal sheds with lanes and palms; which unit is the foundation guessed; on its ground 29% → 74%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the white south-east unit of its row of warehouses, the rest drawn as metal sheds with lanes and palms; which unit is the foundation guessed; on its ground 29% → 74%",
+      "2026-10-08 interior finding: only 74% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 18
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2209,22 +2336,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Gilbert's limestone Palace of Fine Arts at its true angle on Art Hill, skylit wings, the vaulted Sculpture Hall, the arched and columned front with the St. Louis statue, and Chipperfield's dark coffered East Building",
-      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto its outline, Cass Gilbert's building in pale limestone, the East Building blue-grey; on its ground 57% → 76%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto its outline, Cass Gilbert's building in pale limestone, the East Building blue-grey; on its ground 57% → 76%",
+      "2026-10-08 interior finding: only 76% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 101
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2237,22 +2366,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: grey-brick former munitions factory with steel windows and roof lantern, Vector Architects steel-mesh veil over the forecourt, a 798 sawtooth hall across the lane",
-      "2026-09-30 interior finding: only 17% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): clerestory lantern, grey brick, sawtooth shed cut to its outline; position kept (sparse outlines); on its ground 20% → 31%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): clerestory lantern, grey brick, sawtooth shed cut to its outline; position kept (sparse outlines); on its ground 20% → 31%",
+      "2026-10-08 interior finding: only 28% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 18
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2268,18 +2399,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): the block moved onto its outline with West 22nd Street and the 7000 Oaks on the ground's street; on its ground 81% → 95%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 23
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2295,18 +2428,20 @@
       "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 49
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2322,18 +2457,20 @@
       "2026-09-30 interior finding: only 6% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 115
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2346,22 +2483,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Chipperfield's milky-glass cubes round courts with the steps from Bismarckstraße, the low 1960 building to the south, one stone plinth",
-      "2026-09-30 interior finding: only 71% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): narrowed to its 76 m outline; glass fronts on the 1960 wing, tall windows on Chipperfield's; entrance steps east (the street's name guessed); on its ground 72% → 82%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 6
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -2374,22 +2512,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: low pale galleries with skylight monitors on Seattle's turned grid, the rotunda lobby, reflecting pool and column arcade on Terry Ave, the courtyard café.",
-      "2026-09-30 interior finding: only 68% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): block, streets and planting moved onto the outline; on its ground 68% → 71%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): block, streets and planting moved onto the outline; on its ground 68% → 71%",
+      "2026-10-08 interior finding: only 72% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 26
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2402,22 +2542,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Green's 1905 marble temple with Ionic portico to Elmwood Ave; Bunshaft's 1962 court under the Common Sky canopy and black glass auditorium; OMA's glass-wrapped Gundlach Building at the NW corner.",
-      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): one north–south range as the outlines show — the 1905 temple at its north end, the Knox plinth south, Common Sky over the court, the round Gundlach and the bridge; on its ground 57% → 90%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): one north–south range as the outlines show — the 1905 temple at its north end, the Knox plinth south, Common Sky over the court, the round Gundlach and the bridge; on its ground 57% → 90%",
+      "2026-10-08 interior finding: only 80% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 45
       },
       "works": {
-        "hung": 0,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 7
       },
       "log": []
     }
@@ -2430,22 +2572,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white villa by the road and Bo and Wohlert's low white pavilions and glass corridors running north to the lake wing and south to the half-sunk south wing and café, in the park of old beeches sloping to the Øresund",
-      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): each wing onto its chain of outlines, the shore to where the sea is, a finer voxel; on its ground 27% → 43% (the low pavilions read short)"
+      "2026-10-06 refined (catch-up for 1–6 Oct): each wing onto its chain of outlines, the shore to where the sea is, a finer voxel; on its ground 27% → 43% (the low pavilions read short)",
+      "2026-10-08 interior finding: only 36% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 10
       },
       "works": {
-        "hung": 0,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 7
       },
       "log": []
     }
@@ -2458,22 +2602,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the white iceberg volumes with terraces, twelve generated glass sails springing from its shoulders and billowing outward, the basin and grotto cascade, the Bois de Boulogne",
-      "2026-09-30 interior finding: only 70% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): north sails pulled in off the avenue, the avenue to the north, trees thinned; on its ground 54% → 59% (the sails overhang the water); the sails' form still generated"
+      "2026-10-06 refined (catch-up for 1–6 Oct): north sails pulled in off the avenue, the avenue to the north, trees thinned; on its ground 54% → 59% (the sails overhang the water); the sails' form still generated",
+      "2026-10-08 interior finding: only 71% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 81
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -2486,22 +2632,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Smith's Portland stone gallery squared to Millbank, the Corinthian portico and steps, end pavilions, the rotunda dome, the skylit roofs and the Duveen galleries, Stirling's Clore Gallery and pond, the planes and the Thames",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Clore Gallery to the north wing, the Manton ramp to Atterbury Street; the museum's point is about 110 m south-south-east of the building, out of the plate's reach — fix the point first; on its ground 43% → 40%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Clore Gallery to the north wing, the Manton ramp to Atterbury Street; the museum's point is about 110 m south-south-east of the building, out of the plate's reach — fix the point first; on its ground 43% → 40%",
+      "2026-10-08 interior finding: only 26% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 117
       },
       "works": {
-        "hung": 0,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 9
+        "none": 0,
+        "arranged": 17
       },
       "log": []
     }
@@ -2514,22 +2662,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1608 Oudemannenhuis, two brick storeys under dark pitched roofs round the courtyard garden, stepped gables and the gate on Groot Heiligland, lower galleries behind",
-      "2026-09-30 interior finding: only 59% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the almshouse west of Groot Heiligland with its long court, two-storey front range and gate, gabled neighbours; on its ground 60% → 68%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the almshouse west of Groot Heiligland with its long court, two-storey front range and gate, gabled neighbours; on its ground 60% → 68%",
+      "2026-10-08 interior finding: only 67% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 24
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2542,22 +2692,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1936 limestone Hauptbau round its arcaded court with skylit top galleries and street arcade, and the 2016 grey-brick Neubau monolith with its frieze across Dufourstrasse",
-      "2026-09-30 interior finding: only 32% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Hauptbau east onto its courtyard ring with its rear range; the Neubau on its outline across Dufourstrasse with the dark frieze; on its ground 33% → 62%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Hauptbau east onto its courtyard ring with its rear range; the Neubau on its outline across Dufourstrasse with the dark frieze; on its ground 33% → 62%",
+      "2026-10-08 interior finding: only 64% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 80
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
@@ -2570,22 +2722,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the two 2006 limestone buildings with roof monitors and glazed atria across the plaza, petal canopies and oaks, and Ellsworth Kelly's white vaulted cross, Austin",
-      "2026-09-30 interior finding: only 60% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Michener building west, the Smith building narrowed, the plaza and Kelly's Austin re-set, the road to the east edge, lawns and oaks; on its ground 62% → 73%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Michener building west, the Smith building narrowed, the plaza and Kelly's Austin re-set, the road to the east edge, lawns and oaks; on its ground 62% → 73%",
+      "2026-10-08 interior finding: only 79% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 114
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2598,22 +2752,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Palazzo Brera, four rendered storeys under terracotta hips, the portal on via Brera, the arcaded cortile d'onore with Canova's Napoleon, the observatory domes and the Orto Botanico",
-      "2026-09-30 interior finding: only 49% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved 49 m east so the cortile lines up with the outline's courtyard, Via Brera and the quarter from the outlines; on its ground 49% → 68%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved 49 m east so the cortile lines up with the outline's courtyard, Via Brera and the quarter from the outlines; on its ground 49% → 68%",
+      "2026-10-08 interior finding: only 63% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 76
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2626,22 +2782,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: NYU Silver Center on Washington Square East, stone base and brick-and-limestone shaft with arched top storeys, the gallery windows facing the park; turned to the Manhattan grid",
-      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): moved about 20 m east onto the Silver Center's outline; stone base with the gallery's windows, buff-brick shaft, cornice, light court, the park opposite; on its ground 69% → 87%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 69
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2654,22 +2811,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Bazzani palace on Viale delle Belle Arti turned to the avenue, colossal columned entrance with attic and steps, top-lit wings, end pavilions, Villa Borghese pines behind",
-      "2026-09-30 interior finding: only 69% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved and deepened to its 150 × 90 m outline with one central court; the front pavilion's paired columns, attic and steps, the 1933 ranges behind; on its ground 68% → 80%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved and deepened to its 150 × 90 m outline with one central court; the front pavilion's paired columns, attic and steps, the 1933 ranges behind; on its ground 68% → 80%",
+      "2026-10-08 interior finding: only 72% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 162
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2685,18 +2844,20 @@
       "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 30
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2709,22 +2870,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Tod Williams Billie Tsien stone pavilion with roof garden and pool, the zig-zag roofed bridge over the ravine, the restored magazine buildings with tiled roofs on the wooded hillside",
-      "2026-09-30 interior finding: only 13% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the pavilion moved and widened onto its 28 × 60 m outline, the magazines re-set east of the path; on its ground 10% → 66%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the pavilion moved and widened onto its 28 × 60 m outline, the magazines re-set east of the path; on its ground 10% → 66%",
+      "2026-10-08 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 2
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2737,22 +2900,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Moneo's low red-ochre building down Skeppsholmen's spine, galleries bundled in fragments under pyramidal zinc roofs with rectangular lanterns, the top-lit entrance street, the old armoury",
-      "2026-09-30 interior finding: only 57% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved 32 m west onto its outline, Tyghuset onto the older building, zinc lantern caps, trees; on its ground 57% → 74%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved 32 m west onto its outline, Tyghuset onto the older building, zinc lantern caps, trees; on its ground 57% → 74%",
+      "2026-10-08 interior finding: only 74% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 63
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -2765,22 +2930,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former slaughterhouse's brick street front with stone gate pavilion, skylit galleries round a court and a rear extension, among Brussels row houses (largely guessed)",
-      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): street aligned; slate roofs with glazed ridges; the block's houses; on its ground 51% → 57%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): street aligned; slate roofs with glazed ridges; the block's houses; on its ground 51% → 57%",
+      "2026-10-08 interior finding: only 57% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 32
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2793,22 +2960,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 130 x 30 m blue-grey glass box on the Danube bank, its ground floor cut away for 60 m into the open vestibule framing the river",
-      "2026-09-30 interior finding: only 80% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): position confirmed; the 60 m passage through the ground floor, glass skin, roof light, LENTOS letters, riverside steps, more trees; on its ground 75%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): position confirmed; the 60 m passage through the ground floor, glass skin, roof light, LENTOS letters, riverside steps, more trees; on its ground 75%",
+      "2026-10-08 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 9
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2824,18 +2993,20 @@
       "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 40
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2850,18 +3021,20 @@
       "2026-09-24 first model: the white lattice veil over glass with skylit lattice roof, the corners lifted over the lobby on Grand Avenue, the oculus, the olive plaza, on the downtown grid bearing"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 69
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2874,22 +3047,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Carità church's Gothic brick front and the Scuola's Istrian-stone front on the campo, rendered ranges round two courts under tile roofs, the Grand Canal and the wooden Accademia bridge, on the canal bearing",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline south of the campo — the brick church front, Massari's white Scuola front, the convent ranges round Palladio's cloister, the bridge to the campo; on its ground 46% → 59%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline south of the campo — the brick church front, Massari's white Scuola front, the convent ranges round Palladio's cloister, the bridge to the campo; on its ground 46% → 59%",
+      "2026-10-08 interior finding: only 57% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 102
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2902,22 +3077,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model (largely guessed): a modest two-storey stock-brick gallery with a glazed street front and roof skylight on Boundary Road between taller houses",
-      "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): turned 55° to lie along its terrace; on its ground 36% → 72%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned 55° to lie along its terrace; on its ground 36% → 72%",
+      "2026-10-08 interior finding: only 72% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 1
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2930,22 +3107,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the six-storey late-GDR data centre on Dittrichring with window rows between piers, floor bands, set-back top floor and glass lounge, the Pleißemühlgraben and ring road, on the real bearing",
-      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): moved across the millrace onto its outline, a long six-storey arm along the water widening south, Dittrichring placed; on its ground 9% → 85%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 42
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -2960,18 +3138,20 @@
       "2026-09-24 first model: Piano's long low grey-sided house in a white steel frame under rows of white leaves over glass, the porch all round, gardens let in, the Treasure House above; live oaks."
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 37
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -2984,22 +3164,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Ewan Christian's Portland-stone palazzo: rusticated base, arched piano nobile windows, cornice and balustrade, projecting entrance on St Martin's Place, lanterns and the Ondaatje rooftop restaurant; the NG's back to the south.",
-      "2026-09-30 interior finding: only 52% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): London's NPG rebuilt on its wedge 45 m south between Charing Cross Road and St Martin's Place, the National Gallery's back and the Cavell memorial beside it; on its ground 52% → 80%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): London's NPG rebuilt on its wedge 45 m south between Charing Cross Road and St Martin's Place, the National Gallery's back and the Cavell memorial beside it; on its ground 52% → 80%",
+      "2026-10-08 interior finding: only 80% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 50
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -3012,22 +3194,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Kreis's Ehrenhof: dark brick wings with piers and slot windows round the long court and water basin, corner towers, the pier hall; Ungers's glass roof over the rebuilt galleries.",
-      "2026-09-30 interior finding: only 41% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Ehrenhof ranges moved 38 m west and stretched onto the closed outline, the court's pool squared, Ungers's block added; on its ground 42% → 87%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Ehrenhof ranges moved 38 m west and stretched onto the closed outline, the court's pool squared, Ungers's block added; on its ground 42% → 87%",
+      "2026-10-08 interior finding: only 77% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 107
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3040,22 +3224,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: a four-storey yellow-brick harbour warehouse on the quay at Nordhavn (footprint from the ground file), glazed loading doors, the galleries opened up white at the east end, the harbour basin",
-      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its outline, the four-storey warehouse along the quay with the water to its north and the low hall east; on its ground 50% → 94%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 63
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -3071,18 +3256,20 @@
       "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 65
       },
       "works": {
-        "hung": 0,
+        "hung": 8,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 8
       },
       "log": []
     }
@@ -3095,22 +3282,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Busmann + Haberer's dark red brick block under two ranks of curved zinc north-light sheds, stair towers, the glass porch, Heinrich-Böll-Platz, the railway viaduct and the Rhine garden",
-      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt as its 165 × 55 m strip with the zinc sheds, towers, Heinrich-Böll-Platz, the viaduct, a span of the Hohenzollern Bridge and the Rhine; on its ground 21% → 66%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt as its 165 × 55 m strip with the zinc sheds, towers, Heinrich-Böll-Platz, the viaduct, a span of the Hohenzollern Bridge and the Rhine; on its ground 21% → 66%",
+      "2026-10-08 interior finding: only 60% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 87
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -3123,22 +3312,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Hôtel Biron with its court of honour, pedimented court front and rounded garden pavilion under slate, the chapel pavilion, The Thinker, the long garden of lawn, lime alleys and bosquets to the round basin",
-      "2026-09-30 interior finding: only 25% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the hôtel moved about 70 m south onto its outline with its court of honour and gardens; limestone, slate mansard, pediment, garden bow; on its ground 33% → 61%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the hôtel moved about 70 m south onto its outline with its court of honour and gardens; limestone, slate mansard, pediment, garden bow; on its ground 33% → 61%",
+      "2026-10-08 interior finding: only 35% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 24
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3151,22 +3342,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Heckscher Building on Manhattan's grid, red brick over a rusticated limestone base with quoins and cornice, the glass entrance on Fifth, the theatre block, the Conservatory Garden across the avenue",
-      "2026-09-30 interior finding: only 54% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): cut from 88 m to 61 m between its side streets, six storeys as published, Fifth Avenue forecourt and the park wall opposite; on its ground 53% → 74%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): cut from 88 m to 61 m between its side streets, six storeys as published, Fifth Avenue forecourt and the park wall opposite; on its ground 53% → 74%",
+      "2026-10-08 interior finding: only 69% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 57
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3183,18 +3376,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): position confirmed, New York Avenue along its front with its trees, limestone walls; on its ground 75% → 74%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 33
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3210,18 +3405,20 @@
       "2026-09-30 interior finding: only 30% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 101
       },
       "works": {
-        "hung": 0,
+        "hung": 10,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 10
       },
       "log": []
     }
@@ -3234,22 +3431,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former Bristol Hotel's six-storey neoclassical front on Meşrutiyet Caddesi — stone ground floor, windows between pilasters, balconies, cornice and attic — the modern back, low Beyoğlu blocks round it",
-      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto the east side of Meşrutiyet Caddesi, Tepebaşı open to the west; which building is the museum still guessed; on its ground 35% → 59%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved onto the east side of Meşrutiyet Caddesi, Tepebaşı open to the west; which building is the museum still guessed; on its ground 35% → 59%",
+      "2026-10-08 interior finding: only 59% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 33
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3262,8 +3461,8 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind",
-      "2026-09-30 interior finding: only 8% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): moved off the car park onto the three-storey outline, the Johnson front to the east lawn, the galleries west, Camp Bowie Boulevard south; on its ground 7% → 72%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): moved off the car park onto the three-storey outline, the Johnson front to the east lawn, the galleries west, Camp Bowie Boulevard south; on its ground 7% → 72%",
+      "2026-10-08 interior finding: only 25% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",
@@ -3293,18 +3492,20 @@
       "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 155
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3317,22 +3518,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Simpson's top-lit stone gallery with its Doric portico and pediment on Buckingham Gate, the palace's Portland-stone south wing and quadrangle behind, the Royal Mews and its clock-tower gate",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): Buckingham Palace 30 m east, the King's Gallery on its south-east tip, the Mews west, Portland stone with windows all round; on its ground 38% → 52%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): Buckingham Palace 30 m east, the King's Gallery on its south-east tip, the Mews west, Portland stone with windows all round; on its ground 38% → 52%",
+      "2026-10-08 interior finding: only 53% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 111
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3345,22 +3548,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: whole complex coarse: Bramante corridors under tile roofs, Cortile della Pigna with the Nicchione and pine cone, Braccio Nuovo and Library crossings, Belvedere court, Pinacoteca, entrance dome, walls and gardens",
-      "2026-09-30 interior finding: only 37% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): the Pio-Clementino onto the north-east block, a smaller entrance hall with Momo's stair dome, umbrella pines, notes corrected; on its ground 36% → 38%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): the Pio-Clementino onto the north-east block, a smaller entrance hall with Momo's stair dome, umbrella pines, notes corrected; on its ground 36% → 38%",
+      "2026-10-08 interior finding: only 39% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 28
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3376,18 +3581,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): position kept, paler granite, a base course and upper windows; on its ground 80%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 78
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3403,18 +3610,20 @@
       "2026-10-06 refined (catch-up for 1–6 Oct): turned to face East Broad Street with its steps, the Walter Wing lowered to 15 m with a glass link; on its ground 80% → 81%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 97
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
@@ -3427,22 +3636,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1926 grain silo's tall Art Deco volume and staircase tower, flanked by Grandsard's white-walled galleries with roof lights, on Leuvenstraat facing the Waalse Kaai",
-      "2026-09-30 interior finding: only 39% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): turned 34° to run with Leuvenstraat and moved onto its block; quay trees and houses opposite; on its ground 38% → 63%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): turned 34° to run with Leuvenstraat and moved onto its block; quay trees and houses opposite; on its ground 38% → 63%",
+      "2026-10-08 interior finding: only 63% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 34
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3455,22 +3666,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Adjaye's nine cantilevered pavilions in banded aggregate concrete with glass-and-bronze lenses between them",
-      "2026-09-30 interior finding: only 64% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): Adjaye's pavilions moved one by one onto their outline, gravel roofs; on its ground 62% → 73%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): Adjaye's pavilions moved one by one onto their outline, gravel roofs; on its ground 62% → 73%",
+      "2026-10-08 interior finding: only 75% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 51
       },
       "works": {
-        "hung": 0,
+        "hung": 9,
         "elsewhere": 0,
         "off": 0,
-        "none": 9
+        "none": 0,
+        "arranged": 9
       },
       "log": []
     }
@@ -3483,22 +3696,23 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the former Forno del Pane on Via Don Minzoni: long rendered front with taller centre under tile roofs, three brick bakery halls behind with ridge lights, the Cavaticcio park and canal.",
-      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings",
       "2026-10-06 refined (catch-up for 1–6 Oct): rebuilt on its wedge along Via Don Minzoni, rendered front with a taller centre, brick halls to the slanting back, the canal on its line; on its ground 67% → 93%"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 28
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3511,22 +3725,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Le Corbusier's pebble-panel box on pilotis over a glazed lobby, the roof's ring of lighting galleries round the hall's lantern, the Rodins in the forecourt, Maekawa's tiled wing.",
-      "2026-09-30 interior finding: only 75% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): Maekawa's wing moved to the U round its court, panels to rubble, thicker pilotis; covers 81% → 90% of its outline"
+      "2026-10-06 refined (catch-up for 1–6 Oct): Maekawa's wing moved to the U round its court, panels to rubble, thicker pilotis; covers 81% → 90% of its outline",
+      "2026-10-08 interior finding: only 78% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 5
       },
       "works": {
-        "hung": 0,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 6
       },
       "log": []
     }
@@ -3542,18 +3758,20 @@
       "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 93
       },
       "works": {
-        "hung": 0,
+        "hung": 3,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 3
       },
       "log": []
     }
@@ -3566,22 +3784,24 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: SANAA's seven shifted aluminium-clad boxes over a glass ground floor on the Bowery, skylights at the setbacks; OMA's 2025 stepped glass-and-mesh expansion to the north (form guessed).",
-      "2026-09-30 interior finding: only 51% of the model's footprint stands on the ground's buildings",
-      "2026-10-06 refined (catch-up for 1–6 Oct): SANAA's stack onto its lot in pale silver-white, the OMA extension to the south (its lot still cleared in the outlines), walk-ups north; on its ground 51% → 54%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): SANAA's stack onto its lot in pale silver-white, the OMA extension to the south (its lot still cleared in the outlines), walk-ups north; on its ground 51% → 54%",
+      "2026-10-08 interior finding: only 54% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 33
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3617,18 +3837,20 @@
       "2026-09-30 interior finding: only 46% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 34
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }
@@ -3644,18 +3866,20 @@
       "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 1
       },
       "works": {
-        "hung": 0,
+        "hung": 1,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 1
       },
       "log": []
     }

@@ -209,13 +209,16 @@ Every other key on a room is the hand's:
     is counted once, as that one.
 - `asof`: the day the works were placed.
 - `tier`, written by the checker: `documented` (at least 80% of the
-  walkable floor in documented rooms), `reconstructed` (any rooms drawn) or
-  `shell`.
+  walkable floor in documented rooms), `arranged` (more than half of it in
+  rooms the site arranged: "Arranged", below), `reconstructed` (any rooms
+  drawn) or `shell`.
 
 ## How works hang
 
 A work hangs only where its `how` is `museum` and its room is drawn —
-never in a shell, never in a guessed room. On the wall the record gives: the
+never in a shell, never in a guessed room — or where its `how` is
+`arranged` and its room is one the site arranged ("Arranged", below; in the
+file's order, the rule's, one to every 2.5 m of a run, no second tier). On the wall the record gives: the
 room's edge whose outward normal is nearest that way (for a round room, its
 arc within 45° of it), or freestanding at the room's middle for `centre`.
 Along it, in the museum's order (its record numbers), then by date, spaced
@@ -255,8 +258,10 @@ wall facing south (within 60° of it, at whatever angle the building stands),
 with open ground before it for the few metres a visitor stands in; east,
 west or north where no wall facing south has that. You stand 2 m out, facing
 in. That way in is ours, not the museum's door, and is said so: the plan
-names it "A way in (ours)", the banner reads "Inside · nothing is known yet ·
-the walls are the model's, the way in ours", and no lit tile marks it on the
+names it "A way in (ours)" (the banner said "Inside · nothing is known yet ·
+the walls are the model's, the way in ours" until 7 Oct 2026, when the artist
+asked for it gone: `QUIET_LINE` in walk.js; the banner now says only the floor
+and the room), and no lit tile marks it on the
 building (the tile marks only an entrance a source gives; the gesture still
 goes in). No work hangs; the column lists the works and why each is not hung.
 
@@ -270,11 +275,74 @@ goes in). No work hangs; the column lists the works and why each is not hung.
   the rooms connect; a height from the model; the 1.45 m hanging line.
   Surfaces that are reconstructed show a quarter more of the soil through
   them.
+- **arranged** (7 Oct 2026, below): rooms the site lays out by a stated
+  rule inside the model's real walls, where no plan of the museum has been
+  read, so that its saved works can be walked up to. Never the museum's.
 - **not known**: not drawn. It stays earth.
-- **Never**: a room name that is not in a source (use null); a room drawn so
-  that a work can hang in it; a doorway between rooms no source connects; a
+- **Never**: a room name that is not in a source (use null; an arranged
+  room is `Room <n>`, `Hall` or `Entrance`, never a gallery name of the
+  museum's); a room drawn so that a work can hang in it — except in the
+  arranged tier, which says so on every room and work; a doorway between
+  rooms no source connects (arranged doorways are the rule's, said so); a
   staff or closed area made walkable (use `closed`); a placement or a size
-  made up; a `said` that is not verbatim.
+  made up; a `said` that is not verbatim (an arranged `said` is the site's
+  own sentence, and says it is the site's).
+
+### Arranged
+
+The artist, 7 Oct 2026, of MoMA's shell walk: "Focus on building the
+walkable models for all major museums in major cities. I want to be able to
+walk up to an artwork inside the museum and click on it and learn about it."
+That request supersedes, for this tier only, "never a room drawn so that a
+work can hang in it". Written by `scripts/build_interiors_arranged.js` (the
+page's own `models.js` and `walk-plan.js` in a vm; the rule in full in its
+head comment), only for a museum whose rooms no source gives — never one the
+museum's own data draws (the NGA, the Met, the Art Institute, Cleveland) or
+one `osm/indoor/<slug>.json` covers:
+
+- **floors**: the museum's own count where a source read gives it (`FLOORS`
+  in the script, each with its source); else 5 m storeys as far as the model
+  stands over at least 40% of its ground floor (200 m² or more), three at
+  most. `sure: "arranged"`.
+- **rooms**: on a grid turned to the building's main walls, a hall down the
+  long axis (6–10 m wide) where the building is 26 m deep or more, bays
+  either side about 12 m deep and 10–14 m along (larger in a large museum, to
+  keep about 140 rooms), each the largest rectangle of its bay inside the
+  model's walls; only rooms the doorways reach are drawn. Named `Room 1`,
+  `Room 2` … in walking order from the door; the hall is `Hall`. Every room's
+  `said`: "Where the museum hangs these is not known: the rooms are arranged
+  by the site inside its walls". No `ref`, no `h` or material of its own.
+- **doorways**: 2.4 m at the middle of every shared wall the rule names (bay
+  onto hall, neighbours along a rank, outer rank into inner); **stairs** a
+  straight flight down the hall, else a lift in a room both floors share.
+- **the way in**: of the ground floor's room sides that meet open ground
+  through a wall of 2.5 m at most (a voxel and a half on a coarse model), the
+  one facing south, the longest, nearest the shell's door; cut through the
+  wall, said so in its `note`.
+- **works** (`how: "arranged"`, `src: "arranged"`): every saved work the
+  museum holds that its own record does not place in a room drawn (never one
+  its record says is off view, nor one another museum's record places), then
+  the works the museum showed and does not hold ("Also here",
+  `places/<city>.json` at its venue; `also: {k, y, q}` keeps what the history
+  says happened there), each group by period, then artist, then date, filling
+  the rooms in walking order, one work to every 2.5 m of a run of wall
+  (`ARR_SPACE` in walk-plan.js; no second tier), a new room at a new period
+  once a room holds three. `said` says the site hung it; what the museum's
+  record said, if anything, is kept in `rec` with its source. The facts
+  (`t a y m i c cm cmsrc`) are copied from the work's history.
+- **said where**: the column ("Where it hangs · Room 3", then "Hung there by
+  the site: where the museum hangs it is not known") and the look's label;
+  never over the walk (the banner reads only "Level 1 · Room 3").
+- **tier**: `arranged` when more than half the walkable floor is in arranged
+  rooms. The daily pass grows an arranged museum to reconstructed or
+  documented as soon as a plan, OSM indoor mapping or the museum's own data
+  is read: its rooms are then drawn from the source and the script leaves it
+  (`REFINE.md`, "Interiors").
+
+The checker refuses an arranged room named otherwise, without that `said`,
+or with a `ref`; an arranged work in a room not arranged, or a record's
+(`museum`) work in an arranged room; and `arranged` on a height, a material,
+a thing or a pin.
 
 ## The sources, most sure first
 
@@ -323,7 +391,7 @@ the file against its model and ground, and refuses it (exit 1) for: the
 schema (types, `v`, unique ids, a rect's w and d over 0, a polygon of three
 points or more not crossing itself, a circle's r over 0); a `src`, `hsrc`
 or `msrc` not in `sources`, or citing one not yet read; a `sure` other than
-documented or reconstructed; a material not in `models.js`, or one without
+documented or reconstructed (or arranged, on a floor, room, opening, stair, lift or entrance); a material not in `models.js`, or one without
 `msrc`; an opening missing a room, finding no wall between its rooms within
 1.5 m of `at` and 2.5 m thick, or without a source; a cut longer than 2.5 m
 with no note; a stair whose ends do not meet its floors or whose treads are
