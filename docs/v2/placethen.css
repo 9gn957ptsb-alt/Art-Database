@@ -70,19 +70,25 @@
 .pt-swipe-next { right: 6px; }
 /* Shown on a phone too (WCAG 2.5.1): the swipe has a one-tap way on every device. */
 
-/* Its words: the title (a door to its history) and where it stands among the period's, then its wall label. */
+/* Its words: its wall label, then the line — the way on, and where it stands among the period's. */
 .pt-cap { flex: none; display: grid; gap: 2px; min-width: 0; }
 .pt-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+/* The line: the way on (its history, where it was painted) in the reading layout's quiet line, whose it
+   is when another artist's, "not saved"; no title (8 Oct 2026: the label under the picture says where it
+   is, its year and its medium, and nothing else). */
 .pt-wt {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 24px;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  color: #eadfcd;
-  font-family: "Newsreader", var(--serif, serif);
-  font-size: 16px;
+  color: #a8927a;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   line-height: 1.25;
   text-align: left;
   white-space: nowrap;
@@ -90,8 +96,9 @@
   text-overflow: ellipsis;
   cursor: pointer;
 }
-.pt-wt:disabled { cursor: default; }
-.pt-wt:not(:disabled):hover, .pt-wt:focus-visible { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
+.pt-wt[hidden] { display: none; }
+.pt-wt:disabled { cursor: default; color: #8c7a66; }
+.pt-wt:not(:disabled):hover, .pt-wt:focus-visible { color: #9d95e6; }
 .pt-wt .pt-by { font-family: var(--mono, monospace); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #e3b6d3; }
 .pt-count {
   flex: none;
@@ -105,6 +112,9 @@
 }
 .pt-count[hidden] { display: none; }
 .pt-label .wl-by, .pt-label .wl-made, .pt-label .wl-how, .pt-label .wl-now { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Its two short lines, in the middle under the picture (which stands in the middle of its box), each at most two. */
+.pt-label[data-brief] { text-align: center; }
+.pt-label[data-brief] .wl-now, .pt-label[data-brief] .wl-made { white-space: normal; text-overflow: clip; }
 /* Beside an upright picture on a phone (placeLabel): picture left, label right. */
 .pt-work[data-side] .pt-pic { right: auto; width: var(--pt-pic-w); }
 .pt-work[data-side] .pt-picbox > .pt-label { position: absolute; top: 0; right: 0; left: calc(var(--pt-pic-w) + 12px); }
@@ -235,7 +245,7 @@
 /* ---- a desktop: the works large on the left, the doors wrapping under them ---- */
 @media (min-width: 721px) {
   .pt-work { padding: 14px; gap: 8px; background: rgba(15, 10, 7, 0.92); border-radius: 6px; }
-  .pt-wt { font-size: 19px; }
+  .pt-wt { font-size: 11px; }
   .pt-label { font-size: 11px; }
   .pt-doors { flex-wrap: wrap; overflow-x: hidden; overflow-y: auto; max-height: 66px; }
   .pt-door { font-size: 11px; min-height: 28px; }

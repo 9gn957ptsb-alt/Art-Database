@@ -112,7 +112,9 @@ module, `a11y.js` / `a11y.css`, loaded last, so no other module has to know it.
 
 **Met now**
 - **1.3.1, 2.4.6, 2.4.3** — every view has one h1 (the categories' title, else the life's or the
-  place's sentence, else the wall label; a hidden one only where a view gives none), its sections
+  place's sentence; a hidden one where a view gives none — the wall label under a picture says
+  only where the work is, its year and its medium since 8 Oct 2026, its title and artist said to a
+  screen reader in their place, so it no longer heads a view), its sections
   h2, Find's groups h2; one `main` at a time (the view's column, else the stage, which is otherwise
   a labelled region); the banner is a navigation landmark. Arriving, the focus goes to the h1 when
   nothing visible holds it; coming back up it goes back to the mark or row that was pressed. The

@@ -132,7 +132,8 @@
   /* ---- the view ------------------------------------------------------------- */
   var KIND = { work: "Work", life: "Life", town: "City", museum: "Museum", movement: "Movement", thread: "Thread",
                building: "Architecture", place: "Collage", world: "The globe" };
-  var H1 = [".kinds-head .kinds-title", ".pt-say", ".studio-title", ".read-title", ".wl-title"];
+  // (The wall label no longer heads a view: under a picture it names no title since 8 Oct 2026; DISPLAY.md.)
+  var H1 = [".kinds-head .kinds-title", ".pt-say", ".studio-title", ".read-title"];
   var H2 = [".art-section-head", ".town-section:not(.life-kicker)", ".held-count", ".finder-group", ".kinds-panel-head"];
   var LISTS = [[".town-venue-list", ".town-venue-box"], [".town-museums", ".town-museum-row"]];
 

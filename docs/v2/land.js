@@ -20207,24 +20207,6 @@
     // middle of it rather than leaving the room under its label empty). Swapped into the lens's place, it
     // stands in the middle of it.
     if (mode === "rest" && !lensSwapped && W > 720) { x = room.x; }
-    // A picture narrower than its band stands in the middle of it: its label starts at its own left
-    // edge, as a wall label does, not at the band's, and is measured again at that width (narrower,
-    // so taller) — the picture giving up the height it takes, a few times until they agree.
-    // Never narrower than LMIN, though: under an upright picture a label squeezed to its width ran to
-    // seven lines and took the picture's height (8 Oct 2026); it then starts a little left of it, still under it.
-    var LMIN = Math.min(room.w, 280);
-    var lx = room.x, lw = room.w;
-    for (var pass = 0; lab && pass < 3 && x > room.x + 1; pass++) {
-      lx = Math.min(x, room.x + room.w - LMIN); lw = room.x + room.w - lx;
-      var lh = Math.min(b.h * 0.45, labelHeight(lw));
-      if (lh <= lab.h + 0.5) { break; }
-      lab.h = lh;
-      room.h = b.h - lh - 6;
-      w = Math.max(40, Math.min(room.w, room.h * aspect)); hh = w / aspect;
-      x = room.x + (room.w - w) / 2;
-      y = room.y + (room.h - hh) / 2;
-      lx = Math.min(x, room.x + room.w - LMIN); lw = room.x + room.w - lx;
-    }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
     artPlate.style.left = x.toFixed(1) + "px";
@@ -20233,17 +20215,30 @@
     var zb = window.Zoom && Zoom.big();
     if (zb && zb.node === artPlate) { zb.relayout(); }
     if (lab) {
+      // Its two short lines (label.js) in the middle under the picture, as wide as the picture or its
+      // longest line (wrapping past LABEL_W), never past the band; where the picture keeps to its band's
+      // edge and its label is wider than it (a desktop at rest), the label starts at the picture's edge.
+      var lw = Math.min(room.w, Math.max(w, lab.w)), lx = x + w / 2 - lw / 2, align = "center";
+      if (lx < room.x - 0.5 || lx + lw > room.x + room.w + 0.5) { lx = Math.max(room.x, Math.min(x, room.x + room.w - lw)); align = "left"; }
       var ls = artLabel.style;
       ls.left = lx.toFixed(1) + "px";
       ls.top = (y + hh + 6).toFixed(1) + "px";
       ls.width = lw.toFixed(1) + "px";
+      artLabel.dataset.align = align;
       delete artLabel.dataset.side;
     }
   }
   var SWIPE_ROOM = 34;          // an arrow's width (28) and its gap (6), each side of a picture that swipes
-  // The label's room under a picture in band b: its height at the band's width, at most 45 % of it.
+  var LABEL_W = 320;            // a wall label's lines wrap past this, under a picture of any width
+  // The label's room under a picture in band b: its own width (its longest line, up to LABEL_W, never past the
+  // band) and its height there, at most 45 % of the band. Under a picture as wide or wider it is no taller.
   function labelRoom(b, aspect) {
-    return { side: false, w: b.w, h: Math.min(b.h * 0.45, labelHeight(b.w)) };
+    var was = artLabel.style.width;
+    artLabel.style.width = "max-content";
+    var nat = Math.ceil(artLabel.offsetWidth) + 2;
+    artLabel.style.width = was;
+    var w = Math.min(b.w, Math.max(120, Math.min(nat, LABEL_W)));
+    return { side: false, w: w, h: Math.min(b.h * 0.45, labelHeight(w)) };
   }
   // Its height at a width, measured before the picture is sized round it.
   function labelHeight(w) {
@@ -20288,6 +20283,7 @@
       artLabel.style.left = b.x + "px";
       artLabel.style.top = b.y + "px";
       artLabel.style.width = b.w + "px";
+      artLabel.dataset.align = "left";
     }
     if (h) {
       put({ id: h.id, t: h.title || "Untitled", a: (h.artists || []).join(", "), d: h.date || "", m: h.medium || "",

@@ -338,20 +338,20 @@
     // painting that is not saved (Painted here's) says only where it is.
     var t = pic ? String(pic.title || "Untitled") : "", circa = pic && (pic.circa || CIRCA.test(t));
     if (circa) { t = t.replace(CIRCA, ""); }
-    // Where the wall label stands under the picture it says the title, artist and date, and its title is the
-    // door to the work's history (label.js): the line keeps only what the label does not say (8 Oct 2026:
-    // the title was said three times round a picture 88 px tall).
+    // Where the wall label stands under the picture it says where the work is, its medium and its year
+    // (label.js), and no title (8 Oct 2026: "All I want is its current location, the medium, and the year
+    // it was made"): the line keeps only what the label does not say, and the way to the work's history.
     var labelled = !!(artEl && !artEl.dataset.swapped && artEl.querySelector(".wl-plate:not([hidden])"));
     var line = !isWork && pic ? (labelled
-      ? [pic.near ? "the nearest dated" : "", pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ")
+      ? [pic.near ? "the nearest dated" : "", pic.notSaved ? "not saved" : "", pic.id ? "where it has been ›" : ""].filter(Boolean).join(" · ")
       : [t + (pic.year ? ", " + (circa ? "c. " : "") + pic.year : ""), pic.by ? surname(pic.by) : "",
          pic.id ? "" : pic.where || "", pic.near ? "the nearest dated" : "",
          pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "")) : "";
     capPic.hidden = !line;
     if (line && capPic.textContent !== line) { capPic.textContent = line; }
     capPic.dataset.id = pic && pic.id || "";
-    capPic.disabled = labelled || !(pic && pic.id);
-    capPic.setAttribute("aria-label", line && pic.id ? line + " — where it has been" : line);
+    capPic.disabled = !(pic && pic.id);
+    capPic.setAttribute("aria-label", line && pic.id ? (labelled ? t + ": " + line.replace(/ ›$/, "") : line + " — where it has been") : line);
   }
 
   /* ---- swiping through the period's works ---------------------------------------
@@ -446,8 +446,10 @@
     swipeList = w;
     if (capCount) {
       var qn = w && w.i >= 0 ? w.list[w.i] : null;
+      // The year only where the wall label under the picture does not say it.
+      var labelled = !!(artEl && !artEl.dataset.swapped && artEl.querySelector(".wl-plate:not([hidden])"));
       var line = n > 1 && w.i >= 0 ? (w.i + 1) + " of " + n + (w.born ? " · born in " + w.born :
-                 qn && qn.year ? " · " + qn.year : "") : "";
+                 qn && qn.year && !labelled ? " · " + qn.year : "") : "";
       capCount.hidden = !line;
       if (capCount.textContent !== line) { capCount.textContent = line; }
     }
@@ -776,7 +778,8 @@
       if (k >= 0 && w.when < 0.999) { return city(k); }
     }
     return { path: "work", step: "rest", key: "rest",
-             f: { n: n, years: y0 !== null ? span(y0, y1) : null, pts: pts, ll: pts[pts.length - 1] || null } };
+             f: { n: n, places: n === 1 ? "one place" : n + " places", years: y0 !== null ? span(y0, y1) : null, pts: pts,
+                  ll: pts[pts.length - 1] || null } };
   }
 
   /* A life, at the dial's year: past the death, the works' afterlife; a
@@ -1413,7 +1416,10 @@
     swapped: function () { placedKey = ""; kick(); },
     // land.js, once the wall label under the picture is filled or put away: the picture's line says
     // only what the label does not.
-    relabel: function () { if (lastCap) { setCaption(lastCap[0], lastCap[1], lastCap[2]); } },
+    relabel: function () {
+      if (lastCap) { setCaption(lastCap[0], lastCap[1], lastCap[2]); }
+      if (capCount && window.Land && Land.reading) { swipeSay(Land.reading()); }
+    },
     rules: function () { return T; },
     // explorations.js: a sites.json row by its index (a site exploration's stop), once read.
     siteRow: function (i) { var D = sites(); return D ? D.sites[i] || null : null; },

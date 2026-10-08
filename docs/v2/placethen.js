@@ -402,11 +402,11 @@
     var count = el("span", "pt-count");
     line.appendChild(wt);
     line.appendChild(count);
-    // Its wall label (label.js): artist · date, medium · size, how it is known, where it is now.
-    // Always under the picture (artist, 7 Oct 2026: "always be below the thumbnail of the artwork"; placeLabel).
+    // Its wall label (label.js): where it is now, then the year · the medium; directly under the picture
+    // (artist, 7 Oct 2026: "always be below the thumbnail of the artwork"; placeLabel), then the line.
     var how = el("div", "wall-label pt-label");
-    cap.appendChild(line);
     cap.appendChild(how);
+    cap.appendChild(line);
     img.addEventListener("load", function () { placeLabel(); var zb = window.Zoom && Zoom.big(); if (zb && zb.node === picBtn) { zb.relayout(); } });
     work.appendChild(cap);
     var doors = el("div", "pt-doors");
@@ -646,13 +646,23 @@
     // A work by another artist is never taken for the artist's own: its artist on it, and in its line.
     refs.tag.hidden = !it.other;
     refs.tag.textContent = it.other ? "○ " + surname(it.by) + " · " + S.p.place + (it.y ? ", " + it.y : "") : "";
+    // The label under it says where the work is, its year and its medium, and no title (artist, 8 Oct 2026:
+    // "All I want is its current location, the medium, and the year it was made"): the line is the way on —
+    // to its history, or to where it was painted — saying whose it is when it is another artist's (its tag on
+    // the picture says so too) and that it is not saved. The title is said to a screen reader as it changes.
+    var go = it.saved && it.id ? "where it has been ›" : it.kind === "site" && it.ll ? "where it was painted ›" : "";
+    var words = [it.other ? surname(it.by) : "", it.saved ? "" : "not saved", go].filter(Boolean);
     refs.wt.textContent = "";
-    if (it.other) { refs.wt.appendChild(el("span", "pt-by", surname(it.by) + " · ")); }
-    refs.wt.appendChild(el("i", "", it.t || "Untitled"));
-    refs.wt.appendChild(document.createTextNode((it.y ? ", " + (it.circa ? "c. " : "") + it.y : "") + (it.saved && it.id || it.ll ? " ›" : "")));
-    refs.wt.disabled = !(it.saved && it.id) && !(it.kind === "site" && it.ll);
-    // Its visible words first (WCAG 2.5.3), then what a press does.
-    refs.wt.setAttribute("aria-label", refs.wt.textContent.replace(/ ›$/, "") + (it.saved && it.id ? " — where it has been" : " — go to where it was painted"));
+    refs.wt.appendChild(el("span", "a11y-only", (it.t || "Untitled") + (it.y ? ", " + (it.circa ? "c. " : "") + it.y : "") + ". "));
+    words.forEach(function (w, n) {
+      if (n) { refs.wt.appendChild(document.createTextNode(" · ")); }
+      refs.wt.appendChild(n === 0 && it.other ? el("span", "pt-by", w) : document.createTextNode(w));
+    });
+    refs.wt.disabled = !go;
+    refs.wt.hidden = !words.length;
+    // Its visible words first (WCAG 2.5.3), then the work they are of.
+    refs.wt.setAttribute("aria-label", words.join(" · ").replace(/ ›$/, "") + ": " + (it.t || "Untitled") +
+                         (it.y ? ", " + (it.circa ? "c. " : "") + it.y : ""));
     labelItem(it);
     if (it.y) { setYear(it.y); }
     if (!still && !first) { refs.work.dataset.fresh = String(Date.now()); }
@@ -690,7 +700,7 @@
   var PT_ARROW = 28, PT_GAP = 6;
   function placeLabel() {
     if (!S || !refs.pic) { return; }
-    if (refs.how.parentNode !== refs.cap) { refs.cap.appendChild(refs.how); }
+    if (refs.how.parentNode !== refs.cap || refs.cap.firstChild !== refs.how) { refs.cap.insertBefore(refs.how, refs.cap.firstChild); }
     delete refs.work.dataset.side;
     refs.work.style.removeProperty("--pt-pic-w");
     placeArrows();
@@ -755,13 +765,14 @@
      dark steps back. A swipe still changes the work at its size and at twice
      it; on the whole screen one finger moves it. */
 
+  // Twice as big and on the whole screen: the same label (where it is, the year · the medium), and where it
+  // stands among the period's works.
   function labelNode() {
     var it = S && S.items[S.i];
     if (!it) { return null; }
-    var n = el("div", "wall-label"), tl = el("p", "wl-title");
-    tl.appendChild(el("i", "", it.t || "Untitled"));
-    n.appendChild(tl);
-    Array.prototype.forEach.call(refs.how.childNodes, function (c) { n.appendChild(c.cloneNode(true)); });
+    var n = refs.how.cloneNode(true);
+    n.className = "wall-label";
+    n.removeAttribute("style");
     if (refs.count && refs.count.textContent) { n.appendChild(el("p", "wl-src", refs.count.textContent)); }
     return n;
   }

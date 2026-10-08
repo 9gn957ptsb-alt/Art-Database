@@ -137,7 +137,8 @@
 @media (max-width: 720px) {
   .chron-m { grid-template-columns: minmax(0, 1fr); row-gap: 2px; padding: 8px 0 12px 12px; }
   .chron-when { padding: 0; }
-  .art[data-kind="town"] > .art-time.dial:not([data-moved]) { transform: translateY(-100%); top: calc(50vh - 6px); }
+  /* Not while a life's place, then, lays the city out (placethen.css places its dial beside the clod). */
+  body:not([data-placethen]) .art[data-kind="town"] > .art-time.dial:not([data-moved]) { transform: translateY(-100%); top: calc(50vh - 6px); }
   .art[data-kind="town"]:has(> .art-time.dial:not([hidden])) .art-col::before { content: none; }
 }
 /* The story ends on now, with the city's guide: the pill over the column says it no more. */

@@ -87,8 +87,10 @@
       s.setProperty("box-shadow", "0 18px 60px rgba(0, 0, 0, 0.7)");
       o.node.dataset.twice = "true";
       if (lab) {
-        lab.style.width = Math.max(200, w2) + "px";
-        lab.style.left = Math.max(m, Math.min(W - m - Math.max(200, w2), x)) + "px";
+        // Under it, in the middle (as wide as it, or 200 px under a narrow one).
+        var lw = Math.max(200, w2);
+        lab.style.width = lw + "px";
+        lab.style.left = Math.max(m, Math.min(W - m - lw, x + w2 / 2 - lw / 2)) + "px";
         lab.style.top = (y + h2 + 6) + "px";
       }
       close.style.left = (x + w2 - 34) + "px";

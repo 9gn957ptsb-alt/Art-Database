@@ -88,7 +88,7 @@ of the voice's.
 
 | path | step | voice | tense | frame | label | caption |
 |---|---|---|---|---|---|---|
-| work | rest | omniscient | past | route |  | It went to {n} places, {years}. |
+| work | rest | omniscient | past | route |  | It went to {places}, {years}. |
 | work | city | close | past | stop |  | {year}: it was {verb} in {place}. |
 | work | journey | panoramic | past | leg |  | {years}: it went from {from} to {to}. |
 | work | site | first | past | standing |  | Here {who} stood to paint it, {year}. {facing} |

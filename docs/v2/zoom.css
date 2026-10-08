@@ -12,7 +12,11 @@
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto;
+  text-align: center;
 }
+/* The whole screen has the room: the label's lines are not cut there. */
+.zoom-foot-label[data-brief] .wl-now,
+.zoom-foot-label[data-brief] .wl-made { display: block; -webkit-line-clamp: none; }
 .zoom-x, .zoom-b {
   min-width: 32px;
   height: 32px;

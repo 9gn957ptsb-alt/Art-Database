@@ -1,7 +1,8 @@
-/* The wall label (label.js): beside every picture of a work — the reading
-   layout's, the place, then's, the whole-screen look — and, on hover, focus
-   or a held finger, over a list's small square. Text at 4.5:1 or more on its
-   own ground (#eadfcd 14:1, #c4b29c 9:1 on #0f0a07). */
+/* The wall label (label.js): under every picture of a work — the reading
+   layout's, the place, then's, twice as big, the whole screen — two short
+   lines, where it is now, then the year · the medium (8 Oct 2026); and, whole,
+   on hover, focus or a held finger, over a list's small square. Text at 4.5:1
+   or more on its own ground (#eadfcd 14:1, #c4b29c 9:1 on #0f0a07). */
 .wall-label {
   box-sizing: border-box;
   margin: 0;
@@ -19,6 +20,16 @@
 .wall-label .wl-now { color: #eadfcd; }
 .wall-label .wl-where[data-kind="held"]::before { content: "◆ "; color: #d6b05c; }
 .wall-label .wl-src { color: #c4b29c; }
+/* Under a picture: each line at most two lines (the whole is said to a screen reader); the year first, so
+   a long medium is what gives way. */
+.wall-label[data-brief] .wl-now,
+.wall-label[data-brief] .wl-made {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.wall-label[data-brief] .wl-made { color: #c4b29c; }
 
 /* In the reading layout: placed by land.js (layoutPlate), touching the picture. */
 .art > .wall-label.wl-plate {
@@ -30,6 +41,9 @@
   pointer-events: auto;
 }
 .art > .wall-label.wl-plate[data-on="true"] { opacity: 1; }
+/* In the middle under the picture (land.js layoutPlate), from its edge where the picture keeps to its band's. */
+.art > .wall-label.wl-plate { text-align: center; }
+.art > .wall-label.wl-plate[data-align="left"] { text-align: left; }
 .art > .wall-label.wl-plate[data-side="true"] .wl-title { font-size: 14px; }
 .art[data-swapped] > .wall-label.wl-plate,
 .art[data-out] > .wall-label.wl-plate { opacity: 0; visibility: hidden; }
@@ -45,6 +59,7 @@
   z-index: 21;
   opacity: 1;
   visibility: visible;
+  text-align: left;
 }
 @media (min-width: 721px) { .art > .wall-label.wl-plate .wl-title { font-size: 18px; } .art > .wall-label.wl-plate { font-size: 11px; } }
 

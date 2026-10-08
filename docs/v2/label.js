@@ -8,20 +8,26 @@
    artwork"; and the same day: "Also the info for the artwork should always
    be below the thumbnail of the artwork" — so it stands under every picture.
 
-   A label is: the title (serif italic); artist · date; medium · size, as
-   Artsy gives them; and where it is now — the museum holding it and its
-   city (the history's last holding, else museums.json), else the gallery or
-   partner listing it on Artsy and its city ("Listed by …, New York"), else
-   the last place its record names ("Last recorded: Paris, 1933") — with a
-   quiet note of where the facts are from ("Artsy", or "Wikidata" for a
-   painting not saved). Never a private owner's name: where the record ends
-   with one, the label says the place.
+   Under a picture a label is two short lines (artist, 8 Oct 2026, of Dalí's
+   life on his phone, its label five lines under a picture 197 px wide: "The
+   information for each artwork underneath the thumbnail is still messed up
+   and takes up too much space for that information. All I want is its
+   current location, the medium, and the year it was made"): where it is now
+   — the museum holding it and its city (the history's last holding, else
+   museums.json), else the gallery or partner listing it on Artsy and its
+   city ("Listed by …, New York"), else the last place its record names
+   ("Last recorded: Paris, 1933") — then the year it was made · its medium,
+   as Artsy gives them. Never a private owner's name: where the record ends
+   with one, the label says the place. The title, the artist, the size, how
+   the work is known and where the facts are from (Artsy, or Wikidata for a
+   painting not saved) are said to a screen reader, not shown.
 
-   Used by land.js (the reading layout's picture, a work's whole-screen look),
-   placethen.js (the place, then, with how the work is known) and, for the
-   small squares of a list (anything with `data-work`), on hover, focus or a
-   held finger: dismissible with Escape, itself pointable, staying until
-   then (WCAG 1.4.13; DISPLAY.md). */
+   Used by land.js (the reading layout's picture, twice as big, the whole
+   screen, a museum's work brought up), placethen.js (the place, then) and,
+   whole — title, artist · date, medium · size, where · source — for the
+   small squares of a list (anything with `data-work`), which say nothing
+   themselves, on hover, focus or a held finger: dismissible with Escape,
+   itself pointable, staying until then (WCAG 1.4.13; DISPLAY.md). */
 (function () {
   "use strict";
 
@@ -89,20 +95,65 @@
              m: o.medium || "", s: o.size || "", now: o.where || "", nowKind: o.where ? "held" : "", src: o.src || "Wikidata" };
   }
 
-  /* The label's lines into `node`. opts: { title: false } leaves the title out (the caller writes it
-     as a door), `how` adds how the work is known, `small` a compact label. */
+  // The year it was made, as Artsy gives it where that is short ("1945", "c. 1880–1885"), else its first
+  // year ("1960; printed 1980" is 1960); a date with no year at all ("20th Century") as it is.
+  function madeYear(d) {
+    d = String(d || "").trim().replace(/^(circa|ca\.?|c\.)\s*/i, "c. ");
+    if (!d) { return ""; }
+    if (/\d{4}/.test(d)) { return d.length <= 12 ? d : year4(d); }
+    return d.length <= 16 ? d : "";
+  }
+  function medium(m) { return String(m || "").trim().replace(/\s*\.\s*$/, ""); }
+  function yearDoor(f, shown) {
+    var names = f.as && f.as.length ? f.as : f.a ? [f.a] : [];
+    var y4 = year4(shown);
+    return y4 && names.length ? door(el("span", "", shown), { go: "year", id: names[0], year: y4, work: f.id || "" }, names[0] + " in " + y4)
+                              : el("span", "", shown);
+  }
+  function nowLine(f) {
+    var now = el("p", "wl-now");
+    var w = el("span", "wl-where", f.now);
+    w.dataset.kind = f.nowKind || "";
+    now.appendChild(f.slug ? door(w, { go: "museum", id: f.slug }, f.now + ": go in")
+                   : f.key ? door(w, { go: "town", id: f.key }, f.now + ": go there") : w);
+    return now;
+  }
+
+  /* The label's lines into `node`: where it is now, then the year it was made · its medium (the year and
+     the place doors). What is not shown is said to a screen reader in its place: the work and its artist
+     before the lines, its size, how it is known (`how`) and where the facts are from after them.
+     opts.full: the whole label — title, artist · date, medium · size, how, where · source. */
   function fill(node, f, opts) {
     opts = opts || {};
     node.textContent = "";
     if (!f) { node.hidden = true; return node; }
     node.hidden = false;
+    var by = [f.a, f.d].filter(Boolean).join(" · ");
+    var made = [f.m, f.s].filter(Boolean).join(" · ");
+    if (!opts.full) {
+      node.dataset.brief = "true";
+      node.removeAttribute("aria-label");
+      node.appendChild(el("span", "a11y-only", [f.t || "Untitled", f.a ? "by " + f.a : ""].filter(Boolean).join(", ") + ". "));
+      if (f.now) { node.appendChild(nowLine(f)); }
+      var yr = madeYear(f.d), med = medium(f.m);
+      if (yr || med) {
+        var mp = el("p", "wl-made");
+        if (yr) { mp.appendChild(yearDoor(f, yr)); }
+        if (yr && med) { mp.appendChild(document.createTextNode(" · ")); }
+        if (med) { mp.appendChild(el("span", "wl-medium", med)); }
+        node.appendChild(mp);
+      }
+      node.appendChild(el("span", "a11y-only", " " + [f.s, opts.how, "facts from " + f.src].filter(Boolean).join(". ") + "."));
+      return node;
+    }
+    delete node.dataset.brief;
+    node.setAttribute("aria-label", [f.t, by, made, opts.how, f.now, "facts from " + f.src].filter(Boolean).join(". "));
     if (opts.title !== false) {
       var t = el("p", "wl-title");
       var ti = el("i", "", f.t || "Untitled");
       t.appendChild(f.id ? door(ti, { go: "work", id: f.id }, (f.t || "Untitled") + ": where it has been") : ti);
       node.appendChild(t);
     }
-    var by = [f.a, f.d].filter(Boolean).join(" · ");
     if (by) {
       var bp = el("p", "wl-by");
       var names = f.as && f.as.length ? f.as : f.a ? [f.a] : [];
@@ -112,25 +163,15 @@
       });
       if (f.d) {
         if (names.length) { bp.appendChild(document.createTextNode(" · ")); }
-        var y = year4(f.d);
-        bp.appendChild(y && names.length ? door(el("span", "", f.d), { go: "year", id: names[0], year: y, work: f.id || "" },
-                                                names[0] + " in " + y) : el("span", "", f.d));
+        bp.appendChild(yearDoor(f, f.d));
       }
       node.appendChild(bp);
     }
-    var made = [f.m, f.s].filter(Boolean).join(" · ");
     if (made) { node.appendChild(el("p", "wl-made", made)); }
     if (opts.how) { node.appendChild(el("p", "wl-how", opts.how)); }
-    var now = el("p", "wl-now");
-    if (f.now) {
-      var w = el("span", "wl-where", f.now);
-      w.dataset.kind = f.nowKind || "";
-      now.appendChild(f.slug ? door(w, { go: "museum", id: f.slug }, f.now + ": go in")
-                     : f.key ? door(w, { go: "town", id: f.key }, f.now + ": go there") : w);
-    }
+    var now = f.now ? nowLine(f) : el("p", "wl-now");
     now.appendChild(el("span", "wl-src", (f.now ? " · " : "") + f.src));
     node.appendChild(now);
-    node.setAttribute("aria-label", [f.t, by, made, f.now, "facts from " + f.src].filter(Boolean).join(". "));
     return node;
   }
 
@@ -222,7 +263,7 @@
     facts(id).then(function (f) {
       if (tipFor !== sq || !f) { return; }
       var tp = tipEl();
-      fill(tp, f);
+      fill(tp, f, { full: true });
       tp.hidden = false;
       var r = sq.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
       var w = Math.min(280, W - 24);
