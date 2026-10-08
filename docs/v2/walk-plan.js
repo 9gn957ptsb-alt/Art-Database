@@ -2391,6 +2391,11 @@
         if (r.ref !== undefined && !Array.isArray(r.ref)) { err(rw + ": ref must be a list"); }
         sure(r.sure, rw);
         cites(r.src, rw, true);
+        // anchor: the source whose own coordinates fix where the room is (a museum's map of its galleries).
+        if (r.anchor !== undefined) {
+          if (typeof r.anchor !== "string") { err(rw + ": anchor must be a source id"); }
+          else { cites([r.anchor], rw + " anchor", true); }
+        }
         if (r.name !== null && r.name !== undefined && typeof r.name !== "string") { err(rw + ": name must be words or null"); }
         if (r.ceil !== undefined && r.ceil !== "auto" && CEIL[r.ceil] === undefined) { err(rw + ": ceil " + r.ceil + " is not one of flat, skylight, sky, dome, vault, dark, auto"); }
         if (r.h !== null && r.h !== undefined) {
@@ -2539,10 +2544,12 @@
         if (!n) { err("room " + r.id + " has no cells: it is smaller than the grid's cell"); return; }
         if (out / n <= 0.1) { return; }
         var ext = "x " + bb[0].toFixed(1) + " to " + bb[2].toFixed(1) + ", y " + bb[1].toFixed(1) + " to " + bb[3].toFixed(1);
-        if (r.sure === "reconstructed") {
+        // A reconstructed room is held to the model, unless the museum's own coordinates (its anchor) say
+        // where it is: then, like a documented room, the model is what is wrong.
+        if (r.sure === "reconstructed" && !(r.spec && r.spec.anchor)) {
           err("reconstructed room " + r.id + " is " + round(100 * out / n) + "% outside the model at " + (fl.z + EYE).toFixed(1) + " m (" + ext + ")");
         } else {
-          warn("documented room " + r.id + " is " + round(100 * out / n) + "% outside the model (" + ext + ")");
+          warn((r.sure === "documented" ? "documented" : "anchored") + " room " + r.id + " is " + round(100 * out / n) + "% outside the model (" + ext + ")");
           findings.push({ room: r.id, floor: fl.id, out: out / n, x0: bb[0], y0: bb[1], x1: bb[2], y1: bb[3] });
         }
       });
