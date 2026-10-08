@@ -77,6 +77,11 @@
   // An arranged room (INTERIORS.md, "Arranged"): the site's, not the museum's.
   // Its works hang one to every 2.5 m of a run of wall, never closer.
   var ARR_SPACE = 2.5;
+  // A work the site hangs beside the museum's own (INTERIORS.md, "Beside the known"): one to every
+  // 2.5 m of what wall the museum's leave, or every 1.5 m where that would not take them all.
+  var ARR_TIGHT = 1.5;
+  // The rules a work hung beside the museum's own says it was hung by.
+  var BESIDE_BY = { artist: 1, "period-kind": 1, near: 1, period: 1, kind: 1, order: 1 };
   // An arranged room's name is a number or what it is, never a museum's own gallery name.
   var ARR_NAME = /^(Room \d+|Hall|Entrance)$/;
   var SIDES = 24;                // a round room's sides
@@ -1090,6 +1095,132 @@
     return null;
   }
 
+  // A straight wall to hang along: t metres from its left end as you face it.
+  function straightOf(wl) {
+    return { walls: [wl], len: wl.len, runs: wl.runs,
+             at: function (t) { return [wl.x0 + wl.ux * t, wl.y0 + wl.uy * t]; } };
+  }
+  // Whether works side by side fit a run of L metres, never closer than APART.
+  function fitsRun(list, L) {
+    var sum = 0;
+    list.forEach(function (it) { sum += it.size.w; });
+    if (sum > L + 1e-9) { return false; }
+    return list.length < 2 || (L - sum) / (list.length - 1) >= APART - 1e-9;
+  }
+  // The runs left once a stretch [a, b] of a carrier's wall is taken.
+  function cutAvail(avail, cr, a, b) {
+    var out = [];
+    avail.forEach(function (u) {
+      if (u.wall !== cr) { out.push(u); return; }
+      cutRuns([[u.t0, u.t1]], a, b).forEach(function (p) { out.push({ wall: cr, t0: p[0], t1: p[1] }); });
+    });
+    return out.filter(function (u) { return u.t1 - u.t0 >= 0.3; });
+  }
+  // What a room's runs leave once the works hung in it are hung (INTERIORS.md, "Beside the known"):
+  // each straight run less the span of every work that faces out from its wall — hung on it, or
+  // standing free a metre out from it — APART either side. A work in the middle of the room takes
+  // no wall.
+  function leftBy(avail, hung, room, fl) {
+    var out = avail;
+    hung.forEach(function (h) {
+      if (h.room !== room.index || h.floor !== fl.index || h.wall === "centre") { return; }
+      var seen = [];
+      out.forEach(function (u) {
+        var cr = u.wall, wl = cr.walls && cr.walls.length === 1 ? cr.walls[0] : null;
+        if (!wl || seen.indexOf(cr) >= 0) { return; }
+        seen.push(cr);
+        if (h.nx * wl.nx + h.ny * wl.ny > -0.9) { return; }
+        var d = (h.cx - wl.x0) * wl.nx + (h.cy - wl.y0) * wl.ny;
+        if (d > 0.05 || d < -(FREE_OUT + INTO + 0.1)) { return; }
+        var a0 = (h.x0 - wl.x0) * wl.ux + (h.y0 - wl.y0) * wl.uy, a1 = (h.x1 - wl.x0) * wl.ux + (h.y1 - wl.y0) * wl.uy;
+        out = cutAvail(out, cr, min(a0, a1) - APART, max(a0, a1) + APART);
+      });
+    });
+    return out;
+  }
+  // The site's rule along the runs a room offers (INTERIORS.md, "Arranged"; "Beside the known"), the
+  // runs longest first: a work wider than every run is drawn at the size of a run of its own, the
+  // longest left, and no taller than the room lets it stand (`fit`, said so in the look), so that it
+  // never holds the rest back; the rest from the front, as many to a run as fit at one to every
+  // `space` metres of it, never closer than APART. `tall(run)`: the most a work may stand there.
+  // Returns {lays: [{run, list}], left: [the works not taken]}.
+  function siteLay(list, avail, space, tall) {
+    var runs = avail.slice(), lays = [], queue = list.slice();
+    var longest = runs.length ? runs[0].t1 - runs[0].t0 : 0;
+    var big = queue.filter(function (it) { return it.size.w > longest + 1e-9; });
+    if (big.length) {
+      queue = queue.filter(function (it) { return big.indexOf(it) < 0; });
+      big.forEach(function (it) {
+        var run = runs.shift();
+        if (!run) { queue.push(it); return; }
+        var L = run.t1 - run.t0, H = tall ? tall(run) : Infinity, sz = it.size;
+        var k = min(1, (L - 1e-6) / sz.w, H / sz.h);
+        var one = { w: it.w, n: it.n, pin: it.pin,
+                    size: { w: sz.w * k, h: sz.h * k, d: sz.d ? sz.d * k : null, known: sz.known, fit: k } };
+        lays.push({ run: run, list: [one] });
+      });
+    }
+    runs.forEach(function (run) {
+      if (!queue.length) { return; }
+      var take = [], most = max(1, floor((run.t1 - run.t0) / space));
+      for (var k = 0; k < queue.length && take.length < most; k += 1) {
+        if (fitsRun(take.concat([queue[k]]), run.t1 - run.t0)) { take.push(queue[k]); } else { break; }
+      }
+      queue = queue.slice(take.length);
+      if (take.length) { lays.push({ run: run, list: take }); }
+    });
+    return { lays: lays, left: queue };
+  }
+  // The most a work may stand along a run: the headroom a step out from its middle, less the 0.3 m
+  // a tall work stands off the floor and as much again under the ceiling.
+  function tallAlong(fl) {
+    return function (run) {
+      var cr = run.wall, wl = cr.walls && cr.walls[0], p = cr.at((run.t0 + run.t1) / 2);
+      if (!wl || !p) { return Infinity; }
+      var q = cellAt(fl, p[0] - wl.nx * 0.4, p[1] - wl.ny * 0.4);
+      if (q < 0 || fl.ch[q] >= OPEN) { return Infinity; }
+      return max(0.5, (fl.ch[q] - fl.fh[q]) / 100 - 2 * LIFTED);
+    };
+  }
+  // The runs of a room's walls, straight, as the site's works hang on them, less what the works hung
+  // there already take; longest first.
+  function siteRuns(room, fl, hung) {
+    var avail = [];
+    (room.walls || []).forEach(function (wl) {
+      var cr = straightOf(wl);
+      cr.runs.forEach(function (u) { avail.push({ wall: cr, t0: u[0], t1: u[1] }); });
+    });
+    var mine = (hung || []).some(function (h) { return h.room === room.index && h.floor === fl.index; });
+    if (mine) { avail = leftBy(avail, hung, room, fl); }
+    return avail.sort(function (a, b) { return (b.t1 - b.t0) - (a.t1 - a.t0); });
+  }
+  // Whether works the site hangs beside the museum's own all fit in a room, beside what hangs there
+  // already (INTERIORS.md, "Beside the known"): the spacing they would hang at — 2.5 m, else 1.5 —
+  // or 0 where some would be left. opts.scale: a work wider than every run counts as fitting, drawn
+  // smaller (else it does not fit: the site tries a room it fits whole first). A work of no known
+  // size is taken as wide as opts.ar times its 0.6 m height, for its picture may come wider.
+  function siteFits(world, roomId, hung, works, opts) {
+    opts = opts || {};
+    var room = roomById(world, roomId);
+    if (!room || !room.walls || !room.walls.length) { return 0; }
+    var fl = world.floors[room.floor];
+    var list = (works || []).map(function (w, n) {
+      var ww = w;
+      if (opts.ar && !(w.cm && w.cm[0] > 0 && w.cm[1] > 0)) {
+        ww = {};
+        Object.keys(w).forEach(function (k) { ww[k] = w[k]; });
+        ww.ar = opts.ar;
+      }
+      return { w: ww, n: n, pin: null, size: sizeOf(ww) };
+    });
+    var avail = siteRuns(room, fl, hung), tall = tallAlong(fl);
+    var longest = avail.length ? avail[0].t1 - avail[0].t0 : 0;
+    if (!opts.scale && list.some(function (it) { return it.size.w > longest + 1e-9; })) { return 0; }
+    if (!siteLay(list, avail, ARR_SPACE, tall).left.length) { return ARR_SPACE; }
+    if (!siteLay(list, avail, ARR_TIGHT, tall).left.length) { return ARR_TIGHT; }
+    return 0;
+  }
+
   // Hang the works the museum's own records place in drawn rooms, each on
   // the wall the record gives, in the museum's order, spaced evenly along
   // the wall's longest run between openings; what does not fit goes to the
@@ -1097,7 +1228,7 @@
   // the height are ours unless a pin fixes them. Returns {hung, spill}.
   function hang(world, works, pins) {
     pins = pins || {};
-    var groups = {}, order = [], hung = [], spill = [];
+    var groups = {}, order = [], hung = [], spill = [], record = {};
     (works || []).forEach(function (w, n) {
       // A work that is another saved work's very object hangs once, as that one.
       // An arranged work (INTERIORS.md, "Arranged") hangs in the room the site's rule gave it.
@@ -1106,16 +1237,23 @@
       if (!room) { spill.push(w.id); return; }
       var pin = pins[w.id] || null;
       var dir = (pin && pin.wall) || w.wall || null;
-      var key = room.floor + ":" + room.index + ":" + (dir || "-");
-      if (!groups[key]) { groups[key] = { room: room, dir: dir, list: [] }; order.push(key); }
+      // The site's works are a group of their own, never mixed with the record's.
+      var site = w.how === "arranged", rk = room.floor + ":" + room.index;
+      var key = rk + ":" + (dir || "-") + (site ? ":site" : "");
+      if (!site) { record[rk] = true; }
+      if (!groups[key]) { groups[key] = { room: room, dir: dir, list: [], rk: rk, site: site }; order.push(key); }
       groups[key].list.push({ w: w, n: n, pin: pin, size: sizeOf(w) });
     });
+    // In a room where the record's works hang, the site's are hung after them all, on what wall they
+    // leave (INTERIORS.md, "Beside the known"): a record's work is never moved for one of the site's.
+    var after = order.filter(function (k) { return groups[k].site && record[groups[k].rk]; });
+    order = order.filter(function (k) { return after.indexOf(k) < 0; }).concat(after);
     order.forEach(function (key) {
       var g = groups[key], room = g.room, fl = world.floors[room.floor], base = fl.z + room.fz;
       // The museum's order — its own record numbers — then by date; the
       // order the file lists them in last, so it is always the same. Arranged
       // works keep the file's order, which is the rule's: period, artist, date.
-      var arranged = g.list.every(function (it) { return it.w.how === "arranged"; });
+      var arranged = g.site;
       g.list.sort(function (a, b) {
         if (arranged) { return a.n - b.n; }
         return byRecord(a.w, b.w) || String(a.w.y || "").localeCompare(String(b.w.y || "")) || a.n - b.n;
@@ -1128,6 +1266,8 @@
       carriers.forEach(function (cr) {
         cr.runs.forEach(function (u) { avail.push({ wall: cr, t0: u[0], t1: u[1] }); });
       });
+      // Beside the record's works: only what wall they leave (INTERIORS.md, "Beside the known").
+      if (g.site && record[g.rk]) { avail = leftBy(avail, hung, room, fl); }
       // Pinned works first, where their record puts them.
       var rest = [];
       g.list.forEach(function (it) {
@@ -1139,17 +1279,27 @@
       });
       avail.sort(function (a, b) { return (b.t1 - b.t0) - (a.t1 - a.t0); });
       var queue = rest;
-      avail.forEach(function (run) {
-        if (!queue.length) { return; }
-        var take = [];
-        // The arranged rule: one work to every 2.5 m of the run, never crowded.
-        var most = arranged ? max(1, floor((run.t1 - run.t0) / ARR_SPACE)) : Infinity;
-        for (var k = 0; k < queue.length && take.length < most; k += 1) {
-          if (fits(take.concat([queue[k]]), run.t1 - run.t0)) { take.push(queue[k]); } else { break; }
+      if (arranged) {
+        // The arranged rule: one work to every 2.5 m of the run, never crowded; a work the site hangs
+        // beside the museum's own, every 1.5 m where 2.5 m would not take them all.
+        var tall = tallAlong(fl), space = ARR_SPACE;
+        if (g.list.some(function (it) { return !!it.w.beside; }) && siteLay(queue, avail, ARR_SPACE, tall).left.length) {
+          space = ARR_TIGHT;
         }
-        queue = queue.slice(take.length);
-        lay(take, run, 1, null);
-      });
+        var got = siteLay(queue, avail, space, tall);
+        got.lays.forEach(function (l) { lay(l.list, l.run, 1, null); });
+        queue = got.left;
+      } else {
+        avail.forEach(function (run) {
+          if (!queue.length) { return; }
+          var take = [];
+          for (var k = 0; k < queue.length; k += 1) {
+            if (fits(take.concat([queue[k]]), run.t1 - run.t0)) { take.push(queue[k]); } else { break; }
+          }
+          queue = queue.slice(take.length);
+          lay(take, run, 1, null);
+        });
+      }
       // A second tier over the longest run, for what is left (never for the
       // arranged: the rule gives a room no more than its walls hold).
       if (queue.length && avail.length && !arranged) {
@@ -1267,6 +1417,8 @@
         w: sz.w, h: sz.h, d: sz.d, sized: sz.known, free: free, standing: free || (sz.h > TALL && tier === 1),
         tier: tier, ours: !pinned, wallOurs: !!wallOurs, t: t / cr.len, cx: cx, cy: cy
       };
+      // Drawn smaller than its size: no wall here takes it whole (the site's rule, said in the look).
+      if (sz.fit && sz.fit < 1) { h.fit = sz.fit; }
       h.spot = stand(h, world);
       hung.push(h);
     }
@@ -2526,7 +2678,19 @@
         if (!w.room) { err(ww + ": an arranged work needs its room"); }
         if (!/the site/.test(w.said || "")) { err(ww + ": an arranged work's said must say the site hung it"); }
         if (w.rec && w.rec.src && !src[w.rec.src]) { err(ww + ": its record cites " + w.rec.src + ", which is not in sources"); }
-      }
+        // Hung beside the museum's own works, in a room a source draws (INTERIORS.md, "Beside the
+        // known"): it says by which rule, says so in its said, and keeps what its record says.
+        if (w.beside !== undefined) {
+          if (!w.beside || !BESIDE_BY[w.beside.by]) { err(ww + ": beside must say its rule (by: artist, period-kind, near, period, kind or order)"); }
+          if (!/hung here by the site/.test(w.said || "") || !/beside|nearest|from the door/.test(w.said || "")) {
+            err(ww + ": a work the site hangs beside the museum's own says so: 'hung here by the site, beside …'");
+          }
+          if (!w.rec || typeof w.rec.said !== "string" || !HOW[w.rec.how] || w.rec.how === "arranged" || w.rec.how === "museum") {
+            err(ww + ": a work the site hangs beside the museum's own keeps what its record says (rec: how none, elsewhere or off, said, src)");
+          }
+          if (w.beside && w.beside.of && typeof w.beside.of !== "string") { err(ww + ": beside.of is the id of the room it is near"); }
+        }
+      } else if (w.beside !== undefined) { err(ww + ": only a work the site hangs (how arranged) says what it hangs beside"); }
       if (w.wall !== undefined && w.wall !== null && !DIRS[w.wall] && w.wall !== "centre") { err(ww + ": wall must be n, e, s, w, centre or null"); }
       // The museum's own collection on its walls (INTERIORS.md, "The collection on the walls").
       if (w.kind !== undefined && w.kind !== "collection") { err(ww + ": kind must be collection or absent"); }
@@ -2662,9 +2826,11 @@
       // The rule hangs only in rooms the site arranged; a record's work never in one.
       // (or a room OpenStreetMap's indoor mapping draws, where the museum's own plan is not known:
       // the site hangs there what no record places, and says so).
-      if (w.how === "arranged" && r.sure !== "arranged" && !(r.spec && r.spec.anchor === "osm-indoor")) {
-        err("work " + w.id + ": arranged, but room " + r.id + " is not an arranged room (nor one OpenStreetMap draws)");
+      // A work the site hangs beside the museum's own (beside) may hang in any room a source draws.
+      if (w.how === "arranged" && r.sure !== "arranged" && !(r.spec && r.spec.anchor === "osm-indoor") && !w.beside) {
+        err("work " + w.id + ": arranged, but room " + r.id + " is not an arranged room (nor one OpenStreetMap draws), and it does not say what it hangs beside");
       }
+      if (w.beside && (r.kind === "closed" || r.kind === "void" || r.kind === "stair")) { err("work " + w.id + ": hung beside the museum's own in room " + r.id + ", which is not walked"); }
       if (w.how === "museum" && r.sure === "arranged") { err("work " + w.id + ": a record's placement in room " + r.id + ", which the site arranged"); }
       var dir = (pins[w.id] && pins[w.id].wall) || w.wall;
       if (dir && dir !== "centre" && !compass(r, dir, world).length) { err("work " + w.id + ": room " + r.id + " has no " + dir + " wall"); }
@@ -2769,11 +2935,12 @@
     // the rules the walk shares
     RULES: { EYE: EYE, CLEAR: CLEAR, STEP: STEP, HEAD: HEAD, RISER: RISER, THICK: THICK, HANG: HANG,
              TALL: TALL, APART: APART, INTO: INTO, FREE_OUT: FREE_OUT, VIEW: VIEW, VIEW_K: VIEW_K,
-             DOOR_W: DOOR_W, DOOR_H: DOOR_H, PLAN_DOTS: PLAN_DOTS, ARR_SPACE: ARR_SPACE, OFF_OPEN: OFF_OPEN,
-             OFF_CORNER: OFF_CORNER, ARR_NAME: ARR_NAME },
+             DOOR_W: DOOR_W, DOOR_H: DOOR_H, PLAN_DOTS: PLAN_DOTS, ARR_SPACE: ARR_SPACE, ARR_TIGHT: ARR_TIGHT,
+             OFF_OPEN: OFF_OPEN, OFF_CORNER: OFF_CORNER, ARR_NAME: ARR_NAME, BESIDE_BY: BESIDE_BY },
     compile: compile, toGrid: toGrid, toWorld: toWorld, headingOf: headingOf, compassOf: compassOf,
     shape: shape, raster: raster, seal: seal, carve: carve, ramp: ramp, ceilings: ceilings, shell: shell,
     runs: runs, compass: compass, dims: dims, hang: hang, clearance: clearance, path: path, stand: stand,
+    siteFits: siteFits, siteRuns: siteRuns, sizeOf: sizeOf,
     planDots: planDots, check: check,
     // helpers the walk and the checker use
     cellAt: cellAt, centreOf: centreOf, walkable: walkable, floorOf: floorOf, roomById: roomById,

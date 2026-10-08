@@ -2779,6 +2779,8 @@
       else if (w.cmk === "diameter") { parts.push(num(c[0]) + " cm across, its diameter"); }
       else { parts.push(num(c[1]) + " × " + num(c[0]) + (c[2] ? " × " + num(c[2]) : "") + " cm"); }
     } else { parts.push("size not known"); }
+    // No wall here takes it whole: drawn smaller by the site's rule (INTERIORS.md, "How works hang").
+    if (h.fit && h.fit < 1) { parts.push("drawn here at " + Math.max(1, Math.round(h.fit * 100)) + "% of its size: no wall takes it whole"); }
     if (h.free) { parts.push("a photograph of it"); }
     return parts.join(" · ");
   }

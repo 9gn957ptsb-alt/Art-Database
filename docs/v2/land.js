@@ -12325,8 +12325,10 @@
     var iw = clod.where[w.id];
     if (iw && iw.same && clod.where[iw.same]) { iw = clod.where[iw.same]; }
     if (!iw) { return; }
-    // An arranged work (INTERIORS.md, "Arranged") hangs where the site's rule put it: a door like any
-    // other, and said so under it — here in the column, never over the walk.
+    // An arranged work (INTERIORS.md, "Arranged") hangs where the site's rule put it — in a room it
+    // arranged, or beside the museum's own works ("Beside the known"): a door like any other, and
+    // under it, opened, its own sentence of how it came to hang there — here in the column, never
+    // over the walk.
     var arranged = iw.how === "arranged";
     if ((iw.how === "museum" || arranged) && iw.room && clod.roomName[iw.room] !== undefined) {
       var b = document.createElement("button");
@@ -12339,7 +12341,10 @@
       });
       b.addEventListener("keydown", function (event) { event.stopPropagation(); });
       cap.appendChild(b);
-      if (arranged) { cap.appendChild(el("span", "held-where-said", "Hung there by the site: where the museum hangs it is not known")); }
+      if (arranged) {
+        var how = String(iw.said || "hung there by the site: where the museum hangs it is not known");
+        cap.appendChild(el("span", "held-where-said", how.charAt(0).toUpperCase() + how.slice(1)));
+      }
     } else if (iw.said) {
       var said = String(iw.said);
       if (iw.how === "elsewhere") { said = "Elsewhere in the museum · " + said; }
