@@ -984,7 +984,9 @@ function hangWorks(W, m, model, doc, srcs, how) {
   const osm = !!(how && how.osm);
   const P = W.WalkPlan;
   const world = P.compile(Object.assign({}, doc, { works: [] }), model, { soil: null });
-  const before = (doc.works || []).filter(w => !w.also);
+  // The works shown here are found again each run (alsoHere); a loan another museum's record places
+  // (at) is the museum's own listing, kept.
+  const before = (doc.works || []).filter(w => !w.also || w.at);
   // Every saved work museums.json gives it is held, even before build_interiors.py has listed it.
   const listed = new Set(before.map(w => w.id));
   (m.works || []).forEach(x => {
@@ -1097,7 +1099,7 @@ function hangWorks(W, m, model, doc, srcs, how) {
     // Where its record puts it is a room not drawn here (a gallery of the museum's, another of its
     // buildings): said so, and that the site hung it here; else that where it hangs is not known.
     const w = { id: h.w.id, how: "arranged", room: r.id, wall: null,
-                said: rec && rec.how === "elsewhere" ? "the museum's record puts it in " + rec.said + ", which is not drawn here: the site has hung it here"
+                said: rec && rec.how === "elsewhere" ? recWho(rec, m.slug) + " puts it in " + rec.said + ", which is not drawn here: the site has hung it here"
                                                      : "where the museum hangs it is not known: the site has hung it here",
                 src: "arranged", asof: TODAY };
     if (rec) { w.rec = { how: rec.how, said: rec.said, src: rec.src || null, asof: rec.asof || null }; }
@@ -1198,6 +1200,13 @@ function notesOf(layout, placed, fsrc) {
    sentence: what the record says, then "hung here by the site, beside …". INTERIORS.md, "Beside the
    known". */
 
+// Whose words a record's placement is: Wikidata's, the museum's own page, or the museum's record.
+function recWho(rec, slug) {
+  const short = SHORT[slug] || "the museum";
+  if (rec && rec.src === "wikidata-where") { return "Wikidata"; }
+  if (rec && /^page-/.test(rec.src || "")) { return short + "'s own page for it"; }
+  return short + "'s record";
+}
 // The museums' names in the sentences.
 const SHORT = {
   "museum-national-gallery-of-art-washington-dc": "the National Gallery of Art",
@@ -1417,7 +1426,7 @@ function hangBeside(W, m, model, doc, opts) {
     if (rec.how === "elsewhere") {
       let place = String(rec.said || "").replace(/, in the Met's record$/, "").replace(/^Gallery (\S+), in .+$/, "Gallery $1");
       if (/^East Bldg,\s*/.test(place)) { place = "the East Building (" + place.replace(/^East Bldg,\s*/, "") + ")"; }
-      status = short + "'s record puts it in " + place + ", which is not drawn here";
+      status = recWho(rec, slug) + " puts it in " + place + ", which is not drawn here";
     } else if (!rec.src) {
       status = "where " + short + " hangs it has not been read yet";
     } else {
@@ -1433,7 +1442,11 @@ function hangBeside(W, m, model, doc, opts) {
       const r = s.ref, what = r.by === "artist" ? "its other works by " + r.a : r.by === "period-kind" ? "its " + kw(r.k) + " " + pw(r.p)
         : r.by === "period" ? "its works " + pw(r.p) : "its " + kw(r.k);
       beside = "in " + here + ", the nearest room with wall free to " + roomName(r.id) + ", where the museum hangs " + what;
-    } else { beside = "in " + here + ", the first room from the door with wall free: the museum's records place no work here by its artist, of its period or of its kind"; }
+    } else {
+      beside = "in " + here + ", the first room from the door with wall free: " +
+        (periodOf(c.f.y) < PERIODS.length ? "the museum's records place no work here by its artist, of its period or of its kind"
+                                          : "no date is given for it, and the museum's records place no work here by its artist or of its kind");
+    }
     return status + ": hung here by the site, " + beside;
   }
   function entryOf(c, s) {
@@ -1452,20 +1465,36 @@ function hangBeside(W, m, model, doc, opts) {
     return w;
   }
   // Into the rooms: the works with a room of their artist first, then the rest; each into the first
-  // room of its steps whose walls take it whole, else — as late as can be — drawn smaller there.
+  // room of its steps whose walls take it whole — the artist's rooms each at 2.5 m, else tightened to
+  // 1.5, before the next; the rooms of a period, a kind or the nearest, all at 2.5 m before any is
+  // tightened, so that one room is not crowded while its like have wall — else, as late as can be,
+  // drawn smaller in the first that takes it so.
   const assigned = {}, placed = new Map(), why = {};
-  const fitsIn = (id, w, scale) => P.siteFits(world, id, hungKnown, (assigned[id] || []).concat([w]), { ar: 2, scale });
+  const spacing = (id, w, scale) => P.siteFits(world, id, hungKnown, (assigned[id] || []).concat([w]), { ar: 2, scale });
+  const SPACE = P.RULES.ARR_SPACE;
   const first = cands.filter(c => artistName(c.f.a) && ranked(x => sameArtist(x.a, c.f.a)).length);
   const rest = cands.filter(c => first.indexOf(c) < 0);
+  function within(c, steps) {
+    // The steps in runs of one rule.
+    const runs = [];
+    steps.forEach(s => { const last = runs[runs.length - 1]; if (last && last.by === s.by) { last.list.push(s); } else { runs.push({ by: s.by, list: [s] }); } });
+    for (const run of runs) {
+      const tries = run.by === "artist" ? run.list.reduce((a, s) => a.concat([[s, true], [s, false]]), [])
+        : run.list.map(s => [s, true]).concat(run.list.map(s => [s, false]));
+      for (const [s, loose] of tries) {
+        const w = entryOf(c, s), sp = spacing(s.id, w, false);
+        if (sp && (!loose || sp === SPACE)) { return w; }
+      }
+    }
+    return null;
+  }
   first.concat(rest).forEach(c => {
-    let steps = stepsOf(c), got = null;
-    const tryAll = scale => {
-      for (const s of steps) { const w = entryOf(c, s); if (fitsIn(s.id, w, scale)) { return w; } }
-      return null;
-    };
-    got = tryAll(false);
-    if (!got) { const n = steps.length; steps = steps.more(); steps = steps.slice(n); got = tryAll(false); steps = stepsOf(c).more(); }
-    if (!got) { got = tryAll(true); }
+    const steps = stepsOf(c), n = steps.length;
+    let got = within(c, steps);
+    if (!got) { got = within(c, steps.more().slice(n)); }
+    if (!got) {
+      for (const s of steps) { const w = entryOf(c, s); if (spacing(s.id, w, true)) { got = w; break; } }
+    }
     if (!got) { why[c.w.id] = "no room reached from the door has wall left"; return; }
     (assigned[got.room] = assigned[got.room] || []).push(got);
     placed.set(c.w.id, got);

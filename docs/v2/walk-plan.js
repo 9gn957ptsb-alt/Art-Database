@@ -2842,6 +2842,22 @@
     });
     Object.keys(tiers).forEach(function (k) { warn("works on " + k + " overflow into a second tier"); });
     if (hung.spill.length) { warn(hung.spill.length + " placed works found no wall to hang on: " + hung.spill.join(", ")); }
+    // Every saved work it lists hangs (INTERIORS.md, "Beside the known"): but one its record says is
+    // off view, one another museum's record places and the site has not hung here, and a work that is
+    // another's very object, which hangs as that one.
+    var onWall = {}, listedN = 0, listedOn = 0, notOn = [];
+    hung.hung.forEach(function (h) { onWall[h.id] = 1; });
+    (I.works || []).forEach(function (w) {
+      if (!w || w.kind === "collection" || w.how === "off" || (w.at && w.how !== "arranged")) { return; }
+      listedN += 1;
+      if (onWall[w.id] || (w.same && onWall[w.same])) { listedOn += 1; } else { notOn.push(w.id); }
+    });
+    stats.saved = listedN;
+    stats.savedHung = listedOn;
+    if (notOn.length) {
+      warn(notOn.length + " of its " + listedN + " saved works do not hang" + (world.shell ? " (a shell: no rooms to hang in)" : "") + ": " +
+           notOn.slice(0, 12).join(", ") + (notOn.length > 12 ? " and " + (notOn.length - 12) + " more" : ""));
+    }
     var elsewhere = {};
     (I.works || []).forEach(function (w) { if (w && w.how === "elsewhere") { elsewhere[w.said] = (elsewhere[w.said] || 0) + 1; } });
     var ek = Object.keys(elsewhere);

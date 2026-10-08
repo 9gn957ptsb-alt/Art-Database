@@ -229,10 +229,11 @@
         "reconstructed": 0
       },
       "works": {
-        "hung": 345,
-        "elsewhere": 4,
+        "hung": 483,
+        "elsewhere": 0,
         "off": 0,
-        "none": 137
+        "none": 3,
+        "arranged": 138
       },
       "log": [
         "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)",
@@ -321,10 +322,11 @@
         "reconstructed": 400
       },
       "works": {
-        "hung": 317,
-        "elsewhere": 2,
+        "hung": 337,
+        "elsewhere": 0,
         "off": 0,
-        "none": 18
+        "none": 0,
+        "arranged": 20
       },
       "log": [
         "2026-10-08 first pass: 400 galleries on Floors 1 and 2 read off the Met's visitor floor plans (scripts/met_plan_rooms.py), each the floor nearest its printed number by walking, never through a drawn wall, laid by the Met's own map points for 60 galleries (median 0.2 m on Floor 1, 1.4 m on Floor 2) and anchored on them; openings where rooms meet on open floor; the 82nd Street door into the Great Hall; the floors joined by the lift by the Great Hall; 388 of 400 reached from the door (not: Dendur 131, 399, the 900s); 19 saved works and 300 of the Met's highlights on view hung by GalleryNumber. The model stands tens of metres off the Met's points and lacks the Fifth Avenue front: the rooms past it are filed against it."
@@ -352,11 +354,11 @@
         "arranged": 171
       },
       "works": {
-        "hung": 14,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 3,
-        "arranged": 14
+        "none": 0,
+        "arranged": 17
       },
       "log": []
     }
@@ -531,11 +533,11 @@
         "arranged": 158
       },
       "works": {
-        "hung": 42,
+        "hung": 44,
         "elsewhere": 0,
         "off": 0,
-        "none": 2,
-        "arranged": 42
+        "none": 0,
+        "arranged": 44
       },
       "log": []
     }
@@ -771,21 +773,23 @@
     "log": [
       "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around",
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): joints between the six volumes widened and glazed so they read as six, north lights on the back row, steps to the sands, and the harbour, Harbour Arm and Droit House to the north-east",
-      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings"
+      "2026-10-08 interior finding: only 13% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 21
       },
       "works": {
-        "hung": 0,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 7
+        "none": 0,
+        "arranged": 7
       },
       "log": []
     }
@@ -871,11 +875,11 @@
         "arranged": 69
       },
       "works": {
-        "hung": 16,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 16
+        "none": 0,
+        "arranged": 17
       },
       "log": []
     }
@@ -1092,11 +1096,11 @@
         "arranged": 9
       },
       "works": {
-        "hung": 6,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 6
+        "none": 0,
+        "arranged": 7
       },
       "log": []
     }
@@ -1113,18 +1117,20 @@
       "2026-10-08 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 119
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 3,
+        "hung": 11,
+        "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 11
       },
       "log": []
     }
@@ -1150,11 +1156,11 @@
         "arranged": 158
       },
       "works": {
-        "hung": 10,
+        "hung": 11,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 10
+        "none": 0,
+        "arranged": 11
       },
       "log": []
     }
@@ -1447,7 +1453,7 @@
         "arranged": 39
       },
       "works": {
-        "hung": 2,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
@@ -1477,7 +1483,7 @@
         "arranged": 71
       },
       "works": {
-        "hung": 2,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
@@ -3487,21 +3493,23 @@
     "log": [
       "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind",
       "2026-10-06 refined (catch-up for 1–6 Oct): moved off the car park onto the three-storey outline, the Johnson front to the east lawn, the galleries west, Camp Bowie Boulevard south; on its ground 7% → 72%",
-      "2026-10-08 interior finding: only 25% of the model's footprint stands on the ground's buildings"
+      "2026-10-08 interior finding: only 67% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "arranged",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 85
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 2
       },
       "log": []
     }
