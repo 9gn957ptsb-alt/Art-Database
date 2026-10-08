@@ -1,0 +1,147 @@
+/* The city in time (chronicle.js): the column under a city's globe and dial, one moment a line,
+   read along the dial. The moment of the dial's year has the lilac rule; a later one is said in the
+   quiet ink with a dotted rule, its pictures let down to a third (DISPLAY.md, 1.4.3). */
+
+.chron { margin: 0 0 var(--s-4, 16px); }
+.chron-list { list-style: none; margin: 0; padding: 0; }
+.chron-m {
+  display: grid;
+  grid-template-columns: 4.4em minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 10px 0 12px 10px;
+  border-left: 2px solid rgba(234, 223, 205, 0.1);
+  cursor: pointer;
+  transition: border-color 0.24s steps(3);
+}
+.chron-m + .chron-m { margin-top: 2px; }
+.chron-m[data-now="true"] { border-left-color: #9d95e6; }
+.chron-m[data-later="true"] { border-left: 2px dotted rgba(168, 146, 122, 0.45); }
+
+.chron-when {
+  align-self: start;
+  min-height: 24px;
+  margin: 0;
+  padding: 3px 0 0;
+  border: 0;
+  background: none;
+  color: #a8927a;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.chron-m[data-now="true"] .chron-when { color: #9d95e6; }
+.chron-when:hover, .chron-when:focus-visible { color: #eadfcd; }
+
+.chron-body { min-width: 0; }
+.chron-say {
+  margin: 0;
+  font-family: "Newsreader", var(--serif, serif);
+  font-size: 16px;
+  line-height: 1.38;
+  color: #eadfcd;
+  overflow-wrap: anywhere;
+}
+.chron-say i { font-style: italic; }
+.chron-m[data-later="true"] .chron-say { color: #a8927a; }
+
+.chron-door {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.6);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.chron-door:hover, .chron-door:focus-visible { color: #ffffff; text-decoration-color: #9d95e6; }
+
+.chron-works { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.chron-work {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.chron-work img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.chron-work:focus-visible { outline-offset: 2px; }
+.chron-m[data-later="true"] .chron-work { opacity: 0.34; }
+.chron-more { color: #a8927a; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: 0.04em; }
+
+.chron-way {
+  margin: 6px 0 0;
+  color: #a8927a;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.chron-way .chron-door { text-decoration-color: rgba(168, 146, 122, 0.6); }
+.chron-guide {
+  display: inline-block;
+  margin-top: 6px;
+  min-height: 24px;
+  color: #8fc3b0;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration-color: rgba(143, 195, 176, 0.6);
+}
+
+/* The city's directory, folded under its story. */
+.town-dir { margin: var(--s-3, 12px) 0 0; border-top: 1px solid rgba(234, 223, 205, 0.12); }
+.town-dir-head {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: #a8927a;
+  font-family: var(--mono, monospace);
+  font-size: var(--t-1, 11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+.town-dir-head:hover, .town-dir-head:focus-visible { color: #eadfcd; }
+.town-dir-go { flex: none; transition: transform 0.2s steps(3); }
+.town-dir-head[aria-expanded="true"] .town-dir-go { transform: rotate(90deg); }
+.town-dir-body[hidden] { display: none; }
+.town-dir-body { padding-bottom: var(--s-3, 12px); }
+
+@media (min-width: 721px) {
+  .chron-say { font-size: 17px; }
+}
+/* On a phone the year stands over its sentence, so the sentence has the column's width; and a city's
+   dial stands wholly over its band, so the story scrolls under nothing (it had reached 36 px into the
+   column, and the story's lines passed under it). */
+@media (max-width: 720px) {
+  .chron-m { grid-template-columns: minmax(0, 1fr); row-gap: 2px; padding: 8px 0 12px 12px; }
+  .chron-when { padding: 0; }
+  .art[data-kind="town"] > .art-time.dial:not([data-moved]) { transform: translateY(-100%); top: calc(50vh - 6px); }
+  .art[data-kind="town"]:has(> .art-time.dial:not([hidden])) .art-col::before { content: none; }
+}
+/* The story ends on now, with the city's guide: the pill over the column says it no more. */
+.art-col:has(.chron[data-now]) .guide-pill { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .chron-m, .town-dir-go { transition: none; }
+}

@@ -776,7 +776,8 @@
         box.appendChild(rows(ids.map(function (r) { return r; }), true));
       }
     }
-    if (people.length) {
+    // The city's story (chronicle.js) tells who lived here and when; the list is for a city without it.
+    if (people.length && !window.Chronicle) {
       box.appendChild(el("p", "town-section skyline-kicker", "Walking here · " + people.length));
       box.appendChild(el("p", "skyline-said", "Born here, or placed here by their record, each in their years: turn the dial to see who was here"));
       box.appendChild(rows(people, false));
@@ -1245,6 +1246,12 @@
   window.Skyline = {
     on: function () { return on_; },
     key: function (k) { return keyed(k); },
+    // The city's story (chronicle.js): a moment's museum ({museum: slug}) or gallery ({venue: vi}) lit.
+    light: function (l, on) {
+      if (!city || !on_ || !l) { return; }
+      var a = city.arts.filter(function (x) { return l.museum ? x.slug === l.museum : x.kind === "gallery" && x.vi === l.venue; })[0];
+      if (a) { lightArt(a.k, !!on); }
+    },
     // The Artists layer: a town where several saved artists were born (lives.js) — its city key,
     // where the town has a skyline, else null (the town's Born here reading stays).
     bornTown: function (m) {

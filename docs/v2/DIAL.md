@@ -149,6 +149,15 @@ artists came from, where else they were during it, the city at its last year —
 movement's view with the dial at that year. In Find: "movements", a city, a decade ("1950s"), a
 movement's name, an artist.
 
+## A city's story along the dial
+
+A city's column is its story in time (`chronicle.js`, 8 Oct 2026): one moment a line — works
+coming here, artists born here or living here, movements gathered here, and now. The dial's year
+lights its moment (the lilac rule), later ones wait in the quiet ink with a dotted rule; the first
+play carries the column with it; scrolling the column by hand turns the dial to the moment at its
+top; a press on a moment's year turns the dial there. The dial is the city's own (its venues'
+years, `memberYears`); the story adds no marks to it.
+
 ## The dial unrolled
 
 The artist, 7 Oct 2026: "Change the shape of the dial to adapt to the rectangular form in some way."

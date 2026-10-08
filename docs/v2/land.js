@@ -15087,6 +15087,16 @@
       if (n) { r.meta.textContent = r.m.held + " saved · " + n + (n === 1 ? " more has" : " more have") + " been here"; }
     });
     venueSection(a, pf);
+    // The city in time (chronicle.js): under the count, read along the dial.
+    if (window.Chronicle && !(a.via && a.via.studio)) {
+      if (a.head) { a.head.textContent = ["In time", y0 !== Infinity ? yearsText(y0, y1) : ""].filter(Boolean).join(" · "); }
+      var story = Chronicle.build({
+        key: t.key, name: t.name, lat: t.lat / RAD, lon: t.lon / RAD, pf: pf, cdn: (museums && museums.cdn) || ART_CDN,
+        dial: function (y) { if (art === a && window.Land && Land.dialYear) { Land.dialYear(y); } },
+        light: function (l, on) { if (art === a) { storyLight(a, l, on); } }
+      });
+      artCol.insertBefore(story, a.head ? a.head.nextSibling : artCol.firstChild);
+    }
     // Its marks are its venues' first years; it runs on to the last year
     // any of them had a work, so at rest it stands at the present.
     memberYears(a, pf.venues.map(function (v) { return v[2]; }),
@@ -15133,17 +15143,25 @@
     a.head = el("p", "art-count", "Here · " + t.n.toLocaleString("en") + (t.n === 1 ? " work" : " works"));
     col.appendChild(a.head);
     enterText(a.head, 0);
+    if (window.Chronicle) { Chronicle.clear(); }
+    // The city's directory, under its story (chronicle.js) and folded (artist, 8 Oct 2026: "There's too
+    // much information and it is not clear as something that I want to follow along to"): its museums,
+    // then (when its file lands) its galleries, fairs and sale rooms, each a press away; the three tabs over
+    // the column open them too.
     var folger = LANDMARKS.filter(function (m) { return m.town === t.key; });
     if (t.museums.length || folger.length) {
-      col.appendChild(el("p", "town-section", "Museums · " + t.museums.length));
+      var md = townDir("Museums · " + (t.museums.length + folger.length), !window.Chronicle);
+      col.appendChild(md);
+      a.museumDir = md;
       t.museums.forEach(function (slug) {
         var row = museumRow(a, slug);
-        if (row) { col.appendChild(row); }
+        if (row) { md.body.appendChild(row); }
       });
-      folger.forEach(function (mark) { col.appendChild(stageRow(a, mark)); });
+      folger.forEach(function (mark) { md.body.appendChild(stageRow(a, mark)); });
     }
     var near = nearRow(t);
     if (near) { col.appendChild(near); }
+    a.nearEl = near;
     a.foot = artFoot();
     if (following) { followSection(a, t); }
     // Up from one of its museums: that museum's row, lit, and its mark answers.
@@ -15164,6 +15182,33 @@
         }
       }, 1600, a);
     }
+  }
+
+  /* A fold of the city's directory: its label a button that opens and closes it (WCAG 4.1.2: a
+     disclosure), open() for what must show a row in it (a gallery pressed on the map). */
+  function townDir(label, open) {
+    var sec = el("section", "town-dir");
+    var head = el("button", "town-dir-head");
+    head.type = "button";
+    head.appendChild(el("span", "town-dir-label", label));
+    var go = el("span", "town-dir-go", "›");
+    go.setAttribute("aria-hidden", "true");
+    head.appendChild(go);
+    var body = el("div", "town-dir-body");
+    sec.appendChild(head);
+    sec.appendChild(body);
+    function set(on) {
+      head.setAttribute("aria-expanded", on ? "true" : "false");
+      body.hidden = !on;
+    }
+    set(!!open);
+    head.addEventListener("click", function (event) {
+      event.stopPropagation();
+      set(head.getAttribute("aria-expanded") !== "true");
+    });
+    sec.body = body;
+    sec.open = function () { set(true); };
+    return sec;
   }
 
   /* A museum's row: its diamond, its name and the way in; how many saved
@@ -15477,7 +15522,7 @@
     still: function (on) {
       if (on === undefined) { return still; }
       still = !!on;
-      if (still) { settleSwing(); stopFirstPlay(); }
+      if (still) { settleSwing(); stopFirstPlay(true); }
       return still;
     },
     // The globe by keys (a11y.js): turn, roll, nearer or farther, and the place nearest the middle.
@@ -15877,10 +15922,13 @@
       });
     }
     var host = el("section", "town-venues");
+    var fold = window.Chronicle ? townDir("Galleries, fairs and sale rooms · " + (named.length + (unnamed.length ? 1 : 0)), false) : null;
+    var into = fold ? fold.body : host;
+    if (fold) { host.appendChild(fold); a.venueDir = fold; }
     if (named.length) {
-      host.appendChild(el("p", "town-section town-quiet", "Galleries, fairs and sale rooms · " + named.length));
+      if (!fold) { host.appendChild(el("p", "town-section town-quiet", "Galleries, fairs and sale rooms · " + named.length)); }
       var list = el("div", "town-venue-list");
-      host.appendChild(list);
+      into.appendChild(list);
       a.venueOrder = named;
       a.venuePager = pageRows(list, named, function (i) {
         var box = venueRow(a, pf, [i], rowsOf[i], pf.venues[i][0]);
@@ -15895,10 +15943,12 @@
       });
       var box = venueRow(a, pf, unnamed, rows, "Venue not recorded · " + rows.length.toLocaleString("en"));
       box.classList.add("town-venue-unnamed");
-      host.appendChild(box);
+      into.appendChild(box);
       if (came && have[came] && !named.some(holding)) { openVenue(a, box, true); }
     }
-    if (host.children.length) { artCol.insertBefore(host, a.foot); }
+    // Come from a history: the venue that holds the work is open, so its fold is.
+    if (fold && came && (named.some(holding) || unnamed.length)) { fold.open(); }
+    if (host.children.length) { artCol.insertBefore(host, a.nearEl && a.nearEl.parentNode === artCol ? a.nearEl : a.foot); }
   }
 
   /* A venue: its name, what happened there and when, how many works; open,
@@ -16233,6 +16283,7 @@
     });
     venueLabel.style.transform = "translate(" + best.x.toFixed(0) + "px," + best.y.toFixed(0) + "px)";
     // Its row: paged on until it is there, opened, and brought into view.
+    if (a.venueDir) { a.venueDir.open(); }
     var box = null;
     var at = a.venueOrder ? a.venueOrder.indexOf(hit.g.vi) : -1;
     if (at >= 0 && a.venuePager) { a.venuePager.until(at); }
@@ -19004,26 +19055,31 @@
     } catch (e) {}
     return false;
   }
-  function stopFirstPlay() {
+  function stopFirstPlay(onDial) {
     var a = art;
-    if (a && a.auto) { markSeen(a.auto.seen); a.auto = null; a.whenTo = a.when; a.byHand = true; }
-    if (a && a.firstPlay && a.playing) {
+    // A city's years and a museum's ground run on to now unless the dial itself is taken; a reading (a
+    // work's history, a life) is handed over by any touch, as its look is — a tap on its small globe
+    // swaps it at once, never waiting on the play.
+    var anyTouch = !!(a && a.kind !== "town");
+    if (a && a.auto && (onDial || anyTouch)) { markSeen(a.auto.seen); a.auto = null; a.whenTo = a.when; a.byHand = true; }
+    if (a && a.firstPlay && a.playing && (onDial || anyTouch)) {
       markSeen(a.seenKey);
       a.playing = false; a.seg = null; a.whenTo = a.when; a.byHand = true; a.firstPlay = false;
     }
-    if (clod && clod.firstPlay && !clod.byHand && clod.when < clod.whenTo) {
+    if (onDial && clod && clod.firstPlay && !clod.byHand && clod.when < clod.whenTo) {
       markSeen(clod.seenKey);
       clod.whenTo = clod.when; clod.byHand = true; clod.touched = true; clod.firstPlay = false;
     }
   }
-  // Only a hand on the dial — its ring, its face, its range's keys, a wheel over it — takes time over
-  // from a first play. Turning the skyline, moving the map, scrolling the column, the wave, a press on a
-  // museum or a gallery leave it to run on to now (8 Oct 2026; any touch anywhere had stopped it where it
-  // was, so a city turned in its first seconds stayed in its first year, before anything was built).
+  // A city's first play, and a museum's ground growing, are taken over only by a hand on the dial — its
+  // ring, its face, its range's keys, a wheel over it. Turning the skyline, moving the map, scrolling the
+  // column, the wave, a press on a museum or a gallery leave it to run on to now (8 Oct 2026; any touch
+  // anywhere had stopped it where it was, so a city turned in its first seconds stayed in its first
+  // year, before anything was built).
   ["pointerdown", "wheel", "keydown", "touchstart"].forEach(function (type) {
     window.addEventListener(type, function (event) {
       var t = event.target;
-      if (event.isTrusted && t && t.closest && t.closest(".building-time")) { stopFirstPlay(); }
+      if (event.isTrusted) { stopFirstPlay(!!(t && t.closest && t.closest(".building-time"))); }
     }, { capture: true, passive: true });
   });
   /* A city's years from its first to now, calmly: 8 to 12 s by its span. */
@@ -20933,7 +20989,23 @@
     (a.venueBoxes || []).forEach(function (box) {
       if (box.y0 && box.y0 > a.yearNow) { box.dataset.later = "true"; } else { delete box.dataset.later; }
     });
+    // The story's moment of this year, lit; kept in view while the dial goes by itself or is turned.
+    if (window.Chronicle) { Chronicle.year(a.yearNow, !!a.auto || (a.byHand && a.when !== a.whenTo)); }
     townDirty = true;
+  }
+
+  /* A moment of the story pressed or pointed at: its museum, or its gallery, lit where it stands — on
+     the skyline (skyline.js), else on the map. */
+  function storyLight(a, l, on) {
+    if (window.Skyline && Skyline.on && Skyline.on() && Skyline.light) { Skyline.light(l, on); return; }
+    if (l.museum) { lightMuseum(l.museum, on); return; }
+    if (on && typeof l.venue === "number" && a.pf && !still) {
+      galleryPoints(a.town, a.pf).forEach(function (g) {
+        if (g.vi !== l.venue) { return; }
+        var p = project(g.lat, g.lon);
+        if (p.z > 0) { pulse(p.x, p.y, [LIGHT, LILAC], 0.5, 89); }
+      });
+    }
   }
 
   /* The slider over a place's or a thread's members: from the first year
