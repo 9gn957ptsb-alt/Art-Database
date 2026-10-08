@@ -11537,6 +11537,7 @@
       } else {
         // The first time: the town's years go by at an even pace.
         clod.when = Math.min(clod.whenTo, clod.when + dt / CLOD_GROW);
+        if (clod.firstPlay && clod.when >= 1) { markSeen(clod.seenKey); }
       }
       clod.dirty = true;
       showYear();
@@ -11964,7 +11965,8 @@
     clod.firstPlay = false;
     // It grows by itself the first time this viewer comes to it, else stands at now.
     if (!atYear && !still) {
-      if (dialDriven() || !firstSeen("m:" + clod.b.slug)) { clod.when = 1; } else { clod.firstPlay = true; }
+      clod.seenKey = "m:" + clod.b.slug;
+      if (dialDriven() || seenBefore(clod.seenKey)) { clod.when = 1; } else { clod.firstPlay = true; }
     }
     if (atYear && !still) {
       var span = Math.max(1, d.years.y1 - d.years.y0);
@@ -15396,6 +15398,8 @@
     dialYear: function (y) {
       var a = art;
       if (!a || !a.dated) { return; }
+      if (a.auto) { markSeen(a.auto.seen); }
+      if (a.firstPlay) { markSeen(a.seenKey); }
       a.auto = null;
       a.firstPlay = false;
       a.playing = false;
@@ -15545,9 +15549,10 @@
         var to = at ? Math.max(0, Math.min(1, (at - y0) / (a.y1 - y0))) : 1;
         a.when = a.whenTo = to;
         a.yearNow = yearAt(a, to);
-        if (first && !still && !dialDriven() && firstSeen("l:" + a.data.id)) {
+        if (first && !still && !dialDriven() && !seenBefore("l:" + a.data.id)) {
           a.when = a.whenTo = 0;
-          a.auto = { at: performance.now() + 900, dur: Math.max(9000, Math.min(16000, 9000 + (y1 - y0) * 45)) };
+          a.auto = { at: performance.now() + 900, dur: Math.max(9000, Math.min(16000, 9000 + (y1 - y0) * 45)),
+                     seen: "l:" + a.data.id };
         }
         artTime.hidden = false;
         showArtYear();
@@ -18556,7 +18561,7 @@
       if (a.auto) {
         var qa = Math.max(0, (now - a.auto.at) / a.auto.dur);
         a.when = a.whenTo = qa >= 1 ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * qa);
-        if (qa >= 1) { a.auto = null; }
+        if (qa >= 1) { markSeen(a.auto.seen); a.auto = null; }
       } else if (a.byHand && a.when !== a.whenTo) {
         a.when += (a.whenTo - a.when) * Math.min(1, dt / 377);
         if (Math.abs(a.whenTo - a.when) < 0.0005) { a.when = a.whenTo; }
@@ -18585,7 +18590,7 @@
         if (q >= 1) {
           a.when = a.seg.to;
           a.seg = null;
-          if (a.when >= 1) { a.playing = false; }
+          if (a.when >= 1) { a.playing = false; if (a.firstPlay) { markSeen(a.seenKey); } }
           else { a.holdUntil = now + ART_LINGER; }
         }
       }
@@ -18782,6 +18787,8 @@
 
   function setWhen(a, pos) {
     flipToHead();
+    if (a.auto) { markSeen(a.auto.seen); }
+    if (a.firstPlay) { markSeen(a.seenKey); }
     a.auto = null;
     a.firstPlay = false;
     a.playing = false;
@@ -18966,14 +18973,21 @@
      under reduced motion, nor while a walk, an exploration or a corpse is
      driving the dial itself. */
   var DIAL_SEEN = "dial.seen", DIAL_SEEN_MOST = 800;
-  function firstSeen(key) {
+  function seenList() {
     var list = [];
     try { list = JSON.parse(localStorage.getItem(DIAL_SEEN) || "[]"); } catch (e) { list = []; }
-    if (!Array.isArray(list)) { list = []; }
-    if (list.indexOf(key) >= 0) { return false; }
+    return Array.isArray(list) ? list : [];
+  }
+  function seenBefore(key) { return seenList().indexOf(key) >= 0; }
+  // Kept only once its play has run to now, or the dial has been taken by hand (8 Oct 2026: "make sure
+  // the dial automatically goes the first time from the first year to the current year"): a place left
+  // before its play has ended plays again from its first year next time.
+  function markSeen(key) {
+    if (!key) { return; }
+    var list = seenList();
+    if (list.indexOf(key) >= 0) { return; }
     list.push(key);
     try { localStorage.setItem(DIAL_SEEN, JSON.stringify(list.slice(-DIAL_SEEN_MOST))); } catch (e) {}
-    return true;
   }
   function dialDriven() {
     try {
@@ -18987,26 +19001,34 @@
   }
   function stopFirstPlay() {
     var a = art;
-    if (a && a.auto) { a.auto = null; a.whenTo = a.when; a.byHand = true; }
+    if (a && a.auto) { markSeen(a.auto.seen); a.auto = null; a.whenTo = a.when; a.byHand = true; }
     if (a && a.firstPlay && a.playing) {
+      markSeen(a.seenKey);
       a.playing = false; a.seg = null; a.whenTo = a.when; a.byHand = true; a.firstPlay = false;
     }
     if (clod && clod.firstPlay && !clod.byHand && clod.when < clod.whenTo) {
+      markSeen(clod.seenKey);
       clod.whenTo = clod.when; clod.byHand = true; clod.touched = true; clod.firstPlay = false;
     }
   }
+  // Only a hand on the dial — its ring, its face, its range's keys, a wheel over it — takes time over
+  // from a first play. Turning the skyline, moving the map, scrolling the column, the wave, a press on a
+  // museum or a gallery leave it to run on to now (8 Oct 2026; any touch anywhere had stopped it where it
+  // was, so a city turned in its first seconds stayed in its first year, before anything was built).
   ["pointerdown", "wheel", "keydown", "touchstart"].forEach(function (type) {
     window.addEventListener(type, function (event) {
-      if (event.isTrusted) { stopFirstPlay(); }
+      var t = event.target;
+      if (event.isTrusted && t && t.closest && t.closest(".building-time")) { stopFirstPlay(); }
     }, { capture: true, passive: true });
   });
   /* A city's years from its first to now, calmly: 8 to 12 s by its span. */
   function autoTown(a) {
-    if (still || a.byHand || !a.dated || !a.town || dialDriven() || !firstSeen("t:" + a.town.key)) { return; }
+    if (still || a.byHand || !a.dated || !a.town || dialDriven() || seenBefore("t:" + a.town.key)) { return; }
     a.when = a.whenTo = 0;
     a.yearNow = Math.floor(a.y0);
     laterRows(a);
-    a.auto = { at: performance.now() + 600, dur: Math.max(8000, Math.min(12000, 8000 + (a.y1 - a.y0) * 40)) };
+    a.auto = { at: performance.now() + 600, dur: Math.max(8000, Math.min(12000, 8000 + (a.y1 - a.y0) * 40)),
+               seen: "t:" + a.town.key };
     showArtYear();
     a.dirty = true;
   }
@@ -19930,7 +19952,8 @@
     var a = art;
     if (!a || a.kind !== "work" || !a.live) { return; }
     // Played the first time this viewer comes to it; at rest at now after.
-    var first = !still && !dialDriven() && firstSeen("w:" + (a.data && a.data.id));
+    var first = !still && !dialDriven() && !seenBefore("w:" + (a.data && a.data.id));
+    a.seenKey = "w:" + (a.data && a.data.id);
     if (!first) {
       a.when = a.whenTo = 1;
       passEvents(a, performance.now(), false);

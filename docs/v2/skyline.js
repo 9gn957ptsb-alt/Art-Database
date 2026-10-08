@@ -1176,7 +1176,11 @@
     var d = st.dial, yearF = !d || d.rest ? NOW + 1 : d.at - 0.5;
     var dy = d && !d.rest && Land.dial ? Land.dial() : null;
     city.yearNow = !d || d.rest ? 0 : dy && dy.year ? dy.year : Math.floor(d.at);
-    var shown = city.years ? Math.max(-0.01, (yearF - city.years.y0) / (city.years.y1 - city.years.y0)) : 1;
+    // Never less than the ground (8 Oct 2026: before its first dated building a city's whole clod had
+    // gone, ground and all — Milan and Berlin stood empty until 1975 while their dials began in 1482 and
+    // 1904): the land, the water, the streets and every building whose year is not known stand from the
+    // dial's first year; a dated building rises in its year.
+    var shown = city.years ? Math.max(0, (yearF - city.years.y0) / (city.years.y1 - city.years.y0)) : 1;
     if (Math.abs(shown - shownNow) > 1e-4) { shownNow = shown; dirty = true; }
     // Resting on the diagonals, a quarter turn every so often; a drag turns it, let go it settles.
     if (!view.held && !gesture) {
