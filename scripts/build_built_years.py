@@ -808,27 +808,43 @@ BDNB_YEARS = {
 BDNB = "https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_complet?"
 
 
-def bdnb_commune(code):
-    """Every dated group in one commune, cached in data/bdnb/ (the API allows 10,000 calls a month)."""
+def bdnb_commune(code, deadline=None):
+    """Every dated group in one commune, cached in data/bdnb/ (the API allows 10,000 calls a month). A big
+    commune can take longer than a place's run should (Paris's arrondissements, Aix): past the deadline
+    its pages so far are kept (<code>.partial.json) and the next run goes on from them (TimeoutError)."""
     path = CACHE / "bdnb" / f"{code}.json"
     if path.exists():
         return json.loads(path.read_text())
-    rows, offset, total = [], 0, None
-    while total is None or offset < total:
+    part = CACHE / "bdnb" / f"{code}.partial.json"
+    got = json.loads(part.read_text()) if part.exists() else {"rows": [], "total": None}
+    rows, total = got["rows"], got["total"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    def keep(at, data):                     # whole or not at all: another place's run may read it
+        tmp = at.with_suffix(f".{os.getpid()}.part")
+        tmp.write_text(json.dumps(data))
+        tmp.replace(at)
+
+    while total is None or len(rows) < total:
+        if deadline and time.time() > deadline:
+            keep(part, {"rows": rows, "total": total})
+            raise TimeoutError(f"BDNB commune {code}: {len(rows)} of {total} groups read, the rest next run")
         # Pages come shorter than asked when the outlines are heavy, so the true total (Content-Range,
-        # with Prefer: count=exact) says when to stop; a fixed order keeps the pages from shifting.
+        # with Prefer: count=exact, asked once) says when to stop; a fixed order keeps the pages from shifting.
         q = {"code_commune_insee": f"eq.{code}", "select": "batiment_groupe_id,annee_construction,geom_groupe",
              "or": "(annee_construction.not.is.null,batiment_groupe_id.in.(" + ",".join(BDNB_YEARS) + "))",
-             "order": "batiment_groupe_id", "limit": 1000, "offset": offset}
+             "order": "batiment_groupe_id", "limit": 1000, "offset": len(rows)}
         for attempt in range(5):
             try:
-                req = urllib.request.Request(BDNB + urllib.parse.urlencode(q), headers={**AGENT, "Prefer": "count=exact"})
+                req = urllib.request.Request(BDNB + urllib.parse.urlencode(q),
+                                             headers={**AGENT, **({"Prefer": "count=exact"} if total is None else {})})
                 with urllib.request.urlopen(req, timeout=300) as resp:
                     rng = resp.headers.get("Content-Range") or ""
                     page = json.loads(resp.read() or b"[]")
                 break
             except Exception:
                 if attempt == 4:
+                    keep(part, {"rows": rows, "total": total})
                     raise
                 time.sleep(2 ** (attempt + 1))
         if total is None:
@@ -836,11 +852,8 @@ def bdnb_commune(code):
         if not page:
             break
         rows += page
-        offset += len(page)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(f".{os.getpid()}.part")      # whole or not at all: another place's run may read it
-    tmp.write_text(json.dumps(rows))
-    tmp.replace(path)
+    keep(path, rows)
+    part.unlink(missing_ok=True)
     return rows
 
 
@@ -884,8 +897,14 @@ def france(box):
     tmp.replace(kept_at)
     to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
     out = []
+    deadline = time.time() + 900           # a quarter of an hour of the BDNB's pages a place; the rest next run
     for code in sorted(communes):
-        for r in bdnb_commune(code):
+        try:
+            rows = bdnb_commune(code, deadline)
+        except TimeoutError as exc:
+            print(f"  · {exc}", flush=True)
+            continue
+        for r in rows:
             y = BDNB_YEARS.get(r.get("batiment_groupe_id")) or year_of(r.get("annee_construction"))
             for ring in outer_rings(r.get("geom_groupe")):
                 xs, ys = zip(*[c[:2] for c in ring])
