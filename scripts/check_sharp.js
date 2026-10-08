@@ -124,6 +124,12 @@ async function sharpness(P, png, disc) {
    mixes two levels for a moment on purpose, and the door is the nearer). */
 async function doors(P, size, dsf, radii) {
   const want = [...new Set(radii.filter((R) => R > 20 && R < 6000))].concat([40, 68, 94, 140, 176, 293, 462, 900]);
+  // On a fresh page, the page's own drawing held: after the places, the body's canvas is the reading's
+  // (or the fallback's), and reading it back gave black for every pixel, whatever was drawn.
+  await P.goto("http://localhost:" + PORT + "/v2/");
+  await P.waitForFunction(() => window.Land && window.EarthBody && EarthBody.ready(), null, { timeout: 90000 });
+  await P.evaluate(() => Land.pace && Land.pace(false));
+  await P.waitForTimeout(2000);
   const res = await P.evaluate(async ([dsf, want]) => {
     const out = [];
     const cv = EarthBody.canvas(), gl = cv.getContext("webgl2");

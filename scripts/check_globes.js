@@ -33,17 +33,15 @@ const PIC = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><d
 
 const VIEWS = [
   { name: "work, from a museum", open: async (P) => {
+      // The Pushkin's saved works (the Gauguin it once listed went with a data refresh): a held work's
+      // history, opened from the museum's view.
       await P.evaluate(() => Land.museum("museum-pushkin-museum-of-fine-arts"));
       for (let i = 0; i < 80; i++) {
         await P.waitForTimeout(500);
-        const hit = await P.evaluate(() => {
-          const b = [...document.querySelectorAll("button, a, [role=button], li, .held-work, [data-id]")]
-            .find((e) => /Self Portrait Dedicated|Ambroise Vollard/i.test(e.textContent || e.getAttribute("aria-label") || ""));
-          if (b) { b.scrollIntoView({ block: "center" }); b.click(); }
-          return !!b;
-        });
-        if (hit) { break; }
+        if (await P.evaluate(() => (Land.where() || {}).at === "museum" && !Land.where().flying)) { break; }
       }
+      await P.waitForTimeout(6000);      // the museum's own arrival done, so it does not replace the work
+      await P.evaluate(() => Land.work("4f750b5ab4e2f50001000487"));
     }, kind: "work" },
   { name: "life", open: (P) => P.evaluate(() => Lives.open("pablo-picasso")), kind: "life" },
   { name: "movement", open: (P) => P.evaluate(() => Movements.open("mv-new-york-1948")), kind: "movement" },
@@ -265,7 +263,14 @@ async function run(size) {
     for (let i = 0; i < 120 && !(r && r.kind === v.kind && !r.flying); i++) { await P.waitForTimeout(300); r = await state(); }
     if (!r) { check(tag, false, "opened"); continue; }
     // A work's first look ends on any touch.
-    if (r.look === "plate") { await tap(w - 30, h - 30); }
+    // (on a spot that is no door: the label's facts are doors, and the corner can be one)
+    if (r.look === "plate") {
+      const spot = await P.evaluate(([w, h]) => {
+        const cands = [[w - 30, h - 30], [30, h - 30], [w - 30, h * 0.6], [30, h * 0.6], [w / 2, h - 12]];
+        return cands.find(([x, y]) => { const e = document.elementFromPoint(x, y); return e && !e.closest("button, a, .wl-door, input, .art-col, .kinds-head, .wall-label"); }) || cands[0];
+      }, [w, h]);
+      await tap(spot[0], spot[1]);
+    }
     await P.waitForTimeout(4000);       // a view with no picture closes its band after 3 s
     if (v.after) { await v.after(P); await P.waitForTimeout(1500); }
     r = await settle();
