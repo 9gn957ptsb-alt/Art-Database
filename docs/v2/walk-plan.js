@@ -2307,7 +2307,9 @@
     try { M = Models(); } catch (e) { return { errors: [String(e.message)], warnings: [], stats: {}, tier: "shell", findings: [] }; }
 
     // The file's own shape.
-    if (typeof opts.bytes === "number" && opts.bytes > 96 * 1024) { err("the file is " + round(opts.bytes / 1024) + " KB (at most 96)"); }
+    // 640 KB: a museum read from its own open data carries a few hundred of its collection's works, each
+    // with the museum's own label (INTERIORS.md, "The collection on the walls").
+    if (typeof opts.bytes === "number" && opts.bytes > 640 * 1024) { err("the file is " + round(opts.bytes / 1024) + " KB (at most 640)"); }
     if (I.v !== 1) { err("v must be 1"); }
     if (typeof I.slug !== "string") { err("slug is missing"); }
     if (museum && museum.slug && I.slug !== museum.slug) { err("slug " + I.slug + " is not its museum's (" + museum.slug + ")"); }
