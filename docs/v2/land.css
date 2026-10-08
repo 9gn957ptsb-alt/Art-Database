@@ -406,6 +406,28 @@
 .land[data-grown] .city:hover,
 .land[data-grown] .city:focus-visible { color: #ffffff; }
 
+/* Out of a city as far as the fingers go (land.js, "out of a city"): the city lets go of its column, dial
+   and banner over the first part of the way (--rise-show), its skyline sooner (--rise-sky); the world's
+   marks are not hidden as in a flight, so its names come in as there is room. */
+html[data-rising] #art,
+html[data-rising] .banner,
+html[data-rising] .path-time,
+html[data-rising] .voice-chip,
+html[data-rising] .dial-lit,
+html[data-rising] .guide-tiles {
+  opacity: var(--rise-show, 1) !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+html[data-rising] .skyline { opacity: var(--rise-sky, 1) !important; pointer-events: none !important; }
+.land[data-at="rising"] .plot,
+.land[data-at="rising"] .creature,
+.land[data-at="rising"] .spawn,
+.land[data-at="rising"] .say {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 .land[data-at="globe"] .creature,
 .land[data-at="flying"] .creature,
 .land[data-at="globe"] .spawn,

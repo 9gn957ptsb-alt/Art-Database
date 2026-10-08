@@ -1846,6 +1846,8 @@
 
   function comeUp(all) {
     if (walkOn) { if (all === true) { walkClose("all"); } else { window.Walk.up(); } return; }
+    // Already on the way out of a city (rise): up is the rest of that way.
+    if (rise) { riseAll(); return; }
     if (flying || !place) { return; }
     if (route) { endRoute(); }
     artAsked = null;                // a view still being read is not flown to after you have left
@@ -4766,6 +4768,9 @@
     document.addEventListener(name, function () { lastTouch = performance.now(); },
                               { capture: true, passive: true });
   });
+  // A finger or a button held and moving is someone doing something too: a long pinch is not idle.
+  document.addEventListener("pointermove", function (e) { if (e.buttons) { lastTouch = performance.now(); } },
+                            { capture: true, passive: true });
 
   function autoSwing(now) {
     if (!nextSwing) { nextSwing = now + swingWait(); return; }
@@ -5614,7 +5619,10 @@
     // Going down into a city, or coming back up out of one. The sphere grows
     // or shrinks and its framing travels with it; everything else on here is
     // projected through the same two numbers and follows without being told.
-    if (flying) {
+    if (flying && rise) {
+      // Out of a city as far as the fingers go: the height is theirs (see rise).
+      stepRise(now);
+    } else if (flying) {
       // A frame's clock can read a few milliseconds before the press that
       // started the flight; before its start the flight is at its start.
       var went = Math.max(0, Math.min(1, (now - flyAt) / fly.dur));
@@ -8795,8 +8803,8 @@
     // world is being turned. Let go of the turn and the squash and leave the
     // gesture to it, or the world spins while someone is trying to zoom.
     fingers[event.pointerId] = { x: event.clientX, y: event.clientY };
-    // Two fingers that are the small globe's pinch (fingerDown): nothing else begins.
-    if (lensPinch || cityPinch) { return; }
+    // Two fingers that are the small globe's pinch (fingerDown), or a rise's: nothing else begins.
+    if (lensPinch || cityPinch || rise) { return; }
     if ((turning || panning) && Object.keys(fingers).length >= 2) {
       turning = null;
       panning = null;
@@ -13669,7 +13677,7 @@
       return true;
     }
     if (cityMap() && (key === "+" || key === "=")) { if (!cityStepBy(ZOOM_STEP)) { goDeeper(false); } return true; }
-    if (cityMap() && (key === "-" || key === "_")) { if (!cityStepBy(1 / ZOOM_STEP)) { comeUp(); } return true; }
+    if (cityMap() && (key === "-" || key === "_")) { if (!cityStepBy(1 / ZOOM_STEP) && !riseAll()) { comeUp(); } return true; }
     if (place || flying || groundOn || deckMode) { return false; }
     var now = performance.now();
     if (/^Arrow/.test(key)) {
@@ -14173,7 +14181,7 @@
       if (place) { goDeeper(false); } else { flyOver(); }
     }
     else if ((event.key === "-" || event.key === "_") && place) {
-      if (cityMap() && cityStepBy(1 / ZOOM_STEP)) { return; }
+      if (cityMap() && (cityStepBy(1 / ZOOM_STEP) || riseAll())) { return; }
       // A small globe brought nearer is made smaller first; at rest, up a level.
       if (lensAway() && lensK() > 1.001) { lensZoomBy(INV); if (lensK() < LENS_MAGNET) { lensSize(1); } return; }
       comeUp();
@@ -14248,6 +14256,11 @@
     if (event.deltaY > 0) {
       if (event.target.closest && event.target.closest(".deck, .archive")) { return; }
       if (scrollsItself(event.target)) { return; }
+      // A city: out to the world as far as the wheel goes (the rise), not a flight at a push's end.
+      if (riseCan() && riseBegin(1, false)) {
+        riseBy(Math.exp(-event.deltaY * (event.deltaMode === 1 ? 16 : 1) * (event.ctrlKey ? 0.012 : 0.0016)));
+        return;
+      }
       upPush += event.deltaY * (event.ctrlKey ? 8 : 1);
       if (upPush > 377) { upPush = 0; comeUp(); }
       return;
@@ -14279,6 +14292,7 @@
      first (capture) and not passive, so the browser's own zoom does not take
      a trackpad's pinch as well. */
   function zoneWheel(event) {
+    if (rise && (!rise.tween || riseCatch())) { event.preventDefault(); event.stopPropagation(); cityWheel(event); return; }
     if (cityMap() && !dive.on) {
       var ct = event.target;
       if (ct && ct.closest && ct.closest(".art-col, .finder, .ground-dirt, .dial-face, .building-works")) { return; }
@@ -14371,7 +14385,8 @@
     if (Object.keys(downFingers).length < 2) {
       if (lensPinch && lensPinch.zoomed && !dive.on) { lensRelease(); }
       lensPinch = null;
-      if (cityPinch && !dive.on) { cityRelease(); }
+      if (rise && rise.fingers && !rise.tween) { riseLifted(); }
+      if (cityPinch && !dive.on && !rise) { cityRelease(); }
       cityPinch = null;
     }
     if (place && dive.on && Object.keys(downFingers).length < 2) { diveEnd(); }
@@ -14381,6 +14396,8 @@
     if (event.isPrimary) { downFingers = {}; lensPinch = null; cityPinch = null; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
     downFrom = downSpread();
+    // Out of a city: fingers down again while the rise waits are its next stroke.
+    if (rise && rise.fingers && (!rise.tween || riseCatch())) { riseRegrip(); return; }
     lensPinch = null;
     // A work's first look ends on any touch, so its globe is in reach at once.
     if (art && art.kind === "work" && !art.flipped && art.live) { flipToHead(); }
@@ -14418,6 +14435,8 @@
     // The map in the big place moves and zooms itself (and is never the way up).
     if (flat && !flat.cv.hidden && event.target === flat.cv) { return; }
     downFingers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    // Out of a city as far as the fingers go (rise): theirs before anything else's.
+    if (rise && rise.fingers && !rise.tween) { riseFingers(); return; }
     // The city's skyline takes its own two fingers (skyline.js).
     if (skyOn() && event.target && event.target.closest && event.target.closest(".skyline")) { return; }
     var d = downSpread();
@@ -14485,6 +14504,12 @@
     if (place && !flying && !groundOn && downFrom > 0 && (dive.on || (diveCan() && d / downFrom > 1.04))) {
       var gi = Object.keys(downFingers), ga = downFingers[gi[0]], gb = downFingers[gi[1]];
       diveTo(Math.log(d / downFrom / 1.04), (ga.x + gb.x) / 2, (ga.y + gb.y) / 2);
+      return;
+    }
+    // A city pinched in anywhere else (a finger on the dial, the column): the rise, from where the fingers began.
+    if (downFrom > 0 && d > 0 && d < downFrom * 0.97 && riseCan() && riseBegin(downFrom, true)) {
+      lensPinchTakes(event);
+      riseFingers();
       return;
     }
     if (place && !flying && !groundOn && downFrom > 0 && d / downFrom > 1.5) {
@@ -15477,6 +15502,11 @@
       var lim = cityLimits();
       return { zoom: zoom, home: art.mapHome && art.mapHome.zoom, lo: lim.lo, hi: lim.hi, away: cityAway(),
                lat: focus.lat / RAD, lon: wrap(spin) / RAD, R: R, fling: !!cityFling };
+    },
+    // Out of a city as far as the fingers go (for the tests): how far up, its height, where it began.
+    rise: function () {
+      return rise ? { s: rise.s, zoom: zoom, z0: rise.z0, R: R, committed: rise.committed, tween: !!rise.tween,
+                      sky: rise.sky, fingers: rise.fingers } : null;
     },
     // How sharp the globe is drawn (scripts/check_sharp.js): the density of the page's canvases and
     // of the body, against the screen's. Land.pace(false) holds the frame-rate watch (a test on
@@ -17156,7 +17186,9 @@
     // The city view, as the skyline needs it; null when there is none.
     state: function () {
       var a = art;
-      if (!a || a.kind !== "town" || !a.live || !a.town || !place || flying || groundOn || walkOn) { return null; }
+      // A rise begun on the skyline keeps it a moment, fading (rise's RISE_SKY).
+      var risingSky = !!(rise && rise.sky && rise.s < RISE_SKY && !rise.committed);
+      if (!a || a.kind !== "town" || !a.live || !a.town || !place || (flying && !risingSky) || groundOn || walkOn) { return null; }
       if (!a.skyVisit) { skyVisits += 1; a.skyVisit = skyVisits; }     // each visit to a city, its own number
       return { visit: a.skyVisit, key: a.town.key, name: a.town.name, via: a.via || {}, pf: a.pf || null, venueWorks: a.venueWorks || null,
                museums: a.town.museums.slice(), rows: a.museumRows || {}, venueBoxes: a.venueBoxes || [],
@@ -17176,6 +17208,15 @@
     },
     light: function (slug, on) { lightMuseum(slug, on); },
     up: function () { if (place && !flying) { comeUp(); } },
+    // Out past the skyline's widest, as far as the fingers go (or by f, a wheel's step): false where the
+    // way up is not the world's (then up()).
+    rise: function (f) {
+      if (!rise && !riseBegin(f ? 1 : downSpread(), !f)) { return false; }
+      if (f) { riseBy(f); }
+      return true;
+    },
+    riseAll: function () { return !!rise || riseAll(); },
+    rising: function () { return !!rise; },
     deeper: function (x, y) { goDeeper(false, x, y); },
     squash: function (x, y, r) { if (place && !flying) { squash(x, y, r); } },
     pulse: function (x, y, r) { pulse(x, y, [LIGHT, LILAC], 0.5, r || 89); },
@@ -17264,6 +17305,8 @@
     if (g !== 1) {
       var lim = cityLimits(), want = zoom * g, z1 = Math.max(lim.lo, Math.min(lim.hi, want));
       if (Math.abs(z1 - zoom) > 1e-9) { cityZoomTo(z1, mx, my); }
+      // Past the widest the same fingers go on out to the world (rise), from exactly here.
+      if (want < z1 && riseBegin(d * z1 / want, true)) { zoom = Math.max(1, want); return; }
       cp.over *= want / z1;
     }
     if (cp.over < INV) {
@@ -17284,12 +17327,17 @@
   var cityWheelPush = 0, cityWheelAt = 0;
   function cityWheel(event) {
     var wstep = event.ctrlKey ? 0.012 : 0.0016, wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
+    if (rise) { riseBy(Math.exp(-wd * wstep)); return; }
     var lim = cityLimits(), want = zoom * Math.exp(-wd * wstep), z1 = Math.max(lim.lo, Math.min(lim.hi, want));
     var now = performance.now();
     if (now - cityWheelAt > 600) { cityWheelPush = 0; }
     cityWheelAt = now;
     cityFling = null;
-    if (Math.abs(z1 - zoom) > 1e-9) { cityZoomTo(z1, event.clientX, event.clientY); cityWheelPush = 0; }
+    var zoomed = Math.abs(z1 - zoom) > 1e-9;
+    if (zoomed) { cityZoomTo(z1, event.clientX, event.clientY); cityWheelPush = 0; }
+    // Past the widest the wheel goes on out to the world (rise), from exactly here.
+    if (want < z1 && riseBegin(1, false)) { cityWheelPush = 0; riseBy(want / z1); return; }
+    if (zoomed) { /* within the map's heights */ }
     else if (wd > 0) {
       cityWheelPush += wd * (event.ctrlKey ? 8 : 1);
       if (cityWheelPush > 377) { cityWheelPush = 0; comeUp(); return; }
@@ -17338,6 +17386,255 @@
                      at: performance.now(), dur: still ? 1 : LENS_SNAP_MS * 1.4 };
     var b = artBand("town");
     if (!still) { pulse(b.x + b.w / 2, b.y + b.h / 2, [LIGHT], 0.35, 144); }
+  }
+  /* ---- out of a city, as far as the fingers go -------------------------------
+
+     The artist, 8 Oct 2026, with a recording of Vienna's map pinched out to
+     its widest, a sweep of cells, and then the world: "When I am zooming out
+     of a city, like this, I don't want to have to hit a transition point when
+     zooming out to see the entire globe. I want it to be completely smooth."
+     Past a city's widest (its map's, or its skyline's) the same fingers go on
+     drawing the world smaller: the way up is the flight up itself, its height
+     the fingers' (rise), and no sweep. The city lets go of its column, dial
+     and banner over the first part of the way (RISE_ON; its skyline sooner,
+     RISE_SKY), the world's names come in as there is room, and the world
+     turns nowhere: the city stays in front of you, and a skyline grows small
+     with the land about the city's own point as it fades. Let go once the
+     column has gone and it goes on by itself to the whole globe, slowing as
+     it arrives, and rests there (no drift); let go before, and it waits a
+     moment for the next stroke (a hand zooms out in strokes: fingers down
+     again carry on from where it is), then springs back to the city's
+     widest. Pinched all the way, the world is yours at once and the same
+     fingers go on with it. A pinch begun anywhere in the city (a finger on
+     the dial or the column) is the same rise. A wheel or a trackpad's pinch
+     does the same (its letting go a pause of 650 ms, on after a shorter
+     push); "−" past the widest is the whole way, eased. Escape and the
+     banner's way back are unchanged: up to the view you came down from. */
+  var rise = null;
+  // Let go past RISE_ON (the city's column gone) it goes on to the world, short of it back to the widest.
+  // A wheel's notches come in bursts with pauses: it goes on after a shorter push, waits longer to decide.
+  var RISE_ON = 0.3, RISE_SKY = 0.18, RISE_WHEEL_ON = 0.1, RISE_WHEEL_WAIT = 650;
+  // Fingers lifted short of RISE_ON wait this long for the next pinch: a hand zooms out in strokes.
+  var RISE_REGRIP = 420;
+  // A wheel's push past the widest, kept a moment across a spring back (a mouse turned a notch at a time):
+  // 150 (a notch and a half of a mouse's) and it goes on, however deep the city's height is.
+  var riseWheelPush = 0, riseWheelAt = 0, RISE_WHEEL_PUSH = 150;
+  function townView() {
+    return !!(place && art && art.kind === "town" && art.live && !flying && !groundOn && !walkOn && !readingOn() &&
+              !deckMode && !(place.museum || place.stage) && !dive.on);
+  }
+  // Up from here is the world (not a reading come from, nor a museum's city).
+  function riseCan() { return !rise && townView() && !levelUp(); }
+  function riseShow() {
+    var s = rise ? rise.s : 0, de = document.documentElement;
+    de.style.setProperty("--rise-show", Math.max(0, 1 - s / RISE_ON).toFixed(3));
+    de.style.setProperty("--rise-sky", Math.max(0, 1 - s / RISE_SKY).toFixed(3));
+    riseSkyline();
+  }
+  // A skyline rises with the land: it grows smaller with the world about the city's own point on it,
+  // as it fades, so the city goes down into its place rather than giving way to it.
+  var risenSky = null;
+  function riseSkyline() {
+    var on = !!(rise && rise.sky && place && rise.s < RISE_SKY), sk = on ? document.querySelector(".skyline") : null;
+    var parts = sk ? Array.prototype.slice.call(sk.children) : [];
+    if (risenSky && (!on || risenSky.root !== sk)) {
+      risenSky.parts.forEach(function (c) { c.style.transform = c.style.transformOrigin = ""; });
+      risenSky = null;
+    }
+    if (!sk) { return; }
+    var p = project(place.lat, place.lon), k = Math.max(0.05, Math.min(1, zoom / rise.z0));
+    if (!(p.z > 0)) { return; }
+    risenSky = { root: sk, parts: parts };
+    parts.forEach(function (c) {
+      c.style.transformOrigin = Math.round(p.x - c.offsetLeft) + "px " + Math.round(p.y - c.offsetTop) + "px";
+      c.style.transform = "scale(" + k.toFixed(4) + ")";
+    });
+  }
+  // d0: the fingers' spread at which the world would be at the city's height now.
+  function riseBegin(d0, fingers) {
+    if (!riseCan()) { return false; }
+    rise = { z0: zoom, d0: Math.max(1, d0 || 1), s: 0, tilt: tilt, spin: spin, wanted: wanted, lat: focus.lat,
+             sky: skyOn(), fingers: !!fingers, tween: null, committed: false, wheelT: 0, liftT: 0 };
+    cityFling = null;
+    cityHomeAnim = null;
+    stopTown();                       // its museums' names go back to the globe's keeping (placeTown brings them again)
+    flyFrom = zoom;
+    flyTo = 1;
+    leanFrom = leanTo = tilt;         // the world turns nowhere: the city stays in front of you
+    wanted = spin;
+    goingUp = true;
+    hopFrom = null;
+    planFlight("up");
+    flying = true;
+    land.dataset.at = "rising";
+    document.documentElement.dataset.rising = "true";
+    riseShow();
+    marksDirty = true;
+    return true;
+  }
+  // Each frame: the height is the fingers' (or the rise's own easing); the framing follows it.
+  function stepRise(now) {
+    var r = rise, tw = r.tween;
+    if (tw) {
+      // A frame's clock can read a little before the press that began the ease: before it, it is at its start.
+      var q = still || tw.dur <= 0 ? 1 : Math.max(0, Math.min(1, (now - tw.at) / tw.dur));
+      var e = tw.up ? 1 - Math.pow(1 - q, 3) : springEase(q);
+      zoom = Math.exp(tw.from + (tw.to - tw.from) * e);
+      if (q >= 1) { if (tw.up) { riseDone(false); } else { riseBack(); } return; }
+    }
+    var lz = Math.log(Math.max(1e-6, zoom));
+    r.s = Math.max(0, Math.min(1, (fly.a - lz) / Math.max(1e-6, fly.a - fly.b)));
+    // What was in the middle of the city's view stays where it was on the screen as the world grows
+    // small round it (a map's zoom out, not a flight's): the world is left there at the end (riseDone).
+    flyK = 1;
+    riseShow();
+    reframe();
+    marksDirty = true;
+    tilesDirty = true;
+  }
+  function riseFingers() {
+    var r = rise, d = downSpread();
+    if (!(d > 0) || r.tween) { return; }
+    var z = r.z0 * d / r.d0;
+    if (z >= r.z0 && !r.committed) { riseBack(); return; }   // spread back past where it began: the city again
+    if (z <= 1) { riseDone(true); return; }                 // pinched all the way: the world, the fingers on with it
+    zoom = Math.min(r.z0, z);
+    lastTouch = performance.now();
+  }
+  // Springing back to the city, caught by the next stroke or notch: it goes on from where it has got to.
+  function riseCatch() {
+    if (!rise || !rise.tween || rise.tween.up) { return false; }
+    rise.tween = null;
+    return true;
+  }
+  // The fingers lifted: on at once past RISE_ON; short of it, held where it is a moment for the next stroke.
+  function riseLifted() {
+    var r = rise;
+    if (!r || r.tween) { return; }
+    window.clearTimeout(r.liftT);
+    if (r.s >= RISE_ON || r.committed) { riseLetGo(); return; }
+    r.liftT = window.setTimeout(riseLetGo, RISE_REGRIP);
+  }
+  // Fingers down again while it waits: the rise goes on from where it is, the new spread its own.
+  function riseRegrip() {
+    var r = rise, d = downSpread();
+    if (!r || r.tween) { return; }
+    window.clearTimeout(r.liftT);
+    r.liftT = 0;
+    if (d > 0) { r.d0 = d * r.z0 / Math.max(1e-6, zoom); }
+  }
+  // A wheel's or a trackpad's step: f the change of height (under 1 farther out).
+  function riseBy(f) {
+    var r = rise;
+    if (!r || r.tween) { return; }
+    window.clearTimeout(r.wheelT);
+    var now = performance.now();
+    if (now - riseWheelAt > 1500) { riseWheelPush = 0; }
+    riseWheelAt = now;
+    riseWheelPush += -Math.log(f) * 625;            // a wheel's deltaY (0.0016 a pixel of it)
+    var z = zoom * f;
+    if (z >= r.z0 && !r.committed) { riseBack(); return; }
+    if (z <= 1) { riseDone(false); return; }
+    zoom = Math.min(r.z0, z);
+    lastTouch = performance.now();
+    r.wheelT = window.setTimeout(riseLetGo, RISE_WHEEL_WAIT);
+  }
+  // Let go: on to the world once the city's column has gone, else back to its widest.
+  function riseLetGo() {
+    var r = rise;
+    if (!r || r.tween) { return; }
+    window.clearTimeout(r.wheelT);
+    window.clearTimeout(r.liftT);
+    var lz = Math.log(Math.max(1e-6, zoom)), now = performance.now();
+    if (r.committed || (r.fingers ? r.s >= RISE_ON : r.s >= RISE_WHEEL_ON || riseWheelPush >= RISE_WHEEL_PUSH)) {
+      riseWheelPush = 0;
+      riseCommit();
+      r.tween = { from: lz, to: 0, at: now, dur: 380 + 720 * (1 - r.s), up: true };
+    } else {
+      r.tween = { from: lz, to: Math.log(r.z0), at: now, dur: 420, up: false };
+    }
+  }
+  // The whole way, eased: "−" past the widest.
+  function riseAll() {
+    if (!rise && !riseBegin(1, false)) { return false; }
+    window.clearTimeout(rise.wheelT);
+    window.clearTimeout(rise.liftT);
+    riseCommit();
+    rise.tween = { from: Math.log(Math.max(1e-6, zoom)), to: 0, at: performance.now(), dur: 1100, up: true };
+    return true;
+  }
+  // Leaving for good: the city's view is put away (it has faded already), as comeUp does.
+  function riseCommit() {
+    var r = rise;
+    if (!r || r.committed) { return; }
+    r.committed = true;
+    if (route) { endRoute(); }
+    artAsked = null;
+    if (following) { endFollowing(true); }
+    comeUpFromGround();
+    stopTheatre();
+    stopBuilding();
+    stopArt();
+    hold();
+    hideGraze();
+    hereShown = false;
+    dealHere();
+  }
+  function riseDone(fingers) {
+    if (!rise) { return; }
+    riseCommit();
+    window.clearTimeout(rise.wheelT);
+    window.clearTimeout(rise.liftT);
+    rise = null;
+    riseWheelPush = 0;
+    zoom = 1;
+    flying = false;
+    fly.deep = false;
+    goingUp = false;
+    hopFrom = null;
+    delete document.documentElement.dataset.rising;
+    riseShow();
+    // The world where the fingers left it: its middle where the city's view held it, never stranded,
+    // and resting there (no drift to another distance the moment it arrives).
+    var held = keepHold({ size: seat.size, dx: (cx - W / 2) / W, dy: (cy - orbitFor(base0 * seat.size)) / H });
+    leave();
+    flyK = 0;
+    setSeat(held);
+    lastTouch = performance.now();
+    nextSwing = lastTouch + swingWait();
+    marksDirty = true;
+    onward();
+    // The same fingers go on with the world: its own pinch, about them.
+    var at = fingers && pinchState();
+    if (at) { pinch = { d: at.d, x: at.x, y: at.y, size: seat.size }; }
+  }
+  // Back to the city's widest, its view as it was.
+  function riseBack() {
+    var r = rise;
+    if (!r) { return; }
+    if (r.committed) { riseDone(false); return; }
+    window.clearTimeout(r.wheelT);
+    window.clearTimeout(r.liftT);
+    rise = null;
+    flying = false;
+    fly.deep = false;
+    goingUp = false;
+    zoom = r.z0;
+    if (place) { place.zoomTo = zoom; }
+    flyK = 1;
+    spin = r.spin;
+    wanted = r.wanted;
+    lean(r.tilt);
+    focus.lat = r.lat;
+    land.dataset.at = "city";
+    cities.forEach(function (c) { if (c.el && !c.el.dataset.in) { hideMark(c); } });
+    delete document.documentElement.dataset.rising;
+    riseShow();
+    reframe();
+    if (art) { cityMoved(); }
+    townDirty = true;
+    if (cityPinch) { cityPinch.d = downSpread() || cityPinch.d; cityPinch.over = 1; }
+    cityRelease();
   }
   function stepCityMap(now) {
     if (!cityMap()) { cityFling = null; cityHomeAnim = null; return; }
