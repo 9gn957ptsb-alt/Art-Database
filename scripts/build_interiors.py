@@ -501,6 +501,15 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
         s = h.get("slug")
         p = None
         old = was.get(hid)
+        # A work the site hung (build_interiors_arranged.js) is its record's again: what the record said
+        # stands where the record could not be read today, and the site hangs it once more after this run.
+        if old and old.get("how") == "arranged" and (old.get("rec") or {}).get("src") in unread:
+            rec = old["rec"]
+            back = {"id": old["id"], "how": rec.get("how"), "said": rec.get("said"), "src": rec.get("src"),
+                    "asof": rec.get("asof") or TODAY}
+            keep = ("ref",) + (("t", "a", "y", "m", "i", "c", "cm", "cmsrc", "free", "cmk") if rec.get("how") == "elsewhere" else ())
+            back.update({k: old[k] for k in keep if k in old})
+            old = back
         if old and old.get("src") in unread:
             w = dict(old)
             prev = next((x for x in doc.get("sources") or [] if x.get("id") == old["src"]), None)
@@ -1598,6 +1607,9 @@ def moves(old, new):
     out = []
     for w in new:
         o = was.get(w["id"])
+        # A work the site hung was, by its record, where its rec says.
+        if o and o.get("how") == "arranged" and o.get("rec"):
+            o = dict(o, **{k: o["rec"].get(k) for k in ("how", "said", "src")})
         if not o or o.get("src") != w.get("src"):
             continue
         name = w.get("t") or o.get("t") or w["id"]

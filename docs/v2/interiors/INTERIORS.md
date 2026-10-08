@@ -192,8 +192,13 @@ Every other key on a room is the hand's:
   - `how`: `museum` (the record names a room drawn here, and sometimes the
     wall), `elsewhere` (a room not drawn here: another building, a room not
     drawn yet — listed, never hung), `off` (the record says in so many words
-    that it is not on view) or `none` (nothing says; the empty field is
-    reported as what it is, never read as "in storage").
+    that it is not on view), `none` (nothing says; the empty field is
+    reported as what it is, never read as "in storage") or `arranged` (hung
+    by the site: in the rooms it arranged, "Arranged", or beside the works
+    the museum is known to have, "Beside the known" — what the record said
+    kept in `rec`). `build_interiors.py` writes the first four;
+    `build_interiors_arranged.js` turns every `none` and `elsewhere` into
+    `arranged` after it, every run.
   - `said`: the record's own words (a bare field in plain words: the Met's
     `GalleryNumber` 625 is "Gallery 625, in the Met's record", the field as
     it came kept in `ref.field`); `src` its source; `asof` the day read;
@@ -293,8 +298,17 @@ list of hex colours, or `desc` without `descsrc` (or the other way).
 
 A work hangs only where its `how` is `museum` and its room is drawn —
 never in a shell, never in a guessed room — or where its `how` is
-`arranged` and its room is one the site arranged ("Arranged", below; in the
-file's order, the rule's, one to every 2.5 m of a run, no second tier). On the wall the record gives: the
+`arranged`: in a room the site arranged ("Arranged", below; in the file's
+order, the rule's, one to every 2.5 m of a run, no second tier), or beside
+the museum's own works in a room a source draws ("Beside the known": the
+site's works of a room are hung after the record's, on what wall the
+record's leave — each run less every work hung on it, 0.6 m either side —
+one to every 2.5 m of what is left, else every 1.5 m where 2.5 would not
+take them all; a record's work is never moved for one of the site's). A
+work of the site's wider than every run left is drawn at the size of the
+longest, its height kept in proportion and under the room's ceiling, and
+its label says so ("drawn here at 57% of its size: no wall takes it
+whole"), so that it never holds the room's other works back. On the wall the record gives: the
 room's edge whose outward normal is nearest that way (for a round room, its
 arc within 45° of it), or freestanding at the room's middle for `centre`.
 Along it, in the museum's order (its record numbers), then by date, spaced
@@ -340,6 +354,10 @@ asked for it gone: `QUIET_LINE` in walk.js; the banner now says only the floor
 and the room), and no lit tile marks it on the
 building (the tile marks only an entrance a source gives; the gesture still
 goes in). No work hangs; the column lists the works and why each is not hung.
+A shell is only ever the first day of a museum: `build_interiors_arranged.js`
+arranges it on its next run (8 Oct 2026: none is left — the last three,
+Cleveland, Turner Contemporary and the Amon Carter, were arranged, the last
+two on their plinths' tops).
 
 ## The certainty policy
 
@@ -354,6 +372,14 @@ goes in). No work hangs; the column lists the works and why each is not hung.
 - **arranged** (7 Oct 2026, below): rooms the site lays out by a stated
   rule inside the model's real walls, where no plan of the museum has been
   read, so that its saved works can be walked up to. Never the museum's.
+- **hung beside the known** (8 Oct 2026, below): a work the museum holds
+  whose record places it in no room drawn, hung by the site in a room a
+  source draws, beside the works the museum's records do place there — by
+  the same artist, else of its period and kind. Its room and its place are
+  the site's, said so on the work (`beside`, `said`); what the record says
+  of it is kept (`rec`). The rooms stay the source's: nothing is drawn so
+  that a work can hang, and a record's work is never moved for one of the
+  site's.
 - **not known**: not drawn. It stays earth.
 - **Never**: a room name that is not in a source (use null; an arranged
   room is `Room <n>`, `Hall` or `Entrance`, never a gallery name of the
@@ -361,8 +387,10 @@ goes in). No work hangs; the column lists the works and why each is not hung.
   arranged tier, which says so on every room and work; a doorway between
   rooms no source connects (arranged doorways are the rule's, said so); a
   staff or closed area made walkable (use `closed`); a placement or a size
-  made up; a `said` that is not verbatim (an arranged `said` is the site's
-  own sentence, and says it is the site's).
+  made up (a work the site hangs beside the known is the site's placement,
+  said so on it, never passed off as the record's); a `said` that is not
+  verbatim (an arranged `said` is the site's own sentence, and says it is
+  the site's, with the record's words quoted in it where it has any).
 
 ### Arranged
 
@@ -373,16 +401,30 @@ That request supersedes, for this tier only, "never a room drawn so that a
 work can hang in it". Written by `scripts/build_interiors_arranged.js` (the
 page's own `models.js` and `walk-plan.js` in a vm; the rule in full in its
 head comment), only for a museum whose rooms no source gives — never one the
-museum's own data draws (the NGA, the Met, the Art Institute, Cleveland) or
-one whose rooms OpenStreetMap's indoor mapping draws (`build_interiors.py
---osm` took its plan: every floor's `src` has `osm-indoor`). In such a museum
-the script lays out nothing; it only hangs the works no record places, by the
-rule below, in OpenStreetMap's galleries (rooms of kind `gallery` anchored on
-`osm-indoor`, reached from the way in), `how: "arranged"`, `src: "arranged"`
-(its source's `t` says the site hangs them in rooms OpenStreetMap draws), the
-rooms keeping their mapped names. An arranged room is never put on a floor
-OpenStreetMap draws:
+museum's own data draws (the NGA, the Met, the Art Institute) or one whose
+rooms OpenStreetMap's indoor mapping draws (`build_interiors.py --osm` took
+its plan: every floor's `src` has `osm-indoor`). In such a museum the script
+lays out nothing; it only hangs the works no record places: beside the
+museum's own where its records place works in its rooms ("Beside the
+known", below), else, in a museum OpenStreetMap draws and no record places a
+work in, by the rule below, in OpenStreetMap's galleries (rooms of kind
+`gallery` anchored on `osm-indoor`, reached from the way in), `how:
+"arranged"`, `src: "arranged"` (its source's `t` says the site hangs them in
+rooms OpenStreetMap draws), the rooms keeping their mapped names. An
+arranged room is never put on a floor OpenStreetMap draws. A museum whose own
+data names its works' galleries but draws no room (Cleveland: no plan and no
+gallery points have been read; of the six rooms OpenStreetMap maps there —
+an atrium, a lounge, a cafeteria, toilets, one unnamed gallery — three stand
+on its model, too few to walk and none a gallery its records name, so they
+are not kept, since one source draws a floor) is arranged like any other
+until its rooms are read:
 
+- **the ground floor**: at the model's ground, unless the model is solid
+  there — a museum standing on a plinth or a podium (the Amon Carter on its
+  terrace, Turner Contemporary on its sea wall): then on the plinth's top, the
+  first voxel layer up (to 6.5 m) where the rule finds rooms and a way in,
+  with the model's mass under where you stand outside no higher than a step
+  over the floor. Said in the floor's note and the notes.
 - **floors**: the museum's own count where a source read gives it (`FLOORS`
   in the script, each with its source); else 5 m storeys as far as the model
   stands over at least 40% of its ground floor (200 m² or more), three at
@@ -404,15 +446,23 @@ OpenStreetMap draws:
   wall, said so in its `note`.
 - **works** (`how: "arranged"`, `src: "arranged"`): every saved work the
   museum holds that its own record does not place in a room drawn (never one
-  its record says is off view, nor one another museum's record places), then
-  the works the museum showed and does not hold ("Also here",
-  `places/<city>.json` at its venue; `also: {k, y, q}` keeps what the history
-  says happened there), each group by period, then artist, then date, filling
-  the rooms in walking order, one work to every 2.5 m of a run of wall
-  (`ARR_SPACE` in walk-plan.js; no second tier), a new room at a new period
-  once a room holds three. `said` says the site hung it; what the museum's
-  record said, if anything, is kept in `rec` with its source. The facts
-  (`t a y m i c cm cmsrc`) are copied from the work's history.
+  its record says is off view), then the works the museum showed and does not
+  hold ("Also here", `places/<city>.json` at its venue; `also: {k, y, q}`
+  keeps what the history says happened there), each group by period, then
+  artist, then date, filling the rooms in walking order, one work to every
+  2.5 m of a run of wall (`ARR_SPACE` in walk-plan.js; no second tier), a new
+  room at a new period once a room holds three. `said` says the site hung it;
+  what the museum's record said, if anything, is kept in `rec` with its
+  source, and a record that names a room not drawn says so ("SMK's record
+  puts it in SMK Thy, which is not drawn here: the site has hung it here";
+  Wikidata's is Wikidata's). A loan another museum's own record places (`at`:
+  the museum listed it on Artsy for a show, so museums.json counts it held)
+  hangs among the works shown here, saying where it is ("Listed · Shown here,
+  2015, its history says; by its own museum's record it is at National
+  Gallery of Art, Washington, D.C. (West Main Floor Gallery 87 · W); it is
+  not the museum's: the site has hung it here"), `at` and `rec` kept — as
+  any work shown here hangs here and where it is held. The facts (`t a y m i
+  c cm cmsrc`) are copied from the work's history.
 - **said where**: the column ("Where it hangs · Room 3", then "Hung there by
   the site: where the museum hangs it is not known") and the look's label;
   never over the walk (the banner reads only "Level 1 · Room 3").
@@ -424,8 +474,81 @@ OpenStreetMap draws:
 
 The checker refuses an arranged room named otherwise, without that `said`,
 or with a `ref`; an arranged work in a room neither arranged nor anchored on
-`osm-indoor`, or a record's (`museum`) work in an arranged room; and
-`arranged` on a height, a material, a thing or a pin.
+`osm-indoor` unless it says what it hangs beside (below), or a record's
+(`museum`) work in an arranged room; and `arranged` on a height, a material,
+a thing or a pin.
+
+### Beside the known
+
+The artist, 8 Oct 2026: "Just because you don't know the location of every
+artwork in every museum doesn't mean you still can't put artwork inside the
+museum with artwork that you know is in the museum." In a museum whose rooms
+a source draws — its own data (the National Gallery of Art, the Met, the Art
+Institute), a plan redrawn by hand, or OpenStreetMap's mapping where its
+records place works in those rooms — every work the museum holds that its
+record does not place in a room drawn (no location in the record, a room or
+a building not drawn here, nothing read yet) is hung by the site beside the
+works the museum is known to have: the works its records place in its rooms,
+the saved works and the museum's own collection on the walls alike.
+`build_interiors_arranged.js` (`hangBeside`) does it after every works pass,
+on the page's own `walk-plan.js` (`siteFits`, `hang`). The rule, a work at a
+time — those with a room of their artist first, then the rest, each group in
+the arranged rule's order (period, artist, date) — taking only rooms reached
+from the door, of a kind a work hangs in, whose walls have room left:
+
+1. **artist**: the rooms where the record hangs works by the same artist
+   (one name another's with its middle names, initials or a hyphen: Auguste
+   Renoir, Pierre-Auguste Renoir; J. M. W. Turner, Joseph Mallord William
+   Turner), the most first — each at 2.5 m, else tightened to 1.5 m, before
+   the next;
+2. **period-kind**: the rooms whose recorded works are most of its period
+   (the arranged rule's periods) and kind — painting (in paint, whatever it
+   is on), works on paper, sculpture, photograph, other — read from the
+   works' dates and media;
+3. **near**: the rooms nearest the first room of 1 or 2 through the
+   doorways (centre to doorway to centre; a room the doorways do not join,
+   by the plan's distance and 20 m, 40 m on another floor), with wall free;
+4. **period**: the rooms most of its period, any kind; 5. **kind**: the
+   rooms of its kind, the nearest in date first; then the rooms nearest the
+   first of those;
+6. **order**: the galleries in walking order from the door.
+
+In steps 2 to 6, every room of the step is tried at 2.5 m before any is
+tightened, so that one room is not crowded while its like have wall. A work
+of no known size is measured as wide as twice its 0.6 m height, for its
+picture may come wider. A work no wall takes whole at either spacing is
+drawn smaller (above, "How works hang"), in the first room of its steps.
+
+Each is `how: "arranged"`, `room`, `wall: null`, `src: "arranged"` (its
+source's `t` says the site hangs it beside the museum's own), and:
+
+- `beside`: `{by, …}` — `by` the step (`artist`, `period-kind`, `near`,
+  `period`, `kind`, `order`), then `a` the artist and `n` how many of their
+  works the record hangs there; `p` the period and `k` the kind; for `near`,
+  `of` the room it is nearest and `ref` the step that room was found by.
+- `rec`: `{how, said, src, asof}`, what the record says, unchanged.
+- `said`: the record's status, then the site's: "where the National Gallery
+  of Art hangs it is not known (no location in the NGA's open data): hung here
+  by the site, beside the museum's other works by Claude Monet in Gallery
+  85"; "the National Gallery of Art's record puts it in the East Building
+  (Mezz Gal 217B (Pod 1) · W), which is not drawn here: hung here by the site,
+  beside …"; "… in Gallery 89, the nearest room with wall free to Gallery 91,
+  where the museum hangs its paintings of 1860–1899"; "… in Gallery 1, the
+  first room from the door with wall free: no date is given for it, and the
+  museum's records place no work here by its artist or of its kind".
+- the facts (`t a y m i c cm cmsrc`, `free`, `cmk`) as the record had them
+  (an elsewhere work's), else from the work's history.
+
+In the column it is "Where it hangs · Gallery 85", a door into the walk, and,
+opened, its `said`; in the look, its room, then its `said`; never over the
+walk (the banner says only the floor and the room). The checker refuses a
+`beside` without its rule, a `said` that does not say "hung here by the site,
+beside …" (or "the nearest", "from the door"), a `beside` work without its
+`rec` (how none, elsewhere or off, and its words), `beside` on a work the site
+did not hang, and one in a closed room, a void or a stair. Each run takes the
+site's works back to their records first and hangs them again, so a work its
+record now places hangs where the record says, and a newly saved work held
+by the museum goes up beside its like.
 
 ## Which tier draws a museum
 
@@ -434,7 +557,8 @@ One source draws a museum's rooms, never two mixed on a floor, in this order:
 1. **The museum's own data** (the NGA's outlines, the Met's plans and points,
    the Art Institute's points): their own passes own the rooms. OpenStreetMap
    only adds what joins them (its doors, its lifts, the rule inside a wing it
-   maps as one room), each said so; the arranged tier never touches them.
+   maps as one room), each said so; the arranged tier never touches their
+   rooms, and hangs the works their records do not place beside the known.
 2. **OpenStreetMap's indoor mapping**, where it is usable (below): it
    replaces the arranged rooms or the shell whole.
 3. **Arranged**, by the site's rule, where neither has been read or
@@ -578,9 +702,12 @@ address and the day it was read.
   session, so most rooms have no way in known and no stairs join the floors.
   Anchored on its points. All reconstructed.
 - **Cleveland**: its records name each work's gallery, but no geometry for
-  the galleries has been found (no plan, no points); it stays a shell, its
-  works listed, until OpenStreetMap's indoor mapping or a plan gives rooms
-  (8 Oct 2026: OpenStreetMap maps three rooms on its model, too few).
+  the galleries has been found (no plan, no points); it is arranged
+  ("Arranged"), its works hung by the rule with their records' galleries
+  said ("the Cleveland Museum of Art's record puts it in 222 Impressionism &
+  Post-Impressionism, which is not drawn here"), until OpenStreetMap's indoor
+  mapping or a plan gives rooms (8 Oct 2026: OpenStreetMap maps three rooms
+  on its model, too few, and none of them a gallery its records name).
 
 ## What OpenStreetMap gave (8 Oct 2026)
 
@@ -635,15 +762,23 @@ room, or reaching into two rooms on a floor; an entrance not on
 a floor, or no room reached from it; rooms overlapping by more than 5% of
 the smaller; a reconstructed room more than 10% outside the model at its
 floor's eye height (a voxel's slack); a placed work whose room or wall does
-not resolve; a file over 640 KB, a floor over 400,000 cells or 400 rooms.
+not resolve; a work the site hung in a room it did not arrange (nor
+OpenStreetMap's) that does not say what it hangs beside, and a `beside`
+without its rule, its sentence or its record ("Beside the known"); a file
+over 640 KB, a floor over 400,000 cells or 400 rooms.
 
 It warns of a documented room outside the model, rooms with no way in known
 yet (in the walk, a room of those that holds saved works is come into by a
 cut, no doorway drawn, and the banner says "no way in is known yet · placed
 here"), a cut's length, a door narrower than a walker, a ceiling above the model's roof, works overflowing into a second tier,
-works placed in rooms not drawn, a model whose footprint stands less than
-80% on its ground's buildings, a source read more than 180 days ago and
-works placed more than 30 days ago. Findings against the model go into its
+works placed in rooms not drawn, saved works that do not hang (every one
+should: "Beside the known"; a work its record says is off view, a loan
+another museum's record places and the site has not hung here, and a work
+that is another's very object are not counted), a model whose footprint
+stands less than 80% on its ground's buildings, a source read more than 180
+days ago and works placed more than 30 days ago; with `--all` it ends on the
+saved works on the walls, of all it lists ("1129 of 1129"), naming any
+museum short of them. Findings against the model go into its
 log in `docs/v2/models/ledger.json` for its next refinement, one line a
 kind, rewritten as they change. It writes the tier back into the file and
 the museum's `interior` into the ledger.
