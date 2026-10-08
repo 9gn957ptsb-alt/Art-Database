@@ -2,12 +2,39 @@
  "v": 1,
  "grid": {"cell":0.5,"turn":0},
  "sources": [
-  {"id":"model","t":"this museum's exterior model","u":"models/museum-asia-society-hong-kong.json","read":"2026-09-30"}],
- "enter": null,
- "floors": null,
+  {"id":"model","t":"this museum's exterior model","u":"models/museum-asia-society-hong-kong.json","read":"2026-09-30"},
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+ "enter": {"floor":"level-1","at":[0.75,6],"face":0,"door":[0.75,3.75],"out":[[-2.25,2.5,6,5.5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
+ "floors": [
+  {"id": "level-1",
+  "name": "Level 1",
+  "z": 0,
+  "sure": "arranged",
+  "src": ["arranged","model"],
+  "note": "the floor the way in opens on, at the model's ground",
+  "rooms": [
+   {"id":"L1-R01","name":"Room 1","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-9,-6.5,19.5,9],"sure":"arranged","src":["arranged"]}],
+  "open": [
+   {"a":"L1-R01","b":"outside","cut":[-0.45,2.5,2.4,2],"kind":"door","sure":"arranged","src":["arranged","model"],"note":"the way in by the rule: through the model's wall (1.5 m) from the room behind it, 2.4 m wide"}],
+  "things": [],
+  "stairs": [],
+  "lifts": [
+   {"id":"E1","name":null,"rect":[-8.5,-4.5,2.5,2.5],"floors":["level-1","level-2"],"sure":"arranged","src":["arranged"]}]},
+  {"id": "level-2",
+  "name": "Level 2",
+  "z": 5,
+  "sure": "arranged",
+  "src": ["arranged","model"],
+  "note": "a floor 5 m up, by the rule: 5 m a storey; its rooms only where the model stands",
+  "rooms": [
+   {"id":"L2-R01","name":"Room 2","said":"Where the museum hangs these is not known: the rooms are arranged by the site inside its walls","kind":"gallery","rect":[-9,-5,19.5,6.5],"sure":"arranged","src":["arranged"]}],
+  "open": [],
+  "things": [],
+  "stairs": [],
+  "lifts": []}],
  "pins": {},
- "notes": "Nothing published about its rooms has been read yet.",
+ "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 2 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 1 hung so.",
  "works": [
-  {"id":"5c991de400defb6f51e30fbb","how":"none","said":"where it hangs has not been read yet","src":null,"asof":"2026-09-30"}],
- "asof": "2026-09-30",
- "tier": "shell"}
+  {"id":"5c991de400defb6f51e30fbb","how":"arranged","room":"L1-R01","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Yukaloo","a":"James Turrell","y":"2011","m":"LED lights","i":"70XbNoyQpv8lPGqBKuBeNQ","c":["#0e0516","#314faf"],"cm":null,"cmsrc":null}],
+ "asof": "2026-10-08",
+ "tier": "arranged"}
