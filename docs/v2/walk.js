@@ -3582,9 +3582,15 @@
       var h = null;
       s.hung.forEach(function (x) { if (x.id === id) { h = x; } });
       if (!h || h.floor !== s.me.floor || s.seenLo[h.i] < 0) { return null; }
-      var p = s.caster.project(s.cam, h.cx, h.cy, (h.z0 + h.z1) / 2), r = s.view.getBoundingClientRect();
-      if (!p) { return null; }
-      return { x: r.left + (s.seenLo[h.i] + s.seenHi[h.i] + 1) / 2 * s.dot, y: r.top + p.y * s.dot,
+      // The middle of what of it is drawn in its middle column (as a press would find it).
+      var cs = s.caster, r = s.view.getBoundingClientRect();
+      var col = Math.floor((s.seenLo[h.i] + s.seenHi[h.i]) / 2), lo = -1, hi = -1;
+      for (var y = 0; cs.pick && y < cs.H; y += 1) {
+        var v = cs.pick[y * cs.W + col];
+        if (v >>> 24 === PICK_WORK && (v & 0xffffff) === h.i) { if (lo < 0) { lo = y; } hi = y; }
+      }
+      if (lo < 0) { return null; }
+      return { x: r.left + (col + 0.5) * s.dot, y: r.top + ((lo + hi) / 2 + 0.5) * s.dot,
                d: Math.hypot(h.cx - s.me.x, h.cy - s.me.y) };
     },
     _resetStats: function () { if (S) { S.stats = { frames: 0, total: 0, max: 0, list: [], parts: [0, 0, 0, 0] }; S.planStats = { frames: 0, total: 0, max: 0 }; } }
