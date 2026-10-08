@@ -2173,8 +2173,8 @@
   function geometry() {
     // Every pixel the screen has, up to three to one — a phone's full
     // density, and a 4K monitor's at two. It used to stop at two.
-    dpr = Math.min(window.devicePixelRatio || 1, 3, dprCap);
     W = stage.clientWidth;
+    dpr = densityNow();
     H = stage.clientHeight;
 
     canvas.width = Math.round(W * dpr);
@@ -3329,7 +3329,7 @@
      are headed and soft round the edges, the month's cloud on a layer above
      the ground that swells past you as you come down, the land sharpening as
      you descend, the air thick at the limb, and stars far behind when high. */
-  var bodyScale = 1, bodyGone = false;
+  var bodyDiv = 1, bodyGone = false;   // bodyGone: only where WebGL 2 fails (sharpen never sets it)
   function bodyOn() { return DIRT_LOOK && !bodyGone && !!window.EarthBody && EarthBody.ready(); }
 
   // How high a journey is, 0 on the ground of a city to 1 with the world whole.
@@ -3378,7 +3378,7 @@
     return EarthBody.draw({
       // At the page's own density, so each cell's edge falls on a device
       // pixel (sharpen() steps it down on a machine that cannot keep up).
-      W: W, H: H, dpr: dpr * bodyScale, cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
+      W: W, H: H, dpr: dpr / (globeSmall() ? 1 : bodyDiv), cx: cx, cy: cy, R: R, spin: spin, sinT: SIN_T, cosT: COS_T,
       sun: sv, near: near, high: high, journey: on, time: still ? 0 : now / 1000,
       focus: journeyFocus(), cloud: cloud, shell: 1 / (1 - kc), stars: stars,
       starX: ((spin * 140) % 4000 + 4000) % 4000, starY: tilt * 140, light: 1,
@@ -3758,7 +3758,13 @@
      few pixels across, so the terminator and the cloud are pixel art like
      everything else — with each shade stepped and dithered. */
   function drawWeather(now, fade) {
+    // At the grain of the body's own cells, crisp (never stretched smooth): a small globe's
+    // weather is as fine as its cells, a near one's as coarse as before.
     var block = Math.max(3, Math.min(9, Math.round(R / 64)));
+    if (bodyOn()) {
+      var lv = EarthBody.levelFor(R, EarthBody.density());
+      block = Math.max(1, Math.min(9, Math.round(Math.min(lv.drawn, R / 48))));
+    }
     var key = [spin.toFixed(4), tilt.toFixed(4), R.toFixed(1), cx.toFixed(1), cy.toFixed(1), W, H].join();
     if (key !== weatherSeen.key || now - weatherSeen.at > 1000 / 12) {
       weatherSeen.key = key;
@@ -3815,7 +3821,7 @@
     block = weatherSeen.block;
     ctx.save();
     ctx.globalAlpha = fade;
-    ctx.imageSmoothingEnabled = bodyOn();
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(weatherCanvas, 0, 0, weatherCanvas.width * block, weatherCanvas.height * block);
     ctx.imageSmoothingEnabled = true;
     ctx.restore();
@@ -3855,7 +3861,7 @@
   var LAMP = ["#7b5a2c", "#d9a64e", "#fff1c4"];
   function drawLights(now, block, fade) {
     if (!nightLights) { if (earthBits && cities.length) { makeLights(); } else { return; } }
-    var lamp = Math.max(2, Math.round(block * 0.65));
+    var lamp = Math.max(bodyOn() ? 1 : 2, Math.round(block * 0.65));
     ctx.save();
     ctx.globalAlpha = fade;
     // The Artists layer is its names and nothing else (artist, 3 Oct 2026, of
@@ -5508,36 +5514,79 @@
   var last = { x: 0 };
   var trod = { x: 0, y: 0, since: 0 };   // how far it has walked since it last kicked
 
-  /* As sharp as the screen can go, and as sharp as this machine can keep
-     up with. It starts at every pixel the screen has — up to three to one —
-     and watches itself: if it cannot hold about forty-five frames a second
-     over a couple of seconds of ordinary looking, it drops half a step of
-     density and looks again, down to one to one. It never climbs back, so
-     it settles rather than hunting. */
-  var dprCap = 3;
-  var pace = { from: 0, frames: 0 };
+  /* As sharp as the screen can go, and never blurry (the artist, 8 Oct
+     2026: "The globe is blurry for some reason. Make sure the globe is never
+     blurry and consistently the same across all places"). Every globe starts
+     at every pixel the screen has, up to three to one. A machine that cannot
+     keep up is helped only where the globe is large — a small globe (the
+     reading's lens, a far world: under 35 % of the window) is shaded over its
+     own area alone (earth-body.js scissors to it) and always drawn at the
+     screen's full density. A large globe steps down by whole divisors of the
+     screen's density (3 → 1.5 → 1 on a phone, then the body alone by two),
+     and the canvases are shown pixelated, so a coarser density is coarser
+     crisp squares, never a stretched smear. The test is the frame's own work
+     as well as the frame rate: Low Power Mode's 30 Hz cap with cheap frames
+     is not slowness, so it is never stepped down for; under 26 frames a
+     second it is, whatever the cause. It climbs back after good seconds
+     (longer each time it had to step down again), and is held for three
+     seconds after any change, a journey, a dive or a drag. */
+  var densDiv = 1;
+  var pace = { from: 0, frames: 0, work: 0, lastWork: 0, good: 0, wait: 3, quietUntil: 0, held: false };
+  function nativeDpr() { return Math.min(window.devicePixelRatio || 1, 3); }
+  // A small globe: under 35 % of the window (the lens, a far world, a small front globe).
+  function globeSmall() { return W > 0 && Math.PI * R * R < 0.35 * W * H; }
+  function densityNow() {
+    var n = nativeDpr();
+    return globeSmall() ? n : Math.max(1, n / densDiv);
+  }
+  // The density changes with the globe's size (small: full) without a whole geometry().
+  function setDensity() {
+    var want = densityNow();
+    if (want === dpr || !W) { return; }
+    dpr = want;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawn.w = 0;
+    marksDirty = true;
+    tilesDirty = true;
+  }
 
   function sharpen(now) {
-    if (flying || moving() || deckMode || turning || document.hidden) { pace.from = 0; return; }
-    if (!pace.from) { pace.from = now; pace.frames = 0; return; }
+    setDensity();
+    if (pace.held || flying || moving() || deckMode || turning || document.hidden || journey || dive.on ||
+        now < pace.quietUntil || globeSmall()) { pace.from = 0; return; }
+    if (!pace.from) { pace.from = now; pace.frames = 0; pace.work = 0; return; }
     pace.frames += 1;
+    pace.work += pace.lastWork;
     var span = now - pace.from;
     if (span < 2000) { return; }
-    var fps = pace.frames * 1000 / span;
+    var fps = pace.frames * 1000 / span, work = pace.work / Math.max(1, pace.frames);
     pace.from = 0;
-    var have = Math.min(window.devicePixelRatio || 1, 3, dprCap);
-    if (fps < 45 && have > 1) {
-      dprCap = Math.max(1, have - 0.5);
-      geometry();
-    } else if (fps < 24 && bodyOn()) {
-      // A machine that cannot draw the body of works even at one to one
-      // draws it at half density, and failing that has the globe of before.
-      if (bodyScale > 0.5) { bodyScale = 0.5; }
-      else { bodyGone = true; hideDoor(); EarthBody.canvas().style.display = "none"; drawn.w = 0; weave(place ? { lat: focus.lat, lon: focus.lon } : null); }
-    }
+    var n = nativeDpr();
+    var slow = fps < 26 || (fps < 45 && work > 10);
+    if (slow) {
+      pace.good = 0;
+      if (n / (densDiv + 1) >= 1 - 1e-6) { densDiv += 1; setDensity(); pace.wait = Math.min(30, pace.wait * 2); }
+      else if (bodyOn() && bodyDiv < 2) { bodyDiv = 2; drawn.w = 0; pace.wait = Math.min(30, pace.wait * 2); }
+      pace.quietUntil = now + 3000;
+    } else if (fps >= 50 && (densDiv > 1 || bodyDiv > 1)) {
+      pace.good += 1;
+      if (pace.good >= pace.wait) {
+        pace.good = 0;
+        if (bodyDiv > 1) { bodyDiv = 1; drawn.w = 0; } else { densDiv -= 1; setDensity(); }
+        pace.quietUntil = now + 3000;
+      }
+    } else { pace.good = 0; }
   }
 
   function frame(now) {
+    var t0 = performance.now();
+    frameWork(now);
+    pace.lastWork = performance.now() - t0;
+  }
+
+  function frameWork(now) {
     autoSwing(now);
     stepFraming(now);
     stepSwing(now);
@@ -15360,6 +15409,17 @@
       return { zoom: zoom, home: art.mapHome && art.mapHome.zoom, lo: lim.lo, hi: lim.hi, away: cityAway(),
                lat: focus.lat / RAD, lon: wrap(spin) / RAD, R: R, fling: !!cityFling };
     },
+    // How sharp the globe is drawn (scripts/check_sharp.js): the density of the page's canvases and
+    // of the body, against the screen's. Land.pace(false) holds the frame-rate watch (a test on
+    // software GL, whose 1-4 frames a second are not a phone's); Land.pace(true) lets it watch again.
+    density: function () {
+      var b = window.EarthBody && EarthBody.canvas && EarthBody.canvas();
+      return { dpr: dpr, native: nativeDpr(), densDiv: densDiv, bodyDiv: bodyDiv, bodyGone: bodyGone, bodyOn: bodyOn(),
+               small: globeSmall(), R: R, cx: cx, cy: cy, W: W, H: H,
+               body: b ? { w: b.width, h: b.height, cw: b.clientWidth, ch: b.clientHeight, shown: b.style.display !== "none" && !!b.parentNode } : null,
+               level: bodyOn() ? EarthBody.levelFor(R, EarthBody.density()) : null };
+    },
+    pace: function (on) { pace.held = on === false; pace.from = 0; },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
                                   tiles: Object.keys(tilesShown).length, own: ownBoxes.length,
@@ -17337,7 +17397,7 @@
     flat.rect = rect;
     var st = flat.cv.style;
     st.left = rect.x + "px"; st.top = rect.y + "px"; st.width = rect.w + "px"; st.height = rect.h + "px";
-    var d = Math.min(2, window.devicePixelRatio || 1);
+    var d = Math.min(3, window.devicePixelRatio || 1);
     if (flat.cv.width !== Math.round(rect.w * d)) { flat.cv.width = Math.round(rect.w * d); flat.cv.height = Math.round(rect.h * d); flat.key = ""; }
     flat.dpr = d;
     var lim = mapKLimits();

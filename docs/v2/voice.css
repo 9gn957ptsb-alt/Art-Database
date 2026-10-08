@@ -32,7 +32,7 @@
   height: var(--hole-h, 0);
   border-radius: var(--hole-round, 50%);
   box-shadow: 0 0 0 300vmax rgba(15, 10, 7, 0.9), inset 0 0 0 1px rgba(234, 223, 205, 0.16),
-              inset 0 0 34px rgba(15, 10, 7, 0.45);
+              inset 0 0 8px rgba(15, 10, 7, 0.35);   /* within the window's own margin: never over the globe (8 Oct 2026, "never blurry") */
   transition: left var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1), top var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1),
               width var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1), height var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1),
               border-radius var(--beat-6, 0.8s) cubic-bezier(0.2, 0.7, 0.2, 1);
