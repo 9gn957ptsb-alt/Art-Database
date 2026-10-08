@@ -838,7 +838,9 @@ def bdnb_commune(code):
         rows += page
         offset += len(page)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rows))
+    tmp = path.with_suffix(f".{os.getpid()}.part")      # whole or not at all: another place's run may read it
+    tmp.write_text(json.dumps(rows))
+    tmp.replace(path)
     return rows
 
 
@@ -877,7 +879,9 @@ def france(box):
             if kept[at]:
                 communes.add(kept[at])
     kept_at.parent.mkdir(parents=True, exist_ok=True)
-    kept_at.write_text(json.dumps(kept, sort_keys=True))
+    tmp = kept_at.with_suffix(f".{os.getpid()}.part")
+    tmp.write_text(json.dumps(kept, sort_keys=True))
+    tmp.replace(kept_at)
     to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
     out = []
     for code in sorted(communes):
