@@ -2600,7 +2600,20 @@
 .art-find:focus-visible,
 .art-find[aria-expanded="true"] { background: #eadfcd; color: #0f0a07; }
 .art-find[hidden],
-.land:not([data-at="globe"]) .art-find { display: none; }   /* Search: on every layer of the globe (7 Oct 2026) */
+.land:not([data-at="globe"]) .art-find:not([data-grown]) { display: none; }   /* Search: on every layer of the globe (7 Oct 2026) */
+/* …and beside the pills on a reading's enlarged globe (8 Oct 2026): the same button, moved with them. */
+.art-find[data-grown] {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: none;
+  z-index: 13;
+  min-height: 24px;
+  padding: 3px 11px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.art-find[data-grown]:not(:hover):not(:focus-visible):not([aria-expanded="true"]) { background: rgba(15, 10, 7, 0.78); }
 
 .finder {
   position: fixed;
@@ -2632,7 +2645,14 @@
 }
 @keyframes finder-up { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
 .finder[hidden],
-.land:not([data-at="globe"]) .finder { display: none; }
+.land:not([data-at="globe"]):not([data-grown]) .finder { display: none; }   /* and over a reading's enlarged globe (8 Oct 2026) */
+/* Over a reading's enlarged globe the list is in the reading (over its dial, sentence and column),
+   above Search and the pills, or below them where they stand high (land.js, grownMeasure). */
+.finder[data-grown] { bottom: max(calc(var(--s-5) + 84px), var(--finder-floor, 0px)); }
+.finder[data-grown][data-below] { top: var(--finder-top, 16px); bottom: calc(var(--s-5) + 84px); }
+@media (min-width: 721px) {
+  .finder[data-grown] { max-height: min(61vh, var(--finder-room, 61vh)); }
+}
 .finder-form { margin: 0 0 var(--s-3); }
 .finder-group {
   margin: var(--s-4) 0 var(--s-3);

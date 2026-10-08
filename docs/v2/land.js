@@ -995,7 +995,7 @@
   function measureSafe() {
     var foot = 0;
     [filterEl, artFind].forEach(function (b) {
-      if (!b || b.hidden) { return; }
+      if (!b || b.hidden || b.dataset.grown) { return; }   // (moved onto a reading's enlarged globe)
       var r = b.getBoundingClientRect();
       if (r.height) { foot = Math.max(foot, H - r.top + 8); }
     });
@@ -17575,6 +17575,8 @@
      world. At rest, in its window, it is as it was: too small to press. */
   var grown = false, grownAt = null, grownMeasured = 0, grownKey = "", grownArt = null;
   var filterHome = null, filterNext = null;
+  var findHome = null, findNext = null;          // Search comes with the pills (artist, 8 Oct 2026)
+  var finderHome = null, finderNext = null;      // and what it finds, over the reading, not under it
   function grownNow() {
     return !!(LENS_GLOBE && LENS && place && art && readingOn() && !flying && !dive.on &&
               (lensOut || lensSwapped) && !artEl.dataset.full && artEl.dataset.look !== "plate");
@@ -17598,6 +17600,22 @@
         filterNext = filterEl.nextSibling;
         artEl.appendChild(filterEl);
         filterEl.dataset.grown = "true";
+      }
+      // Search comes too, beside the pills (artist, 8 Oct 2026, of a work's globe enlarged with its pills
+      // and no Search: "Make sure the search bar is available when I enlarge the globe as well").
+      if (artFind && artEl) {
+        findHome = artFind.parentNode;
+        findNext = artFind.nextSibling;
+        artEl.appendChild(artFind);
+        artFind.dataset.grown = "true";
+      }
+      // Its list lives in the reading while the globe is grown: under the stage it would lie beneath the
+      // dial, the sentence and the column (the stage, fixed, is a stacking context of its own).
+      if (finderEl && artEl) {
+        finderHome = finderEl.parentNode;
+        finderNext = finderEl.nextSibling;
+        artEl.appendChild(finderEl);
+        finderEl.dataset.grown = "true";
       }
       grownMeasured = 0;
       grownLayer();
@@ -17642,6 +17660,7 @@
   function grownOff() {
     if (!grown) { return; }
     grown = false;
+    if (finder.open && land.dataset.at !== "globe") { closeFinder(); }
     grownAt = null;
     grownKey = "";
     delete land.dataset.grown;
@@ -17650,6 +17669,21 @@
       delete filterEl.dataset.grown;
       filterEl.style.removeProperty("left");
       filterEl.style.removeProperty("top");
+    }
+    if (artFind && findHome) {
+      findHome.insertBefore(artFind, findNext && findNext.parentNode === findHome ? findNext : null);
+      delete artFind.dataset.grown;
+      artFind.style.removeProperty("left");
+      artFind.style.removeProperty("top");
+      findHome = null;
+    }
+    if (finderEl && finderHome) {
+      finderHome.insertBefore(finderEl, finderNext && finderNext.parentNode === finderHome ? finderNext : null);
+      delete finderEl.dataset.grown;
+      delete finderEl.dataset.below;
+      ["--finder-floor", "--finder-top", "--finder-room"].forEach(function (v) { finderEl.style.removeProperty(v); });
+      finderEl._at = "";
+      finderHome = null;
     }
     tilesShown = {};
     nameBoxes = [];
@@ -17713,7 +17747,12 @@
     rectOf(document.querySelector(".building-time.path-time"), 2);
     // The pills: at the foot, in the middle; else to a side; else up, clear of what lies there.
     if (filterEl && filterEl.dataset.grown) {
-      var fw = filterEl.offsetWidth, fh = filterEl.offsetHeight;
+      var pw = filterEl.offsetWidth, fh = filterEl.offsetHeight;
+      // Search rides at the row's end where the row fits the band (else it goes just above, below).
+      var withFind = !!(artFind && artFind.dataset.grown && !artFind.hidden);
+      var aw = withFind ? artFind.offsetWidth : 0, ah = withFind ? artFind.offsetHeight : 0;
+      var inRow = withFind && pw + 8 + aw <= box.x1 - box.x0;
+      var fw = inRow ? pw + 8 + aw : pw;
       var hit = function (x, y) {
         return avoid.some(function (a) { return x < a.x1 && a.x0 < x + fw && y < a.y1 && a.y0 < y + fh; });
       };
@@ -17734,6 +17773,39 @@
       avoid.push({ x0: fx - 6, y0: fy - 6, x1: fx + fw + 6, y1: fy + fh + 6 });
       // What is under the pills, across the whole foot, is no place for a name.
       if (fy + fh >= box.y1 - 2) { box.y1 = Math.min(box.y1, fy - 6); }
+      // Search: at the row's end; else just above the pills, clear of the rest and of the view's
+      // own marks (a life's year and its name, a work's stops).
+      if (withFind) {
+        var own = ownMarks();
+        var hitA = function (x, y) {
+          return x < 4 || x + aw > W - 4 || y < box.y0 ||
+            avoid.concat(own).some(function (a) { return x < a.x1 + 4 && a.x0 - 4 < x + aw && y < a.y1 + 4 && a.y0 - 4 < y + ah; });
+        };
+        var my = fy + (fh - ah) / 2;
+        var tries = inRow ? [[fx + pw + 8, my]] : [];
+        tries = tries.concat([[fx + (pw - aw) / 2, fy - ah - 8], [fx, fy - ah - 8], [fx + pw - aw, fy - ah - 8],
+                              [fx + (pw - aw) / 2, fy + fh + 8]]);
+        var at = (inRow ? tries[0] : null) || tries.filter(function (t) { return !hitA(t[0], t[1]); })[0] || tries[0];
+        var ax = Math.max(4, Math.min(W - aw - 4, at[0])), ay = Math.max(4, Math.min(H - ah - 4, at[1]));
+        artFind.style.left = ax.toFixed(0) + "px";
+        artFind.style.top = ay.toFixed(0) + "px";
+        avoid.push({ x0: ax - 6, y0: ay - 6, x1: ax + aw + 6, y1: ay + ah + 6 });
+        if (ay + ah >= box.y1 - 2) { box.y1 = Math.min(box.y1, ay - 6); }
+      }
+      // What Search finds opens above the row (below it where the row stands high), so Search is
+      // never covered and a second press puts it away, as on the world.
+      if (finderEl && finderEl.dataset.grown) {
+        var rowTop = withFind ? Math.min(fy, ay) : fy, rowBot = withFind ? Math.max(fy + fh, ay + ah) : fy + fh;
+        var below = rowTop < H * 0.45;
+        var fk = (below ? "b" : "a") + Math.round(rowTop) + "," + Math.round(rowBot) + "," + H;
+        if (finderEl._at !== fk) {
+          finderEl._at = fk;
+          if (below) { finderEl.dataset.below = "true"; } else { delete finderEl.dataset.below; }
+          finderEl.style.setProperty("--finder-floor", Math.round(H - rowTop + 8) + "px");
+          finderEl.style.setProperty("--finder-top", Math.round(rowBot + 8) + "px");
+          finderEl.style.setProperty("--finder-room", Math.max(160, Math.round(below ? H - rowBot - 8 - 105 : rowTop - 8 - 16)) + "px");
+        }
+      }
     }
     // A played path's readout beside the dial (transport.js) lies over the globe: no name or mark
     // under it. Not before the pills: the readout keeps off them, so neither chases the other.
@@ -19670,7 +19742,12 @@
       pressPlate();
     });
     window.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && art && partsAway() && !lensAway() && !artEl.dataset.full) {
+      // Search opened on the grown globe is put down first, the globe left as it is.
+      if (event.key === "Escape" && finder.open && art) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeFinder();
+      } else if (event.key === "Escape" && art && partsAway() && !lensAway() && !artEl.dataset.full) {
         event.preventDefault();
         event.stopImmediatePropagation();
         partsHome();
@@ -21053,7 +21130,8 @@
   }
 
   function openFinder() {
-    if (!ARTWORKS || !finderEl || place || flying) { return; }   // Search opens on every layer (7 Oct 2026)
+    // Search opens on every layer (7 Oct 2026), and from a reading whose globe is enlarged (8 Oct 2026).
+    if (!ARTWORKS || !finderEl || flying || (place && !grown)) { return; }
     finderEl.hidden = false;
     finder.open = true;
     if (artFind) { artFind.setAttribute("aria-expanded", "true"); }
