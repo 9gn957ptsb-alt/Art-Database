@@ -559,8 +559,8 @@
     ],
     "interior": {
       "tier": "reconstructed",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 19
@@ -572,7 +572,9 @@
         "none": 0,
         "arranged": 31
       },
-      "log": []
+      "log": [
+        "2026-10-08 OpenStreetMap's plan taken: 18 rooms on 7 floors (levels 2-6 over half the model's floor), 17 reached; 5 mapped doors, 4 by the rule, 2 lifts and 3 by the rule; arranged → reconstructed"
+      ]
     }
   },
   "museum-hammer-museum": {
@@ -1885,8 +1887,8 @@
     ],
     "interior": {
       "tier": "reconstructed",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 78
@@ -1898,7 +1900,9 @@
         "none": 0,
         "arranged": 4
       },
-      "log": []
+      "log": [
+        "2026-10-08 OpenStreetMap's plan taken: 76 rooms on 3 floors (level 2 64% of the model's floor), 75 reached; 30 mapped doors, 42 by the rule, 2 lifts and 1 by the rule; arranged → reconstructed"
+      ]
     }
   },
   "museum-yale-center-for-british-art": {
@@ -2122,8 +2126,8 @@
     ],
     "interior": {
       "tier": "reconstructed",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 16
@@ -2135,7 +2139,9 @@
         "none": 0,
         "arranged": 4
       },
-      "log": []
+      "log": [
+        "2026-10-08 OpenStreetMap's plan taken: 16 ground-floor galleries, 13 reached (a fifth of the model's floor); 1 mapped door, 11 by the rule; shell → reconstructed"
+      ]
     }
   },
   "museum-parrish-art-museum": {
