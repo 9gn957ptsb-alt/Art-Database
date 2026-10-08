@@ -1731,7 +1731,10 @@
     if (!s || s.leaving) { return; }
     if (s.level === "walk" || s.level === "look") { if (then) { then(); } return; }
     var still = s.host.still;
-    if (s.planFloor !== s.me.floor) { s.planFloor = s.me.floor; }
+    // Down onto the floor the plan shows, not back to the one you stood on (artist, 8 Oct 2026: "depending
+    // upon which level I am on when I zoom in it will go to that level. Right now every time I zoom in
+    // regardless of the floor, I'm on I go to level one").
+    if (s.planFloor !== s.me.floor && !arriveOn(s.planFloor)) { s.planFloor = s.me.floor; }
     var o = youOnPlan();
     s.box.hidden = false;
     s.dirty = true;
@@ -1760,6 +1763,68 @@
     onRoom(performance.now());
     wake();
     if (then) { then(); }
+  }
+
+  /* Onto another floor than the one you stand on, from its plan: where the stairs from your floor come out
+     on it (else any stairs that reach it), else where its lift stops, else above (or below) where you stood,
+     else its first room with wall or floor to stand on — off the stair and the lift, at the floor's own
+     level, facing into it. False if nowhere on it can be stood on. */
+  function arriveOn(fi) {
+    var s = S, W = P(), me = s.me, fl = s.world.floors[fi];
+    if (!fl) { return false; }
+    var spot = null, from = null;
+    var stairs = (fl.stairs || []).slice().sort(function (a, b) {
+      return ((a.from === me.floor || a.to === me.floor) ? 0 : 1) - ((b.from === me.floor || b.to === me.floor) ? 0 : 1);
+    });
+    for (var k = 0; k < stairs.length && !spot; k += 1) {
+      var sx = 0, sy = 0, n = 0;
+      for (var q = 0; q < fl.stair.length; q += 1) {
+        if (fl.stair[q] === stairs[k].index) { var c = W.centreOf(fl, q); sx += c[0]; sy += c[1]; n += 1; }
+      }
+      if (n) { from = [sx / n, sy / n]; spot = landing(fl, from[0], from[1]); }
+    }
+    (fl.lifts || []).forEach(function (lf) {
+      if (spot) { return; }
+      from = [(lf.rect[0] + lf.rect[2]) / 2, (lf.rect[1] + lf.rect[3]) / 2];
+      spot = landing(fl, from[0], from[1]);
+    });
+    if (!spot) { from = null; spot = landing(fl, me.x, me.y); }
+    // Its rooms that are reached from the door first.
+    fl.rooms.filter(function (r) { return !r.pseudo && r.kind !== "void"; })
+      .sort(function (a, b) { return (b.reach ? 1 : 0) - (a.reach ? 1 : 0); })
+      .forEach(function (r) { if (!spot) { spot = landing(fl, r.cx, r.cy); } });
+    if (!spot) { return false; }
+    stopGlide();
+    stand(null);
+    s.turnTo = null;
+    me.floor = fi; me.x = spot[0]; me.y = spot[1]; me.z = me.zTo = floorZ(fi, me.x, me.y);
+    // Facing into the floor: away from the stair or lift you came out of, else toward the floor's middle.
+    var mid = [fl.x0 + fl.gw * fl.cell / 2, fl.y0 + fl.gh * fl.cell / 2];
+    var dx = from ? me.x - from[0] : mid[0] - me.x, dy = from ? me.y - from[1] : mid[1] - me.y;
+    if (Math.hypot(dx, dy) > 0.01) { me.a = Math.atan2(dy, dx); }
+    s.lastRoom = null;
+    s.dirty = true;
+    return true;
+  }
+  // The walkable cell nearest a point that is no stair or lift and at its floor's own level, with room to stand.
+  function landing(fl, x, y) {
+    var W = P(), clear = W.clearance(fl), best = null, bd = Infinity;
+    var i0 = Math.floor((x - fl.x0) / fl.cell), j0 = Math.floor((y - fl.y0) / fl.cell), R = Math.ceil(30 / fl.cell);
+    for (var r = 0; r <= R && !best; r += 1) {
+      for (var dj = -r; dj <= r; dj += 1) {
+        for (var di = -r; di <= r; di += 1) {
+          if (Math.max(Math.abs(di), Math.abs(dj)) !== r) { continue; }
+          var i = i0 + di, j = j0 + dj;
+          if (i < 0 || j < 0 || i >= fl.gw || j >= fl.gh) { continue; }
+          var q = j * fl.gw + i;
+          if (!W.walkable(fl, q) || clear[q] < 0.25 || fl.stair[q] >= 0 || fl.lift[q] >= 0) { continue; }
+          if (Math.abs(fl.fh[q] / 100 - fl.z) > 0.21) { continue; }     // a riser of walk-plan.js's, and no more
+          var d = di * di + dj * dj;
+          if (d < bd) { bd = d; best = W.centreOf(fl, q); }
+        }
+      }
+    }
+    return best;
   }
 
   // Up to the plan: you are left as a lit tile where you stood.

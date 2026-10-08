@@ -225,13 +225,35 @@ async function one(s, slug, size) {
   if (s.touch) { await pinchIn(page, band.x + band.width / 2, band.y + band.height / 2); } else { await page.keyboard.press("Escape"); }
   await until(page, () => Land.inside() && Land.inside().level === "plan", null, 8000);
   step("up to the plan");
+  // Another floor by the plan's arrows, then in: the walk is on that floor (artist, 8 Oct 2026: "depending upon
+  // which level I am on when I zoom in it will go to that level").
+  const arrow = await page.evaluate(() => {
+    const b = [...document.querySelectorAll(".walk-floor")].find((e) => !e.disabled && e.getClientRects().length);
+    if (!b) { return null; }
+    const q = b.getBoundingClientRect();
+    return [q.left + q.width / 2, q.top + q.height / 2];
+  });
+  if (arrow) {
+    const was = (await page.evaluate(() => Land.inside())).planFloor;
+    if (s.touch) { await page.touchscreen.tap(arrow[0], arrow[1]); } else { await page.mouse.click(arrow[0], arrow[1]); }
+    await until(page, (w) => Land.inside().planFloor !== w, was, 4000);
+    const pf = (await page.evaluate(() => Land.inside())).planFloor;
+    await page.waitForTimeout(REDUCED ? 100 : 700);
+    await page.keyboard.press("+");
+    await until(page, () => Land.inside().level === "walk", null, 8000);
+    r.floorIn = await page.evaluate(() => Land.inside().floor);
+    r.floorShown = pf;
+    step("in on the floor shown");
+    await page.keyboard.press("Escape");
+    await until(page, () => Land.inside() && Land.inside().level === "plan", null, 8000);
+  }
   // And out at once by the banner's way back.
   await page.click("#banner-back");
   await until(page, () => !Land.inside() && Land.where().at === "museum", null, 8000);
   await until(page, () => { const g = document.querySelector(".walk-go"); return g && !g.hidden; }, null, 8000);
   step("out");
   r.errors = s.errors.slice(e0);
-  r.ok = !r.errors.length && r.moved >= 0.2 && r.frames > 0;
+  r.ok = !r.errors.length && r.moved >= 0.2 && r.frames > 0 && r.floorIn === r.floorShown;
   return r;
 }
 
@@ -255,7 +277,8 @@ async function one(s, slug, size) {
         }
         results.push(r);
         console.log((r.ok ? "ok  " : "FAIL") + " " + size + " " + slug +
-          (r.ok ? "  moved " + r.moved.toFixed(1) + " m · " + r.hung + " hung" + (r.pressedFrom !== undefined ? " · pressed from " + r.pressedFrom + " m" : "") + " · " + r.res + " dots · " + r.mean + " ms" + (r.shell ? " · shell" : "")
+          (r.ok ? "  moved " + r.moved.toFixed(1) + " m · " + r.hung + " hung" + (r.pressedFrom !== undefined ? " · pressed from " + r.pressedFrom + " m" : "") + " · " + r.res + " dots · " + r.mean + " ms" + (r.shell ? " · shell" : "") +
+                  (r.floorShown !== undefined ? " · in on floor " + r.floorIn + " of the plan's " + r.floorShown : "")
                 : "  " + (r.error || "") + " " + JSON.stringify(r.steps || []) + " " + JSON.stringify(r.errors || [])));
       }
       await s.ctx.close();
