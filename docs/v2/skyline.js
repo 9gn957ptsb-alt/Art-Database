@@ -331,6 +331,7 @@
     D.span = n;
     D.lift = Math.min(highest, n / 4);
     return { key: st.key, P: P, g: g, n: n, cell: cell, dots: D, years: years, floor1975: floor1975, from: g.builtFrom || [],
+             old: g.builtOld || 0,
              arts: arts, owner: owner,
              zAt: zAt, toCell: toCell, walk: walk, isWalk: isWalk };
   }
@@ -782,6 +783,9 @@
     }
     if (city && city.floor1975) {
       box.appendChild(el("p", "skyline-said", "Buildings before 1975 are not dated here: all that stood by 1975 is shown."));
+    } else if (city && city.years && city.old) {
+      // A source's open first class ("before 1919"): those buildings stand from the dial's first year.
+      box.appendChild(el("p", "skyline-said", "Buildings from before " + city.old + " are not dated more closely: they stand from the first year."));
     } else if (city && !city.years) {
       box.appendChild(el("p", "skyline-said", "Its buildings' years have not been read yet: the city stands as it is now."));
     }
