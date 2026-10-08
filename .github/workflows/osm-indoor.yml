@@ -1,0 +1,60 @@
+name: OpenStreetMap museum interiors
+
+# Reads OpenStreetMap's indoor mapping (rooms, corridors, doors, entrances,
+# levels) inside the major museums on the Artist Website's globe
+# (scripts/fetch_osm_indoor.py) into osm/indoor/, which build_interiors.py
+# reads (--osm) for the walk inside each museum. It runs here because
+# Geofabrik's and Overpass's servers do not answer the Claude sessions'
+# network. A push to the site's branch that touches the script, this file or
+# osm/INDOOR_REQUEST (write the date in it to ask for a fresh read) runs it;
+# the workflow on a pushed branch is the one that runs.
+
+on:
+  push:
+    branches: [claude/artist-website-dev-s92irf]
+    paths:
+      - scripts/fetch_osm_indoor.py
+      - .github/workflows/osm-indoor.yml
+      - osm/INDOOR_REQUEST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: osm-indoor
+  cancel-in-progress: true
+
+env:
+  SITE_BRANCH: claude/artist-website-dev-s92irf
+
+jobs:
+  indoor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SITE_BRANCH }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read the interiors
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+          pip install -q shapely
+          python3 scripts/fetch_osm_indoor.py
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add osm/indoor
+          if git diff --cached --quiet; then echo "Nothing new."; exit 0; fi
+          git config user.name "osm-indoor"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "OpenStreetMap indoor mapping of the major museums"
+          for i in 1 2 3; do git pull --no-rebase --no-edit origin "$SITE_BRANCH" && git push origin "HEAD:$SITE_BRANCH" && break; sleep 5; done

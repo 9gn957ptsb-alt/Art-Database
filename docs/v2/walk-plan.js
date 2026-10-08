@@ -2322,7 +2322,9 @@
     try { M = Models(); } catch (e) { return { errors: [String(e.message)], warnings: [], stats: {}, tier: "shell", findings: [] }; }
 
     // The file's own shape.
-    if (typeof opts.bytes === "number" && opts.bytes > 96 * 1024) { err("the file is " + round(opts.bytes / 1024) + " KB (at most 96)"); }
+    // 640 KB: a museum read from its own open data carries a few hundred of its collection's works, each
+    // with the museum's own label (INTERIORS.md, "The collection on the walls").
+    if (typeof opts.bytes === "number" && opts.bytes > 640 * 1024) { err("the file is " + round(opts.bytes / 1024) + " KB (at most 640)"); }
     if (I.v !== 1) { err("v must be 1"); }
     if (typeof I.slug !== "string") { err("slug is missing"); }
     if (museum && museum.slug && I.slug !== museum.slug) { err("slug " + I.slug + " is not its museum's (" + museum.slug + ")"); }
@@ -2409,6 +2411,11 @@
         if (r.ref !== undefined && !Array.isArray(r.ref)) { err(rw + ": ref must be a list"); }
         sure(r.sure, rw, true);
         cites(r.src, rw, true);
+        // anchor: the source whose own coordinates fix where the room is (a museum's map of its galleries).
+        if (r.anchor !== undefined) {
+          if (typeof r.anchor !== "string") { err(rw + ": anchor must be a source id"); }
+          else { cites([r.anchor], rw + " anchor", true); }
+        }
         if (r.name !== null && r.name !== undefined && typeof r.name !== "string") { err(rw + ": name must be words or null"); }
         if (r.sure === "arranged") {
           // The site's room, never the museum's: called by a number or by what it is, and it says so.
@@ -2521,6 +2528,20 @@
         if (w.rec && w.rec.src && !src[w.rec.src]) { err(ww + ": its record cites " + w.rec.src + ", which is not in sources"); }
       }
       if (w.wall !== undefined && w.wall !== null && !DIRS[w.wall] && w.wall !== "centre") { err(ww + ": wall must be n, e, s, w, centre or null"); }
+      // The museum's own collection on its walls (INTERIORS.md, "The collection on the walls").
+      if (w.kind !== undefined && w.kind !== "collection") { err(ww + ": kind must be collection or absent"); }
+      if (w.kind === "collection") {
+        if (w.how !== "museum") { err(ww + ": a collection work hangs (how museum) or is not listed"); }
+        if (!w.ref || typeof w.ref.museum !== "string" || w.ref.object === undefined || typeof w.ref.url !== "string") {
+          err(ww + ": a collection work needs ref {museum, object, url}");
+        }
+        if (w.img !== null && w.img !== undefined && !/^https:\/\//.test(String(w.img))) { err(ww + ": img must be an https address or null"); }
+        if (w.c !== null && w.c !== undefined && !(Array.isArray(w.c) && w.c.every(function (h) { return /^#[0-9a-f]{6}$/i.test(h); }))) {
+          err(ww + ": c must be a list of hex colours or null");
+        }
+        if ((w.desc && !w.descsrc) || (!w.desc && w.descsrc)) { err(ww + ": desc and descsrc go together"); }
+        if (w.desc !== null && w.desc !== undefined && typeof w.desc !== "string") { err(ww + ": desc must be the museum's words or null"); }
+      }
       if (w.asof && days(w.asof, today) > 30) { oldWorks += 1; }
     });
     if (oldWorks) { warn(oldWorks + " works were placed more than 30 days ago: run build_interiors.py"); }
@@ -2574,10 +2595,12 @@
         if (!n) { err("room " + r.id + " has no cells: it is smaller than the grid's cell"); return; }
         if (out / n <= 0.1) { return; }
         var ext = "x " + bb[0].toFixed(1) + " to " + bb[2].toFixed(1) + ", y " + bb[1].toFixed(1) + " to " + bb[3].toFixed(1);
-        if (r.sure === "reconstructed" || r.sure === "arranged") {
+        // A reconstructed or arranged room is held to the model, unless the museum's own coordinates (its
+        // anchor) say where it is: then, like a documented room, the model is what is wrong.
+        if ((r.sure === "reconstructed" || r.sure === "arranged") && !(r.spec && r.spec.anchor)) {
           err(r.sure + " room " + r.id + " is " + round(100 * out / n) + "% outside the model at " + (fl.z + EYE).toFixed(1) + " m (" + ext + ")");
         } else {
-          warn("documented room " + r.id + " is " + round(100 * out / n) + "% outside the model (" + ext + ")");
+          warn((r.sure === "documented" ? "documented" : "anchored") + " room " + r.id + " is " + round(100 * out / n) + "% outside the model (" + ext + ")");
           findings.push({ room: r.id, floor: fl.id, out: out / n, x0: bb[0], y0: bb[1], x1: bb[2], y1: bb[3] });
         }
       });

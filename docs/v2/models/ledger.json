@@ -217,25 +217,26 @@
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
       "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine",
       "2026-09-30 interior finding: only 77% of the model's footprint stands on the ground's buildings",
-      "2026-09-30 interior finding: 17 documented rooms of the Main Floor lie outside the model (M-015, M-016, M-017, M-018, M-019, M-035, M-035-A, M-040, M-041, M-041-A, M-060-B, M-062, …): its rooms reach y -46.2 to 46.2 m (92.3 m) where the model reaches y -32.5 to 35.0 m (67.5 m), in x -98.8 to -56.3 and 56.8 to 99.3 m",
-      "2026-09-30 interior finding: 5 documented rooms of the Ground Floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014): its rooms reach y -45.7 to 34.6 m (80.3 m) where the model reaches y -32.5 to 32.5 m (65.0 m), in x -98.3 to -55.8 m"
+      "2026-09-30 interior finding: 5 documented rooms of the Ground Floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014): its rooms reach y -45.7 to 34.6 m (80.3 m) where the model reaches y -32.5 to 32.5 m (65.0 m), in x -98.3 to -55.8 m",
+      "2026-10-08 interior finding: 22 documented rooms of the Main Floor lie outside the model (M-012, M-015, M-016, M-017, M-018, M-019, M-020, M-035, M-035-A, M-040, M-041, M-041-A, …): its rooms reach y -46.2 to 46.2 m (92.3 m) where the model reaches y -32.5 to 35.0 m (67.5 m), in x -98.8 to -56.3 and 56.8 to 99.3 m"
     ],
     "interior": {
       "tier": "documented",
-      "refined": "2026-09-30",
-      "passes": 1,
+      "refined": "2026-10-08",
+      "passes": 2,
       "rooms": {
         "documented": 181,
         "reconstructed": 0
       },
       "works": {
-        "hung": 45,
+        "hung": 345,
         "elsewhere": 4,
         "off": 0,
-        "none": 138
+        "none": 137
       },
       "log": [
-        "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)"
+        "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)",
+        "2026-10-08 doorways: 193 read off the NGA's visitor map (June 2025) by scripts/nga_map_doors.py, the map registered to the NGA's outlines; the North Stair landings opened to the rotunda; the rooms the map paints grey closed; Main Floor 113 of 118 rooms reached from the door, Ground Floor 34 of 63 (13 closed); 300 of its paintings and sculpture on view hung beside the 45 saved works."
       ]
     }
   },
@@ -307,23 +308,27 @@
     "log": [
       "2026-09-24 first model: the four-block limestone front set to Fifth Avenue's 29-degree grid, Hunt's pavilion and stair, the skylit core, Roche-Dinkeloo's glass wings (Dendur slope, American Wing court, Lehman pyramid), Cleopatra's Needle, Central Park behind",
       "2026-09-25 refined: removed 201 background trees burying the building; fattened the colonnade's columns to read at the 4 m voxel",
-      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 47% of the model's footprint stands on the ground's buildings",
+      "2026-10-08 interior finding: 26 documented rooms of the Floor 1 lie outside the model (G-106, G-110, G-111, G-115, G-117, G-152, G-153, G-154, G-156, G-158, G-160, G-162, …)",
+      "2026-10-08 interior finding: 79 documented rooms of the Floor 2 lie outside the model (G-176, G-203, G-204, G-205, G-209, G-213, G-214, G-216, G-218, G-219, G-220, G-221, …)"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "reconstructed",
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 400
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 21,
+        "hung": 317,
+        "elsewhere": 2,
         "off": 0,
         "none": 18
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: 400 galleries on Floors 1 and 2 read off the Met's visitor floor plans (scripts/met_plan_rooms.py), each the floor nearest its printed number by walking, never through a drawn wall, laid by the Met's own map points for 60 galleries (median 0.2 m on Floor 1, 1.4 m on Floor 2) and anchored on them; openings where rooms meet on open floor; the 82nd Street door into the Great Hall; the floors joined by the lift by the Great Hall; 388 of 400 reached from the door (not: Dendur 131, 399, the 900s); 19 saved works and 300 of the Met's highlights on view hung by GalleryNumber. The model stands tens of metres off the Met's points and lacks the Fifth Avenue front: the rooms past it are filed against it."
+      ]
     }
   },
   "museum-seattle-art-museum": {
@@ -604,23 +609,29 @@
     "log": [
       "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway",
       "2026-09-27 refined: the Allerton and east wings in buff limestone; the Allerton's Michigan Avenue front given its two rows of windows at an even rhythm and a darker frieze (no photographs)",
-      "2026-09-30 interior finding: only 23% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 23% of the model's footprint stands on the ground's buildings",
+      "2026-10-08 interior finding: 12 documented rooms of the Lower Level lie outside the model (G-1, G-10, G-11, G-15, G-2, G-24, G-3, G-4, G-50, G-57, G-58, G-59)",
+      "2026-10-08 interior finding: 26 documented rooms of the Floor 1 lie outside the model (G-137, G-144, G-150, G-151, G-152, G-153, G-154, G-160, G-161, G-170, G-171, G-172, …)",
+      "2026-10-08 interior finding: 32 documented rooms of the Floor 2 lie outside the model (G-200, G-201, G-202, G-204, G-205, G-212, G-213, G-215, G-216, G-217, G-218, G-225, …)",
+      "2026-10-08 interior finding: 10 documented rooms of the Floor 3 lie outside the model (G-389, G-391, G-392, G-393, G-394, G-395, G-396, G-397, G-398, G-399)"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "reconstructed",
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 158
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 8,
+        "hung": 308,
+        "elsewhere": 0,
         "off": 0,
         "none": 0
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: 158 galleries on the Lower Level and Floors 1-3 drawn round the Art Institute's own points by rule (scripts/aic_rooms.py: the nearer floor, within 9 m), anchored on them; doorways only between galleries numbered one after the other that share a wall; the Michigan Avenue door (its own point); 8 saved works and 300 of its works on view (boosted first) hung by gallery. No plan read: most rooms have no way in known (come into by a cut); the floors are not joined. The model stands west of the museum's points."
+      ]
     }
   },
   "museum-national-gallery-of-victoria": {
@@ -1091,7 +1102,7 @@
     "log": [
       "2026-09-24 first model: the 1916 marble temple with its Ionic portico and stair to the Fine Arts Garden, Breuer's banded granite wing, Viñoly's glass-roofed atrium and east and west wings, Wade Lagoon",
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): Breuer wing's roof made grey; the Fine Arts Garden's allées, cross walk and axial path toward Wade Lagoon; old trees round the lagoon",
-      "2026-09-30 interior finding: only 65% of the model's footprint stands on the ground's buildings"
+      "2026-10-08 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
       "tier": "shell",

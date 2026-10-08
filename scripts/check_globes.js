@@ -38,7 +38,7 @@ const VIEWS = [
         await P.waitForTimeout(500);
         const hit = await P.evaluate(() => {
           const b = [...document.querySelectorAll("button, a, [role=button], li, .held-work, [data-id]")]
-            .find((e) => /Self Portrait Dedicated/i.test(e.textContent || e.getAttribute("aria-label") || ""));
+            .find((e) => /Self Portrait Dedicated|Ambroise Vollard/i.test(e.textContent || e.getAttribute("aria-label") || ""));
           if (b) { b.scrollIntoView({ block: "center" }); b.click(); }
           return !!b;
         });

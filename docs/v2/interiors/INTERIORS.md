@@ -120,6 +120,12 @@ is its level in metres, `name` only as a source gives it.
   There is no third value: what is not known is not drawn.
 - `tol`: ± metres of the outline. `built`: the year it opened, where
   documented. `note`.
+- `anchor`: the id of a read source whose own coordinates fix where the room
+  is — the museum's own map of its galleries (the Met's map points, the Art
+  Institute's gallery points) or OpenStreetMap's survey. A reconstructed room
+  is held to the model (at most 10% outside it); an anchored one, like a
+  documented one, stands where its anchor says, and where the model stands
+  off it the room is drawn, walled round, and filed against the model.
 
 Where two rooms touch with no cell between them, one wall cell is put in.
 Rooms may not overlap by more than 5% of the smaller.
@@ -207,11 +213,81 @@ Every other key on a room is the hand's:
     which); `free` for a sculpture; `same`, a work that is another saved
     work's very object, whatever its record says of it, which hangs once and
     is counted once, as that one.
+- **The museum's own collection** (`kind: "collection"`), after the saved
+  works: see *The collection on the walls*.
 - `asof`: the day the works were placed.
 - `tier`, written by the checker: `documented` (at least 80% of the
   walkable floor in documented rooms), `arranged` (more than half of it in
   rooms the site arranged: "Arranged", below), `reconstructed` (any rooms
   drawn) or `shell`.
+
+## The collection on the walls
+
+A museum whose own open data says where its works hang carries, beside the
+saved works, a few hundred of its own collection on view, so its rooms are a
+museum to walk: `python3 scripts/build_interiors.py --collection` reads them
+(into `data/collections/<museum>.json`, never committed) and every run hangs
+them from that copy. Chosen by the museum's own flags, in its own order:
+
+| museum | what is read | room from | label |
+| --- | --- | --- | --- |
+| the Met | its highlights on view (`isHighlight`, `isOnView`, collection API v1.1 search, then each object) | `GalleryNumber` | none published |
+| the Art Institute | its works on view (`is_on_view`), the boosted ("essentials", `is_boosted`) first | `gallery_id` / `gallery_title` | `description` (CC BY 4.0) |
+| Cleveland | its highlights on view (`highlight`, `currently_on_view`) | `current_location` | `wall_description`, else `description` |
+| the NGA | its paintings, then sculpture, on view in the West Building (its open data has no highlight flag), by object id | `locationid` → `locations.csv` (room and wall) | none published |
+
+Only works whose gallery is drawn in the file are hung, in rounds: each room
+its first six, then two more a round, the rooms in the order of their best
+work, at most 300 a museum; never a saved work's own object (that is listed
+once, as the saved work); never in a closed room. Each is a work entry:
+
+```json
+{"id": "met:436535", "kind": "collection", "how": "museum", "room": "G-822", "wall": null,
+ "said": "Gallery 822, in the Met's record", "src": "met-collection", "asof": "2026-10-08",
+ "ref": {"museum": "met", "object": "436535", "url": "https://www.metmuseum.org/art/collection/search/436535",
+         "field": "GalleryNumber: 822"},
+ "t": "Wheat Field with Cypresses", "a": "Vincent van Gogh", "y": "1889", "m": "Oil on canvas",
+ "cm": [93.4, 73.2], "cmsrc": "met",
+ "img": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-42549-001.jpg", "c": null,
+ "desc": null, "descsrc": null, "credit": "Purchase, The Annenberg Foundation Gift, 1993"}
+```
+
+- `id`: `<museum>:<object>` — `met`, `aic`, `cma` or `nga` and the museum's
+  own object number; never an Artsy id.
+- `kind`: `collection`. A collection work always hangs (`how` `museum`);
+  one whose gallery is not drawn is not listed at all.
+- `room`, `wall`, `said`, `src`, `asof`: as for a saved work. `said` is the
+  record's words (the Met's bare `GalleryNumber` in plain words, the field
+  in `ref.field`); `src` is the museum's `-collection` source.
+- `ref`: `{museum, object, url, field?}` — `url` the museum's own page for
+  the work (the page may link to it; it is the museum's, not ours).
+- `t`, `a`, `y`, `m`: title, artist (or culture), date and medium as the
+  museum gives them.
+- `cm`, `cmsrc`: its size, as for a saved work (the museum's own measure,
+  never the framed one; the Met's "Overall" element; the NGA's first
+  dimension line; the Art Institute's dimensions text, else its unframed
+  detail).
+- `img`: the museum's own image address, **only where the museum says the
+  image is open access** — the Met's `primaryImageSmall` where
+  `isPublicDomain`; the Art Institute's IIIF
+  `https://www.artic.edu/iiif/2/<image_id>/full/843,/0/default.jpg` where
+  `is_public_domain`; Cleveland's `images.web.url` where
+  `share_license_status` is CC0; the NGA's IIIF
+  `<iiifurl>/full/!843,843/0/default.jpg` where `published_images.csv` says
+  `openaccess` 1 — else null, and the page shows its colours, or a quiet
+  frame, with its label. Shown live in the visitor's browser, never copied.
+- `c`: its colours where the museum measured them cheaply (the Art
+  Institute's dominant colour, one hex), else null.
+- `desc`, `descsrc`: the museum's own label for it, verbatim (its markup
+  taken out, its paragraphs kept), and whose label it is ("the Art
+  Institute of Chicago's label", "the Cleveland Museum of Art's wall text");
+  both null where the museum publishes none (the Met, the NGA).
+- `credit`: the museum's credit line, verbatim, or null.
+- `free`: true for a sculpture, as for a saved work.
+
+The checker refuses a collection work that does not hang, has no
+`ref {museum, object, url}`, an `img` that is not https, `c` that is not a
+list of hex colours, or `desc` without `descsrc` (or the other way).
 
 ## How works hang
 
@@ -352,7 +428,19 @@ a thing or a pin.
    work's gallery; the Met's, Cleveland's and SMK's gallery for each object.
 2. OpenStreetMap's indoor mapping (`indoor=room|area|corridor`, `level`,
    `ref`, `door`; ODbL), read on GitHub's runners as the construction dates
-   are. Reconstructed unless it matches a documented plan.
+   are: `.github/workflows/osm-indoor.yml` runs `scripts/fetch_osm_indoor.py`
+   for the 45 major museums in its `MAJORS` (a push touching either, or
+   `osm/INDOOR_REQUEST`) and commits `osm/indoor/<slug>.json` (each feature's
+   OSM id, its indoor, door, entrance, room, level, ref and name tags, and
+   its geometry in degrees; credited). `build_interiors.py --osm` lays a
+   shell's rooms from it (each level a floor 4.5 m up, ours; each outline a
+   room anchored on OpenStreetMap's coordinates; each door or entrance on
+   the line between two rooms, or a room and the outside, an opening; the
+   grid turned to the outlines' commonest direction) and, where floors are
+   already drawn, adds only its doors between drawn rooms both within 1.5 m
+   of one. Reconstructed unless it matches a documented plan. What it writes
+   has a note beginning "OpenStreetMap's indoor mapping" and is rewritten
+   each run.
 3. Measured drawings in the public domain (HABS/HAER at the Library of
    Congress for the American buildings that have them): documented, to their
    dimensions.
@@ -368,6 +456,51 @@ a thing or a pin.
 Where a museum's own page for a work says where it hangs ("On view in Room
 32"), it goes in `HANGS` in `scripts/build_interiors.py` with the page's
 address and the day it was read.
+
+## The museums read from their own maps (8 Oct 2026)
+
+- **The National Gallery of Art** (`--nga`, then `scripts/nga_map_doors.py`):
+  its own outlines for the rooms (documented); the doorways read off its
+  visitor map (English, June 2025, fetched from nga.gov into
+  `data/plans/`): the map's pages registered to the outlines once (by how
+  many outline points fall on the map's drawn separators; `REG` in the
+  script, recorded in `from.nga-map`), then for each two rooms facing each
+  other a probe across the shared wall every 0.1 m reads the map's paint —
+  the rooms' own (pinks, the halls' white) or a wall (greys; between two
+  galleries the white line); each open run of 1 m or more is a doorway there,
+  at its middle, its width the run's (1.2–4 m). A run of 0.6–1 m counts
+  only where it is a room's only way to the rest; rooms left apart are read
+  again loosely (the map's light screens and hatching not taken for walls).
+  A room the map paints grey is closed. Reconstructed (`src` nga-map), and
+  its note says so.
+- **The Met** (`scripts/met_plan_rooms.py`): its visitor floor plans (Floor
+  1, Floor 2), where each gallery's number is printed on them (as the
+  met-tour-project read them) and the points the Met's own map opens on for
+  85 galleries (the ARtifact project's list of maps.metmuseum.org links).
+  Each floor's plan is laid into the model's frame by the affine that puts
+  the printed numbers on the Met's points (Floor 1 to 0.2 m median, Floor 2
+  to 1.4 m); the plan's walls (its thin blue-grey lines, letters set aside)
+  stop a walk; each room is the floor nearest its number by walking, never
+  through a wall, at most 30 m (so it follows the plan's walls where it
+  draws them and crosses open floor midway), as the 1 m cells of the grid
+  (turned 29.3°, Fifth Avenue's) whose middles are in it; an opening where
+  two rooms meet on open floor. The insets (mezzanines, Floor 3, the Roof
+  Garden) are not drawn: they are not in place on the plans. Rooms are
+  anchored on the Met's points: the model stands off them. The floors are
+  joined by the lift the plans draw by the Great Hall; the entrance is the
+  plans' 82nd Street door. All reconstructed.
+- **The Art Institute** (`scripts/aic_rooms.py`): its API's point for each
+  gallery; each room the floor nearer its point than any other gallery's of
+  that floor (Voronoi), within 9 m of it, on the 0.5 m grid; one gallery
+  given two points is one room round both; doorways only between galleries
+  numbered one after the other (201 and 202; 127A and 127B) that share a
+  wall 2 m long or more, at its middle; the entrance its own point for the
+  Michigan Avenue entrance. No plan of the building can be read from a
+  session, so most rooms have no way in known and no stairs join the floors.
+  Anchored on its points. All reconstructed.
+- **Cleveland**: its records name each work's gallery, but no geometry for
+  the galleries has been found (no plan, no points); it stays a shell, its
+  works listed, until OpenStreetMap's indoor mapping or a plan gives rooms.
 
 ## Georeferencing
 
@@ -400,7 +533,7 @@ room, or reaching into two rooms on a floor; an entrance not on
 a floor, or no room reached from it; rooms overlapping by more than 5% of
 the smaller; a reconstructed room more than 10% outside the model at its
 floor's eye height (a voxel's slack); a placed work whose room or wall does
-not resolve; a file over 96 KB, a floor over 400,000 cells or 400 rooms.
+not resolve; a file over 640 KB, a floor over 400,000 cells or 400 rooms.
 
 It warns of a documented room outside the model, rooms with no way in known
 yet (in the walk, a room of those that holds saved works is come into by a
