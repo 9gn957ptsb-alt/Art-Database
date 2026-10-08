@@ -157,7 +157,8 @@ function record(results) {
 // The ledger as the Python scripts write it (json.dumps, indent 2, ASCII),
 // so a run of the checker changes only the lines it means to.
 function pythonJSON(x) {
-  return JSON.stringify(x, null, 2).replace(/[\u0080-\uffff]/g, ch => "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"));
+  // UTF-8 as the ledger is kept by hand and by the daily pass (escaping it rewrote every accented line).
+  return JSON.stringify(x, null, 2);
 }
 
 function findingLine(f) {
