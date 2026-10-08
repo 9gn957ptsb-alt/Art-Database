@@ -890,6 +890,8 @@
     });
     root.addEventListener("pointermove", function (event) {
       if (!city || !on_) { return; }
+      // Rising out of the city (land.js): the fingers are the rise's, the skyline only fades.
+      if (Land.city && Land.city.rising && Land.city.rising()) { gesture = null; pointers = {}; return; }
       // The globe's own hover (a work named under the pointer) is not the skyline's.
       event.stopPropagation();
       if (event.pointerType === "mouse" && !pointers[event.pointerId] && !event.target.closest(".skyline-name, .skyline-who")) {
@@ -920,6 +922,8 @@
         g.d = d;
         zoomAbout(r, mx, my, g);
         dirty = true;
+        // Pinched on out past the widest: the world, as far as the fingers go (land.js's rise), else up.
+        if (g.over < 1 && Land.city.rise && Land.city.rise()) { gesture = null; pointers = {}; return; }
         if (g.over < 1 / 1.45) { gesture = null; pointers = {}; Land.city.up(); }
         else if (g.over > 1.5) { gesture = null; pointers = {}; down(mx, my); }
       }
@@ -963,6 +967,7 @@
       zoomAbout(Math.exp(-wd * step), event.clientX, event.clientY, g);
       dirty = true;
       if (g.over !== 1) {
+        if (wd > 0 && Land.city.rise && Land.city.rise(Math.exp(-wd * step))) { wheelPush = 0; return; }
         wheelPush += Math.abs(wd) * (event.ctrlKey ? 8 : 1);
         if (wheelPush > (wd > 0 ? 377 : 233)) {
           wheelPush = 0;
@@ -992,7 +997,10 @@
       var inward = k === "+" || k === "=", g = { over: 1 };
       zoomAbout(inward ? 1.25 : 1 / 1.25, band.x + band.w / 2, band.y + band.h / 2, g);
       dirty = true;
-      if (g.over !== 1) { if (inward) { down(band.x + band.w / 2, band.y + band.h / 2); } else { Land.city.up(); } }
+      if (g.over !== 1) {
+        if (inward) { down(band.x + band.w / 2, band.y + band.h / 2); }
+        else if (!(Land.city.riseAll && Land.city.riseAll())) { Land.city.up(); }
+      }
       return true;
     }
     return false;
