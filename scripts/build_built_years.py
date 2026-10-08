@@ -525,10 +525,26 @@ CATASTRO_YEARS = {
 }
 
 
+_catastro_up = None
+
+
 def spain(box):
     """The Catastro's INSPIRE buildings (not the Basque Country or Navarre), in pieces under its 4 km²
-    cap; a piece it cannot answer in time is split in four."""
+    cap; a piece it cannot answer in time is split in four. Asked once first: a service that does not
+    answer at all (the session, since 7 Oct 2026) is left at once, and EUBUCCO's copy of its years
+    stands in (below)."""
     import re
+    global _catastro_up
+    if _catastro_up is None:
+        try:
+            req = urllib.request.Request("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?service=wfs&version=2.0.0"
+                                         "&request=GetCapabilities", headers=AGENT)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                _catastro_up = r.status == 200
+        except Exception:
+            _catastro_up = False
+    if not _catastro_up:
+        raise RuntimeError("the Catastro's service does not answer")
     s, w, n, e = box
     out = []
 
@@ -969,6 +985,168 @@ def join_years(got, lat, lon, cell):
 FLOORS = {"Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King County Assessor": 1900,
           "San Francisco Assessor-Recorder": 1900, "London Building Stock Model 2 (GLA)": 1900}
 
+# EUBUCCO (Milojevic-Dupont et al., Scientific Data 2023; v0.1, ODbL 1.0), on the Source Cooperative's
+# mirror, which answers the session: a year for each building where its country's register gives one —
+# Spain's Catastro (as the WFS above, which refused the session on 7 Oct 2026), France's BD TOPO — in one
+# parquet file an H3 cell (resolution 4), downloaded once into data/eubucco/ (Madrid's 90 MB). Tuscany's
+# years are a survey's, not construction (all 1993–2007): not taken. A Catastro building keeps its hand
+# fix (CATASTRO_YEARS) by its reference.
+EUBUCCO = ("https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/abry-tudelft/eubucco/"
+           "parquet/h3/h3_cell={c}/{c}.parquet")
+EUBUCCO_AT = [(35.9, -9.4, 43.8, 4.4), (41.3, -5.2, 51.1, 9.6)]       # Spain, France
+_eub = {}
+
+
+def eubucco(box):
+    import h3
+    import pyarrow.parquet as pq
+    import shapely
+    s, w, n, e = box
+    cells = sorted({h3.latlng_to_cell(la, lo, 4) for la in np.linspace(s, n, 7) for lo in np.linspace(w, e, 7)})
+    out = []
+    for c in cells:
+        path = CACHE / "eubucco" / (c + ".parquet")
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            req = urllib.request.Request(EUBUCCO.format(c=c), headers=AGENT)
+            try:
+                with urllib.request.urlopen(req, timeout=1800) as r, open(str(path) + ".part", "wb") as f:
+                    while True:
+                        chunk = r.read(1 << 20)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            except urllib.error.HTTPError as exc:
+                if exc.code in (403, 404):
+                    continue                     # no buildings in that cell
+                raise
+            Path(str(path) + ".part").rename(path)
+        pf = _eub.get(c) or pq.ParquetFile(path)
+        _eub[c] = pf
+        for g in range(pf.num_row_groups):
+            t = pf.read_row_group(g, columns=["age", "id_source", "bbox"]).to_pydict()
+            keep = [k for k, (a, b) in enumerate(zip(t["age"], t["bbox"]))
+                    if a and b and b["xmax"] >= w and b["xmin"] <= e and b["ymax"] >= s and b["ymin"] <= n]
+            if not keep:
+                continue
+            geom = pf.read_row_group(g, columns=["geometry"]).column(0).to_pylist()
+            for k in keep:
+                ref = str(t["id_source"][k] or "")
+                y = CATASTRO_YEARS.get(ref.split(".")[-1].strip()) or year_of(t["age"][k])
+                if not y:
+                    continue
+                shape = shapely.from_wkb(geom[k])
+                for poly in getattr(shape, "geoms", [shape]):
+                    if poly.geom_type == "Polygon":
+                        out.append((y, list(poly.exterior.coords)))
+    return "polys", out
+
+
+# Wikidata's dated landmarks: every item in the square with a point (P625) that is an architectural
+# structure (Q811979's class tree) and not an organisation (Q43229's: a museum's founding is not its
+# walls), dated by its inception (P571), else its opening (P1619), to the year or the decade. One
+# query a square (cached in data/wikidata_landmarks/), the classes judged here against the two class
+# trees (fetched once). A landmark is a point: it dates the building cell it stands in.
+WD_MARKS = CACHE / "wikidata_landmarks"
+
+
+def _sparql(query, timeout=180):
+    url = WD_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"})
+    for attempt in range(6):
+        try:
+            return json.loads(fetch(url, timeout=timeout) or b"{}")
+        except Exception as exc:            # the query service is often slow, or asks for a minute between
+            err = exc
+            time.sleep(min(90, 15 * (attempt + 1)))
+    raise err
+
+
+def _tree(root):
+    path = WD_MARKS / f"tree-{root}.json"
+    if path.exists():
+        return set(json.loads(path.read_text()))
+    res = _sparql("SELECT ?c WHERE { ?c wdt:P279* wd:%s }" % root, timeout=300)
+    got = sorted({b["c"]["value"].rsplit("/", 1)[-1] for b in res.get("results", {}).get("bindings", [])})
+    WD_MARKS.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(got))
+    return set(got)
+
+
+def wikidata_marks(slug, box):
+    s, w, n, e = box
+    path = WD_MARKS / (slug + ".json")
+    if path.exists():
+        rows = json.loads(path.read_text())
+    else:
+        rows = []
+        # Large squares in four, so no answer is cut at the service's cap.
+        parts = [(s, w, n, e)] if (n - s) < 0.04 else [(a, b, a + (n - s) / 2, b + (e - w) / 2)
+                                                         for a in (s, (s + n) / 2) for b in (w, (w + e) / 2)]
+        for ps, pw, pn, pe in parts:
+            q = """SELECT ?item ?cls ?p ?t ?prec ?lat ?lon WHERE {
+  SERVICE wikibase:box { ?item wdt:P625 ?loc .
+    bd:serviceParam wikibase:cornerSouthWest "Point(%f %f)"^^geo:wktLiteral .
+    bd:serviceParam wikibase:cornerNorthEast "Point(%f %f)"^^geo:wktLiteral . }
+  ?item wdt:P31 ?cls .
+  { ?item p:P571/psv:P571 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P571" AS ?p) }
+  UNION
+  { ?item p:P1619/psv:P1619 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P1619" AS ?p) }
+  BIND(geof:latitude(?loc) AS ?lat) BIND(geof:longitude(?loc) AS ?lon)
+}""" % (pw, ps, pe, pn)
+            res = _sparql(q)
+            for b in res.get("results", {}).get("bindings", []):
+                rows.append([b["item"]["value"].rsplit("/", 1)[-1], b["cls"]["value"].rsplit("/", 1)[-1],
+                             b["p"]["value"], b["t"]["value"], int(b["prec"]["value"]),
+                             float(b["lat"]["value"]), float(b["lon"]["value"])])
+            time.sleep(2)
+        WD_MARKS.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(rows))
+    built, org = _tree("Q811979"), _tree("Q43229")
+    by = {}
+    for qid, cls, p, t, prec, la, lo in rows:
+        d = by.setdefault(qid, {"cls": set(), "P571": 9999, "P1619": 9999, "ll": (la, lo)})
+        d["cls"].add(cls)
+        if prec < 8:
+            continue
+        try:
+            y = int(t[:t.index("-", 1)])
+        except ValueError:
+            continue
+        y += 5 if prec == 8 else 0
+        if 1000 <= y <= THIS_YEAR:
+            d[p] = min(d[p], y)
+    pts = []
+    for qid, d in by.items():
+        if not (d["cls"] & built) or (d["cls"] & org):
+            continue
+        y = d["P571"] if d["P571"] < 9999 else d["P1619"]
+        if y < 9999:
+            pts.append((d["ll"][0], d["ll"][1], y, 0.0))
+    return "points", pts
+
+
+def landmark_years(place, box, lat, lon, cell):
+    """Each building cell a dated landmark stands in (within half a cell of its point), else 0."""
+    try:
+        got = wikidata_marks(place["slug"], box)
+    except Exception as exc:
+        print(f"  · Wikidata landmarks did not answer: {type(exc).__name__}", flush=True)
+        return None
+    years = np.zeros(len(lat), dtype=np.int64)
+    if not got[1]:
+        return years
+    P = np.array([(r[0], r[1], r[2]) for r in got[1]], dtype=float)
+    reach = cell * 0.71                     # the cell it stands in: half its diagonal
+    for k in range(len(P)):
+        dy = (lat - P[k, 0]) * 111320
+        dx = (lon - P[k, 1]) * 111320 * math.cos(math.radians(P[k, 0]))
+        d = np.sqrt(dx * dx + dy * dy)
+        m = int(np.argmin(d))
+        if d[m] <= reach and (years[m] == 0 or P[k, 2] < years[m]):
+            years[m] = int(P[k, 2])
+    return years
+
+
 # Years from sources that do not answer the session, read on GitHub's runners by
 # scripts/fetch_city_records.py (.github/workflows/city-records.yml) into records/years/<slug>.json:
 # each building cell's year by its index in the ground (i * n + j), the sources' names, their floor.
@@ -992,7 +1170,12 @@ def city_years(place, box, lat, lon, cell):
     for name, s, w, n, e, fetcher in CITIES:
         if not (s <= place["lat"] <= n and w <= place["lon"] <= e):
             continue
-        years = join_years(fetcher(box), lat, lon, cell)
+        try:
+            got = fetcher(box)
+        except Exception as exc:          # a source that does not answer (the Catastro's WFS, 7 Oct 2026)
+            print(f"  · {name} did not answer: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+            continue
+        years = join_years(got, lat, lon, cell)
         if years is None:
             continue            # a box that also takes in a neighbour (France's takes in Bern): try the next
         return years, name
@@ -1180,6 +1363,28 @@ def years_for(place, g):
             said += [n_ for n_ in rec_names if n_ not in said]
             if (rec[take] < 0).any() and rec_floor:
                 floor = max(floor or 0, rec_floor)
+
+    # A dated landmark's year (Wikidata), where the city left its building undated or only "old"
+    # (a year before the source's floor is a closer word for it).
+    lm = landmark_years(place, (s, w, nn, e), lat, lon, cell)
+    if lm is not None:
+        take = ((years == 0) | ((years < 0) & (lm < (floor or THIS_YEAR)))) & (lm > 0)
+        if take.any():
+            years[take] = lm[take]
+            said.append("Wikidata")
+
+    # A building's year from EUBUCCO's registers (Spain, France), where the city left it undated.
+    if any(a <= place["lat"] <= c and b <= place["lon"] <= d for a, b, c, d in EUBUCCO_AT):
+        try:
+            eu = join_years(eubucco((s, w, nn, e)), lat, lon, cell)
+        except Exception as exc:
+            print(f"  · EUBUCCO did not answer: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+            eu = None
+        if eu is not None:
+            take = (years == 0) & (eu != 0)
+            if take.any():
+                years[take] = eu[take]
+                said.append("EUBUCCO (Catastro, BD TOPO)")
 
     # What the city leaves, from the dates OpenStreetMap's contributors have written on the buildings.
     osm = osm_years(place, lat, lon, cell)
