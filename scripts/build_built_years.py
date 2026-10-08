@@ -9,10 +9,14 @@ grows the town year by year under a slider (see CLAUDE.md, "The timeline").
 Where the years come from, most exact first, all open data:
 
   * the building's own year, where the city publishes one (CITIES below: New
-      York's footprints and PLUTO, the Netherlands' BAG, London, France's BDNB,
-      Washington DC, LA County, Chicago, Boston, Philadelphia, Vienna,
-      Switzerland, Melbourne, Spain's Catastro, King County, Miami-Dade), with
-      documented years standing in for a city's plainly wrong landmark records;
+      York's footprints and PLUTO, the Netherlands' BAG, London, Paris's APUR,
+      France's BDNB, Washington DC, LA County, Chicago, Boston, Philadelphia,
+      Vienna, Switzerland, Melbourne, King County, Miami-Dade, San Francisco,
+      Vancouver, New Jersey, Texas, Berlin, Denmark), with documented years
+      standing in for a city's plainly wrong landmark records;
+  * what the city leaves: the records read on GitHub's runners, Wikidata's
+      dated landmarks, EUBUCCO's registers (Spain's Catastro, France's BD TOPO)
+      and OpenStreetMap's dates;
   * otherwise the year its patch of ground was first built on —
       World Settlement Footprint Evolution (DLR; Marconcini et al.), 30 m, a
       year from 1985 to 2015 (1985 meaning "by 1985");
@@ -770,7 +774,9 @@ def melbourne(box):
     return "polys", polys, pts
 
 
-# Spain: the Catastro's own years for landmarks it gives a refurbishment year (reference: documented).
+# Spain: the Catastro's own years for landmarks it gives a refurbishment year (reference: documented),
+# applied to EUBUCCO's copy of its buildings (below): its WFS answered the session only now and then
+# (7–8 Oct 2026), and EUBUCCO dates Madrid's square as fully.
 CATASTRO_YEARS = {
     "1341701VK4714A": 1819,   # Museo del Prado, Villanueva building (opened 1819)
     "1543901VK4714D": 1635,   # Casón del Buen Retiro
@@ -778,72 +784,6 @@ CATASTRO_YEARS = {
     "1344501VK4714C": 1893,   # Biblioteca Nacional / Museo Arqueológico
     "1343708VK4714C": 1910,   # Palacio de Cibeles
 }
-
-
-_catastro_up = None
-
-
-def spain(box):
-    """The Catastro's INSPIRE buildings (not the Basque Country or Navarre), in pieces under its 4 km²
-    cap; a piece it cannot answer in time is split in four. Asked once first: a service that does not
-    answer at all (the session, since 7 Oct 2026) is left at once, and EUBUCCO's copy of its years
-    stands in (below)."""
-    import re
-    global _catastro_up
-    if _catastro_up is None:
-        # A small piece of the square, not its capabilities: on 8 Oct 2026 it answered those at once and
-        # then held every request for buildings until it timed out.
-        s0, w0 = box[0], box[1]
-        q = {"service": "wfs", "version": "2.0.0", "request": "getfeature", "typenames": "BU.BUILDING",
-             "bbox": f"{s0},{w0},{s0 + 0.001},{w0 + 0.001}", "SRSNAME": "EPSG:4326"}
-        try:
-            req = urllib.request.Request("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q),
-                                         headers=AGENT)
-            with urllib.request.urlopen(req, timeout=45) as r:
-                _catastro_up = r.status == 200 and b"FeatureCollection" in r.read()
-        except Exception:
-            _catastro_up = False
-    if not _catastro_up:
-        raise RuntimeError("the Catastro's service does not answer")
-    s, w, n, e = box
-    out = []
-    # And a budget: it can answer one small request and then hold the next ones (8 Oct 2026).
-    deadline = time.time() + 300
-
-    def piece(ys, xw, yn, xe, depth=0):
-        if time.time() > deadline:
-            raise RuntimeError("the Catastro's service is too slow")
-        q = {"service": "wfs", "version": "2.0.0", "request": "getfeature", "typenames": "BU.BUILDING",
-             "bbox": f"{ys},{xw},{yn},{xe}", "SRSNAME": "EPSG:4326"}
-        try:
-            gml = (fetch("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q), timeout=60)
-                   or b"").decode("latin-1")
-        except Exception:
-            if depth >= 3 or time.time() > deadline:
-                raise
-            ym, xm = (ys + yn) / 2, (xw + xe) / 2
-            for a in ((ys, xw, ym, xm), (ys, xm, ym, xe), (ym, xw, yn, xm), (ym, xm, yn, xe)):
-                piece(*a, depth=depth + 1)
-            return
-        for part in gml.split("<gml:featureMember")[1:]:     # one bu-ext2d:Building each
-            m = re.search(r"<bu-core2d:beginning>(\d{4})", part)
-            ref = re.search(r'gml:id="ES\.SDGC\.BU\.([^"]+)"', part)
-            y = CATASTRO_YEARS.get(ref.group(1) if ref else "") or (year_of(m.group(1)) if m else 0)
-            for patch in re.findall(r"<gml:PolygonPatch>(.*?)</gml:PolygonPatch>", part, re.S) or [part]:
-                ext = re.search(r"<gml:exterior>.*?<gml:posList[^>]*>([^<]+)", patch, re.S)
-                if ext:
-                    v = [float(t) for t in ext.group(1).split()]
-                    out.append((y, [(v[k + 1], v[k]) for k in range(0, len(v) - 1, 2)]))
-
-    step = 0.005
-    y0 = s
-    while y0 < n:
-        x0 = w
-        while x0 < e:
-            piece(y0, x0, min(n, y0 + step), min(e, x0 + step))
-            x0 += step
-        y0 += step
-    return "polys", out
 
 
 # France: the BDNB's building groups, commune by commune (Paris, Lyon and Marseille by arrondissement).
@@ -901,19 +841,34 @@ def france(box):
     if (json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}").get("address") or {}).get("country_code") != "fr":
         return "polys", []
     time.sleep(1.1)
-    for la, lo in ((s, w), (s, e), (n, w), (n, e), ((s + n) / 2, (w + e) / 2)):
-        # At zoom 12 the answer is the commune, or the arrondissement in Paris, Lyon and Marseille,
-        # as the BDNB counts them, and OpenStreetMap carries its INSEE code.
-        q = urllib.parse.urlencode({"lat": la, "lon": lo, "format": "jsonv2", "zoom": 12,
-                                    "addressdetails": 1, "extratags": 1})
-        d = json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}")
-        code = (d.get("extratags") or {}).get("ref:INSEE", "")
-        pc = (d.get("address") or {}).get("postcode", "")
-        if len(code) == 5 and code != "75056":
-            communes.add(code)
-        elif pc.startswith("750") and len(pc) == 5:
-            communes.add("751" + pc[3:])                 # Paris: postcode 750NN is arrondissement 751NN
-        time.sleep(1.1)
+    # At zoom 12 the answer is the commune, or the arrondissement in Paris, Lyon and Marseille, as the
+    # BDNB counts them, and OpenStreetMap carries its INSEE code. Asked on a grid a kilometre apart (3 × 3
+    # at least, 9 × 9 at most): the corners and the middle alone had left most of Paris's arrondissements
+    # unread (8 Oct 2026). Each answer is kept in data/bdnb/communes.json.
+    kept_at = CACHE / "bdnb" / "communes.json"
+    kept = json.loads(kept_at.read_text()) if kept_at.exists() else {}
+    ky = min(9, max(3, math.ceil((n - s) * 111.32) + 1))
+    kx = min(9, max(3, math.ceil((e - w) * 111.32 * math.cos(math.radians((s + n) / 2))) + 1))
+    for la in np.linspace(s, n, ky):
+        for lo in np.linspace(w, e, kx):
+            at = f"{la:.4f},{lo:.4f}"
+            if at not in kept:
+                q = urllib.parse.urlencode({"lat": round(la, 5), "lon": round(lo, 5), "format": "jsonv2",
+                                            "zoom": 12, "addressdetails": 1, "extratags": 1})
+                d = json.loads(fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}")
+                code = (d.get("extratags") or {}).get("ref:INSEE", "")
+                pc = (d.get("address") or {}).get("postcode", "")
+                if len(code) == 5 and code != "75056":
+                    kept[at] = code
+                elif pc.startswith("750") and len(pc) == 5:
+                    kept[at] = "751" + pc[3:]            # Paris: postcode 750NN is arrondissement 751NN
+                else:
+                    kept[at] = ""
+                time.sleep(1.1)
+            if kept[at]:
+                communes.add(kept[at])
+    kept_at.parent.mkdir(parents=True, exist_ok=True)
+    kept_at.write_text(json.dumps(kept, sort_keys=True))
     to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
     out = []
     for code in sorted(communes):
@@ -926,6 +881,34 @@ def france(box):
                     continue
                 out.append((y, list(zip(lons, lats))))
     return "polys", out
+
+
+# Paris: APUR's map of the city's buildings (Atelier parisien d'urbanisme, on its ArcGIS Online; ODbL),
+# its period of construction for 93 % of them and an exact year for 61 %. The exact year where it falls in
+# the period; else the period's middle. "Avant 1800" is old (-1) unless an earlier year is given: its
+# 1800 is the period's edge, not a year. "2008 et plus", of a map made in 2018, is 2012 without a year.
+APUR = ("https://services2.arcgis.com/cFEFS0EWrhfDeVw9/ArcGIS/rest/services/"
+        "paris_buildings_footprints/FeatureServer/0")
+APUR_PERIOD = {"1801 - 1850": (1801, 1850, 1825), "1851 - 1914": (1851, 1914, 1882),
+               "1915 - 1939": (1915, 1939, 1927), "1940 - 1967": (1940, 1967, 1953),
+               "1968 - 1975": (1968, 1975, 1971), "1976 - 1981": (1976, 1981, 1978),
+               "1982 - 1989": (1982, 1989, 1985), "1990 - 1999": (1990, 1999, 1994),
+               "2000 - 2007": (2000, 2007, 2003), "2008 et plus": (2008, THIS_YEAR, 2012)}
+
+
+def apur_year(at):
+    period = (at.get("C_PERCONST") or "").strip()
+    y = int(at["AN_CONST"]) if (at.get("AN_CONST") or "").strip().isdigit() else 0
+    if period == "Avant 1800":
+        return y if 1000 <= y < 1800 else OLD
+    if period not in APUR_PERIOD:
+        return 0                         # "Non-daté"
+    lo, hi, mid = APUR_PERIOD[period]
+    return y if lo <= y <= hi else mid
+
+
+def paris(box):
+    return "polys", [(apur_year(at), ring) for at, ring in arcgis(APUR, box, "AN_CONST,C_PERCONST")]
 
 
 # London: the GLA's building stock model, borough by borough (the boroughs round our places): one
@@ -1173,6 +1156,7 @@ CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
     ("New York City building footprints and PLUTO", *NYC, new_york),
     ("BAG (Kadaster)", *NL, netherlands),
     ("London Building Stock Model 2 (GLA)", 51.28, -0.51, 51.70, 0.34, london),
+    ("APUR (Paris)", 48.815, 2.224, 48.903, 2.47, paris),
     ("BDNB (CSTB)", 41.3, -5.2, 51.1, 9.6, france),
     ("DC assessor (CAMA)", 38.79, -77.12, 39.0, -76.90, washington),
     ("LA County Assessor", 33.70, -118.95, 34.85, -117.65, los_angeles),
@@ -1182,7 +1166,6 @@ CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
     ("Vienna building information (Stadt Wien)", 48.11, 16.18, 48.33, 16.58, vienna),
     ("Swiss building register (GWR)", 45.8, 5.9, 47.9, 10.5, switzerland),
     ("City of Melbourne CLUE", -37.86, 144.89, -37.77, 145.0, melbourne),
-    ("Catastro (Spain)", 35.9, -9.4, 43.8, 4.4, spain),
     ("King County Assessor", 47.08, -122.54, 47.78, -121.06, king_county),
     ("Miami-Dade County Property Appraiser", 25.13, -80.87, 25.98, -80.11, miami_dade),
     ("San Francisco Assessor-Recorder", 37.70, -122.52, 37.84, -122.35, san_francisco),
@@ -1248,13 +1231,13 @@ def join_years(got, lat, lon, cell):
 # The year before which a source cannot say ("before 1900", "bis 1918"): its -1 cells, "old", stand from
 # the dial's first year, and the skyline's column says from when they are not dated (the ground's
 # builtOld). The records read on GitHub's runners carry their own.
-FLOORS = {"Berlin building age (Umweltatlas, heat plan) and listed buildings": 1900,
+FLOORS = {"Berlin building age (Umweltatlas, heat plan) and listed buildings": 1900, "APUR (Paris)": 1800,
           "Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King County Assessor": 1900,
           "San Francisco Assessor-Recorder": 1900, "London Building Stock Model 2 (GLA)": 1900}
 
 # EUBUCCO (Milojevic-Dupont et al., Scientific Data 2023; v0.1, ODbL 1.0), on the Source Cooperative's
 # mirror, which answers the session: a year for each building where its country's register gives one —
-# Spain's Catastro (as the WFS above, which refused the session on 7 Oct 2026), France's BD TOPO — in one
+# Spain's Catastro (whose own WFS seldom answers the session), France's BD TOPO — in one
 # parquet file an H3 cell (resolution 4), downloaded once into data/eubucco/ (Madrid's 90 MB). Tuscany's
 # years are a survey's, not construction (all 1993–2007): not taken. A Catastro building keeps its hand
 # fix (CATASTRO_YEARS) by its reference.
@@ -1435,20 +1418,32 @@ def record_years(place, g, cells):
 
 
 def city_years(place, box, lat, lon, cell):
-    """Years for the cells from whichever city covers the place: (years, name), or (None, None)."""
+    """Years for the cells from the cities' sources that cover the place, in CITIES' order, each dating
+    what the ones before left undated, or "old" when it says a year before their floor (APUR, then the
+    BDNB round Paris): (years, names, floor), or (None, [], None)."""
+    years, names, floor = None, [], None
     for name, s, w, n, e, fetcher in CITIES:
         if not (s <= place["lat"] <= n and w <= place["lon"] <= e):
             continue
+        if years is not None and not (years <= 0).any():
+            break
         try:
             got = fetcher(box)
-        except Exception as exc:          # a source that does not answer (the Catastro's WFS, 7 Oct 2026)
+        except Exception as exc:          # a source that does not answer
             print(f"  · {name} did not answer: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
             continue
-        years = join_years(got, lat, lon, cell)
-        if years is None:
+        y = join_years(got, lat, lon, cell)
+        if y is None:
             continue            # a box that also takes in a neighbour (France's takes in Bern): try the next
-        return years, name
-    return None, None
+        if years is None:
+            years = np.zeros(len(lat), dtype=np.int64)
+        take = ((years == 0) & (y != 0)) | ((years < 0) & (y > 0) & (y < (floor or THIS_YEAR)))
+        if take.any():
+            years[take] = y[take]
+            names.append(name)
+            if (y[take] < 0).any() and FLOORS.get(name):
+                floor = max(floor or 0, FLOORS[name])
+    return years, names, floor
 
 
 # OpenStreetMap: the construction dates its contributors have written on the buildings round each
@@ -1552,7 +1547,9 @@ def wikidata_years(qids):
             c = cls.get(q, set())
             ok = bool(c & built) and not (c & org)
             _wd[q] = (got.get(q) or opened.get(q) or 0) if ok else 0
-        WD_INCEPTION.write_text(json.dumps(_wd, sort_keys=True, separators=(",", ":")))
+        tmp = WD_INCEPTION.with_suffix(".part")      # whole or not at all: another run may be reading it
+        tmp.write_text(json.dumps(_wd, sort_keys=True, separators=(",", ":")))
+        tmp.replace(WD_INCEPTION)
         time.sleep(1)
     return {q: _wd.get(q, 0) for q in qids}
 
@@ -1621,14 +1618,10 @@ def years_for(place, g):
     # The building's own year, where the city says.
     w, s = to_deg(-half, -half)
     e, nn = to_deg(half, half)
-    got, name = (None, None) if NO_CITY else city_years(place, (s, w, nn, e), lat, lon, cell)
-    floor = None
+    got, names, floor = (None, [], None) if NO_CITY else city_years(place, (s, w, nn, e), lat, lon, cell)
     if got is not None:
         years = got
-        if (got != 0).any():
-            said.append(name)
-            if (got < 0).any():
-                floor = FLOORS.get(name)
+        said += names
 
     # What the city leaves, from the records read on GitHub's runners (fetch_city_records.py).
     rec, rec_names, rec_floor = record_years(place, g, cells)
