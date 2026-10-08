@@ -1012,16 +1012,79 @@ def osm_year(value):
     return OLD if m and re.fullmatch(r"[~c.\s]*\d{1,3}(-\d\d){0,2}", t) else 0
 
 
+# Wikidata: an undated OpenStreetMap outline that names its building's Wikidata item (fetch_osm_dates.py
+# keeps it as "wikidata:Q…") takes the item's inception (P571), to the year or the decade (a decade its
+# middle), and only where the item is a building or structure that is not also an organisation — a
+# museum's or a church's institution was founded in one year, its walls stand from another. Cached in
+# data/wikidata_inception.json (CC0).
+WD_INCEPTION = CACHE / "wikidata_inception.json"
+WD_SPARQL = "https://query.wikidata.org/sparql"
+_wd = None
+
+
+def wikidata_years(qids):
+    global _wd
+    if _wd is None:
+        _wd = json.loads(WD_INCEPTION.read_text()) if WD_INCEPTION.exists() else {}
+    need = sorted({q for q in qids if q not in _wd})
+    for k in range(0, len(need), 120):
+        part = need[k:k + 120]
+        query = """SELECT ?item ?p ?t ?prec WHERE {
+  VALUES ?item { %s }
+  { ?item p:P571/psv:P571 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P571" AS ?p) }
+  UNION
+  { ?item p:P1619/psv:P1619 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P1619" AS ?p) }
+  FILTER(?prec >= 8)
+  ?item wdt:P31/wdt:P279* wd:Q811979 .
+  FILTER NOT EXISTS { ?item wdt:P31/wdt:P279* wd:Q43229 }
+}""" % " ".join("wd:" + q for q in part)
+        url = WD_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"})
+        got, opened = {}, {}
+        try:
+            res = json.loads(fetch(url, timeout=120) or b"{}")
+        except Exception as exc:
+            print(f"  ! Wikidata: {type(exc).__name__}: {exc}", flush=True)
+            continue                      # not cached: asked again next run
+        for b in (res.get("results") or {}).get("bindings") or []:
+            qid = b["item"]["value"].rsplit("/", 1)[-1]
+            t = b["t"]["value"]
+            try:
+                y = int(t[:t.index("-", 1)])
+            except ValueError:
+                continue
+            if int(b["prec"]["value"]) == 8:
+                y += 5
+            if 1000 <= y <= time.gmtime().tm_year:
+                into = got if b["p"]["value"] == "P571" else opened      # its inception, else its opening
+                into[qid] = min(into.get(qid, 9999), y)
+        for q in part:
+            _wd[q] = got.get(q) or opened.get(q) or 0
+        WD_INCEPTION.write_text(json.dumps(_wd, sort_keys=True, separators=(",", ":")))
+        time.sleep(1)
+    return {q: _wd.get(q, 0) for q in qids}
+
+
+WD_USED = set()          # the places whose OpenStreetMap outlines were dated by Wikidata
+
+
 def osm_years(place, lat, lon, cell):
     """Each cell's year from the dated OpenStreetMap outline it stands in (the earliest, where they
-    overlap), or the nearest within a few metres; None where nothing has been read for the place."""
+    overlap), or the nearest within a few metres; None where nothing has been read for the place.
+    An outline that only names its Wikidata item is dated by the item's inception (wikidata_years)."""
     import shapely
     path = OSM_DATES / (place["slug"] + ".json")
     if not path.exists():
         return None
+    rows = json.loads(path.read_text()).get("buildings") or []
+    wd = wikidata_years([v[9:] for v, _ in rows if str(v).startswith("wikidata:")])
     polys, ys = [], []
-    for value, ring in json.loads(path.read_text()).get("buildings") or []:
-        y = osm_year(value)
+    for value, ring in rows:
+        if str(value).startswith("wikidata:"):
+            y = wd.get(value[9:], 0)
+            if y:
+                WD_USED.add(place["slug"])
+        else:
+            y = osm_year(value)
         if y and len(ring) >= 4:
             polys.append(shapely.Polygon(ring))
             ys.append(y)
@@ -1078,6 +1141,8 @@ def years_for(place, g):
         if take.any():
             years[take] = osm[take]
             said.append("OpenStreetMap contributors")
+            if place["slug"] in WD_USED:
+                said.append("Wikidata")
     known = years.copy()
 
     # The year its ground was first built on, for what the city did not say.

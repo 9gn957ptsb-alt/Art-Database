@@ -3,7 +3,8 @@
 
 Many buildings in OpenStreetMap carry the year they were built (start_date, and a few older keys),
 and a landmark nearly always does. This reads them for the square round every place on the globe
-(docs/v2/architecture.json and museums.json, the same square build_grounds.py cuts) and writes, for
+(docs/v2/architecture.json and museums.json, the cities' skylines in cityplaces.json and the lives'
+places in lifeplaces.json — the same squares build_grounds.py cuts) and writes, for
 each place, the dated buildings' outlines to osm/dates/<slug>.json — OpenStreetMap data, © its
 contributors, under the ODbL, and credited as such in each file. build_built_years.py reads them to
 date what the city sources leave undated, before the satellites.
@@ -32,7 +33,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json"]
+PLACES = [ROOT / "docs" / "v2" / "architecture.json", ROOT / "docs" / "v2" / "museums.json",
+          ROOT / "docs" / "v2" / "cityplaces.json", ROOT / "docs" / "v2" / "lifeplaces.json"]
 OUT = ROOT / "osm" / "dates"
 INDEX = "https://download.geofabrik.de/index-v1.json"
 AGENT = {"User-Agent": "Art-Database/1.0 (artist website; github.com/9gn957ptsb-alt/Art-Database)"}
@@ -65,7 +67,8 @@ def fetch(url, path=None, timeout=600):
 
 
 def square(p):
-    side = SIDE.get(p.get("precision"), SIDE["town"]) + 2 * MARGIN
+    # A city's skyline gives its own side (3–8 km); every other place's is by how exactly it is known.
+    side = (p.get("side") or SIDE.get(p.get("precision"), SIDE["town"])) + 2 * MARGIN
     dy = side / 2 / 111320
     dx = dy / max(0.2, math.cos(math.radians(p["lat"])))
     return [round(p["lon"] - dx, 6), round(p["lat"] - dy, 6), round(p["lon"] + dx, 6), round(p["lat"] + dy, 6)]
@@ -107,6 +110,11 @@ def date_of(tags):
         v = (tags.get(k) or "").strip()
         if v:
             return k, v
+    # Undated, but the building's own Wikidata item is named: build_built_years.py asks Wikidata for its
+    # inception (a landmark's year is there far more often than on the outline).
+    q = (tags.get("wikidata") or "").strip()
+    if q[:1] == "Q" and q[1:].isdigit():
+        return "wikidata", "wikidata:" + q
     return None, None
 
 
@@ -118,7 +126,7 @@ def cut_region(src, group, fid, stamp, work):
     the squares out of the whole region with osmium extract held an ID table a square and ran the
     runner out of memory.)"""
     dated = work / "dated.osm.pbf"
-    run("osmium", "tags-filter", "--no-progress", str(src), *[f"wr/{k}" for k in DATE_KEYS],
+    run("osmium", "tags-filter", "--no-progress", str(src), *[f"wr/{k}" for k in DATE_KEYS + ["wikidata"]],
         "-o", str(dated), "--overwrite")
     seq = work / "dated.geojsonseq"
     run("osmium", "export", "--no-progress", str(dated), "-f", "geojsonseq", "--geometry-types=polygon",
@@ -162,7 +170,8 @@ def main():
     for f in PLACES:
         if f.exists():
             d = json.loads(f.read_text(encoding="utf-8"))
-            places += [p for p in d.get("buildings", d.get("museums", [])) if isinstance(p.get("lat"), (int, float))]
+            places += [p for p in d.get("buildings", d.get("museums", d.get("places", [])))
+                       if isinstance(p.get("lat"), (int, float))]
     if args.only:
         places = [p for p in places if p["slug"] == args.only]
     OUT.mkdir(parents=True, exist_ok=True)
