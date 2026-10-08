@@ -102,6 +102,20 @@ After the buildings, each run:
    rehang: works moved, put up or taken down are written into the museum's
    interior log in `ledger.json`, and `update_buildings.py` lists the saved
    works placed in rooms not drawn yet.
+   **Every work it holds on its walls, every run** (the artist, 8 Oct 2026:
+   "Just because you don't know the location of every artwork in every
+   museum doesn't mean you still can't put artwork inside the museum with
+   artwork that you know is in the museum"): right after the works pass, `node
+   scripts/build_interiors_arranged.js --works` hangs again every work the
+   records place in no room drawn — in a museum whose rooms a source draws
+   (the NGA, the Met, the Art Institute; OpenStreetMap's where its records
+   place works there) beside the museum's own works by the same artist, else
+   of its period and kind, else in the nearest room with wall free
+   (INTERIORS.md, "Beside the known"); in an arranged museum, and one
+   OpenStreetMap draws that no record places a work in, by the arranged
+   rule. A newly saved work held by a museum goes up the same day. The pass
+   takes the site's works back to their records first, so a work a museum's
+   record now places hangs where the record says.
    **The collection on the walls, weekly** (on Mondays, and whenever a
    museum's rooms change): `python3 scripts/build_interiors.py --collection`
    reads again what the Met, the Art Institute, Cleveland and the National
@@ -146,7 +160,9 @@ After the buildings, each run:
    `--only <slug> --relayout`. After every intake, `node
    scripts/build_interiors_arranged.js --works` re-hangs the arranged
    museums' works (new saved works and new "Also here" works go up by the
-   rule), and with no flag it also lays out any new museum's shell. For each: research its public entrance (which façade,
+   rule) and the works hung beside the known, and with no flag it also lays
+   out any new museum's shell (on its plinth's top where its model is solid
+   at the ground). For each: research its public entrance (which façade,
    which door, its floor's level) and what its own pages say of where the
    saved works hang (`HANGS` in `build_interiors.py`, with each page's
    address and the day read); draw at least the entrance, the way in from it
@@ -159,12 +175,16 @@ After the buildings, each run:
    rounds. A doorway needs a source saying the two rooms connect; a room
    name, a material, a height or a size needs its source; what no source
    gives stays earth.
-4. **Check.** `node scripts/check_interior.js --all` until it is clean, then
+4. **Check.** `node scripts/check_interior.js --all` until it is clean and
+   its last line says every saved work is on the walls ("saved works on the
+   walls 1129 of 1129"; a museum short of them is named — hang them, or say
+   in its log why not), then
    `node scripts/check_interior.js docs/v2/interiors/<slug>.json --png
    /tmp/<slug>` for each museum touched, and look at the plans and frames;
-   then `node scripts/smoke_walk.js` — once it exists: it comes with the
-   walk's hooks in `land.js`, and until then this step is skipped, not
-   failed. Independent verifiers check every
+   then `node scripts/smoke_walk.js --jobs 1 --site --only <slugs>` for the
+   museums touched (one browser at a time: parallel Chromium crashes in a
+   session; `--site` walks to a work the site hung and checks the column's
+   and the look's sentences). Independent verifiers check every
    `said` against its source where it can be reached, and every
    reconstructed room against what it cites.
 5. **Record.** Each museum's entry in `ledger.json` has

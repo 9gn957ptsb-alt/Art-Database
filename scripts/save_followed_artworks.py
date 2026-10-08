@@ -78,7 +78,7 @@ S = requests.Session()
 S.verify = "/root/.ccr/ca-bundle.crt"
 
 
-def call(method, path, params=None, tries=6):
+def call(method, path, params=None, tries=6, fatal=True):
     wait = 2.0
     for _ in range(tries):
         try:
@@ -88,6 +88,8 @@ def call(method, path, params=None, tries=6):
         if r.status_code == 429 or r.status_code >= 500:
             time.sleep(wait); wait = min(wait * 2, 120); continue
         return r
+    if not fatal:
+        return None
     raise SystemExit(f"Artsy kept refusing {method} {path}")
 
 
@@ -322,14 +324,24 @@ def unsave(have):
     done = set(json.loads(UNSAVED.read_text())) if UNSAVED.exists() else set()
     own = {w["_id"] for w in json.loads(OWN.read_text())}
     n = 0
+    skipped = {}
     for aid, p in plan.items():
+        # Artsy times out on some works (8 Oct 2026: every try at a Banksy print answered 502 "upstream
+        # request failed" after 30 s): a work it keeps refusing is left for a later run, and an artist
+        # whose works it refuses four times running is left whole, so the rest go on.
+        failed_here = 0
         for _id, slug, title, date, kept in p["remove"]:
             if _id in done or _id in own:
                 continue
-            r = call("DELETE", f"collection/saved-artwork/artwork/{slug}", {"user_id": USER})
-            if r.status_code not in (200, 201, 204, 404):
-                print(f"failed {r.status_code}: {p['name']} · {title}", flush=True)
+            if failed_here >= 4:
+                skipped[p["name"]] = skipped.get(p["name"], 0) + 1
                 continue
+            r = call("DELETE", f"collection/saved-artwork/artwork/{slug}", {"user_id": USER}, tries=3, fatal=False)
+            if r is None or r.status_code not in (200, 201, 204, 404):
+                print(f"failed {r.status_code if r is not None else 'repeatedly'}: {p['name']} · {title}", flush=True)
+                failed_here += 1
+                continue
+            failed_here = 0
             done.add(_id)
             have.discard(_id)
             n += 1
@@ -340,6 +352,8 @@ def unsave(have):
         UNSAVED.write_text(json.dumps(sorted(done)))
         HAVE.write_text(json.dumps(sorted(have)))
         print(f"{p['name']}: unsaved {sum(1 for r in p['remove'] if r[0] in done)} of {len(p['remove'])}", flush=True)
+    for name, k in skipped.items():
+        print(f"left for a later run: {name}, {k} (Artsy refused its works)", flush=True)
     print(f"unsaved total: {len(done)}", flush=True)
 
 

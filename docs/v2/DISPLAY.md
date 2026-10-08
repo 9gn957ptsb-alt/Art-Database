@@ -120,7 +120,8 @@ module, `a11y.js` / `a11y.css`, loaded last, so no other module has to know it.
   work's tab order no longer runs through forty invisible cities.
 - **2.4.7** — one ring everywhere: 2 px `#9d95e6`, 2 px out; the dial is ringed when its range or
   mode has the focus (and lights its tiles, as before); a mark whose name had no room shows it on
-  focus.
+  focus. The view's heading, focused on arrival for a screen reader, is not a control (no tab stop,
+  nothing to press) and is drawn without a ring (8 Oct 2026: a lilac box round "Houston").
 - **2.1.1, 2.1.4** — the globe is the stop after Hold still: ← → turn it, ↑ ↓ roll it, + − nearer
   and farther (past the nearest, down into the ground), Enter opens the shown place nearest the
   middle; in a city the same keys move its map. + / − answer only when nothing in particular, the

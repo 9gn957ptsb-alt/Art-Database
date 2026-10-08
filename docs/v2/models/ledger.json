@@ -223,20 +223,22 @@
     "interior": {
       "tier": "documented",
       "refined": "2026-10-08",
-      "passes": 2,
+      "passes": 3,
       "rooms": {
         "documented": 181,
         "reconstructed": 0
       },
       "works": {
-        "hung": 345,
-        "elsewhere": 4,
+        "hung": 483,
+        "elsewhere": 0,
         "off": 0,
-        "none": 137
+        "none": 3,
+        "arranged": 138
       },
       "log": [
         "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)",
-        "2026-10-08 doorways: 193 read off the NGA's visitor map (June 2025) by scripts/nga_map_doors.py, the map registered to the NGA's outlines; the North Stair landings opened to the rotunda; the rooms the map paints grey closed; Main Floor 113 of 118 rooms reached from the door, Ground Floor 34 of 63 (13 closed); 300 of its paintings and sculpture on view hung beside the 45 saved works."
+        "2026-10-08 doorways: 193 read off the NGA's visitor map (June 2025) by scripts/nga_map_doors.py, the map registered to the NGA's outlines; the North Stair landings opened to the rotunda; the rooms the map paints grey closed; Main Floor 113 of 118 rooms reached from the door, Ground Floor 34 of 63 (13 closed); 300 of its paintings and sculpture on view hung beside the 45 saved works.",
+        "2026-10-08 beside the known (INTERIORS.md): the 138 saved works its open data places in no West Building room (122 with no location in its data, 12 not read yet) or in the East Building (4, not drawn) hung by the site beside the works its records place — 65 in the room holding the most works by their artist, 19 of their period and kind, 46 of their period, 2 in the nearest room with wall free, 6 undated works on paper in the first room from the door — on what wall the record's works leave, 2.5 m apart, 1.5 m where full; each said so, its record kept in rec; 177 of 177 held works on the walls (44 before), 188 of 188 listed."
       ]
     }
   },
@@ -315,19 +317,21 @@
     "interior": {
       "tier": "reconstructed",
       "refined": "2026-10-08",
-      "passes": 1,
+      "passes": 2,
       "rooms": {
         "documented": 0,
         "reconstructed": 400
       },
       "works": {
-        "hung": 317,
-        "elsewhere": 2,
+        "hung": 337,
+        "elsewhere": 0,
         "off": 0,
-        "none": 18
+        "none": 0,
+        "arranged": 20
       },
       "log": [
-        "2026-10-08 first pass: 400 galleries on Floors 1 and 2 read off the Met's visitor floor plans (scripts/met_plan_rooms.py), each the floor nearest its printed number by walking, never through a drawn wall, laid by the Met's own map points for 60 galleries (median 0.2 m on Floor 1, 1.4 m on Floor 2) and anchored on them; openings where rooms meet on open floor; the 82nd Street door into the Great Hall; the floors joined by the lift by the Great Hall; 388 of 400 reached from the door (not: Dendur 131, 399, the 900s); 19 saved works and 300 of the Met's highlights on view hung by GalleryNumber. The model stands tens of metres off the Met's points and lacks the Fifth Avenue front: the rooms past it are filed against it."
+        "2026-10-08 first pass: 400 galleries on Floors 1 and 2 read off the Met's visitor floor plans (scripts/met_plan_rooms.py), each the floor nearest its printed number by walking, never through a drawn wall, laid by the Met's own map points for 60 galleries (median 0.2 m on Floor 1, 1.4 m on Floor 2) and anchored on them; openings where rooms meet on open floor; the 82nd Street door into the Great Hall; the floors joined by the lift by the Great Hall; 388 of 400 reached from the door (not: Dendur 131, 399, the 900s); 19 saved works and 300 of the Met's highlights on view hung by GalleryNumber. The model stands tens of metres off the Met's points and lacks the Fifth Avenue front: the rooms past it are filed against it.",
+        "2026-10-08 beside the known (INTERIORS.md): the 20 saved works the Met's record places in no gallery drawn (15 with no gallery in its record, 3 not read yet, 2 in Gallery 965, not drawn) hung by the site beside its own works — 9 by the same artist, 9 of their period and kind, 1 of its period, 1 of its kind; 36 of 36 held works on the walls (17 before)."
       ]
     }
   },
@@ -344,21 +348,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 171
       },
       "works": {
-        "hung": 14,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 3,
-        "arranged": 14
+        "none": 0,
+        "arranged": 17
       },
-      "log": []
+      "log": [
+        "2026-10-08 the three loans another museum's record places (the NGA's: listed on Artsy for its 2015 show, so museums.json counts them held) hung among the works shown here, each saying where its own record has it; 17 of 17 held works on the walls (14 before)."
+      ]
     }
   },
   "museum-indianapolis-museum-of-art": {
@@ -507,7 +513,9 @@
         "none": 0,
         "arranged": 14
       },
-      "log": []
+      "log": [
+        "2026-10-08 the works Wikidata places in rooms not drawn (Room 710, Room 837) say so in Wikidata's name: 'Wikidata puts it in Room 710, which is not drawn here: the site has hung it here'."
+      ]
     }
   },
   "museum-the-national-gallery-london": {
@@ -523,21 +531,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 158
       },
       "works": {
-        "hung": 42,
+        "hung": 44,
         "elsewhere": 0,
         "off": 0,
-        "none": 2,
-        "arranged": 42
+        "none": 0,
+        "arranged": 44
       },
-      "log": []
+      "log": [
+        "2026-10-08 the two loans the NGA's and the Met's records place (listed for its 2015 show) hung among the works shown here, each saying where its own record has it; 26 of 26 held works on the walls (24 before)."
+      ]
     }
   },
   "museum-centre-pompidou": {
@@ -771,23 +781,27 @@
     "log": [
       "2026-09-24 first model: six white opaque-glass volumes with mono-pitched north-light roofs in two rows on a plinth at Margate's sea wall, the sea, sands and terraces around",
       "2026-09-29 refined (catch-up pass for 28–29 Sep; no photographs reachable): joints between the six volumes widened and glazed so they read as six, north lights on the back row, steps to the sands, and the harbour, Harbour Arm and Droit House to the north-east",
-      "2026-09-30 interior finding: only 18% of the model's footprint stands on the ground's buildings"
+      "2026-10-08 interior finding: only 13% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "arranged",
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 21
       },
       "works": {
-        "hung": 0,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 7
+        "none": 0,
+        "arranged": 7
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: arranged (INTERIORS.md, 'Arranged') on the top of the model's plinth, 3 m up (the shell's rule had looked for rooms inside the plinth's solid mass, and found no way in): 21 rooms on two floors; its 7 held works hung by the rule."
+      ]
     }
   },
   "museum-guggenheim-museum-bilbao": {
@@ -863,21 +877,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 69
       },
       "works": {
-        "hung": 16,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 16
+        "none": 0,
+        "arranged": 17
       },
-      "log": []
+      "log": [
+        "2026-10-08 the loan the Met's record places (listed for its 2016-2017 show) hung among the works shown here, saying where its own record has it; 7 of 7 held works on the walls."
+      ]
     }
   },
   "museum-j-paul-getty-museum": {
@@ -1084,21 +1100,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 9
       },
       "works": {
-        "hung": 6,
+        "hung": 7,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 6
+        "none": 0,
+        "arranged": 7
       },
-      "log": []
+      "log": [
+        "2026-10-08 the loan the Art Institute's record places (listed for its 2016 show) hung among the works shown here, saying where its own record has it; 5 of 5 held works on the walls."
+      ]
     }
   },
   "museum-cleveland-museum-of-art": {
@@ -1113,20 +1131,24 @@
       "2026-10-08 interior finding: only 65% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "arranged",
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 119
       },
       "works": {
-        "hung": 0,
-        "elsewhere": 3,
+        "hung": 11,
+        "elsewhere": 0,
         "off": 0,
-        "none": 3
+        "none": 0,
+        "arranged": 11
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: arranged (INTERIORS.md, 'Arranged'), as no plan or gallery points have been read and OpenStreetMap's six rooms there (three on the model) are too few: 119 rooms on three floors, the way in by the rule; its 6 held works hung by the rule, the three its record places in galleries not drawn (212, 222, 223) saying so, and 5 works shown here."
+      ]
     }
   },
   "museum-dallas-museum-of-art": {
@@ -1142,21 +1164,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 158
       },
       "works": {
-        "hung": 10,
+        "hung": 11,
         "elsewhere": 0,
         "off": 0,
-        "none": 1,
-        "arranged": 10
+        "none": 0,
+        "arranged": 11
       },
-      "log": []
+      "log": [
+        "2026-10-08 the loan the NGA's record places (listed for its 2015 show) hung among the works shown here, saying where its own record has it; 6 of 6 held works on the walls."
+      ]
     }
   },
   "museum-isabella-stewart-gardner-museum": {
@@ -1439,21 +1463,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 39
       },
       "works": {
-        "hung": 2,
+        "hung": 5,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
         "arranged": 5
       },
-      "log": []
+      "log": [
+        "2026-10-08 the works too wide for any wall (Artsy's sizes, millimetres read as inches: 'House in Hudson' 772 × 1290 cm, 'Snap the Whip' 874 × 1326 cm) drawn at the size of the longest run, said so in the look, so they no longer hold the room's other works back; 5 of 5 held works on the walls (2 before)."
+      ]
     }
   },
   "museum-museum-of-contemporary-art-san-diego": {
@@ -1469,21 +1495,23 @@
     ],
     "interior": {
       "tier": "arranged",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
         "arranged": 71
       },
       "works": {
-        "hung": 2,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
         "arranged": 4
       },
-      "log": []
+      "log": [
+        "2026-10-08 Irwin's 'Light and Space' (689 × 1575 cm) drawn at the size of the longest run, said so in the look, so it no longer holds Marden's 'Green Study' back; 4 of 4 held works on the walls (2 before)."
+      ]
     }
   },
   "museum-rijksmuseum": {
@@ -1513,7 +1541,9 @@
         "none": 0,
         "arranged": 6
       },
-      "log": []
+      "log": [
+        "2026-10-08 the work Wikidata places in the Gallery of Honour, not drawn, says so in Wikidata's name."
+      ]
     }
   },
   "museum-museo-reina-sofia": {
@@ -1901,7 +1931,8 @@
         "arranged": 4
       },
       "log": [
-        "2026-10-08 OpenStreetMap's plan taken: 76 rooms on 3 floors (level 2 64% of the model's floor), 75 reached; 30 mapped doors, 42 by the rule, 2 lifts and 1 by the rule; arranged → reconstructed"
+        "2026-10-08 OpenStreetMap's plan taken: 76 rooms on 3 floors (level 2 64% of the model's floor), 75 reached; 30 mapped doors, 42 by the rule, 2 lifts and 1 by the rule; arranged → reconstructed",
+        "2026-10-08 the work SMK's record places at SMK Thy says so: 'SMK's record puts it in SMK Thy, which is not drawn here'."
       ]
     }
   },
@@ -3487,23 +3518,27 @@
     "log": [
       "2026-09-24 first model: Johnson's shellstone front of five shallow arches before dark bronze glass, on its podium over the terraced plaza with Moore's Upright Motives, and the 2001 red-granite galleries behind",
       "2026-10-06 refined (catch-up for 1–6 Oct): moved off the car park onto the three-storey outline, the Johnson front to the east lawn, the galleries west, Camp Bowie Boulevard south; on its ground 7% → 72%",
-      "2026-10-08 interior finding: only 25% of the model's footprint stands on the ground's buildings"
+      "2026-10-08 interior finding: only 67% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
-      "refined": null,
-      "passes": 0,
+      "tier": "arranged",
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 0,
+        "arranged": 85
       },
       "works": {
-        "hung": 0,
+        "hung": 2,
         "elsewhere": 0,
         "off": 0,
-        "none": 1
+        "none": 0,
+        "arranged": 2
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: arranged (INTERIORS.md, 'Arranged') on the top of the model's terrace, 2.2 m up (at the ground the model is solid: the rule had found no inside, '0 m²'): 85 rooms on three floors; its held work hung by the rule, and 1 shown here."
+      ]
     }
   },
   "museum-the-courtauld-gallery": {

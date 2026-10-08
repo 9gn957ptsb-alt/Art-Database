@@ -6,7 +6,12 @@
 
      cd docs && python3 -m http.server 8863 &
      NODE_PATH=$(npm root -g) node scripts/smoke_walk.js [--only slug,slug] [--sizes 390x844,1440x900]
-         [--jobs 4] [--reduced] [--shots DIR] [--port 8863]
+         [--jobs 4] [--reduced] [--shots DIR] [--port 8863] [--site]
+
+   --site walks to a work the site hung (INTERIORS.md, "Arranged" and "Beside the known": one hung
+   beside the museum's own first, then a loan shown here, then any) rather than the first hung, and
+   checks that the column says where it hangs and, opened, the work's own sentence of how it came to
+   hang there, and that the look's label says it too.
 
    Artsy's picture store, NASA and the museums' services are stood in for
    (page.route): a generated gradient, never a real picture. Shots go where
@@ -23,6 +28,7 @@ const SIZES = String(arg("sizes", "390x844,1440x900")).split(",");
 const JOBS = +arg("jobs", 4);
 const REDUCED = !!arg("reduced", false);
 const SHOTS = arg("shots", null);
+const SITE = !!arg("site", false);
 const ROOT = path.join(__dirname, "..", "docs", "v2");
 const EXE = process.env.CHROMIUM || (fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome") ? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" : undefined);
 
@@ -67,6 +73,19 @@ async function session(browser, size, jpg) {
 }
 
 const until = (page, fn, arg, ms) => page.waitForFunction(fn, arg, { timeout: ms || 10000 });
+
+// A work the site hung in a museum, from its interior file: one hung beside the museum's own first,
+// then a loan shown here, then any the site hung; with the name of its room.
+function siteWork(slug) {
+  let I;
+  try { I = JSON.parse(fs.readFileSync(path.join(ROOT, "interiors", slug + ".json"), "utf8")); } catch (e) { return null; }
+  const site = (I.works || []).filter(w => w.how === "arranged" && w.room && w.i);
+  const w = site.find(x => x.beside) || site.find(x => x.at) || site[0];
+  if (!w) { return null; }
+  let room = w.room;
+  (I.floors || []).forEach(f => (f.rooms || []).forEach(r => { if (r.id === w.room) { room = r.name || r.id; } }));
+  return { id: w.id, said: w.said, room };
+}
 
 async function touchDrag(page, x, y, dx, dy, steps) {
   const c = await page.context().newCDPSession(page);
@@ -132,11 +151,31 @@ async function one(s, slug, size) {
   if (SHOTS) { await page.screenshot({ path: path.join(SHOTS, slug + "-2-walk-" + size + ".png") }); }
   step("moved " + r.moved.toFixed(2));
   r.hung = await page.evaluate(() => Walk.hung().length);
+  const want = SITE ? siteWork(slug) : null;
+  if (SITE && !want) { throw new Error("no work the site hung in " + slug); }
   if (r.hung) {
-    const id = await page.evaluate(() => Walk.hung()[0].id);
+    const id = want ? want.id : await page.evaluate(() => Walk.hung()[0].id);
+    if (want && !(await page.evaluate(i => Walk.hung().some(h => h.id === i), id))) { throw new Error("the work the site hung is not on the walls: " + id); }
     await page.evaluate(i => Walk.goTo(i), id);
     await until(page, i => { const x = Land.inside(); return x.standing === i && !x.gliding; }, id, 25000);
     step("before a work");
+    if (want) {
+      // The column, the room you are in at its head: where it hangs, and opened, how it came to hang there
+      // (a work so large that you stand back from it in the next room: its row among the saved works).
+      const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+      const row = i => '.walk-here-group .held[data-work="' + i + '"]';
+      await until(page, i => !!document.querySelector('.held[data-work="' + i + '"] .held-where'), id, 8000);
+      const col = await page.evaluate(([i, sel]) => {
+        const f = document.querySelector(sel) || document.querySelector('.held[data-work="' + i + '"]');
+        const b = f && f.querySelector(".held-where"), s = f && f.querySelector(".held-where-said");
+        return { where: b ? b.textContent : null, said: s ? s.textContent : null, here: !!document.querySelector(sel) };
+      }, [id, row(id)]);
+      if (col.where !== "Where it hangs · " + want.room || col.said !== cap(want.said)) {
+        throw new Error("the column: " + JSON.stringify(col) + " wanted " + JSON.stringify({ room: want.room, said: cap(want.said) }));
+      }
+      r.siteWork = { id, room: want.room };
+      step("the column says where it hangs and why");
+    }
     // What it is, at once, beside it: its title and its artist.
     await until(page, () => { const l = document.querySelector(".walk-label");
       return l && !l.hidden && l.querySelector(".walk-l-t[data-on=true]") && (!document.querySelector(".walk-label .walk-l-by") || l.querySelector(".walk-l-by[data-on=true]")); }, null, 4000);
@@ -171,6 +210,12 @@ async function one(s, slug, size) {
     if (!lab || !lab.title || !lab.under || lab.on < 3) { throw new Error("the look's label: " + JSON.stringify(lab)); }
     r.title = lab.title;
     step("label under the picture");
+    if (want) {
+      // The look's label: where it hangs, in the work's own words of how it came to.
+      const where = await page.evaluate(() => { const e = document.querySelector(".walk-look-lines .walk-l-where"); return e ? e.textContent : null; });
+      if (!where || where.indexOf(want.room) !== 0 || where.indexOf(want.said) < 0) { throw new Error("the look's where: " + JSON.stringify(where)); }
+      step("the look says how it came to hang there");
+    }
     if (SHOTS) { await page.waitForTimeout(1500); await page.screenshot({ path: path.join(SHOTS, slug + "-3-look-" + size + ".png") }); }
     if (s.touch) { await page.tap(".walk-look-x"); } else { await page.keyboard.press("Escape"); }
     await until(page, () => Land.inside().level === "walk", null, 6000);

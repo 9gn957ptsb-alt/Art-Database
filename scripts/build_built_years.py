@@ -662,7 +662,7 @@ LBSM_BOROUGHS = {
     "Lambeth": "c7845e78-00fc-4f93-b70c-c5d245713110/LBSMv2_Lambeth.csv",
     "Southwark": "76f9f478-7636-45be-adaf-19903354ec73/LBSMv2_Southwark.csv",
 }
-LBSM_BAND = {"pre-1900": 1880, "1900-1929": 1915, "1930-1949": 1940, "1950-1966": 1958, "1967-1982": 1975,
+LBSM_BAND = {"pre-1900": OLD, "1900-1929": 1915, "1930-1949": 1940, "1950-1966": 1958, "1967-1982": 1975,
              "1983-1995": 1989, "1996-2011": 2004, "2012-onwards": 2016}
 _lbsm = None
 
@@ -683,7 +683,7 @@ def london(box):
             with open(local_csv, encoding="utf-8", errors="ignore") as f:
                 for r in csv.DictReader(f):
                     y = LBSM_BAND.get(r.get("construction_age_band", ""))
-                    if not y or not r.get("easting"):
+                    if y is None or not r.get("easting"):
                         continue
                     t = toid[r.get("os_topo_toid") or r.get("uprn")]
                     t["e"].append(float(r["easting"]))
@@ -912,55 +912,89 @@ CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
 ]
 
 
+def join_years(got, lat, lon, cell):
+    """Each cell's year from a source's answer — ("polys", [(year, ring)]) or ("points", [(lat, lon,
+    year[, radius])]) — by the outline it stands in (the earliest real year where outlines overlap; -1,
+    "old", only where none says a year), else its nearest outline within a cell, else the nearest point
+    within a cell or 25 m. None where the answer has nothing."""
+    import shapely
+    rows = got[1] if got[0] == "polys" else []
+    pts = got[1] if got[0] == "points" else (got[2] if len(got) > 2 else [])
+    if not rows and not pts:
+        return None
+    years = np.zeros(len(lat), dtype=np.int64)
+    covered = np.zeros(len(lat), dtype=bool)
+    here = shapely.points(lon, lat)
+    polys, ys = [], []
+    for y, ring in rows:
+        if len(ring) >= 3:
+            polys.append(shapely.Polygon(ring))
+            ys.append(y)
+    if polys:
+        ys = np.asarray(ys, dtype=np.int64)
+        hit_pt, hit_poly = shapely.STRtree(polys).query(here, predicate="within")
+        for kp, kq in zip(hit_pt, hit_poly):
+            covered[kp] = True
+            y = ys[kq]
+            if y > 0 and (years[kp] <= 0 or y < years[kp]):
+                years[kp] = y
+            elif y < 0 and years[kp] == 0:
+                years[kp] = y
+        # The ground's footprints (Overture's) and the city's differ by a metre or two, so a cell in
+        # none of the city's outlines takes the year of its nearest outline within a cell — never a
+        # cell inside an outline the city leaves undated.
+        said = np.flatnonzero(ys != 0)
+        miss = np.flatnonzero(~covered)
+        if miss.size and said.size:
+            tree = shapely.STRtree([polys[k] for k in said])
+            ip, iq = tree.query_nearest(here[miss], max_distance=cell / 111320, all_matches=False)
+            years[miss[ip]] = ys[said][iq]
+            covered[miss[ip]] = True
+    if pts:
+        P = np.array([(r[0], r[1], r[2], r[3] if len(r) > 3 else 0.0) for r in pts], dtype=float)
+        reach = max(cell, 25.0)
+        for k in np.flatnonzero(~covered):
+            dy = (P[:, 0] - lat[k]) * 111320
+            dx = (P[:, 1] - lon[k]) * 111320 * math.cos(math.radians(lat[k]))
+            d = np.sqrt(dx * dx + dy * dy) - P[:, 3]
+            m = int(np.argmin(d))
+            if d[m] <= reach:
+                years[k] = int(P[m, 2])
+    return years
+
+
+# The year before which a source cannot say ("before 1900", "bis 1918"): its -1 cells, "old", stand from
+# the dial's first year, and the skyline's column says from when they are not dated (the ground's
+# builtOld). The records read on GitHub's runners carry their own.
+FLOORS = {"Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King County Assessor": 1900,
+          "San Francisco Assessor-Recorder": 1900, "London Building Stock Model 2 (GLA)": 1900}
+
+# Years from sources that do not answer the session, read on GitHub's runners by
+# scripts/fetch_city_records.py (.github/workflows/city-records.yml) into records/years/<slug>.json:
+# each building cell's year by its index in the ground (i * n + j), the sources' names, their floor.
+RECORDS = ROOT / "records" / "years"
+
+
+def record_years(place, g, cells):
+    path = RECORDS / (place["slug"] + ".json")
+    if not path.exists():
+        return None, [], None
+    r = json.loads(path.read_text(encoding="utf-8"))
+    if r.get("n") != g["n"]:
+        return None, [], None             # read for a ground cut differently: read again
+    by = r.get("cells") or {}
+    years = np.array([int(by.get(str(i * g["n"] + j), 0)) for i, j in cells], dtype=np.int64)
+    return years, list(r.get("sources") or []), r.get("floor")
+
+
 def city_years(place, box, lat, lon, cell):
     """Years for the cells from whichever city covers the place: (years, name), or (None, None)."""
-    import shapely
     for name, s, w, n, e, fetcher in CITIES:
         if not (s <= place["lat"] <= n and w <= place["lon"] <= e):
             continue
-        got = fetcher(box)
-        rows = got[1] if got[0] == "polys" else []
-        pts = got[1] if got[0] == "points" else (got[2] if len(got) > 2 else [])
-        if not rows and not pts:
+        years = join_years(fetcher(box), lat, lon, cell)
+        if years is None:
             continue            # a box that also takes in a neighbour (France's takes in Bern): try the next
-        years = np.zeros(len(lat), dtype=np.int64)
-        covered = np.zeros(len(lat), dtype=bool)
-        here = shapely.points(lon, lat)
-        polys, ys = [], []
-        for y, ring in rows:
-            if len(ring) >= 3:
-                polys.append(shapely.Polygon(ring))
-                ys.append(y)
-        if polys:
-            ys = np.asarray(ys, dtype=np.int64)
-            hit_pt, hit_poly = shapely.STRtree(polys).query(here, predicate="within")
-            for kp, kq in zip(hit_pt, hit_poly):
-                covered[kp] = True
-                y = ys[kq]
-                if y > 0 and (years[kp] <= 0 or y < years[kp]):
-                    years[kp] = y
-                elif y < 0 and years[kp] == 0:
-                    years[kp] = y
-            # The ground's footprints (Overture's) and the city's differ by a metre or two, so a cell in
-            # none of the city's outlines takes the year of its nearest outline within a cell — never a
-            # cell inside an outline the city leaves undated.
-            said = np.flatnonzero(ys != 0)
-            miss = np.flatnonzero(~covered)
-            if miss.size and said.size:
-                tree = shapely.STRtree([polys[k] for k in said])
-                ip, iq = tree.query_nearest(here[miss], max_distance=cell / 111320, all_matches=False)
-                years[miss[ip]] = ys[said][iq]
-                covered[miss[ip]] = True
-        if pts:
-            P = np.array([(r[0], r[1], r[2], r[3] if len(r) > 3 else 0.0) for r in pts], dtype=float)
-            reach = max(cell, 25.0)
-            for k in np.flatnonzero(~covered):
-                dy = (P[:, 0] - lat[k]) * 111320
-                dx = (P[:, 1] - lon[k]) * 111320 * math.cos(math.radians(lat[k]))
-                d = np.sqrt(dx * dx + dy * dy) - P[:, 3]
-                m = int(np.argmin(d))
-                if d[m] <= reach:
-                    years[k] = int(P[m, 2])
         return years, name
     return None, None
 
@@ -1129,10 +1163,23 @@ def years_for(place, g):
     w, s = to_deg(-half, -half)
     e, nn = to_deg(half, half)
     got, name = (None, None) if NO_CITY else city_years(place, (s, w, nn, e), lat, lon, cell)
+    floor = None
     if got is not None:
         years = got
         if (got != 0).any():
             said.append(name)
+            if (got < 0).any():
+                floor = FLOORS.get(name)
+
+    # What the city leaves, from the records read on GitHub's runners (fetch_city_records.py).
+    rec, rec_names, rec_floor = record_years(place, g, cells)
+    if rec is not None:
+        take = (years == 0) & (rec != 0)
+        if take.any():
+            years[take] = rec[take]
+            said += [n_ for n_ in rec_names if n_ not in said]
+            if (rec[take] < 0).any() and rec_floor:
+                floor = max(floor or 0, rec_floor)
 
     # What the city leaves, from the dates OpenStreetMap's contributors have written on the buildings.
     osm = osm_years(place, lat, lon, cell)
@@ -1166,8 +1213,9 @@ def years_for(place, g):
         # building is as likely old as not: it stands from the start rather than rising in 1975.
         if ((known > 0) & (known < 1975)).any():
             years[rest & (years == 1975)] = 0
+    old = int((years < 0).sum())
     years[years < 0] = 0          # old, year not known: there from the start
-    return years.tolist(), said
+    return years.tolist(), said, (floor if old else None)
 
 
 def main():
@@ -1201,12 +1249,16 @@ def main():
         if "built" in g and not args.force:
             continue
         try:
-            years, said = years_for(p, g)
+            years, said, floor = years_for(p, g)
         except Exception as exc:
             print(f"  ! {p['slug']}: {type(exc).__name__}: {exc}", flush=True)
             continue
         g["built"] = years
         g["builtFrom"] = said
+        if floor:
+            g["builtOld"] = floor
+        else:
+            g.pop("builtOld", None)
         path.write_text(json.dumps(g, separators=(",", ":")), encoding="utf-8")
         known = [y for y in years if y]
         span = f"{min(known)}–{max(known)}" if known else "no years"

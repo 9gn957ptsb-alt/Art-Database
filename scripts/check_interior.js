@@ -89,7 +89,8 @@ function report(r, brief) {
     const rooms = (s.floors || []).reduce((a, f) => a + (f.rooms || 0), 0);
     const reach = (s.floors || []).reduce((a, f) => a + (f.reached || 0), 0);
     const mark = r.errors.length ? "ERR " : r.warnings.length ? "warn" : "ok  ";
-    console.log(`${mark} ${r.slug.padEnd(58)} ${String(r.tier).padEnd(13)} rooms ${String(rooms).padStart(3)} reached ${String(reach).padStart(3)}  ${how}; hung ${s.hung || 0}`);
+    const saved = s.saved !== undefined ? ` · saved works on the walls ${s.savedHung}/${s.saved}` : "";
+    console.log(`${mark} ${r.slug.padEnd(58)} ${String(r.tier).padEnd(13)} rooms ${String(rooms).padStart(3)} reached ${String(reach).padStart(3)}  ${how}; hung ${s.hung || 0}${saved}`);
     r.errors.forEach(e => console.log("       error: " + e));
     return;
   }
@@ -486,8 +487,13 @@ async function pictures(results, dir) {
     const tiers = {};
     results.forEach(r => { tiers[r.tier] = (tiers[r.tier] || 0) + 1; });
     const bad = results.filter(r => r.errors.length).length;
+    // The saved works each lists, and how many of them hang (every one should: INTERIORS.md, "Beside the known").
+    const saved = results.reduce((a, r) => a + ((r.stats && r.stats.saved) || 0), 0);
+    const on = results.reduce((a, r) => a + ((r.stats && r.stats.savedHung) || 0), 0);
+    const short = results.filter(r => r.stats && r.stats.saved !== undefined && r.stats.savedHung < r.stats.saved).map(r => r.slug);
     console.log(`${results.length} interiors: ` + Object.entries(tiers).map(([k, v]) => `${v} ${k}`).join(", ") +
-                `; ${bad} with errors`);
+                `; ${bad} with errors; saved works on the walls ${on} of ${saved}` +
+                (short.length ? ` (not all in ${short.join(", ")})` : ""));
   }
   if (png) { await pictures(results, png); }
   process.exit(results.some(r => r.errors.length) ? 1 : 0);

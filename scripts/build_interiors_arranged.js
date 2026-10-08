@@ -35,21 +35,27 @@
      the names     Room 1, Room 2 … in walking order; the hall is Hall. Never a museum's own.
 
    Run after build_interiors.py (which rewrites the works from the museums' records): with no
-   argument it re-hangs the works of every arranged museum and lays out every shell left (the targets first).
+   argument it re-hangs the works of every museum with rooms (arranged, or beside the known) and
+   lays out every shell left (the targets first).
 
-     node scripts/build_interiors_arranged.js                 the targets (TARGETS) and re-hangs
+     node scripts/build_interiors_arranged.js                 the targets, every shell, and re-hangs
      node scripts/build_interiors_arranged.js --only slug,slug
-     node scripts/build_interiors_arranged.js --works         re-hang the arranged museums only
-     node scripts/build_interiors_arranged.js --all           every museum whose rooms no source gives
+     node scripts/build_interiors_arranged.js --works         re-hang the works of every museum with rooms
+     node scripts/build_interiors_arranged.js --all           every museum
      node scripts/build_interiors_arranged.js --dry           say what it would write
+     node scripts/build_interiors_arranged.js --to DIR        write into DIR instead
 
    Public files only (museums.json, models/, interiors/, histories/, places/, cities.json); never
    data/. A museum whose rooms a source gives (documented or reconstructed), or that the
-   museums' own data draws (the National Gallery of Art, the Met, the Art Institute, Cleveland),
-   or whose rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan:
-   then only the works no record places are hung in its galleries, by the same rule), is never
-   arranged. The same bytes every run on the same inputs, but for
-   the day's date. */
+   museums' own data draws (the National Gallery of Art, the Met, the Art Institute), or whose
+   rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan), is never
+   arranged: every work it holds that its record places in no room drawn is hung beside the works
+   its records do place — by the same artist, else of its period and kind, else in the nearest room
+   with wall free (hangBeside, below; INTERIORS.md, "Beside the known"; in a museum OpenStreetMap
+   draws and no record places a work in, by the arranged rule in its galleries). A museum whose own
+   data draws no room yet (Cleveland) is arranged. A model solid at the ground (a plinth, a podium)
+   has its ground floor laid on the plinth's top (basesOf, layAt). The same bytes every run on the
+   same inputs, but for the day's date. */
 "use strict";
 
 const fs = require("fs");
@@ -61,11 +67,6 @@ const V2 = path.join(ROOT, "docs", "v2");
 const OUT = path.join(V2, "interiors");
 const OSM_INDOOR = path.join(ROOT, "osm", "indoor");
 const TODAY = new Date().toISOString().slice(0, 10);
-
-// The museums whose own open data draws their rooms (build_interiors.py's passes): never arranged.
-const OWN_DATA = new Set([
-  "museum-national-gallery-of-art-washington-dc", "museum-the-metropolitan-museum-of-art",
-  "museum-art-institute-of-chicago", "museum-cleveland-museum-of-art"]);
 
 // The major museums in major cities (the skyline cities first) and the great European ones, by
 // saved works held and fame: the ones laid out by default.
@@ -219,8 +220,8 @@ function mainPart(W, world, fl) {
 }
 
 // The turn of the grid that fits the main part in the least rectangle (0 where it fits as well).
-function bestTurn(W, model, cell) {
-  const world = shellAt(W, model, cell, 0, 0), fl = world.floors[0];
+function bestTurn(W, model, cell, base) {
+  const world = shellAt(W, model, cell, 0, base || 0), fl = world.floors[0];
   if (!fl) { return 0; }
   const mp = mainPart(W, world, fl);
   if (!mp) { return 0; }
@@ -494,9 +495,9 @@ function reached(n, doors, start) {
 // most, and open ground before it (4 m out, 3 m across) — of those, the side facing south (within
 // 60°, as the shell's rule has it), the longest, nearest the shell's own door. {room, at (the
 // opening, in the grid), door, stand, a (facing in), out ([x0, y0, x1, y1] in the grid)} or null.
-function wayIn(W, model, cell, turn, G, rooms) {
+function wayIn(W, model, cell, turn, G, rooms, base) {
   const P = W.WalkPlan;
-  const world = shellAt(W, model, cell, turn, 0), fl = world.floors[0], e = world.enter;
+  const world = shellAt(W, model, cell, turn, base || 0), fl = world.floors[0], e = world.enter;
   if (!fl) { return null; }
   // Open ground on the shared grid: outside the footprint at eye height.
   const ground = new Uint8Array(G.w * G.h);
@@ -693,12 +694,19 @@ function arrange(W, m, opts) {
   const doc = readJSON(file, null);
   const model = readJSON(path.join(V2, "models", slug + ".json"), null);
   if (!doc || !model) { return { slug, skip: "no interior file or no model" }; }
-  if (OWN_DATA.has(slug)) { return { slug, skip: "its own open data draws its rooms" }; }
   // Rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan): never laid
-  // out again; only the works no record places are hung in its galleries, by the same rule.
-  if (osmDrawn(doc)) { return hangInOSM(W, m, model, doc, opts); }
+  // out again; only the works no record places are hung in its galleries, by the same rule — beside
+  // the museum's own, where its records place some in its rooms.
+  if (osmDrawn(doc)) {
+    return (doc.works || []).some(w => w.how === "museum") ? hangBeside(W, m, model, doc, opts) : hangInOSM(W, m, model, doc, opts);
+  }
   const wasArranged = doc.tier === "arranged" || (doc.floors || []).some(f => f.sure === "arranged");
-  if (doc.floors && doc.floors.length && !wasArranged) { return { slug, skip: "its rooms are drawn from a source (" + doc.tier + ")" }; }
+  // Rooms a source draws — the museum's own data (the National Gallery of Art, the Met, the Art
+  // Institute) or a plan redrawn by hand: never laid out again; every work the museum holds that its
+  // record does not place in a room drawn hangs beside the works the museum is known to have.
+  if (doc.floors && doc.floors.length && !wasArranged) { return hangBeside(W, m, model, doc, opts); }
+  // A museum whose own data gives no rooms yet (Cleveland: its records name galleries, nothing read
+  // draws them) is arranged, as any museum no plan draws, until its rooms are read.
   if (opts.worksOnly && !wasArranged) { return { slug, skip: "not arranged" }; }
 
   const cell = (doc.grid && doc.grid.cell) || 0.5;
@@ -727,7 +735,7 @@ function arrange(W, m, opts) {
     if (keep) {
       layout = { floors: JSON.parse(JSON.stringify(doc.floors)), enter: doc.enter, grid: doc.grid, notes: doc.notes, kept: true };
     } else {
-      layout = lay(W, m, model, cell, grow);
+      layout = layAt(W, m, model, cell, grow);
       if (layout.error) { return { slug, skip: layout.error }; }
     }
     const next = Object.assign({}, doc, { grid: layout.grid, enter: layout.enter, floors: layout.floors });
@@ -740,7 +748,10 @@ function arrange(W, m, opts) {
     const placed = hangWorks(W, m, model, next, srcs);
     next.works = placed.works;
     if (placed.histories) { next.sources.push({ id: "histories", t: "the works' own histories on this site: when each was shown or held here", read: TODAY }); }
-    next.notes = notesOf(layout, placed, fsrc);
+    // What OpenStreetMap gave and why it was not walked (build_interiors.py --osm) stays at the head.
+    const was = String(doc.notes || ""), cut = was.indexOf("¶ ");
+    const osmHead = !layout.kept && /^OpenStreetMap's indoor mapping/.test(was) && cut > 0 ? was.slice(0, cut + 2) : "";
+    next.notes = osmHead + notesOf(layout, placed, fsrc);
     next.asof = TODAY;
     next.tier = "arranged";
     // Checked as the walk will have it; the tier is the checker's.
@@ -792,24 +803,37 @@ function hangInOSM(W, m, model, doc, opts) {
            kb: Math.round(Buffer.byteLength(out) / 1024), warnings: res.warnings, turn: next.grid.turn, kept: true, osm: true };
 }
 
-// The layout: the grid, the floors, the rooms, the doorways, the stairs, the way in.
-function lay(W, m, model, cell, grow) {
+// The levels a museum's ground floor may stand at: the model's ground, else the top of each voxel
+// layer up to 6.5 m — a museum on a plinth or a podium (the Amon Carter on its terrace, Turner
+// Contemporary on its sea wall) has its floor on top of it, not inside its mass.
+function basesOf(W, model, cell) {
+  const vx = shellAt(W, model, cell, 0, 0).vox;
+  const out = [0];
+  if (!vx) { return out; }
+  for (let k = 1; k * vx.v <= 6.5 + 1e-9; k += 1) { out.push(r2(k * vx.v)); }
+  return out;
+}
+
+// The layout: the grid, the floors, the rooms, the doorways, the stairs, the way in. `base`: the
+// ground floor's level (0, the model's ground, unless the museum stands on a plinth).
+function lay(W, m, model, cell, grow, base) {
   const P = W.WalkPlan;
-  const turn = bestTurn(W, model, cell);
+  base = base || 0;
+  const turn = bestTurn(W, model, cell, base);
   const grid = { cell, turn };
   // The shared grid: wide enough for every floor.
-  const g0 = shellAt(W, model, cell, turn, 0), f0 = g0.floors[0];
+  const g0 = shellAt(W, model, cell, turn, base), f0 = g0.floors[0];
   if (!f0) { return { error: "the model has no floor" }; }
   const margin = 40;
   const G = { cell, x0: f0.x0 - margin * cell, y0: f0.y0 - margin * cell, w: f0.gw + 2 * margin, h: f0.gh + 2 * margin };
-  const ground = levelMask(W, model, cell, turn, 0, G, null);
-  if (ground.area < 120) { return { error: "the model's inside is too small to arrange (" + Math.round(ground.area) + " m²)" }; }
+  const ground = levelMask(W, model, cell, turn, base, G, null);
+  if (ground.area < 120) { return { error: "the model's inside is too small to arrange (" + Math.round(ground.area) + " m²" + (base ? " at " + base + " m" : "") + ")" }; }
   // The floors: the museum's own count, else the rule.
   const fsrc = FLOORS[m.slug];
   const levels = [];
   const want = fsrc ? fsrc.n : RULE_MAX, storey = fsrc && fsrc.storey ? fsrc.storey : STOREY;
   for (let k = 0; k < want; k += 1) {
-    const z = k * storey;
+    const z = base + k * storey;
     const lv = k ? levelMask(W, model, cell, turn, z, G, ground.mask) : ground;
     if (k && (lv.area < 0.4 * ground.area || lv.area < 200)) { break; }
     levels.push({ k, z, mask: lv.mask, area: lv.area });
@@ -840,8 +864,22 @@ function lay(W, m, model, cell, grow) {
     lv.rooms = lv.rooms.filter((r, x) => seen[x]);
   }
   // The way in, on the ground floor.
-  const way = wayIn(W, model, cell, turn, G, levels[0].rooms);
-  if (!way) { return { error: "no room of its ground floor stands behind the shell's door" }; }
+  const way = wayIn(W, model, cell, turn, G, levels[0].rooms, base);
+  if (!way) { return { error: "no room of its ground floor stands behind the shell's door" + (base ? " at " + base + " m" : "") }; }
+  // On a plinth the floor is on its top, never inside it: the model's mass under where you stand
+  // outside the way in comes no higher than a step over the floor.
+  if (base) {
+    const vx = way.world.vox, st = P.toWorld(turn, way.stand[0], way.stand[1]);
+    const i = Math.floor((st[0] + vx.site[0] / 2) / vx.v), j = Math.floor((st[1] + vx.site[1] / 2) / vx.v);
+    let top = 0;
+    if (i >= 0 && j >= 0 && i < vx.nx && j < vx.ny) {
+      for (let k = Math.min(vx.nz - 1, Math.floor((base + 1.6) / vx.v)); k >= 0; k -= 1) {
+        const mm = vx.grid[k * vx.nx * vx.ny + j * vx.nx + i];
+        if (mm && vx.built[mm - 1]) { top = (k + 1) * vx.v; break; }
+      }
+    }
+    if (top > base + 0.35) { return { error: "at " + base + " m the floor would be inside the plinth, whose top is " + r2(top) + " m" }; }
+  }
   // Up and down: from each floor to the next, where a stair or a lift can go.
   const ups = [];
   for (let n = 0; n + 1 < levels.length; n += 1) {
@@ -887,7 +925,8 @@ function lay(W, m, model, cell, grow) {
     return {
       id: fid, name: "Level " + (n + 1), z: r2(lv.z), sure: "arranged", src: ["arranged", "model"].concat(fsrc ? ["floors-" + m.slug.replace(/^museum-/, "").slice(0, 24)] : []),
       note: n ? "a floor " + r2(lv.z) + " m up, " + (fsrc ? "one of the museum's own floors (its source)" : "by the rule: 5 m a storey") + "; its rooms only where the model stands"
-              : "the floor the way in opens on, at the model's ground",
+              : base ? "the floor the way in opens on, on the model's plinth " + r2(base) + " m up: inside the plinth the model is solid, so its rooms are laid on top of it, where its walls stand"
+                     : "the floor the way in opens on, at the model's ground",
       rooms: lv.rooms.map(r => ({ id: r.id, name: r.hall ? "Hall" : null, said: r.hall ? SAID_HALL : SAID_ROOM,
                                   kind: r.hall ? "hall" : "gallery", rect: toFile(r.r), sure: "arranged", src: ["arranged"] })),
       // Each doorway at the middle of the wall its rooms share, 2.4 m wide (narrower where they share less): the rule.
@@ -923,7 +962,19 @@ function lay(W, m, model, cell, grow) {
   });
   return { grid, enter, floors, levels: levels.length, stairs: ups.filter(b => b.stair).length,
            lifts: ups.filter(b => b.lift).length, rooms: floors.reduce((a, f) => a + f.rooms.length, 0),
-           ruleFloors: !fsrc, turn };
+           ruleFloors: !fsrc, turn, base };
+}
+
+// The layout at the model's ground, else on its plinth: the first level up whose inside the rule can
+// lay rooms in and walk into (basesOf). The error at the ground where none can.
+function layAt(W, m, model, cell, grow) {
+  let first = null;
+  for (const base of basesOf(W, model, cell)) {
+    const got = lay(W, m, model, cell, grow, base);
+    if (!got.error) { return got; }
+    if (!first) { first = got; }
+  }
+  return first;
 }
 
 /* ---------------------------------------------------------------- hanging */
@@ -934,7 +985,9 @@ function hangWorks(W, m, model, doc, srcs, how) {
   const osm = !!(how && how.osm);
   const P = W.WalkPlan;
   const world = P.compile(Object.assign({}, doc, { works: [] }), model, { soil: null });
-  const before = (doc.works || []).filter(w => !w.also);
+  // The works shown here are found again each run (alsoHere); a loan another museum's record places
+  // (at) is the museum's own listing, kept.
+  const before = (doc.works || []).filter(w => !w.also || w.at);
   // Every saved work museums.json gives it is held, even before build_interiors.py has listed it.
   const listed = new Set(before.map(w => w.id));
   (m.works || []).forEach(x => {
@@ -964,10 +1017,21 @@ function hangWorks(W, m, model, doc, srcs, how) {
   const held = [], shown = [];
   let histories = false;
   before.forEach(w => {
-    // Never one another museum's own record places (it hangs there: `at`), one its record says is off
-    // view, or the very object of another saved work (it hangs once, as that one).
-    if (w.same || w.at || w.how === "museum" || w.how === "off") { return; }
+    // Never one its record says is off view, or the very object of another saved work (it hangs
+    // once, as that one). One another museum's own record places (`at`: it hangs there) was listed
+    // here as a loan to a show: it hangs here as a work the museum showed, saying where it is.
+    if (w.same || w.how === "museum" || w.how === "off") { return; }
     const base = w.how === "arranged" ? (w.rec ? Object.assign({}, w.rec) : { how: "none", said: "where it hangs has not been read yet", src: null }) : { how: w.how, said: w.said, src: w.src, asof: w.asof };
+    if (w.at) {
+      const got = factsOf(W, w.id);
+      if (!got) { return; }
+      const ev = (got.hist.events || []).filter(x => x.m === m.slug && x.k !== "written");
+      const kinds = ev.map(x => x.k).filter((k, i, all) => all.indexOf(k) === i);
+      const ys = ev.map(x => yearOf(x.y)).filter(Boolean);
+      shown.push({ also: { id: w.id, kinds, y0: ys.length ? Math.min(...ys) : null, y1: ys.length ? Math.max(...ys) : null },
+                   f: got.facts, ev: ev[0] || null, at: w.at, rec: base, ref: w.ref || null });
+      return;
+    }
     let f = w.t ? { t: w.t, a: w.a, y: w.y, m: w.m, i: w.i, c: w.c, cm: w.cm, cmsrc: w.cmsrc } : (factsOf(W, w.id) || {}).facts;
     if (!f) {
       // No history on the site yet: what museums.json says of it (its picture's key without the size).
@@ -1033,8 +1097,11 @@ function hangWorks(W, m, model, doc, srcs, how) {
     const r = assign.get(h.w.id);
     if (!r) { return; }
     const rec = h.rec && (h.rec.src || h.rec.how === "elsewhere") ? h.rec : null;
+    // Where its record puts it is a room not drawn here (a gallery of the museum's, another of its
+    // buildings): said so, and that the site hung it here; else that where it hangs is not known.
     const w = { id: h.w.id, how: "arranged", room: r.id, wall: null,
-                said: (rec && rec.how === "elsewhere" ? rec.said + "; " : "") + "where the museum hangs it is not known: the site has hung it here",
+                said: rec && rec.how === "elsewhere" ? recWho(rec, m.slug) + " puts it in " + rec.said + ", which is not drawn here: the site has hung it here"
+                                                     : "where the museum hangs it is not known: the site has hung it here",
                 src: "arranged", asof: TODAY };
     if (rec) { w.rec = { how: rec.how, said: rec.said, src: rec.src || null, asof: rec.asof || null }; }
     if (h.w.ref) { w.ref = h.w.ref; }
@@ -1050,10 +1117,19 @@ function hangWorks(W, m, model, doc, srcs, how) {
     if (!r) { return; }
     const words = (s.also.kinds || []).map(k => KIND_WORD[k] || k).filter((x, i, all) => all.indexOf(x) === i).join(" · ");
     const yrs = yearsText(s.also.y0, s.also.y1);
+    // A loan another museum's own record places: where it is, in that record's words.
+    const mm = s.at ? /^at (.+?): (.+)$/.exec(String(s.rec && s.rec.said || "")) : null;
+    const where = s.at ? (mm ? "by its own museum's record it is at " + mm[1] + " (" + mm[2] + ")" : "its own museum's record places it: " + String(s.rec && s.rec.said || "")) : "";
     const w = { id: s.also.id, how: "arranged", room: r.id, wall: null,
-                said: (words || "Here") + " here" + (yrs ? ", " + yrs : "") + ", its history says; it is not the museum's: the site has hung it here",
+                said: (words || "Here") + " here" + (yrs ? ", " + yrs : "") + ", its history says; " +
+                      (s.at ? where + "; " : "") + "it is not the museum's: the site has hung it here",
                 src: "arranged", asof: TODAY, also: { k: s.also.kinds, y: [s.also.y0, s.also.y1] } };
     if (s.ev && s.ev.q) { w.also.q = s.ev.q; }
+    if (s.at) {
+      w.at = s.at;
+      w.rec = { how: s.rec.how, said: s.rec.said, src: s.rec.src || null, asof: s.rec.asof || null };
+      if (s.ref) { w.ref = s.ref; }
+    }
     Object.assign(w, s.f);
     works.push(w);
     arrangedIds.add(s.also.id);
@@ -1068,6 +1144,7 @@ function hangWorks(W, m, model, doc, srcs, how) {
       const rec = w.rec || { how: "none", said: "where it hangs has not been read yet", src: null };
       const back = { id: w.id, how: rec.how, said: rec.said, src: rec.src || null, asof: rec.asof || TODAY };
       if (w.ref) { back.ref = w.ref; }
+      if (w.at) { back.at = w.at; }
       works.push(back);
     } else { works.push(w); }
   });
@@ -1092,11 +1169,393 @@ function notesOf(layout, placed, fsrc) {
     "a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). " +
     "None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named.",
     fsrc ? "Its floors: " + fsrc.said : "Its floors: " + floors + (floors === 1 ? " floor" : " floors") + " by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own.",
+    layout.base ? "The model stands on a plinth, solid at the ground, so its ground floor is laid on the plinth's top, " + layout.base + " m up, where the model's walls stand round an inside." : null,
     "The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, " +
     "one to every 2.5 m of wall, in walking order from the door; " + placed.count + " hung so" + (placed.also ? ", " + placed.also + " of them shown here, not held" : "") + "."
   ];
   if (layout.notes && layout.kept) { return layout.notes.replace(/; \d+ hung so(, \d+ of them shown here, not held)?\.$/, "; " + placed.count + " hung so" + (placed.also ? ", " + placed.also + " of them shown here, not held" : "") + "."); }
-  return parts.join(" ");
+  return parts.filter(Boolean).join(" ");
+}
+
+/* ---------------------------------------------------------------- beside the known */
+
+/* The artist, 8 Oct 2026: "Just because you don't know the location of every artwork in every museum
+   doesn't mean you still can't put artwork inside the museum with artwork that you know is in the
+   museum." In a museum whose rooms a source draws (its own data, OpenStreetMap's mapping where its
+   records place works there, a plan redrawn by hand), every work it holds that its record does not
+   place in a room drawn — no location in its record, a room or a building not drawn, or nothing read
+   yet — is hung by the site beside the works the museum is known to have: the works its records
+   place in its rooms (the saved works, and the museum's own collection on the walls). The rule, in
+   order, each room taken only if it is reached from the door and its walls have room left:
+     artist       the rooms where the record hangs the most works by the same artist;
+     period-kind  the rooms whose recorded works are most of the same period and kind (painting,
+                  works on paper, sculpture, photograph);
+     near         the nearest rooms by doorways to the first of those, with wall free;
+     period       the rooms whose recorded works are most of its period, any kind;
+     kind         the rooms whose recorded works are most of its kind, the nearest in date first;
+     order        the galleries in walking order from the door.
+   On what wall the record's works leave (never moving one of them), one to every 2.5 m, else every
+   1.5 m where 2.5 would not take them all (walk-plan.js's siteFits and hang, which the page uses too);
+   a work no wall takes whole is drawn smaller, as late as can be (the look says so). Each is `how:
+   "arranged"`, `beside: {by, …}`, `rec` the record's own status with its source, `said` the site's
+   sentence: what the record says, then "hung here by the site, beside …". INTERIORS.md, "Beside the
+   known". */
+
+// Whose words a record's placement is: Wikidata's, the museum's own page, or the museum's record.
+function recWho(rec, slug) {
+  const short = SHORT[slug] || "the museum";
+  if (rec && rec.src === "wikidata-where") { return "Wikidata"; }
+  if (rec && /^page-/.test(rec.src || "")) { return short + "'s own page for it"; }
+  return short + "'s record";
+}
+// The museums' names in the sentences.
+const SHORT = {
+  "museum-national-gallery-of-art-washington-dc": "the National Gallery of Art",
+  "museum-the-metropolitan-museum-of-art": "the Met",
+  "museum-art-institute-of-chicago": "the Art Institute",
+  "museum-cleveland-museum-of-art": "the Cleveland Museum of Art",
+  "museum-statens-museum-for-kunst": "SMK",
+  "museum-centre-pompidou": "the Centre Pompidou",
+  "museum-british-museum": "the British Museum"
+};
+const BESIDE_T = "the site's hanging beside the known: where the museum hangs a work is not known, so the site hangs it beside the museum's own works — by the same artist, else of its period and kind, else in the nearest room with wall free (INTERIORS.md, 'Beside the known')";
+// Kinds of work, as the rooms hold them.
+const KIND_WORDS = { painting: "paintings", paper: "works on paper", sculpture: "sculpture", photograph: "photographs", other: "works" };
+const PHOTO = /\b(photograph|gelatin silver|albumen|platinum print|palladium|chromogenic|c-print|daguerreotype|ambrotype|tintype|salted paper|cyanotype|dye transfer|inkjet print|pigment print|silver dye bleach|cibachrome|polaroid|collodion|carbon print|photogravure)\b/i;
+const PAINT = /\b(oil|oils|tempera|acrylic|encaustic|distemper|fresco|alkyd|casein|enamel)\b/i;
+const SUPPORT_PAPER = /\b(paper|paperboard|cardboard|card|vellum|parchment)\b/i;
+const PAPER = /\b(watercolou?r|gouache|pastel|charcoal|graphite|pencil|crayon|chalk|ink|etching|engraving|lithograph|woodcut|wood engraving|drypoint|aquatint|mezzotint|screenprint|serigraph|linocut|monotype|print|drawing|wash)\b/i;
+const SCULPT = /\b(bronze|marble|stone|wood|clay|plaster|ceramic|terracotta|terra cotta|porcelain|granite|alabaster|limestone|sandstone|iron|steel)\b/i;
+// A painting is in paint whatever it is on (oil on cardboard, oil over graphite on paper, as the
+// museums count them); works on paper are drawn, printed or washed on it.
+function kindOf(w) {
+  const m = String(w.m || "");
+  if (PHOTO.test(m)) { return "photograph"; }
+  if (w.free === true) { return "sculpture"; }
+  const made = m.split(/\bon\b/i)[0];
+  if (SCULPT.test(made) && !PAPER.test(made) && !PAINT.test(made)) { return "sculpture"; }
+  if (PAINT.test(m)) { return "painting"; }
+  if (PAPER.test(m) || SUPPORT_PAPER.test(m)) { return "paper"; }
+  if (/\b(canvas|panel)\b/i.test(m)) { return "painting"; }
+  return "other";
+}
+// A period as the sentences say it: "of 1860–1899", "before 1400", "since 1980".
+const PERIOD_WORDS = ["before 1400", "of 1400–1599", "of 1600–1799", "of 1800–1859", "of 1860–1899", "of 1900–1944", "of 1945–1979", "since 1980"];
+// An artist's name as the sentences give it: the first of several, without its life dates.
+function artistName(a) {
+  return String(a || "").split(/,| and /)[0].replace(/\s*\(.*?\)\s*/g, " ").replace(/\s+/g, " ").trim();
+}
+function artistWords(a) {
+  return artistName(a).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z ]+/g, " ").split(/\s+/).filter(Boolean);
+}
+// Two names of one artist: the same, or the same surname with each of the shorter's other names in
+// the longer, whole or as its initial (Auguste Renoir, Pierre-Auguste Renoir; J. M. W. Turner,
+// Joseph Mallord William Turner).
+function sameArtist(a, b) {
+  const A = artistWords(a), B = artistWords(b);
+  if (!A.length || !B.length) { return false; }
+  if (A.join(" ") === B.join(" ")) { return true; }
+  if (A[A.length - 1] !== B[B.length - 1] || A.length === 1 || B.length === 1) { return false; }
+  const [s, l] = A.length <= B.length ? [A, B] : [B, A];
+  const rest = l.slice(0, -1);
+  return s.slice(0, -1).every(x => rest.some(y => y === x || (x.length === 1 && y.charAt(0) === x)));
+}
+
+// The file written with only what changed: each top-level key whose value is as it was keeps its old
+// text, and in the sources and the works each unchanged line too — a file another script wrote keeps
+// its numbers as that script wrote them.
+function spliceText(oldText, next) {
+  const fresh = layoutText(next);
+  if (!oldText) { return fresh; }
+  const segs = t => {
+    const out = {}, re = /(?:^\{|\n )"([A-Za-z_]+)": /g, idx = [];
+    let mm;
+    while ((mm = re.exec(t))) { idx.push([mm[1], mm.index, re.lastIndex]); }
+    idx.forEach(([k, , j], n) => {
+      const end = n + 1 < idx.length ? idx[n + 1][1] - 1 : t.lastIndexOf("}");
+      out[k] = t.slice(j, end);
+    });
+    return { out, keys: idx.map(x => x[0]) };
+  };
+  const A = segs(oldText), B = segs(fresh);
+  const canon = v => JSON.stringify(v);
+  const parts = B.keys.map(k => {
+    const nv = B.out[k];
+    const ov = A.out[k];
+    if (ov !== undefined) {
+      let same = false;
+      try { same = canon(JSON.parse(ov)) === canon(JSON.parse(nv)); } catch (e) { same = false; }
+      if (same) { return `"${k}": ` + ov; }
+      if ((k === "works" || k === "sources") && /^\[\n {2}\{/.test(ov) && /^\[\n {2}\{/.test(nv)) {
+        const items = v => v.slice(4, -1).split(/,\n {2}(?=\{)/);
+        const old = new Map();
+        items(ov).forEach(it => { try { old.set(canon(JSON.parse(it)), it); } catch (e) { /* not one line */ } });
+        return `"${k}": [\n  ` + items(nv).map(it => old.get(canon(JSON.parse(it))) || it).join(",\n  ") + "]";
+      }
+    }
+    return `"${k}": ` + nv;
+  });
+  const text = "{" + parts.join(",\n ") + "}\n";
+  if (canon(JSON.parse(text)) !== canon(JSON.parse(fresh))) { return fresh; }
+  return text;
+}
+
+// The works its record places in rooms drawn, where they hang; then every work it holds that its
+// record does not place, beside them.
+function hangBeside(W, m, model, doc, opts) {
+  const P = W.WalkPlan, slug = m.slug, short = SHORT[slug] || "the museum";
+  const file = path.join(OUT, slug + ".json");
+  const oldText = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
+  const museums = readJSON(path.join(V2, "museums.json"), {}).museums || [];
+  const next = JSON.parse(JSON.stringify(doc));
+  // Every work as its record has it: the site's earlier hanging beside the known taken back first.
+  const works = (next.works || []).map(w => (w.how === "arranged" && w.beside ? backToRecord(w) : w));
+  const listed = new Set(works.map(w => w.id));
+  (m.works || []).forEach(x => {
+    if (listed.has(x.id)) { return; }
+    works.push({ id: x.id, how: "none", said: "where it hangs has not been read yet", src: null, asof: TODAY });
+    listed.add(x.id);
+  });
+  const world = P.compile(Object.assign({}, next, { works: [] }), model, { soil: null });
+  const pins = next.pins || {};
+  // The known: the record's works (and the museum's collection on its walls) where they hang.
+  const known = works.filter(w => w.how === "museum" && w.room && !w.same);
+  const hungKnown = P.hang(world, known, pins).hung;
+  const hungIds = new Set(hungKnown.map(h => h.id));
+  const rooms = {};
+  world.floors.forEach(fl => fl.rooms.forEach(r => { if (!r.pseudo) { rooms[r.id] = r; } }));
+  const HANGS_IN = { gallery: 1, hall: 1, court: 1, rotunda: 1 };
+  const usable = r => r && r.reach && r.walls && r.walls.length && !["closed", "void", "stair", "shop", "cafe"].includes(r.kind);
+  // What hangs in each room, by the record: artist, period, kind.
+  const inRoom = {};
+  known.forEach(w => {
+    if (!hungIds.has(w.id) || !usable(rooms[w.room])) { return; }
+    (inRoom[w.room] = inRoom[w.room] || []).push({ a: w.a, p: periodOf(w.y), k: kindOf(w) });
+  });
+  const roomIds = Object.keys(inRoom).sort((a, b) => rooms[a].floor - rooms[b].floor || rooms[a].index - rooms[b].index);
+  const ranked = test => roomIds.map(id => [id, inRoom[id].filter(test).length]).filter(x => x[1] > 0)
+    .sort((x, y) => y[1] - x[1] || rooms[x[0]].floor - rooms[y[0]].floor || rooms[x[0]].index - rooms[y[0]].index);
+
+  // The rooms by doorways: from a room, every other on its floor in order of the way through the
+  // doorways (centre to doorway to centre), then the other floors by the plan's distance and a floor.
+  const graph = {};
+  world.floors.forEach(fl => fl.doors.forEach(d => {
+    if (d.a < 0 || d.b < 0) { return; }
+    const A = fl.rooms[d.a], B = fl.rooms[d.b];
+    if (!A || !B || A.pseudo || B.pseudo) { return; }
+    const x = d.cut ? (d.cut[0] + d.cut[2]) / 2 : d.x, y = d.cut ? (d.cut[1] + d.cut[3]) / 2 : d.y;
+    const w = Math.hypot(A.cx - x, A.cy - y) + Math.hypot(B.cx - x, B.cy - y);
+    (graph[A.id] = graph[A.id] || []).push([B.id, w]);
+    (graph[B.id] = graph[B.id] || []).push([A.id, w]);
+  }));
+  const nearCache = {};
+  function nearest(fromId) {
+    if (nearCache[fromId]) { return nearCache[fromId]; }
+    const from = rooms[fromId], dist = { [fromId]: 0 }, done = new Set();
+    for (;;) {
+      let best = null;
+      Object.keys(dist).forEach(k => { if (!done.has(k) && (best === null || dist[k] < dist[best] || (dist[k] === dist[best] && k < best))) { best = k; } });
+      if (best === null) { break; }
+      done.add(best);
+      (graph[best] || []).forEach(([o, w]) => { if (dist[o] === undefined || dist[best] + w < dist[o]) { dist[o] = dist[best] + w; } });
+    }
+    const out = Object.keys(rooms).filter(id => id !== fromId && usable(rooms[id]) && HANGS_IN[rooms[id].kind]).map(id => {
+      const r = rooms[id];
+      const d = dist[id] !== undefined ? dist[id] : Math.hypot(r.cx - from.cx, r.cy - from.cy) + (r.floor !== from.floor ? 40 : 20);
+      return [id, d];
+    }).sort((x, y) => x[1] - y[1] || (x[0] < y[0] ? -1 : 1)).map(x => x[0]);
+    nearCache[fromId] = out;
+    return out;
+  }
+  // The galleries in walking order from the door (only when a work needs them).
+  let walkOrder = null;
+  function fromDoor() {
+    if (walkOrder) { return walkOrder; }
+    const e = world.enter;
+    walkOrder = Object.keys(rooms).filter(id => usable(rooms[id]) && HANGS_IN[rooms[id].kind]).map(id => {
+      const r = rooms[id], p = P.path(world, { x: e.x, y: e.y, floor: e.floor }, { x: r.cx, y: r.cy, floor: r.floor });
+      let L = 0;
+      if (p) { for (let k = 1; k < p.length; k += 1) { L += p[k][2] === p[k - 1][2] ? Math.hypot(p[k][0] - p[k - 1][0], p[k][1] - p[k - 1][1]) : 4; } }
+      return [id, p ? L : Infinity];
+    }).filter(x => x[1] < Infinity).sort((x, y) => x[1] - y[1] || (x[0] < y[0] ? -1 : 1)).map(x => x[0]);
+    return walkOrder;
+  }
+
+  // The works to hang: every work it holds that its record does not place in a room drawn.
+  const cands = [];
+  works.forEach(w => {
+    if (w.kind === "collection" || w.same || w.at || (w.how !== "none" && w.how !== "elsewhere")) { return; }
+    let f = w.t ? { t: w.t, a: w.a, y: w.y, m: w.m, i: w.i, c: w.c, cm: w.cm, cmsrc: w.cmsrc } : (factsOf(W, w.id) || {}).facts;
+    if (!f) {
+      const x = (m.works || []).find(v => v.id === w.id);
+      if (!x) { return; }
+      f = { t: x.t || "", a: x.a || "", y: x.y || "", m: x.m || "", i: String(x.i || "").split("/")[0], c: [], cm: null, cmsrc: null };
+    }
+    cands.push({ w, f, rec: { how: w.how, said: w.said, src: w.src || null, asof: w.asof || null } });
+  });
+  cands.sort((x, y) => order(Object.assign({ id: x.w.id }, x.f), Object.assign({ id: y.w.id }, y.f)));
+
+  // Each work's rooms, in the rule's order: [{id, by, …}], each room once.
+  function stepsOf(c) {
+    const p = periodOf(c.f.y), k = kindOf(Object.assign({}, c.f, { free: c.w.free }));
+    const out = [], seen = new Set();
+    const add = (id, step) => { if (!seen.has(id) && usable(rooms[id])) { seen.add(id); out.push(Object.assign({ id }, step)); } };
+    const name = artistName(c.f.a);
+    const byArtist = name ? ranked(x => sameArtist(x.a, c.f.a)) : [];
+    byArtist.forEach(([id, n]) => add(id, { by: "artist", a: name, n }));
+    const byPK = p < PERIODS.length ? ranked(x => x.p === p && x.k === k) : [];
+    byPK.forEach(([id, n]) => add(id, { by: "period-kind", p, k, n }));
+    const ref = byArtist.length ? { id: byArtist[0][0], by: "artist", a: name } : byPK.length ? { id: byPK[0][0], by: "period-kind", p, k } : null;
+    if (ref) { nearest(ref.id).forEach(id => add(id, { by: "near", ref })); }
+    const byP = p < PERIODS.length ? ranked(x => x.p === p) : [];
+    byP.forEach(([id, n]) => add(id, { by: "period", p, n }));
+    const byK = ranked(x => x.k === k).map(([id, n]) => {
+      const ps = inRoom[id].filter(x => x.k === k && x.p < PERIODS.length).map(x => Math.abs(x.p - p));
+      return [id, n, ps.length ? Math.min(...ps) : 99];
+    }).sort((x, y) => x[2] - y[2] || y[1] - x[1]);
+    byK.forEach(([id, n]) => add(id, { by: "kind", k, n }));
+    const ref2 = !ref && (byP.length || byK.length) ? (byP.length ? { id: byP[0][0], by: "period", p } : { id: byK[0][0], by: "kind", k }) : null;
+    if (ref2) { nearest(ref2.id).forEach(id => add(id, { by: "near", ref: ref2 })); }
+    // Last, the galleries from the door: worked out only for a work that needs them.
+    out.more = () => { fromDoor().forEach(id => add(id, { by: "order" })); return out; };
+    return out;
+  }
+  const roomName = id => (rooms[id] && rooms[id].name) || id;
+  function sentence(c, s) {
+    const rec = c.rec;
+    let status;
+    if (rec.how === "elsewhere") {
+      let place = String(rec.said || "").replace(/, in the Met's record$/, "").replace(/^Gallery (\S+), in .+$/, "Gallery $1");
+      if (/^East Bldg,\s*/.test(place)) { place = "the East Building (" + place.replace(/^East Bldg,\s*/, "") + ")"; }
+      status = recWho(rec, slug) + " puts it in " + place + ", which is not drawn here";
+    } else if (!rec.src) {
+      status = "where " + short + " hangs it has not been read yet";
+    } else {
+      status = "where " + short + " hangs it is not known (" + rec.said + ")";
+    }
+    const here = roomName(s.id), kw = k => KIND_WORDS[k] || "works", pw = p => PERIOD_WORDS[p] || "";
+    let beside;
+    if (s.by === "artist") { beside = "beside the museum's other " + (s.n === 1 ? "work" : "works") + " by " + s.a + " in " + here; }
+    else if (s.by === "period-kind") { beside = "beside the museum's " + kw(s.k) + " " + pw(s.p) + " in " + here; }
+    else if (s.by === "period") { beside = "beside the museum's works " + pw(s.p) + " in " + here; }
+    else if (s.by === "kind") { beside = "beside the museum's " + kw(s.k) + " in " + here; }
+    else if (s.by === "near") {
+      const r = s.ref, what = r.by === "artist" ? "its other works by " + r.a : r.by === "period-kind" ? "its " + kw(r.k) + " " + pw(r.p)
+        : r.by === "period" ? "its works " + pw(r.p) : "its " + kw(r.k);
+      beside = "in " + here + ", the nearest room with wall free to " + roomName(r.id) + ", where the museum hangs " + what;
+    } else {
+      beside = "in " + here + ", the first room from the door with wall free: " +
+        (periodOf(c.f.y) < PERIODS.length ? "the museum's records place no work here by its artist, of its period or of its kind"
+                                          : "no date is given for it, and the museum's records place no work here by its artist or of its kind");
+    }
+    return status + ": hung here by the site, " + beside;
+  }
+  function entryOf(c, s) {
+    const beside = { by: s.by };
+    if (s.by === "artist") { Object.assign(beside, { a: s.a, n: s.n }); }
+    if (s.by === "period-kind") { Object.assign(beside, { p: PERIODS[s.p][2], k: s.k, n: s.n }); }
+    if (s.by === "period") { Object.assign(beside, { p: PERIODS[s.p][2], n: s.n }); }
+    if (s.by === "kind") { Object.assign(beside, { k: s.k, n: s.n }); }
+    if (s.by === "near") { beside.of = s.ref.id; beside.ref = s.ref.by; }
+    const w = { id: c.w.id, how: "arranged", room: s.id, wall: null, said: sentence(c, s), src: "arranged", asof: TODAY,
+                rec: { how: c.rec.how, said: c.rec.said, src: c.rec.src, asof: c.rec.asof }, beside };
+    if (c.w.ref) { w.ref = c.w.ref; }
+    Object.assign(w, c.f);
+    if (c.w.free) { w.free = true; }
+    if (c.w.cmk) { w.cmk = c.w.cmk; }
+    return w;
+  }
+  // Into the rooms: the works with a room of their artist first, then the rest; each into the first
+  // room of its steps whose walls take it whole — the artist's rooms each at 2.5 m, else tightened to
+  // 1.5, before the next; the rooms of a period, a kind or the nearest, all at 2.5 m before any is
+  // tightened, so that one room is not crowded while its like have wall — else, as late as can be,
+  // drawn smaller in the first that takes it so.
+  const assigned = {}, placed = new Map(), why = {};
+  const spacing = (id, w, scale) => P.siteFits(world, id, hungKnown, (assigned[id] || []).concat([w]), { ar: 2, scale });
+  const SPACE = P.RULES.ARR_SPACE;
+  const first = cands.filter(c => artistName(c.f.a) && ranked(x => sameArtist(x.a, c.f.a)).length);
+  const rest = cands.filter(c => first.indexOf(c) < 0);
+  function within(c, steps) {
+    // The steps in runs of one rule.
+    const runs = [];
+    steps.forEach(s => { const last = runs[runs.length - 1]; if (last && last.by === s.by) { last.list.push(s); } else { runs.push({ by: s.by, list: [s] }); } });
+    for (const run of runs) {
+      const tries = run.by === "artist" ? run.list.reduce((a, s) => a.concat([[s, true], [s, false]]), [])
+        : run.list.map(s => [s, true]).concat(run.list.map(s => [s, false]));
+      for (const [s, loose] of tries) {
+        const w = entryOf(c, s), sp = spacing(s.id, w, false);
+        if (sp && (!loose || sp === SPACE)) { return w; }
+      }
+    }
+    return null;
+  }
+  first.concat(rest).forEach(c => {
+    const steps = stepsOf(c), n = steps.length;
+    let got = within(c, steps);
+    if (!got) { got = within(c, steps.more().slice(n)); }
+    if (!got) {
+      for (const s of steps) { const w = entryOf(c, s); if (spacing(s.id, w, true)) { got = w; break; } }
+    }
+    if (!got) { why[c.w.id] = "no room reached from the door has wall left"; return; }
+    (assigned[got.room] = assigned[got.room] || []).push(got);
+    placed.set(c.w.id, got);
+  });
+  // In the file: the record's works as they were; the site's at their own entries' places, a room's
+  // in the order they were given it (the order they hang in, which siteFits measured).
+  const out = works.map(w => placed.get(w.id) || w);
+  const taken = {};
+  out.forEach((w, n) => {
+    if (!placed.has(w.id)) { return; }
+    const r = w.room;
+    taken[r] = taken[r] || 0;
+    out[n] = assigned[r][taken[r]];
+    taken[r] += 1;
+  });
+  next.works = out;
+  // Its sources: the site's hanging, while it hangs any.
+  const srcs = (next.sources || []).filter(s => s.id !== "arranged");
+  if (placed.size) { srcs.push({ id: "arranged", t: BESIDE_T, read: TODAY }); }
+  next.sources = srcs;
+  // Its notes: one paragraph for the site's hanging, rewritten each run.
+  const counts = {};
+  placed.forEach(w => { counts[w.beside.by] = (counts[w.beside.by] || 0) + 1; });
+  const ways = [["artist", "beside the record's works by the same artist"], ["period-kind", "of the same period and kind"],
+                ["near", "in the nearest room with wall free"], ["period", "of the same period"], ["kind", "of the same kind"],
+                ["order", "in the first room from the door with wall free"]].filter(x => counts[x[0]]).map(x => counts[x[0]] + " " + x[1]);
+  const para = "The site's hanging beside the known (INTERIORS.md, 'Beside the known'): the works " + short + " holds that its records do not place in a room drawn here are hung by the site beside the works its records place — " +
+    (placed.size ? ways.join("; ") : "none to hang") + (Object.keys(why).length ? "; " + Object.keys(why).length + " not hung (no room has wall left)" : "") + ".";
+  const notes = String(next.notes || "").split("¶ ").filter(p => !/^The site's hanging beside the known/.test(p));
+  if (placed.size || Object.keys(why).length) { notes.push(para); }
+  next.notes = notes.join("¶ ");
+  if (placed.size) { next.asof = TODAY; }
+  // Checked as the walk will have it, and every work given a room hangs.
+  const text = spliceText(oldText, next);
+  const res = P.check(JSON.parse(text), model, museums.find(x => x.slug === slug) || null,
+                      readJSON(path.join(V2, "grounds", slug + ".json"), null), { bytes: Buffer.byteLength(text), today: TODAY });
+  if (res.errors.length) { return { slug, skip: "it does not check: " + res.errors.slice(0, process.env.DBG ? 40 : 4).join("; "), errors: res.errors }; }
+  const finalHung = new Set(res.hung.hung.map(h => h.id));
+  const spilled = Array.from(placed.keys()).filter(id => !finalHung.has(id));
+  if (spilled.length) { return { slug, skip: "the site's hanging does not hang " + spilled.length + " of its works: " + spilled.slice(0, 6).join(", ") }; }
+  next.tier = res.tier;
+  const final = spliceText(oldText, next);
+  if (opts.to) { fs.mkdirSync(opts.to, { recursive: true }); fs.writeFileSync(path.join(opts.to, slug + ".json"), final); }
+  if (!opts.dry && !opts.to && final !== oldText) { fs.writeFileSync(file, final); }
+  return { slug, tier: res.tier, levels: next.floors.length, rooms: next.floors.reduce((a, f) => a + f.rooms.length, 0),
+           hung: res.stats.hung, works: next.works.length, arranged: placed.size, also: 0, beside: counts, unhung: why,
+           kb: Math.round(Buffer.byteLength(final) / 1024), warnings: res.warnings, turn: next.grid.turn, kept: true };
+}
+
+// A work the site hung beside the known, as its record has it (to be hung again).
+function backToRecord(w) {
+  const rec = w.rec || { how: "none", said: "where it hangs has not been read yet", src: null, asof: null };
+  const back = { id: w.id, how: rec.how, said: rec.said, src: rec.src || null, asof: rec.asof || TODAY };
+  if (w.ref) { back.ref = w.ref; }
+  if (rec.how === "elsewhere") {
+    ["t", "a", "y", "m", "i", "c", "cm", "cmsrc"].forEach(k => { if (w[k] !== undefined) { back[k] = w[k]; } });
+    if (w.free) { back.free = true; }
+    if (w.cmk) { back.cmk = w.cmk; }
+  }
+  return back;
 }
 
 /* ---------------------------------------------------------------- the run */
@@ -1113,13 +1572,14 @@ function main() {
   if (arg("only")) { slugs = String(arg("only")).split(","); }
   else if (arg("all")) { slugs = museums.map(x => x.slug); }
   else {
-    // The targets, every museum already arranged (its works re-hung) and every shell left (a new
-    // museum's, from the intake): the artist's ask is every museum walkable with its works.
+    // The targets, every museum already arranged (its works re-hung), every museum whose rooms a
+    // source draws (its works hung beside the known) and every shell left (a new museum's, from the
+    // intake): the artist's ask is every museum walkable with every work it holds on its walls.
     const arranged = [], shells = [];
     museums.forEach(x => {
       const d = readJSON(path.join(OUT, x.slug + ".json"), {});
-      if (d && (d.tier === "arranged" || (d.floors || []).some(f => f.sure === "arranged") || osmDrawn(d))) { arranged.push(x.slug); }
-      else if (d && !(d.floors && d.floors.length)) { shells.push(x.slug); }
+      if (d && d.floors && d.floors.length) { arranged.push(x.slug); }
+      else if (d) { shells.push(x.slug); }
     });
     slugs = opts.worksOnly ? arranged : Array.from(new Set(TARGETS.concat(arranged, shells)));
   }
@@ -1131,8 +1591,10 @@ function main() {
     try { r = arrange(W, m, opts); } catch (e) { r = { slug, skip: "failed: " + (e && e.stack || e) }; }
     done.push(r);
     if (r.skip) { console.log(`  ${slug}: left as it is — ${r.skip}`); continue; }
+    const beside = r.beside ? " beside the known (" + Object.keys(r.beside).map(k => k + " " + r.beside[k]).join(", ") + ")" +
+      (r.unhung && Object.keys(r.unhung).length ? ", " + Object.keys(r.unhung).length + " not hung" : "") : " by the rule (" + r.also + " shown here)";
     console.log(`  ${slug}: ${r.tier}, ${r.levels} floor${r.levels === 1 ? "" : "s"}, ${r.rooms} rooms, turn ${r.turn}°; ` +
-                `${r.arranged} works hung by the rule (${r.also} shown here), ${r.hung} hung in all; ${r.kb} KB${r.kept ? " (its rooms kept)" : ""}` +
+                `${r.arranged} works hung${beside}, ${r.hung} hung in all; ${r.kb} KB${r.kept ? " (its rooms kept)" : ""}` +
                 (r.warnings && r.warnings.length ? "\n      " + r.warnings.slice(0, 4).join("\n      ") : ""));
   }
   const ok = done.filter(r => !r.skip).length;
@@ -1140,4 +1602,5 @@ function main() {
 }
 
 if (require.main === module) { main(); }
-module.exports = { arrange, pageCode, TARGETS, FLOORS, lay, shellAt, levelMask, frame, roomsOf, wayIn, bestTurn, mainPart, doorsOf, between };
+module.exports = { arrange, pageCode, TARGETS, FLOORS, lay, layAt, basesOf, shellAt, levelMask, frame, roomsOf, wayIn, bestTurn, mainPart,
+                   doorsOf, between, layoutText, spliceText, hangBeside, kindOf, sameArtist };

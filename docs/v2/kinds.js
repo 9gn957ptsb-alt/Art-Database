@@ -977,13 +977,15 @@
     }
     // What this is.
     var what = el("p", "kinds-what");
-    var g = el("span", "kinds-glyph", kd.glyph);
-    g.setAttribute("aria-hidden", "true");
-    what.appendChild(g);
-    what.appendChild(el("span", "kinds-name", kd.name));
+    // The name alone: its category is said to a screen reader, and shown by the tabs' glyphs under it,
+    // not written over it (artist, 8 Oct 2026, of "◎ PLACES" over "Houston": "This is awkward. You
+    // don't need the Places text above the city").
+    var title = el("span", "kinds-title");
+    title.appendChild(el("span", "visually-hidden", (ONE[kd.name] || kd.name) + ": "));
+    title.appendChild(document.createTextNode(it.name));
+    what.appendChild(title);
     var sub = SUBNAME[it.k];
     if (sub) { what.appendChild(el("span", "kinds-sub", sub(it))); }
-    what.appendChild(el("span", "kinds-title", it.name));
     // Following an animal or a voice: the one followed, a door.
     var f = window.Land && Land.following && Land.following();
     if (f && !cur.solo) {
@@ -1079,6 +1081,9 @@
     var nb = hostEl.querySelector('.kinds-tab[data-tab="' + tab + '"]');
     if (nb) { nb.focus({ preventScroll: true }); }
   }
+  // The categories' names, one of them: said before a header's name to a screen reader.
+  var ONE = { "Museums": "Museum", "Movements": "Movement", "Works": "Work", "Artists": "Artist", "Writings": "Writing",
+              "Places": "Place", "Galleries & shows": "Gallery or show", "Animals": "Animal" };
   var SUBNAME = {
     institution: function () { return "a museum"; },
     collection: function () { return "a collection"; },

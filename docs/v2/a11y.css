@@ -12,7 +12,9 @@
 #land:focus-visible { outline-offset: -6px; }
 /* The view's heading takes the focus on arrival; it is a heading, not a control. */
 .a11y-h1:focus, [data-a11y-h1]:focus { outline: none !important; }
-[data-a11y-h1]:focus-visible { outline: 2px solid #9d95e6 !important; outline-offset: 3px; }
+/* The view's heading takes the focus on arrival so a screen reader starts there; it is not a control (no
+   tab stop, nothing to press), so no ring is drawn round it (8 Oct 2026: a lilac box round "Houston"). */
+[data-a11y-h1]:focus-visible { outline: none !important; }
 /* The dial: its range is kept unseen, so the ring is the dial's, round its face. */
 .building-time.dial:has(.building-time-range:focus-visible),
 .building-time.dial:has(.dial-mode:focus-visible) {
