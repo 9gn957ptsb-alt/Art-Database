@@ -437,6 +437,261 @@ def vienna(box):
     return "polys", polys, pts
 
 
+# Berlin: the Senate's building-age maps (dl-de/zero-2-0) on gdi.berlin.de — the Umweltatlas 06.12
+# "Gebäudealter der Wohnbebauung" (2016: each block's predominant decade of its homes) and the heat
+# plan's "bs_baualter" (2026: each sub-block's predominant period of its homes) — and its listed buildings
+# (Denkmale) dated by their Wikidata items' inception (P2424 is their number). The heat plan takes the
+# blocks the Umweltatlas does not have, and those it has seen rebuilt since 2011; a listed building's
+# own outline takes its year over its block's. A block of offices with a house or two is not dated by its
+# homes (fewer than three). gdi.berlin.de's chain ends in a root (Telekom Security TLS RSA Root 2023)
+# the session's bundle lacks (it had read as "Berlin's certificate fails"): certifi's roots are added
+# to the default ones, verification kept.
+BERLIN_WFS = "https://gdi.berlin.de/services/wfs/{svc}?"
+BERLIN_PERIOD = {"vor1919": OLD, "1919-1948": 1933, "1949-1978": 1963, "1979-1990": 1984, "1991-2000": 1995,
+                 "2001-2010": 2005, "2011-2019": 2015, "2020undspäter": 2022}
+UA_COUNTS = ["x_bis_1900"] + [f"x{a}_{a + 9}" for a in range(1901, 2002, 10)] + ["x2011_2015"]
+
+
+def _tls():
+    import ssl
+    ctx = ssl.create_default_context()
+    try:
+        import certifi
+        ctx.load_verify_locations(certifi.where())
+    except Exception:
+        pass
+    return ctx
+
+
+def _berlin(svc, layer, box):
+    s, w, n, e = box
+    q = {"service": "WFS", "version": "1.1.0", "request": "GetFeature", "typeName": layer, "srsName": "EPSG:4326",
+         "outputFormat": "application/json", "bbox": f"{w},{s},{e},{n},EPSG:4326"}
+    req = urllib.request.Request(BERLIN_WFS.format(svc=svc) + urllib.parse.urlencode(q), headers=AGENT)
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=300, context=_tls()) as r:
+                return json.loads(r.read()).get("features") or []
+        except Exception as exc:
+            err = exc
+            time.sleep(2 ** attempt)
+    raise err
+
+
+def _ua_year(pr):
+    import re
+    def num(v):
+        if isinstance(v, (int, float)):
+            return float(v)
+        m = re.findall(r"\d+", str(v or ""))
+        return sum(float(x) for x in m) / len(m) if m else 0.0     # "1 - 3": its middle
+    counts = [num(pr.get(k)) for k in UA_COUNTS]
+    if sum(counts) < 3:
+        return 0
+    v = re.sub(r"\s", "", str(pr.get("ueberw_dekade_woh_neu") or "")).lower()
+    k = None
+    if v == "bis1900":
+        k = 0
+    elif re.fullmatch(r"\d{4}-\d{4}", v):
+        a = int(v[:4])
+        k = len(UA_COUNTS) - 1 if a >= 2011 else (a - 1901) // 10 + 1
+    elif v.startswith("gemischt"):
+        top = max(counts)
+        k = counts.index(top)                        # the earliest of the decades that tie
+    if k is None:
+        return 0
+    return OLD if k == 0 else (2013 if k == len(UA_COUNTS) - 1 else 1905 + 10 * (k - 1))
+
+
+def _berlin_listed():
+    """Wikidata's Berlin monuments (P2424) with an inception, as buildings: {number: year}."""
+    path = CACHE / "berlin_denkmal_years.json"
+    if path.exists():
+        return json.loads(path.read_text())
+    res = _sparql("""SELECT ?id ?cls ?t ?prec WHERE {
+  ?item wdt:P2424 ?id ; wdt:P31 ?cls .
+  ?item p:P571/psv:P571 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] .
+}""", timeout=300)
+    built, org = _tree("Q811979"), _tree("Q43229")
+    by = {}
+    for b in res.get("results", {}).get("bindings", []):
+        d = by.setdefault(b["id"]["value"], {"cls": set(), "y": 9999})
+        d["cls"].add(b["cls"]["value"].rsplit("/", 1)[-1])
+        if int(b["prec"]["value"]) < 8:
+            continue
+        t = b["t"]["value"]
+        try:
+            y = int(t[:t.index("-", 1)]) + (5 if int(b["prec"]["value"]) == 8 else 0)
+        except ValueError:
+            continue
+        if 1000 <= y <= THIS_YEAR:
+            d["y"] = min(d["y"], y)
+    out = {k: d["y"] for k, d in by.items() if d["y"] < 9999 and d["cls"] & built and not d["cls"] & org}
+    path.write_text(json.dumps(out, sort_keys=True))
+    return out
+
+
+def berlin(box):
+    import re
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+
+    def polys(feats, year):
+        out = []
+        for f in feats:
+            y = year(f.get("properties") or {})
+            g = f.get("geometry")
+            if not y or not g:
+                continue
+            try:
+                geo = shape(g).buffer(0)
+            except Exception:
+                continue
+            if not geo.is_empty:
+                out.append((y, geo))
+        return out
+
+    listed = _berlin_listed()
+    dm = polys([f for f in _berlin("denkmale", "denkmale:denkmale", box)
+                if (f.get("properties") or {}).get("typ") == "Baudenkmal"],
+               lambda pr: listed.get(str(pr.get("id") or "")))
+    ua = polys(_berlin("ua_gebaeudealter", "ua_gebaeudealter:ua_gebaeudealter_baualter", box), _ua_year)
+    wp = polys(_berlin("waermeplanung", "waermeplanung:bs_baualter", box),
+               lambda pr: BERLIN_PERIOD.get(re.sub(r"\s", "", str(pr.get("ueberwiegendes_bj") or "")).lower(), 0))
+    new = [(y, g) for y, g in wp if y >= 2011]
+    cut = unary_union([g for _, g in dm] + [g for _, g in new]) if (dm or new) else None
+    ua_all = unary_union([g for _, g in ua]) if ua else None
+    out = list(dm) + list(new)
+    for y, g in ua:
+        out.append((y, g.difference(cut) if cut is not None else g))
+    for y, g in wp:
+        if y >= 2011:
+            continue
+        rest = g.difference(ua_all) if ua_all is not None else g
+        out.append((y, rest.difference(cut) if cut is not None else rest))
+    rings = []
+    for y, g in out:
+        for poly in getattr(g, "geoms", [g]):
+            if poly.geom_type == "Polygon" and not poly.is_empty and poly.area > 0:
+                rings.append((y, list(poly.exterior.coords)))
+    return "polys", rings
+
+
+# Denmark: the national building register (BBR) — each building's year of construction (byg026) and its
+# point — from Mapcentia's weekly copy of it on a public bucket (datagrundlag), which answers the
+# session (Datafordeler, its home, does not). Only the columns read, once, from one 1.2 GB parquet file
+# of the whole country (into data/bbr/); standing buildings (status 6) that are not garages, carports,
+# sheds or greenhouses (use 9xx), with their footprint's radius; a year before 1200 is the register's
+# "not known".
+BBR = "https://datagrundlag.s3.eu-west-1.amazonaws.com/filer/dk/schema%3Dbbr/relation%3Dbygning/"
+_bbr = None
+
+
+class _HttpFile:
+    """A seekable file over HTTP ranges, for reading a few columns of a large parquet file."""
+
+    def __init__(self, url, block=8 << 20):
+        import io  # noqa: F401
+        self.url, self.pos, self.block, self.cache = url, 0, block, {}
+        req = urllib.request.Request(url, method="HEAD", headers=AGENT)
+        with urllib.request.urlopen(req, timeout=60) as r:
+            self.size = int(r.headers["Content-Length"])
+        self.closed = False
+
+    def seekable(self):
+        return True
+
+    def readable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, off, whence=0):
+        self.pos = off if whence == 0 else self.pos + off if whence == 1 else self.size + off
+        return self.pos
+
+    def _blk(self, i):
+        if i not in self.cache:
+            if len(self.cache) > 24:
+                self.cache.pop(next(iter(self.cache)))
+            a = i * self.block
+            b = min(self.size, a + self.block) - 1
+            req = urllib.request.Request(self.url, headers=dict(AGENT, Range=f"bytes={a}-{b}"))
+            for attempt in range(5):
+                try:
+                    with urllib.request.urlopen(req, timeout=300) as r:
+                        self.cache[i] = r.read()
+                    break
+                except Exception:
+                    if attempt == 4:
+                        raise
+                    time.sleep(2 ** attempt)
+        return self.cache[i]
+
+    def read(self, n=-1):
+        if n is None or n < 0:
+            n = self.size - self.pos
+        out = bytearray()
+        while n > 0 and self.pos < self.size:
+            i = self.pos // self.block
+            off = self.pos - i * self.block
+            chunk = self._blk(i)[off:off + n]
+            out += chunk
+            self.pos += len(chunk)
+            n -= len(chunk)
+        return bytes(out)
+
+    def close(self):
+        self.closed = True
+
+
+def denmark(box):
+    global _bbr
+    s, w, n, e = box
+    if _bbr is None:
+        path = CACHE / "bbr" / "points.json"
+        if not path.exists():
+            import pyarrow.parquet as pq
+            from pyproj import Transformer
+            latest = json.loads(fetch(BBR + "latest.json"))
+            href = latest["assets"]["data"]["href"].lstrip("./").replace("=", "%3D")
+            pf = pq.ParquetFile(_HttpFile(BBR + href))
+            cols = ["byg026opførelsesår", "byg404koordinat", "status", "byg021bygningensanvendelse", "byg041bebyggetareal"]
+            to_ll = Transformer.from_crs(25832, 4326, always_xy=True)
+            pts = []
+            for g in range(pf.num_row_groups):
+                t = pf.read_row_group(g, columns=cols).to_pydict()
+                xs, ys, keep = [], [], []
+                for k in range(len(t["status"])):
+                    if str(t["status"][k]) != "6" or str(t["byg021bygningensanvendelse"][k] or "").startswith("9"):
+                        continue
+                    y = year_of(t["byg026opførelsesår"][k])
+                    c = str(t["byg404koordinat"][k] or "")
+                    if not c.startswith("POINT"):
+                        continue
+                    try:
+                        x0, y0 = (float(v) for v in c[c.index("(") + 1:c.index(")")].split())
+                    except ValueError:
+                        continue
+                    try:
+                        area = float(t["byg041bebyggetareal"][k] or 0)
+                    except ValueError:
+                        area = 0.0
+                    xs.append(x0)
+                    ys.append(y0)
+                    keep.append((y, round(math.sqrt(max(area, 0) / math.pi), 1)))
+                if xs:
+                    lons, lats = to_ll.transform(xs, ys)
+                    pts += [(round(la, 6), round(lo, 6), y, r) for la, lo, (y, r) in zip(lats, lons, keep)]
+                print(f"    BBR row group {g + 1}/{pf.num_row_groups}: {len(pts)} buildings", flush=True)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(pts, separators=(",", ":")))
+        _bbr = json.loads(path.read_text())
+    s, w, n, e = padded(box, 50)
+    return "points", [p for p in _bbr if s <= p[0] <= n and w <= p[1] <= e]
+
+
 # The Swiss register's period codes (gbaup), where a building has no year: the middle of each period.
 # 8011 is "before 1919", which has no middle: old, year not known. So are two cantons' own stand-ins
 # for it, Bern's 1900 and Basel-Stadt's 1871.
@@ -552,15 +807,19 @@ def spain(box):
         raise RuntimeError("the Catastro's service does not answer")
     s, w, n, e = box
     out = []
+    # And a budget: it can answer one small request and then hold the next ones (8 Oct 2026).
+    deadline = time.time() + 300
 
     def piece(ys, xw, yn, xe, depth=0):
+        if time.time() > deadline:
+            raise RuntimeError("the Catastro's service is too slow")
         q = {"service": "wfs", "version": "2.0.0", "request": "getfeature", "typenames": "BU.BUILDING",
              "bbox": f"{ys},{xw},{yn},{xe}", "SRSNAME": "EPSG:4326"}
         try:
-            gml = (fetch("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q))
+            gml = (fetch("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q), timeout=60)
                    or b"").decode("latin-1")
         except Exception:
-            if depth >= 3:
+            if depth >= 3 or time.time() > deadline:
                 raise
             ym, xm = (ys + yn) / 2, (xw + xe) / 2
             for a in ((ys, xw, ym, xm), (ys, xm, ym, xe), (ym, xw, yn, xm), (ym, xm, yn, xe)):
@@ -930,6 +1189,8 @@ CITIES = [   # (the name builtFrom gives it, south, west, north, east, fetcher)
     ("Vancouver property tax report (BC Assessment)", 49.19, -123.23, 49.32, -123.02, vancouver),
     ("NJ parcels and MOD-IV (NJOGIS)", 38.92, -75.57, 41.36, -73.88, new_jersey),
     ("TxGIO StratMap land parcels 2025", 29.49, -98.18, 33.03, -94.90, texas),
+    ("Berlin building age (Umweltatlas, heat plan) and listed buildings", 52.33, 13.08, 52.68, 13.77, berlin),
+    ("Danish building register (BBR)", 54.55, 8.0, 57.8, 15.25, denmark),
 ]
 
 
@@ -987,7 +1248,8 @@ def join_years(got, lat, lon, cell):
 # The year before which a source cannot say ("before 1900", "bis 1918"): its -1 cells, "old", stand from
 # the dial's first year, and the skyline's column says from when they are not dated (the ground's
 # builtOld). The records read on GitHub's runners carry their own.
-FLOORS = {"Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King County Assessor": 1900,
+FLOORS = {"Berlin building age (Umweltatlas, heat plan) and listed buildings": 1900,
+          "Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King County Assessor": 1900,
           "San Francisco Assessor-Recorder": 1900, "London Building Stock Model 2 (GLA)": 1900}
 
 # EUBUCCO (Milojevic-Dupont et al., Scientific Data 2023; v0.1, ODbL 1.0), on the Source Cooperative's
@@ -998,7 +1260,9 @@ FLOORS = {"Boston assessing": 1900, "Swiss building register (GWR)": 1919, "King
 # fix (CATASTRO_YEARS) by its reference.
 EUBUCCO = ("https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/abry-tudelft/eubucco/"
            "parquet/h3/h3_cell={c}/{c}.parquet")
-EUBUCCO_AT = [(35.9, -9.4, 43.8, 4.4), (41.3, -5.2, 51.1, 9.6)]       # Spain, France
+# Spain, and France without Belgium, Switzerland or Italy (whose cells carry no years: Milan's and
+# Brussels' were read for nothing on 8 Oct 2026), in boxes.
+EUBUCCO_AT = [(35.9, -9.4, 43.8, 3.4), (42.3, -5.2, 50.2, 8.3), (50.2, 1.5, 51.1, 2.6)]
 _eub = {}
 
 
