@@ -316,7 +316,7 @@
         "reconstructed": 400
       },
       "works": {
-        "hung": 19,
+        "hung": 317,
         "elsewhere": 2,
         "off": 0,
         "none": 18
@@ -584,7 +584,11 @@
     "log": [
       "2026-09-24 first model: whole complex coarse: Allerton front with steps and lions, Gunsaulus bridge over the tracks, east wings, Piano Modern Wing under its flying-carpet canopy with the Nichols Bridgeway",
       "2026-09-27 refined: the Allerton and east wings in buff limestone; the Allerton's Michigan Avenue front given its two rows of windows at an even rhythm and a darker frieze (no photographs)",
-      "2026-09-30 interior finding: only 23% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 23% of the model's footprint stands on the ground's buildings",
+      "2026-10-08 interior finding: 12 documented rooms of the Lower Level lie outside the model (G-1, G-10, G-11, G-15, G-2, G-24, G-3, G-4, G-50, G-57, G-58, G-59)",
+      "2026-10-08 interior finding: 26 documented rooms of the Floor 1 lie outside the model (G-137, G-144, G-150, G-151, G-152, G-153, G-154, G-160, G-161, G-170, G-171, G-172, \u2026)",
+      "2026-10-08 interior finding: 34 documented rooms of the Floor 2 lie outside the model (G-200, G-201, G-202, G-204, G-205, G-212, G-213, G-215, G-216, G-217, G-218, G-225, \u2026)",
+      "2026-10-08 interior finding: 11 documented rooms of the Floor 3 lie outside the model (G-389, G-391, G-392, G-393, G-393, G-394, G-395, G-396, G-397, G-398, G-399)"
     ],
     "interior": {
       "tier": "shell",
@@ -592,7 +596,7 @@
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 163
       },
       "works": {
         "hung": 0,

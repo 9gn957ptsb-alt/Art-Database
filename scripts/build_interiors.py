@@ -573,7 +573,7 @@ def place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api
         out.append(w)
     # The sources the placements cite, in place of the ones they cited before.
     sources = [s for s in doc.get("sources") or []
-               if not (s.get("id", "").endswith("-where") or s.get("id", "").startswith("page-"))]
+               if not (s.get("id", "").endswith(("-where", "-collection")) or s.get("id", "").startswith("page-"))]
     sources += [cited[k] for k in sorted(cited)]
     return out, sources
 
@@ -765,6 +765,292 @@ def merge_nga(doc, model):
     return doc
 
 
+# ---------------------------------------------------------------- the collection on the walls
+
+# Beside the saved works, each museum whose own open data says where its works hang carries a few hundred
+# of its own on-view collection, chosen by its own highlight flags and hung by its own gallery numbers: the
+# Met's highlights on view, the Art Institute's boosted ("essentials") works on view and then its other
+# works on view, Cleveland's highlights on view, and the National Gallery's paintings and sculpture on view
+# in the West Building (its open data has no highlight flag). Read with --collection into
+# data/collections/<museum>.json (weekly is enough: the daily run reads them again on Mondays); hung from
+# that copy on every run. An image is kept only where the museum says it is open access.
+COLLECTIONS = ROOT / "data" / "collections"
+COLLECTION_CAP = 300          # works a museum, at most
+ROOM_CAP = 6                  # works a room, at most, before the next round
+COLLECTION_SOURCES = {
+    "met": ("met-collection", "the Metropolitan Museum of Art's collection API: its highlights on view, each with "
+            "its gallery", "https://collectionapi.metmuseum.org/public/collection/v1.1/", "CC0-1.0"),
+    "aic": ("aic-collection", "the Art Institute of Chicago's API: its works on view, the boosted ('essentials') "
+            "first, each with its gallery and label", "https://api.artic.edu/api/v1/artworks",
+            "CC0-1.0; descriptions CC BY 4.0"),
+    "cma": ("cma-collection", "the Cleveland Museum of Art's open access API: its highlights on view, each with its "
+            "current location and wall text", "https://openaccess-api.clevelandart.org/api/artworks/", "CC0-1.0"),
+    "nga": ("nga-collection", "the National Gallery of Art's open data: its paintings and sculpture on view in the "
+            "West Building, each with its room and wall, and its open-access images",
+            "https://github.com/NationalGalleryOfArt/opendata", "CC0-1.0"),
+}
+COLLECTION_MUSEUM = {"met": "museum-the-metropolitan-museum-of-art", "aic": "museum-art-institute-of-chicago",
+                     "cma": "museum-cleveland-museum-of-art", "nga": NGA_SLUG}
+DESC_SRC = {"aic": "the Art Institute of Chicago's label", "cma": "the Cleveland Museum of Art's wall text"}
+
+
+def _get(url, params=None, tries=4):
+    for k in range(tries):
+        try:
+            r = requests.get(url, params=params, headers={"User-Agent": AGENT}, timeout=60)
+            if r.status_code == 429 or r.status_code >= 500:
+                time.sleep(2 + 3 * k)
+                continue
+            r.raise_for_status()
+            return r.json()
+        except (requests.RequestException, ValueError):
+            time.sleep(2 + 3 * k)
+    return None
+
+
+def plain(html):
+    """A label as words: its paragraphs' text, the markup gone, verbatim otherwise."""
+    if not html:
+        return None
+    t = re.sub(r"</p>\s*<p[^>]*>", "\n\n", str(html))
+    t = re.sub(r"<br\s*/?>", "\n", t)
+    t = re.sub(r"<[^>]+>", "", t)
+    t = t.replace("&nbsp;", " ").replace("&amp;", "&").replace("&quot;", '"').replace("&#39;", "'")
+    t = re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))), t)
+    t = re.sub(r"[ \t]+", " ", t)
+    return t.strip() or None
+
+
+def hsl_hex(c):
+    """The Art Institute's dominant colour (h 0-360, s and l 0-100) as hex."""
+    import colorsys
+    if not c or c.get("h") is None:
+        return None
+    r, g, b = colorsys.hls_to_rgb(c["h"] / 360, c["l"] / 100, c["s"] / 100)
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
+def fetch_met():
+    ids, off = [], 0
+    while True:
+        d = _get("https://collectionapi.metmuseum.org/public/collection/v1.1/search",
+                 {"isHighlight": "true", "isOnView": "true", "q": "*", "limit": 100, "offset": off})
+        if not d or not d.get("objectIDs"):
+            break
+        ids += d["objectIDs"]
+        off += 100
+        if off >= (d.get("total") or 0):
+            break
+    out = []
+    for n, oid in enumerate(ids):
+        o = _get(f"https://collectionapi.metmuseum.org/public/collection/v1/objects/{oid}")
+        time.sleep(0.08)
+        if not o or not str(o.get("GalleryNumber") or "").strip():
+            continue
+        g = str(o["GalleryNumber"]).strip()
+        cm = None
+        for ms in o.get("measurements") or []:
+            em = ms.get("elementMeasurements") or {}
+            if (ms.get("elementName") or "").lower() in ("overall", "") and (em.get("Height") or em.get("Width")):
+                cm = [round(em["Width"], 1) if em.get("Width") else None, round(em["Height"], 1) if em.get("Height") else None]
+                if em.get("Depth"):
+                    cm.append(round(em["Depth"], 1))
+                break
+        out.append({"object": str(oid), "rank": n, "keys": [g, "Gallery " + g], "wall": None,
+                    "said": "Gallery " + g + ", in the Met's record", "field": "GalleryNumber: " + g,
+                    "t": o.get("title") or "", "a": o.get("artistDisplayName") or o.get("culture") or "",
+                    "y": o.get("objectDate") or "", "m": o.get("medium") or "", "cm": cm or parse_dims(o.get("dimensions")),
+                    "img": o.get("primaryImageSmall") if o.get("isPublicDomain") and o.get("primaryImageSmall") else None,
+                    "c": None, "desc": None, "credit": o.get("creditLine") or None, "url": o.get("objectURL"),
+                    "free": (o.get("classification") or "").lower().startswith("sculpture") or None})
+    return out
+
+
+def fetch_aic():
+    fields = ("id,title,gallery_id,gallery_title,is_boosted,image_id,is_public_domain,color,artist_title,"
+              "artist_display,date_display,medium_display,dimensions,dimensions_detail,credit_line,description,"
+              "classification_title")
+    out, seen = [], set()
+    for boosted in (True, False):
+        flt = [{"term": {"is_on_view": True}}, {"exists": {"field": "gallery_id"}}]
+        if boosted:
+            flt.append({"term": {"is_boosted": True}})
+        page = 1
+        while len(out) < 900:
+            d = _get("https://api.artic.edu/api/v1/artworks/search",
+                     {"params": json.dumps({"query": {"bool": {"filter": flt}}}), "limit": 100, "page": page,
+                      "fields": fields})
+            if not d or not d.get("data"):
+                break
+            for o in d["data"]:
+                if o["id"] in seen or not o.get("gallery_id"):
+                    continue
+                seen.add(o["id"])
+                cm = parse_dims(o.get("dimensions"))
+                for dd in ([] if cm else o.get("dimensions_detail") or []):
+                    if (dd.get("height") or dd.get("width")) and not dd.get("clarification"):
+                        cm = [dd.get("width"), dd.get("height")] + ([dd["depth"]] if dd.get("depth") else [])
+                        break
+                t = (o.get("gallery_title") or "").strip()
+                out.append({"object": str(o["id"]), "rank": len(out), "boosted": bool(o.get("is_boosted")),
+                            "keys": [t, re.sub(r"^Gallery\s+", "", t), str(o["gallery_id"])], "wall": None,
+                            "said": t, "field": "gallery_id: " + str(o["gallery_id"]),
+                            "t": o.get("title") or "", "a": o.get("artist_title") or (o.get("artist_display") or "").split("\n")[0],
+                            "y": o.get("date_display") or "", "m": o.get("medium_display") or "",
+                            "cm": cm,
+                            "img": (f"https://www.artic.edu/iiif/2/{o['image_id']}/full/843,/0/default.jpg"
+                                    if o.get("is_public_domain") and o.get("image_id") else None),
+                            "c": [hsl_hex(o.get("color"))] if hsl_hex(o.get("color")) else None,
+                            "desc": plain(o.get("description")), "credit": o.get("credit_line") or None,
+                            "url": f"https://www.artic.edu/artworks/{o['id']}",
+                            "free": (o.get("classification_title") or "").lower() in ("sculpture",) or None})
+            if page >= (d.get("pagination") or {}).get("total_pages", 0) or (boosted is False and len(out) >= 900):
+                break
+            page += 1
+            time.sleep(0.3)
+    return out
+
+
+def fetch_cma():
+    out, skip = [], 0
+    while True:
+        d = _get("https://openaccess-api.clevelandart.org/api/artworks/",
+                 {"highlight": 1, "currently_on_view": 1, "limit": 100, "skip": skip})
+        if not d or not d.get("data"):
+            break
+        for o in d["data"]:
+            loc = (o.get("current_location") or "").strip()
+            if not loc:
+                continue
+            img = ((o.get("images") or {}).get("web") or {}).get("url") if o.get("share_license_status") == "CC0" else None
+            cr = o.get("creators") or []
+            out.append({"object": str(o["id"]), "rank": len(out), "keys": [loc, loc.split(" ")[0]], "wall": None,
+                        "said": loc, "field": "current_location: " + loc, "t": o.get("title") or "",
+                        "a": (cr[0].get("description") or "").split(" (")[0] if cr else (o.get("culture") or [""])[0],
+                        "y": o.get("creation_date") or "", "m": o.get("technique") or "",
+                        "cm": parse_dims(o.get("measurements")), "img": img, "c": None,
+                        "desc": plain(o.get("wall_description") or o.get("description")),
+                        "credit": o.get("creditline") or None, "url": o.get("url"),
+                        "free": (o.get("type") or "").lower() == "sculpture" or None})
+        skip += 100
+        if skip >= ((d.get("info") or {}).get("total") or 0):
+            break
+        time.sleep(0.3)
+    return out
+
+
+def fetch_nga():
+    """The NGA's paintings and sculpture on view in the West Building, from its open data."""
+    objects, locations = download("objects.csv"), download("locations.csv")
+    images = download("published_images.csv")
+    locs = {}
+    with locations.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            locs[row["locationid"]] = row
+    csv.field_size_limit(1 << 30)
+    pics = {}
+    with images.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["viewtype"] == "primary" and row["openaccess"] == "1" and row["depictstmsobjectid"]:
+                pics.setdefault(row["depictstmsobjectid"], row["iiifurl"])
+    out = []
+    with objects.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            loc = locs.get(row["locationid"] or "")
+            if not loc or loc.get("site") != "West Building":
+                continue
+            cls = row.get("classification") or ""
+            if cls not in ("Painting", "Sculpture"):
+                continue
+            pos = (loc.get("unitposition") or "").strip()
+            wall = {"N": "n", "E": "e", "S": "s", "W": "w"}.get(pos.upper()) if pos else None
+            if pos and not wall:
+                wall = "centre"
+            pic = pics.get(row["objectid"])
+            cm = parse_dims((row.get("dimensions") or "").split("\n")[0]) or parse_dims(row.get("dimensions"))
+            out.append({"object": row["objectid"], "rank": 0 if cls == "Painting" else 1,
+                        "keys": [loc.get("room") or "", loc["description"]], "wall": wall,
+                        "said": loc["description"] + (" · " + pos if pos else ""), "field": None,
+                        "t": row.get("title") or "", "a": row.get("attribution") or "", "y": row.get("displaydate") or "",
+                        "m": row.get("medium") or "", "cm": cm,
+                        "img": (pic + "/full/!843,843/0/default.jpg") if pic else None, "c": None, "desc": None,
+                        "credit": row.get("creditline") or None,
+                        "url": f"https://www.nga.gov/collection/art-object-page.{row['objectid']}.html",
+                        "free": cls == "Sculpture" or None})
+    # the NGA's own order within a kind: paintings first, then by object id
+    out.sort(key=lambda r: (r["rank"], int(r["object"])))
+    for n, r in enumerate(out):
+        r["rank"] = n
+    return out
+
+
+FETCH = {"met": fetch_met, "aic": fetch_aic, "cma": fetch_cma, "nga": fetch_nga}
+
+
+def read_collection(mus, refresh):
+    """A museum's on-view collection as read, from data/collections/ (read again with refresh)."""
+    path = COLLECTIONS / f"{mus}.json"
+    have = read_json(path)
+    if have and not refresh:
+        return have
+    print(f"  reading {mus}'s collection on view", flush=True)
+    rows = FETCH[mus]()
+    if not rows and have:
+        print(f"  {mus}: nothing came back; the copy of {have.get('read')} stands", flush=True)
+        return have
+    COLLECTIONS.mkdir(parents=True, exist_ok=True)
+    got = {"read": TODAY, "works": rows}
+    path.write_text(json.dumps(got, ensure_ascii=False), encoding="utf-8")
+    return got
+
+
+def collection_works(m, doc, saved, refresh=False):
+    """The museum's own on-view works to hang beside the saved ones: those whose gallery is drawn here, at
+    most ROOM_CAP a room a round and COLLECTION_CAP in all, in the museum's own order of highlight, spread
+    through the rooms; none that is a saved work's object. Returns (works, source) or ([], None)."""
+    mus = next((k for k, s in COLLECTION_MUSEUM.items() if s == m["slug"]), None)
+    if not mus or not doc.get("floors"):
+        return [], None
+    got = read_collection(mus, refresh) if (refresh or (COLLECTIONS / f"{mus}.json").exists()) else None
+    if not got:
+        return [], None
+    rooms = room_index(doc)
+    closed = {r["id"] for f in doc["floors"] for r in f.get("rooms") or [] if r.get("kind") in ("closed", "void")}
+    have = {(w.get("ref") or {}).get("object") for w in saved if (w.get("ref") or {}).get("museum") == mus}
+    sid, t, u, lic = COLLECTION_SOURCES[mus]
+    per = {}
+    for r in sorted(got["works"], key=lambda r: r["rank"]):
+        if r["object"] in have:
+            continue
+        rid = next((rooms[norm(k)] for k in r["keys"] if k and norm(k) in rooms), None)
+        if rid and rid not in closed:
+            per.setdefault(rid, []).append(r)
+    chosen, rnd = [], 0
+    while len(chosen) < COLLECTION_CAP and any(per.values()):
+        # each round, each room its next few, the rooms in the order of their best work
+        for rid in sorted(per, key=lambda k: per[k][0]["rank"] if per[k] else 1e9):
+            take, per[rid] = per[rid][:ROOM_CAP if rnd == 0 else 2], per[rid][ROOM_CAP if rnd == 0 else 2:]
+            for r in take:
+                chosen.append((rid, r))
+        rnd += 1
+    chosen = chosen[:COLLECTION_CAP]
+    out = []
+    for rid, r in chosen:
+        w = {"id": f"{mus}:{r['object']}", "kind": "collection", "how": "museum", "room": rid, "wall": r["wall"],
+             "said": r["said"], "src": sid, "asof": got["read"],
+             "ref": {"museum": mus, "object": r["object"], "url": r["url"]},
+             "t": r["t"], "a": r["a"], "y": r["y"], "m": r["m"], "cm": r["cm"], "cmsrc": mus if r["cm"] else None,
+             "img": r["img"], "c": r["c"], "desc": r["desc"], "descsrc": DESC_SRC.get(mus) if r["desc"] else None,
+             "credit": r["credit"]}
+        if r.get("field"):
+            w["ref"]["field"] = r["field"]
+        if r.get("free"):
+            w["free"] = True
+        out.append(w)
+    src = {"id": sid, "t": t, "u": u, "licence": lic, "read": got["read"]}
+    return out, src
+
+
 # ---------------------------------------------------------------- what moved
 
 PLACED = ("museum", "elsewhere")
@@ -817,6 +1103,8 @@ def main():
     ap.add_argument("--stubs", action="store_true", help="a shell file for every museum without one")
     ap.add_argument("--nga", action="store_true", help="the NGA West Building's rooms from its open data")
     ap.add_argument("--refresh", action="store_true", help="read the museums' data again")
+    ap.add_argument("--collection", action="store_true",
+                    help="read the museums' own on-view collections again (data/collections/)")
     args = ap.parse_args()
     museums = (read_json(DOCS / "museums.json", {}) or {}).get("museums") or []
     if args.only:
@@ -850,7 +1138,11 @@ def main():
         if m["slug"] == NGA_SLUG and nga is None:
             nga = NGAData(args.refresh)
         works, sources = place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api_matches)
-        lines = moves(doc.get("works"), works)
+        lines = moves([w for w in doc.get("works") or [] if w.get("kind") != "collection"], works)
+        coll, csrc = collection_works(m, doc, works, args.collection)
+        works += coll
+        if csrc:
+            sources.append(csrc)
         if m["slug"] == NGA_SLUG and not nga.ok:
             lines.append("the NGA's open data could not be read; the placements read before stand")
         if lines:
@@ -889,10 +1181,11 @@ def main():
         doc["sources"] = sources
         doc["asof"] = TODAY
         size = write(path, doc)
-        by = {"museum": 0, "elsewhere": 0, "off": 0, "none": 0}
+        by = {"museum": 0, "elsewhere": 0, "off": 0, "none": 0, "collection": 0}
         for w in works:
-            by[w["how"]] += 1
-            totals[w["how"]] += 1
+            k = "collection" if w.get("kind") == "collection" else w["how"]
+            by[k] += 1
+            totals[k] = totals.get(k, 0) + 1
         line = ", ".join(f"{k} {v}" for k, v in by.items() if v)
         print(f"  {m['slug']}: {len(works)} works ({line}); {size // 1024} KB", flush=True)
     log_moves(moved)
