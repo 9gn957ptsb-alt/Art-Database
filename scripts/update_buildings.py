@@ -84,6 +84,10 @@ def main():
             run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
     # The museums' insides: a shell for each new one, and where the works hang today.
     run(str(SCRIPTS / "build_interiors.py"), "--stubs", "--refresh")
+    # And the arranged museums (INTERIORS.md, "Arranged"): their works hung again by the rule after the
+    # records were read, and any new museum's shell laid out, so every museum can be walked up to.
+    print("\n$ node scripts/build_interiors_arranged.js", flush=True)
+    subprocess.run(["node", str(SCRIPTS / "build_interiors_arranged.js")], cwd=ROOT)
 
     for k in KINDS:
         every = places(k)

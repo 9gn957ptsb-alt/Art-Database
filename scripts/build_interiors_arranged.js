@@ -35,7 +35,7 @@
      the names     Room 1, Room 2 … in walking order; the hall is Hall. Never a museum's own.
 
    Run after build_interiors.py (which rewrites the works from the museums' records): with no
-   argument it re-hangs the works of every arranged museum and lays out the targets still shells.
+   argument it re-hangs the works of every arranged museum and lays out every shell left (the targets first).
 
      node scripts/build_interiors_arranged.js                 the targets (TARGETS) and re-hangs
      node scripts/build_interiors_arranged.js --only slug,slug
@@ -1070,12 +1070,15 @@ function main() {
   if (arg("only")) { slugs = String(arg("only")).split(","); }
   else if (arg("all")) { slugs = museums.map(x => x.slug); }
   else {
-    // The targets, and every museum already arranged (its works re-hung).
-    const arranged = museums.filter(x => {
+    // The targets, every museum already arranged (its works re-hung) and every shell left (a new
+    // museum's, from the intake): the artist's ask is every museum walkable with its works.
+    const arranged = [], shells = [];
+    museums.forEach(x => {
       const d = readJSON(path.join(OUT, x.slug + ".json"), {});
-      return d && (d.tier === "arranged" || (d.floors || []).some(f => f.sure === "arranged"));
-    }).map(x => x.slug);
-    slugs = opts.worksOnly ? arranged : Array.from(new Set(TARGETS.concat(arranged)));
+      if (d && (d.tier === "arranged" || (d.floors || []).some(f => f.sure === "arranged"))) { arranged.push(x.slug); }
+      else if (d && !(d.floors && d.floors.length)) { shells.push(x.slug); }
+    });
+    slugs = opts.worksOnly ? arranged : Array.from(new Set(TARGETS.concat(arranged, shells)));
   }
   const done = [];
   for (const slug of slugs) {
