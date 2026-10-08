@@ -202,6 +202,9 @@
   height: 100%;
   display: block;
 }
+/* Never blurry (artist, 8 Oct 2026): a canvas a slow machine draws at a whole divisor of the
+   screen's density is shown as crisp squares, never stretched smooth. The soft copy stays soft. */
+.world:not(.world-soft) { image-rendering: pixelated; }
 
 /* ---- the words --------------------------------------------------------- */
 

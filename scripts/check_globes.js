@@ -71,7 +71,7 @@ function check(tag, ok, what, got) {
 
 async function run(size) {
   const [w, h] = size.split("x").map(Number), touch = w <= 720;
-  const browser = await chromium.launch({ executablePath: EXE });
+  const browser = await chromium.launch({ executablePath: EXE, args: (process.env.CHROMIUM_ARGS || "").split(" ").filter(Boolean) });
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
   await ctx.addInitScript(() => { try { localStorage.setItem("globe-layer", "museums"); } catch (e) {} });
   const P = await ctx.newPage();
@@ -99,6 +99,37 @@ async function run(size) {
     if (touch) { await touchAt([{ x, y, id: 1 }], "touchStart"); await touchAt([], "touchEnd"); } else { await P.mouse.click(x, y); }
   };
   const state = () => P.evaluate(() => Land.reading());
+  // Search on an enlarged globe (artist, 8 Oct 2026: "Make sure the search bar is available when I enlarge
+  // the globe as well"): shown, on the screen, the top thing at its middle, 24 px or more.
+  const searchBox = () => P.evaluate(() => {
+    const b = document.getElementById("art-find");
+    if (!b || b.hidden || !b.offsetWidth) { return null; }
+    const r = b.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    return { x, y, w: r.width, h: r.height, on: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+             top: !!top && (top === b || b.contains(top)), grown: (Land.grown() || {}).on };
+  });
+  async function searchChecks(tag, where) {
+    const sb = await searchBox();
+    check(tag, !!sb && sb.on && sb.top && sb.h >= 24 && sb.grown, "Search is there " + where, sb);
+    if (!sb) { return; }
+    await tap(sb.x, sb.y);
+    await P.waitForTimeout(500);
+    await P.keyboard.type("Paris", { delay: 30 });
+    await P.waitForTimeout(900);
+    const fl = await P.evaluate(() => {
+      const f = document.getElementById("finder");
+      if (!f || f.hidden || !f.offsetWidth) { return null; }
+      const r = f.getBoundingClientRect(), rows = f.querySelectorAll(".finder-row, [role=option], li button, button").length;
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + Math.min(r.height - 4, 40));
+      return { rows, top: !!top && f.contains(top), on: r.top >= 0 && r.bottom <= innerHeight + 1 };
+    });
+    check(tag, !!fl && fl.rows > 0 && fl.top && fl.on, "what it finds shows over the reading " + where, fl);
+    await P.keyboard.press("Escape");
+    await P.waitForTimeout(500);
+    const after = await P.evaluate(() => ({ open: !!(document.getElementById("finder") || {}).offsetWidth, grown: (Land.grown() || {}).on, kind: (Land.reading() || {}).kind }));
+    check(tag, !after.open && after.grown, "Escape closes only the list; the globe stays big", after);
+  }
   const buttons = () => P.evaluate(() => {
     const box = document.querySelector(".lens-zoom");
     return box && !box.hidden && box.querySelector("button") && box.querySelector("button").offsetWidth ? [...box.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }) : null;
@@ -129,6 +160,7 @@ async function run(size) {
     check(tag, q.globe === "big", "a tap on the small globe puts it in the big place", pk(q));
     let f = await P.evaluate(() => Land.flat());
     check(tag, !!f && (await lit()) >= 20, "there it is a map, drawn", f && { w: Math.round(f.rect.w), lit: await lit() });
+    await searchChecks(tag, "on the globe in the big place");
     if (f) {
       const R0 = f.rect, cx0 = R0.x + R0.w / 2, cy0 = R0.y + R0.h / 2;
       await drag(cx0, cy0, cx0 - 60, cy0 + 10);
@@ -282,6 +314,8 @@ async function run(size) {
     await P.waitForTimeout(600);
     r2 = await state();
     check(tag, r2 && r2.k > 1.3, touch ? "two fingers outside the rim make it bigger" : "a wheel beside it makes it bigger", r2 && r2.k);
+    await P.waitForTimeout(400);
+    await searchChecks(tag, "on the enlarged globe");
     await P.keyboard.press("Escape");
     await P.waitForTimeout(900);
     r2 = await settle();

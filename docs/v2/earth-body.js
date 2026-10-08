@@ -11,8 +11,13 @@
    the sea by its depth, forest, grass, sand, rock, ice, the cities' ground,
    and snow and sea ice by the month. A cell is drawn as a crisp square of
    that colour, antialiased to the device pixel and never smaller than the
-   eye can hold: far off, cells smaller than two pixels are averaged
-   (mipmapped) rather than left to shimmer; close to, a cell splits into
+   eye can hold: far off, where a cell would be under three device pixels,
+   the cells are drawn coarser instead — a square of 2, 4, 8 … cells wearing
+   the work at its middle, still crisp — never averaged (the artist, 8 Oct
+   2026, of the small globe beside the dial: "The globe is blurry for some
+   reason. Make sure the globe is never blurry and consistently the same
+   across all places"; only the far limb, foreshortened under a pixel and a
+   half, is averaged, under the air); close to, a cell splits into
    cells of 6.5 to 13 pixels, each its cell's work or one of the eight works
    nearest it in colour, so at every height the ground is the same fine
    pixel and every pixel is a door to one work (doorAt, which works out
@@ -92,6 +97,17 @@
     // The work a cell wears: its own, or with snow its snow's, or, below a
     // cell, its own or one of its eight nearest in colour.
     "int entryAt(ivec2 s, int k) {",
+    // far off: a coarser cell, wearing the work of the cell at its middle
+    "  if (k < 0) {",
+    "    int m = -k, cx = GWI >> m, cy = GHI >> m;",
+    "    s.x = ((s.x % cx) + cx) % cx; s.y = clamp(s.y, 0, cy - 1);",
+    "    ivec2 c = s * (1 << m) + ivec2((1 << m) >> 1);",
+    "    c.y = min(c.y, GHI - 1);",
+    "    uvec4 dc = texelFetch(uDoors, c, 0);",
+    "    uvec4 sc0 = texelFetch(uSeason, c, 0);",
+    "    uint mc = sc0.r | ((sc0.g & 15u) << 8);",
+    "    return ((mc >> uint(uMonth)) & 1u) == 1u ? int((dc.g >> 4) | (dc.b << 4)) : int(dc.r | ((dc.g & 15u) << 8));",
+    "  }",
     "  int nx = GWI << k, ny = GHI << k;",
     "  s.x = ((s.x % nx) + nx) % nx; s.y = clamp(s.y, 0, ny - 1);",
     "  ivec2 b = s >> k;",
@@ -124,7 +140,7 @@
     "vec3 colourOf(int e) { uvec4 p = texelFetch(uPal, ivec2(e & 63, e >> 6), 0); return vec3(p.rgb) / 255.0; }",
     // A level's cells, crisp to the device pixel (sharp bilinear), and whether this is the lit one.
     "vec4 cells(vec2 uv, int k, vec2 fwBase) {",
-    "  float sc = float(1 << k);",
+    "  float sc = exp2(float(k));",
     "  vec2 c = vec2(uv.x * float(GWI), uv.y * float(GHI)) * sc;",
     "  vec2 fw = max(fwBase * sc, vec2(1e-4));",
     "  vec2 p = c - 0.5; vec2 i0 = floor(p); vec2 f = p - i0;",
@@ -163,7 +179,7 @@
     "  if (d2 >= 1.0) {",
     // the rim of the air, and the stars far behind
     "    float r = sqrt(d2);",
-    "    float th = clamp(0.03 * R, 3.0, 46.0) / R;",
+    "    float th = clamp(0.03 * R, 1.0, 46.0) / R;",
     "    float a = exp(-(r - 1.0) / th * 2.6) * (0.34 + 0.3 * high);",
     "    vec3 c = mix(HAZE, HAZE_DEEP, 0.4) * a;",
     "    if (uSky.z > 0.002) {",
@@ -183,9 +199,11 @@
     // how many cells to a pixel, without the jump where longitude wraps
     "  vec2 fwBase = vec2(fwidth(uv.x), fwidth(uv.y)) * vec2(float(GWI), float(GHI));",
     "  fwBase.x = min(fwBase.x, max(fwBase.y, 1e-4) * 8.0);",
-    // smooth (averaged) where cells are under two pixels, or out of focus
-    "  float cellPx = 1.0 / max(max(fwBase.x, fwBase.y), 1e-6);",
-    "  float smoothK = clamp(max(1.0 - smoothstep(1.6, 3.0, cellPx), smoothstep(0.15, 0.7, blur)) + uFeel.x * 0.3 * journey, 0.0, 1.0);",
+    // crisp at every size: the level's cells are three device pixels or more
+    // (levelFor); averaged only at the far limb, where they are foreshortened
+    // under a pixel and a half, and on a journey's out-of-focus edges (in flight only)
+    "  float cellPx = exp2(-min(uLevel.x, 0.0)) / max(max(fwBase.x, fwBase.y), 1e-6);",
+    "  float smoothK = clamp(max(1.0 - smoothstep(0.75, 1.5, cellPx), smoothstep(0.15, 0.7, blur)) + uFeel.x * 0.3 * journey, 0.0, 1.0);",
     "  vec3 col; float lit = 0.0;",
     "  if (smoothK < 0.999) {",
     "    int k = int(uLevel.x);",
@@ -376,6 +394,15 @@
   }
 
   function entryAt(si, sj, k) {
+    if (k < 0) {
+      // Far off: a coarser cell, wearing the work of the cell at its middle (as the shader).
+      var m = -k, cw = GW >> m, ch = GH >> m;
+      si = ((si % cw) + cw) % cw;
+      sj = Math.max(0, Math.min(ch - 1, sj));
+      var ci = si * (1 << m) + ((1 << m) >> 1), cj = Math.min(GH - 1, sj * (1 << m) + ((1 << m) >> 1));
+      var cb = cj * GW + ci, co = cb * 4;
+      return snowy(cb) ? (D.doors[co + 1] >> 4) | (D.doors[co + 2] << 4) : D.doors[co] | ((D.doors[co + 1] & 15) << 8);
+    }
     var nx = GW << k, ny = GH << k;
     si = ((si % nx) + nx) % nx;
     sj = Math.max(0, Math.min(ny - 1, sj));
@@ -398,13 +425,27 @@
     return e;
   }
 
-  // The level a radius draws its cells at, and how far it has blended into the next.
-  function levelFor(R) {
+  /* The level a radius draws its cells at, and how far it has blended into
+     the next. Under three device pixels a cell, the level is negative: cells
+     of 2, 4, 8 … wearing one work each, so they are never under three pixels
+     (CELL_FLOOR) and never averaged. d is the density the body is drawn at
+     (device pixels to a CSS pixel; the last frame's when not given). */
+  var CELL_FLOOR = 3;
+  var drawDpr = Math.min(window.devicePixelRatio || 1, 3);
+  function levelFor(R, d) {
     var cellPx = R * Math.PI / GH;
+    var dev = cellPx * (d || drawDpr);
+    if (dev < CELL_FLOOR) {
+      var lc = Math.log(Math.max(1e-6, dev / CELL_FLOOR)) / Math.LN2;
+      var kc = Math.max(-6, Math.floor(lc));
+      var bc = Math.max(0, Math.min(1, (lc - kc - 0.82) / 0.18));
+      if (kc === -6) { bc = 0; }
+      return { k: kc, blend: bc * bc * (3 - 2 * bc), cellPx: cellPx, drawn: cellPx * Math.pow(2, -kc) };
+    }
     var l = Math.log(Math.max(1e-6, cellPx / CELL_T)) / Math.LN2;
     var k = Math.max(0, Math.min(12, Math.floor(l)));
     var blend = l < 0 ? 0 : Math.max(0, Math.min(1, (l - k - 0.82) / 0.18));
-    return { k: k, blend: blend * blend * (3 - 2 * blend), cellPx: cellPx };
+    return { k: k, blend: blend * blend * (3 - 2 * blend), cellPx: cellPx, drawn: cellPx / Math.pow(2, k) };
   }
 
   /* The work under a point of the Earth, as the shader draws it at radius R:
@@ -414,7 +455,8 @@
     var L = levelFor(R), k = L.blend > 0.5 ? L.k + 1 : L.k;
     var u = (((lon / (2 * Math.PI) + 0.5) % 1) + 1) % 1;
     var v = Math.max(0, Math.min(0.99999, 0.5 - lat / Math.PI));
-    var i = Math.floor(u * (GW << k)), j = Math.floor(v * (GH << k));
+    var i = k < 0 ? Math.floor(u * (GW >> -k)) : Math.floor(u * (GW << k));
+    var j = k < 0 ? Math.floor(v * (GH >> -k)) : Math.floor(v * (GH << k));
     var e = entryAt(i, j, k);
     return { id: D.works[D.ew[e]], e: e, colour: D.hex[e], i: i, j: j, k: k };
   }
@@ -490,7 +532,8 @@
                feel.join(), o.crisp, sel.i, sel.j, sel.k, sel.amt, moving ? o.time : 0, pw, ph].join();
     if (key === last) { return canvas; }
     last = key;
-    var L = levelFor(o.R);
+    drawDpr = pw / o.W;
+    var L = levelFor(o.R, drawDpr);
     gl.viewport(0, 0, pw, ph);
     gl.uniform3f(loc.uView, o.W, o.H, ph);
     gl.uniform1f(loc.uDpr, pw / o.W);
@@ -506,8 +549,20 @@
     gl.uniform3f(loc.uLevel, L.k, L.blend, L.cellPx);
     gl.uniform4f(loc.uSel, sel.i, sel.j, sel.k, sel.amt);
     gl.clearColor(0, 0, 0, 0);
+    gl.disable(gl.SCISSOR_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    // Only the globe and its air are shaded (the stars, when there are any, are everywhere):
+    // a small globe costs its own area, so it never has to be drawn coarser to keep up.
+    if (!(o.stars > 0.002)) {
+      var m = o.R + 3 * Math.min(46, Math.max(1, 0.03 * o.R)) + 2, s = pw / o.W;
+      var x0 = Math.max(0, Math.floor((o.cx - m) * s)), x1 = Math.min(pw, Math.ceil((o.cx + m) * s));
+      var y0 = Math.max(0, Math.floor((o.cy - m) * s)), y1 = Math.min(ph, Math.ceil((o.cy + m) * s));
+      if (x1 <= x0 || y1 <= y0) { return canvas; }
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(x0, ph - y1, x1 - x0, y1 - y0);
+    }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.disable(gl.SCISSOR_TEST);
     return canvas;
   }
 
@@ -519,5 +574,6 @@
 
   window.EarthBody = { start: start, draw: draw, doorAt: doorAt, kindAt: kindAt,
                        light: light, levelFor: levelFor, ready: function () { return ready; },
+                       density: function () { return drawDpr; },
                        canvas: function () { return canvas; } };
 })();
