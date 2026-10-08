@@ -15093,14 +15093,16 @@
       var story = Chronicle.build({
         key: t.key, name: t.name, lat: t.lat / RAD, lon: t.lon / RAD, pf: pf, cdn: (museums && museums.cdn) || ART_CDN,
         dial: function (y) { if (art === a && window.Land && Land.dialYear) { Land.dialYear(y); } },
-        light: function (l, on) { if (art === a) { storyLight(a, l, on); } }
+        light: function (l, on) { if (art === a) { storyLight(a, l, on); } },
+        span: function (y) { if (art === a) { townSpan(a, y); } }
       });
       artCol.insertBefore(story, a.head ? a.head.nextSibling : artCol.firstChild);
     }
     // Its marks are its venues' first years; it runs on to the last year
     // any of them had a work, so at rest it stands at the present.
-    memberYears(a, pf.venues.map(function (v) { return v[2]; }),
-                Math.max.apply(null, pf.venues.map(function (v) { return v[3] || v[2] || 0; })));
+    a.memberYs = pf.venues.map(function (v) { return v[2]; });
+    a.memberEnd = Math.max.apply(null, pf.venues.map(function (v) { return v[3] || v[2] || 0; }));
+    memberYears(a, a.memberYs, a.memberEnd);
     laterRows(a);
     autoTown(a);
     a.dirty = true;
@@ -19082,6 +19084,25 @@
       if (event.isTrusted) { stopFirstPlay(!!(t && t.closest && t.closest(".building-time"))); }
     }, { capture: true, passive: true });
   });
+  // The city's story (chronicle.js) can begin before its venues' first year — a life lived here, a
+  // birth: the dial reaches back to it, so every moment of the story can be turned to, and the first
+  // play starts there, with the city as its buildings' years say it stood (build_built_years.py).
+  function townSpan(a, y) {
+    if (!a.dated || !a.memberYs || !(y < a.y0) || y < 1000) { return; }
+    var auto = !!a.auto, byHand = a.byHand, at = yearAt(a, Math.max(0, a.whenTo));
+    memberYears(a, a.memberYs.concat([y]), a.memberEnd);
+    if (auto) {
+      a.auto = null;
+      autoTown(a);
+    } else if (byHand) {               // turned before the story came: the same year, on the longer dial
+      a.when = a.whenTo = Math.max(0, Math.min(1, (at + 0.5 - a.y0) / (a.y1 - a.y0)));
+      a.byHand = true;
+    }
+    if (a.head && window.Chronicle) { a.head.textContent = "In time · " + yearsText(Math.floor(a.y0), Math.floor(a.y1)); }
+    laterRows(a);
+    a.dirty = true;
+  }
+
   /* A city's years from its first to now, calmly: 8 to 12 s by its span. */
   function autoTown(a) {
     if (still || a.byHand || !a.dated || !a.town || dialDriven() || seenBefore("t:" + a.town.key)) { return; }

@@ -298,6 +298,9 @@
         }
         all.forEach(function (m, i) { list.appendChild(moment(m, i)); });
         S.moments = all;
+        // The story can begin before the city's venues do (a life, a birth): the dial reaches back to it.
+        var first = all.reduce(function (lo, m) { return m.kind === "now" ? lo : Math.min(lo, m.y); }, Infinity);
+        if (first < Infinity && spec.span) { spec.span(first); }
         watch();
         if (S.wantYear) { year(S.wantYear, false); }
       });

@@ -85,7 +85,8 @@ def _bxl(layer, box):
     bbox = f"{min(xs)},{min(ys)},{max(xs)},{max(ys)},urn:ogc:def:crs:EPSG::31370"
     out, start = [], 0
     while True:
-        q = {"typeNames": layer, "bbox": bbox, "count": 5000, "startIndex": start}
+        # A layer without a key refuses a start index (400): the first page goes without one.
+        q = {"typeNames": layer, "bbox": bbox, "count": 5000, **({"startIndex": start} if start else {})}
         d = json.loads(B.fetch(BXL_WFS_GET + urllib.parse.urlencode(q), timeout=600) or b"{}")
         feats = d.get("features") or []
         out += feats
@@ -98,7 +99,11 @@ def brussels_inventory(box):
     pts = []
     for layer, field in (("URBAN_DCH_IBH:Irismonument_inventory", "BULT"),
                          ("URBAN_DCH_IBH:Irismonument_scientific_inventory", "BUILT")):
-        feats, to_ll = _bxl(layer, box)
+        try:
+            feats, to_ll = _bxl(layer, box)
+        except Exception as exc:          # one layer refusing keeps the other
+            print(f"    {layer}: {type(exc).__name__}: {exc}", flush=True)
+            continue
         took = 0
         for f in feats:
             g = f.get("geometry") or {}
