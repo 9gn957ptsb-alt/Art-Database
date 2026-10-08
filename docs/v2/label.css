@@ -60,3 +60,28 @@
   background: rgba(15, 10, 7, 0.97);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
+
+/* Every fact a door (8 Oct 2026): the title, the artist, the date, where it is. A quiet hairline under
+   each says it can be pressed; lilac when pointed at or focused. */
+.wall-label .wl-door,
+.zoom-label .wl-door,
+.zoom-foot-label .wl-door {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.38);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  -webkit-tap-highlight-color: transparent;
+}
+.wl-door:hover,
+.wl-door:focus-visible { color: #ffffff; text-decoration-color: #9d95e6; }
+.wl-door:focus-visible { outline: 2px solid #9d95e6; outline-offset: 2px; }

@@ -62,11 +62,12 @@
     });
     if (held) {
       var city = town(held.w) || (mus && held.m === mus.slug ? town(mus.where) : "");
-      return { kind: "held", text: withCity(held.v || held.who, city) };
+      return { kind: "held", text: withCity(held.v || held.who, city), slug: held.m || (mus && held.m === mus.slug ? mus.slug : ""),
+               key: held.p || "" };
     }
-    if (mus) { return { kind: "held", text: withCity(mus.name.replace(/,\s*D\.C\.$/, ""), town(mus.where)) }; }
-    if (listed) { return { kind: "listed", text: "Listed by " + withCity(listed.who, town(listed.w)) }; }
-    if (last) { return { kind: "last", text: "Last recorded: " + [town(last.w) || last.p, year4(last.y)].filter(Boolean).join(", ") }; }
+    if (mus) { return { kind: "held", text: withCity(mus.name.replace(/,\s*D\.C\.$/, ""), town(mus.where)), slug: mus.slug, key: "" }; }
+    if (listed) { return { kind: "listed", text: "Listed by " + withCity(listed.who, town(listed.w)), key: listed.p || "" }; }
+    if (last) { return { kind: "last", text: "Last recorded: " + [town(last.w) || last.p, year4(last.y)].filter(Boolean).join(", "), key: last.p || "" }; }
     return null;
   }
 
@@ -77,8 +78,9 @@
       var h = r[0];
       if (!h) { return null; }
       var n = nowOf(h, r[1]);
-      return { id: id, t: h.title || "Untitled", a: (h.artists || []).join(", "), d: h.date || "", m: h.medium || "",
-               s: h.dimensions || "", now: n ? n.text : "", nowKind: n ? n.kind : "", src: "Artsy" };
+      return { id: id, t: h.title || "Untitled", a: (h.artists || []).join(", "), as: h.artists || [], d: h.date || "", m: h.medium || "",
+               s: h.dimensions || "", now: n ? n.text : "", nowKind: n ? n.kind : "", slug: n ? n.slug || "" : "",
+               key: n ? n.key || "" : "", src: "Artsy" };
     });
   }
   // A painting not saved (Painted here's, from Commons): what Wikidata gives.
@@ -96,11 +98,26 @@
     node.hidden = false;
     if (opts.title !== false) {
       var t = el("p", "wl-title");
-      t.appendChild(el("i", "", f.t || "Untitled"));
+      var ti = el("i", "", f.t || "Untitled");
+      t.appendChild(f.id ? door(ti, { go: "work", id: f.id }, (f.t || "Untitled") + ": where it has been") : ti);
       node.appendChild(t);
     }
     var by = [f.a, f.d].filter(Boolean).join(" · ");
-    if (by) { node.appendChild(el("p", "wl-by", by)); }
+    if (by) {
+      var bp = el("p", "wl-by");
+      var names = f.as && f.as.length ? f.as : f.a ? [f.a] : [];
+      names.forEach(function (n, i) {
+        if (i) { bp.appendChild(document.createTextNode(", ")); }
+        bp.appendChild(door(el("span", "", n), { go: "artist", id: n }, n + ": the artist"));
+      });
+      if (f.d) {
+        if (names.length) { bp.appendChild(document.createTextNode(" · ")); }
+        var y = year4(f.d);
+        bp.appendChild(y && names.length ? door(el("span", "", f.d), { go: "year", id: names[0], year: y, work: f.id || "" },
+                                                names[0] + " in " + y) : el("span", "", f.d));
+      }
+      node.appendChild(bp);
+    }
     var made = [f.m, f.s].filter(Boolean).join(" · ");
     if (made) { node.appendChild(el("p", "wl-made", made)); }
     if (opts.how) { node.appendChild(el("p", "wl-how", opts.how)); }
@@ -108,13 +125,74 @@
     if (f.now) {
       var w = el("span", "wl-where", f.now);
       w.dataset.kind = f.nowKind || "";
-      now.appendChild(w);
+      now.appendChild(f.slug ? door(w, { go: "museum", id: f.slug }, f.now + ": go in")
+                     : f.key ? door(w, { go: "town", id: f.key }, f.now + ": go there") : w);
     }
     now.appendChild(el("span", "wl-src", (f.now ? " · " : "") + f.src));
     node.appendChild(now);
     node.setAttribute("aria-label", [f.t, by, made, f.now, "facts from " + f.src].filter(Boolean).join(". "));
     return node;
   }
+
+  /* ---- every fact a door (artist, 8 Oct 2026, of a work's label on the whole screen: "I want to be able to
+     click on any of the information in instances like this and it take me there"): the title to the work's
+     history, the artist to their life (or their works), the date to the life at that year, where it is to
+     the museum (or the city). The label is cloned into the zoom views, so the doors are marked with data
+     and answered once, here, for the whole page. Medium and size are measurements, not places: plain. */
+  function door(inner, d, label) {
+    var b = el("button", "wl-door");
+    b.type = "button";
+    Object.keys(d).forEach(function (k) { if (d[k] !== undefined && d[k] !== "") { b.dataset[k] = d[k]; } });
+    b.setAttribute("aria-label", label);
+    b.appendChild(inner);
+    return b;
+  }
+  function putAway() {
+    hideTip();
+    if (window.Land && Land.full) { Land.full(false); }
+    if (window.Zoom) {
+      if (Zoom.on()) { Zoom.close(true); }
+      var zb = Zoom.big();
+      if (zb && zb.undo) { zb.undo(true); }
+    }
+  }
+  function goTo(d) {
+    var L = window.Land, LV = window.Lives;
+    if (!L) { return; }
+    var here = L.where ? L.where() || {} : {};
+    if (d.go === "work") {
+      if (here.at === "work" && here.id === d.id) { return; }
+      L.work(d.id);
+    } else if (d.go === "artist") {
+      if (window.Kinds && Kinds.go) { Kinds.go("artist", d.id); }
+      else if (LV && LV.has(d.id)) { LV.open(LV.idOf(d.id)); }
+    } else if (d.go === "year") {
+      var lv = LV && LV.load ? LV.load() : Promise.resolve();
+      Promise.resolve(lv).then(function () {
+        if (LV && LV.has(d.id)) { LV.open(LV.idOf(d.id), { year: +d.year }); }
+        else if (d.work && !(here.at === "work" && here.id === d.work)) { L.work(d.work); }
+      });
+    } else if (d.go === "museum") {
+      if (L.museum) { L.museum(d.id); }
+    } else if (d.go === "town") {
+      if (L.town) { L.town(d.id); }
+    }
+  }
+  document.addEventListener("click", function (event) {
+    var b = event.target && event.target.closest && event.target.closest(".wl-door");
+    if (!b) { return; }
+    event.preventDefault();
+    event.stopPropagation();
+    var d = { go: b.dataset.go, id: b.dataset.id, year: b.dataset.year, work: b.dataset.work };
+    putAway();
+    goTo(d);
+  }, true);
+  // A press on a door is the door's, not the picture's or the stage's under it.
+  ["pointerdown", "touchstart"].forEach(function (t) {
+    document.addEventListener(t, function (event) {
+      if (event.target && event.target.closest && event.target.closest(".wl-door")) { event.stopPropagation(); }
+    }, { capture: true, passive: true });
+  });
 
   /* ---- the small squares of a list: the label on hover, focus or a held finger ---- */
 
