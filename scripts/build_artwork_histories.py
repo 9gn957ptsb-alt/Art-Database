@@ -990,7 +990,8 @@ def row(rec):
 def write_threads(threads, by_id):
     THREADS.mkdir(parents=True, exist_ok=True)
     for old in THREADS.glob("*.json"):
-        old.unlink()
+        if not old.stem.startswith("style-"):          # the styles' threads are build_styles.py's
+            old.unlink()
     for t in threads.values():
         works = []
         for wid, idx in t["members"].items():
@@ -1150,6 +1151,9 @@ def main():
     build_cities.main()
     import build_voices                                 # the writers and curators, from the histories
     build_voices.main()
+    import build_styles                                 # the styles and movements, Artsy's genes on the works
+    if build_styles.GENES.exists():
+        build_styles.main()
     stale = SITE / "artworks.json"                      # superseded by places.json and finding.json
     if stale.exists():
         stale.unlink()

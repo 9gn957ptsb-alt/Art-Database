@@ -18059,7 +18059,7 @@
   }
 
   var THREAD_WORD = { show: "Shown", sale: "Offered", owner: "Owned", museum: "Held",
-                      writing: "Written", artist: "By" };
+                      writing: "Written", artist: "By", style: "" };
 
   function threadCity(tf) {
     var ends = [];
@@ -18071,7 +18071,7 @@
     var n = tf.works.length;
     return {
       slug: "art-thread-" + tf.id, title: tf.name,
-      where: [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
+      where: [tf.k === "style" ? "Style or movement" : THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
               [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "),
       lat: f.lat, lon: wrap(f.lon), zoomTo: f.zoomTo, seatAt: f.seatAt, tone: LIGHT,
       art: { kind: "thread", data: tf, via: null }
@@ -20881,9 +20881,17 @@
   function threadColumn(tf, via) {
     var a = art;
     var n = tf.works.length;
-    var head = el("p", "art-count", [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
-      [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "));
+    // A style's head: its count, artists and years made; its rows by date, each with where it is now.
+    var style = tf.k === "style";
+    var ys = style ? tf.works.map(function (w) { return w[4]; }).filter(Boolean) : [];
+    var nArt = style ? tf.works.reduce(function (o, w) { o[w[2]] = 1; return o; }, {}) : null;
+    var head = el("p", "art-count", style
+      ? [n + " saved works", Object.keys(nArt).length + " artists",
+         ys.length ? Math.min.apply(null, ys) + "–" + Math.max.apply(null, ys) : ""].filter(Boolean).join(" · ")
+      : [THREAD_WORD[tf.k] || "", n + (n === 1 ? " work" : " works"),
+         [tf.at, tf.y].filter(Boolean).join(", ")].filter(Boolean).join(" · "));
     artCol.appendChild(head);
+    if (style) { artCol.appendChild(el("p", "art-came", "As Artsy tags each work · " + (tf.said || ""))); }
     enterText(head, 0);
     var came = cameLine(via);
     if (came) { artCol.appendChild(came); }
@@ -20897,7 +20905,8 @@
     artCol.appendChild(host);
     pageRows(host, rows, function (w, k) {
       var prev = w[5] && artPlaceBy[w[5]], next = w[6] && artPlaceBy[w[6]];
-      var what = [prev ? "From " + prev.name : "", next ? "To " + next.name : ""].filter(Boolean).join(" · ");
+      var what = style ? [prev ? "Made in " + prev.name : "", next && next !== prev ? "Now " + next.name : ""].filter(Boolean).join(" · ")
+        : [prev ? "From " + prev.name : "", next ? "To " + next.name : ""].filter(Boolean).join(" · ");
       return artRow(w[0], w[1], w[2], w[3], what, w[4], { thread: by }, k);
     });
     artFoot();
@@ -20937,7 +20946,11 @@
   }
 
   function readFinding() {
-    return Promise.all([readPlaces(), readArt("finding.json")]).then(function (both) {
+    // The styles and movements as Artsy tags the works (build_styles.py; artist, 8 Oct 2026: "I should be able
+    // to look up an art movement or style and it have an option that takes me to all of the works in that
+    // art movement or style"): each a thread of kind "style".
+    var styles = readArt("styles.json").then(null, function () { return null; });
+    return Promise.all([readPlaces(), readArt("finding.json"), styles]).then(function (both) {
       var d = both[1];
       if (finding || !d || !artPlaces) { return finding; }
       artPlaces.forEach(function (pl) { pl.hay = fold(pl.name + " " + pl.cc); });
@@ -20953,6 +20966,9 @@
         threads: d.t.map(function (t) {
           return { id: t[0], k: t[1], name: t[2], at: t[3], y: t[4], n: t[5],
                    hay: fold([t[2], t[3], t[4] || ""].join(" ")) };
+        }),
+        styles: ((both[2] && both[2].styles) || []).map(function (r) {
+          return { id: r[0], k: "style", name: r[1], n: r[2], y0: r[3], y1: r[4], artists: r[6], hay: fold(r[1]) };
         })
       };
       return finding;
@@ -20985,7 +21001,8 @@
     }
     var works = finding.works.filter(function (w) { return hit(w.hay); });
     works.sort(function (a, b) { return b.n - a.n; });
-    var out = { works: works, cities: [], museums: [], shows: [], owners: [], writings: [], artists: [] };
+    var out = { works: works, cities: [], museums: [], shows: [], owners: [], writings: [], artists: [], styles: [] };
+    (finding.styles || []).forEach(function (t) { if (out.styles.length < 4 && hit(t.hay)) { out.styles.push(t); } });
     (towns || []).forEach(function (t) {
       if (out.cities.length >= 5) { return; }
       if (!t.hay) { t.hay = fold(t.name + " " + t.cc); }
@@ -21041,7 +21058,8 @@
     finderFound.textContent = "";
     var works = artInfo ? artInfo.works.toLocaleString("en") : "saved works";
     var total = g.works.length;
-    var others = g.cities.length + g.museums.length + g.shows.length + g.owners.length + g.writings.length + g.artists.length;
+    var others = g.cities.length + g.museums.length + g.shows.length + g.owners.length + g.writings.length + g.artists.length +
+      (g.styles || []).length;
     // What is found is lit on the globe by its cities.
     var lit = {};
     g.works.forEach(function (w) { w.pl.forEach(function (i) { if (artPlaces[i]) { lit[artPlaces[i].p] = true; } }); });
@@ -21055,6 +21073,21 @@
     // Everything found counts: a museum or a city found is found too.
     finderSaid.textContent = "Found · " + (total + others).toLocaleString("en");
     var k = 0;
+    // A style or movement first: the door to every saved work in it.
+    if (g.styles && g.styles.length) {
+      finderHead("Styles and movements");
+      g.styles.forEach(function (t) {
+        finderFound.appendChild(foundLine(k, function (b) {
+          b.appendChild(el("i", "", t.name));
+          b.appendChild(document.createTextNode(" · all " + t.n.toLocaleString("en") + " works" +
+            (t.artists > 1 ? " by " + t.artists + " artists" : "") +
+            (t.y0 ? " · " + (t.y1 && t.y1 !== t.y0 ? t.y0 + "–" + t.y1 : t.y0) : "") + " ›"));
+          b.setAttribute("aria-label", t.name + ": all " + t.n + " saved works in it");
+          b.addEventListener("click", function () { openArt({ thread: t.id }); });
+        }));
+        k += 1;
+      });
+    }
     if (total) {
       finderHead("Works");
       g.works.slice(0, 13).forEach(function (w) { finderFound.appendChild(foundWork(w, k)); k += 1; });

@@ -265,6 +265,7 @@
         }
         if (t.k === "owner") { return { k: "collection", id: w.id, name: t.name, thread: t }; }
         if (t.k === "writing") { return { k: "publication", id: w.id, name: t.name, thread: t }; }
+        if (t.k === "style") { return { k: "style", id: w.id, name: t.name, thread: t }; }
         var si = -1;
         D.k.shows.forEach(function (s, i) { if (si < 0 && s[5] === w.id) { si = i; } });
         if (si >= 0) { return showItem(si); }
@@ -289,7 +290,7 @@
       var tid = showOf(it.id)[5];
       return function () { L.thread(tid); };
     }
-    if ((it.k === "collection" || it.k === "publication") && it.thread) { return function () { L.thread(it.id); }; }
+    if ((it.k === "collection" || it.k === "publication" || it.k === "style") && it.thread) { return function () { L.thread(it.id); }; }
     return null;
   }
 

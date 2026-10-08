@@ -91,6 +91,7 @@ shows, a collection is Museums, a publication is Writings). `why` says how the t
 | writer | writing | works | artists | curated | a writer, critic or curator: the works they wrote on, the artists, the shows they curated |
 | publication | writing | works | artists | places | a writing (a book, a catalogue): the works it names, their artists, where they are |
 | movement | movement | artists | works | places | who was there; their works of those years; the city and where its artists came from |
+| style | movement | works | artists | places | a style or movement as Artsy tags each saved work (scripts/build_styles.py, a thread of kind "style"): every saved work in it, by date; its artists, most works first; the cities those works have been in |
 | place | place | museums | galleries | artists | a city: its museums (history), its galleries, fairs and sale rooms (now), the artists born, working and shown there |
 | lifeplace | place | made | herethen | nowat | a place in a life, entered from it ("The place, then"): the works made there in those years; who else was there then; where those works are now |
 | guide | gallery | shows | artists | places | a city's guide (guide.js, GUIDE.md): what is on there now and soon, the artists shown (the saved ones first), and the venues as places on the city. Drawn by guide.js in the city's column under the city's own three, not yet a kinds.js item |
@@ -132,6 +133,7 @@ group's own heading (as land.js and the modules write it); the group goes under 
 | Museums | museum |
 | Owners and museums | museum |
 | Movements | movement |
+| Styles and movements | movement |
 | Works | work |
 | Dealt from the longest journeys | work |
 | Artists | artist |
