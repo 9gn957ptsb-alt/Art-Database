@@ -1225,7 +1225,9 @@
   // the wall the record gives, in the museum's order, spaced evenly along
   // the wall's longest run between openings; what does not fit goes to the
   // next run, then to a second tier above. The place along the wall and
-  // the height are ours unless a pin fixes them. Returns {hung, spill}.
+  // the height are ours unless a pin fixes them. Then the works the site
+  // hung (how arranged), by its rule (siteLay), in a room where the
+  // record's hang only on what wall they leave. Returns {hung, spill}.
   function hang(world, works, pins) {
     pins = pins || {};
     var groups = {}, order = [], hung = [], spill = [], record = {};
