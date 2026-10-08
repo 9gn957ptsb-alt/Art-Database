@@ -76,6 +76,8 @@ function check(tag, ok, what, detail) {
         .then(() => true, () => false);
       check(tag, on, "the skyline is on");
       if (!on) { await P.evaluate(() => Land.up()); await P.waitForTimeout(3000); continue; }
+      // Come from another city, the page may still be flying: the names are placed once it has landed.
+      await P.waitForFunction(() => !Land.where().flying, null, { timeout: 30000 }).catch(() => {});
       await P.waitForTimeout(3500);
       let s = await P.evaluate(() => Skyline.state());
       check(tag, TWO_D ? !s.gpu : s.gpu, TWO_D ? "drawn on the 2D canvas" : "drawn on the GPU",
@@ -120,8 +122,10 @@ function check(tag, ok, what, detail) {
         }
       }
       check(tag, !errors.length, "no page errors", errors.slice(0, 3).join(" | "));
+      // Up to the world, and settled there, before the next city.
       await P.evaluate(() => Land.up());
-      await P.waitForTimeout(2500);
+      await P.waitForFunction(() => Land.where().at === "world" && !Land.where().flying, null, { timeout: 30000 }).catch(() => {});
+      await P.waitForTimeout(1500);
     }
     await ctx.close();
   }
