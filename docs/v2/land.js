@@ -16331,6 +16331,16 @@
       var top = Math.max(74, Math.round(under + 10)), ph = Math.round(0.33 * H), colTop = Math.round(0.64 * H);
       // A view with no picture to show (artist, 7 Oct 2026): no empty band; its sentence, then the globe.
       if (art && art.noPicture && partsNow().picture === "big") { ph = lens ? 58 : 0; colTop = Math.round(0.56 * H); }
+      else if (lens) {
+        // The picture as big as it can be beside what goes with it (artist, 8 Oct 2026, of Cézanne's
+        // Achille Emperaire drawn 88 px tall on his phone: "Make sure the thumbnail for the artwork is as big
+        // as they can be given the information that goes along with it"): its band takes all but the row of
+        // the lens and the dial and the column's first lines — the same for every work of a view, so nothing
+        // jumps as the picture is swiped. The column keeps its first three or four lines; it scrolls.
+        var LB = 146, colMin = Math.max(120, Math.round(0.18 * H));
+        ph = Math.max(ph, H - top - 6 - LB - colMin);
+        colTop = top + ph + 6 + LB;
+      }
       var gy = top + ph + 6, cap = lens ? 52 : 0;
       var globe = { x: 0, y: gy, w: dialMoved() ? W : W - 148, h: Math.max(96, colTop - gy) };
       var lr = Math.max(40, Math.min(globe.w, globe.h) / 2 - 12);
@@ -19625,24 +19635,29 @@
     var room = { x: b.x + A, y: b.y, w: b.w - 2 * A, h: b.h - (lab ? lab.h + 6 : 0) };
     var w = Math.max(40, Math.min(room.w, room.h * aspect)), hh = w / aspect;
     var x = room.x + (room.w - w) / 2, y = room.y + (room.h - hh) / 2;
-    // At rest it keeps to its edge: against the left on a desktop, the globe
-    // beside it; under the banner on a phone, the globe below it. Swapped
-    // into the lens's place, it stands in the middle of it.
-    if (mode === "rest" && !lensSwapped) { if (W > 720) { x = room.x; } else { y = room.y; } }
+    // At rest it keeps to its edge on a desktop: against the left, the globe beside it. On a phone the
+    // picture and its label together stand in the middle of their band's height (8 Oct 2026: the band is
+    // as tall as an upright picture can use, so a wide one, already as wide as it can be, hangs in the
+    // middle of it rather than leaving the room under its label empty). Swapped into the lens's place, it
+    // stands in the middle of it.
+    if (mode === "rest" && !lensSwapped && W > 720) { x = room.x; }
     // A picture narrower than its band stands in the middle of it: its label starts at its own left
     // edge, as a wall label does, not at the band's, and is measured again at that width (narrower,
     // so taller) — the picture giving up the height it takes, a few times until they agree.
+    // Never narrower than LMIN, though: under an upright picture a label squeezed to its width ran to
+    // seven lines and took the picture's height (8 Oct 2026); it then starts a little left of it, still under it.
+    var LMIN = Math.min(room.w, 280);
     var lx = room.x, lw = room.w;
     for (var pass = 0; lab && pass < 3 && x > room.x + 1; pass++) {
-      lx = x; lw = room.x + room.w - x;
+      lx = Math.min(x, room.x + room.w - LMIN); lw = room.x + room.w - lx;
       var lh = Math.min(b.h * 0.45, labelHeight(lw));
       if (lh <= lab.h + 0.5) { break; }
       lab.h = lh;
       room.h = b.h - lh - 6;
       w = Math.max(40, Math.min(room.w, room.h * aspect)); hh = w / aspect;
       x = room.x + (room.w - w) / 2;
-      y = mode === "rest" && !lensSwapped ? room.y : room.y + (room.h - hh) / 2;
-      lx = x; lw = room.x + room.w - x;
+      y = room.y + (room.h - hh) / 2;
+      lx = Math.min(x, room.x + room.w - LMIN); lw = room.x + room.w - lx;
     }
     artPlate.style.width = w.toFixed(1) + "px";
     artPlate.style.height = hh.toFixed(1) + "px";
@@ -19678,11 +19693,13 @@
     if (zb && zb.node === artPlate) { zb.undo(true); }
     if (window.Zoom && artEl.dataset.full) { Zoom.close(true); delete artEl.dataset.full; }
     if (!artLabel) { return; }
+    var was = !artLabel.hidden;
     artLabel.hidden = true;
     artLabel.textContent = "";
     delete artLabel.dataset.on;
     delete artLabel.dataset.side;
     artLabel._for = null;
+    if (was && window.Voice && Voice.relabel) { Voice.relabel(); }
   }
   /* The label of the picture in the plate: a saved work's from its history (Artsy's facts and where
      it is now), a painting not saved from what Painted here gives. Shown at once unless `later`
@@ -19698,6 +19715,7 @@
       if (!f) { clearLabel(); return; }
       WallLabel.fill(artLabel, f);
       if (!wait) { artLabel.dataset.on = "true"; }
+      if (window.Voice && Voice.relabel) { Voice.relabel(); }
       if (!artPlate.hidden) { layoutPlate(null, null); return; }
       // No photograph (yet, or at all): the label stands where it would begin.
       var b = workBands().plate;

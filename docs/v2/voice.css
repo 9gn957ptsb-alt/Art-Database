@@ -293,6 +293,8 @@
   white-space: nowrap;
 }
 .voice-count[hidden] { display: none; }
+/* Alone (the wall label under the picture says the rest), the count stands under the sentence. */
+.voice-pic[hidden] + .voice-count { margin-left: 0; }
 .art[data-read] .art-plate { touch-action: pan-y; }
 .voice-swipe {
   position: absolute;

@@ -415,6 +415,9 @@
     root.appendChild(work);
     // A finger's sideways drag, a trackpad's sideways scroll, ←/→ (voice.js, the reading layout's own).
     if (window.Voice && Voice.swipeable) { Voice.swipeable(picBtn, function (d) { return step(d, true); }, root); }
+    // Its words and doors come after it is placed and take their height from its box: the picture is
+    // fitted again whenever the box changes, so it always stands on them.
+    if (window.ResizeObserver) { new ResizeObserver(function () { placeArrows(); }).observe(picbox); }
 
     // The place: its sentence, one quiet line of how exactly it is placed (the rest a tap away), the clod.
     var stage = el("div", "pt-stage");
@@ -485,7 +488,12 @@
     var bs = document.body.style, key;
     if (phone) {
       var DIAL = 136, HEAD = 40, CLOD = 140, WORDS = 128;   // the title and count, the wall label, the doors
-      var pic = Math.round(Math.max(120, Math.min(0.31 * H, H - top - WORDS - HEAD - CLOD - 8 - 0.25 * H)));
+      // The picture as big as it can be beside what goes with it (artist, 8 Oct 2026: "Make sure the
+      // thumbnail for the artwork is as big as they can be given the information that goes along with
+      // it"), as the reading layout's (land.js workBands): all but its words, the place's band and the
+      // column's first lines.
+      var colMin = Math.max(120, Math.round(0.18 * H));
+      var pic = Math.round(Math.max(120, H - top - WORDS - HEAD - CLOD - 8 - colMin));
       var workH = empty ? 68 : pic + WORDS, bandTop = top + workH + 2;
       var bandH = empty ? pic + WORDS + HEAD + CLOD - 70 : HEAD + CLOD;
       key = ["p", W, H, top, empty].join(",");
@@ -691,18 +699,32 @@
     if (!S || !refs.pic) { return; }
     var swipes = S.items && S.items.length > 1 && !refs.pic.hidden;
     var room = swipes ? PT_ARROW + PT_GAP : 0;
-    refs.pic.style.left = room + "px";
-    refs.pic.style.right = room + "px";
-    refs.pic.style.width = "auto";
+    var im = refs.img, ps = refs.pic.style, bw = refs.picbox.clientWidth - 2 * room, bh = refs.picbox.clientHeight;
+    var aspect = im.naturalWidth && im.naturalHeight && !refs.pic.dataset.none ? im.naturalWidth / im.naturalHeight : 0;
+    // The picture's box is the picture as drawn (8 Oct 2026, the picture as big as it can be): it
+    // stands on its label (no gap between them whatever its shape), its frame and its artist's tag
+    // on it, not round the room it was given; until it has loaded, the room.
+    var dw = aspect && bh > 0 ? Math.min(bw, bh * aspect) : bw, dh = aspect && bh > 0 ? dw / aspect : bh;
+    var x0 = room + (bw - dw) / 2, y0 = Math.max(0, bh - dh);
+    ps.left = x0.toFixed(1) + "px";
+    ps.top = y0.toFixed(1) + "px";
+    ps.width = dw.toFixed(1) + "px";
+    ps.height = dh.toFixed(1) + "px";
+    ps.right = "auto";
+    ps.bottom = "auto";
+    if (refs.tag) {
+      refs.tag.style.left = Math.round(x0 + 8) + "px";
+      refs.tag.style.top = Math.round(y0 + 8) + "px";
+      refs.tag.style.maxWidth = Math.max(60, Math.round(dw - 16)) + "px";
+    }
     if (!swipes) { return; }
-    var im = refs.img, bw = refs.picbox.clientWidth - 2 * room, bh = refs.picbox.clientHeight;
-    var aspect = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 0;
-    var dw = aspect ? Math.min(bw, bh * aspect) : bw;
-    var x0 = room + (bw - dw) / 2;
+    var mid = Math.round(y0 + dh / 2 - 20);
     refs.prev.style.left = Math.round(x0 - PT_GAP - PT_ARROW) + "px";
     refs.prev.style.right = "auto";
     refs.next.style.left = Math.round(x0 + dw + PT_GAP) + "px";
     refs.next.style.right = "auto";
+    refs.prev.style.top = refs.next.style.top = mid + "px";
+    refs.prev.style.marginTop = refs.next.style.marginTop = "0";
   }
 
   // The column's square of the work in the picture, lit (as the reading layout's swipe lights it).

@@ -322,8 +322,10 @@
     release.textContent = isHeld ? "× held" : "";
     release.setAttribute("aria-label", isHeld ? "The lens is held: " + word + ". Let it go back to the path’s own voice" : "");
   }
+  var lastCap = null;
   function setCaption(text, pic, isWork) {
     setUp();
+    lastCap = [text, pic, isWork];
     var plain = plainText(text);
     if (capSay._was !== plain) {
       capSay._was = plain;
@@ -336,13 +338,19 @@
     // painting that is not saved (Painted here's) says only where it is.
     var t = pic ? String(pic.title || "Untitled") : "", circa = pic && (pic.circa || CIRCA.test(t));
     if (circa) { t = t.replace(CIRCA, ""); }
-    var line = !isWork && pic ? [t + (pic.year ? ", " + (circa ? "c. " : "") + pic.year : ""), pic.by ? surname(pic.by) : "",
-                                 pic.id ? "" : pic.where || "", pic.near ? "the nearest dated" : "",
-                                 pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "") : "";
+    // Where the wall label stands under the picture it says the title, artist and date, and its title is the
+    // door to the work's history (label.js): the line keeps only what the label does not say (8 Oct 2026:
+    // the title was said three times round a picture 88 px tall).
+    var labelled = !!(artEl && !artEl.dataset.swapped && artEl.querySelector(".wl-plate:not([hidden])"));
+    var line = !isWork && pic ? (labelled
+      ? [pic.near ? "the nearest dated" : "", pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ")
+      : [t + (pic.year ? ", " + (circa ? "c. " : "") + pic.year : ""), pic.by ? surname(pic.by) : "",
+         pic.id ? "" : pic.where || "", pic.near ? "the nearest dated" : "",
+         pic.notSaved ? "not saved" : ""].filter(Boolean).join(" · ") + (pic.id ? " ›" : "")) : "";
     capPic.hidden = !line;
     if (line && capPic.textContent !== line) { capPic.textContent = line; }
     capPic.dataset.id = pic && pic.id || "";
-    capPic.disabled = !(pic && pic.id);
+    capPic.disabled = labelled || !(pic && pic.id);
     capPic.setAttribute("aria-label", line && pic.id ? line + " — where it has been" : line);
   }
 
@@ -641,7 +649,13 @@
     if (on !== (document.body.dataset.reading === "true")) {
       if (on) { document.body.dataset.reading = "true"; } else { delete document.body.dataset.reading; }
     }
-    if (!r || !r.lens) { hideLens(); chipTick(r); return; }
+    if (!r || !r.lens) {
+      hideLens(); chipTick(r);
+      // The reading left (a place, then, a city): its ‹ › go with it, or they stand doubled over the
+      // place, then's own (8 Oct 2026).
+      if (swipeArrows) { swipeArrows.forEach(function (b) { b.hidden = true; }); }
+      return;
+    }
     if (!T) { load().then(kick); return; }
     hideChip();
     place(r);
@@ -1397,6 +1411,9 @@
     release: letGo,
     handled: handled,
     swapped: function () { placedKey = ""; kick(); },
+    // land.js, once the wall label under the picture is filled or put away: the picture's line says
+    // only what the label does not.
+    relabel: function () { if (lastCap) { setCaption(lastCap[0], lastCap[1], lastCap[2]); } },
     rules: function () { return T; },
     // explorations.js: a sites.json row by its index (a site exploration's stop), once read.
     siteRow: function (i) { var D = sites(); return D ? D.sites[i] || null : null; },
