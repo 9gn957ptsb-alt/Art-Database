@@ -1,0 +1,67 @@
+name: City building records
+
+# Reads the cities' own records of when their buildings went up (scripts/fetch_city_records.py) from
+# servers the Claude sessions' network does not reach — Italy's census sections (ISTAT) first — and
+# commits each ground's years to records/years/ and its census blocks to records/census/, which
+# build_built_years.py reads. A push to the site's branch that touches the script, this file or
+# records/REQUEST (write the date in it to ask for a fresh read) runs it; the workflow on a pushed
+# branch is the one that runs, so it needs no copy on the default branch. Its first step prints what
+# the hosts of the sources still to write offer, for the next reader.
+
+on:
+  push:
+    branches: [claude/artist-website-dev-s92irf]
+    paths:
+      - scripts/fetch_city_records.py
+      - .github/workflows/city-records.yml
+      - records/REQUEST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: city-records
+  cancel-in-progress: true
+
+env:
+  SITE_BRANCH: claude/artist-website-dev-s92irf
+
+jobs:
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SITE_BRANCH }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -q numpy shapely tifffile imagecodecs pyproj pyshp pyarrow pillow
+
+      - name: What the hosts still to read offer
+        continue-on-error: true
+        run: python3 scripts/fetch_city_records.py --probe
+
+      - name: Census blocks
+        run: python3 scripts/fetch_city_records.py --census
+
+      - name: Building records
+        run: python3 scripts/fetch_city_records.py
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p records/years records/census
+          git add records/years records/census
+          if git diff --cached --quiet; then echo "Nothing new."; exit 0; fi
+          git config user.name "city-records"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "The cities' own building years and census blocks round each place"
+          for i in 1 2 3; do git pull --no-rebase --no-edit origin "$SITE_BRANCH" && git push origin "HEAD:$SITE_BRANCH" && break; sleep 5; done

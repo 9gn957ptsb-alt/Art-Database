@@ -1417,6 +1417,47 @@ def record_years(place, g, cells):
     return years, list(r.get("sources") or []), r.get("floor")
 
 
+# A census that counts each block's buildings by period instead of giving each its year (Italy's 2011
+# sections, read on GitHub's runners into records/census/<slug>.json by fetch_city_records.py --census).
+# The cells of a block that nothing more exact dates are dealt its periods in their shares (the largest
+# remainders), in an order shuffled by the place and the block, the same every run: the shares are the
+# census's, which building is which is not known, and the source's name says so.
+CENSUS = ROOT / "records" / "census"
+
+
+def census_years(place, g, cells, years):
+    path = CENSUS / (place["slug"] + ".json")
+    if not path.exists():
+        return None, None, None
+    r = json.loads(path.read_text(encoding="utf-8"))
+    if r.get("n") != g["n"]:
+        return None, None, None           # read for a ground cut differently: read again
+    import zlib
+    n = g["n"]
+    pos = {i * n + j: k for k, (i, j) in enumerate(cells)}
+    by = {}
+    for c, s in r["cells"].items():
+        k = pos.get(int(c))
+        if k is not None and years[k] == 0:
+            by.setdefault(s, []).append(k)
+    out = np.zeros(len(cells), dtype=np.int64)
+    ys = [y for _, y in r["periods"]]
+    for s, ks in sorted(by.items()):
+        counts = np.asarray(r["sections"][s], dtype=float)
+        if counts.sum() <= 0:
+            continue
+        want = counts / counts.sum() * len(ks)
+        take = np.floor(want).astype(int)
+        take[np.argsort(-(want - take), kind="stable")[:len(ks) - int(take.sum())]] += 1
+        order = np.random.default_rng(zlib.crc32(f"{place['slug']}:{r['codes'][s]}".encode())).permutation(len(ks))
+        at = 0
+        for y, m in zip(ys, take.tolist()):
+            for q in order[at:at + m]:
+                out[ks[q]] = y
+            at += m
+    return out, r["source"], r.get("floor")
+
+
 def city_years(place, box, lat, lon, cell):
     """Years for the cells from the cities' sources that cover the place, in CITIES' order, each dating
     what the ones before left undated, or "old" when it says a year before their floor (APUR, then the
@@ -1664,6 +1705,16 @@ def years_for(place, g):
             said.append("OpenStreetMap contributors")
             if place["slug"] in WD_USED and "Wikidata" not in said:
                 said.append("Wikidata")
+
+    # Where nothing says a building's own year, its census block's shares (records/census/).
+    cy, cname, cfloor = census_years(place, g, cells, years)
+    if cy is not None:
+        take = (years == 0) & (cy != 0)
+        if take.any():
+            years[take] = cy[take]
+            said.append(cname)
+            if (cy[take] < 0).any() and cfloor:
+                floor = max(floor or 0, cfloor)
     known = years.copy()
 
     # The year its ground was first built on, for what the city did not say.

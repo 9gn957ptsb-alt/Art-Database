@@ -790,6 +790,10 @@
     } else if (city && !city.years) {
       box.appendChild(el("p", "skyline-said", "Its buildings' years have not been read yet: the city stands as it is now."));
     }
+    // A census counts a block's buildings by period, not each one's year (Italy's, build_built_years.py).
+    if (city && city.years && city.from.some(function (f) { return /census/i.test(f); })) {
+      box.appendChild(el("p", "skyline-said", "Where a building's own year is not known, its block's census shares stand in: which building is which is not known."));
+    }
     if (!box.children.length) { return; }
     // Born here heads the column (come from the Artists layer); who walks here follows the museums.
     var head = col.querySelector(".kinds-head");
