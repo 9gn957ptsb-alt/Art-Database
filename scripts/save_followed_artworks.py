@@ -232,15 +232,135 @@ def count_dupes(state, have):
     print(f"dupes total: {n} extra prints across {len(out)} artists", flush=True)
 
 
+PLAN = DIR / "unsave_plan.json"
+UNSAVED = DIR / "unsaved.json"
+OWN = DIR.parent / "artsy_saves_raw.json"
+
+
+def same_print(a, artist):
+    """The one-print key, stricter for removing than for saving: a print's title (its colourway, proof,
+    state and edition taken away) and its year — Kusama's Pumpkins of 1982 and 1990 are two works."""
+    k = work_key(a, artist)
+    return k + "|" + str(year_of(a.get("date")) or "?") if k.startswith("p:") else k
+
+
+def by_importance(artist):
+    """Every published work of the artist in Artsy's own order of importance; other sorts fill in
+    (at the end, as the least important) where that order is capped."""
+    seen, order = {}, []
+    want = artist.get("published_artworks_count") or 0
+    for sort in ("-iconicity", None, "-date", "date"):
+        page = 1
+        while True:
+            p = {"size": 100, "page": page, "published": "true"}
+            if sort:
+                p["sort"] = sort
+            r = call("GET", f"artist/{artist['id']}/artworks", p)
+            if r.status_code != 200:
+                break
+            d = r.json()
+            if not d:
+                break
+            for a in d:
+                if a["_id"] not in seen:
+                    seen[a["_id"]] = a
+                    order.append(a)
+            page += 1
+            time.sleep(DELAY)
+        if len(seen) >= want:
+            break
+    return order
+
+
+def plan_unsave(have):
+    """The artist, 8 Oct 2026, told 13,864 extra prints were saved for the artists done before the
+    one-print rule: "Unsave the roughly 13.900 extra prints". For each of those artists: the saved
+    listings grouped by `same_print`; in a group of two or more, the most important listing is kept
+    (Artsy's order), and every work the artist saved himself (artsy_saves_raw.json) is kept whatever
+    it is; the rest are to be unsaved. Writes the plan; removes nothing."""
+    own = {w["_id"] for w in json.loads(OWN.read_text())}
+    dupes = json.loads(DUPES.read_text())
+    plan = json.loads(PLAN.read_text()) if PLAN.exists() else {}
+    for aid, v in dupes.items():
+        if aid in plan or not v["extra"]:
+            continue
+        r = call("GET", f"artist/{aid}")
+        if r.status_code != 200:
+            continue
+        artist = r.json()
+        groups = {}
+        for a in by_importance(artist):
+            if a["_id"] in have:
+                groups.setdefault(same_print(a, artist), []).append(a)
+        rows, spared = [], 0
+        for key, g in groups.items():
+            if len(g) < 2:
+                continue
+            # A generic title ("Untitled", "Composition") is told apart only by its year and size: two
+            # different photographs can share both. Saving, that may skip one; removing, it is left alone.
+            if key.startswith("w:") and key.rsplit("|", 1)[-1]:
+                spared += len(g) - 1
+                continue
+            mine = [a for a in g if a["_id"] in own]
+            keep = mine or g[:1]
+            for a in g:
+                if a in keep or a["_id"] in own:
+                    continue
+                rows.append([a["_id"], a["id"], a.get("title") or "", a.get("date") or "", keep[0].get("title") or ""])
+        plan[aid] = {"name": artist.get("name"), "groups": sum(1 for g in groups.values() if len(g) > 1),
+                     "remove": rows, "counted": len(v["extra"]), "spared": spared}
+        PLAN.write_text(json.dumps(plan))
+        print(f"{artist.get('name')}: {len(rows)} to unsave, {spared} generic-titled spared (counted {len(v['extra'])})", flush=True)
+    n = sum(len(p["remove"]) for p in plan.values())
+    print(f"plan total: {n} to unsave across {sum(1 for p in plan.values() if p['remove'])} artists; "
+          f"{sum(p.get('spared', 0) for p in plan.values())} generic-titled spared", flush=True)
+
+
+def unsave(have):
+    """Unsaves what the plan lists, keeping a record of each, so a restart goes on from there."""
+    plan = json.loads(PLAN.read_text())
+    done = set(json.loads(UNSAVED.read_text())) if UNSAVED.exists() else set()
+    own = {w["_id"] for w in json.loads(OWN.read_text())}
+    n = 0
+    for aid, p in plan.items():
+        for _id, slug, title, date, kept in p["remove"]:
+            if _id in done or _id in own:
+                continue
+            r = call("DELETE", f"collection/saved-artwork/artwork/{slug}", {"user_id": USER})
+            if r.status_code not in (200, 201, 204, 404):
+                print(f"failed {r.status_code}: {p['name']} · {title}", flush=True)
+                continue
+            done.add(_id)
+            have.discard(_id)
+            n += 1
+            if n % 25 == 0:
+                UNSAVED.write_text(json.dumps(sorted(done)))
+                HAVE.write_text(json.dumps(sorted(have)))
+            time.sleep(DELAY)
+        UNSAVED.write_text(json.dumps(sorted(done)))
+        HAVE.write_text(json.dumps(sorted(have)))
+        print(f"{p['name']}: unsaved {sum(1 for r in p['remove'] if r[0] in done)} of {len(p['remove'])}", flush=True)
+    print(f"unsaved total: {len(done)}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--dupes", action="store_true", help="count the extra prints already saved; change nothing")
+    ap.add_argument("--plan-unsave", action="store_true", help="list the extra prints to unsave; change nothing")
+    ap.add_argument("--unsave", action="store_true", help="unsave what the plan lists")
     args = ap.parse_args()
     DIR.mkdir(parents=True, exist_ok=True)
     state = json.loads(STATE.read_text()) if STATE.exists() else {"done": [], "counts": {}}
     if args.dupes:
         count_dupes(state, set(json.loads(HAVE.read_text())) if HAVE.exists() else saved_ids())
+        return
+    if args.plan_unsave or args.unsave:
+        have = set(json.loads(HAVE.read_text())) if HAVE.exists() else saved_ids()
+        if args.plan_unsave:
+            plan_unsave(have)
+        else:
+            unsave(have)
         return
     done = set(state["done"])
     arts = followed()
