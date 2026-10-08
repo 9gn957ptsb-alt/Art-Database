@@ -84,8 +84,10 @@ def main():
             run(str(SCRIPTS / "fetch_reference_photos.py"), "--only", b["slug"])
     # The museums' insides: a shell for each new one, and where the works hang today.
     run(str(SCRIPTS / "build_interiors.py"), "--stubs", "--refresh")
-    # And the arranged museums (INTERIORS.md, "Arranged"): their works hung again by the rule after the
-    # records were read, and any new museum's shell laid out, so every museum can be walked up to.
+    # And every work the records place in no room drawn hung again after the records were read — by the
+    # arranged rule in an arranged museum (INTERIORS.md, "Arranged"), beside the museum's own in one a
+    # source draws ("Beside the known") — and any new museum's shell laid out, so every museum can be
+    # walked up to with every work it holds on its walls.
     print("\n$ node scripts/build_interiors_arranged.js", flush=True)
     subprocess.run(["node", str(SCRIPTS / "build_interiors_arranged.js")], cwd=ROOT)
 
@@ -103,22 +105,30 @@ def main():
         print("\nFailed to bring in:", ", ".join(failed))
 
 
+def record_of(w):
+    """What a work's record says: a work the site hung (INTERIORS.md, "Arranged", "Beside the known")
+    keeps it in rec, so one whose record names a room not drawn is waiting for that room as much as one
+    listed elsewhere."""
+    return (w.get("rec") or {}) if w.get("how") == "arranged" else w
+
+
 def interiors():
     """Each museum's interior tier, and the saved works its records place in rooms not drawn yet
     (most first): the first to raise a tier (models/REFINE.md, Interiors)."""
     tiers, waiting = {}, []
+    rec = record_of
     for m in places(KINDS[1]):
         path = INTERIORS / (m["slug"] + ".json")
         doc = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         tier = doc.get("tier", "none")
         tiers[tier] = tiers.get(tier, 0) + 1
-        away = [w for w in doc.get("works") or [] if w.get("how") == "elsewhere"]
+        away = [w for w in doc.get("works") or [] if rec(w).get("how") == "elsewhere"]
         if away:
             waiting.append((len(away), m["slug"], tier, away))
     print("\ninteriors: " + ", ".join(f"{v} {k}" for k, v in sorted(tiers.items())))
     waiting.sort(key=lambda x: (-x[0], x[1]))
     for n, slug, tier, away in waiting:
-        rooms = sorted({w.get("said") or "" for w in away})
+        rooms = sorted({rec(w).get("said") or "" for w in away})
         print(f"  {slug} ({tier}): {n} placed in rooms not drawn — " + "; ".join(rooms[:6]) +
               (f"; … and {len(rooms) - 6} more rooms" if len(rooms) > 6 else ""))
 
