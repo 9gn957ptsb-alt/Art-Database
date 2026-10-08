@@ -102,6 +102,24 @@ After the buildings, each run:
    rehang: works moved, put up or taken down are written into the museum's
    interior log in `ledger.json`, and `update_buildings.py` lists the saved
    works placed in rooms not drawn yet.
+   **The collection on the walls, weekly** (on Mondays, and whenever a
+   museum's rooms change): `python3 scripts/build_interiors.py --collection`
+   reads again what the Met, the Art Institute, Cleveland and the National
+   Gallery have on view (their highlights first) and rehangs up to 300 a
+   museum in the rooms drawn (`data/collections/`, never committed). On the
+   other days the works pass rehangs them from that copy. A museum's own
+   on-view data moves weekly at most; a closed gallery takes its works down.
+   **The museums' own maps, when they change:** the NGA's doorways are read
+   off its visitor map by `scripts/nga_map_doors.py` (after `--nga`), the
+   Met's galleries off its floor plans by `scripts/met_plan_rooms.py`, the
+   Art Institute's round its own points by `scripts/aic_rooms.py`; each
+   rewrites only what it wrote. A new edition of a map (the NGA's is June
+   2025) is fetched into `data/plans/<slug>/` and the script run again.
+   **OpenStreetMap's indoor mapping,** once the `osm-indoor` workflow has
+   written `osm/indoor/` (write the date in `osm/INDOOR_REQUEST` to ask for a
+   fresh read, monthly): `python3 scripts/build_interiors.py --osm` lays a
+   shell's rooms and doors from it where mappers have drawn the inside, and
+   adds its doors between rooms already drawn; check each museum it touched.
 2. **Raise two museums a tier.** First any museum whose records place saved
    works in rooms not drawn (most such works first); then shells, most saved
    works held first. For each: research its public entrance (which façade,

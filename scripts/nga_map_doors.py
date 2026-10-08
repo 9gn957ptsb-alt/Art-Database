@@ -20,7 +20,8 @@ A room the map paints grey (not open to visitors) is never joined; a run under 1
 meet at a corner, not a doorway. The openings are written into the floor's `open` with src ["nga-map",
 "nga-rooms"], sure "reconstructed" and a note beginning with MARK; openings by hand (any other note) stay,
 and a pair joined by hand is not read again. A reading the checker refuses (no wall found near it) is
-dropped by --drop, which reads the checker's errors. Then the file is checked as usual:
+dropped after writing (the checker is run, its errors read). Rooms the first reading leaves apart are read
+again loosely. Then the file is checked as usual:
 
     python3 scripts/nga_map_doors.py [--dry]
     node scripts/check_interior.js docs/v2/interiors/museum-national-gallery-of-art-washington-dc.json

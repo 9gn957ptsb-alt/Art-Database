@@ -222,8 +222,8 @@
     ],
     "interior": {
       "tier": "documented",
-      "refined": "2026-09-30",
-      "passes": 1,
+      "refined": "2026-10-08",
+      "passes": 2,
       "rooms": {
         "documented": 181,
         "reconstructed": 0
@@ -235,7 +235,8 @@
         "none": 137
       },
       "log": [
-        "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)"
+        "2026-09-30 first pass: the NGA's own outlines for all 181 public rooms of the West Building's Main and Ground Floors (its open data), each with the NGA's words; the Sixth Street door on Constitution Avenue, the North Lobby's two stairs to the Main Floor's landings, the rotunda's passages to the sculpture halls (Wikipedia); 45 saved works hung where the NGA's data puts them, 4 in the East Building listed; which galleries connect is still to be read off the NGA's visitor map (www.nga.gov and archive.org's file store refuse a session)",
+        "2026-10-08 doorways: 193 read off the NGA's visitor map (June 2025) by scripts/nga_map_doors.py, the map registered to the NGA's outlines; the North Stair landings opened to the rotunda; the rooms the map paints grey closed; Main Floor 113 of 118 rooms reached from the door, Ground Floor 34 of 63 (13 closed); 300 of its paintings and sculpture on view hung beside the 45 saved works."
       ]
     }
   },
@@ -309,8 +310,8 @@
     ],
     "interior": {
       "tier": "reconstructed",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 400
@@ -321,7 +322,9 @@
         "off": 0,
         "none": 18
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: 400 galleries on Floors 1 and 2 read off the Met's visitor floor plans (scripts/met_plan_rooms.py), each the floor nearest its printed number by walking, never through a drawn wall, laid by the Met's own map points for 60 galleries (median 0.2 m on Floor 1, 1.4 m on Floor 2) and anchored on them; openings where rooms meet on open floor; the 82nd Street door into the Great Hall; the floors joined by the lift by the Great Hall; 388 of 400 reached from the door (not: Dendur 131, 399, the 900s); 19 saved works and 300 of the Met's highlights on view hung by GalleryNumber. The model stands tens of metres off the Met's points and lacks the Fifth Avenue front: the rooms past it are filed against it."
+      ]
     }
   },
   "museum-seattle-art-museum": {
@@ -592,8 +595,8 @@
     ],
     "interior": {
       "tier": "reconstructed",
-      "refined": null,
-      "passes": 0,
+      "refined": "2026-10-08",
+      "passes": 1,
       "rooms": {
         "documented": 0,
         "reconstructed": 158
@@ -604,7 +607,9 @@
         "off": 0,
         "none": 0
       },
-      "log": []
+      "log": [
+        "2026-10-08 first pass: 158 galleries on the Lower Level and Floors 1-3 drawn round the Art Institute's own points by rule (scripts/aic_rooms.py: the nearer floor, within 9 m), anchored on them; doorways only between galleries numbered one after the other that share a wall; the Michigan Avenue door (its own point); 8 saved works and 300 of its works on view (boosted first) hung by gallery. No plan read: most rooms have no way in known (come into by a cut); the floors are not joined. The model stands west of the museum's points."
+      ]
     }
   },
   "museum-national-gallery-of-victoria": {

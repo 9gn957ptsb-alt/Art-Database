@@ -2491,6 +2491,20 @@
         else if (!src[w.src].read && w.how !== "none") { err(ww + " cites " + w.src + ", which has not been read yet"); }
       } else if (w.how === "museum" || w.how === "elsewhere" || w.how === "off") { err(ww + ": a placement needs its src"); }
       if (w.wall !== undefined && w.wall !== null && !DIRS[w.wall] && w.wall !== "centre") { err(ww + ": wall must be n, e, s, w, centre or null"); }
+      // The museum's own collection on its walls (INTERIORS.md, "The collection on the walls").
+      if (w.kind !== undefined && w.kind !== "collection") { err(ww + ": kind must be collection or absent"); }
+      if (w.kind === "collection") {
+        if (w.how !== "museum") { err(ww + ": a collection work hangs (how museum) or is not listed"); }
+        if (!w.ref || typeof w.ref.museum !== "string" || w.ref.object === undefined || typeof w.ref.url !== "string") {
+          err(ww + ": a collection work needs ref {museum, object, url}");
+        }
+        if (w.img !== null && w.img !== undefined && !/^https:\/\//.test(String(w.img))) { err(ww + ": img must be an https address or null"); }
+        if (w.c !== null && w.c !== undefined && !(Array.isArray(w.c) && w.c.every(function (h) { return /^#[0-9a-f]{6}$/i.test(h); }))) {
+          err(ww + ": c must be a list of hex colours or null");
+        }
+        if ((w.desc && !w.descsrc) || (!w.desc && w.descsrc)) { err(ww + ": desc and descsrc go together"); }
+        if (w.desc !== null && w.desc !== undefined && typeof w.desc !== "string") { err(ww + ": desc must be the museum's words or null"); }
+      }
       if (w.asof && days(w.asof, today) > 30) { oldWorks += 1; }
     });
     if (oldWorks) { warn(oldWorks + " works were placed more than 30 days ago: run build_interiors.py"); }
