@@ -1415,15 +1415,17 @@ RECORDS = ROOT / "records" / "years"
 
 
 def record_years(place, g, cells):
+    """(years, sources, floor, extent): extent is the year of a map of what was built up by then
+    (Brussels' 1930), whose inside the record has as old; else None."""
     path = RECORDS / (place["slug"] + ".json")
     if not path.exists():
-        return None, [], None
+        return None, [], None, None
     r = json.loads(path.read_text(encoding="utf-8"))
     if r.get("n") != g["n"]:
-        return None, [], None             # read for a ground cut differently: read again
+        return None, [], None, None       # read for a ground cut differently: read again
     by = r.get("cells") or {}
     years = np.array([int(by.get(str(i * g["n"] + j), 0)) for i, j in cells], dtype=np.int64)
-    return years, list(r.get("sources") or []), r.get("floor")
+    return years, list(r.get("sources") or []), r.get("floor"), r.get("extent")
 
 
 # A census that counts each block's buildings by period instead of giving each its year (Italy's 2011
@@ -1674,7 +1676,7 @@ def years_for(place, g):
         said += names
 
     # What the city leaves, from the records read on GitHub's runners (fetch_city_records.py).
-    rec, rec_names, rec_floor = record_years(place, g, cells)
+    rec, rec_names, rec_floor, extent = record_years(place, g, cells)
     if rec is not None:
         take = (years == 0) & (rec != 0)
         if take.any():
@@ -1744,9 +1746,11 @@ def years_for(place, g):
                 years[by85] = older[by85]
                 said.append("GHSL built-up surface 1975–1980 (JRC)")
         # "By 1975" is the satellites' floor. Where the city's own years go back before it, such a
-        # building is as likely old as not: it stands from the start rather than rising in 1975.
+        # building is as likely old as not: it stands from the start rather than rising in 1975 —
+        # unless a map of what was built up by an earlier year (extent) leaves it out: then it went
+        # up between that year and 1975, and the middle stands for it, as a period's middle does.
         if ((known > 0) & (known < 1975)).any():
-            years[rest & (years == 1975)] = 0
+            years[rest & (years == 1975)] = (extent + 1975) // 2 if extent else 0
     old = int((years < 0).sum())
     years[years < 0] = 0          # old, year not known: there from the start
     return years.tolist(), said, (floor if old else None)

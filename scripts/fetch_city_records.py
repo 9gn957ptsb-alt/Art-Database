@@ -65,6 +65,75 @@ DATA = ROOT / "data" / "records"          # downloads, not committed (and on a r
 # sources are confirmed (see the docstring of each).
 SOURCES = []
 
+# Brussels: urban.brussels' WFS (Brussels-Capital Region). The inventory of the architectural heritage
+# (Irismonument), 40,919 buildings on 8 Oct 2026, each a point at its address with the year it was
+# built ("BULT"; the scientific inventory's "BUILT"); and BruCiel's map of the region built up by 1930
+# (Historique_Urbanisation_1930): a building inside it stood by 1930 (old, floor 1930), and one the
+# satellites have as there by 1975 outside it went up between 1930 and 1975 (EXTENT; build_built_years).
+BXL_WFS_GET = ("https://gis.urban.brussels/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature"
+               "&outputFormat=application/json&")
+BXL_BOX = (50.75, 4.22, 50.93, 4.50)
+EXTENT = {}
+
+
+def _bxl(layer, box):
+    """A layer's features over the square, in pages, and the transform from the region's Lambert 72."""
+    from pyproj import Transformer
+    to_l72 = Transformer.from_crs(4326, 31370, always_xy=True)
+    s, w, n, e = box
+    xs, ys = to_l72.transform([w, e, w, e], [s, s, n, n])
+    bbox = f"{min(xs)},{min(ys)},{max(xs)},{max(ys)},urn:ogc:def:crs:EPSG::31370"
+    out, start = [], 0
+    while True:
+        q = {"typeNames": layer, "bbox": bbox, "count": 5000, "startIndex": start}
+        d = json.loads(B.fetch(BXL_WFS_GET + urllib.parse.urlencode(q), timeout=600) or b"{}")
+        feats = d.get("features") or []
+        out += feats
+        if len(feats) < 5000:
+            return out, Transformer.from_crs(31370, 4326, always_xy=True)
+        start += len(feats)
+
+
+def brussels_inventory(box):
+    pts = []
+    for layer, field in (("URBAN_DCH_IBH:Irismonument_inventory", "BULT"),
+                         ("URBAN_DCH_IBH:Irismonument_scientific_inventory", "BUILT")):
+        feats, to_ll = _bxl(layer, box)
+        took = 0
+        for f in feats:
+            g = f.get("geometry") or {}
+            m = re.search(r"\b(1[0-9]{3}|20[0-2][0-9])\b", str((f.get("properties") or {}).get(field) or ""))
+            if g.get("type") != "Point" or not m or not 1000 <= int(m.group(1)) <= B.THIS_YEAR:
+                continue
+            lon, lat = to_ll.transform(*g["coordinates"][:2])
+            pts.append((lat, lon, int(m.group(1))))
+            took += 1
+        print(f"    {layer}: {len(feats)} in the square, {took} with a year", flush=True)
+    return "points", pts
+
+
+def brussels_1930(box):
+    feats, to_ll = _bxl("BRUCIEL:Historique_Urbanisation_1930", box)
+    rings = []
+    for f in feats:
+        g = f.get("geometry") or {}
+        polys = (g.get("coordinates") or []) if g.get("type") == "MultiPolygon" else [g.get("coordinates") or []]
+        for poly in polys:
+            if poly and len(poly[0]) >= 4:        # the outer ring: a hole in what was built up is left in it
+                xs, ys = zip(*[c[:2] for c in poly[0]])
+                rings.append((B.OLD, list(zip(*to_ll.transform(xs, ys)))))
+    print(f"    built up by 1930: {len(feats)} areas, {len(rings)} rings", flush=True)
+    return "polys", rings
+
+
+SOURCES += [
+    ("Brussels heritage inventory (urban.brussels)", "Brussels-Capital Region open data (urban.brussels)",
+     BXL_BOX, None, brussels_inventory),
+    ("Brussels built up by 1930 (urban.brussels, BruCiel)", "Brussels-Capital Region open data (urban.brussels)",
+     BXL_BOX, 1930, brussels_1930),
+]
+EXTENT["Brussels built up by 1930 (urban.brussels, BruCiel)"] = 1930
+
 
 def cells_of(place, g):
     """The ground's building cells: their indexes and their middles (lat, lon)."""
@@ -385,6 +454,8 @@ def main():
             rec["licence"].append(licence)
             if floor and any(v < 0 for v in rec["cells"].values()):
                 rec["floor"] = max(rec["floor"] or 0, floor)
+            if name in EXTENT:
+                rec["extent"] = EXTENT[name]
         dated = sum(1 for y in years.tolist() if y > 0)
         old = sum(1 for y in years.tolist() if y < 0)
         print(f"  + {name} · {p['slug']}: {dated} of {len(idx)} cells dated, {old} old", flush=True)
