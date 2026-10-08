@@ -285,15 +285,27 @@ def census(args):
     print(f"\nWrote {wrote} census record(s) into records/census")
 
 
-# The hosts of the sources still to write, and what to look for on each.
+# The hosts of the sources still to write, and what to look for on each: (name, url, pattern to grab,
+# pattern to keep), or with no pattern the answer's first characters as they come.
+BXL_WFS = "https://gis.urban.brussels/geoserver/ows?service=WFS&version=2.0.0&"
 PROBES = [
-    ("urban.brussels WFS", "https://gis.urban.brussels/geoserver/ows?service=WFS&version=2.0.0&request=GetCapabilities",
-     r"<(?:wfs:)?Name>([^<]+)</", r"nvent|atrimo|rfgoed|eritage|onument|ati|uild"),
-    ("Statbel open data", "https://statbel.fgov.be/en/open-data", r'href="([^"]+)"', r"build|batim|gebouw|sector"),
-    ("Statbel building stock", "https://statbel.fgov.be/en/themes/housing/building-stock", r'href="([^"]+)"',
-     r"\.zip|\.xlsx|\.txt|open-data"),
-    ("Brussels heritage inventory", "https://monument.heritage.brussels/", r'href="([^"]+)"', r"api|export|download|open|inventa"),
-    ("Colouring London downloads", "https://colouringlondon.org/downloads", r'href="([^"]+)"', r"\.zip|\.csv|download|data"),
+    ("Brussels inventory: fields", BXL_WFS + "request=DescribeFeatureType&typeNames=URBAN_DCH_IBH:Irismonument_inventory",
+     None, None),
+    ("Brussels inventory: two buildings", BXL_WFS + "request=GetFeature&typeNames=URBAN_DCH_IBH:Irismonument_inventory"
+     "&count=2&outputFormat=application/json", None, None),
+    ("Brussels scientific inventory: two", BXL_WFS + "request=GetFeature&typeNames="
+     "URBAN_DCH_IBH:Irismonument_scientific_inventory&count=2&outputFormat=application/json", None, None),
+    ("Brussels heritage: two", BXL_WFS + "request=GetFeature&typeNames=URBAN_DCH_IBH:Heritage&count=2"
+     "&outputFormat=application/json", None, None),
+    ("Brussels urbanisation 1930: one", BXL_WFS + "request=GetFeature&typeNames=BRUCIEL:Historique_Urbanisation_1930"
+     "&count=1&outputFormat=application/json", None, None),
+    ("Brussels inventory: how many", BXL_WFS + "request=GetFeature&typeNames=URBAN_DCH_IBH:Irismonument_inventory"
+     "&resultType=hits", None, None),
+    ("Statbel cadastral building stock", "https://statbel.fgov.be/en/open-data/cadastral-statistics-building-stock",
+     r'href="([^"]+)"', r"\.zip|\.xlsx|\.txt|\.csv"),
+    ("Colouring London data extracts", "https://colouringlondon.org/data-extracts", r'href="([^"]+)"',
+     r"\.zip|\.csv|extract|download"),
+    ("Colouring London extracts API", "https://colouringlondon.org/api/extracts", None, None),
 ]
 
 
@@ -306,6 +318,9 @@ def probe():
                 print(f"\n## {name}: {r.status} · {len(text)} characters", flush=True)
         except Exception as exc:
             print(f"\n## {name}: {type(exc).__name__}: {exc}", flush=True)
+            continue
+        if not grab:
+            print(text[:3500], flush=True)
             continue
         seen = []
         for m in re.findall(grab, text):

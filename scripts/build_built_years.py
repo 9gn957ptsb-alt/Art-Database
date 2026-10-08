@@ -36,6 +36,7 @@ import argparse
 import io
 import json
 import math
+import os
 import sys
 import time
 import urllib.parse
@@ -118,7 +119,9 @@ def wsf_tile(lat, lon):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             data = fetch(WSF.format(x=x, y=y))
-            path.write_bytes(data or b"")
+            tmp = path.with_suffix(f".{os.getpid()}.part")      # whole or not at all: other runs read it
+            tmp.write_bytes(data or b"")
+            tmp.replace(path)
         data = path.read_bytes()
         _tiles[key] = Raster(data) if data else None
     return _tiles[key]
@@ -134,16 +137,22 @@ def ghsl_tile(epoch, lat, lon):
         for k in [k for k in _tiles if k[0] == "ghsl" and k[1] == epoch]:
             del _tiles[k]
         path = CACHE / "ghsl" / f"E{epoch}_R{r}_C{c}.zip"
-        if not path.exists():
+        # Another place's run may be fetching, reading or deleting the same zip: one that is gone or
+        # half there is fetched again, written whole under its own name and then put in place.
+        try:
+            data = path.read_bytes()
+            zipfile.ZipFile(io.BytesIO(data)).namelist() if data else None
+        except (FileNotFoundError, zipfile.BadZipFile):
             path.parent.mkdir(parents=True, exist_ok=True)
-            data = fetch(GHSL.format(e=epoch, r=r, c=c), timeout=600)
-            path.write_bytes(data or b"")
-        data = path.read_bytes()
+            data = fetch(GHSL.format(e=epoch, r=r, c=c), timeout=600) or b""
+            tmp = path.with_suffix(f".{os.getpid()}.part")
+            tmp.write_bytes(data)
+            tmp.replace(path)
         if data:
             z = zipfile.ZipFile(io.BytesIO(data))
             name = next(n for n in z.namelist() if n.endswith(".tif"))
             _tiles[key] = Raster(z.read(name))
-            path.unlink()          # 16 MB each: kept only while its places are read
+            path.unlink(missing_ok=True)          # 16 MB each: kept only while its places are read
         else:
             _tiles[key] = None
     return _tiles[key]
