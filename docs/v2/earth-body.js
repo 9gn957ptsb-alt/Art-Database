@@ -202,7 +202,7 @@
     // crisp at every size: the level's cells are three device pixels or more
     // (levelFor); averaged only at the far limb, where they are foreshortened
     // under a pixel and a half, and on a journey's out-of-focus edges (in flight only)
-    "  float cellPx = exp2(min(uLevel.x, 0.0)) / max(max(fwBase.x, fwBase.y), 1e-6);",
+    "  float cellPx = exp2(-min(uLevel.x, 0.0)) / max(max(fwBase.x, fwBase.y), 1e-6);",
     "  float smoothK = clamp(max(1.0 - smoothstep(0.75, 1.5, cellPx), smoothstep(0.15, 0.7, blur)) + uFeel.x * 0.3 * journey, 0.0, 1.0);",
     "  vec3 col; float lit = 0.0;",
     "  if (smoothK < 0.999) {",

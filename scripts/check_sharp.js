@@ -29,6 +29,14 @@
        must be within TOL (0.08) of its F. A place with under 400 such runs is
        not judged; a city's ground (no front globe that near) is reported only.
      the flat map: backed at its CSS size × the screen's density.
+     the floor: every judged place's F is 0.52 or more (a ×1.5 bilinear copy
+       is about 0.50); a front globe is a reference only within 15 % of the
+       place's radius (else the floor and the doors judge it).
+     the doors (doors() below): the body drawn alone at every radius seen and
+       at full, half and a third of the density; the pixel at each door's
+       cell middle must be that work's own colour. This is what catches an
+       averaged globe: F alone did not (a mipmap smear of small cells keeps
+       sharp-looking edges).
 
    Headless Chromium draws WebGL on the CPU at 1–4 frames a second, which a
    phone does not; left alone, the page's frame-rate watch (sharpen() in
@@ -54,6 +62,7 @@ function arg(name, dflt) { const i = args.indexOf("--" + name); return i < 0 ? d
 const PORT = +arg("port", 8911);
 const SIZES = String(arg("sizes", "390x844x3,1440x900x2")).split(",");
 const TOL = +arg("tol", 0.08);
+const FLOOR = +arg("floor", 0.52);
 const SHOTS = arg("shots", null);
 const BEFORE = args.includes("--before");
 const LIVE = !args.includes("--no-live");
@@ -102,6 +111,66 @@ async function sharpness(P, png, disc) {
     }
     return { N: n ? +(sum / n).toFixed(3) : 0, edges: n, w, h };
   }, [png.toString("base64"), disc]);
+}
+
+/* Every pixel a door, and crisp: the body drawn on its own (no light, cloud,
+   stars or journey) at the radii the places were seen at, at full density and
+   at a half and a third of it (a stepped-down large globe), and at 40 points a
+   radius, each at the middle of the cell EarthBody.doorAt names, the pixel
+   drawn there must be that work's own colour (within 4/255). An averaged globe
+   (the mipmap) fails this at once: its pixels are mixtures, not works. Only
+   points facing the viewer (nZ ≥ 0.85, where the limb's air is under 2/255)
+   and only levels at rest between two (blend 0 or 1; between, the shader
+   mixes two levels for a moment on purpose, and the door is the nearer). */
+async function doors(P, size, dsf, radii) {
+  const want = [...new Set(radii.filter((R) => R > 20 && R < 6000))].concat([40, 68, 94, 140, 176, 293, 462, 900]);
+  const res = await P.evaluate(async ([dsf, want]) => {
+    const out = [];
+    const cv = EarthBody.canvas(), gl = cv.getContext("webgl2");
+    const W = innerWidth, H = innerHeight;
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16));
+    let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (const R of want) {
+      for (const d of [dsf, dsf / 2, dsf / 3]) {
+        const spin = rnd() * 6.28, T = (rnd() - 0.5) * 1.2, sinT = Math.sin(T), cosT = Math.cos(T), cx = W / 2, cy = H / 2;
+        EarthBody.light(null);
+        EarthBody.draw({ W, H, dpr: d, cx, cy, R, spin, sinT, cosT, sun: [0, 0, 1], near: 0, high: 0, journey: 0, time: 0,
+          focus: { x: cx, y: cy, amt: 0, r: 1 }, cloud: 0, shell: 1, stars: 0, starX: 0, starY: 0, light: 0, feel: [0, 0, 0, 0], crisp: 0 });
+        const pw = cv.width, ph = cv.height, L = EarthBody.levelFor(R);
+        if (L.blend > 0.02 && L.blend < 0.98) { out.push({ R, d, k: L.k, blend: L.blend, skipped: true }); continue; }
+        let ok = 0, n = 0, ex = null;
+        for (let tried = 0; n < 40 && tried < 600; tried++) {
+          const a = rnd() * 6.283, rr = Math.sqrt(rnd()) * 0.5 * Math.min(R, W / 2 - 4, H / 2 - 4);
+          const qx = Math.cos(a) * rr / R, qy = -Math.sin(a) * rr / R, nz = Math.sqrt(1 - qx * qx - qy * qy);
+          const wy = qy * cosT + nz * sinT, wz = -qy * sinT + nz * cosT;
+          const wx = qx * Math.cos(spin) + wz * Math.sin(spin), wzz = wz * Math.cos(spin) - qx * Math.sin(spin);
+          const door = EarthBody.doorAt(Math.asin(wy), Math.atan2(wx, wzz), R), k = door.k;
+          const nx = k < 0 ? 1024 >> -k : 1024 << k, ny = k < 0 ? 512 >> -k : 512 << k;
+          const clat = (0.5 - (door.j + 0.5) / ny) * Math.PI, clon = ((door.i + 0.5) / nx - 0.5) * 2 * Math.PI;
+          const X = Math.cos(clat) * Math.sin(clon), Y = Math.sin(clat), Z = Math.cos(clat) * Math.cos(clon);
+          const nX = X * Math.cos(spin) - Z * Math.sin(spin), wZ = X * Math.sin(spin) + Z * Math.cos(spin);
+          const nY = Y * cosT - wZ * sinT, nZ = Y * sinT + wZ * cosT;
+          if (nZ < 0.85) { continue; }
+          const px = cx + nX * R, py = cy - nY * R;
+          const at = EarthBody.doorAt(clat, clon, R);
+          const dx = Math.floor(px * pw / W), dy = Math.floor(py * ph / H);
+          if (dx < 0 || dy < 0 || dx >= pw || dy >= ph) { continue; }
+          const buf = new Uint8Array(4); gl.readPixels(dx, ph - 1 - dy, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+          const c = hex(at.colour), diff = Math.max(...[0, 1, 2].map((i) => Math.abs(buf[i] - c[i])));
+          n++; if (diff <= 4) { ok++; } else if (!ex) { ex = { got: [buf[0], buf[1], buf[2]], want: c, k: at.k }; }
+        }
+        out.push({ R, d, k: L.k, cellDev: +(L.drawn * d).toFixed(2), ok, n, ex });
+      }
+    }
+    return out;
+  }, [dsf, want]);
+  res.forEach((r) => {
+    const tag = size + " doors R " + Math.round(r.R) + " at " + +r.d.toFixed(2) + "x";
+    if (r.skipped) { console.log("  --   " + tag + " · between two levels (blend " + r.blend.toFixed(2) + "): not judged"); return; }
+    check(tag, r.n >= 20 && r.ok === r.n, "every pixel drawn at a cell's middle is its door's work (level " + r.k + ", " + r.cellDev + " device px a cell)", r.ok + "/" + r.n + (r.ex ? " " + JSON.stringify(r.ex) : ""));
+    check(tag, r.cellDev >= 2.99, "cells of three device pixels or more", r.cellDev);
+  });
+  // The page's own globe is drawn again on its next frame (the key has changed).
 }
 
 async function run(size, live) {
@@ -224,7 +293,10 @@ async function run(size, live) {
       if (live && !row.small) { return; }
       const refs = (REF[size] || []).filter((x) => x.edges >= 400);
       if (!refs.length) { check(size + " " + mode + " " + row.place, false, "a front globe to compare with"); return; }
+      check(size + " " + mode + " " + row.place, row.N >= FLOOR, "sharper than any stretched copy (F " + FLOOR + ": ×1.5 bilinear)", row.N);
       const ref = refs.reduce((a, b) => (Math.abs(Math.log(b.R / row.R)) < Math.abs(Math.log(a.R / row.R)) ? b : a));
+      // Only a front globe the wheel brought within 15 % of the radius is a fair reference (cells the same size).
+      if (Math.abs(ref.R / row.R - 1) > 0.15) { console.log("  --   " + size + " " + mode + " " + row.place + " · no front globe within 15 % of R " + row.R + " (nearest " + ref.R + "); judged by the floor and the doors"); return; }
       row.ref = ref.F;
       check(size + " " + mode + " " + row.place, row.N >= ref.F - TOL, "as sharp as the front globe at its size (R " + ref.R + ", F " + ref.F + " - " + TOL + ")", row.N);
     });
@@ -292,6 +364,7 @@ async function run(size, live) {
     await up();
   }
   await judge();
+  if (!live) { await doors(P, size, dsf, rows.filter((r) => r.size === size && r.mode === "held").map((r) => r.R)); }
   const d = await density();
   if (d) { console.log("  " + size + " " + mode + " density at the end: " + JSON.stringify({ dpr: d.dpr, densDiv: d.densDiv, bodyDiv: d.bodyDiv, bodyGone: d.bodyGone })); check(size + " " + mode, !d.bodyGone, "the body is never dropped"); }
   errors.forEach((e) => check(size + " " + mode, false, "page error", e));

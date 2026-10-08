@@ -5531,7 +5531,7 @@
      (longer each time it had to step down again), and is held for three
      seconds after any change, a journey, a dive or a drag. */
   var densDiv = 1;
-  var pace = { from: 0, frames: 0, work: 0, lastWork: 0, good: 0, wait: 3, quietUntil: 0, held: false };
+  var pace = { from: 0, frames: 0, work: 0, lastWork: 0, good: 0, bad: 0, best: 0, wait: 3, quietUntil: 0, held: false };
   function nativeDpr() { return Math.min(window.devicePixelRatio || 1, 3); }
   // A small globe: under 35 % of the window (the lens, a far world, a small front globe).
   function globeSmall() { return W > 0 && Math.PI * R * R < 0.35 * W * H; }
@@ -5564,20 +5564,33 @@
     var fps = pace.frames * 1000 / span, work = pace.work / Math.max(1, pace.frames);
     pace.from = 0;
     var n = nativeDpr();
-    var slow = fps < 26 || (fps < 45 && work > 10);
+    /* Judged against the screen's own pace (the best window seen, so a 30 Hz
+       Low Power cap is the norm there, not a slow device): slow is two windows
+       running in a row well under it (or under 24 a second at all) with the
+       frame's own work heavy, or far under it whatever the work. Back up once
+       the windows are at the screen's pace again; the wait halves with each
+       climb, so a hitch long ago does not hold a phone down for good. */
+    pace.best = Math.max(pace.best * 0.995, Math.min(fps, 125));
+    var ref = Math.max(24, pace.best);
+    var slow = fps < Math.min(20, ref * 0.6) || ((fps < ref * 0.8 || fps < 24) && work > 10);
     if (slow) {
       pace.good = 0;
-      if (n / (densDiv + 1) >= 1 - 1e-6) { densDiv += 1; setDensity(); pace.wait = Math.min(30, pace.wait * 2); }
-      else if (bodyOn() && bodyDiv < 2) { bodyDiv = 2; drawn.w = 0; pace.wait = Math.min(30, pace.wait * 2); }
+      pace.bad += 1;
+      if (pace.bad < 2) { return; }
+      pace.bad = 0;
+      if (n / (densDiv + 1) >= 1 - 1e-6) { densDiv += 1; setDensity(); pace.wait = Math.min(12, pace.wait * 2); }
+      else if (bodyOn() && bodyDiv < 2) { bodyDiv = 2; drawn.w = 0; pace.wait = Math.min(12, pace.wait * 2); }
       pace.quietUntil = now + 3000;
-    } else if (fps >= 50 && (densDiv > 1 || bodyDiv > 1)) {
+    } else if (fps >= ref * 0.9 && work < 8 && (densDiv > 1 || bodyDiv > 1)) {
+      pace.bad = 0;
       pace.good += 1;
       if (pace.good >= pace.wait) {
         pace.good = 0;
+        pace.wait = Math.max(3, Math.round(pace.wait / 2));
         if (bodyDiv > 1) { bodyDiv = 1; drawn.w = 0; } else { densDiv -= 1; setDensity(); }
         pace.quietUntil = now + 3000;
       }
-    } else { pace.good = 0; }
+    } else { pace.bad = 0; }
   }
 
   function frame(now) {
