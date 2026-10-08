@@ -536,11 +536,16 @@ def spain(box):
     import re
     global _catastro_up
     if _catastro_up is None:
+        # A small piece of the square, not its capabilities: on 8 Oct 2026 it answered those at once and
+        # then held every request for buildings until it timed out.
+        s0, w0 = box[0], box[1]
+        q = {"service": "wfs", "version": "2.0.0", "request": "getfeature", "typenames": "BU.BUILDING",
+             "bbox": f"{s0},{w0},{s0 + 0.001},{w0 + 0.001}", "SRSNAME": "EPSG:4326"}
         try:
-            req = urllib.request.Request("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?service=wfs&version=2.0.0"
-                                         "&request=GetCapabilities", headers=AGENT)
-            with urllib.request.urlopen(req, timeout=30) as r:
-                _catastro_up = r.status == 200
+            req = urllib.request.Request("https://ovc.catastro.meh.es/INSPIRE/wfsBU.aspx?" + urllib.parse.urlencode(q),
+                                         headers=AGENT)
+            with urllib.request.urlopen(req, timeout=45) as r:
+                _catastro_up = r.status == 200 and b"FeatureCollection" in r.read()
         except Exception:
             _catastro_up = False
     if not _catastro_up:
@@ -1244,26 +1249,31 @@ def wikidata_years(qids):
     if _wd is None:
         _wd = json.loads(WD_INCEPTION.read_text()) if WD_INCEPTION.exists() else {}
     need = sorted({q for q in qids if q not in _wd})
-    for k in range(0, len(need), 120):
-        part = need[k:k + 120]
-        query = """SELECT ?item ?p ?t ?prec WHERE {
+    if not need:
+        return {q: _wd.get(q, 0) for q in qids}
+    # The classes are judged here, against the two class trees fetched once (_tree), not by the query
+    # service, which timed out (504) on the path through the trees for a batch (8 Oct 2026).
+    built, org = _tree("Q811979"), _tree("Q43229")
+    for k in range(0, len(need), 150):
+        part = need[k:k + 150]
+        query = """SELECT ?item ?cls ?p ?t ?prec WHERE {
   VALUES ?item { %s }
+  ?item wdt:P31 ?cls .
   { ?item p:P571/psv:P571 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P571" AS ?p) }
   UNION
   { ?item p:P1619/psv:P1619 [ wikibase:timeValue ?t; wikibase:timePrecision ?prec ] . BIND("P1619" AS ?p) }
-  FILTER(?prec >= 8)
-  ?item wdt:P31/wdt:P279* wd:Q811979 .
-  FILTER NOT EXISTS { ?item wdt:P31/wdt:P279* wd:Q43229 }
 }""" % " ".join("wd:" + q for q in part)
-        url = WD_SPARQL + "?" + urllib.parse.urlencode({"query": query, "format": "json"})
-        got, opened = {}, {}
         try:
-            res = json.loads(fetch(url, timeout=120) or b"{}")
+            res = _sparql(query, timeout=120)
         except Exception as exc:
             print(f"  ! Wikidata: {type(exc).__name__}: {exc}", flush=True)
             continue                      # not cached: asked again next run
+        cls, got, opened = {}, {}, {}
         for b in (res.get("results") or {}).get("bindings") or []:
             qid = b["item"]["value"].rsplit("/", 1)[-1]
+            cls.setdefault(qid, set()).add(b["cls"]["value"].rsplit("/", 1)[-1])
+            if int(b["prec"]["value"]) < 8:
+                continue
             t = b["t"]["value"]
             try:
                 y = int(t[:t.index("-", 1)])
@@ -1275,7 +1285,9 @@ def wikidata_years(qids):
                 into = got if b["p"]["value"] == "P571" else opened      # its inception, else its opening
                 into[qid] = min(into.get(qid, 9999), y)
         for q in part:
-            _wd[q] = got.get(q) or opened.get(q) or 0
+            c = cls.get(q, set())
+            ok = bool(c & built) and not (c & org)
+            _wd[q] = (got.get(q) or opened.get(q) or 0) if ok else 0
         WD_INCEPTION.write_text(json.dumps(_wd, sort_keys=True, separators=(",", ":")))
         time.sleep(1)
     return {q: _wd.get(q, 0) for q in qids}
