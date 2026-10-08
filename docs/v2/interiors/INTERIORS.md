@@ -579,7 +579,30 @@ address and the day it was read.
   Anchored on its points. All reconstructed.
 - **Cleveland**: its records name each work's gallery, but no geometry for
   the galleries has been found (no plan, no points); it stays a shell, its
-  works listed, until OpenStreetMap's indoor mapping or a plan gives rooms.
+  works listed, until OpenStreetMap's indoor mapping or a plan gives rooms
+  (8 Oct 2026: OpenStreetMap maps three rooms on its model, too few).
+
+## What OpenStreetMap gave (8 Oct 2026)
+
+Of the 45 museums the workflow read, OpenStreetMap's plan was taken for
+three: **SMK** (arranged → reconstructed: 76 rooms on levels 0, 1 and 2, the
+top floor's galleries numbered as SMK numbers them, 64% of the model's floor
+there; 30 mapped doors, 42 by the rule, 2 mapped lifts and one by the rule;
+75 of 76 reached), **the Centre Pompidou** (arranged → reconstructed: 18
+open-plan rooms on levels 0–6, more than half the model's floor on levels
+2–6, 17 reached; 5 mapped doors, 4 by the rule, 2 mapped lifts, 3 by the
+rule) and **the British Museum** (shell → reconstructed: 16 ground-floor
+galleries — Egypt, Assyria, Greece — 13 reached, a fifth of the model's
+floor). The Art Institute got its one mapped lift that lands in its rooms
+and 4 doorways inside the wings OpenStreetMap maps by number; its way in
+still reaches 1 of its 158 rooms (no mapped door or corridor joins them).
+The Louvre's 455 mapped rooms stand in wings OpenStreetMap does not join on
+the levels drawn (its links run through the entresols and the basement):
+24% reached, so it stays arranged. The others map too few rooms, or a
+neighbour's (the Transit Center by SFMOMA, the Neues Museum by the Alte
+Nationalgalerie, the Archives nationales by the Musée Picasso), or rooms the
+model does not stand on (the Musée Rodin's Hôtel Biron, south of its
+model), or only below ground (Orsay).
 
 ## Georeferencing
 

@@ -1500,7 +1500,7 @@ def osm_pass(m, doc, model):
     # Usable: the floors it maps well (OSM_COVER of the model's floor there or more) are the museum's
     # floors walked; the others it maps are kept for what joins them (a lobby, a stair), never filled in.
     best = max([f["cover"] for f in rep.get("floors") or []] or [0])
-    rep["cover_best"] = best
+    rep["cover_best"] = report["cover_best"] = best
     # A shell (nothing drawn inside) takes any plan it can walk, however much of the floor it covers:
     # the rest stays earth, as it was.
     shell = not doc.get("floors")

@@ -46,8 +46,9 @@
    Public files only (museums.json, models/, interiors/, histories/, places/, cities.json); never
    data/. A museum whose rooms a source gives (documented or reconstructed), or that the
    museums' own data draws (the National Gallery of Art, the Met, the Art Institute, Cleveland),
-   or that OpenStreetMap's indoor mapping covers (osm/indoor/<slug>.json, read by
-   build_interiors.py), is never arranged. The same bytes every run on the same inputs, but for
+   or whose rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan:
+   then only the works no record places are hung in its galleries, by the same rule), is never
+   arranged. The same bytes every run on the same inputs, but for
    the day's date. */
 "use strict";
 
