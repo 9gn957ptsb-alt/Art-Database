@@ -2660,7 +2660,11 @@
       var r = w.room ? roomById(world, w.room) : null;
       if (!r) { err("work " + w.id + ": its room " + w.room + " is not drawn"); return; }
       // The rule hangs only in rooms the site arranged; a record's work never in one.
-      if (w.how === "arranged" && r.sure !== "arranged") { err("work " + w.id + ": arranged, but room " + r.id + " is not an arranged room"); }
+      // (or a room OpenStreetMap's indoor mapping draws, where the museum's own plan is not known:
+      // the site hangs there what no record places, and says so).
+      if (w.how === "arranged" && r.sure !== "arranged" && !(r.spec && r.spec.anchor === "osm-indoor")) {
+        err("work " + w.id + ": arranged, but room " + r.id + " is not an arranged room (nor one OpenStreetMap draws)");
+      }
       if (w.how === "museum" && r.sure === "arranged") { err("work " + w.id + ": a record's placement in room " + r.id + ", which the site arranged"); }
       var dir = (pins[w.id] && pins[w.id].wall) || w.wall;
       if (dir && dir !== "centre" && !compass(r, dir, world).length) { err("work " + w.id + ": room " + r.id + " has no " + dir + " wall"); }

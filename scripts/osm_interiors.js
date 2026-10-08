@@ -94,33 +94,47 @@ function polyArea(p) {
 
 /* ---------------------------------------------------------------- the museum in the model */
 
-// The museum's part of the footprint at a level (the shell's rule), as a test on the model's frame.
+// The model's buildings at a level: the parts of its footprint there of a size (a tenth of the
+// largest, 100 m² at least: the shell's rule, which then takes the one nearest the museum's point;
+// here every one, since OpenStreetMap says which the museum's rooms are in). `part(x, y)` is the
+// part a point of the model's frame stands on (within `grow` metres of it), or -1; `area(set)` the
+// floor of those parts.
 function building(model, cell, turn, z, grow) {
   const world = A.shellAt(W, model, cell, turn, z), fl = world.floors[0];
   if (!fl) { return null; }
   const mp = A.mainPart(W, world, fl);
   if (!mp) { return null; }
-  const mine = new Uint8Array(fl.n);
-  mp.parts[mp.main].forEach(q => { mine[q] = 1; });
-  const r = Math.ceil(grow / cell), near = new Uint8Array(fl.n);
+  const largest = Math.max(...mp.parts.map(p => p.length));
+  const label = new Int32Array(fl.n).fill(-1);
+  mp.parts.forEach((p, k) => {
+    if (p.length < 0.1 * largest || p.length * cell * cell < 100) { return; }
+    p.forEach(q => { label[q] = k; });
+  });
+  const r = Math.ceil(grow / cell);
+  let near = label;
   if (r > 0) {
+    near = Int32Array.from(label);
     for (let q = 0; q < fl.n; q += 1) {
-      if (!mine[q]) { continue; }
+      if (label[q] < 0) { continue; }
       const i = q % fl.gw, j = Math.floor(q / fl.gw);
       for (let dj = -r; dj <= r; dj += 1) {
         for (let di = -r; di <= r; di += 1) {
           const a = i + di, b = j + dj;
-          if (a >= 0 && b >= 0 && a < fl.gw && b < fl.gh) { near[b * fl.gw + a] = 1; }
+          if (a >= 0 && b >= 0 && a < fl.gw && b < fl.gh && near[b * fl.gw + a] < 0) { near[b * fl.gw + a] = label[q]; }
         }
       }
     }
   }
-  const area = mp.parts[mp.main].length * cell * cell;
   return {
-    area, world,
-    on(x, y) {
+    world,
+    part(x, y) {
       const g = P.toGrid(turn, x, y), q = P.cellAt(fl, g[0], g[1]);
-      return q >= 0 && (mine[q] || near[q]) ? 1 : 0;
+      return q >= 0 ? near[q] : -1;
+    },
+    area(set) {
+      let n = 0;
+      set.forEach(k => { if (mp.parts[k]) { n += mp.parts[k].length; } });
+      return n * cell * cell;
     }
   };
 }
@@ -154,26 +168,22 @@ function contacts(fl) {
       }
     }
   }
-  return Object.values(pairs).map(c => {
-    // The longest straight run of the contact: points along one line, consecutive.
-    const byLine = {};
-    c.pts.forEach(p => {
-      const key = c.axis === "x" ? Math.round(p[0] / cell * 2) : Math.round(p[1] / cell * 2);
-      (byLine[key] = byLine[key] || []).push(p);
-    });
-    let best = [];
-    Object.values(byLine).forEach(list => {
-      list.sort((u, v) => c.axis === "x" ? u[1] - v[1] : u[0] - v[0]);
-      let run = [list[0]];
-      for (let k = 1; k < list.length; k += 1) {
-        const prev = list[k - 1], cur = list[k];
-        const gap = c.axis === "x" ? cur[1] - prev[1] : cur[0] - prev[0];
-        if (gap <= cell * 1.01) { run.push(cur); } else { if (run.length > best.length) { best = run; } run = [cur]; }
-      }
-      if (run.length > best.length) { best = run; }
-    });
-    const mid = best[Math.floor(best.length / 2)];
-    return { a: c.a, b: c.b, n: best.length, len: best.length * cell, at: mid };
+  // Each pair's contact along both axes together (a wall off the grid's axes steps between them):
+  // its length the cells of wall it faces across, its doorway at the contact nearest their middle.
+  const both = {};
+  Object.values(pairs).forEach(c => {
+    const k = c.a + ":" + c.b;
+    const t = both[k] || (both[k] = { a: c.a, b: c.b, pts: [], nx: 0, ny: 0 });
+    t.pts = t.pts.concat(c.pts);
+    if (c.axis === "x") { t.nx += c.pts.length; } else { t.ny += c.pts.length; }
+  });
+  return Object.values(both).map(c => {
+    let mx = 0, my = 0;
+    c.pts.forEach(p => { mx += p[0]; my += p[1]; });
+    mx /= c.pts.length; my /= c.pts.length;
+    let at = c.pts[0], bd = Infinity;
+    c.pts.forEach(p => { const d = (p[0] - mx) ** 2 + (p[1] - my) ** 2; if (d < bd) { bd = d; at = p; } });
+    return { a: c.a, b: c.b, n: c.pts.length, len: Math.max(c.nx, c.ny) * cell, at };
   }).filter(c => c.len >= SHARE);
 }
 
@@ -327,7 +337,7 @@ function roomsMode(doc, slug, osm, model) {
   doc.floors.forEach(f => {
     const keep = f.rooms.filter(r => {
       const pts = samples(r.poly, 1.5);
-      return pts.filter(p => bld.on(p[0], p[1])).length >= 0.5 * pts.length;
+      return pts.filter(p => bld.part(p[0], p[1]) >= 0).length >= 0.5 * pts.length;
     });
     dropped += f.rooms.length - keep.length;
     const ids = new Set(keep.map(r => r.id));
@@ -372,6 +382,7 @@ function roomsMode(doc, slug, osm, model) {
     if (near) { tries.push({ e, near, score: (e.main ? 0 : 1000) + Math.hypot(e.x, e.y) }); }
   });
   tries.sort((a, b) => a.score - b.score);
+  report.entrances = tries.length;
   let chosen = null;
   for (const t of tries.slice(0, 6)) {
     const c = P.centreOf(fl0, t.near.q), g = P.toGrid(turn, t.e.x, t.e.y);
@@ -399,30 +410,60 @@ function roomsMode(doc, slug, osm, model) {
     doc.enter = chosen.enter;
     report.enter_said = `OpenStreetMap's entrance${chosen.t.e.main ? " (entrance=main)" : ""}${chosen.t.e.name ? ", " + chosen.t.e.name : ""} into ${chosen.open.a}`;
   } else {
-    // The shell's own door, cut through to the nearest room.
+    // A way in by the rule: from a mapped room of the lowest floor straight out through the model's
+    // wall to open ground (4 m of it before the door), the thinnest wall first, then facing south,
+    // then nearest the shell's own door; cut 2.4 m wide, said so.
     const sw = A.shellAt(W, model, cell, turn, first.z), se = sw.enter;
-    if (!se) { report.why = "no way in"; return { doc, report }; }
-    const dG = se.door;
-    let near = null;
+    const sd = se ? se.door : [0, 0];
+    const south = P.toGrid(turn, 0, 1);
+    const outside = q => q >= 0 && q < fl0.n && fl0.room[q] < 0 && fl0.kind[q] === P.CLOSED && !fl0.foot[q];
+    const lim = Math.round(8 / cell), deep = Math.round(4 / cell);
+    let best = null;
     for (let q = 0; q < fl0.n; q += 1) {
       if (fl0.room[q] < 0 || fl0.rooms[fl0.room[q]].pseudo || fl0.kind[q] !== P.FLOOR || fl0.rooms[fl0.room[q]].kind === "closed") { continue; }
-      const c = P.centreOf(fl0, q), d = Math.hypot(c[0] - dG[0], c[1] - dG[1]);
-      if (!near || d < near.d) { near = { d, c, room: fl0.rooms[fl0.room[q]] }; }
+      const i = q % fl0.gw, j = Math.floor(q / fl0.gw);
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        let k = 1;
+        while (k <= lim) {
+          const ii = i + di * k, jj = j + dj * k;
+          if (ii < 0 || jj < 0 || ii >= fl0.gw || jj >= fl0.gh) { k = lim + 1; break; }
+          const p = jj * fl0.gw + ii;
+          if (outside(p)) { break; }
+          if (fl0.kind[p] !== P.WALL && fl0.kind[p] !== P.GLASS) { k = lim + 1; break; }
+          k += 1;
+        }
+        if (k > lim || k < 2) { continue; }
+        let open = true;
+        for (let t = 0; t < deep && open; t += 1) {
+          const ii = i + di * (k + t), jj = j + dj * (k + t);
+          if (ii < 0 || jj < 0 || ii >= fl0.gw || jj >= fl0.gh || !outside(jj * fl0.gw + ii)) { open = false; }
+        }
+        if (!open) { continue; }
+        const c = P.centreOf(fl0, q);
+        const facing = di * south[0] + dj * south[1];
+        const score = k * cell * 10 - (facing > 0.5 ? 5 : 0) + Math.hypot(c[0] - sd[0], c[1] - sd[1]) / 20;
+        if (!best || score < best.score) { best = { score, q, c, di, dj, k, room: fl0.rooms[fl0.room[q]] }; }
+      }
     }
-    if (!near || near.d > 12) { report.why = "no room near the shell's door"; report.rooms = doc.floors.reduce((a, f) => a + f.rooms.length, 0); report.cover = 0; report.reach = 0; return { doc, report }; }
-    const ax = Math.abs(near.c[0] - dG[0]) >= Math.abs(near.c[1] - dG[1]);
-    const half = DOOR / 2;
-    const cutG = ax ? [Math.min(near.c[0], dG[0]), (near.c[1] + dG[1]) / 2 - half, Math.max(near.c[0], dG[0]), (near.c[1] + dG[1]) / 2 + half]
-                    : [(near.c[0] + dG[0]) / 2 - half, Math.min(near.c[1], dG[1]), (near.c[0] + dG[0]) / 2 + half, Math.max(near.c[1], dG[1])];
-    const atG = [se.x, se.y];
-    const atW = P.toWorld(turn, atG[0], atG[1]), doorW = P.toWorld(turn, dG[0], dG[1]);
-    first.open.push({ a: near.room.id, b: "outside", cut: fileRect(turn, cutG), h: null, kind: "door", sure: "reconstructed",
-                      src: ["osm-rule"], note: `${MARK} gives no entrance that opens on a room it draws: the way in is the shell's rule (the middle of the model's longest south-facing wall), cut through to the nearest mapped room, ${near.room.id}; ours` });
-    const outs = [[Math.min(atG[0], dG[0]) - 3, Math.min(atG[1], dG[1]) - 3, Math.max(atG[0], dG[0]) + 3, Math.max(atG[1], dG[1]) + 3]];
-    doc.enter = { floor: first.id, at: [r2(atW[0]), r2(atW[1])], face: r2((se.a * 180 / Math.PI + 90 + 360 + turn) % 360), door: [r2(doorW[0]), r2(doorW[1])],
+    if (!best) {
+      report.why = "no mapped room of the lowest floor has a wall to open ground";
+      report.rooms = doc.floors.reduce((x, f) => x + f.rooms.length, 0); report.cover = 0; report.reach = 0;
+      return { doc, report };
+    }
+    const half = DOOR / 2, c = best.c, L = best.k * cell;
+    const end = [c[0] + best.di * (L + cell / 2), c[1] + best.dj * (L + cell / 2)];
+    const atG = [c[0] + best.di * (L + 2.5), c[1] + best.dj * (L + 2.5)];
+    const doorG = [c[0] + best.di * (L - cell / 2), c[1] + best.dj * (L - cell / 2)];
+    const cutG = best.di ? [Math.min(c[0], end[0]), c[1] - half, Math.max(c[0], end[0]), c[1] + half]
+                         : [c[0] - half, Math.min(c[1], end[1]), c[0] + half, Math.max(c[1], end[1])];
+    const atW = P.toWorld(turn, atG[0], atG[1]), doorW = P.toWorld(turn, doorG[0], doorG[1]);
+    first.open.push({ a: best.room.id, b: "outside", cut: fileRect(turn, cutG), h: null, kind: "door", sure: "reconstructed",
+                      src: ["osm-rule"], note: `${MARK} gives no entrance that opens on a room it draws here: a way in by the rule, from ${best.room.id} straight out through the model's wall (${r2(L)} m) to open ground; ours` });
+    const outs = [[atG[0] - 3, atG[1] - 3, atG[0] + 3, atG[1] + 3]];
+    doc.enter = { floor: first.id, at: [r2(atW[0]), r2(atW[1])], face: 0, door: [r2(doorW[0]), r2(doorW[1])],
                   out: outs.map(o => fileRect(turn, o)), sure: "reconstructed", src: ["osm-rule", "model"],
-                  note: "a way in by the shell's rule: OpenStreetMap maps no entrance into its rooms here" };
-    report.enter_said = "the shell's rule (OpenStreetMap maps no entrance into its rooms here), cut through to " + near.room.id;
+                  note: "a way in by the rule: OpenStreetMap maps no entrance into its rooms here, so the thinnest wall from a mapped room to open ground is cut" };
+    report.enter_said = "the rule (OpenStreetMap maps no entrance into its rooms here): the thinnest wall from a mapped room to open ground, cut into " + best.room.id;
   }
   // The face: recomputed from the compiled entrance so the walker faces in.
   world = compile(doc, model);
@@ -527,17 +568,22 @@ function roomsMode(doc, slug, osm, model) {
   world.floors.forEach(fl => {
     const b = building(model, cell, turn, fl.z, 0);
     let ra = 0, rn = 0;
+    const touched = new Set();
     fl.rooms.forEach(r => {
       if (r.pseudo || r.kind === "closed") { return; }
       nRooms += 1;
       const k = fl.index + ":" + r.index;
       const pts = samples(doc.floors[fl.index].rooms.find(x => x.id === r.id).poly, 1.5);
-      const on = b ? pts.filter(p => b.on(p[0], p[1])).length / pts.length : 0;
-      ra += r.area * on;
+      let on = 0;
+      const tally = {};
+      if (b) { pts.forEach(p => { const t = b.part(p[0], p[1]); if (t >= 0) { on += 1; tally[t] = (tally[t] || 0) + 1; } }); }
+      // The parts of the model the mapped rooms are in: the museum's buildings, as OpenStreetMap has them.
+      Object.keys(tally).forEach(t => { if (tally[t] >= 0.25 * pts.length) { touched.add(+t); } });
+      ra += r.area * on / pts.length;
       roomA += r.area;
       if (reached.has(k)) { reachA += r.area; nReached += 1; rn += 1; }
     });
-    const fa = b ? b.area : 0;
+    const fa = b ? b.area(touched) : 0;
     footA += fa;
     onA += Math.min(ra, fa);
     report.floors.push({ id: fl.id, lv: doc.floors[fl.index]._lv, z: fl.z, rooms: fl.rooms.filter(r => !r.pseudo).length, reached: rn,
@@ -621,6 +667,7 @@ function ownMode(doc, slug, osm, model) {
         if (!near) { near = g.poly.some(p => Math.hypot(p[0] - cw[0], p[1] - cw[1]) < 15); }
         if (near) { members.add(r.index); }
       });
+      (report.groups = report.groups || []).push((g.name || g.id) + " L" + lv + ": " + members.size + " galleries");
       if (members.size < 2) { return; }
       for (let k = 0; k < members.size; k += 1) {
         world = compile(doc, model);
@@ -647,7 +694,76 @@ function ownMode(doc, slug, osm, model) {
   });
   for (let k = 0; k < 4; k += 1) { world = compile(doc, model); if (!dropFailing(doc, world)) { break; } }
   world = compile(doc, model);
-  const after = reachedSet(world);
+  // OpenStreetMap's entrances into its rooms: where one reaches far more of them than the way in the
+  // file has (at least twice as many, ten more), it is the way in, said so.
+  let after = reachedSet(world);
+  const enterFl = doc.enter && world.floors.find(fl => fl.id === doc.enter.floor);
+  const lvOf = {};
+  Object.keys(osm.levels || {}).forEach(lv => { lvOf[osm.levels[lv]] = +lv; });
+  if (enterFl) {
+    let best = null;
+    (osm.entrances || []).forEach(e => {
+      if (e.tagged && e.levels.indexOf(lvOf[enterFl.id]) < 0) { return; }
+      const g = P.toGrid(turn, e.x, e.y);
+      // The room within 1.5 m of it.
+      let near = null;
+      const q0 = P.cellAt(enterFl, g[0], g[1]);
+      if (q0 < 0) { return; }
+      const R = Math.ceil(6 / enterFl.cell), i0 = q0 % enterFl.gw, j0 = Math.floor(q0 / enterFl.gw);
+      for (let dj = -R; dj <= R; dj += 1) {
+        for (let di = -R; di <= R; di += 1) {
+          const q = (j0 + dj) * enterFl.gw + i0 + di;
+          if (q < 0 || q >= enterFl.n || enterFl.room[q] < 0) { continue; }
+          const r = enterFl.rooms[enterFl.room[q]];
+          if (r.pseudo || r.kind === "closed" || r.kind === "void") { continue; }
+          const d = Math.hypot(di, dj);
+          if (!near || d < near.d) { near = { d, q, room: r }; }
+        }
+      }
+      if (!near) { return; }
+      const c = P.centreOf(enterFl, near.q);
+      let ux = g[0] - c[0], uy = g[1] - c[1], L = Math.hypot(ux, uy);
+      if (L < 0.3) { ux = g[0] - near.room.cx; uy = g[1] - near.room.cy; L = Math.hypot(ux, uy) || 1; }
+      ux /= L; uy /= L;
+      const at = [g[0] + ux * 2.5, g[1] + uy * 2.5];
+      const atW = P.toWorld(turn, at[0], at[1]), mw = P.toWorld(turn, -ux, -uy);
+      const gap = Math.hypot(g[0] - c[0], g[1] - c[1]);
+      const named = `${e.id}${e.main ? ", entrance=main" : ""}${e.name ? ", " + e.name : ""}`;
+      let open;
+      if (gap <= 1.5) {
+        open = { a: near.room.id, b: "outside", at: [r2(e.x), r2(e.y)], w: DOOR, h: null, kind: "door", sure: "reconstructed", src: ["osm-indoor"],
+                 note: `${MARK}: the building's entrance here (${named}), into the room it opens on; its width ours` };
+      } else {
+        // The entrance stands off the nearest drawn room: a passage from the room to it, along the
+        // axis they lie most apart on, through what no source shows between them.
+        const ax = Math.abs(g[0] - c[0]) >= Math.abs(g[1] - c[1]), h2 = DOOR / 2;
+        const end = ax ? [g[0] + Math.sign(g[0] - c[0]) * 0.75, c[1]] : [c[0], g[1] + Math.sign(g[1] - c[1]) * 0.75];
+        const cutG = ax ? [Math.min(c[0], end[0]), c[1] - h2, Math.max(c[0], end[0]), c[1] + h2] : [c[0] - h2, Math.min(c[1], end[1]), c[0] + h2, Math.max(c[1], end[1])];
+        open = { a: near.room.id, b: "outside", cut: fileRect(turn, cutG), h: null, kind: "door", sure: "reconstructed", src: ["osm-indoor", "osm-rule"],
+                 note: `${MARK}: the building's entrance (${named}) stands ${r2(gap)} m from the nearest room drawn, ${near.room.id}: a passage cut from it to the room, through what no source shows between them; ours` };
+      }
+      const enter = { floor: enterFl.id, at: [r2(atW[0]), r2(atW[1])], face: r2((Math.atan2(mw[0], -mw[1]) * 180 / Math.PI + 360) % 360),
+                      door: [r2(e.x), r2(e.y)], out: [fileRect(turn, [Math.min(at[0], g[0], c[0]) - 1.5, Math.min(at[1], g[1], c[1]) - 1.5, Math.max(at[0], g[0], c[0]) + 1.5, Math.max(at[1], g[1], c[1]) + 1.5])], sure: "reconstructed", src: ["osm-indoor"],
+                      note: `${MARK}: the building's entrance${e.main ? " (entrance=main)" : ""}${e.name ? ", " + e.name : ""}, node ${e.id}; it reaches more of the rooms than the way in the file had (${doc.enter.note || "its own"})` };
+      const trial = clone(doc);
+      trial.floors.find(f => f.id === enterFl.id).open.push(open);
+      trial.enter = enter;
+      const w = compile(trial, model);
+      const tq = w.enter ? P.cellAt(w.floors[w.enter.floor], w.enter.x, w.enter.y) : -1;
+      (report.entrance_tries = report.entrance_tries || []).push([e.id, r2(gap), w.problems.length ? w.problems[0].text : "ok", w.enter ? P.walkable(w.floors[w.enter.floor], tq) : null, reachedSet(w).size]);
+      if (w.problems.length) { return; }
+      const got = reachedSet(w).size;
+      if (!best || got > best.got) { best = { got, open, enter }; }
+    });
+    report.entrance_best = best ? best.got : null;
+    if (best && best.got >= 2 * after.size && best.got >= after.size + 5) {
+      doc.floors.find(f => f.id === enterFl.id).open.push(best.open);
+      doc.enter = best.enter;
+      report.entered = best.enter.note;
+      world = compile(doc, model);
+      after = reachedSet(world);
+    }
+  }
   report.reached_after = after.size;
   report.doors = doors;
   report.lifts = lifts;

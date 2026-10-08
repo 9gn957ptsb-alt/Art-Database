@@ -55,6 +55,7 @@ import argparse
 import csv
 import datetime
 import json
+import os
 import math
 import re
 import subprocess
@@ -1441,12 +1442,12 @@ def osm_pass(m, doc, model):
                                "nums": sorted(set(nums)), "levels": osm_levels(w["tags"]),
                                "at": [round(c.x, 1), round(c.y, 1)],
                                "poly": [[round(a, 2), round(b, 2)] for a, b in w["geom"].exterior.coords[:-1]]})
-        extra = {"read": got["read"], "opens": opens, "lifts": got["lifts"], "groups": groups,
+        extra = {"read": got["read"], "opens": opens, "lifts": got["lifts"], "groups": groups, "entrances": got["entrances"],
                  "levels": {str(k): v for k, v in lv_floor.items()}}
-        fitted, rep = osm_fit(doc, slug, "own", extra)
+        fitted, rep = osm_fit(dict(doc, sources=osm_sources(doc, got["read"], True)), slug, "own", extra)
         report.update(rep)
-        if rep.get("added"):
-            doc.update({k: fitted[k] for k in ("floors",)})
+        if rep.get("added") or rep.get("entered"):
+            doc.update({k: fitted[k] for k in ("floors", "enter")})
             doc["sources"] = osm_sources(doc, got["read"], rep.get("rule"))
             lines.append(f"{rep['added']} ways from OpenStreetMap's indoor mapping between its own rooms "
                          f"({rep.get('doors', 0)} doors, {rep.get('lifts', 0)} lifts, {rep.get('rule', 0)} by the rule "
@@ -1486,7 +1487,16 @@ def osm_pass(m, doc, model):
              "wings": [{"name": w["tags"].get("name"), "lv": w["lv"]} for w in wings]}
     fitted, rep = osm_fit(cand, slug, "rooms", extra)
     report.update(rep)
-    ok = (rep.get("ok") and rep["cover"] >= OSM_COVER and rep["reach"] >= OSM_REACH and rep["rooms"] >= OSM_MIN_ROOMS)
+    if os.environ.get("OSM_DEBUG_DIR"):
+        Path(os.environ["OSM_DEBUG_DIR"], f"{slug}.fit.json").write_text(json.dumps(fitted), encoding="utf-8")
+    # Usable: the floors it maps well (OSM_COVER of the model's floor there or more) are the museum's
+    # floors walked; the others it maps are kept for what joins them (a lobby, a stair), never filled in.
+    best = max([f["cover"] for f in rep.get("floors") or []] or [0])
+    rep["cover_best"] = best
+    # A shell (nothing drawn inside) takes any plan it can walk, however much of the floor it covers:
+    # the rest stays earth, as it was.
+    shell = not doc.get("floors")
+    ok = (rep.get("ok") and (shell or best >= OSM_COVER) and rep["reach"] >= OSM_REACH and rep["rooms"] >= OSM_MIN_ROOMS)
     report["decision"] = "osm" if ok else "kept"
     if not ok:
         osm_note(doc, got, report)
@@ -1515,16 +1525,35 @@ def osm_seam(rooms, a, b):
     return [round(c.x, 2), round(c.y, 2)]
 
 
+OSM_WHY = {
+    "too few rooms": "it maps too few rooms here",
+    "no level at or over the ground": "it maps rooms here only below the ground",
+}
+
+
 def osm_note(doc, got, rep):
-    """What OpenStreetMap gave, at the head of the notes of a museum that keeps its rooms."""
+    """What OpenStreetMap gave, at the head of the notes of a museum that keeps its rooms. A museum whose
+    rooms were OpenStreetMap's, whose plan no longer serves, goes back to its shell for the site to arrange."""
+    if osm_drawn(doc):
+        doc.update({"floors": None, "enter": None, "notes": "Nothing published about its rooms has been read yet."})
     osm_strip(doc)
     cover = rep.get("cover")
+    why = OSM_WHY.get(rep.get("decision"))
+    if not why:
+        if not rep.get("rooms"):
+            why = "none of its rooms stands on the museum's model (they are a neighbour's, or the model stands off)"
+        elif rep.get("why"):
+            why = rep["why"]
+        else:
+            why = (f"its best-mapped floor has rooms on {round(100 * rep.get('cover_best', cover or 0))}% of the "
+                   f"model's floor there (half is wanted) and {round(100 * rep.get('reach', 0))}% of them are "
+                   f"reached from a door (two thirds is wanted)")
     said = (f"{OSM_MARK} (read {got['read']}) was read: {got['features']} features round it, "
             f"{rep.get('rooms_read', 0)} rooms" +
-            (f" on levels {', '.join(str(x) for x in rep.get('levels') or [])}" if rep.get("levels") else "") +
-            (f", {rep.get('rooms')} of them on the model, covering {round(100 * cover)}% of its floor"
-             f" and {round(100 * rep.get('reach', 0))}% of that reached from a door" if cover is not None else "") +
-            f" — not enough to walk ({rep.get('decision')}), so the rooms stay as they were.¶ ")
+            (f" on levels {', '.join(str(int(x)) if x == int(x) else str(x) for x in rep.get('levels') or [])}"
+             if rep.get("levels") else "") +
+            (f", {rep.get('rooms')} of them on the model" if rep.get("rooms") else "") +
+            f" — not walked: {why}; so the rooms stay as they were.¶ ")
     doc["notes"] = said + (doc.get("notes") or "")
 
 

@@ -693,7 +693,9 @@ function arrange(W, m, opts) {
   const model = readJSON(path.join(V2, "models", slug + ".json"), null);
   if (!doc || !model) { return { slug, skip: "no interior file or no model" }; }
   if (OWN_DATA.has(slug)) { return { slug, skip: "its own open data draws its rooms" }; }
-  if (fs.existsSync(path.join(OSM_INDOOR, slug + ".json"))) { return { slug, skip: "OpenStreetMap's indoor mapping covers it (build_interiors.py draws it)" }; }
+  // Rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan): never laid
+  // out again; only the works no record places are hung in its galleries, by the same rule.
+  if (osmDrawn(doc)) { return hangInOSM(W, m, model, doc, opts); }
   const wasArranged = doc.tier === "arranged" || (doc.floors || []).some(f => f.sure === "arranged");
   if (doc.floors && doc.floors.length && !wasArranged) { return { slug, skip: "its rooms are drawn from a source (" + doc.tier + ")" }; }
   if (opts.worksOnly && !wasArranged) { return { slug, skip: "not arranged" }; }
@@ -751,6 +753,42 @@ function arrange(W, m, opts) {
     }
     return { next, res, placed, layout, bytes };
   }
+}
+
+// Whether a file's floors are OpenStreetMap's plan (build_interiors.py --osm), not the site's arrangement.
+function osmDrawn(doc) {
+  const fls = doc.floors || [];
+  return fls.length > 0 && fls.every(f => (f.src || []).indexOf("osm-indoor") >= 0 && f.sure !== "arranged");
+}
+
+const OSM_HANG = "the site's hanging: where the museum hangs a work is not known, so the site hangs it in a gallery OpenStreetMap's indoor mapping draws, by the arranged rule (INTERIORS.md, 'Arranged')";
+
+// A museum drawn from OpenStreetMap: its rooms kept as they are, the works no record places hung by the
+// arranged rule in its galleries (kind gallery, reached from the way in), in walking order from the door.
+function hangInOSM(W, m, model, doc, opts) {
+  const slug = m.slug;
+  const museums = readJSON(path.join(V2, "museums.json"), {}).museums || [];
+  const next = JSON.parse(JSON.stringify(doc));
+  const srcs = (doc.sources || []).filter(s => !["arranged", "histories"].includes(s.id) && !/^floors-/.test(s.id));
+  srcs.push({ id: "arranged", t: OSM_HANG, read: TODAY });
+  next.sources = srcs;
+  const placed = hangWorks(W, m, model, next, srcs, { osm: true });
+  next.works = placed.works;
+  if (placed.histories) { next.sources.push({ id: "histories", t: "the works' own histories on this site: when each was shown or held here", read: TODAY }); }
+  if (!placed.count) { next.sources = next.sources.filter(s => s.id !== "arranged"); }
+  next.asof = TODAY;
+  const text = layoutText(next);
+  const bytes = Buffer.byteLength(text);
+  const res = W.WalkPlan.check(JSON.parse(text), model, museums.find(x => x.slug === slug) || null,
+                               readJSON(path.join(V2, "grounds", slug + ".json"), null), { bytes, today: TODAY });
+  if (res.errors.length) { return { slug, skip: "it does not check: " + res.errors.slice(0, 4).join("; "), errors: res.errors }; }
+  next.tier = res.tier;
+  const out = layoutText(next);
+  if (opts.to) { fs.mkdirSync(opts.to, { recursive: true }); fs.writeFileSync(path.join(opts.to, slug + ".json"), out); }
+  if (!opts.dry && !opts.to) { fs.writeFileSync(path.join(OUT, slug + ".json"), out); }
+  return { slug, tier: res.tier, levels: next.floors.length, rooms: next.floors.reduce((a, f) => a + f.rooms.length, 0),
+           hung: res.stats.hung, works: next.works.length, arranged: placed.count, also: placed.also,
+           kb: Math.round(Buffer.byteLength(out) / 1024), warnings: res.warnings, turn: next.grid.turn, kept: true, osm: true };
 }
 
 // The layout: the grid, the floors, the rooms, the doorways, the stairs, the way in.
@@ -891,7 +929,8 @@ function lay(W, m, model, cell, grow) {
 
 // Every saved work its records do not place in a room drawn, then the works it showed; each group by
 // period, artist, date; into the rooms in walking order, one to every 2.5 m of a run of wall.
-function hangWorks(W, m, model, doc, srcs) {
+function hangWorks(W, m, model, doc, srcs, how) {
+  const osm = !!(how && how.osm);
   const P = W.WalkPlan;
   const world = P.compile(Object.assign({}, doc, { works: [] }), model, { soil: null });
   const before = (doc.works || []).filter(w => !w.also);
@@ -905,7 +944,10 @@ function hangWorks(W, m, model, doc, srcs) {
   const have = new Set(before.map(w => w.id));
   // The rooms in walking order from the way in (the path's length to each room's middle).
   const rooms = [];
-  world.floors.forEach(fl => fl.rooms.forEach(r => { if (!r.pseudo && r.sure === "arranged" && r.reach) { rooms.push(r); } }));
+  world.floors.forEach(fl => fl.rooms.forEach(r => {
+    if (r.pseudo || !r.reach) { return; }
+    if (osm ? (r.spec && r.spec.anchor === "osm-indoor" && r.kind === "gallery") : r.sure === "arranged") { rooms.push(r); }
+  }));
   const e = world.enter;
   rooms.forEach(r => {
     const p = P.path(world, { x: e.x, y: e.y, floor: e.floor }, { x: r.cx, y: r.cy, floor: r.floor });
@@ -1034,7 +1076,7 @@ function hangWorks(W, m, model, doc, srcs) {
   let n = 0;
   rooms.forEach(r => {
     const spec = byId[r.id];
-    if (!spec || spec.kind === "hall") { return; }
+    if (!spec || spec.kind === "hall" || spec.sure !== "arranged") { return; }
     n += 1;
     spec.name = "Room " + n;
   });
@@ -1075,7 +1117,7 @@ function main() {
     const arranged = [], shells = [];
     museums.forEach(x => {
       const d = readJSON(path.join(OUT, x.slug + ".json"), {});
-      if (d && (d.tier === "arranged" || (d.floors || []).some(f => f.sure === "arranged"))) { arranged.push(x.slug); }
+      if (d && (d.tier === "arranged" || (d.floors || []).some(f => f.sure === "arranged") || osmDrawn(d))) { arranged.push(x.slug); }
       else if (d && !(d.floors && d.floors.length)) { shells.push(x.slug); }
     });
     slugs = opts.worksOnly ? arranged : Array.from(new Set(TARGETS.concat(arranged, shells)));
