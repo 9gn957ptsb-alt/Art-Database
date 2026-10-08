@@ -1405,7 +1405,7 @@ def years_for(place, g):
         if take.any():
             years[take] = osm[take]
             said.append("OpenStreetMap contributors")
-            if place["slug"] in WD_USED:
+            if place["slug"] in WD_USED and "Wikidata" not in said:
                 said.append("Wikidata")
     known = years.copy()
 
