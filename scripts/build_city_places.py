@@ -16,8 +16,11 @@ point (museums.json, cities.json venues): the centre is where an 8 km square
 takes in the most of them (a museum counts as twelve galleries), the side what
 they span there, with a margin, between 3 and 8 km; a museum outside it (the
 Getty from downtown Los Angeles) is not on the skyline, and the column still
-has it. The grid is about 40 m a cell, 96 to 144 cells a side, so a file
-stays near 150-250 KB.
+has it. The grid is first about 40 m a cell, 96 to 144 cells a side, so a file
+stays near 150-250 KB; the cities' pass (docs/v2/grounds/REFINE.md,
+scripts/refine_cities.py) cuts a city finer a grain at a time — 28, 20, then
+14 m a cell, never more than 576 cells a side — and keeps each city's grain in
+docs/v2/grounds/ledger.json, which this reads.
 
 Public files only, no network, the same bytes every run. Writes
 docs/v2/cityplaces.json:
@@ -52,6 +55,24 @@ MUSEUM_WEIGHT = 12
 CELL = 40             # metres a cell, roughly
 BUSY = 8              # a city of galleries this busy (works that have been there) is read too, as the globe names it
 N_MIN, N_MAX = 96, 144
+LEDGER = ROOT / "docs" / "v2" / "grounds" / "ledger.json"   # the cities' pass: each city's grain
+GRAINS = [None, 28, 20, 14]   # metres a cell by the pass's tier; tier 0 is the first cut (~40 m, 96-144 cells)
+N_FINE = 576                  # the most cells a side a city is cut at, however small its cells
+
+
+def cells_for(side, tier=0):
+    """Cells a side for a square of `side` metres at a tier of the cities' pass."""
+    first = max(N_MIN, min(N_MAX, int(round(side / CELL / 8)) * 8))
+    if not tier:
+        return first
+    return max(first, min(N_FINE, int(round(side / GRAINS[min(tier, len(GRAINS) - 1)] / 8)) * 8))
+
+
+def tiers():
+    """Each city's tier, as the cities' pass has raised it (0 where it has not)."""
+    if not LEDGER.exists():
+        return {}
+    return {k: v.get("tier", 0) for k, v in json.loads(LEDGER.read_text(encoding="utf-8")).get("cities", {}).items()}
 
 
 def to_m(lat0, lon0, lat, lon):
@@ -93,10 +114,9 @@ def square_for(points, middle=None):
     return lat, lon, side
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--top", type=int, default=13)
-    args = ap.parse_args()
+def squares(top, grain=None):
+    """The first `top` cities' squares, in cities.json's order, each at its tier's grain."""
+    grain = tiers() if grain is None else grain
     d = json.loads(CITIES.read_text(encoding="utf-8"))
     mus = {m["slug"]: m for m in json.loads(MUSEUMS.read_text(encoding="utf-8"))["museums"]}
     places = []
@@ -114,15 +134,23 @@ def main():
         if not pts:
             continue
         lat, lon, side = square_for(pts, (row[3], row[4]))
-        n = max(N_MIN, min(N_MAX, int(round(side / CELL / 8)) * 8))
+        n = cells_for(side, grain.get(key, 0))
         half = side / 2
         inside = [s for s in museums if s in mus and
                   all(abs(v) <= half for v in to_m(lat, lon, mus[s]["lat"], mus[s]["lon"]))]
         places.append({"slug": "city-" + key, "key": key, "name": name,
                        "lat": round(lat, 5), "lon": round(lon, 5), "precision": "city",
                        "side": side, "n": n, "museums": inside})
-        if len(places) >= args.top:
+        if len(places) >= top:
             break
+    return places
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--top", type=int, default=13)
+    args = ap.parse_args()
+    places = squares(args.top)
     out = {"note": "The squares of the cities' skylines (scripts/build_city_places.py); each ground is "
                    "grounds/city-<town key>.json, read by build_grounds.py and dated by build_built_years.py.",
            "places": places}

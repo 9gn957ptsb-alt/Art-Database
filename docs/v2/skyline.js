@@ -116,6 +116,7 @@
     root.appendChild(note);
     // Under the pixel light and whoever comes out of the wave, over the globe.
     stage.insertBefore(root, tiles || null);
+    gl = gpuStart();
     wire();
   }
 
@@ -168,6 +169,7 @@
     }
     var years = y0 < NOW ? { y0: y0 - 1, y1: NOW } : null;
     function rev(yr, f) { return years && yr > 0 ? (yr - 1 - years.y0) / (years.y1 - years.y0) + f * 0.97 / (years.y1 - years.y0) : 0; }
+    var rise = years ? 0.97 / (years.y1 - years.y0) : 1;     // a building's storeys rise over a year of the dial
 
     // Whose each cell is: 0 none, k+1 the k-th art building.
     var owner = new Int16Array(N), room = new Uint8Array(N);
@@ -235,8 +237,9 @@
       if (!v) { return; }
       var at = toCell(gp.lat, gp.lon);
       if (Math.abs(at.x) > n / 2 - 0.5 || Math.abs(at.y) > n / 2 - 0.5) { return; }
-      var ci = Math.floor(at.y + n / 2), cj = Math.floor(at.x + n / 2), hit = -1;
-      for (var r = 0; r <= 1 && hit < 0; r += 1) {
+      // The building its door is in, or the nearest within ~45 m (a cell, at the first grain).
+      var ci = Math.floor(at.y + n / 2), cj = Math.floor(at.x + n / 2), hit = -1, reachG = Math.max(1, Math.round(45 / cell));
+      for (var r = 0; r <= reachG && hit < 0; r += 1) {
         for (var di = -r; di <= r && hit < 0; di += 1) {
           for (var dj = -r; dj <= r && hit < 0; dj += 1) {
             var ii = ci + di, jj = cj + dj, c = ii * n + jj;
@@ -251,16 +254,26 @@
       if (hit >= 0) {
         if (!owner[hit]) { owner[hit] = a.k + 1; }
         a.cells.push(hit);
+        // Where the grid is finer than the building, the rest of it: the cells joined to it of the same
+        // height, within 30 m of its door's cell (at the first grain that is the one cell).
+        var hi_ = Math.floor(hit / n), hj = hit % n, tallH = g.tall.charCodeAt(hit), span = 30 / cell, todo = [hit], seenG = {};
+        seenG[hit] = 1;
+        while (todo.length && span >= 1) {
+          var c0 = todo.pop();
+          [c0 - n, c0 + n, c0 % n ? c0 - 1 : -1, c0 % n < n - 1 ? c0 + 1 : -1].forEach(function (p) {
+            if (p < 0 || p >= N || seenG[p] || g.kind[p] !== "b" || owner[p] || g.tall.charCodeAt(p) !== tallH) { return; }
+            if (Math.hypot(Math.floor(p / n) - hi_, p % n - hj) > span) { return; }
+            seenG[p] = 1; owner[p] = a.k + 1; a.cells.push(p); todo.push(p);
+          });
+        }
       }
     });
 
-    // The dots.
-    var D = { x: [], y: [], z: [], size: [], ink: [], reveal: [] };
-    var highest = 0;
-    function put(x, y, z, size, ink, reveal) {
-      D.x.push(x); D.y.push(y); D.z.push(z); D.size.push(size); D.ink.push(ink); D.reveal.push(reveal);
-      if (z > highest) { highest = z; }
-    }
+    // The dots: on the 2D canvas a dot a storey, on the GPU a strip a building cell (dotsFor).
+    var E = dotsFor(gpu());
+    // Its soil's grain stays near the ~40 m it was drawn at (a finer grid shows the city's shapes finer,
+    // not its soil noisier): a building takes its tint from the soil's cell at that grain.
+    var grain = Math.max(1, Math.round(40 / cell));
     var artTop = arts.map(function () { return 0; }), artZ0 = arts.map(function () { return 0; }), artN = arts.map(function () { return 0; });
     for (i = 0; i < n; i += 1) {
       for (j = 0; j < n; j += 1) {
@@ -270,29 +283,35 @@
         var up = i && j ? zAt(q - n - 1) : z;
         var lt = 0.82 + 0.12 * Math.max(-1, Math.min(2, Math.round((z - up) * 3)));
         if (what === "=") {
-          put(x, y, z, 1, inkOf(mixTo(s, DUST, 0.6), 1), 0);
+          E.dot(x, y, z, 1, mixTo(s, DUST, 0.6), 1, 0);
         } else if (what === "b") {
-          put(x, y, z, Math.max(1, s[3]), inkOf(s, lt * 0.8), 0);
+          E.dot(x, y, z, Math.max(1, s[3]), s, lt * 0.8, 0);
           var o = owner[q] ? arts[owner[q] - 1] : null;
           if (o) { artZ0[o.k] += z; artN[o.k] += 1; }
           // Under a museum's own model the plot keeps only its ground.
           var storeys = g.tall.charCodeAt(q) - 48;
           var h = Math.min(n / 4, Math.max(0.5, storeys * 3.2 / cell * EX));
           var layers = room[q] ? 0 : Math.max(1, Math.round(h * 2)), yr = built[q];
-          for (var l = 1; l <= layers; l += 1) {
-            var top = l === layers, f = l / layers, ink;
-            if (o && o.kind === "museum") { ink = inkOf(mixTo(s, PALE, 0.86), top ? 1.12 : 0.92 + 0.12 * f); }
-            else if (o) { ink = inkOf(mixTo(mixTo(s, PALE, 0.62), LIL, 0.42), top ? 1.08 : 0.86 + 0.1 * f); }
-            else { ink = inkOf(mixTo(mixTo(s, PALE, 0.3), COOL, 0.26), top ? 0.8 : 0.62 + 0.08 * f); }
-            put(x, y, z + l * 0.5, 2, ink, rev(yr, f));
-            if (o && z + l * 0.5 > artTop[o.k]) { artTop[o.k] = z + l * 0.5; }
+          if (layers) {
+            var tint = grain > 1 ? soil(i - i % grain, j - j % grain, false) : s;
+            var r0 = years && yr > 0 ? rev(yr, 0) : null;
+            if (o && o.kind === "museum") { E.column(x, y, z, layers, mixTo(s, PALE, 0.86), RAMPS.museum, r0, rise); }
+            else if (o) { E.column(x, y, z, layers, mixTo(mixTo(s, PALE, 0.62), LIL, 0.42), RAMPS.gallery, r0, rise); }
+            else { E.column(x, y, z, layers, mixTo(mixTo(tint, PALE, 0.3), COOL, 0.26), RAMPS.plain, r0, rise); }
+            if (o && z + layers * 0.5 > artTop[o.k]) { artTop[o.k] = z + layers * 0.5; }
           }
+        } else if (what === "g") {
+          // The city's green (its parks, gardens, lawns, cemeteries and woods): the soil, grown over.
+          E.dot(x, y, z, Math.max(1, s[3]), mixTo(s, GREEN, 0.55), lt, 0);
         } else if (s[3]) {
-          put(x, y, z, s[3], inkOf(s, what === "~" ? 1 : lt), 0);
+          E.dot(x, y, z, s[3], s, what === "~" ? 1 : lt, 0);
+        } else if (gridFine) {
+          // A finer grid leaves no holes: where the soil has no dot, a small dark one (water stays water).
+          E.dot(x, y, z, 1, s, what === "~" ? 0.78 : lt * 0.62, 0);
         }
         if (i === 0 || j === 0 || i === n - 1 || j === n - 1) {
           var under = soil(i + n, j, false);
-          for (var d = 1; d <= 6; d += 1) { put(x, y, Math.min(z, 0) - d * 0.5, Math.max(1, under[3]), inkOf(under, 0.78 - d * 0.035), 0); }
+          E.side(x, y, Math.min(z, 0), Math.max(1, under[3]), under);
         }
       }
     }
@@ -308,16 +327,17 @@
         dated.sort(function (p, r) { return p - r; });
         for (var u = 0; u < dated.length && !year; u += 1) { if (tally[dated[u]] * 5 >= dated.length) { year = dated[u]; } }
       }
-      var ins = a.ins, dd = ins.dots, v = ins.v, k = 3 / cell * v, seen = {};
+      var ins = a.ins, dd = ins.dots, v = ins.v, k = 3 / cell * v, seen = {}, mg = Math.min(3, cell / 5);
       for (var t = 0; t < dd.count; t += 1) {
         var mx = ((dd.x[t] + ins.nx / 2 + 0.5) * v - ins.site[0] / 2) / cell + a.at.x;
         var my = ((dd.y[t] + ins.ny / 2 + 0.5) * v - ins.site[1] / 2) / cell + a.at.y;
         var mz = a.z0 + dd.z[t] * v / cell * EX;
-        // A third of a cell a dot: the model's grain where the plot's is a cell.
-        var key = Math.round(mx * 3) + "," + Math.round(my * 3) + "," + Math.round(mz * 3);
+        // A third of a cell a dot: the model's grain where the plot's is a cell (and never finer than
+        // ~5 m, however fine the plot: the model's own voxels are 1-3 m).
+        var key = Math.round(mx * mg) + "," + Math.round(my * mg) + "," + Math.round(mz * mg);
         if (seen[key]) { continue; }
         seen[key] = 1;
-        put(mx, my, mz, Math.max(0.7, dd.size[t] * k / 3), dd.ink[t], rev(year, dd.z[t] / ins.nz));
+        E.ink(mx, my, mz, Math.max(0.7, dd.size[t] * k / 3), dd.ink[t], rev(year, dd.z[t] / ins.nz));
         if (mz > a.top) { a.top = mz; }
       }
     });
@@ -325,15 +345,124 @@
     // The streets the artists walk: road cells, else open land.
     var walk = [], isWalk = new Uint8Array(N);
     for (q = 0; q < N; q += 1) { if (g.kind[q] === "=") { isWalk[q] = 1; walk.push(q); } }
-    if (walk.length < 40) { for (q = 0; q < N; q += 1) { if (g.kind[q] === ".") { isWalk[q] = 1; walk.push(q); } } }
+    if (walk.length < 40) { for (q = 0; q < N; q += 1) { if (g.kind[q] === "." || g.kind[q] === "g") { isWalk[q] = 1; walk.push(q); } } }
 
-    D.count = D.x.length;
+    var D = E.done();
     D.span = n;
-    D.lift = Math.min(highest, n / 4);
-    return { key: st.key, P: P, g: g, n: n, cell: cell, dots: D, years: years, floor1975: floor1975, from: g.builtFrom || [],
-             old: g.builtOld || 0,
+    D.lift = Math.min(D.high, n / 4);
+    return { key: st.key, P: P, g: g, n: n, cell: cell, dots: D, years: years, rise: rise, floor1975: floor1975,
+             from: g.builtFrom || [], old: g.builtOld || 0,
              arts: arts, owner: owner,
              zAt: zAt, toCell: toCell, walk: walk, isWalk: isWalk };
+  }
+
+  /* ---- the dots, for the 2D canvas or the GPU -------------------------------
+     A city's ground was made of dots a storey apart, sorted and drawn one by one on a canvas a CSS
+     pixel to its pixel: ~45,000 for New York at ~55 m a cell. The cities' pass (grounds/REFINE.md)
+     cuts them finer, a grain at a time, which that cannot draw at 24 frames a second, so where WebGL 2
+     is there they are drawn by it (gpuDraw): every dot a square of the device's own pixels, depth-
+     tested instead of sorted, and a building cell's storeys one strip from its first storey to its
+     roof, risen as far as the dial has come, lit as the dots were. Where it is not, the city is drawn
+     as before, from its ground made no finer than COARSE cells a side (coarser). */
+  var RAMPS = {                       // a column's light: code, its first storey, its rise to the top, its roof
+    plain: [1, 0.62, 0.08, 0.8], gallery: [2, 0.86, 0.1, 1.08], museum: [3, 0.92, 0.12, 1.12]
+  };
+  var GREEN = [92, 122, 70];          // the models' grass and planting, as the plot's green
+  var COARSE = 160;                   // the most cells a side the 2D canvas is given
+  var gridFine = false;               // the ground being made is finer than the first grain (~40 m)
+  function lit(c, k) { return [Math.min(255, Math.round(c[0] * k)), Math.min(255, Math.round(c[1] * k)), Math.min(255, Math.round(c[2] * k))]; }
+  var rgbSeen = {};
+  function rgbOf(ink) {
+    var c = rgbSeen[ink];
+    if (!c) {
+      var m = /(\d+)\D+(\d+)\D+(\d+)/.exec(ink || "") || [0, 128, 128, 128];
+      c = rgbSeen[ink] = [+m[1], +m[2], +m[3]];
+    }
+    return c;
+  }
+  function dotsFor(onGpu) {
+    if (!onGpu) {
+      var D = { x: [], y: [], z: [], size: [], ink: [], reveal: [], high: 0 };
+      var put = function (x, y, z, size, ink, reveal) {
+        D.x.push(x); D.y.push(y); D.z.push(z); D.size.push(size); D.ink.push(ink); D.reveal.push(reveal);
+        if (z > D.high) { D.high = z; }
+      };
+      return {
+        dot: function (x, y, z, size, c, k, reveal) { put(x, y, z, size, inkOf(c, k), reveal); },
+        ink: function (x, y, z, size, ink, reveal) { put(x, y, z, size, ink, reveal); },
+        // A storey a dot, half a cell apart, each risen in its turn as the dial passes its year.
+        column: function (x, y, z, layers, c, ramp, r0, rise) {
+          for (var l = 1; l <= layers; l += 1) {
+            var f = l / layers;
+            put(x, y, z + l * 0.5, 2, inkOf(c, l === layers ? ramp[3] : ramp[1] + ramp[2] * f), r0 === null ? 0 : r0 + f * rise);
+          }
+        },
+        // The clod's edge, six dots down into the soil.
+        side: function (x, y, z, size, c) {
+          for (var d = 1; d <= 6; d += 1) { put(x, y, z - d * 0.5, size, inkOf(c, 0.78 - d * 0.035), 0); }
+        },
+        done: function () { D.count = D.x.length; D.gpu = false; return D; }
+      };
+    }
+    // x, y, z0, z1, r0 (the year it rises, as the dial's share; -1e6 always), size; and r, g, b, ramp.
+    var F = [], C = [], high = 0, count = 0;
+    function push(x, y, z0, z1, r0, size, c, ramp) {
+      F.push(x, y, z0, z1, r0, size);
+      C.push(c[0], c[1], c[2], ramp);
+      if (z1 > high) { high = z1; }
+      count += 1;
+    }
+    return {
+      dot: function (x, y, z, size, c, k, reveal) { push(x, y, z, z, reveal, size, lit(c, k), 0); },
+      ink: function (x, y, z, size, ink, reveal) { push(x, y, z, z, reveal, size, rgbOf(ink), 0); },
+      column: function (x, y, z, layers, c, ramp, r0) {
+        push(x, y, z, z + layers * 0.5, r0 === null ? -1e6 : r0, 2, [Math.round(c[0]), Math.round(c[1]), Math.round(c[2])], ramp[0]);
+      },
+      side: function (x, y, z, size, c) { push(x, y, z - 3.5, z - 0.5, -1e6, size, [c[0], c[1], c[2]], 4); },
+      done: function () {
+        return { F: new Float32Array(F), C: new Uint8Array(C), count: count, high: high, gpu: true };
+      }
+    };
+  }
+
+  /* A ground cut finer than the 2D canvas can draw, made coarser for it: each block of k × k cells one
+     cell — a building where two in five of it are (its tallest, its earliest year), else water where
+     half is, a street where three in ten are, green where half is, else land; its height the mean. */
+  function coarser(g) {
+    var k = Math.ceil(g.n / COARSE), n = Math.floor(g.n / k), kind = [], tall = [], ground = [], built = [];
+    var o = Math.floor((g.n - n * k) / 2), by = null, bi = 0, q, i, j;     // the blocks kept about the middle
+    if (g.built) {
+      by = new Int32Array(g.n * g.n);
+      for (q = 0; q < g.n * g.n; q += 1) { if (g.kind[q] === "b") { by[q] = g.built[bi] || 0; bi += 1; } }
+    }
+    for (i = 0; i < n; i += 1) {
+      for (j = 0; j < n; j += 1) {
+        var cnt = { b: 0, "~": 0, "=": 0, g: 0, ".": 0 }, hi = 48, sum = 0, yr = 0;
+        for (var di = 0; di < k; di += 1) {
+          for (var dj = 0; dj < k; dj += 1) {
+            q = (o + i * k + di) * g.n + o + j * k + dj;
+            var w = g.kind[q];
+            cnt[w] = (cnt[w] || 0) + 1;
+            sum += g.ground[q];
+            if (w === "b") {
+              hi = Math.max(hi, g.tall.charCodeAt(q));
+              var y = by ? by[q] : 0;
+              if (y && (!yr || (y < 0 ? -1e9 : y) < (yr < 0 ? -1e9 : yr))) { yr = y; }
+            }
+          }
+        }
+        var kk = k * k, w2 = cnt.b * 5 >= kk * 2 ? "b" : cnt["~"] * 2 >= kk ? "~" : cnt["="] * 10 >= kk * 3 ? "=" : cnt.g * 2 >= kk ? "g" : ".";
+        kind.push(w2);
+        tall.push(w2 === "b" ? String.fromCharCode(hi) : "0");
+        ground.push(Math.round(sum / kk));
+        if (w2 === "b") { built.push(yr); }
+      }
+    }
+    var out = {};
+    Object.keys(g).forEach(function (key) { out[key] = g[key]; });
+    out.n = n; out.side = g.side * n * k / g.n; out.kind = kind.join(""); out.tall = tall.join(""); out.ground = ground;
+    if (g.built) { out.built = built; } else { delete out.built; }
+    return out;
   }
 
   /* ---- drawing ----------------------------------------------------------- */
@@ -360,11 +489,13 @@
   }
 
   function draw() {
-    var D = city.dots, w = canvas.width, h = canvas.height, ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, w, h);
+    var D = city.dots, w = band.w, h = band.h;
     // The dial standing under the middle of the band (a desktop's): the clod keeps above it.
     var f = frameFor(w, Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6)));
     frameNow = f;
+    if (D.gpu) { gpuDraw(D, f); return; }
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, w, h);
     if (sorted.heading !== view.heading || sorted.count !== D.count) {
       // Back to front, by a counting sort on depth in quarter cells: the order a heading needs,
       // in one pass, however many dots (a comparator sort of 45,000 took most of a frame).
@@ -395,6 +526,164 @@
       if (D.ink[q] !== was) { ctx.fillStyle = was = D.ink[q]; }
       ctx.fillRect(Math.round(sx - r / 2), Math.round(sy - r / 2), r, r);
     }
+  }
+
+  /* ---- the GPU ------------------------------------------------------------- */
+
+  var gl = null, glLost = false, prog = null, vao = null, bufF = null, bufC = null, glFor = null, uni = {};
+  var density = 1;                    // the canvas's pixels a CSS pixel (the device's, on the GPU; 1 on the 2D canvas)
+  var VS = [
+    "#version 300 es",
+    "precision highp float;",
+    "layout(location = 0) in vec3 aA;   // x, y, z0 (cells)",
+    "layout(location = 1) in vec3 aB;   // z1, the share of the dial it rises at, size",
+    "layout(location = 2) in vec4 aC;   // r, g, b, ramp",
+    "uniform vec2 uView;                // the canvas, in its pixels",
+    "uniform vec3 uFrame;               // scale, cx0, cy0, in the canvas's pixels",
+    "uniform vec4 uRot;                 // cos, sin of the heading; sin, cos of the tilt",
+    "uniform vec3 uTime;                // shown, a building's rise, cover",
+    "uniform vec2 uDepth;               // nearest-to-farthest: its low, and 1 / its span",
+    "out vec3 vInk;",
+    "flat out vec4 vRamp;               // light at the first storey, its rise to the top, the roof's, the roof's pixels",
+    "out float vF;",
+    "out float vTop;",
+    "void main() {",
+    "  int ramp = int(aC.w * 255.0 + 0.5);",
+    "  float r = max(1.0, ceil(aB.z * uTime.z));",
+    "  float zt = aA.z, zb = aA.z, f0 = 1.0, f1 = 1.0;",
+    "  vRamp = vec4(1.0, 0.0, 1.0, 0.0);",
+    "  bool hide;",
+    "  if (ramp == 0) {",
+    "    hide = aB.y > uTime.x;",
+    "  } else {",
+    "    float L = floor((aB.x - aA.z) * 2.0 + 0.5);",
+    "    float k = aB.y < -1e5 ? L : floor(L * clamp((uTime.x - aB.y) / uTime.y, 0.0, 1.0) + 1e-4);",
+    "    hide = k < 1.0;",
+    "    zb = aA.z + 0.5; zt = aA.z + k * 0.5; f0 = 1.0 / L; f1 = k / L;",
+    "    float roof = k >= L ? r : 0.0;",
+    "    if (ramp == 1) vRamp = vec4(0.62, 0.08, 0.8, roof);",
+    "    else if (ramp == 2) vRamp = vec4(0.86, 0.1, 1.08, roof);",
+    "    else if (ramp == 3) vRamp = vec4(0.92, 0.12, 1.12, roof);",
+    "    else vRamp = vec4(0.535, 0.21, 1.0, 0.0);",
+    "  }",
+    "  if (hide) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); vInk = vec3(0.0); vF = 0.0; vTop = 0.0; return; }",
+    "  float u = aA.x * uRot.x - aA.y * uRot.y, w = aA.x * uRot.y + aA.y * uRot.x;",
+    "  float sx = uFrame.y + u * uFrame.x;",
+    "  float yT = floor(uFrame.z + (w * uRot.z - zt * uRot.w) * uFrame.x - r * 0.5 + 0.5);",
+    "  float yB = floor(uFrame.z + (w * uRot.z - zb * uRot.w) * uFrame.x - r * 0.5 + 0.5) + r;",
+    "  float x0 = floor(sx - r * 0.5 + 0.5);",
+    "  float cx = float(gl_VertexID & 1), cy = float(gl_VertexID >> 1);",
+    "  float px = x0 + cx * r, py = mix(yT, yB, cy), zz = mix(zt, zb, cy);",
+    "  float depth = (w * uRot.w + zz * uRot.z - uDepth.x) * uDepth.y;",
+    "  gl_Position = vec4(px / uView.x * 2.0 - 1.0, 1.0 - py / uView.y * 2.0, 1.0 - 2.0 * clamp(depth, 0.0, 1.0), 1.0);",
+    "  vInk = aC.rgb; vF = mix(f1, f0, cy); vTop = cy * (yB - yT);",
+    "}"
+  ].join("\n");
+  var FS = [
+    "#version 300 es",
+    "precision mediump float;",
+    "in vec3 vInk;",
+    "flat in vec4 vRamp;",
+    "in float vF;",
+    "in float vTop;",
+    "out vec4 o;",
+    "void main() {",
+    "  float b = vRamp.w > 0.0 && vTop < vRamp.w ? vRamp.z : vRamp.x + vRamp.y * vF;",
+    "  o = vec4(min(vec3(1.0), floor(vInk * 255.0 * b + 0.5) / 255.0), 1.0);",
+    "}"
+  ].join("\n");
+
+  // WebGL 2 on the skyline's canvas, once; null where it is not to be had (the 2D canvas then).
+  function gpu() {
+    make();
+    return !!gl && !glLost;
+  }
+  function gpuProgram(c) {
+    function shader(type, src) {
+      var sh = c.createShader(type);
+      c.shaderSource(sh, src);
+      c.compileShader(sh);
+      if (!c.getShaderParameter(sh, c.COMPILE_STATUS)) { throw new Error(c.getShaderInfoLog(sh)); }
+      return sh;
+    }
+    var p = c.createProgram();
+    c.attachShader(p, shader(c.VERTEX_SHADER, VS));
+    c.attachShader(p, shader(c.FRAGMENT_SHADER, FS));
+    c.linkProgram(p);
+    if (!c.getProgramParameter(p, c.LINK_STATUS)) { throw new Error(c.getProgramInfoLog(p)); }
+    prog = p;
+    ["uView", "uFrame", "uRot", "uTime", "uDepth"].forEach(function (u) { uni[u] = c.getUniformLocation(prog, u); });
+  }
+  function gpuStart() {
+    if (window.SKYLINE_2D) { return null; }
+    var c = null;
+    try { c = canvas.getContext("webgl2", { antialias: false, depth: true, alpha: true, premultipliedAlpha: true, powerPreference: "low-power" }); } catch (e) { c = null; }
+    if (!c) { return null; }
+    try { gpuProgram(c); } catch (e) {
+      if (window.console) { console.warn("skyline: the GPU's dots could not be made", e); }
+      // The canvas has a WebGL context now and can never give a 2D one: the 2D canvas is a new one.
+      var fresh = el("canvas", "skyline-clod");
+      fresh.tabIndex = 0;
+      fresh.setAttribute("role", "img");
+      if (canvas.parentNode) { canvas.parentNode.replaceChild(fresh, canvas); }
+      canvas = fresh;
+      return null;
+    }
+    // A lost context keeps its object; restored, it is given its program again, and the city its buffers.
+    canvas.addEventListener("webglcontextlost", function (event) {
+      event.preventDefault(); glLost = true; glFor = null; vao = bufF = bufC = null;
+    });
+    canvas.addEventListener("webglcontextrestored", function () {
+      try { gpuProgram(gl); glLost = false; dirty = true; } catch (e) { glLost = true; }
+    });
+    return c;
+  }
+  // The city's dots into the GPU's buffers, once a visit's city.
+  function gpuLoad(D) {
+    if (glFor === D) { return; }
+    if (vao) { gl.deleteVertexArray(vao); gl.deleteBuffer(bufF); gl.deleteBuffer(bufC); }
+    vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    bufF = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufF);
+    gl.bufferData(gl.ARRAY_BUFFER, D.F, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+    gl.vertexAttribDivisor(0, 1);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+    gl.vertexAttribDivisor(1, 1);
+    bufC = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufC);
+    gl.bufferData(gl.ARRAY_BUFFER, D.C, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 4, 0);
+    gl.vertexAttribDivisor(2, 1);
+    gl.bindVertexArray(null);
+    glFor = D;
+  }
+  function gpuDraw(D, f) {
+    if (!gl || glLost) { return; }
+    gpuLoad(D);
+    var k = density, W = canvas.width, H = canvas.height, n = D.span;
+    gl.viewport(0, 0, W, H);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clearDepth(1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.disable(gl.BLEND);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(prog);
+    gl.uniform2f(uni.uView, W, H);
+    gl.uniform3f(uni.uFrame, f.scale * k, f.cx0 * k, f.cy0 * k);
+    gl.uniform4f(uni.uRot, f.cos, f.sin, f.st, f.ct);
+    gl.uniform3f(uni.uTime, shownNow, city.rise || 1, Math.max(0.5, f.scale * k * 0.56));
+    // Nearer is larger: its ground's diagonal and its height, the farthest corner to the nearest roof.
+    var lo = -n * f.ct - 8 * f.st, hi = n * f.ct + (D.high + 2) * f.st;
+    gl.uniform2f(uni.uDepth, lo, 1 / (hi - lo));
+    gl.bindVertexArray(vao);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, D.count);
+    gl.bindVertexArray(null);
   }
 
   // The canvas's pixels to the screen's.
@@ -621,7 +910,9 @@
   }
   function come(r, now) {
     var q = startCell(r);
-    var w = { r: r, q: q, to: q, t: 1, dir: -1, speed: 0.55 + Math.random() * 0.3, at: still ? now - 600 : now, until: still ? Infinity : now + 21000 + Math.random() * 13000,
+    // Cells a second, as fast across the screen however fine the grid (its pace was set at ~40 m a cell).
+    var pace = Math.max(1, 40 / city.cell);
+    var w = { r: r, q: q, to: q, t: 1, dir: -1, speed: (0.55 + Math.random() * 0.3) * pace, at: still ? now - 600 : now, until: still ? Infinity : now + 21000 + Math.random() * 13000,
               leaving: 0, step: Math.random(), named: false, x: 0, y: 0 };
     w.ink = (r[6] || []).map(hex).filter(Boolean);
     w.btn = el("button", "skyline-who");
@@ -1008,7 +1299,7 @@
     var z0 = view.zoom, want = z0 * r, z1 = Math.max(1, Math.min(ZOOM_MAX, want));
     if (z1 !== z0) {
       // The ground under (sx, sy) stays under it.
-      var cx = band.x + canvas.width / 2 + view.px, cy = frameNow ? band.y + frameNow.cy0 : band.y + canvas.height / 2;
+      var cx = band.x + band.w / 2 + view.px, cy = frameNow ? band.y + frameNow.cy0 : band.y + band.h / 2;
       view.px += (sx - cx) * (1 - z1 / z0);
       view.py += (sy - cy) * (1 - z1 / z0);
       view.zoom = z1;
@@ -1036,14 +1327,14 @@
       var d = Math.hypot(mk.x - x, mk.y - y);
       if (d < bd) { bd = d; best = mk.a; }
     });
-    // Or its footprint, where the press is on the building itself.
+    // Or its footprint, where the press is on the building itself (within ~40 m: a cell at the first grain).
     if (!best && frameNow) {
       var p = unproject(frameNow, x - band.x, y - band.y, 0), n = city.n;
-      var i = Math.floor(p.y + n / 2), j = Math.floor(p.x + n / 2);
-      for (var di = -1; di <= 1 && !best; di += 1) {
-        for (var dj = -1; dj <= 1 && !best; dj += 1) {
-          var ii = i + di, jj = j + dj;
-          if (ii >= 0 && jj >= 0 && ii < n && jj < n && city.owner[ii * n + jj]) { best = city.arts[city.owner[ii * n + jj] - 1]; }
+      var i = Math.floor(p.y + n / 2), j = Math.floor(p.x + n / 2), R = Math.max(1, Math.round(40 / city.cell)), bc = Infinity;
+      for (var di = -R; di <= R; di += 1) {
+        for (var dj = -R; dj <= R; dj += 1) {
+          var ii = i + di, jj = j + dj, dc = di * di + dj * dj;
+          if (dc < bc && ii >= 0 && jj >= 0 && ii < n && jj < n && city.owner[ii * n + jj]) { bc = dc; best = city.arts[city.owner[ii * n + jj] - 1]; }
         }
       }
     }
@@ -1077,7 +1368,7 @@
   /* ---- the loop ---------------------------------------------------------- */
 
   var on_ = false, dirty = true, last = 0, visit = null, drawnAt = 0, lightKey = "";
-  var built = {};                     // a city's ground made into dots, kept for the visit after
+  var built = {}, builtOrder = [];    // a city's ground made into dots, kept for the visit after
   var waiting = null;                 // the visit whose ground is in and is being made (or could not be read)
   function off() {
     if (!on_ && (!root || root.hidden)) { return; }
@@ -1164,11 +1455,14 @@
       if (ct > b.y + b.h) { bh = ct - b.y - 6; }
     }
     var nb = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(bh) };
-    if (!band || band.x !== nb.x || band.y !== nb.y || band.w !== nb.w || band.h !== nb.h) {
+    // On the GPU the canvas has the device's pixels (up to three a CSS pixel); the 2D canvas, a CSS pixel's.
+    var dens = city.dots.gpu ? Math.min(3, window.devicePixelRatio || 1) : 1;
+    if (!band || band.x !== nb.x || band.y !== nb.y || band.w !== nb.w || band.h !== nb.h || dens !== density) {
       band = nb;
+      density = dens;
       canvas.style.left = band.x + "px"; canvas.style.top = band.y + "px";
       canvas.style.width = band.w + "px"; canvas.style.height = band.h + "px";
-      canvas.width = Math.max(1, band.w); canvas.height = Math.max(1, band.h);
+      canvas.width = Math.max(1, Math.round(band.w * density)); canvas.height = Math.max(1, Math.round(band.h * density));
       dirty = true;
     }
     // Where the dial stands, now and then (it can be carried anywhere).
@@ -1241,7 +1535,20 @@
     if (!soilIn && tries < 30) { window.setTimeout(function () { waitFor(myVisit, P, g, models, tries + 1); }, 100); return; }
     // The galleries' points are exact once the city's file is in.
     if (!st.pf && tries < 40) { window.setTimeout(function () { waitFor(myVisit, P, g, models, tries + 1); }, 100); return; }
-    try { city = built[st.key] || (built[st.key] = build(st, P, g, models)); } catch (e) { city = null; if (window.console) { console.warn("skyline", e); } }
+    try {
+      if (!built[st.key]) {
+        // The last three cities made are kept for the visit after (a fine city is ~7 MB of strips).
+        builtOrder = builtOrder.filter(function (k) { return k !== st.key; });
+        while (builtOrder.length >= 3) { delete built[builtOrder.shift()]; }
+        builtOrder.push(st.key);
+        // The 2D canvas is given its ground no finer than it can draw; the GPU, all of it.
+        var t0 = performance.now(), g2 = gpu() || g.n <= COARSE ? g : coarser(g);
+        gridFine = g2.side / g2.n < 30;
+        built[st.key] = build(st, P, g2, models);
+        built[st.key].ms = Math.round(performance.now() - t0);
+      }
+      city = built[st.key];
+    } catch (e) { city = null; if (window.console) { console.warn("skyline", e); } }
     waiting = city ? null : myVisit;
     lightKey = "";
     sorted.heading = null;
@@ -1287,7 +1594,10 @@
       return { on: on_, key: city && city.key, arts: city ? city.arts.map(function (a) { return { kind: a.kind, name: a.name, cells: a.cells.length }; }) : [],
                marks: marks.map(function (mk) { return { name: mk.a.name, kind: mk.a.kind, x: mk.x, y: mk.y, named: mk.named, hidden: mk.btn.hidden }; }),
                walkers: walkers.map(function (w) { return { id: w.r[0], name: w.r[1], x: w.x, y: w.y }; }),
-               heading: view.heading, zoom: view.zoom, shown: shownNow, year: city && city.yearNow, band: band };
+               heading: view.heading, zoom: view.zoom, shown: shownNow, year: city && city.yearNow, band: band,
+               // How it is drawn: on the GPU or the 2D canvas, its grid, its dots (or strips), the ms it took to make.
+               gpu: !!(city && city.dots.gpu), n: city && city.n, cell: city && city.cell, count: city ? city.dots.count : 0,
+               ms: city && city.ms, density: density, years: !!(city && city.years) };
     }
   };
   requestAnimationFrame(tick);
