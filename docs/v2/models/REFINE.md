@@ -115,11 +115,21 @@ After the buildings, each run:
    Art Institute's round its own points by `scripts/aic_rooms.py`; each
    rewrites only what it wrote. A new edition of a map (the NGA's is June
    2025) is fetched into `data/plans/<slug>/` and the script run again.
-   **OpenStreetMap's indoor mapping,** once the `osm-indoor` workflow has
-   written `osm/indoor/` (write the date in `osm/INDOOR_REQUEST` to ask for a
-   fresh read, monthly): `python3 scripts/build_interiors.py --osm` lays a
-   shell's rooms and doors from it where mappers have drawn the inside, and
-   adds its doors between rooms already drawn; check each museum it touched.
+   **OpenStreetMap's indoor mapping, monthly:** on the first run of each
+   month write the date in `osm/INDOOR_REQUEST` and push it, so the
+   `osm-indoor` workflow reads `osm/indoor/` again on GitHub's runners; once
+   its commit is in, run `python3 scripts/build_interiors.py --osm
+   --osm-only --osm-report /tmp/osm-fit.json`, then `node
+   scripts/build_interiors_arranged.js --works` (the works no record places
+   go up again, in OpenStreetMap's galleries where its plan was taken).
+   A museum whose mapping has grown usable (INTERIORS.md, "The sources", 2:
+   six rooms or more, two thirds reached, a floor half covered) takes its
+   plan in place of the arranged rooms; one whose plan no longer is goes back
+   to its shell and is arranged again. The Met, the Art Institute and the NGA
+   get only what joins their own rooms. Look at the report's `cover`,
+   `reach`, `off` (mapped rooms off the model: a neighbour's, or a model
+   standing off its building — file that against the model) and check each
+   museum it changed (step 4).
 2. **Raise two museums a tier.** First any museum whose records place saved
    works in rooms not drawn (most such works first); then **arranged**
    museums (INTERIORS.md, "Arranged": the site's own rooms, laid out by rule

@@ -1447,7 +1447,15 @@ def osm_pass(m, doc, model):
         fitted, rep = osm_fit(dict(doc, sources=osm_sources(doc, got["read"], True)), slug, "own", extra)
         report.update(rep)
         if rep.get("added") or rep.get("entered"):
-            doc.update({k: fitted[k] for k in ("floors", "enter")})
+            # Only what was added (its note OSM_MARK): the museum's own rooms stay as written.
+            got_fl = {f["id"]: f for f in fitted["floors"]}
+            for fl in doc["floors"]:
+                ff = got_fl.get(fl["id"]) or {}
+                fl["open"] = (fl.get("open") or []) + [o for o in ff.get("open") or []
+                                                       if (o.get("note") or "").startswith(OSM_MARK)]
+                fl["lifts"] = (fl.get("lifts") or []) + [x for x in ff.get("lifts") or []
+                                                         if (x.get("note") or "").startswith(OSM_MARK)]
+            doc["enter"] = fitted["enter"]
             doc["sources"] = osm_sources(doc, got["read"], rep.get("rule"))
             lines.append(f"{rep['added']} ways from OpenStreetMap's indoor mapping between its own rooms "
                          f"({rep.get('doors', 0)} doors, {rep.get('lifts', 0)} lifts, {rep.get('rule', 0)} by the rule "
@@ -1673,6 +1681,9 @@ def main():
                 print(f"    {line}", flush=True)
             if rep:
                 osm_reports.append(rep)
+            # What OpenStreetMap changed goes into the interior's log, as the moves do.
+            if rep and rep.get("decision") in ("osm", "own") and lines_osm:
+                moved.setdefault(m["slug"], []).extend(lines_osm)
         if m["slug"] == NGA_SLUG and nga is None:
             nga = NGAData(args.refresh)
         works, sources = place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api_matches)
@@ -1684,7 +1695,7 @@ def main():
         if m["slug"] == NGA_SLUG and not nga.ok:
             lines.append("the NGA's open data could not be read; the placements read before stand")
         if lines:
-            moved[m["slug"]] = lines
+            moved.setdefault(m["slug"], []).extend(lines)
             for line in lines:
                 print(f"    {line}", flush=True)
         done.append((m, path, doc, works, sources))

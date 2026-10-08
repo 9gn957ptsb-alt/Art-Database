@@ -374,7 +374,14 @@ work can hang in it". Written by `scripts/build_interiors_arranged.js` (the
 page's own `models.js` and `walk-plan.js` in a vm; the rule in full in its
 head comment), only for a museum whose rooms no source gives — never one the
 museum's own data draws (the NGA, the Met, the Art Institute, Cleveland) or
-one `osm/indoor/<slug>.json` covers:
+one whose rooms OpenStreetMap's indoor mapping draws (`build_interiors.py
+--osm` took its plan: every floor's `src` has `osm-indoor`). In such a museum
+the script lays out nothing; it only hangs the works no record places, by the
+rule below, in OpenStreetMap's galleries (rooms of kind `gallery` anchored on
+`osm-indoor`, reached from the way in), `how: "arranged"`, `src: "arranged"`
+(its source's `t` says the site hangs them in rooms OpenStreetMap draws), the
+rooms keeping their mapped names. An arranged room is never put on a floor
+OpenStreetMap draws:
 
 - **floors**: the museum's own count where a source read gives it (`FLOORS`
   in the script, each with its source); else 5 m storeys as far as the model
@@ -416,9 +423,27 @@ one `osm/indoor/<slug>.json` covers:
   (`REFINE.md`, "Interiors").
 
 The checker refuses an arranged room named otherwise, without that `said`,
-or with a `ref`; an arranged work in a room not arranged, or a record's
-(`museum`) work in an arranged room; and `arranged` on a height, a material,
-a thing or a pin.
+or with a `ref`; an arranged work in a room neither arranged nor anchored on
+`osm-indoor`, or a record's (`museum`) work in an arranged room; and
+`arranged` on a height, a material, a thing or a pin.
+
+## Which tier draws a museum
+
+One source draws a museum's rooms, never two mixed on a floor, in this order:
+
+1. **The museum's own data** (the NGA's outlines, the Met's plans and points,
+   the Art Institute's points): their own passes own the rooms. OpenStreetMap
+   only adds what joins them (its doors, its lifts, the rule inside a wing it
+   maps as one room), each said so; the arranged tier never touches them.
+2. **OpenStreetMap's indoor mapping**, where it is usable (below): it
+   replaces the arranged rooms or the shell whole.
+3. **Arranged**, by the site's rule, where neither has been read or
+   OpenStreetMap's is not usable.
+4. **The shell.**
+
+A plan, a description or a hand's redrawing (sources 3–5 below) is written
+by hand and keeps its floors; `--osm` adds only OpenStreetMap's doors to such
+a museum when it is in `OSM_OWN`, and otherwise leaves it.
 
 ## The sources, most sure first
 
@@ -432,15 +457,69 @@ a thing or a pin.
    for the 45 major museums in its `MAJORS` (a push touching either, or
    `osm/INDOOR_REQUEST`) and commits `osm/indoor/<slug>.json` (each feature's
    OSM id, its indoor, door, entrance, room, level, ref and name tags, and
-   its geometry in degrees; credited). `build_interiors.py --osm` lays a
-   shell's rooms from it (each level a floor 4.5 m up, ours; each outline a
-   room anchored on OpenStreetMap's coordinates; each door or entrance on
-   the line between two rooms, or a room and the outside, an opening; the
-   grid turned to the outlines' commonest direction) and, where floors are
-   already drawn, adds only its doors between drawn rooms both within 1.5 m
-   of one. Reconstructed unless it matches a documented plan. What it writes
-   has a note beginning "OpenStreetMap's indoor mapping" and is rewritten
-   each run.
+   its geometry in degrees; credited). The extract is a square round the
+   museum, so it holds its neighbours too (the Transit Center by SFMOMA, the
+   Neues Museum by the Alte Nationalgalerie, the Archives nationales by the
+   Musée Picasso, the Underground under Trafalgar Square). How
+   `build_interiors.py --osm` reads it, with `scripts/osm_interiors.js` (the
+   page's own compiler in a vm) to fit it to the model:
+   - **levels**: `level`, else `repeat_on` (`2`, `0;1`, `1-2`); untagged is
+     level 0. Each whole level at or above 0 is a floor `L<n>` named
+     "Level <n>" (OpenStreetMap's number); a level between two (the Louvre's
+     0.25, an entresol) and the levels below ground are not drawn, and the
+     notes count them. Each level's height is ours: the storey (3.5–7 m)
+     that gives the most of the mapped upper rooms 2.4 m of headroom under
+     the model's roof, a level that height over the one below.
+   - **rooms**: every `indoor=room|area|corridor` outline (a stair space
+     too), clipped to the model's site; a lift shaft (`highway=elevator`) is
+     a way between floors, not a room. Where outlines overlap, a room keeps
+     the floor, then a stair, a corridor, an area; a room holding two others
+     or more is a wing (not drawn: its name and `ref` are kept for the
+     museum's own rooms, below); an outline left with a hole round a room
+     drawn inside it is split through the hole, its pieces joined as `part`;
+     outlines simplified to 0.2 m, under 4 m² dropped. Kept only where half
+     the room stands on a building of the model (a part of its footprint of
+     a size, 3 m round it): what stands off is a neighbour's. `kind` from
+     `room=` (gallery by default; corridor and area a hall; offices, stores,
+     toilets and `access=private` closed). `name` the mapped `name:en` or
+     `name` or `ref`, `ref` every key a record might use for it ("229",
+     "Gallery 229", "Sal 229" …), `said` its tags verbatim, `anchor`
+     `osm-indoor`, `sure` reconstructed, `tol` 1 m.
+   - **doors**: a `door=*` or `entrance=*` node within 1.5 m of two rooms of
+     its level is an opening there (`w` its `width`, else 1.6 m, ours);
+     dropped where the compiler finds no wall to cut. Where OpenStreetMap
+     draws two rooms side by side and no door, and one of them has no other
+     way in, a doorway is put at the middle of the wall they share (3 m of
+     it or more, at most 2.5 m thick), 2.4 m wide, a corridor or hall first,
+     then the longest wall, until no more can be reached: `src`
+     `["osm-indoor", "osm-rule"]`, its note saying so. That two rooms side
+     by side connect is then the rule's, not a source's: the one place the
+     rule may say rooms connect, and only to give a room a way in.
+   - **between floors**: a lift where it maps a lift or a stair space across
+     levels, a 2 m square (1.5 for a stair) set where it lands inside one
+     walkable room on two floors or more; a floor no mapped one reaches gets
+     one lift by the rule in a room both floors have, nearest the way in
+     (`osm-rule`). No flight is drawn: none is mapped with its run.
+   - **the way in**: of its entrance nodes by a room of the lowest floor
+     (entrance=main first, then nearest the museum's point), the one that
+     reaches the most; else a way in by the rule, from a mapped room
+     straight out through the thinnest wall to open ground, cut, said so.
+   - **usable**: at least 6 rooms, two thirds of their floor reached from the
+     way in, and a floor whose mapped rooms cover half the model's floor
+     there (the parts of the model they stand in) — then it replaces the
+     arranged rooms whole; a shell takes any plan that is reached so. Not
+     usable: the rooms stay as they were and the notes begin with what
+     OpenStreetMap gave and why it was not walked.
+   - **the museums' own** (`OSM_OWN`: the NGA, the Met, the Art Institute):
+     only OpenStreetMap's doors between two of their rooms, its lifts where
+     they land in one of their rooms on two floors or more (its levels mapped
+     to their floors), inside a wing it maps as one room by a range of
+     numbers ("Alsdorf Galleries", `ref` 140-143) doorways by the rule
+     between its galleries that share a wall, enough to join them, and its
+     entrance where it reaches at least twice the rooms the file's does.
+   What it writes has `osm-indoor` (and `osm-rule`) in `src` and a note
+   beginning "OpenStreetMap's indoor mapping", and is rewritten each run;
+   `--osm-report <file>` writes the fit museum by museum.
 3. Measured drawings in the public domain (HABS/HAER at the Library of
    Congress for the American buildings that have them): documented, to their
    dimensions.

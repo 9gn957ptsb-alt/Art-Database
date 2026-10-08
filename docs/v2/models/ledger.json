@@ -549,16 +549,21 @@
     "log": [
       "2026-09-24 first model: the white exoskeleton and glass body, escalator tube on the piazza front, colour-coded ducts on rue du Renard",
       "2026-09-27 refined: the piazza falls toward the building; rue du Renard and rue Rambuteau drawn; two white air-intake funnels on the piazza (no photographs)",
-      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 66% of the model's footprint stands on the ground's buildings",
+      "2026-10-08 interior finding: 2 documented rooms of the Level 1 lie outside the model (O-a731906282, O-a731539646)",
+      "2026-10-08 interior finding: 1 documented rooms of the Level 2 lie outside the model (O-a731466642)",
+      "2026-10-08 interior finding: 2 documented rooms of the Level 3 lie outside the model (O-a731474186, O-a731526876)",
+      "2026-10-08 interior finding: 1 documented rooms of the Level 4 lie outside the model (O-a731512908)",
+      "2026-10-08 interior finding: 1 documented rooms of the Level 5 lie outside the model (O-a731512906)",
+      "2026-10-08 interior finding: 2 documented rooms of the Level 6 lie outside the model (O-a731526886, O-a731526890)"
     ],
     "interior": {
-      "tier": "arranged",
+      "tier": "reconstructed",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0,
-        "arranged": 122
+        "reconstructed": 19
       },
       "works": {
         "hung": 31,
@@ -630,7 +635,8 @@
         "none": 0
       },
       "log": [
-        "2026-10-08 first pass: 158 galleries on the Lower Level and Floors 1-3 drawn round the Art Institute's own points by rule (scripts/aic_rooms.py: the nearer floor, within 9 m), anchored on them; doorways only between galleries numbered one after the other that share a wall; the Michigan Avenue door (its own point); 8 saved works and 300 of its works on view (boosted first) hung by gallery. No plan read: most rooms have no way in known (come into by a cut); the floors are not joined. The model stands west of the museum's points."
+        "2026-10-08 first pass: 158 galleries on the Lower Level and Floors 1-3 drawn round the Art Institute's own points by rule (scripts/aic_rooms.py: the nearer floor, within 9 m), anchored on them; doorways only between galleries numbered one after the other that share a wall; the Michigan Avenue door (its own point); 8 saved works and 300 of its works on view (boosted first) hung by gallery. No plan read: most rooms have no way in known (come into by a cut); the floors are not joined. The model stands west of the museum's points.",
+        "2026-10-08 5 ways from OpenStreetMap's indoor mapping between its own rooms (0 doors, 1 lifts, 4 by the rule inside its mapped wings); reached 1 → 1 of 158 rooms"
       ]
     }
   },
@@ -1873,16 +1879,17 @@
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the 1896 red-brick Neo-Renaissance front on Sølvgade with central and end pavilions and slate roofs, the glass Sculpture Street and Indrio's white wing toward Østre Anlæg, on the real bearing",
-      "2026-10-06 refined (catch-up for 1–6 Oct): it had been turned 32° the wrong way; rebuilt on the outline's bearing — the brick range, Sculpture Street, Indrio's white wing, the lake; on its ground 67% → 89%"
+      "2026-10-06 refined (catch-up for 1–6 Oct): it had been turned 32° the wrong way; rebuilt on the outline's bearing — the brick range, Sculpture Street, Indrio's white wing, the lake; on its ground 67% → 89%",
+      "2026-10-08 interior finding: documented room O-a3060101124 (L2) lies 33% outside the model, x 61.9 to 74.9, y -6.9 to -2.5 m",
+      "2026-10-08 interior finding: documented room O-a3094455938 (L2) lies 31% outside the model, x -22.8 to 11.7, y -63.4 to -58.3 m"
     ],
     "interior": {
-      "tier": "arranged",
+      "tier": "reconstructed",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0,
-        "arranged": 153
+        "reconstructed": 78
       },
       "works": {
         "hung": 4,
@@ -2114,18 +2121,19 @@
       "2026-10-08 interior finding: only 9% of the model's footprint stands on the ground's buildings"
     ],
     "interior": {
-      "tier": "shell",
+      "tier": "reconstructed",
       "refined": null,
       "passes": 0,
       "rooms": {
         "documented": 0,
-        "reconstructed": 0
+        "reconstructed": 16
       },
       "works": {
-        "hung": 0,
+        "hung": 4,
         "elsewhere": 0,
         "off": 0,
-        "none": 2
+        "none": 0,
+        "arranged": 4
       },
       "log": []
     }
