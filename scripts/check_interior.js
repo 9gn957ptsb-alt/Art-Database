@@ -75,7 +75,7 @@ function checkOne(file, W, museums, opts) {
   res.ground = ground;
   // The tier, written back where it stands, without reflowing the file.
   if (!res.errors.length && interior.tier !== res.tier) {
-    const next = text.replace(/"tier":(\s*)"(documented|reconstructed|shell)"/, (m, sp) => `"tier":${sp}"${res.tier}"`);
+    const next = text.replace(/"tier":(\s*)"(documented|reconstructed|arranged|shell)"/, (m, sp) => `"tier":${sp}"${res.tier}"`);
     if (next !== text) { fs.writeFileSync(file, next); }
   }
   return res;
@@ -84,7 +84,7 @@ function checkOne(file, W, museums, opts) {
 function report(r, brief) {
   const s = r.stats || {};
   const works = s.works || {};
-  const how = ["museum", "elsewhere", "off", "none"].filter(k => works[k]).map(k => `${k} ${works[k]}`).join(", ") || "no works";
+  const how = ["museum", "arranged", "elsewhere", "off", "none"].filter(k => works[k]).map(k => `${k} ${works[k]}`).join(", ") || "no works";
   if (brief) {
     const rooms = (s.floors || []).reduce((a, f) => a + (f.rooms || 0), 0);
     const reach = (s.floors || []).reduce((a, f) => a + (f.reached || 0), 0);
@@ -96,7 +96,8 @@ function report(r, brief) {
   console.log(`${r.slug}: ${r.tier}`);
   (s.floors || []).forEach(f => {
     console.log(`  ${f.name || f.id} (z ${f.z} m): ${f.rooms} rooms, ${f.reached} reached from the door; ` +
-                `${f.documented} m² documented, ${f.reconstructed} m² reconstructed; ${f.cells} cells`);
+                `${f.documented} m² documented, ${f.reconstructed} m² reconstructed` +
+                (f.arranged ? `, ${f.arranged} m² arranged by the site` : "") + `; ${f.cells} cells`);
   });
   console.log(`  works: ${how}; ${s.hung || 0} hung, ${s.spill || 0} with no wall to hang on`);
   if (s.ground !== undefined && s.ground !== null) { console.log(`  the model's footprint on the ground's buildings: ${Math.round(s.ground * 100)}%`); }
@@ -118,11 +119,14 @@ function record(results) {
     if (r.world) {
       r.world.floors.forEach(fl => fl.rooms.forEach(room => {
         if (room.pseudo) { return; }
-        rooms[room.sure === "documented" ? "documented" : "reconstructed"] += 1;
+        const k = room.sure === "documented" ? "documented" : room.sure === "arranged" ? "arranged" : "reconstructed";
+        rooms[k] = (rooms[k] || 0) + 1;
       }));
     }
     const w = r.stats.works || {};
     const works = { hung: r.stats.hung || 0, elsewhere: w.elsewhere || 0, off: w.off || 0, none: w.none || 0 };
+    // Of the hung, how many the site's rule hung (INTERIORS.md, "Arranged").
+    if (w.arranged) { works.arranged = w.arranged; }
     const was = JSON.stringify([inside.tier, inside.rooms, inside.works]);
     if (!r.errors.length) { inside.tier = r.tier; }
     inside.rooms = rooms;
@@ -352,7 +356,7 @@ async function pictures(results, dir) {
           if (k === WalkPlan.WALL || k === WalkPlan.GLASS) { ink = fl.foot[q] === 2 ? 0xff5c6a78 : fl.foot[q] ? 0xff3c4a5a : 0xff202830; }
           else if (r && !r.pseudo) {
             const u = WalkPlan.unpack(fl.inkF[q]);
-            const tint = r.sure === "documented" ? [120, 180, 150] : [200, 170, 110];
+            const tint = r.sure === "documented" ? [120, 180, 150] : r.sure === "arranged" ? [150, 140, 210] : [200, 170, 110];
             const m = [u[0] * 0.5 + tint[0] * 0.5, u[1] * 0.5 + tint[1] * 0.5, u[2] * 0.5 + tint[2] * 0.5];
             ink = WalkPlan.pack(m);
             if (!r.reach) { ink = WalkPlan.pack([m[0] * 0.55, m[1] * 0.55, m[2] * 0.55]); }
@@ -404,7 +408,7 @@ async function pictures(results, dir) {
           g.fillStyle = "#5e52c7"; g.fillRect(X(world.enter.x) - 5, Y(world.enter.y) - 5, 10, 10);
         }
         g.fillStyle = "#ddd"; g.font = "14px sans-serif"; g.textAlign = "left";
-        g.fillText(`${interior.slug} · ${fl.name || fl.id} · green documented, amber reconstructed, dim: no way in known, red: outside the model, white: openings`, 8, 16);
+        g.fillText(`${interior.slug} · ${fl.name || fl.id} · green documented, amber reconstructed, lilac arranged by the site, dim: no way in known, red: outside the model, white: openings`, 8, 16);
         shots["plan-" + fl.id] = c.toDataURL("image/png");
       });
       // The cut-away plan level, from two diagonals.
