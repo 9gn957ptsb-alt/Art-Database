@@ -14687,7 +14687,7 @@
         measureNames();
         groundPlaces();
       }
-      if (ARTWORKS && artFind && artInfo) {
+      if (ARTWORKS && artFind) {          // Search reads the works itself when pressed (openFinder)
         artFind.textContent = "Search";
         artFind.setAttribute("aria-label", "Search works, artists, places, museums, shows and writers");
         artFind.hidden = false;
@@ -17608,6 +17608,13 @@
         findNext = artFind.nextSibling;
         artEl.appendChild(artFind);
         artFind.dataset.grown = "true";
+        // Search is there even if the world's cities were still being read when the reading began.
+        if (ARTWORKS && (artFind.hidden || !artFind.textContent.trim())) {
+          artFind.disabled = false;
+          artFind.textContent = "Search";
+          artFind.setAttribute("aria-label", "Search works, artists, places, museums, shows and writers");
+          artFind.hidden = false;
+        }
       }
       // Its list lives in the reading while the globe is grown: under the stage it would lie beneath the
       // dial, the sentence and the column (the stage, fixed, is a stacking context of its own).
@@ -17777,15 +17784,20 @@
       // own marks (a life's year and its name, a work's stops).
       if (withFind) {
         var own = ownMarks();
+        // Every try is checked: clear of the screen's edges, the band's top, the pills themselves, the
+        // dial and the rest (the pills' own avoid box is left out: in a row it covers Search's place).
+        var others = avoid.slice(0, -1).concat(own);
+        var pillBox = { x0: fx, y0: fy, x1: fx + pw, y1: fy + fh };
         var hitA = function (x, y) {
-          return x < 4 || x + aw > W - 4 || y < box.y0 ||
-            avoid.concat(own).some(function (a) { return x < a.x1 + 4 && a.x0 - 4 < x + aw && y < a.y1 + 4 && a.y0 - 4 < y + ah; });
+          return x < 4 || x + aw > W - 4 || y < Math.max(4, box.y0 - 4) || y + ah > H - 4 ||
+            [pillBox].concat(others).some(function (a) { return x < a.x1 + 4 && a.x0 - 4 < x + aw && y < a.y1 + 4 && a.y0 - 4 < y + ah; });
         };
         var my = fy + (fh - ah) / 2;
-        var tries = inRow ? [[fx + pw + 8, my]] : [];
-        tries = tries.concat([[fx + (pw - aw) / 2, fy - ah - 8], [fx, fy - ah - 8], [fx + pw - aw, fy - ah - 8],
-                              [fx + (pw - aw) / 2, fy + fh + 8]]);
-        var at = (inRow ? tries[0] : null) || tries.filter(function (t) { return !hitA(t[0], t[1]); })[0] || tries[0];
+        // The row's end; else above the pills; else below them (where the pills stand at the band's top).
+        var tries = [[fx + pw + 8, my], [fx - aw - 8, my],
+                     [fx + (pw - aw) / 2, fy - ah - 8], [fx, fy - ah - 8], [fx + pw - aw, fy - ah - 8],
+                     [fx + (pw - aw) / 2, fy + fh + 8], [fx, fy + fh + 8], [fx + pw - aw, fy + fh + 8]];
+        var at = tries.filter(function (t) { return !hitA(t[0], t[1]); })[0] || tries[tries.length - 3];
         var ax = Math.max(4, Math.min(W - aw - 4, at[0])), ay = Math.max(4, Math.min(H - ah - 4, at[1]));
         artFind.style.left = ax.toFixed(0) + "px";
         artFind.style.top = ay.toFixed(0) + "px";
