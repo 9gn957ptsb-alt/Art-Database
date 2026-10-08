@@ -55,6 +55,7 @@ import argparse
 import csv
 import datetime
 import json
+import math
 import re
 import subprocess
 import sys
@@ -1051,6 +1052,151 @@ def collection_works(m, doc, saved, refresh=False):
     return out, src
 
 
+# ---------------------------------------------------------------- OpenStreetMap's indoor mapping
+
+# osm/indoor/<slug>.json, read on GitHub's runners by scripts/fetch_osm_indoor.py (ODbL). With --osm:
+#   a shell (no floors) whose museum mappers have drawn inside gets its floors from it: each level a floor
+#   (its z 4.5 m a level, ours), each indoor=room|area|corridor outline a room (reconstructed, anchored on
+#   OpenStreetMap's coordinates), each door or entrance on the line between two rooms (or a room and the
+#   outside) an opening there, and the entrance the first entrance=main (else any) on the lowest level;
+#   a museum with floors already drawn gets only OSM's doors, as openings between the drawn rooms the door
+#   stands between (both within 1.5 m of it), where no opening joins them yet.
+# What it writes carries "osm-indoor" in src and a note beginning OSM_MARK, and is rewritten each run.
+OSM_INDOOR = ROOT / "osm" / "indoor"
+OSM_MARK = "OpenStreetMap's indoor mapping"
+OSM_LEVEL = 4.5
+R_EARTH = 6371008.8
+
+
+def osm_levels(tags):
+    """The levels a feature is on: '1', '0;1', '-1--1', '0-2' (whole levels only)."""
+    v = str(tags.get("level") or tags.get("repeat_on") or "").strip()
+    out = []
+    for part in v.split(";"):
+        part = part.strip()
+        m = re.fullmatch(r"(-?\d+)(?:\s*-\s*(-?\d+))?", part)
+        if m:
+            a = int(m.group(1))
+            b = int(m.group(2)) if m.group(2) else a
+            out += list(range(min(a, b), max(a, b) + 1))
+    return out or [0]
+
+
+def osm_pass(m, doc):
+    """Rooms and doors from OpenStreetMap's indoor mapping, as the module comment says. Returns lines."""
+    from shapely.geometry import Point as SPoint, Polygon as SPolygon
+    data = read_json(OSM_INDOOR / f"{m['slug']}.json")
+    if not data or not data.get("features"):
+        return []
+    lat0, lon0 = m["lat"], m["lon"]
+
+    def xy(c):
+        return ((c[0] - lon0) * math.pi / 180 * R_EARTH * math.cos(lat0 * math.pi / 180),
+                -(c[1] - lat0) * math.pi / 180 * R_EARTH)
+    srcs = {s["id"]: s for s in doc.get("sources") or []}
+    srcs["osm-indoor"] = {"id": "osm-indoor", "t": "OpenStreetMap's indoor mapping of the building: its rooms, "
+                          "corridors, doors and levels, © OpenStreetMap contributors", "u": "https://www.openstreetmap.org/",
+                          "licence": "ODbL-1.0", "read": data.get("read")}
+    rooms, doors = [], []
+    for f in data["features"]:
+        t, g = f["tags"], f["geometry"]
+        if g["type"] in ("Polygon", "MultiPolygon") and t.get("indoor") in ("room", "area", "corridor"):
+            ring = g["coordinates"][0] if g["type"] == "Polygon" else max(
+                (p[0] for p in g["coordinates"]), key=len)
+            poly = [list(map(lambda v: round(v, 2), xy(c))) for c in ring[:-1]]
+            if len(poly) >= 3 and SPolygon(poly).is_valid and SPolygon(poly).area >= 4:
+                rooms.append((f, poly))
+        elif g["type"] == "Point" and (t.get("door") or t.get("entrance")):
+            doors.append((f, xy(g["coordinates"])))
+    lines = []
+    if not doc.get("floors") and len(rooms) >= 3:
+        levels = sorted({lv for f, _ in rooms for lv in osm_levels(f["tags"])})
+        floors = {}
+        for lv in levels:
+            floors[lv] = {"id": f"L{lv}".replace("-", "m"), "name": None, "z": round(lv * OSM_LEVEL, 2),
+                          "sure": "reconstructed", "src": ["osm-indoor"],
+                          "note": f"{OSM_MARK}'s level {lv}; its height ours", "rooms": [], "open": [],
+                          "things": [], "stairs": [], "lifts": []}
+        for f, poly in rooms:
+            t = f["tags"]
+            ref = t.get("ref")
+            nm = t.get("name:en") or t.get("name") or (("Gallery " + ref) if ref else None)
+            for lv in osm_levels(t):
+                rid = f"O-{f['id']}" + (f"-{lv}" if len(osm_levels(t)) > 1 else "")
+                floors[lv]["rooms"].append({
+                    "id": rid, "ref": [x for x in (ref, t.get("name"), ("Gallery " + ref) if ref else None) if x],
+                    "name": nm, "said": f"{OSM_MARK}: " + ", ".join(f"{k}={v}" for k, v in sorted(t.items())),
+                    "kind": {"corridor": "hall", "area": "hall"}.get(t.get("indoor"), "gallery"), "poly": poly,
+                    "sure": "reconstructed", "src": ["osm-indoor"], "anchor": "osm-indoor", "tol": 2.0,
+                    "note": f"{OSM_MARK} ({f['id']})"})
+        doc["floors"] = [floors[lv] for lv in levels]
+        # the grid turned to the outlines' commonest direction
+        from collections import Counter
+        turns = Counter()
+        for _, poly in rooms:
+            for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+                L = math.hypot(x1 - x0, y1 - y0)
+                if L > 2:
+                    turns[round(math.degrees(math.atan2(y1 - y0, x1 - x0)) % 90)] += L
+        doc["grid"] = {"cell": doc.get("grid", {}).get("cell", 0.5), "turn": turns.most_common(1)[0][0] if turns else 0}
+        lines.append(f"{len(rooms)} rooms on {len(levels)} levels from OpenStreetMap's indoor mapping")
+    if not doc.get("floors"):
+        return lines
+    # doors: openings between the drawn rooms a door stands between
+    made = 0
+    for fl in doc["floors"]:
+        fl["open"] = [o for o in fl.get("open") or [] if not (o.get("note") or "").startswith(OSM_MARK)]
+        shapes = []
+        for r in fl.get("rooms") or []:
+            if "poly" in r:
+                shapes.append((r["id"], SPolygon(r["poly"])))
+            elif "rect" in r and not doc.get("grid", {}).get("turn"):
+                x, y, w, d = r["rect"]
+                shapes.append((r["id"], SPolygon([(x, y), (x + w, y), (x + w, y + d), (x, y + d)])))
+            elif "circle" in r:
+                shapes.append((r["id"], SPoint(r["circle"][0], r["circle"][1]).buffer(r["circle"][2], 16)))
+        joined = {frozenset((o["a"], o["b"])) for o in fl["open"]}
+        lv_of = None
+        if fl["id"].startswith("L"):
+            lv_of = int(fl["id"][1:].replace("m", "-"))
+        for f, (x, y) in doors:
+            if lv_of is not None and lv_of not in osm_levels(f["tags"]):
+                continue
+            p = SPoint(x, y)
+            near = sorted((s.exterior.distance(p) if not s.contains(p) else 0.0, rid) for rid, s in shapes)
+            near = [(d, rid) for d, rid in near if d <= 1.5]
+            if len(near) >= 2 and frozenset((near[0][1], near[1][1])) not in joined:
+                a, b = near[0][1], near[1][1]
+            elif len(near) == 1 and f["tags"].get("entrance"):
+                a, b = near[0][1], "outside"
+            else:
+                continue
+            joined.add(frozenset((a, b)))
+            fl["open"].append({"a": a, "b": b, "at": [round(x, 2), round(y, 2)], "w": 1.6, "h": None, "kind": "door",
+                               "sure": "reconstructed", "src": ["osm-indoor"],
+                               "note": f"{OSM_MARK}: a door ({f['id']}) between them; its width ours"})
+            made += 1
+    if made:
+        lines.append(f"{made} doors from OpenStreetMap's indoor mapping")
+    # a museum whose floors came from here enters by OSM's entrance on its lowest level (main first)
+    if lines and not doc.get("enter") and doc.get("floors"):
+        fl = doc["floors"][0]
+        outs = [o for o in fl["open"] if o["b"] == "outside" and (o.get("note") or "").startswith(OSM_MARK)]
+        if outs:
+            o = outs[0]
+            r = next(r for r in fl["rooms"] if r["id"] == o["a"])
+            c = SPolygon(r["poly"]).centroid
+            dx, dy = o["at"][0] - c.x, o["at"][1] - c.y
+            L = math.hypot(dx, dy) or 1
+            at = [round(o["at"][0] + dx / L * 3, 2), round(o["at"][1] + dy / L * 3, 2)]
+            doc["enter"] = {"floor": fl["id"], "at": at, "face": round(math.degrees(math.atan2(-dx, dy)) % 360, 1),
+                            "door": o["at"], "out": [[at[0] - 3, at[1] - 3, 6, 6]], "sure": "reconstructed",
+                            "src": ["osm-indoor"], "note": f"{OSM_MARK}: its entrance"}
+    if lines:
+        doc["sources"] = list(srcs.values())
+    return lines
+
+
 # ---------------------------------------------------------------- what moved
 
 PLACED = ("museum", "elsewhere")
@@ -1103,6 +1249,7 @@ def main():
     ap.add_argument("--stubs", action="store_true", help="a shell file for every museum without one")
     ap.add_argument("--nga", action="store_true", help="the NGA West Building's rooms from its open data")
     ap.add_argument("--refresh", action="store_true", help="read the museums' data again")
+    ap.add_argument("--osm", action="store_true", help="rooms and doors from osm/indoor/ (OpenStreetMap)")
     ap.add_argument("--collection", action="store_true",
                     help="read the museums' own on-view collections again (data/collections/)")
     args = ap.parse_args()
@@ -1135,6 +1282,9 @@ def main():
             made += 1
         if args.nga and m["slug"] == NGA_SLUG:
             doc = merge_nga(doc, model)
+        if args.osm:
+            for line in osm_pass(m, doc):
+                print(f"    {line}", flush=True)
         if m["slug"] == NGA_SLUG and nga is None:
             nga = NGAData(args.refresh)
         works, sources = place_works(m, doc, hist, held_by, by_slug, nga, where, wd, nga_matches, api_matches)
