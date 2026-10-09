@@ -34,6 +34,13 @@ prints of the same work"):
     `--dupes` counts the extra prints already saved for the artists done before this rule (it saves
     and removes nothing); removing them is the artist's call.
 
+Nothing on the market (the artist, 9 Oct 2026: "Make sure when you save an artwork you are not adding
+them to my watch list or inquiring for their price"): a work for sale, on hold or open to an offer is
+never saved — a gallery sends offers to everyone who saved its works in the last 30 days, and Artsy
+emails each one — and neither is a lot in a sale that is not over, since a saved lot is a lot watched.
+The run sends no inquiry and never has. `--market` lists the saved works that are on the market,
+the artist's own saves apart from the run's, and changes nothing.
+
     python3 scripts/save_followed_artworks.py --dry      # count only, save nothing
     python3 scripts/save_followed_artworks.py            # save
 """
@@ -180,6 +187,40 @@ def reason_to_skip(a, artist):
     surname = (artist.get("name") or "").split()[-1:] or [""]
     if surname[0] and re.search(r"\(?\bafter\s+(\w+\s+){0,2}" + re.escape(surname[0]) + r"\b", text, re.I):
         return "not the artist's hand"
+    return on_the_market(a)
+
+
+SALES = DIR / "sales.json"
+_sales = None
+
+
+def sale_open(sid):
+    """Whether a sale is not over (a preview or open auction, or one Artsy will not say is closed)."""
+    global _sales
+    if _sales is None:
+        _sales = json.loads(SALES.read_text()) if SALES.exists() else {}
+    if sid not in _sales:
+        r = call("GET", f"sale/{sid}", tries=3, fatal=False)
+        d = r.json() if r is not None and r.status_code == 200 else {}
+        _sales[sid] = d.get("auction_state") or "unknown"
+        SALES.write_text(json.dumps(_sales))
+    return _sales[sid] != "closed"
+
+
+def on_the_market(a):
+    """The artist, 9 Oct 2026: "I have been getting a lot of emails from artsy saying I inquired for the
+    price of artwork. Make sure when you save an artwork you are not adding them to my watch list or
+    inquiring for their price." The run never inquired (no inquiry on the account since November 2024),
+    but a saved work a gallery has for sale goes on that gallery's list of works saved in the last 30
+    days, which it sends offers from ("Thank you so much for your interest in this artwork. We've
+    extended a small discount for you": 1,411 bulk offers from 265 galleries, 6-9 Oct), and a saved lot
+    in an auction is a lot watched. So neither is saved: nothing for sale, on hold or open to an offer,
+    and nothing in a sale that is not over."""
+    if (a.get("forsale") or a.get("acquireable") or a.get("offerable") or a.get("partner_offerable")
+            or a.get("offerable_from_inquiry") or (a.get("availability") or "") in ("for sale", "on hold")):
+        return "for sale"
+    if any(sale_open(sid) for sid in a.get("sale_ids") or []):
+        return "in an auction"
     return None
 
 
@@ -377,14 +418,49 @@ def unsave(have):
     print(f"unsaved total: {len(done)}", flush=True)
 
 
+MARKET = DIR / "market.json"
+
+
+def market():
+    """Reads every saved work and lists those on the market (`on_the_market`), the artist's own saves
+    (artsy_saves_raw.json) apart from the run's. Changes nothing."""
+    own = {w["_id"] for w in json.loads(OWN.read_text())}
+    out, n, page = {"for sale": [], "in an auction": []}, 0, 1
+    while True:
+        r = call("GET", "collection/saved-artwork/artworks",
+                 {"user_id": USER, "private": "true", "size": 100, "page": page})
+        d = r.json() if r.status_code == 200 else []
+        if not d:
+            break
+        for a in d:
+            n += 1
+            why = on_the_market(a)
+            if why:
+                out[why].append([a["_id"], a["id"], a.get("title") or "", a["_id"] in own])
+        if page % 50 == 0:
+            print(f"{n} read; {len(out['for sale'])} for sale, {len(out['in an auction'])} in an auction", flush=True)
+        page += 1
+        time.sleep(DELAY)
+    MARKET.write_text(json.dumps(out))
+    for why, rows in out.items():
+        mine = sum(1 for r in rows if r[3])
+        print(f"{why}: {len(rows)} ({mine} saved by the artist, {len(rows) - mine} by the run)", flush=True)
+    print(f"market total: {n} saved works read", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--dupes", action="store_true", help="count the extra prints already saved; change nothing")
     ap.add_argument("--plan-unsave", action="store_true", help="list the extra prints to unsave; change nothing")
     ap.add_argument("--unsave", action="store_true", help="unsave what the plan lists")
+    ap.add_argument("--market", action="store_true",
+                    help="list the saved works for sale or in a sale not over; change nothing")
     args = ap.parse_args()
     DIR.mkdir(parents=True, exist_ok=True)
+    if args.market:
+        market()
+        return
     state = json.loads(STATE.read_text()) if STATE.exists() else {"done": [], "counts": {}}
     if args.dupes:
         count_dupes(state, set(json.loads(HAVE.read_text())) if HAVE.exists() else saved_ids())
