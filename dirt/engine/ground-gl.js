@@ -1270,7 +1270,7 @@ void metaForm(ivec2 b, vec2 p, float t, out float v, out float sd, out float sof
   } else if (k == 2) {                                               // a vortex, as Turner's: a swept spiral, no edge at all
     sd = r - R; soft = R * P2;
     float a = atan(q.y, q.x);
-    v = 0.5 + 0.44 * sin(a + log(max(r, 1.0)) * 2.6 - t * 0.21 + th) * (1.0 - smoothstep(R * 0.4, R, r));
+    v = 0.5 + 0.44 * sin(a + log(max(r, 1.0)) * 2.6 + th) * (1.0 - smoothstep(R * 0.4, R, r));   // (held still since 9 Oct 2026)
     prio *= 0.5;                                                     // lies under the forms with edges
   } else if (k == 3) {                                               // a head of planes, as Picasso's: each plane shaded, turning at its edges
     sd = r - R;
@@ -1401,8 +1401,13 @@ Void voidAt(vec2 p) {
   }
   return best;
 }
-/** How complex the plane is at p, leaving the voids aside. */
-float complexityBare(vec2 p) { return smoothstep(0.2, 0.8, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u)); }
+/** How far p lies from a void's middle, measured to its rim: the rim wanders, so a void is a pool and not a disc (since
+ *  9 Oct 2026; drawn as a disc it was one of the large circles). */
+float voidRim(Void v, vec2 p) { return length(p - v.C) + 0.5 * v.R * (vnoise(p, 144.0, v.h + 9u) - 0.5); }
+/** How complex the plane is at p, leaving the voids aside. (9 Oct 2026: "the overall texture is too complicated":
+ *  the curve moved from 0.2-0.8 to 0.3-0.9, so about 72% of the plane is calm blended washes, 17% simplified worlds
+ *  and 10% full ones; the page's complexityJS keeps the same curve.) */
+float complexityBare(vec2 p) { return smoothstep(0.3, 0.9, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u)); }
 /** How complex the plane is at p: 0 in a void's heart, 1 where everything is. */
 float complexityAt(vec2 p) {
   float b = complexityBare(p);
@@ -1485,8 +1490,9 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
     return mix(mix(D, V * 0.9, feather(e1, 8.0)), M, feather(e2, 8.0));
   }
   if (a == 10) {                                                     // Kelly: one shape, one colour
-    float d = max(length(q - vec2(0.0, 40.0)) - 90.0, q.y - 20.0 - 30.0 * u1);
-    return mix(L, V, feather(d, 1.2));
+    // (a curve, its edge soft, since 9 Oct 2026: drawn large, the old dome was a large hard circle)
+    float d = length(q - vec2(0.0, 377.0 + 40.0 * u1)) - 377.0;     // the rim of a circle far larger than the area
+    return mix(L, V, feather(d, 13.0));
   }
   if (a == 11) {                                                     // Irwin: a disc barely there, and its shadow's cross
     float r = length(q), disc = feather(r - 64.0, 14.0);
@@ -1824,9 +1830,9 @@ vec3 washOf(int a) {
 
 // ---- the one pixel ----------------------------------------------------------------------------------------------
 // In a void's heart there is one pixel. Most of the time it only breathes, its colour turning through the artists'.
-// But every 89 seconds or so it does something astronomical, each void in its own order: a supernova (a soft shell
-// thrown out, its debris, then a nebula) or a big bang (everything, the whole plane at its most complex, opening out of
-// the pixel and closing back into it). (Until 9 Oct 2026 also McCall's line of light drawing a circle, planets on
+// But every 89 seconds or so it does something astronomical, each void in its own order: a supernova (a cloud of light
+// thrown out, its debris, then a nebula; a shell of light, a large ring, until 9 Oct 2026) or, one time in five, a big
+// bang (everything, the whole plane at its most complex, opening out of the pixel and closing back into it). (Until 9 Oct 2026 also McCall's line of light drawing a circle, planets on
 // orbits, a constellation joined, a pulsar's two beams and an accretion ring: all drew thin lines that turned.)
 float gBang = 0.0;                                                   // how far a big bang has opened here (cells), for main
 vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
@@ -1834,7 +1840,7 @@ vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   float r = length(d), period = 89.0, T = t + 55.0 * unit(mixh(v.h + 7u));
   float cyc = floor(T / period), ph = fract(T / period);
   uint hc = mixh(v.h ^ uint(cyc) * 0x9e3779b9u);
-  int ev = (hc & 1u) == 0u ? 2 : 6;                                   // (only these two since 9 Oct 2026: the others drew turning lines)
+  int ev = (hc % 5u) == 0u ? 6 : 2;                                   // (only these two since 9 Oct 2026: the others drew turning lines; the big bang one in five)
   float on = smoothstep(0.2, 0.3, ph) * (1.0 - smoothstep(0.85, 0.95, ph)), q = clamp((ph - 0.2) / 0.75, 0.0, 1.0);
   bool dark = lum(field) < 128.0;
   vec3 light = dark ? vec3(250, 246, 236) : vec3(12, 12, 16);
@@ -1846,7 +1852,8 @@ vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   if (on <= 0.0) return one ? pix : c;
   if (ev == 2) {
     float R = 233.0 * (1.0 - pow(1.0 - q, 3.0));
-    c = mix(c, light, on * (1.0 - q) * 0.6 * feather(abs(r - R), 13.0 + 21.0 * q));   // (a soft shell, not a line)
+    float rw = r + 0.3 * R * (vnoise(d, 55.0, hc) - 0.5);            // (a cloud of light, not a ring, since 9 Oct 2026:
+    c = mix(c, light, on * (1.0 - q) * 0.35 * feather(rw - R, 34.0 + 21.0 * q));   // the shell was a large circle)
     uint hd = h3(int(floor(atan(d.y, d.x) * 34.0)), 0, hc);
     float dr = R * (0.55 + 0.4 * unit(hd));
     c = mix(c, MINI[int(hd % 22u) * 4 + 3], on * (1.0 - q) * 0.5 * feather(abs(r - dr), 8.0) * step(0.7, unit(mixh(hd + 1u))));
@@ -1892,8 +1899,8 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   if (worlds) {
     float cxm = complexityAt(m25.xy);
     if (cxm < RUNG_C[3]) {
-      // (painted by the minimal pass, GROUND_MINIMAL, over the cells this pass marks: here only its artist's wash, for
-      // the seams and for when that pass is not there)
+      // (painted by the minimal pass, GROUND_MINIMAL, glazed over this pass: here only its artist's wash, for the seams
+      // and for when that pass is not there)
       Region rg = regionAt(gTrue);
       int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
       A = B = washOf(am);
@@ -1960,14 +1967,15 @@ float kinship(int a, int b, out vec3 shared, out float sharedD) {
 
 
 // ---- singularities: where the image collapses to one pixel, and something new is born of it --------------
-// One in each 987-cell square, kept at phi^-1 of them, each reaching 233 to 377 cells. Across its axis it has two
-// halves. On one, the plane collapses into a kaleidoscope's tube: 3 mirrors at the rim, 5, 8, 13, 21 nearer the core,
-// and every ring phi times nearer holding the ring outside it again, drawing inward, so the flat plane is seen going
-// down and down (each image dimmer and greener for the mirrors it came through), until at the core there is a single
-// pixel: one colour, pulsing, with a corona and two turning beams, like a neutron star. On the other half a world
-// found nowhere else builds up out of that pixel, seen in a kaleidoscope of 8 mirrors, then 5, then 3, in colours born of the core's own colour
-// turned by the golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing, rings
-// interfering, or a prismatic crystal.
+// One in each 987-cell square, kept at phi^-3 of them (phi^-1 until 9 Oct 2026), each reaching 233 to 377 cells.
+// Across its axis it has two halves. On one, the plane collapses into a kaleidoscope's tube: 3 mirrors at the rim, 5,
+// 8, 13, 21 nearer the core, and every ring phi times nearer holding the ring outside it again, so the flat plane is
+// seen going down and down (each image dimmer and greener for the mirrors it came through), until at the core there is
+// a single pixel: one colour, glowing softly (it pulsed, with a corona and two turning beams like a neutron star's,
+// until 9 Oct 2026, and the rings drew inward). On the other half a world found nowhere else builds up out of that
+// pixel, seen in a kaleidoscope of 8 mirrors, then 5, then 3, in colours born of the core's own colour turned by the
+// golden angle: a galaxy of seeds set by the golden angle, stained glass subdividing, rings interfering, or a
+// prismatic crystal, all held still.
 const int FIBS[11] = int[11](1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144);
 struct Sing { bool on; vec2 C, axis; float R; uint h; };
 Sing singAt(vec2 p) {
@@ -1978,7 +1986,7 @@ Sing singAt(vec2 p) {
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 q = sq + ivec2(i, j);
     uint h = h3(q.x, q.y, 1597u);
-    if (unit(h) > P1) continue;
+    if (unit(h) > P3) continue;                                     // (phi^-3 of the squares since 9 Oct 2026, not phi^-1)
     vec2 C = (vec2(q) + 0.25 + 0.5 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * G;
     float R = 233.0 + 144.0 * unit(mixh(h + 3u)), d = length(p - C);
     if (d < R && d < bd) { bd = d; float a = 6.2832 * unit(mixh(h + 4u)); best = Sing(true, C, vec2(cos(a), sin(a)), R, h); }
@@ -2047,20 +2055,20 @@ vec3 newborn(vec2 d, vec3 cc, uint h, float T) {
       else { float cy = o.y + sz.y * cut; if (q.y < cy) { sz.y = cy - o.y; hh += 17u; } else { sz.y = o.y + sz.y - cy; o.y = cy; hh += 19u; } }
     }
     vec2 e = min(q - o, o + sz - q);
-    if (min(e.x, e.y) < 1.0) return vec3(20.0);
-    return PAL(int(hh % 5u)) * (0.85 + 0.25 * sin(T * 0.7 + unit(hh) * 6.28));
+    // (the lead between the pieces was a dark line; since 9 Oct 2026 each piece only darkens a little toward its edge)
+    return PAL(int(hh % 5u)) * (0.85 + 0.25 * sin(T * 0.7 + unit(hh) * 6.28)) * (0.82 + 0.18 * smoothstep(0.0, 8.0, min(e.x, e.y)));
   } else if (kind == 2) {
     // rings interfering: two sources, their waves crossing
     vec2 s = 21.0 * vec2(cos(T * 0.2), sin(T * 0.2));
     float w = sin(length(d - s) * 0.55 - T * 2.0) + sin(length(d + s) * 0.55 - T * 2.0);
-    return mix(PAL(1), PAL(3), 0.5 + 0.25 * w) * (0.7 + 0.3 * step(0.0, w));
+    return mix(PAL(1), PAL(3), 0.5 + 0.25 * w) * (0.85 + 0.15 * smoothstep(-1.0, 1.0, w));   // soft, not banded
   }
   // a crystal: hexagons, each face lit by its angle to a light that turns
   vec2 hx = vec2(d.x / 11.0, (d.y + d.x * 0.577) / 12.7);
   vec2 cellc = floor(hx), f = fract(hx);
   float an = atan(f.y - 0.5, f.x - 0.5) + T * 0.3;
   vec3 col = mix(PAL(int(mod(cellc.x + cellc.y * 3.0, 5.0))), vec3(255.0), 0.25 + 0.25 * sin(an * 3.0));
-  if (min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)) < 0.06) col = vec3(250.0);
+  col = mix(vec3(250.0), col, smoothstep(0.0, 0.2, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y))) * 0.4 + 0.6);   // its rims light, softly (no line)
   return col;
   #undef PAL
 }
@@ -2239,7 +2247,6 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
 }
 
 void main() {
-  gl_FragDepth = 1.0;                                                // (0 marks a minimal cell for the minimal pass)
   ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
   vec3 anTint = vec3(1);
   vec4 anOver = vec4(0);
@@ -2271,7 +2278,7 @@ void main() {
   bool voidOne = false;
   if (ladder) {
     Void vd = voidAt(cellP);
-    float vr = vd.on ? length(cellP - vd.C) : 1e9;
+    float vr = vd.on ? voidRim(vd, cellP) : 1e9;
     if (vr < vd.R) {
       voidField = unit(mixh(vd.h + 5u)) < 0.5 ? MINI[0] * 0.36 : MINI[6];   // Reinhardt's black, or Ryman's white
       voidCol = astronomy(vd, cellP, uTime, voidField, voidOne);
@@ -2293,13 +2300,13 @@ void main() {
       sside = dot(d, sg.axis) + 21.0 * (vnoise(cellP, 34.0, sg.h) - 0.5);
       float t = clamp(1.0 - (sr - 21.0) / (sg.R - 21.0), 0.0, 1.0);
       if (sside > 0.0 && (sr < sg.R - 13.0 || unit(h3(cell.x, cell.y, sg.h)) < (sg.R - sr) / 13.0)) emerge = true;
-      else if (sr < 21.0 || t > 0.2 || unit(h3(cell.x, cell.y, sg.h + 1u)) < t / 0.2) {   // (its rim a speckle, not a line)
+      else if (sr < 21.0 || t > 0.08 || unit(h3(cell.x, cell.y, sg.h + 1u)) < t / 0.08) {   // (its rim a speckle, not a line; narrower since 9 Oct 2026)
         // The plane gathering to the core, seen in a kaleidoscope's tube: 3 mirrors at the rim, then 5, 8, 13 and 21
-        // nearer the core, and down the tube every ring phi times nearer holds the ring outside it again, drawing
-        // slowly inward, so a flat plane is seen to go down and down; each image as dim and green as the mirrors
-        // it has come through.
+        // nearer the core, and down the tube every ring phi times nearer holds the ring outside it again, so a flat
+        // plane is seen to go down and down; each image as dim and green as the mirrors it has come through. (The
+        // rings drew slowly inward until 9 Oct 2026: now the tube holds still.)
         float n = float(FIBS[2 + min(4, int(pow(t, 1.3) * 4.99))]);
-        float rho = log(max(sr, 21.0) / 21.0) / log(PHI) + uTime * 0.08, ring = floor(rho);
+        float rho = log(max(sr, 21.0) / 21.0) / log(PHI), ring = floor(rho);
         float rS = sg.R / (PHI * PHI) * pow(PHI, fract(rho));
         float k, ea;
         vec2 kd = kaleido(d / max(sr, 1.0) * rS, n, 6.2832 * unit(sg.h) + (mod(ring, 2.0) > 0.5 ? 0.3 : -0.3), k, ea);   // (no longer turning)
@@ -2315,12 +2322,13 @@ void main() {
     }
   }
   // Between the minimal and the full, the worlds simplified.
-  if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3]) {
+  if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3] + 0.06) {
     // (once drawn in blocks: now mirrors, strips of silvered glass standing in the plane, more and deeper the lower,
-    // and lower still, a second mirror reflecting the first)
-    float f = clamp((0.75 - cx) / (0.75 - RUNG_C[3]), 0.0, 1.0);
-    vec2 q = mirrorAt(cellP, 233.0, 8.0 + 47.0 * f, 5101u, gMirK, gMirE);
-    if (f > 0.4) q = mirrorAt(q, 144.0, 5.0 + 29.0 * f, 5103u, gMirK, gMirE);
+    // and lower still, a second mirror reflecting the first; since 9 Oct 2026 they thin out and go where the calm
+    // country's glaze comes in, so they never break its edge into splinters)
+    float f = clamp((0.75 - cx) / (0.75 - RUNG_C[3]), 0.0, 1.0), g = smoothstep(RUNG_C[3] + 0.06, RUNG_C[3] + 0.16, cx);
+    vec2 q = mirrorAt(cellP, 233.0, (8.0 + 47.0 * f) * g, 5101u, gMirK, gMirE);
+    if (f > 0.4) q = mirrorAt(q, 144.0, (5.0 + 29.0 * f) * g, 5103u, gMirK, gMirE);
     ivec2 bc = ivec2(floor(q));
     ivec2 sl2 = (bc >> 8) - uC0;
     if (bc != cell && all(greaterThanEqual(sl2, ivec2(0))) && all(lessThan(sl2, ivec2(16)))) {
@@ -2356,7 +2364,7 @@ void main() {
     int kk;
     State ss;
     passageAt(layer, cc, cell, a, b, kk, ss);
-    if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; if (gGram >= 40 && uAnom.z <= 0.0) gl_FragDepth = 0.0; }
+    if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
     else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
   }
   if (shaded) {
@@ -2385,20 +2393,15 @@ void main() {
     if (at == 0) { Cell o = cellAt(prev, lc); paint(prev, o, int(entT(prev, o.e, 25).z), Sd, A, B); }
     else if (at != 3) A = B = flatIn(layer, c, kind, Sd, tsel, at == 2);
   }
-  // ---- the seams: where two passages meet, what they are to each other decides how -------------------------
-  // Paintings by one artist, near in years, or sharing a colour are kin, and their sheets run into each other across
-  // a wide band, the nearer the kinder, each one's marks carrying on over the edge in the other's hand. Strangers
-  // meet at a torn edge, the upper sheet casting a shadow on the lower. A colour the two share is stitched along the
-  // seam. And where paper meets a digital territory, the marks are the passage between them: near the seam a crayon
-  // stroke is a window onto the other world, and the stroke carries on into it in that world's own light.
+  // ---- the seams: where two passages meet, they run into each other ---------------------------------------
+  // Every seam is a wash: the two sides blend across a band 34 cells deep, half and half at the seam itself. (Until
+  // 9 Oct 2026 strangers met at a torn edge with a shadow, a shared colour was stitched along the seam, and paper
+  // opened windows onto a digital territory: "more blending, more seamless transitions between things".)
   if (seam) {
-    // (since 9 Oct 2026 every seam is a wash: the two sides blend across the band, half and half at the seam itself,
-    // with no torn edge, shadow, stitch or window; "more blending, more seamless transitions between things")
     float db = c.pe * 55.0 + 8.0 * (vnoise(gP, 21.0, 131u) - 0.5);   // cells to the seam, the edge wandering a little
     float w = 0.5 + 0.5 * smoothstep(0.0, 34.0, db);
     A = mix(Ab, A, w); B = mix(Bb, B, w);
   }
-  // the meta forms' edges: one grey gradient, dark to light, through every world they cross
   // (the meta forms' edges were a grey line through every world; since 9 Oct 2026 the forms show only in their light)
   if (sg.on) {
     vec2 d = cellP - sg.C;
@@ -2408,22 +2411,13 @@ void main() {
       // the new world, seen in a kaleidoscope of 8 mirrors at the core, 5, then 3 at the rim, turning slowly the other way
       float t = clamp(1.0 - (sr - 21.0) / (sg.R - 21.0), 0.0, 1.0), k, ea;
       vec2 kd = kaleido(d, float(FIBS[2 + min(2, int(t * 2.99))]), 6.2832 * unit(mixh(sg.h + 7u)), k, ea);   // (no longer turning)
-      A = B = newborn(kd, cc, sg.h, uTime);
+      A = B = newborn(kd, cc, sg.h, 0.0);                            // held still (since 9 Oct 2026: nothing turns)
       gMirK = min(k, 5.0); gMirE = ea * sr;
     }
-    if (sr < 21.0) {
-      // the core: one pixel, pulsing
-      vec3 core = sside > 0.0 ? A : A;
-      A = B = min(core * (1.1 + 0.3 * sin(uTime * 8.0)) + 30.0, vec3(255.0));
-    }
-    if (abs(sr - 21.0) < 1.2) A = B = vec3(255.0, 252.0, 240.0);   // the corona
-    // two beams turning, as a pulsar's do
-    float ang = uTime * 0.8 + 6.2832 * unit(sg.h);
-    vec2 bdir = vec2(cos(ang), sin(ang));
-    if (sr > 21.0 && abs(dot(d, vec2(-bdir.y, bdir.x))) < 1.5) {
-      float f = 0.7 * (1.0 - sr / sg.R);
-      A = mix(A, vec3(255.0), f); B = mix(B, vec3(255.0), f);
-    }
+    // the core: one pixel, its light fading out softly over 34 cells (since 9 Oct 2026 it no longer pulses, and its
+    // corona ring and two turning beams are gone: "there is a spinning thin line animation ... please get rid of that")
+    float glow = 1.0 - smoothstep(0.0, 34.0, sr);
+    A = mix(A, min(A * 1.1 + 30.0, vec3(255.0)), glow); B = mix(B, min(B * 1.1 + 30.0, vec3(255.0)), glow);
   }
   // what is seen in the mirrors: each reflection takes a little of the light, and silvered glass leans green; and
   // where a mirror's glass is, a glint that fades off it (a gradient, never a line)
@@ -2458,12 +2452,11 @@ function fsPart(from, to) {
   if (i < 0 || j < 0) throw new Error("DIRT ground shader: no " + from);
   return GROUND_FS.slice(i, j) + "\n";
 }
-// The minimal areas' own pass (9 Oct 2026): the first pass marks the cells whose passage is minimal (at depth 0), and
-// this paints them, each in its large region, the region's painting thinning to its wash at the edge and two washes
-// meeting as one. Drawn as a pass of its own so that the first pass's shader, already the largest, holds none of the
-// compositions (with them it grew past what a software GPU could compile).
-const GROUND_VS_NEAR = `#version 300 es
-void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, -1.0, 1.0); }`;
+// The minimal areas' own pass (9 Oct 2026): the calm country, each large region's painting thinning to its wash at the
+// edge and two washes meeting as one. It is decided cell by cell, by how calm the plane is there, and glazed over what
+// the first pass drew, fading out across the edge of the busy country, so no passage's outline shows (the first pass
+// gives a calm passage only its wash). Drawn as a pass of its own so that the first pass's shader, already the
+// largest, holds none of the compositions (with them it grew past what a software GPU could compile).
 const GROUND_MINIMAL = (() => {
   const part = fsPart;
   return `#version 300 es
@@ -2474,19 +2467,30 @@ uniform sampler2D uRoster;
 uniform int uRAt[5];
 uniform ivec2 uCell0;
 uniform float uTime;
+uniform int uTaps;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
 void main() {
   vec2 p = vec2(uCell0 + ivec2(gl_FragCoord.xy)) + 0.5;
+  // how much of the calm country is here: all of it below the minimal rung, none a tenth above it, and none in a
+  // void's heart, which is the void's own (its rim, 21 cells, shared)
+  float cx = complexityAt(p), cover = 1.0 - smoothstep(RUNG_C[3] - 0.02, RUNG_C[3] + 0.1, cx);
+  Void vd = voidAt(p);
+  if (vd.on) cover *= smoothstep(vd.R - 21.0, vd.R, voidRim(vd, p));
+  if (cover <= 0.0) discard;
   Region rg = regionAt(p);
   int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
   int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.h2);
-  vec3 w1 = washOf(a1), w2 = washOf(a2), comp = minimal(a1, (p - rg.C1) * 0.55, rg.h1, uTime);
-  float zone = 1.0 - smoothstep(RUNG_C[3] - 0.1, RUNG_C[3], complexityBare(p));   // and toward the worlds round it
+  vec3 w1 = washOf(a1), w2 = washOf(a2), comp = vec3(0.0);
+  // the painting, a little soft: looked at a few cells apart and averaged, so no edge in it is sharp and no line hard
+  vec2 q = (p - rg.C1) * 0.55;
+  for (int k = 0; k < uTaps; k++) comp += minimal(a1, q + (uTaps == 1 ? vec2(0.0) : 1.8 * vec2((k & 1) == 0 ? -1.0 : 1.0, (k & 2) == 0 ? -1.0 : 1.0)), rg.h1, uTime);
+  comp /= float(max(uTaps, 1));
+  float zone = 1.0 - smoothstep(RUNG_C[3] - 0.1, RUNG_C[3], cx);   // and toward the worlds round it, its wash alone
   vec3 col = mix(w1, comp, smoothstep(0.0, 89.0, rg.d) * zone);     // the painting, thinning to its wash at the edge
   col = mix(col, mix(w1, w2, 0.5), 1.0 - smoothstep(0.0, 34.0, rg.d));   // and the two washes one at the edge
-  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, 1.0);
+  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, cover);
 }`;
 })();
 const GROUND_FORMAL = (() => {
@@ -3965,7 +3969,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
-  let minimalProg = null, Mi = {}, rbDepth = null;
+  let minimalProg = null, Mi = {};
   let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, toysProg = null, Ty = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
@@ -4102,9 +4106,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // page); the ground is plain paper until they are ready.
   const parallel = gl.getExtension("KHR_parallel_shader_compile");
   let pending = null;
-  function program(fsSrc, vsSrc = GROUND_VS) {
+  function program(fsSrc) {
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
-    const vs = sh(gl.VERTEX_SHADER, vsSrc), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
+    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
     gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
     return { pr, vs, fs };
   }
@@ -4125,7 +4129,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS), j: program(GROUND_MINIMAL, GROUND_VS_NEAR) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS), j: program(GROUND_MINIMAL) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -4251,7 +4255,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
-    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime"]);   // the minimal areas' pass
+    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime", "uTaps"]);   // the minimal areas' pass
     if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
@@ -4269,10 +4273,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tA, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, tB, 0);
     gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
-    if (!rbDepth) rbDepth = gl.createRenderbuffer();                 // the minimal cells' mark
-    gl.bindRenderbuffer(gl.RENDERBUFFER, rbDepth);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, FW, FH);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rbDepth);
     // the last frame's cells, for the depth pass, with every level of detail
     if (tP) gl.deleteTexture(tP);
     gl.activeTexture(gl.TEXTURE10); tP = tex(gl.TEXTURE_2D);
@@ -4375,17 +4375,18 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform4fv(U.uAnom, anom);
     gl.uniform1i(U.uTier, tier);
     gl.uniform2f(U.uHalf, cw / 2, ch / 2);
-    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.ALWAYS); gl.depthMask(true);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    // then the minimal areas, over the cells the first pass marked
-    if (minimalProg && !earth && !(anom[2] > 0)) {
+    // then the calm country, glazed over it (its cover in the alpha; the cells' own alpha kept)
+    if (minimalProg && !earth && edgeOn && !(anom[2] > 0)) {
       gl.useProgram(minimalProg);
       gl.uniform2i(Mi.uCell0, cx0, cy0);
       gl.uniform1f(Mi.uTime, t);
-      gl.depthFunc(gl.EQUAL); gl.depthMask(false);
+      gl.uniform1i(Mi.uTaps, tier >= 2 ? 4 : 1);
+      gl.enable(gl.BLEND);
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
     }
-    gl.depthMask(true); gl.disable(gl.DEPTH_TEST);
     // then the formal end over it, once the quilts are here, on the plane after the artists, and not in an anomaly
     if (formalProg && qn && !earth && edgeOn && tier >= 1 && !(anom[2] > 0)) {
       gl.useProgram(formalProg);

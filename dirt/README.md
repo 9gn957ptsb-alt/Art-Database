@@ -302,7 +302,8 @@ with any name you add. The photo stays in the viewer's browser, and goes to Clau
 (`FIELD_K` in the page's shared script, and as a literal in `ground-gl.js`): the ladder of complexity and its voids,
 the calm islands, the passages and their oversprays, the collage's and the worlds' slow fields, the meta forms and
 the gardens all change in 377 to 987 cells where they took 987 to 2584, so a swipe of a phone's width or two is
-already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1.
+already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1. (Since 9 October
+2026 the passages are only one step nearer, 144 cells, and their oversprays not at all: see *Seams as washes*.)
 
 **Friezes, after Rothko.** Now and then (rarer since the exquisite corpses came), the collage gives way to friezes (`ground-gl.js`,
 `frieze()`): rows 89 cells high in three registers in golden proportion, as Rothko stacked heads over torsos over feet
@@ -442,15 +443,35 @@ too much ... I want those faces to be barely noticeable and more rare than not")
 - *No turning lines.* McCall's minimal area no longer draws its circle with a turning line of light: the cone of light it
   makes is there whole, a soft fan from the source and a soft halo where it meets the circle. The one pixel in a void
   now only throws out a supernova (a soft shell, not a line) or opens a big bang; its pulsar beams, orbits,
-  constellation lines, accretion ring and McCall circle are gone. The singularities' kaleidoscopes hold still.
+  constellation lines, accretion ring and McCall circle are gone. The singularities hold still too: their kaleidoscopes
+  no longer turn, the core no longer pulses and has lost its corona ring and its two turning beams (a neutron star's,
+  thin lines sweeping round, missed in the first pass), and the worlds born of a core are held as they are,
+  the stained glass without its lead and the crystal without its white rims; their tubes no longer draw inward, they
+  come in φ⁻³ of their squares, not φ⁻¹, and their speckled rims are narrower. The meta forms' vortex holds still.
 - *One wash.* The minimal rungs were a patchwork: every passage, 89 cells across, its own painting cut off at a hard
   edge, six or eight to a screen. Now they are large regions, about 377 cells across (a scattered seed in each square,
   the edges between them wandering), each one artist's minimal painting drawn larger and whole; toward its edge each
   thins over 89 cells into a wash of its own light colours, and at the edge two neighbours meet in one wash of both,
-  so no border shows. They are drawn by a pass of their own (`GROUND_MINIMAL`): the first pass marks the cells whose
-  passage is minimal at depth 0 and gives them their artist's wash, and the minimal pass paints only those cells, so
-  the first pass's shader, the largest, holds none of the compositions (with them it grew past what a software GPU
-  could compile).
+  so no border shows. Each painting is looked at four times a few cells apart and averaged, so no edge in it is sharp
+  and no line hard, and Kelly's one shape is a soft curve now, not a dome (drawn this large, it was a large hard
+  circle). They are drawn by a pass of their own (`GROUND_MINIMAL`), so the first pass's shader, the largest, holds
+  none of the compositions (with them it grew past what a software GPU could compile).
+- *A glaze, not a cut.* Where the calm country meets the busy one it no longer stops at a passage's outline: the
+  minimal pass decides cell by cell, by how calm the plane is there, and is glazed over what the first pass drew,
+  wholly below the minimal rung and fading out a tenth above it, so the busy worlds go under a wash along the
+  plane's own contours. The simplified worlds' mirror strips thin out and go before the glaze comes in, so they no
+  longer splinter its edge (they had been deepest just there). A void's heart keeps its own field, and its rim now
+  wanders, so a void is a pool and not one more large disc; its supernova throws out a cloud of light, not a shell
+  (an expanding ring), and its big bang comes one time in five, not one in two.
+- *Seams as washes.* Where two worlds meet, they now blend across a band 34 cells deep on either side, half and half
+  at the seam itself, its course wandering a little; and DRIFT's passages are 144 cells across, one Fibonacci step
+  nearer than the site's 233, not two, so fewer worlds share a screen. (The band had been 13 cells deep: the
+  shaders read the cells' nearness to a seam as if every field were the site's size.) The torn edges with their
+  shadows, the stitches of a shared colour along a seam, and the crayon windows from paper into a digital territory
+  are gone, and so is the grey line the meta forms drew through every world: they show only in their light.
+- *Calmer on the whole.* How complex the plane is at a place now rises from 0.3 to 0.9 of its noise, not 0.2 to 0.8,
+  so about 72% of the plane is the calm washes of the minimal regions (half, before), 17% the simplified worlds and
+  10% the full ones (a quarter, before). The worlds are all still there, only rarer, and the way to them is longer.
 - *Faint faces.* The welds come in φ⁻⁷ of their squares, not φ⁻²; the face mosaics and exquisite corpses in φ⁻⁹, not
   φ⁻⁶; the friezes of faces only where their field is above 0.9. And every one is drawn at φ⁻³ of its strength, so the
   ground shows through it: a face you notice only if you look.
