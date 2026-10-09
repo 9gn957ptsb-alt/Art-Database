@@ -471,7 +471,8 @@ the border a plant may be a hybrid, its leaves the one artist's edged in the oth
 the first one's colours. The flowers open, stand about half a minute, fall and come again; the leaves stay. Where a
 plant lies under the canopy is found once, not every frame, so the garden costs well under a millisecond a frame.
 
-**Falling Like Leaves: the garden as a film.** The coleus loves heat and keeps to the shade, and its colour is
+**Falling Like Leaves: the garden as a film.** (Since 9 October 2026 the characters no longer walk in DRIFT: "I can't stand
+the small silhouettes walking around." Their title cards still come into the collage, and the website keeps them.) The coleus loves heat and keeps to the shade, and its colour is
 brightest there: a character before it is a plant. Every plant in the garden is one (`artists/cast.json`), set where
 that plant thrives on Earth and written after a performance from the history of cinema. Plectra, the coleus, is the
 protagonist (Kebun Raya Bogor, Java; after Tony Leung in *In the Mood for Love*); she crosses the gardens and takes

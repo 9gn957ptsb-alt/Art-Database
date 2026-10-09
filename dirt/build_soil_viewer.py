@@ -2073,7 +2073,9 @@ const STILL = new Set(["blooms", "ferns", "garden"]);                     // wit
 // blooms and ferns, and the morpho butterflies. The rest (ants, mould, frogs, snakes, fireflies, wind, troops,
 // hummingbirds, macaws, eagles, and the wanderers) stay in the code, off.
 // (and halved again the same day: the ferns, whose curling fronds read as scribble over the fields, are off too)
-const KEPT_LIFE = new Set(["morphos", "garden", "blooms", "cast"]);
+// (9 Oct 2026: the cast's walking figures are off in DRIFT too, "I can't stand the small silhouettes walking around";
+// their title cards still come into the collage. The website keeps them until that session chooses.)
+const KEPT_LIFE = new Set(SITE ? ["morphos", "garden", "blooms", "cast"] : ["morphos", "garden", "blooms"]);
 function spawnLife(c) {
   for (const s of c.sites) {
     const g = LIFE[s.kind];
