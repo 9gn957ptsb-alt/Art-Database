@@ -2442,6 +2442,28 @@
     return ((n ^ (n >>> 16)) >>> 0) % 1024 / 1024;
   }
 
+  /* The pulse is seen through a kaleidoscope (the artist, 9 Oct 2026: kaleidoscopes "in a very,
+     very subtle way", then "Fold the pulse"): two mirrors at 36° — 2 cos 36° = φ, the number every
+     timing here runs on. Every tile is folded into the tenth between the mirrors and worked out
+     there, shape and ragged edge alike, so one tenth of the old pulse is reflected round ten
+     times: the square with its corners knocked off comes out a soft pentagon (its corners 16 %
+     out, the square's were 27 %), and the same broken edge comes round ten times, mirrored.
+     Each press turns the kaleidoscope (`turn`) and shakes its pieces (`seed`); its three echoes
+     share them. On the 13 px grid it shows in the larger echoes. */
+  var FOLD = Math.PI / 5;               // 36°: the angle between the two mirrors
+  var JAG = CELL_PX * 0.65;             // the edge's reach either side, as before
+
+  function folded(sx, sy, turn) {
+    var a = Math.atan2(sy, sx) - turn;
+    a -= Math.floor(a / (2 * FOLD)) * 2 * FOLD;   // into one pair of images, 0–72°
+    return a > FOLD ? 2 * FOLD - a : a;             // and back through the mirror, 0–36°
+  }
+
+  // The ragged edge at a folded angle: where in the tenth, in tiles along the ring and out.
+  function jag(a, base, seed) {
+    return (hash2(Math.floor(a * base / CELL_PX) + seed, Math.floor(base / CELL_PX)) - 0.5) * 2 * JAG;
+  }
+
   /* Light going out from a point, in the colours given, three rings deep. */
   function pulse(x, y, tones, strength, reach) {
     if (still || !isFinite(x) || !isFinite(y)) { return; }
@@ -2449,13 +2471,15 @@
     strength = strength === undefined ? 1 : strength;
     reach = reach || Math.max(W, H) * INV2;
     var now = performance.now();
+    var turn = Math.random() * 2 * FOLD, seed = Math.floor(Math.random() * 4096);
     [1, INV, INV2].forEach(function (k, i) {
       waves.push({
         x: x, y: y, at: now + i * 110,
         tone: tones[i % tones.length],
         strength: strength * k,
         reach: reach * (1 - i * 0.12),
-        speed: reach / (FLY * 0.9)            // pixels a millisecond
+        speed: reach / (FLY * 0.9),           // pixels a millisecond
+        turn: turn, seed: seed
       });
     });
     if (waves.length > 36) { waves.splice(0, waves.length - 36); }
@@ -2515,20 +2539,25 @@
       var r = age * w.speed;
       var band = CELL_PX * 3.2;
       var blob = age < 150 ? CELL_PX * 3.4 : 0;      // the square it starts as
-      var span = r + CELL_PX * 2;
+      var span = Math.max(r, blob) / 0.86 + CELL_PX * 2;   // the folded corners reach 1/0.86 of it
       var i0 = Math.max(0, Math.floor((w.x - span) / CELL_PX));
       var i1 = Math.min(cols - 1, Math.ceil((w.x + span) / CELL_PX));
       var j0 = Math.max(0, Math.floor((w.y - span) / CELL_PX));
       var j1 = Math.min(rows - 1, Math.ceil((w.y + span) / CELL_PX));
       for (var j = j0; j <= j1; j += 1) {
         for (var i = i0; i <= i1; i += 1) {
-          var dx = Math.abs(i * CELL_PX + CELL_PX / 2 - w.x);
-          var dy = Math.abs(j * CELL_PX + CELL_PX / 2 - w.y);
-          // A square that has had its corners knocked off, and a ragged edge.
-          var d = 0.72 * Math.max(dx, dy) + 0.28 * Math.sqrt(dx * dx + dy * dy) +
-                  (hash2(i, j) - 0.5) * CELL_PX * 1.3;
+          var sx = i * CELL_PX + CELL_PX / 2 - w.x, sy = j * CELL_PX + CELL_PX / 2 - w.y;
+          var rho = Math.sqrt(sx * sx + sy * sy);
+          // Out of reach of the front and the first square at any angle, whatever the edge does
+          // (folded, the shape below is between 0.86 and 1 of rho).
+          if (0.86 * rho - JAG >= blob && (0.86 * rho - JAG > r || rho + JAG <= r - band)) { continue; }
+          // A square that has had its corners knocked off, and a ragged edge, both seen through
+          // the mirrors (folded, jag, above): within the tenth, max(|cos|, |sin|) is the cosine.
+          var a = folded(sx, sy, w.turn || 0);
+          var base = rho * (0.72 * Math.cos(a) + 0.28);
+          var d = base + jag(a, base, w.seed || 0);
           var lit = 0;
-          if (d < blob) { lit = 1; }
+          if (blob && d < blob) { lit = 1; }        // not after it: an edge pulled in past the middle
           var front = r - d;
           if (front >= 0 && front < band) { lit = Math.max(lit, 1 - front / band); }
           if (!lit) { continue; }
