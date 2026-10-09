@@ -66,6 +66,9 @@ def places(k):
 
 
 def main():
+    sys.path.insert(0, str(SCRIPTS))
+    import needs
+    needs.ensure()                        # a fresh container: what the grounds and their years import
     failed, new = [], {}
     for k in KINDS:
         before = {p["slug"] for p in places(k)}
