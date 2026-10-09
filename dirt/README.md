@@ -432,6 +432,29 @@ ten compositions, five of them sharing the net and six a band on white; it has 5
 in DIRT added at once (Richard Diebenkorn, Peter Doig, Robert Rauschenberg, Graham Sutherland, Gabriel Orozco, Brice Marden, Edgar Degas, Julian Schnabel, Stanley William Hayter, Childe Hassam, Anselm Kiefer, Emil Nolde, Gregory Horndeski, Hiroyuki Hamada, Mark Bradford, Auguste Rodin, Alfred Stieglitz, Hans Bellmer, Odilon Redon, Robert Motherwell, Alex Da Corte, Pietro Consagra, Rembrandt van Rijn, Georges Mathieu, JFK Turner, Jean-Michel Basquiat, Beatrice Meoni, Carl Holty, Le Corbusier, M. C. Escher, Marcel Duchamp, Charline von Heyl, Conrad Marca-Relli, Dorothy Napangardi, Eva Schlegel, Richard Prince, Richard Serra, Dan Walsh, Eddie Martinez, John Chamberlain, Wifredo Lam), and nine compositions after bodies of work (above). Each minimal area takes an artist of its
 rung, so most now take one of the roster, and no two neighbours need look alike.
 
+**Another place each time, fewer lines, one wash, faint faces** (9 October 2026: "it opens to the same thing every time
+... There is a spinning thin line animation ... please get rid of that. I still feel like the overall texture is too
+complicated, I want more blending, more seamless transitions between things. Also, the frequency of Big faces is way
+too much ... I want those faces to be barely noticeable and more rare than not").
+
+- *Another place each time.* Each visit begins on another calm island, one of 233 by 233, chosen at random (the website
+  keeps its one beginning).
+- *No turning lines.* McCall's minimal area no longer draws its circle with a turning line of light: the cone of light it
+  makes is there whole, a soft fan from the source and a soft halo where it meets the circle. The one pixel in a void
+  now only throws out a supernova (a soft shell, not a line) or opens a big bang; its pulsar beams, orbits,
+  constellation lines, accretion ring and McCall circle are gone. The singularities' kaleidoscopes hold still.
+- *One wash.* The minimal rungs were a patchwork: every passage, 89 cells across, its own painting cut off at a hard
+  edge, six or eight to a screen. Now they are large regions, about 377 cells across (a scattered seed in each square,
+  the edges between them wandering), each one artist's minimal painting drawn larger and whole; toward its edge each
+  thins over 89 cells into a wash of its own light colours, and at the edge two neighbours meet in one wash of both,
+  so no border shows. They are drawn by a pass of their own (`GROUND_MINIMAL`): the first pass marks the cells whose
+  passage is minimal at depth 0 and gives them their artist's wash, and the minimal pass paints only those cells, so
+  the first pass's shader, the largest, holds none of the compositions (with them it grew past what a software GPU
+  could compile).
+- *Faint faces.* The welds come in φ⁻⁷ of their squares, not φ⁻²; the face mosaics and exquisite corpses in φ⁻⁹, not
+  φ⁻⁶; the friezes of faces only where their field is above 0.9. And every one is drawn at φ⁻³ of its strength, so the
+  ground shows through it: a face you notice only if you look.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later
@@ -584,7 +607,7 @@ The one pixel is one device pixel. Most of the time it only breathes, its colour
 as McCall's; planets go round it on Kepler's orbits, the far ones slower; a supernova throws out a shell and its
 debris and leaves a nebula; a constellation appears star by star, joined, as Miró's; a pulsar's two beams turn; an
 accretion ring turns round a black point with light bent round it; or a big bang: the whole plane at its most complex
-opens out of the pixel across the void, and closes back into it.
+opens out of the pixel across the void, and closes back into it. (Since 9 October 2026 only the supernova and the big bang: the others drew thin lines that turned.)
 
 **New artists, every week.** Beyond the 22 drawn by hand, artists join the ladder from the roster
 (`dirt/artists/roster.json`), with no new code: `dirt/artists/roster.py` reads an artist's saved works (up to 13, taken

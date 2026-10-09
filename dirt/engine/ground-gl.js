@@ -1401,9 +1401,11 @@ Void voidAt(vec2 p) {
   }
   return best;
 }
+/** How complex the plane is at p, leaving the voids aside. */
+float complexityBare(vec2 p) { return smoothstep(0.2, 0.8, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u)); }
 /** How complex the plane is at p: 0 in a void's heart, 1 where everything is. */
 float complexityAt(vec2 p) {
-  float b = smoothstep(0.2, 0.8, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u));
+  float b = complexityBare(p);
   Void v = voidAt(p);
   if (v.on) b *= smoothstep(v.R, v.R + 377.0 * ${FKS}, length(p - v.C));
   return b;
@@ -1430,12 +1432,15 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
     float y = q.y - (u1 - 0.5) * 34.0;
     return y < 0.0 ? mix(L, M, smoothstep(-144.0, 0.0, y) * 0.5) : mix(M * 0.62, D, smoothstep(0.0, 144.0, y));
   }
-  if (a == 3) {                                                      // McCall: a line of light drawing a circle in the dark
-    float r = length(q), ang = mod(atan(q.y, q.x) + 3.1416, 6.2832), grow = fract(t / 34.0 + u1) * 6.2832;
-    float ring = feather(abs(r - 72.0), 1.4) * (ang < grow ? 1.0 : 0.0);
-    vec2 tip = 72.0 * vec2(cos(grow - 3.1416), sin(grow - 3.1416)), src = vec2(-150.0, -150.0 + 300.0 * u2);
-    float beam = feather(segD(q, src, tip), 1.0) * 0.25;
-    return mix(D * 0.3, L, max(ring, beam) + 0.04 * (ang < grow && r < 72.0 ? 1.0 : 0.0));
+  if (a == 3) {                                                      // McCall: a cone of light in the haze, still
+    // (until 9 Oct 2026 a line of light drew the circle, turning, and read as a spinning thin line: now the cone it
+    // makes is there whole, a soft fan of light from the source, a soft halo where it meets the circle)
+    vec2 src = vec2(-150.0, -150.0 + 300.0 * u2), ax = normalize(-src);
+    float along = dot(q - src, ax), across = abs(dot(q - src, vec2(-ax.y, ax.x))), reach = length(src);
+    float spread = 72.0 * clamp(along / reach, 0.0, 1.0);
+    float cone = step(0.0, along) * (1.0 - smoothstep(spread - 13.0, spread + 13.0, across)) * smoothstep(0.0, reach, along) * (1.0 - smoothstep(reach, reach + 55.0, along));
+    float halo = exp(-pow((length(q) - 72.0) / 13.0, 2.0));
+    return mix(D * 0.3, L, 0.14 * cone + 0.32 * halo);
   }
   if (a == 4) {                                                      // Miro: a constellation, joined
     vec3 c = L;
@@ -1791,20 +1796,45 @@ int minimalOf(float cx, uint h) {
   return i < nb ? RUNG[RUNG_AT[r] + i] : 100 + uRAt[r] + i - nb;
 }
 
+// The large regions of the ladder's minimal rungs (9 Oct 2026): a seed in each 377-cell square, scattered, the edges
+// between them wandering; for a point, its region's seed and the next, and how far in from the edge between them it is.
+struct Region { vec2 C1, C2; uint h1, h2; float d; };
+Region regionAt(vec2 p) {
+  const float RG = 377.0;
+  vec2 pw = p + 34.0 * (vec2(vnoise(p, 144.0, 5201u), vnoise(p, 144.0, 5202u)) - 0.5);
+  ivec2 g0 = ivec2(floor(pw / RG));
+  Region r = Region(vec2(0.0), vec2(1e6), 0u, 0u, 0.0);
+  float d1 = 1e18, d2 = 1e18;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = g0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 5203u);
+    vec2 C = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * RG;
+    float dd = dot(pw - C, pw - C);
+    if (dd < d1) { d2 = d1; r.C2 = r.C1; r.h2 = r.h1; d1 = dd; r.C1 = C; r.h1 = h; }
+    else if (dd < d2) { d2 = dd; r.C2 = C; r.h2 = h; }
+  }
+  r.d = (d2 - d1) / (2.0 * max(length(r.C1 - r.C2), 1.0));
+  return r;
+}
+/** An artist's wash: their light colour with a little of their middle one, as paint thinned with water. */
+vec3 washOf(int a) {
+  if (a >= 100) return mix(texelFetch(uRoster, ivec2(2, a - 100), 0).rgb, texelFetch(uRoster, ivec2(1, a - 100), 0).rgb, 0.2);
+  return mix(MINI[a * 4 + 2], MINI[a * 4 + 1], 0.2);
+}
+
 // ---- the one pixel ----------------------------------------------------------------------------------------------
 // In a void's heart there is one pixel. Most of the time it only breathes, its colour turning through the artists'.
-// But every 89 seconds or so it does something astronomical, each void in its own order:
-//   0 a line of light drawing a circle out of it, as McCall's;   1 planets, on orbits as Kepler's (the far slower);
-//   2 a supernova: a shell thrown out, its debris, then a nebula; 3 a constellation, star by star, joined, as Miro's;
-//   4 a pulsar: two beams turning;   5 an event horizon: an accretion ring round a black point, and light bent round it;
-//   6 a big bang: everything, the whole plane at its most complex, opening out of the pixel and closing back into it.
+// But every 89 seconds or so it does something astronomical, each void in its own order: a supernova (a soft shell
+// thrown out, its debris, then a nebula) or a big bang (everything, the whole plane at its most complex, opening out of
+// the pixel and closing back into it). (Until 9 Oct 2026 also McCall's line of light drawing a circle, planets on
+// orbits, a constellation joined, a pulsar's two beams and an accretion ring: all drew thin lines that turned.)
 float gBang = 0.0;                                                   // how far a big bang has opened here (cells), for main
 vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   vec2 d = p - v.C;
   float r = length(d), period = 89.0, T = t + 55.0 * unit(mixh(v.h + 7u));
   float cyc = floor(T / period), ph = fract(T / period);
   uint hc = mixh(v.h ^ uint(cyc) * 0x9e3779b9u);
-  int ev = int(hc % 7u);
+  int ev = (hc & 1u) == 0u ? 2 : 6;                                   // (only these two since 9 Oct 2026: the others drew turning lines)
   float on = smoothstep(0.2, 0.3, ph) * (1.0 - smoothstep(0.85, 0.95, ph)), q = clamp((ph - 0.2) / 0.75, 0.0, 1.0);
   bool dark = lum(field) < 128.0;
   vec3 light = dark ? vec3(250, 246, 236) : vec3(12, 12, 16);
@@ -1814,45 +1844,13 @@ vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   vec3 c = field;
   gBang = 0.0;
   if (on <= 0.0) return one ? pix : c;
-  if (ev == 0) {
-    float R = 55.0 + 89.0 * unit(hc), ang = mod(atan(d.y, d.x) + 6.2832, 6.2832), grow = q * 6.2832 * 1.2;
-    c = mix(c, light, on * feather(abs(r - R), 1.2) * (ang < grow ? 1.0 : 0.0));
-    vec2 tip = R * vec2(cos(grow), sin(grow));
-    c = mix(c, light, on * 0.35 * feather(segD(d, vec2(0), tip), 0.8));
-  } else if (ev == 1) {
-    for (int i = 1; i <= 6; i++) {
-      float R = 8.0 * pow(PHI, float(i)), w = 0.9 / pow(R / 8.0, 1.5), an = w * T + 6.2832 * unit(mixh(hc + uint(i)));
-      vec2 b = R * vec2(cos(an), sin(an) * 0.62);
-      c = mix(c, light, on * 0.07 * feather(abs(length(d / vec2(1.0, 0.62)) - R), 0.6));
-      c = mix(c, MINI[int(mixh(hc + uint(i) * 7u) % 22u) * 4 + 3], on * feather(length(d - b) - 0.8, 0.7));
-    }
-  } else if (ev == 2) {
+  if (ev == 2) {
     float R = 233.0 * (1.0 - pow(1.0 - q, 3.0));
-    c = mix(c, light, on * (1.0 - q) * feather(abs(r - R), 2.0 + 6.0 * q));
+    c = mix(c, light, on * (1.0 - q) * 0.6 * feather(abs(r - R), 13.0 + 21.0 * q));   // (a soft shell, not a line)
     uint hd = h3(int(floor(atan(d.y, d.x) * 34.0)), 0, hc);
     float dr = R * (0.55 + 0.4 * unit(hd));
-    c = mix(c, MINI[int(hd % 22u) * 4 + 3], on * (1.0 - q) * feather(abs(r - dr), 1.0) * step(0.7, unit(mixh(hd + 1u))));
+    c = mix(c, MINI[int(hd % 22u) * 4 + 3], on * (1.0 - q) * 0.5 * feather(abs(r - dr), 8.0) * step(0.7, unit(mixh(hd + 1u))));
     c = mix(c, MINI[int(hc % 22u) * 4 + 3], on * q * 0.25 * feather(r - R * 0.7, R * 0.3) * vnoise(d, 21.0, hc));
-  } else if (ev == 3) {
-    vec2 prev = vec2(0);
-    int n = int(q * 9.0);
-    for (int i = 0; i < 9; i++) {
-      if (i > n) break;
-      uint hi = mixh(hc + 90u + uint(i));
-      vec2 s = prev + (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 89.0;
-      c = mix(c, light, on * 0.6 * feather(segD(d, prev, s), 0.6));
-      c = mix(c, MINI[4 * 4 + 3], on * feather(length(d - s) - 1.5, 0.8));
-      prev = s;
-    }
-  } else if (ev == 4) {
-    float an = T * 3.0, cross = abs(dot(d, vec2(-sin(an), cos(an))));
-    c = mix(c, light, on * feather(cross, 1.0) * feather(r - 377.0, 144.0) * 0.8);
-  } else if (ev == 5) {
-    vec2 e = d / vec2(1.0, 0.34);
-    float ring = feather(abs(length(e) - 34.0), 3.0), lens = feather(abs(r - 21.0), 1.5);
-    c = mix(c, mix(MINI[17 * 4 + 3], light, 0.5 + 0.5 * sin(atan(e.y, e.x) * 2.0 - T * 2.0)), on * ring);
-    c = mix(c, light, on * lens * 0.8);
-    if (r < 13.0) c = mix(c, vec3(0), on);
   } else {
     gBang = on * (v.R * 0.9) * sin(3.1416 * q);
   }
@@ -1886,21 +1884,20 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
   float t0 = first + float(k) * tau;
   uint hk = mixh(seed ^ (uint(k) * 0x85ebca6bu));
   vec2 O = m25.xy + (vec2(unit(hk), unit(mixh(hk + 1u))) - 0.5) * 144.0, cp = vec2(cell) + 0.5;
-  // Low on the ladder, the area is one minimal painting, after one of the saved artists, and at each change another
-  // of the same rung, wiped across as the old one goes.
+  // Low on the ladder (since 9 Oct 2026): large regions, about 377 cells across, each one minimal painting after one
+  // artist, drawn large and whole, and still; each thins toward its edge into a wash of its own light colours, and at
+  // the edge two neighbours meet in one wash of both, so no border shows ("more blending, more seamless transitions
+  // between things"). Until then each passage, 89 cells across, was its own painting, cut off at a hard edge, six or
+  // eight to a screen.
   if (worlds) {
     float cxm = complexityAt(m25.xy);
     if (cxm < RUNG_C[3]) {
-      int a1 = minimalOf(cxm, h3(int(m26.y), int(m26.z), uint(max(k, -1) + 3))), a0 = minimalOf(cxm, h3(int(m26.y), int(m26.z), uint(max(k - 1, -1) + 3)));
-      vec2 q = gTrue - m25.xy;
-      float pcm = k < 0 || uHold > 0.5 ? 2.0 : progressAt(cp, t0, -1e9, O, seed, DUR, SPEED);
-      float wipe = smoothstep(-0.05, 0.05, pcm - 0.5 - 0.3 * (vnoise(gTrue, 21.0, hk) - 0.5));
-      // (one call in a loop, not two: every composition is then compiled once, 9 Oct 2026)
-      vec3 mc[2] = vec3[2](vec3(0.0), vec3(0.0));
-      int i0 = wipe >= 1.0 ? 1 : 0, i1 = wipe <= 0.0 ? 0 : 1;
-      for (int i = i0; i <= i1; i++) mc[i] = minimal(i == 0 ? a0 : a1, q, h3(int(m26.y), int(m26.z), uint(k + 99 + i)), uTime);
-      A = B = mix(mc[0], mc[1], wipe);
-      gGram = 40 + (wipe > 0.5 ? a1 : a0);
+      // (painted by the minimal pass, GROUND_MINIMAL, over the cells this pass marks: here only its artist's wash, for
+      // the seams and for when that pass is not there)
+      Region rg = regionAt(gTrue);
+      int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
+      A = B = washOf(am);
+      gGram = 40 + am;
       Sd = State(0, 0, 0, 0);
       return;
     }
@@ -2242,6 +2239,7 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
 }
 
 void main() {
+  gl_FragDepth = 1.0;                                                // (0 marks a minimal cell for the minimal pass)
   ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
   vec3 anTint = vec3(1);
   vec4 anOver = vec4(0);
@@ -2304,7 +2302,7 @@ void main() {
         float rho = log(max(sr, 21.0) / 21.0) / log(PHI) + uTime * 0.08, ring = floor(rho);
         float rS = sg.R / (PHI * PHI) * pow(PHI, fract(rho));
         float k, ea;
-        vec2 kd = kaleido(d / max(sr, 1.0) * rS, n, uTime * 0.04 * (mod(ring, 2.0) > 0.5 ? 1.0 : -1.0) + 6.2832 * unit(sg.h), k, ea);
+        vec2 kd = kaleido(d / max(sr, 1.0) * rS, n, 6.2832 * unit(sg.h) + (mod(ring, 2.0) > 0.5 ? 0.3 : -0.3), k, ea);   // (no longer turning)
         gMirK = min(k, 5.0) + max(0.0, log(sg.R / max(sr, 21.0)) / log(PHI) - 1.0);
         gMirE = ea * sr;
         ivec2 bc = sr < 21.0 ? ivec2(sg.C) : ivec2(sg.C + kd);
@@ -2358,7 +2356,7 @@ void main() {
     int kk;
     State ss;
     passageAt(layer, cc, cell, a, b, kk, ss);
-    if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
+    if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; if (gGram >= 40 && uAnom.z <= 0.0) gl_FragDepth = 0.0; }
     else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
   }
   if (shaded) {
@@ -2394,46 +2392,14 @@ void main() {
   // seam. And where paper meets a digital territory, the marks are the passage between them: near the seam a crayon
   // stroke is a window onto the other world, and the stroke carries on into it in that world's own light.
   if (seam) {
-    vec3 sharedC;
-    float sharedD, r = kinship(int(entT(layer, c.e, 25).w), int(entT(layer, c.eb, 25).w), sharedC, sharedD);
-    float db = c.pe * 55.0;                                          // cells to the seam
-    float x = s0 < s1 ? db : -db;                                  // across the seam, one way for both sides
-    float W = mix(1.5, 34.0, r), tear = (vnoise(gP, 3.0, 131u) - 0.5) * 5.0 * (1.0 - r) + (vnoise(gP, 13.0, 137u) - 0.5) * 8.0;
-    float xt = x + tear, dith = r * W * (unit(h3(cell.x, cell.y, 139u)) * 2.0 - 1.0) * (0.4 + 0.6 * vnoise(gP, 5.0, 149u));
-    bool ownSide = (xt > dith) == (x > 0.0);
-    vec3 PA = ownSide ? A : Ab, PB2 = ownSide ? B : Bb;
-    float covHere = ownSide ? cov0 : cov1, covThere = ownSide ? cov1 : cov0;
-    int gHere = ownSide ? g0 : g1, gThere = ownSide ? g1 : g0;
-    State Shere = Sb;
-    if (ownSide) Shere = Sd;
-    vec3 markThere = ownSide ? mk1 : mk0;
-    // strangers: the upper sheet (the one on the positive side) shadows the lower
-    if (xt < 0.0 && xt > -1.6 && r < 0.5) { PA *= mix(0.72, 1.0, r * 2.0); PB2 *= mix(0.72, 1.0, r * 2.0); }
-    bool dig0 = gHere >= 5 && gHere < 25, dig1 = gThere >= 5 && gThere < 25;
-    float ax = abs(xt), wc = mix(5.0, 34.0, r);
-    if (!dig0 && !dig1) {
-      // kin: the other sheet's marks carry on across, in this sheet's hand
-      if (covThere > 0.5 && covHere < 0.3 && ax < wc * (0.4 + 0.6 * unit(h3(cell.x >> 2, cell.y >> 2, 151u)))) {
-        vec3 hand = artVivid(Shere.w, 0);
-        PA = mix(PA, hand, 0.85); PB2 = mix(PB2, hand, 0.6);
-      }
-    } else if (dig0 != dig1) {
-      float paperCov = dig0 ? covThere : covHere;
-      vec3 digA = dig0 ? PA : (ownSide ? Ab : A);
-      if (paperCov > 0.5 && ax < 21.0 * (0.5 + 0.5 * unit(h3(cell.x >> 1, cell.y >> 1, 157u)))) {
-        if (!dig0) { PA = digA; PB2 = digA; }                           // on the paper: the stroke is a window onto the other world
-        else { vec3 lit = lum(digA) < 110.0 ? vec3(242.0, 240.0, 232.0) : vec3(18.0); PA = lit; PB2 = mix(PB2, lit, 0.6); }   // in it: the stroke in its light
-      }
-    }
-    // a colour the two share, stitched along the seam
-    if (sharedD < 21.0 && chroma(sharedC) > 34.0 && abs(x) < 0.9 && fract((gP.x - gP.y) / 8.0) < 0.38) { PA = sharedC * 0.85; PB2 = sharedC * 0.85; }
-    A = PA; B = PB2;
+    // (since 9 Oct 2026 every seam is a wash: the two sides blend across the band, half and half at the seam itself,
+    // with no torn edge, shadow, stitch or window; "more blending, more seamless transitions between things")
+    float db = c.pe * 55.0 + 8.0 * (vnoise(gP, 21.0, 131u) - 0.5);   // cells to the seam, the edge wandering a little
+    float w = 0.5 + 0.5 * smoothstep(0.0, 34.0, db);
+    A = mix(Ab, A, w); B = mix(Bb, B, w);
   }
   // the meta forms' edges: one grey gradient, dark to light, through every world they cross
-  if (shaded && metaA > 0.0) {
-    vec3 grey = vec3(255.0 * (0.04 + 0.92 * metaG)) * vec3(1.0, 0.994, 0.985);
-    A = mix(A, grey, metaA); B = mix(B, grey, metaA);
-  }
+  // (the meta forms' edges were a grey line through every world; since 9 Oct 2026 the forms show only in their light)
   if (sg.on) {
     vec2 d = cellP - sg.C;
     vec3 soil; int s_;
@@ -2441,7 +2407,7 @@ void main() {
     if (emerge) {
       // the new world, seen in a kaleidoscope of 8 mirrors at the core, 5, then 3 at the rim, turning slowly the other way
       float t = clamp(1.0 - (sr - 21.0) / (sg.R - 21.0), 0.0, 1.0), k, ea;
-      vec2 kd = kaleido(d, float(FIBS[2 + min(2, int(t * 2.99))]), -uTime * 0.03 + 6.2832 * unit(mixh(sg.h + 7u)), k, ea);
+      vec2 kd = kaleido(d, float(FIBS[2 + min(2, int(t * 2.99))]), 6.2832 * unit(mixh(sg.h + 7u)), k, ea);   // (no longer turning)
       A = B = newborn(kd, cc, sg.h, uTime);
       gMirK = min(k, 5.0); gMirE = ea * sr;
     }
@@ -2492,6 +2458,37 @@ function fsPart(from, to) {
   if (i < 0 || j < 0) throw new Error("DIRT ground shader: no " + from);
   return GROUND_FS.slice(i, j) + "\n";
 }
+// The minimal areas' own pass (9 Oct 2026): the first pass marks the cells whose passage is minimal (at depth 0), and
+// this paints them, each in its large region, the region's painting thinning to its wash at the edge and two washes
+// meeting as one. Drawn as a pass of its own so that the first pass's shader, already the largest, holds none of the
+// compositions (with them it grew past what a software GPU could compile).
+const GROUND_VS_NEAR = `#version 300 es
+void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, -1.0, 1.0); }`;
+const GROUND_MINIMAL = (() => {
+  const part = fsPart;
+  return `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+uniform sampler2D uRoster;
+uniform int uRAt[5];
+uniform ivec2 uCell0;
+uniform float uTime;
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
+void main() {
+  vec2 p = vec2(uCell0 + ivec2(gl_FragCoord.xy)) + 0.5;
+  Region rg = regionAt(p);
+  int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
+  int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.h2);
+  vec3 w1 = washOf(a1), w2 = washOf(a2), comp = minimal(a1, (p - rg.C1) * 0.55, rg.h1, uTime);
+  float zone = 1.0 - smoothstep(RUNG_C[3] - 0.1, RUNG_C[3], complexityBare(p));   // and toward the worlds round it
+  vec3 col = mix(w1, comp, smoothstep(0.0, 89.0, rg.d) * zone);     // the painting, thinning to its wash at the edge
+  col = mix(col, mix(w1, w2, 0.5), 1.0 - smoothstep(0.0, 34.0, rg.d));   // and the two washes one at the edge
+  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, 1.0);
+}`;
+})();
 const GROUND_FORMAL = (() => {
   const part = fsPart;
   return `#version 300 es
@@ -3136,7 +3133,7 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
   float z = vnoise(p + 34.0 * (vec2(vnoise(p, 89.0, 52003u), vnoise(p, 89.0, 52004u)) - 0.5), 987.0, 52001u);
-  float m = smoothstep(0.8, 0.84, z);                                // (rarer: a crowd now and then; the welds lead)
+  float m = smoothstep(0.9, 0.93, z);                                // (rarer still since 9 Oct 2026: a crowd now and then)
   if (m <= 0.0) return 0.0;
   float d = smoothstep(0.3, 0.8, vnoise(p, 610.0, 52002u));        // how far dissolved toward the fields
   float row = floor(p.y / FZH), y = p.y / FZH - row;                 // 0 at a frieze's top, 1 at its foot
@@ -3208,7 +3205,7 @@ float weld(vec2 p, float T, out vec3 col) {
   const float G = 1597.0 * ${FKS}, W = 233.0, H = 377.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 55001u);
-  if (unit(h) > 0.382) return 0.0;                                   // in phi^-2 of the squares
+  if (unit(h) > 0.034) return 0.0;                                   // in phi^-7 of the squares (phi^-2 until 9 Oct 2026: "too dominant")
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - H - 233.0, 0.0);
   vec2 q = p - o;
   if (max(abs(q.x) - W * 0.5, abs(q.y) - H * 0.5) > 144.0) return 0.0;
@@ -3271,7 +3268,7 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 q = sq + ivec2(i, j);
     uint hq = h3(q.x, q.y, 53001u);
-    if (unit(hq) > 0.056) continue;                                 // phi^-6 of the squares have one (the welds lead now)
+    if (unit(hq) > 0.013) continue;                                 // phi^-9 of the squares have one (phi^-6 until 9 Oct 2026)
     vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
     // a portrait, as tall as a face crop is (5 to 4), torn out like a photograph: its edge wanders by a few cells
     float r = 89.0 + 55.0 * unit(mixh(hq + 3u));
@@ -3311,13 +3308,16 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
 // made of two faces (the top of one and the bottom of another, meeting at the nose, as two players' halves meet), a
 // torso of 55 cut from one painting and legs of 55 cut from another, each section set a little aside from the one
 // above as a different hand would set it, outlined in ink, with creases at the folds and torn paper round it.
+// The faces (welds, portraits, friezes, corpses) are rare and faint since 9 Oct 2026 ("I want those faces to be barely
+// noticeable and more rare than not"): each at phi^-3 of its strength, so what lies under it shows through.
+const float FACE_A = 0.236;
 float corpse(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
   const float G = 610.0 * ${FKS}, W = 55.0, H = 144.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 54001u);
-  if (unit(h) > 0.056) return 0.0;                                   // in phi^-6 of the squares
+  if (unit(h) > 0.013) return 0.0;                                   // in phi^-9 of the squares (phi^-6 until 9 Oct 2026)
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - 160.0, 0.0);
   float a = (unit(mixh(h + 3u)) - 0.5) * 0.3;
   vec2 q = mat2(cos(a), -sin(a), sin(a), cos(a)) * (p - o);
@@ -3356,12 +3356,13 @@ float corpse(vec2 p, float T, out vec3 col) {
 void main() {
   vec2 p = vec2(uCell0) + gl_FragCoord.xy, lp = p - vec2(uPrev0);
   float T = uTime, t = torn(p, T);
-  { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
+  { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, FACE_A); return; } }   // an exquisite corpse, faint
   // a weld, a portrait or a frieze, where there is one: whole, it stands alone; at its feathered edge it lies over the
   // collage, so nothing is cut where it thins out
   vec3 oz = vec3(0.0); float om = weld(p, T, oz);
   if (om <= 0.0) om = mosaic(p, lp, T, oz);
   if (om <= 0.0) om = frieze(p, T, oz);
+  om *= FACE_A;                                                      // the faces barely there, the ground through them
   if (om >= 0.999) { outA = outB = vec4(clamp(oz, 0.0, 255.0) / 255.0, 1.0); return; }
   // the thing put in arrives where it was put in: the whole photo, torn out, for a few seconds, and the collage takes
   // it from there (the datamosh melts it, the pieces carry it off across the plane)
@@ -3964,6 +3965,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // The paintings with the most colour: those with a colour of chroma 89 or more.
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
+  let minimalProg = null, Mi = {}, rbDepth = null;
   let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, toysProg = null, Ty = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
@@ -4100,9 +4102,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   // page); the ground is plain paper until they are ready.
   const parallel = gl.getExtension("KHR_parallel_shader_compile");
   let pending = null;
-  function program(fsSrc) {
+  function program(fsSrc, vsSrc = GROUND_VS) {
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
-    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
+    const vs = sh(gl.VERTEX_SHADER, vsSrc), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
     gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
     return { pr, vs, fs };
   }
@@ -4123,7 +4125,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS), j: program(GROUND_MINIMAL, GROUND_VS_NEAR) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -4206,7 +4208,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
-    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
+    if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
@@ -4249,6 +4251,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
+    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime"]);   // the minimal areas' pass
+    if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
     pending = null;
@@ -4265,6 +4269,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tA, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, tB, 0);
     gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+    if (!rbDepth) rbDepth = gl.createRenderbuffer();                 // the minimal cells' mark
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rbDepth);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, FW, FH);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rbDepth);
     // the last frame's cells, for the depth pass, with every level of detail
     if (tP) gl.deleteTexture(tP);
     gl.activeTexture(gl.TEXTURE10); tP = tex(gl.TEXTURE_2D);
@@ -4367,7 +4375,17 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform4fv(U.uAnom, anom);
     gl.uniform1i(U.uTier, tier);
     gl.uniform2f(U.uHalf, cw / 2, ch / 2);
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.ALWAYS); gl.depthMask(true);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // then the minimal areas, over the cells the first pass marked
+    if (minimalProg && !earth && !(anom[2] > 0)) {
+      gl.useProgram(minimalProg);
+      gl.uniform2i(Mi.uCell0, cx0, cy0);
+      gl.uniform1f(Mi.uTime, t);
+      gl.depthFunc(gl.EQUAL); gl.depthMask(false);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    gl.depthMask(true); gl.disable(gl.DEPTH_TEST);
     // then the formal end over it, once the quilts are here, on the plane after the artists, and not in an anomaly
     if (formalProg && qn && !earth && edgeOn && tier >= 1 && !(anom[2] > 0)) {
       gl.useProgram(formalProg);

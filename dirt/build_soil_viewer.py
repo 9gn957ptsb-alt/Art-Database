@@ -920,7 +920,12 @@ function fit() {
   const midX = vx + VW / 2, midY = vy + VH / 2;
   cv.width = w; cv.height = h; VW = w / R; VH = h / R;
   if (placed) { vx = midX - VW / 2; vy = midY - VH / 2; }
-  else { const c = isle(0, 0); vx = c.x - VW / 2; vy = c.y - VH / 2; placed = true; }   // begin on calm ground
+  else {                                                         // begin on calm ground
+    // (9 Oct 2026: "it opens to the same thing every time": each visit to DRIFT begins on another calm island, one of
+    // 233 by 233, so no two openings are alike; the website keeps its one beginning)
+    const pick = () => (SITE ? 0 : Math.floor(Math.random() * 233) - 116);
+    const c = isle(pick(), pick()); vx = c.x - VW / 2; vy = c.y - VH / 2; placed = true;
+  }
   sizeTrail();
 }
 new ResizeObserver(fit).observe(stage);
