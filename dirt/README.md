@@ -462,7 +462,7 @@ too much ... I want those faces to be barely noticeable and more rare than not")
   plane's own contours. The simplified worlds' mirror strips thin out and go before the glaze comes in, so they no
   longer splinter its edge (they had been deepest just there). A void's heart keeps its own field, and its rim now
   wanders, so a void is a pool and not one more large disc; its supernova throws out a cloud of light, not a shell
-  (an expanding ring), and its big bang comes one time in five, not one in two.
+  (an expanding ring), and its big bang comes one time in 13, not one in two.
 - *Seams as washes.* Where two worlds meet, they now blend across a band 34 cells deep on either side, half and half
   at the seam itself, its course wandering a little; and DRIFT's passages are 144 cells across, one Fibonacci step
   nearer than the site's 233, not two, so fewer worlds share a screen. (The band had been 13 cells deep: the

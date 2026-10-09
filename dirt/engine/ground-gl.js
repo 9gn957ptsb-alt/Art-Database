@@ -1831,7 +1831,7 @@ vec3 washOf(int a) {
 // ---- the one pixel ----------------------------------------------------------------------------------------------
 // In a void's heart there is one pixel. Most of the time it only breathes, its colour turning through the artists'.
 // But every 89 seconds or so it does something astronomical, each void in its own order: a supernova (a cloud of light
-// thrown out, its debris, then a nebula; a shell of light, a large ring, until 9 Oct 2026) or, one time in five, a big
+// thrown out, its debris, then a nebula; a shell of light, a large ring, until 9 Oct 2026) or, one time in 13, a big
 // bang (everything, the whole plane at its most complex, opening out of the pixel and closing back into it). (Until 9 Oct 2026 also McCall's line of light drawing a circle, planets on
 // orbits, a constellation joined, a pulsar's two beams and an accretion ring: all drew thin lines that turned.)
 float gBang = 0.0;                                                   // how far a big bang has opened here (cells), for main
@@ -1840,7 +1840,7 @@ vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   float r = length(d), period = 89.0, T = t + 55.0 * unit(mixh(v.h + 7u));
   float cyc = floor(T / period), ph = fract(T / period);
   uint hc = mixh(v.h ^ uint(cyc) * 0x9e3779b9u);
-  int ev = (hc % 5u) == 0u ? 6 : 2;                                   // (only these two since 9 Oct 2026: the others drew turning lines; the big bang one in five)
+  int ev = (hc % 13u) == 0u ? 6 : 2;                                  // (only these two since 9 Oct 2026: the others drew turning lines; the big bang one in 13)
   float on = smoothstep(0.2, 0.3, ph) * (1.0 - smoothstep(0.85, 0.95, ph)), q = clamp((ph - 0.2) / 0.75, 0.0, 1.0);
   bool dark = lum(field) < 128.0;
   vec3 light = dark ? vec3(250, 246, 236) : vec3(12, 12, 16);
