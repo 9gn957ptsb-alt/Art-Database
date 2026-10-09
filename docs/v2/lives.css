@@ -72,7 +72,7 @@
 .life-open { display: block; margin: var(--s-2) 0 0; }
 .art-head-text .life-open, .art-body > .life-in-work { margin-top: var(--s-2); }
 .life-undated, .life-after { margin-left: 0; line-height: 1.45; }
-.life-cat { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.life-cat { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 12px; row-gap: 2px; align-items: baseline; }
 @media (prefers-reduced-motion: reduce) { .life-period-body [data-later] { transition: none; } }
 /* On a phone the dial stands over the column's right edge: the way in goes under the place's name. */
 @media (max-width: 720px) {

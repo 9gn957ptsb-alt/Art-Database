@@ -147,6 +147,8 @@
 .studio-src a { color: inherit; text-underline-offset: 3px; }
 
 /* Find: the catalogue. */
-.studio-cat { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+/* Side by side where they fit; on a phone the details go under the name rather than off the edge
+   ("1881–1973 · 18 places · 180 works · 33 printed at 8 workshops" is wider than the list). */
+.studio-cat { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 12px; row-gap: 2px; align-items: baseline; }
 .studio-cat-name { font-family: var(--serif, serif); }
-.studio-cat-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: #a8927a; white-space: nowrap; }
+.studio-cat-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: #a8927a; }
