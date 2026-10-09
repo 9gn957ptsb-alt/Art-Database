@@ -412,6 +412,20 @@ watercolour's wet edge (each cell bleeding a little into the next) stays soft: i
 Japanese the blur of a lens is *boke*, "haze", and the same word is used for the haze of age; here the haze is
 replaced by memory.
 
+**The swimmers** (9 October 2026: "get rid of that wind animation, it's cheesy at this point. I want similar movement
+happening but through transparency changes instead of lines ... much more subtle, like a fish ever so subtly moving
+the surface of the water as it swims just underneath the surface"). The birds are gone from DRIFT, and their trails
+with them (the website's plane keeps them for now). In their place five swimmers move just under the plane's surface
+(`SWIM` in `engine/ground-gl.js`), never drawn. Each swims 8 to 13 cells a second on a slow current of three travelling
+waves 233, 377 and 610 cells long, turning slowly, so they wander and wheel as the flocks did. They show only in the
+watercolour. Over each the surface swells and the wash thins, letting a little more paper through: a soft hump about
+42 cells long and 26 across, at most 3.5% more paper. Where it has passed, the water stays a little thinner, widening
+from 13 to 29 cells as it settles, and by φ² seconds it is a little thicker before it goes calm, gone in four seconds.
+Nothing in it is narrower than the swimmer, so no line forms anywhere. Because thinning paint matters most where the
+paint is dark, the swimmers are seen mostly over the dark passages, as a fish is seen against dark water. Anglers
+read the same sign on a river: a fish feeding just under the surface shows as a bulge, the water lifting over it
+without breaking.
+
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
 taken, the ultracode's readings and the frame's measures (the `references` collection of its database), so a later
@@ -881,7 +895,8 @@ and an eddy in each 377-cell square, 89 cells across times φ^±½, turning one 
 the flocks wheel. Over calm ground the birds
 turn back outward, harder the deeper they stray. Trails fade by φ⁻⁶ a frame. With reduced motion set, nothing
 takes flight or moves: only the plants show, full grown and still. New ground appears at once, and swipes do not
-glide.
+glide. (Since 9 October 2026 the birds no longer fly in DRIFT: see **The swimmers**. The website's plane keeps
+them.)
 
 **Naming and picking out.** Every cell remembers which painting it came from, however it was moved, so pointing
 anywhere names the saved painting underneath, or the painting a creature there wears. A click or tap that does not move picks a painting out, darkening

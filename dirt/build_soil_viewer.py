@@ -1005,6 +1005,10 @@ function currentField(t, box) {
 }
 
 function spawn(c) {
+  // (9 Oct 2026: the birds are off in DRIFT. Their trails had become a wind of lines, "cheesy at this point"; what moves
+  // the surface now is the swimmers under it, seen only as the paint thinning and thickening (ground-gl.js, SWIM).
+  // The website's plane keeps its birds until that session chooses.)
+  if (!SITE) { c.spawned = true; return; }
   const b = c.birds;
   for (let o = 0; o + 5 < b.length && nb < CAP; o += 6) {
     BX[nb] = BHX[nb] = b[o]; BY[nb] = BHY[nb] = b[o + 1];

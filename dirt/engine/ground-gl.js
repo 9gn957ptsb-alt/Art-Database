@@ -20,6 +20,66 @@ const FKS = (typeof FIELD_K !== "undefined" ? FIELD_K : 1).toFixed(9);
 // of 8, 5, 3 and 2 cells and then single cells (a spray's straight to dust), and the new ground shows through. The Earth's places move only among the five paintings nearest their look,
 // so they stay themselves, and each new month sweeps over the Earth the same way, out from the view's middle.
 
+// ---- the swimmers: what moves the surface now --------------------------------------------------------------------
+// Aries (9 Oct 2026): "Get rid of that wind animation ... I want similar movement happening but through transparency
+// changes instead of lines ... much more subtle, like a fish ever so subtly moving the surface of the water as it swims
+// just underneath the surface." The birds and their trails are gone; in their place five swimmers move under the
+// plane's surface on a slow current, a stream function of three travelling waves 233, 377 and 610 cells long (so they
+// wander and wheel, as the flocks did), each also keeping its own heading, turning slowly, never drawn. They are seen
+// only in the paint. Over each the surface swells and the wash thins, a little more paper through it; where it has
+// just been, the water stays a little thinner, widening as it settles, and after phi squared seconds a little thicker
+// before it is calm again, gone in about four seconds. Nothing in it is narrower than the swimmer itself, so no line forms
+// anywhere: the watercolour pass (GROUND_PX) moves the paint's transparency a few hundredths either way, no more.
+const SWIM = (() => {
+  const TAU = 2 * Math.PI, COUNT = 5, MARKS = 8, EVERY = 0.5;
+  const waves = [[233, 0.7, 0.031], [377, 2.3, -0.019], [610, 4.1, 0.012]].map(([l, a, w]) => ({ kx: TAU / l * Math.cos(a), ky: TAU / l * Math.sin(a), w }));
+  /** The slow current at x, y (cells), time t (s): the curl of the waves' stream function, at most about a cell a second. */
+  function current(x, y, t) {
+    let u = 0, v = 0;
+    for (const q of waves) { const c = Math.cos(q.kx * x + q.ky * y + q.w * t * TAU), k = Math.hypot(q.kx, q.ky); u += q.ky / k * c; v -= q.kx / k * c; }
+    return [u / waves.length, v / waves.length];
+  }
+  const fish = [], none = [new Float32Array(COUNT * 4), new Float32Array(COUNT * MARKS * 4).fill(-1)];
+  let last = -1;
+  function place(f, cx, cy, hw, hh, anywhere, t) {
+    // somewhere in the view's neighbourhood: anywhere at first, afterwards just outside it
+    const a = Math.random() * TAU, r = anywhere ? Math.sqrt(Math.random()) * 0.9 : 1.15;
+    f.x = cx + Math.cos(a) * hw * r; f.y = cy + Math.sin(a) * hh * r;
+    const [u, v] = current(f.x, f.y, t);
+    f.a = Math.atan2(v, u) + (Math.random() - 0.5);                  // swimming the current's way, more or less
+    if (!anywhere && Math.cos(f.a) * (cx - f.x) + Math.sin(f.a) * (cy - f.y) < 0) f.a += Math.PI;   // and into the view
+    f.v = 8 + 5 * Math.random();                                     // its own pace: 8 to 13 cells a second
+    f.k = Math.random() * TAU;                                       // its own wandering
+    f.age = 0; f.marks = []; f.markAt = t;
+  }
+  /** The swimmers for this moment, the view's middle at (cx, cy) and half its size (hw, hh), in cells: for each, its
+   * place, heading and how much it shows (0 to 1); and for each, where it was over the last four seconds, every half
+   * second (place, and how long ago; -1 where there is none yet). */
+  function step(cx, cy, t, hw, hh) {
+    const dt = last < 0 ? 0 : Math.min(0.1, Math.max(0, t - last));
+    last = t;
+    while (fish.length < COUNT) { const f = {}; place(f, cx, cy, hw, hh, true, t); fish.push(f); }
+    const out = new Float32Array(COUNT * 4), wake = new Float32Array(COUNT * MARKS * 4).fill(-1);
+    fish.forEach((f, i) => {
+      const [u, v] = current(f.x, f.y, t);
+      let d = Math.atan2(v, u) - f.a;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      f.a += (0.3 * d + 0.35 * Math.sin(t * 0.21 + f.k) + 0.15 * Math.sin(t * 0.57 + 2 * f.k)) * dt;   // turning slowly
+      f.x += (Math.cos(f.a) * f.v + u * 5) * dt;
+      f.y += (Math.sin(f.a) * f.v + v * 5) * dt;
+      f.age += dt;
+      if (t - f.markAt >= EVERY) { f.marks.unshift([f.x, f.y, t]); f.marks.length = Math.min(f.marks.length, MARKS); f.markAt = t; }
+      const ox = Math.abs(f.x - cx) / hw, oy = Math.abs(f.y - cy) / hh;
+      if (ox > 1.6 || oy > 1.6) place(f, cx, cy, hw, hh, false, t);  // gone far off: another comes in from outside
+      const show = Math.min(1, f.age / 5) * (1 - Math.min(1, Math.max(0, Math.max(ox, oy) - 1.2) / 0.4));   // surfacing slowly
+      out.set([f.x, f.y, f.a, Math.max(0, show)], i * 4);
+      f.marks.forEach((m, k) => wake.set([m[0], m[1], t - m[2], 0], (i * MARKS + k) * 4));
+    });
+    return [out, wake];
+  }
+  return { step, current, none };
+})();
+
 const GROUND_VS = `#version 300 es
 void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
 
@@ -32,6 +92,8 @@ uniform sampler2D uA, uB;
 uniform ivec2 uOff, uCell0;
 uniform int uH, uEdge, uWater;
 uniform vec2 uView;
+uniform vec4 uSwim[5];              // the swimmers under the surface (SWIM): where (cells), heading, how much they show
+uniform vec4 uWake[40];             // and where each was, every half second for four seconds: where, how long ago (s)
 out vec4 outColour;
 // Drawn after the artists, no edge is a hard line. Across every edge of every shape, in every world, lies a grey
 // gradient running the whole scale from dark to light, the same scale the artists make over the whole plane: the
@@ -81,7 +143,35 @@ void main() {
     float d = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.38 * edge;
     c = clamp(c - (c - c * c) * (d - 1.0), 0.0, 1.0);
     vec3 paper = vec3(0.957, 0.937, 0.894) * (0.985 + 0.03 * grain);
-    c = mix(c, paper, 0.06);                                          // never opaque: the paper through it all
+    // the swimmers just under the surface: over each the surface swells and the wash thins; where it has just been the
+    // water rocks, thicker and thinner by turns, widening and settling; nothing narrower than the swimmer, so no line
+    float lift = 0.0;
+    vec2 pc = P * 0.5;                                                // this pixel on the plane, in cells
+    for (int i = 0; i < 5; i++) {
+      vec4 f = uSwim[i];
+      vec2 fd = pc - f.xy;
+      if (f.w <= 0.0 || dot(fd, fd) > 144.0 * 144.0) continue;
+      vec2 hd = vec2(cos(f.z), sin(f.z));
+      float u = dot(fd, hd) - 4.0, v = dot(fd, vec2(-hd.y, hd.x));   // along it (from just ahead of its middle), across it
+      float swell = exp(-u * u / 882.0 - v * v / 338.0);              // a soft hump of water over it, wider than it
+      float env = 0.0, ew = 0.0, ea = 0.0;                            // the water it has passed through: how much, how long ago
+      vec2 a = f.xy; float ta = 0.0;
+      for (int k = 0; k < 8; k++) {
+        vec4 q = uWake[i * 8 + k];
+        if (q.z < 0.0) break;
+        vec2 ab = q.xy - a;
+        float h = clamp(dot(pc - a, ab) / max(dot(ab, ab), 1e-3), 0.0, 1.0), ago = mix(ta, q.z, h);
+        vec2 e = pc - a - ab * h;
+        float r = 13.0 + 4.0 * ago;                                   // as wide as the hump, spreading as it settles
+        float w = exp(-dot(e, e) / (r * r) - ago / 1.8) * 13.0 / r;
+        env = max(env, w); ew += w; ea += w * ago;
+        a = q.xy; ta = q.z;
+      }
+      float ago = ea / max(ew, 1e-4);
+      float rock = cos(3.1416 * ago / 2.618) * smoothstep(0.0, 1.0, ago);    // thinner behind it, then settling a little thicker
+      lift += f.w * (swell + 2.0 * env * rock);
+    }
+    c = mix(c, paper, clamp(0.06 + 0.035 * lift, 0.0, 0.2));          // never opaque: the paper through it all
     vec2 r = (gl_FragCoord.xy - 0.5 * uView) / (0.5 * uView);
     float far = smoothstep(0.62, 1.5, length(r * vec2(1.0, 0.8)) + 0.12 * (pool - 0.5));
     c = mix(c, mix(paper, vec3(0.86, 0.9, 0.95), 0.35), far * 0.55);  // to paper and cool air at the margins
@@ -4022,7 +4112,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -4336,6 +4426,9 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform1i(V.uEdge, edgeOn && !earth && tier >= 3 ? 1 : 0);
     gl.uniform1i(V.uWater, !earth && !noWater ? 1 : 0);                  // watercolour on the plane
     gl.uniform2f(V.uView, W, H);
+    const swim = !earth && !noWater ? SWIM.step(cx0 + cw / 2, cy0 + ch / 2, t, cw / 2, ch / 2) : SWIM.none;   // the swimmers
+    gl.uniform4fv(V.uSwim, swim[0]);
+    gl.uniform4fv(V.uWake, swim[1]);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!earth) reflect(now);
   }
