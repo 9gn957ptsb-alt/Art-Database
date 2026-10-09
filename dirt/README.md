@@ -372,25 +372,8 @@ no frame and its space opens from the middle, as in Cézanne's late watercolours
 welds' fields are glazes now (about 0.8 to 0.9 opaque), so what lies under them shows faintly through, one transparent
 layer over another. Six places measured: busy 0.188 → 0.120, calm 0.517 → 0.622. `#nowater` turns it off.
 
-**The tree of many focal points** (2 October 2026: "is it possible to depict a tree ... where it has multiple focus
-points ... the series of branches that stem from that focal point make the most sense when focusing on that point ...
-looking at the tree as a whole ... it warps ... it sways as you look at it"). *Focus* is Latin for a hearth; Kepler
-(1604) made it the point where rays meet. Here and there on the plane (in φ⁻³ of the squares 2584 cells across, at
-φ⁻² nearness) stands a tree with thirteen hearths, one at every place it branches: the top of the trunk, the three
-limbs' ends, the nine boughs' ends (1 + 3 + 9). It grows in three dimensions, each branch about φ⁻¹ the length of
-the one before (144, 89, 55, 34 cells), each fork turned the golden angle. No single eye draws it: every branch is
-drawn in the perspective of the hearth it grows from, and each hearth looks from the side where its own branches
-spread widest, so at each hearth they read (which reach toward you, which away, how they fork). Each branch starts
-where its hearth was drawn, so the tree never comes apart, but no one perspective holds the whole, as in Cézanne's
-tables and Hockney's joiners (Merleau-Ponty, "Cézanne's Doubt", 1945; Hockney, *Pearblossom Hwy.*, 1986). The
-hearth nearest the middle of the view lends its perspective to its neighbours, less the further they are along the
-branches, so the tree comes together round wherever one looks and warps elsewhere: swiping across it, it sways
-(between one hearth and another, its branches move 18 cells on average, up to 40); a little wind moves every
-hearth's eye too. It is worked out on the main thread each frame (`engine/focus-tree.js`, 41 points) and painted by
-the collage pass in watercolour: branches sepia near and indigo far, paler with the air between; leaves as
-transparent washes of sap green, olive ochre and viridian, now and then cerulean or a coleus red, each pooling at
-its rim, deepening where they overlap. `node dirt/engine/focus-tree.test.mjs` checks that it never comes apart, has
-thirteen hearths, and sways; `#notree` hides it.
+**The tree of many focal points** (2 October 2026), a tree drawn with a perspective for each place it branched, was
+taken out on 9 October 2026: "Get rid of that tree, it looks horrible." Its code is in the history (commit `fdacca6`).
 
 **Elsewhere, not blur** (8 October 2026: "instead of using blur to distinguish depth of field or objects from each
 other in space ... replacing all those moments of blur in a photograph with moments from other places ... that level
@@ -425,6 +408,29 @@ Nothing in it is narrower than the swimmer, so no line forms anywhere. Because t
 paint is dark, the swimmers are seen mostly over the dark passages, as a fish is seen against dark water. Anglers
 read the same sign on a river: a fish feeding just under the surface shows as a bulge, the water lifting over it
 without breaking.
+
+**Still, and more artists** (9 October 2026: "Get rid of that tree, it looks horrible. Get rid of the subtle sway when
+I am not swiping. I want more diversity of artists, I don't find the field to be very diverse with aesthetics, it feels
+repetitive").
+
+*Still.* Left alone, the ultracode no longer drives the view (its propulsion is kept for `#drive`): slowed by the taste
+it wandered a few cells a second and turned as it went, which read as a sway. Everything that moved in place without
+being touched holds still too: the countries no longer drift; Turrell's orbs no longer wander and his bands no longer
+turn, curve and breathe; the silk's folds, and the plane bent through them, hold; the light's openings stay where they
+are; the tree lines along the seams, the aspens and the dapples no longer sway in a wind; and the stripes, rings and
+waves of the minimal areas (Riley's, Gerstner's, Larry Bell's sheen, the roster's) stand where they were drawn. What
+still moves is what was asked for or what happens rather than sways: the swimmers, the life in the garden, the welds
+breathing from one face into the other, the collage's melt and streaks, and the one pixel's events.
+
+*More artists.* The field looked the same from place to place for three reasons, each undone. Turrell's light lay over
+two thirds of the plane at nine tenths opacity, so most places were the same pastel haze; it keeps to a quarter now (the
+light where the countries field is above 0.62, the silk above 0.72), and the plane's own country, where the artists
+are, is the rest. Every artist's colours were the average of their works' colours, which turned Mondrian, Albers and
+Rothko alike into beige; they are measured from the pixels now (above), the 22 drawn by hand included: Mondrian's red
+and blue, Albers's purple and orange, Rothko's maroon, Kusama's yellow and red. And the roster had fourteen artists in
+ten compositions, five of them sharing the net and six a band on white; it has 55 now, the 41 most-saved artists not yet
+in DIRT added at once (Richard Diebenkorn, Peter Doig, Robert Rauschenberg, Graham Sutherland, Gabriel Orozco, Brice Marden, Edgar Degas, Julian Schnabel, Stanley William Hayter, Childe Hassam, Anselm Kiefer, Emil Nolde, Gregory Horndeski, Hiroyuki Hamada, Mark Bradford, Auguste Rodin, Alfred Stieglitz, Hans Bellmer, Odilon Redon, Robert Motherwell, Alex Da Corte, Pietro Consagra, Rembrandt van Rijn, Georges Mathieu, JFK Turner, Jean-Michel Basquiat, Beatrice Meoni, Carl Holty, Le Corbusier, M. C. Escher, Marcel Duchamp, Charline von Heyl, Conrad Marca-Relli, Dorothy Napangardi, Eva Schlegel, Richard Prince, Richard Serra, Dan Walsh, Eddie Martinez, John Chamberlain, Wifredo Lam), and nine compositions after bodies of work (above). Each minimal area takes an artist of its
+rung, so most now take one of the roster, and no two neighbours need look alike.
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
@@ -529,7 +535,8 @@ wake in `engine/ground-gl.js`):
   day, 377 squares at most), so it remembers where it has been across visits. Recent ones push it away, harder the
   nearer and the more recent (a place stops pushing over about ten minutes): it does not circle back to what it has
   already spent.
-- **Propulsion.** Left alone for a second, both become thrust: toward what is most alive and new, away from where it
+- **Propulsion** (only with `#drive` since 9 October 2026; without it the view stays where it was put, see **Still**,
+  below). Left alone for a second, both become thrust: toward what is most alive and new, away from where it
   has been, harder the more alive and new the view is (at most 105 cells a second; calm, it still wanders on a little).
   It is a craft with a heavy rudder and a strong engine, heading and speed kept apart: its heading turns toward the
   thrust over φ⁻¹ seconds, so it sweeps round rather than twitching, and its throttle answers in φ/5 seconds, so it has
@@ -579,14 +586,23 @@ accretion ring turns round a black point with light bent round it; or a big bang
 opens out of the pixel across the void, and closes back into it.
 
 **New artists, every week.** Beyond the 22 drawn by hand, artists join the ladder from the roster
-(`dirt/artists/roster.json`), with no new code: `dirt/artists/roster.py` reads an artist's saved works, measures what
-they share (how densely they mark, whether their marks share a direction, how much ground they leave bare, how
-saturated they are), and gives them one of ten compositions (a field and a band, stripes, dots, a net (cells bent, never a grid), strokes, rings,
-stacked fields, scattered marks, poured stains, cut shapes) with its parameters, the rung their marks earn, and the
-colours of their own saved works. A coworker (a scheduled Claude session, `dirt/artists/COWORKER.md`) brings in the
-next three most-saved artists every week and republishes DIRT. The first eight: Dalí (a horizon), Matisse (cut shapes),
-Frankenthaler (stacked fields), Cartier-Bresson and Warhol (grids), Pollock (scattered marks), Elaine de Kooning
-(strokes), Caponigro (dots).
+(`dirt/artists/roster.json`), with no new code: `dirt/artists/roster.py` reads an artist's saved works (up to 13, taken
+across all their saves when they have many), measures what they share (how densely they mark, whether their marks
+share a direction, how much ground they leave bare, how saturated they are), and gives them one of ten compositions (a
+field and a band, stripes, dots, a net (cells bent, never a grid), strokes, rings, stacked fields, scattered marks,
+poured stains, cut shapes) with its parameters and the rung their marks earn. Where those ten miss what an artist does,
+they get a composition after a body of their work instead (`FAMILY` in `roster.py`): ruled planes (Diebenkorn's Ocean
+Park, Marden's Grove Group), black ovals between bars (Motherwell's Elegies, Serra's paintstick blacks), dabs laid side
+by side (Degas's pastels, Hassam's flags, Nolde's and Redon's flowers, Hockney's iPad spring), a landscape in bands with
+its reflection (Doig's Canoe-Lake, Sutherland, Kiefer's fields, Turner's seas, Dalí's shore), a warm light out of the
+dark (Rembrandt), torn and pasted sheets (Rauschenberg's Combines, Bradford, Schnabel, Marca-Relli, Prince), lashes,
+crowns and words crossed out (Basquiat, Mathieu, Martinez, Appel), circles quartered in four colours (Orozco's Samurai
+Tree, Duchamp's Rotoreliefs), and bands round a centre with an unpainted pinstripe between (Stella's Black Paintings
+and Protractors). Each is drawn in the artist's own four colours, measured from the pixels of their works (k-means in
+Lab: the darkest and lightest colours that cover a real share, the middle one that covers most and is most coloured,
+the most coloured that is more than a fleck), so one composition in two artists' hands is two artists. A coworker (a
+scheduled Claude session, `dirt/artists/COWORKER.md`) brings in the next three most-saved artists every week and
+republishes DIRT. On 9 October 2026 there were 55.
 
 **Anomalies.** Now and then, unannounced (the first a minute or two in, then one to two and a half minutes after the last ends),
 the whole plane in view collapses to its middle as a star does: it spirals in, reddens and dims as its light is

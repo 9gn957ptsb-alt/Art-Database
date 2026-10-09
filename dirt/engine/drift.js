@@ -334,7 +334,8 @@ For "go", give a real website you are certain exists (a museum or collection pag
   //   memory       the squares of the plane (377 cells a side) it has passed through, and when, kept in this browser,
   //                so it remembers where it has been across visits; the recent ones push it away (over ten minutes a
   //                place stops pushing), so it does not circle back to what it has already spent;
-  //   propulsion   left alone for a second, both become thrust: toward what is most alive and new, away from where it
+  //   propulsion   (only with #drive, since 9 Oct 2026; otherwise the view stays where it was put)
+  //                left alone for a second, both become thrust: toward what is most alive and new, away from where it
   //                has been, harder the more alive and new the view is (at most 105 cells a second; calm, it still
   //                wanders on a little). A craft with a heavy rudder and a strong engine: its heading turns over phi^-1
   //                seconds, so it sweeps rather than twitches, and its throttle answers in phi/5 seconds. A touch, a
@@ -346,7 +347,10 @@ For "go", give a real website you are certain exists (a museum or collection pag
   //                read from themselves) headed by their live readings, a new stretch every 34 seconds: the codex read
   //                as texture, taken back to the trunk it was split from.
   const UC = { hist: [], dir: [0, 0], mem: [0, 0], life: 0, novelty: 0, vx: 0, vy: 0, hx: 0, hy: 0, speed: 0, idleAt: performance.now(),
-    last: 0, seen: null, given: false, sheetAt: -1e9, line: 0, shownAt: -1e9 };
+    last: 0, seen: null, given: false, sheetAt: -1e9, line: 0, shownAt: -1e9,
+    // (9 Oct 2026: it drives only with #drive. Left alone, slowed by the taste, it wandered a few cells a second and
+    // read as a sway; Aries: "Get rid of the subtle sway when I am not swiping." Now the view stays where it was put.)
+    drive: typeof location !== "undefined" && /(?:^|&)drive(?:&|$)/.test(location.hash.slice(1)) };
   const TOP = 105, WAIT = 1000, RUDDER = 1 / PHI, THROTTLE = PHI / 5, LOOKBACK = 377;
   // Taste: the life of the views Aries has kept (dirt/artists/taste.json, and the stills kept with the Still and Record
   // buttons, which the page adds as it loads them). Where there is one, the ultracode is drawn to the parts of the view
@@ -441,7 +445,7 @@ For "go", give a real website you are certain exists (a museum or collection pag
     UC.last = now;
     const r = plane() && GLG.reflection && onPlane() ? GLG.reflection() : null;
     if (r && r !== UC.seen) { UC.seen = r; reflectOn(r); }
-    const alone = !!UC.seen && onPlane() && now - UC.idleAt > WAIT && !flight && !(typeof ANOM !== "undefined" && ANOM.at) && !REDUCED
+    const alone = UC.drive && !!UC.seen && onPlane() && now - UC.idleAt > WAIT && !flight && !(typeof ANOM !== "undefined" && ANOM.at) && !REDUCED
       && !(typeof down !== "undefined" && down) && !document.hidden && !(!at.hidden && now - UC.shownAt < 34000);
     // toward what is most alive and new, and away from where it has been
     // and, while Plectra (cast.js) is in view, toward the shade she wants, at phi^-1

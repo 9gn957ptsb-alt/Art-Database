@@ -8,7 +8,8 @@ Rules it keeps:
 - Work on the branch `claude/digital-dirt-layers-paiial` and push only there (`git push -u origin claude/digital-dirt-layers-paiial`).
   Never push to `claude/artist-website-dev-s92irf`.
 - Never commit `data/` or `dirt/private/`: the saves, the database, the downloaded images and the built page stay out
-  of the repository. The only file it commits is `dirt/artists/roster.json` (names, colours and numbers).
+  of the repository. It commits only `dirt/artists/roster.json` (names, colours and numbers), the plants and cast,
+  and `roster.py` when it adds an artist to FAMILY.
 - The Artsy token is the environment's API credential, added by the proxy; never ask for it or write it anywhere.
 - If a step fails, say which and why in the session, and commit nothing half-done.
 - End commit messages with the attribution lines the session's own instructions give.
@@ -29,8 +30,12 @@ rm scripts/normalize_artsy_saves.py
 pip install numpy pillow requests
 python3 dirt/artists/roster.py --db data/artworks.db --cache dirt/private/briefs --add 3
 
+# 2a. if a new artist's way of working is one of the compositions after a body of work (10-18 in roster.py's
+#     docstring) better than the measured one, add them to FAMILY in roster.py, naming the body of work (a real series
+#     and its years), and run roster.py again with --add 0 --repalette; then commit roster.py with the roster
+
 # 3. a plant for each new artist (below), then commit the roster and the plants
-git add dirt/artists/roster.json dirt/artists/plants.json dirt/artists/cast.json
+git add dirt/artists/roster.json dirt/artists/plants.json dirt/artists/cast.json dirt/artists/roster.py
 git commit -m "DIRT roster: <the artists added>"
 git push -u origin claude/digital-dirt-layers-paiial
 

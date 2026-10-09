@@ -1354,30 +1354,31 @@ vec3 toShade(vec3 col, int g, float sh, float M) {
 //   simplified    the worlds in few tones, fewer the lower, with mirrors standing in them
 //   full          the worlds as they are, with the meta forms' light and the singularities
 // Each minimal area is drawn in the colours of that artist's own saved works (dark, middle, light, and their most
-// vivid), measured from the collection.
+// vivid), measured from the pixels of the works (roster.py --mini; from 9 Oct 2026, when averaging their colours, as
+// until then, had turned Mondrian, Albers and Rothko alike into the same beige).
 const vec3 MINI[88] = vec3[88](
-  vec3(32, 41, 57), vec3(128, 115, 111), vec3(222, 220, 214), vec3(2, 95, 169),        //  0 Ad Reinhardt
-  vec3(193, 170, 138), vec3(223, 214, 198), vec3(238, 235, 228), vec3(237, 205, 152), //  1 Robert Ryman
-  vec3(34, 34, 35), vec3(108, 108, 106), vec3(196, 196, 194), vec3(226, 219, 208),    //  2 Hiroshi Sugimoto
-  vec3(58, 63, 63), vec3(156, 158, 157), vec3(221, 223, 223), vec3(95, 157, 192),     //  3 Anthony McCall
-  vec3(77, 47, 38), vec3(179, 133, 96), vec3(222, 211, 177), vec3(237, 146, 59),      //  4 Joan Miro
-  vec3(79, 67, 63), vec3(151, 128, 115), vec3(216, 199, 172), vec3(219, 163, 66),     //  5 Wassily Kandinsky
-  vec3(47, 47, 41), vec3(132, 119, 103), vec3(220, 212, 199), vec3(155, 89, 42),      //  6 Franz Kline
-  vec3(111, 104, 94), vec3(177, 167, 147), vec3(220, 212, 196), vec3(250, 217, 164),  //  7 Alberto Giacometti
-  vec3(63, 84, 60), vec3(141, 167, 132), vec3(160, 171, 186), vec3(141, 167, 132),    //  8 Barnett Newman
-  vec3(84, 53, 52), vec3(175, 121, 107), vec3(227, 208, 195), vec3(231, 151, 35),     //  9 Mark Rothko
-  vec3(106, 98, 125), vec3(169, 143, 133), vec3(221, 219, 205), vec3(198, 76, 151),   // 10 Ellsworth Kelly
-  vec3(76, 82, 72), vec3(167, 170, 162), vec3(216, 217, 215), vec3(190, 163, 128),    // 11 Robert Irwin
-  vec3(48, 45, 45), vec3(136, 133, 126), vec3(221, 214, 207), vec3(19, 136, 83),      // 12 Larry Bell
-  vec3(122, 59, 86), vec3(201, 174, 137), vec3(236, 231, 217), vec3(244, 34, 4),      // 13 Josef Albers
-  vec3(86, 88, 89), vec3(239, 236, 229), vec3(241, 241, 241), vec3(238, 235, 223),    // 14 Agnes Martin
-  vec3(41, 44, 43), vec3(93, 119, 113), vec3(194, 188, 174), vec3(34, 127, 129),      // 15 Sol LeWitt
-  vec3(91, 76, 72), vec3(161, 140, 129), vec3(220, 212, 203), vec3(24, 79, 151),      // 16 Piet Mondrian
-  vec3(60, 30, 44), vec3(146, 94, 112), vec3(210, 193, 191), vec3(253, 53, 2),        // 17 Karl Gerstner
-  vec3(73, 59, 56), vec3(130, 137, 140), vec3(224, 220, 215), vec3(142, 34, 56),      // 18 Bridget Riley
-  vec3(45, 12, 9), vec3(118, 77, 41), vec3(223, 211, 212), vec3(173, 84, 47),         // 19 Yayoi Kusama
-  vec3(138, 117, 114), vec3(199, 194, 188), vec3(242, 240, 237), vec3(237, 134, 126), // 20 Donald Judd
-  vec3(106, 96, 85), vec3(179, 167, 148), vec3(232, 226, 212), vec3(228, 201, 104));  // 21 Giorgio Morandi
+  vec3(51, 47, 47), vec3(14, 80, 146), vec3(247, 247, 245), vec3(193, 179, 149),  //  0 Ad Reinhardt
+  vec3(135, 110, 78), vec3(219, 199, 166), vec3(244, 240, 242), vec3(243, 228, 199),  //  1 Robert Ryman
+  vec3(44, 44, 44), vec3(183, 184, 182), vec3(245, 245, 243), vec3(85, 86, 81),  //  2 Hiroshi Sugimoto
+  vec3(49, 44, 43), vec3(206, 181, 132), vec3(233, 232, 231), vec3(131, 106, 73),  //  3 Anthony McCall
+  vec3(60, 53, 48), vec3(182, 141, 88), vec3(238, 234, 218), vec3(237, 197, 47),  //  4 Joan Miró
+  vec3(43, 40, 39), vec3(182, 167, 149), vec3(249, 232, 192), vec3(193, 157, 60),  //  5 Wassily Kandinsky
+  vec3(24, 24, 25), vec3(209, 186, 155), vec3(234, 233, 231), vec3(188, 82, 45),  //  6 Franz Kline
+  vec3(93, 86, 80), vec3(227, 210, 181), vec3(255, 255, 255), vec3(162, 136, 94),  //  7 Alberto Giacometti
+  vec3(22, 28, 23), vec3(87, 115, 80), vec3(216, 226, 232), vec3(153, 189, 226),  //  8 Barnett Newman
+  vec3(66, 53, 59), vec3(148, 68, 50), vec3(254, 254, 253), vec3(179, 72, 38),  //  9 Mark Rothko
+  vec3(36, 31, 27), vec3(203, 184, 79), vec3(240, 240, 235), vec3(45, 61, 145),  // 10 Ellsworth Kelly
+  vec3(50, 48, 40), vec3(159, 162, 158), vec3(233, 235, 235), vec3(168, 148, 114),  // 11 Robert Irwin
+  vec3(30, 28, 26), vec3(139, 85, 54), vec3(252, 252, 252), vec3(139, 85, 54),  // 12 Larry Bell
+  vec3(82, 28, 79), vec3(203, 58, 31), vec3(244, 243, 243), vec3(243, 163, 46),  // 13 Josef Albers
+  vec3(10, 12, 15), vec3(239, 236, 232), vec3(246, 245, 245), vec3(235, 233, 218),  // 14 Agnes Martin
+  vec3(40, 40, 42), vec3(116, 99, 72), vec3(249, 246, 240), vec3(116, 99, 72),  // 15 Sol LeWitt
+  vec3(46, 45, 42), vec3(196, 58, 32), vec3(236, 238, 235), vec3(23, 71, 165),  // 16 Piet Mondrian
+  vec3(53, 60, 72), vec3(230, 146, 32), vec3(244, 245, 245), vec3(192, 56, 89),  // 17 Karl Gerstner
+  vec3(98, 114, 173), vec3(140, 116, 117), vec3(252, 251, 252), vec3(92, 156, 117),  // 18 Bridget Riley
+  vec3(29, 27, 23), vec3(243, 178, 38), vec3(253, 251, 248), vec3(162, 50, 50),  // 19 Yayoi Kusama
+  vec3(27, 30, 36), vec3(173, 169, 165), vec3(243, 240, 237), vec3(211, 193, 171),  // 20 Donald Judd
+  vec3(87, 74, 64), vec3(129, 119, 104), vec3(253, 253, 252), vec3(167, 164, 125));  // 21 Giorgio Morandi
 // the rungs, and the artists on each
 const int RUNG[22] = int[22](0, 1, 2, 3, 7, 8,  9, 10, 11, 12, 6, 5,  13, 14, 15, 16, 4, 21,  17, 18, 19, 20);
 const int RUNG_AT[5] = int[5](0, 6, 12, 18, 22);
@@ -1490,7 +1491,7 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
   if (a == 12) {                                                     // Larry Bell: a glass cube, its edges iridescent
     float e = max(aq.x, aq.y) - 55.0, band = feather(abs(e), 6.0);
     vec3 glass = mix(D, M, 0.5 + 0.5 * q.y / 55.0);
-    vec3 iri = mix(V, L, 0.5 + 0.5 * sin(atan(q.y, q.x) * 3.0 + t * 0.2));
+    vec3 iri = mix(V, L, 0.5 + 0.5 * sin(atan(q.y, q.x) * 3.0 + 6.2832 * u1));   // (still since 9 Oct 2026)
     return e < 0.0 ? mix(glass, iri, band) : mix(L, iri, band * 0.5);
   }
   if (a == 13) {                                                     // Albers: squares within squares, sunk toward the bottom
@@ -1522,11 +1523,11 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
     return mix(c, vec3(20), feather(line - 2.0, 0.8));
   }
   if (a == 17) {                                                     // Gerstner: rings of colour turning through each other
-    float r = length(q), k = fract(r / 55.0 - t * 0.02);
+    float r = length(q), k = fract(r / 55.0 + u1);                   // (still since 9 Oct 2026)
     return k < 0.33 ? mix(D, V, k / 0.33) : k < 0.66 ? mix(V, L, (k - 0.33) / 0.33) : mix(L, D, (k - 0.66) / 0.34);
   }
   if (a == 18) {                                                     // Riley: black and white, waving
-    float x = q.x + 6.0 * sin(q.y / 13.0 + t * 0.3 + q.x / 55.0);
+    float x = q.x + 6.0 * sin(q.y / 13.0 + 6.2832 * u1 + q.x / 55.0);   // (still since 9 Oct 2026)
     return mix(L, D * 0.3, smoothstep(0.35, 0.65, abs(fract(x / 8.0) * 2.0 - 1.0)));
   }
   if (a == 19) {                                                     // Kusama: dots, infinitely
@@ -1561,11 +1562,12 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
   if (gm == 0) {                                                     // a field and one band
     vec2 dir = vec2(cos(p1), sin(p1));
     float x = dot(q, vec2(-dir.y, dir.x)) - (u1 - 0.5) * 60.0;
-    return mix(L, mix(M, V, u2), feather(abs(x) - p2 * 0.5, 3.0));
+    vec3 fld = mix(L, M, 0.22 + 0.2 * clamp(0.5 + q.y / 300.0, 0.0, 1.0));   // (the field in their own colour, since 9 Oct 2026)
+    return mix(fld, mix(M, V, 0.4 + 0.6 * u2), feather(abs(x) - p2 * 0.5, 3.0));
   }
   if (gm == 1) {                                                     // stripes, along the direction the marks share
     vec2 dir = vec2(cos(p1), sin(p1));
-    float x = dot(q, vec2(-dir.y, dir.x)) + p3 * sin(dot(q, dir) / 13.0 + t * 0.2);
+    float x = dot(q, vec2(-dir.y, dir.x)) + p3 * sin(dot(q, dir) / 13.0 + 6.2832 * u1);   // (still since 9 Oct 2026)
     float k = fract(x / max(3.0, p2));
     return k < 0.5 ? mix(L, D, feather(abs(k - 0.25) * p2 - p2 * 0.2, 1.0)) : mix(M, V, 0.3);
   }
@@ -1593,7 +1595,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     return c;
   }
   if (gm == 5) {                                                     // rings
-    float k = fract(length(q) / max(6.0, p2) - t * 0.02);
+    float k = fract(length(q) / max(6.0, p2) + u1);                  // (still since 9 Oct 2026)
     return k < 0.33 ? mix(D, V, k / 0.33) : k < 0.66 ? mix(V, L, (k - 0.33) / 0.33) : mix(L, M, (k - 0.66) / 0.34);
   }
   if (gm == 6) {                                                     // stacked fields, their edges breathing
@@ -1620,6 +1622,155 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     float n = vnoise(w, p2, h + 2u), n2 = vnoise(w, p2 * 0.6, h + 3u);
     vec3 c = mix(L, V, smoothstep(0.5, 0.56, n) * (0.6 + 0.4 * p3));
     return mix(c, M, smoothstep(0.6, 0.66, n2) * 0.7);
+  }
+  // The compositions after a body of work (roster.py, FAMILY; from 9 Oct 2026). Still, frameless, each in its artist's
+  // four colours, so the same composition in two artists' hands looks like two artists.
+  #define BRUSH (2.4 * (vnoise(q, 5.0, h + 7u) - 0.5))                    // a brushed edge
+  if (gm == 10) {                                                    // ruled planes: Diebenkorn's Ocean Park, Marden
+    // a band across the top, a strip down one side, a field; their edges ruled in charcoal, not quite straight; a
+    // diagonal across the band; and the lines that were moved still showing, pale, a few cells off (pentimenti)
+    float top = -75.0 + 150.0 * mix(0.12, 0.26, u1), side = -75.0 + 150.0 * mix(0.16, 0.34, u2);
+    float xs = (h & 1u) == 0u ? q.x : -q.x, wob = 0.8 * BRUSH;
+    vec3 field = mix(L, V, 0.28 + 0.14 * vnoise(q, 34.0, h + 4u));
+    vec3 c = mix(field, mix(M, V, 0.4), feather(xs - side + wob, 1.4) * smoothstep(top - 1.0, top + 1.0, q.y));
+    c = mix(c, mix(M, L, 0.2 + 0.2 * vnoise(q, 21.0, h + 5u)), feather(q.y - top + wob, 1.4));
+    float ln = min(abs(q.y - top + wob), q.y > top ? abs(xs - side + wob) : 1e3);
+    ln = min(ln, segD(vec2(xs, q.y), vec2(side, -200.0), vec2(side + 260.0, top)));
+    c = mix(c, D, 0.5 * feather(ln - 0.5, 0.9));
+    float ghost = min(abs(q.y - top - 6.0 - 5.0 * u1), q.y > top ? abs(xs - side + 8.0 * u2) : 1e3);
+    return mix(c, L, 0.3 * feather(ghost - 0.7, 1.4));
+  }
+  if (gm == 11) {                                                    // black ovals pressed between bars: Motherwell's Elegies
+    float sp = 55.0 + 21.0 * u1, x = q.x + sp * u2, k = floor(x / sp), f = x - k * sp, brush = BRUSH;
+    uint hb = h3(int(k), 0, h);
+    float tall = 62.0 + 21.0 * u1, span = abs(q.y - (unit(hb) - 0.5) * 8.0) - tall;
+    float bar = abs(f - sp * 0.14) - sp * (0.05 + 0.03 * unit(mixh(hb + 1u)));
+    vec2 e = (vec2(f, q.y) - vec2(sp * 0.6, (unit(mixh(hb + 2u)) - 0.5) * 21.0)) / vec2(sp * 0.33, sp * 0.5 + 9.0 * unit(mixh(hb + 3u)));
+    float ov = (length(e) - 1.0) * sp * 0.33;
+    vec3 c = mix(L, V, 0.3 * smoothstep(0.4, 0.7, vnoise(q, 89.0, h + 9u)));   // the ground: white, with ochre or blue let in
+    float black = max(feather(bar + brush, 1.3) * feather(span + 2.0 * brush, 2.5), feather(ov + brush, 1.5));
+    return mix(c, D, black);
+  }
+  if (gm == 12) {                                                    // dabs laid side by side: Degas, Hassam, Nolde, Redon
+    vec3 c = mix(M, L, 0.35 + 0.3 * vnoise(q, 55.0, h + 3u));        // the ground, laid in first
+    const float G = 5.0;
+    vec2 g0 = floor(q / G - 0.5);                                   // (the four cells nearest)
+    for (int j2 = 0; j2 <= 1; j2++) for (int i2 = 0; i2 <= 1; i2++) {
+      vec2 cc = g0 + vec2(i2, j2);
+      uint hi = h3(int(cc.x), int(cc.y), h + 17u);
+      if (unit(hi) > 0.75) continue;
+      vec2 m = (cc + vec2(unit(mixh(hi + 1u)), unit(mixh(hi + 2u)))) * G;
+      float an = 6.2832 * vnoise(m, 34.0, h + 4u) + 0.7 * (unit(mixh(hi + 3u)) - 0.5);   // the hand's way, turning slowly
+      vec2 dv = vec2(cos(an), sin(an)) * (2.0 + 2.5 * unit(mixh(hi + 4u)));
+      uint pick = mixh(hi + 5u) % 8u;
+      float drift = vnoise(m, 89.0, h + 6u);                         // the colour gathering in passages
+      vec3 dc = pick < 3u ? mix(V, L, 0.3 * drift) : pick < 5u ? L : pick < 7u ? mix(M, V, drift) : D;
+      c = mix(c, dc, 0.85 * feather(segD(q, m - dv, m + dv) - 1.0, 0.8));
+    }
+    return c;
+  }
+  if (gm == 13) {                                                    // a landscape in bands, and its reflection: Doig, Kiefer
+    float hz = (u1 - 0.62) * 70.0;                                   // the horizon, high or low
+    float shore = 6.0 + 13.0 * vnoise(vec2(q.x, 0.0), 34.0, h + 3u) + 5.0 * vnoise(vec2(q.x, 0.0), 8.0, h + 4u);
+    vec3 sky = mix(mix(L, V, 0.35), L, smoothstep(hz - 110.0, hz, q.y));
+    vec3 c;
+    if (q.y < hz) c = mix(sky, D, smoothstep(hz - shore - 1.0, hz - shore + 1.0, q.y));
+    else {
+      float ry = 2.0 * hz - q.y;                                     // the same bands, upside down, broken by the water
+      vec3 refl = mix(mix(mix(L, V, 0.35), L, smoothstep(hz - 110.0, hz, ry)), D, 1.0 - smoothstep(hz + shore - 1.0, hz + shore + 1.0, q.y));
+      c = mix(refl * 0.85, M, 0.2 + 0.25 * vnoise(vec2(q.x * 0.12, q.y), 3.0, h + 5u));
+    }
+    vec2 fc = floor(q / 8.0);                                        // a fall of flecks: snow, or blossom
+    uint hf = h3(int(fc.x), int(fc.y), h + 6u);
+    if (unit(hf) < 0.4 * u2) {
+      vec2 fm = (fc + vec2(unit(mixh(hf + 1u)), unit(mixh(hf + 2u)))) * 8.0;
+      c = mix(c, mix(L, V, 0.15), feather(length(q - fm) - 1.1, 0.8));
+    }
+    return c;
+  }
+  if (gm == 14) {                                                    // a warm light out of the dark: Rembrandt
+    vec2 o = vec2((u1 - 0.5) * 56.0, (u2 - 0.55) * 44.0);
+    float r = length((q - o) / vec2(72.0, 88.0)), light = exp(-r * r * 2.0) * (0.8 + 0.2 * vnoise(q, 21.0, h + 3u));
+    vec3 c = mix(D * 0.62, mix(mix(M, V, 0.5), L, 0.25 * light), smoothstep(0.0, 0.85, light));
+    float brush = BRUSH;
+    c = mix(c, D * 0.45, 0.35 * smoothstep(0.45, 0.7, vnoise(q, 34.0, h + 4u)) * (1.0 - light));   // glazes, deeper still
+    for (int i = 0; i < 2; i++) {                                    // and in the light, a few strokes laid thick
+      uint hi = mixh(h + 120u + uint(i));
+      vec2 m = o + (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 44.0, dv = vec2(cos(0.6 * float(i) + 4.0 * u1), sin(0.6 * float(i) + 4.0 * u1)) * (5.0 + 5.0 * unit(mixh(hi + 2u)));
+      c = mix(c, mix(L, V, 0.3), 0.7 * light * feather(segD(q, m - dv, m + dv) - 1.4 + brush * 0.4, 1.0));
+    }
+    return c;
+  }
+  if (gm == 15) {                                                    // torn and pasted sheets: Rauschenberg, Bradford
+    vec3 c = mix(L, M, 0.25 * vnoise(q, 34.0, h + 3u));
+    float brush = BRUSH;
+    for (int i = 0; i < 4; i++) {
+      uint hi = mixh(h + 90u + uint(i));
+      vec2 m = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 130.0;
+      vec2 sz = vec2(16.0, 13.0) + vec2(40.0, 34.0) * vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u)));
+      vec2 dq = abs(q - m) - sz;
+      float d = max(dq.x, dq.y) + 1.4 * brush;                       // its edge torn
+      if (d > 2.0) continue;
+      int kind = int(mixh(hi + 4u) % 4u);
+      vec3 f = kind == 0 ? V : kind == 1 ? mix(L, D, 0.6 * step(fract((q.y - m.y) / 3.0), 0.42)) : kind == 2 ? mix(D, L, smoothstep(0.3, 0.7, vnoise(q, 6.0, hi + 2u))) : M;
+      c = mix(c, f, feather(d, 1.0));
+    }
+    float dx = q.x - (u1 - 0.5) * 100.0;                             // and a drip run down from one of them
+    return mix(c, V, 0.8 * feather(abs(dx + 0.6 * brush) - 1.1, 0.7) * smoothstep(-25.0 + 30.0 * u2, -22.0 + 30.0 * u2, q.y) * (1.0 - smoothstep(60.0 + 25.0 * u2, 70.0 + 25.0 * u2, q.y)));
+  }
+  if (gm == 16) {                                                    // lashes, crowns, words crossed out: Basquiat, Mathieu
+    vec3 c = mix(M, V, 0.3 + 0.35 * smoothstep(0.35, 0.65, vnoise(q, 55.0, h + 3u)));
+    float ink = 0.0, brush = BRUSH;
+    uint u3 = mixh(h + 63u);
+    vec2 cr = q - vec2((u1 - 0.5) * 120.0, (u2 - 0.5) * 100.0);      // a crown, most of the time: three points over a band
+    float w = 14.0 + 12.0 * unit(mixh(u3 + 1u)), tip = 10.0 + 8.0 * unit(mixh(u3 + 2u));
+    if (unit(u3) < 0.7 && abs(cr.x) < w + 3.0 && cr.y > -tip - 4.0 && cr.y < 8.0) {
+      float tri = abs(fract(cr.x * 3.0 / (2.0 * w) + 0.5) - 0.5) * 2.0;   // 1 at a point, 0 between
+      float zig = abs(cr.y + tip * tri) / sqrt(1.0 + pow(3.0 * tip / w, 2.0));
+      zig = min(zig + 1e3 * step(w, abs(cr.x)), abs(cr.y - 4.0) + 1e3 * step(w, abs(cr.x)));
+      ink = max(ink, feather(zig - 1.3 + 0.4 * brush, 0.8));
+    }
+    int rows = 2 + int(mixh(u3 + 3u) % 3u);                          // words: rows of strokes, one of them crossed out
+    float wy = (unit(mixh(u3 + 4u)) - 0.5) * 120.0, wx = (unit(mixh(u3 + 5u)) - 0.5) * 80.0, ww = 30.0 + 34.0 * unit(mixh(u3 + 6u));
+    int r = int(floor((q.y - wy) / 12.0 + 0.5));
+    float y = wy + 12.0 * float(r);
+    if (r >= 0 && r < rows && abs(q.y - y) < 4.0 && abs(q.x - wx) < ww) {
+      float k = floor(q.x / 6.0), f = q.x - k * 6.0;
+      uint hk = h3(int(k), r, h + 9u);
+      if (unit(hk) < 0.8) ink = max(ink, feather(abs(f - 3.0) - 1.0 - 1.5 * unit(mixh(hk + 1u)), 0.6) * feather(abs(q.y - y) - 2.6, 0.6));
+      if (r == int(mixh(u3 + 7u) % uint(rows))) ink = max(ink, feather(abs(q.y - y - 0.5 * sin(q.x / 9.0)) - 0.9, 0.6));
+    }
+    uint hl = mixh(u3 + 10u);                                        // and a lash across
+    float an = (unit(mixh(hl + 1u)) - 0.5) * 1.2, amp = 12.0 + 28.0 * unit(mixh(hl + 2u)), per = 25.0 + 30.0 * unit(mixh(hl + 3u));
+    vec2 rq = mat2(cos(an), sin(an), -sin(an), cos(an)) * q;
+    float lash = abs(rq.y - (unit(mixh(hl + 4u)) - 0.5) * 120.0 - amp * sin(rq.x / per + 6.2832 * unit(mixh(hl + 5u))));
+    ink = max(ink, feather(lash - 1.6 - 0.8 * brush, 1.0) * (1.0 - smoothstep(70.0, 110.0, abs(rq.x - (unit(mixh(hl + 6u)) - 0.5) * 60.0))));
+    return mix(c, D, ink);
+  }
+  if (gm == 17) {                                                    // circles quartered in four colours: Orozco, Duchamp
+    float G = 34.0 + 13.0 * u1;
+    vec2 g = q / G, c0 = floor(g + 0.5), e = (g - c0) * G;
+    uint hc = h3(int(c0.x), int(c0.y), h + 3u);
+    float r = length(e), R = G * (0.28 + 0.2 * unit(hc));
+    int quad = (e.x < 0.0 ? 0 : 1) + (e.y < 0.0 ? 0 : 2);
+    uint pick = mixh(hc + uint(quad)) % 5u;
+    vec3 f = pick == 0u ? V : pick == 1u ? D : pick == 2u ? M : pick == 3u ? mix(V, L, 0.5) : L;
+    vec3 c = mix(L, f, feather(r - R, 0.8));
+    float ring = feather(abs(r - R) - 0.4, 0.6), cross_ = feather(min(abs(e.x), abs(e.y)) - 0.35, 0.5) * step(r, R);
+    return mix(c, D, 0.6 * max(ring, cross_));
+  }
+  if (gm == 18) {                                                    // bands round a centre: Stella's Black Paintings, Protractors
+    float w = 8.0 + 4.0 * u1, d;
+    bool black = u2 < 0.5;
+    if (black) d = max(abs(q.x), abs(q.y) * 1.25);                   // squares in squares, black, as in 1958-60
+    else {                                                           // two fans of arcs laid through each other, as in 1967-71
+      vec2 a = q - vec2(-60.0, 80.0), b = q - vec2(60.0, 80.0);
+      d = (h3(int(floor(length(a) / w)), 1, h) & 1u) == 0u ? min(length(a), length(b)) : length(a) < length(b) ? length(a) : length(b) + w * 0.5;
+    }
+    float k = floor(d / w), f = d - k * w;
+    uint hk = mixh(h + uint(k) * 7u + 1u);
+    vec3 band = black ? mix(D, D * 0.7, 0.5 * vnoise(q, 34.0, h + 3u)) : (hk % 4u) == 0u ? V : (hk % 4u) == 1u ? M : (hk % 4u) == 2u ? mix(V, L, 0.45) : D;
+    return mix(band, L, feather(abs(f - w + 0.7) - 0.45, 0.5));       // the unpainted pinstripe between bands
   }
   // 9: cut shapes, flat, on open ground
   vec3 c = L;
@@ -1744,7 +1895,11 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
       vec2 q = gTrue - m25.xy;
       float pcm = k < 0 || uHold > 0.5 ? 2.0 : progressAt(cp, t0, -1e9, O, seed, DUR, SPEED);
       float wipe = smoothstep(-0.05, 0.05, pcm - 0.5 - 0.3 * (vnoise(gTrue, 21.0, hk) - 0.5));
-      A = B = mix(minimal(a0, q, h3(int(m26.y), int(m26.z), uint(k + 99)), uTime), minimal(a1, q, h3(int(m26.y), int(m26.z), uint(k + 100)), uTime), wipe);
+      // (one call in a loop, not two: every composition is then compiled once, 9 Oct 2026)
+      vec3 mc[2] = vec3[2](vec3(0.0), vec3(0.0));
+      int i0 = wipe >= 1.0 ? 1 : 0, i1 = wipe <= 0.0 ? 0 : 1;
+      for (int i = i0; i <= i1; i++) mc[i] = minimal(i == 0 ? a0 : a1, q, h3(int(m26.y), int(m26.z), uint(k + 99 + i)), uTime);
+      A = B = mix(mc[0], mc[1], wipe);
       gGram = 40 + (wipe > 0.5 ? a1 : a0);
       Sd = State(0, 0, 0, 0);
       return;
@@ -2611,17 +2766,18 @@ const vec3 PAIR[12] = vec3[12](
   vec3(40, 164, 200), vec3(118, 58, 188),                          // cyan and violet
   vec3(236, 96, 60), vec3(96, 40, 120));                           // coral and plum
 /** One field of light: a pair of colours (chosen by a field "scale" cells across) in bands "period" cells apart, a
- * warm field, a pale band where it turns, a dark core, and the warm field again, curving slowly and breathing. */
+ * warm field, a pale band where it turns, a dark core, and the warm field again, curving (held still since 9 Oct 2026:
+ * it turned and breathed, and read as a sway). */
 vec3 bands(vec2 p, float T, uint seed, float scale, float period) {
   float k = vnoise(p, scale, seed) * 5.999;
   int i = int(k);
   float f = smoothstep(0.3, 0.7, fract(k));
   vec3 c1 = mix(PAIR[2 * i], PAIR[2 * min(i + 1, 5)], f), c2 = mix(PAIR[2 * i + 1], PAIR[2 * min(i + 1, 5) + 1], f);
   vec3 pale = mix(c2, vec3(236, 230, 240), 0.35), dark = c2 * 0.16 + vec3(8, 4, 10);
-  float an = 6.2832 * vnoise(p, 2584.0, seed + 2u) + T / 233.0;
+  float an = 6.2832 * vnoise(p, 2584.0, seed + 2u);
   vec2 dir = vec2(cos(an), sin(an));
-  float sAt = dot(p, dir) + 89.0 * sin(dot(p, vec2(-dir.y, dir.x)) / 610.0 + T / 89.0);
-  float x = fract(sAt / period + 0.05 * sin(T / 34.0));
+  float sAt = dot(p, dir) + 89.0 * sin(dot(p, vec2(-dir.y, dir.x)) / 610.0);
+  float x = fract(sAt / period);
   return x < 0.42 ? mix(c1, pale, pow(smoothstep(0.0, 0.42, x), 3.0))
        : x < 0.55 ? mix(pale, dark, smoothstep(0.42, 0.55, x))
        : mix(dark, c1, smoothstep(0.55, 1.0, x));
@@ -2641,20 +2797,21 @@ const vec3 PHONE[12] = vec3[12](
   vec3(64, 196, 146), vec3(22, 94, 116),                           // green, teal
   vec3(250, 202, 92), vec3(112, 62, 174),                          // gold, deep purple
   vec3(196, 58, 22), vec3(110, 160, 235));                         // ember, sky
-/** Which country p is in, now: a field 2584 cells across drifting over the plane at a few cells a second. Low, the plane
+/** Which country p is in: a field 2584 cells across (held still since 9 Oct 2026; it drifted a few cells a second). Low, the plane
  * as it is, without the light (its soil, paintings, quilts, hangs, ladder and tree lines); then Turrell's light and
  * its orbs; then the silk and glass; each handing over to the next across a soft border, so everything DRIFT has
- * made is somewhere on it, and whatever is in view becomes, in time, the next. */
+ * made is somewhere on it. Since 9 Oct 2026 the light and the silk keep to the top quarter of it, and the plane's own
+ * country, where the artists are, is the rest. */
 float regime(vec2 p, float T) {
-  vec2 q = mat2(0.8, 0.6, -0.6, 0.8) * p + T * vec2(3.0, 1.7);
+  vec2 q = mat2(0.8, 0.6, -0.6, 0.8) * p;                            // (still since 9 Oct 2026; it drifted)
   return vnoise(q + 233.0 * (vec2(vnoise(q, 610.0, 30203u), vnoise(q, 610.0, 30204u)) - 0.5), 2584.0, 30201u);
 }
 float fbm2(vec2 q, uint s) { return 0.62 * vnoise(q * 89.0, 89.0, s) + 0.38 * vnoise(q * 89.0, 34.0, s + 1u); }
 /** The light at p at time T; off: how its glass bends what is behind it (cells); sheen: the light along its crests. */
 vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
   vec2 q = mix(p, uView, 0.18) / 610.0;                              // deeper than the plane: it moves less
-  vec2 w1 = vec2(fbm2(q + vec2(0.0, T * 0.004), 301u), fbm2(q + vec2(5.2, 1.3) - T * 0.003, 303u));
-  vec2 w2 = vec2(fbm2(q + 3.0 * w1 + vec2(1.7, 9.2), 305u), fbm2(q + 3.0 * w1 + vec2(8.3, 2.8) + T * 0.002, 307u));
+  vec2 w1 = vec2(fbm2(q, 301u), fbm2(q + vec2(5.2, 1.3), 303u));     // (the folds hold still since 9 Oct 2026)
+  vec2 w2 = vec2(fbm2(q + 3.0 * w1 + vec2(1.7, 9.2), 305u), fbm2(q + 3.0 * w1 + vec2(8.3, 2.8), 307u));
   float v = fbm2(q + 3.0 * w2, 309u);
   float k = vnoise(p, 2584.0, 311u) * 5.999;
   int i = int(k);
@@ -2669,19 +2826,18 @@ vec3 lightAt(vec2 p, float T, out vec2 off, out vec3 sheen) {
   off = (w2 - 0.5) * 55.0;
   // Turrell's light, with its orbs, has its own country, and hands over to the silk across a soft border
   vec3 A = bands(p, T, 28661u, 987.0, 987.0), B = bands(p + vec2(377.0, -233.0), T * 1.3, 28671u, 610.0, 610.0);
-  vec3 turrell = mix(A, B, 0.72 * smoothstep(0.3, 0.7, vnoise(p + T * vec2(-1.5, 2.0), 377.0, 28675u)));
+  vec3 turrell = mix(A, B, 0.72 * smoothstep(0.3, 0.7, vnoise(p, 377.0, 28675u)));
   const float G = 144.0;
   ivec2 c0 = ivec2(floor(p / G));
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 c = c0 + ivec2(i, j);
     uint h = h3(c.x, c.y, 28677u);
     if (unit(h) > 0.45) continue;
-    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G
-           + 21.0 * vec2(sin(T / 21.0 + 6.2832 * unit(h)), cos(T / 34.0 + 6.2832 * unit(mixh(h + 3u))));
+    vec2 C = (vec2(c) + 0.5 + 0.6 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G;   // (the orbs no longer wander)
     float r = 21.0 + 34.0 * unit(mixh(h + 4u)), d2 = dot(p - C, p - C) / (r * r);
     turrell = mix(turrell, PAIR[int(mixh(h + 5u) % 12u)] * 1.08, 0.5 * exp(-d2 * 1.6));
   }
-  float silk = smoothstep(0.5, 0.6, regime(p, T));
+  float silk = smoothstep(0.72, 0.8, regime(p, T));
   sheen *= silk;
   off *= silk;
   return mix(turrell, col, silk);
@@ -2702,7 +2858,7 @@ vec3 filmic(vec3 c) { vec3 x = c / 255.0 * 1.05; return clamp((x * (2.51 * x + 0
 vec2 askew(vec2 p) { return mat2(0.8, 0.6, -0.6, 0.8) * p + 89.0 * (vec2(vnoise(p, 377.0, 28701u), vnoise(p, 377.0, 28702u)) - 0.5); }
 int weil(vec2 p, float T, out vec3 col, out float a) {
   col = vec3(0); a = 0.0;
-  if (vnoise(askew(p), 1597.0, 28681u) < 0.82 || regime(p, T) < 0.4) return 0;   // (rarer since 2 Oct 2026)   // not in the plane's own country
+  if (vnoise(askew(p), 1597.0, 28681u) < 0.82 || regime(p, T) < 0.62) return 0;   // (rarer since 2 Oct 2026)   // not in the plane's own country
   // the shards: the nearest of seeds scattered 89 cells apart, the plane warped a little first so no edge is straight
   const float S = 144.0;
   vec2 pw = p + 21.0 * (vec2(vnoise(p, 34.0, 28691u), vnoise(p, 34.0, 28692u)) - 0.5) + 3.0 * (vec2(vnoise(p, 8.0, 28693u), vnoise(p, 8.0, 28694u)) - 0.5);
@@ -2739,13 +2895,12 @@ int weil(vec2 p, float T, out vec3 col, out float a) {
 }
 /** Komorebi: light through leaves. Every gap between leaves is a pinhole and throws an image of what lies beyond it (in
  * an eclipse the ground under a tree fills with crescent suns); so the dapples here are soft, overlapping pinhole
- * images of other places, upside down, warm with sun, swaying and flickering as unseen leaves move in a wind; not out of
+ * images of other places, upside down, warm with sun, flickering as unseen leaves pass (still since 9 Oct 2026); not out of
  * focus (as until 8 Oct 2026) but each a small abstraction of one of the history's moments, in flat patches. They come and go in drifts (a field 987 cells across) over every country. Returns their light and how much. */
 vec4 dapples(vec2 p, float T) {
   if (uAN == 0) return vec4(0.0);
   float dens = smoothstep(0.74, 0.88, vnoise(askew(p) + T * vec2(-2.0, 1.1), 987.0, 30301u));   // (halved three times, 2 Oct 2026)
   if (dens <= 0.0) return vec4(0.0);
-  vec2 wind = vec2(sin(T * 0.7) + 0.4 * sin(T * 1.9 + 1.3), 0.6 * cos(T * 0.5) + 0.3 * sin(T * 2.3)) * 4.0;
   const float G = 34.0;
   ivec2 c0 = ivec2(floor(p / G));
   vec3 acc = vec3(0.0);
@@ -2754,7 +2909,7 @@ vec4 dapples(vec2 p, float T) {
     ivec2 c = c0 + ivec2(i, j);
     uint h = h3(c.x, c.y, 30303u);
     if (unit(h) > 0.62) continue;
-    vec2 C = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G + wind * (0.5 + unit(mixh(h + 3u)));
+    vec2 C = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G;   // (no wind since 9 Oct 2026)
     float R = 8.0 + 18.0 * unit(mixh(h + 4u));
     vec2 d = mat2(0.88, 0.47, -0.47, 0.88) * (p - C);
     d.x /= 1.35;                                                     // the sun low: each image drawn out along its light
@@ -2792,12 +2947,14 @@ void main() {
   if (wk == 1) { outA = outB = vec4(filmic(wc) / 255.0, wa); return; }
   // how much of the light is here: most of the plane, opening in soft apertures where the paintings show clear
   vec2 pa = askew(p);
-  float w = smoothUp(0.22, 0.46, vnoise(pa + uTime * vec2(2.0, -1.3), 610.0, 28657u) * 0.62 + vnoise(pa, 233.0, 28658u) * 0.38);
+  float w = smoothUp(0.22, 0.46, vnoise(pa, 610.0, 28657u) * 0.62 + vnoise(pa, 233.0, 28658u) * 0.38);   // (still since 9 Oct 2026)
   // the edge of an aperture dithered, as light breaking up on a screen
   w = clamp(w + (unit(h3(int(p.x), int(p.y), 28659u)) - 0.5) * 0.5 * (1.0 - abs(2.0 * w - 1.0)), 0.0, 1.0);
   vec4 was = inPrev ? texelFetch(uPrev, ivec2(lp), 0) : vec4(1.0);
   if (inPrev && was.a < 0.75) w *= P2;                              // a painting shown as itself: the light stands back
-  w *= smoothstep(0.32, 0.44, regime(p, uTime));                      // and in the plane's own country, no light at all
+  // and in the plane's own country, no light at all: since 9 Oct 2026 three quarters of the plane, the artists' (it was a
+  // third, and the light's pastel lay over two thirds of everything, so every place looked the same)
+  w *= smoothstep(0.62, 0.7, regime(p, uTime));
   if (w <= 0.0) {                                                    // no light here: only the dapples, if any
     if (dap.a <= 0.0) discard;
     outA = outB = vec4(filmic(dap.rgb) / 255.0, dap.a);
@@ -2817,7 +2974,7 @@ void main() {
     L = mix(L, seen * (0.45 + 0.75 * L / 255.0), 0.34);
   }
   L += sheen * 0.42;
-  L += caustics(p, uTime, smoothstep(0.5, 0.6, regime(p, uTime)));
+  L += caustics(p, uTime, smoothstep(0.72, 0.8, regime(p, uTime)));
   L = mix(L, dap.rgb, dap.a);
   L += (unit(h3(int(p.x), int(p.y), uint(uTime * 24.0))) - 0.5) * 7.0;   // grain, as in a photograph
   outA = outB = vec4(filmic(max(L, vec3(0.0))) / 255.0, w * 0.92);
@@ -2865,8 +3022,6 @@ uniform vec2 uThrust;               // the ultracode's thrust (drift.js), cells 
 uniform sampler2D uFace;            // the faces in the saved paintings (dirt/artists/faces.py), an atlas uFG cells across, down
 uniform int uFN;
 uniform vec2 uFG;
-uniform vec4 uTS[40], uTW[40], uTL[27], uTB;   // the tree of many focal points (focus-tree.js): branches, widths, leaves, its box
-uniform int uTN;
 uniform int uPair[26];                // the pairs of faces that weld (faces.py), two indices each
 uniform int uPN;
 uniform sampler2D uFaceLut;         // which face's mean is nearest a colour: 8 levels a channel, 64 by 8 (r + 8 g, b)
@@ -3036,63 +3191,6 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = mix(canvas, c, smoothstep(0.6, 1.6 + 6.0 * d, seam));
   return m;
 }
-// ---- the tree of many focal points (focus-tree.js) ---------------------------------------------------------------
-// The tree nearest the view, as the page works it out each frame: its 40 branches, each drawn in the perspective of
-// the hearth it grows from (uTS: from, to; uTW: widths, depths), and the washes of leaves at its 27 twigs' ends (uTL:
-// where, how wide, which pigment and how deep). Painted in watercolour: a branch is sepia near and indigo far, as
-// Cezanne's blue is the air between; it is laid in one stroke, its edge a little dry; the leaves are transparent washes
-// of sap green, olive ochre, viridian, now and then cerulean or a coleus red, each pooling at its rim as a wash dries,
-// and where they overlap they deepen, one glaze through another.
-float tree(vec2 p, float T, out vec3 col) {
-  col = vec3(0.0);
-  if (uTN <= 0 || p.x < uTB.x || p.y < uTB.y || p.x > uTB.z || p.y > uTB.w) return 0.0;
-  // first its air: a wash laid behind it, sky above and warm ground below, thinning to nothing well before the edge of
-  // its box, its outline wandering, so the tree has room to be seen and no frame round it
-  vec2 mid = 0.5 * (uTB.xy + uTB.zw), hx = 0.5 * (uTB.zw - uTB.xy);
-  vec2 q = abs(p - mid) / hx;
-  float rr = pow(pow(q.x, 2.6) + pow(q.y, 2.6), 1.0 / 2.6) + 0.14 * (vnoise(p, 89.0, 61103u) - 0.5) + 0.05 * (vnoise(p, 21.0, 61104u) - 0.5);
-  float air = 1.0 - smoothstep(0.62, 0.97, rr);
-  vec3 sky = mix(vec3(222, 230, 236), vec3(240, 232, 214), smoothstep(-0.2, 0.8, (p.y - mid.y) / hx.y));
-  vec3 c = sky; float a = 0.9 * air;
-  float dry = vnoise(p, 3.0, 61101u) - 0.5;
-  for (int i = 0; i < 40; i++) {
-    if (i >= uTN) break;
-    vec4 s = uTS[i], w = uTW[i];
-    vec2 ab = s.zw - s.xy;
-    float L = max(length(ab), 1e-3);
-    vec2 nrm = vec2(-ab.y, ab.x) / L;
-    float bend = L * 0.07 * (fract(sin(float(i) * 12.9898) * 43758.5453) - 0.5) * 2.0;   // each branch bowed a little, its own way
-    float t = clamp(dot(p - s.xy, ab) / (L * L), 0.0, 1.0);
-    vec2 pq = p - nrm * bend * sin(3.14159 * t);                     // the bow taken out, so the straight test serves
-    t = clamp(dot(pq - s.xy, ab) / (L * L), 0.0, 1.0);
-    float d = length(pq - s.xy - ab * t), hw = 0.5 * mix(w.x, w.y, t) + 0.6;
-    if (d > hw + 2.0) continue;
-    float m = 1.0 - smoothstep(hw - 1.0, hw + 1.0, d + 1.2 * dry);
-    float z = clamp(mix(w.z, w.w, t) / 233.0 + 0.5, 0.0, 1.0);    // near 0, far 1
-    vec3 ink = mix(vec3(92, 66, 50), vec3(70, 80, 122), z);         // sepia near, indigo far
-    ink = mix(ink, vec3(232, 226, 214), 0.22 * z);                   // and paler with the air between
-    ink *= 0.86 + 0.28 * vnoise(vec2(t * L, float(i) * 55.0), 21.0, 61105u);   // the pigment heavier and lighter along the stroke
-    over(c, a, ink, m * 0.9);
-  }
-  const vec3 PIG[5] = vec3[5](vec3(96, 138, 72), vec3(178, 158, 84), vec3(66, 128, 116), vec3(170, 64, 96), vec3(116, 156, 196));
-  for (int i = 0; i < 27; i++) {
-    vec4 l = uTL[i];
-    if (l.z <= 0.0) continue;
-    float d = length(p - l.xy);
-    if (d > l.z + 3.0) continue;
-    vec2 lv = p - l.xy;
-    float ang = atan(lv.y, lv.x);
-    d *= 1.0 + 0.3 * (vnoise(vec2(ang * 3.0, float(i) * 7.0), 1.0, 61102u) - 0.5) * 2.0;   // a blot, not a disc: its edge goes in and out
-    d += 0.12 * l.z * (vnoise(p, 8.0, 61106u + uint(i)) - 0.5);       // and wanders a little on the paper's tooth
-    float inside = 1.0 - smoothstep(l.z - 1.5, l.z + 1.0, d);
-    float rim = smoothstep(l.z * 0.55, l.z, d);                       // the pigment pools at the rim as it dries
-    float z = fract(l.w);
-    vec3 pg = mix(PIG[int(l.w)], vec3(214, 222, 228), 0.35 * z);     // the far leaves paler and cooler
-    over(c, a, pg, inside * (0.22 + 0.24 * rim) * (1.0 - 0.3 * z));
-  }
-  col = c;
-  return a;
-}
 // ---- welds: two faces dissolving into each other in a Rothko -----------------------------------------------------
 // Most of what DRIFT does with faces now: one pair at a time. Of the faces in the saved paintings, faces.py finds the
 // pairs that weld, two faces from different paintings whose eyes, mouths and light fall in the same places (a
@@ -3261,8 +3359,7 @@ void main() {
   { vec3 cz; if (corpse(p, T, cz) > 0.0) { outA = outB = vec4(clamp(cz, 0.0, 255.0) / 255.0, 1.0); return; } }   // an exquisite corpse
   // a weld, a portrait or a frieze, where there is one: whole, it stands alone; at its feathered edge it lies over the
   // collage, so nothing is cut where it thins out
-  vec3 oz = vec3(0.0); float om = tree(p, T, oz);
-  if (om <= 0.0) om = weld(p, T, oz);
+  vec3 oz = vec3(0.0); float om = weld(p, T, oz);
   if (om <= 0.0) om = mosaic(p, lp, T, oz);
   if (om <= 0.0) om = frieze(p, T, oz);
   if (om >= 0.999) { outA = outB = vec4(clamp(oz, 0.0, 255.0) / 255.0, 1.0); return; }
@@ -3481,7 +3578,7 @@ void main() {
 // the outermost leaves lit from behind. The trees change along every seam, a stretch of each: white pine (tufts of
 // needles), broadleaf (poplar, maple), magnolia (large leaves), oak (lobed), spruce (spires), willow (hanging
 // strands), palm (fronds), aspen and birch (small leaves, quivering), cypress (flames), and a tree in winter (bare
-// twigs); all sway a little in the wind. Colours come from the last frame, taken from well inside each region, so
+// twigs); still, since 9 Oct 2026 (they swayed in a wind). Colours come from the last frame, taken from well inside each region, so
 // each region keeps its own texture in the leaves and the holes. Its own small program, drawn over the rest.
 const GROUND_CANOPY = `#version 300 es
 precision highp float;
@@ -3547,7 +3644,7 @@ float leafAt(vec2 w, int kind, vec2 n, vec2 t) {
     if (unit(h) < (kind == ASPEN ? 0.4 : 0.12)) continue;          // not every place has its leaf
     vec2 C = (vec2(c) + 0.15 + 0.7 * vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u)))) * g;
     float ph = unit(mixh(h + 3u)), an = 6.2832 * ph;
-    if (kind == ASPEN) C += 0.4 * vec2(sin(uTime * 7.0 + 6.2832 * ph), cos(uTime * 5.0 + 9.0 * ph));   // quivering
+    if (kind == ASPEN) C += 0.4 * vec2(sin(6.2832 * ph), cos(9.0 * ph));   // (still since 9 Oct 2026; they quivered)
     if (kind == PINE) { m = max(m, tuft(w, C, 11.0, 5.5, ph, 0.55)); continue; }
     if (kind == PALM) {
       float f = tuft(w, C, 7.0, 11.0, ph, 0.6 + 1.4 * (0.5 + 0.5 * sin(length(w - C) * 3.0)));   // fronds, with leaflets
@@ -3566,7 +3663,7 @@ float leafAt(vec2 w, int kind, vec2 n, vec2 t) {
  * behind a leaf at the canopy's very edge is. */
 bool canopyAt(vec2 p, float sc, vec2 n, vec2 t, int kind, out float glint, out float leafM) {
   glint = 0.0; leafM = 1.0;
-  vec2 w = p + vec2(sin(uTime * 0.9 + p.y * 0.07), cos(uTime * 0.7 + p.x * 0.05)) * 0.7;   // the wind
+  vec2 w = p + vec2(sin(p.y * 0.07), cos(p.x * 0.05)) * 0.7;          // (no wind since 9 Oct 2026: nothing sways)
   float u = dot(p, t);
   float crown = 21.0 * (vnoise(p, 55.0, 201u) - 0.5) + 8.0 * (vnoise(p, 13.0, 202u) - 0.5);
   if (kind == SPRUCE) crown += 21.0 * (1.0 - 2.0 * abs(fract(u / 17.0) - 0.5)) - 9.0;   // spires
@@ -3615,11 +3712,11 @@ void main() {
   // the canopy seen against the light: dark toward its edge, each leaf a little different
   float dark = (0.3 + 0.28 * (1.0 - clamp(m, 0.0, 1.0))) * (1.0 - smoothstep(0.0, 34.0, max(sc, 0.0)));
   vec3 warm = vec3(0.86, 0.8, 0.36);
-  // through the gaps in the leaves, another place, large and far off behind them, drifting as in a wind: not softened
+  // through the gaps in the leaves, another place, large and far off behind them, held still: not softened
   // (as it was until 8 Oct 2026) but abstracted, in large flat patches of three tones (ELSEWHERE_GLSL)
   bool gap = !canopy && ownCanopy && sc > 0.0;
   if (gap && uAN > 0) {
-    vec2 uv = (p - mo.xy) / 377.0 + 0.5 + vec2(uTime * 0.004 + 0.02 * sin(uTime * 0.6), 0.015 * sin(uTime * 0.9 + p.x * 0.01));
+    vec2 uv = (p - mo.xy) / 377.0 + 0.5;                               // (held still since 9 Oct 2026)
     float e = 16.0 * unit(h3(int(mo.x), int(mo.y), 30123u)) + uTime / 21.0;
     vec3 hist = elsewhere(p, 0.8, e, uv, 377.0);                    // far: patches 22 cells across, three tones
     vec3 sky = across(p + n * (d + 46.0), int(mt.w)) * 255.0;
@@ -3873,7 +3970,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
   const noWater = /(?:^|&)nowater(?:&|$)/.test(location.hash.slice(1));   // #nowater: without the watercolour
-  const noTree = /(?:^|&)notree(?:&|$)/.test(location.hash.slice(1));   // #notree: without the tree of many focal points
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -4132,7 +4228,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(canopyProg);
       gl.uniform1i(Cn.uCells, 0); gl.uniform1i(Cn.uEnts, 1); gl.uniform1i(Cn.uSlots, 2); gl.uniform1i(Cn.uWorks, 7); gl.uniform1i(Cn.uPrev, 10); gl.uniform1i(Cn.uAnt, 11);
     }
-    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut", "uPair", "uPN", "uTS", "uTW", "uTL", "uTB", "uTN"]);
+    const hh = finish(pending.h, ["uPrev", "uPrevSize", "uPrevTex", "uCell0", "uPrev0", "uTime", "uQuilt", "uQN", "uQS", "uAnt", "uAN", "uLite", "uThing", "uThingOn", "uThingP", "uThrust", "uFace", "uFN", "uFG", "uFaceLut", "uPair", "uPN"]);
     if (hh) { [collageProg, Co] = hh; gl.useProgram(collageProg); gl.uniform1i(Co.uPrev, 10); gl.uniform1i(Co.uQuilt, 9); gl.uniform1i(Co.uAnt, 11); gl.uniform1i(Co.uThing, 12); gl.uniform1i(Co.uFace, 13); gl.uniform1i(Co.uFaceLut, 14); }
     const c = pending.c && finish(pending.c, ["uCells", "uEnts", "uSlots", "uWorks", "uQuilt", "uCell0", "uC0", "uQN", "uQS", "uFormal", "uDay", "uTime"]);
     if (c) {
@@ -4359,12 +4455,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.uniform1i(Co.uPN, pairs.length);
       if (pairs.length) gl.uniform1iv(Co.uPair, new Int32Array(26).map((_, i) => (pairs[i >> 1] || [0, 0])[i & 1]));
       gl.uniform4f(Co.uThingP, thingP[0], thingP[1], thingP[2], thingP[3]);
-      const ft = typeof FOCUS_TREE !== "undefined" && !noTree ? FOCUS_TREE.draw(cx0 + cw / 2, cy0 + ch / 2, t, typeof FIELD_K !== "undefined" ? FIELD_K : 1) : null;   // the tree of many focal points
-      gl.uniform1i(Co.uTN, ft ? ft.n : 0);
-      if (ft) {
-        gl.uniform4fv(Co.uTS, ft.seg); gl.uniform4fv(Co.uTW, ft.wid); gl.uniform4fv(Co.uTL, ft.leaf);
-        gl.uniform4f(Co.uTB, ft.box[0], ft.box[1], ft.box[2], ft.box[3]);
-      }
       gl.uniform2f(Co.uThrust, thrust[0], thrust[1]);
       gl.enable(gl.BLEND);                                             // where it covers, the edge pass stands aside
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);

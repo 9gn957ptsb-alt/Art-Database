@@ -2279,7 +2279,7 @@ const QG = 8, quietCv = document.createElement("canvas"), quietCtx = quietCv.get
 let quietAt = "";
 function quieten() {
   const gx = Math.floor(vx / QG) - 1, gy = Math.floor(vy / QG) - 1, w = Math.ceil(VW / QG) + 3, h = Math.ceil(VH / QG) + 3, walls = GLG && GLG.quilts && GLG.quilts() > 0;
-  const tb = typeof FOCUS_TREE !== "undefined" && FOCUS_TREE.last ? FOCUS_TREE.last.box.map((v) => Math.round(v / 34)).join(":") : "", key = `${gx},${gy},${w},${h},${walls},${tb}`;
+  const key = `${gx},${gy},${w},${h},${walls}`;
   if (key !== quietAt) {
     quietAt = key;
     quietCv.width = w; quietCv.height = h;
@@ -2287,8 +2287,7 @@ function quieten() {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
       const x = (gx + i + 0.5) * QG, y = (gy + j + 0.5) * QG, c = complexityJS(x, y);
       const wall = walls ? wallJS(x, y) * smooth(0.7, 0.8, c) : 0;
-      const air = tb ? FOCUS_TREE.airAt(x, y) : 0;                     // and none in the tree's air (focus-tree.js)
-      img.data[(j * w + i) * 4 + 3] = Math.round(255 * Math.max(1 - smooth(0.4, 0.62, c), wall, air));   // none on the minimal rungs, all once the worlds are full
+      img.data[(j * w + i) * 4 + 3] = Math.round(255 * Math.max(1 - smooth(0.4, 0.62, c), wall));   // none on the minimal rungs, all once the worlds are full
     }
     quietCtx.putImageData(img, 0, 0);
   }
@@ -2595,7 +2594,7 @@ def main():
         ap.error("--site needs --earth and --dots")
     pl = site_plane(priv / "plane", args.dots) if site else plane(priv / "plane")
     src, files = earth_scripts(Path(args.earth), site or priv) if args.earth else ({}, [])
-    gpu = ((HERE / "engine" / "focus-tree.js").read_text() + "\n" + (HERE / "engine" / "ground-gl.js").read_text()).replace("</script", "<\\/script")
+    gpu = (HERE / "engine" / "ground-gl.js").read_text().replace("</script", "<\\/script")
     page = (PAGE.replace("__GROUND__", pl["ground"]["hex"])
                 .replace("__GROUND_GL__", gpu)
                 .replace("__CAST_JS__", "" if site else (HERE / "engine" / "cast.js").read_text().replace("</script", "<\\/script"))

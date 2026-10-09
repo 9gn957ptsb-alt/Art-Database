@@ -10,7 +10,7 @@ function harness(opts = {}) {
   const store = new Map(), env = {
     vx: 0, vy: 0, VW: 400, VH: 300, PHI: (1 + Math.sqrt(5)) / 2, REDUCED: false, flight: null, down: null,
     at: { hidden: true }, ANOM: { at: 0 }, MODE: opts.MODE, GLG: { reflection: () => env.reading, setThrust: (x, y) => { env.thrust = [x, y]; }, putIn: () => { env.sheets++; } },
-    sheets: 0, thrust: [0, 0], reading: null, now: 100000,
+    sheets: 0, thrust: [0, 0], reading: null, now: 100000, location: { hash: opts.drive === false ? '' : '#drive' },
   };
   const localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
   const fn = new Function('env', 'localStorage', 'addEventListener', 'getComputedStyle', 'document', 'performance', 'requestAnimationFrame', `
@@ -98,6 +98,14 @@ for (const MODE of ['earth', undefined]) {
   if (MODE === 'earth') check('on the Earth: does not move', moved === 0, 'moved ' + moved.toFixed(2));
   else check('on the plane, alone: moves toward the change, with a wake', moved > 100 && e.thrust[0] > 5 && e.sheets >= 1, `moved ${moved.toFixed(1)} cells in 10 s, thrust ${fmt(e.thrust)}, sheets ${e.sheets}`);
 }
+// 6a. without #drive (the default since 9 Oct 2026): left alone, the view stays where it was put, and leaves no wake;
+// its code still turns up in the collage
+{ const e = harness({ drive: false }); const C = 8, img = (X, Y) => world(X, Y);
+  e.reading = reading(0, 0, 34, 21, C, img); e.now = 100000; e.UC.idleAt = 0; e.propel(e.now);
+  e.reading = reading(0, 0, 34, 21, C, (X, Y, x) => x >= 26 ? world(X, Y, 3) : img(X, Y));
+  const x0 = e.vx, y0 = e.vy; for (let i = 0; i < 600; i++) { e.now += 16.7; e.propel(e.now); }
+  check('without #drive, left alone: stays where it was put, no wake', e.vx === x0 && e.vy === y0 && Math.hypot(...e.thrust) === 0 && e.sheets >= 1,
+    `moved ${(e.vx - x0).toFixed(2)}, ${(e.vy - y0).toFixed(2)} cells in 10 s, thrust ${fmt(e.thrust)}, sheets ${e.sheets}`); }
 // 6b. the engine: never past top speed; the throttle has most of its speed within a second; the rudder sweeps
 { const e = harness(); const C = 8, img = (X, Y) => world(X, Y);
   e.reading = reading(0, 0, 34, 21, C, img); e.UC.idleAt = 0; e.propel(e.now);
