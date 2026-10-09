@@ -20,7 +20,7 @@ Website.
 | --- | --- |
 | **its grain** | Tiers of cell size (`GRAINS` in `scripts/build_city_places.py`): 0 is the first cut (~40 m, 96–144 cells a side), then **28 m, 20 m, 14 m**, never more than **576 cells a side** (finer than that is under a device pixel on a phone at rest). A cut costs about the same at any grain, so a first cut is raised straight to 20 m, then to 14 m; 28 m is where a city goes when 20 m is over the budget. Each run raises a few cities, the coarsest first, then the most important (cities.json's order: the most museums and works first). |
 | **its currency** | Every ground says which Overture Maps release it was read from (`release`) and when (`read`). Overture publishes about monthly; a city read from an older release than the newest is read again, the oldest read first. New buildings, demolitions, heights and parks come with it. |
-| **its years** | Each cut is dated by `scripts/build_built_years.py` (the cities' own records, the runners' records, Wikidata, EUBUCCO, OpenStreetMap, then the satellites). Where a source that dated the last cut does not answer this time, the last cut's years are carried over cell by cell and the ground says so (`builtCarried`). Where a city's records were read on GitHub's runners for the old grid (`records/years/`, `records/census/`), the pass asks them again (`records/REQUEST`) and dates the city again once they are in (`--redate`). |
+| **its years** | Each cut is dated by `scripts/build_built_years.py` (the cities' own records, the runners' records, Wikidata, EUBUCCO, OpenStreetMap, then the satellites). Where a source that dated the last cut does not answer this time, the last cut's years are carried over cell by cell and the ground says so (`builtCarried`); the next runs date it again (three tries at most before its next cut), so a source that failed one day is not lost to the city's grain. Where a city's records were read on GitHub's runners for the old grid (`records/years/`, `records/census/`), the pass asks them again (`records/REQUEST`) and dates the city again once they are in (`--redate`). |
 | **its green** | Parks, gardens, lawns, pitches, cemeteries and woods (Overture's land use and land) are cells of their own (`"g"`), drawn as the soil grown over, so Central Park, the Tuileries and Hyde Park read. |
 | **its coverage** | A city without a skyline still opens on the globe's own cells (~39 km each), the most pixelated of all: the next cities in order without one (cities with museums, then cities of galleries busy enough to be named on the globe; 111 in all, 16 read by 8 Oct 2026) are read each run, at 20 m. |
 
@@ -32,10 +32,13 @@ drawn as it was, from its ground made no finer than 160 cells a side.
 ## Each run
 
 1. **Start clean.** `git fetch origin claude/artist-website-dev-s92irf` and
-   merge it (never rebase; other sessions push here too). Install what the
-   scripts need if it is missing: `pip install pyarrow shapely numpy pillow
-   tifffile imagecodecs pyproj pyshp`.
-2. **Date again** what the runners have read since the last run:
+   merge it (never rebase; other sessions push here too). What the scripts
+   import is installed where it is missing by `scripts/needs.py`, which
+   `refine_cities.py` runs first (pyarrow, shapely, numpy, pillow, tifffile,
+   imagecodecs, pyproj, pyshp, h3 — `h3` finds EUBUCCO's files, France's and
+   Spain's years: without it they "do not answer").
+2. **Date again** what the runners have read since the last run, and the
+   cities whose years were carried because a source did not answer:
    `python3 scripts/refine_cities.py --redate`.
 3. **The plan:** `python3 scripts/refine_cities.py` prints it — new cities,
    cities raised a tier, cities read again from a newer release — and stops.
@@ -61,8 +64,10 @@ drawn as it was, from its ground made no finer than 160 cells a side.
    density, made in time, its museums named, the dial's first years standing
    less of it, a museum pressed going in and back. Then
    `node scripts/check_skyline.js --2d --sizes 1440x900x2 <one key>` for the
-   fallback. Look at every screenshot.
-6. **Look, and fix the biggest mismatches.** For each changed city, against
+   fallback. Look at every screenshot. A check that fails is fixed, or said in
+   the report with what failed and why — never reported as passed.
+6. **Look, and fix the biggest mismatches.** For every changed city, the new
+   ones too, against
    what is known of it now (Overture, OpenStreetMap, the city's own maps and
    photographs where they can be reached), write down the five biggest
    mismatches, most important first — water where there is land, a park

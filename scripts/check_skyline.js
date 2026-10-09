@@ -85,9 +85,21 @@ function check(tag, ok, what, detail) {
       if (TWO_D) { check(tag, s.n <= 160, "the 2D canvas is given 160 cells a side or fewer", s.n); }
       else { check(tag, s.density === Math.min(3, dpr), "at the screen's density", s.density); }
       check(tag, s.ms < BUDGET, "made in under " + BUDGET + " ms", s.ms + " ms");
+      // Its museums named: names come once the city has settled, and on a phone a long one may not fit
+      // beside its museum as the city stands, so they are waited for, the city turned a quarter at a time.
+      let turns = 0, named = [];
+      for (; turns < 4; turns += 1) {
+        if (turns) { await P.evaluate(() => Skyline.key("ArrowRight")); await P.waitForTimeout(1500); }
+        named = await P.waitForFunction(() => {
+          const a = Skyline.state().marks.filter((m) => m.kind === "museum" && m.named).map((m) => m.name);
+          return a.length ? a : null;
+        }, null, { timeout: 6000 }).then((h) => h.jsonValue(), () => []);
+        if (named.length) { break; }
+      }
+      s = await P.evaluate(() => Skyline.state());
       const museums = s.marks.filter((m) => m.kind === "museum");
-      check(tag, museums.length > 0 && museums.some((m) => m.named), "its museums on it, one named at least",
-        museums.filter((m) => m.named).map((m) => m.name).join(", "));
+      check(tag, museums.length > 0 && named.length > 0, "its museums on it, one named at least",
+        named.join(", ") + (turns ? " (turned " + turns + " quarter" + (turns > 1 ? "s" : "") + ")" : ""));
       if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await P.screenshot({ path: path.join(SHOTS, key + "-" + size + ".png") }); }
       // The dial: its first years stand less of the city than now.
       const first = await P.evaluate(() => { const d = Land.dial && Land.dial(); return d && d.y0 ? d.y0 : null; });
@@ -106,14 +118,14 @@ function check(tag, ok, what, detail) {
         console.log("  --   " + tag + " · its buildings' years are not in its ground yet: the dial not checked");
       }
       // A named museum, pressed, goes in; up again, the skyline is back.
-      const named = museums.find((m) => m.named && !m.hidden);
-      if (named) {
+      const one = museums.find((m) => m.named && !m.hidden);
+      if (one) {
         await P.evaluate((name) => {
           const b = [...document.querySelectorAll(".skyline-museum[data-named]")].find((e) => e.textContent === name);
           if (b) { b.click(); if (matchMedia("(pointer: coarse)").matches) { b.click(); } }
-        }, named.name);
+        }, one.name);
         const inside = await P.waitForFunction(() => Land.where().at === "museum", null, { timeout: 30000 }).then(() => true, () => false);
-        check(tag, inside, "pressed, " + named.name + " goes into its museum", JSON.stringify(await P.evaluate(() => Land.where())));
+        check(tag, inside, "pressed, " + one.name + " goes into its museum", JSON.stringify(await P.evaluate(() => Land.where())));
         if (inside) {
           await P.waitForTimeout(2000);
           await P.evaluate(() => Land.up());

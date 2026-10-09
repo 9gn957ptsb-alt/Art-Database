@@ -15,7 +15,8 @@ cut ~40 m a cell, so a block of Manhattan was two or three dots. The daily citie
   * reads again, oldest first, the cities read from an older Overture release than the newest;
   * dates each ground it cut (build_built_years.py); where a source of the last cut's years did not
     answer this time, the last cut's years are carried over cell by cell for the buildings it left
-    undated, and the ground says so (builtCarried);
+    undated, and the ground says so (builtCarried) — and the next runs date it again (three tries at
+    most before its next cut), so a source that failed one day is not lost to its grain;
   * asks GitHub's runners to read a city's records again where they were read for another grid
     (records/REQUEST, .github/workflows/city-records.yml), and dates the city again once they are in;
   * keeps a cut only within BUDGET (else the city stays as it was, and its log says why);
@@ -28,7 +29,8 @@ cities' own open records through build_built_years.py.
     python3 scripts/refine_cities.py                      # the plan, and stop
     python3 scripts/refine_cities.py --run [--new 2] [--raise 3] [--refresh 2] [--years-timeout 2400]
     python3 scripts/refine_cities.py --run --only new-york-us [--tier 2]
-    python3 scripts/refine_cities.py --redate             # date again the cities whose runners' records came
+    python3 scripts/refine_cities.py --redate             # date again the cities whose runners' records came,
+                                                          # or whose years were carried (builtCarried)
 
 The run ends with a report (plain lines) and the keys it changed, for scripts/check_skyline.js.
 """
@@ -45,6 +47,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import build_city_places as BCP  # noqa: E402
+import needs  # noqa: E402
 
 V2 = ROOT / "docs" / "v2"
 GROUNDS = V2 / "grounds"
@@ -57,6 +60,7 @@ FIRST = 2                                 # the tier a new city is read at, and 
 BUDGET = {"kb": 2600, "gz": 420}          # a ground's file, raw and as GitHub Pages sends it (gzip)
 SATELLITES = ("World Settlement Footprint", "GHSL")
 TODAY = datetime.date.today().isoformat()
+RETRIES = 3                               # the runs that date again a city whose years were carried
 
 
 def py(*args, timeout=None):
@@ -205,12 +209,11 @@ def keep_years(key, old, old_place, place, years_rc):
     new["builtFrom"] = list(dict.fromkeys((new.get("builtFrom") or []) + (old.get("builtFrom") or [])))
     if old.get("builtOld") and not new.get("builtOld"):
         new["builtOld"] = old["builtOld"]
-    why = ", ".join(lost) if lost else "the years were not read again"
+    why = ", ".join(lost) + " did not answer" if lost else "its years were not read again"
     new["builtCarried"] = (f"{took} building cells' years carried from the cut of {old.get('read') or 'before'} "
                            f"({old['n']} cells a side): {why}")
     path.write_text(json.dumps(new, separators=(",", ":")), encoding="utf-8")
-    return (f"{round(100 * dated_share(new))}% dated, {took} cells' years carried from the last cut "
-            f"({why} did not answer)")
+    return f"{round(100 * dated_share(new))}% dated, {took} cells' years carried from the last cut ({why})"
 
 
 # ---- the plan ----------------------------------------------------------------------------------
@@ -265,19 +268,22 @@ def plan(args, led, release):
 
 
 def redate_list(led):
-    """Cities whose runners' records are now for their grid: asked for by a cut (the ledger's "records"),
-    or read after the city was last dated. The records carry only their day, so a city asked for today is
-    dated again whenever its records are for its grid."""
+    """Cities to date again: those whose runners' records are now for their grid (asked for by a cut, the
+    ledger's "records", or read after the city was last dated — the records carry only their day, so a
+    city asked for today is dated again whenever its records are for its grid); and those whose years
+    were carried from their last cut because a source did not answer (builtCarried), on a later day,
+    RETRIES times at most before their next cut."""
     out = []
     for p in listed():
         g = read(ground_path(p["key"]))
         if not g:
             continue
         e = led["cities"].get(p["key"], {})
-        for name, n, when in records_for(p["slug"]):
-            if n == g["n"] and (e.get("records") or when[:10] > e.get("dated", "")):
-                out.append(p["key"])
-                break
+        if any(n == g["n"] and (e.get("records") or when[:10] > e.get("dated", ""))
+               for name, n, when in records_for(p["slug"])):
+            out.append(p["key"])
+        elif g.get("builtCarried") and e.get("retries", 0) < RETRIES and e.get("dated", "") < TODAY:
+            out.append(p["key"])
     return out
 
 
@@ -366,10 +372,11 @@ def main():
     ap.add_argument("--refresh", type=int, default=1, help="cities read again from a newer release a run")
     ap.add_argument("--only", help="one city (its town key), raised a grain or to --tier")
     ap.add_argument("--tier", type=int, help="with --only: the tier to cut it at")
-    ap.add_argument("--redate", action="store_true", help="date again the cities whose runners' records came")
+    ap.add_argument("--redate", action="store_true", help="date again the cities whose runners' records came, or whose years were carried")
     ap.add_argument("--ground-timeout", type=int, default=1500)
     ap.add_argument("--years-timeout", type=int, default=2400)
     args = ap.parse_args()
+    needs.ensure()                        # a fresh container: what the cut and its years import
 
     led = ledger()
     fixed = reconcile(led)
@@ -381,17 +388,31 @@ def main():
     print(f"Overture's newest release: {release or 'not reachable'}")
     if args.redate:
         changed = []
+        places = {p["key"]: p for p in listed()}
         for key in redate_list(led):
-            slug = "city-" + key
-            if py("scripts/build_built_years.py", "--only", slug, "--force", timeout=args.years_timeout) == 0:
-                g = read(ground_path(key))
-                e = led["cities"].setdefault(key, {"log": []})
-                e["dated"] = TODAY
-                e["dated_share"] = round(dated_share(g), 3)
-                e.pop("records", None)
-                e.setdefault("log", []).append(f"{TODAY} · dated again with its runners' records · "
-                                               f"{round(100 * dated_share(g))}% of its building cells dated")
-                changed.append(key)
+            old = read(ground_path(key))
+            e = led["cities"].setdefault(key, {"log": []})
+            carried = bool(old.get("builtCarried"))
+            if carried:
+                e["retries"] = e.get("retries", 0) + 1
+            rc = py("scripts/build_built_years.py", "--only", "city-" + key, "--force", timeout=args.years_timeout)
+            # What answers this time stands; what does not is carried again from the years it had.
+            line = keep_years(key, old, places.get(key), places.get(key), rc)
+            g = read(ground_path(key))
+            if "carried" not in line and g.get("builtCarried"):
+                g.pop("builtCarried")
+                ground_path(key).write_text(json.dumps(g, separators=(",", ":")), encoding="utf-8")
+            if not g.get("builtCarried"):
+                e.pop("retries", None)
+            if rc != 0 and not carried:
+                e.setdefault("log", []).append(f"{TODAY} · not dated again: its years did not finish ({line})")
+                continue
+            e["dated"] = TODAY
+            e["dated_share"] = round(dated_share(g), 3)
+            e.pop("records", None)
+            e.setdefault("log", []).append(f"{TODAY} · dated again " + ("(its years had been carried)" if carried else
+                                           "with its runners' records") + " · " + line)
+            changed.append(key)
         save(led)
         print("Changed: " + " ".join(changed) if changed else "Nothing to date again.")
         return

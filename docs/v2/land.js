@@ -14787,7 +14787,8 @@
      else the name. Never a short name written by hand. */
   function shortName(m) {
     var name = String(m.name || "");
-    var acronym = /\(([^()]+)\)\s*$/.exec(name);
+    // Its own acronym: in brackets at the end ("… (MoMA)"), or first, before a dash ("M HKA – …").
+    var acronym = /\(([^()]+)\)\s*$/.exec(name) || /^([A-Z][A-Z0-9 .&]*[A-Z0-9])\s+[–—-]\s+\S/.exec(name);
     if (acronym) { return acronym[1]; }
     var where = String(m.where || "");
     var town = where.lastIndexOf(",") > 0 ? where.slice(0, where.lastIndexOf(",")).trim() : where.trim();
