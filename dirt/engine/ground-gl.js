@@ -124,23 +124,24 @@ void main() {
   vec4 own = (G & 1) == ivec2(0) ? texelFetch(uA, t, 0) : texelFetch(uB, t, 0);
   outColour = vec4(own.rgb, 1.0);
   if (uWater == 1) {
-    ivec2 sz = textureSize(uB, 0) - 1;
     vec2 P = vec2(G) + 0.5;
+    // (the bleed phi times wider since v80: nine looks a cell and a half apart, each the mean of the four cells round
+    // it, as the cells' texture is filtered, so it costs what the narrower one did)
+    vec2 tsz = vec2(textureSize(uB, 0)), pt = P * 0.5 - vec2(uCell0);     // this pixel in the cells' texture
     vec3 soft = vec3(0.0); float sw = 0.0; vec2 gl = vec2(0.0);
     for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
-      ivec2 c = t + ivec2(dx, dy);
-      vec3 k = texelFetch(uB, clamp(c, ivec2(0), sz), 0).rgb;
-      vec2 d = (vec2(c + uCell0) * 2.0 + 1.0 - P) / 2.0;
-      float w = exp(-dot(d, d));
+      vec2 o = vec2(dx, dy) * 1.5;
+      vec3 k = texture(uB, clamp(pt + o, vec2(0.5), tsz - 0.5) / tsz).rgb;
+      float w = exp(-dot(o, o) / 2.618);                              // (phi^2)
       soft += w * k; sw += w;
       gl += vec2(dx, dy) * dot(k, vec3(0.3, 0.59, 0.11));            // which way the light changes
     }
     soft /= sw;
-    vec3 c = mix(own.rgb, soft, 0.62);                                // wet: the colours bleed a little
+    vec3 c = mix(own.rgb, soft, 0.764);                               // wet: the colours bleed (1 - phi^-3; phi^-1 until v80)
     float edge = smoothstep(0.06, 0.5, length(gl) / 3.0);             // the rim of a wash
     float grain = wn(P, 2.0, 7u) * 0.6 + wn(P, 5.0, 8u) * 0.4;        // the paper's tooth, fixed to the plane
     float pool = wn(P, 89.0, 9u) * 0.62 + wn(P, 34.0, 10u) * 0.38;    // pigment settling unevenly as it dries
-    float d = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.38 * edge;
+    float d = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.236 * edge;   // (rims phi^-3; 0.38 until v80)
     c = clamp(c - (c - c * c) * (d - 1.0), 0.0, 1.0);
     vec3 paper = vec3(0.957, 0.937, 0.894) * (0.985 + 0.03 * grain);
     // the swimmers just under the surface: over each the surface swells and the wash thins; where it has just been the
@@ -1382,7 +1383,10 @@ const vec3 MINI[88] = vec3[88](
 // the rungs, and the artists on each
 const int RUNG[22] = int[22](0, 1, 2, 3, 7, 8,  9, 10, 11, 12, 6, 5,  13, 14, 15, 16, 4, 21,  17, 18, 19, 20);
 const int RUNG_AT[5] = int[5](0, 6, 12, 18, 22);
-const float RUNG_C[4] = float[4](0.16, 0.28, 0.40, 0.50);             // the complexity each rung reaches up to
+const float RUNG_C[4] = float[4](0.034, 0.146, 0.236, 0.50);          // the complexity each rung reaches up to (phi^-7,
+                                                                     // phi^-4, phi^-3 since the curve moved again, so
+                                                                     // each rung keeps its share of the regions; 0.16,
+                                                                     // 0.28, 0.40 before)
 
 struct Void { bool on; vec2 C; float R; uint h; };
 /** The void nearest p: one in each 1597-cell square, phi^-1 of them kept, 233 to 610 cells across its heart. */
@@ -1405,9 +1409,10 @@ Void voidAt(vec2 p) {
  *  9 Oct 2026; drawn as a disc it was one of the large circles). */
 float voidRim(Void v, vec2 p) { return length(p - v.C) + 0.5 * v.R * (vnoise(p, 144.0, v.h + 9u) - 0.5); }
 /** How complex the plane is at p, leaving the voids aside. (9 Oct 2026: "the overall texture is too complicated":
- *  the curve moved from 0.2-0.8 to 0.3-0.9, so about 72% of the plane is calm blended washes, 17% simplified worlds
- *  and 10% full ones; the page's complexityJS keeps the same curve.) */
-float complexityBare(vec2 p) { return smoothstep(0.3, 0.9, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u)); }
+ *  the curve moved from 0.2-0.8 to 0.3-0.9, so 72% of the plane was calm, 17% simplified worlds and 10% full ones;
+ *  then, "do that again in an exponential fashion", the busy share halved once more, to 0.38-0.98: about 87% calm
+ *  (near 1 - phi^-4), 10% simplified, 3% full (near phi^-7). The page's complexityJS keeps the same curve.) */
+float complexityBare(vec2 p) { return smoothstep(0.38, 0.98, 0.62 * vnoise(p, 987.0, 3001u) + 0.38 * vnoise(p, 377.0, 3002u)); }
 /** How complex the plane is at p: 0 in a void's heart, 1 where everything is. */
 float complexityAt(vec2 p) {
   float b = complexityBare(p);
@@ -2322,11 +2327,11 @@ void main() {
     }
   }
   // Between the minimal and the full, the worlds simplified.
-  if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3] + 0.06) {
+  if (ladder && !emerge && cx < 0.75 && cx >= RUNG_C[3] + 0.16) {
     // (once drawn in blocks: now mirrors, strips of silvered glass standing in the plane, more and deeper the lower,
     // and lower still, a second mirror reflecting the first; since 9 Oct 2026 they thin out and go where the calm
     // country's glaze comes in, so they never break its edge into splinters)
-    float f = clamp((0.75 - cx) / (0.75 - RUNG_C[3]), 0.0, 1.0), g = smoothstep(RUNG_C[3] + 0.06, RUNG_C[3] + 0.16, cx);
+    float f = clamp((0.75 - cx) / (0.75 - RUNG_C[3]), 0.0, 1.0), g = smoothstep(RUNG_C[3] + 0.16, RUNG_C[3] + 0.26, cx);
     vec2 q = mirrorAt(cellP, 233.0, (8.0 + 47.0 * f) * g, 5101u, gMirK, gMirE);
     if (f > 0.4) q = mirrorAt(q, 144.0, (5.0 + 29.0 * f) * g, 5103u, gMirK, gMirE);
     ivec2 bc = ivec2(floor(q));
@@ -2347,7 +2352,7 @@ void main() {
   }
   // The cell's passage, and where it lies near an edge, the passage beyond: one evaluation in a loop of one or two, so
   // the shader holds a single copy of it.
-  bool seam = art && !emerge && c.eb != c.e && c.pe < 0.62 && uTier >= 1;
+  bool seam = art && !emerge && c.eb != c.e && c.pe < 0.99 && uTier >= 1;   // (55 cells either side; 34 until v80)
   vec3 A = vec3(0), B = vec3(0), Ab = vec3(0), Bb = vec3(0), mk0 = vec3(0), mk1 = vec3(0);
   int kind, kb, g0 = 0, g1 = 0;
   float cov0 = 0.0, cov1 = 0.0;
@@ -2370,7 +2375,7 @@ void main() {
   if (shaded) {
     // Each side in its artist's shade, and across a seam the two shades blend, halfway at the seam itself, so the
     // plane's light has no step in it anywhere.
-    float w0 = seam ? 0.5 + 0.5 * smoothstep(0.0, 0.62, c.pe) : 1.0, sh = seam ? mix(shadeOf(g1), shadeOf(g0), w0) : shadeOf(g0);
+    float w0 = seam ? 0.5 + 0.5 * smoothstep(0.0, 0.99, c.pe) : 1.0, sh = seam ? mix(shadeOf(g1), shadeOf(g0), w0) : shadeOf(g0);
     float ms = smoothstep(RUNG_C[3], 0.85, cx);                     // the forms' light only where the plane is full
     A = mix(A, toShade(A, g0, sh, metaM), ms); B = mix(B, toShade(B, g0, sh, metaM), ms);
     if (seam) { Ab = mix(Ab, toShade(Ab, g1, sh, metaM), ms); Bb = mix(Bb, toShade(Bb, g1, sh, metaM), ms); }
@@ -2394,12 +2399,12 @@ void main() {
     else if (at != 3) A = B = flatIn(layer, c, kind, Sd, tsel, at == 2);
   }
   // ---- the seams: where two passages meet, they run into each other ---------------------------------------
-  // Every seam is a wash: the two sides blend across a band 34 cells deep, half and half at the seam itself. (Until
+  // Every seam is a wash: the two sides blend across a band 55 cells deep, half and half at the seam itself. (Until
   // 9 Oct 2026 strangers met at a torn edge with a shadow, a shared colour was stitched along the seam, and paper
   // opened windows onto a digital territory: "more blending, more seamless transitions between things".)
   if (seam) {
     float db = c.pe * 55.0 + 8.0 * (vnoise(gP, 21.0, 131u) - 0.5);   // cells to the seam, the edge wandering a little
-    float w = 0.5 + 0.5 * smoothstep(0.0, 34.0, db);
+    float w = 0.5 + 0.5 * smoothstep(0.0, 55.0, db);
     A = mix(Ab, A, w); B = mix(Bb, B, w);
   }
   // (the meta forms' edges were a grey line through every world; since 9 Oct 2026 the forms show only in their light)
@@ -2471,26 +2476,65 @@ uniform int uTaps;
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
+const float GA = 2.399963229728653;                                  // the golden angle
+/** A reflection seen deep in the glass: each ring further in has come through one more mirror, so it is a little
+ *  dimmer and greener (silvered glass leans green) and a little nearer its region's wash. */
+vec3 deeper(vec3 c, vec3 wash, float n) {
+  c *= pow(vec3(0.93, 0.965, 0.955), vec3(n));
+  return mix(c, wash, 1.0 - pow(1.0 - P3, n));
+}
 void main() {
   vec2 p = vec2(uCell0 + ivec2(gl_FragCoord.xy)) + 0.5;
-  // how much of the calm country is here: all of it below the minimal rung, none a tenth above it, and none in a
-  // void's heart, which is the void's own (its rim, 21 cells, shared)
-  float cx = complexityAt(p), cover = 1.0 - smoothstep(RUNG_C[3] - 0.02, RUNG_C[3] + 0.1, cx);
+  // how much of the calm country is here: all of it just below the minimal rung, fading to none phi^-4 of the ladder
+  // above it (a tenth until v80), and none in a void's heart, which is the void's own (its rim, 21 cells, shared)
+  float cx = complexityAt(p), cover = 1.0 - smoothstep(RUNG_C[3] - 0.03, RUNG_C[3] + 0.16, cx);
   Void vd = voidAt(p);
   if (vd.on) cover *= smoothstep(vd.R - 21.0, vd.R, voidRim(vd, p));
   if (cover <= 0.0) discard;
   Region rg = regionAt(p);
   int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
   int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.h2);
-  vec3 w1 = washOf(a1), w2 = washOf(a2), comp = vec3(0.0);
-  // the painting, a little soft: looked at a few cells apart and averaged, so no edge in it is sharp and no line hard
+  vec3 w1 = washOf(a1), w2 = washOf(a2);
   vec2 q = (p - rg.C1) * 0.55;
-  for (int k = 0; k < uTaps; k++) comp += minimal(a1, q + (uTaps == 1 ? vec2(0.0) : 1.8 * vec2((k & 1) == 0 ? -1.0 : 1.0, (k & 2) == 0 ? -1.0 : 1.0)), rg.h1, uTime);
-  comp /= float(max(uTaps, 1));
-  float zone = 1.0 - smoothstep(RUNG_C[3] - 0.1, RUNG_C[3], cx);   // and toward the worlds round it, its wash alone
-  vec3 col = mix(w1, comp, smoothstep(0.0, 89.0, rg.d) * zone);     // the painting, thinning to its wash at the edge
-  col = mix(col, mix(w1, w2, 0.5), 1.0 - smoothstep(0.0, 34.0, rg.d));   // and the two washes one at the edge
-  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, cover);
+  // A golden kaleidoscope (v80: "don't forget the relationship between the golden ratio and kaleidoscopes"). In
+  // phi^-4 of the regions the painting is also seen in five mirrors standing at 36 degrees round its middle: their
+  // ten images make the pentagon's symmetry, whose every proportion is phi (cos 36 degrees is phi / 2). Toward the
+  // middle the mirrors face one another, so each ring phi times nearer holds the ring outside it again, deeper and
+  // dimmer, and the painting goes down and down; where one ring gives way to the next the two cross-fade, so no ring
+  // has an edge. It is laid over the painting as a glaze, phi^-1 at the most, in the middle, and gone by the edge:
+  // a small presence of glass and mirrors, the painting and its reflection both there.
+  float kal = 0.0, lev = 0.0, up = 0.0;
+  vec2 qk = q;
+  if (unit(mixh(rg.h1 + 99u)) < P4) {
+    float r = length(q), w = 3.14159265 / 5.0, a = atan(q.y, q.x) + 6.2832 * unit(mixh(rg.h1 + 98u));
+    float i = floor(a / w), f = a - i * w;
+    if (mod(i, 2.0) > 0.5) f = w - f;                                 // every other image the mirror image
+    const float R0 = 89.0;                                            // where the mirrors begin to face each other
+    float sd = max(log(R0 / max(r, 0.01)) / log(PHI), 0.0);          // how many rings in
+    lev = min(floor(sd), 13.0);
+    qk = r * pow(PHI, lev) * vec2(cos(f), sin(f));                    // the ring outside it, held again
+    up = smoothstep(1.0 - P2, 1.0, fract(sd)) * step(lev, 12.0);      // near the next ring in, that one coming
+    kal = P1 * (1.0 - smoothstep(R0 * P1, R0 * PHI, r));
+  }
+  // The looks, all at one place in the code: the painting itself and, through the glass, one ring of its reflection
+  // or two where they cross-fade; each softened by looking uTaps times on a sunflower, a golden angle round from the
+  // last look and farther out by the square root, as seeds are set, 2.9 units out at most (1.8 until v80), and
+  // averaged, so no edge is sharp and no line hard.
+  int scales = kal <= 0.0 ? 1 : up > 0.0 ? 3 : 2, nt = max(uTaps, 1);
+  vec3 acc0 = vec3(0.0), acc1 = vec3(0.0), acc2 = vec3(0.0);
+  for (int j = 0; j < scales * nt; j++) {
+    int sc = j / nt, k = j - sc * nt;
+    float rk = nt == 1 ? 0.0 : 2.9 * sqrt((float(k) + 0.5) / float(nt)), ak = float(k) * GA;
+    vec3 v = minimal(a1, (sc == 0 ? q : sc == 1 ? qk : qk * PHI) + rk * vec2(cos(ak), sin(ak)), rg.h1, uTime);
+    if (sc == 0) acc0 += v; else if (sc == 1) acc1 += v; else acc2 += v;
+  }
+  vec3 comp = acc0 / float(nt);
+  if (kal > 0.0) comp = mix(comp, mix(deeper(acc1 / float(nt), w1, lev), deeper(acc2 / float(nt), w1, lev + 1.0), up), kal);
+  // toward the busy country round it, its wash alone (from phi^-4 of the ladder below the rung; a tenth until v80)
+  float zone = 1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx);
+  vec3 col = mix(w1, comp, smoothstep(0.0, 144.0, rg.d) * zone);    // the painting, thinning to its wash at the edge
+  col = mix(col, mix(w1, w2, 0.5), 1.0 - smoothstep(0.0, 55.0, rg.d));   // and the two washes one at the edge
+  outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, cover);           // (89 and 34 cells until v80)
 }`;
 })();
 const GROUND_FORMAL = (() => {
@@ -3137,7 +3181,7 @@ float frieze(vec2 p, float T, out vec3 col) {
   col = vec3(0.0);
   if (uFN <= 0) return 0.0;
   float z = vnoise(p + 34.0 * (vec2(vnoise(p, 89.0, 52003u), vnoise(p, 89.0, 52004u)) - 0.5), 987.0, 52001u);
-  float m = smoothstep(0.9, 0.93, z);                                // (rarer still since 9 Oct 2026: a crowd now and then)
+  float m = smoothstep(0.93, 0.955, z);                              // (rarer still since 9 Oct 2026: a crowd now and then)
   if (m <= 0.0) return 0.0;
   float d = smoothstep(0.3, 0.8, vnoise(p, 610.0, 52002u));        // how far dissolved toward the fields
   float row = floor(p.y / FZH), y = p.y / FZH - row;                 // 0 at a frieze's top, 1 at its foot
@@ -3209,7 +3253,7 @@ float weld(vec2 p, float T, out vec3 col) {
   const float G = 1597.0 * ${FKS}, W = 233.0, H = 377.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 55001u);
-  if (unit(h) > 0.034) return 0.0;                                   // in phi^-7 of the squares (phi^-2 until 9 Oct 2026: "too dominant")
+  if (unit(h) > 0.0213) return 0.0;                                  // in phi^-8 of the squares (phi^-2 until 9 Oct 2026: "too dominant"; then phi^-7)
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - H - 233.0, 0.0);
   vec2 q = p - o;
   if (max(abs(q.x) - W * 0.5, abs(q.y) - H * 0.5) > 144.0) return 0.0;
@@ -3272,7 +3316,7 @@ float mosaic(vec2 p, vec2 lp, float T, out vec3 col) {
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 q = sq + ivec2(i, j);
     uint hq = h3(q.x, q.y, 53001u);
-    if (unit(hq) > 0.013) continue;                                 // phi^-9 of the squares have one (phi^-6 until 9 Oct 2026)
+    if (unit(hq) > 0.0081) continue;                                // phi^-10 of the squares have one (phi^-6 until 9 Oct 2026, then phi^-9)
     vec2 c = (vec2(q) + 0.5 + 0.3 * (vec2(unit(mixh(hq + 1u)), unit(mixh(hq + 2u))) - 0.5)) * G;
     // a portrait, as tall as a face crop is (5 to 4), torn out like a photograph: its edge wanders by a few cells
     float r = 89.0 + 55.0 * unit(mixh(hq + 3u));
@@ -3321,7 +3365,7 @@ float corpse(vec2 p, float T, out vec3 col) {
   const float G = 610.0 * ${FKS}, W = 55.0, H = 144.0;
   ivec2 sq = ivec2(floor(p / G));
   uint h = h3(sq.x, sq.y, 54001u);
-  if (unit(h) > 0.013) return 0.0;                                   // in phi^-9 of the squares (phi^-6 until 9 Oct 2026)
+  if (unit(h) > 0.0081) return 0.0;                                  // in phi^-10 of the squares (phi^-6 until 9 Oct 2026, then phi^-9)
   vec2 o = (vec2(sq) + 0.5) * G + (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5) * max(G - 160.0, 0.0);
   float a = (unit(mixh(h + 3u)) - 0.5) * 0.3;
   vec2 q = mat2(cos(a), -sin(a), sin(a), cos(a)) * (p - o);
@@ -4269,6 +4313,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (tA) { gl.deleteTexture(tA); gl.deleteTexture(tB); }
     gl.activeTexture(gl.TEXTURE4); tA = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, FW, FH);
     gl.activeTexture(gl.TEXTURE5); tB = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, FW, FH);
+    for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.LINEAR);   // (the watercolour's bleed looks between cells)
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tA, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, tB, 0);
@@ -4381,7 +4426,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       gl.useProgram(minimalProg);
       gl.uniform2i(Mi.uCell0, cx0, cy0);
       gl.uniform1f(Mi.uTime, t);
-      gl.uniform1i(Mi.uTaps, tier >= 2 ? 4 : 1);
+      gl.uniform1i(Mi.uTaps, tier >= 3 ? 5 : tier === 2 ? 3 : 1);     // looks on a sunflower: Fibonacci numbers
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);

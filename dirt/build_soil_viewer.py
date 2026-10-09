@@ -349,10 +349,11 @@ const blockOf = (d) => (d < PHI ** -2 ? 1 : d < PHI ** -2 + PHI ** -4 ? 2 : d < 
 // ground's lights and darks as a gradient map. The passages' edges wander, and where two meet, each
 // cell belongs to one or the other by chance, the likelier the nearer: an overspray, as where two
 // sprayed colours meet.
-// (9 Oct 2026, "more blending, more seamless transitions": DRIFT's passages are one Fibonacci step nearer, 144 cells,
-// not two, so fewer worlds share a screen; and the band where two meet is 55 cells deep everywhere, as the shaders
-// assume when they read c.pe * 55 as the cells to the seam, so two worlds blend across 34 cells on either side.)
-const PASS = 233 * Math.sqrt(FIELD_K), OVERSPRAY = 55, WANDER = 55 * FIELD_K;
+// (9 Oct 2026, "more blending, more seamless transitions": DRIFT's passages were made one Fibonacci step nearer, 144
+// cells, not two, so fewer worlds share a screen; then, "do that again in an exponential fashion", as large as the
+// site's, 233. The band where two meet is 55 cells deep everywhere, as the shaders assume when they read c.pe * 55 as
+// the cells to the seam, and two worlds blend across all of it, on either side.)
+const PASS = 233, OVERSPRAY = 55, WANDER = 55 * FIELD_K;
 const MOSAIC = 0, NOCTURNE = 1, SPRAY = 2, WEAVE = 3, DRIP = 4;
 // Their shares: mosaic phi^-2, nocturne phi^-3, spray and weave phi^-4 each, drip phi^-5. They sum to 1.
 const KIND_UPTO = [PHI ** -2, PHI ** -1, PHI ** -1 + PHI ** -4, 1 - PHI ** -5, 1];
@@ -2270,7 +2271,7 @@ function voidNear(x, y) {
 }
 function complexityJS(x, y) {
   const n = 0.62 * vnoise(x, y, 987, 3001) + 0.38 * vnoise(x, y, 377, 3002);
-  let b = smooth(0.3, 0.9, n);                                     // the shader's complexityBare curve
+  let b = smooth(0.38, 0.98, n);                                   // the shader's complexityBare curve
   const v = voidNear(x, y);
   if (v) b *= smooth(v.R, v.R + 377 * FIELD_K, v.d);
   return b;

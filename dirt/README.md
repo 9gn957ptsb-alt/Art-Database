@@ -303,7 +303,8 @@ with any name you add. The photo stays in the viewer's browser, and goes to Clau
 the calm islands, the passages and their oversprays, the collage's and the worlds' slow fields, the meta forms and
 the gardens all change in 377 to 987 cells where they took 987 to 2584, so a swipe of a phone's width or two is
 already somewhere else. The fine grain (anything under 233 cells) is as it was. The Earth keeps 1. (Since 9 October
-2026 the passages are only one step nearer, 144 cells, and their oversprays not at all: see *Seams as washes*.)
+2026 the passages were only one step nearer, 144 cells, and their oversprays not at all, and since v80 the passages
+are not nearer either, 233 cells: see *Seams as washes* and *Every blend φ times wider*.)
 
 **Friezes, after Rothko.** Now and then (rarer since the exquisite corpses came), the collage gives way to friezes (`ground-gl.js`,
 `frieze()`): rows 89 cells high in three registers in golden proportion, as Rothko stacked heads over torsos over feet
@@ -475,6 +476,35 @@ too much ... I want those faces to be barely noticeable and more rare than not")
 - *Faint faces.* The welds come in φ⁻⁷ of their squares, not φ⁻²; the face mosaics and exquisite corpses in φ⁻⁹, not
   φ⁻⁶; the friezes of faces only where their field is above 0.9. And every one is drawn at φ⁻³ of its strength, so the
   ground shows through it: a face you notice only if you look.
+
+**One more golden step, and a golden kaleidoscope** (9 October 2026, after the above: "The changes you made were the
+best ones you have made yet. Whatever you did, do that again in an exponential fashion and don't forget the
+relationship between the golden ratio and kaleidoscopes"). Every change above is taken one step further, each step a
+power of φ, so the changes compound as an exponential does.
+
+- *Calmer again.* The complexity curve moves once more, to 0.38 to 0.98 of the noise, and the busy share halves again:
+  about 87% of the plane is calm (near 1 − φ⁻⁴), 10% simplified worlds and 3% full ones (near φ⁻⁷). The rungs that
+  choose a region's minimal artist move with it (to φ⁻⁷, φ⁻⁴ and φ⁻³), so each rung keeps its share of the regions
+  and no artist is crowded out of the calm.
+- *Every blend φ times wider.* The glaze over the busy country fades out across φ⁻⁴ of the ladder, not a tenth, and
+  the mirror strips begin only where it ends. A region's painting thins to its wash over 144 cells, not 89, and two
+  washes meet over 55, not 34. Two worlds blend across 55 cells on either side of their seam, not 34, and DRIFT's
+  passages are 233 cells across, as large as the site's. The watercolour's bleed is φ times wider, and the pigment
+  gathers at a wash's rim at φ⁻³, not 0.38; it looks between the cells through the filtered texture, nine looks as
+  before, so it costs what the narrower bleed did.
+- *Softness on a sunflower.* Each calm painting is looked at five times (three on a phone), each look a golden angle
+  round from the last and farther out by the square root, as a sunflower's seeds are set (Vogel's model, 1979), 2.9
+  units out at most, φ times the old reach.
+- *Faces one golden step rarer.* Welds in φ⁻⁸ of their squares, face mosaics and exquisite corpses in φ⁻¹⁰, and the
+  friezes only where their field passes 0.93.
+- *A golden kaleidoscope.* In φ⁻⁴ of the calm regions the painting is also seen in five mirrors standing at 36° round
+  its middle. Their ten images have the pentagon's symmetry, and every proportion in a pentagon is φ (cos 36° = φ/2;
+  a regular pentagon's diagonal is φ times its side). Toward the middle the mirrors face one another, so each ring φ
+  times nearer holds the ring outside it again, a little dimmer, greener (silvered glass) and nearer the wash for
+  every mirror it has come through, and the painting recedes down and down: depth made of reflection alone. Where one
+  ring gives way to the next the two cross-fade, so no ring has an edge, and the whole is laid over the painting as a
+  glaze, φ⁻¹ at the most, in the middle, gone toward the region's edge: the painting and its reflection both there, a
+  small presence of glass and mirrors, and as still as everything else.
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was
