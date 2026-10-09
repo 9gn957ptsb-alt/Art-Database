@@ -41,6 +41,7 @@ prints of the same work"):
 import argparse
 import json
 import re
+import signal
 import sys
 import time
 from pathlib import Path
@@ -78,12 +79,31 @@ S = requests.Session()
 S.verify = "/root/.ccr/ca-bundle.crt"
 
 
+class Hung(Exception):
+    pass
+
+
+def hung(signum, frame):
+    raise Hung()
+
+
 def call(method, path, params=None, tries=6, fatal=True):
     wait = 2.0
     for _ in range(tries):
+        # A request can hang past its timeout (9 Oct 2026: a DELETE sat in poll for half an hour while
+        # the same DELETE by hand answered in a second): after 90 s it is given up, its connection with it.
+        signal.signal(signal.SIGALRM, hung)
+        signal.alarm(90)
         try:
             r = S.request(method, f"{BASE}/{path}", params=params, timeout=60)
+        except Hung:
+            r = None
+            S.close()
         except requests.RequestException:
+            r = None
+        finally:
+            signal.alarm(0)
+        if r is None:
             time.sleep(wait); wait *= 2; continue
         if r.status_code == 429 or r.status_code >= 500:
             time.sleep(wait); wait = min(wait * 2, 120); continue
