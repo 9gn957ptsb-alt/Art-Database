@@ -24,7 +24,8 @@ Precision (`pr`):
 
 Which works: the saved works matched to Wikidata (by fetch_history_wikidata.py), and every other
 work on Wikidata by a saved artist ("find all other instances"); the latter are external records —
-title, artist, date, museum, the Commons file of the painting — and never enter Find's works.
+title, artist, date, museum, the Commons file of the painting, its height × width (P2048, P2049: never
+the frame's; none where the record disagrees with itself) — and never enter Find's works.
 
 Explorations (kind "sites"): per artist and place (the depicted place's municipality, else the
 town the work was made in, else the nearest site city within 30 km) with three sites or more —
@@ -50,7 +51,8 @@ QUOTE_MAX = 2
 
 NOTE = ("Painted here (docs/v2/sites.js; scripts/build_sites.py). sites: one row a work — id (s + Wikidata "
         "item, or a hand id), q (Wikidata item), w (saved work's history id, or null: an external record), t, a, "
-        "d, m (museum), img (Commons file of the painting, for external works), ll [lat, lon], pr (view: point of "
+        "d, m (museum), img (Commons file of the painting, for external works), z (its height × width as Wikidata "
+        "gives them, for an external work), ll [lat, lon], pr (view: point of "
         "view; site: the place painted; street; town: only the town is known), what (the place painted), place "
         "(the place for grouping), key (cities.json town to fly to), km (its distance), photos [{f Commons file, "
         "of, by, lic, d metres from the point, when then|now}], said [{q quotation, by, in, url}], src [{name, url}]. "
@@ -144,11 +146,47 @@ def quotes_from(article, words):
     return out
 
 
+UNITS = {'Q174728': ('cm', 1), 'Q174789': ('mm', 0.1), 'Q11573': ('m', 100), 'Q218593': ('in', 2.54)}
+FRAME = 'Q860792'           # "applies to part: frame" — the frame's measure, not the work's
+
+
+def amount(a):
+    """Wikidata's amount as written: '+73.0' → '73', '+92.10' → '92.1'."""
+    a = str(a).lstrip('+')
+    return a.rstrip('0').rstrip('.') if '.' in a else a
+
+
+def measure(stmts):
+    """One side of the work (P2048 height or P2049 width) from its statements: never the frame's, never
+    a deprecated one, a preferred one where there is one; where they disagree by more than 2 % (a frame
+    not marked as one, two sources) none is said."""
+    st = [x for x in stmts if not x[2].endswith('DeprecatedRank') and x[3] != FRAME and x[1] in UNITS]
+    st = [x for x in st if x[2].endswith('PreferredRank')] or st
+    cm = sorted(((float(x[0]) * UNITS[x[1]][1], x) for x in st), key=lambda t: (t[0], str(t[1])))
+    if not cm or cm[0][0] <= 0 or cm[-1][0] > cm[0][0] * 1.02:
+        return None
+    x = cm[0][1]
+    return amount(x[0]), UNITS[x[1]][0]
+
+
+def size_of(v):
+    """Height × width, as the wall label says it ("73 × 92 cm"); both sides or nothing."""
+    h, w = measure((v or {}).get('h', [])), measure((v or {}).get('w', []))
+    if not (h and w):
+        return None
+    if h[1] == w[1]:
+        return f'{h[0]} × {w[0]} {h[1]}'
+    # The two sides in two units: both in centimetres, to a millimetre.
+    cm = lambda m: amount(f'{float(m[0]) * {u: k for u, k in UNITS.values()}[m[1]]:.1f}')
+    return f'{cm(h)} × {cm(w)} cm'
+
+
 def main():
     raw = load(os.path.join(RAW, 'raw.json'))
     files = load(os.path.join(RAW, 'files.json')) if os.path.exists(os.path.join(RAW, 'files.json')) else {}
     near = load(os.path.join(RAW, 'near.json')) if os.path.exists(os.path.join(RAW, 'near.json')) else {}
     wiki = load(os.path.join(RAW, 'wiki.json')) if os.path.exists(os.path.join(RAW, 'wiki.json')) else {}
+    sizes = load(os.path.join(RAW, 'sizes.json')) if os.path.exists(os.path.join(RAW, 'sizes.json')) else {}
     hand = load(HAND)['sites'] if os.path.exists(HAND) else []
     towns = load(os.path.join(V2, 'cities.json'))['towns']
     matches = load(os.path.join(ROOT, 'data', 'wikidata', 'matches.json'))['matched']
@@ -253,6 +291,8 @@ def main():
         if not row['w'] and w['img']:
             row['img'] = w['img']
             want_files.add(w['img'])
+        if not row['w'] and size_of(sizes.get(q)):
+            row['z'] = size_of(sizes.get(q))
         what = (hd or {}).get('what') or (p['label'] if p and pr in ('site', 'town') else None)
         if what:
             row['what'] = what
@@ -378,7 +418,8 @@ def main():
     c = collections.Counter(r['pr'] for r in rows)
     print('sites:', len(rows), dict(c), ' saved works:', sum(1 for r in rows if r['w']),
           dict(collections.Counter(r['pr'] for r in rows if r['w'])))
-    print('  with a photograph:', sum(1 for r in rows if r.get('photos')), ' quoted:', sum(1 for r in rows if r.get('said')))
+    print('  with a photograph:', sum(1 for r in rows if r.get('photos')), ' quoted:', sum(1 for r in rows if r.get('said')),
+          ' sized:', sum(1 for r in rows if r.get('z')), 'of', sum(1 for r in rows if not r['w']), 'not saved')
     print('explorations:', len(exps))
     for e in exps[:60]:
         print('   ', e['title'])

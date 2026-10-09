@@ -400,7 +400,7 @@
       if (!full || !full.img || (full.w && seen[full.w])) { return; }
       out.push({ id: full.w || null, site: x[0], src: COMMONS + encodeURIComponent(full.img) + "?width=960",
                  big: COMMONS + encodeURIComponent(full.img) + "?width=2000", title: x[1], year: x[2] || null, by: L.name,
-                 where: full.m || "", notSaved: !full.w });
+                 where: full.m || "", size: full.w ? "" : full.z || "", notSaved: !full.w });
     });
     out.sort(function (a, b) { return (a.year || 9999) - (b.year || 9999); });
     if (SD) { lifePicsOf[L.id] = out; }
@@ -733,7 +733,7 @@
     Object.keys(extra || {}).forEach(function (k) { f[k] = extra[k]; });
     var pic = s.img ? { id: s.w || null, site: s.id || null, src: COMMONS + encodeURIComponent(s.img) + "?width=960",
                         big: COMMONS + encodeURIComponent(s.img) + "?width=2000", title: s.t, year: s.d || null, by: s.a,
-                        where: s.m || "", notSaved: !s.w } : undefined;
+                        where: s.m || "", size: s.w ? "" : s.z || "", notSaved: !s.w } : undefined;
     return { path: path, step: step, f: f, key: "site:" + s.id, pic: pic, stand: true };
   }
 
@@ -1069,7 +1069,7 @@
       if (!full || !full.img || (full.w && seen[full.w])) { return; }
       more.push({ id: full.w || null, site: x[0], src: COMMONS + encodeURIComponent(full.img) + "?width=960",
                   big: COMMONS + encodeURIComponent(full.img) + "?width=2000", title: x[1], year: x[2] || null, by: L.name,
-                  where: full.m || "", notSaved: !full.w });
+                  where: full.m || "", size: full.w ? "" : full.z || "", notSaved: !full.w });
     });
     more.sort(function (a, b) { return (a.year || 9999) - (b.year || 9999); });
     return out.concat(more);

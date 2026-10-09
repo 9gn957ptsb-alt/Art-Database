@@ -16,7 +16,8 @@
 
    Collections.search(museum, text) resolves to a list of works in the same
    shape as the saved ones — { t: title, a: artist, y: date, m: medium,
-   src: picture } — or rejects if the source cannot be reached. The Met's and
+   s: size (as the source writes it, for the wall label), src: picture } —
+   or rejects if the source cannot be reached. The Met's and
    the Art Institute's also say where each work hangs today (gallery), as a
    line under it; a work found here is never hung in the walk.
    Collections.source(museum) names where the results come from.
@@ -65,7 +66,7 @@
           }));
         }).then(function (objs) {
           return objs.filter(function (o) { return o && o.primaryImageSmall; }).map(function (o) {
-            return { t: o.title, a: o.artistDisplayName, y: o.objectDate, m: o.medium,
+            return { t: o.title, a: o.artistDisplayName, y: o.objectDate, m: o.medium, s: o.dimensions || "",
                      src: o.primaryImageSmall, gallery: o.GalleryNumber ? "Gallery " + o.GalleryNumber : "" };
           });
         });
@@ -75,7 +76,7 @@
     "museum-art-institute-of-chicago": {
       name: "the Art Institute's open collection",
       search: function (text) {
-        var fields = "id,title,artist_title,artist_display,date_display,medium_display,image_id,is_on_view,gallery_title";
+        var fields = "id,title,artist_title,artist_display,date_display,medium_display,dimensions,image_id,is_on_view,gallery_title";
         var url = text
           ? "https://api.artic.edu/api/v1/artworks/search?" + q({ q: text, limit: PAGE, fields: fields })
           : "https://api.artic.edu/api/v1/artworks?" + q({ limit: PAGE, fields: fields });
@@ -83,7 +84,7 @@
           var iiif = (d.config && d.config.iiif_url) || "https://www.artic.edu/iiif/2";
           return (d.data || []).filter(function (w) { return w.image_id; }).map(function (w) {
             return { t: w.title, a: w.artist_title || (w.artist_display || "").split("\n")[0],
-                     y: w.date_display, m: w.medium_display,
+                     y: w.date_display, m: w.medium_display, s: w.dimensions || "",
                      src: iiif + "/" + w.image_id + "/full/600,/0/default.jpg",
                      gallery: w.is_on_view && w.gallery_title ? w.gallery_title : "" };
           });
@@ -100,7 +101,7 @@
           return (d.data || []).filter(function (w) { return w.images && w.images.web; }).map(function (w) {
             var c = (w.creators && w.creators[0] && w.creators[0].description) || "";
             return { t: w.title, a: c.replace(/\s*\(.*$/, ""), y: w.creation_date,
-                     m: w.technique, src: w.images.web.url };
+                     m: w.technique, s: w.measurements || "", src: w.images.web.url };
           });
         });
       }
@@ -116,13 +117,35 @@
             var who = w.production && w.production[0] && w.production[0].creator;
             var when = w.production_date && w.production_date[0] && w.production_date[0].period;
             return { t: (w.titles && w.titles[0] && w.titles[0].title) || "Untitled",
-                     a: who || "", y: when || "", m: (w.techniques || []).join(", "),
+                     a: who || "", y: when || "", m: (w.techniques || []).join(", "), s: smkSize(w.dimensions),
                      src: w.image_thumbnail };
           });
         });
       }
     }
   };
+
+  /* SMK's measures: height and width of one part — the sheet (bladmål), plate, image or net measure —
+     never the gross (brutto, with its frame), the mount's or the frame's. */
+  function smkSize(dims) {
+    var parts = {}, order = [];
+    (dims || []).forEach(function (d) {
+      var part = String((d && d.part) || "").toLowerCase();
+      if (!d || !d.value || /brutto|montering|ramme|frame|mount/.test(part)) { return; }
+      if (!parts[part]) { parts[part] = {}; order.push(part); }
+      parts[part][d.type] = parts[part][d.type] || d;
+    });
+    for (var i = 0; i < order.length; i++) {
+      var h = parts[order[i]].height, w = parts[order[i]].width;
+      if (h && w) {
+        return h.unit === w.unit ? h.value + " × " + w.value + " " + (h.unit || "")
+                                 : h.value + " " + (h.unit || "") + " × " + w.value + " " + (w.unit || "");
+      }
+    }
+    return "";
+  }
+  // Wikidata's normalised measure (metres) in centimetres, to a millimetre.
+  function cm(v) { return String(Math.round(parseFloat(v) * 1000) / 10); }
 
   /* ---- Wikidata, for every other museum ----------------------------- */
 
@@ -183,12 +206,17 @@
           if (!ids.length) { return []; }
           var query =
             "SELECT ?w ?wLabel ?img (SAMPLE(?by) AS ?byLabel) (MIN(?when) AS ?date) " +
-            "(SAMPLE(?what) AS ?medium) WHERE {" +
+            "(SAMPLE(?what) AS ?medium) (MIN(?hm) AS ?high) (MIN(?wm) AS ?wide) WHERE {" +
             " VALUES ?w { " + ids.map(function (id) { return "wd:" + id; }).join(" ") + " }" +
             " ?w wdt:P18 ?img ." +
             " OPTIONAL { ?w wdt:P170 ?c . ?c rdfs:label ?by . FILTER(LANG(?by) = \"en\") }" +
             " OPTIONAL { ?w wdt:P571 ?when . }" +
             " OPTIONAL { ?w wdt:P186 ?mat . ?mat rdfs:label ?what . FILTER(LANG(?what) = \"en\") }" +
+            // Its height and width (P2048, P2049), never the frame's (P518 frame) nor a deprecated one.
+            " OPTIONAL { ?w p:P2048 ?hs . ?hs psn:P2048/wikibase:quantityAmount ?hm ." +
+            "  FILTER NOT EXISTS { ?hs pq:P518 wd:Q860792 } FILTER NOT EXISTS { ?hs wikibase:rank wikibase:DeprecatedRank } }" +
+            " OPTIONAL { ?w p:P2049 ?ws . ?ws psn:P2049/wikibase:quantityAmount ?wm ." +
+            "  FILTER NOT EXISTS { ?ws pq:P518 wd:Q860792 } FILTER NOT EXISTS { ?ws wikibase:rank wikibase:DeprecatedRank } }" +
             " SERVICE wikibase:label { bd:serviceParam wikibase:language \"en,fr,es,de,it,nl\" . }" +
             "} GROUP BY ?w ?wLabel ?img";
           return sparql(query).then(function (rows) {
@@ -201,6 +229,7 @@
               var year = r.date ? r.date.value.slice(0, 4).replace(/^0+/, "") : "";
               return { t: r.wLabel.value, a: r.byLabel ? r.byLabel.value : "", y: year,
                        m: r.medium ? r.medium.value : "",
+                       s: r.high && r.wide ? cm(r.high.value) + " × " + cm(r.wide.value) + " cm" : "",
                        src: FILEPATH + encodeURIComponent(file) + "?width=600" };
             });
           });

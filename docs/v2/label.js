@@ -8,19 +8,21 @@
    artwork"; and the same day: "Also the info for the artwork should always
    be below the thumbnail of the artwork" — so it stands under every picture.
 
-   Under a picture a label is two short lines (artist, 8 Oct 2026, of Dalí's
+   Under a picture a label is three short lines (artist, 8 Oct 2026, of Dalí's
    life on his phone, its label five lines under a picture 197 px wide: "The
    information for each artwork underneath the thumbnail is still messed up
    and takes up too much space for that information. All I want is its
-   current location, the medium, and the year it was made"): where it is now
-   — the museum holding it and its city (the history's last holding, else
-   museums.json), else the gallery or partner listing it on Artsy and its
-   city ("Listed by …, New York"), else the last place its record names
-   ("Last recorded: Paris, 1933") — then the year it was made · its medium,
-   as Artsy gives them. Never a private owner's name: where the record ends
-   with one, the label says the place. The title, the artist, the size, how
-   the work is known and where the facts are from (Artsy, or Wikidata for a
-   painting not saved) are said to a screen reader, not shown.
+   current location, the medium, and the year it was made"; and 9 Oct 2026:
+   "I want to see the dimensions of each artwork in the info below it's
+   thumbnail"): where it is now — the museum holding it and its city (the
+   history's last holding, else museums.json), else the gallery or partner
+   listing it on Artsy and its city ("Listed by …, New York"), else the last
+   place its record names ("Last recorded: Paris, 1933") — then the year it
+   was made · its medium, then its size, as Artsy gives them. Never a private
+   owner's name: where the record ends with one, the label says the place.
+   The title, the artist, how the work is known and where the facts are from
+   (Artsy, or Wikidata for a painting not saved) are said to a screen reader,
+   not shown.
 
    Used by land.js (the reading layout's picture, twice as big, the whole
    screen, a museum's work brought up), placethen.js (the place, then) and,
@@ -77,16 +79,18 @@
     return null;
   }
 
-  // A saved work's label, from its history file: { t, a, d, m, s, now, src, id }.
+  // A saved work's label, from its history file: { t, a, d, m, s, now, src, id }; once read, known(id) gives it at once.
+  var known = {};
   function facts(id) {
     if (!id) { return Promise.resolve(null); }
     return Promise.all([json("histories/" + id + ".json"), json("museums.json")]).then(function (r) {
       var h = r[0];
       if (!h) { return null; }
       var n = nowOf(h, r[1]);
-      return { id: id, t: h.title || "Untitled", a: (h.artists || []).join(", "), as: h.artists || [], d: h.date || "", m: h.medium || "",
-               s: h.dimensions || "", now: n ? n.text : "", nowKind: n ? n.kind : "", slug: n ? n.slug || "" : "",
-               key: n ? n.key || "" : "", src: "Artsy" };
+      known[id] = { id: id, t: h.title || "Untitled", a: (h.artists || []).join(", "), as: h.artists || [], d: h.date || "", m: h.medium || "",
+                    s: h.dimensions || "", now: n ? n.text : "", nowKind: n ? n.kind : "", slug: n ? n.slug || "" : "",
+                    key: n ? n.key || "" : "", src: "Artsy" };
+      return known[id];
     });
   }
   // A painting not saved (Painted here's, from Commons): what Wikidata gives.
@@ -104,6 +108,14 @@
     return d.length <= 16 ? d : "";
   }
   function medium(m) { return String(m || "").trim().replace(/\s*\.\s*$/, ""); }
+  /* Its size as the source gives it ("82 × 104 in"), the spaces round the × made even. A museum's
+     measure in parts ("Framed: …; Unframed: …", "Image: …; Paper: …; Matted: …") gives the work's
+     own, the first part that is not the frame's, the mount's or the mat's. */
+  function size(s) {
+    var parts = String(s || "").split(/\s*;\s*|\s*[\r\n]+\s*/).filter(Boolean);
+    var own = parts.filter(function (p) { return !/^(framed|frame|with frame|mount|mounted|matted|mat)\b/i.test(p); });
+    return String(own[0] || parts[0] || "").replace(/(\d)\s*[×xX]\s*(?=\d)/g, "$1 × ");
+  }
   function yearDoor(f, shown) {
     var names = f.as && f.as.length ? f.as : f.a ? [f.a] : [];
     var y4 = year4(shown);
@@ -120,8 +132,8 @@
   }
 
   /* The label's lines into `node`: where it is now, then the year it was made · its medium (the year and
-     the place doors). What is not shown is said to a screen reader in its place: the work and its artist
-     before the lines, its size, how it is known (`how`) and where the facts are from after them.
+     the place doors), then its size. What is not shown is said to a screen reader in its place: the work
+     and its artist before the lines, how it is known (`how`) and where the facts are from after them.
      opts.full: the whole label — title, artist · date, medium · size, how, where · source. */
   function fill(node, f, opts) {
     opts = opts || {};
@@ -143,7 +155,9 @@
         if (med) { mp.appendChild(el("span", "wl-medium", med)); }
         node.appendChild(mp);
       }
-      node.appendChild(el("span", "a11y-only", " " + [f.s, opts.how, "facts from " + f.src].filter(Boolean).join(". ") + "."));
+      var sz = size(f.s);
+      if (sz) { node.appendChild(el("p", "wl-size", sz)); }
+      node.appendChild(el("span", "a11y-only", " " + [opts.how, "facts from " + f.src].filter(Boolean).join(". ") + "."));
       return node;
     }
     delete node.dataset.brief;
@@ -309,5 +323,6 @@
   // A scroll moves the square from under its label (but not the scroll that focusing it brought).
   window.addEventListener("scroll", function () { if (tipFor && performance.now() - shownAt > 400) { hideTip(); } }, true);
 
-  window.WallLabel = { facts: facts, fromItem: fromItem, fill: fill, nowOf: nowOf, hide: hideTip };
+  window.WallLabel = { facts: facts, known: function (id) { return known[id] || null; }, fromItem: fromItem, fill: fill,
+                       nowOf: nowOf, hide: hideTip };
 })();

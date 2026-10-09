@@ -143,7 +143,7 @@
         return { kind: "site", id: q.id || null, sid: q.site, t: q.title, y: q.year || null, img: q.src, big: q.big || q.src,
                  sq: String(q.src || "").replace(/width=\d+/, "width=160"),
                  how: "painted at a documented site · " + (s[3] || "the place painted"), ll: s[4], key: s[7],
-                 where: q.where || "", saved: !q.notSaved };
+                 where: q.where || "", size: q.size || "", saved: !q.notSaved };
       }
       var w = works[q.id];
       if (!w || !w[3]) { return null; }
@@ -204,7 +204,7 @@
                      img: COMMONS + encodeURIComponent(s.img) + "?width=960", big: COMMONS + encodeURIComponent(s.img) + "?width=2000",
                      sq: COMMONS + encodeURIComponent(s.img) + "?width=160",
                      how: "painted at a documented site · " + (s.what || s.place || "the place painted"), ll: s.ll, key: s.key,
-                     where: s.m || "", saved: !!s.w, other: true, by: s.a });
+                     where: s.m || "", size: s.w ? "" : s.z || "", saved: !!s.w, other: true, by: s.a });
         });
         out.sort(function (a, b) { return (b.saved ? 1 : 0) - (a.saved ? 1 : 0) || (a.y || 9999) - (b.y || 9999); });
         return out.slice(0, OTHERS);
@@ -690,7 +690,8 @@
     var mine = S, how = howOf(it), W = window.WallLabel;
     if (!W) { refs.how.textContent = how; return; }
     var by = it.other ? it.by : S.L.name;
-    var quick = W.fromItem({ title: it.t, by: by, year: it.y, where: it.saved ? "" : it.where, src: it.saved ? "Artsy" : "Wikidata" });
+    var quick = W.fromItem({ title: it.t, by: by, year: it.y, where: it.saved ? "" : it.where, size: it.saved ? "" : it.size,
+                             src: it.saved ? "Artsy" : "Wikidata" });
     W.fill(refs.how, quick, { title: false, how: how });
     if (it.saved && it.id) {
       W.facts(it.id).then(function (f) {

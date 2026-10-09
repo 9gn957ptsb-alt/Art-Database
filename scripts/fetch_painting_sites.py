@@ -28,6 +28,9 @@ Then the Commons files' authors and licences (extmetadata), through www.wikidata
 reads Commons as its shared file repository (commons.wikimedia.org itself is refused from the
 session). Paced and retried: the Wikimedia APIs answer 429 to a shared address.
 
+Then each work's height and width (P2048, P2049), for the wall label under its picture
+(`--only sizes`, after the rest: it reads raw.json's works).
+
 Everything is cached in data/sites/ (private, gitignored, like all of data/). build_sites.py
 distils it into docs/v2/sites.json.
 """
@@ -254,6 +257,32 @@ def wiki_text():
     print(f'  articles read: {len(have)}')
 
 
+def sizes():
+    """Each work's height and width (P2048, P2049) with their units, ranks and the part a statement
+    applies to (P518: a frame, the painted surface), for the wall label under its picture. Raw here;
+    build_sites.py chooses and says them."""
+    raw = json.load(open(os.path.join(OUT, 'raw.json')))
+    works = sorted({qid(r['w']) for r in raw['works'] if r.get('w')}, key=lambda q: int(q[1:]))
+    out = {}
+    for ch in chunks(works, 60):
+        for r in sparql(f'''
+SELECT ?w ?p ?amt ?unit ?rank ?part WHERE {{
+  VALUES ?w {{ {' '.join('wd:' + q for q in ch)} }}
+  VALUES (?p ?psv) {{ (p:P2048 psv:P2048) (p:P2049 psv:P2049) }}
+  ?w ?p ?st . ?st ?psv ?v ; wikibase:rank ?rank .
+  ?v wikibase:quantityAmount ?amt ; wikibase:quantityUnit ?unit .
+  OPTIONAL {{ ?st pq:P518 ?part }}
+}}'''):
+            k = 'h' if r['p'].endswith('P2048') else 'w'
+            out.setdefault(qid(r['w']), {}).setdefault(k, []).append(
+                [r['amt'], qid(r['unit']), qid(r['rank']), qid(r.get('part'))])
+    for v in out.values():
+        for k in v:
+            v[k].sort(key=lambda x: [str(y) for y in x])
+    json.dump(out, open(os.path.join(OUT, 'sizes.json'), 'w'), sort_keys=True)
+    print(f'  sizes: {len(out)} of {len(works)} works have a height or a width')
+
+
 def near_pictures():
     """Items with a picture within 250 m of each point of view that has no depicted place."""
     raw = json.load(open(os.path.join(OUT, 'raw.json')))
@@ -305,6 +334,6 @@ def file_meta():
 if __name__ == '__main__':
     if sys.argv[1:2] == ['--only']:
         for a in sys.argv[2:]:
-            {'near': near_pictures, 'files': file_meta, 'wiki': wiki_text}[a]()
+            {'near': near_pictures, 'files': file_meta, 'wiki': wiki_text, 'sizes': sizes}[a]()
     else:
         main()

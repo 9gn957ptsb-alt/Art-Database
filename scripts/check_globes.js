@@ -291,6 +291,8 @@ async function run(size) {
       return { dial: box(document.getElementById("art-time")), plate: plate && !plate.hidden ? box(plate) : null,
                label: lab && !lab.hidden ? box(lab) : null, titled: !!(lab && lab.querySelector(".wl-title, .wl-by")),
                align: lab ? lab.dataset.align || "" : "",
+               size: lab ? ((lab.querySelector(".wl-size") || {}).textContent || "") : "",
+               lines: lab ? parseFloat(getComputedStyle(lab).lineHeight) || 15 : 15,
                arrows: [...document.querySelectorAll(".art > .voice-swipe")].map(box).filter(Boolean) };
     });
     check(tag, !!lay.dial, "the dial is there at rest", lay.dial && { x: Math.round(lay.dial.x), y: Math.round(lay.dial.y), w: lay.dial.width });
@@ -298,9 +300,12 @@ async function run(size) {
       const P0 = lay.plate, Lb = lay.label;
       check(tag, Lb.top >= P0.bottom - 1 && Lb.left < P0.right && Lb.right > P0.left, "the wall label is under the picture",
             { plateBottom: Math.round(P0.bottom), labelTop: Math.round(Lb.top) });
-      // Where it is, then the year · the medium, and nothing more (8 Oct 2026: "All I want is its current location,
-      // the medium, and the year it was made"), in the middle under the picture, or from its edge where it keeps to it.
-      check(tag, !lay.titled && Lb.height <= 64, "the wall label is two short lines, no title", { h: Math.round(Lb.height), titled: lay.titled });
+      // Where it is, then the year · the medium, then the size, and nothing more (8 Oct 2026: "All I want is its
+      // current location, the medium, and the year it was made"; 9 Oct: "I want to see the dimensions of each
+      // artwork in the info below it's thumbnail"), each at most two lines, in the middle under the picture, or
+      // from its edge where it keeps to it.
+      check(tag, !lay.titled && Lb.height <= 6 * lay.lines + 4, "the wall label is three short lines, no title",
+            { h: Math.round(Lb.height), lines: lay.lines, titled: lay.titled, size: lay.size });
       const mid = Math.abs((Lb.left + Lb.right) / 2 - (P0.left + P0.right) / 2), edge = Math.abs(Lb.left - P0.left);
       check(tag, lay.align === "left" ? edge < 2 : mid < 2, "the wall label stands under the picture's middle (or from its edge)",
             { align: lay.align, mid: Math.round(mid), edge: Math.round(edge) });

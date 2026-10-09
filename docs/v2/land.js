@@ -11800,6 +11800,8 @@
       });
       fig.dataset.open = String(!was);
       img.setAttribute("aria-expanded", String(!was));
+      // Its label's facts, read now so that twice as big has them at once.
+      if (!was && w.id && window.WallLabel) { WallLabel.facts(w.id); }
       if (!was && opts.big && img.getAttribute("src") && img.src !== opts.big) {
         var big = new Image();
         big.referrerPolicy = "no-referrer";
@@ -11811,8 +11813,20 @@
     }
     function heldLabel() {
       if (!window.WallLabel) { return null; }
-      return WallLabel.fill(el("div", "wall-label"), WallLabel.fromItem({ title: w.t, by: w.a, year: w.y, medium: w.m,
-        where: opts.history ? opts.history.name : "", src: "Artsy" }));
+      // A saved work's history has the rest (its size among it): the same label as the reading layout's,
+      // read when the work was brought up (open); a work found in the collection, what its source gives.
+      var f = w.id && WallLabel.known ? WallLabel.known(w.id) : null;
+      var node = WallLabel.fill(el("div", "wall-label"), f || WallLabel.fromItem({ title: w.t, by: w.a, year: w.y, medium: w.m,
+        size: w.s, where: opts.history ? opts.history.name : "", src: "Artsy" }));
+      if (w.id && !f) {
+        WallLabel.facts(w.id).then(function (g) {
+          if (!g || !node.isConnected) { return; }
+          // Twice as big: placed again, the label made anew from what is now known (it may have grown a line).
+          var z = window.Zoom && Zoom.big();
+          if (z && z.node === img && z.relayout) { z.relayout(); } else { WallLabel.fill(node, g); }
+        });
+      }
+      return node;
     }
     function zoomHeld() {
       var z = Zoom.big();
@@ -20322,7 +20336,8 @@
     } else if (spec.id) {
       WallLabel.facts(spec.id).then(function (f) { put(f || WallLabel.fromItem({ title: spec.title, by: spec.by, year: spec.year, src: "Artsy" })); });
     } else {
-      put(WallLabel.fromItem({ title: spec.title, by: spec.by, year: spec.year, where: spec.where }));
+      // A painting not saved: Wikidata's museum, and its height × width where Wikidata gives them (sites.json z).
+      put(WallLabel.fromItem({ title: spec.title, by: spec.by, year: spec.year, where: spec.where, size: spec.size }));
     }
   }
 

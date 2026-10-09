@@ -1,6 +1,7 @@
 /* The wall label (label.js): under every picture of a work — the reading
-   layout's, the place, then's, twice as big, the whole screen — two short
-   lines, where it is now, then the year · the medium (8 Oct 2026); and, whole,
+   layout's, the place, then's, twice as big, the whole screen — three short
+   lines, where it is now, then the year · the medium (8 Oct 2026), then the
+   size (9 Oct 2026); and, whole,
    on hover, focus or a held finger, over a list's small square. Text at 4.5:1
    or more on its own ground (#eadfcd 14:1, #c4b29c 9:1 on #0f0a07). */
 .wall-label {
@@ -23,13 +24,15 @@
 /* Under a picture: each line at most two lines (the whole is said to a screen reader); the year first, so
    a long medium is what gives way. */
 .wall-label[data-brief] .wl-now,
-.wall-label[data-brief] .wl-made {
+.wall-label[data-brief] .wl-made,
+.wall-label[data-brief] .wl-size {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-.wall-label[data-brief] .wl-made { color: #c4b29c; }
+.wall-label[data-brief] .wl-made,
+.wall-label[data-brief] .wl-size { color: #c4b29c; }
 
 /* In the reading layout: placed by land.js (layoutPlate), touching the picture. */
 .art > .wall-label.wl-plate {
