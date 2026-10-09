@@ -76,7 +76,7 @@
       tb.head.forEach(function (h, i) { o[h] = (cells[i] || "").replace(/^`([^`]*)`$/, "$1"); });
       tb.rows.push(o);
     });
-    var out = { kinds: {}, order: [], from: {}, tabs: {}, find: [] };
+    var out = { kinds: {}, order: [], from: {}, tabs: {}, find: [], findOrder: [] };
     tables.forEach(function (t) {
       var h = t.head.join(" ");
       if (h.indexOf("kind name glyph tone") === 0) {
@@ -85,10 +85,15 @@
         t.rows.forEach(function (r) { out.from[r.from] = r; });
       } else if (h.indexOf("tab label kind") === 0) {
         t.rows.forEach(function (r) { out.tabs[r.tab] = r; });
+      } else if (h.indexOf("find kind") === 0) {
+        // Find's own order of the categories (artist, 9 Oct 2026: artists, then works, then movements …).
+        t.rows.slice().sort(function (a, b) { return +a.find - +b.find; })
+          .forEach(function (r) { out.findOrder.push(r.kind); });
       } else if (h.indexOf("head kind") === 0) {
-        t.rows.forEach(function (r) { out.find.push(r); });
+        t.rows.forEach(function (r, i) { r.at = i; out.find.push(r); });
       }
     });
+    // Matched longest first (a heading is matched by its start); `at` keeps the table's order within a category.
     out.find.sort(function (a, b) { return b.head.length - a.head.length; });
     return out;
   }
@@ -1281,10 +1286,15 @@
 
   var found = document.getElementById("finder-found");
   var grouping = false;
-  function catOf(text) {
+  function bareHead(text) {
+    var t = String(text || "").trim(), g = t.charAt(0);
+    var glyph = T && Object.keys(T.kinds).some(function (k) { return T.kinds[k].glyph === g; });
+    return glyph ? t.slice(1).trim() : t;
+  }
+  function headOf(text) {
     if (!T) { return null; }
     for (var i = 0; i < T.find.length; i += 1) {
-      if (text.indexOf(T.find[i].head) === 0) { return T.find[i].kind; }
+      if (text.indexOf(T.find[i].head) === 0) { return T.find[i]; }
     }
     return null;
   }
@@ -1299,10 +1309,15 @@
       if (c === stillEl) { return; }
       var h = c.classList.contains("finder-group") ? c : c.querySelector && c.querySelector(".finder-group");
       if (h && !c.classList.contains("finder-foot") && !h.classList.contains("finder-foot")) {
-        seg = { head: h, els: [c], kind: h.dataset.kinds || catOf(h.textContent.replace(/^\S\s/, "")) };
+        // Classified once (its heading then carries the category's tag): its category and its row.
+        // (Bare of a category's glyph, if one leads it: "A life" is not "A" and "life".)
+        var row = h.dataset.kinds ? null : headOf(bareHead(h.textContent));
+        if (row) { h.dataset.kindsAt = row.at; }
+        seg = { head: h, els: [c], kind: h.dataset.kinds || (row && row.kind) || null,
+                at: h.dataset.kindsAt !== undefined ? +h.dataset.kindsAt : 999 };
         segs.push(seg);
       } else if (seg) { seg.els.push(c); }
-      else { segs.push({ head: null, els: [c], kind: null }); }
+      else { segs.push({ head: null, els: [c], kind: null, at: 999 }); }
     });
     segs.forEach(function (s) {
       if (!s.head || !s.kind || s.head.dataset.kinds) { return; }
@@ -1314,9 +1329,11 @@
       if (s.head.textContent.indexOf(kd.name) !== 0) { s.head.insertBefore(tag, s.head.firstChild); }
       else { var gl = el("span", "kinds-find-tag kinds-find-glyph", kd.glyph); gl.setAttribute("aria-hidden", "true"); s.head.insertBefore(gl, s.head.firstChild); }
     });
-    // In the spectrum's order (KINDS.md's), what has no category last as it was.
-    // Hold still (a11y.js's row for "still") stays first.
-    var rank = function (s) { var i = s.kind ? T.order.indexOf(s.kind) : -1; return i < 0 ? 99 : i; };
+    // In Find's order (KINDS.md's "find" table: artists, works, movements …; else the spectrum's), and within a
+    // category in its headings' order; what has no category last as it was. Hold still (a11y.js's row for
+    // "still") stays first.
+    var order = T.findOrder && T.findOrder.length ? T.findOrder : T.order;
+    var rank = function (s) { var i = s.kind ? order.indexOf(s.kind) : -1; return (i < 0 ? 99 : i) * 1000 + s.at; };
     var sorted = segs.map(function (s, i) { return { s: s, i: i }; })
       .sort(function (a, b) { return rank(a.s) - rank(b.s) || a.i - b.i; });
     var moved = sorted.some(function (o, i) { return o.i !== i; });

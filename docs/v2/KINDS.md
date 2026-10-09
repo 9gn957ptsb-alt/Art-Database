@@ -125,30 +125,54 @@ Each tab: its label, the category its rows are, and what it lists. The label is 
 
 ## Find
 
-Find's groups are named by category, with the glyph, in the spectrum's order. `head` is the start of a
-group's own heading (as land.js and the modules write it); the group goes under its category.
+Find's groups are named by category, with the glyph, **in the order a name is looked up** (artist, 9 Oct
+2026: "In the search bar, prioritize artists at the top when looking up names, then artwork, then
+movement, then you decide the rest"): Artists, Works, Movements; then Places (a city, where the rest are),
+Museums, Writings (writers and critics are names too), Galleries & shows, Architecture, Animals, and the
+Paths through them last. Not the spectrum's order, which is the categories table's: Find is for names,
+the spectrum for time. `find` is a category's place in Find (read by `kinds.js`).
+
+| find | kind |
+|---|---|
+| 1 | artist |
+| 2 | work |
+| 3 | movement |
+| 4 | place |
+| 5 | museum |
+| 6 | writing |
+| 7 | gallery |
+| 8 | building |
+| 9 | animal |
+| 10 | path |
+
+`head` is the start of a group's own heading (as land.js and the modules write it); the group goes under
+its category, and within a category the groups keep this table's order (an artist's life before the
+thread of their saved works).
 
 | head | kind |
 |---|---|
-| Museums | museum |
-| Owners and museums | museum |
-| Movements | movement |
-| Styles and movements | movement |
+| A life | artist |
+| Lives | artist |
+| Artists | artist |
 | Works | work |
 | Dealt from the longest journeys | work |
-| Artists | artist |
-| A life | artist |
+| Styles and movements | movement |
+| Movements | movement |
+| Cities | place |
 | Studios | place |
+| Painted here | place |
+| Museums | museum |
+| Owners and museums | museum |
 | Voices | writing |
 | Writings | writing |
-| Cities | place |
-| Painted here | place |
 | Shows and sales | gallery |
 | Walks | path |
+| Walk | path |
 | Hunts | path |
 | Explorations | path |
 | Exploration | path |
-| Walk | path |
+| An exploration | path |
+| A relay | path |
 | The exquisite corpse | path |
 
 ## What is weak

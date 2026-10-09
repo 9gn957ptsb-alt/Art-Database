@@ -24,6 +24,16 @@
 .city[data-kind="studio"][data-pr="town"] .city-name { color: #cbbba6; }
 .city[data-kind="studio"]:hover .city-name,
 .city[data-kind="studio"]:focus-visible .city-name { color: #ffffff; }
+/* The artist read last (land.js, pinArtist; artist, 9 Oct 2026: "make sure when returning to the globe from
+   an artist that the artists name remains on the globe"): named before any other, in the light, a lilac
+   hairline under it. */
+.city[data-kind="studio"][data-pinned="true"] .city-name {
+  color: #f3f1ee;
+  text-decoration: underline;
+  text-decoration-color: rgba(157, 149, 230, 0.9);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
 
 .studio-box {
   margin: 0 0 var(--s-5);

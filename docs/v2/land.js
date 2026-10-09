@@ -246,10 +246,33 @@
      before. Nothing is stored and nothing is committed: the telescope is
      asked afresh every visit. */
 
-  var HUBBLE_QUERIES = ["hubble galaxy", "hubble nebula", "hubble star cluster",
-                        "hubble space telescope image"];
-  var HUBBLE_NOT = /astronaut|servicing|sts-|shuttle|launch|crew|engineer|technician|clean ?room|mirror|mission|spacewalk|eva\b|logo|illustration|artist|concept|rendering|poster/i;
+  /* Deep space only (artist, 9 Oct 2026: "Make sure no photos of people come up for the NASA space
+     photos, I only want pictures of deep space"). NASA's library answers "hubble" with press conferences,
+     astronauts, the telescope in its shuttle's bay, Edwin Hubble, Jupiter and Mars as well as galaxies, so
+     the questions ask only for what lies beyond the solar system, and every answer must say it is one —
+     a galaxy, a nebula, a cluster, a supernova's remains, a deep field (HUBBLE_DEEP) — and nothing of
+     people, hardware, drawings or simulations (HUBBLE_PEOPLE in its title and keywords, HUBBLE_PEOPLE_SAID
+     in its description's opening), nothing of the solar system (HUBBLE_NEAR), and no photographer's credit
+     but the telescope's own (an event's photograph is credited "NASA/<a name>"). Tried on 631 of NASA's
+     answers, 9 Oct 2026: the six questions give about 250 photographs, every one of them deep space. */
+  var HUBBLE_QUERIES = ["hubble galaxy", "hubble nebula", "hubble star cluster", "hubble deep field",
+                        "hubble supernova remnant", "hubble planetary nebula"];
+  var HUBBLE_DEEP = /galax|nebula|cluster|supernova|remnant|quasar|deep field|light[- ]years?\b|star[- ]?(forming|formation|birth|burst)|stellar (nursery|nurseries|jet)|protostar|globular|spiral|elliptical|lenticular|black hole|pillars? of|lensing|einstein ring|magellanic|andromeda|milky way|\b(ngc|ic|arp|abell|ugc|eso|messier|hcg|sh2)[ -]?\d|\bm ?\d{1,3}\b/i;
+  var HUBBLE_PEOPLE = /astronaut|\bcrew\b|spacewalk|\beva\b|sts-?\d|servicing|shuttle|\blaunch|edwin|\bpeople\b|portrait of (dr|mr|mrs|ms)\b|administrator|senator|congress|deputy|\bdirector\b|\bmanager\b|public affairs|press (conference|briefing|event)|news conference|briefing|remarks|\bpanel\b|ceremony|\baward|audience|visitors?\b|students?\b|children|employees|\bstaff\b|team members|\bworkers?\b|engineers?\b|technicians?\b|operations center|control (center|room)|\bconsole|celebration|\bcake\b|headquarters|auditorium|interview|lecture|presentation|exhibit|museum|clean ?room|integration|testing|vibration|thermal vacuum|hardware|mock-?up|replica|full-scale|schematics?|diagram|\bcharts?\b|\bgraphs?\b|infographic|illustration|artist|concept|rendering|animation|simulat|visuali[sz]ation|quiz|\blogos?\b|poster|\bpatch\b|insignia|emblem|\bmirror|spacecraft|deploy|berth|grapple|payload|orbiter|robot(ic)? arm|by touch|tactile/i;
+  var HUBBLE_PEOPLE_SAID = /press conference|news conference|\bremarks\b|\bspeaks\b|\bdelivers\b|\bdiscusses\b|\blistens\b|\bposes? for\b|posing|ceremony|\baward|audience|administrator|senator|congress(man|woman)\b|astronauts?\b|crew members?|technicians?|engineers?\b|from left|\((left|right|center)\)|clean ?room|spacewalk|artist'?s (concept|impression|illustration|view|rendering)|this (illustration|artist)|illustration of|simulat|visuali[sz]ation/i;
+  var HUBBLE_NEAR = /\b(mars|martian|jupiter|jovian|saturn|saturnian|uranus|neptune|pluto|charon|venus|mercury|ceres|vesta|asteroids?|comets?|kuiper|io|europa|ganymede|callisto|titan|enceladus|triton|moons?|lunar|earth|auroras?|great red spot|shoemaker|planet|dwarf planet|solar system)\b/i;
+  // Pressed before any photograph has been measured: the Hubble Deep Field's own page.
+  var HUBBLE_FIRST = "https://images.nasa.gov/details/PIA12110";
   var hubble = { tokens: [], seen: {}, measuring: 0 };
+
+  function deepSpace(data) {
+    var title = (data.title || "").replace(/\s+/g, " "), kw = (data.keywords || []).join(" ");
+    var said = (data.description || "").slice(0, 300), ph = data.photographer || "";
+    if (ph && !/hubble|esa|stsci|telescope/i.test(ph)) { return false; }
+    if (!/hubble|hst\b/i.test([title, kw, said, ph, data.secondary_creator || ""].join(" "))) { return false; }
+    if (HUBBLE_PEOPLE.test(title + " " + kw) || HUBBLE_PEOPLE_SAID.test(said) || HUBBLE_NEAR.test(title + " " + kw)) { return false; }
+    return HUBBLE_DEEP.test(title + " " + kw + " " + said);
+  }
 
   function readHubble() {
     if (!window.fetch) { return; }
@@ -265,10 +288,7 @@
                 return l.render === "image" || /thumb|small|medium/i.test(l.href || "");
               })[0];
               if (!data || !link || !data.nasa_id || hubble.seen[data.nasa_id]) { return; }
-              var words = (data.title || "") + " " + (data.keywords || []).join(" ") +
-                          " " + (data.description || "").slice(0, 200);
-              if (HUBBLE_NOT.test(words)) { return; }
-              if (!/hubble|hst\b/i.test(words)) { return; }
+              if (!deepSpace(data)) { return; }
               hubble.seen[data.nasa_id] = true;
               measureHubble({
                 s: data.nasa_id,
@@ -838,11 +858,57 @@
         open: function () { if (window.Lives && Lives.openMark) { Lives.openMark(m); } }
       }, true);
     });
+    applyPin();
 
     // And the cities, once cities.json has been read (the Museums layer).
     if (towns) { raiseTowns(); }
     filterGlobe();
     measureNames();
+  }
+
+  /* The artist last read, named on the globe (artist, 9 Oct 2026: "Also make
+     sure when returning to the globe from an artist that the artists name
+     remains on the globe"): come up from a life, the Artists layer gives that
+     artist's name out before any other, wherever the calm rules would have let
+     it go, and even with the world far off (nameMarks: `pin`); an artist born
+     in a town of several ("Paris · 47") has a name of their own there while
+     pinned, pressed into their life. It holds until another artist is read. */
+  var pinned = null;                    // { id }
+  function pinArtist(id) {
+    if (!pinned || pinned.id !== id) { pinned = { id: id }; applyPin(); }
+    var at = null;
+    cities.some(function (c) { if (c.pin) { at = c; return true; } return false; });
+    return at;
+  }
+  function applyPin() {
+    var was = cities.filter(function (c) { return c.pinOwn; });
+    was.forEach(function (c) { if (c.el && c.el.parentNode) { c.el.parentNode.removeChild(c.el); } });
+    if (was.length) { cities = cities.filter(function (c) { return !c.pinOwn; }); }
+    cities.forEach(function (c) { if (c.pin) { c.pin = false; if (c.el) { delete c.el.dataset.pinned; } } });
+    marksDirty = true;
+    if (!pinned || !studios || !studios.lives) { return; }
+    var li = -1, id = pinned.id;
+    studios.lives.some(function (r, i) { if (r[0] === id) { li = i; return true; } return false; });
+    var mark = null;
+    if (li >= 0) { cities.some(function (c) { if (c.studio && c.studio[4].indexOf(li) >= 0) { mark = c; return true; } return false; }); }
+    if (!mark) { return; }
+    if (mark.studio[4].length === 1) {
+      mark.pin = true;
+      if (mark.el) { mark.el.dataset.pinned = "true"; }
+      return;
+    }
+    var m = mark.studio, r = studios.lives[li], name = surnameOf(r[1]);
+    raiseCity({
+      work: null, slug: "born-pinned", title: name, label: name, aria: r[1] + ", born in " + m[7] + ": the artist read last",
+      where: m[7], lat: mark.lat, lon: mark.lon, studio: [m[0], m[1], name, r[1], [li], "exact", r[5] || 0, m[7]], real: true,
+      rank: mark.rank, layer: "studios", hue: 0.09, rise: 0, pin: true, pinOwn: true,
+      open: function () { if (window.Lives && Lives.open) { Lives.open(id); } }
+    }, true);
+    var own = cities[cities.length - 1];
+    own.el.dataset.pinned = "true";
+    own.off = layerOn !== "studios";
+    if (own.off) { own.el.style.visibility = "hidden"; own.shown = false; }
+    measureOne(own);
   }
 
   /* The Artists layer's file (lives.json: the birthplaces), read the first time the layer is on. */
@@ -1011,18 +1077,19 @@
   /* Every mark's measurements, in one pass: its width, its name's width and
      height, where its dot's middle is and how far the name starts from it. */
   function measureNames() {
-    cities.forEach(function (c) {
-      if (!c.el) { return; }
-      var dot = c.el.firstChild, name = c.el.lastChild;
-      c.w = c.el.offsetWidth;
-      c.dx = dot.offsetLeft + dot.offsetWidth / 2;
-      c.dh = dot.offsetWidth / 2;
-      c.nw = name.offsetWidth;
-      c.nh = name.offsetHeight;
-      c.gap = name.offsetLeft - c.dx;
-    });
+    cities.forEach(measureOne);
     marksDirty = true;
     townDirty = true;
+  }
+  function measureOne(c) {
+    if (!c.el) { return; }
+    var dot = c.el.firstChild, name = c.el.lastChild;
+    c.w = c.el.offsetWidth;
+    c.dx = dot.offsetLeft + dot.offsetWidth / 2;
+    c.dh = dot.offsetWidth / 2;
+    c.nw = name.offsetWidth;
+    c.nh = name.offsetHeight;
+    c.gap = name.offsetLeft - c.dx;
   }
 
   function hideMark(city) {
@@ -1200,7 +1267,7 @@
     });
     groups.forEach(function (g) {
       var c = g.lead.city;
-      g.pri = (c.rank || 1) * (0.3 + 0.7 * g.lead.z) * (c.wasNamed ? 1.25 : 1);
+      g.pri = c.pin ? 1e9 : (c.rank || 1) * (0.3 + 0.7 * g.lead.z) * (c.wasNamed ? 1.25 : 1);
       g.w = 0;
       g.members.forEach(function (m) { g.w = Math.max(g.w, m.city.nw || 0); });
       g.h = Math.max(LINE, c.nh || 0) + (g.members.length - 1) * LINE;
@@ -1275,7 +1342,7 @@
         g.members.forEach(function (m) { m.hidden = true; });
         return;
       }
-      if (!far && L.z >= 0.3 && count < rules.budget && g.w) {
+      if ((!far || L.city.pin) && L.z >= (L.city.pin ? 0.15 : 0.3) && (count < rules.budget || L.city.pin) && g.w) {
         var gap = L.city.gap || 10;
         // Beside the dot, right or left; a collage may be lifted or dropped
         // a line or two, with a hairline back to its dot (rules.lifts).
@@ -1800,28 +1867,30 @@
      there (a collage is the artist's own, of no category), so the way back
      from it, the banner's and the pinch's, is the reading. */
   var readingBack = null;               // { to: the place, name, go }
-  function readingWay(a, to) {
+  // An artist by their surname, as the sentences call them (voice.js: bare of
+  // "(b. 1981)"; a name also in its own script, its whole Latin name).
+  function surnameOf(title) {
+    var bare = String(title || "").replace(/\s*\([^)]*\)\s*$/, "").trim(), east = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+    var w = bare.split(/\s+/).filter(function (x) { return x && !east.test(x); }), k = w.length - 1;
+    if (east.test(bare) || k < 0) { return w.join(" ") || bare; }
+    while (k > 0 && /^(de|van|von|da|di|del|der|le|la|du|ter|ten)$/i.test(w[k - 1])) { k -= 1; }
+    return w.slice(k).join(" ");
+  }
+  // A life opened again where it stood (lives.js's year), else as a life opens.
+  function lifeAgain(d, y) {
+    if (!d.born && window.Lives && Lives.open && d.id) { Lives.open(d.id, { year: y || null }); } else { openLife(d); }
+  }
+  function readingWay(a, to, year) {
     var d = a.data || {}, title = String(d.title || (place && place.title) || "");
-    var go = a.kind === "life" ? function () { openLife(d); }
+    var y = year || (a.kind === "life" && a.yearNow) || null;
+    var go = a.kind === "life" ? function () { lifeAgain(d, y); }
       : a.kind === "movement" ? function () { openMovement(d); }
       : a.kind === "work" && d.id ? function () { openArt({ work: d.id }, {}); }
       : a.kind === "thread" && d.id ? function () { openArt({ thread: d.id }); }
       : null;
     if (!go || !title) { return null; }
-    // A life by its artist's surname, as the sentences call them (voice.js:
-    // bare of "(b. 1981)"; a name also in its own script, its whole Latin
-    // name); anything else by its title.
-    var name = title;
-    if (a.kind === "life" && !d.born) {
-      var bare = title.replace(/\s*\([^)]*\)\s*$/, "").trim(), east = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
-      var w = bare.split(/\s+/).filter(function (x) { return x && !east.test(x); }), k = w.length - 1;
-      if (east.test(bare) || k < 0) { name = w.join(" ") || bare; }
-      else {
-        while (k > 0 && /^(de|van|von|da|di|del|der|le|la|du|ter|ten)$/i.test(w[k - 1])) { k -= 1; }
-        name = w.slice(k).join(" ");
-      }
-    }
-    return { to: to, name: name, go: go };
+    // A life by its artist's surname; anything else by its title.
+    return { to: to, name: a.kind === "life" && !d.born ? surnameOf(title) : title, go: go };
   }
 
   /* One level up from where you are: from a collage's site pressed on a
@@ -1861,6 +1930,8 @@
     if (up) { up.go(); return; }
     // Up to the world: following an animal ends here (characters.js).
     if (following) { endFollowing(true); }
+    // Up to the world from an artist: their name stays on the globe (pinArtist).
+    var pin = art && art.kind === "life" && art.data && art.data.id && !art.data.born ? pinArtist(art.data.id) : null;
     comeUpFromGround();
     stopTheatre();
     stopBuilding();
@@ -1876,6 +1947,12 @@
     leanTo = leanWas;
     // The same face of the world you were looking at before you went down.
     wanted = spinWas;
+    // Up from an artist onto the Artists layer, the world comes up facing their name, however the life
+    // was reached (from the name itself the turn is small; from Find or a crumb, the name is brought round).
+    if (pin && layerKept === "studios") {
+      wanted = pin.lon;
+      leanTo = Math.max(LEAN_LOW, Math.min(LEAN_TOP, pin.lat - LOOK));
+    }
     flyFrom = zoom;
     flyTo = 1;
     planFlight("up");
@@ -1961,6 +2038,7 @@
     showHere(false);
     grownOff();
     readingBack = null;
+    townBack = null;
     // A layer chosen in a reading was the reading's: up at the world, the viewer's own comes back.
     cameLayer = null;
     if (layerOn !== layerKept) {
@@ -5121,8 +5199,7 @@
   scope.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
   scope.addEventListener("click", function () {
     var pool = hubble.tokens;
-    var href = pool.length ? pool[Math.floor(Math.random() * pool.length)].href
-                           : "https://images.nasa.gov/search?q=hubble&media=image";
+    var href = pool.length ? pool[Math.floor(Math.random() * pool.length)].href : HUBBLE_FIRST;
     window.open(href, "_blank", "noopener");
   });
 
@@ -15140,7 +15217,34 @@
     c.zoomTo = f.zoomTo;
     c.seatAt = f.seatAt;
     c.art.via = via || {};
+    townWayBack(key, c, via);
     if (place) { hopTo(c); } else { goDown(c); }
+  }
+
+  /* A city opened from an artist's life — a place of it entered, the place
+     before or after it, a painted site, a studio, a city pressed on its grown
+     globe (artist, 9 Oct 2026: "When I click on an artist, then click on a city
+     under the artists info, and then go back out of the city info, I want to
+     return back to the artist instead of returning to the entire globe"): the
+     way back out of it, the banner's, Escape's and the pinch's, is that life,
+     at the year of the place entered (else the year it stood at). It holds
+     while one of the city's museums is gone into and come back up from. */
+  var townBack = null;                  // { key, life: id, back: { name, go } }
+  function townWayBack(key, c, via) {
+    var pay = via && via.studio;
+    if (pay && pay.life) {
+      var id = pay.life, y = pay.y || null;
+      readingBack = { to: c, name: surnameOf(pay.name || ""), go: function () { lifeAgain({ id: id }, y); } };
+    } else if (art && art.kind === "life" && place && art.city === place) {
+      readingBack = readingWay(art, c);
+    } else if (via && via.museum && townBack && townBack.key === key) {
+      readingBack = { to: c, name: townBack.back.name, go: townBack.back.go };
+      return;
+    } else {
+      townBack = null;
+      return;
+    }
+    townBack = readingBack ? { key: key, back: { name: readingBack.name, go: readingBack.go } } : null;
   }
 
   /* A museum, at its city's height, so going between the two is a short
@@ -21801,7 +21905,34 @@
     // Everything found counts: a museum or a city found is found too.
     finderSaid.textContent = "Found · " + (total + others).toLocaleString("en");
     var k = 0;
-    // A style or movement first: the door to every saved work in it.
+    // In the order a name is looked up (artist, 9 Oct 2026: "prioritize artists at the top when looking up names,
+    // then artwork, then movement, then you decide the rest"; KINDS.md's "find" table, which kinds.js keeps the
+    // modules' groups to): the artists, the works, the styles and movements, then the cities, the museums, the
+    // writings, the shows and sales, the owners and collections.
+    function threadGroup(key, head) {
+      if (!g[key].length) { return; }
+      finderHead(head);
+      g[key].forEach(function (t) {
+        finderFound.appendChild(foundLine(k, function (b) {
+          b.appendChild(el("i", "", t.name));
+          b.appendChild(document.createTextNode([t.k === "artist" ? "" : t.at, t.y || ""].filter(Boolean)
+            .map(function (s) { return ", " + s; }).join("") + " · " + t.n + " works"));
+          b.addEventListener("click", function () {
+            // A museum on the Museums layer opens as the museum.
+            var mc = t.k === "museum" ? museumNamed(t.name) : null;
+            if (mc) { openMuseum(mc.slug, {}); return; }
+            openArt({ thread: t.id });
+          });
+        }));
+        k += 1;
+      });
+    }
+    threadGroup("artists", "Artists");
+    if (total) {
+      finderHead("Works");
+      g.works.slice(0, 13).forEach(function (w) { finderFound.appendChild(foundWork(w, k)); k += 1; });
+    }
+    // A style or movement: the door to every saved work in it.
     if (g.styles && g.styles.length) {
       finderHead("Styles and movements");
       g.styles.forEach(function (t) {
@@ -21815,10 +21946,6 @@
         }));
         k += 1;
       });
-    }
-    if (total) {
-      finderHead("Works");
-      g.works.slice(0, 13).forEach(function (w) { finderFound.appendChild(foundWork(w, k)); k += 1; });
     }
     if (g.cities.length) {
       finderHead("Cities");
@@ -21842,25 +21969,9 @@
         k += 1;
       });
     }
-    [["shows", "Shows and sales"], ["owners", "Owners and museums"], ["writings", "Writings"], ["artists", "Artists"]]
-      .forEach(function (grp) {
-        if (!g[grp[0]].length) { return; }
-        finderHead(grp[1]);
-        g[grp[0]].forEach(function (t) {
-          finderFound.appendChild(foundLine(k, function (b) {
-            b.appendChild(el("i", "", t.name));
-            b.appendChild(document.createTextNode([t.k === "artist" ? "" : t.at, t.y || ""].filter(Boolean)
-              .map(function (s) { return ", " + s; }).join("") + " · " + t.n + " works"));
-            b.addEventListener("click", function () {
-              // A museum on the Museums layer opens as the museum.
-              var mc = t.k === "museum" ? museumNamed(t.name) : null;
-              if (mc) { openMuseum(mc.slug, {}); return; }
-              openArt({ thread: t.id });
-            });
-          }));
-          k += 1;
-        });
-      });
+    threadGroup("writings", "Writings");
+    threadGroup("shows", "Shows and sales");
+    threadGroup("owners", "Owners and museums");
     if (total > 13) { finderFound.appendChild(el("p", "finder-group finder-foot", "13 of " + total.toLocaleString("en") + " — add a word")); }
   }
 

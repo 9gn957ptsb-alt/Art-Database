@@ -665,7 +665,7 @@
     return life(id).then(function (L) {
       var p = L && L.periods[k];
       if (!p || !window.Land || !Land.studio || !p.key) { return; }
-      Land.studio(p.key, p.ll[0], p.ll[1], 6, p.place, { life: id, p: k, alone: true, name: L.name });
+      Land.studio(p.key, p.ll[0], p.ll[1], 6, p.place, { life: id, p: k, alone: true, name: L.name, y: p.y0 });
     });
   }
 
@@ -797,12 +797,23 @@
       var all = /^ (lives?|a life|artists'? lives) $/.test(t);
       var every = onLayer && !t.trim();
       var q = t.replace(/ (lives?|a life|s life) $/, " ");
+      // A name as it is typed (artist, 9 Oct 2026: artists first when names are looked up): every word typed
+      // starts a word of the artist's name, so "pica" finds Picasso; a whole word matched before a part of one.
+      var toks = q.split(" ").filter(Boolean);
+      var whole = function (r) {
+        var hay = fold(r[1]);
+        return toks.filter(function (k) { return hay.indexOf(" " + k + " ") >= 0; }).length;
+      };
       var rows = D.lives.filter(function (r) {
         if (every) { return true; }
         if (all) { return r[9]; }
         var hay = fold(r[1]);
-        return hay.indexOf(q) >= 0 || fold(surname(r[1])) === q;
+        return toks.length > 0 && toks.every(function (k) { return hay.indexOf(" " + k) >= 0; });
       });
+      if (!every && !all) {
+        rows = rows.map(function (r, i) { return { r: r, i: i, w: whole(r) }; })
+          .sort(function (a, b) { return b.w - a.w || a.i - b.i; }).map(function (o) { return o.r; });
+      }
       if (!rows.length) { return; }
       var box = el("div", "explore-found life-found");
       box.appendChild(el("p", "finder-group", every ? "Artists · " + D.lives.length + " · each a life, most saved first" :
