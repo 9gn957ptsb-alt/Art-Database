@@ -1,397 +1,398 @@
 {
- "note": "The cities' pass (docs/v2/grounds/REFINE.md, scripts/refine_cities.py): each skyline's grain, the Overture release it was read from, when it was read and dated, and a line a run.",
- "cities": {
-  "amsterdam-nl": {
-   "name": "Amsterdam",
-   "tier": 0,
-   "n": 96,
-   "cell": 41.7,
-   "side": 4000,
-   "lat": 52.37143,
-   "lon": 4.8743,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 3088,
-   "green": 0,
-   "dated_share": 0.993,
-   "kb": 61,
-   "gz": 14,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 96 cells a side (41.7 m) from Overture 2026-09-23.0 \u00b7 3088 buildings \u00b7 dated to 2026-10-08: 99% of its building cells"
-   ]
-  },
-  "antwerp-be": {
-   "tier": 2,
-   "log": [
-    "2026-10-09 \u00b7 first cut \u00b7 288 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 26244 buildings, 14382 green cells \u00b7 5% of its building cells dated \u00b7 461 KB (63 KB sent)",
-    "2026-10-09 \u00b7 checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
-   ],
-   "name": "Antwerp",
-   "n": 288,
-   "cell": 19.8,
-   "side": 5700,
-   "lat": 51.20197,
-   "lon": 4.41355,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 26244,
-   "green": 14382,
-   "dated_share": 0.05,
-   "kb": 461,
-   "gz": 63
-  },
-  "berlin-de": {
-   "name": "Berlin",
-   "tier": 0,
-   "n": 144,
-   "cell": 45.8,
-   "side": 6600,
-   "lat": 52.512,
-   "lon": 13.35698,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 6626,
-   "green": 0,
-   "dated_share": 0.572,
-   "kb": 129,
-   "gz": 28,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (45.8 m) from Overture 2026-09-23.0 \u00b7 6626 buildings \u00b7 dated to 2026-10-08: 57% of its building cells"
-   ]
-  },
-  "boston-us": {
-   "name": "Boston",
-   "tier": 0,
-   "n": 144,
-   "cell": 39.6,
-   "side": 5700,
-   "lat": 42.34562,
-   "lon": -71.07098,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 4650,
-   "green": 0,
-   "dated_share": 0.669,
-   "kb": 119,
-   "gz": 24,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (39.6 m) from Overture 2026-09-23.0 \u00b7 4650 buildings \u00b7 dated to 2026-10-08: 67% of its building cells"
-   ]
-  },
-  "brussels-be": {
-   "name": "Brussels",
-   "tier": 0,
-   "n": 144,
-   "cell": 44.4,
-   "side": 6400,
-   "lat": 50.84005,
-   "lon": 4.36079,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 8848,
-   "green": 0,
-   "dated_share": 0.656,
-   "kb": 149,
-   "gz": 35,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (44.4 m) from Overture 2026-09-23.0 \u00b7 8848 buildings \u00b7 dated to 2026-10-08: 66% of its building cells"
-   ]
-  },
-  "chicago-us": {
-   "name": "Chicago",
-   "tier": 0,
-   "n": 144,
-   "cell": 41.0,
-   "side": 5900,
-   "lat": 41.8953,
-   "lon": -87.63185,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 4019,
-   "green": 0,
-   "dated_share": 0.7,
-   "kb": 124,
-   "gz": 20,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (41.0 m) from Overture 2026-09-23.0 \u00b7 4019 buildings \u00b7 dated to 2026-10-08: 70% of its building cells"
-   ]
-  },
-  "copenhagen-dk": {
-   "name": "Copenhagen",
-   "tier": 0,
-   "n": 144,
-   "cell": 44.4,
-   "side": 6400,
-   "lat": 55.68627,
-   "lon": 12.56603,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 5173,
-   "green": 0,
-   "dated_share": 0.987,
-   "kb": 133,
-   "gz": 25,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (44.4 m) from Overture 2026-09-23.0 \u00b7 5173 buildings \u00b7 dated to 2026-10-08: 99% of its building cells"
-   ]
-  },
-  "houston-us": {
-   "name": "Houston",
-   "tier": 0,
-   "n": 144,
-   "cell": 42.4,
-   "side": 6100,
-   "lat": 29.74727,
-   "lon": -95.3939,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 5207,
-   "green": 0,
-   "dated_share": 0.924,
-   "kb": 133,
-   "gz": 23,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (42.4 m) from Overture 2026-09-23.0 \u00b7 5207 buildings \u00b7 dated to 2026-10-08: 92% of its building cells"
-   ]
-  },
-  "london-gb": {
-   "name": "London",
-   "tier": 2,
-   "n": 368,
-   "cell": 19.8,
-   "side": 7300,
-   "lat": 51.51225,
-   "lon": -0.1406,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 32502,
-   "green": 21664,
-   "dated_share": 0.382,
-   "kb": 777,
-   "gz": 136,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (50.7 m) from Overture 2026-09-23.0 \u00b7 7898 buildings \u00b7 dated to 2026-10-08: 51% of its building cells",
-    "2026-10-09 \u00b7 raised to tier 2 \u00b7 368 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 32502 buildings, 21664 green cells \u00b7 38% of its building cells dated (51% at the last cut) \u00b7 777 KB (136 KB sent)",
-    "2026-10-09 \u00b7 still wrong: homes only are dated (GLA), other buildings stand from the start; green and the Thames read well; heights often missing (two storeys)"
-   ]
-  },
-  "los-angeles-us": {
-   "name": "Los Angeles",
-   "tier": 2,
-   "n": 328,
-   "cell": 19.8,
-   "side": 6500,
-   "lat": 34.05251,
-   "lon": -118.45271,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 26490,
-   "green": 10219,
-   "dated_share": 0.936,
-   "kb": 749,
-   "gz": 132,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (45.1 m) from Overture 2026-09-23.0 \u00b7 6050 buildings \u00b7 dated to 2026-10-08: 92% of its building cells",
-    "2026-10-09 \u00b7 raised to tier 2 \u00b7 328 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 26490 buildings, 10219 green cells \u00b7 94% of its building cells dated (93% at the last cut) \u00b7 749 KB (132 KB sent)",
-    "2026-10-09 \u00b7 checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
-   ]
-  },
-  "madrid-es": {
-   "name": "Madrid",
-   "tier": 0,
-   "n": 144,
-   "cell": 45.8,
-   "side": 6600,
-   "lat": 40.43295,
-   "lon": -3.68335,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 8957,
-   "green": 0,
-   "dated_share": 0.997,
-   "kb": 166,
-   "gz": 40,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (45.8 m) from Overture 2026-09-23.0 \u00b7 8957 buildings \u00b7 dated to 2026-10-08: 100% of its building cells"
-   ]
-  },
-  "milan-it": {
-   "name": "Milan",
-   "tier": 0,
-   "n": 144,
-   "cell": 47.9,
-   "side": 6900,
-   "lat": 45.48045,
-   "lon": 9.186,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 8600,
-   "green": 0,
-   "dated_share": 0.782,
-   "kb": 142,
-   "gz": 31,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (47.9 m) from Overture 2026-09-23.0 \u00b7 8600 buildings \u00b7 dated to 2026-10-08: 78% of its building cells"
-   ]
-  },
-  "new-haven-us": {
-   "tier": 2,
-   "log": [
-    "2026-10-09 \u00b7 first cut \u00b7 152 cells a side (19.7 m) from Overture 2026-09-23.1 \u00b7 4220 buildings, 2132 green cells \u00b7 2% of its building cells dated \u00b7 124 KB (17 KB sent)",
-    "2026-10-09 \u00b7 checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
-   ],
-   "name": "New Haven",
-   "n": 152,
-   "cell": 19.7,
-   "side": 3000,
-   "lat": 41.30819,
-   "lon": -72.93077,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 4220,
-   "green": 2132,
-   "dated_share": 0.025,
-   "kb": 124,
-   "gz": 17
-  },
-  "new-york-us": {
-   "name": "New York",
-   "tier": 2,
-   "n": 400,
-   "cell": 20.0,
-   "side": 8000,
-   "lat": 40.74899,
-   "lon": -73.98445,
-   "release": "2026-09-23.1",
-   "read": "2026-10-08",
-   "dated": "2026-10-08",
-   "buildings": 35433,
-   "green": 12394,
-   "dated_share": 0.936,
-   "kb": 951,
-   "gz": 163,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (55.6 m) from Overture 2026-09-23.0 \u00b7 6754 buildings \u00b7 dated to 2026-10-08: 88% of its building cells",
-    "2026-10-08 \u00b7 cut at tier 2 \u00b7 400 cells a side (20.0 m) from Overture 2026-09-23.1 \u00b7 35433 buildings, 12394 green cells \u00b7 94% of its building cells dated (88% at the last cut) \u00b7 951 KB (163 KB sent)"
-   ]
-  },
-  "paris-fr": {
-   "name": "Paris",
-   "tier": 2,
-   "n": 344,
-   "cell": 20.1,
-   "side": 6900,
-   "lat": 48.8606,
-   "lon": 2.3351,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 46896,
-   "green": 9138,
-   "dated_share": 0.976,
-   "kb": 871,
-   "gz": 168,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (47.9 m) from Overture 2026-09-23.0 \u00b7 10712 buildings \u00b7 dated to 2026-10-08: 95% of its building cells",
-    "2026-10-09 \u00b7 raised to tier 2 \u00b7 344 cells a side (20.1 m) from Overture 2026-09-23.1 \u00b7 46896 buildings, 9138 green cells \u00b7 98% dated, 54631 cells' years carried from the last cut (EUBUCCO (Catastro, BD TOPO) did not answer) \u00b7 871 KB (168 KB sent)",
-    "2026-10-09 \u00b7 still wrong (looked at 8 Oct run, Paris and London only): the dither of the dated-building tints makes the whole square read as grain; Paris's years are mostly carried (EUBUCCO did not answer); towers too low where Overture has no height"
-   ]
-  },
-  "philadelphia-us": {
-   "tier": 2,
-   "log": [
-    "2026-10-09 \u00b7 first cut \u00b7 168 cells a side (20.2 m) from Overture 2026-09-23.1 \u00b7 6119 buildings, 2547 green cells \u00b7 92% of its building cells dated \u00b7 183 KB (33 KB sent)",
-    "2026-10-09 \u00b7 checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
-   ],
-   "name": "Philadelphia",
-   "n": 168,
-   "cell": 20.2,
-   "side": 3400,
-   "lat": 39.96395,
-   "lon": -75.16728,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 6119,
-   "green": 2547,
-   "dated_share": 0.922,
-   "kb": 183,
-   "gz": 33
-  },
-  "san-francisco-us": {
-   "name": "San Francisco",
-   "tier": 0,
-   "n": 144,
-   "cell": 50.0,
-   "side": 7200,
-   "lat": 37.77445,
-   "lon": -122.43391,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 7466,
-   "green": 0,
-   "dated_share": 0.813,
-   "kb": 149,
-   "gz": 40,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (50.0 m) from Overture 2026-09-23.0 \u00b7 7466 buildings \u00b7 dated to 2026-10-08: 81% of its building cells"
-   ]
-  },
-  "seattle-us": {
-   "name": "Seattle",
-   "tier": 0,
-   "n": 128,
-   "cell": 40.6,
-   "side": 5200,
-   "lat": 47.61035,
-   "lon": -122.33488,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 3814,
-   "green": 0,
-   "dated_share": 0.921,
-   "kb": 104,
-   "gz": 25,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 128 cells a side (40.6 m) from Overture 2026-09-23.0 \u00b7 3814 buildings \u00b7 dated to 2026-10-08: 92% of its building cells"
-   ]
-  },
-  "washington-us": {
-   "name": "Washington",
-   "tier": 2,
-   "n": 288,
-   "cell": 20.1,
-   "side": 5800,
-   "lat": 38.89993,
-   "lon": -77.03005,
-   "release": "2026-09-23.1",
-   "read": "2026-10-09",
-   "dated": "2026-10-09",
-   "buildings": 11545,
-   "green": 12400,
-   "dated_share": 0.816,
-   "kb": 487,
-   "gz": 78,
-   "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (40.3 m) from Overture 2026-09-23.0 \u00b7 4445 buildings \u00b7 dated to 2026-10-08: 83% of its building cells",
-    "2026-10-09 \u00b7 raised to tier 2 \u00b7 288 cells a side (20.1 m) from Overture 2026-09-23.1 \u00b7 11545 buildings, 12400 green cells \u00b7 82% of its building cells dated (83% at the last cut) \u00b7 487 KB (78 KB sent)",
-    "2026-10-09 \u00b7 checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
-   ]
+  "note": "The cities' pass (docs/v2/grounds/REFINE.md, scripts/refine_cities.py): each skyline's grain, the Overture release it was read from, when it was read and dated, and a line a run.",
+  "cities": {
+    "amsterdam-nl": {
+      "name": "Amsterdam",
+      "tier": 0,
+      "n": 96,
+      "cell": 41.7,
+      "side": 4000,
+      "lat": 52.37143,
+      "lon": 4.8743,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 3088,
+      "green": 0,
+      "dated_share": 0.993,
+      "kb": 61,
+      "gz": 14,
+      "log": [
+        "2026-10-07 · first cut · 96 cells a side (41.7 m) from Overture 2026-09-23.0 · 3088 buildings · dated to 2026-10-08: 99% of its building cells"
+      ]
+    },
+    "antwerp-be": {
+      "tier": 2,
+      "log": [
+        "2026-10-09 · first cut · 288 cells a side (19.8 m) from Overture 2026-09-23.1 · 26244 buildings, 14382 green cells · 5% of its building cells dated · 461 KB (63 KB sent)",
+        "2026-10-09 · checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
+      ],
+      "name": "Antwerp",
+      "n": 288,
+      "cell": 19.8,
+      "side": 5700,
+      "lat": 51.20197,
+      "lon": 4.41355,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 26244,
+      "green": 14382,
+      "dated_share": 0.05,
+      "kb": 461,
+      "gz": 63
+    },
+    "berlin-de": {
+      "name": "Berlin",
+      "tier": 0,
+      "n": 144,
+      "cell": 45.8,
+      "side": 6600,
+      "lat": 52.512,
+      "lon": 13.35698,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 6626,
+      "green": 0,
+      "dated_share": 0.572,
+      "kb": 129,
+      "gz": 28,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (45.8 m) from Overture 2026-09-23.0 · 6626 buildings · dated to 2026-10-08: 57% of its building cells"
+      ]
+    },
+    "boston-us": {
+      "name": "Boston",
+      "tier": 0,
+      "n": 144,
+      "cell": 39.6,
+      "side": 5700,
+      "lat": 42.34562,
+      "lon": -71.07098,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 4650,
+      "green": 0,
+      "dated_share": 0.669,
+      "kb": 119,
+      "gz": 24,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (39.6 m) from Overture 2026-09-23.0 · 4650 buildings · dated to 2026-10-08: 67% of its building cells"
+      ]
+    },
+    "brussels-be": {
+      "name": "Brussels",
+      "tier": 0,
+      "n": 144,
+      "cell": 44.4,
+      "side": 6400,
+      "lat": 50.84005,
+      "lon": 4.36079,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 8848,
+      "green": 0,
+      "dated_share": 0.656,
+      "kb": 149,
+      "gz": 35,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 8848 buildings · dated to 2026-10-08: 66% of its building cells"
+      ]
+    },
+    "chicago-us": {
+      "name": "Chicago",
+      "tier": 0,
+      "n": 144,
+      "cell": 41.0,
+      "side": 5900,
+      "lat": 41.8953,
+      "lon": -87.63185,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 4019,
+      "green": 0,
+      "dated_share": 0.7,
+      "kb": 124,
+      "gz": 20,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (41.0 m) from Overture 2026-09-23.0 · 4019 buildings · dated to 2026-10-08: 70% of its building cells"
+      ]
+    },
+    "copenhagen-dk": {
+      "name": "Copenhagen",
+      "tier": 0,
+      "n": 144,
+      "cell": 44.4,
+      "side": 6400,
+      "lat": 55.68627,
+      "lon": 12.56603,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 5173,
+      "green": 0,
+      "dated_share": 0.987,
+      "kb": 133,
+      "gz": 25,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 5173 buildings · dated to 2026-10-08: 99% of its building cells"
+      ]
+    },
+    "houston-us": {
+      "name": "Houston",
+      "tier": 0,
+      "n": 144,
+      "cell": 42.4,
+      "side": 6100,
+      "lat": 29.74727,
+      "lon": -95.3939,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 5207,
+      "green": 0,
+      "dated_share": 0.924,
+      "kb": 133,
+      "gz": 23,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (42.4 m) from Overture 2026-09-23.0 · 5207 buildings · dated to 2026-10-08: 92% of its building cells"
+      ]
+    },
+    "london-gb": {
+      "name": "London",
+      "tier": 2,
+      "n": 368,
+      "cell": 19.8,
+      "side": 7300,
+      "lat": 51.51225,
+      "lon": -0.1406,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 32502,
+      "green": 21664,
+      "dated_share": 0.382,
+      "kb": 777,
+      "gz": 136,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (50.7 m) from Overture 2026-09-23.0 · 7898 buildings · dated to 2026-10-08: 51% of its building cells",
+        "2026-10-09 · raised to tier 2 · 368 cells a side (19.8 m) from Overture 2026-09-23.1 · 32502 buildings, 21664 green cells · 38% of its building cells dated (51% at the last cut) · 777 KB (136 KB sent)",
+        "2026-10-09 · still wrong: homes only are dated (GLA), other buildings stand from the start; green and the Thames read well; heights often missing (two storeys)"
+      ]
+    },
+    "los-angeles-us": {
+      "name": "Los Angeles",
+      "tier": 2,
+      "n": 328,
+      "cell": 19.8,
+      "side": 6500,
+      "lat": 34.05251,
+      "lon": -118.45271,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 26490,
+      "green": 10219,
+      "dated_share": 0.936,
+      "kb": 749,
+      "gz": 132,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (45.1 m) from Overture 2026-09-23.0 · 6050 buildings · dated to 2026-10-08: 92% of its building cells",
+        "2026-10-09 · raised to tier 2 · 328 cells a side (19.8 m) from Overture 2026-09-23.1 · 26490 buildings, 10219 green cells · 94% of its building cells dated (93% at the last cut) · 749 KB (132 KB sent)",
+        "2026-10-09 · checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
+      ]
+    },
+    "madrid-es": {
+      "name": "Madrid",
+      "tier": 0,
+      "n": 144,
+      "cell": 45.8,
+      "side": 6600,
+      "lat": 40.43295,
+      "lon": -3.68335,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 8957,
+      "green": 0,
+      "dated_share": 0.997,
+      "kb": 166,
+      "gz": 40,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (45.8 m) from Overture 2026-09-23.0 · 8957 buildings · dated to 2026-10-08: 100% of its building cells"
+      ]
+    },
+    "milan-it": {
+      "name": "Milan",
+      "tier": 0,
+      "n": 144,
+      "cell": 47.9,
+      "side": 6900,
+      "lat": 45.48045,
+      "lon": 9.186,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 8600,
+      "green": 0,
+      "dated_share": 0.782,
+      "kb": 142,
+      "gz": 31,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (47.9 m) from Overture 2026-09-23.0 · 8600 buildings · dated to 2026-10-08: 78% of its building cells"
+      ]
+    },
+    "new-haven-us": {
+      "tier": 2,
+      "log": [
+        "2026-10-09 · first cut · 152 cells a side (19.7 m) from Overture 2026-09-23.1 · 4220 buildings, 2132 green cells · 2% of its building cells dated · 124 KB (17 KB sent)",
+        "2026-10-09 · checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
+      ],
+      "name": "New Haven",
+      "n": 152,
+      "cell": 19.7,
+      "side": 3000,
+      "lat": 41.30819,
+      "lon": -72.93077,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 4220,
+      "green": 2132,
+      "dated_share": 0.025,
+      "kb": 124,
+      "gz": 17
+    },
+    "new-york-us": {
+      "name": "New York",
+      "tier": 2,
+      "n": 400,
+      "cell": 20.0,
+      "side": 8000,
+      "lat": 40.74899,
+      "lon": -73.98445,
+      "release": "2026-09-23.1",
+      "read": "2026-10-08",
+      "dated": "2026-10-08",
+      "buildings": 35433,
+      "green": 12394,
+      "dated_share": 0.936,
+      "kb": 951,
+      "gz": 163,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (55.6 m) from Overture 2026-09-23.0 · 6754 buildings · dated to 2026-10-08: 88% of its building cells",
+        "2026-10-08 · cut at tier 2 · 400 cells a side (20.0 m) from Overture 2026-09-23.1 · 35433 buildings, 12394 green cells · 94% of its building cells dated (88% at the last cut) · 951 KB (163 KB sent)"
+      ]
+    },
+    "paris-fr": {
+      "name": "Paris",
+      "tier": 2,
+      "n": 344,
+      "cell": 20.1,
+      "side": 6900,
+      "lat": 48.8606,
+      "lon": 2.3351,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-10",
+      "buildings": 46896,
+      "green": 9138,
+      "dated_share": 0.933,
+      "kb": 871,
+      "gz": 168,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (47.9 m) from Overture 2026-09-23.0 · 10712 buildings · dated to 2026-10-08: 95% of its building cells",
+        "2026-10-09 · raised to tier 2 · 344 cells a side (20.1 m) from Overture 2026-09-23.1 · 46896 buildings, 9138 green cells · 98% dated, 54631 cells' years carried from the last cut (EUBUCCO (Catastro, BD TOPO) did not answer) · 871 KB (168 KB sent)",
+        "2026-10-09 · still wrong (looked at 8 Oct run, Paris and London only): the dither of the dated-building tints makes the whole square read as grain; Paris's years are mostly carried (EUBUCCO did not answer); towers too low where Overture has no height",
+        "2026-10-10 · dated again (its years had been carried) · 93% of its building cells dated (98% at the last cut)"
+      ]
+    },
+    "philadelphia-us": {
+      "tier": 2,
+      "log": [
+        "2026-10-09 · first cut · 168 cells a side (20.2 m) from Overture 2026-09-23.1 · 6119 buildings, 2547 green cells · 92% of its building cells dated · 183 KB (33 KB sent)",
+        "2026-10-09 · checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
+      ],
+      "name": "Philadelphia",
+      "n": 168,
+      "cell": 20.2,
+      "side": 3400,
+      "lat": 39.96395,
+      "lon": -75.16728,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 6119,
+      "green": 2547,
+      "dated_share": 0.922,
+      "kb": 183,
+      "gz": 33
+    },
+    "san-francisco-us": {
+      "name": "San Francisco",
+      "tier": 0,
+      "n": 144,
+      "cell": 50.0,
+      "side": 7200,
+      "lat": 37.77445,
+      "lon": -122.43391,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 7466,
+      "green": 0,
+      "dated_share": 0.813,
+      "kb": 149,
+      "gz": 40,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (50.0 m) from Overture 2026-09-23.0 · 7466 buildings · dated to 2026-10-08: 81% of its building cells"
+      ]
+    },
+    "seattle-us": {
+      "name": "Seattle",
+      "tier": 0,
+      "n": 128,
+      "cell": 40.6,
+      "side": 5200,
+      "lat": 47.61035,
+      "lon": -122.33488,
+      "release": "2026-09-23.0",
+      "read": "2026-10-07",
+      "dated": "2026-10-08",
+      "buildings": 3814,
+      "green": 0,
+      "dated_share": 0.921,
+      "kb": 104,
+      "gz": 25,
+      "log": [
+        "2026-10-07 · first cut · 128 cells a side (40.6 m) from Overture 2026-09-23.0 · 3814 buildings · dated to 2026-10-08: 92% of its building cells"
+      ]
+    },
+    "washington-us": {
+      "name": "Washington",
+      "tier": 2,
+      "n": 288,
+      "cell": 20.1,
+      "side": 5800,
+      "lat": 38.89993,
+      "lon": -77.03005,
+      "release": "2026-09-23.1",
+      "read": "2026-10-09",
+      "dated": "2026-10-09",
+      "buildings": 11545,
+      "green": 12400,
+      "dated_share": 0.816,
+      "kb": 487,
+      "gz": 78,
+      "log": [
+        "2026-10-07 · first cut · 144 cells a side (40.3 m) from Overture 2026-09-23.0 · 4445 buildings · dated to 2026-10-08: 83% of its building cells",
+        "2026-10-09 · raised to tier 2 · 288 cells a side (20.1 m) from Overture 2026-09-23.1 · 11545 buildings, 12400 green cells · 82% of its building cells dated (83% at the last cut) · 487 KB (78 KB sent)",
+        "2026-10-09 · checked at 390x844 and 1440x900 (GPU); screenshots not individually reviewed for mismatches this run"
+      ]
+    }
   }
- }
 }
