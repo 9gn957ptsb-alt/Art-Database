@@ -1,0 +1,674 @@
+{
+ "slug": "seamless-horizons-balboa-by-riva-spain",
+ "name": "Balboa",
+ "voxel": 0.4,
+ "site": [
+  40,
+  36
+ ],
+ "ground": "grass",
+ "parts": [
+  {
+   "box": [
+    -20,
+    -18,
+    0,
+    40,
+    36,
+    0.4
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -5,
+    -10,
+    0,
+    12,
+    8.5,
+    0.5
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    8,
+    2,
+    0,
+    12,
+    14,
+    0.35
+   ],
+   "m": "gravel"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    0,
+    12,
+    20,
+    3.4
+   ],
+   "m": "render"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    3.4,
+    12.6,
+    20.6,
+    0.5
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    3.9,
+    11,
+    12,
+    3.0
+   ],
+   "m": "render"
+  },
+  {
+   "box": [
+    -17.3,
+    -10.3,
+    6.9,
+    11.6,
+    12.6,
+    0.25
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -16.8,
+    -9.8,
+    7.3,
+    10.6,
+    0.15,
+    1.1
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -16.8,
+    1.8,
+    7.3,
+    10.6,
+    0.15,
+    1.1
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6.4,
+    -9.8,
+    7.3,
+    0.15,
+    11.6,
+    1.1
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -16,
+    -7,
+    7.3,
+    4,
+    2.6,
+    0.8
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -12,
+    -2,
+    7.3,
+    3,
+    2,
+    0.8
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -5.6,
+    9.5,
+    0,
+    0.5,
+    0.5,
+    3.4
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -5.8,
+    -9.4,
+    0.4,
+    0.35,
+    0.35,
+    3.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -5.8,
+    9.5,
+    0.4,
+    0.35,
+    0.35,
+    3.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -9,
+    -8,
+    0,
+    1.2,
+    5,
+    3.4
+   ],
+   "m": "render"
+  },
+  {
+   "box": [
+    -5,
+    -10,
+    0,
+    1.8,
+    0.4,
+    3.2
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -5,
+    -10,
+    0,
+    12,
+    0.5,
+    3.1
+   ],
+   "m": "render"
+  },
+  {
+   "box": [
+    -5.4,
+    -10.2,
+    3.3,
+    13,
+    9.2,
+    0.2
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -5,
+    -10,
+    0,
+    0.45,
+    0.45,
+    3.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    6.5,
+    -10,
+    0,
+    0.45,
+    0.45,
+    3.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    6.5,
+    -2.5,
+    0,
+    0.45,
+    0.45,
+    3.1
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0,
+    -9.5,
+    0.5,
+    6.5,
+    1.2,
+    1.1
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    0.5,
+    -8,
+    0.5,
+    5,
+    0.8,
+    0.12
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    0,
+    -7,
+    0.5,
+    0.4,
+    0.4,
+    1.1
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    1.5,
+    -7,
+    0.5,
+    0.4,
+    0.4,
+    1.1
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    3,
+    -7,
+    0.5,
+    0.4,
+    0.4,
+    1.1
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    4.5,
+    -7,
+    0.5,
+    0.4,
+    0.4,
+    1.1
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -3,
+    -3.5,
+    0.5,
+    4,
+    1.2,
+    0.8
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    15.5,
+    -6,
+    0,
+    3.2,
+    3.2,
+    3.0
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    15.7,
+    -5.3,
+    3.0,
+    2.8,
+    1.8,
+    0.8
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    16.4,
+    -6.2,
+    3.8,
+    0.9,
+    0.9,
+    1.6
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    8,
+    -8,
+    0,
+    11,
+    0.5,
+    1.2
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    7.5,
+    4,
+    0.3,
+    4,
+    1.4,
+    0.9
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    13,
+    6,
+    0.3,
+    1.2,
+    2.5,
+    0.5
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    14.5,
+    6.3,
+    0.3,
+    1.8,
+    1.6,
+    0.9
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -3,
+    8,
+    0,
+    0.5,
+    8,
+    0.8
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -4,
+    12,
+    0.3,
+    0.6,
+    5,
+    0.5
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -6,
+    12,
+    0.3,
+    9,
+    1.8,
+    1.8
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -14,
+    12,
+    0.3,
+    9,
+    1.8,
+    1.8
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -4,
+    14.5,
+    0.3,
+    20,
+    1.8,
+    1.6
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -18,
+    -14,
+    0.3,
+    36,
+    1.6,
+    1.4
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    8,
+    14,
+    0.3,
+    10,
+    1.6,
+    1.5
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -2,
+    -2,
+    0.3,
+    1.6,
+    1.6,
+    1.0
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    14,
+    -12,
+    11,
+    4.5
+   ]
+  },
+  {
+   "tree": [
+    18,
+    -10,
+    9,
+    4
+   ]
+  },
+  {
+   "tree": [
+    17.5,
+    8,
+    8,
+    3.6
+   ]
+  },
+  {
+   "tree": [
+    -18,
+    14,
+    7,
+    3
+   ]
+  },
+  {
+   "tree": [
+    19,
+    16,
+    6,
+    3
+   ]
+  },
+  {
+   "box": [
+    9,
+    -4,
+    0,
+    6.5,
+    6,
+    0.9
+   ],
+   "m": "white"
+  },
+  {
+   "cut": [
+    9.6,
+    -3.4,
+    0.4,
+    4.2,
+    4.8,
+    1
+   ]
+  },
+  {
+   "pool": [
+    9.6,
+    -3.4,
+    4.2,
+    4.8
+   ],
+   "z": 0.45
+  },
+  {
+   "cut": [
+    -6.4,
+    -0.5,
+    0.2,
+    1.5,
+    9.5,
+    3.1
+   ]
+  },
+  {
+   "box": [
+    -6.4,
+    -0.5,
+    0.2,
+    0.3,
+    9.5,
+    3.1
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -6.1,
+    -0.5,
+    0.2,
+    0.2,
+    9.5,
+    3.1
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    -6.4,
+    -9.5,
+    0.2,
+    1.5,
+    5.5,
+    3.1
+   ]
+  },
+  {
+   "box": [
+    -6.4,
+    -9.5,
+    0.2,
+    0.3,
+    5.5,
+    3.1
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -6.1,
+    -9.5,
+    0.2,
+    0.2,
+    5.5,
+    3.1
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -5.2,
+    -0.5,
+    3.3,
+    0.3,
+    9.5,
+    0.9
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    -6.6,
+    -8,
+    4.2,
+    1.2,
+    8,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    -6.6,
+    -8,
+    4.2,
+    0.3,
+    8,
+    2.4
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -6.35,
+    -8,
+    4.2,
+    0.15,
+    8,
+    2.4
+   ],
+   "m": "glass"
+  }
+ ],
+ "notes": "From one aerial view (photo 00 / sheet1) of the garden side: low flat-roofed house of white plaster with dark-timber fascias and a clerestory band, ground floor glazed onto a timber deck, pergola on slim wood posts over an outdoor kitchen and bar, small raised blue plunge pool in a white surround, pizza oven and white seat wall, a stepping-stone garden, clipped hedges, a lawn, tall pines on the ridge, and a glass-railed roof terrace with white sofas. Interior photos (oak floors, open-riser stair, beams) are not modelled. Three renders against it: round 1 the glazing read as white wall and the pool as a white block; round 2 glass recessed behind dark interiors and a clerestory strip added; round 3 the pool basin cut out of its surround so the water shows blue, the pergola roof thinned. Still off: pergola roof reads heavy, roof deck reads brown not white/glass, hedges too regular. Guessed: all dimensions and plan, orientation (house to the west), the number of floors and wings, everything beyond the garden. Placed only at the town of Del Mar. Round 4: roof deck slab now white, pergola roof thinned."
+}

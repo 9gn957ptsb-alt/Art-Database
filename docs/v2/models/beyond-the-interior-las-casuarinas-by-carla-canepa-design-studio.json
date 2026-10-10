@@ -1,0 +1,671 @@
+{
+ "slug": "beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio",
+ "name": "Las Casuarinas",
+ "voxel": 0.4,
+ "site": [
+  40,
+  36
+ ],
+ "ground": "grass",
+ "parts": [
+  {
+   "box": [
+    -20,
+    -18,
+    0,
+    40,
+    36,
+    0.4
+   ],
+   "m": "grass"
+  },
+  {
+   "shed": [
+    -20,
+    -18,
+    0.4,
+    40,
+    6,
+    7
+   ],
+   "rise": "-y",
+   "m": "drygrass"
+  },
+  {
+   "box": [
+    -20,
+    -12.4,
+    0,
+    40,
+    0.5,
+    3.2
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    -18,
+    -9,
+    0,
+    20,
+    8,
+    3.3
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -18,
+    -9,
+    3.3,
+    22,
+    8.6,
+    0.3
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -18,
+    -9,
+    3.7,
+    20,
+    8,
+    3.1
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -18.4,
+    -9.4,
+    6.8,
+    22.6,
+    9.2,
+    0.25
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    4,
+    -8,
+    0,
+    3.5,
+    7,
+    6.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    8,
+    -9,
+    0,
+    12,
+    10,
+    3.3
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    8,
+    -9,
+    3.3,
+    12,
+    10,
+    3.5
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    7,
+    -10,
+    6.8,
+    14,
+    11.5,
+    0.25
+   ],
+   "m": "white"
+  },
+  {
+   "cut": [
+    -17,
+    0.2,
+    0.4,
+    20,
+    0.8,
+    2.8
+   ]
+  },
+  {
+   "box": [
+    -17,
+    -0.6,
+    0.4,
+    20,
+    0.2,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -17,
+    0,
+    0.4,
+    20,
+    0.2,
+    2.8
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    -17,
+    0.2,
+    4.1,
+    9,
+    0.8,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    -17,
+    -0.6,
+    4.1,
+    9,
+    0.2,
+    2.4
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -17,
+    0,
+    4.1,
+    9,
+    0.2,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    -6,
+    0.2,
+    4.1,
+    7,
+    0.8,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    -6,
+    -0.6,
+    4.1,
+    7,
+    0.2,
+    2.4
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -6,
+    0,
+    4.1,
+    7,
+    0.2,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -17,
+    1.0,
+    3.7,
+    20,
+    0.7,
+    0.35
+   ],
+   "m": "plant"
+  },
+  {
+   "cut": [
+    8.8,
+    0.6,
+    0.4,
+    7,
+    0.6,
+    2.8
+   ]
+  },
+  {
+   "box": [
+    8.8,
+    0.2,
+    0.4,
+    7,
+    0.2,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    8.8,
+    0.9,
+    0.4,
+    7,
+    0.2,
+    2.8
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    10,
+    0.6,
+    4.1,
+    8,
+    0.6,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    10,
+    0.2,
+    4.1,
+    8,
+    0.2,
+    2.4
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    10,
+    0.9,
+    4.1,
+    8,
+    0.2,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "cut": [
+    7.6,
+    -6,
+    0.4,
+    0.7,
+    5,
+    2.8
+   ]
+  },
+  {
+   "box": [
+    7.6,
+    -6,
+    0.4,
+    0.2,
+    5,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    7.9,
+    -6,
+    0.4,
+    0.2,
+    5,
+    2.8
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -20,
+    1.2,
+    0,
+    40,
+    6,
+    0.55
+   ],
+   "m": "paving"
+  },
+  {
+   "cut": [
+    -16,
+    2.2,
+    0.1,
+    16,
+    4.4,
+    1
+   ]
+  },
+  {
+   "pool": [
+    -16,
+    2.2,
+    16,
+    4.4
+   ],
+   "z": 0.15,
+   "m": "slate"
+  },
+  {
+   "box": [
+    -16.6,
+    1.8,
+    0.4,
+    17.2,
+    0.5,
+    0.2
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -16.6,
+    6.5,
+    0.4,
+    17.2,
+    0.5,
+    0.2
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -3.5,
+    -1,
+    0.5,
+    4,
+    1.8,
+    0.7
+   ],
+   "m": "sand"
+  },
+  {
+   "box": [
+    -12,
+    -1.2,
+    0.5,
+    3.5,
+    1.2,
+    0.8
+   ],
+   "m": "sand"
+  },
+  {
+   "box": [
+    -9,
+    7.4,
+    0.5,
+    2.6,
+    2.4,
+    0.8
+   ],
+   "m": "sand"
+  },
+  {
+   "box": [
+    -3,
+    7.2,
+    0.5,
+    3,
+    1.6,
+    0.5
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    9,
+    3,
+    0,
+    7,
+    1.6,
+    0.6
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -18,
+    11,
+    0.4,
+    36,
+    0.4,
+    1.0
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -19,
+    9.5,
+    0.4,
+    3,
+    7,
+    1.0
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -19,
+    -1.2,
+    0.4,
+    3,
+    2.5,
+    1.2
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -14,
+    -1.5,
+    8,
+    2.8
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    -5,
+    -1.6,
+    7.5,
+    2.6
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    1,
+    7.4,
+    6.5,
+    2.4
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    17,
+    8,
+    11,
+    3.4
+   ]
+  },
+  {
+   "tree": [
+    -17,
+    13,
+    8,
+    2.6
+   ]
+  },
+  {
+   "tree": [
+    18,
+    14,
+    6,
+    2.2
+   ]
+  },
+  {
+   "tree": [
+    11.5,
+    6,
+    6,
+    1.8
+   ],
+   "shape": "palm"
+  },
+  {
+   "blob": [
+    -10,
+    -1.8,
+    0.8,
+    1.2,
+    0.8,
+    0.8
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    -1,
+    -1.8,
+    0.8,
+    1.2,
+    0.8,
+    0.8
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    13,
+    -10.3,
+    0.7,
+    2,
+    0.8,
+    0.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -17.0,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -14.8,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -12.6,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -10.399999999999999,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -8.2,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -6.0,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -3.799999999999999,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -1.5999999999999979,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    0.6000000000000014,
+    1.7,
+    1.0,
+    0.12,
+    0.12,
+    2.7
+   ],
+   "m": "plant"
+  }
+ ],
+ "notes": "Photos 00, sheet1 and sheet2 show the garden side: two storeys of white plaster boxes with thin flat roofs, a pale stone-clad vertical core between the main block and a wing with a cantilevered roof slab, large black-framed glazing on both floors, a planter ledge with hanging vines on the upper floor, a dark pool in a grey paver terrace with daybeds and palms, a lawn, and a bare hillside rising behind. Interiors (white marble, steel kitchen, living room) are not modelled. Renders: round 1 the hill was a tall dark soil wall and the pool was paved over; round 2 hill lowered to a dry-grass slope with a low concrete retaining wall, pool basin cut so the water shows, glass recessed behind dark interiors. Still off: the pool should read darker teal, vines are drawn only as a planter ledge, the hill is a plain ramp, the roof slabs are heavier than the photos' thin edges. Guessed: all dimensions, the L plan and which way the wing runs, the hill's height and slope, lawn size, tree positions. Placed only at the city of Lima. Round 3: pool water set to dark slate-teal, roof slabs thinned to 0.25-0.3 m, vines hung from the planter ledge."
+}
