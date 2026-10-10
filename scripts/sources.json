@@ -1,0 +1,130 @@
+{
+ "note": "Open sources of how things on the Earth look, for the Artist Website, and the hosts each needs (NETWORK.md; the artist, 10 Oct 2026). state: candidate (found), asked (in the block given to the artist), allowed (every host answers), used (a script reads it: used_by), dropped (why). Each host's state is the probe's (scripts/probe_sources.py): open, refused, stalls, silent.",
+ "probed": "2026-10-10 22:07 UTC",
+ "sources": [
+  {
+   "id": "openverse",
+   "name": "Openverse",
+   "facet": "museums",
+   "what": "WordPress's search over 800 million openly licensed images (Flickr, Wikimedia, museums), with each image's licence and author.",
+   "improves": "Photographs of gallery rooms, buildings, plants and animals where Commons has none: more museums' walls read for their real paint, more buildings modelled from photographs.",
+   "licence": "Each image's own CC licence or public domain; the API's data CC0.",
+   "key": false,
+   "format": "JSON",
+   "priority": 1,
+   "notes": "Refused by the network policy since at least 9 Oct 2026.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.openverse.org",
+     "role": "search API (anonymous, rate-limited)",
+     "probe": "https://api.openverse.org/v1/images/?q=gallery%20interior&page_size=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.openverse.org\"",
+     "seen": "2026-10-10"
+    }
+   ]
+  },
+  {
+   "id": "wikimedia-upload",
+   "name": "Wikimedia Commons files",
+   "facet": "museums",
+   "what": "upload.wikimedia.org: Commons' files and their thumbnails.",
+   "improves": "Reading a photograph's pixels directly (a gallery's paint measured in Lab, a building's materials) instead of through a vision model.",
+   "licence": "Each file's own licence.",
+   "key": false,
+   "format": "JPEG, PNG, TIFF",
+   "priority": 1,
+   "notes": "Allowed, but answers 429 to the session's shared address most of the time: not a network setting.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "upload.wikimedia.org",
+     "role": "files and thumbnails",
+     "probe": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/250px-Tour_Eiffel_Wikimedia_Commons.jpg",
+     "state": "open",
+     "code": 429,
+     "said": "Too Many Requests (015d12c)",
+     "seen": "2026-10-10"
+    }
+   ]
+  },
+  {
+   "id": "flickr-images",
+   "name": "Flickr (openly licensed photographs)",
+   "facet": "museums",
+   "what": "Photographs and their licences; the image files themselves on Flickr's CDN.",
+   "improves": "The pictures Openverse and Commons point to: reading a gallery's or a building's colours off the photograph itself.",
+   "licence": "Each photograph's own licence; only CC and public-domain ones used.",
+   "key": false,
+   "format": "JPEG; HTML",
+   "priority": 2,
+   "notes": "Flickr's API needs a key; the photo pages and files do not.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "live.staticflickr.com",
+     "role": "image files",
+     "probe": "https://live.staticflickr.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"live.staticflickr.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.flickr.com",
+     "role": "photo pages (author, licence)",
+     "probe": "https://www.flickr.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.flickr.com\"",
+     "seen": "2026-10-10"
+    }
+   ]
+  },
+  {
+   "id": "met-images",
+   "name": "The Met's open-access images",
+   "facet": "museums",
+   "what": "The Metropolitan Museum's image server: every public-domain work's photograph, full size.",
+   "improves": "The colours measured off a Met work's own photograph, and the works hung in the Met's walk drawn from the museum's own picture.",
+   "licence": "CC0 for open-access works.",
+   "key": false,
+   "format": "JPEG",
+   "priority": 2,
+   "notes": "collectionapi.metmuseum.org (the data) is a different host.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "images.metmuseum.org",
+     "role": "image files",
+     "probe": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"images.metmuseum.org\"",
+     "seen": "2026-10-10"
+    }
+   ]
+  },
+  {
+   "id": "wikimedia-api",
+   "name": "Wikimedia API gateway",
+   "facet": "museums",
+   "what": "api.wikimedia.org: Commons' and the wikis' REST endpoints, rate-limited per address.",
+   "improves": "Commons' files' metadata and thumbnails without the action API's 429s from the session's shared address.",
+   "licence": "Each file's own licence.",
+   "key": false,
+   "format": "JSON",
+   "priority": 2,
+   "notes": "commons.wikimedia.org's pages and query.wikidata.org answer the session; the action API and upload thumbnails answer 429.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.wikimedia.org",
+     "role": "REST API",
+     "probe": "https://api.wikimedia.org/core/v1/commons/file/File:Louvre_Museum_Wikimedia_Commons.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.wikimedia.org\"",
+     "seen": "2026-10-10"
+    }
+   ]
+  }
+ ]
+}
