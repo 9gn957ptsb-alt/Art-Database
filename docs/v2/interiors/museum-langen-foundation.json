@@ -3,7 +3,7 @@
  "grid": {"cell":0.5,"turn":0},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-langen-foundation.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[-47.25,-13],"face":0,"door":[-47.25,-15.25],"out":[[-50.25,-16,6,5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -95,6 +95,6 @@
  "pins": {},
  "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 2 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 1 hung so.",
  "works": [
-  {"id":"553a6a1e7261690f61472700","how":"arranged","room":"L1-R09","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Room for all colours, 1999","a":"Olafur Eliasson","y":"1999","m":"Steel, bulb, colour filter film (red, green, blue), clips, projection screen, control unit","i":"pbXFJSbmCCvq3FD5lffJLw","c":["#2d5383","#020602","#698fca"],"cm":null,"cmsrc":null}],
- "asof": "2026-10-08",
+  {"id":"553a6a1e7261690f61472700","how":"arranged","room":"L1-R09","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Room for all colours, 1999","a":"Olafur Eliasson","y":"1999","m":"Steel, bulb, colour filter film (red, green, blue), clips, projection screen, control unit","i":"pbXFJSbmCCvq3FD5lffJLw","c":["#2d5383","#020602","#698fca"],"cm":null,"cmsrc":null}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

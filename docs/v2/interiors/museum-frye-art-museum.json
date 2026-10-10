@@ -3,7 +3,7 @@
  "grid": {"cell":0.5,"turn":-32},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-frye-art-museum.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[8.45,19.19],"face":58,"door":[10.36,17.99],"out":[[5.17,17.7,6,6]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -90,7 +90,7 @@
  "pins": {},
  "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 1 floor by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 2 hung so.",
  "works": [
-  {"id":"55ad6e4472616979e900006f","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Venice","a":"Hermann Corrodi","y":"ca. 1900","m":"Oil on canvas","i":"uQC_E8s2SrH_94-iUPaycQ","c":["#675c4d","#b0a17a","#a19a74"],"cm":[231.8,125.1],"cmsrc":"artsy"},
-  {"id":"56bb97f77622dd66e30000e7","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Lady in Pink (Portrait of Natalia Podbelskaya)","a":"Nicolai Fechin","y":"1912","m":"Oil on canvas","i":"E0DnTN4iVKyJoxP5YJxfOA","c":["#e2d1c0","#a38c72","#b7afb2"],"cm":[88.9,115.6],"cmsrc":"artsy"}],
- "asof": "2026-10-08",
+  {"id":"55ad6e4472616979e900006f","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Venice","a":"Hermann Corrodi","y":"ca. 1900","m":"Oil on canvas","i":"uQC_E8s2SrH_94-iUPaycQ","c":["#675c4d","#b0a17a","#a19a74"],"cm":[231.8,125.1],"cmsrc":"artsy"},
+  {"id":"56bb97f77622dd66e30000e7","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Lady in Pink (Portrait of Natalia Podbelskaya)","a":"Nicolai Fechin","y":"1912","m":"Oil on canvas","i":"E0DnTN4iVKyJoxP5YJxfOA","c":["#e2d1c0","#a38c72","#b7afb2"],"cm":[88.9,115.6],"cmsrc":"artsy"}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

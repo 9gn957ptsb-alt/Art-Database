@@ -3,7 +3,7 @@
  "grid": {"cell":0.5,"turn":20},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-faurschou-foundation.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[-9.64,37.46],"face":20,"door":[-8.87,35.35],"out":[[-10.92,32.21,6,6.5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -216,7 +216,7 @@
  "pins": {},
  "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 3 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 2 hung so.",
  "works": [
-  {"id":"56498f96275b241f000004a6","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"'Parts Of A Light House'","a":"Yoko Ono","y":"1966","m":"","i":"QoVzmc6GSD52CVHEcF7mUg","c":["#6f6c6a","#757477","#999290"],"cm":null,"cmsrc":null},
-  {"id":"56498fa1139b211f6e0003f2","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"'Word Piece'","a":"Yoko Ono","y":"","m":"","i":"gGgl2R0FRsaQ-ywjs4Dwug","c":["#6b5e46","#b1afab","#ad9d8e"],"cm":null,"cmsrc":null}],
- "asof": "2026-10-08",
+  {"id":"56498f96275b241f000004a6","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"'Parts Of A Light House'","a":"Yoko Ono","y":"1966","m":"","i":"QoVzmc6GSD52CVHEcF7mUg","c":["#6f6c6a","#757477","#999290"],"cm":null,"cmsrc":null},
+  {"id":"56498fa1139b211f6e0003f2","how":"arranged","room":"L1-R20","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"'Word Piece'","a":"Yoko Ono","y":"","m":"","i":"gGgl2R0FRsaQ-ywjs4Dwug","c":["#6b5e46","#b1afab","#ad9d8e"],"cm":null,"cmsrc":null}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

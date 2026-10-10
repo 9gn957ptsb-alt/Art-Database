@@ -3,8 +3,8 @@
  "grid": {"cell":0.5,"turn":0},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-the-menil-collection.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"},
-  {"id":"histories","t":"the works' own histories on this site: when each was shown or held here","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"},
+  {"id":"histories","t":"the works' own histories on this site: when each was shown or held here","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[-1.25,21],"face":0,"door":[-1.25,18.75],"out":[[-4.25,18,6,5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -115,7 +115,7 @@
  "pins": {},
  "notes": "OpenStreetMap's indoor mapping (read 2026-10-08) was read: 2 features round it, 0 rooms — not walked: it maps too few rooms here; so the rooms stay as they were.¶ Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 1 floor by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 2 hung so, 1 of them shown here, not held.",
  "works": [
-  {"id":"551c5dd97261692b7b0b0900","how":"arranged","room":"L1-R32","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Broken Obelisk","a":"Barnett Newman","y":"1963-1967","m":"Cor-ten steel","i":"vmLc2TEVHVctRcsUQw6kIg","c":["#3f543c","#a0abba","#8da784"],"cm":[320,792.5,320],"cmsrc":"artsy"},
-  {"id":"632841a4d47377000c3174fd","how":"arranged","room":"L1-R31","wall":null,"said":"Shown here, 1992, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-08","also":{"k":["exhibited"],"y":[1992,1992],"q":"Photographs by Constantin Brancusi, The Menil Collection, Houston, TX (March 19 - June 28, 1992)"},"t":"Mademoiselle Pogany II, Bronze of 1920","a":"Constantin Brâncuși","y":"ca. 1920","m":"Vintage gelatin-silver print","i":"jsZRWEhwPdiD52keMAoBnQ","c":["#090807","#635648","#857869"],"cm":[16,22.4],"cmsrc":"artsy"}],
- "asof": "2026-10-08",
+  {"id":"551c5dd97261692b7b0b0900","how":"arranged","room":"L1-R32","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Broken Obelisk","a":"Barnett Newman","y":"1963-1967","m":"Cor-ten steel","i":"vmLc2TEVHVctRcsUQw6kIg","c":["#3f543c","#a0abba","#8da784"],"cm":[320,792.5,320],"cmsrc":"artsy"},
+  {"id":"632841a4d47377000c3174fd","how":"arranged","room":"L1-R31","wall":null,"said":"Shown here, 1992, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-10","also":{"k":["exhibited"],"y":[1992,1992],"q":"Photographs by Constantin Brancusi, The Menil Collection, Houston, TX (March 19 - June 28, 1992)"},"t":"Mademoiselle Pogany II, Bronze of 1920","a":"Constantin Brâncuși","y":"ca. 1920","m":"Vintage gelatin-silver print","i":"jsZRWEhwPdiD52keMAoBnQ","c":["#090807","#635648","#857869"],"cm":[16,22.4],"cmsrc":"artsy"}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

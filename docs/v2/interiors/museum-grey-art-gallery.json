@@ -3,8 +3,8 @@
  "grid": {"cell":0.5,"turn":29},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-grey-art-gallery.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"},
-  {"id":"histories","t":"the works' own histories on this site: when each was shown or held here","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"},
+  {"id":"histories","t":"the works' own histories on this site: when each was shown or held here","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[17.41,53.67],"face":29,"door":[18.5,51.7],"out":[[16.97,48.28,6,6.5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -229,7 +229,7 @@
  "pins": {},
  "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 3 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 2 hung so, 1 of them shown here, not held.",
  "works": [
-  {"id":"5d126cbee5280a0012d04fa8","how":"arranged","room":"L1-R22","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Prayer for the Sun","a":"Siah Armajani","y":"1962","m":"Oil on canvas","i":"w7rt64PwDbbls05EnXa8Og","c":["#21253e","#465786","#4d4754"],"cm":[81.3,122.6],"cmsrc":"artsy"},
-  {"id":"5661dd03a09a671e4800003f","how":"arranged","room":"L1-R23","wall":null,"said":"Shown here, 1982, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-08","also":{"k":["exhibited"],"y":[1982,1982],"q":"New York, Two Installations, Grey Art Gallery, NYU, 1982"},"t":"Summer Storm","a":"David Hare","y":"1954","m":"Painted Metal, Brass and Stone","i":"uvQlvFeZVjhjEVMnZtj_Dg","c":["#e3e2df","#c4beb4","#dbd6cd"],"cm":[86.4,193,35.6],"cmsrc":"artsy"}],
- "asof": "2026-10-08",
+  {"id":"5d126cbee5280a0012d04fa8","how":"arranged","room":"L1-R22","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Prayer for the Sun","a":"Siah Armajani","y":"1962","m":"Oil on canvas","i":"w7rt64PwDbbls05EnXa8Og","c":["#21253e","#465786","#4d4754"],"cm":[81.3,122.6],"cmsrc":"artsy"},
+  {"id":"5661dd03a09a671e4800003f","how":"arranged","room":"L1-R23","wall":null,"said":"Shown here, 1982, its history says; it is not the museum's: the site has hung it here","src":"arranged","asof":"2026-10-10","also":{"k":["exhibited"],"y":[1982,1982],"q":"New York, Two Installations, Grey Art Gallery, NYU, 1982"},"t":"Summer Storm","a":"David Hare","y":"1954","m":"Painted Metal, Brass and Stone","i":"uvQlvFeZVjhjEVMnZtj_Dg","c":["#e3e2df","#c4beb4","#dbd6cd"],"cm":[86.4,193,35.6],"cmsrc":"artsy"}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

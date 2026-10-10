@@ -3,7 +3,7 @@
  "grid": {"cell":0.5,"turn":38},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-the-broad.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[-20.12,26.16],"face":38,"door":[-18.73,24.39],"out":[[-20.64,21.95,6,5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -227,6 +227,6 @@
  "pins": {},
  "notes": "OpenStreetMap's indoor mapping (read 2026-10-08) was read: 83 features round it, 0 rooms — not walked: it maps too few rooms here; so the rooms stay as they were.¶ Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 3 floors by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 1 hung so.",
  "works": [
-  {"id":"5075e8d880cd1c00020012df","how":"arranged","room":"L1-R18","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Untitled","a":"Cy Twombly","y":"2007","m":"Paintings on Wood","i":"Ml-yhS2yVd6DNT9KsRWniQ","c":["#b72708","#ead654","#d28820"],"cm":[558.8,640.1],"cmsrc":"artsy"}],
- "asof": "2026-10-08",
+  {"id":"5075e8d880cd1c00020012df","how":"arranged","room":"L1-R18","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Untitled","a":"Cy Twombly","y":"2007","m":"Paintings on Wood","i":"Ml-yhS2yVd6DNT9KsRWniQ","c":["#b72708","#ead654","#d28820"],"cm":[558.8,640.1],"cmsrc":"artsy"}],
+ "asof": "2026-10-10",
  "tier": "arranged"}

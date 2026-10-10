@@ -3,7 +3,7 @@
  "grid": {"cell":0.5,"turn":0},
  "sources": [
   {"id":"model","t":"this museum's exterior model","u":"models/museum-harn-museum-of-art.json","read":"2026-09-30"},
-  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-08"}],
+  {"id":"arranged","t":"the site's arrangement: galleries laid out by rule inside the model's walls, where no plan of the museum has been read (INTERIORS.md, 'Arranged')","read":"2026-10-10"}],
  "enter": {"floor":"level-1","at":[-60.25,2],"face":0,"door":[-60.25,-0.25],"out":[[-63.25,-1.5,6,5.5]],"sure":"arranged","src":["arranged","model"],"note":"a way in by the rule — of the walls of the model's ground floor that open on ground, one facing south, the longest, nearest the shell's own door: the museum's own door is not known here"},
  "floors": [
   {"id": "level-1",
@@ -155,8 +155,8 @@
  "pins": {},
  "notes": "Arranged by the site (INTERIORS.md, 'Arranged'): no plan of the museum has been read, so its rooms are laid out by rule inside the model's walls — a hall along its long axis where it is deep enough, bays of about 12 m either side, doorways on the hall and between neighbours, the way in at the shell's door (the middle of the model's longest south-facing wall). None of it is the museum's plan: no room here is one of its galleries, and the walk's rooms are numbered, not named. Its floors: 1 floor by the rule (5 m a storey, as many as the model stands over most of its ground floor, three at most): no source read gives the museum's own. The works: the saved works it holds that its records do not place in a room drawn, then the works it showed (its history), each by period, then artist, then date, one to every 2.5 m of wall, in walking order from the door; 3 hung so.",
  "works": [
-  {"id":"50c0cf285b48b55510000358","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Champ d'avoine (Oat Field)","a":"Claude Monet","y":"1890","m":"Oil on canvas","i":"Q3uCMvUZJtnw5NPbtt5llQ","c":["#a8a9a4","#a29686","#8d97a0"],"cm":[121.9,91.4,10.8],"cmsrc":"artsy"},
-  {"id":"50c8d9e3d54a7b0eea0007a0","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Black Canon, Colorado River, from Camp 8, Looking Above","a":"Timothy H. O'Sullivan","y":"1873","m":"Albumen print","i":"huad8Mf3aTUukIEBe1x9Lw","c":["#554c44","#c3b6a4","#bdae98"],"cm":[27.3,20.3],"cmsrc":"artsy"},
-  {"id":"50c8c2bbd54a7b0eea0005ea","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-08","t":"Untitled Portrait","a":"Umberto Boccioni","y":"1909","m":"Pastel on paper","i":"CqgL7HbJ_eDh5bpwDgWrJg","c":["#53554b","#554f3d","#a8a57b"],"cm":[30.5,27.9],"cmsrc":"artsy"}],
- "asof": "2026-10-08",
+  {"id":"50c0cf285b48b55510000358","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Champ d'avoine (Oat Field)","a":"Claude Monet","y":"1890","m":"Oil on canvas","i":"Q3uCMvUZJtnw5NPbtt5llQ","c":["#a8a9a4","#a29686","#8d97a0"],"cm":[121.9,91.4,10.8],"cmsrc":"artsy"},
+  {"id":"50c8d9e3d54a7b0eea0007a0","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Black Canon, Colorado River, from Camp 8, Looking Above","a":"Timothy H. O'Sullivan","y":"1873","m":"Albumen print","i":"huad8Mf3aTUukIEBe1x9Lw","c":["#554c44","#c3b6a4","#bdae98"],"cm":[27.3,20.3],"cmsrc":"artsy"},
+  {"id":"50c8c2bbd54a7b0eea0005ea","how":"arranged","room":"L1-R24","wall":null,"said":"where the museum hangs it is not known: the site has hung it here","src":"arranged","asof":"2026-10-10","t":"Untitled Portrait","a":"Umberto Boccioni","y":"1909","m":"Pastel on paper","i":"CqgL7HbJ_eDh5bpwDgWrJg","c":["#53554b","#554f3d","#a8a57b"],"cm":[30.5,27.9],"cmsrc":"artsy"}],
+ "asof": "2026-10-10",
  "tier": "arranged"}
