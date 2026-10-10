@@ -12274,9 +12274,24 @@
   function readInterior(slug) {
     var key = "interior:" + slug;
     if (!grounds[key]) {
-      grounds[key] = read("interiors/" + slug + ".json").catch(function () { delete grounds[key]; return null; });
+      // With the paint of its rooms (interiors/finishes.json: as its galleries are photographed, else a
+      // gallery's white; walk-plan.js, "the paint"); without the file, the white.
+      grounds[key] = Promise.all([read("interiors/" + slug + ".json"), readFinishes()]).then(function (got) {
+        var interior = got[0], f = got[1];
+        if (interior && !interior.finish) {
+          var row = f && f.museums && f.museums[slug] || {}, fin = { white: f && f.white, ceiling: f && f.ceiling };
+          Object.keys(row).forEach(function (k) { fin[k] = row[k]; });
+          interior.finish = fin;
+        }
+        return interior;
+      }).catch(function () { delete grounds[key]; return null; });
     }
     return grounds[key];
+  }
+  var finishesRead = null;
+  function readFinishes() {
+    if (!finishesRead) { finishesRead = read("interiors/finishes.json").catch(function () { finishesRead = null; return null; }); }
+    return finishesRead;
   }
 
   // After the building has risen, on idle: the walk's code and the interior.
@@ -12367,7 +12382,7 @@
       onWhere: function (p) {
         var had = insideWas[m.slug];
         insideWas[m.slug] = p;
-        if (!had || had.room !== p.room) { walkHere(p.room); }
+        if (!had || had.room !== p.room) { walkHere(p.room, p.paint); }
       },
       onOut: leaveWalk
     };
@@ -12520,8 +12535,9 @@
     }
   }
 
-  // While inside: the works that hang in the room you are in, first.
-  function walkHere(roomId) {
+  // While inside: the works that hang in the room you are in, first; and how its walls are known
+  // (walk-plan.js, "the paint": as the museum's galleries are photographed, else a gallery's white).
+  function walkHere(roomId, paint) {
     var was = buildingWorks && buildingWorks.querySelector(".walk-here-group");
     if (was) { was.parentNode.removeChild(was); }
     if (!walkOn || !roomId || !clod || !clod.where || !clod.m) { return; }
@@ -12530,9 +12546,12 @@
     var here = (clod.interior.works || []).filter(function (w) {
       return (w.how === "museum" || w.how === "arranged") && w.room === roomId && !w.same;
     });
-    if (!here.length) { return; }
+    var walls = paint ? wallsLine(paint) : null;
+    if (!here.length && !walls) { return; }
     var box = el("section", "walk-here-group");
-    box.appendChild(el("p", "held-count held-group", "Here · " + (clod.roomName[roomId] || roomId) + " · " + here.length));
+    box.appendChild(el("p", "held-count held-group", "Here · " + (clod.roomName[roomId] || roomId) +
+                       (here.length ? " · " + here.length : "")));
+    if (walls) { box.appendChild(walls); }
     var cdn = (museums && museums.cdn) || ART_CDN;
     here.forEach(function (iw, i) {
       var w = byId[iw.id] || iw;
@@ -12547,6 +12566,32 @@
     // The reading's card, if walk.js has put one there, stays first.
     var card = window.Walk && window.Walk.here && window.Walk.here();
     buildingWorks.insertBefore(box, card && card.parentNode === buildingWorks ? card.nextSibling : buildingWorks.firstChild);
+  }
+
+  // The room's walls in a line, and, opened, the photographs they were read off: named in plain
+  // words, never linked (the site's ways off are few), with their authors and licences.
+  function wallsLine(paint) {
+    var fin = clod.interior && clod.interior.finish || {}, src = fin.src || [];
+    var d = document.createElement("details");
+    d.className = "walk-walls";
+    var w = paint.w || "white";
+    var sum = el("summary", "walk-walls-line", "Walls · " + w + (paint.how === "room" ? ", as this gallery is photographed" :
+              paint.how === "museum" ? ", as its galleries are photographed" : ": no photograph of its galleries was found"));
+    d.appendChild(sum);
+    var body = el("div", "walk-walls-body");
+    body.appendChild(el("p", "walk-walls-said", paint.how === "white" || !src.length ?
+      "Where no photograph of a museum's galleries has been read, its walls are a gallery's white. The ceilings are white." :
+      String(fin.said || "") + " The ceilings are white."));
+    if (src.length) {
+      var ul = el("ul", "walk-walls-src");
+      src.forEach(function (x) {
+        ul.appendChild(el("li", "", [x.t, x.room, x.by, x.lic, x.d].filter(Boolean).join(" · ")));
+      });
+      body.appendChild(ul);
+    }
+    d.appendChild(body);
+    d.addEventListener("keydown", function (event) { event.stopPropagation(); });
+    return d;
   }
 
   // Leaving the museum: out of the walk, and its door let go.

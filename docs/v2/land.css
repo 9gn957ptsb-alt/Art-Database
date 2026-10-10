@@ -3095,6 +3095,17 @@ button.art-venue:focus-visible { text-decoration: underline; }
 .held[data-open="true"] .held-where-said { display: block; margin-top: var(--s-2); }
 .walk-here-group { margin: 0 0 var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid rgba(157, 149, 230, 0.35); }
 .held-group { color: #9d95e6; }
+/* The room's walls, while walking: a quiet line, and, opened, the photographs they were read off. */
+.walk-walls { margin: var(--s-2) 0 var(--s-3); font-size: var(--t-0); color: var(--ink-dim); }
+.walk-walls > summary { cursor: pointer; list-style: none; min-height: 24px; display: flex; align-items: center;
+  font-family: var(--mono, ui-monospace, monospace); letter-spacing: 0.04em; }
+.walk-walls > summary::-webkit-details-marker { display: none; }
+.walk-walls > summary::after { content: " ›"; color: #9d95e6; }
+.walk-walls[open] > summary::after { content: " ‹"; }
+.walk-walls-said { margin: var(--s-2) 0; }
+.walk-walls-src { margin: 0; padding-left: 1.1em; }
+.walk-walls-src li { margin: 0 0 var(--s-1); overflow-wrap: anywhere; }
+.dirt-look .walk-walls { color: #a8927a; }
 
 /* The slider of the work's own years: the town timeline's pill, under the
    globe, with a tick for every event above its track. */

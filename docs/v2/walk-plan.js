@@ -86,6 +86,17 @@
   var ARR_NAME = /^(Room \d+|Hall|Entrance)$/;
   var SIDES = 24;                // a round room's sides
   var UNSURE = 0.25;             // how much more soil shows through a reconstructed surface
+  // The paint (artist, 10 Oct 2026: "I want the interior walls of all the museums to be [what] they are
+  // in real life if you can find photos of the interiors, if not, just make it a [basic] white and make
+  // the ceiling white as well which should actually look gray when considering shadows of interiors"):
+  // a museum's rooms wear the paint its galleries are photographed in (interiors/finishes.json, given as
+  // opts.finish), else a gallery's white; every ceiling under the model's roof is white, and the walk lights
+  // it as an inside's ceiling is lit, in shade. A material the interior file documents still comes first.
+  var PAINT = true;              // false: walls of no known make are the soil again, their ceilings the dark
+  var WHITE = [242, 240, 235];   // a gallery's white
+  var CEILING = [246, 245, 241]; // a ceiling's white
+  var PAINT_SOIL = 0.04;         // a breath of the place's soil through the paint
+  var ERA = ["old", "19c", "modern", "now"];   // the works a room holds: before 1800, the 1800s, to 1970, since
   var DOOR_W = 2.4, DOOR_H = 3.0;// the stated rule for an opening's size, where none is given
   var OUT_W = 6, OUT_D = 4;      // a shell's ground outside its door
   var PLAN_DOTS = 40000;         // the plan level's dots, with its building's, at most
@@ -357,6 +368,83 @@
     for (var i = 0; i < world.floors.length; i += 1) { if (world.floors[i].id === id) { return world.floors[i]; } }
     return null;
   }
+
+  /* ---------------------------------------------------------------- the paint */
+
+  // A museum's finish as the page passes it (its row of interiors/finishes.json, with the file's white and
+  // ceiling): {paints: [{c: "#hex", n, era: [..]}], rooms: {id or name: "#hex"}, white, ceiling, said, src};
+  // false or PAINT off: none, the walls the soil as before.
+  function finishOf(f) {
+    if (!PAINT || f === false) { return null; }
+    f = f || {};
+    var paints = (f.paints || []).map(function (p) {
+      return { c: hexRgb(p && p.c), w: p && p.w || null, n: p && p.n || 1, era: p && p.era || [] };
+    }).filter(function (p) { return p.c; });
+    var rooms = {};
+    Object.keys(f.rooms || {}).forEach(function (k) {
+      var v = f.rooms[k], c = hexRgb(v && v.c || v);
+      if (c) { rooms[k] = { c: c, w: v && v.w || null }; }
+    });
+    return { paints: paints, rooms: rooms, white: hexRgb(f.white) || WHITE, ceiling: hexRgb(f.ceiling) || CEILING,
+             said: f.said || null, src: f.src || [] };
+  }
+
+  // A work's year from its record's date: "ca. 1519", "1890–1895", "19th century", "c. 1945".
+  function yearOf(y) {
+    var t = String(y || ""), m = /(\d{4})/.exec(t);
+    if (m) { return +m[1]; }
+    m = /(\d{1,2})(st|nd|rd|th)\s+century/i.exec(t);
+    if (m) { return (+m[1] - 1) * 100 + 50; }
+    m = /\b(\d{3})\b/.exec(t);
+    return m ? +m[1] : null;
+  }
+  function eraOf(y) { return y < 1800 ? 0 : y < 1900 ? 1 : y < 1970 ? 2 : 3; }
+
+  // A room's paint: its own, where a photograph names it; else, where the museum's galleries are
+  // photographed in more than one paint, the one seen over works of the era it holds most of (else the
+  // nearest era's), else the paint seen most; where none was photographed, a gallery's white.
+  function paintFor(fin, r, eras) {
+    var own = fin.rooms[r.id] || (r.name && fin.rooms[r.name]);
+    if (own) { return { c: own.c, w: own.w, how: "room" }; }
+    if (!fin.paints.length) { return { c: fin.white, w: "white", how: "white" }; }
+    var best = fin.paints[0];
+    if (eras && fin.paints.length > 1) {
+      var e = 0;
+      for (var k = 1; k < 4; k += 1) { if (eras[k] > eras[e]) { e = k; } }
+      var gap = Infinity;
+      fin.paints.forEach(function (p) {
+        var d = Infinity;
+        p.era.forEach(function (name) { var i = ERA.indexOf(name); if (i >= 0) { d = min(d, abs(i - e)); } });
+        if (d < gap) { gap = d; best = p; }
+      });
+    }
+    return { c: best.c, w: best.w, how: "museum" };
+  }
+
+  // Every room's paint, from the works hung in it, before its ceiling is worked out: a painted room has a
+  // white ceiling under the model's roof, never the dark of one nobody knows.
+  function paintRooms(world, interior) {
+    var fin = world.finish;
+    if (!fin) { return; }
+    var eras = {};
+    (interior.works || []).forEach(function (w) {
+      if (!w || !w.room || (w.how !== "museum" && w.how !== "arranged")) { return; }
+      var y = yearOf(w.y);
+      if (y === null) { return; }
+      var t = eras[w.room] || (eras[w.room] = [0, 0, 0, 0]);
+      t[eraOf(y)] += 1;
+    });
+    world.floors.forEach(function (fl) {
+      fl.rooms.forEach(function (r) {
+        // Outside, or open to the sky (a court's walls are the building's own outside): unpainted.
+        if (r.pseudo === "outside" || r.ceil === "sky") { return; }
+        var p = paintFor(fin, r, eras[r.id]);
+        r.paint = { walls: r.mats.walls ? null : p.c, top: r.mats.top ? null : fin.ceiling, how: p.how, w: p.w };
+      });
+    });
+  }
+
+  function paintInk(c, s) { return pack(mix(c, s, PAINT_SOIL)); }
 
   /* ---------------------------------------------------------------- rooms */
 
@@ -765,9 +853,10 @@
         }
         default:
           // auto: the model's roof over the cell, less a voxel; a skylight
-          // where the model has glass on top, else a ceiling nobody knows.
+          // where the model has glass on top, else a ceiling nobody knows —
+          // painted white where the room is painted.
           if (a < 0) { fl.ch[q] = OPEN; fl.ck[q] = DARK; }
-          else { fl.ch[q] = cm(a); fl.ck[q] = glassy[q] ? SKYLIGHT : DARK; }
+          else { fl.ch[q] = cm(a); fl.ck[q] = glassy[q] ? SKYLIGHT : r.paint && r.paint.top ? FLAT : DARK; }
       }
     }
     // A doorway's head: as it says, else the lower of its two rooms' ceilings.
@@ -829,12 +918,36 @@
     var dark = world.dark, sky = world.sky, ground = mats[world.groundMaterial] || null;
     var pane = pack(sky.pane), tone = pack(sky.tone), glass = pack([150, 172, 190]), void_ = pack(dark);
     var byName = names.map(function (n) { return mats[n] || null; });
-    // Each room's materials, looked up once.
+    var fin = world.finish;
+    // Each room's materials, looked up once; a stair and a lift painted white, as the rooms are painted.
     var rm = fl.rooms.map(function (r) {
       var lift = r.mats.sure === "documented" ? 0 : UNSURE;
+      if (fin && !r.paint && (r.pseudo === "stair" || r.pseudo === "lift")) {
+        r.paint = { walls: fin.white, top: fin.ceiling, how: "white", w: "white" };
+      }
       return { floor: mats[r.mats.floor] || null, walls: mats[r.mats.walls] || null, top: mats[r.mats.top] || null,
-               lift: lift, pseudo: r.pseudo, void: r.kind === "void" };
+               lift: lift, pseudo: r.pseudo, void: r.kind === "void",
+               paintW: r.paint && r.paint.walls || null, paintT: r.paint && r.paint.top || null };
     });
+    // An inside wall's paint: a painted room's beside it.
+    var N = [1, -1, fl.gw, -fl.gw, fl.gw + 1, fl.gw - 1, -fl.gw + 1, -fl.gw - 1];
+    function paintBeside(q, i) {
+      for (var k = 0; k < 8; k += 1) {
+        var di = k < 2 ? N[k] : k < 4 ? 0 : (k === 4 || k === 6 ? 1 : -1);
+        if (i + di < 0 || i + di >= fl.gw) { continue; }
+        var p = q + N[k];
+        if (p < 0 || p >= fl.n || fl.room[p] < 0) { continue; }
+        var pr = rm[fl.room[p]];
+        if (pr.paintW && pr.pseudo !== "outside") { return pr.paintW; }
+        // A doorway's outer half, through a thick wall: the paint of the room it leads into.
+        var d = fl.door[p] >= 0 ? fl.doors[fl.door[p]] : null;
+        if (d) {
+          var into = [d.a, d.b].filter(function (x) { return x >= 0 && rm[x] && rm[x].paintW && rm[x].pseudo !== "outside"; })[0];
+          if (into !== undefined) { return rm[into].paintW; }
+        }
+      }
+      return null;
+    }
     var grit = fl.grit = new Uint8Array(fl.n);
     // The soil under the grid and three cells round it, read once.
     var M3 = 3, sw = fl.gw + 2 * M3, sh = fl.gh + 2 * M3, sc = soil ? new Uint8Array(sw * sh * 4) : null;
@@ -872,21 +985,33 @@
         var mm = fl.foot[q] === 2 && fl.footM[q] ? byName[fl.footM[q] - 1] : null;
         F = Wl = T = inkOf(mm, UNSURE, s, dark);
         if (k === GLASS) { Wl = glass; } else if (!mm) { gr = g0 * 21; }
+        // A wall inside the building, between rooms: the paint of a room beside it (the plan shows it
+        // so); the model's own outer wall keeps its make, and a painted room sees its own paint on it.
+        var pw = k === WALL && fin && fl.foot[q] !== 2 ? paintBeside(q, i) : null;
+        if (pw) { Wl = paintInk(pw, s); gr = 0; }
       } else if (ri >= 0 && !rm[ri].pseudo) {
         var m = rm[ri];
         F = m.void ? void_ : inkOf(m.floor, m.lift, s, dark);
-        Wl = inkOf(m.walls, m.lift, s, dark);
-        T = inkOf(m.top, m.lift, s, dark);
-        gr = (m.floor || m.void ? 0 : g0) | (m.walls ? 0 : g0 << 2) | (m.top ? 0 : g0 << 4);
+        Wl = m.paintW ? paintInk(m.paintW, s) : inkOf(m.walls, m.lift, s, dark);
+        T = m.paintT ? paintInk(m.paintT, s) : inkOf(m.top, m.lift, s, dark);
+        gr = (m.floor || m.void ? 0 : g0) | (m.walls || m.paintW ? 0 : g0 << 2) | (m.top || m.paintT ? 0 : g0 << 4);
       } else if (ri >= 0 && rm[ri].pseudo !== "outside") {
-        // The shell, a stair, a lift: as far as they are known, the soil.
+        // The shell, a stair, a lift: as far as they are known, the soil underfoot; painted, as the rooms are.
+        var pm = rm[ri];
         F = Wl = T = inkOf(null, 0, s, dark);
-        gr = g0 * 21;
+        if (pm.paintW) { Wl = paintInk(pm.paintW, s); }
+        if (pm.paintT) { T = paintInk(pm.paintT, s); }
+        gr = g0 | (pm.paintW ? 0 : g0 << 2) | (pm.paintT ? 0 : g0 << 4);
       } else {
         // Outside: the ground under it in the model, else the soil.
         var om = fl.footM[q] ? byName[fl.footM[q] - 1] : ground;
         F = Wl = T = inkOf(om, UNSURE, s, dark);
         if (!om) { gr = g0 * 21; }
+      }
+      // A doorway's outer half, through a thick wall, under the ceiling of the room it leads into.
+      if (fin && fl.door[q] >= 0 && ri >= 0 && rm[ri].pseudo === "outside" && fl.ck[q] === FLAT) {
+        var dq = fl.doors[fl.door[q]], into = dq ? [dq.a, dq.b].filter(function (x) { return x >= 0 && rm[x] && rm[x].paintT; })[0] : undefined;
+        if (into !== undefined) { T = paintInk(rm[into].paintT, s); gr &= 15; }
       }
       grit[q] = gr;
       if (fl.ck[q] === SKYLIGHT) { T = pane; } else if (fl.ck[q] === SKY) { T = tone; }
@@ -2180,6 +2305,7 @@
       vox: modelOf(modelSpec, MATS), sky: skyOf(opts.sky), dark: opts.dark || DARK_INK,
       groundMaterial: modelSpec && modelSpec.ground || null,
       sources: {}, works: interior.works || [], pins: interior.pins || {},
+      finish: finishOf(opts.finish !== undefined ? opts.finish : interior.finish),
       problems: [], notices: [], overlaps: [], stairSpecs: [], liftSpecs: []
     };
     (interior.sources || []).forEach(function (s) { if (s && s.id) { world.sources[s.id] = s; } });
@@ -2190,6 +2316,7 @@
       if (!vx) { world.problems.push({ rule: "shell", text: "no model to make its shell from" }); return world; }
       world.shell = true;
       world.floors.push(shellFloor(world, interior));
+      paintRooms(world, interior);
     } else {
       var seenStair = {}, seenLift = {};
       specs.forEach(function (fs) {
@@ -2210,7 +2337,8 @@
       } else {
         world.problems.push({ rule: "enter", text: e ? "the entrance is not on a floor of the file" : "no entrance" });
       }
-      // Ceilings first, so a stair can take the higher of the two over it.
+      // The paint, then the ceilings, so a stair can take the higher of the two over it.
+      paintRooms(world, interior);
       world.floors.forEach(function (fl) { ceilings(world, fl); });
       var before = {};
       world.stairSpecs.forEach(function (st, n) {
@@ -2496,6 +2624,34 @@
       if (s.read !== null && !(typeof s.read === "string" && DATE.test(s.read))) { err("source " + s.id + ": read must be a date or null"); }
       if (s.read && days(s.read, today) > 180) { warn("source " + s.id + " was read " + days(s.read, today) + " days ago"); }
     });
+    // The paint, as the page passes it (its row of interiors/finishes.json): colours, eras, the rooms the
+    // photographs name, and a photograph with its licence behind every paint.
+    if (I.finish) {
+      var Fn = I.finish, rid = {};
+      (Fn.paints || []).forEach(function (p, n) {
+        if (!p || !hexRgb(p.c)) { err("finish paint " + n + ": c must be a #rrggbb colour"); return; }
+        if (typeof p.n !== "number" || p.n < 1) { err("finish paint " + p.c + ": n must be how many photographs show it"); }
+        (p.era || []).forEach(function (e) {
+          if (ERA.indexOf(e) < 0) { err("finish paint " + p.c + ": era " + e + " is not one of " + ERA.join(", ")); }
+        });
+      });
+      ["white", "ceiling"].forEach(function (k) {
+        if (Fn[k] !== undefined && Fn[k] !== null && !hexRgb(Fn[k])) { err("finish " + k + " must be a #rrggbb colour"); }
+      });
+      (Fn.src || []).forEach(function (s, n) {
+        if (!s || !s.t || !s.u) { err("finish source " + n + " needs t (the file) and u (its page)"); return; }
+        if (!s.lic) { err("finish source " + s.t + " has no licence"); }
+      });
+      var painted = (Fn.paints || []).length + Object.keys(Fn.rooms || {}).length;
+      if (painted && !(Fn.src || []).length) { err("finish: paints with no photograph to say where they are from"); }
+      (I.floors || []).forEach(function (fs) {
+        (fs.rooms || []).forEach(function (r) { rid[r.id] = 1; if (r.name) { rid[r.name] = 1; } });
+      });
+      Object.keys(Fn.rooms || {}).forEach(function (k) {
+        if (!rid[k]) { warn("finish: the room " + k + " a photograph names is not in the file"); }
+        if (!hexRgb(Fn.rooms[k] && Fn.rooms[k].c || Fn.rooms[k])) { err("finish room " + k + ": not a #rrggbb colour"); }
+      });
+    }
     function cites(list, what, required) {
       if (list === undefined || list === null) {
         if (required) { err(what + " has no src"); }

@@ -217,6 +217,17 @@ default, and a private home never does.
 
 Each run, after the intake: `python3 scripts/fetch_city_guides.py` (about 10 minutes, paced) and commit `docs/v2/guides.json` and `docs/v2/guides/` — what is on in each city, from Artsy's public show listings (see `docs/v2/GUIDE.md`). Nothing else keeps the guides fresh; a guide read over 21 days ago says so on its pill.
 
+## The paint of the rooms (weekly)
+
+Once a week (the Monday run, with Bloomberg Connects): `python3 scripts/fetch_interior_photos.py --jobs 6`
+then `python3 scripts/build_finishes.py`, and commit `scripts/finishes_hand.json` and
+`docs/v2/interiors/finishes.json` ("Interiors: the paint …"). It reads only museums the hand file does not
+have yet — a museum new to `museums.json`, or one with no photograph found before (to read one again:
+`--slug museum-…`; every one: `--again`, about an hour). A museum whose walls are white for want of a photograph says so in
+the column; look for its galleries by hand where it matters (its own pages, a press photograph's page on
+Commons) and add the file to its category's reading. Photographs are read, never copied (INTERIORS.md,
+"The paint").
+
 ## Bloomberg Connects (weekly)
 
 Once a week is enough (a museum's guide on Bloomberg Connects changes slowly; the Monday run): `python3 scripts/fetch_bloomberg_guides.py`. It reads only the institutions' own "digital guide" pages named in `scripts/bloomberg_hand.json` (`pages`; each host's robots.txt first, 3 s between requests to a host), takes the Bloomberg Connects links it finds there verbatim and rewrites `docs/v2/bloomberg.json`; a refused host is said so and changes nothing. **Never read Bloomberg's own sites**: guides.bloombergconnects.org's robots.txt forbids every robot and www.bloombergconnects.org (its directory of guides) is behind bot protection — no directory, no checking a guide by opening it. Then, for a museum new to `museums.json` since last week, search the web for “"<name>" "Bloomberg Connects"” and add its row to the hand table: its status (guide, unconfirmed, none), its evidence, its own guide page in `pages`, and an address only where one was seen verbatim, with where (`seen`). A guide id is never made up: a guide without a seen address keeps `url: null` and the page shows nothing for it. Commit `scripts/bloomberg_hand.json` and `docs/v2/bloomberg.json` ("Bloomberg Connects: …"); the cache in `data/bloomberg/` never.

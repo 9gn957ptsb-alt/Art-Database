@@ -112,6 +112,11 @@
   // Four stepped brightnesses, as the pixel light has four, and the 8x8
   // Bayer matrix that chooses between neighbouring steps (land.js's BAYER).
   var STEPS = [0.62, 0.78, 0.92, 1.06];
+  // A painted inside (walk-plan.js, "the paint"): its walls lit by the rooms, the light on them nearly
+  // even and the paint's grain slight; its white ceiling in the shade an inside's ceiling is in, grey,
+  // and greyer still along the walls; a dome's or a vault's rings in two greys.
+  var PAINT_LIT = 0.98, PAINT_SHADE = 0.88, PAINT_GRAIN = 0.3;
+  var CEIL_LIGHT = 0.72, CEIL_EDGE = 0.64, CEIL_RINGS = [0.66, 0.74];
   var KM = STEPS.map(function (k) { return Math.round(k * 256); });
   var BAYER = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
                12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
@@ -174,19 +179,43 @@
       roof[q] = Math.min(32766, Math.round(top * 100));
     }
     // Which way each face of a grid cell looks on the Earth, for its light:
-    // west and north 0.94, east and south 0.74, as the models are lit.
-    function faceLight(nx, ny) {
-      var m = W.toWorld(world, nx, ny);
-      return (-m[0] - m[1]) >= 0 ? 0.94 : 0.74;
+    // west and north 0.94, east and south 0.74, as the models are lit; a
+    // painted wall inside, lit by its rooms and not the sun, 0.98 and 0.88.
+    function faceLight(nx, ny, inside) {
+      var m = W.toWorld(world, nx, ny), lit = (-m[0] - m[1]) >= 0;
+      return inside ? (lit ? PAINT_LIT : PAINT_SHADE) : lit ? 0.94 : 0.74;
     }
-    // A room's walls of a known make wear it, seen from the room; of no
-    // known make, a wall is its own cell's soil, not the floor's before it.
-    var known = new Uint8Array(fl.rooms.length);
-    fl.rooms.forEach(function (rm, k) { known[k] = rm.pseudo || !rm.mats || !rm.mats.walls ? 0 : 1; });
+    // A room's walls of a known make or paint wear it, seen from the room; of
+    // no known make, a wall is its own cell's soil, not the floor's before it.
+    var known = new Uint8Array(fl.rooms.length), painted = new Uint8Array(fl.rooms.length);
+    fl.rooms.forEach(function (rm, k) {
+      painted[k] = rm.pseudo !== "outside" && rm.paint && rm.paint.walls ? 1 : 0;
+      known[k] = painted[k] || (!rm.pseudo && rm.mats && rm.mats.walls) ? 1 : 0;
+    });
+    // A painted ceiling's cells, and those of them along a wall, where an inside's ceiling is darkest.
+    var ceilP = new Uint8Array(n);
+    for (var cq = 0; cq < n; cq += 1) {
+      var cr = fl.room[cq], rmc = cr >= 0 ? fl.rooms[cr] : null;
+      // A doorway's outer half takes the ceiling of the room it leads into (walk-plan.js inks).
+      if (rmc && rmc.pseudo === "outside" && fl.door[cq] >= 0 && fl.doors[fl.door[cq]]) {
+        var dd = fl.doors[fl.door[cq]];
+        rmc = [dd.a, dd.b].map(function (x) { return x >= 0 ? fl.rooms[x] : null; })
+          .filter(function (x) { return x && x.paint && x.paint.top; })[0] || null;
+      }
+      if (!rmc || !rmc.paint || !rmc.paint.top) { continue; }
+      var ci = cq % gw, edge = 0;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) {
+        var ii = ci + o[0], qq = cq + o[0] + o[1] * gw;
+        if (ii >= 0 && ii < gw && qq >= 0 && qq < n && (fl.kind[qq] === W.WALL || fl.kind[qq] === W.GLASS)) { edge = 1; }
+      });
+      ceilP[cq] = edge ? 2 : 1;
+    }
     fl.walk = {
-      pat: pat, litF: litF, roof: roof, grW: grW, known: known, grit: fl.grit || new Uint8Array(n),
+      pat: pat, litF: litF, roof: roof, grW: grW, known: known, painted: painted, ceilP: ceilP,
+      grit: fl.grit || new Uint8Array(n),
       // the face met going +x is a wall's west face, and so on
-      face: [faceLight(-1, 0), faceLight(1, 0), faceLight(0, -1), faceLight(0, 1)]
+      face: [faceLight(-1, 0), faceLight(1, 0), faceLight(0, -1), faceLight(0, 1)],
+      faceIn: [faceLight(-1, 0, 1), faceLight(1, 0, 1), faceLight(0, -1, 1), faceLight(0, 1, 1)]
     };
     return fl.walk;
   }
@@ -240,6 +269,7 @@
     var buf = this.buf, pick = this.pick, rowK = this.rowK, DARK = this.DARK;
     var kind = fl.kind, fh = fl.fh, ch = fl.ch, ck = fl.ck, inkF = fl.inkF, inkW = fl.inkW, inkT = fl.inkT;
     var pat = ex.pat, litF = ex.litF, roof = ex.roof, grW = ex.grW, face = ex.face, known = ex.known, grit = ex.grit;
+    var faceIn = ex.faceIn, painted = ex.painted, ceilP = ex.ceilP;
     var rooms = fl.rooms, room = fl.room;
     var gw = fl.gw, gh = fl.gh, cell = fl.cell, x0 = fl.x0, y0 = fl.y0;
     var WALL = Wp.WALL, GLASS = Wp.GLASS, OPEN = Wp.OPEN;
@@ -370,7 +400,9 @@
           var kc = ck[q];
           if (yA <= yB) {
             var zu = cz - zE, pkc = (PICK_CEIL << 24) | q;
-            var lc = kc === SKYLIGHT ? 1.0 : kc === DOME || kc === VAULT ? (((czc / 50) | 0) & 1 ? 0.8 : 0.88) : 0.84;
+            var ring = ((czc / 50) | 0) & 1, cp = ceilP[q];
+            var lc = kc === SKYLIGHT ? 1.0 : kc === DOME || kc === VAULT ? (cp ? CEIL_RINGS[ring] : ring ? 0.8 : 0.88) :
+                     cp === 2 ? CEIL_EDGE : cp ? CEIL_LIGHT : 0.84;
             this.steps(kc === DARKC ? DARK : inkT[q]);
             var gT = kc === FLATC ? (grit[q] >> 4) & 3 : 0;
             for (y = yA; y <= yB; y += 1) {
@@ -406,12 +438,12 @@
         if (ix < 0 || iy < 0 || ix >= gw || iy >= gh) { this.rest(x, top, bot, q, ck[q] === SKY && czc >= OPEN); break; }
         nq = iy * gw + ix;
         k = kind[nq];
-        // The face met: which way it looks decides its light.
-        var fl_ = side === 0 ? (stx > 0 ? face[0] : face[1]) : (sty > 0 ? face[2] : face[3]);
+        // The face met: which way it looks decides its light (a painted inside's, more evenly).
+        var fk = side === 0 ? (stx > 0 ? 0 : 1) : (sty > 0 ? 2 : 3), fl_ = face[fk];
         if (k === WALL || k === GLASS) {
           // The wall it ends at: from the floor to the ceiling, or under an
           // open sky to the model's roof over it, the sky or the dark above.
-          var mine = room[q] >= 0 && known[room[q]];
+          var mine = room[q] >= 0 && known[room[q]], paint = mine && painted[room[q]];
           var ink = mine ? inkW[q] : inkW[nq], gW = mine ? 0 : (grit[nq] >> 2) & 3;
           var from = top;
           if (czc >= OPEN) {
@@ -438,7 +470,7 @@
             // floor (the model's walls show none): never a stripe from floor
             // to ceiling.
             this.steps(ink);
-            var ib = grW[nq] * fl_, dz = d1 / focal;
+            var ib = paint ? (1 + (grW[nq] - 1) * PAINT_GRAIN) * faceIn[fk] : grW[nq] * fl_, dz = d1 / focal;
             li = ((ib - 0.4) * 256) | 0;
             if (li < 0) { li = 0; } else if (li > 255) { li = 255; }
             var along = gW ? Math.floor((side === 0 ? cy + ry * d1 : cx + rx * d1) * GRIT) : 0;
@@ -498,11 +530,12 @@
           var yl = Math.ceil(rowOf(ncz, d1) - 0.5) - 1;
           if (yl > bot) { yl = bot; }
           if (from2 <= yl) {
-            var inkl = room[nq] >= 0 && !rooms[room[nq]].pseudo ? inkW[nq] : room[q] >= 0 && !rooms[room[q]].pseudo ? inkW[q] : inkW[nq];
+            var lr = room[nq] >= 0 && !rooms[room[nq]].pseudo ? room[nq] : room[q] >= 0 && !rooms[room[q]].pseudo ? room[q] : room[nq];
+            var inkl = lr === room[q] ? inkW[q] : inkW[nq];
             this.steps(inkl);
             dist = d1 * rl;
             var fogl = dist > FOG_NEAR ? (dist - FOG_NEAR) * FOG_K : 0, pkl = (PICK_WALL << 24) | nq;
-            li = ((fl_ - 0.4) * 256) | 0;
+            li = (((lr >= 0 && painted[lr] ? faceIn[fk] : fl_) - 0.4) * 256) | 0;
             for (y = from2; y <= yl; y += 1) {
               o = y * W + x;
               thr = THR[((y & 7) << 3) | xm];
@@ -2193,7 +2226,9 @@
     var s = S;
     if (!s.ctx.onWhere || !s.me) { return; }
     var r = roomAt(s.world, s.me.floor, s.me.x, s.me.y);
-    s.ctx.onWhere({ floor: s.me.floor, x: s.me.x, y: s.me.y, a: s.me.a, room: r && !r.pseudo ? r.id : null });
+    // Its paint too, for the column's line of how its walls are known (walk-plan.js, "the paint").
+    var pt = r && !r.pseudo && r.paint && r.paint.walls ? { w: r.paint.w || null, how: r.paint.how } : null;
+    s.ctx.onWhere({ floor: s.me.floor, x: s.me.x, y: s.me.y, a: s.me.a, room: r && !r.pseudo ? r.id : null, paint: pt });
   }
 
   /* ---------------------------------------------------------------- glides */

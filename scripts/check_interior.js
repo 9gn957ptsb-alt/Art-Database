@@ -26,7 +26,7 @@
    two diagonals as the page draws it, and — once docs/v2/walk.js offers
    Walk.snapshot(world, hung, {x, y, a, floor, w, h, dot}), resolving to a
    canvas of one frame — first-person frames from the door and before up to
-   six hung works. Artsy's pictures are stood in for by each work's three
+   six hung works, and along the wall from the first three. Artsy's pictures are stood in for by each work's three
    colours (its image store is not reachable from a session); nothing else
    leaves the page. It prints the frame times. */
 
@@ -62,6 +62,13 @@ function checkOne(file, W, museums, opts) {
     return { file, slug: path.basename(file, ".json"), errors: ["not JSON: " + e.message], warnings: [], stats: {}, tier: "shell" };
   }
   const slug = interior.slug || path.basename(file, ".json");
+  // Its paint, as the page passes it (land.js readInterior): interiors/finishes.json's row with the file's white.
+  if (!interior.finish) {
+    const F = readJSON(path.join(V2, "interiors", "finishes.json"), null);
+    const fin = { white: F && F.white, ceiling: F && F.ceiling };
+    Object.assign(fin, (F && F.museums && F.museums[slug]) || {});
+    interior.finish = fin;
+  }
   const model = readJSON(path.join(V2, "models", slug + ".json"), null);
   const ground = readJSON(path.join(V2, "grounds", slug + ".json"), null);
   const museum = museums.find(m => m.slug === slug) || null;
@@ -440,6 +447,8 @@ async function pictures(results, dir) {
         const stand = [];
         if (world.enter) { stand.push({ name: "door", x: world.enter.x, y: world.enter.y, a: world.enter.a, floor: world.enter.floor }); }
         hung.slice(0, 6).forEach((h, k) => stand.push({ name: "work-" + (k + 1), x: h.spot.x, y: h.spot.y, a: h.spot.face, floor: h.floor }));
+        // … and along the wall from the first three, for the walls and the ceiling in depth.
+        hung.slice(0, 3).forEach((h, k) => stand.push({ name: "along-" + (k + 1), x: h.spot.x, y: h.spot.y, a: h.spot.face + Math.PI * 0.6, floor: h.floor }));
         for (const s of stand) {
           const t2 = performance.now();
           const c = await Walk.snapshot(world, hung, { x: s.x, y: s.y, a: s.a, floor: s.floor, w: 130, h: 148, dot: 3 });
@@ -471,7 +480,7 @@ async function pictures(results, dir) {
   const pi = args.indexOf("--png");
   const png = pi >= 0 ? args[pi + 1] : null;
   const files = all
-    ? fs.readdirSync(path.join(V2, "interiors")).filter(f => f.endsWith(".json")).sort().map(f => path.join(V2, "interiors", f))
+    ? fs.readdirSync(path.join(V2, "interiors")).filter(f => f.endsWith(".json") && f.startsWith("museum-")).sort().map(f => path.join(V2, "interiors", f))
     : args.filter((a, i) => !a.startsWith("--") && (pi < 0 || i !== pi + 1));
   if (!files.length) {
     console.error("usage: node scripts/check_interior.js docs/v2/interiors/<slug>.json [--png dir] | --all [--png dir]");

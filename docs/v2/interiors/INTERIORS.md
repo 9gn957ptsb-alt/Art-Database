@@ -115,7 +115,9 @@ is its level in metres, `name` only as a source gives it.
   voxel — a skylight where the model has glass on top, else dark. `oculus`:
   the radius of a dome's open eye, in metres, where a source gives it.
 - `floor`, `walls`, `top`: materials from `docs/v2/models.js`, or null — not
-  known, drawn as the place's DIRT. Any material needs `msrc` (and `msure`).
+  known: the floor drawn as the place's DIRT, the walls and the ceiling
+  painted (below, **The paint**). Any material needs `msrc` (and `msure`),
+  and comes before the paint.
 - `sure`: `documented` or `reconstructed`, for its existence and outline.
   There is no third value: what is not known is not drawn.
 - `tol`: ± metres of the outline. `built`: the year it opened, where
@@ -358,6 +360,79 @@ A shell is only ever the first day of a museum: `build_interiors_arranged.js`
 arranges it on its next run (8 Oct 2026: none is left — the last three,
 Cleveland, Turner Contemporary and the Amon Carter, were arranged, the last
 two on their plinths' tops).
+
+## The paint
+
+The artist, 10 Oct 2026: "I want the interior walls of all the museums to be
+[what] they are in real life if you can find photos of the interiors, if not,
+just make it a [basic] white and make the ceiling white as well which should
+actually look gray when considering shadows of interiors". So every room's
+walls are painted, and its ceiling is white (`walk-plan.js`, "the paint";
+`PAINT = false` brings back the soil walls and the dark ceilings):
+
+- **As photographed.** `docs/v2/interiors/finishes.json`, a row a museum, is
+  the paint its galleries are photographed in on Wikimedia Commons:
+  `scripts/fetch_interior_photos.py` finds its Wikidata item (by name within
+  1.5 km of its point), the item's Commons category and the one it is filed
+  under, the subcategories about its inside (rooms first, temporary
+  exhibitions after, the past never) and Commons' own search under it
+  (gallery, room, interior and the local word: salle, zaal, Saal, sala, sal),
+  twenty photographs a museum, one of a series ("Blue Room Bikes 5", "… 6"),
+  never a reproduction of one work or a catalogue image; a vision model (OpenAI's, which fetches each
+  from Commons itself — Commons refuses the session's address its images)
+  says of each whether it shows the museum's gallery walls as they are now
+  (not an exterior, one object, a historic or black-and-white photograph, an
+  event, a café or shop, a period room), the paint as it is in daylight
+  ("white" for a white wall under any light, else its colour), the era of the
+  works on them and the room the title or category names; each one used has
+  its author, licence and date read off its file page. What was read, with
+  the credits and never a photograph, is `scripts/finishes_hand.json`;
+  `scripts/build_finishes.py` writes the file from it: photographs from
+  before 2012 only where none is newer, a temporary exhibition's only where
+  there is nothing else, alike colours one paint (ΔE under 12), most seen
+  first (white first where two are seen as often), each with how many
+  photographs show it (`n`), the eras of the works
+  seen on it (`era`: `old` before 1800, `19c`, `modern` to 1970, `now`), its
+  name in plain words (`w`), a sentence (`said`) and the photographs (`src`:
+  title, page, author, licence, year, the colour read, the room).
+- **A room's own.** Where a photograph names a gallery a source draws (the
+  NGA's "Gallery 28", the Met's "Gallery 822", "G18" for the NGA's ground
+  floor's 18) the room wears that photograph's paint (`rooms`). Never an
+  arranged room: its "Room 3" is the site's own number.
+- **Dealt by what it holds.** Where a museum is photographed in more than one
+  paint, a room takes the paint seen over works of the era it holds most of
+  (its hung works' dates), else the nearest era's, else the paint seen most.
+  A room with nothing hung takes the paint seen most.
+- **White.** A museum with no photograph read is painted a gallery's white
+  (`#f2f0eb`, `WHITE`); stairs and lifts are white everywhere.
+- **Ceilings.** White (`#f6f5f1`) under the model's roof in every painted
+  room — the auto ceiling is `FLAT`, no longer dark — lit as an inside's
+  ceiling is, in shade: 0.72 against the walls' 0.98 and 0.88 (the lit and
+  the shaded side, lit by the rooms, not the sun), and 0.64 along the walls,
+  so a white ceiling reads grey, greyer at its edges (`walk.js`,
+  `CEIL_LIGHT`, `CEIL_EDGE`, `PAINT_LIT`, `PAINT_SHADE`). A dome's or a
+  vault's rings are two greys. Skylights and open courts are unchanged.
+- **Walls between rooms** (the plan shows them) take the paint of a room
+  beside them; a doorway cut through a thick outer wall, the paint and the
+  ceiling of the room it leads into. The model's own outer wall keeps its
+  make outside; a painted room sees its own paint on it.
+- A breath of the place's soil shows through the paint (4 %), and the paint
+  has none of DIRT's gaps or speckle.
+- **Said** only in the column while walking (land.js `wallsLine`): "Walls ·
+  dark blue-grey, as its galleries are photographed ›", opened: the sentence
+  and the photographs, named in plain words with their authors and licences,
+  never linked; "Walls · white: no photograph of its galleries was found"
+  where none was. Never over the walk.
+
+The checker (`WalkPlan.check`, through `scripts/check_interior.js`, which
+passes each museum its row as the page does) refuses a paint that is not a
+colour, an era not in the list, a photograph without its page or licence,
+and paints with no photograph; it warns of a room a photograph names that the
+file does not have. Weak: the colour is a model's reading of a photograph, not
+a measurement (Commons' images cannot be fetched here to measure); a museum's
+photographed galleries are a sample, often its most photographed rooms; the
+era deal is the site's rule, not the museum's hang; a museum repainted since
+its photographs is shown as photographed.
 
 ## The certainty policy
 
