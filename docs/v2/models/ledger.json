@@ -2475,13 +2475,14 @@
   },
   "museum-the-studio-museum-in-harlem": {
     "name": "Studio Museum in Harlem",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Adjaye's stacked dark precast volumes shifting over West 125th Street, the double-height street window, varied windows, roof terrace with the black pyramid, between walk-ups",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+      "2026-10-10 interior finding: only 28% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): façade on the old footprint: lighter slab-edge bands, double-height street window between bronze reveals, varied windows, windowed brick walk-ups, roof terrace with the pyramid, street trees"
     ],
     "interior": {
       "tier": "arranged",
@@ -2504,13 +2505,14 @@
   },
   "museum-victoria-and-albert-museum-v-and-a": {
     "name": "V&A",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model (coarse, whole complex): Webb's brick-and-stone Cromwell Road front with the crowned tower, brick ranges round glass-roofed courts, the Madejski Garden pool, the Exhibition Road screen",
-      "2026-09-30 interior finding: only 6% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 6% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): steeper slate roofs; limestone plinth, string course and end bays; tall arched portal under the tower; limestone cap and copper spire; pale tiled Sackler Courtyard"
     ],
     "interior": {
       "tier": "arranged",
@@ -2891,13 +2893,14 @@
   },
   "museum-the-wellington-museum": {
     "name": "Apsley House",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Apsley House (the geocode wrongly points to Wellington, South Africa): Bath-stone house with Wyatt Corinthian portico and pediment on the east, sash windows, balustrade, Waterloo Gallery wing and lantern",
-      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): Apsley House masonry pale Bath stone; balustrade ring round a low slate hip; string courses, four chimney stacks, portico steps"
     ],
     "interior": {
       "tier": "arranged",
@@ -3040,13 +3043,14 @@
   },
   "museum-virginia-museum-of-contemporary-art": {
     "name": "Virginia MOCA",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the closed gallery core, the glazed lobby behind its perforated zinc veil on Parks Avenue, skylit corridor, studios and auditorium (massing largely guessed)",
-      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 28% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): white stucco core and wings against the grey perforated veil and glass lobby; five palms on the avenue front"
     ],
     "interior": {
       "tier": "arranged",
@@ -3069,12 +3073,13 @@
   },
   "museum-the-broad": {
     "name": "The Broad",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: the white lattice veil over glass with skylit lattice roof, the corners lifted over the lobby on Grand Avenue, the oculus, the olive plaza, on the downtown grid bearing"
+      "2026-09-24 first model: the white lattice veil over glass with skylit lattice roof, the corners lifted over the lobby on Grand Avenue, the oculus, the olive plaza, on the downtown grid bearing",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): lifted the paving raster, stair and trees that lay outside the plate; roof now a north-facing sawtooth of glass slopes with white backs; olive plaza terrace (footprint, bearing and veil kept; interior check 0 errors)"
     ],
     "interior": {
       "tier": "arranged",
@@ -3186,12 +3191,13 @@
   },
   "museum-the-menil-collection": {
     "name": "The Menil Collection",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
-      "2026-09-24 first model: Piano's long low grey-sided house in a white steel frame under rows of white leaves over glass, the porch all round, gardens let in, the Treasure House above; live oaks."
+      "2026-09-24 first model: Piano's long low grey-sided house in a white steel frame under rows of white leaves over glass, the porch all round, gardens let in, the Treasure House above; live oaks.",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): roof leaves limestone, one pale ferro-cement plane; Treasure House grey with a dark glazed ribbon; broader umbrella oaks"
     ],
     "interior": {
       "tier": "arranged",
@@ -3303,13 +3309,14 @@
   },
   "museum-whitney-museum-of-american-art-1": {
     "name": "Whitney Museum of American Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Piano's steel-clad body tall to the Hudson with its north-light roof, the east half lifted over the largo and stepping down in timber terraces to the High Line, Hudson River Park and the Meatpacking District",
-      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 44% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): slit windows and a west window band; glass lobby under the cantilever; roof parapet and outdoor stair; varied Meatpacking neighbours"
     ],
     "interior": {
       "tier": "arranged",
@@ -3452,13 +3459,14 @@
   },
   "museum-the-state-hermitage-museum": {
     "name": "The State Hermitage Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the whole ensemble coarse, set to the Palace Embankment — the Winter Palace's four green-and-white ranges round the Great Courtyard with columns, statues and the square's gate, the Small Hermitage and hanging garden, the Old and New Hermitage with the Atlantes, the Winter Canal and Theatre, the Neva, the Alexander Column",
-      "2026-09-30 interior finding: only 30% of the model's footprint stands on the ground's buildings"
+      "2026-10-10 interior finding: only 30% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): Winter Palace roof green copper, New Hermitage slate; white balustrade rim; Palace Square gate block with three arches"
     ],
     "interior": {
       "tier": "arranged",
@@ -3543,13 +3551,14 @@
   },
   "museum-the-courtauld-gallery": {
     "name": "The Courtauld Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Somerset House at the Strand's angle, Portland-stone ranges round the great court and its fountains, the Strand block with its arched vestibule, porticoes and the south dome, the river terrace with watergate arches",
-      "2026-09-30 interior finding: only 50% of the model's footprint stands on the ground's buildings"
+      "2026-10-10 interior finding: only 52% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): walls pale Portland limestone; roofs lowered and made blue-grey slate; Strand block raised with its own roof and pale pediments; Embankment road added"
     ],
     "interior": {
       "tier": "arranged",
@@ -3809,13 +3818,14 @@
   },
   "museum-vancouver-art-gallery": {
     "name": "Vancouver Art Gallery",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-10",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Rattenbury's neoclassical courthouse on downtown's 45-degree grid: granite base, marble walls, end pavilions, Ionic portico and lions to Georgia St, drum and low copper dome, the lawn and fountain.",
-      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 35% of the model's footprint stands on the ground's buildings",
+      "2026-10-10 refined (no photographs reachable; from published descriptions): dome and lantern copper green, lantern taller and dome slightly flattened; eight-column marble colonnade on Robson; street trees"
     ],
     "interior": {
       "tier": "arranged",
@@ -3951,6 +3961,56 @@
     "sketchup": false,
     "log": [
       "2026-10-06 first model from the article's thirteen photographs"
+    ]
+  },
+  "seamless-horizons-balboa-by-riva-spain": {
+    "name": "Balboa",
+    "refined": "2026-10-10",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-10 first model from the article's photographs: low white flat-roofed house with a clerestory band, recessed glass to a timber deck, pergola over an outdoor kitchen, raised plunge pool, stepping-stone garden; placed at its town only"
+    ]
+  },
+  "beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio": {
+    "name": "Las Casuarinas",
+    "refined": "2026-10-10",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-10 first model from the article's photographs: two white plaster storeys with thin roofs, pale stone core, cantilevered wing, recessed black-framed glazing, pool terrace and dry-grass hillside; placed at its city only"
+    ]
+  },
+  "light-matter-and-garden-casa-galera-by-karlen-clemente": {
+    "name": "Casa Galera",
+    "refined": "2026-10-10",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-10 first model from the article's photographs: long concrete slab on stone piers with timber slat panels, glazed gallery wing to a pool and deck, slatted upper block with chimney; placed at its town only"
+    ]
+  },
+  "ode-to-the-environment-casa-rc-by-cristin-nanzer": {
+    "name": "Casa R&C",
+    "refined": "2026-10-10",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-10 first model from the article's photographs: fieldstone-flecked concrete podium under a glazed floor and five brick barrel vaults with concrete ribs, balcony beam, long stair, two-leg water tank, pool; placed at its city only"
+    ]
+  },
+  "elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura": {
+    "name": "Clínica Dental Vega",
+    "refined": "2026-10-10",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-10 first model from the article's photographs: a Salamanca corner building as a cutaway: sandstone ground floor on a granite base with oak-framed windows, an L of pale render upper floors under tile, the clinic's interior from above; placed at its city only"
     ]
   }
 }
