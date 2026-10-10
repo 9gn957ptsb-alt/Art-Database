@@ -1,0 +1,682 @@
+<title>DIRT Poetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,500;1,300&display=swap">
+<style>
+/* Layout: one painted plane, edge to edge, that the viewer drags through; a single quiet label in the
+   pages' own type names the page underfoot. One look (watercolour paper), so one palette. */
+:root {
+  color-scheme: light;
+  --paper: #f4efe4;          /* DIRT's paper: 0.957, 0.937, 0.894 */
+  --ink: #3a3833;            /* the pages' text */
+  --muted: #7d776c;
+  --veil: rgba(244, 239, 228, 0.78);
+  --face: "Poppins", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+html, body { height: 100%; background: var(--paper); color: var(--ink); }
+body { margin: 0; overflow: hidden; overscroll-behavior: none; font-family: var(--face); font-weight: 300; }
+#plane { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; outline: none; }
+#plane.held { cursor: grabbing; }
+#plane:focus-visible { box-shadow: inset 0 0 0 2px var(--muted); }
+.label {
+  position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px);
+  padding: 7px 11px 8px; background: var(--veil); border-radius: 3px; pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.label .t { font-weight: 500; font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase; }
+.label .s { font-style: italic; font-size: 12px; color: var(--muted); margin-top: 2px; letter-spacing: 0.01em; }
+.hint {
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 7px 11px 8px;
+  background: var(--veil); border-radius: 3px; font-size: 12px; font-style: italic; color: var(--muted);
+  pointer-events: none; transition: opacity 0.8s ease;
+}
+.hint.gone, .label.gone { opacity: 0; }
+.fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; font-size: 14px; color: var(--muted); }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { .label, .hint { transition: none; } }
+</style>
+
+<canvas id="plane" tabindex="0" role="img" aria-label="A painted plane made from the four pages of Picture Poetry: drag, swipe or use the arrow keys to wander through it."></canvas>
+<div class="label gone" id="label" aria-live="polite"><div class="t" id="label-t"></div><div class="s" id="label-s"></div></div>
+<div class="hint" id="hint">Drag to wander</div>
+<div class="fallback" id="fallback" hidden>This plane needs WebGL 2, which this browser has turned off.</div>
+<section class="sr-only" aria-label="The poems">__POEMS_HTML__</section>
+
+<script>
+"use strict";
+/* DIRT Poetry: the four pages of Picture Poetry, painted in DIRT.
+
+   The plane is cut into territories, one in each 610-pixel square, scattered, their edges wandering. Each is one
+   page: its photograph is the paint, laid in one of the four ways the stills from DRIFT show (a pale wash with fine
+   rainbow arcs, a dark disc, halftone and stipple; a white field with a large curved colour field, grey vapour and a
+   knot of torn photograph; a cream field with a deep band and white clouds holding golden kaleidoscopes; or a
+   collage of torn pieces), and a strip torn from the page itself carries some of its poem. Toward its edge each
+   territory thins to a wash of its own photograph, and two neighbours meet in one wash of both. Then DIRT's
+   watercolour: the colours bleed, the pigment pools and gathers at the rims of the washes, the paper shows through,
+   and the margins of the view thin to paper. Nothing moves unless it is dragged. */
+const ASSETS = __ASSETS__;
+
+const canvas = document.getElementById("plane");
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: false });
+if (!gl) { document.getElementById("fallback").hidden = false; document.getElementById("hint").hidden = true; throw new Error("no WebGL 2"); }
+
+// ---- the shaders ------------------------------------------------------------------------------------------------
+const COMMON = `
+precision highp float; precision highp int; precision highp sampler2DArray;
+const float PHI = 1.618033988749895, P1 = 0.618033988749895, P2 = 0.381966011250105, P3 = 0.236067977499790, P4 = 0.145898033750315;
+const float G = 610.0;                                               // a territory to each square this wide
+uint mixh(uint h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
+uint h3(int x, int y, uint s) { return mixh(uint(x) * 0x27d4eb2du ^ mixh(uint(y) * 0x165667b1u + s)); }
+float unit(uint h) { return float(h >> 8) * (1.0 / 16777216.0); }
+float vnoise(vec2 p, float g, uint s) {
+  vec2 f = p / g, i = floor(f), t = f - i; t = t * t * (3.0 - 2.0 * t);
+  ivec2 q = ivec2(i);
+  return mix(mix(unit(h3(q.x, q.y, s)), unit(h3(q.x + 1, q.y, s)), t.x), mix(unit(h3(q.x, q.y + 1, s)), unit(h3(q.x + 1, q.y + 1, s)), t.x), t.y);
+}
+float fbm(vec2 p, float g, uint s) { return 0.5 * vnoise(p, g, s) + 0.3 * vnoise(p, g * P1, s + 1u) + 0.2 * vnoise(p, g * P2, s + 2u); }
+mat2 turn(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+struct Reg { vec2 c1, c2; uint h1, h2; float d; };
+/** The territory a point is in, and the next one, and how far in from the edge between them it lies. */
+Reg regionAt(vec2 p) {
+  vec2 pw = p + 144.0 * (vec2(vnoise(p, 377.0, 51u), vnoise(p, 377.0, 52u)) - 0.5)
+             + 34.0 * (vec2(vnoise(p, 89.0, 54u), vnoise(p, 89.0, 55u)) - 0.5);   // the edges wander, as a wash's do
+  ivec2 g0 = ivec2(floor(pw / G));
+  Reg r = Reg(vec2(0.0), vec2(1e6), 0u, 0u, 0.0);
+  float d1 = 1e18, d2 = 1e18;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = g0 + ivec2(i, j);
+    uint h = h3(c.x, c.y, 53u);
+    vec2 C = (vec2(c) + 0.5 + 0.7 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G;
+    float dd = dot(pw - C, pw - C);
+    if (dd < d1) { d2 = d1; r.c2 = r.c1; r.h2 = r.h1; d1 = dd; r.c1 = C; r.h1 = h; }
+    else if (dd < d2) { d2 = dd; r.c2 = C; r.h2 = h; }
+  }
+  r.d = (d2 - d1) / (2.0 * max(length(r.c1 - r.c2), 1.0));
+  return r;
+}
+int pageOf(uint h) { return int(mixh(h + 7u) % 4u); }
+`;
+
+const VS = `#version 300 es
+void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+
+// The paint, a texel to every two pixels of the screen.
+const PAINT = `#version 300 es
+${COMMON}
+uniform sampler2DArray uPhoto;     // the four photographs, mipmapped
+uniform vec3 uPal[28];             // each page: paper, light, mid, deep, accent, pastel, pastel
+uniform vec2 uOrigin;              // the plane at the screen's top left
+uniform float uCell;               // plane pixels a texel
+uniform vec2 uSize;                // texels
+out vec4 outC;
+vec3 pal(int pg, int i) { return uPal[pg * 7 + i]; }
+vec2 mirrored(vec2 uv) { return 1.0 - abs(1.0 - mod(uv, 2.0)); }   // the photograph met by its mirror image, so it has no edge
+vec3 photoAt(int pg, vec2 uv, float lod) { return textureLod(uPhoto, vec3(mirrored(uv), float(pg)), lod).rgb * 255.0; }
+float lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)) / 255.0; }
+const vec3 WHITE = vec3(248.0, 246.0, 241.0);
+
+/** How a territory holds its photograph: turned, scaled and placed by its own hash. */
+vec2 photoUV(vec2 q, uint h) {
+  float sc = 1.0 / (760.0 + 520.0 * unit(mixh(h + 3u)));
+  return vec2(0.5) + turn(6.2832 * unit(mixh(h + 4u))) * q * sc + 0.5 * (vec2(unit(mixh(h + 5u)), unit(mixh(h + 6u))) - 0.5);
+}
+/** The photograph thinned with water until only its light is left: the territory's wash, pale and calm, as the
+ *  stills' open fields are (the photograph's own shapes are kept for the devices). */
+vec3 washAt(int pg, vec2 q, uint h) {
+  vec3 c = photoAt(pg, photoUV(q, h), 6.2);
+  float l = max(lum(c), 0.05);
+  c *= mix(1.0, 0.82 / l, 0.55);                                     // its darks lifted: a wash is never deep
+  return mix(pal(pg, 0), c, 0.3 + 0.08 * vnoise(q, 233.0, h + 15u));
+}
+
+// ---- the devices of the four stills -----------------------------------------------------------------------------
+vec3 clouds(vec3 col, vec2 q, uint h) {
+  vec2 o = 999.0 * vec2(unit(mixh(h + 20u)), unit(mixh(h + 21u)));
+  float c = smoothstep(0.54, 0.7, fbm(q + o, 170.0, h + 22u));
+  float under = smoothstep(0.54, 0.7, fbm(q + o + vec2(0.0, -11.0), 170.0, h + 22u));
+  col = mix(col, col * 0.88, clamp(under - c, 0.0, 1.0) * 0.6);     // their grey undersides
+  return mix(col, WHITE, c * 0.88);
+}
+/** Fine arcs in the lens flare's colours (page 2's sun), a rainbow drawn in hairlines (still 1). */
+vec3 arcs(vec3 col, vec2 q, uint h) {
+  vec2 ca = turn(6.2832 * unit(mixh(h + 30u))) * vec2(520.0 + 320.0 * unit(mixh(h + 31u)), 0.0);
+  float R = length(ca), r = length(q - ca);
+  float band = smoothstep(R - 210.0, R - 90.0, r) * (1.0 - smoothstep(R + 90.0, R + 230.0, r));
+  float side = smoothstep(-0.1, 0.6, dot(normalize(q - ca), -ca / R));
+  float s = fract(r / 9.0), line = exp(-pow((s - 0.5) / 0.16, 2.0));
+  vec3 hue = 255.0 * (0.66 + 0.3 * cos(6.2832 * (r / 377.0 + unit(h) + vec3(0.0, 0.33, 0.67))));
+  return mix(col, hue * 0.88, band * side * line * 0.78);
+}
+/** A soft dark disc, as the sun leaves on the eye (still 1). */
+vec3 disc(vec3 col, vec2 q, uint h) {
+  vec2 cd = turn(6.2832 * unit(mixh(h + 34u))) * vec2(170.0 * unit(mixh(h + 35u)), 0.0);
+  float rd = 64.0 + 64.0 * unit(mixh(h + 36u));
+  float e = length(q - cd) + 7.0 * (vnoise(q, 21.0, h + 37u) - 0.5);
+  float a = 1.0 - smoothstep(rd - 10.0, rd + 10.0, e);
+  return mix(col, vec3(62.0, 58.0, 55.0) * (0.86 + 0.28 * vnoise(q, 13.0, h + 38u)), a);
+}
+/** The photograph screened into dots of one ink, in a soft patch (stills 1 and 3). */
+vec3 halftone(vec3 col, vec2 q, int pg, uint h, vec3 ink, float period, float amt) {
+  vec2 ch = turn(6.2832 * unit(mixh(h + 40u))) * vec2(150.0 * unit(mixh(h + 41u)), 0.0);
+  vec2 e = (q - ch) / vec2(180.0, 115.0);
+  float mask = 1.0 - smoothstep(0.55, 1.0, length(e) + 0.3 * (vnoise(q, 34.0, h + 42u) - 0.5));
+  if (mask <= 0.0) return col;
+  mat2 t = turn(0.785398);
+  vec2 g = t * q / period, cell = floor(g) + 0.5, f = g - cell;
+  vec3 c = photoAt(pg, photoUV(transpose(t) * cell * period, h), 2.0);
+  float rr = 0.5 * sqrt(clamp((1.0 - lum(c)) * 1.35, 0.0, 1.0));
+  float dt = 1.0 - smoothstep(rr - 0.08, rr + 0.08, length(f));
+  return mix(col, ink, dt * mask * amt);
+}
+/** Small clusters of pen stipple (stills 1 and 2): as ash, or sigils. */
+vec3 stipple(vec3 col, vec2 q, uint h) {
+  vec2 cc = floor(q / 144.0);
+  uint hc = h3(int(cc.x), int(cc.y), h + 50u);
+  if (unit(hc) > 0.17) return col;
+  vec2 C = (cc + 0.25 + 0.5 * vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u)))) * 144.0;
+  float r = length(q - C);
+  if (r > 19.0) return col;
+  vec2 sg = floor(q / 3.0);
+  uint hs = h3(int(sg.x), int(sg.y), hc);
+  if (unit(hs) > 0.6 * (1.0 - r / 19.0)) return col;
+  vec2 dc = (sg + 0.5 + 0.5 * (vec2(unit(mixh(hs + 1u)), unit(mixh(hs + 2u))) - 0.5)) * 3.0;
+  return mix(col, vec3(36.0, 34.0, 32.0), (1.0 - smoothstep(0.55, 1.15, length(q - dc))) * 0.85);
+}
+/** Grey vapour, soft as smoke (still 2): the boiling. */
+vec3 vapour(vec3 col, vec2 q, uint h) {
+  float f = fbm(q + 700.0 * vec2(unit(mixh(h + 60u))), 190.0, h + 61u);
+  return mix(col, vec3(120.0, 114.0, 112.0), smoothstep(0.5, 0.8, f) * 0.5);
+}
+/** One large colour field, its rim a gentle curve (stills 2 and 3), its pigment granulated as watercolour settles. */
+vec3 field(vec3 col, vec2 q, uint h, vec3 c) {
+  float a = 6.2832 * unit(mixh(h + 70u));
+  float R = 900.0 + 700.0 * unit(mixh(h + 71u));
+  vec2 cf = vec2(cos(a), sin(a)) * (R + 40.0 - 170.0 * unit(mixh(h + 72u)));
+  float e = length(q - cf) - R + 15.0 * (vnoise(q, 34.0, h + 73u) - 0.5);
+  float core = 1.0 - smoothstep(-12.0, 12.0, length(q) - 250.0 - 60.0 * (vnoise(q, 144.0, h + 75u) - 0.5));
+  return mix(col, c * (0.9 + 0.2 * vnoise(q, 21.0, h + 74u)), (1.0 - smoothstep(-9.0, 9.0, e)) * core);
+}
+/** A deep band between two gentle curves (still 3). */
+vec3 band(vec3 col, vec2 q, uint h, vec3 c) {
+  float a = 6.2832 * unit(mixh(h + 76u)), R = 700.0 + 500.0 * unit(mixh(h + 77u));
+  vec2 cb = vec2(cos(a), sin(a)) * (R + 60.0 * (unit(mixh(h + 78u)) - 0.5));
+  float e = abs(length(q - cb) - R) - (34.0 + 30.0 * unit(mixh(h + 79u))) + 14.0 * (vnoise(q, 34.0, h + 75u) - 0.5);
+  float core = 1.0 - smoothstep(-12.0, 12.0, length(q) - 250.0 - 60.0 * (vnoise(q, 144.0, h + 78u) - 0.5));
+  return mix(col, c * (0.9 + 0.2 * vnoise(q, 21.0, h + 74u)), (1.0 - smoothstep(-8.0, 8.0, e)) * core);
+}
+/** Pieces torn from the photograph and laid over one another, each torn edge white with the paper's fibre (still 4). */
+vec3 collage(vec3 col, vec2 q, int pg, uint h, float size, float amt, float reach) {
+  vec2 qw = q + 21.0 * (vec2(vnoise(q, 34.0, h + 80u), vnoise(q, 34.0, h + 81u)) - 0.5)
+              + 6.0 * (vec2(vnoise(q, 7.0, h + 82u), vnoise(q, 7.0, h + 83u)) - 0.5);
+  ivec2 g0 = ivec2(floor(qw / size));
+  float d1 = 1e18, d2 = 1e18; uint p1 = 0u, p2 = 0u; vec2 s1 = vec2(0.0), s2 = vec2(0.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    ivec2 c = g0 + ivec2(i, j);
+    uint hc = h3(c.x, c.y, h + 84u);
+    vec2 S = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u))) - 0.5)) * size;
+    float dd = dot(qw - S, qw - S);
+    if (dd < d1) { d2 = d1; p2 = p1; s2 = s1; d1 = dd; p1 = hc; s1 = S; }
+    else if (dd < d2) { d2 = dd; p2 = hc; s2 = S; }
+  }
+  float e = 0.5 * (sqrt(d2) - sqrt(d1));                             // in from the edge between the two, on p1's side
+  // a piece is laid only near the middle: beyond its reach (each piece its own) the ground shows, round torn edges
+  bool here1 = length(s1) < reach * (0.75 + 0.5 * unit(mixh(p1 + 11u))), here2 = length(s2) < reach * (0.75 + 0.5 * unit(mixh(p2 + 11u)));
+  if (!here1 && !here2) return col;
+  bool firstOnTop = here1 && (!here2 || unit(mixh(p1 + 5u)) > unit(mixh(p2 + 5u)));
+  float se = firstOnTop ? e : -e;                                    // in from the edge, on the upper piece's side
+  float ov = 5.0 + 4.0 * vnoise(q, 5.0, h + 85u);                    // how far the upper piece reaches over
+  bool onTop = se > -ov;
+  if (!onTop && !(firstOnTop ? here2 : here1)) return col;          // the piece beneath is not there: the ground
+  uint pc = onTop == firstOnTop ? p1 : p2;
+  vec2 sc = onTop == firstOnTop ? s1 : s2;
+  vec2 uv = vec2(unit(mixh(pc + 1u)), unit(mixh(pc + 2u))) + turn(6.2832 * unit(mixh(pc + 4u))) * (q - sc) / (380.0 + 300.0 * unit(mixh(pc + 3u)));
+  vec3 pa = pal(pg, 5), pb = pal(pg, 6);
+  if (unit(mixh(pc + 8u)) < 0.5) { vec3 t = pa; pa = pb; pb = t; }
+  vec3 frag = mix(pa, pb, smoothstep(-120.0, 120.0, dot(q - sc, turn(6.2832 * unit(mixh(pc + 9u))) * vec2(1.0, 0.0))));
+  if (unit(mixh(pc + 10u)) < P2) frag = mix(photoAt(pg, uv, 0.6), frag, 0.38);   // a fragment of the photograph
+  frag = mix(frag, WHITE, 0.26 * smoothstep(-90.0, 90.0, dot(q - sc, vec2(0.7071, -0.7071))));   // light across the piece
+  float rim = onTop ? smoothstep(-ov, -ov + 1.0, se) * (1.0 - smoothstep(-ov + 1.6, -ov + 3.6 + 2.0 * vnoise(q, 3.0, h + 86u), se)) : 0.0;
+  frag = mix(frag, vec3(252.0, 251.0, 247.0) * (0.95 + 0.05 * vnoise(q, 1.5, h + 87u)), rim);
+  if (!onTop) frag *= 1.0 - 0.11 * (1.0 - smoothstep(0.0, 8.0, -ov - se));   // in the upper piece's shadow
+  return mix(col, frag, amt);
+}
+/** Light caught on the paper: thin soft streaks (still 4). */
+vec3 glints(vec3 col, vec2 q, uint h) {
+  for (int k = 0; k < 4; k++) {
+    uint hk = mixh(h + 100u + uint(k) * 3u);
+    vec2 c = turn(6.2832 * unit(hk)) * vec2(250.0 * unit(mixh(hk + 1u)), 0.0);
+    vec2 l = turn(-6.2832 * unit(mixh(hk + 2u))) * (q - c);
+    float s = exp(-abs(l.y) / 1.3) * exp(-abs(l.x) / (22.0 + 30.0 * unit(mixh(hk + 3u))));
+    s = max(s, 0.6 * exp(-abs(l.x) / 1.3) * exp(-abs(l.y) / 9.0));
+    col = mix(col, vec3(253.0, 252.0, 249.0), s * 0.7);
+  }
+  return col;
+}
+/** White clouds, and in each the photograph seen in five mirrors standing at 36 degrees: the pentagon's symmetry,
+ *  where cos 36 degrees is phi / 2; toward the middle the mirrors face each other, so each ring phi times nearer
+ *  holds the ring outside it again, and where one ring gives way to the next the two cross-fade (still 3). */
+vec3 rosettes(vec3 col, vec2 q, int pg, uint h) {
+  for (int k = 0; k < 3; k++) {
+    uint hk = mixh(h + 90u + uint(k) * 7u);
+    vec2 ck = turn(6.2832 * unit(hk)) * vec2(70.0 + 190.0 * unit(mixh(hk + 1u)), 0.0);
+    float rb = 46.0 + 42.0 * unit(mixh(hk + 2u));
+    vec2 d = q - ck;
+    float r = length(d);
+    float edge = r + rb * 0.42 * (vnoise(q, rb * 0.55, hk + 3u) - 0.5) + 5.0 * (vnoise(q, 3.0, hk + 4u) - 0.5);   // a cloud's outline
+    float blob = 1.0 - smoothstep(rb * 1.3, rb * 1.3 + 13.0, edge);
+    if (blob <= 0.0) continue;
+    float w = 3.14159265 / 5.0, a = atan(d.y, d.x) + 6.2832 * unit(mixh(hk + 5u));
+    float i = floor(a / w), f = a - i * w;
+    if (mod(i, 2.0) > 0.5) f = w - f;                                // every other image the mirror image
+    vec3 star = WHITE;
+    // two strokes in the wedge between the mirrors, so ten images make a star; and the same star again phi^2
+    // smaller in its middle, where the mirrors face each other
+    for (int lv = 0; lv < 2; lv++) {
+      float rr = r * (lv == 0 ? 1.0 : PHI * PHI), fade = lv == 0 ? 1.0 : P1;
+      vec2 wq = rr * vec2(cos(f), sin(f));
+      for (int sk = 0; sk < 2; sk++) {
+        float sa = (sk == 0 ? 0.25 : 0.72) * w + 0.12 * w * (unit(mixh(hk + 20u + uint(sk))) - 0.5);
+        vec2 dir = vec2(cos(sa), sin(sa));
+        float r0 = rb * (sk == 0 ? 0.22 : 0.48), r1 = rb * (sk == 0 ? 0.78 : 1.02);
+        float t = clamp(dot(wq, dir), r0, r1), dist = length(wq - dir * t);
+        float wd = (sk == 0 ? 6.5 : 4.5) * (1.0 - 0.45 * smoothstep(r0, r1, t));   // thinning dry toward its end
+        float s = 1.0 - smoothstep(wd - 1.5, wd + 1.5, dist + 2.0 * (vnoise(wq, 3.0, hk + 9u) - 0.5));
+        // its colour from the photograph: where it was dark, dark; else the page's accent
+        vec3 src = photoAt(pg, 0.15 + 0.7 * vec2(unit(mixh(hk + 30u + uint(sk))), unit(mixh(hk + 32u + uint(sk)))), 2.0);
+        vec3 ink = lum(src) < 0.42 ? vec3(44.0, 41.0, 42.0) : pal(pg, 4);
+        star = mix(star, ink, s * fade * (0.78 + 0.22 * vnoise(wq, 5.0, hk + 11u)));
+      }
+    }
+    col = mix(col, star, blob);
+  }
+  return col;
+}
+/** A few soft strokes of a loaded brush, thinning dry at their ends (stills 2 and 3). */
+vec3 strokes(vec3 col, vec2 q, int pg, uint h, bool upright) {
+  for (int k = 0; k < 2; k++) {
+    uint hk = mixh(h + 110u + uint(k) * 5u);
+    vec2 c = turn(6.2832 * unit(hk)) * vec2(90.0 + 160.0 * unit(mixh(hk + 1u)), 0.0);
+    float a = upright ? 1.5708 + 0.15 * (unit(mixh(hk + 2u)) - 0.5) : 6.2832 * unit(mixh(hk + 2u));
+    vec2 l = turn(-a) * (q - c);
+    float len = 36.0 + 70.0 * unit(mixh(hk + 3u)), wd = 7.0 + 6.0 * unit(mixh(hk + 4u));
+    float e = length(vec2(max(abs(l.x) - len, 0.0), l.y)) - wd * (1.0 - 0.35 * smoothstep(0.4, 1.0, abs(l.x) / len))
+              + 3.0 * (vnoise(q, 4.0, hk + 5u) - 0.5);
+    float s = (1.0 - smoothstep(-2.0, 2.5, e)) * (0.72 + 0.28 * vnoise(l, 5.0, hk + 7u));
+    col = mix(col, unit(mixh(hk + 6u)) < 0.62 ? pal(pg, 4) : vec3(50.0, 47.0, 46.0), s);
+  }
+  return col;
+}
+/** A woven band of chevrons in the page's colours (still 2). */
+vec3 woven(vec3 col, vec2 q, int pg, uint h) {
+  float dy = q.y - (150.0 + 120.0 * (unit(mixh(h + 120u)) - 0.5));
+  float b = (1.0 - smoothstep(10.0, 13.5, abs(dy))) * smoothstep(-280.0, -210.0, q.x) * (1.0 - smoothstep(210.0, 280.0, q.x));
+  if (b <= 0.0) return col;
+  int k = int(fract((q.x + abs(dy) * 1.4) / 16.0) * 3.0);
+  return mix(col, k == 0 ? pal(pg, 3) : k == 1 ? pal(pg, 4) : pal(pg, 1), b * 0.85);
+}
+/** A knot of torn photograph in the white, its edge dissolving cell by cell (still 2). */
+vec3 knot(vec3 col, vec2 q, int pg, uint h) {
+  vec2 ck = turn(6.2832 * unit(mixh(h + 130u))) * vec2(110.0 * unit(mixh(h + 131u)), 0.0);
+  float m = 1.0 - smoothstep(0.55, 1.0, length((q - ck) / vec2(170.0, 130.0)) + 0.35 * (fbm(q, 55.0, h + 132u) - 0.5));
+  if (m <= 0.0) return col;
+  vec2 cell = floor(q / 3.0);
+  if (unit(h3(int(cell.x), int(cell.y), h + 133u)) > m * 1.25) return col;
+  return collage(col, q, pg, h + 134u, 75.0, 0.85, 1e5);
+}
+
+/** Which still a territory is laid after. Each page leans to one: Boiling to vapour and its fields, the second
+ *  page to its sun's arcs and disc, For What to collage, Neither Where Nor When to its field and collage; and each
+ *  to the others now and then. */
+int modeOf(int pg, uint h) {
+  float u = unit(mixh(h + 11u));
+  return pg == 0 ? (u < 0.4 ? 1 : u < 0.62 ? 2 : u < 0.84 ? 0 : 3)
+       : pg == 1 ? (u < 0.4 ? 0 : u < 0.76 ? 2 : u < 0.9 ? 1 : 3)
+       : pg == 2 ? (u < 0.42 ? 3 : u < 0.64 ? 0 : u < 0.86 ? 2 : 1)
+       :           (u < 0.32 ? 1 : u < 0.62 ? 3 : u < 0.86 ? 2 : 0);
+}
+/** A territory's ground: its wash, whiter after still 2, creamier after still 3, reaching to its edge. */
+vec3 groundAt(int pg, vec2 q, uint h, int m) {
+  vec3 w = washAt(pg, q, h);
+  if (m == 1) return mix(w, WHITE, 0.45);
+  if (m == 2) return mix(w, mix(pal(pg, 0), vec3(240.0, 230.0, 210.0), 0.5), 0.45);
+  return w;
+}
+/** One territory at p: its page, the way it is laid, and its devices thinning to its ground toward its edge. */
+vec3 territory(vec2 p, vec2 C, uint h, float d) {
+  int pg = pageOf(h), m = modeOf(pg, h);
+  vec2 q = turn(6.2832 * unit(mixh(h + 9u))) * (p - C);
+  vec3 wash = groundAt(pg, q, h, m);
+  float dev = smoothstep(21.0, 77.0, d);
+  if (dev <= 0.0) return wash;
+  vec3 col = wash;
+  if (m == 0) {                                                      // still 1
+    col = clouds(col, q, h);
+    if (unit(mixh(h + 12u)) < P1) col = halftone(col, q, pg, h, pal(pg, 4), 10.0, 0.85);
+    col = arcs(col, q, h);
+    if (unit(mixh(h + 13u)) < P1) col = disc(col, q, h);
+    col = stipple(col, q, h);
+  } else if (m == 1) {                                               // still 2
+    col = field(col, q, h, pal(pg, 3));
+    col = vapour(col, q, h);
+    col = knot(col, q, pg, h);
+    col = strokes(col, q, pg, h, true);
+    if (unit(mixh(h + 14u)) < P2) col = woven(col, q, pg, h);
+    col = stipple(col, q, h);
+  } else if (m == 2) {                                               // still 3
+    col = band(col, q, h, pal(pg, 3));
+    col = rosettes(col, q, pg, h);
+    col = strokes(col, q, pg, h, false);
+    col = halftone(col, q, pg, h, vec3(150.0, 148.0, 146.0), 15.0, 0.6);
+  } else {                                                           // still 4
+    col = collage(col, q, pg, h, 170.0, 1.0, 300.0);
+    col = glints(col, q, h);
+  }
+  return mix(wash, col, dev);
+}
+
+void main() {
+  vec2 p = uOrigin + vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y) * uCell;
+  Reg r = regionAt(p);
+  vec3 col = territory(p, r.c1, r.h1, r.d);
+  if (r.d < 89.0) {                                                  // two washes meeting as one
+    vec2 q2 = turn(6.2832 * unit(mixh(r.h2 + 9u))) * (p - r.c2);
+    int pg2 = pageOf(r.h2);
+    col = mix(groundAt(pg2, q2, r.h2, modeOf(pg2, r.h2)), col, 0.5 + 0.5 * smoothstep(0.0, 89.0, r.d));
+  }
+  outC = vec4(clamp(col, 0.0, 255.0) / 255.0, 1.0);
+}`;
+
+// The screen: DIRT's watercolour over the paint, then the strips torn from the pages.
+const FINAL = `#version 300 es
+${COMMON}
+uniform sampler2D uPaint;
+uniform sampler2DArray uText;      // each page's poem, as set on the page
+uniform vec4 uTxtA[4];             // each page: where its crop begins (page px), and its poem's left and right
+uniform vec4 uTxtB[4];             // each page: its title's top (or -1), its first line's top, the line pitch, its lines
+uniform vec2 uTxtSize;             // the crop's size in the texture
+uniform vec2 uOrigin;
+uniform float uDpr;
+uniform vec2 uView;                // device pixels
+uniform vec2 uPaintSize;
+out vec4 outColour;
+float lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)); }
+
+/** The strip of a territory's page: which of its lines, where, how turned and torn. */
+void slip(vec2 p, vec2 C, uint h, inout vec3 col) {
+  if (unit(mixh(h + 199u)) > P2) return;                           // phi^-2 of the territories carry a strip
+  int pg = pageOf(h);
+  vec4 A = uTxtA[pg], B = uTxtB[pg];
+  float u = unit(mixh(h + 200u)), n = B.w;
+  bool title = false; float s0 = 0.0, s1 = n;
+  if (u < P3) title = B.x >= 0.0;                                    // the whole poem
+  else if (u < P3 + P2 && B.x >= 0.0) { title = true; s1 = 2.0 + floor(2.0 * unit(mixh(h + 201u))); }
+  else { float m = 2.0 + floor(4.0 * unit(mixh(h + 202u))); s0 = floor((n - m + 1.0) * unit(mixh(h + 203u))); s1 = min(s0 + m, n); }
+  float y0 = title ? B.x - 26.0 : B.y + s0 * B.z - 0.42 * B.z;
+  float y1 = B.y + s1 * B.z - 0.16 * B.z + 4.0;
+  float x0 = A.z - 26.0, x1 = A.w + 26.0;
+  vec2 size = vec2(x1 - x0, y1 - y0);
+  float k = 0.6 + 0.1 * unit(mixh(h + 204u));                       // plane pixels a page pixel
+  vec2 c = C + turn(6.2832 * unit(mixh(h + 205u))) * vec2(120.0 * unit(mixh(h + 206u)), 0.0);
+  float a = 0.07 * (unit(mixh(h + 207u)) - 0.5);
+  vec2 l = turn(-a) * (p - c) / k + 0.5 * size;
+  float e = min(min(l.x, size.x - l.x), min(l.y, size.y - l.y));
+  float tear = e + 3.5 * (vnoise(l, 9.0, h + 208u) - 0.5) + 1.6 * (vnoise(l, 2.5, h + 209u) - 0.5);
+  if (tear < 0.0) {                                                  // its shadow, a little down and to the right
+    vec2 ls = turn(-a) * (p - c - vec2(3.0, 4.0)) / k + 0.5 * size;
+    float es = min(min(ls.x, size.x - ls.x), min(ls.y, size.y - ls.y));
+    col *= 1.0 - 0.13 * smoothstep(-10.0, 1.0, es);
+    return;
+  }
+  vec2 t = (vec2(x0, y0) + l - A.xy) / uTxtSize;
+  vec3 pagec = texture(uText, vec3(t, float(pg))).rgb * 255.0;
+  pagec = mix(pagec, pagec * col / 236.0, 0.2);                       // thin paper: the paint faintly through it
+  float fibre = 1.0 - smoothstep(0.4, 2.4 + 1.2 * vnoise(l, 2.0, h + 210u), tear);   // the torn rim's white fibre
+  col = mix(pagec, vec3(252.0, 251.0, 247.0), fibre * 0.9);
+}
+
+void main() {
+  vec2 fc = vec2(gl_FragCoord.x, uView.y - gl_FragCoord.y);
+  vec2 p = uOrigin + fc / uDpr;
+  vec2 tp = gl_FragCoord.xy * 0.5, ts = 1.0 / uPaintSize;
+  // DIRT's watercolour: the colours bleed into their neighbours, the pigment is denser and thinner over the paper's
+  // grain and in slow pools and gathers at the rim of every wash, and the paper shows through it all
+  vec3 own = texture(uPaint, tp * ts).rgb, soft = vec3(0.0);
+  float sw = 0.0; vec2 gr = vec2(0.0);
+  for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+    vec2 o = vec2(dx, dy) * 1.5;
+    vec3 kk = texture(uPaint, (tp + o) * ts).rgb;
+    float w = exp(-dot(o, o) / 2.618);
+    soft += w * kk; sw += w;
+    gr += vec2(dx, dy) * lum(kk);
+  }
+  soft /= sw;
+  vec3 c = mix(own, soft, 0.62);
+  float edge = smoothstep(0.06, 0.5, length(gr) / 3.0);
+  float grain = vnoise(p, 1.2, 7u) * 0.6 + vnoise(p, 3.0, 8u) * 0.4;
+  float pool = vnoise(p, 89.0, 9u) * 0.62 + vnoise(p, 34.0, 10u) * 0.38;
+  float dd = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.236 * edge;
+  c = clamp(c - (c - c * c) * (dd - 1.0), 0.0, 1.0);
+  vec3 paper = vec3(0.957, 0.937, 0.894) * (0.985 + 0.03 * grain);
+  c = mix(c, paper, 0.06);
+  // the strips of the pages, glued over the paint
+  vec3 cs = c * 255.0;
+  Reg rg = regionAt(p);
+  slip(p, rg.c2, rg.h2, cs);
+  slip(p, rg.c1, rg.h1, cs);
+  c = cs / 255.0;
+  c = mix(c, c * (0.97 + 0.06 * grain), 0.5);                        // the paper's tooth through the strips too
+  // toward the margins the paint thins to paper and cool air, so the picture has no frame
+  vec2 r = (gl_FragCoord.xy - 0.5 * uView) / (0.5 * uView);
+  float far = smoothstep(0.62, 1.5, length(r * vec2(1.0, 0.8)) + 0.12 * (pool - 0.5));
+  c = mix(c, mix(paper, vec3(0.86, 0.9, 0.95), 0.35), far * 0.55);
+  outColour = vec4(c, 1.0);
+}`;
+
+function compile(src, type) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
+  return s;
+}
+function program(fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(VS, gl.VERTEX_SHADER)); gl.attachShader(p, compile(fs, gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i), name = a.name.replace(/\[0\]$/, ""); u[name] = gl.getUniformLocation(p, a.name); }
+  return { p, u };
+}
+const paintProg = program(PAINT), finalProg = program(FINAL);
+gl.bindVertexArray(gl.createVertexArray());
+
+// ---- the pages: photographs and poems ---------------------------------------------------------------------------
+function loadImage(src) { return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; }); }
+function layers(images, w, h, mip) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY, t);
+  gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA8, w, h, images.length, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  images.forEach((im, i) => gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, gl.RGBA, gl.UNSIGNED_BYTE, im));
+  if (mip) gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+// ---- the plane in JavaScript, to name the page underfoot and to begin somewhere --------------------------------
+const imul = Math.imul;
+function mixh(h) { h ^= h >>> 16; h = imul(h, 0x7feb352d); h ^= h >>> 15; h = imul(h, 0x846ca68b); h ^= h >>> 16; return h >>> 0; }
+function h3(x, y, s) { return mixh((imul(x | 0, 0x27d4eb2d) ^ mixh((imul(y | 0, 0x165667b1) + (s >>> 0)) >>> 0)) >>> 0); }
+const unit = (h) => (h >>> 8) / 16777216;
+function vnoise(x, y, g, s) {
+  const fx = x / g, fy = y / g, ix = Math.floor(fx), iy = Math.floor(fy);
+  let tx = fx - ix, ty = fy - iy; tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+  const a = unit(h3(ix, iy, s)), b = unit(h3(ix + 1, iy, s)), c = unit(h3(ix, iy + 1, s)), d = unit(h3(ix + 1, iy + 1, s));
+  return (a + (b - a) * tx) + ((c + (d - c) * tx) - (a + (b - a) * tx)) * ty;
+}
+const G = 610;
+function regionAt(x, y) {
+  const px = x + 144 * (vnoise(x, y, 377, 51) - 0.5) + 34 * (vnoise(x, y, 89, 54) - 0.5);
+  const py = y + 144 * (vnoise(x, y, 377, 52) - 0.5) + 34 * (vnoise(x, y, 89, 55) - 0.5);
+  const gx = Math.floor(px / G), gy = Math.floor(py / G);
+  let best = null, bd = Infinity;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const h = h3(gx + i, gy + j, 53);
+    const cx = (gx + i + 0.5 + 0.7 * (unit(mixh((h + 1) >>> 0)) - 0.5)) * G, cy = (gy + j + 0.5 + 0.7 * (unit(mixh((h + 2) >>> 0)) - 0.5)) * G;
+    const dd = (px - cx) ** 2 + (py - cy) ** 2;
+    if (dd < bd) { bd = dd; best = { x: cx, y: cy, h }; }
+  }
+  return best;
+}
+const pageOf = (h) => mixh((h + 7) >>> 0) % 4;
+
+// ---- the view ---------------------------------------------------------------------------------------------------
+let W = 0, H = 0, dpr = 1, fbo = null, paintTex = null, FW = 0, FH = 0;
+const view = { x: 0, y: 0, vx: 0, vy: 0 };
+function size() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = Math.max(1, Math.round(canvas.clientWidth * dpr)), ch = Math.max(1, Math.round(canvas.clientHeight * dpr));
+  if (cw === W && ch === H) return;
+  W = cw; H = ch; canvas.width = W; canvas.height = H;
+  FW = Math.ceil(W / 2); FH = Math.ceil(H / 2);
+  if (paintTex) gl.deleteTexture(paintTex);
+  paintTex = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, paintTex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, FW, FH);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  if (!fbo) fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, paintTex, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+let ready = false, queued = false;
+function draw() {
+  queued = false;
+  if (!ready) return;
+  size();
+  const ox = view.x - canvas.clientWidth / 2, oy = view.y - canvas.clientHeight / 2;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.viewport(0, 0, FW, FH);
+  gl.useProgram(paintProg.p);
+  gl.uniform2f(paintProg.u.uOrigin, ox, oy);
+  gl.uniform1f(paintProg.u.uCell, 2 / dpr);
+  gl.uniform2f(paintProg.u.uSize, FW, FH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.useProgram(finalProg.p);
+  gl.uniform2f(finalProg.u.uOrigin, ox, oy);
+  gl.uniform1f(finalProg.u.uDpr, dpr);
+  gl.uniform2f(finalProg.u.uView, W, H);
+  gl.uniform2f(finalProg.u.uPaintSize, FW, FH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  name();
+}
+function redraw() { if (!queued) { queued = true; requestAnimationFrame(draw); } }
+
+// the page underfoot, named in the pages' own type
+const labelEl = document.getElementById("label"), labelT = document.getElementById("label-t"), labelS = document.getElementById("label-s");
+let shown = -1;
+function name() {
+  const r = regionAt(view.x, view.y), pg = pageOf(r.h);
+  if (pg === shown) return;
+  shown = pg;
+  const P = ASSETS.pages[pg];
+  labelT.textContent = P.title || P.signature.replace(/^\u2014/, "");
+  labelS.textContent = "Picture Poetry, page " + P.n;
+  labelEl.classList.remove("gone");
+}
+
+// ---- dragging, swiping, the wheel, the keys ---------------------------------------------------------------------
+const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const hint = document.getElementById("hint");
+let drag = null, coast = 0;
+function moved() { hint.classList.add("gone"); }
+canvas.addEventListener("pointerdown", (e) => {
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add("held");
+  drag = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0 };
+  view.vx = view.vy = 0; cancelAnimationFrame(coast);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y, now = performance.now(), dt = Math.max(1, now - drag.t);
+  view.x -= dx; view.y -= dy;
+  drag.vx = 0.8 * (-dx / dt) + 0.2 * drag.vx; drag.vy = 0.8 * (-dy / dt) + 0.2 * drag.vy;
+  drag.x = e.clientX; drag.y = e.clientY; drag.t = now;
+  moved(); redraw();
+});
+function release() {
+  if (!drag) return;
+  canvas.classList.remove("held");
+  view.vx = drag.vx * 16; view.vy = drag.vy * 16; drag = null;
+  if (still) return;
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(64, now - last) / 16.67; last = now;
+    view.x += view.vx * dt; view.y += view.vy * dt;
+    const f = Math.pow(0.94, dt); view.vx *= f; view.vy *= f;
+    redraw();
+    if (Math.hypot(view.vx, view.vy) > 0.05) coast = requestAnimationFrame(step);
+  };
+  coast = requestAnimationFrame(step);
+}
+canvas.addEventListener("pointerup", release);
+canvas.addEventListener("pointercancel", release);
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? canvas.clientHeight : 1;
+  view.x += (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k;
+  view.y += (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * k;
+  moved(); redraw();
+}, { passive: false });
+canvas.addEventListener("keydown", (e) => {
+  const s = e.shiftKey ? 377 : 89;
+  const d = { ArrowLeft: [-s, 0], ArrowRight: [s, 0], ArrowUp: [0, -s], ArrowDown: [0, s] }[e.key];
+  if (!d) return;
+  e.preventDefault(); view.x += d[0]; view.y += d[1]; moved(); redraw();
+});
+window.addEventListener("resize", redraw);
+canvas.addEventListener("webglcontextlost", (e) => {
+  e.preventDefault(); ready = false;
+  const f = document.getElementById("fallback");
+  f.textContent = "The painting paused when the graphics card was reset. Reload the page to go on.";
+  f.hidden = false;
+});
+
+// ---- begin: somewhere else each visit, in the middle of one page --------------------------------------------------
+(async function begin() {
+  try {
+    const photos = await Promise.all(ASSETS.photos.map(loadImage));
+    const texts = await Promise.all(ASSETS.texts.map(loadImage));
+    gl.activeTexture(gl.TEXTURE0); layers(photos, ASSETS.photoSize, ASSETS.photoSize, true);
+    gl.activeTexture(gl.TEXTURE1); layers(texts, ASSETS.textSize[0], ASSETS.textSize[1], false);
+    gl.useProgram(paintProg.p);
+    gl.uniform1i(paintProg.u.uPhoto, 0);
+    gl.uniform3fv(paintProg.u.uPal, new Float32Array(ASSETS.palette));
+    gl.useProgram(finalProg.p);
+    gl.uniform1i(finalProg.u.uPaint, 2);
+    gl.uniform1i(finalProg.u.uText, 1);
+    gl.uniform4fv(finalProg.u.uTxtA, new Float32Array(ASSETS.txtA));
+    gl.uniform4fv(finalProg.u.uTxtB, new Float32Array(ASSETS.txtB));
+    gl.uniform2f(finalProg.u.uTxtSize, ASSETS.textSize[0], ASSETS.textSize[1]);
+    const start = location.hash.match(/^#at(-?\d+)_(-?\d+)$/);
+    if (start) { view.x = +start[1]; view.y = +start[2]; }
+    else {
+      const r = regionAt((Math.random() - 0.5) * 2e5, (Math.random() - 0.5) * 2e5);
+      view.x = r.x; view.y = r.y;
+    }
+    ready = true; redraw();
+    setTimeout(() => hint.classList.add("gone"), 7000);
+  } catch (err) {
+    document.getElementById("fallback").textContent = "The pages could not be drawn: " + err.message;
+    document.getElementById("fallback").hidden = false;
+  }
+})();
+</script>
