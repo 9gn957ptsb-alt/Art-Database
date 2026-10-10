@@ -2531,6 +2531,15 @@
   var FOLD = Math.PI / 5;               // 36°: the angle between the two mirrors
   var JAG = CELL_PX * 0.65;             // the edge's reach either side, as before
 
+  /* The kaleidoscopes after it (the artist, 10 Oct 2026: "Keep introducing kaleidoscopes in
+     relation to the golden ratio on the website until I tell you, it's too much. Be gradual about
+     it, maybe introduce it in a new way once a day"). One new way a day, each with its flag here,
+     so the latest can be taken back when he says it is too much (docs/v2/KALEIDOSCOPE.md, the
+     ledger and the ideas still to come). The pulse's fold, above, came first. */
+  var KALEIDOSCOPES = {
+    arrive: true          // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
+  };
+
   function folded(sx, sy, turn) {
     var a = Math.atan2(sy, sx) - turn;
     a -= Math.floor(a / (2 * FOLD)) * 2 * FOLD;   // into one pair of images, 0–72°
@@ -10146,9 +10155,86 @@
   };
   Object.keys(MORE_ARRIVALS).forEach(function (k) { ARRIVALS[k] = MORE_ARRIVALS[k]; });
 
+  /* Through the kaleidoscope (10 Oct 2026; KALEIDOSCOPES.arrive): the pulse's two mirrors at 36°
+     stand over the middle of the photograph, and its tenth there is reflected round ten times;
+     the kaleidoscope turns a little, as one turned in the hand; then the mirrors open by φ a
+     step — 36°, 58°, 94°, 153°, 247° — so the images round the middle go 10, 6.2, 3.8, 2.4, 1.5
+     (ten over a power of φ), a broken one where the circle no longer comes round whole, until
+     there is one, and it is the photograph. Where two images meet, the mirror's edge catches
+     the lavender light. Drawn at half the box's pixels and held at 24 frames a second, as the
+     rest of the light is; one arrival among the others, dealt. */
+  var K_GROW = 336, K_TURN = Math.round(160 * PHI * PHI), K_OPEN = 5 * 110;
+
+  function kaleidoscopeIn(box, wait) {
+    var turn0 = (Math.random() - 0.5) * FOLD;                    // where the mirrors stand over it
+    var swing = (Math.random() < 0.5 ? -1 : 1) * FOLD * INV;     // and how far the hand turns it
+    var small = null;
+    runVeil(box, wait, K_GROW + K_TURN + K_OPEN + 84, 33, function (v, q, art, ms) {
+      if (!small) { small = pixelCanvas(v, 2); }
+      var sg = small.getContext("2d"), k = small.width / v.w;
+      var grown = Math.min(1, ms / K_GROW), turned = clamp01((ms - K_GROW) / K_TURN);
+      var step = Math.floor((ms - K_GROW - K_TURN) / 110) + 1;   // 0 while closed, 5 once open
+      if (step >= 5) { drawArt(v.g, art, v.w, v.h); return; }
+      var wedge = FOLD * Math.pow(PHI, Math.max(0, step));
+      var tau = turn0 + swing * (turned * turned * (3 - 2 * turned));
+      // The rosette grows out of the middle in four held steps, a power of φ each.
+      var reach = Math.hypot(v.w, v.h) / 2 * Math.pow(PHI, -Math.round(4 * (1 - grown)));
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.fillStyle = COVER;
+      sg.fillRect(0, 0, small.width, small.height);
+      sg.setTransform(k, 0, 0, k, 0, 0);
+      kaleidoscopeOf(sg, art, v.w, v.h, wedge, tau, reach);
+      v.g.imageSmoothingEnabled = false;
+      v.g.drawImage(small, 0, 0, v.w, v.h);
+      v.g.imageSmoothingEnabled = true;
+      // The mirrors' edges, catching the light, quieter as they open.
+      var n = Math.ceil(2 * Math.PI / wedge - 1e-6);
+      v.g.strokeStyle = LIGHT;
+      v.g.globalAlpha = step > 0 ? 0.34 : 0.5;
+      v.g.lineWidth = 1;
+      v.g.beginPath();
+      for (var i = 0; i < n; i += 1) {
+        var a = tau + i * wedge;
+        v.g.moveTo(v.w / 2, v.h / 2);
+        v.g.lineTo(v.w / 2 + Math.cos(a) * reach, v.h / 2 + Math.sin(a) * reach);
+      }
+      v.g.stroke();
+      v.g.globalAlpha = 1;
+    }, { art: true });
+  }
+
+  /* The photograph seen through two mirrors `wedge` apart, standing at `tau` over its middle, out
+     to `reach`: the picture under the first wedge, reflected wedge by wedge round the middle; the
+     last cut where the circle closes. */
+  function kaleidoscopeOf(g, art, w, h, wedge, tau, reach) {
+    var cx = w / 2, cy = h / 2, n = Math.ceil(2 * Math.PI / wedge - 1e-6);
+    for (var i = 0; i < n; i += 1) {
+      var odd = i % 2 === 1, lo = 0, hi = wedge, left = 2 * Math.PI - i * wedge;
+      if (left < wedge) { if (odd) { lo = wedge - left; } else { hi = left; } }
+      g.save();
+      g.translate(cx, cy);
+      g.rotate(tau + (odd ? (i + 1) * wedge : i * wedge));
+      if (odd) { g.scale(1, -1); }
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.arc(0, 0, reach, lo, hi);
+      g.closePath();
+      g.clip();
+      g.rotate(-tau);
+      g.translate(-cx, -cy);
+      drawArt(g, art, w, h);
+      g.restore();
+    }
+  }
+  if (KALEIDOSCOPES.arrive) { ARRIVALS.kaleidoscope = kaleidoscopeIn; }
+
+  var nextArrival = null;        // Land.arrival(name): the next one dealt is that one (for the checks)
+
   function bringIn(box, wait) {
     if (still) { return; }
-    ARRIVALS[oneOf(Object.keys(ARRIVALS))](box, wait);
+    var name = nextArrival && ARRIVALS[nextArrival] ? nextArrival : oneOf(Object.keys(ARRIVALS));
+    nextArrival = null;
+    ARRIVALS[name](box, wait);
   }
 
   /* Pointing at a photograph. */
@@ -15794,6 +15880,8 @@
                level: bodyOn() ? EarthBody.levelFor(R, EarthBody.density()) : null };
     },
     pace: function (on) { pace.held = on === false; pace.from = 0; },
+    // The next photograph to arrive comes by this arrival ("kaleidoscope", "tiles" …): for the checks.
+    arrival: function (name) { nextArrival = name || null; return Object.keys(ARRIVALS); },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
                                   tiles: Object.keys(tilesShown).length, own: ownBoxes.length,
