@@ -1,18 +1,2021 @@
 {
- "note": "Open sources of how things on the Earth look, for the Artist Website, and the hosts each needs (NETWORK.md; the artist, 10 Oct 2026). state: candidate (found), asked (in the block given to the artist), allowed (every host answers), used (a script reads it: used_by), dropped (why). Each host's state is the probe's (scripts/probe_sources.py): open, refused, stalls, silent.",
- "probed": "2026-10-10 22:07 UTC",
+ "note": "Open sources of how things on the Earth look, for the Artist Website, and the hosts each needs (NETWORK.md; the artist, 10 Oct 2026). priority: 1 ask now, 2 ask once the first are in use, 3 noted. key_needed: the artist signs up first and the key is kept as an environment secret. state: candidate, allowed (every host it needs answers), used (used_by), dropped (why). Host role browser (a page for people), alt (an alternative not needed) and unconfirmed are never asked for. Each host's state is the probe's (scripts/probe_sources.py): open, refused, stalls, silent.",
+ "probed": "2026-10-10 22:32 UTC",
  "sources": [
+  {
+   "id": "globalbuildingatlas-lod1-tum-2025-geoparquet-on-source-coo",
+   "name": "GlobalBuildingAtlas LoD1 (TUM 2025), GeoParquet on Source Cooperative",
+   "facet": "cities",
+   "what": "About 2.75 billion building footprints worldwide, each with a height (deep learning on PlanetScope, 3 m height grid), merged from OSM, Google, Microsoft and TUM's own; 5x5 degree GeoParquet tiles with a bbox column (columns: source, id, height, var, region, bbox, geometry).",
+   "improves": "Fills the skyline's missing heights, where the site now falls back to two storeys: Overture gives a height for only 5% of central Paris, 14% of Berlin-Mitte and 1% of Ginza. Measured here: Paris 1er, 1,232 buildings all with a height (median 16.3 m); Ginza, 1,941 (median 20.8 m, max 105 m); each box read in about 1 s with the same pyarrow bbox filter build_grounds.py uses.",
+   "licence": "GBA.LoD1 and heights CC BY-NC 4.0 (polygons from OSM/Microsoft ODbL); non-commercial, so it fits a non-commercial art site with credit, but say so. Google Open Buildings 2.5D Temporal: CC BY 4.0 or ODbL, user's choice.",
+   "key": "none",
+   "format": "GeoParquet (WKB geometry, bbox struct, row-group statistics), about 210 GB in all; read by bbox like Overture.",
+   "priority": 1,
+   "notes": "Reachable NOW (already-allowed host, path-style). The original hosts (mediaTUM, Hugging Face) are refused and not needed. Heights are satellite estimates (RMSE 1.5-8.9 m by continent): prefer official heights where the site already has them. EUBUCCO, already cached in data/eubucco/, carries 'height' on 99% of rows in the cached French cell, so use it in the EU; use Overture's USGS-lidar heights in the US, Flateau in Tokyo, and GBA everywhere else. Complement, also reachable: Google Open Buildings 2.5D Temporal (storage.googleapis.com/open-buildings-temporal-data/v1/geotiffs/...) gives building presence, counts and heights per year 2016-2023 at about 4 m effective resolution for Africa, South and South-East Asia and Latin America. That is the only per-year building source for Mexico City, Buenos Aires or Mumbai, where CLAUDE.md says no city record exists.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/globalbuildingatlas-lod1/e000_n50_e005_n45.parquet",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "mediatum.ub.tum.de",
+     "role": "alt",
+     "probe": "https://mediatum.ub.tum.de/1782307",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"mediatum.ub.tum.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "huggingface.co",
+     "role": "alt",
+     "probe": "https://huggingface.co/datasets/zhu-xlab/GBA.LoD1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"huggingface.co\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "storage.googleapis.com",
+     "role": "files",
+     "probe": "https://storage.googleapis.com/open-buildings-temporal-data/v1/geotiffs/00824_2016_06_30/tile_3FYdP6L109o.tif",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "gsi-japan-tiles-seamless-orthophoto-and-national-historica",
+   "name": "GSI Japan tiles: seamless orthophoto and national historical aerial mosaics 1936-1990",
+   "facet": "cities",
+   "what": "Geospatial Information Authority of Japan XYZ tiles: the current seamless orthophoto (seamlessphoto, to z18) and national historical aerial mosaics: ort_riku10 (c. 1936-42), ort_USA10 (1945-50, US Army), ort_old10 (1961-69), gazo1 (1974-78), gazo2 (1979-83), gazo3 (1984-86), gazo4 (1987-90).",
+   "improves": "Tokyo and any Japanese life place get roof colours from the current orthophoto and real frames of the city for the dial: the late 1930s, 1945-50 (the city burnt in the 1945 raids and rebuilding), the 1960s and the 1970s-80s. That is exactly where the site has no building years.",
+   "licence": "GSI content terms of use (compatible with CC BY 4.0); credit 'Geospatial Information Authority of Japan' (Kokudo Chiriin).",
+   "key": "none",
+   "format": "XYZ JPEG/PNG tiles (EPSG:3857); the PMTiles mirror is one 425 GB z18 archive read by range requests.",
+   "priority": 1,
+   "notes": "The current orthophoto is reachable NOW as smartmaps' PMTiles mirror on Source Cooperative; the historical layers need cyberjapandata.gsi.go.jp. The tile IDs are GSI's published list, not re-checked from here (the host is refused): confirm them against the GSI tile list once it is open.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "cyberjapandata.gsi.go.jp",
+     "role": "tiles",
+     "probe": "https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/15/29105/12904.png",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"cyberjapandata.gsi.go.jp\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/smartmaps/japan-seamlessphoto/pmtiles/z18.pmtiles",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "ign-geoplateforme-france-bd-ortho-bd-ortho-historique-bd-t",
+   "name": "IGN Geoplateforme (France): BD ORTHO, BD ORTHO Historique, BD TOPO, LiDAR HD",
+   "facet": "cities",
+   "what": "The national orthophoto (20 cm; WMTS layer ORTHOIMAGERY.ORTHOPHOTOS), historical orthomosaics (ORTHOIMAGERY.ORTHOPHOTOS.1950-1965, the only complete historical vintage, greyscale; also .1965-1980 and .1980-1995), BD TOPO buildings (hauteur, nombre_d_etages, materiaux_des_murs, materiaux_de_la_toiture, date_d_apparition) by WFS, and LiDAR HD classified point clouds and surface models. 'Remonter le temps' is a viewer over these same layers.",
+   "improves": "Paris and every French life place (Giverny, Auvers, Aix's Atelier Cezanne, Antibes, Vallauris, Ceret) get real roof colours read per building off the 20 cm orthophoto: Paris's blue-grey zinc, Provence's terracotta. LiDAR gives true heights and roof forms, and the 1950-65 orthophoto gives a real first frame for their city in time, where the satellites date nothing before 1975.",
+   "licence": "Licence Ouverte / Etalab 2.0: free reuse including commercial; credit IGN.",
+   "key": "none (public Geoplateforme layers)",
+   "format": "WMTS/WMS JPEG and PNG tiles (PM tile matrix), WFS GeoJSON, downloads as GeoPackage, LAZ/COPC and GeoTIFF.",
+   "priority": 1,
+   "notes": "Only data.geopf.fr is needed (redirects were not observable while it is refused). Materials can start TODAY without it: the BDNB, already in use, has mat_mur_txt (PIERRE, BRIQUES, MEULIERE, BETON...) and mat_toit_txt (ZINC ALUMINIUM, TUILES, ARDOISES...) in table batiment_groupe_ffo_bat. Those come from the same fichiers fonciers as BD TOPO and are often INDETERMINE. So IGN's gain is the imagery, the LiDAR and the historical orthos. The historical orthos are greyscale: they give built/unbuilt and form, not colour.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "data.geopf.fr",
+     "role": "tiles",
+     "probe": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX=17&TILEROW=45090&TILECOL=66387&FORMAT=image/jpeg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.geopf.fr\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "remonterletemps.ign.fr",
+     "role": "browser",
+     "probe": "https://remonterletemps.ign.fr/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"remonterletemps.ign.fr\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.bdnb.io",
+     "role": "api",
+     "probe": "https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_ffo_bat?limit=2",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.0 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "ign-spain-cnig-pnoa-orthophoto-and-pnoa-historico-incl-the",
+   "name": "IGN Spain / CNIG: PNOA orthophoto and PNOA Historico (incl. the 1956-57 American flight)",
+   "facet": "cities",
+   "what": "PNOA national orthophoto (15-25 cm; WMTS layer OI.OrthoimageCoverage, also as TMS) and the historical flights by WMS: American Series B 1956-57 at 1 m, Interministerial 1973-86, Nacional 1980-86, OLISTAT, SIGPAC and the early PNOA years.",
+   "improves": "Madrid (a skyline city: Prado, Reina Sofia, Thyssen) and the Spanish life places (Malaga, Barcelona, Figueres, Cadaques, Gosol) get real roof colours (Madrid's tile and zinc). The 1956 flight gives a real past frame to the dial over Madrid's EUBUCCO-dated buildings, which today have no imagery.",
+   "licence": "CC BY 4.0 (IGN / CNIG, scne.es); credit 'PNOA cedido por (c) Instituto Geografico Nacional'.",
+   "key": "none",
+   "format": "WMTS/TMS JPEG (GoogleMapsCompatible), WMS for the historical flights.",
+   "priority": 1,
+   "notes": "The historical layer names (e.g. the 1956-57 flight) come from search results, not from GetCapabilities, which could not be read from here: read the capabilities once the host is open. The 1956 flight is greyscale. Spain's Catastro (ovc.catastro.meh.es, already allowed) is unreliable from the session, per CLAUDE.md.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "www.ign.es",
+     "role": "tiles",
+     "probe": "https://www.ign.es/wmts/pnoa-ma?service=WMTS&request=GetTile&version=1.0.0&Format=image/jpeg&layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&TileMatrix=15&TileRow=12355&TileCol=16047",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.ign.es\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "tms-pnoa-ma.idee.es",
+     "role": "tiles",
+     "probe": "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/15/16047/20412.jpeg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tms-pnoa-ma.idee.es\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "nyc-office-of-technology-and-innovation-aerial-tile-servic",
+   "name": "NYC Office of Technology and Innovation: aerial tile service (1924, 1951, 1996 to now) and the 3-D Building Model",
+   "facet": "cities",
+   "what": "The city's XYZ tiles maps.nyc.gov/xyz/1.0.0/photo/{year}/{z}/{x}/{y}.png8, with citywide aerial mosaics for 1924 and 1951, 1996, 2001-2 and later flights; the citywide 3-D building massing model (CityGML, Multipatch, DGN, with roof forms; NYC Open Data tnru-abg2); and raw orthoimagery downloads.",
+   "improves": "New York's skyline, the site's first city, can lay the real 1924 and 1951 photographs under its dated buildings as the dial turns. Its towers get their true massing (setbacks, spires, pitched roofs) from the 3-D model, and roof colours from the recent orthos.",
+   "licence": "NYC Open Data terms (free reuse; the ortho records say CC BY 4.0); credit NYC OTI.",
+   "key": "none",
+   "format": "PNG8/JPEG XYZ tiles (EPSG:3857); CityGML zip (several GB); JP2 ortho zips (Manhattan 2016: 2.58 GB).",
+   "priority": 1,
+   "notes": "Only maps.nyc.gov and s-media.nyc.gov are new. The 2016 borough ortho zips are reachable NOW via s3.amazonaws.com, and the 2018 Manhattan zip via data.cityofnewyork.us (both heavy). The 1951 mosaic is reported misregistered and needs a hand offset. The 3-D model is c. 2014, so towers built since are missing; take heights from Overture/PLUTO and forms from the model. The New York State orthos (orthos.its.ny.gov) are refused and not needed.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "maps.nyc.gov",
+     "role": "tiles",
+     "probe": "https://maps.nyc.gov/xyz/1.0.0/photo/1924/15/9650/12314.png8",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"maps.nyc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s-media.nyc.gov",
+     "role": "files",
+     "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"s-media.nyc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.amazonaws.com/sa-static-customer-assets-us-east-1-fedramp-prod/data.cityofnewyork.us/Map_Downloads/2016_orthos/boro_manhattan_sp16.zip",
+     "state": "open",
+     "code": 200,
+     "said": "application/zip in 0.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.cityofnewyork.us",
+     "role": "api",
+     "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "sentinel-2-global-mosaics-quarterly-cloud-free-10-m-tge-mi",
+   "name": "Sentinel-2 Global Mosaics, quarterly cloud-free 10 m (TGE mirror on Source Cooperative)",
+   "facet": "cities",
+   "what": "ESA/Copernicus Sentinel-2 L3 quarterly cloud-free mosaics (first quartile of L2A surface reflectance), bands B02/B03/B04/B08 at 10 m, every land tile, 2017 Q1 to 2026 Q2, as COGs keyed {year}/{Qn}/{MGRS}_{i}_{j}/{band}.tif. Single L2A scenes (TCI true colour) and a STAC index as GeoParquet sit on reachable buckets too.",
+   "improves": "Gives every skyline and area-view cell its real colour from above (roofs, streets, parks, water) instead of the place's soil tint: at 10 m a 14-40 m cell averages 2-16 true pixels, the same for every city on the site. Four quarters a year let a city change colour with the season beside the dial (snow, autumn), and 2017-2025 is the recent end of the city in time.",
+   "licence": "Copernicus Sentinel data legal notice: free, full and open use including redistribution; credit 'Contains modified Copernicus Sentinel data 2017-2025'.",
+   "key": "none",
+   "format": "Cloud-optimised GeoTIFF, int16 reflectance x10000, ~100 km UTM tiles with 5 overview levels; range-readable (GDAL /vsicurl/, rasterio, tifffile).",
+   "priority": 1,
+   "notes": "Reachable NOW through the already-allowed host, path-style (bucket us-west-2.opendata.source.coop); the README's own host data.source.coop is refused. Earth Search's STAC API is refused but its index is mirrored as GeoParquet at tge-labs/s2-stac-geoparquet (reachable). EOX s2cloudless (tiles.maps.eox.at, CC BY-NC-SA) refused and not needed. Weak: 10 m blends roof, street and shadow in old dense cores; use Q2/Q3 for leaf-on colour and map reflectance to sRGB with one fixed gain before matching to the collection's colours. Also reachable on storage.googleapis.com: JRC Global Surface Water (yearly water 1984-2021, e.g. downloads2021/occurrence/occurrence_80W_50Nv1_4_2021.tif, 200) for harbour and landfill change in the city in time, and Landsat (gcp-public-data-landsat, 30 m back to 1984).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/2024/Q2/31UFU_0_0/B04.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.source.coop",
+     "role": "alt",
+     "probe": "https://data.source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/2024/Q2/31UFU_0_0/B04.tif",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "sentinel-cogs.s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/18/T/WL/2024/7/S2A_18TWL_20240705_0_L2A/TCI.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.8 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "earth-search.aws.element84.com",
+     "role": "alt",
+     "probe": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"earth-search.aws.element84.com\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "swisstopo-swissimage-swissimage-journey-through-time-1926-",
+   "name": "swisstopo: SWISSIMAGE, SWISSIMAGE Journey through time (1926-2025), Journey through time maps (1844-2021), swissBUILDINGS3D 3.0",
+   "facet": "cities",
+   "what": "SWISSIMAGE 10 cm orthophoto; ch.swisstopo.swissimage-product, orthophotos for about 100 years from 1926 to 2025 with a time dimension; ch.swisstopo.zeitreihen, national maps 1844-2021; ch.swisstopo.swissimage-product_1946, a 1 m 1946 national mosaic; swissBUILDINGS3D 3.0, LoD2 with roof shapes. Layer IDs and years were confirmed from the reachable api3.geo.admin.ch layersConfig.",
+   "improves": "Zurich, Basel, Riehen (Beyeler), Bern and Geneva get roof colours from 10 cm orthos and LoD2 roof forms. Above all they get a real aerial for nearly every decade back to 1926 to lay under the dial, the richest city-in-time imagery of any country.",
+   "licence": "swisstopo Open Government Data: free use including commercial, the source must be cited ('(c) swisstopo'). SWISSIMAGE HIST 1946 can be viewed free through the WMTS, but full-resolution files are a paid order, so use the tiles.",
+   "key": "none",
+   "format": "WMTS JPEG/PNG (EPSG:3857 and 2056) with a time dimension; STAC with GDB/CityGML/DXF/GeoTIFF downloads.",
+   "priority": 1,
+   "notes": "Only the host wmts.geo.admin.ch is needed for imagery; data.geo.admin.ch for the LoD2 files. The Journey-through-time orthos have patchy coverage per year: check each year's footprint over a city (layer ch.swisstopo.swissimage-product.metadata). Early years are black and white.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "wmts.geo.admin.ch",
+     "role": "tiles",
+     "probe": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/1946/3857/15/17161/11474.png",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"wmts.geo.admin.ch\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.geo.admin.ch",
+     "role": "files",
+     "probe": "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissbuildings3d_3_0/items?limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.geo.admin.ch\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "wms.geo.admin.ch",
+     "role": "tiles",
+     "probe": "https://wms.geo.admin.ch/?SERVICE=WMS&REQUEST=GetCapabilities",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"wms.geo.admin.ch\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api3.geo.admin.ch",
+     "role": "api",
+     "probe": "https://api3.geo.admin.ch/rest/services/api/MapServer/layersConfig?lang=en",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "3d-bag-netherlands-lod1-2-1-3-2-2",
+   "name": "3D BAG (Netherlands, LoD1.2/1.3/2.2)",
+   "facet": "cities",
+   "what": "Every Dutch building (~10 M) modelled from BAG footprints and AHN lidar in LoD1.2/1.3/2.2, with roof type and roof-height percentiles (b3_dak_type, b3_h_dak_50p/70p/max, b3_h_maaiveld) and the BAG construction year; yearly releases.",
+   "improves": "Amsterdam (a skyline city), Otterlo and the Rijksmuseum, Stedelijk and Van Gogh Museum plots get real gables, mansards and flat roofs at measured heights in the area views. With the PDOK orthos, already open, roofs get their real colours too.",
+   "licence": "CC BY 4.0 (3DBAG by tudelft3d and 3DGI).",
+   "key": "none",
+   "format": "OGC API Features (JSON/CityJSON), WFS/WMS, tiled GeoPackage, CityJSON and OBJ downloads.",
+   "priority": 2,
+   "notes": "Overture already has a height for 88% of central Amsterdam (OSM imports) but a roof shape for only 1.7%, so the gain is shape. That shows in the area views (~7 m cells), barely in a 14-20 m skyline. Needed now: the PDOK luchtfotorgb WMTS (already open) carries 2016_ortho25 to 2025_ortho25 and 2021-2026 orthoHR, so the Netherlands has a decade of roof colour by year with no new host.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.3dbag.nl",
+     "role": "api",
+     "probe": "https://api.3dbag.nl/collections/pand/items?bbox=4.884,52.359,4.886,52.361&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.3dbag.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.3dbag.nl",
+     "role": "files",
+     "probe": "https://data.3dbag.nl/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.3dbag.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "docs.3dbag.nl",
+     "role": "browser",
+     "probe": "https://docs.3dbag.nl/en/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"docs.3dbag.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "service.pdok.nl",
+     "role": "tiles",
+     "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/2025_orthoHR/EPSG:3857/17/67314/43081.jpeg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.8 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "german-state-lod2-and-orthophotos-bavaria-and-north-rhine-",
+   "name": "German state LoD2 and orthophotos: Bavaria and North Rhine-Westphalia (Berlin already open)",
+   "facet": "cities",
+   "what": "Official LoD2 CityGML for every building, with roof shape (Dachform) and heights, plus open orthophotos: Bavaria's LoD2 and DOP40; NRW's LoD2, DOP10 and historical orthophotos (WMS-T 'Historische Digitale Orthophotos'); and in Berlin, on the already-allowed gdi.berlin.de, the 2024 true orthophoto (truedop_2024) and the 1928 1:4000 aerial photo index (luftbild_1928_04).",
+   "improves": "Munich (Brandhorst, Pinakotheken, Lenbachhaus), Dusseldorf and Cologne (K20/K21, Museum Ludwig) and Berlin's museum plots get exact roof forms in the area views. Roof colours come from true orthos, which show buildings without lean, so each roof's pixels sit on its own footprint.",
+   "licence": "Bavaria CC BY 4.0; NRW and Berlin Datenlizenz Deutschland Zero 2.0.",
+   "key": "none",
+   "format": "CityGML 1.0 tiles (1-2 km), JP2/GeoTIFF orthos, WMS.",
+   "priority": 2,
+   "notes": "Berlin needs no new host. gdi.berlin.de answered 200 only with certifi's roots added, since its certificate chain is incomplete, as build_built_years.py already does. luftbild_1928_04 serves photo centres and coverage, not a mosaic. Bavaria's LoD2 metalink is geodaten.bayern.de/odd/a/lod2/citygml/meta/metalink/09.meta4; that the files sit on download1.bayernwolke.de could not be confirmed from here (refused).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "geodaten.bayern.de",
+     "role": "api",
+     "probe": "https://geodaten.bayern.de/opengeodata/OpenDataDetail.html?pn=lod2",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"geodaten.bayern.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "download1.bayernwolke.de",
+     "role": "unconfirmed",
+     "probe": "https://download1.bayernwolke.de/a/lod2/citygml/690_5334.gml",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"download1.bayernwolke.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "geoservices.bayern.de",
+     "role": "tiles",
+     "probe": "https://geoservices.bayern.de/od/wms/dop/v1/dop40?SERVICE=WMS&REQUEST=GetCapabilities",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"geoservices.bayern.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.opengeodata.nrw.de",
+     "role": "files",
+     "probe": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.opengeodata.nrw.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.wms.nrw.de",
+     "role": "tiles",
+     "probe": "https://www.wms.nrw.de/geobasis/wms_nw_dop?SERVICE=WMS&REQUEST=GetCapabilities",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.wms.nrw.de\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "gdi.berlin.de",
+     "role": "tiles",
+     "probe": "https://gdi.berlin.de/services/wms/truedop_2024?REQUEST=GetCapabilities&SERVICE=wms",
+     "state": "open",
+     "said": "text/xml in 0.7 s",
+     "seen": "2026-10-10",
+     "code": 200
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "king-county-aerial-orthophotos-1936-and-1998-2025-seattle",
+   "name": "King County aerial orthophotos 1936 and 1998-2025 (Seattle)",
+   "facet": "cities",
+   "what": "King County's ArcGIS MapServers: a 1936 aerial mosaic (KingCo_Aerial_1936) and orthophotos for 1998, 2000, 2002, 2005, 2007, 2009, 2012, 2013, 2015, 2017, 2019, 2021, 2023 and 2025.",
+   "improves": "Seattle (a skyline city) gets a real 1936 aerial and one about every two years since 1998 to lay under its dial, and roof colours from the 2025 flight.",
+   "licence": "King County GIS data: free, provided as-is with a disclaimer; credit King County.",
+   "key": "none",
+   "format": "ArcGIS MapServer export/tile (JPEG).",
+   "priority": 2,
+   "notes": "Reachable NOW: an export over downtown in 1936 returned a JPEG. Other already-open city servers with orthos to read roof colour from, no new host: DC maps2.dcgis.dc.gov (DCGIS_DATA/Ortho2010 to Ortho2025, plus a 2026 snow flight); LA County public.gis.lacounty.gov (LACounty_Aerial 2011-13 and current); Boston gisportal.boston.gov (Imagery/ORTHOPHOTO_1995 and 2011); PDOK (NL, 2016-2026); Berlin truedop_2024. Other skyline cities' own imagery is refused and not detailed here: Brussels UrbIS orthos at 5 cm, CC BY (geoservices-urbis.irisnet.be, urbisdownload.datastore.brussels, both 000); Vienna (mapsneu.wien.gv.at, 000); Copenhagen (api.dataforsyningen.dk, 000, free token).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "gismaps.kingcounty.gov",
+     "role": "tiles",
+     "probe": "https://gismaps.kingcounty.gov/arcgis/rest/services/BaseMaps/KingCo_Aerial_1936/MapServer/export?bbox=-122.345,47.603,-122.330,47.612&bboxSR=4326&size=256,256&format=jpg&f=image",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 2.8 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "library-of-congress-sanborn-maps-lc-labs-data-package-on-a",
+   "name": "Library of Congress Sanborn maps (LC Labs data package on AWS), plus Washington's georeferenced 1880 Sanborn",
+   "facet": "cities",
+   "what": "About 50,600 Sanborn fire-insurance maps (440,048 JPEG sheets, 1867-1981, some 12,000 US places) organised by state. They show every building's footprint, storeys and roof, with its material colour-coded. DC GIS already serves the 1880 Washington Sanborn as georeferenced tiles.",
+   "improves": "Lets US cities show buildings' material colours and storeys at a date (1880s-1920s). Washington can lay its 1880 Sanborn under the dial now.",
+   "licence": "Public domain (Library of Congress rights statement); DC's tiles credit 'DC GIS and Library of Congress'; USGS topographic maps public domain.",
+   "key": "none",
+   "format": "JPEG per sheet with metadata JSON/CSV (not georeferenced); DC: ArcGIS MapServer; USGS: GeoTIFF.",
+   "priority": 2,
+   "notes": "The LoC package is reachable NOW, per sheet under maps-by-state/ (there is no need for the state zips of 1.6 GB and more). Each sheet must be georeferenced by hand from control points, so do it only for chosen blocks. DC_HISTORICAL also has the L'Enfant, Ellicott and Baker plans and an 1892 survey as tiles (already-open host). USGS historical topographic maps (prd-tnm, public domain, 1880s-2000s for every US city, e.g. Central Park 1947 1:24,000) are reachable and georeferenced but coarse.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "loc-sanborn-maps.s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://loc-sanborn-maps.s3.us-west-2.amazonaws.com/README.md",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.loc.gov",
+     "role": "api",
+     "probe": "https://www.loc.gov/collections/sanborn-maps/?fo=json&c=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.loc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "tile.loc.gov",
+     "role": "files",
+     "probe": "https://tile.loc.gov/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tile.loc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "maps2.dcgis.dc.gov",
+     "role": "tiles",
+     "probe": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_HISTORICAL/Sanborn_WebMercator/MapServer/export?bbox=-77.040,38.895,-77.030,38.902&bboxSR=4326&size=256,256&format=png&f=image",
+     "state": "open",
+     "code": 200,
+     "said": "image/png in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "prd-tnm.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/HistoricalTopo/GeoTIFF/NY/NY_Central%20Park_122894_1947_24000_geo.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.6 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "mapillary",
+   "name": "Mapillary (street-level photographs, with KartaView)",
+   "facet": "cities",
+   "what": "The largest crowd-sourced street-level archive, global, with API v4: images by bbox, thumbnails at 256/1024/2048 px, capture dates from about 2014, detected map features. KartaView (ex-OpenStreetCam) is a smaller, keyless alternative.",
+   "improves": "Facade colour and material for museums and streets in any city, not only France. Dated photos also let recent facades change with the dial. Each museum's facade colour and materials as seen from the street, to paint the voxel models' walls as they look rather than from descriptions. Painted here's 'now' can become the view from the painter's own spot, facing the subject. Take the image nearest the painter's point (Wikidata P1259, or a hand-placed point such as Tree Roots on the rue Daubigny) whose compass angle points at the depicted place (Caillebotte's rue de Turin), instead of the nearest picture of the place within 250 m. Where both a point of view and a depicted place are known, the same bearing could replace 'Facing north: the way the painter faced is not recorded'.",
+   "licence": "Mapillary imagery CC BY-SA 4.0; KartaView CC BY-SA 4.0.",
+   "key": "free sign-up client token (Mapillary, needs a Meta/Mapillary account); KartaView none",
+   "format": "JSON (Graph API), JPEG thumbnails, MVT vector tiles.",
+   "priority": 2,
+   "notes": "Mapillary's thumbnail URLs expire and come from rotating scontent-*.xx.fbcdn.net hosts, so a wildcard would be needed: fetch, measure, discard. KartaView's photo host (cdn.kartaview.org, or storage*.openstreetcam.org) is unconfirmed while its API is refused. Thumbnail hosts vary (scontent-*.xx.fbcdn.net). Faces and plates are blurred. Light and season vary, so take colours from several images. Thumbnail URLs are signed and expire, so ask the API for them each time and never store them. They come from regional hosts scontent-<pop>.xx.fbcdn.net, so session tests need a wildcard *.fbcdn.net (visitors' browsers need nothing). Coverage is thin in villages and fields. For Britain and Ireland, the Geograph images on Wikimedia Commons (already reachable) carry camera position and heading. Considered and left out: KartaView (refused, overlaps Mapillary), Smapshot (Switzerland only), PastVu (photo licences unclear).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "graph.mapillary.com",
+     "role": "api",
+     "probe": "https://graph.mapillary.com/images?bbox=2.336,48.860,2.338,48.861&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"graph.mapillary.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "tiles.mapillary.com",
+     "role": "tiles",
+     "probe": "https://tiles.mapillary.com/maps/vtp/mly1_public/2/14/8298/5636",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tiles.mapillary.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "*.fbcdn.net",
+     "role": "files",
+     "probe": "https://scontent-iad3-1.xx.fbcdn.net/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"scontent-iad3-1.xx.fbcdn.net\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.openstreetcam.org",
+     "role": "api",
+     "probe": "https://api.openstreetcam.org/2.0/photo/?lat=48.8606&lng=2.3376&radius=150&itemsPerPage=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.openstreetcam.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "cdn.kartaview.org",
+     "role": "files",
+     "probe": "https://cdn.kartaview.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"cdn.kartaview.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.mapillary.com",
+     "role": "browser",
+     "probe": "https://www.mapillary.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.mapillary.com\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
+  },
+  {
+   "id": "meta-wri-global-canopy-height-map-v2-1-19-m-cloud-native-m",
+   "name": "Meta / WRI Global Canopy Height Map v2 (1.19 m), cloud-native mirror",
+   "facet": "cities",
+   "what": "Canopy height per ~1.2 m pixel worldwide (DINOv3, 213,109 Web-Mercator COG tiles, uint8 metres), with a GeoParquet tile index and acquisition dates per tile; v1 is on Meta's own reachable bucket.",
+   "improves": "A skyline's green cells ('g') become trees of their real height and crown: street trees, Central Park's canopy against its lawns, the Tuileries' rows. Tree is told from grass where Overture's land use only says 'park'.",
+   "licence": "CC BY 4.0 (Meta AI / Data for Good; WRI).",
+   "key": "none",
+   "format": "COG tiles EPSG:3857 plus GeoParquet index, STAC and Zarr.",
+   "priority": 2,
+   "notes": "Reachable NOW. Model output: tall buildings' edges can read as 'canopy', so mask by Overture building footprints first. For the green and water class alone, Overture's own base/land_cover (ESA WorldCover 10 m) is on the bucket already in use and needs no new source.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/meta-chm-v2/tiles.parquet",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "dataforgood-fb-data.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://dataforgood-fb-data.s3.amazonaws.com/forests/v1/alsgedi_global_v6_float/chm/001311332.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "national-library-of-scotland-historic-ordnance-survey-tile",
+   "name": "National Library of Scotland historic Ordnance Survey tiles (S3), incl. London 1890s and 1940s",
+   "facet": "cities",
+   "what": "NLS's georeferenced OS XYZ tiles. london_1890s is the OS London town plans of the 1890s: every building, garden and pavement. london_1940s is OS large-scale London c. 1940s-50s. Also OS six-inch 2nd ed. (os/6inchsecond), 1:1250/2500 of the late 1960s, Goad fire-insurance plans of Scottish towns, and 1840s-1890s town plans.",
+   "improves": "London (a skyline city) can lay the city as drawn in the 1890s and the 1940s under the dial. It also gives building outlines and gardens to check its 'old' (pre-1900) cells against: a real map frame for the years London's records leave blank.",
+   "licence": "CC BY (NLS) per sheet; credit 'Reproduced with the permission of the National Library of Scotland'. A few items are CC BY-NC-SA, so check the layer's page.",
+   "key": "none (avoid NLS's MapTiler-hosted copies, which need a key)",
+   "format": "XYZ PNG tiles (EPSG:3857), deep zooms.",
+   "priority": 2,
+   "notes": "Reachable NOW: Bloomsbury z16 tiles of london_1890s and london_1940s answered 200; the path-style s3.amazonaws.com URL answers 301, so use the virtual-host name. Coverage is Great Britain only (plus Belgian GSGS 1940s and Hong Kong sheets in the bucket). These are maps, not photographs: they give form and land use, not colour.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "mapseries-tilesets.s3.amazonaws.com",
+     "role": "tiles",
+     "probe": "https://mapseries-tilesets.s3.amazonaws.com/london_1890s/16/32744/21788.png",
+     "state": "open",
+     "code": 200,
+     "said": "image/png in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "maps.nls.uk",
+     "role": "browser",
+     "probe": "https://maps.nls.uk/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"maps.nls.uk\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "nypl-map-warper-and-allmaps-georeferenced-historical-city-",
+   "name": "NYPL Map Warper (and Allmaps): georeferenced historical city atlases",
+   "facet": "cities",
+   "what": "The New York Public Library's georeferenced historical maps as XYZ tiles per map or layer: NYC atlases from the 1850s to the 1950s (Perris, Bromley, Robinson and other insurance-style atlases) colour-coded by building material. Allmaps holds IIIF georeference annotations for many libraries' maps and renders them through its own tile server.",
+   "improves": "New York's city in time gets real building footprints and materials per decade (pink brick, ochre wood frame, blue-grey stone), so each building's dots can wear the material colour it had in the year the dial shows.",
+   "licence": "NYPL: public domain / CC0 for most maps ('From The New York Public Library' requested). Allmaps annotations CC0; images under each holding institution's terms.",
+   "key": "none",
+   "format": "XYZ PNG tiles and GeoTIFF exports (Map Warper); IIIF Georeference Annotation JSON (Allmaps).",
+   "priority": 2,
+   "notes": "The Map Warper tile path (/warper/layers/tile/{id}/{z}/{x}/{y}.png) could not be confirmed while the host is refused. Allmaps' images come from each library's own IIIF host, so expect extra hosts per map. Materials are drawn by convention: colour must be classified, not copied.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "maps.nypl.org",
+     "role": "tiles",
+     "probe": "https://maps.nypl.org/warper/layers.json?query=bromley&per_page=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"maps.nypl.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "annotations.allmaps.org",
+     "role": "api",
+     "probe": "https://annotations.allmaps.org/maps?limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"annotations.allmaps.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "allmaps.xyz",
+     "role": "tiles",
+     "probe": "https://allmaps.xyz/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"allmaps.xyz\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "overture-buildings-colours-materials-roof-shapes-and-build",
+   "name": "Overture buildings: colours, materials, roof shapes and building_part (already reachable; coverage measured)",
+   "facet": "cities",
+   "what": "Overture's building and building_part types carry roof_color, facade_color, roof_material, facade_material, roof_shape, roof_height, min_height and num_floors, mostly passed through from OSM tags (building:colour, roof:colour, roof:shape, building:material).",
+   "improves": "Free overrides now, in build_grounds.py's existing read: tint a building's dots with its own facade or roof colour where it has one, and give the surroundings of the museums their real cladding. Manhattan's mapped landmark parts are rich.",
+   "licence": "ODbL (buildings theme).",
+   "key": "none",
+   "format": "GeoParquet (release 2026-09-23.1 is the newest on the bucket).",
+   "priority": 2,
+   "notes": "Measured in six central boxes (Amsterdam / Paris 1er / Midtown NYC / Berlin-Mitte / Ginza / downtown Houston). Buildings: n = 6286 / 1221 / 983 / 489 / 1955 / 237; roof_color 8 / 0 / 17 / 32 / 0 / 2; facade_color 4 / 6 / 167 / 23 / 0 / 12; roof_material 11 / 23 / 182 / 9 / 0 / 0; roof_shape 107 / 22 / 186 / 105 / 5 / 6; height 88% / 5% / 97% / 14% / 1% / 89%. building_part: NYC 1,724 parts with facade_color 84%, roof_material 87% and roof_shape 91%; Paris 299 parts with roof_color 13%; sparse elsewhere. Values are clean ('#956C66', 'brick', 'stone', 'glass', 'flat', 'gabled', 'mansard'). Verdict: an override for landmarks, not a source. OSM itself is no easier from here. Refused: overpass.kumi.systems, overpass.private.coffee, maps.mail.ru, download.bbbike.org, download.openstreetmap.fr, planet.openstreetmap.org, ftp.osuosl.org, ftp.fau.de, data.openstreetmap.us (Layercake) and api.openstreetmap.org. osm-pds.s3.amazonaws.com answers, but it holds only the full-planet ORC, about 100 GB. Since Overture already carries the OSM colour tags, no separate OSM source is needed for colour.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "overturemaps-us-west-2.s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-09-23.1/theme=buildings/type=building_part/part-00000-7e1e3f13-ca48-5851-a16f-b54315e6becc-c000.zstd.parquet",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "panoramax",
+   "name": "Panoramax (open street-level photographs)",
+   "facet": "cities",
+   "what": "Openly licensed street-level photographs behind a STAC API: the meta-catalogue api.panoramax.xyz and instances run by OSM France and IGN, strongest in France.",
+   "improves": "Facades, which orthos cannot see. A vision model reads each museum's and each street's facade colour and material from photos at its point, as the site already does for gallery walls. In true isometric the walls are half of what is seen: Paris's limestone against render, shopfront colours. Facade colours and materials for the Paris museums' voxel models (the Louvre, Orsay, the Pompidou, the Musée Picasso, the Petit Palais), from open, dated pictures. Keyless 'now' views for France that face the painted place. For Auvers, Arles, Saint-Rémy, Giverny, Pontoise and L'Estaque, ask for pictures 3-60 m from the site that look at it, and show today's view beside the painting.",
+   "licence": "Per instance: OSM France CC BY-SA 4.0; IGN Licence Ouverte 2.0 (each instance's /api/configuration states it).",
+   "key": "none",
+   "format": "STAC JSON; JPEG (thumbnail, SD, HD, 360-degree).",
+   "priority": 2,
+   "notes": "Picture files are served from each instance's own storage. The OVH host listed is OSM France's and is unconfirmed: read the asset hrefs once the API answers and allow whatever hosts they name. Coverage outside France is thin. Keep only the colours read, never the photographs. Mostly France; picture files are served from each instance's storage. Each picture is served by the instance that holds it, and its code can redirect to that instance's object storage, so allow whatever host the first fetch shows. Strongest in France; sparse elsewhere.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.panoramax.xyz",
+     "role": "api",
+     "probe": "https://api.panoramax.xyz/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.panoramax.xyz\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "panoramax.openstreetmap.fr",
+     "role": "api",
+     "probe": "https://panoramax.openstreetmap.fr/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"panoramax.openstreetmap.fr\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "panoramax.ign.fr",
+     "role": "api",
+     "probe": "https://panoramax.ign.fr/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"panoramax.ign.fr\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "plateau-japan-via-flateau-on-source-cooperative-plus-tu-de",
+   "name": "PLATEAU (Japan) via Flateau on Source Cooperative, plus TU Delft's PLATEAU Tokyo FlatCityBuf",
+   "facet": "cities",
+   "what": "MLIT's PLATEAU 3D city models. Flateau (Pacific Spatial Solutions) is the LoD0 footprints with attributes as GeoParquet per city: measured_height, storeys_above_ground, year_of_construction, roof_type, structure and usage, for 211 cities including Tokyo's 23 wards (2023 data). TU Delft's FlatCityBuf (cloud-optimised CityJSON, 4 GB) holds PLATEAU Tokyo in 3D.",
+   "improves": "Tokyo's skyline gets measured heights: Chuo-ku has measured_height on 15,920 of 16,800 buildings and Taito-ku on 97%, against 1% from Overture in Ginza. Storeys are given for 66-90%.",
+   "licence": "Flateau CC BY 4.0 (Pacific Spatial Solutions), under PLATEAU's terms of use, which are CC BY 4.0-compatible; credit MLIT Project PLATEAU.",
+   "key": "none",
+   "format": "GeoParquet/GeoPackage per city (join tables by gml_id); FlatCityBuf .fcb, range-readable.",
+   "priority": 2,
+   "notes": "Reachable NOW (already-allowed host). Checked: in the 2023 Tokyo wards year_of_construction, roof_type and structure are empty (Chuo, Taito), so Tokyo still has no building years. PLATEAU's own LoD2 is textured from aerial photographs, which would give real roof and facade colours, but it needs the three refused PLATEAU hosts.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/pacificspatial/flateau/parquet/13102_chuo-ku_2023_building_lod0.parquet",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.geospatial.jp",
+     "role": "files",
+     "probe": "https://www.geospatial.jp/ckan/api/3/action/package_search?q=plateau&rows=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.geospatial.jp\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.plateauview.mlit.go.jp",
+     "role": "api",
+     "probe": "https://api.plateauview.mlit.go.jp/datacatalog/plateau-datasets",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.plateauview.mlit.go.jp\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "assets.cms.plateau.reearth.io",
+     "role": "files",
+     "probe": "https://assets.cms.plateau.reearth.io/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"assets.cms.plateau.reearth.io\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "usgs-3dep-airborne-lidar-entwine-point-tiles-on-aws-plus-d",
+   "name": "USGS 3DEP airborne lidar (Entwine Point Tiles on AWS), plus DC's lidar",
+   "facet": "cities",
+   "what": "Classified airborne lidar for the US (ground, buildings, vegetation) as Entwine Point Tiles, e.g. NY_NewYorkCity; Washington DC's own lidar buckets (dc-lidar-2018, ...).",
+   "improves": "True roof forms for the US skyline cities (New York, LA, San Francisco, Washington, Chicago, Boston, Houston, Seattle, Philadelphia): setbacks, pitched roofs, domes and crowns. Each cell gets a surface height, not one number per building, and the museum plots get their neighbours' real profiles.",
+   "licence": "Public domain (USGS); DC lidar under DC open data terms.",
+   "key": "none",
+   "format": "EPT (ept.json + LAZ octree), range-readable; needs PDAL, or laspy with lazrs.",
+   "priority": 2,
+   "notes": "Reachable NOW. Overture already uses USGS lidar for heights (97% in Midtown, 89% in Houston), so the gain is shape, not height. Processing is heavy, so do one city at a time on GitHub's runners. Avoid NAIP on AWS (naip-analytic, naip-visualization): those buckets are requester-pays and would bill. Planetary Computer's free NAIP (planetarycomputer.microsoft.com, naipeuwest.blob.core.windows.net) and USGS's NAIP ImageServer (imagery.nationalmap.gov) are both refused (000).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "usgs-lidar-public.s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://usgs-lidar-public.s3.us-west-2.amazonaws.com/NY_NewYorkCity/ept.json",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s3-us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/NY_NewYorkCity/ept.json",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "dc-lidar-2018.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://dc-lidar-2018.s3.amazonaws.com/",
+     "state": "open",
+     "code": 200,
+     "said": "application/xml in 0.7 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "openhistoricalmap-dated-cc0-historical-map",
+   "name": "OpenHistoricalMap (dated, CC0 historical map)",
+   "facet": "cities",
+   "what": "An OSM-style community map where every feature carries start_date and end_date, including historical buildings and streets in some cities, with demolished ones kept. A planet PBF (about 1.3 GB), replication diffs and vector tiles.",
+   "improves": "Dated building outlines where volunteers have mapped them, the only open source that can show buildings that no longer stand. It feeds build_built_years.py the way the OSM dates do.",
+   "licence": "CC0.",
+   "key": "none",
+   "format": "OSM PBF (planet, weekly), MVT vector tiles.",
+   "priority": 3,
+   "notes": "The S3 bucket behind planet.openhistoricalmap.org lists through the allowed s3.amazonaws.com, but its objects answer AccessDenied (403), so the planet needs its own host, or a read on GitHub's runners like osm-dates.yml. Coverage of the site's cities is patchy and uneven by period.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "planet.openhistoricalmap.org",
+     "role": "files",
+     "probe": "https://planet.openhistoricalmap.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"planet.openhistoricalmap.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "vtiles.openhistoricalmap.org",
+     "role": "tiles",
+     "probe": "https://vtiles.openhistoricalmap.org/maps/osm/0/0/0.pbf",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"vtiles.openhistoricalmap.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.openhistoricalmap.org",
+     "role": "browser",
+     "probe": "https://www.openhistoricalmap.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.openhistoricalmap.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.amazonaws.com/planet.openhistoricalmap.org/planet/planet-261003_0000.osm.pbf",
+     "state": "open",
+     "code": 200,
+     "said": "application/zip in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "esa-ocean-colour-cci-v6-0-monthly-climatology-of-remote-se",
+   "name": "ESA Ocean Colour CCI v6.0: monthly climatology of remote-sensing reflectance (1997-2022)",
+   "facet": "earth",
+   "what": "The sea's measured colour: reflectance (Rrs) at 412, 443, 490, 510, 560 and 665 nm, plus chlorophyll, merged from SeaWiFS, MODIS, MERIS, VIIRS and OLCI. About 4 km, one field per calendar month.",
+   "improves": "The sea (71 % of the globe's body) is now coloured only by depth zones (the SHELF/SLOPE/ABYSS/REEF hexes). Converting Rrs 443/560/665 to sRGB per month would give it its actual colour: green shelf seas, the brown Baltic, the muddy plumes of the Amazon, Yangtze and Rio de la Plata, spring blooms, and the milky turquoise coccolithophore blooms of the Barents and Bering seas. The open-ocean gyres stay deep blue.",
+   "licence": "ESA CCI free and open access (ESA CCI Ocean Colour terms). Cite 'ESA Ocean Colour CCI v6.0', DOI 10.5285/5011d22aae5a4671b0cbc7d05c56c4f0.",
+   "key": "none",
+   "format": "NetCDF-4, 12 monthly climatology files at 1/24 degree (about 4 km). THREDDS OPeNDAP/NCSS can cut a strided subset (e.g. every 8th pixel, three Rrs bands) down to a few MB.",
+   "priority": 1,
+   "notes": "All four hosts are blocked here. CEDA's catalogue marked v6.0 downloads 'temporarily unavailable' in Nov 2025 and points to oceancolour.org, so allow both. Gaps under persistent cloud and ice at high latitudes need filling from the annual mean or neighbours. The NOAA ERDDAP mirror holds a monthly time series at 1 km, not a climatology; check which variables it carries. NASA OB.DAAC's L3m climatologies (oceandata.sci.gsfc.nasa.gov) are an alternative but need an Earthdata login.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "www.oceancolour.org",
+     "role": "api",
+     "probe": "https://www.oceancolour.org/thredds/catalog.html",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.oceancolour.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.cci.ceda.ac.uk",
+     "role": "api",
+     "probe": "https://data.cci.ceda.ac.uk/thredds/catalog/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/catalog.html",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.cci.ceda.ac.uk\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "dap.ceda.ac.uk",
+     "role": "files",
+     "probe": "https://dap.ceda.ac.uk/neodc/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"dap.ceda.ac.uk\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "comet.nefsc.noaa.gov",
+     "role": "alt",
+     "probe": "https://comet.nefsc.noaa.gov/erddap/info/occci_v6_monthly_1km/index.html",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"comet.nefsc.noaa.gov\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "esa-worldcover-10-m-2021-v200-land-cover-plus-its-sentinel",
+   "name": "ESA WorldCover 10 m 2021 v200 land cover, plus its Sentinel-2 RGBNIR annual composites, on AWS",
+   "facet": "earth",
+   "what": "Eleven land-cover classes at 10 m (tree, shrub, grassland, cropland, built-up, bare/sparse, snow and ice, water, herbaceous wetland, mangroves, moss and lichen), plus the yearly cloud-free Sentinel-2 median composite the classes were made from.",
+   "improves": "build_material.py could blend each cell from its real class shares instead of inferring forest, grass or desert from biome, canopy height and aridity. It also adds what the globe lacks: cropland (not in CLASSES, yet the main surface of Europe, India and the US Midwest), shrubland, moss-and-lichen tundra, mangroves and exact built-up area. The RGBNIR composite gives each class its real local colour (Sahara red vs Arabian beige) for calibrating material colours.",
+   "licence": "CC BY 4.0. Credit: '© ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium'. Impact Observatory LULC is also CC BY 4.0.",
+   "key": "none",
+   "format": "Class map: COG uint8, 3x3 degree tiles (36000x36000 px), overviews down to 562x562 (about 600 m). Composites: 1x1 degree, 4-band uint16 COGs (12000x12000 px, overviews down to 750x750) for 2020 and 2021. The swir/ and ndvi/ folders hold NDVI p10/p50/p90.",
+   "priority": 1,
+   "notes": "Already reachable; no redirects; no CORS (build-time only). Covers 2020/2021 only. For change through 2024, Impact Observatory's 10 m annual land cover (2017-2024, one file per UTM zone, CC BY 4.0, third host above) is also reachable. Class overviews are sampled, not averaged, so compute shares from a middle overview level (3-4). The same files on Planetary Computer and Terrascope (both blocked) are not needed.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "esa-worldcover.s3.eu-central-1.amazonaws.com",
+     "role": "files",
+     "probe": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N51E000_Map.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "esa-worldcover-s2.s3.eu-central-1.amazonaws.com",
+     "role": "files",
+     "probe": "https://esa-worldcover-s2.s3.eu-central-1.amazonaws.com/rgbnir/2021/N51/ESA_WorldCover_10m_2021_v200_N51E000_S2RGBNIR.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "io-10m-annual-lulc.s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/31U_2024.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.9 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "nasa-gibs-global-imagery-browse-services-wmts-wms-the-succ",
+   "name": "NASA GIBS (Global Imagery Browse Services) WMTS/WMS, the successor to NEO",
+   "facet": "earth",
+   "what": "Over 1,200 global layers as tiles or one-shot WMS maps. Relevant ones: monthly snow cover % (MODIS_Terra_L3_Snow_Cover_Monthly_Average_Pct); monthly NDVI (VIIRS_NOAA20_L3_NDVI_Monthly, MODIS_Terra_L3_NDVI_Monthly); Black Marble 2012/2016 night lights (VIIRS_Black_Marble); nightly Day/Night Band (VIIRS_SNPP_DayNightBand_ENCC); yesterday's true colour (VIIRS_NOAA20_CorrectedReflectance_TrueColor); 10-minute geostationary GeoColor and IR (GOES-East_ABI_GeoColor, GOES-West_ABI_GeoColor, Himawari_AHI_Band13_Clean_Infrared); daily sea ice (AMSRU2_Sea_Ice_Concentration_12km); BlueMarble_NextGeneration (August 2004 only).",
+   "improves": "At build time: about 20 years of MODIS monthly snow % at 0.05 degrees would replace DIRT's MERRA-2 0.5-degree snow (thresholded at 50 %), and monthly NDVI would add real green-up. In the visitor's browser (CORS tiles), the globe could show today's real cloud and true colour, and the night side the actual Day/Night Band, under the real sun the page already computes.",
+   "licence": "NASA open data, no restrictions. GIBS asks for this acknowledgement: 'We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS).' Geostationary layers are NOAA/JMA data.",
+   "key": "none",
+   "format": "WMTS JPEG/PNG tiles (EPSG:4326, 3857, 3413, 3031); WMS GetMap at any bbox and size (wms.cgi); Worldview snapshot API. Science layers are colour-mapped; GIBS colormap XML maps colours back to values.",
+   "priority": 1,
+   "notes": "Blocked in this session (connect_rejected). To allow: gibs.earthdata.nasa.gov; gibs-a, gibs-b and gibs-c.earthdata.nasa.gov (Worldview's shards, optional over HTTP/2); wvs.earthdata.nasa.gov. NASA NEO (neo.gsfc.nasa.gov), the old source of these monthly grids, shut its WMS on 3 Aug 2026 and its site on 1 Sep 2026, and its own notice points to GIBS. GeoColor layers keep about 90 days. Layer IDs were checked against Worldview's config (github.com/nasa-gibs/worldview). For aurora: the DNB ENCC layer shows it nightly, and SWPC's OVATION grid (services.swpc.noaa.gov/json/ovation_aurora_latest.json) is blocked; the reachable noaa-swpc-pds bucket has only hemispheric power and Kp.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "gibs.earthdata.nasa.gov",
+     "role": "tiles",
+     "probe": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/VIIRS_Black_Marble/default/2016-01-01/500m/0/0/0.png",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"gibs.earthdata.nasa.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "gibs-a.earthdata.nasa.gov",
+     "role": "alt",
+     "probe": "https://gibs-a.earthdata.nasa.gov/wmts/epsg4326/best/VIIRS_Black_Marble/default/2016-01-01/500m/0/0/0.png",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"gibs-a.earthdata.nasa.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "wvs.earthdata.nasa.gov",
+     "role": "api",
+     "probe": "https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=2026-10-08&BBOX=-90,-180,90,180&CRS=EPSG:4326&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor&FORMAT=image/jpeg&WIDTH=512&HEIGHT=256",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"wvs.earthdata.nasa.gov\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "noaa-gmgsi-global-mosaic-of-geostationary-satellite-imager",
+   "name": "NOAA GMGSI: Global Mosaic of Geostationary Satellite Imagery (hourly), on AWS",
+   "facet": "earth",
+   "what": "The whole world's clouds every hour: blended longwave IR, shortwave IR, water vapour and visible mosaics from Himawari-9, GOES-18/19 and Meteosat, about 40 minutes after the hour.",
+   "improves": "The globe's cloud is now a monthly climatology (DIRT's CERES-based cloud-*.webp). GMGSI's IR (cold means high, bright cloud), plus visible by day, gives the real cloud of the last hour under the real sun the page already computes (land.js sunNow), with storms where storms are. The page could fetch it directly (CORS *), or an hourly job could reduce it to a small WebP mask.",
+   "licence": "NOAA open data (NODD): free to use, attribution requested, no implied endorsement.",
+   "key": "none",
+   "format": "NetCDF-4/HDF5 on a 4999x3000 grid (about 0.072 degrees, 8 km), 72.7S-72.7N, about 7 MB per band per hour. Path: GMGSI_{LW,SW,WV,VIS,SSR}/YYYY/MM/DD/HH/.",
+   "priority": 1,
+   "notes": "Already reachable; no redirects. Checked: hourly files up to 21 UTC today, Access-Control-Allow-Origin: *. Nothing beyond 72.7 degrees, so polar caps need the climatology. IR alone under-shows warm low cloud and fog, and visible exists only by day. Decoding in the browser needs an HDF5 reader (e.g. h5wasm), and 7 MB per visit is heavy on phones; a scheduled GitHub Action writing a ~100-200 KB alpha WebP would be lighter. Full-disk scans from noaa-goes19, noaa-goes18 and noaa-himawari9 (also reachable) give true-colour clouds by day, but at hundreds of MB per scan. The sun and terminator need no data: land.js's Almanac formula is already accurate to a fraction of a degree.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "noaa-gmgsi-pds.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://noaa-gmgsi-pds.s3.amazonaws.com/GMGSI_LW/2026/10/10/21/GLOBCOMPLIR_v3r0_blend_s202610102100000_e202610102109599_c202610102133488.nc",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "sentinel-2-l2a-120-m-mosaic-sinergise-sentinel-hub-cloud-f",
+   "name": "Sentinel-2 L2A 120 m Mosaic (Sinergise / Sentinel Hub), cloud-free every 10 days, on AWS",
+   "facet": "earth",
+   "what": "Global land surface reflectance for 36 ten-day periods of 2020 (2019 has fewer bands), clouds removed and gaps interpolated, all Sentinel-2 bands at 120 m.",
+   "improves": "Gives every land cell its real colour month by month (B04/B03/B02 to sRGB, averaged per 39 km cell). That replaces build_material.py's invented material colours (soil-class bare ground; CANOPY_*/GRASS/DRY_GRASS hexes mixed by aridity), so deserts, cropland, tundra, the seasonal green-up and winter snow look as they did. B08/B04 (NDVI) gives real greenness by month for the same cells. The art-palette snap is unchanged.",
+   "licence": "CC BY 4.0. Credit: 'Contains modified Copernicus data 2020 processed by Sentinel Hub'.",
+   "key": "none",
+   "format": "COG uint16, one file per band per UTM grid zone, 647 zones per period, about 50 MB each. Internal overviews go down to 1/32 (about 3.8 km, e.g. 130x235 px). Path: YYYY/M/D/<zone>/<band>.tif, where D is the first day of the 10-day period. QM.tif is the quality mask.",
+   "priority": 1,
+   "notes": "Already reachable; no redirects; no CORS (build-time only). Covers land and coastal water only: no open ocean, and little or no Antarctica. One year only. Regions cloudy for long spells may keep cloud (QM flags them). The interpolation masks cloud only (CLM/CLP), so snow mostly survives, but bright snow taken for cloud gets interpolated over. Needs reprojection from UTM to equirectangular.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "sentinel-s2-l2a-mosaic-120.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://sentinel-s2-l2a-mosaic-120.s3.amazonaws.com/2020/7/12/31U/B04.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.8 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "world-bank-light-every-night-viirs-day-night-band-monthly-",
+   "name": "World Bank 'Light Every Night': VIIRS Day/Night Band monthly global composites (NOAA/EOG processing), on AWS",
+   "facet": "earth",
+   "what": "Measured night-light radiance for every month, Jan 2012 to Jun 2025 (Suomi NPP; NOAA-20 Jun 2023 to Feb 2025). Each month comes stray-light corrected or excluded, with a count of cloud-free nights.",
+   "improves": "Replaces the night side's invented lamps (land.js makeLights seeds random clusters on land) with the lights that are really there. A 12-month median of avg_rade9, reduced to the 1024x512 or 2048x1024 grid, gives each cell its true brightness: the Nile thread, the Trans-Siberian beads, Gulf flares, dark North Korea. Lamp colour can still come from the art palette.",
+   "licence": "CC BY 4.0 (World Bank open data licence). Credit: Light Every Night, World Bank / NOAA NCEI-EOG / University of Michigan.",
+   "key": "none",
+   "format": "COG, float32 LZW, 15 arc-sec (86400x33601, 75N-65S), internal overviews down to 338x132. Each month is 3-4.5 GB, but the 2700x1051 or 5400x2101 overview is a few MB of range reads. CORS: Access-Control-Allow-Origin * (checked).",
+   "priority": 1,
+   "notes": "Already reachable from the session; no redirects. Monthly composites still contain short-lived light (fires, gas flares, fishing boats, aurora residue). Summer months above about 55 degrees are empty because of the midnight sun, so take a multi-month median of the slcorr files. The bucket's dated folders (YYYYMM/, npp_YYYYMM/) hold raw nightly swaths of 16-260 MB each; use only composites/.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "globalnightlight.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://globalnightlight.s3.amazonaws.com/composites/npp_202506_ops/DNB_npp_20250601-20250630_global_ecm-slcorr_v10_ops.avg_rade9.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "earth-genome-earth-index-yearly-cloudless-sentinel-2-mosai",
+   "name": "Earth Genome 'Earth Index' yearly cloudless Sentinel-2 mosaics (2022-2025), on Source Cooperative",
+   "facet": "earth",
+   "what": "Cloud-free Sentinel-2 composites per 100 km MGRS tile for each year 2022-2025: an 8-bit true-colour TCI plus all bands at native resolution. Also 2022-23 temporal mosaics with a pre-cut tile cache (zoom 0-8).",
+   "improves": "Modern 10 m true colour for the close views: the dive's ground, the tint of a city's or a museum's clod, the regional heights. It also allows per-region colour calibration that matches today's land (new reservoirs, cleared forest, grown cities), under an open licence, unlike EOX s2cloudless.",
+   "licence": "CC BY 4.0 (Earth Genome). Also credit 'Contains modified Copernicus Sentinel data'.",
+   "key": "none",
+   "format": "COG in EPSG:3857, one per MGRS tile. TCI is 8-bit RGB, about 150-330 MB, with overviews down to 272x272 (about 370 m). 21,636 tiles for 2025 and 16,126 for 2024. The tile cache is earthgenome/sentinel2-temporal-mosaics/cache.tar.gz: 2.6 GB of XYZ tiles, zoom 0-8 (reachable, 206).",
+   "priority": 2,
+   "notes": "Reachable now via the s3.us-west-2 path (data.source.coop is blocked); no redirects. Yearly composites only, no seasons. Coverage grows by year (2022 is partial). Web Mercator, so nothing beyond about 85 degrees.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/earthgenome/earthindeximagery/31UDQ_2025-01-01_2026-01-01/TCI.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.source.coop",
+     "role": "alt",
+     "probe": "https://data.source.coop/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "earthenv-global-cloud-cover-climatology-wilson-jetz-2016-m",
+   "name": "EarthEnv global cloud-cover climatology (Wilson & Jetz 2016), MODIS 1 km",
+   "facet": "earth",
+   "what": "How often each 1 km square is cloudy, month by month, from 15 years (2000-2014) of twice-daily MODIS.",
+   "improves": "The monthly cloud layer is CERES SYN1deg at 1 degree (DIRT's cloud-*.webp). EarthEnv is about 100 times finer and observed: fog coasts (Namib, Atacama, California), cloud on windward slopes, cloud forests, clear rain shadows and deserts. Cloud geography as it really falls.",
+   "licence": "Unclear. The GEE community catalog lists CC BY-NC 4.0; another mirror lists CC BY 4.0. Read earthenv.org/cloud before use: NC would be a problem if the site sells work. Cite Wilson & Jetz 2016, PLoS Biol 14(3): e1002415.",
+   "key": "none",
+   "format": "GeoTIFF at 30 arc-sec (about 1 km), global: 12 monthly means (MODCF_monthlymean_01 to _12) plus annual-mean and variability layers. Hundreds of MB each.",
+   "priority": 2,
+   "notes": "Blocked here. The climatology ends in 2014, which is fine for cloud geography. It gives frequency, not thickness: pair it with the existing CERES optical depth, or ERA5's daily cycle, for how thick and when.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "data.earthenv.org",
+     "role": "files",
+     "probe": "https://data.earthenv.org/cloud/MODCF_monthlymean_01.tif",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.earthenv.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.earthenv.org",
+     "role": "browser",
+     "probe": "https://www.earthenv.org/cloud",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.earthenv.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "gebco-2026-global-terrain-grid-15-arc-sec-cloud-optimised-",
+   "name": "GEBCO_2026 global terrain grid (15 arc-sec), cloud-optimised, on Source Cooperative",
+   "facet": "earth",
+   "what": "Land and sea-floor elevation at 15 arc-seconds (published 23 Apr 2026), constrained by multibeam surveys; includes under-ice topography.",
+   "improves": "The sea's colour by depth and the relief light (earth-props.webp) come from Mapzen terrarium, whose bathymetry dates from the ETOPO1 era. GEBCO 2026 puts shelf breaks, seamounts, ridges and trenches where they are, in one consistent grid for land and sea.",
+   "licence": "Public domain and free for any use, including commercial, but attribution is required ('GEBCO Bathymetric Compilation Group 2026, The GEBCO_2026 Grid'). Not for navigation.",
+   "key": "none",
+   "format": "COG int16, 86400x43200, overviews from 43200 down to 675x337. 3.3 GB whole, but the 5400x2700 (4 arc-min) overview is one small read (tens of MB).",
+   "priority": 2,
+   "notes": "Reachable now through the already-allowed s3.us-west-2.amazonaws.com path (the README's data.source.coop hostname is blocked); no redirects. Mirrored by the Australian Antarctic Division, with GEBCO 2024 and 2025 alongside. The TID (source-type) grid is not mirrored.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "s3.us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/ausantarctic/gebco/GEBCO_2026.tif",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.7 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.source.coop",
+     "role": "alt",
+     "probe": "https://data.source.coop/ausantarctic/gebco/GEBCO_2026.tif",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.gebco.net",
+     "role": "browser",
+     "probe": "https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.gebco.net\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "microsoft-planetary-computer-keyless-stac-api-and-azure-bl",
+   "name": "Microsoft Planetary Computer: keyless STAC API and Azure Blob COGs (MODIS 6.1, WorldCover, GOES)",
+   "facet": "earth",
+   "what": "STAC search with anonymous short-lived SAS tokens for dozens of collections. Notably MODIS 6.1 as COGs: MCD43A4 daily NBAR true colour (500 m), MOD09A1 8-day reflectance, MOD10A2 8-day snow, MOD13A1 16-day NDVI.",
+   "improves": "The only keyless route to MODIS; NASA's own distribution needs an Earthdata login. A median per calendar month of MCD43A4 bands 1/4/3 over 2015-2024 would be a modern multi-year 'Blue Marble': land colour, seasonal snow and green-up by month at 500 m, everywhere including high latitudes. That beats BMNG's single year (2004) and the Sentinel-2 mosaic's single year (2020).",
+   "licence": "Set per collection (MODIS: NASA open, no restrictions), plus the Planetary Computer terms of use for the service.",
+   "key": "none (anonymous SAS token from the API; rate-limited)",
+   "format": "STAC JSON. COGs on Azure Blob: MODIS sinusoidal 10x10 degree tiles, about 460 per date. The data API can also render previews and mosaics server-side.",
+   "priority": 2,
+   "notes": "All blocked here. A full year means thousands of tiles; sampling one composite every 8-16 days is enough. Storage accounts were taken from microsoft/planetary-computer-tasks: modiseuwest/modis-061, ai4edataeuwest/esa-worldcover, goeseuwest/noaa-goes*. The PC Hub (notebooks) was retired; the STAC and data APIs remain.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "planetarycomputer.microsoft.com",
+     "role": "api",
+     "probe": "https://planetarycomputer.microsoft.com/api/sas/v1/token/modis-09A1-061",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"planetarycomputer.microsoft.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "modiseuwest.blob.core.windows.net",
+     "role": "files",
+     "probe": "https://modiseuwest.blob.core.windows.net/modis-061/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"modiseuwest.blob.core.windows.net\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "ai4edataeuwest.blob.core.windows.net",
+     "role": "files",
+     "probe": "https://ai4edataeuwest.blob.core.windows.net/esa-worldcover/v200/2021/map/ESA_WorldCover_10m_2021_v200_N51E000_Map.tif",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ai4edataeuwest.blob.core.windows.net\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "nasa-blue-marble-next-generation-bmng-monthly-true-colour-",
+   "name": "NASA Blue Marble Next Generation (BMNG) monthly true colour, 2004",
+   "facet": "earth",
+   "what": "Cloud-free MODIS true-colour Earth for each month of 2004 at 500 m, with seasonal snow, vegetation and shallow-water colour. Variants add shaded topography and bathymetry.",
+   "improves": "The standard month-by-month picture of the Earth from above. It is a reference for checking colours derived from Sentinel-2, and the only monthly true colour that covers Antarctica, Greenland and shallow seas (the Bahamas banks, reefs), which the 120 m Sentinel-2 mosaic lacks.",
+   "licence": "NASA public domain. Credit NASA Earth Observatory (Reto Stöckli).",
+   "key": "none",
+   "format": "JPEG/PNG at 5400x2700 (8 km), 21600x10800 (2 km), or 86400x43200 (500 m, in 8 tiles). File names: world / world.topo / world.topo.bathy.2004MM.",
+   "priority": 2,
+   "notes": "All hosts are blocked, and whether the files still exist is uncertain. earthobservatory.nasa.gov moved to science.nasa.gov in Dec 2025 and the old domain was switched off. visibleearth.nasa.gov no longer resolves for the fetch tool. NEO, which held the BMNG archive, was turned off on 1 Sep 2026. Confirm that eoimages still serves the files (or where it now redirects) before relying on it. GIBS's BlueMarble_NextGeneration is August 2004 only. Land cover is from 2004, before 20 years of deforestation, new reservoirs and city growth. The 'topo.bathy' ocean is shaded relief, not ocean colour.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "eoimages.gsfc.nasa.gov",
+     "role": "files",
+     "probe": "https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73751/world.topo.bathy.200407.3x5400x2700.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"eoimages.gsfc.nasa.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "assets.science.nasa.gov",
+     "role": "files",
+     "probe": "https://assets.science.nasa.gov/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"assets.science.nasa.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "neo.gsfc.nasa.gov",
+     "role": "alt",
+     "probe": "https://neo.gsfc.nasa.gov/archive/bluemarble/bmng/readme.pdf",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"neo.gsfc.nasa.gov\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "noaa-usnic-ims-daily-northern-hemisphere-snow-and-ice-anal",
+   "name": "NOAA/USNIC IMS Daily Northern Hemisphere Snow and Ice Analysis (G02156), 4 km and 1 km",
+   "facet": "earth",
+   "what": "Daily analyst-made maps of snow on land and ice on sea for the Northern Hemisphere: 4 km since 2004, 1 km since 2014. Cloud does not hide the ground in these maps.",
+   "improves": "A monthly snow frequency for 2004-2025 at 4 km would replace MERRA-2's 0.5-degree snow. It gives real snow lines in the Alps, Rockies, Himalaya and Tibetan plateau, and the Great Plains' brief winter snow. It could also show today's snow and sea ice on a live globe.",
+   "licence": "US government (NOAA/USNIC) open data. Cite IMS v1, DOI 10.7265/N52R3PMC.",
+   "key": "none",
+   "format": "Daily gzipped GeoTIFF and ASCII, polar stereographic (the 4 km grid is about 6144x6144). Values: sea, land, sea ice, snow.",
+   "priority": 2,
+   "notes": "Blocked here. Northern Hemisphere only; southern snow (Andes, New Zealand, Australian Alps) can come from GIBS MODIS monthly snow %. About 8,000 daily files over 22 years; one day a week is enough for a climatology.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "noaadata.apps.nsidc.org",
+     "role": "files",
+     "probe": "https://noaadata.apps.nsidc.org/NOAA/G02156/GIS/4km/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"noaadata.apps.nsidc.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "nsidc-sea-ice-index-v4-g02135-monthly-sea-ice-concentratio",
+   "name": "NSIDC Sea Ice Index v4 (G02135): monthly sea-ice concentration, extent and median edges",
+   "facet": "earth",
+   "what": "Arctic and Antarctic sea-ice concentration and extent for every month (and day) from 1978 to now at 25 km, with 30-year median ice edges.",
+   "improves": "The sea-ice months now come from MERRA-2's 0.5-degree fraction thresholded at 0.5 (through DIRT's snow-*.png). The Sea Ice Index median edge for each month, or a recent-decade mean concentration, puts the ice edge where it really is: the open Barents Sea, the Okhotsk winter ice, the Weddell Sea's summer remnant.",
+   "licence": "NOAA@NSIDC open data; citation requested (Fetterer et al., Sea Ice Index, Version 4, NSIDC).",
+   "key": "none",
+   "format": "GeoTIFF (25 km polar stereographic, north and south), median-edge shapefiles, CSV. The AWS fallback is daily NetCDF (3.7 MB each).",
+   "priority": 2,
+   "notes": "The NSIDC hosts are blocked. The reachable AWS copy is the NOAA/NSIDC CDR v2 daily data, 1978-2015 only. It can give a 1991-2015 monthly mean, but the ice has shrunk since. 25 km suits the 39 km cells. Check whether the median shapefiles cover 1981-2010 or 1991-2020.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "noaadata.apps.nsidc.org",
+     "role": "files",
+     "probe": "https://noaadata.apps.nsidc.org/NOAA/G02135/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"noaadata.apps.nsidc.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "masie_web.apps.nsidc.org",
+     "role": "files",
+     "probe": "https://masie_web.apps.nsidc.org/pub/DATASETS/NOAA/G02135/north/monthly/shapefiles/shp_median/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"masie_web.apps.nsidc.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "noaa-cdr-sea-ice-concentration-pds.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://noaa-cdr-sea-ice-concentration-pds.s3.amazonaws.com/ncei_data/2015/seaice_conc_daily_nh_f17_20150101_v02r00.nc",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "copernicus-data-space-ecosystem-sentinel-2-l3-quarterly-cl",
+   "name": "Copernicus Data Space Ecosystem: Sentinel-2 L3 quarterly cloudless mosaics (Q1 2020 onward)",
+   "facet": "earth",
+   "what": "Global Sentinel-2 cloud-free mosaics for every quarter since 2020 (first quartile of the clear pixels). Copernicus's own product.",
+   "improves": "Seasonal (four a year), recent, open-licence true colour for all land, at 10-20 m: snow in winter, green in summer. The most current seasonal land colour, for both the globe's cells and the close views.",
+   "licence": "Copernicus Sentinel data: free, full and open. Credit 'Contains modified Copernicus Sentinel data [year]'.",
+   "key": "free sign-up (CDSE account, giving an OAuth token or S3 keys)",
+   "format": "COG tiles (100 km), quarterly. Access via STAC, OData, S3, or the Sentinel Hub process API, which can return a downsampled global render.",
+   "priority": 3,
+   "notes": "Needs an account, and all hosts are blocked. Free accounts get a monthly Sentinel Hub quota (no billing). The reachable Sinergise 120 m mosaic (2020, every 10 days) covers most of the same need without sign-up.",
+   "state": "dropped",
+   "hosts": [
+    {
+     "host": "stac.dataspace.copernicus.eu",
+     "role": "api",
+     "probe": "https://stac.dataspace.copernicus.eu/v1/collections/sentinel-2-global-mosaics",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"stac.dataspace.copernicus.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "identity.dataspace.copernicus.eu",
+     "role": "redirect",
+     "probe": "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/.well-known/openid-configuration",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"identity.dataspace.copernicus.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "eodata.dataspace.copernicus.eu",
+     "role": "files",
+     "probe": "https://eodata.dataspace.copernicus.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"eodata.dataspace.copernicus.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "sh.dataspace.copernicus.eu",
+     "role": "api",
+     "probe": "https://sh.dataspace.copernicus.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"sh.dataspace.copernicus.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "dataspace.copernicus.eu",
+     "role": "api",
+     "probe": "https://dataspace.copernicus.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"dataspace.copernicus.eu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "why": "needs an account; the same quarterly mosaics are mirrored on Source Cooperative (TGE) and answer now",
+   "key_needed": false
+  },
+  {
+   "id": "copernicus-dem-glo-30-glo-90-on-aws",
+   "name": "Copernicus DEM GLO-30 / GLO-90, on AWS",
+   "facet": "earth",
+   "what": "A global surface model (WorldDEM/TanDEM-X) at 30 m and 90 m, including the high latitudes SRTM misses.",
+   "improves": "Better relief north of 60N (Greenland, Scandinavia, Siberia, Alaska) and in steep mountains. It helps the relief light a little and the close views (clods, the dive's ground) more; the 1024x512 globe gains little.",
+   "licence": "Copernicus DEM licence: free worldwide use, including commercial, with the attribution '© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved'.",
+   "key": "none",
+   "format": "COG float32, 1x1 degree tiles (about 26,000); a GLO-90 tile is 3.7 MB. STAC index at copernicus-dem-30m-stac.s3.amazonaws.com (reachable).",
+   "priority": 3,
+   "notes": "Already reachable; no redirects. It is a surface model (tops of trees and buildings), not bare ground, and has no ocean tiles. Mapzen terrarium (already used) is adequate for the globe's cells.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "copernicus-dem-90m.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://copernicus-dem-90m.s3.amazonaws.com/Copernicus_DSM_COG_30_N51_00_E000_00_DEM/Copernicus_DSM_COG_30_N51_00_E000_00_DEM.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.8 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "copernicus-dem-30m.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N51_00_E000_00_DEM/Copernicus_DSM_COG_10_N51_00_E000_00_DEM.tif",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.7 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "eog-colorado-school-of-mines-viirs-nighttime-lights-annual",
+   "name": "EOG (Colorado School of Mines) VIIRS Nighttime Lights annual VNL v2.2, 2012-2024",
+   "facet": "earth",
+   "what": "Annual global night-light composites with fires, gas flares, boats, aurora and background removed ('average-masked').",
+   "improves": "The cleanest 'Earth at night' radiance. One 2024 VNL file gives every cell its steady light, without the short-lived light and summer gaps of the monthly composites.",
+   "licence": "CC BY 4.0 according to EOG (Google's Earth Engine catalog calls it unrestricted). Cite Elvidge et al. 2021, Remote Sensing 13(5):922.",
+   "key": "free sign-up (EOG account; downloads use an access token from eogauth.mines.edu)",
+   "format": "Gzipped GeoTIFF at 15 arc-sec, global: average, average-masked, median and cloud-free-coverage layers, about 1-3 GB each compressed.",
+   "priority": 3,
+   "notes": "Blocked and needs an account. The reachable World Bank monthly composites (same EOG processing) give nearly the same result after a median. NASA's Black Marble VNP46A4 annual product (ladsweb.modaps.eosdis.nasa.gov) is the NASA equivalent but needs an Earthdata login.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "eogdata.mines.edu",
+     "role": "files",
+     "probe": "https://eogdata.mines.edu/nighttime_light/annual/v22/2024/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"eogdata.mines.edu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "eogauth.mines.edu",
+     "role": "redirect",
+     "probe": "https://eogauth.mines.edu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"eogauth.mines.edu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
+  },
+  {
+   "id": "eox-sentinel-2-cloudless-s2maps-eu-tiles",
+   "name": "EOX Sentinel-2 cloudless (s2maps.eu) tiles",
+   "facet": "earth",
+   "what": "Seamless cloudless Sentinel-2 true-colour mosaics of the world at 10 m, one per year (2016, then 2018-2024), as WMTS tiles.",
+   "improves": "A ready, carefully colour-balanced true-colour land basemap at any zoom. But see the licence: Earth Genome's CC BY mosaics do the same job openly and are reachable now.",
+   "licence": "The 2016 edition is CC BY 4.0. The 2018-2024 editions are CC BY-NC-SA 4.0; commercial use needs EOX's paid licence. Credit: 'Sentinel-2 cloudless - https://s2maps.eu by EOX IT Services GmbH (Contains modified Copernicus Sentinel data [year])'.",
+   "key": "none",
+   "format": "WMTS JPEG tiles (EPSG:3857 and 4326).",
+   "priority": 3,
+   "notes": "Blocked here. If the site counts as commercial (it shows prices), only the 2016 layer is safely usable, and NC-SA would also force derived images under NC-SA. The tile servers are meant for live display, not bulk download, so do not bake from them.",
+   "state": "dropped",
+   "hosts": [
+    {
+     "host": "tiles.maps.eox.at",
+     "role": "tiles",
+     "probe": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/g/0/0/0.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tiles.maps.eox.at\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s2maps-tiles.eu",
+     "role": "tiles",
+     "probe": "https://s2maps-tiles.eu/wmts/1.0.0/s2cloudless-2023_3857/default/g/0/0/0.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"s2maps-tiles.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s2maps.eu",
+     "role": "api",
+     "probe": "https://s2maps.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"s2maps.eu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "why": "2018-2024 editions CC BY-NC-SA; Earth Genome's CC BY mosaics do the same openly, and answer now",
+   "key_needed": false
+  },
+  {
+   "id": "era5-hourly-climatology-1990-2019-google-weatherbench-2-on",
+   "name": "ERA5 hourly climatology 1990-2019 (Google WeatherBench 2), on Google Cloud",
+   "facet": "earth",
+   "what": "ERA5's 30-year average for every day of the year at 00, 06, 12 and 18 UTC on a 0.25-degree grid: total cloud cover, sea-ice cover, snow depth, leaf-area index (high and low vegetation), sea-surface temperature and more.",
+   "improves": "Cloud for the date and hour rather than the season. The daily cycle (afternoon storms over land, morning sea fog and low cloud) could follow the visitor's real time, as the sun already does. It also gives a daily sea-ice and snow-depth climatology for smoothing between months.",
+   "licence": "Licence to Use Copernicus Products (C3S/ECMWF): free worldwide use, with the attribution 'Contains modified Copernicus Climate Change Service information [year]'.",
+   "key": "none",
+   "format": "Zarr v2 (blosc-lz4, float32). Arrays are [4 hours x 366 days x 721 x 1440], in 3x3-day chunks of about 37 MB raw each.",
+   "priority": 3,
+   "notes": "Already reachable; no redirects. A model reanalysis rather than an observation, and no finer than the current 0.25 degrees. Use it for timing, and take the shapes from an observed pattern such as EarthEnv.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "storage.googleapis.com",
+     "role": "files",
+     "probe": "https://storage.googleapis.com/weatherbench2/datasets/era5-hourly-climatology/1990-2019_6h_1440x721.zarr/total_cloud_cover/.zarray",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "eumetsat-eumetview-wms-mtg-geocolour-every-10-minutes",
+   "name": "EUMETSAT EUMETView WMS: MTG GeoColour every 10 minutes",
+   "facet": "earth",
+   "what": "Live full-disk imagery over Europe, Africa and the Atlantic from MTG-I1's FCI instrument: true colour by day, IR by night. Other Meteosat RGB products too, all as a keyless WMS.",
+   "improves": "Fills the true-colour gap that GOES (Americas) and Himawari (Asia-Pacific) leave on GIBS. The visitor's globe could show the real clouds over Europe and Africa now, in natural colour.",
+   "licence": "EUMETSAT Data Policy. Credit '© EUMETSAT [year]'. EUMETView serves visualisations, not numerical data; check its terms on redistribution before caching images.",
+   "key": "none",
+   "format": "WMS 1.3.0, PNG/JPEG at any size, 10-minute time steps.",
+   "priority": 3,
+   "notes": "Blocked here. NASA Worldview itself uses this endpoint (layer mtg_fd:rgb_geocolour). The night side of GeoColour uses a static Black Marble background. CORS not verified.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "view.eumetsat.int",
+     "role": "browser",
+     "probe": "https://view.eumetsat.int/geoserver/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=mtg_fd:rgb_geocolour&CRS=EPSG:4326&BBOX=-80,-80,80,80&WIDTH=1024&HEIGHT=1024&FORMAT=image/jpeg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"view.eumetsat.int\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "jrc-global-surface-water-v1-4-pekel-et-al-2016-1984-2021-o",
+   "name": "JRC Global Surface Water v1.4 (Pekel et al. 2016), 1984-2021, on Google Cloud",
+   "facet": "earth",
+   "what": "Where surface water has been over 38 years at 30 m: occurrence %, months of water per year (seasonality), recurrence, transitions and maximum extent.",
+   "improves": "Lakes, rivers and wetlands from their real water share and season, instead of Natural Earth outlines plus a wetland flag. Seasonal floodplains (Okavango, Sudd, Pantanal, Tonle Sap) can be shown filling for part of the year, new reservoirs appear, and shrunken lakes (the Aral) shrink.",
+   "licence": "Free, with no restriction on use (Copernicus programme). Cite Pekel et al. 2016, Nature 540:418-422 ('Source: EC JRC/Google').",
+   "key": "none",
+   "format": "GeoTIFF (not COG), 10x10 degree tiles at 0.00025 degrees (about 30 m), about 500 tiles per layer, 17-40 MB each (e.g. seasonality_0E_10Nv1_4_2021.tif).",
+   "priority": 3,
+   "notes": "Already reachable; no redirects. Whole tiles must be downloaded (no overviews), so 10-20 GB per layer for the world. Seasonality gives how many months a year, not which months; the monthly history is only in Earth Engine.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "storage.googleapis.com",
+     "role": "files",
+     "probe": "https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_0E_10Nv1_4_2021.tif",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "gbif-occurrence-api-map-tiles-monthly-parquet-snapshot-on-",
+   "name": "GBIF (occurrence API, map tiles, monthly Parquet snapshot on AWS)",
+   "facet": "life",
+   "what": "Every published occurrence of every species, from museum specimens, surveys and iNaturalist research grade. The API gives counts and facets by area, year, establishment means and basis of record; species distributions (native or introduced by country, from checklists); and v2 density map tiles. A monthly snapshot of the whole index is published as Parquet.",
+   "improves": "Before natives.py gives a place its animal or plants, it can count recent native occurrences of that species within ~50 km. Ranges then rest on evidence rather than boxes drawn by hand (no Iberian ibex in Bologna, no wolves in London). It can also fill the grammar's gaps from what actually lives there, such as Sydney's eucalypts, and Tokyo's own trees instead of Europe's beech and hazel.",
+   "licence": "Records are CC0, CC BY or CC BY-NC per dataset. The AWS snapshot as a whole is CC BY-NC under GBIF's terms of use. Cite the snapshot DOI (1 Oct 2026: 10.15468/dl.tup2g6).",
+   "key": "none for search, tiles and the S3 snapshot; a free GBIF account only for asynchronous downloads with their own DOI",
+   "format": "JSON; PNG/MVT tiles; Parquet (columns include specieskey, decimallatitude, decimallongitude, month, year, establishmentmeans, basisofrecord, license, mediatype)",
+   "priority": 1,
+   "notes": "The snapshot is already open (S3, CORS *). It runs to hundreds of GB, so read only the needed columns by range request with pyarrow, as build_grounds.py does with Overture. The API needs api.gbif.org allowed (search counts, /v1/species/{key}/distributions, and v2 tiles to show a followed animal's real range). Occurrences include zoos, gardens and introductions: filter on establishmentmeans and basisofrecord, and keep recent years. OBIS's marine snapshot is open the same way (obis-open-data.s3.amazonaws.com, 200) for when sea life is drawn.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.gbif.org",
+     "role": "api",
+     "probe": "https://api.gbif.org/v2/map/occurrence/density/0/0/0@1x.png?taxonKey=5219243",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.gbif.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "gbif-open-data-us-east-1.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://gbif-open-data-us-east-1.s3.amazonaws.com/occurrence/2026-10-01/citation.txt",
+     "state": "open",
+     "code": 200,
+     "said": "text/plain in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.gbif.org",
+     "role": "browser",
+     "probe": "https://www.gbif.org/species/5219243",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.gbif.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "inaturalist-api-open-photo-bucket-open-range-map-dataset",
+   "name": "iNaturalist (API, open photo bucket, Open Range Map dataset)",
+   "facet": "life",
+   "what": "Research-grade observations with photos, each with a date and location. You can filter them by place, month, native or introduced, and annotation (Life Stage, Sex, Plant Phenology, and Leaves: breaking leaf buds / green / colored / no live leaves). Also monthly histograms, and a range polygon for each taxon modelled from the observations (geomodel, ~100k taxa).",
+   "improves": "The coat/pale/dark hexes typed by hand in species.py, and each biome's single plant 'look', become measured colours: the median Lab of many research-grade photos of that species near that place in that month. Examples: a red deer's red summer coat against its grey-brown winter one; London's beech from 'Colored leaves' observations in late October, bare in January. The RANGE/GAPS boxes in lives_at become a point-in-polygon test on the taxon's range.",
+   "licence": "Photos and observations are CC0, CC BY or CC BY-NC per item (credit the observer). The Open Range Map dataset is CC BY 4.0. The S3 bucket holds only openly licensed photos; all-rights-reserved ones are on static.inaturalist.org, which is not needed.",
+   "key": "none (keep to ~60 requests/min and under 10,000/day)",
+   "format": "JSON (REST v1/v2); JPEG square/small/medium/large with CORS *; range maps as GeoJSON per taxon and GeoPackage per group; monthly TSV.gz dumps",
+   "priority": 1,
+   "notes": "The bucket is already open from the session: photos/<id>/medium.jpg answers 200, the range maps are at geomodel/geojsons/<version>/<taxon_id>.geojson, and the monthly metadata dumps are there too (observations.csv.gz is 13.4 GB, so use the API instead). Only api.inaturalist.org needs allowing. Caution, checked here: the range maps include introduced populations and reach onto islands (the red fox polygon contains Honolulu and Auckland). The 'latest' release (2.34) has also lost the red fox's Eurasian and North American range (448 square degrees, against 10,275 in 2.30), so pin a version and check each taxon's area. Use the API's native/introduced filters with a place_id. Field light varies, so take medians over many photos filtered by annotation (adult, sex). Considered and left out: Pl@ntNet (an identification API, needs a key), EOL (refused, adds little beyond this), Macaulay Library (media cannot be reused without permission).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.inaturalist.org",
+     "role": "api",
+     "probe": "https://api.inaturalist.org/v1/observations?taxon_name=Vulpes%20vulpes&quality_grade=research&photos=true&per_page=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.inaturalist.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "inaturalist-open-data.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://inaturalist-open-data.s3.amazonaws.com/geomodel/geojsons/latest/42069.geojson",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "static.inaturalist.org",
+     "role": "alt",
+     "probe": "https://static.inaturalist.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"static.inaturalist.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.inaturalist.org",
+     "role": "browser",
+     "probe": "https://www.inaturalist.org/taxa/42069.json",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.inaturalist.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "kew-world-checklist-of-vascular-plants-and-plants-of-the-w",
+   "name": "Kew: World Checklist of Vascular Plants and Plants of the World Online",
+   "facet": "life",
+   "what": "The accepted name of every vascular plant, and where it is native, introduced or extinct, by WGSRPD level-3 'botanical country'. POWO's pages and its undocumented JSON (api/2) serve the same data.",
+   "improves": "Each plant in a place's planting is kept only where WCVP says it is native in that botanical country, so Tokyo stops getting European beech and hazel and Sydney's planting can be its own. Combined with GBIF's occurrences near the city, it gives each place a list of its own native trees and shrubs to choose from.",
+   "licence": "WCVP is CC BY (Kew lists CC BY 3.0 for v10; check the current release's README). WGSRPD is a TDWG standard, free to use with citation.",
+   "key": "none",
+   "format": "WCVP: pipe-delimited CSV in a zip (names and distribution tables); POWO JSON; WGSRPD level-3 GeoJSON/shapefile",
+   "priority": 1,
+   "notes": "One download of wcvp.zip is enough; no API calls are needed. The level-3 GeoJSON is already open. POWO's /api/2/taxon/<ipni id>?fields=distribution is undocumented (it is what pykew uses). Level-3 units are coarse: 'Great Britain' makes beech native everywhere, though it is native only in the south and east. For trees, pair this with the tree range polygons below.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "sftp.kew.org",
+     "role": "files",
+     "probe": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"sftp.kew.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "powo.science.kew.org",
+     "role": "api",
+     "probe": "https://powo.science.kew.org/api/2/search?q=Fagus%20sylvatica",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"powo.science.kew.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "raw.githubusercontent.com",
+     "role": "files",
+     "probe": "https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson",
+     "state": "open",
+     "code": 200,
+     "said": "text/plain in 0.4 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "biodiversity-heritage-library-open-data-natural-history-pl",
+   "name": "Biodiversity Heritage Library Open Data (natural-history plates, on AWS)",
+   "facet": "life",
+   "what": "All of BHL on S3: every page image (JPEG-2000 and JPEG), the OCR, and TSV exports. PageName lists every scientific name found on every page, and Page gives page types, including 'Illustration'.",
+   "improves": "Each animal and plant on the site can be matched to its 18th-19th-century natural-history plates (Audubon and Bachman's quadrupeds, Thorburn's birds, botanical floras). A plate can be shown with the character's line or used as a second colour reference, in the spirit of Twombly's Natural History.",
+   "licence": "Mostly public domain; some items CC BY or CC BY-NC. Each item's status is in item.txt (CopyrightStatus, LicenseType).",
+   "key": "none for the S3 data; free sign-up key for the BHL API",
+   "format": "TSV.gz exports (pagename.txt.gz 2.1 GB, page.txt.gz 606 MB, item.txt.gz 18 MB); JP2 (~20 MB a page) and JPEG page images; OCR text; JSON API",
+   "priority": 2,
+   "notes": "Everything on S3 is already open. The JPEGs have no CORS header, so read colours at build time. Plates can be shown live via www.biodiversitylibrary.org/pagethumb/<PageID>; that host is needed only for testing. The Internet Archive copy's metadata and thumbnails answer (archive.org, 200), but its downloads redirect to ia<N>.us.archive.org data nodes, which are refused (a wildcard *.us.archive.org would be needed). The plates are hand-coloured and aged: a reference, not ground truth.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "bhl-open-data.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://bhl-open-data.s3.amazonaws.com/jpg/mobot31753003125132/mobot31753003125132_0002.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.biodiversitylibrary.org",
+     "role": "alt",
+     "probe": "https://www.biodiversitylibrary.org/api3?op=NameSearch&name=Vulpes%20vulpes&format=json&apikey=x",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.biodiversitylibrary.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "archive.org",
+     "role": "api",
+     "probe": "https://archive.org/metadata/mobot31753002152491",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "*.us.archive.org",
+     "role": "redirect",
+     "probe": "https://ia600409.us.archive.org/31/items/mobot31753002152491/mobot31753002152491.pdf",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ia600409.us.archive.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "ebird-status-and-trends-weekly-bird-abundance-and-ranges",
+   "name": "eBird Status and Trends (weekly bird abundance and ranges)",
+   "facet": "life",
+   "what": "Modelled weekly relative abundance (about 3 km resolution) and seasonal range polygons (breeding, non-breeding, migration) for about 2,000 bird species, built from eBird checklists.",
+   "improves": "Birds appear in the sky only where and when they really are there: the bald eagle gathering on winter rivers, geese vees in their migration weeks, starling murmurations in their months, the white-tailed eagle in its real season.",
+   "licence": "eBird Status and Trends terms: free for non-commercial use with citation (Fink et al.).",
+   "key": "free access key by form (non-commercial)",
+   "format": "GeoTIFF weekly abundance; GeoPackage seasonal ranges; CSV/Parquet summaries",
+   "priority": 2,
+   "notes": "The rasters are large, so derive each place's weekly presence once at build time. Birds only. Flagged, not proposed, in case sound ever matters (Systems.sound is off by default): Xeno-canto (xeno-canto.org, refused) needs a free account key for API v3 and licenses each recording separately, often CC BY-NC-SA or BY-NC-ND (no edits).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "st-download.ebird.org",
+     "role": "files",
+     "probe": "https://st-download.ebird.org/v1/list-obj/2023",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"st-download.ebird.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "ebird.org",
+     "role": "browser",
+     "probe": "https://ebird.org/science/status-and-trends",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ebird.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
+  },
+  {
+   "id": "iucn-red-list-expert-range-polygons",
+   "name": "IUCN Red List (expert range polygons)",
+   "facet": "life",
+   "what": "The assessed range of every mammal, amphibian and reptile, and many other groups, as polygons coded by presence (extant, possibly extinct), origin (native, introduced) and seasonality. Assessments are available by API. Bird ranges come from BirdLife's own download (datazone.birdlife.org, refused).",
+   "improves": "Settles 'only drawn where it lives' for the cast and the 119 generated species, with an authority the hand-drawn boxes lack (wolves gone from Britain, no adders in Ireland). It also gives birds their breeding and wintering ranges.",
+   "licence": "Red List Terms of Use: non-commercial use, with citation; the data itself may not be redistributed.",
+   "key": "free token by application (non-commercial); a login for spatial downloads",
+   "format": "JSON (API v4); shapefile/GeoPackage by download request",
+   "priority": 2,
+   "notes": "The polygons come by request after login, not by API. Keep them in data/ (gitignored, since the repo is public) and publish only each place's yes or no. Wikidata's P181 range-map images (already reachable) are a fallback. Map of Life (api.mol.org, mol.org: refused) would serve similar expert maps, but its API is undocumented, so it was left out.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.iucnredlist.org",
+     "role": "api",
+     "probe": "https://api.iucnredlist.org/api/v4/taxa/scientific_name?genus_name=Vulpes&species_name=vulpes",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.iucnredlist.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.iucnredlist.org",
+     "role": "browser",
+     "probe": "https://www.iucnredlist.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.iucnredlist.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
+  },
+  {
+   "id": "phenocam-network-canopy-cameras-colour-of-vegetation-by-da",
+   "name": "PhenoCam Network (canopy cameras: colour of vegetation by day)",
+   "facet": "life",
+   "what": "About 700-800 fixed cameras that photograph canopies every 30 minutes, mostly in North America with some in Europe and Asia. Midday images, and green/red chromatic coordinate time series per vegetation type (deciduous broadleaf, evergreen needleleaf, grassland, shrub, agriculture).",
+   "improves": "The plants that rise round an animal can wear the real colour of their kind of canopy for that month and latitude, measured from midday photographs: a deciduous broadleaf's April green, October rust, January bare grey. This replaces one fixed three-colour 'look' per biome.",
+   "licence": "CC BY 4.0 (PhenoCam fair-use policy updated 28 Aug 2025); credit the network and the site.",
+   "key": "none",
+   "format": "JSON API (cameras, ROIs, midday image lists); JPEG images under /data/archive/; CSV time series",
+   "priority": 2,
+   "notes": "Build-time use only: the median canopy RGB per vegetation type, latitude band and month. Considered and left out: USA-NPN (services.usanpn.org, refused; species' 'Colored leaves' dates, US only) and PEP725 (Europe, needs registration). iNaturalist's Leaves annotation gives the species-level version worldwide.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "phenocam.nau.edu",
+     "role": "api",
+     "probe": "https://phenocam.nau.edu/api/middayimages/harvard/2024/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"phenocam.nau.edu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "tree-range-polygons-europe-caudullo-et-al-2017-jrc-and-the",
+   "name": "Tree range polygons: Europe (Caudullo et al. 2017, JRC) and the United States (Little's Atlas)",
+   "facet": "life",
+   "what": "Native range polygons for the main European trees and shrubs (European Atlas of Forest Tree Species), with isolated populations as points and introduced occurrences kept separate. Elbert Little's range maps for 679 North American trees.",
+   "improves": "A tree in a planting rises only inside its real range: beech, pedunculate oak, hazel and holly in Europe; sugar maple, white oak and tulip tree in North America. Finer than WCVP's botanical countries.",
+   "licence": "Little's atlas: public domain (US federal work). European maps: CC BY 4.0 as published with Caudullo et al. 2017, Data in Brief (check each record).",
+   "key": "none",
+   "format": "ESRI shapefiles (polygons, points, synanthropic layers); Little's as shapefile and GeoJSON",
+   "priority": 2,
+   "notes": "Little's maps are already open (the sugar maple file answered 200; NAD27; USGS noted some digitising errors). The European maps are one figshare record per species. Their files redirect to figshare's S3 bucket, which is reachable (the 403 is only the bucket listing). The same data are on Mendeley Data (data.mendeley.com, refused). Neither covers Asia, Africa, South America or Australia: use WCVP and GBIF there.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "figshare.com",
+     "role": "api",
+     "probe": "https://figshare.com/articles/dataset/Quercus_ilex_chorology/5114062",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"figshare.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "ndownloader.figshare.com",
+     "role": "files",
+     "probe": "https://ndownloader.figshare.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ndownloader.figshare.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s3-eu-west-1.amazonaws.com",
+     "role": "redirect",
+     "probe": "https://s3-eu-west-1.amazonaws.com/pfigshare-u-files/",
+     "state": "open",
+     "code": 403,
+     "said": "Forbidden",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "raw.githubusercontent.com",
+     "role": "files",
+     "probe": "https://raw.githubusercontent.com/wpetry/USTreeAtlas/main/shp/acersacc/acersacc.shp",
+     "state": "open",
+     "code": 200,
+     "said": "text/plain in 0.4 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "aloft-european-weather-radar-bird-migration-profiles",
+   "name": "Aloft (European weather-radar bird migration profiles)",
+   "facet": "life",
+   "what": "Vertical profiles of birds in flight from about 150 European weather radars: density, speed and direction by height, every few minutes, from 2012 to 2023 and on. Daily and monthly CSV per radar.",
+   "improves": "The sky over the globe can carry real migration: flocks crossing Belgium, the Netherlands or Switzerland on the nights the radars recorded them, in the direction and at the density measured, rather than at random.",
+   "licence": "Open data (Zenodo deposit 'BALTRAD_VPTS'); believed CC BY 4.0, to confirm on the record.",
+   "key": "none",
+   "format": "VPTS CSV (daily and monthly per radar under baltrad/, uva/, ecog-04003/); ODIM HDF5",
+   "priority": 3,
+   "notes": "Already open from the session. Europe only. Radars measure biomass, not species, so pair this with eBird's weekly data to know which birds. The 'baltrad' source is the longest but noisiest; 'uva' and 'ecog-04003' are curated.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "aloftdata.s3-eu-west-1.amazonaws.com",
+     "role": "files",
+     "probe": "https://aloftdata.s3-eu-west-1.amazonaws.com/coverage.csv",
+     "state": "open",
+     "code": 200,
+     "said": "binary/octet-stream in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "aloftdata.eu",
+     "role": "browser",
+     "probe": "https://aloftdata.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"aloftdata.eu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "art-institute-of-chicago-api-and-iiif-works-with-the-aic-u",
+   "name": "Art Institute of Chicago API and IIIF (works with the AIC-User-Agent header)",
+   "facet": "museums",
+   "what": "The AIC's public API gives artworks with image_id, color (one salient HSL colour), dimensions_detail, gallery_id and is_on_view, and galleries with floor and point. Its Cantaloupe IIIF server on www.artic.edu answers the session (200) only when the AIC-User-Agent header its docs ask for is sent; without it Cloudflare's challenge returns 403. The 843 px renders are cached; an uncached 401 px render timed out at 20 s.",
+   "improves": "The AIC's 7 saved works, and the collection hung in its rooms, can be measured in the session off the museum's own studio photographs instead of Artsy's dealer photos, so their colours on the globe are true. info.json gives each master's size (9310 × 6237 for La Grande Jatte) for sharp large views.",
+   "licence": "Data CC0; images of public-domain works CC0 (is_public_domain)",
+   "key": "none (send the AIC-User-Agent header with project name and contact)",
+   "format": "JSON; IIIF Image API 2 JPEG",
+   "priority": 1,
+   "notes": "Request only /full/843,/0/default.jpg. The API's color field is one salient cluster (percentage often under 1 %), not a palette, so measure from the image. The site already uses the gallery points (scripts/aic_rooms.py).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "api.artic.edu",
+     "role": "api",
+     "probe": "https://api.artic.edu/api/v1/artworks/27992?fields=id,title,image_id,color,dimensions_detail,gallery_id,is_on_view",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.artic.edu",
+     "role": "iiif",
+     "probe": "https://www.artic.edu/iiif/2/2d484387-2509-5e8e-2c43-22f9981972eb/full/843,/0/default.jpg",
+     "state": "open",
+     "code": 403,
+     "said": "Forbidden",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "national-gallery-of-art-open-data-github-and-its-iiif-serv",
+   "name": "National Gallery of Art open data (GitHub) and its IIIF server",
+   "facet": "museums",
+   "what": "The NGA's open data on GitHub, which the session can read: published_images.csv (iiifurl, width, height, openaccess, assistivetext), objects_dimensions.csv (each element, including framed and unframed, in cm) and objects.csv (locationid, wikidataid). The images are on api.nga.gov's IIIF server, which the proxy refuses. www.nga.gov sits behind a Cloudflare challenge.",
+   "improves": "The NGA holds 177 of the site's saved works, the largest share by far. Their colours on the globe and their large views would come from the NGA's own colour-managed photography, not dealers' photos. The framed sizes would let the walk hang each frame at its real outer size.",
+   "licence": "CC0 for the data and for open-access images (openaccess = 1)",
+   "key": "none",
+   "format": "CSV (objects_dimensions.csv is 10.7 MB); IIIF Image API JPEG",
+   "priority": 1,
+   "notes": "Allow api.nga.gov, or measure the images on GitHub's runners (as osm-dates.yml reads Geofabrik) and commit only the colours. Visitors' browsers already load these images live.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "raw.githubusercontent.com",
+     "role": "files",
+     "probe": "https://raw.githubusercontent.com/NationalGalleryOfArt/opendata/main/data/published_images.csv",
+     "state": "open",
+     "code": 200,
+     "said": "text/plain in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.nga.gov",
+     "role": "iiif",
+     "probe": "https://api.nga.gov/iiif/00007f61-4922-417b-8f27-893ea328206c/full/!200,200/0/default.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.nga.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.nga.gov",
+     "role": "browser",
+     "probe": "https://www.nga.gov/",
+     "state": "open",
+     "code": 403,
+     "said": "Forbidden",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
   {
    "id": "openverse",
    "name": "Openverse",
    "facet": "museums",
    "what": "WordPress's search over 800 million openly licensed images (Flickr, Wikimedia, museums), with each image's licence and author.",
-   "improves": "Photographs of gallery rooms, buildings, plants and animals where Commons has none: more museums' walls read for their real paint, more buildings modelled from photographs.",
+   "improves": "Photographs of gallery rooms, buildings, plants and animals where Commons has none: more museums' walls read for their real paint, more buildings modelled from photographs. One domain to allow opens up Flickr's CC photographs of the galleries Commons lacks: 53 museums are white for want of a gallery view (the Kröller-Müller, the Clark, the Philadelphia Museum, the Stedelijk). Those photographs could be read and measured for wall paint, floors and skylights, through a thumbnail proxy that avoids Commons' and Flickr's limits on the session.",
    "licence": "Each image's own CC licence or public domain; the API's data CC0.",
-   "key": false,
+   "key": "none for anonymous use (rate-limited); a free registered client for higher limits",
    "format": "JSON",
    "priority": 1,
-   "notes": "Refused by the network policy since at least 9 Oct 2026.",
+   "notes": "Refused by the network policy since at least 9 Oct 2026. Its Flickr index lags Flickr itself; the Flickr API (key) is fresher. Filter by licence and by source (flickr, wikimedia).",
    "state": "candidate",
    "hosts": [
     {
@@ -22,49 +2025,249 @@
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.openverse.org\"",
      "seen": "2026-10-10"
-    }
-   ]
-  },
-  {
-   "id": "wikimedia-upload",
-   "name": "Wikimedia Commons files",
-   "facet": "museums",
-   "what": "upload.wikimedia.org: Commons' files and their thumbnails.",
-   "improves": "Reading a photograph's pixels directly (a gallery's paint measured in Lab, a building's materials) instead of through a vision model.",
-   "licence": "Each file's own licence.",
-   "key": false,
-   "format": "JPEG, PNG, TIFF",
-   "priority": 1,
-   "notes": "Allowed, but answers 429 to the session's shared address most of the time: not a network setting.",
-   "state": "allowed",
-   "hosts": [
+    },
     {
-     "host": "upload.wikimedia.org",
-     "role": "files and thumbnails",
-     "probe": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/250px-Tour_Eiffel_Wikimedia_Commons.jpg",
-     "state": "open",
-     "code": 429,
-     "said": "Too Many Requests (015d12c)",
+     "host": "openverse.org",
+     "role": "browser",
+     "probe": "https://openverse.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"openverse.org\"",
      "seen": "2026-10-10"
     }
-   ]
+   ],
+   "key_needed": false
   },
   {
-   "id": "flickr-images",
-   "name": "Flickr (openly licensed photographs)",
+   "id": "rijksmuseum-data-services-and-micrio-iiif",
+   "name": "Rijksmuseum Data Services and Micrio IIIF",
    "facet": "museums",
-   "what": "Photographs and their licences; the image files themselves on Flickr's CDN.",
-   "improves": "The pictures Openverse and Commons point to: reading a gallery's or a building's colours off the photograph itself.",
-   "licence": "Each photograph's own licence; only CC and public-domain ones used.",
-   "key": false,
-   "format": "JPEG; HTML",
-   "priority": 2,
-   "notes": "Flickr's API needs a key; the photo pages and files do not.",
+   "what": "The Rijksmuseum's keyless search and Linked Art at data.rijksmuseum.nl, with images on Micrio's IIIF (iiif.micr.io). Micrio also serves the Van Gogh Museum's zoom images. All of these hosts are refused.",
+   "improves": "Full-resolution, colour-managed masters would give true colours and deep zoom for the Rijksmuseum's 4 and the Van Gogh Museum's 14 saved works, one host serving both Dutch museums.",
+   "licence": "CC0 for data and public-domain images",
+   "key": "none",
+   "format": "JSON-LD (Linked Art); IIIF Image API JPEG",
+   "priority": 1,
+   "notes": "The old key-based API (www.rijksmuseum.nl/api) is refused too and should not be relied on.",
    "state": "candidate",
    "hosts": [
     {
+     "host": "data.rijksmuseum.nl",
+     "role": "api",
+     "probe": "https://data.rijksmuseum.nl/search/collection?objectNumber=SK-C-5",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.rijksmuseum.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "iiif.micr.io",
+     "role": "iiif",
+     "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"iiif.micr.io\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.rijksmuseum.nl",
+     "role": "browser",
+     "probe": "https://www.rijksmuseum.nl/en",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.rijksmuseum.nl\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "the-met-collection-api-and-images-metmuseum-org",
+   "name": "The Met Collection API and images.metmuseum.org",
+   "facet": "museums",
+   "what": "The Met's keyless API (it answers the session) gives GalleryNumber, measurements by element (Overall, Framed, Glazing), primaryImage (original), primaryImageSmall (web-large), additionalImages and isPublicDomain. The images are on images.metmuseum.org, which the proxy refuses. www.metmuseum.org answers 429 (bot protection).",
+   "improves": "True colours and large views for the 36 saved works the Met holds, measured off its Open Access masters. Frames could hang at the size the Met records as 'Framed' (it does for Washington Crossing the Delaware, Garden at Sainte-Adresse and A Woman Seated beside a Vase of Flowers).",
+   "licence": "CC0 for Open Access objects (isPublicDomain true); other objects' images are not open",
+   "key": "none",
+   "format": "JSON; JPEG (original and web-large)",
+   "priority": 1,
+   "notes": "Allow images.metmuseum.org or read on the runners. The API asks callers to stay under 80 requests per second. The gallery numbers already drive the Met's walk.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "collectionapi.metmuseum.org",
+     "role": "api",
+     "probe": "https://collectionapi.metmuseum.org/public/collection/v1/objects/436535",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 3.3 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "images.metmuseum.org",
+     "role": "files",
+     "probe": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-42549-001.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"images.metmuseum.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.metmuseum.org",
+     "role": "browser",
+     "probe": "https://www.metmuseum.org/art/collection/search/436535",
+     "state": "open",
+     "code": 429,
+     "said": "Too Many Requests",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "wikimedia-commons-images-through-the-commons-host-s-thumb-",
+   "name": "Wikimedia Commons images through the commons host's thumb.php and upload.wikimedia.org thumbnails",
+   "facet": "museums",
+   "what": "Commons' own images can be fetched from the session again, but only by some routes. The commons host's thumbnail entry point (w/thumb.php?f=<file>&w=<px>) rendered an uncached 400 px thumbnail and answered 9 of 10 files at 3 s pacing. upload.wikimedia.org answers its standard widths (250/330/500/960/1280) about half the time at 1 s pacing, refuses non-standard widths with 400, and gives 429 for originals and 1920 px. The action API gave one 200, then 429 even at 10 s spacing. Special:EntityData (structured data) answered 200 at 5 s. Commons' pages now embed thumb.wikimedia.org, which the proxy refuses.",
+   "improves": "The session can download the same gallery photographs gpt-5.5 reads and measure the wall, floor and ceiling colour itself (median Lab over the wall areas the model marks), so finishes.json's paint becomes a measurement rather than a model's reading. The same route gives facade colours for the voxel museums, Commons' 'Floor plans of museums' (15 subcategories, 93 files) for room layouts, and public-domain reproductions (Wikidata P18) to colour works in museums with no open API (Orsay, Louvre, Prado, Kröller-Müller).",
+   "licence": "Per file (CC0, CC BY, CC BY-SA, public domain). The site keeps only measured colours plus the credit (author, licence and date from the file page) and copies no image, which fits a non-commercial site.",
+   "key": "none (send a descriptive User-Agent with contact details, as Wikimedia asks)",
+   "format": "JPEG/PNG thumbnails (an sRGB ICC profile is kept: 536 bytes on the one checked); HTML file and category pages",
+   "priority": 1,
+   "notes": "Prefer thumb.php or the standard widths, wait at least 3 s between requests and back off on 429. The 960 px files the model already fetched appear to be cached. Special:FilePath goes through Special:Redirect, which answers 429. The limit belongs to the shared address and changes from hour to hour. Allowing thumb.wikimedia.org (the host Commons' pages now link) and api.wikimedia.org would add routes with their own limits. commons-query.wikimedia.org also needs a Wikimedia login (OAuth cookie) to find photos by depicts or point of view. The model could also be sent the downloaded bytes instead of a URL.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "commons.wikimedia.org",
+     "role": "files",
+     "probe": "https://commons.wikimedia.org/w/thumb.php?f=Gallery_28,_National_Gallery_of_Art.jpg&w=500",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "upload.wikimedia.org",
+     "role": "files",
+     "probe": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/330px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.3 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "thumb.wikimedia.org",
+     "role": "files",
+     "probe": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/National_Gallery_of_Art_-_West_Building.JPG/250px-National_Gallery_of_Art_-_West_Building.JPG",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"thumb.wikimedia.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.wikimedia.org",
+     "role": "api",
+     "probe": "https://api.wikimedia.org/core/v1/commons/file/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.wikimedia.org\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "commons-query.wikimedia.org",
+     "role": "alt",
+     "probe": "https://commons-query.wikimedia.org/sparql?query=SELECT%20%3Fx%20WHERE%20%7B%7D%20LIMIT%201",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"commons-query.wikimedia.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "artsy-image-cdn-baseline-reachable",
+   "name": "Artsy image CDN (baseline, reachable)",
+   "facet": "museums",
+   "what": "Artsy's CDN answers the session. It serves each saved work in square, small, medium, large (640 px), larger and normalized (full size: 3.3 MB for Manet's Luncheon on the Grass) versions. Artsy's resizing proxy (gemini) is refused.",
+   "improves": "The 5,112 saved works' colours could be measured again from 'larger' or 'normalized' rather than small sizes. It stays the only source for contemporary works no museum photographs openly.",
+   "licence": "Artsy's terms; images are the rights holders'. Show live and keep only colours, as now.",
+   "key": "none for images (their tokens come from api.artsy.net)",
+   "format": "JPEG with no embedded ICC profile (treat as sRGB)",
+   "priority": 2,
+   "notes": "These are dealers' and auction houses' photographs, with varying light and white balance. Where a museum's own master exists (the NGA, Met, AIC, Cleveland, Getty, Van Gogh Museum, Smithsonian), measure that instead.",
+   "state": "used",
+   "hosts": [
+    {
+     "host": "d32dm0rphc51dk.cloudfront.net",
+     "role": "files",
+     "probe": "https://d32dm0rphc51dk.cloudfront.net/zFA7cwdkWxbIrmuAAd21VA/normalized.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "d7hftxdivxxvm.cloudfront.net",
+     "role": "alt",
+     "probe": "https://d7hftxdivxxvm.cloudfront.net/?resize_to=fit&width=200&height=200&quality=80&src=https%3A%2F%2Fd32dm0rphc51dk.cloudfront.net%2FzFA7cwdkWxbIrmuAAd21VA%2Flarge.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"d7hftxdivxxvm.cloudfront.net\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "used_by": "the page, live; the tones and the histories",
+   "key_needed": false
+  },
+  {
+   "id": "cleveland-museum-of-art-open-access-api-and-cdn",
+   "name": "Cleveland Museum of Art Open Access API and CDN",
+   "facet": "museums",
+   "what": "The API answers the session. It gives current_location (gallery number and name, e.g. '222 Impressionism & Post-Impressionism'), dimensions framed and unframed in metres, images (web, print, full TIFF), alternate_images and sketchfab_id. The image CDN openaccess-cdn.clevelandart.org is refused.",
+   "improves": "Frames could be drawn at their true size on Cleveland's walls: Water Lilies 1960.81 is 2.049 × 4.303 m framed against 2.013 × 4.256 m unframed. The CC0 masters would give true colours for the 6 saved works and the collection hung there.",
+   "licence": "CC0 (share_license_status)",
+   "key": "none",
+   "format": "JSON; JPEG and TIFF",
+   "priority": 2,
+   "notes": "The site already searches this API in visitors' browsers; only the CDN is new, for measuring.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "openaccess-api.clevelandart.org",
+     "role": "api",
+     "probe": "https://openaccess-api.clevelandart.org/api/artworks/?q=water%20lilies&limit=1&has_image=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.2 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "openaccess-cdn.clevelandart.org",
+     "role": "files",
+     "probe": "https://openaccess-cdn.clevelandart.org/1960.81/1960.81_web.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"openaccess-cdn.clevelandart.org\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "flickr-api",
+   "name": "Flickr API",
+   "facet": "museums",
+   "what": "Search by text, tags, licence, date taken and geography (a bbox round each museum). Photos come from live.staticflickr.com in fixed sizes.",
+   "improves": "Flickr has far more recent, dated, geotagged photographs of each museum's galleries than Commons. Read and measured, they would give the paint, floor and skylights of the museums now painted white for want of a photograph, and would find rooms by name.",
+   "licence": "Per photo (filter license=1,2,3,4,5,6,9,10 for CC and public domain). The API terms ask for attribution and no keeping of photos, so keep colours only.",
+   "key": "free sign-up (non-commercial API key)",
+   "format": "JSON; JPEG (_w 400 px, _b 1024 px)",
+   "priority": 2,
+   "notes": "The keyless public feed on www.flickr.com has no licence filter, so it is unusable for this.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.flickr.com",
+     "role": "api",
+     "probe": "https://api.flickr.com/services/rest/?method=flickr.test.echo&api_key=0&format=json&nojsoncallback=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.flickr.com\"",
+     "seen": "2026-10-10"
+    },
+    {
      "host": "live.staticflickr.com",
-     "role": "image files",
+     "role": "files",
      "probe": "https://live.staticflickr.com/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"live.staticflickr.com\"",
@@ -72,59 +2275,493 @@
     },
     {
      "host": "www.flickr.com",
-     "role": "photo pages (author, licence)",
-     "probe": "https://www.flickr.com/",
+     "role": "browser",
+     "probe": "https://www.flickr.com/services/feeds/photos_public.gne?tags=louvre,interior&format=json&nojsoncallback=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.flickr.com\"",
      "seen": "2026-10-10"
     }
-   ]
+   ],
+   "key_needed": true
   },
   {
-   "id": "met-images",
-   "name": "The Met's open-access images",
+   "id": "getty",
+   "name": "J. Paul Getty Museum: Linked Art data and IIIF images",
    "facet": "museums",
-   "what": "The Metropolitan Museum's image server: every public-domain work's photograph, full size.",
-   "improves": "The colours measured off a Met work's own photograph, and the works hung in the Met's walk drawn from the museum's own picture.",
-   "licence": "CC0 for open-access works.",
-   "key": false,
-   "format": "JPEG",
+   "what": "The Getty's Linked Art objects and its SPARQL endpoint both answer the session. Objects carry structured dimension, current_location (a Place record; the one read said 'Storage') and representation, which points to an IIIF full image. The IIIF image server media.getty.edu is refused.",
+   "improves": "The Getty's 17 saved works would get colours and large views from the Getty's Open Content photography, and structured height and width. current_location could hang on-view works in Getty galleries rather than the site's arranged rooms. 'Then' photographs of painted places that the session can query today: Marville's and Atget's Paris streets for Caillebotte, Pissarro and Monet; Baldus's Avignon and Arles; Frith's Venice; Watkins's and Muybridge's Yosemite for Bierstadt.",
+   "licence": "Data CC0; Open Content images of public-domain works CC0",
+   "key": "none",
+   "format": "JSON-LD (Linked Art); SPARQL JSON at data.getty.edu/museum/collection/sparql; IIIF Image API JPEG",
    "priority": 2,
-   "notes": "collectionapi.metmuseum.org (the data) is a different host.",
+   "notes": "Small SPARQL queries answer; grouping across the whole collection timed out. Gallery names on current_location are not yet confirmed. The metadata is already open. Only media.getty.edu needs allowing, and only to test images (visitors' browsers load it anyway). Free-text SPARQL filters time out, so harvest the activity stream or query by photographer. Also already open and holding Atget: the Art Institute (api.artic.edu, 200) and Cleveland (openaccess-api.clevelandart.org, 200). The Met's collection API answered 410. Getty's ULAN (data.getty.edu/vocab/ulan, 200) was checked for studios: Picasso's activity reads only 'active: France', with no dates, so it adds nothing to the lives.",
    "state": "candidate",
    "hosts": [
     {
-     "host": "images.metmuseum.org",
-     "role": "image files",
-     "probe": "https://images.metmuseum.org/CRDImages/ep/original/DT1567.jpg",
+     "host": "data.getty.edu",
+     "role": "api",
+     "probe": "https://data.getty.edu/museum/collection/object/8dd03159-261d-4e43-b277-15792e04089f",
+     "state": "open",
+     "code": 200,
+     "said": "application/ld+json in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "media.getty.edu",
+     "role": "iiif",
+     "probe": "https://media.getty.edu/iiif/image/93be2690-832e-4567-9713-e86df011b473/full/!400,400/0/default.jpg",
      "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"images.metmuseum.org\"",
+     "said": "request blocked: no rule or allowlist entry allows host \"media.getty.edu\"",
      "seen": "2026-10-10"
     }
-   ]
+   ],
+   "key_needed": false
   },
   {
-   "id": "wikimedia-api",
-   "name": "Wikimedia API gateway",
+   "id": "library-of-congress-habs-haer-hals-measured-drawings-and-t",
+   "name": "Library of Congress: HABS/HAER/HALS measured drawings and the Carol M. Highsmith Archive",
    "facet": "museums",
-   "what": "api.wikimedia.org: Commons' and the wikis' REST endpoints, rate-limited per address.",
-   "improves": "Commons' files' metadata and thumbnails without the action API's 429s from the session's shared address.",
-   "licence": "Each file's own licence.",
-   "key": false,
-   "format": "JSON",
+   "what": "Public-domain measured drawings (plans, sections, elevations) and large-format photographs of US buildings, plus Highsmith's photographs of US buildings, interiors included. Served through loc.gov's JSON API and tile.loc.gov; both refused.",
+   "improves": "Documented plans and sections where a US museum building is surveyed, which would raise its interior to the documented tier and true its exterior model. Dated interior photographs would give paint as photographed.",
+   "licence": "Public domain / no known restrictions (HABS; Highsmith gift)",
+   "key": "none",
+   "format": "JSON; JPEG, TIFF, JP2",
    "priority": 2,
-   "notes": "commons.wikimedia.org's pages and query.wikidata.org answer the session; the action API and upload thumbnails answer 429.",
+   "notes": "Coverage of the site's museums is not verified: Wikidata's LoC HABS/HAER/HALS place ID (P8655) is on none of the 99 museum items checked, nor on their buildings through occupant or location.",
    "state": "candidate",
    "hosts": [
     {
-     "host": "api.wikimedia.org",
-     "role": "REST API",
-     "probe": "https://api.wikimedia.org/core/v1/commons/file/File:Louvre_Museum_Wikimedia_Commons.jpg",
+     "host": "www.loc.gov",
+     "role": "api",
+     "probe": "https://www.loc.gov/search/?q=national%20gallery%20of%20art&fa=partof:historic%20american%20buildings%20survey&fo=json&c=1",
      "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"api.wikimedia.org\"",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.loc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "tile.loc.gov",
+     "role": "files",
+     "probe": "https://tile.loc.gov/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tile.loc.gov\"",
      "seen": "2026-10-10"
     }
-   ]
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "official-open-3d-buildings-and-aerials-3d-bag-nl-nyc-3-d-b",
+   "name": "Official open 3D buildings and aerials: 3D BAG (NL), NYC 3-D Building Model, PDOK 8 cm orthophotos",
+   "facet": "museums",
+   "what": "3D BAG has every Dutch building in LoD 1.2, 1.3 and 2.2 with roof shapes (CityJSON and an OGC API). NYC OTI's 3-D Building Model is CityGML LoD2 from a 2014 survey; its metadata answers on data.cityofnewyork.us, but the files are on s-media.nyc.gov, which is refused. PDOK's national orthophotos (8 cm, 2026) answer the session.",
+   "improves": "True massing and roof forms for the voxel models of the Rijksmuseum, the Stedelijk, the Van Gogh Museum and the Kröller-Müller, and of New York's Met, Guggenheim and MoMA. Roof colour and material can be read off the 8 cm aerials, which matters most in the isometric view.",
+   "licence": "3D BAG CC BY 4.0; NYC Open Data terms; PDOK luchtfoto states no fees and no access constraints (open data)",
+   "key": "none",
+   "format": "CityJSON / OGC API Features; CityGML in a zip; WMTS JPEG",
+   "priority": 2,
+   "notes": "NYC's model is from a 2014 survey, so buildings since are missing. Open LoD2 of the same kind exists for Berlin, Vienna and Switzerland (swissBUILDINGS3D; data.geo.admin.ch is refused). Aerial roofs also suit the city skylines.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.3dbag.nl",
+     "role": "api",
+     "probe": "https://api.3dbag.nl/collections/pand/items?bbox=121000,486000,121100,486100&limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.3dbag.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.3dbag.nl",
+     "role": "files",
+     "probe": "https://data.3dbag.nl/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.3dbag.nl\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "data.cityofnewyork.us",
+     "role": "api",
+     "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s-media.nyc.gov",
+     "role": "files",
+     "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"s-media.nyc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "service.pdok.nl",
+     "role": "tiles",
+     "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/18/134629/86162.jpeg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.8 s",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "openstreetmap-building-appearance-and-3d-tags-read-on-gith",
+   "name": "OpenStreetMap building appearance and 3D tags (read on GitHub's runners)",
+   "facet": "museums",
+   "what": "OpenStreetMap's tags on each museum's building and its parts: building:colour, building:material, roof:colour, roof:material, roof:shape, height, min_height, building:levels and building:part. They come from the same Geofabrik extracts the runners already cut for indoor maps and dates.",
+   "improves": "Where they are mapped, the voxel museums get surveyed roof shapes, part heights, and facade and roof colours, checked against photographs, instead of forms built from published descriptions.",
+   "licence": "ODbL (credit OpenStreetMap contributors)",
+   "key": "none",
+   "format": "OSM PBF cut to JSON by osmium",
+   "priority": 2,
+   "notes": "Cheap: one more filter in osm-dates.yml or the indoor job. Coverage is uneven and colour tags are often missing.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "download.geofabrik.de",
+     "role": "files",
+     "probe": "https://download.geofabrik.de/",
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "overpass-api.de",
+     "role": "api",
+     "probe": "https://overpass-api.de/api/status",
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "smithsonian",
+   "name": "Smithsonian Open Access",
+   "facet": "museums",
+   "what": "Smithsonian CC0 metadata as line-delimited JSON in a public S3 bucket, which answers the session. It is split by unit: chndm (Cooper Hewitt), fsg (Freer|Sackler), saam, hmsg, npg. The images are on ids.si.edu, and the search API is api.si.edu; both are refused.",
+   "improves": "Cooper Hewitt's own measurements (72 of 111 records sampled carry 'Dimensions' in cm and in) would fix the works that Artsy's millimetres-read-as-inches made too wide for any wall. Its CC0 images (99 of 111 records sampled have media) would give their true colours. Portraits of the saved artists, and photographs of them at work in their studios, for the studios' column and the lives; CC0 and downloadable now. NMNH study skins give a second, lab-lit check on the characters' colours.",
+   "licence": "CC0 (metadata_usage and media usage 'CC0')",
+   "key": "none for S3; api.si.edu takes a free api.data.gov key (DEMO_KEY for testing)",
+   "format": "JSON lines; JPEG through the IDS delivery service",
+   "priority": 2,
+   "notes": "Use range requests on the S3 files; no key needed. Cooper Hewitt holds 5 saved works and the Freer 1. Already open via S3: the metadata for aaa, npg, saam, nmnhbirds, nmnhmammals and the other units, and the media themselves. Use only CC0-flagged media. Skins fade, so they can check colours but should not set them. The artists covered are mostly American.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "smithsonian-open-access.s3-us-west-2.amazonaws.com",
+     "role": "files",
+     "probe": "https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/chndm/00.txt",
+     "state": "open",
+     "code": 200,
+     "said": "text/plain in 0.8 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "ids.si.edu",
+     "role": "files",
+     "probe": "https://ids.si.edu/ids/deliveryService?id=CHSDM-27627_01-000001",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ids.si.edu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "api.si.edu",
+     "role": "api",
+     "probe": "https://api.si.edu/openaccess/api/v1.0/search?q=hopper&rows=1&api_key=DEMO_KEY",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.si.edu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "van-gogh-museum-s-own-artwork-downloads",
+   "name": "Van Gogh Museum's own artwork downloads",
+   "facet": "museums",
+   "what": "The museum's site answers the session. Every artwork page offers 'Download image of artwork' (/asset/download/<object number>, an 800 px JPEG, 107 KB for s0031V1962). Its zoom images are on Micrio's IIIF (iiif.micr.io), which the proxy refuses.",
+   "improves": "The 14 saved works the Van Gogh Museum holds can be measured now, in the session, off the museum's own photography, so their colours on the globe are true.",
+   "licence": "Not read: the image terms were not found in the page and must be checked before use (the works are public domain). Keep colours only.",
+   "key": "none",
+   "format": "JPEG 800 px; IIIF via Micrio",
+   "priority": 2,
+   "notes": "Allowing iiif.micr.io would add full-resolution IIIF for both the Van Gogh Museum and the Rijksmuseum.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "www.vangoghmuseum.nl",
+     "role": "files",
+     "probe": "https://www.vangoghmuseum.nl/asset/download/s0031V1962",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 1.5 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "iiif.micr.io",
+     "role": "iiif",
+     "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"iiif.micr.io\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "google-arts-culture-flagged-not-usable-as-a-data-source",
+   "name": "Google Arts & Culture (flagged: not usable as a data source)",
+   "facet": "museums",
+   "what": "Google's museum pages with gigapixel reproductions and Street View walk-throughs of the galleries of hundreds of museums.",
+   "improves": "It would show real rooms and hangs, but Google's terms forbid automated access and extraction. Street View panoramas come only through the billed Maps Platform, which the artist has ruled out.",
+   "licence": "Google Terms of Service; images supplied by the museums under their own terms",
+   "key": "a billed Google Maps Platform key would be needed (excluded)",
+   "format": "HTML/JS; tiled images",
+   "priority": 3,
+   "notes": "Do not take data from it. At most the artist can look, to check a room by eye. Matterport tours (my.matterport.com, refused) carry the same terms problem.",
+   "state": "dropped",
+   "hosts": [
+    {
+     "host": "artsandculture.google.com",
+     "role": "browser",
+     "probe": "https://artsandculture.google.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"artsandculture.google.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "lh3.googleusercontent.com",
+     "role": "files",
+     "probe": "https://lh3.googleusercontent.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"lh3.googleusercontent.com\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "maps.googleapis.com",
+     "role": "api",
+     "probe": "https://maps.googleapis.com/",
+     "state": "silent",
+     "said": "Tunnel connection failed: 403 Forbidden",
+     "seen": "2026-10-10"
+    }
+   ],
+   "why": "Google's terms forbid automated access; Street View only through the billed Maps Platform",
+   "key_needed": false
+  },
+  {
+   "id": "yale-lux-yale-university-art-gallery-and-yale-center-for-b",
+   "name": "Yale LUX (Yale University Art Gallery and Yale Center for British Art) and IIIF",
+   "facet": "museums",
+   "what": "Yale's Linked Art search across its collections. The API answers a browser-like User-Agent (200) and refuses curl's (403 from a CloudFront WAF). The IIIF manifests and images on manifests.collections.yale.edu and images.collections.yale.edu are refused.",
+   "improves": "Colours and sizes for 10 saved works (YUAG 8, YCBA 2) from Yale's own open-access photography.",
+   "licence": "Yale Open Access: images of public-domain works free to use. The LUX data terms still need checking.",
+   "key": "none",
+   "format": "JSON-LD (Linked Art); IIIF Presentation and Image",
+   "priority": 3,
+   "notes": "collections.britishart.yale.edu is also refused.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "lux.collections.yale.edu",
+     "role": "api",
+     "probe": "https://lux.collections.yale.edu/api/search/item?q=%7B%22text%22%3A%22turner%22%7D",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "manifests.collections.yale.edu",
+     "role": "iiif",
+     "probe": "https://manifests.collections.yale.edu/ycba/obj/34",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"manifests.collections.yale.edu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "images.collections.yale.edu",
+     "role": "iiif",
+     "probe": "https://images.collections.yale.edu/iiif/2/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"images.collections.yale.edu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "gallica-bnf-digital-library-postcards-and-photographs-of-f",
+   "name": "Gallica (BnF digital library: postcards and photographs of French places)",
+   "facet": "past",
+   "what": "Millions of digitised documents from the BnF and partner libraries, including postcards and photographs of French towns and monuments from c. 1880-1930. SRU search and IIIF images.",
+   "improves": "'Then' pictures for the French painted sites from the years they were painted: Auvers-sur-Oise's church, town hall and rue Daubigny, Arles, Saint-Rémy, Pontoise, Argenteuil, Giverny, L'Estaque. IIIF lets the browser crop to the part that was painted.",
+   "licence": "Public-domain documents are free to reuse non-commercially with the credit 'Source gallica.bnf.fr / BnF'; commercial reuse needs a licence.",
+   "key": "none",
+   "format": "SRU XML (Dublin Core); IIIF Image and Presentation APIs on the same host (gallica.bnf.fr/iiif/ark:/12148/<id>/f1/full/400,/0/native.jpg); JPEG",
+   "priority": 1,
+   "notes": "Gallica throttles heavy scraping, so list with SRU and then fetch a few images per site. Records name places and buildings, not points: match by town and by the depicted building's name. Visitors' browsers load the images live by IIIF.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "gallica.bnf.fr",
+     "role": "api",
+     "probe": "https://gallica.bnf.fr/SRU?operation=searchRetrieve&version=1.2&query=gallica%20all%20%22Auvers-sur-Oise%22&maximumRecords=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"gallica.bnf.fr\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "library-of-congress-prints-photographs-photochrom-prints-d",
+   "name": "Library of Congress Prints & Photographs (Photochrom prints, Detroit Publishing Co.)",
+   "facet": "past",
+   "what": "About 6,000 colour photochrom views of European, Middle Eastern and North American places, c. 1890-1905, plus Detroit Publishing's US views, with titles that name the place. JSON search and an IIIF image service.",
+   "improves": "Gives the plate's 'then' tab colour views of painted places within a few years of their painting: Monet's Rouen cathedral and Étretat cliffs, Venice for Bellotto and Turner, Lucerne and the Rigi for Turner, the Seine bridges of Paris.",
+   "licence": "Photochroms: 'No known restrictions on publication' (public domain); credit the Library of Congress.",
+   "key": "none",
+   "format": "JSON (?fo=json); IIIF Image API; JPEG/TIFF",
+   "priority": 1,
+   "notes": "The colour in a photochrom was added by hand during the process, so it is a 'then' picture, not a colour to measure. The API throttles bursts. Match by title (place names), then by the depicted landmark. For British sites, the National Library of Scotland's georeferenced OS maps of c. 1888-1913 are already open as tiles (mapseries-tilesets.s3.amazonaws.com, 200; NLS terms, with attribution).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "www.loc.gov",
+     "role": "api",
+     "probe": "https://www.loc.gov/collections/photochrom-prints/?q=rouen&fo=json",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.loc.gov\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "tile.loc.gov",
+     "role": "iiif",
+     "probe": "https://tile.loc.gov/image-services/iiif/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"tile.loc.gov\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "europeana",
+   "name": "Europeana",
+   "facet": "past",
+   "what": "Europe's aggregator: search and record APIs over tens of millions of items from European museums, each with a rights statement, a thumbnail API and IIIF manifests. All refused.",
+   "improves": "Openly licensed images for works in European museums the site has no API for, so their colours would be true. Contributors include the Belvedere, the Alte Nationalgalerie (through the Berlin museums), SMK and the Rijksmuseum. It also holds dated photographs of gallery interiors. Openly licensed 'then' views of painted sites across Europe in one query: Dutch town views from the Rijksmuseum and the Dutch heritage agency (the Grote Kerk at Dordrecht), Swiss lakes from ETH-Bibliothek, German towns from the Deutsche Fotothek.",
+   "licence": "Metadata CC0; media per item (edm:rights: CC0, PDM, CC BY, CC BY-SA, or in copyright)",
+   "key": "public demo key api2demo (low limits); free personal key by sign-up",
+   "format": "JSON; thumbnails at api.europeana.eu/thumbnail/v3/<size>/<hash>; IIIF",
+   "priority": 2,
+   "notes": "SMK's own API answers the session (api.smk.dk; current_location_name such as 'Sal 227'), and its download endpoint gives the native master (46.7 MB for KMS9202). Its sized IIIF (iip.smk.dk, iip-thumb.smk.dk) is refused. Paris Musées (apicollections.parismusees.paris.fr, free token) and Harvard Art Museums (api.harvardartmuseums.org, free key) were probed (000) but hold at most one of the site's saved works. Full images come from each provider's own host; for build-time tests each provider's host would need allowing separately. It stands in for the Rijksmuseum's own API (data.rijksmuseum.nl and iiif.micr.io, refused; CC0, keyless) and for RKD (api.rkd.nl, refused).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.europeana.eu",
+     "role": "api",
+     "probe": "https://api.europeana.eu/record/v2/search.json?wskey=api2demo&query=mona%20lisa&rows=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.europeana.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "iiif.europeana.eu",
+     "role": "iiif",
+     "probe": "https://iiif.europeana.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"iiif.europeana.eu\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.europeana.eu",
+     "role": "browser",
+     "probe": "https://www.europeana.eu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.europeana.eu\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "geograph-britain-and-ireland-photographs-of-every-grid-squ",
+   "name": "Geograph Britain and Ireland (photographs of every grid square)",
+   "facet": "past",
+   "what": "Over 7 million geolocated photographs covering nearly every 1 km square of Britain and Ireland. Many record the photographer's position and view direction.",
+   "improves": "'Now' views from where Turner, Constable and Gainsborough stood, facing their subject, for the site's largest site exploration (Turner's painted places, 88 sites), in fields, rivers and coasts that street-level imagery does not reach.",
+   "licence": "CC BY-SA 2.0 (credit the photographer).",
+   "key": "free sign-up (API key) for the syndicator; database exports recommended for bulk use",
+   "format": "JSON/XML/KML/RSS feeds; JPEG",
+   "priority": 2,
+   "notes": "The API is for on-demand lookups only (first 1,000 matches). Check which position and direction fields it returns before relying on them. Over 1.8 million Geograph photographs are already on Wikimedia Commons with location templates, reachable now through Commons' pages. Image hosts are sharded (s0 and siblings).",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.geograph.org.uk",
+     "role": "api",
+     "probe": "https://api.geograph.org.uk/syndicator.php?q=Abingdon&format=JSON",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.geograph.org.uk\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.geograph.org.uk",
+     "role": "browser",
+     "probe": "https://www.geograph.org.uk/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.geograph.org.uk\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "s0.geograph.org.uk",
+     "role": "files",
+     "probe": "https://s0.geograph.org.uk/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"s0.geograph.org.uk\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
+  },
+  {
+   "id": "paris-mus-es-collections-carnavalet-marville-atget-and-par",
+   "name": "Paris Musées collections (Carnavalet: Marville, Atget and Paris photographs)",
+   "facet": "past",
+   "what": "The collections of the City of Paris museums, with over 150,000 out-of-copyright works released as CC0 open content. They include Charles Marville's photographs of streets before and after Haussmann (1850s-1870s), Eugène Atget's photographs of 1890s-1920s Paris, and Paris interiors.",
+   "improves": "Paris painted sites as they stood when they were painted, for Caillebotte, Pissarro, Monet and Renoir. Atget is himself a saved artist, so his photographs can serve both as 'then' pictures and as his own works on the site.",
+   "licence": "CC0 for open-content images (out-of-copyright works); the portal asks for a credit.",
+   "key": "free sign-up (API token)",
+   "format": "GraphQL JSON; JPEG (HD 300 dpi)",
+   "priority": 2,
+   "notes": "Records give street names, not points, so geocode them with Nominatim (already allowed). Only the open-content subset is CC0.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "apicollections.parismusees.paris.fr",
+     "role": "api",
+     "probe": "https://apicollections.parismusees.paris.fr/graphql",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"apicollections.parismusees.paris.fr\"",
+     "seen": "2026-10-10"
+    },
+    {
+     "host": "www.parismuseescollections.paris.fr",
+     "role": "files",
+     "probe": "https://www.parismuseescollections.paris.fr/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.parismuseescollections.paris.fr\"",
+     "seen": "2026-10-10"
+    }
+   ],
+   "key_needed": true
   }
  ]
 }

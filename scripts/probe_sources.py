@@ -91,17 +91,32 @@ def policy(host, port=443):
         s.close()
 
 
-def fetch(url, timeout=25):
+def tls(extra=False):
+    """The default context; with `extra`, certifi's roots added too (verification stays on), for a host
+    whose chain is incomplete (gdi.berlin.de, as build_built_years.py reads it)."""
+    c = ssl.create_default_context()
+    if extra:
+        try:
+            import certifi
+            c.load_verify_locations(certifi.where())
+        except Exception:
+            pass
+    return c
+
+
+def fetch(url, timeout=25, extra=False):
     """The host's own answer: (code, said) or (None, why)."""
     req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': '*/*'})
     t = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=ssl.create_default_context()) as r:
+        with urllib.request.urlopen(req, timeout=timeout, context=tls(extra)) as r:
             r.read(2048)
             return r.status, '%s in %.1f s' % (r.headers.get('Content-Type', '').split(';')[0] or 'answer', time.time() - t)
     except urllib.error.HTTPError as e:
         return e.code, (e.reason or '')[:80] if isinstance(e.reason, str) else str(e.code)
     except urllib.error.URLError as e:
+        if not extra and 'CERTIFICATE_VERIFY_FAILED' in str(e.reason):
+            return fetch(url, timeout, True)
         return None, str(e.reason)[:160]
     except Exception as e:  # a timeout, a reset, a handshake that never ends
         return None, ('%s: %s' % (type(e).__name__, e))[:160]
@@ -109,8 +124,9 @@ def fetch(url, timeout=25):
 
 def probe(h):
     """One host: its state, the HTTP code if any, and what was said."""
-    url = h.get('probe') or 'https://%s/' % h['host']
-    pol, why = policy(h['host'])
+    url = h.get('probe') or 'https://%s/' % h['host'].lstrip('*.')
+    # A wildcard (*.us.archive.org) is asked about through one of its hosts, the probe's.
+    pol, why = policy(urllib.parse.urlparse(url).hostname if h['host'].startswith('*.') else h['host'])
     if pol == 'refused':
         return {'state': 'refused', 'code': None, 'said': why}
     code, said = fetch(url)
@@ -129,18 +145,50 @@ def hosts_of(src):
 
 # ---- the ledger's generated parts ----
 
-def ask_block(src):
-    """The domains to ask for: refused hosts of sources still wanted, most needed first, once each."""
-    seen, rows = set(), []
-    for s in sorted(src['sources'], key=lambda s: (s.get('priority', 3), FACETS.index(s.get('facet', 'past'))
-                                                   if s.get('facet') in FACETS else 9, s['name'].lower())):
-        if s.get('state') == 'dropped' or s.get('priority', 3) > 2:
+NEVER_ASK = ('browser', 'alt', 'unconfirmed')   # a page for people, an alternative not needed, not yet seen
+
+
+def wanted(s):
+    return s.get('state') != 'dropped' and not s.get('key_needed')
+
+
+def order(s):
+    return (s.get('priority', 3), FACETS.index(s['facet']) if s.get('facet') in FACETS else 9, s['name'].lower())
+
+
+def ask_block(src, level=1, before=()):
+    """The domains to ask for at a priority: refused hosts the session needs, of sources wanted without a
+    sign-up, most needed first, once each, none already in an earlier block."""
+    seen, rows = set(before), []
+    for s in sorted(src['sources'], key=order):
+        if not wanted(s) or s.get('priority', 3) != level:
             continue
         for h in s.get('hosts', []):
-            if h.get('state') == 'refused' and h['host'] not in seen:
+            if h.get('state') == 'refused' and h.get('role') not in NEVER_ASK and h['host'] not in seen:
                 seen.add(h['host'])
                 rows.append(h['host'])
     return rows
+
+
+def open_now(src):
+    """The sources whose every needed host answers now and that nothing reads yet, most needed first."""
+    out = []
+    for s in sorted(src['sources'], key=order):
+        if s.get('state') == 'allowed':
+            out.append('- **%s** (P%d) — %s' % (s['name'], s.get('priority', 3), cell(s.get('improves'))[:260].rstrip() +
+                                                ('…' if len(cell(s.get('improves'))) > 260 else '')))
+    return '\n'.join(out) + '\n' if out else 'None.\n'
+
+
+def sign_ups(src):
+    """The sources that need the artist to sign up first: what, and the hosts they would then need."""
+    out = []
+    for s in sorted(src['sources'], key=order):
+        if s.get('state') == 'dropped' or not s.get('key_needed'):
+            continue
+        hs = [h['host'] for h in s.get('hosts', []) if h.get('state') == 'refused' and h.get('role') not in NEVER_ASK]
+        out.append('- **%s** — %s; then %s' % (s['name'], cell(s.get('key')), ', '.join('`%s`' % h for h in hs) or 'nothing more'))
+    return '\n'.join(out) + '\n' if out else 'None.\n'
 
 
 def word(h):
@@ -171,9 +219,12 @@ def table(src):
                 state += ' · ' + s['used_by']
             if state.startswith('dropped') and s.get('why'):
                 state += ': ' + s['why']
+            lic = cell(s.get('licence'))
+            if s.get('key_needed'):
+                lic += ' · key: ' + cell(s.get('key'))
             out.append('| **%s** (P%d) %s | %s | %s | %s | %s |' % (
                 cell(s['name']), s.get('priority', 3), cell(s.get('what')), hs, cell(s.get('improves')),
-                cell(s.get('licence')), cell(state)))
+                lic, cell(state)))
         out.append('')
     return '\n'.join(out).rstrip() + '\n'
 
@@ -191,9 +242,13 @@ def write_ledger(src):
     if not os.path.exists(LEDGER):
         return
     text = open(LEDGER).read()
-    ask = ask_block(src)
-    block = ('```\n' + '\n'.join(ask) + '\n```\n') if ask else 'Nothing to ask for: every wanted host answers.\n'
-    text = splice(text, 'ask', block)
+    first = ask_block(src, 1)
+    later = ask_block(src, 2, first)
+    fence = lambda rows, none: ('```\n' + '\n'.join(rows) + '\n```\n') if rows else none + '\n'
+    text = splice(text, 'ask', fence(first, 'Nothing to ask for now: every host of the first sources answers.'))
+    text = splice(text, 'later', fence(later, 'None.'))
+    text = splice(text, 'keys', sign_ups(src))
+    text = splice(text, 'open', open_now(src))
     text = splice(text, 'table', table(src))
     probed = src.get('probed') or ''
     text = re.sub(r'(<!-- probed -->).*?(<!-- /probed -->)', r'\g<1>%s\g<2>' % probed, text)
@@ -233,7 +288,7 @@ def main():
         changed = sorted(set(changed))
         src['probed'] = time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())
         for s in src['sources']:
-            states = {h.get('state') for h in s.get('hosts', [])}
+            states = {h.get('state') for h in s.get('hosts', []) if h.get('role') not in NEVER_ASK}
             if s.get('state') in ('candidate', 'asked') and states == {'open'}:
                 s['state'] = 'allowed'
         with open(SOURCES, 'w') as fh:
@@ -246,8 +301,9 @@ def main():
         for host, was, now in changed:
             print('  %s: %s -> %s%s' % (host, was, now, '   <- newly open: put it to use' if now == 'open' else ''))
     write_ledger(src)
-    ask = ask_block(src)
-    print('to ask for: %d domains' % len(ask))
+    first = ask_block(src, 1)
+    print('to ask for: %d domains first, %d later, %d sources wait on a sign-up' % (
+        len(first), len(ask_block(src, 2, first)), sum(1 for s in src['sources'] if s.get('key_needed'))))
 
 
 if __name__ == '__main__':
