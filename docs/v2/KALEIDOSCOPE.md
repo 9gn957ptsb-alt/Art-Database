@@ -49,14 +49,15 @@ the mirrors can be, all φ's:
 | --- | --- | --- | --- |
 | 9 Oct 2026 | The pulse — every press's pixel light | Folded through two mirrors at 36°: the square with its corners knocked off comes out a soft pentagon, its ragged edge ten times, mirrored; the mirrors turned and the pieces shaken anew each press (`folded`, `jag`) | none (asked for) |
 | 10 Oct 2026 | A photograph's arrival — a work's first look, a collage dealt at its site | One arrival of fourteen, dealt: the 36° rosette of the picture's middle grows out in four held steps of φ, turns a little as a kaleidoscope turned in the hand, then the mirrors open by φ a step — 10, 6.2, 3.8, 2.4, 1.5 images — until there is one, and it is the picture. Where two images meet, the mirror's edge catches the lavender light. About 1.4 s (`kaleidoscopeIn`, `kaleidoscopeOf`) | `arrive` |
+| 13 Oct 2026 | A photograph pointed at (a mouse), or a door pressed — the thumbnail's answer | One pointed effect of the others, dealt: the 36° mirrors stand over the point the pointer is on and the picture is seen through them as they close and open by φ — 1.5, 3.8, 10 images, then 10, 3.8, 1.5 — seven held steps, about 0.9 s; the picture shows through where an image is broken, the mirrors' edges a short lavender line at the point (`kaleidoscopeAt`) | `pointed` |
 
 ## Still to come
 
 Ideas, roughly from quietest to most present; take the next that still fits, or a better one, and
 strike it here when it is done.
 
-1. **A door pressed** (a thread's door, a collage pointed at with a mouse): the picture folds about
-   the point pressed into ten for a beat and opens again (`POINTED`, dealt among the others).
+1. ~~**A door pressed** (a thread's door, a collage pointed at with a mouse): the picture folds about
+   the point pressed into ten for a beat and opens again (`POINTED`, dealt among the others).~~ Done 13 Oct.
 2. **The aim of the dive** (`drawAim`): its ring of pixel light folded as the pulse is — ten ragged
    arcs, mirrored, turning as the fingers carry it.
 3. **The squash's held ring** (`ringNow`, a city held): a rosette that turns while the finger holds,
