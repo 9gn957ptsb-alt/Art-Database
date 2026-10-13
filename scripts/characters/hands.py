@@ -208,24 +208,41 @@ def nearest(cols, target, avoid=()):
     return best[1] if best else target
 
 
+def toward(c0, c1, target):
+    """c0 worked toward c1 until its lightness is the target (as near as the way allows)."""
+    lo, hi = 0.0, 1.0
+    if lab(mix(c0, c1, 1.0))[0] <= target:
+        return mix(c0, c1, 1.0)
+    for _ in range(14):
+        mid = (lo + hi) / 2
+        if lab(mix(c0, c1, mid))[0] < target:
+            lo = mid
+        else:
+            hi = mid
+    return mix(c0, c1, (lo + hi) / 2)
+
+
 def ladder(cols, base, steps):
     """A ramp from the artist's colours: for each wanted lightness offset from the
     species' colour, the artist's colour nearest that; where it gives no step of its
-    own, the chosen one worked toward the artist's darkest or lightest."""
+    own (none near, or nearer the last step than a step apart), the last one worked
+    toward the artist's lightest by just the lightness the species wants — a black
+    bear stays black after an artist of greys, and is not washed to the artist's
+    mid-tones."""
     darkest = min(cols, key=lambda c: (lab(c)[0], c))
     lightest = max(cols, key=lambda c: (lab(c)[0], c))
-    out = []
+    lb = lab(base)[0]
+    fixed = []
     for dl in steps:
+        want = lb + dl
         c = nearest(cols, shade(base, dl))
-        out.append(c)
-    # each step must stand apart from its neighbour, darkest first
-    fixed = [out[0]]
-    for n in range(1, len(out)):
-        c = out[n]
-        if lab(c)[0] < lab(fixed[-1])[0] + 6:
-            c = mix(fixed[-1], lightest, 0.32)
-            if lab(c)[0] < lab(fixed[-1])[0] + 4:
-                c = shade(fixed[-1], 9)
+        if fixed:
+            prev = lab(fixed[-1])[0]
+            lc = lab(c)[0]
+            if lc < prev + 6 or lc - want > 14:
+                c = toward(fixed[-1], lightest, max(want, prev + 7.0))
+                if lab(c)[0] < prev + 4:
+                    c = shade(fixed[-1], 9)
         fixed.append(c)
     if lab(fixed[0])[0] > lab(fixed[-1])[0] - 6:
         fixed[0] = mix(fixed[0], darkest, 0.5)

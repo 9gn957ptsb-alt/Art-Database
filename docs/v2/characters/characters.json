@@ -236,6 +236,11 @@
       "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
     }
   ],
+  "natives_refined": [
+    {"key": "london-gb", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 wild boar after Turner, four rounds against the real animal and his strokes: a wedge not a loaf (shoulders raised, hump, narrower haunch, a long tapering snout with its tusk, the head low on a thick neck, the tail hanging) and the coat dark bristly brown, not the pale beige the artist's light palette had washed it to (hands.ladder)"]},
+    {"key": "paris-fr", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 grey wolf after Monet, three rounds: the tail carried low and straight with a dark tip (it rode up like a fox's), bushy; a ruff and pale cheeks; a broader head, heavier paws; the pale belly now pale (its ladder had come out mid-grey)"]},
+    {"key": "washington-us", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 American black bear after Artschwager, three rounds: black, not pale grey (hands.ladder worked the steps toward the artist's lightest by a third each, so every dark animal washed out); rump a little higher than the shoulders, no hump; head carried low and larger, bigger round ears, long flat paws"]}
+  ],
   "backlog": [
     {
       "artist": "Jackson Pollock",
