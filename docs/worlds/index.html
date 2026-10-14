@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Worlds</title>
+  <meta name="description" content="A wager game on a woven globe. Earth and Mars, and no boundary between worlds.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="globe" aria-label="The globe. Drag to turn it, scroll or pinch to come closer, click a territory to select it."></canvas>
+
+  <header class="bar">
+    <h1>Worlds</h1>
+    <div class="switch" role="group" aria-label="World">
+      <button data-world="earth" aria-pressed="true">Earth</button>
+      <button data-world="mars" aria-pressed="false">Mars</button>
+    </div>
+    <dl class="stats">
+      <div><dt>Turn</dt><dd id="turn">1</dd></div>
+      <div><dt>Treasury</dt><dd><span id="treasury">0</span> <small id="income"></small></dd></div>
+    </dl>
+    <button id="end" class="primary">End turn</button>
+  </header>
+
+  <aside id="panel" class="panel" aria-live="polite" hidden></aside>
+
+  <section class="side">
+    <ul id="houses" class="houses" aria-label="Houses"></ul>
+    <details class="chronicle" open>
+      <summary>Chronicle</summary>
+      <ol id="log"></ol>
+    </details>
+    <button id="new" class="quiet">New game</button>
+  </section>
+
+  <div class="zoom">
+    <button id="zin" aria-label="Closer">+</button>
+    <button id="zout" aria-label="Farther">−</button>
+  </div>
+
+  <div id="banner" class="banner" hidden><p></p></div>
+  <div id="tip" class="tip" hidden></div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="loading" class="loading">Weaving the worlds…</div>
+
+  <script src="globe.js"></script>
+  <script src="game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

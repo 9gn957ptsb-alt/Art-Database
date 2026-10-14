@@ -35,7 +35,7 @@ jobs:
       - name: Stamp the pages' own files with this commit
         run: |
           V=${GITHUB_SHA::8}
-          for f in docs/v2/index.html; do
+          for f in docs/v2/index.html docs/worlds/index.html; do
             [ -f "$f" ] && sed -i -E "s#((href|src)=\"[a-z0-9._/-]+\.(css|js))\"#\1?v=$V\"#g" "$f"
           done
           grep -c "?v=$V" docs/v2/index.html
