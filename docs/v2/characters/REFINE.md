@@ -149,7 +149,11 @@ every run and public files only.
   The whole fox no longer has `act`, `play` or `ritual` poses — the page never
   reads them for a whole animal — and its mousing pounce, toss and gekkering
   are still the chimera's parts, drawn by `fox.py`'s `rig()` (`parts/fox.json`,
-  untouched, so the chimera's fox is in the new inks and the old drawing).
+  untouched, so the chimera's fox is in the new inks and the old drawing). A
+  cell of one CSS pixel is whole device pixels on any screen, so at a fractional
+  density (1.5) it is 2 and the fox is drawn a third larger; its box follows
+  the drawing (`cellPx`, `bounds` in `characters.js`), so its feet stay on the
+  ground and the pressed red box fits it at every density.
 - **Checked:** `scripts/check_characters.js` (the wave, the press line) and the
   preview (`scripts/preview_character.js fox out.png`, `fox,bison,deer` for a
   chimera) at 390×844 and 1440×900, and at a device density of 3.

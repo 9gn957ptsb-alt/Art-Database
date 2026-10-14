@@ -474,6 +474,11 @@
     };
   }
 
+  // Whole device pixels a cell, so the dots stay crisp. At a fractional density that is not quite cell × scale
+  // CSS pixels (a cell of one CSS pixel is 2 device pixels at 1.5), so a sprite's box follows how it is drawn
+  // (bounds), never the other way round: its feet stay on the ground at any density.
+  function cellPx(s, scale) { return Math.max(1, Math.round(s.cell * dpr * (scale || 1))); }
+
   function sprite(c, pose, n, dir, here, scale) {
     var s = sprites[c.id];
     if (!s.poses[pose]) { pose = "stand"; }
@@ -482,7 +487,7 @@
     var key = c.id + "|" + pose + "|" + n + "|" + dir + "|" + scale + "|" + (here ? here.soil : "");
     if (spriteCache[key]) { return spriteCache[key]; }
     var rows = s.poses[pose][n];
-    var px = Math.max(1, Math.round(s.cell * dpr * scale));
+    var px = cellPx(s, scale);
     var cv = document.createElement("canvas");
     cv.width = s.w * px;
     cv.height = s.h * px;
@@ -1305,9 +1310,9 @@
 
   function bounds(o) {
     var s = sprites[o.c.id];
-    var k = o.scale || 1;
-    var w = s.w * s.cell * k, h = s.h * s.cell * k;
-    return { x: o.x - w / 2, y: o.y - o.alt - s.foot[1] * s.cell * k, w: w, h: h };
+    var u = cellPx(s, o.scale) / dpr;                    // CSS pixels a cell, as drawn
+    var w = s.w * u, h = s.h * u;
+    return { x: o.x - w / 2, y: o.y - o.alt - s.foot[1] * u, w: w, h: h };
   }
 
   function placeSays(o) {
