@@ -373,22 +373,23 @@
     "new-york-us": {
       "name": "New York",
       "tier": 3,
-      "n": 400,
-      "cell": 20.0,
+      "n": 568,
+      "cell": 14.1,
       "side": 8000,
       "lat": 40.74899,
       "lon": -73.98445,
       "release": "2026-09-23.1",
-      "read": "2026-10-08",
-      "dated": "2026-10-08",
-      "buildings": 35433,
-      "green": 12394,
-      "dated_share": 0.936,
-      "kb": 951,
-      "gz": 163,
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 47103,
+      "green": 25317,
+      "dated_share": 0.934,
+      "kb": 1899,
+      "gz": 300,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (55.6 m) from Overture 2026-09-23.0 · 6754 buildings · dated to 2026-10-08: 88% of its building cells",
-        "2026-10-08 · cut at tier 2 · 400 cells a side (20.0 m) from Overture 2026-09-23.1 · 35433 buildings, 12394 green cells · 94% of its building cells dated (88% at the last cut) · 951 KB (163 KB sent)"
+        "2026-10-08 · cut at tier 2 · 400 cells a side (20.0 m) from Overture 2026-09-23.1 · 35433 buildings, 12394 green cells · 94% of its building cells dated (88% at the last cut) · 951 KB (163 KB sent)",
+        "2026-10-14 · raised to tier 3 · 568 cells a side (14.1 m) from Overture 2026-09-23.1 · 47103 buildings, 25317 green cells · 93% of its building cells dated (94% at the last cut) · 1899 KB (300 KB sent)"
       ]
     },
     "paris-fr": {
