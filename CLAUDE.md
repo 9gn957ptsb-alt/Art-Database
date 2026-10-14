@@ -148,7 +148,7 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   earlier days into each run) and costs the conversation one short turn; a fire that comes mid-conversation waits its
   turn. The REFINE.md files stay the authority on each step; a routine's prompt can be changed only from the
   conversation it fires into. The routines of before, each bound to its own session ("(replaced) …"), are paused, not
-  deleted. Never a routine that starts a fresh session each fire: that session has no repository (tagged
+  deleted, and those five sessions archived (14 Oct, the artist: "Yes"). Never a routine that starts a fresh session each fire: that session has no repository (tagged
   `config:no-git-repo`), so it can never push — the daily characters pass ran so from 1 to 10 Oct and committed
   nothing. Not moved: "Artsy saving run check-in" (it watches a process in its own session) and DIRT's weekly coworker.
 - **Domains for Network access come as one block to copy** (artist, 7 Oct 2026: "When I ask you for the domains you need
