@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DIRT Poetry: the five pages of Picture Poetry, each laid whole on a plane painted in DIRT.
+"""DRIFT Poetry: the five pages of Picture Poetry, each laid whole on a plane painted in DIRT.
 
 Builds one self-contained page from plane.html (beside this file) and the pages themselves, which stay private:
 dirt/private/poetry/ holds Picture Poetry's page images, overlays/ (each page's buildings and characters as the

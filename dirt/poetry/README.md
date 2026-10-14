@@ -1,11 +1,12 @@
-# DIRT Poetry
+# DRIFT Poetry
 
 The five pages of *Picture Poetry* (Aries's book of photographs and poems: *Boiling*, a page signed *Innocence as an
 Act*, *For What*, *Neither Where Nor When*, and an untitled prose poem beside the Spring Point Ledge lighthouse), each
 laid whole on an endless plane painted in DIRT's language, that you drag through. Made on 10 October 2026 from four
 stills of DRIFT (v80) and the pages themselves, and nothing else: "make a new artifact that applies each page to these
 graphic aesthetics in a 2D plane ... strictly working off of these images and the pages in the Picture Poetry
-artifact", and then "each page from the Picture Poetry pages".
+artifact", and then "each page from the Picture Poetry pages". First published as *DIRT Poetry*; renamed *DRIFT Poetry*
+on 14 October 2026, after the work it is painted from.
 
 Published as its own artifact (private to its owner). The pages, the photographs and the poems are not in this
 repository: `build_poetry.py` reads them from `dirt/private/poetry/` (ignored): the page images saved from the Picture
