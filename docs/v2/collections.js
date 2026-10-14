@@ -56,7 +56,8 @@
     "museum-the-metropolitan-museum-of-art": {
       name: "the Met's open collection",
       search: function (text) {
-        var url = "https://collectionapi.metmuseum.org/public/collection/v1/search?" +
+        // v1/search was retired on 1 Oct 2026; v1.1 gives the same {total, objectIDs} (100 at most).
+        var url = "https://collectionapi.metmuseum.org/public/collection/v1.1/search?" +
                   q({ q: text || "painting", hasImages: "true" });
         return json(url).then(function (d) {
           var ids = (d.objectIDs || []).slice(0, PAGE);
