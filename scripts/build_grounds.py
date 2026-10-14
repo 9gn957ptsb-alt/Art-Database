@@ -30,6 +30,7 @@ which Overture release it was read from and when ("release", "read");
 --release latest reads the newest release on the bucket.
 
     python3 scripts/build_grounds.py [--force] [--only slug] [--release latest|2026-09-23.1]
+    python3 scripts/build_grounds.py --heights [--only city-<key>]    # towers above 237 m, read again
 """
 
 import argparse
@@ -67,6 +68,10 @@ SIDE = {                      # metres a side, by how exactly the point is known
 }
 BIGGEST = 25000               # m²: larger than any one roof on these grounds
 FLOOR = 3.2                   # metres a storey, where only storeys are given
+# The most storeys a cell says (832 m: the Burj Khalifa). It stopped at 74 (237 m) until 14 Oct 2026, when
+# every tower above that — the Empire State Building, the Willis Tower, the Eiffel Tower, the CN Tower — was
+# found standing at the same height; `--heights` reads those cells again for the grounds cut before.
+MAX_STOREYS = 260
 ROAD_WIDTH = {                # metres, by Overture's road class
     "motorway": 22, "trunk": 18, "primary": 14, "secondary": 12, "tertiary": 10,
     "residential": 8, "living_street": 6, "unclassified": 7, "service": 5,
@@ -220,7 +225,12 @@ def square(b):
     return (w, s, e, n)
 
 
-def build(b):
+def storeys_of(tall):
+    """Storeys standing on each cell, as one character each (48 + the count, up to MAX_STOREYS)."""
+    return "".join(chr(48 + min(MAX_STOREYS, int(round(v / FLOOR)))) if v else "0" for v in tall.ravel())
+
+
+def build(b, only_tall=False):
     lat, lon = b["lat"], b["lon"]
     side = side_of(b)
     N = b.get("n") or GRID       # a city's skyline is finer than 80 a side
@@ -255,7 +265,7 @@ def build(b):
     tall = np.zeros((N, N))
     city = b.get("precision") == "city"
 
-    for row in overture("base", "water", ["subtype", "class"], box):
+    for row in (() if only_tall else overture("base", "water", ["subtype", "class"], box)):
         g = to_local(shapely.from_wkb(row["geometry"]))
         if g.geom_type in ("LineString", "MultiLineString"):
             g = g.buffer(max(cell * 0.6, 6))
@@ -263,7 +273,7 @@ def build(b):
             kind[within(g)] = "~"
 
     # A city's green, under its streets and buildings: parks, gardens, lawns, pitches, cemeteries, woods.
-    if city:
+    if city and not only_tall:
         for theme, kind_ in (("base", "land_use"), ("base", "land")):
             for row in overture(theme, kind_, ["subtype", "class"], box):
                 if theme == "base" and kind_ == "land_use" and row.get("class") not in GREEN_USE:
@@ -277,7 +287,7 @@ def build(b):
     # A city's skyline keeps its streets, not every lane and drive: under 8 m wide they are left out
     # where a cell is ~40 m, and kept from 6 m where the grid has been cut finer than 22 m.
     least = 8 if cell > 22 else 6
-    for row in overture("transportation", "segment", ["subtype", "class"], box):
+    for row in (() if only_tall else overture("transportation", "segment", ["subtype", "class"], box)):
         if row.get("subtype") != "road":
             continue
         width = ROAD_WIDTH.get(row.get("class") or "", 0)
@@ -318,6 +328,9 @@ def build(b):
         tall[inside] = np.maximum(tall[inside], h)
         count += 1
 
+    if only_tall:                # the buildings and their heights alone (`--heights`)
+        return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall)}
+
     at = terrain(box, cell, lat)
     ground = np.array([[at(*to_deg(gx[i, j], gy[i, j])) for j in range(N)] for i in range(N)])
     # A tile's broken pixel reads as a pit hundreds of metres deep (New York's at zoom 12: -823 m),
@@ -346,13 +359,52 @@ def build(b):
         # "." land, "~" water, "=" road, "b" building; a city's skyline also "g", its green.
         "kind": "".join(kind.ravel()),
         # Storeys standing on each cell, as one character each (0-9, then on).
-        "tall": "".join(chr(48 + min(74, int(round(v / FLOOR)))) if v else "0"
-                        for v in tall.ravel()),
+        "tall": storeys_of(tall),
         "buildings": count,
         # Which of Overture's releases it was read from, and when.
         "release": RELEASE,
         "read": datetime.date.today().isoformat(),
     }
+
+
+def repair_heights(places):
+    """`--heights`: a ground cut while a cell's storeys stopped at 74 (237 m) says the same height for every
+    tower above it (Chicago's, New York's, Toronto's, the Eiffel Tower). Each such ground's buildings are
+    read again, from the release it was read from, and the cells at the limit take their true height;
+    nothing else in the ground changes — its years, streets, water, green. A ground whose grid is no longer
+    the place's is left for a new cut."""
+    limit = chr(48 + 74)
+    for b in places:
+        path = OUT / (b["slug"] + ".json")
+        if not path.exists():
+            continue
+        old = json.loads(path.read_text(encoding="utf-8"))
+        capped = [q for q, c in enumerate(old["tall"]) if c == limit and old["kind"][q] == "b"]
+        if not capped:
+            continue
+        if old["n"] != (b.get("n") or GRID) or old["side"] != side_of(b):
+            print(f"  · {b['slug']}: its grid is not the place's now: cut it again instead", flush=True)
+            continue
+        new = None
+        for release in dict.fromkeys([old.get("release") or RELEASE, "latest"]):
+            try:
+                use_release(release)
+                new = build(b, only_tall=True)
+                break
+            except Exception as exc:         # a release the bucket no longer keeps: the newest instead
+                print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+        if new is None:
+            continue
+        tall, raised = list(old["tall"]), 0
+        for q in capped:
+            if new["kind"][q] == "b" and new["tall"][q] > limit:
+                tall[q] = new["tall"][q]
+                raised += 1
+        old["tall"] = "".join(tall)
+        path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
+        top = max(ord(c) - 48 for c in tall)
+        print(f"  + {b['name']}: {raised} of {len(capped)} cells at the limit read again, "
+              f"the tallest now {top} storeys ({top * FLOOR:.0f} m)", flush=True)
 
 
 def main():
@@ -361,6 +413,9 @@ def main():
     parser.add_argument("--only")
     parser.add_argument("--release", default=None,
                         help="an Overture release (2026-09-23.1), or 'latest' for the newest on the bucket")
+    parser.add_argument("--heights", action="store_true",
+                        help="read again the heights of the cells a ground cut at the old limit of 74 storeys "
+                             "left standing at 237 m, leaving all else as it is (with --only: one place)")
     args = parser.parse_args()
     if args.release:
         print(f"Overture release {use_release(args.release)}", flush=True)
@@ -376,6 +431,9 @@ def main():
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.heights:
+        repair_heights(buildings)
+        sys.exit(0)
     todo = [b for b in buildings if args.force or not (OUT / (b["slug"] + ".json")).exists()]
 
     # Many at once (the museums, first time round): read the planet once for
