@@ -47,6 +47,24 @@
   var KEY_TURN = 100 * Math.PI / 180;           // rad/s, by the keys
   var FOV = 66 * Math.PI / 180;                 // across, with the horizon mid-frame
   var DOT_MAX = 6, FPS = 24;
+  // The room's dot: two CSS pixels, on a phone and a desktop (14 Oct 2026; it had been three and four: "The
+  // interiors still look too pixelated"). It grows only if frames come too slowly (pace).
+  var DOT_BASE = 2;
+  /* The works at the screen's own pixels, and a halo of clarity round each (artist, 14 Oct 2026: "I want
+     the artworks on the walls of each museum to be as high res as you possibly can make them. There
+     should be a fade out as far as pixelation clarity from each artwork to the surrounding space like a
+     halo of clarity for each artwork"). A work's picture is drawn in true perspective by WebGL from
+     Artsy's largest pictures (Art, below), and round each work seen within PICTURE_NEAR the room is cast
+     again finer — at the screen's own pixels nearest it, then at a CSS pixel — each ring dithered into
+     the next by the Bayer matrix, out to the room's dots. A halo is HALO_K of the work's height on the
+     screen across (HALO_MIN CSS px at least, and each level's own widest), so a far work's is small and a
+     near one's wide; RING gives each level's reach in halos. */
+  var HALO_K = 0.55, HALO_MIN = 18;
+  // [wholly this level within, gone by, the halo's widest for this level in CSS px]: the screen's own
+  // pixels close round the frame, the CSS pixel out to the halo's edge.
+  var RING = { device: [0.06, 0.5, 60], css: [0.3, 1.25, 120] };
+  var FRAME_M = 0.012;                          // m: the slim dark frame round a picture drawn sharp
+  var GL_KEEP = 12;                             // textures kept on the graphics card, the least recently seen let go
   var FOG_NEAR = 10, FOG_FAR = 44;              // m: dots go out to the dark between
   var NAME_NEAR = 8, DOOR_NEAR = 12;            // m: works' titles; rooms' names at their doorways
   var PICTURE_NEAR = 25, PICTURE_FADE = 13;     // m: pictures drawn within; fading past
@@ -261,8 +279,15 @@
   /* One frame into this.buf, this.pick and the per-column records. cam:
      {fl (a floor), x, y, a (radians in the grid), z (the floor height under
      the walker, m)}; works: the hung works of this floor, each with an
-     index i into the whole list. */
-  Caster.prototype.render = function (cam, works) {
+     index i into the whole list. opt (all optional): lo, hi — the rows each
+     column is cast between (a halo's ring; a column with lo > hi is not cast,
+     and what is not cast is left as it was); sharp — by work index, 1 where
+     the work's picture is drawn over the frame at the screen's own pixels,
+     so its bands are not drawn (its dots still pick it); skip — leave the
+     wall behind such a work undrawn too (a ring's, cleared each frame). */
+  Caster.prototype.render = function (cam, works, opt) {
+    opt = opt || {};
+    var lo = opt.lo || null, hi = opt.hi || null, sharp = opt.sharp || null, skipSharp = !!opt.skip;
     var world = this.world, fl = cam.fl, Wp = P();
     var ex = prepFloor(world, fl);
     var W = this.W, H = this.H, focal = this.focal, hz = this.hz;
@@ -317,9 +342,10 @@
       var rx = dx - dy * cmx, ry = dy + dx * cmx, rl = Math.sqrt(rx * rx + ry * ry);
       this.colRx[x] = rx; this.colRy[x] = ry; this.colRl[x] = rl;
       xm = x & 7;
-      top = 0; bot = H - 1;
+      top = lo ? lo[x] : 0; bot = hi ? hi[x] : H - 1;
+      if (top > bot) { this.depth[x] = 0; this.winT[x] = 0; this.winB[x] = -1; this.hitW[x] = -2; continue; }
       if (!inside0) {
-        for (y = 0; y < H; y += 1) { o = y * W + x; buf[o] = DARK; pick[o] = 0; }
+        for (y = top; y <= bot; y += 1) { o = y * W + x; buf[o] = DARK; pick[o] = 0; }
         this.depth[x] = 0;
         continue;
       }
@@ -337,6 +363,12 @@
         tW = tt; uW = uu; wI = e.i; wc = e;
       }
       var recorded = wI < 0;
+      // In a ring, the wall behind a work drawn sharp is left to the room's dots under it (a row in, so
+      // no seam shows at its edge).
+      var sk0 = 1, sk1 = 0;
+      if (skipSharp && wI >= 0 && sharp && sharp[wI]) {
+        sk0 = Math.ceil(rowOf(wc.z1, tW) - 0.5) + 1; sk1 = Math.ceil(rowOf(wc.z0, tW) - 0.5) - 2;
+      }
       var ix = ix0, iy = iy0;
       var ddx = rx === 0 ? 1e30 : Math.abs(cell / rx), ddy = ry === 0 ? 1e30 : Math.abs(cell / ry);
       var stx = rx < 0 ? -1 : 1, sty = ry < 0 ? -1 : 1;
@@ -474,10 +506,12 @@
             li = ((ib - 0.4) * 256) | 0;
             if (li < 0) { li = 0; } else if (li > 255) { li = 255; }
             var along = gW ? Math.floor((side === 0 ? cy + ry * d1 : cx + rx * d1) * GRIT) : 0;
+            var sa = sk0, sb = d1 >= tW - 0.12 ? sk1 : sk0 - 1;
             for (y = from; y <= bot; y += 1) {
               o = y * W + x;
               thr = THR[((y & 7) << 3) | xm];
               pick[o] = pkw;
+              if (y >= sa && y <= sb) { continue; }
               if (thr < fogw) { buf[o] = DARK; continue; }
               // A dot's darker skirting at the foot of every wall.
               s = y === yFoot ? 0 : LS[li] + (thr < LF[li] ? 1 : 0) - night;
@@ -555,18 +589,20 @@
       this.depth[x] = d1;
 
       // The work this column meets: its three colours in bands, 5:3:2, until
-      // its picture is laid over them.
+      // its picture is laid over them (one drawn sharp over the frame has none:
+      // the wall stays under it, and its dots only pick it).
       if (wI >= 0 && tW < d1 + 0.05) {
         this.hitW[x] = wI; this.hitT[x] = tW; this.hitU[x] = uW;
         var wt = Math.ceil(rowOf(wc.z1, tW) - 0.5), wb = Math.ceil(rowOf(wc.z0, tW) - 0.5) - 1;
         var ct = Math.max(wt, this.winT[x]), cb = Math.min(wb, this.winB[x]);
         dist = tW * rl;
         var fogk = dist > FOG_NEAR ? (dist - FOG_NEAR) * FOG_K : 0, pkk = (PICK_WORK << 24) | wI;
-        var span = Math.max(1, wb - wt + 1);
+        var span = Math.max(1, wb - wt + 1), bands = !(sharp && sharp[wI]);
         for (y = ct; y <= cb; y += 1) {
           o = y * W + x;
           thr = THR[((y & 7) << 3) | xm];
           pick[o] = pkk;
+          if (!bands) { continue; }
           if (thr < fogk) { buf[o] = DARK; continue; }
           var v = (y - wt + 0.5) / span;
           var bi = v < 0.5 ? 0 : v < 0.8 ? 1 : 2;
@@ -580,10 +616,10 @@
         }
       }
     }
-    // The works' left and right edges, a dot of the dark.
+    // The works' left and right edges, a dot of the dark (a work drawn sharp has its own frame).
     for (x = 0; x < W; x += 1) {
       var h = this.hitW[x];
-      if (h < 0) { continue; }
+      if (h < 0 || (sharp && sharp[h])) { continue; }
       if ((x > 0 && this.hitW[x - 1] === h) && (x < W - 1 && this.hitW[x + 1] === h)) { continue; }
       var t0 = this.winT[x], t1 = this.winB[x];
       for (y = t0; y <= t1; y += 1) {
@@ -637,12 +673,16 @@
   // A work's picture: Artsy's key, else the museum's own image (a collection work's img).
   function picKey(w) { return (w && (w.i || w.img)) || null; }
 
-  function Pictures(cdn) {
+  function Pictures(cdn, sharp) {
     this.cdn = cdn || CDN;
     this.by = {};
     this.flying = 0;
     this.wanted = [];
     this.onready = null;
+    // Drawn sharp (WebGL): Artsy's larger picture, asked for with CORS (its store answers
+    // access-control-allow-origin: *), so it can be a texture; a picture refused that way is asked for
+    // again without it, and drawn in the dots as before.
+    this.sharp = !!sharp;
   }
   Pictures.prototype.get = function (key) {
     var p = this.by[key];
@@ -662,13 +702,22 @@
       var entry = this.by[key] = { key: key, ready: false, failed: false, seen: performance.now(), at: 0 };
       this.flying += 1;
       (function (entry) {
-        var img = new Image();
-        img.decoding = "async";
-        img.referrerPolicy = "no-referrer";
         // A museum's own picture (a collection work's img) is its whole address; Artsy's, a key.
         var whole = /^https?:\/\//.test(entry.key);
-        var tries = whole ? [] : ["medium", "large", "square"];
-        img.onload = function () {
+        var sizes = self.sharp ? ["larger", "large", "medium", "square"] : ["medium", "large", "square"];
+        var cors = self.sharp, tries = whole ? [] : sizes.slice();
+        var img = null;
+        function src() { return whole ? entry.key : self.cdn + entry.key + "/" + tries.shift() + ".jpg"; }
+        function ask() {
+          img = new Image();
+          img.decoding = "async";
+          img.referrerPolicy = "no-referrer";
+          if (cors) { img.crossOrigin = "anonymous"; }
+          img.onload = loaded;
+          img.onerror = failed;
+          img.src = src();
+        }
+        function loaded() {
           self.flying -= 1;
           var k = Math.min(1, PICTURE_TALL / Math.max(1, img.naturalHeight));
           var c = document.createElement("canvas");
@@ -679,17 +728,21 @@
           g.drawImage(img, 0, 0, c.width, c.height);
           entry.canvas = c; entry.w = c.width; entry.h = c.height; entry.ready = true;
           entry.ar = img.naturalWidth / Math.max(1, img.naturalHeight);
+          // The picture itself, for its texture, where it may be one.
+          if (cors) { entry.img = img; entry.big = Math.max(img.naturalWidth, img.naturalHeight); }
           self.trim();
           self.pump();
           if (self.onready) { self.onready(entry); }
-        };
-        img.onerror = function () {
-          if (tries.length) { img.src = self.cdn + entry.key + "/" + tries.shift() + ".jpg"; return; }
+        }
+        function failed() {
+          if (tries.length) { img.src = src(); return; }
+          // Refused with CORS: once more without it (drawn in the dots), from the first size again.
+          if (cors) { cors = false; tries = whole ? [] : sizes.slice(); ask(); return; }
           self.flying -= 1;
           entry.failed = true;
           self.pump();
-        };
-        img.src = whole ? entry.key : self.cdn + entry.key + "/" + tries.shift() + ".jpg";
+        }
+        ask();
       }(entry));
     }
   };
@@ -768,6 +821,350 @@
     }
     g.globalAlpha = 1;
     return busy;
+  }
+
+  /* ---------------------------------------------------------------- the works drawn sharp */
+
+  /* Each seen work's picture in true perspective over the frame, by WebGL, at the screen's own pixels:
+     its texture mipmapped, and filtered across at a slant where the card allows. Only what of it the
+     room leaves in view is drawn — each column's window at the work, from the finest cast that went
+     through it (the mask, a texture a column wide, in CSS px). The photograph is fitted inside the
+     work's real size, never stretched; the rest of the work and a slim frame round it are the dark; it
+     goes out to the dark with distance as the room does; seen for the first time, it is uncovered in
+     blocks over the room's bands, in held frames. No pixel of it is ever read back. */
+  var ART_VS = "#version 300 es\n" +
+    "in vec3 aCam; in vec2 aUV; uniform vec3 uP; out vec2 vUV; out float vDist;\n" +
+    "void main() { vUV = aUV; vDist = length(aCam.xy);\n" +
+    "  gl_Position = vec4(aCam.x * uP.x, (aCam.z - uP.z) * uP.y, aCam.y * 1.0002 - 0.1, aCam.y); }\n";
+  var ART_FS = "#version 300 es\n" +
+    "precision highp float;\n" +
+    "in vec2 vUV; in float vDist;\n" +
+    "uniform sampler2D uPic; uniform highp sampler2D uMask;\n" +
+    "uniform vec4 uM; uniform vec4 uFit; uniform vec2 uFrame; uniform vec3 uDark; uniform vec3 uLit; uniform vec2 uFog;\n" +
+    "out vec4 o;\n" +
+    "float hash(vec2 p) { p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }\n" +
+    "void main() {\n" +
+    "  vec2 fw = fwidth(vUV) * 1.25;\n" +
+    "  vec2 p = vec2((vUV.x - uFit.x) / (uFit.y - uFit.x), (vUV.y - uFit.z) / (uFit.w - uFit.z));\n" +
+    "  vec3 pic = texture(uPic, clamp(p, 0.0, 1.0)).rgb;\n" +
+    "  vec4 m = texelFetch(uMask, ivec2(clamp(int(gl_FragCoord.x * uM.x), 0, textureSize(uMask, 0).x - 1), 0), 0);\n" +
+    "  if (abs(m.x - uM.w) > 0.5) { discard; }\n" +
+    "  float y = (uM.z - gl_FragCoord.y) / uM.y;\n" +
+    "  if (y < m.y || y >= m.z) { discard; }\n" +
+    "  if (uLit.y < 1.0 && hash(floor(gl_FragCoord.xy / uLit.z)) > uLit.y) { discard; }\n" +
+    "  vec2 b = max(uFrame, fw);\n" +
+    "  bool dark = vUV.x < b.x || vUV.x > 1.0 - b.x || vUV.y < b.y || vUV.y > 1.0 - b.y ||\n" +
+    "              vUV.x < uFit.x || vUV.x > uFit.y || vUV.y < uFit.z || vUV.y > uFit.w;\n" +
+    "  vec3 c = dark ? uDark : pic * uLit.x;\n" +
+    "  float fog = clamp((vDist - uFog.x) / (uFog.y - uFog.x), 0.0, 1.0);\n" +
+    "  o = vec4(mix(c, uDark, fog), 1.0);\n" +
+    "}\n";
+
+  function Art(canvas, dark) {
+    this.ok = false;
+    this.canvas = canvas;
+    this.dark = dark;
+    this.tex = new Map();
+    this.frame = 0;
+    this.uploads = 0;
+    var gl = null;
+    try {
+      gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true, depth: false,
+                                          stencil: false, preserveDrawingBuffer: false, powerPreference: "low-power" });
+    } catch (err) { gl = null; }
+    if (!gl) { return; }
+    function shader(type, src) {
+      var sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
+    }
+    var vs = shader(gl.VERTEX_SHADER, ART_VS), fs = shader(gl.FRAGMENT_SHADER, ART_FS);
+    if (!vs || !fs) { return; }
+    var prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { return; }
+    this.gl = gl; this.prog = prog;
+    this.loc = {};
+    ["uP", "uPic", "uMask", "uM", "uFit", "uFrame", "uDark", "uLit", "uFog"].forEach(function (n) { this.loc[n] = gl.getUniformLocation(prog, n); }, this);
+    this.aCam = gl.getAttribLocation(prog, "aCam"); this.aUV = gl.getAttribLocation(prog, "aUV");
+    this.vbo = gl.createBuffer();
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+    gl.enableVertexAttribArray(this.aCam);
+    gl.vertexAttribPointer(this.aCam, 3, gl.FLOAT, false, 20, 0);
+    gl.enableVertexAttribArray(this.aUV);
+    gl.vertexAttribPointer(this.aUV, 2, gl.FLOAT, false, 20, 12);
+    gl.bindVertexArray(null);
+    this.maskTex = gl.createTexture();
+    this.aniso = gl.getExtension("EXT_texture_filter_anisotropic");
+    this.anisoMax = this.aniso ? Math.min(8, gl.getParameter(this.aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)) : 0;
+    var self = this;
+    canvas.addEventListener("webglcontextlost", function (event) { event.preventDefault(); self.ok = false; self.tex = new Map(); });
+    this.ok = true;
+  }
+  Art.prototype.size = function (w, h, cssW, cssH) {
+    var c = this.canvas;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    c.style.width = cssW + "px"; c.style.height = cssH + "px";
+    this.cssW = cssW; this.cssH = cssH;
+  };
+  // A picture's texture, made once (two a frame at most: the rest keep their bands a frame longer).
+  Art.prototype.texture = function (entry) {
+    var gl = this.gl, rec = this.tex.get(entry);
+    if (rec) { rec.seen = this.frame; return rec.t; }
+    if (!entry.img || entry.noGL || this.uploads >= 2) { return null; }
+    this.uploads += 1;
+    var t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, entry.img);
+    } catch (err) {
+      gl.deleteTexture(t);
+      entry.noGL = true;
+      return null;
+    }
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if (this.aniso) { gl.texParameterf(gl.TEXTURE_2D, this.aniso.TEXTURE_MAX_ANISOTROPY_EXT, this.anisoMax); }
+    this.tex.set(entry, { t: t, seen: this.frame });
+    if (this.tex.size > GL_KEEP) {
+      var old = null;
+      this.tex.forEach(function (r, e) { if (r.seen < this.frame && (!old || r.seen < old[1].seen)) { old = [e, r]; } }, this);
+      if (old) { gl.deleteTexture(old[1].t); this.tex.delete(old[0]); }
+    }
+    return t;
+  };
+  // Lay the works over the frame. cam as the caster's; list: [{h, t (texture), up (0 to 1, uncovered)}];
+  // mask: Float32Array, four a column (work + 1, top and foot of its window in CSS px, 0); light: 0 to 1.
+  Art.prototype.draw = function (cam, list, mask, maskW, light) {
+    var gl = this.gl, c = this.canvas, L = this.loc;
+    gl.viewport(0, 0, c.width, c.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    if (!list.length) { return; }
+    gl.useProgram(this.prog);
+    gl.bindVertexArray(this.vao);
+    // The mask: one row of float texels, a column each.
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.maskTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, maskW, 1, 0, gl.RGBA, gl.FLOAT, mask);
+    gl.uniform1i(L.uMask, 1);
+    gl.uniform1i(L.uPic, 0);
+    var tf = Math.tan(FOV / 2), zE = cam.z + EYE;
+    gl.uniform3f(L.uP, 1 / tf, (this.cssW / this.cssH) / tf, zE);
+    gl.uniform4f(L.uM, maskW / c.width, c.height / this.cssH, c.height, 0);
+    gl.uniform3f(L.uDark, this.dark[0] / 255, this.dark[1] / 255, this.dark[2] / 255);
+    gl.uniform2f(L.uFog, FOG_NEAR, FOG_FAR);
+    var dx = Math.cos(cam.a), dy = Math.sin(cam.a), v = new Float32Array(20);
+    function corner(k, px, py, z, u, w) {
+      var vx = px - cam.x, vy = py - cam.y;
+      v[k * 5] = -vx * dy + vy * dx; v[k * 5 + 1] = vx * dx + vy * dy; v[k * 5 + 2] = z;
+      v[k * 5 + 3] = u; v[k * 5 + 4] = w;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+    gl.activeTexture(gl.TEXTURE0);
+    for (var n = 0; n < list.length; n += 1) {
+      var e = list[n], h = e.h;
+      corner(0, h.x0, h.y0, h.z1, 0, 0); corner(1, h.x0, h.y0, h.z0, 0, 1);
+      corner(2, h.x1, h.y1, h.z1, 1, 0); corner(3, h.x1, h.y1, h.z0, 1, 1);
+      gl.bufferData(gl.ARRAY_BUFFER, v, gl.STREAM_DRAW);
+      gl.bindTexture(gl.TEXTURE_2D, e.t);
+      gl.uniform4f(L.uM, maskW / c.width, c.height / this.cssH, c.height, h.i + 1);
+      gl.uniform4f(L.uFit, e.fit[0], e.fit[1], e.fit[2], e.fit[3]);
+      gl.uniform2f(L.uFrame, FRAME_M / Math.max(0.05, h.w), FRAME_M / Math.max(0.05, h.h));
+      gl.uniform3f(L.uLit, light, e.up, e.block);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    gl.bindVertexArray(null);
+  };
+  Art.prototype.clear = function () {
+    if (!this.ok) { return; }
+    var gl = this.gl;
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  };
+  Art.prototype.destroy = function () {
+    var gl = this.gl;
+    if (!gl) { return; }
+    this.tex.forEach(function (r) { gl.deleteTexture(r.t); });
+    this.tex = new Map();
+    var lose = gl.getExtension("WEBGL_lose_context");
+    if (lose) { lose.loseContext(); }
+    this.ok = false;
+  };
+
+  // The photograph inside a work's real size, never stretched: [u0, u1, v0, v1] of the work it fills.
+  function fitOf(h, ar) {
+    var arW = h.w / Math.max(0.01, h.h), f = [0, 1, 0, 1];
+    if (Math.abs(ar / arW - 1) > 0.08) {
+      if (ar > arW) { var hh = arW / ar; f[2] = (1 - hh) / 2; f[3] = 1 - f[2]; }
+      else { var ww = ar / arW; f[0] = (1 - ww) / 2; f[1] = 1 - f[0]; }
+    }
+    return f;
+  }
+
+  /* Which works on this floor are drawn sharp this frame: those seen last frame (or stood before) whose
+     picture has come and is a texture. tex[i]: {t, entry, up}; sharp[i] = 1 once it is wholly uncovered,
+     when the room no longer draws its bands. */
+  function sharpWorks(s, works, pics, now) {
+    var n = s.hung.length, sharp = new Uint8Array(n), tex = new Array(n), busy = false;
+    var art = s.art;
+    art.frame += 1;
+    art.uploads = 0;
+    works.forEach(function (h) {
+      var seenNow = h === s.standing || (s.seenLo && s.seenLo.length === n && s.seenLo[h.i] >= 0);
+      if (!seenNow) { return; }
+      var key = picKey(h.work), p = key ? pics.get(key) : null;
+      if (!p || !p.img || p.noGL) { return; }
+      var t = art.texture(p);
+      if (!t) { return; }
+      if (!p.at) { p.at = now; }
+      var up = s.host.still ? 1 : clamp((Math.floor((now - p.at) / (1000 / FPS)) * (1000 / FPS)) / 600, 0, 1);
+      if (up < 1) { busy = true; } else { sharp[h.i] = 1; }
+      tex[h.i] = { t: t, entry: p, up: up };
+    });
+    return { sharp: sharp, tex: tex, busy: busy };
+  }
+
+  /* The works the room met this frame as they fall on the screen, in CSS px: each its left and right
+     edges with its top and foot at each (the part in front of the eye), its nearest distance, and its
+     halo's width — those within PICTURE_NEAR have a halo. */
+  function quadsOf(s, cam, cs) {
+    var n = s.hung.length, seen = new Uint8Array(n), all = [], halo = [];
+    var dx = Math.cos(cam.a), dy = Math.sin(cam.a), zE = cam.z + EYE, dot = s.dot, NEAR = 0.1;
+    for (var x = 0; x < cs.W; x += 1) {
+      var i = cs.hitW[x];
+      if (i < 0 || seen[i]) { continue; }
+      seen[i] = 1;
+      var h = s.hung[i];
+      var ax = h.x0 - cam.x, ay = h.y0 - cam.y, bx = h.x1 - cam.x, by = h.y1 - cam.y;
+      var A = [ax * dx + ay * dy, -ax * dy + ay * dx], B = [bx * dx + by * dy, -bx * dy + by * dx];
+      if (A[0] < NEAR && B[0] < NEAR) { continue; }
+      if (A[0] < NEAR) { var ka = (NEAR - A[0]) / (B[0] - A[0]); A = [NEAR, A[1] + (B[1] - A[1]) * ka]; }
+      if (B[0] < NEAR) { var kb = (NEAR - B[0]) / (A[0] - B[0]); B = [NEAR, B[1] + (A[1] - B[1]) * kb]; }
+      function at(P) {
+        return { x: (cs.W / 2 + P[1] / P[0] * cs.focal) * dot,
+                 t: (cs.hz + (zE - h.z1) * cs.focal / P[0]) * dot, b: (cs.hz + (zE - h.z0) * cs.focal / P[0]) * dot };
+      }
+      var pa = at(A), pb = at(B), l = pa.x <= pb.x ? pa : pb, r = pa.x <= pb.x ? pb : pa;
+      var q = { i: i, h: h, xl: l.x, ylt: l.t, ylb: l.b, xr: r.x, yrt: r.t, yrb: r.b,
+                d: Math.min(Math.hypot(ax, ay), Math.hypot(bx, by), Math.hypot(h.cx - cam.x, h.cy - cam.y)) };
+      q.tall = Math.max(l.b - l.t, r.b - r.t);
+      q.halo = clamp(HALO_K * q.tall, HALO_MIN, RING.css[2]);
+      all.push(q);
+      if (q.d <= PICTURE_NEAR) { halo.push(q); }
+    }
+    return { all: all, halo: halo };
+  }
+
+  /* One ring of the halo: the room cast again at the level's pixels, only in the columns' rows within
+     reach of a work, the rest of its canvas clear; a pixel kept where it is wholly within the ring, and
+     across the ring's fading edge kept or not by interleaved gradient noise — never the Bayer matrix the
+     room's own two tones are dithered by, which would keep only the darker of them and darken the fade —
+     so the clarity thins out into the coarser dots. */
+  function ign(x, y) {
+    var f = 0.06711056 * x + 0.00583715 * y;
+    f = 52.9829189 * (f - Math.floor(f));
+    return f - Math.floor(f);
+  }
+  function castLevel(s, lv, cam, works, quads, sharp) {
+    var cs = lv.caster, W = cs.W, H = cs.H, k = lv.k, lo = lv.lo, hi = lv.hi;
+    var inner = lv.ring[0], outer = lv.ring[1], span = outer - inner, nq = quads.length;
+    quads.forEach(function (q) { q.halo = clamp(HALO_K * q.tall, HALO_MIN, lv.ring[2]); });
+    var sa = lv.sa || (lv.sa = new Float64Array(64)), sb = lv.sb || (lv.sb = new Float64Array(64));
+    var bx0 = W, bx1 = -1, by0 = H, by1 = -1;
+    for (var x = 0; x < W; x += 1) {
+      var X = (x + 0.5) / k, a = Infinity, b = -Infinity;
+      for (var n = 0; n < nq; n += 1) {
+        var q = quads[n], r = outer * q.halo;
+        var ex = X < q.xl ? q.xl - X : X > q.xr ? X - q.xr : 0;
+        if (ex > r) { continue; }
+        var xc = X < q.xl ? q.xl : X > q.xr ? q.xr : X, f = q.xr > q.xl ? (xc - q.xl) / (q.xr - q.xl) : 0;
+        var e = Math.sqrt(r * r - ex * ex);
+        var yt = q.ylt + (q.yrt - q.ylt) * f - e, yb = q.ylb + (q.yrb - q.ylb) * f + e;
+        if (yt < a) { a = yt; }
+        if (yb > b) { b = yb; }
+      }
+      var ya = Math.max(0, Math.floor(a * k)), yb_ = Math.min(H - 1, Math.ceil(b * k));
+      if (!(a < b) || ya > yb_) { lo[x] = 1; hi[x] = 0; continue; }
+      lo[x] = ya; hi[x] = yb_;
+      if (x < bx0) { bx0 = x; }
+      if (x > bx1) { bx1 = x; }
+      if (ya < by0) { by0 = ya; }
+      if (yb_ > by1) { by1 = yb_; }
+    }
+    // What was drawn last frame and what is drawn now are cleared together and put together.
+    var was = lv.box, ux0 = bx0, ux1 = bx1, uy0 = by0, uy1 = by1;
+    if (was) { ux0 = Math.min(ux0, was[0]); ux1 = Math.max(ux1, was[1]); uy0 = Math.min(uy0, was[2]); uy1 = Math.max(uy1, was[3]); }
+    if (ux1 < ux0) { lv.box = null; return; }
+    for (var yy = uy0; yy <= uy1; yy += 1) { cs.buf.fill(0, yy * W + ux0, yy * W + ux1 + 1); }
+    if (bx1 >= bx0) {
+      cs.render(cam, works, { lo: lo, hi: hi, sharp: sharp, skip: true });
+      var buf = cs.buf, ex2s = lv.ex2s || (lv.ex2s = new Float64Array(64)), yts = lv.yts || (lv.yts = new Float64Array(64)),
+          ybs = lv.ybs || (lv.ybs = new Float64Array(64)), ihs = lv.ihs || (lv.ihs = new Float64Array(64));
+      for (x = bx0; x <= bx1; x += 1) {
+        if (lo[x] > hi[x]) { continue; }
+        // Each work as this column meets it: its top and foot here (level rows), how far the column is
+        // to the side of it (squared, level px), and its halo (level px); and its rows wholly within.
+        var Xc = (x + 0.5) / k, nn = 0, ns = 0;
+        for (n = 0; n < nq && nn < 64; n += 1) {
+          var qq = quads[n], hl = qq.halo * k;
+          var exq = (Xc < qq.xl ? qq.xl - Xc : Xc > qq.xr ? Xc - qq.xr : 0) * k;
+          if (exq > outer * hl) { continue; }
+          var xc2 = Xc < qq.xl ? qq.xl : Xc > qq.xr ? qq.xr : Xc, f2 = qq.xr > qq.xl ? (xc2 - qq.xl) / (qq.xr - qq.xl) : 0;
+          var ytq = (qq.ylt + (qq.yrt - qq.ylt) * f2) * k, ybq = (qq.ylb + (qq.yrb - qq.ylb) * f2) * k;
+          ex2s[nn] = exq * exq; yts[nn] = ytq; ybs[nn] = ybq; ihs[nn] = 1 / hl; nn += 1;
+          var ri = inner * hl;
+          if (exq <= ri) { var e2 = Math.sqrt(ri * ri - exq * exq); sa[ns] = ytq - e2; sb[ns] = ybq + e2; ns += 1; }
+        }
+        for (var y = lo[x]; y <= hi[x]; y += 1) {
+          var yc = y + 0.5, solid = false, m;
+          for (m = 0; m < ns; m += 1) { if (yc >= sa[m] && yc <= sb[m]) { solid = true; break; } }
+          if (solid) { continue; }
+          var best = 1e9;
+          for (m = 0; m < nn; m += 1) {
+            var dy = yc < yts[m] ? yts[m] - yc : yc > ybs[m] ? yc - ybs[m] : 0;
+            var d = (ex2s[m] > 0 ? Math.sqrt(ex2s[m] + dy * dy) : dy) * ihs[m];
+            if (d < best) { best = d; }
+          }
+          var v = (best - inner) / span;
+          if (v > 0 && v >= ign(x, y)) { buf[y * W + x] = 0; }
+        }
+      }
+    }
+    lv.g.putImageData(cs.img, 0, 0, ux0, uy0, ux1 - ux0 + 1, uy1 - uy0 + 1);
+    lv.box = bx1 >= bx0 ? [bx0, bx1, by0, by1] : null;
+  }
+  function clearLevel(lv) {
+    if (!lv.box) { return; }
+    lv.g.clearRect(0, 0, lv.canvas.width, lv.canvas.height);
+    lv.box = null;
+  }
+
+  /* The mask for the works drawn sharp: for each column of the finest cast drawn (else the room's), the
+     work it meets and the rows of it the room leaves in view, in CSS px; a column the finer cast did
+     not go through takes the room's. */
+  function maskOf(s, finest) {
+    var base = s.caster, kb = 1 / s.dot, src = finest || base, k = finest ? finest.W / (base.W * s.dot) : kb;
+    var Wm = src.W, m = s.maskBuf && s.maskBuf.length === Wm * 4 ? s.maskBuf : (s.maskBuf = new Float32Array(Wm * 4));
+    for (var x = 0; x < Wm; x += 1) {
+      var id = src.hitW[x], t, b;
+      if (id === -2) {
+        var bxx = Math.min(base.W - 1, Math.floor((x + 0.5) / k * kb));
+        id = base.hitW[bxx]; t = base.winT[bxx] / kb; b = (base.winB[bxx] + 1) / kb;
+      } else { t = src.winT[x] / k; b = (src.winB[x] + 1) / k; }
+      m[x * 4] = id + 1; m[x * 4 + 1] = t; m[x * 4 + 2] = b; m[x * 4 + 3] = 0;
+    }
+    return { m: m, w: Wm };
   }
 
   /* ---------------------------------------------------------------- the state */
@@ -869,6 +1266,10 @@
     view.tabIndex = 0;
     view.setAttribute("role", "img");
     box.appendChild(view);
+    // Over the room's dots: the halo's two rings (a CSS pixel, the screen's own pixels), then the works
+    // drawn sharp. None takes a press: they all go to the view under them.
+    var fineCss = el("canvas", "walk-fine"), fineDev = el("canvas", "walk-fine"), artC = el("canvas", "walk-art");
+    [fineCss, fineDev, artC].forEach(function (c) { c.setAttribute("aria-hidden", "true"); box.appendChild(c); });
     var plan = el("canvas", "walk-plan");
     var light = el("canvas", "walk-light");
     light.setAttribute("aria-hidden", "true");
@@ -899,6 +1300,10 @@
     root.style.visibility = "hidden";
     (ctx.host || document.body).appendChild(root);
     var styled_ = styleOnce();
+    var art = new Art(artC, rgbOf(ctx.frameInk, [15, 12, 10]));
+    function level(name, canvas) {
+      return { name: name, canvas: canvas, g: null, caster: null, k: 1, lo: null, hi: null, ring: RING[name], box: null };
+    }
 
     var s = S = {
       ctx: ctx, host: host, root: root, box: box, view: view, plan: plan, light: light, names: names,
@@ -906,8 +1311,12 @@
       me: null, keys: {}, drag: null, pointers: {}, glide: null, turnTo: null, raf: 0, last: 0,
       dirty: true, planDirty: true, drawn: 0, planDrawn: 0, planAnim: null, planDots: null, planFloor: 0,
       heading: ctx.heading === undefined ? TAU / 8 : ctx.heading, headAnim: null, frame: null,
-      dot: window.innerWidth <= 720 ? 3 : 4, times: [], slow: 0, standing: null, reading: null,
-      stillSince: 0, walked: 0, pics: new Pictures(host.cdn), live: true, listeners: [], nameEls: {},
+      dot: DOT_BASE, times: [], slow: 0, standing: null, reading: null,
+      // The works drawn sharp and the halo's rings, where WebGL 2 is there; q: 0 both rings, 1 the CSS
+      // pixel's only, 2 none (pace lowers it; a frame drawn once you are still is always q 0).
+      art: art.ok ? art : null, fine: { css: level("css", fineCss), device: level("device", fineDev) }, levels: [],
+      q: 0, best: false, drawnQ: 0,
+      stillSince: 0, walked: 0, pics: new Pictures(host.cdn, art.ok), live: true, listeners: [], nameEls: {},
       stats: { frames: 0, total: 0, max: 0, list: [], parts: [0, 0, 0, 0] }, planStats: { frames: 0, total: 0, max: 0 },
       cameFor: {}, lastRoom: null, lastWhere: 0,
       toClose: [], rechecked: false
@@ -948,6 +1357,10 @@
         }
         if (!s.world.floors.length || !s.world.enter) { close(); fail(new Error("nothing to walk")); return; }
         s.caster = new Caster(s.world, rgbOf(ctx.frameInk, [15, 12, 10]));
+        if (s.art) {
+          s.fine.css.caster = new Caster(s.world, rgbOf(ctx.frameInk, [15, 12, 10]));
+          s.fine.device.caster = new Caster(s.world, rgbOf(ctx.frameInk, [15, 12, 10]));
+        }
         var e = s.world.enter, was = ctx.at && ctx.at.resume;
         s.me = was && s.world.floors[was.floor] ? { floor: was.floor, x: was.x, y: was.y, a: was.a, z: 0 }
                                                 : { floor: e.floor, x: e.x, y: e.y, a: e.a, z: 0 };
@@ -1012,6 +1425,7 @@
     if (s.here && s.here.parentNode) { s.here.parentNode.removeChild(s.here); }
     if (s.host.banner.under) { s.host.banner.under.hidden = false; }   // a shell had emptied it
     if (s.root.parentNode) { s.root.parentNode.removeChild(s.root); }
+    if (s.art) { s.art.destroy(); s.art = null; }
     if (s.host.lightInto) { s.host.lightInto(null); }
     if (s.level !== null && s.ctx.onLevel) { s.ctx.onLevel(null); }
     s.world = null; s.caster = null; s.hung = [];
@@ -1082,6 +1496,29 @@
     s.view.style.height = H * s.dot + "px";
     s.g = s.view.getContext("2d");
     s.caster.size(W, H, s.g);
+    // The halo's rings and the works drawn sharp, over the same box: a CSS pixel, and where the screen
+    // has more (a density of 1.5 or more), its own pixels — two to a CSS pixel at most (on a 3x phone a
+    // pixel and a half: as fine as the eye sees, at under half the cost); the works at the screen's own.
+    s.levels = [];
+    if (s.art) {
+      var cw = W * s.dot, chh = H * s.dot, dpr = Math.min(3, window.devicePixelRatio || 1);
+      [[s.fine.css, 1], [s.fine.device, Math.min(2, dpr)]].forEach(function (d) {
+        var lv = d[0], c = lv.canvas;
+        if (lv === s.fine.device && dpr < 1.5) { c.hidden = true; return; }
+        var lw = Math.round(cw * d[1]), lh = Math.round(chh * d[1]);
+        if (c.width !== lw || c.height !== lh) { c.width = lw; c.height = lh; }
+        c.hidden = false;
+        c.style.width = cw + "px"; c.style.height = chh + "px";
+        lv.g = c.getContext("2d");
+        lv.g.clearRect(0, 0, lw, lh);
+        lv.caster.size(lw, lh, lv.g);
+        lv.k = lw / cw;
+        lv.lo = new Int16Array(lw); lv.hi = new Int16Array(lw);
+        lv.box = null;
+        s.levels.push(lv);
+      });
+      s.art.size(Math.round(cw * dpr), Math.round(chh * dpr), cw, chh);
+    }
     var band = s.ctx.band ? s.ctx.band.getBoundingClientRect() : r;
     var pw = Math.max(1, Math.ceil(band.width / PLAN_PIX)), ph = Math.max(1, Math.ceil(band.height / PLAN_PIX));
     if (s.plan.width !== pw || s.plan.height !== ph) { s.plan.width = pw; s.plan.height = ph; }
@@ -1144,6 +1581,11 @@
       s.slot = Math.floor(now * FPS / 1000);
       draw(now);
     }
+    // Still again after frames drawn with fewer rings: one more, at its best.
+    if ((s.level === "walk" || s.level === "look") && !s.dirty && s.drawnQ > 0 && !busy(s, now)) {
+      s.best = true;
+      s.dirty = true;
+    }
     // Still long enough: are you before a work? (No frame is drawn for it.)
     if (s.level === "walk" && !s.dirty && s.stillSince && !s.standChecked && now - s.stillSince >= STILL_WAIT) {
       s.standChecked = true;
@@ -1154,30 +1596,69 @@
     }
   }
 
-  /* One frame of the walk: cast, put, lay the pictures over, then the names. */
+  /* One frame of the walk: cast the room, put it; then, where WebGL 2 is there, the halo's rings round
+     the works seen and the works themselves drawn sharp over it (else the pictures laid into the dots,
+     as before); then the names. */
   function draw(now) {
     var s = S;
     var t0 = performance.now();
     var fl = s.world.floors[s.me.floor];
     var cam = { fl: fl, x: s.me.x, y: s.me.y, a: s.me.a, z: s.me.z };
     var works = s.hung.filter(function (h) { return h.floor === s.me.floor; });
-    s.caster.render(cam, works);
+    var saveData = navigator.connection && navigator.connection.saveData;
+    var pics = saveData ? standingOnly(s) : s.pics;
+    var art = s.art && s.art.ok ? s.art : null;
+    var q = s.best ? 0 : s.q;
+    s.drawnQ = q; s.wasBest = s.best; s.best = false;
+    var sw = art ? sharpWorks(s, works, pics, now) : null;
+    s.caster.render(cam, works, { sharp: sw ? sw.sharp : null });
     var t1 = performance.now();
     s.g.putImageData(s.caster.img, 0, 0);
     var t2 = performance.now();
-    var saveData = navigator.connection && navigator.connection.saveData;
-    var pics = saveData ? standingOnly(s) : s.pics;
-    s.picBusy = blitWorks(s.g, s.caster, cam, s.hung, pics, now, s.dot, s.host.still);
+    if (art) {
+      var quads = quadsOf(s, cam, s.caster), finest = null, tr0 = performance.now();
+      s.levels.forEach(function (lv) {
+        var on = quads.halo.length && (lv.name === "css" ? q <= 1 : q === 0);
+        if (on) { castLevel(s, lv, cam, works, quads.halo, sw.sharp); finest = lv.caster; } else { clearLevel(lv); }
+      });
+      var mk = maskOf(s, finest), list = [], block = 6 * s.dot * (s.art.canvas.width / Math.max(1, s.art.cssW));
+      quads.all.forEach(function (qd) {
+        var e = sw.tex[qd.i], key = picKey(qd.h.work);
+        if (e) { list.push({ h: qd.h, t: e.t, up: e.up, block: block, fit: fitOf(qd.h, e.entry.ar) }); }
+        else if (key && qd.d <= PICTURE_NEAR) { pics.want(key); }
+      });
+      var tr1 = performance.now();
+      art.draw(cam, list, mk.m, mk.w, s.world.sky && s.world.sky.night ? 0.82 : 0.96);
+      if (!s.wasBest) { s.stats.rings = (s.stats.rings || 0) + tr1 - tr0; s.stats.gl = (s.stats.gl || 0) + performance.now() - tr1; }
+      // A picture refused for WebGL (no CORS, or a texture that would not take it) is laid into the dots,
+      // as before; one that has come but is not a texture yet asks for another frame.
+      var rest = blitWorks(s.g, s.caster, cam, s.hung, { get: function (k) { var p = pics.get(k); return p && (!p.img || p.noGL) ? p : null; },
+                                                          want: function () {} }, now, s.dot, s.host.still);
+      s.picBusy = sw.busy || rest;
+      var pending = quads.all.some(function (qd) {
+        var p = pics.get(picKey(qd.h.work));
+        return p && p.img && !p.noGL && !sw.tex[qd.i];
+      });
+    } else {
+      s.picBusy = blitWorks(s.g, s.caster, cam, s.hung, pics, now, s.dot, s.host.still);
+    }
     var t3 = performance.now();
     s.drawn = now;
-    s.dirty = false;
+    s.dirty = !!pending;
     s.cam = cam;
     seen(s);
     // In the look the walk is washed behind the work: no names over it.
     if (s.level === "look") { clearNames("walk"); } else { names(now); }
     standCheck(now);
-    // The whole frame, names and all, is what the dot grows by.
-    pace(performance.now() - t0, now, [t1 - t0, t2 - t1, t3 - t2, performance.now() - t3]);
+    // The whole frame, names and all, is what the quality and the dot follow (not the frame drawn at
+    // its best once you are still).
+    if (!s.wasBest) { pace(performance.now() - t0, now, [t1 - t0, t2 - t1, t3 - t2, performance.now() - t3]); }
+    // The frame drawn at its best once you are still says what the next walk can afford: both rings if
+    // it came in a frame's time (41 ms at 24 a second) with room to spare, else the CSS pixel's.
+    else if (s.art && s.q > 0) {
+      var took = performance.now() - t0;
+      s.q = took < 24 ? 0 : took < 34 ? Math.min(s.q, 1) : s.q;
+    }
   }
 
   // With saveData, a work stays its three colours until you stand before it.
@@ -1187,8 +1668,9 @@
              want: function (k) { if (k === key) { s.pics.want(k); } } };
   }
 
-  // Frame times: if they average over 30 ms for two seconds, the dot grows
-  // (3, 4, 5, 6) and does not shrink back.
+  // Frame times: if they average over 30 ms for two seconds, the halo's finest ring is let go, then its
+  // other, then the dot grows (3, 4, 5, 6); none comes back while the walk is open, but the frame drawn
+  // once you are still has both rings again.
   function pace(ms, now, parts) {
     var s = S, st = s.stats;
     st.frames += 1; st.total += ms; st.max = Math.max(st.max, ms);
@@ -1201,7 +1683,11 @@
     if (s.times.length >= 6 && now - s.times[0].at > 1800) {
       var sum = 0;
       s.times.forEach(function (t) { sum += t.ms; });
-      if (sum / s.times.length > 30 && s.dot < DOT_MAX) {
+      if (sum / s.times.length > 30 && s.art && s.q < 2) {
+        s.q += 1;
+        s.times = [];
+        s.dirty = true;
+      } else if (sum / s.times.length > 30 && s.dot < DOT_MAX) {
         s.dot += 1;
         s.times = [];
         s.sized = false;
@@ -3577,7 +4063,10 @@
              w: s.caster ? s.caster.W : 0, h: s.caster ? s.caster.H : 0, dot: s.dot, planMs: s.planMs || 0,
              plan: { frames: s.planStats.frames, mean: s.planStats.frames ? s.planStats.total / s.planStats.frames : 0, max: s.planStats.max,
                      dots: s.planDots ? s.planDots.count : 0, shown: s.planDots && s.planDots.plan ? s.planDots.plan.shown : 0 },
-             arrival: s.lookArrival || null };
+             arrival: s.lookArrival || null,
+             // The halo's rings and the works drawn sharp, a frame's mean, ms; the quality now.
+             rings: st.frames ? (st.rings || 0) / st.frames : 0, gl: st.frames ? (st.gl || 0) / st.frames : 0,
+             q: s.q, sharp: !!s.art };
   }
 
   /* One frame, for the checker: the world and its hung works as walk-plan.js
