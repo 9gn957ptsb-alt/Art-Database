@@ -52,10 +52,22 @@ then covers it without change.
 3. **Photographs** for the buildings to refine: `python3
    scripts/fetch_reference_photos.py` — into `data/photos/<slug>/`
    (gitignored; reference only, never committed). The Architectural Authority
-   articles give their own; the museums' come from Wikimedia Commons once
-   `commons.wikimedia.org` and `upload.wikimedia.org` are allowed under
-   Network access. Where there are none, work from published plans,
-   sections and dimensions, and say so in `notes`.
+   articles give their own; the museums' come from Wikimedia Commons. Where
+   there are none, work from published plans, sections and dimensions, and
+   say so in `notes`. What Wikimedia answers a session (14 Oct 2026): its
+   category pages (`commons.wikimedia.org/wiki/Category:<Building>`, then
+   its `Exterior_of_…` and `Facade_of_…` subcategories), the Commons search
+   page (`/w/index.php?search=…&ns6=1&fulltext=1`) and `en.wikipedia.org`'s
+   pages answer; `upload.wikimedia.org`'s thumbnails answer at the standard
+   widths (250, 330, 500, 960, 1280) for a file already asked for by others
+   — a well-known building's 960 px usually is — and 429 "robot policy" for a
+   file nobody has, an odd width or an original; retry a few times, with a
+   pause, one file at a time and a User-Agent that says who is asking (the
+   site's address); the 250 px thumbnail in the search listing is there when
+   nothing larger is. The action API, the query service and Wikidata's API
+   answer 429. A few photographs read well: the front, the corner, the roof
+   and, for a large building, the aerial "Orthophotographie" of its
+   category.
 4. **Choose.** Read `ledger.json` beside this page and take the **five**
    buildings refined longest ago (never refined first), whatever their kind
    (artist, 26 Sep 2026: raised from three to ten; 14 Oct 2026: cut to five, so
@@ -73,6 +85,30 @@ then covers it without change.
    - fix them, re-render, compare; at least three rounds. Refine rather than
      restart. Keep `max(site) / voxel` about 100 and under ~25,000 dots;
    - update the model's `notes`: what changed, what is still guessed.
+   - **Where it stands, first** (a museum or a public building, `"precision":
+     "exact"`): its model is set into the plot at its point, north up, so a
+     footprint that is off its building shows at once in the area view.
+     `node scripts/fit_ground.js docs/v2/models/<slug>.json` says how much of
+     the model stands on the plot's building cells ("on", aim 85% or more),
+     how much of the plot's building cells it covers, and the shift that would
+     fit it best (aim 0, 0). On 14 Oct 2026 47 of the 123 museums stood on
+     under 60% and 57 wanted a shift of 14 m or more (the British Museum,
+     Montclair, the V&A, Dallas, the Art Institute, the Louvre, Turner
+     Contemporary, the Gemäldegalerie, Guggenheim Bilbao, the Clark, the PAC,
+     the Philadelphia Museum, the Studio Museum …): their footprints were
+     guessed from descriptions. Redraw such a footprint before anything
+     else, from the map's own outline: `python3 scripts/overture_outline.py
+     <slug> --png /tmp/<slug>-map.png` prints the buildings round the point in
+     the model's frame, each outline as points to drop into `prism` parts
+     (the Petit Palais and the Black Mountain College Museum were redone so on
+     14 Oct: 45% to 86% and 65% to 84%, and each of them found larger and
+     differently turned than the first model had it); then heights, roofs and
+     what the photographs show. A museum of several buildings: the one that
+     holds the works. After it, its arranged rooms are laid again inside the
+     new walls — `node scripts/build_interiors_arranged.js --only <slug>
+     --relayout`, then `node scripts/check_interior.js
+     docs/v2/interiors/<slug>.json --png /tmp/<slug>` (and the interior's
+     step 4 below).
 6. **SketchUp** (flagged buildings): follow `scripts/sketchup/README.md` —
    edit or write `scripts/sketchup/<name>.py`, build, save, read back,
    convert, preview. Re-commit the `.skp` in `sketchup/` only if the form

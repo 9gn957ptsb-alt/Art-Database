@@ -1,407 +1,628 @@
 {
   "slug": "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
   "name": "Casa Sisal",
-  "voxel": 0.8,
+  "voxel": 0.5,
   "site": [
-    64,
-    84
+    50,
+    60
   ],
   "ground": "grass",
   "parts": [
     {
       "box": [
-        -32,
-        -42,
+        -25,
+        -33,
         0,
-        64,
-        84,
-        0.3
+        50,
+        60,
+        0.5
       ],
       "m": "grass"
     },
     {
       "box": [
-        -19,
-        -22,
-        0,
-        38,
-        9,
-        3.4
-      ],
-      "m": "render"
-    },
-    {
-      "cut": [
-        -17,
-        -22,
-        0.9,
-        8,
-        0.8,
-        1.9
-      ]
-    },
-    {
-      "box": [
-        -17,
-        -22.4,
-        0.9,
-        8,
-        0.8,
-        0.1
-      ],
-      "m": "glass"
-    },
-    {
-      "cut": [
-        -6,
-        -22,
-        0.9,
-        9,
-        0.8,
-        1.9
-      ]
-    },
-    {
-      "box": [
-        -6,
-        -22.4,
-        0.9,
-        9,
-        0.8,
-        0.1
-      ],
-      "m": "glass"
-    },
-    {
-      "box": [
-        -20,
-        -23,
-        3.4,
-        40,
-        11,
-        0.4
-      ],
-      "m": "concrete"
-    },
-    {
-      "box": [
-        -15,
-        -12.2,
-        0,
-        6,
-        6,
-        1.4
-      ],
-      "m": "water"
-    },
-    {
-      "box": [
+        -25,
         -33,
-        -10,
         0,
-        16,
-        15,
-        3.4
+        50,
+        1,
+        3.5
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -25,
+        -33,
+        0,
+        1,
+        60,
+        3.5
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        24,
+        -33,
+        0,
+        1,
+        60,
+        3.5
+      ],
+      "m": "concrete"
+    },
+    {
+      "box": [
+        -14,
+        -19,
+        0,
+        28.5,
+        8,
+        4
+      ],
+      "m": "render"
+    },
+    {
+      "box": [
+        -14.5,
+        -19.5,
+        4,
+        29.5,
+        9,
+        0.5
       ],
       "m": "render"
     },
     {
       "cut": [
+        -4.5,
         -20,
-        -9.3,
-        0.7,
-        3,
-        13,
-        2.1
+        1,
+        6,
+        10,
+        3
       ]
     },
     {
       "box": [
-        -20,
-        -10.1,
-        0.7,
-        3,
-        0.8,
-        2.1
-      ],
-      "m": "glass"
-    },
-    {
-      "box": [
-        -34,
-        -11,
-        3.4,
-        18,
-        17,
-        0.4
-      ],
-      "m": "concrete"
-    },
-    {
-      "box": [
-        -18.5,
-        4.4,
-        0.5,
-        2,
-        2.2,
-        2.1
-      ],
-      "m": "timber"
-    },
-    {
-      "box": [
-        -18.7,
-        4.4,
-        2.5,
-        2.4,
-        2.2,
-        0.15
-      ],
-      "m": "timber"
-    },
-    {
-      "box": [
-        -31,
-        3,
-        0.3,
-        7,
-        4,
-        1.1
-      ],
-      "m": "water"
-    },
-    {
-      "box": [
-        -31,
-        7.5,
-        0.3,
-        7,
-        3,
-        0.7
-      ],
-      "m": "water"
-    },
-    {
-      "box": [
-        -24.5,
-        3,
-        0.9,
-        0.8,
-        8,
-        1.2
-      ],
-      "m": "dark"
-    },
-    {
-      "box": [
-        -19.6,
-        -21.7,
-        0,
-        0.8,
-        3.8,
-        0.9
-      ],
-      "m": "concrete"
-    },
-    {
-      "box": [
-        -19.6,
-        -18.1,
-        0.75,
-        0.8,
-        3.8,
-        0.9
-      ],
-      "m": "concrete"
-    },
-    {
-      "box": [
-        -19.6,
-        -14.5,
-        1.5,
-        0.8,
-        3.8,
-        0.9
-      ],
-      "m": "concrete"
-    },
-    {
-      "box": [
-        -19.6,
-        -10.9,
-        2.25,
-        0.8,
-        4,
-        1.15
-      ],
-      "m": "render"
-    },
-    {
-      "tree": [
+        -4.5,
         -19,
-        -37,
-        9,
+        0,
+        6,
+        8,
+        1
+      ],
+      "m": "wood"
+    },
+    {
+      "box": [
+        -4.5,
+        -18.5,
+        1,
+        0.5,
+        7,
+        2.5
+      ],
+      "m": "wood"
+    },
+    {
+      "box": [
+        -4,
+        -19,
+        1,
+        5.5,
+        0.5,
         3
       ],
-      "shape": "bare"
+      "m": "glass"
     },
     {
-      "tree": [
-        10,
-        -40,
-        8,
-        2.6
+      "cut": [
+        -9.5,
+        -13,
+        1,
+        5,
+        2.5,
+        3
       ]
     },
     {
-      "tree": [
+      "box": [
+        -9.5,
         -13,
-        -2,
-        13,
-        3.6
+        0,
+        5,
+        2,
+        1
       ],
-      "shape": "palm"
+      "m": "render"
     },
     {
-      "tree": [
+      "box": [
+        -8.5,
+        -11,
+        0,
+        0.5,
+        0.5,
+        3.5
+      ],
+      "m": "corten"
+    },
+    {
+      "box": [
+        -4.5,
+        -11,
+        0,
+        0.5,
+        0.5,
+        3.5
+      ],
+      "m": "corten"
+    },
+    {
+      "box": [
+        -9,
         -13,
-        8,
-        13,
-        3.6
+        3.5,
+        5,
+        2.5,
+        0.5
       ],
-      "shape": "palm"
+      "m": "corten"
     },
     {
-      "tree": [
-        -13,
-        18,
-        13,
-        3.6
-      ],
-      "shape": "palm"
+      "cut": [
+        -12,
+        -11.5,
+        2,
+        1.5,
+        0.5,
+        1.5
+      ]
     },
     {
-      "tree": [
-        -13,
-        28,
-        13,
-        3.6
+      "box": [
+        -12,
+        -11.5,
+        2,
+        1.5,
+        0.5,
+        1.5
       ],
-      "shape": "palm"
+      "m": "glass"
     },
     {
-      "tree": [
-        -13,
-        -2,
-        13,
-        3.6
-      ],
-      "shape": "palm"
+      "cut": [
+        10.5,
+        -11.5,
+        2,
+        1.5,
+        0.5,
+        1.5
+      ]
     },
     {
-      "tree": [
-        -13,
-        8,
-        13,
-        3.6
+      "box": [
+        10.5,
+        -11.5,
+        2,
+        1.5,
+        0.5,
+        1.5
       ],
-      "shape": "palm"
+      "m": "glass"
     },
     {
-      "tree": [
-        13,
-        18,
-        13,
-        3.6
-      ],
-      "shape": "palm"
+      "cut": [
+        -12.5,
+        -19,
+        1,
+        1.5,
+        0.5,
+        2.5
+      ]
     },
     {
-      "tree": [
-        13,
-        28,
-        13,
-        3.6
+      "box": [
+        -12.5,
+        -19,
+        1,
+        1.5,
+        0.5,
+        2.5
       ],
-      "shape": "palm"
+      "m": "wood"
     },
     {
-      "tree": [
-        13,
-        -2,
-        13,
-        3.6
-      ],
-      "shape": "palm"
+      "cut": [
+        11.5,
+        -19,
+        1,
+        1.5,
+        0.5,
+        2.5
+      ]
     },
     {
-      "tree": [
-        13,
-        8,
-        13,
-        3.6
+      "box": [
+        11.5,
+        -19,
+        1,
+        1.5,
+        0.5,
+        2.5
       ],
-      "shape": "palm"
+      "m": "wood"
     },
     {
-      "tree": [
-        13,
-        18,
-        13,
-        3.6
+      "box": [
+        5.5,
+        -17.5,
+        4.5,
+        3.5,
+        3.5,
+        2
       ],
-      "shape": "palm"
+      "m": "render"
     },
     {
-      "tree": [
-        13,
-        28,
-        13,
-        3.6
+      "cyl": [
+        -7.5,
+        -15.5,
+        4.5,
+        1,
+        0.5
       ],
-      "shape": "palm"
+      "m": "render"
+    },
+    {
+      "box": [
+        -16,
+        -18.5,
+        0.5,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -16,
+        -17.5,
+        1,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -16,
+        -16.5,
+        1.5,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -16,
+        -15.5,
+        2,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -16,
+        -14.5,
+        2.5,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -16,
+        -13.5,
+        3,
+        2,
+        1,
+        0.5
+      ],
+      "m": "white"
+    },
+    {
+      "box": [
+        -11.5,
+        -11,
+        0,
+        20.5,
+        3,
+        1
+      ],
+      "m": "paving"
+    },
+    {
+      "box": [
+        -12,
+        -22.5,
+        0,
+        20,
+        3.5,
+        1
+      ],
+      "m": "paving"
+    },
+    {
+      "box": [
+        -14,
+        -25.5,
+        0,
+        26,
+        3,
+        0.5
+      ],
+      "m": "gravel"
+    },
+    {
+      "box": [
+        -8,
+        -8,
+        0,
+        4.5,
+        14,
+        1.5
+      ],
+      "m": "limestone"
+    },
+    {
+      "cut": [
+        -7.5,
+        -7.5,
+        1,
+        3.5,
+        13,
+        1
+      ]
     },
     {
       "pool": [
-        -1.7,
-        32,
-        3.4,
-        8
+        -7.5,
+        -7.5,
+        3.5,
+        13,
+        1
       ]
     },
     {
       "box": [
+        2.5,
+        -32,
+        0,
+        5,
+        9.5,
+        1
+      ],
+      "m": "corten"
+    },
+    {
+      "cut": [
+        3,
+        -31.5,
+        0.5,
+        4,
+        8.5,
+        1
+      ]
+    },
+    {
+      "pool": [
+        3,
+        -31.5,
+        4,
+        8.5,
+        0.5
+      ]
+    },
+    {
+      "box": [
+        4,
+        -29,
+        1,
+        1.5,
+        1.5,
+        0.5
+      ],
+      "m": "plant"
+    },
+    {
+      "box": [
+        5,
+        -26.5,
+        1,
+        1.5,
+        1.5,
+        0.5
+      ],
+      "m": "plant"
+    },
+    {
+      "box": [
+        -14,
+        -11,
+        0,
+        3.5,
+        1,
+        1
+      ],
+      "m": "stone"
+    },
+    {
+      "box": [
+        -14,
+        -11,
+        1,
+        3.5,
+        1,
+        0.5
+      ],
+      "m": "sage"
+    },
+    {
+      "box": [
+        9,
+        -11,
+        0,
+        5.5,
+        1,
+        1
+      ],
+      "m": "stone"
+    },
+    {
+      "box": [
+        9,
+        -11,
+        1,
+        5.5,
+        1,
+        0.5
+      ],
+      "m": "sage"
+    },
+    {
+      "tree": [
+        3.5,
+        -8.5,
+        6,
+        3.6,
+        1
+      ],
+      "shape": "bare",
+      "trunk": "limestone"
+    },
+    {
+      "tree": [
+        -6.5,
+        -20.5,
+        6,
+        3.4,
+        1
+      ],
+      "shape": "bare",
+      "trunk": "limestone"
+    },
+    {
+      "tree": [
+        -15,
+        1,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
+        15,
+        1,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
+        -15,
+        10,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
+        15,
+        10,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
+        -15,
+        19,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
+        15,
+        19,
+        16,
+        4.2
+      ],
+      "shape": "palm",
+      "trunk": "concrete"
+    },
+    {
+      "tree": [
         -20,
-        -12.6,
-        3.8,
-        40,
-        0.6,
-        0.35
-      ],
-      "m": "dark"
+        -29,
+        11,
+        4.2
+      ]
     },
     {
-      "box": [
-        -31,
-        -41,
-        0,
-        1,
-        82,
-        3.3
-      ],
-      "m": "render"
+      "tree": [
+        12,
+        -30,
+        12,
+        4.6
+      ]
     },
     {
-      "box": [
-        30,
-        -41,
-        0,
-        1,
-        82,
-        3.3
-      ],
-      "m": "render"
+      "tree": [
+        21,
+        -21,
+        10,
+        3.8
+      ]
+    },
+    {
+      "tree": [
+        -21.5,
+        -9,
+        9,
+        3.6
+      ]
+    },
+    {
+      "tree": [
+        21.5,
+        -2,
+        9,
+        3.6
+      ]
     }
   ],
-  "notes": "Reyes Rios + Larrain's Casa Sisal, a single-storey house within the historic Hacienda Sac Chich near Acanceh (the article's photographs, no plan): flat concrete roofs on deep overhangs over cream chukum-plastered walls, floor-to-ceiling sliding glass that disappears into the structure. The formal front: a lily pond with steps down, glimpsed through wide-open glass into a lit room at night. West of it, a lower wing holds the sunken living room and kitchen, opening onto its own terrace with a small stepped water feature and a freestanding outdoor shower/pergola post (guessed from the pergola patio described but not fully shown). A long lawn, given the two-acre former henequen field, runs south between two rows of Royal Palms (the night photograph's all\u00e9e) to a linear pool at the far end (the pool most clearly photographed; the described three-sided infinity pool on the opposite side is guessed and not separately modelled). The hacienda's 11-foot perimeter walls are suggested at east and west only, to keep the lawn open in the view. Guessed throughout: the exact plan, the roof step for the cantilevered exterior stair (simplified to three landings), the second pool's shape. No dimensions were published; scaled from the photographs against door heights (~2.1 m)."
+  "notes": "Reyes Rios + Larrain's Casa Sisal, from the article's eleven photographs (no plan and no dimensions published; scaled from the doors, 2.1 m, and the sliding glass): a single-storey house of chukum-plastered walls, drawn pale cream, under a flat slab roof, 28.5 m long and 8 m deep, in a walled former henequen field near Acanceh (the house is placed only at its town). Shown: the pavilion of sliding glass pulled right away, open through the whole depth of the house to both lawns, with timber floor and cabinetry on its west side and fixed glass on the north; the recessed bay west of it under the roof edge, with a rust-brown steel pergola; a window and a lit door at each end; the cubic stair-head and the round tank on the roof; the cantilevered stair of white treads on the west end; the south terrace a step above the lawn and, down the lawn from it, the raised three-sided infinity pool (4.5 x 14 m, pale coping); the nine-metre lily pond with rust-steel edges on the north side; a bare frangipani on each side of the pavilion, pale as in the photographs; the avenue of royal palms, pale trunks, between the old walls of weathered limestone (the long lawn runs on south past the edge of the site to a lap pool; the walls are drawn on the north, east and west only), and shade trees behind. Redone from the first model, which had grey roofs, a west wing and two palms drawn twice. Guessed: the plan and where each room is, every dimension, which end the stair is on, the pond's side and length, the terrace's extent, the number of palms (the real avenue is longer), the walls' return on the south."
 }

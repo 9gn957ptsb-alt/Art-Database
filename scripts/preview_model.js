@@ -8,8 +8,9 @@
    --big draws each view at twice the resolution, to judge detail.
 
    Uses the site's own docs/v2/models.js and the DIRT at the building's place
-   (docs/v2/dirt-land.png, located from docs/v2/architecture.json). Needs
-   Playwright; in a session it is installed globally. */
+   (docs/v2/dirt-land.png, located from docs/v2/architecture.json, or from
+   docs/v2/museums.json for a museum). Needs Playwright; in a session it is
+   installed globally. */
 
 const fs = require("fs");
 const path = require("path");
@@ -32,8 +33,9 @@ function playwright() {
   }
   const root = path.resolve(__dirname, "..");
   const spec = JSON.parse(fs.readFileSync(specPath, "utf8"));
-  const where = JSON.parse(fs.readFileSync(path.join(root, "docs/v2/architecture.json"), "utf8"))
-    .buildings.find(b => b.slug === spec.slug) || { lat: 0, lon: 0 };
+  const placed = (file, key) => (JSON.parse(fs.readFileSync(path.join(root, "docs/v2", file), "utf8"))[key] || [])
+    .find(b => b.slug === spec.slug);
+  const where = placed("architecture.json", "buildings") || placed("museums.json", "museums") || { lat: 0, lon: 0 };
   const models = fs.readFileSync(path.join(root, "docs/v2/models.js"), "utf8");
   const dirt = "data:image/png;base64," +
     fs.readFileSync(path.join(root, "docs/v2/dirt-land.png")).toString("base64");
