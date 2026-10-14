@@ -1733,9 +1733,12 @@ def years_for(place, g):
     w, s = to_deg(-half, -half)
     e, nn = to_deg(half, half)
     got, names, floor = (None, [], None) if NO_CITY else city_years(place, (s, w, nn, e), lat, lon, cell)
+    register = np.zeros(len(cells), dtype=bool)        # the cells the BDNB's land registers date
     if got is not None:
         years = got
         said += names
+        if names and all(n_.startswith("BDNB") for n_ in names):
+            register |= got > 0
 
     # What the city leaves, from the records read on GitHub's runners (fetch_city_records.py).
     rec, rec_names, rec_floor, extent = record_years(place, g, cells)
@@ -1746,6 +1749,8 @@ def years_for(place, g):
             said += [n_ for n_ in rec_names if n_ not in said]
             if (rec[take] < 0).any() and rec_floor:
                 floor = max(floor or 0, rec_floor)
+            if any(n_.startswith("BDNB") for n_ in rec_names):
+                register |= take & (rec > 0)
 
     # A dated landmark's year (Wikidata), where the city left its building undated or only "old"
     # (a year before the source's floor is a closer word for it).
@@ -1778,6 +1783,22 @@ def years_for(place, g):
             said.append("OpenStreetMap contributors")
             if place["slug"] in WD_USED and "Wikidata" not in said:
                 said.append("Wikidata")
+
+    # The land registers' year for an old building is often a renovation's, a re-registration's or the
+    # State's 1800 (see BDNB_YEARS): where a dated landmark (Wikidata) or a contributor's date on the
+    # building's outline (OpenStreetMap) has it standing before 1800, and a generation (30 years) or more
+    # before the register does, the documented year stands — buildings do not get younger. Arles's
+    # Saint-Trophime, "C12" on OpenStreetMap, had read 1970 by the register (14 Oct 2026).
+    if register.any():
+        for doc, by in ((lm, "Wikidata"), (osm, "OpenStreetMap contributors")):
+            if doc is None:
+                continue
+            take = register & (doc > 0) & (doc < 1800) & (doc <= years - 30)
+            if take.any():
+                years[take] = doc[take]
+                register &= ~take
+                if by not in said:
+                    said.append(by)
 
     # Where nothing says a building's own year, its census block's shares (records/census/).
     cy, cname, cfloor = census_years(place, g, cells, years)
