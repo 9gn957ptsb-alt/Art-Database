@@ -53,17 +53,23 @@ COAT = net(BASE)
 MANE = net(ramp("dR"))
 
 
+LOWER = ramp("ddR")                    # below the knee the leg is darker, a red deer's
+
+
 def leg(joint, foot, l1, l2, bend, r0, r1, paint, group):
     knee = two_bone(joint, foot, l1, l2, bend)
     sdf = union(capsule(joint, knee, r0, (r0 + r1) / 2), capsule(knee, foot, (r0 + r1) / 2 * 0.7, r1))
-    return [Part(sdf, paint, group), Part(ellipse(foot[0] + 0.3, foot[1] - 0.2, 0.7, 0.5), lambda *a: "k", group)]
+
+    def below(x, y, light, i, j):
+        return LOWER(x, y, light, i, j) if y > knee[1] + 0.2 and group >= 7 else paint(x, y, light, i, j)
+    return [Part(sdf, below, group), Part(ellipse(foot[0] + 0.3, foot[1] - 0.2, 0.7, 0.5), lambda *a: "k", group)]
 
 
-SHOULDER = (24.4, 15.2)
-HIP = (13.6, 14.8)
+SHOULDER = (24.6, 15.2)
+HIP = (12.2, 14.8)
 
 
-def legs(phases, dy=0.0, reach=2.6, lift=2.0):
+def legs(phases, dy=0.0, reach=3.0, lift=2.7):
     ff, fh, nf, nh = phases
     sh, hp = (SHOULDER[0], SHOULDER[1] + dy), (HIP[0], HIP[1] + dy)
     far = (leg((sh[0] + 0.8, sh[1]), foot_at(ff, sh[0] + 0.8, reach, lift, GROUND), 4.6, 5.0, 1, 1.0, 0.5, FAR_COAT, 0) +
@@ -75,13 +81,14 @@ def legs(phases, dy=0.0, reach=2.6, lift=2.0):
 
 
 def body(dy=0.0):
-    torso = union(ellipse(18.8, 12.6 + dy, 8.0, 4.0), ellipse(24.6, 12.8 + dy, 3.4, 4.0))
+    # a red deer is longer than it is tall: the long back and the deep chest, the belly rising to the flank
+    torso = union(ellipse(16.9, 12.6 + dy, 9.2, 3.95), ellipse(24.8, 12.8 + dy, 3.4, 4.0))
 
     def paint(x, y, light, i, j):
-        if x < 13.2 and y < 13.8 + dy:
-            return "W" if light < 0.62 else "w"          # the rump patch
+        if x < 10.8 + 0.5 * math.sin(y * 1.3) and 9.6 + dy < y < 13.8 + dy:
+            return "W" if light < 0.62 else "w"          # the rump patch, cream, ragged at its edge
         return COAT(x, y, light, i, j)
-    tail = capsule((10.8, 10.8 + dy), (10.2, 13.0 + dy), 0.7, 0.5)
+    tail = capsule((8.4, 10.8 + dy), (7.8, 13.0 + dy), 0.7, 0.5)
     return [Part(tail, lambda *a: "W", 1), Part(torso, paint, 2)]
 
 
@@ -99,12 +106,27 @@ def antlers(cx, cy, f=1):
         return union(path([(cx, cy), (cx - f * 1.0, cy - 2.0), (cx - f * 1.4, cy - 3.6)], 0.7, 0.6),
                      capsule((cx - f * 0.3, cy - 0.6), (cx + f * 1.2, cy - 1.2), 0.55, 0.5),
                      capsule((cx - f * 1.0, cy - 2.2), (cx + f * 0.4, cy - 2.8), 0.5, 0.45))
-    beam = path([(cx, cy), (cx - f * 1.2, cy - 2.2), (cx - f * 1.9, cy - 4.2), (cx - f * 1.4, cy - 5.8)], 0.5, 0.35)
-    tines = union(capsule((cx - f * 0.3, cy - 0.6), (cx + f * 1.6, cy - 1.2), 0.4, 0.3),
-                  capsule((cx - f * 0.9, cy - 1.8), (cx + f * 0.9, cy - 2.6), 0.35, 0.3),
-                  capsule((cx - f * 1.7, cy - 3.4), (cx - f * 0.2, cy - 4.0), 0.35, 0.3),
-                  capsule((cx - f * 1.5, cy - 5.4), (cx - f * 2.7, cy - 6.6), 0.35, 0.3))
+    # the beam sweeps up and back from the skull; the brow tine springs forward from its foot, the bez above it,
+    # the trez higher, and at the top the crown's points fan up; every tine one cell, with a cell of air between
+    S = 0.7                                      # the whole set drawn to fit the picture's top
+
+    def P(dx, dy):
+        return (cx - f * dx * S, cy - dy * S)
+    beam = path([P(0, 0), P(1.6, 2.4), P(3.0, 4.6), P(3.4, 6.8), P(2.6, 8.8)], 0.6, 0.5)
+    tines = union(capsule(P(0.3, 0.7), P(-2.8, 1.5), 0.5, 0.4),
+                  capsule(P(1.3, 2.7), P(-2.2, 4.0), 0.48, 0.38),
+                  capsule(P(2.5, 4.9), P(-1.0, 6.4), 0.48, 0.38),
+                  capsule(P(3.4, 6.8), P(5.4, 8.4), 0.48, 0.38),
+                  capsule(P(2.6, 8.8), P(0.8, 10.0), 0.48, 0.38),
+                  capsule(P(2.6, 8.8), P(4.2, 10.2), 0.48, 0.38))
     return union(beam, tines)
+
+
+def bare(part):
+    """A part with no edge drawn round it: the antlers' tines are one cell thin, and a chalk edge would fill the air
+    between them into a slab. (Hard antler only: the velvet's are the coat's own colour and keep their edge.)"""
+    part.noline = SEASON == "hard"
+    return part
 
 
 def antler_paint(x, y, light, i, j):
@@ -130,7 +152,7 @@ def head_side(cx, cy, f=1, dy=0.0):
         eye = [Part(ellipse(cx + f * 0.8 * K, cy - 0.3 * K, 0.62, 0.55), lambda *a: "k", 6),
                Part(ellipse(cx + f * 0.65 * K, cy - 0.45 * K, 0.3, 0.3), lambda *a: "y", 7),
                Part(ellipse(cx + f * 3.0 * K, cy + 2.0 * K, 0.9, 0.5), lambda *a: "W", 6)]
-    return [Part(antlers(cx - f * 0.2 * K, cy - 1.4 * K, f), antler_paint, 3), Part(ear, BASE, 4), Part(skull, paint, 5)] + eye
+    return [bare(Part(antlers(cx - f * 0.2 * K, cy - 1.4 * K, f), antler_paint, 3)), Part(ear, BASE, 4), Part(skull, paint, 5)] + eye
 
 
 def head_front(cx, cy):
@@ -139,12 +161,13 @@ def head_front(cx, cy):
                  triangle((cx + 1.6, cy - 0.6), (cx + 1.0, cy - 1.6), (cx + 4.0, cy - 1.4)))
     ant = union(antlers(cx - 0.8, cy - 1.6, 1), antlers(cx + 0.8, cy - 1.6, -1))
     eyes = union(ellipse(cx - 1.0, cy - 0.2, 0.4, 0.4), ellipse(cx + 1.0, cy - 0.2, 0.4, 0.4))
-    return [Part(ant, antler_paint, 3), Part(ears, BASE, 4), Part(skull, BASE, 5),
+    return [bare(Part(ant, antler_paint, 3)), Part(ears, BASE, 4), Part(skull, BASE, 5),
             Part(ellipse(cx, cy + 2.6, 0.7, 0.5), lambda *a: "k", 6), Part(eyes, lambda *a: "y", 6)]
 
 
-NECK_K = 1.0                   # the neck's thickness (a chimera's head is given the stag's autumn neck)
-HEAD_K = 1.0                   # the head's size (a chimera's head, a little more than life)
+WHOLE_NECK, WHOLE_HEAD = 1.22, 1.12     # a stag's thick neck and long head, in the whole animal's poses
+NECK_K = WHOLE_NECK            # the neck's thickness (a chimera's head is given the stag's autumn neck)
+HEAD_K = WHOLE_HEAD            # the head's size (a chimera's head, a little more than life)
 
 
 def neck(a, b, dy=0.0):
@@ -253,8 +276,8 @@ def rig(pose, k=0, slot="body"):
     try:
         return rig_(pose, k)
     finally:
-        NECK_K = 1.0
-        HEAD_K = 1.0
+        NECK_K = WHOLE_NECK
+        HEAD_K = WHOLE_HEAD
 
 
 def rig_(pose, k=0):

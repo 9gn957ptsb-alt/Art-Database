@@ -168,6 +168,8 @@ def scaled(parts, k, about):
         q = Part(sdf, paint, p.group)
         if hasattr(p, "limb"):
             q.limb = p.limb
+        if hasattr(p, "noline"):
+            q.noline = p.noline
         out.append(q)
     return out
 
@@ -191,6 +193,8 @@ def turned(parts, angle, about, shift=(0.0, 0.0)):
         q = Part(sdf, paint, p.group)
         if hasattr(p, "limb"):
             q.limb = p.limb
+        if hasattr(p, "noline"):
+            q.noline = p.noline
         out.append(q)
     return out
 
@@ -267,6 +271,8 @@ def raster(parts, w, h, ink_dark="o", ink_light="p", deep="d"):
             for di, dj, k in ((1, 0, 1), (0, 1, 1), (-1, 0, -1), (0, -1, -1)):
                 a, b = i + di, j + dj
                 if 0 <= a < w and 0 <= b < h and cells[b][a] != ".":
+                    if getattr(parts[owner[b][a]], "noline", False):
+                        continue                  # a part with no edge of its own (thin antlers' tines)
                     near = True
                     lit += k
             if near:

@@ -80,10 +80,13 @@
         {"name": "the rut's head-to-head", "role": "ritual", "pose": "ritual", "what": "In the rut, bulls face each other, heads down, and push forehead to forehead.", "source": "Lott, D. F. (2002). American Bison: A Natural History. Berkeley: University of California Press.", "said": "the bison met head to head"}
       ],
       "added": "2026-10-01",
-      "refined": "2026-10-01",
-      "passes": 1,
-      "notes": "Side on, 40 by 26 cells. Guessed still: the walk's leg phases are the textbook lateral sequence, not traced from film; the horns read only as two pale marks at this size; the lying pose's folded legs are two capsules.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+      "refined": "2026-10-14",
+      "passes": 2,
+      "notes": "Side on, 40 by 26 cells. Guessed still: the walk's leg phases are the textbook lateral sequence, not traced from film; the horn is a curved dark spike pale only at its tip, a few cells at this size; the lying pose's folded legs are two capsules.",
+      "log": [
+        "2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")",
+        "2026-10-14 second pass, three rounds against the real bison and de Kooning's strokes. The five biggest mismatches, most important first: the coat was one slab with a straight seam between the summer ochre and the wool (the ochre now darkens into wool along a ragged diagonal, the strokes leaning, no longer upright); the hindquarters as tall and as bright as the forequarter (lower and slimmer, the coat's own step); the forelegs thick and alike from top to foot (the wool hangs in chaps over a thin dark lower leg and a hoof); the head small and lost in the mane (larger, a mop over the brow, a curved horn pale only at its tip, a shaggy black beard, a pale muzzle, the eye one whole cell); the stride short (a longer reach, a higher lift). The chimera's bison parts take the same legs, coat and hindquarter; three triples re-rendered, the folds still agree."
+      ]
     },
     {
       "id": "squirrel",
@@ -157,10 +160,13 @@
         {"name": "the cartwheel", "role": "ritual", "pose": "ritual", "what": "In courtship a pair lock talons high up and fall turning over and over, letting go before the ground.", "source": "Buehler, D. A. (2020). Bald Eagle, Birds of the World.", "said": "the eagles locked talons and fell, turning"}
       ],
       "added": "2026-10-01",
-      "refined": "2026-10-01",
-      "passes": 1,
-      "notes": "Side on, 40 by 26 cells. It comes out of the wave standing, then flies up and away; it is the one character that leaves by the sky. Guessed still: a wing seen side on is a long band; the far wing is a single dark stroke.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+      "refined": "2026-10-14",
+      "passes": 2,
+      "notes": "Side on, 40 by 26 cells. It comes out of the wave standing, then flies up and away; it is the one character that leaves by the sky. Guessed still: the wingbeat is four drawn states (up, half up, down, half down), not film; the far wing is a single dark band.",
+      "log": [
+        "2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")",
+        "2026-10-14 second pass, three rounds against the real bald eagle and Warhol's plates. The five biggest mismatches: the level wing a plank (the beat was one long band swung up and down; now four states of a broad wing, its leading edge through the wrist to the tip, the trailing edge back to the body, the flight feathers four fingers at the tip); the wings too narrow; the head a block (a heavier hooked yellow bill, a dark brow, each eye on a whole cell, in the front view too); the perched bird a penguin (tilted forward, a long white tail hanging, the dark wing tips crossing over it, feathered trousers); the plates flat (two now, the coverts a step lighter than the flight feathers)."
+      ]
     },
     {
       "id": "slug",
@@ -232,26 +238,63 @@
         {"name": "roaring and the parallel walk", "role": "ritual", "pose": "ritual", "what": "In the rut stags roar at each other, and two well matched walk side by side, step for step, sizing each other up before they fight or one gives way.", "source": "Clutton-Brock, T. H. & Albon, S. D. (1979). The roaring of red deer and the evolution of honest advertisement. Behaviour 69, 145–170.", "said": "the stags roared and walked side by side"}
       ],
       "added": "2026-10-01",
-      "refined": "2026-10-01",
+      "refined": "2026-10-14",
+      "passes": 2,
+      "notes": "A stag, side on, 40 by 26 cells. Guessed still: the antlers are a stylised twelve-pointer drawn thin (a beam, brow, bez, trez and a crown, a cell a tine); the rump patch is small and ragged at this size.",
+      "log": [
+        "2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")",
+        "2026-10-14 second pass, three rounds against the real red deer stag and the artist's hand. The five biggest mismatches: the antlers a grey slab (the chalk outline had filled the air between the one-cell tines: a part can now be drawn with no edge, `noline`; thin branching tines in pale bone, scaled to fit the picture's top); the neck thin and the head small (the whole stag's neck and head larger, the chimera's slots as they were); the body short and square (longer, the belly rising to the flank); the legs thin with no step in them (the lower legs a darker step, a longer reach and a higher lift in the trot); the rump patch a block (small, ragged at its edge)."
+      ]
+    },
+    {
+      "id": "starling",
+      "name": "Starling murmuration",
+      "species": "Sturnus vulgaris",
+      "kind": "flocks",
+      "from": {
+        "biome": "Temperate Broadleaf & Mixed Forests",
+        "realm": "Palearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 4, life.above.flocks: starling murmurations"
+      },
+      "why": "The grammar's one animal that is a field and not a body: thousands of common starlings at dusk, each following its nearest neighbours, so that a turn runs through them as a wave and they move as one mass, a line poured and flung over the sky.",
+      "artist": "Jackson Pollock",
+      "native": {"key": "cody-us", "where": "Cody, Wyoming", "ll": [44.5233, -109.0572], "why": "Jackson Pollock was born in Cody, Wyoming (Wikidata P19, characters/homes.json); Cody is the site's city within 25 km. Common starlings live there now, and are the town's birds as they are everywhere on the continent.", "source": "A stretch, said so: DIRT's grammar has the starling murmuration in the Palearctic broadleaf forest (biome 4, above.flocks), and Cody is Nearctic desert and xeric shrubland, whose grammar gives coyotes. The common starling is no native of North America: about sixty were released in New York's Central Park in 1890 and about forty more in 1891, and it now breeds across the continent (Cabe, P. R. (1993). European Starling (Sturnus vulgaris). In The Birds of North America, No. 48. Philadelphia: The Academy of Natural Sciences; Washington, D.C.: The American Ornithologists' Union)."},
+      "after": {
+        "why": "His pours of 1947-51 (Number 14: Gray, Brown and Silver II, Number 7) are one line poured and flung over the whole sheet, thickening to a pool, thinning to a thread, drops thrown off it, with no edge and no centre. DIRT's roster gives him grammar 7, scattered marks: dense marks in every direction. So the starlings are not one animal drawn in his hand but the field itself: a murmuration is a poured line that turns as one, a ribbon that thickens into a mass and thins to a thread, each bird one flung mark (a V, a bar, a caret as its wing beats; the far ones a speck), no outline, because a flock has no edge. The umber of his saved works for the birds in shade, their warm grey and off-white for the lit ones, and the ochre (his most vivid ink) flecked through it as thrown paint; pressed, it is framed in the ochre.",
+        "inks": {
+          "coat": ["#3a322d", "#5c5248", "#8a7f70", "#b3a897"],
+          "white": ["#dbd5cc", "#efe9df"],
+          "black": ["#2a231f", "#3d352f"],
+          "eye": "#b66b1f",
+          "pen": ["#6f655a", "#b9b0a2"],
+          "box": "#b66b1f"
+        },
+        "works": ["Number 14: Gray, 1948", "Brown and Silver II, 1951", "Number 7, 1951"]
+      },
+      "poses": "trot (eight frames: the flock flying, a ribbon thickening to a head with waves of density running forward through it and the tail curling), stand (eight: wheeling in place, a pinwheel of three arms turning), back (eight: the head of the flock curling up and over, a wave about to break), look (eight: a ring opened toward you with one bird of the ochre at its middle), sit (eight: the pour thickening into a pool, and starlings standing on the ground, heads up and down, a wing flicked); every pose moves",
+      "moves": {"speed": 2.2, "fps": 8, "pause": "back", "leave": "rise", "lift": 34, "gait": "fly", "live": true},
+      "chimera": {"head": "Mimicking", "body": "Murmuration", "hind": "That Turns as One", "gaze": "bright, sidelong", "carriage": "upright, strutting", "pace": "a quick walk"},
+      "ethogram": [
+        {"name": "the murmuration", "role": "instinct", "pose": "act", "what": "At dusk, before they roost, thousands of starlings fly as one mass, each bird following the seven or so nearest to it and not every bird within some distance, so a turn begun at the edge runs through the flock as a wave.", "source": "Ballerini, M. et al. (2008). Interaction ruling animal collective behavior depends on topological rather than metric distance: evidence from a field study. PNAS 105(4), 1232–1237; Attanasi, A. et al. (2014). Information transfer and behavioural inertia in starling flocks. Nature Physics 10, 691–696.", "said": "the starlings turned as one"},
+        {"name": "probing", "role": "play", "pose": "play", "what": "On the ground it walks rather than hops, pushing its closed bill into the turf and opening it there to find leatherjackets and other insects.", "source": "Feare, C. (1984). The Starling. Oxford: Oxford University Press.", "said": "the starling probed the ground, and found something"},
+        {"name": "the song", "role": "ritual", "pose": "ritual", "what": "A singing male raises the feathers of his throat, opens his bill and flicks his wings out and in, to a rival or a mate: a long run of whistles, rattles and the borrowed calls of other birds.", "source": "Feare, C. (1984). The Starling. Oxford: Oxford University Press.", "said": "the starlings sang at each other, their wings flicking"}
+      ],
+      "added": "2026-10-14",
+      "refined": "2026-10-14",
       "passes": 1,
-      "notes": "A stag, side on, 40 by 26 cells. Guessed still: the antlers are a stylised twelve-pointer at four tines a side; the rump patch is small at this size.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+      "notes": "A murmuration drawn as a field, 80 by 48 cells at two pixels (160 by 96), every pose of eight frames and living (moves.live): about 200 birds a frame laid on a ribbon, a ring or a disc, each by its place (far a cell, near a V of five), the light from the upper left on the side of the ribbon that faces it. Its drawing is run-length coded (rle). Guessed still: which bird is lit is the ribbon's side, not a measured flock's; the V is the sign for a bird in flight, not a starling's own silhouette (its single bird is the chimera's part, drawn whole).",
+      "log": ["2026-10-14 first drawing: a murmuration as a poured ribbon after his pours (a line that thickens to a mass and thins to a thread, flung marks, no edge), five poses of eight living frames; the single starling for the chimera"]
     }
   ],
   "natives_refined": [
     {"key": "london-gb", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 wild boar after Turner, four rounds against the real animal and his strokes: a wedge not a loaf (shoulders raised, hump, narrower haunch, a long tapering snout with its tusk, the head low on a thick neck, the tail hanging) and the coat dark bristly brown, not the pale beige the artist's light palette had washed it to (hands.ladder)"]},
     {"key": "paris-fr", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 grey wolf after Monet, three rounds: the tail carried low and straight with a dark tip (it rode up like a fox's), bushy; a ruff and pale cheeks; a broader head, heavier paws; the pale belly now pale (its ladder had come out mid-grey)"]},
-    {"key": "washington-us", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 American black bear after Artschwager, three rounds: black, not pale grey (hands.ladder worked the steps toward the artist's lightest by a third each, so every dark animal washed out); rump a little higher than the shoulders, no hump; head carried low and larger, bigger round ears, long flat paws"]}
+    {"key": "washington-us", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 American black bear after Artschwager, three rounds: black, not pale grey (hands.ladder worked the steps toward the artist's lightest by a third each, so every dark animal washed out); rump a little higher than the shoulders, no hump; head carried low and larger, bigger round ears, long flat paws"]},
+    {"key": "los-angeles-us", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 coyote after Turrell, three rounds against the real animal and his plates. The five biggest mismatches, most important first: the tail carried up like a fox's brush (low now, bushy, a dark tip); the head carried high in the trot (a coyote trots with it low, near the line of the back: a canid plan's new neck_trot); the muzzle short and thick and the ears small (a long narrow snout, large ears, broad at the base head on, no longer spikes); the build a stocky dog's (lankier: longer, slimmer legs, a narrower chest); the coat's markings straight edged (the saddle's lower edge ragged, the belly's stepped: every species with a saddle or a pale belly gains) and a pale ruff and cheeks. A seated canid's chest and head are a little larger. Wolf, jackal and fennec fox checked beside it."]},
+    {"key": "san-francisco-us", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 mule deer after Serra, three rounds. The five biggest mismatches: the gait was a trot (a mule deer stots: all four feet leave the ground and come down together, the legs stiff, the body low on landing, up, at the top, down: a new quad gait, stot, seven frames a second); the antlers a dark clump that hid behind the ear (they fork, and each fork forks again, in pale bone, drawn over the ear with no edge; every antler kind's radii raised to a cell so its tines stop dropping out); the tail a pale blob (a narrow white rope with a black tip); the face one grey block (a dark forehead over a pale muzzle and cheeks) and the ears small; the neck too long and the head too high, its antlers clipped by the picture's top (a short thick neck, the head carried level, a stockier body). The legs of every cervid are a step slimmer (the moose keep theirs). White-tailed deer, moose and reindeer checked beside it."]},
+    {"key": "amsterdam-nl", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 greylag goose after Rembrandt, three rounds. The five biggest mismatches: in flight the wings were blades that left the picture (a broad wing in four states, up, coming down swept back, down, lifting, its flight feathers a darker plate with fingers at the tip: the bird plan's, so every flying bird gains); the body held flat like a duck's (breast high, tail low: every goose, swan and pelican); the bill and legs drawn in the eye's brown (the species' accent is its orange, in Rembrandt's nearest ink); the neck short and the head small (longer, thicker, larger); the bill missing head on (a wedge as broad as the bill is). Canada goose, pelican, golden eagle, turkey vulture, snow bunting and scarlet macaw checked beside it."]}
   ],
   "backlog": [
-    {
-      "artist": "Jackson Pollock",
-      "species": "starlings (a murmuration)",
-      "kind": "flocks",
-      "biome": "Temperate Broadleaf & Mixed Forests",
-      "realm": "Palearctic",
-      "why": "Scattered marks: a murmuration is a poured, flung field of dots that turns as one."
-    },
     {
       "artist": "Salvador Dalí",
       "species": "ocellated lizard",

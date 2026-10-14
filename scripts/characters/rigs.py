@@ -46,12 +46,14 @@ def hsh(i, j, s=0):
 # ---- parts, by role ------------------------------------------------------------
 
 class P:
-    """A part: its field, its role (or a function of (x, y) giving one), its group."""
+    """A part: its field, its role (or a function of (x, y) giving one), its group. `noline`: no chalk outline is
+    drawn against it (antlers, whose one-cell tines the outline would fill into a slab)."""
 
-    def __init__(self, sdf, role, group=0):
+    def __init__(self, sdf, role, group=0, noline=False):
         self.sdf = sdf
         self.role = role
         self.group = group
+        self.noline = noline
 
 
 def mark_role(base, rules):
@@ -129,6 +131,8 @@ def paint(parts, cells, hand, w, h):
             for di, dj, k in ((1, 0, 1), (0, 1, 1), (-1, 0, -1), (0, -1, -1)):
                 a, b = i + di, j + dj
                 if 0 <= a < w and 0 <= b < h and rows[b][a] != ".":
+                    if cells[b][a] and parts[cells[b][a][0]].noline:
+                        continue
                     near = True
                     lit += k
             if near:
@@ -172,6 +176,7 @@ QUAD = dict(
     horns=None, horn=1.0, mane=0.0, beard=0.0, trunk=0.0, tusks=0.0,
     leg_w=1.1, hoof=False, arms=1.0, marks=(), gait="trot", rest="lie", grazer=False,
     canvas=(W, H), face="long", cheeks=0.0, ruff=0.0, upright=False, rise=0.0, foot=1.0,
+    neck_trot=None,      # the neck's angle in the trot, where the head is carried lower than at rest (a canid's)
 )
 
 
@@ -205,6 +210,12 @@ def quad_parts(sp, pose, k):
         elif gait == "bound":
             phases = (ph + 0.1, ph + 0.5, ph, ph + 0.55)
             duty = 0.45
+        elif gait == "stot":
+            # a mule deer's stotting: all four feet leave the ground and come down together, the legs stiff, the
+            # body low on landing, up through the push, at the top, coming down
+            phases = (0.1, 0.1, 0.1, 0.1)
+            duty = 0.5
+            dy = (0.7, -1.0, -2.3, -0.9)[k] * s
         else:
             phases = (ph + 0.5, ph, ph, ph + 0.5)
             duty = 0.5
@@ -232,14 +243,14 @@ def quad_parts(sp, pose, k):
     def coat_role(x, y):
         mid = hp_y + (sh_y - hp_y) * (x - hip_x) / max(1e-6, sh_x - hip_x)
         rel = (y - mid) / dep                    # -1 the back, +1 the belly
-        if "belly" in marks and rel > 0.42:
+        if "belly" in marks and rel > 0.42 + 0.12 * math.sin(x * 0.8 + 1.0):      # a stepped edge, as a coat has
             return "pale"
         if "flank" in marks and 0.0 < rel < 0.38 and hip_x + 1 < x < sh_x + 1:
             return "dark"
         if "dorsal" in marks and rel < -0.72:
             return "dark"
-        if "saddle" in marks and rel < -0.25 and hip_x - 1 < x < sh_x:
-            return "dark"
+        if "saddle" in marks and rel < -0.22 + 0.15 * math.sin(x * 1.7) and hip_x - 1 < x < sh_x:
+            return "dark"                                  # the saddle: a grizzled band with a ragged lower edge, not a plank
         if "rump" in marks and x < hip_x + 0.6 and rel < 0.3:
             return "pale"
         if "bib" in marks and x > sh_x + 0.6 and rel > -0.2:
@@ -289,16 +300,23 @@ def quad_parts(sp, pose, k):
         return out
 
     far_parts, near_parts = [], []
+    stot = gait == "stot" and pose == "trot"
+    stot_lift = (0.0, 0.5, 2.0, 0.4)[k % 4] * s
+
+    def foot_for(ph, x, hind):
+        if stot:                               # the four together: the forefeet a little ahead, the hind a little behind
+            return (x + (-0.5 if hind else 0.8) * s * (1.0 if k in (1, 2) else 0.3), G - stot_lift)
+        return foot_at(ph, x, reach, lift, G, duty)
     if not lying:
         ff, fh, nf, nh = phases
         hj = (hip_x, hp_y + dep * 0.35)
         sj = (sh_x, sh_y + dep * 0.45)
-        hl = G - hj[1]
-        sl = G - sj[1]
-        far_parts += leg((sj[0] + 0.8 * s, sj[1]), foot_at(ff, sj[0] + 0.8 * s, reach, lift, G, duty), sl * 0.49, sl * 0.55, 1, True, 0, p["hoof"])
-        far_parts += leg((hj[0] + 0.8 * s, hj[1]), foot_at(fh, hj[0] + 0.8 * s, reach, lift, G, duty), hl * 0.48, hl * 0.57, -1, True, 0, p["hoof"])
-        near_parts += leg(hj, foot_at(nh, hj[0], reach, lift, G, duty), hl * 0.48, hl * 0.57, -1, False, 7, p["hoof"])
-        near_parts += leg(sj, foot_at(nf, sj[0], reach, lift, G, duty), sl * 0.49, sl * 0.55, 1, False, 7, p["hoof"])
+        hl = G - hj[1] + (dy if stot else 0.0)           # a stotting leg is its standing length, in the air too
+        sl = G - sj[1] + (dy if stot else 0.0)
+        far_parts += leg((sj[0] + 0.8 * s, sj[1]), foot_for(ff, sj[0] + 0.8 * s, False), sl * 0.49, sl * 0.55, 1, True, 0, p["hoof"])
+        far_parts += leg((hj[0] + 0.8 * s, hj[1]), foot_for(fh, hj[0] + 0.8 * s, True), hl * 0.48, hl * 0.57, -1, True, 0, p["hoof"])
+        near_parts += leg(hj, foot_for(nh, hj[0], True), hl * 0.48, hl * 0.57, -1, False, 7, p["hoof"])
+        near_parts += leg(sj, foot_for(nf, sj[0], False), sl * 0.49, sl * 0.55, 1, False, 7, p["hoof"])
     else:
         # Lying down: the legs folded under, a foreleg out in front.
         far_parts.append(P(capsule((hip_x - 0.5, G - 0.8), (hip_x + 3.5 * s, G - 0.6), lw, lw * 0.8), "far", 0))
@@ -330,6 +348,13 @@ def quad_parts(sp, pose, k):
         a, b = t0, (t0[0] - 1.0 * s, t0[1] + tl * 0.9)
         parts.append(P(capsule(a, b, 0.35 * s + 0.2, 0.3), "coat", 1))
         parts.append(P(ellipse(b[0], b[1] + 0.4, 0.7 * s + 0.2, 1.0 * s + 0.2), "dark", 1))
+    elif p["tail"] == "rope":
+        # a mule deer's: a narrow white rope hanging, its tip black
+        tb = (t0[0] - 0.5 * s, t0[1] + tl)
+
+        def rope_role(x, y, tb=tb):
+            return "dark" if y > tb[1] - 1.1 else "pale"
+        parts.append(P(capsule(t0, tb, 0.5 * s + 0.2, 0.42), rope_role, 1))
     elif p["tail"] == "short":
         parts.append(P(ellipse(t0[0] - 0.3, t0[1] + 0.3, 0.9 * s + 0.2, 0.6 * s + 0.3, 0.6), "pale" if "rump" in marks else "coat", 1))
     elif p["tail"] == "curl":
@@ -349,6 +374,8 @@ def quad_parts(sp, pose, k):
 
     # ---- neck and head -------------------------------------------------------------------
     nup = math.radians(p["neck_up"])
+    if pose == "trot" and p["neck_trot"] is not None:
+        nup = math.radians(p["neck_trot"])          # a canid trots with its head carried low, near the line of the back
     nl = p["neck"] * s
     base = (sh_x + 1.2 * s, sh_y - dep * 0.55)
     head_dir = 1
@@ -415,28 +442,38 @@ def ear_parts(kind, cx, cy, size, f, s, far=False):
     return []
 
 
+ANTLERS = ("antler", "forward", "forked", "caribou")      # thin branching bone: no chalk outline to fill it in
+
+
 def horn_parts(kind, cx, cy, size, f, s, front=False):
     z = size * s
     out = []
     if not kind:
         return out
     if kind == "antler":
-        beam = path([(cx, cy), (cx - f * 1.0 * z, cy - 2.2 * z), (cx - f * 1.6 * z, cy - 4.2 * z), (cx - f * 1.1 * z, cy - 5.6 * z)], 0.45, 0.3)
-        tines = union(capsule((cx - f * 0.3 * z, cy - 0.7 * z), (cx + f * 1.3 * z, cy - 1.3 * z), 0.35, 0.28),
-                      capsule((cx - f * 1.2 * z, cy - 2.6 * z), (cx + f * 0.3 * z, cy - 3.3 * z), 0.32, 0.26),
-                      capsule((cx - f * 1.5 * z, cy - 4.0 * z), (cx - f * 0.4 * z, cy - 4.9 * z), 0.3, 0.25))
+        beam = path([(cx, cy), (cx - f * 1.0 * z, cy - 2.2 * z), (cx - f * 1.6 * z, cy - 4.2 * z), (cx - f * 1.1 * z, cy - 5.6 * z)], 0.55, 0.46)
+        tines = union(capsule((cx - f * 0.3 * z, cy - 0.7 * z), (cx + f * 1.3 * z, cy - 1.3 * z), 0.5, 0.46),
+                      capsule((cx - f * 1.2 * z, cy - 2.6 * z), (cx + f * 0.3 * z, cy - 3.3 * z), 0.48, 0.46),
+                      capsule((cx - f * 1.5 * z, cy - 4.0 * z), (cx - f * 0.4 * z, cy - 4.9 * z), 0.47, 0.46))
         out.append(union(beam, tines))
     elif kind == "forward":                    # a white-tailed deer's: the beam swept forward, tines up
-        beam = path([(cx, cy), (cx - f * 0.6 * z, cy - 2.0 * z), (cx + f * 0.8 * z, cy - 3.2 * z), (cx + f * 2.4 * z, cy - 3.0 * z)], 0.4, 0.28)
-        tines = union(capsule((cx + f * 0.2 * z, cy - 2.9 * z), (cx + f * 0.1 * z, cy - 4.3 * z), 0.3, 0.24),
-                      capsule((cx + f * 1.3 * z, cy - 3.2 * z), (cx + f * 1.3 * z, cy - 4.5 * z), 0.3, 0.24))
+        beam = path([(cx, cy), (cx - f * 0.6 * z, cy - 2.0 * z), (cx + f * 0.8 * z, cy - 3.2 * z), (cx + f * 2.4 * z, cy - 3.0 * z)], 0.55, 0.46)
+        tines = union(capsule((cx + f * 0.2 * z, cy - 2.9 * z), (cx + f * 0.1 * z, cy - 4.3 * z), 0.48, 0.46),
+                      capsule((cx + f * 1.3 * z, cy - 3.2 * z), (cx + f * 1.3 * z, cy - 4.5 * z), 0.48, 0.46))
         out.append(union(beam, tines))
+    elif kind == "forked":                     # a mule deer's: the beam forks, and each fork forks again, up and back
+        a, b = (cx - f * 0.7 * z, cy - 2.1 * z), (cx - f * 1.7 * z, cy - 3.9 * z)
+        c = (cx + f * 0.5 * z, cy - 3.2 * z)
+        out.append(union(path([(cx, cy), a], 0.55, 0.5),
+                         path([a, b], 0.5, 0.47), path([a, c], 0.5, 0.47),
+                         path([b, (cx - f * 2.7 * z, cy - 4.8 * z)], 0.47, 0.46), path([b, (cx - f * 1.2 * z, cy - 5.2 * z)], 0.47, 0.46),
+                         path([c, (cx + f * 0.3 * z, cy - 4.5 * z)], 0.47, 0.46), path([c, (cx + f * 1.8 * z, cy - 4.0 * z)], 0.47, 0.46)))
     elif kind == "palm":                       # a moose's
         out.append(union(ellipse(cx - f * 1.2 * z, cy - 1.9 * z, 2.3 * z, 1.0 * z, f * -0.3),
                          capsule((cx, cy), (cx - f * 0.6 * z, cy - 1.4 * z), 0.45, 0.4)))
     elif kind == "caribou":
-        out.append(union(path([(cx, cy), (cx - f * 1.6 * z, cy - 2.6 * z), (cx - f * 1.2 * z, cy - 5.0 * z), (cx + f * 0.6 * z, cy - 5.6 * z)], 0.4, 0.28),
-                         capsule((cx + f * 0.1 * z, cy - 0.5 * z), (cx + f * 1.4 * z, cy - 1.6 * z), 0.35, 0.5)))
+        out.append(union(path([(cx, cy), (cx - f * 1.6 * z, cy - 2.6 * z), (cx - f * 1.2 * z, cy - 5.0 * z), (cx + f * 0.6 * z, cy - 5.6 * z)], 0.55, 0.46),
+                         capsule((cx + f * 0.1 * z, cy - 0.5 * z), (cx + f * 1.4 * z, cy - 1.6 * z), 0.46, 0.55)))
     elif kind == "curve":                      # an ibex's: a long scimitar back
         out.append(path([(cx, cy), (cx - f * 0.6 * z, cy - 2.4 * z), (cx - f * 2.4 * z, cy - 3.6 * z), (cx - f * 3.8 * z, cy - 2.6 * z)], 0.65 * z, 0.3))
     elif kind == "spiral":                     # a mouflon's or a bighorn's: round and forward
@@ -471,6 +508,8 @@ def head_side(p, cx, cy, s, marks, f, pose):
     head = union(skull, snout)
 
     def head_role(x, y):
+        if "forehead" in marks and y < cy - hr * 0.1 and f * (x - cx) > -hr * 0.6:
+            return "dark"                              # a mule deer's dark forehead, the face paler below it
         if "mask" in marks and abs(x - (cx + f * hr * 0.35)) < hr * 0.55 and y < cy + hr * 0.3:
             return "dark"
         if "pale_face" in marks and f * (x - cx) > -hr * 0.2:
@@ -494,8 +533,6 @@ def head_side(p, cx, cy, s, marks, f, pose):
         out.append(P(path([tip, t1, t2], sw * 0.8, sw * 0.45), "coat", 4))
     if p["tusks"]:
         out.append(P(path([(cx + f * hr * 0.9, cy + hr * 0.8), (cx + f * (hr + 1.6 * s), cy + hr * 1.6), (cx + f * (hr + 2.6 * s), cy + hr * 1.0)], 0.45 * s, 0.25), "pale", 5))
-    for hpart in horn_parts(p["horns"], cx - f * hr * 0.15, cy - hr * 0.7, p["horn"], f, s):
-        out.append(P(hpart, "dark" if p.get("horn_dark", True) else "pale", 5))
     nose = (tip[0] + f * 0.1, tip[1] - sw * 0.2)
     if not p["trunk"]:
         out.append(P(ellipse(nose[0], nose[1], max(0.5, sw * 0.55), max(0.45, sw * 0.45)), "dark", 5))
@@ -504,6 +541,9 @@ def head_side(p, cx, cy, s, marks, f, pose):
     if p["ears"] in ("point", "tuft", "round", "long", "small"):
         for e in ear_parts(p["ears"], cx + f * 0.7 * s, cy - hr * 0.6, p["ear"], f, s):
             out.append(P(e, "dark" if "earback" in marks else "coat", 5))
+    # the horns last: antlers rise over the ear, not behind it
+    for hpart in horn_parts(p["horns"], cx - f * hr * 0.15, cy - hr * 0.7, p["horn"], f, s):
+        out.append(P(hpart, "dark" if p.get("horn_dark", True) else "pale", 6, noline=p["horns"] in ANTLERS))
     return out
 
 
@@ -515,7 +555,8 @@ def head_front(p, cx, cy, s, marks):
     for f in (-1, 1):
         ex, ey = cx + f * hr * 0.85, cy - hr * 0.55
         if kind in ("point", "tuft"):
-            out.append(P(triangle((ex - 0.9 * s, ey + 0.4), (ex + 0.9 * s, ey + 0.4), (ex + f * 0.2 * s, ey - z * 1.5)), "dark" if "earback" in marks else "coat", 3))
+            bw = 0.9 * s * max(1.0, p["ear"] / 2.4)       # a big ear (a coyote's, a fennec's) has a broad base, not a spike
+            out.append(P(triangle((ex - bw, ey + 0.4), (ex + bw, ey + 0.4), (ex + f * 0.2 * s, ey - z * 1.5)), "dark" if "earback" in marks else "coat", 3))
         elif kind in ("round", "small"):
             out.append(P(ellipse(ex + f * 0.2, ey - 0.2, z * 0.5, z * 0.48), "coat", 3))
         elif kind == "long":
@@ -523,13 +564,15 @@ def head_front(p, cx, cy, s, marks):
         elif kind in ("side", "big"):
             out.append(P(ellipse(ex + f * z * 0.6, ey + 0.6 * s, z * (1.1 if kind == "big" else 0.7), z * (1.3 if kind == "big" else 0.4)), "far", 3))
         for hpart in horn_parts(p["horns"], cx + f * hr * 0.45, cy - hr * 0.75, p["horn"] * 0.85, -f, s, True):
-            out.append(P(hpart, "dark" if p.get("horn_dark", True) else "pale", 5))
+            out.append(P(hpart, "dark" if p.get("horn_dark", True) else "pale", 5, noline=p["horns"] in ANTLERS))
     long = p["face"] == "long"
     if p["ruff"]:
         out.append(P(ellipse(cx, cy + hr * 0.45, hr * (1.0 + 0.3 * p["ruff"]), hr * 0.72), "pale" if "cheeks" in marks else "coat", 3))
     skull = ellipse(cx, cy, hr * 0.95, hr * (1.15 if long else 0.95))
 
     def role(x, y):
+        if "forehead" in marks and y < cy - hr * 0.05:
+            return "dark"
         if "mask" in marks and abs(y - (cy - hr * 0.15)) < hr * 0.35:
             return "dark"
         if "pale_face" in marks:
@@ -580,7 +623,9 @@ def quad_sit(sp, pose):
                 return "coat"
             parts.append(P(path(pts, tw * 0.7, tw * 0.6), tr, 1))
     torso_h = max(dep * (2.3 if upright else 1.9), legs * (1.0 if upright else 1.2))
-    back = capsule((hx, G - dep * 0.9), (cx + (0.6 if upright else 1.6) * s, G - torso_h - dep * 0.3), dep * 0.95, dep * 0.8)
+    # a seated canid's chest is deep: the back is a thick slope, not a thin one
+    back = capsule((hx, G - dep * 0.9), (cx + (0.6 if upright else 1.6) * s, G - torso_h - dep * 0.3),
+                   dep * (0.95 if upright else 1.12), dep * (0.8 if upright else 0.98))
     haunch = ellipse(hx + 0.4 * s, G - dep * 1.05, dep * 1.3, dep * 1.15)
 
     def role(x, y):
@@ -605,7 +650,8 @@ def quad_sit(sp, pose):
     hr = p["head"] * s
     hc = (top[0] + 0.6 * s, top[1] - hr * 0.9)
     parts.append(P(capsule(top, hc, p["neck_w"] * s, p["neck_w"] * s * 0.8), "coat", 3))
-    parts += head_front(p, hc[0], hc[1], s, marks)
+    # seen from the front the head of a seated animal is the whole of its face: a little larger than the side view's skull
+    parts += head_front(dict(p, head=p["head"] * (1.0 if upright else 1.12)), hc[0], hc[1], s, marks)
     return parts, cw, ch
 
 
@@ -683,6 +729,53 @@ BIRD = dict(
 )
 
 
+# A wing seen from the side at the four points of its beat: where the tip and the wrist go from the shoulder, as
+# fractions of the wing's length R (x forward, y down). A wing seen side-on is foreshortened: raised, it is a blade
+# standing over the back; level, swept back along it.
+BEAT = ((-0.15, -0.98, 0.30, -0.52, 0.36),      # up (a blade: seen nearly edge-on, its chord narrow)
+        (-0.80, -0.22, -0.30, -0.30, 0.55),     # coming down, swept back (broad: its top surface in view)
+        (-0.30, 1.05, 0.26, 0.55, 0.40),        # down
+        (-0.72, -0.55, -0.25, -0.42, 0.50))     # lifting
+
+
+def bird_wing(sh, k, p, s, role_of, far=False):
+    """A broad wing, not an arm: the leading edge from the shoulder through the wrist to the tip, the trailing edge
+    back to the body, the flight feathers spread as fingers at the tip (a goose's, a hawk's, a parrot's)."""
+    R = p["wing_span"] * s * 0.42
+    R = min(R, (sh[1] - 1.5) / 1.13, (H - 2.0 - sh[1]) / 1.2)      # the beat, and its outline, stay in the picture: a condor's too
+    R *= 0.88 if far else 1.0
+    tx, ty, wx, wy, cf = BEAT[k % 4]
+    off = 1.3 if far else 0.0
+    tip = (sh[0] + tx * R + off, sh[1] + ty * R)
+    wrist = (sh[0] + wx * R + off * 0.5, sh[1] + wy * R)
+    vx, vy = tip[0] - sh[0], tip[1] - sh[1]
+    L = math.hypot(vx, vy) or 1.0
+    nx, ny = -vy / L, vx / L
+    if nx > 0:
+        nx, ny = -nx, -ny                          # the trailing side: toward the tail
+    ch = max(1.8, cf * R)
+    pts = [sh, wrist, tip,
+           (tip[0] - vx * 0.16 + nx * 0.3 * ch, tip[1] - vy * 0.16 + ny * 0.3 * ch),
+           (sh[0] + vx * 0.52 + nx * ch, sh[1] + vy * 0.52 + ny * ch),
+           (sh[0] + vx * 0.18 + nx * ch * 0.9, sh[1] + vy * 0.18 + ny * ch * 0.9),
+           (sh[0] + nx * ch * 0.45 - 1.4, sh[1] + ny * ch * 0.45)]
+    fingers = []
+    nf = 3 if R > 5 else 2
+    for n in range(nf):
+        bx, by = tip[0] - vx * 0.1 + nx * (0.3 + 0.8 * n), tip[1] - vy * 0.1 + ny * (0.3 + 0.8 * n)
+        fa = (vx / L + nx * 0.18 * (n - 0.8), vy / L + ny * 0.18 * (n - 0.8))
+        fl = max(1.2, 0.25 * R - 0.2 * n)
+        fingers.append(capsule((bx, by), (bx + fa[0] * fl, by + fa[1] * fl), 0.5, 0.32))
+    shape = union(poly(pts), *fingers)
+
+    def role(x, y):
+        if far:
+            return "far"
+        u = ((x - sh[0]) * vx + (y - sh[1]) * vy) / (L * L)
+        return role_of(u)
+    return P(shape, role, 0 if far else 6)
+
+
 def bird_draw(sp, pose, k):
     p = dict(BIRD)
     p.update(sp.get("p", {}))
@@ -699,7 +792,10 @@ def bird_draw(sp, pose, k):
     bcx = 19.0
     bcy = G - legs - bd * 0.8
     if flying:
-        bcy = G - legs - bd - 3.0 * s
+        bcy = 12.4 + bd * 0.4          # the shoulder at the picture's middle: the wing has as much room up as down
+        # a long neck and bill (a goose's, a pelican's) in flight: the whole bird a little to the left, its bill in the picture
+        right = bcx + bl * 0.7 + 0.86 * p["neck"] * s + p["head"] * s + p["bill_len"] * s + 1.0
+        bcx -= max(0.0, right - (W - 1.5))
     parts = []
     tail_dir = math.radians(180 + p["tail_drop"]) if not flying else math.radians(180 + 5)
     rear = (bcx - math.cos(tilt) * bl * 0.8, bcy + math.sin(tilt) * bl * 0.8)
@@ -722,10 +818,7 @@ def bird_draw(sp, pose, k):
     # the far wing, flying
     sh = (bcx + 0.6 * s, bcy - bd * 0.4)
     if flying:
-        a = [1.15, 0.25, -0.75, 0.25][k]
-        span = p["wing_span"] * s
-        tipw = (sh[0] - span * 0.35 * math.cos(a) - 1.0, sh[1] - span * 0.55 * math.sin(a))
-        parts.append(P(path([sh, ((sh[0] + tipw[0]) / 2 + 0.6, (sh[1] + tipw[1]) / 2), tipw], bd * 0.5, 0.4), "far", 0))
+        parts.append(bird_wing(sh, k, p, s, None, far=True))
     body = ellipse(bcx, bcy, bl, bd, -tilt)
 
     def body_role(x, y):
@@ -755,11 +848,11 @@ def bird_draw(sp, pose, k):
         wing = ellipse(bcx - bl * 0.18, bcy - bd * 0.05, bl * 0.75, bd * 0.62, -tilt)
         parts.append(P(wing, lambda x, y: "dark" if ("wing" in darks or ("primaries" in darks and x < bcx - bl * 0.45)) else ("pale" if "wing" in pale else "coat"), 3))
     else:
-        a = [1.15, 0.25, -0.75, 0.25][k]
-        span = p["wing_span"] * s
-        tipw = (sh[0] - span * 0.3 * math.cos(a) + 1.0, sh[1] - span * 0.62 * math.sin(a))
-        parts.append(P(path([sh, ((sh[0] + tipw[0]) / 2, (sh[1] + tipw[1]) / 2 - 0.4), tipw], bd * 0.7, 0.45),
-                       lambda x, y: "dark" if ("wing" in darks or "primaries" in darks) and math.hypot(x - sh[0], y - sh[1]) > p["wing_span"] * s * 0.35 else ("pale" if "wing" in pale else "coat"), 6))
+        def wing_role(u):
+            if u > 0.6 and ("wing" in darks or "primaries" in darks):
+                return "dark"                       # the flight feathers, darker than the coverts
+            return "pale" if "wing" in pale else "coat"
+        parts.append(bird_wing(sh, k, p, s, wing_role))
     # neck and head
     nup = math.radians(p["neck_up"])
     front = (bcx + math.cos(tilt) * bl * 0.7, bcy - math.sin(tilt) * bl * 0.7)
@@ -774,6 +867,7 @@ def bird_draw(sp, pose, k):
         nl *= 0.4
     if flying:
         nup = math.radians(10)
+        nl *= 0.86                           # stretched forward, but not off the picture (a goose's, a pelican's)
     hc = (front[0] + math.cos(nup) * nl, front[1] - math.sin(nup) * nl)
     if f < 0:
         hc = (front[0] - 0.6 * s, front[1] - nl * 0.8 - 0.4)
@@ -809,7 +903,9 @@ def bird_draw(sp, pose, k):
     br = p["bill_role"]
     bx = hc[0] + f * hr * 0.85
     if look:
-        parts.append(P(triangle((hc[0] - 0.6, hc[1] + 0.1), (hc[0] + 0.6, hc[1] + 0.1), (hc[0], hc[1] + 0.5 + min(bl_, 2.2) * 0.6)), br, 7))
+        # the bill head on: a wedge, as broad as the bill is (a goose's, a duck's, a parrot's), a point for a finch's
+        bw = 0.6 if p["bill"] not in ("flat", "heavy", "parrot") else max(0.9, hr * 0.3)
+        parts.append(P(triangle((hc[0] - bw, hc[1] + 0.1), (hc[0] + bw, hc[1] + 0.1), (hc[0], hc[1] + 0.5 + min(bl_, 2.2) * 0.6)), br, 7))
         for g in (-1, 1):
             parts.append(P(ellipse(hc[0] + g * hr * 0.45, hc[1] - hr * 0.15, 0.45, 0.42), "eye", 7))
     else:

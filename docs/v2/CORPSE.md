@@ -36,6 +36,10 @@ idea of ritual and using the animals to generate games".
   - American bison — faces into the blizzard: stops are offered from later to
     earlier years (it walks back along where works came from); each stop
     leaves a wallow, a small depression in the ground, drawn in that city.
+  - starling murmuration — each bird follows its nearest neighbours, not every
+    bird within some distance (Ballerini et al. 2008), so a turn runs through
+    the flock as a wave: the next stops are offered among the cities nearest
+    the last (the "next door" ones, or within 700 km), nearest first.
   - red deer — the antler cycle by the real month: in rut (Sep–Nov) it goes
     where the crowds are; hard antlers (Dec–Mar) near ground; cast (Apr) a
     short leg; velvet (May–Aug) each stop a little further. Its picture in the

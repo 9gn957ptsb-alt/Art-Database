@@ -27,15 +27,35 @@ W, H = 40, 26
 GROUND = 24.6
 CELL = 2
 
-COAT = strokes("dRrg")
-WOOL = strokes("kkKd", width=2.0, swing=1.3)
+COAT = strokes("dRrg", angle=1.5, width=2.6, swing=1.0)           # the summer coat: broad strokes leaning forward
+WOOL = strokes("kkKd", angle=1.85, width=2.0, swing=1.3)            # the wool: leaning back, narrower, darker
 FAR = strokes("kK")
 FAR_COAT = strokes("dR")
+FACE_WOOL = strokes("dKdR", angle=1.75, width=2.2, swing=0.5)      # the face: dark umber-brown, warmer than the chest's wool
+MOP_WOOL = strokes("RdRr", angle=2.1, width=1.8, swing=1.0)        # the mop over the brow: the lighter wool
+
+
+def hind_paint(x, y, light, i, j):
+    """The summer coat of the hindquarters, darkening into the wool of the shoulders along a ragged diagonal
+    behind the hump, not at a straight edge: a bison's cape fades back along its back."""
+    edge = 18.6 - 0.5 * (y - 12.0) + 1.0 * math.sin(y * 1.9 + 0.7)
+    if x > edge:
+        return WOOL(x, y, light, i, j)
+    if x > edge - 2.4:
+        return COAT(x, y, light - 0.24, i, j)
+    return COAT(x, y, light, i, j)
 
 
 def leg(joint, foot, l1, l2, bend, r0, r1, paint, group, chaps=False):
     knee = two_bone(joint, foot, l1, l2, bend)
-    sdf = union(capsule(joint, knee, r0 * (1.25 if chaps else 1), (r0 + r1) / 2 * (1.2 if chaps else 1)),
+    if chaps:
+        # the shaggy wool of a foreleg to the knee, ragged at its lower edge, and the thin dark leg below it
+        upper = shaggy(capsule(joint, knee, r0 * 1.35, r0 * 1.2), 0.45, 1.9, 2.0)
+        lower = capsule(knee, foot, (r0 + r1) / 2 * 0.72, r1 * 0.9)
+        hoof = ellipse(foot[0] + 0.4, foot[1] - 0.2, 0.9, 0.6)
+        return [Part(upper, paint, group), Part(lower, lambda x, y, l, i, j: "K" if l < 0.6 else "d", group + 0.2),
+                Part(hoof, lambda *a: "k", group + 0.2)]
+    sdf = union(capsule(joint, knee, r0, (r0 + r1) / 2),
                 capsule(knee, foot, (r0 + r1) / 2 * 0.75, r1))
     hoof = ellipse(foot[0] + 0.4, foot[1] - 0.2, 0.9, 0.6)
     return [Part(sdf, paint, group), Part(hoof, lambda *a: "k", group)]
@@ -61,11 +81,12 @@ def body(dy=0.0, tail=0.0):
     tl = [(7.2, 12.4 + dy), (6.4, 14.6 + dy + tail), (6.2, 17.6 + dy + tail)]
     parts.append(Part(path(tl, 0.5, 0.4), lambda *a: "K", 1))
     parts.append(Part(ellipse(6.2, 18.2 + dy + tail, 0.9, 1.3), lambda *a: "k", 1))
-    hind = union(ellipse(12.2, 15.0 + dy, 5.0, 3.7), ellipse(18.0, 15.0 + dy, 6.4, 4.4))
-    parts.append(Part(hind, COAT, 2))
-    # The wool: the hump, the shoulders and chest, down to the forelegs.
+    # the hindquarters: lower and slimmer than the shoulders, as a bison's are (the back slopes from the hump)
+    hind = union(ellipse(12.0, 15.4 + dy, 4.8, 3.5), ellipse(18.0, 15.2 + dy, 6.2, 4.2))
+    parts.append(Part(hind, hind_paint, 3))
+    # The wool: the hump, the shoulders and chest, down to the forelegs, its edge ragged.
     front = union(ellipse(24.2, 11.4 + dy, 6.2, 6.9, -0.25), ellipse(27.4, 15.8 + dy, 4.6, 5.0))
-    parts.append(Part(front, WOOL, 3))
+    parts.append(Part(shaggy(front, 0.42, 1.6, 3.0), WOOL, 3))
     return parts
 
 
@@ -73,36 +94,43 @@ def head_side(cx, cy, down=0.0, ear=0.0, blink=False):
     """The head side on, low, the beard under it; `down` lowers it to graze;
     `ear` flicks the ear up; `blink` closes the eye."""
     cy += down
-    skull = union(ellipse(cx, cy, 3.6, 3.8, 0.4), ellipse(cx + 2.4, cy + 2.8, 2.1, 1.8))
-    beard = triangle((cx - 1.6, cy + 2.0), (cx + 2.2, cy + 2.6), (cx - 0.4, cy + 6.2))
-    horn = path([(cx - 0.6, cy - 2.6), (cx - 0.2, cy - 4.4), (cx + 1.0, cy - 5.0)], 0.6, 0.3)
+    skull = union(ellipse(cx, cy, 3.8, 3.9, 0.4), ellipse(cx + 2.6, cy + 2.8, 2.2, 1.9))
+    # the beard hangs black and ragged; the mop over the brow is the lighter wool, a mound of it between the horns
+    beard = shaggy(triangle((cx - 1.8, cy + 2.0), (cx + 2.4, cy + 2.8), (cx - 0.6, cy + 6.8)), 0.35, 2.2, 0.4)
+    mop = shaggy(ellipse(cx + 0.4, cy - 2.8, 2.7, 1.7, -0.25), 0.38, 2.0, 2.0)
+    # the horn: short, black at the base, curving up and in, its tip pale
+    horn = path([(cx - 1.2, cy - 2.2), (cx - 2.0, cy - 4.2), (cx - 0.8, cy - 5.8), (cx + 1.2, cy - 6.0)], 0.85, 0.3)
 
     def paint(x, y, light, i, j):
-        if math.hypot(x - (cx + 3.8), y - (cy + 2.6)) < 0.9:
+        if math.hypot(x - (cx + 4.0), y - (cy + 2.6)) < 1.05:
             return "W"                       # the muzzle, pale
-        return WOOL(x, y, light, i, j)
-    parts = [Part(beard, WOOL, 4), Part(skull, paint, 5), Part(horn, lambda x, y, l, i, j: "w" if l > 0.7 else "k", 6)]
+        return FACE_WOOL(x, y, light, i, j)
+    parts = [Part(beard, FAR, 4), Part(skull, paint, 5), Part(mop, MOP_WOOL, 6),
+             Part(horn, lambda x, y, l, i, j: "w" if math.hypot(x - (cx + 1.2), y - (cy - 6.0)) < 1.6 else "K", 7)]
     if ear:
-        parts.append(Part(ellipse(cx - 2.2, cy - 1.4 - ear, 1.0, 0.6, -0.5), WOOL, 6))
-    parts.append(Part(ellipse(cx + 1.0, cy + 0.2, 0.55, 0.45 if not blink else 0.2), (lambda *a: "y") if not blink else (lambda *a: "k"), 7))
+        parts.append(Part(ellipse(cx - 2.4, cy - 1.4 - ear, 1.0, 0.6, -0.5), WOOL, 6))
+    # the eye: one cell, on a cell's middle so it is whole
+    ex, ey = math.floor(cx + 1.2) + 0.5, math.floor(cy + 0.3) + 0.5
+    parts.append(Part(ellipse(ex, ey, 0.62, 0.6 if not blink else 0.25), (lambda *a: "y") if not blink else (lambda *a: "k"), 8))
     return parts
 
 
 def head_front(cx, cy):
-    skull = ellipse(cx, cy, 3.4, 3.8)
-    beard = triangle((cx - 2.0, cy + 2.0), (cx + 2.0, cy + 2.0), (cx, cy + 6.6))
-    horns = union(path([(cx - 2.8, cy - 1.8), (cx - 4.4, cy - 2.6), (cx - 4.2, cy - 4.6)], 0.6, 0.3),
-                  path([(cx + 2.8, cy - 1.8), (cx + 4.4, cy - 2.6), (cx + 4.2, cy - 4.6)], 0.6, 0.3))
+    skull = ellipse(cx, cy, 3.6, 3.9)
+    beard = shaggy(triangle((cx - 2.2, cy + 2.0), (cx + 2.2, cy + 2.0), (cx, cy + 7.0)), 0.35, 2.2, 0.4)
+    mop = shaggy(ellipse(cx, cy - 2.6, 3.4, 1.9), 0.4, 2.0, 2.0)
+    horns = union(path([(cx - 3.0, cy - 1.8), (cx - 4.8, cy - 2.6), (cx - 4.6, cy - 5.0)], 0.8, 0.3),
+                  path([(cx + 3.0, cy - 1.8), (cx + 4.8, cy - 2.6), (cx + 4.6, cy - 5.0)], 0.8, 0.3))
     eyes = union(ellipse(cx - 1.6, cy - 0.2, 0.5, 0.45), ellipse(cx + 1.6, cy - 0.2, 0.5, 0.45))
-    muzzle = ellipse(cx, cy + 2.4, 1.4, 1.0)
-    return [Part(horns, lambda x, y, l, i, j: "w" if l > 0.7 else "k", 4), Part(beard, WOOL, 4),
-            Part(skull, WOOL, 5), Part(muzzle, lambda *a: "W", 6), Part(eyes, lambda *a: "y", 7)]
+    muzzle = ellipse(cx, cy + 2.6, 1.6, 1.15)
+    return [Part(horns, lambda x, y, l, i, j: "w" if (y < cy - 3.6 or l > 0.8) else "K", 4), Part(beard, FAR, 4),
+            Part(skull, FACE_WOOL, 5), Part(mop, MOP_WOOL, 6), Part(muzzle, lambda *a: "W", 6), Part(eyes, lambda *a: "y", 7)]
 
 
 def walk_parts(p, up=None, nod=0.0):
     up = (p in (0.25, 0.75)) if up is None else up
     dy = -0.4 if up else 0.0
-    far, near = legs((p + 0.75, p + 0.5, p + 0.25, p), dy)
+    far, near = legs((p + 0.75, p + 0.5, p + 0.25, p), dy, reach=3.0, lift=2.2)
     return far + body(dy, tail=0.3 if up else 0.0) + head_side(32.8, 17.0 + dy + nod) + near
 
 
