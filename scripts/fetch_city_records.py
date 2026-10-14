@@ -689,9 +689,13 @@ def main():
         if years is None:
             print(f"  · {name} · {p['slug']}: nothing in its square", flush=True)
             continue
-        if p["slug"] in kept and p["slug"] not in done:
-            old = json.loads((OUT / (p["slug"] + ".json")).read_text(encoding="utf-8"))
-            done[p["slug"]] = {**old, "read": stamp, "cells": dict(old.get("cells", {}))}
+        old_path = OUT / (p["slug"] + ".json")
+        if p["slug"] in kept and p["slug"] not in done and old_path.exists():
+            old = json.loads(old_path.read_text(encoding="utf-8"))
+            # A record read for another grid is not built on: its cell numbers are another ground's (14 Oct 2026:
+            # Brussels, cut finer, had its new cells laid among its old 144-a-side ones under n = 144).
+            if old.get("n") == g["n"]:
+                done[p["slug"]] = {**old, "read": stamp, "cells": dict(old.get("cells", {}))}
         rec = done.setdefault(p["slug"], {"sources": [], "licence": [], "read": stamp, "floor": None,
                                           "n": g["n"], "side": g["side"], "cells": {}})
         took = 0
