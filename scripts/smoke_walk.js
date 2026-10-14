@@ -65,7 +65,9 @@ async function session(browser, size, jpg) {
     if (/net::|ERR_|Failed to load resource/.test(t)) { return; }
     errors.push("console: " + t);
   });
-  await page.route(/d32dm0rphc51dk\.cloudfront\.net|nasa\.gov/, r => r.fulfill({ status: 200, contentType: "image/jpeg", body: jpg }));
+  // As Artsy's store answers (access-control-allow-origin: *, 14 Oct 2026), so the works are drawn sharp by WebGL.
+  await page.route(/d32dm0rphc51dk\.cloudfront\.net|nasa\.gov/, r => r.fulfill({ status: 200, contentType: "image/jpeg", body: jpg,
+    headers: { "access-control-allow-origin": "*" } }));
   await page.route(/metmuseum|artic\.edu|clevelandart|smk\.dk|wikidata|wikimedia|fonts\.(googleapis|gstatic)/, r => r.abort());
   await page.goto("http://localhost:" + PORT + "/v2/", { waitUntil: "load" });
   await page.waitForFunction(() => document.getElementById("land").dataset.at === "globe", null, { timeout: 60000 });
@@ -144,7 +146,7 @@ async function one(s, slug, size) {
     r.moved = Math.hypot(c.x - a.x, c.y - a.y);
   }
   const st = await page.evaluate(() => Walk.stats());
-  r.frames = st.frames; r.dot = st.dot; r.res = st.w + "x" + st.h;
+  r.frames = st.frames; r.dot = st.dot; r.res = st.w + "x" + st.h; r.sharp = st.sharp; r.q = st.q;
   r.mean = +st.mean.toFixed(1); r.p95 = +st.p95.toFixed(1);
   r.shell = await page.evaluate(() => !!(Walk.world() && Walk.world().shell));
   r.under = await page.evaluate(() => document.getElementById("banner-under").textContent);

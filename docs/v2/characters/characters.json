@@ -15,29 +15,30 @@
       "artist": "Cy Twombly",
       "native": {"key": null, "where": "Lexington, Virginia", "ll": [37.784, -79.4428], "why": "Cy Twombly was born in Lexington, Virginia (Wikidata P19, characters/homes.json); red foxes live throughout Virginia.", "source": "Lexington is DIRT's Temperate Broadleaf & Mixed Forests, Nearctic, whose grammar gives black bears and coyotes as its hunters, not the red fox (a Palearctic hunter of biome 4 there); the red fox's range covers most of North America, though whether the eastern foxes are native or descend from colonial introductions was long argued (Kamler, J. F. & Ballard, W. B. (2002). A review of native and nonnative red foxes in North America. Wildlife Society Bulletin 30(2): 370-379)."},
       "after": {
-        "why": "DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its coat is in the ochres and rusts of Some Trees of Italy (Title Print), its white in his papers, its black in the Mushrooms' graphite and its outline in their pale grey, a chalk line, as he wrote on his blackboards, so it reads on the city's dark ground; the line it leaves is his writing, in the pale greens of Roman Notes II (light enough to read on the dark ground), a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses).",
+        "why": "The artist drew its look himself (14 Oct 2026: \"Here is an improved graphic for the fox that represents Cy Twombly\"): a pixel fox, three-quarter, on a dark ground with Twombly's chalk loops, crayon dashes in red and cream, and lavender squares. The graphic is the fox: its inks are measured off it (the coat's four oranges, the cream lit and in shade, the plum-brown of its legs and ears, the amber of its eye, the warm grey it shades its cream with), and the other poses the page reads were made as edits of it so all stay in register (scripts/characters/trace_fox.py). DIRT's ground is drawn after Twombly first (dirt/README.md), and no artist on the roster is nearer a fox among plants: his Natural History portfolios (Mushrooms, 1974; Some Trees of Italy, 1976) are botanical plates. Its outline is a chalk line, as he wrote on his blackboards, so it reads on the city's dark ground; the line it leaves is his writing, in the graphic's own chalk, a pale lilac-grey and a cream, a looping pen leaning right, two lines in two inks, lifting between phrases; pressed, it is boxed in red, as he boxed his plates, in the red of Untitled (Roses) and of the graphic's crayon.",
         "inks": {
-          "coat": ["#9a5426", "#be752f", "#cf8f46", "#e2ae67"],
-          "white": ["#d9cbbd", "#f0ece2"],
-          "black": ["#201e15", "#4a4446"],
-          "eye": "#e2ae67",
-          "pen": ["#8e8a89", "#7a4a2a"],
-          "writing": ["#99ae9e", "#859d95"],
+          "coat": ["#8b3525", "#b64626", "#d0652b", "#e18238"],
+          "white": ["#dcae82", "#efd0b0"],
+          "black": ["#3b2025", "#5a2e2c"],
+          "eye": "#e8a030",
+          "pen": ["#8d7a7c", "#4a2a2c"],
+          "writing": ["#a99aa6", "#ddbfa3"],
           "box": "#a72720"
         },
         "works": ["Natural History Part II: Some Trees of Italy (Title Print)", "Natural History Part I, Mushrooms", "Roman Notes II", "Untitled (Roses)"]
       },
-      "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back over its shoulder), look (turned to you), sit",
+      "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back over its shoulder), look (turned to you: the artist's own graphic), sit — each drawn fine, one CSS pixel a cell, 112 by 90 cells",
       "added": "2026-10-01",
       "refined": "2026-10-14",
-      "passes": 2,
-      "notes": "Side on, 40 by 26 cells, two CSS pixels a cell. Guessed still: the trot's knee and hock angles are a two-bone reach, not traced from film; the sitting brush hardly shows round the feet; the turned-back head reads at its size but only just.",
+      "passes": 3,
+      "notes": "Traced from the artist's graphic and its edits (scripts/characters/trace_fox.py, fox_fine.json), 112 by 90 cells, one CSS pixel a cell: the graphic is its look, the other poses were made as edits of it with OpenAI's gpt-image-2.5 (kept outside the repository, as the chimera's are) and traced down, the inks measured off the graphic, the eyes set by hand. The whole fox has only the five poses the page asks for (its pounce, toss and gekkering are the chimera's parts, still drawn by fox.py's rig, in the new inks). Guessed still: which diagonal of the trot is which (the model draws the gait but its near and far legs are only a shade apart); the trot's four frames are four drawings, so the fur's patches move a little from frame to frame.",
       "log": [
         "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)",
         "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it",
-        "2026-10-14 second pass, three rounds against the real fox and Twombly's hand: the brush no longer a bar of the body's own thickness (narrow where it leaves the rump, fullest past its middle, tapering to the white point), the belly tucked up behind the ribs (the chest its deepest part), and the eye, which had vanished (its amber is the coat's light step), set in a black rim lined on toward the muzzle. Chimera: the fox's three parts checked as head, body and hindquarters beside the deer, squirrel, bison and eagle: the folds still agree"
+        "2026-10-14 second pass, three rounds against the real fox and Twombly's hand: the brush no longer a bar of the body's own thickness (narrow where it leaves the rump, fullest past its middle, tapering to the white point), the belly tucked up behind the ribs (the chest its deepest part), and the eye, which had vanished (its amber is the coat's light step), set in a black rim lined on toward the muzzle. Chimera: the fox's three parts checked as head, body and hindquarters beside the deer, squirrel, bison and eagle: the folds still agree",
+        "2026-10-14 redrawn from the artist's own graphic (a pixel fox on a dark ground with Twombly's chalk loops, red and cream crayon and lavender squares): the page's fox is now its trace, 112 by 90 cells at one CSS pixel (it was 40 by 26 at two), in the graphic's inks; the trot, the stand, the look back and the sit are edits of it traced the same way; the writing it leaves is the graphic's chalk (pale lilac-grey and cream, not Roman Notes' greens); its trot at 6 frames a second, so a stride of about 20 pixels matches the 58 a second it covers"
       ],
-      "moves": {"speed": 1, "fps": 8, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"},
+      "moves": {"speed": 1, "fps": 6, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"},
       "chimera": {"head": "Listening", "body": "Russet", "hind": "That Writes as It Goes", "gaze": "cocked, listening", "carriage": "low and level", "pace": "a trot"},
       "ethogram": [
         {"name": "mousing pounce", "role": "instinct", "pose": "act", "what": "It stands still with its head cocked, listening for a vole under snow or soil, then leaps in a high arc and comes down nose first. Pounces made facing north-east are far more often successful, which suggests foxes use the Earth's magnetic field to judge the distance.", "source": "Červený, J., Begall, S., Koubek, P., Nováková, P. & Burda, H. (2011). Directional preference may enhance hunting accuracy in foraging foxes. Biology Letters 7(3), 355–357.", "said": "the fox listened, then dived nose first into the ground here"},

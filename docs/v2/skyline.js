@@ -1697,6 +1697,8 @@
       return;
     }
     if (!city) { return; }
+    // Come down into from the world (land.js, descent): made ready while it is still far off, not yet shown.
+    if (st.prep) { if (on_) { off(); } return; }
     // On.
     if (!on_) {
       make();
@@ -1841,6 +1843,17 @@
   window.Skyline = {
     on: function () { return on_; },
     key: function (k) { return keyed(k); },
+    // A city being come down into from the world (land.js, descent): its ground and its museums read now,
+    // so its skyline is made by the time it is near.
+    prefetch: function (key) {
+      return lists().then(function () {
+        var P = places && places[key];
+        if (!P) { return; }
+        once("grounds/city-" + key + ".json");
+        (P.museums || []).forEach(function (s) { once("models/" + s + ".json"); });
+        if (!livesRows) { once("lives.json"); }
+      });
+    },
     // land.js's two fingers when one is off the skyline (on the dial): the skyline's own pinch, by spread.
     pinch: function (d, mx, my) {
       if (!city || !on_ || leaving) { return false; }

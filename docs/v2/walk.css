@@ -18,7 +18,7 @@
 }
 .walk > * { pointer-events: auto; }
 
-/* The walk itself: a dot is three or four screen pixels, kept square. */
+/* The walk itself: a dot is two CSS pixels, kept square. */
 .walk-box {
   position: absolute;
   inset: 0;
@@ -41,6 +41,18 @@
 }
 .walk-plan:active,
 .walk-view:active { cursor: grabbing; }
+/* Over the room's dots, the halo's rings (a CSS pixel, the screen's own pixels), each a pixel kept
+   square, then the works drawn sharp: none takes a press, which goes to the view under them. */
+.walk-fine,
+.walk-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+.walk-fine { image-rendering: pixelated; image-rendering: crisp-edges; }
+.walk-fine[hidden] { display: none; }
 .walk-view:focus-visible { outline: 2px solid rgba(94, 82, 199, 0.9); outline-offset: -2px; }
 /* The plan lies over the building's own box, so its roof comes off in place. */
 .walk-plan { z-index: 2; }
@@ -222,7 +234,7 @@
 .walk-here .walk-l-t { font-size: var(--t-3); }
 
 /* The look: the work large over the walk, which is washed behind it. */
-.walk[data-level="look"] .walk-view { filter: brightness(0.5) blur(2px); }
+.walk[data-level="look"] .walk-box { filter: brightness(0.5) blur(2px); }
 .walk-look {
   position: absolute;
   inset: 0;

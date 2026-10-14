@@ -12,7 +12,9 @@ Letters: d R r g the coat, deepest to lightest; W w the white; k K the black
 (K the lit side of it); y the eye; o p the outline, dark and light.
 """
 
+import json
 import math
+import os
 
 from draw import Part, capsule, ellipse, limb, path, ramp, raster, triangle, turned, two_bone, union
 
@@ -345,3 +347,22 @@ def rig(pose, k=0, slot="body"):
     if pose == "rest":
         return lie_parts()
     return stand_parts("up", tail_lift=1.4), 0.0
+
+
+# ---- the fox drawn fine, after the artist's own graphic -------------------------
+
+FINE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fox_fine.json")
+
+
+def fine_sprite():
+    """The fox the page draws: traced from the artist's graphic and its edits (trace_fox.py), one CSS pixel a cell —
+    a trot in four frames, a stand, a look back, a look at you, a sit. None where fox_fine.json is not there, and
+    the whole animal is then the procedural one above. (Its ethogram poses, the pounce, the toss and the gekkering,
+    are drawn only as the chimera's parts, rig(): the page never asks the whole fox for them.)"""
+    if not os.path.exists(FINE):
+        return None
+    d = json.load(open(FINE))
+    pose = lambda n: list(d["poses"][n])
+    return {"w": d["w"], "h": d["h"], "cell": d["cell"], "foot": d["foot"],
+            "poses": {"trot": [pose("trot%d" % k) for k in range(4)], "stand": [pose("stand")], "back": [pose("back")],
+                      "look": [pose("look")], "sit": [pose("sit")]}}

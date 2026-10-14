@@ -347,9 +347,15 @@ def main():
     (OUT / "parts").mkdir(exist_ok=True)
     for c in cast["cast"]:
         mod = importlib.import_module(c["id"])
-        poses = mod.poses()
-        sprite = {"id": c["id"], "w": mod.W, "h": mod.H, "cell": mod.CELL,
-                  "foot": [mod.W // 2, int(mod.GROUND)], "poses": poses}
+        fine = mod.fine_sprite() if hasattr(mod, "fine_sprite") else None
+        if fine:
+            # drawn fine from the artist's own graphic (scripts/characters/trace_fox.py): its own grid and cell
+            poses = fine["poses"]
+            sprite = dict({"id": c["id"]}, **fine)
+        else:
+            poses = mod.poses()
+            sprite = {"id": c["id"], "w": mod.W, "h": mod.H, "cell": mod.CELL,
+                      "foot": [mod.W // 2, int(mod.GROUND)], "poses": poses}
         if hasattr(mod, "seasons"):
             sprite["seasons"] = mod.seasons()        # the stag's antlers by month
         n = dump(OUT / (c["id"] + ".json"), sprite)
