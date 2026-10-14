@@ -20,16 +20,30 @@ as `worlds/#paris-fr` goes straight into a city.
 
 ## How it plays
 
+Worlds is about finding the way off each world and on to the next, made of what each world
+really is (`escape.js`). Wagers are how you win the ground and the marks the way off needs.
+
 - **Choose your ground.** Pick any country on Earth. Three houses rise elsewhere.
-- **Everything is a wager.** Stake marks from your treasury on a territory that borders
-  yours. You win with the chance *stake ÷ (stake + garrison)*. A win takes it, and 60% of
-  the stake stays as its garrison. A loss spends the stake, and 30% of it goes to the
-  defender.
-- **No boundary between worlds.** Every territory also borders the ground of the other world
-  that lies under it. France lies over Acidalia Planitia, Lunae Planum and Arabia Terra.
-  Mars starts unclaimed: no one lives there, so it is cheap to take and yields little.
-- **Each turn** every house is paid 10 plus the yield of all it holds. A house holding two
-  fifths of all the yield, on every world together, wins.
+- **Everything is taken by a wager.** Stake marks on a territory that borders yours; you win
+  with the chance *stake ÷ (stake + garrison)*. A win takes it and 60% of the stake stays as
+  its garrison; a loss spends the stake, 30% of it to the defender. Each month every house is
+  paid 10 plus the yield of all it holds.
+- **The way off the Earth.** Hold the country of a real launch site (Kourou, Alcântara,
+  Sriharikota, Wenchang, Cape Canaveral, Baikonur…): the nearer the equator, the more the
+  Earth's spin gives (0.465 km/s × cos latitude). Wait for the window: a 259-day Hohmann
+  transfer needs Mars about 44° ahead of the Earth, which comes round every 26 months (a turn
+  is a month, and the solar system moves with it). Pay for the propellant by the rocket
+  equation (9.4 km/s to orbit with gravity and drag losses, 3.6 to Mars, 0.6 to land; a
+  20-tonne payload): kerosene is cheap but heavy, hydrogen light but dear, methane between.
+- **The way off Mars.** Come down anywhere no one holds. Mars has no one to buy from: hold its
+  ice (the caps 8 t a month, Vastitas Borealis 5, the buried ice of Utopia and Arcadia 3) and
+  ground near the equator for the sun that powers the plant, through the dust storms of its
+  southern summer. Lift off (4.1 km/s to orbit, less from the high volcanoes, 2.3 more home)
+  when the Earth is about 75° behind Mars.
+- **No boundary between worlds, once found.** A house crosses to a world only after it has
+  made the journey there; then every territory borders the ground of the other world beneath
+  it. Home again, you have found the way between worlds. A house holding two fifths of all the
+  yield also wins.
 
 The game is saved in the browser (`localStorage`). There is no account and no real money.
 
@@ -48,6 +62,7 @@ look is read from `../v2/earth-dirt/`, so the page needs the site beside it.
 | `../v2/earth-body.js` | The Earth: the Artist Website's own body of the globe, lit by the real sun. Worlds sets `EarthBody.base` to `"../v2/"` so it finds its files. |
 | `body.js` | Mars and the other planets, drawn the same way in WebGL 2 (crisp cells, light from the sun, thin air at the limb), plus the territories laid over any world, the Earth included: a wash of the holder's colour and a one-pixel hairline where territories meet. |
 | `street.js` | A city at street level, in WebGL 2: the site's ground for it, its museums' models (via `../v2/models.js`), the real sun, collision with walls and water. |
+| `escape.js` | The way off each world: launch sites, windows, the rocket equation, Mars's ice and sun, the journeys. |
 | `game.js` | The rules and the other houses' play. It does not touch the page. |
 | `app.js` | The scene: the solar system, the way down to a world and back, the card, the names, input. |
 | `earth/`, `mars/` | Each world's board: `land.png` (its territories), `territories.json`, and Mars's `body.png` (its look). |

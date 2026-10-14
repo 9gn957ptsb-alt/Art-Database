@@ -49,7 +49,8 @@
   var sys = { az: -0.35, elev: 0.5, scale: 1 };
   var AIR = { mars: [0.80, 0.62, 0.46, 0.035], venus: [0.95, 0.88, 0.72, 0.06] };
 
-  function days() { return Date.now() / 86400000 - 10957.5; }
+  // The solar system stands at the game's own date: a turn is a month.
+  function days() { return game && game.s.day ? game.s.day : Date.now() / 86400000 - 10957.5; }
   function narrow() { return W <= 720; }
   function sunAt() { return { x: W / 2, y: H * (narrow() ? 0.4 : 0.5) }; }
 
@@ -199,6 +200,7 @@
       sctx.strokeStyle = p.world ? (hoverPlanet === p.key ? "rgba(243,201,139,0.55)" : "rgba(234,223,205,0.26)") : "rgba(234,223,205,0.085)";
       sctx.stroke();
     });
+    drawJourney(c, se);
     // The sun: a small hot disc and its light, nothing more.
     var R = 90 * sys.scale, g = sctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, R);
     g.addColorStop(0, "rgba(255,236,200,0.55)");
@@ -211,6 +213,47 @@
     sctx.beginPath(); sctx.arc(c.x, c.y, 5.5 * sys.scale, 0, Math.PI * 2); sctx.fill();
     sctx.globalAlpha = 1;
   }
+
+  /* The journey, far out: while you are working out the way off a world,
+     the line from the sun to each world and the angle between them (the
+     window); while you are on the way, the craft on its transfer. */
+  function drawJourney(c, se) {
+    if (!game || !game.escape) { return; }
+    var e = game.escape.e, E = planetNow(planet("earth")), M = planetNow(planet("mars"));
+    if (e.stage === "earth" || e.stage === "mars") {
+      var w = game.escape.window(e.stage), col = w.best ? "rgba(156,197,164,0.7)" : w.open ? "rgba(243,201,139,0.6)" : "rgba(234,223,205,0.28)";
+      sctx.lineWidth = 1 / dpr;
+      sctx.strokeStyle = col;
+      [E, M].forEach(function (o) { sctx.beginPath(); sctx.moveTo(c.x, c.y); sctx.lineTo(o.cx, o.cy); sctx.stroke(); });
+      mctxLater.push(function () {
+        var mx = (E.cx + M.cx) / 2, my = (E.cy + M.cy) / 2;
+        var tx = c.x + (mx - c.x) * 0.55, ty = c.y + (my - c.y) * 0.55;
+        label(Math.round(Math.abs(w.phase)) + "° · " + Math.abs(w.ideal) + "° wanted", tx, ty, { align: "center", size: 8.5, color: w.best ? "#9cc5a4" : w.open ? "#f3c98b" : "#a8927a" });
+      });
+    }
+    if (e.transit) {
+      var t = e.transit, u = Math.max(0, Math.min(1, (days() - t.depart) / (t.arrive - t.depart)));
+      var A = t.from === "earth" ? E : M, B = t.from === "earth" ? M : E;
+      var L0 = Wd.Escape.lon(t.from, t.depart) * RAD + sys.az;
+      var trail = [];
+      for (var q = 0; q <= 40; q += 1) {
+        var v = u * q / 40, th = L0 + Math.PI * v, r = A.orbit + (B.orbit - A.orbit) * (1 - Math.cos(Math.PI * v)) / 2;
+        trail.push([c.x + r * Math.cos(th), c.y - r * Math.sin(th) * se]);
+      }
+      sctx.setLineDash([2, 3]);
+      sctx.strokeStyle = "rgba(243,201,139,0.6)";
+      sctx.lineWidth = 1;
+      sctx.beginPath();
+      trail.forEach(function (p, i) { if (i) { sctx.lineTo(p[0], p[1]); } else { sctx.moveTo(p[0], p[1]); } });
+      sctx.stroke();
+      sctx.setLineDash([]);
+      var at = trail[trail.length - 1];
+      sctx.fillStyle = "#fff4df";
+      sctx.fillRect(Math.round(at[0]) - 2, Math.round(at[1]) - 2, 4, 4);
+      mctxLater.push(function () { label("You · " + Math.max(0, Math.ceil((t.arrive - days()) / 30)) + " months to " + cap(t.to), at[0] + 8, at[1], { size: 8.5, color: "#f3c98b" }); });
+    }
+  }
+  var mctxLater = [];
 
   // Saturn's rings in the lean of the orbits: the far half behind the planet, the near half before it.
   function drawRing(ctx, o, k, front) {
@@ -290,6 +333,8 @@
     mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     mctx.clearRect(0, 0, W, H);
     fronts.forEach(function (o) { drawRing(mctx, o, k, true); });
+    if (k > 0.05) { mctx.globalAlpha = k; mctxLater.forEach(function (f) { f(); }); mctx.globalAlpha = 1; }
+    mctxLater = [];
     drawMarks(k, worldO);
     requestAnimationFrame(frame);
   }
@@ -345,6 +390,24 @@
     }
     if (!worldO || mode !== "world") { return; }
     var T = boards[here], taken = [], o = worldO, z = views[here].zoom;
+    // The launch sites: a small spire each, named when there is room.
+    if (here === "earth" && game.escape) {
+      Wd.Escape.PORTS.forEach(function (pt) {
+        var p = Wd.project(o, pt.lat * RAD, pt.lon * RAD);
+        if (p.z < 0.15) { pt.sx = null; return; }
+        pt.sx = p.x; pt.sy = p.y;
+        var mine = pt.id >= 0 && game.owner("earth", pt.id) === 0;
+        mctx.globalAlpha = Math.min(1, (p.z - 0.15) / 0.2);
+        mctx.beginPath(); mctx.moveTo(p.x, p.y - 7); mctx.lineTo(p.x + 4, p.y + 3); mctx.lineTo(p.x - 4, p.y + 3); mctx.closePath();
+        mctx.fillStyle = "rgba(15,10,7,0.7)"; mctx.fill();
+        mctx.lineWidth = 1.4; mctx.strokeStyle = mine ? "#f3c98b" : "#eadfcd"; mctx.stroke();
+        if (z >= 1.6 || mine) {
+          label(pt.name, p.x + 8, p.y - 2, { size: 8.5, color: mine ? "#f3c98b" : "rgba(234,223,205,0.75)" });
+          taken.push([p.x - 6, p.y - 10, p.x + 120, p.y + 6]);
+        }
+        mctx.globalAlpha = 1;
+      });
+    }
     // The cities whose streets can be walked: a small square each, named when near enough.
     if (here === "earth" && z >= CITY_ZOOM) {
       cities.forEach(function (c) {
@@ -458,22 +521,30 @@
       var mine = game.holdings(0);
       if (!mine.length) { p.hidden = true; return; }
       p.hidden = false;
-      p.innerHTML = '<p class="eyebrow">Your holdings</p><h2>' + mine.length + ' territor' + (mine.length === 1 ? 'y' : 'ies') + '</h2>' +
-        '<ul class="list">' + mine.map(function (x) {
+      p.innerHTML = journey() + '<p class="eyebrow under">Your holdings · ' + mine.length + '</p>' +
+        '<ul class="list">' + mine.slice(0, 8).map(function (x) {
           return '<li><button data-go="' + x.w + ':' + x.id + '"><span>' + esc(x.t.name) + '</span><em>' + cap(x.w) + ' · ' + game.s.garrison[x.w][x.id] + '</em></button></li>';
-        }).join("") + '</ul><p class="hint">Press a territory that borders yours to wager on it.</p>';
+        }).join("") + '</ul>';
+      wireJourney(p);
       wireGo(p);
       return;
     }
     var w = sel.w, id = sel.id, t2 = game.territory(w, id), o = game.owner(w, id), house = game.house(o);
     var g = s.garrison[w][id], me = game.human(), from = game.reachFrom(0, w, id);
     var other = w === "earth" ? "mars" : "earth", under = t2[other] || [];
+    var port = w === "earth" ? Wd.Escape.PORTS.filter(function (q) { return q.id === id; }) : [];
+    var ice = w === "mars" && Wd.Escape.ICE[t2.name];
     var html = '<p class="eyebrow">' + cap(w) + (t2.region ? ' · ' + esc(t2.region) : '') + '</p><h2>' + esc(t2.name) + '</h2>' +
+      (port.length ? '<p class="from">Launch site · <b>' + port.map(function (q) { return esc(q.name); }).join(", ") + '</b></p>' : '') +
+      (ice ? '<p class="from">Ice · <b>' + ice + ' tonnes of propellant a month</b></p>' : '') +
       '<dl class="facts">' +
       fact("Held by", (house ? '<i class="sw" style="background:' + house.color + '"></i>' : '') + esc(who(house))) +
       fact("Garrison", g) + fact("Yield", t2.yield + " a turn") + '</dl>';
     var none = me.treasury < 1 ? ' disabled' : '';
-    if (o === 0) {
+    var E = game.escape ? game.escape.e : null;
+    if (E && E.stage === "land-" + w && (o < 0 || o === 0)) {
+      html += '<button class="act" id="landhere">Come down here</button>';
+    } else if (o === 0) {
       html += '<label class="stake" for="sr"><span>Fortify</span><output id="sv"></output></label>' +
         '<input id="sr" type="range" min="1" max="' + Math.max(1, me.treasury) + '" value="' + Math.min(stake || 1, Math.max(1, me.treasury)) + '"' + none + '>' +
         '<button class="act" id="act"' + none + '>Fortify</button>';
@@ -484,6 +555,8 @@
         '<input id="sr" type="range" min="1" max="' + Math.max(1, me.treasury) + '" value="' + stake + '"' + none + '>' +
         '<div class="odds"><div class="track"><i id="ob"></i></div><span id="ot"></span></div>' +
         '<button class="act" id="act"' + none + '>Wager</button>';
+    } else if (s.winner === -1 && game.escape && !game.escape.reached(0, w)) {
+      html += '<p class="hint">' + cap(w) + ' is reached by finding the way off ' + (w === "mars" ? "the Earth" : "Mars") + '.</p>';
     } else if (s.winner === -1) {
       html += '<p class="hint">None of your ground borders it yet, on this world or the other.</p>';
     }
@@ -527,7 +600,89 @@
       };
     }
     $("close").onclick = function () { select(here, -1); };
+    var lh = $("landhere");
+    if (lh) {
+      lh.onclick = function () {
+        if (game.escape.land(0, w, id)) { save(); paint(); status(); toast("Down on " + t2.name, true); select(w, -1); }
+      };
+    }
     wireGo(p);
+  }
+
+  /* ---- the way off --------------------------------------------------- */
+
+  function step(done, title, body) {
+    return '<li data-done="' + (done ? "true" : "false") + '"><b>' + title + '</b><span>' + body + '</span></li>';
+  }
+  function windowLine(w, target) {
+    var lead = target === "Mars" ? "Mars is " + Math.round(Math.abs(w.phase)) + "° " + (w.phase >= 0 ? "ahead of" : "behind") + " the Earth"
+                                 : "The Earth is " + Math.round(Math.abs(w.phase)) + "° " + (w.phase <= 0 ? "behind" : "ahead of") + " Mars";
+    var want = "; the 259-day transfer wants " + Math.abs(w.ideal) + "° " + (w.ideal >= 0 ? "ahead" : "behind") + ". ";
+    var months = function (n) { return n + " month" + (n === 1 ? "" : "s"); };
+    var when = w.best ? "The window is open, at its best." :
+               w.open ? "The window is open" + (w.next ? "; at its best in " + months(w.next) : "") + ", " + w.extra.toFixed(2) + " km/s dearer now." :
+               "The window opens in about " + months(Math.max(1, w.next - 1)) + ".";
+    return lead + want + when;
+  }
+
+  function journey() {
+    var x = game.escape, e = x.e, me = game.human(), h = "";
+    if (e.stage === "earth") {
+      var held = x.portsHeld(0), plan = x.bestEarthPlan(0, e.engine), w = x.window("earth");
+      var ports = Wd.Escape.PORTS.filter(function (q) { return q.id >= 0; }).slice(0, 5);
+      h += '<p class="eyebrow">The way off the Earth</p><h2>Find the way to Mars.</h2><ol class="steps">';
+      h += step(held.length > 0, "A launch site", held.length ? esc(held[0].name) + ", in " + esc(game.territory("earth", held[0].id).name) + ". " + Math.round(0.465 * Math.cos(held[0].lat * RAD) * 1000) + " m/s from the Earth's spin." :
+        "Hold the country of one. The nearer the equator, the more the Earth's spin lifts you: " + ports.map(function (q) {
+          return '<button class="inline" data-go="earth:' + q.id + '">' + esc(q.name) + '</button>';
+        }).join(", ") + ".");
+      h += step(w.open, "The window", windowLine(w, "Mars"));
+      var cost = plan ? plan.cost : x.earthPlan(Wd.Escape.PORTS[0], e.engine).cost;
+      h += step(plan && me.treasury >= cost, "The propellant", (plan ? Math.round(plan.mass).toLocaleString() + " tonnes at lift-off, " : "About ") + cost + " marks on " +
+        Wd.Escape.ENGINES.filter(function (q) { return q.key === e.engine; })[0].name.toLowerCase() + ". You have " + me.treasury + ".");
+      h += '</ol><div class="engines" role="group" aria-label="Engine">' + Wd.Escape.ENGINES.map(function (q) {
+        return '<button class="pill" data-engine="' + q.key + '" aria-pressed="' + (q.key === e.engine) + '" title="' + esc(q.note) + '">' + q.key + '</button>';
+      }).join("") + '</div>';
+      var ready = plan && w.open && me.treasury >= plan.cost;
+      h += '<button class="act" id="launch"' + (ready ? '' : ' disabled') + '>' + (ready ? "Launch from " + esc(plan.port.name) : "Launch") + '</button>';
+    } else if (e.stage === "to-mars" || e.stage === "to-earth") {
+      var t = e.transit, left = Math.max(0, Math.ceil((t.arrive - game.s.day) / 30));
+      h += '<p class="eyebrow">On the way</p><h2>' + (e.stage === "to-mars" ? "Bound for Mars." : "Bound for the Earth.") + '</h2>' +
+        '<p class="lede">Out from ' + esc(t.port) + ' on the long half-orbit between the worlds. ' + left + ' month' + (left === 1 ? '' : 's') + ' to go.</p>';
+    } else if (e.stage === "land-mars" || e.stage === "land-earth") {
+      var to = e.stage === "land-mars" ? "Mars" : "the Earth";
+      h += '<p class="eyebrow">Arrived</p><h2>Choose where to come down on ' + to + '.</h2><p class="lede">Press any ground no one holds, then come down there.' +
+        (e.stage === "land-mars" ? ' Near the ice, or the high volcanoes, will serve the way off.' : '') + '</p>';
+    } else if (e.stage === "mars") {
+      var wk = x.marsWorks(0), mp = x.bestMarsPlan(0), wm = x.window("mars"), ss = x.season();
+      h += '<p class="eyebrow">The way off Mars</p><h2>Make the way home.</h2><ol class="steps">';
+      h += step(wk.ice > 0, "Ice", wk.ice ? esc(wk.iceNames.join(", ")) + ", " + wk.ice + " tonnes a month." :
+        "Hold the polar caps (8 tonnes a month), Vastitas Borealis (5), or the buried ice of Utopia and Arcadia (3).");
+      h += step(wk.sun.length > 0, "Sun", wk.sun.length ? "Power from " + esc(wk.sun[0]) + ". " + (ss.storms ? "It is the dust season: storms may dim it." : "The air is clear this season.") :
+        "Hold ground within 35° of the equator to power the plant that makes methane and oxygen from ice and air.");
+      h += step(mp && x.e.fuel >= mp.need, "Propellant", Math.floor(x.e.fuel) + " of " + (mp ? mp.need : "about 110") + " tonnes made" + (wk.rate ? ", " + wk.rate + " a month." : ".") +
+        (mp && mp.high ? " Lifting from " + esc(mp.name) + ", above most of the air." : ""));
+      h += step(wm.open, "The window", windowLine(wm, "Earth"));
+      var go = mp && wm.open && x.e.fuel >= mp.need;
+      h += '</ol><button class="act" id="launch"' + (go ? '' : ' disabled') + '>' + (go ? "Lift off from " + esc(mp.name) : "Lift off") + '</button>';
+    } else {
+      h += '<p class="eyebrow">The way between worlds</p><h2>You have found it.</h2><p class="lede">Off the Earth, off Mars, and home. The moons of Jupiter are next; the way there is not yet built.</p>';
+    }
+    return h;
+  }
+
+  function wireJourney(root) {
+    root.querySelectorAll("[data-engine]").forEach(function (b) {
+      b.onclick = function () { game.escape.e.engine = b.dataset.engine; save(); panel(); };
+    });
+    var l = $("launch");
+    if (l) {
+      l.onclick = function () {
+        var x = game.escape, ok = false;
+        if (x.e.stage === "earth") { ok = x.launchFromEarth(0, x.bestEarthPlan(0, x.e.engine)); }
+        else if (x.e.stage === "mars") { ok = x.launchFromMars(0, x.bestMarsPlan(0)); }
+        if (ok) { save(); status(); panel(); toast("Launched", true); if (mode === "world") { ascend(); } }
+      };
+    }
   }
 
   function wireGo(root) {
@@ -545,7 +700,7 @@
 
   function status() {
     var s = game.s, me = game.human();
-    $("turn").textContent = "Turn " + s.turn;
+    $("turn").textContent = "Month " + s.turn + " · " + dateOf(s.day);
     $("purse").textContent = me.treasury + " marks";
     $("income").textContent = "+" + game.income(0) + " a turn";
     $("end").hidden = s.phase !== "play" || s.winner !== -1;
@@ -565,6 +720,11 @@
     } else {
       banner.hidden = true;
     }
+  }
+
+  function dateOf(day) {
+    var d = new Date((day + 10957.5) * 86400000);
+    return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getUTCMonth()] + " " + d.getUTCFullYear();
   }
 
   function pills() {
@@ -769,7 +929,15 @@
     save(); paint();
     if (sel) { select(sel.w, sel.id); } else { panel(); }
     status();
-    toast("Turn " + game.s.turn + " · paid " + game.income(0));
+    var e = game.escape && game.escape.e;
+    if (e && e.stage.indexOf("land-") === 0) {
+      var to = e.stage.slice(5);
+      toast("Arrived · choose where to come down", true);
+      sel = null;
+      descend(to);
+    } else {
+      toast("Month " + game.s.turn + " · paid " + game.income(0));
+    }
   };
   // Asked twice, on the button itself: a new game loses this one.
   var armed = 0;
@@ -946,6 +1114,17 @@
     bodies.add("mars-land", all[1], true);
     bodies.add("mars", all[2]);
     PLANETS.forEach(function (p) { if (p.look) { bodies.add(p.key, paintPlanet(p)); } });
+    // Each launch site stands in the country around it (or the nearest, on a coast).
+    Wd.Escape.locate(function (lat, lon) {
+      for (var r = 0; r <= 6; r += 1) {
+        for (var a = 0; a < Math.max(1, r * 8); a += 1) {
+          var dl = r * 0.25 * Math.cos(a / Math.max(1, r * 8) * Math.PI * 2), dn = r * 0.25 * Math.sin(a / Math.max(1, r * 8) * Math.PI * 2);
+          var id = cellAt("earth", (lat + dl) * RAD, (lon + dn) * RAD);
+          if (id >= 0) { return id; }
+        }
+      }
+      return -1;
+    });
     var saved = null;
     try { var v = localStorage.getItem(SAVE); saved = v ? JSON.parse(v) : null; } catch (e) { saved = null; }
     game = new Game(boards, saved && saved.hold && saved.hold.earth.length === boards.earth.length ? saved : null);

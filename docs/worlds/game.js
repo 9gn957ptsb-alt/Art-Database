@@ -10,11 +10,13 @@
    A wager is made from a territory you hold, on one that borders it — across
    land, across a sea lane, or across worlds: every territory borders the
    ground of the other world that lies under it. There is no boundary
-   between worlds.
+   between worlds, once you have found the way between them: a house crosses
+   to a world only after it has made the journey there (escape.js).
 
    Each turn every house is paid the yield of all it holds. A house that holds
    nothing is out. A house that holds two fifths of all the yield there is,
-   on every world together, has won. */
+   on every world together, has won; so has the house that finds the way off
+   the Earth to Mars and home again. A turn is a month of the solar system. */
 
 (function () {
   "use strict";
@@ -50,6 +52,7 @@
         s.garrison[w] = T.map(function (t) { return w === "earth" ? 8 + t.yield * 9 : 2 + t.yield * 3; });
       });
     }
+    this.escape = window.Worlds.Escape ? new window.Worlds.Escape(this) : null;
   }
 
   Game.WORLDS = WORLDS;
@@ -63,20 +66,23 @@
     if (this.s.log.length > 80) { this.s.log.length = 80; }
   };
 
-  /* The territories that border one: its neighbours on its own world and
-     the ground under it on the other. */
-  Game.prototype.borders = function (w, id) {
+  /* The territories that border one: its neighbours on its own world and,
+     for a house that has been to both worlds, the ground under it on the other. */
+  Game.prototype.borders = function (w, id, h) {
     var t = this.boards[w][id], out = [];
     t.near.forEach(function (j) { out.push({ w: w, id: j }); });
     var other = w === "earth" ? "mars" : "earth";
-    (t[other] || []).forEach(function (j) { out.push({ w: other, id: j }); });
+    var reached = this.s.reached ? this.s.reached[h === undefined ? 0 : h] : null;
+    if (!reached || (reached.indexOf(w) >= 0 && reached.indexOf(other) >= 0)) {
+      (t[other] || []).forEach(function (j) { out.push({ w: other, id: j }); });
+    }
     return out;
   };
 
   /* Where house h can wager on (w, id) from: a territory it holds that borders it. */
   Game.prototype.reachFrom = function (h, w, id) {
     if (this.s.hold[w][id] === h) { return null; }
-    var b = this.borders(w, id);
+    var b = this.borders(w, id, h);
     for (var i = 0; i < b.length; i++) {
       if (this.s.hold[b[i].w][b[i].id] === h) { return b[i]; }
     }
@@ -205,6 +211,7 @@
       if (house.alive) { house.treasury += me.income(house.id); }
     });
     s.turn += 1;
+    if (this.escape) { this.escape.month(0); } else { s.day = (s.day || 0) + 30; }
     this.checkHouses();
   };
 
@@ -218,7 +225,7 @@
     for (var tries = 0; tries < 3; tries++) {
       var options = [];
       this.holdings(h).forEach(function (x) {
-        me.borders(x.w, x.id).forEach(function (b) {
+        me.borders(x.w, x.id, h).forEach(function (b) {
           if (s.hold[b.w][b.id] === h) { return; }
           var t = me.boards[b.w][b.id], g = s.garrison[b.w][b.id];
           var rival = s.hold[b.w][b.id] === 0 ? 1.25 : 1;   // you are the one to beat
@@ -237,7 +244,7 @@
     // Shore up the weakest holding that borders an enemy.
     var weak = null;
     this.holdings(h).forEach(function (x) {
-      var threatened = me.borders(x.w, x.id).some(function (b) { var o = s.hold[b.w][b.id]; return o >= 0 && o !== h; });
+      var threatened = me.borders(x.w, x.id, h).some(function (b) { var o = s.hold[b.w][b.id]; return o >= 0 && o !== h; });
       if (threatened && (!weak || s.garrison[x.w][x.id] < s.garrison[weak.w][weak.id])) { weak = x; }
     });
     if (weak && house.treasury > 40) { this.fortify(h, weak.w, weak.id, Math.floor(house.treasury * 0.3)); }

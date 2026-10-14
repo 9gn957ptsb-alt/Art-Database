@@ -221,3 +221,16 @@ input[type="range"]:disabled { opacity: 0.35; cursor: default; }
   .card { animation: none; }
   .pill, .act, .toast, .track i { transition: none; }
 }
+
+/* The way off: the steps, each with its state. */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); border-top: 1px solid var(--hair); padding-top: var(--s-3); counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 14px 1fr; column-gap: var(--s-3); row-gap: 2px; counter-increment: step; }
+.steps li::before { content: ""; grid-row: 1 / span 2; width: 9px; height: 9px; margin-top: 3px; border: 1px solid var(--muted); border-radius: 1px; }
+.steps li[data-done="true"]::before { background: var(--good); border-color: var(--good); }
+.steps b { font: 500 var(--t-1)/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream); }
+.steps li[data-done="true"] b { color: var(--good); }
+.steps span { font: 400 var(--t-2)/1.4 var(--serif); color: var(--muted); }
+.inline { border: 0; background: none; padding: 0; color: var(--cream); font: inherit; text-decoration: underline; text-decoration-color: rgba(234, 223, 205, 0.35); text-underline-offset: 2px; cursor: pointer; }
+.inline:hover, .inline:focus-visible { color: #fff7ea; }
+.engines { display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(234, 223, 205, 0.06); align-self: flex-start; }
+.engines .pill { min-height: 26px; padding: 4px 11px; }
