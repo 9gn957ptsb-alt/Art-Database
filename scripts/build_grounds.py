@@ -31,6 +31,7 @@ which Overture release it was read from and when ("release", "read");
 
     python3 scripts/build_grounds.py [--force] [--only slug] [--release latest|2026-09-23.1]
     python3 scripts/build_grounds.py --heights [--only city-<key>]    # towers above 237 m, read again
+    python3 scripts/build_grounds.py --bridges [--only city-<key>]    # road bridges over a city's water
 """
 
 import argparse
@@ -50,6 +51,7 @@ import pyarrow.dataset as ds
 import pyarrow.fs as pafs
 import shapely
 from PIL import Image
+from shapely.ops import substring
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILDINGS = ROOT / "docs" / "v2" / "architecture.json"
@@ -109,7 +111,7 @@ def local(lat, lon):
 
 
 COLUMNS = {("base", "water"): ["subtype", "class"],
-           ("transportation", "segment"): ["subtype", "class"],
+           ("transportation", "segment"): ["subtype", "class", "road_flags"],
            ("buildings", "building"): ["height", "num_floors"]}
 GREEN_COLUMNS = {("base", "land_use"): ["subtype", "class"],     # read for the cities' skylines only
                  ("base", "land"): ["subtype", "class"]}
@@ -230,7 +232,35 @@ def storeys_of(tall):
     return "".join(chr(48 + min(MAX_STOREYS, int(round(v / FLOOR)))) if v else "0" for v in tall.ravel())
 
 
-def build(b, only_tall=False):
+def bridge_mask(segments, cell, least, to_local, within, N):
+    """The cells under the decks of road bridges, as a mask. A road is not drawn over water, so a river
+    ran unbroken from bank to bank (the Seine, the Thames, the Han, the Rhine under the Hohenzollern
+    Bridge); Overture flags a bridge on its segment (`road_flags`: `is_bridge`, the whole segment, or the
+    stretch of it between two fractions of its length). Only roads a skyline keeps — a footbridge, a path,
+    a rail bridge are left out, as their streets are."""
+    mask = np.zeros((N, N), bool)
+    for row in segments:
+        if row.get("subtype") != "road":
+            continue
+        width = ROAD_WIDTH.get(row.get("class") or "", 0)
+        if not width or width < least:
+            continue
+        for flag in row.get("road_flags") or []:
+            if "is_bridge" not in (flag.get("values") or []):
+                continue
+            g = to_local(shapely.from_wkb(row["geometry"]))
+            span = flag.get("between")
+            if span and g.geom_type == "LineString" and g.length and (span[0] > 0 or span[1] < 1):
+                g = substring(g, span[0], span[1], normalized=True)
+            if g.is_empty:
+                continue
+            mask |= within(g.buffer(width / 2 + cell * 0.12))
+    return mask
+
+
+def build(b, only=None):
+    """A place's ground. `only` reads part of it for a repair: "tall" the buildings and their heights
+    (`--heights`), "bridges" the cells under road bridges (`--bridges`)."""
     lat, lon = b["lat"], b["lon"]
     side = side_of(b)
     N = b.get("n") or GRID       # a city's skyline is finer than 80 a side
@@ -265,7 +295,7 @@ def build(b, only_tall=False):
     tall = np.zeros((N, N))
     city = b.get("precision") == "city"
 
-    for row in (() if only_tall else overture("base", "water", ["subtype", "class"], box)):
+    for row in (() if only else overture("base", "water", ["subtype", "class"], box)):
         g = to_local(shapely.from_wkb(row["geometry"]))
         if g.geom_type in ("LineString", "MultiLineString"):
             g = g.buffer(max(cell * 0.6, 6))
@@ -273,7 +303,7 @@ def build(b, only_tall=False):
             kind[within(g)] = "~"
 
     # A city's green, under its streets and buildings: parks, gardens, lawns, pitches, cemeteries, woods.
-    if city and not only_tall:
+    if city and not only:
         for theme, kind_ in (("base", "land_use"), ("base", "land")):
             for row in overture(theme, kind_, ["subtype", "class"], box):
                 if theme == "base" and kind_ == "land_use" and row.get("class") not in GREEN_USE:
@@ -287,7 +317,10 @@ def build(b, only_tall=False):
     # A city's skyline keeps its streets, not every lane and drive: under 8 m wide they are left out
     # where a cell is ~40 m, and kept from 6 m where the grid has been cut finer than 22 m.
     least = 8 if cell > 22 else 6
-    for row in (() if only_tall else overture("transportation", "segment", ["subtype", "class"], box)):
+    segments = [] if only == "tall" else overture("transportation", "segment", ["subtype", "class", "road_flags"], box)
+    if only == "bridges":        # the cells under road bridges alone (`--bridges`)
+        return {"deck": bridge_mask(segments, cell, least, to_local, within, N)}
+    for row in segments:
         if row.get("subtype") != "road":
             continue
         width = ROAD_WIDTH.get(row.get("class") or "", 0)
@@ -299,6 +332,9 @@ def build(b, only_tall=False):
         g = to_local(shapely.from_wkb(row["geometry"])).buffer(reach)
         inside = within(g) & (kind != "~")
         kind[inside] = "="
+    # A bridge crosses the water the road is not drawn over.
+    if city and segments:
+        kind[bridge_mask(segments, cell, least, to_local, within, N)] = "="
 
     count = 0
     for row in overture("buildings", "building", ["height", "num_floors"], box):
@@ -328,7 +364,7 @@ def build(b, only_tall=False):
         tall[inside] = np.maximum(tall[inside], h)
         count += 1
 
-    if only_tall:                # the buildings and their heights alone (`--heights`)
+    if only == "tall":           # the buildings and their heights alone (`--heights`)
         return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall)}
 
     at = terrain(box, cell, lat)
@@ -364,6 +400,8 @@ def build(b, only_tall=False):
         # Which of Overture's releases it was read from, and when.
         "release": RELEASE,
         "read": datetime.date.today().isoformat(),
+        # A city's roads over water (its bridges) are drawn (`--bridges` does it for the grounds cut before).
+        **({"bridges": datetime.date.today().isoformat()} if city else {}),
     }
 
 
@@ -376,8 +414,8 @@ def repair_heights(places):
     limit = chr(48 + 74)
     for b in places:
         path = OUT / (b["slug"] + ".json")
-        if not path.exists():
-            continue
+        if b.get("precision") != "city" or not path.exists():
+            continue                   # a museum's plot draws no tower past a fifth of its width anyway
         old = json.loads(path.read_text(encoding="utf-8"))
         capped = [q for q, c in enumerate(old["tall"]) if c == limit and old["kind"][q] == "b"]
         if not capped:
@@ -389,7 +427,7 @@ def repair_heights(places):
         for release in dict.fromkeys([old.get("release") or RELEASE, "latest"]):
             try:
                 use_release(release)
-                new = build(b, only_tall=True)
+                new = build(b, only="tall")
                 break
             except Exception as exc:         # a release the bucket no longer keeps: the newest instead
                 print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
@@ -407,6 +445,41 @@ def repair_heights(places):
               f"the tallest now {top} storeys ({top * FLOOR:.0f} m)", flush=True)
 
 
+def repair_bridges(places):
+    """`--bridges`: a city's ground cut before road bridges were drawn shows each river unbroken from bank
+    to bank. Its road segments are read again, from the release the ground was read from, and the water
+    cells under a bridge deck become road; nothing else in the ground changes. A ground cut with bridges
+    says so (`bridges`, the day) and is left alone."""
+    for b in places:
+        path = OUT / (b["slug"] + ".json")
+        if b.get("precision") != "city" or not path.exists():
+            continue
+        old = json.loads(path.read_text(encoding="utf-8"))
+        if old.get("bridges"):
+            continue
+        if old["n"] != (b.get("n") or GRID) or old["side"] != side_of(b):
+            print(f"  · {b['slug']}: its grid is not the place's now: cut it again instead", flush=True)
+            continue
+        new = None
+        for release in dict.fromkeys([old.get("release") or RELEASE, "latest"]):
+            try:
+                use_release(release)
+                new = build(b, only="bridges")
+                break
+            except Exception as exc:         # a release the bucket no longer keeps: the newest instead
+                print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+        if new is None:
+            continue
+        kind = list(old["kind"])
+        decks = [q for q in np.flatnonzero(new["deck"].ravel()) if kind[q] == "~"]
+        for q in decks:
+            kind[q] = "="
+        old["kind"] = "".join(kind)
+        old["bridges"] = datetime.date.today().isoformat()
+        path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
+        print(f"  + {b['name']}: {len(decks)} water cells under bridges are road now", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true")
@@ -416,6 +489,9 @@ def main():
     parser.add_argument("--heights", action="store_true",
                         help="read again the heights of the cells a ground cut at the old limit of 74 storeys "
                              "left standing at 237 m, leaving all else as it is (with --only: one place)")
+    parser.add_argument("--bridges", action="store_true",
+                        help="draw the road bridges over water in the cities' grounds cut without them, "
+                             "leaving all else as it is (with --only: one place)")
     args = parser.parse_args()
     if args.release:
         print(f"Overture release {use_release(args.release)}", flush=True)
@@ -431,8 +507,11 @@ def main():
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]
     OUT.mkdir(parents=True, exist_ok=True)
-    if args.heights:
-        repair_heights(buildings)
+    if args.heights or args.bridges:
+        if args.heights:
+            repair_heights(buildings)
+        if args.bridges:
+            repair_bridges(buildings)
         sys.exit(0)
     todo = [b for b in buildings if args.force or not (OUT / (b["slug"] + ".json")).exists()]
 
