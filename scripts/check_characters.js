@@ -49,8 +49,10 @@ function check(tag, ok, what, got) {
 function bareSpot([w, h]) {
   // Not on a city's ground dial (skyline.js): a press on its ring or its marks turns time, not the wave.
   const ring = window.Skyline && Skyline.ring ? Skyline.ring() : null;
+  const hb = ring && Skyline.hand && Skyline.hand() ? Skyline.hand().box : null;
   const onRing = (x, y) => {
     if (!ring) { return false; }
+    if (hb && x > hb.x - hb.w / 2 - 24 && x < hb.x + hb.w / 2 + 24 && y > hb.top - 24 && y < hb.top + hb.h + 24) { return true; }
     const du = x - ring.cx, dw = (y - ring.cy) / ring.st;
     return Math.hypot(du, dw) > ring.R * 0.8;
   };
@@ -108,6 +110,12 @@ async function run(size, place) {
   }
   check(tag, at && at.at === "town" && at.key === place, "down in the city", at && { at: at.at, key: at.key });
   await sleep(9000);                       // the first play of the dial, the arrival
+  // Laid on the ground, the dial's animal walks its first play round the ring: the wave waits for it to sit.
+  for (let i = 0; i < 40; i++) {
+    const t = await P.evaluate(() => (window.Skyline && Skyline.hand && Skyline.hand() ? Skyline.hand().t : 1));
+    if (t >= 0.999) { break; }
+    await sleep(500);
+  }
   await P.evaluate(() => { Characters._reset(); });
   const pt = await P.evaluate(bareSpot, [w, h]);
   check(tag, !!pt, "a bare spot to press", pt);
@@ -121,7 +129,7 @@ async function run(size, place) {
   // out already, as its hand: the wave raises the plants alone, and the press is on the hand.
   const hand = await P.evaluate(() => (window.Skyline && Skyline.hand && Skyline.hand()) || null);
   if (hand && hand.box) {
-    for (let i = 0; i < 30 && !st; i++) { await sleep(100); st = await P.evaluate(() => Characters._state()); }
+    for (let i = 0; i < 60 && !st; i++) { await sleep(150); st = await P.evaluate(() => Characters._state()); }
     const b = await P.evaluate(() => Skyline.hand().box);
     if (SHOTS) { await P.screenshot({ path: `${SHOTS}/chars_${place}_${w}.png` }); }
     await P.mouse.click(b.x, b.top + b.h / 2);

@@ -1469,8 +1469,13 @@
         if (gh) {
           if (hoverK >= 0) { hover(-1e4, -1e4); }
           Land.dialGround.press("hover", event);
+          ground.hovering = true;
           root.style.cursor = gh === "hand" ? "grab" : "pointer";
-        } else { hover(event.clientX, event.clientY); }
+        } else {
+          // Off the ring, nothing of it is pointed at any more.
+          if (ground.hovering) { ground.hovering = false; Land.dialGround.press("hover", { clientX: -1e4, clientY: -1e4 }); }
+          hover(event.clientX, event.clientY);
+        }
       }
       if (!pointers[event.pointerId]) { return; }
       event.stopPropagation();
@@ -1528,7 +1533,11 @@
     }
     root.addEventListener("pointerup", end);
     root.addEventListener("pointercancel", end);
-    root.addEventListener("pointerleave", function (event) { if (event.pointerType === "mouse") { hover(-1e4, -1e4); } });
+    root.addEventListener("pointerleave", function (event) {
+      if (event.pointerType !== "mouse") { return; }
+      hover(-1e4, -1e4);
+      if (ground.hovering) { ground.hovering = false; Land.dialGround.press("hover", { clientX: -1e4, clientY: -1e4 }); }
+    });
     root.addEventListener("click", stop);
     root.addEventListener("wheel", function (event) {
       if (!city || !on_) { return; }
