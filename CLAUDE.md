@@ -133,8 +133,10 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   the latest (their flags in `KALEIDOSCOPES` in `land.js`).
 - **The daily routines fire into the artist's own conversation** (artist, 14 Oct 2026: "Can you collapse all of the
   daily routines into this session"; session_017Kv6WGqA4BeBjASfZpXzPC). Six, each named "… (daily, here)": Color
-  Middling's Artsy reconcile 07:23 UTC (its own branch, `claude/artsy-import-rwgk8s`, and its two artifacts), buildings
-  08:52, characters 09:47, cities 11:16, network research 13:41, kaleidoscope 16:07. None does its pass in the
+  Middling's Artsy reconcile 07:23 UTC (its own branch, `claude/artsy-import-rwgk8s`, and its two artifacts; **paused
+  14 Oct**: its first run here found 52,924 saves against the 5,021 it holds — the saving run of every work by the
+  artists he follows — and stopped before writing, its page would be ~105 MB against an artifact's 16; like the
+  buildings pass's museums intake since 6 Oct, it waits on his decision), buildings 08:52, characters 09:47, cities 11:16, network research 13:41, kaleidoscope 16:07. None does its pass in the
   conversation: each hands it to one helper (the Agent tool: Sonnet, its own git worktree under `.claude/worktrees/`,
   in the background) with the brief written in the routine's prompt, relays its report in a few lines and removes the
   worktree. A helper starts from the pushed branch, copies `data/` in from the main checkout and its new caches back at
