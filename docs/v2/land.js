@@ -2541,7 +2541,8 @@
      ledger and the ideas still to come). The pulse's fold, above, came first. */
   var KALEIDOSCOPES = {
     arrive: true,         // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
-    pointed: true         // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
+    pointed: true,        // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
+    ring: true            // 14 Oct: a press held on a city's map opens a rosette inside its ring, a sunflower's seeds turning in the mirrors (rosetteRuns)
   };
 
   function folded(sx, sy, turn) {
@@ -2555,14 +2556,15 @@
     return (hash2(Math.floor(a * base / CELL_PX) + seed, Math.floor(base / CELL_PX)) - 0.5) * 2 * JAG;
   }
 
-  /* Light going out from a point, in the colours given, three rings deep. */
-  function pulse(x, y, tones, strength, reach) {
+  /* Light going out from a point, in the colours given, three rings deep. The mirrors stand where
+     `turnAt` says (the held ring's rosette lets go of them here), else anywhere. */
+  function pulse(x, y, tones, strength, reach, turnAt) {
     if (still || !isFinite(x) || !isFinite(y)) { return; }
     tones = (tones && tones.length) ? tones : [LIGHT];
     strength = strength === undefined ? 1 : strength;
     reach = reach || Math.max(W, H) * INV2;
     var now = performance.now();
-    var turn = Math.random() * 2 * FOLD, seed = Math.floor(Math.random() * 4096);
+    var turn = turnAt === undefined ? Math.random() * 2 * FOLD : turnAt, seed = Math.floor(Math.random() * 4096);
     [1, INV, INV2].forEach(function (k, i) {
       waves.push({
         x: x, y: y, at: now + i * 110,
@@ -2598,6 +2600,72 @@
       });
     }
     if (notes.length > 24) { notes.splice(0, notes.length - 24); }
+  }
+
+  /* The held ring, a rosette (14 Oct 2026; KALEIDOSCOPES.ring). In a city that is a map (a skyline
+     takes the press itself, and a collage's reading covers the window with its own), press and
+     hold and the ring opens under the finger, as it did; now the pulse's two mirrors, 36° apart
+     (2 cos 36° = φ), stand over the point inside it and a sunflower's seeds turn in front of
+     them. The seeds are the golden angle apart, 2π/φ² = 137.5°, on a radius that goes as √n
+     (Vogel's), and every one is seen ten times, five turned and five reflected. One is born as the
+     ring opens and then one every φ²/12 of a second, so the thirteenth, a Fibonacci number, comes
+     φ² seconds on: one tile each, lit in four held steps. The seeds that are Fibonacci numbers
+     (1, 2, 3, 5, 8, 13) are lilac: they fall alternately either side of one ray, each a golden
+     step nearer it (−85°, +53°, −32°, +20°, −12°), so the mirrors string them out along ten
+     spokes and what comes first is a star. The mirrors keep their places and the seeds turn in
+     front of them, once in φ⁸ seconds, with a flick as the ring opens that settles in φ seconds,
+     as a kaleidoscope turned and let go: tiles slide together at a mirror and part again, and
+     never the same twice (the golden angle is not a fraction of a turn). A tile a seed has left
+     stays lit for eight held frames, stepping down as the pointer's trail does, so none lights
+     more often than 24 / (8 + 2) = 2.4 times a second, whatever crosses it. Only inside the ring
+     and only while it is held; let go, and the pulse goes out on the same mirrors. Held frames at
+     twenty-four a second, on the page's grid of tiles. */
+  var ROSETTE_N = 13;                                                  // seeds when it is full
+  var ROSETTE_GAP = Math.round(PHI * PHI * 1000 / (ROSETTE_N - 1));    // ms between births: 218
+  var ROSETTE_SPIN = TAU / Math.pow(PHI, 8);                           // radians a second the seeds turn, in the end
+  var ROSETTE_KICK = TAU / Math.pow(PHI, 4);                           // and the flick they are given, settling in φ s
+  var ROSETTE_TAIL = 8;                                                // held frames a tile stays lit once left
+  var FIBONACCI = { 1: true, 2: true, 3: true, 5: true, 8: true, 13: true };
+
+  // The tiles the rosette lights `age` held frames before frame `held` (ms into the press), put into
+  // `lit` (tile → { i, j, tone, level }); a tile a seed has left steps down a level every two frames.
+  function rosetteSeen(lit, held, age, cols, rows, rg) {
+    var reach = Math.min(SQUASH_MAX, Math.min(W, H) / 2) * 0.92;       // on a phone, what the screen can hold
+    var c = reach / Math.sqrt(ROSETTE_N);
+    var opened = Math.max(0, held - SQUASH_WAIT) / 1000;               // seconds since the ring opened
+    var spin = ROSETTE_SPIN * opened + ROSETTE_KICK * (1 - Math.exp(-opened / PHI));
+    for (var n = 1; n <= ROSETTE_N; n += 1) {
+      var born = SQUASH_WAIT + (n - 1) * ROSETTE_GAP;
+      if (held < born) { break; }
+      var rho = c * Math.sqrt(n);
+      if (rho > rg.r - CELL_PX * 0.6) { continue; }                      // the ring is the front it is seen inside
+      var level = Math.max(1, Math.min(4, 1 + Math.floor((held - born) / 42)) - Math.floor(age / 2));
+      var tone = FIBONACCI[n] === true ? LILAC : LIGHT;
+      var beta = n * GOLDEN + spin;                                      // the seed's angle from the first mirror
+      for (var k = 0; k < 5; k += 1) {
+        for (var s = 0; s < 2; s += 1) {
+          var a = rg.turn + (s ? -beta : beta) + k * 2 * FOLD;
+          var i = Math.floor((rg.x + rho * Math.cos(a)) / CELL_PX), j = Math.floor((rg.y + rho * Math.sin(a)) / CELL_PX);
+          if (i < 0 || j < 0 || i >= cols || j >= rows) { continue; }
+          var at = j * 8192 + i;
+          if (lit[at] && lit[at].level >= level) { continue; }
+          lit[at] = { i: i, j: j, tone: tone, level: level };
+        }
+      }
+    }
+  }
+
+  // The tiles lit at held frame `t` by a ring `rg` ({ x, y, r, since, turn }), pushed into `runs`
+  // as drawTiles keeps them ("tone|level" → i, j, i, j …); `cols` and `rows` are the grid's.
+  function rosetteRuns(runs, t, cols, rows, rg) {
+    var held = t - rg.since;
+    if (held < SQUASH_WAIT) { return; }
+    var lit = {};
+    for (var age = 0; age <= ROSETTE_TAIL; age += 1) { rosetteSeen(lit, held - age * 42, age, cols, rows, rg); }
+    Object.keys(lit).forEach(function (at) {
+      var o = lit[at], key = o.tone + "|" + o.level;
+      (runs[key] || (runs[key] = [])).push(o.i, o.j);
+    });
   }
 
   function drawTiles(now) {
@@ -2664,6 +2732,8 @@
     // A history's journey, in the same light (the journey, below).
     if (art || passing || walkShown) { drawJourney(runs, t); }
     if (route) { routeRuns(runs, t); }
+    // The held ring's rosette (KALEIDOSCOPES.ring), inside it.
+    if (ringNow && KALEIDOSCOPES.ring && !still && !walkOn) { rosetteRuns(runs, t, cols, rows, ringNow); }
 
     Object.keys(runs).forEach(function (key) {
       var cut = key.lastIndexOf("|");
@@ -8612,7 +8682,7 @@
      moves is a turn, so nothing is lost by trying. The animal is never
      squashed; it is the one thing on here that is not excess. */
 
-  var squashing = null;        // { id, x, y, since, ring }
+  var squashing = null;        // { id, x, y, since, turn }: turn is where the rosette's mirrors stand (KALEIDOSCOPES.ring)
   var SQUASH_WAIT = 260;       // holding this long opens the ring
   var SQUASH_MIN = 40;
   var SQUASH_MAX = 300;
@@ -8630,12 +8700,12 @@
      drawTiles); all this does is say where it is. */
   function drawRing(now) {
     var r = squashRing(now);
-    ringNow = r ? { x: squashing.x, y: squashing.y, r: r } : null;
+    ringNow = r ? { x: squashing.x, y: squashing.y, r: r, since: squashing.since, turn: squashing.turn } : null;
     if (r) { tilesDirty = true; }
   }
 
-  function squash(x, y, r) {
-    pulse(x, y, [LIGHT], 1, r * PHI);
+  function squash(x, y, r, turn) {
+    pulse(x, y, [LIGHT], 1, r * PHI, KALEIDOSCOPES.ring ? turn : undefined);
     // Now and then someone comes out of the wave (characters.js): only in a
     // city, never while a collage is being read or a flight is on.
     if (window.Characters && place && !flying && !reading && !deckMode &&
@@ -8959,7 +9029,7 @@
     turning = { id: event.pointerId, x: event.clientX, y: event.clientY,
                 spin: spin, lean: tilt, moved: 0, at: performance.now() };
     squashing = { id: event.pointerId, x: event.clientX, y: event.clientY,
-                  since: performance.now() };
+                  since: performance.now(), turn: Math.random() * 2 * FOLD };
     stage.dataset.turning = "true";
     try { stage.setPointerCapture(event.pointerId); } catch (e) {}
   });
@@ -9158,7 +9228,7 @@
         var reach = squashRing(performance.now());
         var where = squashing;
         squashing = null;
-        if (reach) { squash(where.x, where.y, reach); return; }
+        if (reach) { squash(where.x, where.y, reach, where.turn); return; }
       }
 
       // A plain quick tap on the world, with a finger: the spot is ringed
@@ -15977,6 +16047,18 @@
     // The next photograph to arrive comes by this arrival ("kaleidoscope", "tiles" …): for the checks.
     pointed: function (name, x, y) { var b = document.querySelector("#art-plate .art-pic, #art-plate"); if (!b || !POINTED[name]) { return Object.keys(POINTED); } b.pointerXY = { x: x, y: y }; POINTED[name](b, b); return Object.keys(POINTED); },
     arrival: function (name) { nextArrival = name || null; return Object.keys(ARRIVALS); },
+    // The held ring's rosette (scripts/check_kaleidoscope.js --ring): the tiles it lights, [i, j, tone, level],
+    // `held` ms into a hold at (x, y), the ring as wide as it would be then, the mirrors at `turn`.
+    rosette: function (held, x, y, turn) {
+      var runs = {}, out = [];
+      var ring = { x: x, y: y, r: Math.min(SQUASH_MAX, SQUASH_MIN + Math.max(0, held - SQUASH_WAIT) * 0.42), since: 0, turn: turn || 0 };
+      rosetteRuns(runs, held, Math.ceil(W / CELL_PX), Math.ceil(H / CELL_PX), ring);
+      Object.keys(runs).forEach(function (key) {
+        var cut = key.lastIndexOf("|");
+        for (var n = 0; n < runs[key].length; n += 2) { out.push([runs[key][n], runs[key][n + 1], key.slice(0, cut), Number(key.slice(cut + 1))]); }
+      });
+      return out;
+    },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
                                   tiles: Object.keys(tilesShown).length, own: ownBoxes.length,
