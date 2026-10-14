@@ -1,0 +1,540 @@
+{
+ "slug": "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto",
+ "name": "University of Jyväskylä Main Building",
+ "voxel": 0.8,
+ "site": [
+  80,
+  72
+ ],
+ "ground": "gravel",
+ "parts": [
+  {
+   "box": [
+    -40,
+    4,
+    0,
+    80,
+    10,
+    0.4
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -8,
+    6,
+    0,
+    14,
+    8,
+    0.4
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -30,
+    -10,
+    0,
+    24,
+    15,
+    11
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -30.01,
+    -10,
+    8.4,
+    0.9,
+    3,
+    2
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -29.6,
+    2,
+    8.2,
+    2.4,
+    0.5,
+    1.8
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -26,
+    4.8,
+    1.2,
+    1.6,
+    0.4,
+    1.0
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -22,
+    4.8,
+    3.6,
+    14,
+    0.4,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -22,
+    4.8,
+    7,
+    14,
+    0.4,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6,
+    -4,
+    0,
+    10,
+    3,
+    3
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -6,
+    4,
+    0,
+    10,
+    2.4,
+    0.3
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -6,
+    5.2,
+    0,
+    10,
+    1.2,
+    0.6
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    4,
+    -12,
+    0,
+    26,
+    20,
+    9.5
+   ],
+   "m": "brick"
+  },
+  {
+   "shed": [
+    4,
+    -12,
+    9.5,
+    26,
+    20,
+    7
+   ],
+   "rise": "+x",
+   "m": "brick"
+  },
+  {
+   "cut": [
+    4,
+    -10,
+    0,
+    22,
+    14,
+    2.9
+   ]
+  },
+  {
+   "box": [
+    4,
+    -10,
+    0,
+    22,
+    14,
+    0.3
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    5,
+    -10.5,
+    0.3,
+    22,
+    0.6,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    4,
+    7.4,
+    0.3,
+    22,
+    0.6,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    25.4,
+    -10,
+    0.3,
+    0.6,
+    18,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    4,
+    -12,
+    2.9,
+    26,
+    20,
+    0.5
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    8,
+    4,
+    0.3,
+    0.6,
+    0.6,
+    2.6
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    14,
+    4,
+    0.3,
+    0.6,
+    0.6,
+    2.6
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    20,
+    4,
+    0.3,
+    0.6,
+    0.6,
+    2.6
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -6,
+    -28,
+    0,
+    36,
+    16,
+    0.3
+   ],
+   "m": "gravel"
+  },
+  {
+   "box": [
+    -39,
+    20,
+    0,
+    28,
+    9,
+    6.4
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -39,
+    19.9,
+    0.4,
+    28,
+    0.2,
+    1.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -38,
+    19.9,
+    3.4,
+    26,
+    0.2,
+    1.4
+   ],
+   "m": "glass"
+  },
+  {
+   "shed": [
+    -39,
+    20,
+    6.4,
+    28,
+    9,
+    1.8
+   ],
+   "rise": "-y",
+   "m": "tile"
+  },
+  {
+   "tree": [
+    14,
+    -22,
+    15,
+    4
+   ],
+   "shape": "round"
+  },
+  {
+   "tree": [
+    -8,
+    -20,
+    14,
+    3.5
+   ]
+  },
+  {
+   "tree": [
+    2,
+    -26,
+    13,
+    3.4
+   ]
+  },
+  {
+   "tree": [
+    32,
+    0,
+    16,
+    2.8
+   ]
+  },
+  {
+   "tree": [
+    34,
+    10,
+    14,
+    2.6
+   ]
+  },
+  {
+   "tree": [
+    -34,
+    -22,
+    17,
+    3.0
+   ]
+  },
+  {
+   "tree": [
+    -3,
+    22,
+    8,
+    3.5
+   ]
+  },
+  {
+   "tree": [
+    -22,
+    12,
+    20,
+    3.0
+   ]
+  },
+  {
+   "box": [
+    -40,
+    -36,
+    0,
+    80,
+    8,
+    0.3
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -40,
+    28,
+    0,
+    80,
+    8,
+    0.3
+   ],
+   "m": "gravel"
+  },
+  {
+   "box": [
+    -6,
+    -10,
+    0,
+    10,
+    5,
+    11
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -5,
+    -5.4,
+    0,
+    8,
+    0.5,
+    3.4
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -1,
+    -5.5,
+    0.4,
+    1.6,
+    0.5,
+    2.4
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6,
+    -5,
+    0,
+    10,
+    0.9,
+    0.5
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    -6,
+    -4.1,
+    0,
+    10,
+    0.9,
+    0.3
+   ],
+   "m": "stone"
+  },
+  {
+   "cut": [
+    4,
+    -12,
+    13,
+    6,
+    10,
+    5
+   ]
+  },
+  {
+   "box": [
+    -5,
+    -5.2,
+    0,
+    8,
+    0.4,
+    3
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -29,
+    4.9,
+    3.4,
+    2,
+    0.3,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -29,
+    4.9,
+    6.8,
+    2,
+    0.3,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -5.2,
+    4.9,
+    3.4,
+    0,
+    0.3,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    3.5,
+    -9,
+    3.4,
+    0.5,
+    16,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6.5,
+    -9,
+    3.4,
+    0.5,
+    10,
+    1.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6.5,
+    -9,
+    6.8,
+    0.5,
+    10,
+    1.2
+   ],
+   "m": "glass"
+  }
+ ],
+ "notes": "Models the Main Building (Päärakennus, Seminaarinkatu 15; Aalto 1954-56) on Seminaarinmäki, not the whole campus. Photos show: the entrance between a tall rectangular brick classroom wing (left, three storeys, one corner window under a white frame) and the fan-shaped auditorium wing (right) whose brick wall rises toward the east, steps up to a dark recessed doorway; the auditorium wing's glazed ground floor (library) on the forest side with a dark fascia; low red-brick wings with red tin roofs along the sports ground; pines and birches. Guessed: all dimensions (from proportions against the figure and storeys), the fan wing's true curved plan (stepped here as a wedge of brick over a box), the placement of the sports-ground wings, north orientation. Interior photos (skylights, stair) unused. Round 3: classroom wing given window ribbons by storey; entrance block lowered to brick."
+}

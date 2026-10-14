@@ -178,6 +178,11 @@ SPOTS = {
     # Valladolid; OpenStreetMap has the house number (24 Sep 2026).
     "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura":
         {"lat": 41.6135, "lon": -4.7603, "precision": "exact"},
+    # University of Jyväskylä's Main Building (Päärakennus, Alvar Aalto 1954–56),
+    # Seminaarinkatu 15: OpenStreetMap's "Jyväskylän yliopiston päärakennus (C)" via
+    # Nominatim (13 Oct 2026). A public university building.
+    "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto":
+        {"lat": 62.23643, "lon": 25.73230, "precision": "exact"},
 }
 
 

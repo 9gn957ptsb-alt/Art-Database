@@ -12,13 +12,14 @@
   },
   "a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos": {
     "name": "Casa Kakmo",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-13",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: smaller rear trees so the roof lounge reads, pool entry steps, stair railing, pale main-house walls, guessed yellow street front"
+      "2026-09-24 refined: smaller rear trees so the roof lounge reads, pool entry steps, stair railing, pale main-house walls, guessed yellow street front",
+      "2026-10-13 refined (photographs): the court re-laid as the photographs show: a narrow passage the lot's depth with a 4.4 × 16.6 m pool, ledge, floating stair to the guest block's roof, yellow street wall"
     ]
   },
   "measured-continuity-casa-s-by-valdemarin-and-siuk-studio": {
@@ -100,13 +101,14 @@
   },
   "a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio": {
     "name": "Simon Hamui Space",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-13",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: white window frames, dark multipane grid on the neighbour's windows, planter, heater and blade sign"
+      "2026-09-24 refined: white window frames, dark multipane grid on the neighbour's windows, planter, heater and blade sign",
+      "2026-10-13 refined (photographs): four tall bare cottonwoods; east neighbour paler brick; many-paned back-street windows"
     ]
   },
   "tree-as-origin-residence-204-by-estudio-bearzotti": {
@@ -177,13 +179,14 @@
   },
   "a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos": {
     "name": "Strazik House",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-13",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: vines redrawn as dense 0.9 m canopies every 2.5 m, living-gallery glass wraps the north end under the slab"
+      "2026-09-24 refined: vines redrawn as dense 0.9 m canopies every 2.5 m, living-gallery glass wraps the north end under the slab",
+      "2026-10-13 refined (photographs): roof now a dark slab with a parapet ring proud of the walls; loungers on the pool deck"
     ]
   },
   "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic": {
@@ -199,18 +202,19 @@
   },
   "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura": {
     "name": "Clinica Dental Apolonia",
-    "refined": "2026-09-24",
-    "passes": 2,
+    "refined": "2026-10-13",
+    "passes": 3,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs: a cutaway at the clinic's ceiling, its street front and its curved interior",
-      "2026-09-24 refined: shopfront frosted windows in dark frames and grey granite surround, pale floor, rear treatment-room windows, disc pendants"
+      "2026-09-24 refined: shopfront frosted windows in dark frames and grey granite surround, pale floor, rear treatment-room windows, disc pendants",
+      "2026-10-13 refined (photographs): floor beige porcelain; corridor and reception partitions warm plaster; oak reception wall behind the concrete sign panel; thin brick slab-edge ring so the interior stays open"
     ]
   },
   "museum-national-gallery-of-art-washington-dc": {
     "name": "National Gallery of Art, West Building",
-    "refined": "2026-09-24",
-    "passes": 2,
+    "refined": "2026-10-13",
+    "passes": 3,
     "sketchup": false,
     "kind": "museum",
     "log": [
@@ -218,7 +222,8 @@
       "2026-09-24 refined: Mall portico in two rows of Ionic columns framing three doors, stepped rings at the foot of the dome, skylit sculpture halls along the spine",
       "2026-09-30 interior finding: only 77% of the model's footprint stands on the ground's buildings",
       "2026-09-30 interior finding: 5 documented rooms of the Ground Floor lie outside the model (G-009, G-010, G-011-A, G-013-A, G-014): its rooms reach y -45.7 to 34.6 m (80.3 m) where the model reaches y -32.5 to 32.5 m (65.0 m), in x -98.3 to -55.8 m",
-      "2026-10-08 interior finding: 22 documented rooms of the Main Floor lie outside the model (M-012, M-015, M-016, M-017, M-018, M-019, M-020, M-035, M-035-A, M-040, M-041, M-041-A, …): its rooms reach y -46.2 to 46.2 m (92.3 m) where the model reaches y -32.5 to 35.0 m (67.5 m), in x -98.8 to -56.3 and 56.8 to 99.3 m"
+      "2026-10-08 interior finding: 22 documented rooms of the Main Floor lie outside the model (M-012, M-015, M-016, M-017, M-018, M-019, M-020, M-035, M-035-A, M-040, M-041, M-041-A, …): its rooms reach y -46.2 to 46.2 m (92.3 m) where the model reaches y -32.5 to 35.0 m (67.5 m), in x -98.8 to -56.3 and 56.8 to 99.3 m",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): limestone parapets and base course; pavilion cornices; dome in stone on a taller drum with a lantern; four garden courts glazed with low curbs (footprint 77% kept, 0 errors)"
     ],
     "interior": {
       "tier": "documented",
@@ -244,14 +249,15 @@
   },
   "museum-guggenheim-museum": {
     "name": "Solomon R. Guggenheim Museum",
-    "refined": "2026-09-24",
-    "passes": 2,
+    "refined": "2026-10-13",
+    "passes": 3,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
       "2026-09-24 refined: turned onto Manhattan grid (29 deg) and placed on its lot between 88th and 89th from the ground file, smaller Monitor and skylight, 88th/89th Streets, park thickened, rotunda clear of street trees",
-      "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 79% of the model's footprint stands on the ground's buildings",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): Gwathmey tower pale limestone; Fifth Avenue entrance canopy; monitor roof ring with skylight and three ribs over the rotunda (footprint 79% kept, 0 errors)"
     ],
     "interior": {
       "tier": "arranged",
@@ -274,13 +280,14 @@
   },
   "museum-san-francisco-museum-of-modern-art-sfmoma": {
     "name": "San Francisco Museum of Modern Art",
-    "refined": "2026-09-24",
-    "passes": 2,
+    "refined": "2026-10-13",
+    "passes": 3,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model from published plans and dimensions (no photographs reachable)",
-      "2026-09-24 refined: turned onto the SoMa grid (45 deg) with Third Street where the ground has it, cylinder slice cut along the rotated slope, Howard Street entrance and street, gallery skylights, height 62 m confirmed"
+      "2026-09-24 refined: turned onto the SoMa grid (45 deg) with Third Street where the ground has it, cylinder slice cut along the rotated slope, Howard Street entrance and street, gallery skylights, height 62 m confirmed",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): the addition's flat roof steps down toward Howard Street in three cuts (footprint 100% kept; still over the dot budget at 26.5k)"
     ],
     "interior": {
       "tier": "arranged",
@@ -807,14 +814,15 @@
   },
   "museum-guggenheim-museum-bilbao": {
     "name": "Guggenheim Bilbao",
-    "refined": "2026-09-24",
-    "passes": 2,
+    "refined": "2026-10-13",
+    "passes": 3,
     "sketchup": true,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: titanium flower atrium and petals as overlapping ellipsoids, the long fish gallery under La Salve bridge to the tower, limestone blocks on the city side, pool, river, Puppy; curves approximated — a SketchUp mesh would do them better",
       "2026-09-24 SketchUp: the titanium rebuilt as 17 lofted and curling solids (atrium bundle and crown, seven sails, four galleries, the fish gallery and tail, the tower cap), replacing 40 overlapping blobs",
-      "2026-09-30 interior finding: only 21% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 21% of the model's footprint stands on the ground's buildings",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): city-side blocks pale limestone with window slots; river-promenade trees; Puppy and Maman added (ordinary parts; SketchUp not used)"
     ],
     "interior": {
       "tier": "arranged",
@@ -1877,13 +1885,14 @@
   },
   "museum-yuz-museum": {
     "name": "Yuz Museum",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-13",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: the Longhua hangar with its shallow vault and clerestory, Fujimoto's L-shaped glass hall under a thin white roof, the olive tree",
-      "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 33% of the model's footprint stands on the ground's buildings",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): hangar vault in 14 finer courses with truss ribs every 8 m; clerestory a glass band; glass hall raised to 10 m with mullions; slimmer pilasters on two sides; courtyard opened"
     ],
     "interior": {
       "tier": "arranged",
@@ -1939,13 +1948,14 @@
   },
   "museum-yale-center-for-british-art": {
     "name": "Yale Center for British Art",
-    "refined": "2026-09-24",
-    "passes": 1,
+    "refined": "2026-10-13",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-24 first model: Kahn's 10x6-bay concrete frame with pewter steel and glass infill, shop fronts on Chapel Street, the open corner entrance, rows of roof skylights, on the street grid's bearing",
-      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings"
+      "2026-09-30 interior finding: only 55% of the model's footprint stands on the ground's buildings",
+      "2026-10-13 refined (no photographs reachable; from published descriptions): skylights no longer stacked two deep (the roof reads flat concrete with low skylights); a second row of street trees (footprint kept, interior check 0 errors)"
     ],
     "interior": {
       "tier": "arranged",
@@ -4012,6 +4022,86 @@
     "kind": "architecture",
     "log": [
       "2026-10-10 first model from the article's photographs: a Salamanca corner building as a cutaway: sandstone ground floor on a granite base with oak-framed windows, an L of pale render upper floors under tile, the clinic's interior from above; placed at its city only"
+    ]
+  },
+  "cityscape-casa-cm-by-mz-architects": {
+    "name": "Casa CM",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: board-formed concrete ground floor on a lawn podium with a rust-red garage panel; white upper box cantilevered over the entrance; long patio pool; placed at its town only"
+    ]
+  },
+  "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto": {
+    "name": "University of Jyväskylä Campus",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: Aalto's Main Building (1954–56): brick classroom wing, recessed entrance block, fan-shaped auditorium wing over a glazed library floor, red-roofed sports-ground wing; placed exactly (public building; OpenStreetMap, Seminaarinkatu 15)"
+    ]
+  },
+  "design-and-functionality-justiniano-building-by-s-estudio": {
+    "name": "Justiniano Building",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: narrow mid-block façade of slab edges and columns with glass-balustraded balconies, double-height ground floor, set-back duplex with roof terrace; placed at its city only"
+    ]
+  },
+  "a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain": {
+    "name": "Minnesota Residence",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: three-level lakeside house on a treed bank: white walk-out level, glazed middle level on a timber terrace, dark upper level; boathouse and dock; placed at its state only"
+    ]
+  },
+  "design-excellence-the-hotel-azur-lobby-by-estudio-montevideo": {
+    "name": "The Hotel Azur Lobby",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: interior cutaway: slate-blue walls over a timber wainscot, tiled arched niches, backlit timber reception wall, hanging timber-plate cylinder, sunken round seating; placed at its city only"
+    ]
+  },
+  "articulated-elegance-casa-berman-by-barrionuevo-villanueva-arquitectos": {
+    "name": "Casa Berman",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: two-storey grey concrete house, white upper box with concrete bands, hollow-block lattice screen, deep canopy over a covered terrace with a planted patio; placed at its city only"
+    ]
+  },
+  "dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos": {
+    "name": "Pabellón Polideportivo Carlos Soria",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: single-storey double-hollow-brick base with sliding glass and a canopied entrance, a tall milky-polycarbonate hall under a shallow zinc roof, blue court and pitch; placed at its city only (no precise public point found)"
+    ]
+  },
+  "golden-continuity-allison-island-residence-by-riva-spain": {
+    "name": "Allison Island Residence",
+    "refined": "2026-10-13",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-13 first model from the article's photographs: cream two-storey Mediterranean block with arcaded loggias under a red-tile hip roof, small pavilion, deck and pool, palms; placed at its town only"
     ]
   }
 }

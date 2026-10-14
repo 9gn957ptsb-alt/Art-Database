@@ -2537,7 +2537,8 @@
      so the latest can be taken back when he says it is too much (docs/v2/KALEIDOSCOPE.md, the
      ledger and the ideas still to come). The pulse's fold, above, came first. */
   var KALEIDOSCOPES = {
-    arrive: true          // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
+    arrive: true,         // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
+    pointed: true         // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
   };
 
   function folded(sx, sy, turn) {
@@ -10206,8 +10207,8 @@
   /* The photograph seen through two mirrors `wedge` apart, standing at `tau` over its middle, out
      to `reach`: the picture under the first wedge, reflected wedge by wedge round the middle; the
      last cut where the circle closes. */
-  function kaleidoscopeOf(g, art, w, h, wedge, tau, reach) {
-    var cx = w / 2, cy = h / 2, n = Math.ceil(2 * Math.PI / wedge - 1e-6);
+  function kaleidoscopeOf(g, art, w, h, wedge, tau, reach, mx, my) {
+    var cx = mx === undefined ? w / 2 : mx, cy = my === undefined ? h / 2 : my, n = Math.ceil(2 * Math.PI / wedge - 1e-6);
     for (var i = 0; i < n; i += 1) {
       var odd = i % 2 === 1, lo = 0, hi = wedge, left = 2 * Math.PI - i * wedge;
       if (left < wedge) { if (odd) { lo = wedge - left; } else { hi = left; } }
@@ -10326,12 +10327,52 @@
     }, { art: true, covered: false });
   };
 
+  /* Pointed at, folded (13 Oct 2026; KALEIDOSCOPES.pointed): the mirrors stand over the point
+     the pointer is on and the photograph is seen through them as they close and open by φ —
+     1.5, 3.8, 10 images, then back, 10, 3.8, 1.5 — seven held steps, a beat and a half. The
+     photograph is uncovered between steps (no step hides it for more than a fifth of a second). */
+  function kaleidoscopeAt(box) {
+    var at = box.pointerXY || { x: 0.5, y: 0.5 };
+    var turn0 = Math.random() * FOLD, small = null;
+    var wedges = [FOLD * PHI * PHI * PHI * PHI, FOLD * PHI * PHI, FOLD, FOLD, FOLD * PHI * PHI, FOLD * PHI * PHI * PHI * PHI];
+    runVeil(box, 0, 130 * (wedges.length + 1), wedges.length + 1, function (v, q, art) {
+      var i = Math.floor(q * (wedges.length + 1));
+      if (i >= wedges.length) { drawArt(v.g, art, v.w, v.h); return; }
+      if (!small) { small = pixelCanvas(v, 2); }
+      var sg = small.getContext("2d"), k = small.width / v.w;
+      var cx = at.x * v.w, cy = at.y * v.h;
+      sg.setTransform(1, 0, 0, 1, 0, 0);
+      sg.clearRect(0, 0, small.width, small.height);
+      sg.setTransform(k, 0, 0, k, 0, 0);
+      kaleidoscopeOf(sg, art, v.w, v.h, wedges[i], turn0 + i * 0.07, Math.hypot(v.w, v.h), cx, cy);
+      drawArt(v.g, art, v.w, v.h);
+      v.g.imageSmoothingEnabled = false;
+      v.g.drawImage(small, 0, 0, v.w, v.h);
+      v.g.imageSmoothingEnabled = true;
+      var n = Math.ceil(2 * Math.PI / wedges[i] - 1e-6);
+      v.g.strokeStyle = LIGHT;
+      v.g.globalAlpha = 0.3;
+      v.g.lineWidth = 1;
+      v.g.beginPath();
+      for (var j = 0; j < n; j += 1) {
+        var a = turn0 + i * 0.07 + j * wedges[i];
+        v.g.moveTo(cx, cy);
+        v.g.lineTo(cx + Math.cos(a) * 40, cy + Math.sin(a) * 40);
+      }
+      v.g.stroke();
+      v.g.globalAlpha = 1;
+    }, { art: true, covered: false });
+  }
+  if (KALEIDOSCOPES.pointed) { POINTED.kaleidoscope = kaleidoscopeAt; }
+
   function pointAt(box, go, event) {
     if (still || event.pointerType !== "mouse") { return; }
     if (box.querySelector(".deal-veil") || go.dataset.pointed) { return; }
     var now = performance.now();
     if (box.pointedAt && now - box.pointedAt < 900) { return; }
     box.pointedAt = now;
+    var br = box.getBoundingClientRect();
+    box.pointerXY = { x: clamp01((event.clientX - br.left) / Math.max(1, br.width)), y: clamp01((event.clientY - br.top) / Math.max(1, br.height)) };
     POINTED[oneOf(Object.keys(POINTED))](box, go);
   }
 
@@ -15881,6 +15922,7 @@
     },
     pace: function (on) { pace.held = on === false; pace.from = 0; },
     // The next photograph to arrive comes by this arrival ("kaleidoscope", "tiles" …): for the checks.
+    pointed: function (name, x, y) { var b = document.querySelector("#art-plate .art-pic, #art-plate"); if (!b || !POINTED[name]) { return Object.keys(POINTED); } b.pointerXY = { x: x, y: y }; POINTED[name](b, b); return Object.keys(POINTED); },
     arrival: function (name) { nextArrival = name || null; return Object.keys(ARRIVALS); },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
