@@ -47,6 +47,13 @@ function check(tag, ok, what, got) {
 // A point on bare ground: nothing there is a name, a button, a link, the column, the banner or the dial,
 // and none within 22 px; on a phone toward the middle, where a character that walks off to the left has room.
 function bareSpot([w, h]) {
+  // Not on a city's ground dial (skyline.js): a press on its ring or its marks turns time, not the wave.
+  const ring = window.Skyline && Skyline.ring ? Skyline.ring() : null;
+  const onRing = (x, y) => {
+    if (!ring) { return false; }
+    const du = x - ring.cx, dw = (y - ring.cy) / ring.st;
+    return Math.hypot(du, dw) > ring.R * 0.8;
+  };
   const bad = (el) => {
     for (let e = el; e && e !== document.body; e = e.parentElement) {
       if (e.matches && e.matches("button, a, [role=button], [class*=name], [class*=label], input, #art-col, #banner, .banner, .dial, [class*=dial]")) { return true; }
@@ -58,6 +65,7 @@ function bareSpot([w, h]) {
     for (let q = 0; q < 40; q++) {
       const x = Math.round(w * (x0 + (x1 - x0) * ((q * 7 + r * 3) % 40) / 40)), y = Math.round(h * (y0 + (y1 - y0) * ((r * 11 + q * 5) % 40) / 40));
       const el = document.elementFromPoint(x, y);
+      if (onRing(x, y)) { continue; }
       if (!el || bad(el) || !(el.tagName === "CANVAS" || el.id === "land" || el.closest(".skyline, #land, .land"))) { continue; }
       let near = false;
       for (let dx = -22; dx <= 22 && !near; dx += 11) {
