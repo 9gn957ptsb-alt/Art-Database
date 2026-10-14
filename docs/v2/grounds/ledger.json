@@ -111,25 +111,27 @@
     },
     "brussels-be": {
       "name": "Brussels",
-      "tier": 0,
-      "n": 144,
-      "cell": 44.4,
+      "tier": 2,
+      "n": 320,
+      "cell": 20.0,
       "side": 6400,
       "lat": 50.84005,
       "lon": 4.36079,
-      "release": "2026-09-23.0",
-      "read": "2026-10-07",
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
       "dated": "2026-10-14",
-      "buildings": 8848,
-      "green": 0,
-      "dated_share": 0.656,
-      "kb": 149,
-      "gz": 35,
+      "buildings": 41020,
+      "green": 10229,
+      "dated_share": 0.69,
+      "kb": 721,
+      "gz": 125,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 8848 buildings · dated to 2026-10-08: 66% of its building cells",
         "2026-10-13 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
-        "2026-10-14 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)"
-      ]
+        "2026-10-14 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
+        "2026-10-14 · raised to tier 2 · 320 cells a side (20.0 m) from Overture 2026-09-23.1 · 41020 buildings, 10229 green cells · 69% dated, 29278 cells' years carried from the last cut (Brussels heritage inventory (urban.brussels), Brussels built up by 1930 (urban.brussels, BruCiel), Brussels heritage inventory (urban.brussels) did not answer) · 721 KB (125 KB sent)"
+      ],
+      "records": "asked 2026-10-14 for years"
     },
     "chicago-us": {
       "name": "Chicago",
@@ -153,25 +155,66 @@
         "2026-10-14 · still wrong: dated share fell 70% to 66% at the finer grain (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
       ]
     },
+    "cologne-de": {
+      "tier": 2,
+      "log": [
+        "2026-10-14 · first cut · 200 cells a side (20.0 m) from Overture 2026-09-23.1 · 12034 buildings, 5182 green cells · 4% of its building cells dated · 223 KB (34 KB sent)"
+      ],
+      "name": "Cologne",
+      "n": 200,
+      "cell": 20.0,
+      "side": 4000,
+      "lat": 50.9272,
+      "lon": 6.95155,
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 12034,
+      "green": 5182,
+      "dated_share": 0.045,
+      "kb": 223,
+      "gz": 34
+    },
     "copenhagen-dk": {
       "name": "Copenhagen",
-      "tier": 0,
-      "n": 144,
-      "cell": 44.4,
+      "tier": 2,
+      "n": 320,
+      "cell": 20.0,
       "side": 6400,
       "lat": 55.68627,
       "lon": 12.56603,
-      "release": "2026-09-23.0",
-      "read": "2026-10-07",
-      "dated": "2026-10-08",
-      "buildings": 5173,
-      "green": 0,
-      "dated_share": 0.987,
-      "kb": 133,
-      "gz": 25,
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 13895,
+      "green": 16077,
+      "dated_share": 0.965,
+      "kb": 606,
+      "gz": 111,
       "log": [
-        "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 5173 buildings · dated to 2026-10-08: 99% of its building cells"
+        "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 5173 buildings · dated to 2026-10-08: 99% of its building cells",
+        "2026-10-14 · raised to tier 2 · 320 cells a side (20.0 m) from Overture 2026-09-23.1 · 13895 buildings, 16077 green cells · 96% of its building cells dated (99% at the last cut) · 606 KB (111 KB sent)"
       ]
+    },
+    "dallas-us": {
+      "tier": 2,
+      "log": [
+        "2026-10-14 · first cut · 192 cells a side (20.3 m) from Overture 2026-09-23.1 · 2306 buildings, 2748 green cells · 8% of its building cells dated · 182 KB (25 KB sent)"
+      ],
+      "name": "Dallas",
+      "n": 192,
+      "cell": 20.3,
+      "side": 3900,
+      "lat": 32.7902,
+      "lon": -96.81535,
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 2306,
+      "green": 2748,
+      "dated_share": 0.078,
+      "kb": 182,
+      "gz": 25
     },
     "houston-us": {
       "name": "Houston",
@@ -329,7 +372,7 @@
     },
     "new-york-us": {
       "name": "New York",
-      "tier": 2,
+      "tier": 3,
       "n": 400,
       "cell": 20.0,
       "side": 8000,
@@ -438,27 +481,44 @@
     },
     "seattle-us": {
       "name": "Seattle",
-      "tier": 0,
-      "n": 128,
-      "cell": 40.6,
+      "tier": 2,
+      "n": 256,
+      "cell": 20.3,
       "side": 5200,
       "lat": 47.61035,
       "lon": -122.33488,
-      "release": "2026-09-23.0",
-      "read": "2026-10-07",
-      "dated": "2026-10-08",
-      "buildings": 3814,
-      "green": 0,
-      "dated_share": 0.921,
-      "kb": 104,
-      "gz": 25,
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 10180,
+      "green": 3717,
+      "dated_share": 0.864,
+      "kb": 405,
+      "gz": 77,
       "log": [
-        "2026-10-07 · first cut · 128 cells a side (40.6 m) from Overture 2026-09-23.0 · 3814 buildings · dated to 2026-10-08: 92% of its building cells"
+        "2026-10-07 · first cut · 128 cells a side (40.6 m) from Overture 2026-09-23.0 · 3814 buildings · dated to 2026-10-08: 92% of its building cells",
+        "2026-10-14 · raised to tier 2 · 256 cells a side (20.3 m) from Overture 2026-09-23.1 · 10180 buildings, 3717 green cells · 86% of its building cells dated (92% at the last cut) · 405 KB (77 KB sent)"
       ]
     },
     "seoul-kr": {
       "tier": 2,
-      "log": []
+      "log": [
+        "2026-10-14 · first cut · 344 cells a side (20.1 m) from Overture 2026-09-23.1 · 21160 buildings, 13517 green cells · 7% of its building cells dated · 649 KB (100 KB sent)"
+      ],
+      "name": "Seoul",
+      "n": 344,
+      "cell": 20.1,
+      "side": 6900,
+      "lat": 37.52415,
+      "lon": 127.0279,
+      "release": "2026-09-23.1",
+      "read": "2026-10-14",
+      "dated": "2026-10-14",
+      "buildings": 21160,
+      "green": 13517,
+      "dated_share": 0.066,
+      "kb": 649,
+      "gz": 100
     },
     "tokyo-jp": {
       "tier": 2,
