@@ -1,12 +1,14 @@
 name: City building records
 
 # Reads the cities' own records of when their buildings went up (scripts/fetch_city_records.py) from
-# servers the Claude sessions' network does not reach — Italy's census sections (ISTAT) first — and
-# commits each ground's years to records/years/ and its census blocks to records/census/, which
-# build_built_years.py reads. A push to the site's branch that touches the script, this file or
-# records/REQUEST (write the date in it to ask for a fresh read) runs it; the workflow on a pushed
-# branch is the one that runs, so it needs no copy on the default branch. Its first step prints what
-# the hosts of the sources still to write offer, for the next reader.
+# servers the Claude sessions' network does not reach — Italy's census sections (ISTAT), Brussels'
+# heritage inventory, and the BDNB's department files for the French places the session asks for in
+# records/bdnb.json (its API serves ten groups a call) — and commits each ground's years to
+# records/years/ and its census blocks to records/census/, which build_built_years.py reads. A push to
+# the site's branch that touches the script, this file, records/REQUEST (write the date in it to ask
+# for a fresh read) or records/bdnb.json runs it; the workflow on a pushed branch is the one that runs,
+# so it needs no copy on the default branch. Its first step prints what the hosts of the sources still
+# to write offer, for the next reader.
 
 on:
   push:
@@ -15,6 +17,7 @@ on:
       - scripts/fetch_city_records.py
       - .github/workflows/city-records.yml
       - records/REQUEST
+      - records/bdnb.json
   workflow_dispatch:
 
 permissions:

@@ -29,7 +29,7 @@ What neither knows stays 0: the town shows it from the start.
 
 Tiles and answers are cached in data/ (not committed).
 
-    python3 scripts/build_built_years.py [--only slug] [--force] [--cities]
+    python3 scripts/build_built_years.py [--only slug] [--force] [--cities] [--bdnb-cached]
 """
 
 import argparse
@@ -806,15 +806,46 @@ BDNB_YEARS = {
     "bdnb-bg-767W-2W5S-SH7Z": 1724, "bdnb-bg-KXBT-7377-FP55": 1857, "bdnb-bg-DZB9-77DA-3E6Z": 1500,
 }
 BDNB = "https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_complet?"
+# Since October 2026 the API answers ten groups a call, whatever the limit asks, against 10,000 calls a
+# month (Aix-en-Provence alone is 20,588 groups): a commune over BDNB_API_MAX groups is not read from the
+# session but asked of GitHub's runners, which read the BDNB's department files whole
+# (fetch_city_records.py, records/bdnb.json) into records/years/, applied by record_years below.
+BDNB_API_MAX = 1000
+BDNB_CACHED_ONLY = False    # --bdnb-cached: no calls at all, only the communes already in data/bdnb/
+BDNB_WANT = ROOT / "records" / "bdnb.json"
+WANT_RUNNERS = set()        # the places a commune was left out of, for records/bdnb.json
+_slug_now = None
+
+
+def ask_runners():
+    """Add the places a commune was left out of to records/bdnb.json, the list the runners read the
+    department files for (a push of it starts .github/workflows/city-records.yml). Once their records
+    are in records/years/, date those places again: --force --only <slug>."""
+    if not WANT_RUNNERS:
+        return
+    have = json.loads(BDNB_WANT.read_text(encoding="utf-8")) if BDNB_WANT.exists() else {}
+    places = sorted(set(have.get("places", [])) | WANT_RUNNERS)
+    if places != have.get("places"):
+        BDNB_WANT.parent.mkdir(parents=True, exist_ok=True)
+        BDNB_WANT.write_text(json.dumps({
+            "note": ("The places whose BDNB communes are too big for its API from the session (ten groups a "
+                     "call, 10,000 calls a month): GitHub's runners read them from the BDNB's department files "
+                     "(scripts/fetch_city_records.py; written by build_built_years.py)."),
+            "places": places}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"  · asked the runners for {len(places) - len(have.get('places', []))} more place(s): "
+              f"commit and push records/bdnb.json", flush=True)
 
 
 def bdnb_commune(code, deadline=None):
     """Every dated group in one commune, cached in data/bdnb/ (the API allows 10,000 calls a month). A big
     commune can take longer than a place's run should (Paris's arrondissements, Aix): past the deadline
-    its pages so far are kept (<code>.partial.json) and the next run goes on from them (TimeoutError)."""
+    its pages so far are kept (<code>.partial.json) and the next run goes on from them (TimeoutError).
+    One over BDNB_API_MAX groups is left to the runners (TimeoutError), its size kept so it is asked once."""
     path = CACHE / "bdnb" / f"{code}.json"
     if path.exists():
         return json.loads(path.read_text())
+    if BDNB_CACHED_ONLY:
+        raise TimeoutError(f"BDNB commune {code}: not read yet (--bdnb-cached), left to the runners")
     part = CACHE / "bdnb" / f"{code}.partial.json"
     got = json.loads(part.read_text()) if part.exists() else {"rows": [], "total": None}
     rows, total = got["rows"], got["total"]
@@ -826,6 +857,10 @@ def bdnb_commune(code, deadline=None):
         tmp.replace(at)
 
     while total is None or len(rows) < total:
+        if total and total > BDNB_API_MAX:
+            keep(part, {"rows": rows, "total": total})
+            raise TimeoutError(f"BDNB commune {code}: {total} groups, too many for the API's ten a call; "
+                               f"left to the runners' department files")
         if deadline and time.time() > deadline:
             keep(part, {"rows": rows, "total": total})
             raise TimeoutError(f"BDNB commune {code}: {len(rows)} of {total} groups read, the rest next run")
@@ -903,6 +938,8 @@ def france(box):
             rows = bdnb_commune(code, deadline)
         except TimeoutError as exc:
             print(f"  · {exc}", flush=True)
+            if _slug_now:
+                WANT_RUNNERS.add(_slug_now)
             continue
         for r in rows:
             y = BDNB_YEARS.get(r.get("batiment_groupe_id")) or year_of(r.get("annee_construction"))
@@ -1678,6 +1715,8 @@ NO_CITY = False     # --no-city
 
 
 def years_for(place, g):
+    global _slug_now
+    _slug_now = place["slug"]
     n, side = g["n"], g["side"]
     cell = side / n
     to_m, to_deg = local(place["lat"], place["lon"])
@@ -1787,9 +1826,12 @@ def main():
     ap.add_argument("--no-city", action="store_true",
                     help="leave the city's own source out (it refuses the session: Catastro answered 403 on 7 Oct 2026); "
                          "OpenStreetMap's dates and the satellites only")
+    ap.add_argument("--bdnb-cached", action="store_true",
+                    help="no calls to the BDNB's API: only the communes already read; the rest asked of the runners")
     args = ap.parse_args()
-    global NO_CITY
+    global NO_CITY, BDNB_CACHED_ONLY
     NO_CITY = args.no_city
+    BDNB_CACHED_ONLY = args.bdnb_cached
     places = []
     for f in PLACES:
         if f.exists():
@@ -1814,6 +1856,8 @@ def main():
         except Exception as exc:
             print(f"  ! {p['slug']}: {type(exc).__name__}: {exc}", flush=True)
             continue
+        finally:
+            ask_runners()
         g["built"] = years
         g["builtFrom"] = said
         if floor:

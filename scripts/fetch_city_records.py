@@ -31,7 +31,7 @@ A second kind of source counts a block's buildings by period instead of giving e
 and build_built_years.py deals each block's cells that nothing else dates in the block's shares.
 --probe prints what the hosts of the sources still to write offer (their layers, their downloads).
 
-    python3 scripts/fetch_city_records.py [--only slug] [--source name] [--list] [--census] [--probe]
+    python3 scripts/fetch_city_records.py [--only slug] [--source name] [--list] [--census] [--probe] [--force]
 """
 
 import argparse
@@ -39,10 +39,12 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import shutil
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -138,6 +140,227 @@ SOURCES += [
      BXL_BOX, 1930, brussels_1930),
 ]
 EXTENT["Brussels built up by 1930 (urban.brussels, BruCiel)"] = 1930
+
+# France: the BDNB (Base de données nationale des bâtiments, CSTB; Licence Ouverte / Etalab 2.0), whose
+# year is the land registers' (fichiers fonciers). build_built_years.py reads it commune by commune from
+# its API, but since October 2026 the API answers ten groups a call against 10,000 calls a month, so a
+# commune over a thousand groups (Aix-en-Provence is 20,588; Paris's arrondissements, Nice, Arles) is
+# asked of the runners: the places in records/bdnb.json. Each department's CSV extract is downloaded
+# once, the groups whose outline starts in a wanted square kept with their year, and the file deleted.
+# The monuments' documented years stand in for the registers' (build_built_years.BDNB_YEARS), and an
+# undated group is left out, as the API's reading leaves it.
+BDNB_NAME = "BDNB (CSTB), its department files"
+BDNB_FILE = ("https://open-data.s3.fr-par.scw.cloud/bdnb_millesime_{m}/millesime_{m}_dep{d}/"
+             "open_data_millesime_{m}_dep{d}_csv.zip")
+BDNB_RELEASES = ["2026-02-a", "2025-07-a"]          # the newest first
+BDNB_BOX = (41.3, -5.2, 51.1, 9.6)
+_bdnb = {}                                            # square -> [(year, ring)]
+_deps = None
+
+
+def department(lat, lon):
+    """The French department a point is in, as the BDNB's files write it ("06", "75", "2a"), or None."""
+    global _deps
+    path = DATA / "departments.json"
+    if _deps is None:
+        _deps = json.loads(path.read_text()) if path.exists() else {}
+    at = f"{lat:.3f},{lon:.3f}"
+    if at not in _deps:
+        q = urllib.parse.urlencode({"lat": round(lat, 5), "lon": round(lon, 5), "format": "jsonv2", "zoom": 10,
+                                    "addressdetails": 1})
+        a = (json.loads(B.fetch("https://nominatim.openstreetmap.org/reverse?" + q) or b"{}").get("address") or {})
+        d = None
+        if a.get("country_code") == "fr":
+            m = re.match(r"FR-(\d[0-9AB])", a.get("ISO3166-2-lvl6", ""), re.I)     # Paris is FR-75C
+            pc = a.get("postcode", "")
+            if m:
+                d = m.group(1).lower()
+            elif re.fullmatch(r"\d{5}", pc):
+                d = ("2a" if pc[:3] in ("200", "201") else "2b") if pc.startswith("20") else pc[:2]
+        _deps[at] = d
+        DATA.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(_deps, sort_keys=True))
+        time.sleep(1.1)
+    return _deps[at]
+
+
+def bdnb_download(d):
+    """A department's CSV extract, the newest release that answers."""
+    for m in BDNB_RELEASES:
+        for dd in dict.fromkeys([d, d.upper(), d.lstrip("0")]):
+            url = BDNB_FILE.format(m=m, d=dd)
+            try:
+                return download(url, f"bdnb_{m}_dep{dd}.zip"), m
+            except urllib.error.HTTPError as exc:
+                print(f"    {url}: {exc.code}", flush=True)
+    raise FileNotFoundError(f"no BDNB extract for department {d}")
+
+
+def _bdnb_table(z, names, want):
+    """A CSV member of the extract and its reader: the first whose base name is one of `want` (in that
+    order), or whose header has every column of a `want` entry given as a tuple of columns."""
+    csv.field_size_limit(2 ** 31 - 1)
+    for w in want:
+        for n in names:
+            if not n.lower().endswith(".csv"):
+                continue
+            if isinstance(w, str) and os.path.basename(n).lower() != w:
+                continue
+            f = io.TextIOWrapper(z.open(n), encoding="utf-8", errors="replace", newline="")
+            head = f.readline()
+            sep = ";" if head.count(";") > head.count(",") else ","
+            cols = [c.strip().strip('"').lstrip("﻿").lower() for c in head.rstrip("\r\n").split(sep)]
+            if isinstance(w, tuple) and not all(c in cols for c in w):
+                f.close()
+                continue
+            return n, cols, csv.reader(f, delimiter=sep)
+    return None, [], None
+
+
+def _shape(text):
+    """A group's outline from its CSV cell: WKT, EWKT, hex (E)WKB or GeoJSON."""
+    import shapely
+    t = text.strip()
+    if not t:
+        return None
+    if t.startswith("{"):
+        return shapely.from_geojson(t)
+    if re.fullmatch(r"[0-9A-Fa-f]+", t[:64]):
+        return shapely.from_wkb(bytes.fromhex(t))
+    return shapely.from_wkt(re.sub(r"^SRID=\d+;", "", t))
+
+
+FIRST_XY = re.compile(r"(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)")
+
+
+def bdnb_prepare(boxes):
+    """Read every wanted square's groups out of its departments' files, each department once."""
+    from pyproj import Transformer
+    by_dep = {}
+    for box in boxes:
+        _bdnb.setdefault(box, [])
+        s, w, n, e = box
+        for d in {department(la, lo) for la, lo in ((s, w), (s, e), (n, w), (n, e), ((s + n) / 2, (w + e) / 2))}:
+            if d:
+                by_dep.setdefault(d, []).append(box)
+    to_l93 = Transformer.from_crs(4326, 2154, always_xy=True)
+    to_ll = Transformer.from_crs(2154, 4326, always_xy=True)
+    for d, wanted in sorted(by_dep.items()):
+        print(f"    BDNB department {d}: {len(wanted)} square(s)", flush=True)
+        try:
+            path, release = bdnb_download(d)
+        except Exception as exc:
+            print(f"    ! BDNB department {d}: {type(exc).__name__}: {exc}", flush=True)
+            continue
+        try:
+            z = zipfile.ZipFile(path)
+            names = z.namelist()
+            print(f"    {path.name} ({release}): {len(names)} files · "
+                  f"{[os.path.basename(n) for n in names if 'batiment_groupe' in n.lower()][:24]}", flush=True)
+            # The outlines: batiment_groupe (its geom_groupe), else the complete view if the extract has it.
+            gname, gcols, rows = _bdnb_table(z, names, ["batiment_groupe.csv", "batiment_groupe_complet.csv"])
+            if not rows or "batiment_groupe_id" not in gcols:
+                print(f"    ! no outlines in {path.name}: {gname} {gcols[:12]}", flush=True)
+                continue
+            k_id = gcols.index("batiment_groupe_id")
+            k_geom = next((gcols.index(c) for c in ("geom_groupe", "geom", "geometry", "wkt") if c in gcols),
+                          next((i for i, c in enumerate(gcols) if c.startswith("geom")), None))
+            k_year = gcols.index("annee_construction") if "annee_construction" in gcols else None
+            print(f"    {gname}: columns {gcols[:16]} · outline {gcols[k_geom] if k_geom is not None else None}",
+                  flush=True)
+            if k_geom is None:
+                continue
+            frames, projected, keep, seen = None, True, {}, 0
+            for row in rows:
+                if len(row) <= max(k_id, k_geom):
+                    continue
+                text = row[k_geom]
+                seen += 1
+                if frames is None:          # the files' coordinates: Lambert-93 metres, or degrees
+                    g0 = _shape(text)
+                    if g0 is None or g0.is_empty:
+                        continue
+                    x0, y0 = g0.bounds[:2]
+                    projected = abs(x0) > 360 or abs(y0) > 90
+                    print(f"    first outline: {text[:72]}… ({'Lambert-93' if projected else 'degrees'})",
+                          flush=True)
+                    frames = []
+                    for box in wanted:
+                        s, w, n, e = B.padded(box, 200)
+                        if projected:
+                            xs, ys = to_l93.transform([w, e, w, e], [s, s, n, n])
+                            frames.append((min(xs), min(ys), max(xs), max(ys), box))
+                        else:
+                            frames.append((w, s, e, n, box))
+                m = FIRST_XY.search(text[:200]) if not text.lstrip().startswith(("0", "{")) else None
+                if m:
+                    x, y = float(m.group(1)), float(m.group(2))
+                else:
+                    g1 = _shape(text)
+                    if g1 is None or g1.is_empty:
+                        continue
+                    x, y = g1.bounds[:2]
+                hits = [f[4] for f in frames if f[0] <= x <= f[2] and f[1] <= y <= f[3]]
+                if hits:
+                    year = B.year_of(row[k_year]) if k_year is not None and len(row) > k_year else 0
+                    keep[row[k_id]] = [text, hits, year]
+            print(f"    {seen} groups read, {len(keep)} in the squares", flush=True)
+            if not keep:
+                continue
+            if k_year is None:          # the year from the land registers' table, joined by the group's id
+                yname, ycols, yrows = _bdnb_table(z, names, ["batiment_groupe_ffo_bat.csv",
+                                                             ("batiment_groupe_id", "annee_construction")])
+                if not yrows:
+                    print(f"    ! no years in {path.name}", flush=True)
+                    continue
+                k_yid, k_y = ycols.index("batiment_groupe_id"), ycols.index("annee_construction")
+                print(f"    years from {yname}", flush=True)
+                for row in yrows:
+                    if len(row) > max(k_yid, k_y) and row[k_yid] in keep:
+                        keep[row[k_yid]][2] = keep[row[k_yid]][2] or B.year_of(row[k_y])
+            took = 0
+            for gid, (text, hits, year) in keep.items():
+                year = B.BDNB_YEARS.get(gid) or year
+                if not year:
+                    continue
+                geom = _shape(text)
+                if geom is None or geom.is_empty:
+                    continue
+                polys = getattr(geom, "geoms", [geom])
+                for poly in polys:
+                    if getattr(poly, "exterior", None) is None:
+                        continue
+                    xs, ys = zip(*[c[:2] for c in poly.exterior.coords])
+                    ring = list(zip(*to_ll.transform(xs, ys))) if projected else list(zip(xs, ys))
+                    for box in hits:
+                        _bdnb[box].append((year, ring))
+                took += 1
+            print(f"    {took} dated groups kept for {len(wanted)} square(s)", flush=True)
+        except Exception as exc:          # one department failing keeps none of the others back
+            print(f"    ! BDNB department {d}: {type(exc).__name__}: {exc}", flush=True)
+        finally:
+            path.unlink(missing_ok=True)
+
+
+def bdnb_france(box):
+    return "polys", _bdnb.get(box, [])
+
+
+def bdnb_wanted(p, force=False):
+    """A place the session asked for (records/bdnb.json) and not already read from the files."""
+    want = ROOT / "records" / "bdnb.json"
+    places = json.loads(want.read_text(encoding="utf-8")).get("places", []) if want.exists() else []
+    if p["slug"] not in places:
+        return False
+    rec = OUT / (p["slug"] + ".json")
+    return force or not rec.exists() or BDNB_NAME not in json.loads(rec.read_text()).get("sources", [])
+
+
+SOURCES += [
+    (BDNB_NAME, "Licence Ouverte / Etalab 2.0 (BDNB open data, CSTB)", BDNB_BOX, None, bdnb_france),
+]
+PREPARE = {BDNB_NAME: bdnb_prepare}       # read once for every square, before the squares are joined
+WANTED = {BDNB_NAME: bdnb_wanted}         # which places a source is read for, when not every one in its box
 
 
 def cells_of(place, g):
@@ -380,6 +603,10 @@ PROBES = [
     ("Colouring London data extracts", "https://colouringlondon.org/data-extracts", r'href="([^"]+)"',
      r"\.zip|\.csv|extract|download"),
     ("Colouring London extracts API", "https://colouringlondon.org/api/extracts", None, None),
+    ("BDNB releases", "https://open-data.s3.fr-par.scw.cloud/?list-type=2&delimiter=/&prefix=bdnb_millesime",
+     r"<Prefix>([^<]+)</Prefix>", r"millesime"),
+    ("BDNB department 06's files", "https://open-data.s3.fr-par.scw.cloud/?list-type=2&prefix=bdnb_millesime_"
+     + BDNB_RELEASES[0] + "/millesime_" + BDNB_RELEASES[0] + "_dep06/", r"<Key>([^<]+)</Key>", r"."),
 ]
 
 
@@ -411,12 +638,13 @@ def main():
     ap.add_argument("--list", action="store_true", help="list the grounds each source covers, and stop")
     ap.add_argument("--census", action="store_true", help="the census blocks (Italy's sections), and stop")
     ap.add_argument("--probe", action="store_true", help="what the sources still to write offer, and stop")
+    ap.add_argument("--force", action="store_true", help="read a wanted place again though its record has the source")
     args = ap.parse_args()
     if args.probe:
         return probe()
     if args.census:
         return census(args)
-    todo = []
+    todo, kept = [], set()
     for name, licence, (s, w, n, e), floor, reader in SOURCES:
         if args.source and args.source.lower() not in name.lower():
             continue
@@ -424,6 +652,12 @@ def main():
             if args.only and p["slug"] != args.only:
                 continue
             if s <= p["lat"] <= n and w <= p["lon"] <= e and (GROUNDS / (p["slug"] + ".json")).exists():
+                if name in WANTED:
+                    want = WANTED[name](p, args.force)
+                    if not want:
+                        if want is False:         # read already: its record is kept under any other reading
+                            kept.add(p["slug"])
+                        continue
                 todo.append((name, licence, floor, reader, p))
     if args.list:
         for name, _, _, _, p in todo:
@@ -432,9 +666,17 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     DATA.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
+    ground = {}
+    for p in {p["slug"]: p for *_, p in todo}.values():
+        ground[p["slug"]] = json.loads((GROUNDS / (p["slug"] + ".json")).read_text(encoding="utf-8"))
+    for name, prepare in PREPARE.items():
+        boxes = [square(p, ground[p["slug"]]) for nm, *_, p in todo if nm == name]
+        if boxes:
+            print(f"{name}: {len(boxes)} place(s)", flush=True)
+            prepare(boxes)
     done = {}
     for name, licence, floor, reader, p in todo:
-        g = json.loads((GROUNDS / (p["slug"] + ".json")).read_text(encoding="utf-8"))
+        g = ground[p["slug"]]
         idx, lat, lon, cell = cells_of(p, g)
         if not idx:
             continue
@@ -447,6 +689,9 @@ def main():
         if years is None:
             print(f"  · {name} · {p['slug']}: nothing in its square", flush=True)
             continue
+        if p["slug"] in kept and p["slug"] not in done:
+            old = json.loads((OUT / (p["slug"] + ".json")).read_text(encoding="utf-8"))
+            done[p["slug"]] = {**old, "read": stamp, "cells": dict(old.get("cells", {}))}
         rec = done.setdefault(p["slug"], {"sources": [], "licence": [], "read": stamp, "floor": None,
                                           "n": g["n"], "side": g["side"], "cells": {}})
         took = 0
