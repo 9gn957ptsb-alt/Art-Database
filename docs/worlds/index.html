@@ -17,7 +17,8 @@
     <canvas class="layer" id="marks" aria-hidden="true"></canvas>
 
     <header class="where">
-      <p class="name">Worlds</p>
+      <p class="name" id="where-name">Worlds</p>
+      <p class="at" id="where-at"></p>
       <p class="purse"><span id="purse">300 marks</span> <span class="income" id="income"></span></p>
       <p class="turn" id="turn">Turn 1</p>
     </header>
@@ -39,6 +40,7 @@
         <button class="pill" data-world="system" aria-pressed="true">Solar system</button>
         <button class="pill" data-world="earth" aria-pressed="false">Earth</button>
         <button class="pill" data-world="mars" aria-pressed="false">Mars</button>
+        <button class="pill" data-world="city" id="pill-city" aria-pressed="true" hidden></button>
       </nav>
     </div>
 
@@ -47,6 +49,9 @@
       <button class="pill round" id="zout" aria-label="Farther">−</button>
     </div>
 
+    <p class="help" id="street-help" hidden>Arrows or W A S D walk · drag to look · press the ground to walk there · Shift strides · Escape rises</p>
+    <p class="near" id="near" hidden></p>
+    <p class="going" id="going" hidden></p>
     <p class="banner" id="banner" hidden></p>
     <div class="tip" id="tip" hidden></div>
     <div class="toast" id="toast" role="status"></div>
@@ -54,7 +59,9 @@
   </main>
 
   <script src="../v2/earth-body.js"></script>
+  <script src="../v2/models.js"></script>
   <script src="body.js"></script>
+  <script src="street.js"></script>
   <script src="game.js"></script>
   <script src="app.js"></script>
 </body>

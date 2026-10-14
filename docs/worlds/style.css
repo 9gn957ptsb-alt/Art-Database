@@ -23,6 +23,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; overflow: hidden; background: var(--ground); color: var(--cream); font: 400 var(--t-2)/1.45 var(--sans); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; }
@@ -32,7 +33,7 @@ button { font: inherit; color: inherit; }
 .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 /* The labels' hand: small capitals, tracked. */
-.name, .purse, .turn, .eyebrow, .pill, .facts dt, .stake, .odds span, .list em, .houses, .chronicle summary, .chronicle b, .quiet, .tip, .toast, .loading, .from {
+.name, .at, .help, .near, .going, .purse, .turn, .eyebrow, .pill, .facts dt, .stake, .odds span, .list em, .houses, .chronicle summary, .chronicle b, .quiet, .tip, .toast, .loading, .from {
   font-family: var(--mono);
   font-size: var(--t-1);
   letter-spacing: 0.08em;
@@ -81,6 +82,28 @@ button { font: inherit; color: inherit; }
 }
 .pill.round { width: 32px; padding: 0; background: var(--veil); font-size: var(--t-2); letter-spacing: 0; }
 body:not([data-at="world"]) .zoom { display: none; }
+
+/* The street: the site's pixel, two of the screen's to one. */
+.street-view { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; image-rendering: pixelated; image-rendering: crisp-edges; outline: none; cursor: grab; animation: arrive 0.6s steps(6); }
+.street-view:active { cursor: grabbing; }
+.street-names { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+@keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
+body[data-at="street"] .layer { visibility: hidden; }
+.at { color: var(--muted); font-variant-numeric: tabular-nums; }
+.help {
+  position: absolute; z-index: 5; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--s-5) + 48px + env(safe-area-inset-bottom, 0px));
+  margin: 0; color: var(--cream); opacity: 0.72; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+.near {
+  position: absolute; z-index: 6; left: 50%; transform: translateX(-50%);
+  top: calc(var(--s-5) + env(safe-area-inset-top, 0px));
+  margin: 0; display: flex; gap: var(--s-3); align-items: center;
+  padding: 6px 6px 6px 13px; border-radius: 999px; background: var(--card); border: 1px solid var(--hair); white-space: nowrap;
+}
+.near a { color: var(--ground); background: var(--cream); border-radius: 999px; padding: 5px 11px; text-decoration: none; }
+.near a:hover, .near a:focus-visible { background: #fff7ea; }
+.going { position: absolute; inset: 0; z-index: 4; margin: 0; display: grid; place-items: center; background: var(--ground); color: var(--muted); }
 
 /* The card: one object, set apart by a hairline, read in Newsreader. */
 .card {
@@ -190,6 +213,9 @@ input[type="range"]:disabled { opacity: 0.35; cursor: default; }
   .where { top: calc(var(--s-4) + env(safe-area-inset-top, 0px)); left: max(var(--s-4), env(safe-area-inset-left, 0px)); }
   .zoom { top: calc(var(--s-4) + env(safe-area-inset-top, 0px)); bottom: auto; right: max(var(--s-4), env(safe-area-inset-right, 0px)); }
   .toast { bottom: auto; top: calc(var(--s-6) + 40px); }
+  .help { display: none; }
+  .near { top: auto; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); overflow: hidden; }
+  body[data-at="street"] .card { max-height: 30%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card { animation: none; }

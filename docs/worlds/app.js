@@ -121,6 +121,7 @@
 
   function descend(w, then) {
     if (mode === "fly") { return; }
+    if (mode === "street") { leaveStreet(function () { descend(w, then); }); return; }
     if (mode === "world" && here === w) { if (then) { then(); } return; }
     if (mode === "world") { ascend(function () { descend(w, then); }); return; }
     here = w;
@@ -248,6 +249,7 @@
 
   var lastPlanets = {};
   function frame(now) {
+    if (mode === "street") { requestAnimationFrame(frame); return; }
     var list = [], fronts = [], k = 1, worldO = null;
     if (mode === "fly") {
       var f = flyStep(now);
@@ -343,6 +345,24 @@
     }
     if (!worldO || mode !== "world") { return; }
     var T = boards[here], taken = [], o = worldO, z = views[here].zoom;
+    // The cities whose streets can be walked: a small square each, named when near enough.
+    if (here === "earth" && z >= CITY_ZOOM) {
+      cities.forEach(function (c) {
+        var p = Wd.project(o, c.lat * RAD, c.lon * RAD);
+        if (p.z < 0.2) { return; }
+        c.sx = p.x; c.sy = p.y;
+        mctx.globalAlpha = Math.min(1, (p.z - 0.2) / 0.2) * Math.min(1, (z - CITY_ZOOM) / 0.8 + 0.4);
+        mctx.fillStyle = "rgba(15,10,7,0.7)"; mctx.fillRect(Math.round(p.x) - 5, Math.round(p.y) - 5, 10, 10);
+        mctx.strokeStyle = "#eadfcd"; mctx.lineWidth = 1.5; mctx.strokeRect(Math.round(p.x) - 3.5, Math.round(p.y) - 3.5, 7, 7);
+        if (z >= CITY_ZOOM + 1.5 || hoverCity === c) {
+          label(c.name, p.x, p.y - 13, { align: "center", size: 9.5, color: hoverCity === c ? "#ffffff" : "#eadfcd" });
+          taken.push([p.x - 40, p.y - 20, p.x + 40, p.y + 6]);
+        }
+        mctx.globalAlpha = 1;
+      });
+    } else {
+      cities.forEach(function (c) { c.sx = c.sy = null; });
+    }
     function rank(t) {
       return (sel && sel.w === here && sel.id === t.id ? 4 : 0) + (t.id === hover ? 3 : 0) + (game.owner(here, t.id) >= 0 ? 2 : 0);
     }
@@ -548,11 +568,14 @@
   }
 
   function pills() {
-    var on = mode === "fly" ? (fly.up ? "system" : fly.w) : mode === "system" ? "system" : here;
+    var on = mode === "street" ? "city" : mode === "fly" ? (fly.up ? "system" : fly.w) : mode === "system" ? "system" : here;
     document.querySelectorAll("[data-world]").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.world === on));
     });
-    document.body.dataset.at = mode === "world" ? "world" : "system";
+    var cp = $("pill-city");
+    cp.hidden = mode !== "street";
+    if (street) { cp.textContent = street.place.name; }
+    document.body.dataset.at = mode === "street" ? "street" : mode === "world" ? "world" : "system";
   }
 
   function save() {
@@ -651,6 +674,8 @@
       return;
     }
     if (mode !== "world") { return; }
+    hoverCity = here === "earth" && views.earth.zoom >= CITY_ZOOM ? cityAt(x, y) : null;
+    if (hoverCity) { hover = -1; tip("Walk the streets of " + hoverCity.name, cx, cy); stage.style.cursor = "pointer"; return; }
     hover = territoryAt(x, y);
     var t = hover >= 0 ? boards[here][hover] : null, h = t ? game.house(game.owner(here, hover)) : null;
     tip(t ? t.name + (h ? " · " + who(h) : "") : null, cx, cy);
@@ -672,6 +697,8 @@
         var p = planetAt(l.x, l.y);
         if (p && p.world) { hoverPlanet = null; tip(null); descend(p.key); }
       } else if (mode === "world") {
+        var hit = cityAt(l.x, l.y);
+        if (hit && views.earth.zoom >= CITY_ZOOM) { enterStreet(hit, null); drag = null; dragging = false; return; }
         var id = territoryAt(l.x, l.y);
         if (game.s.phase === "choose" && here !== "earth") { id = -1; }
         select(here, id);
@@ -684,12 +711,18 @@
   stage.addEventListener("pointerleave", function () { hover = -1; hoverPlanet = null; tip(null); });
   stage.addEventListener("wheel", function (e) {
     e.preventDefault();
+    if (mode === "street") {
+      // Pulling back far enough in the street rises out of it.
+      rise = e.deltaY > 0 ? rise + e.deltaY : 0;
+      if (rise > 600) { rise = 0; leaveStreet(); }
+      return;
+    }
     if (mode === "world") { zoomTo(views[here].zoom * Math.exp(-e.deltaY * 0.0015)); }
     else if (mode === "system" && e.deltaY < 0 && hoverPlanet && planet(hoverPlanet).world) { descend(hoverPlanet); }
   }, { passive: false });
 
   // Pulled back far enough, a world gives way to the solar system.
-  var outAt = 0;
+  var outAt = 0, rise = 0;
   function zoomTo(z) {
     var v = views[here];
     if (z < 0.62) {
@@ -699,8 +732,14 @@
       return;
     }
     outAt = 0;
+    if (z > 16 && here === "earth" && mode === "world") {
+      var c = cityInView();
+      if (c) { enterStreet(c.place, c.at); return; }
+      if (!deepSaid) { deepSaid = true; toast("Streets are built for " + cities.length + " cities · find their marks"); }
+    }
     v.zoom = Math.min(16, z);
   }
+  var deepSaid = false;
 
   document.addEventListener("keydown", function (e) {
     if (e.target.tagName === "INPUT" || mode !== "world") { return; }
@@ -718,7 +757,12 @@
   $("zout").onclick = function () { if (mode === "world") { if (views[here].zoom <= 0.66) { ascend(); } else { zoomTo(views[here].zoom / 1.4); } } };
 
   document.querySelectorAll("[data-world]").forEach(function (b) {
-    b.onclick = function () { if (b.dataset.world === "system") { ascend(); } else { descend(b.dataset.world); } };
+    b.onclick = function () {
+      var w = b.dataset.world;
+      if (w === "city") { return; }
+      if (mode === "street") { leaveStreet(function () { if (w === "system") { ascend(); } else if (w !== "earth") { descend(w); } }); return; }
+      if (w === "system") { ascend(); } else { descend(w); }
+    };
   });
   $("end").onclick = function () {
     game.endTurn();
@@ -771,6 +815,96 @@
     }
   }, 16);
 
+  /* ---- the streets ------------------------------------------------------
+
+     Close enough to the Earth, its cities can be walked: the Artist
+     Website's 28 cities, every building at its height and every museum as
+     the site models it (street.js). Zooming in past the globe's nearest
+     over one of them, or pressing its mark, goes down into its streets;
+     Escape, or the Earth's pill, comes up again where you went down. */
+  var cities = [], hoverCity = null, street = null, CITY_ZOOM = 3;
+
+  function cityAt(x, y) {
+    var best = null, bd = 12;
+    cities.forEach(function (c) {
+      if (c.sx === null || c.sx === undefined) { return; }
+      var d = Math.hypot(x - c.sx, y - c.sy);
+      if (d < bd) { best = c; bd = d; }
+    });
+    return best;
+  }
+  // The city nearest the middle of the view, if the view is over it.
+  function cityInView() {
+    var o = worldNow("earth"), mid = Wd.unproject(o, o.cx, o.cy);
+    if (!mid) { return null; }
+    var best = null;
+    cities.forEach(function (c) {
+      var p = Wd.project(o, c.lat * RAD, c.lon * RAD);
+      if (p.z < 0.2) { return; }
+      var d = Math.hypot(p.x - o.cx, p.y - o.cy);
+      if (d < Math.min(W, H) * 0.22 && (!best || d < best.d)) { best = { place: c, d: d }; }
+    });
+    if (!best) { return null; }
+    var c = best.place, half = c.side / 2 / 111320;
+    var lat = mid[0] * DEG, lon = mid[1] * DEG;
+    // Where you looked, if it is inside the city's square; else its middle.
+    var inside = Math.abs(lat - c.lat) < half && Math.abs(lon - c.lon) < half / Math.cos(c.lat * RAD);
+    return { place: c, at: inside ? { lat: lat, lon: lon } : null };
+  }
+
+  function enterStreet(place, at) {
+    if (mode !== "world" || street) { return; }
+    mode = "street";
+    street = { place: place };
+    hover = -1; hoverCity = null; tip(null);
+    pills();
+    $("where-name").textContent = place.name;
+    // The ground the city stands on: its country, to wager on from the street.
+    var id = cellAt("earth", place.lat * RAD, place.lon * RAD);
+    if (id >= 0 && game.s.phase === "play") { select("earth", id); } else { panel(); }
+    $("street-help").hidden = false;
+    $("going").hidden = false;
+    $("going").textContent = "Going down into " + place.name;
+    Wd.Street.open({
+      host: stage, base: "../v2/", place: place, at: at,
+      sun: function () { return sunNow(Date.now()); },
+      onOut: function () { leaveStreet(); },
+      onNear: function (m) {
+        var el = $("near");
+        if (!m) { el.hidden = true; return; }
+        el.hidden = false;
+        el.innerHTML = '<span>' + esc(m.name) + '</span><a href="../v2/" target="_blank" rel="noopener">Its inside, on the Artist Website</a>';
+      },
+      onWhere: function (ll) {
+        $("where-at").textContent = Math.abs(ll.lat).toFixed(4) + "° " + (ll.lat >= 0 ? "N" : "S") + "  " + Math.abs(ll.lon).toFixed(4) + "° " + (ll.lon >= 0 ? "E" : "W");
+        street.ll = ll;
+      }
+    }).then(function () {
+      $("going").hidden = true;
+    }).catch(function (err) {
+      $("going").hidden = true;
+      street = null; mode = "world"; pills();
+      $("street-help").hidden = true;
+      toast("The streets of " + place.name + " could not be opened · " + err.message, false);
+    });
+  }
+
+  function leaveStreet(then) {
+    if (mode !== "street") { if (then) { then(); } return; }
+    var ll = street && street.ll ? street.ll : { lat: street.place.lat, lon: street.place.lon };
+    Wd.Street.close();
+    street = null;
+    mode = "world"; here = "earth";
+    views.earth.zoom = 9;
+    views.earth.spin = ll.lon * RAD; views.earth.tilt = Math.max(-1, Math.min(1, ll.lat * RAD));
+    $("where-name").textContent = "Worlds";
+    $("where-at").textContent = "";
+    $("near").hidden = true;
+    $("street-help").hidden = true;
+    pills(); panel();
+    if (then) { then(); }
+  }
+
   /* ---- begin ------------------------------------------------------------ */
 
   function image(url) {
@@ -801,8 +935,10 @@
     image("earth/land.png"), image("mars/land.png"), image("mars/body.png"),
     fetch("earth/territories.json").then(function (r) { return r.json(); }),
     fetch("mars/territories.json").then(function (r) { return r.json(); }),
-    window.EarthBody ? window.EarthBody.start(MONTH) : Promise.resolve(false)
+    window.EarthBody ? window.EarthBody.start(MONTH) : Promise.resolve(false),
+    fetch("../v2/cityplaces.json").then(function (r) { return r.json(); }).catch(function () { return { places: [] }; })
   ]).then(function (all) {
+    cities = (all[6].places || []).filter(function (c) { return c.slug && c.n; });
     worlds.earth = { ids: idsOf(all[0]) }; worlds.mars = { ids: idsOf(all[1]) };
     boards.earth = all[3].territories; boards.mars = all[4].territories;
     earthOk = !!all[5];
@@ -816,6 +952,10 @@
     $("loading").remove();
     paint(); status(); pills(); panel();
     requestAnimationFrame(frame);
+    // A link to a city (worlds/#paris-fr) goes straight down into its streets.
+    var key = decodeURIComponent((location.hash || "").slice(1));
+    var c = cities.filter(function (q) { return q.key === key; })[0];
+    if (c) { descend("earth", function () { enterStreet(c, null); }); }
   }).catch(function (err) {
     $("loading").textContent = "The worlds could not be loaded: " + err.message;
   });

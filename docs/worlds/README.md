@@ -8,6 +8,16 @@ their orbits put them now, and the Earth and Mars drawn as themselves. Press the
 (or its pill at the foot) to go down to it. Pull back far enough, press Escape, or press
 *Solar system* to come up again. The other planets have not been reached yet.
 
+Close to the Earth, the Artist Website's 28 cities are marked with small squares. Press one,
+or keep zooming in over it past the globe's nearest, and you go down into its streets at eye
+height (`street.js`): every building cell of the site's ground for that city
+(`docs/v2/grounds/city-*.json`) stood up at its storeys, the greens with trees, the water
+taking the sky, and the city's museums as the site models them (`docs/v2/models/`), set in at
+their points to be walked round. It is lit by the real sun for that place and hour, with
+windows and museums lit at night, and drawn in the site's two-pixel grain. Arrows or W A S D
+walk, drag looks, pressing the ground walks there, Shift strides, Escape rises. A link such
+as `worlds/#paris-fr` goes straight into a city.
+
 ## How it plays
 
 - **Choose your ground.** Pick any country on Earth. Three houses rise elsewhere.
@@ -37,6 +47,7 @@ look is read from `../v2/earth-dirt/`, so the page needs the site beside it.
 | `index.html`, `style.css` | The page. |
 | `../v2/earth-body.js` | The Earth: the Artist Website's own body of the globe, lit by the real sun. Worlds sets `EarthBody.base` to `"../v2/"` so it finds its files. |
 | `body.js` | Mars and the other planets, drawn the same way in WebGL 2 (crisp cells, light from the sun, thin air at the limb), plus the territories laid over any world, the Earth included: a wash of the holder's colour and a one-pixel hairline where territories meet. |
+| `street.js` | A city at street level, in WebGL 2: the site's ground for it, its museums' models (via `../v2/models.js`), the real sun, collision with walls and water. |
 | `game.js` | The rules and the other houses' play. It does not touch the page. |
 | `app.js` | The scene: the solar system, the way down to a world and back, the card, the names, input. |
 | `earth/`, `mars/` | Each world's board: `land.png` (its territories), `territories.json`, and Mars's `body.png` (its look). |
