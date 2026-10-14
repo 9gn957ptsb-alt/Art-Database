@@ -154,9 +154,10 @@ yet. The daily pass takes them up, most needed first:
 
 ## The daily pass
 
-A routine keeps this true: "Artist Website — network research (daily)", at 13:41 UTC in its own session
-("Artist Website — network research", the repository attached, as the buildings' and cities' passes are:
-a routine that starts a fresh session each time starts it with no repository, and could never push).
+A routine keeps this true: "Artist Website — network research (daily, here)", at 13:41 UTC. Since 14 Oct 2026
+it fires into the artist's own conversation, which hands the pass to a helper in its own worktree of the
+repository (CLAUDE.md, "The daily routines"); a routine that starts a fresh session each time starts it with
+no repository, and could never push.
 
 1. Merge the site branch; `python3 scripts/probe_sources.py`. A host newly **open** is one the artist
    has added: fetch a sample from it, write in its row's `plan` how it would be used, and use it where

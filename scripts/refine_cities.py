@@ -269,8 +269,9 @@ def plan(args, led, release):
 
 def redate_list(led):
     """Cities to date again: those whose runners' records are now for their grid (asked for by a cut, the
-    ledger's "records", or read after the city was last dated — the records carry only their day, so a
-    city asked for today is dated again whenever its records are for its grid); and those whose years
+    ledger's "records", or read on or after the day the city was last dated — the records carry only their
+    day, so records of the day a city was cut date it again once: Rome's census blocks, read the afternoon
+    of its first cut, had waited for want of it); and those whose years
     were carried from their last cut because a source did not answer (builtCarried), on a later day,
     RETRIES times at most before their next cut."""
     out = []
@@ -279,7 +280,7 @@ def redate_list(led):
         if not g:
             continue
         e = led["cities"].get(p["key"], {})
-        if any(n == g["n"] and (e.get("records") or when[:10] > e.get("dated", ""))
+        if any(n == g["n"] and (e.get("records") or when[:10] >= e.get("dated", ""))
                for name, n, when in records_for(p["slug"])):
             out.append(p["key"])
         elif g.get("builtCarried") and e.get("retries", 0) < RETRIES and e.get("dated", "") < TODAY:

@@ -3,7 +3,8 @@
 The artist, 1 Oct 2026: "Just like there is a daily update through the
 architecture (daily) session in which a certain number of buildings get
 updated every day, I want the same rules to apply to a daily update of
-characters." A scheduled session follows this page each time it runs, on the
+characters." A scheduled pass follows this page each time it runs (since 14 Oct
+2026 a helper the artist's own conversation starts in its own worktree), on the
 branch `claude/artist-website-dev-s92irf` — pushing there publishes the
 Artist Website.
 
@@ -37,6 +38,7 @@ by the museum or gallery that holds the work.
 | `characters.json` | the cast (id, name, species, kind, where in the grammar it is from, the artist and why, inks, added, refined, passes, notes, log) and the backlog |
 | `scripts/characters/<id>.py` | the drawing: its parts as distance fields, its poses (`draw.py` is the small flat renderer: ramps, light from the upper left, Bayer dither, selective outline) |
 | `<id>.json` | its poses, a letter a cell, written by `python3 scripts/build_characters.py` |
+| `scripts/characters/fox_fine.json`, `trace_fox.py` | the red fox's poses, traced from the artist's own graphic (below, "The red fox, from the artist's own graphic"); `fox.json` is built from them |
 | `plants.json` | every city's (and every artist's birthplace's) biome, realm, ecoregion, soil and plants, by stratum with crown shapes, written by the same script |
 | `homes.json` | where each artist (cast and backlog) was born, worked and lived, from Wikidata (CC0), with the source; written by `python3 scripts/fetch_artist_homes.py` (network; the artist's item is the one `fetch_history_wikidata.py` matched, in `data/wikidata/matches.json`) |
 | `artists.json` | each artist's map — works, cities in route order, the museums holding the works, where the animal waits, and home with its plants — written by `build_characters.py` from public files |
@@ -111,6 +113,51 @@ place the artist's own animal is that one).
 far below from a journey passing over, sits at a history's stop, and is at
 rest one visit in φ²; never over the lens, the picture, the dial or the
 column (it is not seen there).
+
+## The red fox, from the artist's own graphic
+
+The artist, 14 Oct 2026, sending a pixel-art fox on a dark navy ground with
+Twombly's chalk loops, red and cream crayon dashes and lavender squares: "Here
+is an improved graphic for the fox that represents Cy Twombly." The graphic is
+now the fox's look. Its poses are **traced**, not computed:
+`scripts/characters/fox_fine.json` holds `trot` ×4, `stand`, `back`, `look`
+and `sit` as rows of letters on a 112×90 grid at one CSS pixel a cell (the
+computed fox was 40×26 at two), written by `python3
+scripts/characters/trace_fox.py REF_DIR` and read by `fine_sprite()` in
+`fox.py`, which `build_characters.py` takes in place of `poses()` when the file
+is there. A build needs only `fox_fine.json`, so it is still the same bytes
+every run and public files only.
+
+- **The references** are the artist's graphic (`look.png`) and an edit of it for
+  each other pose — `stand`, `trot0`–`trot3`, `back`, `sit` — made with OpenAI's
+  gpt-image-2.5 (`/v1/images/edits`; the proxy supplies the key): one design,
+  one pose each, so all stay in register. They are kept in the session's
+  scratchpad, never the repository (as the chimera's are). To redraw, make the
+  edits again and run the tracer; to touch one cell, edit `fox_fine.json`
+  (a pose is 90 strings of 112 letters).
+- **The tracer** takes the fox as the pixels that are not the flat ground, a
+  cell's colour as the vote of the fox's pixels in it (dark features kept at a
+  quarter), the nearest ink in Lab, the eyes set by hand (`EYES`), the feet on
+  the ground row, the walkers lined up by the ear (a trot does not shuffle),
+  and the standard chalk outline round it.
+- **The inks** (`characters.json`, `after.inks`) are measured off the graphic —
+  the coat's four oranges, the cream lit and in shade, the plum-brown of the
+  nose, ears and legs, the amber eye, the warm grey — and its writing trail is
+  the graphic's chalk. The chimera's fox parts use them too.
+- **What it costs:** the four trot frames are four drawings, so the fur patches
+  shift a little from frame to frame (it plays at 6 a second, `moves.fps`; it
+  was 8); which diagonal of the gait is which is the model's, not a measurement.
+  The whole fox no longer has `act`, `play` or `ritual` poses — the page never
+  reads them for a whole animal — and its mousing pounce, toss and gekkering
+  are still the chimera's parts, drawn by `fox.py`'s `rig()` (`parts/fox.json`,
+  untouched, so the chimera's fox is in the new inks and the old drawing). A
+  cell of one CSS pixel is whole device pixels on any screen, so at a fractional
+  density (1.5) it is 2 and the fox is drawn a third larger; its box follows
+  the drawing (`cellPx`, `bounds` in `characters.js`), so its feet stay on the
+  ground and the pressed red box fits it at every density.
+- **Checked:** `scripts/check_characters.js` (the wave, the press line) and the
+  preview (`scripts/preview_character.js fox out.png`, `fox,bison,deer` for a
+  chimera) at 390×844 and 1440×900, and at a device density of 3.
 
 ## Each run
 

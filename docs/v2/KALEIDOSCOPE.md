@@ -6,8 +6,8 @@ tell you, it's too much. Be gradual about it, maybe introduce it in a new way on
 
 So: one new way a day, each a kaleidoscope whose geometry is the golden ratio's, each behind its own
 flag, until he says it is too much. This file is the ledger — what has come, what may come next —
-and the daily pass's authority (the routine "Artist Website — kaleidoscope (daily)", in its own
-session "Artist Website — kaleidoscope").
+and the daily pass's authority (the routine "Artist Website — kaleidoscope (daily, here)", which
+since 14 Oct 2026 fires into the artist's own conversation and hands the pass to a helper).
 
 **When he says it is too much** — in any session, in any words — that session disables the routine
 (`update_trigger`, enabled false; `list_triggers` finds it by its name), writes **Stopped** at the

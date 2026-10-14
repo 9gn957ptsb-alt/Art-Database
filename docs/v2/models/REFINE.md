@@ -240,7 +240,7 @@ Once a week is enough (a museum's guide on Bloomberg Connects changes slowly; th
 The cities' skylines have their own pass since 8 Oct 2026 (the artist: "I want
 to make sure that over time this is getting refined to be as up-to-date with
 the current status as possible"): `docs/v2/grounds/REFINE.md`, run by its own
-daily routine ("Artist Website — cities pass (daily)"), which reads new cities,
+daily routine ("Artist Website — cities pass (daily, here)"), which reads new cities,
 cuts each finer a tier at a time and reads it again from Overture's newest
 release (`scripts/refine_cities.py`). This pass no longer runs
 `update_skylines.py`.
