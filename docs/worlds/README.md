@@ -1,7 +1,12 @@
 # Worlds
 
-A wager game on the Artist Website's woven globe. The site uses the globe to show what is
+A wager game on the Artist Website's globe. The site uses the globe to show what is
 real: art, museums, buildings. Worlds keeps that look and changes what the globe is for.
+
+It opens far out, on the solar system as it stands today: the sun, the eight planets where
+their orbits put them now, and the Earth and Mars drawn as themselves. Press the Earth or Mars
+(or its pill at the foot) to go down to it. Pull back far enough, press Escape, or press
+*Solar system* to come up again. The other planets have not been reached yet.
 
 ## How it plays
 
@@ -30,24 +35,27 @@ look is read from `../v2/earth-dirt/`, so the page needs the site beside it.
 | | |
 | --- | --- |
 | `index.html`, `style.css` | The page. |
-| `globe.js` | The woven globe: the dots on the sphere, lit from one side, plus turning, zooming and picking. |
+| `../v2/earth-body.js` | The Earth: the Artist Website's own body of the globe, lit by the real sun. Worlds sets `EarthBody.base` to `"../v2/"` so it finds its files. |
+| `body.js` | Mars and the other planets, drawn the same way in WebGL 2 (crisp cells, light from the sun, thin air at the limb), plus the territories laid over any world, the Earth included: a wash of the holder's colour and a one-pixel hairline where territories meet. |
 | `game.js` | The rules and the other houses' play. It does not touch the page. |
-| `app.js` | The page wired to the game: the panel, the crossing between worlds, input. |
-| `earth/`, `mars/` | Each world's board: `land.png` (its territories), `territories.json`, and Mars's `dots.png` (its look). Earth's look is the site's `docs/v2/earth-dirt/earth-dirt-MM.png`. |
+| `app.js` | The scene: the solar system, the way down to a world and back, the card, the names, input. |
+| `earth/`, `mars/` | Each world's board: `land.png` (its territories), `territories.json`, and Mars's `body.png` (its look). |
 | `scripts/build_worlds.py` | Builds the boards from `scripts/worlds_src/`. |
 
 Every world uses the Artist Website's half-degree grid: 720 × 360 cells, column 0 at 180° W,
-row 0 at 90° N. In a world's dots picture a pixel's colour is the dot's colour and its alpha is the dot's
-size (0, 85, 170, 255 → sizes 0–3). In `land.png` red + 256 × green is the territory id + 1.
+row 0 at 90° N. `mars/body.png` is 1024 × 512, like the Earth's body. In `land.png` red + 256 × green is the territory id + 1.
 
 ## Sources
 
-- **Earth's look:** the Artist Website's `docs/v2/earth-dirt/earth-dirt-MM.png`, one per
-  month, read in place, each place dressed in the colours of the saved paintings nearest it. The page shows
-  the current month.
+- **Earth's look:** the Artist Website's body of the globe (`docs/v2/earth-body.js`), every
+  cell a saved work's colour, read in place.
 - **Earth's territories:** Natural Earth 1:110m countries (public domain).
 - **Mars's look:** the Viking MDIM 2.1 colour mosaic (NASA / USGS, public domain). Its
-  contrast is stretched, then each dot is moved to the nearest of the paintings' colours.
+  contrast is stretched, then each cell takes the nearest colour among the works the Earth's
+  body is made of (`docs/v2/earth-doors.json`), leaving out the Earth's seas and greenery.
+- **The planets' places:** mean orbital elements for J2000 (JPL's approximate positions),
+  so each planet stands where it is today. Distances are on a root scale; sizes are for the
+  eye.
 - **Mars's territories:** 32 named regions at their IAU coordinates; each cell belongs to the
   nearest region.
 
@@ -60,7 +68,7 @@ python3 scripts/build_worlds.py
 
 ## Adding a world
 
-A new world needs a `dots.png` and a `land.png` on the same grid, plus a `territories.json`,
+A new world needs a `body.png` and a `land.png` on the same grid, plus a `territories.json`,
 built the way `build_mars` builds Mars. A world with no source map (an invented planet) can
 take its look from noise in the paintings' colours and its regions from points placed by
 hand. To join it to the others, add its name to `Game.WORLDS`, load it in `app.js`, and give

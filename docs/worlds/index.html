@@ -2,52 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Worlds</title>
-  <meta name="description" content="A wager game on a woven globe. Earth and Mars, and no boundary between worlds.">
+  <meta name="description" content="A wager game on the Artist Website's globe. The solar system as it stands today; Earth and Mars, and no boundary between worlds.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <canvas id="globe" aria-label="The globe. Drag to turn it, scroll or pinch to come closer, click a territory to select it."></canvas>
+<body data-at="system">
+  <main class="stage" id="stage" aria-label="The solar system. Press the Earth or Mars to go down to it. Down at a world, drag to turn it, scroll or pinch to come nearer, press a territory to choose it; Escape goes back up.">
+    <canvas class="layer" id="sky" aria-hidden="true"></canvas>
+    <canvas class="layer" id="bodies" aria-hidden="true"></canvas>
+    <canvas class="layer" id="marks" aria-hidden="true"></canvas>
 
-  <header class="bar">
-    <h1>Worlds</h1>
-    <div class="switch" role="group" aria-label="World">
-      <button data-world="earth" aria-pressed="true">Earth</button>
-      <button data-world="mars" aria-pressed="false">Mars</button>
+    <header class="where">
+      <p class="name">Worlds</p>
+      <p class="purse"><span id="purse">300 marks</span> <span class="income" id="income"></span></p>
+      <p class="turn" id="turn">Turn 1</p>
+    </header>
+
+    <aside class="card" id="card" aria-live="polite" hidden></aside>
+
+    <section class="ledger" aria-label="Houses and chronicle">
+      <ul class="houses" id="houses"></ul>
+      <details class="chronicle">
+        <summary>Chronicle</summary>
+        <ol id="log"></ol>
+      </details>
+      <button class="quiet" id="new">New game</button>
+    </section>
+
+    <div class="foot">
+      <button class="pill solo" id="end" hidden>End turn</button>
+      <nav class="filter" aria-label="Where you are">
+        <button class="pill" data-world="system" aria-pressed="true">Solar system</button>
+        <button class="pill" data-world="earth" aria-pressed="false">Earth</button>
+        <button class="pill" data-world="mars" aria-pressed="false">Mars</button>
+      </nav>
     </div>
-    <dl class="stats">
-      <div><dt>Turn</dt><dd id="turn">1</dd></div>
-      <div><dt>Treasury</dt><dd><span id="treasury">0</span> <small id="income"></small></dd></div>
-    </dl>
-    <button id="end" class="primary">End turn</button>
-  </header>
 
-  <aside id="panel" class="panel" aria-live="polite" hidden></aside>
+    <div class="zoom">
+      <button class="pill round" id="zin" aria-label="Nearer">+</button>
+      <button class="pill round" id="zout" aria-label="Farther">−</button>
+    </div>
 
-  <section class="side">
-    <ul id="houses" class="houses" aria-label="Houses"></ul>
-    <details class="chronicle" open>
-      <summary>Chronicle</summary>
-      <ol id="log"></ol>
-    </details>
-    <button id="new" class="quiet">New game</button>
-  </section>
+    <p class="banner" id="banner" hidden></p>
+    <div class="tip" id="tip" hidden></div>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="loading" id="loading">Setting out the worlds</div>
+  </main>
 
-  <div class="zoom">
-    <button id="zin" aria-label="Closer">+</button>
-    <button id="zout" aria-label="Farther">−</button>
-  </div>
-
-  <div id="banner" class="banner" hidden><p></p></div>
-  <div id="tip" class="tip" hidden></div>
-  <div id="toast" class="toast" role="status"></div>
-  <div id="loading" class="loading">Weaving the worlds…</div>
-
-  <script src="globe.js"></script>
+  <script src="../v2/earth-body.js"></script>
+  <script src="body.js"></script>
   <script src="game.js"></script>
   <script src="app.js"></script>
 </body>

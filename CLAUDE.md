@@ -22,7 +22,7 @@ already declined or deferred in the same conversation.
 | --- | --- |
 | `docs/` | **Umbrella Portfolio 2026** — served at `/`, deployed by `.github/workflows/pages.yml`. |
 | `docs/v2/` | **Artist Website** — the ongoing site, served at `/v2/`. Its front page is the land. Hand-edited; the generator does not write it. Shares `docs/images/`. |
-| `docs/worlds/` | **Worlds** — the wager game on the same woven globe, served at `/worlds/`: Earth's countries and Mars's named regions, every territory bordering the ground of the other world beneath it. Reads Earth's look from `docs/v2/earth-dirt/`; its boards are built by `scripts/build_worlds.py`. See `docs/worlds/README.md`. |
+| `docs/worlds/` | **Worlds** — the wager game on the same globe, served at `/worlds/`. It opens on the solar system as it stands today; the Earth (the site's own `earth-body.js`, which Worlds points at `../v2/` through `EarthBody.base`) and Mars are the two worlds you go down to, each territory bordering the ground of the other world beneath it. Its boards are built by `scripts/build_worlds.py`. See `docs/worlds/README.md`. |
 | `docs/works.json` | The works, as data. Edit this, not `index.html`. |
 | `scripts/build_page.py` | Renders `docs/index.html` from `works.json`. |
 | `scripts/build_artifact.py` | Flattens the page for publishing as an Artifact. |

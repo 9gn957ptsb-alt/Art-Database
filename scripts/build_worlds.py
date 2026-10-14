@@ -3,17 +3,17 @@
 Every world is written the same way, on the Artist Website's half-degree grid
 (720 by 360 cells, column 0 at 180 W, row 0 at 90 N):
 
-  docs/worlds/<world>/dots.png   the look: colour = the dot's colour,
-                                 alpha = its size (0, 85, 170, 255 -> 0..3)
+  docs/worlds/mars/body.png      Mars's look, 1024 by 512 like the Earth's
+                                 body: each cell a saved work's colour
   docs/worlds/<world>/land.png        which territory each cell belongs to:
                                  id + 1 in red + 256 * green, 0 for none
   docs/worlds/<world>/territories.json  names, centres, yields and borders
 
-Earth's look is the Artist Website's own (docs/v2/earth-dirt/earth-dirt-MM.png,
+Earth's look is the Artist Website's own body of the globe (docs/v2/earth-body.js,
 read by the page where it is), its
 territories the countries of Natural Earth (1:110m, public domain). Mars is
 dressed from the Viking MDIM 2.1 colour mosaic (NASA/USGS, public domain),
-each dot moved to the nearest colour the paintings put on Earth, and divided
+each cell moved to the nearest colour of the works the Earth is made of, and divided
 into its named regions around their real coordinates.
 
 Last of all, every territory is linked to the territories of the other world
@@ -33,7 +33,8 @@ W, H = 720, 360
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "scripts", "worlds_src")
 OUT = os.path.join(ROOT, "docs", "worlds")
-EARTH_DOTS = os.path.join(ROOT, "docs", "v2", "earth-dirt", "earth-dirt-%02d.png")
+EARTH_DOORS = os.path.join(ROOT, "docs", "v2", "earth-doors.json")
+BW, BH = 1024, 512   # the bodies' grid, the Earth body's own
 
 
 def xy(lon, lat):
@@ -181,40 +182,35 @@ MARS_REGIONS = [
 ]
 
 
-def painting_palette(keep=512):
-    """The colours the paintings put on Earth's globe most often, over the year."""
-    counts = {}
-    for m in range(1, 13):
-        a = np.array(Image.open(EARTH_DOTS % m).convert("RGBA"))
-        c = a[a[..., 3] > 0][:, :3]
-        u, n = np.unique(c, axis=0, return_counts=True)
-        for col, k in zip(map(tuple, u.tolist()), n.tolist()):
-            counts[col] = counts.get(col, 0) + k
-    top = sorted(counts, key=lambda c: -counts[c])[:keep]
-    return np.array(top, np.float32)
-
-
-def value_noise(seed, scale):
-    rng = np.random.default_rng(seed)
-    g = rng.random((H // scale + 2, W // scale + 2)).astype(np.float32)
-    img = Image.fromarray((g * 255).astype(np.uint8)).resize((W + 2 * scale, H + 2 * scale), Image.BICUBIC)
-    return np.array(img, np.float32)[scale:scale + H, scale:scale + W] / 255.0
+def collection_palette():
+    """The colours of the saved works the Earth's body is made of
+    (docs/v2/earth-doors.json, written by scripts/build_material.py)."""
+    t = json.load(open(EARTH_DOORS))
+    c = t["c"]
+    return np.array([[int(c[i:i + 2], 16), int(c[i + 2:i + 4], 16), int(c[i + 4:i + 6], 16)]
+                     for i in range(0, len(c), 6)], np.float32)
 
 
 def build_mars():
+    """Mars's body: a crisp cell of a saved work's colour wherever the
+    Viking mosaic is nearest it, as the Earth's body is made (BW by BH)."""
     src = Image.open(os.path.join(SRC, "mars_viking_mdim21.jpg")).convert("RGB")
-    rgb = np.array(src.resize((W, H), Image.LANCZOS), np.float32)
+    rgb = np.array(src.resize((BW, BH), Image.LANCZOS), np.float32)
 
-    # The mosaic is a narrow band of rusts; spread it over the paintings'
+    # The mosaic is a narrow band of rusts; spread it over the collection's
     # range first (its light and dark, and its colour away from grey), so the
-    # nearest paintings tell the bright dust from the dark basalt.
+    # nearest works tell the bright dust from the dark basalt.
     grey = rgb.mean(-1, keepdims=True)
-    lo, hi = np.percentile(grey, [2, 98])
-    g2 = (grey - lo) / (hi - lo) * 200 + 30
-    rgb = np.clip(g2 + (rgb - grey) * 2.4, 0, 255)
+    lo, hi = np.percentile(grey, [1, 99])
+    g2 = (grey - lo) / (hi - lo) * 190 + 32
+    rgb = np.clip(g2 + (rgb - grey) * 1.6, 0, 255)
 
-    # Each dot in the nearest of the paintings' colours (in a rough Lab).
-    pal = painting_palette(2048)
+    # Mars has no sea: the works that are the Earth's water are kept for its
+    # ice alone (pale ones), never its dark basalt.
+    pal = collection_palette()
+    blue = pal[:, 2] > pal[:, 0] + 6
+    green = pal[:, 1] > pal[:, 0] + 2        # nor its forests and grass
+    pal = pal[(~blue & ~green) | (pal.mean(1) > 190)]
 
     def lab(c):
         c = c / 255.0
@@ -225,19 +221,11 @@ def build_mars():
     flat = lab(rgb.reshape(-1, 3))
     pl = lab(pal)
     best = np.empty(len(flat), np.int64)
-    for s in range(0, len(flat), 8192):
-        d = ((flat[s:s + 8192, None, :] - pl[None]) ** 2).sum(-1)
-        best[s:s + 8192] = d.argmin(1)
-    col = pal[best].reshape(H, W, 3).astype(np.uint8)
-
-    # The weave: Earth's globe leaves about two cells in five empty, in drifts.
-    lum = (rgb @ [0.3, 0.59, 0.11]) / 255.0
-    n = 0.55 * value_noise(7, 6) + 0.3 * value_noise(11, 2) + 0.15 * np.random.default_rng(3).random((H, W))
-    v = 0.8 * n + 0.2 * lum
-    q = np.quantile(v, [0.38, 0.62, 0.86])
-    size = np.digitize(v, q).astype(np.uint8)        # 0..3
-    out = np.dstack([col, (size * 85).astype(np.uint8)])
-    Image.fromarray(out, "RGBA").save(os.path.join(OUT, "mars", "dots.png"), optimize=True)
+    for s0 in range(0, len(flat), 4096):
+        d = ((flat[s0:s0 + 4096, None, :] - pl[None]) ** 2).sum(-1)
+        best[s0:s0 + 4096] = d.argmin(1)
+    col = pal[best].reshape(BH, BW, 3).astype(np.uint8)
+    Image.fromarray(col, "RGB").save(os.path.join(OUT, "mars", "body.png"), optimize=True)
 
     # Regions: every cell belongs to the nearest named place.
     lon, lat = cell_latlon()

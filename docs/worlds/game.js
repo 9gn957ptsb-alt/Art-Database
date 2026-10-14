@@ -24,16 +24,18 @@
   var KEEP_ON_WIN = 0.6, SPOILS_ON_LOSS = 0.3, VICTORY_SHARE = 0.4;
 
   var HOUSES = [
-    { name: "You", color: "#e8b04a", human: true },
-    { name: "House Cobalt", color: "#5b8fd9" },
-    { name: "House Madder", color: "#c8553d" },
-    { name: "House Verdigris", color: "#4fae8f" }
+    { name: "You", color: "#f3c98b", human: true },
+    { name: "House Cobalt", color: "#86a3cf" },
+    { name: "House Madder", color: "#c97862" },
+    { name: "House Verdigris", color: "#7fb59f" }
   ];
 
   function Game(boards, saved) {
     this.boards = boards;                 // { earth: territories[], mars: [...] }
     if (saved) {
       this.s = saved;
+      // A game saved before the houses were recoloured wears today's colours.
+      saved.houses.forEach(function (h, i) { if (HOUSES[i]) { h.color = HOUSES[i].color; } });
     } else {
       this.s = { turn: 1, phase: "choose", houses: [], hold: {}, garrison: {}, log: [], winner: -1 };
       var s = this.s;
