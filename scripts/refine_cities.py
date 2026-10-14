@@ -54,6 +54,7 @@ GROUNDS = V2 / "grounds"
 LEDGER = BCP.LEDGER
 CITYPLACES = V2 / "cityplaces.json"
 RECORDS = [ROOT / "records" / "years", ROOT / "records" / "census"]
+OSM_DATES = ROOT / "osm" / "dates"
 REQUEST = ROOT / "records" / "REQUEST"
 TOP = len(BCP.GRAINS) - 1                 # the finest tier
 FIRST = 2                                 # the tier a new city is read at, and a first cut raised to (20 m)
@@ -123,6 +124,13 @@ def records_for(slug):
         if r:
             out.append((folder.name, r.get("n"), r.get("read", "")))
     return out
+
+
+def osm_read(slug):
+    """The day OpenStreetMap's building dates were read for a place on the runners (osm/dates/, the
+    osm-dates workflow), '' where they were not."""
+    r = read(OSM_DATES / f"{slug}.json")
+    return (r or {}).get("read", "") if isinstance(r, dict) else ""
 
 
 def dated_share(g):
@@ -271,17 +279,21 @@ def redate_list(led):
     """Cities to date again: those whose runners' records are now for their grid (asked for by a cut, the
     ledger's "records", or read on or after the day the city was last dated — the records carry only their
     day, so records of the day a city was cut date it again once: Rome's census blocks, read the afternoon
-    of its first cut, had waited for want of it); and those whose years
-    were carried from their last cut because a source did not answer (builtCarried), on a later day,
-    RETRIES times at most before their next cut."""
+    of its first cut, had waited for want of it); those whose OpenStreetMap dates (osm/dates/, a read of
+    the osm-dates workflow, not tied to a grid) were read on or after the day the city was last dated; and
+    those whose years were carried from their last cut because a source did not answer (builtCarried), on a
+    later day, RETRIES times at most before their next cut."""
     out = []
     for p in listed():
         g = read(ground_path(p["key"]))
         if not g:
             continue
         e = led["cities"].get(p["key"], {})
+        osm = osm_read(p["slug"])
         if any(n == g["n"] and (e.get("records") or when[:10] >= e.get("dated", ""))
                for name, n, when in records_for(p["slug"])):
+            out.append(p["key"])
+        elif osm and e.get("dated") and osm[:10] >= e["dated"]:
             out.append(p["key"])
         elif g.get("builtCarried") and e.get("retries", 0) < RETRIES and e.get("dated", "") < TODAY:
             out.append(p["key"])
