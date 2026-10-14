@@ -33,6 +33,7 @@ writes goes to dirt/private/, because the cutouts reproduce other artists' image
 import argparse
 import json
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -72,8 +73,21 @@ class Images:
     def __init__(self, cache):
         self.cache = Path(cache)
         self.mem = {}
+        self.gone = set()
 
-    def get(self, url, size="medium"):
+    def try_get(self, url, size="medium", keep=True):
+        """The image, or None if Artsy no longer serves it (403 or 404: a work taken down since it was saved)."""
+        if url in self.gone:
+            return None
+        try:
+            return self.get(url, size, keep)
+        except urllib.error.HTTPError as e:
+            if e.code not in (403, 404):
+                raise
+            self.gone.add(url)
+            return None
+
+    def get(self, url, size="medium", keep=True):
         url = url.replace("large.jpg", f"{size}.jpg")
         if url not in self.mem:
             name = url.split("/")[-2] + ("" if size == "medium" else "-" + size) + ".jpg"
@@ -81,7 +95,10 @@ class Images:
             if not path.exists():
                 self.cache.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(urllib.request.urlopen(url, timeout=60).read())
-            self.mem[url] = Image.open(path).convert("RGB")
+            im = Image.open(path).convert("RGB")
+            if not keep:                                 # looked at once (the face search runs over thousands)
+                return im
+            self.mem[url] = im
         return self.mem[url]
 
 
@@ -95,7 +112,10 @@ def detect_faces(works, images, out, not_faces):
     for w in works:
         if w["id"] in not_faces:
             continue
-        g = cv2.equalizeHist(cv2.cvtColor(np.asarray(images.get(w["image"])), cv2.COLOR_RGB2GRAY))
+        pic = images.try_get(w["image"], keep=False)
+        if pic is None:                                  # taken down from Artsy since it was saved
+            continue
+        g = cv2.equalizeHist(cv2.cvtColor(np.asarray(pic), cv2.COLOR_RGB2GRAY))
         h, wd = g.shape
         found = casc.detectMultiScale(g, 1.08, 6, minSize=(max(20, wd // 14),) * 2)
         if len(found):
@@ -177,12 +197,18 @@ def make_source(rng, pool, face_pool, images, objs=(), name=""):
     for i in order:
         cells = lab == i
         p = face_pool[faces.pop()] if faces and rng.random() < FACE_SHARE else pool[chocs.pop()]
+        pic = images.try_get(p["work"]["image"])
+        while pic is None and chocs:                   # its image is gone from Artsy: the next painting takes the clod
+            p = pool[chocs.pop()]
+            pic = images.try_get(p["work"]["image"])
+        if pic is None:
+            continue
         meta[i] = dict(work=p["work"], hex=p["hex"], glint=p["glint"], kind="face" if p.get("face") else None)
         colA[cells] = rgb(p["hex"])
         if p["glint"]:
             glint_col[i] = rgb(p["glint"])
             has_glint[i] = True
-        img = np.asarray(images.get(p["work"]["image"]), float)
+        img = np.asarray(pic, float)
         h, w = img.shape[:2]
         span = max(np.ptp(ox[cells]), np.ptp(oy[cells]), 4) + 1
         if p.get("face"):
@@ -306,14 +332,20 @@ def main():
     print(f"{len(pool)} chocolate paintings, {len(face_pool)} with faces")
 
     def obj(o):
-        w = by_id[o["id"]]
-        return dict(o, work=w, img=images.get(w["image"], "large"), hex=w["colors"][0])
+        """A shape with its work and image, or None if the work has left the saves or Artsy no longer serves it."""
+        w = by_id.get(o["id"])
+        img = images.try_get(w["image"], "large") if w else None
+        return None if img is None else dict(o, work=w, img=img, hex=w["colors"][0])
+
+    def shape(o, place, how):
+        got = obj(o)
+        return [(got, place, how)] if got else []
 
     span = N - 2 * (CZ + CZ_WANDER) - 34               # room along an edge between the corners (Fibonacci margin)
     corners = [make_source(rng, pool, face_pool, images) for _ in range(CORNERS)]
-    vert = [make_source(rng, pool, face_pool, images, [(obj(o), (0, N / 2, 2 * OBJ_HALF, span), "across")], f"v{c}")
+    vert = [make_source(rng, pool, face_pool, images, shape(o, (0, N / 2, 2 * OBJ_HALF, span), "across"), f"v{c}")
             for c, o in enumerate(spec["vertical"][:K])]
-    horiz = [make_source(rng, pool, face_pool, images, [(obj(o), (N / 2, 0, span, 2 * OBJ_HALF), "across")], f"h{c}")
+    horiz = [make_source(rng, pool, face_pool, images, shape(o, (N / 2, 0, span, 2 * OBJ_HALF), "across"), f"h{c}")
              for c, o in enumerate(spec["horizontal"][:K])]
 
     # Shapes that surface inside single tiles: the hand-found ones and every checked face that is
@@ -342,7 +374,13 @@ def main():
         places = two if rng.random() < SECOND else one
         if rng.random() < PHI ** -2:
             places = [(N - x, y, w_, h_) for x, y, w_, h_ in places]      # the other diagonal
-        mine = [(obj(within.pop()), p, "within") for p in places if within]
+        mine = []
+        for p in places:
+            while within:
+                got = obj(within.pop())                 # (a shape whose work is gone gives way to the next)
+                if got:
+                    mine.append((got, p, "within"))
+                    break
         middles.append(make_source(rng, pool, face_pool, images, mine, f"m{m}"))
         print(f"middle soil {m + 1} of {MIDDLES}: {len(mine)} shape(s) surfacing")
 

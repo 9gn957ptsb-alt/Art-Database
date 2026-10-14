@@ -3,6 +3,11 @@
 A scheduled Claude session runs this every week. It brings the next artists from the Artsy saves into DIRT's plane
 (each as a minimal area on the ladder of complexity, see `roster.py`), commits them, and republishes DIRT.
 
+It runs on Tuesdays at 19:47 UTC, just after the account's weekly usage comes back (Tuesdays at 19:00 UTC). It first
+ran on Mondays at 15:00, when the week's usage was already spent, and its runs of 28 September, 5 October and 12
+October 2026 all stopped on the usage limit before they began; each of those weeks was made up by hand the day after
+or the day after that. A week that fails is made up the same way: these steps, run in any session.
+
 Rules it keeps:
 
 - Work on the branch `claude/digital-dirt-layers-paiial` and push only there (`git push -u origin claude/digital-dirt-layers-paiial`).
@@ -18,16 +23,16 @@ Rules it keeps:
 
 ```sh
 git fetch origin claude/digital-dirt-layers-paiial && git checkout -B claude/digital-dirt-layers-paiial origin/claude/digital-dirt-layers-paiial
+pip install numpy pillow requests "opencv-python-headless<4.13" scipy
 
-# 1. the saves, fresh from Artsy, into data/artworks.db
-python3 scripts/fetch_artsy_saves.py
+# 1. the saves, fresh from Artsy, into data/artworks.db: four pages at a time, a page retried when its tunnel drops
+#    or Artsy answers 5xx, and on past Artsy's count (which runs behind) until a page comes back empty; then
+#    normalized with the normalizer from claude/artsy-import-rwgk8s, run in memory and patched for open-ended prices
+#    (saves.py says how; fetch_artsy_saves.py alone, one page after another, rarely gets through forty thousand saves)
 git fetch origin claude/artsy-import-rwgk8s
-git show origin/claude/artsy-import-rwgk8s:scripts/normalize_artsy_saves.py > scripts/normalize_artsy_saves.py
-python3 scripts/normalize_artsy_saves.py          # writes data/artworks.db
-rm scripts/normalize_artsy_saves.py
+python3 dirt/artists/saves.py
 
 # 2. the next three artists onto the roster
-pip install numpy pillow requests
 python3 dirt/artists/roster.py --db data/artworks.db --cache dirt/private/briefs --add 3
 
 # 2a. if a new artist's way of working is one of the compositions after a body of work (10-18 in roster.py's
@@ -39,10 +44,13 @@ git add dirt/artists/roster.json dirt/artists/plants.json dirt/artists/cast.json
 git commit -m "DIRT roster: <the artists added>"
 git push -u origin claude/digital-dirt-layers-paiial
 
-# 4. rebuild DIRT and republish it (the plane is built from the saves; its files stay in dirt/private/)
-pip install "opencv-python-headless<4.13" scipy
+# 4. rebuild DIRT and republish it (the plane is built from the saves; its files stay in dirt/private/). In a fresh
+#    session soil_tiles.py first downloads the chocolate paintings it uses (into dirt/private/cache/), so give it
+#    time; a work Artsy has taken down since it was saved (403 or 404) is passed over for the next painting. It
+#    takes the faces it may centre a clod on from dirt/private/faces.json (4a brings it from the artifact); without
+#    that file it searches every saved painting for faces, some 11,000 downloads, an hour or more
+# (4a, below: the quilts, the history and the faces into dirt/private/ first)
 python3 dirt/soil_tiles.py --db data/artworks.db
-# (4a, below: the quilts and the history into dirt/private/ first)
 python3 dirt/build_soil_viewer.py                 # the plane alone: the Earth is the website's globe
 ```
 
@@ -65,10 +73,11 @@ that best shows the scene (petals, cut, flash, fling, rain, glow, void, wind, ri
 (`dirt/private/quilts/`) and the history of Greece and Rome (`dirt/private/antiquity/`); they are never committed, and
 a fresh session does not have them. Built without them, the page loses the quilts, the history's light and the
 collage's painting pieces, so it must not be published that way. They live beside the page in the DIRT artifact
-itself. Before `build_soil_viewer.py`, read them back with the Artifact tool (`action: "read"` with the artifact's
+itself. Before `soil_tiles.py` and `build_soil_viewer.py`, read them back with the Artifact tool (`action: "read"` with the artifact's
 `url` and `paths`): first `quilts/quilts.json`, `antiquity/antiquity.json` and `faces/faces.json`, then every file
 those list (`quilts/qNN.jpg`, `antiquity/aNN.jpg`, `faces/faces.jpg`), and copy them, with the JSON files, into
-`dirt/private/quilts/`, `dirt/private/antiquity/` and `dirt/private/faces/`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
+`dirt/private/quilts/`, `dirt/private/antiquity/` and `dirt/private/faces/`; and `plane/faces.json` (the faces found
+in the saved paintings, the boxes the plane may centre a clod on) into `dirt/private/faces.json`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
 the roster is committed, and the next session that has the files picks it up; say so in the final line.
 
 Then publish `dirt/private/collection-soil.html` to the existing DIRT artifact,
