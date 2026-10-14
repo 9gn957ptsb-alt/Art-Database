@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Rocket</title>
-  <meta name="description" content="Escapes made from the Artist Website: one of its museums, buildings or cities in blocks, the four pieces of your rocket hidden behind its works, and the clues to which.">
+  <meta name="description" content="Escapes made from the Artist Website: one of its museums, buildings or cities in blocks, or a new building made of the parts of the ones it has modelled, the four pieces of your rocket hidden behind its works, and the clues to which.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
@@ -45,12 +45,14 @@
       <canvas class="mark" aria-hidden="true"></canvas>
       <p class="eyebrow">Escapes made from the Artist Website</p>
       <h1>Rocket</h1>
-      <p class="lede">You come down hard and wake under a tree beside your capsule. The four pieces of your rocket are somewhere in the place: behind four of the works hung in a museum, on a building's roof and in its garden, or across a city. Read the notes, work out which work hides which piece, build the rocket at the wreck, and launch.</p>
+      <p class="lede">You come down hard and wake under a tree beside your capsule. The four pieces of your rocket are somewhere in the place: behind four of the works hung in a museum, on a building's roof and in its garden, or across a city. Read the notes, work out which work hides which piece, build the rocket at the wreck, and launch. Every building round you, and every new form, is made of the parts of the buildings the site has modelled.</p>
       <div class="kinds" role="group" aria-label="What to escape from">
         <button class="pill" data-kind="museum" aria-pressed="true">A museum</button>
         <button class="pill" data-kind="building" aria-pressed="false">A building</button>
         <button class="pill" data-kind="city" aria-pressed="false">A city</button>
+        <button class="pill" data-kind="form" aria-pressed="false">A new form</button>
       </div>
+      <a class="apart" href="forms.html">The buildings taken apart, and the new forms made of them →</a>
       <label for="place">The place</label>
       <select id="place"></select>
       <p class="preview" id="preview"></p>
@@ -70,6 +72,7 @@
     </div>
   </section>
   <script src="../../v2/models.js"></script>
+  <script src="forms.js"></script>
   <script src="adventure.js"></script>
   <script src="place.js"></script>
   <script src="rocket.js"></script>

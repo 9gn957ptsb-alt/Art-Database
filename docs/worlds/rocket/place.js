@@ -1,22 +1,29 @@
 /* Rocket's places, in one-metre blocks: one of the Artist Website's cities,
-   or one of its museums or the buildings it has modelled, with the
-   neighbourhood round it.
+   or one of its museums or the buildings it has modelled, or a new form made
+   of those buildings' sections, with the neighbourhood round it.
 
    A city is its ground (docs/v2/grounds/city-*.json): every 20 m cell a
-   street, a pavement, a park, water or a building of so many storeys. A
+   street, a pavement, a park, water or a building of so many storeys, and
+   the buildings new forms (forms.js): its built cells gathered into lots and
+   each lot a building made of the Architectural Authority's projects'
+   sections, one's ground floor, another's storeys, a third's crown. A
    museum or a building is its model (docs/v2/models/<slug>.json, filled in
    by models.js at a metre to the block) stood on the same kind of ground,
-   its plot levelled and eased into the streets round it. Into a museum its
+   its plot levelled and eased into the streets round it; a new form is a
+   model already in blocks, stood the same way. Into a museum its
    rooms are carved from its interior (docs/v2/interiors/<slug>.json):
    every floor, room, doorway and stair the file draws, the whole turned by
    the file's grid so the main walls lie along the blocks; where two floors
    have no stair between them one is laid, and the door is cut where the
    file says. A building with no plan is hollowed out, its floor boarded,
-   and a door cut toward where you came down. Then the works are hung on
+   and a door cut toward where you came down, its rooms called after the
+   sections they are in (a new form's, after the sections it is made of,
+   with a wall kept where two of them meet). Then the works are hung on
    the rooms' walls, the pieces of the rocket hidden and the notes left.
 
    No DOM: window.RocketPlace in the page, module.exports in Node, where a
-   test builds a place without a page. It needs models.js (Models). */
+   test builds a place without a page. It needs models.js (Models), and for
+   the lots and the new forms forms.js (Forms) and its sections. */
 
 (function (root) {
   "use strict";
@@ -148,16 +155,27 @@
   /* Every column from the cell its middle falls in: at(x, z) gives the
      column's place in the ground's metres, href the height that is the
      world's GROUND. Streets of asphalt with a pavement where they meet a
-     building, buildings of their storeys (lime, brick, render, concrete or
-     glass by their age) with a grid of windows, parks, water to swim in. */
-  function fillGround(w, G, at, href) {
-    var SX = w.SX, SZ = w.SZ, top = w.top, x, y, z;
+     building, parks, water to swim in, and the buildings of their storeys:
+     with the sections of the Architectural Authority's projects (opt.forms,
+     forms.js) each a new one made of them, on a lot of a cell or a few
+     (buildLots); without, a block of lime, brick, render, concrete or glass
+     by its age with a grid of windows. opt.keepOut(x, z): ground left open,
+     where the place's own building or the crash will be. */
+  function fillGround(w, G, at, href, opt) {
+    var SX = w.SX, SZ = w.SZ, top = w.top, x, y, z, S = opt && opt.forms, cellAt = S ? new Int32Array(SX * SZ).fill(-1) : null;
     var hAt = function (x2, z2) { var m = at(x2, z2); return max(6, min(SY - 40, round(GROUND + G.h(m[0], m[1]) - href))); };
     for (z = 0; z < SZ; z += 1) {
       for (x = 0; x < SX; x += 1) {
         var m = at(x, z), cl = G.cell(m[0], m[1]), k = G.K(cl[0], cl[1]), y0 = hAt(x, z), c = z * SX + x;
         w.kind[c] = k.charCodeAt(0);
         if (k === "b") { y0 = hAt(floor(x / 4) * 4, floor(z / 4) * 4); }
+        if (k === "b" && cellAt) {
+          for (y = 0; y < y0; y += 1) { w.set(x, y, z, y === 0 ? B.BEDROCK : y < y0 - 3 ? B.STONE : y < y0 - 1 ? B.DIRT : B.PAVE); }
+          top[c] = y0 - 1;
+          cellAt[c] = cl[1] * G.n + cl[0];
+          if (opt.keepOut && opt.keepOut(x, z)) { w.kind[c] = 46; }
+          continue;
+        }
         for (y = 0; y < y0 - 3; y += 1) { w.set(x, y, z, y === 0 ? B.BEDROCK : B.STONE); }
         for (y = max(0, y0 - 3); y < y0; y += 1) { w.set(x, y, z, B.DIRT); }
         var surf = B.PAVE;
@@ -188,6 +206,7 @@
         }
       }
     }
+    if (cellAt) { w.lots = buildLots(w, G, cellAt, hAt, S); return hAt; }
     // The windows: a grid of glass in every outside wall, a storey (three blocks) apart.
     for (z = 1; z < SZ - 1; z += 1) {
       for (x = 1; x < SX - 1; x += 1) {
@@ -203,6 +222,86 @@
       }
     }
     return hAt;
+  }
+
+  /* The lots: the ground's built cells gathered, row by row, into lots of
+     one to three cells a side (cells of a like height), and on each a
+     building made of the projects' sections (Forms.tower): one's ground
+     floor over the whole lot, another's storeys over it to the cells'
+     height, a third's roof or lookout, its bays and storeys repeated to fit.
+     A cell any of whose ground is to be kept open is left as paving. Each
+     lot keeps which section every block of it came from (partAt). */
+  function buildLots(w, G, cellAt, hAt, S) {
+    var SX = w.SX, SZ = w.SZ, n = G.n, cells = {}, order = [], lots = [], out = [], taken = {}, c;
+    w.lot = new Int16Array(SX * SZ);
+    for (c = 0; c < SX * SZ; c += 1) {
+      var q = cellAt[c];
+      if (q < 0) { continue; }
+      if (!cells[q]) { cells[q] = { q: q, i: q % n, j: floor(q / n), cols: [], open: false }; order.push(cells[q]); }
+      cells[q].cols.push(c);
+      // A cell with ground to keep open is open altogether: no building cut in two.
+      if (w.kind[c] === 46) { cells[q].open = true; }
+    }
+    order.sort(function (a, b) { return a.q - b.q; });
+    var free = function (i, j, st) { var f = cells[j * n + i]; return f && !f.open && !taken[f.q] && abs(G.storeys(i, j) - st) <= 2; };
+    order.forEach(function (e) {
+      if (taken[e.q]) { return; }
+      if (e.open) { e.cols.forEach(function (c2) { w.kind[c2] = 46; }); taken[e.q] = 1; return; }
+      var st = G.storeys(e.i, e.j), want = [1 + floor(hash(e.i, e.j, 3) * 2.6), 1 + floor(hash(e.j, e.i, 5) * 2.2)], wi = 1, wj = 1, ii, jj, t;
+      var col = function (i0) { for (t = 0; t < wj; t += 1) { if (!free(i0, e.j + t, st)) { return false; } } return true; };
+      var row = function (j0) { for (t = 0; t < wi; t += 1) { if (!free(e.i + t, j0, st)) { return false; } } return true; };
+      while (wi < want[0] && col(e.i + wi)) { wi += 1; }
+      while (wj < want[1] && row(e.j + wj)) { wj += 1; }
+      var lot = { cols: [], storeys: 1, i: e.i, j: e.j };
+      for (jj = 0; jj < wj; jj += 1) {
+        for (ii = 0; ii < wi; ii += 1) {
+          var f = cells[(e.j + jj) * n + e.i + ii];
+          taken[f.q] = 1;
+          Array.prototype.push.apply(lot.cols, f.cols);
+          lot.storeys = max(lot.storeys, G.storeys(e.i + ii, e.j + jj));
+        }
+      }
+      lots.push(lot);
+    });
+    lots.forEach(function (lot) {
+      var x0 = SX, x1 = -1, z0 = SZ, z1 = -1;
+      lot.cols.forEach(function (c2) { var X = c2 % SX, Z = (c2 - X) / SX; x0 = min(x0, X); x1 = max(x1, X); z0 = min(z0, Z); z1 = max(z1, Z); });
+      var W = x1 - x0 + 1, D = z1 - z0 + 1;
+      // A sliver at the world's edge is left as paving.
+      if (W < 5 || D < 5) { lot.cols.forEach(function (c2) { w.kind[c2] = 46; }); return; }
+      var y0 = hAt(round((x0 + x1) / 2), round((z0 + z1) / 2)), H = min(SY - y0 - 8, max(3, round(lot.storeys * 3.2)));
+      var R = root.Forms.tower(S, floor(hash(lot.i, lot.j, 77) * 1e6) + 1, W, D, H);
+      if (!R) { return; }
+      var L = { x0: x0 - R.ox, z0: z0 - R.oy, y0: y0, nx: R.nx, ny: R.ny, nz: R.nz, from: R.from, placed: R.placed, name: R.name, recipe: R.recipe };
+      out.push(L);
+      var id = out.length;
+      lot.cols.forEach(function (c2) {
+        var X = c2 % SX, Z = (c2 - X) / SX, i = X - L.x0, j = Z - L.z0, y, tp = y0 - 1;
+        for (y = 1; y < SY; y += 1) { w.set(X, y, Z, y < y0 - 4 ? B.STONE : y < y0 - 1 ? B.DIRT : y === y0 - 1 ? B.PAVE : B.AIR); }
+        if (i >= 0 && j >= 0 && i < R.nx && j < R.ny) {
+          for (var k = 0; k < R.nz; k += 1) {
+            var v = R.grid[(k * R.ny + j) * R.nx + i];
+            if (v) { w.set(X, y0 + k, Z, w.mat(R.names[v - 1])); tp = y0 + k; }
+          }
+        }
+        w.top[c2] = tp;
+        w.lot[c2] = id;
+      });
+    });
+    return out;
+  }
+
+  /* Which section of which project a block came from: in a lot, in a new
+     form, or (by its sections' boxes) in a building the site has modelled. */
+  function partAt(place, x, y, z) {
+    var w = place.w, c = z * w.SX + x;
+    if (x < 0 || z < 0 || x >= w.SX || z >= w.SZ) { return null; }
+    if (w.lot && w.lot[c]) {
+      var L = w.lots[w.lot[c] - 1], i = x - L.x0, j = z - L.z0, k = y - L.y0;
+      var P = k >= 0 && k < L.nz && i >= 0 && j >= 0 && i < L.nx && j < L.ny ? L.placed[L.from[(k * L.ny + j) * L.nx + i] - 1] : null;
+      return { name: P && P.sec ? P.sec.name : "", from: P ? P.from : "", lot: L };
+    }
+    return place.part ? place.part(x, y, z) : null;
   }
 
   /* Oaks, as the blocky world grows them. */
@@ -242,6 +341,7 @@
       for (x = cx - R; x <= cx + R; x += 1) {
         if (x < 1 || z < 1 || x >= SX - 1 || z >= SZ - 1) { continue; }
         var c = z * SX + x;
+        if (w.lot && w.lot[c]) { continue; }
         for (y = cy; y < SY; y += 1) {
           var b = w.get(x, y, z);
           if (b !== B.AIR && b !== B.WATER && !(M && M.has(x, y, z))) { w.set(x, y, z, B.AIR); }
@@ -301,16 +401,17 @@
     return best < 0 ? floor(n / 2) * n + floor(n / 2) : best;
   }
 
-  function makeCity(g) {
+  function makeCity(g, forms) {
     var w = new World(384, 384), SX = w.SX, SZ = w.SZ, G = readGround(g);
     var best = cityPark(G, SX), ci = best % G.n, cj = floor(best / G.n);
     var ox = (ci + 0.5) * G.c - G.half - SX / 2, oz = (cj + 0.5) * G.c - G.half - SZ / 2;
-    var hAt = fillGround(w, G, function (x, z) { return [x + ox, z + oz]; }, G.soft[best]);
+    var hAt = fillGround(w, G, function (x, z) { return [x + ox, z + oz]; }, G.soft[best],
+                         { forms: forms, keepOut: function (x, z) { return hypot(x - SX / 2, z - SZ / 2) < 24; } });
     var trees = plantTrees(w, null);
     var cx = SX / 2, cz = SZ / 2, site = crashSite(w, cx, cz, { clear: 20, lawn: 17 });
     trees = trees.filter(function (tr) { return abs(tr.x - cx) > 22 || abs(tr.z - cz) > 22; });
     return { kind: "city", w: w, hAt: hAt, trees: trees, crash: site.crash, wreck: site.wreck, tree: site.tree,
-             centre: { x: cx, z: cz }, rooms: [], floors: [], roomById: {}, door: null, M: null };
+             centre: { x: cx, z: cz }, rooms: [], floors: [], roomById: {}, door: null, M: null, lots: w.lots || [] };
   }
 
   /* ---- a museum or a building ----------------------------------------------------- */
@@ -334,13 +435,20 @@
      round it). What it lays on the ground (paving, lawns, water) is the
      plot's surface; what it builds stands on it. */
   function placeModel(w, spec, F, hAt) {
-    var Models = root.Models, SX = w.SX, SZ = w.SZ, x, y, z, c, k, q;
-    var s1 = copy(spec);
-    s1.voxel = 1;
-    var vx = Models.voxelize(s1);
-    var sb = copy(s1);
-    sb.parts = (spec.parts || []).filter(builtPart);
-    var bv = sb.parts.some(function (p) { return !p.cut; }) ? Models.voxelize(sb) : null;
+    var Models = root.Models, SX = w.SX, SZ = w.SZ, x, y, z, c, k, q, vx, bv;
+    if (spec.blocks) {
+      // A new form (forms.js), in blocks already: all of it, and what of it is built.
+      var R = spec.blocks;
+      vx = { nx: R.nx, ny: R.ny, nz: R.nz, grid: R.grid, names: R.names, site: [R.nx, R.ny] };
+      bv = { nz: R.nz, grid: spec.built };
+    } else {
+      var s1 = copy(spec);
+      s1.voxel = 1;
+      vx = Models.voxelize(s1);
+      var sb = copy(s1);
+      sb.parts = (spec.parts || []).filter(builtPart);
+      bv = sb.parts.some(function (p) { return !p.cut; }) ? Models.voxelize(sb) : null;
+    }
     var nx = vx.nx, ny = vx.ny, plane = nx * ny, site = vx.site, base = GROUND, hx = site[0] / 2, hy = site[1] / 2;
     var colOf = new Int32Array(SX * SZ), foot = new Uint8Array(SX * SZ), colTop = new Int16Array(SX * SZ), plot = new Uint8Array(SX * SZ);
     var x0 = SX, x1 = -1, z0 = SZ, z1 = -1, pool = [];
@@ -400,9 +508,25 @@
         if (!bv || x2 < 0 || z2 < 0 || x2 >= SX || z2 >= SZ) { return false; }
         var q2 = colOf[z2 * SX + x2], kk = y2 - base;
         return q2 >= 0 && kk >= 0 && kk < bv.nz && !!bv.grid[kk * plane + q2];
-      }
+      },
+      // In a new form, the blocks where one volume meets another stay when it is hollowed: a wall between.
+      keep: spec.blocks ? function (x2, y2, z2) {
+        var R2 = spec.blocks, at = function (X, Y, Z) {
+          if (X < 0 || Z < 0 || X >= SX || Z >= SZ) { return 0; }
+          var q3 = colOf[Z * SX + X], k3 = Y - base, o = q3 >= 0 && k3 >= 0 && k3 < R2.nz ? R2.from[k3 * plane + q3] : 0;
+          return o && VOLUME[R2.placed[o - 1].role] ? o : 0;
+        };
+        var o0 = at(x2, y2, z2);
+        if (!o0) { return false; }
+        for (var f = 0; f < 6; f += 1) {
+          var o1 = at(x2 + (f === 0) - (f === 1), y2 + (f === 2) - (f === 3), z2 + (f === 4) - (f === 5));
+          if (o1 && o1 !== o0) { return true; }
+        }
+        return false;
+      } : null
     };
   }
+  var VOLUME = { base: 1, wing: 1, upper: 1, lookout: 1 }, GROUNDED = { pool: 1, terrace: 1, tree: 1 };
 
   // A room's outline in the grid, and whether a point is inside it by a margin.
   function inPoly(p, x, y) {
@@ -667,7 +791,7 @@
               for (var dx = -1; dx <= 1 && all; dx += 1) { if (!w.SOLID[w.get(x + dx, y + dy, z + dz)]) { all = false; } }
             }
           }
-          if (all) { cut.push(x, y, z); }
+          if (all && !(M.keep && M.keep(x, y, z))) { cut.push(x, y, z); }
         }
       }
     }
@@ -842,11 +966,13 @@
 
   function makePlace(d) {
     var spec = d.model, it = d.interior && d.interior.floors && d.interior.floors.length ? d.interior : null;
+    // A new form (forms.js) is a model already in blocks.
+    if (d.kind === "form") { spec = { site: [d.form.nx, d.form.ny], ground: d.form.ground, blocks: d.form, built: root.Forms.built(d.form) }; it = null; }
     var turn = it && it.grid ? it.grid.turn || 0 : 0, s = spec.site || [30, 30], a = turn * Math.PI / 180;
     var spanX = abs(Math.cos(a)) * s[0] + abs(Math.sin(a)) * s[1], spanZ = abs(Math.sin(a)) * s[0] + abs(Math.cos(a)) * s[1];
     var size = d.kind === "museum" ? max(320, min(512, ceil((max(spanX, spanZ) + 200) / 16) * 16)) : 256;
-    var w = new World(size, size), F = frame(w, turn), G = readGround(d.ground);
-    var hAt = fillGround(w, G, F.model, G.h(0, 0));
+    var w = new World(size, size), F = frame(w, turn), G = readGround(d.ground), ex = s[0] / 2 + 15, ey = s[1] / 2 + 15;
+    var hAt = fillGround(w, G, F.model, G.h(0, 0), { forms: d.forms, keepOut: function (x, z) { var m = F.model(x, z); return abs(m[0]) <= ex && abs(m[1]) <= ey; } });
     var M = placeModel(w, spec, F, hAt);
     var plan = it ? carveInterior(w, it, M, F) : null;
     var near = plan && plan.door ? { x: plan.door.x, z: plan.door.z } : { x: M.mid[0], z: M.mid[1] };
@@ -858,9 +984,83 @@
     trees = trees.filter(function (tr) { return abs(tr.x - spot.x) > 15 || abs(tr.z - spot.z) > 15; });
     var roomById = {};
     plan.rooms.forEach(function (rm) { rm.runs = runsOf(w, plan.floors[rm.floor], rm); roomById[rm.id] = rm; });
+    // A building's rooms are called after the sections they are in, a new form's after the sections it is made of.
+    var part = d.kind === "form" ? formPart(w, M, d.form) : !it && d.sections ? sectionPart(w, F, M, d.sections, d.name) : null;
+    if (part && !it) { nameRooms(w, plan.rooms, part); }
     return { kind: d.kind, w: w, F: F, M: M, hAt: hAt, trees: trees, crash: site.crash, wreck: site.wreck, tree: site.tree,
              centre: { x: M.mid[0], z: M.mid[1] }, rooms: plan.rooms, floors: plan.floors, roomById: roomById, door: plan.door, stairs: plan.stairs,
-             where: plan.where };
+             where: plan.where, part: part, form: d.form || null, lots: w.lots || [] };
+  }
+
+  /* Which section a block of a new form came from: the placement it was drawn by. */
+  function formPart(w, M, R) {
+    var plane = R.nx * R.ny;
+    return function (x, y, z) {
+      if (x < 0 || z < 0 || x >= w.SX || z >= w.SZ) { return null; }
+      var q = M.colOf[z * w.SX + x], k = y - M.base;
+      if (q < 0 || k < 0 || k >= R.nz) { return null; }
+      var P = R.placed[R.from[k * plane + q] - 1];
+      return P && P.sec ? { name: P.sec.name + " of " + P.of, part: P.sec.name, from: P.from, role: P.role } : null;
+    };
+  }
+  /* Which of a modelled building's volumes a block is in, by the sections' boxes (the smallest that holds it). */
+  function sectionPart(w, F, M, secs, name) {
+    var vols = secs.filter(function (q) { return q.kind === "volume"; });
+    return function (x, y, z) {
+      if (x < 0 || z < 0 || x >= w.SX || z >= w.SZ || !M.foot[z * w.SX + x]) { return null; }
+      var m = F.model(x, z), h = y - M.base + 0.5, best = null;
+      vols.forEach(function (q) {
+        if (m[0] < q.at[0] - 0.5 || m[0] > q.at[0] + q.size[0] + 0.5 || m[1] < q.at[1] - 0.5 || m[1] > q.at[1] + q.size[1] + 0.5 || h < q.z - 0.6 || h > q.z + q.size[2] + 0.6) { return; }
+        if (!best || q.size[0] * q.size[1] * q.size[2] < best.size[0] * best.size[1] * best.size[2]) { best = q; }
+      });
+      return best ? { name: best.name, part: best.name, from: name } : null;
+    };
+  }
+  // Each room called after the section most of its floor is in; two rooms in one section, by which end of it.
+  var NTH = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
+  function nameRooms(w, rooms, part) {
+    var SX = w.SX, by = {};
+    rooms.forEach(function (rm) {
+      var votes = {}, best = null;
+      rm.blocks.forEach(function (c, n) {
+        var x = c % SX, z = (c - x) / SX, p = null, y;
+        // The volume it is in; or, in the open under an upper box or a pergola, the space under that.
+        for (y = rm.fzs[n] + 1; y <= rm.tops[n] + 1 && !p; y += 1) {
+          var q = part(x, y, z);
+          if (!q || !q.name || GROUNDED[q.role]) { continue; }
+          p = !q.role || q.role === "base" || q.role === "wing" || (VOLUME[q.role] && y <= rm.tops[n]) ? q :
+              { name: (q.role === "screen" ? "the space behind " : "the space under ") + q.name, from: q.from };
+        }
+        if (!p) { return; }
+        var key = p.name + "|" + p.from;
+        votes[key] = (votes[key] || 0) + 1;
+        if (!best || votes[key] > votes[best.key]) { best = { key: key, p: p }; }
+      });
+      if (!best) { return; }
+      rm.name = rm.blocks.length < 12 && !/^the space /.test(best.p.name) ? best.p.name.replace(/^the /, "a nook of the ") : best.p.name;
+      rm.from = best.p.from;
+      if (rm.blocks.length >= 12) { (by[best.key] = by[best.key] || []).push(rm); }
+    });
+    // Two rooms of a like size in one: its two ends. Else the biggest is it, and the rest the rooms to its north, south, east or west.
+    Object.keys(by).forEach(function (key) {
+      var list = by[key].sort(function (a, b) { return b.blocks.length - a.blocks.length; });
+      if (list.length < 2) { return; }
+      var name = list[0].name, mids = list.map(function (rm) { return centreOf(rm, SX); }), seen = {};
+      if (list.length === 2 && list[1].blocks.length >= list[0].blocks.length * 0.4) {
+        var dx = mids[1].x - mids[0].x, dz = mids[1].z - mids[0].z, ax = abs(dx) >= abs(dz);
+        list[0].name = "the " + (ax ? (dx > 0 ? "west" : "east") : (dz > 0 ? "north" : "south")) + " end of " + name;
+        list[1].name = "the " + (ax ? (dx > 0 ? "east" : "west") : (dz > 0 ? "south" : "north")) + " end of " + name;
+        return;
+      }
+      list.forEach(function (rm, n) {
+        if (!n) { return; }
+        var dx2 = mids[n].x - mids[0].x, dz2 = mids[n].z - mids[0].z;
+        var dir = abs(dx2) >= abs(dz2) ? (dx2 > 0 ? "east" : "west") : (dz2 > 0 ? "south" : "north");
+        seen[dir] = (seen[dir] || 0) + 1;
+        var nth = seen[dir] > 1 ? (NTH[seen[dir] - 1] || seen[dir]) + " " : "";
+        rm.name = /^the space /.test(name) ? name + ", " + (nth ? "the " + nth + "one " : "") + "to the " + dir : "the " + nth + dir + " room of " + name;
+      });
+    });
   }
 
   /* ---- the works on the walls ------------------------------------------------------ */
@@ -942,7 +1142,9 @@
         return x;
       });
     }
-    var rooms = place.rooms.filter(function (rm) { return wallOf(rm) >= 1.5; }).sort(function (a, b) { return wallOf(b) - wallOf(a); }).slice(0, 3);
+    // Rooms, not nooks, if there are rooms enough.
+    var walled = place.rooms.filter(function (rm) { return wallOf(rm) >= 1.5; }), big = walled.filter(function (rm) { return rm.blocks.length >= 12; });
+    var rooms = (big.length >= 2 ? big : walled).sort(function (a, b) { return wallOf(b) - wallOf(a); }).slice(0, 3);
     if (!rooms.length) { return []; }
     return works.map(function (x, i) {
       x.room = rooms[i % rooms.length].id;
@@ -983,7 +1185,8 @@
         for (x = 20; x < SX - 20; x += 2) {
           t = top[z * SX + x];
           var tb = w.get(x, t, z);
-          if (t > bt && t - place.hAt(x, z) <= 24 && hypot(x - cx, z - cz) > 30 && (tb === B.SLATE || tb === B.CONC) && free(x, z)) { bt = t; best = { x: x, z: z, t: t }; }
+          var roofy = w.lot ? w.lot[z * SX + x] && w.SOLID[tb] && tb !== B.GLASS && w.style[tb] !== 3 && w.get(x, t + 1, z) === B.AIR : tb === B.SLATE || tb === B.CONC;
+          if (t > bt && t - place.hAt(x, z) <= 24 && hypot(x - cx, z - cz) > 30 && roofy && free(x, z)) { bt = t; best = { x: x, z: z, t: t }; }
         }
       }
       if (!best) { best = { x: cx + 40, z: cz + 40, t: top[(cz + 40) * SX + cx + 40] }; }
@@ -1219,6 +1422,6 @@
   }
 
   var api = { B: B, PIECE_IDS: PIECE_IDS, SY: SY, World: World, city: makeCity, place: makePlace, hangable: hangable,
-              hang: hang, hide: hide, roomAt: roomAt, rng: rng, hash: hash, sizeIn: sizeIn };
+              hang: hang, hide: hide, roomAt: roomAt, partAt: partAt, rng: rng, hash: hash, sizeIn: sizeIn };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.RocketPlace = api; }
 })(typeof window !== "undefined" ? window : this);

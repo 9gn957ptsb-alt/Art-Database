@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Forms · Rocket</title>
+  <meta name="description" content="The buildings the site has modelled, from the Architectural Authority, taken apart into their volumes, roofs, features and ground, and put together again into the new forms Rocket's world is built of.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    /* Rocket's dark hand: cream on near-black, small tracked capitals for what labels, Newsreader for what is read. */
+    :root {
+      --ground: #0f0a07; --cream: #eadfcd; --muted: #a8927a; --glow: #f3c98b; --card: #17110c; --hair: rgba(234, 223, 205, 0.14);
+      --serif: "Newsreader", Georgia, serif; --sans: "Archivo", system-ui, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { background: var(--ground); }
+    body { margin: 0; background: var(--ground); color: var(--cream); font: 400 15px/1.5 var(--serif); }
+    a { color: inherit; }
+    :focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; }
+    .eyebrow, .pill, .tag, .meta, .back, .legend, .count { font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .wrap { width: min(1180px, 100%); margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)); }
+    header { padding: 36px 0 22px; display: grid; gap: 12px; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--cream); }
+    .eyebrow { margin: 0; color: var(--muted); }
+    h1 { margin: 0; font: 400 52px/1 var(--serif); letter-spacing: -0.01em; color: #fff7ea; }
+    h2 { margin: 0; font: 400 30px/1.1 var(--serif); color: #fff7ea; }
+    h3 { margin: 0; font: 400 22px/1.15 var(--serif); color: #fff7ea; }
+    .lede { margin: 0; max-width: 46em; font-size: 17px; line-height: 1.55; color: var(--cream); }
+    .note { margin: 0; max-width: 46em; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; min-height: 32px; padding: 6px 14px; border: 0; border-radius: 999px; background: rgba(234, 223, 205, 0.08);
+            color: var(--muted); cursor: pointer; text-decoration: none; }
+    .pill:hover, .pill:focus-visible { color: var(--cream); }
+    .pill[aria-pressed="true"], .pill.solid { background: var(--cream); color: var(--ground); }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    section { padding: 26px 0 8px; border-top: 1px solid var(--hair); display: grid; gap: 14px; }
+    .head-row { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: baseline; justify-content: space-between; }
+    canvas { display: block; max-width: 100%; height: auto; }
+    /* The new forms. */
+    .forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .form { display: grid; gap: 10px; align-content: start; padding: 16px; background: var(--card); border: 1px solid var(--hair); }
+    .form .pic { display: grid; place-items: center; min-height: 230px; }
+    .form h3 { font-size: 20px; }
+    .form p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    /* The projects taken apart. */
+    .project { display: grid; gap: 12px; padding: 22px 0; border-top: 1px solid var(--hair); }
+    .project:first-of-type { border-top: 0; }
+    .meta { color: var(--muted); }
+    .whole { display: grid; place-items: center; min-height: 160px; padding: 10px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; }
+    .kind { display: grid; gap: 8px; }
+    .kind > .tag { color: var(--muted); }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .tile { display: grid; gap: 6px; align-content: start; padding: 10px; background: var(--card); border: 1px solid var(--hair); }
+    .tile .pic { display: grid; place-items: center; min-height: 92px; }
+    .tile b { font-weight: 400; font-size: 14px; line-height: 1.3; color: var(--cream); }
+    .tile span { font-family: var(--mono); font-size: 9.6px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); }
+    .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+    footer { padding: 30px 0 48px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 14px; }
+    @media (max-width: 520px) {
+      h1 { font-size: 42px; }
+      .forms { grid-template-columns: 1fr; }
+      .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="back" href="./">← Rocket</a>
+      <p class="eyebrow">The buildings the site has modelled, from the Architectural Authority</p>
+      <h1>Forms</h1>
+      <p class="lede">Each of the thirty-six is taken apart into the sections it is made of: its volumes, each named by the space it is (the ground floor, a wing, the long wing, the glass pavilion, the hall, the tower, the block, the upper box, the cantilevered box, the lookout, the room of an interior); its roofs; the features that make it itself rather than a box (screens, slats, fins, colonnades, pergolas, canopies, walls); its pools, terraces and garden. Then they are put together again, in ways their architects never did. Every building in Rocket's world is one of these new forms.</p>
+      <div class="bar">
+        <span class="eyebrow">Colour</span>
+        <button class="pill" data-mode="mat" aria-pressed="true">What it is made of</button>
+        <button class="pill" data-mode="kind" aria-pressed="false">What each section is</button>
+      </div>
+      <p class="legend" id="legend" hidden></p>
+    </header>
+
+    <section aria-labelledby="new-h">
+      <div class="head-row"><h2 id="new-h">New forms</h2><div class="bar"><button class="pill" id="shuffle">Six more</button></div></div>
+      <p class="note">One project's volume on the ground, another's wings against it, a third's upper box on top run out past its edge as far as it ran out in its own building, a fourth's roof drawn again over it at its own pitch, a fifth's screen across a face, a pool slid under the overhang, and the trees of a garden round it. Each is made by a number; each can be escaped from.</p>
+      <div class="forms" id="forms"></div>
+    </section>
+
+    <section aria-labelledby="apart-h">
+      <div class="head-row"><h2 id="apart-h">Taken apart</h2><span class="count" id="count"></span></div>
+      <p class="note">Each project drawn taken apart (tap it to put it together), and each of its sections in its blocks, a metre to the block, every block three faces in three tones of its colour, as the tribar has them. A bay that repeats along a building is one section, with how many times it comes.</p>
+      <div id="projects"></div>
+    </section>
+
+    <footer>Made by <code>scripts/build_sections.js</code>, which reads the sections from the models' own parts, and <code>forms.js</code>, which puts them together; both run in the page and in Node. <a href="./">Back to Rocket</a>.</footer>
+  </div>
+
+  <script src="../../v2/models.js"></script>
+  <script src="forms.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var Fm = window.Forms, MAT = window.Models.MATERIALS;
+    var C30 = Math.cos(Math.PI / 6), DPR = Math.min(2, window.devicePixelRatio || 1);
+    var S = null, mode = "mat", drawn = [];
+    var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs;
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]; }); }
+    function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+    // What each section is, as a tone, when the colours tell sections and not materials.
+    var KIND = { ground: [222, 208, 184], upper: [188, 166, 136], lookout: [160, 140, 116], roof: [150, 92, 66], face: [112, 124, 132], free: [92, 104, 112],
+                 pool: [80, 128, 168], terrace: [150, 160, 112], tree: [86, 120, 70] };
+    var KIND_NAME = { ground: "A volume on the ground", upper: "An upper volume", lookout: "A lookout", roof: "A roof", face: "A feature on a face", free: "A feature standing free",
+                      pool: "A pool", terrace: "A terrace", tree: "A tree" };
+    function kindOf(sec) { return !sec ? "tree" : sec.kind === "volume" ? (sec.role === "ground" ? "ground" : sec.role === "lookout" ? "lookout" : "upper") : sec.kind === "feature" ? sec.role : sec.kind; }
+    function rgbOf(name) { var m = MAT[name]; return m && m.c ? m.c : [180, 170, 160]; }
+    function css(c, k, a) { return "rgba(" + round(c[0] * k) + "," + round(c[1] * k) + "," + round(c[2] * k) + "," + (a === undefined ? 1 : a) + ")"; }
+
+    /* A field of blocks in isometric, seen from the south-east and above: every block's three faces
+       in three tones of its colour, the tribar's (its top its own, the south face a fifth darker,
+       the east nearly half), drawn from the back to the front. at(i, j, k): 0, or a colour's
+       place in cols plus one; cols: [[r, g, b, alpha], …]. */
+    function iso(cv, nx, ny, nz, at, cols, maxW, maxH, maxS) {
+      var s = min(maxS || 9, maxW / max(1, (nx + ny) * C30), maxH / max(1, (nx + ny) * 0.5 + nz));
+      var W = Math.ceil((nx + ny) * C30 * s) + 2, H = Math.ceil(((nx + ny) * 0.5 + nz) * s) + 2;
+      cv.width = round(W * DPR); cv.height = round(H * DPR);
+      cv.style.width = W + "px";
+      var c = cv.getContext("2d");
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.clearRect(0, 0, W, H);
+      var ox = ny * C30 * s + 1, oy = nz * s + 1, seam = s >= 1.6;
+      var tones = cols.map(function (col) { return [css(col, 1, col[3]), css(col, 0.8, col[3]), css(col, 0.58, col[3])]; });
+      var get = function (i, j, k) { return i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz ? 0 : at(i, j, k); };
+      var buckets = [];
+      for (var k = 0; k < nz; k += 1) {
+        for (var j = 0; j < ny; j += 1) {
+          for (var i = 0; i < nx; i += 1) {
+            var v = at(i, j, k);
+            if (!v) { continue; }
+            var m = (get(i, j, k + 1) ? 0 : 1) | (get(i, j + 1, k) ? 0 : 2) | (get(i + 1, j, k) ? 0 : 4);
+            if (!m) { continue; }
+            var d = i + j + k;
+            (buckets[d] = buckets[d] || []).push(i, j, k, v, m);
+          }
+        }
+      }
+      var X = function (x, y) { return ox + (x - y) * C30 * s; }, Y = function (x, y, z) { return oy + (x + y) * 0.5 * s - z * s; };
+      var quad = function (p, fill) {
+        c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(p[2], p[3]); c.lineTo(p[4], p[5]); c.lineTo(p[6], p[7]); c.closePath();
+        c.fillStyle = fill; c.fill();
+        if (seam) { c.strokeStyle = fill; c.lineWidth = 0.6; c.stroke(); }
+      };
+      buckets.forEach(function (list) {
+        for (var q = 0; q < list.length; q += 5) {
+          var i2 = list[q], j2 = list[q + 1], k2 = list[q + 2], t = tones[list[q + 3] - 1], mm = list[q + 4];
+          if (mm & 1) { quad([X(i2, j2), Y(i2, j2, k2 + 1), X(i2 + 1, j2), Y(i2 + 1, j2, k2 + 1), X(i2 + 1, j2 + 1), Y(i2 + 1, j2 + 1, k2 + 1), X(i2, j2 + 1), Y(i2, j2 + 1, k2 + 1)], t[0]); }
+          if (mm & 2) { quad([X(i2, j2 + 1), Y(i2, j2 + 1, k2), X(i2 + 1, j2 + 1), Y(i2 + 1, j2 + 1, k2), X(i2 + 1, j2 + 1), Y(i2 + 1, j2 + 1, k2 + 1), X(i2, j2 + 1), Y(i2, j2 + 1, k2 + 1)], t[1]); }
+          if (mm & 4) { quad([X(i2 + 1, j2), Y(i2 + 1, j2, k2), X(i2 + 1, j2 + 1), Y(i2 + 1, j2 + 1, k2), X(i2 + 1, j2 + 1), Y(i2 + 1, j2 + 1, k2 + 1), X(i2 + 1, j2), Y(i2 + 1, j2, k2 + 1)], t[2]); }
+        }
+      });
+    }
+    // A material's colour as the page draws it: glass seen through a little.
+    function colour(name) { var c0 = rgbOf(name); return name === "glass" ? [c0[0], c0[1], c0[2], 0.72] : name === "water" ? [c0[0], c0[1], c0[2], 0.85] : [c0[0], c0[1], c0[2], 1]; }
+
+    // One section in its blocks.
+    function drawSection(cv, sec, maxW, maxH) {
+      var st = Fm.stampOf(S, sec), cols, at;
+      if (mode === "kind") { cols = [KIND[kindOf(sec)].concat(1)]; at = function (i, j, k) { return st.v[(k * st.ny + j) * st.nx + i] ? 1 : 0; }; }
+      else { cols = st.mats.map(colour); at = function (i, j, k) { return st.v[(k * st.ny + j) * st.nx + i]; }; }
+      iso(cv, st.nx, st.ny, st.nz, at, cols, maxW, maxH, 8);
+    }
+
+    /* A project from its sections, each where it stood (o), or taken apart: the upper volumes lifted,
+       the roofs lifted higher, the features drawn out from the middle, the ground left where it lies. */
+    function drawProject(cv, p, apart, maxW, maxH) {
+      var secs = p.sections.map(function (id) { return S.sections[id]; }), x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, cx = 0, cy = 0, n = 0;
+      secs.forEach(function (s) { if (s.kind === "volume") { cx += s.o[0] + s.n[0] / 2; cy += s.o[1] + s.n[1] / 2; n += 1; } });
+      cx /= max(1, n); cy /= max(1, n);
+      var placed = secs.map(function (s) {
+        var dx = 0, dy = 0, dz = 0, k = kindOf(s);
+        if (apart) {
+          if (k === "upper" || k === "lookout") { dz = 4; }
+          if (k === "roof") { dz = 8; }
+          if (k === "face" || k === "free") {
+            var fx = s.o[0] + s.n[0] / 2 - cx, fy = s.o[1] + s.n[1] / 2 - cy;
+            if (abs(fx) >= abs(fy)) { dx = fx >= 0 ? 6 : -6; } else { dy = fy >= 0 ? 6 : -6; }
+          }
+        }
+        var P = { s: s, st: Fm.stampOf(S, s), x: round(s.o[0] + dx), y: round(s.o[1] + dy), z: round(s.o[2] + dz) };
+        x0 = min(x0, P.x); y0 = min(y0, P.y); z0 = min(z0, P.z); x1 = max(x1, P.x + P.st.nx); y1 = max(y1, P.y + P.st.ny);
+        return P;
+      });
+      var z1 = 0;
+      placed.forEach(function (P) { P.x -= x0; P.y -= y0; P.z -= z0; z1 = max(z1, P.z + P.st.nz); });
+      var nx = x1 - x0, ny = y1 - y0, nz = z1, grid = new Uint8Array(nx * ny * nz), cols = [], ids = {};
+      var idOf = function (key, col) { if (!ids[key]) { cols.push(col); ids[key] = cols.length; } return ids[key]; };
+      // The ground first, the volumes, then what they wear and what crowns them.
+      var rank = { terrace: 0, pool: 1, ground: 2, upper: 3, lookout: 4, free: 5, face: 6, roof: 7 };
+      placed.sort(function (a, b) { return rank[kindOf(a.s)] - rank[kindOf(b.s)]; }).forEach(function (P) {
+        var st = P.st, map = st.mats.map(function (m) { return mode === "kind" ? idOf("k" + kindOf(P.s), KIND[kindOf(P.s)].concat(1)) : idOf(m, colour(m)); });
+        for (var k = 0; k < st.nz; k += 1) {
+          for (var j = 0; j < st.ny; j += 1) {
+            for (var i = 0; i < st.nx; i += 1) {
+              var v = st.v[(k * st.ny + j) * st.nx + i];
+              if (v) { grid[((P.z + k) * ny + P.y + j) * nx + P.x + i] = map[v - 1]; }
+            }
+          }
+        }
+      });
+      iso(cv, nx, ny, nz, function (i, j, k) { return grid[(k * ny + j) * nx + i]; }, cols, maxW, maxH, 7);
+    }
+
+    // A new form, from its blocks; in sections' tones, by which placement each block came from.
+    function drawForm(cv, R, maxW, maxH) {
+      var cols, at;
+      if (mode === "kind") {
+        var roleKind = function (P) { return P.role === "base" || P.role === "wing" ? "ground" : P.role === "upper" ? "upper" : P.role === "lookout" ? "lookout" : P.role === "roof" ? "roof" :
+                                       P.role === "screen" ? "face" : P.role === "cover" ? "free" : P.role; };
+        var keys = Object.keys(KIND);
+        cols = keys.map(function (k) { return KIND[k].concat(1); });
+        at = function (i, j, k) { var q = (k * R.ny + j) * R.nx + i; return R.grid[q] ? keys.indexOf(roleKind(R.placed[R.from[q] - 1])) + 1 : 0; };
+      } else {
+        cols = R.names.map(colour);
+        at = function (i, j, k) { return R.grid[(k * R.ny + j) * R.nx + i]; };
+      }
+      iso(cv, R.nx, R.ny, R.nz, at, cols, maxW, maxH, 6);
+    }
+
+    /* ---- the new forms ------------------------------------------------------------- */
+
+    var seeds = [1, 2, 3, 4, 5, 6];
+    function showForms() {
+      $("forms").innerHTML = "";
+      seeds.forEach(function (n) {
+        var R = Fm.form(S, n), card = document.createElement("article");
+        card.className = "form";
+        card.innerHTML = '<div class="pic"><canvas role="img" aria-label="' + esc(R.name) + '"></canvas></div><p class="eyebrow">No. ' + n + '</p><h3>' + esc(R.name) +
+          '</h3><p>' + esc(R.recipe) + '</p><div class="bar"><a class="pill solid" href="./#form/' + n + '/' + (1 + floor(Math.random() * 9998)) + '">Escape from it</a></div>';
+        $("forms").appendChild(card);
+        var cv = card.querySelector("canvas"), item = { el: cv, draw: function () { drawForm(cv, R, min(520, card.clientWidth - 32), 300); } };
+        drawn.push(item);
+        item.draw();
+      });
+    }
+
+    /* ---- the projects taken apart -------------------------------------------------------- */
+
+    var ORDER = [["Volumes", function (s) { return s.kind === "volume"; }], ["Roofs", function (s) { return s.kind === "roof"; }],
+                 ["Features", function (s) { return s.kind === "feature"; }], ["Ground", function (s) { return s.kind === "pool" || s.kind === "terrace"; }]];
+    function sizeText(s) { return s.size.map(function (v) { return String(v).replace(/\.0$/, ""); }).join(" × ") + " m"; }
+    function showProjects() {
+      var box = $("projects"), lazy = [];
+      $("count").textContent = S.projects.length + " projects · " + S.sections.length + " sections";
+      S.projects.forEach(function (p, pi) {
+        var secs = p.sections.map(function (id) { return S.sections[id]; });
+        var el = document.createElement("article"), counts = ORDER.map(function (o) { return secs.filter(o[1]).length; });
+        el.className = "project";
+        el.id = p.slug;
+        var html = '<div class="head-row"><h3>' + esc(p.name) + '</h3><span class="meta">' + esc(p.where) + '</span></div>' +
+          '<p class="note">Taken apart into ' + secs.length + ' sections: ' + ORDER.map(function (o, i) { return counts[i] + " " + o[0].toLowerCase(); }).filter(function (t) { return !/^0 /.test(t); }).join(", ") +
+          (p.garden.trees.length ? "; and its garden's " + p.garden.trees.length + (p.garden.trees.length === 1 ? " tree" : " trees") : "") +
+          '. <a href="./#building/' + esc(p.slug) + '/' + (1 + floor(Math.random() * 9998)) + '">Escape from it</a>.</p>' +
+          '<div class="whole" role="button" tabindex="0" aria-pressed="true" aria-label="' + esc(p.name) + ', taken apart. Tap to put it together."><canvas></canvas></div>';
+        ORDER.forEach(function (o) {
+          var list = secs.filter(o[1]);
+          if (!list.length) { return; }
+          html += '<div class="kind"><span class="tag">' + o[0] + '</span><div class="tiles">' + list.map(function (s) {
+            var on = s.on !== undefined ? S.sections[s.on] : null;
+            return '<div class="tile"><div class="pic"><canvas data-sec="' + s.id + '" role="img" aria-label="' + esc(s.name) + '"></canvas></div><b>' + esc(cap(s.name)) + (s.rep > 1 ? " ×" + s.rep : "") + '</b><span>' +
+              esc(sizeText(s) + (s.z > 1.2 ? " · " + String(round(s.z * 10) / 10) + " m up" : "") + (on ? " · on " + on.name.replace(/^the /, "the ") : "")) + '</span></div>';
+          }).join("") + '</div></div>';
+        });
+        el.innerHTML = html;
+        box.appendChild(el);
+        var whole = el.querySelector(".whole"), wc = whole.querySelector("canvas"), apart = true;
+        var item = { el: whole, lazy: true, draw: function () { drawProject(wc, p, apart, min(900, whole.clientWidth - 20), 320); } };
+        var flip = function () { apart = !apart; whole.setAttribute("aria-pressed", String(apart)); whole.setAttribute("aria-label", p.name + (apart ? ", taken apart. Tap to put it together." : ", put together. Tap to take it apart.")); item.draw(); };
+        whole.addEventListener("click", flip);
+        whole.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+        lazy.push(item);
+        el.querySelectorAll("canvas[data-sec]").forEach(function (cv) {
+          lazy.push({ el: cv, lazy: true, draw: function () { drawSection(cv, S.sections[+cv.dataset.sec], max(120, cv.parentNode.clientWidth), 110); } });
+        });
+      });
+      drawn = drawn.concat(lazy);
+      // Drawn as they come into view.
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (!en.isIntersecting) { return; }
+            io.unobserve(en.target);
+            var it = lazy.filter(function (q) { return q.el === en.target; })[0];
+            if (it) { it.done = true; it.draw(); }
+          });
+        }, { rootMargin: "600px 0px" });
+        lazy.forEach(function (it) { io.observe(it.el); });
+      } else { lazy.forEach(function (it) { it.done = true; it.draw(); }); }
+    }
+
+    function legend() {
+      var el = $("legend");
+      el.hidden = mode !== "kind";
+      el.innerHTML = Object.keys(KIND).map(function (k) { return '<span><i style="background:' + css(KIND[k], 1) + '"></i>' + KIND_NAME[k] + '</span>'; }).join("");
+    }
+    document.querySelectorAll("[data-mode]").forEach(function (b) {
+      b.onclick = function () {
+        mode = b.dataset.mode;
+        document.querySelectorAll("[data-mode]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+        legend();
+        drawn.forEach(function (it) { if (!it.lazy || it.done) { it.draw(); } });
+      };
+    });
+    $("shuffle").onclick = function () {
+      seeds = seeds.map(function () { return 25 + floor(Math.random() * 9970); });
+      drawn = drawn.filter(function (it) { return it.lazy; });
+      showForms();
+    };
+
+    fetch("sections.json").then(function (r) { return r.json(); }).then(function (json) {
+      S = Fm.load(json);
+      showForms();
+      showProjects();
+      if (location.hash) { var t = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (t) { t.scrollIntoView(); } }
+    }).catch(function (e) { $("forms").textContent = "The sections could not be loaded: " + e.message; });
+  })();
+  </script>
+</body>
+</html>
