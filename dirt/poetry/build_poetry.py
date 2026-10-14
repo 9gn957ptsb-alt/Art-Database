@@ -1,153 +1,226 @@
 #!/usr/bin/env python3
-"""DRIFT Poetry: the five pages of Picture Poetry, each laid whole on a plane painted in DIRT.
+"""DRIFT Poetry: the pages of Picture Poetry laid on DRIFT.
 
-Builds one self-contained page from plane.html (beside this file) and the pages themselves, which stay private:
-dirt/private/poetry/ holds Picture Poetry's page images, overlays/ (each page's buildings and characters as the
-Picture Poetry artifact draws them over the page, captured on a transparent ground at the page image's size) and
-poems.json (the poems as transcribed from the pages). Nothing of the pages is written into the repository; the built
-page goes where it is told.
+DRIFT Poetry is DRIFT's own page, exactly as published, with the pages of Picture Poetry laid over its ground
+(layer.js, beside this file). It is built from the two artifacts as they stand, so whenever either changes it is built
+again from both (UPDATE.md says how):
 
-    python3 dirt/poetry/build_poetry.py OUT.html
+    python3 dirt/poetry/build_poetry.py --drift DRIFT.html --out OUT [--sources SOURCES.json]
 
-Each page becomes two layers. Its photograph, cut from the page where the page sets it, becomes the paint: 600 by
-800 pixels, mipmapped on the GPU (one wider than tall lies on its side). Everything else on the page, its type, its
-rules and its buildings and characters, becomes the ink: the page with its paper taken away, kept at three
-quarters of the page's size so the poems stay sharp (a page wider than tall lies on its side here too). The plane
-knows where each page sets its photograph and its poem, measured from the page images.
+DRIFT.html is DRIFT's page as published (read it back with the Artifact tool). The pages come from
+dirt/private/poetry/, which is never committed: Picture Poetry's page images and photographs as it publishes them,
+pages.json and overlays/ (capture_pages.js: what its data says about each page, and its buildings and characters as
+it draws them), and poems.json (the poems, transcribed from the page images). OUT gets index.html (DRIFT's page with
+the pages laid on it) and poetry/: each page's photograph and its ink, poems.json, and sources.json (the versions of
+DRIFT and Picture Poetry it was built from, from SOURCES.json, and a fingerprint of each page image), so the next build
+can begin from the artifact alone and say which pages are new or changed.
+
+Each page is measured from its image: its paper (its commonest colour), its photograph (where Picture Poetry's data
+sets it, or else the largest patch unlike the paper), its ink (the far end of its own colours from the paper: darker
+on a light page, lighter on a dark one) and its poem (the run of ink lines with the most ink in it, outside the
+photograph and the figures). Its photograph becomes the paint, 600 by 800 pixels, mipmapped on the GPU (one wider
+than tall lies on its side). Everything else on the page, its type, its rules, its buildings and characters, becomes
+the ink: the page with its paper taken away, each pixel's own colour kept (so a coloured rule keeps its colour), at
+three quarters of the page's size so the poems stay sharp.
 """
-import base64
+import argparse
+import hashlib
 import html
 import io
 import json
-import sys
+import shutil
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 HERE = Path(__file__).resolve().parent
 PRIVATE = HERE.parent / "private" / "poetry"
 PHOTO = (600, 800)
 INK_K = 0.75
+G = 2584.0                      # a page to each square this wide (plane pixels): pages lie apart, with DRIFT between
 
-# Each page, in its own image's pixels: where it sets its photograph and its poem (title, rule, lines and signature,
-# left, top, right, bottom), its paper and its type's ink, and a block of colour it sets (page 4's sage), if any.
-PAGES = [
-    {"page": "page-1.jpg", "photo": (363, 688, 964, 1489), "text": (117, 214, 555, 593),
-     "paper": (239, 240, 235), "ink": (47, 48, 41)},
-    {"page": "page-2.jpg", "photo": (600, 0, 1920, 952), "text": (97, 393, 458, 708),
-     "paper": (233, 236, 241), "ink": (36, 40, 46)},
-    {"page": "page-3.jpg", "photo": (0, 0, 811, 1080), "text": (1150, 210, 1579, 831),
-     "paper": (235, 239, 240), "ink": (40, 45, 46)},
-    {"page": "page-4.jpg", "photo": (180, 180, 901, 1141), "text": (180, 1284, 775, 1752),
-     "paper": (240, 240, 230), "ink": (42, 43, 31), "block": ((612, 1140, 1080, 1920), (220, 223, 212))},
-    {"page": "page-5.jpg", "photo": (1083, 108, 1813, 1080), "text": (231, 170, 964, 492),
-     "paper": (210, 217, 223), "ink": (31, 38, 44)},
-]
-
-# Each page's colours, measured from its photograph (k-means in RGB, 14 clusters, ranked by chroma and share): its
-# paper, light, mid, a deep colour for the large fields (the photograph's own hue, deepened: Boiling's sunset to burnt
-# orange, the second page's sky to deep blue, For What's sky to teal, the lawn's shade to a living green, the
-# lighthouse's caisson to the slate of the sea), an accent for halftone, brush and kaleidoscope (Boiling's brick, the
-# second page's lens-flare rose, For What's cloud light, the sunlit lawn, the lighthouse's lantern), and two pastels
-# for torn pieces.
-PALETTE = [
-    [(240, 238, 231), (240, 213, 166), (176, 172, 144), (198, 110, 52), (176, 96, 58), (244, 214, 176), (210, 198, 224)],
-    [(233, 236, 241), (168, 187, 215), (115, 149, 193), (48, 84, 168), (206, 124, 168), (196, 214, 240), (238, 200, 216)],
-    [(235, 239, 240), (181, 209, 214), (174, 179, 169), (70, 128, 150), (200, 160, 104), (198, 226, 234), (244, 222, 196)],
-    [(238, 239, 234), (221, 218, 210), (109, 118, 117), (62, 108, 54), (160, 158, 62), (218, 224, 160), (230, 214, 206)],
-    [(226, 231, 234), (211, 219, 222), (164, 171, 171), (52, 78, 102), (176, 70, 72), (214, 196, 180), (200, 212, 224)],
-]
-
-
-def data_uri(im, fmt="JPEG", quality=86):
-    buf = io.BytesIO()
-    if fmt == "JPEG":
-        im.save(buf, "JPEG", quality=quality, optimize=True, progressive=True)
-        mime = "image/jpeg"
-    else:
-        im.save(buf, "PNG", optimize=True)
-        mime = "image/png"
-    return "data:%s;base64,%s" % (mime, base64.b64encode(buf.getvalue()).decode("ascii"))
+# The accent each page's halftone, brushstrokes and kaleidoscopes lean to, and the still it leans to (0 the halftone
+# and the disc, 1 coming apart, 2 the cloud and the kaleidoscopes, 3 torn), by its name; a page not named here takes
+# the most vivid colour of its photograph, and a still from its name's hash.
+ACCENT = {
+    "Boiling": (176, 96, 58),                  # its brick
+    "Innocence as an Act": (206, 124, 168),    # the lens flare's rose
+    "For What": (200, 160, 104),               # the cloud light
+    "Neither Where Nor When": (160, 158, 62),  # the sunlit lawn
+    "What too came devoured": (176, 70, 72),   # the lighthouse's lantern
+    "Discourse to the Athenians": (199, 128, 39),   # the gold of the creature crossing the globes
+}
+LEAN = {"Boiling": 1, "Innocence as an Act": 2, "For What": 3, "Neither Where Nor When": 3,
+        "What too came devoured": 0, "Discourse to the Athenians": 0}   # the disc among the globes and the stars
 
 
 def lum(a):
     return a[..., 0] * 0.299 + a[..., 1] * 0.587 + a[..., 2] * 0.114
 
 
-def ink_layer(spec, page, over):
-    """The page with its paper taken away: the type as coverage of its ink, the buildings and characters over it."""
+def measure(page, entry):
+    """Where the page sets its photograph and its poem, and the colours of its paper and its ink (page pixels)."""
     a = np.asarray(page).astype(np.float32)
     H, W, _ = a.shape
-    paper = np.empty_like(a)
-    paper[...] = spec["paper"]
-    if spec.get("block"):
-        (x0, y0, x1, y1), c = spec["block"]
-        paper[y0:y1, x0:x1] = c
-    inkc = np.array(spec["ink"], np.float32)
-    lp, li = lum(paper), float(lum(inkc))
-    cover = np.clip((lp - lum(a) - 6.0) / (lp - li - 6.0), 0.0, 1.0)
+    free = np.ones((H, W), bool)                       # neither photograph nor building nor character
+    for o in entry["objects"]:
+        x0, y0, x1, y1 = o["box"]
+        free[max(0, y0 - 8):y1 + 8, max(0, x0 - 8):x1 + 8] = False
+    q = (a // 8).astype(np.int32)
+    key = (q[..., 0] << 10) | (q[..., 1] << 5) | q[..., 2]
+
+    def paper_of(mask):                                # the commonest colour
+        vals, counts = np.unique(key[mask], return_counts=True)
+        return a[(key == vals[np.argmax(counts)]) & mask].mean(0)
+
+    if entry.get("photoRect"):
+        photo = tuple(int(v) for v in entry["photoRect"])
+    else:                                              # the largest coherent patch unlike the paper
+        dist = np.sqrt(((a - paper_of(free)) ** 2).sum(-1))
+        k = 8
+        small = dist[:H // k * k, :W // k * k].reshape(H // k, k, W // k, k).mean((1, 3)) > 24
+        small = ndimage.binary_opening(small, iterations=2)
+        lab, n = ndimage.label(small)
+        if not n:
+            raise SystemExit(f"page {entry['n']}: no photograph found")
+        sl = ndimage.find_objects(lab)[int(np.argmax(ndimage.sum(small, lab, range(1, n + 1))))]
+        photo = (sl[1].start * k, sl[0].start * k, min(W, sl[1].stop * k), min(H, sl[0].stop * k))
+    x0, y0, x1, y1 = photo
+    free[max(0, y0 - 34):y1 + 34, max(0, x0 - 34):x1 + 34] = False
+    paper = paper_of(free)
+    lp, L = float(lum(paper)), lum(a)
+    far = (L - lp) if lp < 128 else (lp - L)           # toward the ink: lighter on a dark page, darker on a light one
+    cand = free & (far > 0)
+    thr = np.percentile(far[cand], 99.5)
+    ink = np.median(a[cand & (far >= thr * 0.95)], 0)
+    t = np.clip(far / max(1.0, abs(float(lum(ink)) - lp)), 0, 1) * free
+    m = t > 0.5
+    rows = np.where(m.sum(1) >= 3)[0]
+    if not len(rows):
+        raise SystemExit(f"page {entry['n']}: no poem found")
+    runs = np.split(rows, np.where(np.diff(rows) >= 144)[0] + 1)   # a gap of 144 pixels between runs of lines
+    run = max(runs, key=lambda r: m[r].sum())
+    cols = np.where(m[run.min():run.max() + 1].sum(0) >= 3)[0]
+    text = (int(cols.min()), int(run.min()), int(cols.max()) + 1, int(run.max()) + 1)
+    return {"photo": photo, "text": text, "paper": tuple(int(round(v)) for v in paper),
+            "ink": tuple(int(round(v)) for v in ink)}
+
+
+def ink_layer(page, spec, over):
+    """The page with its paper taken away: each pixel's own colour, as much of it as is not paper, and the buildings
+    and characters over it; premultiplied while it is made, straight alpha in the PNG."""
+    a = np.asarray(page).astype(np.float32)
+    H, W, _ = a.shape
+    paper = np.array(spec["paper"], np.float32)
+    lp, li = float(lum(paper)), float(lum(np.array(spec["ink"], np.float32)))
+    d = (lp - lum(a)) if li < lp else (lum(a) - lp)
+    cover = np.clip((d - 6.0) / max(1.0, abs(lp - li) - 6.0), 0.0, 1.0)
     x0, y0, x1, y1 = spec["photo"]
-    cover[max(0, y0 - 2):y1 + 2, max(0, x0 - 2):x1 + 2] = 0.0         # the photograph is the paint's
+    cover[max(0, y0 - 2):y1 + 2, max(0, x0 - 2):x1 + 2] = 0.0          # the photograph is the paint's
+    rgb = np.clip(a - paper * (1.0 - cover[..., None]), 0.0, 255.0 * cover[..., None])
     o = np.asarray(over.convert("RGBA").resize((W, H), Image.LANCZOS)).astype(np.float32) / 255.0
     oa = o[..., 3:4]
-    # premultiplied: the overlay over the type
-    rgb = o[..., :3] * 255.0 * oa + inkc * cover[..., None] * (1.0 - oa)
+    rgb = o[..., :3] * 255.0 * oa + rgb * (1.0 - oa)                  # the figures over the type
     alpha = oa[..., 0] + cover * (1.0 - oa[..., 0])
     pm = np.dstack([rgb, alpha * 255.0])
     size = (round(W * INK_K), round(H * INK_K))
     small = np.asarray(Image.fromarray(np.clip(pm, 0, 255).astype(np.uint8), "RGBA").resize(size, Image.LANCZOS)).astype(np.float32)
     al = small[..., 3:4] / 255.0
-    straight = np.where(al > 0.004, small[..., :3] / np.maximum(al, 1e-6), 0.0)  # straight alpha again, for the PNG
+    straight = np.where(al > 0.004, small[..., :3] / np.maximum(al, 1e-6), 0.0)
     out = Image.fromarray(np.clip(np.dstack([straight, small[..., 3:4]]), 0, 255).astype(np.uint8), "RGBA")
     if W > H:
         out = out.transpose(Image.Transpose.ROTATE_270)                  # on its side: a quarter turn clockwise
     return out
 
 
-def build(out):
+def vivid(img):
+    """The most vivid colour a photograph holds: the middle of its most vivid two thousandths (by chroma, leaning to
+    the bright), so a small bright thing in a dark picture still counts."""
+    a = np.asarray(img.convert("RGB")).reshape(-1, 3).astype(np.float32)
+    score = (a.max(1) - a.min(1)) * (0.4 + a.max(1) / 255.0)
+    return tuple(int(v) for v in np.median(a[score >= np.percentile(score, 99.8)], 0))
+
+
+def name_of(p):
+    return p.get("title") or p.get("label") or (p.get("signature") or "").lstrip("—") or "Page %d" % p["n"]
+
+
+def build(drift, out, sources):
+    out = Path(out)
+    (out / "poetry").mkdir(parents=True, exist_ok=True)
+    book = json.loads((PRIVATE / "pages.json").read_text(encoding="utf-8"))["pages"]
     poems = {p["n"]: p for p in json.loads((PRIVATE / "poems.json").read_text(encoding="utf-8"))["pages"]}
-    over_dir = PRIVATE / "overlays"
-    photos, inks, page_a, photo_r, text_r, paper, block, block_c, pages = [], [], [], [], [], [], [], [], []
-    for n, spec in enumerate(PAGES, start=1):
-        page = Image.open(PRIVATE / spec["page"]).convert("RGB")
+    missing = [e["n"] for e in book if e["n"] not in poems]
+    if missing:
+        raise SystemExit(f"pages {missing} have no poem in poems.json: transcribe them from their page images first")
+    pages, sr = [], []
+    for e in book:
+        n, p = e["n"], poems[e["n"]]
+        page = Image.open(PRIVATE / e["img"]).convert("RGB")
         W, H = page.size
+        spec = measure(page, e)
         ph = page.crop(spec["photo"])
         turned = ph.width > ph.height
         if turned:
             ph = ph.transpose(Image.Transpose.ROTATE_270)
-        photos.append(data_uri(ph.resize(PHOTO, Image.LANCZOS)))
-        inks.append(data_uri(ink_layer(spec, page, Image.open(over_dir / ("over-%d.png" % n))), "PNG"))
-        page_a += [W, H, 1 if W > H else 0, 1 if turned else 0]
-        photo_r += list(spec["photo"])
-        text_r += list(spec["text"])
-        paper += list(spec["paper"])
-        b = spec.get("block")
-        block += list(b[0]) if b else [0, 0, 0, 0]
-        block_c += list(b[1]) if b else [0, 0, 0]
-        p = poems[n]
-        pages.append({"n": n, "title": p.get("title"), "signature": p.get("signature"), "label": p.get("label")})
-    ink_size = [round(1080 * INK_K), round(1920 * INK_K)]
-    assets = {
-        "photos": photos, "inks": inks, "photoSize": list(PHOTO), "inkSize": ink_size,
-        "pageA": page_a, "photoR": photo_r, "textR": text_r, "paper": paper, "block": block, "blockC": block_c,
-        "palette": [v for pg in PALETTE for c in pg for v in c], "pages": pages,
-    }
-    sr = []
-    for n in range(1, len(PAGES) + 1):
-        p = poems[n]
-        head = p.get("title") or (p.get("signature") or "").lstrip("—") or "Page %d" % n
-        if p.get("prose"):
-            body = html.escape(" ".join(p["lines"]))
-        else:
-            body = "<br>".join(html.escape(line) for line in p["lines"])
+        ph.resize(PHOTO, Image.LANCZOS).save(out / "poetry" / f"photo-{n}.jpg", "JPEG", quality=86, optimize=True, progressive=True)
+        ink_layer(page, spec, Image.open(PRIVATE / "overlays" / f"over-{n}.png")).save(out / "poetry" / f"ink-{n}.png", "PNG", optimize=True)
+        name = name_of(p)
+        accent = ACCENT.get(name) or vivid(page.crop(spec["photo"]))
+        lean = LEAN.get(name, int(hashlib.sha256(name.encode()).hexdigest(), 16) % 4)
+        pages.append({"n": n, "name": name, "size": [W, H], "turned": W > H, "photoTurned": turned,
+                      "photoR": list(spec["photo"]), "textR": list(spec["text"]), "paper": list(spec["paper"]),
+                      "accent": list(accent), "lean": lean, "photo": f"poetry/photo-{n}.jpg", "ink": f"poetry/ink-{n}.png"})
+        print(f"page {n} ({name}): photograph {spec['photo']}, poem {spec['text']}, paper {spec['paper']}, ink {spec['ink']}, accent {accent}, still {lean}")
+        body = html.escape(" ".join(p["lines"])) if p.get("prose") else "<br>".join(html.escape(line) for line in p["lines"])
         sign = "<br><br>" + html.escape(p["signature"]) if p.get("signature") else ""
-        sr.append("<h2>%s</h2><p>%s%s</p>" % (html.escape(head), body, sign))
-    page = (HERE / "plane.html").read_text(encoding="utf-8")
-    page = page.replace("__ASSETS__", json.dumps(assets, separators=(",", ":"))).replace("__POEMS_HTML__", "".join(sr))
-    Path(out).write_text(page, encoding="utf-8")
-    print(out, "%.2f MB" % (len(page.encode("utf-8")) / 1e6))
+        sr.append("<h2>%s</h2><p>%s%s</p>" % (html.escape(name), body, sign))
+    spec = {"G": G, "photoSize": list(PHOTO), "inkSize": [round(1080 * INK_K), round(1920 * INK_K)], "pages": pages}
+    page = Path(drift).read_text(encoding="utf-8")
+    if page.lstrip().lower().startswith("<!doctype html>") and "<body>" in page:
+        # read back from the artifact, the page comes wrapped in the skeleton the artifact serves it in, which
+        # publishing adds again: take it off
+        page = page[page.index("<body>") + len("<body>"):]
+        page = page.rstrip()
+        if page.endswith("</body></html>"):
+            page = page[:-len("</body></html>")]
+        page = page.strip() + "\n"
+    if page.count("<title>DRIFT</title>") != 1:
+        raise SystemExit("DRIFT's page has no <title>DRIFT</title> to rename: has DRIFT's page changed shape?")
+    if "const GLG" not in page or 'id="stage"' not in page or 'id="field"' not in page:
+        raise SystemExit("DRIFT's page lacks GLG, #stage or #field, which the pages are laid with: see layer.js")
+    page = page.replace("<title>DRIFT</title>", "<title>DRIFT Poetry</title>", 1)
+    layer = (HERE / "layer.js").read_text(encoding="utf-8").replace("__POETRY__", json.dumps(spec, separators=(",", ":")))
+    src = json.loads(Path(sources).read_text(encoding="utf-8")) if sources else {}
+    # each page image's fingerprint, kept with the sources, so the next build can say which pages are new or changed
+    src["pages"] = {e["img"]: hashlib.sha256((PRIVATE / e["img"]).read_bytes()).hexdigest()[:16] for e in book}
+    before = PRIVATE / "sources.json"
+    if before.exists():
+        was = json.loads(before.read_text(encoding="utf-8")).get("pages", {})
+        for e in book:
+            if e["img"] not in was:
+                print(f"page {e['n']} is new since the last build: its poem in poems.json must be read from its image")
+            elif was[e["img"]] != src["pages"][e["img"]]:
+                print(f"page {e['n']} has changed since the last build: check its poem in poems.json against its image")
+    page += ('\n<section aria-label="The poems of Picture Poetry, which lie on this plane" style="position:absolute;width:1px;'
+             'height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">'
+             + "".join(sr) + "</section>\n"
+             + '<script type="application/json" id="drift-poetry-sources">' + json.dumps(src).replace("</", "<\\/") + "</script>\n"
+             + '<script id="drift-poetry">\n' + layer + "</script>\n")
+    (out / "index.html").write_text(page, encoding="utf-8")
+    shutil.copy(PRIVATE / "poems.json", out / "poetry" / "poems.json")
+    for f in (out / "poetry" / "sources.json", PRIVATE / "sources.json"):
+        f.write_text(json.dumps(src, indent=1) + "\n", encoding="utf-8")
+    print(out / "index.html", "%.2f MB" % (len(page.encode("utf-8")) / 1e6), "+",
+          "%.2f MB of pages" % (sum(f.stat().st_size for f in (out / "poetry").iterdir()) / 1e6))
 
 
 if __name__ == "__main__":
-    build(sys.argv[1] if len(sys.argv) > 1 else "dirt-poetry.html")
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--drift", required=True, help="DRIFT's page as published")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--sources", help="the versions of DRIFT and Picture Poetry it is built from (JSON)")
+    a = ap.parse_args()
+    build(a.drift, a.out, a.sources)
