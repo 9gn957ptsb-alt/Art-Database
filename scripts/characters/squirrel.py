@@ -155,7 +155,7 @@ def poses():
 
 SEAMS = {"neck": (22.8, 18.0), "hip": (17.4, 18.6)}
 CHIMERA_SCALE = 1.45
-CHIMERA_SLOT_K = {"hind": 0.78}   # its tail, as a chimera's hindquarters, is not to outweigh the rest
+CHIMERA_SLOT_K = {"hind": 0.78, "head": 0.9}   # its tail, as a chimera's hindquarters, is not to outweigh the rest; its head, grown to meet the marks, is a size under
 DEEP = "."
 
 

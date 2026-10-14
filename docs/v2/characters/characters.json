@@ -29,12 +29,13 @@
       },
       "poses": "trot (four frames, diagonal pairs), stand, back (stops and looks back over its shoulder), look (turned to you), sit",
       "added": "2026-10-01",
-      "refined": "2026-10-01",
-      "passes": 1,
+      "refined": "2026-10-14",
+      "passes": 2,
       "notes": "Side on, 40 by 26 cells, two CSS pixels a cell. Guessed still: the trot's knee and hock angles are a two-bone reach, not traced from film; the sitting brush hardly shows round the feet; the turned-back head reads at its size but only just.",
       "log": [
         "2026-10-01 first drawing: three rounds of render and compare (ears restored, legs shortened to a fox's and the body lowered, a fuller brush, a bigger head and longer muzzle, the coat dithered less, the look back lifted clear of the back)",
-        "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it"
+        "2026-10-01 in the page and the preview: the outline in chalk grey so the black stockings read on the dark city ground, the coat's darkest step kept for the edges between parts (it read as a leopard's spots), no dots small enough to leave gaps; his writing drawn as one continuous looping line behind it",
+        "2026-10-14 second pass, three rounds against the real fox and Twombly's hand: the brush no longer a bar of the body's own thickness (narrow where it leaves the rump, fullest past its middle, tapering to the white point), the belly tucked up behind the ribs (the chest its deepest part), and the eye, which had vanished (its amber is the coat's light step), set in a black rim lined on toward the muzzle. Chimera: the fox's three parts checked as head, body and hindquarters beside the deer, squirrel, bison and eagle: the folds still agree"
       ],
       "moves": {"speed": 1, "fps": 8, "pause": "back", "leave": "edge", "trail": "writing", "gait": "trot"},
       "chimera": {"head": "Listening", "body": "Russet", "hind": "That Writes as It Goes", "gaze": "cocked, listening", "carriage": "low and level", "pace": "a trot"},
@@ -119,7 +120,7 @@
       "refined": "2026-10-01",
       "passes": 1,
       "notes": "Side on, about 30 by 20 cells of the 40 by 26. Guessed still: the bound's frames are drawn from stills of a squirrel crossing a lawn, not traced; the front-on head is a circle with two tufts.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the day's random triple, the squirrel's head on the bison's body with the slug's hindquarters): its head, grown to meet the folds' marks, was the biggest mass of the three; a size under now (CHIMERA_SLOT_K head 0.9)"]
     },
     {
       "id": "eagle",
@@ -194,7 +195,7 @@
       "refined": "2026-10-01",
       "passes": 1,
       "notes": "Side on, 31 by 9 cells of the 40 by 26. It does not leave the screen: it crawls a while and goes back into the soil a row at a time. Guessed still: the crawl's wave is a single hump; a real slug's foot waves are many and fine.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")"]
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the same triple): its long foot as hindquarters ran twice the length of a bison's body and read as a ramp; scaled to 0.8 as a chimera's hindquarters (CHIMERA_SLOT_K hind). The canonical bison-eagle-slug is its own fine drawing and is unchanged"]
     },
     {
       "id": "deer",
@@ -237,9 +238,9 @@
     }
   ],
   "natives_refined": [
-    {"key": "london-gb", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 wild boar after Turner, four rounds against the real animal and his strokes: a wedge not a loaf (shoulders raised, hump, narrower haunch, a long tapering snout with its tusk, the head low on a thick neck, the tail hanging) and the coat dark bristly brown, not the pale beige the artist's light palette had washed it to (hands.ladder)"]},
-    {"key": "paris-fr", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 grey wolf after Monet, three rounds: the tail carried low and straight with a dark tip (it rode up like a fox's), bushy; a ruff and pale cheeks; a broader head, heavier paws; the pale belly now pale (its ladder had come out mid-grey)"]},
-    {"key": "washington-us", "refined": "2026-10-13", "passes": 1, "log": ["2026-10-13 American black bear after Artschwager, three rounds: black, not pale grey (hands.ladder worked the steps toward the artist's lightest by a third each, so every dark animal washed out); rump a little higher than the shoulders, no hump; head carried low and larger, bigger round ears, long flat paws"]}
+    {"key": "london-gb", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 wild boar after Turner, four rounds against the real animal and his strokes: a wedge not a loaf (shoulders raised, hump, narrower haunch, a long tapering snout with its tusk, the head low on a thick neck, the tail hanging) and the coat dark bristly brown, not the pale beige the artist's light palette had washed it to (hands.ladder)"]},
+    {"key": "paris-fr", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 grey wolf after Monet, three rounds: the tail carried low and straight with a dark tip (it rode up like a fox's), bushy; a ruff and pale cheeks; a broader head, heavier paws; the pale belly now pale (its ladder had come out mid-grey)"]},
+    {"key": "washington-us", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 American black bear after Artschwager, three rounds: black, not pale grey (hands.ladder worked the steps toward the artist's lightest by a third each, so every dark animal washed out); rump a little higher than the shoulders, no hump; head carried low and larger, bigger round ears, long flat paws"]}
   ],
   "backlog": [
     {

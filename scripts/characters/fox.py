@@ -73,18 +73,21 @@ def body_parts(dy=0.0, tail_lift=0.0, head=None):
     """The body, neck and brush; the head is passed in, since it turns."""
     parts = []
     # The brush, behind everything: level, a little down, white at the tip.
-    tail = [(12.6, 13.0 + dy), (8.4, 14.0 + dy - tail_lift * 0.5), (4.2, 14.8 + dy - tail_lift), (1.9, 15.0 + dy - tail_lift)]
+    # The brush is narrow where it leaves the rump, fullest a little past its middle, and
+    # tapers to a point: not a bar of the body's own thickness.
+    tail = [(12.6, 13.0 + dy), (8.6, 14.0 + dy - tail_lift * 0.5), (4.8, 14.9 + dy - tail_lift), (1.7, 15.2 + dy - tail_lift)]
     tip = tail[-1]
 
     def tail_paint(x, y, light, i, j):
-        if math.hypot(x - tip[0], y - tip[1]) < 2.3:
+        if math.hypot(x - tip[0], y - tip[1]) < 2.4:
             return WHITE(x, y, light, i, j)
         return COAT_SOFT(x, y, light, i, j)
-    parts.append(Part(union(path(tail[:2], 1.4, 2.6), path(tail[1:], 2.6, 2.0)), tail_paint, 1))
+    parts.append(Part(union(path(tail[:2], 1.3, 2.7), path(tail[1:3], 2.7, 3.0), path(tail[2:], 3.0, 1.0)), tail_paint, 1))
     # Haunch, barrel and chest, one long low body.
-    torso = union(ellipse(18.6, 14.8 + dy, 8.4, 3.2),
-                  ellipse(13.9, 14.4 + dy, 3.8, 3.5),
-                  ellipse(24.2, 14.5 + dy, 3.6, 3.8, -0.2))
+    # (The belly tucks up behind the ribs: a fox's chest is its deepest part.)
+    torso = union(ellipse(18.6, 14.5 + dy, 8.4, 2.95),
+                  ellipse(13.9, 14.3 + dy, 3.8, 3.4),
+                  ellipse(24.2, 14.6 + dy, 3.6, 3.9, -0.2))
     parts.append(Part(torso, coat_with_white(lambda x, y: x > 25.4 and y > 14.0 + dy), 2))
     return parts
 
@@ -112,9 +115,12 @@ def head_profile(cx, cy, facing=1, ear=0.0):
 
     def far_ear_paint(x, y, light, i, j):
         return "k" if y < cy - 3.4 else FAR_COAT(x, y, light, i, j)
-    eye = ellipse(cx + f * 1.7, cy - 0.1, 0.6, 0.45)
+    # The eye is amber, the colour of the coat's light step, so it is set in a dark rim (a fox's
+    # eye is lined in black, the line running on toward the muzzle): without it, it vanished.
+    rim = union(ellipse(cx + f * 1.7, cy - 0.1, 1.05, 0.8), capsule((cx + f * 2.2, cy + 0.15), (cx + f * 3.3, cy + 0.55), 0.35, 0.3))
+    eye = ellipse(cx + f * 1.75, cy - 0.1, 0.55, 0.42)
     return [Part(far_ear, far_ear_paint, 3), Part(head, paint, 4),
-            Part(near_ear, ear_paint, 5), Part(eye, lambda *a: "y", 6)]
+            Part(near_ear, ear_paint, 5), Part(rim, lambda *a: "k", 6), Part(eye, lambda *a: "y", 7)]
 
 
 def head_front(cx, cy):
@@ -156,8 +162,18 @@ def legs_at(phases, dy=0.0, reach=3.0, lift=2.2):
 
 
 def neck(a, b):
+    ax, ay = a
+    bx, by = b
+
     def paint(x, y, light, i, j):
-        # The throat is white on the side toward the head's chin.
+        # The throat is white on the underside, from the chin down to the chest's bib: seen
+        # side on it was coat all the way, and the white stopped at the jaw.
+        if bx - ax > 1.5:
+            t = max(0.0, min(1.0, (x - ax) / (bx - ax)))
+            if t > 0.2 and y > ay + (by - ay) * t + 0.6:
+                return WHITE(x, y, light, i, j)
+        elif x > ax + 1.0 and y > min(ay, by) + 1.5:
+            return WHITE(x, y, light, i, j)
         return COAT(x, y, light, i, j)
     return Part(capsule(a, b, 2.3, 1.9), paint, 3)
 
