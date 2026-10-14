@@ -427,6 +427,10 @@ def main():
         print(f"  {why:8} {key}: {g['n'] if g else 0} → {BCP.cells_for((listed_side(key) or 8000), tier)} cells a side (tier {tier})")
     if not args.run:
         return
+    # Grounds cut before their landmarks' heights (Wikidata, EUBUCCO) and their bridges were read, or while a
+    # source did not answer, are read again for those alone (a ground that has them is passed over at once).
+    py("scripts/build_grounds.py", "--heights", timeout=args.years_timeout)
+    py("scripts/build_grounds.py", "--bridges", timeout=args.years_timeout)
     changed, report, asked = [], [], set()
     for why, key, tier in todo:
         print(f"\n== {key} ({why}, tier {tier})", flush=True)

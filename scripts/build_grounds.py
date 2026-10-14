@@ -78,6 +78,7 @@ ROAD_WIDTH = {                # metres, by Overture's road class
     "motorway": 22, "trunk": 18, "primary": 14, "secondary": 12, "tertiary": 10,
     "residential": 8, "living_street": 6, "unclassified": 7, "service": 5,
 }
+RAIL_WIDTH = {"standard_gauge": 8, "light_rail": 6, "narrow_gauge": 6}   # a railway bridge's deck, metres
 # A city's green (its skyline only): Overture's land use by class, and its land by subtype.
 GREEN_USE = {"park", "dog_park", "village_green", "garden", "flowerbed", "allotments", "grass",
              "pitch", "playground", "recreation_ground", "cemetery", "grave_yard", "golf_course",
@@ -111,7 +112,7 @@ def local(lat, lon):
 
 
 COLUMNS = {("base", "water"): ["subtype", "class"],
-           ("transportation", "segment"): ["subtype", "class", "road_flags"],
+           ("transportation", "segment"): ["subtype", "class", "road_flags", "rail_flags"],
            ("buildings", "building"): ["height", "num_floors"]}
 GREEN_COLUMNS = {("base", "land_use"): ["subtype", "class"],     # read for the cities' skylines only
                  ("base", "land"): ["subtype", "class"]}
@@ -258,6 +259,38 @@ def dry_basins(rows, box, to_local, half):
     return dry
 
 
+def eubucco_storeys(b, box, kind, tall, gx, gy, to_local):
+    """Where Overture gives a building no height (its cell stands at the default two storeys) and EUBUCCO
+    gives it its register's — Spain's Catastro floors, France's BD TOPO (eubucco_heights.py) — the cell
+    takes it, if that is a storey higher or more. Changes `tall`; returns the cells raised (0 where no register
+    covers the place), or None where its file did not answer."""
+    try:
+        import eubucco_heights
+        if not eubucco_heights.covers(b["lat"], b["lon"]):
+            return 0
+        west, south, east, north = box
+        got = eubucco_heights.polygons((south, west, north, east))
+        if not got:
+            return 0
+        shapes = [to_local(shape) for _, shape in got]
+        heights = np.array([h for h, _ in got])
+        q = np.flatnonzero(kind.reshape(-1) == "b")
+        pts = shapely.points(gx.reshape(-1)[q], gy.reshape(-1)[q])
+        pi, gi = shapely.STRtree(shapes).query(pts, predicate="within")
+        best = np.zeros(len(q))
+        np.maximum.at(best, pi, heights[gi])
+        flat = tall.reshape(-1)
+        rise = (flat[q] <= 2 * FLOOR + 1e-6) & (best >= 3 * FLOOR)
+        flat[q[rise]] = best[rise]
+        raised = int(rise.sum())
+    except Exception as exc:             # EUBUCCO out of reach: the heights Overture has
+        print(f"  · EUBUCCO's heights not used: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+        return None
+    print(f"  · EUBUCCO's register: {raised} building cells that stood at two storeys rise to their buildings' heights",
+          flush=True)
+    return raised
+
+
 def landmark_rises(b, box, geoms, to_m):
     """{index of a building: [(x, y, metres)]}: the heights Wikidata gives landmarks (wikidata_heights.py),
     each given to the building its point stands in — the largest where several do — else the nearest within
@@ -295,16 +328,19 @@ def bridge_mask(segments, cell, least, to_local, within, N):
     """The cells under the decks of road bridges, as a mask. A road is not drawn over water, so a river
     ran unbroken from bank to bank (the Seine, the Thames, the Han, the Rhine under the Hohenzollern
     Bridge); Overture flags a bridge on its segment (`road_flags`: `is_bridge`, the whole segment, or the
-    stretch of it between two fractions of its length). Only roads a skyline keeps — a footbridge, a path,
-    a rail bridge are left out, as their streets are."""
+    stretch of it between two fractions of its length; a railway's in `rail_flags`). Only what a skyline
+    keeps — roads and main-line railways, not a footbridge or a path, as their streets are left out."""
     mask = np.zeros((N, N), bool)
     for row in segments:
-        if row.get("subtype") != "road":
+        if row.get("subtype") == "rail":
+            width, flags = RAIL_WIDTH.get(row.get("class") or "", 0), row.get("rail_flags")
+        elif row.get("subtype") == "road":
+            width, flags = ROAD_WIDTH.get(row.get("class") or "", 0), row.get("road_flags")
+        else:
             continue
-        width = ROAD_WIDTH.get(row.get("class") or "", 0)
         if not width or width < least:
             continue
-        for flag in row.get("road_flags") or []:
+        for flag in flags or []:
             if "is_bridge" not in (flag.get("values") or []):
                 continue
             g = to_local(shapely.from_wkb(row["geometry"]))
@@ -380,7 +416,8 @@ def build(b, only=None):
     # A city's skyline keeps its streets, not every lane and drive: under 8 m wide they are left out
     # where a cell is ~40 m, and kept from 6 m where the grid has been cut finer than 22 m.
     least = 8 if cell > 22 else 6
-    segments = [] if only == "tall" else overture("transportation", "segment", ["subtype", "class", "road_flags"], box)
+    segments = [] if only == "tall" else overture("transportation", "segment",
+                                                  ["subtype", "class", "road_flags", "rail_flags"], box)
     if only == "bridges":        # the cells under road bridges alone (`--bridges`)
         return {"deck": bridge_mask(segments, cell, least, to_local, within, N)}
     for row in segments:
@@ -439,8 +476,14 @@ def build(b, only=None):
                 tall[near] = np.maximum(tall[near], top)
         count += 1
 
+    heights_from = ["Wikidata (CC0)"] if city and landmarks and rises else []
+    eub = eubucco_storeys(b, box, kind, tall, gx, gy, to_local) if city else 0
+    if eub:
+        heights_from.append("EUBUCCO (ODbL)")
+    heights_read = landmarks and eub is not None      # both answered: the ground says its heights are read
     if only == "tall":           # the buildings and their heights alone (`--heights`)
-        return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall), "landmarks": landmarks}
+        return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall), "landmarks": heights_read,
+                "heightsFrom": heights_from}
 
     at = terrain(box, cell, lat)
     ground = np.array([[at(*to_deg(gx[i, j], gy[i, j])) for j in range(N)] for i in range(N)])
@@ -478,7 +521,7 @@ def build(b, only=None):
         # A city's roads over water (its bridges) are drawn, and its landmarks stand at Wikidata's heights
         # (`--bridges` and `--heights` do it for the grounds cut before).
         **({"bridges": datetime.date.today().isoformat()} if city else {}),
-        **({"heights": datetime.date.today().isoformat()} if city and landmarks else {}),
+        **({"heights": datetime.date.today().isoformat(), "heightsFrom": heights_from} if city and heights_read else {}),
     }
 
 
@@ -516,13 +559,14 @@ def repair_heights(places):
                 tall[q] = new["tall"][q]
                 raised += 1
         old["tall"] = "".join(tall)
-        if new["landmarks"]:             # Wikidata answered: not asked again (else the next run tries)
+        if new["landmarks"]:             # Wikidata and EUBUCCO answered: not asked again (else the next run tries)
             old["heights"] = datetime.date.today().isoformat()
+            old["heightsFrom"] = new["heightsFrom"]
         path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
         top = max(ord(c) - 48 for c in tall)
         print(f"  + {b['name']}: {raised} building cells rise (past 74 storeys, or to a landmark's height), "
               f"the tallest now {top} storeys ({top * FLOOR:.0f} m)"
-              + ("" if new["landmarks"] else "; Wikidata did not answer: the landmarks are left for the next run"), flush=True)
+              + ("" if new["landmarks"] else "; Wikidata or EUBUCCO did not answer: left for the next run"), flush=True)
 
 
 def repair_bridges(places):

@@ -122,16 +122,16 @@
       "dated": "2026-10-14",
       "buildings": 41020,
       "green": 10229,
-      "dated_share": 0.69,
+      "dated_share": 0.47,
       "kb": 721,
       "gz": 125,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 8848 buildings · dated to 2026-10-08: 66% of its building cells",
         "2026-10-13 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
         "2026-10-14 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
-        "2026-10-14 · raised to tier 2 · 320 cells a side (20.0 m) from Overture 2026-09-23.1 · 41020 buildings, 10229 green cells · 69% dated, 29278 cells' years carried from the last cut (Brussels heritage inventory (urban.brussels), Brussels built up by 1930 (urban.brussels, BruCiel), Brussels heritage inventory (urban.brussels) did not answer) · 721 KB (125 KB sent)"
-      ],
-      "records": "asked 2026-10-14 for years"
+        "2026-10-14 · raised to tier 2 · 320 cells a side (20.0 m) from Overture 2026-09-23.1 · 41020 buildings, 10229 green cells · 69% dated, 29278 cells' years carried from the last cut (Brussels heritage inventory (urban.brussels), Brussels built up by 1930 (urban.brussels, BruCiel), Brussels heritage inventory (urban.brussels) did not answer) · 721 KB (125 KB sent)",
+        "2026-10-14 · dated again (its years had been carried) · 47% of its building cells dated (69% at the last cut)"
+      ]
     },
     "chicago-us": {
       "name": "Chicago",
@@ -199,7 +199,8 @@
     "dallas-us": {
       "tier": 2,
       "log": [
-        "2026-10-14 · first cut · 192 cells a side (20.3 m) from Overture 2026-09-23.1 · 2306 buildings, 2748 green cells · 8% of its building cells dated · 182 KB (25 KB sent)"
+        "2026-10-14 · first cut · 192 cells a side (20.3 m) from Overture 2026-09-23.1 · 2306 buildings, 2748 green cells · 8% of its building cells dated · 182 KB (25 KB sent)",
+        "2026-10-14 · cut at tier 2 · 192 cells a side (20.3 m) from Overture 2026-09-23.1 · 2306 buildings, 2947 green cells · 8% of its building cells dated (8% at the last cut) · 186 KB (27 KB sent)"
       ],
       "name": "Dallas",
       "n": 192,
@@ -211,10 +212,10 @@
       "read": "2026-10-14",
       "dated": "2026-10-14",
       "buildings": 2306,
-      "green": 2748,
+      "green": 2947,
       "dated_share": 0.078,
-      "kb": 182,
-      "gz": 25
+      "kb": 186,
+      "gz": 27
     },
     "houston-us": {
       "name": "Houston",
@@ -325,6 +326,7 @@
         "2026-10-10 · raised to tier 2 · 344 cells a side (20.1 m) from Overture 2026-09-23.1 · 28704 buildings, 11646 green cells · 78% dated, 34235 cells' years carried from the last cut (ISTAT census 2011 (each block's buildings by period; which is which is not known) did not answer) · 777 KB (128 KB sent)",
         "2026-10-10 · still wrong: ISTAT census blocks did not answer, 34,235 cells' years carried from the last cut (checked at 390x844 and 1440x900; screenshots looked at: Tokyo only)",
         "2026-10-13 · dated again (its years had been carried) · 79% of its building cells dated (78% at the last cut)",
+        "2026-10-14 · dated again with its runners' records · 79% of its building cells dated (79% at the last cut)",
         "2026-10-14 · dated again with its runners' records · 79% of its building cells dated (79% at the last cut)"
       ]
     },
@@ -441,7 +443,8 @@
       "log": [
         "2026-10-10 · first cut · 272 cells a side (19.9 m) from Overture 2026-09-23.1 · 14556 buildings, 12485 green cells · 5% of its building cells dated · 433 KB (78 KB sent)",
         "2026-10-10 · still wrong: only 5% of building cells dated (satellites; no Italian census blocks for Rome's square yet); ancient fabric reads as plain blocks (checked at 390x844 and 1440x900; screenshots looked at: Tokyo only)",
-        "2026-10-14 · dated again with its runners' records · 57% of its building cells dated (5% at the last cut)"
+        "2026-10-14 · dated again with its runners' records · 57% of its building cells dated (5% at the last cut)",
+        "2026-10-14 · dated again with its runners' records · 57% of its building cells dated (57% at the last cut)"
       ],
       "name": "Rome",
       "n": 272,
