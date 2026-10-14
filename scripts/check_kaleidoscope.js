@@ -21,6 +21,7 @@ const PORT = arg("port", "8863");
 const OUT = arg("out", fs.mkdtempSync(path.join(os.tmpdir(), "kal-")));
 const WORK = arg("work", "4f9bcc20aa99be0001000727");          // Monet, The Japanese Footbridge (NGA)
 const ARRIVAL = arg("arrival", "kaleidoscope");
+const POINTED = arg("pointed", "");   // --pointed kaleidoscope: see the fold a mouse-over makes (13 Oct 2026)
 const SLOW = parseFloat(arg("slow", "0.08"));
 const EXE = fs.existsSync("/opt/pw-browsers/chromium-1194/chrome-linux/chrome") ? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" : undefined;
 const ROOT = path.join(__dirname, "..");
@@ -56,11 +57,16 @@ function picture() {
     await page.route(/nasa\.gov|metmuseum|artic\.edu|clevelandart|smk\.dk|wikidata|wikimedia|fonts\.(googleapis|gstatic)/, r => r.abort());
     await page.goto(`http://localhost:${PORT}/v2/`, { waitUntil: "load" });
     await page.waitForFunction(() => document.getElementById("land").dataset.at === "globe", null, { timeout: 60000 });
-    const names = await page.evaluate(a => { Land.pace(false); return Land.arrival(a); }, ARRIVAL);
-    if (!names.includes(ARRIVAL)) { console.log(w, "no arrival named", ARRIVAL, "among", names.join(", ")); bad += 1; await ctx.close(); continue; }
+    const names = await page.evaluate(a => { Land.pace(false); return Land.arrival(a); }, POINTED ? "" : ARRIVAL);
+    if (!POINTED && !names.includes(ARRIVAL)) { console.log(w, "no arrival named", ARRIVAL, "among", names.join(", ")); bad += 1; await ctx.close(); continue; }
     await page.evaluate(id => Land.work(id), WORK);
     await page.waitForFunction(() => { const x = Land.where(); return x.at === "work" && !x.flying; }, null, { timeout: 30000 });
-    await page.evaluate(k => window.__setSlow(k), SLOW);
+    if (POINTED) {
+      await page.waitForTimeout(12000);   // past the first look's own arrival
+      await page.evaluate(k => window.__setSlow(k), SLOW);
+      const ok = await page.evaluate(n => Land.pointed(n, 0.3, 0.4).includes(n), POINTED);
+      if (!ok) { console.log(w, "no pointed effect named", POINTED); bad += 1; await ctx.close(); continue; }
+    } else { await page.evaluate(k => window.__setSlow(k), SLOW); }
     await page.waitForFunction(() => !!document.querySelector("#art-plate .deal-veil"), null, { timeout: 20000 }).catch(() => {});
     const t0 = await page.evaluate(() => performance.now());
     let n = 0;

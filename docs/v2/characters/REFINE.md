@@ -42,6 +42,7 @@ by the museum or gallery that holds the work.
 | `artists.json` | each artist's map — works, cities in route order, the museums holding the works, where the animal waits, and home with its plants — written by `build_characters.py` from public files |
 | `docs/v2/characters.js` | the page: when one comes, how it moves, how it is drawn |
 | `walks.json` | the walks published for everyone, two per character from its artist's map (`python3 scripts/build_walks.py`) and any the artist publishes; played by `docs/v2/walks.js` |
+| `scripts/check_characters.js` | the page check of a day's pass: each place at 390×844 and 1440×900, the wave, the character and its plants, the press line, no page errors |
 | `scripts/preview_character.js` | draws a character large, every pose, on the soil of six cities with their plants; `--sheet key,key …` a contact sheet of places' own characters |
 | `places/<key>.json`, `maps/<id>.json` | every place's own character and its native artist's map (`scripts/characters/natives.py`, `species.py`, `rigs.py`, `hands.py`; below, "Every place its own") |
 
@@ -90,7 +91,12 @@ same bytes every run, about a minute):
   pieces; a photograph → grain; watercolour → washes pooled at the edges;
   graphite → hatching; sculpture → modelled bands; ink → a line) and inks
   from their works' measured colours, each real colour of the animal taken
-  by the artist's nearest in Lab.
+  by the artist's nearest in Lab. A step the artist's colours do not give
+  (none near, or none a step apart) is the last one worked toward the
+  artist's lightest by just the lightness the species wants (`hands.ladder`):
+  a black bear stays black after an artist of greys, a boar dark brown after
+  Turner's golds (14 Oct 2026; before, each missing step went a third of the
+  way to the artist's lightest and every dark animal washed out).
 
 Files: `places/<key>.json` (the place, the native artist and how, the
 species and its source, the hand and why, the inks, the moves, the poses run-
@@ -137,7 +143,11 @@ column (it is not seen there).
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,
    `notes` in `characters.json`.
-5. **Check in the page.** `python3 -m http.server --directory docs`, open
+5. **Check in the page.** `python3 -m http.server 8911 --directory docs &`
+   then `NODE_PATH=$(npm root -g) node scripts/check_characters.js
+   --places <the refined places' keys>` does the whole of this at both sizes
+   (down into the city, the wave, the character out with its plants, pressed:
+   its line; no page errors; `--shots DIR` keeps the pictures). By hand: open
    `/v2/` at 390×844 and 1440×900, go down into each refined place (Find on
    the Museums layer), press and hold on the ground and let go: the wave,
    its own character steps out and its plants rise round the ring; press it

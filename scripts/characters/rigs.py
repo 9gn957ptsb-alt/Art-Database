@@ -171,7 +171,7 @@ QUAD = dict(
     ears="point", ear=2.6, tail="brush", tail_len=8.0, tail_up=-10, tail_w=1.6,
     horns=None, horn=1.0, mane=0.0, beard=0.0, trunk=0.0, tusks=0.0,
     leg_w=1.1, hoof=False, arms=1.0, marks=(), gait="trot", rest="lie", grazer=False,
-    canvas=(W, H), face="long", cheeks=0.0, ruff=0.0, upright=False,
+    canvas=(W, H), face="long", cheeks=0.0, ruff=0.0, upright=False, rise=0.0, foot=1.0,
 )
 
 
@@ -220,6 +220,8 @@ def quad_parts(sp, pose, k):
         tilt = (p["arms"] - 1.0) * 0.5          # an ape: higher at the shoulders
     else:
         tilt = 0.0
+    if not lying:
+        tilt += p["rise"]                       # a boar: higher at the shoulders; a black bear: at the rump
     sh_y = body_y - tilt * legs
     hp_y = body_y
     parts = []
@@ -281,7 +283,8 @@ def quad_parts(sp, pose, k):
         knee = two_bone(j, foot, l1, l2, bend)
         sdf = union(capsule(j, knee, lw * 1.25, lw), capsule(knee, foot, lw * 0.85, lw * 0.6))
         out = [P(sdf, leg_role(far), group)]
-        foot_sdf = ellipse(foot[0] + 0.4 * s, foot[1] - 0.2, max(0.6, lw * 0.95), 0.55)
+        fw = p["foot"]                          # a bear's flat paw is longer than a deer's hoof
+        foot_sdf = ellipse(foot[0] + 0.4 * s + 0.35 * (fw - 1.0) * lw, foot[1] - 0.2, max(0.6, lw * 0.95 * fw), 0.55 + 0.15 * (fw - 1.0))
         out.append(P(foot_sdf, "dark" if (hoof or "dark_legs" in marks) else ("far" if far else "coat"), group))
         return out
 
@@ -376,6 +379,10 @@ def quad_parts(sp, pose, k):
         parts.append(P(capsule((base[0] - 1.6 * s, base[1] - dep * 0.6), mt, p["mane"] * s, p["mane"] * s * 0.6),
                        "dark" if "mane_dark" in marks else "coat", 3))
 
+    if p["ruff"] and pose != "look":
+        rr = p["ruff"]
+        parts.append(P(ellipse(hb[0] - head_dir * 0.3 * s, hb[1] + hr * 0.5, hr * (0.7 + 0.3 * rr), hr * (0.62 + 0.2 * rr)),
+                       "pale" if "cheeks" in marks else "coat", 3))
     look = pose == "look"
     if look:
         parts += head_front(p, hb[0], hb[1] - hr * 0.2, s, marks)
@@ -518,6 +525,8 @@ def head_front(p, cx, cy, s, marks):
         for hpart in horn_parts(p["horns"], cx + f * hr * 0.45, cy - hr * 0.75, p["horn"] * 0.85, -f, s, True):
             out.append(P(hpart, "dark" if p.get("horn_dark", True) else "pale", 5))
     long = p["face"] == "long"
+    if p["ruff"]:
+        out.append(P(ellipse(cx, cy + hr * 0.45, hr * (1.0 + 0.3 * p["ruff"]), hr * 0.72), "pale" if "cheeks" in marks else "coat", 3))
     skull = ellipse(cx, cy, hr * 0.95, hr * (1.15 if long else 0.95))
 
     def role(x, y):
