@@ -34,7 +34,8 @@
    hands back its canvas, laid under the page's own (null until ready, or
    without WebGL 2, when the globe is as it was); EarthBody.doorAt(lat, lon,
    R) names the work under a point at a radius; EarthBody.light(door, amt)
-   lights its cell; EarthBody.kindAt(lat, lon) says what the place is. */
+   lights its cell; EarthBody.kindAt(lat, lon) says what the place is.
+   EarthBody.base, set before start, is where its files are (default: beside the page). */
 (function () {
   "use strict";
 
@@ -475,9 +476,12 @@
     if (failed || ready) { return Promise.resolve(ready); }
     if (!setup()) { failed = true; return Promise.resolve(false); }
     var season = Math.floor(month / 3);
-    return Promise.all([image("earth-doors.webp"), image("earth-season.webp"), image("earth-props.webp"),
-                        image("dirt/earth/cloud-" + season + ".webp"),
-                        fetch("earth-doors.json").then(function (r) { return r.json(); })])
+    // Where its files are: beside the page (the Artist Website), or wherever
+    // another page says (Worlds sets EarthBody.base to "../v2/").
+    var B = window.EarthBody.base || "";
+    return Promise.all([image(B + "earth-doors.webp"), image(B + "earth-season.webp"), image(B + "earth-props.webp"),
+                        image(B + "dirt/earth/cloud-" + season + ".webp"),
+                        fetch(B + "earth-doors.json").then(function (r) { return r.json(); })])
       .then(function (got) {
         var t = got[4], n = t.e.length;
         D = { doors: pixels(got[0]), season: pixels(got[1]), works: t.w, ew: t.e, sib: t.s,

@@ -7,17 +7,17 @@ markings, with its source: the English Wikipedia article on the species (its
 description; `wiki` is the article's title). Nothing here is the artist's:
 the hand and the inks come from the native artist (hands.py).
 
-Left out of the natives on purpose: the six drawn by hand (`CAST`: the red
+Left out of the natives on purpose: the seven drawn by hand (`CAST`: the red
 fox, the American bison, the red squirrel, the bald eagle, the banana slug,
-the red deer — each lives only in its artist's home town, characters.json's
-`native`); the kinds that are not one animal (wind, blooms, ferns, mould,
+the red deer, the starling murmuration — each lives only in its artist's home
+town, characters.json's `native`); the kinds that are not one animal (wind, blooms, ferns, mould,
 leaf fall, fire, grass waves, dunes, dust, schools, sea life) and swarms of
 biting flies (mosquitoes, blackflies), termite mounds and bats at dusk. A
 species of the grammar not in this table is not yet drawn: the daily pass
 adds it (REFINE.md).
 """
 
-CAST = {"red foxes", "American bison", "red squirrels", "bald eagle", "banana slugs", "red deer"}
+CAST = {"red foxes", "American bison", "red squirrels", "bald eagle", "banana slugs", "red deer", "starling murmurations"}
 KINDS = {"herds": 1.0, "hunters": 1.0, "troops": 0.95, "colonies": 0.85, "eagles": 0.85, "waders": 0.85,
          "macaws": 0.8, "soarers": 0.75, "vees": 0.75, "flocks": 0.75, "hummers": 0.75, "frogs": 0.7,
          "snakes": 0.65, "morphos": 0.6, "fireflies": 0.45, "ants": 0.4, "swarms": 0.4}
@@ -43,7 +43,7 @@ FELID = dict(L=11.5, legs=7.4, depth=3.0, neck=3.0, neck_up=22, head=2.4, snout=
 URSID = dict(L=12, legs=6.8, depth=4.4, neck=2.4, neck_up=-6, head=2.8, snout=2.4, snout_w=1.4, ears="round", ear=1.5,
              tail="short", gait="walk", rest="lie", hump=0.25, leg_w=1.8, foot=1.5, marks=())
 CERVID = dict(L=11, legs=10, depth=3.1, neck=5, neck_up=55, head=2.1, snout=2.8, snout_w=0.95, ears="long", ear=2.0,
-              tail="short", gait="trot", rest="lie", grazer=True, hoof=True, horns="antler", horn=1.0, leg_w=0.95, marks=("belly",))
+              tail="short", gait="trot", rest="lie", grazer=True, hoof=True, horns="antler", horn=1.0, leg_w=0.8, marks=("belly",))
 BOVINE = dict(L=13, legs=7.8, depth=4.3, neck=3, neck_up=18, head=2.6, snout=2.6, snout_w=1.4, ears="side", ear=1.6,
               tail="tuft", tail_len=7, gait="walk", rest="lie", grazer=True, hoof=True, horns="boss", horn=1.0, leg_w=1.5, marks=())
 ANTELOPE = dict(L=10, legs=10, depth=2.8, neck=4.6, neck_up=55, head=2.0, snout=2.6, snout_w=0.9, ears="long", ear=1.8,
@@ -72,7 +72,7 @@ VULTURE = dict(body=5, deep=3, tilt=35, neck=1.8, neck_up=55, head=1.4, bare=Tru
                legs=3, leg_w=0.5, tail=3, tail_drop=40, wing_span=18, gait="fly", bill_role="pale", leg_role="pale")
 OWL = dict(body=3.6, deep=3.0, tilt=75, neck=0, head=2.4, disk=True, bill="hook", bill_len=0.6, legs=1.8, tail=2, tail_drop=80,
            wing_span=14, gait="fly")
-GOOSE = dict(body=5, deep=2.6, tilt=5, neck=4, neck_up=60, head=1.5, bill="flat", bill_len=2, legs=3, leg_w=0.4, tail=2,
+GOOSE = dict(body=5, deep=2.6, tilt=14, neck=4, neck_up=60, head=1.5, bill="flat", bill_len=2, legs=3, leg_w=0.4, tail=2,
              tail_drop=10, wing_span=14, gait="fly")
 WADER = dict(scale=1.0, body=4.6, deep=2.4, tilt=15, neck=6, neck_up=70, head=1.3, bill="long", bill_len=3.2, legs=10, leg_w=0.35, tail=2.4,
              tail_drop=30, wing_span=14, gait="walk")
@@ -115,7 +115,8 @@ SPECIES = {
     "Ethiopian wolves": Q(CANID, "Ethiopian wolf", "Canis simensis", "Ethiopian wolf", col("#b5612b", "#f1e6d2", "#2e2420", "#8a6a3a"), size=0.85,
                           snout=3.8, marks=("belly", "bib", "tailtip_dark")),
     "coyotes": Q(CANID, "Coyote", "Canis latrans", "Coyote", col("#a08a6c", "#e3d8c4", "#3c3128", "#c8a25a"), size=0.85,
-                 marks=("belly", "saddle", "tailtip_dark")),
+                 legs=9.2, depth=2.7, leg_w=0.95, head=2.3, snout=3.9, snout_w=0.95, ear=2.6, tail_up=26, tail_len=8.5, tail_w=1.8,
+                 neck_trot=12, ruff=0.6, marks=("belly", "saddle", "cheeks", "tailtip_dark")),
     "golden jackals": Q(CANID, "Golden jackal", "Canis aureus", "Golden jackal", col("#b8915c", "#e8dcc2", "#4a3a2a"), size=0.75,
                         marks=("belly", "saddle")),
     "dholes": Q(CANID, "Dhole", "Cuon alpinus", "Dhole", col("#b2582a", "#e9d8c0", "#2c1f18"), size=0.8, marks=("belly", "tailtip_dark")),
@@ -190,13 +191,14 @@ SPECIES = {
     "bushpigs": Q(SUID, "Bushpig", "Potamochoerus larvatus", "Bushpig", col("#8a4a28", "#d8cfc0", "#2a1e18"), size=0.82, marks=("dorsal",)),
     "white-tailed deer": Q(CERVID, "White-tailed deer", "Odocoileus virginianus", "White-tailed deer",
                            col("#a87a52", "#efe8dc", "#2e2620"), size=0.9, horns="forward", marks=("belly", "rump", "muzzle")),
-    "mule deer": Q(CERVID, "Mule deer", "Odocoileus hemionus", "Mule deer", col("#8a7e70", "#ece6da", "#2e2a26"), size=0.9, ear=2.8,
-                   horns="forward", marks=("belly", "rump", "pale_face")),
+    "mule deer": Q(CERVID, "Mule deer", "Odocoileus hemionus", "Mule deer", col("#8a7e70", "#ece6da", "#2e2a26"), size=0.9, ear=2.7,
+                   L=11.5, legs=9.0, depth=3.3, neck=4.4, neck_up=40, neck_w=2.5, horns="forked", horn=1.2, horn_dark=False,
+                   tail="rope", tail_len=4.6, gait="stot", marks=("belly", "rump", "forehead", "muzzle", "cheeks")),
     "Roosevelt elk": Q(CERVID, "Roosevelt elk", "Cervus canadensis roosevelti", "Roosevelt elk", col("#9a7650", "#d8c6a4", "#3e2c1e"),
                        size=1.08, mane=1.0, marks=("rump", "mane_dark")),
-    "moose": Q(CERVID, "Moose", "Alces alces", "Moose", col("#3e2e24", "#8a7a68", "#1c1612"), size=1.12, legs=11, horns="palm", horn=1.2,
+    "moose": Q(CERVID, "Moose", "Alces alces", "Moose", col("#3e2e24", "#8a7a68", "#1c1612"), size=1.12, legs=11, horns="palm", horn=1.2, leg_w=1.05,
                snout=3.4, snout_w=1.4, hump=0.6, beard=0.8, marks=("pale_legs",)),
-    "elk (moose)": Q(CERVID, "Moose", "Alces alces", "Moose", col("#3e2e24", "#8a7a68", "#1c1612"), size=1.12, legs=11, horns="palm", horn=1.2,
+    "elk (moose)": Q(CERVID, "Moose", "Alces alces", "Moose", col("#3e2e24", "#8a7a68", "#1c1612"), size=1.12, legs=11, horns="palm", horn=1.2, leg_w=1.05,
                      snout=3.4, snout_w=1.4, hump=0.6, beard=0.8, marks=("pale_legs",)),
     "reindeer": Q(CERVID, "Reindeer", "Rangifer tarandus", "Reindeer", col("#8a7e6e", "#ebe6da", "#3a342e"), size=0.95, horns="caribou",
                   horn=1.1, mane=0.8, marks=("belly", "rump")),
@@ -500,8 +502,8 @@ SPECIES = {
                               size=1.2, bill="long", bill_len=3.2, casque=1.2, bill_role="pale", pale_parts=("tail", "belly")),
     "Canada geese": B(GOOSE, "Canada goose", "Branta canadensis", "Canada goose", col("#7a6a5a", "#efe8dc", "#1a1816"), size=1.05,
                       dark_parts=("neck", "head", "tail"), pale_parts=("belly",)),
-    "greylag geese": B(GOOSE, "Greylag goose", "Anser anser", "Greylag goose", col("#8a8476", "#d8d2c8", "#3a3632"), size=1.05, bill_role="eye",
-                       pale_parts=("belly",), eye_bill=True),
+    "greylag geese": B(GOOSE, "Greylag goose", "Anser anser", "Greylag goose", col("#8a8476", "#d8d2c8", "#3a3632", "#e0873a"), size=1.05,
+                       neck=5.8, neck_up=62, head=1.7, bill_role="eye", leg_role="eye", pale_parts=("belly",), dark_parts=("primaries",), eye_bill=True),
     "snow geese": B(GOOSE, "Snow goose", "Anser caerulescens", "Snow goose", col("#efebe4", "#f8f6f2", "#2a2624", "#e88a8a"), size=1.0,
                     dark_parts=("primaries",), bill_role="eye"),
     "bean geese": B(GOOSE, "Taiga bean goose", "Anser fabalis", "Taiga bean goose", col("#6a5a4a", "#c8bca8", "#2a2420", "#e8a030"), size=1.05,

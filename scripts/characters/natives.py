@@ -339,8 +339,8 @@ def moves_of(sp):
     size = p.get("size", 1.0)
     if plan == "quad":
         g = p.get("gait", "trot")
-        speed = {"walk": 0.68, "trot": 1.0, "bound": 1.45}[g] * (0.85 + 0.25 * min(1.2, size))
-        return {"speed": round(speed, 2), "fps": {"walk": 6, "trot": 8, "bound": 10}[g], "pause": "back", "leave": "edge", "gait": g}
+        speed = {"walk": 0.68, "trot": 1.0, "bound": 1.45, "stot": 1.1}[g] * (0.85 + 0.25 * min(1.2, size))
+        return {"speed": round(speed, 2), "fps": {"walk": 6, "trot": 8, "bound": 10, "stot": 7}[g], "pause": "back", "leave": "edge", "gait": g}
     if plan == "hopper":
         return {"speed": 1.5, "fps": 6, "pause": "back", "leave": "edge", "gait": "hop"}
     if plan == "bird":

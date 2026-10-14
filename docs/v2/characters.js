@@ -14,7 +14,8 @@
    artists (characters/characters.json says why): its dots are the soil
    where it stands worked into the artist's inks, it moves in its own gait
    (the fox trots, the bison walks, the squirrel bounds, the eagle flies up
-   and away, the slug crawls and goes back into the soil), and some leave
+   and away, the starlings stream up and away in a murmuration, the slug
+   crawls and goes back into the soil), and some leave
    something of their artist behind (Twombly's writing after the fox, the
    dark trace of Kapoor's wax after the slug). Pressed, one stops and looks
    at you, is framed in its artist's ink, and a quiet line says what it is.
@@ -139,7 +140,13 @@
       plants = got[1];
       artists = got[2];
       return Promise.all(cast.cast.map(function (c) {
-        return get(BASE + c.id + ".json").then(function (s) { sprites[c.id] = s; }, function () {});
+        return get(BASE + c.id + ".json").then(function (s) {
+          // A sprite with `rle` has its rows run-length coded, as a place's own does (a count, then its letter).
+          if (s.rle) {
+            Object.keys(s.poses).forEach(function (pn) { s.poses[pn] = s.poses[pn].map(function (fr) { return fr.map(unrow); }); });
+          }
+          sprites[c.id] = s;
+        }, function () {});
       }));
     }).catch(function () { cast = null; });
     return loading;
@@ -160,11 +167,12 @@
     return i === undefined || !towns ? null : { key: key, name: towns[i][1], lat: towns[i][3], lon: towns[i][4] };
   }
 
-  // A character's moves: its gait's speed and frames, its pause, how it leaves, what it leaves behind.
+  // A character's moves: its gait's speed and frames, its pause, how it leaves, what it leaves behind, and
+  // whether its poses move (`live`: a murmuration wheels, looks and settles in frames, not in one picture).
   function moves(c) {
     var m = c.moves || {};
     return { speed: m.speed || 1, fps: m.fps || FPS, pause: m.pause === undefined ? "back" : m.pause,
-             leave: m.leave || "edge", lift: m.lift || 0, trail: m.trail || null };
+             leave: m.leave || "edge", lift: m.lift || 0, trail: m.trail || null, live: !!m.live };
   }
 
   function drawn() { return cast ? cast.cast.filter(function (c) { return sprites[c.id]; }) : []; }
@@ -1408,7 +1416,8 @@
 
   /* ---- moving -------------------------------------------------------------- */
 
-  function gaitFrame(o, now) { return Math.floor(now / (1000 / o.mv.fps)) % 4; }
+  // The frame a gait is at: held at its own fps, counted modulo 24 so a drawing of four, six or eight frames loops.
+  function gaitFrame(o, now) { return Math.floor(now / (1000 / o.mv.fps)) % 24; }
 
   function step(o, now) {
     var t = now - o.since;
@@ -1568,7 +1577,8 @@
       busy = drawTrail(o, now) || busy;
       if (o.state === "gone" || o.hidden || (o.covered && o.mode === "follow")) { if (o.hit) { o.hit.hidden = true; } return; }
       busy = true;
-      var sp = sprite(o.c, o.pose, o.n, o.dir, o.here, o.scale);
+      // A live drawing (a murmuration's) moves in every pose, not only on the way: standing, looking, resting.
+      var sp = sprite(o.c, o.pose, o.mv.live ? gaitFrame(o, now) : o.n, o.dir, o.here, o.scale);
       var b = bounds(o);
       var x = Math.round(b.x * dpr), y = Math.round(b.y * dpr);
       var h = sp.cv.height;
@@ -2157,6 +2167,8 @@
   }
 
   // Where its feet are, its size: `big` a presentation (the unfolding), else a city's.
+  // (Named apart from cellPx, a whole character's own: the two had one name, the later won, and every whole
+  // character was drawn a pixel a cell, half its size, until this was found on 14 Oct 2026.)
   function chCellPx(o) {
     var css_ = o.big ? (window.innerWidth < 720 ? 3.2 : 4.4) : (o.far ? 1 : 2 / RES);
     return Math.max(1, Math.round(css_ * chDpr));
@@ -2527,7 +2539,8 @@
      courtship or contest, in the ethogram). Two foxes' heads gekker, side
      on; eagles lock talons and fall turning; bison meet head to head;
      stags roar and walk side by side; slugs circle and lunge; squirrels
-     chase round and round. Drawn where the game's ritual box is, else at
+     chase round and round; starlings sing at each other, wings flicking.
+     Drawn where the game's ritual box is, else at
      the middle of the screen. Resolves when it is over, with the line. */
   function meet(a, b, opts) {
     opts = opts || {};
@@ -2558,7 +2571,13 @@
         bison: function (o, n, u) { var p = u < 0.4 ? u / 0.4 : 1; o.x = cx + (n ? 1 : -1) * (70 - 40 * p + (u > 0.4 ? 3 * Math.abs(Math.sin(u * 30)) : 0)); o.ritualNames = ["ritual" + (u > 0.4 ? 1 : 0), "stand0", "stand0"]; },
         deer: function (o, n, u) { o.dir = 1; o.y = cy + (n ? 10 : -10); o.x = cx - 60 + u * 120; o.ritualNames = u > 0.5 && u < 0.7 ? ["ritual1", "stand0", "stand0"] : ["walk" + (Math.floor(u * 60) % 6), "walk" + (Math.floor(u * 60) % 6), "walk" + (Math.floor(u * 60) % 6)]; },
         slug: function (o, n, u) { var a2 = u * Math.PI * 2 + (n ? Math.PI : 0); o.x = cx + Math.cos(a2) * 40; o.y = cy + Math.sin(a2) * 8; o.dir = Math.sin(a2) > 0 ? -1 : 1; o.ritualNames = ["ritual" + (u > 0.8 ? 1 : 0), "stand0", "walk" + (Math.floor(u * 40) % 6)]; },
-        squirrel: function (o, n, u) { var a2 = u * Math.PI * 6 + (n ? 0.9 : 0); o.x = cx + Math.cos(a2) * 50; o.y = cy + Math.sin(a2) * 10; o.dir = Math.sin(a2) > 0 ? -1 : 1; o.ritualNames = ["stand0", "walk" + (Math.floor(u * 90) % 6), "walk" + (Math.floor(u * 90) % 6)]; }
+        squirrel: function (o, n, u) { var a2 = u * Math.PI * 6 + (n ? 0.9 : 0); o.x = cx + Math.cos(a2) * 50; o.y = cy + Math.sin(a2) * 10; o.dir = Math.sin(a2) > 0 ? -1 : 1; o.ritualNames = ["stand0", "walk" + (Math.floor(u * 90) % 6), "walk" + (Math.floor(u * 90) % 6)]; },
+        // Two starlings face each other and sing in turn, the throat up, the wings flicking, a step nearer now and then.
+        starling: function (o, n, u) {
+          o.x = cx + (n ? 1 : -1) * (58 - 12 * Math.min(1, u * 2));
+          var sung = Math.floor(u * 14 + (n ? 1 : 0)) % 2;
+          o.ritualNames = [sung ? "ritual0" : "ritual1", "stand" + (sung ? 2 : 0), "stand0"];
+        }
       }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
       var rit = behaviour(A.ch.cs[0], "ritual");
       return new Promise(function (done) {

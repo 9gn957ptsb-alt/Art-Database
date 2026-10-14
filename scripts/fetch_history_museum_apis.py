@@ -121,7 +121,10 @@ AGENT = ("Art-Database artwork-history reader (+https://github.com/9gn957ptsb-al
 AIC = "https://api.artic.edu/api/v1/"
 CMA = "https://openaccess-api.clevelandart.org/api/artworks/"
 MET = "https://collectionapi.metmuseum.org/public/collection/v1/"
-SMK = "https://api.smk.dk/api/v1/"
+# v1/search was retired on 1 Oct 2026 (it now answers a message); v1.1 is Elastic-backed, gives up to 100
+# ids a page and takes offset and limit. The objects endpoint is unchanged.
+MET_SEARCH = "https://collectionapi.metmuseum.org/public/collection/v1.1/"
+SMK ="https://api.smk.dk/api/v1/"
 LUX = "https://lux.collections.yale.edu/"
 
 # Each host: the fewest seconds between two requests, and how many at once.
@@ -792,7 +795,7 @@ def met_ids(params, refresh):
     """The object ids a Met search gives, in its order."""
     q = params.pop("q")
     params["q"] = q            # the Met reads q only when it comes last
-    j = fetch("met", MET + "search", params, refresh=refresh) or {}
+    j = fetch("met", MET_SEARCH + "search", params, refresh=refresh) or {}
     return list(j.get("objectIDs") or [])
 
 

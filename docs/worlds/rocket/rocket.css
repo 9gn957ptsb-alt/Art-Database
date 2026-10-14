@@ -1,0 +1,73 @@
+/* Rocket, in the Artist Website's dark hand: cream on near-black, small tracked capitals for
+   what labels, Newsreader for what is read, the round pills of its foot. */
+:root {
+  --ground: #0f0a07; --cream: #eadfcd; --muted: #a8927a; --glow: #f3c98b;
+  --veil: rgba(15, 10, 7, 0.6); --card: rgba(15, 10, 7, 0.84); --hair: rgba(234, 223, 205, 0.14); --good: #9cc5a4;
+  --serif: "Newsreader", Georgia, serif; --sans: "Archivo", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--ground); color: var(--cream); font: 400 13px/1.45 var(--sans); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; }
+
+#view { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; }
+#hud { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.where, .pieces, .pill, .eyebrow, .near, .toast, .status, label, .hotbar, .jump {
+  font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.top { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); display: grid; gap: 8px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); pointer-events: none; }
+.where { margin: 0; letter-spacing: 0.22em; }
+.pieces { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pieces li { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.pieces li i { width: 10px; height: 10px; border-radius: 1px; opacity: 0.25; box-shadow: 0 0 0 2px rgba(15, 10, 7, 0.6); }
+.pieces li[data-got="true"] { color: var(--cream); }
+.pieces li[data-got="true"] i { opacity: 1; }
+
+.pill { min-height: 34px; padding: 7px 14px; border: 0; border-radius: 999px; background: var(--veil); color: var(--muted); cursor: pointer; transition: background 0.26s steps(3), color 0.26s steps(3); }
+.pill:hover, .pill:focus-visible { color: var(--cream); }
+.pill[aria-pressed="true"], .pill.solid { background: var(--cream); color: var(--ground); }
+.pill.big { min-height: 44px; padding: 10px 22px; font-size: 11px; }
+.pill:disabled { opacity: 0.4; cursor: default; }
+.corner { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); }
+.notes { position: fixed; top: calc(54px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: min(300px, calc(100% - 24px)); padding: 16px; background: var(--card); border: 1px solid var(--hair); }
+.eyebrow { margin: 0 0 8px; color: var(--muted); }
+.notes ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.notes li { font: 400 14px/1.4 var(--serif); color: var(--muted); }
+.notes li b { color: var(--cream); font-weight: 400; }
+.notes li[data-got="true"] { text-decoration: line-through; opacity: 0.55; }
+.near { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); margin: 0; padding: 6px 13px; border-radius: 999px; background: var(--veil); white-space: nowrap; }
+
+.foot { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.acts { display: flex; gap: 8px; }
+.bar { display: flex; align-items: center; gap: 8px; }
+.hotbar { display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: var(--veil); }
+.slot { width: 38px; height: 38px; border: 2px solid transparent; border-radius: 7px; background: rgba(234, 223, 205, 0.06); padding: 5px; cursor: pointer; }
+.slot i { display: block; width: 100%; height: 100%; border-radius: 2px; image-rendering: pixelated; }
+.slot[aria-pressed="true"] { border-color: var(--cream); }
+.jump { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: 64px; height: 64px; border: 1px solid var(--hair); border-radius: 50%; background: var(--veil); color: var(--cream); font-size: 22px; letter-spacing: 0; display: none; touch-action: none; }
+body[data-touch] .jump { display: block; }
+.joy { position: fixed; width: 100px; height: 100px; border-radius: 50%; border: 1px solid var(--hair); background: rgba(15, 10, 7, 0.35); pointer-events: none; }
+.joy i { position: absolute; left: 30px; top: 30px; width: 40px; height: 40px; border-radius: 50%; background: rgba(234, 223, 205, 0.55); }
+.toast { position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--hair); text-align: center; opacity: 0; transition: opacity 0.26s steps(3); pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast[data-tone="good"] { color: var(--good); }
+
+.start { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(circle at 50% 30%, rgba(243, 201, 139, 0.08), transparent 60%), var(--ground); }
+#end { background: rgba(15, 10, 7, 0.55); }
+.start-card { width: min(420px, 100%); display: grid; gap: 14px; padding: 28px; background: var(--card); border: 1px solid var(--hair); }
+.start-card h1, .start-card h2 { margin: 0; font: 400 40px/1.05 var(--serif); letter-spacing: -0.01em; color: #fff7ea; }
+.start-card h2 { font-size: 28px; }
+.lede { margin: 0; font: 400 16px/1.45 var(--serif); color: var(--muted); }
+label { color: var(--muted); margin-bottom: -8px; }
+select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--hair); border-radius: 8px; background: rgba(234, 223, 205, 0.05); }
+.status { margin: 0; color: var(--muted); min-height: 1em; }
+.keys { margin: 0; font: italic 400 13px/1.4 var(--serif); color: var(--muted); }
+
+/* While you come to, everything else steps back. */
+.top, .corner, .notes, .near, .foot, .jump { transition: opacity 0.6s steps(6); }
+body[data-film] .top, body[data-film] .corner, body[data-film] .notes, body[data-film] .near, body[data-film] .foot, body[data-film] .jump { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .pill, .toast, .top, .foot { transition: none; } }

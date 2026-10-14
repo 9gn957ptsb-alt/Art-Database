@@ -37,7 +37,7 @@ by the museum or gallery that holds the work.
 | --- | --- |
 | `characters.json` | the cast (id, name, species, kind, where in the grammar it is from, the artist and why, inks, added, refined, passes, notes, log) and the backlog |
 | `scripts/characters/<id>.py` | the drawing: its parts as distance fields, its poses (`draw.py` is the small flat renderer: ramps, light from the upper left, Bayer dither, selective outline) |
-| `<id>.json` | its poses, a letter a cell, written by `python3 scripts/build_characters.py` |
+| `<id>.json` | its poses, a letter a cell, written by `python3 scripts/build_characters.py` (run-length coded where the character's module says `RLE = True`: the murmuration's, a count then its letter, `"rle": true`; `characters.js` decodes it on load) |
 | `scripts/characters/fox_fine.json`, `trace_fox.py` | the red fox's poses, traced from the artist's own graphic (below, "The red fox, from the artist's own graphic"); `fox.json` is built from them |
 | `plants.json` | every city's (and every artist's birthplace's) biome, realm, ecoregion, soil and plants, by stratum with crown shapes, written by the same script |
 | `homes.json` | where each artist (cast and backlog) was born, worked and lived, from Wikidata (CC0), with the source; written by `python3 scripts/fetch_artist_homes.py` (network; the artist's item is the one `fetch_history_wikidata.py` matched, in `data/wikidata/matches.json`) |
@@ -74,7 +74,7 @@ same bytes every run, about a minute):
   animal after the same artist within 300 km, the same animal avoided within
   700 km where another can be had. The source line (`species.source`) is the
   grammar's: "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf &
-  Mixed Forests), Palearctic, understory.hunters: wolves". The six drawn by
+  Mixed Forests), Palearctic, understory.hunters: wolves". The seven drawn by
   hand are never generated: they are the natives of their artists' home
   towns (`native` in characters.json) and their places' files say `cast`.
 - **Its plants**: plants.json's set for the place, as before (its rows now
@@ -99,6 +99,22 @@ same bytes every run, about a minute):
   a black bear stays black after an artist of greys, a boar dark brown after
   Turner's golds (14 Oct 2026; before, each missing step went a third of the
   way to the artist's lightest and every dark animal washed out).
+  **What the plans have gained** by the daily refining (each fix in `rigs.py` is every species of
+  its plan's): a canid trots with its head carried low (`neck_trot`, a coyote's) and its tail low
+  where the species' is; a saddle's lower edge is ragged and a pale belly's edge stepped; a
+  seated canid has a deep chest and a larger head; a head on has ears with a broad base when
+  they are big; a gait `stot` (all four feet together, the body low on landing, up, at the top,
+  down: the mule deer's); a tail `rope`; antlers (`antler`, `forward`, `forked`, `caribou`) with
+  radii of a cell so their tines do not drop out, drawn over the ear, with no chalk edge to fill
+  them in (a part made `P(..., noline=True)`; `draw.py`'s `Part.noline` is the same); a cervid's
+  legs a step slimmer (`leg_w` 0.8); a bird's broad wing in four states (`bird_wing`, `BEAT`: up,
+  coming down swept back, down, lifting; its flight feathers a darker plate, fingers at the tip;
+  the beat's length is clamped to the picture, the flying bird's shoulder at its middle and, for a
+  long neck and bill, the whole bird a little left, so no wing or bill leaves the 40×26 frame),
+  geese with the breast high (`tilt` 14) and a bill head on as broad as the bill is. Check two
+  other species of a plan before you leave it: draw them in the same place's hand
+  (`rigs.poses(rigs.geometries(species.SPECIES[key]), hands.Hand(mode))`, letters to the place's
+  inks) or build and look at a place whose native is the sibling (`preview_character.js --sheet <key>`).
 
 Files: `places/<key>.json` (the place, the native artist and how, the
 species and its source, the hand and why, the inks, the moves, the poses run-
@@ -162,6 +178,45 @@ every run and public files only.
   preview (`scripts/preview_character.js fox out.png`, `fox,bison,deer` for a
   chimera) at 390×844 and 1440×900, and at a device density of 3.
 
+## The starling murmuration, a field not a body
+
+The artist's roster (DIRT's grammar 7, "scattered marks") gives Jackson Pollock a
+mark that is not a body: a pour. The seventh of the cast, drawn on 14 Oct 2026, is
+accordingly not one animal but **a flock drawn as a field**: `scripts/characters/starling.py`,
+80×48 cells at two CSS pixels (160×96), five poses of eight frames each, every frame
+about two hundred birds laid on a *poured line* — a spine with a width that grows and
+shrinks (a line that thickens to a mass and thins to a thread, flung drops, no edge).
+Birds are laid by a low-discrepancy sequence on ribbon coordinates (s along the spine,
+n across it) in three layers: far specks (a cell), mid V-signs, near bigger V's (five
+cells, a wingbeat of `(-1,-1,-1,0,1,1,1,0)`), with travelling density waves and the
+light from the upper left on the side of the ribbon that faces it. Ink: black, bone-white,
+an umber between and Pollock's ochre in a few, so it reads on a dark city ground and a
+pale one (checked on Cody's khaki, a dark soil and a blue-grey). The poses: `trot` the
+ribbon travelling (a teardrop that crosses), `stand` a pinwheel disc of three arms,
+`back` a breaking wave with a hook, `look` a ring round one ochre bird, `sit` a pour that
+thickens into a pool and settles to perched starlings. `moves.live`: its frames play by
+the clock (`gaitFrame` is `% 24`), not by the walk; the sprite is run-length coded
+(`RLE = True`, about 36 KB).
+
+- **Native** at Cody, Wyoming (Pollock's birthplace, `cody-us`) — **a stretch, said so**: the
+  starling was brought to North America in 1890–91, so the "native" entry cites Cabe (1993)
+  for that; it is the only drawn character whose species is an introduction.
+- **Ethogram**: the murmuration (instinct, `act`: take-off in a wave), probing (play), the
+  song (ritual, `characters.js`'s `meet`: two starlings answer from the two sides).
+- **Corpse**: "the starlings follow their nearest": the next stops are the cities next door
+  (`corpse.js`'s `offers`, within 700 km, nearest first).
+- **The chimera's part** is one starling, drawn in three parts (`starling_parts`), in
+  Pollock's inks; any triple with it reads as one creature.
+- **Weak:** a murmuration has no body, so it has no gait you can follow with the eye — only a
+  ribbon that travels; the V is a glyph, not a silhouette; its sitting pool is the most
+  readable pose and its walking ribbon the least; Cody is the one place it can be
+  found (a wave there, or at its home on the first visit in φ²).
+- **Refining it:** render a pose at a large scale from `poses()` (a contact sheet of the
+  letters in Pollock's inks is enough: `INKS` in the module), and compare with his pours
+  and with footage of a murmuration's shapes; the five poses must stay distinct as a
+  silhouette at 1×. Never change the flock's `seed` without checking every pose: the
+  birds are hash-stable (`hsh`, FNV) so a pose's frames repeat exactly.
+
 ## Each run
 
 1. **Start clean.** `git fetch origin claude/artist-website-dev-s92irf` and
@@ -189,7 +244,7 @@ every run and public files only.
    where the grammar is thin or wrong for a place (Tokyo's plants are
    Europe's beech and hazel; Sydney's have no eucalypts; Chicago is given
    wolves), say so to the DIRT session rather than patch it here.
-4. **Refine one of the six drawn by hand** (the one refined longest ago),
+4. **Refine one of the seven drawn by hand** (the one refined longest ago),
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,
    `notes` in `characters.json`.
@@ -346,8 +401,8 @@ three parts the day it is drawn**:
 - Mark legs with `limb(parts, "body" | "hind")` so they are drawn whole when
   they step past a fold. A raster finish (`finish`, or `finish_chimera`)
   runs on each part as on the whole.
-- A character that is not one body (a murmuration) gives one of the flock
-  for its parts.
+- A character that is not one body (the starling murmuration) gives one of the flock
+  for its parts: `starling.py`'s `rig` draws a single starling, `CHIMERA_SCALE` 1.35.
 - Write its `ethogram` and its `chimera` words in `characters.json` (below).
 - Check: the whole animal's poses unchanged where they were (compare the
   rows), then `NODE_PATH=/opt/node22/lib/node_modules node

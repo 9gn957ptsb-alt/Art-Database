@@ -104,15 +104,22 @@ function check(tag, ok, what, detail) {
       // The dial: its first years stand less of the city than now.
       const first = await P.evaluate(() => { const d = Land.dial && Land.dial(); return d && d.y0 ? d.y0 : null; });
       if (first && s.years) {
-        // The dial eases to a year turned to: wait for the skyline to stand at it.
-        const at = async (y) => {
+        // The dial eases to a year turned to a few percent of the way a frame, and the skyline follows it a
+        // few seconds behind, so a city of 400,000 strips in headless Chromium's software GL (0.4 s a
+        // frame) takes a minute to arrive: wait for the skyline to stand at the year or to have come a
+        // tenth of the dial's way toward it (`dir`: down going back, up coming forward), whichever is first.
+        const at = async (y, dir, from) => {
           await P.evaluate((y) => Land.dialYear(y), y);
-          await P.waitForFunction((y) => Math.abs((Skyline.state().year || new Date().getFullYear()) - y) <= 2, y, { timeout: 15000 }).catch(() => {});
+          await P.waitForFunction((a) => {
+            const s = Skyline.state();
+            return Math.abs((s.year || new Date().getFullYear()) - a.y) <= 2 || a.dir * (s.shown - a.from) >= 0.1;
+          }, { y, dir, from }, { timeout: 90000 }).catch(() => {});
           await P.waitForTimeout(600);
           return P.evaluate(() => Skyline.state().shown);
         };
-        const early = await at(first + 1);
-        const late = await at(new Date().getFullYear());
+        const rest = await P.evaluate(() => Skyline.state().shown);
+        const early = await at(first + 1, -1, rest);
+        const late = await at(new Date().getFullYear(), 1, early);
         check(tag, early < late, "turned to " + (first + 1) + ", less of it stands", early.toFixed(3) + " < " + late.toFixed(3));
       } else if (!s.years) {
         console.log("  --   " + tag + " · its buildings' years are not in its ground yet: the dial not checked");

@@ -328,8 +328,17 @@
           E.dot(x, y, z, 1, s, what === "~" ? 0.78 : lt * 0.62, 0);
         }
         if (i === 0 || j === 0 || i === n - 1 || j === n - 1) {
+          // The edge goes down into the soil from the ground the clod holds there, not from the plain: a
+          // hill (Los Angeles, Rome, Madrid, Seoul stand 20 cells over the base) is not left over a gap.
+          // Where the soil has a hole, a tall wall wears the soil's mean, not a black bar.
           var under = soil(i + n, j, false);
-          E.side(x, y, Math.min(z, 0), Math.max(1, under[3]), under);
+          if (z > 1 && !under[3]) { under = [114, 82, 55, 1]; }
+          E.side(x, y, z, Math.max(1, under[3]), under);
+        } else if (what !== "~") {
+          // A step in the ground (a bluff over the water, a steep hill) is not left over a gap either: the
+          // cell's earth runs down to its lowest neighbour's ground, the sea's level at the shore.
+          var zl = Math.min(z, zAt(q - n), zAt(q + n), zAt(q - 1), zAt(q + 1));
+          if (z - zl > 1) { E.skirt(x, y, z, zl, Math.max(1, s[3]), s[3] ? s : [114, 82, 55, 1]); }
         }
       }
     }
@@ -415,9 +424,16 @@
             put(x, y, z + l * 0.5, 2, inkOf(c, l === layers ? ramp[3] : ramp[1] + ramp[2] * f), r0 === null ? 0 : r0 + f * rise);
           }
         },
-        // The clod's edge, six dots down into the soil.
+        // The clod's edge, down into the soil from the ground it holds: six dots under flat land, and
+        // as many more as a hill stands above the base, so no hill floats over a gap.
         side: function (x, y, z, size, c) {
-          for (var d = 1; d <= 6; d += 1) { put(x, y, z - d * 0.5, size, inkOf(c, 0.78 - d * 0.035), 0); }
+          var m = 6 + Math.round(Math.max(0, z) * 2);
+          for (var d = 1; d <= m; d += 1) { put(x, y, z - d * 0.5, size, inkOf(c, 0.745 - 0.175 * (d - 1) / Math.max(1, m - 1)), 0); }
+        },
+        // A step in the ground: a cell's earth from its top down to its lowest neighbour's.
+        skirt: function (x, y, z, zl, size, c) {
+          var m = Math.round((z - zl) * 2);
+          for (var d = 1; d <= m; d += 1) { put(x, y, z - d * 0.5, size, inkOf(c, 0.745 - 0.175 * (d - 1) / Math.max(1, m - 1)), 0); }
         },
         done: function () { D.count = D.x.length; D.gpu = false; return D; }
       };
@@ -436,7 +452,9 @@
       column: function (x, y, z, layers, c, ramp, r0) {
         push(x, y, z, z + layers * 0.5, r0 === null ? -1e6 : r0, 2, [Math.round(c[0]), Math.round(c[1]), Math.round(c[2])], ramp[0]);
       },
-      side: function (x, y, z, size, c) { push(x, y, z - 3.5, z - 0.5, -1e6, size, [c[0], c[1], c[2]], 4); },
+      // The clod's edge: a strip from the soil's base (3.5 below the plain) up to just under the ground it holds.
+      side: function (x, y, z, size, c) { push(x, y, -3.5, z - 0.5, -1e6, size, [c[0], c[1], c[2]], 4); },
+      skirt: function (x, y, z, zl, size, c) { push(x, y, zl, z - 0.5, -1e6, size, [c[0], c[1], c[2]], 4); },
       done: function () {
         return { F: new Float32Array(F), C: new Uint8Array(C), count: count, high: high, gpu: true };
       }

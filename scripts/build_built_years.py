@@ -1318,10 +1318,10 @@ EUBUCCO_AT = [(35.9, -9.4, 43.8, 3.4), (42.3, -5.2, 50.2, 8.3), (50.2, 1.5, 51.1
 _eub = {}
 
 
-def eubucco(box):
+def eubucco_paths(box):
+    """The parquet files (an H3 cell each) that take in the box (south, west, north, east), downloaded once
+    into data/eubucco/; (cell, path) pairs. build_grounds.py reads their heights (eubucco_heights.py)."""
     import h3
-    import pyarrow.parquet as pq
-    import shapely
     s, w, n, e = box
     cells = sorted({h3.latlng_to_cell(la, lo, 4) for la in np.linspace(s, n, 7) for lo in np.linspace(w, e, 7)})
     out = []
@@ -1342,6 +1342,16 @@ def eubucco(box):
                     continue                     # no buildings in that cell
                 raise
             Path(str(path) + ".part").rename(path)
+        out.append((c, path))
+    return out
+
+
+def eubucco(box):
+    import pyarrow.parquet as pq
+    import shapely
+    s, w, n, e = box
+    out = []
+    for c, path in eubucco_paths(box):
         pf = _eub.get(c) or pq.ParquetFile(path)
         _eub[c] = pf
         for g in range(pf.num_row_groups):

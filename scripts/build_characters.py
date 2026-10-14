@@ -356,10 +356,20 @@ def main():
             poses = mod.poses()
             sprite = {"id": c["id"], "w": mod.W, "h": mod.H, "cell": mod.CELL,
                       "foot": [mod.W // 2, int(mod.GROUND)], "poses": poses}
+            if getattr(mod, "RLE", False):
+                # a large drawing (a murmuration's, 80 by 48): rows run-length coded as a place's own are (a count, then its letter)
+                import natives
+                sprite["rle"] = True
+                sprite["poses"] = {k: [[natives.rle(r) for r in fr] for fr in v] for k, v in poses.items()}
         if hasattr(mod, "seasons"):
             sprite["seasons"] = mod.seasons()        # the stag's antlers by month
         n = dump(OUT / (c["id"] + ".json"), sprite)
         print(f"{c['id']}: {sum(len(v) for v in poses.values())} frames, {n} bytes")
+        if getattr(mod, "RLE", False):
+            # the page must read back what it was given: the rows, decoded, are the drawing's rows
+            back = {k: [["".join(ch * int(m) if m else ch for m, ch in re.findall(r"(\d*)(\D)", r)) for r in fr]
+                        for fr in v] for k, v in sprite["poses"].items()}
+            assert back == poses, c["id"] + ": run-length rows do not decode to the drawing"
         # Its three parts, for a chimera (scripts/characters/chimera.py).
         if hasattr(mod, "rig"):
             n = dump(OUT / "parts" / (c["id"] + ".json"), chimera.build(c["id"]))

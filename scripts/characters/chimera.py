@@ -248,6 +248,8 @@ class Rig:
                 for di, dj, kk in ((1, 0, 1), (0, 1, 1), (-1, 0, -1), (0, -1, -1)):
                     a, b = c + di, j + dj
                     if 0 <= a < w and 0 <= b < ROWS and cells[b][a] != ".":
+                        if owner[b][a] >= 0 and getattr(parts[owner[b][a]], "noline", False):
+                            continue             # a part with no edge of its own (thin antlers' tines)
                         if own or (owner[b][a] >= 0 and is_limb(parts[owner[b][a]], slot)):
                             near = True
                             lit += kk

@@ -25,6 +25,8 @@
                the year; its stops are few and far apart
      bison     faces into the blizzard: it walks against time (later to
                earlier), and each stop leaves a wallow in the ground
+     starling  a murmuration follows its nearest neighbours (Ballerini et al.
+               2008): the next stops are the cities next door, nearest first
      deer      the antler cycle, by the real month: its part changes with
                the month; it freezes when the pointer comes near
 
@@ -186,6 +188,7 @@
       case "slug": return "the slug follows trails, and leaves one";
       case "eagle": return "the eagle mantles: it hides what came before, and flies far";
       case "bison": return "the bison faces into the storm: back in time";
+      case "starling": return "the starlings follow their nearest: the next stops are the cities next door";
       case "deer":
         return { rut: "the stag is in rut: it goes where the crowds are",
                  cast: "the stag has cast its antlers: a short leg",
@@ -388,6 +391,12 @@
         cand.forEach(function (x) { if (x.how === "trail") { x.score -= 2; } x.score += x.km / 1500; });
       } else if (a === "squirrel") {
         cand.forEach(function (x) { if (x.how === "cache") { x.score -= 2; } });
+      } else if (a === "starling" && e.w) {
+        // A murmuration follows each bird's nearest neighbours, not every bird within some distance (Ballerini et al.
+        // 2008): the stops are offered among the cities nearest the last, the nearest first, and a turn begun
+        // there carries on: the next is the nearest to that.
+        keep(function (x) { return x.how === "near" || x.km <= 700; });
+        cand.forEach(function (x) { x.score = x.km / 250 + x.score * 0.3; });
       } else if (a === "deer" && e.w) {
         cand.forEach(function (x) {
           var t = town(x.to);
