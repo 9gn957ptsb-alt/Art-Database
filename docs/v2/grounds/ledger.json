@@ -44,44 +44,69 @@
    "kb": 461,
    "gz": 63
   },
+  "basel-ch": {
+   "tier": 2,
+   "log": [
+    "2026-10-13 \u00b7 first cut \u00b7 152 cells a side (20.4 m) from Overture 2026-09-23.1 \u00b7 7162 buildings, 1706 green cells \u00b7 96% of its building cells dated \u00b7 154 KB (32 KB sent)",
+    "2026-10-14 \u00b7 nothing new found; 96% dated (GWR) (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
+   ],
+   "name": "Basel",
+   "n": 152,
+   "cell": 20.4,
+   "side": 3100,
+   "lat": 47.56252,
+   "lon": 7.58955,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 7162,
+   "green": 1706,
+   "dated_share": 0.956,
+   "kb": 154,
+   "gz": 32
+  },
   "berlin-de": {
    "name": "Berlin",
-   "tier": 0,
-   "n": 144,
-   "cell": 45.8,
+   "tier": 2,
+   "n": 328,
+   "cell": 20.1,
    "side": 6600,
    "lat": 52.512,
    "lon": 13.35698,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 6626,
-   "green": 0,
-   "dated_share": 0.572,
-   "kb": 129,
-   "gz": 28,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 19892,
+   "green": 18153,
+   "dated_share": 0.524,
+   "kb": 640,
+   "gz": 105,
    "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (45.8 m) from Overture 2026-09-23.0 \u00b7 6626 buildings \u00b7 dated to 2026-10-08: 57% of its building cells"
+    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (45.8 m) from Overture 2026-09-23.0 \u00b7 6626 buildings \u00b7 dated to 2026-10-08: 57% of its building cells",
+    "2026-10-13 \u00b7 raised to tier 2 \u00b7 328 cells a side (20.1 m) from Overture 2026-09-23.1 \u00b7 19892 buildings, 18153 green cells \u00b7 52% of its building cells dated (57% at the last cut) \u00b7 640 KB (105 KB sent)",
+    "2026-10-14 \u00b7 still wrong: dated share fell 57% to 52% at the finer grain (block ages cover fewer small buildings) (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
    ]
   },
   "boston-us": {
    "name": "Boston",
-   "tier": 0,
-   "n": 144,
-   "cell": 39.6,
+   "tier": 2,
+   "n": 288,
+   "cell": 19.8,
    "side": 5700,
    "lat": 42.34562,
    "lon": -71.07098,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 4650,
-   "green": 0,
-   "dated_share": 0.669,
-   "kb": 119,
-   "gz": 24,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 13309,
+   "green": 6640,
+   "dated_share": 0.662,
+   "kb": 450,
+   "gz": 74,
    "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (39.6 m) from Overture 2026-09-23.0 \u00b7 4650 buildings \u00b7 dated to 2026-10-08: 67% of its building cells"
+    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (39.6 m) from Overture 2026-09-23.0 \u00b7 4650 buildings \u00b7 dated to 2026-10-08: 67% of its building cells",
+    "2026-10-13 \u00b7 raised to tier 2 \u00b7 288 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 13309 buildings, 6640 green cells \u00b7 66% of its building cells dated (67% at the last cut) \u00b7 450 KB (74 KB sent)",
+    "2026-10-14 \u00b7 still wrong: 66% dated; older buildings carried as old, year not known (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
    ]
   },
   "brussels-be": {
@@ -94,34 +119,37 @@
    "lon": 4.36079,
    "release": "2026-09-23.0",
    "read": "2026-10-07",
-   "dated": "2026-10-08",
+   "dated": "2026-10-13",
    "buildings": 8848,
    "green": 0,
    "dated_share": 0.656,
    "kb": 149,
    "gz": 35,
    "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (44.4 m) from Overture 2026-09-23.0 \u00b7 8848 buildings \u00b7 dated to 2026-10-08: 66% of its building cells"
+    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (44.4 m) from Overture 2026-09-23.0 \u00b7 8848 buildings \u00b7 dated to 2026-10-08: 66% of its building cells",
+    "2026-10-13 \u00b7 dated again with its runners' records \u00b7 66% of its building cells dated (66% at the last cut)"
    ]
   },
   "chicago-us": {
    "name": "Chicago",
-   "tier": 0,
-   "n": 144,
-   "cell": 41.0,
+   "tier": 2,
+   "n": 296,
+   "cell": 19.9,
    "side": 5900,
    "lat": 41.8953,
    "lon": -87.63185,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 4019,
-   "green": 0,
-   "dated_share": 0.7,
-   "kb": 124,
-   "gz": 20,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 10635,
+   "green": 6725,
+   "dated_share": 0.663,
+   "kb": 451,
+   "gz": 55,
    "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (41.0 m) from Overture 2026-09-23.0 \u00b7 4019 buildings \u00b7 dated to 2026-10-08: 70% of its building cells"
+    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (41.0 m) from Overture 2026-09-23.0 \u00b7 4019 buildings \u00b7 dated to 2026-10-08: 70% of its building cells",
+    "2026-10-13 \u00b7 raised to tier 2 \u00b7 296 cells a side (19.9 m) from Overture 2026-09-23.1 \u00b7 10635 buildings, 6725 green cells \u00b7 66% of its building cells dated (70% at the last cut) \u00b7 451 KB (55 KB sent)",
+    "2026-10-14 \u00b7 still wrong: dated share fell 70% to 66% at the finer grain (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
    ]
   },
   "copenhagen-dk": {
@@ -146,22 +174,24 @@
   },
   "houston-us": {
    "name": "Houston",
-   "tier": 0,
-   "n": 144,
-   "cell": 42.4,
+   "tier": 2,
+   "n": 304,
+   "cell": 20.1,
    "side": 6100,
    "lat": 29.74727,
    "lon": -95.3939,
-   "release": "2026-09-23.0",
-   "read": "2026-10-07",
-   "dated": "2026-10-08",
-   "buildings": 5207,
-   "green": 0,
-   "dated_share": 0.924,
-   "kb": 133,
-   "gz": 23,
+   "release": "2026-09-23.1",
+   "read": "2026-10-14",
+   "dated": "2026-10-13",
+   "buildings": 21100,
+   "green": 6547,
+   "dated_share": 0.942,
+   "kb": 596,
+   "gz": 86,
    "log": [
-    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (42.4 m) from Overture 2026-09-23.0 \u00b7 5207 buildings \u00b7 dated to 2026-10-08: 92% of its building cells"
+    "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (42.4 m) from Overture 2026-09-23.0 \u00b7 5207 buildings \u00b7 dated to 2026-10-08: 92% of its building cells",
+    "2026-10-13 \u00b7 raised to tier 2 \u00b7 304 cells a side (20.1 m) from Overture 2026-09-23.1 \u00b7 21100 buildings, 6547 green cells \u00b7 94% of its building cells dated (92% at the last cut) \u00b7 596 KB (86 KB sent)",
+    "2026-10-14 \u00b7 nothing new found; 94% dated (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
    ]
   },
   "london-gb": {
@@ -240,18 +270,18 @@
    "lon": 9.186,
    "release": "2026-09-23.1",
    "read": "2026-10-10",
-   "dated": "2026-10-10",
+   "dated": "2026-10-13",
    "buildings": 28704,
    "green": 11646,
-   "dated_share": 0.783,
+   "dated_share": 0.789,
    "kb": 777,
    "gz": 128,
    "log": [
     "2026-10-07 \u00b7 first cut \u00b7 144 cells a side (47.9 m) from Overture 2026-09-23.0 \u00b7 8600 buildings \u00b7 dated to 2026-10-08: 78% of its building cells",
     "2026-10-10 \u00b7 raised to tier 2 \u00b7 344 cells a side (20.1 m) from Overture 2026-09-23.1 \u00b7 28704 buildings, 11646 green cells \u00b7 78% dated, 34235 cells' years carried from the last cut (ISTAT census 2011 (each block's buildings by period; which is which is not known) did not answer) \u00b7 777 KB (128 KB sent)",
-    "2026-10-10 \u00b7 still wrong: ISTAT census blocks did not answer, 34,235 cells' years carried from the last cut (checked at 390x844 and 1440x900; screenshots looked at: Tokyo only)"
-   ],
-   "records": "asked 2026-10-10 for census"
+    "2026-10-10 \u00b7 still wrong: ISTAT census blocks did not answer, 34,235 cells' years carried from the last cut (checked at 390x844 and 1440x900; screenshots looked at: Tokyo only)",
+    "2026-10-13 \u00b7 dated again (its years had been carried) \u00b7 79% of its building cells dated (78% at the last cut)"
+   ]
   },
   "munich-de": {
    "tier": 2,
@@ -443,6 +473,48 @@
    "dated_share": 0.036,
    "kb": 857,
    "gz": 139
+  },
+  "toronto-ca": {
+   "tier": 2,
+   "log": [
+    "2026-10-13 \u00b7 first cut \u00b7 288 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 23760 buildings, 6848 green cells \u00b7 3% of its building cells dated \u00b7 477 KB (65 KB sent)",
+    "2026-10-14 \u00b7 still wrong: 3% dated, no open year source read for Toronto, so it stands from the start until the satellites' first year (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
+   ],
+   "name": "Toronto",
+   "n": 288,
+   "cell": 19.8,
+   "side": 5700,
+   "lat": 43.6577,
+   "lon": -79.4151,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 23760,
+   "green": 6848,
+   "dated_share": 0.034,
+   "kb": 477,
+   "gz": 65
+  },
+  "vienna-at": {
+   "tier": 2,
+   "log": [
+    "2026-10-13 \u00b7 first cut \u00b7 192 cells a side (19.8 m) from Overture 2026-09-23.1 \u00b7 7318 buildings, 7166 green cells \u00b7 55% of its building cells dated \u00b7 223 KB (45 KB sent)",
+    "2026-10-14 \u00b7 still wrong: 55% dated (building-period outlines miss part of the square) (checked at 390x844 and 1440x900; screenshot looked at: Toronto only)"
+   ],
+   "name": "Vienna",
+   "n": 192,
+   "cell": 19.8,
+   "side": 3800,
+   "lat": 48.1999,
+   "lon": 16.38655,
+   "release": "2026-09-23.1",
+   "read": "2026-10-13",
+   "dated": "2026-10-13",
+   "buildings": 7318,
+   "green": 7166,
+   "dated_share": 0.548,
+   "kb": 223,
+   "gz": 45
   },
   "washington-us": {
    "name": "Washington",
