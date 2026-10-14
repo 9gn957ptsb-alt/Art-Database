@@ -4,6 +4,38 @@ A simpler game in the way of Minecraft's phone app, about one mission: you come 
 to under a tree beside your wrecked capsule, and find the four pieces of your rocket, to build it
 at the wreck and launch. Served at `/worlds/rocket/`.
 
+## The tribar, not the pixel
+
+The game is not drawn in Minecraft's pixels. Its unit is the impossible triangle the artist chose
+(14 Oct 2026: "Instead of using cube pixels as the common unit to build out the design I want you
+to use the shape in the image"): a tribar, three bars on a triangular lattice, and in the artist's
+drawing three tribars round an inverted gap. What was read from that drawing:
+
+- **Three tones, each one ribbon.** Every bar shows two faces: the left bar grey outside and black
+  inside, the bottom bar black outside and white inside, the right bar white outside and grey
+  inside. So each tone is the inner face of one bar turning the corner into the outer face of the
+  next, and each bar owns the corner it comes to first — that rotation is what makes it impossible.
+- **The white is the ground.** The white faces are the page itself, told from it only by a hairline;
+  the figure is drawn by its grey and black.
+- **It is self-similar, and it runs on.** The drawing is three tribars round a gap; where two touch,
+  the grey of one runs straight on into the next.
+
+So every face of every block is a field of tribars, one to a block, in rows a block high, every
+other row half a block along — three round every gap, the artist's figure everywhere. The white is
+the surface's own colour (limestone, brick, lawn, plaster), so the figures rise out of it and sink
+back into it; grey and black are that colour deepened; a hairline draws the white faces. Across
+blocks of one material the ribbons run on unbroken, and a lawn's side is green ground with figures
+of earth. Water's three tones turn slowly round its figures, and the rocket's pieces turn theirs
+quickly, so their ribbons seem to flow; glass is leaded in figures; a gallery's plaster carries
+quieter ones, so the works on it are what is seen; a note has the figure pressed into its paper.
+Far off, where a figure would be a few pixels, a face is its figures' mean, so nothing shimmers.
+
+The view is at the screen's own density, smooth, with no grain, dithering or shaded corners (and
+softens while you come to, under your tree); the works are their pictures from Artsy at a finer
+size, in frames of the same three tones (lit along the top and left, shadowed along the bottom and
+right, turned the other way where they meet the picture). The crosshair, the pieces, the blocks to
+place and the title's mark are the figure too; the smoke is triangles.
+
 ## Escapes made from what the site holds
 
 Every adventure is generated, by a seed, from the art database the site has put together on
@@ -59,9 +91,10 @@ switches break and place, N opens the notes, F looks behind the work whose label
 - `place.js` — the place in blocks, no DOM: the ground, the model, the rooms carved or hollowed,
   the crash site, the works hung (`hang`), the pieces hidden and the notes left (`hide`). Both run
   in Node, so a test can build every place without a page.
-- `rocket.js` — the game: the mesh (16 × 16 columns a chunk, shaded corners, the nearest first and
-  the rest a few each frame), the works' pictures, the view in the site's two-pixel grain, the
-  hand, the opening, the labels and the notes, the rocket, the start screen.
+- `rocket.js` — the game: the mesh (16 × 16 columns a chunk, the nearest first and the rest a few
+  each frame), the tribar drawn on every face (the fragment shader `FS`, and `figure()` for the
+  page's marks), the works' pictures, the hand, the opening, the labels and the notes, the rocket,
+  the start screen.
 - `catalogue.json` — what each adventure can be made from, written by
   `python3 scripts/build_adventures.py`.
 

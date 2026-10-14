@@ -33,8 +33,8 @@
             ENGINE: 22, TANK: 23, GUIDE: 24, SHIELD: 25, NOTE: 26, FLOOR: 27, PLASTER: 28 };
   var PIECE_IDS = [B.ENGINE, B.TANK, B.GUIDE, B.SHIELD];
   var OWN = 32, ALL = 64;            // a model's own materials take the ids from 32 to 63
-  // Each block's colour, and how the shader textures it: 0 plain, 1 grass, 2 log, 3 leaves, 4 glass,
-  // 5 brick, 6 water, 7 a piece of the rocket, 8 road, 9 boards, 10 paper.
+  // Each block's colour, and how the shader draws its figures: 0 plain, 1 grass, 2 log, 3 leaves, 4 glass,
+  // 5 brick, 6 water, 7 a piece of the rocket, 8 road, 9 boards, 10 paper, 11 a gallery's plaster.
   var PAL = [], STYLE = [];
   function def(id, rgb, style) { PAL[id] = rgb; STYLE[id] = style || 0; }
   def(B.AIR, [0, 0, 0]); def(B.GRASS, [96, 138, 64], 1); def(B.DIRT, [124, 88, 60]); def(B.STONE, [122, 122, 120]);
@@ -44,7 +44,7 @@
   def(B.SCORCH, [52, 44, 38]); def(B.RENDER, [232, 226, 214]); def(B.LOOSE, [96, 66, 44]); def(B.WHITE, [240, 238, 232]);
   def(B.RED, [188, 58, 46]); def(B.BEDROCK, [40, 40, 42]);
   def(B.ENGINE, [255, 168, 64], 7); def(B.TANK, [120, 220, 255], 7); def(B.GUIDE, [150, 255, 140], 7); def(B.SHIELD, [255, 120, 200], 7);
-  def(B.NOTE, [246, 238, 214], 10); def(B.FLOOR, [150, 108, 70], 9); def(B.PLASTER, [228, 222, 210]);
+  def(B.NOTE, [246, 238, 214], 10); def(B.FLOOR, [150, 108, 70], 9); def(B.PLASTER, [228, 222, 210], 11);
   for (var b0 = 0; b0 < ALL; b0 += 1) { if (!PAL[b0]) { def(b0, [255, 0, 255]); } }
 
   // A model's materials as blocks: the ones the city has already, else each its own colour.

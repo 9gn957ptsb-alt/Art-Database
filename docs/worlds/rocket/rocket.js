@@ -16,15 +16,20 @@
    an alarm, and at the third the guards put you out under your tree again.
    Tap a note to read it. Break and place blocks as you need to.
 
-   The view is drawn in the site's pixel (two of the screen's to one), its
-   light dithered; the works are their pictures from Artsy, framed, on the
-   walls; its labels in the site's small capitals. */
+   Its unit is not the cube's pixel but the impossible triangle the artist
+   chose (14 Oct 2026, a tribar of three tribars round a gap): every face of
+   every block is a field of them, one to a block, in three tones of its own
+   colour that run on from figure to figure (see FS). The view is at the
+   screen's own density, smooth, without grain or dithering; the works are
+   their pictures from Artsy in frames of the same three tones; the page's
+   own marks (the crosshair, the pieces, the blocks, the title) are the
+   figure too, and the smoke is triangles. */
 
 (function () {
   "use strict";
 
   var BASE = "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/";
-  var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PIX = 2, PPM = 32, SAVE = "rocket-save-v2";
+  var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, TRI = 1, SAVE = "rocket-save-v2";
   var Pl = window.RocketPlace, Adv = window.Adventures, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
   var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs, hypot = Math.hypot;
   var HOTBAR = [B.BRICK, B.LOG, B.GLASS, B.DIRT, B.STONE];
@@ -35,6 +40,57 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]; }); }
   function lower(s) { return s.charAt(0).toLowerCase() + s.slice(1); }
+
+  /* The figure, for the page's own marks (the crosshair, the pieces, the blocks to place, the
+     title's): the shader's rule at a point (fa, fb) of an up-triangle in its skew coordinates. */
+  function tribarAt(fa, fb) {
+    if (fa < 0 || fb < 0 || fa + fb >= 1) { return 0; }
+    var dL = fa, dR = 1 - fa - fb, dB = fb, BAR = 0.30, FACE = 0.16;
+    if (dL < BAR && dR >= BAR) { return dL < FACE ? 1 : 2; }
+    if (dB < BAR && dL >= BAR) { return dB < FACE ? 3 : 4; }
+    if (dR < BAR && dB >= BAR) { return dR < FACE ? 5 : 6; }
+    return 7;
+  }
+  var FACE_TONE = [-1, 1, 2, 2, 0, 0, 1, -1];   // region → white 0, grey 1, black 2; the ground and the hole clear
+  /* The figure on a canvas wpx wide: level 1 the tribar, level 2 the artist's own, three tribars
+     round a gap. tones: [white, grey, black] as [r, g, b]; ground: [r, g, b] or clear. */
+  function figure(wpx, level, tones, ground) {
+    var hpx = Math.ceil(wpx * Math.sqrt(3) / 2), cv = document.createElement("canvas"), S = 3;
+    cv.width = wpx; cv.height = hpx;
+    var c = cv.getContext("2d"), img = c.createImageData(wpx, hpx);
+    for (var py = 0; py < hpx; py += 1) {
+      for (var px = 0; px < wpx; px += 1) {
+        var r = 0, g = 0, b = 0, a = 0;
+        for (var j = 0; j < S; j += 1) {
+          for (var i = 0; i < S; i += 1) {
+            var y = 1 - (py + (j + 0.5) / S) / hpx, x = (px + (i + 0.5) / S) / wpx, sb = y, sa = x - y / 2, reg = 0;
+            // The figure's own corners cut, as the beams' ends are; inside, the ribbons run on.
+            if (sa >= 0 && sb >= 0 && sa + sb < 1 && max(sa, sb, 1 - sa - sb) < 0.955) {
+              if (level === 2) {
+                var a2 = sa * 2, b2 = sb * 2, i0 = floor(a2), j0 = floor(b2);
+                reg = i0 + j0 <= 1 ? tribarAt(a2 - i0, b2 - j0) : 0;
+              } else { reg = tribarAt(sa, sb); }
+            }
+            var t = FACE_TONE[reg], col = t >= 0 ? tones[t] : ground;
+            if (col) { r += col[0]; g += col[1]; b += col[2]; a += 1; }
+          }
+        }
+        var q = (py * wpx + px) * 4;
+        if (a) { img.data[q] = r / a; img.data[q + 1] = g / a; img.data[q + 2] = b / a; img.data[q + 3] = 255 * a / (S * S); }
+      }
+    }
+    c.putImageData(img, 0, 0);
+    return cv;
+  }
+  // A colour's three tones, as the figure has them: its own, lit, and deepened.
+  function tonesOf(rgb) {
+    return [[min(255, rgb[0] * 0.75 + 64), min(255, rgb[1] * 0.75 + 64), min(255, rgb[2] * 0.75 + 64)], rgb.slice(), [rgb[0] * 0.42, rgb[1] * 0.42, rgb[2] * 0.42]];
+  }
+  var marks = {};
+  function markOf(key, wpx, rgb) {
+    if (!marks[key]) { marks[key] = figure(wpx, 1, tonesOf(rgb)).toDataURL(); }
+    return marks[key];
+  }
 
   // What the game is: the place in blocks, the adventure, and where you have got to in it.
   var place = null, w = null, adv = null, setting = null, seed = 0;
@@ -67,7 +123,7 @@
 
   function meshChunk(cx, cz) {
     var pos = [], inf = [], ind = [], v = 0, x0 = cx * CH, z0 = cz * CH;
-    var SX = w.SX, SZ = w.SZ, SY = w.SY, data = w.data, SOLID = w.SOLID, SEE = w.SEE, NOTE = B.NOTE, WATER = B.WATER;
+    var SX = w.SX, SZ = w.SZ, SY = w.SY, data = w.data, SEE = w.SEE, NOTE = B.NOTE, WATER = B.WATER;
     var get = function (x, y, z) { return x < 0 || z < 0 || x >= SX || z >= SZ || y >= SY ? 0 : y < 0 ? B.BEDROCK : data[(y * SZ + z) * SX + x]; };
     for (var y = 0; y < SY; y += 1) {
       for (var z = z0; z < z0 + CH; z += 1) {
@@ -80,19 +136,10 @@
             else if (!SEE[nb] || nb === b) { continue; }
             for (var k = 0; k < 4; k += 1) {
               var cc = Fc.c[k];
-              // A note is a sheet on the floor; water's top sits a little low.
+              // A note is a sheet on the floor; water's top sits a little low. No shading in the corners:
+              // a face is flat, its tone its own, as the figure's faces are.
               pos.push(x + cc[0], y + (b === NOTE ? cc[1] * 0.08 : cc[1] - (b === WATER && Fc.d[1] === 1 ? 0.12 : 0)), z + cc[2]);
-              // The corner's shade: how many blocks crowd it (ambient occlusion).
-              var ao = 0;
-              if (b !== WATER && b !== NOTE) {
-                var ax = cc[0] ? 1 : -1, ay = cc[1] ? 1 : -1, az = cc[2] ? 1 : -1;
-                var px = x + Fc.d[0], py = y + Fc.d[1], pz = z + Fc.d[2], s1, s2, s3;
-                if (Fc.d[0]) { s1 = SOLID[get(px, py + ay, pz)]; s2 = SOLID[get(px, py, pz + az)]; s3 = SOLID[get(px, py + ay, pz + az)]; }
-                else if (Fc.d[1]) { s1 = SOLID[get(px + ax, py, pz)]; s2 = SOLID[get(px, py, pz + az)]; s3 = SOLID[get(px + ax, py, pz + az)]; }
-                else { s1 = SOLID[get(px + ax, py, pz)]; s2 = SOLID[get(px, py + ay, pz)]; s3 = SOLID[get(px + ax, py + ay, pz)]; }
-                ao = s1 && s2 ? 3 : s1 + s2 + s3;
-              }
-              inf.push(f, b, ao, 0);
+              inf.push(f, b, 0, 0);
             }
             ind.push(v, v + 1, v + 2, v, v + 2, v + 3);
             v += 4;
@@ -126,58 +173,85 @@
     if (z % CH === CH - 1 && cz < nz - 1) { meshChunk(cx, cz + 1); }
   }
 
-  var BAYER = [
-    "float bayer(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;",
-    "  int b[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5); return (float(b[i]) + 0.5) / 16.0; }"
-  ].join("\n");
   var VS = [
     "#version 300 es",
     "layout(location=0) in vec3 aP; layout(location=1) in vec4 aI;",
     "uniform mat4 uVP; uniform vec3 uOff;",
-    "out vec3 vP; flat out int vF; flat out int vB; out float vAO;",
-    "void main() { vP = aP + uOff; vF = int(aI.x); vB = int(aI.y); vAO = aI.z; gl_Position = uVP * vec4(vP, 1.0); }"
+    "out vec3 vP; flat out int vF; flat out int vB;",
+    "void main() { vP = aP + uOff; vF = int(aI.x); vB = int(aI.y); gl_Position = uVP * vec4(vP, 1.0); }"
   ].join("\n");
+  /* The unit everything is built of: not a pixel but the tribar, the impossible triangle of three
+     bars (the artist's figure, 14 Oct 2026). Every face is a field of them, a row a block high and
+     every other row half a block along, so three round every gap between them make the whole figure
+     the artist drew. Each bar shows two faces: the left bar grey outside and black inside, the bottom
+     black outside and white inside, the right white outside and grey inside, so that every tone is
+     one ribbon, the inner face of one bar turning the corner into the outer face of the next; each bar
+     owns the corner it comes to first; where two figures touch, the ribbon runs on from the one into
+     the other, as it does in the artist's drawing. The white is the surface's own colour,
+     so the figures rise out of it and sink back into it, drawn only by their grey and black and a
+     hairline; grey and black are the colour deepened. The bars are three tenths of a figure's height,
+     their outer faces a little over half of that, as the artist's are. Far off, where a figure is
+     smaller than a few pixels, a face is its figures' mean, so nothing shimmers. */
   var FS = [
     "#version 300 es",
     "precision highp float;",
-    "in vec3 vP; flat in int vF; flat in int vB; in float vAO; out vec4 o;",
-    "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze;",
-    "float h(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }",
-    BAYER,
+    "in vec3 vP; flat in int vF; flat in int vB; out vec4 o;",
+    "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze; uniform float uTri;",
     "const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));",
+    "const float BAR = 0.30, FACE = 0.16;",
+    "const vec2 TAP[4] = vec2[4](vec2(0.375, 0.125), vec2(-0.125, 0.375), vec2(-0.375, -0.125), vec2(0.125, -0.375));",
+    // 0 the ground between figures, 7 the hole in one; 1-2 the left bar's outer and inner faces, 3-4 the bottom's, 5-6 the right's.
+    "int tribar(vec2 p) {",
+    "  float b = p.y, a = p.x - b * 0.5, fa = fract(a), fb = fract(b);",
+    "  if (fa + fb >= 1.0) { return 0; }",
+    "  float dL = fa, dR = 1.0 - fa - fb, dB = fb;",
+    "  if (dL < BAR && dR >= BAR) { return dL < FACE ? 1 : 2; }",
+    "  if (dB < BAR && dL >= BAR) { return dB < FACE ? 3 : 4; }",
+    "  if (dR < BAR && dB >= BAR) { return dR < FACE ? 5 : 6; }",
+    "  return 7;",
+    "}",
+    "float tone(int r) { return r == 1 || r == 6 ? 0.8 : r == 2 || r == 3 ? 0.58 : 1.0; }",
+    "bool bare(int r) { return r == 0 || r == 7; }",
+    // The three tones turned round, for water and the pieces: their ribbons flow.
+    "float turn(int r, float k) { if (bare(r)) { return 1.0; } float t = tone(r); int i = t > 0.9 ? 0 : t > 0.7 ? 1 : 2;",
+    "  float a = mod(float(i) + k, 3.0), f = fract(a); int i0 = int(a), i1 = (i0 + 1) % 3;",
+    "  float T[3] = float[3](1.0, 0.8, 0.58); return mix(T[i0], T[i1], smoothstep(0.0, 1.0, f)); }",
     "void main() {",
     "  vec3 n = N[vF];",
-    "  vec3 cell = floor(vP - n * 0.5);",
-    "  vec2 uv = vF < 2 ? vec2(vP.z, vP.y) : vF < 4 ? vec2(vP.x, vP.z) : vec2(vP.x, vP.y);",
-    "  vec2 f = fract(uv); vec2 tx = floor(f * 8.0);",
-    "  float r = h(cell * 1.7 + vec3(tx, float(vF)));",
-    "  vec4 pe = uPal[vB]; vec3 c = pe.rgb; int st = int(pe.a + 0.5);",
-    "  float k = 0.9 + 0.18 * r;",
-    "  if (st == 1) { if (vF != 2) { if (f.y < 0.78 - 0.1 * h(cell + vec3(tx.x))) { c = uPal[2].rgb; } } }",
-    "  if (st == 2) { if (vF == 2 || vF == 3) { float d = length(f - 0.5); c *= 0.85 + 0.25 * step(0.5, fract(d * 4.0)); } else { k = 0.8 + 0.3 * step(0.4, h(cell + vec3(tx.x, 0.0, 0.0))); } }",
-    "  if (st == 3) { if (r < 0.22) { c *= 0.55; } }",
-    "  if (st == 4) { bool edge = f.x < 0.12 || f.x > 0.88 || f.y < 0.12 || f.y > 0.88; c = edge ? vec3(0.32, 0.3, 0.3) * 255.0 : mix(uSky * 255.0, c, 0.55); k = 1.0; }",
-    "  if (st == 5) { float row = floor(f.y * 4.0); float mx = fract(f.x * 2.0 + row * 0.5); if (fract(f.y * 4.0) < 0.18 || mx < 0.09) { c = vec3(196.0, 188.0, 176.0); } }",
-    "  if (st == 6) { k = 0.85 + 0.3 * (0.5 + 0.5 * sin(vP.x * 1.3 + vP.z * 0.9 + uT * 1.6)); }",
-    "  if (st == 8) { k = 0.88 + 0.2 * r; }",
-    // Boards: four to a block, their ends staggered.
-    "  if (st == 9) { vec2 q = vF < 2 ? vec2(vP.z, vP.y) : vF < 4 ? vec2(vP.x, vP.z) : vec2(vP.x, vP.y);",
-    "    float row = floor(q.y * 4.0), sh = h(vec3(row, cell.y, 3.0)), run = floor(q.x * 0.5 + sh);",
-    "    float seam = max(step(0.88, fract(q.y * 4.0)), step(0.96, fract(q.x * 0.5 + sh)));",
-    "    k = (0.86 + 0.2 * h(vec3(row, run, cell.y))) * (1.0 - 0.3 * seam); }",
-    // A note: paper, ruled.
-    "  if (st == 10) { k = 1.0; if (vF == 2 && fract(f.y * 7.0) < 0.16 && f.x > 0.18 && f.x < 0.82 && f.y > 0.2 && f.y < 0.86) { c *= 0.74; } }",
-    "  c = c / 255.0 * k;",
+    // Each face's own field, upright and the right way round to one looking at it.
+    "  vec2 p = vF == 0 ? vec2(-vP.z, vP.y) : vF == 1 ? vec2(vP.z, vP.y) : vF == 4 ? vec2(vP.x, vP.y) : vF == 5 ? vec2(-vP.x, vP.y) : vec2(vP.x, vP.z);",
+    "  p /= uTri;",
+    "  vec2 dx = dFdx(p), dy = dFdy(p);",
+    "  float fw = max(length(dx), length(dy));",
+    "  vec4 pe = uPal[vB]; vec3 c = pe.rgb / 255.0; int st = int(pe.a + 0.5);",
+    "  vec3 under = c;",   // what the bars are made of; the ground is c
+    "  bool side = vF != 2 && vF != 3;",
+    "  if (st == 1) { if (side) { under = uPal[2].rgb / 255.0; } else if (vF == 3) { c = uPal[2].rgb / 255.0; under = c; } }",   // grass over earth
+    "  if (st == 2 && !side) { under = c * 1.35; }",                       // a log's rings
+    "  if (st == 3) { under = c * 0.8; }",                                 // leaves
+    "  if (st == 4) { c = mix(uSky, c, 0.5); under = c * 0.62; }",            // glass, leaded in figures
+    "  if (st == 10) { under = c * 0.9; }",                                // a note: the figure pressed into the paper
+    "  float k = st == 6 ? uT * 0.35 + (vP.x + vP.z) * 0.05 : st == 7 ? uT * 1.6 : -1.0;",
+    // A gallery's plaster: the figures quieter, so the works on it are what is seen.
+    "  float q = st == 11 ? 0.5 : 1.0;",
+    "  vec3 acc = vec3(0.0); int r0 = 0; float edge = 0.0;",
+    "  for (int i = 0; i < 4; i++) {",
+    "    int r = tribar(p + dx * TAP[i].x + dy * TAP[i].y);",
+    "    if (i == 0) { r0 = r; } else if (r != r0) { edge = 1.0; }",
+    "    acc += (bare(r) ? c : under) * (1.0 - q * (1.0 - (k >= 0.0 ? turn(r, k) : tone(r))));",
+    "  }",
+    "  acc *= 0.25;",
+    "  float lod = smoothstep(0.06, 0.3, fw);",
+    "  vec3 far = c * 0.5048 + under * 0.4952 * (1.0 - q * 0.2068);",
+    "  vec3 surf = mix(acc * (1.0 - 0.3 * edge), far, lod);",
     "  float sun = max(dot(n, uSun), 0.0);",
-    "  float amb = 0.55 + 0.15 * n.y;",
-    "  vec3 col = c * (amb + 0.6 * sun) * (1.0 - vAO * 0.16);",
+    "  float amb = 0.56 + 0.16 * n.y;",
+    "  vec3 col = surf * (amb + 0.58 * sun);",
     // The pieces glow and breathe, to be seen from far off; the notes catch the eye.
-    "  if (st == 7) { float pulse = 0.65 + 0.35 * sin(uT * 3.0); bool rim = f.x < 0.14 || f.x > 0.86 || f.y < 0.14 || f.y > 0.86; col = rim ? c * 0.35 : c * (0.8 + 0.6 * pulse); }",
-    "  if (st == 10) { col = c * (0.95 + 0.25 * (0.5 + 0.5 * sin(uT * 2.6))); }",
+    "  if (st == 7) { col = surf * (1.0 + 0.35 * sin(uT * 3.0)); }",
+    "  if (st == 10) { col = surf * (0.98 + 0.18 * (0.5 + 0.5 * sin(uT * 2.6))); }",
     "  float dist = length(uEye - vP);",
     "  col = mix(col, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0));",
-    "  float t = bayer(gl_FragCoord.xy) - 0.5;",
-    "  col = floor(col * 36.0 + t + 0.5) / 36.0;",
     "  o = vec4(col, 1.0);",
     "}"
   ].join("\n");
@@ -187,10 +261,10 @@
     "uniform mat4 uInv; uniform vec3 uEye; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uHaze;",
     "void main() { vec4 p = uInv * vec4(vA, 1.0, 1.0); vec3 r = normalize(p.xyz / p.w - uEye);",
     "  vec3 c = mix(uHaze, uSky, pow(clamp(r.y, 0.0, 1.0), 0.5));",
-    "  float s = dot(r, uSun); c += vec3(1.0, 0.95, 0.85) * (step(0.9985, s) * 0.9 + pow(max(s, 0.0), 30.0) * 0.12);",
+    "  float s = dot(r, uSun); c += vec3(1.0, 0.95, 0.85) * (smoothstep(0.99955, 0.99972, s) * 0.9 + pow(max(s, 0.0), 30.0) * 0.12);",
     "  o = vec4(c, 1.0); }"
   ].join("\n");
-  // The works: each its picture on a quad a hair off its wall, in the same haze and grain.
+  // The works: each its picture on a quad a hair off its wall, in the same haze.
   var ART_VS = [
     "#version 300 es",
     "layout(location=0) in vec3 aP; layout(location=1) in vec2 aT;",
@@ -200,10 +274,8 @@
   var ART_FS = [
     "#version 300 es", "precision highp float;", "in vec3 vP; in vec2 vT; out vec4 o;",
     "uniform sampler2D uTex; uniform vec3 uEye; uniform vec3 uHaze; uniform float uLit;",
-    BAYER,
     "void main() { vec3 c = texture(uTex, vT).rgb * uLit; float d = length(uEye - vP);",
-    "  c = mix(c, uHaze, clamp(1.0 - exp(-d * 0.006), 0.0, 1.0));",
-    "  float t = bayer(gl_FragCoord.xy) - 0.5; c = floor(c * 36.0 + t + 0.5) / 36.0; o = vec4(c, 1.0); }"
+    "  c = mix(c, uHaze, clamp(1.0 - exp(-d * 0.006), 0.0, 1.0)); o = vec4(c, 1.0); }"
   ].join("\n");
 
   function compile(vs, fs) {
@@ -250,15 +322,26 @@
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 20, 12);
     gl.bindVertexArray(null);
   }
-  // A work's face: its picture in a frame (gilt for the old ones), or its colours while it comes.
+  /* A work's face: its picture in a frame, or its colours while it comes. The frame is the figure's
+     three tones: lit along its top and left, shadowed along its bottom and right, and inside, where
+     it turns in to the picture, the other way about, as the tribar's inner faces take the next
+     tone (gilt for the works before 1900, dark wood after). */
   function paintTexture(p, img) {
-    var W = max(8, round((p.u1 - p.u0) * PPM)), H = max(8, round((p.y1 - p.y0) * PPM));
+    var W = max(16, min(640, round((p.u1 - p.u0) * PPM))), H = max(16, min(640, round((p.y1 - p.y0) * PPM)));
     var cv = document.createElement("canvas");
     cv.width = W; cv.height = H;
-    var c = cv.getContext("2d"), fr = max(1, round(PPM * 0.07)), old = p.f.year && p.f.year < 1900;
-    c.fillStyle = old ? "#9c7636" : "#2b221c";
+    var c = cv.getContext("2d"), fr = max(4, round(PPM * 0.075)), old = p.f.year && p.f.year < 1900;
+    var tones = old ? ["#d9b468", "#a37b3b", "#684a20"] : ["#5a4c40", "#30271f", "#120d0a"];
+    var bevel = function (x0, y0, x1, y1, t, lit, dark) {
+      c.fillStyle = lit;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1 - t, y0 + t); c.lineTo(x0 + t, y0 + t); c.lineTo(x0 + t, y1 - t); c.lineTo(x0, y1); c.closePath(); c.fill();
+      c.fillStyle = dark;
+      c.beginPath(); c.moveTo(x1, y1); c.lineTo(x0, y1); c.lineTo(x0 + t, y1 - t); c.lineTo(x1 - t, y1 - t); c.lineTo(x1 - t, y0 + t); c.lineTo(x1, y0); c.closePath(); c.fill();
+    };
+    c.fillStyle = tones[1];
     c.fillRect(0, 0, W, H);
-    if (old) { c.fillStyle = "#d8b060"; c.fillRect(0, 0, W, 1); c.fillRect(0, 0, 1, H); }
+    bevel(0, 0, W, H, fr * 0.36, tones[0], tones[2]);
+    bevel(fr * 0.72, fr * 0.72, W - fr * 0.72, H - fr * 0.72, fr * 0.28, tones[2], tones[0]);
     var iw = W - fr * 2, ih = H - fr * 2;
     if (img) {
       var s = max(iw / img.width, ih / img.height), dw = img.width * s, dh = img.height * s;
@@ -273,8 +356,9 @@
     gl.bindTexture(gl.TEXTURE_2D, p.tex);
     try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv); }
     catch (e) { if (img) { paintTexture(p, null); } return; }
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     p.shown = !!img;
@@ -288,7 +372,7 @@
     img.referrerPolicy = "no-referrer";
     img.onload = function () { loading -= 1; paintTexture(p, img); };
     img.onerror = function () { loading -= 1; };
-    img.src = CDN + p.f.image + "/small.jpg";
+    img.src = CDN + p.f.image + "/medium.jpg";
   }
   // The pictures of the works near you, a few at a time.
   function fetchNear() {
@@ -533,18 +617,21 @@
   /* ---- the frame ------------------------------------------------------------------ */
 
   var last = 0, sunDir = norm([-0.45, 0.78, -0.35]), SKY = [0.48, 0.66, 0.86], HAZE = [0.84, 0.86, 0.86];
-  var skyVao = null, curPix = PIX, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
+  var crossMark = null, held = false;
+  var skyVao = null, curPix = 1, quality = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
   function norm(v) { var n = hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; }
 
   function frame(now) {
     var dt = min(0.05, (now - (last || now)) / 1000);
     last = now;
     tick += 1;
+    if (!intro && !held && dt > 0.03) { slow += 1; if (slow > 45 && quality > 0.5) { quality -= 0.25; slow = 0; resize(); } } else if (slow > 0) { slow -= 1; }
     var eyeH = EYE, open = 1;
     if (intro) {
       var u = (now - intro.t0) / 1000, sm = function (a, b) { var t = max(0, min(1, (u - a) / (b - a))); return t * t * (3 - 2 * t); };
       open = lids(u);
-      var pix = round(8 - 6 * sm(1, 5.5));
+      // Coming to: the world soft, then sharp.
+      var pix = round(10 - 9 * sm(1, 5.5));
       if (pix !== curPix) { curPix = pix; resize(); }
       eyeH = 0.35 + (EYE - 0.35) * sm(4.5, 7.2);
       P.pitch = 1.2 + (0 - 1.2) * sm(3.8, 7.2);
@@ -568,7 +655,7 @@
     gl.useProgram(prog);
     gl.uniformMatrix4fv(U.uVP, false, vp);
     gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
-    gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, HAZE);
+    gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, HAZE); gl.uniform1f(U.uTri, TRI);
     gl.uniform3f(U.uOff, 0, 0, 0);
     var pcx = floor(P.x / CH), pcz = floor(P.z / CH);
     Object.keys(chunks).forEach(function (k) {
@@ -622,7 +709,7 @@
   function awake() {
     var again = intro.lines[0] === "The guards walk you out.";
     intro = null;
-    curPix = PIX;
+    curPix = 1;
     resize();
     delete document.body.dataset.film;
     if (again) { say("The alarms are quiet again. What you have found, you keep."); return; }
@@ -665,14 +752,16 @@
       var q = [0, 0, 0, 0];
       for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; }
       if (q[3] <= 0.3) { continue; }
-      var x = (q[0] / q[3] * 0.5 + 0.5) * W, y = (1 - (q[1] / q[3] * 0.5 + 0.5)) * H, s = max(2, min(launched ? 30 : 14, (0.4 + life * 2) * H / q[3] * 0.4));
-      s = round(s / 2) * 2;
-      c.fillStyle = launched && life < 0.15 ? "rgba(255,190,110," + (0.8 * (1 - life / 0.15)) + ")" : "rgba(70,66,64," + (0.45 * (1 - life)).toFixed(3) + ")";
-      c.fillRect(round(x - s / 2), round(y - s / 2), s, s);
+      var x = (q[0] / q[3] * 0.5 + 0.5) * W, y = (1 - (q[1] / q[3] * 0.5 + 0.5)) * H, s = max(3, min(launched ? 34 : 16, (0.4 + life * 2) * H / q[3] * 0.45));
+      // Smoke in triangles, the unit of everything else.
+      c.fillStyle = launched && life < 0.15 ? "rgba(255,190,110," + (0.8 * (1 - life / 0.15)) + ")" : "rgba(70,66,64," + (0.42 * (1 - life)).toFixed(3) + ")";
+      c.beginPath(); c.moveTo(x, y - s * 0.58); c.lineTo(x + s / 2, y + s * 0.29); c.lineTo(x - s / 2, y + s * 0.29); c.closePath(); c.fill();
     }
     if (!intro && !launched && !touchy) {
-      c.fillStyle = "rgba(255,255,255,0.8)";
-      c.fillRect(W / 2 - 7, H / 2 - 1, 14, 2); c.fillRect(W / 2 - 1, H / 2 - 7, 2, 14);
+      if (!crossMark) { crossMark = figure(17, 1, [[255, 255, 255], [196, 196, 196], [36, 34, 32]]); }
+      c.globalAlpha = 0.92;
+      c.drawImage(crossMark, round(W / 2 - 8.5), round(H / 2 - 9));
+      c.globalAlpha = 1;
     }
     if (intro) {
       var shut = (1 - open) * H / 2;
@@ -809,7 +898,7 @@
   function drawPieces(fresh) {
     $("pieces").innerHTML = adv.pieces.map(function (p) {
       var got = found.indexOf(p.k) >= 0, c = w.pal[PIECE_IDS[p.k]];
-      return '<li data-got="' + got + '"><i style="background:rgb(' + c.join(",") + ')"></i><span>' + esc(p.name.replace(/^The /, "")) + '</span></li>';
+      return '<li data-got="' + got + '"><i style="background-image:url(' + markOf("p" + p.k, 28, c) + ')"></i><span>' + esc(p.name.replace(/^The /, "")) + '</span></li>';
     }).join("");
     var al = $("alarms");
     al.hidden = setting.kind === "city";
@@ -831,7 +920,7 @@
   }
   function drawHotbar() {
     $("hotbar").innerHTML = HOTBAR.map(function (b, i) {
-      return '<button class="slot" data-slot="' + i + '" aria-pressed="' + (mode === "place" && slot === i) + '" aria-label="' + BLOCKS[b] + '"><i style="background:rgb(' + w.pal[b].join(",") + ')"></i></button>';
+      return '<button class="slot" data-slot="' + i + '" aria-pressed="' + (mode === "place" && slot === i) + '" aria-label="' + BLOCKS[b] + '"><i style="background-image:url(' + markOf("b" + b, 52, w.pal[b]) + ')"></i></button>';
     }).join("");
     document.querySelectorAll("[data-slot]").forEach(function (el) {
       el.onclick = function (e) { e.stopPropagation(); slot = +el.dataset.slot; setMode("place"); };
@@ -924,9 +1013,12 @@
     document.addEventListener("keyup", function (e) { input.keys[keyOf(e)] = false; });
     window.addEventListener("resize", resize);
   }
+  // The view at the screen's own density (no grain of its own), softened while you come to; a
+  // little coarser if the frames come slowly.
   function resize() {
     var cw = window.innerWidth, chh = window.innerHeight, dpr = min(2, window.devicePixelRatio || 1);
-    canvas.width = max(1, round(cw / curPix)); canvas.height = max(1, round(chh / curPix));
+    var sc = curPix > 1 ? 1 / curPix : dpr * quality;
+    canvas.width = max(1, round(cw * sc)); canvas.height = max(1, round(chh * sc));
     hud.width = round(cw * dpr); hud.height = round(chh * dpr);
   }
 
@@ -1035,10 +1127,11 @@
   function init() {
     canvas = $("view");
     hud = $("hud");
-    gl = canvas.getContext("webgl2", { antialias: false });
+    gl = canvas.getContext("webgl2", { antialias: true });
+    quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS);
-    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uTri"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
     gl.enable(gl.DEPTH_TEST);
@@ -1048,6 +1141,12 @@
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
     resize(); wire();
+    // The title's mark: the artist's figure, three tribars round a gap, in the page's tones.
+    document.querySelectorAll("canvas.mark").forEach(function (m) {
+      var f = figure(240, 2, [[234, 223, 205], [168, 146, 122], [92, 76, 62]]);
+      m.width = f.width; m.height = f.height;
+      m.getContext("2d").drawImage(f, 0, 0);
+    });
     fetch("catalogue.json").then(function (r) { return r.json(); }).then(function (d) {
       cat = d;
       // The address names an adventure (#museum/<slug>/<seed>); else the one you were in; else the Musée d'Orsay.
@@ -1084,7 +1183,10 @@
     return { P: P, place: place, w: w, adv: adv, paintings: paintings, pieces: pieces, notes: notes, found: found, known: known, looked: looked,
              alarms: function () { return alarms; }, act: act, remeshAt: remeshAt, buildRocket: buildRocket, launch: launch, showLabel: showLabel,
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
-             skip: function () { if (intro) { intro.t0 -= 9600; } } };
+             skip: function () { if (intro) { intro.t0 -= 9600; } },
+             hold: function (q, tri) { held = true; quality = q; if (tri) { TRI = tri; } resize(); },
+             flush: function () { pump(1e9); }, figure: figure,
+             aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
   } };
   init();
 })();
