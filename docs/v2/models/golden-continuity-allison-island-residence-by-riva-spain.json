@@ -1,0 +1,612 @@
+{
+ "slug": "golden-continuity-allison-island-residence-by-riva-spain",
+ "name": "Allison Island Residence",
+ "voxel": 0.55,
+ "site": [
+  58,
+  50
+ ],
+ "ground": "grass",
+ "parts": [
+  {
+   "box": [
+    -29,
+    -25,
+    0,
+    58,
+    50,
+    0.3
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -20,
+    -14,
+    0,
+    40,
+    30,
+    0.2
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    0,
+    34,
+    12,
+    3.4
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    3.4,
+    34,
+    12,
+    3.2
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -17,
+    -10,
+    6.6,
+    34,
+    0.4,
+    0.3
+   ],
+   "m": "limestone"
+  },
+  {
+   "cut": [
+    -15,
+    0.6,
+    0.1,
+    30,
+    1.8,
+    3.0
+   ]
+  },
+  {
+   "box": [
+    -15,
+    1.7,
+    0.1,
+    30,
+    0.3,
+    3.0
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -15,
+    0.5,
+    0.1,
+    30,
+    0.5,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -15.2,
+    0.6,
+    0.1,
+    0.5,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -9.2,
+    0.6,
+    0.1,
+    0.6,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -3.2,
+    0.6,
+    0.1,
+    0.6,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    2.8,
+    0.6,
+    0.1,
+    0.6,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    8.8,
+    0.6,
+    0.1,
+    0.6,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    14.5,
+    0.6,
+    0.1,
+    0.6,
+    1.8,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "cut": [
+    -15,
+    0.6,
+    3.5,
+    30,
+    1.8,
+    2.8
+   ]
+  },
+  {
+   "box": [
+    -15,
+    1.7,
+    3.5,
+    30,
+    0.3,
+    2.8
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -15,
+    0.5,
+    3.5,
+    30,
+    0.5,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -15.2,
+    0.6,
+    3.5,
+    0.5,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -9.2,
+    0.6,
+    3.5,
+    0.6,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -3.2,
+    0.6,
+    3.5,
+    0.6,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    2.8,
+    0.6,
+    3.5,
+    0.6,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    8.8,
+    0.6,
+    3.5,
+    0.6,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    14.5,
+    0.6,
+    3.5,
+    0.6,
+    1.8,
+    2.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -16,
+    1.8,
+    3.4,
+    32,
+    0.3,
+    0.9
+   ],
+   "m": "limestone"
+  },
+  {
+   "hip": [
+    -18.5,
+    -11.5,
+    6.9,
+    37,
+    15,
+    3.6
+   ],
+   "m": "tile"
+  },
+  {
+   "cyl": [
+    0,
+    -6,
+    8.5,
+    3.8,
+    1.8
+   ],
+   "m": "limestone"
+  },
+  {
+   "dome": [
+    0,
+    -6,
+    10.3,
+    3.0
+   ],
+   "m": "limestone"
+  },
+  {
+   "box": [
+    -12,
+    6,
+    0,
+    28,
+    15,
+    0.3
+   ],
+   "m": "wood"
+  },
+  {
+   "cut": [
+    -8,
+    8,
+    0,
+    22,
+    9,
+    0.5
+   ]
+  },
+  {
+   "pool": [
+    -8,
+    8,
+    22,
+    9
+   ]
+  },
+  {
+   "box": [
+    -8.4,
+    7.6,
+    0,
+    22.8,
+    0.4,
+    0.4
+   ],
+   "m": "marble"
+  },
+  {
+   "box": [
+    -8.4,
+    17,
+    0,
+    22.8,
+    0.4,
+    0.4
+   ],
+   "m": "marble"
+  },
+  {
+   "box": [
+    14,
+    7.6,
+    0,
+    0.4,
+    9.8,
+    0.4
+   ],
+   "m": "marble"
+  },
+  {
+   "box": [
+    -8.4,
+    7.6,
+    0,
+    0.4,
+    9.8,
+    0.4
+   ],
+   "m": "marble"
+  },
+  {
+   "box": [
+    -4,
+    9.5,
+    0.3,
+    3,
+    1.6,
+    0.35
+   ],
+   "m": "sage"
+  },
+  {
+   "box": [
+    15,
+    3,
+    0,
+    8,
+    7,
+    3.2
+   ],
+   "m": "limestone"
+  },
+  {
+   "cut": [
+    16,
+    8.8,
+    0.1,
+    5.5,
+    0.4,
+    2.4
+   ]
+  },
+  {
+   "box": [
+    16,
+    9.3,
+    0.1,
+    5.5,
+    0.2,
+    2.4
+   ],
+   "m": "dark"
+  },
+  {
+   "hip": [
+    14.2,
+    2.2,
+    3.2,
+    9.6,
+    8.6,
+    2.2
+   ],
+   "m": "tile"
+  },
+  {
+   "box": [
+    23,
+    -6,
+    0,
+    2,
+    16,
+    2.6
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -26,
+    -6,
+    0,
+    2,
+    22,
+    2.6
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    -14,
+    5,
+    0.5,
+    1.2,
+    1.0,
+    0.7
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    -2,
+    20,
+    0.5,
+    1.6,
+    1.0,
+    0.7
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    8,
+    20,
+    0.5,
+    1.6,
+    1.0,
+    0.7
+   ],
+   "m": "plant"
+  },
+  {
+   "box": [
+    -4,
+    4,
+    0.3,
+    2.5,
+    0.8,
+    0.5
+   ],
+   "m": "sage"
+  },
+  {
+   "box": [
+    -5,
+    4.5,
+    0.3,
+    2.4,
+    1.4,
+    0.5
+   ],
+   "m": "sage"
+  },
+  {
+   "box": [
+    -2,
+    4.5,
+    0.3,
+    2.4,
+    1.4,
+    0.5
+   ],
+   "m": "sage"
+  },
+  {
+   "tree": [
+    -21,
+    4,
+    16,
+    3.5
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    -20,
+    -2,
+    14,
+    3.2
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    -24,
+    10,
+    12,
+    3.0
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    20,
+    -3,
+    15,
+    3.2
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    14,
+    18,
+    14,
+    3.2
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    -14,
+    20,
+    15,
+    3.4
+   ],
+   "shape": "palm"
+  },
+  {
+   "tree": [
+    -10,
+    -18,
+    5,
+    2.5
+   ]
+  },
+  {
+   "tree": [
+    10,
+    -18,
+    5,
+    2.5
+   ]
+  },
+  {
+   "box": [
+    -14,
+    2.4,
+    0.2,
+    30,
+    3.4,
+    0.1
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -6,
+    10,
+    0.5,
+    5,
+    1.5,
+    0.3
+   ],
+   "m": "sage"
+  }
+ ],
+ "notes": "The article's only exterior is the dusk rear view (sheet1, photo 08): a cream-stucco, two-storey Mediterranean house with arcaded ground and upper loggias (arches lit warm from inside), a low-pitched red-tile hip roof, a small red-tile pavilion with arched openings at the east end of a long deck, a dark-green-tiled pool with a raised spa, palms along the water and a dense clipped hedge. Everything else is interiors: a soaring circular foyer with a sculpted marble stair and a glass-balustraded oculus (modelled only as a low drum with a dome behind the roof, a guess), wide oak floors. Round 1 had a flat front and no foyer volume; round 2 added the loggias set in recesses with piers; round 3 pulled the foyer drum up through the roof as a short cylinder with a low dome, then added the hip roof, dome, pool coping and the pavilion. Guessed: all dimensions and plan (a long rectangular block), the foyer's outward form, the front (north) side, the pool size, the number and spacing of arches (drawn as piers, not round arches), the pavilion's position, the waterfront (not drawn). Placed at its town only (Miami Beach); nothing in the article places the house closer."
+}

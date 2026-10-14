@@ -101,6 +101,7 @@ def poses():
 
 SEAMS = {"neck": (32.0, 21.6), "hip": (20.0, 22.4)}
 CHIMERA_SCALE = 1.0
+CHIMERA_SLOT_K = {"hind": 0.8}   # its long foot, as a chimera's hindquarters, ran twice the length of a bison's body
 
 
 def court_parts(k):

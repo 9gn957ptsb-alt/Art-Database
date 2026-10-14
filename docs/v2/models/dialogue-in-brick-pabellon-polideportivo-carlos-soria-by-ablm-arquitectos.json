@@ -1,0 +1,330 @@
+{
+ "slug": "dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos",
+ "name": "Pabellón Polideportivo Carlos Soria",
+ "voxel": 0.6,
+ "site": [
+  64,
+  56
+ ],
+ "ground": "paving",
+ "parts": [
+  {
+   "box": [
+    -32,
+    14,
+    0,
+    64,
+    6,
+    0.3
+   ],
+   "m": "paving"
+  },
+  {
+   "box": [
+    -32,
+    20,
+    0,
+    64,
+    8,
+    0.3
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -32,
+    -28,
+    0,
+    64,
+    14,
+    0.3
+   ],
+   "m": "grass"
+  },
+  {
+   "box": [
+    -10,
+    -28,
+    0,
+    28,
+    14,
+    0.4
+   ],
+   "m": "bluetile"
+  },
+  {
+   "box": [
+    -22,
+    -12,
+    0,
+    44,
+    24,
+    4.6
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -22,
+    -12,
+    4.6,
+    44,
+    24,
+    0.5
+   ],
+   "m": "concrete"
+  },
+  {
+   "box": [
+    -22,
+    -12,
+    5.1,
+    28,
+    24,
+    7.4
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    -22.01,
+    -11.5,
+    5.4,
+    0.1,
+    23,
+    6.0
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    6,
+    -12,
+    5.1,
+    16,
+    24,
+    6.4
+   ],
+   "m": "brick"
+  },
+  {
+   "box": [
+    -22,
+    -12,
+    12.5,
+    28,
+    24,
+    0.5
+   ],
+   "m": "steel"
+  },
+  {
+   "box": [
+    6,
+    -12,
+    11.5,
+    16,
+    24,
+    0.5
+   ],
+   "m": "concrete"
+  },
+  {
+   "cut": [
+    8,
+    12,
+    0,
+    8,
+    2,
+    3.4
+   ]
+  },
+  {
+   "box": [
+    8,
+    8,
+    0,
+    8,
+    4,
+    3.4
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -18,
+    11.9,
+    1.0,
+    6,
+    0.4,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -4,
+    11.9,
+    1.0,
+    5,
+    0.4,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    17,
+    11.9,
+    1.0,
+    3,
+    0.4,
+    2.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -22,
+    -12.4,
+    1.0,
+    6,
+    0.4,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -6,
+    -12.4,
+    1.0,
+    6,
+    0.4,
+    2.2
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -22.4,
+    -4,
+    1.0,
+    0.4,
+    6,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    10,
+    -12.4,
+    1.0,
+    10,
+    0.4,
+    2.2
+   ],
+   "m": "glass"
+  },
+  {
+   "shed": [
+    8,
+    -18,
+    0,
+    12,
+    6,
+    2.2
+   ],
+   "rise": "+y",
+   "m": "concrete"
+  },
+  {
+   "box": [
+    -32,
+    -14,
+    0,
+    64,
+    0.5,
+    1.4
+   ],
+   "m": "metal"
+  },
+  {
+   "tree": [
+    -24,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    -14,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    -2,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    8,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    20,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    28,
+    17,
+    7,
+    2.6
+   ],
+   "shape": "bare"
+  },
+  {
+   "tree": [
+    -28,
+    -20,
+    7,
+    2.8
+   ]
+  },
+  {
+   "shed": [
+    -22,
+    -12,
+    13,
+    28,
+    24,
+    1.4
+   ],
+   "rise": "+x",
+   "thick": 0.6,
+   "m": "slate"
+  }
+ ],
+ "notes": "Photos show: a single-storey brick base (double hollow brick, ~4.6 m) wrapping the whole plan with big sliding-glass openings and a recessed, canopied entrance on the street (south) side; above it a tall hall volume clad in translucent polycarbonate (milky white-blue) on the west/north, with a brick-faced upper block at the east end; flat, thin roof edge; blue court and pitch to the north, a ramp up to a north door, pollarded street trees. Interior (steel trusses, polycarbonate clerestory, blue floor) not modelled. Guessed: plan size (~44x24 m base, footprint area 1,914 m2 from ArchDaily), heights, which end the brick block is, ramp position, orientation. Aerial photo suggests the hall is at the street corner; placement approximate. Rounds 2-3: hall raised to ~2.7x the base as in the street photos, east brick block raised to match, shallow mono-pitch zinc roof added over the hall (photo of the corner shows a sloping top edge)."
+}

@@ -1,6 +1,102 @@
 {
   "buildings": [
     {
+      "title": "Cityscape – Casa CM by MZ Architects",
+      "name": "Casa CM",
+      "slug": "cityscape-casa-cm-by-mz-architects",
+      "url": "https://www.thearchitecturalauthority.com/article/cityscape-casa-cm-by-mz-architects",
+      "city": "Río Ceballos",
+      "country": "Argentina",
+      "where": "Río Ceballos, Argentina",
+      "lat": -31.1709,
+      "lon": -64.3161,
+      "precision": "town"
+    },
+    {
+      "title": "Timeless Architecture – University of Jyväskylä Campus by Alvar Aalto",
+      "name": "University of Jyväskylä Campus",
+      "slug": "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto",
+      "url": "https://www.thearchitecturalauthority.com/article/timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto",
+      "city": "Jyväskylä",
+      "country": "Finland",
+      "where": "Jyväskylä, Finland",
+      "lat": 62.23643,
+      "lon": 25.7323,
+      "precision": "exact"
+    },
+    {
+      "title": "Design and Functionality – Justiniano Building by S_ Estudio",
+      "name": "Justiniano Building",
+      "slug": "design-and-functionality-justiniano-building-by-s-estudio",
+      "url": "https://www.thearchitecturalauthority.com/article/design-and-functionality-justiniano-building-by-s-estudio",
+      "city": "Córdoba",
+      "country": "Argentina",
+      "where": "Córdoba, Argentina",
+      "lat": -31.4167,
+      "lon": -64.1834,
+      "precision": "town"
+    },
+    {
+      "title": "A Lakeside Home Grounded in Oak – Minnesota Residence by RIVA Spain",
+      "name": "Minnesota Residence",
+      "slug": "a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain",
+      "url": "https://www.thearchitecturalauthority.com/article/a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain",
+      "city": "",
+      "country": "United States",
+      "where": "Minnesota, United States",
+      "lat": 45.9897,
+      "lon": -94.6113,
+      "precision": "region"
+    },
+    {
+      "title": "Design Excellence – The Hotel Azur Lobby by Estudio Montevideo",
+      "name": "The Hotel Azur Lobby",
+      "slug": "design-excellence-the-hotel-azur-lobby-by-estudio-montevideo",
+      "url": "https://www.thearchitecturalauthority.com/article/design-excellence-the-hotel-azur-lobby-by-estudio-montevideo",
+      "city": "Córdoba",
+      "country": "Argentina",
+      "where": "Córdoba, Argentina",
+      "lat": -31.4167,
+      "lon": -64.1834,
+      "precision": "town"
+    },
+    {
+      "title": "Articulated Elegance – Casa Berman by Barrionuevo Villanueva Arquitectos",
+      "name": "Casa Berman",
+      "slug": "articulated-elegance-casa-berman-by-barrionuevo-villanueva-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/articulated-elegance-casa-berman-by-barrionuevo-villanueva-arquitectos",
+      "city": "Buenos Aires",
+      "country": "Argentina",
+      "where": "Buenos Aires, Argentina",
+      "lat": -34.6096,
+      "lon": -58.3888,
+      "precision": "town"
+    },
+    {
+      "title": "Dialogue in Brick – Pabellon Polideportivo Carlos Soria by ABLM Arquitectos",
+      "name": "Pabellon Polideportivo Carlos Soria",
+      "slug": "dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos",
+      "city": "Ávila",
+      "country": "Spain",
+      "where": "Ávila, Spain",
+      "lat": 40.6572,
+      "lon": -4.6627,
+      "precision": "town"
+    },
+    {
+      "title": "Golden Continuity – Allison Island Residence by RIVA Spain",
+      "name": "Allison Island Residence",
+      "slug": "golden-continuity-allison-island-residence-by-riva-spain",
+      "url": "https://www.thearchitecturalauthority.com/article/golden-continuity-allison-island-residence-by-riva-spain",
+      "city": "Miami Beach",
+      "country": "United States",
+      "where": "Miami Beach, United States",
+      "lat": 25.7929,
+      "lon": -80.1353,
+      "precision": "town"
+    },
+    {
       "title": "Seamless Horizons – Balboa by RIVA Spain",
       "name": "Balboa",
       "slug": "seamless-horizons-balboa-by-riva-spain",

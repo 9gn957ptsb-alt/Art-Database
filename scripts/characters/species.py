@@ -40,8 +40,8 @@ CANID = dict(L=11, legs=8.2, depth=3.0, neck=4.0, neck_up=38, head=2.5, snout=3.
              tail="brush", tail_len=8, tail_up=-25, tail_w=1.5, gait="trot", rest="sit", marks=("belly",))
 FELID = dict(L=11.5, legs=7.4, depth=3.0, neck=3.0, neck_up=22, head=2.4, snout=1.3, snout_w=1.3, face="short", ears="round",
              ear=1.7, tail="long", tail_len=10, tail_up=-15, tail_w=1.0, gait="walk", rest="lie", marks=("belly",))
-URSID = dict(L=12, legs=6.8, depth=4.4, neck=2.4, neck_up=12, head=2.8, snout=2.4, snout_w=1.4, ears="round", ear=1.5,
-             tail="short", gait="walk", rest="lie", hump=0.25, leg_w=1.8, marks=())
+URSID = dict(L=12, legs=6.8, depth=4.4, neck=2.4, neck_up=-6, head=2.8, snout=2.4, snout_w=1.4, ears="round", ear=1.5,
+             tail="short", gait="walk", rest="lie", hump=0.25, leg_w=1.8, foot=1.5, marks=())
 CERVID = dict(L=11, legs=10, depth=3.1, neck=5, neck_up=55, head=2.1, snout=2.8, snout_w=0.95, ears="long", ear=2.0,
               tail="short", gait="trot", rest="lie", grazer=True, hoof=True, horns="antler", horn=1.0, leg_w=0.95, marks=("belly",))
 BOVINE = dict(L=13, legs=7.8, depth=4.3, neck=3, neck_up=18, head=2.6, snout=2.6, snout_w=1.4, ears="side", ear=1.6,
@@ -50,8 +50,9 @@ ANTELOPE = dict(L=10, legs=10, depth=2.8, neck=4.6, neck_up=55, head=2.0, snout=
                 tail="short", gait="trot", rest="lie", grazer=True, hoof=True, horns="lyre", horn=1.0, leg_w=0.85, marks=("belly",))
 CAPRID = dict(L=10.5, legs=8, depth=3.5, neck=3.6, neck_up=45, head=2.2, snout=2.2, snout_w=1.0, ears="side", ear=1.4,
               tail="short", gait="walk", rest="lie", grazer=True, hoof=True, horns="curve", horn=1.0, leg_w=1.1, marks=("belly",))
-SUID = dict(L=11, legs=5.8, depth=4.2, neck=1.5, neck_up=0, head=3.0, snout=3.6, snout_w=1.4, snout_drop=0.5, ears="point",
-            ear=1.8, tail="thin", tail_len=3, tail_up=-70, tail_w=0.6, gait="trot", rest="lie", grazer=True, hoof=True, leg_w=1.2, marks=())
+SUID = dict(L=11, legs=5.8, depth=4.2, neck=1.5, neck_up=-10, head=3.0, snout=3.6, snout_w=1.4, snout_drop=0.5, ears="point",
+            ear=1.8, tail="thin", tail_len=4, tail_up=62, tail_w=0.6, gait="trot", rest="lie", grazer=True, hoof=True, leg_w=1.2,
+            rise=0.14, haunch=0.9, chest=1.15, marks=())
 EQUID = dict(L=12, legs=10, depth=3.6, neck=6, neck_up=50, head=2.2, snout=3.6, snout_w=1.2, ears="long", ear=1.5,
              tail="long", tail_len=7, tail_up=-65, tail_w=1.3, mane=1.0, hoof=True, grazer=True, gait="trot", rest="lie", marks=())
 CAMELID = dict(L=10, legs=11, depth=3.0, neck=7, neck_up=72, head=1.9, snout=2.4, snout_w=1.0, ears="long", ear=1.6,
@@ -104,9 +105,11 @@ def B(base, name, latin, wiki, c, **over):
 SPECIES = {
     # ---- hunters ---------------------------------------------------------------------------
     "wolves": Q(CANID, "Grey wolf", "Canis lupus", "Wolf", col("#8c8378", "#ddd5c6", "#3b342e", "#c9a24a"), size=0.95,
-                marks=("belly", "saddle", "muzzle")),
+                tail_up=8, tail_len=8.5, tail_w=1.9, ruff=1.0, head=2.7, leg_w=1.25, foot=1.3,
+                marks=("belly", "saddle", "muzzle", "cheeks", "tailtip_dark")),
     "grey wolves": Q(CANID, "Grey wolf", "Canis lupus", "Wolf", col("#8a8176", "#ddd6c8", "#3a332d", "#c9a24a"), size=0.95,
-                     marks=("belly", "saddle", "muzzle")),
+                     tail_up=8, tail_len=8.5, tail_w=1.9, ruff=1.0, head=2.7, leg_w=1.25, foot=1.3,
+                     marks=("belly", "saddle", "muzzle", "cheeks", "tailtip_dark")),
     "Indian wolves": Q(CANID, "Indian wolf", "Canis lupus pallipes", "Indian wolf", col("#a78a68", "#e2d4bb", "#4a3b2c", "#c9a24a"), size=0.85,
                        marks=("belly", "muzzle")),
     "Ethiopian wolves": Q(CANID, "Ethiopian wolf", "Canis simensis", "Ethiopian wolf", col("#b5612b", "#f1e6d2", "#2e2420", "#8a6a3a"), size=0.85,
@@ -168,7 +171,7 @@ SPECIES = {
     "a spotted hyena clan": Q(CANID, "Spotted hyena", "Crocuta crocuta", "Spotted hyena", col("#a88c66", "#d8c8a8", "#2a221a"), size=0.95,
                               ears="round", ear=1.8, tail="tuft", tail_len=5, depth=3.4, sag=-0.6, marks=("spots", "muzzle_dark")),
     "black bears": Q(URSID, "American black bear", "Ursus americanus", "American black bear", col("#2c2724", "#7a6650", "#1a1716", "#5a4030"),
-                     size=0.95, marks=("muzzle",)),
+                     size=0.95, hump=0.0, rise=-0.05, ear=1.9, head=3.0, marks=("muzzle",)),
     "Asiatic black bears": Q(URSID, "Asian black bear", "Ursus thibetanus", "Asian black bear", col("#2a2624", "#e6dcc6", "#141210"),
                              size=0.95, marks=("bib",)),
     "brown bears": Q(URSID, "Brown bear", "Ursus arctos", "Brown bear", col("#6e4c30", "#a07c58", "#2a1e16", "#3a2a1e"), size=1.08, hump=0.6),
@@ -179,8 +182,9 @@ SPECIES = {
                ear=1.4, snout=2.0, tail="brush", tail_len=6, gait="bound", rest="sit", marks=("bib",)),
 
     # ---- herds ------------------------------------------------------------------------------
-    "wild boar": Q(SUID, "Wild boar", "Sus scrofa", "Wild boar", col("#4e3e30", "#8a7660", "#1e1814", "#2a2018"), size=0.9, mane=0.7,
-                   tusks=0.5, marks=("dorsal",)),
+    "wild boar": Q(SUID, "Wild boar", "Sus scrofa", "Wild boar", col("#4e3e30", "#8a7660", "#1e1814", "#2a2018"), size=0.9, mane=0.8,
+                   depth=3.8, legs=6.2, head=2.8, snout=4.7, snout_w=0.95, neck_w=2.5, rise=0.26, hump=0.16, haunch=0.8, chest=1.15, tusks=0.5,
+                   marks=("dorsal", "mane_dark")),
     "collared peccaries": Q(SUID, "Collared peccary", "Dicotyles tajacu", "Collared peccary", col("#4a4440", "#b8b0a2", "#1e1a18"), size=0.7,
                             tail="none", marks=("bib",)),
     "bushpigs": Q(SUID, "Bushpig", "Potamochoerus larvatus", "Bushpig", col("#8a4a28", "#d8cfc0", "#2a1e18"), size=0.82, marks=("dorsal",)),

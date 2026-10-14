@@ -1,0 +1,623 @@
+{
+ "slug": "a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain",
+ "name": "Minnesota Residence",
+ "voxel": 0.6,
+ "site": [
+  62,
+  56
+ ],
+ "ground": "grass",
+ "parts": [
+  {
+   "shed": [
+    -31,
+    -28,
+    0,
+    62,
+    20,
+    5
+   ],
+   "rise": "-y",
+   "m": "grass"
+  },
+  {
+   "box": [
+    -31,
+    -8,
+    0,
+    62,
+    20,
+    0.3
+   ],
+   "m": "grass"
+  },
+  {
+   "pool": [
+    -31,
+    16.5,
+    62,
+    11.5
+   ]
+  },
+  {
+   "box": [
+    -31,
+    15.2,
+    0,
+    62,
+    1.4,
+    0.9
+   ],
+   "m": "rubble"
+  },
+  {
+   "box": [
+    -14,
+    -8,
+    0,
+    28,
+    11,
+    3.2
+   ],
+   "m": "white"
+  },
+  {
+   "cut": [
+    -12,
+    2,
+    0.1,
+    24,
+    1.6,
+    2.8
+   ]
+  },
+  {
+   "box": [
+    -12,
+    2.3,
+    0.1,
+    24,
+    0.4,
+    2.8
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -12,
+    1.2,
+    0.1,
+    24,
+    0.5,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -12.2,
+    2.0,
+    0.1,
+    0.3,
+    0.6,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -4.2,
+    2.0,
+    0.1,
+    0.3,
+    0.6,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    3.8,
+    2.0,
+    0.1,
+    0.3,
+    0.6,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    11.8,
+    2.0,
+    0.1,
+    0.3,
+    0.6,
+    2.8
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -14,
+    -8,
+    3.2,
+    26,
+    10,
+    3.0
+   ],
+   "m": "white"
+  },
+  {
+   "cut": [
+    -11,
+    1.6,
+    3.3,
+    20,
+    0.8,
+    2.6
+   ]
+  },
+  {
+   "box": [
+    -11,
+    1.9,
+    3.3,
+    20,
+    0.35,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -11,
+    1.0,
+    3.3,
+    20,
+    0.5,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -11.2,
+    1.6,
+    3.3,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -1.2,
+    1.6,
+    3.3,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    8.8,
+    1.6,
+    3.3,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -12,
+    2.4,
+    3.0,
+    22,
+    3.6,
+    0.4
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -12,
+    5.6,
+    3.4,
+    22,
+    0.15,
+    1.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -11.5,
+    5.4,
+    0,
+    0.3,
+    0.3,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -4,
+    5.4,
+    0,
+    0.3,
+    0.3,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    3.5,
+    5.4,
+    0,
+    0.3,
+    0.3,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    9.5,
+    5.4,
+    0,
+    0.3,
+    0.3,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -9,
+    -7,
+    6.2,
+    22,
+    6.5,
+    3.2
+   ],
+   "m": "dark"
+  },
+  {
+   "cut": [
+    -7,
+    -0.6,
+    6.4,
+    16,
+    0.8,
+    2.6
+   ]
+  },
+  {
+   "box": [
+    -7,
+    -0.3,
+    6.4,
+    16,
+    0.35,
+    2.6
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    -7,
+    -1.4,
+    6.4,
+    16,
+    0.5,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -7.2,
+    -0.6,
+    6.4,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    0.8,
+    -0.6,
+    6.4,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    8.8,
+    -0.6,
+    6.4,
+    0.3,
+    0.7,
+    2.6
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -8,
+    -0.5,
+    6.2,
+    20,
+    1.8,
+    0.3
+   ],
+   "m": "dark"
+  },
+  {
+   "shed": [
+    -10,
+    -8,
+    9.4,
+    25,
+    9.5,
+    1.3
+   ],
+   "rise": "-y",
+   "thick": 0.7,
+   "m": "slate"
+  },
+  {
+   "gable": [
+    -14,
+    -8.5,
+    6.2,
+    8,
+    7,
+    1.6
+   ],
+   "axis": "y",
+   "m": "slate"
+  },
+  {
+   "box": [
+    -14,
+    -8.5,
+    3.2,
+    8,
+    7,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "box": [
+    -13,
+    -4,
+    0,
+    0.8,
+    0.8,
+    0.1
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    14.5,
+    -4,
+    0,
+    2.5,
+    7,
+    0.4
+   ],
+   "m": "timber"
+  },
+  {
+   "box": [
+    -11,
+    11,
+    0,
+    7,
+    4,
+    3.0
+   ],
+   "m": "dark"
+  },
+  {
+   "gable": [
+    -11.4,
+    10.6,
+    3.0,
+    7.8,
+    4.8,
+    2.2
+   ],
+   "axis": "x",
+   "m": "slate"
+  },
+  {
+   "box": [
+    -8,
+    10.9,
+    0.2,
+    3.5,
+    0.2,
+    2.0
+   ],
+   "m": "glass"
+  },
+  {
+   "box": [
+    3,
+    16,
+    0.5,
+    2,
+    11,
+    0.25
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    -24,
+    19,
+    0.4,
+    10,
+    6,
+    3.0
+   ],
+   "m": "white"
+  },
+  {
+   "box": [
+    4,
+    8,
+    0,
+    4,
+    0.4,
+    0.4
+   ],
+   "m": "stone"
+  },
+  {
+   "box": [
+    8,
+    4,
+    0.1,
+    1,
+    14,
+    0.15
+   ],
+   "m": "wood"
+  },
+  {
+   "box": [
+    12,
+    5,
+    0.1,
+    1.2,
+    8,
+    0.1
+   ],
+   "m": "timber"
+  },
+  {
+   "tree": [
+    -24,
+    6,
+    16,
+    3.8
+   ]
+  },
+  {
+   "tree": [
+    22,
+    8,
+    15,
+    3.5
+   ]
+  },
+  {
+   "tree": [
+    -6,
+    -17,
+    17,
+    4.5
+   ]
+  },
+  {
+   "tree": [
+    8,
+    -18,
+    18,
+    4.5
+   ]
+  },
+  {
+   "tree": [
+    -26,
+    -14,
+    18,
+    4.0
+   ]
+  },
+  {
+   "tree": [
+    26,
+    -16,
+    17,
+    4.0
+   ]
+  },
+  {
+   "blob": [
+    -3,
+    6,
+    0.4,
+    1.4,
+    1.0,
+    0.5
+   ],
+   "m": "plant"
+  },
+  {
+   "blob": [
+    7,
+    8,
+    0.4,
+    1.6,
+    1.0,
+    0.5
+   ],
+   "m": "plant"
+  },
+  {
+   "tree": [
+    -27,
+    -4,
+    19,
+    4.2
+   ]
+  },
+  {
+   "tree": [
+    24,
+    -3,
+    20,
+    4.2
+   ]
+  },
+  {
+   "tree": [
+    -28,
+    8,
+    15,
+    3.6
+   ]
+  },
+  {
+   "box": [
+    -31,
+    9,
+    0.1,
+    62,
+    6,
+    0.12
+   ],
+   "m": "grass"
+  }
+ ],
+ "notes": "Photos 02, 03 and the lake views (sheet0 and sheet2): from the water the place stands in layers - a stone-edged shore with a long wood dock, a small dark boathouse with a pitched slate roof and big glass doors on the lawn, then the house climbing a sloping, treed bank. The house reads as three storeys on the lake side: a lighter (white render) walk-out level with sliding glass under a deck, a white middle level with full-width glazing opening to a furnished timber terrace with a black cable-rail and slender black posts, and a dark upper level with a glazed band and a balcony; low pitched slate roofs, a gable pointing at the lake on the west end. Arrival side (north) is more closed, dark upper walls over light ones, and there is a stair of wood down the east side of the lawn. Interiors (kitchen island, floating stair, laundry) were not modelled. Round 1 render showed the house as three equal slabs with a flat top; round 2 added the gable roofs and wing; round 3 swapped the upper gable (which buried the dark walls) for a thin low slate roof, widened the lawn to the shore, deepened the terrace glass recess and moved the boathouse and dock to the lawn edge. Guessed: footprint and every dimension (scaled by storey height 3 m), orientation (lake south), the extent of the dark upper level, the number of trees and their positions, the east stair (shown only as a walk). Placed at its town only; no site more exact than the region."
+}
