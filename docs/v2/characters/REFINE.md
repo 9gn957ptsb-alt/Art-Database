@@ -3,7 +3,8 @@
 The artist, 1 Oct 2026: "Just like there is a daily update through the
 architecture (daily) session in which a certain number of buildings get
 updated every day, I want the same rules to apply to a daily update of
-characters." A scheduled session follows this page each time it runs, on the
+characters." A scheduled pass follows this page each time it runs (since 14 Oct
+2026 a helper the artist's own conversation starts in its own worktree), on the
 branch `claude/artist-website-dev-s92irf` — pushing there publishes the
 Artist Website.
 
