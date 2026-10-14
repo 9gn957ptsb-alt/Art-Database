@@ -4,63 +4,72 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Rocket</title>
-  <meta name="description" content="A city of the Artist Website in blocks, and the four pieces of your rocket somewhere in it.">
+  <meta name="description" content="Escapes made from the Artist Website: one of its museums, buildings or cities in blocks, the four pieces of your rocket hidden behind its works, and the clues to which.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="rocket.css">
 </head>
 <body>
-  <canvas id="view" aria-label="The city in blocks. Move with the stick or W A S D, drag to look, tap a block to break it or place one."></canvas>
+  <canvas id="view" aria-label="The place in blocks. Move with the stick or W A S D, drag to look, tap a work to read its label, tap a block to break it or place one."></canvas>
   <canvas id="hud" aria-hidden="true"></canvas>
-
   <header class="top">
     <p class="where" id="where"></p>
+    <p class="alarms" id="alarms" hidden></p>
     <ul class="pieces" id="pieces" aria-label="The pieces of your rocket"></ul>
   </header>
   <button class="pill corner" id="notes-btn">Notes</button>
-  <aside class="notes" id="notes" hidden>
-    <p class="eyebrow">Where they fell</p>
-    <ol id="notes-list"></ol>
-  </aside>
+  <aside class="notes" id="notes" hidden><p class="eyebrow">What you know</p><div id="notes-list"></div></aside>
   <p class="near" id="near" hidden></p>
-
+  <p class="tag" id="tag" hidden></p>
+  <section class="label" id="label" hidden aria-label="The work's label">
+    <img class="l-pic" id="l-pic" alt="" referrerpolicy="no-referrer">
+    <div class="l-text">
+      <p class="l-t"></p>
+      <p class="l-by"></p>
+      <p class="l-m"></p>
+      <p class="l-room"></p>
+      <p class="l-done" id="behind-done" hidden></p>
+      <div class="l-acts"><button class="pill solid" id="behind">Look behind it</button><button class="pill" id="leave">Leave it</button></div>
+    </div>
+  </section>
   <div class="foot">
-    <div class="acts">
-      <button class="pill solid" id="build" hidden>Build the rocket</button>
-      <button class="pill solid" id="launch" hidden>Launch</button>
-    </div>
-    <div class="bar">
-      <button class="pill" id="mode" aria-pressed="false">Break</button>
-      <div class="hotbar" id="hotbar" role="group" aria-label="Blocks to place"></div>
-    </div>
+    <div class="acts"><button class="pill solid" id="build" hidden>Build the rocket</button><button class="pill solid" id="launch" hidden>Launch</button></div>
+    <div class="bar"><button class="pill" id="mode" aria-pressed="false">Break</button><div class="hotbar" id="hotbar" role="group" aria-label="Blocks to place"></div></div>
   </div>
   <button class="jump" id="jump" aria-label="Jump">↑</button>
   <div class="joy" id="joy" hidden><i></i></div>
   <div class="toast" id="toast" role="status"></div>
-
   <section class="start" id="start">
     <div class="start-card">
-      <p class="eyebrow">A city of the Artist Website, in blocks</p>
+      <p class="eyebrow">Escapes made from the Artist Website</p>
       <h1>Rocket</h1>
-      <p class="lede">You come down hard in a city and wake under a tree beside your capsule. Four pieces of your rocket are somewhere in the streets, on the roofs, under the parks and in the water. Find them, build the rocket at the wreck, and launch.</p>
-      <label for="city">The city</label>
-      <select id="city"></select>
-      <button class="pill solid big" id="begin" disabled>Begin</button>
-      <p class="status" id="status">Loading the cities</p>
-      <p class="keys">On a phone: the stick on the left, drag to look, tap a block. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place.</p>
+      <p class="lede">You come down hard and wake under a tree beside your capsule. The four pieces of your rocket are somewhere in the place: behind four of the works hung in a museum, on a building's roof and in its garden, or across a city. Read the notes, work out which work hides which piece, build the rocket at the wreck, and launch.</p>
+      <div class="kinds" role="group" aria-label="What to escape from">
+        <button class="pill" data-kind="museum" aria-pressed="true">A museum</button>
+        <button class="pill" data-kind="building" aria-pressed="false">A building</button>
+        <button class="pill" data-kind="city" aria-pressed="false">A city</button>
+      </div>
+      <label for="place">The place</label>
+      <select id="place"></select>
+      <p class="preview" id="preview"></p>
+      <div class="go"><button class="pill solid big" id="begin" disabled>Begin</button><button class="pill" id="surprise">Surprise me</button></div>
+      <p class="status" id="status">Loading the places</p>
+      <p class="keys">Tap a work to read its label and look behind it; three wrong looks and the guards put you out. On a phone: the stick on the left, drag to look, tap. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes.</p>
     </div>
   </section>
-
   <section class="start" id="end" hidden>
     <div class="start-card">
       <p class="eyebrow">Lift-off</p>
       <h2></h2>
       <p class="lede"></p>
-      <button class="pill solid big" id="again">Play another city</button>
+      <button class="pill solid big" id="again">Another adventure here</button>
+      <a class="pill" href="./">Somewhere else</a>
     </div>
   </section>
-
+  <script src="../../v2/models.js"></script>
+  <script src="adventure.js"></script>
+  <script src="place.js"></script>
   <script src="rocket.js"></script>
 </body>
 </html>
