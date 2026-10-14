@@ -91,6 +91,21 @@
    "place": "the bulb fields round Lisse, Netherlands", "lat": 52.27, "lon": 4.55, "climate": "temperate maritime, cool springs of about 10 °C; the bulbs need a cold winter",
    "scene": "Every April he lays out the beds, one colour to a row, each tulip lit from one side with its own blue shadow; when the flowers are open he cuts their heads, so the bulbs keep their strength.",
    "after": "Jacques Tati", "performance": "Mon Oncle", "year": 1958,
-   "why": "Monsieur Hulot, deadpan among bright displays and shop-window modernity (Special Jury Prize at Cannes 1958; the Oscar for Best Foreign Language Film).", "action": "cut"}
+   "why": "Monsieur Hulot, deadpan among bright displays and shop-window modernity (Special Jury Prize at Cannes 1958; the Oscar for Best Foreign Language Film).", "action": "cut"},
+  {"plant": "bee orchid", "artist": "KAWS", "name": "Apifera", "role": "a lonely giant who wears another's face so as to be loved",
+   "place": "the chalk downs of Kent, England", "lat": 51.2, "lon": 0.9, "climate": "temperate maritime; thin, dry chalk grassland, flowering in June and July, and not every year",
+   "scene": "Each June he lies on his back on the downs with his arms over his eyes, among orchids dressed as bees; the bees go to the orchids and not to him, so he gets up and dresses as a bee.",
+   "after": "Jack Lemmon", "performance": "Some Like It Hot", "year": 1959,
+   "why": "Jerry, a musician on the run who becomes Daphne, in a dress and heels, to hide in an all-girl band, and comes to like it (the Golden Globe for Best Actor in a Musical or Comedy and the BAFTA for Best Foreign Actor, both 1960).", "action": "swap"},
+  {"plant": "garden rose", "artist": "Honoré Daumier", "name": "Macaire", "role": "a swindler in a top hat who sells every Sunday visitor the same rose",
+   "place": "the Roseraie de L'Haÿ-les-Roses, south of Paris", "lat": 48.78, "lon": 2.34, "climate": "oceanic, mild and damp; the roses flower from late May into July",
+   "scene": "On Sundays he stands among the beds in a stovepipe hat, cuts a rose for each Parisian who stops and takes their coin, and when they turn away ties it back on its stem; from the path the owners groan.",
+   "after": "Pierre Brasseur", "performance": "Children of Paradise", "year": 1945,
+   "why": "Frédérick Lemaître, the actor of the Boulevard du Crime who sends up the mediocre play he is cast in; Lemaître's Robert Macaire is the swindler Daumier drew for Le Charivari (Caricaturana, from 1836). The film earned Jacques Prévert an Oscar nomination for its screenplay (1947) and was voted the best French film ever made in a 1995 poll of 600 French critics and professionals.", "action": "cut"},
+  {"plant": "buddleia", "artist": "Banksy", "name": "Davidii", "role": "a painter nobody has seen, known only by what turns up on the walls",
+   "place": "the railway arches of south London", "lat": 51.49, "lon": -0.1, "climate": "temperate maritime; it roots in mortar and brick and flowers from July to September, full of butterflies",
+   "scene": "At night he is only a shadow on the brick of the arches; by morning there is a stencil on the wall and a buddleia rooted in the mortar beside it, and he throws its purple spikes to the crowd that comes to look.",
+   "after": "Orson Welles", "performance": "The Third Man", "year": 1949,
+   "why": "Harry Lime, whom everyone in post-war Vienna believes dead, seen at last as a face in a doorway and a shadow on the walls (the Grand Prize at Cannes 1949, the BAFTA for Best British Film, the Oscar for Robert Krasker's black-and-white photography, and first in the BFI's 1999 list of the best British films).", "action": "fling"}
  ]
 }

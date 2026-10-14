@@ -56,6 +56,15 @@
    "form": "radial", "petals": 34, "size": 8, "flower": [[86, 52, 22], [244, 190, 24], [250, 222, 92]]},
   {"artist": "Wayne Thiebaud", "plant": "tulip", "latin": "Tulipa gesneriana", "tie": "work",
    "why": "Tulip Sunday (2015), a sugar-lift aquatint with drypoint, among Aries's saved works: tulips set out in a row as his Display Cakes (1963) are set out in a case.",
-   "form": "radial", "petals": 6, "size": 5, "flower": [[52, 30, 40], [222, 72, 88], [246, 150, 140]]}
+   "form": "radial", "petals": 6, "size": 5, "flower": [[52, 30, 40], [222, 72, 88], [246, 150, 140]]},
+  {"artist": "KAWS", "plant": "bee orchid", "latin": "Ophrys apifera", "tie": "process",
+   "why": "Its lip wears the likeness of a bee, as his Companion, first made as a vinyl toy with Bounty Hunter in Tokyo in 1999, wears Mickey Mouse's, its eyes crossed out.",
+   "form": "radial", "petals": 3, "size": 5, "flower": [[104, 64, 40], [224, 150, 180], [244, 206, 220]]},
+  {"artist": "Honoré Daumier", "plant": "garden rose", "latin": "Rosa", "tie": "work",
+   "why": "Allons bon!... voilà qu'elle me cueille une rose... (1846), among Aries's saved works: a bourgeois groans in a garden as a woman reaches into the rose bush; a second saved print, Macédoine, No. 9, has \"Arrière fiston, tu n'auras pas ma rose!\"",
+   "form": "rose", "petals": 13, "size": 5, "flower": [[150, 56, 72], [228, 136, 154], [248, 208, 214]]},
+  {"artist": "Banksy", "plant": "buddleia", "latin": "Buddleja davidii", "tie": "process",
+   "why": "It seeds itself, unasked, into the brick of railway arches and derelict walls (it was among the first plants on London's bombsites after the Blitz), as his stencils turn up unasked on city walls; his Flower Thrower prints are among Aries's saved works.",
+   "form": "spike", "petals": 4, "size": 8, "flower": [[232, 150, 40], [150, 102, 190], [198, 170, 224]]}
  ]
 }
