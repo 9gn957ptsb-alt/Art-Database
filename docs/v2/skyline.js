@@ -98,6 +98,7 @@
   /* ---- the elements ------------------------------------------------------ */
 
   var root = null, canvas = null, light = null, veil = null, names = null, note = null;
+  var under = null, over = null, says = null;     // the ground dial (below): behind the city, before it; the animal's line
   function make() {
     if (root) { return; }
     var stage = document.getElementById("stage"), tiles = document.getElementById("tiles");
@@ -109,6 +110,13 @@
     canvas.setAttribute("role", "img");
     light = el("canvas", "skyline-light");
     light.setAttribute("aria-hidden", "true");
+    under = el("canvas", "skyline-ground skyline-under");
+    under.setAttribute("aria-hidden", "true");
+    over = el("canvas", "skyline-ground skyline-over");
+    over.setAttribute("aria-hidden", "true");
+    says = el("p", "skyline-hand-says");
+    says.setAttribute("aria-live", "polite");
+    says.hidden = true;
     // Going in to a museum, the city round it let go of (in, below).
     veil = el("div", "skyline-veil");
     veil.setAttribute("aria-hidden", "true");
@@ -116,11 +124,14 @@
     names = el("div", "skyline-names");
     // The year and who is here, quietly (not live: it changes with every year the dial passes).
     note = el("p", "skyline-note");
+    root.appendChild(under);
     root.appendChild(canvas);
     root.appendChild(light);
+    root.appendChild(over);
     root.appendChild(veil);
     root.appendChild(names);
     root.appendChild(note);
+    root.appendChild(says);
     // Under the pixel light and whoever comes out of the wave, over the globe.
     stage.insertBefore(root, tiles || null);
     gl = gpuStart();
@@ -482,9 +493,21 @@
   function frameFor(w, h) {
     var D = city.dots, cos = Math.cos(view.heading), sin = Math.sin(view.heading), st = Math.sin(TILT), ct = Math.cos(TILT);
     var tall = (D.lift || 0) * ct;
+    if (ground.on) {
+      // The ring round the block (the ground dial, below), and room for its animal: beside it at the ring's
+      // sides, over it at the far side, under the near side for the first year. In cells: the block's far
+      // corner and its tallest over the middle, or the ring's far side; the ring's near side under it.
+      var Rr = RING * D.span, room = handRoom();
+      var up = Math.max(0.71 * D.span * st + tall, Rr * st), down = Rr * st;
+      var s0 = Math.max(0.01, Math.min((w - 2 * room.side) / (2 * Rr), (h - room.foot) / (up + down),
+                                       (h - room.up - room.foot) / (2 * Rr * st)));
+      var topPx = Math.max((0.71 * D.span * st + tall) * s0, Rr * st * s0 + room.up), botPx = Rr * st * s0 + room.foot;
+      return { scale: s0 * view.zoom, cx0: w / 2 + view.px, cy0: (h - topPx - botPx) / 2 + topPx + view.py,
+               cos: cos, sin: sin, st: st, ct: ct, ring: Rr };
+    }
     var scale = Math.min(w * 0.94 / (D.span * 1.42), h * 0.9 / (D.span * 1.42 * st + tall));
     return { scale: scale * view.zoom, cx0: w / 2 + view.px, cy0: h * 0.5 + tall * scale * 0.382 + view.py,
-             cos: cos, sin: sin, st: st, ct: ct };
+             cos: cos, sin: sin, st: st, ct: ct, ring: 0 };
   }
   function project(f, x, y, z) {
     return { x: f.cx0 + (x * f.cos - y * f.sin) * f.scale, y: f.cy0 + ((x * f.sin + y * f.cos) * f.st - z * f.ct) * f.scale };
@@ -496,7 +519,11 @@
   }
 
   // The dial standing under the middle of the band (a desktop's): the clod keeps above it.
-  function frameH() { var h = band.h; return Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6)); }
+  function frameH() {
+    var h = band.h;
+    // Laid on the ground, the dial takes no room of its own.
+    return ground.on ? h : Math.max(h * 0.62, Math.min(h, dialTop - band.y - 6));
+  }
   function draw() {
     var D = city.dots, w = band.w, h = band.h;
     var f = frameFor(w, frameH());
@@ -1065,6 +1092,209 @@
     g.globalAlpha = 1;
   }
 
+  /* ---- the ground dial ------------------------------------------------------
+
+     The artist, 14 Oct 2026, with four frames of the red fox at the edge of a city's skyline beside the
+     dial's rim: "What if the time dial laid on the same plane the fox walked on and the fox (characters
+     in the website) became the time dial?" So, on a city's skyline, the city's dial lies on its ground: a
+     ring round the city's block in the same true isometric (a circle on the ground, an ellipse on the
+     screen), where now meets the beginning at its front, nearest you; its marks — the years works came
+     here, lit as they are passed, the hub's arcs, a path's stops — outside it, away from the city. Its
+     drawing is the dial's own (land.js, paintDial through groundCtx); the half behind the city is painted
+     under the skyline, so its towers stand in front of it, the half before it over them. The ring is
+     fixed to the screen, not to the ground: the city turns inside it.
+
+     The place's own animal (characters.js, Characters.hand: the native a wave here would bring, after its
+     native artist) is its hand. It walks to the dial's year — round the whole ring the first time, the
+     city rising inside it — trots when time goes fast, walks when it is led slowly, and at now sits at
+     the gap where the ring begins and ends, facing the beginning. Leading it is turning time: drag the
+     animal, or anywhere on the ring (a press there turns the year to it, as on the round dial). A tap on
+     the animal says what it is, or plays and pauses a path; a wheel over it turns time, a crown. The year
+     rides upright beside it (land.js, groundLabel), with the hub's word and readout, and the range under
+     them keeps the keyboard. Under reduced motion it is placed, never trotting. Where the place has no
+     animal drawn, the dial's diamond is the hand. GROUND = false brings the round dial back here. */
+  var GROUND = true;
+  var RING = 0.76;                    // the ring's radius, of the block's side (its corners are at 0.707)
+  var DIAL_GAP = 18 * Math.PI / 180, DIAL_START = -Math.PI / 2 + DIAL_GAP / 2, DIAL_SWEEP = TAU - DIAL_GAP;
+  var SAY_MS = Math.pow(PHI, 5) * 1000;
+  var TROT = 58;                      // characters.js's trot, CSS px a second: a gait's frames at that pace
+  var ground = { on: false, ring: null, hand: null, key: null, box: null, painted: "", scale: 1,
+                 hs: { t: 1, v: 0, dir: -1, phase: 0, last: -1e9, alt: 0, pose: "sit", n: 0, half: "front", x: 0, y: 0, said: 0 } };
+
+  // Room for the animal round the ring (CSS px): beside it at the ring's sides, over the ring's far side,
+  // under the near side (the first year at the gap).
+  function handRoom() {
+    var phone = window.innerWidth <= 720;
+    var b = ground.hand ? ground.hand.box(ground.scale) : null;
+    return { side: b ? Math.max(18, b.w / 2 + 6) : (phone ? 30 : 40), up: b ? b.h + 6 : (phone ? 48 : 62), foot: 18 };
+  }
+  // The animal at a size of its own pixels (whole device pixels a cell, so its dots stay crisp): about 44 px
+  // tall on a phone, 60 on a desktop, a little more as the city is brought nearer.
+  function handScale() {
+    var h = ground.hand;
+    if (!h) { return 1; }
+    var dpr = Math.min(3, window.devicePixelRatio || 1);
+    var want = (window.innerWidth <= 720 ? 44 : 60) * Math.min(PHI, Math.sqrt(view.zoom));
+    var k = Math.max(1, Math.round(want * dpr / h.cells.h));
+    if (k * h.cells.h / dpr < want * 0.8) { k += 1; }
+    return k / (h.cells.cell * dpr);
+  }
+  // Where the ring lies on the screen, from the frame as drawn.
+  function ringNow() {
+    var f = frameNow;
+    return f && f.ring ? { cx: band.x + f.cx0, cy: band.y + f.cy0, R: f.ring * f.scale, st: f.st } : null;
+  }
+  function ringAt(r, t) {
+    var a = DIAL_START + t * DIAL_SWEEP + Math.PI;
+    return { x: r.cx + Math.cos(a) * r.R, y: r.cy + Math.sin(a) * r.R * r.st };
+  }
+  // The animal, each frame: to the dial's year on the ring, its gait by how fast it went there.
+  function stepHand(now, dt) {
+    var r = ground.ring, hs = ground.hs, h = ground.hand;
+    var dv = Land.dial ? Land.dial() : null;
+    var t = dv && typeof dv.t === "number" ? dv.t : 1;
+    var p = ringAt(r, t), p0 = ringAt(r, hs.t);       // on the ring as it lies now: a zoom is not a walk
+    var went = Math.hypot(p.x - p0.x, p.y - p0.y);
+    hs.t = t;
+    var v = dt > 0 ? went / dt * 1000 : 0;
+    hs.v += (v - hs.v) * Math.min(1, dt / 160);
+    if (went > 0.04) {
+      hs.last = now;
+      if (Math.abs(p.x - p0.x) > 0.04) { hs.dir = p.x > p0.x ? 1 : -1; }
+    }
+    var moving = now - hs.last < 160;
+    var mv = h ? h.mv : { fps: 6, speed: 1, lift: 0 };
+    if (moving && !still) {
+      hs.pose = "trot";
+      hs.phase += dt / 1000 * mv.fps * Math.max(0.5, Math.min(2.2, hs.v / (TROT * (mv.speed || 1))));
+      hs.n = Math.floor(hs.phase) % 4;
+    } else if (now < hs.said) {
+      hs.pose = "look"; hs.n = 0;
+    } else {
+      var waited = now - hs.last;
+      hs.pose = still ? (moving || waited < 1600 ? "stand" : "sit") : waited > 4200 ? "sit" : waited > 1600 ? "look" : "stand";
+      hs.n = 0;
+    }
+    // A bird or a butterfly flies its years and comes down to stand.
+    var lift = (mv.lift || 0) * Math.min(PHI, Math.sqrt(view.zoom));
+    hs.alt += ((moving && !still ? lift : 0) - hs.alt) * Math.min(1, dt / 220);
+    if (hs.alt < 0.2) { hs.alt = 0; }
+    hs.x = p.x; hs.y = p.y;
+    hs.half = p.y < r.cy ? "back" : "front";
+    if (h) {
+      var b = h.box(ground.scale);
+      ground.box = { x: p.x, y: p.y, top: p.y - hs.alt - b.foot, w: b.w, h: b.h };
+    } else { ground.box = null; }
+  }
+  // The ring, its marks and its animal on the two canvases: what is behind the middle of the ring under
+  // the city, what is before it over the city. Only when something on them has changed.
+  function paintGround(now) {
+    var r = ground.ring, hs = ground.hs;
+    var k = Math.min(window.devicePixelRatio || 1, 3), W = window.innerWidth, H = window.innerHeight;
+    var key = [Math.round(r.cx * 2), Math.round(r.cy * 2), Math.round(r.R * 2), Land.dialGround.ver(), hs.pose, hs.n, hs.dir,
+               Math.round(hs.x * 2), Math.round(hs.y * 2), Math.round(hs.alt), !!ground.hand, ground.scale,
+               band.x, band.y, band.w, band.h, W, H, k].join("|");
+    if (key === ground.painted) { return; }
+    ground.painted = key;
+    var pw = Math.round(W * k), ph = Math.round(H * k);
+    var ring = { cx: r.cx, cy: r.cy, R: r.R, st: r.st, hand: ground.hand ? ground.box : null };
+    // Only the band is drawn in, so only the band is cleared — but all of it when the band has moved.
+    var bk = [band.x, band.y, band.w, band.h, pw, ph].join(","), whole = bk !== ground.bandKey;
+    ground.bandKey = bk;
+    [[under, "back"], [over, "front"]].forEach(function (pair) {
+      var cv = pair[0], half = pair[1];
+      if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+      var g = cv.getContext("2d");
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      if (whole) { g.clearRect(0, 0, pw, ph); }
+      else { g.clearRect(Math.floor(band.x * k) - 1, Math.floor(band.y * k) - 1, Math.ceil(band.w * k) + 2, Math.ceil(band.h * k) + 2); }
+      g.setTransform(k, 0, 0, k, 0, 0);
+      var y0 = half === "back" ? band.y : Math.max(band.y, r.cy), y1 = half === "back" ? Math.min(band.y + band.h, r.cy) : band.y + band.h;
+      g.save();
+      g.beginPath();
+      g.rect(band.x, band.y, band.w, band.h);
+      g.clip();
+      if (y1 > y0) {
+        g.save();
+        g.beginPath();
+        g.rect(band.x, y0, band.w, y1 - y0);
+        g.clip();
+        Land.dialGround.paint(g, ring);
+        g.restore();
+      }
+      if (ground.hand && hs.half === half) {
+        ground.hand.draw(g, hs.x, hs.y - hs.alt, hs.pose, hs.n, hs.dir, ground.scale);
+      }
+      g.restore();
+    });
+  }
+  function groundClear() {
+    ground.painted = "";
+    ground.bandKey = "";
+    [under, over].forEach(function (cv) {
+      if (cv && cv.width) { var g = cv.getContext("2d"); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); }
+    });
+  }
+  function groundOff() {
+    if (!ground.on) { return; }
+    ground.on = false;
+    ground.ring = null;
+    ground.box = null;
+    if (Land.dialGround) { Land.dialGround.set(null); }
+    groundClear();
+    if (says) { says.hidden = true; }
+    dirty = true;
+    placed = "";
+  }
+  // The place's own animal, read once a city (the same native a wave there would bring).
+  function handFor(key) {
+    if (ground.key === key) { return; }
+    ground.key = key;
+    ground.hand = null;
+    ground.hs.t = 1; ground.hs.last = -1e9; ground.hs.said = 0;
+    if (!window.Characters || !Characters.hand) { return; }
+    Characters.hand(key).then(function (h) {
+      if (ground.key !== key) { return; }
+      ground.hand = h;
+      ground.painted = "";
+      dirty = true;
+    });
+  }
+  // A press on the ground dial: the animal ("hand"), the ring and its marks ("ring"), or neither.
+  function groundHit(x, y, touch) {
+    if (!ground.on || !ground.ring) { return null; }
+    var b = ground.box;
+    if (b && ground.hand) {
+      var px = Math.max(touch ? 4 : 0, ((touch ? 44 : 24) - b.w) / 2), py = Math.max(touch ? 4 : 0, ((touch ? 44 : 24) - b.h) / 2);
+      if (x >= b.x - b.w / 2 - px && x <= b.x + b.w / 2 + px && y >= b.top - py && y <= b.top + b.h + py) { return "hand"; }
+    }
+    var r = ground.ring, du = x - r.cx, dw = (y - r.cy) / r.st;
+    var a = Math.atan2(dw, du), ex = r.cx + Math.cos(a) * r.R, ey = r.cy + Math.sin(a) * r.R * r.st;
+    var d = Math.hypot(x - ex, y - ey) * (Math.hypot(du, dw) < r.R ? -1 : 1);
+    if (y < band.y || y > band.y + band.h || x < band.x || x > band.x + band.w) { return null; }
+    return d >= -(touch ? 16 : 10) && d <= (touch ? 40 : 34) ? "ring" : null;
+  }
+  // A tap on the animal: a path played or paused, else what it is, said beside it a while.
+  function handTapped() {
+    if (window.Dial && Dial.live && Dial.live() && Dial.toggle) { Dial.toggle(); return; }
+    var h = ground.hand, b = ground.box;
+    if (!h || !b) { return; }
+    var now = performance.now();
+    ground.hs.said = now + SAY_MS;
+    ground.painted = "";
+    says.textContent = h.line;
+    says.hidden = false;
+    var sw = says.offsetWidth, sh = says.offsetHeight;
+    var x = b.x - sw / 2, y = b.top - sh - 8;
+    if (y < band.y + 4) { y = b.top + b.h + 8; }
+    x = Math.max(band.x + 8, Math.min(band.x + band.w - sw - 8, x));
+    // By left and top: the rise (land.js) scales the skyline's children by their transforms.
+    says.style.left = Math.round(x) + "px";
+    says.style.top = Math.round(y) + "px";
+    window.clearTimeout(handTapped.t);
+    handTapped.t = window.setTimeout(function () { says.hidden = true; }, SAY_MS);
+  }
+
   /* ---- the column: who walks here, and who was born here ------------------ */
 
   function columnFor(st) {
@@ -1186,11 +1416,20 @@
       pointers[event.pointerId] = { x: event.clientX, y: event.clientY };
       if (!onName) { try { root.setPointerCapture(event.pointerId); } catch (e) {} }
       var ids = Object.keys(pointers);
+      // On the ground dial — its animal, its ring or its marks — a press is the dial's: it turns time.
+      var gh = ids.length === 1 && !onName ? groundHit(event.clientX, event.clientY, event.pointerType !== "mouse") : null;
+      if (gh) {
+        gesture = { kind: "dial", hand: gh === "hand", x: event.clientX, y: event.clientY, at: performance.now() };
+        Land.dialGround.press("down", event, gh === "hand");
+        return;
+      }
       if (ids.length === 1) {
         gesture = { kind: "one", x: event.clientX, y: event.clientY, lx: event.clientX, at: performance.now(), moved: 0,
                     touch: event.pointerType !== "mouse", onName: onName,
                     h0: nearestDiagonal(view.swingAt ? view.to : view.heading) };
       } else if (ids.length === 2) {
+        // A second finger while the dial was being led: the dial let go of, and the two fingers the skyline's.
+        if (gesture && gesture.kind === "dial") { Land.dialGround.press("cancel", event); }
         var a = pointers[ids[0]], b = pointers[ids[1]];
         gesture = { kind: "two", d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, over: 1 };
         settleTo(null);
@@ -1203,13 +1442,20 @@
       // The globe's own hover (a work named under the pointer) is not the skyline's.
       event.stopPropagation();
       if (event.pointerType === "mouse" && !pointers[event.pointerId] && !event.target.closest(".skyline-name, .skyline-who")) {
-        hover(event.clientX, event.clientY);
+        // Over the ground dial: its marks named in the readout (the hub's hover), the animal to be led.
+        var gh = groundHit(event.clientX, event.clientY, false);
+        if (gh) {
+          if (hoverK >= 0) { hover(-1e4, -1e4); }
+          Land.dialGround.press("hover", event);
+          root.style.cursor = gh === "hand" ? "grab" : "pointer";
+        } else { hover(event.clientX, event.clientY); }
       }
       if (!pointers[event.pointerId]) { return; }
       event.stopPropagation();
       pointers[event.pointerId] = { x: event.clientX, y: event.clientY };
       var g = gesture;
       if (!g) { return; }
+      if (g.kind === "dial") { Land.dialGround.press("move", event); return; }
       if (g.kind === "one") {
         g.moved = Math.max(g.moved, Math.abs(event.clientX - g.x), Math.abs(event.clientY - g.y));
         if (g.moved > 6) {
@@ -1231,6 +1477,13 @@
       event.stopPropagation();
       delete pointers[event.pointerId];
       var g = gesture;
+      if (g && g.kind === "dial") {
+        gesture = null;
+        var said = Land.dialGround.press(event.type === "pointerup" ? "up" : "cancel", event);
+        if (said === "hand") { handTapped(); }
+        swallowClick();
+        return;
+      }
       if (g && g.kind === "one") {
         var held = performance.now() - g.at;
         if (g.moved > 6) {
@@ -1259,6 +1512,11 @@
       if (!city || !on_) { return; }
       event.preventDefault();
       event.stopPropagation();
+      // Over the ground dial's animal a wheel turns time, a crown (a trackpad's pinch still brings the city nearer).
+      if (!event.ctrlKey && !into && !leaving && groundHit(event.clientX, event.clientY, false) === "hand") {
+        Land.dialGround.press("wheel", event);
+        return;
+      }
       var wd = event.deltaY * (event.deltaMode === 1 ? 16 : 1), step = event.ctrlKey ? 0.012 : 0.0016;
       var now = performance.now();
       if (now - wheelAt > 600) { wheelPush = 0; }
@@ -1644,6 +1902,7 @@
     if (into) { intoEnd(true); }
     leaving = null;
     extPinch = null;
+    groundOff();
     if (!on_ && (!root || root.hidden)) { return; }
     on_ = false;
     if (root) { root.hidden = true; }
@@ -1662,8 +1921,9 @@
   function tick(now) {
     requestAnimationFrame(tick);
     if (!window.Land || !Land.city) { return; }
-    // Gone into a museum: the skyline holds, coming nearer, until the museum's view is up over it.
-    if (leaving && city && on_ && band) { stepLeaving(now); return; }
+    // Gone into a museum: the skyline holds, coming nearer, until the museum's view is up over it (its
+    // ground dial let go of: the ring would stand still while the city came nearer).
+    if (leaving && city && on_ && band) { if (ground.painted) { groundClear(); } stepLeaving(now); return; }
     var st = Land.city.state();
     var ok = st && !st.reading && !(st.via && (st.via.at || st.via.studio));
     if (!ok) { off(); visit = null; return; }
@@ -1710,8 +1970,10 @@
         plural(city.arts.filter(function (a) { return a.kind === "gallery"; }).length, "gallery", "galleries") +
         " named; ← → turn it, + − nearer and farther");
       view.heading = nearestDiagonal(TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4);
-      // A phone a little nearer: its window is narrow, and the museums are in the middle.
-      view.zoom = window.innerWidth <= 720 ? 1.15 : 1; view.px = view.py = 0; view.swingAt = 0; view.nextTurn = now + REST_MS;
+      // A phone a little nearer: its window is narrow, and the museums are in the middle (not where the
+      // ring of its dial lies round the city: then all of it, ring and all).
+      view.zoom = window.innerWidth <= 720 && !(GROUND && st.dial) ? 1.15 : 1;
+      view.px = view.py = 0; view.swingAt = 0; view.nextTurn = now + REST_MS;
       // Up from the museum gone into from here (within the half hour, the window as it was): that view again.
       var wf = wentFrom[st.key], bnow = st.band;
       if (wf && st.via && st.via.museum === wf.slug && now - wf.at < 1800000 &&
@@ -1728,6 +1990,8 @@
       columnFor(st);
       pulseAt = now + 1600; pulseArt = -2;          // every museum's ring, once, as the city settles
       dirty = true;
+      // Its first play, if one is under way, from its first year now that it can be seen.
+      if (Land.city.shown) { Land.city.shown(); }
     }
     if (st.still !== still) { still = st.still; }
     var dt = Math.min(80, now - (last || now));
@@ -1750,8 +2014,17 @@
       canvas.width = Math.max(1, Math.round(band.w * density)); canvas.height = Math.max(1, Math.round(band.h * density));
       dirty = true;
     }
-    // Where the dial stands, now and then (it can be carried anywhere).
-    if (!tick.dialAt || now - tick.dialAt > 500) {
+    // The dial laid on the ground (the ground dial) while the city has its years; its animal read once a city.
+    var wantGround = GROUND && !!st.dial && !!Land.dialGround;
+    if (wantGround && !ground.on) { ground.on = true; dirty = true; placed = ""; dialTop = Infinity; }
+    else if (!wantGround && ground.on) { groundOff(); }
+    if (ground.on) {
+      handFor(st.key);
+      var sc = handScale();
+      if (sc !== ground.scale) { ground.scale = sc; dirty = true; }
+    }
+    // Where the dial stands, now and then (it can be carried anywhere; laid on the ground, it takes no room).
+    if (!ground.on && (!tick.dialAt || now - tick.dialAt > 500)) {
       tick.dialAt = now;
       var de = document.getElementById("art-time"), dt0 = Infinity;
       if (de && !de.hidden) {
@@ -1788,6 +2061,17 @@
       draw();
     }
     if (!frameNow) { return; }
+    // The ground dial: where its ring lies, its animal to the year, both painted, and land.js told.
+    if (ground.on) {
+      ground.ring = ringNow();
+      if (ground.ring) {
+        stepHand(now, dt);
+        var gr = ground.ring;
+        Land.dialGround.set({ cx: gr.cx, cy: gr.cy, R: gr.R, st: gr.st, hand: ground.hand ? ground.box : null,
+                              hx: ground.hs.x, hy: ground.hs.y, left: band.x, right: band.x + band.w });
+        paintGround(now);
+      }
+    }
     stepWalkers(now, dt);
     placeNames(now);
     var lk = placed + "|" + walkers.length + "|" + litArt;
@@ -1843,6 +2127,23 @@
   window.Skyline = {
     on: function () { return on_; },
     key: function (k) { return keyed(k); },
+    // The ground dial: whether a city's dial is laid on its ground (characters.js: its animal is out
+    // already, as the hand); where its ring lies; where its animal is and what it is doing.
+    holds: function (key) {
+      if (!GROUND || !key) { return false; }
+      if (!places) { lists(); return false; }
+      return !!places[key];
+    },
+    ring: function () {
+      var r = ground.on && ground.ring;
+      return r ? { cx: r.cx, cy: r.cy, R: r.R, st: r.st, rx: r.R, ry: r.R * r.st } : null;
+    },
+    hand: function () {
+      if (!ground.on || !ground.ring) { return null; }
+      var hs = ground.hs, h = ground.hand;
+      return { id: h ? h.id : null, name: h ? h.name : null, line: h ? h.line : null, t: hs.t, x: hs.x, y: hs.y,
+               pose: hs.pose, n: hs.n, dir: hs.dir, alt: hs.alt, half: hs.half, box: ground.box, scale: ground.scale };
+    },
     // A city being come down into from the world (land.js, descent): its ground and its museums read now,
     // so its skyline is made by the time it is near.
     prefetch: function (key) {

@@ -15908,7 +15908,7 @@
       if (!a || !a.live || !artTime || artTime.hidden || !a.dated) { return null; }
       return { kind: a.kind, id: a.data && a.data.id || null, key: a.town ? a.town.key : (a.via && a.via.place) || null,
                artists: a.data && a.data.artists || null, y0: a.y0, y1: a.y1, year: yearAt(a, Math.max(0, a.when)),
-               box: artTime, flying: flying };
+               t: Math.max(0, Math.min(1, a.when)), first: !!a.auto, box: artTime, flying: flying };
     },
     dialYear: function (y) {
       var a = art;
@@ -17673,6 +17673,19 @@
       if (venueLabel) { venueLabel.hidden = true; }      // the skyline names it itself
     },
     light: function (slug, on) { lightMuseum(slug, on); },
+    // The skyline up (skyline.js): a first play under way starts again from the city's first year, so it is
+    // seen whole — the city growing, and its animal walking its ring from the beginning — however long the
+    // city took to be made.
+    shown: function () {
+      var a = art;
+      if (!a || a.kind !== "town" || !a.auto) { return; }
+      a.auto.at = performance.now() + 600;
+      a.when = a.whenTo = 0;
+      a.yearNow = Math.floor(a.y0);
+      laterRows(a);
+      showArtYear();
+      a.dirty = true;
+    },
     up: function () { if (place && !flying) { comeUp(); } },
     // Out past the skyline's widest, as far as the fingers go (or by f, a wheel's step): false where the
     // way up is not the world's (then up()).
@@ -20213,6 +20226,8 @@
   /* Each dial to the viewer's place (or home), whenever the window or the
      place has changed since it was last put. */
   function placeDial(d) {
+    // Laid on the ground, its box stands beside the animal (groundLabel).
+    if (d.box.dataset.ground) { return; }
     var key = window.innerWidth + "x" + window.innerHeight + "|" + dialPlaceVer;
     if (d.placed === key || d.move) { return; }
     d.placed = key;
@@ -20370,18 +20385,31 @@
     homeMark.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     homeMark.addEventListener("click", function (event) { event.stopPropagation(); dialGoHome(d); });
     box.appendChild(homeMark);
-    // Unrolled into a band (drawDial): a press on the band as the press on the ring it stands for.
+    // Unrolled into a band (drawDial): a press on the band as the press on the ring it stands for. Laid on
+    // the ground: a press there (the skyline's, groundPress) as the press on the round dial it stands for,
+    // in the hidden face's frame.
     function ringEv(event) {
-      if (!d.geo || !event || event.clientX === undefined) { return event; }
-      var r = face.getBoundingClientRect(), p = bandToRing(d.geo, event.clientX - r.left, event.clientY - r.top);
-      return { clientX: r.left + r.width / 2 + (p.x - d.geo.c), clientY: r.top + r.height / 2 + (p.y - d.geo.c),
-               pointerId: event.pointerId, pointerType: event.pointerType, type: event.type, target: event.target,
+      if (!event || event.clientX === undefined) { return event; }
+      var r = face.getBoundingClientRect(), p, cx, cy, ground = !!(d.box.dataset.ground && groundRing);
+      if (ground) {
+        p = groundToRing(groundGeo(groundRing, r.width / 2, r.width / 2 - 13), event.clientX, event.clientY);
+        cx = r.left + p.x; cy = r.top + p.y;
+      } else if (d.geo) {
+        p = bandToRing(d.geo, event.clientX - r.left, event.clientY - r.top);
+        cx = r.left + r.width / 2 + (p.x - d.geo.c); cy = r.top + r.height / 2 + (p.y - d.geo.c);
+      } else { return event; }
+      return { clientX: cx, clientY: cy,
+               pointerId: ground ? -1 : event.pointerId, pointerType: event.pointerType, type: event.type, target: event.target,
                deltaX: event.deltaX, deltaY: event.deltaY,
                preventDefault: function () { event.preventDefault(); }, stopPropagation: function () { event.stopPropagation(); } };
     }
     function hubXY(event) {
-      var r = face.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top;
-      if (d.geo) { var p = bandToRing(d.geo, x, y); return { x: p.x, y: p.y, w: r.width }; }
+      var r = face.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top, p;
+      if (d.box.dataset.ground && groundRing) {
+        p = groundToRing(groundGeo(groundRing, r.width / 2, r.width / 2 - 13), event.clientX, event.clientY);
+        return { x: p.x, y: p.y, w: r.width };
+      }
+      if (d.geo) { p = bandToRing(d.geo, x, y); return { x: p.x, y: p.y, w: r.width }; }
       return { x: x, y: y, w: r.width };
     }
     function tAt(event) {
@@ -20538,10 +20566,67 @@
       turnTo(t);
       d.grab = null;
     }, { passive: false });
+    /* Laid on the ground (the ground dial): the skyline hands on the presses on the ring and on its animal.
+       The ring turns time as the round one does (a path's stops scrubbed while one plays); the animal is
+       picked up where it stands and led — never carried, as the face carries the round dial. A tap on the
+       animal is the skyline's to answer ("hand" comes back): it plays or pauses a path, else says what it
+       is. A wheel over the animal turns time, a crown. */
+    d.groundPress = function (phase, event, onHand) {
+      if (phase === "down") {
+        var live = !!(window.Dial && Dial.live && Dial.live());
+        d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: false, far: false, hand: !!onHand, live: live };
+        d.tp = !onHand && !!(window.Dial && Dial.ring && Dial.ring(d, "down", ringEv(event)));
+        if (!d.tp && !(onHand && live)) {
+          range.dispatchEvent(new Event("pointerdown"));
+          d.last = null;
+          box.dataset.turning = "true";
+          if (onHand) { d.grab = Number(range.value) / 1000; d.last = d.grab; } else { turnTo(tAt(event)); }
+        }
+        return null;
+      }
+      if (phase === "move") {
+        if (!d.down) { return null; }
+        if (Math.hypot(event.clientX - d.down.x, event.clientY - d.down.y) > 6) { d.down.far = true; }
+        if (d.tp) { Dial.ring(d, "move", ringEv(event)); return null; }
+        if (d.grab === null || !d.down.far) { return null; }
+        turnTo(tAt(event));
+        return null;
+      }
+      if (phase === "hover") {
+        if (range === artRange && window.DialHub && DialHub.hover) { var hx = hubXY(event); DialHub.hover(d, hx.x, hx.y, hx.w); }
+        return null;
+      }
+      if (phase === "wheel") {
+        if (window.Dial && Dial.ring && Dial.ring(d, "wheel", ringEv(event))) { return null; }
+        range.dispatchEvent(new Event("pointerdown"));
+        turnTo(Number(range.value) / 1000 + (event.deltaY + event.deltaX) * 0.0007);
+        d.grab = null;
+        return null;
+      }
+      // Let go (up), or taken away (cancel).
+      var down = d.down;
+      d.down = null;
+      if (d.tp) { d.tp = false; Dial.ring(d, phase === "up" ? "up" : "cancel", ringEv(event)); return null; }
+      var tapped = !!(down && !down.far && phase === "up");
+      if (d.grab !== null) {
+        d.grab = null;
+        d.last = null;
+        delete box.dataset.turning;
+        range.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (tapped && down.hand) { return "hand"; }
+      // A press on the hub's band that was not a turn opens the mark under it (dialhub.js).
+      if (tapped && range === artRange && window.DialHub && DialHub.tap) {
+        var tx = hubXY(event);
+        DialHub.tap(d, tx.x, tx.y, tx.w);
+      }
+      return null;
+    };
     // Shift and the arrows nudge it; the arrows alone still turn time.
     range.addEventListener("keydown", function (event) {
       var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
-      if (!event.shiftKey || !dir) { return; }
+      // Laid on the ground it lies where the city is: Shift and the arrows turn time, as the arrows do.
+      if (!event.shiftKey || !dir || box.dataset.ground) { return; }
       event.preventDefault();
       event.stopImmediatePropagation();
       var r = box.getBoundingClientRect();
@@ -20690,18 +20775,171 @@
     void S;
   }
 
+  /* ---- the dial laid on the ground (skyline.js, "the ground dial") ---------
+     The artist, 14 Oct 2026, of the fox walking beside the dial's edge in Dresden's skyline: "What if the
+     time dial laid on the same plane the fox walked on and the fox (characters in the website) became the
+     time dial?" On a city's skyline the city's dial is laid on its ground. The skyline says where the
+     ring lies (Land.dialGround.set: its middle on the screen, its radius across the ground, the ground's
+     foreshortening, where its animal stands) and paints it on its own canvases, the half behind the city
+     under its towers and the half before it over them; the drawing is the dial's own (paintDial through
+     groundCtx), turned so that where now meets the beginning is at the front, nearest you, and its marks
+     laid outside the ring, away from the city. Presses on the ring and on its animal come back here as
+     the ring's (groundPress). The box keeps its year, its word and its readout, beside the animal; the
+     range in it keeps the keyboard. */
+  var groundRing = null;
+  function groundFor(d) {
+    if (d.range !== artRange || !groundRing || !art || art.kind !== "town" || !art.live || !skyOn()) { return null; }
+    return groundRing;
+  }
+  function groundT() { return art ? Math.max(0, Math.min(1, art.when)) : 1; }
+  function groundGeo(gd, c, R1) { return { c: c, R1: R1, cx: gd.cx, cy: gd.cy, R: gd.R, st: gd.st }; }
+  // A point of the round dial on the ground: its angle turned half round (its top to the front), its
+  // distance from the ring kept in pixels across the ground and turned outward (what was inside the ring
+  // lies outside it, clear of the city), foreshortened as the ground is.
+  function groundXY(geo, x, y) {
+    var dx = x - geo.c, dy = y - geo.c;
+    var r = Math.sqrt(dx * dx + dy * dy), a = Math.atan2(dy, dx) + Math.PI;
+    var rho = Math.max(0, geo.R + (geo.R1 - r));
+    return { x: geo.cx + Math.cos(a) * rho, y: geo.cy + Math.sin(a) * rho * geo.st };
+  }
+  // The other way: a point of the screen as the point of the round dial it stands for (presses, the hub's hits).
+  function groundToRing(geo, x, y) {
+    var du = x - geo.cx, dw = (y - geo.cy) / geo.st;
+    var rho = Math.sqrt(du * du + dw * dw), a = Math.atan2(dw, du) - Math.PI;
+    var r = Math.max(0, geo.R1 - (rho - geo.R));
+    return { x: geo.c + Math.cos(a) * r, y: geo.c + Math.sin(a) * r };
+  }
+  function groundCtx(g, geo) {
+    var local = 0, stack = [];
+    var o = {
+      save: function () { stack.push(local); g.save(); },
+      restore: function () { local = stack.length ? stack.pop() : 0; g.restore(); },
+      beginPath: function () { g.beginPath(); },
+      closePath: function () { g.closePath(); },
+      stroke: function () { g.stroke(); },
+      fill: function () { g.fill(); },
+      setLineDash: function (v) { g.setLineDash(v); },
+      measureText: function (t) { return g.measureText(t); },
+      rotate: function (a) { g.rotate(a); },
+      setTransform: function () {},
+      clearRect: function () {},
+      translate: function (x, y) {
+        if (local) { g.translate(x, y); return; }
+        var p = groundXY(geo, x, y);
+        g.translate(p.x, p.y);
+        local = 1;
+      },
+      moveTo: function (x, y) { if (local) { g.moveTo(x, y); return; } var p = groundXY(geo, x, y); g.moveTo(p.x, p.y); },
+      lineTo: function (x, y) { if (local) { g.lineTo(x, y); return; } var p = groundXY(geo, x, y); g.lineTo(p.x, p.y); },
+      arc: function (x, y, r, a0, a1) {
+        if (local) { g.arc(x, y, r, a0, a1); return; }
+        if (Math.abs(x - geo.c) < 0.5 && Math.abs(y - geo.c) < 0.5) {
+          // A ring of the dial: an ellipse on the ground, the same way round.
+          var rho = Math.max(0, geo.R + (geo.R1 - r));
+          g.ellipse(geo.cx, geo.cy, rho, rho * geo.st, 0, a0 + Math.PI, a1 + Math.PI);
+          return;
+        }
+        var p = groundXY(geo, x, y);
+        g.moveTo(p.x + r, p.y);
+        g.arc(p.x, p.y, r, a0, a1);
+      },
+      fillRect: function (x, y, w, h) {
+        if (local) { g.fillRect(x, y, w, h); return; }
+        var p = groundXY(geo, x + w / 2, y + h / 2);
+        g.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+      },
+      strokeRect: function (x, y, w, h) {
+        if (local) { g.strokeRect(x, y, w, h); return; }
+        var p = groundXY(geo, x + w / 2, y + h / 2);
+        g.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
+      },
+      fillText: function (t, x, y) { if (local) { g.fillText(t, x, y); return; } var p = groundXY(geo, x, y); g.fillText(t, p.x, p.y); },
+      map: function (x, y) { return groundXY(geo, x, y); }
+    };
+    ["strokeStyle", "fillStyle", "lineWidth", "globalAlpha", "shadowColor", "shadowBlur", "font", "textAlign",
+     "textBaseline", "lineCap", "lineJoin"].forEach(function (k) {
+      Object.defineProperty(o, k, { get: function () { return g[k]; }, set: function (v) { g[k] = v; } });
+    });
+    return o;
+  }
+  // On the ground: the first year under where the ring begins (the year itself rides beside the animal, in
+  // the box); a path's play or pause over the animal, where the face's was.
+  function groundWords(g, geo, span, tp, S, hand) {
+    if (span[1] > span[0]) {
+      var p = groundXY(geo, geo.c + Math.cos(DIAL_START) * (geo.R1 - 10), geo.c + Math.sin(DIAL_START) * (geo.R1 - 10));
+      g.save();
+      g.font = "10px " + dialFont;
+      g.textAlign = "center";
+      g.textBaseline = "top";
+      g.fillStyle = "rgba(168, 146, 122, 0.9)";
+      g.fillText(String(Math.floor(span[0])), p.x, p.y + 1);
+      g.restore();
+    }
+    if (tp && hand) {
+      var c = S / 2;
+      g.save();
+      g.translate(hand.x - c, hand.top - 14 - (c + S * 0.15));
+      tp.face(g, c, S);
+      g.restore();
+    }
+  }
+  // The box beside the animal: its year, the hub's word under it, the readout over it.
+  function groundLabel(d, gd) {
+    var box = d.box;
+    if (!box.dataset.ground) {
+      box.dataset.ground = "true";
+      delete box.dataset.moved;
+      d.drawn = "";
+      d.placed = "";
+    }
+    var h = gd.hand || { x: gd.hx, y: gd.hy, top: gd.hy - 10, w: 14, h: 12 };
+    var bw = box.offsetWidth, bh = box.offsetHeight;
+    var x = h.x + h.w / 2 + 6, y = h.top + h.h / 2 - Math.min(bh, 24) / 2;
+    var right = gd.right || W, left = gd.left || 0;
+    if (x + bw > right - 6) { x = h.x - h.w / 2 - 6 - bw; }
+    x = Math.max(left + 6, Math.min(right - 6 - bw, x));
+    var top = 8;
+    if (banner && !banner.hidden) { var br = banner.getBoundingClientRect(); if (br.height) { top = br.bottom + 6; } }
+    y = Math.max(top, Math.min(H - bh - 6, y));
+    var host = box.offsetParent || box.parentElement, pr = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+    var key = Math.round(x - pr.left) + "," + Math.round(y - pr.top);
+    if (box._ground === key) { return; }
+    box._ground = key;
+    var s = box.style;
+    s.setProperty("left", Math.round(x - pr.left) + "px", "important");
+    s.setProperty("top", Math.round(y - pr.top) + "px", "important");
+    s.setProperty("right", "auto", "important");
+    s.setProperty("bottom", "auto", "important");
+    s.setProperty("transform", "none", "important");
+  }
+  function groundOff(d) {
+    delete d.box.dataset.ground;
+    d.box._ground = "";
+    d.gst = null;
+    dialHome(d);
+    d.placed = "";
+    d.drawn = "";
+  }
+
   function drawDials() {
     for (var n = 0; n < dials.length; n += 1) { drawDial(dials[n]); }
   }
 
   function drawDial(d) {
     if (d.box.hidden || !d.box.offsetWidth) { return; }
+    // Laid on a city's ground (skyline.js, "the ground dial"): the same drawing, painted there by the
+    // skyline on its own canvases (paintDial through groundCtx); here only its label is put beside the
+    // animal that is its hand.
+    var gd = groundFor(d);
+    if (gd) { groundLabel(d, gd); } else if (d.box.dataset.ground) { groundOff(d); }
     placeDial(d);
-    var S = d.box.offsetWidth;
+    var S = gd ? d.face.offsetWidth || dialSize(d) : d.box.offsetWidth;
     // Unrolled in a long place: a band of years (artist, 7 Oct 2026: "Change the shape of the dial
     // to adapt to the rectangular form"). The same drawing, through bandCtx.
-    var band = d.box.dataset.form === "band", BH = band ? d.box.offsetHeight : S;
-    var t = d.grab !== null ? d.grab : Number(d.range.value) / 1000;
+    var band = !gd && d.box.dataset.form === "band", BH = band ? d.box.offsetHeight : S;
+    // On the ground the hand is the animal, which goes after the dial's own year as it eases there, not
+    // after the finger that leads it.
+    var t = gd ? groundT() : d.grab !== null ? d.grab : Number(d.range.value) / 1000;
     var span = d.span() || [0, 0];
     var ticks = d.ticksOf ? d.ticksOf() : [];
     var year = d.box.querySelector(".building-time-year").textContent;
@@ -20714,14 +20952,25 @@
     // A path being played (transport.js): its stops outside the ring, its play or pause on the face.
     var tp = window.Dial && Dial.layer ? Dial.layer(d) : null;
     var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
-               hub ? hub.key : "", tense, tp ? tp.key : "", band, BH].join("|");
+               hub ? hub.key : "", tense, tp ? tp.key : "", band, BH, gd ? "g" : ""].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
+    var st = { S: S, BH: BH, band: band, t: t, span: span, ticks: ticks, year: year, focused: focused, lifted: lifted,
+               hub: hub, tense: tense, tp: tp };
+    if (gd) { d.geo = null; d.gst = st; d.groundVer = (d.groundVer || 0) + 1; return; }
     var px = Math.round(S * dpr), pxh = Math.round(BH * dpr);
     if (d.face.width !== px || d.face.height !== pxh) { d.face.width = px; d.face.height = pxh; }
-    var g = d.g, real = d.g;
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, S, BH);
+    d.g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    d.g.clearRect(0, 0, S, BH);
+    paintDial(d, st, d.g, null);
+  }
+
+  /* The dial's one drawing in its three forms: round on its face; unrolled into a band (bandCtx); laid on
+     a city's ground (groundCtx), painted there by the skyline, gd the ring as it lies now. */
+  function paintDial(d, st, real, gd) {
+    var S = st.S, BH = st.BH, band = st.band, t = st.t, span = st.span, ticks = st.ticks, year = st.year;
+    var focused = st.focused, lifted = st.lifted, hub = st.hub, tense = st.tense, tp = st.tp;
+    var g = real;
     var c = S / 2, R1 = S / 2 - 13;
     var at = DIAL_START + t * DIAL_SWEEP;
     g.lineCap = "butt";
@@ -20730,11 +20979,15 @@
       geo = bandGeo(S, BH);
       d.geo = geo;
       g = bandCtx(real, geo);
+    } else if (gd) {
+      geo = groundGeo(gd, c, R1);
+      g = groundCtx(real, geo);
     } else { d.geo = null; }
 
-    // The chronograph's scale, outside the ring, still (a path's stops there while one plays).
+    // The chronograph's scale, outside the ring, still (a path's stops there while one plays). Not on the
+    // ground: there it would be a fence round the city.
     if (tp) { tp.outer(g, c, R1, S); }
-    for (var k = 0; k < (tp ? 0 : band ? 0 : 120); k += 1) {
+    for (var k = 0; k < (tp || band || gd ? 0 : 120); k += 1) {
       var ak = -Math.PI / 2 + k / 120 * TAU;
       var long = k % 10 === 0;
       g.strokeStyle = "rgba(168, 146, 122, " + (long ? 0.55 : 0.22) + ")";
@@ -20747,9 +21000,10 @@
 
     // Unrolled: a scale of decades above the line instead of the chronograph's.
     if (band && !tp) { bandScale(real, geo, span); }
-    // Two rings geared to time, turning against each other at phi (resting while the hub's band is in use).
+    // Two rings geared to time, turning against each other at phi (resting while the hub's band is in use;
+    // not on the ground, where they would lie across the city).
     g.save();
-    if (band) { g.globalAlpha = 0; }
+    if (band || gd) { g.globalAlpha = 0; }
     if (hub && hub.quiet) { g.globalAlpha = 0.25; }
     g.setLineDash([2, 5]);
     g.strokeStyle = "rgba(234, 223, 205, 0.22)";
@@ -20776,13 +21030,20 @@
     if (band) { real.fillStyle = LILAC; real.fillRect(geo.x0 - 1.5, geo.y - 1.5, 3, 3); real.fillRect(geo.x1 - 1.5, geo.y - 1.5, 3, 3); }
     else { g.fillRect(c - 1.5, c - R1 - 1.5, 3, 3); }
 
-    // Every event, inside the ring: lit once it has been passed.
+    // Every event, inside the ring: lit once it has been passed. On the ground each is a tile lying beside
+    // the ring, outside it.
     ticks.forEach(function (tk) {
       var a = DIAL_START + tk.pos * DIAL_SWEEP;
       var lit = tk.pos <= t + 1e-6;
       var len = tk.written ? 9 : 6;
       g.strokeStyle = tk.after ? (lit ? "rgba(157, 149, 230, 0.6)" : "rgba(157, 149, 230, 0.22)") :
         lit ? (tk.written ? "#ffffff" : "rgba(234, 223, 205, 0.9)") : "rgba(168, 146, 122, 0.45)";
+      if (gd) {
+        var ts = tk.written ? 4 : 3;
+        g.fillStyle = g.strokeStyle;
+        g.fillRect(c + Math.cos(a) * (R1 - 8) - ts / 2, c + Math.sin(a) * (R1 - 8) - ts / 2, ts, ts);
+        return;
+      }
       g.lineWidth = tk.written ? 1.25 : 1;
       g.beginPath();
       g.moveTo(c + Math.cos(a) * (R1 - 3), c + Math.sin(a) * (R1 - 3));
@@ -20817,23 +21078,27 @@
       }
     }
 
-    // The handle: the museums' diamond, and pixel light round it while turned.
+    // The handle: the museums' diamond, and pixel light round it while turned. On the ground the handle is
+    // the place's animal, drawn by the skyline (the diamond only where the place has none drawn).
     var hx = c + Math.cos(at) * R1, hy = c + Math.sin(at) * R1;
     if (d.box.dataset.turning || focused) {
       g.fillStyle = LIGHT;
       [[0, -8], [8, 0], [0, 8], [-8, 0]].forEach(function (o) { g.fillRect(hx + o[0] - 1.5, hy + o[1] - 1.5, 3, 3); });
     }
-    g.save();
-    g.translate(hx, hy);
-    g.rotate(Math.PI / 4);
-    g.fillStyle = "#0f0a07";
-    g.fillRect(-6, -6, 12, 12);
-    g.fillStyle = "#eadfcd";
-    g.fillRect(-4.5, -4.5, 9, 9);
-    g.restore();
+    if (!(gd && gd.hand)) {
+      g.save();
+      g.translate(hx, hy);
+      g.rotate(Math.PI / 4);
+      g.fillStyle = "#0f0a07";
+      g.fillRect(-6, -6, 12, 12);
+      g.fillStyle = "#eadfcd";
+      g.fillRect(-4.5, -4.5, 9, 9);
+      g.restore();
+    }
     g.globalAlpha = 1;
 
     if (band) { bandWords(real, geo, year, span, tense, tp, S); return; }
+    if (gd) { groundWords(real, geo, span, tp, S, gd.hand); return; }
     // Lifted to be carried: four tiles of pixel light round it.
     if (lifted) {
       g.fillStyle = LIGHT;
@@ -20878,9 +21143,31 @@
     var v = clod && clod.views[clod.view];
     return v && v.years ? [v.years.y0, v.years.y1] : null;
   }, null);
-  makeDial(artTime, artRange, function () {
+  var artDial = makeDial(artTime, artRange, function () {
     return art && art.dated ? [art.y0, art.y1] : null;
   }, artTickList);
+  // For the skyline (skyline.js, "the ground dial"): where the ring lies (null when it is not laid), the
+  // dial's drawing painted there, the presses handed back, and how many times it has changed.
+  var dialGround = {
+    set: function (ring) {
+      var was = !!groundRing;
+      groundRing = ring || null;
+      if (was !== !!groundRing && artDial) { artDial.drawn = ""; }
+    },
+    paint: function (g, ring) {
+      var d = artDial;
+      if (!d || !d.gst || !ring || !groundFor(d)) { return false; }
+      paintDial(d, d.gst, g, ring);
+      return true;
+    },
+    press: function (phase, event, onHand) {
+      var d = artDial;
+      return d && groundFor(d) && d.groundPress ? d.groundPress(phase, event, onHand) : null;
+    },
+    ver: function () { return artDial ? (artDial.groundVer || 0) : 0; },
+    on: function () { return !!(artDial && artDial.box.dataset.ground); }
+  };
+  if (window.Land) { window.Land.dialGround = dialGround; }
 
   /* On a phone, after the play, scrolling the column moves time too: the
      group nearest the column's top sets the slider, and its stop is ringed. */

@@ -185,6 +185,41 @@ played path, a press on a span (`DialHub.tap`). The range underneath keeps the k
 place or its own the dial is a dial. A new kind of mark drawn with the ring's own calls is unrolled
 with it; text it wants written only unrolled asks `g.unrolled`.
 
+## The dial on the ground
+
+The artist, 14 Oct 2026, with four frames of the red fox at the edge of a city's skyline beside the
+dial's rim: "What if the time dial laid on the same plane the fox walked on and the fox (characters
+in the website) became the time dial?" On a city's skyline the city's dial is its third form: laid
+on the city's ground, round the city's block, in the skyline's own true isometric — the same drawing
+again, through a projection (`groundCtx` in land.js), painted by the skyline (skyline.js, "the
+ground dial") on two canvases of its own, the half behind the middle of the ring under the city, so
+its towers stand in front of it, the half before it over the city.
+
+| On the ring | On the ground |
+| --- | --- |
+| the angle from the top | the same angle turned half round: the top is the front, nearest you |
+| the gap where now meets the beginning | at the front; the first year under it, outside |
+| the distance from the ring | the same pixels across the ground, foreshortened as the ground is, and turned outward: what was inside the ring lies outside it, clear of the city |
+| the chronograph's scale and the geared rings | not drawn (they would be a fence round the city, rings across it) |
+| the event ticks inside | tiles lying beside the ring, outside it, lit once passed |
+| the way come and the comet's tail | a line of light round the ground to the animal, the tail behind it |
+| the handle (the museums' diamond) | **the place's own animal** (characters.js `Characters.hand`: the native a wave there would bring, after its native artist): it walks to the year, trots when time goes fast, walks when it is led slowly, flies if it flies, and at now sits at the gap facing the beginning; the diamond only where the place has none drawn |
+| the hub's band (dialhub.js) | its lanes outside the ring |
+| the transport's stops outside the ring | inside it, just within the line |
+| the face: ❚❚ / ▶ | over the animal; a tap on the animal plays or pauses |
+| the face's word, the year, the readout | the dial's box, put beside the animal (`groundLabel`): the year upright in the city's mono, the word under it, the readout over it |
+
+The ring is fixed to the screen, not to the ground: the city turns inside it. Leading the animal is
+turning time: a press anywhere on the ring or its marks turns the year there (`groundToRing`, then
+the round dial's own `tAt` and range), a drag along it goes on turning, never across the gap in one
+move; the animal is picked up where it stands and led. A tap on the animal says what it is (or plays
+and pauses a path); a wheel over it turns time, a crown; the range under the label keeps the keys.
+The ground form is never carried or swapped (it lies where the city is). A press elsewhere on the
+skyline still turns the city. Under reduced motion the animal is placed, never trotting. While a
+city's dial lies on its ground no other animal of the place comes out of a wave, a journey or a visit
+(it is out already, as the hand). On a phone the city stands about a third smaller, to give the ring
+and its animal room. `GROUND = false` in skyline.js brings the round dial back to the skyline.
+
 ## Rules kept
 
 - The dial draws only when something on it changed: the hub's layer gives a key.

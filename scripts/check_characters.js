@@ -9,6 +9,10 @@
        is (the line under it, "Wild boar · after J. M. W. Turner, born in
        Maiden Lane · among London's European beech … · 19 of the artist's works
        have been here", and Follow);
+     where the city's dial lies on its ground (a skyline city: skyline.js, "the
+       ground dial"), its animal is that dial's hand: the wave raises the plants
+       alone, and the hand, pressed, says what it is ("Wild boar · after J. M. W.
+       Turner, born in Maiden Lane");
      no page errors.
 
    A native born in the place may be at rest there already (one visit in φ²);
@@ -105,6 +109,23 @@ async function run(size, place) {
   await sleep(700);
   await P.mouse.up();
   let st = null, said = null;
+  // Where the city's dial lies on its ground (skyline.js, "the ground dial") the place's own animal is
+  // out already, as its hand: the wave raises the plants alone, and the press is on the hand.
+  const hand = await P.evaluate(() => (window.Skyline && Skyline.hand && Skyline.hand()) || null);
+  if (hand && hand.box) {
+    for (let i = 0; i < 30 && !st; i++) { await sleep(100); st = await P.evaluate(() => Characters._state()); }
+    const b = await P.evaluate(() => Skyline.hand().box);
+    if (SHOTS) { await P.screenshot({ path: `${SHOTS}/chars_${place}_${w}.png` }); }
+    await P.mouse.click(b.x, b.top + b.h / 2);
+    await sleep(700);
+    said = await P.evaluate(() => { const e = document.querySelector(".skyline-hand-says"); return e && !e.hidden ? e.textContent : null; });
+    if (SHOTS) { await P.screenshot({ path: `${SHOTS}/chars_${place}_${w}_pressed.png` }); }
+    check(tag, !!(st && (st.beds || st.plants)), "its plants rose round the wave (its animal is the dial's hand)", st && { beds: st.beds, plants: st.plants });
+    check(tag, !!said && said.indexOf(hand.name) === 0, "the hand, pressed: what it is", said);
+    check(tag, errors.length === 0, "no page errors", errors.slice(0, 3));
+    await browser.close();
+    return;
+  }
   for (let i = 0; i < 60 && !said; i++) {
     await sleep(100);
     const cur = await P.evaluate(() => Characters._state());

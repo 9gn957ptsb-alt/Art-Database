@@ -154,7 +154,10 @@ every run and public files only.
   cell of one CSS pixel is whole device pixels on any screen, so at a fractional
   density (1.5) it is 2 and the fox is drawn a third larger; its box follows
   the drawing (`cellPx`, `bounds` in `characters.js`), so its feet stay on the
-  ground and the pressed red box fits it at every density.
+  ground and the pressed red box fits it at every density. The chimera's own
+  cell size is `chCellPx` (14 Oct 2026: a second function of the same name,
+  the chimera's, had taken over every sprite's, drawing each animal one device
+  pixel a cell — a third of its size on a phone — until it was renamed).
 - **Checked:** `scripts/check_characters.js` (the wave, the press line) and the
   preview (`scripts/preview_character.js fox out.png`, `fox,bison,deer` for a
   chimera) at 390×844 and 1440×900, and at a device density of 3.

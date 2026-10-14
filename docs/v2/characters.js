@@ -899,6 +899,8 @@
         var now = performance.now();
         var c = got && got.c;
         if (c && prefer && c.id !== prefer) { c = null; }
+        // Its dial laid on the ground, the place's animal is out already: its hand. The plants rise all the same.
+        if (c && onTheDial(key) && !(lw && lw.life)) { c = null; }
         if (c && (visit.seen[c.id] || outNow(c.id) || now < restUntil || !room(c.id, now))) { c = null; }
         if (c) {
           var home = got.rec ? got.rec.key === pk && got.rec.native && got.rec.native.how === "born"
@@ -1008,14 +1010,14 @@
   function arrive(key, viaTrip) {
     homeAnimal(key).then(function (c) {
       var t = townOf(key);
-      if (!c || !t || visit.key !== key || visit.seen[c.id] || outNow(c.id)) { return; }
+      if (!c || !t || visit.key !== key || visit.seen[c.id] || outNow(c.id) || onTheDial(key)) { return; }
       if (!setUp()) { return; }
       size();
       if (!room(c.id, performance.now())) { return; }
       if (viaTrip) {
         visit.seen[c.id] = true;
         window.setTimeout(function () {
-          if (visit.key === key && room(c.id, performance.now() + GAP)) { comeHome(c, t, viaTrip); }
+          if (visit.key === key && room(c.id, performance.now() + GAP) && !onTheDial(key)) { comeHome(c, t, viaTrip); }
         }, 900);
       } else {
         // Decided once a visit; when it is not there at rest, the visit's wave can still bring it.
@@ -2155,7 +2157,7 @@
   }
 
   // Where its feet are, its size: `big` a presentation (the unfolding), else a city's.
-  function cellPx(o) {
+  function chCellPx(o) {
     var css_ = o.big ? (window.innerWidth < 720 ? 3.2 : 4.4) : (o.far ? 1 : 2 / RES);
     return Math.max(1, Math.round(css_ * chDpr));
   }
@@ -2163,7 +2165,7 @@
   function chBounds(o) {
     if (o.fine) { return fineBounds(o); }
     // Its feet's middle is the middle of its body.
-    var L = o.L, px = cellPx(o) / chDpr, c = L.hip + o.ch.P[1].len / 2;
+    var L = o.L, px = chCellPx(o) / chDpr, c = L.hip + o.ch.P[1].len / 2;
     return { x: o.x - (o.dir > 0 ? c : L.w - c) * px, y: o.y - L.ground * px, w: L.w * px, h: L.h * px, px: px };
   }
 
@@ -2269,7 +2271,7 @@
   function drawChimera(o, now) {
     if (!o.ready || o.hidden) { if (o.hit) { o.hit.hidden = true; } return; }
     if (o.fine) { drawFine(o, now); return; }
-    var px = cellPx(o);
+    var px = chCellPx(o);
     var names = namesNow(o, now);
     var sp = chimeraSprite(o.ch, names, o.dir, px);
     var b = chBounds(o);
@@ -2571,8 +2573,57 @@
     });
   }
 
+  /* ---- the hand of the ground dial ---------------------------------------------
+     The artist, 14 Oct 2026: "What if the time dial laid on the same plane the fox walked on and the fox
+     (characters in the website) became the time dial?" On a city's skyline the dial lies on the ground and
+     the place's own animal is its hand (skyline.js, "the ground dial"): the same native a wave there would
+     bring, drawn on the skyline's canvases in its poses, its feet on the ring. So a city whose dial is laid
+     on its ground brings no other of its own out of a wave, a journey or a visit (onTheDial): the animal is
+     there already, walking its years. */
+  var hands = {};
+  function hand(key) {
+    if (!key) { return Promise.resolve(null); }
+    if (!hands[key]) {
+      hands[key] = Promise.all([load(), loadTowns()]).then(function () {
+        return nativeFor(placeKey({ key: key }, null));
+      }).then(function (got) {
+        var c = got && got.c, s = c && sprites[c.id];
+        if (!s) { return null; }
+        var t = townOf(key), here = t ? placeAt(t.lat, t.lon) : null;
+        var home = homeOf(mapOf(c));
+        var who = c.gen ? afterSaid({ c: c, here: here }) : "after " + c.artist + (home ? ", of " + home.where : "");
+        return {
+          id: c.id, name: c.name, artist: c.artist || null, line: c.name + " · " + who, mv: moves(c),
+          cells: { w: s.w, h: s.h, cell: s.cell },
+          // Its size as drawn at a scale, in CSS pixels (as bounds() measures one of the crowd).
+          box: function (scale) {
+            size();
+            var u = cellPx(s, scale) / dpr;
+            return { w: s.w * u, h: s.h * u, foot: s.foot[1] * u };
+          },
+          // A pose drawn on another's canvas (its transform the device's pixels a CSS pixel), its feet at (x, y).
+          draw: function (g, x, y, pose, n, dir, scale) {
+            size();
+            var sp = sprite(c, pose, n || 0, dir || 1, here, scale);
+            var u = sp.px / dpr;
+            var bx = Math.round((x - s.w * u / 2) * dpr) / dpr, by = Math.round((y - s.foot[1] * u) * dpr) / dpr;
+            var was = g.imageSmoothingEnabled;
+            g.imageSmoothingEnabled = false;
+            g.drawImage(sp.cv, bx, by, sp.cv.width / dpr, sp.cv.height / dpr);
+            g.imageSmoothingEnabled = was;
+            return { x: bx, y: by, w: sp.cv.width / dpr, h: sp.cv.height / dpr };
+          }
+        };
+      }).catch(function () { return null; });
+    }
+    return hands[key];
+  }
+  function onTheDial(key) { return !!(key && window.Skyline && Skyline.holds && Skyline.holds(key)); }
+
   window.Characters = {
     wave: wave,
+    // skyline.js, the ground dial: the place's own animal as its hand.
+    hand: hand,
     // A place's own character (characters/places/<key>.json): { c, rec }, for the checks and the preview.
     native: function (key) { return load().then(function () { return nativeFor(key); }); },
     placeKey: function (city, ll) { return placeKey(city, ll); },

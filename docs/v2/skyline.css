@@ -159,3 +159,81 @@ html[data-skyline] .venue-label { visibility: hidden !important; }
 }
 .skyline-none { margin: 0 0 12px; color: #a8927a; font: 400 12px/1.45 var(--serif, Georgia, serif); letter-spacing: 0; text-transform: none; }
 .town-venue-box[data-lit] { box-shadow: inset 2px 0 0 #9d95e6; }
+
+/* The dial laid on the city's ground (skyline.js, "the ground dial"; land.js, groundLabel): the ring is
+   painted on the skyline's own canvases, the half behind the city under its towers, the half before it
+   over them; the dial's box is only its label, beside the animal that is its hand — the year upright in
+   the city's mono, the hub's word under it, the readout over it. Its presses are the skyline's (the ring
+   and the animal under the label), so the label lets them through but for its own buttons. */
+.skyline-ground { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.skyline-ground[hidden] { display: none; }
+.building-time.dial[data-ground] {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 3px 7px 2px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.66);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  pointer-events: none;
+  z-index: 6;
+}
+.building-time.dial[data-ground] .dial-face {
+  inset: auto;
+  left: 0;
+  top: 0;
+  width: var(--dial);
+  height: var(--dial);
+  visibility: hidden;
+  pointer-events: none;
+}
+.building-time.dial[data-ground] .building-time-year {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  opacity: 1;
+  color: #eadfcd;
+  font: 600 15px/18px var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.building-time.dial[data-ground] .dial-mode {
+  position: static;
+  transform: none;
+  display: block;
+  min-width: 0;
+  min-height: 24px;
+  margin: 0 -6px -2px;
+  padding: 0 6px;
+  text-align: left;
+  font-size: 8px;
+  line-height: 24px;
+  pointer-events: auto;
+}
+.building-time.dial[data-ground] .dial-mode[hidden] { display: none; }
+.building-time.dial[data-ground] .dial-home { display: none; }
+.building-time.dial[data-ground] > .dial-end { pointer-events: auto; top: -11px; right: -11px; }
+.building-time.dial[data-ground]:focus-within { outline: 2px solid #9d95e6; outline-offset: 2px; box-shadow: none; }
+/* The animal pressed: what it is, beside it, a little while. */
+.skyline-hand-says {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(300px, calc(100vw - 32px));
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: rgba(15, 10, 7, 0.84);
+  color: #eadfcd;
+  font: 400 12px/1.45 var(--serif, Georgia, serif);
+  pointer-events: none;
+  z-index: 6;
+}
+.skyline-hand-says[hidden] { display: none; }
