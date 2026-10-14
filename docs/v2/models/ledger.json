@@ -3889,33 +3889,35 @@
   },
   "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain": {
     "name": "Casa Sisal",
-    "refined": "2026-09-25",
-    "passes": 1,
+    "refined": "2026-10-14",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-09-25 first model from the article's photographs"
+      "2026-09-25 first model from the article's photographs",
+      "2026-10-14 refined (photographs, four rounds): re-laid as the photographs show it — a 28.5 x 8 m single-storey block under a flat slab (roofs no longer grey), the glass pavilion open through the house to both lawns, the recessed bay with its rust-steel pergola, roof stair-head and tank, the cantilevered west stair, the raised infinity pool, the nine-metre lily pond, the palm avenue (pale trunks) between the old limestone walls; voxel 0.8 to 0.5; a duplicated row of palms removed; the hacienda's name left out of the notes (the house stays at its town)"
     ]
   },
   "a-sanctuary-of-relaxation-living-n5-on-the-casa-foa-platform-by-giunta-muebles": {
     "name": "Living N5",
-    "refined": "2026-09-25",
-    "passes": 1,
+    "refined": "2026-10-14",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-09-25 first model from the article's photographs"
+      "2026-09-25 first model from the article's photographs",
+      "2026-10-14 refined (photographs, three rounds): the closed timber box with its two trees became a cutaway set — walnut art wall with its quartzite band and five pictures, olive sofa and armchairs, the slatted garden screen with the planted strip behind it, the drapes and shutter of the double-height end, the single-slope ceiling over that end only; the site tightened to the room"
     ]
   },
   "museum-musee-du-petit-palais": {
     "name": "Musée du Petit Palais",
-    "refined": "2026-09-25",
-    "passes": 1,
+    "refined": "2026-10-14",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-25 first model from published descriptions and dimensions (no photographs available this session)",
-      "2026-09-30 interior finding: only 46% of the model's footprint stands on the ground's buildings"
+      "2026-10-14 refined (photographs, the map's outline, the 2018 aerial photograph): redrawn on the building's real footprint — the 122 m front turned four degrees off north-south and facing west, the trapezoid of four wings round the D-shaped court — from OpenStreetMap's outline (new part prism, with holes and taper): 45% to 86% of the plot's building cells, all 144 covered; limestone walls on a stone plinth, balustrade, flat-topped slate mansards with chimneys and skylights, corner pavilion domes, the great arched porch with its gilded gate and stair, the central dome on its drum, first-floor windows, the front colonnade, the roofed peristyle with its column arcade round the court; arranged rooms laid again inside (141)"
     ],
     "interior": {
       "tier": "arranged",
@@ -3924,7 +3926,7 @@
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
-        "arranged": 34
+        "arranged": 141
       },
       "works": {
         "hung": 1,
@@ -3938,13 +3940,13 @@
   },
   "museum-black-mountain-college-museum-and-arts-center": {
     "name": "Black Mountain College Museum and Arts Center",
-    "refined": "2026-09-26",
-    "passes": 1,
+    "refined": "2026-10-14",
+    "passes": 2,
     "sketchup": false,
     "kind": "museum",
     "log": [
       "2026-09-26 first model: a generic downtown-Asheville brick storefront block (no photographs reachable, no purpose-built museum building of its own; the institution occupies a storefront on College Street)",
-      "2026-09-30 interior finding: only 62% of the model's footprint stands on the ground's buildings"
+      "2026-10-14 refined (a March 2023 photograph at 250 px, the map's outline): the museum is a 6,000 sq ft space in a renovated three-storey red-brick block on Pack Square Park, not a storefront — redrawn on the block's real footprint (31 x 37 m, turned 13 degrees, with its annex) 12 m north of where the first model stood: 65% to 84% of the plot's building cells, no shift needed; shop bays under a dark awning, string course and cornice, windows on the four sides, parapet, copper roof at the corner, College Street and Pack Square Park's lawn and pavilion; arranged rooms laid again inside (18)"
     ],
     "interior": {
       "tier": "arranged",
@@ -3953,7 +3955,7 @@
       "rooms": {
         "documented": 0,
         "reconstructed": 0,
-        "arranged": 1
+        "arranged": 18
       },
       "works": {
         "hung": 1,
@@ -3967,11 +3969,12 @@
   },
   "harmonious-habitat-woodsong-by-alfred-browning-parker": {
     "name": "Woodsong",
-    "refined": "2026-10-06",
-    "passes": 1,
+    "refined": "2026-10-14",
+    "passes": 2,
     "sketchup": false,
     "log": [
-      "2026-10-06 first model from the article's thirteen photographs"
+      "2026-10-06 first model from the article's thirteen photographs",
+      "2026-10-14 refined (photographs, three rounds): the slatted volumes near black (new material ebony), the ground the dense understory of the photographs instead of bare soil, pale grey royal-palm trunks (new tree option trunk) with fuller crowns, the silver Bismarck palm and two tall trunks in the entry court's foreground, palmettos; voxel 0.46 to 0.5 to keep the dots under 25,000 (22,350 before, 23,200 now)"
     ]
   },
   "seamless-horizons-balboa-by-riva-spain": {

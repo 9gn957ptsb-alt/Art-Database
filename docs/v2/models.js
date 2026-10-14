@@ -3,9 +3,10 @@
 
    A model is a small description of a building, written by hand from the
    photographs of it (docs/v2/models/<slug>.json, see MODELS.md beside it):
-   boxes, gables, slopes, cylinders, domes and blobs, each of a material,
-   and cuts that take volume away again — a courtyard, a window band, the
-   void under an overhang. Here it is filled in as voxels, and every voxel
+   boxes, gables, slopes, cylinders, domes and blobs, polygons stood up for
+   a plan that is off the grid, each of a material, and cuts that take
+   volume away again — a courtyard, a window band, the void under an
+   overhang. Here it is filled in as voxels, and every voxel
    on the outside becomes one dot: the material's colour worn over the soil
    of the place, lit from the upper left of the world, glass left open so it
    reads as glass. It stands on a clod of its own ground and rises out of it
@@ -42,6 +43,7 @@
     mesh:     { c: [118, 116, 112], soil: 0.04, open: 0.5 },  // expanded metal, perforated screens
     wood:     { c: [178, 128, 82], soil: 0.10 },
     timber:   { c: [104, 72, 46], soil: 0.10 },
+    ebony:    { c: [66, 46, 36], soil: 0.08 },      // dark-stained or charred timber cladding, near black
     thatch:   { c: [170, 142, 88], soil: 0.20 },
     glass:    { c: [88, 110, 128], soil: 0.04, glass: true },
     metal:    { c: [150, 154, 160], soil: 0.04 },
@@ -93,6 +95,7 @@
         for (var q = 2; q < p.mesh.v.length; q += 3) { top = Math.max(top, p.mesh.v[q]); }
         return;
       }
+      if (p.prism) { top = Math.max(top, (p.z || 0) + (p.h || 0)); return; }
       var a = p.box || p.gable || p.shed || p.hip || p.cut || p.blob || p.cyl || p.dome || p.tree;
       if (!a) { return; }
       if (p.box || p.gable || p.shed || p.hip) { top = Math.max(top, a[2] + a[5] + (p.thick || 0)); }
@@ -120,6 +123,47 @@
             var cx = (i + 0.5) * v - site[0] / 2, cy = (j + 0.5) * v - site[1] / 2, cz = (k + 0.5) * v;
             var r = fn(cx, cy, cz);
             if (r === undefined) { continue; }
+            grid[(k * ny + j) * nx + i] = r;
+          }
+        }
+      }
+    }
+
+    /* A plan that is not on the grid: a polygon (x, y in metres, any winding)
+       stood from z up h, the holes of it (a courtyard) left open. With taper,
+       its walls lean in that many metres for each metre up and the top is
+       flat at h — a mansard, or a hip, over any plan. A cell is in when its
+       middle is inside the outline and outside every hole. */
+    function prismFill(p, r) {
+      var pts = p.prism || p.pcut, rings = [pts].concat(p.holes || []);
+      var z0 = p.z || 0, h = p.h || 0, taper = p.taper || 0;
+      if (!pts || pts.length < 3 || h <= 0) { return; }
+      var bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+      pts.forEach(function (q) {
+        bx0 = Math.min(bx0, q[0]); bx1 = Math.max(bx1, q[0]);
+        by0 = Math.min(by0, q[1]); by1 = Math.max(by1, q[1]);
+      });
+      var i0 = Math.max(0, I(bx0)), i1 = Math.min(nx - 1, I(bx1));
+      var j0 = Math.max(0, J(by0)), j1 = Math.min(ny - 1, J(by1));
+      var k0 = Math.max(0, K(z0)), k1 = Math.min(nz - 1, K(z0 + h - 1e-6));
+      for (var j = j0; j <= j1; j += 1) {
+        for (var i = i0; i <= i1; i += 1) {
+          var px = (i + 0.5) * v - site[0] / 2, py = (j + 0.5) * v - site[1] / 2;
+          var inside = false, reach = Infinity;
+          rings.forEach(function (ring) {
+            for (var s = 0, t = ring.length - 1; s < ring.length; t = s, s += 1) {
+              var ax = ring[t][0], ay = ring[t][1], cx = ring[s][0], cy = ring[s][1];
+              if ((ay > py) !== (cy > py) && px < ax + (py - ay) * (cx - ax) / (cy - ay)) { inside = !inside; }
+              if (taper) {
+                var dx = cx - ax, dy = cy - ay, len2 = dx * dx + dy * dy;
+                var u = len2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2)) : 0;
+                reach = Math.min(reach, Math.hypot(px - ax - u * dx, py - ay - u * dy));
+              }
+            }
+          });
+          if (!inside) { continue; }
+          for (var k = k0; k <= k1; k += 1) {
+            if (taper && ((k + 0.5) * v - z0) * taper > reach) { break; }
             grid[(k * ny + j) * nx + i] = r;
           }
         }
@@ -226,7 +270,9 @@
         // poplar (a tall narrow flame), umbrella (a flat wide crown, the
         // native trees of the Americas' dry hills), palm (a bare trunk to
         // a small crown of fronds).
-        var trunk = mi("timber"), crown = mi(p.m || "plant"), shape = p.shape || "round";
+        // "trunk" is its wood: dark timber by default; a royal palm's or a
+        // frangipani's is pale grey.
+        var trunk = mi(p.trunk || "timber"), crown = mi(p.m || "plant"), shape = p.shape || "round";
         // A fifth value stands it on a terrace: its foot is that high.
         var base = a[4] || 0;
         var r = a[3], hh = a[2] + base, tw = v * 0.05;   // a trunk one voxel wide
@@ -254,6 +300,8 @@
           }
           return d2 <= 1 ? crown : undefined;
         });
+      } else if (p.prism || p.pcut) {
+        prismFill(p, p.pcut ? 0 : m);
       } else if (p.mesh) {
         fillMesh(p.mesh, m);
       } else if ((a = p.pool)) {
@@ -383,6 +431,7 @@
   function partTop(p) {
     var a = p.box || p.gable || p.shed || p.hip, t = 0;
     if (p.mesh) { for (var q = 2; q < p.mesh.v.length; q += 3) { t = Math.max(t, p.mesh.v[q]); } return t; }
+    if (p.prism) { return (p.z || 0) + (p.h || 0); }
     if (a) { return a[2] + a[5] + (p.thick || 0); }
     if (p.cyl) { return p.cyl[2] + p.cyl[4]; }
     if (p.dome) { return p.dome[2] + p.dome[3]; }
@@ -391,7 +440,7 @@
   }
   function inset(spec, soil) {
     var parts = (spec.parts || []).filter(function (p) {
-      return p.cut || (!p.tree && !p.pool && !GROUNDS[p.m || "concrete"] && partTop(p) > 1);
+      return p.cut || p.pcut || (!p.tree && !p.pool && !GROUNDS[p.m || "concrete"] && partTop(p) > 1);
     });
     if (!parts.some(function (p) { return !p.cut; })) { return null; }
     var s = {}, key;
