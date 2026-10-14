@@ -1144,7 +1144,8 @@
   function handRoom() {
     var phone = window.innerWidth <= 720;
     var b = ground.hand ? ground.hand.box(ground.scale) : null;
-    return { side: b ? Math.max(18, b.w / 2 + 6) : (phone ? 30 : 40), up: b ? b.h + 6 : (phone ? 48 : 62), foot: 18 };
+    // Before it has come, the room of a place's own (40 × 26 cells), so the city does not jump when it does.
+    return { side: b ? Math.max(18, b.w / 2 + 6) : (phone ? 40 : 56), up: b ? b.h + 6 : (phone ? 49 : 71), foot: 18 };
   }
   // The animal at a size of its own pixels (whole device pixels a cell, so its dots stay crisp): about 44 px
   // tall on a phone, 60 on a desktop, a little more as the city is brought nearer.
@@ -1212,8 +1213,11 @@
     var key = [Math.round(r.cx * 2), Math.round(r.cy * 2), Math.round(r.R * 2), Land.dialGround.ver(), hs.pose, hs.n, hs.dir,
                Math.round(hs.x * 2), Math.round(hs.y * 2), Math.round(hs.alt), !!ground.hand, ground.scale,
                band.x, band.y, band.w, band.h, W, H, k].join("|");
-    if (key === ground.painted) { return; }
+    // Thirty times a second at most (the skyline itself is drawn at twenty-four): what changed in between
+    // is painted at the next.
+    if (key === ground.painted || now - (ground.paintedAt || 0) < 33) { return; }
     ground.painted = key;
+    ground.paintedAt = now;
     var pw = Math.round(W * k), ph = Math.round(H * k);
     var ring = { cx: r.cx, cy: r.cy, R: r.R, st: r.st, hand: ground.hand ? ground.box : null };
     // Only the band is drawn in, so only the band is cleared — but all of it when the band has moved.
@@ -1957,6 +1961,8 @@
       visit = st.visit;
       city = null;
       off();
+      // Its animal read while its ground is (the ground dial's hand), so the city is laid out for it at once.
+      if (GROUND) { handFor(st.key); }
       var myVisit = visit;
       var slugs = P.museums || [];
       building = Promise.all([once("grounds/city-" + st.key + ".json")].concat(slugs.map(function (s) { return once("models/" + s + ".json"); }))

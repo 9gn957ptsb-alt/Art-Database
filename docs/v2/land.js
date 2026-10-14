@@ -20892,13 +20892,29 @@
     return { x: geo.c + Math.cos(a) * r, y: geo.c + Math.sin(a) * r };
   }
   function groundCtx(g, geo) {
-    var local = 0, stack = [];
+    // A glow asked for (shadowBlur) is drawn as a wider, fainter stroke under the line: a canvas blur along
+    // a ring the size of a city, twice a frame (its two halves), was most of a frame on a phone.
+    var local = 0, stack = [], blur = 0, blurColor = "";
     var o = {
-      save: function () { stack.push(local); g.save(); },
-      restore: function () { local = stack.length ? stack.pop() : 0; g.restore(); },
+      save: function () { stack.push([local, blur, blurColor]); g.save(); },
+      restore: function () {
+        var s = stack.length ? stack.pop() : [0, 0, ""];
+        local = s[0]; blur = s[1]; blurColor = s[2];
+        g.restore();
+      },
       beginPath: function () { g.beginPath(); },
       closePath: function () { g.closePath(); },
-      stroke: function () { g.stroke(); },
+      stroke: function () {
+        if (blur > 0 && blurColor) {
+          g.save();
+          g.strokeStyle = blurColor;
+          g.globalAlpha *= 0.3;
+          g.lineWidth += blur * 0.75;
+          g.stroke();
+          g.restore();
+        }
+        g.stroke();
+      },
       fill: function () { g.fill(); },
       setLineDash: function (v) { g.setLineDash(v); },
       measureText: function (t) { return g.measureText(t); },
@@ -20938,10 +20954,12 @@
       fillText: function (t, x, y) { if (local) { g.fillText(t, x, y); return; } var p = groundXY(geo, x, y); g.fillText(t, p.x, p.y); },
       map: function (x, y) { return groundXY(geo, x, y); }
     };
-    ["strokeStyle", "fillStyle", "lineWidth", "globalAlpha", "shadowColor", "shadowBlur", "font", "textAlign",
+    ["strokeStyle", "fillStyle", "lineWidth", "globalAlpha", "font", "textAlign",
      "textBaseline", "lineCap", "lineJoin"].forEach(function (k) {
       Object.defineProperty(o, k, { get: function () { return g[k]; }, set: function (v) { g[k] = v; } });
     });
+    Object.defineProperty(o, "shadowBlur", { get: function () { return blur; }, set: function (v) { blur = +v || 0; g.shadowBlur = 0; } });
+    Object.defineProperty(o, "shadowColor", { get: function () { return blurColor; }, set: function (v) { blurColor = v; } });
     return o;
   }
   // On the ground: the first year under where the ring begins (the year itself rides beside the animal, in

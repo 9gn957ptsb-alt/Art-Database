@@ -9,6 +9,8 @@
      made: the city was made into dots in under --budget ms (default 4000; headless Chromium is slow);
      named: its museums are on it, and at least one is named;
      time: turned to the dial's first years, less of it stands (the share risen goes down), and back;
+     ground: the dial lies on the city's ground, its ring wholly in the city's band, its animal (the hand) at
+       the dial's year;
      pressed: a named museum, pressed, goes into the museum, and up again brings the skyline back;
      quiet: no page error and no console error but the blocked hosts' (NASA, Artsy's images, Commons,
        Google Fonts are not reached from the sandbox).
@@ -124,6 +126,17 @@ function check(tag, ok, what, detail) {
       } else if (!s.years) {
         console.log("  --   " + tag + " · its buildings' years are not in its ground yet: the dial not checked");
       }
+      // The dial laid on its ground (skyline.js, "the ground dial"): its ring wholly in the band, round the
+      // city, its animal (or the diamond, where the place has none drawn) at the dial's year.
+      const gd = await P.evaluate(() => ({ on: !!(Land.dialGround && Land.dialGround.on()), ring: Skyline.ring(), hand: Skyline.hand(),
+                                          t: Land.dial() ? Land.dial().t : null, band: Skyline.state().band }));
+      check(tag, gd.on && !!gd.ring && !!gd.hand, "its dial lies on its ground", gd.hand ? (gd.hand.name || "the diamond") : JSON.stringify(gd));
+      if (gd.ring && gd.band) {
+        const b = gd.band, r = gd.ring;
+        check(tag, r.cx - r.R >= b.x - 1 && r.cx + r.R <= b.x + b.w + 1 && r.cy - r.ry >= b.y - 1 && r.cy + r.ry <= b.y + b.h + 1,
+          "its ring wholly in the city's band", [Math.round(r.cx - r.R), Math.round(r.cy - r.ry), Math.round(r.cx + r.R), Math.round(r.cy + r.ry)].join(","));
+      }
+      if (gd.hand && gd.t !== null) { check(tag, Math.abs(gd.hand.t - gd.t) < 0.02, "its hand at the dial's year", gd.hand.t.toFixed(3) + " ~ " + gd.t.toFixed(3)); }
       // A named museum, pressed, goes in; up again, the skyline is back.
       const one = museums.find((m) => m.named && !m.hidden);
       if (one) {
