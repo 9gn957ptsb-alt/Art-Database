@@ -234,3 +234,7 @@ input[type="range"]:disabled { opacity: 0.35; cursor: default; }
 .inline:hover, .inline:focus-visible { color: #fff7ea; }
 .engines { display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(234, 223, 205, 0.06); align-self: flex-start; }
 .engines .pill { min-height: 26px; padding: 4px 11px; }
+
+/* While you come to, the page steps back, as a film opens. */
+.where, .card, .ledger, .help, .foot, .near { transition: opacity 0.6s steps(6); }
+body[data-film] .where, body[data-film] .card, body[data-film] .ledger, body[data-film] .help, body[data-film] .foot, body[data-film] .near { opacity: 0; pointer-events: none; }

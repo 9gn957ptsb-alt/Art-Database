@@ -390,24 +390,6 @@
     }
     if (!worldO || mode !== "world") { return; }
     var T = boards[here], taken = [], o = worldO, z = views[here].zoom;
-    // The launch sites: a small spire each, named when there is room.
-    if (here === "earth" && game.escape) {
-      Wd.Escape.PORTS.forEach(function (pt) {
-        var p = Wd.project(o, pt.lat * RAD, pt.lon * RAD);
-        if (p.z < 0.15) { pt.sx = null; return; }
-        pt.sx = p.x; pt.sy = p.y;
-        var mine = pt.id >= 0 && game.owner("earth", pt.id) === 0;
-        mctx.globalAlpha = Math.min(1, (p.z - 0.15) / 0.2);
-        mctx.beginPath(); mctx.moveTo(p.x, p.y - 7); mctx.lineTo(p.x + 4, p.y + 3); mctx.lineTo(p.x - 4, p.y + 3); mctx.closePath();
-        mctx.fillStyle = "rgba(15,10,7,0.7)"; mctx.fill();
-        mctx.lineWidth = 1.4; mctx.strokeStyle = mine ? "#f3c98b" : "#eadfcd"; mctx.stroke();
-        if (z >= 1.6 || mine) {
-          label(pt.name, p.x + 8, p.y - 2, { size: 8.5, color: mine ? "#f3c98b" : "rgba(234,223,205,0.75)" });
-          taken.push([p.x - 6, p.y - 10, p.x + 120, p.y + 6]);
-        }
-        mctx.globalAlpha = 1;
-      });
-    }
     // The cities whose streets can be walked: a small square each, named when near enough.
     if (here === "earth" && z >= CITY_ZOOM) {
       cities.forEach(function (c) {
@@ -495,6 +477,25 @@
   function panel() {
     var p = $("card"), s = game.s;
     if (mode === "fly") { p.hidden = true; return; }
+    if (mode === "street") {
+      p.hidden = false;
+      var sw = street.world, hh = game.escape && game.escape.hunt(sw);
+      if (!street.hunting) {
+        p.innerHTML = '<p class="eyebrow">' + esc(street.place.name) + '</p><h2>Walking.</h2><p class="lede">Your rocket\'s parts are not here. They are where you came down.</p>' +
+          '<button class="act" id="hunt">Go back to your tree</button>';
+        $("hunt").onclick = function () { leaveStreet(function () { goToHunt(game.escape.e.stage === "mars" ? "mars" : "earth", false); }); };
+        return;
+      }
+      var all = hh && hh.found.length === Wd.Escape.PARTS[sw].length;
+      p.innerHTML = '<p class="eyebrow">The way off ' + (sw === "earth" ? "the Earth" : "Mars") + ' · ' + esc(street.place.name) + '</p>' +
+        '<h2>' + (hh && hh.built ? "Your rocket stands under the tree." : all ? "Go back to your tree to build." : "Find the parts of your rocket.") + '</h2>' +
+        notebook(sw) +
+        (hh && hh.built ? '<p class="lede">' + windowLine(game.escape.window(sw), sw === "earth" ? "Mars" : "Earth") + '</p>' +
+          '<button class="act" id="launch"' + (game.escape.window(sw).open ? '' : ' disabled') + '>Launch</button>' :
+          '<p class="hint">Walk to a place to search it. Mind the ' + (sw === "earth" ? "traffic" : "dust devils") + ': struck, you come to again under your tree.</p>');
+      wireJourney(p);
+      return;
+    }
     if (s.phase === "choose") {
       p.hidden = false;
       if (mode === "system") {
@@ -507,13 +508,19 @@
           '<button class="act" id="down">Go to Earth</button>';
         $("down").onclick = function () { descend("earth"); };
       } else if (!sel) {
-        p.innerHTML = '<p class="eyebrow">Begin</p><h2>Choose your ground.</h2><p class="lede">Press any country to look at it, then raise your banner there.</p>';
+        p.innerHTML = '<p class="eyebrow">Begin</p><h2>Choose your ground.</h2><p class="lede">Press any country to look at it, then raise your banner there. You will come down in the city nearest it.</p>';
       } else {
         var t = game.territory("earth", sel.id);
         p.innerHTML = '<p class="eyebrow">Earth' + (t.region ? ' · ' + esc(t.region) : '') + '</p><h2>' + esc(t.name) + '</h2>' +
           '<dl class="facts">' + fact("Yield", t.yield + " a turn") + fact("Borders", t.near.length) + fact("Beneath", (t.mars || []).length + " on Mars") + '</dl>' +
+          '<p class="from">You come down in <b>' + esc((nearestCity(t.lat, t.lon) || { name: "the nearest city" }).name) + '</b></p>' +
           '<button class="act" id="begin">Begin in ' + esc(t.name) + '</button>';
-        $("begin").onclick = function () { game.begin(sel.w, sel.id); save(); paint(); select(sel.w, sel.id); status(); };
+        $("begin").onclick = function () {
+          game.begin(sel.w, sel.id); save(); paint(); status();
+          sel = null;
+          // You come down in the walkable city nearest the ground you chose.
+          goToHunt("earth", true);
+        };
       }
       return;
     }
@@ -603,7 +610,11 @@
     var lh = $("landhere");
     if (lh) {
       lh.onclick = function () {
-        if (game.escape.land(0, w, id)) { save(); paint(); status(); toast("Down on " + t2.name, true); select(w, -1); }
+        if (game.escape.land(0, w, id)) {
+          save(); paint(); status(); sel = null;
+          if (w === "mars") { game.escape.e.landed = id; save(); goToHunt("mars", true); }
+          else { toast("Home · " + t2.name, true); panel(); }
+        }
       };
     }
     wireGo(p);
@@ -626,44 +637,31 @@
   }
 
   function journey() {
-    var x = game.escape, e = x.e, me = game.human(), h = "";
+    var x = game.escape, e = x.e, h = "";
+    var hunt = function (w) {
+      var hh = x.hunt(w), P = Wd.Escape.PARTS[w], n = hh ? hh.found.length : 0, win = x.window(w);
+      var where = hh ? hh.name : (w === "earth" ? "the city you came down in" : "where you came down");
+      h += '<ol class="steps">';
+      h += step(n === P.length, "The parts", n + " of " + P.length + " found in " + esc(where) + ": " + P.map(function (p) { return p.replace(/^The /, "").toLowerCase(); }).join(", ") + ".");
+      h += step(hh && hh.built, "Build", "At your tree, once every part is found.");
+      h += step(win.open, "The window", windowLine(win, w === "earth" ? "Mars" : "Earth"));
+      h += '</ol><button class="act" id="hunt">Go to your tree</button>';
+      if (hh && hh.built) { h += '<button class="act" id="launch"' + (win.open ? '' : ' disabled') + '>Launch</button>'; }
+    };
     if (e.stage === "earth") {
-      var held = x.portsHeld(0), plan = x.bestEarthPlan(0, e.engine), w = x.window("earth");
-      var ports = Wd.Escape.PORTS.filter(function (q) { return q.id >= 0; }).slice(0, 5);
-      h += '<p class="eyebrow">The way off the Earth</p><h2>Find the way to Mars.</h2><ol class="steps">';
-      h += step(held.length > 0, "A launch site", held.length ? esc(held[0].name) + ", in " + esc(game.territory("earth", held[0].id).name) + ". " + Math.round(0.465 * Math.cos(held[0].lat * RAD) * 1000) + " m/s from the Earth's spin." :
-        "Hold the country of one. The nearer the equator, the more the Earth's spin lifts you: " + ports.map(function (q) {
-          return '<button class="inline" data-go="earth:' + q.id + '">' + esc(q.name) + '</button>';
-        }).join(", ") + ".");
-      h += step(w.open, "The window", windowLine(w, "Mars"));
-      var cost = plan ? plan.cost : x.earthPlan(Wd.Escape.PORTS[0], e.engine).cost;
-      h += step(plan && me.treasury >= cost, "The propellant", (plan ? Math.round(plan.mass).toLocaleString() + " tonnes at lift-off, " : "About ") + cost + " marks on " +
-        Wd.Escape.ENGINES.filter(function (q) { return q.key === e.engine; })[0].name.toLowerCase() + ". You have " + me.treasury + ".");
-      h += '</ol><div class="engines" role="group" aria-label="Engine">' + Wd.Escape.ENGINES.map(function (q) {
-        return '<button class="pill" data-engine="' + q.key + '" aria-pressed="' + (q.key === e.engine) + '" title="' + esc(q.note) + '">' + q.key + '</button>';
-      }).join("") + '</div>';
-      var ready = plan && w.open && me.treasury >= plan.cost;
-      h += '<button class="act" id="launch"' + (ready ? '' : ' disabled') + '>' + (ready ? "Launch from " + esc(plan.port.name) : "Launch") + '</button>';
+      h += '<p class="eyebrow">The way off the Earth</p><h2>Build a rocket for Mars.</h2>';
+      hunt("earth");
     } else if (e.stage === "to-mars" || e.stage === "to-earth") {
       var t = e.transit, left = Math.max(0, Math.ceil((t.arrive - game.s.day) / 30));
       h += '<p class="eyebrow">On the way</p><h2>' + (e.stage === "to-mars" ? "Bound for Mars." : "Bound for the Earth.") + '</h2>' +
-        '<p class="lede">Out from ' + esc(t.port) + ' on the long half-orbit between the worlds. ' + left + ' month' + (left === 1 ? '' : 's') + ' to go.</p>';
+        '<p class="lede">Out from ' + esc(t.port) + ' on the long half-orbit between the worlds. ' + left + ' month' + (left === 1 ? '' : 's') + ' to go. End the turn to pass them.</p>';
     } else if (e.stage === "land-mars" || e.stage === "land-earth") {
       var to = e.stage === "land-mars" ? "Mars" : "the Earth";
       h += '<p class="eyebrow">Arrived</p><h2>Choose where to come down on ' + to + '.</h2><p class="lede">Press any ground no one holds, then come down there.' +
-        (e.stage === "land-mars" ? ' Near the ice, or the high volcanoes, will serve the way off.' : '') + '</p>';
+        (e.stage === "land-mars" ? ' The poles and the northern plains have the most ice; the volcanoes the most basalt.' : '') + '</p>';
     } else if (e.stage === "mars") {
-      var wk = x.marsWorks(0), mp = x.bestMarsPlan(0), wm = x.window("mars"), ss = x.season();
-      h += '<p class="eyebrow">The way off Mars</p><h2>Make the way home.</h2><ol class="steps">';
-      h += step(wk.ice > 0, "Ice", wk.ice ? esc(wk.iceNames.join(", ")) + ", " + wk.ice + " tonnes a month." :
-        "Hold the polar caps (8 tonnes a month), Vastitas Borealis (5), or the buried ice of Utopia and Arcadia (3).");
-      h += step(wk.sun.length > 0, "Sun", wk.sun.length ? "Power from " + esc(wk.sun[0]) + ". " + (ss.storms ? "It is the dust season: storms may dim it." : "The air is clear this season.") :
-        "Hold ground within 35° of the equator to power the plant that makes methane and oxygen from ice and air.");
-      h += step(mp && x.e.fuel >= mp.need, "Propellant", Math.floor(x.e.fuel) + " of " + (mp ? mp.need : "about 110") + " tonnes made" + (wk.rate ? ", " + wk.rate + " a month." : ".") +
-        (mp && mp.high ? " Lifting from " + esc(mp.name) + ", above most of the air." : ""));
-      h += step(wm.open, "The window", windowLine(wm, "Earth"));
-      var go = mp && wm.open && x.e.fuel >= mp.need;
-      h += '</ol><button class="act" id="launch"' + (go ? '' : ' disabled') + '>' + (go ? "Lift off from " + esc(mp.name) : "Lift off") + '</button>';
+      h += '<p class="eyebrow">The way off Mars</p><h2>Build a rocket for home.</h2>';
+      hunt("mars");
     } else {
       h += '<p class="eyebrow">The way between worlds</p><h2>You have found it.</h2><p class="lede">Off the Earth, off Mars, and home. The moons of Jupiter are next; the way there is not yet built.</p>';
     }
@@ -671,16 +669,16 @@
   }
 
   function wireJourney(root) {
-    root.querySelectorAll("[data-engine]").forEach(function (b) {
-      b.onclick = function () { game.escape.e.engine = b.dataset.engine; save(); panel(); };
-    });
-    var l = $("launch");
+    var hb = root.querySelector("#hunt");
+    if (hb && !hb.onclick) { hb.onclick = function () { goToHunt(game.escape.e.stage === "mars" ? "mars" : "earth", false); }; }
+    var l = root.querySelector("#launch");
     if (l) {
       l.onclick = function () {
-        var x = game.escape, ok = false;
-        if (x.e.stage === "earth") { ok = x.launchFromEarth(0, x.bestEarthPlan(0, x.e.engine)); }
-        else if (x.e.stage === "mars") { ok = x.launchFromMars(0, x.bestMarsPlan(0)); }
-        if (ok) { save(); status(); panel(); toast("Launched", true); if (mode === "world") { ascend(); } }
+        var x = game.escape, w = x.e.stage;
+        if (!x.launchBuilt(0, w)) { return; }
+        save(); status(); toast("Launched", true);
+        var up = function () { panel(); if (mode === "world") { ascend(); } };
+        if (mode === "street") { leaveStreet(up); } else { up(); }
       };
     }
   }
@@ -1020,35 +1018,54 @@
     return { place: c, at: inside ? { lat: lat, lon: lon } : null };
   }
 
-  function enterStreet(place, at) {
+  /* Down to street level. opts: world ("earth" or "mars"), crash (this is
+     where you came down: the hunt is here), intro (come to under the tree),
+     ground (a world's own ground, for Mars). */
+  function enterStreet(place, at, opts) {
+    opts = opts || {};
     if (mode !== "world" || street) { return; }
+    var w = opts.world || "earth", x = game.escape, h = x ? x.hunt(w) : null;
+    var hunting = !!(x && (opts.crash || (h && h.place === place.key)) && x.e.stage === w);
     mode = "street";
-    street = { place: place };
-    hover = -1; hoverCity = null; tip(null);
+    street = { place: place, world: w, hunting: hunting };
+    sel = null; hover = -1; hoverCity = null; tip(null);
     pills();
     $("where-name").textContent = place.name;
-    // The ground the city stands on: its country, to wager on from the street.
-    var id = cellAt("earth", place.lat * RAD, place.lon * RAD);
-    if (id >= 0 && game.s.phase === "play") { select("earth", id); } else { panel(); }
     $("street-help").hidden = false;
-    $("going").hidden = false;
+    $("going").hidden = !!opts.intro;
     $("going").textContent = "Going down into " + place.name;
+    var mars = w === "mars";
+    var lines = mars ? ["The parachute tore in the thin air over " + place.name + ".", "You come to under the greenhouse olive, thrown clear in the crash.", "Mars · " + place.name]
+                     : ["Somewhere over " + place.name + ", the descent went wrong.", "You come to under a tree. Your craft is in pieces.", place.name];
+    panel();
     Wd.Street.open({
-      host: stage, base: "../v2/", place: place, at: at,
+      host: stage, base: "../v2/", place: place, at: at, ground: opts.ground || null,
+      intro: opts.intro ? lines : null, atCrash: hunting && !opts.intro,
+      look: mars ? { ground: Wd.Street.MARS_GROUND, rock: [118, 70, 50], trees: false, tree: [96, 112, 70], sky: "mars", movers: "dust" } : null,
       sun: function () { return sunNow(Date.now()); },
+      fixedSun: mars ? [-0.52, 0.62, -0.58] : null,
       onOut: function () { leaveStreet(); },
+      onHit: function () {
+        toast(mars ? "A dust devil threw you down" : "Struck in the road", false);
+        game.say(mars ? "A dust devil caught you on " + place.name + "; you came to again under the olive." : "A car caught you in " + place.name + "; you came to again under your tree.", 0);
+        save(); status();
+      },
+      onSite: hunting ? function (site) { atSite(w, site); } : null,
+      siteTag: hunting ? function (site) { return siteTag(w, site); } : null,
       onNear: function (m) {
         var el = $("near");
-        if (!m) { el.hidden = true; return; }
+        if (!m || mars) { el.hidden = true; return; }
         el.hidden = false;
         el.innerHTML = '<span>' + esc(m.name) + '</span><a href="../v2/" target="_blank" rel="noopener">Its inside, on the Artist Website</a>';
       },
       onWhere: function (ll) {
-        $("where-at").textContent = Math.abs(ll.lat).toFixed(4) + "° " + (ll.lat >= 0 ? "N" : "S") + "  " + Math.abs(ll.lon).toFixed(4) + "° " + (ll.lon >= 0 ? "E" : "W");
+        $("where-at").textContent = mars ? "Mars · " + Math.abs(place.lat).toFixed(1) + "° " + (place.lat >= 0 ? "N" : "S") :
+          Math.abs(ll.lat).toFixed(4) + "° " + (ll.lat >= 0 ? "N" : "S") + "  " + Math.abs(ll.lon).toFixed(4) + "° " + (ll.lon >= 0 ? "E" : "W");
         street.ll = ll;
       }
-    }).then(function () {
+    }).then(function (got) {
       $("going").hidden = true;
+      if (hunting && got) { x.startHunt(w, place, got.sites); save(); panel(); }
     }).catch(function (err) {
       $("going").hidden = true;
       street = null; mode = "world"; pills();
@@ -1057,20 +1074,91 @@
     });
   }
 
+  // Standing at a place: searching it, or at your tree, building.
+  function atSite(w, site) {
+    var x = game.escape, h = x.hunt(w);
+    if (!h) { return; }
+    if (site.kind === "crash") {
+      if (x.build(w)) { toast("The rocket is built", true); save(); status(); panel(); }
+      return;
+    }
+    var r = x.search(w, site.key);
+    if (!r) { return; }
+    if (r.found.length) { toast("Found · " + r.found.join(", "), true); }
+    else { toast("Not here · " + site.name); }
+    save(); status(); panel();
+  }
+  function siteTag(w, site) {
+    var h = game.escape.hunt(w);
+    if (!h) { return ""; }
+    if (site.key === "crash") { return h.built ? "your rocket" : h.found.length + " of " + Wd.Escape.PARTS[w].length + " parts"; }
+    var here = Wd.Escape.PARTS[w].filter(function (p) { return h.parts[p] === site.key && h.found.indexOf(p) >= 0; });
+    if (here.length) { return "found " + here.join(", ").toLowerCase(); }
+    if (h.searched.indexOf(site.key) >= 0) { return "searched"; }
+    var still = Wd.Escape.PARTS[w].filter(function (p) { return h.found.indexOf(p) < 0 && h.crossed[p].indexOf(site.key) < 0; });
+    return still.length ? "" : "ruled out";
+  }
+
+  /* The notebook: for each part, found where, or where it may still be. */
+  function notebook(w) {
+    var x = game.escape, h = x.hunt(w), P = Wd.Escape.PARTS[w];
+    if (!h) { return '<p class="lede">Searching begins when you stand in ' + esc(street ? street.place.name : "the place you came down") + '.</p>'; }
+    var rows = P.map(function (p) {
+      var got = h.found.indexOf(p) >= 0, may = x.maybe(h, p);
+      var nm = function (k) { return esc(Wd.Escape.inSentence(x.siteName(h, k))); };
+      var where = got ? "Found at " + nm(h.parts[p]) + "." :
+        may.length === 1 ? "It must be at " + nm(may[0]) + "." :
+        "Could be at " + may.map(nm).join(", ") + ".";
+      return '<li data-done="' + got + '"><b>' + esc(p.replace(/^The /, "")) + '</b><span>' + where + '</span></li>';
+    }).join("");
+    return '<ol class="steps">' + rows + '</ol>';
+  }
+
   function leaveStreet(then) {
     if (mode !== "street") { if (then) { then(); } return; }
+    var w = street.world || "earth";
     var ll = street && street.ll ? street.ll : { lat: street.place.lat, lon: street.place.lon };
+    if (w === "mars") { ll = { lat: street.place.lat, lon: street.place.lon }; }
     Wd.Street.close();
     street = null;
-    mode = "world"; here = "earth";
-    views.earth.zoom = 9;
-    views.earth.spin = ll.lon * RAD; views.earth.tilt = Math.max(-1, Math.min(1, ll.lat * RAD));
+    mode = "world"; here = w;
+    views[w].zoom = w === "earth" ? 9 : 2.4;
+    views[w].spin = ll.lon * RAD; views[w].tilt = Math.max(-1, Math.min(1, ll.lat * RAD));
     $("where-name").textContent = "Worlds";
     $("where-at").textContent = "";
     $("near").hidden = true;
     $("street-help").hidden = true;
     pills(); panel();
     if (then) { then(); }
+  }
+
+  // The walkable city nearest a place on the Earth.
+  function nearestCity(lat, lon) {
+    var best = null, bd = 1e9;
+    cities.forEach(function (c) {
+      var d = Math.acos(Math.max(-1, Math.min(1, Math.sin(lat * RAD) * Math.sin(c.lat * RAD) + Math.cos(lat * RAD) * Math.cos(c.lat * RAD) * Math.cos((lon - c.lon) * RAD))));
+      if (d < bd) { bd = d; best = c; }
+    });
+    return best;
+  }
+  // Mars's ground at a region: made there, the same each time you come back.
+  function marsPlace(id) {
+    var t = game.territory("mars", id);
+    return { key: "mars-" + id, name: t.name, lat: t.lat, lon: t.lon, region: id };
+  }
+  function goToHunt(w, intro) {
+    var h = game.escape.hunt(w);
+    if (w === "earth") {
+      var c = h ? cities.filter(function (q) { return q.key === h.place; })[0] : null;
+      if (!c) { var mine = game.holdings(0).filter(function (q) { return q.w === "earth"; })[0]; c = nearestCity(mine ? mine.t.lat : 48.86, mine ? mine.t.lon : 2.35); }
+      var go = function () { enterStreet(c, null, { world: "earth", crash: true, intro: intro }); };
+      if (mode === "world" && here === "earth") { go(); } else { descend("earth", go); }
+    } else {
+      var id = h ? h.region : game.escape.e.landed;
+      if (id === undefined || id === null) { return; }
+      var pl = marsPlace(id), go2 = function () { enterStreet(pl, null, { world: "mars", crash: true, intro: intro, ground: Wd.marsGround(pl, id + 1) }); };
+      if (mode === "world" && here === "mars") { go2(); } else { descend("mars", go2); }
+    }
   }
 
   /* ---- begin ------------------------------------------------------------ */

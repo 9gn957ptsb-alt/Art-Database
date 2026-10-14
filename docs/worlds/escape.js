@@ -26,7 +26,18 @@
    75 degrees behind Mars.
 
    A house may wager across to another world only once it has made the
-   journey there itself. */
+   journey there itself.
+
+   Each world begins with a crash: you come to under a tree, your craft in
+   pieces, and the way off is to find the parts of a rocket and build it
+   there. As in Clue, they are hidden at the places of the place you came
+   down in, and you work out where: every place you search rules itself out
+   for every part it does not hold, and something there (a guard, a note in
+   the wreck's log, a sensor) rules out one more. The parts are what that
+   world asks of a rocket: off the Earth, its engine, tank, guidance and heat
+   shield; off Mars, what makes its propellant there (an ice drill, a plant,
+   a solar array) and an engine for the thin air. Built, the rocket goes in
+   the window. */
 
 (function () {
   "use strict";
@@ -67,6 +78,15 @@
   var HIGH = { "Olympus Mons": 0.3, "Tharsis Montes": 0.25, "Alba Mons": 0.2, "Elysium Mons": 0.2 };
   var MARS_ISP = 360;
 
+  var PARTS = {
+    earth: ["The engine", "The fuel tank", "The guidance computer", "The heat shield"],
+    mars: ["The ice drill", "The propellant plant", "The solar array", "The ascent engine"]
+  };
+  var WITNESS = {
+    earth: ["A guard there says", "A street sweeper swears", "The wreck's log, read again, says", "A child who saw you fall insists"],
+    mars: ["Your suit's log says", "The old lander's last record shows", "The greenhouse sensor reads", "Your radio, crackling, says"]
+  };
+
   function Escape(game) {
     this.game = game;
     var s = game.s;
@@ -87,6 +107,87 @@
   };
 
   Escape.prototype.reached = function (h, w) { return this.game.s.reached[h].indexOf(w) >= 0; };
+  Escape.PARTS = PARTS;
+
+  /* ---- the hunt for the parts ------------------------------------------ */
+
+  Escape.prototype.hunt = function (w) { return (this.e.hunts || {})[w] || null; };
+
+  // Begun when you first stand in the place you came down in.
+  Escape.prototype.startHunt = function (w, place, sites) {
+    if (!this.e.hunts) { this.e.hunts = {}; }
+    var h = this.e.hunts[w];
+    var list = sites.map(function (x) { return { key: x.key, name: x.name }; });
+    if (h && h.place === place.key) { h.sites = list; return h; }
+    var keys = list.map(function (x) { return x.key; });
+    for (var i = keys.length - 1; i > 0; i -= 1) { var j = Math.floor(Math.random() * (i + 1)), t = keys[i]; keys[i] = keys[j]; keys[j] = t; }
+    h = { place: place.key, name: place.name, lat: place.lat, lon: place.lon, region: place.region, parts: {}, found: [], crossed: {}, searched: [], built: false, sites: list };
+    PARTS[w].forEach(function (p, k) { h.parts[p] = keys[k % keys.length]; h.crossed[p] = []; });
+    this.e.hunts[w] = h;
+    return h;
+  };
+
+  // "The riverbank" begins a line; mid-sentence it is "the riverbank".
+  function inSentence(name) { return /^The /.test(name) ? "the " + name.slice(4) : name; }
+  Escape.inSentence = inSentence;
+
+  Escape.prototype.siteName = function (h, key) {
+    var s = h.sites.filter(function (x) { return x.key === key; })[0];
+    return s ? s.name : key;
+  };
+
+  // Where a part may still be: every place not yet ruled out for it.
+  Escape.prototype.maybe = function (h, part) {
+    if (h.found.indexOf(part) >= 0) { return [h.parts[part]]; }
+    return h.sites.map(function (x) { return x.key; }).filter(function (k) { return h.crossed[part].indexOf(k) < 0; });
+  };
+
+  /* Searching a place: what is there is found; it is ruled out for the rest;
+     and one more thing is learnt. Returns { found: [...], clue } or null. */
+  Escape.prototype.search = function (w, key) {
+    var h = this.hunt(w), me = this;
+    if (!h || h.searched.indexOf(key) >= 0) { return null; }
+    h.searched.push(key);
+    var found = [];
+    PARTS[w].forEach(function (p) {
+      if (h.parts[p] === key && h.found.indexOf(p) < 0) { h.found.push(p); found.push(p); }
+      else if (h.crossed[p].indexOf(key) < 0 && h.parts[p] !== key) { h.crossed[p].push(key); }
+    });
+    // The witness: one more place ruled out for one part still missing.
+    var open = PARTS[w].filter(function (p) { return h.found.indexOf(p) < 0; }), clue = null;
+    for (var tries = 0; tries < 12 && open.length; tries += 1) {
+      var p = open[Math.floor(Math.random() * open.length)];
+      var cand = h.sites.map(function (x) { return x.key; }).filter(function (k) { return k !== h.parts[p] && h.crossed[p].indexOf(k) < 0; });
+      if (!cand.length) { continue; }
+      var k = cand[Math.floor(Math.random() * cand.length)];
+      h.crossed[p].push(k);
+      var who = WITNESS[w][Math.floor(Math.random() * WITNESS[w].length)];
+      clue = who + " " + p.charAt(0).toLowerCase() + p.slice(1) + " did not come down at " + inSentence(me.siteName(h, k)) + ".";
+      break;
+    }
+    if (clue) { this.game.say(clue, 0); }
+    found.forEach(function (p) { me.game.say("You found " + p.charAt(0).toLowerCase() + p.slice(1) + " at " + inSentence(me.siteName(h, key)) + ".", 0); });
+    return { found: found, clue: clue };
+  };
+
+  // At your tree with every part: the rocket is built.
+  Escape.prototype.build = function (w) {
+    var h = this.hunt(w);
+    if (!h || h.built || h.found.length < PARTS[w].length) { return false; }
+    h.built = true;
+    this.game.say("You built the rocket under your tree in " + h.name + ".", 0);
+    return true;
+  };
+
+  // Built, and in the window: away.
+  Escape.prototype.launchBuilt = function (hs, w) {
+    var g = this.game, s = g.s, h = this.hunt(w), win = this.window(w);
+    if (!h || !h.built || !win.open || this.e.stage !== w) { return false; }
+    this.e.stage = w === "earth" ? "to-mars" : "to-earth";
+    this.e.transit = { from: w, to: w === "earth" ? "mars" : "earth", depart: s.day, arrive: s.day + 259, port: h.name };
+    g.say("Your rocket rose from " + h.name + ". " + (w === "earth" ? "Mars" : "The Earth") + " in 259 days.", hs);
+    return true;
+  };
 
   /* ---- the window ------------------------------------------------------ */
 
