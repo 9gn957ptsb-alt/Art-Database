@@ -16,6 +16,41 @@ describes what the token object is (item 7).
 Don't recite the list unprompted, and don't re-raise an item the artist has
 already declined or deferred in the same conversation.
 
+## Holographic Mr Pearl — what the game is for
+
+Rocket (`docs/worlds/rocket/`) is becoming **Holographic Mr Pearl** (artist, 15 Oct 2026). What it is for comes
+before every other rule about it, in the artist's words, each said with "MAKE THAT SALIENT":
+
+1. "The goal of this game is to show people what they can do with their own information"
+2. "THIS IS ABOUT DETERMINED RELATIONS"
+3. "By playing this game in which everyone's world is different, and yet, they have the same mission of escaping
+   the planet, you are enticing people to share their worlds, what their mission was like…"
+4. "Tell me Claude, what is the salience of this game?" — **Your information is a world. Find your way out.** The
+   artist's figure already says it: every joint of the impossible triangle is a true relation, and the whole closes
+   only from one point of view. A person's information is the same: every relation in it determined, whole only
+   from where they stand.
+
+So:
+
+- **A player's own information is the seed of their world**, never a random number, and the game says so first.
+  The site's own world, made from the art database and the modelled buildings, is the example of what one
+  person's information became.
+- **Nothing is arbitrary.** Every form, place and size follows from a relation in the information, by rules that
+  are the same for everyone: the same information always gives the same world. Claude's part is to read the
+  relations out of the information once, into a fixed list; code builds the world from the list. Anything tapped
+  says what it came from and the relation that put it there.
+- **The one thing not made of the information is Mr Pearl's head**, the only perfect sphere in the game (artist:
+  "Holographic mode disengages the head of Mr Pearl. His head/Holographic mode will be the only perfect Sphere in
+  the game, everything else will receive the consequential texture of the base unit we are figuring out"): the
+  player's point of view, where their world closes from. Everything else is built from the base unit and wears its
+  texture.
+- **Every world differs; every mission is the same**: get off the planet, the body in the rocket (leaving as the
+  hologram does not count). So every escape ends in a record made to be shared (the planet as you leave it, your
+  route, your numbers, the relations it was made of), showing only what the player chooses; what they bring stays
+  private to them.
+- 15 Oct 2026: the base unit is being designed, with Mr Pearl as its test form; nothing else is built until the
+  artist approves it ("We do not move forward until we figure out the basic unit").
+
 ## Where things are
 
 | | |
