@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Figure in 3D · Rocket</title>
+  <meta name="description" content="Ten studies of the artist's impossible triangle as real objects, most made of the figure with itself: each can be turned by hand, and swings round to the one view where it closes into the drawing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    /* Rocket's dark hand (cream on near-black, small tracked capitals for what labels, Newsreader for what
+       is read), and inside it the drawing's own sheet: paper, with the figure in grey, black and white. */
+    :root {
+      --ground: #0f0a07; --cream: #eadfcd; --muted: #a8927a; --glow: #f3c98b; --card: #17110c; --hair: rgba(234, 223, 205, 0.14);
+      --paper: #f0ece4; --ink: #161616;
+      --serif: "Newsreader", Georgia, serif; --sans: "Archivo", system-ui, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { background: var(--ground); }
+    body { margin: 0; background: var(--ground); color: var(--cream); font: 400 15px/1.5 var(--serif); }
+    a { color: inherit; }
+    :focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; }
+    .eyebrow, .pill, .back, .hint, .num, .count { font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .wrap { width: min(1180px, 100%); margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    header { padding-block: 36px 22px; display: grid; gap: 12px; }
+    .back { color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--cream); }
+    .eyebrow { margin: 0; color: var(--muted); }
+    h1 { margin: 0; font: 400 52px/1 var(--serif); letter-spacing: -0.01em; color: #fff7ea; text-wrap: balance; }
+    h2 { margin: 0; font: 400 32px/1.08 var(--serif); color: #fff7ea; text-wrap: balance; }
+    h3 { margin: 0; font: 400 19px/1.2 var(--serif); color: #fff7ea; }
+    .lede { margin: 0; max-width: 44em; font-size: 17px; line-height: 1.55; color: var(--cream); }
+    .note { margin: 0; max-width: 44em; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; min-height: 34px; padding: 7px 15px; border: 0; border-radius: 999px; background: rgba(234, 223, 205, 0.08);
+            color: var(--muted); cursor: pointer; text-decoration: none; }
+    .pill:hover, .pill:focus-visible { color: var(--cream); }
+    .pill[aria-pressed="true"], .pill.solid { background: var(--cream); color: var(--ground); }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    /* The stage: the sheet with the study on it, and what it is. */
+    .stage { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 22px; align-items: start; padding-block: 8px 30px; border-top: 1px solid var(--hair); padding-top: 26px; }
+    .sheet { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background: var(--paper); border-radius: 2px; overflow: hidden; }
+    .sheet canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    .sheet canvas:active { cursor: grabbing; }
+    .sheet .hint { position: absolute; left: 12px; bottom: 10px; margin: 0; color: rgba(22, 22, 22, 0.5); pointer-events: none; transition: opacity 0.8s; }
+    .sheet .hint.gone { opacity: 0; }
+    .sheet .state { position: absolute; right: 12px; top: 10px; margin: 0; color: rgba(22, 22, 22, 0.55); pointer-events: none; }
+    .caption { display: grid; gap: 12px; align-content: start; min-width: 0; }
+    .num { margin: 0; color: var(--muted); }
+    .idea { margin: 0; font-size: 17px; line-height: 1.5; color: var(--cream); }
+    .how { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+    /* The ten. */
+    .ten { padding-block: 26px 10px; border-top: 1px solid var(--hair); display: grid; gap: 14px; }
+    .studies { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .study { display: grid; gap: 8px; align-content: start; padding: 0 0 12px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; text-align: left; color: inherit; font: inherit; width: 100%; }
+    .study:hover, .study[aria-current="true"] { border-color: rgba(243, 201, 139, 0.55); }
+    .study canvas { display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--paper); }
+    .study h3, .study p { padding: 0 12px; }
+    .study p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.4; }
+    footer { padding-block: 26px 48px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
+    footer p { margin: 0; max-width: 46em; }
+    .fail { padding: 40px 20px; color: var(--ink); font: 400 15px/1.5 var(--serif); }
+    @media (max-width: 860px) {
+      .stage { grid-template-columns: 1fr; }
+      .sheet { aspect-ratio: 1 / 1; }
+    }
+    @media (max-width: 520px) {
+      h1 { font-size: 40px; }
+      h2 { font-size: 28px; }
+      .studies { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="back" href="./">← Rocket</a>
+      <p class="eyebrow">The artist's figure: three tribars round a gap</p>
+      <h1>The figure in 3D</h1>
+      <p class="lede">The drawing shows the figure from one direction only, and says nothing of how deep anything in it is. Every point of an object can slide along that line of sight, or be moved with all the others on its sightline, and the drawing does not change: one drawing is a whole family of objects, most of which never touch themselves where the drawing says they do. These are ten of them, most made of the figure with itself. Turn each by hand; then let it swing round to the one place it closes.</p>
+    </header>
+
+    <section class="stage" aria-label="The study">
+      <div class="sheet">
+        <canvas id="view" role="img" aria-label=""></canvas>
+        <p class="state" id="state"></p>
+        <p class="hint">Drag to turn it · scroll or pinch to come closer</p>
+      </div>
+      <div class="caption">
+        <p class="num" id="num"></p>
+        <h2 id="name"></h2>
+        <p class="idea" id="idea"></p>
+        <div class="bar">
+          <button class="pill solid" id="close" type="button">See it close</button>
+          <button class="pill" id="turn" type="button" aria-pressed="false">Let it turn</button>
+        </div>
+        <div class="bar" id="corners" hidden></div>
+        <p class="how" id="how"></p>
+      </div>
+    </section>
+
+    <section class="ten" aria-label="The ten studies">
+      <p class="eyebrow">The ten</p>
+      <ol class="studies" id="studies"></ol>
+    </section>
+
+    <footer>
+      <p>The same ten are built in the artist's SketchUp, each beam a solid, each study with the scene where it closes (sketchup/impossible-triangle-studies.skp); the figure alone is sketchup/impossible-triangle.skp, the block Rocket is built of.</p>
+      <p class="count">Model axes, z up, in cells of the lattice; a cell is half a block in Rocket and 18 in in SketchUp.</p>
+    </footer>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    var $ = function (id) { return document.getElementById(id); };
+    var min = Math.min, max = Math.max, abs = Math.abs, sqrt = Math.sqrt, PI = Math.PI;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var studies = [], cur = 0, corner = 0, gl = null, canvas = $("view");
+    var progScene, progComp, quad, fbo, texC, texN, texD, W = 0, H = 0, SS = 1, made = 0, meshes = {};
+    var cam = null, anim = null, mode = "free", spin = !reduce, drag = null, pointers = {}, pinch = null, idle = 0, last = 0;
+    var YAW = -0.55, PITCH = 0.32, yaw = YAW, pitch = PITCH, zoom = 1;
+
+    /* ---- vectors -------------------------------------------------------------------- */
+    function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+    function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function mul(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+    function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function norm(a) { var l = sqrt(dot(a, a)) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+    function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+    function slerp(a, b, t) {
+      var c = max(-1, min(1, dot(a, b))), w = Math.acos(c);
+      if (w < 1e-4) { return norm(lerp(a, b, t)); }
+      var s = Math.sin(w);
+      return add(mul(a, Math.sin((1 - t) * w) / s), mul(b, Math.sin(t * w) / s));
+    }
+    function lookAt(e, t, u) {
+      var f = norm(sub(t, e)), s = norm(cross(f, u)), v = cross(s, f);
+      return [s[0], v[0], -f[0], 0, s[1], v[1], -f[1], 0, s[2], v[2], -f[2], 0, -dot(s, e), -dot(v, e), dot(f, e), 1];
+    }
+    function perspective(fovy, aspect, n, f) {
+      var t = 1 / Math.tan(fovy / 2);
+      return [t / aspect, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0];
+    }
+    function mat(a, b) {
+      var o = new Array(16);
+      for (var i = 0; i < 4; i++) { for (var j = 0; j < 4; j++) { var s = 0; for (var k = 0; k < 4; k++) { s += a[k * 4 + j] * b[i * 4 + k]; } o[i * 4 + j] = s; } }
+      return o;
+    }
+    function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+    /* ---- a study as triangles: each box's six faces, each bent beam's sides and ends ---------------- */
+    function meshOf(s) {
+      if (meshes[s.key]) { return meshes[s.key]; }
+      var v = [], pts = [];
+      function tri(a, b, c, tone) {
+        var n = norm(cross(sub(b, a), sub(c, a)));
+        [a, b, c].forEach(function (p) { v.push(p[0], p[1], p[2], n[0], n[1], n[2], tone); });
+      }
+      (s.boxes || []).forEach(function (b) {
+        var c = b.slice(0, 3), E = [b.slice(3, 6), b.slice(6, 9), b.slice(9, 12)], tone = b.slice(12, 15);
+        var P = function (s0, s1, s2) { return add(c, add(add(mul(E[0], s0), mul(E[1], s1)), mul(E[2], s2))); };
+        for (var g = 0; g < 8; g++) { pts.push(P(g & 1 ? 1 : -1, g & 2 ? 1 : -1, g & 4 ? 1 : -1)); }
+        for (var k = 0; k < 3; k++) {
+          for (var sg = -1; sg <= 1; sg += 2) {
+            var q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (ab) {
+              var s3 = [0, 0, 0]; s3[k] = sg; s3[(k + 1) % 3] = ab[0]; s3[(k + 2) % 3] = ab[1]; return P(s3[0], s3[1], s3[2]);
+            });
+            tri(q[0], q[1], q[2], tone[k]); tri(q[0], q[2], q[3], tone[k]);
+          }
+        }
+      });
+      // A beam drawn in towards an eye: its eight corners (z fastest, then y, then x), its faces planes.
+      (s.hexes || []).forEach(function (h) {
+        var C = function (i) { return [h[i * 3], h[i * 3 + 1], h[i * 3 + 2]]; }, tone = h.slice(24, 27);
+        for (var g = 0; g < 8; g++) { pts.push(C(g)); }
+        for (var k = 0; k < 3; k++) {
+          for (var side = 0; side < 2; side++) {
+            var q = [[0, 0], [1, 0], [1, 1], [0, 1]].map(function (ab) {
+              var bits = [0, 0, 0]; bits[k] = side; bits[(k + 1) % 3] = ab[0]; bits[(k + 2) % 3] = ab[1]; return C(4 * bits[0] + 2 * bits[1] + bits[2]);
+            });
+            tri(q[0], q[1], q[2], tone[k]); tri(q[0], q[2], q[3], tone[k]);
+          }
+        }
+      });
+      (s.lofts || []).forEach(function (lf) {
+        var p = lf.s, at = function (i) { return [p[i * 3], p[i * 3 + 1], p[i * 3 + 2]]; }, n = p.length / 12;
+        for (var i = 0; i < 4 * n; i++) { pts.push(at(i)); }
+        for (var m = 0; m < n - 1; m++) {
+          for (var q = 0; q < 4; q++) {
+            var a = at(4 * m + q), b = at(4 * m + (q + 1) % 4), c2 = at(4 * (m + 1) + (q + 1) % 4), d = at(4 * (m + 1) + q), t = lf.t[q % 2];
+            tri(a, b, c2, t); tri(a, c2, d, t);
+          }
+        }
+        [0, n - 1].forEach(function (r) { tri(at(4 * r), at(4 * r + 1), at(4 * r + 2), lf.t[2]); tri(at(4 * r), at(4 * r + 2), at(4 * r + 3), lf.t[2]); });
+      });
+      var f = s.frame, centre = [(f[0] + f[3]) / 2, (f[1] + f[4]) / 2, (f[2] + f[5]) / 2];
+      var radius = 0.5 * sqrt(Math.pow(f[3] - f[0], 2) + Math.pow(f[4] - f[1], 2) + Math.pow(f[5] - f[2], 2));
+      var vao = gl.createVertexArray(), buf = gl.createBuffer();
+      gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
+      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
+      gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 28, 24);
+      gl.bindVertexArray(null);
+      return (meshes[s.key] = { vao: vao, count: v.length / 7, centre: centre, radius: radius, pts: pts, fit: {} });
+    }
+
+    /* ---- shaders: the faces in the drawing's tones; then hairlines round the white ones ------------ */
+    var SCENE_VS = "#version 300 es\nlayout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in float aT;\n" +
+      "uniform mat4 uVP; out vec3 vN; flat out int vT;\nvoid main() { vN = aN; vT = int(aT + 0.5); gl_Position = uVP * vec4(aP, 1.0); }";
+    var SCENE_FS = "#version 300 es\nprecision highp float;\nin vec3 vN; flat in int vT;\nlayout(location=0) out vec4 oC; layout(location=1) out vec4 oN;\n" +
+      "const vec3 T[3] = vec3[3](vec3(0.502), vec3(0.0), vec3(1.0));\n" +
+      "void main() { vec3 n = normalize(vN); if (!gl_FrontFacing) { n = -n; } oC = vec4(T[vT], 1.0); oN = vec4(n * 0.5 + 0.5, 1.0); }";
+    var COMP_VS = "#version 300 es\nlayout(location=0) in vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }";
+    var COMP_FS = "#version 300 es\nprecision highp float;\nuniform sampler2D uC, uN, uD; uniform float uNear, uFar; uniform int uSS; uniform vec3 uPaper, uInk; out vec4 o;\n" +
+      "float L(float d) { return uNear * uFar / (uFar - d * (uFar - uNear)); }\n" +
+      "vec3 at(ivec2 p) {\n" +
+      "  vec4 c = texelFetch(uC, p, 0);\n" +
+      "  if (c.a < 0.5) { return uPaper; }\n" +
+      "  if (c.r < 0.9) { return c.rgb; }\n" +                      // only the white faces are drawn round, as in the drawing
+      "  vec3 n = texelFetch(uN, p, 0).xyz * 2.0 - 1.0; float d = L(texelFetch(uD, p, 0).r);\n" +
+      "  ivec2 o4[4] = ivec2[4](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));\n" +
+      "  for (int i = 0; i < 4; i++) {\n" +
+      "    ivec2 q = p + o4[i];\n" +
+      "    if (texelFetch(uC, q, 0).a < 0.5) { return uInk; }\n" +
+      "    if (dot(n, texelFetch(uN, q, 0).xyz * 2.0 - 1.0) < 0.94) { return uInk; }\n" +
+      "  }\n" +
+      "  float dl = L(texelFetch(uD, p + ivec2(-1, 0), 0).r), dr = L(texelFetch(uD, p + ivec2(1, 0), 0).r);\n" +
+      "  float du = L(texelFetch(uD, p + ivec2(0, 1), 0).r), dd = L(texelFetch(uD, p + ivec2(0, -1), 0).r);\n" +
+      "  if (max(abs(dl + dr - 2.0 * d), abs(du + dd - 2.0 * d)) > 0.0025 * d) { return uInk; }\n" +
+      "  return c.rgb;\n" +
+      "}\n" +
+      "void main() {\n" +
+      "  ivec2 p = ivec2(gl_FragCoord.xy) * uSS; vec3 s = vec3(0.0);\n" +
+      "  for (int j = 0; j < uSS; j++) { for (int i = 0; i < uSS; i++) { s += at(p + ivec2(i, j)); } }\n" +
+      "  o = vec4(s / float(uSS * uSS), 1.0);\n" +
+      "}";
+
+    function compile(vs, fs) {
+      var p = gl.createProgram();
+      [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]].forEach(function (x) {
+        var sh = gl.createShader(x[0]); gl.shaderSource(sh, x[1]); gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { throw new Error(gl.getShaderInfoLog(sh)); }
+        gl.attachShader(p, sh);
+      });
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { throw new Error(gl.getProgramInfoLog(p)); }
+      return p;
+    }
+    function texture(internal, format, type, w, h) {
+      var t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, internal, w, h, 0, format, type, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    }
+    function targets(w, h) {
+      if (fbo && W === w && H === h && made === SS) { return; }
+      W = w; H = h; made = SS;
+      [texC, texN, texD].forEach(function (t) { if (t) { gl.deleteTexture(t); } });
+      if (fbo) { gl.deleteFramebuffer(fbo); }
+      texC = texture(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, w * SS, h * SS);
+      texN = texture(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, w * SS, h * SS);
+      texD = texture(gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, w * SS, h * SS);
+      fbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texC, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, texN, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, texD, 0);
+      gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    /* ---- the camera: a target, the way to the eye, the up, a half-height seen, a field of view ------ */
+    var FREE_F = 30 * PI / 180;
+    function dirOf(y, p) { return [Math.cos(p) * Math.cos(y), Math.cos(p) * Math.sin(y), Math.sin(p)]; }
+    // How far back the free view stands: far enough that every corner of the study is inside the sheet,
+    // with a margin, from all round at this height of eye, so the study does not breathe as it turns.
+    function fitH(m, p, aspect) {
+      p = Math.round(p * 50) / 50;
+      var key = p + " " + aspect.toFixed(3);
+      if (m.fit[key]) { return m.fit[key]; }
+      var t = Math.tan(FREE_F / 2) * 0.9, R = 0;
+      for (var k = 0; k < 24; k++) {
+        var D = dirOf(k * PI / 12, p), sx = norm(cross(mul(D, -1), [0, 0, 1])), vy = cross(sx, mul(D, -1));
+        for (var i = 0; i < m.pts.length; i++) {
+          var q = sub(m.pts[i], m.centre), z = dot(q, D);
+          R = max(R, z + abs(dot(q, vy)) / t, z + abs(dot(q, sx)) / (t * aspect));
+        }
+      }
+      return (m.fit[key] = R * Math.tan(FREE_F / 2));
+    }
+    function freeCam(s) {
+      var m = meshOf(s), aspect = W / H || 4 / 3;
+      return { T: m.centre, D: dirOf(yaw, pitch), U: [0, 0, 1], h: fitH(m, pitch, aspect) * zoom, F: FREE_F };
+    }
+    function closedCam(s, k) {
+      var v = s.views[min(k, s.views.length - 1)], aspect = W / H || 4 / 3;
+      if (v.kind === "persp") {
+        var dv = sub(v.eye, v.target), R = sqrt(dot(dv, dv)), F = v.fov * PI / 180;
+        return { T: v.target, D: norm(dv), U: v.up, h: R * Math.tan(F / 2), F: F, fixedR: R };
+      }
+      return { T: v.centre, D: norm(mul(v.dir, -1)), U: v.up, h: v.span / 2 / min(1, aspect), F: 1 * PI / 180 };
+    }
+    function camAt(a, b, t) {
+      return { T: lerp(a.T, b.T, t), D: slerp(a.D, b.D, t), U: norm(lerp(a.U, b.U, t)), h: a.h + (b.h - a.h) * t,
+               F: Math.exp(Math.log(a.F) + (Math.log(b.F) - Math.log(a.F)) * t) };
+    }
+    function goTo(target, ms, then) {
+      if (!cam || reduce) { cam = target; if (then) { then(); } return; }
+      anim = { from: cam, to: target, t0: performance.now(), ms: ms, then: then };
+    }
+
+    function render(c, m, w, h) {
+      var R = c.h / Math.tan(c.F / 2), eye = add(c.T, mul(c.D, R));
+      var up = abs(dot(norm(c.U), c.D)) > 0.995 ? [0, 1, 0] : c.U;
+      var n = max(R - 3 * m.radius, R * 0.02), f = R + 3 * m.radius;
+      var vp = mat(perspective(c.F, w / h, n, f), lookAt(eye, c.T, up));
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, w * SS, h * SS);
+      gl.clearBufferfv(gl.COLOR, 0, [0, 0, 0, 0]); gl.clearBufferfv(gl.COLOR, 1, [0.5, 0.5, 1, 0]); gl.clearBufferfv(gl.DEPTH, 0, [1]);
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(progScene);
+      gl.uniformMatrix4fv(gl.getUniformLocation(progScene, "uVP"), false, vp);
+      gl.bindVertexArray(m.vao); gl.drawArrays(gl.TRIANGLES, 0, m.count);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, w, h);
+      gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(progComp);
+      [[texC, "uC"], [texN, "uN"], [texD, "uD"]].forEach(function (x, i) {
+        gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, x[0]); gl.uniform1i(gl.getUniformLocation(progComp, x[1]), i);
+      });
+      gl.uniform1f(gl.getUniformLocation(progComp, "uNear"), n); gl.uniform1f(gl.getUniformLocation(progComp, "uFar"), f);
+      gl.uniform1i(gl.getUniformLocation(progComp, "uSS"), SS);
+      gl.uniform3f(gl.getUniformLocation(progComp, "uPaper"), 240 / 255, 236 / 255, 228 / 255);
+      gl.uniform3f(gl.getUniformLocation(progComp, "uInk"), 22 / 255, 22 / 255, 22 / 255);
+      gl.bindVertexArray(quad); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    function size() {
+      var dpr = min(2, window.devicePixelRatio || 1), r = canvas.getBoundingClientRect();
+      var w = max(1, Math.round(r.width * dpr)), h = max(1, Math.round(r.height * dpr));
+      SS = dpr < 1.5 ? 2 : 1;
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      targets(w, h);
+    }
+
+    function frame(now) {
+      var dt = min(0.05, (now - (last || now)) / 1000); last = now;
+      size();
+      var s = studies[cur];
+      if (anim) {
+        var t = min(1, (now - anim.t0) / anim.ms);
+        cam = camAt(anim.from, anim.to, ease(t));
+        if (t >= 1) { var then = anim.then; anim = null; if (then) { then(); } }
+      } else if (mode === "free") {
+        if (spin && !drag && now - idle > 1200) { yaw += dt * 0.32; }
+        var fc = freeCam(s);
+        // Back from a closed view the lens widens again by degrees, so the parallel view eases into perspective.
+        cam = cam ? { T: lerp(cam.T, fc.T, 0.2), D: fc.D, U: norm(lerp(cam.U, fc.U, 0.12)), h: cam.h + (fc.h - cam.h) * 0.2,
+                      F: Math.exp(Math.log(cam.F) + (Math.log(fc.F) - Math.log(cam.F)) * 0.1) } : fc;
+      }
+      render(cam, meshOf(s), canvas.width, canvas.height);
+      requestAnimationFrame(frame);
+    }
+
+    /* ---- what is on the stage ----------------------------------------------------------------------- */
+    var CORNERS = ["From the north-east", "From the north-west", "From the south-west", "From the south-east"];
+    function show(i, quiet) {
+      cur = i; corner = 0;
+      var s = studies[i];
+      $("num").textContent = "Study " + (i + 1) + " of " + studies.length;
+      $("name").textContent = s.name;
+      $("idea").textContent = s.idea;
+      canvas.setAttribute("aria-label", s.name + ". " + s.idea);
+      $("how").textContent = s.views[0].kind === "persp" ? "It closes from one eye only, in perspective: the view swings to stand you there." :
+        s.views.length > 1 ? "It closes four ways: pick a corner to stand at." : "It closes looking down its diagonal, in parallel projection: the view draws back until the lines of sight run parallel.";
+      var cs = $("corners");
+      cs.hidden = s.views.length < 2;
+      cs.innerHTML = "";
+      if (s.views.length > 1) {
+        s.views.forEach(function (v, k) {
+          var b = document.createElement("button");
+          b.className = "pill"; b.type = "button"; b.textContent = CORNERS[k] || "View " + (k + 1);
+          b.setAttribute("aria-pressed", "false");
+          b.onclick = function () { corner = k; close(); };
+          cs.appendChild(b);
+        });
+      }
+      document.querySelectorAll(".study").forEach(function (el, k) { el.setAttribute("aria-current", String(k === i)); });
+      if (!quiet) { try { history.replaceState(null, "", "#" + s.key); } catch (e) { /* the address stays */ } }
+      // Each study is first seen turned, as on its card; the view swings there from wherever it was.
+      var was = cam;
+      yaw = YAW; pitch = PITCH;
+      setFree(true);
+      if (was) { goTo(freeCam(s), 900); }
+    }
+    function setFree(reset) {
+      if (mode === "closed" || reset) {
+        if (!reset && cam) { yaw = Math.atan2(cam.D[1], cam.D[0]); pitch = max(-1.35, min(1.35, Math.asin(max(-1, min(1, cam.D[2]))))); }
+        if (reset) { zoom = 1; }
+      }
+      mode = "free"; anim = null;
+      $("state").textContent = "";
+      $("close").textContent = "See it close";
+      $("turn").setAttribute("aria-pressed", String(spin));
+      document.querySelectorAll("#corners .pill").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+    }
+    function close() {
+      var s = studies[cur];
+      mode = "closing";
+      $("state").textContent = "";
+      goTo(closedCam(s, corner), 1700, function () { mode = "closed"; $("state").textContent = "Closed"; });
+      $("close").textContent = "Turn it again";
+      document.querySelectorAll("#corners .pill").forEach(function (b, k) { b.setAttribute("aria-pressed", String(k === corner)); });
+    }
+
+    function wire() {
+      // The hint says what the hand can do here, and goes once the hand has done it.
+      var hint = document.querySelector(".sheet .hint"), seen = function () { hint.classList.add("gone"); };
+      if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) { hint.textContent = "Drag to turn it · pinch to come closer"; }
+      canvas.addEventListener("pointerdown", seen); canvas.addEventListener("wheel", seen, { passive: true });
+      $("close").onclick = function () { if (mode === "free") { close(); } else { setFree(false); } };
+      $("turn").onclick = function () { spin = !spin; if (mode !== "free") { setFree(false); } $("turn").setAttribute("aria-pressed", String(spin)); };
+      canvas.addEventListener("pointerdown", function (e) {
+        canvas.setPointerCapture(e.pointerId);
+        pointers[e.pointerId] = [e.clientX, e.clientY];
+        var ids = Object.keys(pointers);
+        if (ids.length === 2) { var a = pointers[ids[0]], b = pointers[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: zoom }; drag = null; return; }
+        if (mode !== "free") { setFree(false); }
+        drag = { x: e.clientX, y: e.clientY };
+        idle = performance.now();
+      });
+      canvas.addEventListener("pointermove", function (e) {
+        if (!pointers[e.pointerId]) { return; }
+        pointers[e.pointerId] = [e.clientX, e.clientY];
+        var ids = Object.keys(pointers);
+        if (pinch && ids.length === 2) {
+          var a = pointers[ids[0]], b = pointers[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+          zoom = max(0.25, min(3, pinch.z * pinch.d / max(1, d)));
+          return;
+        }
+        if (!drag) { return; }
+        yaw -= (e.clientX - drag.x) * 0.008;
+        pitch = max(-1.35, min(1.35, pitch + (e.clientY - drag.y) * 0.008));
+        drag = { x: e.clientX, y: e.clientY };
+        idle = performance.now();
+      });
+      var up = function (e) { delete pointers[e.pointerId]; if (Object.keys(pointers).length < 2) { pinch = null; } drag = null; idle = performance.now(); };
+      canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", up);
+      canvas.addEventListener("dblclick", function () { if (mode === "free") { close(); } else { setFree(false); } });
+      canvas.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        if (mode !== "free") { setFree(false); }
+        zoom = max(0.25, min(3, zoom * Math.exp(e.deltaY * 0.0012)));
+        idle = performance.now();
+      }, { passive: false });
+    }
+
+    /* ---- the ten, each drawn once turned, on its card --------------------------------------------- */
+    function cards() {
+      var ol = $("studies");
+      ol.innerHTML = "";
+      studies.forEach(function (s, i) {
+        var li = document.createElement("li"), b = document.createElement("button"), c = document.createElement("canvas");
+        b.className = "study"; b.type = "button";
+        c.width = 400; c.height = 300;
+        var h = document.createElement("h3"), p = document.createElement("p");
+        h.textContent = (i + 1) + ". " + s.name; p.textContent = s.idea.split(". ")[0].replace(/\.?$/, ".");
+        b.appendChild(c); b.appendChild(h); b.appendChild(p);
+        b.onclick = function () { show(i); var r = $("view").getBoundingClientRect(); if (r.top < 0 || r.bottom > window.innerHeight) { $("view").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" }); } };
+        li.appendChild(b); ol.appendChild(li);
+      });
+      // Draw each, turned, into its card.
+      var ow = canvas.width, oh = canvas.height, keep = [yaw, pitch, zoom];
+      canvas.width = 400; canvas.height = 300; SS = 2; targets(400, 300);
+      studies.forEach(function (s, i) {
+        yaw = YAW; pitch = PITCH; zoom = 1;
+        render(freeCam(s), meshOf(s), 400, 300);
+        ol.children[i].querySelector("canvas").getContext("2d").drawImage(canvas, 0, 0);
+      });
+      yaw = keep[0]; pitch = keep[1]; zoom = keep[2];
+      canvas.width = ow; canvas.height = oh; W = 0; size();
+    }
+
+    function start(data) {
+      studies = data.studies;
+      gl = canvas.getContext("webgl2", { antialias: false, preserveDrawingBuffer: false });
+      if (!gl) { canvas.parentNode.innerHTML = '<p class="fail">These studies need WebGL 2, which this browser does not offer.</p>'; return; }
+      progScene = compile(SCENE_VS, SCENE_FS); progComp = compile(COMP_VS, COMP_FS);
+      quad = gl.createVertexArray(); gl.bindVertexArray(quad);
+      var qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(null);
+      size();
+      cards();
+      var h = (location.hash || "").slice(1), k = studies.map(function (s) { return s.key; }).indexOf(h);
+      show(k >= 0 ? k : 0, true);
+      wire();
+      requestAnimationFrame(frame);
+      window.Figures = { show: show, close: close, free: function () { setFree(false); }, state: function () { return { cur: cur, mode: mode, cam: cam }; } };
+    }
+
+    if (window.FIGURES) { start(window.FIGURES); }
+    else {
+      fetch("figures.json").then(function (r) { return r.json(); }).then(start).catch(function (err) {
+        if (window.console) { console.error(err); }
+        canvas.parentNode.innerHTML = '<p class="fail">The studies could not be loaded.</p>';
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

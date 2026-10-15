@@ -59,6 +59,52 @@ other way where they meet the picture). The blocks to place, the pieces and the 
 the model seen down its diagonal, which is the drawing; the crosshair is a tribar; the smoke is
 triangles.
 
+## The figure in 3D
+
+Then the artist asked for more of it (15 Oct 2026: "Use the shape with itself to actually realize
+its 3D potential, I understand it's an impossible triangle that can only visually exist like that
+in 2D. It's okay if all doesn't connect to itself. Explore different ways it can exist 3D"). The
+drawing fixes only what is seen down one line of sight. Every point of an object can slide along
+that line, or be moved with all the others on its line (sheared, stretched along it, drawn in
+towards an eye), and the drawing does not change: one drawing is a whole family of objects. Ten of
+them, most made of the figure with itself:
+
+- **The figure** — the drawing as one object, nine beams on a lattice (the block's model).
+- **Apart** — its three tribars slid two cells along the line of sight either way; none touches.
+- **Closed** — its three cuts joined by struts that run straight down the line of sight, hidden
+  behind the nearer end: one closed object, impossible only from the diagonal.
+- **Figure of figures** — the figure's own rule (each tribar the first turned a third about the
+  diagonal and moved) applied to the figure: three of it round a gap, nine tribars.
+- **Three turns** — the figure with two copies turned a third and two thirds about its own line of
+  sight: the frames fall on each other, the middles cross through one another.
+- **Tower** — four of it, each turned a quarter about an upright and set a storey higher; from each
+  corner a different one closes. The upright stands in the middle of a cell, not on a beam, or the
+  uprights of the storey below would line up with the closing one's and draw its legs on.
+- **Drawn out** — stretched four times along the line of sight.
+- **Bent** — every point moved along the line of sight by a bow across the drawing.
+- **One point** — for one eye, in perspective, as the large outdoor ones are made: every point
+  moved along its line from the eye, the near parts drawn in small and the far ones out large (a
+  projective map, so a beam's faces stay planes), so that from there it is the drawing exactly.
+- **Siblings** — three different objects (other turns and depths of the tribars) that draw it.
+
+`python3 scripts/figure_studies.py` writes them to `figures.json` (`--sheet out.png` draws a check
+sheet: each closed, then turned twice), and `scripts/sketchup/impossible_triangle_studies.py`
+builds the same ten in SketchUp by the same rules (`sketchup/impossible-triangle-studies.skp`: a
+group a study, a solid a beam, a scene where each closes and the tower's four). `figure.html`
+shows them: each turned by hand or left to turn, and swung round to where it closes, the lens
+drawing back to parallel for the nine that close in parallel projection; the white faces are
+drawn round with a hairline, as in the drawing. `#tower` (or any study's key) opens on one. As an
+Artifact it is built by `node scripts/build_figure_artifact.js <out.html>`, the studies inlined.
+
+**In the game.** Over the wreck hangs the figure of figures, drawn in towards the eye of one
+standing where you woke (`underTree()`): every line of sight of the drawing onto one ray from that
+eye, the nearer parts nearer, a hundred metres off and more. So it is the drawing as you sit up
+and turn to the wreck, and from anywhere else its beams come apart across the sky, long and
+tapering away from the tree; come back to the tree and you are told once that it has closed again.
+It is placed as near straight over the wreck and as low as the place leaves it clear from that
+eye, in the drawing's own grey, black and white under a lighter haze, and nothing to walk on. You
+watch the rocket go from the same place.
+
 ## Escapes made from what the site holds
 
 Every adventure is generated, by a seed, from the art database the site has put together on
@@ -173,11 +219,14 @@ switches break and place, N opens the notes, F looks behind the work whose label
 - `sections.json` — the 36 projects taken apart, written by `node scripts/build_sections.js`
   (`--list` prints every project's sections).
 - `forms.html` — the breakdown: the projects taken apart and the new forms made of them.
+- `figure.html` — the figure in 3D: the ten studies, turned and closed; `figures.json` is them,
+  written by `python3 scripts/figure_studies.py`.
 - `rocket.js` — the game: the mesh (16 × 16 columns a chunk, the nearest first and the rest a few
   each frame), the block (`FIGURE`, the model's six bars), the walk through the blocks from their
   faces (the fragment shader `FS`, over the grid as a texture, `voxTexture` and `refresh`), the
-  page's marks (`blockMark()`, the model seen down its diagonal), the works' pictures, the hand,
-  the opening, the labels and the notes, the rocket, the start screen.
+  page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
+  (`figureBeams`, `drawnIn`, `placeSky`), the works' pictures, the hand, the opening, the labels
+  and the notes, the rocket, the start screen.
 - `catalogue.json` — what each adventure can be made from, written by
   `python3 scripts/build_adventures.py`.
 
