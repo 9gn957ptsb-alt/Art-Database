@@ -218,9 +218,38 @@ html[data-skyline] .venue-label { visibility: hidden !important; }
   pointer-events: auto;
 }
 .building-time.dial[data-ground] .dial-mode[hidden] { display: none; }
+/* The crown (land.js, "the city's dial on the categories"): the ring on the ground turned from time to the
+   categories and back. Only on the ground; on the categories the front's name stands where the year was. */
+.dial-crown { display: none; }
+.building-time.dial[data-ground] .dial-crown {
+  display: block;
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0 -6px -2px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #c4b29c;
+  font: 400 9px/24px var(--mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.building-time.dial[data-ground] .dial-crown:hover,
+.building-time.dial[data-ground] .dial-crown:focus-visible { color: #ffffff; background: rgba(94, 82, 199, 0.5); }
+.building-time.dial[data-ground] .dial-crown:focus-visible { outline: 2px solid #9d95e6; outline-offset: 1px; }
+/* On the categories the label is only the crown: the front's name is lit on the ring itself, and the
+   hub's word (a mode of time) waits for time. */
+.building-time.dial[data-ground][data-fn="categories"] .building-time-year,
+.building-time.dial[data-ground][data-fn="categories"] .dial-mode { display: none; }
 .building-time.dial[data-ground] .dial-home { display: none; }
 .building-time.dial[data-ground] > .dial-end { pointer-events: auto; top: -11px; right: -11px; }
-.building-time.dial[data-ground]:focus-within { outline: 2px solid #9d95e6; outline-offset: 2px; box-shadow: none; }
+/* Ringed for the keys only (a tap on the crown is not a focus to show). */
+.building-time.dial[data-ground]:has(:focus-visible) { outline: 2px solid #9d95e6; outline-offset: 2px; box-shadow: none; }
 /* The animal pressed: what it is, beside it, a little while. */
 .skyline-hand-says {
   position: absolute;

@@ -35,6 +35,16 @@ Built so far: Walt Disney Concert Hall (the whole building) and Guggenheim
 Bilbao (the titanium only — `to_model.py … --keep-except blob` keeps the
 model's straight parts and replaces its blobs with the meshes).
 
+Not a building: the artist's impossible triangle (three tribars round a gap),
+Rocket's block (`impossible_triangle.py`, `sketchup/impossible-triangle.skp`).
+Six square bars on the edges of a lattice of 18 in cells, 4 in square, fitted
+to the drawing; they close into it only seen down the (1, 1, 1) diagonal in
+parallel projection, which is its first scene ("The drawing", the camera rolled
+so the triangle stands on its base; "Turned" shows the bars not meeting). Its
+faces are flat tones by the axis they face (X grey, Y black, Z white; no sun on
+them). It is not read back: `docs/worlds/rocket/rocket.js` keeps its six bars as
+`FIGURE`, in the block's unit, and draws every block as it.
+
 **Storage.** Git keeps every version of a binary for good, so a `.skp` is
 re-committed only when a building's form really changes — not on every small
 refinement. The build script is the source of truth and regenerates the

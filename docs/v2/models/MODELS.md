@@ -56,7 +56,8 @@ the model stands on the plot's building cells.
   DIRT), `grass`, `drygrass`, `sand`, `gravel` or `paving`.
 - `parts`: applied **in order**; a `cut` removes whatever earlier parts put
   there. Every part has an `"m"` material except `cut`, `pcut`, `pool` and
-  `tree` (a tree's `m` is its crown, default `plant`).
+  `tree` (a tree's `m` is its crown, default `plant`; a pool's is its water,
+  default `water`).
 
 | part | array | what it is |
 | --- | --- | --- |
@@ -68,7 +69,7 @@ the model stands on the plot's building cells.
 | `dome` | `[cx, cy, z, r]` | a half sphere standing on z |
 | `blob` | `[cx, cy, cz, rx, ry, rz]` | an ellipsoid, for anything that swells or curves |
 | `hip` | `[x, y, z, w, d, h]` | a hipped roof, rising from all four eaves at z to a ridge h above |
-| `pool` | `[x, y, w, d]` (+ `z`) | water at ground level, or at z for a raised pool |
+| `pool` | `[x, y, w, d]` (+ `z`) + optional `"m"` | water at ground level, or at z for a raised pool; `m` gives the water another colour (`slate` for a dark slate-teal pool in dark pavers — the default `water` is a bright blue) |
 | `tree` | `[cx, cy, h, r]` (+ base `z`) + optional `"shape"` | a trunk and a crown, h tall, crown radius r; `shape`: `round` (default), `poplar`, `umbrella` (flat, wide), `palm` (bare trunk, frond crown), `bare` (winter: limbs and an open crown of twigs); `trunk`: the material of its wood (default `timber`, dark; `concrete` or `limestone` for the pale grey trunk of a royal palm or a frangipani) |
 | `prism` | `[[x, y], …]` + `"z"`, `"h"` (+ optional `"holes"`, `"taper"`) | a polygon stood up from z, h tall — for a plan off the grid (a rotated wing, a trapezoid, a rounded corner traced as points); `holes` is a list of polygons left open (a courtyard); `taper` leans the walls in that many metres for each metre up, with a flat top at h: a mansard or a hip over any plan |
 | `pcut` | the same as `prism` | takes a polygon prism out of whatever earlier parts put there |

@@ -121,7 +121,15 @@ then covers it without change.
    today's date and add one to its `passes`; add a line to its `log`.
 9. **Check and publish.** Open the site locally (`python3 -m http.server
    --directory docs`, then `/v2/`), pick its layer in the filter and press one
-   refined building: it rises, turns and swaps to its ground without errors. Commit ("Refine <names>")
+   refined building: it rises, turns and swaps to its ground without errors.
+   `node scripts/check_buildings.js --port <port> --today --max 4` does it in
+   headless Chromium for the buildings the ledger says were refined or modelled
+   today, the kinds in turn (or `--slugs a,b,museum-c`; a museum's slug begins
+   `museum-`): each is opened, must be drawn up to its full height (a drawing
+   at `shown` 1 — on 15 Oct 2026 a late frame had left Balboa's tallest pine a
+   ring, its top storey unrisen), turn when dragged, swap to its ground on a tap
+   and back, and leave, with no page error; about a minute a building under
+   software GL. Commit ("Refine <names>")
    and push. If the push is refused, fetch, merge and push again.
 
 ## Interiors

@@ -7,7 +7,7 @@
      1440x900: the wheel goes down into New York; "+" at the nearest into Paris; open sea stays at the nearest;
        on the Collages layer New York's plot all the same; on the Artists layer New York opens on Born here.
      cd docs && python3 -m http.server 8871 &
-     NODE_PATH=$(npm root -g) node scripts/check_descent.js [port] [shots dir]
+     NODE_PATH=$(npm root -g) node scripts/check_descent.js [port] [shots dir]     (ONLY=aimed|phone|desktop: one part)
    Exits 1 on any failure. */
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -27,6 +27,9 @@ async function open(browser, w, h, touch, layer) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
   await ctx.addInitScript((l) => { try { localStorage.setItem("globe-layer", l); localStorage.removeItem("dial.seen"); } catch (e) {} }, layer);
   const P = await ctx.newPage();
+  // A city's first play redraws its skyline every frame, ~7 s a frame for New York in software GL: a
+  // screenshot waits for one.
+  P.setDefaultTimeout(90000);
   const errors = [];
   P.on("pageerror", (e) => errors.push(e.message));
   await P.route(/d32dm0rphc51dk\.cloudfront\.net|nasa\.gov|wikimedia\.org/, (r) => r.fulfill({ status: 200, contentType: "image/svg+xml", body: PIC }));
@@ -260,10 +263,11 @@ async function desktop(browser) {
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE, args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
-  try { await aimed(browser); } catch (e) { console.log("aimed threw", e); fails.push("aimed threw"); }
-  if (process.env.ONLY_AIMED) { await browser.close(); console.log(fails.length ? "FAILS: " + fails.length : "ALL OK"); process.exit(fails.length ? 1 : 0); }
-  try { await phone(browser); } catch (e) { console.log("phone threw", e); fails.push("phone threw"); }
-  try { await desktop(browser); } catch (e) { console.log("desktop threw", e); fails.push("desktop threw"); }
+  // ONLY=aimed|phone|desktop runs one part (ONLY_AIMED=1 as before).
+  const only = process.env.ONLY || (process.env.ONLY_AIMED ? "aimed" : "");
+  if (!only || only === "aimed") { try { await aimed(browser); } catch (e) { console.log("aimed threw", e); fails.push("aimed threw"); } }
+  if (!only || only === "phone") { try { await phone(browser); } catch (e) { console.log("phone threw", e); fails.push("phone threw"); } }
+  if (!only || only === "desktop") { try { await desktop(browser); } catch (e) { console.log("desktop threw", e); fails.push("desktop threw"); } }
   await browser.close();
   console.log(fails.length ? "FAILS: " + fails.length : "ALL OK");
   process.exit(fails.length ? 1 : 0);

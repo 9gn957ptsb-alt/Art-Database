@@ -797,7 +797,8 @@
   }
 
   function avoidRects() {
-    var out = [];
+    // The city's ring on the categories (land.js): its names are the instrument, kept clear.
+    var out = Land.dialGround && Land.dialGround.catRects ? Land.dialGround.catRects().slice() : [];
     ["#art-time", "#art-col", ".banner", "#filter", ".guide-pill", ".kinds"].forEach(function (s) {
       document.querySelectorAll(s).forEach(function (e) {
         if (e.hidden || e.closest(".skyline")) { return; }
@@ -809,10 +810,12 @@
   }
   function meets(a, b, pad) { return a.x0 < b.x1 + pad && b.x0 < a.x1 + pad && a.y0 < b.y1 + pad && b.y0 < a.y1 + pad; }
 
-  var placed = "";
+  var placed = "", nameRects = [];
   function placeNames(now) {
+    var cr = Land.dialGround && Land.dialGround.catRects ? Land.dialGround.catRects() : [];
     var f = frameNow, key = [view.heading.toFixed(3), view.zoom.toFixed(3), view.px | 0, view.py | 0, band.x, band.y, band.w, band.h,
-                              litArt, shownNow.toFixed(3), city.yearNow, namedTap ? namedTap.k : -1].join(",");
+                              litArt, shownNow.toFixed(3), city.yearNow, namedTap ? namedTap.k : -1, cat,
+                              cr.map(function (b) { return Math.round(b.x0) + ":" + Math.round(b.y0); }).join(";")].join(",");
     if (key === placed) { return; }
     placed = key;
     var W = window.innerWidth, H = window.innerHeight;
@@ -837,7 +840,10 @@
       mk.btn.hidden = !inside;
       if (!inside) { mk.named = false; return; }
       if (!mk.w) { mk.btn.dataset.named = "true"; mk.w = mk.btn.offsetWidth; mk.h = mk.btn.offsetHeight; }
-      var want = (a.kind === "museum" || count < budget) && !later || litArt === a.k || namedTap === a;
+      // Another category chosen (the philosophers, the artists, the animal): the museums and galleries give
+      // way, named only when pointed at or tapped; their rings and diamonds stay.
+      var quiet = cat === "philosophers" || cat === "studios" || cat === "characters";
+      var want = !quiet && (a.kind === "museum" || count < budget) && !later || litArt === a.k || namedTap === a;
       var spot = null;
       if (want && (count < budget || litArt === a.k || namedTap === a)) {
         // Right of it, else left; a museum may be lifted or dropped a line.
@@ -867,6 +873,7 @@
       if (litArt === a.k) { mk.btn.dataset.lit = "true"; } else { delete mk.btn.dataset.lit; }
       if (later) { mk.btn.dataset.later = "true"; } else { delete mk.btn.dataset.later; }
     });
+    nameRects = boxes.concat(avoid);
   }
 
   /* ---- pixel light: rings round the museums, and their marks -------------- */
@@ -942,9 +949,63 @@
 
   var walkers = [], nextCome = 0, crowd = 2, roster = [];
   function eligible(y) {
+    // The philosophers born here: all of them while the dial rests at now; turned to a year, those alive then.
+    if (cat === "philosophers" && !city.yearNow) { return roster.slice(); }
     return roster.filter(function (r) {
       return r[5].some(function (s) { return s[0] <= y && y <= s[1]; });
     });
+  }
+
+  /* ---- the category the city shows ----------------------------------------
+     The artist, 15 Oct 2026: "The dial around the globe or the cities is the answer to being able to shift
+     through categories seamlessly while the dial being able to be other tools as well", and "Introduce
+     notable philosophers as character relative to their native country or city". The world's category —
+     chosen on the globe's dial, or on the city's own turned to the categories by its crown (land.js,
+     "the city's dial on the categories") — is what the city shows. Philosophers: the philosophers born
+     here walk its streets in the dress of their time and place (philosophers.js), all of them while the
+     dial rests at now and, turned to a year, those alive then, each named, a press their card. Artists:
+     its artists walk, named. Characters: no one walks; its own animal, the dial's hand, says what it is.
+     The rest: as it was, the museums named and its artists walking, named when pointed at. */
+  var cat = "", philRows = null, philAsked = null;
+  function philosophersHere(key) {
+    if (!philRows) {
+      if (!philAsked && window.Philosophers && Philosophers.load) {
+        philAsked = Philosophers.load().then(function (d) { philRows = (d && d.people) || []; cat = ""; }).catch(function () { philAsked = null; });
+      }
+      return [];
+    }
+    // Most read first (the rows' own order is by how many Wikipedias have them), as a walker is chosen.
+    return philRows.filter(function (r) { return r[10] === key; }).sort(function (a, b) { return b[9] - a[9]; }).map(function (r) {
+      return [r[0], r[2], null, null, null, [[r[3], r[4] === null || r[4] === undefined ? NOW : r[4], "born"]], [], null, { phil: r }];
+    });
+  }
+  function castFor(now) {
+    var was = cat;
+    cat = Land.layer ? Land.layer() : "museums";
+    var phone = window.innerWidth <= 720;
+    if (cat === "philosophers") { roster = philosophersHere(city.key); crowd = phone ? 3 : 5; }
+    else if (cat === "characters") { roster = []; crowd = 0; }
+    else { roster = (artistsAll[city.key] || []).slice(); crowd = phone ? 6 : 10; }
+    // Who walks for another category goes; the new come soon after.
+    walkers.forEach(function (w) { if (!w.leaving && roster.indexOf(w.r) < 0 && !roster.some(function (r) { return r[0] === w.r[0]; })) { w.leaving = now; } });
+    nextCome = Math.min(nextCome, now + (still ? 0 : 500));
+    if (was && was !== cat) {
+      if (cat === "characters" && ground.hand && ground.box) { handTapped(); }
+      if (window.A11y && A11y.say) { var said = noteFor(); if (said) { A11y.say(said); } }
+    }
+  }
+  // The quiet line at the foot: what the category holds here, in the dial's year.
+  function noteFor() {
+    if (!city) { return ""; }
+    var y = city.yearNow;
+    if (cat === "philosophers") {
+      var n = roster.length;
+      if (!n) { return philRows ? "No philosopher on the site was born here" : ""; }
+      return y ? y + " · " + plural(eligible(y).length, "philosopher", "philosophers") + " alive of " + n + " born here"
+        : plural(n, "philosopher", "philosophers") + " born here";
+    }
+    if (cat === "characters") { return ground.hand && ground.hand.line ? ground.hand.line.split(" · ")[0] + " · its own animal, the dial's hand" : ""; }
+    return y ? y + " · " + plural(eligible(y).length, "artist here", "artists here") : "";
   }
   function yearOf() { return city.yearNow || NOW; }
   function startCell(r) {
@@ -977,15 +1038,22 @@
     var w = { r: r, q: q, to: q, t: 1, dir: -1, speed: (0.55 + Math.random() * 0.3) * pace, at: still ? now - 600 : now, until: still ? Infinity : now + 21000 + Math.random() * 13000,
               leaving: 0, step: Math.random(), named: false, x: 0, y: 0 };
     w.ink = (r[6] || []).map(hex).filter(Boolean);
-    w.btn = el("button", "skyline-who");
+    w.phil = r[8] && r[8].phil ? r[8].phil : null;
+    w.btn = el("button", "skyline-who" + (w.phil ? " skyline-phil" : ""));
     w.btn.type = "button";
     var span = r[5].filter(function (s) { return s[0] <= yearOf() && yearOf() <= s[1]; })[0] || r[5][0];
-    w.btn.setAttribute("aria-label", r[1] + " — " + (span[2] === "born" ? "born here" : "here") + ", " + span[0] +
-      (span[1] > span[0] ? "–" + span[1] : "") + "; their life");
+    if (w.phil) {
+      w.btn.setAttribute("aria-label", w.phil[1] + " — born here, " + (window.Philosophers ? Philosophers.lifeSaid(w.phil) : w.phil[3]) +
+        "; a philosopher: their card");
+    } else {
+      w.btn.setAttribute("aria-label", r[1] + " — " + (span[2] === "born" ? "born here" : "here") + ", " + span[0] +
+        (span[1] > span[0] ? "–" + span[1] : "") + "; their life");
+    }
     w.btn.appendChild(el("span", "skyline-who-name", r[1]));
     w.btn.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (coarse && !w.named) { w.named = true; w.btn.dataset.named = "true"; return; }
+      if (coarse && !w.named && !w.btn.dataset.named) { w.named = true; w.btn.dataset.named = "true"; return; }
+      if (w.phil) { if (window.Philosophers) { Philosophers.open(w.phil[0]); } return; }
       openLife(w.r);
     });
     w.btn.addEventListener("pointerenter", function () { w.hover = true; });
@@ -1065,8 +1133,18 @@
   function paintWalkers(g, now) {
     var phone = window.innerWidth <= 720;
     var u = Math.min(3, (phone ? 1.75 : 2) * Math.sqrt(view.zoom));
+    // A philosopher's figure (40 cells tall) at whole device pixels a cell: about 30 px on a phone, 36 on a desktop.
+    var dpr = Math.min(3, window.devicePixelRatio || 1);
+    var pu = Math.max(1, Math.round((phone ? 30 : 36) * Math.min(PHI, Math.sqrt(view.zoom)) * dpr / 40)) / dpr;
+    var told = (nameRects || []).slice();
     walkers.forEach(function (w) {
       var p = walkerAt(w);
+      if (w.phil) {
+        if (Math.abs(p.x - w.x) > 0.05) { w.face = p.x > w.x ? 1 : -1; }
+        w.x = p.x; w.y = p.y;
+        paintPhil(g, w, p, now, pu, told);
+        return;
+      }
       w.x = p.x; w.y = p.y;
       var inside = p.x > band.x + 4 && p.x < band.x + band.w - 4 && p.y > band.y + 18 && p.y < band.y + band.h - 2;
       w.btn.hidden = !inside;
@@ -1103,11 +1181,58 @@
         g.strokeStyle = LILAC; g.lineWidth = 1;
         g.strokeRect(x0 - 3.5, y0 - 3.5, 4 * u + 7, 9 * u + 7);
       }
-      var named = lit || w.named;
+      // Named when pointed at; on the Artists, always where the name has room.
+      var named = lit || w.named || (cat === "studios" && fitsName(w, p.x + 10, p.y - 4 * u - 12, told));
       if (named) { w.btn.dataset.named = "true"; } else { delete w.btn.dataset.named; }
       w.btn.style.transform = "translate(" + Math.round(p.x - 12) + "px," + Math.round(p.y - 4 * u - 12) + "px)";
     });
     g.globalAlpha = 1;
+  }
+  // A walker's name beside it, if it meets no museum's name nor another walker's (told: the names given).
+  function fitsName(w, x0, y0, told) {
+    if (!w.nw) {
+      var was = w.btn.dataset.named;
+      w.btn.dataset.named = "true";
+      var nm = w.btn.lastChild;
+      w.nw = nm ? nm.offsetWidth : 60;
+      if (!was) { delete w.btn.dataset.named; }
+    }
+    var b = { x0: x0, y0: y0, x1: x0 + w.nw, y1: y0 + 24 };
+    if (b.x1 > band.x + band.w - 2 || b.x0 < band.x + 2 || b.y0 < band.y || b.y1 > band.y + band.h) { return false; }
+    if (told.some(function (r) { return meets(b, r, 2); })) { return false; }
+    told.push(b);
+    return true;
+  }
+  // A philosopher walking: their figure in the dress of their time and place, its feet on the street, a
+  // tile of the pixel light under them; named beside them where there is room.
+  function paintPhil(g, w, p, now, pu, told) {
+    var fh = 40 * pu;
+    var inside = p.x > band.x + 4 && p.x < band.x + band.w - 4 && p.y > band.y + fh * 0.6 && p.y < band.y + band.h - 2;
+    w.btn.hidden = !inside;
+    if (!inside || !window.Philosophers) { return; }
+    var fade = Math.min(1, (now - w.at) / 600);
+    if (w.leaving) { fade = Math.max(0, 1 - (now - w.leaving) / 600); }
+    fade = Math.round(fade * 4) / 4;
+    var lit = w.hover || w.lit;
+    g.globalAlpha = fade * LEVELS[lit ? 3 : 1];
+    g.fillStyle = LIGHT;
+    g.fillRect(Math.floor(p.x / T) * T + 1, Math.floor((p.y - 3) / T) * T + 1, T - 2, T - 2);
+    g.globalAlpha = fade * 0.45;
+    g.fillStyle = "rgb(" + INK_DARK.join(",") + ")";
+    g.fillRect(Math.round(p.x - 5 * pu), Math.round(p.y), Math.round(10 * pu), Math.max(1, Math.round(pu)));     // its shadow
+    g.globalAlpha = fade;
+    var frame = still ? 0 : Math.floor(w.step * 2) % 4;
+    var at = Philosophers.draw(g, w.phil[0], p.x, p.y, still ? "stand" : "walk", frame, w.face || 1, pu);
+    g.globalAlpha = 1;
+    if (lit && at) {
+      g.strokeStyle = LILAC; g.lineWidth = 1;
+      g.strokeRect(Math.round(p.x - 8 * pu) - 2.5, at.y + 2.5, Math.round(16 * pu) + 5, at.h - 2);
+    }
+    var top = Math.round(p.y - fh * 0.62);
+    var named = lit || w.named || fitsName(w, p.x + 10, top, told);
+    if (named) { w.btn.dataset.named = "true"; } else { delete w.btn.dataset.named; }
+    w.btn.style.height = Math.round(fh * 0.9) + "px";
+    w.btn.style.transform = "translate(" + Math.round(p.x - 12) + "px," + Math.round(p.y - fh * 0.9) + "px)";
   }
 
   /* ---- the ground dial ------------------------------------------------------
@@ -1247,6 +1372,11 @@
       if (ground.hand && hs.half === half) {
         ground.hand.draw(g, hs.x, hs.y - hs.alt, hs.pose, hs.n, hs.dir, ground.scale);
       }
+      // On the categories, their names over the city, whichever half they are on (none lost behind a tower).
+      if (half === "front" && Land.dialGround.paintTop) {
+        ring.band = band;
+        Land.dialGround.paintTop(g, ring);
+      }
       g.restore();
     });
   }
@@ -1285,6 +1415,8 @@
   // A press on the ground dial: the animal ("hand"), the ring and its marks ("ring"), or neither.
   function groundHit(x, y, touch) {
     if (!ground.on || !ground.ring) { return null; }
+    // The ring on the categories (land.js): its names, wherever they were kept in the band.
+    if (Land.dialGround.catHit && Land.dialGround.catHit(x, y)) { return "ring"; }
     var b = ground.box;
     if (b && ground.hand) {
       var px = Math.max(touch ? 4 : 0, ((touch ? 44 : 24) - b.w) / 2), py = Math.max(touch ? 4 : 0, ((touch ? 44 : 24) - b.h) / 2);
@@ -1543,8 +1675,11 @@
       if (!city || !on_) { return; }
       event.preventDefault();
       event.stopPropagation();
+      // The wheel's run that brought the city down from the world goes no further (land.js, entryHold).
+      if (Land.city.held && Land.city.held(event.timeStamp)) { return; }
       // Over the ground dial's animal a wheel turns time, a crown (a trackpad's pinch still brings the city nearer).
-      if (!event.ctrlKey && !into && !leaving && groundHit(event.clientX, event.clientY, false) === "hand") {
+      var gw = !event.ctrlKey && !into && !leaving ? groundHit(event.clientX, event.clientY, false) : null;
+      if (gw === "hand" || (gw === "ring" && Land.dialGround.fn && Land.dialGround.fn() === "categories")) {
         Land.dialGround.press("wheel", event);
         return;
       }
@@ -2015,9 +2150,9 @@
         view.zoom = Math.max(1, Math.min(ZOOM_MAX, wf.zoom));
         view.px = wf.px; view.py = wf.py;
       }
-      crowd = window.innerWidth <= 720 ? 6 : 10;
-      roster = (artistsAll[st.key] || []).slice();
       walkers = [];
+      cat = "";
+      castFor(now);
       nextCome = now + (still ? 0 : 900);
       makeNames();
       columnFor(st);
@@ -2107,6 +2242,7 @@
         paintGround(now);
       }
     }
+    if (cat !== (Land.layer ? Land.layer() : "museums")) { castFor(now); }
     stepWalkers(now, dt);
     placeNames(now);
     var lk = placed + "|" + walkers.length + "|" + litArt;
@@ -2129,7 +2265,8 @@
     });
     if (lit >= 0 && litArt !== lit && hoverK < 0) { litArt = lit; placed = ""; }
     else if (lit < 0 && litArt >= 0 && hoverK < 0 && !marks.some(function (mk) { return mk.btn.matches(":hover, :focus"); })) { litArt = -1; placed = ""; }
-    note.textContent = city.yearNow ? city.yearNow + " · " + plural(eligible(city.yearNow).length, "artist here", "artists here") : "";
+    var nt = noteFor();
+    if (note.textContent !== nt) { note.textContent = nt; }
   }
   // The dirt tiles may still be on their way: the ground is made once they have come (or after 3 s).
   function waitFor(myVisit, P, g, models, tries) {
@@ -2241,6 +2378,9 @@
         return best;
       });
     },
+    // What a city holds of the categories the skyline shows (land.js counts them on the city's ring): its
+    // artists who walk it (-1 before the lists are read).
+    cast: function (key) { return { artists: artistsAll ? (artistsAll[key] || []).length : -1, category: cat }; },
     // For the tests: one draw (its time is the caller's to measure), and how many dots.
     _draw: function () { if (city && on_) { sorted.heading = null; draw(); } },
     _pointers: function () { return { pointers: Object.keys(pointers), gesture: gesture && gesture.kind }; },
@@ -2257,7 +2397,8 @@
     state: function () {
       return { on: on_, key: city && city.key, arts: city ? city.arts.map(function (a) { return { kind: a.kind, name: a.name, cells: a.cells.length }; }) : [],
                marks: marks.map(function (mk) { return { name: mk.a.name, kind: mk.a.kind, x: mk.x, y: mk.y, named: mk.named, hidden: mk.btn.hidden }; }),
-               walkers: walkers.map(function (w) { return { id: w.r[0], name: w.r[1], x: w.x, y: w.y }; }),
+               walkers: walkers.map(function (w) { return { id: w.r[0], name: w.r[1], x: w.x, y: w.y, phil: !!w.phil, named: !!w.btn.dataset.named, hidden: !!w.btn.hidden, leaving: !!w.leaving }; }),
+               category: cat, note: note ? note.textContent : "",
                heading: view.heading, zoom: view.zoom, shown: shownNow, year: city && city.yearNow, band: band,
                // How it is drawn: on the GPU or the 2D canvas, its grid, its dots (or strips), the ms it took to make.
                gpu: !!(city && city.dots.gpu), n: city && city.n, cell: city && city.cell, count: city ? city.dots.count : 0,

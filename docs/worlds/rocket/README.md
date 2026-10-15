@@ -4,37 +4,60 @@ A simpler game in the way of Minecraft's phone app, about one mission: you come 
 to under a tree beside your wrecked capsule, and find the four pieces of your rocket, to build it
 at the wreck and launch. Served at `/worlds/rocket/`.
 
-## The tribar, not the pixel
+## The figure, not the cube
 
-The game is not drawn in Minecraft's pixels. Its unit is the impossible triangle the artist chose
+The game is not drawn in Minecraft's cubes. Its unit is the impossible triangle the artist chose
 (14 Oct 2026: "Instead of using cube pixels as the common unit to build out the design I want you
-to use the shape in the image"): a tribar, three bars on a triangular lattice, and in the artist's
-drawing three tribars round an inverted gap. What was read from that drawing:
+to use the shape in the image"): a tribar, three bars round a triangle, and in the artist's
+drawing three tribars round an inverted gap. At first it was drawn on the faces of the blocks; then
+the artist asked for it as a thing (15 Oct 2026: "Make this a 3D model first and then integrate
+that into this artifact as the building block. Right now it's just planted on the surface of the
+cubes").
 
-- **Three tones, each one ribbon.** Every bar shows two faces: the left bar grey outside and black
-  inside, the bottom bar black outside and white inside, the right bar white outside and grey
-  inside. So each tone is the inner face of one bar turning the corner into the outer face of the
-  next, and each bar owns the corner it comes to first — that rotation is what makes it impossible.
-- **The white is the ground.** The white faces are the page itself, told from it only by a hairline;
-  the figure is drawn by its grey and black.
-- **It is self-similar, and it runs on.** The drawing is three tribars round a gap; where two touch,
-  the grey of one runs straight on into the next.
+**The model.** An impossible figure is a real object seen from the one place where its cuts line
+up. The drawing was read as square bars on the edges of a lattice of cubes, along paths whose ends
+meet only when seen down the (1, 1, 1) diagonal in parallel projection, and the bars' paths and
+thickness fitted to it (the outer frame exactly, the pinwheel inside very nearly). It comes to six
+bars, a tenth of a block thick: three long ones, one along each axis, running the block's whole
+width (the outer frame: the grey post on the left, the black base, the white-topped beam on the
+right), and three short ones inside (the pinwheel). It is built in SketchUp at 40 in across,
+`scripts/sketchup/impossible_triangle.py`, saved as `sketchup/impossible-triangle.skp`, with two
+scenes: the drawing (down the diagonal, rolled so that the triangle stands on its base) and turned
+(where the bars are seen not to meet). Each bar's faces take the drawing's tones by the axis they
+face: X grey, Y black, Z white.
 
-So every face of every block is a field of tribars, one to a block, in rows a block high, every
-other row half a block along — three round every gap, the artist's figure everywhere. The white is
-the surface's own colour (limestone, brick, lawn, plaster), so the figures rise out of it and sink
-back into it; grey and black are that colour deepened; a hairline draws the white faces. Across
-blocks of one material the ribbons run on unbroken, and a lawn's side is green ground with figures
-of earth. Water's three tones turn slowly round its figures, and the rocket's pieces turn theirs
-quickly, so their ribbons seem to flow; glass is leaded in figures; a gallery's plaster carries
-quieter ones, so the works on it are what is seen; a note has the figure pressed into its paper.
-Far off, where a figure would be a few pixels, a face is its figures' mean, so nothing shimmers.
+**The block.** Every block of the game is that model, a metre across, its post upright (x east,
+y up, z south, so that a block seen from the north-east and above, down its diagonal, is the
+drawing). Its three tones are its material's, by the way a bar's face looks: up white, east and
+west grey, north and south black, the material lit, itself and deepened. A lawn's bars are earth
+with green tops, a log's ends are paler, leaves keep their green in the dark, glass takes the sky,
+a gallery's plaster is quieter so that the works on it are what is seen, and the rocket's pieces
+breathe. The long bars of blocks side by side run on into each other, so a wall is a lattice and
+a field a deep one; between the bars you see into the blocks behind, and through a wall a block
+thick to what is beyond it. You still stand on a block and are stopped by one: the bars are what
+you see, the block what you touch.
 
-The view is at the screen's own density, smooth, with no grain, dithering or shaded corners (and
-softens while you come to, under your tree); the works are their pictures from Artsy at a finer
-size, in frames of the same three tones (lit along the top and left, shadowed along the bottom and
-right, turned the other way where they meet the picture). The crosshair, the pieces, the blocks to
-place and the title's mark are the figure too; the smoke is triangles.
+**How it is drawn.** The place's grid goes to the graphics card as a texture of block ids, a layer
+to each height. The faces where a block meets the open are meshed as before, but a face only
+starts a ray: the fragment shader (`FS` in `rocket.js`) walks it on from the face, block to block,
+testing the six bars in each, and shows the first it meets, a little deeper for each block it has
+gone in. A ray that comes out into the open again lets the faces behind show; one still among bars
+after eight blocks shows the dark between them. A face keeps its own depth, which is right because
+every face along a ray between it and what it meets is one the walk has passed through; chunks are
+drawn nearest first, so what is hidden is turned away before its walk. Breaking or placing a block
+sends its column again; the rocket walks a little grid of its own, which rises with it. Far off,
+where a bar would be narrower than a pixel or two, a face shows what its blocks average to
+(`scripts/rocket_far.py` runs the same walk over many rays, at a slant and from nearer straight
+on), so nothing shimmers. If the frames come slowly, the view coarsens, and then the walk is kept
+nearer. Water and the notes are surfaces, not blocks: water its colour with the sky in it at a
+slant, a note paper that catches the eye.
+
+The view is at the screen's own density, smooth, with no grain or dithering (and softens while you
+come to, under your tree); the works are their pictures from Artsy at a finer size, in frames of
+the same three tones (lit along the top and left, shadowed along the bottom and right, turned the
+other way where they meet the picture). The blocks to place, the pieces and the title's mark are
+the model seen down its diagonal, which is the drawing; the crosshair is a tribar; the smoke is
+triangles.
 
 ## Escapes made from what the site holds
 
@@ -151,9 +174,10 @@ switches break and place, N opens the notes, F looks behind the work whose label
   (`--list` prints every project's sections).
 - `forms.html` — the breakdown: the projects taken apart and the new forms made of them.
 - `rocket.js` — the game: the mesh (16 × 16 columns a chunk, the nearest first and the rest a few
-  each frame), the tribar drawn on every face (the fragment shader `FS`, and `figure()` for the
-  page's marks), the works' pictures, the hand, the opening, the labels and the notes, the rocket,
-  the start screen.
+  each frame), the block (`FIGURE`, the model's six bars), the walk through the blocks from their
+  faces (the fragment shader `FS`, over the grid as a texture, `voxTexture` and `refresh`), the
+  page's marks (`blockMark()`, the model seen down its diagonal), the works' pictures, the hand,
+  the opening, the labels and the notes, the rocket, the start screen.
 - `catalogue.json` — what each adventure can be made from, written by
   `python3 scripts/build_adventures.py`.
 

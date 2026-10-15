@@ -1,0 +1,159 @@
+/* The Characters and Philosophers layers' marks (land.js figureDot): the figure is the dot, its feet at the
+   place, the name beside it; and a philosopher's card (philosophers.js). */
+.city[data-kind="character"] .city-dot,
+.city[data-kind="philosopher"] .city-dot,
+.dirt-look .city[data-kind="character"] .city-dot,
+.dirt-look .city[data-kind="philosopher"] .city-dot {
+  width: auto;
+  height: auto;
+  margin: 0 3px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+/* Before its figure is drawn, a 3 px point says where, as an artist's does. */
+.city[data-kind="character"] .city-dot:empty,
+.city[data-kind="philosopher"] .city-dot:empty {
+  width: 3px;
+  height: 3px;
+  background: #9d95e6;
+}
+.city-figure {
+  display: block;
+  image-rendering: pixelated;
+  transform: translateY(-34%);
+}
+.city[data-kind="character"] .city-name { font-style: normal; }
+.city[data-kind="philosopher"] .city-name { font-style: italic; }
+.city[data-kind="character"]:hover .city-name,
+.city[data-kind="philosopher"]:hover .city-name,
+.city[data-kind="character"]:focus-visible .city-name,
+.city[data-kind="philosopher"]:focus-visible .city-name { color: #ffffff; }
+
+/* ---- a philosopher's card ---------------------------------------------------------------- */
+.phil-card {
+  position: fixed;
+  z-index: 140;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: end;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(157, 149, 230, 0.35);
+  border-radius: 6px;
+  background: rgba(15, 10, 7, 0.95);
+  color: #eadfcd;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+@media (min-width: 721px) {
+  .phil-card { left: 24px; bottom: 24px; transform: none; width: 400px; }
+}
+.phil-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #c4b29c;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.phil-close:hover,
+.phil-close:focus-visible { color: #ffffff; background: rgba(234, 223, 205, 0.08); }
+.phil-stage {
+  align-self: start;
+  position: sticky;
+  top: 0;
+  padding: 0 4px 6px;
+  background: linear-gradient(to top, var(--soil, #8a7660) 0, var(--soil, #8a7660) 8px, transparent 8px);
+  border-radius: 2px;
+}
+.phil-figure { display: block; image-rendering: pixelated; }
+.phil-words { min-width: 0; padding-right: 18px; }
+.phil-name {
+  margin: 0 0 4px;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 20px;
+  font-weight: normal;
+  line-height: 1.15;
+}
+.phil-years {
+  margin: 0 0 8px;
+  font-family: var(--mono, var(--sans));
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c4b29c;
+}
+.phil-desc { margin: 0 0 8px; font-size: 13px; line-height: 1.35; }
+.phil-said {
+  margin: 0 0 8px;
+  font-family: var(--serif, Georgia, serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.phil-ground { margin: 0 0 10px; font-size: 12px; line-height: 1.35; color: #c4b29c; }
+/* Its three ways on (KINDS.md, "philosopher"): the city, the philosophers of its time, the artists born there. */
+.phil-three { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+.phil-tab {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid rgba(234, 223, 205, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: #c4b29c;
+  font-family: var(--mono, var(--sans));
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.phil-tab[hidden] { display: none; }
+.phil-tab[aria-expanded="true"], .phil-tab:hover, .phil-tab:focus-visible { color: #ffffff; border-color: rgba(157, 149, 230, 0.8); }
+.phil-list { max-height: 30vh; overflow: auto; margin: 2px 0 4px; border-top: 1px solid rgba(234, 223, 205, 0.12); }
+.phil-list[hidden] { display: none; }
+.phil-row {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 2px;
+  border: 0;
+  border-bottom: 1px solid rgba(234, 223, 205, 0.08);
+  background: transparent;
+  color: #eadfcd;
+  text-align: left;
+  cursor: pointer;
+}
+.phil-row:hover, .phil-row:focus-visible { background: rgba(157, 149, 230, 0.12); }
+.phil-row-name { display: block; font-family: var(--serif, Georgia, serif); font-size: 14px; line-height: 1.25; }
+.phil-row-sub { display: block; font-family: var(--mono, var(--sans)); font-size: 10px; letter-spacing: 0.04em; color: #a8927a; }
+.phil-go {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid rgba(157, 149, 230, 0.6);
+  border-radius: 999px;
+  background: transparent;
+  color: #eadfcd;
+  font-family: var(--mono, var(--sans));
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.phil-go:hover,
+.phil-go:focus-visible { background: #9d95e6; color: #0f0a07; }
+.phil-source { margin: 10px 0 0; font-size: 10px; color: #a8927a; }

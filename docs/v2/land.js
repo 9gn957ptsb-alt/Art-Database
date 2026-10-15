@@ -155,6 +155,8 @@
   var architecture = null;   // architecture.json — the buildings (scripts/build_architecture.py)
   var museums = null;        // museums.json — the museums that hold the saved works (scripts/build_museums.py)
   var studios = null;        // studios.json — where the saved artists worked (scripts/build_studios.py; read when its layer is on)
+  var charIndex = null;      // characters/index.json — each place's own animal (the Characters layer; read when it is on)
+  var philData = null;       // philosophers.json — the philosophers at their birthplaces (the Philosophers layer; philosophers.js)
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
@@ -689,7 +691,8 @@
     var el = document.createElement("button");
     el.className = "city";
     el.type = "button";
-    el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : city.studio ? "studio" : real ? "landmark" : "work";
+    el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : city.studio ? "studio" :
+      city.character ? "character" : city.philosopher ? "philosopher" : real ? "landmark" : "work";
     if (city.studio) { el.dataset.pr = city.studio[5]; }   // an exact studio, or a town of studios (land.css)
     if (city.layer) { el.dataset.layer = city.layer; }
     if (city.inTown) { el.dataset.intown = "true"; }     // named in its city, in the serif (land.css)
@@ -860,10 +863,116 @@
     });
     applyPin();
 
+    // And each place's own animal (the Characters layer; characters/index.json): where it lives, drawn after its
+    // native artist (characters.js), named by the animal; pressed, its place.
+    ((charIndex && charIndex.places) || []).forEach(function (r, k) {
+      raiseCity({
+        work: null, slug: "char-" + r[0], title: r[4], label: r[4], where: r[1],
+        aria: r[4] + (r[5] ? ", after " + r[5] : "") + ", in " + r[1],
+        lat: r[2] * RAD, lon: wrap(r[3] * RAD), character: r, real: true,
+        rank: 0.8 + 0.5 * r[6], layer: "characters", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
+        figBox: { w: 36, up: 22, down: 5 },          // until its figure is drawn (figureDot)
+        open: function () { openCharacter(r); }
+      }, true);
+    });
+    // And the philosophers (the Philosophers layer; philosophers.json), each at the birthplace, a figure in the
+    // dress of their time and place (philosophers.js), named as they go by; pressed, their card.
+    ((philData && philData.people) || []).forEach(function (r, k) {
+      raiseCity({
+        work: null, slug: "phil-" + r[0], title: r[2], label: r[2], where: r[5],
+        aria: r[1] + ", born in " + r[5] + (window.Philosophers ? ", " + Philosophers.lifeSaid(r) : ""),
+        lat: r[6] * RAD, lon: wrap(r[7] * RAD), philosopher: r, real: true,
+        years: [r[3], r[4] === null || r[4] === undefined ? Infinity : r[4]],
+        rank: 0.6 + r[9] / 80, layer: "philosophers", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
+        figBox: { w: 12, up: 31, down: 6 },          // until its figure is drawn (figureDot)
+        open: function () { if (window.Philosophers) { Philosophers.open(r[0]); } }
+      }, true);
+    });
+
     // And the cities, once cities.json has been read (the Museums layer).
     if (towns) { raiseTowns(); }
     filterGlobe();
     measureNames();
+  }
+
+  /* The Characters and Philosophers layers' files, read the first time each is on. */
+  var charAsk = null, philAsk = null;
+  function peopleLayers() {
+    if (layerOn === "characters" && !charIndex && !charAsk) {
+      charAsk = read("characters/index.json").then(function (d) {
+        charIndex = d;
+        found();
+        if (layerOn === "characters") { placeMarks(); }
+      }).catch(function () { charAsk = null; });
+    }
+    if (layerOn === "philosophers" && !philData && !philAsk) {
+      philAsk = (window.Philosophers ? Philosophers.load() : read("philosophers.json")).then(function (d) {
+        philData = d;
+        found();
+        if (layerOn === "philosophers") { placeMarks(); }
+      }).catch(function () { philAsk = null; });
+    }
+  }
+  /* An animal pressed on the globe: its place — a city gone down into (where it is the dial's hand, or a wave
+     brings it), else the life of its native artist, whose birthplace it is. */
+  function openCharacter(r) {
+    if (townBy[r[0]] && !townBy[r[0]].pass) { openTown(r[0]); return; }
+    if (r[7] && window.Lives && Lives.open) { Lives.open(r[7]); return; }
+    if (townBy[r[0]]) { openTown(r[0]); }
+  }
+  /* A Characters or Philosophers mark named for the first time: its figure is its dot (the animal's stand,
+     drawn by characters.js; the philosopher's, by philosophers.js), its feet at the place. */
+  function figureDot(c) {
+    if (c.fig || !c.el) { return; }
+    c.fig = "asked";
+    var dot = c.el.firstChild, dpr = Math.min(3, window.devicePixelRatio || 1);
+    function seat(cv, w, h) {
+      cv.className = "city-figure";
+      cv.style.width = Math.round(w) + "px";
+      cv.style.height = Math.round(h) + "px";
+      dot.textContent = "";
+      dot.appendChild(cv);
+      c.fig = "drawn";
+      measureOne(c);
+      // What it covers, so no name is written over it (nameMarks' dotOf): it stands up from its place,
+      // lifted a third of its height (philosophers.css .city-figure).
+      c.figBox = { w: Math.round(w), up: Math.round(h) * 0.84, down: Math.round(h) * 0.16 };
+      marksDirty = true;
+    }
+    if (c.philosopher && window.Philosophers) {
+      var fc = Philosophers.figure(c.philosopher[0], "stand", 0, 1);
+      if (!fc) { c.fig = null; return; }
+      // Trimmed to what it draws (the figure's cells leave room for a hand held out), so its place is its middle.
+      var fd = fc.getContext("2d").getImageData(0, 0, fc.width, fc.height).data;
+      var x0 = fc.width, x1 = -1, y0 = fc.height, y1 = -1;
+      for (var yy = 0; yy < fc.height; yy += 1) {
+        for (var xx = 0; xx < fc.width; xx += 1) {
+          if (fd[(yy * fc.width + xx) * 4 + 3] > 0) {
+            if (xx < x0) { x0 = xx; } if (xx > x1) { x1 = xx; } if (yy < y0) { y0 = yy; } if (yy > y1) { y1 = yy; }
+          }
+        }
+      }
+      if (x1 < x0) { c.fig = "none"; return; }
+      var tw = x1 - x0 + 1, th = y1 - y0 + 1;
+      var cv = document.createElement("canvas");
+      cv.width = tw; cv.height = th;
+      cv.getContext("2d").drawImage(fc, x0, y0, tw, th, 0, 0, tw, th);
+      seat(cv, tw, th);
+      return;
+    }
+    if (c.character && window.Characters && Characters.hand) {
+      Characters.hand(c.character[0]).then(function (h) {
+        if (!h) { c.fig = "none"; return; }
+        var cells = h.cells || { w: 40, h: 26 }, scale = Math.max(1, Math.round(36 * dpr / Math.max(1, cells.w)));
+        var b = h.box(scale), cv = document.createElement("canvas");
+        cv.width = Math.max(1, Math.round(b.w * dpr)); cv.height = Math.max(1, Math.round(b.h * dpr));
+        var g = cv.getContext("2d");
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        h.draw(g, b.w / 2, b.foot, "stand", 0, 1, scale);
+        var k = Math.min(1, 40 / Math.max(1, b.w));     // a fine drawing shown no wider than 40 px
+        seat(cv, b.w * k, b.h * k);
+      });
+    }
   }
 
   /* The artist last read, named on the globe (artist, 9 Oct 2026: "Also make
@@ -947,7 +1056,12 @@
     // artists do not show up"): one mark an artist, at the birthplace, a town
     // of several one mark with its count (lives.js); the studios are stops
     // inside a life. The key stays "studios", so a viewer's choice holds.
-    { key: "studios", label: "Artists", glyph: "○" }
+    { key: "studios", label: "Artists", glyph: "○" },
+    // Each place's own animal, after its native artist (artist, 15 Oct 2026: "Add Character as a category
+    // filter"), and the philosophers at their birthplaces ("Philosophers category as well. Introduce notable
+    // philosophers as character relative to their native country or city").
+    { key: "characters", label: "Characters", glyph: "∴" },
+    { key: "philosophers", label: "Philosophers", glyph: "∵" }
   ];
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
@@ -1021,6 +1135,7 @@
     groundPlaces();
     museumsLayer();
     studiosLayer();
+    peopleLayers();
     if (at) { pulse(at.x, at.y, [LIGHT], 0.5, Math.max(W, H) * INV2); }
     return true;
   }
@@ -1154,6 +1269,10 @@
   }
   function measureOne(c) {
     if (!c.el) { return; }
+    // Measured as it reads with its name on the right (putMark mirrors from that): a mark measured again
+    // while its name is on the left (a figure drawn, figureDot) would have its dot and name swapped.
+    var left = c.el.dataset.side === "left";
+    if (left) { delete c.el.dataset.side; }
     var dot = c.el.firstChild, name = c.el.lastChild;
     c.w = c.el.offsetWidth;
     c.dx = dot.offsetLeft + dot.offsetWidth / 2;
@@ -1161,6 +1280,7 @@
     c.nw = name.offsetWidth;
     c.nh = name.offsetHeight;
     c.gap = name.offsetLeft - c.dx;
+    if (left) { c.el.dataset.side = "left"; }
   }
 
   function hideMark(city) {
@@ -1267,6 +1387,7 @@
       : layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
       : layerOn === "architecture" ? { stack: true, budget: nameBudget() }
       : layerOn === "studios" ? { namesOnly: true, budget: Math.round(nameBudget() * Math.min(2.6, Math.max(1.3, R / Math.max(1, base0)))) }
+      : layerOn === "characters" || layerOn === "philosophers" ? { namesOnly: true, budget: Math.round(nameBudget() * Math.min(1.8, Math.max(1, R / Math.max(1, base0)))) }
       : { budget: nameBudget() };
     rules.box = S;
     nameBoxes = nameMarks(items, rules);
@@ -1278,6 +1399,7 @@
       putMark(c, it.x, it.y, it.side || (c.el.dataset.side === "left" ? "left" : "right"),
               (INV2 + INV * Math.min(1, (it.z - 0.12) / 0.3)) * dim);
       nameShown(c, !!it.side);
+      if (it.side && (c.character || c.philosopher) && !c.fig) { figureDot(c); }
       // A stacked name sits under the first, beside the first's dot; a
       // lifted one carries a hairline back to its dot.
       var dx = it.lead ? it.lead.x - it.x : 0, dy = it.lead ? it.lead.y - it.y + it.step * LINE + it.lift : 0;
@@ -1349,7 +1471,13 @@
     groups.sort(function (a, b) { return b.pri - a.pri; });
 
     var given = [], dots = [], count = 0;
-    function dotOf(m) { return { x: m.x, y: m.y, r: (m.city.dh || 4) + 3, lead: m.lead, town: m.city.town }; }
+    // What a mark covers: its dot, or a figure standing up from its place (the Characters and Philosophers).
+    function dotOf(m) {
+      var f = m.city.figBox, r = (m.city.dh || 4) + 3;
+      return f ? { x: m.x, y: m.y, r: r, x0: m.x - f.w / 2 - 2, x1: m.x + f.w / 2 + 2, y0: m.y - f.up - 1, y1: m.y + f.down + 1, lead: m.lead, town: m.city.town }
+        : { x: m.x, y: m.y, r: r, x0: m.x - r, x1: m.x + r, y0: m.y - r, y1: m.y + r, lead: m.lead, town: m.city.town };
+    }
+    function meets(a, b) { return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1; }
     // Dots that are never let go are never written over, whatever their rank.
     if (rules.keepDots) { items.forEach(function (m) { dots.push(dotOf(m)); }); }
     // The diamond of a city with museums is how its museums are reached, so a
@@ -1381,21 +1509,24 @@
       for (var d = 0; d < dots.length; d += 1) {
         var p = dots[d];
         if (p.lead && p.lead === lead) { continue; }        // its own stack
-        if (b.x0 < p.x + p.r && p.x - p.r < b.x1 && b.y0 < p.y + p.r && p.y - p.r < b.y1) { return false; }
+        if (meets(b, p)) { return false; }
       }
       for (var q = 0; q < diamonds.length; q += 1) {
         var m = diamonds[q];
         if (m.lead === lead) { continue; }
-        if (b.x0 < m.x + m.r && m.x - m.r < b.x1 && b.y0 < m.y + m.r && m.y - m.r < b.y1 &&
-            !spare(lead.city.town, m.town, keep)) { return false; }
+        if (meets(b, m) && !spare(lead.city.town, m.town, keep)) { return false; }
       }
       return true;
     }
     function under(it) {
+      // A figure is under a name wherever any of it is; a dot, where its middle is.
+      var f = it.city.figBox ? dotOf(it) : null;
       for (var k = 0; k < given.length; k += 1) {
         var o = given[k];
-        if (it.x > o.x0 && it.x < o.x1 && it.y > o.y0 && it.y < o.y1) { return true; }
+        if (f ? meets(f, o) : it.x > o.x0 && it.x < o.x1 && it.y > o.y0 && it.y < o.y1) { return true; }
       }
+      // Nor does a figure stand over another kept on the world (never a crowd), nor under the ring's words.
+      if (f && (boxAvoid(f) || dots.some(function (p) { return p.lead !== it.lead && meets(f, p); }))) { return true; }
       return false;
     }
     // How much of what is still to be named a name there would hide: the
@@ -1404,8 +1535,7 @@
       var n = 0;
       items.forEach(function (m) {
         if (m.lead === lead || m.hidden) { return; }
-        var r = (m.city.dh || 4) + 3;
-        if (b.x0 < m.x + r && m.x - r < b.x1 && b.y0 < m.y + r && m.y - r < b.y1) { n += m.city.rank || 1; }
+        if (meets(b, dotOf(m))) { n += m.city.rank || 1; }
       });
       return n;
     }
@@ -2127,6 +2257,7 @@
       filterGlobe();
       museumsLayer();
       studiosLayer();
+      peopleLayers();
     }
     measureSafe();                  // the pills are there to be measured again
     // How you got here, drawn once on the way out (the walk).
@@ -5968,6 +6099,7 @@
     if (place && !flying) { stepGrown(); } else if (grown) { grownOff(); }
     placeZooms();
     stepParts();
+    ringAvoidNow();
     if (!place || flying || grown) { placeMarks(); }
     if (!place || flying) { requestAnimationFrame(frame); return; }
     if (art && !dive.on) { stepArt(now); stepCityMap(now); placeStops(); if (art && art.kind === "town") { placeTown(); } }
@@ -11948,7 +12080,10 @@
     clod.last = now;
     // Drawn only while something is happening — rising, swinging, being
     // turned, or the window changing size. At rest it costs nothing.
-    var rising = !still && now - clod.at < CLOD_RISE + 100;
+    // And once more after the rise: a frame that comes late (a slow device, the main thread busy
+    // making the plot) must not leave the last drawing at nine tenths — the tallest crown's top
+    // storey missing until the next turn (found 15 Oct 2026, a tree drawn as a ring).
+    var rising = !still && (now - clod.at < CLOD_RISE + 100 || clod.drawn - clod.at < CLOD_RISE);
     var sized = buildingMap.clientWidth !== clod.cw || buildingMap.clientHeight !== clod.ch;
     if ((rising || clod.dirty || sized) && now - clod.drawn >= 1000 / CLOD_FPS) {
       clod.drawn = now;
@@ -16113,6 +16248,7 @@
     },
     layers: function () { return LAYERS.map(function (l) { return { key: l.key, label: l.label, glyph: l.glyph || "" }; }); },
     layer: function () { return layerOn; },
+    townName: function (key) { var t = townBy[key]; return t ? t.name : null; },
     chooseLayer: function (key, at) { return chooseLayer(key, at); },
     globeYear: function (y) { if (arguments.length) { setGlobeYear(y); } return globeYear; },
     layerYears: function () { return layerYears(); },
@@ -17883,6 +18019,9 @@
     },
     riseAll: function () { return !!rise || riseAll(); },
     rising: function () { return !!rise; },
+    // A wheel's run that brought the view here (into a museum, or down into the city from the world) is
+    // spent here: the skyline's own wheel asks, by when each event was made.
+    held: function (ts) { return entryHeld("wheel", ts); },
     deeper: function (x, y) { goDeeper(false, x, y); },
     squash: function (x, y, r) { if (place && !flying) { squash(x, y, r); } },
     pulse: function (x, y, r) { pulse(x, y, [LIGHT, LILAC], 0.5, r || 89); },
@@ -18411,6 +18550,9 @@
       // Its first play (the city growing to now) starts now it is seen: its clock had run on, unseen, while
       // its view was made on the way down.
       if (art && art.auto) { art.auto.at = performance.now() + 600; art.when = art.whenTo = 0; art.dirty = true; }
+      // A wheel's run (a trackpad's momentum) that brought it down is spent on arriving, never also a step on
+      // into a museum; fingers still down go on with the city, as before.
+      if (!r.fingers) { holdEntry(); }
       var fi = Object.keys(downFingers);
       if (r.fingers && fi.length >= 2 && !cityPinch && cityMap()) {
         var fa = downFingers[fi[0]], fb = downFingers[fi[1]];
@@ -19401,6 +19543,7 @@
       });
     }
     studiosLayer();
+    peopleLayers();
     marksDirty = true;
   }
   /* Where the grown globe is seen: the band it has (a phone: under the
@@ -19519,15 +19662,26 @@
     if (key !== grownKey) { grownKey = key; marksDirty = true; }
   }
   function inAvoid(x, y, pad) {
-    if (!grown || !grownAt) { return false; }
     pad = pad || 0;
     var hit = function (a) { return x > a.x0 - pad && x < a.x1 + pad && y > a.y0 - pad && y < a.y1 + pad; };
+    if (ringAvoid.length && ringAvoid.some(hit)) { return true; }
+    if (!grown || !grownAt) { return false; }
     return grownAt.avoid.some(hit) || ownBoxes.some(hit);
   }
   function boxAvoid(b) {
-    if (!grown || !grownAt) { return false; }
     var hit = function (a) { return b.x0 < a.x1 && a.x0 < b.x1 && b.y0 < a.y1 && a.y0 < b.y1; };
+    if (ringAvoid.length && ringAvoid.some(hit)) { return true; }
+    if (!grown || !grownAt) { return false; }
     return grownAt.avoid.some(hit) || ownBoxes.some(hit);
+  }
+  /* The globe's dial (globedial.js) writes its categories, its years and its crown round the world: no name
+     or mark of the world's under them. Read each frame on the front globe; the marks placed again only when
+     the ring has been drawn again. */
+  var ringAvoid = [];
+  function ringAvoidNow() {
+    var b = !place && !grown && window.GlobeDial && GlobeDial.boxes ? GlobeDial.boxes() : [];
+    if (!b.length && !ringAvoid.length) { return; }
+    if (b !== ringAvoid) { ringAvoid = b; marksDirty = true; }
   }
 
   /* The first person: the ground where they stood, DIRT Earth's, in the
@@ -20402,7 +20556,8 @@
     if (!artYear.scrambling) { artYear.textContent = yr; }
     // Not under the keys turning it — unless a path plays (transport.js), whose keys step its stops.
     if (document.activeElement !== artRange || (window.Dial && Dial.live && Dial.live())) { artRange.value = String(Math.round(Math.max(0, a.when) * 1000)); }
-    artRange.setAttribute("aria-valuetext", yr);
+    // A city's dial on the categories says its category instead (cityCrownWords).
+    if (!cityCatsOn()) { artRange.setAttribute("aria-valuetext", yr); }
   }
 
   function buildTicks(a) {
@@ -20861,6 +21016,8 @@
        animal is the skyline's to answer ("hand" comes back): it plays or pauses a path, else says what it
        is. A wheel over the animal turns time, a crown. */
     d.groundPress = function (phase, event, onHand) {
+      // The city's dial turned to the categories (its crown): the ring's presses turn them, not time.
+      if (range === artRange && cityFnNow() === "categories") { return catPress(phase, event, onHand); }
       if (phase === "down") {
         var live = !!(window.Dial && Dial.live && Dial.live());
         d.down = { x: event.clientX, y: event.clientY, was: range.value, inner: false, far: false, hand: !!onHand, live: live };
@@ -21264,8 +21421,11 @@
     var tense = d.range === artRange && art && art.tense ? art.tense : "";
     // A path being played (transport.js): its stops outside the ring, its play or pause on the face.
     var tp = window.Dial && Dial.layer ? Dial.layer(d) : null;
+    if (d === artDial) { cityFnNow(); }
+    if (gd && d === artDial) { stepCityCats(performance.now()); }
+    var cats = gd && d === artDial && cityFnNow() === "categories" ? "c" + cityCats.turn.toFixed(3) + layerOn + cityCats.countsKey : "";
     var key = [S, dpr, t.toFixed(4), span[0], span[1], ticks.length, year, focused, !!d.box.dataset.turning, lifted,
-               hub ? hub.key : "", tense, tp ? tp.key : "", band, BH, gd ? "g" : ""].join("|");
+               hub ? hub.key : "", tense, tp ? tp.key : "", band, BH, gd ? "g" : "", cats].join("|");
     if (key === d.drawn) { return; }
     d.drawn = key;
     var st = { S: S, BH: BH, band: band, t: t, span: span, ticks: ticks, year: year, focused: focused, lifted: lifted,
@@ -21470,8 +21630,29 @@
     paint: function (g, ring) {
       var d = artDial;
       if (!d || !d.gst || !ring || !groundFor(d)) { return false; }
+      if (cityFnNow() === "categories") { paintCatRing(g, ring); return true; }
       paintDial(d, d.gst, g, ring);
       return true;
+    },
+    // Over the city, whichever half of the ring: the categories' names, so none is lost behind a tower.
+    paintTop: function (g, ring) {
+      var d = artDial;
+      if (!d || !ring || !groundFor(d) || cityFnNow() !== "categories") { return false; }
+      paintCatNames(g, ring);
+      return true;
+    },
+    // A point on one of the categories' names (the skyline's presses: the ring's).
+    catHit: function (x, y) {
+      if (cityFnNow() !== "categories") { return false; }
+      return cityCats.boxes.some(function (b) { return x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1; });
+    },
+    // Where the categories' names are written (the skyline's names keep off them); none on time.
+    catRects: function () { return cityFnNow() === "categories" ? cityCats.boxes : []; },
+    fn: function () { return art && art.kind === "town" ? cityFnNow() : null; },
+    // For the tests: the ring on the categories as it stands.
+    cats: function () {
+      return { fn: cityFnNow(), front: LAYERS[modN(Math.round(cityCats.turn), LAYERS.length)].key, layer: layerOn,
+               counts: cityCounts(), boxes: cityCats.boxes.map(function (b) { return { key: LAYERS[b.k].key, x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 }; }) };
     },
     press: function (phase, event, onHand) {
       var d = artDial;
@@ -21481,6 +21662,268 @@
     on: function () { return !!(artDial && artDial.box.dataset.ground); }
   };
   if (window.Land) { window.Land.dialGround = dialGround; }
+
+  /* ---- the city's dial on the categories ---------------------------------------
+     The artist, 15 Oct 2026: "In the globe view rotating the dial should rotate you through the different
+     categories and in the city views the rotation of the dial should change the time. What we need to
+     figure out is how to be able to shift the function of the dial in views to enable the right function
+     to be at the fingertips of the user. For instance, switching between the categories function and the
+     time function." Each view opens on its own function: the world on its categories (globedial.js), a
+     city on its time. The crown in the label beside the city's animal ("⇄ Categories", "⇄ Time"; T on its
+     keys) turns the ring on the ground to the categories and back: the world's six round the city, the
+     front's lit, each with what this city holds of it ("∵ Philosophers · 9"; one with nothing here quieter,
+     uncounted). Turned — a drag along the ring, a tap on a name, a wheel over it, the arrows — the front's
+     is the world's category (chooseLayer), and the city shows it (skyline.js, "the category the city
+     shows"): the philosophers born here walking it, its artists, or only its animal. A city is always
+     entered on its time. */
+  var cityCats = { fn: "time", forArt: null, turn: 0, tween: null, drag: null, boxes: [], counts: null, countsKey: "" };
+  function layerIndex(key) {
+    for (var k = 0; k < LAYERS.length; k += 1) { if (LAYERS[k].key === key) { return k; } }
+    return 0;
+  }
+  function modN(a, n) { return ((a % n) + n) % n; }
+  function cityCatsOn() { return !!(cityCats && art && art.kind === "town" && cityCats.forArt === art && cityCats.fn === "categories"); }
+  function cityFnNow() {
+    if (!cityCats) { return "time"; }
+    if (cityCats.forArt !== art) {
+      cityCats.forArt = art;
+      cityCats.fn = "time";
+      cityCats.turn = layerIndex(layerOn);
+      cityCats.tween = null;
+      cityCats.drag = null;
+      cityCats.boxes = [];
+      cityCrownWords();
+    }
+    return cityCats.fn;
+  }
+  // What the city holds of each category: its collages and modelled buildings within 30 km, its museums,
+  // the artists who walk it (skyline.js), its own animal, the philosophers born in it.
+  function cityCounts() {
+    var t = art && art.kind === "town" ? art.town : null;
+    if (!t) { return {}; }
+    var key = t.key + "|" + !!philData + "|" + !!charIndex + "|" + (window.Skyline && Skyline.cast ? Skyline.cast(t.key).artists : -1);
+    if (cityCats.countsKey === key && cityCats.counts) { return cityCats.counts; }
+    cityCats.countsKey = key;
+    var c3 = toVec(t.lat, t.lon), near = function (c) {
+      var v = toVec(c.lat, c.lon), dot = c3[0] * v[0] + c3[1] * v[1] + c3[2] * v[2];
+      return Math.acos(Math.max(-1, Math.min(1, dot))) * 6371 < 30;
+    };
+    var n = { collages: 0, museums: t.museums.length, architecture: 0, studios: 0, characters: 0, philosophers: 0 };
+    cities.forEach(function (c) {
+      if (c.layer === "collages" && c.work && near(c)) { n.collages += 1; }
+      if (c.layer === "architecture" && near(c)) { n.architecture += 1; }
+    });
+    n.studios = window.Skyline && Skyline.cast ? Math.max(0, Skyline.cast(t.key).artists) : 0;
+    n.characters = charIndex ? ((charIndex.places || []).some(function (r) { return r[0] === t.key; }) ? 1 : 0) : 1;
+    n.philosophers = philData ? (philData.people || []).filter(function (r) { return r[10] === t.key; }).length : 0;
+    cityCats.counts = n;
+    return n;
+  }
+  function catWords(l, n) {
+    var k = n[l.key] || 0;
+    // An animal is one; the rest are counted.
+    return (l.glyph ? l.glyph + " " : "") + l.label.toUpperCase() + (k && l.key !== "characters" ? " · " + k : "");
+  }
+  var cityCrown = null;
+  function cityCrownWords() {
+    if (!cityCrown) { return; }
+    var on = cityCats.fn === "categories", here = LAYERS[layerIndex(layerOn)];
+    cityCrown.textContent = on ? "⇄ Time" : "⇄ Categories";
+    cityCrown.setAttribute("aria-label", on ? "The city's dial is on the categories, at " + here.label + ": switch it to time"
+      : "The city's dial is on time: switch it to the categories");
+    cityCrown.setAttribute("aria-pressed", on ? "true" : "false");
+    if (artTime) { if (on) { artTime.dataset.fn = "categories"; } else { delete artTime.dataset.fn; } }
+    var n = on ? cityCounts() : null;
+    if (artRange) {
+      if (on) { artRange.setAttribute("aria-valuetext", here.label + " — " + (n && n[here.key] ? "in this city" : "none here")); }
+      else { showArtYear(); }
+    }
+    if (artDial) { artDial.drawn = ""; }
+  }
+  function cityFnSet(fn) {
+    cityFnNow();
+    if (cityCats.fn === fn) { return; }
+    cityCats.fn = fn;
+    cityCats.turn = layerIndex(layerOn);
+    cityCats.tween = null;
+    // What each holds here, the philosophers read if they are not yet.
+    if (fn === "categories" && !philData && window.Philosophers) {
+      Philosophers.load().then(function (dd) { philData = dd; cityCats.countsKey = ""; cityCrownWords(); }).catch(function () {});
+    }
+    if (fn === "categories" && !charIndex && !charAsk) {
+      charAsk = read("characters/index.json").then(function (dd) { charIndex = dd; cityCats.countsKey = ""; cityCrownWords(); })
+        .catch(function () { charAsk = null; });
+    }
+    cityCrownWords();
+    if (window.A11y && A11y.say) { A11y.say(fn === "categories" ? "The city's dial: the categories" : "The city's dial: time"); }
+  }
+  // The front's category made the world's, and the city told (skyline.js reads Land.layer()).
+  function catChoose(k, at) {
+    var L = LAYERS[modN(k, LAYERS.length)];
+    if (L && layerOn !== L.key) { chooseLayer(L.key, null); }
+    cityCrownWords();
+    if (at) { pulse(at.x, at.y, [LIGHT], 0.4, Math.max(W, H) * INV3); }
+  }
+  function catTurnTo(k, at) {
+    var n = LAYERS.length, base = Math.round(cityCats.turn), diff = modN(k - modN(base, n), n);
+    if (diff > n / 2) { diff -= n; }
+    cityCats.tween = { from: cityCats.turn, to: base + diff, at: performance.now(), dur: still ? 1 : 360 };
+    catChoose(k, at);
+  }
+  // Each frame (drawDials): the ring eased to where it was turned; the world's category, if chosen elsewhere.
+  function stepCityCats(now) {
+    if (cityFnNow() !== "categories") { return; }
+    var n = LAYERS.length, k = layerIndex(layerOn);
+    if (!cityCats.drag && !cityCats.tween && modN(Math.round(cityCats.turn), n) !== k) { catTurnTo(k, null); }
+    if (cityCats.tween) {
+      var q = Math.min(1, (now - cityCats.tween.at) / cityCats.tween.dur), e = 1 - Math.pow(1 - q, 3);
+      cityCats.turn = cityCats.tween.from + (cityCats.tween.to - cityCats.tween.from) * e;
+      if (q >= 1) { cityCats.turn = modN(cityCats.tween.to, n); cityCats.tween = null; }
+    }
+  }
+  function catAngle(k) { return Math.PI / 2 + (k - cityCats.turn) * (TAU / LAYERS.length); }
+  // The ring on the ground, on the categories: its line, a tick between each two, the front's stretch lit.
+  function paintCatRing(g, ring) {
+    var n = LAYERS.length, step = TAU / n;
+    g.save();
+    g.strokeStyle = "rgba(234, 223, 205, 0.34)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.ellipse(ring.cx, ring.cy, ring.R, ring.R * ring.st, 0, 0, TAU);
+    g.stroke();
+    g.strokeStyle = "rgba(234, 223, 205, 0.45)";
+    for (var k = 0; k < n; k += 1) {
+      var tb = catAngle(k + 0.5), ca = Math.cos(tb), sa = Math.sin(tb);
+      g.beginPath();
+      g.moveTo(ring.cx + ca * (ring.R - 4), ring.cy + sa * (ring.R - 4) * ring.st);
+      g.lineTo(ring.cx + ca * (ring.R + 4), ring.cy + sa * (ring.R + 4) * ring.st);
+      g.stroke();
+    }
+    g.strokeStyle = "#9d95e6";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.ellipse(ring.cx, ring.cy, ring.R, ring.R * ring.st, 0, Math.PI / 2 - step * 0.3, Math.PI / 2 + step * 0.3);
+    g.stroke();
+    g.restore();
+  }
+  // The names, upright on the ring, each on a dark ground, kept inside the city's band.
+  function paintCatNames(g, ring) {
+    var n = LAYERS.length, f = modN(Math.round(cityCats.turn), n), counts = cityCounts();
+    var band = ring.band || { x: 0, y: 0, w: W, h: H };
+    cityCats.boxes = [];
+    g.save();
+    g.textBaseline = "middle";
+    g.textAlign = "left";
+    LAYERS.forEach(function (l, k) {
+      var th = catAngle(k), isFront = k === f;
+      var near = Math.abs(Math.atan2(Math.sin(th - Math.PI / 2), Math.cos(th - Math.PI / 2))) / Math.PI;
+      var has = (counts[l.key] || 0) > 0;
+      g.font = (isFront ? "600 11px " : "10px ") + dialFont;
+      var words = catWords(l, counts), tw = g.measureText(words).width;
+      var px = ring.cx + Math.cos(th) * ring.R, py = ring.cy + Math.sin(th) * ring.R * ring.st;
+      var bw = tw + 12, bh = isFront ? 20 : 18;
+      var x0 = px - bw / 2, y0 = py - bh / 2;
+      // Under the ring at its front, the year's gap there; over it at the back.
+      if (isFront) { y0 = py + 6; }
+      x0 = Math.max(band.x + 6, Math.min(band.x + band.w - 6 - bw, x0));
+      y0 = Math.max(band.y + 4, Math.min(band.y + band.h - 4 - bh, y0));
+      g.globalAlpha = isFront ? 1 : Math.max(0.5, 1 - near * 0.5) * (has ? 1 : 0.7);
+      g.fillStyle = isFront ? "rgba(94, 82, 199, 0.9)" : "rgba(15, 10, 7, 0.74)";
+      g.fillRect(x0, y0, bw, bh);
+      g.fillStyle = isFront ? "#ffffff" : has ? "#eadfcd" : "#a8927a";
+      g.fillText(words, x0 + 6, y0 + bh / 2 + 0.5);
+      cityCats.boxes.push({ k: k, x0: x0 - 3, y0: y0 - 3, x1: x0 + bw + 3, y1: y0 + bh + 3 });
+    });
+    // The front's handle: the site's diamond on the ring.
+    var fx = ring.cx, fy = ring.cy + ring.R * ring.st;
+    g.globalAlpha = 1;
+    g.fillStyle = "#eadfcd";
+    g.beginPath();
+    g.moveTo(fx, fy - 5); g.lineTo(fx + 5, fy); g.lineTo(fx, fy + 5); g.lineTo(fx - 5, fy);
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+  // A press on the ring while it is on the categories: a drag turns them, a tap on a name (or on the ring)
+  // turns to it, a wheel steps; on the animal, a tap is still the animal's.
+  function catPress(phase, event, onHand) {
+    var r = groundRing;
+    if (!r) { return null; }
+    var th = Math.atan2((event.clientY - r.cy) / r.st, event.clientX - r.cx);
+    var n = LAYERS.length, step = TAU / n;
+    if (phase === "down") {
+      cityCats.drag = { x: event.clientX, y: event.clientY, th: th, moved: 0, hand: !!onHand, at: performance.now() };
+      cityCats.tween = null;
+      return null;
+    }
+    var D = cityCats.drag;
+    if (phase === "move") {
+      if (!D || D.hand) { return null; }
+      D.moved = Math.max(D.moved, Math.abs(event.clientX - D.x), Math.abs(event.clientY - D.y));
+      if (D.moved < 6) { return null; }
+      var dth = Math.atan2(Math.sin(th - D.th), Math.cos(th - D.th));
+      D.th = th;
+      cityCats.turn -= dth / step;
+      var f = modN(Math.round(cityCats.turn), n);
+      if (LAYERS[f].key !== layerOn) { catChoose(f, null); }
+      if (artDial) { artDial.drawn = ""; }
+      return null;
+    }
+    if (phase === "hover") { return null; }
+    if (phase === "wheel") {
+      cityCats.wheel = (cityCats.wheel || 0) + (event.deltaY || 0) + (event.deltaX || 0);
+      if (Math.abs(cityCats.wheel) >= 60) {
+        var kw = modN(Math.round(cityCats.turn), n) + (cityCats.wheel > 0 ? 1 : -1);
+        cityCats.wheel = 0;
+        catTurnTo(modN(kw, n), null);
+      }
+      return null;
+    }
+    cityCats.drag = null;
+    if (!D) { return null; }
+    var tapped = phase === "up" && D.moved < 6 && performance.now() - D.at < 600;
+    if (tapped && D.hand) { return "hand"; }
+    if (tapped) {
+      var hitName = null;
+      cityCats.boxes.forEach(function (b) {
+        if (event.clientX >= b.x0 && event.clientX <= b.x1 && event.clientY >= b.y0 && event.clientY <= b.y1) { hitName = b.k; }
+      });
+      var k = hitName !== null ? hitName : Math.round(cityCats.turn + Math.atan2(Math.sin(th - Math.PI / 2), Math.cos(th - Math.PI / 2)) / step);
+      catTurnTo(modN(k, n), { x: event.clientX, y: event.clientY });
+      return null;
+    }
+    // Let go: it settles on the nearest.
+    catTurnTo(modN(Math.round(cityCats.turn), n), null);
+    return null;
+  }
+  // The crown and the category's name in the label beside the animal; the keys on its range.
+  if (artTime && artRange) {
+    cityCrown = document.createElement("button");
+    cityCrown.type = "button";
+    cityCrown.className = "dial-crown";
+    cityCrown.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    cityCrown.addEventListener("click", function (event) {
+      event.stopPropagation();
+      cityFnSet(cityFnNow() === "categories" ? "time" : "categories");
+    });
+    artTime.appendChild(cityCrown);
+    cityCrownWords();
+    artRange.addEventListener("keydown", function (event) {
+      if (!artTime.dataset.ground || !art || art.kind !== "town") { return; }
+      if ((event.key === "t" || event.key === "T") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        cityFnSet(cityFnNow() === "categories" ? "time" : "categories");
+        return;
+      }
+      if (cityFnNow() !== "categories") { return; }
+      var dir = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -1, PageUp: 1 }[event.key];
+      if (!dir) { return; }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      catTurnTo(modN(Math.round(cityCats.turn) + dir, LAYERS.length), null);
+    }, true);
+  }
 
   /* On a phone, after the play, scrolling the column moves time too: the
      group nearest the column's top sets the slider, and its stop is ringed. */
@@ -23515,7 +23958,7 @@
         (window.requestIdleCallback || function (f) { return window.setTimeout(f, 300); })(museumsLayer);
       }
       if (layerOn === "studios") { museumsLayer(); studiosLayer(); }
-      else if (layerOn !== "museums") { museumsLayer(); }   // Search is on every layer from the start
+      else if (layerOn !== "museums") { museumsLayer(); peopleLayers(); }   // Search is on every layer from the start
 
       // An old link to the works page, forwarded here.
       followHash();
