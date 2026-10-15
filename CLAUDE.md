@@ -48,6 +48,10 @@ So:
   hologram does not count). So every escape ends in a record made to be shared (the planet as you leave it, your
   route, your numbers, the relations it was made of), showing only what the player chooses; what they bring stays
   private to them.
+- **For now the world is the artist's own** (artist, 15 Oct 2026: "For now let's make mine and figure out how to
+  make it for others later"): one planet, made from the site's information and its relations (the collages, the
+  saved works, the artists' lives, the museums, the modelled buildings, the cities, the movements, the voices).
+  How others bring theirs comes later.
 - 15 Oct 2026: the base unit is being designed, with Mr Pearl as its test form; nothing else is built until the
   artist approves it ("We do not move forward until we figure out the basic unit").
 
