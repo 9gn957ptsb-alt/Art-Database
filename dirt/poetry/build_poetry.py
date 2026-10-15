@@ -2,15 +2,17 @@
 """DRIFT Poetry: the pages of Picture Poetry laid on DRIFT.
 
 DRIFT Poetry is DRIFT's own page, exactly as published, with the pages of Picture Poetry laid over its ground
-(layer.js, beside this file). It is built from the two artifacts as they stand, so whenever either changes it is built
-again from both (UPDATE.md says how):
+(layer.js, beside this file), their buildings turning under a swipe, and the poems written along DRIFT's lines. It is
+built from the two artifacts as they stand, so whenever either changes it is built again from both (UPDATE.md says
+how):
 
     python3 dirt/poetry/build_poetry.py --drift DRIFT.html --out OUT [--sources SOURCES.json]
 
 DRIFT.html is DRIFT's page as published (read it back with the Artifact tool). The pages come from
 dirt/private/poetry/, which is never committed: Picture Poetry's page images and photographs as it publishes them,
-pages.json and overlays/ (capture_pages.js: what its data says about each page, and its buildings and characters as
-it draws them), and poems.json (the poems, transcribed from the page images). OUT gets index.html (DRIFT's page with
+pages.json and overlays/ (capture_pages.js: what its data says about each page, and its characters as it draws them),
+buildings.json and models.js (its buildings and the code that draws them, which layer.js draws live and turns), and
+poems.json (the poems, transcribed from the page images). OUT gets index.html (DRIFT's page with
 the pages laid on it) and poetry/: each page's photograph and its ink, poems.json, and sources.json (the versions of
 DRIFT and Picture Poetry it was built from, from SOURCES.json, and a fingerprint of each page image), so the next build
 can begin from the artifact alone and say which pages are new or changed.
@@ -21,7 +23,10 @@ on a light page, lighter on a dark one) and its poem (the run of ink lines with 
 photograph and the figures). Its photograph becomes the paint, 600 by 800 pixels, mipmapped on the GPU (one wider
 than tall lies on its side). Everything else on the page, its type, its rules, its buildings and characters, becomes
 the ink: the page with its paper taken away, each pixel's own colour kept (so a coloured rule keeps its colour), at
-three quarters of the page's size so the poems stay sharp.
+three quarters of the page's size so the poems stay sharp. The buildings are not in it: they are drawn live over it.
+
+The page also asks DRIFT's engine, before it begins, for the letters (window.DRIFT_WORDS; WORDS in ground-gl.js):
+some of the ground's lines written out in the poems, which layer.js draws the glyphs of and hands over.
 """
 import argparse
 import hashlib
@@ -109,8 +114,8 @@ def measure(page, entry):
 
 
 def ink_layer(page, spec, over):
-    """The page with its paper taken away: each pixel's own colour, as much of it as is not paper, and the buildings
-    and characters over it; premultiplied while it is made, straight alpha in the PNG."""
+    """The page with its paper taken away: each pixel's own colour, as much of it as is not paper, and the characters
+    over it (the buildings are drawn live, layer.js); premultiplied while it is made, straight alpha in the PNG."""
     a = np.asarray(page).astype(np.float32)
     H, W, _ = a.shape
     paper = np.array(spec["paper"], np.float32)
@@ -177,7 +182,19 @@ def build(drift, out, sources):
         body = html.escape(" ".join(p["lines"])) if p.get("prose") else "<br>".join(html.escape(line) for line in p["lines"])
         sign = "<br><br>" + html.escape(p["signature"]) if p.get("signature") else ""
         sr.append("<h2>%s</h2><p>%s%s</p>" % (html.escape(name), body, sign))
-    spec = {"G": G, "photoSize": list(PHOTO), "inkSize": [round(1080 * INK_K), round(1920 * INK_K)], "pages": pages}
+    # the poems themselves, for the letters written along DRIFT's lines (layer.js, WORDS in ground-gl.js)
+    verse = [{"name": name_of(poems[e["n"]]), "lines": [l for l in poems[e["n"]]["lines"] if l.strip()],
+              "prose": bool(poems[e["n"]].get("prose"))} for e in book]
+    spec = {"G": G, "photoSize": list(PHOTO), "inkSize": [round(1080 * INK_K), round(1920 * INK_K)], "pages": pages, "poems": verse}
+    # the buildings, drawn live and turned by a swipe (layer.js), by Picture Poetry's own model code: where each stands on
+    # its page (page pixels), what it is made of, and the soil it is made of (capture_pages.js takes them from the book)
+    bld = json.loads((PRIVATE / "buildings.json").read_text(encoding="utf-8"))
+    spec["buildings"] = [{"page": i, "slug": o["model"], "box": o["box"], "hit": o["hit"], "name": bld["notes"][o["note"]]["name"],
+                          "sub": bld["notes"][o["note"]]["sub"]}
+                         for i, e in enumerate(book) for o in e["objects"] if o["kind"] == "model"]
+    spec["models"] = {s: bld["models"][s] for s in {b["slug"] for b in spec["buildings"]}}
+    spec["dirt"] = bld["dirt"]
+    models = (PRIVATE / "models.js").read_text(encoding="utf-8")
     page = Path(drift).read_text(encoding="utf-8")
     if page.lstrip().lower().startswith("<!doctype html>") and "<body>" in page:
         # read back from the artifact, the page comes wrapped in the skeleton the artifact serves it in, which
@@ -191,7 +208,12 @@ def build(drift, out, sources):
         raise SystemExit("DRIFT's page has no <title>DRIFT</title> to rename: has DRIFT's page changed shape?")
     if "const GLG" not in page or 'id="stage"' not in page or 'id="field"' not in page:
         raise SystemExit("DRIFT's page lacks GLG, #stage or #field, which the pages are laid with: see layer.js")
-    page = page.replace("<title>DRIFT</title>", "<title>DRIFT Poetry</title>", 1)
+    # the new title; before any of DRIFT's scripts, the letters asked of its engine (WORDS in ground-gl.js); and the
+    # capitals' type, Picture Poetry's own
+    page = page.replace("<title>DRIFT</title>", "<title>DRIFT Poetry</title>\n<script>window.DRIFT_WORDS = true;</script>\n"
+                        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap">', 1)
+    if page.index("<script") != page.index("<script>window.DRIFT_WORDS"):
+        raise SystemExit("one of DRIFT's scripts runs before its title, so before the letters are asked for: has DRIFT's page changed shape?")
     layer = (HERE / "layer.js").read_text(encoding="utf-8").replace("__POETRY__", json.dumps(spec, separators=(",", ":")))
     src = json.loads(Path(sources).read_text(encoding="utf-8")) if sources else {}
     # each page image's fingerprint, kept with the sources, so the next build can say which pages are new or changed
@@ -208,6 +230,7 @@ def build(drift, out, sources):
              'height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">'
              + "".join(sr) + "</section>\n"
              + '<script type="application/json" id="drift-poetry-sources">' + json.dumps(src).replace("</", "<\\/") + "</script>\n"
+             + '<script id="picture-poetry-models">\n' + models.replace("</script", "<\\/script") + "</script>\n"
              + '<script id="drift-poetry">\n' + layer + "</script>\n")
     (out / "index.html").write_text(page, encoding="utf-8")
     shutil.copy(PRIVATE / "poems.json", out / "poetry" / "poems.json")

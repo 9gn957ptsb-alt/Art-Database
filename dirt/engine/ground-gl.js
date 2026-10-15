@@ -1,6 +1,10 @@
 // How near the plane's large fields are drawn (FIELD_K, set by the page: phi^-2 on the plane, 1 on the Earth), as a
 // GLSL literal.
 const FKS = (typeof FIELD_K !== "undefined" ? FIELD_K : 1).toFixed(9);
+// The letters (DRIFT Poetry, dirt/poetry/): where the page sets window.DRIFT_WORDS before this runs, the ground's lines
+// can be written in the poems' letters, which the page hands over through words() (see WORDS_PX below). DRIFT itself
+// never sets it: its shaders then compile without any of it, and draw exactly as they did.
+const WORDS = typeof window !== "undefined" && window.DRIFT_WORDS === true ? 1 : 0;
 // ---- DIRT's ground on the GPU ----------------------------------------------------------------------------
 // Where the page has WebGL2 it paints the ground itself, every frame, from what each cell is made of (the workers
 // send that instead of pixels), so the ground's colours can change as they are watched. Left as grown, it paints
@@ -95,6 +99,7 @@ uniform vec2 uView;
 uniform vec4 uSwim[5];              // the swimmers under the surface (SWIM): where (cells), heading, how much they show
 uniform vec4 uWake[40];             // and where each was, every half second for four seconds: where, how long ago (s)
 out vec4 outColour;
+/*WORDS_DECL*/
 // Drawn after the artists, no edge is a hard line. Across every edge of every shape, in every world, lies a grey
 // gradient running the whole scale from dark to light, the same scale the artists make over the whole plane: the
 // smallest thing on the plane holds what the largest does. The gradient is found from the cells around the pixel
@@ -143,6 +148,7 @@ void main() {
     float pool = wn(P, 89.0, 9u) * 0.62 + wn(P, 34.0, 10u) * 0.38;    // pigment settling unevenly as it dries
     float d = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.236 * edge;   // (rims phi^-3; 0.38 until v80)
     c = clamp(c - (c - c * c) * (d - 1.0), 0.0, 1.0);
+    /*WORDS_PRINT*/
     vec3 paper = vec3(0.957, 0.937, 0.894) * (0.985 + 0.03 * grain);
     // the swimmers just under the surface: over each the surface swells and the wash thins; where it has just been the
     // water rocks, thicker and thinner by turns, widening and settling; nothing narrower than the swimmer, so no line
@@ -231,6 +237,17 @@ vec2 gTrue;                         // where the cell really is (a simplified ar
 float gMirK = 0.0, gMirE = 1e9;     // the mirrors: how many reflections the cell is seen through, how near their glass
 vec2 gMid;                          // the middle of its passage
 float gGate = 1.0;                  // how much of a sheet's marks are drawn yet (while it is being drawn)
+#if WORDS
+// The letters (DRIFT Poetry): what the letters at this cell are, noted as the cell is painted, for the pixel pass
+uniform float uWordsOn;             // 0 to 1: the lines giving way to the letters
+uint gWKind = 0u;                   // 0 none; 1 a minimal area, whose lines the pixel pass finds again; 2 the gesture
+uint gWX = 0u;                      // (1) the area's hash
+int gWA = 0;                        // (1) its artist
+vec2 gWQ = vec2(0.0);               // (1) where in its painting (its q)
+float gWD = 0.0, gWVis = 1.0;       // (1) how far in from its edge; how much of the letters a change has left showing
+vec3 gWInk = vec3(0.0);             // (2) the gesture's ink here
+bool gWRec = false;                 // noting (the cell's own passage, not the one across a seam)
+#endif
 
 const float PHI = 1.618033988749895, P1 = 0.618033988749895, P2 = 0.381966011250105, P3 = 0.236067977499790, P4 = 0.145898033750315;
 const float GA = 2.399963229728653;                                  // the golden angle
@@ -1061,6 +1078,11 @@ void gesture(Cell c, State S, inout vec3 A, inout vec3 B) {
   else if (G == 10) { a = 0.35 * exp(-d / 13.0); col = vec3(255.0, 250.0, 240.0); }                                        // a band of light
   else { a = step(d, 1.0); col = p.y > y ? vec3(60.0, 50.0, 35.0) : vec3(235.0, 220.0, 180.0); }                          // the edge of a plane
   a = clamp(a, 0.0, 1.0);
+#if WORDS
+  // the line written out in the poems' letters by the pixel pass, in its ink; the line itself stays, fainter
+  if (gWRec && d < 13.0) { gWKind = 2u; gWInk = G > 10 ? vec3(60.0, 50.0, 35.0) : col; }
+  a *= mix(1.0, P2, uWordsOn);
+#endif
   A = mix(A, col, a); B = mix(B, col, a * (G == 8 || G == 10 ? 1.0 : 0.7));
 }
 /**
@@ -1387,6 +1409,20 @@ const float RUNG_C[4] = float[4](0.034, 0.146, 0.236, 0.50);          // the com
                                                                      // phi^-4, phi^-3 since the curve moved again, so
                                                                      // each rung keeps its share of the regions; 0.16,
                                                                      // 0.28, 0.40 before)
+#if WORDS
+// The letters (DRIFT Poetry): where a minimal area's lines are written in the poems' letters by the pixel pass, the
+// lines themselves stay, fainter: by phi^-3 where the letters take their place, phi^-2 a thin line, phi^-1 a band.
+float gWD0 = 1.0, gWD1 = 1.0, gWD2 = 1.0;
+#define WD0 gWD0
+#define WD1 gWD1
+#define WD2 gWD2
+#define WDIF(c, k) ((c) ? (k) : 1.0)
+#else
+#define WD0 1.0
+#define WD1 1.0
+#define WD2 1.0
+#define WDIF(c, k) 1.0
+#endif
 
 struct Void { bool on; vec2 C; float R; uint h; };
 /** The void nearest p: one in each 1597-cell square, phi^-1 of them kept, 233 to 610 cells across its heart. */
@@ -1458,7 +1494,7 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
     for (int i = 0; i < 7; i++) {
       uint hi = mixh(h + 20u + uint(i));
       vec2 s = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 170.0;
-      if (i > 0) c = mix(c, D * 0.4, feather(segD(q, prev, s), 0.9));
+      if (i > 0) c = mix(c, D * 0.4, WD1 * feather(segD(q, prev, s), 0.9));
       float rr = 2.0 + 3.0 * unit(mixh(hi + 2u));
       c = mix(c, i % 3 == 0 ? V : D * 0.4, feather(length(q - s) - rr, 1.0));
       prev = s;
@@ -1471,23 +1507,23 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
     vec2 e0 = tB - tA, e1 = tC - tB, e2 = tA - tC;
     bool inT = (e0.x * (q.y - tA.y) - e0.y * (q.x - tA.x)) * (e1.x * (q.y - tB.y) - e1.y * (q.x - tB.x)) > 0.0 && (e1.x * (q.y - tB.y) - e1.y * (q.x - tB.x)) * (e2.x * (q.y - tC.y) - e2.y * (q.x - tC.x)) > 0.0;
     if (inT) c = mix(c, M, 0.7);
-    for (int i = 0; i < 3; i++) { uint hi = mixh(h + 30u + uint(i)); vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 200.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 200.0; c = mix(c, D * 0.5, feather(segD(q, a0, a1), 0.8)); }
+    for (int i = 0; i < 3; i++) { uint hi = mixh(h + 30u + uint(i)); vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 200.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 200.0; c = mix(c, D * 0.5, WD1 * feather(segD(q, a0, a1), 0.8)); }
     return mix(c, V, feather(length(q - vec2(-30.0 + 60.0 * u2, -20.0)) - 21.0, 1.5));
   }
   if (a == 6) {                                                      // Kline: a few broad black strokes
     vec3 c = L;
     for (int i = 0; i < 3; i++) { uint hi = mixh(h + 40u + uint(i)); vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 220.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 220.0;
-      float w = 6.0 + 8.0 * unit(mixh(hi + 4u)) + 3.0 * (vnoise(q, 4.0, hi) - 0.5); c = mix(c, D * 0.45, feather(segD(q, a0, a1) - w, 1.5)); }
+      float w = 6.0 + 8.0 * unit(mixh(hi + 4u)) + 3.0 * (vnoise(q, 4.0, hi) - 0.5); c = mix(c, D * 0.45, WD2 * feather(segD(q, a0, a1) - w, 1.5)); }
     return c;
   }
   if (a == 7) {                                                      // Giacometti: one thin figure in all that space
     vec2 f = q - vec2((u1 - 0.5) * 60.0, 0.0);
     float body = abs(f.x + 1.5 * (vnoise(vec2(0.0, f.y), 6.0, h) - 0.5)) - (f.y < -52.0 ? 3.0 : 1.2);
     float on = (f.y > -58.0 && f.y < 58.0) ? feather(body, 0.9) : 0.0;
-    return mix(mix(M, L, 0.6), D * 0.7, on);
+    return mix(mix(M, L, 0.6), D * 0.7, WD1 * on);
   }
   if (a == 8) {                                                      // Newman: a field, and one zip through it
-    return mix(M, L, feather(abs(q.x - (u1 - 0.5) * 90.0) - 1.5, 1.0));
+    return mix(M, L, WD2 * feather(abs(q.x - (u1 - 0.5) * 90.0) - 1.5, 1.0));
   }
   if (a == 9) {                                                      // Rothko: fields stacked, their edges breathing
     float e1 = max(abs(q.x) - 76.0, abs(q.y + 34.0) - 28.0) + 4.0 * (vnoise(q, 9.0, h) - 0.5);
@@ -1520,7 +1556,7 @@ vec3 minimal(int a, vec2 q, uint h, float t) {
   if (a == 14) {                                                     // Agnes Martin: pale bands, and a pencil grid
     float band = mod(floor(q.y / 21.0), 2.0);
     vec3 c = mix(L, mix(M, V, 0.5), band * 0.5);
-    float g = max(feather(abs(mod(q.x, 8.0) - 4.0) - 3.5, 0.5), feather(abs(mod(q.y, 8.0) - 4.0) - 3.5, 0.5));
+    float g = max(feather(abs(mod(q.x, 8.0) - 4.0) - 3.5, 0.5), WD1 * feather(abs(mod(q.y, 8.0) - 4.0) - 3.5, 0.5));
     return mix(c, D * 1.6, g * 0.18);
   }
   if (a == 15) {                                                     // LeWitt: lines in four directions, a quarter each
@@ -1585,7 +1621,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     vec2 dir = vec2(cos(p1), sin(p1));
     float x = dot(q, vec2(-dir.y, dir.x)) + p3 * sin(dot(q, dir) / 13.0 + 6.2832 * u1);   // (still since 9 Oct 2026)
     float k = fract(x / max(3.0, p2));
-    return k < 0.5 ? mix(L, D, feather(abs(k - 0.25) * p2 - p2 * 0.2, 1.0)) : mix(M, V, 0.3);
+    return k < 0.5 ? mix(L, D, WDIF(p2 >= 12.0, WD2) * feather(abs(k - 0.25) * p2 - p2 * 0.2, 1.0)) : mix(M, V, 0.3);
   }
   if (gm == 2) {                                                     // dots
     vec2 gg = q / max(4.0, p2); gg.x += mod(floor(gg.y), 2.0) * 0.5;
@@ -1606,7 +1642,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
       uint hi = mixh(h + 70u + uint(i));
       float an = p1 + (unit(hi) - 0.5) * 0.6, len = 60.0 + 60.0 * unit(mixh(hi + 1u));
       vec2 m = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 140.0, dv = vec2(cos(an), sin(an)) * len * 0.5;
-      c = mix(c, (hi & 1u) == 0u ? D : V, feather(segD(q, m - dv, m + dv) - p3 + 2.0 * (vnoise(q, 4.0, hi) - 0.5), 1.5));
+      c = mix(c, (hi & 1u) == 0u ? D : V, WDIF(p3 >= 3.0, WD2) * feather(segD(q, m - dv, m + dv) - p3 + 2.0 * (vnoise(q, 4.0, hi) - 0.5), 1.5));
     }
     return c;
   }
@@ -1652,7 +1688,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     c = mix(c, mix(M, L, 0.2 + 0.2 * vnoise(q, 21.0, h + 5u)), feather(q.y - top + wob, 1.4));
     float ln = min(abs(q.y - top + wob), q.y > top ? abs(xs - side + wob) : 1e3);
     ln = min(ln, segD(vec2(xs, q.y), vec2(side, -200.0), vec2(side + 260.0, top)));
-    c = mix(c, D, 0.5 * feather(ln - 0.5, 0.9));
+    c = mix(c, D, 0.5 * WD1 * feather(ln - 0.5, 0.9));
     float ghost = min(abs(q.y - top - 6.0 - 5.0 * u1), q.y > top ? abs(xs - side + 8.0 * u2) : 1e3);
     return mix(c, L, 0.3 * feather(ghost - 0.7, 1.4));
   }
@@ -1728,7 +1764,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
       float d = max(dq.x, dq.y) + 1.4 * brush;                       // its edge torn
       if (d > 2.0) continue;
       int kind = int(mixh(hi + 4u) % 4u);
-      vec3 f = kind == 0 ? V : kind == 1 ? mix(L, D, 0.6 * step(fract((q.y - m.y) / 3.0), 0.42)) : kind == 2 ? mix(D, L, smoothstep(0.3, 0.7, vnoise(q, 6.0, hi + 2u))) : M;
+      vec3 f = kind == 0 ? V : kind == 1 ? mix(L, D, 0.6 * WD0 * step(fract((q.y - m.y) / 3.0), 0.42)) : kind == 2 ? mix(D, L, smoothstep(0.3, 0.7, vnoise(q, 6.0, hi + 2u))) : M;
       c = mix(c, f, feather(d, 1.0));
     }
     float dx = q.x - (u1 - 0.5) * 100.0;                             // and a drip run down from one of them
@@ -1753,7 +1789,7 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
     if (r >= 0 && r < rows && abs(q.y - y) < 4.0 && abs(q.x - wx) < ww) {
       float k = floor(q.x / 6.0), f = q.x - k * 6.0;
       uint hk = h3(int(k), r, h + 9u);
-      if (unit(hk) < 0.8) ink = max(ink, feather(abs(f - 3.0) - 1.0 - 1.5 * unit(mixh(hk + 1u)), 0.6) * feather(abs(q.y - y) - 2.6, 0.6));
+      if (unit(hk) < 0.8) ink = max(ink, WD0 * feather(abs(f - 3.0) - 1.0 - 1.5 * unit(mixh(hk + 1u)), 0.6) * feather(abs(q.y - y) - 2.6, 0.6));
       if (r == int(mixh(u3 + 7u) % uint(rows))) ink = max(ink, feather(abs(q.y - y - 0.5 * sin(q.x / 9.0)) - 0.9, 0.6));
     }
     uint hl = mixh(u3 + 10u);                                        // and a lash across
@@ -1869,6 +1905,15 @@ vec3 astronomy(Void v, vec2 p, float t, vec3 field, out bool one) {
   return one ? pix : c;
 }
 
+#if WORDS
+/** Whether artist a's minimal area has lines the pixel pass writes in letters (wCalm in GROUND_PX_USED). */
+bool wLettered(int a) {
+  if (a < 100) return a == 4 || a == 5 || a == 6 || a == 7 || a == 8 || a == 14;
+  vec4 g = texelFetch(uRoster, ivec2(4, a - 100), 0), pp = texelFetch(uRoster, ivec2(5, a - 100), 0);
+  int gm = int(g.x);
+  return gm == 10 || gm == 15 || gm == 16 || (gm == 1 && g.w >= 12.0) || (gm == 4 && pp.x >= 3.0);
+}
+#endif
 /** A passage's colours at a cell, with its changes: which passage is c.e. */
 void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int kind, out State Sd) {
   gCov = 0.0;
@@ -1910,6 +1955,9 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
       int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
       A = B = washOf(am);
       gGram = 40 + am;
+#if WORDS
+      if (gWRec && wLettered(am)) { gWKind = 1u; gWX = rg.h1; gWA = am; gWQ = (gTrue - rg.C1) * 0.55; gWD = rg.d; }
+#endif
       Sd = State(0, 0, 0, 0);
       return;
     }
@@ -1936,13 +1984,22 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
       { gGram = gW0; paint(layer, c, kind, So, A, B); }
       float w = 0.8 * smoothstep(brush - 0.15, brush + 0.15, pc * 2.4) * (0.7 + 0.3 * vnoise(vec2(gP.x / 34.0, gP.y), 2.0, hk + 3u));
       A = mix(A, gesso, w); B = mix(B, gesso, w);
+#if WORDS
+      if (gWRec) gWVis *= 1.0 - w;
+#endif
     } else {
       float q = (pc - 0.5) * 2.0, sweep = fract((gP.x + gP.y * 0.4) / 233.0);
       gGate = smoothstep(sweep - 0.05, sweep + 0.05, q * 1.2 - 0.1);
+#if WORDS
+      float gate = gGate;
+#endif
       { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
       float w = 0.5 * (1.0 - smoothstep(0.2, 1.0, q)) * (0.7 + 0.3 * vnoise(vec2(gP.x / 34.0, gP.y), 2.0, hk + 3u));
       A = mix(A, gesso, w); B = mix(B, gesso, w);
       gGate = 1.0;
+#if WORDS
+      if (gWRec) gWVis *= (1.0 - w) * gate;
+#endif
     }
   }
   else if (pc >= 1.5) { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
@@ -1952,7 +2009,12 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
     int at = changeAt(kind, cell, t0, -1e9, O, seed, hk, DUR, SPEED, tsel);
     if (at == 0) { gGram = gW0; paint(layer, c, kind, So, A, B); }
     else if (at == 3) { gGram = gW1; paint(layer, c, kind, Sn, A, B); }
-    else { gGram = gW1; A = B = flatIn(layer, c, kind, Sn, tsel, at == 2); }
+    else {
+      gGram = gW1; A = B = flatIn(layer, c, kind, Sn, tsel, at == 2);
+#if WORDS
+      if (gWRec) gWVis = 0.0;
+#endif
+    }
   }
   gGram = pc >= 0.5 ? gW1 : gW0;
 }
@@ -2251,6 +2313,16 @@ void anomaly(vec2 p, out vec2 src, inout vec3 tint, inout vec4 over) {
   over = vec4(x < 1.0 ? vec3(255.0 * (1.0 - x) * (kind == 3 ? 0.7 : 0.5)) * (kind == 3 ? vec3(0.7, 0.85, 1.0) : vec3(1)) + stars : stars, 1.0);
 }
 
+#if WORDS
+// (the letters' two targets, written whatever way the cell's colours were reached)
+layout(location = 2) out vec4 outL;                                  // how much of them shows: the passes after fade it
+layout(location = 3) out uvec4 outM;                                 // what they are (see gWKind)
+vec4 gWOutL = vec4(0.0);
+uvec4 gWOutM = uvec4(0u);
+void cellMain();
+void main() { cellMain(); outL = gWOutL; outM = gWOutM; }
+#define main cellMain
+#endif
 void main() {
   ivec2 cell = uCell0 + ivec2(gl_FragCoord.xy), sl = (cell >> 8) - uC0, lc = cell & 255;
   vec3 anTint = vec3(1);
@@ -2281,9 +2353,15 @@ void main() {
   float voidEdge = 0.0;
   vec3 voidField = vec3(0), voidCol = vec3(0);
   bool voidOne = false;
+#if WORDS
+  float wVoid = 1.0;                                                 // how much of the calm country a void leaves here
+#endif
   if (ladder) {
     Void vd = voidAt(cellP);
     float vr = vd.on ? voidRim(vd, cellP) : 1e9;
+#if WORDS
+    wVoid = vd.on ? smoothstep(vd.R - 21.0, vd.R, vr) : 1.0;
+#endif
     if (vr < vd.R) {
       voidField = unit(mixh(vd.h + 5u)) < 0.5 ? MINI[0] * 0.36 : MINI[6];   // Reinhardt's black, or Ryman's white
       voidCol = astronomy(vd, cellP, uTime, voidField, voidOne);
@@ -2368,10 +2446,16 @@ void main() {
     vec3 a, b;
     int kk;
     State ss;
+#if WORDS
+    gWRec = side == 0;
+#endif
     passageAt(layer, cc, cell, a, b, kk, ss);
     if (side == 0) { A = a; B = b; kind = kk; Sd = ss; g0 = gGram; cov0 = gCov; mk0 = gMark; s0 = gSeed; }
     else { Ab = a; Bb = b; kb = kk; Sb = ss; g1 = gGram; cov1 = gCov; mk1 = gMark; s1 = gSeed; }
   }
+#if WORDS
+  gWRec = false;
+#endif
   if (shaded) {
     // Each side in its artist's shade, and across a seam the two shades blend, halfway at the seam itself, so the
     // plane's light has no step in it anywhere.
@@ -2434,8 +2518,30 @@ void main() {
     float night = smoothstep(0.55, 0.95, 0.5 - 0.5 * cos(6.2832 * uTime / 233.0)) * P2;
     vec3 tint = mix(vec3(1.0), vec3(0.55, 0.6, 0.8), night);
     A *= tint; B *= tint;
+#if WORDS
+    gWInk *= tint;
+#endif
   }
   if (anOver.a > 0.0 || anTint != vec3(1)) { A = mix(A * anTint, anOver.rgb, anOver.a); B = mix(B * anTint, anOver.rgb, anOver.a); }
+#if WORDS
+  if (gWKind != 0u) {
+    // How much of the letters will show. In a minimal area, as much of its painting as the minimal pass lays here (its
+    // cover, its thinning to its wash at its edge, its kaleidoscope's glass over it); on the gesture, what that pass
+    // leaves of the world, and none where the cell is seen in a mirror or a singularity.
+    float cover = (1.0 - smoothstep(RUNG_C[3] - 0.03, RUNG_C[3] + 0.16, cx)) * wVoid, v;
+    if (gWKind == 1u) {
+      float zone = 1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx);
+      float kal = unit(mixh(gWX + 99u)) < P4 ? P1 * (1.0 - smoothstep(89.0 * P1, 89.0 * PHI, length(gWQ))) : 0.0;
+      v = cover * zone * smoothstep(0.0, 144.0, gWD) * (1.0 - kal);
+      gWOutM = uvec4(gWX, uint(gWA) | (1u << 24), floatBitsToUint(gWQ));
+    } else {
+      v = (1.0 - cover) * gWVis * (1.0 - voidEdge) * (gMirK > 0.0 || sg.on ? 0.0 : 1.0);
+      uvec3 k = uvec3(clamp(gWInk, 0.0, 255.0) + 0.5);
+      gWOutM = uvec4(k.r | (k.g << 8) | (k.b << 16), 2u << 24, 0u, 0u);
+    }
+    gWOutL = vec4(v, 0.0, 0.0, 1.0);
+  }
+#endif
   outA = vec4(A / 255.0, 1.0);
   outB = vec4(B / 255.0, 1.0);
 }`;
@@ -2457,6 +2563,257 @@ function fsPart(from, to) {
   if (i < 0 || j < 0) throw new Error("DIRT ground shader: no " + from);
   return GROUND_FS.slice(i, j) + "\n";
 }
+// ---- the letters (DRIFT Poetry) ------------------------------------------------------------------------------------
+// Aries, 14 Oct 2026: "Analyze places in the graphics of DRIFT where lines can be subtly transformed into linguistic
+// characters." In DRIFT Poetry (and only there: the page sets window.DRIFT_WORDS, so DRIFT compiles none of this) some
+// of the ground's lines are written out in the poems' letters, small enough to read as the line from a little way off
+// and as the poems close to: micrography, as the Hebrew scribes drew figures in minute letters, here the other way
+// round. The watercolour softens everything the cells hold, so the letters cannot be painted there; the first pass
+// notes, cell by cell, which line runs there (WORDS in GROUND_FS: its outL and outM), every pass after it fades that
+// note where it covers the cell, and the pixel pass, last, finds the line again at the pixel's own size and prints its
+// letters on the wash, in the line's ink, while the line itself stays, fainter, under them. The lines written:
+//   the calm country (most of the plane): Kandinsky's lines (Point and Line to Plane), Miro's constellation, Kline's
+//     strokes (lines of letters along each), Giacometti's figure and Newman's zip (a line of letters down each),
+//     Agnes Martin's grid (each row a line of writing), and of the roster's compositions the stripes and broad
+//     strokes wide enough to hold a line, Diebenkorn's charcoal lines, the torn printed sheet (a page of the poems,
+//     a line of verse a row) and Basquiat's words (the strokes become capitals, the crossed-out row still crossed)
+//   the worlds: the gesture, the one line through every world, written out as one line of the poems running on.
+const GROUND_PX_USED = !WORDS ? GROUND_PX : (() => {
+  const part = fsPart;
+  const decl = `
+precision highp usampler2D;
+uniform highp usampler2D uWM;       // what the letters at each cell are (the first pass's outM)
+uniform sampler2D uWL;              // how much of them shows (its outL, faded by each pass that covers the cell)
+uniform sampler2D uWAtlas;          // the glyphs, a slot each: the italic, then the capitals; white on black
+uniform highp sampler2D uWText;     // the poems: per character its glyph and where it ends (em), in each face, the
+                                    // text twice over; then each glyph's advance; then where each line begins and ends
+uniform ivec4 uWN;                  // characters, glyphs a face, lines; the row of the advances
+uniform vec4 uWAt;                  // a slot's width and height (px), slots a row, an em (px)
+uniform vec2 uWO;                   // where a glyph's origin lies in its slot (px)
+uniform float uWOn;                 // 0 to 1, as they come in
+uniform sampler2D uRoster;
+${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "float chroma(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "// the rungs")}${part("float segD(", "vec3 rostered(")}
+const float WQ = 0.55;                                               // a minimal area's q units a cell
+/** How finely to read the glyphs for letters an em of e q units high (two pixels a cell): a little soft, as pencil is. */
+float wLod(float e) { return max(log2(uWAt.w * WQ / (e * 2.0)) + 0.25, 0.0); }
+vec4 wTx(int i) { return texelFetch(uWText, ivec2(i & 1023, i >> 10), 0); }
+float wBegin(int i, int f) { if (i <= 0) return 0.0; vec4 v = wTx(i - 1); return f == 0 ? v.y : v.z; }
+float wTotal(int f) { vec4 v = wTx(uWN.x - 1); return f == 0 ? v.y : v.z; }
+vec4 wLine(uint k) { int n = int(k % uint(max(uWN.z, 1))); return texelFetch(uWText, ivec2(n & 1023, uWN.w + 1 + (n >> 10)), 0); }
+float wAdv(int g, int f) { vec4 v = texelFetch(uWText, ivec2(g, uWN.w), 0); return f == 0 ? v.x : v.y; }
+/** Glyph g of face f at e (em from its origin on the baseline: x on, y down), read at level of detail lod. */
+float wGlyph(int g, int f, vec2 e, float lod) {
+  vec2 px = uWO + e * uWAt.w;
+  if (px.x < 2.0 || px.y < 2.0 || px.x > uWAt.x - 2.0 || px.y > uWAt.y - 2.0) return 0.0;
+  int s = g + f * uWN.y, cols = int(uWAt.z);
+  return textureLod(uWAtlas, (vec2(float(s % cols), float(s / cols)) * uWAt.xy + px) / vec2(textureSize(uWAtlas, 0)), lod).r;
+}
+/** The ink x em along a run of the poems from character st (to en; running on if en < 0), y em below the middle of
+ *  its small letters (where the line ran), in face f. */
+float wPrint(float x, float y, int st, int en, int f, float lod) {
+  if (x < 0.0 || abs(y) > 0.62 || uWN.x < 2) return 0.0;
+  float X = mod(wBegin(st, f) + x, wTotal(f));
+  int lo = 0, hi = uWN.x - 1;
+  for (int it = 0; it < 15; it++) {                                  // the character there: the last to begin before X
+    if (lo >= hi) break;
+    int mid = (lo + hi + 1) >> 1;
+    if (wBegin(mid, f) <= X) lo = mid; else hi = mid - 1;
+  }
+  float ink = 0.0;
+  for (int k = -1; k <= 1; k++) {                                    // and its neighbours, whose strokes may reach over
+    int i = lo + k;
+    if (i < 0 || (en >= 0 && (i < st || i >= en))) continue;
+    ink = max(ink, wGlyph(int(wTx(i).x), f, vec2(X - wBegin(i, f), y - 0.25), lod));
+  }
+  return ink;
+}
+/** Letters along the segment a-b (q units), an em e high, the middle of the small letters on it: one of the poems'
+ *  lines (chosen by hs) and on into the next. */
+float wSeg(vec2 q, vec2 a, vec2 b, float e, uint hs) {
+  if (b.x < a.x) { vec2 t_ = a; a = b; b = t_; }                     // never upside down
+  vec2 ab = b - a;
+  float len = length(ab);
+  if (len < e) return 0.0;
+  vec2 dir = ab / len, d = q - a;
+  float x = dot(d, dir);
+  if (x > len) return 0.0;
+  return wPrint(x / e, (dir.x * d.y - dir.y * d.x) / e, int(wLine(hs).x), -1, 0, wLod(e));
+}
+/** Lines of letters filling a band along a-b (q units), an em e high and k em apart, each one of the poems' lines. */
+float wRows(vec2 q, vec2 a, vec2 b, float e, float k, uint hs) {
+  if (b.x < a.x) { vec2 t_ = a; a = b; b = t_; }
+  vec2 ab = b - a;
+  float len = length(ab);
+  if (len < e) return 0.0;
+  vec2 dir = ab / len, d = q - a;
+  float yv = (dir.x * d.y - dir.y * d.x) / (e * k), r = floor(yv + 0.5);
+  return wPrint(dot(d, dir) / e, (yv - r) * k, int(wLine(mixh(hs ^ uint(int(r) + 1000) * 2654435761u)).x), -1, 0, wLod(e));
+}
+/** A minimal area's lines written (minimal() and rostered() in GROUND_FS, which draw them): the ink, and how much. */
+vec4 wCalm(uvec4 m, vec2 pc, vec2 cc) {
+  const float E13 = 7.15, E10 = 5.5, E8 = 4.4;                       // ems of 13, 10 and 8 cells, in q units
+  uint h = m.x;
+  int a = int(m.y & 255u);
+  vec2 q = uintBitsToFloat(m.zw) + (pc - cc) * WQ;                   // this pixel in the area's painting
+  float cov = 0.0, al = 1.0;
+  vec3 ink = vec3(0.0);
+  if (a < 100) {
+    vec3 D = MINI[a * 4], L = MINI[a * 4 + 2];
+    float u1 = unit(mixh(h + 11u)), u2 = unit(mixh(h + 12u));
+    if (a == 4) {                                                    // Miro: the constellation's lines, under its stars
+      vec2 prev = vec2(0);
+      for (int i = 0; i < 7; i++) {
+        uint hi = mixh(h + 20u + uint(i));
+        vec2 s = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 170.0;
+        if (i > 0) cov = max(cov, wSeg(q, prev, s, E10, hi));
+        prev = s;
+      }
+      for (int i = 0; i < 7; i++) {
+        uint hi = mixh(h + 20u + uint(i));
+        vec2 s = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 170.0;
+        cov *= 1.0 - feather(length(q - s) - 3.0 - 3.0 * unit(mixh(hi + 2u)), 1.0);
+      }
+      ink = D * 0.4;
+    } else if (a == 5) {                                             // Kandinsky: the lines, under the point
+      for (int i = 0; i < 3; i++) {
+        uint hi = mixh(h + 30u + uint(i));
+        vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 200.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 200.0;
+        cov = max(cov, wSeg(q, a0, a1, E13, hi));
+      }
+      cov *= 1.0 - feather(length(q - vec2(-30.0 + 60.0 * u2, -20.0)) - 21.0, 1.5);
+      ink = D * 0.5;
+    } else if (a == 6) {                                             // Kline: lines of letters along each stroke
+      for (int i = 0; i < 3; i++) {
+        uint hi = mixh(h + 40u + uint(i));
+        vec2 a0 = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 220.0, a1 = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 220.0;
+        float w = 6.0 + 8.0 * unit(mixh(hi + 4u)) + 3.0 * (vnoise(q, 4.0, hi) - 0.5);
+        float in_ = feather(segD(q, a0, a1) - w + 0.25 * E10, 1.5);
+        if (in_ > 0.0) cov = max(cov, in_ * wRows(q, a0, a1, E10, 1.3, hi));
+      }
+      ink = D * 0.45;
+    } else if (a == 7) {                                             // Giacometti: a line of letters down the figure
+      vec2 f = q - vec2((u1 - 0.5) * 60.0, 0.0);
+      float mid = -1.5 * (vnoise(vec2(0.0, f.y), 6.0, h) - 0.5);
+      if (f.y > -58.0 && f.y < 58.0) cov = wPrint((f.y + 58.0) / E8, (mid - f.x) / E8, int(wLine(h + 7u).x), -1, 0, wLod(E8));
+      ink = D * 0.7;
+    } else if (a == 8) {                                             // Newman: a line of letters down the zip
+      cov = wPrint((q.y + 233.0) / E8, ((u1 - 0.5) * 90.0 - q.x) / E8, int(wLine(h + 8u).x), -1, 0, wLod(E8));
+      ink = L;
+    } else if (a == 14) {                                            // Agnes Martin: each row of the grid a line of writing
+      float r = floor(q.y / 8.0 + 0.5);
+      cov = wPrint((q.x + 233.0) / E10, (q.y - 8.0 * r) / E10, int(wLine(mixh(h ^ uint(int(r) + 1000) * 2654435761u)).x), -1, 0, wLod(E10));
+      ink = D * 1.6; al = P2;
+    }
+  } else {
+    int j = a - 100;
+    vec3 D = texelFetch(uRoster, ivec2(0, j), 0).rgb, L = texelFetch(uRoster, ivec2(2, j), 0).rgb, V = texelFetch(uRoster, ivec2(3, j), 0).rgb;
+    vec4 g = texelFetch(uRoster, ivec2(4, j), 0), pp = texelFetch(uRoster, ivec2(5, j), 0);
+    int gm = int(g.x);
+    float p1 = g.z, p2 = g.w, p3 = pp.x, u1 = unit(mixh(h + 61u)), u2 = unit(mixh(h + 62u));
+    if (gm == 1 && p2 >= 12.0) {                                     // stripes: a line of letters along each dark one
+      vec2 dir = vec2(cos(p1), sin(p1));
+      float x = dot(q, vec2(-dir.y, dir.x)) + p3 * sin(dot(q, dir) / 13.0 + 6.2832 * u1);
+      float k = floor(x / p2), e = clamp(0.5 * p2, E8, E13), y = (x - p2 * (k + 0.25)) / e, s = dot(q, dir);
+      if (dir.x < 0.0) { y = -y; s = -s; }
+      cov = wPrint((s + 400.0) / e, y, int(wLine(mixh(h ^ uint(int(k) + 1000) * 2654435761u)).x), -1, 0, wLod(e));
+      ink = D;
+    } else if (gm == 4 && p3 >= 3.0) {                               // broad strokes: lines of letters along each
+      float e = clamp(1.5 * p3, E8, E10);
+      for (int i = 0; i < 6; i++) {
+        if (float(i) >= p2) break;
+        uint hi = mixh(h + 70u + uint(i));
+        float an = p1 + (unit(hi) - 0.5) * 0.6, len = 60.0 + 60.0 * unit(mixh(hi + 1u));
+        vec2 mm = (vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u))) - 0.5) * 140.0, dv = vec2(cos(an), sin(an)) * len * 0.5;
+        float sd = segD(q, mm - dv, mm + dv) + 2.0 * (vnoise(q, 4.0, hi) - 0.5);
+        if (sd < p3) { cov = feather(sd - p3 + 0.25 * e, 1.5) * wRows(q, mm - dv, mm + dv, e, 1.3, hi); ink = (hi & 1u) == 0u ? D : V; }
+      }
+    } else if (gm == 10) {                                           // ruled planes: the charcoal lines written
+      float top = -75.0 + 150.0 * mix(0.12, 0.26, u1), side = -75.0 + 150.0 * mix(0.16, 0.34, u2);
+      float sx = (h & 1u) == 0u ? 1.0 : -1.0, wob = 0.8 * 2.4 * (vnoise(q, 5.0, h + 7u) - 0.5);
+      cov = wPrint((q.x + 233.0) / E10, (q.y - top + wob) / E10, int(wLine(h + 21u).x), -1, 0, wLod(E10));
+      if (q.y > top) cov = max(cov, wPrint((q.y - top) / E10, (sx * (side - wob) - q.x) / E10, int(wLine(h + 22u).x), -1, 0, wLod(E10)));
+      cov = max(cov, wSeg(q, vec2(sx * side, -200.0), vec2(sx * (side + 260.0), top), E10, h + 23u));
+      ink = D; al = 0.5;
+    } else if (gm == 15) {                                           // torn sheets: the printed one a page of the poems
+      float brush = 2.4 * (vnoise(q, 5.0, h + 7u) - 0.5);
+      int top = -1;
+      vec2 tm = vec2(0), tz = vec2(0);
+      uint th = 0u;
+      for (int i = 0; i < 4; i++) {                                  // the sheet laid last over this pixel
+        uint hi = mixh(h + 90u + uint(i));
+        vec2 mm = (vec2(unit(hi), unit(mixh(hi + 1u))) - 0.5) * 130.0;
+        vec2 sz = vec2(16.0, 13.0) + vec2(40.0, 34.0) * vec2(unit(mixh(hi + 2u)), unit(mixh(hi + 3u)));
+        vec2 dq = abs(q - mm) - sz;
+        if (max(dq.x, dq.y) + 1.4 * brush < -0.5) { top = int(mixh(hi + 4u) % 4u); tm = mm; tz = sz; th = hi; }
+      }
+      if (top == 1) {                                                // a line of verse a row, from its torn left edge
+        float r = floor((q.y - tm.y + tz.y - 1.0) / 6.0);
+        vec4 ln = wLine(th + uint(int(r)));
+        cov = wPrint((q.x - tm.x + tz.x - 2.0) / E8, (q.y - (tm.y - tz.y + 4.0 + 6.0 * r)) / E8, int(ln.x), int(ln.y), 0, wLod(E8));
+        ink = mix(L, D, 0.6);
+      }
+    } else if (gm == 16) {                                           // words crossed out: each stroke becomes a capital
+      uint u3 = mixh(h + 63u);
+      int rows = 2 + int(mixh(u3 + 3u) % 3u);
+      float wy = (unit(mixh(u3 + 4u)) - 0.5) * 120.0, wx = (unit(mixh(u3 + 5u)) - 0.5) * 80.0, ww = 30.0 + 34.0 * unit(mixh(u3 + 6u));
+      int r = int(floor((q.y - wy) / 12.0 + 0.5));
+      float y = wy + 12.0 * float(r), k = floor(q.x / 6.0), k0 = ceil((wx - ww) / 6.0);
+      if (r >= 0 && r < rows && abs(q.y - y) < 5.0 && k >= k0 && 6.0 * k + 6.0 <= wx + ww) {   // (whole strokes' places: no capital cut)
+        const float EC = 7.4;                                        // capitals 5.2 q high, as the strokes were
+        vec4 ln = wLine(u3 + uint(r));
+        int i = int(ln.x) + int(k - k0);
+        if (i < int(ln.y)) {
+          int gl = int(wTx(i).x);
+          cov = wGlyph(gl, 1, vec2((q.x - 6.0 * k) / EC - 0.5 * (6.0 / EC - wAdv(gl, 1)), (q.y - y) / EC - 0.35), wLod(EC));
+        }
+        ink = D;
+      }
+    }
+  }
+  return vec4(ink, cov * al);
+}
+/** The gesture (gesture() in GROUND_FS) written out: one line of the poems along it, running on through every world. */
+vec4 wGesture(uvec4 m, vec2 p) {
+  const float GAPY = 987.0 * ${FKS}, E = 13.0;
+  int band = int(floor(p.y / GAPY + 0.5));
+  uint h = h3(band, 0, 991u);
+  float ph = 6.2832 * unit(h), ph2 = 6.2832 * unit(mixh(h + 1u));
+  vec3 A = vec3(144.0 / 377.0, 55.0 / 144.0, 13.0 / 34.0), w = vec3(1.0 / 377.0, 1.0 / 144.0, 1.0 / 34.0), ph3 = vec3(ph, ph2, 0.0);
+  vec3 u = p.x * w + ph3;
+  float y = (float(band) + 0.2 * (unit(mixh(h + 2u)) - 0.5)) * GAPY + 144.0 * sin(u.x) + 55.0 * sin(u.y) + 13.0 * sin(u.z);
+  float dy = dot(A, cos(u)), k2 = 1.0 + dy * dy;
+  float x = p.x + (p.y - y) * dy / k2;                                // the foot of the pixel on the line
+  // how far along the line that is: its slope is small, so the length is x and half the integral of the slope squared
+  vec3 U = x * w + ph3;
+  float F = dot(A * A, vec3(x * 0.5) + sin(2.0 * U) / (4.0 * w))
+          + A.x * A.y * (sin(U.x - U.y) / (w.x - w.y) + sin(U.x + U.y) / (w.x + w.y))
+          + A.x * A.z * (sin(U.x - U.z) / (w.x - w.z) + sin(U.x + U.z) / (w.x + w.z))
+          + A.y * A.z * (sin(U.y - U.z) / (w.y - w.z) + sin(U.y + U.z) / (w.y + w.z));
+  float ink = wPrint((x + 0.5 * F) / E + 8192.0, (p.y - y) / sqrt(k2) / E, int(wLine(h + 3u).x), -1, 0, wLod(E * WQ));
+  return vec4(float(m.x & 255u), float((m.x >> 8) & 255u), float((m.x >> 16) & 255u), ink * 0.92);
+}
+`;
+  const print = `if (uWOn > 0.0) {                                                 // the letters, printed on the wash
+      uvec4 wm = texelFetch(uWM, t, 0);
+      uint wk = wm.y >> 24;
+      float wv = wk == 0u ? 0.0 : texelFetch(uWL, t, 0).r * uWOn;
+      if (wv > 0.004) {
+        vec4 wi = wk == 1u ? wCalm(wm, P * 0.5, vec2(t + uCell0) + 0.5) : wGesture(wm, P * 0.5);
+        c = mix(c, wi.rgb / 255.0, clamp(wi.a * wv * (0.86 + 0.14 * grain), 0.0, 1.0));
+      }
+    }`;
+  if (!GROUND_PX.includes("/*WORDS_DECL*/") || !GROUND_PX.includes("/*WORDS_PRINT*/")) throw new Error("DIRT ground shader: no place for the letters");
+  return GROUND_PX.replace("/*WORDS_DECL*/", decl).replace("/*WORDS_PRINT*/", print);
+})();
+/** A pass drawn over the cells after the first, in DRIFT Poetry: where it covers a cell it fades the letters there too
+ *  (their outL, blended as its colours are), so no letter shows over a window, a light or a piece of the collage. */
+function lettered(src) {
+  if (!WORDS) return src;
+  const decl = "layout(location = 1) out vec4 outB;", i = src.indexOf(decl);
+  if (i < 0) throw new Error("DIRT ground shader: a pass without outB");
+  return src.slice(0, i + decl.length) + "\nlayout(location = 2) out vec4 outL;\n#define main passMain\n" + src.slice(i + decl.length)
+    + "\n#undef main\nvoid main() { passMain(); outL = vec4(0.0, 0.0, 0.0, outB.a); }\n";
+}
 // The minimal areas' own pass (9 Oct 2026): the calm country, each large region's painting thinning to its wash at the
 // edge and two washes meeting as one. It is decided cell by cell, by how calm the plane is there, and glazed over what
 // the first pass drew, fading out across the edge of the busy country, so no passage's outline shows (the first pass
@@ -2473,6 +2830,9 @@ uniform int uRAt[5];
 uniform ivec2 uCell0;
 uniform float uTime;
 uniform int uTaps;
+#if WORDS
+uniform float uWordsOn;             // the letters (DRIFT Poetry): 0 to 1, the lines they are written along giving way
+#endif
 layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
@@ -2484,6 +2844,9 @@ vec3 deeper(vec3 c, vec3 wash, float n) {
   return mix(c, wash, 1.0 - pow(1.0 - P3, n));
 }
 void main() {
+#if WORDS
+  gWD0 = mix(1.0, P3, uWordsOn); gWD1 = mix(1.0, P2, uWordsOn); gWD2 = mix(1.0, P1, uWordsOn);
+#endif
   vec2 p = vec2(uCell0 + ivec2(gl_FragCoord.xy)) + 0.5;
   // how much of the calm country is here: all of it just below the minimal rung, fading to none phi^-4 of the ladder
   // above it (a tenth until v80), and none in a void's heart, which is the void's own (its rim, 21 cells, shared)
@@ -4014,6 +4377,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   const vivid = tokens.filter((cols) => Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) >= 89)
     .map((cols) => { const c = cols.slice(); while (c.length < 3) c.push(c[c.length - 1]); return c; });
   let minimalProg = null, Mi = {};
+  let tWL = null, tWM = null, tWAtlas = null, tWText = null, wordsSrc = null, wordsN = null, wordsAt = 0;   // the letters (WORDS)
   let cellProg = null, pxProg = null, formalProg = null, depthProg = null, lightProg = null, spaceProg = null, Sp = {}, canopyProg = null, Cn = {}, collageProg = null, Co = {}, toysProg = null, Ty = {}, U = {}, V = {}, F = {}, D = {}, Lu = {}, edgeOn = false, fbo = null, tA = null, tB = null, FW = 0, FH = 0, lost = false;
   const lut = new Float32Array(16 * 16 * 4), slotRec = new Array(SLOTS).fill(null), used = new Float64Array(SLOTS);
   let frameNo = 0, turnAt = -1e9, turnO = [0, 0];
@@ -4129,6 +4493,42 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Put a photo into the plane (a canvas or image), at x, y in cells: it arrives there, then the collage carries it.
    * quiet: no arrival, and only `share` of the usual pieces (the ultracode's sheets of DRIFT's own code, drift.js). */
   let thingShare = 1;
+  /** The letters (WORDS: DRIFT Poetry, dirt/poetry/layer.js): the glyphs and the poems, handed over by the page once its
+   *  fonts are in. w.atlas: a canvas of glyph slots, white on black, a face after the other; w.slot [width, height],
+   *  w.cols slots a row, w.em and w.origin [x, y] in pixels; w.glyphs a face; w.adv [face 0, face 1] per glyph (em);
+   *  w.text the poems as glyphs; w.ends [face 0, face 1] where each character ends (em); w.lines [first, end] per line.
+   *  False where the page did not ask for the letters before this began (DRIFT itself). */
+  function words(w) {
+    if (!WORDS) return false;
+    wordsSrc = w; wordsAt = performance.now();
+    if (!lost) fillWords(w);
+    return true;
+  }
+  function fillWords(w) {
+    gl.activeTexture(gl.TEXTURE15);
+    gl.deleteTexture(tWAtlas);
+    tWAtlas = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tWAtlas);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, w.atlas);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+    // the poems: 1024 characters a row, the text twice over (so a run can pass its end), each as its glyph and where it
+    // ends in each face; then a row of the glyphs' advances; then each line's first character and its end
+    const n = w.text.length, rows = Math.ceil((2 * n) / 1024), H = rows + 1 + Math.ceil(w.lines.length / 1024), d = new Float32Array(1024 * H * 4);
+    const t0 = w.ends[n - 1][0], t1 = w.ends[n - 1][1];
+    for (let i = 0; i < 2 * n; i++) { const k = i % n, o = i < n ? 0 : 1; d.set([w.text[k], w.ends[k][0] + o * t0, w.ends[k][1] + o * t1, 0], i * 4); }
+    w.adv.forEach((a, g) => d.set([a[0], a[1], 0, 0], (rows * 1024 + g) * 4));
+    w.lines.forEach((l, k) => d.set([l[0], l[1], 0, 0], ((rows + 1) * 1024 + k) * 4));
+    gl.activeTexture(gl.TEXTURE17);
+    gl.deleteTexture(tWText);
+    tWText = tex(gl.TEXTURE_2D);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1024, H, 0, gl.RGBA, gl.FLOAT, d);
+    wordsN = gl.getError() === gl.NO_ERROR ? [n, w.glyphs, w.lines.length, rows] : null;
+  }
   /** The ultracode's thrust (drift.js), cells a second, for the collage's wake. */
   const thrust = [0, 0];
   const setThrust = (x, y) => { thrust[0] = x; thrust[1] = y; };
@@ -4152,7 +4552,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   let pending = null;
   function program(fsSrc) {
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
-    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc), pr = gl.createProgram();
+    const vs = sh(gl.VERTEX_SHADER, GROUND_VS), fs = sh(gl.FRAGMENT_SHADER, fsSrc.replace("#version 300 es\n", "#version 300 es\n#define WORDS " + WORDS + "\n")), pr = gl.createProgram();
     gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
     return { pr, vs, fs };
   }
@@ -4173,7 +4573,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     return t;
   }
   function setup() {
-    pending = { a: program(GROUND_FS), b: program(GROUND_PX), c: quilts && quilts.length ? program(GROUND_FORMAL) : null, d: program(GROUND_DEPTH), e: program(GROUND_LIGHT), f: program(GROUND_SPACE), g: program(GROUND_CANOPY), h: program(GROUND_COLLAGE), i: program(GROUND_TOYS), j: program(GROUND_MINIMAL) };
+    pending = { a: program(GROUND_FS), b: program(GROUND_PX_USED), c: quilts && quilts.length ? program(lettered(GROUND_FORMAL)) : null, d: program(lettered(GROUND_DEPTH)), e: program(lettered(GROUND_LIGHT)), f: program(lettered(GROUND_SPACE)), g: program(lettered(GROUND_CANOPY)), h: program(lettered(GROUND_COLLAGE)), i: program(lettered(GROUND_TOYS)), j: program(GROUND_MINIMAL) };
     gl.activeTexture(gl.TEXTURE0); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGB32UI, N, N, SLOTS);
     gl.activeTexture(gl.TEXTURE1); tex(gl.TEXTURE_2D_ARRAY); gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA32F, ENT_W, ENT_MAX, SLOTS);
     gl.activeTexture(gl.TEXTURE2); tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 16, 16);
@@ -4249,6 +4649,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R8, 1, 1);
     faceOn = 0;
     if (faceImg) fillFaces(faceImg);
+    if (WORDS) {                                                     // the letters' glyphs (15) and poems (17), when given
+      gl.activeTexture(gl.TEXTURE15); tWAtlas = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R8, 1, 1);
+      gl.activeTexture(gl.TEXTURE17); tWText = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 1, 1);
+      wordsN = null;
+      if (wordsSrc) fillWords(wordsSrc);
+    }
     pending.gram = gram; pending.artOn = ws.length && [0, 1, 2, 3, 4].every((g) => gram[2 * g + 1]) ? 1 : 0;
     fbo = gl.createFramebuffer(); FW = FH = 0;
     slotRec.fill(null);
@@ -4257,8 +4663,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier", "uWordsOn"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -4299,10 +4705,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
-    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime", "uTaps"]);   // the minimal areas' pass
+    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime", "uTaps", "uWordsOn"]);   // the minimal areas' pass
     if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
+    if (WORDS) { gl.uniform1i(V.uWAtlas, 15); gl.uniform1i(V.uWL, 16); gl.uniform1i(V.uWText, 17); gl.uniform1i(V.uWM, 18); gl.uniform1i(V.uRoster, 8); }
     pending = null;
     return true;
   }
@@ -4317,6 +4724,13 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tA, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, tB, 0);
+    if (WORDS) {                                                     // the letters: how much shows (16), what they are (18)
+      if (tWL) { gl.deleteTexture(tWL); gl.deleteTexture(tWM); }
+      gl.activeTexture(gl.TEXTURE16); tWL = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, FW, FH);
+      gl.activeTexture(gl.TEXTURE18); tWM = tex(gl.TEXTURE_2D); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32UI, FW, FH);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, tWL, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT3, gl.TEXTURE_2D, tWM, 0);
+    }
     gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
     // the last frame's cells, for the depth pass, with every level of detail
     if (tP) gl.deleteTexture(tP);
@@ -4332,7 +4746,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   }
   if (!setup()) return null;
   glcv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; });
-  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = null; reflFbo = reflPbo = reflSync = null; reflBytes = 0; lost = !setup(); });
+  glcv.addEventListener("webglcontextrestored", () => { tA = tB = tP = fboP = tWL = tWM = null; reflFbo = reflPbo = reflSync = null; reflBytes = 0; lost = !setup(); });
   stage.insertBefore(glcv, cv);
   // Seen whenever the page's canvas is (the globe hides it).
   new MutationObserver(() => { glcv.style.visibility = cv.style.visibility; }).observe(cv, { attributes: true, attributeFilter: ["style"] });
@@ -4420,18 +4834,24 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform4fv(U.uAnom, anom);
     gl.uniform1i(U.uTier, tier);
     gl.uniform2f(U.uHalf, cw / 2, ch / 2);
+    // the letters (WORDS), coming in over phi seconds once given, and away in an anomaly or on the Earth
+    const wk = WORDS && wordsN && !earth && !(anom[2] > 0) ? Math.min(1, (now - wordsAt) / 1618) : 0;
+    if (WORDS) { gl.uniform1f(U.uWordsOn, wk); gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2, gl.COLOR_ATTACHMENT3]); }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (WORDS) gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.NONE, gl.NONE]);   // (the minimal pass: its letters are the first's)
     // then the calm country, glazed over it (its cover in the alpha; the cells' own alpha kept)
     if (minimalProg && !earth && edgeOn && !(anom[2] > 0)) {
       gl.useProgram(minimalProg);
       gl.uniform2i(Mi.uCell0, cx0, cy0);
       gl.uniform1f(Mi.uTime, t);
+      if (WORDS) gl.uniform1f(Mi.uWordsOn, wk);
       gl.uniform1i(Mi.uTaps, tier >= 3 ? 5 : tier === 2 ? 3 : 1);     // looks on a sunflower: Fibonacci numbers
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disable(gl.BLEND);
     }
+    if (WORDS) gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2, gl.NONE]);   // (the rest fade the letters where they cover)
     // then the formal end over it, once the quilts are here, on the plane after the artists, and not in an anomaly
     if (formalProg && qn && !earth && edgeOn && tier >= 1 && !(anom[2] > 0)) {
       gl.useProgram(formalProg);
@@ -4583,6 +5003,15 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const swim = !earth && !noWater ? SWIM.step(cx0 + cw / 2, cy0 + ch / 2, t, cw / 2, ch / 2) : SWIM.none;   // the swimmers
     gl.uniform4fv(V.uSwim, swim[0]);
     gl.uniform4fv(V.uWake, swim[1]);
+    if (WORDS) {
+      gl.uniform1f(V.uWOn, wk);
+      if (wordsN) {
+        const w = wordsSrc;
+        gl.uniform4i(V.uWN, wordsN[0], wordsN[1], wordsN[2], wordsN[3]);
+        gl.uniform4f(V.uWAt, w.slot[0], w.slot[1], w.cols, w.em);
+        gl.uniform2f(V.uWO, w.origin[0], w.origin[1]);
+      }
+    }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!earth) reflect(now);
   }
@@ -4627,5 +5056,5 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, putIn, setThrust, reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, putIn, setThrust, words, reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
 }

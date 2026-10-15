@@ -492,7 +492,10 @@ void main() {
   }
   function draw(now) {
     if (!ready || typeof placed === "undefined" || !placed) return;
-    if (typeof MODE !== "undefined" && MODE !== "plane") { if (last) { clear(); last = null; nameAt(null); } return; }
+    if (typeof MODE !== "undefined" && MODE !== "plane") {
+      if (last) { clear(); last = null; lastV = null; nameAt(null); fx.setTransform(1, 0, 0, 1, 0, 0); fx.clearRect(0, 0, fig.width, fig.height); }
+      return;
+    }
     const v = view();
     if (!anchored) anchorAt(v);
     const moved = !last || v.x !== last.x || v.y !== last.y || v.W !== last.W || v.H !== last.H || v.dpr !== last.dpr;
@@ -506,7 +509,7 @@ void main() {
       movedAt = now; step = last ? moveStep : 0; restAt = now + 233;
     } else if (step !== 0 && now >= restAt) step = 0;                 // at rest, drawn once more at its finest
     else return;                                                      // nothing has changed: the pages stay as drawn
-    last = v;
+    last = v; lastV = v; figDirty = true;                             // (the buildings move with their pages)
     if (lay.width !== v.W || lay.height !== v.H) { lay.width = v.W; lay.height = v.H; }
     const sc = 1 / v.dpr, x1 = v.x + v.W * sc, y1 = v.y + v.H * sc;
     clear();
@@ -532,14 +535,188 @@ void main() {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     nameAt(pageNear(v.x + v.W * sc / 2, v.y + v.H * sc / 2));
   }
+  // ---- the buildings, turned by a swipe as in Picture Poetry -------------------------------------------------------
+  // Aries, 14 Oct 2026: "Make sure I can still rotate architecture buildings in DRIFT Poetry like I can in Picture
+  // Poetry." Each page's buildings are drawn live, by Picture Poetry's own model code (window.Models, from its page) on
+  // each place's DIRT soil, on a canvas over the pages: dragged sideways, a building turns as in the book (0.022 radians
+  // a pixel), and let go it settles on the nearest of its four diagonals over 700 ms; a tap names it. Each copy of a
+  // page on the plane keeps its own buildings' turns. The page's ink holds no buildings (capture_pages.js hides them).
+  const fig = document.createElement("canvas");
+  fig.setAttribute("aria-hidden", "true");
+  fig.style.pointerEvents = "none";
+  stage.insertBefore(fig, lay.nextSibling);
+  const fx = fig.getContext("2d");
+  const TAU = 2 * Math.PI, REST = TAU / 8, BLD = SPEC.buildings || [];
+  const isoNearest = (h) => Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8;
+  const ease = (q) => (q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dotsOf = {}, turns = new Map();
+  let soilPx = null, soilN = 0, figDirty = true, turning = null, lastV = null;
+  /** The soil of a place (latitude, longitude) as the book takes it: the DIRT soil tile, wrapped. */
+  function soilFor(lat, lon) {
+    const n = soilN, cell = (a) => ((Math.floor(a) % n) + n) % n;
+    const u0 = Math.floor((lon / 360 + 0.5) * 2 * n), v0 = Math.floor((0.5 - lat / 180) * n);
+    return (i, j) => { const o = (cell(v0 + j) * n + cell(u0 + i)) * 4; return [soilPx[o], soilPx[o + 1], soilPx[o + 2], Math.round(soilPx[o + 3] / 85)]; };
+  }
+  /** One building's dots, built once (a few at a time while the page is idle, so a swipe never waits on one). */
+  function dots(slug) {
+    if (!dotsOf[slug] && soilPx && window.Models) { const m = SPEC.models[slug]; dotsOf[slug] = Models.build(m.spec, soilFor(m.lat, m.lon)); }
+    return dotsOf[slug];
+  }
+  /** A building's copy on the plane, in its square, and its turn: kept once it has been turned, at rest till then. */
+  function copyOf(b, cx, cy) {
+    const key = cx + "," + cy + "," + b.slug;
+    return turns.get(key) || { b, cx, cy, key, heading: REST, held: false, settle: null };
+  }
+  /** A building drawn at a heading, w by h device pixels: one drawing for every copy resting on the same diagonal;
+   *  a copy being turned has its own. */
+  const drawings = new Map();
+  function drawingOf(t, d, w, h) {
+    const rest = !t.held && !t.settle, key = rest ? t.b.slug + "|" + w + "|" + h + "|" + t.heading.toFixed(5) : t;
+    let cv = drawings.get(key);
+    if (!cv || cv.width !== w || cv.height !== h || (!rest && cv.drawn !== t.heading)) {
+      if (!cv) { cv = document.createElement("canvas"); drawings.set(key, cv); }
+      cv.width = w; cv.height = h;
+      Models.draw(cv, d, t.heading, 1, 0.9);
+      cv.drawn = t.heading;
+    }
+    if (rest && drawings.has(t)) drawings.delete(t);                  // (a turn finished: its own drawing goes)
+    return cv;
+  }
+  /** Where a square's page lies on the screen: device pixels for a page pixel q, as the shaders lay it. */
+  function pageFrame(cx, cy, v) {
+    const s = seedOf(cx, cy), P = SPEC.pages[pageOf(cx, cy)], t = 0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
+    const k = v.dpr * P1, c = Math.cos(t) * k, sn = Math.sin(t) * k, hx = P.size[0] / 2, hy = P.size[1] / 2;
+    return { a: c, b: sn, c: -sn, d: c, e: v.dpr * (s.x - v.x) - (c * hx - sn * hy), f: v.dpr * (s.y - v.y) - (sn * hx + c * hy) };
+  }
+  /** The buildings' copies within reach of the view. */
+  function copiesNear(v) {
+    const out = [], sc = 1 / v.dpr, x0 = v.x, y0 = v.y, x1 = v.x + v.W * sc, y1 = v.y + v.H * sc, reach = 0.62 * 1920 * P1;
+    for (let gy = Math.floor((y0 - shift[1] - reach) / G); gy <= Math.floor((y1 - shift[1] + reach) / G); gy++)
+      for (let gx = Math.floor((x0 - shift[0] - reach) / G); gx <= Math.floor((x1 - shift[0] + reach) / G); gx++) {
+        const pg = pageOf(gx, gy);
+        for (const b of BLD) if (b.page === pg) out.push(copyOf(b, gx, gy));
+      }
+    return out;
+  }
+  /** Where a building sits on its page (page pixels): the book's placement, its outline at rest fitted to its box. */
+  function placeOf(b) {
+    const r = SPEC.models[b.slug].rest, s = (b.box[2] - b.box[0]) / (r[2] - r[0]);
+    return { x: b.box[0] - r[0] * s, y: b.box[1] - r[1] * s, w: 900 * s, h: 675 * s };
+  }
+  function drawBuildings(v) {
+    if (fig.width !== v.W || fig.height !== v.H) { fig.width = v.W; fig.height = v.H; }
+    fx.setTransform(1, 0, 0, 1, 0, 0);
+    fx.clearRect(0, 0, fig.width, fig.height);
+    if (!anchored || !BLD.length) return;
+    for (const t of copiesNear(v)) {
+      const d = dots(t.b.slug);
+      if (!d) continue;
+      const pl = placeOf(t.b), f = pageFrame(t.cx, t.cy, v), k = v.dpr * P1;
+      const w = Math.max(1, Math.round(pl.w * k)), h = Math.max(1, Math.round(pl.h * k));
+      fx.setTransform(f.a, f.b, f.c, f.d, f.e, f.f);
+      fx.drawImage(drawingOf(t, d, w, h), pl.x, pl.y, pl.w, pl.h);
+    }
+    fx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  /** The building copy under a point on the screen (client pixels), if any: its box on the page, at least 36 pixels. */
+  function buildingAt(clientX, clientY) {
+    if (!ready || !anchored || !lastV || !BLD.length) return null;
+    const r = field.getBoundingClientRect(), v = lastV;
+    const px = v.x + (clientX - r.left), py = v.y + (clientY - r.top);     // the plane, in its pixels (CSS)
+    for (const t of copiesNear(v)) {
+      if (!dots(t.b.slug)) continue;
+      const s = seedOf(t.cx, t.cy), P = SPEC.pages[pageOf(t.cx, t.cy)], a = -0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
+      const dx = (px - s.x) / P1, dy = (py - s.y) / P1, qx = Math.cos(a) * dx - Math.sin(a) * dy + P.size[0] / 2, qy = Math.sin(a) * dx + Math.cos(a) * dy + P.size[1] / 2;
+      const bx = t.b.hit, m = 18 / P1;                                 // (18 CSS pixels: half of the book's 36)
+      const cxm = (bx[0] + bx[2]) / 2, cym = (bx[1] + bx[3]) / 2, hw = Math.max((bx[2] - bx[0]) / 2, m), hh = Math.max((bx[3] - bx[1]) / 2, m);
+      if (Math.abs(qx - cxm) <= hw && Math.abs(qy - cym) <= hh) return t;
+    }
+    return null;
+  }
+  // (for looking, as UPDATE.md does: each building copy on the screen, its middle in client pixels, and its turn)
+  window.DRIFT_POETRY = {
+    buildings() {
+      if (!lastV) return [];
+      const r = field.getBoundingClientRect(), v = lastV;
+      return copiesNear(v).filter((t) => dotsOf[t.b.slug]).map((t) => {
+        const s = seedOf(t.cx, t.cy), P = SPEC.pages[pageOf(t.cx, t.cy)], a = 0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
+        const qx = (t.b.hit[0] + t.b.hit[2]) / 2 - P.size[0] / 2, qy = (t.b.hit[1] + t.b.hit[3]) / 2 - P.size[1] / 2;
+        return { name: t.b.name, heading: t.heading, x: r.left + s.x + P1 * (Math.cos(a) * qx - Math.sin(a) * qy) - v.x,
+                 y: r.top + s.y + P1 * (Math.sin(a) * qx + Math.cos(a) * qy) - v.y };
+      }).filter((b) => b.x > r.left && b.x < r.right && b.y > r.top && b.y < r.bottom);
+    },
+  };
+  function settle(t) {
+    const from = t.heading, to = isoNearest(from);
+    if (reduce) { t.heading = to; figDirty = true; return; }
+    t.settle = { from, to, t0: performance.now() };
+  }
+  stage.addEventListener("pointerdown", (e) => {
+    if (e.button > 0 || turning) return;
+    const t = buildingAt(e.clientX, e.clientY);
+    if (!t) return;
+    e.stopPropagation();                                              // the plane stays where it is: the building turns
+    e.preventDefault();
+    turning = { t, x: e.clientX, y: e.clientY, h0: t.heading, id: e.pointerId, moved: 0 };
+    t.held = true; t.settle = null;
+    turns.set(t.key, t);
+    try { stage.setPointerCapture(e.pointerId); } catch (err) { /* (a finished pointer) */ }
+  }, true);
+  stage.addEventListener("pointermove", (e) => {
+    if (turning && e.pointerId === turning.id) {
+      e.stopPropagation();
+      const dx = e.clientX - turning.x;
+      turning.moved = Math.max(turning.moved, Math.abs(dx) + Math.abs(e.clientY - turning.y));
+      turning.t.heading = turning.h0 + dx * 0.022;
+      figDirty = true;
+    } else if (e.pointerType === "mouse") stage.classList.toggle("poetry-turn", !!buildingAt(e.clientX, e.clientY));
+  }, true);
+  const letGo = (e) => {
+    if (!turning || e.pointerId !== turning.id) return;
+    e.stopPropagation();
+    const { t, moved } = turning;
+    turning = null; t.held = false;
+    settle(t);
+    if (moved < 8) nameBuilding(t.b);                                 // a tap names it
+  };
+  stage.addEventListener("pointerup", letGo, true);
+  stage.addEventListener("pointercancel", letGo, true);
+  /** Turning and settling, drawn on DRIFT's frames. */
+  function turnStep(now, v) {
+    for (const t of turns.values()) {
+      if (!t.settle || t.held) continue;
+      const q = Math.min(1, Math.max(0, (now - t.settle.t0) / 700));   // (a frame's time can be just before the letting go)
+      t.heading = t.settle.from + (t.settle.to - t.settle.from) * ease(q);
+      if (q >= 1) t.settle = null;
+      figDirty = true;
+    }
+    if (figDirty && v) { figDirty = false; drawBuildings(v); }
+  }
+  // the soil the buildings are made of, and then each building, one at a time while the page is idle
+  if (BLD.length && SPEC.dirt) {
+    loadImage(SPEC.dirt).then((im) => {
+      const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+      const x = c.getContext("2d"); x.drawImage(im, 0, 0);
+      soilPx = x.getImageData(0, 0, c.width, c.height).data; soilN = c.width;
+      const slugs = [...new Set(BLD.map((b) => b.slug))], idle = window.requestIdleCallback || ((f) => setTimeout(f, 34));
+      const next = () => { const s = slugs.shift(); if (!s) return; try { dots(s); } catch (err) { console.warn("DRIFT Poetry: a building could not be built:", err.message); } figDirty = true; idle(next); };
+      idle(next);
+    }).catch((err) => console.warn("DRIFT Poetry: the buildings' soil did not arrive:", err.message));
+  }
+
   const groundDraw = GLG.draw;
-  GLG.draw = function (now) { groundDraw(now); try { draw(now); } catch (err) { console.warn("DRIFT Poetry:", err.message); ready = false; } };
+  GLG.draw = function (now) {
+    groundDraw(now);
+    try { draw(now); turnStep(now, lastV); } catch (err) { console.warn("DRIFT Poetry:", err.message); ready = false; }
+  };
   if (typeof composite === "function") {                              // DRIFT's stills and recordings show the pages too
     const groundStill = composite;
     window.composite = function () {
       groundStill();
       const c = SNAP.cv;
       if (ready && lay.width) c.getContext("2d").drawImage(lay, 0, 0, c.width, c.height);
+      if (ready && fig.width) c.getContext("2d").drawImage(fig, 0, 0, c.width, c.height);
     };
   }
 
@@ -554,11 +731,13 @@ void main() {
     "gap:13px;align-items:baseline;white-space:nowrap;overflow:hidden}.poetry-label.on{opacity:1}" +
     ".poetry-label .t{font:italic 400 17px/1.25 var(--serif);flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis}" +
     ".poetry-label .s{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis}" +
-    "@media (prefers-reduced-motion:reduce){.poetry-label{transition:none}}";
+    "@media (prefers-reduced-motion:reduce){.poetry-label{transition:none}}.poetry-turn #field{cursor:ew-resize}";
   document.head.appendChild(style);
   stage.appendChild(label);
-  let named = -1;
+  let named = -1, lastNear = null, namedB = null, namedTimer = 0;
   function nameAt(near) {
+    lastNear = near;
+    if (namedB) return;                                               // a building just named stays named a while
     const pg = near && near.e < 233 ? near.pg : -1;
     if (pg === named) return;
     named = pg;
@@ -568,6 +747,59 @@ void main() {
     label.querySelector(".s").textContent = "Picture Poetry, page " + P.n;
     label.classList.add("on");
   }
+  function nameBuilding(b) {
+    namedB = b; named = -2;
+    label.querySelector(".t").textContent = b.name;
+    label.querySelector(".s").textContent = b.sub || "";
+    label.classList.add("on");
+    clearTimeout(namedTimer);
+    namedTimer = setTimeout(() => { namedB = null; nameAt(lastNear); }, 4181);
+  }
+
+  // ---- the poems' letters in DRIFT's lines (WORDS in ground-gl.js) -------------------------------------------------
+  // Aries, 14 Oct 2026: "Analyze places in the graphics of DRIFT where lines can be subtly transformed into linguistic
+  // characters." build_poetry.py asks DRIFT's engine for its letters before the engine begins (window.DRIFT_WORDS);
+  // here the poems' glyphs are drawn once their fonts are in, in DRIFT's own italic (Newsreader) and Picture Poetry's
+  // capitals (Poppins), and handed to it. #nowords leaves DRIFT's lines as they are.
+  function letters() {
+    if (typeof GLG.words !== "function" || !SPEC.poems || /(?:^|&)nowords(?:&|$)/.test(location.hash.slice(1))) return;
+    const EM = 48, SW = 88, SH = 72, OX = 20, OY = 52, COLS = 16;   // an em, a glyph's slot, its origin in it (px)
+    const faces = ['italic 400 ' + EM + 'px "Newsreader", Georgia, "Times New Roman", serif',
+                   '500 ' + EM + 'px "Poppins", "Avenir Next", "Helvetica Neue", Arial, sans-serif'];
+    // the poems as one text: a poem's lines a verse line apart (" / "), a prose poem's run together, a dot between poems
+    let text = "";
+    const lines = [];
+    for (const P of SPEC.poems) {
+      const ls = P.lines.filter((l) => l.trim());
+      ls.forEach((l, i) => { const a = text.length; text += l; lines.push([a, text.length]); if (i < ls.length - 1) text += P.prose ? " " : " / "; });
+      text += "  ·  ";
+    }
+    const chars = [...new Set(text)], gi = new Map(chars.map((c, i) => [c, i]));
+    const draw = () => {
+      const cv = document.createElement("canvas");
+      cv.width = COLS * SW; cv.height = Math.ceil((2 * chars.length) / COLS) * SH;
+      const x = cv.getContext("2d");
+      x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height);
+      x.fillStyle = "#fff"; x.textBaseline = "alphabetic";
+      const adv = chars.map(() => [0, 0]);
+      faces.forEach((font, f) => {
+        x.font = font;
+        chars.forEach((c, g) => {
+          const ch = f === 1 ? c.toUpperCase() : c, s = g + f * chars.length;
+          adv[g][f] = x.measureText(ch).width / EM;
+          x.fillText(ch, (s % COLS) * SW + OX, Math.floor(s / COLS) * SH + OY);
+        });
+      });
+      const ends = [], at = [0, 0];
+      for (const c of text) { const a = adv[gi.get(c)]; at[0] += a[0]; at[1] += a[1]; ends.push([at[0], at[1]]); }
+      GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv,
+                  text: [...text].map((c) => gi.get(c)), ends, lines });
+    };
+    const sample = chars.join("");
+    const fonts = document.fonts && document.fonts.load ? Promise.all(faces.map((f) => document.fonts.load(f, sample))) : Promise.resolve();
+    Promise.race([fonts, new Promise((ok) => setTimeout(ok, 4181))]).then(draw, draw);   // (in their own type if it comes)
+  }
+  try { letters(); } catch (err) { console.warn("DRIFT Poetry: the letters could not be drawn:", err.message); }
 
   // ---- the pages arrive ----------------------------------------------------------------------------------------
   Promise.all([Promise.all(SPEC.pages.map((p) => loadImage(p.photo))), Promise.all(SPEC.pages.map((p) => loadImage(p.ink)))])

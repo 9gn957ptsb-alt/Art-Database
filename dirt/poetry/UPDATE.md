@@ -46,8 +46,10 @@ repository.
    NODE_PATH=$(npm root -g) node dirt/poetry/capture_pages.js <the folder of Picture Poetry's files> dirt/private/poetry
    ```
 
-   It opens Picture Poetry in Chromium, photographs each page's buildings and characters as that artifact draws them,
-   and copies the page images and photographs beside them, with what its data says about each page (`pages.json`).
+   It opens Picture Poetry in Chromium, photographs each page's characters as that artifact draws them (its buildings
+   hidden: DRIFT Poetry draws them live, to be turned), and copies the page images and photographs beside them, with
+   what its data says about each page (`pages.json`), its buildings (`buildings.json`) and the code that draws them
+   (`models.js`).
 
 6. **The poems.** The poems exist only in the page images. For a page that is new (it has no entry in `poems.json`;
    the build refuses to run without one), read its poem from its image (crop it at full size and look) and add an
@@ -74,8 +76,11 @@ repository.
 
 8. **Look at it.** Serve `<scratch>/drift-poetry` with DRIFT's private folders beside it (`quilts/`, `antiquity/`,
    `faces/`, from DRIFT's files) and open `index.html#forcegl&pageN` in headless Chromium for each new or changed page
-   (`pageN` begins on page N; `nopoetry` shows DRIFT alone). There must be no page errors, and every poem must be
-   legible.
+   (`pageN` begins on page N; `nopoetry` shows DRIFT alone; `nowords` leaves DRIFT's lines unwritten). There must be
+   no page errors, and every poem must be legible. `window.DRIFT_POETRY.buildings()` lists the buildings on the screen
+   (their middles, in client pixels): drag one sideways with the mouse and it must turn, and settle on a diagonal when
+   let go. Between the pages, some of DRIFT's lines must be written in the poems' letters (README.md says which); they
+   need DRIFT's engine to carry its WORDS hook (`GLG.words`), and without it the lines stay lines.
 
 9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
    `files` mapping every `poetry/...` file of the build to its path, and every file DRIFT publishes except
