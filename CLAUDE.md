@@ -76,6 +76,11 @@ So:
   hologram does not count). So every escape ends in a record made to be shared (the planet as you leave it, your
   route, your numbers, the relations it was made of), showing only what the player chooses; what they bring stays
   private to them.
+- **It is rendered as Cézanne paints** (artist, 15 Oct 2026, sending two Cézanne-like paintings generated from
+  photographs — a watercolour of overlapping translucent diamond washes, an oil of short dabs with warm lights and
+  blue-violet shades: "I want you to incorporate this aesthetic into the rendering aesthetic of Holographic Mr
+  Pearl"): the world and his body are painted, strokes anchored to the surfaces, form modelled by warm and cool,
+  translucent washes mixing into new colours where they overlap; the head alone is left unpainted.
 - **For now the world is the artist's own** (artist, 15 Oct 2026: "For now let's make mine and figure out how to
   make it for others later"): one planet, made from the site's information and its relations (the collages, the
   saved works, the artists' lives, the museums, the modelled buildings, the cities, the movements, the voices).
