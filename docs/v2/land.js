@@ -11948,7 +11948,10 @@
     clod.last = now;
     // Drawn only while something is happening — rising, swinging, being
     // turned, or the window changing size. At rest it costs nothing.
-    var rising = !still && now - clod.at < CLOD_RISE + 100;
+    // And once more after the rise: a frame that comes late (a slow device, the main thread busy
+    // making the plot) must not leave the last drawing at nine tenths — the tallest crown's top
+    // storey missing until the next turn (found 15 Oct 2026, a tree drawn as a ring).
+    var rising = !still && (now - clod.at < CLOD_RISE + 100 || clod.drawn - clod.at < CLOD_RISE);
     var sized = buildingMap.clientWidth !== clod.cw || buildingMap.clientHeight !== clod.ch;
     if ((rising || clod.dirty || sized) && now - clod.drawn >= 1000 / CLOD_FPS) {
       clod.drawn = now;

@@ -306,9 +306,11 @@
         fillMesh(p.mesh, m);
       } else if ((a = p.pool)) {
         // x, y, w, d (and z): water let into the ground, its surface at
-        // ground level — or at z, for a pool raised on a terrace.
-        var pz = a[4] || 0;
-        each(a[0], a[1], pz, a[0] + a[2], a[1] + a[3], pz + v, function () { return mi("water"); });
+        // ground level — or at z, for a pool raised on a terrace. An "m" gives
+        // the water another colour: a dark slate-teal pool in dark pavers is
+        // "slate", not the bright blue of "water".
+        var pz = a[4] || 0, pm = p.m ? m : mi("water");
+        each(a[0], a[1], pz, a[0] + a[2], a[1] + a[3], pz + v, function () { return pm; });
       }
     });
     return { grid: grid, nx: nx, ny: ny, nz: nz, v: v, names: names, site: site };
