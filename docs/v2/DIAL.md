@@ -236,12 +236,22 @@ Each view opens on the function its turning should be: the world on its categori
 | --- | --- | --- |
 | the ring | round the world, 22 px off its rim; over a world larger than the window, the largest the window has room for, in its middle | on the city's ground (The dial on the ground) |
 | its front | its foot, nearest you | the same |
-| **categories** | the layers along the arc, glyph and name; the front's is on the world; turning turns the world through them, a layer as each comes to the front; let go, the nearest; a tap on a name turns it there | — |
+| **categories** | the layers along the arc, glyph and name; the front's is on the world; turning turns the world through them, a layer as each comes to the front; let go, the nearest; a tap on a name turns it there | the same six, upright on the ring round the city, each with what the city holds of it ("∵ Philosophers · 9"); the front's is the world's category, and the city shows it (below) |
 | **time** | years, the first just left of the front, now just right of it, spread by the logarithm of the years before now; the world shows the layer's marks of that year (an artist living then, a collage once made, a city once a saved work had come there); at now, all | the city's years, as before |
 | default | categories | time |
+| the crown | under the ring's front | in the label beside the city's animal, where its year is (on the categories, the label is only the crown) |
 
-A new category is a layer of the globe (`LAYERS` in land.js, its glyph from KINDS.md); it comes onto the
-ring by itself. A new function is a third face of the ring and a third state of the crown.
+**The category is one, the functions are the views'.** Chosen on the world's ring or a city's, it is the
+world's (`chooseLayer`), kept going up and coming down; the crown only changes what turning does. A city
+shows the category in either function: **Philosophers**, the philosophers born there walk its streets
+(all of them at rest, those alive in the year the dial is turned to), named, a press their card;
+**Artists**, its artists walk, named; **Characters**, no one walks and its own animal — the dial's hand —
+says what it is; the rest as before. On those three the museums' names give way; a note at the foot says
+what the category holds here. A city is always entered on its time.
+
+A new category is a layer of the globe (`LAYERS` in land.js, its glyph from KINDS.md); it comes onto both
+rings by itself, and says what a city shows of it in skyline.js's `castFor`. A new function is a third face
+of the ring and a third state of the crown.
 
 ## Rules kept
 

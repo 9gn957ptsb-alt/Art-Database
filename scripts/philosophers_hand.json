@@ -1,0 +1,722 @@
+{
+ "note": "The Philosophers layer, by hand (build_philosophers.py reads it over its rules): for the best known, the emblem each carries and where it comes from (a thing of their own life or work, as their own texts, their first biographers or the paintings of them tell it), and how they are dressed where the rule of their time and place would say it wrongly. Fields: emblem (book, scroll, slips, tablet, lantern, cup, staff, stick, lens, umbrella, butterfly, bowl, quill, pipe, lyre, astrolabe, dog, flowers, ladder, fire, hammer, rock, heart, wheel, stars, box, hoe, sword, notebook), said (one sentence, its source in it), dress, hair, beard, head, glasses, bare (barefoot), hairc, cloth, cloth2. A living philosopher is never given a look of their own: only their time's dress.",
+ "people": {
+  "Q913": {
+   "emblem": "cup",
+   "said": "The cup of hemlock he drank in prison, as Plato's Phaedo tells it.",
+   "hair": "bald",
+   "beard": "full",
+   "bare": true,
+   "hairc": "#7a6a58",
+   "cloth": "#a89a82"
+  },
+  "Q859": {
+   "emblem": "book",
+   "said": "Raphael painted him holding his Timaeus (The School of Athens, 1509–1511).",
+   "hair": "long",
+   "beard": "long",
+   "hairc": "#d9d2c4",
+   "cloth": "#9c4a3a",
+   "cloth2": "#5d6a8c"
+  },
+  "Q868": {
+   "emblem": "book",
+   "said": "Raphael painted him holding his Ethics (The School of Athens, 1509–1511).",
+   "hair": "short",
+   "beard": "short",
+   "hairc": "#6e5640",
+   "cloth": "#4f6f9a",
+   "cloth2": "#8a6a3e"
+  },
+  "Q59180": {
+   "emblem": "lantern",
+   "said": "He lit a lamp in broad daylight and went about looking for a human being (Diogenes Laërtius, Lives VI.41).",
+   "hair": "long",
+   "beard": "full",
+   "bare": true,
+   "hairc": "#5a4a3a",
+   "cloth": "#7d6e58"
+  },
+  "Q41155": {
+   "emblem": "fire",
+   "said": "The world, 'an ever-living fire, kindling in measures and going out in measures' (fragment B30).",
+   "hair": "long",
+   "beard": "long",
+   "hairc": "#4a3a2c"
+  },
+  "Q36303": {
+   "emblem": "stars",
+   "said": "Looking up at the stars he fell into a well, as Plato's Theaetetus tells it (174a).",
+   "hair": "short",
+   "beard": "full",
+   "hairc": "#bfb6a6"
+  },
+  "Q10261": {
+   "emblem": "lyre",
+   "said": "The harmony of numbers he heard in a string's lengths (Iamblichus, Life of Pythagoras 26).",
+   "hair": "long",
+   "beard": "long",
+   "head": "turban",
+   "hairc": "#d4ccbd",
+   "cloth": "#e6dccb"
+  },
+  "Q43216": {
+   "emblem": "flowers",
+   "said": "He taught in a garden in Athens, and his school was called the Garden (Diogenes Laërtius X.10).",
+   "hair": "short",
+   "beard": "full"
+  },
+  "Q1430": {
+   "emblem": "scroll",
+   "said": "The notes to himself we call the Meditations, written on campaign.",
+   "dress": "toga",
+   "hair": "curly",
+   "beard": "full",
+   "cloth": "#ece4d4",
+   "cloth2": "#6a2c5a"
+  },
+  "Q2054": {
+   "emblem": "scroll",
+   "said": "The letters to Lucilius, a Stoic's teaching by post.",
+   "dress": "toga",
+   "hair": "short",
+   "beard": "none",
+   "cloth2": "#8a5a3a"
+  },
+  "Q1541": {
+   "emblem": "scroll",
+   "said": "An orator's speeches; he was killed for his Philippics in 43 BC.",
+   "dress": "toga",
+   "hair": "short",
+   "beard": "none",
+   "cloth2": "#8a2a2a"
+  },
+  "Q11903": {
+   "emblem": "astrolabe",
+   "said": "The astrolabe her pupil Synesius made after her teaching, and wrote of (On the Gift of an Astrolabe).",
+   "hair": "bun",
+   "hairc": "#3a2a20",
+   "cloth": "#e4dccb",
+   "cloth2": "#4a6a8a"
+  },
+  "Q8018": {
+   "emblem": "heart",
+   "said": "A heart aflame, his emblem in painting after the Confessions: 'our heart is restless until it rests in you'.",
+   "dress": "gown",
+   "hair": "short",
+   "beard": "full",
+   "head": "mitre",
+   "cloth": "#e8e0cf",
+   "cloth2": "#b08a3a"
+  },
+  "Q102851": {
+   "emblem": "wheel",
+   "said": "Fortune's wheel, which Philosophy shows him turning in the Consolation he wrote in prison (Book II).",
+   "dress": "toga",
+   "beard": "none",
+   "hair": "short"
+  },
+  "Q9438": {
+   "emblem": "book",
+   "said": "A sun on his breast in painting, for the light of his Summa.",
+   "dress": "habit",
+   "hair": "tonsure",
+   "beard": "none",
+   "cloth": "#ebe5d8",
+   "cloth2": "#1e1a18"
+  },
+  "Q190089": {
+   "dress": "habit",
+   "hair": "tonsure",
+   "beard": "none",
+   "cloth": "#6e5440",
+   "cloth2": "#6e5440"
+  },
+  "Q171677": {
+   "emblem": "lens",
+   "said": "He wrote of lenses that make small things large (Opus Majus, Part V).",
+   "dress": "habit",
+   "hair": "tonsure",
+   "beard": "none",
+   "cloth": "#6e5440",
+   "cloth2": "#6e5440"
+  },
+  "Q43939": {
+   "dress": "habit",
+   "hair": "tonsure",
+   "beard": "none",
+   "cloth": "#1e1a18",
+   "cloth2": "#1e1a18"
+  },
+  "Q76548": {
+   "dress": "habit",
+   "hair": "tonsure",
+   "beard": "none",
+   "cloth": "#ebe5d8",
+   "cloth2": "#1e1a18"
+  },
+  "Q154751": {
+   "dress": "gown",
+   "head": "cap",
+   "beard": "none",
+   "cloth": "#9c2a24",
+   "cloth2": "#9c2a24",
+   "hair": "short"
+  },
+  "Q43977": {
+   "dress": "gown",
+   "beard": "full",
+   "head": "cap",
+   "cloth": "#22201e",
+   "cloth2": "#22201e"
+  },
+  "Q1067": {
+   "emblem": "book",
+   "said": "Domenico di Michelino painted him in red, holding the Commedia, before Florence (1465).",
+   "dress": "gown",
+   "head": "laurel",
+   "beard": "none",
+   "hair": "short",
+   "cloth": "#a8302a",
+   "cloth2": "#a8302a"
+  },
+  "Q4604": {
+   "emblem": "slips",
+   "said": "The bamboo slips of the Analects, what his students wrote down of his sayings.",
+   "hair": "topknot",
+   "beard": "long",
+   "head": "guan",
+   "hairc": "#cfc8bb",
+   "cloth": "#5a4a3a",
+   "cloth2": "#c8a86a"
+  },
+  "Q9333": {
+   "emblem": "staff",
+   "said": "Leaving for the west, he wrote the Tao Te Ching for the keeper of the pass (Sima Qian, Records of the Grand Historian, 63).",
+   "hair": "long",
+   "beard": "long",
+   "hairc": "#e8e4dc",
+   "cloth": "#d8cfbf"
+  },
+  "Q47739": {
+   "emblem": "butterfly",
+   "said": "He dreamt he was a butterfly, and woke not knowing whether he was Zhuang Zhou who had dreamt it or a butterfly dreaming he was Zhuang Zhou (Zhuangzi, ch. 2).",
+   "hair": "topknot",
+   "beard": "short"
+  },
+  "Q9397": {
+   "emblem": "book",
+   "said": "His commentaries on the Four Books, read for six centuries in the examinations.",
+   "head": "guan",
+   "beard": "long",
+   "hairc": "#cfc8bb"
+  },
+  "Q9441": {
+   "emblem": "bowl",
+   "said": "The begging bowl of a wandering teacher.",
+   "dress": "kesa",
+   "hair": "short",
+   "beard": "none",
+   "cloth": "#c47a2a",
+   "cloth2": "#c47a2a",
+   "bare": true
+  },
+  "Q171195": {
+   "dress": "kesa",
+   "hair": "bald",
+   "beard": "none",
+   "cloth": "#9a4a22",
+   "cloth2": "#9a4a22",
+   "bare": true
+  },
+  "Q180967": {
+   "emblem": "staff",
+   "said": "The staff of a wandering ascetic, who crossed India on foot.",
+   "dress": "kesa",
+   "hair": "bald",
+   "beard": "none",
+   "cloth": "#d4772a",
+   "cloth2": "#d4772a",
+   "bare": true
+  },
+  "Q7241": {
+   "emblem": "book",
+   "said": "Gitanjali, the songs he translated himself (1912).",
+   "dress": "robe",
+   "hair": "long",
+   "beard": "long",
+   "hairc": "#e8e4dc",
+   "cloth": "#5a3a2a",
+   "cloth2": "#5a3a2a"
+  },
+  "Q47478": {
+   "dress": "kesa",
+   "head": "turban",
+   "beard": "none",
+   "hair": "short",
+   "cloth": "#d4772a",
+   "cloth2": "#c46a22"
+  },
+  "Q484141": {
+   "dress": "frock",
+   "head": "cap",
+   "beard": "none",
+   "hair": "short",
+   "cloth": "#2a2420"
+  },
+  "Q156349": {
+   "dress": "frock",
+   "head": "turban",
+   "beard": "none",
+   "cloth": "#2e2a26",
+   "cloth2": "#ece6da"
+  },
+  "Q8011": {
+   "emblem": "book",
+   "said": "The Canon of Medicine, taught in Europe's schools for six centuries.",
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full",
+   "cloth": "#4a5a7a",
+   "cloth2": "#c8b48a"
+  },
+  "Q39837": {
+   "emblem": "book",
+   "said": "His commentaries on Aristotle, which gave him his medieval name, the Commentator; Raphael painted him in a turban among the philosophers (The School of Athens).",
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full"
+  },
+  "Q127398": {
+   "emblem": "book",
+   "said": "The Guide for the Perplexed (c. 1190).",
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full"
+  },
+  "Q46420": {
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full"
+  },
+  "Q160460": {
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full",
+   "emblem": "lyre",
+   "said": "He wrote the Great Book of Music, and played as he wrote of it."
+  },
+  "Q179759": {
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full"
+  },
+  "Q169234": {
+   "dress": "thobe",
+   "head": "turban",
+   "beard": "full"
+  },
+  "Q41568": {
+   "emblem": "book",
+   "said": "The Essays, written in the tower of his château (1580).",
+   "dress": "doublet",
+   "head": "cap",
+   "beard": "short",
+   "cloth": "#1e1a18"
+  },
+  "Q36330": {
+   "emblem": "stars",
+   "said": "An infinity of worlds, each a sun with its planets (On the Infinite Universe and Worlds, 1584).",
+   "dress": "habit",
+   "hair": "short",
+   "beard": "short",
+   "cloth": "#ebe5d8",
+   "cloth2": "#1e1a18"
+  },
+  "Q37388": {
+   "emblem": "book",
+   "said": "The New Organon (1620), knowledge by trial.",
+   "dress": "doublet",
+   "head": "hat",
+   "beard": "short",
+   "cloth": "#1e1a18"
+  },
+  "Q42544": {
+   "emblem": "book",
+   "said": "Utopia, a book of an island that is nowhere (1516).",
+   "dress": "gown",
+   "head": "cap",
+   "beard": "none",
+   "cloth": "#2a1e1a",
+   "cloth2": "#6a2a22"
+  },
+  "Q83428": {
+   "dress": "gown",
+   "head": "beret",
+   "beard": "none",
+   "hair": "short"
+  },
+  "Q193344": {
+   "emblem": "sword",
+   "said": "A wooden sword: he is said to have carved one from an oar for a duel on Ganryū island (1612).",
+   "dress": "kimono",
+   "hair": "topknot",
+   "beard": "short",
+   "cloth": "#2a2420",
+   "cloth2": "#5a4a3a"
+  },
+  "Q183074": {
+   "emblem": "book",
+   "said": "The library of her cell, said to have been four thousand volumes.",
+   "dress": "habit",
+   "head": "veil",
+   "cloth": "#ebe5d8",
+   "cloth2": "#1e1a18"
+  },
+  "Q9191": {
+   "emblem": "quill",
+   "said": "The Discourse on the Method (1637), 'I think, therefore I am'.",
+   "dress": "doublet",
+   "hair": "long",
+   "beard": "moustache",
+   "hairc": "#2a201a",
+   "cloth": "#1e1a18",
+   "cloth2": "#ece6da"
+  },
+  "Q1290": {
+   "emblem": "box",
+   "said": "The calculating machine he built at nineteen for his father's tax sums (1642).",
+   "dress": "justaucorps",
+   "hair": "long",
+   "beard": "none",
+   "cloth": "#2a2420"
+  },
+  "Q35802": {
+   "emblem": "lens",
+   "said": "He ground lenses for his living (Colerus, 1705).",
+   "dress": "doublet",
+   "hair": "long",
+   "beard": "moustache",
+   "hairc": "#2a201a",
+   "cloth": "#24201c",
+   "cloth2": "#ece6da"
+  },
+  "Q9047": {
+   "emblem": "quill",
+   "said": "The calculus, by his own notation (1684).",
+   "dress": "justaucorps",
+   "hair": "wig",
+   "beard": "none",
+   "hairc": "#3a2c22"
+  },
+  "Q37621": {
+   "emblem": "book",
+   "said": "Leviathan (1651), a commonwealth drawn as one great body of men.",
+   "dress": "doublet",
+   "hair": "long",
+   "beard": "short",
+   "hairc": "#d8d0c4",
+   "cloth": "#1e1a18"
+  },
+  "Q9353": {
+   "emblem": "book",
+   "said": "An Essay Concerning Human Understanding (1689): the mind a blank page.",
+   "dress": "justaucorps",
+   "hair": "long",
+   "beard": "none",
+   "hairc": "#5a4a3a"
+  },
+  "Q9068": {
+   "emblem": "quill",
+   "said": "Candide (1759), and twenty thousand letters.",
+   "dress": "frock",
+   "hair": "wig",
+   "beard": "none",
+   "hairc": "#e8e4dc"
+  },
+  "Q6527": {
+   "emblem": "flowers",
+   "said": "He botanized on his walks (Reveries of the Solitary Walker, the seventh walk), and wore the Armenian caftan and fur cap Ramsay painted (1766).",
+   "dress": "caftan",
+   "head": "fur",
+   "beard": "none",
+   "cloth": "#7a5a3a",
+   "cloth2": "#3a2c22"
+  },
+  "Q37160": {
+   "emblem": "book",
+   "said": "A Treatise of Human Nature (1739), which he said fell dead-born from the press.",
+   "dress": "frock",
+   "hair": "wig",
+   "beard": "none",
+   "hairc": "#e8e4dc"
+  },
+  "Q9312": {
+   "emblem": "stick",
+   "said": "His daily walk, at the same hour, after which the people of Königsberg are said to have set their clocks.",
+   "dress": "frock",
+   "hair": "wig",
+   "beard": "none",
+   "hairc": "#e8e4dc",
+   "cloth": "#5a4a3a"
+  },
+  "Q9381": {
+   "emblem": "book",
+   "said": "The Wealth of Nations (1776).",
+   "dress": "frock",
+   "hair": "wig",
+   "beard": "none",
+   "hairc": "#e8e4dc"
+  },
+  "Q448": {
+   "emblem": "book",
+   "said": "The Encyclopédie, which he edited for twenty years.",
+   "dress": "frock",
+   "hair": "short",
+   "beard": "none"
+  },
+  "Q9235": {
+   "emblem": "book",
+   "said": "The Phenomenology of Spirit, finished as Napoleon's army came into Jena (1806).",
+   "dress": "frock",
+   "hair": "short",
+   "beard": "none",
+   "hairc": "#8a8070"
+  },
+  "Q38193": {
+   "emblem": "dog",
+   "said": "His poodles, each of them called Atma (Gwinner).",
+   "dress": "frock",
+   "hair": "bald",
+   "beard": "none",
+   "hairc": "#e8e4dc"
+  },
+  "Q6512": {
+   "emblem": "umbrella",
+   "said": "The umbrella of his walks through Copenhagen, which The Corsair's caricatures gave him (1846).",
+   "dress": "frock",
+   "hair": "quiff",
+   "beard": "none",
+   "hairc": "#5a4630"
+  },
+  "Q48226": {
+   "emblem": "book",
+   "said": "Nature (1836).",
+   "dress": "frock",
+   "beard": "none"
+  },
+  "Q131149": {
+   "emblem": "hoe",
+   "said": "The bean-field he hoed at Walden Pond (Walden, 'The Bean-Field', 1854).",
+   "dress": "frock",
+   "beard": "short",
+   "cloth": "#5a4a36"
+  },
+  "Q9061": {
+   "emblem": "book",
+   "said": "Capital, its first volume (1867).",
+   "dress": "frock",
+   "hair": "curly",
+   "beard": "full",
+   "hairc": "#cfc6b6"
+  },
+  "Q34787": {
+   "dress": "frock",
+   "beard": "full",
+   "hairc": "#8a6a48"
+  },
+  "Q5752": {
+   "dress": "frock",
+   "beard": "full",
+   "hair": "bald",
+   "hairc": "#e0dad0"
+  },
+  "Q9358": {
+   "emblem": "hammer",
+   "said": "How one philosophizes with a hammer, the subtitle of Twilight of the Idols (1889).",
+   "dress": "frock",
+   "hair": "short",
+   "beard": "moustache",
+   "hairc": "#5a4630"
+  },
+  "Q50020": {
+   "emblem": "book",
+   "said": "On Liberty (1859).",
+   "dress": "frock",
+   "hair": "bald",
+   "beard": "none"
+  },
+  "Q42156": {
+   "dress": "frock",
+   "hair": "bald",
+   "beard": "moustache"
+  },
+  "Q49325": {
+   "dress": "frock",
+   "beard": "moustache",
+   "hairc": "#e0dad0"
+  },
+  "Q33760": {
+   "emblem": "pipe",
+   "said": "The pipe of his photographs; on a plane that crashed in 1948 he sat in the smoking section and was saved.",
+   "dress": "suit",
+   "hair": "short",
+   "beard": "none",
+   "hairc": "#ece8e0"
+  },
+  "Q9391": {
+   "emblem": "ladder",
+   "said": "The ladder to be thrown away once climbed (Tractatus Logico-Philosophicus, 6.54).",
+   "dress": "suit",
+   "hair": "short",
+   "beard": "none",
+   "cloth": "#4a4440"
+  },
+  "Q48301": {
+   "emblem": "stick",
+   "said": "His walks from the hut at Todtnauberg, on the forest paths he wrote of.",
+   "dress": "suit",
+   "hair": "short",
+   "beard": "moustache"
+  },
+  "Q9364": {
+   "emblem": "pipe",
+   "said": "The pipe of the Café de Flore, where he wrote through the war.",
+   "dress": "suit",
+   "hair": "short",
+   "beard": "none",
+   "glasses": true
+  },
+  "Q34670": {
+   "emblem": "rock",
+   "said": "Sisyphus's rock: 'one must imagine Sisyphus happy' (The Myth of Sisyphus, 1942).",
+   "dress": "coat",
+   "hair": "short",
+   "beard": "none",
+   "cloth": "#8a7a5a"
+  },
+  "Q7197": {
+   "emblem": "notebook",
+   "said": "The turban of her photographs from the 1940s, and the notebooks of her memoirs.",
+   "dress": "dress",
+   "head": "turban",
+   "cloth": "#2a2a3a",
+   "cloth2": "#b0302a"
+  },
+  "Q60025": {
+   "emblem": "book",
+   "said": "The Human Condition (1958).",
+   "dress": "dress",
+   "hair": "short"
+  },
+  "Q157309": {
+   "emblem": "book",
+   "said": "The notebooks her friends published after her death, Gravity and Grace (1947).",
+   "dress": "dress",
+   "hair": "short",
+   "glasses": true,
+   "cloth": "#3a3632"
+  },
+  "Q76749": {
+   "dress": "habit",
+   "head": "veil",
+   "cloth": "#5a4632",
+   "cloth2": "#ebe5d8"
+  },
+  "Q44272": {
+   "dress": "turtleneck",
+   "hair": "bald",
+   "beard": "none",
+   "glasses": true,
+   "cloth": "#ece6da"
+  },
+  "Q130631": {
+   "dress": "suit",
+   "hair": "short",
+   "hairc": "#ece8e0",
+   "beard": "none"
+  },
+  "Q12807": {
+   "emblem": "book",
+   "said": "The Name of the Rose (1980), a murder in a monastery's library.",
+   "dress": "suit",
+   "beard": "full",
+   "glasses": true,
+   "hairc": "#5a4a3a"
+  },
+  "Q83003": {
+   "emblem": "notebook",
+   "said": "The Prison Notebooks, thirty-three of them, written in a fascist prison.",
+   "dress": "suit",
+   "hair": "curly",
+   "glasses": true
+  },
+  "Q61078": {
+   "dress": "suit",
+   "hair": "curly",
+   "beard": "moustache",
+   "glasses": true
+  },
+  "Q232505": {
+   "emblem": "tablet",
+   "said": "The hymns she signed on clay at Ur, the first author known by name.",
+   "dress": "tunic",
+   "hair": "long",
+   "head": "band",
+   "cloth": "#e4dccb",
+   "cloth2": "#3a5a8a"
+  },
+  "Q173481": {
+   "dress": "suit",
+   "head": "hat",
+   "beard": "moustache",
+   "glasses": true
+  },
+  "Q123190": {
+   "dress": "suit",
+   "head": "beret",
+   "glasses": true,
+   "hairc": "#e8e4dc",
+   "emblem": "pipe",
+   "said": "The pipe and beret of his photographs, as he cycled to his institute."
+  },
+  "Q189564": {
+   "dress": "habit",
+   "hair": "short",
+   "cloth": "#1e1a18",
+   "cloth2": "#1e1a18"
+  },
+  "Q360512": {
+   "dress": "habit",
+   "hair": "short",
+   "cloth": "#1e1a18",
+   "cloth2": "#1e1a18"
+  },
+  "Q191850": {
+   "dress": "habit",
+   "hair": "short",
+   "cloth": "#ebe5d8",
+   "cloth2": "#1e1a18"
+  },
+  "Q4295": {
+   "dress": "gown",
+   "hair": "short",
+   "beard": "none"
+  },
+  "Q193660": {
+   "dress": "habit",
+   "beard": "long",
+   "cloth": "#6e5440",
+   "cloth2": "#6e5440"
+  },
+  "Q193670": {
+   "dress": "suit",
+   "hair": "short",
+   "skin": "#5a3a26"
+  },
+  "Q103285": {
+   "dress": "frock",
+   "beard": "moustache"
+  }
+ }
+}

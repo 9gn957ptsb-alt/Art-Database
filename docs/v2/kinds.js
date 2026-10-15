@@ -1088,7 +1088,8 @@
   }
   // The categories' names, one of them: said before a header's name to a screen reader.
   var ONE = { "Museums": "Museum", "Movements": "Movement", "Works": "Work", "Artists": "Artist", "Writings": "Writing",
-              "Places": "Place", "Galleries & shows": "Gallery or show", "Animals": "Animal" };
+              "Places": "Place", "Galleries & shows": "Gallery or show", "Animals": "Animal", "Characters": "Character",
+              "Philosophers": "Philosopher" };
   var SUBNAME = {
     institution: function () { return "a museum"; },
     collection: function () { return "a collection"; },

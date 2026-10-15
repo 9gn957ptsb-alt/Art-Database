@@ -58,6 +58,7 @@
   var FOOT = 48;                           // the front's name and the crown under it
   var CREAM = "#eadfcd", QUIET = "#a8927a", LILAC = "#9d95e6", LIGHT = "#b9b2ff";
   var NOW = new Date().getFullYear();
+  var NONE = [];
   var SCALE = 25;                          // the years' logarithm: room for the last decades
 
   var de = document.documentElement;
@@ -99,6 +100,7 @@
     alpha: 0,                // shown, 0 to 1
     key: "",                 // what was last drawn
     labels: [],              // where each name is, for presses
+    boxes: [],               // what the ring writes, for the globe's names to keep off (land.js boxAvoid)
     G: null                  // the ring: { cx, cy, r, over }
   };
 
@@ -181,10 +183,14 @@
     var chars = Array.from(str), widths = chars.map(function (c) { return g.measureText(c).width + track; });
     var total = widths.reduce(function (a, b) { return a + b; }, 0) - track;
     var under = Math.sin(th) > 0, dir = under ? -1 : 1, a = th - dir * total / 2 / rad;
+    var half = (parseFloat((/(\d+(?:\.\d+)?)px/.exec(font) || [0, 10])[1]) || 10) * 0.62 + 2;
     chars.forEach(function (ch, i) {
       var w = widths[i], mid = a + dir * (w - track) / 2 / rad;
+      var px = cx + Math.cos(mid) * rad, py = cy + Math.sin(mid) * rad;
+      // Each letter's room, so a name on the globe is never written over the ring's.
+      if (ch !== " ") { st.boxes.push({ x0: px - half, y0: py - half, x1: px + half, y1: py + half }); }
       g.save();
-      g.translate(cx + Math.cos(mid) * rad, cy + Math.sin(mid) * rad);
+      g.translate(px, py);
       g.rotate(under ? mid - Math.PI / 2 : mid + Math.PI / 2);
       g.strokeText(ch, 0, 0);
       g.fillText(ch, 0, 0);
@@ -209,6 +215,7 @@
     var W = window.innerWidth, H = window.innerHeight;
     g.clearRect(0, 0, W, H);
     st.labels = [];
+    st.boxes = [];
     if (st.alpha <= 0.01) { return; }
     g.globalAlpha = st.alpha;
     var cx = G.cx, cy = G.cy, r = G.r;
@@ -257,6 +264,7 @@
     });
     g.globalAlpha = st.alpha;
     diamond(cx, cy + r, 5.5, CREAM);
+    st.boxes.push({ x0: cx - 10, y0: cy + r - 10, x1: cx + 10, y1: cy + r + 10 });
   }
 
   function drawYears(G) {
@@ -267,6 +275,8 @@
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText("NO YEARS ON THIS LAYER", cx, cy + r + 14);
+      var nw = g.measureText("NO YEARS ON THIS LAYER").width;
+      st.boxes.push({ x0: cx - nw / 2 - 4, y0: cy + r + 5, x1: cx + nw / 2 + 4, y1: cy + r + 23 });
       return;
     }
     // The decades and the centuries, as their room allows; the named years round the outside.
@@ -313,9 +323,13 @@
     g.fillStyle = CREAM;
     g.textBaseline = "middle";
     g.textAlign = "right";
-    g.fillText(yearSaid(s[0]), cx + Math.cos(ua) * (r + 4) - 4, cy + Math.sin(ua) * (r + 4) + 12);
+    var fx = cx + Math.cos(ua) * (r + 4) - 4, fy = cy + Math.sin(ua) * (r + 4) + 12;
+    g.fillText(yearSaid(s[0]), fx, fy);
+    st.boxes.push({ x0: fx - g.measureText(yearSaid(s[0])).width - 3, y0: fy - 8, x1: fx + 3, y1: fy + 8 });
     g.textAlign = "left";
-    g.fillText("NOW", cx + Math.cos(ub) * (r + 4) + 4, cy + Math.sin(ub) * (r + 4) + 12);
+    var nx = cx + Math.cos(ub) * (r + 4) + 4, ny = cy + Math.sin(ub) * (r + 4) + 12;
+    g.fillText("NOW", nx, ny);
+    st.boxes.push({ x0: nx - 3, y0: ny - 8, x1: nx + g.measureText("NOW").width + 3, y1: ny + 8 });
     // The way come: lilac from the first year round to the handle.
     var at = angOf(st.t);
     g.strokeStyle = LILAC;
@@ -329,11 +343,14 @@
     g.arc(cx, cy, r, Math.max(angOf(0), at - 0.18), at);
     g.stroke();
     diamond(cx + Math.cos(at) * r, cy + Math.sin(at) * r, 5.5, CREAM);
+    st.boxes.push({ x0: cx + Math.cos(at) * r - 10, y0: cy + Math.sin(at) * r - 10, x1: cx + Math.cos(at) * r + 10, y1: cy + Math.sin(at) * r + 10 });
     // The year, at the front.
     g.font = "600 13px " + mono;
     g.fillStyle = CREAM;
     g.textAlign = "center";
-    g.fillText(st.t >= 0.999 ? "NOW" : yearSaid(yOf(st.t)), cx, cy + r + 15);
+    var said = st.t >= 0.999 ? "NOW" : yearSaid(yOf(st.t)), sw = g.measureText(said).width;
+    g.fillText(said, cx, cy + r + 15);
+    st.boxes.push({ x0: cx - sw / 2 - 4, y0: cy + r + 5, x1: cx + sw / 2 + 4, y1: cy + r + 25 });
   }
 
   /* ---- the crown and the keys ---------------------------------------------- */
@@ -446,9 +463,13 @@
     st.touch = event.pointerType === "touch";
     if (st.drag || !st.G || ui.hidden) { return; }
     var t = event.target;
-    if (t && t.closest && t.closest(".city, button, a, input, .globe-dial-ui")) { return; }
+    var onMark = !!(t && t.closest && t.closest(".city"));
+    if (!onMark && t && t.closest && t.closest("button, a, input, .globe-dial-ui")) { return; }
     var h = hit(event.clientX, event.clientY);
     if (!h) { return; }
+    // The ring's names and handle are its own, whatever mark a finger lands near (no mark stands under its
+    // words: land.js keeps them off); the bare ring gives way to a mark pressed on it.
+    if (onMark && h.kind === "ring") { return; }
     event.stopPropagation();
     event.stopImmediatePropagation();
     st.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, th: h.th, th0: h.th, turn0: st.turn, t0: st.t,
@@ -576,6 +597,21 @@
                ring: st.G, alpha: st.alpha, labels: st.labels.map(function (o) { return { k: o.k, th: o.th }; }) };
     },
     fn: function (f) { if (f) { setFn(f); } return st.fn; },
+    // What the ring writes and its crown, where the globe's names keep off (the same array until it is drawn again).
+    boxes: function () {
+      if (st.alpha < 0.3) { return NONE; }
+      if (st.boxesFor !== st.boxes || st.crownAt !== crown.style.transform) {
+        st.boxesFor = st.boxes;
+        st.crownAt = crown.style.transform;
+        var out = st.boxes.slice();
+        if (!ui.hidden) {
+          var b = crown.getBoundingClientRect();
+          if (b.width) { out.push({ x0: b.left - 4, y0: b.top - 4, x1: b.right + 4, y1: b.bottom + 4 }); }
+        }
+        st.boxesOut = out;
+      }
+      return st.boxesOut;
+    },
     turnTo: function (key) { turnTo(idx(key), null); },
     year: function (y) { if (st.fn !== "time") { setFn("time"); } setT(uOf(y)); return Land.globeYear(); }
   };

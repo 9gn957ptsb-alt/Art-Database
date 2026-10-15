@@ -71,7 +71,8 @@ every list.
 | place | Places | ◎ | #8fa7c7 | 0.6 | cities, and the sites on the globe: painted here, studios as places, a place in a life (the town or studio a period of a life is entered at, as it stood then) |
 | building | Architecture | △ | #b8a48a | 0.65 | buildings, and the buildings that house art |
 | gallery | Galleries & shows | ▢ | #8fc7bd | 0.92 | the contemporary: galleries, fairs, sale rooms, exhibitions now and recent |
-| animal | Animals | ∴ | #a3b87a | 0.7 | the companions that carry paths, and the chimera |
+| animal | Characters | ∴ | #a3b87a | 0.7 | each place's own animal, drawn after its native artist (the globe's Characters layer; a city's dial's hand): the companions that carry paths, and the chimera |
+| philosopher | Philosophers | ∵ | #cfa08f | 0.3 | notable philosophers as characters at their birthplaces (the globe's Philosophers layer; walking the cities they were born in), each in the dress of their time and place, with their card |
 | path | Paths | → | #a8927a | 0.5 | explorations — hunts, walks, relays, corpses, a life played: paths *through* the categories, not one of them |
 
 ## The three from each
@@ -97,6 +98,7 @@ shows, a collection is Museums, a publication is Writings). `why` says how the t
 | guide | gallery | shows | artists | places | a city's guide (guide.js, GUIDE.md): what is on there now and soon, the artists shown (the saved ones first), and the venues as places on the city. Drawn by guide.js in the city's column under the city's own three, not yet a kinds.js item |
 | building | building | places | museums | buildings | a building: its town, the museums near it, the other buildings near it |
 | animal | animal | artist | walks | places | an animal: the artist it is drawn after, its walks, the cities on its artist's map |
+| philosopher | philosopher | places | thinkers | artists | a philosopher: where they were born (its city, where they walk); the philosophers whose lives overlapped theirs; the saved artists born in the same place. Drawn by philosophers.js as the three doors of its card, not yet a kinds.js item |
 
 ## The subcategories
 
@@ -119,6 +121,7 @@ Each tab: its label, the category its rows are, and what it lists. The label is 
 | galleries | Galleries & shows | gallery | the galleries, fairs and sale rooms in the city, and the shows there, newest first |
 | buildings | Architecture | building | the other buildings, nearest first |
 | walks | Walks | path | the animal's published walks |
+| thinkers | Of their time | philosopher | a philosopher: the philosophers on the site whose lives overlapped theirs, the nearest in years first (philosophers.js) |
 | made | Made here | work | a place in a life: the saved works its period places there — made, printed, painted at a documented site — each with how it is known |
 | herethen | Here then | artist | a place in a life: the other saved artists placed there in the same years (lives that cross, the movements' presences), each with the evidence |
 | nowat | Where they are now | museum | a place in a life: the museums holding the works made there then, most first; the rest said |
@@ -128,8 +131,8 @@ Each tab: its label, the category its rows are, and what it lists. The label is 
 Find's groups are named by category, with the glyph, **in the order a name is looked up** (artist, 9 Oct
 2026: "In the search bar, prioritize artists at the top when looking up names, then artwork, then
 movement, then you decide the rest"): Artists, Works, Movements; then Places (a city, where the rest are),
-Museums, Writings (writers and critics are names too), Galleries & shows, Architecture, Animals, and the
-Paths through them last. Not the spectrum's order, which is the categories table's: Find is for names,
+Museums, Writings (writers and critics are names too), Galleries & shows, Architecture, Characters,
+Philosophers, and the Paths through them last. Not the spectrum's order, which is the categories table's: Find is for names,
 the spectrum for time. `find` is a category's place in Find (read by `kinds.js`).
 
 | find | kind |
@@ -143,7 +146,8 @@ the spectrum for time. `find` is a category's place in Find (read by `kinds.js`)
 | 7 | gallery |
 | 8 | building |
 | 9 | animal |
-| 10 | path |
+| 10 | philosopher |
+| 11 | path |
 
 `head` is the start of a group's own heading (as land.js and the modules write it); the group goes under
 its category, and within a category the groups keep this table's order (an artist's life before the
@@ -166,6 +170,7 @@ thread of their saved works).
 | Voices | writing |
 | Writings | writing |
 | Shows and sales | gallery |
+| Philosophers | philosopher |
 | Walks | path |
 | Walk | path |
 | Hunts | path |
