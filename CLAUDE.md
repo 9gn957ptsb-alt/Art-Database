@@ -35,7 +35,7 @@ Keep each piece to its job; where one needs another's job, borrow it rather than
 | **DRIFT** (Artifact, https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k) | How to generate textures. |
 | **Artist Website** (`docs/v2/`) | Locating it in contemporary and historical settings. |
 | **Picture Poetry** (Artifact, https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE) | Creating pathways by presenting a visual navigation system: a storyline. |
-| **Holographic Mr Pearl** (`docs/worlds/rocket/`, Artifact https://claude.ai/artifact/5yPot5suK22JKCt8svNDGe) | Showing people what they can do with their own information: a world made by its relations, to find your way out of. |
+| **Holographic Mr Pearl** (`docs/worlds/rocket/`, Artifact https://claude.ai/artifact/5yPot5suK22JKCt8svNDGe) | **The position of freedom at the crux of your digital setting** (artist, 15 Oct 2026, "MAKE THAT SALIENT"): showing people what they can do with their own information, a world made by its relations, to find your way out of. |
 
 The other pieces (DRIFT Poetry, Knuckle Carbon, Synth, Morphology Web, Color Middling, Matthew Livingston, The
 Figure in 3D, DIRT, Worlds, the Umbrella Portfolio) are added to the table as each is read for what it does.
@@ -53,6 +53,10 @@ before every other rule about it, in the artist's words, each said with "MAKE TH
    artist's figure already says it: every joint of the impossible triangle is a true relation, and the whole closes
    only from one point of view. A person's information is the same: every relation in it determined, whole only
    from where they stand.
+5. "And Holographic Mr Pearl is about the position of freedom at the crux of your digital setting" — **the head is
+   that position**: the one perfect sphere, the one thing not determined by the information, standing where all its
+   relations cross (the crux, the one point the figure closes from). Holographic mode is that freedom used: the head
+   leaves the determined body and goes anywhere; the mission is won only by bringing the body after it.
 
 So:
 
