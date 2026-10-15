@@ -42,8 +42,9 @@
 
   /* Where things are, unless the page says otherwise (window.ROCKET): base, the site's data; art(id),
      a work's picture; play, straight into an escape with no start card; kinds and forms, what one
-     can be. */
+     can be; name, what the game is called in the tab. */
   var CFG = window.ROCKET || {};
+  var NAME = CFG.name || "Rocket";
   var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next";
   function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, FOV = 70, SAVE = "rocket-save-v2";
@@ -1447,7 +1448,7 @@
       store();
       $("start").hidden = true;
       $("veil").hidden = true;
-      document.title = adv.title + " · Rocket";
+      document.title = adv.title + " · " + NAME;
       drawPieces(); drawHotbar(); setMode("break"); where();
       lieDown(adv.intro);
       requestAnimationFrame(frame);

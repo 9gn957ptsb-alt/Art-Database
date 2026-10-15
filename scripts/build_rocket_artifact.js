@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* Rocket as an Artifact (a page hosted on claude.ai), straight into play: no start card, the
    screen black until the place is built, then the eyes open under the tree beside the wreck.
+   The Artifact is called Holographic Mr Pearl, the name the game is becoming (artist, 15 Oct 2026:
+   "Rename the artifact to holographic Mr Pearl").
 
    An Artifact's frame loads nothing from other sites, so everything the game needs is bundled:
    the scripts and the style inlined into the page (index.html); sections.json; a catalogue of
@@ -97,7 +99,7 @@ async function main() {
   take(/<meta name="viewport"[^>]*>\s*/i, "");
   take(/<\/head>\s*<body>\s*/i, "\n");
   take(/\s*<\/body>\s*<\/html>\s*$/i, "\n");
-  take(/<title>Rocket<\/title>/, "<title>Rocket</title>");
+  take(/<title>Rocket<\/title>/, "<title>Holographic Mr Pearl</title>");
   take(/<meta name="description" content="[^"]*">/, '<meta name="description" content="A first-person game in blocks: you come to under a tree beside your crashed capsule, in a world built of the parts of the buildings the site has modelled, and find the four pieces of your rocket.">');
   take(/<link rel="stylesheet" href="rocket\.css">/, () => "<style>\n" + read(path.join(ROCKET, "rocket.css")) + "</style>");
   take(/<div class="veil" id="veil" hidden><\/div>/, '<div class="veil" id="veil"></div>');
@@ -106,7 +108,7 @@ async function main() {
   take(/\s*<a class="apart" href="figure\.html">[^<]*<\/a>/, "");
   const scripts = ["../../v2/models.js", "forms.js", "adventure.js", "place.js", "rocket.js"];
   const files = { "../../v2/models.js": path.join(V2, "models.js") };
-  let inline = "<script>\nwindow.ROCKET = { base: \"data/\", play: true, kinds: [\"form\", \"form\", \"form\", \"building\"], forms: " + JSON.stringify(FORMS) +
+  let inline = "<script>\nwindow.ROCKET = { name: \"Holographic Mr Pearl\", base: \"data/\", play: true, kinds: [\"form\", \"form\", \"form\", \"building\"], forms: " + JSON.stringify(FORMS) +
                ", art: function (id) { return \"art/\" + id + \".jpg\"; } };\n</script>\n";
   scripts.forEach((src) => {
     const code = read(files[src] || path.join(ROCKET, src));
