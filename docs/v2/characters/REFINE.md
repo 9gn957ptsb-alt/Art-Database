@@ -74,7 +74,7 @@ same bytes every run, about a minute):
   animal after the same artist within 300 km, the same animal avoided within
   700 km where another can be had. The source line (`species.source`) is the
   grammar's: "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf &
-  Mixed Forests), Palearctic, understory.hunters: wolves". The seven drawn by
+  Mixed Forests), Palearctic, understory.hunters: wolves". The eight drawn by
   hand are never generated: they are the natives of their artists' home
   towns (`native` in characters.json) and their places' files say `cast`.
 - **Its plants**: plants.json's set for the place, as before (its rows now
@@ -217,6 +217,55 @@ the clock (`gaitFrame` is `% 24`), not by the walk; the sprite is run-length cod
   silhouette at 1×. Never change the flock's `seed` without checking every pose: the
   birds are hash-stable (`hsh`, FNV) so a pose's frames repeat exactly.
 
+## The ocellated lizard, bands and a reflection
+
+The eighth of the cast, drawn on 15 Oct 2026 from the top of the backlog: Dalí's lizard
+("A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground").
+DIRT's roster gives Dalí grammar 13, *a landscape in bands, and its reflection* (the shore at
+Cap de Creus in *The Persistence of Memory*, 1931: `dirt/engine/ground-gl.js`, composition 13 on the
+DIRT branch: a sky band, a dark shore band with a ragged edge, a horizon, the same bands upside
+down below it, broken and dimmed, and a fall of flecks). `scripts/characters/lizard.py`:
+
+- **Drawn fine, as the fox is**: 100 by 40 cells at one CSS pixel a cell (`CELL = 1`, `RLE = True`), because a lizard's
+  net, ocelli and toes do not read at two pixels. The chimera's parts are the same geometry at
+  `CHIMERA_SCALE` 0.78 (a pixel here is 1.56 CSS pixels in a chimera's cells of two).
+- **The bands**: the back olive (a grey-olive worked from his grey-teal toward his gold) netted in black — the
+  edges of a jittered grid (`voronoi_edge`), the lines between rosettes, after Wikipedia's "bold pattern of
+  interconnected rosettes" — the flank his gold with five blue, black-ringed ocelli each a little lower than
+  the one before (a fall of flecks), the belly his sand; each band flat, no dither. The ocelli's blue is the
+  pale of his sky made bluer (none of his saved works is blue).
+- **The horizon and its reflection** (`reflect`): the ground line is row 29 (`GROUND`) and the lowest nine rows
+  of the figure are mirrored below it, the nearest dark (the shore's band), then olive, then the pale of the
+  sky, each row shifted a cell as ripples take it and faded by a regular dither (Bayer), so it reads as a
+  reflection at a glance and never as a second animal. The whole animal's poses carry it; the chimera's parts do
+  not (a part is cut at a fold, and its reflection would not agree).
+- **Poses**: `trot` four frames (diagonal pairs: near hind with far fore; the body lifts on the odd frames, the
+  tail swings), `stand`, `back` (the pause: up on the forelegs, the head raised, the throat pale), `look` (the head
+  turned to you, front on, two golden eyes), `sit` (basking: flat to the ground, the legs folded, an eye lidded),
+  and for the chimera and the corpse `act` (the threat: up on the forelegs, the mouth opening), `play` (the tongue
+  tasting the air) and `ritual` (the gape, the bite). `moves`: speed 0.9, 10 frames a second — with a reach of
+  5 pixels a stride that is 46–52 px a second, so the feet do not slide on a desktop.
+- **Native** at Figueres (`life-figueres`, Dalí's birthplace, a place of his life, not a city of the site): a wave in
+  any place of Dalí's life (the place, then, a studio) brings it, as the fox is brought in Picasso's; and the
+  generated `ocellated lizards` is out of the natives (`species.CAST`), so the Mediterranean places that had it
+  were dealt other animals. Following goes along Dalí's map (34 cities).
+- **Ethogram**: holding a territory (the instinct: Wikipedia, "Males are territorial in spring and fight in the
+  breeding season"; the raised stance and the gape are the common threat display, said so), tasting the air
+  (Schwenk 1994), the bite (the ritual, `characters.js` `meet`: two face each other, gape and lunge in turn).
+  **Corpse**: a male holds a territory, so its leg keeps to its ground — every stop within 400 km of the leg's
+  first (`corpse.js`, `offers`).
+- **Weak**: no photograph of the animal was reachable, so the proportions are the drawn lizard's (its tail a little
+  over half its length where the real one's is two thirds); the legs are a two-bone reach, the near and far legs
+  of a stride only a shade apart; the front-on head is a rounded wedge; the reflection costs the sprite nine rows
+  below its feet, so its pressed frame is a little tall under the lizard. On a place, then's clod
+  (`.pt-clod`) the canvas sits above the stage, so a character standing over it cannot be pressed (the same
+  for the fox in Picasso's life): a finding for the placethen pass, not changed here.
+- **Refining it**: render with `qlook`-style sheets (letters through `INKS`) at 8–14 px a cell and the page's own
+  `preview_character.js lizard out.png --scale 2`; compare the silhouette (head wedge, neck, trunk depth, legs with
+  the knee forward and the elbow back, tail), the net and the ocelli with photographs of a male in spring; change
+  the legs by moving feet in `gait_feet` / `stand_feet` and the leg's bone lengths in `legs`, never the agreed marks
+  (`SEAMS`), and check `deer,lizard,fox` and `fox,deer,lizard` as chimeras.
+
 ## Each run
 
 1. **Start clean.** `git fetch origin claude/artist-website-dev-s92irf` and
@@ -244,7 +293,7 @@ the clock (`gaitFrame` is `% 24`), not by the walk; the sprite is run-length cod
    where the grammar is thin or wrong for a place (Tokyo's plants are
    Europe's beech and hazel; Sydney's have no eucalypts; Chicago is given
    wolves), say so to the DIRT session rather than patch it here.
-4. **Refine one of the seven drawn by hand** (the one refined longest ago),
+4. **Refine one of the eight drawn by hand** (the one refined longest ago),
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,
    `notes` in `characters.json`.

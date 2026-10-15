@@ -28,8 +28,10 @@
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var D = null, loading = null;
   var CAST = { "Cy Twombly": "fox", "Elaine de Kooning": "bison", "Henri Matisse": "squirrel",
-               "Andy Warhol": "eagle", "Anish Kapoor": "slug", "David Hockney": "deer" };
-  var ANIMAL = { fox: "red fox", bison: "bison", squirrel: "red squirrel", eagle: "bald eagle", slug: "banana slug", deer: "red deer" };
+               "Andy Warhol": "eagle", "Anish Kapoor": "slug", "David Hockney": "deer",
+               "Jackson Pollock": "starling", "Salvador Dalí": "lizard" };
+  var ANIMAL = { fox: "red fox", bison: "bison", squirrel: "red squirrel", eagle: "bald eagle", slug: "banana slug", deer: "red deer",
+                 starling: "starling murmuration", lizard: "ocellated lizard" };
   var KIND = { studio: "Studio", house: "House", worked: "Worked here", lived: "Lived here", "lived and worked": "Lived and worked here" };
   var HOW = {
     record: "its own record says it was made in this town",

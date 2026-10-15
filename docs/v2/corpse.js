@@ -27,6 +27,9 @@
                earlier), and each stop leaves a wallow in the ground
      starling  a murmuration follows its nearest neighbours (Ballerini et al.
                2008): the next stops are the cities next door, nearest first
+     lizard    a male holds a territory and fights for it (Wikipedia,
+               Ocellated lizard): its leg keeps to its ground, every stop
+               within 400 km of where the leg began
      deer      the antler cycle, by the real month: its part changes with
                the month; it freezes when the pointer comes near
 
@@ -189,6 +192,7 @@
       case "eagle": return "the eagle mantles: it hides what came before, and flies far";
       case "bison": return "the bison faces into the storm: back in time";
       case "starling": return "the starlings follow their nearest: the next stops are the cities next door";
+      case "lizard": return "the lizard holds its ground: its stops keep within 400 km of where it began";
       case "deer":
         return { rut: "the stag is in rut: it goes where the crowds are",
                  cast: "the stag has cast its antlers: a short leg",
@@ -397,6 +401,14 @@
         // there carries on: the next is the nearest to that.
         keep(function (x) { return x.how === "near" || x.km <= 700; });
         cand.forEach(function (x) { x.score = x.km / 250 + x.score * 0.3; });
+      } else if (a === "lizard" && e.w) {
+        // A male holds a territory and fights for it in the breeding season (Wikipedia, Ocellated lizard): once its
+        // leg has begun, every stop is offered within 400 km of the first, the nearest to that first stop first.
+        var seat = leg.stops.length ? ll(leg.stops[0].k) : null;
+        if (seat) {
+          keep(function (x) { return km(seat, ll(x.to)) <= 400; });
+          cand.forEach(function (x) { x.score = km(seat, ll(x.to)) / 200 + x.score * 0.3; });
+        }
       } else if (a === "deer" && e.w) {
         cand.forEach(function (x) {
           var t = town(x.to);

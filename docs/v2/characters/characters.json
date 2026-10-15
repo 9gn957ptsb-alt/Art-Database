@@ -121,10 +121,10 @@
         {"name": "tail-flicking and the spiral chase", "role": "play", "pose": "play", "what": "It flicks its tail when alarmed or excited, and squirrels chase each other in spirals round a trunk (in the mating chases of late winter).", "source": "Gurnell, J. (1987). The Natural History of Squirrels. London: Christopher Helm.", "said": "the squirrel flicked its tail"}
       ],
       "added": "2026-10-01",
-      "refined": "2026-10-01",
-      "passes": 1,
-      "notes": "Side on, about 30 by 20 cells of the 40 by 26. Guessed still: the bound's frames are drawn from stills of a squirrel crossing a lawn, not traced; the front-on head is a circle with two tufts.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the day's random triple, the squirrel's head on the bison's body with the slug's hindquarters): its head, grown to meet the folds' marks, was the biggest mass of the three; a size under now (CHIMERA_SLOT_K head 0.9)"]
+      "refined": "2026-10-15",
+      "passes": 2,
+      "notes": "Side on, about 30 by 20 cells of the 40 by 26; the tail a scalloped plume in two papers (yellow, with an orange one laid along it). Guessed still: the bound's frames are drawn from stills of a squirrel crossing a lawn, not traced; the front-on head is a rounded square with two tufts and two eyes; the sitting-up squirrel's head is small.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the day's random triple, the squirrel's head on the bison's body with the slug's hindquarters): its head, grown to meet the folds' marks, was the biggest mass of the three; a size under now (CHIMERA_SLOT_K head 0.9)", "2026-10-15 second pass, three rounds against the real red squirrel and Matisse's cut paper. The five biggest mismatches, most important first: the tail a banana (a tube of one width: now a plume, narrow at the root and fullest toward the tip, cut in yellow paper with its edge scalloped like the lobed fronds of Oceania, the Sea, and a narrower orange paper laid along it); the face a bare dot (the whole animal now wears the chimera's face: the tufted ear, the cream chin, the eye; the eye-ring left to the chimera, where it is more than a white dot; the tuft cut shorter; the front-on face's eyes put on cell centres, they had fallen between cells and vanished); the belly a white dash in the middle of the body (one cream paper now lies along the lower edge from the chest to the haunch, cut to the body's own edge, and down the front of the sitting-up squirrel); the chin floating off the head (cut to the skull); the ear a spike. The chimera's squirrel parts take the same tail, tuft and chin; three triples re-rendered, the folds still agree."]
     },
     {
       "id": "eagle",
@@ -199,10 +199,10 @@
         {"name": "courtship", "role": "ritual", "pose": "ritual", "what": "Two banana slugs circle each other, nosing and lunging, for hours before they mate.", "source": "Leonard, J. L., Pearse, J. S. & Harper, A. B. (2002). Comparative reproductive biology of Ariolimax californicus and A. dolichophallus. Invertebrate Reproduction & Development 41, 83–93.", "said": "the slugs circled each other, and lunged"}
       ],
       "added": "2026-10-01",
-      "refined": "2026-10-01",
-      "passes": 1,
-      "notes": "Side on, 31 by 9 cells of the 40 by 26. It does not leave the screen: it crawls a while and goes back into the soil a row at a time. Guessed still: the crawl's wave is a single hump; a real slug's foot waves are many and fine.",
-      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the same triple): its long foot as hindquarters ran twice the length of a bison's body and read as a ramp; scaled to 0.8 as a chimera's hindquarters (CHIMERA_SLOT_K hind). The canonical bison-eagle-slug is its own fine drawing and is unchanged"]
+      "refined": "2026-10-15",
+      "passes": 2,
+      "notes": "Side on, 31 by 9 cells of the 40 by 26: a dome-backed body, the sole flat on the ground and pale along its margin. It does not leave the screen: it crawls a while and goes back into the soil a row at a time. Guessed still: the crawl's wave is a single hump; a real slug's foot waves are many and fine; the upper tentacles are drawn in one length.",
+      "log": ["2026-10-01 first drawing, three rounds of render and compare against the real animal and the artist's hand (the artist, 1 Oct 2026: \"I want there to be other animals besides the fox as well\")", "2026-10-14 chimera pass (the same triple): its long foot as hindquarters ran twice the length of a bison's body and read as a ramp; scaled to 0.8 as a chimera's hindquarters (CHIMERA_SLOT_K hind). The canonical bison-eagle-slug is its own fine drawing and is unchanged", "2026-10-15 second pass, three rounds against the real banana slug and Kapoor's stacked fields. The five biggest mismatches: the body a flat slab of one thickness (a dome now: thin at the tail, fullest over the mantle, narrower to a blunt head, the sole flat on the ground); the tentacles one-cell hairs (two upper stalks, near and far, each with a dark bulb at its tip, and a short lower one); the foot's fringe a dark patch under the middle (a pale margin along the whole sole, as the real foot's is); the mantle a plain pale cap (a glossy saddle over the front third with the breathing pore at its edge, laid in the same field with no dark edge, as stacked fields have none); the spots a scatter of single cells (four round spots laid along the body, travelling with it). The chimera's slug parts take the same body; three triples re-rendered, the folds still agree."]
     },
     {
       "id": "deer",
@@ -262,7 +262,7 @@
       "after": {
         "why": "His pours of 1947-51 (Number 14: Gray, Brown and Silver II, Number 7) are one line poured and flung over the whole sheet, thickening to a pool, thinning to a thread, drops thrown off it, with no edge and no centre. DIRT's roster gives him grammar 7, scattered marks: dense marks in every direction. So the starlings are not one animal drawn in his hand but the field itself: a murmuration is a poured line that turns as one, a ribbon that thickens into a mass and thins to a thread, each bird one flung mark (a V, a bar, a caret as its wing beats; the far ones a speck), no outline, because a flock has no edge. The umber of his saved works for the birds in shade, their warm grey and off-white for the lit ones, and the ochre (his most vivid ink) flecked through it as thrown paint; pressed, it is framed in the ochre.",
         "inks": {
-          "coat": ["#3a322d", "#5c5248", "#8a7f70", "#b3a897"],
+          "coat": ["#4b4239", "#706555", "#948877", "#b9ae9c"],
           "white": ["#dbd5cc", "#efe9df"],
           "black": ["#2a231f", "#3d352f"],
           "eye": "#b66b1f",
@@ -280,10 +280,49 @@
         {"name": "the song", "role": "ritual", "pose": "ritual", "what": "A singing male raises the feathers of his throat, opens his bill and flicks his wings out and in, to a rival or a mate: a long run of whistles, rattles and the borrowed calls of other birds.", "source": "Feare, C. (1984). The Starling. Oxford: Oxford University Press.", "said": "the starlings sang at each other, their wings flicking"}
       ],
       "added": "2026-10-14",
-      "refined": "2026-10-14",
+      "refined": "2026-10-15",
+      "passes": 2,
+      "notes": "A murmuration drawn as a field, 80 by 48 cells at two pixels (160 by 96), every pose of eight frames and living (moves.live): about 260 birds a frame laid on a ribbon, a ring or a disc, each by its place (far a cell, near a V of five), the light from the upper left on the side of the ribbon that faces it. Its drawing is run-length coded (rle). Guessed still: which bird is lit is the ribbon's side, not a measured flock's; the V is the sign for a bird in flight, not a starling's own silhouette (its single bird is the chimera's part, drawn whole).",
+      "log": ["2026-10-14 first drawing: a murmuration as a poured ribbon after his pours (a line that thickens to a mass and thins to a thread, flung marks, no edge), five poses of eight living frames; the single starling for the chimera", "2026-10-15 second pass, three rounds against murmuration footage and Pollock's pours. The flock was a scatter of sparks, not a mass (a third more birds in every pose, the middle layer fuller; the poured skein, a one-cell thread in the dim umber, now runs the whole length of the ribbon in the walk and the wave, not only its thin end); the dark birds were holes on a dark city ground (the coat's steps lifted, the darkest from #3a322d to #4b4239, no far bird in the darkest step, a tenth of the middle birds black or darkest where it was three tenths); the five poses still read apart as silhouettes at 1×: a teardrop, a disc, a crescent, a ring, a stream into a pool."]
+    },
+    {
+      "id": "lizard",
+      "name": "Ocellated lizard",
+      "species": "Timon lepidus",
+      "kind": "frogs",
+      "from": {
+        "biome": "Mediterranean Forests, Woodlands & Scrub",
+        "realm": "Palearctic",
+        "grammar": "dirt/earth/out/grammar.json, biome 12, life.floor.frogs: ocellated lizards"
+      },
+      "why": "A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground. Europe's largest lizard, in the dry scrub, the stone walls and the old olive groves of the Empordà, where Dalí was born (Figueres) and where the Pyrenees fall to the sea at Cap de Creus.",
+      "artist": "Salvador Dalí",
+      "native": {"key": null, "where": "Figueres", "ll": [42.2667, 2.95], "why": "Salvador Dalí was born in Figueres, in the Empordà (Wikidata P19, characters/homes.json); the ocellated lizard lives throughout the Iberian peninsula.", "source": "dirt/earth/out/grammar.json, biome 12 (Mediterranean Forests, Woodlands & Scrub), Palearctic, floor.frogs: ocellated lizards; range: Wikipedia, Ocellated lizard (Geographic range: found throughout the Iberian peninsula)."},
+      "after": {
+        "why": "DIRT's roster gives Dalí grammar 13, the composition after the shore at Cap de Creus in The Persistence of Memory (1931): a landscape in bands, a horizon, its reflection, a fall of flecks. So the lizard is laid in flat bands, not shaded (a back netted in black, a flank of ochre where the blue eyes fall in a row like flecks, a pale belly), and it stands on a long flat ground: a horizon under its feet and, below it, the same bands upside down, broken by the water, fading in a few rows. His dark and near-black for the net, a grey-olive worked from his grey-teal toward the gold of his saved works for the back, the gold itself for the flank, his sand for the belly, the pale of his sky for the ocelli and the reflection.",
+        "inks": {
+          "coat": ["#46463a", "#8a8b70", "#c5af77", "#e0d8cd"],
+          "white": ["#a9c1cf", "#d6ccb0"],
+          "black": ["#141413", "#393a38"],
+          "eye": "#e6c970",
+          "pen": ["#8f8c80", "#2b2a25"],
+          "box": "#c5af77"
+        },
+        "works": ["The Persistence of Memory, 1931"]
+      },
+      "poses": "trot (four frames, diagonal pairs, the tail swinging), stand, back (its pause: up on its forelegs, the head raised), look (its head turned to you), sit (basking, flat to the ground, an eye lidded) — each with its reflection below the ground line; 100 by 40 cells at one CSS pixel a cell",
+      "moves": {"speed": 0.9, "fps": 10, "pause": "back", "leave": "edge", "gait": "scurry"},
+      "chimera": {"head": "Gaping", "body": "Rosette", "hind": "That Holds Its Ground", "gaze": "lidded, sunning", "carriage": "low and flat", "pace": "a scurry"},
+      "ethogram": [
+        {"name": "holding a territory", "role": "instinct", "pose": "act", "what": "In spring the males hold territories and fight for them in the breeding season. A male facing a rival rears up on straight forelegs and gapes before it comes to a bite: the threat display large lizards give, a widely told observation, drawn here, not measured.", "source": "Wikipedia, Ocellated lizard (Reproduction: \"Males are territorial in spring and fight in the breeding season\").", "said": "the lizard held its ground here"},
+        {"name": "tasting the air", "role": "play", "pose": "play", "what": "It flicks its tongue as it goes, bringing particles of air and ground to the organ in the roof of its mouth that smells them.", "source": "Schwenk, K. (1994). Why snakes have forked tongues. Science 263, 1573–1577.", "said": "the lizard tasted the air"},
+        {"name": "the bite", "role": "ritual", "pose": "ritual", "what": "Rival males meet head to head, gape, and bite at each other's heads and necks, hard enough to wound; the fights are the males' business of the breeding season. How large lizards fight is a widely told observation, drawn here, not measured.", "source": "Wikipedia, Ocellated lizard (Reproduction); Description (\"a robust lizard … the male has a characteristic broad head … thick, strong legs\").", "said": "the lizards gaped, and bit"}
+      ],
+      "added": "2026-10-15",
+      "refined": "2026-10-15",
       "passes": 1,
-      "notes": "A murmuration drawn as a field, 80 by 48 cells at two pixels (160 by 96), every pose of eight frames and living (moves.live): about 200 birds a frame laid on a ribbon, a ring or a disc, each by its place (far a cell, near a V of five), the light from the upper left on the side of the ribbon that faces it. Its drawing is run-length coded (rle). Guessed still: which bird is lit is the ribbon's side, not a measured flock's; the V is the sign for a bird in flight, not a starling's own silhouette (its single bird is the chimera's part, drawn whole).",
-      "log": ["2026-10-14 first drawing: a murmuration as a poured ribbon after his pours (a line that thickens to a mass and thins to a thread, flung marks, no edge), five poses of eight living frames; the single starling for the chimera"]
+      "notes": "Side on, 100 by 40 cells at one CSS pixel a cell: the ground line at row 29 and, below it, the reflection (the lowest rows mirrored, the nearest dark, then the pale of the sky, broken by the water and faded by a regular dither over nine rows) in every pose. The bands are flat: the back's net is the edges of a jittered grid (black lines round rosettes of olive), the flank ochre with five blue, black-ringed ocelli each a little lower than the one before, the belly sand. Guessed still: no photograph was reachable, so the proportions are the drawn lizard's (its tail is a little over half its length, where the real one's is two thirds), the legs' joints are a two-bone reach (the near and far legs of a stride are a shade apart), the ocelli's blue is the pale of his sky made bluer (his saved works have no blue), and the front-on head is a rounded wedge with two golden eyes. Its poses beyond the five the page reads (act, play, ritual) are the chimera's and the corpse's.",
+      "log": ["2026-10-15 first drawing, three rounds of render and compare against the real animal and the artist's hand (the backlog's top: Dalí, the ocellated lizard). Round one: 40 by 26 cells at two pixels was too coarse for a lizard (a net, ocelli, toes), so it is drawn at one pixel a cell, as the red fox is; the shape found (a wedge head with a swollen cheek, a thick neck, a trunk eight pixels deep, legs with the knee forward and the elbow back, long clawed toes, a tail that tapers to a whip), the bands laid (a back netted in black, an ochre flank, a sand belly) and the reflection under the ground line. Round two: the trunk too deep and the legs pillars (a slimmer trunk, longer legs, the body raised); the back too grey (a grey-olive worked from his grey-teal toward his gold); the ocelli too big and black-ringed (smaller, lower in the flank); the cheek a gold mask (an olive crown, an ochre cheek, a pale chin). Round three: the near legs' lit edges ochre so the limbs read against the body; the front-on head larger and higher; the basking lizard's tail laid on the ground. Its chimera parts (the head a fifth larger, the hindquarters with a shorter tail), its corpse rule (a territory: every stop within 400 km of the leg's first), its ritual (the gape and the bite), its published walks, and a door to it from a life's place and a studio (\"Follow the ocellated lizard\")."]
     }
   ],
   "natives_refined": [
@@ -295,14 +334,6 @@
     {"key": "amsterdam-nl", "refined": "2026-10-14", "passes": 1, "log": ["2026-10-14 greylag goose after Rembrandt, three rounds. The five biggest mismatches: in flight the wings were blades that left the picture (a broad wing in four states, up, coming down swept back, down, lifting, its flight feathers a darker plate with fingers at the tip: the bird plan's, so every flying bird gains); the body held flat like a duck's (breast high, tail low: every goose, swan and pelican); the bill and legs drawn in the eye's brown (the species' accent is its orange, in Rembrandt's nearest ink); the neck short and the head small (longer, thicker, larger); the bill missing head on (a wedge as broad as the bill is). Canada goose, pelican, golden eagle, turkey vulture, snow bunting and scarlet macaw checked beside it."]}
   ],
   "backlog": [
-    {
-      "artist": "Salvador Dalí",
-      "species": "ocellated lizard",
-      "kind": "frogs",
-      "biome": "Mediterranean Forests, Woodlands & Scrub",
-      "realm": "Palearctic",
-      "why": "A horizon: the Catalan lizard on Dalí's own scrub coast, still on a long flat ground."
-    },
     {
       "artist": "Helen Frankenthaler",
       "species": "Anna's hummingbird",

@@ -40,6 +40,11 @@ idea of ritual and using the animals to generate games".
     bird within some distance (Ballerini et al. 2008), so a turn runs through
     the flock as a wave: the next stops are offered among the cities nearest
     the last (the "next door" ones, or within 700 km), nearest first.
+  - ocellated lizard — a male holds a territory and fights for it (Wikipedia,
+    Ocellated lizard: "Males are territorial in spring and fight in the
+    breeding season"): once its leg has begun, every stop is offered within
+    400 km of the leg's first stop, the nearest to that first stop first; its
+    ritual is the gape and the bite (`Characters.meet`).
   - red deer — the antler cycle by the real month: in rut (Sep–Nov) it goes
     where the crowds are; hard antlers (Dec–Mar) near ground; cast (Apr) a
     short leg; velvet (May–Aug) each stop a little further. Its picture in the

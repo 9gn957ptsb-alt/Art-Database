@@ -15,7 +15,7 @@ TAU = 2 * math.pi
 R2A, R2B = 0.7548776662466927, 0.5698402909980532     # the R2 sequence: even, never gridded
 
 # Pollock's inks (DIRT's roster: dark #473e38, mid #998e7f, light #dbd5cc, the vivid #b66b1f)
-INKS = {"coat": ["#3a322d", "#5c5248", "#8a7f70", "#b3a897"], "white": ["#dbd5cc", "#efe9df"],
+INKS = {"coat": ["#4b4239", "#706555", "#948877", "#b9ae9c"], "white": ["#dbd5cc", "#efe9df"],
         "black": ["#2a231f", "#3d352f"], "eye": "#b66b1f", "pen": ["#6f655a", "#b9b0a2"], "box": "#b66b1f"}
 
 
@@ -83,7 +83,7 @@ class Bird:
         self.off = int(hsh(seed, layer, i, "o") * 4)
 
 
-def flock(width, counts=(230, 56, 14), seed=1, closed=False):
+def flock(width, counts=(300, 74, 16), seed=1, closed=False):
     out = []
     for layer, n in zip(("far", "mid", "near"), counts):
         out += [Bird(layer, i, seed, width, closed) for i in range(n)]
@@ -114,12 +114,12 @@ def ink(lum, tone, layer):
         if tone > 0.97:
             return "y"
         k = int(lum * 6.0 + (tone - 0.5) * 1.1)
-        return steps[max(0, min(5, k))]
+        return steps[max(1, min(5, k))]               # never the darkest: on a dark ground it is a hole
     if tone > 0.90:
         return "y"                                    # the vivid, flung
-    if tone < 0.10:
+    if tone < 0.05:
         return "k"
-    if tone < 0.30:
+    if tone < 0.14:
         return "d"
     k = int(lum * 6.0 + (tone - 0.5) * 1.1)
     return steps[max(1, min(5, k))]
@@ -258,12 +258,13 @@ def trot(t):
     place = ribbon_place(TROT_WIDTH, trot_spine, (2.0, 42.0, 0.8, 0.5, 3.6, 0.8, -0.6), T)
     cells = paint_birds(TROT, place, t, T)
     thread(cells, trot_spine, 0.0, 0.2, t, T)
+    thread(cells, trot_spine, 0.2, 0.96, t, T, gleam=False)
     throw(cells, TROT_DROPS, t, T, ribbon_edge(TROT_WIDTH, trot_spine, 1), 0.03)
     return rows_of(cells)
 
 
 # Wheeling in place: a pinwheel of three arms, turning.
-DISC = flock(Width(lambda s: 1.0), counts=(190, 46, 12), seed=2, closed=True)
+DISC = flock(Width(lambda s: 1.0), counts=(250, 60, 14), seed=2, closed=True)
 
 
 def disc_place(cx, cy, rx, ry, tilt, arms=3, turn=1.0, hole=0.0):
@@ -311,7 +312,7 @@ def stand(t):
 
 
 # Looking at you: the flock opens a ring, a hollow with one bird of the vivid in it (a vacuole).
-RING = flock(Width(lambda s: 1.0), counts=(170, 44, 12), seed=3, closed=True)
+RING = flock(Width(lambda s: 1.0), counts=(220, 56, 14), seed=3, closed=True)
 
 
 def ring_place(cx, cy, rx, ry, half):
@@ -340,7 +341,7 @@ def look(t):
 
 # Wheeling back: the flock's head curls up and over, a wave about to break.
 HOOK_WIDTH = Width(lambda s: 0.3 + 9.0 * math.sin(math.pi * min(1.0, s ** 0.8)) * (0.5 + 0.5 * smooth(0.0, 0.5, s)))
-HOOK = flock(HOOK_WIDTH, counts=(160, 42, 10), seed=4)
+HOOK = flock(HOOK_WIDTH, counts=(210, 54, 12), seed=4)
 
 
 def hook_spine(s, t):
@@ -365,6 +366,7 @@ def back(t):
     place = ribbon_place(HOOK_WIDTH, hook_spine, (10.0, 44.0, 0.9, 0.55, 2.2, 0.7, -0.7), T)
     cells = paint_birds(HOOK, place, t, T)
     thread(cells, hook_spine, 0.0, 0.2, t, T)
+    thread(cells, hook_spine, 0.2, 0.96, t, T, gleam=False)
     throw(cells, HOOK_DROPS, t, T, ribbon_edge(HOOK_WIDTH, hook_spine, -1), 0.05)
     return rows_of(cells)
 
@@ -423,7 +425,7 @@ ROOST = [(7, 46.2, 0), (19, 46.4, 0), (31, 46.0, 0), (43, 46.4, 0), (55, 46.0, 0
 ROOST = [(x + (hsh(i, "rx") - 0.5) * 2.4, y, far, hsh(i, "ph"), hsh(i, "tone")) for i, (x, y, far) in enumerate(ROOST)]
 # the pour: a line that thickens into the pool
 STREAM_WIDTH = Width(lambda s: 0.5 + 5.6 * smooth(0.0, 1.0, s) ** 1.2)
-STREAM = flock(STREAM_WIDTH, counts=(140, 34, 8), seed=5)
+STREAM = flock(STREAM_WIDTH, counts=(180, 44, 10), seed=5)
 
 
 def stream_spine(s, t):

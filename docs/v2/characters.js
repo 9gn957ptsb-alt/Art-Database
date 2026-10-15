@@ -13,9 +13,9 @@
    back. Each is an animal of DIRT's grammar drawn after one of DIRT's
    artists (characters/characters.json says why): its dots are the soil
    where it stands worked into the artist's inks, it moves in its own gait
-   (the fox trots, the bison walks, the squirrel bounds, the eagle flies up
-   and away, the starlings stream up and away in a murmuration, the slug
-   crawls and goes back into the soil), and some leave
+   (the fox trots, the bison walks, the squirrel bounds, the lizard scurries,
+   the eagle flies up and away, the starlings stream up and away in a
+   murmuration, the slug crawls and goes back into the soil), and some leave
    something of their artist behind (Twombly's writing after the fox, the
    dark trace of Kapoor's wax after the slug). Pressed, one stops and looks
    at you, is framed in its artist's ink, and a quiet line says what it is.
@@ -2539,7 +2539,8 @@
      courtship or contest, in the ethogram). Two foxes' heads gekker, side
      on; eagles lock talons and fall turning; bison meet head to head;
      stags roar and walk side by side; slugs circle and lunge; squirrels
-     chase round and round; starlings sing at each other, wings flicking.
+     chase round and round; starlings sing at each other, wings flicking;
+     ocellated lizards gape and bite head to head.
      Drawn where the game's ritual box is, else at
      the middle of the screen. Resolves when it is over, with the line. */
   function meet(a, b, opts) {
@@ -2577,6 +2578,13 @@
           o.x = cx + (n ? 1 : -1) * (58 - 12 * Math.min(1, u * 2));
           var sung = Math.floor(u * 14 + (n ? 1 : 0)) % 2;
           o.ritualNames = [sung ? "ritual0" : "ritual1", "stand" + (sung ? 2 : 0), "stand0"];
+        },
+        // Two male ocellated lizards meet head to head, up on their forelegs, and gape, then bite, in turn: one lunges
+        // as the other draws back.
+        lizard: function (o, n, u) {
+          var bite = Math.floor(u * 12 + (n ? 1 : 0)) % 2;
+          o.x = cx + (n ? 1 : -1) * (74 - 20 * Math.min(1, u * 2.5) + (bite ? 3 : 0));
+          o.ritualNames = [bite ? "ritual1" : "ritual0", "stand0", "stand0"];
         }
       }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
       var rit = behaviour(A.ch.cs[0], "ritual");

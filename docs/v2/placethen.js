@@ -72,8 +72,10 @@
   var OTHERS = 34;                               // works by others, at most, after the artist's own
   var NEAR_KM = 6;                               // a documented site this near the place is in its town
   var CAST = { "Cy Twombly": "fox", "Elaine de Kooning": "bison", "Henri Matisse": "squirrel",
-               "Andy Warhol": "eagle", "Anish Kapoor": "slug", "David Hockney": "deer" };
-  var ANIMAL = { fox: "red fox", bison: "bison", squirrel: "red squirrel", eagle: "bald eagle", slug: "banana slug", deer: "red deer" };
+               "Andy Warhol": "eagle", "Anish Kapoor": "slug", "David Hockney": "deer",
+               "Jackson Pollock": "starling", "Salvador Dalí": "lizard" };
+  var ANIMAL = { fox: "red fox", bison: "bison", squirrel: "red squirrel", eagle: "bald eagle", slug: "banana slug", deer: "red deer",
+                 starling: "starling murmuration", lizard: "ocellated lizard" };
   var GLYPH = { museum: ["◆", "#d6b05c"], movement: ["◇", "#d9a55b"], work: ["■", "#eadfcd"], artist: ["○", "#c98fb5"],
                 writing: ["¶", "#9d95e6"], place: ["◎", "#8fa7c7"], gallery: ["▢", "#8fc7bd"], animal: ["∴", "#a3b87a"] };
   var HOW = { record: "by its own record", site: "painted at a documented site", dated: "dated within these years" };

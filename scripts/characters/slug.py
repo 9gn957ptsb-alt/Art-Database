@@ -33,47 +33,80 @@ GROUND = 24.6
 CELL = 2
 
 
-def bands(top, bottom):
-    """Stacked fields: the band of a cell by its height in the body."""
+SPOTS = [(0.16, 0.52), (0.35, 0.68), (0.50, 0.40), (0.84, 0.62)]            # along the body, down it
+
+
+def profile(tail_x, head_x, hump, rise, lift):
+    """The body's thickness and centre line along its length: thin at the tail, the back arching to its fullest
+    over the mantle (a dome with the sole flat on the ground), narrower again to the blunt head."""
+    L = head_x - tail_x
+
+    def r_of(u):
+        if u < 0.62:
+            return 0.5 + (2.9 + rise - 0.5) * math.sin(math.pi / 2 * (u / 0.62)) ** 1.15
+        return 2.9 + rise - (1.0 + rise * 0.3) * ((u - 0.62) / 0.38) ** 1.7
+
+    def yc_of(u):
+        y = GROUND - 1.1 - r_of(u)
+        if hump is not None:
+            y -= 0.9 * math.exp(-((u - hump) / 0.12) ** 2)
+        return y - lift * max(0.0, (u - 0.7) / 0.3) ** 2
+    return L, r_of, yc_of
+
+
+def bands(tail_x, head_x, r_of, yc_of):
+    """Stacked fields: the band of a cell by its height in the body, a pale highlight over the back, the banana's
+    own yellow, a deeper one below, the foot's margin pale; and the dark spots, laid by where they are along it."""
+    L = head_x - tail_x
+
     def paint(x, y, light, i, j):
-        if y > GROUND - 1.0:
-            return "d"
-        t = (y - top) / max(1.0, bottom - top)
-        if (i * 7 + j * 3) % 23 == 0 and 0.25 < t < 0.7:
-            return "k"                         # a spot
-        return "g" if t < 0.28 else "r" if t < 0.66 else "R"
+        u = max(0.0, min(1.0, (x - tail_x) / L))
+        r, yc = r_of(u), yc_of(u)
+        t = (y - (yc - r)) / max(1.0, 2 * r)
+        if y > GROUND - 1.15:
+            return "g"                                          # the foot's margin, pale along the ground
+        for su, sv in SPOTS:
+            sx = tail_x + su * L
+            su2 = max(0.0, min(1.0, su))
+            sy = yc_of(su2) - r_of(su2) + sv * 2 * r_of(su2)
+            if math.hypot(x - sx, (y - sy) * 1.25) < 0.8:
+                return "k"                                      # a spot
+        return "g" if t < 0.14 else "r" if t < 0.66 else "R"
     return paint
 
 
 def slug_parts(tail_x, head_x, hump=None, rise=0.0, stalks=1.0, lift=0.0, front=False):
     """The body from tail to head along the ground; `hump` lifts it where the
     wave is; `lift` raises the head; `stalks` how far the tentacles are out."""
-    base = GROUND - 2.1
-    pts = []
-    n = 8
-    for k in range(n + 1):
-        u = k / n
-        x = tail_x + (head_x - tail_x) * u
-        y = base
-        if hump is not None:
-            y -= 0.9 * math.exp(-((u - hump) / 0.12) ** 2)
-        y -= lift * max(0.0, (u - 0.7) / 0.3) ** 2
-        pts.append((x, y))
-    body = union(path(pts[:-1], 0.6, 2.7 + rise), ellipse(pts[-2][0] + 0.4, pts[-2][1] + 0.3, 2.6, 2.4 + rise * 0.6))
-    mantle = ellipse(head_x - (head_x - tail_x) * 0.22, base - 0.9 - rise * 0.5 - lift * 0.3,
-                     (head_x - tail_x) * 0.21, 2.7 + rise * 0.6)
-    parts = [Part(union(body, mantle), bands(base - 3.4 - rise - lift, GROUND), 2)]
-    hx, hy = pts[-2][0] + 2.0, pts[-2][1]
+    L, r_of, yc_of = profile(tail_x, head_x, hump, rise, lift)
+    n = 12
+    pts = [(tail_x + L * k / n, yc_of(k / n)) for k in range(n + 1)]
+    segs = [capsule(pts[k], pts[k + 1], r_of(k / n), r_of((k + 1) / n)) for k in range(n - 1)]
+    hx, hy = pts[-1][0] - 1.2, pts[-1][1] + 0.5
+    body = union(*segs, ellipse(hx, hy, 2.5, r_of(1.0) + 0.5))
+    # the mantle: the saddle over the front third, glossy, with the breathing pore on its edge
+    mu = 0.62
+    mx, mr = tail_x + L * mu, r_of(mu)
+    my = yc_of(mu) - mr * 0.45
+    mantle = ellipse(mx, my, L * 0.2, mr * 0.62)
+    parts = [Part(body, bands(tail_x, head_x, r_of, yc_of), 2),
+             Part(mantle, lambda x, y, light, i, j: "g" if light > 0.55 else "r", 2),
+             Part(ellipse(mx + L * 0.13, my + mr * 0.5, 0.55, 0.5), lambda *a: "k", 2)]
     if stalks > 0:
+        ey = hy - 1.0
         if front:
-            st = union(capsule((hx - 0.4, hy - 1.4), (hx - 1.6, hy - 1.4 - 3.6 * stalks), 0.45, 0.4),
-                       capsule((hx + 0.4, hy - 1.4), (hx + 1.6, hy - 1.4 - 3.6 * stalks), 0.45, 0.4))
-            tips = union(ellipse(hx - 1.6, hy - 1.6 - 3.6 * stalks, 0.55, 0.55), ellipse(hx + 1.6, hy - 1.6 - 3.6 * stalks, 0.55, 0.55))
+            st = union(capsule((hx - 0.6, ey), (hx - 2.0, ey - 3.8 * stalks), 0.55, 0.5),
+                       capsule((hx + 0.6, ey), (hx + 2.0, ey - 3.8 * stalks), 0.55, 0.5))
+            tips = union(ellipse(hx - 2.0, ey - 3.9 * stalks, 0.85, 0.85), ellipse(hx + 2.0, ey - 3.9 * stalks, 0.85, 0.85))
+            low = union(capsule((hx - 1.2, hy + 1.0), (hx - 2.2, hy + 1.6), 0.45, 0.4), capsule((hx + 1.2, hy + 1.0), (hx + 2.2, hy + 1.6), 0.45, 0.4))
         else:
-            st = union(capsule((hx + 0.6, hy - 1.2), (hx + 2.4 * stalks, hy - 1.2 - 3.4 * stalks), 0.45, 0.4),
-                       capsule((hx + 1.2, hy + 0.6), (hx + 1.2 + 1.6 * stalks, hy + 1.0), 0.4, 0.35))
-            tips = ellipse(hx + 2.4 * stalks, hy - 1.4 - 3.4 * stalks, 0.55, 0.55)
+            far = capsule((hx + 0.2, ey + 0.2), (hx + 2.2 * stalks, ey - 3.8 * stalks), 0.5, 0.45)
+            near = capsule((hx + 1.2, ey), (hx + 3.6 * stalks, ey - 3.6 * stalks), 0.6, 0.5)
+            st = union(far, near)
+            tips = union(ellipse(hx + 2.2 * stalks, ey - 3.9 * stalks, 0.8, 0.8), ellipse(hx + 3.6 * stalks, ey - 3.7 * stalks, 0.85, 0.85))
+            low = union(capsule((hx + 1.8, hy + 0.9), (hx + 1.8 + 2.0 * stalks, hy + 1.5), 0.45, 0.4))
         parts.append(Part(st, lambda *a: "r", 3))
+        parts.append(Part(low, lambda *a: "R", 3))
         parts.append(Part(tips, lambda *a: "k", 4))
     return parts
 
