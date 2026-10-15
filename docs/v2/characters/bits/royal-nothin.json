@@ -1,0 +1,79 @@
+{
+ "note": "Written by scripts/characters/royal_nothin.py: a pixel loop after Ed Bassmaster's short \"Royal Nothin\" (20 April 2026), drawn again in the site's pixel art; nothing of the short is in it.",
+ "w": 108,
+ "h": 192,
+ "fps": 12,
+ "frames": 120,
+ "cols": 10,
+ "colours": 172,
+ "small": {
+  "file": "royal-nothin-small.png",
+  "sprites": {
+   "figure-stand": [
+    0,
+    14,
+    28,
+    44
+   ],
+   "figure-look": [
+    29,
+    14,
+    28,
+    44
+   ],
+   "figure-walk0": [
+    58,
+    14,
+    28,
+    44
+   ],
+   "figure-walk1": [
+    87,
+    14,
+    28,
+    44
+   ],
+   "figure-walk2": [
+    116,
+    14,
+    28,
+    44
+   ],
+   "figure-walk3": [
+    145,
+    14,
+    28,
+    44
+   ],
+   "guard-low": [
+    174,
+    0,
+    44,
+    58
+   ],
+   "guard-up": [
+    219,
+    0,
+    44,
+    58
+   ],
+   "guard-toward": [
+    264,
+    0,
+    44,
+    58
+   ]
+  },
+  "foot": {
+   "figure": [
+    14,
+    42.5
+   ],
+   "guard": [
+    22,
+    57
+   ]
+  }
+ },
+ "walkFrom": 89
+}
