@@ -1,6 +1,6 @@
 {
  "note": "Open sources of how things on the Earth look, for the Artist Website, and the hosts each needs (NETWORK.md; the artist, 10 Oct 2026). priority: 1 ask now, 2 ask once the first are in use, 3 noted. key_needed: the artist signs up first and the key is kept as an environment secret. state: candidate, allowed (every host it needs answers), used (used_by), dropped (why). Host role browser (a page for people), alt (an alternative not needed) and unconfirmed are never asked for. Each host's state is the probe's (scripts/probe_sources.py): open, refused, stalls, silent.",
- "probed": "2026-10-15 14:03 UTC",
+ "probed": "2026-10-15 14:25 UTC",
  "sources": [
   {
    "id": "globalbuildingatlas-lod1-tum-2025-geoparquet-on-source-coo",
@@ -21,7 +21,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/globalbuildingatlas-lod1/e000_n50_e005_n45.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -46,7 +46,7 @@
      "probe": "https://storage.googleapis.com/open-buildings-temporal-data/v1/geotiffs/00824_2016_06_30/tile_3FYdP6L109o.tif",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 1.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -70,7 +70,7 @@
      "role": "tiles",
      "probe": "https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/15/29105/12904.png",
      "state": "open",
-     "said": "image/png in 0.6 s",
+     "said": "image/png in 2.0 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -80,7 +80,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/smartmaps/japan-seamlessphoto/pmtiles/z18.pmtiles",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     }
    ],
@@ -104,9 +104,10 @@
      "host": "data.geopf.fr",
      "role": "tiles",
      "probe": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX=17&TILEROW=45090&TILECOL=66387&FORMAT=image/jpeg",
-     "state": "stalls",
-     "said": "[Errno 104] Connection reset by peer",
-     "seen": "2026-10-15"
+     "state": "open",
+     "said": "image/jpeg in 2.4 s",
+     "seen": "2026-10-15",
+     "code": 200
     },
     {
      "host": "remonterletemps.ign.fr",
@@ -122,7 +123,7 @@
      "probe": "https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_ffo_bat?limit=2",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.1 s",
+     "said": "application/json in 2.5 s",
      "seen": "2026-10-15"
     }
    ],
@@ -147,7 +148,7 @@
      "role": "tiles",
      "probe": "https://www.ign.es/wmts/pnoa-ma?service=WMTS&request=GetTile&version=1.0.0&Format=image/jpeg&layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&TileMatrix=15&TileRow=12355&TileCol=16047",
      "state": "open",
-     "said": "image/jpeg in 0.4 s",
+     "said": "image/jpeg in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -156,7 +157,7 @@
      "role": "tiles",
      "probe": "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/15/16047/20412.jpeg",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
+     "said": "image/jpeg in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     }
@@ -182,7 +183,7 @@
      "role": "tiles",
      "probe": "https://maps.nyc.gov/xyz/1.0.0/photo/1924/15/9650/12314.png8",
      "state": "open",
-     "said": "image/png in 0.6 s",
+     "said": "image/png in 0.5 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -191,7 +192,7 @@
      "role": "files",
      "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
      "state": "open",
-     "said": "application/zip in 0.6 s",
+     "said": "application/zip in 1.0 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -201,7 +202,7 @@
      "probe": "https://s3.amazonaws.com/sa-static-customer-assets-us-east-1-fedramp-prod/data.cityofnewyork.us/Map_Downloads/2016_orthos/boro_manhattan_sp16.zip",
      "state": "open",
      "code": 200,
-     "said": "application/zip in 0.7 s",
+     "said": "application/zip in 0.4 s",
      "seen": "2026-10-15"
     },
     {
@@ -210,7 +211,7 @@
      "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
+     "said": "application/json in 0.9 s",
      "seen": "2026-10-15"
     }
    ],
@@ -236,7 +237,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/2024/Q2/31UFU_0_0/B04.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -253,7 +254,7 @@
      "probe": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/18/T/WL/2024/7/S2A_18TWL_20240705_0_L2A/TCI.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.7 s",
+     "said": "image/tiff in 1.7 s",
      "seen": "2026-10-15"
     },
     {
@@ -285,7 +286,7 @@
      "role": "tiles",
      "probe": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/1946/3857/15/17161/11474.png",
      "state": "open",
-     "said": "image/png in 0.3 s",
+     "said": "image/png in 2.8 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -294,7 +295,7 @@
      "role": "files",
      "probe": "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissbuildings3d_3_0/items?limit=1",
      "state": "open",
-     "said": "application/json in 1.1 s",
+     "said": "application/json in 3.0 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -303,7 +304,7 @@
      "role": "tiles",
      "probe": "https://wms.geo.admin.ch/?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
-     "said": "text/xml in 0.5 s",
+     "said": "text/xml in 2.6 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -313,7 +314,7 @@
      "probe": "https://api3.geo.admin.ch/rest/services/api/MapServer/layersConfig?lang=en",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.6 s",
+     "said": "application/json in 2.2 s",
      "seen": "2026-10-15"
     }
    ],
@@ -363,7 +364,7 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/2025_orthoHR/EPSG:3857/17/67314/43081.jpeg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 1.0 s",
+     "said": "image/jpeg in 2.0 s",
      "seen": "2026-10-15"
     }
    ],
@@ -427,7 +428,7 @@
      "role": "tiles",
      "probe": "https://gdi.berlin.de/services/wms/truedop_2024?REQUEST=GetCapabilities&SERVICE=wms",
      "state": "open",
-     "said": "text/xml in 0.9 s",
+     "said": "text/xml in 3.5 s",
      "seen": "2026-10-15",
      "code": 200
     }
@@ -453,7 +454,7 @@
      "probe": "https://gismaps.kingcounty.gov/arcgis/rest/services/BaseMaps/KingCo_Aerial_1936/MapServer/export?bbox=-122.345,47.603,-122.330,47.612&bboxSR=4326&size=256,256&format=jpg&f=image",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 2.2 s",
+     "said": "image/jpeg in 3.9 s",
      "seen": "2026-10-15"
     }
    ],
@@ -478,7 +479,7 @@
      "probe": "https://loc-sanborn-maps.s3.us-west-2.amazonaws.com/README.md",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.9 s",
+     "said": "binary/octet-stream in 2.2 s",
      "seen": "2026-10-15"
     },
     {
@@ -486,18 +487,18 @@
      "role": "api",
      "probe": "https://www.loc.gov/collections/sanborn-maps/?fo=json&c=1",
      "state": "open",
-     "said": "application/json in 0.2 s",
+     "said": "application/json in 1.1 s",
      "seen": "2026-10-15",
      "code": 200
     },
     {
      "host": "tile.loc.gov",
      "role": "files",
-     "probe": "https://tile.loc.gov/",
+     "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "Forbidden",
+     "said": "image/jpeg in 1.1 s",
      "seen": "2026-10-15",
-     "code": 403
+     "code": 200
     },
     {
      "host": "maps2.dcgis.dc.gov",
@@ -505,7 +506,7 @@
      "probe": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_HISTORICAL/Sanborn_WebMercator/MapServer/export?bbox=-77.040,38.895,-77.030,38.902&bboxSR=4326&size=256,256&format=png&f=image",
      "state": "open",
      "code": 200,
-     "said": "image/png in 0.3 s",
+     "said": "image/png in 1.7 s",
      "seen": "2026-10-15"
     },
     {
@@ -514,7 +515,7 @@
      "probe": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/HistoricalTopo/GeoTIFF/NY/NY_Central%20Park_122894_1947_24000_geo.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.7 s",
+     "said": "image/tiff in 1.7 s",
      "seen": "2026-10-15"
     }
    ],
@@ -604,7 +605,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/meta-chm-v2/tiles.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -613,7 +614,7 @@
      "probe": "https://dataforgood-fb-data.s3.amazonaws.com/forests/v1/alsgedi_global_v6_float/chm/001311332.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.5 s",
+     "said": "binary/octet-stream in 2.1 s",
      "seen": "2026-10-15"
     }
    ],
@@ -638,7 +639,7 @@
      "probe": "https://mapseries-tilesets.s3.amazonaws.com/london_1890s/16/32744/21788.png",
      "state": "open",
      "code": 200,
-     "said": "image/png in 0.9 s",
+     "said": "image/png in 2.5 s",
      "seen": "2026-10-15"
     },
     {
@@ -711,7 +712,7 @@
      "probe": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-09-23.1/theme=buildings/type=building_part/part-00000-7e1e3f13-ca48-5851-a16f-b54315e6becc-c000.zstd.parquet",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 0.9 s",
      "seen": "2026-10-15"
     }
    ],
@@ -776,7 +777,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/pacificspatial/flateau/parquet/13102_chuo-ku_2023_building_lod0.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -825,7 +826,7 @@
      "probe": "https://usgs-lidar-public.s3.us-west-2.amazonaws.com/NY_NewYorkCity/ept.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.7 s",
+     "said": "application/json in 1.1 s",
      "seen": "2026-10-15"
     },
     {
@@ -834,7 +835,7 @@
      "probe": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/NY_NewYorkCity/ept.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
+     "said": "application/json in 0.8 s",
      "seen": "2026-10-15"
     },
     {
@@ -892,7 +893,7 @@
      "probe": "https://s3.amazonaws.com/planet.openhistoricalmap.org/planet/planet-261003_0000.osm.pbf",
      "state": "open",
      "code": 200,
-     "said": "application/zip in 0.7 s",
+     "said": "application/zip in 0.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -915,17 +916,16 @@
      "host": "www.oceancolour.org",
      "role": "api",
      "probe": "https://www.oceancolour.org/thredds/catalog.html",
-     "state": "open",
-     "said": "text/html in 1.4 s",
-     "seen": "2026-10-15",
-     "code": 200
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-15"
     },
     {
      "host": "data.cci.ceda.ac.uk",
      "role": "api",
      "probe": "https://data.cci.ceda.ac.uk/thredds/catalog/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/catalog.html",
      "state": "open",
-     "said": "text/html in 1.1 s",
+     "said": "text/html in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -934,7 +934,7 @@
      "role": "files",
      "probe": "https://dap.ceda.ac.uk/neodc/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/",
      "state": "open",
-     "said": "text/html in 1.5 s",
+     "said": "text/html in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -969,7 +969,7 @@
      "probe": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N51E000_Map.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.5 s",
+     "said": "binary/octet-stream in 0.9 s",
      "seen": "2026-10-15"
     },
     {
@@ -978,7 +978,7 @@
      "probe": "https://esa-worldcover-s2.s3.eu-central-1.amazonaws.com/rgbnir/2021/N51/ESA_WorldCover_10m_2021_v200_N51E000_S2RGBNIR.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.9 s",
+     "said": "binary/octet-stream in 1.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -987,11 +987,12 @@
      "probe": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/31U_2024.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.9 s",
+     "said": "binary/octet-stream in 2.7 s",
      "seen": "2026-10-15"
     }
    ],
-   "key_needed": false
+   "key_needed": false,
+   "plan": "Sampled 15 Oct 2026 through esa-worldcover.s3.eu-central-1.amazonaws.com with HTTP range requests (numpy and tifffile only): overview level 4 of 7 of a 3 degree tile (2,250 x 2,250 pixels, 148 m a pixel) is one 1 MB request, 1.5 to 2 s, and gives the class shares of a 39 km cell. Paris: built 52 %, tree 33 %, crop 8 %, grass 5 %, water 1 %. Ames, Iowa: crop 79 %, grass 9 %, tree 8 %, built 4 %. Manaus: tree 40 %, water 28 %, built 17 %, grass 12 %, wetland 3 %. Tamanrasset: bare 98.6 %. Kyoto: tree 60 %, built 25 %, water 6 %, crop 6 %. Next: build_material.py reads level 4 of each land tile once (about 2,600 tiles, about 2.6 GB, about 10 minutes eight at a time), reduces to the 1024 x 512 grid as shares of the eleven classes, and replaces the biome, canopy and aridity inference for forest, grass, desert and rock with them, adding cropland, shrub, moss and mangrove to CLASSES with the works' colours for them. Bigger than a small change (it changes how the globe is drawn): proposed, not built."
   },
   {
    "id": "nasa-gibs-global-imagery-browse-services-wmts-wms-the-succ",
@@ -1011,7 +1012,7 @@
      "role": "tiles",
      "probe": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/VIIRS_Black_Marble/default/2016-01-01/500m/0/0/0.png",
      "state": "open",
-     "said": "image/png in 0.4 s",
+     "said": "image/png in 1.2 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -1028,7 +1029,7 @@
      "role": "api",
      "probe": "https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=2026-10-08&BBOX=-90,-180,90,180&CRS=EPSG:4326&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor&FORMAT=image/jpeg&WIDTH=512&HEIGHT=256",
      "state": "open",
-     "said": "image/jpeg in 0.8 s",
+     "said": "image/jpeg in 1.2 s",
      "seen": "2026-10-15",
      "code": 200
     }
@@ -1055,7 +1056,7 @@
      "probe": "https://noaa-gmgsi-pds.s3.amazonaws.com/GMGSI_LW/2026/10/10/21/GLOBCOMPLIR_v3r0_blend_s202610102100000_e202610102109599_c202610102133488.nc",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.7 s",
+     "said": "binary/octet-stream in 2.1 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1080,7 +1081,7 @@
      "probe": "https://sentinel-s2-l2a-mosaic-120.s3.amazonaws.com/2020/7/12/31U/B04.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 1.0 s",
+     "said": "image/tiff in 2.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1105,7 +1106,7 @@
      "probe": "https://globalnightlight.s3.amazonaws.com/composites/npp_202506_ops/DNB_npp_20250601-20250630_global_ecm-slcorr_v10_ops.avg_rade9.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.7 s",
+     "said": "image/tiff in 1.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1130,7 +1131,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/earthgenome/earthindeximagery/31UDQ_2025-01-01_2026-01-01/TCI.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -1195,7 +1196,7 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/ausantarctic/gebco/GEBCO_2026.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 2.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -1331,7 +1332,7 @@
    "key": "none",
    "format": "GeoTIFF (25 km polar stereographic, north and south), median-edge shapefiles, CSV. The AWS fallback is daily NetCDF (3.7 MB each).",
    "priority": 2,
-   "notes": "The NSIDC hosts are blocked. The reachable AWS copy is the NOAA/NSIDC CDR v2 daily data, 1978-2015 only. It can give a 1991-2015 monthly mean, but the ice has shrunk since. 25 km suits the 39 km cells. Check whether the median shapefiles cover 1981-2010 or 1991-2020.",
+   "notes": "The NSIDC hosts are blocked. The reachable AWS copy is the NOAA/NSIDC CDR v2 daily data, 1978-2015 only. It can give a 1991-2015 monthly mean, but the ice has shrunk since. 25 km suits the 39 km cells. Check whether the median shapefiles cover 1981-2010 or 1991-2020. 15 Oct 2026: the median edges are on noaadata.apps.nsidc.org as well (NOAA/G02135/north/monthly/shapefiles/shp_median/, median_extent_N_01_1981-2010_polyline_v4.0.zip and on: the 1981-2010 medians), so masie_web.apps.nsidc.org is not needed; the proxy still refused it after the artist allowed it, while noaadata.apps.nsidc.org answers.",
    "state": "candidate",
    "hosts": [
     {
@@ -1343,20 +1344,12 @@
      "seen": "2026-10-15"
     },
     {
-     "host": "masie_web.apps.nsidc.org",
-     "role": "files",
-     "probe": "https://masie_web.apps.nsidc.org/pub/DATASETS/NOAA/G02135/north/monthly/shapefiles/shp_median/",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"masie_web.apps.nsidc.org\"",
-     "seen": "2026-10-15"
-    },
-    {
      "host": "noaa-cdr-sea-ice-concentration-pds.s3.amazonaws.com",
      "role": "files",
      "probe": "https://noaa-cdr-sea-ice-concentration-pds.s3.amazonaws.com/ncei_data/2015/seaice_conc_daily_nh_f17_20150101_v02r00.nc",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 1.7 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1438,7 +1431,7 @@
      "probe": "https://copernicus-dem-90m.s3.amazonaws.com/Copernicus_DSM_COG_30_N51_00_E000_00_DEM/Copernicus_DSM_COG_30_N51_00_E000_00_DEM.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.6 s",
+     "said": "image/tiff in 2.0 s",
      "seen": "2026-10-15"
     },
     {
@@ -1447,7 +1440,7 @@
      "probe": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N51_00_E000_00_DEM/Copernicus_DSM_COG_10_N51_00_E000_00_DEM.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.6 s",
+     "said": "image/tiff in 1.6 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1545,7 +1538,7 @@
      "probe": "https://storage.googleapis.com/weatherbench2/datasets/era5-hourly-climatology/1990-2019_6h_1440x721.zarr/total_cloud_cover/.zarray",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 1.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1594,7 +1587,7 @@
      "probe": "https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_0E_10Nv1_4_2021.tif",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 1.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1618,7 +1611,7 @@
      "role": "api",
      "probe": "https://api.gbif.org/v2/map/occurrence/density/0/0/0@1x.png?taxonKey=5219243",
      "state": "open",
-     "said": "image/png in 0.6 s",
+     "said": "image/png in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -1628,7 +1621,7 @@
      "probe": "https://gbif-open-data-us-east-1.s3.amazonaws.com/occurrence/2026-10-01/citation.txt",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.4 s",
+     "said": "text/plain in 0.9 s",
      "seen": "2026-10-15"
     },
     {
@@ -1660,7 +1653,7 @@
      "role": "api",
      "probe": "https://api.inaturalist.org/v1/observations?taxon_name=Vulpes%20vulpes&quality_grade=research&photos=true&per_page=1",
      "state": "open",
-     "said": "application/json in 1.1 s",
+     "said": "application/json in 2.0 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -1670,7 +1663,7 @@
      "probe": "https://inaturalist-open-data.s3.amazonaws.com/geomodel/geojsons/latest/42069.geojson",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.4 s",
+     "said": "binary/octet-stream in 1.1 s",
      "seen": "2026-10-15"
     },
     {
@@ -1711,7 +1704,7 @@
      "role": "files",
      "probe": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
      "state": "open",
-     "said": "application/zip in 0.8 s",
+     "said": "application/zip in 0.9 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -1730,7 +1723,7 @@
      "probe": "https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.5 s",
+     "said": "text/plain in 0.6 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1756,7 +1749,7 @@
      "probe": "https://bhl-open-data.s3.amazonaws.com/jpg/mobot31753003125132/mobot31753003125132_0002.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.6 s",
+     "said": "image/jpeg in 0.7 s",
      "seen": "2026-10-15"
     },
     {
@@ -1773,7 +1766,7 @@
      "probe": "https://archive.org/metadata/mobot31753002152491",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.9 s",
+     "said": "application/json in 0.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -1919,7 +1912,7 @@
      "probe": "https://raw.githubusercontent.com/wpetry/USTreeAtlas/main/shp/acersacc/acersacc.shp",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.5 s",
+     "said": "text/plain in 0.6 s",
      "seen": "2026-10-15"
     }
    ],
@@ -1944,7 +1937,7 @@
      "probe": "https://aloftdata.s3-eu-west-1.amazonaws.com/coverage.csv",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
+     "said": "binary/octet-stream in 1.4 s",
      "seen": "2026-10-15"
     },
     {
@@ -1977,7 +1970,7 @@
      "probe": "https://api.artic.edu/api/v1/artworks/27992?fields=id,title,image_id,color,dimensions_detail,gallery_id,is_on_view",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
+     "said": "application/json in 2.3 s",
      "seen": "2026-10-15"
     },
     {
@@ -1995,7 +1988,7 @@
      "probe": "https://artic-api-data.s3.amazonaws.com/artic-api-data.tar.bz2",
      "state": "open",
      "code": 200,
-     "said": "application/x-bzip2 in 0.4 s",
+     "said": "application/x-bzip2 in 1.6 s",
      "seen": "2026-10-15"
     }
    ],
@@ -2020,7 +2013,7 @@
      "probe": "https://raw.githubusercontent.com/NationalGalleryOfArt/opendata/main/data/published_images.csv",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.5 s",
+     "said": "text/plain in 0.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -2028,7 +2021,7 @@
      "role": "iiif",
      "probe": "https://api.nga.gov/iiif/00007f61-4922-417b-8f27-893ea328206c/full/!200,200/0/default.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.5 s",
+     "said": "image/jpeg in 1.5 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2063,7 +2056,7 @@
      "role": "search API (anonymous, rate-limited)",
      "probe": "https://api.openverse.org/v1/images/?q=gallery%20interior&page_size=1",
      "state": "open",
-     "said": "application/json in 0.6 s",
+     "said": "application/json in 1.6 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2097,7 +2090,7 @@
      "role": "api",
      "probe": "https://data.rijksmuseum.nl/search/collection?objectNumber=SK-C-5",
      "state": "open",
-     "said": "application/ld+json in 0.9 s",
+     "said": "application/ld+json in 1.8 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2106,7 +2099,7 @@
      "role": "iiif",
      "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.5 s",
+     "said": "image/jpeg in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2141,7 +2134,7 @@
      "probe": "https://collectionapi.metmuseum.org/public/collection/v1/objects/436535",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.7 s",
+     "said": "application/json in 1.1 s",
      "seen": "2026-10-15"
     },
     {
@@ -2149,7 +2142,7 @@
      "role": "files",
      "probe": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-42549-001.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.2 s",
+     "said": "image/jpeg in 1.5 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2168,7 +2161,7 @@
      "probe": "https://storage.googleapis.com/storage/v1/b/gcs-public-data--met/o?maxResults=1",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.7 s",
+     "said": "application/octet-stream in 1.4 s",
      "seen": "2026-10-15"
     }
    ],
@@ -2194,7 +2187,7 @@
      "probe": "https://commons.wikimedia.org/w/thumb.php?f=Gallery_28,_National_Gallery_of_Art.jpg&w=500",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.4 s",
+     "said": "image/jpeg in 1.0 s",
      "seen": "2026-10-15"
     },
     {
@@ -2203,7 +2196,7 @@
      "probe": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/330px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.4 s",
+     "said": "image/jpeg in 1.1 s",
      "seen": "2026-10-15"
     },
     {
@@ -2211,7 +2204,7 @@
      "role": "files",
      "probe": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/National_Gallery_of_Art_-_West_Building.JPG/250px-National_Gallery_of_Art_-_West_Building.JPG",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
+     "said": "image/jpeg in 0.8 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2220,7 +2213,7 @@
      "role": "api",
      "probe": "https://api.wikimedia.org/core/v1/commons/file/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg",
      "state": "open",
-     "said": "application/json in 0.4 s",
+     "said": "application/json in 0.8 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2255,7 +2248,7 @@
      "probe": "https://d32dm0rphc51dk.cloudfront.net/zFA7cwdkWxbIrmuAAd21VA/normalized.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 1.1 s",
+     "said": "image/jpeg in 0.9 s",
      "seen": "2026-10-15"
     },
     {
@@ -2289,7 +2282,7 @@
      "probe": "https://openaccess-api.clevelandart.org/api/artworks/?q=water%20lilies&limit=1&has_image=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.4 s",
+     "said": "application/json in 1.2 s",
      "seen": "2026-10-15"
     },
     {
@@ -2362,7 +2355,7 @@
      "probe": "https://data.getty.edu/museum/collection/object/8dd03159-261d-4e43-b277-15792e04089f",
      "state": "open",
      "code": 200,
-     "said": "application/ld+json in 0.7 s",
+     "said": "application/ld+json in 1.0 s",
      "seen": "2026-10-15"
     },
     {
@@ -2392,20 +2385,20 @@
     {
      "host": "www.loc.gov",
      "role": "api",
-     "probe": "https://www.loc.gov/search/?q=national%20gallery%20of%20art&fa=partof:historic%20american%20buildings%20survey&fo=json&c=1",
+     "probe": "https://www.loc.gov/collections/historic-american-buildings-landscapes-and-engineering-records/?fo=json&c=1",
      "state": "open",
-     "said": "application/json in 0.2 s",
+     "said": "application/json in 1.1 s",
      "seen": "2026-10-15",
      "code": 200
     },
     {
      "host": "tile.loc.gov",
      "role": "files",
-     "probe": "https://tile.loc.gov/",
+     "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "Forbidden",
+     "said": "image/jpeg in 1.1 s",
      "seen": "2026-10-15",
-     "code": 403
+     "code": 200
     }
    ],
    "key_needed": false,
@@ -2446,7 +2439,7 @@
      "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
+     "said": "application/json in 0.9 s",
      "seen": "2026-10-15"
     },
     {
@@ -2454,7 +2447,7 @@
      "role": "files",
      "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
      "state": "open",
-     "said": "application/zip in 0.6 s",
+     "said": "application/zip in 1.0 s",
      "seen": "2026-10-15",
      "code": 200
     },
@@ -2464,7 +2457,7 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/18/134629/86162.jpeg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 1.0 s",
+     "said": "image/jpeg in 2.0 s",
      "seen": "2026-10-15"
     }
    ],
@@ -2523,7 +2516,7 @@
      "probe": "https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/chndm/00.txt",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.7 s",
+     "said": "text/plain in 0.8 s",
      "seen": "2026-10-15"
     },
     {
@@ -2564,7 +2557,7 @@
      "probe": "https://www.vangoghmuseum.nl/asset/download/s0031V1962",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.8 s",
+     "said": "image/jpeg in 1.9 s",
      "seen": "2026-10-15"
     },
     {
@@ -2572,7 +2565,7 @@
      "role": "iiif",
      "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.5 s",
+     "said": "image/jpeg in 1.4 s",
      "seen": "2026-10-15",
      "code": 200
     }
@@ -2706,18 +2699,18 @@
      "role": "api",
      "probe": "https://www.loc.gov/collections/photochrom-prints/?q=rouen&fo=json",
      "state": "open",
-     "said": "application/json in 0.2 s",
+     "said": "application/json in 1.1 s",
      "seen": "2026-10-15",
      "code": 200
     },
     {
      "host": "tile.loc.gov",
      "role": "iiif",
-     "probe": "https://tile.loc.gov/image-services/iiif/",
+     "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "Forbidden",
+     "said": "image/jpeg in 1.1 s",
      "seen": "2026-10-15",
-     "code": 403
+     "code": 200
     }
    ],
    "key_needed": false,
@@ -2854,7 +2847,7 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?request=GetCapabilities&service=WMTS",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 1.0 s",
+     "said": "image/jpeg in 2.0 s",
      "seen": "2026-10-15"
     }
    ],
@@ -2880,7 +2873,7 @@
      "probe": "https://data.wien.gv.at/daten/geo?service=WFS&request=GetFeature&version=1.1.0&typeName=ogdwien:DACHKATASTEROBJEKTEOGD&outputFormat=json&maxFeatures=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.9 s",
+     "said": "application/json in 1.7 s",
      "seen": "2026-10-15"
     }
    ],
@@ -2978,7 +2971,7 @@
      "probe": "https://raw.githubusercontent.com/MuseumofModernArt/collection/main/README.md",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.5 s",
+     "said": "text/plain in 0.6 s",
      "seen": "2026-10-15"
     },
     {
@@ -2996,7 +2989,7 @@
      "probe": "https://www.moma.org/media/W1siZiIsIjUyNzc3MCJdLFsicCIsImNvbnZlcnQiLCItcmVzaXplIDEwMjR4MTAyNFx1MDAzZSJdXQ.jpg?sha=712ac0fd74ea5bd5",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.5 s",
+     "said": "image/jpeg in 0.9 s",
      "seen": "2026-10-15"
     }
    ],
@@ -3022,7 +3015,7 @@
      "probe": "https://api.smk.dk/api/v1/art/?object_number=KMS1&lang=en",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.9 s",
+     "said": "application/json in 1.4 s",
      "seen": "2026-10-15"
     },
     {
@@ -3064,7 +3057,7 @@
      "probe": "https://s-media.nyc.gov/agencies/lpc/lp/1775.pdf",
      "state": "open",
      "code": 200,
-     "said": "application/zip in 0.6 s",
+     "said": "application/zip in 1.0 s",
      "seen": "2026-10-15"
     },
     {
@@ -3189,7 +3182,7 @@
      "probe": "https://www.phillipscollection.org/image-licensing",
      "state": "open",
      "code": 200,
-     "said": "text/html in 0.4 s",
+     "said": "text/html in 1.2 s",
      "seen": "2026-10-15"
     },
     {
@@ -3231,6 +3224,319 @@
      "state": "open",
      "code": 403,
      "said": "Forbidden",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "municipal-tree-registers-new-york-boston-san-francisco-sea",
+   "name": "Municipal tree registers: New York, Boston, San Francisco, Seattle, Melbourne, Berlin (reachable now)",
+   "facet": "life",
+   "what": "Each city's own inventory of the trees it keeps: a record a tree, with its species (botanical and common name), trunk size, planting date where known and a point. New York: Parks' Forestry Tree Points (897,575 standing trees, updated 7 Oct 2026; 1,123,163 records with the retired and stumps) and the 2015 Street Tree Census (683,788). Berlin: Baumbestand, 434,765 street trees and 527,780 park trees, with planting year, age, crown diameter, trunk girth and height. San Francisco: Street Tree Inventory (144,491, updated 14 Oct 2026). Seattle: Combined Tree Point (240,255, with trunk diameter) and, from the University of Vermont's lidar read of 2021, 968,013 individual tree crowns (612,693 deciduous, 355,320 coniferous) with height, radius and type. Boston: BPRD Trees, park and street (55,227, updated 15 Oct 2026). Melbourne: Urban Forest trees with species and dimensions (82,064, with age and useful life).",
+   "improves": "The plants that rise round a character in a city come from DIRT's biome grammar, so every city of a biome gets the same few trees: New York and Boston the sugar maple, white oak, American beech, tulip tree and white pine; Berlin, Paris and Amsterdam the Palearctic beech, oak and hornbeam; Melbourne (and Sydney) New Zealand's tree ferns, southern beech, kahikatea and rimu; Seattle Douglas fir, western red cedar and Sitka spruce; San Francisco coast live oak and blue oak. The registers say what really stands there, counted. New York: London planetree 97,316, thornless honeylocust 71,366, pin oak 66,521, Callery pear 52,225, Japanese zelkova 33,111, littleleaf linden 27,538. Boston: honeylocust, littleleaf linden, Norway maple, red maple, pin oak. San Francisco: London plane, Brisbane box, New Zealand Christmas tree, swamp myrtle, southern magnolia. Seattle: Japanese maple, bigleaf maple, red maple, crabapple, Norway maple. Melbourne: river red gum, London plane, drooping sheoak, English elm, yellow box, black wattle, spotted gum. Berlin: linden is more than half of a 4,000-tree sample, then maple, plane, pear, horse chestnut, ash, oak. Seattle's lidar crowns are 37 % coniferous (355,320 of 968,013), so the grammar's firs and cedars are right for its canopy and wrong for its streets. With trunk size, height and crown diameter each species gets its real size, and Seattle's crown polygons give the canopy's shape and height from above, where a skyline's green cells ('g') now carry only Overture's land-use word, 'park' or 'garden'. Counted by cell, the registers would make a skyline's green the trees that are there.",
+   "licence": "All open, each credited by name. New York: NYC Open Data terms of use (no restriction; the datasets carry no licence field). San Francisco and Boston: Open Data Commons PDDL. Melbourne: CC BY. Berlin: Datenlizenz Deutschland Zero 2.0, and the WFS says 'no access restrictions'. Seattle: no licence statement on the layers (the City's open data; the crowns by the University of Vermont Spatial Analysis Laboratory), so read the portal's terms before shipping anything derived from them.",
+   "key": "none",
+   "format": "Socrata JSON/CSV (New York, San Francisco; $select, $group and $where count and tally in one call); CKAN datastore JSON, CSV and GeoJSON (Boston); ArcGIS FeatureServer JSON with outStatistics (Seattle; Boston's own copy is on services.arcgis.com/sFnw0xNflSi8J0uh); Opendatasoft JSON (Melbourne); OGC WFS 2.0 GeoJSON (Berlin, UTM 33N metres).",
+   "priority": 1,
+   "notes": "Sampled 15 Oct 2026, no key, every host answering the session: NYC hn5i-inap (Forestry Tree Points: genusspecies, dbh, tpstructure Full/Retired/Stump, tpcondition) and uvpi-gqnh (the 2015 census: spc_latin, spc_common, tree_dbh, health); SF tkzw-k3nq (species as 'Latin :: common', mapdbh, plantdate, latitude and longitude); Boston's CKAN resource 995cd80f-2489-41bf-b16b-113dba4f2797 (spp_com, spp_bot, dbh, date_plant, neighborhood); Seattle's services.arcgis.com/ZOyb2t4B0UYuYNYH layers Combined_Tree_Point (SCIENTIFIC_NAME, COMMON_NAME, DBH), TreeCrowns_2021_Seattle and TreeCentroids_2021_Seattle (Hgt_Q98, Hgt_Q99, Radius, Type, Volume; the layers' units are US feet); Melbourne's trees-with-species-and-dimensions-urban-forest (genus, common_name, diameter_breast_height, year_planted); Berlin's gdi.berlin.de/services/wfs/baumbestand (layers strassenbaeume and anlagenbaeume: art_dtsch, art_bot, gattung, pflanzjahr, standalter, kronedurch, stammumfg, baumhoehe). Berlin's host needs certifi's roots added to the default TLS context (verification on), as build_built_years.py already does; its WFS cannot aggregate, so page it 4,000 at a time. A register counts the trees a city keeps: private gardens, cemeteries and woods are not in it, so combine it with the land-cover shares (ESA WorldCover, CCI plant functional types) for the rest. NYC's count includes retired trees and stumps: keep tpstructure Full. Boston's includes empty planting pits (spp_com 'Empty Pit/Planting Site', 2,178). Boston's 2024 canopy layer (BPRD/Tree_Canopy_Data_2024 on gisportal.boston.gov) and the 2014-2019 canopy change are the same kind of polygon as Seattle's. Not yet looked for: Los Angeles, Chicago, Houston, Madrid, Milan, Brussels, Copenhagen; Philadelphia's phl.carto.com answers but its inventory's table name was not found (six guesses). Vienna's tree cadastre has its own row; Paris, Amsterdam and Sydney are the next row; Washington's street trees are on opendata.dc.gov (refused), and no street-tree service was found on its own ArcGIS server (maps2.dcgis.dc.gov).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "data.cityofnewyork.us",
+     "role": "api",
+     "probe": "https://data.cityofnewyork.us/resource/hn5i-inap.json?$limit=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.9 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "data.sf.gov",
+     "role": "api",
+     "probe": "https://data.sf.gov/resource/tkzw-k3nq.json?$limit=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.7 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "data.boston.gov",
+     "role": "api",
+     "probe": "https://data.boston.gov/api/3/action/datastore_search?resource_id=995cd80f-2489-41bf-b16b-113dba4f2797&limit=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.5 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "services.arcgis.com",
+     "role": "api",
+     "probe": "https://services.arcgis.com/ZOyb2t4B0UYuYNYH/arcgis/rest/services/TreeCrowns_2021_Seattle/FeatureServer/0/query?where=1%3D1&returnCountOnly=true&f=json",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.1 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "data.melbourne.vic.gov.au",
+     "role": "api",
+     "probe": "https://data.melbourne.vic.gov.au/api/explore/v2.1/catalog/datasets/trees-with-species-and-dimensions-urban-forest/records?limit=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 2.4 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "gdi.berlin.de",
+     "role": "api",
+     "probe": "https://gdi.berlin.de/services/wfs/baumbestand?service=WFS&version=2.0.0&request=GetFeature&typeNames=baumbestand:strassenbaeume&count=1&outputFormat=application/json",
+     "state": "open",
+     "code": 200,
+     "said": "text/xml in 3.5 s",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false,
+   "plan": "Sampled 15 Oct 2026 (notes): each register answers and the top species were tallied for six cities. Use: build_characters.py reads a skyline city's register once (one aggregate query, counts by species and the median trunk size), writes that city's row in characters/plants.json from its top species in place of the biome's set (each species keeps the crown shape of its genus from the existing strata; the radius follows the median trunk size, or Berlin's crown diameter), and the line says whose register it is. Bigger than a small change (it changes which plants rise round a character): proposed, not built. The refine pass could start with New York, the Artists layer's busiest town."
+  },
+  {
+   "id": "tree-registers-of-paris-amsterdam-and-sydney-the-hosts-to-",
+   "name": "Tree registers of Paris, Amsterdam and Sydney (the hosts to ask for)",
+   "facet": "life",
+   "what": "The same kind of register for three more of the site's cities. Paris: 'Les arbres', the street, park and public-building trees of the City (Direction des Espaces Verts et de l'Environnement; updated 31 July 2026), with species, height, circumference and development stage as the catalogue lists them. Amsterdam: 'Bomen', the municipality's trees in public space (about 270,000), with genus, species, planting year and height and trunk-diameter classes. Sydney: the City of Sydney's Trees (street and park trees, updated Jan 2026), with species, common name, height, canopy, status, age and trunk diameter.",
+   "improves": "Sydney is the artist's own city and gets New Zealand's tree ferns, southern beech, kahikatea and rimu, and no eucalypts (DIRT's grammar has none for that biome; the characters pass lists it as a standing gap). Melbourne's register shows what Sydney's would: river red gum, sheoak, yellow box, spotted gum. Paris and Amsterdam would swap the Palearctic beech and hazel for the trees their streets really hold (expected: Paris's planes, horse chestnuts and lindens, Amsterdam's canal elms and lindens; counted, not guessed). With New York, Berlin and the rest of the previous row, every collage city and most skyline cities would plant their own trees.",
+   "licence": "Not confirmed. Paris's other tree datasets are ODbL; 'Les arbres' shows no licence on its data.gouv.fr copies. Amsterdam's terms are on maps.amsterdam.nl/open_geodata/terms.php (not read). Sydney's listings on data.nsw.gov.au say 'not specified' (the City's own portal terms not read). Read each on the portal before using it.",
+   "key": "none",
+   "format": "Paris: Opendatasoft API v2.1 (JSON, GeoJSON, CSV). Amsterdam: api.data.amsterdam.nl/v1/bomen/ (JSON, paged) and GeoJSON from maps.amsterdam.nl's open_geodata. Sydney: the City's ArcGIS Hub (CSV, GeoJSON by its download API).",
+   "priority": 2,
+   "notes": "None of these hosts answers the session, so the endpoints come from the cities' published documentation and the open-data catalogues (data.gouv.fr, data.overheid.nl, data.nsw.gov.au) and were not sampled: ask, then sample. Sydney's host is the City's data hub as published; its dataset's own address has not been seen, so it is marked unconfirmed and stays out of the block to ask for until a pass confirms it. Its ArcGIS Online services sit on hosts the session cannot reach (services1, services3, services5 and services-ap1.arcgis.com are refused; services.arcgis.com and services2.arcgis.com answer). Washington's street trees are on opendata.dc.gov (refused). USDA Forest Service's Urban Tree Database (McPherson et al. 2016, public domain, on www.fs.usda.gov, refused) gives crown height and diameter from trunk diameter for 171 species, which would size New York's, San Francisco's and Boston's trees, whose registers carry no crown.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "opendata.paris.fr",
+     "role": "api",
+     "probe": "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/les-arbres/records?limit=1",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"opendata.paris.fr\"",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "api.data.amsterdam.nl",
+     "role": "api",
+     "probe": "https://api.data.amsterdam.nl/v1/bomen/stamgegevens/?_pageSize=1&_format=json",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.data.amsterdam.nl\"",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "data.cityofsydney.nsw.gov.au",
+     "role": "unconfirmed",
+     "probe": "https://data.cityofsydney.nsw.gov.au/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"data.cityofsydney.nsw.gov.au\"",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "lila-bc-camera-trap-and-wildlife-photographs-open-google-c",
+   "name": "LILA BC camera-trap and wildlife photographs (open Google Cloud bucket)",
+   "facet": "life",
+   "what": "The Labeled Information Library of Alexandria's wildlife datasets on a public bucket: camera-trap stills with species labels, bounding boxes, timestamps and camera sites in COCO Camera Traps JSON, plus drone and aerial sets, about fifty datasets. ENA24 (9,676 images, 23 classes of the eastern US: American black bear 959 boxes, grey fox 438, red fox 413, white-tailed deer 381, coyote 344, bobcat 333, eastern grey squirrel 319, raccoon, opossum, skunk, wild turkey, crow); Idaho Camera Traps, Caltech Camera Traps and NACTI (North America; NACTI 3.7 million images); Snapshot Serengeti and Snapshot Safari (Africa); WCS Camera Traps (worldwide); Lindenthal (Cologne); Seattle-ish; Channel Islands (island fox); Orinoquia (Colombia); NZ Trailcams and Wellington; UNSW predators (Australia); desert lions (Namibia).",
+   "improves": "species.py's coats and proportions are typed by hand from Wikipedia's words, and the characters pass records that no photograph of the animal was reachable. These are the real animals in the field, in their ground. The median colour of the pixels inside a species' boxes (daytime frames: the infrared night frames are grey) gives its coat, pale belly and dark legs as photographed, by month where the timestamp is kept (the winter against the summer coat of a white-tailed deer or a coyote). A side-on box's aspect gives body depth against length, and 413 red fox boxes are a measured check on the fox sprite. The frame behind gives the leaf litter, grass and snow the animal stands in, which the plants that rise round it can match. Frame sequences show how the animal stands, trots and looks back.",
+   "licence": "Mostly the Community Data License Agreement, Permissive 1.0 (confirmed by secondary sources for ENA24, Snapshot Serengeti, Caltech Camera Traps and Wellington). Each dataset's page on lila.science (refused) holds its own licence and citation: read it before taking a dataset up. Photographs are reference only and never enter the repository; a measured colour or ratio may, with the dataset's credit.",
+   "key": "none",
+   "format": "COCO Camera Traps JSON (images with file_name, width, height and, where kept, datetime and location; annotations with bbox [x, y, w, h] in pixels; categories): ENA24's is 3.8 MB. JPEG stills at https://storage.googleapis.com/public-datasets-lila/<dataset>/images/<file>. The whole-dataset zips are 100 to 600 GB and are never to be fetched.",
+   "priority": 2,
+   "notes": "Sampled 15 Oct 2026: the bucket's README and its listing (prefix and delimiter), ena24/ena24.json (9,676 images, 11,596 boxes, of which 1,161 are people and 295 vehicles) and one image, a red fox (2048 x 1536, 302 KB). That frame is an infrared night shot (22 Jun 2015, 7:46 pm), grey: keep only frames whose red, green and blue differ. Boxes mark whole animals, not their parts: take the coat under a mask, not the box's mean. Camera traps shoot from low and close, so proportions come only from side-on frames. Frames labelled human are dropped before anything is kept. The same data on Azure (lilablobssc.blob.core.windows.net) and Source Cooperative are refused and not needed. NEON's airborne canopy imagery (storage.googleapis.com/neon-aop-products) is on the same host but forbids anonymous listing.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "storage.googleapis.com",
+     "role": "files",
+     "probe": "https://storage.googleapis.com/public-datasets-lila/README",
+     "state": "open",
+     "code": 200,
+     "said": "application/octet-stream in 1.4 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "lila.science",
+     "role": "browser",
+     "probe": "https://lila.science/datasets",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"lila.science\"",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false,
+   "plan": "Sampled 15 Oct 2026 (notes). Use: a new script (fetch_camera_trap_looks.py) reads ENA24's JSON for a species, takes the thirty daytime frames with the largest side-on boxes, measures the median Lab of the coat, belly and legs, and writes them beside the species' hand-typed hexes in species.py for the characters pass to compare against. No script reads photographs of animals yet, so this is bigger than a small change: proposed, not built."
+  },
+  {
+   "id": "phylopic-free-silhouettes-of-animals-and-plants-with-an-op",
+   "name": "PhyloPic: free silhouettes of animals and plants, with an open API",
+   "facet": "life",
+   "what": "A database of silhouette images of organisms, each tied to a taxon (species, genus, family, down to clades) and given a Creative Commons licence by its contributor: vector SVG and PNG at several sizes, and a JSON API (api.phylopic.org, version 2) that finds the image nearest a name and gives its licence, contributor and the clade it stands for.",
+   "improves": "A species' body in side view as a naturalist drew it: head against trunk, neck, leg length, ears, tail, stance. species.py types these by hand per body plan (CANID L=11, legs=8.2, depth=3.0, neck=4.0 and so on) and per species; a silhouette of the real species can be measured instead (length against height, leg length over depth, head over body, tail over body) and the 118 generated species checked against it, falling back to the genus or family where a species has none. It also shows a tree's crown outline for the plants' strata (lobed, conical, columnar).",
+   "licence": "Each image carries its own licence: CC0 or Public Domain Mark (no requirement), CC BY 3.0 or 4.0 (credit the contributor and link the licence), CC BY-SA (derivatives share alike); the API filters by licence, so a pass takes only what the site may use, and the line says whose silhouette it is.",
+   "key": "none",
+   "format": "JSON (API v2, linked resources, embed_items); SVG and PNG at several widths, a thumbnail and the source file on images.phylopic.org.",
+   "priority": 2,
+   "notes": "Not reachable from the session (api.phylopic.org, images.phylopic.org and www.phylopic.org are refused), so licences and API behaviour are from PhyloPic's own usage article and the rphylopic client's notes (API v2.1, api-docs.phylopic.org/v2), not sampled: ask, then sample. A silhouette is an illustrator's reading, filled solid: it gives outline, not colour or pattern, and its quality varies, so use the species' own image, else the genus', and say which. Coverage is thickest for vertebrates; a standing red deer may need its genus. The eight drawn by hand need none.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "api.phylopic.org",
+     "role": "api",
+     "probe": "https://api.phylopic.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"api.phylopic.org\"",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "images.phylopic.org",
+     "role": "files",
+     "probe": "https://images.phylopic.org/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"images.phylopic.org\"",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "www.phylopic.org",
+     "role": "browser",
+     "probe": "https://www.phylopic.org/articles/image-usage",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.phylopic.org\"",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false
+  },
+  {
+   "id": "esa-cci-land-cover-plant-functional-types-v2-0-81-what-gro",
+   "name": "ESA CCI Land Cover plant functional types, v2.0.81 (what grows in each 300 m, 1992-2020), on CEDA",
+   "facet": "life",
+   "what": "Annual maps at 300 m of the percentage cover of 14 plant functional types, made from the CCI land-cover maps for climate models: broadleaved and needleleaved, evergreen and deciduous trees (TREES-BD, -BE, -ND, -NE), the same four kinds of shrub, natural and managed grass (GRASS-NAT; GRASS-MAN is crops and pasture), bare soil, built, water, snow and ice, with an inland-water layer. One NetCDF a year, 1992 to 2020 (v2.0.81, 24 Sep 2025), 64,800 x 129,600 pixels, 1.8 GB a file.",
+   "improves": "build_material.py tells forest from grass from desert from DIRT's biome, canopy height and aridity, and has no leaf type, no crops and no shrub; the characters' plants come from the biome grammar alone. Plant-functional-type cover says, for any place or any 39 km cell, how much is broadleaf deciduous (the beech that goes bare in winter), needleleaf evergreen (the spruce that does not), shrub, natural grass or crop. A forest cell's tone then follows its leaf type, a place's planting keeps to what grows there (Tokyo's mix, not Europe's beech and hazel) and 29 years of it make a dial: the Amazon's arc of deforestation, the oil-palm and rice frontiers, the Aral Sea's floor.",
+   "licence": "ESA CCI Land Cover terms, a CEDA-specific licence (public data, open to registered and non-registered users, citation required): Harper, K. L., Lamarche, C., Hartley, A. et al. (2023), 'A 29-year time series of annual 300 m resolution plant-functional-type maps for climate models', Earth System Science Data 15, 1465-1499, doi 10.5194/essd-15-1465-2023, and the catalogue record's own citation. The licence PDF (artefacts.ceda.ac.uk) is not reachable from the session: read it before shipping a derived file.",
+   "key": "none",
+   "format": "NetCDF-4, byte variables 0-100 %: WATER, BARE, BUILT, GRASS-MAN, GRASS-NAT, SHRUBS-BD, SHRUBS-BE, SHRUBS-ND, SHRUBS-NE, TREES-BD, TREES-BE, TREES-ND, TREES-NE, SNOWICE, WATER_INLAND. THREDDS OPeNDAP on data.cci.ceda.ac.uk serves strided subsets; dap.ceda.ac.uk serves whole files.",
+   "priority": 2,
+   "notes": "Sampled 15 Oct 2026: both hosts answer; the .dds and .das read; a strided subset (.ascii?TREES-BD[0:0][20000:2000:22000][80000:2000:82000]; curl needs -g for the brackets) returned the 2 x 2 values and their latitudes. A 1024 x 512 globe wants a stride of about 32 (2,025 x 4,050 a variable, about 8 MB, about 115 MB for all fourteen). An OPeNDAP stride samples, it does not average; over 39 km (130 pixels) a stride of 32 still leaves 16 x 16 samples a cell. v2.0.8 (1992-2020) is marked superseded by v2.0.81 (same years, 24 Sep 2025); CEDA says updates are expected annually. For forest lost since 2000 at 30 m, Hansen's Global Forest Change (CC BY 4.0: tree cover 2000, loss year 2001-2025, gain) is also open, on storage.googleapis.com under earthenginepartners-hansen/GFC-2025-v1.13/ (Hansen_GFC-2025-v1.13_lossyear_50N_000E.tif is 38 MB for the 10 degree tile with its corner at 50N 000E; range requests accepted; no overviews, so a build reads whole tiles).",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "data.cci.ceda.ac.uk",
+     "role": "api",
+     "probe": "https://data.cci.ceda.ac.uk/thredds/dodsC/esacci/land_cover/data/pft/v2.0.81/ESACCI-LC-L4-PFT-Map-300m-P1Y-2020-v2.0.81.nc.dds",
+     "state": "open",
+     "code": 200,
+     "said": "text/html in 1.4 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "dap.ceda.ac.uk",
+     "role": "files",
+     "probe": "https://dap.ceda.ac.uk/neodc/esacci/land_cover/data/pft/v2.0.81/00README_catalogue_and_licence.txt",
+     "state": "open",
+     "code": 200,
+     "said": "text/html in 1.4 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "artefacts.ceda.ac.uk",
+     "role": "browser",
+     "probe": "https://artefacts.ceda.ac.uk/licences/specific_licences/esacci_landcover_terms_and_conditions.pdf",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"artefacts.ceda.ac.uk\"",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false,
+   "plan": "Sampled 15 Oct 2026 (notes). Use: one build step in build_material.py reads the twelve tree, shrub and grass variables of the 2020 file at a stride of 32 once (about 100 MB), reduces them to the 1024 x 512 grid as shares, and replaces the biome, canopy and aridity inference of forest or grass (adding crops, shrub and leaf type to CLASSES and the works' colours for them); plants.json's places read the same shares at their point to choose evergreen or deciduous, needle or broad crowns. Bigger than a small change: proposed, not built."
+  },
+  {
+   "id": "muybridge-s-animal-locomotion-plates-real-gaits-frame-by-f",
+   "name": "Muybridge's Animal Locomotion plates: real gaits frame by frame (Library of Congress and the Met, public domain)",
+   "facet": "life",
+   "what": "Eadweard Muybridge's chronophotographs of animals in motion (1872-1887): 12 to 24 consecutive frames to a plate, with a distance scale. The Library of Congress lists 266 items for them in its photos search (collotype plates, albumen prints, the zoetrope strips): 'Deer, running' (1881: twelve frames of a stag), 'Deer, trotting', horses in every gait with and without a rider, ox, cow and bull, boar, goat, greyhound and dog, a cat leaping, an ostrich running, a hawk in flight, a raccoon, a sloth, a mule, a baboon climbing. The Met holds about ten public-domain plates and portfolios of them, each object with many plate images.",
+   "improves": "The characters' gaits are drawn from stated rules (a trot in four frames at six a second; gait_feet and stand_feet in each plan), and the characters pass checks 'which feet are down in which frame' against the real animal with no real frames to hand. Muybridge's plates are the real frames: a deer's, ox's, boar's, goat's, greyhound's (the CANID gallop), cat's (the FELID leap), ostrich's (RATITE), hawk's (RAPTOR) and horse's (EQUID) feet and spine through a stride, with the bend of each leg at each phase, and a clean side-on silhouette of the animal's proportions. Nearly every body plan in rigs.py has a plate that fits it.",
+   "licence": "Public domain: Muybridge died in 1904 and the plates date from 1872 to 1887. The Library of Congress gives 'no known restrictions on publication'; the Met's Open Access images are CC0. Credit the holder.",
+   "key": "none",
+   "format": "Library of Congress: JSON (www.loc.gov/photos/?q=...&fo=json: title, date, image URLs), JPEG on tile.loc.gov in sizes (_150px, v = 1,024 px, r = full). The Met: JSON API (search, objects with primaryImage and additionalImages), JPEG on images.metmuseum.org (web-large 600 px, original).",
+   "priority": 2,
+   "notes": "Sampled 15 Oct 2026: LOC's /photos/ JSON (266 hits for 'muybridge animal locomotion') and one plate ('Deer, running', 1881, 1,024 x 818, 104 KB) through tile.loc.gov; the Met's /v1.1/search for his public-domain plates (23 hits, ten of them his) and two plates (a horse and rider jumping, 600 px) through images.metmuseum.org. www.loc.gov's robots.txt disallows /search and /pictures/search and asks for a 5 second crawl delay: use /photos/ or /collections/ and wait 5 seconds between requests. tile.loc.gov has no robots.txt and answers 403 to curl's default User-Agent and to its bare root, but 200 to a descriptive User-Agent. The 'Animal locomotion' plates' titles are numbers (65 items): the animal is in the plate, not the title. The complete 781 plates (Penn's, the Internet Archive's) need *.us.archive.org, already on the later list for BHL. Marey's bird-flight chronophotographs (1880s-1890s, also public domain) are the counterpart for the eagle and the starlings; no open host for them has been found yet.",
+   "state": "allowed",
+   "hosts": [
+    {
+     "host": "www.loc.gov",
+     "role": "api",
+     "probe": "https://www.loc.gov/photos/?q=muybridge+deer&fo=json&c=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.1 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "tile.loc.gov",
+     "role": "files",
+     "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 1.1 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "collectionapi.metmuseum.org",
+     "role": "api",
+     "probe": "https://collectionapi.metmuseum.org/public/collection/v1.1/search?q=Muybridge&hasImages=true",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.1 s",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "images.metmuseum.org",
+     "role": "files",
+     "probe": "https://images.metmuseum.org/CRDImages/ph/web-large/DP275263.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 1.5 s",
+     "seen": "2026-10-15"
+    }
+   ],
+   "key_needed": false,
+   "plan": "Sampled 15 Oct 2026 (notes). Use: the characters pass's refine step (REFINE.md, step 2) gains a reference: for the body plan being refined, fetch its plate and set gait_feet and stand_feet against the frames. No script needs to change; proposed, to go into REFINE.md in its own words when the artist says so."
+  },
+  {
+   "id": "avonet-measured-bird-proportions-beak-wing-tail-tarsus-mas",
+   "name": "AVONET: measured bird proportions (beak, wing, tail, tarsus, mass) for 11,009 species",
+   "facet": "life",
+   "what": "Tobias et al. 2022 (Ecology Letters): morphological traits measured on 90,020 individuals of 11,009 bird species from 181 countries, with species means on three taxonomies: beak length (culmen and nares), beak width and depth, tarsus, wing, Kipps distance, secondary, hand-wing index, tail length and mass; with ecological and range data.",
+   "improves": "The bird plans (PASSERINE, RAPTOR, VULTURE, OWL, GOOSE, WADER, RATITE, PARROT, HUMMER, GROUNDBIRD) take bill_len, legs, tail and wing_span from typed numbers per plan. AVONET gives the real beak, tarsus, tail and wing ratios of the species actually drawn (the bald eagle, starling, greylag goose, crane, macaw), so a stubby goose bill or a long heron leg is the measured one and every generated bird can be checked at once.",
+   "licence": "Open. The paper is open access (CC BY); the data record on figshare (doi 10.6084/m9.figshare.16586228) states its own licence, to confirm on the record (not reachable from the session). Cite Tobias et al. 2022, doi 10.1111/ele.13898.",
+   "key": "none",
+   "format": "CSV and XLSX: species means (AVONET1_BirdLife, AVONET2_eBird, AVONET3_BirdTree, about 11,000 rows each) and the raw individual measurements.",
+   "priority": 3,
+   "notes": "figshare.com and ndownloader.figshare.com are refused and already on the later list (for the tree-range polygons), so this adds no domain. Not sampled. It measures proportions, not colour. Mammals have no equivalent: PanTHERIA (esapubs.org, refused), EltonTraits and COMBINE (figshare) give body mass and head-body length, not leg or ear lengths.",
+   "state": "candidate",
+   "hosts": [
+    {
+     "host": "figshare.com",
+     "role": "api",
+     "probe": "https://figshare.com/articles/dataset/AVONET_morphological_ecological_and_geographical_data_for_all_birds_Tobias_et_al_2021_Ecology_Letters_/16586228",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"figshare.com\"",
+     "seen": "2026-10-15"
+    },
+    {
+     "host": "ndownloader.figshare.com",
+     "role": "files",
+     "probe": "https://ndownloader.figshare.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ndownloader.figshare.com\"",
      "seen": "2026-10-15"
     }
    ],
