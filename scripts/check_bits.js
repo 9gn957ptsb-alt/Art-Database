@@ -161,7 +161,12 @@ async function london(P, tag, touch, shots) {
   // Pressed as a person would, once it holds still: the skyline swings a quarter turn every φ⁷ s, and in
   // software GL a frame takes seconds, so a point read a moment before can be where the pair was.
   const pair = P.locator(".skyline-bit");
-  if (touch) { await pair.tap(); await P.waitForTimeout(300); await pair.tap(); } else { await pair.click(); }
+  // On a touch screen a first tap names it, unless its name is showing already: then it opens.
+  if (touch) {
+    await pair.tap();
+    await P.waitForTimeout(1500);
+    if (!(await P.evaluate(() => !!document.querySelector(".bit-card")))) { await pair.tap(); }
+  } else { await pair.click(); }
   await P.waitForFunction(() => document.querySelector(".bit-card"), null, { timeout: 8000 }).catch(() => {});
   check(tag, await P.evaluate(() => !!document.querySelector(".bit-card")), "pressed, its card");
   if (shots) { await P.waitForTimeout(1500); await P.screenshot({ path: path.join(OUT, "bits-london-card-" + tag + ".png") }); }
