@@ -2,7 +2,7 @@
 
 DRIFT Poetry (https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp) is made of two other artifacts: DRIFT
 (https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k), whose page it is, and Picture Poetry
-(https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE), whose pages lie on it. Whenever either is published again,
+(https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE), which is taken into it in pieces (README.md says how). Whenever either is published again,
 DRIFT Poetry is built again from both, as they now stand, and republished. Aries, 14 Oct 2026: "Make sure that it
 updates anytime either of the other artifacts are updated."
 
@@ -46,7 +46,7 @@ repository.
    NODE_PATH=$(npm root -g) node dirt/poetry/capture_pages.js <the folder of Picture Poetry's files> dirt/private/poetry
    ```
 
-   It opens Picture Poetry in Chromium, photographs each page's characters as that artifact draws them (its buildings
+   It opens Picture Poetry in Chromium, photographs each page's creatures as that artifact draws them (its buildings
    hidden: DRIFT Poetry draws them live, to be turned), and copies the page images and photographs beside them, with
    what its data says about each page (`pages.json`), its buildings (`buildings.json`) and the code that draws them
    (`models.js`).
@@ -70,25 +70,32 @@ repository.
    python3 dirt/poetry/build_poetry.py --drift <DRIFT's page, from step 2> --out <scratch>/drift-poetry --sources <scratch>/sources.json
    ```
 
-   Each page is measured from its image (its photograph, its poem, its paper and its ink): read the printed
-   measures and look at any that seem wrong. A page not named in `ACCENT` and `LEAN` in `build_poetry.py` takes the
-   most vivid colour of its photograph and a still from its name; give a new page its own there if it deserves one.
+   Each page's photograph is cut from its image (where Picture Poetry's data sets it, or else the largest patch of the
+   page unlike its paper) and its creatures from its overlay: read the printed sizes and look at any photograph that
+   seems wrong. The build refuses a DRIFT whose engine has no swimmers' lines (`GLG.verse`): publish DRIFT from this
+   repository first.
 
 8. **Look at it.** Serve `<scratch>/drift-poetry` with DRIFT's private folders beside it (`quilts/`, `antiquity/`,
    `faces/`, from DRIFT's files) and open `index.html#forcegl&pageN` in headless Chromium for each new or changed page
-   (`pageN` begins on page N; `nopoetry` shows DRIFT alone; `nowords` leaves DRIFT's lines unwritten). There must be
-   no page errors, and every poem must be legible. `window.DRIFT_POETRY.buildings()` lists the buildings on the screen
-   (their middles, in client pixels): drag one sideways with the mouse and it must turn, and settle on a diagonal when
-   let go. Between the pages, some of DRIFT's lines must be written in the poems' letters (README.md says which); they
-   need DRIFT's engine to carry its WORDS hook (`GLG.words`), and without it the lines stay lines.
+   (`pageN` begins beside the building of page N; `nopoetry` shows DRIFT alone; `nowords` leaves DRIFT's lines and
+   swimmers as they are). There must be no page errors. `GLG.verse()` gives `{ begun, letters }`: after a minute the
+   swimmers must have begun lines (`begun`, each with the index of its line) and set letters down (`letters` above 0),
+   and a frame must show them legible (a software GPU draws slowly, so the swimmers crawl and few letters show at
+   once). The calm country's lines must open into the poems' letters and close again (README.md says which).
+   `window.DRIFT_POETRY.buildings()` lists the buildings on the screen (their middles, in client pixels): drag one
+   sideways with the mouse and it must turn, and settle on a diagonal when let go. A photograph of Picture Poetry must
+   arrive torn out near where the visit begins, a few seconds after the ground is painted.
 
 9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
-   `files` mapping every `poetry/...` file of the build to its path, and every file DRIFT publishes except
-   `index.html` and `plane/...` (its `quilts/`, `antiquity/` and `faces/`) to `{"artifact": DRIFT's url, "path":
-   the same path}`, copied server side. Leave `capabilities` out (they carry forward: DRIFT's own, `sample`,
+   `files` mapping every `poetry/...` file of the build to its path (`photo-N.jpg`, `creatures.png`, `poems.json`,
+   `sources.json`) and every `poetry/...` file DRIFT Poetry already has that the build does not to `null`, so it goes.
+   List DRIFT Poetry's files first (`list`, `scope: "files"`): the tool will not replace a file the session has not
+   seen. DRIFT's own files (its `quilts/`, `antiquity/` and `faces/`; not `index.html` or `plane/...`) are already in
+   DRIFT Poetry and are kept when left out: map only those whose size differs between the two listings, or that DRIFT
+   Poetry lacks, to `{"artifact": DRIFT's url, "path": the same path}`, copied server side. Leave `capabilities` out (they carry forward: DRIFT's own, `sample`,
    `assets`, `db` and `downloads`, which its page uses); if DRIFT's declaration has changed, declare the same set.
 
-10. **Commit** whatever changed in `dirt/poetry/` (a new page's accent, a fix to the measuring) and push to
+10. **Commit** whatever changed in `dirt/poetry/` (a fix to the cutting or the capture) and push to
     `claude/digital-dirt-layers-paiial`. Nothing from `dirt/private/` is ever committed.
 
 If a step fails, leave DRIFT Poetry as it was (it still works, a version behind), and say which step failed and why.

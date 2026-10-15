@@ -1,94 +1,98 @@
 # DRIFT Poetry
 
-DRIFT with the pages of *Picture Poetry* lying on it. Aries, 14 Oct 2026: "There should be two separate artifacts, DRIFT
-and DRIFT Poetry. The latter should be a combination of the Picture Poetry artifact and DRIFT. Make sure that it
-updates anytime either of the other artifacts are updated."
+DRIFT with *Picture Poetry* taken into it. Aries, 14 Oct 2026: "There should be two separate artifacts, DRIFT and
+DRIFT Poetry. The latter should be a combination of the Picture Poetry artifact and DRIFT. Make sure that it updates
+anytime either of the other artifacts are updated." And on 15 Oct: "You can break up the poems by line, keeping them
+all together squares the aesthetic too much. I want a more synthesized integration between DRIFT and Picture Poetry,
+just as you are distorting artist works to form drift you are now taking Picture Poetry and implementing them into
+those distortions. Figuring out the integration of the language is especially important. I don't mind having the
+language the most animated aspect of DRIFT Poetry, just as long as it's aesthetically pleasing."
 
 So DRIFT Poetry is DRIFT's own page, exactly as published (its ground, its artists, its garden and creatures, its
-watercolour, its buttons), with the six pages of Picture Poetry laid over its ground, each whole: its photograph, its
-poem, its buildings (which turn under a swipe, as in the book) and its characters; and between the pages, some of
-DRIFT's own lines are written out in the poems. It is built from the two artifacts as they stand and built again whenever
-either is republished: [UPDATE.md](UPDATE.md) says how, and who does it. DRIFT stays a separate artifact, without
-the pages.
+watercolour, its buttons), with Picture Poetry taken into it in pieces, as DRIFT takes in the paintings it is made of:
+the poems a line at a time into DRIFT's moving parts, the photographs into its collage, the buildings onto its ground.
+It is built from the two artifacts as they stand and built again whenever either is republished:
+[UPDATE.md](UPDATE.md) says how, and who does it. DRIFT stays a separate artifact, without any of it.
 
-It began on 10 October 2026 as *DIRT Poetry*, the pages on a plane of its own painted after four stills of DRIFT
-(v80), first five pages and then each page whole; renamed *DRIFT Poetry* on 14 October, and that day made of DRIFT
-itself, when Picture Poetry had grown a sixth page (*Discourse to the Athenians*) and redesigned its fourth.
+It began on 10 October 2026 as *DIRT Poetry*, the pages on a plane of their own painted after four stills of DRIFT
+(v80); renamed *DRIFT Poetry* on 14 October and made of DRIFT itself, the six pages laid on it whole, their buildings
+turning and some of DRIFT's lines written in the poems' letters; and on 15 October the pages came apart into DRIFT.
 
-Published as its own artifact (private to its owner), https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp. The pages,
-the photographs and the poems are not in this repository: they come from Picture Poetry's published files and
+Published as its own artifact (private to its owner), https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp. The poems,
+the photographs and the creatures are not in this repository: they come from Picture Poetry's published files and
 `dirt/private/poetry/` (ignored), and are published only with the artifact.
 
     NODE_PATH=$(npm root -g) node dirt/poetry/capture_pages.js PICTURE_POETRY_FILES dirt/private/poetry
     python3 dirt/poetry/build_poetry.py --drift DRIFT.html --out OUT --sources SOURCES.json
 
-## How the pages lie on DRIFT
+## The poems, a line at a time
 
-- **On DRIFT, in step with it.** `layer.js` runs inside DRIFT's page: just after DRIFT draws its ground, on the same
-  frame, it draws the pages on a canvas of its own over DRIFT's ground and its living things, clear everywhere else,
-  so the pages move with the ground exactly. Stills and recordings made with DRIFT's buttons include them.
-- **Where.** One page to each square 2584 pixels wide, scattered a little and turned within a degree and a half, as
-  if laid by hand, with DRIFT between them. They are dealt along the rows two apart, so no two neighbours hold the
-  same page. The squares are anchored where the visit begins, on a page chosen at random (on a narrow screen, on its
-  poem); `#pageN` begins on page N, `#nopoetry` shows DRIFT alone. A label in DRIFT's caption type names the page
-  underfoot.
-- **How big.** A page pixel is φ⁻¹ of a CSS pixel on every screen, a little larger than the book shows them, so the
-  poems read at their own size.
-- **Four ways of painting a page,** after the four stills of DRIFT the first version was made from. Each page leans
-  to one and visits the other three: its photograph printed in halftone over a pale wash of itself, a soft dark disc
-  just beyond its far edge with fine rainbow arcs round it; whole in its middle and coming apart cell by cell toward
-  its edge, a few upright brushstrokes in its accent beside it; held in a white cloud, with golden kaleidoscopes round
-  it (two strokes in the wedge between five mirrors at 36°, so ten images make a star, cos 36° = φ/2); torn and laid
-  again, its torn edges white with fibre, and the poem on its own torn sheet of the page's paper. *Boiling* leans to
-  coming apart, the sun in the trees to the kaleidoscopes, *For What* and *Neither Where Nor When* to the torn, the
-  lighthouse and *Discourse to the Athenians* (the disc among its globes and stars) to the halftone and the disc.
-- **The paper dissolves into DRIFT; the poem stays.** A page's paper thins into DRIFT's ground at a wash's wandering
-  edge, and the poem keeps a calm paper under it so it can be read, dark where the page is dark (pages 4 and 6). A
-  watercolour softens the paint, and last the page's own type, rules, buildings and characters are printed on it,
-  sharp: the page with its paper taken away, each pixel's own colour kept, so a coloured rule keeps its colour.
-  The buildings are not in that ink: they are drawn live over it (below).
-- **Measured, not transcribed.** Each page is measured from its image when it is built: its paper (its commonest
-  colour), its photograph (where Picture Poetry's data sets it, or else the largest patch unlike the paper), its ink
-  (the far end of its colours from the paper, darker on a light page, lighter on a dark one) and its poem (the run
-  of lines with the most ink, outside the photograph and the figures), so a new page needs only its poem read: the
-  poems exist only in the page images, and are transcribed into `poems.json` for screen readers and the label.
-- **Still, and never behind.** Nothing moves unless DRIFT's view moves; the pages are drawn again only then, more
-  coarsely if moving frames come slowly (a frame over 24 ms, eight times), and once more at their finest at rest.
+No poem lies whole anywhere. Each is broken into its lines (a prose poem at its sentences and clauses, none longer than
+55 characters), and the lines go into the parts of DRIFT that already move, each moving as that part does. Barbara
+Brownie's terms for type in time (*Transforming Type: New Directions in Kinetic Typography*, 2015) fit what each does:
+the swimmers' lines are a *construction* (written on, letter by letter, where the eye is), the calm country's a
+*metamorphosis* (a line becoming letters and letters becoming a line, Brownie's fluid typography), the gesture's a
+*scrolling* line.
 
-## The buildings turn
-
-Aries, 14 Oct 2026: "Make sure I can still rotate architecture buildings in DRIFT Poetry like I can in Picture
-Poetry." Each page's buildings (Turner Contemporary, Ordrupgaard, the Menil Collection, Cherry Hill Park, the
-Phillips Collection, Spring Point Ledge light, the Parthenon) are drawn live by Picture Poetry's own model code, on
-each place's DIRT soil, on a canvas over the pages. Dragged sideways, a building turns as in the book (0.022 radians a
-pixel) and the plane holds still under it; let go, it settles on the nearest of its four diagonals over 700 ms, with
-the book's easing; a tap names it in the label. Each copy of a page on the plane keeps its own buildings' turns.
-`capture_pages.js` takes the model code (`models.js`) and the buildings (`buildings.json`) from the book, and leaves
-them out of the captured ink.
-
-## The poems written along DRIFT's lines
-
-Aries, 14 Oct 2026: "You have to integrate the text into DRIFT Poetry more. Analyze places in the graphics of DRIFT
-where lines can be subtly transformed into linguistic characters." Some of DRIFT's lines are written out in the poems'
-letters, small enough to read as the line a little way off and as the poems close to: micrography, as the Hebrew
-scribes drew figures in minute letters, except that here the figures were there first and the poems are written into
-them.
-
-- **Where.** Most of the plane is the calm country, one minimal painting a region, and there: Kandinsky's lines (*Point
-  and Line to Plane*), Miró's constellation, Kline's strokes (lines of letters along each), Giacometti's figure and
-  Newman's zip (a line of letters down each), Agnes Martin's grid (each row a line of writing), and of the roster's
-  compositions the stripes and broad strokes wide enough to hold a line, Diebenkorn's and Marden's charcoal lines,
-  the printed sheet among the torn ones (Rauschenberg, Bradford: a page of the poems, a line of verse a row) and the
-  rows of strokes after Basquiat and Mathieu (the strokes become capitals, the crossed-out row still crossed). In the
-  busier worlds, the gesture, the one line that runs through every world, becomes one line of the poems running on.
-  Lines too fine or too close to hold letters (LeWitt's, Riley's, Stella's pinstripes, Mondrian's) are left as lines.
+- **The swimmers write.** The five swimmers under DRIFT's surface (seen only as the wash thinning over them) each
+  write a line of a poem in their wake, as a finger writes in water: a letter is set down on the water where the
+  swimmer has just passed, along the way it swims, and comes up out of the blur; it rides the water, rocking a
+  little, and about 21 seconds later sinks again, blurring and spreading as ink does in water. A swimmer keeps to one
+  poem, line after line, resting a few seconds between them; heading left, it writes its line from the end, so every
+  line reads left to right; it writes only while it swims within 50° of level, and a steeper turn ends the line there.
+  The letters are DRIFT's italic, an em of 17 CSS pixels on any screen, in the ground's own ink: a glaze of the colour
+  under each letter, its pigment denser and leaning to sepia, with a little of the paint pushed back round it (on dark
+  ground, the paper showing through instead), the paper's grain in it, thinning toward the frame's margins as
+  everything does. Precedents: Utterback and Achituv's *Text Rain* (1999), where a poem's letters fall on the viewers
+  a line at a time; Jenny Holzer's words projected onto rivers, the Arno in 1996 and the Tiber since. When a swimmer
+  begins a line near the middle of the view, the label names its poem.
+- **The calm country's lines breathe.** Where DRIFT's minimal paintings draw lines, each line, on a cycle of its own
+  about 34 seconds long (times φ^±½), opens into one line of a poem: the line wears away into letters, written on
+  along it over 2.6 seconds; the letters hold; then they swell back into the line over 3 seconds, bleeding into one
+  another as wet ink does, and the line is a line alone for 5 seconds before the next line of the poems. The line
+  itself fades as its letters come and returns as they go. Each verse line is centred on the line that holds it (from
+  the torn edge, on a printed sheet) and thins out where the mark ends. The lines written: Kandinsky's (*Point and Line
+  to Plane*), Miró's constellation, Kline's strokes (a verse line a row along each), Giacometti's figure and Newman's
+  zip (a verse line down each), each row of Agnes Martin's grid on its own breath, and of the roster's compositions the
+  stripes and broad strokes wide enough to hold a line, Diebenkorn's and Marden's charcoal lines (each of the three on
+  its own breath), the printed sheet among the torn ones (Rauschenberg, Bradford: a verse line a row) and the rows of
+  strokes after Basquiat and Mathieu (the strokes become capitals, each a whole stroke's place). Lines too fine or too
+  close to hold letters (LeWitt's, Riley's, Stella's pinstripes, Mondrian's) are left as lines. Precedents: Hebrew
+  micrography, figures drawn in minute script, and Glenn Ligon's stencilled sentences that thicken into coal dust and
+  illegibility; Tom Phillips's *A Humument* (1966–2016), its verse found in rivers through painted pages.
+- **The gesture carries lines.** The one line that runs through every busy world carries the poems along it, a line
+  every 40 em, drifting by at φ⁻¹ em a second, the way the eye reads: smooth scrolling reads as well as words flashed in
+  one place (Kang and Muter, "Reading dynamically displayed text", 1989).
 - **How.** DRIFT's watercolour softens everything its cells hold, so the letters cannot be painted there. DRIFT's
   engine (`dirt/engine/ground-gl.js`, WORDS) has a hook that only DRIFT Poetry turns on, before the engine begins
-  (`window.DRIFT_WORDS`): the first pass notes, cell by cell, which line runs there; every pass after it fades the note
-  where it covers the cell; and the pixel pass, last, finds the line again at the pixel's own size and prints its
-  letters on the wash in the line's own ink, while the line itself stays, fainter, under them. DRIFT never sets the
-  flag, so its shaders compile without any of it. `layer.js` draws the glyphs once their fonts are in, in DRIFT's
-  italic (Newsreader) and Picture Poetry's capitals (Poppins), and hands them over with the poems' text: each poem's
-  lines a verse line apart, a prose poem run together.
-- **Still.** The letters come in over phi seconds once their fonts arrive and then hold still with the lines; they go
-  in an anomaly and come back after it. `#nowords` leaves DRIFT's lines as they are.
+  (`window.DRIFT_WORDS`): the first pass notes, cell by cell, which line runs there; the minimal areas' pass fades each
+  line as its letters come (the cycle, `wCycle`, worked out alike in both passes); every pass after fades the note
+  where it covers the cell; the pixel pass, last, finds the line again at the pixel's own size and prints its verse
+  line on the wash in the line's own ink; and the swimmers' letters are quads drawn over the finished frame. The glyphs
+  are distance fields (Green, "Improved Alpha-Tested Magnification for Vector Textures and Special Effects", SIGGRAPH
+  2007), so a letter can wear thin, swell and blur as well as be drawn; `layer.js` makes them once the fonts are in, in
+  DRIFT's italic (Newsreader) and Picture Poetry's capitals (Poppins), with Felzenszwalb and Huttenlocher's exact
+  distance transform (2012). DRIFT never sets the flag, so its shaders compile without any of it. `#nowords` leaves
+  DRIFT's lines and swimmers as they are.
+
+## The photographs, into the collage
+
+Each page's photograph goes into DRIFT as a photo the viewer puts in does (`GLG.putIn`, drift.js): it arrives torn out
+where it is put in, and DRIFT's collage melts it (the datamosh) and carries it off in torn pieces across the plane. The
+first arrives where the visit begins, once DRIFT's ground is painted; every 144 seconds the next goes in quietly (no
+arrival: only a share of the collage's pieces turn to it); and for 377 seconds after the viewer puts in a photo or a
+name of their own, theirs is left to drift.
+
+## The buildings, on the ground
+
+Aries, 14 Oct 2026: "Make sure I can still rotate architecture buildings in DRIFT Poetry like I can in Picture
+Poetry." The buildings (Turner Contemporary, Ordrupgaard, the Menil Collection, Cherry Hill Park, the Phillips
+Collection, Spring Point Ledge light, the Parthenon) stand on DRIFT's ground on their own, a building to each square of
+a lattice 1597 CSS pixels wide, dealt so that no two neighbours are alike, scattered within φ⁻¹ of their squares; the
+visit begins beside one (`#pageN` beside page N's). Each is drawn live by Picture Poetry's own model code on its
+place's DIRT soil, as large as the book has it, with the creatures that stood by it on its page, each where it stood.
+Dragged sideways, a building turns as in the book (0.022 radians a pixel) and the plane holds still under it; let go,
+it settles on the nearest of its four diagonals over 700 ms, with the book's easing; a tap names it in the label. Each
+copy keeps its own turn. `capture_pages.js` takes the model code (`models.js`) and the buildings (`buildings.json`)
+from the book, and the creatures as it draws them (its overlays); `build_poetry.py` cuts the creatures onto one sheet.
+Stills and recordings made with DRIFT's buttons include the buildings.

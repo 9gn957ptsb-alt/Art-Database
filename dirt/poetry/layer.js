@@ -1,557 +1,80 @@
-/* DRIFT Poetry's pages, laid on DRIFT.
+/* DRIFT Poetry: Picture Poetry taken into DRIFT.
 
-   This runs inside DRIFT's own page (build_poetry.py appends it): DRIFT draws its ground as it always does, and just
-   after it, on the same frame, this draws the pages of Picture Poetry over it, each whole, on a canvas of its own
-   over DRIFT's ground and its living things (which pass under a page's paper, seen through it where it thins).
-   Outside the pages the canvas is clear, so everything else is DRIFT as published. The pages lie on a lattice of squares 2584 pixels wide, one to a square, scattered a little and turned
-   as if laid by hand, dealt along the rows two apart so that no two neighbours hold the same page; the lattice is
-   anchored where the visit begins, on a page chosen at random.
+   This runs inside DRIFT's own page (build_poetry.py appends it), after DRIFT's engine has begun. Aries, 15 Oct 2026:
+   "You can break up the poems by line, keeping them all together squares the aesthetic too much. I want a more
+   synthesized integration between DRIFT and Picture Poetry, just as you are distorting artist works to form drift you
+   are now taking Picture Poetry and implementing them into those distortions." So no page lies on the plane any more:
+   Picture Poetry goes into DRIFT as the saved paintings do, in pieces, each piece into the process that suits it.
 
-   Each page is painted in one of four ways, after four stills of DRIFT: its photograph printed in halftone with a
-   soft dark disc and fine rainbow arcs beyond it; whole in its middle and coming apart cell by cell toward its edge;
-   held in a white cloud with golden kaleidoscopes round it; torn and laid again. The page's paper dissolves into
-   DRIFT at a wash's wandering edge, the poem keeps a calm paper under it so it can be read, a watercolour softens the
-   paint, and last the page's own type, rules, buildings and characters are printed on it, sharp.
+   - The poems, a line at a time, into DRIFT's moving parts (WORDS in ground-gl.js, which this hands the glyphs and the
+     lines): each swimmer under the surface writes the lines of one poem in its wake, one after another; each line the
+     calm country draws opens into a line of the poems and swells back into a line, on a breath of its own; the gesture
+     carries lines along it as a river carries what is put in it. A verse line stays whole; a prose poem is broken at
+     its sentences and clauses.
+   - The photographs into DRIFT's collage, as a photo the viewer puts in goes (GLG.putIn): the first arrives torn out
+     where the visit begins, and the collage melts it and carries it off in pieces; every 144 seconds the next goes in
+     quietly, so the collage's torn pieces are of it; never over a photo the viewer has just put in.
+   - The buildings onto the ground, alone: a building to each square of a lattice of their own, 1597 CSS pixels wide,
+     dealt so that no two neighbours are alike, each drawn live by Picture Poetry's own model code on its place's DIRT
+     soil and turned by a swipe as in the book, with the creatures that stood by it on its page.
+   - A label names the poem a swimmer begins near the middle of the view, and a building when it is tapped.
 
-   Nothing here moves on its own: the pages are drawn again only when DRIFT's view moves. */
+   #nowords leaves DRIFT's lines and swimmers as they are; #nopoetry is DRIFT alone. */
 (function () {
   "use strict";
   const SPEC = __POETRY__;
   if (typeof GLG === "undefined" || !GLG || /(?:^|&)nopoetry(?:&|$)/.test(location.hash.slice(1))) return;
   const stage = document.getElementById("stage"), field = document.getElementById("field");
-  const lay = document.createElement("canvas");
-  lay.setAttribute("aria-hidden", "true");
-  lay.style.pointerEvents = "none";
-  // (the drawing kept between frames: the pages are drawn only when the view moves, and a still taken in between
-  //  must still find them)
-  const gl = lay.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true });
-  if (!gl) return;
-  stage.insertBefore(lay, field.nextSibling);          // over DRIFT's ground and its living things, so a poem stays clear
-  new MutationObserver(() => { lay.style.visibility = field.style.visibility; }).observe(field, { attributes: true, attributeFilter: ["style"] });
-  const NP = SPEC.pages.length;
-
-  // ---- the shaders -----------------------------------------------------------------------------------------------
-  const COMMON = `
-precision highp float; precision highp int; precision highp sampler2DArray;
-const float PHI = 1.618033988749895, P1 = 0.618033988749895, P2 = 0.381966011250105, P4 = 0.145898033750315;
-const float G = ${SPEC.G.toFixed(1)};          // a page to each square this wide (plane pixels)
-const float S = P1;                            // plane pixels to a page pixel
-const int NP = ${NP};
-uniform vec4 uPageA[NP];         // each page: its width and height (page pixels), whether it lies on its side in the
-                                 // ink texture, and whether its photograph does in the photo texture
-uniform vec4 uPhotoR[NP];        // where each page sets its photograph (page pixels: left, top, right, bottom)
-uniform vec4 uTextR[NP];         // where each sets its poem
-uniform ivec2 uAnchor;           // the lattice square the visit began in
-uniform int uFirst;              // and the page it holds
-uniform vec2 uShift;             // the lattice's offset, so that square's page lies where the visit began
-uint mixh(uint h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
-uint h3(int x, int y, uint s) { return mixh(uint(x) * 0x27d4eb2du ^ mixh(uint(y) * 0x165667b1u + s)); }
-float unit(uint h) { return float(h >> 8) * (1.0 / 16777216.0); }
-float vnoise(vec2 p, float g, uint s) {
-  vec2 f = p / g, i = floor(f), t = f - i; t = t * t * (3.0 - 2.0 * t);
-  ivec2 q = ivec2(i);
-  return mix(mix(unit(h3(q.x, q.y, s)), unit(h3(q.x + 1, q.y, s)), t.x), mix(unit(h3(q.x, q.y + 1, s)), unit(h3(q.x + 1, q.y + 1, s)), t.x), t.y);
-}
-float fbm(vec2 p, float g, uint s) { return 0.5 * vnoise(p, g, s) + 0.3 * vnoise(p, g * P1, s + 1u) + 0.2 * vnoise(p, g * P2, s + 2u); }
-mat2 turn(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
-float sdBox(vec2 p, vec2 b) { vec2 d = abs(p) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
-/** A square's middle, where its page lies: moved a little by its own hash. */
-vec2 seedOf(ivec2 c, out uint h) {
-  h = h3(c.x, c.y, 53u);
-  return (vec2(c) + 0.5 + P4 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * G + uShift;
-}
-/** Which page a square holds: dealt along the rows two apart, so no two neighbours hold the same page. */
-int pageOf(ivec2 c) { int v = c.x - uAnchor.x + 2 * (c.y - uAnchor.y) + uFirst; return v - NP * int(floor(float(v) / float(NP))); }
-float tilt(uint h) { return 0.0557 * (unit(mixh(h + 9u)) - 0.5); }   // as laid by hand: within a degree and a half
-vec2 toPage(vec2 p, vec2 C, uint h, int pg) { return turn(-tilt(h)) * (p - C) / S + 0.5 * uPageA[pg].xy; }
-struct Pg { vec2 q; int pg; uint h; float e; };
-/** The page nearest p: where p falls on it (page pixels), which page, its square's hash, and how far outside its
- *  edge p lies (negative within). */
-Pg pageAt(vec2 p) {
-  ivec2 g0 = ivec2(floor((p - uShift) / G));
-  Pg best = Pg(vec2(0.0), 0, 0u, 1e9);
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    ivec2 c = g0 + ivec2(i, j);
-    uint h; vec2 C = seedOf(c, h);
-    int pg = pageOf(c);
-    vec2 q = toPage(p, C, h, pg), hw = 0.5 * uPageA[pg].xy;
-    float e = sdBox(q - hw, hw);
-    if (e < best.e) best = Pg(q, pg, h, e);
-  }
-  return best;
-}
-`;
-  const VS = `#version 300 es
-void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
-
-  // The paint, premultiplied: what each page lays over DRIFT, and how much of DRIFT it covers.
-  const PAINT = `#version 300 es
-${COMMON}
-uniform sampler2DArray uPhoto;   // the photographs, as the pages hold them, mipmapped
-uniform vec3 uPaper[NP];         // each page's own paper
-uniform vec3 uAccent[NP];        // each page's accent, for its halftone, brushstrokes and kaleidoscopes
-uniform int uLean[NP];           // the still each page leans to
-uniform vec2 uOrigin;            // the plane at the paint's top left
-uniform float uCell;             // plane pixels a texel
-uniform vec2 uSize;              // texels
-out vec4 outC;
-const vec3 WHITE = vec3(248.0, 246.0, 241.0), FIBRE = vec3(252.0, 251.0, 247.0), BLACK = vec3(0.0);
-vec4 acc;                        // premultiplied, 0 to 255: what has been laid so far
-/** Lay colour c over what is there, covering t of it. */
-void put(vec3 c, float t) { t = clamp(t, 0.0, 1.0); acc = vec4(mix(acc.rgb, c, t), mix(acc.a, 255.0, t)); }
-float lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)) / 255.0; }
-/** Which still a page is painted after here: each leans to one and visits the other three. */
-int modeOf(int pg, uint h) {
-  int lean = uLean[pg];
-  float u = unit(mixh(h + 11u));
-  if (u < P2) return lean;
-  int k = lean + 1 + int(min(2.0, floor((u - P2) / P1 * 3.0)));
-  return k > 3 ? k - 4 : k;
-}
-vec3 photo(int pg, vec2 f, float lod) {
-  f = clamp(f, 0.0, 1.0);
-  if (uPageA[pg].w > 0.5) f = vec2(1.0 - f.y, f.x);
-  return textureLod(uPhoto, vec3(f, float(pg)), lod).rgb * 255.0;
-}
-vec2 photoF(int pg, vec2 q) { vec4 R = uPhotoR[pg]; return (q - R.xy) / (R.zw - R.xy); }
-/** Where the disc sits: just beyond the photograph's far edge, away from the poem, never far off the page. */
-vec2 discAt(vec2 rc, vec2 rh, vec2 away, float rd, vec2 hw) {
-  float reach = abs(away.x) * rh.x + abs(away.y) * rh.y;
-  return clamp(rc + away * (reach + 0.5 * rd), vec2(-89.0), 2.0 * hw + 89.0);
-}
-/** Fine arcs in rainbow colours round a centre, a rainbow drawn in hairlines (the first still). */
-void arcs(vec2 q, vec2 ca, float R, uint h, float amt) {
-  float r = length(q - ca);
-  float band = smoothstep(R - 340.0, R - 146.0, r) * (1.0 - smoothstep(R + 146.0, R + 372.0, r));
-  float s = fract(r / 14.6), line = exp(-pow((s - 0.5) / 0.16, 2.0));
-  vec3 hue = 255.0 * (0.66 + 0.3 * cos(6.2832 * (r / 610.0 + unit(h) + vec3(0.0, 0.33, 0.67))));
-  put(hue * 0.88, band * line * amt);
-}
-/** A soft dark disc, as the sun leaves on the eye (the first still). */
-void disc(vec2 q, vec2 cd, float rd, uint h) {
-  float e = length(q - cd) + 11.0 * (vnoise(q, 34.0, h + 37u) - 0.5);
-  put(vec3(62.0, 58.0, 55.0) * (0.86 + 0.28 * vnoise(q, 21.0, h + 38u)), (1.0 - smoothstep(rd - 16.0, rd + 16.0, e)) * 0.94);
-}
-/** Light caught on the paper: thin soft streaks (the fourth still). */
-void glints(vec2 q, vec2 at, uint h) {
-  for (int k = 0; k < 4; k++) {
-    uint hk = mixh(h + 100u + uint(k) * 3u);
-    vec2 c = at + turn(6.2832 * unit(hk)) * vec2(404.0 * unit(mixh(hk + 1u)), 0.0);
-    vec2 l = turn(-6.2832 * unit(mixh(hk + 2u))) * (q - c);
-    float s = exp(-abs(l.y) / 2.1) * exp(-abs(l.x) / (36.0 + 48.0 * unit(mixh(hk + 3u))));
-    s = max(s, 0.6 * exp(-abs(l.x) / 2.1) * exp(-abs(l.y) / 14.6));
-    put(vec3(253.0, 252.0, 249.0), s * 0.7);
-  }
-}
-/** A white cloud, and in it the page's photograph seen in five mirrors standing at 36 degrees: the pentagon's
- *  symmetry, where cos 36 degrees is phi / 2. Two brush strokes lie in the wedge between the mirrors, so ten images
- *  make a star, and the same star again phi^2 smaller in its middle (the third still). */
-void rosette(vec2 q, vec2 ck, float rb, int pg, uint hk) {
-  vec2 d = q - ck;
-  float r = length(d);
-  float edge = r + rb * 0.42 * (vnoise(q, rb * 0.55, hk + 3u) - 0.5) + 8.0 * (vnoise(q, 5.0, hk + 4u) - 0.5);
-  float blob = 1.0 - smoothstep(rb * 1.3, rb * 1.3 + 21.0, edge);
-  if (blob <= 0.0) return;
-  float w = 3.14159265 / 5.0, a = atan(d.y, d.x) + 6.2832 * unit(mixh(hk + 5u));
-  float i = floor(a / w), f = a - i * w;
-  if (mod(i, 2.0) > 0.5) f = w - f;
-  vec3 star = WHITE;
-  for (int lv = 0; lv < 2; lv++) {
-    float rr = r * (lv == 0 ? 1.0 : PHI * PHI), fade = lv == 0 ? 1.0 : P1;
-    vec2 wq = rr * vec2(cos(f), sin(f));
-    for (int sk = 0; sk < 2; sk++) {
-      float sa = (sk == 0 ? 0.25 : 0.72) * w + 0.12 * w * (unit(mixh(hk + 20u + uint(sk))) - 0.5);
-      vec2 dir = vec2(cos(sa), sin(sa));
-      float r0 = rb * (sk == 0 ? 0.22 : 0.48), r1 = rb * (sk == 0 ? 0.78 : 1.02);
-      float t = clamp(dot(wq, dir), r0, r1), dist = length(wq - dir * t);
-      float wd = (sk == 0 ? 10.5 : 7.3) * (1.0 - 0.45 * smoothstep(r0, r1, t));
-      float s = 1.0 - smoothstep(wd - 2.4, wd + 2.4, dist + 3.2 * (vnoise(wq, 5.0, hk + 9u) - 0.5));
-      vec3 src = photo(pg, 0.15 + 0.7 * vec2(unit(mixh(hk + 30u + uint(sk))), unit(mixh(hk + 32u + uint(sk)))), 2.0);
-      vec3 ink = lum(src) < 0.42 ? vec3(44.0, 41.0, 42.0) : uAccent[pg];
-      star = mix(star, ink, s * fade * (0.78 + 0.22 * vnoise(wq, 8.0, hk + 11u)));
-    }
-  }
-  put(star, blob);
-}
-/** A soft stroke of a loaded brush, thinning dry at its ends (the second still). */
-void stroke(vec2 q, vec2 c, float a, float len, float wd, vec3 ink, uint hk) {
-  vec2 l = turn(-a) * (q - c);
-  float e = length(vec2(max(abs(l.x) - len, 0.0), l.y)) - wd * (1.0 - 0.35 * smoothstep(0.4, 1.0, abs(l.x) / len))
-            + 5.0 * (vnoise(q, 6.5, hk + 5u) - 0.5);
-  put(ink, (1.0 - smoothstep(-3.2, 4.0, e)) * (0.72 + 0.28 * vnoise(l, 8.0, hk + 7u)));
-}
-
-// ---- the page's photograph, after each still (q in page pixels) ------------------------------------------------
-/** Printed in halftone over a pale wash of itself: dots where it is dark, in its own colours leaning to the page's
- *  accent, at 45 degrees (the first still). */
-void photoHalftone(vec2 q, int pg, uint h, float er) {
-  float edge = er + 11.0 * (vnoise(q, 21.0, h + 150u) - 0.5) + 4.0 * (vnoise(q, 5.0, h + 151u) - 0.5);
-  float inside = 1.0 - smoothstep(-15.0, 0.0, edge);
-  if (inside <= 0.0) return;
-  vec3 ph = photo(pg, photoF(pg, q), 1.2);
-  vec3 base = mix(mix(ph, vec3(lum(ph) * 255.0), 0.24), uPaper[pg], 0.38);
-  mat2 t = turn(0.785398);
-  float per = 21.0;
-  vec2 g = t * q / per, cell = floor(g) + 0.5, f = g - cell;
-  vec3 pc = photo(pg, photoF(pg, transpose(t) * cell * per), 2.4);
-  float rr = 0.44 * sqrt(clamp((1.0 - lum(pc) - 0.18) * 1.5, 0.0, 1.0));
-  float dt = 1.0 - smoothstep(rr - 0.09, rr + 0.09, length(f));
-  put(mix(base, mix(pc * 0.78, uAccent[pg], 0.42), dt * 0.72), inside);
-}
-/** Whole in its middle, coming apart cell by cell toward its edge, the cells drifting out (the second still). */
-void photoKnot(vec2 q, int pg, uint h, float er, vec2 rh) {
-  float bw = 0.26 * min(rh.x, rh.y);
-  float inset = -er + 0.55 * bw * (fbm(q, 89.0, h + 152u) - 0.5);
-  if (inset < -0.62 * bw) return;
-  if (inset >= bw) { put(photo(pg, photoF(pg, q), 0.8), 1.0); return; }
-  vec2 cell = floor(q / 13.0);
-  uint hc = h3(int(cell.x), int(cell.y), h + 153u);
-  float keep = smoothstep(-0.62 * bw, bw, inset);
-  if (unit(hc) > keep * keep * 1.1) return;
-  vec2 cc = (cell + 0.5) * 13.0 + 3.0 * (vec2(unit(mixh(hc + 3u)), unit(mixh(hc + 4u))) - 0.5);
-  vec2 crumb = vec2(2.6 + 3.4 * unit(mixh(hc + 5u)), 2.6 + 3.4 * unit(mixh(hc + 6u)));
-  vec3 c = photo(pg, photoF(pg, cc + 13.0 * (vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u))) - 0.5)), 0.6);
-  put(c, 1.0 - smoothstep(-0.5, 1.5, sdBox(q - cc, crumb)));
-}
-/** Held in a white cloud: its edge a cloud's, thinning to white toward the rim (the third still). */
-void photoCloud(vec2 q, int pg, uint h, float er, vec2 rh) {
-  float s = min(rh.x, rh.y);
-  float e = er + 0.18 * s * (fbm(q, 0.3 * s, h + 154u) - 0.5) + 8.0 * (vnoise(q, 6.5, h + 155u) - 0.5);
-  float blob = 1.0 - smoothstep(0.0, 34.0, e);
-  if (blob <= 0.0) return;
-  float inside = 1.0 - smoothstep(-55.0, -13.0, e);
-  put(mix(WHITE, mix(photo(pg, photoF(pg, q), 0.9), WHITE, 0.1), inside), blob);
-}
-/** Torn into pieces and laid again, each a little moved and turned, the torn edges white with fibre, casting a soft
- *  shadow on what lies under them (the fourth still). */
-void photoTorn(vec2 q, int pg, uint h, vec2 rc, vec2 rh) {
-  float size = 0.95 * min(rh.x, rh.y);
-  vec2 qw = q + 34.0 * (vec2(vnoise(q, 55.0, h + 160u), vnoise(q, 55.0, h + 161u)) - 0.5)
-              + 10.0 * (vec2(vnoise(q, 11.0, h + 162u), vnoise(q, 11.0, h + 163u)) - 0.5);
-  ivec2 g0 = ivec2(floor(qw / size));
-  float d1 = 1e18, d2 = 1e18; uint p1 = 0u, p2 = 0u;
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    ivec2 c = g0 + ivec2(i, j);
-    uint hc = h3(c.x, c.y, h + 164u);
-    vec2 S2 = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(hc + 1u)), unit(mixh(hc + 2u))) - 0.5)) * size;
-    float dd = dot(qw - S2, qw - S2);
-    if (dd < d1) { d2 = d1; p2 = p1; d1 = dd; p1 = hc; }
-    else if (dd < d2) { d2 = dd; p2 = hc; }
-  }
-  float e = 0.5 * (sqrt(d2) - sqrt(d1));
-  bool firstOnTop = unit(mixh(p1 + 5u)) > unit(mixh(p2 + 5u));
-  float se = firstOnTop ? e : -e;
-  float ov = 8.0 + 6.0 * vnoise(q, 8.0, h + 165u);
-  bool onTop = se > -ov;
-  uint pc = onTop == firstOnTop ? p1 : p2;
-  vec2 off = 21.0 * (vec2(unit(mixh(pc + 1u)), unit(mixh(pc + 2u))) - 0.5);
-  vec2 src = rc + turn(0.035 * (unit(mixh(pc + 3u)) - 0.5)) * (q - rc) - off;
-  float tear = sdBox(src - rc, rh) + 11.0 * (vnoise(q, 15.0, h + 166u) - 0.5) + 3.2 * (vnoise(q, 4.0, h + 167u) - 0.5);
-  if (tear > 0.0) { put(BLACK, 0.1 * (1.0 - smoothstep(0.0, 15.0, tear))); return; }
-  vec3 frag = photo(pg, photoF(pg, src), 0.7);
-  frag = mix(frag, WHITE, 0.16 * smoothstep(-rh.x, rh.x, dot(q - rc, vec2(0.7071, -0.7071))));
-  float rimP = onTop ? smoothstep(-ov, -ov + 1.6, se) * (1.0 - smoothstep(-ov + 2.6, -ov + 5.8 + 3.2 * vnoise(q, 5.0, h + 168u), se)) : 0.0;
-  float rimE = smoothstep(-5.8 - 3.2 * vnoise(q, 5.0, h + 169u), -1.6, tear);
-  frag = mix(frag, FIBRE, max(rimP, rimE) * 0.9);
-  if (!onTop) frag *= 1.0 - 0.11 * (1.0 - smoothstep(0.0, 13.0, -ov - se));
-  put(frag, 1.0);
-}
-
-/** A page laid on DRIFT, after the still it is painted in. */
-void pageLayer(vec2 q, int pg, uint h) {
-  int m = modeOf(pg, h);
-  vec2 hw = 0.5 * uPageA[pg].xy;
-  vec4 R = uPhotoR[pg], T = uTextR[pg];
-  vec2 rc = 0.5 * (R.xy + R.zw), rh = 0.5 * (R.zw - R.xy);
-  vec2 tc = 0.5 * (T.xy + T.zw), th = 0.5 * (T.zw - T.xy);
-  float wob = 55.0 * (fbm(q, 233.0, h + 140u) - 0.5) + 13.0 * (vnoise(q, 34.0, h + 141u) - 0.5);
-  float sheet = 1.0 - smoothstep(-144.0, 0.0, sdBox(q - hw, hw) + wob);   // the page's paper, its edge a wash's
-  float tz = 1.0 - smoothstep(-89.0, 0.0, sdBox(q - tc, th + 55.0) + 0.6 * wob);   // the calm under the poem
-  if (m == 3) {                                                      // the poem on its own torn sheet
-    put(uPaper[pg], sheet * 0.38);
-    float te = sdBox(q - tc, th + 55.0) + 13.0 * (vnoise(q, 21.0, h + 170u) - 0.5) + 4.0 * (vnoise(q, 5.5, h + 171u) - 0.5);
-    if (te < 0.0) put(mix(uPaper[pg] * (0.985 + 0.03 * vnoise(q, 3.2, h + 172u)), FIBRE,
-                          (1.0 - smoothstep(1.0, 5.8 + 2.4 * vnoise(q, 3.2, h + 173u), -te)) * 0.9), 1.0);
-    else put(BLACK, 0.12 * (1.0 - smoothstep(0.0, 21.0, sdBox(q - tc - vec2(8.0, 11.0), th + 55.0))));
-  } else {
-    put(uPaper[pg], max(sheet * (m == 0 ? 0.62 : 0.38), tz * 0.95));
-  }
-  float er = sdBox(q - rc, rh);
-  vec2 away = normalize(rc - tc + vec2(1e-3, 0.0));                  // from the poem toward the photograph
-  if (m == 0) {
-    photoHalftone(q, pg, h, er);
-    float rd = 0.2 * min(rh.x, rh.y) + 34.0 * unit(mixh(h + 36u));
-    vec2 cd = discAt(rc, rh, away, rd, hw);
-    arcs(q, cd, length(rc - cd) * (0.8 + 0.3 * unit(mixh(h + 31u))), h, 0.45 * (1.0 - tz) * sheet);
-    disc(q, cd, rd, h);
-  } else if (m == 1) {
-    photoKnot(q, pg, h, er, rh);
-    for (int k = 0; k < 3; k++) {                                    // upright strokes across its far edge
-      uint hk = mixh(h + 110u + uint(k) * 5u);
-      vec2 c = vec2(rc.x + sign(away.x) * rh.x * (0.86 + 0.28 * unit(hk)), rc.y + rh.y * (unit(mixh(hk + 1u)) - 0.5) * 1.2);
-      stroke(q, c, 1.5708 + 0.15 * (unit(mixh(hk + 2u)) - 0.5), 0.12 * rh.y + 0.14 * rh.y * unit(mixh(hk + 3u)),
-             11.0 + 10.0 * unit(mixh(hk + 4u)), unit(mixh(hk + 6u)) < 0.62 ? uAccent[pg] : vec3(50.0, 47.0, 46.0), hk);
-    }
-  } else if (m == 2) {
-    photoCloud(q, pg, h, er, rh);
-    for (int k = 0; k < 3; k++) {                                    // kaleidoscopes round it, clear of the poem
-      uint hk = mixh(h + 90u + uint(k) * 7u);
-      float a = 6.2832 * unit(hk);
-      vec2 ck = k == 0 ? rc + sign(away) * rh * 0.8 : rc + vec2(cos(a), sin(a)) * rh * (0.9 + 0.3 * unit(mixh(hk + 1u)));
-      ck = clamp(ck, vec2(144.0), 2.0 * hw - 144.0);
-      float rb = 74.0 + 68.0 * unit(mixh(hk + 2u));
-      if (sdBox(ck - tc, th) > rb * 1.5) rosette(q, ck, rb, pg, hk);
-    }
-  } else {
-    photoTorn(q, pg, h, rc, rh);
-    glints(q, rc, h);
-  }
-}
-
-void main() {
-  vec2 p = uOrigin + vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y) * uCell;
-  acc = vec4(0.0);
-  Pg g = pageAt(p);
-  if (g.e < 377.0) pageLayer(g.q, g.pg, g.h);
-  outC = acc / 255.0;
-}`;
-
-  // The screen: a watercolour over the paint, then each page's type, rules, buildings and characters, printed on it.
-  const FINAL = `#version 300 es
-${COMMON}
-uniform sampler2D uPaint;
-uniform sampler2DArray uInk;     // each page with its paper taken away, premultiplied
-uniform vec2 uOrigin;            // the plane at the screen's top left
-uniform float uScale;            // plane pixels a device pixel
-uniform vec2 uView;              // device pixels
-uniform vec2 uPaintSize;
-uniform vec2 uPaintScale;        // paint texels a device pixel
-out vec4 outColour;
-float lum(vec3 c) { return dot(c, vec3(0.3, 0.59, 0.11)); }
-void main() {
-  vec2 fc = vec2(gl_FragCoord.x, uView.y - gl_FragCoord.y);
-  vec2 p = uOrigin + fc * uScale;
-  vec2 tp = gl_FragCoord.xy * uPaintScale, ts = 1.0 / uPaintSize;
-  // the watercolour: the colours bleed into their neighbours, the pigment is denser and thinner over the paper's
-  // grain and in slow pools and gathers at the rim of every wash
-  vec4 own = texture(uPaint, tp * ts), soft = vec4(0.0);
-  float sw = 0.0; vec2 gr = vec2(0.0);
-  for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
-    vec2 o = vec2(dx, dy) * 1.5;
-    vec4 kk = texture(uPaint, (tp + o) * ts);
-    float w = exp(-dot(o, o) / 2.618);
-    soft += w * kk; sw += w;
-    gr += vec2(dx, dy) * lum(kk.rgb);
-  }
-  soft /= sw;
-  vec4 c4 = mix(own, soft, 0.62);
-  float grain = vnoise(p, 1.2, 7u) * 0.6 + vnoise(p, 3.0, 8u) * 0.4;
-  vec4 outc = vec4(0.0);
-  if (c4.a > 0.002) {
-    vec3 c = c4.rgb / c4.a;
-    float edge = smoothstep(0.06, 0.5, length(gr) / 3.0);
-    float pool = vnoise(p, 89.0, 9u) * 0.62 + vnoise(p, 34.0, 10u) * 0.38;
-    float dd = 1.0 + 0.34 * (grain - 0.5) + 0.5 * (pool - 0.5) + 0.236 * edge;
-    c = clamp(c - (c - c * c) * (dd - 1.0), 0.0, 1.0);
-    c = mix(c, c * (0.97 + 0.06 * grain), 0.5);                      // the paper's tooth
-    outc = vec4(c * c4.a, c4.a);
-  }
-  Pg g = pageAt(p);
-  if (g.e < 0.0) {
-    vec2 wh = uPageA[g.pg].xy;
-    vec2 uv = uPageA[g.pg].z > 0.5 ? vec2(1.0 - g.q.y / wh.y, g.q.x / wh.x) : g.q / wh;
-    vec4 ink = texture(uInk, vec3(uv, float(g.pg)));
-    float k = 0.94 * (0.95 + 0.05 * grain);
-    outc = outc * (1.0 - ink.a * k) + ink * k;
-  }
-  outColour = outc;
-}`;
-
-  function compile(src, type) {
-    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
-    return s;
-  }
-  function program(fs) {
-    const p = gl.createProgram();
-    gl.attachShader(p, compile(VS, gl.VERTEX_SHADER)); gl.attachShader(p, compile(fs, gl.FRAGMENT_SHADER));
-    gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
-    const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
-    for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i); u[a.name.replace(/\[0\]$/, "")] = gl.getUniformLocation(p, a.name); }
-    return { p, u };
-  }
-  let paintProg, finalProg;
-  try { paintProg = program(PAINT); finalProg = program(FINAL); }
-  catch (err) { console.warn("DRIFT Poetry: the pages could not be drawn:", err.message); lay.remove(); return; }
-  gl.bindVertexArray(gl.createVertexArray());
-
-  // ---- the lattice in JavaScript, to begin on a page, to name the page underfoot, and to draw only where pages are --
-  const imul = Math.imul, P4 = 0.145898033750315, P1 = 0.618033988749895, G = SPEC.G;
+  const imul = Math.imul, P1 = 0.618033988749895;
   function mixh(h) { h ^= h >>> 16; h = imul(h, 0x7feb352d); h ^= h >>> 15; h = imul(h, 0x846ca68b); h ^= h >>> 16; return h >>> 0; }
   function h3(x, y, s) { return mixh((imul(x | 0, 0x27d4eb2d) ^ mixh((imul(y | 0, 0x165667b1) + (s >>> 0)) >>> 0)) >>> 0); }
   const unit = (h) => (h >>> 8) / 16777216;
-  let anchor = [0, 0], first = 0, shift = [0, 0];
-  function seedOf(cx, cy) {
-    const h = h3(cx, cy, 53);
-    return { x: (cx + 0.5 + P4 * (unit(mixh((h + 1) >>> 0)) - 0.5)) * G + shift[0], y: (cy + 0.5 + P4 * (unit(mixh((h + 2) >>> 0)) - 0.5)) * G + shift[1], h };
-  }
-  const pageOf = (cx, cy) => { const v = cx - anchor[0] + 2 * (cy - anchor[1]) + first; return v - NP * Math.floor(v / NP); };
-  /** The page whose square holds the plane point (x, y), and how far the point lies outside it (plane pixels). */
-  function pageNear(x, y) {
-    const gx = Math.floor((x - shift[0]) / G), gy = Math.floor((y - shift[1]) / G);
-    let best = null;
-    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-      const s = seedOf(gx + i, gy + j), pg = pageOf(gx + i, gy + j), P = SPEC.pages[pg];
-      const a = -0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5), c = Math.cos(a), sn = Math.sin(a);
-      const dx = (x - s.x) / P1, dy = (y - s.y) / P1, qx = c * dx - sn * dy, qy = sn * dx + c * dy;
-      const e = Math.max(Math.abs(qx) - P.size[0] / 2, Math.abs(qy) - P.size[1] / 2) * P1;
-      if (!best || e < best.e) best = { pg, e, s };
-    }
-    return best;
-  }
-  /** Whether any page (with the reach of its paint) touches the plane rectangle x0..x1, y0..y1. */
-  function anyPage(x0, y0, x1, y1) {
-    const reach = 377 * P1 + 0.62 * 1920 * P1;
-    for (let gy = Math.floor((y0 - shift[1] - reach) / G); gy <= Math.floor((y1 - shift[1] + reach) / G); gy++)
-      for (let gx = Math.floor((x0 - shift[0] - reach) / G); gx <= Math.floor((x1 - shift[0] + reach) / G); gx++) {
-        const s = seedOf(gx, gy);
-        if (s.x + reach > x0 && s.x - reach < x1 && s.y + reach > y0 && s.y - reach < y1) return true;
-      }
-    return false;
-  }
-
-  // ---- the textures --------------------------------------------------------------------------------------------
   function loadImage(src) { return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => no(new Error(src)); im.src = src; }); }
-  function layers(unitN, images, w, h, premultiply) {
-    gl.activeTexture(gl.TEXTURE0 + unitN);
-    const t = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D_ARRAY, t);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiply);
-    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.RGBA8, w, h, images.length, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    images.forEach((im, i) => gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, gl.RGBA, gl.UNSIGNED_BYTE, im));
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  }
-  let paintTex = null, fbo = null, FW = 0, FH = 0;
-  function paintTarget(fw, fh) {
-    if (fw === FW && fh === FH) return;
-    FW = fw; FH = fh;
-    if (paintTex) gl.deleteTexture(paintTex);
-    gl.activeTexture(gl.TEXTURE2);
-    paintTex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, paintTex);
-    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, FW, FH);
-    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
-    if (!fbo) fbo = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, paintTex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  }
-
-  // ---- drawing, in step with DRIFT --------------------------------------------------------------------------------
-  // How coarsely to paint (screen pixels a paint texel): 2 at rest; while the view moves, coarser if moving frames
-  // come slowly, so a swipe is never left behind; at rest it is drawn once more at its finest.
-  const STEPS = [2, 3, 4];
-  let ready = false, anchored = false, step = 0, moveStep = 0, last = null, movedAt = 0, slow = 0, fast = 0, restAt = 0;
+  /** DRIFT's view: its top left on the plane in CSS pixels, its size in device pixels, and device pixels a CSS one
+   *  (DRIFT's vx, vy are in cells, R canvas pixels a cell). */
   function view() {
-    // DRIFT's view: vx, vy (its top left, in cells), R canvas pixels a cell, and the canvas's device pixels a CSS pixel
     const dpr = field.width / Math.max(1, field.clientWidth);
     return { W: field.width, H: field.height, dpr, x: Math.round(vx * R) / dpr, y: Math.round(vy * R) / dpr };
   }
-  function anchorAt(v) {
-    // the lattice square the visit begins in, and its page: chosen at random, or #pageN
-    const want = location.hash.match(/(?:^|[#&])page(\d+)(?:&|$)/);
-    first = want ? Math.max(0, Math.min(NP - 1, +want[1] - 1)) : Math.floor(Math.random() * NP);
-    anchor = [Math.floor((Math.random() - 0.5) * 120), Math.floor((Math.random() - 0.5) * 120)];
-    shift = [0, 0];
-    const s = seedOf(anchor[0], anchor[1]), P = SPEC.pages[first];
-    let cx = v.x + v.W / v.dpr / 2, cy = v.y + v.H / v.dpr / 2;
-    if (field.clientWidth < 700) {                                    // on a narrow screen, begin on the poem
-      const a = 0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5), c = Math.cos(a), sn = Math.sin(a);
-      const qx = ((P.textR[0] + P.textR[2]) / 2 - P.size[0] / 2) * P1, qy = ((P.textR[1] + P.textR[3]) / 2 - P.size[1] / 2) * P1;
-      cx -= c * qx - sn * qy; cy -= sn * qx + c * qy;
-    }
-    shift = [cx - s.x, cy - s.y];
-    for (const pr of [paintProg, finalProg]) {
-      gl.useProgram(pr.p);
-      gl.uniform2i(pr.u.uAnchor, anchor[0], anchor[1]);
-      gl.uniform1i(pr.u.uFirst, first);
-      gl.uniform2f(pr.u.uShift, shift[0], shift[1]);
-    }
-    anchored = true;
-  }
-  function clear() {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, lay.width, lay.height);
-    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-  }
-  function draw(now) {
-    if (!ready || typeof placed === "undefined" || !placed) return;
-    if (typeof MODE !== "undefined" && MODE !== "plane") {
-      if (last) { clear(); last = null; lastV = null; nameAt(null); fx.setTransform(1, 0, 0, 1, 0, 0); fx.clearRect(0, 0, fig.width, fig.height); }
-      return;
-    }
-    const v = view();
-    if (!anchored) anchorAt(v);
-    const moved = !last || v.x !== last.x || v.y !== last.y || v.W !== last.W || v.H !== last.H || v.dpr !== last.dpr;
-    if (moved) {
-      if (last && now - movedAt < 100) {                              // moving all the while since the last frame
-        const dt = now - movedAt;
-        if (dt > 24) { slow++; fast = 0; } else if (dt < 17.5) { fast++; slow = Math.max(0, slow - 1); }
-        if (slow >= 8 && moveStep < STEPS.length - 1) { moveStep++; slow = 0; }
-        else if (fast >= 144 && moveStep > 0) { moveStep--; fast = 0; }
-      }
-      movedAt = now; step = last ? moveStep : 0; restAt = now + 233;
-    } else if (step !== 0 && now >= restAt) step = 0;                 // at rest, drawn once more at its finest
-    else return;                                                      // nothing has changed: the pages stay as drawn
-    last = v; lastV = v; figDirty = true;                             // (the buildings move with their pages)
-    if (lay.width !== v.W || lay.height !== v.H) { lay.width = v.W; lay.height = v.H; }
-    const sc = 1 / v.dpr, x1 = v.x + v.W * sc, y1 = v.y + v.H * sc;
-    clear();
-    if (!anyPage(v.x, v.y, x1, y1)) { nameAt(null); return; }
-    const k = STEPS[step];
-    paintTarget(Math.ceil(v.W / k), Math.ceil(v.H / k));
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.viewport(0, 0, FW, FH);
-    gl.useProgram(paintProg.p);
-    gl.uniform2f(paintProg.u.uOrigin, v.x, v.y);
-    gl.uniform1f(paintProg.u.uCell, k * sc);
-    gl.uniform2f(paintProg.u.uSize, FW, FH);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, v.W, v.H);
-    gl.useProgram(finalProg.p);
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, paintTex);
-    gl.uniform2f(finalProg.u.uOrigin, v.x, v.y);
-    gl.uniform1f(finalProg.u.uScale, sc);
-    gl.uniform2f(finalProg.u.uView, v.W, v.H);
-    gl.uniform2f(finalProg.u.uPaintSize, FW, FH);
-    gl.uniform2f(finalProg.u.uPaintScale, FW / v.W, FH / v.H);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    nameAt(pageNear(v.x + v.W * sc / 2, v.y + v.H * sc / 2));
-  }
-  // ---- the buildings, turned by a swipe as in Picture Poetry -------------------------------------------------------
+  const onPlane = () => typeof MODE === "undefined" || MODE === "plane";
+
+  // ---- the buildings, on the ground and turned by a swipe as in Picture Poetry -----------------------------------
   // Aries, 14 Oct 2026: "Make sure I can still rotate architecture buildings in DRIFT Poetry like I can in Picture
-  // Poetry." Each page's buildings are drawn live, by Picture Poetry's own model code (window.Models, from its page) on
-  // each place's DIRT soil, on a canvas over the pages: dragged sideways, a building turns as in the book (0.022 radians
-  // a pixel), and let go it settles on the nearest of its four diagonals over 700 ms; a tap names it. Each copy of a
-  // page on the plane keeps its own buildings' turns. The page's ink holds no buildings (capture_pages.js hides them).
+  // Poetry." Dragged sideways, a building turns as in the book (0.022 radians a pixel) and the plane holds still under
+  // it; let go, it settles on the nearest of its four diagonals over 700 ms, with the book's easing; a tap names it.
+  // Each copy on the plane keeps its own turn. They are drawn on a canvas over DRIFT's ground, as large as the book has
+  // them (a page pixel to phi^-1 of a plane pixel).
   const fig = document.createElement("canvas");
   fig.setAttribute("aria-hidden", "true");
   fig.style.pointerEvents = "none";
-  stage.insertBefore(fig, lay.nextSibling);
+  stage.insertBefore(fig, field.nextSibling);
+  new MutationObserver(() => { fig.style.visibility = field.style.visibility; }).observe(field, { attributes: true, attributeFilter: ["style"] });
   const fx = fig.getContext("2d");
-  const TAU = 2 * Math.PI, REST = TAU / 8, BLD = SPEC.buildings || [];
+  const B = 1597, TAU = 2 * Math.PI, REST = TAU / 8, BLD = SPEC.buildings || [], NB = BLD.length;
   const isoNearest = (h) => Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8;
   const ease = (q) => (q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const dotsOf = {}, turns = new Map();
-  let soilPx = null, soilN = 0, figDirty = true, turning = null, lastV = null;
+  let soilPx = null, soilN = 0, figDirty = true, turning = null, lastV = null, anchor = [0, 0], first = 0, shift = [0, 0], anchored = false;
+  /** A square's middle, where its building stands: moved within phi^-1 of the square by its own hash. */
+  function seedOf(cx, cy) {
+    const h = h3(cx, cy, 59);
+    return { x: (cx + 0.5 + P1 * (unit(mixh((h + 1) >>> 0)) - 0.5)) * B + shift[0], y: (cy + 0.5 + P1 * (unit(mixh((h + 2) >>> 0)) - 0.5)) * B + shift[1] };
+  }
+  /** Which building a square holds: dealt along the rows two apart, so that no two neighbours hold the same one. */
+  const bldOf = (cx, cy) => { const v = cx - anchor[0] + 2 * (cy - anchor[1]) + first; return v - NB * Math.floor(v / NB); };
+  /** The square the visit begins in holds a building (the one from page N, with #pageN), standing right of the middle of
+   *  the view and a little below it (in the middle, on a narrow screen), clear of the caption. */
+  function anchorAt(v) {
+    const want = location.hash.match(/(?:^|[#&])page(\d+)(?:&|$)/);
+    const byPage = want ? BLD.findIndex((b) => SPEC.pages[b.page].n === +want[1]) : -1;
+    first = byPage >= 0 ? byPage : Math.floor(Math.random() * Math.max(1, NB));
+    anchor = [Math.floor((Math.random() - 0.5) * 120), Math.floor((Math.random() - 0.5) * 120)];
+    shift = [0, 0];
+    const s = seedOf(anchor[0], anchor[1]), cw = v.W / v.dpr, ch = v.H / v.dpr;
+    shift = [v.x + cw * (cw < 700 ? 0.5 : 0.62) - s.x, v.y + ch * 0.6 - s.y];
+    anchored = true;
+  }
   /** The soil of a place (latitude, longitude) as the book takes it: the DIRT soil tile, wrapped. */
   function soilFor(lat, lon) {
     const n = soilN, cell = (a) => ((Math.floor(a) % n) + n) % n;
@@ -565,7 +88,7 @@ void main() {
   }
   /** A building's copy on the plane, in its square, and its turn: kept once it has been turned, at rest till then. */
   function copyOf(b, cx, cy) {
-    const key = cx + "," + cy + "," + b.slug;
+    const key = cx + "," + cy;
     return turns.get(key) || { b, cx, cy, key, heading: REST, held: false, settle: null };
   }
   /** A building drawn at a heading, w by h device pixels: one drawing for every copy resting on the same diagonal;
@@ -583,54 +106,63 @@ void main() {
     if (rest && drawings.has(t)) drawings.delete(t);                  // (a turn finished: its own drawing goes)
     return cv;
   }
-  /** Where a square's page lies on the screen: device pixels for a page pixel q, as the shaders lay it. */
-  function pageFrame(cx, cy, v) {
-    const s = seedOf(cx, cy), P = SPEC.pages[pageOf(cx, cy)], t = 0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
-    const k = v.dpr * P1, c = Math.cos(t) * k, sn = Math.sin(t) * k, hx = P.size[0] / 2, hy = P.size[1] / 2;
-    return { a: c, b: sn, c: -sn, d: c, e: v.dpr * (s.x - v.x) - (c * hx - sn * hy), f: v.dpr * (s.y - v.y) - (sn * hx + c * hy) };
-  }
-  /** The buildings' copies within reach of the view. */
-  function copiesNear(v) {
-    const out = [], sc = 1 / v.dpr, x0 = v.x, y0 = v.y, x1 = v.x + v.W * sc, y1 = v.y + v.H * sc, reach = 0.62 * 1920 * P1;
-    for (let gy = Math.floor((y0 - shift[1] - reach) / G); gy <= Math.floor((y1 - shift[1] + reach) / G); gy++)
-      for (let gx = Math.floor((x0 - shift[0] - reach) / G); gx <= Math.floor((x1 - shift[0] + reach) / G); gx++) {
-        const pg = pageOf(gx, gy);
-        for (const b of BLD) if (b.page === pg) out.push(copyOf(b, gx, gy));
-      }
-    return out;
-  }
-  /** Where a building sits on its page (page pixels): the book's placement, its outline at rest fitted to its box. */
+  /** Where a building's drawing lies about its middle, in plane pixels: its outline at rest fitted to its box, as the
+   *  book fits it (x, y its top left; w, h its size). */
   function placeOf(b) {
     const r = SPEC.models[b.slug].rest, s = (b.box[2] - b.box[0]) / (r[2] - r[0]);
-    return { x: b.box[0] - r[0] * s, y: b.box[1] - r[1] * s, w: 900 * s, h: 675 * s };
+    const cx = (b.box[0] + b.box[2]) / 2, cy = (b.box[1] + b.box[3]) / 2;
+    return { x: (b.box[0] - r[0] * s - cx) * P1, y: (b.box[1] - r[1] * s - cy) * P1, w: 900 * s * P1, h: 675 * s * P1 };
+  }
+  // the creatures that stood by each building on its page, each where it stood about the building's middle (page pixels)
+  const sheet = { im: null }, flock = BLD.map(() => []);
+  for (const c of SPEC.chars || []) {
+    let best = -1, bd = Infinity;
+    BLD.forEach((b, i) => {
+      if (b.page !== c.page) return;
+      const d = Math.hypot((b.box[0] + b.box[2] - c.box[0] - c.box[2]) / 2, (b.box[1] + b.box[3] - c.box[1] - c.box[3]) / 2);
+      if (d < bd) { bd = d; best = i; }
+    });
+    if (best >= 0) { const b = BLD[best]; flock[best].push({ dx: c.box[0] - (b.box[0] + b.box[2]) / 2, dy: c.box[1] - (b.box[1] + b.box[3]) / 2, r: c.sheet }); }
+  }
+  if (SPEC.charSheet) loadImage(SPEC.charSheet).then((im) => { sheet.im = im; figDirty = true; }).catch(() => {});
+  /** The buildings' copies within reach of the view. */
+  function copiesNear(v) {
+    const out = [], x1 = v.x + v.W / v.dpr, y1 = v.y + v.H / v.dpr, reach = 377;
+    if (!NB) return out;
+    for (let gy = Math.floor((v.y - shift[1] - reach) / B); gy <= Math.floor((y1 - shift[1] + reach) / B); gy++)
+      for (let gx = Math.floor((v.x - shift[0] - reach) / B); gx <= Math.floor((x1 - shift[0] + reach) / B); gx++) out.push(copyOf(BLD[bldOf(gx, gy)], gx, gy));
+    return out;
   }
   function drawBuildings(v) {
     if (fig.width !== v.W || fig.height !== v.H) { fig.width = v.W; fig.height = v.H; }
     fx.setTransform(1, 0, 0, 1, 0, 0);
     fx.clearRect(0, 0, fig.width, fig.height);
-    if (!anchored || !BLD.length) return;
+    if (!anchored || !onPlane()) return;
     for (const t of copiesNear(v)) {
+      const s = seedOf(t.cx, t.cy), X = (s.x - v.x) * v.dpr, Y = (s.y - v.y) * v.dpr, k = P1 * v.dpr;
       const d = dots(t.b.slug);
-      if (!d) continue;
-      const pl = placeOf(t.b), f = pageFrame(t.cx, t.cy, v), k = v.dpr * P1;
-      const w = Math.max(1, Math.round(pl.w * k)), h = Math.max(1, Math.round(pl.h * k));
-      fx.setTransform(f.a, f.b, f.c, f.d, f.e, f.f);
-      fx.drawImage(drawingOf(t, d, w, h), pl.x, pl.y, pl.w, pl.h);
+      if (d) {
+        const pl = placeOf(t.b), w = Math.max(1, Math.round(pl.w * v.dpr)), h = Math.max(1, Math.round(pl.h * v.dpr));
+        fx.drawImage(drawingOf(t, d, w, h), Math.round(X + pl.x * v.dpr), Math.round(Y + pl.y * v.dpr));
+      }
+      if (sheet.im) {                                                 // its creatures, as pixel art is drawn: square
+        fx.imageSmoothingEnabled = false;
+        for (const c of flock[BLD.indexOf(t.b)]) fx.drawImage(sheet.im, c.r[0], c.r[1], c.r[2], c.r[3], Math.round(X + c.dx * k), Math.round(Y + c.dy * k), Math.round(c.r[2] * k), Math.round(c.r[3] * k));
+        fx.imageSmoothingEnabled = true;
+      }
     }
-    fx.setTransform(1, 0, 0, 1, 0, 0);
   }
-  /** The building copy under a point on the screen (client pixels), if any: its box on the page, at least 36 pixels. */
+  /** The building copy under a point on the screen (client pixels), if any: its box, at least 36 CSS pixels across. */
   function buildingAt(clientX, clientY) {
-    if (!ready || !anchored || !lastV || !BLD.length) return null;
+    if (!anchored || !lastV || !NB) return null;
     const r = field.getBoundingClientRect(), v = lastV;
     const px = v.x + (clientX - r.left), py = v.y + (clientY - r.top);     // the plane, in its pixels (CSS)
     for (const t of copiesNear(v)) {
       if (!dots(t.b.slug)) continue;
-      const s = seedOf(t.cx, t.cy), P = SPEC.pages[pageOf(t.cx, t.cy)], a = -0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
-      const dx = (px - s.x) / P1, dy = (py - s.y) / P1, qx = Math.cos(a) * dx - Math.sin(a) * dy + P.size[0] / 2, qy = Math.sin(a) * dx + Math.cos(a) * dy + P.size[1] / 2;
-      const bx = t.b.hit, m = 18 / P1;                                 // (18 CSS pixels: half of the book's 36)
-      const cxm = (bx[0] + bx[2]) / 2, cym = (bx[1] + bx[3]) / 2, hw = Math.max((bx[2] - bx[0]) / 2, m), hh = Math.max((bx[3] - bx[1]) / 2, m);
-      if (Math.abs(qx - cxm) <= hw && Math.abs(qy - cym) <= hh) return t;
+      const s = seedOf(t.cx, t.cy), bx = t.b.hit, b = t.b.box;
+      const hx = ((bx[0] + bx[2]) - (b[0] + b[2])) / 2 * P1, hy = ((bx[1] + bx[3]) - (b[1] + b[3])) / 2 * P1;
+      const hw = Math.max((bx[2] - bx[0]) / 2 * P1, 18), hh = Math.max((bx[3] - bx[1]) / 2 * P1, 18);
+      if (Math.abs(px - s.x - hx) <= hw && Math.abs(py - s.y - hy) <= hh) return t;
     }
     return null;
   }
@@ -640,10 +172,9 @@ void main() {
       if (!lastV) return [];
       const r = field.getBoundingClientRect(), v = lastV;
       return copiesNear(v).filter((t) => dotsOf[t.b.slug]).map((t) => {
-        const s = seedOf(t.cx, t.cy), P = SPEC.pages[pageOf(t.cx, t.cy)], a = 0.0557 * (unit(mixh((s.h + 9) >>> 0)) - 0.5);
-        const qx = (t.b.hit[0] + t.b.hit[2]) / 2 - P.size[0] / 2, qy = (t.b.hit[1] + t.b.hit[3]) / 2 - P.size[1] / 2;
-        return { name: t.b.name, heading: t.heading, x: r.left + s.x + P1 * (Math.cos(a) * qx - Math.sin(a) * qy) - v.x,
-                 y: r.top + s.y + P1 * (Math.sin(a) * qx + Math.cos(a) * qy) - v.y };
+        const s = seedOf(t.cx, t.cy), bx = t.b.hit, b = t.b.box;
+        return { name: t.b.name, heading: t.heading, x: r.left + s.x - v.x + ((bx[0] + bx[2]) - (b[0] + b[2])) / 2 * P1,
+                 y: r.top + s.y - v.y + ((bx[1] + bx[3]) - (b[1] + b[3])) / 2 * P1 };
       }).filter((b) => b.x > r.left && b.x < r.right && b.y > r.top && b.y < r.bottom);
     },
   };
@@ -682,8 +213,8 @@ void main() {
   };
   stage.addEventListener("pointerup", letGo, true);
   stage.addEventListener("pointercancel", letGo, true);
-  /** Turning and settling, drawn on DRIFT's frames. */
-  function turnStep(now, v) {
+  /** Turning and settling, on DRIFT's frames. */
+  function turnStep(now) {
     for (const t of turns.values()) {
       if (!t.settle || t.held) continue;
       const q = Math.min(1, Math.max(0, (now - t.settle.t0) / 700));   // (a frame's time can be just before the letting go)
@@ -691,10 +222,9 @@ void main() {
       if (q >= 1) t.settle = null;
       figDirty = true;
     }
-    if (figDirty && v) { figDirty = false; drawBuildings(v); }
   }
   // the soil the buildings are made of, and then each building, one at a time while the page is idle
-  if (BLD.length && SPEC.dirt) {
+  if (NB && SPEC.dirt) {
     loadImage(SPEC.dirt).then((im) => {
       const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
       const x = c.getContext("2d"); x.drawImage(im, 0, 0);
@@ -705,22 +235,35 @@ void main() {
     }).catch((err) => console.warn("DRIFT Poetry: the buildings' soil did not arrive:", err.message));
   }
 
-  const groundDraw = GLG.draw;
-  GLG.draw = function (now) {
-    groundDraw(now);
-    try { draw(now); turnStep(now, lastV); } catch (err) { console.warn("DRIFT Poetry:", err.message); ready = false; }
-  };
-  if (typeof composite === "function") {                              // DRIFT's stills and recordings show the pages too
-    const groundStill = composite;
-    window.composite = function () {
-      groundStill();
-      const c = SNAP.cv;
-      if (ready && lay.width) c.getContext("2d").drawImage(lay, 0, 0, c.width, c.height);
-      if (ready && fig.width) c.getContext("2d").drawImage(fig, 0, 0, c.width, c.height);
+  // ---- the photographs, into DRIFT's collage ----------------------------------------------------------------------
+  // As a photo the viewer puts in goes (drift.js): it arrives torn out where it is put in, and the collage melts it
+  // (the datamosh) and carries it off in torn pieces across the plane. The first arrives where the visit begins; every
+  // 144 seconds the next goes in quietly (no arrival: only the collage's pieces turn to it, phi^-1 of the usual
+  // share); and for 377 seconds after the viewer puts in a photo or a name of their own, theirs is left to drift.
+  const photoImgs = [];
+  let photoNext = Math.floor(Math.random() * 8), photoAt = -1, viewerAt = -1e9;
+  if (typeof GLG.putIn === "function") {
+    const putIn = GLG.putIn;
+    GLG.putIn = function (src, x, y, o) {
+      if (!(src && src.poetry) && !(o && o.quiet)) viewerAt = performance.now();
+      return putIn.apply(this, arguments);
     };
+    Promise.all((SPEC.pages || []).map((p) => loadImage(p.photo).catch(() => null)))
+      .then((ims) => ims.forEach((im) => { if (im) { im.poetry = true; photoImgs.push(im); } }));
+  }
+  let groundAt = -1;
+  function photos(now) {
+    // (once DRIFT's ground is being painted: it has read back a frame of its own)
+    if (groundAt < 0) { if (GLG.reflection && GLG.reflection()) groundAt = now; return; }
+    if (!photoImgs.length || now - groundAt < 1618 || now - viewerAt < 377000) return;
+    const firstOne = photoAt < 0;
+    if (!firstOne && now - photoAt < 144000) return;
+    photoAt = now;
+    const im = photoImgs[photoNext++ % photoImgs.length];
+    GLG.putIn(im, vx + VW * 0.38, vy + VH * 0.42, firstOne ? {} : { quiet: true, share: P1 });
   }
 
-  // ---- the page underfoot, named in DRIFT's own caption type --------------------------------------------------------
+  // ---- the label: the poem a swimmer begins near the middle of the view, a building when it is tapped ---------------
   const label = document.createElement("div");
   label.className = "poetry-label";
   label.setAttribute("aria-live", "polite");
@@ -734,51 +277,140 @@ void main() {
     "@media (prefers-reduced-motion:reduce){.poetry-label{transition:none}}.poetry-turn #field{cursor:ew-resize}";
   document.head.appendChild(style);
   stage.appendChild(label);
-  let named = -1, lastNear = null, namedB = null, namedTimer = 0;
-  function nameAt(near) {
-    lastNear = near;
-    if (namedB) return;                                               // a building just named stays named a while
-    const pg = near && near.e < 233 ? near.pg : -1;
-    if (pg === named) return;
-    named = pg;
-    if (pg < 0) { label.classList.remove("on"); return; }
-    const P = SPEC.pages[pg];
-    label.querySelector(".t").textContent = P.name;
-    label.querySelector(".s").textContent = "Picture Poetry, page " + P.n;
+  let namedB = null, namedTimer = 0, poemTimer = 0, verseSeen = -1;
+  const linePoem = [];                                                // which poem each of the lines handed over is from
+  function show(t, s) {
+    label.querySelector(".t").textContent = t;
+    label.querySelector(".s").textContent = s;
     label.classList.add("on");
   }
   function nameBuilding(b) {
-    namedB = b; named = -2;
-    label.querySelector(".t").textContent = b.name;
-    label.querySelector(".s").textContent = b.sub || "";
-    label.classList.add("on");
-    clearTimeout(namedTimer);
-    namedTimer = setTimeout(() => { namedB = null; nameAt(lastNear); }, 4181);
+    namedB = b;
+    show(b.name, b.sub || "");
+    clearTimeout(namedTimer); clearTimeout(poemTimer);
+    namedTimer = setTimeout(() => { namedB = null; label.classList.remove("on"); }, 4181);
+  }
+  function verseLabel() {
+    if (typeof GLG.verse !== "function" || !linePoem.length) return;
+    for (const b of GLG.verse().begun) {
+      if (b.at <= verseSeen) continue;
+      verseSeen = b.at;
+      if (namedB || Math.abs(b.x - (vx + VW / 2)) > VW * 0.3 || Math.abs(b.y - (vy + VH / 2)) > VH * 0.3) continue;
+      const P = SPEC.poems[linePoem[b.line]];
+      if (!P) continue;
+      show(P.name, "Picture Poetry, page " + P.n);
+      clearTimeout(poemTimer);
+      poemTimer = setTimeout(() => { if (!namedB) label.classList.remove("on"); }, 6854);
+    }
   }
 
-  // ---- the poems' letters in DRIFT's lines (WORDS in ground-gl.js) -------------------------------------------------
-  // Aries, 14 Oct 2026: "Analyze places in the graphics of DRIFT where lines can be subtly transformed into linguistic
-  // characters." build_poetry.py asks DRIFT's engine for its letters before the engine begins (window.DRIFT_WORDS);
-  // here the poems' glyphs are drawn once their fonts are in, in DRIFT's own italic (Newsreader) and Picture Poetry's
-  // capitals (Poppins), and handed to it. #nowords leaves DRIFT's lines as they are.
+  // ---- on DRIFT's frames ------------------------------------------------------------------------------------------
+  const groundDraw = GLG.draw;
+  GLG.draw = function (now) {
+    groundDraw(now);
+    try { step(now); } catch (err) { console.warn("DRIFT Poetry:", err.message); }
+  };
+  function step(now) {
+    if (typeof placed === "undefined" || !placed) return;
+    if (!onPlane()) {
+      if (lastV) { lastV = null; fx.setTransform(1, 0, 0, 1, 0, 0); fx.clearRect(0, 0, fig.width, fig.height); label.classList.remove("on"); }
+      return;
+    }
+    const v = view();
+    if (!anchored) anchorAt(v);
+    if (!lastV || v.x !== lastV.x || v.y !== lastV.y || v.W !== lastV.W || v.H !== lastV.H || v.dpr !== lastV.dpr) { lastV = v; figDirty = true; }
+    turnStep(now);
+    if (figDirty) { figDirty = false; drawBuildings(v); }
+    photos(now);
+    verseLabel();
+  }
+  if (typeof composite === "function") {                              // DRIFT's stills and recordings show the buildings too
+    const groundStill = composite;
+    window.composite = function () {
+      groundStill();
+      const c = SNAP.cv;
+      if (fig.width) c.getContext("2d").drawImage(fig, 0, 0, c.width, c.height);
+    };
+  }
+
+  // ---- the poems' letters (WORDS in ground-gl.js) --------------------------------------------------------------------
+  // build_poetry.py asks DRIFT's engine for its letters before the engine begins (window.DRIFT_WORDS); here the poems'
+  // glyphs are drawn once their fonts are in, in DRIFT's own italic (Newsreader) and Picture Poetry's capitals
+  // (Poppins), made distance fields (so the engine can let them wear away out of a line and swell back into it), and
+  // handed over with the poems broken into their lines.
+  /** A poem's lines as they go into DRIFT: a verse line whole; a prose poem broken at its sentences and clauses, none
+   *  longer than 55 characters (at the comma, or else the space, nearest the middle of one that is). */
+  function linesOf(P) {
+    const ls = P.lines.map((l) => l.trim()).filter(Boolean);
+    if (!P.prose) return ls;
+    const out = [];
+    for (const sentence of ls.join(" ").split(/(?<=[.!?;:])\s+/)) {
+      let rest = sentence.trim();
+      while (rest.length > 55) {
+        const mid = rest.length / 2, near = (ch) => {
+          let at = -1;
+          for (let i = 8; i < rest.length - 8; i++) if (rest[i] === ch && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i;
+          return at;
+        };
+        let at = near(",");
+        if (at < 0 || Math.abs(at - mid) > rest.length * 0.3) at = near(" ");
+        if (at < 0) break;
+        out.push(rest.slice(0, rest[at] === "," ? at + 1 : at).trim());
+        rest = rest.slice(at + 1).trim();
+      }
+      if (rest) out.push(rest);
+    }
+    return out;
+  }
+  /** The atlas's glyphs, white on black, made distance fields in place, a slot at a time: each pixel how far it lies
+   *  from the glyph's edge, 0.5 on it, rising inside and falling to 0 a spread of pixels outside (the exact distance
+   *  transform of Felzenszwalb and Huttenlocher, "Distance Transforms of Sampled Functions", 2012, run inside and out). */
+  function fields(x, W, H, SW, SH, spread) {
+    const img = x.getImageData(0, 0, W, H), d = img.data, INF = 1e20, n = Math.max(SW, SH);
+    const outer = new Float64Array(SW * SH), inner = new Float64Array(SW * SH), f = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    function pass(g, off, stride, len) {                               // the lower envelope of the parabolas, one row
+      for (let i = 0; i < len; i++) f[i] = g[off + i * stride];
+      let k = 0;
+      v[0] = 0; z[0] = -INF; z[1] = INF;
+      for (let q = 1; q < len; q++) {
+        let s = (f[q] + q * q - f[v[k]] - v[k] * v[k]) / (2 * (q - v[k]));
+        while (k > 0 && s <= z[k]) { k--; s = (f[q] + q * q - f[v[k]] - v[k] * v[k]) / (2 * (q - v[k])); }
+        k++; v[k] = q; z[k] = s; z[k + 1] = INF;
+      }
+      for (let q = 0, j = 0; q < len; q++) { while (z[j + 1] < q) j++; const r = v[j]; g[off + q * stride] = f[r] + (q - r) * (q - r); }
+    }
+    const edt = (g) => { for (let c = 0; c < SW; c++) pass(g, c, SW, SH); for (let r = 0; r < SH; r++) pass(g, r * SW, 1, SW); };
+    for (let sy = 0; sy < H; sy += SH) for (let sx = 0; sx < W; sx += SW) {
+      for (let j = 0; j < SH; j++) for (let i = 0; i < SW; i++) {
+        const a = d[((sy + j) * W + sx + i) * 4] / 255, k = j * SW + i;
+        outer[k] = a >= 1 ? 0 : a <= 0 ? INF : Math.max(0, 0.5 - a) ** 2;
+        inner[k] = a >= 1 ? INF : a <= 0 ? 0 : Math.max(0, a - 0.5) ** 2;
+      }
+      edt(outer); edt(inner);
+      for (let j = 0; j < SH; j++) for (let i = 0; i < SW; i++) {
+        const k = j * SW + i, o = ((sy + j) * W + sx + i) * 4;
+        const val = Math.round(255 * (0.5 - (Math.sqrt(outer[k]) - Math.sqrt(inner[k])) / (2 * spread)));
+        d[o] = d[o + 1] = d[o + 2] = Math.max(0, Math.min(255, val)); d[o + 3] = 255;
+      }
+    }
+    x.putImageData(img, 0, 0);
+  }
   function letters() {
     if (typeof GLG.words !== "function" || !SPEC.poems || /(?:^|&)nowords(?:&|$)/.test(location.hash.slice(1))) return;
-    const EM = 48, SW = 88, SH = 72, OX = 20, OY = 52, COLS = 16;   // an em, a glyph's slot, its origin in it (px)
+    const EM = 48, SW = 96, SH = 80, OX = 24, OY = 56, COLS = 16, SPREAD = 10;   // an em, a glyph's slot, its origin in it (px)
     const faces = ['italic 400 ' + EM + 'px "Newsreader", Georgia, "Times New Roman", serif',
                    '500 ' + EM + 'px "Poppins", "Avenir Next", "Helvetica Neue", Arial, sans-serif'];
-    // the poems as one text: a poem's lines a verse line apart (" / "), a prose poem's run together, a dot between poems
+    // the poems' lines, one after another, a space between (no line runs on into the next: each is written alone)
     let text = "";
     const lines = [];
-    for (const P of SPEC.poems) {
-      const ls = P.lines.filter((l) => l.trim());
-      ls.forEach((l, i) => { const a = text.length; text += l; lines.push([a, text.length]); if (i < ls.length - 1) text += P.prose ? " " : " / "; });
-      text += "  ·  ";
-    }
+    SPEC.poems.forEach((P, pi) => {
+      for (const l of linesOf(P)) { const a = text.length; text += l; lines.push([a, text.length]); linePoem.push(pi); text += " "; }
+    });
     const chars = [...new Set(text)], gi = new Map(chars.map((c, i) => [c, i]));
     const draw = () => {
       const cv = document.createElement("canvas");
       cv.width = COLS * SW; cv.height = Math.ceil((2 * chars.length) / COLS) * SH;
-      const x = cv.getContext("2d");
+      const x = cv.getContext("2d", { willReadFrequently: true });
       x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height);
       x.fillStyle = "#fff"; x.textBaseline = "alphabetic";
       const adv = chars.map(() => [0, 0]);
@@ -790,39 +422,15 @@ void main() {
           x.fillText(ch, (s % COLS) * SW + OX, Math.floor(s / COLS) * SH + OY);
         });
       });
+      fields(x, cv.width, cv.height, SW, SH, SPREAD);
       const ends = [], at = [0, 0];
       for (const c of text) { const a = adv[gi.get(c)]; at[0] += a[0]; at[1] += a[1]; ends.push([at[0], at[1]]); }
-      GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv,
-                  text: [...text].map((c) => gi.get(c)), ends, lines });
+      GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv, spread: SPREAD,
+                  text: [...text].map((c) => gi.get(c)), ends, lines, poem: linePoem, space: gi.has(" ") ? gi.get(" ") : -1 });
     };
     const sample = chars.join("");
     const fonts = document.fonts && document.fonts.load ? Promise.all(faces.map((f) => document.fonts.load(f, sample))) : Promise.resolve();
     Promise.race([fonts, new Promise((ok) => setTimeout(ok, 4181))]).then(draw, draw);   // (in their own type if it comes)
   }
   try { letters(); } catch (err) { console.warn("DRIFT Poetry: the letters could not be drawn:", err.message); }
-
-  // ---- the pages arrive ----------------------------------------------------------------------------------------
-  Promise.all([Promise.all(SPEC.pages.map((p) => loadImage(p.photo))), Promise.all(SPEC.pages.map((p) => loadImage(p.ink)))])
-    .then(([photos, inks]) => {
-      layers(0, photos, SPEC.photoSize[0], SPEC.photoSize[1], false);
-      layers(1, inks, SPEC.inkSize[0], SPEC.inkSize[1], true);
-      const flat = (f) => new Float32Array(SPEC.pages.flatMap(f));
-      for (const pr of [paintProg, finalProg]) {
-        gl.useProgram(pr.p);
-        gl.uniform4fv(pr.u.uPageA, flat((p) => [p.size[0], p.size[1], p.turned ? 1 : 0, p.photoTurned ? 1 : 0]));
-        gl.uniform4fv(pr.u.uPhotoR, flat((p) => p.photoR));
-        gl.uniform4fv(pr.u.uTextR, flat((p) => p.textR));
-      }
-      gl.useProgram(paintProg.p);
-      gl.uniform1i(paintProg.u.uPhoto, 0);
-      gl.uniform3fv(paintProg.u.uPaper, flat((p) => p.paper));
-      gl.uniform3fv(paintProg.u.uAccent, flat((p) => p.accent));
-      gl.uniform1iv(paintProg.u.uLean, new Int32Array(SPEC.pages.map((p) => p.lean)));
-      gl.useProgram(finalProg.p);
-      gl.uniform1i(finalProg.u.uPaint, 2);
-      gl.uniform1i(finalProg.u.uInk, 1);
-      ready = true;
-    })
-    .catch((err) => { console.warn("DRIFT Poetry: the pages did not arrive:", err.message); lay.remove(); });
-  lay.addEventListener("webglcontextlost", (e) => { e.preventDefault(); ready = false; });
 })();
