@@ -324,8 +324,10 @@
         } else if (s[3]) {
           E.dot(x, y, z, s[3], s, what === "~" ? 1 : lt, 0);
         } else if (gridFine) {
-          // A finer grid leaves no holes: where the soil has no dot, a small dark one (water stays water).
-          E.dot(x, y, z, 1, s, what === "~" ? 0.78 : lt * 0.62, 0);
+          // A finer grid leaves no holes: where the soil has no dot, a small dark one. On water it is the sea's
+          // deep tone at the width of the sea's commonest dot, not the soil's black: a third of the sea's
+          // swatch is hole, and a lagoon (Venice's) read as black voids between patches of blue, not as water.
+          E.dot(x, y, z, what === "~" ? 2 : 1, what === "~" ? SEA_DEEP : s, what === "~" ? 0.6 : lt * 0.62, 0);
         }
         if (i === 0 || j === 0 || i === n - 1 || j === n - 1) {
           // The edge goes down into the soil from the ground the clod holds there, not from the plain: a
@@ -395,6 +397,7 @@
     plain: [1, 0.62, 0.08, 0.8], gallery: [2, 0.86, 0.1, 1.08], museum: [3, 0.92, 0.12, 1.12]
   };
   var GREEN = [92, 122, 70];          // the models' grass and planting, as the plot's green
+  var SEA_DEEP = [62, 89, 113];       // the sea swatch's mean dot (dirt-sea.png): the water where the soil has a hole
   var COARSE = 160;                   // the most cells a side the 2D canvas is given
   var gridFine = false;               // the ground being made is finer than the first grain (~40 m)
   function lit(c, k) { return [Math.min(255, Math.round(c[0] * k)), Math.min(255, Math.round(c[1] * k)), Math.min(255, Math.round(c[2] * k))]; }

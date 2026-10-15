@@ -128,6 +128,19 @@ function check(tag, ok, what, detail) {
       }
       // The dial laid on its ground (skyline.js, "the ground dial"): its ring wholly in the band, round the
       // city, its animal (or the diamond, where the place has none drawn) at the dial's year.
+      // The dial eases to its year and the animal walks after it at its own pace, a few seconds behind in headless
+      // Chromium's software GL (a city of 400,000 strips draws two frames a second, and the dial takes a minute
+      // to come to rest): wait for the dial to rest and the animal to arrive, as the skyline's own year was
+      // waited for. A city where few buildings are dated changes little with the year (Venice's `shown` runs
+      // 0.72 to 1.0), so the wait above ends while the dial is still on its way.
+      await P.evaluate(() => { window.__dialT = undefined; });
+      await P.waitForFunction(() => {
+        const h = Skyline.hand(), d = Land.dial();
+        if (!h || !d || typeof d.t !== "number") { return true; }
+        const rest = window.__dialT !== undefined && Math.abs(d.t - window.__dialT) < 0.002;
+        window.__dialT = d.t;
+        return rest && Math.abs(h.t - d.t) < 0.01;
+      }, null, { timeout: 120000, polling: 700 }).catch(() => {});
       const gd = await P.evaluate(() => ({ on: !!(Land.dialGround && Land.dialGround.on()), ring: Skyline.ring(), hand: Skyline.hand(),
                                           t: Land.dial() ? Land.dial().t : null, band: Skyline.state().band }));
       check(tag, gd.on && !!gd.ring && !!gd.hand, "its dial lies on its ground", gd.hand ? (gd.hand.name || "the diamond") : JSON.stringify(gd));
