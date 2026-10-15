@@ -16,6 +16,30 @@ describes what the token object is (item 7).
 Don't recite the list unprompted, and don't re-raise an item the artist has
 already declined or deferred in the same conversation.
 
+## What we are making
+
+Artist, 15 Oct 2026, with "MAKE THAT SALIENT": "Really between all of the information in the database and the
+other artifacts that we have created we really have to understand what it is. We are making in how we categorize
+and display the information that we are able to manipulate or is able to inform. For instance DRIFT how to generate
+textures. The Artist website is about locating it's in contemporary and historical settings. Picture Poetry is about
+creating pathways by presenting a visual navigation system, I.e. a storyline."
+
+So everything here is **one system: one database, and pieces that each have one job with it**, said in one line.
+A piece either **manipulates** the information (makes something new from it) or **informs** (locates it, explains
+it, leads through it), or says which of its parts does which. Before building anything, name its job in that line,
+the categories it puts the information in and how it shows them (with `docs/v2/KINDS.md` and `docs/v2/DISPLAY.md`).
+Keep each piece to its job; where one needs another's job, borrow it rather than redo it.
+
+| Piece | Its job |
+| --- | --- |
+| **DRIFT** (Artifact, https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k) | How to generate textures. |
+| **Artist Website** (`docs/v2/`) | Locating it in contemporary and historical settings. |
+| **Picture Poetry** (Artifact, https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE) | Creating pathways by presenting a visual navigation system: a storyline. |
+| **Holographic Mr Pearl** (`docs/worlds/rocket/`, Artifact https://claude.ai/artifact/5yPot5suK22JKCt8svNDGe) | Showing people what they can do with their own information: a world made by its relations, to find your way out of. |
+
+The other pieces (DRIFT Poetry, Knuckle Carbon, Synth, Morphology Web, Color Middling, Matthew Livingston, The
+Figure in 3D, DIRT, Worlds, the Umbrella Portfolio) are added to the table as each is read for what it does.
+
 ## Holographic Mr Pearl — what the game is for
 
 Rocket (`docs/worlds/rocket/`) is becoming **Holographic Mr Pearl** (artist, 15 Oct 2026). What it is for comes
