@@ -31,7 +31,12 @@
 (function () {
   "use strict";
 
-  var BASE = "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/";
+  /* Where things are, unless the page says otherwise (window.ROCKET): base, the site's data; art(id),
+     a work's picture; play, straight into an escape with no start card; kinds and forms, what one
+     can be. */
+  var CFG = window.ROCKET || {};
+  var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next";
+  function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, TRI = 1, SAVE = "rocket-save-v2";
   var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
   var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs, hypot = Math.hypot;
@@ -376,7 +381,7 @@
     img.referrerPolicy = "no-referrer";
     img.onload = function () { loading -= 1; paintTexture(p, img); };
     img.onerror = function () { loading -= 1; };
-    img.src = CDN + p.f.image + "/medium.jpg";
+    img.src = artOf(p.f.image);
   }
   // The pictures of the works near you, a few at a time.
   function fetchNear() {
@@ -573,7 +578,7 @@
     el.querySelector(".l-room").textContent = [upper(p.room.name), p.work.floorShown].filter(Boolean).join(" · ") || (place.kind === "museum" ? "" : setting.name);
     var pic = $("l-pic");
     pic.alt = f.title || "";
-    pic.src = f.image ? CDN + f.image + "/medium.jpg" : "";
+    pic.src = f.image ? artOf(f.image) : "";
     var done = looked[f.id];
     $("behind").hidden = !!done;
     $("behind-done").hidden = !done;
@@ -704,8 +709,10 @@
   }
   // You, lying beside the trunk of your tree, the wreck to one side.
   function lieDown(lines) {
-    var c = place.crash, wr = place.wreck;
-    P.x = c.x + 1.2; P.z = c.z + 0.6; P.y = c.y; P.vx = P.vy = P.vz = 0;
+    var c = place.crash, wr = place.wreck, tr = place.tree;
+    // Under your tree on the wreck's side of its trunk, so that sitting up and turning you see the wreck.
+    var tx = tr ? tr.x + 0.5 : c.x, tz = tr ? tr.z + 0.5 : c.z, ax = wr.x + 0.5 - tx, az = wr.z + 0.5 - tz, L = hypot(ax, az) || 1;
+    P.x = tx + ax / L * 1.7; P.z = tz + az / L * 1.7; P.y = c.y; P.vx = P.vy = P.vz = 0;
     var toWreck = Math.atan2(wr.x - P.x, -(wr.z - P.z));
     intro = { t0: performance.now(), yaw0: toWreck - 1.5, turn: 1.5, lines: lines };
     document.body.dataset.film = "true";
@@ -718,10 +725,13 @@
     delete document.body.dataset.film;
     if (again) { say("The alarms are quiet again. What you have found, you keep."); return; }
     var behind = adv.pieces.filter(function (p) { return p.hide.type === "work"; }).length;
-    if (behind === 4) { say("The four pieces are behind four of the works inside. Your notes say which; there are more notes in the rooms."); }
-    else if (behind) { say(behind === 1 ? "One piece is behind a work inside. The wreck's log says where the others fell." : behind + " pieces are behind works inside. The wreck's log says where the others fell."); }
-    else { say("Four pieces of your rocket are somewhere in " + setting.name + ". The notes show where they fell."); }
-    $("notes").hidden = false;
+    // Straight in, the world first: the notes are a tap away.
+    var open = !CFG.play || window.innerWidth >= 1400;
+    say((behind === 4 ? "The four pieces are behind four of the works inside. Your notes say which; there are more notes in the rooms." :
+         behind === 1 ? "One piece is behind a work inside. The wreck's log says where the others fell." :
+         behind ? behind + " pieces are behind works inside. The wreck's log says where the others fell." :
+         "Four pieces of your rocket are somewhere in " + setting.name + ". The notes show where they fell.") + (open ? "" : " Tap Notes to read it."));
+    if (open) { $("notes").hidden = false; }
   }
 
   function wrap(c, text, maxW) {
@@ -881,6 +891,7 @@
   function launch() {
     if (!built || launched) { return; }
     launched = performance.now();
+    store();
     closeLabel();
     $("notes").hidden = true;
     // Stand back by your tree, on the wreck's side of it, and watch it go.
@@ -960,7 +971,7 @@
 
   function advKey() { return setting.kind + ":" + setting.slug + ":" + seed; }
   function store() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built })); }
+    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched })); }
     catch (e) { /* kept only while the page is open */ }
   }
   function saved() {
@@ -1021,7 +1032,8 @@
     $("behind").onclick = lookBehind;
     $("leave").onclick = closeLabel;
     $("notes-btn").onclick = function () { var n = $("notes"); n.hidden = !n.hidden; if (!n.hidden && window.innerWidth < 900) { closeLabel(); } };
-    $("again").onclick = function () { location.hash = setting.kind + "/" + setting.slug + "/" + newSeed(); location.reload(); };
+    $("again").onclick = function () { goTo({ kind: setting.kind, slug: setting.slug, seed: newSeed() }); };
+    $("elsewhere").onclick = function (e) { if (CFG.play) { e.preventDefault(); goTo(randomChoice()); } };
     var keyOf = function (e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; };
     document.addEventListener("keydown", function (e) {
       if (!place) { return; }
@@ -1058,6 +1070,29 @@
     var out = [];
     for (var n = 1; n <= 24; n += 1) { out.push(formEntry(n)); }
     return out;
+  }
+  function kindOK(kind) { return listOf(kind) && listOf(kind).length && (!CFG.kinds || CFG.kinds.indexOf(kind) >= 0); }
+  function randomChoice() {
+    var kinds = (CFG.kinds || ["museum", "museum", "museum", "building", "building", "city"].concat(forms ? ["form", "form"] : [])).filter(kindOK);
+    var kind = kinds[floor(Math.random() * kinds.length)];
+    if (kind === "form") { var fs = CFG.forms || cat.forms.map(function (e) { return +e.slug; }); return { kind: kind, slug: String(fs[floor(Math.random() * fs.length)]), seed: newSeed() }; }
+    var list = listOf(kind);
+    return { kind: kind, slug: keyOfEntry(kind, list[floor(Math.random() * list.length)]), seed: newSeed() };
+  }
+  /* Straight in (CFG.play): the escape asked for on the way out of the last one; else the last one, if
+     it is not over; else a new one. The screen is black until the place is built, then the eyes open. */
+  function nextChoice() {
+    var n = null, s = saved();
+    try { n = JSON.parse(localStorage.getItem(NEXT) || "null"); localStorage.removeItem(NEXT); } catch (e) { n = null; }
+    if (n && n.kind && kindOK(n.kind)) { return n; }
+    if (s && s.key && !s.done) { var k = s.key.split(":"); if (kindOK(k[0])) { return { kind: k[0], slug: k[1], seed: +k[2] || newSeed() }; } }
+    return randomChoice();
+  }
+  function goTo(c) {
+    if (CFG.play) {
+      try { localStorage.setItem(NEXT, JSON.stringify(c)); } catch (e) { /* a new one at random, then */ }
+    } else { location.hash = c.kind + "/" + c.slug + "/" + c.seed; }
+    location.reload();
   }
   function formEntry(n) {
     var R = Fm.form(forms, n), base = R.placed.filter(function (P2) { return P2.role === "base"; })[0], pj = forms.projects[base.sec.p];
@@ -1103,7 +1138,9 @@
   function worksFor(d, sd) {
     var r = Pl.rng(sd * 13 + 5), pool = cat.pool.slice(), pick = [];
     while (pick.length < 15 && pool.length) { pick.push(pool.splice(floor(r() * pool.length), 1)[0]); }
-    return Promise.all(pick.map(function (wk) { return fetchJSON("histories/" + wk.id + ".json").catch(function () { return null; }); })).then(function (hs) {
+    return Promise.all(pick.map(function (wk) {
+      return cat.histories ? cat.histories[wk.id] || null : fetchJSON("histories/" + wk.id + ".json").catch(function () { return null; });
+    })).then(function (hs) {
       d.works = pick.map(function (wk, i) { return { work: wk, history: hs[i] }; }).filter(function (x) { return x.history; }).slice(0, 12);
       return d;
     });
@@ -1149,6 +1186,7 @@
       }
       store();
       $("start").hidden = true;
+      $("veil").hidden = true;
       document.title = adv.title + " · Rocket";
       drawPieces(); drawHotbar(); setMode("break"); where();
       lieDown(adv.intro);
@@ -1176,9 +1214,11 @@
   function init() {
     canvas = $("view");
     hud = $("hud");
+    // Straight in: nothing over the view until you have come to.
+    if (CFG.play) { document.body.dataset.film = "true"; }
     gl = canvas.getContext("webgl2", { antialias: true });
     quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
-    if (!gl) { $("status").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
+    if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS);
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uTri"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
@@ -1204,6 +1244,11 @@
       forms = res[1] ? Fm.load(res[1]) : null;
       cat.forms = forms ? formList() : [];
       if (!forms) { var fp = document.querySelector('[data-kind="form"]'); if (fp) { fp.hidden = true; } }
+      if (CFG.play) {
+        choice = nextChoice();
+        start(choice.kind, chosen(), choice.seed).catch(function (err) { $("veil").textContent = "The world could not be built: " + err.message; });
+        return;
+      }
       // The address names an adventure (#museum/<slug>/<seed>); else the one you were in; else the Musée d'Orsay.
       var h = decodeURIComponent((location.hash || "").slice(1)).split("/"), s = saved(), k = s && s.key ? s.key.split(":") : null;
       if (h[0] === "museum" || h[0] === "building" || h[0] === "city" || (h[0] === "form" && forms)) { choice = { kind: h[0], slug: h[1] || "", seed: +h[2] || newSeed() }; }
@@ -1230,7 +1275,7 @@
           begin.disabled = false;
         });
       };
-    }).catch(function () { $("status").textContent = "The places could not be loaded."; });
+    }).catch(function () { $("status").textContent = "The places could not be loaded."; $("veil").textContent = "The world could not be loaded."; });
   }
 
   // debug() hands the game's state to a test (it changes nothing by itself).

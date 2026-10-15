@@ -159,3 +159,20 @@ switches break and place, N opens the notes, F looks behind the work whose label
 
 Where you had got to in an adventure (the pieces found, the notes read, the works looked behind,
 the alarms) is kept in the browser, and comes back when you open the same adventure again.
+
+## Straight in: Rocket as an Artifact
+
+The game also runs as an Artifact (a page hosted on claude.ai), built by
+`node scripts/build_rocket_artifact.js <out dir>` (artist, 15 Oct 2026: "Give me a first person
+Minecraft like game. As soon as I open the artifact, the entire screen should be a fade into a
+first person view of the character waking up under a tree after crash landing"). There is no
+start card: the page sets `window.ROCKET = { play: true, … }`, the screen is black while the
+place is built, and the eyes open on it under your tree, on the wreck's side of its trunk; the
+notes are a tap away rather than open over the view. Its escapes are the new forms (most often
+one of fifteen with an upper box, a crown and a pool) and the modelled buildings; the escape you
+were in comes back if it is not over, and "Another adventure here" or "Somewhere else" picks the
+next. An Artifact loads nothing from other sites, so the bundle carries the scripts and style
+inlined, the sections, the 36 buildings' models and grounds, and 150 of the saved works with
+their pictures (fetched once from Artsy's image server; the bundle is written outside the
+repository). `window.ROCKET` can also set `base` (where the data is), `art(id)` (a work's
+picture), `kinds` and `forms` (what an escape may be).
