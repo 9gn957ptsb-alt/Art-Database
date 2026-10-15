@@ -32,7 +32,10 @@
    density, smooth, without grain or dithering; the works are their pictures
    from Artsy in frames of the same three tones; the page's own marks are the
    figure too (the blocks and the pieces as the drawing, the crosshair a
-   tribar), and the smoke is triangles. */
+   tribar), and the smoke is triangles. Over the wreck hangs the figure of
+   figures, drawn in towards the eye of one standing where you woke: from
+   there it is the drawing, from anywhere else its beams come apart across
+   the sky (see the figure in the sky). */
 
 (function () {
   "use strict";
@@ -158,7 +161,7 @@
 
   /* ---- the mesh ------------------------------------------------------------- */
 
-  var gl, prog, skyProg, artProg, U = {}, SU = {}, AU = {}, chunks = {}, queue = [], canvas, hud;
+  var gl, prog, skyProg, artProg, figProg, U = {}, SU = {}, AU = {}, FU = {}, chunks = {}, queue = [], canvas, hud;
   var FACES = [
     { d: [1, 0, 0], c: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] }, { d: [-1, 0, 0], c: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]] },
     { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]] }, { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
@@ -498,6 +501,126 @@
     return test("x" + x, z, -1) || test("x" + (x + 1), z, 1) || test("z" + z, x, -1) || test("z" + (z + 1), x, 1);
   }
 
+  /* ---- the figure in the sky ---------------------------------------------------------- */
+
+  /* The figure of figures (the figure's own rule applied to the figure: three of it round a gap, nine
+     tribars, 27 beams; figure.html, scripts/figure_studies.py) hangs over the wreck, a hundred metres off and
+     more, drawn in towards one eye: yours, standing where you woke under your tree. A point at (a, b) in the
+     drawing and d along its line of sight goes to eye + (g (a R + b U) + far F) / (1 + beta d): every line
+     of sight of the drawing onto one ray from that eye, nearer for what the drawing has nearer. So from there
+     it is the drawing exactly, and from anywhere else its beams come apart across the sky, long and tapering
+     away from the tree. The map is a projective one, so each beam's faces stay planes. The figure is in the
+     drawing's own tones under a lighter haze, and nothing to walk on. */
+  var SKY_ORDERS = [[1, 0, 2], [0, 2, 1], [2, 1, 0]], SKY_OFFS = [[0, 0, 0], [0, 1, 0], [1, 1, 0]], SKY_BASE = [[0, 0, 0], [0, 1, 0], [1, 1, 0]];
+  var SKY_CONF = [[0, 0], [1, -1], [1, -1]], SKY_TURN = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]]];
+  var SKY_FAR = 140, SKY_HALF = 0.22;
+  // The figure at a level of its rule (2 the drawing, 3 three of it round a gap), as boxes [lo, hi] in cells
+  // of its lattice, in the model's axes (z up); a face pair along axis k is grey, black, white for x, y, z.
+  function figureBeams(level) {
+    var H = 0.11, p = [0, 0, 0], shape = [];
+    SKY_ORDERS[0].forEach(function (ax) {
+      var q = p.slice();
+      q[ax] += 1;
+      shape.push([min(p[0], q[0]) - H, min(p[1], q[1]) - H, min(p[2], q[2]) - H, max(p[0], q[0]) + H, max(p[1], q[1]) + H, max(p[2], q[2]) + H]);
+      p = q;
+    });
+    for (var j = 1; j < level; j += 1) {
+      var sc = Math.pow(2, j - 1), next = [];
+      SKY_CONF.forEach(function (rt, i) {
+        var M = SKY_TURN[rt[0]], t = [0, 1, 2].map(function (k) { return sc * (SKY_BASE[i][k] + rt[1] + SKY_OFFS[rt[0]][k]); });
+        shape.forEach(function (b) {
+          var at = function (o) { return [0, 1, 2].map(function (k) { return M[k][0] * b[o] + M[k][1] * b[o + 1] + M[k][2] * b[o + 2] + t[k]; }); };
+          var lo = at(0), hi = at(3);
+          next.push([min(lo[0], hi[0]), min(lo[1], hi[1]), min(lo[2], hi[2]), max(lo[0], hi[0]), max(lo[1], hi[1]), max(lo[2], hi[2])]);
+        });
+      });
+      shape = next;
+    }
+    return shape;
+  }
+  // The beams drawn in towards eye E, the drawing's middle seen along F, SKY_HALF radians each side.
+  function drawnIn(boxes, E, F) {
+    var r2 = Math.SQRT2, r3 = Math.sqrt(3), r6 = Math.sqrt(6);
+    var RV = [-2 / r6, 1 / r6, 1 / r6], UV = [0, -1 / r2, 1 / r2], NV = [1 / r3, 1 / r3, 1 / r3];
+    var abd = function (b, g) {
+      var p = [b[g & 4 ? 3 : 0], b[g & 2 ? 4 : 1], b[g & 1 ? 5 : 2]];
+      return [RV, UV, NV].map(function (v) { return p[0] * v[0] + p[1] * v[1] + p[2] * v[2]; });
+    };
+    var lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    boxes.forEach(function (b) { for (var g = 0; g < 8; g += 1) { var q = abd(b, g); for (var k = 0; k < 3; k += 1) { lo[k] = min(lo[k], q[k]); hi[k] = max(hi[k], q[k]); } } });
+    var mid = [0, 1, 2].map(function (k) { return (lo[k] + hi[k]) / 2; });
+    var g0 = SKY_FAR * Math.tan(SKY_HALF) / ((hi[0] - lo[0]) / 2), beta = 0.43 / ((hi[2] - lo[2]) / 2);
+    var U = norm([-F[0] * F[1], 1 - F[1] * F[1], -F[2] * F[1]]), R = [F[1] * U[2] - F[2] * U[1], F[2] * U[0] - F[0] * U[2], F[0] * U[1] - F[1] * U[0]];
+    return boxes.map(function (b) {
+      var P = [];
+      for (var g = 0; g < 8; g += 1) {
+        var q = abd(b, g), a = (q[0] - mid[0]) * g0, bb = (q[1] - mid[1]) * g0, l = 1 / (1 + beta * (q[2] - mid[2]));
+        P.push([0, 1, 2].map(function (k) { return E[k] + (a * R[k] + bb * U[k] + SKY_FAR * F[k]) * l; }));
+      }
+      return P;
+    });
+  }
+  // How much of it the place hides from the eye: its corners and middles looked for along their rays.
+  function hiddenFrom(E, hexes, worse) {
+    var n = 0;
+    for (var i = 0; i < hexes.length; i += 1) {
+      var P = hexes[i], pts = P.concat([[0, 1, 2].map(function (k) { return P.reduce(function (s, p) { return s + p[k]; }, 0) / 8; })]);
+      for (var j = 0; j < pts.length; j += 1) {
+        var d = [pts[j][0] - E[0], pts[j][1] - E[1], pts[j][2] - E[2]], L = hypot(d[0], d[1], d[2]);
+        for (var t = 1; t < L; t += 0.5) {
+          var x = floor(E[0] + d[0] * t / L), y = floor(E[1] + d[1] * t / L), z = floor(E[2] + d[2] * t / L);
+          if (x < 0 || z < 0 || x >= w.SX || z >= w.SZ || y >= w.SY) { break; }
+          var b = y < 0 ? B.BEDROCK : w.get(x, y, z);
+          if (w.SOLID[b]) { n += w.SEE[b] ? 0.25 : 1; if (!w.SEE[b]) { break; } }
+        }
+        if (n > worse) { return n; }
+      }
+    }
+    return n;
+  }
+  // Over the wreck, as near straight over it and as low as the place leaves the figure clear.
+  function placeSky() {
+    var at = underTree(), E = [at.x, at.y + EYE, at.z], wr = place.wreck, beams = figureBeams(3), best = null;
+    var toWreck = Math.atan2(wr.x + 0.5 - at.x, -(wr.z + 0.5 - at.z));
+    [0, 0.12, -0.12, 0.24, -0.24].forEach(function (db, i) {
+      [0.42, 0.36, 0.49, 0.53].forEach(function (el, j) {
+        var hexes = drawnIn(beams, E, lookDir(toWreck + db, el)), cost = hiddenFrom(E, hexes, best ? best.cost : 1e9) * 4 + i + j;
+        if (!best || cost < best.cost) { best = { cost: cost, hexes: hexes }; }
+      });
+    });
+    // Six faces to a beam, each in the tone of its pair of faces, as the drawing has them.
+    var data = [];
+    best.hexes.forEach(function (P) {
+      for (var k = 0; k < 3; k += 1) {
+        for (var side = 0; side < 2; side += 1) {
+          var q = [[0, 0], [1, 0], [1, 1], [0, 1]].map(function (ab) {
+            var bits = [0, 0, 0]; bits[k] = side; bits[(k + 1) % 3] = ab[0]; bits[(k + 2) % 3] = ab[1]; return P[4 * bits[0] + 2 * bits[1] + bits[2]];
+          });
+          [q[0], q[1], q[2], q[0], q[2], q[3]].forEach(function (v) { data.push(v[0], v[1], v[2], k); });
+        }
+      }
+    });
+    var vao = gl.createVertexArray(), buf = gl.createBuffer();
+    gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 12);
+    gl.bindVertexArray(null);
+    return { vao: vao, buf: buf, count: data.length / 4, eye: E, hexes: best.hexes, cost: best.cost, away: false, said: false };
+  }
+  var FIG_VS = "#version 300 es\nlayout(location=0) in vec3 aP; layout(location=1) in float aT; uniform mat4 uVP; out vec3 vP; flat out int vT;\n" +
+    "void main() { vP = aP; vT = int(aT + 0.5); gl_Position = uVP * vec4(aP, 1.0); }";
+  var FIG_FS = "#version 300 es\nprecision highp float;\nin vec3 vP; flat in int vT; out vec4 o; uniform vec3 uEye; uniform vec3 uHaze;\n" +
+    "const vec3 T[3] = vec3[3](vec3(0.5), vec3(0.03), vec3(0.97));\n" +   // the drawing's grey, black and white
+    "void main() { float d = length(vP - uEye); o = vec4(mix(T[vT], uHaze, clamp(1.0 - exp(-d * 0.0022), 0.0, 1.0)), 1.0); }";
+  // Back under the tree after walking off, you are told once that it has closed again.
+  function skyCheck() {
+    if (!skyFig || intro || launched) { return; }
+    var dx = P.x - skyFig.eye[0], dz = P.z - skyFig.eye[2], r = hypot(dx, dz), up = abs(P.y + EYE - skyFig.eye[1]);
+    if (r > 6) { skyFig.away = true; }
+    if (skyFig.away && !skyFig.said && r < 0.45 && up < 0.3) { skyFig.said = true; say("Under your tree the figure in the sky is the drawing again; anywhere else it comes apart.", true); }
+  }
+
   /* ---- the camera ------------------------------------------------------------ */
 
   function perspective(fovy, aspect, near, far) {
@@ -727,7 +850,7 @@
 
   var last = 0, sunDir = norm([-0.45, 0.78, -0.35]), SKY = [0.48, 0.66, 0.86], HAZE = [0.84, 0.86, 0.86];
   var crossMark = null, held = false, flying = false;
-  var skyVao = null, curPix = 1, quality = 1, near = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
+  var skyVao = null, skyFig = null, curPix = 1, quality = 1, near = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
   function norm(v) { var n = hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; }
 
   function frame(now) {
@@ -747,7 +870,7 @@
       var pix = round(10 - 9 * sm(1, 5.5));
       if (pix !== curPix) { curPix = pix; resize(); }
       eyeH = 0.35 + (EYE - 0.35) * sm(4.5, 7.2);
-      P.pitch = 1.2 + (0 - 1.2) * sm(3.8, 7.2);
+      P.pitch = 1.2 + (0.2 - 1.2) * sm(3.8, 7.2);
       P.yaw = intro.yaw0 + intro.turn * sm(5.5, 8.6);
       if (u > 9.6) { awake(); }
     } else if (!launched && !flying) {
@@ -796,6 +919,13 @@
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
       rocketLift = lift;
     }
+    if (skyFig) {
+      gl.useProgram(figProg);
+      gl.uniformMatrix4fv(FU.uVP, false, vp);
+      gl.uniform3fv(FU.uEye, eye); gl.uniform3fv(FU.uHaze, HAZE);
+      gl.bindVertexArray(skyFig.vao);
+      gl.drawArrays(gl.TRIANGLES, 0, skyFig.count);
+    }
     if (paintings.length) {
       gl.useProgram(artProg);
       gl.uniformMatrix4fv(AU.uVP, false, vp);
@@ -810,7 +940,7 @@
       });
     }
     gl.bindVertexArray(null);
-    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); }
+    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); }
     overlay(now, open);
     requestAnimationFrame(frame);
   }
@@ -822,12 +952,17 @@
     }
     return 1;
   }
+  // Where you come to, and stand to watch the rocket go: under your tree on the wreck's side of its trunk,
+  // so that sitting up and turning you see the wreck. The figure in the sky is the drawing from here.
+  function underTree() {
+    var c = place.crash, wr = place.wreck, tr = place.tree;
+    var tx = tr ? tr.x + 0.5 : c.x, tz = tr ? tr.z + 0.5 : c.z, ax = wr.x + 0.5 - tx, az = wr.z + 0.5 - tz, L = hypot(ax, az) || 1;
+    return { x: tx + ax / L * 1.7, y: c.y, z: tz + az / L * 1.7 };
+  }
   // You, lying beside the trunk of your tree, the wreck to one side.
   function lieDown(lines) {
-    var c = place.crash, wr = place.wreck, tr = place.tree;
-    // Under your tree on the wreck's side of its trunk, so that sitting up and turning you see the wreck.
-    var tx = tr ? tr.x + 0.5 : c.x, tz = tr ? tr.z + 0.5 : c.z, ax = wr.x + 0.5 - tx, az = wr.z + 0.5 - tz, L = hypot(ax, az) || 1;
-    P.x = tx + ax / L * 1.7; P.z = tz + az / L * 1.7; P.y = c.y; P.vx = P.vy = P.vz = 0;
+    var at = underTree(), wr = place.wreck;
+    P.x = at.x; P.z = at.z; P.y = at.y; P.vx = P.vy = P.vz = 0;
     var toWreck = Math.atan2(wr.x - P.x, -(wr.z - P.z));
     intro = { t0: performance.now(), yaw0: toWreck - 1.5, turn: 1.5, lines: lines };
     document.body.dataset.film = "true";
@@ -1013,10 +1148,11 @@
     store();
     closeLabel();
     $("notes").hidden = true;
-    // Stand back by your tree, on the wreck's side of it, and watch it go.
-    var c = place.crash, wr = place.wreck, ax = (wr.x + 0.5) - c.x, az = (wr.z + 0.5) - c.z, L = hypot(ax, az) || 1;
-    P.x = c.x + ax / L * 2.6; P.z = c.z + az / L * 2.6;
-    for (var y = w.SY - 2; y > 0; y -= 1) { if (w.SOLID[w.get(floor(P.x), y, floor(P.z))]) { P.y = y + 1; break; } }
+    // Stand back under your tree, where you woke, and watch it go up past the figure in the sky.
+    var at = underTree(), wr = place.wreck;
+    P.x = at.x; P.z = at.z; P.y = at.y;
+    // The ground there, looked for from just over your head (the tree's leaves are over it).
+    for (var y = floor(at.y) + 1; y > 0; y -= 1) { if (w.SOLID[w.get(floor(P.x), y, floor(P.z))]) { P.y = y + 1; break; } }
     P.yaw = Math.atan2(wr.x + 0.5 - P.x, -(wr.z + 0.5 - P.z));
     P.pitch = 0.3;
     var t0 = performance.now();
@@ -1294,6 +1430,10 @@
       });
       uploadPalette();
       meshAll(place.crash.x, place.crash.z);
+      var t0 = performance.now();
+      if (skyFig) { gl.deleteVertexArray(skyFig.vao); gl.deleteBuffer(skyFig.buf); }
+      skyFig = placeSky();
+      skyFig.ms = round(performance.now() - t0);
       uploadArt();
       paintings.forEach(function (p) { paintTexture(p, null); });
       // Where you had got to in this very adventure, if you were in it before.
@@ -1339,10 +1479,11 @@
     gl = canvas.getContext("webgl2", { antialias: true });
     quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
-    prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS);
+    prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS);
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
+    ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); });
     gl.enable(gl.DEPTH_TEST);
     skyVao = gl.createVertexArray(); gl.bindVertexArray(skyVao);
     var sb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, sb);
@@ -1405,7 +1546,7 @@
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
              skip: function () { if (intro) { intro.t0 -= 9600; } },
              hold: function (q) { held = true; quality = q; near = 1; resize(); },
-             flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; },
+             flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; }, sky: function () { return skyFig; }, underTree: underTree,
              aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
   } };
   init();

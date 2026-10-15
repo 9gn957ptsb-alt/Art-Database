@@ -103,6 +103,7 @@ async function main() {
   take(/<div class="veil" id="veil" hidden><\/div>/, '<div class="veil" id="veil"></div>');
   take(/<section class="start" id="start">/, '<section class="start" id="start" hidden>');
   take(/\s*<a class="apart" href="forms\.html">[^<]*<\/a>/, "");
+  take(/\s*<a class="apart" href="figure\.html">[^<]*<\/a>/, "");
   const scripts = ["../../v2/models.js", "forms.js", "adventure.js", "place.js", "rocket.js"];
   const files = { "../../v2/models.js": path.join(V2, "models.js") };
   let inline = "<script>\nwindow.ROCKET = { base: \"data/\", play: true, kinds: [\"form\", \"form\", \"form\", \"building\"], forms: " + JSON.stringify(FORMS) +
