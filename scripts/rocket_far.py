@@ -5,8 +5,8 @@ Every block is the artist's figure, six bars (FIGURE in rocket.js; the SketchUp 
 scripts/sketchup/impossible_triangle.py). The shader draws a block from its face in: a ray walked block
 to block through the solid behind the face, the first bar it meets seen in the tone of the way that bar's
 face looks (up white, east and west grey, north and south black), a little deeper (DARKEN) for each block
-it has gone in, and the dark between the bars if it is still among them after STEPS blocks. Far off,
-where a bar is narrower than a pixel or two, the shader shows instead what this same walk averages to over
+it has gone in, and the dark between the bars if it is still among them after STEPS blocks. Further
+off (from where a bar is eight pixels wide to under four), the shader shows instead what this same walk averages to over
 many rays into a solid face: the weight of white, grey, black and the dark, for each of the six faces, at
 a slant (the ray 0.15 off the face, cosine to its normal) and from nearer straight on (0.75).
 

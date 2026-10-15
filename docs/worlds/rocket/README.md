@@ -45,10 +45,12 @@ gone in. A ray that comes out into the open again lets the faces behind show; on
 after eight blocks shows the dark between them. A face keeps its own depth, which is right because
 every face along a ray between it and what it meets is one the walk has passed through; chunks are
 drawn nearest first, so what is hidden is turned away before its walk. Breaking or placing a block
-sends its column again; the rocket walks a little grid of its own, which rises with it. Far off,
-where a bar would be narrower than a pixel or two, a face shows what its blocks average to
-(`scripts/rocket_far.py` runs the same walk over many rays, at a slant and from nearer straight
-on), so nothing shimmers. If the frames come slowly, the view coarsens, and then the walk is kept
+sends its column again; the rocket walks a little grid of its own, which rises with it. Further
+off, a face shows what its blocks average to (`scripts/rocket_far.py` runs the same walk over many
+rays, at a slant and from nearer straight on): it closes into that mean from where a bar is eight
+pixels wide to where it is under four, a quarter of the distance it once did (artist, 15 Oct 2026:
+"Have the distance in which the facades of objects disappear be 1/4 of what it is now"), so near
+you the facades open and you see in, and further off they close and the land reads solid. If the frames come slowly, the view coarsens, and then the walk is kept
 nearer. Water and the notes are surfaces, not blocks: water its colour with the sky in it at a
 slant, a note paper that catches the eye.
 
