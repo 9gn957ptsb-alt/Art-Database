@@ -76,6 +76,8 @@ body[data-touch] .jump { display: block; }
 .toast.show { opacity: 1; }
 .toast[data-tone="good"] { color: var(--good); }
 
+/* Black until the place is built, when the eyes open on it. */
+.veil { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: #050302; color: var(--muted); font: italic 400 16px/1.5 var(--serif); text-align: center; }
 .start { position: fixed; inset: 0; display: grid; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(circle at 50% 30%, rgba(243, 201, 139, 0.08), transparent 60%), var(--ground); }
 #end { background: rgba(15, 10, 7, 0.55); }
 .start-card { width: min(420px, 100%); margin: auto; display: grid; gap: 14px; padding: 28px; background: var(--card); border: 1px solid var(--hair); }
