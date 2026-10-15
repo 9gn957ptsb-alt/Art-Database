@@ -151,16 +151,17 @@ async function globeMark(P, tag, shots) {
 async function london(P, tag, touch, shots) {
   await P.evaluate(() => { if (Land.chooseLayer) { Land.chooseLayer("characters"); } Land.town("london-gb"); });
   await P.waitForFunction(() => window.Skyline && Skyline.on() && Skyline.state().key === "london-gb" && Skyline.state().count > 0, null, { timeout: 240000 });
-  await P.waitForFunction(() => (Skyline.state().bits || []).some((b) => !b.hidden && b.w > 0), null, { timeout: 120000 }).catch(() => {});
+  await P.waitForFunction(() => (Skyline.state().bits || []).some((b) => !b.hidden && b.w > 24), null, { timeout: 120000 }).catch(() => {});
   const s = await P.evaluate(() => ({ bits: Skyline.state().bits, note: (document.querySelector(".skyline-note") || {}).textContent || "", W: innerWidth, H: innerHeight }));
   const b = (s.bits || [])[0];
   check(tag, !!b && !b.hidden && b.x >= 0 && b.y >= 0 && b.x + b.w <= s.W && b.y + b.h <= s.H, "the pair standing at Horse Guards on London's skyline", b);
   check(tag, /Royal Nothin at Horse Guards/.test(s.note), "the note says it is here", s.note);
   if (shots) { await P.screenshot({ path: path.join(OUT, "bits-london-" + tag + ".png") }); }
   if (!b || b.hidden) { return; }
-  const x = b.x + b.w / 2, y = b.y + b.h / 2;
-  await press(P, touch, x, y);
-  if (touch) { await P.waitForTimeout(300); await press(P, touch, x, y); }
+  // Pressed as a person would, once it holds still: the skyline swings a quarter turn every φ⁷ s, and in
+  // software GL a frame takes seconds, so a point read a moment before can be where the pair was.
+  const pair = P.locator(".skyline-bit");
+  if (touch) { await pair.tap(); await P.waitForTimeout(300); await pair.tap(); } else { await pair.click(); }
   await P.waitForFunction(() => document.querySelector(".bit-card"), null, { timeout: 8000 }).catch(() => {});
   check(tag, await P.evaluate(() => !!document.querySelector(".bit-card")), "pressed, its card");
   if (shots) { await P.waitForTimeout(1500); await P.screenshot({ path: path.join(OUT, "bits-london-card-" + tag + ".png") }); }

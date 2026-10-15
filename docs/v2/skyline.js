@@ -1265,6 +1265,7 @@
       var o = { b: b, hover: false, named: false };
       o.btn = el("button", "skyline-who skyline-bit");
       o.btn.type = "button";
+      o.btn.hidden = true;                          // until the pair is drawn and the button laid over it
       o.btn.setAttribute("aria-label", b.title + " — after " + b.who + "'s short, filmed at " + b.place + "; its card");
       o.btn.appendChild(el("span", "skyline-who-name", b.title));
       o.btn.addEventListener("click", function (event) {
@@ -1299,7 +1300,7 @@
       g.fillRect(Math.round(p.x - 24 * pu), Math.round(p.y), Math.round(44 * pu), Math.max(1, Math.round(pu)));   // their shadow
       g.globalAlpha = 1;
       var box = Bits.drawPair(g, o.b.key, p.x, p.y, now, pu, { still: still });
-      if (!box) { return; }
+      if (!box) { o.btn.hidden = true; return; }
       if (lit) {
         g.strokeStyle = LILAC; g.lineWidth = 1;
         g.strokeRect(box.x0 - 2.5, box.y0 - 2.5, box.x1 - box.x0 + 5, box.y1 - box.y0 + 5);
