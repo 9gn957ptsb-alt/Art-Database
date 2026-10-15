@@ -1,0 +1,51 @@
+/* The globe's dial (globedial.js): a ring round the world, drawn on its own canvas under the world's
+   names; the crown under its front; the ring's keys a range laid over it, unseen. */
+.globe-dial {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 3;
+  image-rendering: auto;
+}
+.globe-dial-ui[hidden] { display: none; }
+.globe-dial-ui { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 87; }
+.globe-dial-crown {
+  position: absolute;
+  left: 0;
+  top: 0;
+  min-height: 24px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 10, 7, 0.62);
+  color: #c4b29c;
+  font-family: var(--mono, var(--sans));
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.26s steps(3), color 0.26s steps(3);
+}
+.globe-dial-crown:hover,
+.globe-dial-crown:focus-visible { background: #eadfcd; color: #0f0a07; }
+/* The ring's keys: a range over the ring, unseen; with the focus the ring is ringed. */
+.globe-dial-range {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.globe-dial-range:focus-visible { opacity: 1; outline: 2px solid #9d95e6; outline-offset: 2px; appearance: none; background: transparent; }
+.globe-dial-range:focus-visible::-webkit-slider-thumb { opacity: 0; }
+.globe-dial-range:focus-visible::-moz-range-thumb { opacity: 0; }
+/* The pills give way to the ring on the front globe (on a reading's grown globe they stay), and Search
+   comes down to the foot. */
+html[data-globe-dial] .filter:not([data-grown]) { display: none !important; }
+html[data-globe-dial] .art-find:not([data-grown]) { bottom: var(--s-5); }
+.stage.over-globe-dial { cursor: grab; }

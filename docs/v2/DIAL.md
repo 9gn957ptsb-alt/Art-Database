@@ -220,6 +220,29 @@ city's dial lies on its ground no other animal of the place comes out of a wave,
 (it is out already, as the hand). On a phone the city stands about a third smaller, to give the ring
 and its animal room. `GROUND = false` in skyline.js brings the round dial back to the skyline.
 
+## The globe's dial, and the dial's functions
+
+The artist, 15 Oct 2026: "The dial around the globe or the cities is the answer to being able to shift
+through categories seamlessly while the dial being able to be other tools as well. In the globe view
+rotating the dial should rotate you through the different categories and in the city views the rotation
+of the dial should change the time. What we need to figure out is how to be able to shift the function of
+the dial in views to enable the right function to be at the fingertips of the user."
+
+The dial is one instrument with **functions**, and a **crown** that switches between them: a small button
+at the front of the ring ("⇄ Time", "⇄ Categories": the function it switches to; T on the ring's keys).
+Each view opens on the function its turning should be: the world on its categories, a city on its time.
+
+| | On the globe (globedial.js) | In a city |
+| --- | --- | --- |
+| the ring | round the world, 22 px off its rim; over a world larger than the window, the largest the window has room for, in its middle | on the city's ground (The dial on the ground) |
+| its front | its foot, nearest you | the same |
+| **categories** | the layers along the arc, glyph and name; the front's is on the world; turning turns the world through them, a layer as each comes to the front; let go, the nearest; a tap on a name turns it there | — |
+| **time** | years, the first just left of the front, now just right of it, spread by the logarithm of the years before now; the world shows the layer's marks of that year (an artist living then, a collage once made, a city once a saved work had come there); at now, all | the city's years, as before |
+| default | categories | time |
+
+A new category is a layer of the globe (`LAYERS` in land.js, its glyph from KINDS.md); it comes onto the
+ring by itself. A new function is a third face of the ring and a third state of the crown.
+
 ## Rules kept
 
 - The dial draws only when something on it changed: the hub's layer gives a key.

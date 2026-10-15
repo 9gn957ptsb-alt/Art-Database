@@ -420,6 +420,24 @@ html[data-rising] .guide-tiles {
   transition: none !important;
 }
 html[data-rising] .skyline { opacity: var(--rise-sky, 1) !important; pointer-events: none !important; }
+/* Down into a city from the world (land.js, "into a city from the world"; artist, 14 Oct 2026: "The zoom in
+   has a transition that I want to get rid of"): its skyline is there from the hand-off, solid, growing out
+   of the city's point with the land, and the world round it goes down into the city's own dark (--rise-bg)
+   rather than the skyline fading in over the world's cells; the skyline's words come with its column, and
+   the world's names go with the world. */
+html[data-rising="down"] .skyline {
+  opacity: 1 !important;
+  background-color: rgba(15, 10, 7, var(--rise-bg, 1)) !important;
+}
+html[data-rising="down"] .skyline-names,
+html[data-rising="down"] .skyline-note,
+html[data-rising="down"] .skyline-hand-says { opacity: var(--rise-show, 1) !important; }
+html[data-rising="down"] .land .city { filter: opacity(calc(1 - var(--rise-bg, 0))); }
+/* Only the cities while the world is brought nearer (land.js, zoomCities): the one the fingers are on lit. */
+.city[data-aimed] .city-name { color: #f3f1ee; text-decoration: underline; text-decoration-color: rgba(157, 149, 230, 0.95);
+  text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.city[data-kind="town"][data-aimed] .city-dot { background: #b9b2ff; transform: rotate(45deg) scale(1.3); }
+.city[data-aimed][data-tile] .city-dot { visibility: visible; border: 0; border-radius: 0; background: rgba(157, 149, 230, 0.9); transform: none; }
 /* Into a museum from its skyline by the fingers (skyline.js, "in"): the city lets go of its column, dial and
    banner over the way in (--enter-show), and the museum's own view is faded in over the skyline. */
 html[data-entering] #art,

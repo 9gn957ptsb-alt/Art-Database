@@ -8,8 +8,11 @@
   outline: 2px solid #9d95e6 !important;
   outline-offset: 2px;
 }
-/* The globe itself (a11y.js gives it a place in the tab order): the ring inside the window. */
+/* The globe itself (a11y.js gives it a place in the tab order): the ring inside the window, and only when
+   the keys brought the focus there (html[data-keys], a11y.js): the page puts the focus on the globe on
+   arriving at the world, and a ring round the whole window after a touch read as a frame (14 Oct 2026). */
 #land:focus-visible { outline-offset: -6px; }
+html:not([data-keys]) #land:focus-visible { outline: none !important; }
 /* The view's heading takes the focus on arrival; it is a heading, not a control. */
 .a11y-h1:focus, [data-a11y-h1]:focus { outline: none !important; }
 /* The view's heading takes the focus on arrival so a screen reader starts there; it is not a control (no

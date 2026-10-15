@@ -15,7 +15,7 @@ Reads only public files, all in docs/v2/:
 
 and writes docs/v2/cities.json:
 
-  {"note": ..., "towns": [[key, name, cc, lat, lon, n, museums, others, pass, file, near], ...],
+  {"note": ..., "towns": [[key, name, cc, lat, lon, n, museums, others, pass, file, near, y0], ...],
    "venues": {key: [[vi, lat, lon], ...], ...}}
 
   key      the places.json key (and places/<key>.json when file is 1); a museum in no place and
@@ -25,6 +25,8 @@ and writes docs/v2/cities.json:
   others   its venues that are not site museums, the unnamed one ("") included
   pass     1 when it is one museum and nothing else: pressing it goes straight into the museum
   near     the 8 nearest other towns within 500 km, as [row, km]
+  y0       the first year any of its venues had a saved work (0 where none is dated): the globe's dial,
+           turned to time, shows the town from then
   venues   the points of a town's venues, vi being the venue's index in places/<key>.json: a site
            museum's own point, else the middle of the points its events give at venue precision (or
            at the listing partner's office, for a listing that names no other venue); a venue with
@@ -198,8 +200,9 @@ def main():
         ms = sorted(inside.get(key, []), key=lambda s: (-by_slug[s]["held"], by_slug[s]["name"]))
         d = files.get(key)
         others = sum(1 for v in d["venues"] if not v[1]) if d else 0
+        firsts = [v[2] for v in (d["venues"] if d else []) if len(v) > 2 and isinstance(v[2], int) and v[2] > 0]
         towns.append([key, RENAME.get(key, p[1]), p[2], round(p[3], 4), round(p[4], 4), p[5], ms, others,
-                      1 if len(ms) == 1 and others == 0 else 0, 1 if d else 0, []])
+                      1 if len(ms) == 1 and others == 0 else 0, 1 if d else 0, [], min(firsts) if firsts else 0])
     towns.sort(key=lambda t: (0, -rank(t), t[1]) if t[6] else (1, -t[5], t[1]))
     for i, t in enumerate(towns):
         near = sorted((km(t[3:5], o[3:5]), j) for j, o in enumerate(towns) if j != i)

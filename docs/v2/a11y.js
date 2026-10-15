@@ -109,6 +109,15 @@
   if (finderField) { finderField.addEventListener("input", function () { window.setTimeout(stillRow, 260); }); }
 
   /* ---- the globe in the tab order ------------------------------------------- */
+  // The globe's ring frames the whole window, so it is drawn only when the keys brought the focus
+  // there (14 Oct 2026: a lilac frame round the window as fingers landed on the world, the focus
+  // put on the globe on arriving and Safari ringing it after a touch). The keys say so until a
+  // pointer is pressed (a11y.css, html[data-keys]).
+  var de = document.documentElement;
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Tab" || /^Arrow/.test(event.key) || event.key === "Enter" || event.key === " ") { de.dataset.keys = "true"; }
+  }, true);
+  document.addEventListener("pointerdown", function () { if (de.dataset.keys) { delete de.dataset.keys; } }, true);
   // The telescope comes and goes in front of the world: after it in the tab order, so the
   // globe is always the stop after Hold still (its z-index sets where it is drawn, not its order).
   var hubble = document.getElementById("hubble");

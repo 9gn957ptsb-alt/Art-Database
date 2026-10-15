@@ -936,9 +936,9 @@
      when it shows you the museums in that city"): see "the cities". */
   var ARTWORKS = true;                 // false: no histories, threads, Find or doors
   var LAYERS = [
-    { key: "collages", label: "Collages" },
-    { key: "museums", label: "Museums" },
-    { key: "architecture", label: "Architecture" },
+    { key: "collages", label: "Collages", glyph: "■" },
+    { key: "museums", label: "Museums", glyph: "◆" },
+    { key: "architecture", label: "Architecture", glyph: "△" },
     // The studios (artist, 1 Oct 2026: "Give a site to artist studios to
     // catalogue individual artists with specific locations"): studios.js.
     // Since 2 Oct 2026 the Artists (artist: "I just want the Artist to be
@@ -947,7 +947,7 @@
     // artists do not show up"): one mark an artist, at the birthplace, a town
     // of several one mark with its count (lives.js); the studios are stops
     // inside a life. The key stays "studios", so a viewer's choice holds.
-    { key: "studios", label: "Artists" }
+    { key: "studios", label: "Artists", glyph: "○" }
   ];
   var LAYER_KEY = "globe-layer";
   var layerOn = "collages";
@@ -967,8 +967,9 @@
 
   function filterGlobe() {
     cities.forEach(function (city) {
-      // A museum (and the Folger) stands in its city, not on the globe.
-      city.off = (!!city.layer && city.layer !== layerOn) || !!city.inTown;
+      // A museum (and the Folger) stands in its city, not on the globe. While the world is being brought
+      // nearer, only the cities ("only the cities, while zooming in").
+      city.off = zoomCities ? !city.town || !!city.inTown : (!!city.layer && city.layer !== layerOn) || !!city.inTown || !inYear(city);
       if (city.off) { city.el.style.visibility = "hidden"; city.shown = false; }
     });
     marksDirty = true;
@@ -991,29 +992,99 @@
       b.textContent = l.label;
       b.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
       b.addEventListener("click", function () {
-        // Pressed again while its cities could not be read: read them again.
-        if (layerOn === l.key && !(l.key === "museums" && !towns)) { return; }
-        layerOn = l.key;
-        var r0 = b.getBoundingClientRect();
-        // On a reading's grown globe the choice is the reading's: not stored,
-        // and the stored one comes back when the viewer goes up to the world.
-        if (grown) {
-          grownLayer();
-          pulse(r0.left + r0.width / 2, r0.top + r0.height / 2, [LIGHT], 0.4, Math.max(W, H) * INV3);
-          return;
-        }
-        layerKept = layerOn;
-        try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
-        filterGlobe();
-        placeMarks();
-        groundPlaces();
-        museumsLayer();
-        studiosLayer();
         var r = b.getBoundingClientRect();
-        pulse(r.left + r.width / 2, r.top + r.height / 2, [LIGHT], 0.5, Math.max(W, H) * INV2);
+        chooseLayer(l.key, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       });
       filterEl.appendChild(b);
     });
+  }
+
+  /* A layer chosen — a pill, or the globe's dial turned to it (globedial.js) —
+     its marks read and raised, and answered in the pixel light where it was
+     chosen (at). Pressed again while its cities could not be read: read them
+     again. On a reading's grown globe the choice is the reading's: not
+     stored, and the stored one comes back when the viewer goes up to the
+     world. */
+  function chooseLayer(key, at) {
+    if (!LAYERS.some(function (l) { return l.key === key; })) { return false; }
+    if (layerOn === key && !(key === "museums" && !towns)) { return false; }
+    layerOn = key;
+    if (grown) {
+      grownLayer();
+      if (at) { pulse(at.x, at.y, [LIGHT], 0.4, Math.max(W, H) * INV3); }
+      return true;
+    }
+    layerKept = layerOn;
+    try { localStorage.setItem(LAYER_KEY, layerOn); } catch (e) {}
+    filterGlobe();
+    placeMarks();
+    groundPlaces();
+    museumsLayer();
+    studiosLayer();
+    if (at) { pulse(at.x, at.y, [LIGHT], 0.5, Math.max(W, H) * INV2); }
+    return true;
+  }
+
+  /* The globe in a year (the globe's dial turned to time, globedial.js): a
+     mark with years is on the world only in them — an artist's life, a
+     collage from the year it was made, a city from the first year a saved
+     work was there; one with none is always on. At now (null) nothing is
+     held back. A town of several births says how many were living then. */
+  var globeYear = null;
+  function markYears(c) {
+    if (c.work && c.work.year) { return [c.work.year, Infinity]; }
+    if (c.town && c.town.y0) { return [c.town.y0, Infinity]; }
+    if (c.studio && studios && studios.lives) {
+      var y0 = Infinity, y1 = -Infinity;
+      (c.studio[4] || []).forEach(function (li) {
+        var r = studios.lives[li];
+        if (!r || !r[2]) { return; }
+        y0 = Math.min(y0, r[2]);
+        y1 = Math.max(y1, r[3] || Infinity);
+      });
+      return y0 < Infinity ? [y0, y1] : null;
+    }
+    return c.years || null;
+  }
+  function inYear(c) {
+    if (globeYear === null) { return true; }
+    var ys = markYears(c);
+    if (!ys) { return true; }
+    if (globeYear < ys[0] || globeYear > ys[1]) { return false; }
+    // A town of several births: those living then.
+    if (c.studio && c.studio[5] === "town" && studios && studios.lives) {
+      var n = 0;
+      (c.studio[4] || []).forEach(function (li) {
+        var r = studios.lives[li];
+        if (r && r[2] && r[2] <= globeYear && globeYear <= (r[3] || Infinity)) { n += 1; }
+      });
+      if (!n) { return false; }
+      var text = c.studio[7] + " · " + n;
+      if (c.name && c.name.textContent !== text) { c.name.textContent = text; measureOne(c); }
+    }
+    return true;
+  }
+  function setGlobeYear(y) {
+    var v = y === null || y === undefined || !isFinite(y) ? null : Math.round(y);
+    if (v === globeYear) { return; }
+    globeYear = v;
+    // Back at now: the towns of several say all who were born there again.
+    if (v === null) {
+      cities.forEach(function (c) {
+        if (c.studio && c.name && c.name.textContent !== (c.label || c.title)) { c.name.textContent = c.label || c.title; measureOne(c); }
+      });
+    }
+    filterGlobe();
+  }
+  // The span of the shown layer's years, for the globe's dial: from its first dated mark to now.
+  function layerYears() {
+    var y0 = Infinity;
+    cities.forEach(function (c) {
+      if (c.inTown || (c.layer || "") !== layerOn) { return; }
+      var ys = markYears(c);
+      if (ys && ys[0] < y0) { y0 = ys[0]; }
+    });
+    return y0 < Infinity ? [y0, new Date().getFullYear()] : null;
   }
 
   /* Which collage a landmark is standing nearest, by the places they are in. */
@@ -1159,7 +1230,7 @@
 
     // Knots: one diamond in any 12 px, the city that matters most kept;
     // the others are its tile until the world comes nearer.
-    if (layerOn === "museums") {
+    if (layerOn === "museums" || zoomCities) {
       var kept = [];
       items.filter(function (it) { return it.city.town && !it.city.tile; })
         .sort(function (a, b) { return a.city.town.i - b.city.town.i; })
@@ -1191,7 +1262,9 @@
     // many dots on the globe for the artist filter. I just want artist names
     // to be where they were born"): no mark stands for an artist unnamed, so
     // the window takes more names, and more as the world comes nearer.
-    var rules = layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
+    // While the world is brought nearer, the cities as the Museums layer names them, whatever the layer.
+    var rules = zoomCities ? { budget: nameBudget() }
+      : layerOn === "collages" ? { stack: true, keepDots: true, budget: Infinity, lifts: [-LINE, LINE, -2 * LINE, 2 * LINE] }
       : layerOn === "architecture" ? { stack: true, budget: nameBudget() }
       : layerOn === "studios" ? { namesOnly: true, budget: Math.round(nameBudget() * Math.min(2.6, Math.max(1.3, R / Math.max(1, base0)))) }
       : { budget: nameBudget() };
@@ -1267,7 +1340,8 @@
     });
     groups.forEach(function (g) {
       var c = g.lead.city;
-      g.pri = c.pin ? 1e9 : (c.rank || 1) * (0.3 + 0.7 * g.lead.z) * (c.wasNamed ? 1.25 : 1);
+      // The city the way down is going into (descent) is named first, as a pinned artist is.
+      g.pri = c.pin || c.aimed ? 1e9 : (c.rank || 1) * (0.3 + 0.7 * g.lead.z) * (c.wasNamed ? 1.25 : 1);
       g.w = 0;
       g.members.forEach(function (m) { g.w = Math.max(g.w, m.city.nw || 0); });
       g.h = Math.max(LINE, c.nh || 0) + (g.members.length - 1) * LINE;
@@ -1337,12 +1411,14 @@
     }
     groups.forEach(function (g) {
       var L = g.lead;
+      L.city.nameBox = null;
       // A dot that falls under a name already given out is let go for now.
       if (!rules.keepDots && under(L)) {
         g.members.forEach(function (m) { m.hidden = true; });
         return;
       }
-      if ((!far || L.city.pin) && L.z >= (L.city.pin ? 0.15 : 0.3) && (count < rules.budget || L.city.pin) && g.w) {
+      var first = L.city.pin || L.city.aimed;
+      if ((!far || first) && L.z >= (first ? 0.15 : 0.3) && (count < rules.budget || first) && g.w) {
         var gap = L.city.gap || 10;
         // Beside the dot, right or left; a collage may be lifted or dropped
         // a line or two, with a hairline back to its dot (rules.lifts).
@@ -1369,6 +1445,8 @@
           }
           if (side) {
             given.push(side === "right" ? right : left);
+            // Where its name is written: a finger on the name is on the place (descentTarget).
+            L.city.nameBox = side === "right" ? right : left;
             count += 1;
             var lift = lifts[k];
             g.members.forEach(function (m) { m.side = side; m.lift = lift; });
@@ -5218,6 +5296,7 @@
     if (descent) { event.preventDefault(); descentBy(Math.exp(-wl)); return; }
     if (place || flying || swing || deckMode || groundOn) { return; }
     event.preventDefault();
+    if (event.deltaY < 0) { zoomingIn(); }
     if (seat.size >= SIZE_MOST - 1e-6 && event.deltaY < 0) {
       // Past the globe's nearest: on down into the city under the pointer (never DIRT Earth's ground).
       if (descentBegin(event.clientX, event.clientY, 1, false)) { descentBy(Math.exp(-wl)); }
@@ -9035,7 +9114,9 @@
   });
 
   stage.addEventListener("pointermove", function (event) {
-    if (!deckMode) {
+    // No trail under two fingers bringing the world nearer, nor on the way down into a city (14 Oct 2026:
+    // "having all the other things makes the zoom in slippery").
+    if (!deckMode && !descent && !rise && Object.keys(fingers).length < 2) {
       tread(event.clientX, event.clientY);
       dropHubble(event.clientX, event.clientY);
     }
@@ -9055,6 +9136,7 @@
         return;
       }
       if (now2) {
+        if (!place && now2.d > pinch.d * 1.004) { zoomingIn(); }
         var size = Math.max(SIZE_FAR * INV, Math.min(SIZE_MOST, pinch.size * now2.d / pinch.d));
         var t = seatAbout(now2.x, now2.y, size);
         // And the pair of fingers drags it as it pinches.
@@ -14103,6 +14185,7 @@
       return true;
     }
     if (key === "+" || key === "=") {
+      zoomingIn();
       // At the nearest, the whole way down into the city nearest the middle (descent), eased.
       if (seat.size >= SIZE_MOST - 1e-6) { descentAll(); return true; }
       settleSwing();
@@ -15158,7 +15241,7 @@
       towns = d.towns.map(function (row, i) {
         var t = { i: i, key: row[0], name: row[1], cc: row[2], lat: row[3] * RAD, lon: wrap(row[4] * RAD),
                   n: row[5], museums: row[6] || [], others: row[7], pass: !!row[8], file: !!row[9],
-                  near: row[10] || [], venues: (d.venues && d.venues[row[0]]) || [] };
+                  near: row[10] || [], venues: (d.venues && d.venues[row[0]]) || [], y0: row[11] || 0 };
         t.v = toVec(t.lat, t.lon);
         var lg = Math.log(1 + t.n) / Math.LN10;
         t.rank = t.museums.length ? 1 + 0.5 * t.museums.length + 0.5 * lg : 0.5 * lg;
@@ -16019,7 +16102,28 @@
     // Down into a city from the world (descent), for the tests: how far, into where.
     descent: function () {
       return descent ? { p: descent.p, zoom: zoom, z1: descent.z1, R: R, town: descent.t.key, name: descent.t.name,
-                         museum: descent.museum, tween: !!descent.tween, fingers: descent.fingers } : null;
+                         museum: descent.museum, tween: !!descent.tween, fingers: descent.fingers, locked: descent.locked,
+                         cities: zoomCities } : null;
+    },
+    // The globe's dial (globedial.js): where the world is, and whether the front globe is the view.
+    globeRing: function () {
+      return { on: !place && !flying && !descent && !rise && !deckMode && !groundOn && !walkOn && !grown && !dive.on &&
+                   land.dataset.at === "globe",
+               cx: cx, cy: cy, R: R, W: W, H: H, foot: safeFoot, still: still, layer: layerOn, year: globeYear, cities: zoomCities };
+    },
+    layers: function () { return LAYERS.map(function (l) { return { key: l.key, label: l.label, glyph: l.glyph || "" }; }); },
+    layer: function () { return layerOn; },
+    chooseLayer: function (key, at) { return chooseLayer(key, at); },
+    globeYear: function (y) { if (arguments.length) { setGlobeYear(y); } return globeYear; },
+    layerYears: function () { return layerYears(); },
+    safe: function () { measureSafe(); },
+    // For the tests: what the world names now (the cities only while it is brought nearer), and where.
+    names: function () {
+      return { cities: zoomCities, named: cities.filter(function (c) { return c.shown && c.wasNamed && c.el; }).map(function (c) {
+        var b = c.nameBox;
+        return { title: c.title, town: !!c.town, key: c.town ? c.town.key : null, aimed: !!c.aimed,
+                 box: b ? [Math.round(b.x0), Math.round(b.y0), Math.round(b.x1), Math.round(b.y1)] : null };
+      }) };
     },
     // For the tests: the world at a size, turned so a point stands at the middle of the window.
     globeAt: function (lat, lon, size) {
@@ -17728,17 +17832,18 @@
       var a = art;
       // A rise begun on the skyline keeps it a moment, fading (rise's RISE_SKY).
       var risingSky = !!(rise && rise.sky && rise.s < RISE_SKY && !rise.committed);
-      // Come down into it from the world (rise.down): made ready while it is still far off (prep), and
-      // shown, coming in, once it is near (rise's RISE_SKY), so it grows out of the city's point.
+      // Come down into it from the world (rise.down): shown from the hand-off, solid, growing out of the
+      // city's point with the land (riseSkyline), the world round it going down into its dark (14 Oct 2026:
+      // the skyline had faded in over the world's cells, "a transition that I want to get rid of").
       var downSky = !!(rise && rise.down && !rise.committed);
-      if (downSky && rise.s < RISE_SKY) { risingSky = true; }
-      var prep = downSky && !risingSky;
+      if (downSky) { risingSky = true; }
+      var prep = false;
       if (!a || a.kind !== "town" || !a.live || !a.town || !place || (flying && !risingSky && !prep) || groundOn || walkOn) { return null; }
       if (!a.skyVisit) { skyVisits += 1; a.skyVisit = skyVisits; }     // each visit to a city, its own number
       return { visit: a.skyVisit, key: a.town.key, name: a.town.name, via: a.via || {}, pf: a.pf || null, venueWorks: a.venueWorks || null,
                museums: a.town.museums.slice(), rows: a.museumRows || {}, venueBoxes: a.venueBoxes || [],
                galleries: galleryPoints(a.town, a.pf).map(function (g) { return { vi: g.vi, lat: g.lat / RAD, lon: wrap(g.lon) / RAD }; }),
-               band: artBand("town"), col: artCol, foot: a.foot || null, reading: readingOn(), still: still, prep: prep,
+               band: artBand("town"), col: artCol, foot: a.foot || null, reading: readingOn(), still: still, prep: prep, coming: downSky,
                dial: a.dated && artTime && !artTime.hidden ? { y0: a.y0, y1: a.y1, at: a.y0 + Math.max(0, Math.min(1, a.when)) * (a.y1 - a.y0),
                                                        rest: a.when >= 0.999 && !a.byHand && !a.auto } : null };
     },
@@ -18072,22 +18177,26 @@
     var s = rise ? rise.s : 0, de = document.documentElement;
     de.style.setProperty("--rise-show", Math.max(0, 1 - s / RISE_ON).toFixed(3));
     de.style.setProperty("--rise-sky", Math.max(0, 1 - s / RISE_SKY).toFixed(3));
+    // Down into a city from the world: the world round its skyline goes down into the city's own dark over
+    // the first stretch after the hand-off (land.css, html[data-rising="down"]), so nothing fades in over it
+    // and the last of the way is the city growing out of its dark.
+    de.style.setProperty("--rise-bg", rise && rise.down ? smooth01((1 - P_HAND - s) / 0.3).toFixed(3) : "1");
     riseSkyline();
   }
   // A skyline rises with the land: it grows smaller with the world about the city's own point on it,
   // as it fades, so the city goes down into its place rather than giving way to it.
   var risenSky = null;
   function riseSkyline() {
-    var on = !!(rise && rise.sky && place && rise.s < RISE_SKY), sk = on ? document.querySelector(".skyline") : null;
+    var on = !!(rise && rise.sky && place && (rise.down || rise.s < RISE_SKY)), sk = on ? document.querySelector(".skyline") : null;
     var parts = sk ? Array.prototype.slice.call(sk.children) : [];
     if (risenSky && (!on || risenSky.root !== sk)) {
       risenSky.parts.forEach(function (c) { c.style.transform = c.style.transformOrigin = ""; });
       risenSky = null;
     }
     if (!sk) { return; }
-    var p = project(place.lat, place.lon), k = Math.max(0.05, Math.min(1, zoom / rise.z0));
+    var p = project(place.lat, place.lon), k = Math.max(rise.down ? 0.004 : 0.05, Math.min(1, zoom / rise.z0));
     if (!(p.z > 0)) { return; }
-    risenSky = { root: sk, parts: parts };
+    risenSky = { root: sk, parts: parts, k: k, x: p.x, y: p.y };
     parts.forEach(function (c) {
       c.style.transformOrigin = Math.round(p.x - c.offsetLeft) + "px " + Math.round(p.y - c.offsetTop) + "px";
       c.style.transform = "scale(" + k.toFixed(4) + ")";
@@ -18295,10 +18404,10 @@
     townDirty = true;
     if (cityPinch) { cityPinch.d = downSpread() || cityPinch.d; cityPinch.over = 1; }
     if (r.down) {
-      // Come down into it from the world: the city answers in the pixel light, and fingers still down go
-      // on with its map (a skyline takes them itself, Skyline.pinch).
-      var sx = place.seatAt ? place.seatAt.x * W : W / 2, sy = place.seatAt ? place.seatAt.y * H : H * 0.62;
-      if (!still) { pulse(sx, sy, [cityTone(place), LIGHT], 0.8, Math.max(W, H) * INV); }
+      // Come down into it from the world: no pulse (it was come into, not pressed: 14 Oct 2026, "the zoom
+      // in has a transition that I want to get rid of"), and fingers still down go on with its map (a
+      // skyline takes them itself, Skyline.pinch). The world's names are the layer's again.
+      zoomCitiesOff();
       // Its first play (the city growing to now) starts now it is seen: its clock had run on, unseen, while
       // its view was made on the way down.
       if (art && art.auto) { art.auto.at = performance.now() + 600; art.when = art.whenTo = 0; art.dirty = true; }
@@ -18309,6 +18418,40 @@
       }
     }
     cityRelease();
+  }
+
+  /* ---- only the cities, while zooming in --------------------------------------
+
+     The artist, 14 Oct 2026, with a recording of the Artists layer zoomed into
+     the east coast and on into Boston when he had aimed at New York: "Have
+     just cities be named on the map in that view, having all the other things
+     makes the zoom in slippery and hard to zoom into something specific." So
+     while the world is being brought nearer — two fingers spreading on it, a
+     wheel or a trackpad's pinch in, "+", and on down into a city (descent) —
+     its names are the cities' only, those the way down goes into, as the
+     Museums layer names them, whatever the layer; the city the fingers are on
+     is lit among them (descentAim). The layer's own names come back a moment
+     after the zoom stops. */
+  var zoomCities = false, zoomCitiesT = 0, ZOOM_CITIES_HOLD = 900;
+  function zoomingIn() {
+    if (place) { return; }
+    window.clearTimeout(zoomCitiesT);
+    zoomCitiesT = window.setTimeout(zoomCitiesOff, ZOOM_CITIES_HOLD);
+    if (zoomCities) { return; }
+    if (!towns) { readTowns().then(function () { if (towns && !zoomCities && descent) { zoomingIn(); } }); return; }
+    zoomCities = true;
+    land.dataset.zoomCities = "true";
+    if (!cities.some(function (c) { return c.town; })) { raiseTowns(); measureNames(); }
+    filterGlobe();
+  }
+  function zoomCitiesOff() {
+    window.clearTimeout(zoomCitiesT);
+    // Held while the way down goes on, and while two fingers are still on the world.
+    if (descent || (rise && rise.down) || (pinch && !place)) { zoomCitiesT = window.setTimeout(zoomCitiesOff, ZOOM_CITIES_HOLD); return; }
+    if (!zoomCities) { return; }
+    zoomCities = false;
+    delete land.dataset.zoomCities;
+    filterGlobe();
   }
 
   /* ---- into a city from the world, as far as the fingers go -----------------
@@ -18348,9 +18491,15 @@
   var descent = null;
   var DESCENT_ON = 0.3, DESCENT_WHEEL_ON = 0.1, DESCENT_REGRIP = 420, DESCENT_WAIT = 650;
   var P_HAND = 0.5;                     // by here the world faces the city and holds it at its seat
+  var P_LOCK = 0.2;                     // until here the city is the one the fingers are on; then it is held
   var DESCENT_REACH = 0.3;              // how far from the fingers a city is reached, of the window's smaller side
-  // The cities, read on every layer a little after the page has come up: the way down needs them.
-  window.setTimeout(function () { readTowns(); }, 4000);
+  // The cities, read on every layer a little after the page has come up: the way down needs them, and names
+  // them while the world is brought nearer (zoomCities), so their marks are made then too.
+  window.setTimeout(function () {
+    readTowns().then(function () {
+      if (towns && !cities.some(function (c) { return c.town; })) { raiseTowns(); filterGlobe(); measureNames(); }
+    });
+  }, 4000);
 
   // The point of the world under (x, y), else, off it, the nearest on its edge; and where that stands.
   function worldAt(x, y) {
@@ -18361,20 +18510,50 @@
     return e ? { lat: e.lat, lon: e.lon, x: ex, y: ey } : null;
   }
   // The city whose plot is under (x, y); null with none within reach (the cities are read the first time).
+  // What the fingers are on first (14 Oct 2026: aimed at New York, the way had gone into Boston, whose dot
+  // was the nearer to the point between them, and a name stands beside its dot, so fingers on a name are
+  // off its city): a mark shown on the world, by its name as it is written or by its dot — a city's mark is
+  // that city; any other (an artist's birthplace, a building, a collage) the city nearest it on the screen.
+  // Only failing that, the city whose dot is nearest the fingers, one that matters more a little nearer.
   function descentTarget(x, y, fine) {
     if (!towns) { readTowns(); return null; }
     var at = worldAt(x, y);
     if (!at) { return null; }
-    var reach = DESCENT_REACH * Math.min(W, H), breadth = fine ? 12 : 24, best = null, bs = Infinity;
+    var reach = DESCENT_REACH * Math.min(W, H), breadth = fine ? 12 : 24, mark = null, ms = Infinity;
+    cities.forEach(function (c) {
+      if (!c.el || c.off || c.shown !== true || c.inTown) { return; }
+      var p = project(c.lat, c.lon);
+      if (p.z <= 0.05) { return; }
+      var d = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+      if (c.wasNamed && c.nameBox) { d = Math.min(d, boxDist(c.nameBox, x, y)); }
+      if (d < ms) { ms = d; mark = c; }
+    });
+    var t = null;
+    if (mark && ms <= breadth * 1.5) {
+      if (mark.town) { t = mark.town; }
+      else {
+        var mp = project(mark.lat, mark.lon);
+        t = nearestTown(mp.x, mp.y, reach, breadth);
+      }
+    }
+    if (!t) { t = nearestTown(at.x, at.y, reach, breadth); }
+    return t ? { t: t, at: at } : null;
+  }
+  function boxDist(b, x, y) {
+    var bx = Math.max(b.x0 - x, 0, x - b.x1), by = Math.max(b.y0 - y, 0, y - b.y1);
+    return Math.sqrt(bx * bx + by * by);
+  }
+  function nearestTown(x, y, reach, breadth) {
+    var best = null, bs = Infinity;
     towns.forEach(function (t) {
       var p = project(t.lat, t.lon);
       if (p.z <= 0.05) { return; }
-      var d = Math.sqrt((p.x - at.x) * (p.x - at.x) + (p.y - at.y) * (p.y - at.y));
+      var d = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
       if (d > reach) { return; }
-      var s = Math.max(d, breadth) / Math.sqrt(1 + t.rank);
-      if (s < bs) { bs = s; best = t; }
+      var sc = Math.max(d, breadth) / Math.pow(1 + t.rank, 0.25);
+      if (sc < bs) { bs = sc; best = t; }
     });
-    return best ? { t: best, at: at } : null;
+    return best;
   }
   // On the Artists layer a town where several saved artists were born opens on them, as its name does.
   function bornHere(t) {
@@ -18392,7 +18571,35 @@
     if (place || flying || descent || rise || deckMode || groundOn || walkOn) { return false; }
     var tg = descentTarget(x, y, !fingers);
     if (!tg) { return false; }
-    var t = tg.t, via = {}, m = bornHere(t), c, museum = false;
+    // The world grows about the city's own point, where it stands on the screen, so the city stays where
+    // the fingers were put on it (or its name) until the way is under way.
+    var tp = project(tg.t.lat, tg.t.lon);
+    var D = {
+      fingers: !!fingers, d0: Math.max(1, d0 || 1), locked: false, pL: 0,
+      spin0: spin, wanted0: wanted, tilt0: tilt, A: toVec(tg.t.lat, tg.t.lon),
+      fx: tp.x, fy: tp.y, x0: x, y0: y, px: 0, py: 0, p: 0, tween: null, liftT: 0, wheelT: 0
+    };
+    if (!descentAim(D, tg.t)) { return false; }
+    settleSwing();
+    framing = null;
+    if (route) { endRoute(); }
+    artAsked = null;
+    hideDoor();
+    hideGraze();
+    closeDeck();
+    descent = D;
+    zoom = 1;
+    flying = true;
+    land.dataset.at = "rising";            // the world's marks stay, its creature and pills do not
+    drawAim.at = performance.now();
+    zoomingIn();
+    marksDirty = true;
+    return true;
+  }
+  // The city the way down is going into: its view's framing made, its plot and its file on their way before
+  // its view needs them, and its name lit among the cities'. Again while the way is young (stepDescent).
+  function descentAim(D, t) {
+    var via = {}, m = bornHere(t), c, museum = false;
     if (m) { via.born = m; }
     if (t.pass && !via.born) {
       c = cityOf(t.museums[0]);
@@ -18411,30 +18618,24 @@
       c.art.via = via;
     }
     if (!(c.zoomTo > 1.2)) { return false; }
-    settleSwing();
-    framing = null;
-    if (route) { endRoute(); }
-    artAsked = null;
-    hideDoor();
-    hideGraze();
-    closeDeck();
-    var A = toVec(tg.at.lat, tg.at.lon), C = toVec(c.lat, c.lon);
-    descent = {
-      t: t, c: c, via: via, museum: museum, fingers: !!fingers, d0: Math.max(1, d0 || 1), z1: c.zoomTo,
-      spin0: spin, wanted0: wanted, tilt0: tilt, dSpin: shortest(spin, c.lon), tilt1: c.lat,
-      A: A, C: C, om: Math.acos(Math.max(-1, Math.min(1, dot3(A, C)))),
-      fx: tg.at.x, fy: tg.at.y, x0: x, y0: y, px: 0, py: 0, p: 0, tween: null, liftT: 0, wheelT: 0,
-      G: c.seatAt ? { x: c.seatAt.x * W, y: c.seatAt.y * H } : { x: W / 2, y: H * 0.62 }
-    };
-    zoom = 1;
-    flying = true;
-    land.dataset.at = "rising";            // the world's marks stay, its creature and pills do not
-    drawAim.at = performance.now();
-    // Its plot and its file, on their way before its view needs them.
+    if (D.t && D.t.mark && D.t !== t) { descentLit(D.t, false); }
+    var C = toVec(c.lat, c.lon);
+    D.t = t; D.c = c; D.via = via; D.museum = museum; D.z1 = c.zoomTo;
+    D.dSpin = shortest(D.spin0, c.lon); D.tilt1 = c.lat;
+    D.C = C; D.om = Math.acos(Math.max(-1, Math.min(1, dot3(D.A, C))));
+    D.G = c.seatAt ? { x: c.seatAt.x * W, y: c.seatAt.y * H } : { x: W / 2, y: H * 0.62 };
+    descentLit(t, true);
     if (!museum && window.Skyline && Skyline.prefetch) { Skyline.prefetch(t.key); }
     if (!museum && t.file) { readArt("places/" + t.key + ".json"); }
-    marksDirty = true;
     return true;
+  }
+  // Its name lit among the cities' (land.css, .city[data-aimed]), and named first (nameMarks).
+  function descentLit(t, on) {
+    var m = t && t.mark;
+    if (!m) { return; }
+    m.aimed = on;
+    if (m.el) { if (on) { m.el.dataset.aimed = "true"; } else { delete m.el.dataset.aimed; } }
+    marksDirty = true;
   }
   // Each frame: the height is the fingers' (or the descent's own easing); the world follows it.
   function stepDescent(now) {
@@ -18446,26 +18647,31 @@
       if (q >= 1 && !tw.down) { descentBack(false); return; }
     }
     var p = D.p = Math.max(0, Math.min(1, Math.log(Math.max(1e-6, zoom)) / Math.log(D.z1)));
+    // While the way is young the world only grows about the city, which stays where it is on the screen
+    // (nothing slides from under the fingers); then the world turns to face it and carries it to its seat.
+    if (!D.locked && (p >= P_LOCK || (D.tween && D.tween.down))) { D.locked = true; D.pL = Math.min(p, P_HAND * 0.8); }
     // Half way down a city's view is made and the rise takes the rest of the way; a museum is gone all the way.
     if (!D.museum && p >= P_HAND) { descentHand(now); return; }
     if (D.museum && p >= 1 - 1e-4) { descentArrive(); return; }
     descentView(D, p);
-    // Where it is going: a ring of the pixel light on the city, named where its layer does not name it.
+    // Where it is going: its name lit among the cities'. A city with no mark of its own on the world (a
+    // town of a few galleries) has the ring of the pixel light and its name, as before.
     var tp = project(D.t.lat, D.t.lon), o = 1 - smooth01((p - 0.6 * P_HAND) / (0.4 * P_HAND));
-    if (tp.z > 0.05 && o > 0.02) {
+    if (!D.t.mark && tp.z > 0.05 && o > 0.02) {
       drawAim(tp.x, tp.y, Math.min(1, p / P_HAND), now);
       aimEl.style.opacity = o.toFixed(3);
-      if (layerOn !== "museums") { sayDescent(D.t, tp.x, tp.y, o); }
-      else if (aimName) { aimName.hidden = true; }
+      sayDescent(D.t, tp.x, tp.y, o);
     } else { hideAim(); }
     marksDirty = true;
     tilesDirty = true;
     handledAt = now;
   }
-  // The world p of the way to the city's plot: zoomed about the fingers, turned to face the city by 0.8 of
-  // the hand-off, and the point held under the fingers carried to the city's seat by the hand-off.
+  // The world p of the way to the city's plot. Before it is held, zoomed about the fingers only; then turned
+  // to face the city by 0.8 of the rest of the way to the hand-off, and the point held under the fingers
+  // carried to the city's seat by the hand-off.
   function descentView(D, p) {
-    var k = smooth01(p / (0.8 * P_HAND)), m = smooth01(p / P_HAND);
+    var q = D.locked ? Math.max(0, Math.min(1, (p - D.pL) / Math.max(1e-6, P_HAND - D.pL))) : 0;
+    var k = smooth01(q / 0.8), m = smooth01(q);
     spin = wanted = D.spin0 + D.dSpin * k;
     lean(D.tilt0 + (D.tilt1 - D.tilt0) * k);
     R = baseR * zoom;
@@ -18473,9 +18679,9 @@
     var tx = D.fx + D.px + (D.G.x - D.fx - D.px) * m, ty = D.fy + D.py + (D.G.y - D.fy - D.py) * m;
     cx = 0;
     cy = 0;
-    var q = project(latOf(hv), lonOf(hv));
-    cx = tx - q.x;
-    cy = ty - q.y;
+    var qp = project(latOf(hv), lonOf(hv));
+    cx = tx - qp.x;
+    cy = ty - qp.y;
   }
   function sayDescent(t, x, y, o) {
     aimSetup();
@@ -18583,7 +18789,7 @@
     zoom = 1;
     descentView(D, 0);
     descent = null;
-    descentAimOff();
+    descentAimOff(D);
     flying = false;
     flyK = 0;
     land.dataset.at = "globe";
@@ -18597,7 +18803,8 @@
     var at = fingers && pinchState();
     if (at) { pinch = { d: at.d, x: at.x, y: at.y, size: seat.size }; }
   }
-  function descentAimOff() {
+  function descentAimOff(D) {
+    if (D) { descentLit(D.t, false); }
     hideAim();
     if (aimEl) { aimEl.style.opacity = ""; }
     if (aimName) { aimName.style.opacity = ""; delete aimName.dataset.key; }
@@ -18626,7 +18833,7 @@
     window.clearTimeout(D.wheelT);
     descentView(D, P_HAND);              // the city's own framing: faced, and held at its seat
     descent = null;
-    descentAimOff();
+    descentAimOff(D);
     descentPlace(D);
     arriveQuiet = true;                   // its pulse is for arriving (riseBack), not for being made
     arrive();
@@ -18643,7 +18850,7 @@
     flying = true;
     zoom = z;
     land.dataset.at = "rising";
-    document.documentElement.dataset.rising = "true";
+    document.documentElement.dataset.rising = "down";
     if (tw && tw.down) {
       rise.tween = { from: Math.log(z), to: Math.log(c.zoomTo), at: now, dur: still ? 1 : 300 + 1400 * (1 - P_HAND),
                      up: false, out: true };
@@ -18659,7 +18866,7 @@
     window.clearTimeout(D.liftT);
     window.clearTimeout(D.wheelT);
     descent = null;
-    descentAimOff();
+    descentAimOff(D);
     descentPlace(D);
     zoom = D.c.zoomTo;
     fly.deep = false;
@@ -20993,6 +21200,12 @@
       d.placed = "";
     }
     var h = gd.hand || { x: gd.hx, y: gd.hy, top: gd.hy - 10, w: 14, h: 12 };
+    // Coming down into the city, the skyline is drawn smaller about the city's point (riseSkyline): its
+    // label beside the animal as it is drawn.
+    var rk = risenSky && risenSky.k < 1 ? risenSky : null;
+    if (rk) {
+      h = { x: rk.x + (h.x - rk.x) * rk.k, top: rk.y + (h.top - rk.y) * rk.k, w: h.w * rk.k, h: h.h * rk.k };
+    }
     var bw = box.offsetWidth, bh = box.offsetHeight;
     var x = h.x + h.w / 2 + 6, y = h.top + h.h / 2 - Math.min(bh, 24) / 2;
     var right = gd.right || W, left = gd.left || 0;

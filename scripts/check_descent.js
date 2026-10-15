@@ -113,6 +113,83 @@ async function phone(browser) {
   await ctx.close();
 }
 
+// The recording of 14 Oct 2026: the Artists layer at the globe's nearest over the east coast, two fingers spread on
+// New York's name with Boston's dot nearer the point between them. Only the cities are named while the world comes
+// nearer, the city the fingers are on is lit, the way goes into New York, the lilac frame never shows, and from
+// the hand-off the skyline is there, solid, the world round it going down into its dark.
+async function aimed(browser) {
+  const tag = "390x844 artists";
+  const { ctx, P, cdp, errors } = await open(browser, 390, 844, true, "studios");
+  const touchAt = (pts, type) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts });
+  await P.evaluate(() => {
+    window.__sky = [];
+    (function rec() {
+      const r = Land.rise(), sk = document.querySelector(".skyline");
+      if (r && r.down && sk && !sk.hidden && window.__sky.length < 400) {
+        const cs = getComputedStyle(sk), m = /rgba?\(([^)]+)\)/.exec(cs.backgroundColor);
+        window.__sky.push({ s: +r.s.toFixed(3), op: Number(cs.opacity), bg: m ? Number((m[1].split(",")[3] || "1").trim()) : 1 });
+      }
+      requestAnimationFrame(rec);
+    })();
+  });
+  await P.evaluate(() => Land.globeAt(41.6, -72.4, 2.6180339887));
+  await P.waitForTimeout(900);
+  const before = await P.evaluate(() => Land.names());
+  check(tag, !before.cities && before.named.some((n) => !n.town), "at rest the layer names its own (artists)", before.named.slice(0, 6).map((n) => n.title));
+  // The point between the fingers on New York's name, toward its end (the side Boston is on).
+  const nyName = before.named.filter((n) => /^New York/.test(n.title))[0];
+  const ny = await P.evaluate(() => Land.at(40.758, -73.985));
+  const x = nyName && nyName.box ? nyName.box[0] + (nyName.box[2] - nyName.box[0]) * 0.7 : ny.x + 30;
+  const y = nyName && nyName.box ? (nyName.box[1] + nyName.box[3]) / 2 : ny.y;
+  const pts = (d) => [{ x: x - d / 2, y, id: 1 }, { x: x + d / 2, y, id: 2 }];
+  const during = [];
+  // A first stroke, as a hand zooms; the second, within the moment the first is held for, goes just past the
+  // hand-off and is held there while the skyline is made (software GL takes seconds), then on.
+  await touchAt([pts(40)[0]], "touchStart");
+  await touchAt(pts(40), "touchStart");
+  for (let i = 1; i <= 12; i++) {
+    await touchAt(pts(40 + 80 * i / 12), "touchMove");
+    await P.waitForTimeout(40);
+    during.push(await P.evaluate(() => ({ n: Land.names(), d: Land.descent() })));
+    if (i === 8) { await P.screenshot({ path: path.join(OUT, `${tag}-aim.png`) }); }
+  }
+  const frame = await P.evaluate(() => getComputedStyle(document.getElementById("land")).outlineStyle);
+  check(tag, frame === "none", "no lilac frame round the window after a touch", frame);
+  await touchAt([], "touchEnd");
+  await P.waitForTimeout(150);
+  const d1 = await P.evaluate(() => Land.descent());
+  const want = d1 ? Math.pow(d1.z1, 0.62) / d1.zoom : 6;            // to 0.62 of the way down
+  await touchAt([pts(40)[0]], "touchStart");
+  await touchAt(pts(40), "touchStart");
+  for (let i = 1; i <= 8; i++) { await touchAt(pts(40 * Math.pow(want, i / 8)), "touchMove"); await P.waitForTimeout(40); }
+  await P.waitForFunction(() => window.Skyline && Skyline.on && Skyline.on(), null, { timeout: 30000 }).catch(() => {});
+  await P.waitForTimeout(600);
+  await P.screenshot({ path: path.join(OUT, `${tag}-coming.png`) });
+  const dEnd = 40 * want;
+  for (let i = 1; i <= 8; i++) { await touchAt(pts(dEnd * Math.pow(1.6, i / 8)), "touchMove"); await P.waitForTimeout(60); }
+  const named = during.filter((s) => s.n.cities).map((s) => s.n.named);
+  check(tag, named.length > 0 && named.every((list) => list.every((n) => n.town)), "while the world comes nearer only the cities are named",
+        named.length ? named[named.length - 1].map((n) => n.title) : null);
+  const aims = during.map((s) => s.d && s.d.town).filter(Boolean);
+  check(tag, aims.length > 0 && aims[aims.length - 1] === "new-york-us", "the way is aimed at New York, the city the fingers are on", aims);
+  const lit = during.map((s) => s.n.named.filter((n) => n.aimed).map((n) => n.key)).filter((l) => l.length);
+  check(tag, lit.length > 0 && lit[lit.length - 1][0] === "new-york-us", "its name is lit among the cities'", lit.slice(-1));
+  await touchAt([], "touchEnd");
+  // From the hand-off: the skyline solid, its ground's dark coming in (sampled every frame in the page: a
+  // software GL frame is too slow to sample between).
+  await P.waitForFunction(() => Land.where().at === "town" && !Land.rise() && !Land.descent(), null, { timeout: 60000 }).catch(() => {});
+  const seenSky = await P.evaluate(() => (window.__sky || []).slice());
+  check(tag, seenSky.length > 0 && seenSky.every((o) => o.op > 0.99), "on the way down the skyline is there, solid", seenSky.slice(0, 4));
+  check(tag, seenSky.some((o) => o.bg < 0.6), "the world round it goes down into its dark as it comes, not at once", seenSky.map((o) => o.bg.toFixed(2)).slice(0, 8));
+  await P.waitForTimeout(2500);
+  const w = await P.evaluate(() => ({ where: Land.where(), names: Land.names().cities }));
+  check(tag, w.where.at === "town" && w.where.key === "new-york-us", "into New York", w.where);
+  check(tag, !w.names, "arrived, the world's names are the layer's again", w.names);
+  await P.screenshot({ path: path.join(OUT, `${tag}-arrived.png`) });
+  check(tag, errors.length === 0, "no page errors", errors.slice(0, 3));
+  await ctx.close();
+}
+
 async function desktop(browser) {
   const tag = "1440x900";
   let { ctx, P, errors } = await open(browser, 1440, 900, false, "museums");
@@ -183,6 +260,8 @@ async function desktop(browser) {
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE, args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
+  try { await aimed(browser); } catch (e) { console.log("aimed threw", e); fails.push("aimed threw"); }
+  if (process.env.ONLY_AIMED) { await browser.close(); console.log(fails.length ? "FAILS: " + fails.length : "ALL OK"); process.exit(fails.length ? 1 : 0); }
   try { await phone(browser); } catch (e) { console.log("phone threw", e); fails.push("phone threw"); }
   try { await desktop(browser); } catch (e) { console.log("desktop threw", e); fails.push("desktop threw"); }
   await browser.close();

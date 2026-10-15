@@ -2027,6 +2027,8 @@
       if (Land.city.shown) { Land.city.shown(); }
     }
     if (st.still !== still) { still = st.still; }
+    // Still on its way down from the world (land.js, rise.down): its museums' rings wait for it to arrive.
+    if (st.coming && pulseArt === -2) { pulseAt = now + 1600; }
     var dt = Math.min(80, now - (last || now));
     last = now;
     // The band it is drawn in, and the canvas there.
