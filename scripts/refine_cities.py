@@ -28,7 +28,7 @@ cities' own open records through build_built_years.py.
 
     python3 scripts/refine_cities.py                      # the plan, and stop
     python3 scripts/refine_cities.py --run [--new 2] [--raise 3] [--refresh 2] [--years-timeout 2400]
-    python3 scripts/refine_cities.py --run --only new-york-us [--tier 2]
+    python3 scripts/refine_cities.py --run --only new-york-us [--tier 2] [--why "cut again with its building parts"]
     python3 scripts/refine_cities.py --redate             # date again the cities whose runners' records came,
                                                           # or whose years were carried (builtCarried)
 
@@ -385,6 +385,7 @@ def main():
     ap.add_argument("--refresh", type=int, default=1, help="cities read again from a newer release a run")
     ap.add_argument("--only", help="one city (its town key), raised a grain or to --tier")
     ap.add_argument("--tier", type=int, help="with --only: the tier to cut it at")
+    ap.add_argument("--why", help="with --only: what the ledger's line says it was cut for (default: cut at tier N)")
     ap.add_argument("--redate", action="store_true", help="date again the cities whose runners' records came, or whose years were carried")
     ap.add_argument("--ground-timeout", type=int, default=1500)
     ap.add_argument("--years-timeout", type=int, default=2400)
@@ -447,7 +448,7 @@ def main():
     for why, key, tier in todo:
         print(f"\n== {key} ({why}, tier {tier})", flush=True)
         kept, line = cut(key, tier, {"new": "first cut", "raise": f"raised to tier {tier}", "refresh": "read again",
-                                     "only": f"cut at tier {tier}"}[why], led, release, args)
+                                     "only": args.why or f"cut at tier {tier}"}[why], led, release, args)
         report.append(f"{key}: {line}")
         if kept:
             changed.append(key)

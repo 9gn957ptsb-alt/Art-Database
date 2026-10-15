@@ -30,8 +30,16 @@ which Overture release it was read from and when ("release", "read");
 --release latest reads the newest release on the bucket.
 
     python3 scripts/build_grounds.py [--force] [--only slug] [--release latest|2026-09-23.1]
-    python3 scripts/build_grounds.py --heights [--only city-<key>]    # heights past 74 storeys; landmarks' heights
+    python3 scripts/build_grounds.py --heights [--only city-<key>]    # heights past 74 storeys; landmarks'; parts
     python3 scripts/build_grounds.py --bridges [--only city-<key>]    # road bridges over a city's water
+
+A city's skyline keeps two more things the first cuts did not (14-15 Oct 2026, docs/v2/grounds/REFINE.md):
+its building parts — Overture's `building_part`s, OpenStreetMap's building:part: a building mapped in tiers,
+legs and spires is drawn as them (each cell the tallest part over it), not as a slab of its whole footprint
+at its top height (the Empire State Building was 37 cells at 138 storeys, the Eiffel Tower 27 at 103) — and
+its roads on the surface only: a stretch Overture flags `is_tunnel` is not drawn (Madrid Río's M-30,
+Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris were roads over parks). `--heights` brings
+the parts to the grounds cut before; the tunnels come with a new cut.
 """
 
 import argparse
@@ -113,9 +121,11 @@ def local(lat, lon):
 
 COLUMNS = {("base", "water"): ["subtype", "class"],
            ("transportation", "segment"): ["subtype", "class", "road_flags", "rail_flags"],
-           ("buildings", "building"): ["height", "num_floors"]}
+           ("buildings", "building"): ["id", "height", "num_floors"]}
 GREEN_COLUMNS = {("base", "land_use"): ["subtype", "class"],     # read for the cities' skylines only
-                 ("base", "land"): ["subtype", "class"]}
+                 ("base", "land"): ["subtype", "class"],
+                 ("buildings", "building_part"): ["building_id", "height", "min_height", "num_floors",
+                                                  "is_underground"]}
 
 
 def only(theme, kind):
@@ -128,17 +138,19 @@ def only(theme, kind):
 FETCHED = {}                  # (theme, kind) -> rows, read once for many places
 
 
-def prefetch(boxes, green=False):
+def prefetch(boxes, green=False, themes=None):
     """Read each theme once for every square at the same time. Overture's
     files are sorted by place, so one pass over the planet's index serves a
     batch of places nearly as cheaply as one; each place then takes its own
-    rows. `green`: the batch has a city's skyline, which keeps its green."""
+    rows. `green`: the batch has a city's skyline, which keeps its green and
+    its building parts. `themes`: {(theme, type): columns} to read instead
+    (the buildings and their parts alone, for `--heights`)."""
     f = None
     for west, south, east, north in boxes:
         one = ((ds.field("bbox", "xmax") > west) & (ds.field("bbox", "xmin") < east) &
                (ds.field("bbox", "ymax") > south) & (ds.field("bbox", "ymin") < north))
         f = one if f is None else f | one
-    themes = {**COLUMNS, **(GREEN_COLUMNS if green else {})}
+    themes = themes or {**COLUMNS, **(GREEN_COLUMNS if green else {})}
     for (theme, kind), columns in themes.items():
         d = ds.dataset(f"{BUCKET}/theme={theme}/type={kind}/", filesystem=S3, format="parquet")
         want = only(theme, kind)
@@ -263,10 +275,12 @@ def eubucco_storeys(b, box, kind, tall, gx, gy, to_local):
     """Where Overture gives a building no height (its cell stands at the default two storeys) and EUBUCCO
     gives it its register's — Spain's Catastro floors, France's BD TOPO (eubucco_heights.py) — the cell
     takes it, if that is a storey higher or more. Changes `tall`; returns the cells raised (0 where no register
-    covers the place), or None where its file did not answer."""
+    covers the place), or None where its file did not answer. Only a place in Spain or France (its slug ends
+    -es or -fr): EUBUCCO's boxes take in Basel and Bern too, where its heights are a model's, not a register's
+    (Basel: r = 0.37 with Overture's, 32% within 3 m; Brussels's the same)."""
     try:
         import eubucco_heights
-        if not eubucco_heights.covers(b["lat"], b["lon"]):
+        if not (b.get("slug") or "").endswith(("-es", "-fr")) or not eubucco_heights.covers(b["lat"], b["lon"]):
             return 0
         west, south, east, north = box
         got = eubucco_heights.polygons((south, west, north, east))
@@ -353,6 +367,51 @@ def bridge_mask(segments, cell, least, to_local, within, N):
     return mask
 
 
+def surface(g, flags):
+    """A road segment's geometry without its tunnelled stretches: a road under a park, a river or a
+    street (Madrid Río's M-30, Boston's Greenway, the quais of Paris) is not on the ground, so no cell of
+    the surface is a road there. Overture flags a tunnel on the segment (`road_flags`: `is_tunnel`, the
+    whole segment, or the stretch of it between two fractions of its length). None where all of it is."""
+    spans = []
+    for flag in flags or []:
+        if "is_tunnel" not in (flag.get("values") or []):
+            continue
+        span = flag.get("between")
+        if not span:
+            return None
+        spans.append((max(0.0, float(span[0])), min(1.0, float(span[1]))))
+    if not spans or g.geom_type != "LineString" or not g.length:
+        return g
+    keep, at = [], 0.0
+    for a, z in sorted(spans):
+        if a > at:
+            keep.append((at, a))
+        at = max(at, z)
+    if at < 1:
+        keep.append((at, 1.0))
+    pieces = [substring(g, a, z, normalized=True) for a, z in keep if z - a > 1e-6]
+    pieces = [p for p in pieces if p.geom_type == "LineString" and p.length > 0]
+    return shapely.MultiLineString(pieces) if pieces else None
+
+
+def building_parts(box, to_local):
+    """{id of a building: [(geometry, top, bottom)]}: Overture's `building_part`s (OpenStreetMap's
+    building:part — the tiers, towers, legs and spires of a building mapped in parts), each with the metres
+    of its top and where it starts (`min_height`: an arch's top starts above the street). Below ground,
+    without a height, or as big as a campus, a part says nothing a skyline can draw."""
+    out = {}
+    for row in overture("buildings", "building_part", ["building_id", "height", "min_height", "num_floors",
+                                                       "is_underground"], box):
+        top = row.get("height") or (row.get("num_floors") or 0) * FLOOR
+        if row.get("is_underground") or not top or not row.get("building_id"):
+            continue
+        g = to_local(shapely.from_wkb(row["geometry"]))
+        if g.is_empty or not g.area or g.area > BIGGEST:
+            continue
+        out.setdefault(row["building_id"], []).append((g, float(top), float(row.get("min_height") or 0)))
+    return out
+
+
 def build(b, only=None):
     """A place's ground. `only` reads part of it for a repair: "tall" the buildings and their heights
     (`--heights`), "bridges" the cells under road bridges (`--bridges`)."""
@@ -429,7 +488,12 @@ def build(b, only=None):
         if city and width < least:
             continue
         reach = width / 2 + cell * 0.12 if city else max(width / 2, cell * 0.45)
-        g = to_local(shapely.from_wkb(row["geometry"])).buffer(reach)
+        g = to_local(shapely.from_wkb(row["geometry"]))
+        if city:                           # a tunnel is under the ground, not on it
+            g = surface(g, row.get("road_flags"))
+            if g is None:
+                continue
+        g = g.buffer(reach)
         inside = within(g) & (kind != "~")
         kind[inside] = "="
     # A bridge crosses the water the road is not drawn over.
@@ -437,11 +501,13 @@ def build(b, only=None):
         kind[bridge_mask(segments, cell, least, to_local, within, N)] = "="
 
     count = 0
-    rows = overture("buildings", "building", ["height", "num_floors"], box)
+    rows = overture("buildings", "building", ["id", "height", "num_floors"], box)
     geoms = [to_local(shapely.from_wkb(row["geometry"])) for row in rows]
     rises = landmark_rises(b, box, geoms, to_m) if city else {}
     landmarks = rises is not None         # Wikidata answered (None: it did not, and the ground does not say so)
     rises = rises or {}
+    parts = building_parts(box, to_local) if city else {}     # a city's tiers, towers and spires
+    parted = np.zeros((N, N), bool)       # the cells whose height a building's parts gave
     spire = max(1.5 * cell, 22.0)         # metres round a landmark's point that rise to its height
     for k, (row, g) in enumerate(zip(rows, geoms)):
         # Some maps draw a whole resort or campus as one "building" round the
@@ -466,14 +532,69 @@ def build(b, only=None):
             inside[i, j] = True
         own = row.get("height") or (row.get("num_floors") or 0) * FLOOR
         h = own or 2 * FLOOR
-        kind[inside] = "b"
-        tall[inside] = np.maximum(tall[inside], h)
+        mine = parts.get(row.get("id"))
+        best, top_part, kept = None, 0, []
+        if mine:
+            # A building mapped in parts (the Empire State Building's eleven tiers, the Eiffel Tower's legs,
+            # platforms and mast): each cell takes the tallest part over it, not the whole footprint the
+            # building's top height. A part off the ground adds height to the building's cells, never new
+            # ones. Where no part reaches, the building's own height stands — unless that height is the
+            # whole building's top (mapped on the outline for renderers that draw no parts): then the
+            # lowest part on the ground, its podium. Where the parts stop short of the building's own
+            # height (a spire or a roof they leave out), their tallest stands at it.
+            best = np.zeros((N, N))
+            ground = []                       # the tops of the parts on the ground that reach a cell (`kept`: of all)
+            for pg, top, low in mine:
+                pin = within(pg)
+                if low:
+                    pin &= inside
+                if not pin.any() and pg.area >= 0.04 * cell * cell:
+                    # A tower, a mast or a spire between two cell middles stands in the building's cell
+                    # nearest it, within a cell (a thinner part says nothing a cell of this size can hold).
+                    c = pg.centroid
+                    i0, j0 = int((half - c.y) // cell), int((c.x + half) // cell)
+                    near = None
+                    for i in range(max(0, i0 - 1), min(N, i0 + 2)):
+                        for j in range(max(0, j0 - 1), min(N, j0 + 2)):
+                            if inside[i, j] or (not low and best[i, j] > 0):
+                                d = (gx[i, j] - c.x) ** 2 + (gy[i, j] - c.y) ** 2
+                                if d <= cell * cell and (near is None or d < near[0]):
+                                    near = (d, i, j)
+                    if near:
+                        pin = np.zeros((N, N), bool)
+                        pin[near[1], near[2]] = True
+                if pin.any():
+                    best[pin] = np.maximum(best[pin], top)
+                    kept.append(top)
+                    if not low:
+                        ground.append(top)
+            top_part = max(kept, default=0)
+            base = min(ground) if own and abs(own - top_part) <= 1.0 and ground else h
+            covered = best > 0
+            inside = inside | covered
+            heights = np.where(covered, best, base)
+            if kept and own > top_part + 3:   # the parts leave out the building's top (the Campanile's pyramid and
+                heights[best == top_part] = own     # angel): its tallest part stands at the building's height
+            kind[inside] = "b"
+            tall[inside] = np.maximum(tall[inside], heights[inside])
+            parted |= covered | (inside & (best == 0))
+            h = max(h, top_part)
+        else:
+            kind[inside] = "b"
+            tall[inside] = np.maximum(tall[inside], h)
         # A landmark's height (Wikidata), where the building's own is missing or a good deal lower: the
-        # cells round its point rise to it (a tower, a spire, a dome stand at a building's middle).
+        # cells round its point rise to it (a tower, a spire, a dome stand at a building's middle) — and
+        # all of a low, wide one's (a ring like the Colosseum, a hall, a stadium: under 60 m, over 10,000 m²).
         for x, y, top in rises.get(k, ()):
             if top >= 1.5 * h and top - h >= 12:
-                near = inside & ((gx - x) ** 2 + (gy - y) ** 2 <= spire ** 2)
+                near = inside if (top < 60 and g.area >= 10000) else \
+                    inside & ((gx - x) ** 2 + (gy - y) ** 2 <= spire ** 2)
                 tall[near] = np.maximum(tall[near], top)
+            elif kept and top > top_part + 3:
+                # The parts stop short of the landmark's height (a mast, a spire: Torrespaña's parts reach
+                # 173 m and its mast 231): their tallest cells at its point stand at it.
+                peak = inside & (best == top_part) & ((gx - x) ** 2 + (gy - y) ** 2 <= spire ** 2)
+                tall[peak] = np.maximum(tall[peak], top)
         count += 1
 
     heights_from = ["Wikidata (CC0)"] if city and landmarks and rises else []
@@ -483,7 +604,7 @@ def build(b, only=None):
     heights_read = landmarks and eub is not None      # both answered: the ground says its heights are read
     if only == "tall":           # the buildings and their heights alone (`--heights`)
         return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall), "landmarks": heights_read,
-                "heightsFrom": heights_from}
+                "heightsFrom": heights_from, "parted": np.flatnonzero(parted.ravel()).tolist()}
 
     at = terrain(box, cell, lat)
     ground = np.array([[at(*to_deg(gx[i, j], gy[i, j])) for j in range(N)] for i in range(N)])
@@ -520,7 +641,8 @@ def build(b, only=None):
         "read": datetime.date.today().isoformat(),
         # A city's roads over water (its bridges) are drawn, and its landmarks stand at Wikidata's heights
         # (`--bridges` and `--heights` do it for the grounds cut before).
-        **({"bridges": datetime.date.today().isoformat()} if city else {}),
+        **({"bridges": datetime.date.today().isoformat(), "parts": datetime.date.today().isoformat(),
+            "tunnels": datetime.date.today().isoformat()} if city else {}),
         **({"heights": datetime.date.today().isoformat(), "heightsFrom": heights_from} if city and heights_read else {}),
     }
 
@@ -531,42 +653,76 @@ def repair_heights(places):
     Willis Tower and the Eiffel Tower had all stood at one height), and a landmark takes the height Wikidata
     gives it where Overture's is missing or lower (the Willis Tower stood at 31 m, the Tour du Midi at 19).
     Each building cell takes the taller of its height and the new one; nothing else in the ground changes —
-    its years, streets, water, green. A ground cut or repaired so says it (`heights`, the day) and is left
-    alone; one whose grid is no longer the place's is left for a new cut."""
+    its years, streets, water, green. A building mapped in parts (`building_part`: the Empire State
+    Building's tiers, the Eiffel Tower's legs and mast) has each of its cells take the height of the tallest
+    part over it, up or down, as a new cut does (`parts`): a slab at the building's top height is no longer
+    its silhouette. A ground cut or repaired so says it (`heights`, `parts`, the day) and is left alone; one
+    whose grid is no longer the place's is left for a new cut. The grounds are read a few at a time: one
+    pass over Overture's index serves a batch of cities."""
+    todo = {}
     for b in places:
         path = OUT / (b["slug"] + ".json")
         if b.get("precision") != "city" or not path.exists():
             continue                   # a museum's plot draws no tower past a fifth of its width anyway
         old = json.loads(path.read_text(encoding="utf-8"))
-        if old.get("heights"):
+        if old.get("heights") and old.get("parts"):
             continue
         if old["n"] != (b.get("n") or GRID) or old["side"] != side_of(b):
             print(f"  · {b['slug']}: its grid is not the place's now: cut it again instead", flush=True)
             continue
-        new = None
-        for release in dict.fromkeys([old.get("release") or RELEASE, "latest"]):
+        todo.setdefault(old.get("release") or RELEASE, []).append((b, old, path))
+    themes = {("buildings", "building"): COLUMNS[("buildings", "building")],
+              ("buildings", "building_part"): GREEN_COLUMNS[("buildings", "building_part")]}
+    BATCH = 6
+    for rel, group in todo.items():
+        for k in range(0, len(group), BATCH):
+            chunk = group[k:k + BATCH]
+            FETCHED.clear()
             try:
-                use_release(release)
-                new = build(b, only="tall")
-                break
-            except Exception as exc:         # a release the bucket no longer keeps: the newest instead
-                print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
-        if new is None:
-            continue
-        tall, raised = list(old["tall"]), 0
-        for q, c in enumerate(tall):
-            if old["kind"][q] == "b" and new["kind"][q] == "b" and new["tall"][q] > c:
-                tall[q] = new["tall"][q]
+                use_release(rel)
+                prefetch([square(b) for b, _, _ in chunk], themes=themes)
+            except Exception as exc:         # a release the bucket no longer keeps: each place asks for itself
+                print(f"  · Overture {rel}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+                FETCHED.clear()
+            for b, old, path in chunk:
+                repair_one_heights(b, old, path, rel)
+            FETCHED.clear()
+
+
+def repair_one_heights(b, old, path, rel):
+    new = None
+    for release in dict.fromkeys([rel, "latest"]):
+        try:
+            use_release(release)
+            new = build(b, only="tall")
+            break
+        except Exception as exc:             # a release the bucket no longer keeps: the newest instead
+            print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+            FETCHED.clear()
+    if new is None:
+        return
+    parted = set(new["parted"])
+    tall, raised, parted_now = list(old["tall"]), 0, 0
+    for q, c in enumerate(tall):
+        if old["kind"][q] == "b" and new["kind"][q] == "b":
+            t = new["tall"][q]
+            if q in parted:              # a building mapped in parts: its parts' heights, up or down
+                if t != c:
+                    tall[q] = t
+                    parted_now += 1
+            elif t > c:
+                tall[q] = t
                 raised += 1
-        old["tall"] = "".join(tall)
-        if new["landmarks"]:             # Wikidata and EUBUCCO answered: not asked again (else the next run tries)
-            old["heights"] = datetime.date.today().isoformat()
-            old["heightsFrom"] = new["heightsFrom"]
-        path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
-        top = max(ord(c) - 48 for c in tall)
-        print(f"  + {b['name']}: {raised} building cells rise (past 74 storeys, or to a landmark's height), "
-              f"the tallest now {top} storeys ({top * FLOOR:.0f} m)"
-              + ("" if new["landmarks"] else "; Wikidata or EUBUCCO did not answer: left for the next run"), flush=True)
+    old["tall"] = "".join(tall)
+    old["parts"] = datetime.date.today().isoformat()
+    if new["landmarks"]:                 # Wikidata and EUBUCCO answered: not asked again (else the next run tries)
+        old["heights"] = datetime.date.today().isoformat()
+        old["heightsFrom"] = new["heightsFrom"]
+    path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
+    top = max(ord(c) - 48 for c in tall)
+    print(f"  + {b['name']}: {raised} building cells rise (past 74 storeys, or to a landmark's height), "
+          f"{parted_now} take the heights of their buildings' parts, the tallest now {top} storeys ({top * FLOOR:.0f} m)"
+          + ("" if new["landmarks"] else "; Wikidata or EUBUCCO did not answer: left for the next run"), flush=True)
 
 
 def repair_bridges(places):
@@ -607,13 +763,13 @@ def repair_bridges(places):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true")
-    parser.add_argument("--only")
+    parser.add_argument("--only", help="one place's slug, or several, comma-separated")
     parser.add_argument("--release", default=None,
                         help="an Overture release (2026-09-23.1), or 'latest' for the newest on the bucket")
     parser.add_argument("--heights", action="store_true",
                         help="read again the heights of the cities' buildings by the rules now in force (past "
-                             "74 storeys, landmarks at Wikidata's heights), leaving all else as it is "
-                             "(with --only: one place)")
+                             "74 storeys, landmarks at Wikidata's heights, buildings mapped in parts at their "
+                             "parts' heights), leaving all else as it is (with --only: one place)")
     parser.add_argument("--bridges", action="store_true",
                         help="draw the road bridges over water in the cities' grounds cut without them, "
                              "leaving all else as it is (with --only: one place)")
@@ -630,7 +786,8 @@ def main():
         places += json.loads(CITYPLACES.read_text(encoding="utf-8"))["places"]
     buildings = [b for b in places if isinstance(b.get("lat"), (int, float))]
     if args.only:
-        buildings = [b for b in buildings if b["slug"] == args.only]
+        wanted = set(args.only.split(","))
+        buildings = [b for b in buildings if b["slug"] in wanted]
     OUT.mkdir(parents=True, exist_ok=True)
     if args.heights or args.bridges:
         if args.heights:
