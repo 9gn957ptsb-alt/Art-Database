@@ -9,8 +9,11 @@
    its plan and the saved works hung in them, the pieces behind four of the
    works and the clues to which ones left about the rooms as notes, as in
    Clue; one of the buildings it has modelled, two pieces behind works hung
-   in it and two on its roof, in its garden or its pool; or one of its
-   cities, the pieces on a roof, in a park, in the water and up a tree.
+   in it and two on its roof, in its garden or its pool; a new form, a
+   building no one drew made of the sections of those buildings (forms.js),
+   the same; or one of its cities, the pieces on a roof, in a park, in the
+   water and up a tree. The buildings round every place are new forms too,
+   on lots of the ground's built cells.
 
    Tap a work to read its label, and look behind it: a wrong look sets off
    an alarm, and at the third the guards put you out under your tree again.
@@ -30,7 +33,7 @@
 
   var BASE = "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/";
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, TRI = 1, SAVE = "rocket-save-v2";
-  var Pl = window.RocketPlace, Adv = window.Adventures, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
+  var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
   var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs, hypot = Math.hypot;
   var HOTBAR = [B.BRICK, B.LOG, B.GLASS, B.DIRT, B.STONE];
   var BLOCKS = {};
@@ -40,6 +43,7 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]; }); }
   function lower(s) { return s.charAt(0).toLowerCase() + s.slice(1); }
+  function upper(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   /* The figure, for the page's own marks (the crosshair, the pieces, the blocks to place, the
      title's): the shader's rule at a point (fa, fb) of an up-triangle in its skew coordinates. */
@@ -566,7 +570,7 @@
     el.querySelector(".l-t").textContent = f.title || "Untitled";
     el.querySelector(".l-by").textContent = [f.artist, raw.date].filter(Boolean).join(", ");
     el.querySelector(".l-m").textContent = [raw.medium, raw.dims].filter(Boolean).join(" · ");
-    el.querySelector(".l-room").textContent = [p.room.name, p.work.floorShown].filter(Boolean).join(" · ") || (place.kind === "museum" ? "" : setting.name);
+    el.querySelector(".l-room").textContent = [upper(p.room.name), p.work.floorShown].filter(Boolean).join(" · ") || (place.kind === "museum" ? "" : setting.name);
     var pic = $("l-pic");
     pic.alt = f.title || "";
     pic.src = f.image ? CDN + f.image + "/medium.jpg" : "";
@@ -617,7 +621,7 @@
   /* ---- the frame ------------------------------------------------------------------ */
 
   var last = 0, sunDir = norm([-0.45, 0.78, -0.35]), SKY = [0.48, 0.66, 0.86], HAZE = [0.84, 0.86, 0.86];
-  var crossMark = null, held = false;
+  var crossMark = null, held = false, flying = false;
   var skyVao = null, curPix = 1, quality = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
   function norm(v) { var n = hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; }
 
@@ -637,7 +641,7 @@
       P.pitch = 1.2 + (0 - 1.2) * sm(3.8, 7.2);
       P.yaw = intro.yaw0 + intro.turn * sm(5.5, 8.6);
       if (u > 9.6) { awake(); }
-    } else if (!launched) {
+    } else if (!launched && !flying) {
       physics(dt);
     }
     pump(intro ? 14 : 6);
@@ -806,15 +810,34 @@
       var tag = $("tag"), hit = !intro && !launched && vp ? cast(lookDir(P.yaw, P.pitch), LOOK) : null, tt = "";
       if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
       else if (hit && hit.b === B.NOTE && hit.t <= REACH) { tt = "A note · click to read it"; }
+      else if (hit && hit.b !== undefined) { tt = partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
       tag.hidden = !tt;
       if (tt && tag.textContent !== tt) { tag.textContent = tt; }
     }
     if (current && hypot(current.cx - P.x, current.cz - P.z) > 11) { closeLabel(); }
   }
-  // Where you are: the room and its floor, or the place.
+  // A block's section and project: "The white cantilevered box of Casa CM", and in a lot, the lot's new form.
+  function partText(pa) {
+    if (!pa || !pa.name) { return pa && pa.lot ? pa.lot.name : ""; }
+    var own = pa.from === setting.name;
+    return upper(own ? pa.part || pa.name : pa.name.indexOf(" of ") > 0 ? pa.name : pa.name + " of " + Fm.the(pa.from)) + (pa.lot ? " · " + pa.lot.name : "");
+  }
+  // Where you are: the room and its floor; or by a building of the lots round it, the new form it is; or the place.
   function where() {
     var rm = place.kind !== "city" ? Pl.roomAt(place, P.x, P.y, P.z) : null, t = setting.name;
-    if (rm && rm.name) { var FL = place.floors[rm.floor]; t = rm.name + (place.kind === "museum" ? " · " + (FL.name || FL.label) : ""); }
+    if (rm && rm.name) { var FL = place.floors[rm.floor]; t = upper(rm.name) + (place.kind === "museum" ? " · " + (FL.name || FL.label) : ""); }
+    else if (w.lot) {
+      var L = null, x = floor(P.x), z = floor(P.z);
+      for (var r = 0; r <= 2 && !L; r += 1) {
+        for (var dz = -r; dz <= r && !L; dz += 1) {
+          for (var dx = -r; dx <= r && !L; dx += 1) {
+            var X = x + dx, Z = z + dz;
+            if (X >= 0 && Z >= 0 && X < w.SX && Z < w.SZ && w.lot[Z * w.SX + X]) { L = w.lots[w.lot[Z * w.SX + X] - 1]; }
+          }
+        }
+      }
+      if (L) { t = setting.name + " · " + L.name; }
+    }
     var el = $("where");
     if (el.textContent !== t) { el.textContent = t; }
   }
@@ -880,7 +903,8 @@
     } else {
       end.querySelector("h2").textContent = "You found the way out of " + name + ".";
       end.querySelector(".lede").textContent = "The rocket built from the pieces you found " + (setting.kind === "museum" ? "behind its works" : "in and round it") +
-        " is climbing out of the air over " + (setting.city || setting.where) + ". There are more escapes in the site: another museum, another building, the same place by another seed.";
+        " is climbing out of the air over " + (setting.city || setting.where) + ". There are more escapes in the site: another museum, another building, " +
+        (setting.kind === "form" ? "another new form, " : "") + "the same place by another seed.";
     }
   }
 
@@ -916,7 +940,8 @@
                    more ? more + (more === 1 ? " more note about it, somewhere in the rooms." : " more notes about it, somewhere in the rooms.") : "";
       return '<li data-got="' + got + '"><b>' + esc(p.name) + '</b>' + lines.join("") + (status ? '<span class="more">' + status + '</span>' : '') + '</li>';
     }).join("");
-    $("notes-list").innerHTML = '<ol>' + html + '</ol>' + (total ? '<p class="count">Notes read: ' + read + ' of ' + total + '</p>' : '');
+    $("notes-list").innerHTML = '<ol>' + html + '</ol>' + (total ? '<p class="count">Notes read: ' + read + ' of ' + total + '</p>' : '') +
+      (setting.recipe ? '<p class="made"><b>What this building is made of</b>' + esc(setting.recipe) + '</p>' : '');
   }
   function drawHotbar() {
     $("hotbar").innerHTML = HOTBAR.map(function (b, i) {
@@ -1024,13 +1049,26 @@
 
   /* ---- an adventure, from what the site holds ------------------------------------------------ */
 
-  var cat = null, choice = { kind: "museum", slug: "", seed: 0 };
+  var cat = null, forms = null, choice = { kind: "museum", slug: "", seed: 0 };
   function newSeed() { return 1 + floor(Math.random() * 9998); }
-  function listOf(kind) { return kind === "museum" ? cat.museums : kind === "building" ? cat.buildings : cat.cities; }
+  function listOf(kind) { return kind === "museum" ? cat.museums : kind === "building" ? cat.buildings : kind === "form" ? cat.forms : cat.cities; }
+  /* The new forms on offer: the first two dozen the generator makes from the sections of the
+     Architectural Authority's projects, each stood on the ground round the project its first volume came from. */
+  function formList() {
+    var out = [];
+    for (var n = 1; n <= 24; n += 1) { out.push(formEntry(n)); }
+    return out;
+  }
+  function formEntry(n) {
+    var R = Fm.form(forms, n), base = R.placed.filter(function (P2) { return P2.role === "base"; })[0], pj = forms.projects[base.sec.p];
+    return { slug: String(n), name: R.name, where: pj.where, ground: pj.slug, recipe: R.recipe };
+  }
   function keyOfEntry(kind, e) { return kind === "city" ? e.key : e.slug; }
   function chosen() {
-    var list = listOf(choice.kind);
-    return list.filter(function (e) { return keyOfEntry(choice.kind, e) === choice.slug; })[0] || list[0];
+    var list = listOf(choice.kind), e = list.filter(function (x) { return keyOfEntry(choice.kind, x) === choice.slug; })[0];
+    // A new form by any number (the forms page offers more than the two dozen listed).
+    if (!e && choice.kind === "form" && forms && /^\d+$/.test(choice.slug) && +choice.slug > 0) { e = formEntry(+choice.slug); list.push(e); }
+    return e || list[0];
   }
   function fetchJSON(path) { return fetch(BASE + path).then(function (r) { if (!r.ok) { throw new Error("no " + path); } return r.json(); }); }
 
@@ -1038,10 +1076,16 @@
      works hung in it (sixty at most, by the seed); a building's model and ground, and a dozen of
      the saved works, by the seed, with their histories. */
   function gather(kind, e, sd) {
-    if (kind === "city") { return fetchJSON("grounds/" + e.slug + ".json").then(function (g) { return { kind: kind, ground: g }; }); }
+    if (kind === "city") { return fetchJSON("grounds/" + e.slug + ".json").then(function (g) { return { kind: kind, ground: g, forms: forms }; }); }
+    if (kind === "form") {
+      return fetchJSON("grounds/" + e.ground + ".json").then(function (g) { return worksFor({ kind: kind, name: e.name, form: Fm.form(forms, +e.slug), ground: g, forms: forms }, sd); });
+    }
     return Promise.all([fetchJSON("models/" + e.slug + ".json"), fetchJSON("grounds/" + e.slug + ".json"),
                         kind === "museum" ? fetchJSON("interiors/" + e.slug + ".json") : null]).then(function (res) {
-      var d = { kind: kind, name: e.name, model: res[0], ground: res[1], interior: res[2] }, r = Pl.rng(sd * 13 + 5);
+      var d = { kind: kind, name: e.name, model: res[0], ground: res[1], interior: res[2], forms: forms }, r = Pl.rng(sd * 13 + 5);
+      // A building's sections, to call its rooms by.
+      var pj = forms ? forms.projects.filter(function (q) { return q.slug === e.slug; })[0] : null;
+      if (pj) { d.sections = pj.sections.map(function (id) { return forms.sections[id]; }); }
       if (kind === "museum") {
         var roomName = {};
         (d.interior.floors || []).forEach(function (f) { (f.rooms || []).forEach(function (rm) { roomName[rm.id] = rm.name || ""; }); });
@@ -1052,12 +1096,16 @@
         });
         return d;
       }
-      var pool = cat.pool.slice(), pick = [];
-      while (pick.length < 15 && pool.length) { pick.push(pool.splice(floor(r() * pool.length), 1)[0]); }
-      return Promise.all(pick.map(function (wk) { return fetchJSON("histories/" + wk.id + ".json").catch(function () { return null; }); })).then(function (hs) {
-        d.works = pick.map(function (wk, i) { return { work: wk, history: hs[i] }; }).filter(function (x) { return x.history; }).slice(0, 12);
-        return d;
-      });
+      return worksFor(d, sd);
+    });
+  }
+  // A dozen of the saved works, by the seed, with their histories.
+  function worksFor(d, sd) {
+    var r = Pl.rng(sd * 13 + 5), pool = cat.pool.slice(), pick = [];
+    while (pick.length < 15 && pool.length) { pick.push(pool.splice(floor(r() * pool.length), 1)[0]); }
+    return Promise.all(pick.map(function (wk) { return fetchJSON("histories/" + wk.id + ".json").catch(function () { return null; }); })).then(function (hs) {
+      d.works = pick.map(function (wk, i) { return { work: wk, history: hs[i] }; }).filter(function (x) { return x.history; }).slice(0, 12);
+      return d;
     });
   }
   function wait(v) { return new Promise(function (done) { setTimeout(function () { done(v); }, 30); }); }
@@ -1065,14 +1113,14 @@
   function start(kind, e, sd) {
     var status = $("status");
     setting = { kind: kind, slug: keyOfEntry(kind, e), name: e.name, where: e.where || e.name,
-                city: kind === "city" ? e.name : String(e.where || "").split(",")[0] };
+                city: kind === "city" ? e.name : String(e.where || "").split(",")[0], recipe: e.recipe || "" };
     seed = sd;
     status.textContent = "Fetching " + (kind === "museum" ? Adv.theName(e.name) : e.name);
     return gather(kind, e, sd).then(function (d) {
       status.textContent = "Building " + (kind === "museum" ? Adv.theName(e.name) : e.name) + " in blocks";
       return wait(d);
     }).then(function (d) {
-      place = kind === "city" ? Pl.city(d.ground) : Pl.place(d);
+      place = kind === "city" ? Pl.city(d.ground, forms) : Pl.place(d);
       w = place.w;
       var cands = (d.works || []).map(function (x) { x.f = Adv.facts(x.work, x.history); return x; });
       var hung = kind === "city" ? [] : Pl.hang(place, Pl.hangable(place, cands));
@@ -1114,12 +1162,13 @@
     choice.slug = keyOfEntry(choice.kind, e);
     $("place").innerHTML = list.map(function (x) {
       var k = keyOfEntry(choice.kind, x);
-      return '<option value="' + esc(k) + '"' + (k === choice.slug ? " selected" : "") + '>' + esc(x.name) + '</option>';
+      return '<option value="' + esc(k) + '"' + (k === choice.slug ? " selected" : "") + '>' + esc((choice.kind === "form" ? "No. " + k + " · " : "") + x.name) + '</option>';
     }).join("");
     var no = " Adventure no. " + choice.seed + ".";
     $("preview").textContent = choice.kind === "museum" ?
       "Escape from " + Adv.theName(e.name) + ", " + String(e.where).split(",")[0] + ": " + e.works + " saved works on " + (e.floors === 1 ? "its one floor" : "its " + e.floors + " floors") + ", and four of them hiding the pieces." + no :
       choice.kind === "building" ? "Escape from " + e.name.replace(/^The /, "the ") + ", " + e.where + ": a dozen saved works hung in a building the site has modelled, its roof and its garden." + no :
+      choice.kind === "form" ? "Escape from a building no one drew, made of the parts of the buildings the site has modelled, from the Architectural Authority: " + lower(e.recipe) + " A dozen saved works hang in it." + no :
       "Escape from " + e.name + ": the pieces on a roof, in a park, in the water and up a tree." + no;
     try { history.replaceState(null, "", "#" + choice.kind + "/" + choice.slug + "/" + choice.seed); } catch (err) { /* the address stays */ }
   }
@@ -1147,13 +1196,19 @@
       m.width = f.width; m.height = f.height;
       m.getContext("2d").drawImage(f, 0, 0);
     });
-    fetch("catalogue.json").then(function (r) { return r.json(); }).then(function (d) {
+    Promise.all([fetch("catalogue.json").then(function (r) { return r.json(); }),
+                 Fm ? fetch("sections.json").then(function (r) { return r.json(); }).catch(function () { return null; }) : null]).then(function (res) {
+      var d = res[0];
       cat = d;
+      // The sections of the Architectural Authority's projects: the buildings round every place, and the new forms.
+      forms = res[1] ? Fm.load(res[1]) : null;
+      cat.forms = forms ? formList() : [];
+      if (!forms) { var fp = document.querySelector('[data-kind="form"]'); if (fp) { fp.hidden = true; } }
       // The address names an adventure (#museum/<slug>/<seed>); else the one you were in; else the Musée d'Orsay.
       var h = decodeURIComponent((location.hash || "").slice(1)).split("/"), s = saved(), k = s && s.key ? s.key.split(":") : null;
-      if (h[0] === "museum" || h[0] === "building" || h[0] === "city") { choice = { kind: h[0], slug: h[1] || "", seed: +h[2] || newSeed() }; }
+      if (h[0] === "museum" || h[0] === "building" || h[0] === "city" || (h[0] === "form" && forms)) { choice = { kind: h[0], slug: h[1] || "", seed: +h[2] || newSeed() }; }
       else if (h[0] && cat.cities.some(function (c) { return c.key === h[0]; })) { choice = { kind: "city", slug: h[0], seed: newSeed() }; }
-      else if (k) { choice = { kind: k[0], slug: k[1], seed: +k[2] || newSeed() }; }
+      else if (k && (k[0] !== "form" || forms)) { choice = { kind: k[0], slug: k[1], seed: +k[2] || newSeed() }; }
       else { choice = { kind: "museum", slug: "museum-musee-dorsay", seed: newSeed() }; }
       drawChoice();
       document.querySelectorAll("[data-kind]").forEach(function (b) {
@@ -1161,7 +1216,7 @@
       });
       $("place").onchange = function () { choice.slug = $("place").value; choice.seed = newSeed(); drawChoice(); };
       $("surprise").onclick = function () {
-        var kinds = ["museum", "museum", "museum", "building", "building", "city"], kind = kinds[floor(Math.random() * kinds.length)], list = listOf(kind);
+        var kinds = ["museum", "museum", "museum", "building", "building", "city"].concat(forms ? ["form", "form"] : []), kind = kinds[floor(Math.random() * kinds.length)], list = listOf(kind);
         choice = { kind: kind, slug: keyOfEntry(kind, list[floor(Math.random() * list.length)]), seed: newSeed() };
         drawChoice();
       };
@@ -1185,7 +1240,7 @@
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
              skip: function () { if (intro) { intro.t0 -= 9600; } },
              hold: function (q, tri) { held = true; quality = q; if (tri) { TRI = tri; } resize(); },
-             flush: function () { pump(1e9); }, figure: figure,
+             flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; },
              aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
   } };
   init();

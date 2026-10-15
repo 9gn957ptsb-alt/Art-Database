@@ -14,8 +14,10 @@
    notes to be found.
 
    A house or a studio has a roof and a garden and sometimes a pool, and
-   some of its pieces are there instead. A city is the hunt it always was:
-   a roof, a park, the water, a tree.
+   some of its pieces are there instead; so has a new form, a building made
+   of the sections of the Architectural Authority's projects (forms.js),
+   its rooms called after the sections they are in. A city is the hunt it
+   always was: a roof, a park, the water, a tree.
 
    Adventures.make(setting, seed, data) → the adventure (plain data).
    Adventures.facts(work, history) → what a work is, for the clues. */
@@ -247,7 +249,9 @@
       a.intro = ["Somewhere over " + over + ", the descent went wrong.", "You come to under a tree outside " + theName(name) + ". Your capsule is in pieces, and the pieces are inside.", name];
     } else {
       a.title = "Escape from " + name;
-      a.intro = ["Somewhere over " + over + ", the descent went wrong.", "You come to under a tree outside " + name.replace(/^The /, "the ") + ". Your capsule is in pieces.", name];
+      a.intro = ["Somewhere over " + over + ", the descent went wrong.",
+                 setting.kind === "form" ? "You come to under a tree outside a building no one drew, made of the parts of others. Your capsule is in pieces." :
+                 "You come to under a tree outside " + name.replace(/^The /, "the ") + ". Your capsule is in pieces.", name];
       var rest = [{ type: "roof", clue: "The wreck's log says one piece rolled onto the roof. Stack blocks to climb to it." },
                   data.pool ? { type: "pool", clue: "The wreck's log says one piece sank in the pool. Swim down for it." }
                             : { type: "garden", clue: "The wreck's log says one piece dug itself into the garden. Look for loose earth, and dig." }];
