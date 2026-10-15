@@ -19,14 +19,20 @@
    an alarm, and at the third the guards put you out under your tree again.
    Tap a note to read it. Break and place blocks as you need to.
 
-   Its unit is not the cube's pixel but the impossible triangle the artist
-   chose (14 Oct 2026, a tribar of three tribars round a gap): every face of
-   every block is a field of them, one to a block, in three tones of its own
-   colour that run on from figure to figure (see FS). The view is at the
-   screen's own density, smooth, without grain or dithering; the works are
-   their pictures from Artsy in frames of the same three tones; the page's
-   own marks (the crosshair, the pieces, the blocks, the title) are the
-   figure too, and the smoke is triangles. */
+   Its unit is not the cube but the impossible triangle the artist chose
+   (14 Oct 2026, a tribar of three tribars round a gap), made a real object
+   first (15 Oct 2026: "Make this a 3D model first and then integrate that
+   into this artifact as the building block"): six square bars, built in
+   SketchUp (scripts/sketchup/impossible_triangle.py), that close into the
+   drawing only seen down their diagonal. Every block is one of them, in
+   three tones of its own colour by the way a bar's face looks, as the
+   drawing has them: up white, east and west grey, north and south black.
+   Between the bars you see into the blocks behind, and through a wall a
+   block thick to what is beyond it (see FS). The view is at the screen's own
+   density, smooth, without grain or dithering; the works are their pictures
+   from Artsy in frames of the same three tones; the page's own marks are the
+   figure too (the blocks and the pieces as the drawing, the crosshair a
+   tribar), and the smoke is triangles. */
 
 (function () {
   "use strict";
@@ -37,7 +43,7 @@
   var CFG = window.ROCKET || {};
   var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next";
   function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
-  var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, TRI = 1, SAVE = "rocket-save-v2";
+  var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, FOV = 70, SAVE = "rocket-save-v2";
   var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
   var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs, hypot = Math.hypot;
   var HOTBAR = [B.BRICK, B.LOG, B.GLASS, B.DIRT, B.STONE];
@@ -95,9 +101,53 @@
   function tonesOf(rgb) {
     return [[min(255, rgb[0] * 0.75 + 64), min(255, rgb[1] * 0.75 + 64), min(255, rgb[2] * 0.75 + 64)], rgb.slice(), [rgb[0] * 0.42, rgb[1] * 0.42, rgb[2] * 0.42]];
   }
+
+  /* The block: the artist's figure built as an object in SketchUp (scripts/sketchup/impossible_triangle.py;
+     the model is sketchup/impossible-triangle.skp, 40 in across). Six square bars on the edges of a lattice
+     of half-block cells, a tenth of a block thick: three, one along each axis, run the block's whole width,
+     so that the bars of blocks side by side run on from one into the next; three are the pinwheel inside.
+     They close into the drawing only seen down the block's diagonal, from the north-east and above.
+     Each [x0, y0, z0, x1, y1, z1] in the block's own unit, x east, y up, z south. */
+  var FIGURE = [[0.45, 0.45, 0, 0.55, 0.55, 1], [0, 0, 0.45, 1, 0.1, 0.55], [0.9, 0.1, 0.45, 1, 1, 0.55],
+                [0.55, 0.45, 0.45, 0.9, 0.55, 0.55], [0.45, 0.1, 0.45, 0.55, 0.45, 0.55], [0.9, 0.45, 0, 1, 0.55, 0.45]];
+  /* A block as the page shows it (the blocks to place, the pieces, the title's mark): the figure seen down
+     that diagonal in parallel projection, which is the artist's drawing. tones [white, grey, black]: the
+     faces that look up, east or west, north or south. */
+  function blockMark(wpx, tones) {
+    var cv = document.createElement("canvas"), S = wpx > 120 ? 2 : 3, r2 = Math.SQRT2, r3 = Math.sqrt(3), r6 = Math.sqrt(6);
+    cv.width = wpx; cv.height = wpx;
+    var c = cv.getContext("2d"), img = c.createImageData(wpx, wpx);
+    var v = [-1 / r3, -1 / r3, 1 / r3], up = [0, 1 / r2, 1 / r2], rt = [-2 / r6, 1 / r6, -1 / r6], C = [0.65, 0.426, 0.576], span = 0.98;
+    for (var py = 0; py < wpx; py += 1) {
+      for (var px = 0; px < wpx; px += 1) {
+        var r = 0, g = 0, b = 0, a = 0;
+        for (var j = 0; j < S; j += 1) {
+          for (var i = 0; i < S; i += 1) {
+            var sx = ((px + (i + 0.5) / S) / wpx * 2 - 1) * span / 2, sy = (1 - (py + (j + 0.5) / S) / wpx * 2) * span / 2;
+            var o = [0, 1, 2].map(function (k) { return C[k] + rt[k] * sx + up[k] * sy - v[k] * 3; });
+            var best = 1e9, ax = -1;
+            for (var n = 0; n < FIGURE.length; n += 1) {
+              var bx = FIGURE[n], tn = -1e9, tf = 1e9, at = 0;
+              for (var k = 0; k < 3; k += 1) {
+                var t0 = (bx[k] - o[k]) / v[k], t1 = (bx[k + 3] - o[k]) / v[k], lo = min(t0, t1), hi = max(t0, t1);
+                if (lo > tn) { tn = lo; at = k; }
+                tf = min(tf, hi);
+              }
+              if (tn <= tf && tn < best) { best = tn; ax = at; }
+            }
+            if (ax >= 0) { var col = tones[ax === 1 ? 0 : ax === 0 ? 1 : 2]; r += col[0]; g += col[1]; b += col[2]; a += 1; }
+          }
+        }
+        var q = (py * wpx + px) * 4;
+        if (a) { img.data[q] = r / a; img.data[q + 1] = g / a; img.data[q + 2] = b / a; img.data[q + 3] = 255 * a / (S * S); }
+      }
+    }
+    c.putImageData(img, 0, 0);
+    return cv;
+  }
   var marks = {};
   function markOf(key, wpx, rgb) {
-    if (!marks[key]) { marks[key] = figure(wpx, 1, tonesOf(rgb)).toDataURL(); }
+    if (!marks[key]) { marks[key] = blockMark(wpx, tonesOf(rgb)).toDataURL(); }
     return marks[key];
   }
 
@@ -173,8 +223,35 @@
     var t0 = performance.now();
     while (queue.length && performance.now() - t0 < ms) { var c = queue.shift(); meshChunk(c[0], c[1]); }
   }
+  /* The blocks themselves, for the shader to walk through: the place's grid as a texture of block ids,
+     a layer to each height (the grid's own order, x along a row, z down the rows), on unit 1. */
+  var voxTex = null;
+  function voxTexture(data, sx, sy, sz, tex) {
+    tex = tex || gl.createTexture();
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]
+      .forEach(function (q) { gl.texParameteri(gl.TEXTURE_2D_ARRAY, q[0], q[1]); });
+    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.R8UI, sx, sz, sy, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, data);
+    gl.activeTexture(gl.TEXTURE0);
+    return tex;
+  }
+  // The columns from (x0, z0) to (x1, z1), every height, after blocks in them are broken or placed.
+  function refresh(x0, z0, x1, z1) {
+    x0 = max(0, x0); z0 = max(0, z0); x1 = min(w.SX - 1, x1); z1 = min(w.SZ - 1, z1);
+    if (!voxTex || x1 < x0 || z1 < z0) { return; }
+    var nx = x1 - x0 + 1, nz = z1 - z0 + 1, buf = new Uint8Array(nx * nz * w.SY), i = 0;
+    for (var y = 0; y < w.SY; y += 1) { for (var z = z0; z <= z1; z += 1) { for (var x = x0; x <= x1; x += 1) { buf[i++] = w.data[(y * w.SZ + z) * w.SX + x]; } } }
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, x0, z0, 0, nx, nz, w.SY, gl.RED_INTEGER, gl.UNSIGNED_BYTE, buf);
+    gl.activeTexture(gl.TEXTURE0);
+  }
   function remeshAt(x, z) {
     var cx = floor(x / CH), cz = floor(z / CH), nx = w.SX / CH, nz = w.SZ / CH;
+    refresh(x, z, x, z);
     meshChunk(cx, cz);
     if (x % CH === 0 && cx > 0) { meshChunk(cx - 1, cz); }
     if (x % CH === CH - 1 && cx < nx - 1) { meshChunk(cx + 1, cz); }
@@ -189,78 +266,101 @@
     "out vec3 vP; flat out int vF; flat out int vB;",
     "void main() { vP = aP + uOff; vF = int(aI.x); vB = int(aI.y); gl_Position = uVP * vec4(vP, 1.0); }"
   ].join("\n");
-  /* The unit everything is built of: not a pixel but the tribar, the impossible triangle of three
-     bars (the artist's figure, 14 Oct 2026). Every face is a field of them, a row a block high and
-     every other row half a block along, so three round every gap between them make the whole figure
-     the artist drew. Each bar shows two faces: the left bar grey outside and black inside, the bottom
-     black outside and white inside, the right white outside and grey inside, so that every tone is
-     one ribbon, the inner face of one bar turning the corner into the outer face of the next; each bar
-     owns the corner it comes to first; where two figures touch, the ribbon runs on from the one into
-     the other, as it does in the artist's drawing. The white is the surface's own colour,
-     so the figures rise out of it and sink back into it, drawn only by their grey and black and a
-     hairline; grey and black are the colour deepened. The bars are three tenths of a figure's height,
-     their outer faces a little over half of that, as the artist's are. Far off, where a figure is
-     smaller than a few pixels, a face is its figures' mean, so nothing shimmers. */
+  /* The blocks are drawn from their faces in. Each face where a block meets the open (air, water, a note,
+     or glass or leaves, which are seen through) starts a ray from the eye on into the blocks behind it, and
+     the ray is walked block to block through the grid (uVox), the figure's six bars tested in each. The first
+     bar it meets is what is seen, in the tone of the way that face of the bar looks (up white, east and west
+     grey, north and south black, as the artist drew them), each a little deeper the further in it lies. A
+     ray that comes out into the open again shows what is beyond: the fragment goes, and the faces behind are
+     drawn. One still among bars after eight blocks shows the dark between them. Far off, where a bar is
+     narrower than a pixel or two, a face is what its blocks average to, so nothing shimmers: FAR, the same
+     walk run over many rays (scripts/rocket_far.py), at a slant and from nearer straight on. A face keeps
+     its own depth: along its ray, every face between it and what it meets is one the walk has passed
+     through, so the nearest still wins. Water and the notes are surfaces, not blocks. */
+  // For each face, [white, grey, black, the dark between] as seen at a slant, then from nearer straight on.
+  var FAR_SLANT = [[0.393, 0.156, 0.289, 0.033], [0.42, 0.083, 0.169, 0.069], [0.099, 0.363, 0.249, 0.057],
+                   [0.099, 0.205, 0.542, 0.024], [0.382, 0.202, 0.133, 0.03], [0.45, 0.229, 0.093, 0.029]];
+  var FAR_ON = [[0.197, 0.409, 0.149, 0.1], [0.228, 0.366, 0.135, 0.104], [0.366, 0.211, 0.2, 0.081],
+                [0.302, 0.175, 0.244, 0.073], [0.219, 0.135, 0.414, 0.079], [0.243, 0.15, 0.388, 0.08]];
+  function glslVecs(list, from, n) {
+    return "vec" + n + "[" + list.length + "](" + list.map(function (b) {
+      return "vec" + n + "(" + b.slice(from, from + n).map(function (q) { return q.toFixed(3); }).join(", ") + ")";
+    }).join(", ") + ")";
+  }
   var FS = [
     "#version 300 es",
-    "precision highp float;",
+    "precision highp float;", "precision highp int;", "precision highp usampler2DArray;",
     "in vec3 vP; flat in int vF; flat in int vB; out vec4 o;",
-    "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze; uniform float uTri;",
+    "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze;",
+    "uniform usampler2DArray uVox; uniform vec3 uOrg; uniform ivec3 uDim; uniform int uFloor; uniform float uPx;",
     "const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));",
-    "const float BAR = 0.30, FACE = 0.16;",
-    "const vec2 TAP[4] = vec2[4](vec2(0.375, 0.125), vec2(-0.125, 0.375), vec2(-0.375, -0.125), vec2(0.125, -0.375));",
-    // 0 the ground between figures, 7 the hole in one; 1-2 the left bar's outer and inner faces, 3-4 the bottom's, 5-6 the right's.
-    "int tribar(vec2 p) {",
-    "  float b = p.y, a = p.x - b * 0.5, fa = fract(a), fb = fract(b);",
-    "  if (fa + fb >= 1.0) { return 0; }",
-    "  float dL = fa, dR = 1.0 - fa - fb, dB = fb;",
-    "  if (dL < BAR && dR >= BAR) { return dL < FACE ? 1 : 2; }",
-    "  if (dB < BAR && dL >= BAR) { return dB < FACE ? 3 : 4; }",
-    "  if (dR < BAR && dB >= BAR) { return dR < FACE ? 5 : 6; }",
-    "  return 7;",
+    "const vec3 LO[6] = " + glslVecs(FIGURE, 0, 3) + ";",
+    "const vec3 HI[6] = " + glslVecs(FIGURE, 3, 3) + ";",
+    "const vec4 FAR_SLANT[6] = " + glslVecs(FAR_SLANT, 0, 4) + ", FAR_ON[6] = " + glslVecs(FAR_ON, 0, 4) + ";",
+    "const int STEPS = 8;",
+    // What is in a block of the grid: beside it, air; under the world, bedrock.
+    "uint idAt(ivec3 c) {",
+    "  if (c.x < 0 || c.z < 0 || c.x >= uDim.x || c.z >= uDim.z || c.y >= uDim.y) { return 0u; }",
+    "  if (c.y < 0) { return uFloor == 1 ? " + B.BEDROCK + "u : 0u; }",
+    "  return texelFetch(uVox, ivec3(c.x, c.z, c.y), 0).r;",
     "}",
-    "float tone(int r) { return r == 1 || r == 6 ? 0.8 : r == 2 || r == 3 ? 0.58 : 1.0; }",
-    "bool bare(int r) { return r == 0 || r == 7; }",
-    // The three tones turned round, for water and the pieces: their ribbons flow.
-    "float turn(int r, float k) { if (bare(r)) { return 1.0; } float t = tone(r); int i = t > 0.9 ? 0 : t > 0.7 ? 1 : 2;",
-    "  float a = mod(float(i) + k, 3.0), f = fract(a); int i0 = int(a), i1 = (i0 + 1) % 3;",
-    "  float T[3] = float[3](1.0, 0.8, 0.58); return mix(T[i0], T[i1], smoothstep(0.0, 1.0, f)); }",
+    "bool solid(uint b) { return b != 0u && b != " + B.WATER + "u && b != " + B.NOTE + "u; }",
+    // A bar's face in a block's colours, by its axis (0 east-west, 1 up-down, 2 north-south) and the way it looks.
+    "vec3 bar(int id, int ax, float s) {",
+    "  vec4 pe = uPal[id]; vec3 c = pe.rgb / 255.0; int st = int(pe.a + 0.5);",
+    "  if (st == 1 && !(ax == 1 && s > 0.0)) { c = uPal[" + B.DIRT + "].rgb / 255.0; }",   // grass over earth
+    "  if (st == 2 && ax == 1) { c = min(vec3(1.0), c * 1.35); }",                         // a log's rings
+    "  if (st == 4) { c = mix(uSky, c, 0.5); }",                                           // glass
+    "  vec3 L = min(vec3(1.0), c * 0.75 + 0.25), M = c, D = c * (st == 3 ? 0.55 : 0.42);",
+    "  if (st == 11) { L = c; M = c * 0.9; D = c * 0.78; }",                               // a gallery's plaster: quieter, for the works on it
+    "  vec3 t = ax == 0 ? M : ax == 2 ? D : L * (s > 0.0 ? 1.0 : 0.8);",
+    "  return st == 7 ? t * (1.0 + 0.35 * sin(uT * 3.0)) : t;",                            // the pieces breathe, to be seen from far off
+    "}",
+    "vec3 dark(int id) { return uPal[int(uPal[id].a + 0.5) == 1 ? " + B.DIRT + " : id].rgb / 255.0 * 0.16; }",
     "void main() {",
-    "  vec3 n = N[vF];",
-    // Each face's own field, upright and the right way round to one looking at it.
-    "  vec2 p = vF == 0 ? vec2(-vP.z, vP.y) : vF == 1 ? vec2(vP.z, vP.y) : vF == 4 ? vec2(vP.x, vP.y) : vF == 5 ? vec2(-vP.x, vP.y) : vec2(vP.x, vP.z);",
-    "  p /= uTri;",
-    "  vec2 dx = dFdx(p), dy = dFdy(p);",
-    "  float fw = max(length(dx), length(dy));",
-    "  vec4 pe = uPal[vB]; vec3 c = pe.rgb / 255.0; int st = int(pe.a + 0.5);",
-    "  vec3 under = c;",   // what the bars are made of; the ground is c
-    "  bool side = vF != 2 && vF != 3;",
-    "  if (st == 1) { if (side) { under = uPal[2].rgb / 255.0; } else if (vF == 3) { c = uPal[2].rgb / 255.0; under = c; } }",   // grass over earth
-    "  if (st == 2 && !side) { under = c * 1.35; }",                       // a log's rings
-    "  if (st == 3) { under = c * 0.8; }",                                 // leaves
-    "  if (st == 4) { c = mix(uSky, c, 0.5); under = c * 0.62; }",            // glass, leaded in figures
-    "  if (st == 10) { under = c * 0.9; }",                                // a note: the figure pressed into the paper
-    "  float k = st == 6 ? uT * 0.35 + (vP.x + vP.z) * 0.05 : st == 7 ? uT * 1.6 : -1.0;",
-    // A gallery's plaster: the figures quieter, so the works on it are what is seen.
-    "  float q = st == 11 ? 0.5 : 1.0;",
-    "  vec3 acc = vec3(0.0); int r0 = 0; float edge = 0.0;",
-    "  for (int i = 0; i < 4; i++) {",
-    "    int r = tribar(p + dx * TAP[i].x + dy * TAP[i].y);",
-    "    if (i == 0) { r0 = r; } else if (r != r0) { edge = 1.0; }",
-    "    acc += (bare(r) ? c : under) * (1.0 - q * (1.0 - (k >= 0.0 ? turn(r, k) : tone(r))));",
+    "  vec4 pe = uPal[vB]; int st = int(pe.a + 0.5);",
+    "  vec3 n = N[vF], col; float dist = length(vP - uEye), th = 0.0;",
+    "  if (st == 6 || st == 10) {",
+    // Water: its own colour, the sky in it at a slant, a slow shimmer. A note: paper, catching the eye.
+    "    vec3 c = pe.rgb / 255.0;",
+    "    if (st == 6) { float sl = 1.0 - abs(normalize(vP - uEye).y); c = mix(c, uSky, 0.45 * sl * sl) * (0.94 + 0.06 * sin(uT * 0.9 + (vP.x - vP.z) * 0.8)); }",
+    "    col = c * (0.56 + 0.16 * n.y + 0.58 * max(dot(n, uSun), 0.0));",
+    "    if (st == 10) { col = c * (0.98 + 0.18 * (0.5 + 0.5 * sin(uT * 2.6))); }",
+    "  } else {",
+    "    if (!gl_FrontFacing) { discard; }",
+    "    vec3 d = normalize(vP - uEye);",
+    "    vec4 fw = mix(FAR_SLANT[vF], FAR_ON[vF], smoothstep(0.15, 0.75, -dot(d, n)));",
+    "    vec3 far = fw.x * bar(vB, 1, 1.0) + fw.y * bar(vB, 0, 1.0) + fw.z * bar(vB, 2, 1.0) + fw.w * dark(vB);",
+    "    float lod = smoothstep(0.05, 0.11, uPx * dist);",   // a bar two pixels wide, then one
+    "    if (lod >= 1.0) { col = far; } else {",
+    "      vec3 p0 = vP - uOrg;",
+    "      d = mix(d, vec3(1e-6), vec3(equal(d, vec3(0.0))));",
+    "      vec3 inv = 1.0 / d, td = abs(inv);",
+    "      ivec3 c = ivec3(floor(p0 - n * 0.5)), sg = ivec3(sign(d));",
+    "      vec3 tm = (vec3(c) + step(0.0, d) - p0) * inv;",
+    "      float tin = 0.0; int res = 0; uint lb = uint(vB);",
+    "      for (int k = 0; k < STEPS; k++) {",
+    "        uint b = idAt(c);",
+    "        if (!solid(b)) { res = 2; break; }",
+    "        lb = b;",
+    "        float tout = min(min(tm.x, tm.y), tm.z), best = tout + 1e-4; int ax = -1;",
+    "        vec3 q = p0 - vec3(c);",
+    "        for (int i = 0; i < 6; i++) {",
+    "          vec3 a = (LO[i] - q) * inv, e = (HI[i] - q) * inv, lo = min(a, e), hi = max(a, e);",
+    "          float tn = max(max(lo.x, lo.y), lo.z), tf = min(min(hi.x, hi.y), hi.z);",
+    "          if (tn <= tf && tf >= tin && tn < best) { best = tn; ax = lo.x >= lo.y && lo.x >= lo.z ? 0 : lo.y >= lo.z ? 1 : 2; }",
+    "        }",
+    "        if (ax >= 0) { res = 1; th = max(best, tin); col = bar(int(b), ax, -float(sg[ax])) * (1.0 - 0.07 * float(k)); break; }",
+    "        if (tm.x < tm.y && tm.x < tm.z) { c.x += sg.x; tin = tm.x; tm.x += td.x; }",
+    "        else if (tm.y < tm.z) { c.y += sg.y; tin = tm.y; tm.y += td.y; }",
+    "        else { c.z += sg.z; tin = tm.z; tm.z += td.z; }",
+    "      }",
+    "      if (res == 0) { col = dark(int(lb)); th = tin; }",
+    "      if (res == 2) { if (lod < 0.5) { discard; } col = far; }",
+    "      else { col = mix(col, far, lod); }",
+    "    }",
     "  }",
-    "  acc *= 0.25;",
-    "  float lod = smoothstep(0.06, 0.3, fw);",
-    "  vec3 far = c * 0.5048 + under * 0.4952 * (1.0 - q * 0.2068);",
-    "  vec3 surf = mix(acc * (1.0 - 0.3 * edge), far, lod);",
-    "  float sun = max(dot(n, uSun), 0.0);",
-    "  float amb = 0.56 + 0.16 * n.y;",
-    "  vec3 col = surf * (amb + 0.58 * sun);",
-    // The pieces glow and breathe, to be seen from far off; the notes catch the eye.
-    "  if (st == 7) { col = surf * (1.0 + 0.35 * sin(uT * 3.0)); }",
-    "  if (st == 10) { col = surf * (0.98 + 0.18 * (0.5 + 0.5 * sin(uT * 2.6))); }",
-    "  float dist = length(uEye - vP);",
-    "  col = mix(col, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0));",
+    "  col = mix(col, uHaze, clamp(1.0 - exp(-(dist + th) * 0.006), 0.0, 1.0));",
     "  o = vec4(col, 1.0);",
     "}"
   ].join("\n");
@@ -627,14 +727,18 @@
 
   var last = 0, sunDir = norm([-0.45, 0.78, -0.35]), SKY = [0.48, 0.66, 0.86], HAZE = [0.84, 0.86, 0.86];
   var crossMark = null, held = false, flying = false;
-  var skyVao = null, curPix = 1, quality = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
+  var skyVao = null, curPix = 1, quality = 1, near = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
   function norm(v) { var n = hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; }
 
   function frame(now) {
     var dt = min(0.05, (now - (last || now)) / 1000);
     last = now;
     tick += 1;
-    if (!intro && !held && dt > 0.03) { slow += 1; if (slow > 45 && quality > 0.5) { quality -= 0.25; slow = 0; resize(); } } else if (slow > 0) { slow -= 1; }
+    // Frames coming slowly: the view a little coarser, then the walk among the bars kept nearer (near).
+    if (!intro && !held && dt > 0.03) {
+      slow += 1;
+      if (slow > 45 && quality > 0.5) { quality -= 0.25; slow = 0; resize(); } else if (slow > 45 && near < 4) { near *= 1.5; slow = 0; }
+    } else if (slow > 0) { slow -= 1; }
     var eyeH = EYE, open = 1;
     if (intro) {
       var u = (now - intro.t0) / 1000, sm = function (a, b) { var t = max(0, min(1, (u - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -652,7 +756,7 @@
     pump(intro ? 14 : 6);
     eye = [P.x, P.y + eyeH, P.z];
     var cw = canvas.width, chh = canvas.height;
-    var proj = perspective(70 * Math.PI / 180, cw / chh, 0.08, 420);
+    var proj = perspective(FOV * Math.PI / 180, cw / chh, 0.08, 420);
     vp = mul(proj, view(eye, P.yaw, P.pitch));
     gl.viewport(0, 0, cw, chh);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -664,18 +768,29 @@
     gl.useProgram(prog);
     gl.uniformMatrix4fv(U.uVP, false, vp);
     gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
-    gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, HAZE); gl.uniform1f(U.uTri, TRI);
+    gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, HAZE);
+    // The place's blocks to walk through, and how wide a pixel is at a block's distance.
+    gl.uniform1f(U.uPx, near * 2 * Math.tan(FOV * Math.PI / 360) / chh);
+    gl.uniform1i(U.uVox, 1);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ); gl.uniform1i(U.uFloor, 1);
     gl.uniform3f(U.uOff, 0, 0, 0);
-    var pcx = floor(P.x / CH), pcz = floor(P.z / CH);
-    Object.keys(chunks).forEach(function (k) {
-      var ch = chunks[k];
-      if (!ch.count || abs(ch.cx - pcx) > 14 || abs(ch.cz - pcz) > 14) { return; }
-      gl.bindVertexArray(ch.vao);
-      gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
-    });
+    // Nearest first, so that what is hidden behind is turned away before the walk through its blocks.
+    var pcx = P.x / CH - 0.5, pcz = P.z / CH - 0.5;
+    Object.keys(chunks).map(function (k) { return chunks[k]; })
+      .filter(function (ch) { return ch.count && abs(ch.cx - pcx) <= 14.5 && abs(ch.cz - pcz) <= 14.5; })
+      .sort(function (a, b) { return hypot(a.cx - pcx, a.cz - pcz) - hypot(b.cx - pcx, b.cz - pcz); })
+      .forEach(function (ch) {
+        gl.bindVertexArray(ch.vao);
+        gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
+      });
     if (rocketCh) {
       var lift = launched ? Math.pow(max(0, (now - launched) / 1000 - 1), 2) * 2.4 : 0;
       gl.uniform3f(U.uOff, 0, lift, 0);
+      // The rocket walks its own small grid, which rises with it.
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, rocketCh.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform3f(U.uOrg, rocketCh.org[0], rocketCh.org[1] + lift, rocketCh.org[2]);
+      gl.uniform3i(U.uDim, rocketCh.dim[0], rocketCh.dim[1], rocketCh.dim[2]); gl.uniform1i(U.uFloor, 0);
       gl.bindVertexArray(rocketCh.vao);
       gl.drawElements(gl.TRIANGLES, rocketCh.count, gl.UNSIGNED_INT, 0);
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
@@ -878,6 +993,7 @@
     // a white body, red nose and fins.
     var rx = place.wreck.x, rz = place.wreck.z, ry = place.wreck.y, x, y, z, list = [];
     for (y = ry; y < ry + 14; y += 1) { for (z = rz - 2; z <= rz + 2; z += 1) { for (x = rx - 2; x <= rx + 2; x += 1) { if (!(place.M && place.M.has(x, y, z))) { w.set(x, y, z, B.AIR); } } } }
+    refresh(rx - 2, rz - 2, rx + 2, rz + 2);
     remeshAt(rx, rz); remeshAt(rx - 2, rz - 2); remeshAt(rx + 2, rz + 2);
     for (y = ry; y < ry + 12; y += 1) {
       var r = y > ry + 9 ? 0 : 1;
@@ -886,6 +1002,9 @@
     list.push([rx, ry + 12, rz, B.RED]);
     [[-2, 0], [2, 0], [0, -2], [0, 2]].forEach(function (d) { list.push([rx + d[0], ry, rz + d[1], B.RED], [rx + d[0], ry + 1, rz + d[1], B.RED]); });
     rocketCh = meshBlocks(list);
+    var g = new Uint8Array(5 * 13 * 5);
+    list.forEach(function (b) { g[((b[1] - ry) * 5 + (b[2] - rz + 2)) * 5 + (b[0] - rx + 2)] = b[3]; });
+    rocketCh.tex = voxTexture(g, 5, 13, 5); rocketCh.org = [rx - 2, ry, rz - 2]; rocketCh.dim = [5, 13, 5];
     if (!quiet) { say("The rocket stands on the wreck's ground. Launch when you are clear.", true); }
   }
   function launch() {
@@ -1159,6 +1278,7 @@
     }).then(function (d) {
       place = kind === "city" ? Pl.city(d.ground, forms) : Pl.place(d);
       w = place.w;
+      voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       var cands = (d.works || []).map(function (x) { x.f = Adv.facts(x.work, x.history); return x; });
       var hung = kind === "city" ? [] : Pl.hang(place, Pl.hangable(place, cands));
       adv = Adv.make(setting, sd, { works: hung.map(function (p) { return p.work; }), pool: !!(place.M && place.M.pool.length) });
@@ -1220,7 +1340,7 @@
     quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS);
-    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uTri"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
     gl.enable(gl.DEPTH_TEST);
@@ -1232,7 +1352,7 @@
     resize(); wire();
     // The title's mark: the artist's figure, three tribars round a gap, in the page's tones.
     document.querySelectorAll("canvas.mark").forEach(function (m) {
-      var f = figure(240, 2, [[234, 223, 205], [168, 146, 122], [92, 76, 62]]);
+      var f = blockMark(240, [[234, 223, 205], [168, 146, 122], [92, 76, 62]]);
       m.width = f.width; m.height = f.height;
       m.getContext("2d").drawImage(f, 0, 0);
     });
@@ -1284,7 +1404,7 @@
              alarms: function () { return alarms; }, act: act, remeshAt: remeshAt, buildRocket: buildRocket, launch: launch, showLabel: showLabel,
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
              skip: function () { if (intro) { intro.t0 -= 9600; } },
-             hold: function (q, tri) { held = true; quality = q; if (tri) { TRI = tri; } resize(); },
+             hold: function (q) { held = true; quality = q; near = 1; resize(); },
              flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; },
              aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
   } };

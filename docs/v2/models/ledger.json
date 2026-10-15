@@ -3979,52 +3979,57 @@
   },
   "seamless-horizons-balboa-by-riva-spain": {
     "name": "Balboa",
-    "refined": "2026-10-10",
-    "passes": 1,
+    "refined": "2026-10-15",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-10-10 first model from the article's photographs: low white flat-roofed house with a clerestory band, recessed glass to a timber deck, pergola over an outdoor kitchen, raised plunge pool, stepping-stone garden; placed at its town only"
+      "2026-10-10 first model from the article's photographs: low white flat-roofed house with a clerestory band, recessed glass to a timber deck, pergola over an outdoor kitchen, raised plunge pool, stepping-stone garden; placed at its town only",
+      "2026-10-15 refined: rebuilt against the aerial of the garden side in three rounds: the lounge wing long and low with its red-brown awning, clerestory band and brown fascia (it had been a white two-storey block), the roof terrace on it behind a glass rail with white sofas, the pergola at its real 10 x 6 m with kitchen, bar and stools, a 3.8 m raised plunge pool in an L-shaped seat wall with oak coping, pizza oven, flagstone garden, fire trough, boxwood masses and umbrella pines for the straight hedges and round trees, the deck in oak with a step to the lawn; placed at its town only"
     ]
   },
   "beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio": {
     "name": "Las Casuarinas",
-    "refined": "2026-10-10",
-    "passes": 1,
+    "refined": "2026-10-15",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-10-10 first model from the article's photographs: two white plaster storeys with thin roofs, pale stone core, cantilevered wing, recessed black-framed glazing, pool terrace and dry-grass hillside; placed at its city only"
+      "2026-10-10 first model from the article's photographs: two white plaster storeys with thin roofs, pale stone core, cantilevered wing, recessed black-framed glazing, pool terrace and dry-grass hillside; placed at its city only",
+      "2026-10-15 refined: rebuilt against the garden-side photographs in three rounds: the pool dark slate-teal in dark grey pavers (it had drawn bright blue: the pool part took no colour; models.js now lets it, `m`, and MODELS.md says so), the right block's cantilevered roof slab thrown 3.5 m over its pale stone column and glazed corner, the left block's ground floor set back under its overhanging upper floor with the glass where the photographs have it, the planter ledge and trailing vines, a grey-brown rock slope with a planted foot for the tan hill, a pale stone wall and steps at the west end, the lawn left open, palms kept under the slab; voxel 0.4 to 0.45 to stay under 25,000 dots; placed at its city only"
     ]
   },
   "light-matter-and-garden-casa-galera-by-karlen-clemente": {
     "name": "Casa Galera",
-    "refined": "2026-10-10",
-    "passes": 1,
+    "refined": "2026-10-15",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-10-10 first model from the article's photographs: long concrete slab on stone piers with timber slat panels, glazed gallery wing to a pool and deck, slatted upper block with chimney; placed at its town only"
+      "2026-10-10 first model from the article's photographs: long concrete slab on stone piers with timber slat panels, glazed gallery wing to a pool and deck, slatted upper block with chimney; placed at its town only",
+      "2026-10-15 refined: re-made in three rounds against the street and courtyard photographs: the roof slabs thinned from two voxels (0.55 m) to one (0.4 m) on a seven-voxel storey, so the house stops reading heavy; the slat screens re-cut as one-voxel slats on a dark backing (their rhythm had come from aliasing against the grid); the upper volume's courtyard face slatted like its other two; the boundary walls in painted grey; the neighbours' white walls beyond the east wall; numbers tidied; placed at its town only"
     ]
   },
   "ode-to-the-environment-casa-rc-by-cristin-nanzer": {
     "name": "Casa R&C",
-    "refined": "2026-10-10",
-    "passes": 1,
+    "refined": "2026-10-15",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-10-10 first model from the article's photographs: fieldstone-flecked concrete podium under a glazed floor and five brick barrel vaults with concrete ribs, balcony beam, long stair, two-leg water tank, pool; placed at its city only"
+      "2026-10-10 first model from the article's photographs: fieldstone-flecked concrete podium under a glazed floor and five brick barrel vaults with concrete ribs, balcony beam, long stair, two-leg water tank, pool; placed at its city only",
+      "2026-10-15 refined: re-made in three rounds against the frontal street photograph: the podium as two bands (a board-marked concrete beam over a rough fieldstone wall) where it had been a concrete block speckled with 230 stones too small to read at this voxel; the vaults' brick tan-brown, not tile red; the water tower a 4.4 m concrete cube on two 1.3 m piers at its outer edges (it had been a 1.6 m slab on two 1 m legs); the carport an open white slab on slim posts with a dark soffit instead of a solid block; grasses and a path of steps at the podium's foot; 378 parts down to 172; placed at its town only"
     ]
   },
   "elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura": {
     "name": "Clínica Dental Vega",
-    "refined": "2026-10-10",
-    "passes": 1,
+    "refined": "2026-10-15",
+    "passes": 2,
     "sketchup": false,
     "kind": "architecture",
     "log": [
-      "2026-10-10 first model from the article's photographs: a Salamanca corner building as a cutaway: sandstone ground floor on a granite base with oak-framed windows, an L of pale render upper floors under tile, the clinic's interior from above; placed at its city only"
+      "2026-10-10 first model from the article's photographs: a Salamanca corner building as a cutaway: sandstone ground floor on a granite base with oak-framed windows, an L of pale render upper floors under tile, the clinic's interior from above; placed at its city only",
+      "2026-10-15 refined: re-made in three rounds against the corner street photograph and the facade close-up: two floors above the stone ground floor, not three (two rows of windows with their balconies; 11.4 m to the eaves, from 13.5 m); the roof lower-pitched in the muted tan-brown tile it is photographed in; a stone cornice on both street faces; the ornament frieze and panels over the windows and the pilaster strips between the bays in mauve-grey; the sign over the entrance window; numbers tidied; placed at its town only (Salamanca)"
     ]
   },
   "cityscape-casa-cm-by-mz-architects": {
@@ -4105,6 +4110,106 @@
     "kind": "architecture",
     "log": [
       "2026-10-13 first model from the article's photographs: cream two-storey Mediterranean block with arcaded loggias under a red-tile hip roof, small pavilion, deck and pool, palms; placed at its town only"
+    ]
+  },
+  "light-and-form-studio-fran-vinas-arquitectos-by-fv-arquitectos": {
+    "name": "Studio Fran Viñas",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: black steel portal on the street line, glazed across, with a white-gravel entry court and the red door box on the perforated screen behind it; a narrow charcoal prism two storeys higher with a perforated-screen face and a green roof terrace, between a white shop building and a cream house; placed at its town only (no street address found)"
+    ]
+  },
+  "redefining-work-environments-the-uc-innovation-center-by-elemental": {
+    "name": "UC Innovation Center",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: placed exactly (OpenStreetMap way 157740163): Overture's eleven-floor part (36 x 30 m turned 10.5 degrees off north) with its low wings and the south-east cantilever box, board-formed concrete with deep recesses in every face, the entrance under a lifted corner on one pier, bare winter trees"
+    ]
+  },
+  "a-symphony-of-nature-dacha-retreat-by-draa": {
+    "name": "Dacha Retreat",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: charred-pine cabin on a concrete plinth among boulders: a glazed lookout body under a mono-pitch roof, two terminals (the taller with an open top room under a red cap), a timber footbridge to the hillside; placed at its town only"
+    ]
+  },
+  "loft-revolution-valpo-1-by-estudio-montevideo": {
+    "name": "Valpo 1",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: a terrace of eight two-storey brick lofts (open-bond panels, pale grey door strips, dark party walls, roofs stepping), steel carports over pairs of drives, a paver drive, a grey end unit; placed at its town only"
+    ]
+  },
+  "renovation-pre-columbian-museum-by-smiljan-radic": {
+    "name": "Pre-Columbian Museum",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: placed exactly (OpenStreetMap node 1297763053): the Real Aduana on Overture's footprint (32 x 57 m turned 7.6 degrees, a 13 m courtyard with colonnade, pool and black blinds), two storeys under a white cornice; Radic's underground galleries cannot be seen from outside"
+    ]
+  },
+  "continuity-of-material-marlborough-residence-by-riva-spain": {
+    "name": "Marlborough Residence",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: Mediterranean Revival house: a two-storey central block under a low tile hip, arched entrance with iron balcony, tile-roofed wings, a flat-roofed rear block, travertine court with pool and tiled water wall, palms; placed at its town only"
+    ]
+  },
+  "structured-clarity-cavendish-housing-by-ar-arquitectos": {
+    "name": "Cavendish Housing",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: six staggered units along a shared paver drive: white corrugated upper boxes cantilevered over white ground floors, slatted timber entrance walls, carports, a white boundary wall; placed at its town only"
+    ]
+  },
+  "exploring-material-mastery-the-alfa-collection-by-almagre-ceramicas": {
+    "name": "The Alfa Collection",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: not a building: the three objects (Jarra, Infusora, Cafetera) and white tumblers life size on a wooden tabletop, one voxel a centimetre; placed at its town only"
+    ]
+  },
+  "heritage-a-multifamily-housing-project-casa-yb-by-augusto-domnguez": {
+    "name": "Casa YB",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: one-storey courtyard house: white walls under a hipped tile ring roof, a glazed court gallery, black clerestory boxes, a water-and-timber court, a glass link to a pavilion and a gravel labyrinth; placed at its town only"
+    ]
+  },
+  "the-ranch-at-el-paraiso-a-five-acre-equestrian-estate-by-paterson-project-management": {
+    "name": "The Ranch at El Paraiso",
+    "refined": "2026-10-15",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-15 first model from the article's photographs: white board-and-batten farmhouse under dark gabled roofs with dormers and a veranda, kidney pool terrace with pergola, brick walk through two pergolas, white shell drive, tennis court, fence and hedges; placed at its town only"
     ]
   }
 }

@@ -183,6 +183,15 @@ SPOTS = {
     # Nominatim (13 Oct 2026). A public university building.
     "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto":
         {"lat": 62.23643, "lon": 25.73230, "precision": "exact"},
+    # Centro de Innovación UC Anacleto Angelini (ELEMENTAL, 2014), Av. Vicuña Mackenna 4860, Campus San
+    # Joaquín of the Pontificia Universidad Católica: OpenStreetMap building way 157740163 (height 44 m,
+    # 11 levels) via Nominatim, the point its own (15 Oct 2026). A public university building.
+    "redefining-work-environments-the-uc-innovation-center-by-elemental":
+        {"lat": -33.49775, "lon": -70.61525, "precision": "exact"},
+    # Museo Chileno de Arte Precolombino (the Real Casa de Aduana, Bandera 361, Santiago centro): OpenStreetMap
+    # node 1297763053 "Museo de Arte Precolombino" via Nominatim (15 Oct 2026). A public museum.
+    "renovation-pre-columbian-museum-by-smiljan-radic":
+        {"lat": -33.43902, "lon": -70.65220, "precision": "exact"},
 }
 
 
