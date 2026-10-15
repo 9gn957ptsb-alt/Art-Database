@@ -20,9 +20,9 @@
       "city": "Santiago",
       "country": "Chile",
       "where": "Santiago, Chile",
-      "lat": -33.4377,
-      "lon": -70.6511,
-      "precision": "town"
+      "lat": -33.49775,
+      "lon": -70.61525,
+      "precision": "exact"
     },
     {
       "title": "A Symphony of Nature – Dacha Retreat by DRAA",
@@ -56,9 +56,9 @@
       "city": "Santiago",
       "country": "Chile",
       "where": "Santiago, Chile",
-      "lat": -33.4377,
-      "lon": -70.6511,
-      "precision": "town"
+      "lat": -33.43902,
+      "lon": -70.6522,
+      "precision": "exact"
     },
     {
       "title": "Continuity of Material – Marlborough Residence by RIVA Spain",
