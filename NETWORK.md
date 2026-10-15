@@ -40,7 +40,6 @@ ai4edataeuwest.blob.core.windows.net
 eoimages.gsfc.nasa.gov
 assets.science.nasa.gov
 noaadata.apps.nsidc.org
-masie_web.apps.nsidc.org
 api.3dbag.nl
 data.3dbag.nl
 sgx.geodatenzentrum.de
