@@ -68,7 +68,7 @@ APE = dict(L=9, legs=7, arms=1.35, depth=3.6, neck=1.0, neck_up=20, head=2.8, sn
 PASSERINE = dict(body=3.2, deep=1.9, tilt=25, neck=0.6, neck_up=50, head=1.6, bill="cone", bill_len=1.2, legs=2.2, tail=3.2,
                  tail_drop=20, wing_span=8, gait="fly")
 RAPTOR = dict(body=4.2, deep=2.6, tilt=55, neck=0.8, neck_up=70, head=1.9, bill="hook", bill_len=1.6, legs=3.0, leg_w=0.5,
-              tail=4, tail_drop=70, wing_span=16, gait="fly", bill_role="pale", leg_role="pale")
+              tail=4, tail_drop=70, wing_span=22, gait="fly", bill_role="pale", leg_role="pale", scale=1.3, tail_fan=True, dark_parts=("primaries",))
 VULTURE = dict(body=5, deep=3, tilt=35, neck=1.8, neck_up=55, head=1.4, bare=True, ruff=1.6, bill="hook", bill_len=1.8,
                legs=3, leg_w=0.5, tail=3, tail_drop=40, wing_span=18, gait="fly", bill_role="pale", leg_role="pale")
 OWL = dict(body=3.6, deep=3.0, tilt=75, neck=0, head=2.4, disk=True, bill="hook", bill_len=0.6, legs=1.8, tail=2, tail_drop=80,
@@ -142,11 +142,11 @@ SPECIES = {
     "black-backed jackals": Q(CANID, "Black-backed jackal", "Lupulella mesomelas", "Black-backed jackal",
                               col("#b06a36", "#e9dcc6", "#262220"), size=0.72, marks=("belly", "saddle")),
     "Eurasian lynx": Q(FELID, "Eurasian lynx", "Lynx lynx", "Eurasian lynx", col("#ad8c66", "#ece2d0", "#3a2c22", "#c9a24a"), size=0.85,
-                       legs=8.4, ears="tuft", ear=2.0, tail="short", marks=("belly", "spots")),
+                       legs=8.4, ears="tuft", ear=1.5, tail="short", ruff=0.9, marks=("belly", "spots", "earback", "cheeks")),
     "Iberian lynx": Q(FELID, "Iberian lynx", "Lynx pardinus", "Iberian lynx", col("#b8925e", "#efe6d4", "#2c221c", "#c9a24a"), size=0.78,
-                      legs=8.2, ears="tuft", ear=2.0, tail="short", marks=("belly", "spots")),
+                      legs=8.2, ears="tuft", ear=1.5, tail="short", ruff=0.9, marks=("belly", "spots", "earback", "cheeks")),
     "Canada lynx": Q(FELID, "Canada lynx", "Lynx canadensis", "Canada lynx", col("#9c9284", "#e2ddd2", "#2e2a26", "#c9a24a"), size=0.82,
-                     legs=8.8, ears="tuft", ear=2.0, tail="short", marks=("belly",)),
+                     legs=8.8, ears="tuft", ear=1.5, tail="short", ruff=0.9, marks=("belly", "earback", "cheeks")),
     "bobcats": Q(FELID, "Bobcat", "Lynx rufus", "Bobcat", col("#a2805e", "#ece2d0", "#2e241c", "#c9a24a"), size=0.75, legs=7.8,
                  ears="tuft", ear=1.7, tail="short", marks=("belly", "spots")),
     "caracals": Q(FELID, "Caracal", "Caracal caracal", "Caracal", col("#b27a48", "#eee2cc", "#221c18", "#c9a24a"), size=0.78, legs=8.4,

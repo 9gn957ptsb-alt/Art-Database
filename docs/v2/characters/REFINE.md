@@ -111,7 +111,17 @@ same bytes every run, about a minute):
   coming down swept back, down, lifting; its flight feathers a darker plate, fingers at the tip;
   the beat's length is clamped to the picture, the flying bird's shoulder at its middle and, for a
   long neck and bill, the whole bird a little left, so no wing or bill leaves the 40×26 frame),
-  geese with the breast high (`tilt` 14) and a bill head on as broad as the bill is. Check two
+  geese with the breast high (`tilt` 14) and a bill head on as broad as the bill is. 15 Oct 2026:
+  a raptor's tail is a fan, a wedge and not a stick (`tail_fan`), its flight feathers a darker plate
+  (`dark_parts`) and its wing broader on a smaller body (`wing_span`, `scale`: the white-tailed eagle
+  of 50 places, Bonelli's, the golden eagle, the red-tailed hawk); a lynx has short tufts dark at
+  the back of the ear and a cheek ruff (`ear` 1.5, `ruff`, the marks `earback` and `cheeks`: the
+  Iberian, the Eurasian and the Canada lynx; the bobcat's tufts are still the older, longer ones); an ant (`ant_draw`, 21 places) is made as
+  an ant is made, a big gaster behind a petiole and its node, the humped alitrunk, a head on a neck
+  with its dark eye and a glint, mandibles and an elbowed feeler, the body held high on six legs
+  found from their two bones (`two_bone`) that walk in tripods (before, its feet were reversed and
+  its legs stubs under a low body); a new role `limb` (`hands.STEPS`) for a leg or a feeler a cell
+  wide: one ink, no chalk outline round it (`P(..., noline=True)`). Check two
   other species of a plan before you leave it: draw them in the same place's hand
   (`rigs.poses(rigs.geometries(species.SPECIES[key]), hands.Hand(mode))`, letters to the place's
   inks) or build and look at a place whose native is the sibling (`preview_character.js --sheet <key>`).
@@ -292,7 +302,10 @@ down below it, broken and dimmed, and a fall of flecks). `scripts/characters/liz
    Never add an animal the grammar does not give for that biome and realm;
    where the grammar is thin or wrong for a place (Tokyo's plants are
    Europe's beech and hazel; Sydney's have no eucalypts; Chicago is given
-   wolves), say so to the DIRT session rather than patch it here.
+   wolves; Houston, Corpus Christi and Lake Charles, the Nearctic tropical
+   grassland, are given ants and no plants at all, so a wave there raises
+   none and `check_characters.js` expects none), say so to the DIRT session
+   rather than patch it here.
 4. **Refine one of the eight drawn by hand** (the one refined longest ago),
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,

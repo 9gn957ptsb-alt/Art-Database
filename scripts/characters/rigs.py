@@ -24,7 +24,7 @@ you) and `sit` (its rest).
 
 Each part is painted by role, never by colour: "coat" (the ramp d R r g,
 deepest to lightest), "far" (the far legs, a step darker), "pale" (W w),
-"dark" (k K), "eye" (y); the hand decides how each role is laid (a dither,
+"dark" (k K), "eye" (y), "limb" (a leg or a feeler a cell wide: one ink, no chalk round it); the hand decides how each role is laid (a dither,
 strokes, flat plates, cut paper ...), and the page decides the inks.
 """
 
@@ -801,7 +801,17 @@ def bird_draw(sp, pose, k):
     rear = (bcx - math.cos(tilt) * bl * 0.8, bcy + math.sin(tilt) * bl * 0.8)
     if p["tail"]:
         tt = (rear[0] + math.cos(tail_dir) * p["tail"] * s, rear[1] - math.sin(tail_dir) * p["tail"] * s)
-        parts.append(P(path([rear, tt], bd * 0.45, 0.45 * s + 0.25), "pale" if "tail" in pale else ("dark" if "tail" in darks else "coat"), 1))
+        trole = "pale" if "tail" in pale else ("dark" if "tail" in darks else "coat")
+        if p.get("tail_fan"):
+            # a raptor's tail: a short broad wedge, spread at its end, not a stick
+            ux, uy = tt[0] - rear[0], tt[1] - rear[1]
+            L_ = math.hypot(ux, uy) or 1.0
+            nx_, ny_ = -uy / L_, ux / L_
+            w0, w1 = bd * 0.5, bd * 0.95
+            parts.append(P(poly([(rear[0] + nx_ * w0, rear[1] + ny_ * w0), (tt[0] + nx_ * w1, tt[1] + ny_ * w1),
+                                 (tt[0] - nx_ * w1, tt[1] - ny_ * w1), (rear[0] - nx_ * w0, rear[1] - ny_ * w0)]), trole, 1))
+        else:
+            parts.append(P(path([rear, tt], bd * 0.45, 0.45 * s + 0.25), trole, 1))
     # legs
     if pose != "sit" or p["ratite"]:
         hipb = (bcx - 0.4 * s, bcy + bd * 0.6)
@@ -1185,6 +1195,77 @@ def snake_draw(sp, pose, k):
 # insect: butterflies, beetles and ants, bees, locusts, moths
 # ================================================================================
 
+def ant_draw(p, pose, k, s):
+    """An ant, as an ant is made: a big gaster behind a narrow waist (the petiole and its node), the humped alitrunk,
+    a round head on a thin neck with its eye and mandibles and an elbowed feeler, six long legs bent at the knee,
+    walking in tripods. Drawn half as large again as the unit it is laid out in (an ant at one cell a millimetre is
+    a smudge), with the body held high, so the legs are what it stands on."""
+    G = H - 1.4
+    K = 1.5
+    cx, cy = 18.0, G - 6.4 * K
+
+    def pt(dx, dy):
+        return (cx + dx * K, cy + dy * K)
+
+    def ell(dx, dy, rx, ry, turn=0.0):
+        return ellipse(cx + dx * K, cy + dy * K, rx * K, ry * K, turn)
+
+    def cap(a, b, r0, r1):
+        return capsule(pt(*a), pt(*b), r0 * K, r1 * K)
+    marks = set(p["marks"])
+    parts = []
+    # six legs, three a side, in tripods (the near front, the far middle and the near hind swing together): the hips
+    # under the alitrunk, each foot out behind (hind) or ahead (front) of its hip, the knee found from the two
+    # bones and bent outward, so a leg is the long thin zigzag an ant stands on
+    for side in (0, 1):
+        for n in range(3):                                  # 0 hind, 1 middle, 2 front
+            ph = ((k / 4.0) + (0.5 if (n + side) % 2 else 0.0)) % 1.0 if pose == "trot" else 0.2
+            sw = math.sin(ph * 6.2832)
+            hu = (-0.5, 1.3, 3.0)[n] + (0.0 if side else 0.5)
+            hip = pt(hu, 1.0)
+            foot = (cx + (hu + (-3.2, 0.6, 3.6)[n] + sw * 1.4) * K, G - 0.3 - max(0.0, sw) * 1.2)
+            knee = two_bone(hip, foot, 3.9 * K, 3.9 * K, (-1, -1, 1)[n])
+            leg = P(union(capsule(hip, knee, 0.56, 0.52), capsule(knee, foot, 0.5, 0.45)), "far" if side == 0 else "limb", 7, noline=True)
+            parts.append(leg)                               # a leg is a line a cell wide: no chalk round it
+    up = pose == "back"
+    # the gaster: the big oval behind, tilted up a little, with a pale band where the species has one
+    gl = 3.9 * p["size"] ** 0.3
+
+    def gaster_role(x, y):
+        if "stripes" in marks and int((x - cx) / K * 0.5 + 40) % 3 == 0:
+            return "pale"
+        return "coat" if y < cy + 0.9 * K else "far"
+    parts.append(P(ell(-6.2, -0.3, gl, 2.7, -0.18), gaster_role, 2))
+    # the waist: the petiole, and its node standing up
+    parts.append(P(cap((-3.2, 0.2), (-1.0, -0.2), 0.6, 0.55), "dark", 2))
+    parts.append(P(ell(-2.2, -0.9, 0.9, 1.0), "coat", 3))
+    # the alitrunk and the humped pronotum before it
+    parts.append(P(union(ell(0.4, -0.3, 3.0, 1.6, -0.12), ell(2.8, -0.6, 1.4, 1.4)), "coat", 3))
+    # the head, on its neck; the eye (dark, with a glint on the lit side) and the mandibles
+    hc = (6.1, 0.5)
+    if pose == "look":
+        fx, fy = hc[0] - 3.4, hc[1]
+        parts.append(P(ell(fx, fy, 3.0, 2.7), "coat", 4))
+        for g in (-1, 1):
+            e = pt(fx + g * 1.5, fy - 0.5)
+            parts.append(P(ellipse(e[0], e[1], 0.95, 0.95), "dark", 6))
+            parts.append(P(ellipse(math.floor(e[0]) + 0.5, math.floor(e[1]) + 0.5, 0.4, 0.4), "pale", 7))
+            parts.append(P(cap((fx + g * 0.9, fy - 2.1), (fx + g * 2.7, fy - 4.5), 0.42, 0.34), "limb", 5, noline=True))
+            parts.append(P(triangle(pt(fx + g * 0.3, fy + 1.9), pt(fx + g * 2.1, fy + 2.8), pt(fx + g * 0.5, fy + 3.8)), "dark", 6))
+        return parts
+    parts.append(P(ell(hc[0], hc[1], 2.7, 2.3), "coat", 4))
+    parts.append(P(triangle(pt(hc[0] + 2.0, hc[1] + 0.9), pt(hc[0] + 4.1, hc[1] + 2.2), pt(hc[0] + 1.6, hc[1] + 2.8)), "dark", 5))
+    e = pt(hc[0] + 0.5, hc[1] - 0.6)
+    parts.append(P(ellipse(e[0], e[1], 0.95, 0.95), "dark", 6))
+    parts.append(P(ellipse(math.floor(e[0]) + 0.5, math.floor(e[1]) + 0.5, 0.4, 0.4), "pale", 7))
+    # the feeler: the scape up and forward, the elbow, the funiculus bent down and out
+    a0 = pt(hc[0] + 1.6, hc[1] - 1.7)
+    a1 = pt(hc[0] + 3.6, hc[1] - (4.8 if up else 3.4))
+    a2 = pt(hc[0] + 6.2, hc[1] - (3.8 if up else 1.8) + (0.5 if pose == "sit" else 0.0))
+    parts.append(P(path([a0, a1, a2], 0.55, 0.45), "limb", 5, noline=True))
+    return parts
+
+
 def insect_draw(sp, pose, k):
     p = dict(size=1.0, form="beetle", marks=(), glow=False, antenna=2.4)
     p.update(sp.get("p", {}))
@@ -1193,6 +1274,8 @@ def insect_draw(sp, pose, k):
     marks = set(p["marks"])
     form = p["form"]
     parts = []
+    if form == "ant":
+        return ant_draw(p, pose, k, s), W, H
     if form == "butterfly":
         flying = pose == "trot"
         cy = G - 3.6 * s if flying else G - 2.2 * s

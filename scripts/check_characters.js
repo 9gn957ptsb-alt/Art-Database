@@ -79,6 +79,18 @@ function bareSpot([w, h]) {
   return null;
 }
 
+// A place whose biome DIRT's grammar gives no plants (Houston, Corpus Christi, Lake Charles: the Nearctic tropical
+// grassland has ants and no strata) raises none in a wave: that is a gap in the grammar, not a failure here.
+async function noStrata(P, place) {
+  return P.evaluate(async (k) => {
+    try {
+      const d = await (await fetch("characters/plants.json")).json();
+      const row = d.places.filter((p) => p[5] === k)[0];
+      return !!row && !(d.sets[row[2]].strata || []).length;
+    } catch (e) { return false; }
+  }, place);
+}
+
 // The first character button on the screen, as a box.
 function characterBox() {
   const b = [].slice.call(document.querySelectorAll("button.character")).filter((e) => !e.hidden)[0];
@@ -136,7 +148,11 @@ async function run(size, place) {
     await sleep(700);
     said = await P.evaluate(() => { const e = document.querySelector(".skyline-hand-says"); return e && !e.hidden ? e.textContent : null; });
     if (SHOTS) { await P.screenshot({ path: `${SHOTS}/chars_${place}_${w}_pressed.png` }); }
-    check(tag, !!(st && (st.beds || st.plants)), "its plants rose round the wave (its animal is the dial's hand)", st && { beds: st.beds, plants: st.plants });
+    if (await noStrata(P, place)) {
+      check(tag, !(st && (st.beds || st.plants)), "no plants rose: DIRT's grammar gives this place's biome none (its set has no strata)", st && { beds: st.beds, plants: st.plants });
+    } else {
+      check(tag, !!(st && (st.beds || st.plants)), "its plants rose round the wave (its animal is the dial's hand)", st && { beds: st.beds, plants: st.plants });
+    }
     check(tag, !!said && said.indexOf(hand.name) === 0, "the hand, pressed: what it is", said);
     check(tag, errors.length === 0, "no page errors", errors.slice(0, 3));
     await browser.close();
@@ -158,7 +174,7 @@ async function run(size, place) {
     if (SHOTS) { await P.screenshot({ path: `${SHOTS}/chars_${place}_${w}_pressed.png` }); }
   }
   check(tag, !!st, "something came out of the wave", st && { id: st.id, mode: st.mode, plants: st.plants, beds: st.beds });
-  if (st) {
+  if (st && !(await noStrata(P, place))) {
     check(tag, (st.plants || 0) + (st.beds || 0) > 0 || !!(st.crowd && st.crowd.some((c) => c.plants > 0)), "its plants rose", { plants: st.plants, beds: st.beds });
   }
   check(tag, !!said, "pressed: the caption shows", said);

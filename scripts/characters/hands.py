@@ -26,7 +26,7 @@ import re
 
 from draw import bayer, flat, offset_line, ramp, strokes, unline
 
-STEPS = {"coat": "Rrg", "far": "dR", "pale": "Ww", "dark": "kK", "eye": "y"}
+STEPS = {"coat": "Rrg", "far": "dR", "pale": "Ww", "dark": "kK", "eye": "y", "limb": "r"}
 
 # ---- the mark --------------------------------------------------------------------
 
