@@ -266,3 +266,8 @@ html[data-skyline] .venue-label { visibility: hidden !important; }
   z-index: 6;
 }
 .skyline-hand-says[hidden] { display: none; }
+
+/* A filmed bit standing where it was filmed (bits.js, skyline.js "a filmed bit"): the target is the pair;
+   the name beside it once named. */
+.skyline-bit { width: auto; }
+.skyline-bit[data-named] .skyline-who-name { left: calc(var(--bit-w, 22px) + 2px); }
