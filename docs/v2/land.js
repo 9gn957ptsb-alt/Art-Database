@@ -16156,6 +16156,9 @@
       // other modules draw at a place (the guide's shows, the dial's ateliers, an animal) stands there too.
       var sk = skyOn() && Skyline.at ? Skyline.at(lat, lon) : null;
       if (sk) { return sk; }
+      // In a life's place the clod (placethen.js) is what is seen, the globe lying under its panel: a point on it is where it stands there.
+      var pc = window.PlaceThen && PlaceThen.at ? PlaceThen.at(lat, lon) : null;
+      if (pc) { return pc; }
       var p = project(lat * RAD, wrap(lon * RAD)); return { x: p.x, y: p.y, z: p.z };
     },
     journey: function () {
@@ -16674,6 +16677,9 @@
     var srow = sv && sv.studios[art.via.studio.i];
     if (srow && sv.artists[srow.a][1] === following.artist) { lat = srow.ll[0] * RAD; lon = wrap(srow.ll[1] * RAD); }
     var at = project(lat, lon);
+    // In a life's place (placethen.js) it waits on the clod, by the tile that is the place; until the clod is drawn, nowhere.
+    var on = window.PlaceThen && PlaceThen.here ? PlaceThen.here() : null;
+    if (on) { at = on; } else if (document.body.dataset.placethen) { Characters.guide(null); return; }
     if (at.z <= 0) { Characters.guide(null); return; }
     // Below the door and to its left, so its name, its diamond and the names above stay clear.
     Characters.guide({ x: at.x - 40, y: at.y + 40, key: t.key, lat: t.lat / RAD, lon: t.lon / RAD, name: t.name });

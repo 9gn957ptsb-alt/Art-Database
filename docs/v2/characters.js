@@ -432,6 +432,11 @@
         if (land.dataset.at !== "city") { endVisit(); }
       }).observe(land, { attributes: true, attributeFilter: ["data-at"] });
     }
+    // A life's place (placethen.js) comes and goes with its mark on the body, and takes the canvas with it
+    // (lift): the canvas is put back in the stage when the place is put away, animals or none.
+    if (window.MutationObserver) {
+      new MutationObserver(lift).observe(document.body, { attributes: true, attributeFilter: ["data-placethen"] });
+    }
     return true;
   }
 
@@ -447,6 +452,41 @@
     b.addEventListener("click", function (event) { event.stopPropagation(); press(o); });
     if (stage) { stage.appendChild(b); }
     return b;
+  }
+
+  /* In a life's place. The art layer lies over the whole stage, and there (placethen.js) its panel is 95% dark and its clod
+     takes the presses: an animal in the stage is under it, hidden, and a press where it stands is the clod's (the artist's own
+     animal could be neither seen nor pressed, 15 Oct 2026). So while the place is up the canvas and the buttons stand in its
+     panel instead, in a layer as big as the window set over the clod, under the place's tile and words and cut to the clod's
+     box: an animal is seen only where it stands on the ground, never over the picture, the words, the dial or the column, and a
+     press on the clod anywhere but on it still swings the clod. What they say goes up into the art layer, over it all. When the
+     place is gone everything is set back in the stage, the canvas after the pixel light. Asked at every frame; it moves only
+     what is not where it belongs. */
+  var layer = null;
+  function lift() {
+    var tiles = document.getElementById("tiles"), art = document.getElementById("art");
+    if (!canvas || !tiles) { return; }
+    var pt = art ? art.querySelector(":scope > .pt") : null;
+    var clod = pt ? pt.querySelector(".pt-clod") : null;
+    var lines = [says, pair], hits = crowd.map(function (o) { return o.hit; });
+    if (!clod) {
+      var stage = tiles.parentNode;
+      if (canvas.parentNode !== stage) { stage.insertBefore(canvas, tiles.nextSibling); }
+      lines.concat(hits).forEach(function (e) { if (e && e.parentNode !== stage) { stage.appendChild(e); } });
+      return;
+    }
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.className = "character-layer";
+      layer.style.cssText = "position:fixed;inset:0;pointer-events:none";
+    }
+    if (layer.parentNode !== clod.parentNode) { clod.parentNode.insertBefore(layer, clod.nextSibling); }
+    [canvas].concat(hits).forEach(function (e) { if (e && e.parentNode !== layer) { layer.appendChild(e); } });
+    lines.forEach(function (e) { if (e && e.parentNode !== art) { art.insertBefore(e, pt.nextSibling); } });
+    var r = clod.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+    var cut = "inset(" + Math.max(0, Math.round(r.top)) + "px " + Math.max(0, Math.round(vw - r.right)) + "px " +
+              Math.max(0, Math.round(vh - r.bottom)) + "px " + Math.max(0, Math.round(r.left)) + "px)";
+    if (layer._cut !== cut) { layer._cut = cut; layer.style.clipPath = layer.style.webkitClipPath = cut; }
   }
 
   function size() {
@@ -767,15 +807,16 @@
   function obstacles() {
     var out = [];
     // In the reading layout also the lens (the small round globe), the picture and its sentence
-    // (7 Oct 2026: a fox sat on the lens's edge in a work's view and was in the way of its pinch).
+    // (7 Oct 2026: a fox sat on the lens's edge in a work's view and was in the way of its pinch);
+    // in a life's place the picture, the place's sentence and the words it opens (15 Oct 2026).
     ["#art-col", "#art-time", "#building-time", ".walk-strip", "#banner", "#art-plate", ".lens-hole",
-     ".voice-cap", ".dial-readout", ".lens-home", ".dial-home"].forEach(function (sel) {
+     ".voice-cap", ".dial-readout", ".lens-home", ".dial-home", ".pt-work", ".pt-head", ".pt-more"].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el || el.hidden || !el.getClientRects().length) { return; }
       var r = el.getBoundingClientRect();
       if (r.width && r.height) {
         out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height,
-                   reading: /art-plate|lens|voice-cap|art-time/.test(sel) });
+                   reading: /art-plate|lens|voice-cap|art-time|\.pt-/.test(sel) });
       }
     });
     // The city's own marks: a museum's diamond and its name are its way in.
@@ -1566,6 +1607,7 @@
   /* ---- drawn ---------------------------------------------------------------- */
 
   function draw(now) {
+    lift();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
     g.imageSmoothingEnabled = false;

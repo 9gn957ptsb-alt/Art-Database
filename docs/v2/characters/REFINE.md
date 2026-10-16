@@ -268,8 +268,10 @@ down below it, broken and dimmed, and a fall of flecks). `scripts/characters/liz
   over half its length where the real one's is two thirds); the legs are a two-bone reach, the near and far legs
   of a stride only a shade apart; the front-on head is a rounded wedge; the reflection costs the sprite nine rows
   below its feet, so its pressed frame is a little tall under the lizard. On a place, then's clod
-  (`.pt-clod`) the canvas sits above the stage, so a character standing over it cannot be pressed (the same
-  for the fox in Picasso's life): a finding for the placethen pass, not changed here.
+  (`.pt-clod`) the canvas stood in the stage, under the art layer, so a character standing over it could be
+  neither seen nor pressed (the same for the fox in Picasso's life): mended 15 Oct 2026 (`characters.js`, "In a
+  life's place": while the place is up the canvas and the buttons stand in its panel over the clod, cut to it;
+  `placethen.js` `at` and `here`; `scripts/check_place_animal.js`).
 - **Refining it**: render with `qlook`-style sheets (letters through `INKS`) at 8–14 px a cell and the page's own
   `preview_character.js lizard out.png --scale 2`; compare the silhouette (head wedge, neck, trunk depth, legs with
   the knee forward and the elbow back, tail), the net and the ocelli with photographs of a male in spring; change
@@ -414,6 +416,20 @@ overwhelming and distracting."
   walk's strip, or a museum's diamond and name (`seat` in characters.js).
   The nearer (lower) is drawn over the farther. A walk's animal is asked
   for, so it is always let in: the one out longest makes way.
+- **In a life's place** (the place, then: `placethen.js`) an animal stands on
+  the place's clod. The art layer lies over the stage there, its panel 95%
+  dark, so while the place is up `lift` in characters.js carries the canvas
+  and the buttons into the place's panel, over the clod and under its tile and
+  words, cut to the clod's box (never over the picture, the sentence, the dial
+  or the column), and the lines (what it is, what two share) up into the art
+  layer; all go back to the stage when the place is put away. `PlaceThen.at`
+  puts a point of the earth on the clod as drawn (`Land.at` asks it, so a
+  hometown animal stands where its town is; off the square it is seated by the
+  keep-clear boxes, `.pt-work`, `.pt-head` and `.pt-more` among them) and
+  `PlaceThen.here` is the place's tile, by which a followed animal waits, below
+  it and to its left as by a museum's door (`guideFrame`). Pressed, a followed
+  animal is let go, as everywhere; one at rest, or come from a wave, stops and
+  says what it is. `scripts/check_place_animal.js` checks it.
 - **Two that meet.** One that comes while another stands still goes to it
   and stands beside it, facing, a little lower. If their artists' saved
   works share a thread (`artists.json` `pairs`: a show, else an owner, a
