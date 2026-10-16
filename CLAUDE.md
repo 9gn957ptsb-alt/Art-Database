@@ -81,6 +81,13 @@ So:
   blue-violet shades: "I want you to incorporate this aesthetic into the rendering aesthetic of Holographic Mr
   Pearl"): the world and his body are painted, strokes anchored to the surfaces, form modelled by warm and cool,
   translucent washes mixing into new colours where they overlap; the head alone is left unpainted.
+- **Its shapes are built of stated circles, after the Arnell Group's BREATHTAKING** (artist, 16 Oct 2026, sending
+  that 2008 Pepsi design strategy: "This should fit in perfectly with how you are developing your shapes, use it
+  wherever you find it applicable"). Take its constructions, not its claims: its "Pepsi Ratio" is 2:3 by its own
+  construction, not φ — the step the artist's drawing already takes (1:2:3:5:8 in thirds) — so everything built is
+  Fibonacci, and exact φ belongs only to Mr Pearl's head and its circles (brim : head = φ; head top : shoulders = φ),
+  as the exact sphere belongs only to his head, the one outline that is the same from every point of view. The unit's
+  levels all touch one circle-point, the crux; bends are arcs of stated circles; built spheres are bands of figures.
 - **For now the world is the artist's own** (artist, 15 Oct 2026: "For now let's make mine and figure out how to
   make it for others later"): one planet, made from the site's information and its relations (the collages, the
   saved works, the artists' lives, the museums, the modelled buildings, the cities, the movements, the voices).
