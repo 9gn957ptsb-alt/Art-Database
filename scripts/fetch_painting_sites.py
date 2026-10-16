@@ -29,7 +29,8 @@ reads Commons as its shared file repository (commons.wikimedia.org itself is ref
 session). Paced and retried: the Wikimedia APIs answer 429 to a shared address.
 
 Then each work's height and width (P2048, P2049), for the wall label under its picture
-(`--only sizes`, after the rest: it reads raw.json's works).
+(`--only sizes`, after the rest: it reads raw.json's works), and each work's inception with its
+precision (`--only dates`, the same).
 
 Everything is cached in data/sites/ (private, gitignored, like all of data/). build_sites.py
 distils it into docs/v2/sites.json.
@@ -283,6 +284,27 @@ SELECT ?w ?p ?amt ?unit ?rank ?part WHERE {{
     print(f'  sizes: {len(out)} of {len(works)} works have a height or a width')
 
 
+def dates():
+    """Each work's inception (P571) with its precision, for build_sites.py: Wikidata keeps a date known only
+    to its century or millennium as that century's last year ("20th century" is 2000), so a year is kept
+    only where the statement is precise to the year or finer (precision 9 or more)."""
+    raw = json.load(open(os.path.join(OUT, 'raw.json')))
+    works = sorted({qid(r['w']) for r in raw['works'] if r.get('w')}, key=lambda q: int(q[1:]))
+    out = {}
+    for ch in chunks(works, 60):
+        for r in sparql(f'''
+SELECT ?w ?t ?prec ?rank WHERE {{
+  VALUES ?w {{ {' '.join('wd:' + q for q in ch)} }}
+  ?w p:P571 ?st . ?st psv:P571 ?v ; wikibase:rank ?rank .
+  ?v wikibase:timeValue ?t ; wikibase:timePrecision ?prec .
+}}'''):
+            out.setdefault(qid(r['w']), []).append([r['t'], int(r['prec']), qid(r['rank'])])
+    for v in out.values():
+        v.sort()
+    json.dump(out, open(os.path.join(OUT, 'dates.json'), 'w'), sort_keys=True)
+    print(f'  dates: {len(out)} of {len(works)} works have an inception')
+
+
 def near_pictures():
     """Items with a picture within 250 m of each point of view that has no depicted place."""
     raw = json.load(open(os.path.join(OUT, 'raw.json')))
@@ -334,6 +356,6 @@ def file_meta():
 if __name__ == '__main__':
     if sys.argv[1:2] == ['--only']:
         for a in sys.argv[2:]:
-            {'near': near_pictures, 'files': file_meta, 'wiki': wiki_text, 'sizes': sizes}[a]()
+            {'near': near_pictures, 'files': file_meta, 'wiki': wiki_text, 'sizes': sizes, 'dates': dates}[a]()
     else:
         main()

@@ -20,17 +20,19 @@
 (function () {
   "use strict";
 
-  var data = null, ask = null, byKey = {}, loops = {};
+  var data = null, ask = null, failedAt = 0, byKey = {}, loops = {};
   var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function load() {
     if (data) { return Promise.resolve(data); }
+    // After a failed read, none again for half a minute (bitsHere asks every frame).
+    if (!ask && failedAt && Date.now() - failedAt < 30000) { return Promise.resolve({ bits: [] }); }
     if (!ask) {
       ask = fetch("characters/bits.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         data = d && d.bits ? d : { bits: [] };
         data.bits.forEach(function (b) { byKey[b.key] = b; });
         return data;
-      }).catch(function () { ask = null; return { bits: [] }; });
+      }).catch(function () { ask = null; failedAt = Date.now(); return { bits: [] }; });
     }
     return ask;
   }
@@ -56,13 +58,17 @@
   }
   function sheetOf(b) {
     return loopOf(b).then(function (L) {
-      if (!L.sheetAsk) { L.sheetAsk = image(L.json.replace(/\.json$/, ".png")).then(function (i) { L.sheet = i; return L; }); }
+      if (!L.sheetAsk) {
+        L.sheetAsk = image(L.json.replace(/\.json$/, ".png")).then(function (i) { L.sheet = i; return L; }, function (e) { L.sheetAsk = null; throw e; });
+      }
       return L.sheetAsk;
     });
   }
   function smallOf(b) {
     return loopOf(b).then(function (L) {
-      if (!L.smallAsk) { L.smallAsk = image(L.dir + L.meta.small.file).then(function (i) { L.small = i; return L; }); }
+      if (!L.smallAsk) {
+        L.smallAsk = image(L.dir + L.meta.small.file).then(function (i) { L.small = i; return L; }, function (e) { L.smallAsk = null; throw e; });
+      }
       return L.smallAsk;
     });
   }
@@ -107,13 +113,22 @@
   var pending = {};
   function drawPair(g, key, x, y, now, pu, opts) {
     var b = byKey[key];
-    if (!b) { if (!pending[key]) { pending[key] = load(); } return null; }
-    var L = loops[b.key] && loops[b.key].done;
-    if (!L) {
-      if (!pending["s" + key]) { pending["s" + key] = smallOf(b).then(function (l) { loops[b.key].done = l; }).catch(function () {}); }
+    if (!b) {
+      if (!pending[key]) { pending[key] = load().then(function () { if (!byKey[key]) { window.setTimeout(function () { delete pending[key]; }, 30000); } }); }
       return null;
     }
-    var S = L.meta.small, sp = S.sprites, beat = still || (opts && opts.still) ? { head: "low", fig: "stand", walk: 0, fade: 1 } : beatAt(now / 1000);
+    var L = loops[b.key] && loops[b.key].done;
+    if (!L) {
+      // Asked once at a time; a failed read is asked again half a minute on.
+      if (!pending["s" + key]) {
+        pending["s" + key] = smallOf(b).then(function (l) { loops[b.key].done = l; }).catch(function () {
+          window.setTimeout(function () { delete pending["s" + key]; }, 30000);
+        });
+      }
+      return null;
+    }
+    var held = still || (opts && opts.still) || !!(window.Land && Land.still && Land.still());
+    var S = L.meta.small, sp = S.sprites, beat = held ? { head: "low", fig: "stand", walk: 0, fade: 1 } : beatAt(now / 1000);
     var gr = sp["guard-" + beat.head], fr = sp["figure-" + beat.fig];
     var gx = Math.round(x - S.foot.guard[0] * pu), gy = Math.round(y - S.foot.guard[1] * pu);
     var was = g.imageSmoothingEnabled;
@@ -131,17 +146,16 @@
   }
 
   /* ---- the card ---------------------------------------------------------------------------------- */
-  var card = null, cardKey = null, raf = 0, opener = null;
+  var card = null, cardKey = null, opener = null;
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text) { e.textContent = text; } return e; }
-  function close() {
+  function close(keepFocus) {
     if (!card) { return; }
-    window.cancelAnimationFrame(raf);
-    raf = 0;
+    window.cancelAnimationFrame(card.raf || 0);
     card.remove();
     card = null;
     cardKey = null;
-    if (opener && opener.isConnected && opener.focus) { try { opener.focus({ preventScroll: true }); } catch (e) {} }
-    opener = null;
+    if (keepFocus !== true && opener && opener.isConnected && opener.focus) { try { opener.focus({ preventScroll: true }); } catch (e) {} }
+    if (keepFocus !== true) { opener = null; }
   }
   function dateSaid(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
@@ -158,11 +172,13 @@
     return load().then(function () {
       var b = byKey[key];
       if (!b) { return; }
-      var was = document.activeElement;
-      close();
-      opener = was;
+      // A card opened over its own keeps the first one's way back.
+      var was = document.activeElement, again = card && card.contains(was);
+      close(again);
+      if (!again) { opener = was; }
       cardKey = key;
       card = el("section", "bit-card");
+      var mine = card;
       card.setAttribute("role", "dialog");
       card.setAttribute("aria-label", b.title + ", after " + b.who + "'s short");
       ["pointerdown", "wheel", "touchstart"].forEach(function (t) {
@@ -171,7 +187,7 @@
       var x = el("button", "bit-close", "×");
       x.type = "button";
       x.setAttribute("aria-label", "Close");
-      x.addEventListener("click", close);
+      x.addEventListener("click", function () { close(); });
       card.appendChild(x);
 
       // The loop, large, at whole device pixels a cell.
@@ -192,7 +208,7 @@
       words.appendChild(el("p", "bit-place", "Filmed at " + b.place));
       words.appendChild(el("p", "bit-said", b.said));
       var out = el("div", "bit-out");
-      [[b.video, "▶ " + b.title + " on YouTube", b.title + ", " + b.who + "'s short: opens YouTube in a new tab"],
+      [[b.video, "▶ " + b.title + " on YouTube", b.title + " on YouTube: " + b.who + "'s short, opens in a new tab"],
        [b.channel, b.who + "'s channel", b.who + "'s channel: opens YouTube in a new tab"]].forEach(function (l) {
         var a = el("a", "bit-link");
         a.href = l[0];
@@ -212,7 +228,8 @@
       var panel = el("div", "bit-list");
       panel.hidden = true;
       var here = window.Land && Land.where ? Land.where() : {};
-      if (b.town && window.Land && Land.town && !(here && here.key === b.town && here.at !== "world")) {
+      var onIt = here && here.at === "town" && here.key === b.town && Land.layer && Land.layer() === "characters";
+      if (b.town && window.Land && Land.town && !onIt) {
         var go = el("button", "bit-go", "◎ " + townName(b.town, "London") + " ›");
         go.type = "button";
         go.setAttribute("aria-label", "Into " + townName(b.town, "London") + ", where it was filmed: it stands at Horse Guards while the city shows its Characters");
@@ -271,7 +288,8 @@
       try { x.focus({ preventScroll: true }); } catch (e) {}
 
       // Play it: twelve frames a second, from the PNG of its frames; a press on it or its button pauses.
-      var playing = !still, frame = 0, last = 0;
+      var held = still || !!(window.Land && Land.still && Land.still());
+      var playing = !held, frame = 0, last = 0;
       function sayPlay() {
         play.textContent = playing ? "❚❚" : "▶";
         play.setAttribute("aria-label", playing ? "Pause the loop" : "Play the loop");
@@ -282,7 +300,7 @@
       play.addEventListener("click", function (event) { event.stopPropagation(); toggle(); });
       cv.addEventListener("click", toggle);
       sheetOf(b).then(function (L) {
-        if (!card || cardKey !== key) { return; }
+        if (card !== mine) { return; }
         var m = L.meta, dpr = Math.min(3, window.devicePixelRatio || 1);
         var phone = window.innerWidth <= 720;
         var want = phone ? Math.min(320, window.innerHeight * 0.4) : Math.min(420, window.innerHeight * 0.6);
@@ -298,15 +316,16 @@
         }
         paint();
         function tick(ts) {
-          raf = window.requestAnimationFrame(tick);
+          if (card !== mine) { return; }
+          mine.raf = window.requestAnimationFrame(tick);
           if (!playing) { return; }
           if (ts - last < 1000 / m.fps - 4) { return; }
           last = ts;
           frame = (frame + 1) % m.frames;
           paint();
         }
-        raf = window.requestAnimationFrame(tick);
-        card.dataset.loaded = "true";
+        mine.raf = window.requestAnimationFrame(tick);
+        mine.dataset.loaded = "true";
       }).catch(function () { stage.dataset.failed = "true"; });
     });
   }
@@ -348,14 +367,18 @@
         box.appendChild(r);
       });
       found.appendChild(box);
-    });
+    }).catch(function () {});
   }
   if (field) { field.addEventListener("input", function () { window.setTimeout(offer, 380); }); }
   if (found && window.MutationObserver) {
     new MutationObserver(function () { if (field && field.value && !found.querySelector(".bit-found")) { offer(); } })
       .observe(found, { childList: true });
   }
-  document.addEventListener("keydown", function (event) { if (event.key === "Escape" && card) { close(); event.stopPropagation(); } }, true);
+  // On the window and in the capture phase, registered before land.js and guide.js: the card is on top, so
+  // Escape closes it before the guide, the lens or the parts behind it.
+  window.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && card) { event.preventDefault(); event.stopImmediatePropagation(); close(); }
+  }, true);
 
   window.Bits = {
     load: load,
