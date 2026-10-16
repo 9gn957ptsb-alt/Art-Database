@@ -921,6 +921,8 @@
     }
     if (layerOn === "characters" && !bitData && !bitAsk && window.Bits) {
       bitAsk = Bits.load().then(function (d) {
+        // Nothing read (a failed read) is not kept: asked again half a minute on.
+        if (!d || !d.bits || !d.bits.length) { window.setTimeout(function () { bitAsk = null; }, 30000); return; }
         bitData = d;
         found();
         if (layerOn === "characters") { placeMarks(); }

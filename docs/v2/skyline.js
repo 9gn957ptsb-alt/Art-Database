@@ -1058,9 +1058,10 @@
         (span[1] > span[0] ? "–" + span[1] : "") + "; their life");
     }
     w.btn.appendChild(el("span", "skyline-who-name", r[1]));
+    w.btn.addEventListener("pointerdown", function () { w.shownAtDown = !!w.btn.dataset.named; });
     w.btn.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (coarse && !w.named && !w.btn.dataset.named) { w.named = true; w.btn.dataset.named = "true"; return; }
+      if (coarse && event.detail && !w.named && !w.shownAtDown) { w.named = true; w.btn.dataset.named = "true"; return; }
       if (w.phil) { if (window.Philosophers) { Philosophers.open(w.phil[0]); } return; }
       openLife(w.r);
     });
@@ -1250,11 +1251,22 @@
      trooper on his horse and the figure beside him, in step with its loop, the figure walking off toward
      you and back — on a tile of the pixel light, named where there is room; a press is its card (on a touch
      screen a first tap names it). Under reduced motion it stands still. */
-  var bits = [];
+  var bits = [], bitsAsked = false;
   function bitsHere() {
     if (cat !== "characters" || !window.Bits || !city) { return []; }
     var all = Bits.list();
-    if (!all.length) { Bits.load(); return []; }
+    if (!all.length) {
+      // Asked once; when the bits come the light is painted again (in Characters no walker would), and a
+      // failed read is asked again half a minute on.
+      if (!bitsAsked) {
+        bitsAsked = true;
+        Bits.load().then(function (d) {
+          if (d && d.bits && d.bits.length) { bitsAsked = false; lightKey = ""; dirty = true; }
+          else { window.setTimeout(function () { bitsAsked = false; }, 30000); }
+        });
+      }
+      return [];
+    }
     return all.filter(function (b) { return b.town === city.key; });
   }
   function paintBits(g, now) {
@@ -1268,9 +1280,12 @@
       o.btn.hidden = true;                          // until the pair is drawn and the button laid over it
       o.btn.setAttribute("aria-label", b.title + " — after " + b.who + "'s short, filmed at " + b.place + "; its card");
       o.btn.appendChild(el("span", "skyline-who-name", b.title));
+      o.btn.addEventListener("pointerdown", function () { o.shownAtDown = !!o.btn.dataset.named; });
       o.btn.addEventListener("click", function (event) {
         event.stopPropagation();
-        if (coarse && !o.named && !o.btn.dataset.named) { o.named = true; o.btn.dataset.named = "true"; return; }
+        // On a touch screen a first tap names it (the finger's own light named it already; what counts is
+        // whether it was named before the finger came down); the keys open it at once.
+        if (coarse && event.detail && !o.named && !o.shownAtDown) { o.named = true; o.btn.dataset.named = "true"; return; }
         Bits.open(b.key);
       });
       o.btn.addEventListener("pointerenter", function () { o.hover = true; });

@@ -80,7 +80,8 @@
 }
 .bit-play:hover,
 .bit-play:focus-visible { background: #9d95e6; color: #0f0a07; border-color: #9d95e6; }
-.bit-stage[data-playing="true"] .bit-play { opacity: 0.55; }
+/* Quieter while it plays, but never under 3:1 against the slab behind it (WCAG 1.4.11): an opaque ground. */
+.bit-stage[data-playing="true"] .bit-play { background: rgba(15, 10, 7, 0.92); opacity: 0.85; }
 .bit-stage[data-playing="true"] .bit-play:hover,
 .bit-stage[data-playing="true"] .bit-play:focus-visible { opacity: 1; }
 .bit-words { min-width: 0; padding-right: 18px; }

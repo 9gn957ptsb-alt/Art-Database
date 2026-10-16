@@ -208,11 +208,36 @@ def main():
         p['adm'] = p['adm'] or r.get('admL')
         p['wiki'] = p['wiki'] or r.get('enwiki')
     works = {}
+    # Each work's year from its inception statements with their precision (fetch_painting_sites.py --only
+    # dates): Wikidata keeps a date known only to its century or millennium as one round year ("2nd
+    # millennium" is 2000: the Hermitage's Waterloo Bridge had read 2000 beside its own 1903). A statement
+    # precise to the year (precision 9 or finer) gives its year; one to the decade, the decade's middle; one
+    # coarser only a year that is not round (1876 marked "century" is a year typed in, with the wrong
+    # precision); never a deprecated statement; a preferred one first, else the earliest. Without the file,
+    # raw.json's best-rank inception, as before.
+    dated = load(os.path.join(RAW, 'dates.json')) if os.path.exists(os.path.join(RAW, 'dates.json')) else None
+
+    def stated_year(st):
+        y = year(st[0])
+        if not y:
+            return None
+        if st[1] >= 9:
+            return y
+        if y % 10:
+            return y
+        return y + 5 if st[1] == 8 else None
+
+    def year_of(q):
+        sts = [s for s in (dated or {}).get(q, []) if not s[2].endswith('DeprecatedRank') and stated_year(s)]
+        best = [s for s in sts if s[2].endswith('PreferredRank')] or sts
+        ys = [stated_year(s) for s in best]
+        return min(ys) if ys else None
+
     for r in raw['works']:
         w = works.setdefault(qid(r['w']), {'t': None, 'a': None, 'd': None, 'img': None, 'm': None, 'arts': {}})
         w['t'] = w['t'] or r.get('label') or r.get('labelfr')
         w['a'] = w['a'] or r.get('creatorL')
-        y = year(r.get('inception'))
+        y = year_of(qid(r['w'])) if dated is not None else year(r.get('inception'))
         if y and (w['d'] is None or y < w['d']):
             w['d'] = y
         w['img'] = w['img'] or file_of(r.get('img'))
@@ -266,7 +291,8 @@ def main():
         if NARRATIVE.search(t):
             return True
         lat, lon = best[2]
-        return 29 <= lat <= 34 and 34 <= lon <= 36.6 and ((works.get(q) or {}).get('d') or 0) < 1800
+        y = (works.get(q) or {}).get('d')
+        return 29 <= lat <= 34 and 34 <= lon <= 36.6 and y is not None and y < 1800
     rows = []
     want_files, want_wiki = set(), set()
     for q in sorted(set(cand) | set(hand_by_q), key=lambda x: int(x[1:]) if x[1:].isdigit() else 0):
