@@ -324,8 +324,10 @@
         } else if (s[3]) {
           E.dot(x, y, z, s[3], s, what === "~" ? 1 : lt, 0);
         } else if (gridFine) {
-          // A finer grid leaves no holes: where the soil has no dot, a small dark one (water stays water).
-          E.dot(x, y, z, 1, s, what === "~" ? 0.78 : lt * 0.62, 0);
+          // A finer grid leaves no holes: where the soil has no dot, a small dark one. On water it is the sea's
+          // deep tone at the width of the sea's commonest dot, not the soil's black: a third of the sea's
+          // swatch is hole, and a lagoon (Venice's) read as black voids between patches of blue, not as water.
+          E.dot(x, y, z, what === "~" ? 2 : 1, what === "~" ? SEA_DEEP : s, what === "~" ? 0.6 : lt * 0.62, 0);
         }
         if (i === 0 || j === 0 || i === n - 1 || j === n - 1) {
           // The edge goes down into the soil from the ground the clod holds there, not from the plain: a
@@ -395,6 +397,7 @@
     plain: [1, 0.62, 0.08, 0.8], gallery: [2, 0.86, 0.1, 1.08], museum: [3, 0.92, 0.12, 1.12]
   };
   var GREEN = [92, 122, 70];          // the models' grass and planting, as the plot's green
+  var SEA_DEEP = [62, 89, 113];       // the sea swatch's mean dot (dirt-sea.png): the water where the soil has a hole
   var COARSE = 160;                   // the most cells a side the 2D canvas is given
   var gridFine = false;               // the ground being made is finer than the first grain (~40 m)
   function lit(c, k) { return [Math.min(255, Math.round(c[0] * k)), Math.min(255, Math.round(c[1] * k)), Math.min(255, Math.round(c[2] * k))]; }
@@ -943,6 +946,7 @@
       }
     });
     paintWalkers(g, now);
+    paintBits(g, now);
   }
 
   /* ---- the artists, walking ---------------------------------------------- */
@@ -1004,7 +1008,11 @@
       return y ? y + " · " + plural(eligible(y).length, "philosopher", "philosophers") + " alive of " + n + " born here"
         : plural(n, "philosopher", "philosophers") + " born here";
     }
-    if (cat === "characters") { return ground.hand && ground.hand.line ? ground.hand.line.split(" · ")[0] + " · its own animal, the dial's hand" : ""; }
+    if (cat === "characters") {
+      var own = ground.hand && ground.hand.line ? ground.hand.line.split(" · ")[0] + " · its own animal, the dial's hand" : "";
+      var here = bitsHere().map(function (b) { return b.title + " at " + b.place.split(",")[0]; });
+      return [own].concat(here).filter(Boolean).join(" · ");
+    }
     return y ? y + " · " + plural(eligible(y).length, "artist here", "artists here") : "";
   }
   function yearOf() { return city.yearNow || NOW; }
@@ -1050,9 +1058,10 @@
         (span[1] > span[0] ? "–" + span[1] : "") + "; their life");
     }
     w.btn.appendChild(el("span", "skyline-who-name", r[1]));
+    w.btn.addEventListener("pointerdown", function () { w.shownAtDown = !!w.btn.dataset.named; });
     w.btn.addEventListener("click", function (event) {
       event.stopPropagation();
-      if (coarse && !w.named && !w.btn.dataset.named) { w.named = true; w.btn.dataset.named = "true"; return; }
+      if (coarse && event.detail && !w.named && !w.shownAtDown) { w.named = true; w.btn.dataset.named = "true"; return; }
       if (w.phil) { if (window.Philosophers) { Philosophers.open(w.phil[0]); } return; }
       openLife(w.r);
     });
@@ -1233,6 +1242,92 @@
     if (named) { w.btn.dataset.named = "true"; } else { delete w.btn.dataset.named; }
     w.btn.style.height = Math.round(fh * 0.9) + "px";
     w.btn.style.transform = "translate(" + Math.round(p.x - 12) + "px," + Math.round(p.y - fh * 0.9) + "px)";
+  }
+
+  /* ---- a filmed bit, where it was filmed -----------------------------------
+     The artist, 14 Oct 2026: "Recreate a gif like animation of this YouTube short. Create Ed Bassmaster's
+     character and have it link to his YouTube". While the city shows its Characters, a bit filmed here
+     (characters/bits.json, bits.js: Royal Nothin at Horse Guards, London) stands at its own point — the
+     trooper on his horse and the figure beside him, in step with its loop, the figure walking off toward
+     you and back — on a tile of the pixel light, named where there is room; a press is its card (on a touch
+     screen a first tap names it). Under reduced motion it stands still. */
+  var bits = [], bitsAsked = false;
+  function bitsHere() {
+    if (cat !== "characters" || !window.Bits || !city) { return []; }
+    var all = Bits.list();
+    if (!all.length) {
+      // Asked once; when the bits come the light is painted again (in Characters no walker would), and a
+      // failed read is asked again half a minute on.
+      if (!bitsAsked) {
+        bitsAsked = true;
+        Bits.load().then(function (d) {
+          if (d && d.bits && d.bits.length) { bitsAsked = false; lightKey = ""; dirty = true; }
+          else { window.setTimeout(function () { bitsAsked = false; }, 30000); }
+        });
+      }
+      return [];
+    }
+    return all.filter(function (b) { return b.town === city.key; });
+  }
+  function paintBits(g, now) {
+    var list = bitsHere();
+    bits = bits.filter(function (o) { if (list.indexOf(o.b) < 0) { o.btn.remove(); return false; } return true; });
+    list.forEach(function (b) {
+      if (bits.some(function (o) { return o.b === b; })) { return; }
+      var o = { b: b, hover: false, named: false };
+      o.btn = el("button", "skyline-who skyline-bit");
+      o.btn.type = "button";
+      o.btn.hidden = true;                          // until the pair is drawn and the button laid over it
+      o.btn.setAttribute("aria-label", b.title + " — after " + b.who + "'s short, filmed at " + b.place + "; its card");
+      o.btn.appendChild(el("span", "skyline-who-name", b.title));
+      o.btn.addEventListener("pointerdown", function () { o.shownAtDown = !!o.btn.dataset.named; });
+      o.btn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        // On a touch screen a first tap names it (the finger's own light named it already; what counts is
+        // whether it was named before the finger came down); the keys open it at once.
+        if (coarse && event.detail && !o.named && !o.shownAtDown) { o.named = true; o.btn.dataset.named = "true"; return; }
+        Bits.open(b.key);
+      });
+      o.btn.addEventListener("pointerenter", function () { o.hover = true; });
+      o.btn.addEventListener("pointerleave", function () { o.hover = false; });
+      o.btn.addEventListener("focus", function () { o.hover = true; });
+      o.btn.addEventListener("blur", function () { o.hover = false; });
+      names.appendChild(o.btn);
+      bits.push(o);
+    });
+    if (!bits.length) { return; }
+    var phone = window.innerWidth <= 720, dpr = Math.min(3, window.devicePixelRatio || 1);
+    var pu = Math.max(1, Math.round((phone ? 30 : 36) * Math.min(PHI, Math.sqrt(view.zoom)) * dpr / 40)) / dpr;
+    var told = (nameRects || []).slice();
+    bits.forEach(function (o) {
+      var at = city.toCell(o.b.point[0], o.b.point[1]), n = city.n;
+      var ci = Math.max(0, Math.min(n - 1, Math.round(at.y + n / 2 - 0.5))), cj = Math.max(0, Math.min(n - 1, Math.round(at.x + n / 2 - 0.5)));
+      var p = toScreen(project(frameNow, at.x, at.y, city.zAt(ci * n + cj)));
+      var inside = p.x > band.x + 24 && p.x < band.x + band.w - 24 && p.y > band.y + 60 * pu && p.y < band.y + band.h - 2;
+      o.btn.hidden = !inside;
+      if (!inside) { return; }
+      var lit = o.hover;
+      g.globalAlpha = LEVELS[lit ? 3 : 1];
+      g.fillStyle = LIGHT;
+      g.fillRect(Math.floor(p.x / T) * T + 1, Math.floor((p.y - 3) / T) * T + 1, T - 2, T - 2);
+      g.globalAlpha = 0.45;
+      g.fillStyle = "rgb(" + INK_DARK.join(",") + ")";
+      g.fillRect(Math.round(p.x - 24 * pu), Math.round(p.y), Math.round(44 * pu), Math.max(1, Math.round(pu)));   // their shadow
+      g.globalAlpha = 1;
+      var box = Bits.drawPair(g, o.b.key, p.x, p.y, now, pu, { still: still });
+      if (!box) { o.btn.hidden = true; return; }
+      if (lit) {
+        g.strokeStyle = LILAC; g.lineWidth = 1;
+        g.strokeRect(box.x0 - 2.5, box.y0 - 2.5, box.x1 - box.x0 + 5, box.y1 - box.y0 + 5);
+      }
+      var bw = Math.max(24, box.x1 - box.x0), bh = Math.max(24, box.y1 - box.y0);
+      o.btn.style.width = bw + "px";
+      o.btn.style.height = bh + "px";
+      o.btn.style.setProperty("--bit-w", bw + "px");
+      o.btn.style.transform = "translate(" + Math.round(box.x0) + "px," + Math.round(box.y0) + "px)";
+      var named = lit || o.named || fitsName(o, box.x1 + 2, box.y0, told);
+      if (named) { o.btn.dataset.named = "true"; } else { delete o.btn.dataset.named; }
+    });
   }
 
   /* ---- the ground dial ------------------------------------------------------
@@ -2075,6 +2170,8 @@
     delete document.documentElement.dataset.skyline;
     walkers.forEach(function (w) { w.btn.remove(); });
     walkers = [];
+    bits.forEach(function (o) { o.btn.remove(); });
+    bits = [];
     if (litArt >= 0 && city) { lightArt(litArt, false); }
   }
   function sayNoSkyline(st) {
@@ -2151,6 +2248,8 @@
         view.px = wf.px; view.py = wf.py;
       }
       walkers = [];
+      bits.forEach(function (o) { o.btn.remove(); });
+      bits = [];
       cat = "";
       castFor(now);
       nextCome = now + (still ? 0 : 900);
@@ -2246,7 +2345,7 @@
     stepWalkers(now, dt);
     placeNames(now);
     var lk = placed + "|" + walkers.length + "|" + litArt;
-    if (walkers.length || lk !== lightKey || (pulseAt && now - pulseAt < 1200 && now >= pulseAt)) {
+    if (walkers.length || bits.length || lk !== lightKey || (pulseAt && now - pulseAt < 1200 && now >= pulseAt)) {
       lightKey = lk;
       paintLight(now);
     }
@@ -2397,6 +2496,7 @@
     state: function () {
       return { on: on_, key: city && city.key, arts: city ? city.arts.map(function (a) { return { kind: a.kind, name: a.name, cells: a.cells.length }; }) : [],
                marks: marks.map(function (mk) { return { name: mk.a.name, kind: mk.a.kind, x: mk.x, y: mk.y, named: mk.named, hidden: mk.btn.hidden }; }),
+               bits: bits.map(function (o) { var r = o.btn.getBoundingClientRect(); return { key: o.b.key, hidden: !!o.btn.hidden, named: !!o.btn.dataset.named, x: r.x, y: r.y, w: r.width, h: r.height }; }),
                walkers: walkers.map(function (w) { return { id: w.r[0], name: w.r[1], x: w.x, y: w.y, phil: !!w.phil, named: !!w.btn.dataset.named, hidden: !!w.btn.hidden, leaving: !!w.leaving }; }),
                category: cat, note: note ? note.textContent : "",
                heading: view.heading, zoom: view.zoom, shown: shownNow, year: city && city.yearNow, band: band,

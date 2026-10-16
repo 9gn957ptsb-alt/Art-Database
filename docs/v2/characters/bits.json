@@ -1,0 +1,160 @@
+{
+ "note": "Written by scripts/characters/royal_nothin.py. A filmed bit drawn again as a character of the site (the artist, 14 Oct 2026); its loop is the site's drawing, the short and the channel are YouTube's. painted: [metres, sites.json id, title, artist, year]; museums: [metres, slug, name].",
+ "bits": [
+  {
+   "key": "royal-nothin",
+   "title": "Royal Nothin",
+   "who": "Ed Bassmaster",
+   "handle": "@edbassmaster",
+   "channel": "https://www.youtube.com/@edbassmaster",
+   "video": "https://www.youtube.com/shorts/nDsF0a6rVmo",
+   "date": "2026-04-20",
+   "place": "Horse Guards, Whitehall, London",
+   "point": [
+    51.50478,
+    -0.12723
+   ],
+   "pointFrom": "OpenStreetMap, way 133153176 (Horse Guards)",
+   "town": "london-gb",
+   "said": "A man in a loud knitted jumper and white shades stands stiff beside a trooper of the King's Life Guard, doing, as the trooper does, nothing, while the horse turns its head about; then he walks off.",
+   "loop": "bits/royal-nothin.json",
+   "painted": [
+    [
+     305,
+     "sQ26713304",
+     "View of the Thames: Charing Cross Bridge",
+     "Alfred Sisley",
+     1874
+    ],
+    [
+     630,
+     "sQ19912126",
+     "The Houses of Parliament (Effect of Fog)",
+     "Claude Monet",
+     1903
+    ],
+    [
+     630,
+     "sQ20190110",
+     "Charing Cross Bridge, London",
+     "Camille Pissarro",
+     1890
+    ],
+    [
+     630,
+     "sQ3204090",
+     "The Burning of the Houses of Lords and Commons",
+     "J. M. W. Turner",
+     1834
+    ],
+    [
+     630,
+     "sQ49445583",
+     "Houses of Parliament, sunset",
+     "Claude Monet",
+     1904
+    ],
+    [
+     647,
+     "sQ60389924",
+     "Leicester Square, by night",
+     "Claude Monet",
+     1901
+    ],
+    [
+     647,
+     "sQ66924740",
+     "Leicester Square, la nuit",
+     "Claude Monet",
+     1901
+    ],
+    [
+     830,
+     "sQ138660021",
+     "Waterloo Bridge, effet de brume",
+     "Claude Monet",
+     1904
+    ],
+    [
+     830,
+     "sQ19198168",
+     "Waterloo Bridge in London",
+     "Claude Monet",
+     1902
+    ],
+    [
+     830,
+     "sQ20190882",
+     "Waterloo Bridge, Gray Day",
+     "Claude Monet",
+     1903
+    ],
+    [
+     830,
+     "sQ20190907",
+     "Waterloo Bridge, London, at Sunset",
+     "Claude Monet",
+     1904
+    ],
+    [
+     830,
+     "sQ3795194",
+     "Waterloo Bridge. Effect of Fog",
+     "Claude Monet",
+     1903
+    ],
+    [
+     830,
+     "sQ42882613",
+     "Waterloo Bridge, London",
+     "Claude Monet",
+     1903
+    ],
+    [
+     896,
+     "sQ106502281",
+     "St James Street - June 1878",
+     "James McNeill Whistler",
+     0
+    ]
+   ],
+   "museums": [
+    [
+     494,
+     "museum-the-national-gallery-london",
+     "The National Gallery, London"
+    ],
+    [
+     565,
+     "museum-national-portrait-gallery",
+     "National Portrait Gallery"
+    ],
+    [
+     1007,
+     "museum-the-courtauld-gallery",
+     "The Courtauld Gallery"
+    ],
+    [
+     1173,
+     "museum-royal-collection-trust",
+     "Royal Collection Trust"
+    ],
+    [
+     1511,
+     "museum-british-museum",
+     "British Museum"
+    ],
+    [
+     1623,
+     "museum-tate-britain",
+     "Tate Britain"
+    ],
+    [
+     1708,
+     "museum-the-wellington-museum",
+     "The Wellington Museum"
+    ]
+   ]
+  }
+ ]
+}

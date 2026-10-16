@@ -1,6 +1,7 @@
 {
  "note": "The places whose BDNB communes are too big for its API from the session (ten groups a call, 10,000 calls a month): GitHub's runners read them from the BDNB's department files (scripts/fetch_city_records.py; written by build_built_years.py).",
  "places": [
+  "city-paris-fr",
   "life-20th-arrondissement-of-paris",
   "life-aix-en-provence",
   "life-amboise",

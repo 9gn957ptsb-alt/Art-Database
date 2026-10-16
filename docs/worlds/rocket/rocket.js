@@ -42,8 +42,9 @@
 
   /* Where things are, unless the page says otherwise (window.ROCKET): base, the site's data; art(id),
      a work's picture; play, straight into an escape with no start card; kinds and forms, what one
-     can be. */
+     can be; name, what the game is called in the tab. */
   var CFG = window.ROCKET || {};
+  var NAME = CFG.name || "Rocket";
   var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next";
   function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, FOV = 70, SAVE = "rocket-save-v2";
@@ -275,9 +276,12 @@
      bar it meets is what is seen, in the tone of the way that face of the bar looks (up white, east and west
      grey, north and south black, as the artist drew them), each a little deeper the further in it lies. A
      ray that comes out into the open again shows what is beyond: the fragment goes, and the faces behind are
-     drawn. One still among bars after eight blocks shows the dark between them. Far off, where a bar is
-     narrower than a pixel or two, a face is what its blocks average to, so nothing shimmers: FAR, the same
-     walk run over many rays (scripts/rocket_far.py), at a slant and from nearer straight on. A face keeps
+     drawn. One still among bars after eight blocks shows the dark between them. Further off a face is what
+     its blocks average to: FAR, the same walk run over many rays (scripts/rocket_far.py), at a slant and from
+     nearer straight on. It closes into that mean from where a bar is eight pixels wide to where it is under
+     four, a quarter of the distance it once did at two and one (the artist, 15 Oct 2026: "Have the distance
+     in which the facades of objects disappear be 1/4 of what it is now"): near, the facades open and you
+     see in; further off they close. A face keeps
      its own depth: along its ray, every face between it and what it meets is one the walk has passed
      through, so the nearest still wins. Water and the notes are surfaces, not blocks. */
   // For each face, [white, grey, black, the dark between] as seen at a slant, then from nearer straight on.
@@ -334,7 +338,7 @@
     "    vec3 d = normalize(vP - uEye);",
     "    vec4 fw = mix(FAR_SLANT[vF], FAR_ON[vF], smoothstep(0.15, 0.75, -dot(d, n)));",
     "    vec3 far = fw.x * bar(vB, 1, 1.0) + fw.y * bar(vB, 0, 1.0) + fw.z * bar(vB, 2, 1.0) + fw.w * dark(vB);",
-    "    float lod = smoothstep(0.05, 0.11, uPx * dist);",   // a bar two pixels wide, then one
+    "    float lod = smoothstep(0.0125, 0.0275, uPx * dist);",   // a bar eight pixels wide, then under four
     "    if (lod >= 1.0) { col = far; } else {",
     "      vec3 p0 = vP - uOrg;",
     "      d = mix(d, vec3(1e-6), vec3(equal(d, vec3(0.0))));",
@@ -1447,7 +1451,7 @@
       store();
       $("start").hidden = true;
       $("veil").hidden = true;
-      document.title = adv.title + " · Rocket";
+      document.title = adv.title + " · " + NAME;
       drawPieces(); drawHotbar(); setMode("break"); where();
       lieDown(adv.intro);
       requestAnimationFrame(frame);

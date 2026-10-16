@@ -157,6 +157,7 @@
   var studios = null;        // studios.json — where the saved artists worked (scripts/build_studios.py; read when its layer is on)
   var charIndex = null;      // characters/index.json — each place's own animal (the Characters layer; read when it is on)
   var philData = null;       // philosophers.json — the philosophers at their birthplaces (the Philosophers layer; philosophers.js)
+  var bitData = null;        // characters/bits.json — filmed bits drawn again as characters, where they were filmed (bits.js)
   var mine = null;      // works.json — the artist's works
   var vocabulary = [];  // [{ word, works, lat, lon, mass, el }]
   var masses = [];      // one landmass per work
@@ -692,7 +693,7 @@
     el.className = "city";
     el.type = "button";
     el.dataset.kind = city.town ? "town" : city.museum ? "museum" : city.building ? "building" : city.studio ? "studio" :
-      city.character ? "character" : city.philosopher ? "philosopher" : real ? "landmark" : "work";
+      city.character || city.bit ? "character" : city.philosopher ? "philosopher" : real ? "landmark" : "work";
     if (city.studio) { el.dataset.pr = city.studio[5]; }   // an exact studio, or a town of studios (land.css)
     if (city.layer) { el.dataset.layer = city.layer; }
     if (city.inTown) { el.dataset.intown = "true"; }     // named in its city, in the serif (land.css)
@@ -875,6 +876,19 @@
         open: function () { openCharacter(r); }
       }, true);
     });
+    // And the filmed bits drawn again as characters (the Characters layer; characters/bits.json, bits.js), each
+    // where it was filmed, its figure the dot (the artist, 14 Oct 2026: "Recreate a gif like animation of this
+    // YouTube short. Create Ed Bassmaster's character and have it link to his YouTube"); pressed, its card.
+    ((bitData && bitData.bits) || []).forEach(function (b, k) {
+      raiseCity({
+        work: null, slug: "bit-" + b.key, title: b.title, label: b.title, where: b.place,
+        aria: b.title + ", after " + b.who + "'s short, filmed at " + b.place,
+        lat: b.point[0] * RAD, lon: wrap(b.point[1] * RAD), bit: b, real: true,
+        rank: 1.3, layer: "characters", hue: 0.09, rise: still ? 0 : 300 + Math.min(k, 55) * 34,
+        figBox: { w: 22, up: 30, down: 6 },          // until its figure is drawn (figureDot)
+        open: function () { if (window.Bits) { Bits.open(b.key); } }
+      }, true);
+    });
     // And the philosophers (the Philosophers layer; philosophers.json), each at the birthplace, a figure in the
     // dress of their time and place (philosophers.js), named as they go by; pressed, their card.
     ((philData && philData.people) || []).forEach(function (r, k) {
@@ -896,7 +910,7 @@
   }
 
   /* The Characters and Philosophers layers' files, read the first time each is on. */
-  var charAsk = null, philAsk = null;
+  var charAsk = null, philAsk = null, bitAsk = null;
   function peopleLayers() {
     if (layerOn === "characters" && !charIndex && !charAsk) {
       charAsk = read("characters/index.json").then(function (d) {
@@ -904,6 +918,15 @@
         found();
         if (layerOn === "characters") { placeMarks(); }
       }).catch(function () { charAsk = null; });
+    }
+    if (layerOn === "characters" && !bitData && !bitAsk && window.Bits) {
+      bitAsk = Bits.load().then(function (d) {
+        // Nothing read (a failed read) is not kept: asked again half a minute on.
+        if (!d || !d.bits || !d.bits.length) { window.setTimeout(function () { bitAsk = null; }, 30000); return; }
+        bitData = d;
+        found();
+        if (layerOn === "characters") { placeMarks(); }
+      }).catch(function () { bitAsk = null; });
     }
     if (layerOn === "philosophers" && !philData && !philAsk) {
       philAsk = (window.Philosophers ? Philosophers.load() : read("philosophers.json")).then(function (d) {
@@ -958,6 +981,13 @@
       cv.width = tw; cv.height = th;
       cv.getContext("2d").drawImage(fc, x0, y0, tw, th, 0, 0, tw, th);
       seat(cv, tw, th);
+      return;
+    }
+    if (c.bit && window.Bits && Bits.mark) {
+      Bits.mark(c.bit.key).then(function (cv) {
+        if (!cv) { c.fig = "none"; return; }
+        seat(cv, cv.width, cv.height);
+      });
       return;
     }
     if (c.character && window.Characters && Characters.hand) {
@@ -1399,7 +1429,7 @@
       putMark(c, it.x, it.y, it.side || (c.el.dataset.side === "left" ? "left" : "right"),
               (INV2 + INV * Math.min(1, (it.z - 0.12) / 0.3)) * dim);
       nameShown(c, !!it.side);
-      if (it.side && (c.character || c.philosopher) && !c.fig) { figureDot(c); }
+      if (it.side && (c.character || c.philosopher || c.bit) && !c.fig) { figureDot(c); }
       // A stacked name sits under the first, beside the first's dot; a
       // lifted one carries a hairline back to its dot.
       var dx = it.lead ? it.lead.x - it.x : 0, dy = it.lead ? it.lead.y - it.y + it.step * LINE + it.lift : 0;
