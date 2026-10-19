@@ -1,6 +1,111 @@
 {
   "buildings": [
     {
+      "title": "Redefining Traditional Mexican Architecture – Vista Clara House Modern Elegance by Fernando Cibrian",
+      "name": "Vista Clara House Modern Elegance",
+      "slug": "redefining-traditional-mexican-architecture-vista-clara-house-modern-elegance-by-fernando-cibrian",
+      "url": "https://www.thearchitecturalauthority.com/article/redefining-traditional-mexican-architecture-vista-clara-house-modern-elegance-by-fernando-cibrian",
+      "city": "Cholula",
+      "country": "Mexico",
+      "where": "Cholula, Mexico",
+      "lat": 19.0678,
+      "lon": -98.3106,
+      "precision": "town"
+    },
+    {
+      "title": "Lightbender – The Villa in La Quinta by Lucas Delgado",
+      "name": "The Villa",
+      "slug": "lightbender-the-villa-in-la-quinta-by-lucas-delgado",
+      "url": "https://www.thearchitecturalauthority.com/article/lightbender-the-villa-in-la-quinta-by-lucas-delgado",
+      "city": "Santa Úrsula",
+      "country": "Spain",
+      "where": "Santa Úrsula, Spain",
+      "lat": 28.4062,
+      "lon": -16.4799,
+      "precision": "town"
+    },
+    {
+      "title": "Rooted in Minimalism – Finca Aguy by MAPA Architects",
+      "name": "Finca Aguy",
+      "slug": "rooted-in-minimalism-finca-aguy-by-mapa-architects",
+      "url": "https://www.thearchitecturalauthority.com/article/rooted-in-minimalism-finca-aguy-by-mapa-architects",
+      "city": "Maldonado",
+      "country": "Uruguay",
+      "where": "Maldonado, Uruguay",
+      "lat": -34.6667,
+      "lon": -54.9167,
+      "precision": "region"
+    },
+    {
+      "title": "Stone and Light – Llagar Renovation by Baldo Arquitectura",
+      "name": "Llagar Renovation",
+      "slug": "stone-and-light-llagar-renovation-by-baldo-arquitectura",
+      "url": "https://www.thearchitecturalauthority.com/article/stone-and-light-llagar-renovation-by-baldo-arquitectura",
+      "city": "Villaviciosa",
+      "country": "Spain",
+      "where": "Villaviciosa, Spain",
+      "lat": 43.4814,
+      "lon": -5.4345,
+      "precision": "town"
+    },
+    {
+      "title": "Tailored Elegance – Casa Conlon by Paulina Jimenez",
+      "name": "Casa Conlon",
+      "slug": "tailored-elegance-casa-conlon-by-paulina-jimenez",
+      "url": "https://www.thearchitecturalauthority.com/article/tailored-elegance-casa-conlon-by-paulina-jimenez",
+      "city": "Los Cabos",
+      "country": "Mexico",
+      "where": "Los Cabos, Mexico",
+      "lat": 23.0698,
+      "lon": -109.6584,
+      "precision": "town"
+    },
+    {
+      "title": "A Self-Sufficient Retreat – Ca na Joaneta by Different Desing",
+      "name": "Ca na Joaneta",
+      "slug": "a-self-sufficient-retreat-ca-na-joaneta-by-different-desing",
+      "url": "https://www.thearchitecturalauthority.com/article/a-self-sufficient-retreat-ca-na-joaneta-by-different-desing",
+      "city": "Palma",
+      "country": "Spain",
+      "where": "Palma, Spain",
+      "lat": 39.5696,
+      "lon": 2.6501,
+      "precision": "town"
+    },
+    {
+      "title": "The final piece – The Le Cèdre Socio-Cultural Center by Guillaume Ramillien",
+      "name": "The Le Cèdre Socio-Cultural Center",
+      "slug": "the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien",
+      "url": "https://www.thearchitecturalauthority.com/article/the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien",
+      "city": "",
+      "country": "France",
+      "where": "Hauts-de-Seine, France"
+    },
+    {
+      "title": "Purity and Warmth in Balance – Casa VCH by FH2L Arquitectos",
+      "name": "Casa VCH",
+      "slug": "purity-and-warmth-in-balance-casa-vch-by-fh2l-arquitectos",
+      "url": "https://www.thearchitecturalauthority.com/article/purity-and-warmth-in-balance-casa-vch-by-fh2l-arquitectos",
+      "city": "Madrid",
+      "country": "Spain",
+      "where": "Madrid, Spain",
+      "lat": 40.4168,
+      "lon": -3.7035,
+      "precision": "town"
+    },
+    {
+      "title": "A Functional Design – Armani 3400 by FL Interiors",
+      "name": "Armani 3400",
+      "slug": "a-functional-design-armani-3400-by-fl-interiors",
+      "url": "https://www.thearchitecturalauthority.com/article/a-functional-design-armani-3400-by-fl-interiors",
+      "city": "Sunny Isles Beach",
+      "country": "United States",
+      "where": "Sunny Isles Beach, United States",
+      "lat": 25.9427,
+      "lon": -80.1218,
+      "precision": "town"
+    },
+    {
       "title": "Light and Form – Studio Fran Vinas Arquitectos by FV Arquitectos",
       "name": "Studio Fran Vinas Arquitectos",
       "slug": "light-and-form-studio-fran-vinas-arquitectos-by-fv-arquitectos",
