@@ -1,6 +1,6 @@
 /* The street: a city of the Artist Website walked at eye height.
 
-   Each of the site's 28 cities has a ground (docs/v2/grounds/city-*.json,
+   Each of the site's 31 cities has a ground (docs/v2/grounds/city-*.json,
    written by scripts/build_grounds.py): a square of cells about 20 m
    across, each one land, street, green, water or building, with its
    building's storeys (3.2 m a storey), its year, and the height of the

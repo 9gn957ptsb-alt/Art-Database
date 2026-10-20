@@ -984,7 +984,7 @@
   /* ---- the streets ------------------------------------------------------
 
      Close enough to the Earth, its cities can be walked: the Artist
-     Website's 28 cities, every building at its height and every museum as
+     Website's 31 cities, every building at its height and every museum as
      the site models it (street.js). Zooming in past the globe's nearest
      over one of them, or pressing its mark, goes down into its streets;
      Escape, or the Earth's pill, comes up again where you went down. */
