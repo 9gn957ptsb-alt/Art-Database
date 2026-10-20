@@ -32,9 +32,9 @@ different pictures.
 hand-edited from here on — it is where the site is being redesigned, while `/`
 stays as it was submitted to an open call.
 
-That means a change to `works.json` (a new work, a corrected year) now reaches
-`/` only. Until the redesign lands, anything that should appear on both has to be
-made in both places.
+A change to `works.json` (a new work, a corrected year) reaches v2 as soon as it
+is deployed, since `land.js` reads it, and `/` only when `build_page.py` is run
+again.
 
 ## The work grid
 
