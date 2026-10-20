@@ -15,6 +15,12 @@ Then the host itself (a GET of the source's probe address): does it answer, and 
   stalls   the policy lets it through but nothing comes back (Overpass, Geofabrik): GitHub's runners
   silent   the policy lets it through and the host answers nothing it can read (TLS, reset, timeout)
 
+A host that answers is also asked for its robots.txt (once, by a plain GET): "robots" in its row is
+"disallows" when the file refuses robots the probe's address (the probe's own GET is then not made: the
+tunnel's opening is all that is said), "ok" when it has rules that allow it, "none" when it has no file. A
+source whose needed host disallows is not "allowed" but "held": the host answers and is not read (the
+artist's rule of 10 Oct 2026 that robots.txt is honoured; NETWORK.md, "How a source is judged").
+
 Writes each host's state and the date into sources.json, prints what changed since the last probe
 (a host newly open is one the artist has added: put it to use), and rewrites NETWORK.md's generated
 parts between their markers: the block of domains to ask for, and the table of every host.
@@ -35,6 +41,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.robotparser
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,6 +129,35 @@ def fetch(url, timeout=25, extra=False):
         return None, ('%s: %s' % (type(e).__name__, e))[:160]
 
 
+def robots(url):
+    """What the host's robots.txt says of this address: "disallows", "ok" (a file whose rules allow it),
+    "none" (no file, or not a robots file), or None (could not be read). A 4xx is no file, as a search
+    engine reads it; a body that is a page of HTML is none; a 5xx or a failure is unread."""
+    u = urllib.parse.urlparse(url)
+    req = urllib.request.Request('%s://%s/robots.txt' % (u.scheme, u.netloc), headers={'User-Agent': UA})
+    body = None
+    for extra in (False, True):
+        try:
+            with urllib.request.urlopen(req, timeout=20, context=tls(extra)) as r:
+                body = r.read(200000).decode('utf-8', 'replace')
+            break
+        except urllib.error.HTTPError as e:
+            return 'none' if 400 <= e.code < 500 else None
+        except urllib.error.URLError as e:
+            if not extra and 'CERTIFICATE_VERIFY_FAILED' in str(e.reason):
+                continue
+            return None
+        except Exception:
+            return None
+    if body is None:
+        return None
+    if body.lstrip()[:1] == '<' or not re.search(r'^\s*(user-agent|disallow|allow)\s*:', body, re.I | re.M):
+        return 'none'
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(body.splitlines())
+    return 'ok' if rp.can_fetch(UA, url) else 'disallows'
+
+
 def probe(h):
     """One host: its state, the HTTP code if any, and what was said."""
     url = h.get('probe') or 'https://%s/' % h['host'].lstrip('*.')
@@ -129,9 +165,17 @@ def probe(h):
     pol, why = policy(urllib.parse.urlparse(url).hostname if h['host'].startswith('*.') else h['host'])
     if pol == 'refused':
         return {'state': 'refused', 'code': None, 'said': why}
+    rb = robots(url) if pol == 'ok' else None
+    if rb == 'disallows':
+        # The policy lets it through; its robots.txt refuses robots this address: it is not asked.
+        return {'state': 'open', 'code': None, 'said': 'its robots.txt disallows this address: not asked',
+                'robots': rb}
     code, said = fetch(url)
     if code is not None:
-        return {'state': 'open', 'code': code, 'said': said}
+        r = {'state': 'open', 'code': code, 'said': said}
+        if rb:
+            r['robots'] = rb
+        return r
     if pol == 'ok' and re.search(r'timed out|reset|EOF|handshake|closed', said, re.I):
         return {'state': 'stalls', 'code': None, 'said': said}
     if pol is None and re.search(r'403 Forbidden', said):
@@ -196,6 +240,8 @@ def word(h):
     w = {'open': 'open', 'refused': 'to ask', 'stalls': 'stalls', 'silent': 'silent'}.get(h.get('state'), 'not probed')
     if h.get('state') == 'open' and h.get('code') and h['code'] >= 400:
         w += ' (%d)' % h['code']
+    if h.get('robots') == 'disallows':
+        w += ', robots.txt disallows'
     return w
 
 
@@ -219,6 +265,8 @@ def table(src):
                 state += ' · ' + s['used_by']
             if state.startswith('dropped') and s.get('why'):
                 state += ': ' + s['why']
+            if state == 'held' and s.get('held'):
+                state += ': ' + s['held'] + ' (not read)'
             lic = cell(s.get('licence'))
             if s.get('key_needed'):
                 lic += ' · key: ' + cell(s.get('key'))
@@ -284,12 +332,22 @@ def main():
             h['seen'] = today
             if r['code'] is None:
                 h.pop('code', None)
+            if 'robots' not in r:
+                h.pop('robots', None)
         # Once each, however many sources share a host.
         changed = sorted(set(changed))
         src['probed'] = time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())
         for s in src['sources']:
-            states = {h.get('state') for h in s.get('hosts', []) if h.get('role') not in NEVER_ASK}
-            if s.get('state') in ('candidate', 'asked') and states == {'open'}:
+            needed = [h for h in s.get('hosts', []) if h.get('role') not in NEVER_ASK]
+            states = {h.get('state') for h in needed}
+            barred = [h['host'] for h in needed if h.get('robots') == 'disallows']
+            if s.get('state') in ('candidate', 'asked', 'allowed') and barred:
+                s['state'] = 'held'
+                s['held'] = 'robots.txt disallows ' + ', '.join(barred)
+            elif s.get('state') == 'held' and not barred:
+                s['state'] = 'allowed' if states == {'open'} else 'candidate'
+                s.pop('held', None)
+            elif s.get('state') in ('candidate', 'asked') and states == {'open'}:
                 s['state'] = 'allowed'
         with open(SOURCES, 'w') as fh:
             json.dump(src, fh, indent=1, ensure_ascii=False)
@@ -300,6 +358,9 @@ def main():
         print('probed %d hosts: %s' % (len(got), ', '.join('%d %s' % (v, k) for k, v in sorted(n.items()))))
         for host, was, now in changed:
             print('  %s: %s -> %s%s' % (host, was, now, '   <- newly open: put it to use' if now == 'open' else ''))
+        barred = sorted({h['host'] for h in hosts_of(src) if h.get('robots') == 'disallows'})
+        if barred:
+            print('robots.txt disallows the probe address (not asked; sources on them are held): %s' % ', '.join(barred))
     write_ledger(src)
     first = ask_block(src, 1)
     print('to ask for: %d domains first, %d later, %d sources wait on a sign-up' % (
