@@ -2781,7 +2781,8 @@
   var KALEIDOSCOPES = {
     arrive: true,         // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
     pointed: true,        // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
-    ring: true            // 14 Oct: a press held on a city's map opens a rosette inside its ring, a sunflower's seeds turning in the mirrors (rosetteRuns)
+    ring: true,           // 14 Oct: a press held on a city's map opens a rosette inside its ring, a sunflower's seeds turning in the mirrors (rosetteRuns)
+    scope: true           // 20 Oct: in the far views a telescope photograph the pointer drops sometimes lands through the telescope's two mirrors, five images at 72° (scopeShot)
   };
 
   function folded(sx, sy, turn) {
@@ -10027,8 +10028,10 @@
 
   function drawArt(g, art, w, h, s) {
     s = s || 1;
-    g.fillStyle = MOUNT;
-    g.fillRect(0, 0, w * s, h * s);
+    if (!art.bare) {                // the telescope's photographs (scopeShot) lie on the dark, not on a card
+      g.fillStyle = MOUNT;
+      g.fillRect(0, 0, w * s, h * s);
+    }
     g.save();
     g.translate(w * s / 2, h * s / 2);
     g.rotate(art.turn);
@@ -10837,7 +10840,7 @@
   var trailLayer = document.getElementById("trail");
   var lastShot = null, shots = 0;
 
-  function dropHubble(x, y) {
+  function dropHubble(x, y, how) {
     if (still || !trailLayer || !scopeShown || place || flying || !hubble.tokens.length) { return; }
     var dx = x - cx, dy = y - cy;
     if (dx * dx + dy * dy < R * R * 1.15) { return; }        // not over the world
@@ -10845,23 +10848,107 @@
     if (shots >= 7) { return; }
     lastShot = { x: x, y: y };
     var tok = oneOf(hubble.tokens);
+    var width = Math.round(between(72, 128));
+    shots += 1;
+    var gone = function (el) {
+      if (el && el.parentNode) { el.parentNode.removeChild(el); shots -= 1; }
+    };
+    // One in φ³ lands through the telescope's two mirrors (KALEIDOSCOPES.scope).
+    if (how ? how === "through" : (KALEIDOSCOPES.scope && Math.random() < INV3)) {
+      scopeShot(tok, x, y, width, gone);
+      return;
+    }
     var im = document.createElement("img");
     im.className = "trail-shot";
     im.alt = "";
     im.decoding = "async";
     im.draggable = false;
     im.src = tok.u;
-    im.style.width = Math.round(between(72, 128)) + "px";
+    im.style.width = width + "px";
     im.style.left = x.toFixed(0) + "px";
     im.style.top = y.toFixed(0) + "px";
-    shots += 1;
-    var gone = function () {
-      if (im.parentNode) { im.parentNode.removeChild(im); shots -= 1; }
-    };
-    im.addEventListener("animationend", gone);
-    im.addEventListener("error", gone);
-    window.setTimeout(gone, 2400);
+    im.addEventListener("animationend", function () { gone(im); });
+    im.addEventListener("error", function () { gone(im); });
+    window.setTimeout(function () { gone(im); }, 2400);
     trailLayer.appendChild(im);
+  }
+
+  /* The telescope's photographs, through its own two mirrors (20 Oct 2026; KALEIDOSCOPES.scope).
+     A telescope is a pair of mirrors, and so is a kaleidoscope. Now and then (one photograph in
+     φ³) the one the pointer drops in the far views lands seen through them: the mirrors stand
+     over its middle 72° apart, so five images come round it (a pentagon, whose diagonals cut each
+     other in φ; five is odd, so the circle cannot close and the seam shows), then open by φ a step
+     — 72°, 116°, 188°, 305°: 5, 3.1, 1.9 and 1.2 images — and it is the photograph, which goes
+     on as the others do (the same fall and fade, land.css). Four held steps at 24 frames a
+     second (the first four frames, to wait out the fade-in, then two each: 0.4 s in all); the
+     mirrors' edges in the lavender light. Drawn at half the photograph's pixels and blown up unsmoothed, as the
+     arrival is. Only where the pointer drops one: the far views, never under reduced motion. */
+  var SCOPE_FRAMES = [4, 2, 2, 2];       // held frames each of the four steps lasts: the first waits out the fade-in
+
+  function scopeShot(tok, x, y, width, gone) {
+    var img = new Image();
+    img.decoding = "async";
+    img.onerror = function () { shots -= 1; };                 // nothing was put up yet
+    img.onload = function () {
+      var w = width, h = Math.max(1, Math.round(width * img.naturalHeight / Math.max(1, img.naturalWidth)));
+      var k = Math.min(window.devicePixelRatio || 1, 2);
+      var c = document.createElement("canvas");
+      c.className = "trail-shot";
+      c.setAttribute("aria-hidden", "true");
+      c.width = Math.round(w * k);
+      c.height = Math.round(h * k);
+      c.style.width = w + "px";
+      c.style.left = x.toFixed(0) + "px";
+      c.style.top = y.toFixed(0) + "px";
+      var g = c.getContext("2d");
+      var small = document.createElement("canvas");
+      small.width = Math.max(1, Math.round(w / 2));
+      small.height = Math.max(1, Math.round(h / 2));
+      var sg = small.getContext("2d"), s2 = small.width / w;
+      var art = { img: img, w: w, h: h, turn: 0, bare: true };
+      var turn0 = Math.random() * 2 * FOLD, start = performance.now(), last = -1;
+      c.addEventListener("animationend", function () { gone(c); });
+      window.setTimeout(function () { gone(c); }, 2400);
+      trailLayer.appendChild(c);
+      function frame(now) {
+        if (!c.parentNode) { return; }
+        var f = Math.floor((now - start) / 42), step = 0;      // held frames, 24 a second
+        for (var m = 0, left = f; m < SCOPE_FRAMES.length && left >= SCOPE_FRAMES[m]; m += 1) { left -= SCOPE_FRAMES[m]; step += 1; }
+        if (step === last) { requestAnimationFrame(frame); return; }
+        last = step;
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.clearRect(0, 0, c.width, c.height);
+        if (step >= SCOPE_FRAMES.length) {
+          g.imageSmoothingEnabled = true;
+          g.drawImage(img, 0, 0, c.width, c.height);
+          return;                                              // the photograph, and done
+        }
+        var wedge = 2 * FOLD * Math.pow(PHI, step), tau = turn0 + step * FOLD * INV3;
+        var reach = Math.hypot(w, h) / 2;
+        sg.setTransform(1, 0, 0, 1, 0, 0);
+        sg.clearRect(0, 0, small.width, small.height);
+        sg.setTransform(s2, 0, 0, s2, 0, 0);
+        kaleidoscopeOf(sg, art, w, h, wedge, tau, reach);
+        g.imageSmoothingEnabled = false;
+        g.drawImage(small, 0, 0, c.width, c.height);
+        // The mirrors' edges, catching the light.
+        g.setTransform(k, 0, 0, k, 0, 0);
+        g.strokeStyle = LILAC;
+        g.globalAlpha = 0.5 - step * 0.08;
+        g.lineWidth = 1;
+        g.beginPath();
+        for (var i = 0, n = Math.ceil(2 * Math.PI / wedge - 1e-6); i < n; i += 1) {
+          var a = tau + i * wedge;
+          g.moveTo(w / 2, h / 2);
+          g.lineTo(w / 2 + Math.cos(a) * reach, h / 2 + Math.sin(a) * reach);
+        }
+        g.stroke();
+        g.globalAlpha = 1;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    };
+    img.src = tok.u;
   }
 
   /* ---- the sweep --------------------------------------------------------- */
@@ -16317,6 +16404,8 @@
     // The next photograph to arrive comes by this arrival ("kaleidoscope", "tiles" …): for the checks.
     pointed: function (name, x, y) { var b = document.querySelector("#art-plate .art-pic, #art-plate"); if (!b || !POINTED[name]) { return Object.keys(POINTED); } b.pointerXY = { x: x, y: y }; POINTED[name](b, b); return Object.keys(POINTED); },
     arrival: function (name) { nextArrival = name || null; return Object.keys(ARRIVALS); },
+    // A telescope photograph dropped at (x, y), through the mirrors ("through") or plain ("plain"): for the checks.
+    shot: function (x, y, how) { lastShot = null; var before = shots; dropHubble(x, y, how || "through"); return { shots: shots, dropped: shots > before, shown: scopeShown, tokens: hubble.tokens.length }; },
     // The held ring's rosette (scripts/check_kaleidoscope.js --ring): the tiles it lights, [i, j, tone, level],
     // `held` ms into a hold at (x, y), the ring as wide as it would be then, the mirrors at `turn`.
     rosette: function (held, x, y, turn) {
