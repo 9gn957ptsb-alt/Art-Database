@@ -45,7 +45,7 @@
      can be; name, what the game is called in the tab. */
   var CFG = window.ROCKET || {};
   var NAME = CFG.name || "Rocket";
-  var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next";
+  var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next", ESCAPED = "rocket-escaped";
   function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, FOV = 70, SAVE = "rocket-save-v2";
   var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
@@ -162,7 +162,9 @@
 
   /* ---- the mesh ------------------------------------------------------------- */
 
-  var gl, prog, skyProg, artProg, figProg, U = {}, SU = {}, AU = {}, FU = {}, chunks = {}, queue = [], canvas, hud;
+  var gl, prog, skyProg, artProg, figProg, homProg, U = {}, SU = {}, AU = {}, FU = {}, HU = {}, chunks = {}, queue = [], canvas, hud;
+  // The homage (homage.js): its figures, where you wake in the first world of a visit, not one escaped to.
+  var homage = null, homageData = null, escaped = false;
   var FACES = [
     { d: [1, 0, 0], c: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] }, { d: [-1, 0, 0], c: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]] },
     { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]] }, { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
@@ -617,6 +619,31 @@
   var FIG_FS = "#version 300 es\nprecision highp float;\nin vec3 vP; flat in int vT; out vec4 o; uniform vec3 uEye; uniform vec3 uHaze;\n" +
     "const vec3 T[3] = vec3[3](vec3(0.5), vec3(0.03), vec3(0.97));\n" +   // the drawing's grey, black and white
     "void main() { float d = length(vP - uEye); o = vec4(mix(T[vT], uHaze, clamp(1.0 - exp(-d * 0.0022), 0.0, 1.0)), 1.0); }";
+  // The homage's figures: each vertex's tone as weights of the drawing's grey, black and white, in the place's haze.
+  var HOM_VS = "#version 300 es\nlayout(location=0) in vec3 aP; layout(location=1) in vec3 aW; uniform mat4 uVP; out vec3 vP; out vec3 vW;\n" +
+    "void main() { vP = aP; vW = aW; gl_Position = uVP * vec4(aP, 1.0); }";
+  var HOM_FS = "#version 300 es\nprecision highp float;\nin vec3 vP; in vec3 vW; out vec4 o; uniform vec3 uEye; uniform vec3 uHaze;\n" +
+    "void main() { float t = dot(vW, vec3(0.5, 0.03, 0.97)) / max(vW.x + vW.y + vW.z, 1e-3), d = length(vP - uEye);\n" +
+    "  o = vec4(mix(vec3(t), uHaze, clamp(1.0 - exp(-d * 0.006), 0.0, 1.0)), 1.0); }";
+  function homageUpload() {
+    (homage ? homage.figures : []).forEach(function (f) {
+      var vao = gl.createVertexArray(), pb = gl.createBuffer(), wb = gl.createBuffer(), ib = gl.createBuffer();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, pb); gl.bufferData(gl.ARRAY_BUFFER, f.mesh.pos, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, wb); gl.bufferData(gl.ARRAY_BUFFER, f.mesh.wts, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, f.mesh.idx, gl.STATIC_DRAW);
+      gl.bindVertexArray(null);
+      f.vao = vao; f.count = f.mesh.idx.length;
+    });
+  }
+  // On a stone of the homage, once each: which figure it is, and how it closes from there.
+  function homageCheck() {
+    if (!homage || intro || launched) { return; }
+    var st = Homage.standing(homage, P.x, P.y, P.z);
+    if (st && !st.told) { st.told = true; say(st.name + ". " + st.said, true); }
+  }
   // Back under the tree after walking off, you are told once that it has closed again.
   function skyCheck() {
     if (!skyFig || intro || launched) { return; }
@@ -930,6 +957,12 @@
       gl.bindVertexArray(skyFig.vao);
       gl.drawArrays(gl.TRIANGLES, 0, skyFig.count);
     }
+    if (homage) {
+      gl.useProgram(homProg);
+      gl.uniformMatrix4fv(HU.uVP, false, vp);
+      gl.uniform3fv(HU.uEye, eye); gl.uniform3fv(HU.uHaze, HAZE);
+      homage.figures.forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
+    }
     if (paintings.length) {
       gl.useProgram(artProg);
       gl.uniformMatrix4fv(AU.uVP, false, vp);
@@ -944,7 +977,7 @@
       });
     }
     gl.bindVertexArray(null);
-    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); }
+    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
     overlay(now, open);
     requestAnimationFrame(frame);
   }
@@ -963,12 +996,13 @@
     var tx = tr ? tr.x + 0.5 : c.x, tz = tr ? tr.z + 0.5 : c.z, ax = wr.x + 0.5 - tx, az = wr.z + 0.5 - tz, L = hypot(ax, az) || 1;
     return { x: tx + ax / L * 1.7, y: c.y, z: tz + az / L * 1.7 };
   }
+  // The way you first face on coming to: a quarter turn short of the wreck, turned as you sit up.
+  function wakeYaw() { var at = underTree(), wr = place.wreck; return Math.atan2(wr.x - at.x, -(wr.z - at.z)) - 1.5; }
   // You, lying beside the trunk of your tree, the wreck to one side.
   function lieDown(lines) {
-    var at = underTree(), wr = place.wreck;
+    var at = underTree();
     P.x = at.x; P.z = at.z; P.y = at.y; P.vx = P.vy = P.vz = 0;
-    var toWreck = Math.atan2(wr.x - P.x, -(wr.z - P.z));
-    intro = { t0: performance.now(), yaw0: toWreck - 1.5, turn: 1.5, lines: lines };
+    intro = { t0: performance.now(), yaw0: wakeYaw(), turn: 1.5, lines: lines };
     document.body.dataset.film = "true";
   }
   function awake() {
@@ -1074,7 +1108,7 @@
       var tag = $("tag"), hit = !intro && !launched && vp ? cast(lookDir(P.yaw, P.pitch), LOOK) : null, tt = "";
       if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
       else if (hit && hit.b === B.NOTE && hit.t <= REACH) { tt = "A note · click to read it"; }
-      else if (hit && hit.b !== undefined) { tt = partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
+      else if (hit && hit.b !== undefined) { tt = (window.Homage && Homage.label(homage, hit.x, hit.y, hit.z)) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
       tag.hidden = !tt;
       if (tt && tag.textContent !== tt) { tag.textContent = tt; }
     }
@@ -1230,7 +1264,7 @@
 
   function advKey() { return setting.kind + ":" + setting.slug + ":" + seed; }
   function store() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched })); }
+    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched, escaped: escaped })); }
     catch (e) { /* kept only while the page is open */ }
   }
   function saved() {
@@ -1348,6 +1382,7 @@
     return randomChoice();
   }
   function goTo(c) {
+    try { sessionStorage.setItem(ESCAPED, "1"); } catch (e) { /* then the next has the homage too */ }
     if (CFG.play) {
       try { localStorage.setItem(NEXT, JSON.stringify(c)); } catch (e) { /* a new one at random, then */ }
     } else { location.hash = c.kind + "/" + c.slug + "/" + c.seed; }
@@ -1418,12 +1453,17 @@
     }).then(function (d) {
       place = kind === "city" ? Pl.city(d.ground, forms) : Pl.place(d);
       w = place.w;
-      voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       var cands = (d.works || []).map(function (x) { x.f = Adv.facts(x.work, x.history); return x; });
       var hung = kind === "city" ? [] : Pl.hang(place, Pl.hangable(place, cands));
       adv = Adv.make(setting, sd, { works: hung.map(function (p) { return p.work; }), pool: !!(place.M && place.M.pool.length) });
       var hidden = Pl.hide(place, adv, hung, sd);
       paintings = hung; pieces = hidden.pieces; notes = hidden.notes;
+      // The homage's blocks, then the place's grid sent for the walk, with the pieces and the notes in it. A world
+      // escaped to has none, even come back to.
+      var was = saved();
+      if (was && was.key === advKey() && was.escaped) { escaped = true; }
+      homage = homageData && window.Homage && !escaped ? Homage.plan(place, homageData, { wake: underTree(), yaw: wakeYaw(), eye: EYE, B: B }) : null;
+      voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       byPlane = {};
       paintings.forEach(function (p) {
         (byPlane[p.axis + p.plane] = byPlane[p.axis + p.plane] || []).push(p);
@@ -1438,6 +1478,7 @@
       if (skyFig) { gl.deleteVertexArray(skyFig.vao); gl.deleteBuffer(skyFig.buf); }
       skyFig = placeSky();
       skyFig.ms = round(performance.now() - t0);
+      homageUpload();
       uploadArt();
       paintings.forEach(function (p) { paintTexture(p, null); });
       // Where you had got to in this very adventure, if you were in it before.
@@ -1483,11 +1524,12 @@
     gl = canvas.getContext("webgl2", { antialias: true });
     quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
-    prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS);
+    prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS); homProg = compile(HOM_VS, HOM_FS);
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
-    ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); });
+    ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); HU[n] = gl.getUniformLocation(homProg, n); });
+    try { escaped = sessionStorage.getItem(ESCAPED) === "1"; sessionStorage.removeItem(ESCAPED); } catch (e) { escaped = false; }
     gl.enable(gl.DEPTH_TEST);
     skyVao = gl.createVertexArray(); gl.bindVertexArray(skyVao);
     var sb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, sb);
@@ -1502,8 +1544,10 @@
       m.getContext("2d").drawImage(f, 0, 0);
     });
     Promise.all([fetch("catalogue.json").then(function (r) { return r.json(); }),
-                 Fm ? fetch("sections.json").then(function (r) { return r.json(); }).catch(function () { return null; }) : null]).then(function (res) {
+                 Fm ? fetch("sections.json").then(function (r) { return r.json(); }).catch(function () { return null; }) : null,
+                 fetch("homage.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (res) {
       var d = res[0];
+      homageData = res[2];
       cat = d;
       // The sections of the Architectural Authority's projects: the buildings round every place, and the new forms.
       forms = res[1] ? Fm.load(res[1]) : null;
@@ -1551,6 +1595,7 @@
              skip: function () { if (intro) { intro.t0 -= 9600; } },
              hold: function (q) { held = true; quality = q; near = 1; resize(); },
              flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; }, sky: function () { return skyFig; }, underTree: underTree,
+             homage: function () { return homage; }, wakeYaw: wakeYaw,
              aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
   } };
   init();
