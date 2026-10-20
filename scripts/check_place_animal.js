@@ -124,6 +124,14 @@ async function seen(P, box) {
 
 const inside = (a, c, m) => a.l >= c.l - m && a.r <= c.r + m && a.t >= c.t - m && a.b <= c.b + m;
 const over = (a, c) => !!c && a.l < c.r && a.r > c.l && a.t < c.b && a.b > c.t;
+// Where a follower's anchor (f) should stand: at the tile's offset (40 left, 40 below), moved only as far as keeps its box (a.box,
+// measured at f) wholly on the clod, or centred on the clod where the box is bigger than it (characters.js, onClod).
+function expectAnchor(a, f, tile, clod) {
+  const want = { x: tile.x - 40, y: tile.y + 40 };
+  const dx = want.x - f.x, dy = want.y - f.y;
+  const fit = (lo, hi, clo, chi) => (hi - lo > chi - clo) ? ((clo + chi) - (lo + hi)) / 2 : lo < clo ? clo - lo : hi > chi ? chi - hi : 0;
+  return { x: want.x + fit(a.box.l + dx, a.box.r + dx, clod.l, clod.r), y: want.y + fit(a.box.t + dy, a.box.b + dy, clod.t, clod.b) };
+}
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE, args: ["--disable-dev-shm-usage"] });
@@ -252,7 +260,8 @@ const over = (a, c) => !!c && a.l < c.r && a.r > c.l && a.t < c.b && a.b > c.t;
           check(tag, !!f && !f.hidden && !!a, "followed: the animal is out and shown", s.crowd);
           if (f && a) {
             const tile = { x: (s.tile.l + s.tile.r) / 2, y: (s.tile.t + s.tile.b) / 2 };
-            check(tag, Math.abs(f.x - (tile.x - 40)) <= 2 && Math.abs(f.y - (tile.y + 40)) <= 2, "it waits by the place's tile, on the clod", { at: [f.x, f.y], tile: [Math.round(tile.x), Math.round(tile.y)] });
+            const ex = expectAnchor(a, f, tile, s.clod);
+            check(tag, Math.abs(f.x - ex.x) <= 2.5 && Math.abs(f.y - ex.y) <= 2.5, "it waits by the place's tile, on the clod", { at: [f.x, f.y], want: [Math.round(ex.x), Math.round(ex.y)], tile: [Math.round(tile.x), Math.round(tile.y)] });
             check(tag, a.parent === "character-layer", "its button stands in the place's panel", a.parent);
             check(tag, a.top, "its button is the topmost thing at its middle", a.topIs);
             check(tag, inside(a.box, s.clod, 2), "it stands wholly on the clod", { box: a.box, clod: s.clod });
@@ -288,7 +297,9 @@ const over = (a, c) => !!c && a.l < c.r && a.r > c.l && a.t < c.b && a.b > c.t;
               const tile2 = { x: (t2.tile.l + t2.tile.r) / 2, y: (t2.tile.t + t2.tile.b) / 2 };
               check(tag, t2.inPanel, "the canvas stands in the new panel");
               check(tag, !!g2 && !!b2 && b2.parent === "character-layer" && b2.top, "the follower is out there, its button topmost");
-              check(tag, !!g2 && Math.abs(g2.x - (tile2.x - 40)) <= 2 && Math.abs(g2.y - (tile2.y + 40)) <= 2, "and it waits by the new place's tile", g2 && { at: [g2.x, g2.y], tile: [Math.round(tile2.x), Math.round(tile2.y)] });
+              const ex2 = g2 && b2 ? expectAnchor(b2, g2, tile2, t2.clod) : null;
+              check(tag, !!ex2 && Math.abs(g2.x - ex2.x) <= 2.5 && Math.abs(g2.y - ex2.y) <= 2.5, "and it waits by the new place's tile, on its clod", ex2 && { at: [g2.x, g2.y], want: [Math.round(ex2.x), Math.round(ex2.y)], tile: [Math.round(tile2.x), Math.round(tile2.y)] });
+              if (b2) { check(tag, inside(b2.box, t2.clod, 2), "and wholly on the new clod", { box: b2.box, clod: t2.clod }); }
               if (b2) { await press(b2.mid.x, b2.mid.y); } else { await P.evaluate(() => Land.unfollow()); }
             }
             await P.waitForTimeout(1200);

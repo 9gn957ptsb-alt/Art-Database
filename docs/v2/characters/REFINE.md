@@ -422,7 +422,10 @@ overwhelming and distracting."
   and the buttons into the place's panel, over the clod and under its tile and
   words, cut to the clod's box (never over the picture, the sentence, the dial
   or the column), and the lines (what it is, what two share) up into the art
-  layer; all go back to the stage when the place is put away. `PlaceThen.at`
+  layer; all go back to the stage when the place is put away. Where one stands
+  (a seat, a followed one's tile) is fitted so its whole box is on the clod
+  (`onClod`: the starling is 160 px across and a phone's clod 230, and its edge
+  had been cut off by the box). `PlaceThen.at`
   puts a point of the earth on the clod as drawn (`Land.at` asks it, so a
   hometown animal stands where its town is; off the square it is seated by the
   keep-clear boxes, `.pt-work`, `.pt-head` and `.pt-more` among them) and

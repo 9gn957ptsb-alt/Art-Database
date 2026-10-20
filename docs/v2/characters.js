@@ -461,8 +461,9 @@
      box: an animal is seen only where it stands on the ground, never over the picture, the words, the dial or the column, and a
      press on the clod anywhere but on it still swings the clod. What they say goes up into the art layer, over it all. When the
      place is gone everything is set back in the stage, the canvas after the pixel light. Asked at every frame; it moves only
-     what is not where it belongs. */
-  var layer = null;
+     what is not where it belongs. The layer is cut to the clod's box, so where one stands is chosen to be wholly on the clod
+     (onClod, below: a flock 160 px across on a phone's 230 px clod had its edge cut off). */
+  var layer = null, clodBox = null;
   function lift() {
     var tiles = document.getElementById("tiles"), art = document.getElementById("art");
     if (!canvas || !tiles) { return; }
@@ -470,6 +471,7 @@
     var clod = pt ? pt.querySelector(".pt-clod") : null;
     var lines = [says, pair], hits = crowd.map(function (o) { return o.hit; });
     if (!clod) {
+      clodBox = null;
       var stage = tiles.parentNode;
       if (canvas.parentNode !== stage) { stage.insertBefore(canvas, tiles.nextSibling); }
       lines.concat(hits).forEach(function (e) { if (e && e.parentNode !== stage) { stage.appendChild(e); } });
@@ -484,9 +486,22 @@
     [canvas].concat(hits).forEach(function (e) { if (e && e.parentNode !== layer) { layer.appendChild(e); } });
     lines.forEach(function (e) { if (e && e.parentNode !== art) { art.insertBefore(e, pt.nextSibling); } });
     var r = clod.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+    clodBox = r.width && r.height ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null;
     var cut = "inset(" + Math.max(0, Math.round(r.top)) + "px " + Math.max(0, Math.round(vw - r.right)) + "px " +
               Math.max(0, Math.round(vh - r.bottom)) + "px " + Math.max(0, Math.round(r.left)) + "px)";
     if (layer._cut !== cut) { layer._cut = cut; layer.style.clipPath = layer.style.webkitClipPath = cut; }
+  }
+
+  // The nearest place to (x, y) where an animal of this character, at this scale, stands wholly on the clod while a life's place
+  // is up (its box would otherwise be cut by the layer's edge); (x, y) itself anywhere else, or where its drawing is not known yet.
+  // A box bigger than the clod is centred on it.
+  function onClod(x, y, c, scale) {
+    var k = clodBox, s = c && sprites[c.id];
+    if (!k || !s) { return { x: x, y: y }; }
+    var u = cellPx(s, scale || 1) / dpr, w = s.w * u, h = s.h * u;
+    var x0 = k.l + w / 2, x1 = k.r - w / 2, y0 = k.t + s.foot[1] * u, y1 = k.b - h + s.foot[1] * u;
+    return { x: x1 < x0 ? (k.l + k.r) / 2 : Math.max(x0, Math.min(x1, x)),
+             y: y1 < y0 ? (y0 + y1) / 2 : Math.max(y0, Math.min(y1, y)) };
   }
 
   function size() {
@@ -833,13 +848,15 @@
 
   // A place to stand near (x, y) that keeps clear of the others and of what
   // is on the screen: there, below, above, across.
-  function seat(x, y, except) {
+  function seat(x, y, except, c) {
     var tries = [[0, 0], [0, 52], [0, -52], [APART, 26], [-APART, 26], [APART, -26], [-APART, -26], [0, 104],
                  [-APART * 1.6, 0], [APART * 1.6, 0], [0, -104], [-APART, -78]];
     var obs = obstacles();
     for (var k = 0; k < tries.length; k += 1) {
       var cx = Math.max(48, Math.min(W - 48, x + tries[k][0]));
       var cy = Math.max(110, Math.min(H - 24, y + tries[k][1]));
+      // Of this character, in a life's place: wholly on the clod.
+      if (c) { var on = onClod(cx, cy, c, 1); cx = on.x; cy = on.y; }
       var under = obs.some(function (r) { return cx + 44 > r.left && cx - 44 < r.right && cy + 6 > r.top && cy - 56 < r.bottom; });
       if (under) { continue; }
       var clear = live().every(function (o) {
@@ -969,7 +986,7 @@
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
-    var at = seat(x, y) || { x: x, y: y };
+    var at = seat(x, y, null, c) || onClod(x, y, c, 1);
     var o = make(c, "wave", at.x, at.y, { dir: dir, here: here, city: city || null });
     o.row = rowHere(o.map, city);
     o.atHome = !!atHome;
@@ -996,7 +1013,7 @@
     var dir = from ? (((t.lon - from.lon + 540) % 360) - 180 >= 0 ? 1 : -1) : (Math.random() < 0.5 ? 1 : -1);
     var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
     if (!p || p.z <= 0) { return; }
-    var spot = seat(p.x + 56, p.y + 72);
+    var spot = seat(p.x + 56, p.y + 72, null, c);
     if (!spot) { return; }
     var slow = moves(c).speed < 0.5;
     var here = placeAt(t.lat, t.lon);
@@ -1023,7 +1040,7 @@
   function comeRest(c, t) {
     var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
     if (!p || p.z <= 0) { return; }
-    var spot = seat(p.x + 56, p.y + 72);
+    var spot = seat(p.x + 56, p.y + 72, null, c);
     if (!spot) { return; }
     var o = make(c, "rest", spot.x, spot.y, {
       dir: p.x + 56 > W / 2 ? -1 : 1, here: placeAt(t.lat, t.lon),
@@ -1265,6 +1282,11 @@
       return;
     }
     if (o.state === "run") { o.state = "wait"; o.waitSince = now; }
+    // Waiting in a life's place, it stands wholly on the clod, by its tile.
+    if (clodBox) {
+      var on = onClod(p.x, p.y, o.c, o.scale);
+      p = { x: on.x, y: on.y, key: p.key, lat: p.lat, lon: p.lon, name: p.name };
+    }
     o.target = p;
     if (o.atKey !== p.key) {
       o.atKey = p.key;
