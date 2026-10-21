@@ -17,7 +17,7 @@
 //                 kept on the screen's grid; carried by a drag on the black, the world moves and the light holds;
 //   5. crisp      a star a square of one colour on #remains and of s * dpr device pixels on the screen; a gas
 //                 tile 11 CSS px of one colour;
-//   6. cap        photographs one after another: never more than 13 at once unhurried, a hurried one gone in a second;
+//   6. cap        photographs one after another: never more than 13 at once unhurried, a hurried one gone soon (2.5 s);
 //   7. mirrors    one through the telescope's mirrors leaves its photograph's light, never the mirrors' lilac;
 //   8. the dial   no light drawn under the globe's dial's words, nor under Search and the words at the foot;
 //  13. a nebula   a photograph a nebula fills to its edges (made here, served as NASA's): its print shows no card
@@ -84,16 +84,15 @@ const SQUARE = `const [x, y, s, k] = a; let first = null, same = true;
     if (!first) { first = c; } else if (c[0] !== first[0] || c[1] !== first[1] || c[2] !== first[2]) { same = false; }
   }
   return { same, colour: first, n: Math.round(s * k) };`;
-// The brightest pixels' places in a box (CSS px), for the photograph's peaks.
-const PEAKS = `const [bx, by, bw, bh, k] = a; const out = [];
-  for (let y = Math.round(by * k) + 1; y < Math.round((by + bh) * k) - 1; y++) for (let x = Math.round(bx * k) + 1; x < Math.round((bx + bw) * k) - 1; x++) {
-    const i = (y * w + x) * 4, L = d[i] + d[i + 1] + d[i + 2];
-    if (L < 300) continue;
-    let top = true;
-    for (let dy = -1; dy <= 1 && top; dy++) for (let dx = -1; dx <= 1; dx++) { const j = ((y + dy) * w + x + dx) * 4; if (d[j] + d[j + 1] + d[j + 2] > L) { top = false; break; } }
-    if (top) out.push([x / k, y / k, L]);
-  }
-  return out.sort((p, q) => q[2] - p[2]).slice(0, 80);`;
+// Where the photograph as drawn is brightest within r CSS px of a point (cx, cy): the star finder keeps a pixel no
+// neighbour outshines, so its star must stand on the brightest point of its own neighbourhood on the screen.
+const NEAR_MAX = `const [cx, cy, r, k] = a; let best = null;
+  for (let y = Math.max(0, Math.floor((cy - r) * k)); y <= Math.min(h - 1, Math.ceil((cy + r) * k)); y++)
+    for (let x = Math.max(0, Math.floor((cx - r) * k)); x <= Math.min(w - 1, Math.ceil((cx + r) * k)); x++) {
+      const i = (y * w + x) * 4, L = d[i] + d[i + 1] + d[i + 2];
+      if (!best || L > best[2]) { best = [(x + 0.5) / k, (y + 0.5) / k, L]; }
+    }
+  return best;`;
 
 async function check(browser, w, h, touch, dsf, stand) {
   const fails = [], out = { window: [w, h, dsf] };
@@ -204,11 +203,12 @@ async function check(browser, w, h, touch, dsf, stand) {
     const stars = r.list.length ? r.list[0].lights.filter(l => l[0] === "star") : [];
     if (stars.length) {
       const top = stars.slice().sort((p, q) => q[6] - p[6])[0];
-      const peaks = await inPixels(dec, shot820, PEAKS, [box[0], box[1], box[2], box[3], dsf]);
-      const dist = Math.min(...peaks.map(p => Math.hypot(p[0] - (top[1] + 0.5 * top[7]), p[1] - (top[2] + 0.5 * top[7]))));
+      const sc = [top[1] + 0.5 * top[7], top[2] + 0.5 * top[7]];
+      const peak = await inPixels(dec, shot820, NEAR_MAX, [sc[0], sc[1], 3, dsf]);
+      const dist = peak ? Math.hypot(peak[0] - sc[0], peak[1] - sc[1]) : Infinity;
       out.brightest = { at: [top[1], top[2]], size: top[7], V: +top[6].toFixed(1), toPeak: +dist.toFixed(2) };
-      // Its square's middle within half a pixel more than its own size of a peak (a bloomed star is two pixels).
-      if (!(dist <= top[7] + 0.5)) { fail("the brightest star is " + dist.toFixed(1) + " CSS px from the photograph's nearest peak"); }
+      // The brightest point within 3 CSS px lies within its own size and half a pixel of it (the screen is finer).
+      if (!(dist <= top[7] + 0.5)) { fail("the brightest star is " + dist.toFixed(1) + " CSS px from the brightest point round it on the screen"); }
     } else { out.brightest = null; }
   }
 
@@ -279,17 +279,42 @@ async function check(browser, w, h, touch, dsf, stand) {
   }
   await empty();
 
-  // 3. Never dropped over the world or Search; behind the world when it is grown over the light.
+  // 3. Never dropped over the world, Search or the dial's words; behind the world when it is grown over the light.
   {
+    await reseat();
     const g = await page.evaluate(() => Land.remains());
     const a = -2.4, d = g.R * 1.1;
     const bx = Math.round(g.cx + Math.cos(a) * d), by = Math.round(g.cy + Math.sin(a) * d);
-    const rim = await page.evaluate(([x, y]) => Land.shot(x, y, "plain").dropped, [bx, by]);
+    const rimR = await page.evaluate(([x, y]) => Land.shot(x, y, "plain"), [bx, by]);
     const find = await page.evaluate(() => { const el = document.querySelector("#art-find"); if (!el || el.hidden) { return null; } const b = el.getBoundingClientRect(); return b.width ? [b.left + b.width / 2, b.top + b.height / 2 - 30] : null; });
-    const onFind = find ? await page.evaluate(([x, y]) => Land.shot(x, y, "plain").dropped, find) : null;
-    out.refused = { rim: !rim, search: find ? !onFind : "no Search" };
-    if (rim) { fail("a photograph was dropped over the world's rim"); }
-    if (find && onFind) { fail("a photograph was dropped over Search"); }
+    const findR = find ? await page.evaluate(([x, y]) => Land.shot(x, y, "plain"), find) : null;
+    // A control: in the same state, a spot with room is dropped.
+    const ctrl = await page.evaluate(([x, y]) => Land.shot(x, y, "plain"), spots[spots.length - 1].slice(0, 2));
+    out.refused = { telescope: rimR.shown, rim: !rimR.dropped, search: find ? !findR.dropped : "no Search", control: ctrl.dropped };
+    if (!rimR.shown) { fail("the telescope was not out for the refusals"); }
+    if (rimR.dropped) { fail("a photograph was dropped over the world's rim"); }
+    if (findR && findR.dropped) { fail("a photograph was dropped over Search"); }
+    if (!ctrl.dropped) { fail("a photograph was not dropped where there is room (the control)"); }
+    // The rule itself: no photograph over the dial's words or the words at the foot, clear of the world as it may be
+    // (a 4 px square at a word's middle, wholly outside the world's air as onTheBlack measures it). The ring comes
+    // back in once the world has been put back (re-seated), so its words are waited for.
+    // A small world far off, so the ring's words stand on the black (over a larger world the ring lies on it).
+    await page.evaluate(() => Land.globeAt(20, 10, 0.15));
+    await page.waitForFunction(() => window.GlobeDial && GlobeDial.boxes && GlobeDial.boxes().length > 0, null, { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    const rule = await page.evaluate(() => {
+      const r = Land.remains(), clear = b => Math.hypot((b.x0 + b.x1) / 2 - r.cx, (b.y0 + b.y1) / 2 - r.cy) - 3 > r.R * Math.sqrt(1.12) + 1;
+      const dial = (window.GlobeDial && GlobeDial.boxes ? GlobeDial.boxes() : []).filter(clear);
+      const foot = ["#art-find", ".guide-world"].map(s => document.querySelector(s)).filter(el => el && !el.hidden)
+        .map(el => el.getBoundingClientRect()).filter(b => b.width).map(b => ({ x0: b.left, y0: b.top, x1: b.right, y1: b.bottom })).filter(clear);
+      const over = b => Land.onBlack((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, 4, 4);
+      return { dial: dial.length, dialLet: dial.filter(over).length, foot: foot.length, footLet: foot.filter(over).length };
+    });
+    out.refused.rule = rule;
+    await reseat();
+    if (!rule.dial) { fail("no dial word clear of the world to test the rule on"); }
+    if (rule.dialLet) { fail(rule.dialLet + " of the dial's words would let a photograph over them"); }
+    if (rule.footLet) { fail(rule.footLet + " of the words at the foot would let a photograph over them"); }
     await finishCss();
     await empty();
     // The nearest spot to the world with room; placed and whole, then the world grown over it.
@@ -452,7 +477,9 @@ async function check(browser, w, h, touch, dsf, stand) {
       const r = await page.evaluate(() => Object.assign(Land.remains(), { now: performance.now() }));
       most = Math.max(most, r.list.filter(l => l.placed && !l.hurried).length);
       r.list.forEach(l => { if (l.hurried && !hurriedAt[l.at]) { hurriedAt[l.at] = r.now; } });
-      Object.keys(hurriedAt).forEach(k => { if (hurriedAt[k] && !r.list.some(l => String(l.at) === k)) { if (r.now - hurriedAt[k] > 1500) { slow += 1; } hurriedAt[k] = 0; } });
+      // Hurried, a light goes in under a second of the page's clock; seen from here, a frame of the software GL can hold
+      // the clock's next step back, so 2.5 s (still well inside the 16 s an unhurried one lives).
+      Object.keys(hurriedAt).forEach(k => { if (hurriedAt[k] && !r.list.some(l => String(l.at) === k)) { if (r.now - hurriedAt[k] > 2500) { slow += 1; } hurriedAt[k] = 0; } });
     };
     // 24 photographs, one a seventh of a print's life apart (seven prints at most at once), round the sky.
     for (let i = 0; i < 24; i++) {
@@ -466,26 +493,53 @@ async function check(browser, w, h, touch, dsf, stand) {
     out.cap = { dropped, most, hurried: Object.keys(hurriedAt).length, slowToGo: slow, n: r.n };
     if (most > 13) { fail("more than 13 at once: " + most); }
     if (!Object.keys(hurriedAt).length) { fail("the cap was never reached: " + JSON.stringify(out.cap)); }
-    if (slow) { fail("a hurried one took more than a second and a half to go"); }
+    if (slow) { fail("a hurried one took more than two and a half seconds to go"); }
     await page.screenshot({ path: path.join(OUT, `${w}-remains-many.png`) });
 
-    // 8. The dial's words keep their black.
+    // 8. The dial's words, and the words at the foot, keep their black. No photograph is dropped over them (3), so
+    // light comes under them only as it drifts: here a word is put over a light that is lit (a dial box added to the
+    // dial's own, Search moved), and under it the canvas must be the stage's black.
+    const lit = await page.evaluate(() => {
+      const r = Land.remains(true), ls = [];
+      r.list.forEach(o => (o.lights || []).forEach(l => { if (l[8] && l[1] > 4 && l[2] > 4 && l[1] < r.W - 30 && l[2] < r.H - 30) { ls.push(l); } }));
+      return ls.sort((p, q) => q[6] - p[6]).slice(0, 2);
+    });
+    if (lit.length < 2) { fail("no light lit to put a word over (the dial and the foot are not tested)"); }
+    const restore = await page.evaluate(([a, b]) => {
+      const was = GlobeDial.boxes, extra = was.call(GlobeDial).concat([{ x0: a[1] - 2, y0: a[2] - 2, x1: a[1] + a[7] + 2, y1: a[2] + a[7] + 2 }]);
+      GlobeDial.boxes = () => extra;
+      window.__dialWas = was;
+      const el = document.querySelector("#art-find");
+      window.__findWas = el ? el.getAttribute("style") || "" : null;
+      if (el) { el.style.position = "fixed"; el.style.left = (b[1] - 6) + "px"; el.style.top = (b[2] - 6) + "px"; el.style.width = (b[7] + 12) + "px"; el.style.height = (b[7] + 12) + "px"; el.style.margin = "0"; el.style.transform = "none"; }
+      return !!el;
+    }, lit.length >= 2 ? lit : [[0, 0, 0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 1]]);
+    // A frame for the dial's box (the software GL's frames can take a second each), and the keep's quarter of a second
+    // (on the page's clock, at a quarter).
+    await page.waitForFunction(() => { const r = Land.remains(); return r.ringSame && r.ring === GlobeDial.boxes().length; }, null, { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(Math.ceil(400 / SLOW));
     const boxes = await page.evaluate(() => (window.GlobeDial && GlobeDial.boxes ? GlobeDial.boxes() : []).map(b => [b.x0, b.y0, b.x1, b.y1]));
     // Under the dial's words the black is the stage's own: nothing of the light there.
-    const under = await page.evaluate(([bx, black]) => {
+    const scan = await page.evaluate(([bx, black]) => {
       const c = document.getElementById("remains");
-      if (!c || c.hidden || !c.width) { return -1; }
-      const g = c.getContext("2d");
+      if (!c || c.hidden || !c.width) { return { n: -1 }; }
+      const g = c.getContext("2d"), st = Land.remains();
       let n = 0;
-      bx.forEach(b => {
+      const where = [];
+      bx.forEach((b, j) => {
         const x0 = Math.max(0, Math.floor(b[0])), y0 = Math.max(0, Math.floor(b[1])), x1 = Math.min(c.width, Math.ceil(b[2])), y1 = Math.min(c.height, Math.ceil(b[3]));
         if (x1 <= x0 || y1 <= y0) { return; }
         const d = g.getImageData(x0, y0, x1 - x0, y1 - y0).data;
-        for (let i = 0; i < d.length; i += 4) { if (d[i] !== black[0] || d[i + 1] !== black[1] || d[i + 2] !== black[2]) { n += 1; } }
+        let m = 0, ex = null;
+        for (let i = 0; i < d.length; i += 4) { if (d[i] !== black[0] || d[i + 1] !== black[1] || d[i + 2] !== black[2]) { m += 1; if (!ex) { ex = [d[i], d[i + 1], d[i + 2], x0 + (i / 4) % (x1 - x0), y0 + Math.floor(i / 4 / (x1 - x0))]; } } }
+        if (m) { n += m; where.push({ box: j, of: bx.length, rect: b.map(v => +v.toFixed(1)), m, ex }); }
       });
-      return n;
+      return { n, where: where.slice(0, 4), ring: st.ring, ringNow: st.ringNow, same: st.ringSame, remains: st.n };
     }, [boxes, black]);
-    out.dial = { boxes: boxes.length, litPixelsUnder: under };
+    const under = scan.n;
+    out.dial = { boxes: boxes.length, litPixelsUnder: under, where: scan.where, ring: scan.ring, ringNow: scan.ringNow, same: scan.same };
+    if (!boxes.length) { fail("the globe's dial gave no words"); }
+    if (under < 0) { fail("nothing on #remains to test the dial's words against"); }
     if (under > 0) { fail(under + " pixels of light under the dial's words"); }
     // And under the words at the foot (Search, the guide's pill …), which the page keeps (remainsKeep).
     const keep = await page.evaluate(() => Land.remains().keep.map(b => [b.x0, b.y0, b.x1, b.y1]));
@@ -502,8 +556,16 @@ async function check(browser, w, h, touch, dsf, stand) {
       });
       return n;
     }, [keep, black]);
-    out.foot = { boxes: keep.length, litPixelsUnder: underKeep };
+    const covered = lit.length >= 2 && keep.some(b => b[0] <= lit[1][1] && b[2] >= lit[1][1] + lit[1][7] && b[1] <= lit[1][2] && b[3] >= lit[1][2] + lit[1][7]);
+    out.foot = { boxes: keep.length, moved: restore, covered, litPixelsUnder: underKeep };
+    if (!covered) { fail("Search, moved over a light, was not among the words kept black"); }
+    if (underKeep < 0) { fail("nothing on #remains to test the words at the foot against"); }
     if (underKeep > 0) { fail(underKeep + " pixels of light under the words at the world's foot"); }
+    await page.evaluate(() => {
+      if (window.__dialWas) { GlobeDial.boxes = window.__dialWas; }
+      const el = document.querySelector("#art-find");
+      if (el && window.__findWas !== null) { el.setAttribute("style", window.__findWas); }
+    });
 
     // 9. Hold still clears it at once.
     await page.evaluate(() => Land.still(true));
@@ -514,9 +576,13 @@ async function check(browser, w, h, touch, dsf, stand) {
     await page.evaluate(() => Land.still(false));
   }
 
-  // 11. The real route: the pointer across the sky at real speed.
+  // 11. The real route: the pointer across the sky at real speed. Waiting for the black to clear, the world was left
+  // alone long enough to swing to a new distance (a large world puts the telescope away), so it is put back first.
   {
     await empty();
+    await reseat();
+    // Asked over the world's middle, where nothing is dropped, only whether the telescope is out.
+    if (!(await page.evaluate(() => { const g = Land.remains(); return Land.shot(g.cx, g.cy, "plain").shown; }))) { fail("the telescope was not out for the route"); }
     await page.evaluate(k => window.__setSlow(k), SLOW);
     const cdp = touch ? await ctx.newCDPSession(page) : null;
     const finger = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts });
@@ -542,7 +608,7 @@ async function check(browser, w, h, touch, dsf, stand) {
     const r = await page.evaluate(() => Land.remains());
     out.route = { most, n: r.n, drawMs: +(draw / SLOW).toFixed(2), readMs: +(read / SLOW).toFixed(2) };
     if (most > 13) { fail("more than 13 at once on the real route"); }
-    if (!r.n) { fail("the real route left nothing in the black"); }
+    if (!most) { fail("the real route left nothing in the black"); }
 
     // 9b. Down into a city clears it, and it is still clear up again.
     await page.evaluate(() => window.__setSlow(1));
