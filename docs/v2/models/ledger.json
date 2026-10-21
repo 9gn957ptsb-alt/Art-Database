@@ -1,13 +1,15 @@
 {
   "roots-of-the-mountain-casa-ll-by-ra-arquitectura": {
     "name": "Casa LL",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-21",
+    "passes": 4,
     "sketchup": false,
+    "kind": "architecture",
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: living-room glass wall taller under a shallower overhang so it reads, wider bedroom glass doors, bigger junction tree, more planting, dark gabion"
+      "2026-09-24 refined: living-room glass wall taller under a shallower overhang so it reads, wider bedroom glass doors, bigger junction tree, more planting, dark gabion",
+      "2026-10-21 refined (3 rounds, photos 00-12): rammed-earth 'earth' walls tried and dropped (too dark and red against the pale honey tan), bare-crowned junction tree tried and dropped (read dead), airy umbrella tree kept; taller denser entry-patio planting and a second wooden door; furnished terrace, slate path, hammocks, thicker bougainvillea, lintel over the alley portal"
     ]
   },
   "a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos": {
@@ -24,35 +26,41 @@
   },
   "measured-continuity-casa-s-by-valdemarin-and-siuk-studio": {
     "name": "Casa S",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-21",
+    "passes": 4,
     "sketchup": false,
+    "kind": "architecture",
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: ground-floor gallery glass now reads (gallery drawn shallower, dark room behind the glass), big east tree moved clear of the facade"
+      "2026-09-24 refined: ground-floor gallery glass now reads (gallery drawn shallower, dark room behind the glass), big east tree moved clear of the facade",
+      "2026-10-21 refined (3 rounds, photos 00-16): roof deck now the pale painted brick (was brown); continuous clipped west hedge; gallery furnished (long timber table, timber-framed sofas, pendant); pale slab fascia; side entrance with brick court, louvred canopy and stepped brick volumes; big oak behind the pool"
     ]
   },
   "language-of-light-residence-oliva-by-estudio-bearzotti": {
     "name": "Residence Oliva",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-21",
+    "passes": 4,
     "sketchup": false,
+    "kind": "architecture",
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: garden glazing mullions, gravel roofs within dark/concrete rims, terrace sofas and pool loungers"
+      "2026-09-24 refined: garden glazing mullions, gravel roofs within dark/concrete rims, terrace sofas and pool loungers",
+      "2026-10-21 refined (3 rounds, photos 00-12): pool lengthened from 14 to 22.5 m with 28 m timber decks, a 6.5 m beach and loungers; sleeper stair up the street bank, red-tipped shrubs by the drive, feather-grass drifts; perimeter hedge and a ring of trees round the lawn"
     ]
   },
   "roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos": {
     "name": "Miami Residence",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-21",
+    "passes": 4,
     "sketchup": false,
+    "kind": "architecture",
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: flatter wing hips (2.0 m) and centre block lowered to 6.6 m so the two wing roofs read apart, walls white, planting beds along the front"
+      "2026-09-24 refined: flatter wing hips (2.0 m) and centre block lowered to 6.6 m so the two wing roofs read apart, walls white, planting beds along the front",
+      "2026-10-21 refined (3 rounds, street elevation 19 and the pool view): wall boxes in warm cream render (were bright white); colonnade's black balustrade, stone steps and balcony edge; garage roller door and black screen wall; more gravel on the drive, entry shrubs"
     ]
   },
   "the-diaphanous-cave-casa-cosmo-by-cristian-nanzer": {
@@ -68,13 +76,15 @@
   },
   "embracing-nature-naman-pure-spa-by-mia-design-studio": {
     "name": "Naman Pure Spa",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-21",
+    "passes": 4,
     "sketchup": false,
+    "kind": "architecture",
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: fin screens filled in so the pool and east faces read solid white, jagged bars above the roof on the pool side, screens on the bare north faces, planting along the roof edge"
+      "2026-09-24 refined: fin screens filled in so the pool and east faces read solid white, jagged bars above the roof on the pool side, screens on the bare north faces, planting along the roof edge",
+      "2026-10-21 refined (3 rounds, photos 01-05): all pools now the dark slate-teal water of the reflecting pool (was bright blue); slate paths and four flat-crowned frangipanis in the garden; vine curtains of mixed lengths on the courtyard's inner faces; now at its own spot, but only 8 building cells are mapped so the ground fit has nothing to hold"
     ]
   },
   "balance-and-permanence-unpuente-by-paolini-arquitectos": {
@@ -4210,6 +4220,206 @@
     "kind": "architecture",
     "log": [
       "2026-10-15 first model from the article's photographs: white board-and-batten farmhouse under dark gabled roofs with dormers and a veranda, kidney pool terrace with pergola, brick walk through two pergolas, white shell drive, tennis court, fence and hedges; placed at its town only"
+    ]
+  },
+  "architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin": {
+    "name": "Neuendorf House",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: Pawson and Silvestrin's block of reddish Santanyi stucco with a roofless atrium behind a slit between two 9 m walls, a 30 m pool aimed at a deep loggia, the stepped stone path beside its freestanding wall, a clay court; placed at its town only (a private home)"
+    ]
+  },
+  "sustainable-innovation-the-headquarters-of-beeah-group-by-zaha-hadid-architect": {
+    "name": "The Headquarters of BEEAH Group",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: three overlapping tapering white 'dunes' (7, 9 and 14 m) on a diagonal with a glazed crack, roof gardens, entrance dome, landscape islands and pond; public corporate building, now at its own spot (OpenStreetMap way 1077753326)"
+    ]
+  },
+  "beachfront-retreat-anantara-mina-al-arab-ras-al-khaimah-resort-by-anantara-hotels-and-resorts": {
+    "name": "Anantara Mina Al Arab Ras Al Khaimah Resort",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: three thatched overwater villas on white piles along a timber jetty beside a mangrove bank, boulder revetment, palms; public resort, now at its own spot (OpenStreetMap node 11601727670); only the villas, no main building was photographed"
+    ]
+  },
+  "parisian-elegance-rue-jean-bart-by-jean-christophe-quinton": {
+    "name": "Rue Jean-Bart",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: nine storeys of Vassens limestone in a cascade of rounded bays stepping back at the street, between a white slot-windowed block and a mansard block; placed at Paris only (homes; the article's location block had no city)"
+    ]
+  },
+  "light-and-connection-medika-10-by-paredes-aleman-arquitectos": {
+    "name": "Medika 10",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: faceted two-storey food court turned to the corner on slim columns, skylit lobby block, blue-glass medical tower behind; public building, now at its own spot (OpenStreetMap building way 400891967)"
+    ]
+  },
+  "unconventional-center-pueblo-serena-by-carranza-y-ruiz-arquitectura": {
+    "name": "Pueblo Serena",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: a village-like shopping centre round a white church with pointed gables and a bell tower, stone-pier ranges under dark timber-soffit canopies, a green cut-leaf screen block, water channel and fountain; public centre, now at its own spot (OpenStreetMap way 306773379)"
+    ]
+  },
+  "a-harmonious-response-three-gardens-house-by-agi-architects": {
+    "name": "Three Gardens House",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: stacked cream limestone blocks with a planted street window, an open wet-garden court with pool, an angled dark perforated-metal skin over the upper floor and roof, olives on the street wall; placed at its region only (a private home)"
+    ]
+  },
+  "a-modern-oasis-transforming-a-residential-chalet-in-lardero-by-estudio-njera-y-boto-interiorismo": {
+    "name": "Transforming a Residential Chalet",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: two-storey suburban chalet, brick-and-timber ground floor under a white box cantilevering over the pool terrace, glass balustrade, street wall and gate; placed at its town only (a private home)"
+    ]
+  },
+  "a-triumph-of-modern-minimalism-la-providencia-residence-by-vernica-durn-arquitecto": {
+    "name": "La Providencia Residence",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: taupe-render boxes on a bank over a half-buried lower level whose planted roof overhangs the entrance, glazed double-height stair hall, glass-balustraded terraces; placed at its town only (a private home)"
+    ]
+  },
+  "leisure-culture-gastronomy-and-sports-el-vasco-boulevard-in-oviedo-by-vernica-durn-sela": {
+    "name": "El Vasco Boulevard",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: raised concrete promenade deck with a long white-panel arcade building under a green glass band, three glass lift towers with white perforated columns, bridges, white and brick apartment blocks; public complex, placed at its town only (no point found on the map)"
+    ]
+  },
+  "a-tribute-to-architectural-elegance-casa-homenaje-by-vernica-durn-sela": {
+    "name": "Casa Homenaje",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: white flat-roofed house with a timber-faced upper volume, a wide cantilevered carport slab on slim columns over a curving drive; placed at its town only (a private home)"
+    ]
+  },
+  "redefining-traditional-mexican-architecture-vista-clara-house-modern-elegance-by-fernando-cibrian": {
+    "name": "Vista Clara House Modern Elegance",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: black marble 'clamp' portal framing floor-to-ceiling glass, a gold-lit timber-slat volume, stone and onyx piers, reflecting pools into the vestibule; placed at its town only (a private home)"
+    ]
+  },
+  "lightbender-the-villa-in-la-quinta-by-lucas-delgado": {
+    "name": "The Villa",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: three stepped white slabs on a lava cliff above the sea, basalt base, timber deck and infinity pool, concrete wedge entrance pavilion behind royal palms; placed at its town only (a private home)"
+    ]
+  },
+  "rooted-in-minimalism-finca-aguy-by-mapa-architects": {
+    "name": "Finca Aguy",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: two 12.5 m prefabricated modules, a black steel box with timber slat shutters cantilevered from a fieldstone plinth wall in an olive grove; placed at its department only (a private cabin)"
+    ]
+  },
+  "stone-and-light-llagar-renovation-by-baldo-arquitectura": {
+    "name": "Llagar Renovation",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: Asturian stone ground floor with timber shutters under a timber-clad storey and clay-tile gable roof, an east wing with its gable to the lawn, a white neighbour; placed at its town only (a private home)"
+    ]
+  },
+  "tailored-elegance-casa-conlon-by-paulina-jimenez": {
+    "name": "Casa Conlon",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: pale-walled tile-roofed hacienda round a glass-edged infinity pool terrace, arched loggia, two forward wings, a round tile-roofed pavilion on four stone columns over the sea; placed at its town only (a private home)"
+    ]
+  },
+  "a-self-sufficient-retreat-ca-na-joaneta-by-different-desing": {
+    "name": "Ca na Joaneta",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: honey rubble-stone farmhouse with a clay-tile gable roof and mustard shutters, a low annexe, a gravel court, dry-stone walls, pines; placed at its town only (a private home)"
+    ]
+  },
+  "the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien": {
+    "name": "The Le Cèdre Socio-Cultural Center",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: tall white-brick gable volume, a low timber-pier wing under a zinc roof with deep timber eaves, a three-storey timber and glass building, the preserved cedar between; public building, placed at its department only (Hauts-de-Seine; no address in the article)"
+    ]
+  },
+  "purity-and-warmth-in-balance-casa-vch-by-fh2l-arquitectos": {
+    "name": "Casa VCH",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs: glazed ground floor under an overhanging limestone first-floor box with timber louvres, long pool and terrace, block-wall entry with a water channel and gravel garden, pines; placed at its town only (a private home)"
+    ]
+  },
+  "a-functional-design-armani-3400-by-fl-interiors": {
+    "name": "Armani 3400",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "log": [
+      "2026-10-21 first model from the article's photographs (all interiors): a high-floor apartment as a cutaway set over the sea - curved glass corner, slatted timber wall, marble wall, kitchen island, curved sofas, oval dining table; placed at its town only (a private apartment); the tower itself is not photographed"
     ]
   }
 }

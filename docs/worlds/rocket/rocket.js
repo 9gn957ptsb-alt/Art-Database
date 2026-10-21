@@ -48,6 +48,24 @@
   var BASE = CFG.base || "../../v2/", CDN = "https://d32dm0rphc51dk.cloudfront.net/", NEXT = "rocket-next", ESCAPED = "rocket-escaped";
   function artOf(id) { return CFG.art ? CFG.art(id) : CDN + id + "/medium.jpg"; }
   var CH = 16, REACH = 6, LOOK = 9, EYE = 1.62, PPM = 96, FOV = 70, SAVE = "rocket-save-v2";
+  /* The three views (third person over his head, first person, holographic), every number from a relation.
+     His measures come from his form (pearl-body.json, which a better form replaces; these are its values until
+     it has come): the head's centre height and radius, the top of his hat (his whole figure's height), the
+     farthest of the hat from the head, how far the hat falls when the head leaves, and his leg. */
+  var PHI = (1 + Math.sqrt(5)) / 2, T35 = Math.tan(FOV * Math.PI / 360), NEAR = 0.08, FAR = 420, WALK = 4.3, SWIM = 2.2;
+  var PEARL = { headY: 1.3724, headR: 0.2457, top: 1.6967, hatReach: 0.458, hatDrop: 0.432, leg: 0.618 };
+  var AIM = Math.atan(T35 / 2);                  // what the camera follows sits at the middle of the screen's lower half
+  var REST = -Math.atan(T35 / 3);                // the third person's resting look: the horizon on the upper third line
+  measure();                                     // the distances that follow from his measures (TP_D, TURN, LIFT ...)
+  var V_FALL = 1 / 0.05;                         // a fall no faster than a block in the longest frame (dt 0.05 s): never through a roof
+  var T_SIT = 2.7;                               // the time he takes to sit up as he comes to (the eye's rise, 4.5 s to 7.2 s)
+  var T_LIFT = 8.2 / 25;                         // the head lifts off in the time a jump takes to rise
+  var HOLO_D = PHI;                              // the camera as far behind the head as the head stands off the ground
+  var HOLO_V = WALK * PHI * PHI, HOLO_V_IN = WALK * PHI;   // the hologram: phi^2 his walk out of doors, phi his walk in a room
+  var HOLO_T = 150;                              // the theme song, 2 min 30 s (149.9 s): one trip as the hologram
+  var BAR = 4 * 60 / 125;                        // one bar of the theme song (4/4 at 125 a minute, calc/tempo.py): the least the hologram gathers to go out
+  var HOLO_REFILL = 1;                           // the time fills again in the body at the rate it was spent
+  var VIEWS_KEY = "rocket-view";
   var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
   var floor = Math.floor, round = Math.round, min = Math.min, max = Math.max, abs = Math.abs, hypot = Math.hypot;
   var HOTBAR = [B.BRICK, B.LOG, B.GLASS, B.DIRT, B.STONE];
@@ -162,15 +180,30 @@
 
   /* ---- the mesh ------------------------------------------------------------- */
 
-  var gl, prog, skyProg, artProg, figProg, homProg, U = {}, SU = {}, AU = {}, FU = {}, HU = {}, chunks = {}, queue = [], canvas, hud;
+  var gl, prog, skyProg, artProg, figProg, homProg, U = {}, SU = {}, AU = {}, FU = {}, HU = {}, OU = {}, chunks = {}, queue = [], canvas, hud;
   // The homage (homage.js): its figures, where you wake in the first world of a visit, not one escaped to.
-  var homage = null, homageData = null, escaped = false;
+  var homage = null, homageData = null, escaped = false, onStone = false;
   var FACES = [
     { d: [1, 0, 0], c: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] }, { d: [-1, 0, 0], c: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]] },
     { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]] }, { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
     { d: [0, 0, 1], c: [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]] }, { d: [0, 0, -1], c: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]] }
   ];
 
+  /* The same faces again, for the veil (see frame): those that look each way in turn, each way from the
+     furthest of them to the nearest. A face is seen only from the side it looks to, so of the faces looking
+     east the furthest from any eye that sees them is the most westerly. Water and the notes have no holes. */
+  function veilOrder(pos, inf) {
+    var ways = [[], [], [], [], [], []], out = [];
+    for (var q = 0; q < inf.length / 16; q += 1) {
+      var f = inf[q * 16], b = inf[q * 16 + 1];
+      if (b !== B.WATER && b !== B.NOTE) { ways[f].push([pos[q * 12 + (f >> 1)], q * 4]); }
+    }
+    ways.forEach(function (g, f) {
+      g.sort(function (a, c) { return f & 1 ? c[0] - a[0] : a[0] - c[0]; });
+      g.forEach(function (e) { var v = e[1]; out.push(v, v + 1, v + 2, v, v + 2, v + 3); });
+    });
+    return out;
+  }
   function upload(ch, pos, inf, ind) {
     if (!ch.vao) { ch.vao = gl.createVertexArray(); ch.pb = gl.createBuffer(); ch.ib = gl.createBuffer(); ch.eb = gl.createBuffer(); }
     gl.bindVertexArray(ch.vao);
@@ -181,8 +214,9 @@
     gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(inf), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.UNSIGNED_BYTE, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ch.eb);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(ind), gl.STATIC_DRAW);
-    ch.count = ind.length;
+    var veil = veilOrder(pos, inf);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(ind.concat(veil)), gl.STATIC_DRAW);
+    ch.count = ind.length; ch.vcount = veil.length;
     gl.bindVertexArray(null);
   }
 
@@ -268,9 +302,9 @@
   var VS = [
     "#version 300 es",
     "layout(location=0) in vec3 aP; layout(location=1) in vec4 aI;",
-    "uniform mat4 uVP; uniform vec3 uOff;",
+    "uniform mat4 uVP; uniform vec3 uOff; uniform mat4 uM;",
     "out vec3 vP; flat out int vF; flat out int vB;",
-    "void main() { vP = aP + uOff; vF = int(aI.x); vB = int(aI.y); gl_Position = uVP * vec4(vP, 1.0); }"
+    "void main() { vP = (uM * vec4(aP, 1.0)).xyz + uOff; vF = int(aI.x); vB = int(aI.y); gl_Position = uVP * vec4(vP, 1.0); }"
   ].join("\n");
   /* The blocks are drawn from their faces in. Each face where a block meets the open (air, water, a note,
      or glass or leaves, which are seen through) starts a ray from the eye on into the blocks behind it, and
@@ -278,12 +312,18 @@
      bar it meets is what is seen, in the tone of the way that face of the bar looks (up white, east and west
      grey, north and south black, as the artist drew them), each a little deeper the further in it lies. A
      ray that comes out into the open again shows what is beyond: the fragment goes, and the faces behind are
-     drawn. One still among bars after eight blocks shows the dark between them. Further off a face is what
-     its blocks average to: FAR, the same walk run over many rays (scripts/rocket_far.py), at a slant and from
-     nearer straight on. It closes into that mean from where a bar is eight pixels wide to where it is under
-     four, a quarter of the distance it once did at two and one (the artist, 15 Oct 2026: "Have the distance
-     in which the facades of objects disappear be 1/4 of what it is now"): near, the facades open and you
-     see in; further off they close. A face keeps
+     drawn. One still among bars after eight blocks (fewer if the frames come slowly) shows the dark between
+     them. Further off a face is what its blocks average to: FAR, the same walk run over many rays
+     (scripts/rocket_far.py), at a slant and from nearer straight on. It closes into that mean as its bars
+     narrow on the screen: lod, from where a bar (a tenth of a block) is eight of the view's pixels wide to
+     where it is under four, a quarter of the distance it once did at two and one (the artist, 15 Oct 2026:
+     "Have the distance in which the facades of objects disappear be 1/4 of what it is now"). The pixels are
+     the screen's at the quality the view starts at (uPx; while you come to, the view's own coarse ones), so
+     the distance is the artist's on every screen, and a slow frame, which makes the view coarser, does not
+     move it. Every pixel of a face is then
+     (1 - lod) of the open face and lod of its mean, the holes too: a bar is mixed toward the mean where it
+     is drawn, and a hole, where the faces behind are drawn, is veiled with the mean at lod over them (uVeil,
+     the second pass in frame). Near, the facades open and you see in; further off they close. A face keeps
      its own depth: along its ray, every face between it and what it meets is one the walk has passed
      through, so the nearest still wins. Water and the notes are surfaces, not blocks. */
   // For each face, [white, grey, black, the dark between] as seen at a slant, then from nearer straight on.
@@ -302,6 +342,8 @@
     "in vec3 vP; flat in int vF; flat in int vB; out vec4 o;",
     "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze;",
     "uniform usampler2DArray uVox; uniform vec3 uOrg; uniform ivec3 uDim; uniform int uFloor; uniform float uPx;",
+    "uniform mat4 uInvM;",   // the world to a grid's own cells: the place's and the rocket's as they are, Mr Pearl's parts turned and scaled
+    "uniform int uSteps; uniform int uVeil;",
     "const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));",
     "const vec3 LO[6] = " + glslVecs(FIGURE, 0, 3) + ";",
     "const vec3 HI[6] = " + glslVecs(FIGURE, 3, 3) + ";",
@@ -329,6 +371,9 @@
     "void main() {",
     "  vec4 pe = uPal[vB]; int st = int(pe.a + 0.5);",
     "  vec3 n = N[vF], col; float dist = length(vP - uEye), th = 0.0;",
+    "  float lod = smoothstep(0.0125, 0.0275, uPx * dist);",   // a bar eight pixels wide, then under four
+    // The veil (see frame) is only where a face is closing: not water, not a note, not its back.
+    "  if (uVeil == 1 && (lod <= 0.0 || lod >= 1.0 || st == 6 || st == 10 || !gl_FrontFacing)) { discard; }",
     "  if (st == 6 || st == 10) {",
     // Water: its own colour, the sky in it at a slant, a slow shimmer. A note: paper, catching the eye.
     "    vec3 c = pe.rgb / 255.0;",
@@ -338,17 +383,20 @@
     "  } else {",
     "    if (!gl_FrontFacing) { discard; }",
     "    vec3 d = normalize(vP - uEye);",
+    "    d = normalize(mat3(uInvM) * d);",   // the ray taken into the grid's frame
     "    vec4 fw = mix(FAR_SLANT[vF], FAR_ON[vF], smoothstep(0.15, 0.75, -dot(d, n)));",
     "    vec3 far = fw.x * bar(vB, 1, 1.0) + fw.y * bar(vB, 0, 1.0) + fw.z * bar(vB, 2, 1.0) + fw.w * dark(vB);",
-    "    float lod = smoothstep(0.0125, 0.0275, uPx * dist);",   // a bar eight pixels wide, then under four
+    // The veil: drawn where the depth test lets it, which is only where this face let a hole through.
+    "    if (uVeil == 1) { o = vec4(mix(far, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0)), lod); return; }",
     "    if (lod >= 1.0) { col = far; } else {",
-    "      vec3 p0 = vP - uOrg;",
+    "      vec3 p0 = (uInvM * vec4(vP, 1.0)).xyz - uOrg;",
     "      d = mix(d, vec3(1e-6), vec3(equal(d, vec3(0.0))));",
     "      vec3 inv = 1.0 / d, td = abs(inv);",
     "      ivec3 c = ivec3(floor(p0 - n * 0.5)), sg = ivec3(sign(d));",
     "      vec3 tm = (vec3(c) + step(0.0, d) - p0) * inv;",
     "      float tin = 0.0; int res = 0; uint lb = uint(vB);",
     "      for (int k = 0; k < STEPS; k++) {",
+    "        if (k >= uSteps) { break; }",
     "        uint b = idAt(c);",
     "        if (!solid(b)) { res = 2; break; }",
     "        lb = b;",
@@ -365,7 +413,7 @@
     "        else { c.z += sg.z; tin = tm.z; tm.z += td.z; }",
     "      }",
     "      if (res == 0) { col = dark(int(lb)); th = tin; }",
-    "      if (res == 2) { if (lod < 0.5) { discard; } col = far; }",
+    "      if (res == 2) { discard; }",
     "      else { col = mix(col, far, lod); }",
     "    }",
     "  }",
@@ -412,6 +460,7 @@
     for (var i = 0; i < 64; i += 1) { var c = w.pal[i] || [255, 0, 255]; pal[i * 4] = c[0]; pal[i * 4 + 1] = c[1]; pal[i * 4 + 2] = c[2]; pal[i * 4 + 3] = w.style[i] || 0; }
     gl.useProgram(prog);
     gl.uniform4fv(U.uPal, pal);
+    worldPal = pal;
   }
 
   /* ---- the works on the walls ------------------------------------------------- */
@@ -495,8 +544,9 @@
   // The pictures of the works near you, a few at a time.
   function fetchNear() {
     if (!paintings.length) { return; }
-    paintings.filter(function (p) { return !p.asked && abs(p.cx - P.x) < 40 && abs(p.cz - P.z) < 40 && abs(p.y0 - P.y) < 14; })
-      .sort(function (a, b) { return hypot(a.cx - P.x, a.cz - P.z) - hypot(b.cx - P.x, b.cz - P.z); })
+    var m = me();
+    paintings.filter(function (p) { return !p.asked && abs(p.cx - m.x) < 40 && abs(p.cz - m.z) < 40 && abs(p.y0 - m.y) < 14; })
+      .sort(function (a, b) { return hypot(a.cx - m.x, a.cz - m.z) - hypot(b.cx - m.x, b.cz - m.z); })
       .slice(0, max(0, 6 - loading)).forEach(loadPicture);
   }
   // Is a work hung on a face of this block?
@@ -647,8 +697,10 @@
   // Back under the tree after walking off, you are told once that it has closed again.
   function skyCheck() {
     if (!skyFig || intro || launched) { return; }
-    var dx = P.x - skyFig.eye[0], dz = P.z - skyFig.eye[2], r = hypot(dx, dz), up = abs(P.y + EYE - skyFig.eye[1]);
-    if (r > 6) { skyFig.away = true; }
+    var dx = eye[0] - skyFig.eye[0], dz = eye[2] - skyFig.eye[2], r = hypot(dx, dz), up = abs(eye[1] - skyFig.eye[1]);
+    var rb = hypot(P.x - skyFig.eye[0], P.z - skyFig.eye[2]);
+    if (rb > 6) { skyFig.away = true; }
+    if (skyFig.away && !skyFig.said && !skyFig.hint && pov === "third" && !Hd && rb < 0.45) { skyFig.hint = true; say("Under your tree, from his own eyes (First, or V), the figure in the sky is the drawing again.", true); }
     if (skyFig.away && !skyFig.said && r < 0.45 && up < 0.3) { skyFig.said = true; say("Under your tree the figure in the sky is the drawing again; anywhere else it comes apart.", true); }
   }
 
@@ -695,7 +747,10 @@
 
   /* ---- you ---------------------------------------------------------------------- */
 
-  var P = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ground: false, wet: false };
+  var P = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ground: false, wet: false, face: 0, want: null, walked: 0, amount: 0 };
+  // pov: the view now ("third", "first", "holo"); bodyPov: the body's view to come back to; Hd: the head while it is out.
+  var pov = "third", bodyPov = "third", Hd = null, blend = null, camD = 0, camLast = null, holoTop = 0, drawMe = { body: false, head: false };
+  try { var sv = localStorage.getItem(VIEWS_KEY); if (sv === "first" || sv === "third") { pov = bodyPov = sv; } } catch (e) { /* the default */ }
   var input = { fwd: 0, side: 0, jump: false, keys: {} };
   var mode = "break", slot = 0;
 
@@ -709,7 +764,8 @@
     return false;
   }
 
-  function physics(dt) {
+  // What the hand asks: forward and sideways (the stick, W A S D), and up (jump; as the hologram, rise or sink).
+  function controls(dt) {
     var k = input.keys;
     var fwd = input.fwd + ((k.w || k.ArrowUp) ? 1 : 0) - ((k.s || k.ArrowDown) ? 1 : 0);
     var side = input.side + (k.d ? 1 : 0) - (k.a ? 1 : 0);
@@ -717,14 +773,24 @@
     if (k.ArrowRight) { P.yaw += dt * 2; }
     var len = hypot(fwd, side);
     if (len > 1) { fwd /= len; side /= len; }
+    return { fwd: fwd, side: side, up: (input.jump || k[" "] ? 1 : 0) - (k.Shift || k.c ? 1 : 0) };
+  }
+  function turnTo(a, b, step) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + max(-step, min(step, d)); }
+  function physics(dt, c) {
+    var fwd = c.fwd, side = c.side;
     P.wet = w.get(floor(P.x), floor(P.y + 0.6), floor(P.z)) === B.WATER;
-    var speed = P.wet ? 2.2 : 4.3;
+    var speed = P.wet ? SWIM : WALK;
     P.vx = (Math.sin(P.yaw) * fwd + Math.cos(P.yaw) * side) * speed;
     P.vz = (-Math.cos(P.yaw) * fwd + Math.sin(P.yaw) * side) * speed;
-    var jump = input.jump || k[" "];
+    // He faces the way he walks (relative to the camera), or what he reaches for; in first person, where you look.
+    if (pov === "first") { P.face = P.yaw; P.want = null; }
+    else if (fwd || side) { P.face = turnTo(P.face, Math.atan2(P.vx, -P.vz), TURN * dt); P.want = null; }
+    else if (P.want !== null) { P.face = turnTo(P.face, P.want, TURN * dt); }
+    follow(dt, c);
+    var jump = c.up > 0, ox = P.x, oz = P.z;
     if (P.wet) { P.vy += (jump ? 9 : -6) * dt; P.vy = max(-2.5, min(3, P.vy)); }
     else {
-      P.vy -= 25 * dt;
+      P.vy = max(-V_FALL, P.vy - 25 * dt);
       if (jump && P.ground) { P.vy = 8.2; P.ground = false; }
     }
     // Across, then along, then up and down, each stopped by the blocks; a single step is climbed by itself.
@@ -749,22 +815,28 @@
     } else { P.ground = false; }
     P.y = max(1, ny);
     P.x = max(0.5, min(w.SX - 0.5, P.x)); P.z = max(0.5, min(w.SZ - 0.5, P.z));
+    // His walk is by the ground he covers, not by the clock, so a foot never slides; he falls into his stride
+    // and out of it in the time he walks one step.
+    var step = hypot(P.x - ox, P.z - oz), on = (P.ground || P.wet) && step > 1e-4;
+    if (on) { P.walked += step; }
+    P.amount += ((on ? 1 : 0) - P.amount) * (1 - Math.exp(-dt / STEP_T));
   }
 
   /* What a ray from the eye meets first: a work on a wall, or the block and the face it came in by. */
-  function cast(dir, reach) {
-    var x = floor(eye[0]), y = floor(eye[1]), z = floor(eye[2]);
+  function cast(dir, reach, o, t0) {
+    o = o || eye; t0 = t0 || 0;
+    var x = floor(o[0]), y = floor(o[1]), z = floor(o[2]);
     var sx = dir[0] > 0 ? 1 : -1, sy = dir[1] > 0 ? 1 : -1, sz = dir[2] > 0 ? 1 : -1;
     var tdx = abs(1 / dir[0]), tdy = abs(1 / dir[1]), tdz = abs(1 / dir[2]);
-    var tx = (sx > 0 ? x + 1 - eye[0] : eye[0] - x) * tdx, ty = (sy > 0 ? y + 1 - eye[1] : eye[1] - y) * tdy, tz = (sz > 0 ? z + 1 - eye[2] : eye[2] - z) * tdz;
+    var tx = (sx > 0 ? x + 1 - o[0] : o[0] - x) * tdx, ty = (sy > 0 ? y + 1 - o[1] : o[1] - y) * tdy, tz = (sz > 0 ? z + 1 - o[2] : o[2] - z) * tdz;
     var last = null, t = 0, axis = -1;
     while (t < reach) {
       var b = w.get(x, y, z);
-      if (b !== B.AIR && b !== B.WATER) {
+      if (b !== B.AIR && b !== B.WATER && t >= t0) {
         if (axis === 0 || axis === 2) {
           var plane = axis === 0 ? (sx > 0 ? x : x + 1) : (sz > 0 ? z : z + 1), list = byPlane[(axis === 0 ? "x" : "z") + plane];
           if (list) {
-            var hy = eye[1] + dir[1] * t, u = axis === 0 ? eye[2] + dir[2] * t : eye[0] + dir[0] * t, nd = axis === 0 ? -sx : -sz;
+            var hy = o[1] + dir[1] * t, u = axis === 0 ? o[2] + dir[2] * t : o[0] + dir[0] * t, nd = axis === 0 ? -sx : -sz;
             for (var i = 0; i < list.length; i += 1) {
               var p = list[i];
               if (p.dir === nd && u >= p.u0 && u <= p.u1 && hy >= p.y0 && hy <= p.y1) { return { painting: p, t: t }; }
@@ -773,10 +845,21 @@
         }
         return { x: x, y: y, z: z, b: b, prev: last, t: t };
       }
-      last = [x, y, z];
+      last = b === B.AIR || b === B.WATER ? [x, y, z] : null;
       if (tx < ty && tx < tz) { x += sx; t = tx; tx += tdx; axis = 0; } else if (ty < tz) { y += sy; t = ty; ty += tdy; axis = 1; } else { z += sz; t = tz; tz += tdz; axis = 2; }
     }
     return null;
+  }
+  // Where he reaches from: his eye, or the head while it is out.
+  function reachFrom() { return Hd ? [Hd.x, Hd.y, Hd.z] : [P.x, P.y + EYE, P.z]; }
+  // What the crosshair (or a tap) is on: the ray from the camera, begun where it passes him (nothing between the
+  // camera and him counts), and what it meets measured from where he reaches from (r). In first person, as before.
+  function pick(dir) {
+    var at = reachFrom(), t0 = max(0, (at[0] - eye[0]) * dir[0] + (at[1] - eye[1]) * dir[1] + (at[2] - eye[2]) * dir[2]);
+    var hit = cast(dir, t0 + LOOK, eye, t0);
+    if (!hit) { return null; }
+    hit.r = hypot(eye[0] + dir[0] * hit.t - at[0], eye[1] + dir[1] * hit.t - at[1], eye[2] + dir[2] * hit.t - at[2]);
+    return hit.r <= LOOK ? hit : null;
   }
   function dirAt(px, py) {
     var r = canvas.getBoundingClientRect(), nx = (px - r.left) / r.width * 2 - 1, ny = 1 - (py - r.top) / r.height * 2;
@@ -787,11 +870,13 @@
   }
   function act(px, py, forcePlace) {
     if (intro || launched || !vp) { return; }
-    var hit = cast(dirAt(px, py), LOOK);
+    var hit = pick(dirAt(px, py));
     if (!hit) { return; }
+    if (!Hd) { var hx = hit.painting ? hit.painting.cx : hit.x + 0.5, hz = hit.painting ? hit.painting.cz : hit.z + 0.5; P.want = Math.atan2(hx - P.x, -(hz - P.z)); }
     if (hit.painting) { showLabel(hit.painting); return; }
-    if (hit.t > REACH) { return; }
+    if (hit.r > REACH) { return; }
     if (hit.b === B.NOTE) { readNote(hit.x, hit.y, hit.z); return; }
+    if (Hd) { barred(); return; }
     if (!(forcePlace || mode === "place")) {
       if (hit.b === B.BEDROCK) { return; }
       if (hangsOn(hit.x, hit.y, hit.z)) { say("A work hangs on this wall."); return; }
@@ -805,6 +890,357 @@
       if (boxHits(P.x, P.y, P.z)) { w.set(p[0], p[1], p[2], B.AIR); return; }
       remeshAt(p[0], p[2]);
     }
+  }
+
+  /* ---- the three views: third person over his head, first person, the hologram ---------------------- */
+
+  var R_C = 0.1, holoLeft = HOLO_T;
+  /* The lengths that follow from his measures (PEARL): set now from the defaults, and again when his body's file
+     has come, so a new form brings its own distances. */
+  var TP_D, TP_UP, TP_DOWN, TP_HEAD, TURN, T_VIEW, LIFT, HAT_REACH, STEP_T;
+  function measure() {
+    TP_D = thirdDistance();                        // his whole figure a third of the screen's height, at REST
+    TP_UP = AIM - Math.asin(PEARL.top / 2 / TP_D); // the camera never sinks below the top of his hat
+    TP_DOWN = AIM - Math.PI / 2 + 0.01;            // and comes at most straight over him
+    TP_HEAD = Math.hypot(TP_D * Math.cos(REST - AIM), PEARL.top / 2 - TP_D * Math.sin(REST - AIM) - PEARL.headY);   // the camera to his head, at REST
+    TURN = Math.PI * WALK / PEARL.top;             // he turns half round in the time he walks his own height
+    T_VIEW = PEARL.top / WALK;                     // a switch of view: the time he walks his own height
+    LIFT = 2 * PEARL.headR;                        // the head lifts its own diameter off its seat
+    HAT_REACH = PEARL.hatReach;                    // the farthest of his hat from his head's centre
+    STEP_T = PEARL.leg / WALK;                     // he sets out or stops in the time he walks one step (a leg long)
+  }
+  function smooth(s) { s = max(0, min(1, s)); return s * s * (3 - 2 * s); }
+  function clampV(v, a, b) { return max(a, min(b, v)); }
+  function angle(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+  // The distance at which his whole figure, feet to hat top, is a third of the screen's height when the camera
+  // looks down at REST with his middle AIM below the centre: solved, since the picture is not linear in height.
+  function thirdDistance() {
+    var M = PEARL.top / 2, span = function (D) {
+      var a = REST - AIM, cx = -D * Math.cos(a), cy = M - D * Math.sin(a);
+      var ndc = function (h) { var dy = h - cy, f = -cx * Math.cos(REST) + dy * Math.sin(REST), u = cx * Math.sin(REST) + dy * Math.cos(REST); return u / f / T35; };
+      return ndc(PEARL.top) - ndc(0);
+    };
+    var lo = 0.5, hi = 20;
+    for (var i = 0; i < 60; i += 1) { var D = (lo + hi) / 2; if (span(D) > 2 / 3) { lo = D; } else { hi = D; } }
+    return (lo + hi) / 2;
+  }
+  // How far the look may go up and down in each view: in third person the camera never sinks below his hat
+  // (it stays above his head) and comes at most straight over him; elsewhere as before.
+  function clampPitch(p) { return !Hd && pov === "third" ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
+  // Where his head sits on the body (the hologram's seat).
+  function seat() { return [P.x, P.y + PEARL.headY, P.z]; }
+  function isOpen(b) { return b === B.AIR || b === B.WATER; }
+  // Whether the cube of half-side r round a point (the camera's near plane fits in it) is in a block.
+  function boxSolid(x, y, z, r) {
+    for (var i = 0; i < 8; i += 1) {
+      if (!isOpen(w.get(floor(x + (i & 1 ? r : -r)), floor(y + (i & 2 ? r : -r)), floor(z + (i & 4 ? r : -r))))) { return true; }
+    }
+    return false;
+  }
+  // How far the camera may stand from o along u (at most L) with its near plane clear of every block: the ray
+  // through the grid, stopped the near plane's reach short of the first block, then drawn in until clear.
+  function clearTo(o, u, L) {
+    var hit = cast(u, L + R_C, o), D = min(L, hit ? max(0, hit.t - R_C) : L);
+    while (D > 0 && boxSolid(o[0] + u[0] * D, o[1] + u[1] * D, o[2] + u[2] * D, R_C)) { D = max(0, D - R_C); }
+    return D;
+  }
+  function firstCam(h) { return { e: [P.x, P.y + h, P.z], yaw: P.yaw, pitch: P.pitch }; }
+  // Third person: his middle held AIM below the screen's centre, TP_D away along the look; the camera on the line
+  // from his head to there, pulled in at once when blocks stand between, let out no faster than he walks.
+  function thirdCam(dt) {
+    var hd = seat(), d = lookDir(P.yaw, P.pitch - AIM);
+    var full = [P.x - TP_D * d[0], P.y + PEARL.top / 2 - TP_D * d[1], P.z - TP_D * d[2]];
+    var v = [full[0] - hd[0], full[1] - hd[1], full[2] - hd[2]], L = hypot(v[0], v[1], v[2]), u = [v[0] / L, v[1] / L, v[2] / L];
+    camD = min(clearTo(hd, u, L), camD + WALK * dt);
+    return { e: [hd[0] + u[0] * camD, hd[1] + u[1] * camD, hd[2] + u[2] * camD], yaw: P.yaw, pitch: P.pitch, from: hd };
+  }
+  // The hologram: the camera HOLO_D behind the head along the look, the head AIM below the centre; kept out of
+  // the blocks behind it while the head is in the open (in a block the hologram, and its camera, see through).
+  function holoCam(dt) {
+    var c = [Hd.x, Hd.y, Hd.z], d = lookDir(P.yaw, P.pitch - AIM), u = [-d[0], -d[1], -d[2]];
+    var D = isOpen(w.get(floor(c[0]), floor(c[1]), floor(c[2]))) ? clearTo(c, u, HOLO_D) : HOLO_D;
+    camD = min(D, camD + HOLO_V * dt);
+    return { e: [c[0] + u[0] * camD, max(1 + R_C, c[1] + u[1] * camD), c[2] + u[2] * camD], yaw: P.yaw, pitch: P.pitch, from: c };
+  }
+  // The camera of the frame, and whether he (body, head) is drawn: in first person and in the films (the wake-up,
+  // the launch) you are behind his eyes and see nothing of him; else he is drawn once the camera is clear of his
+  // hat (HAT_REACH from the head's centre, plus the near plane's reach).
+  function camera(now, dt, eyeH, aspect) {
+    R_C = NEAR * Math.sqrt(1 + T35 * T35 * (1 + aspect * aspect));
+    // On a stone of the homage the view is his own eyes, as the stone is the one point its figure closes from
+    // (from over his head he would stand in front of it); stepping off, it rises out over his head again.
+    var stone = !!(homage && !Hd && !intro && !launched && Homage.standing(homage, P.x, P.y, P.z));
+    if (stone !== onStone) {
+      onStone = stone;
+      if (pov === "third") { blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: stone ? null : clampV(P.pitch, TP_DOWN, TP_UP) }; camD = 1e9; }
+    }
+    var c = intro || launched ? firstCam(eyeH) : Hd ? holoCam(dt) : pov === "first" || onStone ? firstCam(EYE) : thirdCam(dt);
+    if (blend && !intro) {
+      var s = smooth((now - blend.t0) / 1000 / blend.dur), f = blend.from, a = c.from || c.e;
+      if (blend.pitchTo != null) { P.pitch = blend.pitchFrom + (blend.pitchTo - blend.pitchFrom) * s; c.pitch = P.pitch; }
+      c = { e: [0, 1, 2].map(function (k) { return f.e[k] + (c.e[k] - f.e[k]) * s; }), yaw: f.yaw + angle(c.yaw - f.yaw) * s, pitch: f.pitch + (c.pitch - f.pitch) * s };
+      // On the way the camera keeps out of the blocks as the view's own does: drawn in toward what it follows.
+      if (boxSolid(c.e[0], c.e[1], c.e[2], R_C)) {
+        var bv = [c.e[0] - a[0], c.e[1] - a[1], c.e[2] - a[2]], bl = hypot(bv[0], bv[1], bv[2]);
+        if (bl > 1e-6) { var bd = clearTo(a, [bv[0] / bl, bv[1] / bl, bv[2] / bl], bl); c.e = [a[0] + bv[0] / bl * bd, a[1] + bv[1] / bl * bd, a[2] + bv[2] / bl * bd]; }
+      }
+      if (s >= 1) { blend = null; }
+    }
+    var hc = Hd ? [Hd.x, Hd.y, Hd.z] : seat(), far = hypot(c.e[0] - hc[0], c.e[1] - hc[1], c.e[2] - hc[2]) > HAT_REACH + R_C;
+    var bc = seat(), farB = hypot(c.e[0] - bc[0], c.e[1] - bc[1], c.e[2] - bc[2]) > HAT_REACH + R_C;
+    drawMe = { body: !intro && !launched && (Hd ? true : (pov !== "first" && !onStone) || !!blend) && farB, head: !intro && !launched && (Hd ? true : (pov !== "first" && !onStone) || !!blend) && far };
+    camLast = c;
+    return c;
+  }
+  // Third person: the camera comes round behind him as he walks, in the time he walks its distance from his head,
+  // by the forward part of the stick (walking sideways or back to the camera does not swing it), not while you drag.
+  function follow(dt, c) {
+    if (pov !== "third" || Hd || input.looking || c.fwd <= 0 || !(c.fwd || c.side)) { return; }
+    P.yaw += angle(P.face - P.yaw) * (1 - Math.exp(-dt * c.fwd * WALK / TP_HEAD));
+  }
+
+  /* ---- switching views; the hologram's flight; the body brought, harmed ---------------------------------- */
+
+  function setPov(v) {
+    if (intro || launched || !place) { return; }
+    if (v === "holo") { if (Hd) { bringBody(); } else { enterHolo(); } return; }
+    if (Hd) { bodyPov = v; bringBody(); drawViews(); return; }
+    if (v === pov) { return; }
+    var now = performance.now();
+    blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: v === "third" ? clampV(P.pitch, TP_DOWN, TP_UP) : null };
+    pov = bodyPov = v; camD = 1e9;
+    try { localStorage.setItem(VIEWS_KEY, v); } catch (e) { /* the choice lasts the visit */ }
+    drawViews();
+  }
+  function enterHolo() {
+    if (Hd || flying) { return; }
+    if (holoLeft < BAR) { say("The hologram is gathering again: " + Math.ceil(BAR - holoLeft) + " s."); return; }
+    var s = seat(), now = performance.now();
+    Hd = { x: s[0], y: s[1], z: s[2], y0: s[1], vx: 0, vy: 0, vz: 0, yaw: P.face, phase: "lift", t0: now, left: now, warned: false };
+    bodyPov = pov; pov = "holo"; camD = 1e9;
+    blend = { from: camLast, t0: now, dur: T_LIFT, pitchFrom: P.pitch, pitchTo: null };
+    document.body.dataset.holo = "true";
+    drawViews();
+    say("Your head leaves the body: fly it anywhere, and wherever you leave the hologram the body lands. Till then it stays here, open to harm.", true);
+  }
+  // Home: the head settles onto the body brought under it, in the time of a switch of view. Nothing flies the head
+  // back to where the body was: to land there, fly it back yourself.
+  function goHome(why, dur) {
+    if (!Hd || Hd.phase === "home") { return; }
+    Hd.phase = "home"; Hd.t0 = performance.now(); Hd.from = [Hd.x, Hd.y, Hd.z]; Hd.dur = dur || T_VIEW; Hd.why = why;
+  }
+  function seatHead() {
+    var now = performance.now();
+    Hd = null; pov = bodyPov; camD = 1e9;
+    blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: pov === "third" ? clampV(P.pitch, TP_DOWN, TP_UP) : null };
+    delete document.body.dataset.holo;
+    drawViews();
+  }
+  function holo(dt, now, c) {
+    if (Hd.phase === "lift") {
+      // The head rises off its seat as a jump rises (slowing to its top), its own diameter in a jump's rise.
+      var s = min(1, (now - Hd.t0) / 1000 / T_LIFT), st = seat();
+      Hd.x = st[0]; Hd.z = st[2]; Hd.y = st[1] + LIFT * (1 - (1 - s) * (1 - s));
+      if (s >= 1) { Hd.phase = "free"; }
+      return;
+    }
+    if (Hd.phase === "home") {
+      var u = smooth((now - Hd.t0) / 1000 / Hd.dur), to = seat();
+      Hd.x = Hd.from[0] + (to[0] - Hd.from[0]) * u; Hd.y = Hd.from[1] + (to[1] - Hd.from[1]) * u; Hd.z = Hd.from[2] + (to[2] - Hd.from[2]) * u;
+      Hd.yaw = turnTo(Hd.yaw, P.face, TURN * dt);
+      if (u >= 1) { seatHead(); }
+      return;
+    }
+    holoLeft = max(0, holoLeft - dt);
+    if (holoLeft <= HOLO_T / 10 && !Hd.warned) { Hd.warned = true; say(round(holoLeft) + " seconds left as the hologram; then the body lands where the head is."); }
+    if (holoLeft <= 0) { bringBody("time"); return; }
+    // Free in three dimensions: forward along the look (up and down with it), sideways, the jump to rise and
+    // Shift or C to sink; through blocks, but not out of the place, below its floor, or over its ceiling.
+    var f = lookDir(P.yaw, P.pitch), r = [Math.cos(P.yaw), 0, Math.sin(P.yaw)], V = inRoom(Hd.x, Hd.y - PEARL.headY, Hd.z) ? HOLO_V_IN : HOLO_V;
+    var want = [f[0] * c.fwd + r[0] * c.side, f[1] * c.fwd + c.up, f[2] * c.fwd + r[2] * c.side], L = hypot(want[0], want[1], want[2]);
+    if (L > 1) { want = want.map(function (q) { return q / L; }); }
+    var k = 1 - Math.exp(-dt / T_LIFT), hr = PEARL.headR;
+    Hd.vx += (want[0] * V - Hd.vx) * k; Hd.vy += (want[1] * V - Hd.vy) * k; Hd.vz += (want[2] * V - Hd.vz) * k;
+    Hd.x = clampV(Hd.x + Hd.vx * dt, hr, w.SX - hr); Hd.y = clampV(Hd.y + Hd.vy * dt, 1 + hr, holoTop); Hd.z = clampV(Hd.z + Hd.vz * dt, hr, w.SZ - hr);
+    Hd.yaw = turnTo(Hd.yaw, P.yaw, TURN * dt);
+  }
+  // "Choose to move Mr Pearl's body exactly there", and every way out of the hologram is that choice (artist,
+  // 21 Oct 2026: "Wherever you move in the holographic view should be where you land when you switch back to any
+  // other view"): a view chosen, Holo again, H or V, the button or G, the time up. The body to where the head is
+  // (the head back on it), or, if he does not fit there, to the nearest place he fits; then it falls, unhurt
+  // (there is no fall damage). A head still lifting has not moved: it settles back where it rose from.
+  function bringBody(why) {
+    if (!Hd || Hd.phase === "home") { return; }
+    if (Hd.phase === "lift") { goHome("bring"); return; }
+    var at = freeSpot(Hd.x, Hd.y - PEARL.headY, Hd.z), exact = at[0] === Hd.x && at[1] === Hd.y - PEARL.headY && at[2] === Hd.z;
+    P.x = at[0]; P.y = at[1]; P.z = at[2]; P.vx = P.vy = P.vz = 0; P.ground = false; P.face = Hd.yaw;
+    goHome("bring");
+    var where = exact ? "where your head is." : "at the nearest place it fits.";
+    say(why === "time" ? "The time is up: your body lands " + where : "Your body lands " + where, true);
+  }
+  function freeSpot(x, y, z) {
+    x = clampV(x, 0.5, w.SX - 0.5); z = clampV(z, 0.5, w.SZ - 0.5); y = max(1, y);
+    if (!boxHits(x, y, z)) { return [x, y, z]; }
+    // The nearest point he fits, on half-block steps out to his reach; failing that, straight up.
+    var S = 0.5, N = REACH / S, best = null, bd = 1e9;
+    for (var j = -N; j <= N; j += 1) {
+      for (var k = -N; k <= N; k += 1) {
+        for (var i = -N; i <= N; i += 1) {
+          var d = hypot(i, j, k) * S, X = x + i * S, Y = y + j * S, Z = z + k * S;
+          if (d >= bd || d > REACH || Y < 1 || X < 0.5 || Z < 0.5 || X > w.SX - 0.5 || Z > w.SZ - 0.5) { continue; }
+          if (!boxHits(X, Y, Z)) { bd = d; best = [X, Y, Z]; }
+        }
+      }
+    }
+    if (best) { return best; }
+    for (var yy = floor(y) + 1; yy < w.SY; yy += 1) { if (!boxHits(x, yy, z)) { return [x, yy, z]; } }
+    return [x, w.SY, z];
+  }
+  // The body left behind is "completely vulnerable to getting destroyed": the hook. Nothing calls it yet (the
+  // giants, the craters where they fall, later); whatever harms him calls harmBody(cause), which counts only
+  // while the head is out. The rule to come: the body destroyed, the head is pulled home and he comes to under
+  // his tree (lieDown), keeping what he found, as when the guards put him out.
+  var bodyHarm = [];
+  function harmBody(cause) {
+    if (!Hd) { return false; }
+    bodyHarm.push({ cause: cause || "", at: performance.now(), x: P.x, y: P.y, z: P.z });
+    if (CFG.onHarm) { CFG.onHarm(cause, bodyHarm.length); }
+    return true;
+  }
+  function barred() { say("As the hologram you can look and read. To take, build or break, bring the body here."); }
+
+  /* ---- the views' controls ------------------------------------------------------------------------------- */
+
+  function drawViews() {
+    var on = Hd ? "holo" : pov;
+    document.querySelectorAll("[data-pov]").forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.pov === on)); });
+    $("bring").hidden = !Hd;
+    $("jump").setAttribute("aria-label", Hd ? "Rise" : "Jump");
+
+  }
+  // Each frame: the ring round Holo (the time left, filling again in the body at the rate it was spent), and on
+  // the button the way to the body and how far it will come.
+  var holoSaid = -1;
+  function holoHud() {
+    var b = $("v-holo"), left = holoLeft / HOLO_T;
+    b.style.setProperty("--left", left.toFixed(3));
+    if (left < 1) { document.body.dataset.ring = "true"; } else { delete document.body.dataset.ring; }
+    var secs = Math.ceil(holoLeft), label = "Holographic, " + (secs >= 60 ? floor(secs / 60) + " min " : "") + (secs % 60) + " s";
+    if (abs(secs - holoSaid) >= 10 || (secs < holoSaid && secs % 10 === 0)) { holoSaid = secs; b.setAttribute("aria-label", label + " left"); }
+    if (Hd) {
+      var dx = P.x - Hd.x, dz = P.z - Hd.z, t = "Bring the body here · " + bearing(P.x, P.z) + " " + round(hypot(dx, dz, P.y + PEARL.headY - Hd.y)) + " m";
+      if ($("bring").textContent !== t) { $("bring").textContent = t; }
+    }
+  }
+
+  /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
+
+  /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
+     one to each part that moves (the pelvis, the torso, the arms, the guitar, the hat, the thighs, the shins), each
+     walked by FS exactly as the place's grid is, under a model transform (uM: the part's cells to the world, turned
+     and scaled to the unit; uInvM takes the ray back into the cells). The pixel's width is divided by the unit, so
+     his facades open and close at the sizes on the screen the world's do. His head is not built: its own program
+     solves a ray per pixel against the sphere, so it is exactly round at any distance. */
+  var me3 = null, headProg = null, HU = {}, worldPal = null, ID4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  var pxW = 0;             // a pixel's width at a block's distance, as frame sets it for the place (the fade's uPx)
+  var HEAD_EXPO = 1.047;   // the head's median brightness on the screen, from the third-person camera, the covers' (#b9aca9)
+  function initPearl() {
+    var PB = window.PearlBody;
+    if (!PB) { return; }
+    headProg = compile(PB.HEAD_VS, PB.HEAD_FS);
+    ["uVP", "uEye", "uC", "uSun", "uHaze", "uR", "uExpo", "uHolo", "uHead", "uV", "uRig"].forEach(function (n) { HU[n] = gl.getUniformLocation(headProg, n); });
+  }
+  // His body from its file: the parts' grids to the card, his palette, and his measures into every distance.
+  function pearlFrom(spec) {
+    var PB = window.PearlBody;
+    if (!PB || !spec || !gl) { return; }
+    var t0 = performance.now(), body = PB.build(spec, { skip: [B.WATER, B.NOTE] }), pal = new Float32Array(64 * 4);
+    body.palette.forEach(function (c, i) { pal.set(c, i * 4); });
+    var parts = body.parts.filter(function (p) { return !p.empty; }).map(function (p) {
+      var ch = meshBlocks(p.blocks);
+      ch.tex = voxTexture(p.ids, p.dim[0], p.dim[1], p.dim[2]); ch.p = p;
+      return ch;
+    });
+    // How far any of him reaches from the line up through his feet, and how high, in any pose of the walk: the
+    // corners of each part's grid at rest and at the stride's four quarters (what the veil's reach is measured to).
+    var rad = 0, hi = 0;
+    [[0, 0], [0, 1], [Math.PI / 2, 1], [Math.PI, 1], [1.5 * Math.PI, 1]].forEach(function (q) {
+      var M = PB.pose(body, q[0], q[1]);
+      parts.forEach(function (ch) {
+        for (var i = 0; i < 8; i += 1) {
+          var c = apply(M[ch.p.name], [i & 1 ? ch.p.dim[0] : 0, i & 2 ? ch.p.dim[1] : 0, i & 4 ? ch.p.dim[2] : 0]);
+          rad = max(rad, hypot(c[0], c[2])); hi = max(hi, c[1]);
+        }
+      });
+    });
+    me3 = { body: body, parts: parts, pal: pal, rad: rad, hi: hi, ms: round(performance.now() - t0) };
+    PEARL = { headY: body.head.centre[1], headR: body.head.radius, top: body.top, hatReach: body.hatReach || PEARL.hatReach,
+              hatDrop: body.hatDrop || 0, leg: body.walk.L_m || PEARL.leg };
+    measure();
+  }
+  // The hat, with the head gone, falls straight down onto the bare neck as anything falls here (25 m/s/s), the
+  // form's own drop (option B: nothing built rides with the one perfect form); the head coming home picks it up.
+  function hatDrop(now) {
+    if (!Hd || !PEARL.hatDrop) { return 0; }
+    var t = (now - Hd.left) / 1000, fall = 12.5 * t * t, s = seat();
+    var gap = Hd.phase === "home" ? hypot(Hd.x - s[0], Hd.y - s[1], Hd.z - s[2]) : 1e9;
+    return min(PEARL.hatDrop, fall, gap);
+  }
+  function apply(m, p) { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]]; }
+  /* With veil, his parts' faces again for the fade's second pass (frame turns it on): where a hole of his lets
+     what is behind show, it is veiled with the face's mean at lod, as the place's holes are. The head has no holes. */
+  function drawPearl(now, veil) {
+    if (!me3 || (!drawMe.body && !drawMe.head)) { return; }
+    var PB = window.PearlBody, body = me3.body, phase = PB.phaseStep(body, 0, P.walked), M = PB.pose(body, phase, P.amount);
+    if (drawMe.body) {
+      // The same program as the place's blocks, his palette, the pixel's width in his unit; no floor under his grids.
+      gl.uniform4fv(U.uPal, me3.pal);
+      gl.uniform1f(U.uPx, pxW / body.cell);
+      gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0);
+      var drop = hatDrop(now);
+      me3.parts.forEach(function (ch) {
+        var m = PB.place(M[ch.p.name], P.x, P.y, P.z, P.face);
+        if (ch.p.name === "hat" && drop) { m = mul(PB.T(0, -drop, 0), m); }
+        gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
+        gl.uniform3i(U.uDim, ch.p.dim[0], ch.p.dim[1], ch.p.dim[2]);
+        gl.bindVertexArray(ch.vao);
+        if (veil) { gl.drawElements(gl.TRIANGLES, ch.vcount, gl.UNSIGNED_INT, ch.count * 4); }
+        else { gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0); }
+      });
+      // The place's own again, for whatever walks the place's grid after him.
+      gl.uniform4fv(U.uPal, worldPal); gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+      gl.uniform1f(U.uPx, pxW); gl.uniform1i(U.uFloor, 1); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    }
+    if (drawMe.head && headProg && !veil) {
+      // On the body the head rides the walk's bob and turns with him; out, it is where the hologram is, turned
+      // to the camera's yaw. Its pattern and eyes ride its own frame: columns his right, up and back.
+      var c = Hd ? [Hd.x, Hd.y, Hd.z] : apply(PB.place(M.head, P.x, P.y, P.z, P.face), body.head.centre), yaw = Hd ? Hd.yaw : P.face;
+      var cy = Math.cos(yaw), sy = Math.sin(yaw), vm = view(eye, camLast.yaw, camLast.pitch);
+      gl.useProgram(headProg);
+      gl.uniformMatrix4fv(HU.uVP, false, vp); gl.uniform3fv(HU.uEye, eye); gl.uniform3fv(HU.uC, c); gl.uniform1f(HU.uR, PEARL.headR);
+      gl.uniform3fv(HU.uSun, sunDir); gl.uniform3fv(HU.uHaze, HAZE); gl.uniform1f(HU.uExpo, HEAD_EXPO); gl.uniform1f(HU.uHolo, Hd ? 1 : 0);
+      gl.uniformMatrix3fv(HU.uHead, false, [cy, 0, sy, 0, 1, 0, -sy, 0, cy]);
+      gl.uniformMatrix3fv(HU.uV, false, [vm[0], vm[1], vm[2], vm[4], vm[5], vm[6], vm[8], vm[9], vm[10]]); gl.uniform1f(HU.uRig, 1);
+      gl.bindVertexArray(null);
+      gl.drawArrays(gl.TRIANGLES, 0, 36);
+    }
+  }
+  // The nearest yaw to this one (either way, in steps of a 72nd of a turn) from which the third-person camera
+  // stands its full distance from his head, nothing between: where the wake-up eases out to.
+  function clearYaw(yaw, pitch) {
+    var hd = seat();
+    for (var i = 0; i <= 36; i += 1) {
+      for (var sgn = 1; sgn >= -1; sgn -= 2) {
+        var y = yaw + sgn * i * Math.PI / 36, d = lookDir(y, pitch - AIM);
+        var full = [P.x - TP_D * d[0], P.y + PEARL.top / 2 - TP_D * d[1], P.z - TP_D * d[2]];
+        var v = [full[0] - hd[0], full[1] - hd[1], full[2] - hd[2]], L = hypot(v[0], v[1], v[2]);
+        if (clearTo(hd, [v[0] / L, v[1] / L, v[2] / L], L) >= L - 1e-6) { return y; }
+        if (!i) { break; }
+      }
+    }
+    return yaw;
   }
 
   /* ---- what you find --------------------------------------------------------------- */
@@ -834,15 +1270,17 @@
     pic.alt = f.title || "";
     pic.src = f.image ? artOf(f.image) : "";
     var done = looked[f.id];
-    $("behind").hidden = !!done;
-    $("behind-done").hidden = !done;
-    $("behind-done").textContent = done === "piece" ? "You found " + lower(adv.pieces[p.k].name) + " behind it." : "You looked behind it: nothing.";
+    $("behind").hidden = !!done || !!Hd;
+    $("behind-done").hidden = !done && !Hd;
+    $("behind-done").textContent = done === "piece" ? "You found " + lower(adv.pieces[p.k].name) + " behind it." : done ? "You looked behind it: nothing." :
+      "As the hologram you can read it; to look behind it, bring the body here.";
     el.hidden = false;
     if (window.innerWidth < 900) { $("notes").hidden = true; }
   }
   function closeLabel() { current = null; $("label").hidden = true; }
   function lookBehind() {
     var p = current;
+    if (Hd) { barred(); return; }
     if (!p || looked[p.f.id]) { return; }
     if (p.k >= 0 && found.indexOf(p.k) < 0) {
       looked[p.f.id] = "piece";
@@ -867,31 +1305,32 @@
   }
   function readNote(x, y, z) {
     var n = notes.filter(function (q) { return q.x === x && q.y === y && q.z === z; })[0];
-    w.set(x, y, z, B.AIR);
-    remeshAt(x, z);
-    if (!n) { return; }
+    // The hologram reads a note and leaves the paper where it lies; the body picks it up.
+    if (!Hd) { w.set(x, y, z, B.AIR); remeshAt(x, z); }
+    if (!n || (Hd && known[n.k + ":" + n.i])) { return; }
     known[n.k + ":" + n.i] = 1;
     store();
     drawPieces(n);
     $("notes").hidden = false;
-    say("A note, picked up. It is in your notes.", true);
+    say(Hd ? "A note, read. It is in your notes; the paper stays where it lies." : "A note, picked up. It is in your notes.", true);
   }
 
   /* ---- the frame ------------------------------------------------------------------ */
 
   var last = 0, sunDir = norm([-0.45, 0.78, -0.35]), SKY = [0.48, 0.66, 0.86], HAZE = [0.84, 0.86, 0.86];
   var crossMark = null, held = false, flying = false;
-  var skyVao = null, skyFig = null, curPix = 1, quality = 1, near = 1, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
+  var skyVao = null, skyFig = null, curPix = 1, quality = 1, quality0 = 1, rows0 = 1, walk = 8, slow = 0, rocketCh = null, rocketLift = 0, ended = false, tick = 0, slowAt = 0;
   function norm(v) { var n = hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; }
 
   function frame(now) {
     var dt = min(0.05, (now - (last || now)) / 1000);
     last = now;
     tick += 1;
-    // Frames coming slowly: the view a little coarser, then the walk among the bars kept nearer (near).
+    // Frames coming slowly: the view a little coarser, then the walk among the bars shorter (walk, in
+    // blocks); never the distance at which the faces close, which is set by the screen (rows0).
     if (!intro && !held && dt > 0.03) {
       slow += 1;
-      if (slow > 45 && quality > 0.5) { quality -= 0.25; slow = 0; resize(); } else if (slow > 45 && near < 4) { near *= 1.5; slow = 0; }
+      if (slow > 45 && quality > 0.5) { quality -= 0.25; slow = 0; resize(); } else if (slow > 45 && walk > 4) { walk -= 2; slow = 0; }
     } else if (slow > 0) { slow -= 1; }
     var eyeH = EYE, open = 1;
     if (intro) {
@@ -905,13 +1344,15 @@
       P.yaw = intro.yaw0 + intro.turn * sm(5.5, 8.6);
       if (u > 9.6) { awake(); }
     } else if (!launched && !flying) {
-      physics(dt);
+      var hand = controls(dt);
+      if (Hd) { holo(dt, now, hand); physics(dt, { fwd: 0, side: 0, up: 0 }); }
+      else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
     }
     pump(intro ? 14 : 6);
-    eye = [P.x, P.y + eyeH, P.z];
-    var cw = canvas.width, chh = canvas.height;
-    var proj = perspective(FOV * Math.PI / 180, cw / chh, 0.08, 420);
-    vp = mul(proj, view(eye, P.yaw, P.pitch));
+    var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
+    eye = cam.e;
+    var proj = perspective(FOV * Math.PI / 180, cw / chh, NEAR, FAR);
+    vp = mul(proj, view(eye, cam.yaw, cam.pitch));
     gl.viewport(0, 0, cw, chh);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(skyProg);
@@ -923,23 +1364,28 @@
     gl.uniformMatrix4fv(U.uVP, false, vp);
     gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
     gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, HAZE);
-    // The place's blocks to walk through, and how wide a pixel is at a block's distance.
-    gl.uniform1f(U.uPx, near * 2 * Math.tan(FOV * Math.PI / 360) / chh);
+    // The place's blocks to walk through, and how wide a pixel of the screen (at the view's first quality;
+    // while you come to, the view's own coarse pixels) is at a block's distance.
+    var tanH = 2 * Math.tan(FOV * Math.PI / 360), rows = curPix > 1 ? chh : rows0;
+    pxW = tanH / rows;
+    gl.uniform1f(U.uPx, pxW);
+    gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0);
     gl.uniform1i(U.uVox, 1);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
     gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ); gl.uniform1i(U.uFloor, 1);
     gl.uniform3f(U.uOff, 0, 0, 0);
+    gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
     // Nearest first, so that what is hidden behind is turned away before the walk through its blocks.
-    var pcx = P.x / CH - 0.5, pcz = P.z / CH - 0.5;
-    Object.keys(chunks).map(function (k) { return chunks[k]; })
+    var pcx = eye[0] / CH - 0.5, pcz = eye[2] / CH - 0.5;
+    var drawn = Object.keys(chunks).map(function (k) { return chunks[k]; })
       .filter(function (ch) { return ch.count && abs(ch.cx - pcx) <= 14.5 && abs(ch.cz - pcz) <= 14.5; })
-      .sort(function (a, b) { return hypot(a.cx - pcx, a.cz - pcz) - hypot(b.cx - pcx, b.cz - pcz); })
-      .forEach(function (ch) {
+      .sort(function (a, b) { return hypot(a.cx - pcx, a.cz - pcz) - hypot(b.cx - pcx, b.cz - pcz); });
+    drawn.forEach(function (ch) {
         gl.bindVertexArray(ch.vao);
         gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
       });
+    var lift = launched ? Math.pow(max(0, (now - launched) / 1000 - 1), 2) * 2.4 : 0;
     if (rocketCh) {
-      var lift = launched ? Math.pow(max(0, (now - launched) / 1000 - 1), 2) * 2.4 : 0;
       gl.uniform3f(U.uOff, 0, lift, 0);
       // The rocket walks its own small grid, which rises with it.
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, rocketCh.tex); gl.activeTexture(gl.TEXTURE0);
@@ -950,6 +1396,7 @@
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
       rocketLift = lift;
     }
+    drawPearl(now);
     if (skyFig) {
       gl.useProgram(figProg);
       gl.uniformMatrix4fv(FU.uVP, false, vp);
@@ -959,8 +1406,8 @@
     }
     if (homage) {
       gl.useProgram(homProg);
-      gl.uniformMatrix4fv(HU.uVP, false, vp);
-      gl.uniform3fv(HU.uEye, eye); gl.uniform3fv(HU.uHaze, HAZE);
+      gl.uniformMatrix4fv(OU.uVP, false, vp);
+      gl.uniform3fv(OU.uEye, eye); gl.uniform3fv(OU.uHaze, HAZE);
       homage.figures.forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
     }
     if (paintings.length) {
@@ -970,11 +1417,43 @@
       gl.activeTexture(gl.TEXTURE0); gl.uniform1i(AU.uTex, 0);
       gl.bindVertexArray(artVao);
       paintings.forEach(function (p) {
-        if (!p.tex || abs(p.cx - P.x) > 90 || abs(p.cz - P.z) > 90) { return; }
+        if (!p.tex || abs(p.cx - eye[0]) > 90 || abs(p.cz - eye[2]) > 90) { return; }
         gl.bindTexture(gl.TEXTURE_2D, p.tex);
         gl.uniform1f(AU.uLit, looked[p.f.id] ? p.lit * 0.8 : p.lit);
         gl.drawArrays(gl.TRIANGLES, p.first, 6);
       });
+    }
+    /* The veil, last, over all that the holes let through: the faces again, where the depth test (LESS, the
+       depth written above) passes, which is only where a face let a hole through, since everywhere else the
+       face itself or something nearer is in the depth. There each paints its mean at lod over what is behind
+       it, so the hole closes as the bars narrow, with the bars. No depth is written; the faces go from the
+       furthest to the nearest, so a hole seen through a hole is veiled first. Only the faces nearer than
+       where lod reaches 1, which are drawn whole above. */
+    var reach = 0.0275 * rows / tanH + 1, veil = [];
+    drawn.forEach(function (ch) {
+      if (ch.vcount && hypot(max(0, abs(eye[0] - (ch.cx + 0.5) * CH) - CH / 2), max(0, abs(eye[2] - (ch.cz + 0.5) * CH) - CH / 2)) < reach) {
+        veil.push({ ch: ch, d: hypot(eye[0] - (ch.cx + 0.5) * CH, eye[2] - (ch.cz + 0.5) * CH), lift: 0 });
+      }
+    });
+    if (rocketCh && rocketCh.vcount) { veil.push({ ch: rocketCh, d: hypot(eye[0] - rocketCh.org[0] - 2.5, eye[2] - rocketCh.org[2] - 2.5), lift: lift }); }
+    // And Mr Pearl's parts, when the camera stands near enough that a face of his is closing: the same reach in
+    // his unit (lod is 1 beyond reach - 1 of his cells), to the nearest of him in any pose of the walk.
+    if (me3 && drawMe.body) {
+      var pr = hypot(eye[0] - P.x, eye[2] - P.z), pdy = max(0, P.y - eye[1], eye[1] - P.y - me3.hi);
+      if (hypot(max(0, pr - me3.rad), pdy) < (reach - 1) * me3.body.cell) { veil.push({ pearl: true, d: pr }); drawMe.veil = true; }
+    }
+    if (veil.length) {
+      gl.useProgram(prog);
+      gl.uniform1i(U.uVeil, 1);
+      gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+      gl.enable(gl.CULL_FACE); gl.depthMask(false);
+      veil.sort(function (a, b) { return b.d - a.d; }).forEach(function (e) {
+        if (e.pearl) { drawPearl(now, true); return; }
+        gl.uniform3f(U.uOff, 0, e.lift, 0);
+        gl.bindVertexArray(e.ch.vao);
+        gl.drawElements(gl.TRIANGLES, e.ch.vcount, gl.UNSIGNED_INT, e.ch.count * 4);
+      });
+      gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
     }
     gl.bindVertexArray(null);
     if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
@@ -1001,6 +1480,8 @@
   // You, lying beside the trunk of your tree, the wreck to one side.
   function lieDown(lines) {
     var at = underTree();
+    if (Hd) { Hd = null; pov = bodyPov; delete document.body.dataset.holo; drawViews(); }
+    blend = null; camD = 0;
     P.x = at.x; P.z = at.z; P.y = at.y; P.vx = P.vy = P.vz = 0;
     intro = { t0: performance.now(), yaw0: wakeYaw(), turn: 1.5, lines: lines };
     document.body.dataset.film = "true";
@@ -1008,6 +1489,15 @@
   function awake() {
     var again = intro.lines[0] === "The guards walk you out.";
     intro = null;
+    // Out of his eyes and up over his head: the first time you see him (or into the view you had chosen).
+    P.face = P.yaw;
+    camLast = { e: [P.x, P.y + EYE, P.z], yaw: P.yaw, pitch: P.pitch };
+    if (pov === "third") {
+      // The first time you see him: from the nearest side where nothing stands between the camera and his head.
+      var from = { e: camLast.e, yaw: P.yaw, pitch: P.pitch };
+      P.yaw = clearYaw(P.yaw, REST); camD = 1e9;
+      blend = { from: from, t0: performance.now(), dur: T_SIT, pitchFrom: P.pitch, pitchTo: REST };
+    }
     curPix = 1;
     resize();
     delete document.body.dataset.film;
@@ -1028,16 +1518,18 @@
     if (line) { lines.push(line); }
     return lines;
   }
+  // Where you are: the body, or the head while it is out (as feet under it).
+  function me() { return Hd ? { x: Hd.x, y: Hd.y - PEARL.headY, z: Hd.z } : P; }
   function bearing(x, z) {
-    var b = Math.atan2(x - P.x, -(z - P.z)) - P.yaw;
+    var m = me(), b = Math.atan2(x - m.x, -(z - m.z)) - P.yaw;
     b = Math.atan2(Math.sin(b), Math.cos(b));
     return ARROWS[(round(b / (Math.PI / 4)) + 8) % 8];
   }
   function inRoom(x, y, z) { return place.kind !== "city" && !!Pl.roomAt(place, x, y, z); }
   function inBuilding() {
     if (!place.M) { return false; }
-    var c = floor(P.z) * w.SX + floor(P.x);
-    return inRoom(P.x, P.y, P.z) || (P.x >= 0 && P.z >= 0 && P.x < w.SX && P.z < w.SZ && !!place.M.foot[c] && P.y < place.M.base + 30);
+    var m = me(), c = floor(m.z) * w.SX + floor(m.x);
+    return inRoom(m.x, m.y, m.z) || (m.x >= 0 && m.z >= 0 && m.x < w.SX && m.z < w.SZ && !!place.M.foot[c] && m.y < place.M.base + 30);
   }
 
   /* Over the view: the crosshair, the eyelids and the opening's lines, the smoke, and which way. */
@@ -1088,31 +1580,32 @@
       var target = null, label = "";
       var unread = notes.filter(function (n) { return !known[n.k + ":" + n.i] && found.indexOf(n.k) < 0; });
       var lying = pieces.filter(function (pc) { return found.indexOf(pc.k) < 0; });
-      var dist = function (a) { return hypot(a.x + 0.5 - P.x, a.z + 0.5 - P.z) + abs(a.y - P.y) * 2; };
+      var m = me(), dist = function (a) { return hypot(a.x + 0.5 - m.x, a.z + 0.5 - m.z) + abs(a.y - m.y) * 2; };
       if (found.length === 4 && !built) { target = { x: wr.x, y: wr.y, z: wr.z }; label = "The wreck"; }
       else if (unread.length) { unread.sort(function (a, b) { return dist(a) - dist(b); }); target = unread[0]; label = "A note"; }
       else if (lying.length) { lying.sort(function (a, b) { return dist(a) - dist(b); }); target = lying[0]; label = adv.pieces[target.k].name.replace(/^The /, ""); }
       else if (found.length < 4) { text = "Behind which work? Read your notes"; }
       if (target && inRoom(target.x + 0.5, target.y, target.z + 0.5) && !inBuilding() && place.door) { target = { x: place.door.x - 0.5, y: place.door.y, z: place.door.z - 0.5 }; label = "The way in"; }
       if (target) {
-        var dx = target.x + 0.5 - P.x, dz = target.z + 0.5 - P.z, dy = target.y - P.y;
+        var dx = target.x + 0.5 - m.x, dz = target.z + 0.5 - m.z, dy = target.y - m.y;
         text = bearing(target.x + 0.5, target.z + 0.5) + " " + label + " · " + round(hypot(dx, dz)) + " m" + (dy > 3 ? " up" : dy < -3 ? " down" : "");
       }
     }
     el.hidden = !text;
     if (text && el.textContent !== text) { el.textContent = text; }
-    $("build").hidden = !(found.length === 4 && !built && hypot(wr.x - P.x, wr.z - P.z) < 9);
-    $("launch").hidden = !(built && !launched);
+    $("build").hidden = !!Hd || !(found.length === 4 && !built && hypot(wr.x - P.x, wr.z - P.z) < 9);
+    $("launch").hidden = !!Hd || !(built && !launched);
+    holoHud();
     // What the crosshair is on (on a computer): a work's title, a note.
     if (!touchy && tick % 3 === 0) {
-      var tag = $("tag"), hit = !intro && !launched && vp ? cast(lookDir(P.yaw, P.pitch), LOOK) : null, tt = "";
+      var tag = $("tag"), hit = !intro && !launched && vp ? pick(lookDir(camLast.yaw, camLast.pitch)) : null, tt = "";
       if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
-      else if (hit && hit.b === B.NOTE && hit.t <= REACH) { tt = "A note · click to read it"; }
+      else if (hit && hit.b === B.NOTE && hit.r <= REACH) { tt = "A note · click to read it"; }
       else if (hit && hit.b !== undefined) { tt = (window.Homage && Homage.label(homage, hit.x, hit.y, hit.z)) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
       tag.hidden = !tt;
       if (tt && tag.textContent !== tt) { tag.textContent = tt; }
     }
-    if (current && hypot(current.cx - P.x, current.cz - P.z) > 11) { closeLabel(); }
+    if (current && hypot(current.cx - me().x, current.cz - me().z) > 11) { closeLabel(); }
   }
   // A block's section and project: "The white cantilevered box of Casa CM", and in a lot, the lot's new form.
   function partText(pa) {
@@ -1122,10 +1615,10 @@
   }
   // Where you are: the room and its floor; or by a building of the lots round it, the new form it is; or the place.
   function where() {
-    var rm = place.kind !== "city" ? Pl.roomAt(place, P.x, P.y, P.z) : null, t = setting.name;
+    var m = me(), rm = place.kind !== "city" ? Pl.roomAt(place, m.x, m.y, m.z) : null, t = setting.name;
     if (rm && rm.name) { var FL = place.floors[rm.floor]; t = upper(rm.name) + (place.kind === "museum" ? " · " + (FL.name || FL.label) : ""); }
     else if (w.lot) {
-      var L = null, x = floor(P.x), z = floor(P.z);
+      var L = null, x = floor(m.x), z = floor(m.z);
       for (var r = 0; r <= 2 && !L; r += 1) {
         for (var dz = -r; dz <= r && !L; dz += 1) {
           for (var dx = -r; dx <= r && !L; dx += 1) {
@@ -1159,7 +1652,7 @@
     return ch;
   }
   function buildRocket(quiet) {
-    if ((built && !quiet) || found.length < 4) { return; }
+    if ((built && !quiet) || found.length < 4 || (Hd && !quiet)) { return; }
     built = true;
     store();
     // The wreck's blocks cleared away, and the rocket stood there in a mesh of its own, so it can rise:
@@ -1181,7 +1674,7 @@
     if (!quiet) { say("The rocket stands on the wreck's ground. Launch when you are clear.", true); }
   }
   function launch() {
-    if (!built || launched) { return; }
+    if (!built || launched || Hd) { return; }
     launched = performance.now();
     store();
     closeLabel();
@@ -1252,7 +1745,7 @@
       return '<button class="slot" data-slot="' + i + '" aria-pressed="' + (mode === "place" && slot === i) + '" aria-label="' + BLOCKS[b] + '"><i style="background-image:url(' + markOf("b" + b, 52, w.pal[b]) + ')"></i></button>';
     }).join("");
     document.querySelectorAll("[data-slot]").forEach(function (el) {
-      el.onclick = function (e) { e.stopPropagation(); slot = +el.dataset.slot; setMode("place"); };
+      el.onclick = function (e) { e.stopPropagation(); if (Hd) { barred(); return; } slot = +el.dataset.slot; setMode("place"); };
     });
   }
   function setMode(m) {
@@ -1290,6 +1783,7 @@
         return;
       }
       look[e.pointerId] = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false, button: e.button };
+      input.looking = true;
     });
     canvas.addEventListener("pointermove", function (e) {
       if (stick && e.pointerId === stick.id) {
@@ -1302,13 +1796,15 @@
       if (!l) { return; }
       var mx = e.clientX - l.x, my = e.clientY - l.y;
       if (abs(e.clientX - l.sx) + abs(e.clientY - l.sy) > 8) { l.moved = true; }
-      P.yaw += mx * 0.0055; P.pitch = max(-1.5, min(1.5, P.pitch - my * 0.0055));
+      P.yaw += mx * 0.0055; P.pitch = clampPitch(P.pitch - my * 0.0055);
+      if (blend) { blend.pitchTo = null; }
       l.x = e.clientX; l.y = e.clientY;
     });
     var up = function (e) {
       if (stick && e.pointerId === stick.id) { stick = null; input.fwd = input.side = 0; joy.hidden = true; knob.style.transform = ""; return; }
       var l = look[e.pointerId];
       delete look[e.pointerId];
+      input.looking = Object.keys(look).length > 0;
       if (l && !l.moved && performance.now() - l.t < 450) {
         if (touchy) { act(e.clientX, e.clientY, false); }
         else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, l.button === 2); }
@@ -1319,7 +1815,9 @@
     var jb = $("jump");
     jb.addEventListener("pointerdown", function (e) { e.preventDefault(); input.jump = true; });
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { jb.addEventListener(ev, function () { input.jump = false; }); });
-    $("mode").onclick = function () { setMode(mode === "break" ? "place" : "break"); };
+    $("mode").onclick = function () { if (Hd) { barred(); return; } setMode(mode === "break" ? "place" : "break"); };
+    document.querySelectorAll("[data-pov]").forEach(function (b) { b.onclick = function () { setPov(b.dataset.pov); }; });
+    $("bring").onclick = function () { bringBody(); };
     $("build").onclick = function () { buildRocket(false); };
     $("launch").onclick = launch;
     $("behind").onclick = lookBehind;
@@ -1332,12 +1830,18 @@
       if (!place) { return; }
       if (intro && performance.now() - intro.t0 > 600) { intro.t0 -= 9600; return; }
       var k = keyOf(e);
-      if (["w", "a", "s", "d", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(k) >= 0) { input.keys[k] = true; e.preventDefault(); }
-      if (k >= "1" && k <= "5") { slot = +k - 1; setMode("place"); }
-      if (k === "e" || k === "q") { setMode(mode === "break" ? "place" : "break"); }
-      if (k === "b") { buildRocket(false); }
+      if (["w", "a", "s", "d", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Shift", "c"].indexOf(k) >= 0) { input.keys[k] = true; e.preventDefault(); }
+      if (k === "v") { setPov(pov === "third" || (Hd && bodyPov === "third") ? "first" : "third"); }
+      if (k === "h") { setPov(Hd ? bodyPov : "holo"); }
+      if (k === "g" && Hd) { bringBody(); }
+      if (Hd && ((k >= "1" && k <= "5") || k === "e" || k === "q" || k === "b")) { barred(); }
+      else {
+        if (k >= "1" && k <= "5") { slot = +k - 1; setMode("place"); }
+        if (k === "e" || k === "q") { setMode(mode === "break" ? "place" : "break"); }
+        if (k === "b") { buildRocket(false); }
+      }
       if (k === "n") { $("notes").hidden = !$("notes").hidden; }
-      if (k === "f" && current) { lookBehind(); }
+      if (k === "f" && current) { if (Hd) { barred(); } else { lookBehind(); } }
       if (k === "Escape") { closeLabel(); $("notes").hidden = true; }
     });
     document.addEventListener("keyup", function (e) { input.keys[keyOf(e)] = false; });
@@ -1349,6 +1853,7 @@
     var cw = window.innerWidth, chh = window.innerHeight, dpr = min(2, window.devicePixelRatio || 1);
     var sc = curPix > 1 ? 1 / curPix : dpr * quality;
     canvas.width = max(1, round(cw * sc)); canvas.height = max(1, round(chh * sc));
+    rows0 = max(1, round(chh * dpr * quality0));
     hud.width = round(cw * dpr); hud.height = round(chh * dpr);
   }
 
@@ -1493,7 +1998,8 @@
       $("start").hidden = true;
       $("veil").hidden = true;
       document.title = adv.title + " · " + NAME;
-      drawPieces(); drawHotbar(); setMode("break"); where();
+      holoTop = place.crash.y + Math.sqrt(FAR * FAR - (w.SX * w.SX + w.SZ * w.SZ) / 4);
+      drawPieces(); drawHotbar(); setMode("break"); where(); drawViews();
       lieDown(adv.intro);
       requestAnimationFrame(frame);
     });
@@ -1522,13 +2028,14 @@
     // Straight in: nothing over the view until you have come to.
     if (CFG.play) { document.body.dataset.film = "true"; }
     gl = canvas.getContext("webgl2", { antialias: true });
-    quality = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
+    quality = quality0 = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS); homProg = compile(HOM_VS, HOM_FS);
-    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+    initPearl();
+    ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx", "uSteps", "uVeil", "uM", "uInvM"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
-    ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); HU[n] = gl.getUniformLocation(homProg, n); });
+    ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); OU[n] = gl.getUniformLocation(homProg, n); });
     try { escaped = sessionStorage.getItem(ESCAPED) === "1"; sessionStorage.removeItem(ESCAPED); } catch (e) { escaped = false; }
     gl.enable(gl.DEPTH_TEST);
     skyVao = gl.createVertexArray(); gl.bindVertexArray(skyVao);
@@ -1545,9 +2052,12 @@
     });
     Promise.all([fetch("catalogue.json").then(function (r) { return r.json(); }),
                  Fm ? fetch("sections.json").then(function (r) { return r.json(); }).catch(function () { return null; }) : null,
+                 fetch("pearl-body.json").then(function (r) { return r.json(); }).catch(function () { return null; }),
                  fetch("homage.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (res) {
       var d = res[0];
-      homageData = res[2];
+      // Mr Pearl, built of the unit from his form's file (without it the game plays, and he is not seen).
+      try { pearlFrom(res[2]); } catch (err) { me3 = null; }
+      homageData = res[3];
       cat = d;
       // The sections of the Architectural Authority's projects: the buildings round every place, and the new forms.
       forms = res[1] ? Fm.load(res[1]) : null;
@@ -1593,10 +2103,12 @@
              alarms: function () { return alarms; }, act: act, remeshAt: remeshAt, buildRocket: buildRocket, launch: launch, showLabel: showLabel,
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
              skip: function () { if (intro) { intro.t0 -= 9600; } },
-             hold: function (q) { held = true; quality = q; near = 1; resize(); },
+             hold: function (q, steps) { held = true; quality = q; walk = steps || 8; resize(); }, walk: function () { return walk; }, quality: function () { return quality; },
              flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; }, sky: function () { return skyFig; }, underTree: underTree,
              homage: function () { return homage; }, wakeYaw: wakeYaw,
-             aim: function () { var h = eye ? cast(lookDir(P.yaw, P.pitch), LOOK) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.t.toFixed(2)) : "nothing"; } };
+             aim: function () { var h = eye && camLast ? pick(lookDir(camLast.yaw, camLast.pitch)) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.r.toFixed(2)) : "nothing"; },
+             pov: function () { return pov; }, setPov: setPov, head: function () { return Hd; }, cam: function () { return { eye: eye, last: camLast, camD: camD, blend: blend, drawMe: drawMe }; },
+             bring: bringBody, home: goHome, harm: harmBody, pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL }; }, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_T: HOLO_T, BAR: BAR, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; } };
   } };
   init();
 })();

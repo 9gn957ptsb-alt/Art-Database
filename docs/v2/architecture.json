@@ -20,9 +20,9 @@
       "city": "Sharjah",
       "country": "United Arab Emirates",
       "where": "Sharjah, United Arab Emirates",
-      "lat": 25.3461,
-      "lon": 55.4211,
-      "precision": "town"
+      "lat": 25.28533,
+      "lon": 55.65271,
+      "precision": "exact"
     },
     {
       "title": "Beachfront Retreat – Anantara Mina Al Arab Ras Al Khaimah Resort by Anantara Hotels and Resorts",
@@ -32,9 +32,9 @@
       "city": "Ras Al Khaimah",
       "country": "United Arab Emirates",
       "where": "Ras Al Khaimah, United Arab Emirates",
-      "lat": 25.7738,
-      "lon": 55.9382,
-      "precision": "town"
+      "lat": 25.72184,
+      "lon": 55.85107,
+      "precision": "exact"
     },
     {
       "title": "Parisian Elegance – Rue Jean-Bart by Jean-Christophe Quinton",
@@ -43,7 +43,10 @@
       "url": "https://www.thearchitecturalauthority.com/article/parisian-elegance-rue-jean-bart-by-jean-christophe-quinton",
       "city": "",
       "country": "France",
-      "where": "Paris, France"
+      "where": "Paris, France",
+      "lat": 48.8535,
+      "lon": 2.3484,
+      "precision": "town"
     },
     {
       "title": "Light and Connection – Medika 10 by Paredes + Aleman Arquitectos",
@@ -53,9 +56,9 @@
       "city": "Guatemala City",
       "country": "Guatemala",
       "where": "Guatemala City, Guatemala",
-      "lat": 14.6416,
-      "lon": -90.5133,
-      "precision": "town"
+      "lat": 14.60934,
+      "lon": -90.5096,
+      "precision": "exact"
     },
     {
       "title": "Unconventional Center – Pueblo Serena by Carranza y Ruiz Arquitectura",
@@ -65,9 +68,9 @@
       "city": "Monterrey",
       "country": "Mexico",
       "where": "Monterrey, Mexico",
-      "lat": 25.6802,
-      "lon": -100.3153,
-      "precision": "town"
+      "lat": 25.57598,
+      "lon": -100.24862,
+      "precision": "exact"
     },
     {
       "title": "A Harmonious Response – Three Gardens House by AGi Architects",
@@ -208,7 +211,10 @@
       "url": "https://www.thearchitecturalauthority.com/article/the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien",
       "city": "",
       "country": "France",
-      "where": "Hauts-de-Seine, France"
+      "where": "Hauts-de-Seine, France",
+      "lat": 48.8402,
+      "lon": 2.1986,
+      "precision": "region"
     },
     {
       "title": "Purity and Warmth in Balance – Casa VCH by FH2L Arquitectos",

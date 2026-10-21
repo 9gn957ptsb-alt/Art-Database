@@ -3529,6 +3529,7 @@ button.art-venue:focus-visible { text-decoration: underline; }
   left: 0;
   top: 0;
   z-index: 3;
+  pointer-events: auto;        /* its own, though the layer it stands in over a life's place takes none (characters.js, lift) */
   margin: 0;
   padding: 0;
   border: 0;

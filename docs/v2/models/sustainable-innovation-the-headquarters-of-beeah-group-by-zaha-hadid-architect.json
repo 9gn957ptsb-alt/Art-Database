@@ -1,0 +1,360 @@
+{
+ "slug": "sustainable-innovation-the-headquarters-of-beeah-group-by-zaha-hadid-architect",
+ "name": "The Headquarters of BEEAH Group",
+ "voxel": 1.5,
+ "site": [
+  150,
+  120
+ ],
+ "ground": "sand",
+ "parts": [
+  {
+   "box": [
+    -75,
+    -60,
+    0,
+    150,
+    120,
+    0.3
+   ],
+   "m": "sand"
+  },
+  {
+   "prism": [
+    [
+     -77.8,
+     21.2
+    ],
+    [
+     -62.2,
+     -5.7
+    ],
+    [
+     -34.6,
+     -27.6
+    ],
+    [
+     -45.3,
+     -2.8
+    ],
+    [
+     -63.6,
+     21.2
+    ]
+   ],
+   "z": 0.3,
+   "h": 0.3,
+   "m": "grass"
+  },
+  {
+   "prism": [
+    [
+     41.0,
+     -1.4
+    ],
+    [
+     59.4,
+     -25.5
+    ],
+    [
+     80.6,
+     -29.7
+    ],
+    [
+     67.9,
+     -2.8
+    ],
+    [
+     45.3,
+     17.0
+    ]
+   ],
+   "z": 0.3,
+   "h": 0.3,
+   "m": "grass"
+  },
+  {
+   "prism": [
+    [
+     -33.9,
+     65.1
+    ],
+    [
+     -21.2,
+     46.7
+    ],
+    [
+     0.0,
+     42.4
+    ],
+    [
+     -8.5,
+     65.1
+    ],
+    [
+     -25.5,
+     76.4
+    ]
+   ],
+   "z": 0.3,
+   "h": 0.3,
+   "m": "grass"
+  },
+  {
+   "prism": [
+    [
+     -53.7,
+     39.6
+    ],
+    [
+     -31.1,
+     -2.8
+    ],
+    [
+     2.8,
+     -39.6
+    ],
+    [
+     49.5,
+     -60.8
+    ],
+    [
+     48.1,
+     -8.5
+    ],
+    [
+     7.1,
+     35.4
+    ],
+    [
+     -32.5,
+     55.2
+    ]
+   ],
+   "z": 0.3,
+   "h": 0.4,
+   "m": "paving"
+  },
+  {
+   "prism": [
+    [
+     -38.2,
+     43.8
+    ],
+    [
+     -12.7,
+     35.4
+    ],
+    [
+     22.6,
+     8.5
+    ],
+    [
+     41.0,
+     -24.0
+    ],
+    [
+     46.7,
+     -46.7
+    ],
+    [
+     21.2,
+     -21.2
+    ],
+    [
+     -12.7,
+     15.6
+    ]
+   ],
+   "z": 0.3,
+   "h": 7.0,
+   "m": "white",
+   "taper": 0.7
+  },
+  {
+   "prism": [
+    [
+     -46.7,
+     38.2
+    ],
+    [
+     -33.9,
+     8.5
+    ],
+    [
+     -4.2,
+     -24.0
+    ],
+    [
+     35.4,
+     -46.7
+    ],
+    [
+     49.5,
+     -52.3
+    ],
+    [
+     27.6,
+     -29.0
+    ],
+    [
+     -9.9,
+     4.2
+    ]
+   ],
+   "z": 0.3,
+   "h": 9.0,
+   "m": "white",
+   "taper": 0.8
+  },
+  {
+   "prism": [
+    [
+     -36.8,
+     36.8
+    ],
+    [
+     -22.6,
+     5.7
+    ],
+    [
+     4.2,
+     -24.0
+    ],
+    [
+     39.6,
+     -45.3
+    ],
+    [
+     49.5,
+     -49.5
+    ],
+    [
+     21.2,
+     -12.7
+    ],
+    [
+     -11.3,
+     25.5
+    ]
+   ],
+   "z": 0.3,
+   "h": 14.0,
+   "m": "white",
+   "taper": 0.85
+  },
+  {
+   "prism": [
+    [
+     -22.6,
+     19.8
+    ],
+    [
+     -2.8,
+     -2.8
+    ],
+    [
+     24.0,
+     -24.0
+    ],
+    [
+     1.4,
+     1.4
+    ]
+   ],
+   "z": 0.3,
+   "h": 4.0,
+   "m": "glass",
+   "taper": 0.0
+  },
+  {
+   "prism": [
+    [
+     -33.2,
+     29.0
+    ],
+    [
+     -21.9,
+     12.0
+    ],
+    [
+     -20.5,
+     13.4
+    ],
+    [
+     -31.8,
+     30.4
+    ]
+   ],
+   "z": 9.0,
+   "h": 0.6,
+   "m": "plant",
+   "taper": 0.0
+  },
+  {
+   "prism": [
+    [
+     1.4,
+     -12.7
+    ],
+    [
+     17.0,
+     -25.5
+    ],
+    [
+     18.4,
+     -24.0
+    ],
+    [
+     2.8,
+     -11.3
+    ]
+   ],
+   "z": 11.0,
+   "h": 0.6,
+   "m": "plant",
+   "taper": 0.0
+  },
+  {
+   "dome": [
+    -32.5,
+    35.4,
+    0.3,
+    7
+   ]
+  },
+  {
+   "prism": [
+    [
+     -9.9,
+     32.5
+    ],
+    [
+     13.4,
+     13.4
+    ],
+    [
+     14.8,
+     14.8
+    ],
+    [
+     -8.5,
+     33.9
+    ]
+   ],
+   "z": 7.0,
+   "h": 0.8,
+   "m": "dark",
+   "taper": 0.0
+  },
+  {
+   "pool": [
+    -26.6,
+    49.2,
+    22,
+    12
+   ]
+  }
+ ],
+ "notes": "Sheet 0 (Zaha Hadid Architects, Sharjah, 2020s): from the air the building is a family of long, tapering white aluminium-clad 'dunes' lying side by side on a diagonal, sharp at the north-east end and blunter at the south-west, the tallest dune at the crest between two lower; a glazed crack and green terraces between the dunes; curved landscape islands with a dark pond and perimeter paving round it. The entrance is a roof oculus (15 m dome, ventilating) at the blunt end; inside, a triangle-perforated skylit atrium, white ribbon stairs and an auditorium (sheet 1, not modelled). Modelled with tapered prisms: three overlapping dunes of 7, 9 and 14 m, the glazed split, two roof gardens, an entrance dome, the apron and three landscape islands with a pond. Guessed: every dimension (a diagonal of about 130 m and a crest of about 14 m, from the aerial and the 15 m dome), the number of dunes (the aerial shows three or four), the green terraces' positions. Orientation is the aerial's, long axis south-west to north-east. A public corporate building, at its own spot (OpenStreetMap 'BEEAH Group Headquarters', way 1077753326, via Nominatim); the footprint is not yet redrawn from the map's outline."
+}

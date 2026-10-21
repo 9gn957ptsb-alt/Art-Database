@@ -4,9 +4,10 @@ The artist, 9 Oct 2026: kaleidoscopes "in a very, very subtle way", then "Fold t
 10 Oct 2026: "Keep introducing kaleidoscopes in relation to the golden ratio on the website until I
 tell you, it's too much. Be gradual about it, maybe introduce it in a new way once a day."
 
-So: one new way a day, each a kaleidoscope whose geometry is the golden ratio's, each behind its own
+So: one new way a day (every other day since 21 Oct 2026, the artist: "Make the kaleidoscope routine the same
+as the characters routine"), each a kaleidoscope whose geometry is the golden ratio's, each behind its own
 flag, until he says it is too much. This file is the ledger — what has come, what may come next —
-and the daily pass's authority (the routine "Artist Website — kaleidoscope (daily, here)", which
+and the pass's authority (the routine "Artist Website — kaleidoscope (every other day, here)", which
 since 14 Oct 2026 fires into the artist's own conversation and hands the pass to a helper).
 
 **When he says it is too much** — in any session, in any words — that session disables the routine

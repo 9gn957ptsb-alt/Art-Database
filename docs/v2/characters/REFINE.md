@@ -74,9 +74,13 @@ same bytes every run, about a minute):
   animal after the same artist within 300 km, the same animal avoided within
   700 km where another can be had. The source line (`species.source`) is the
   grammar's: "dirt/earth/out/grammar.json, biome 4 (Temperate Broadleaf &
-  Mixed Forests), Palearctic, understory.hunters: wolves". The eight drawn by
-  hand are never generated: they are the natives of their artists' home
-  towns (`native` in characters.json) and their places' files say `cast`.
+  Mixed Forests), Palearctic, understory.hunters: wolves". The drawn by hand
+  are never generated: they are the natives of their artists' home
+  towns (`native` in characters.json) and their places' files say `cast` —
+  all but the slug and the hummingbird, which are no place's (`belongs`). The
+  hummingbird's species is deliberately not in `CAST` (species.py): Berkeley's
+  and Santa Monica's own Anna's hummingbirds, after Mary Corse and Mark
+  Bradford, stay the generated ones.
 - **Its plants**: plants.json's set for the place, as before (its rows now
   carry each place's key).
 - **Its drawing** (`species.py` → `rigs.py` → `hands.py`): the species' body
@@ -268,13 +272,67 @@ down below it, broken and dimmed, and a fall of flecks). `scripts/characters/liz
   over half its length where the real one's is two thirds); the legs are a two-bone reach, the near and far legs
   of a stride only a shade apart; the front-on head is a rounded wedge; the reflection costs the sprite nine rows
   below its feet, so its pressed frame is a little tall under the lizard. On a place, then's clod
-  (`.pt-clod`) the canvas sits above the stage, so a character standing over it cannot be pressed (the same
-  for the fox in Picasso's life): a finding for the placethen pass, not changed here.
+  (`.pt-clod`) the canvas stood in the stage, under the art layer, so a character standing over it could be
+  neither seen nor pressed (the same for the fox in Picasso's life): mended 15 Oct 2026 (`characters.js`, "In a
+  life's place": while the place is up the canvas and the buttons stand in its panel over the clod, cut to it;
+  `placethen.js` `at` and `here`; `scripts/check_place_animal.js`).
 - **Refining it**: render with `qlook`-style sheets (letters through `INKS`) at 8–14 px a cell and the page's own
   `preview_character.js lizard out.png --scale 2`; compare the silhouette (head wedge, neck, trunk depth, legs with
   the knee forward and the elbow back, tail), the net and the ocelli with photographs of a male in spring; change
   the legs by moving feet in `gait_feet` / `stand_feet` and the leg's bone lengths in `legs`, never the agreed marks
   (`SEAMS`), and check `deer,lizard,fox` and `fox,deer,lizard` as chimeras.
+
+## Anna's hummingbird, a stain and a hover
+
+The ninth of the cast, drawn on 21 Oct 2026 from the top of the backlog: Frankenthaler's Anna's hummingbird
+("Stacked fields: the gorget's colour soaks and floods as it turns, the way her stain soaks the canvas").
+DIRT's roster gives her grammar 8, poured stains (soft marks that flow one way: Mountains and Sea, 1952, paint
+soaked into raw canvas). `scripts/characters/hummingbird.py`:
+
+- **A stain, not a shading**: 64 by 48 cells at 1.5 CSS pixels a cell (`CELL = 1.5`, so 2 device pixels at density 1,
+  3 at 2: a bird about 60 CSS pixels long), every pose of four or eight frames played on the clock (`moves.live`,
+  as the murmuration's). The rose of the gorget soaks out of the throat into the bronze of the back along a feathered
+  dithered edge (`soak`), a cream wash thins up the flank, and the wings are a plum blade with the fan its stroke
+  leaves (`fan_part`: a wash dithered in blocks of two cells, densest at the wing's edge now, thinning back). The
+  gorget is rose only where the light is where it is turned (`rose`, `gleam`): lit in the hover, blazing facing
+  you, dark when perched — structural colour, which is a stain's own trick.
+- **Her inks**: plum-brown #6b4f55 (wings, tail, bill), her gold worked toward the plum for the bronze of the back,
+  her cream for the dusky belly, her terracotta worked toward the gorget's rose. The back reads bronze where the real
+  one is green (no green in her palette).
+- **Poses** (`poses()`): `trot` the dart (body level, four wing states), `stand` the hover (the body tilted 38°),
+  `back` its pause — the bird backing away, upright with the wings level at the sides (a hummingbird is the only bird
+  that flies backward; the first try, a head turned right round, lost the bill against the wing), `look` facing you,
+  `sit` perched on a twig (eight frames: the head turns, the tail flicks, the eye shuts), and the ethogram's `act`
+  (the display dive), `play` (feeding at a flower, the tongue out and in) and `ritual` (the chase).
+- **No place's native** (`belongs` in characters.json, as the slug): Anna's lives on the Pacific coast and Frankenthaler
+  was born in Manhattan, where the bison (de Kooning, Brooklyn) already is: a place has one native character. So it
+  comes out of no city's wave. It comes in Frankenthaler's own places (`CAST` in placethen.js and studios.js: a studio
+  or a place of her life, as the fox in Picasso's and the lizard in Dalí's), in her published walks (`hummingbird-route`,
+  `hummingbird-travelled`: "Frankenthaler by hummingbird"), followed (`Characters.lead`; its line: "Anna's hummingbird ·
+  after Helen Frankenthaler, of New York City, New York · sugar maple and eastern white pine from New York City among
+  Paris's hazel, ancient oaks and European beech · …"; a press on a follower lets it go, so its line is read in
+  `Characters._state().line`) and in a chimera. **A choice for the artist**: Berkeley and Santa Monica, which have
+  generated hummingbirds after Mary Corse and Mark Bradford, are where the species lives; making Frankenthaler's
+  hand-drawn bird theirs (and the generated ones go) would be one entry in `native` and one in `species.CAST`.
+- **Ethogram** (the papers are cited as recalled: Wikimedia answered 429 on 21 Oct 2026 and the Wikipedia article was
+  not re-read; check each against its source): the display dive (instinct: Clark & Feo 2008, the tail's chirp; Clark
+  2009, about 27 m/s), feeding at a flower (play: Rico-Guevara & Rubega 2011, the tongue a fluid trap), the territorial
+  chase (ritual: Russell 1996 and the article). **Corpse** (`corpse.js`, `offers`): the dive — a leg's second stop is
+  offered 1,200 km or more from the last (the climb), its third within 400 km of the leg's first (the fall).
+  **Meeting** (`characters.js`, `meet`): two chase round the territory, gorgets blazing.
+- **The chimera's parts** (`rig`, `level`): the bird held level on a twig, tiny feet down to the ground line (the legs
+  thick enough not to read as pins), the wings folded along the back — always, as hindquarters, where a beating wing
+  would be cut at the fold and float — and the tail shortened there; `CHIMERA_SCALE` 1.12. Checked as head (bison, hummingbird,
+  slug), body (bison, hummingbird, fox) and hindquarters (fox, deer, hummingbird).
+- **Weak**: the wing is a blade and a stain, not a feather; the hover's wing positions are chosen for how they read,
+  not filmed; a hovering bird has no ground, so its box sits above the ground line by a few cells; the body as a
+  chimera's is a slab between its neighbours' bigger masses; the real bird's description, the range and the papers'
+  figures should be checked against their sources (not re-read this pass).
+- **Refining it**: `python3 scripts/build_characters.py --sprites`, then render the poses large on a flat ground in
+  its inks (the page's own letter map is `inkFor` in characters.js: d R r g the coat, W w the white, k K the black, y
+  the eye, o p the pen) and compare the hover's silhouette (head, bill, chest, tail), the gorget's soak and the fan
+  with photographs of a male hovering; change the geometry in `bird()` (the body is `F.path` and `F.ell`, the head
+  `ellipse` at `F.pt(10.4, -0.5)`), never the agreed marks (`SEAMS`).
 
 ## Each run
 
@@ -306,7 +364,7 @@ down below it, broken and dimmed, and a fall of flecks). `scripts/characters/liz
    grassland, are given ants and no plants at all, so a wave there raises
    none and `check_characters.js` expects none), say so to the DIRT session
    rather than patch it here.
-4. **Refine one of the eight drawn by hand** (the one refined longest ago),
+4. **Refine one of the nine drawn by hand** (the one refined longest ago),
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,
    `notes` in `characters.json`.
@@ -414,6 +472,25 @@ overwhelming and distracting."
   walk's strip, or a museum's diamond and name (`seat` in characters.js).
   The nearer (lower) is drawn over the farther. A walk's animal is asked
   for, so it is always let in: the one out longest makes way.
+- **In a life's place** (the place, then: `placethen.js`) an animal stands on
+  the place's clod. The art layer lies over the stage there, its panel 95%
+  dark, so while the place is up `lift` in characters.js carries the canvas
+  and the buttons into the place's panel, over the clod and under its tile and
+  words, cut to the clod's box (never over the picture, the sentence, the dial
+  or the column), and the lines (what it is, what two share) up into the art
+  layer; all go back to the stage when the place is put away. Where one stands
+  (a seat, a followed one's tile) is fitted so its whole box is on the clod
+  (`onClod`: the starling is 160 px across and a phone's clod 230, and its edge
+  had been cut off by the box). `PlaceThen.at`
+  puts a point of the earth on the clod as drawn (`Land.at` asks it, so a
+  hometown animal stands where its town is, and one a journey's arrival met
+  before the clod was drawn is seated again by that point, not carried by its
+  offset from the globe's; off the square it is seated by the
+  keep-clear boxes, `.pt-work`, `.pt-head` and `.pt-more` among them) and
+  `PlaceThen.here` is the place's tile, by which a followed animal waits, below
+  it and to its left as by a museum's door (`guideFrame`). Pressed, a followed
+  animal is let go, as everywhere; one at rest, or come from a wave, stops and
+  says what it is. `scripts/check_place_animal.js` checks it.
 - **Two that meet.** One that comes while another stands still goes to it
   and stands beside it, facing, a little lower. If their artists' saved
   works share a thread (`artists.json` `pairs`: a show, else an owner, a

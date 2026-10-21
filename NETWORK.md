@@ -163,7 +163,7 @@ yet. The daily pass takes them up, most needed first:
 
 ## The daily pass
 
-A routine keeps this true: "Artist Website — network research (daily, here)", at 13:41 UTC. Since 14 Oct 2026
+A routine keeps this true: "Artist Website — network research (every other day, here)", at 13:41 UTC on odd days of the month. Since 14 Oct 2026
 it fires into the artist's own conversation, which hands the pass to a helper in its own worktree of the
 repository (CLAUDE.md, "The daily routines"); a routine that starts a fresh session each time starts it with
 no repository, and could never push.
