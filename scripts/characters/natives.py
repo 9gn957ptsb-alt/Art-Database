@@ -28,8 +28,10 @@ this chooses, from public files only and the same every run:
   artist's hand and inks (hands.py), the poses as a letter a cell, rows
   run-length coded (a run is its count then its letter; no letter is a digit).
 
-The six drawn by hand are the natives of their artists' home towns
-(characters.json's `native`): their places' files name them (`cast`).
+The drawn by hand are the natives of their artists' home towns
+(characters.json's `native`): their places' files name them (`cast`). One is the
+native of two places by the artist's choice, not by a birthplace (characters.json's
+`chosen`; `chosen_places` below).
 
 Writes docs/v2/characters/places/<key>.json (one a place, read on the wave)
 and docs/v2/characters/maps/<life id>.json (each native artist's map, for
@@ -362,6 +364,42 @@ def moves_of(sp):
     return {"speed": 0.4, "fps": 10, "pause": "back", "leave": "edge", "gait": "crawl"}
 
 
+# ---- the artist's choice ---------------------------------------------------------------------
+
+def chosen_places(cast, places, born):
+    """The places whose native character the artist chose, not a birthplace (characters.json's `chosen`, a list on
+    a drawn character): place key -> { the character, its artist, the artist's life id, how it was chosen }.
+    The artist, 21 Oct 2026: "Give Berkeley and Santa Monica the hummingbird." Helen Frankenthaler's Anna's
+    hummingbird is Berkeley's and Santa Monica's native although she was born in Manhattan, so the place's file
+    says `how: "chosen"`, never "born".
+
+    It is applied AFTER the generator's own choices (choose_artists and choose_species run as if no choice had been
+    made), so that no other place shifts: the artist born here (Mary Corse, Berkeley) stays "used" for her
+    neighbours, the hummingbird the generator drew here still counts in its neighbours' spread, and the record the
+    generator drew is kept in the place's file as `own`, for the artist's own life places and her follow map."""
+    keys = {p["key"] for p in places}
+    out = {}
+    for c in cast["cast"]:
+        for n in c.get("chosen") or []:
+            if n["key"] not in keys:
+                raise SystemExit("characters.json: %s is chosen for %s, which is no place of the site" % (c["id"], n["key"]))
+            aid = next((b["id"] for b in born if b["name"] == c["artist"]), None)
+            out[n["key"]] = {"cast": c["id"], "artist": c["artist"], "id": aid, "by": n["by"]}
+    return out
+
+
+def chosen_record(rec, ch):
+    """The place's file where the artist chose its character: the drawn character (`cast`) after its own artist and,
+    if the generator drew one here, its whole record kept as `own` (the artist born here keeps their own animal)."""
+    out = {"key": rec["key"], "name": rec["name"], "ll": rec["ll"], "kind": rec["kind"], "cast": ch["cast"],
+           "native": {"artist": ch["artist"], "how": "chosen", "by": ch["by"]}}
+    if ch.get("id"):
+        out["native"]["id"] = ch["id"]
+    if rec.get("species"):
+        out["own"] = rec
+    return out
+
+
 # ---- all ------------------------------------------------------------------------------------
 
 def build(cast, plant_of, place_sets, grammar):
@@ -403,6 +441,7 @@ def write_all(cast, places, fixed, born, plant_rows, sets_of, grammar):
     by_name = artist_works(finding)
     artists = choose_artists(places, born, fixed)
     species = choose_species(places, sets_of, artists, grammar)
+    chosen = chosen_places(cast, places, born)
     (OUT / "places").mkdir(exist_ok=True)
     (OUT / "maps").mkdir(exist_ok=True)
     for old in list((OUT / "places").glob("*.json")) + list((OUT / "maps").glob("*.json")):
@@ -410,7 +449,7 @@ def write_all(cast, places, fixed, born, plant_rows, sets_of, grammar):
     geo_cache, rows_cache = {}, {}
     maps_done = {}
     by_id = {b["id"]: b for b in born}
-    stats = {"born": 0, "region": 0, "ground": 0, "cast": 0, "none": 0, "bytes": 0, "maps": 0, "species": set(), "modes": {}}
+    stats = {"born": 0, "region": 0, "ground": 0, "cast": 0, "chosen": 0, "none": 0, "bytes": 0, "maps": 0, "species": set(), "modes": {}}
     index = []
     for p in places:
         a = artists[p["key"]]
@@ -479,6 +518,13 @@ def write_all(cast, places, fixed, born, plant_rows, sets_of, grammar):
         else:
             stats["none"] += 1
             continue
+        if p["key"] in chosen:
+            if a.get("cast"):
+                raise SystemExit("%s is a drawn character's home town and is also chosen" % p["key"])
+            if rec.get("species"):
+                stats[a["how"]] -= 1                     # drawn by the generator and kept (`own`), not the place's now
+            rec = chosen_record(rec, chosen[p["key"]])
+            stats["chosen"] += 1
         text = json.dumps(rec, ensure_ascii=False, separators=(",", ":"))
         (OUT / "places" / (p["key"] + ".json")).write_text(text + "\n")
         stats["bytes"] += len(text) + 1

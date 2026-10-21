@@ -69,7 +69,13 @@
    Only drawn characters, each once a visit to a city. The banana slug is
    no place's: Ariolimax lives on the Pacific coast of North America and
    Kapoor was born in Mumbai, so it walks its walks, is followed, and is a
-   chimera's part, and never comes out of a wave.
+   chimera's part, and never comes out of a wave. Frankenthaler's Anna's
+   hummingbird is no birthplace's (she was born in Manhattan, where the bison
+   is) but is the native of Berkeley and Santa Monica by the artist's choice
+   (characters.json's `chosen`; a place file's `native.how` "chosen"): there
+   it is the wave's, the dial's hand and the arrival's, after Frankenthaler,
+   and the artists born there (Corse, Bradford) keep their own generated
+   hummingbirds in their life places (nativeFor's `own`).
 
    A crowd, never: at most two animals on a phone and three on a desktop,
    counting one being followed; a second never comes within φ³ s of the
@@ -316,7 +322,15 @@
      born there; else one of the region; else "after the ground"), in that artist's
      hand and inks. plants.json's rows carry each place's key; a place is found by its
      key, else as the nearest keyed place within 25 km. A place whose native is one of
-     the six drawn by hand names it (`cast`). One file a place, read on the wave. */
+     the six drawn by hand names it (`cast`). One file a place, read on the wave.
+
+     Where the artist chose the place's character, not a birthplace (the artist, 21 Oct
+     2026: "Give Berkeley and Santa Monica the hummingbird": Frankenthaler's Anna's
+     hummingbird, `native.how` "chosen"), the file names the drawn one (`cast`) and keeps,
+     as `own`, the whole record the generator drew there for the artist born there (Mary
+     Corse's, Mark Bradford's). The place's character is the drawn one; the artist's own
+     animal, asked for by the artist (nativeFor's second argument, a life's place), is
+     `own`. */
 
   var natives = {};                    // key -> Promise of the character (or null)
   var gens = {};                       // id -> a place's own character, built
@@ -355,11 +369,14 @@
     return mapsRead[id];
   }
 
-  // The place's character: one of the six (cast), or its own, built from its file.
-  function nativeFor(key) {
+  // The place's character: one of the drawn (cast), or its own, built from its file. Given an artist, the one the
+  // generator drew there for that artist where the place's character was chosen for another (its `own`).
+  function nativeFor(key, artist) {
     if (!key) { return Promise.resolve(null); }
-    if (!natives[key]) {
-      natives[key] = load().then(function () { return get(BASE + "places/" + key + ".json"); }).then(function (rec) {
+    var ck = artist ? key + "|" + artist : key;
+    if (!natives[ck]) {
+      natives[ck] = load().then(function () { return get(BASE + "places/" + key + ".json"); }).then(function (rec) {
+        if (artist && rec.own && rec.own.native && rec.own.native.artist === artist) { rec = rec.own; }
         if (rec.cast) {
           var c0 = castOf(rec.cast);
           return c0 && sprites[c0.id] ? { c: c0, rec: rec } : null;
@@ -379,13 +396,15 @@
         });
       }).catch(function () { return null; });
     }
-    return natives[key];
+    return natives[ck];
   }
 
-  // A place's native as a hometown animal: only where its artist was born (not one of the region, not the ground's).
+  // A place's native as a hometown animal: only where its artist was born, or the artist chose it for the place
+  // (not one of the region, not the ground's).
   function hometown(key) {
     return nativeFor(key).then(function (got) {
-      return got && got.rec.native && got.rec.native.how === "born" ? got.c : null;
+      var how = got && got.rec.native && got.rec.native.how;
+      return how === "born" || how === "chosen" ? got.c : null;
     });
   }
 
@@ -976,7 +995,9 @@
         // A life's place: the artist's own animal, chosen by whoever chose the life; else the place's own.
         var own = drawn().filter(function (k) { return k.artist === lw.life.name; })[0];
         var nk = plants && plants.natives && plants.natives[lw.life.name];
-        want = own ? Promise.resolve({ c: own, rec: null }) : nk ? nativeFor(nk) : nativeFor(pk);
+        // (The artist's own, asked for by name: where their birthplace's character was chosen for another, Berkeley's
+        // hummingbird for Frankenthaler's, theirs is the one the generator drew, kept in that place's file.)
+        want = own ? Promise.resolve({ c: own, rec: null }) : nk ? nativeFor(nk, lw.life.name) : nativeFor(pk);
       } else {
         want = nativeFor(pk);
       }
@@ -1385,6 +1406,8 @@
       if (local) { bits.push("among " + local); }
     } else if (o.atHome && town) {
       bits.push("at home in " + town + (names.length ? ", among " + andList(names.slice(0, 2)) : ""));
+      // (Where the artist chose the place for the animal, its artist's home is another ground and its plants rise too.)
+      if (homes.length && o.home) { bits.push(andList(homes.slice(0, 2)) + " from " + o.home.name); }
     } else if (homes.length) {
       bits.push(andList(homes.slice(0, 2)) + " from " + o.home.name + (local ? " among " + local : ""));
     } else if (o.home && o.here && o.home.set === o.here.set && names.length) {
