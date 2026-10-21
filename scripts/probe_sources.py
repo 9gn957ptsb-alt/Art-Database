@@ -16,8 +16,9 @@ Then the host itself (a GET of the source's probe address): does it answer, and 
   silent   the policy lets it through and the host answers nothing it can read (TLS, reset, timeout)
 
 A host that answers is also asked for its robots.txt (once, by a plain GET): "robots" in its row is
-"disallows" when the file refuses robots the probe's address (the probe's own GET is then not made: the
-tunnel's opening is all that is said), "ok" when it has rules that allow it, "none" when it has no file. A
+"disallows" when the file refuses the probe's address to any robot, or to Claude's own by name (ClaudeBot,
+Claude-User, Claude-Code, Claude-SearchBot, Claude-Web, anthropic-ai: whoever runs the probe and the passes after it is Claude; the probe's own GET is
+then not made: the tunnel's opening is all that is said), "ok" when it has rules that allow it, "none" when it has no file. A
 source whose needed host disallows is not "allowed" but "held": the host answers and is not read (the
 artist's rule of 10 Oct 2026 that robots.txt is honoured; NETWORK.md, "How a source is judged").
 
@@ -48,6 +49,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCES = os.path.join(ROOT, 'scripts', 'sources.json')
 LEDGER = os.path.join(ROOT, 'NETWORK.md')
 UA = 'ArtDatabaseProbe/1.0 (https://9gn957ptsb-alt.github.io/Art-Database/)'
+# The robots a host's robots.txt is read for: the probe's own name, and Claude's, since a session reads it.
+AGENTS = (UA, 'ClaudeBot', 'Claude-User', 'Claude-Code', 'Claude-SearchBot', 'Claude-Web', 'anthropic-ai')
 FACETS = ['earth', 'cities', 'museums', 'life', 'past']
 FACET_WORDS = {'earth': 'The Earth from above', 'cities': 'Cities and buildings',
                'museums': 'Museums and works', 'life': 'Plants and animals', 'past': 'Places as they were'}
@@ -155,7 +158,7 @@ def robots(url):
         return 'none'
     rp = urllib.robotparser.RobotFileParser()
     rp.parse(body.splitlines())
-    return 'ok' if rp.can_fetch(UA, url) else 'disallows'
+    return 'ok' if all(rp.can_fetch(a, url) for a in AGENTS) else 'disallows'
 
 
 def probe(h):
