@@ -19,6 +19,13 @@ A new kind is one more row here, one more entry in `KINDS` in
 on the globe), and `"kind"` on its entries in `ledger.json`. Everything below
 then covers it without change.
 
+A building the artist names by hand (`scripts/architecture_hand.json`,
+`"hand"` in `architecture.json`; the Shanghai Grand Opera House, 21 Oct 2026)
+is of its kind and takes its turn like the rest. Where its ledger entry names
+a `"script"`, refine that script and run it again, never the JSON it writes.
+It has no article's photographs: use Wikimedia Commons, or the sources its
+script names, once they answer.
+
 ## Each run
 
 1. **Start clean.** `git fetch origin claude/artist-website-dev-s92irf` and

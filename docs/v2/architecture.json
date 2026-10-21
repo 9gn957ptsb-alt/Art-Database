@@ -791,6 +791,21 @@
       "lat": -32.0222,
       "lon": -63.9699,
       "precision": "region"
+    },
+    {
+      "title": "Shanghai Grand Opera House by Snøhetta",
+      "name": "Shanghai Grand Opera House",
+      "slug": "shanghai-grand-opera-house-by-snohetta",
+      "url": "https://www.snohetta.com/projects/shanghai-grand-opera-house",
+      "source": "Snøhetta",
+      "city": "Shanghai",
+      "country": "China",
+      "where": "Shanghai, China",
+      "year": "2026",
+      "lat": 31.18061,
+      "lon": 121.46638,
+      "precision": "exact",
+      "hand": true
     }
   ]
 }

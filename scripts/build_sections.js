@@ -398,7 +398,9 @@ function stamp(sec) {
 /* ---- all of them ----------------------------------------------------------------------- */
 
 function main() {
-  const arch = JSON.parse(fs.readFileSync(path.join(V2, "architecture.json"), "utf8")).buildings;
+  // The Architectural Authority's buildings only: one the artist named by hand (`hand`) is not, and Rocket's world
+  // says it is made of theirs.
+  const arch = JSON.parse(fs.readFileSync(path.join(V2, "architecture.json"), "utf8")).buildings.filter(b => !b.hand);
   const projects = [], sections = [];
   arch.forEach(entry => {
     const file = path.join(V2, "models", entry.slug + ".json");

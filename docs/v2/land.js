@@ -12201,6 +12201,7 @@
   var buildingEl = document.getElementById("building");
   var buildingMap = document.getElementById("building-map");
   var buildingLink = document.getElementById("building-link");
+  var buildingLinkAt = document.getElementById("building-link-at");
   var buildingWorks = document.getElementById("building-works");
   var buildingOn = null;             // the visit the view belongs to
   var grounds = {};                  // slug -> the ground, once read
@@ -12725,9 +12726,11 @@
     var b = city.building;
     var visit = {};
     buildingOn = visit;
-    // A building links to its article; a museum has its works instead.
+    // A building links to its article; a museum has its works instead. One the artist named by hand, not a
+    // bookmark, links to its own source and says whose (architecture_hand.json's `source`).
     buildingLink.hidden = !b.url;
     if (b.url) { buildingLink.href = b.url; }
+    if (buildingLinkAt) { buildingLinkAt.textContent = "Read it at " + (b.source || "The Architectural Authority"); }
     if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
     var walkVia = city.via;
     delete city.via;

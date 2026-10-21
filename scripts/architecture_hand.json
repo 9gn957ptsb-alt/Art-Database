@@ -1,0 +1,26 @@
+{
+  "_note": "Buildings the artist named by hand that are not among his Architectural Authority bookmarks. scripts/build_architecture.py appends them to docs/v2/architecture.json (every build, or alone with --hand), marked \"hand\": true; keys starting with an underscore stay here. `source` names who the link goes to (the page says \"Read it at <source>\"). Rocket's sections and adventures keep to the Architectural Authority's buildings.",
+  "buildings": [
+    {
+      "title": "Shanghai Grand Opera House by Snøhetta",
+      "name": "Shanghai Grand Opera House",
+      "slug": "shanghai-grand-opera-house-by-snohetta",
+      "url": "https://www.snohetta.com/projects/shanghai-grand-opera-house",
+      "source": "Snøhetta",
+      "city": "Shanghai",
+      "country": "China",
+      "where": "Shanghai, China",
+      "year": "2026",
+      "lat": 31.18061,
+      "lon": 121.46638,
+      "precision": "exact",
+      "_asked": "The artist, 21 Oct 2026, sending a LinkedIn link (lnkd.in, refused to the session) and then: \"It's the new Shanghai Opera house building by Snohetta\"; asked whether to add it though it is not in the Architectural Authority (its own search, HybridSearch/Global, finds nothing for Shanghai Grand Opera, Snøhetta, opera house or Pudong; its sitemap has no article on it): \"Add it by hand\".",
+      "_sources": [
+        "Point: OpenStreetMap way 1316877742 (amenity=theatre, name:en Shanghai Grand Opera House, name 上海大歌剧院), its centroid by Nominatim (lookup?osm_ids=W1316877742), 31.1806072 N, 121.4663783 E. A public building: exact. Not the Shanghai Grand Theatre at People's Square (way 39763758).",
+        "Year: opened 17 October 2026 (zh Wikipedia, read through api.wikimedia.org: 10月17日啟用); built from 18 December 2019, completed 23 June 2026 (zh Wikipedia).",
+        "Link: Snøhetta's own project page, the address as search results give it; the session's proxy refuses snohetta.com, so it was not opened from here.",
+        "Wikidata Q85873917 (opera house, Shanghai); Expo Culture Park, Pudong, beside the Huangpu."
+      ]
+    }
+  ]
+}

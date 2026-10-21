@@ -69,7 +69,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--only")
     args = parser.parse_args()
-    buildings = json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"]
+    # The articles' photographs: a building added by hand has no article here (its reference is gathered by hand).
+    buildings = [b for b in json.loads(BUILDINGS.read_text(encoding="utf-8"))["buildings"] if not b.get("hand")]
     if args.only:
         buildings = [b for b in buildings if b["slug"] == args.only]
     session = requests.Session()

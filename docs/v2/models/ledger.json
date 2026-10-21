@@ -4421,5 +4421,16 @@
     "log": [
       "2026-10-21 first model from the article's photographs (all interiors): a high-floor apartment as a cutaway set over the sea - curved glass corner, slatted timber wall, marble wall, kitchen island, curved sofas, oval dining table; placed at its town only (a private apartment); the tower itself is not photographed"
     ]
+  },
+  "shanghai-grand-opera-house-by-snohetta": {
+    "name": "Shanghai Grand Opera House",
+    "refined": "2026-10-21",
+    "passes": 1,
+    "sketchup": false,
+    "kind": "architecture",
+    "script": "scripts/model_shanghai_opera.py",
+    "log": [
+      "2026-10-21 first model, by hand (not an Architectural Authority bookmark): written by scripts/model_shanghai_opera.py from OpenStreetMap's outline, Sentinel-2 of 8 and 14 Oct 2026, published heights and Snøhetta's film of the design from above; no photograph of the built house read. its well and stair at the published 22-32 m; stands on 99% of its plot's building cells, best shift 0, 0"
+    ]
   }
 }

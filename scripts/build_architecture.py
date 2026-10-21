@@ -19,6 +19,15 @@ saved/bookmarked list; it is just the architecture the artist keeps an eye on.
 Geocoding uses nominatim.openstreetmap.org; that host must be allowed under the
 environment's Network access. Results are cached in data/geocode_cache.json, so it
 is only paid once per city.
+
+A building the artist names that is not among the bookmarks (21 Oct 2026, the Shanghai Grand Opera House:
+not in the Architectural Authority at all) is added by hand in scripts/architecture_hand.json, each entry as it
+is written here, its point from the map, its link to its own source and that source's name (`source`: the page
+says "Read it at …"), marked `"hand": true`. Every build appends them after the bookmarks; `--hand` merges them
+into the existing file alone, without reading the bookmarks again. Rocket's sections and adventures keep to the
+Architectural Authority's buildings (scripts/build_sections.js, scripts/build_adventures.py).
+
+    python3 scripts/build_architecture.py --hand
 """
 
 import json
@@ -34,6 +43,7 @@ RAW = ROOT / "data" / "architecture_saves_raw.json"
 CACHE = ROOT / "data" / "geocode_cache.json"
 INDEX = ROOT / "data" / "article_index.json"
 OUT = ROOT / "docs" / "v2" / "architecture.json"
+HAND = ROOT / "scripts" / "architecture_hand.json"
 
 SITE = "https://www.thearchitecturalauthority.com"
 ARTICLE = SITE + "/article/{slug}"
@@ -220,6 +230,25 @@ SPOTS = {
 }
 
 
+def hand_entries():
+    """The buildings the artist named by hand (architecture_hand.json), as they are written into the file."""
+    if not HAND.exists():
+        return []
+    rows = json.loads(HAND.read_text(encoding="utf-8")).get("buildings", [])
+    out = []
+    for row in rows:
+        entry = {k: v for k, v in row.items() if not k.startswith("_")}   # "_sources" and notes stay in the table
+        entry["hand"] = True
+        out.append(entry)
+    return out
+
+
+def with_hand(buildings):
+    """The bookmarks' buildings, then the hand ones not already among them."""
+    have = {b["slug"] for b in buildings}
+    return buildings + [h for h in hand_entries() if h["slug"] not in have]
+
+
 def short_name(title):
     """"Roots of the Mountain – Casa LL by RA! Arquitectura" -> "Casa LL"."""
     name = re.split(r"\s[–—]\s", title, maxsplit=1)[-1]
@@ -271,6 +300,14 @@ def geocode(session, cache, city, state, country):
 
 
 def main():
+    if "--hand" in sys.argv:
+        # Only the hand table: the bookmarks' buildings as they stand in the file, then the hand ones.
+        current = json.loads(OUT.read_text(encoding="utf-8")).get("buildings", []) if OUT.exists() else []
+        buildings = with_hand([b for b in current if not b.get("hand")])
+        OUT.write_text(json.dumps({"buildings": buildings}, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"Wrote {len(buildings)} building(s), {sum(1 for b in buildings if b.get('hand'))} by hand, "
+              f"to {OUT.relative_to(ROOT)}")
+        return
     saves = load_raw()
     cache = load_cache()
     session = requests.Session()
@@ -322,6 +359,7 @@ def main():
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     CACHE.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    buildings = with_hand(buildings)
     placed = [b for b in buildings if "lat" in b]
     OUT.write_text(json.dumps({"buildings": buildings}, indent=2, ensure_ascii=False),
                    encoding="utf-8")

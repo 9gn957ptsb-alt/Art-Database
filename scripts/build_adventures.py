@@ -45,7 +45,8 @@ def main():
 
     out_b = []
     for b in json.load(open(V2 / "architecture.json"))["buildings"]:
-        if b["slug"] in models and b["slug"] in grounds:
+        # The Architectural Authority's buildings only (a hand one is not theirs, and Rocket says they are).
+        if not b.get("hand") and b["slug"] in models and b["slug"] in grounds:
             # The model's own name for what it is (the Walt Disney Concert Hall, not the article's "Frank Gehry 1929–2025").
             name = json.load(open(V2 / "models" / (b["slug"] + ".json"))).get("name") or b["name"]
             out_b.append({"slug": b["slug"], "name": name, "where": b.get("where") or b.get("country", ""),
