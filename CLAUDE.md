@@ -16,6 +16,29 @@ describes what the token object is (item 7).
 Don't recite the list unprompted, and don't re-raise an item the artist has
 already declined or deferred in the same conversation.
 
+**Held ideas: propose each again when its condition is met.** Ideas the artist
+liked and asked to keep for later. When a held idea's condition comes true —
+in any session, whatever is being worked on — propose it again, once, briefly,
+as an offer. Strike it from the list when he takes it up or turns it down.
+
+1. **Snøhetta's roof as Penrose's endless stair** (artist, 21 Oct 2026: "I like
+   that idea with the roof and impossible triangle", then "Save the idea though
+   and repropose it to me later when more things are defined"). The Shanghai
+   Grand Opera House's roof (`docs/v2/models/shanghai-grand-opera-house-by-snohetta.json`)
+   climbs 295° round its stair well and stops at a cliff above where it began:
+   Penrose's other impossible figure, the endless staircase (Lionel and Roger
+   Penrose, 1958, the same paper as the triangle). In Holographic Mr Pearl it is
+   a world: you wake in the park by the Huangpu, the rocket's pieces are up the
+   roof's leaves, and a stone stands at the top of the well's stair. The roof is
+   drawn in toward that stone's eye, as the homage's figures are toward theirs,
+   so from there the cliff closes, the top step meets the foot and the climb
+   never ends; you launch from there. Weak: the way the roof winds is a guess,
+   unconfirmed until photographs or drawings of the built house are read.
+   **Condition:** the basic unit is approved (his rule of 15 Oct: "We do not
+   move forward until we figure out the basic unit"), or the game's worlds are
+   being defined again. He chose to hold it, so nothing of it is built or written
+   into the game until then.
+
 ## What we are making
 
 Artist, 15 Oct 2026, with "MAKE THAT SALIENT": "Really between all of the information in the database and the
