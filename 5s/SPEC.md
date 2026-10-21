@@ -18,6 +18,22 @@ own information is the seed of their world … how others bring theirs comes lat
   of the artist's collaging: sort the things, split them into parts, set the parts together, see the
   positive and negative space of your taste, and seed a world with it.
 
+## The month, condensed (the purpose: read CONCEPT.md "The purpose")
+
+5s puts a newcomer in the situation the artist was in for a month of organizing a digital
+aesthetics, small enough for a few minutes a day. Every feature below is one of the five moves of that month:
+
+| His month | In 5s |
+| --- | --- |
+| **Gather**: saves from other websites and apps brought home into one database | **Sort** the deck (exposure to the forefront: every card is from the artist's database) and **Bring in your own** (your saved things from your photos, Pinterest, Instagram, Artsy…), which then come back as **Still yours?** |
+| **Catalog**: every record split into colours, kind, medium, date, place; categories with names | **Split**: your database, by part and by source |
+| **Make**: new things from the parts | **Set** (a room from your parts) and **Seed** (a ground grown from all of it) |
+| **Name and reflect**: each piece's job in one line; a journal, one entry per question | **Notes** at the moments that matter (a turn, a finished five, a pinned set, a thing brought in); **See** |
+| **Keep at it**: routines | **Today's five**, the streak, and **the Path** (the month as eight milestones) |
+
+The cards themselves are the artist's: the deck is drawn from the artist's database of saves. What a person
+brings in is theirs, private to them.
+
 ## The five kinds of card
 
 | Kind | What it is | Shown on the card | Becomes in Set |
@@ -52,8 +68,16 @@ material words (never the title or artist).
   "A turn. You kept this though you pass most <feature> works." (or "…though you keep most…").
   A Keep also shows the card's parts (colour chips, material words, two qualities) flying toward the
   Split tab; under reduced motion they just appear in the strip.
+- A turn's reveal strip also offers **Note why** (opens the note sheet: "You went against your own
+  pattern. What changed?").
+- **Still yours?** When the person has brought things in, at most one card in a five is one of their
+  own, labelled "Still yours?" above the card, with the buttons reading **Let go** and **Keep** (the
+  same gestures and keys). Letting go is recorded like a pass and the thing moves to "Let go" in Split
+  (subtraction is part of the game: "a game of subtraction and negation").
 - After the fifth card: **Five sorted** summary: the five as a row of small tiles marked Kept/Passed
-  (glyph + word), total time, turns, parts gained, and two buttons: "Another five", "Set what you kept".
+  (glyph + word), total time, turns, parts gained, an optional one-line field "One word for this five"
+  (saved as a note), and buttons "Another five", "Set what you kept", and, until they have brought
+  something in, "Bring in your own".
 - First visit: an intro card on top of the stack (dismissable, remembered): what 5s is in one sentence,
   how to judge, "Names come after you decide", "No account details. Only your judgments." and **Start**.
 - A small "i" in Sort's header reopens that intro.
@@ -67,6 +91,14 @@ material words (never the title or artist).
   Subjects (Subject Matter), Eras, Places, Kinds, and Things (all kept works as thumbnails, each
   opening its detail sheet with a link out to Artsy).
 - Empty state: a designed placeholder per section naming what will fill it.
+- **Bring in your own** (a prominent button at the top of Split; also offered from the intro and the
+  Five sorted summary): see "Bring in your own" below. Brought things appear in a **Brought in** section
+  (thumbnail, name, source), are kept by definition (they are the person's saves), and feed every
+  part section like kept cards (their colours, their surface crop, their kind).
+- **Sources**: where the things in the database come from, as a short list with counts ("The artist's
+  database (Artsy) · 31", "Your photos · 4", "Pinterest · 2"). This is the database connected to other
+  websites and apps, said plainly.
+- **Let go**: the things the person let go of on a "Still yours?" card (thumbnail, when), quiet.
 
 ### Set (compose: the mood board as a room)
 - Heading "Set", sentence: "Put your parts together. Every place in the room offers three; choose one."
@@ -80,8 +112,12 @@ material words (never the title or artist).
     background drops into the wall.
 - Each slot is a button; pressing it opens a chooser with **three** candidates (Irwin's three ways) and
   "Three more". An empty slot says "Keep a <kind> to fill this" and links to Sort.
-- **Pin this set** saves the composition; pinned sets show below as small elevations; each can be
+- **Pin this set** asks one line first, "What is this set for?" (≤ 80 characters, optional, e.g. "A room
+  for slow mornings"), the way the artist names each piece's job in one line, then saves the
+  composition with that name; pinned sets show below as small elevations with their names; each can be
   reopened or removed (with an in-page confirm, never `confirm()`).
+- Brought-in things are candidates for their kind's slot, their colours for the Wall and their surface
+  crop for the Floor (drawn with background-size/position from `crop`).
 
 ### See (your taste: positive and negative space)
 - Heading "See", one sentence summary: "You kept 38 of 75. You decide in 1.8 seconds. 3 turns."
@@ -92,10 +128,14 @@ material words (never the title or artist).
 - **Turns**: every turn, newest first: thumbnail, "You kept <title> though you pass most <feature> works",
   date. Copy: "A turn is where you went against your own pattern. That's where taste changes."
 - **Drift** (from 30 judgments): top features in your first third of judgments → your last third.
+- **Your notes**: the journal, one entry per question, newest first: the question (small), the answer
+  (large), the date, and what it was about (a thumbnail); each removable; a "Write a note" button for a
+  free note ("What are you looking for?"). Copy: "Your own words, next to your judgments."
 - **Your philosophy**: 4–6 short lines in the second person from `engine.philosophy()` (deterministic),
   and a button **Ask Claude to write it** (the `sample` capability; hidden if unavailable) that streams a
-  short piece from the profile JSON. Its output replaces nothing; it appears below, marked "Written by
-  Claude from your judgments".
+  short piece from the profile JSON and the person's notes. Its output replaces nothing; it appears
+  below, marked "Written by Claude from your judgments and notes". The prompt asks for plain, specific
+  sentences about how this person goes about things (a map, not a horoscope), naming their turns.
 
 ### Seed (your world)
 - Heading "Seed", sentence: "Your ground, grown from your judgments."
@@ -114,6 +154,42 @@ material words (never the title or artist).
 - Privacy line: "Your seed holds no name, no email, no card. Only what you kept, passed and set."
 - Link out: "Holographic Mr Pearl builds worlds from a person's information. This seed is yours, ready for
   it." (no claim that the game reads it yet).
+
+### Bring in your own (the person's own digital information)
+- Opened from Split (and the intro and the Five sorted summary). A sheet: "Bring in things you've saved
+  elsewhere: photos, screenshots, pins, saves. They stay private to you."
+- Input: a file picker (`accept="image/*" multiple`), drag-and-drop onto the sheet, and paste (the
+  `paste` event's image items). No URLs: the page cannot fetch other sites' images.
+- Each image is processed in the browser on a canvas, nothing uploaded anywhere else:
+  - downscaled to a 720 px long edge, encoded WebP (JPEG if WebP encoding is unavailable), kept under
+    ~180 KB by stepping quality down; a 128 px square thumbnail;
+  - **colours**: its three dominant colours (k-means, k = 5, on a 96 px downsample; merge clusters closer
+    than ~12 in RGB; order by share);
+  - **surface**: the square window (side a quarter of the shorter edge) with the most gradient energy,
+    avoiding near-uniform areas and the outer 4 %, as `crop` fractions, and `texture` 0..1;
+  - a guessed kind (Image by default).
+- For each, the person confirms: **kind** (Image / Object / Space, a segmented control), **from**
+  (Your photos, Pinterest, Instagram, Artsy, Are.na, The web, Somewhere else), an optional **name**
+  (≤ 60 characters) and an optional "Why did you save it?" (saved as a note). Then **Add to my database**.
+- Removing a brought thing: its detail sheet, "Remove from my database", with an in-page confirm. It is
+  removed with its image and its judgments.
+
+### The Path (the month as milestones)
+- A chip in every view's top bar, "Path 3/8", opens the Path sheet: eight milestones in order, each
+  with a word state ("Done", "Next", "Not yet": never colour alone) and one line saying how the artist
+  did the same thing in that month (the "why"), e.g. "Bring in something of your own: the artist brought
+  5,021 saved works home from Artsy into one database."
+  1. Sort your first five (Sort) 2. Bring in something of your own (Split) 3. Keep one of each kind
+  (Split) 4. Pin a set and say what it's for (Set) 5. Find a turn (See) 6. Write a note (See)
+  7. Take your seed (Seed: saved or copied) 8. Five days in a row (Sort).
+- Finishing a milestone announces it once, politely ("Path: Pin a set. Done.") and never interrupts.
+
+### About ("Where 5s comes from", from the "i" in Sort's header)
+- One short paragraph: 5s is a short version of a month the artist Matthew Livingston spent organizing a
+  digital aesthetic: bringing 5,021 works saved on Artsy home into one database, splitting
+  them into colours, kinds and qualities, making new things from the parts, naming what each thing is
+  for, and growing a world from it. The cards you judge come from that database; what you bring in is
+  yours. Then the how-to lines, the privacy line, and the "Five-second ring" switch.
 
 ### Example mode
 - Every tab except Sort can show **an example taste** (built by `engine.exampleState(deck)`), behind a
@@ -218,8 +294,22 @@ FiveS.startFive(state, deck, now) -> State         // state.five = {ids: nextFiv
 FiveS.currentCard(state) -> cardId | null          // state.five.ids[state.five.i], null when the five is done
 FiveS.fiveDone(state) -> boolean
 FiveS.streak(state, now) -> number                 // consecutive days in state.days ending today or yesterday
-FiveS.pinSet(state, set, now) / FiveS.unpinSet(state, index) -> State
+FiveS.pinSet(state, set, now) / FiveS.unpinSet(state, index) -> State   // set may carry `name`
+FiveS.card(state, deck, id) -> Card | null         // a deck card, or a brought-in thing as a card:
+   // {id:"y…", kind, own:true, source, title: name || "Untitled", artist: "You", colours, crop, texture,
+   //  w, h, materials:[], genes:[], era:null, place:null, img:null}  (the app supplies own images)
+FiveS.bring(state, item, now) -> State             // item: {id, kind, name, source, colours, crop, texture, w, h}
+FiveS.removeOwn(state, id) -> State                // drops the item, its judgments and notes about it
+FiveS.addNote(state, {q, text, ref}, now) -> State // q: "turn" | "five" | "set" | "bring" | "free"
+FiveS.removeNote(state, at) -> State
+FiveS.markSeen(state, key) -> State                // e.g. "intro", "seed" (seed taken)
+FiveS.path(state, deck, now) -> [{key, step, label, why, done, next}]   // the eight milestones, in order
 ```
+- Brought things count as kept (weight 1) in the model and the profile until let go. Every function that
+  takes `(state, deck)` sees them through `card()`; ids starting "y" are brought things.
+- nextFive: if there are brought things that were brought before this five started and were not
+  revisited in the last 2 days, one of them (the least recently revisited) replaces the card in the
+  "dare" slot of its kind, flagged by `FiveS.isRevisit(state, id)`. Passing it sets `let` on the item.
 - `now` is always a millisecond timestamp passed in (never read inside the engine), so everything is
   deterministic and testable. State stores unix **seconds**.
 - `judge()` computes the prediction **before** counting the judgment, appends it, advances `five.i` when
@@ -236,10 +326,15 @@ FiveS.pinSet(state, set, now) / FiveS.unpinSet(state, index) -> State
   "five": {"ids": ["…×5"], "day": "2026-10-21", "n": 1, "i": 0},   // the five in progress (n = which five today, i = how many judged)
   "sets": [{"at": 1761050000, "wall": "c004", "window": "s011", "picture": "i020", "floor": "u007", "object": "o017"}],
   "days": ["2026-10-20", "2026-10-21"],     // local dates on which today's five was finished
-  "seen": {"intro": 1},
+  "own": [{"id": "y7k2q", "kind": "object", "name": "Grandmother's bowl", "source": "Your photos",
+           "colours": ["#…", "#…", "#…"], "crop": [0.4, 0.3, 0.25, 0.25], "texture": 0.4,
+           "w": 720, "h": 540, "at": 1761050000, "let": null, "seenAt": null}],   // metadata only, no images
+  "notes": [{"at": 1761050000, "q": "turn", "ref": "o017", "text": "I didn't expect to like steel."}],
+  "seen": {"intro": 1, "seed": 1, "path": ["sort", "bring"]},   // path = milestones already announced
   "opts": {"ring": true}
 }
 ```
+(`sets[]` entries may also carry `"name": "A room for slow mornings"`.)
 
 ### The taste model
 - Each feature keeps Beta counts (kept, passed). A card's prediction is naive-Bayes style: start from the
@@ -269,7 +364,10 @@ FiveS.pinSet(state, set, now) / FiveS.unpinSet(state, index) -> State
   "keptColours": ["#…"], "passedColours": ["#…"],
   "keptByKind": {"image": ["i020"], "object": [], "space": [], "surface": [], "colour": []},
   "drift": {"then": [/* top 3 features of the first third */], "now": [/* of the last third */]} | null,
-  "streak": 3, "todayDone": true
+  "streak": 3, "todayDone": true,
+  "brought": 6, "letGo": 1,
+  "sources": [{"source": "The artist's database (Artsy)", "n": 31}, {"source": "Your photos", "n": 4}],
+  "notes": 5
 }
 ```
 
@@ -284,12 +382,14 @@ FiveS.pinSet(state, set, now) / FiveS.unpinSet(state, index) -> State
   "surfaces": [{"work": "…", "crop": [0.41, 0.22, 0.25, 0.25]}],
   "leanings": {"positive": [["gene:biomorphic", 0.31]], "negative": [["gene:geometric", -0.4]]},
   "turns": [{"work": "…", "dir": 1, "because": ["gene:geometric"]}],
-  "sets": [{"wall": "…work slug…", "window": "…", "picture": "…", "floor": "…", "object": "…"}],
+  "sets": [{"name": "A room for slow mornings", "wall": "…work slug…", "window": "…", "picture": "…", "floor": "…", "object": "…"}],
+  "own": [{"name": "Grandmother's bowl", "kind": "object", "source": "Your photos", "colours": ["#…"], "let": false}],
+  "notes": [{"q": "turn", "text": "I didn't expect to like steel.", "about": "…work slug or own name…", "at": "2026-10-21"}],
   "speed": {"medianMs": 1800}
 }
 ```
-Works are named by their Artsy slug, the id the art database and the game already use. No name, email
-or account id ever goes in.
+Works are named by their Artsy slug, the id the art database and the game already use; brought things
+by the name the person gave them (no images). No account name, email or id ever goes in.
 
 ## Persistence (app.js)
 - Declared capabilities: `{db: {}, user: {}, sample: {}, downloads: true}`.
@@ -300,6 +400,11 @@ or account id ever goes in.
   cannot write) still works; a rejected write switches that visit to local only and says so once in the
   footer: "Saved in this browser only."
 - The page renders immediately from localStorage (or a fresh state) and lights up when `db` resolves.
+- Brought-in images are NOT in the state document. Each is its own private document
+  `data/users/<uid>/own-<itemId>` = `{img: dataURL, thumb: dataURL, at}` (keep it under ~200 KB). Without
+  `db`, they go to IndexedDB (database "5s", store "own"); without either, they live for this visit only
+  and the sheet says so. Load them lazily (thumbnails first).
+- Example mode's brought things carry `imgFrom: <deck card id>` so the app can show a stand-in image.
 - Optional: `window.claude?.hot?.snapshot(() => state)` and boot through `hot.ready` if present.
 
 ## Look and feel

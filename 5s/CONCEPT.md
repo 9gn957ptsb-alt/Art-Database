@@ -3,6 +3,29 @@
 Spoken, 21 Oct 2026, with the first logo (an orange-to-red "5s" with a violet-blue ribbon running
 through it, in a blue-violet rounded square). Lightly cleaned of filler; nothing added.
 
+## The purpose (said after, the same day; it frames everything below)
+
+"This app really is going to capture any self-reflective process: what I have done so far with you
+regarding creating a repo, creating a database of digital artifacts that are connected to other
+websites and apps in which I catalog objects. The goal is for this app to put people in a situation in
+which I have gone about for the past month or so of organizing my digital aesthetics."
+
+That month, as this repository records it (the site branch's CLAUDE.md, the import branches):
+
+1. **Gather.** The works saved on another website (5,021 Artsy saves), and bookmarks from another
+   (Architectural Authority's buildings), brought home into one database.
+2. **Catalog.** Every record normalized and searchable; split into its colours (three dominant
+   colours, the chords between them), its kind, medium, date and place; nine categories, each thing
+   in one, each with a glyph and a name.
+3. **Make.** New things from the parts: objects from the colours (Color Middling), grounds from the
+   paintings (DIRT), the works located on a globe (the Artist Website), a world seeded from all of it
+   (Holographic Mr Pearl).
+4. **Name and reflect.** Each piece's job said in one line ("MAKE THAT SALIENT"); a running journal
+   of notes, one entry per question; a glossary of the artist's own words, linked by reasons.
+5. **Keep at it.** Routines that come back every day or every other day.
+
+5s puts a newcomer through the same five, small enough to do in a few minutes a day.
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
