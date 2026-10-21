@@ -1,0 +1,467 @@
+{
+ "schema": "residential-db/1",
+ "slug": "test-house",
+ "name": "Test House",
+ "units": "m",
+ "accuracy": {
+  "level": "D",
+  "basis": "synthetic test fixture"
+ },
+ "levels": [
+  {
+   "id": "L0",
+   "name": "Ground floor",
+   "elevation": 0.0,
+   "height": 3.2
+  },
+  {
+   "id": "L1",
+   "name": "First floor",
+   "elevation": 3.2,
+   "height": 3.6
+  }
+ ],
+ "rooms": [
+  {
+   "id": "L0-living",
+   "name": "Living room",
+   "type": "living",
+   "level": "L0",
+   "outline": [
+    [
+     0,
+     0
+    ],
+    [
+     6,
+     0
+    ],
+    [
+     6,
+     5
+    ],
+    [
+     0,
+     5
+    ]
+   ],
+   "walls": [
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 1.0,
+       "w": 2.0
+      }
+     ]
+    },
+    {
+     "kind": "open"
+    },
+    null,
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "door",
+       "at": 1.5,
+       "w": 1.0,
+       "name": "Front door"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "L0-kitchen",
+   "name": "Kitchen",
+   "type": "kitchen",
+   "level": "L0",
+   "outline": [
+    [
+     6,
+     0
+    ],
+    [
+     10,
+     0
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     6,
+     5
+    ]
+   ],
+   "walls": [
+    {
+     "openings": [
+      {
+       "type": "window",
+       "at": 1.0,
+       "w": 1.5
+      }
+     ]
+    },
+    null,
+    {
+     "kind": "glass"
+    },
+    null
+   ],
+   "fixtures": [
+    {
+     "name": "Island",
+     "at": [
+      7.2,
+      2.0
+     ],
+     "size": [
+      2.4,
+      1.0,
+      0.9
+     ],
+     "mat": "stone"
+    }
+   ]
+  },
+  {
+   "id": "L0-hall",
+   "name": "Hall",
+   "type": "hall",
+   "level": "L0",
+   "outline": [
+    [
+     0,
+     5
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     0,
+     8
+    ]
+   ],
+   "walls": [
+    {
+     "openings": [
+      {
+       "type": "door",
+       "at": 2.6,
+       "w": 0.9
+      }
+     ]
+    },
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "id": "L0-bath",
+   "name": "Bathroom",
+   "type": "bathroom",
+   "level": "L0",
+   "outline": [
+    [
+     4,
+     5
+    ],
+    [
+     6,
+     5
+    ],
+    [
+     6,
+     8
+    ],
+    [
+     4,
+     8
+    ]
+   ],
+   "walls": [
+    null,
+    null,
+    {
+     "openings": [
+      {
+       "type": "window",
+       "at": 0.5,
+       "w": 0.8,
+       "sill": 1.5,
+       "h": 0.6
+      }
+     ]
+    },
+    {
+     "openings": [
+      {
+       "type": "door",
+       "at": 0.8,
+       "w": 0.8
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "L0-dining",
+   "name": "Dining room",
+   "type": "dining",
+   "level": "L0",
+   "outline": [
+    [
+     6,
+     5
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     10,
+     8
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "L0-terrace",
+   "name": "Terrace",
+   "type": "terrace",
+   "level": "L0",
+   "outline": [
+    [
+     0,
+     -3
+    ],
+    [
+     10,
+     -3
+    ],
+    [
+     10,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ],
+   "slab": 0.15
+  },
+  {
+   "id": "L1-bed",
+   "name": "Main bedroom",
+   "type": "master_bedroom",
+   "level": "L1",
+   "outline": [
+    [
+     0,
+     0
+    ],
+    [
+     6,
+     0
+    ],
+    [
+     6,
+     5
+    ],
+    [
+     0,
+     5
+    ]
+   ],
+   "ceiling": {
+    "planes": [
+     [
+      0,
+      0.12,
+      2.4
+     ]
+    ]
+   },
+   "walls": [
+    {
+     "openings": [
+      {
+       "type": "glass_door",
+       "at": 1.5,
+       "w": 3.0,
+       "glass": true
+      }
+     ]
+    },
+    {
+     "openings": [
+      {
+       "type": "door",
+       "at": 3.6,
+       "w": 0.9
+      }
+     ]
+    },
+    null,
+    null
+   ]
+  },
+  {
+   "id": "L1-study",
+   "name": "Study",
+   "type": "study",
+   "level": "L1",
+   "outline": [
+    [
+     6,
+     0
+    ],
+    [
+     10,
+     0
+    ],
+    [
+     10,
+     5
+    ],
+    [
+     6,
+     5
+    ]
+   ],
+   "ceiling": {
+    "planes": [
+     [
+      0.5,
+      0,
+      -0.6
+     ],
+     [
+      -0.5,
+      0,
+      7.4
+     ]
+    ]
+   }
+  },
+  {
+   "id": "L1-balcony",
+   "name": "Balcony",
+   "type": "balcony",
+   "level": "L1",
+   "outline": [
+    [
+     0,
+     -1.5
+    ],
+    [
+     6,
+     -1.5
+    ],
+    [
+     6,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ],
+   "slab": 0.2,
+   "walls": [
+    {
+     "kind": "rail"
+    },
+    {
+     "kind": "rail"
+    },
+    null,
+    {
+     "kind": "rail"
+    }
+   ]
+  }
+ ],
+ "elements": [
+  {
+   "id": "stair",
+   "kind": "stair",
+   "room": "L0-hall",
+   "level": "L0",
+   "name": "Stair",
+   "flights": [
+    {
+     "start": [
+      1.0,
+      5.2
+     ],
+     "dir_deg": 90,
+     "width": 0.9,
+     "steps": 9,
+     "rise": 1.6,
+     "going": 0.24
+    }
+   ],
+   "landings": [
+    {
+     "outline": [
+      [
+       0.55,
+       7.36
+      ],
+      [
+       1.45,
+       7.36
+      ],
+      [
+       1.45,
+       7.84
+      ],
+      [
+       0.55,
+       7.84
+      ]
+     ],
+     "z": 1.6
+    }
+   ]
+  },
+  {
+   "id": "pool",
+   "kind": "pool",
+   "level": "L0",
+   "outline": [
+    [
+     1,
+     -8
+    ],
+    [
+     9,
+     -8
+    ],
+    [
+     9,
+     -4
+    ],
+    [
+     1,
+     -4
+    ]
+   ],
+   "depth": 1.6
+  }
+ ]
+}

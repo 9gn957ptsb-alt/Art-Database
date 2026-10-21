@@ -1,0 +1,682 @@
+[
+ {
+  "slug": "a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio",
+  "name": "Simon Hamui Space",
+  "url": "https://www.thearchitecturalauthority.com/article/a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio",
+  "where": "Aspen, United States",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos",
+  "name": "Casa Kakmo",
+  "url": "https://www.thearchitecturalauthority.com/article/a-firelit-harmony-casa-kakmo-in-izamal-magical-town-by-garrido-lizarraga-arquitectos",
+  "where": "Izamal, Mexico",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-functional-design-armani-3400-by-fl-interiors",
+  "name": "Armani 3400",
+  "url": "https://www.thearchitecturalauthority.com/article/a-functional-design-armani-3400-by-fl-interiors",
+  "where": "Sunny Isles Beach, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-harmonious-response-three-gardens-house-by-agi-architects",
+  "name": "Three Gardens House",
+  "url": "https://www.thearchitecturalauthority.com/article/a-harmonious-response-three-gardens-house-by-agi-architects",
+  "where": "Al Funayţīs, Kuwait",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain",
+  "name": "Minnesota Residence",
+  "url": "https://www.thearchitecturalauthority.com/article/a-lakeside-home-grounded-in-oak-minnesota-residence-by-riva-spain",
+  "where": "Minnesota, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
+  "name": "Casa Sisal",
+  "url": "https://www.thearchitecturalauthority.com/article/a-luxury-oasis-casa-sisal-by-reyes-rios-larrain",
+  "where": "Acanceh, Mexico",
+  "category": "Hospitality",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "a-modern-oasis-transforming-a-residential-chalet-in-lardero-by-estudio-njera-y-boto-interiorismo",
+  "name": "Transforming a Residential Chalet",
+  "url": "https://www.thearchitecturalauthority.com/article/a-modern-oasis-transforming-a-residential-chalet-in-lardero-by-estudio-njera-y-boto-interiorismo",
+  "where": "Lardero, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos",
+  "name": "Strazik House",
+  "url": "https://www.thearchitecturalauthority.com/article/a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos",
+  "where": "Mendoza, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-sanctuary-of-relaxation-living-n5-on-the-casa-foa-platform-by-giunta-muebles",
+  "name": "Living N5 on the CASA FOA Platform",
+  "url": "https://www.thearchitecturalauthority.com/article/a-sanctuary-of-relaxation-living-n5-on-the-casa-foa-platform-by-giunta-muebles",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-self-sufficient-retreat-ca-na-joaneta-by-different-desing",
+  "name": "Ca na Joaneta",
+  "url": "https://www.thearchitecturalauthority.com/article/a-self-sufficient-retreat-ca-na-joaneta-by-different-desing",
+  "where": "Palma, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-symphony-of-nature-dacha-retreat-by-draa",
+  "name": "Dacha Retreat",
+  "url": "https://www.thearchitecturalauthority.com/article/a-symphony-of-nature-dacha-retreat-by-draa",
+  "where": "Chillán, Chile",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-territorial-presence-casa-bp-by-santiago-bertotti",
+  "name": "Casa BP",
+  "url": "https://www.thearchitecturalauthority.com/article/a-territorial-presence-casa-bp-by-santiago-bertotti",
+  "where": "Mendiolaza, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "a-tribute-to-architectural-elegance-casa-homenaje-by-vernica-durn-sela",
+  "name": "Casa Homenaje",
+  "url": "https://www.thearchitecturalauthority.com/article/a-tribute-to-architectural-elegance-casa-homenaje-by-vernica-durn-sela",
+  "where": "Gijón, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "a-triumph-of-modern-minimalism-la-providencia-residence-by-vernica-durn-arquitecto",
+  "name": "La Providencia Residence",
+  "url": "https://www.thearchitecturalauthority.com/article/a-triumph-of-modern-minimalism-la-providencia-residence-by-vernica-durn-arquitecto",
+  "where": "Gijón, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin",
+  "name": "Neuendorf House",
+  "url": "https://www.thearchitecturalauthority.com/article/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin",
+  "where": "Palma, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "articulated-elegance-casa-berman-by-barrionuevo-villanueva-arquitectos",
+  "name": "Casa Berman",
+  "url": "https://www.thearchitecturalauthority.com/article/articulated-elegance-casa-berman-by-barrionuevo-villanueva-arquitectos",
+  "where": "Buenos Aires, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "balance-and-permanence-unpuente-by-paolini-arquitectos",
+  "name": "UNPUENTE",
+  "url": "https://www.thearchitecturalauthority.com/article/balance-and-permanence-unpuente-by-paolini-arquitectos",
+  "where": "Departamento de Calamuchita, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "beachfront-retreat-anantara-mina-al-arab-ras-al-khaimah-resort-by-anantara-hotels-and-resorts",
+  "name": "Anantara Mina Al Arab Ras Al Khaimah Resort",
+  "url": "https://www.thearchitecturalauthority.com/article/beachfront-retreat-anantara-mina-al-arab-ras-al-khaimah-resort-by-anantara-hotels-and-resorts",
+  "where": "Ras Al Khaimah, United Arab Emirates",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "between-edges-casa-en-el-dragon-by-cristian-nanzer",
+  "name": "Casa en el Dragon",
+  "url": "https://www.thearchitecturalauthority.com/article/between-edges-casa-en-el-dragon-by-cristian-nanzer",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio",
+  "name": "Las Casuarinas",
+  "url": "https://www.thearchitecturalauthority.com/article/beyond-the-interior-las-casuarinas-by-carla-canepa-design-studio",
+  "where": "Lima, Peru",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "cityscape-casa-cm-by-mz-architects",
+  "name": "Casa CM",
+  "url": "https://www.thearchitecturalauthority.com/article/cityscape-casa-cm-by-mz-architects",
+  "where": "Río Ceballos, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "continuity-of-material-marlborough-residence-by-riva-spain",
+  "name": "Marlborough Residence",
+  "url": "https://www.thearchitecturalauthority.com/article/continuity-of-material-marlborough-residence-by-riva-spain",
+  "where": "West Palm Beach, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "design-and-functionality-justiniano-building-by-s-estudio",
+  "name": "Justiniano Building",
+  "url": "https://www.thearchitecturalauthority.com/article/design-and-functionality-justiniano-building-by-s-estudio",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "design-excellence-the-hotel-azur-lobby-by-estudio-montevideo",
+  "name": "The Hotel Azur Lobby",
+  "url": "https://www.thearchitecturalauthority.com/article/design-excellence-the-hotel-azur-lobby-by-estudio-montevideo",
+  "where": "Córdoba, Argentina",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos",
+  "name": "Pabellon Polideportivo Carlos Soria",
+  "url": "https://www.thearchitecturalauthority.com/article/dialogue-in-brick-pabellon-polideportivo-carlos-soria-by-ablm-arquitectos",
+  "where": "Ávila, Spain",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura",
+  "name": "Clínica Dental Vega",
+  "url": "https://www.thearchitecturalauthority.com/article/elegance-and-functionality-clnica-dental-vega-by-murillo-y-hernndez-arquitectura",
+  "where": "Salamanca, Spain",
+  "category": "Healthcare",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "embracing-nature-naman-pure-spa-by-mia-design-studio",
+  "name": "Naman Pure Spa",
+  "url": "https://www.thearchitecturalauthority.com/article/embracing-nature-naman-pure-spa-by-mia-design-studio",
+  "where": "Da Nang, Vietnam",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura",
+  "name": "Escala Humana Wines Winery",
+  "url": "https://www.thearchitecturalauthority.com/article/escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura",
+  "where": "Departamento de Tupungato, Argentina",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "exploring-material-mastery-the-alfa-collection-by-almagre-ceramicas",
+  "name": "The Alfa Collection",
+  "url": "https://www.thearchitecturalauthority.com/article/exploring-material-mastery-the-alfa-collection-by-almagre-ceramicas",
+  "where": "Villa Allende, Argentina",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "golden-continuity-allison-island-residence-by-riva-spain",
+  "name": "Allison Island Residence",
+  "url": "https://www.thearchitecturalauthority.com/article/golden-continuity-allison-island-residence-by-riva-spain",
+  "where": "Miami Beach, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
+  "name": "Suspended Stone Houses",
+  "url": "https://www.thearchitecturalauthority.com/article/gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "harmonious-habitat-woodsong-by-alfred-browning-parker",
+  "name": "Woodsong",
+  "url": "https://www.thearchitecturalauthority.com/article/harmonious-habitat-woodsong-by-alfred-browning-parker",
+  "where": "Coconut Grove, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "heritage-a-multifamily-housing-project-casa-yb-by-augusto-domnguez",
+  "name": "Casa YB",
+  "url": "https://www.thearchitecturalauthority.com/article/heritage-a-multifamily-housing-project-casa-yb-by-augusto-domnguez",
+  "where": "Maule, Chile",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
+  "name": "Centro Cultural Los Lavaderos",
+  "url": "https://www.thearchitecturalauthority.com/article/honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos",
+  "where": "Zaratán, Spain",
+  "category": "Cultural",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "language-of-light-residence-oliva-by-estudio-bearzotti",
+  "name": "Residence Oliva",
+  "url": "https://www.thearchitecturalauthority.com/article/language-of-light-residence-oliva-by-estudio-bearzotti",
+  "where": "Mendiolaza, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "leisure-culture-gastronomy-and-sports-el-vasco-boulevard-in-oviedo-by-vernica-durn-sela",
+  "name": "El Vasco Boulevard",
+  "url": "https://www.thearchitecturalauthority.com/article/leisure-culture-gastronomy-and-sports-el-vasco-boulevard-in-oviedo-by-vernica-durn-sela",
+  "where": "Oviedo, Spain",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "light-and-connection-medika-10-by-paredes-aleman-arquitectos",
+  "name": "Medika 10",
+  "url": "https://www.thearchitecturalauthority.com/article/light-and-connection-medika-10-by-paredes-aleman-arquitectos",
+  "where": "Guatemala City, Guatemala",
+  "category": "Healthcare",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "light-and-form-studio-fran-vinas-arquitectos-by-fv-arquitectos",
+  "name": "Studio Fran Vinas Arquitectos",
+  "url": "https://www.thearchitecturalauthority.com/article/light-and-form-studio-fran-vinas-arquitectos-by-fv-arquitectos",
+  "where": "Córdoba, Argentina",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "light-matter-and-garden-casa-galera-by-karlen-clemente",
+  "name": "Casa Galera",
+  "url": "https://www.thearchitecturalauthority.com/article/light-matter-and-garden-casa-galera-by-karlen-clemente",
+  "where": "Río Tercero, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "lightbender-the-villa-in-la-quinta-by-lucas-delgado",
+  "name": "The Villa",
+  "url": "https://www.thearchitecturalauthority.com/article/lightbender-the-villa-in-la-quinta-by-lucas-delgado",
+  "where": "Santa Úrsula, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "loft-revolution-valpo-1-by-estudio-montevideo",
+  "name": "Valpo 1",
+  "url": "https://www.thearchitecturalauthority.com/article/loft-revolution-valpo-1-by-estudio-montevideo",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "measured-continuity-casa-s-by-valdemarin-and-siuk-studio",
+  "name": "Casa S",
+  "url": "https://www.thearchitecturalauthority.com/article/measured-continuity-casa-s-by-valdemarin-and-siuk-studio",
+  "where": "Buenos Aires, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera",
+  "name": "Casa La Flecha",
+  "url": "https://www.thearchitecturalauthority.com/article/music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera",
+  "where": "Colonia Department, Uruguay",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "ode-to-the-environment-casa-rc-by-cristin-nanzer",
+  "name": "Casa R&C",
+  "url": "https://www.thearchitecturalauthority.com/article/ode-to-the-environment-casa-rc-by-cristin-nanzer",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "parisian-elegance-rue-jean-bart-by-jean-christophe-quinton",
+  "name": "Rue Jean-Bart",
+  "url": "https://www.thearchitecturalauthority.com/article/parisian-elegance-rue-jean-bart-by-jean-christophe-quinton",
+  "where": "Paris, France",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno",
+  "name": "Depart Colegiales",
+  "url": "https://www.thearchitecturalauthority.com/article/parkside-urban-living-depart-colegiales-by-grupo-uno-en-uno",
+  "where": "Buenos Aires, Argentina",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "purity-and-warmth-in-balance-casa-vch-by-fh2l-arquitectos",
+  "name": "Casa VCH",
+  "url": "https://www.thearchitecturalauthority.com/article/purity-and-warmth-in-balance-casa-vch-by-fh2l-arquitectos",
+  "where": "Madrid, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "redefining-traditional-mexican-architecture-vista-clara-house-modern-elegance-by-fernando-cibrian",
+  "name": "Vista Clara House Modern Elegance",
+  "url": "https://www.thearchitecturalauthority.com/article/redefining-traditional-mexican-architecture-vista-clara-house-modern-elegance-by-fernando-cibrian",
+  "where": "Cholula, Mexico",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "redefining-work-environments-the-uc-innovation-center-by-elemental",
+  "name": "The UC Innovation Center",
+  "url": "https://www.thearchitecturalauthority.com/article/redefining-work-environments-the-uc-innovation-center-by-elemental",
+  "where": "Santiago, Chile",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "renovation-pre-columbian-museum-by-smiljan-radic",
+  "name": "Pre-Columbian Museum",
+  "url": "https://www.thearchitecturalauthority.com/article/renovation-pre-columbian-museum-by-smiljan-radic",
+  "where": "Santiago, Chile",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "rooted-in-minimalism-finca-aguy-by-mapa-architects",
+  "name": "Finca Aguy",
+  "url": "https://www.thearchitecturalauthority.com/article/rooted-in-minimalism-finca-aguy-by-mapa-architects",
+  "where": "Maldonado, Uruguay",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos",
+  "name": "Miami Residence",
+  "url": "https://www.thearchitecturalauthority.com/article/roots-in-motion-miami-residence-by-caroline-andrusko-arquitetos",
+  "where": "Miami, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "roots-of-the-mountain-casa-ll-by-ra-arquitectura",
+  "name": "Casa LL",
+  "url": "https://www.thearchitecturalauthority.com/article/roots-of-the-mountain-casa-ll-by-ra-arquitectura",
+  "where": "Tepoztlán, Mexico",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "seamless-horizons-balboa-by-riva-spain",
+  "name": "Balboa",
+  "url": "https://www.thearchitecturalauthority.com/article/seamless-horizons-balboa-by-riva-spain",
+  "where": "Del Mar, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "stone-and-light-llagar-renovation-by-baldo-arquitectura",
+  "name": "Llagar Renovation",
+  "url": "https://www.thearchitecturalauthority.com/article/stone-and-light-llagar-renovation-by-baldo-arquitectura",
+  "where": "Villaviciosa, Spain",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "structured-clarity-cavendish-housing-by-ar-arquitectos",
+  "name": "Cavendish Housing",
+  "url": "https://www.thearchitecturalauthority.com/article/structured-clarity-cavendish-housing-by-ar-arquitectos",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "sustainable-innovation-the-headquarters-of-beeah-group-by-zaha-hadid-architect",
+  "name": "The Headquarters of BEEAH Group",
+  "url": "https://www.thearchitecturalauthority.com/article/sustainable-innovation-the-headquarters-of-beeah-group-by-zaha-hadid-architect",
+  "where": "Sharjah, United Arab Emirates",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "tailored-elegance-casa-conlon-by-paulina-jimenez",
+  "name": "Casa Conlon",
+  "url": "https://www.thearchitecturalauthority.com/article/tailored-elegance-casa-conlon-by-paulina-jimenez",
+  "where": "Los Cabos, Mexico",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "the-da-vinci-of-architecture-frank-gehry-19292025",
+  "name": "Frank Gehry 1929–2025",
+  "url": "https://www.thearchitecturalauthority.com/article/the-da-vinci-of-architecture-frank-gehry-19292025",
+  "where": "Los Angeles, United States",
+  "category": "Authorities",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "the-diaphanous-cave-casa-cosmo-by-cristian-nanzer",
+  "name": "Casa Cosmo",
+  "url": "https://www.thearchitecturalauthority.com/article/the-diaphanous-cave-casa-cosmo-by-cristian-nanzer",
+  "where": "Capilla del Monte, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien",
+  "name": "The Le Cèdre Socio-Cultural Center",
+  "url": "https://www.thearchitecturalauthority.com/article/the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien",
+  "where": "Hauts-de-Seine, France",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura",
+  "name": "Clinica Dental Apolonia",
+  "url": "https://www.thearchitecturalauthority.com/article/the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura",
+  "where": "Valladolid, Spain",
+  "category": "Healthcare",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "the-ranch-at-el-paraiso-a-five-acre-equestrian-estate-by-paterson-project-management",
+  "name": "A Five-Acre Equestrian Estate",
+  "url": "https://www.thearchitecturalauthority.com/article/the-ranch-at-el-paraiso-a-five-acre-equestrian-estate-by-paterson-project-management",
+  "where": "Delray Beach, United States",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto",
+  "name": "University of Jyväskylä Campus",
+  "url": "https://www.thearchitecturalauthority.com/article/timeless-architecture-university-of-jyvskyl-campus-by-alvar-aalto",
+  "where": "Jyväskylä, Finland",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ },
+ {
+  "slug": "tree-as-origin-residence-204-by-estudio-bearzotti",
+  "name": "Residence 204",
+  "url": "https://www.thearchitecturalauthority.com/article/tree-as-origin-residence-204-by-estudio-bearzotti",
+  "where": "Córdoba, Argentina",
+  "category": "Residential",
+  "first_seen": "2026-10-21",
+  "in_feed": true,
+  "claimed": "2026-10-21",
+  "claimed_by": "session 018c1ebx: initial backlog"
+ },
+ {
+  "slug": "unconventional-center-pueblo-serena-by-carranza-y-ruiz-arquitectura",
+  "name": "Pueblo Serena",
+  "url": "https://www.thearchitecturalauthority.com/article/unconventional-center-pueblo-serena-by-carranza-y-ruiz-arquitectura",
+  "where": "Monterrey, Mexico",
+  "category": "Commercial",
+  "first_seen": "2026-10-21",
+  "in_feed": true
+ }
+]
