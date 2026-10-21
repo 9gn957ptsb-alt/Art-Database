@@ -6,7 +6,8 @@
 
    An Artifact's frame loads nothing from other sites, so everything the game needs is bundled:
    the scripts and the style inlined into the page (index.html); sections.json; Mr Pearl's form
-   (pearl-body.json, the data his body is built of); a catalogue of
+   (pearl-body.json, the data his body is built of); homage.json (the three figures where you
+   wake); a catalogue of
    the modelled buildings and a pool of saved works with what the clues need of their histories;
    each building's model and ground (data/); and the works' pictures, fetched once from Artsy's
    image server (art/). Its escapes are the new forms and the modelled buildings: the museums
@@ -93,6 +94,8 @@ async function main() {
   fs.copyFileSync(path.join(ROCKET, "sections.json"), path.join(out, "sections.json"));
   // Mr Pearl's form, the data his body is built of in the page (pearl.js builds it, rocket.js draws it).
   fs.copyFileSync(path.join(ROCKET, "pearl-body.json"), path.join(out, "pearl-body.json"));
+  // The three figures of the homage where you wake (homage.js).
+  fs.copyFileSync(path.join(ROCKET, "homage.json"), path.join(out, "homage.json"));
 
   // The page: the game's own, with its style and scripts inlined, set to play straight in.
   let html = read(path.join(ROCKET, "index.html"));
@@ -109,7 +112,7 @@ async function main() {
   take(/<section class="start" id="start">/, '<section class="start" id="start" hidden>');
   take(/\s*<a class="apart" href="forms\.html">[^<]*<\/a>/, "");
   take(/\s*<a class="apart" href="figure\.html">[^<]*<\/a>/, "");
-  const scripts = ["../../v2/models.js", "forms.js", "adventure.js", "place.js", "pearl.js", "rocket.js"];
+  const scripts = ["../../v2/models.js", "forms.js", "adventure.js", "place.js", "homage.js", "pearl.js", "rocket.js"];
   const files = { "../../v2/models.js": path.join(V2, "models.js") };
   let inline = "<script>\nwindow.ROCKET = { name: \"Holographic Mr Pearl\", base: \"data/\", play: true, kinds: [\"form\", \"form\", \"form\", \"building\"], forms: " + JSON.stringify(FORMS) +
                ", art: function (id) { return \"art/\" + id + \".jpg\"; } };\n</script>\n";

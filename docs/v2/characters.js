@@ -14,8 +14,9 @@
    artists (characters/characters.json says why): its dots are the soil
    where it stands worked into the artist's inks, it moves in its own gait
    (the fox trots, the bison walks, the squirrel bounds, the lizard scurries,
-   the eagle flies up and away, the starlings stream up and away in a
-   murmuration, the slug crawls and goes back into the soil), and some leave
+   the eagle flies up and away, the hummingbird darts up and away, the
+   starlings stream up and away in a murmuration, the slug crawls and goes
+   back into the soil), and some leave
    something of their artist behind (Twombly's writing after the fox, the
    dark trace of Kapoor's wax after the slug). Pressed, one stops and looks
    at you, is framed in its artist's ink, and a quiet line says what it is.
@@ -432,6 +433,11 @@
         if (land.dataset.at !== "city") { endVisit(); }
       }).observe(land, { attributes: true, attributeFilter: ["data-at"] });
     }
+    // A life's place (placethen.js) comes and goes with its mark on the body, and takes the canvas with it
+    // (lift): the canvas is put back in the stage when the place is put away, animals or none.
+    if (window.MutationObserver) {
+      new MutationObserver(lift).observe(document.body, { attributes: true, attributeFilter: ["data-placethen"] });
+    }
     return true;
   }
 
@@ -447,6 +453,66 @@
     b.addEventListener("click", function (event) { event.stopPropagation(); press(o); });
     if (stage) { stage.appendChild(b); }
     return b;
+  }
+
+  /* In a life's place. The art layer lies over the whole stage, and there (placethen.js) its panel is 95% dark and its clod
+     takes the presses: an animal in the stage is under it, hidden, and a press where it stands is the clod's (the artist's own
+     animal could be neither seen nor pressed, 15 Oct 2026). So while the place is up the canvas and the buttons stand in its
+     panel instead, in a layer as big as the window set over the clod, under the place's tile and words and cut to the clod's
+     box: an animal is seen only where it stands on the ground, never over the picture, the words, the dial or the column, and a
+     press on the clod anywhere but on it still swings the clod. What they say goes up into the art layer, over it all. When the
+     place is gone everything is set back in the stage, the canvas after the pixel light. Asked at every frame; it moves only
+     what is not where it belongs. The layer is cut to the clod's box, so where one stands is chosen to be wholly on the clod
+     (onClod, below: a flock 160 px across on a phone's 230 px clod had its edge cut off). */
+  var layer = null, clodBox = null, clodAt = 0;
+  function lift() {
+    var tiles = document.getElementById("tiles"), art = document.getElementById("art");
+    if (!canvas || !tiles) { return; }
+    var pt = art ? art.querySelector(":scope > .pt") : null;
+    var clod = pt ? pt.querySelector(".pt-clod") : null;
+    var lines = [says, pair], hits = crowd.map(function (o) { return o.hit; });
+    if (!clod) {
+      clodBox = null;
+      var stage = tiles.parentNode;
+      if (canvas.parentNode !== stage) { stage.insertBefore(canvas, tiles.nextSibling); }
+      lines.concat(hits).forEach(function (e) { if (e && e.parentNode !== stage) { stage.appendChild(e); } });
+      return;
+    }
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.className = "character-layer";
+      layer.style.cssText = "position:fixed;inset:0;pointer-events:none";
+    }
+    if (layer.parentNode !== clod.parentNode) { clod.parentNode.insertBefore(layer, clod.nextSibling); }
+    [canvas].concat(hits).forEach(function (e) { if (e && e.parentNode !== layer) { layer.appendChild(e); } });
+    lines.forEach(function (e) { if (e && e.parentNode !== art) { art.insertBefore(e, pt.nextSibling); } });
+    var r = clod.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+    clodBox = r.width && r.height ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null;
+    var cut = "inset(" + Math.max(0, Math.round(r.top)) + "px " + Math.max(0, Math.round(vw - r.right)) + "px " +
+              Math.max(0, Math.round(vh - r.bottom)) + "px " + Math.max(0, Math.round(r.left)) + "px)";
+    if (layer._cut !== cut) { layer._cut = cut; layer.style.clipPath = layer.style.webkitClipPath = cut; }
+    // Not before the clod is drawn: an animal told of the place at the end of a journey stands nowhere on it yet.
+    var shown = window.PlaceThen && PlaceThen.here && PlaceThen.here() ? "" : "hidden";
+    if (layer.style.visibility !== shown) { layer.style.visibility = shown; }
+  }
+
+  // The clod's box as it is now, if a life's place is up: read again at most every 30 ms (a seat or a guide can ask every frame).
+  function clodNow() {
+    var now = performance.now();
+    if (now - clodAt > 30) { clodAt = now; lift(); }
+    return clodBox;
+  }
+
+  // The nearest place to (x, y) where an animal of this character, at this scale, stands wholly on the clod while a life's place
+  // is up (its box would otherwise be cut by the layer's edge); (x, y) itself anywhere else, or where its drawing is not known yet.
+  // A box bigger than the clod is centred on it.
+  function onClod(x, y, c, scale) {
+    var k = clodNow(), s = c && sprites[c.id];
+    if (!k || !s) { return { x: x, y: y }; }
+    var u = cellPx(s, scale || 1) / dpr, w = s.w * u, h = s.h * u;
+    var x0 = k.l + w / 2, x1 = k.r - w / 2, y0 = k.t + s.foot[1] * u, y1 = k.b - h + s.foot[1] * u;
+    return { x: x1 < x0 ? (k.l + k.r) / 2 : Math.max(x0, Math.min(x1, x)),
+             y: y1 < y0 ? (y0 + y1) / 2 : Math.max(y0, Math.min(y1, y)) };
   }
 
   function size() {
@@ -767,15 +833,16 @@
   function obstacles() {
     var out = [];
     // In the reading layout also the lens (the small round globe), the picture and its sentence
-    // (7 Oct 2026: a fox sat on the lens's edge in a work's view and was in the way of its pinch).
+    // (7 Oct 2026: a fox sat on the lens's edge in a work's view and was in the way of its pinch);
+    // in a life's place the picture, the place's sentence and the words it opens (15 Oct 2026).
     ["#art-col", "#art-time", "#building-time", ".walk-strip", "#banner", "#art-plate", ".lens-hole",
-     ".voice-cap", ".dial-readout", ".lens-home", ".dial-home"].forEach(function (sel) {
+     ".voice-cap", ".dial-readout", ".lens-home", ".dial-home", ".pt-work", ".pt-head", ".pt-more"].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el || el.hidden || !el.getClientRects().length) { return; }
       var r = el.getBoundingClientRect();
       if (r.width && r.height) {
         out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height,
-                   reading: /art-plate|lens|voice-cap|art-time/.test(sel) });
+                   reading: /art-plate|lens|voice-cap|art-time|\.pt-/.test(sel) });
       }
     });
     // The city's own marks: a museum's diamond and its name are its way in.
@@ -792,13 +859,15 @@
 
   // A place to stand near (x, y) that keeps clear of the others and of what
   // is on the screen: there, below, above, across.
-  function seat(x, y, except) {
+  function seat(x, y, except, c) {
     var tries = [[0, 0], [0, 52], [0, -52], [APART, 26], [-APART, 26], [APART, -26], [-APART, -26], [0, 104],
                  [-APART * 1.6, 0], [APART * 1.6, 0], [0, -104], [-APART, -78]];
     var obs = obstacles();
     for (var k = 0; k < tries.length; k += 1) {
       var cx = Math.max(48, Math.min(W - 48, x + tries[k][0]));
       var cy = Math.max(110, Math.min(H - 24, y + tries[k][1]));
+      // Of this character, in a life's place: wholly on the clod.
+      if (c) { var on = onClod(cx, cy, c, 1); cx = on.x; cy = on.y; }
       var under = obs.some(function (r) { return cx + 44 > r.left && cx - 44 < r.right && cy + 6 > r.top && cy - 56 < r.bottom; });
       if (under) { continue; }
       var clear = live().every(function (o) {
@@ -838,6 +907,14 @@
     if (o.geo && window.Land && Land.at) {
       var p = Land.at(o.geo.lat, o.geo.lon);
       if (!p || p.z <= 0) { return null; }
+      // Seated by a point of the globe or the skyline, and then (a life's place, placethen.js, drawn some seconds after the
+      // journey that met it) by a point of the place's clod, and again once that is put away: seated anew by the point it has now,
+      // not carried by an offset from another (a hometown animal had been left a window's height below the clod).
+      if (!!p.clod !== !!o.geo.clod) {
+        o.geo.clod = !!p.clod;
+        var sp = seat(p.x + 56, p.y + 72, o, o.c) || onClod(p.x + 56, p.y + 72, o.c, o.scale);
+        o.geo.dx = sp.x - p.x; o.geo.dy = sp.y - p.y;
+      }
       return { x: p.x + o.geo.dx, y: p.y + o.geo.dy };
     }
     return o.tx !== undefined ? { x: o.tx, y: o.ty } : null;
@@ -928,7 +1005,7 @@
     var dir = x > W / 2 ? 1 : -1;
     if (Math.abs((dir > 0 ? W : 0) - x) < 140) { dir = -dir; }
     if (W < 600) { dir = -1; }
-    var at = seat(x, y) || { x: x, y: y };
+    var at = seat(x, y, null, c) || onClod(x, y, c, 1);
     var o = make(c, "wave", at.x, at.y, { dir: dir, here: here, city: city || null });
     o.row = rowHere(o.map, city);
     o.atHome = !!atHome;
@@ -955,7 +1032,7 @@
     var dir = from ? (((t.lon - from.lon + 540) % 360) - 180 >= 0 ? 1 : -1) : (Math.random() < 0.5 ? 1 : -1);
     var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
     if (!p || p.z <= 0) { return; }
-    var spot = seat(p.x + 56, p.y + 72);
+    var spot = seat(p.x + 56, p.y + 72, null, c);
     if (!spot) { return; }
     var slow = moves(c).speed < 0.5;
     var here = placeAt(t.lat, t.lon);
@@ -968,7 +1045,7 @@
     }
     var o = make(c, "home", slow ? spot.x : edge, spot.y, {
       dir: dir, here: here, city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
-      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, state: slow ? "out" : "in",
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y, clod: !!p.clod }, state: slow ? "out" : "in",
       alt: moves(c).lift, atHome: true
     });
     o.row = rowHere(o.map, o.city);
@@ -982,12 +1059,12 @@
   function comeRest(c, t) {
     var p = window.Land && Land.at ? Land.at(t.lat, t.lon) : null;
     if (!p || p.z <= 0) { return; }
-    var spot = seat(p.x + 56, p.y + 72);
+    var spot = seat(p.x + 56, p.y + 72, null, c);
     if (!spot) { return; }
     var o = make(c, "rest", spot.x, spot.y, {
       dir: p.x + 56 > W / 2 ? -1 : 1, here: placeAt(t.lat, t.lon),
       city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
-      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, atHome: true
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y, clod: !!p.clod }, atHome: true
     });
     o.row = rowHere(o.map, o.city);
   }
@@ -1224,6 +1301,11 @@
       return;
     }
     if (o.state === "run") { o.state = "wait"; o.waitSince = now; }
+    // Waiting in a life's place, it stands wholly on the clod, by its tile.
+    if (clodNow()) {
+      var on = onClod(p.x, p.y, o.c, o.scale);
+      p = { x: on.x, y: on.y, key: p.key, lat: p.lat, lon: p.lon, name: p.name };
+    }
     o.target = p;
     if (o.atKey !== p.key) {
       o.atKey = p.key;
@@ -1566,6 +1648,7 @@
   /* ---- drawn ---------------------------------------------------------------- */
 
   function draw(now) {
+    lift();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
     g.imageSmoothingEnabled = false;
@@ -2540,7 +2623,8 @@
      on; eagles lock talons and fall turning; bison meet head to head;
      stags roar and walk side by side; slugs circle and lunge; squirrels
      chase round and round; starlings sing at each other, wings flicking;
-     ocellated lizards gape and bite head to head.
+     ocellated lizards gape and bite head to head; Anna's hummingbirds chase
+     each other round the territory, gorgets blazing.
      Drawn where the game's ritual box is, else at
      the middle of the screen. Resolves when it is over, with the line. */
   function meet(a, b, opts) {
@@ -2585,6 +2669,15 @@
           var bite = Math.floor(u * 12 + (n ? 1 : 0)) % 2;
           o.x = cx + (n ? 1 : -1) * (74 - 20 * Math.min(1, u * 2.5) + (bite ? 3 : 0));
           o.ritualNames = [bite ? "ritual1" : "ritual0", "stand0", "stand0"];
+        },
+        // Two male Anna's hummingbirds chase round the territory one behind the other, each flaring its gorget; the
+        // leader turns on the other now and then.
+        hummingbird: function (o, n, u) {
+          var a2 = u * Math.PI * 7 + (n ? 0.8 : 0);
+          o.x = cx + Math.cos(a2) * 52;
+          o.y = cy - 14 + Math.sin(a2 * 0.5 + (n ? 0.6 : 0)) * 16;
+          o.dir = Math.sin(a2) > 0 ? -1 : 1;
+          o.ritualNames = ["ritual" + (Math.floor(u * 24 + n) % 2), "stand0", "stand0"];
         }
       }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
       var rit = behaviour(A.ch.cs[0], "ritual");

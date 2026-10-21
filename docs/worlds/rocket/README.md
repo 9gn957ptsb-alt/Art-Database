@@ -153,7 +153,9 @@ walks. You look up only as far as keeps the camera over his hat. The crosshair, 
 from the camera through the screen, but begin where the ray passes him and are measured from him, so his reach is
 what it was: a work within nine blocks of him, a block or a note within six. As you come to under your tree it is
 still through his eyes, as the artist asked of the opening; then, as he sits up, the view rises out over his head
-to the nearest side where nothing stands between it and him.
+to the nearest side where nothing stands between it and him. On a stone of the homage the view is his own
+eyes, as the stone is the one point its figure closes from (from over his head he would stand in front of it);
+stepping off, it rises out over his head again.
 
 **First person** is his own eyes, as the game was. `V` or the switch goes between the two, and the game keeps
 your choice.
@@ -171,6 +173,53 @@ it does not fit there, to the nearest place it does, and it falls unhurt ("There
 than a block a frame so it never passes through a roof. As the hologram you can look and read, a work's label or a
 note (the paper stays where it lies), but not take, build, launch, or break and place blocks: "you cannot complete
 the missions like going to space by merely going into holographic mode".
+
+## The homage: three figures where you wake
+
+The artist asked for a third figure (15 Oct 2026: "it is not quite possible without the introduction
+of a curve in three dimensional space ... consider the perspective points in which the Impossible
+Triangle would make sense in relation to the forms of architecture that you build ... when you get
+close to an aspect of architecture, a transparency, awakens, and as you progress further from the
+structure, it closes back up ... I want one more version of a figure of the impossible triangle"),
+then for the three side by side (15 Oct 2026: "Presents 3 structures at the beginning of the first
+world that presents the three figurations of the impossible triangle They should be lined up next to
+each other and be very simple objects, almost like an homage site").
+
+**The three.** The first is the block's own figure, six square bars whose ends meet only down the
+diagonal, closing from above, as the site draws its buildings. The second is being made in the game's
+own session; its plinth stands empty until `homage.json` gives it. The third (`scripts/figure_three.py`)
+is the first's six bars made one closed thing by a curve: every point of a figure may slide along the
+line of sight without changing the drawing, so each tribar gives up its rise round its own loop, a
+third a beam, in the beams' middles, its joints held square, until each cut's two ends lie EPS (0.3 of
+a cell) apart, the near cube just in front of the far one; then the whole drawing is lifted by one
+paraboloid, springing at its outer corners and rising the side over φ² at its middle, so the bars bow
+into the ribs of a vault (a slide of whole sightlines never changes what is in front). Turned over, it
+closes from below, as a person looks up at a building. Its tones are the drawing's, blended where its
+faces turn: a vertex's weights are the squares of its normal along the figure's own axes. `--check`
+rasterises it from its eye against the first and finds no pixel off the edges different; `--sheet`
+draws it closed, turned, near and far.
+
+**The site** (`homage.js`, no DOM). In the first world of a visit, not one escaped to (an escape marks
+the next with `rocket-escaped` in the session's storage, and the world keeps `escaped` in its save, so
+it has none when come back to), a row of three stands across the turn you make on waking, its middle
+about half a radian into the turn, so the opening shot passes the first, the second and the third
+before it comes to the wreck. It is set square to the blocks on open, level ground (a block either way
+is levelled; road, paving and a model's laid gravel will do, never its footprint, water or the
+crater), about nine metres off, never toward the wreck, on a strip of limestone in the ground that
+makes it one site. Each figure is its drawing from one white stone, drawn in towards that eye as the
+figure in the sky is drawn in towards the eye under your tree: every point moved along its line of
+sight, near the middle at its own size (a projective map, so faces stay flat). Off the stone its cuts
+come apart; back on it, it closes. Looked down on and up at along the diagonal's slope (35.26°):
+
+- **the first**, on a pin in a limestone square sunk a block, looked down on from a white step;
+- **the second**, a limestone plinth, empty, a white stone three blocks before it;
+- **the third**, on a thread under the lintel of a limestone gate five blocks high, looked up at from
+  a white stone.
+
+On a stone you are told once which figure it is and how it closes; the crosshair names the blocks.
+`node scripts/check_homage.js` plans it in every place an escape can be made of (fifteen new forms, 36
+buildings: all but Naman Pure Spa, ringed by water, have room) and checks each figure against its
+drawing from its stone; `--page PORT [shots]` plays it in headless Chromium.
 
 ## Escapes made from what the site holds
 
@@ -292,16 +341,21 @@ G brings the body to the head; as the hologram, space rises and Shift or C sinks
   written by `python3 scripts/figure_studies.py`.
 - `rocket.js` — the game: the mesh (16 × 16 columns a chunk, the nearest first and the rest a few
   each frame), the block (`FIGURE`, the model's six bars), the walk through the blocks from their
-  faces (the fragment shader `FS`, over the grid as a texture, `voxTexture` and `refresh`), the
+  faces (the fragment shader `FS`, over the grid as a texture, `voxTexture` and `refresh`: sent once
+  the pieces are hidden and the homage set, since a block set after it is not seen up close — the
+  pieces had been invisible within a few metres until 20 Oct 2026), the
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
-  (`figureBeams`, `drawnIn`, `placeSky`), the works' pictures, the hand, the opening, the labels
-  and the notes, the rocket, the start screen.
+  (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
+  pictures, the hand, the opening, the labels and the notes, the rocket, the start screen.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk
   (`pose`, `phaseStep`), his place in the world (`place`), and his head's own program (`HEAD_FS`, the
   true sphere). `rocket.js` draws them (`drawPearl`) and holds the views (`camera`, `thirdCam`,
   `holoCam`, `holo`, `bringBody`).
 - `pearl-body.json` — his form as data: the primitives of the form fitted to the album covers, his
   unit, his parts and joints, his walk and his palette, each with the relation that sets it.
+- `homage.js` — the homage where you wake, no DOM: the three planned in the place (`plan`), each
+  figure drawn in towards its stone (`drawIn`), the stone you stand on (`standing`), what a block of
+  it is (`label`); `homage.json` is the figures, written by `python3 scripts/figure_three.py`.
 - `catalogue.json` — what each adventure can be made from, written by
   `python3 scripts/build_adventures.py`.
 
@@ -323,7 +377,7 @@ were in comes back if it is not over, and "Another adventure here" or "Somewhere
 next. The Artifact is called **Holographic Mr Pearl**, the name the game is becoming (artist, 15 Oct
 2026: "Rename the artifact to holographic Mr Pearl"): its title, and `name` in `window.ROCKET`,
 which the tab shows after the escape's own name. An Artifact loads nothing from other sites, so the bundle carries the scripts and style
-inlined, the sections, the 36 buildings' models and grounds, and 150 of the saved works with
+inlined, the sections, the homage's figures, the 36 buildings' models and grounds, and 150 of the saved works with
 their pictures (fetched once from Artsy's image server; the bundle is written outside the
 repository). `window.ROCKET` can also set `base` (where the data is), `art(id)` (a work's
 picture), `kinds` and `forms` (what an escape may be), and `name` (what the tab calls the game;

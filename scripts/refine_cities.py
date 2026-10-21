@@ -427,6 +427,7 @@ def main():
             e.setdefault("log", []).append(f"{TODAY} · dated again " + ("(its years had been carried)" if carried else
                                            "with its runners' records") + " · " + line)
             changed.append(key)
+            save(led)                     # a city at a time: a run cut short (a time limit) keeps what it dated
         save(led)
         print("Changed: " + " ".join(changed) if changed else "Nothing to date again.")
         return
