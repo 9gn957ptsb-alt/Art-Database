@@ -63,7 +63,7 @@
   var HOLO_D = PHI;                              // the camera as far behind the head as the head stands off the ground
   var HOLO_V = WALK * PHI * PHI, HOLO_V_IN = WALK * PHI;   // the hologram: phi^2 his walk out of doors, phi his walk in a room
   var HOLO_T = 150;                              // the theme song, 2 min 30 s (149.9 s): one trip as the hologram
-  var BAR = 4 * 60 / 125;                        // one bar of the theme song (4/4 at 125 a minute, calc/tempo.py): the head's flight home
+  var BAR = 4 * 60 / 125;                        // one bar of the theme song (4/4 at 125 a minute, calc/tempo.py): the least the hologram gathers to go out
   var HOLO_REFILL = 1;                           // the time fills again in the body at the rate it was spent
   var VIEWS_KEY = "rocket-view";
   var Pl = window.RocketPlace, Adv = window.Adventures, Fm = window.Forms, B = Pl.B, PIECE_IDS = Pl.PIECE_IDS;
@@ -1003,8 +1003,8 @@
 
   function setPov(v) {
     if (intro || launched || !place) { return; }
-    if (v === "holo") { if (Hd) { goHome("return"); } else { enterHolo(); } return; }
-    if (Hd) { bodyPov = v; goHome("return"); drawViews(); return; }
+    if (v === "holo") { if (Hd) { bringBody(); } else { enterHolo(); } return; }
+    if (Hd) { bodyPov = v; bringBody(); drawViews(); return; }
     if (v === pov) { return; }
     var now = performance.now();
     blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: v === "third" ? clampV(P.pitch, TP_DOWN, TP_UP) : null };
@@ -1021,14 +1021,13 @@
     blend = { from: camLast, t0: now, dur: T_LIFT, pitchFrom: P.pitch, pitchTo: null };
     document.body.dataset.holo = "true";
     drawViews();
-    say("Your head leaves the body: fly it anywhere. The body stays here, open to harm.", true);
+    say("Your head leaves the body: fly it anywhere, and wherever you leave the hologram the body lands. Till then it stays here, open to harm.", true);
   }
-  // Home: the head flies back to its seat on the body (one bar of the theme song), or, the body brought,
-  // settles onto it (the time of a switch of view).
+  // Home: the head settles onto the body brought under it, in the time of a switch of view. Nothing flies the head
+  // back to where the body was: to land there, fly it back yourself.
   function goHome(why, dur) {
     if (!Hd || Hd.phase === "home") { return; }
-    Hd.phase = "home"; Hd.t0 = performance.now(); Hd.from = [Hd.x, Hd.y, Hd.z]; Hd.dur = dur || BAR; Hd.why = why;
-    if (why === "time") { say("The time is up: your head flies home."); }
+    Hd.phase = "home"; Hd.t0 = performance.now(); Hd.from = [Hd.x, Hd.y, Hd.z]; Hd.dur = dur || T_VIEW; Hd.why = why;
   }
   function seatHead() {
     var now = performance.now();
@@ -1053,8 +1052,8 @@
       return;
     }
     holoLeft = max(0, holoLeft - dt);
-    if (holoLeft <= HOLO_T / 10 && !Hd.warned) { Hd.warned = true; say(round(holoLeft) + " seconds left as the hologram."); }
-    if (holoLeft <= 0) { goHome("time"); return; }
+    if (holoLeft <= HOLO_T / 10 && !Hd.warned) { Hd.warned = true; say(round(holoLeft) + " seconds left as the hologram; then the body lands where the head is."); }
+    if (holoLeft <= 0) { bringBody("time"); return; }
     // Free in three dimensions: forward along the look (up and down with it), sideways, the jump to rise and
     // Shift or C to sink; through blocks, but not out of the place, below its floor, or over its ceiling.
     var f = lookDir(P.yaw, P.pitch), r = [Math.cos(P.yaw), 0, Math.sin(P.yaw)], V = inRoom(Hd.x, Hd.y - PEARL.headY, Hd.z) ? HOLO_V_IN : HOLO_V;
@@ -1065,14 +1064,19 @@
     Hd.x = clampV(Hd.x + Hd.vx * dt, hr, w.SX - hr); Hd.y = clampV(Hd.y + Hd.vy * dt, 1 + hr, holoTop); Hd.z = clampV(Hd.z + Hd.vz * dt, hr, w.SZ - hr);
     Hd.yaw = turnTo(Hd.yaw, P.yaw, TURN * dt);
   }
-  // "Choose to move Mr Pearl's body exactly there": the body to where the head is (the head back on it), or, if
-  // he does not fit there, to the nearest place he fits; then it falls, unhurt (there is no fall damage).
-  function bringBody() {
-    if (!Hd || Hd.phase !== "free") { return; }
+  // "Choose to move Mr Pearl's body exactly there", and every way out of the hologram is that choice (artist,
+  // 21 Oct 2026: "Wherever you move in the holographic view should be where you land when you switch back to any
+  // other view"): a view chosen, Holo again, H or V, the button or G, the time up. The body to where the head is
+  // (the head back on it), or, if he does not fit there, to the nearest place he fits; then it falls, unhurt
+  // (there is no fall damage). A head still lifting has not moved: it settles back where it rose from.
+  function bringBody(why) {
+    if (!Hd || Hd.phase === "home") { return; }
+    if (Hd.phase === "lift") { goHome("bring"); return; }
     var at = freeSpot(Hd.x, Hd.y - PEARL.headY, Hd.z), exact = at[0] === Hd.x && at[1] === Hd.y - PEARL.headY && at[2] === Hd.z;
     P.x = at[0]; P.y = at[1]; P.z = at[2]; P.vx = P.vy = P.vz = 0; P.ground = false; P.face = Hd.yaw;
-    goHome("bring", T_VIEW);
-    say(exact ? "Your body, brought to where your head is." : "Your body, brought to the nearest place it fits.", true);
+    goHome("bring");
+    var where = exact ? "where your head is." : "at the nearest place it fits.";
+    say(why === "time" ? "The time is up: your body lands " + where : "Your body lands " + where, true);
   }
   function freeSpot(x, y, z) {
     x = clampV(x, 0.5, w.SX - 0.5); z = clampV(z, 0.5, w.SZ - 0.5); y = max(1, y);
@@ -1110,12 +1114,12 @@
   function drawViews() {
     var on = Hd ? "holo" : pov;
     document.querySelectorAll("[data-pov]").forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.pov === on)); });
-    $("bring").hidden = $("return").hidden = !Hd;
+    $("bring").hidden = !Hd;
     $("jump").setAttribute("aria-label", Hd ? "Rise" : "Jump");
 
   }
-  // Each frame: the ring round Holo (the time left, filling again in the body at the rate it was spent), the way
-  // and distance back to the body on Return.
+  // Each frame: the ring round Holo (the time left, filling again in the body at the rate it was spent), and on
+  // the button the way to the body and how far it will come.
   var holoSaid = -1;
   function holoHud() {
     var b = $("v-holo"), left = holoLeft / HOLO_T;
@@ -1124,8 +1128,8 @@
     var secs = Math.ceil(holoLeft), label = "Holographic, " + (secs >= 60 ? floor(secs / 60) + " min " : "") + (secs % 60) + " s";
     if (abs(secs - holoSaid) >= 10 || (secs < holoSaid && secs % 10 === 0)) { holoSaid = secs; b.setAttribute("aria-label", label + " left"); }
     if (Hd) {
-      var dx = P.x - Hd.x, dz = P.z - Hd.z, t = "Return · " + bearing(P.x, P.z) + " " + round(hypot(dx, dz, P.y + PEARL.headY - Hd.y)) + " m";
-      if ($("return").textContent !== t) { $("return").textContent = t; }
+      var dx = P.x - Hd.x, dz = P.z - Hd.z, t = "Bring the body here · " + bearing(P.x, P.z) + " " + round(hypot(dx, dz, P.y + PEARL.headY - Hd.y)) + " m";
+      if ($("bring").textContent !== t) { $("bring").textContent = t; }
     }
   }
 
@@ -1813,8 +1817,7 @@
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { jb.addEventListener(ev, function () { input.jump = false; }); });
     $("mode").onclick = function () { if (Hd) { barred(); return; } setMode(mode === "break" ? "place" : "break"); };
     document.querySelectorAll("[data-pov]").forEach(function (b) { b.onclick = function () { setPov(b.dataset.pov); }; });
-    $("bring").onclick = bringBody;
-    $("return").onclick = function () { goHome("return"); };
+    $("bring").onclick = function () { bringBody(); };
     $("build").onclick = function () { buildRocket(false); };
     $("launch").onclick = launch;
     $("behind").onclick = lookBehind;

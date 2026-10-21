@@ -167,10 +167,14 @@ read the works. With the head gone nothing holds his hat: it falls straight down
 has it, and the head coming home picks it up. The body stays where it was, headless, "completely vulnerable to
 getting destroyed"; nothing threatens it yet (`harmBody()` is where whatever does will call). The time is one play
 of the theme song, two and a half minutes, shown as a ring round the Holo switch; it fills again in the body at
-the rate it was spent, and the head flies home when it runs out. Return (or `H`) flies the head home along a
-straight line in one bar of the song; "Bring the body here" (or `G`) moves the body exactly under the head, or, if
-it does not fit there, to the nearest place it does, and it falls unhurt ("There is no fall damage"), no faster
-than a block a frame so it never passes through a roof. As the hologram you can look and read, a work's label or a
+the rate it was spent. **Wherever the head has gone is where you land** (artist, 21 Oct 2026: "Wherever you move
+in the holographic view should be where you land when you switch back to any other view"): every way out — Third
+or First, Holo again, `H` or `V`, "Bring the body here" or `G`, the time running out — moves the body exactly
+under the head, or, if it does not fit there, to the nearest place it does, and it falls unhurt ("There is no fall
+damage"), no faster than a block a frame so it never passes through a roof; the head settles onto it in the time a
+switch of view takes. The button says where the body is and how far it will come ("Bring the body here · ↗ 34 m").
+Nothing flies the head home: to land where the body stands, fly the head back to it. A head still lifting has not
+moved, and settles back. As the hologram you can look and read, a work's label or a
 note (the paper stays where it lies), but not take, build, launch, or break and place blocks: "you cannot complete
 the missions like going to space by merely going into holographic mode".
 
@@ -321,7 +325,8 @@ On a phone: the stick on the left, drag to look, tap, the jump button (single st
 themselves), and over it the switch of the three views, Third, First and Holo. On a computer: W A S D,
 drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes, F
 looks behind the work whose label is open, V switches third and first person, H the holographic view,
-G brings the body to the head; as the hologram, space rises and Shift or C sinks.
+G brings the body to the head (as leaving the hologram any way does); as the hologram, space rises and Shift or C
+sinks.
 
 ## Files
 
