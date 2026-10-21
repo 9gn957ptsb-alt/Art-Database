@@ -14,8 +14,9 @@
    artists (characters/characters.json says why): its dots are the soil
    where it stands worked into the artist's inks, it moves in its own gait
    (the fox trots, the bison walks, the squirrel bounds, the lizard scurries,
-   the eagle flies up and away, the starlings stream up and away in a
-   murmuration, the slug crawls and goes back into the soil), and some leave
+   the eagle flies up and away, the hummingbird darts up and away, the
+   starlings stream up and away in a murmuration, the slug crawls and goes
+   back into the soil), and some leave
    something of their artist behind (Twombly's writing after the fox, the
    dark trace of Kapoor's wax after the slug). Pressed, one stops and looks
    at you, is framed in its artist's ink, and a quiet line says what it is.
@@ -2540,7 +2541,8 @@
      on; eagles lock talons and fall turning; bison meet head to head;
      stags roar and walk side by side; slugs circle and lunge; squirrels
      chase round and round; starlings sing at each other, wings flicking;
-     ocellated lizards gape and bite head to head.
+     ocellated lizards gape and bite head to head; Anna's hummingbirds chase
+     each other round the territory, gorgets blazing.
      Drawn where the game's ritual box is, else at
      the middle of the screen. Resolves when it is over, with the line. */
   function meet(a, b, opts) {
@@ -2585,6 +2587,15 @@
           var bite = Math.floor(u * 12 + (n ? 1 : 0)) % 2;
           o.x = cx + (n ? 1 : -1) * (74 - 20 * Math.min(1, u * 2.5) + (bite ? 3 : 0));
           o.ritualNames = [bite ? "ritual1" : "ritual0", "stand0", "stand0"];
+        },
+        // Two male Anna's hummingbirds chase round the territory one behind the other, each flaring its gorget; the
+        // leader turns on the other now and then.
+        hummingbird: function (o, n, u) {
+          var a2 = u * Math.PI * 7 + (n ? 0.8 : 0);
+          o.x = cx + Math.cos(a2) * 52;
+          o.y = cy - 14 + Math.sin(a2 * 0.5 + (n ? 0.6 : 0)) * 16;
+          o.dir = Math.sin(a2) > 0 ? -1 : 1;
+          o.ritualNames = ["ritual" + (Math.floor(u * 24 + n) % 2), "stand0", "stand0"];
         }
       }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
       var rit = behaviour(A.ch.cs[0], "ritual");
