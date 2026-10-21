@@ -400,8 +400,8 @@ def main():
     p["natives"] = dict(sorted(natives_of.items()))
     n = dump(OUT / "plants.json", p)
     print(f"plants: {len(p['places'])} places, {len(p['sets'])} biome-realm sets, {n} bytes")
-    print(f"natives: {len(index)} places with a character ({stats['cast']} drawn by hand), native artist "
-          f"{stats['born']}, of the region {stats['region']}, after the ground {stats['ground']}, none {stats['none']}; "
+    print(f"natives: {len(index)} places with a character ({stats['cast']} drawn by hand, {stats['chosen']} chosen by "
+          f"the artist), native artist {stats['born']}, of the region {stats['region']}, after the ground {stats['ground']}, none {stats['none']}; "
           f"{len(stats['species'])} species; hands {stats['modes']}; {stats['maps']} maps; places {stats['bytes']} bytes")
     if natives.MISSING:
         print("not yet drawn (no row in species.py): " + ", ".join(sorted(natives.MISSING)))

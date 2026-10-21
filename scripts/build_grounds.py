@@ -32,14 +32,17 @@ which Overture release it was read from and when ("release", "read");
     python3 scripts/build_grounds.py [--force] [--only slug] [--release latest|2026-09-23.1]
     python3 scripts/build_grounds.py --heights [--only city-<key>]    # heights past 74 storeys; landmarks'; parts
     python3 scripts/build_grounds.py --bridges [--only city-<key>]    # road bridges over a city's water
+    python3 scripts/build_grounds.py --tunnels [--only city-<key>]    # tunnels and culverts off the surface
 
 A city's skyline keeps two more things the first cuts did not (14-15 Oct 2026, docs/v2/grounds/REFINE.md):
 its building parts — Overture's `building_part`s, OpenStreetMap's building:part: a building mapped in tiers,
 legs and spires is drawn as them (each cell the tallest part over it), not as a slab of its whole footprint
 at its top height (the Empire State Building was 37 cells at 138 storeys, the Eiffel Tower 27 at 103) — and
 its roads on the surface only: a stretch Overture flags `is_tunnel` is not drawn (Madrid Río's M-30,
-Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris were roads over parks). `--heights` brings
-the parts to the grounds cut before; the tunnels come with a new cut.
+Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris were roads over parks) — nor a
+watercourse below the ground (Overture's water `level` under 0, or the source's `tunnel` tag: San Francisco's
+culverted creeks and Milan's covered navigli were blue lines through its blocks; 21 Oct 2026). `--heights`
+brings the parts to the grounds cut before; `--tunnels` brings the tunnels and the culverts to them.
 """
 
 import argparse
@@ -119,7 +122,7 @@ def local(lat, lon):
             lambda e, n: (lon + e / (k * c), lat + n / k))
 
 
-COLUMNS = {("base", "water"): ["subtype", "class"],
+COLUMNS = {("base", "water"): ["subtype", "class", "level", "source_tags"],
            ("transportation", "segment"): ["subtype", "class", "road_flags", "rail_flags"],
            ("buildings", "building"): ["id", "height", "num_floors"]}
 GREEN_COLUMNS = {("base", "land_use"): ["subtype", "class"],     # read for the cities' skylines only
@@ -367,6 +370,19 @@ def bridge_mask(segments, cell, least, to_local, within, N):
     return mask
 
 
+def underground(row):
+    """A watercourse below the ground — a culvert, a covered canal, a piped stream (San Francisco's
+    creeks and Milan's covered navigli ran as blue lines through its streets and parks). Overture's water
+    carries OpenStreetMap's `level` (negative below the ground) and the source's own tags (`tunnel`)."""
+    level = row.get("level")
+    if level is not None and level < 0:
+        return True
+    tags = row.get("source_tags") or []
+    tags = tags.items() if hasattr(tags, "items") else tags
+    return any(k == "tunnel" and v in ("yes", "culvert", "pipe", "building_passage", "flooded")
+               for k, v in tags)
+
+
 def surface(g, flags):
     """A road segment's geometry without its tunnelled stretches: a road under a park, a river or a
     street (Madrid Río's M-30, Boston's Greenway, the quais of Paris) is not on the ground, so no cell of
@@ -449,8 +465,12 @@ def build(b, only=None):
     tall = np.zeros((N, N))
     city = b.get("precision") == "city"
 
-    waters = [] if only else overture("base", "water", ["subtype", "class"], box)
+    # A watercourse under the ground (a culvert, a covered canal) is not on it: left out of the water, and
+    # said (`below`) for the repair of the grounds cut before it was (`--tunnels`).
+    waters = overture("base", "water", ["subtype", "class", "level", "source_tags"], box) \
+        if only in (None, "underground") else []
     dry = dry_basins(waters, box, to_local, half) if city else set()
+    below = np.zeros((N, N), bool)
     for k, row in enumerate(waters):
         if k in dry:
             continue
@@ -458,10 +478,14 @@ def build(b, only=None):
         if g.geom_type in ("LineString", "MultiLineString"):
             g = g.buffer(max(cell * 0.6, 6))
         if g.area:
-            kind[within(g)] = "~"
+            if underground(row):
+                below |= within(g)
+            else:
+                kind[within(g)] = "~"
 
     # A city's green, under its streets and buildings: parks, gardens, lawns, pitches, cemeteries, woods.
-    if city and not only:
+    green = np.zeros((N, N), bool)
+    if city and only in (None, "underground"):
         for theme, kind_ in (("base", "land_use"), ("base", "land")):
             for row in overture(theme, kind_, ["subtype", "class"], box):
                 if theme == "base" and kind_ == "land_use" and row.get("class") not in GREEN_USE:
@@ -470,7 +494,9 @@ def build(b, only=None):
                     continue
                 g = to_local(shapely.from_wkb(row["geometry"]))
                 if g.area:
-                    kind[within(g) & (kind == ".")] = "g"
+                    held = within(g)
+                    green |= held
+                    kind[held & (kind == ".")] = "g"
 
     # A city's skyline keeps its streets, not every lane and drive: under 8 m wide they are left out
     # where a cell is ~40 m, and kept from 6 m where the grid has been cut finer than 22 m.
@@ -479,26 +505,37 @@ def build(b, only=None):
                                                   ["subtype", "class", "road_flags", "rail_flags"], box)
     if only == "bridges":        # the cells under road bridges alone (`--bridges`)
         return {"deck": bridge_mask(segments, cell, least, to_local, within, N)}
-    for row in segments:
-        if row.get("subtype") != "road":
-            continue
-        width = ROAD_WIDTH.get(row.get("class") or "", 0)
-        if not width:
-            continue
-        if city and width < least:
-            continue
-        reach = width / 2 + cell * 0.12 if city else max(width / 2, cell * 0.45)
-        g = to_local(shapely.from_wkb(row["geometry"]))
-        if city:                           # a tunnel is under the ground, not on it
-            g = surface(g, row.get("road_flags"))
-            if g is None:
+    def streets():
+        """Each street a city keeps, as the ground it covers (a tunnel is under the ground, not on it)."""
+        for row in segments:
+            if row.get("subtype") != "road":
                 continue
-        g = g.buffer(reach)
+            width = ROAD_WIDTH.get(row.get("class") or "", 0)
+            if not width:
+                continue
+            if city and width < least:
+                continue
+            reach = width / 2 + cell * 0.12 if city else max(width / 2, cell * 0.45)
+            g = to_local(shapely.from_wkb(row["geometry"]))
+            if city:
+                g = surface(g, row.get("road_flags"))
+                if g is None:
+                    continue
+            yield g.buffer(reach)
+
+    deck = bridge_mask(segments, cell, least, to_local, within, N) if city and segments else None
+    if only == "underground":    # what lies on the surface, for the repair of the grounds cut before (`--tunnels`)
+        roads = np.zeros((N, N), bool)
+        for g in streets():
+            roads |= within(g)
+        return {"above": kind == "~", "below": below, "green": green, "roads": roads,
+                "deck": deck if deck is not None else np.zeros((N, N), bool)}
+    for g in streets():
         inside = within(g) & (kind != "~")
         kind[inside] = "="
     # A bridge crosses the water the road is not drawn over.
-    if city and segments:
-        kind[bridge_mask(segments, cell, least, to_local, within, N)] = "="
+    if deck is not None:
+        kind[deck] = "="
 
     count = 0
     rows = overture("buildings", "building", ["id", "height", "num_floors"], box)
@@ -642,7 +679,8 @@ def build(b, only=None):
         # A city's roads over water (its bridges) are drawn, and its landmarks stand at Wikidata's heights
         # (`--bridges` and `--heights` do it for the grounds cut before).
         **({"bridges": datetime.date.today().isoformat(), "parts": datetime.date.today().isoformat(),
-            "tunnels": datetime.date.today().isoformat()} if city else {}),
+            "tunnels": datetime.date.today().isoformat(),
+            "culverts": datetime.date.today().isoformat()} if city else {}),
         **({"heights": datetime.date.today().isoformat(), "heightsFrom": heights_from} if city and heights_read else {}),
     }
 
@@ -760,6 +798,100 @@ def repair_bridges(places):
         print(f"  + {b['name']}: {len(decks)} water cells under bridges are road now", flush=True)
 
 
+def repair_underground(places):
+    """`--tunnels`: a city's ground cut before tunnels and culverts were left off the surface draws a road
+    in a tunnel over the park, the river or the street above it (Madrid Río's M-30, Boston's Greenway, the
+    quais of Paris), and a covered stream or canal as a blue line through its blocks (San Francisco's
+    creeks, Milan's covered navigli). Its water, green and street segments are read again, from the
+    release the ground was read from; a road cell no street of the surface covers is green where the
+    green polygons hold it, else land, and a water cell that only a watercourse under the ground made is a
+    street where the surface has one, else green, else land. What lay under the road is the same polygons'
+    answer, so nothing else in the ground changes — its buildings, heights, terrain and years. A ground
+    cut with the tunnels (`tunnels`) and the culverts (`culverts`) says so and is left alone. The grounds
+    are read a few at a time: one pass over Overture's index serves a batch of cities."""
+    todo = {}
+    for b in places:
+        path = OUT / (b["slug"] + ".json")
+        if b.get("precision") != "city" or not path.exists():
+            continue
+        old = json.loads(path.read_text(encoding="utf-8"))
+        if old.get("tunnels") and old.get("culverts"):
+            continue
+        if old["n"] != (b.get("n") or GRID) or old["side"] != side_of(b):
+            print(f"  · {b['slug']}: its grid is not the place's now: cut it again instead", flush=True)
+            continue
+        todo.setdefault(old.get("release") or RELEASE, []).append((b, old, path))
+    themes = {("base", "water"): COLUMNS[("base", "water")],
+              ("transportation", "segment"): COLUMNS[("transportation", "segment")],
+              ("base", "land_use"): GREEN_COLUMNS[("base", "land_use")],
+              ("base", "land"): GREEN_COLUMNS[("base", "land")]}
+    BATCH = 6
+    for rel, group in todo.items():
+        for k in range(0, len(group), BATCH):
+            chunk = group[k:k + BATCH]
+            FETCHED.clear()
+            try:
+                use_release(rel)
+                prefetch([square(b) for b, _, _ in chunk], themes=themes)
+            except Exception as exc:         # a release the bucket no longer keeps: each place asks for itself
+                print(f"  · Overture {rel}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+                FETCHED.clear()
+            for b, old, path in chunk:
+                repair_one_underground(b, old, path, rel)
+            FETCHED.clear()
+
+
+def repair_one_underground(b, old, path, rel):
+    new = None
+    for release in dict.fromkeys([rel, "latest"]):
+        try:
+            use_release(release)
+            new = build(b, only="underground")
+            break
+        except Exception as exc:             # a release the bucket no longer keeps: the newest instead
+            print(f"  · {b['slug']}: Overture {release}: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+            FETCHED.clear()
+    if new is None:
+        return
+    n = old["n"]
+    kind = np.array(list(old["kind"])).reshape(n, n)
+    old_kind = kind.copy()
+    today = datetime.date.today().isoformat()
+    roads, deck, green = new["roads"], new["deck"], new["green"]
+    tunnelled = covered = 0
+    if not old.get("tunnels"):
+        gone = (kind == "=") & ~roads & ~deck
+        kind[gone & green] = "g"
+        kind[gone & ~green] = "."
+        tunnelled = int(gone.sum())
+        old["tunnels"] = today
+    if not old.get("culverts"):
+        wet = (kind == "~") & new["below"] & ~new["above"]
+        kind[wet & roads] = "="
+        kind[wet & ~roads & green] = "g"
+        kind[wet & ~roads & ~green] = "."
+        covered = int(wet.sum())
+        old["culverts"] = today
+    # Land at or under the sea's height is the sea (a cut's last rule for the cells nothing else holds): a
+    # cell given back to the land here, in a low city (Amsterdam's polders, a river's bank), is tested by it.
+    plain = (kind == ".") & (old_kind != ".")
+    if plain.any():
+        try:
+            cell = old["side"] / n
+            to_m, to_deg = local(b["lat"], b["lon"])
+            at = terrain(square(b), cell, b["lat"])
+            for i, j in zip(*np.nonzero(plain)):
+                if at(*to_deg((j + 0.5) * cell - old["side"] / 2, old["side"] / 2 - (i + 0.5) * cell)) <= 0.3:
+                    kind[i, j] = "~"
+        except Exception as exc:             # the terrain out of reach: left for the next run
+            print(f"  · {b['slug']}: the terrain did not answer ({type(exc).__name__}): left as it was", flush=True)
+            return
+    old["kind"] = "".join(kind.ravel())
+    path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
+    print(f"  + {b['name']}: {tunnelled} road cells in tunnels and {covered} water cells of covered watercourses "
+          f"are off the surface", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true")
@@ -773,6 +905,9 @@ def main():
     parser.add_argument("--bridges", action="store_true",
                         help="draw the road bridges over water in the cities' grounds cut without them, "
                              "leaving all else as it is (with --only: one place)")
+    parser.add_argument("--tunnels", action="store_true",
+                        help="take the roads in tunnels and the watercourses under the ground off the surface of "
+                             "the cities' grounds cut without that, leaving all else as it is (with --only: one place)")
     args = parser.parse_args()
     if args.release:
         print(f"Overture release {use_release(args.release)}", flush=True)
@@ -789,11 +924,13 @@ def main():
         wanted = set(args.only.split(","))
         buildings = [b for b in buildings if b["slug"] in wanted]
     OUT.mkdir(parents=True, exist_ok=True)
-    if args.heights or args.bridges:
+    if args.heights or args.bridges or args.tunnels:
         if args.heights:
             repair_heights(buildings)
         if args.bridges:
             repair_bridges(buildings)
+        if args.tunnels:
+            repair_underground(buildings)
         sys.exit(0)
     todo = [b for b in buildings if args.force or not (OUT / (b["slug"] + ".json")).exists()]
 

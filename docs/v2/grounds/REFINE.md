@@ -26,7 +26,7 @@ Website.
 | **its towers** | A cell says up to 260 storeys (832 m, `MAX_STOREYS`). It stopped at 74 (237 m) until 14 Oct 2026, when every tower above that — the Empire State Building, the Willis Tower, the Eiffel Tower, the CN Tower — was found standing at one height (11 of the 25 skylines then). And Overture's heights are mostly missing (Brussels: 93% of 100,000 buildings; a cell then stands at two storeys) or a landmark's own is a podium's or a machine's (the Willis Tower 31 m, Trump Tower 60 m, the Tour du Midi 19 m): so a landmark takes the height Wikidata gives it (`scripts/wikidata_heights.py`, CC0: `P2048` normalised to metres, the preferred statement, never a deprecated one; `P1101` floors only for a skyscraper) — the cells of the building its point stands in, within 22 m (or 1.5 cells) of the point, where the building's own height is missing or at most two thirds of it and 12 m lower. In Spain and France a cell that stands at the default two storeys takes its building's height from EUBUCCO's register (`scripts/eubucco_heights.py`, ODbL: Spain's Catastro floors, France's BD TOPO; the files are the ones the years are read from, `data/eubucco/`) where that is a storey higher or more — Madrid's cells at two storeys went from 64% to 17%, Paris's from 34% to 10%; EUBUCCO's heights for Brussels are not a register's (their median is 6 m, r = 0.35 with Overture's), so they are not used there or anywhere else — nor in Basel, which EUBUCCO's rough box for France takes in (its heights: median 7.5 m against Overture's 12.8, r = 0.37, 32% within 3 m): a place's slug must end -es or -fr (`eubucco_storeys`). `build_grounds.py --heights` does it for the grounds cut before (the taller of the old and new height; a ground cut or repaired so says it: `heights`, and from what: `heightsFrom`). |
 | **its bridges** | A road was drawn over land only, so a river ran unbroken from bank to bank (the Han, the Seine, the Thames, the Rhine under the Hohenzollern Bridge). Overture flags a bridge on its segment (`road_flags` or, for a railway, `rail_flags`: `is_bridge`, the whole segment or the stretch between two fractions of its length): the road and main-line rail bridges of a city's square are drawn over its water, at the water's height (`bridge_mask`; footbridges, paths, trams and subways are left out, as their streets are). `build_grounds.py --bridges` does it for the grounds cut before (`bridges`). **Water that is dry:** a reservoir of half a square kilometre or more that Overture's land cover (ESA WorldCover, which has no water in it) covers four fifths of is land (`dry_basins`; Dallas's Trinity River Floodway, 1.9 km² of its square, had been a lake). |
 | **its parts** | A building mapped in parts (Overture's `building_part`, OpenStreetMap's building:part: tiers, towers, legs, spires, each with its top and, where it floats, its `min_height`) is drawn as them. Each cell takes the tallest part over it, not the whole footprint the building's top height: the Empire State Building was 37 cells at 138 storeys and the Eiffel Tower 27 at 103, one slab each; now the eleven tiers, and four legs, two platforms and a needle. A part off the ground (an arch, a skybridge) adds height to the building's own cells, never new ones; a tower or a mast thinner than a cell stands in the building's cell nearest it (a part under a twenty-fifth of a cell says nothing a cell holds); where no part reaches, the building's own height stands, unless that is the whole building's top (mapped on the outline for renderers that draw no parts: then its lowest part on the ground, its podium), and where the parts stop short of it (the Campanile's pyramid and angel) their tallest stands at it. Where a building's parts are mapped and its own height is missing, the parts are the height (Stockholm's Hötorget towers had stood at two storeys). `build_grounds.py --heights` brings it to the grounds cut before — up or down for the cells of a building with parts (`parts`), as a cut does. A low, wide landmark (under 60 m, over 10,000 m²: the Colosseum, a hall) takes Wikidata's height over its whole footprint, not within 22 m of its point. |
-| **its tunnels** | A road in a tunnel is not on the ground: Overture flags it on its segment (`road_flags`: `is_tunnel`, the whole segment or the stretch of it between two fractions of its length) and the stretch is left out of the road cells (`surface`), so the park, the square or the river over it shows (Madrid Río over the M-30, Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris). `--heights` cannot bring it to a ground cut before (what lay under the road was not kept in it): a city has it from its next cut (`tunnels` in the ground), 15 Oct 2026 on; a `--tunnels` repair is the weakest list's to do. |
+| **its tunnels** | A road in a tunnel is not on the ground: Overture flags it on its segment (`road_flags`: `is_tunnel`, the whole segment or the stretch of it between two fractions of its length) and the stretch is left out of the road cells (`surface`), so the park, the square or the river over it shows (Madrid Río over the M-30, Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris). **A watercourse under the ground is not on it either** (21 Oct 2026): Overture's water carries OpenStreetMap's `level` (negative below ground) and the source's `tunnel` tag (`underground`), and a culvert, a covered canal or a piped stream was drawn as a blue line through blocks and parks (San Francisco's creeks, Milan's covered navigli: 3,250 cells, most of them streets now). `build_grounds.py --tunnels` brings both to the grounds cut before (`tunnels`, `culverts` in the ground say so; `--run` does it first, after `--heights` and `--bridges`): it reads the water, the green and the street segments again, from the release the ground was read from, and a road cell no surface street covers (not a bridge deck) is green where the green polygons hold it, else land; a water cell only an underground watercourse made is a street where the surface has one, else green, else land; each cell given back to the land is tested by the sea rule against the terrain (land at or under 0.3 m is water again: Boston's harbour tunnels). Nothing else in the ground changes — its buildings, heights, terrain and years. 21 Oct 2026: 20 grounds had both done, 14 (cut since the tunnels) the culverts: 2,994 road cells off the surface (New York 716, Boston 489, Seoul 290, Antwerp 271, Tokyo 263, Brussels 257) and 12,144 water cells (Milan 3,250, Los Angeles 2,183, London 1,769, Brussels 1,004, San Francisco 703). |
 
 The page draws a city on the GPU (WebGL 2): every dot a square of the device's
 own pixels, depth-tested, a building cell's storeys one strip, so a city of
@@ -61,8 +61,8 @@ as black voids between patches of blue; land keeps its black pores.
    3 raised, 1 read again — a read-again turn goes to one more raise until a
    city is at the finest grain; `--new`, `--raise`, `--refresh` change it; a
    run takes about 4–8 minutes a city, longer where a city's records are
-   read). A run first reads again, for their heights and bridges alone, the
-   grounds that lack them (`build_grounds.py --heights`, `--bridges`: a ground
+   read). A run first reads again, for their heights, bridges, tunnels and culverts alone, the
+   grounds that lack them (`build_grounds.py --heights`, `--bridges`, `--tunnels`: a ground
    cut with them, or repaired, says so and is passed over at once; one cut
    while Wikidata or EUBUCCO did not answer is tried again; `--heights` reads
    the grounds a few at a time, one pass over Overture's index for six cities,
@@ -119,7 +119,7 @@ as black voids between patches of blue; land keeps its black pores.
 - The buildings' pass (`docs/v2/models/REFINE.md`) no longer grows the
   skylines; this pass does.
 
-## Where the grounds are weakest (15 Oct 2026)
+## Where the grounds are weakest (21 Oct 2026)
 
 What a source or a change in the drawing would improve most, from the grounds
 as they stand (counted from each ground's `tall` and `built` by
@@ -127,10 +127,15 @@ as they stand (counted from each ground's `tall` and `built` by
 
 - **Heights.** Over half of the building cells stand at the default two storeys
   in Shanghai (96%: Overture gives a height for few of its buildings), Antwerp
-  (86%), Brussels (83%), Tokyo (77%), New Haven and Seoul (74%), Basel (67%),
-  Toronto (66%), Cologne (55%), Milan and Rome (51%): Overture has a height for
-  few of their buildings and no register of them is read (Wikidata's landmarks
-  and the buildings' parts are; EUBUCCO's registers only for Spain and France).
+  (86%), Brussels (83%), Düsseldorf (79%), Tokyo (77%), New Haven and Seoul (74%),
+  Basel (67%), Toronto (66%), Cologne (55%), Indianapolis, Milan and Rome (51%),
+  Bilbao (46%): Overture has a height for few of their buildings and no register
+  of them is read (Wikidata's landmarks and the buildings' parts are; EUBUCCO's
+  registers only for Spain and France, and not the Basque Country's: Bilbao;
+  Milan's ISTAT census sections are said to count each block's buildings by floors
+  as well as by period (to be checked in the variables' descriptions), a candidate for `fetch_city_records.py --census`; North
+  Rhine-Westphalia's open LoD1 building models might give Düsseldorf's and
+  Cologne's heights (not looked for yet)).
   Copenhagen's building register (BBR) and Basel's (GWR) date their cells and
   probably hold floors too: not read for heights yet. No open register of
   China's building heights is read (a candidate for `NETWORK.md`).
@@ -144,39 +149,32 @@ as they stand (counted from each ground's `tall` and `built` by
   is not drawn (a mast or a spire a cell wide stands only where Wikidata or the
   building's own height gives its top), and a tower's footprint is a cell at
   least: Torrespaña (231 m) is a column 20 m wide.
-- **Years.** Under a tenth of the building cells are dated in Seoul (7%),
-  Dallas (8%), Venice (6%), Shanghai (6%), Munich (5%), Antwerp (5%), Cologne
-  (4%), Tokyo (4%), Toronto (3%) and New Haven (2%): only Wikidata's landmarks,
-  OpenStreetMap's dates and the satellites' (1975 on) reach them. OpenStreetMap's
-  dates (`osm/dates/`) have been read for only 16 of the 31 skylines, the first
-  16 cut: Antwerp, Basel, Cologne, Dallas, Munich, New Haven, Philadelphia, Rome,
-  Seoul, Shanghai, Stockholm, Tokyo, Toronto, Venice and Vienna have none. Ask
-  the osm-dates workflow again with `osm/REQUEST` (write the day in it): it reads
-  every place on the globe again from Geofabrik and commits `osm/dates/` (72 MB,
-  read twice so far, 27 Sep and 8 Oct), so ask when several places wait, as
-  these 15 do. This pass does not make that run. `--redate` then dates a city
-  again once its `osm/dates/` file was read on or after the day it was last
-  dated (since 14 Oct 2026). Brussels is 47% dated: 12% by the satellites'
-  "between 1930 and 1975" year (1952), the rest by its heritage inventory,
-  OpenStreetMap, Wikidata and the satellites' later years; the other 53% have no
-  year and stand from the dial's first. Stockholm (21%) has no Swedish register
-  read, Washington (82%) none for the federal and exempt buildings the
-  assessor's AYB leaves out.
-- **Tunnels, bridges and streets.** A tunnel is left off the surface from a
-  city's next cut (`tunnels` in its ground: Stockholm, Venice, Shanghai, London,
-  Paris, Washington and Los Angeles have it); the other 24 skylines still draw
-  theirs on the surface, over parks and squares (Overture flags 70 motorway
-  segments in a box round Madrid Río, 36 round Boston's Greenway, 15 under
-  downtown Seattle), until they are raised to 14 m or read again from a newer
-  release. To fix them without a cut: a `--tunnels` repair that reads the
-  water, the green and the road segments again, six cities to a pass, and sets
-  the cells that were road and are not now to what lies there (green where the
-  green polygons hold them, else land) — what lay under the road is the same
-  polygons' answer, so it would be a new cut's, without the buildings, the
-  terrain and the years (about 90 s a city). Bridge decks,
-  flyovers, elevated rail and the subway are drawn at ground or water height,
-  with no piers, arches or cable stays. A street is a whole cell wide wherever
-  it is kept (a 6-10 m lane at 20 m reads twice as wide).
+- **Years.** Under a tenth of the building cells are dated in Düsseldorf (3%),
+  New Haven (5%), Bilbao (5%), Cologne (6%), Toronto and Shanghai (7%), Tokyo and
+  Antwerp (8%): only Wikidata's landmarks, OpenStreetMap's dates and the
+  satellites' (1975 on) reach them. OpenStreetMap's dates (`osm/dates/`) were read
+  for every place on 16 Oct 2026 and the skylines dated again with them on 21 Oct
+  (Seoul 7% to 27%, Venice 6% to 28%, Munich 5% to 13%, Dallas 8% to 11%,
+  Stockholm 21% to 29%, Tokyo and Toronto about doubled); the cities cut since have
+  none until `osm/REQUEST` is written again (write the day in it: the osm-dates
+  workflow reads every place on the globe again from Geofabrik and commits
+  `osm/dates/`, 72 MB, so ask when several places wait; this pass does not make
+  that run). `--redate` dates a city again once its `osm/dates/` file was read on
+  or after the day it was last dated. Bilbao's and Düsseldorf's years are the
+  satellites' and Wikidata's alone: Spain's Catastro (EUBUCCO) leaves out the
+  Basque Country, and no German state register is read. Brussels is 47% dated:
+  12% by the satellites' "between 1930 and 1975" year (1952), the rest by its
+  heritage inventory, OpenStreetMap, Wikidata and the satellites' later years; the
+  other 53% have no year and stand from the dial's first. Stockholm has no Swedish
+  register read, Washington (82%) none for the federal and exempt buildings the
+  assessor's AYB leaves out. Milan's census-block years were carried over from its
+  last cut when it was raised (the runners' records are for the old grid: asked for
+  on 21 Oct, `records/REQUEST`; `--redate` once they are in).
+- **Tunnels, bridges and streets.** Tunnels and culverts are off the surface in
+  every skyline since 21 Oct 2026 (`--tunnels`, above). Bridge decks, flyovers,
+  elevated rail and the subway are drawn at ground or water height, with no
+  piers, arches or cable stays. A street is a whole cell wide wherever it is kept
+  (a 6-10 m lane at 20 m reads twice as wide).
 - **Water.** A water cell with no dot in the sea's soil is its deep tone now, so
   a lagoon or a bay reads as water; but Overture's water has no minor canals
   (Venice's rii and Amsterdam's grachten under 20 m are gaps between buildings,

@@ -70,20 +70,22 @@ button, select { font: inherit; color: inherit; }
 .slot[aria-pressed="true"] { border-color: var(--cream); }
 .jump { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: 64px; height: 64px; border: 1px solid var(--hair); border-radius: 50%; background: var(--veil); color: var(--cream); font-size: 22px; letter-spacing: 0; display: none; touch-action: none; }
 body[data-touch] .jump { display: block; }
-.joy { position: fixed; width: 100px; height: 100px; border-radius: 50%; border: 1px solid var(--hair); background: rgba(15, 10, 7, 0.35); pointer-events: none; }
-.joy i { position: absolute; left: 30px; top: 30px; width: 40px; height: 40px; border-radius: 50%; background: rgba(234, 223, 205, 0.55); }
 .toast { position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--hair); text-align: center; opacity: 0; transition: opacity 0.26s steps(3); pointer-events: none; }
 .toast.show { opacity: 1; }
 .toast[data-tone="good"] { color: var(--good); }
 
-/* The views: Third, First, Holo, a column over the jump button (phone) or in its place (computer). The ring round
-   Holo is the hologram's time left. */
-.views { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(176px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; }
+/* The buttons of play take a touch as it lands (rocket.js press), so nothing of the page's own gestures waits on
+   them; the start and end cards' buttons scroll with their cards as before. */
+.foot .pill, .corner, .vw, .slot { touch-action: none; }
+
+/* The view: one button, Holo, over the jump button (phone) or in its place (computer), pressed while the head is
+   out; else the view is third person. The ring round it is the hologram's time left. */
+.views { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(176px + env(safe-area-inset-bottom, 0px)); display: grid; }
 body:not([data-touch]) .views { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 .vw { position: relative; min-width: 56px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 999px; background: var(--veil); color: var(--muted); cursor: pointer;
   font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase; }
 .vw:hover, .vw:focus-visible { color: var(--cream); }
-.vw[aria-checked="true"] { background: var(--cream); color: var(--ground); }
+.vw[aria-pressed="true"] { background: var(--cream); color: var(--ground); }
 #v-holo::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; pointer-events: none; opacity: 0;
   background: conic-gradient(var(--glow) calc(var(--left, 1) * 360deg), rgba(234, 223, 205, 0.12) 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 3px; }
@@ -96,7 +98,7 @@ body[data-holo] .jump { border-color: var(--glow); }
   body[data-touch] .notes { max-height: calc(100% - 54px - 340px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
   body[data-touch] .label { right: calc(88px + env(safe-area-inset-right, 0px)); }
 }
-@media (max-height: 520px) { .views { grid-auto-flow: column; bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); } }
+@media (max-height: 520px) { .views { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); } }
 
 /* Black until the place is built, when the eyes open on it. */
 .veil { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: #050302; color: var(--muted); font: italic 400 16px/1.5 var(--serif); text-align: center; }

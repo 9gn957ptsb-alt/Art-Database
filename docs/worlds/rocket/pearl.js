@@ -4,8 +4,9 @@
      spec = pearl-body.json, his form as data: the primitives of the form study (metres, z up, facing -y) and every
      relation the build follows. A better form is dropped in by replacing that file; nothing here changes.
      opts.skip = palette ids the game's block shader reads as no block (water, a note), which his cells never take.
-   PearlBody.pose(body, phase, amount) -> { part: mat4 }: each part's cells -> his own frame (metres, y up, he
-     faces -z, the origin the ground under his head), the walk at that phase; column-major as rocket.js's.
+   PearlBody.pose(body, phase, amount, act) -> { part: mat4 }: each part's cells -> his own frame (metres, y up, he
+     faces -z, the origin the ground under his head), the walk at that phase; column-major as rocket.js's. act
+     (optional) is what his arms and upper body do over the walk: { arms, twist } in radians (the smash).
    PearlBody.place(m, x, y, z, yaw) -> mat4: his frame -> the world, stood at (x, y, z), facing the yaw.
    PearlBody.phaseStep(body, phase, metres): the walk's phase after walking that far (a stride is two legs).
    PearlBody.HEAD_VS, HEAD_FS: his head's own program, the true sphere solved per pixel.
@@ -340,6 +341,12 @@
   function S(s) { return [s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1]; }
   function RX(a) { var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]; }
   function RY(a) { var c = Math.cos(a), s = Math.sin(a); return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]; }
+  // a turn by a about the axis v (any length), right-handed: RA([1, 0, 0], a) is RX(a)
+  function RA(v, a) {
+    var l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]), x = v[0] / l, y = v[1] / l, z = v[2] / l, c = Math.cos(a), s = Math.sin(a), k = 1 - c;
+    return [c + x * x * k, y * x * k + z * s, z * x * k - y * s, 0, x * y * k - z * s, c + y * y * k, z * y * k + x * s, 0,
+            x * z * k + y * s, y * z * k - x * s, c + z * z * k, 0, 0, 0, 0, 1];
+  }
   function about(R, p) { return mmul(T(p[0], p[1], p[2]), mmul(R, T(-p[0], -p[1], -p[2]))); }
   // the inverse of a rigid motion times a uniform scale (what the FS needs as uInvM)
   function inverse(m) {
@@ -354,13 +361,23 @@
   // phase advances by the ground covered: a stride (two steps) is 2 L
   function phaseStep(body, phase, metres) { return phase + 2 * Math.PI * metres / (2 * body.walk.L_m); }
   // amount: 0 standing .. 1 walking (ease it in the game as he starts and stops)
-  function pose(body, phase, amount) {
+  // act (optional), what his arms and upper body do over the walk, in radians (the artist, 21 Oct 2026: "He should be
+  // using his guitar to smash things when using the break function"): act.arms, both arms and the guitar as one about
+  // the line through his shoulder centres (his hands hold it; + lifts the front, as RX swings a leg forward);
+  // act.twist, the upper body about the spine, the walk's own turn made large (+ to his right): the torso, the arms,
+  // the guitar, the hat and the head's centre turn with it, as with the walk's (the head's eyes are drawn on his
+  // facing, so they stay on what he faces).
+  function pose(body, phase, amount, act) {
     var W = body.walk, th = W.thigh_swing_deg * Math.PI / 180 * (amount == null ? 1 : amount), J = body.joints;
     var kn = W.knee_bend_deg / W.thigh_swing_deg, tw = W.shoulder_twist_deg / W.thigh_swing_deg;
     var aR = th * Math.sin(phase), aL = th * Math.sin(phase + Math.PI);
     var drop = W.L_m * (1 - Math.cos(aR));                       // the pelvis on a straight swinging leg
     var kR = kn * th * max(0, Math.cos(phase)), kL = kn * th * max(0, Math.cos(phase + Math.PI));
-    var bob = T(0, -drop, 0), twist = about(RY(-tw * aR), J.spine.at);
+    var bob = T(0, -drop, 0), twist = about(RY(-tw * aR - (act && act.twist || 0)), J.spine.at), arms = null;
+    if (act && act.arms) {
+      var sR = J.shoulder_right.at, sL = J.shoulder_left.at;
+      arms = about(RA([sR[0] - sL[0], sR[1] - sL[1], sR[2] - sL[2]], act.arms), sR);
+    }
     var M = {};
     var rest = function (p) { return mmul(T(p.org[0], p.org[1], p.org[2]), S(body.cell)); };   // cells -> his frame at rest
     body.parts.forEach(function (p) {
@@ -370,6 +387,7 @@
       else if (p.name === "shin_right") { m = mmul(about(RX(aR), J.hip_right.at), mmul(about(RX(-kR), J.knee_right.at), m)); }
       else if (p.name === "thigh_left") { m = mmul(about(RX(aL), J.hip_left.at), m); }
       else if (p.name === "shin_left") { m = mmul(about(RX(aL), J.hip_left.at), mmul(about(RX(-kL), J.knee_left.at), m)); }
+      else if (arms && (p.name === "arm_right" || p.name === "arm_left" || p.name === "guitar")) { m = mmul(twist, mmul(arms, m)); }
       else if (p.name !== "pelvis") { m = mmul(twist, m); }
       M[p.name] = mmul(bob, m);
     });
@@ -588,6 +606,6 @@
   ].join("\n");
 
   var api = { HEAD_VS: HEAD_VS, HEAD_FS: HEAD_FS, build: build, pose: pose, place: place, phaseStep: phaseStep, inverse: inverse, mul: mmul,
-              T: T, S: S, RX: RX, RY: RY, toGame: toGame, toForm: toForm, sdf: sdf, PHI: PHI };
+              T: T, S: S, RX: RX, RY: RY, RA: RA, toGame: toGame, toForm: toForm, sdf: sdf, PHI: PHI };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.PearlBody = api; }
 })(this);
