@@ -56,7 +56,11 @@
    column and PlaceThen.studio(i, box) from a studio's; land.js gives
    Land.ground, Land.periodYears, Land.dial(Year) and Land.where (its
    `life`); voice.js gives Voice.periodPics and Voice.swipeable. It closes
-   itself when its box leaves the page. */
+   itself when its box leaves the page. What stands on the clod is asked
+   where: PlaceThen.at(lat, lon) puts a point of the earth on the clod as it
+   is drawn (Land.at asks it) and PlaceThen.here() is the place's own tile
+   (land.js, guideFrame), so the artist's animal (characters.js) can stand on
+   it, over the panel, and be pressed. */
 (function () {
   "use strict";
 
@@ -300,6 +304,7 @@
       S.noGround = "";
       S.ground = got.g;
       S.dots = got.dots;
+      S.f = null;
       S.slug = pl.slug;
       S.at = performance.now();
       S.heading = TAU / 8 + (Math.abs(hash(pl.slug)) % 4) * TAU / 4;
@@ -1055,6 +1060,7 @@
     // It rises out of the ground the first time, a row at a time; after, it stands at its year.
     var shown = S.when;
     var f = window.Models.draw(c, S.dots, S.heading, rising ? Math.min(shown, (now - S.at) / 1600) : shown, 0.9);
+    S.f = f;                                     // kept, so a point of the earth can be put on the clod as drawn (at, here)
     var g = c.getContext("2d");
     var n = S.dots.span;
     // The sites of the period's outings: a line of sea-green tiles from the place to each
@@ -1110,6 +1116,30 @@
     yearNote();
   }
 
+  /* ---- what stands on it ---------------------------------------------------- */
+
+  // A point of the clod, in its own cells from the middle (east, south), on the screen as the clod is drawn now:
+  // { x, y, z: 1, clod: true } as Land.at gives a point (clod says it is on this ground, not the globe's or the skyline's), at the height of the ground in the middle, where the place's tile stands.
+  function onClod(gx, gy) {
+    var c = refs.canvas, r = c.getBoundingClientRect();
+    if (!S.f || !r.width || !r.height) { return null; }
+    var t = Models.project(S.f, gx, gy, S.centre);
+    return { x: r.left + t.x * r.width / c.width, y: r.top + t.y * r.height / c.height, z: 1, clod: true };
+  }
+
+  // Where a point of the earth stands on the clod (land.js's Land.at asks, so an animal told to stand at a place stands on
+  // its ground: characters.js), or null: no place is up, its ground is not drawn yet, or the point falls off the square.
+  function at(lat, lon) {
+    if (!S || !S.f || !S.place || !refs.canvas) { return null; }
+    var n = S.dots.span, cell = (SIDE[S.place.precision] || 2400) / n;
+    var dx = (lon - S.place.lon) * 111320 * Math.cos(S.place.lat * Math.PI / 180), dy = (lat - S.place.lat) * 111320;
+    var gx = dx / cell, gy = -dy / cell, lim = n / 2 - 0.5;
+    return Math.abs(gx) > lim || Math.abs(gy) > lim ? null : onClod(gx, gy);
+  }
+
+  // The place itself, the lit tile's point: where the artist's animal waits when it is followed here (land.js's guideFrame).
+  function here() { return S && S.f && refs.canvas ? onClod(0, 0) : null; }
+
   /* ---- from a studio's column (the Artists layer) --------------------------- */
 
   function fromStudio(i, box) {
@@ -1163,6 +1193,9 @@
     close: close,
     studio: fromStudio,
     facts: facts,
+    // What stands on the clod (the artist's animal: characters.js, land.js's Land.at and guideFrame): a point on the screen, or null.
+    at: at,
+    here: here,
     _state: function () {
       if (!S) { return null; }
       var it = S.items[S.i];
