@@ -324,6 +324,9 @@
       try { colours = strongest(img); } catch (e) { colours = null; }
       if (!colours) { return; }
       tok.c = colours;
+      tok.ar = img.naturalHeight / Math.max(1, img.naturalWidth);
+      // Its own black, which the print and what it leaves in the black both take away (the remains).
+      try { tok.black = blackOfImage(img); } catch (e) { tok.black = null; }
       hubble.tokens.push(tok);
       // Once there are enough of them, they are the supply.
       if (hubble.tokens.length >= 12) {
@@ -376,6 +379,38 @@
         return h.length < 2 ? "0" + h : h;
       }).join("");
     });
+  }
+
+  /* A photograph's own black, the floor its light stands on (the remains, and the print that leaves them, take
+     it away), channel by channel: the median of its dark pixels (r + g + b under 90, as strongest() leaves out),
+     where there are enough of them (a twentieth of it), and the median of its edge (its outermost two pixels),
+     whichever is lighter. A photograph a nebula fills to its edges has hardly a dark pixel, and its floor is
+     its edge: taken away, its frame leaves no card. */
+  function blackOf(px, w, h) {
+    var hr = new Uint32Array(256), hg = new Uint32Array(256), hb = new Uint32Array(256), dark = 0;
+    var er = new Uint32Array(256), eg = new Uint32Array(256), eb = new Uint32Array(256), edge = 0;
+    for (var y = 0; y < h; y += 1) {
+      for (var x = 0; x < w; x += 1) {
+        var i = (y * w + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
+        if (r + g + b < 90) { hr[r] += 1; hg[g] += 1; hb[b] += 1; dark += 1; }
+        if (x < 2 || y < 2 || x >= w - 2 || y >= h - 2) { er[r] += 1; eg[g] += 1; eb[b] += 1; edge += 1; }
+      }
+    }
+    var median = function (hist, all) {
+      for (var v = 0, s = 0; v < 256; v += 1) { s += hist[v]; if (s * 2 >= all) { return v; } }
+      return 0;
+    };
+    var k = dark >= Math.max(21, w * h * 0.05) ? [median(hr, dark), median(hg, dark), median(hb, dark)] : [0, 0, 0];
+    if (edge) { k = [Math.max(k[0], median(er, edge)), Math.max(k[1], median(eg, edge)), Math.max(k[2], median(eb, edge))]; }
+    return k;
+  }
+
+  function blackOfImage(img) {
+    var n = 64, c = document.createElement("canvas");
+    c.width = c.height = n;
+    var g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0, n, n);
+    return blackOf(g.getImageData(0, 0, n, n).data, n, n);
   }
 
   function workLine(work) {
@@ -4016,6 +4051,7 @@
     if (following && place) { drawFollowed(); }
     placeGloss();
     placeHubble(now);
+    stepRemains(now);
 
     if (place && !flying) { drawStage(ctx, now); }
     stir(now);
@@ -10840,15 +10876,17 @@
   var trailLayer = document.getElementById("trail");
   var lastShot = null, shots = 0;
 
-  function dropHubble(x, y, how) {
+  function dropHubble(x, y, how, pick) {
     if (still || !trailLayer || !scopeShown || place || flying || !hubble.tokens.length) { return; }
     var dx = x - cx, dy = y - cy;
     if (dx * dx + dy * dy < R * R * 1.15) { return; }        // not over the world
     if (lastShot && Math.abs(x - lastShot.x) + Math.abs(y - lastShot.y) < 110) { return; }
     if (shots >= 7) { return; }
-    lastShot = { x: x, y: y };
-    var tok = oneOf(hubble.tokens);
+    var tok = (pick && hubble.tokens.filter(function (t) { return t.s === pick; })[0]) || oneOf(hubble.tokens);
     var width = Math.round(between(72, 128));
+    // It lies on the black, where its light will stay (the remains): never over the world or the words at its foot.
+    if (REMAINS && !onTheBlack(x, y, width, Math.round(width * (tok.ar || 1)))) { return; }
+    lastShot = { x: x, y: y };
     shots += 1;
     var gone = function (el) {
       if (el && el.parentNode) { el.parentNode.removeChild(el); shots -= 1; }
@@ -10863,6 +10901,13 @@
     im.alt = "";
     im.decoding = "async";
     im.draggable = false;
+    // Its own black taken away, as its remains' is, so the photograph passes into them without a card.
+    if (REMAINS) {
+      if (tok.black) { im.style.filter = blackFilter(tok.black); }
+      im.style.setProperty("--feather", remainsFeather(width, Math.round(width * (tok.ar || 1))) + "px");
+    }
+    var at = performance.now();
+    im.addEventListener("load", function () { remainsOf(tok, x, y, width, at); });
     im.src = tok.u;
     im.style.width = width + "px";
     im.style.left = x.toFixed(0) + "px";
@@ -10879,7 +10924,7 @@
      over its middle 72° apart, so five images come round it (a pentagon, whose diagonals cut each
      other in φ; five is odd, so the circle cannot close and the seam shows), then open by φ a step
      — 72°, 116°, 188°, 305°: 5, 3.1, 1.9 and 1.2 images — and it is the photograph, which goes
-     on as the others do (the same fall and fade, land.css). Four held steps at 24 frames a
+     on as the others do (the same fade, land.css; what it leaves stays in the black: the remains). Four held steps at 24 frames a
      second (the first four frames, to wait out the fade-in, then two each: 0.4 s in all); the
      mirrors' edges in the lavender light. Drawn at half the photograph's pixels and blown up unsmoothed, as the
      arrival is. Only where the pointer drops one: the far views, never under reduced motion. */
@@ -10900,6 +10945,10 @@
       c.style.width = w + "px";
       c.style.left = x.toFixed(0) + "px";
       c.style.top = y.toFixed(0) + "px";
+      if (REMAINS) {
+        if (tok.black) { c.style.filter = blackFilter(tok.black); }
+        c.style.setProperty("--feather", remainsFeather(w, h) + "px");
+      }
       var g = c.getContext("2d");
       var small = document.createElement("canvas");
       small.width = Math.max(1, Math.round(w / 2));
@@ -10910,6 +10959,8 @@
       c.addEventListener("animationend", function () { gone(c); });
       window.setTimeout(function () { gone(c); }, 2400);
       trailLayer.appendChild(c);
+      // From 0.4 s it is the photograph itself; what it leaves in the black is the photograph's, never the mirrors'.
+      remainsOf(tok, x, y, w, start);
       function frame(now) {
         if (!c.parentNode) { return; }
         var f = Math.floor((now - start) / 42), step = 0;      // held frames, 24 a second
@@ -10949,6 +11000,410 @@
       requestAnimationFrame(frame);
     };
     img.src = tok.u;
+  }
+
+  /* ---- the remains: what the telescope saw, left in the black ---------------
+
+     The artist, 21 Oct 2026: "I want the pictures that show up of the galaxy and stars from NASA for
+     quick 2nd as they fade away, they become a part of the background, as in, they actually become to
+     animate some aspect of that black space."
+
+     So a photograph the pointer drops in the far views (dropHubble, scopeShot) does not simply go out.
+     It lies on the black, clear of the world and of the words at its foot (onTheBlack), without a card:
+     its own black (blackOf, measured once when it came: the median of its dark pixels or of its edge,
+     whichever is lighter) is taken off it (blackFilter) and it is laid on the page with lighten
+     (land.css), its edges letting go over its outer eighth (remainsFeather), so only its light shows; it
+     fades where it is instead of falling, and as it fades that
+     light stays behind, in the black, behind the world: the black's own sky. The photograph is read once,
+     from a copy of its own (remainsOf), at the size and place it was dropped (readRemains), less the same
+     black, so what is left is only what it holds of light, its edges let go over the outer eighth so no
+     frame is left:
+
+       its stars  a pixel brighter than every one round it, and clear of its ring (the 16 a step further
+                  out), in its own colour over the ring's: a square of one CSS pixel, two where it blooms,
+                  crisp at the device's pixels; the brightest 55;
+       its gas    the rest of its light, summed over squares of the screen's own grid (kept on it as
+                  it drifts): 2 CSS px as it
+                  arrives (the photograph, a little coarser), then each time it dims a Fibonacci step
+                  coarser, 3, 5, 8 and 13 px, the pixel light's own tile. The light is kept as it spreads
+                  (each square the mean of what it covers), so the photograph thins into the black as a
+                  cloud does: it loses its detail as it loses its light.
+
+     Nothing drawn is made up: every light is a pixel, or a mean of pixels, of the photograph as it was.
+
+     It comes in three held steps with the print's fade (exposures phi^2, phi, 1: the brightest first),
+     is held phi^2 s, then dims by phi every phi s, each light going when it falls under the black's own
+     grain (a level of 4), so it goes out faintest first: the gas, the faint stars, the brightest star last,
+     16 to 18 s on. That is what moves the black now: light comes where a photograph stood, thins and goes
+     out faintest first; the world passes in front of it (carried, swung, bounced, brought nearer: the sky
+     holds still); and turning the world drags it a little, phi^-3 of the way the land at the front goes,
+     so there is depth behind the world.
+
+     #remains is the stage's first canvas, under the world: the globe hides what is behind it, its air lies
+     over the light at the limb, the telescope passes in front. It is backed at CSS pixels and shown
+     pixelated (.world), filled with the stage's own black, and every light is added to it ("lighter"), so
+     light that overlaps adds, as light does; the globe's dial, Search, the guide's pill, the pills and the
+     banner keep the black under their words (remainsKeep: their contrast, WCAG 1.4.3). At most 13
+     photographs' light at once (the oldest is hurried out, faintest first, when a 14th comes); drawn on
+     held frames at 24 a second, and only when something on it has changed. Never under Hold still or
+     reduced motion; cleared on any way down into a place, so a city never inherits the world's sky.
+     REMAINS = false brings back the card that fell. */
+  var REMAINS = DIRT_LOOK;
+  var BEAT5 = 1097;                                        // land.css --beat-5: the print's whole life
+  // The light comes in with the print's fade (land.css shot-black: steps(9) from 70 % to 100 %), a third of it a step.
+  var REMAINS_IN = [0.7 * BEAT5, 0.8 * BEAT5, 0.9 * BEAT5];
+  var REMAINS_HOLD = PHI * PHI * 1000, REMAINS_STEP = PHI * 1000, REMAINS_HURRY = 84;
+  var REMAINS_FLOOR = 4, REMAINS_STARS = 55, REMAINS_MAX = 13;
+  var REMAINS_GRAIN = [2, 3, 5, 8, CELL_PX];              // the gas's squares, a Fibonacci step coarser each time it dims
+  var remainsCanvas = document.getElementById("remains"), remainsCtx = null, remainsScratch = null;
+  var remainsCalm = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  var remains = { list: [], tick: -1, key: "", off: { x: 0, y: 0 }, spin: null, tilt: null, black: null, ring: null,
+                  keep: null, keepAt: 0, keepKey: "", cost: { draw: 0, read: 0 } };
+  if (REMAINS && trailLayer && remainsCanvas) { trailLayer.dataset.black = "true"; } else { REMAINS = false; }
+
+  // The median of the 16 values of a ring, sorted: the mean of the eighth and ninth.
+  function ringMedian(a) { a.sort(function (p, q) { return p - q; }); return (a[7] + a[8]) / 2; }
+
+  /* What a photograph leaves: read once, at the size and place it was dropped (w CSS px wide, centred on
+     x, y), from its own pixels. Null if it cannot be read, or holds no light. */
+  function readRemains(img, x, y, w, black) {
+    var nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
+    if (!nw || !nh || !w) { return null; }
+    var h = Math.max(1, Math.round(w * nh / nw)), ox = Math.round(x - w / 2), oy = Math.round(y - h / 2);
+    if (!remainsScratch) { remainsScratch = document.createElement("canvas"); }
+    remainsScratch.width = w;
+    remainsScratch.height = h;
+    var g = remainsScratch.getContext("2d", { willReadFrequently: true });
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    g.clearRect(0, 0, w, h);
+    var px;
+    try { g.drawImage(img, 0, 0, w, h); px = g.getImageData(0, 0, w, h).data; } catch (e) { return null; }
+    var n = w * h, q, i;
+    // Its own black (blackOf): the one measured when it came, which its print takes away too; else its own here.
+    var b0 = black || blackOf(px, w, h);
+    // What it holds of light: each pixel over its black, and how bright that is.
+    var er = new Float32Array(n), eg = new Float32Array(n), eb = new Float32Array(n), L = new Float32Array(n);
+    for (q = 0; q < n; q += 1) {
+      i = q * 4;
+      er[q] = Math.max(0, px[i] - b0[0]);
+      eg[q] = Math.max(0, px[i + 1] - b0[1]);
+      eb[q] = Math.max(0, px[i + 2] - b0[2]);
+      L[q] = 0.2126 * er[q] + 0.7152 * eg[q] + 0.0722 * eb[q];
+    }
+    // Its stars: a pixel no other in its 3 x 3 outshines (ties to the first), clear of its ring.
+    var found = [], xx, yy, dx, dy;
+    for (yy = 2; yy < h - 2; yy += 1) {
+      for (xx = 2; xx < w - 2; xx += 1) {
+        q = yy * w + xx;
+        var v = L[q];
+        if (v < 40) { continue; }
+        var top = true, bright = 0;
+        for (dy = -1; dy <= 1 && top; dy += 1) {
+          for (dx = -1; dx <= 1; dx += 1) {
+            var o = L[q + dy * w + dx];
+            if (o >= v * 0.5) { bright += 1; }
+            if (dx === 0 && dy === 0) { continue; }
+            if (o > v || (o === v && (dy < 0 || (dy === 0 && dx < 0)))) { top = false; break; }
+          }
+        }
+        if (!top) { continue; }
+        var rl = [], rr = [], rg = [], rb = [];
+        for (dy = -2; dy <= 2; dy += 1) {
+          for (dx = -2; dx <= 2; dx += 1) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) { continue; }
+            var c = q + dy * w + dx;
+            rl.push(L[c]); rr.push(er[c]); rg.push(eg[c]); rb.push(eb[c]);
+          }
+        }
+        var ringL = ringMedian(rl);
+        if (v - ringL < 24 || v < 1.6 * ringL) { continue; }
+        var ring = [ringMedian(rr), ringMedian(rg), ringMedian(rb)];
+        found.push({ q: q, x: xx, y: yy, V: v - ringL, ring: ring, s: bright >= 4 ? 2 : 1,
+                     c: [Math.max(0, er[q] - ring[0]), Math.max(0, eg[q] - ring[1]), Math.max(0, eb[q] - ring[2])] });
+      }
+    }
+    // Its edges let go into the black: its light is taken down to nothing over the outer eighth, so no frame is
+    // left, only less of its light (a nebula that fills the photograph thins out toward its edges).
+    var feather = remainsFeather(w, h);
+    var edgeOf = function (q3) {
+      var d = Math.min(q3 % w, w - 1 - q3 % w, Math.floor(q3 / w), h - 1 - Math.floor(q3 / w));
+      return d >= feather ? 1 : (d + 0.5) / feather;
+    };
+    found.forEach(function (s) {
+      var f = edgeOf(s.q);
+      if (f < 1) { s.V *= f; s.c = [s.c[0] * f, s.c[1] * f, s.c[2] * f]; }
+    });
+    found.sort(function (p, q2) { return q2.V - p.V; });
+    found = found.slice(0, REMAINS_STARS);
+    // Its gas: the rest of its light (each star's 3 x 3 given back its ring's), summed over the screen's
+    // squares at each grain of the ladder.
+    found.forEach(function (s) {
+      for (var ddy = -1; ddy <= 1; ddy += 1) {
+        for (var ddx = -1; ddx <= 1; ddx += 1) {
+          var c2 = s.q + ddy * w + ddx;
+          er[c2] = s.ring[0]; eg[c2] = s.ring[1]; eb[c2] = s.ring[2];
+        }
+      }
+    });
+    for (q = 0; q < n; q += 1) {
+      var f2 = edgeOf(q);
+      if (f2 < 1) { er[q] *= f2; eg[q] *= f2; eb[q] *= f2; }
+    }
+    var vmax = 0;
+    var gas = REMAINS_GRAIN.map(function (sz) {
+      var i0 = Math.floor(ox / sz), j0 = Math.floor(oy / sz);
+      var ni = Math.floor((ox + w - 1) / sz) - i0 + 1, nj = Math.floor((oy + h - 1) / sz) - j0 + 1;
+      var rgb = new Float32Array(ni * nj * 3), V = new Float32Array(ni * nj), top2 = 0, t, y2, x2;
+      for (y2 = 0; y2 < h; y2 += 1) {
+        var row = (Math.floor((oy + y2) / sz) - j0) * ni;
+        for (x2 = 0; x2 < w; x2 += 1) {
+          t = (row + Math.floor((ox + x2) / sz) - i0) * 3;
+          var p = y2 * w + x2;
+          rgb[t] += er[p]; rgb[t + 1] += eg[p]; rgb[t + 2] += eb[p];
+        }
+      }
+      var area = sz * sz;
+      for (t = 0; t < ni * nj; t += 1) {
+        rgb[t * 3] /= area; rgb[t * 3 + 1] /= area; rgb[t * 3 + 2] /= area;
+        V[t] = 0.2126 * rgb[t * 3] + 0.7152 * rgb[t * 3 + 1] + 0.0722 * rgb[t * 3 + 2];
+        top2 = Math.max(top2, V[t]);
+      }
+      return { s: sz, i0: i0, j0: j0, ni: ni, nj: nj, rgb: rgb, V: V, vmax: top2 };
+    });
+    var stars = found.map(function (s) { return [ox + s.x, oy + s.y, s.c[0], s.c[1], s.c[2], s.V, s.s]; });
+    var starMax = stars.length ? stars[0][5] : 0;
+    vmax = Math.max(starMax, gas[0].vmax);
+    if (vmax < REMAINS_FLOOR) { return null; }
+    return { ox: ox, oy: oy, w: w, h: h, black: b0, stars: stars, starMax: starMax, gas: gas, vmax: vmax };
+  }
+
+  /* A photograph has come (its print loaded and showing): what it leaves is read from a copy of its own, asked
+     for as measureHubble asked (NASA shares it), so a copy NASA will not share costs only the remains, never the
+     print. One whose print came too late to be seen whole leaves nothing. */
+  function remainsOf(tok, x, y, w, at) {
+    if (!REMAINS || still || remainsCalm.matches || performance.now() - at > REMAINS_IN[0]) { return; }
+    var img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.onload = function () { leaveRemains(img, x, y, w, at, tok.black); };
+    img.src = tok.u;
+  }
+
+  /* Read when its picture has been decoded and the page has a moment (at the latest a little before its light
+     is due), and placed as it fades: if it is read late, its light comes in at the step its age has reached,
+     and once the print has gone it leaves nothing (light never comes from nothing). */
+  function leaveRemains(img, x, y, w, at, black) {
+    if (!REMAINS || still || remainsCalm.matches || performance.now() - at > BEAT5) { return; }
+    var go = function () {
+      if (still || place || flying || performance.now() - at > BEAT5) { return; }
+      var t0 = performance.now(), r = readRemains(img, x, y, w, black);
+      remains.cost.read = performance.now() - t0;
+      if (!r) { return; }
+      r.at = at; r.E = 0; r.k = 0; r.placed = false; r.dx = 0; r.dy = 0; r.hurry = 0; r.e0 = 0; r.lit = 0;
+      remains.list.push(r);
+    };
+    var idle = function () {
+      var wait = Math.max(1, REMAINS_IN[0] - 120 - (performance.now() - at));
+      if (window.requestIdleCallback) { window.requestIdleCallback(go, { timeout: wait }); } else { window.setTimeout(go, 0); }
+    };
+    // Decoded off the page's own thread first (a NASA thumbnail can be 1,280 px), then read.
+    if (img.decode) { img.decode().then(idle, idle); } else { idle(); }
+  }
+
+  /* Whether a photograph w x h centred on x, y lies wholly on the black: clear of the world and its air, and of
+     the words that stand on the black at its foot (remainsKeep), so its light never lies over them. */
+  function onTheBlack(x, y, w, h) {
+    var nx = Math.max(x - w / 2, Math.min(cx, x + w / 2)), ny = Math.max(y - h / 2, Math.min(cy, y + h / 2));
+    if ((nx - cx) * (nx - cx) + (ny - cy) * (ny - cy) < R * R * 1.12) { return false; }
+    return !remainsKeep(performance.now()).some(function (b) {
+      return x + w / 2 > b.x0 && x - w / 2 < b.x1 && y + h / 2 > b.y0 && y - h / 2 < b.y1;
+    });
+  }
+
+  /* The words that stand on the black (Search and the guide's pill at the world's foot, the pills, the banner):
+     the black stays black under them, as under the dial's (ringAvoid), so they keep their contrast (WCAG 1.4.3).
+     Measured at most every quarter of a second. */
+  var REMAINS_KEEP = ["#art-find", ".guide-world", "#filter", "#banner"];
+  function remainsKeep(now) {
+    if (remains.keep && now - remains.keepAt < 250 && now >= remains.keepAt) { return remains.keep; }
+    var out = [];
+    REMAINS_KEEP.forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el || el.hidden) { return; }
+      var b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) { out.push({ x0: b.left - 4, y0: b.top - 4, x1: b.right + 4, y1: b.bottom + 4 }); }
+    });
+    remains.keep = out;
+    remains.keepAt = now;
+    remains.keepKey = out.map(function (b) { return Math.round(b.x0) + "," + Math.round(b.y0) + "," + Math.round(b.x1) + "," + Math.round(b.y1); }).join(";");
+    return out;
+  }
+
+  /* The print's own black taken away (an SVG filter, its channels each less its black, in sRGB), so with
+     lighten what is left over the page is only its light, as in its remains. One filter a black, kept. */
+  var blackFilters = {}, blackDefs = null;
+  function blackFilter(k) {
+    var id = "remains-black-" + k.join("-");
+    if (!blackFilters[id]) {
+      var ns = "http://www.w3.org/2000/svg";
+      if (!blackDefs) {
+        var svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("width", "0");
+        svg.setAttribute("height", "0");
+        svg.setAttribute("aria-hidden", "true");
+        svg.style.position = "absolute";
+        blackDefs = document.createElementNS(ns, "defs");
+        svg.appendChild(blackDefs);
+        document.body.appendChild(svg);
+      }
+      var f = document.createElementNS(ns, "filter");
+      f.setAttribute("id", id);
+      f.setAttribute("x", "0"); f.setAttribute("y", "0"); f.setAttribute("width", "1"); f.setAttribute("height", "1");
+      f.setAttribute("color-interpolation-filters", "sRGB");
+      var t = document.createElementNS(ns, "feComponentTransfer");
+      ["R", "G", "B"].forEach(function (ch, i) {
+        var fn = document.createElementNS(ns, "feFunc" + ch);
+        fn.setAttribute("type", "linear");
+        fn.setAttribute("slope", "1");
+        fn.setAttribute("intercept", (-k[i] / 255).toFixed(5));
+        t.appendChild(fn);
+      });
+      f.appendChild(t);
+      blackDefs.appendChild(f);
+      blackFilters[id] = "url(#" + id + ")";
+    }
+    return blackFilters[id];
+  }
+
+  // How far a photograph's light is let down at an age, and which grain of the ladder its gas is at: 0 not
+  // yet; phi^2, phi, 1 as the print fades; held phi^2 s; then a power of phi more, and a grain coarser, every phi s.
+  function remainsStage(age) {
+    if (age < REMAINS_IN[0]) { return { E: 0, k: 0 }; }
+    if (age < REMAINS_IN[1]) { return { E: PHI * PHI, k: 0 }; }
+    if (age < REMAINS_IN[2]) { return { E: PHI, k: 0 }; }
+    var past = age - BEAT5 - REMAINS_HOLD;
+    if (past < 0) { return { E: 1, k: 0 }; }
+    var step = 1 + Math.floor(past / REMAINS_STEP);
+    return { E: Math.pow(PHI, step), k: Math.min(step, REMAINS_GRAIN.length - 1) };
+  }
+  // The brightest it holds at its grain now.
+  function remainsTop(r) { return Math.max(r.starMax, r.gas[r.k].vmax); }
+
+  // Each frame (paint): the drift kept up every frame, the light stepped and drawn on held frames.
+  function stepRemains(now) {
+    if (!remains.list.length) { return; }
+    if (still || place || flying || descent || rise || dive.on) { clearRemains(); return; }
+    if (remains.spin !== null) {
+      remains.off.x -= R * shortest(remains.spin, spin) * INV3;
+      remains.off.y += R * (tilt - remains.tilt) * INV3;
+    }
+    remains.spin = spin;
+    remains.tilt = tilt;
+    var f = Math.floor(now / 42);                            // held frames, 24 a second
+    if (f === remains.tick) { return; }
+    remains.tick = f;
+    var dx = Math.round(remains.off.x), dy = Math.round(remains.off.y), live = 0, key = [];
+    for (var m = remains.list.length - 1; m >= 0; m -= 1) {
+      var r = remains.list[m], age = now - r.at, st = remainsStage(age), E = st.E;
+      if (E && !r.placed) { r.placed = true; r.dx = -dx; r.dy = -dy; }      // under the print, whatever the drift
+      if (r.hurry) { E = Math.max(E, r.e0 * Math.pow(PHI, 1 + Math.floor((now - r.hurry) / REMAINS_HURRY))); }
+      r.E = E;
+      r.k = st.k;
+      // Gone once its brightest is under the black's grain: only when it has come in whole, or is hurried out.
+      if (E && (r.hurry || age >= REMAINS_IN[2]) && remainsTop(r) / E < REMAINS_FLOOR) { remains.list.splice(m, 1); continue; }
+      if (E && !r.hurry) {
+        live += 1;
+        if (live > REMAINS_MAX) { r.hurry = now; r.e0 = E; }                // the oldest goes, faintest first
+      }
+      key.push(E + ":" + r.k);
+    }
+    if (!remains.list.length) { clearRemains(); return; }
+    remainsKeep(now);
+    key = key.join(",") + "|" + dx + "," + dy + "|" + W + "x" + H + "|" + remains.keepKey;
+    var ringNew = remains.ring !== ringAvoid;
+    remains.ring = ringAvoid;
+    if (key === remains.key && !ringNew) { return; }
+    remains.key = key;
+    drawRemains(dx, dy);
+  }
+
+  // How far in from its edges a photograph lets go into the black: the outer eighth (its print's mask, land.css, and its remains).
+  function remainsFeather(w, h) { return Math.max(2, Math.round(Math.min(w, h) / 8)); }
+
+  // An offset put on the grid of a grain.
+  function remainsSnap(a, s) { return Math.round(a / s) * s; }
+
+  // A photograph's gas at its grain and exposure, a cell a pixel (drawn scaled up, unsmoothed): kept until either changes.
+  function gasCanvas(r) {
+    var G = r.gas[r.k], key = G.s + ":" + r.E;
+    if (r.gasKey === key) { return r.gasCanvas; }
+    var c = r.gasCanvas || (r.gasCanvas = document.createElement("canvas"));
+    c.width = G.ni;
+    c.height = G.nj;
+    var g = c.getContext("2d"), im = g.createImageData(G.ni, G.nj), d = im.data, inv = 1 / r.E;
+    for (var t = 0; t < G.ni * G.nj; t += 1) {
+      var lit = G.V[t] * inv >= REMAINS_FLOOR;
+      d[t * 4] = lit ? Math.round(G.rgb[t * 3] * inv) : 0;
+      d[t * 4 + 1] = lit ? Math.round(G.rgb[t * 3 + 1] * inv) : 0;
+      d[t * 4 + 2] = lit ? Math.round(G.rgb[t * 3 + 2] * inv) : 0;
+      d[t * 4 + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    r.gasKey = key;
+    return c;
+  }
+
+  function drawRemains(dx, dy) {
+    var t0 = performance.now();
+    if (remainsCanvas.width !== W || remainsCanvas.height !== H) { remainsCanvas.width = W; remainsCanvas.height = H; }
+    if (!remainsCtx) { remainsCtx = remainsCanvas.getContext("2d", { alpha: false }); }
+    if (!remains.black) {
+      var bg = "";
+      try { bg = window.getComputedStyle(stage).backgroundColor || ""; } catch (e) { bg = ""; }
+      remains.black = /^rgb\(/.test(bg) ? bg : "#0f0a07";
+    }
+    var g = remainsCtx;
+    g.imageSmoothingEnabled = false;
+    g.globalCompositeOperation = "source-over";
+    g.fillStyle = remains.black;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = "lighter";
+    remains.list.forEach(function (r) {
+      r.lit = 0;
+      if (!r.placed || !r.E) { return; }
+      var k = 1 / r.E, ax = r.dx + dx, ay = r.dy + dy, G = r.gas[r.k];
+      if (G.vmax * k >= REMAINS_FLOOR) {
+        // On the screen's own grid at its grain, however far it has drifted (the stars keep the pixel).
+        g.drawImage(gasCanvas(r), G.i0 * G.s + remainsSnap(ax, G.s), G.j0 * G.s + remainsSnap(ay, G.s), G.ni * G.s, G.nj * G.s);
+        r.lit += 1;
+      }
+      r.stars.forEach(function (s) {
+        if (s[5] * k < REMAINS_FLOOR) { return; }
+        g.fillStyle = "rgb(" + Math.round(s[2] * k) + "," + Math.round(s[3] * k) + "," + Math.round(s[4] * k) + ")";
+        g.fillRect(s[0] + ax, s[1] + ay, s[6], s[6]);
+        r.lit += 1;
+      });
+    });
+    // The globe's dial, and the words at the world's foot, keep the black under them.
+    g.globalCompositeOperation = "source-over";
+    g.fillStyle = remains.black;
+    ringAvoid.concat(remains.keep || []).forEach(function (b) {
+      g.fillRect(Math.floor(b.x0), Math.floor(b.y0), Math.ceil(b.x1 - b.x0) + 1, Math.ceil(b.y1 - b.y0) + 1);
+    });
+    if (remainsCanvas.hidden) { remainsCanvas.hidden = false; }
+    remains.cost.draw = performance.now() - t0;
+  }
+
+  function clearRemains() {
+    remains.list.length = 0;
+    remains.key = "";
+    remains.tick = -1;
+    remains.off.x = 0; remains.off.y = 0;
+    remains.spin = null; remains.tilt = null; remains.ring = null;
+    if (remainsCanvas && (remainsCanvas.width || !remainsCanvas.hidden)) {
+      remainsCanvas.width = 0; remainsCanvas.height = 0; remainsCanvas.hidden = true;
+    }
   }
 
   /* ---- the sweep --------------------------------------------------------- */
@@ -16408,7 +16863,35 @@
     pointed: function (name, x, y) { var b = document.querySelector("#art-plate .art-pic, #art-plate"); if (!b || !POINTED[name]) { return Object.keys(POINTED); } b.pointerXY = { x: x, y: y }; POINTED[name](b, b); return Object.keys(POINTED); },
     arrival: function (name) { nextArrival = name || null; return Object.keys(ARRIVALS); },
     // A telescope photograph dropped at (x, y), through the mirrors ("through") or plain ("plain"): for the checks.
-    shot: function (x, y, how) { lastShot = null; var before = shots; dropHubble(x, y, how || "through"); return { shots: shots, dropped: shots > before, shown: scopeShown, tokens: hubble.tokens.length }; },
+    shot: function (x, y, how, pick) { lastShot = null; var before = shots; dropHubble(x, y, how || "through", pick); return { shots: shots, dropped: shots > before, shown: scopeShown, tokens: hubble.tokens.length, ids: hubble.tokens.map(function (t) { return t.s; }) }; },
+    // What the telescope's photographs have left in the black (the remains), for the checks; all: every light, where it is drawn.
+    remains: function (all) {
+      var dx = Math.round(remains.off.x), dy = Math.round(remains.off.y);
+      return {
+        on: REMAINS, n: remains.list.length, shown: !!remainsCanvas && !remainsCanvas.hidden, keep: remains.keep || [],
+        canvas: remainsCanvas ? [remainsCanvas.width, remainsCanvas.height] : null, off: [remains.off.x, remains.off.y],
+        spin: spin, tilt: tilt, R: R, cx: cx, cy: cy, W: W, H: H, cost: { draw: remains.cost.draw, read: remains.cost.read },
+        list: remains.list.map(function (r) {
+          var k = r.E ? 1 / r.E : 0, ax = r.dx + dx, ay = r.dy + dy, G = r.gas[r.k];
+          var one = { at: r.at, E: r.E, grain: G.s, placed: r.placed, hurried: !!r.hurry, box: [r.ox, r.oy, r.w, r.h], black: r.black,
+                      vmax: r.vmax, top: remainsTop(r), stars: r.stars.length, lit: r.lit, shift: [ax, ay],
+                      feather: remainsFeather(r.w, r.h) };
+          if (all) {
+            // [kind, x, y, r, g, b, how bright, size, lit] where it is drawn now (the dial's words keep their black over it).
+            var lights = [];
+            var gx = remainsSnap(ax, G.s), gy = remainsSnap(ay, G.s);
+            for (var t = 0; t < G.ni * G.nj; t += 1) {
+              if (G.V[t] < REMAINS_FLOOR) { continue; }
+              lights.push(["gas", (G.i0 + t % G.ni) * G.s + gx, (G.j0 + Math.floor(t / G.ni)) * G.s + gy,
+                           G.rgb[t * 3], G.rgb[t * 3 + 1], G.rgb[t * 3 + 2], G.V[t], G.s, !!(r.placed && r.E && G.V[t] * k >= REMAINS_FLOOR)]);
+            }
+            r.stars.forEach(function (s) { lights.push(["star", s[0] + ax, s[1] + ay, s[2], s[3], s[4], s[5], s[6], !!(r.placed && r.E && s[5] * k >= REMAINS_FLOOR)]); });
+            one.lights = lights;
+          }
+          return one;
+        })
+      };
+    },
     // The held ring's rosette (scripts/check_kaleidoscope.js --ring): the tiles it lights, [i, j, tone, level],
     // `held` ms into a hold at (x, y), the ring as wide as it would be then, the mirrors at `turn`.
     rosette: function (held, x, y, turn) {
@@ -16456,7 +16939,7 @@
     still: function (on) {
       if (on === undefined) { return still; }
       still = !!on;
-      if (still) { settleSwing(); stopFirstPlay(true); }
+      if (still) { settleSwing(); stopFirstPlay(true); clearRemains(); }
       return still;
     },
     // The globe by keys (a11y.js): turn, roll, nearer or farther, and the place nearest the middle.

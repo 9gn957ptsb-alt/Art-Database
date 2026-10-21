@@ -1,0 +1,1684 @@
+{
+ "name": "Holographic Mr Pearl - his body for the game (wf10/body)",
+ "date": "2026-10-21",
+ "source": {
+  "form": "wf6/pearl/pearl.json",
+  "colours": "wf6/pearl/bases.json",
+  "form_date": "2026-10-16 (run 2; run 1 15 Oct)",
+  "fit": {
+   "silhouette_iou_cover1": 0.9417,
+   "regions": {
+    "hat+head": 0.9638,
+    "torso+arms": 0.9408,
+    "legs": 0.9134,
+    "feet": 0.8615
+   },
+   "method": "front orthographic silhouette (convex hulls) against the wf5 reference mask (sky mask for head and hat, traced polygon for the body), group-wise Nelder-Mead (fit.py, fit_params.json)"
+  }
+ },
+ "purpose": "THIS IS ABOUT DETERMINED RELATIONS: every number below says the relation that set it.",
+ "frames": {
+  "form": "metres; z up; feet on z = 0; he faces -y; +x is his left; origin the ground point under the head centre",
+  "game": "metres; y up; yaw 0 looks along -z; +x is the right of one looking along -z (rocket.js view/lookDir)",
+  "map_form_to_game": [
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    1
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "map_relation": "game = M form: his face (-y) -> -z, so at yaw 0 he faces where the camera looks; his left (+x) -> -x; z up -> y up. det M = +1 (a turn, not a mirror). He is then turned by P.yaw about +y."
+ },
+ "scale": {
+  "form_relation": "the top of the sphere stands at phi metres (the block is 1 m, phi the unit's ratio); every other length is its ratio to that on cover 1",
+  "height_to_hat_top_m": 1.6967,
+  "head_top_m": 1.618,
+  "leg_m": 0.6256,
+  "leg_relation": "thigh + shin = 0.6179 m = 1/phi m to 0.01%: his leg is the golden step below the block (a consequence of the head top at phi m, not set)"
+ },
+ "unit": {
+  "phi": 1.618033988749895,
+  "level": 7,
+  "cell_m": 0.03444185374863302,
+  "relation": "level k of the base unit has edge phi^-k m (level 0 = the game's 1 m block, drawn as one figure). He is built at the level whose unit is his narrowest solid part: the glove finger, 0.0301 m thick; k = round(log_phi(1 m / 0.0301 m)) = 7, unit 0.03444 m. So he is the game's own figure, 7 golden steps down: the same six bars a tenth of a unit thick (3.44 mm).",
+  "consequences": {
+   "units_tall_to_hat_top": 49.3,
+   "bar_mm": 3.44
+  },
+  "thicken_m": 0.04870813668458744,
+  "occupancy": "a cell is his if its centre lies inside him, after each part thinner than the unit's face diagonal (sqrt 2 h = 0.0487 m) is first thickened to it (inflated by (sqrt 2 h - t)/2): the face diagonal is the least thickness that keeps a cell centre in every column of a part that runs or slants in one of the lattice's planes (a cord of one unit, sampled at the centres, breaks into beads: run 1 showed the strap and the guitar neck as dotted lines). So the brim (1.0 cm), the strap (2.0 cm), the tuners (1.7 cm), the neck (2.9 cm) and the fingers (3.3 cm) become 4.9 cm, the consequence of the unit, never lost. Its owner is the primitive it lies deepest in (least SDF). Paint primitives (the sound hole and the bridge, under a twelfth of a unit thick) only recolour the cells they touch. The guitar's ribs: a cell of its body with the open beside it in the body's own plane (a face whose normal is within 60 deg of square to the top's normal) is a rib cell and takes the rib gold, so the pearl guitar reads against the pearl suit by its gold edge, as on cover 1.",
+  "lattice": "one lattice for the whole body at rest, its planes on whole multiples of the unit from his origin, so at rest the bars of neighbouring parts run on into each other as the world's blocks do; then split into one small grid per part, each with its own model transform."
+ },
+ "form": {
+  "primitive_kinds": "sphere{c,r} ellipsoid{c,R,radii} capsule{a,b,r} roundcone{a,b,ra,rb} cappedcone{a,b,ra,rb} roundbox{c,R,half,round} torus{c,R,major,minor} dome{c,R,radii: half-ellipsoid local z>=0} dish{c,R,Rs,t,r_in,r_out: sphere radius Rs centred at c - Rs z_local, thickness t, cut to r_in..r_out from the local z axis}; R = 3x3 rows, columns are the local axes (world = c + R local); all convex; exact GLSL SDFs in gen_glsl.py (SDF_LIB)",
+  "primitives": [
+   {
+    "part": "hat_crown_taper",
+    "group": "hat",
+    "kind": "cappedcone",
+    "a": [
+     -0.00293,
+     0.0603,
+     1.46756
+    ],
+    "b": [
+     -0.00585,
+     0.12042,
+     1.56244
+    ],
+    "ra": 0.21917,
+    "rb": 0.17999,
+    "relation": "crown opening = the head's cross-section where the hat rests (its base circle lies on the sphere); taper, dome radius and height fitted to the cover-1 silhouette"
+   },
+   {
+    "part": "hat_crown_dome",
+    "group": "hat",
+    "kind": "dome",
+    "c": [
+     -0.00585,
+     0.12042,
+     1.56244
+    ],
+    "R": [
+     [
+      0.016453,
+      -0.999527,
+      -0.02598
+     ],
+     [
+      0.844832,
+      0.0,
+      0.535032
+     ],
+     [
+      -0.534779,
+      -0.030752,
+      0.844432
+     ]
+    ],
+    "radii": [
+     0.17999,
+     0.17999,
+     0.11081
+    ],
+    "relation": "half-ellipsoid on the taper; radius and height fitted to the cover-1 silhouette"
+   },
+   {
+    "part": "hat_band",
+    "group": "band",
+    "kind": "cappedcone",
+    "a": [
+     -0.00309,
+     0.06357,
+     1.47272
+    ],
+    "b": [
+     -0.00378,
+     0.07775,
+     1.49509
+    ],
+    "ra": 0.22222,
+    "rb": 0.21271,
+    "relation": "a band 14 px (cover 1) tall at the crown's foot, 3 px proud of it"
+   },
+   {
+    "part": "hat_brim",
+    "group": "hat",
+    "kind": "dish",
+    "c": [
+     -0.00303,
+     0.06248,
+     1.471
+    ],
+    "R": [
+     [
+      0.016453,
+      -0.999527,
+      -0.02598
+     ],
+     [
+      0.844832,
+      0.0,
+      0.535032
+     ],
+     [
+      -0.534779,
+      -0.030752,
+      0.844432
+     ]
+    ],
+    "Rs": 2.55421,
+    "t": 0.01019,
+    "r_in": 0.20796,
+    "r_out": 0.39787,
+    "relation": "wide curved brim: a slice of a sphere (the rim droops by BRIM_DROOP at BRIM_R), at the crown's foot; radius and droop fitted to the cover-1 silhouette; axis tipped straight back from the face by HAT_TIP"
+   },
+   {
+    "part": "hat_brim_lip",
+    "group": "hat",
+    "kind": "torus",
+    "c": [
+     -0.00222,
+     0.0458,
+     1.44467
+    ],
+    "R": [
+     [
+      0.016453,
+      -0.999527,
+      -0.02598
+     ],
+     [
+      0.844832,
+      0.0,
+      0.535032
+     ],
+     [
+      -0.534779,
+      -0.030752,
+      0.844432
+     ]
+    ],
+    "major": 0.39787,
+    "minor": 0.00652,
+    "relation": "the rolled edge both covers show round the brim"
+   },
+   {
+    "part": "neck",
+    "group": "neck",
+    "kind": "cappedcone",
+    "a": [
+     0.01594,
+     0.0,
+     1.06377
+    ],
+    "b": [
+     0.0,
+     0.0,
+     1.17587
+    ],
+    "ra": 0.03464,
+    "rb": 0.03464,
+    "relation": "short dark neck inside the collar, up into the sphere; seen only as the dark gap under the head"
+   },
+   {
+    "part": "collar",
+    "group": "jacket",
+    "kind": "cappedcone",
+    "a": [
+     0.01594,
+     0.0,
+     1.076
+    ],
+    "b": [
+     0.01594,
+     0.0,
+     1.1351
+    ],
+    "ra": 0.06317,
+    "rb": 0.05502,
+    "relation": "stand-up band collar under the head (cover 1: 50 px wide, 29 px tall)"
+   },
+   {
+    "part": "chest",
+    "group": "jacket",
+    "kind": "ellipsoid",
+    "c": [
+     0.07256,
+     0.0,
+     0.84064
+    ],
+    "R": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.20765,
+     0.14951,
+     0.21602
+    ],
+    "relation": "jacket chest; width and height fitted to the cover-1 silhouette; depth = DEPTH_RATIO x width"
+   },
+   {
+    "part": "yoke",
+    "group": "jacket",
+    "kind": "ellipsoid",
+    "c": [
+     0.03314,
+     0.0,
+     1.03829
+    ],
+    "R": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.17872,
+     0.06033,
+     0.07855
+    ],
+    "relation": "shoulder yoke (the line from collar to shoulders); fitted; depth = DEPTH_RATIO x width"
+   },
+   {
+    "part": "waist",
+    "group": "jacket",
+    "kind": "ellipsoid",
+    "c": [
+     0.05873,
+     0.0,
+     0.66952
+    ],
+    "R": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.14646,
+     0.10545,
+     0.12431
+    ],
+    "relation": "jacket waist behind the guitar; its front is the plane the guitar's back rests on"
+   },
+   {
+    "part": "hips",
+    "group": "trousers",
+    "kind": "ellipsoid",
+    "c": [
+     0.08726,
+     0.0,
+     0.62767
+    ],
+    "R": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.15321,
+     0.11031,
+     0.07336
+    ],
+    "relation": "trouser seat where the legs part (cover 1 v 865)"
+   },
+   {
+    "part": "guitar_lower_bout",
+    "group": "guitar",
+    "kind": "cappedcone",
+    "a": [
+     -0.09892,
+     -0.10512,
+     0.64499
+    ],
+    "b": [
+     -0.11457,
+     -0.19629,
+     0.66018
+    ],
+    "ra": 0.18472,
+    "rb": 0.18472,
+    "relation": "acoustic guitar body: lower bout; long axis and size fitted to the cover-1 silhouette; its back rests on the belly"
+   },
+   {
+    "part": "guitar_upper_bout",
+    "group": "guitar",
+    "kind": "cappedcone",
+    "a": [
+     0.02694,
+     -0.11721,
+     0.70203
+    ],
+    "b": [
+     0.0113,
+     -0.20838,
+     0.71723
+    ],
+    "ra": 0.14705,
+    "rb": 0.14705,
+    "relation": "upper bout"
+   },
+   {
+    "part": "guitar_waist",
+    "group": "guitar",
+    "kind": "roundbox",
+    "c": [
+     -0.04381,
+     -0.15675,
+     0.68111
+    ],
+    "R": [
+     [
+      0.907345,
+      -0.385838,
+      -0.166896
+     ],
+     [
+      -0.087156,
+      0.215728,
+      -0.972556
+     ],
+     [
+      0.411253,
+      0.89699,
+      0.162112
+     ]
+    ],
+    "half": [
+     0.08974,
+     0.12023,
+     0.04687
+    ],
+    "round": 0.00815,
+    "relation": "the waist between the bouts"
+   },
+   {
+    "part": "guitar_soundhole",
+    "group": "dark",
+    "kind": "cappedcone",
+    "a": [
+     0.00407,
+     -0.20668,
+     0.71371
+    ],
+    "b": [
+     0.00363,
+     -0.20926,
+     0.71414
+    ],
+    "ra": 0.0428,
+    "rb": 0.0428,
+    "relation": "sound hole (cover 2 shows it; cover 1 hides it under the hand)"
+   },
+   {
+    "part": "guitar_bridge",
+    "group": "dark",
+    "kind": "roundbox",
+    "c": [
+     -0.13727,
+     -0.19713,
+     0.65062
+    ],
+    "R": [
+     [
+      0.907345,
+      -0.385838,
+      -0.166896
+     ],
+     [
+      -0.087156,
+      0.215728,
+      -0.972556
+     ],
+     [
+      0.411253,
+      0.89699,
+      0.162112
+     ]
+    ],
+    "half": [
+     0.01223,
+     0.06929,
+     0.00509
+    ],
+    "round": 0.00204,
+    "relation": "bridge"
+   },
+   {
+    "part": "guitar_neck",
+    "group": "fretboard",
+    "kind": "roundbox",
+    "c": [
+     0.33812,
+     -0.22567,
+     0.86197
+    ],
+    "R": [
+     [
+      0.907345,
+      -0.385838,
+      -0.166896
+     ],
+     [
+      -0.087156,
+      0.215728,
+      -0.972556
+     ],
+     [
+      0.411253,
+      0.89699,
+      0.162112
+     ]
+    ],
+    "half": [
+     0.24312,
+     0.02654,
+     0.01427
+    ],
+    "round": 0.00611,
+    "relation": "neck and fretboard, body to nut; length and width fitted"
+   },
+   {
+    "part": "guitar_head",
+    "group": "fretboard",
+    "kind": "roundbox",
+    "c": [
+     0.63595,
+     -0.25025,
+     0.99599
+    ],
+    "R": [
+     [
+      0.907345,
+      -0.385838,
+      -0.166896
+     ],
+     [
+      -0.087156,
+      0.215728,
+      -0.972556
+     ],
+     [
+      0.411253,
+      0.89699,
+      0.162112
+     ]
+    ],
+    "half": [
+     0.08438,
+     0.04206,
+     0.00917
+    ],
+    "round": 0.00509,
+    "relation": "headstock; fitted"
+   },
+   {
+    "part": "guitar_tuner_1r",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.60521,
+     -0.25481,
+     0.93697
+    ],
+    "b": [
+     0.61228,
+     -0.25877,
+     0.92052
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "guitar_tuner_1l",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.57274,
+     -0.23666,
+     1.01243
+    ],
+    "b": [
+     0.56567,
+     -0.23271,
+     1.02888
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "guitar_tuner_2r",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.64958,
+     -0.25908,
+     0.95708
+    ],
+    "b": [
+     0.65666,
+     -0.26303,
+     0.94063
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "guitar_tuner_2l",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.61712,
+     -0.24093,
+     1.03255
+    ],
+    "b": [
+     0.61005,
+     -0.23697,
+     1.049
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "guitar_tuner_3r",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.69396,
+     -0.26334,
+     0.9772
+    ],
+    "b": [
+     0.70104,
+     -0.2673,
+     0.96075
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "guitar_tuner_3l",
+    "group": "tuner",
+    "kind": "capsule",
+    "a": [
+     0.6615,
+     -0.24519,
+     1.05266
+    ],
+    "b": [
+     0.65442,
+     -0.24123,
+     1.06911
+    ],
+    "r": 0.00856,
+    "relation": "tuners, three a side (both covers)"
+   },
+   {
+    "part": "shoulder_right",
+    "group": "jacket",
+    "kind": "sphere",
+    "c": [
+     -0.14398,
+     0.0,
+     1.01134
+    ],
+    "r": 0.05478,
+    "relation": "shoulder joints at y = 0 (the body plane); one radius for both (symmetry)"
+   },
+   {
+    "part": "upper_arm_right",
+    "group": "jacket",
+    "kind": "roundcone",
+    "a": [
+     -0.14398,
+     0.0,
+     1.01134
+    ],
+    "b": [
+     -0.19157,
+     -0.02511,
+     0.83953
+    ],
+    "ra": 0.05259,
+    "rb": 0.07017,
+    "relation": "round cone shoulder -> elbow; both upper arms one length (the elbow depths are solved from it)"
+   },
+   {
+    "part": "forearm_right",
+    "group": "jacket",
+    "kind": "roundcone",
+    "a": [
+     -0.19157,
+     -0.02511,
+     0.83953
+    ],
+    "b": [
+     -0.03903,
+     -0.23415,
+     0.78466
+    ],
+    "ra": 0.07017,
+    "rb": 0.05177,
+    "relation": "round cone elbow -> wrist; both forearms one length; the wrist rests on the guitar (right: over the top, left: in front of the neck)"
+   },
+   {
+    "part": "cuff_right",
+    "group": "jacket",
+    "kind": "cappedcone",
+    "a": [
+     -0.05784,
+     -0.20839,
+     0.79142
+    ],
+    "b": [
+     -0.03903,
+     -0.23415,
+     0.78466
+    ],
+    "ra": 0.05686,
+    "rb": 0.0589,
+    "relation": "sleeve cuff at the wrist"
+   },
+   {
+    "part": "glove_right_palm",
+    "group": "glove",
+    "kind": "ellipsoid",
+    "c": [
+     -0.01521,
+     -0.2668,
+     0.77609
+    ],
+    "R": [
+     [
+      0.695523,
+      0.428639,
+      0.576643
+     ],
+     [
+      0.608017,
+      0.076499,
+      -0.79023
+     ],
+     [
+      -0.382836,
+      0.900231,
+      -0.207413
+     ]
+    ],
+    "radii": [
+     0.03868,
+     0.02853,
+     0.0459
+    ],
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_right_finger1",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.01246,
+     -0.28056,
+     0.79631
+    ],
+    "b": [
+     0.04409,
+     -0.3459,
+     0.75002
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_right_finger2",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.00417,
+     -0.28204,
+     0.7789
+    ],
+    "b": [
+     0.0358,
+     -0.34738,
+     0.73261
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_right_finger3",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     -0.00412,
+     -0.28352,
+     0.76149
+    ],
+    "b": [
+     0.02751,
+     -0.34886,
+     0.7152
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_right_finger4",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     -0.01241,
+     -0.285,
+     0.74408
+    ],
+    "b": [
+     0.01922,
+     -0.35033,
+     0.69779
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_right_thumb",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.00107,
+     -0.2562,
+     0.80611
+    ],
+    "b": [
+     0.0569,
+     -0.31554,
+     0.8133
+    ],
+    "r": 0.01624,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "shoulder_left",
+    "group": "jacket",
+    "kind": "sphere",
+    "c": [
+     0.1932,
+     0.0,
+     0.98842
+    ],
+    "r": 0.05478,
+    "relation": "shoulder joints at y = 0 (the body plane); one radius for both (symmetry)"
+   },
+   {
+    "part": "upper_arm_left",
+    "group": "jacket",
+    "kind": "roundcone",
+    "a": [
+     0.1932,
+     0.0,
+     0.98842
+    ],
+    "b": [
+     0.19808,
+     -0.10966,
+     0.84571
+    ],
+    "ra": 0.05259,
+    "rb": 0.07017,
+    "relation": "round cone shoulder -> elbow; both upper arms one length (the elbow depths are solved from it)"
+   },
+   {
+    "part": "forearm_left",
+    "group": "jacket",
+    "kind": "roundcone",
+    "a": [
+     0.19808,
+     -0.10966,
+     0.84571
+    ],
+    "b": [
+     0.3992,
+     -0.27709,
+     0.80708
+    ],
+    "ra": 0.07017,
+    "rb": 0.05177,
+    "relation": "round cone elbow -> wrist; both forearms one length; the wrist rests on the guitar (right: over the top, left: in front of the neck)"
+   },
+   {
+    "part": "cuff_left",
+    "group": "jacket",
+    "kind": "cappedcone",
+    "a": [
+     0.37441,
+     -0.25645,
+     0.81184
+    ],
+    "b": [
+     0.3992,
+     -0.27709,
+     0.80708
+    ],
+    "ra": 0.05686,
+    "rb": 0.0589,
+    "relation": "sleeve cuff at the wrist"
+   },
+   {
+    "part": "glove_left_palm",
+    "group": "glove",
+    "kind": "ellipsoid",
+    "c": [
+     0.43061,
+     -0.30323,
+     0.80105
+    ],
+    "R": [
+     [
+      0.587869,
+      0.276294,
+      0.76031
+     ],
+     [
+      0.766102,
+      0.111698,
+      -0.632938
+     ],
+     [
+      -0.259802,
+      0.95456,
+      -0.146006
+     ]
+    ],
+    "radii": [
+     0.03868,
+     0.02853,
+     0.0459
+    ],
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_left_finger1",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.49002,
+     -0.32179,
+     0.81672
+    ],
+    "b": [
+     0.48201,
+     -0.29914,
+     0.8994
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_left_finger2",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.46204,
+     -0.3191,
+     0.80404
+    ],
+    "b": [
+     0.45403,
+     -0.29645,
+     0.88672
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_left_finger3",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.43407,
+     -0.31642,
+     0.79136
+    ],
+    "b": [
+     0.42606,
+     -0.29377,
+     0.87404
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_left_finger4",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.40609,
+     -0.31373,
+     0.77868
+    ],
+    "b": [
+     0.39808,
+     -0.29108,
+     0.86136
+    ],
+    "r": 0.01504,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "glove_left_thumb",
+    "group": "glove",
+    "kind": "capsule",
+    "a": [
+     0.42196,
+     -0.31143,
+     0.81839
+    ],
+    "b": [
+     0.43643,
+     -0.33319,
+     0.89134
+    ],
+    "r": 0.01624,
+    "relation": "puffy cartoon glove: palm ellipsoid along the forearm, four fingers and a thumb (right: strumming over the sound hole; left: fretting, fingers over the fretboard, thumb over the neck)"
+   },
+   {
+    "part": "thigh_right",
+    "group": "trousers",
+    "kind": "roundcone",
+    "a": [
+     -0.0004,
+     0.0,
+     0.62495
+    ],
+    "b": [
+     -0.02092,
+     0.0,
+     0.34507
+    ],
+    "ra": 0.06736,
+    "rb": 0.08584,
+    "relation": "round cone hip -> knee; one thigh radius and knee radius for both legs (symmetry)"
+   },
+   {
+    "part": "flare_right",
+    "group": "trousers",
+    "kind": "cappedcone",
+    "a": [
+     -0.02092,
+     0.0,
+     0.34507
+    ],
+    "b": [
+     -0.06155,
+     0.0,
+     0.00247
+    ],
+    "ra": 0.08584,
+    "rb": 0.15839,
+    "relation": "flared bell-bottom, knee -> hem (capped cone), one hem radius for both legs; both legs one length (the left knee and hem depths are solved from it; where the fitted hem lies farther from the knee than the shin is long, the hem rises under its column until the shins are equal - check-pearl, 16 Oct: the left hem hangs 0.034 m over its shoe)"
+   },
+   {
+    "part": "thigh_left",
+    "group": "trousers",
+    "kind": "roundcone",
+    "a": [
+     0.181,
+     0.0,
+     0.61951
+    ],
+    "b": [
+     0.22387,
+     -0.11953,
+     0.36926
+    ],
+    "ra": 0.06736,
+    "rb": 0.08584,
+    "relation": "round cone hip -> knee; one thigh radius and knee radius for both legs (symmetry)"
+   },
+   {
+    "part": "flare_left",
+    "group": "trousers",
+    "kind": "cappedcone",
+    "a": [
+     0.22387,
+     -0.11953,
+     0.36926
+    ],
+    "b": [
+     0.31458,
+     -0.11953,
+     0.03639
+    ],
+    "ra": 0.08584,
+    "rb": 0.15839,
+    "relation": "flared bell-bottom, knee -> hem (capped cone), one hem radius for both legs; both legs one length (the left knee and hem depths are solved from it; where the fitted hem lies farther from the knee than the shin is long, the hem rises under its column until the shins are equal - check-pearl, 16 Oct: the left hem hangs 0.034 m over its shoe)"
+   },
+   {
+    "part": "shoe_right",
+    "group": "shoe",
+    "kind": "ellipsoid",
+    "c": [
+     -0.08126,
+     -0.07318,
+     0.04434
+    ],
+    "R": [
+     [
+      0.965594,
+      0.260056,
+      0.0
+     ],
+     [
+      -0.260056,
+      0.965594,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.06219,
+     0.15176,
+     0.04408
+    ],
+    "relation": "shoe under the hem, both soles on the ground (z = 0) whatever the hem height; the left turned out"
+   },
+   {
+    "part": "shoe_left",
+    "group": "shoe",
+    "kind": "ellipsoid",
+    "c": [
+     0.38286,
+     -0.15243,
+     0.04434
+    ],
+    "R": [
+     [
+      0.4341,
+      -0.900865,
+      0.0
+     ],
+     [
+      0.900865,
+      0.4341,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "radii": [
+     0.06219,
+     0.15176,
+     0.04408
+    ],
+    "relation": "shoe under the hem, both soles on the ground (z = 0) whatever the hem height; the left turned out"
+   },
+   {
+    "part": "strap_1",
+    "group": "strap",
+    "kind": "capsule",
+    "a": [
+     0.1816,
+     -0.14202,
+     0.76269
+    ],
+    "b": [
+     0.11356,
+     0.0,
+     1.12075
+    ],
+    "r": 0.01019,
+    "relation": "strap from the neck heel over his left shoulder, down his back to the tail button (both covers show it crossing his chest to the left shoulder)"
+   },
+   {
+    "part": "strap_2",
+    "group": "strap",
+    "kind": "capsule",
+    "a": [
+     0.11356,
+     0.0,
+     1.12075
+    ],
+    "b": [
+     0.08676,
+     0.12979,
+     1.01791
+    ],
+    "r": 0.01019,
+    "relation": "strap from the neck heel over his left shoulder, down his back to the tail button (both covers show it crossing his chest to the left shoulder)"
+   },
+   {
+    "part": "strap_3",
+    "group": "strap",
+    "kind": "capsule",
+    "a": [
+     0.08676,
+     0.12979,
+     1.01791
+    ],
+    "b": [
+     0.04141,
+     0.1597,
+     0.79989
+    ],
+    "r": 0.01019,
+    "relation": "strap from the neck heel over his left shoulder, down his back to the tail button (both covers show it crossing his chest to the left shoulder)"
+   },
+   {
+    "part": "strap_4",
+    "group": "strap",
+    "kind": "capsule",
+    "a": [
+     0.04141,
+     0.1597,
+     0.79989
+    ],
+    "b": [
+     -0.09791,
+     0.02636,
+     0.66952
+    ],
+    "r": 0.01019,
+    "relation": "strap from the neck heel over his left shoulder, down his back to the tail button (both covers show it crossing his chest to the left shoulder)"
+   },
+   {
+    "part": "strap_5",
+    "group": "strap",
+    "kind": "capsule",
+    "a": [
+     -0.09791,
+     0.02636,
+     0.66952
+    ],
+    "b": [
+     -0.27435,
+     -0.13461,
+     0.57661
+    ],
+    "r": 0.01019,
+    "relation": "strap from the neck heel over his left shoulder, down his back to the tail button (both covers show it crossing his chest to the left shoulder)"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "name": "pelvis",
+   "prims": [
+    "hips"
+   ],
+   "joint": "pelvis"
+  },
+  {
+   "name": "torso",
+   "prims": [
+    "chest",
+    "yoke",
+    "waist",
+    "collar",
+    "neck",
+    "shoulder_right",
+    "shoulder_left"
+   ],
+   "joint": "spine"
+  },
+  {
+   "name": "arm_right",
+   "prims": [
+    "upper_arm_right",
+    "forearm_right",
+    "cuff_right",
+    "glove_right_"
+   ],
+   "joint": "spine",
+   "note": "pivot of its own for later (shoulder_right); in the guitar pose it rides with the torso"
+  },
+  {
+   "name": "arm_left",
+   "prims": [
+    "upper_arm_left",
+    "forearm_left",
+    "cuff_left",
+    "glove_left_"
+   ],
+   "joint": "spine",
+   "note": "pivot of its own for later (shoulder_left); in the guitar pose it rides with the torso"
+  },
+  {
+   "name": "guitar",
+   "prims": [
+    "guitar_",
+    "strap_"
+   ],
+   "paint": [
+    "guitar_soundhole",
+    "guitar_bridge"
+   ],
+   "paint_group": {
+    "guitar_bridge": "bridge"
+   },
+   "rim": {
+    "prims": [
+     "guitar_lower_bout",
+     "guitar_upper_bout",
+     "guitar_waist"
+    ],
+    "axis_of": "guitar_lower_bout",
+    "group": "rib",
+    "cos_max": 0.5
+   },
+   "joint": "spine"
+  },
+  {
+   "name": "hat",
+   "prims": [
+    "hat_"
+   ],
+   "joint": "head",
+   "note": "rides on the head (holographic option A) or stays on the body (option B): pearl.json holographic_mode"
+  },
+  {
+   "name": "thigh_right",
+   "prims": [
+    "thigh_right"
+   ],
+   "joint": "hip_right"
+  },
+  {
+   "name": "shin_right",
+   "prims": [
+    "flare_right",
+    "shoe_right"
+   ],
+   "joint": "knee_right"
+  },
+  {
+   "name": "thigh_left",
+   "prims": [
+    "thigh_left"
+   ],
+   "joint": "hip_left"
+  },
+  {
+   "name": "shin_left",
+   "prims": [
+    "flare_left",
+    "shoe_left"
+   ],
+   "joint": "knee_left"
+  }
+ ],
+ "joints": {
+  "pelvis": {
+   "at_form": [
+    0.08726,
+    0.0,
+    0.62495
+   ],
+   "parent": null,
+   "relation": "the hips' centre at the hip joints' height; bobs with the walk"
+  },
+  "spine": {
+   "at_form": [
+    0.08726,
+    0.0,
+    0.62495
+   ],
+   "parent": "pelvis",
+   "axis_form": [
+    0,
+    0,
+    1
+   ],
+   "relation": "the upright through the pelvis: the shoulders turn about it"
+  },
+  "hip_right": {
+   "at_form": [
+    -0.0004,
+    0.0,
+    0.62495
+   ],
+   "parent": "pelvis",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "the top of the right thigh (its round-cone's end a)"
+  },
+  "hip_left": {
+   "at_form": [
+    0.181,
+    0.0,
+    0.61951
+   ],
+   "parent": "pelvis",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "the top of the left thigh"
+  },
+  "knee_right": {
+   "at_form": [
+    -0.02092,
+    0.0,
+    0.34507
+   ],
+   "parent": "hip_right",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "where the thigh meets the flare (thigh b = flare a)"
+  },
+  "knee_left": {
+   "at_form": [
+    0.22387,
+    -0.11953,
+    0.36926
+   ],
+   "parent": "hip_left",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "where the thigh meets the flare"
+  },
+  "shoulder_right": {
+   "at_form": [
+    -0.14398,
+    0.0,
+    1.01134
+   ],
+   "parent": "spine",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "the shoulder sphere's centre (for a later strum or swing)"
+  },
+  "shoulder_left": {
+   "at_form": [
+    0.1932,
+    0.0,
+    0.98842
+   ],
+   "parent": "spine",
+   "axis_form": [
+    1,
+    0,
+    0
+   ],
+   "relation": "the shoulder sphere's centre"
+  },
+  "head": {
+   "at_form": [
+    0.0,
+    0.0,
+    1.37239
+   ],
+   "parent": "spine",
+   "relation": "the sphere's centre: the hologram"
+  }
+ },
+ "walk": {
+  "phase": "phase = 2 pi x (distance walked) / (2 L): driven by the ground covered, not by time, so a foot never slides; at 4.3 m/s (the game's walk) a stride every 0.287 s, in water (2.2 m/s) every 0.562 s",
+  "L_m": 0.6256,
+  "thigh_swing_deg": 30.0,
+  "thigh_relation": "a step is one leg long: the foot sets down L ahead of the other, 2 L sin(theta) = L, theta = 30 deg (half the 60 deg of the figure's lattice). thigh angle = theta sin(phase), the left leg half a stride behind",
+  "knee_bend_deg": 48.54,
+  "knee_relation": "the knee folds only while its leg swings forward, up to phi theta = 48.5 deg: knee = phi theta max(0, cos(phase))",
+  "bob_m": 0.0838,
+  "bob_relation": "the pelvis rides on a straight swinging leg: its height falls by L (1 - cos theta) = 0.083 m at full swing and returns at mid-stance, twice a stride: drop = L (1 - cos(theta sin(phase)))",
+  "shoulder_twist_deg": 7.08,
+  "twist_relation": "the upper body (torso, both arms, the guitar) turns against the legs about the spine by theta phi^-3 = 7.1 deg: three golden steps down from the legs' swing, the arms being held to the guitar; the arms do not swing of themselves in the guitar pose",
+  "rest": "standing still, phase eases to the nearest mid-stance (both legs under him)"
+ },
+ "palette": {
+  "relation": "each cell takes its part's colour as the covers show it (the median of the part's cover-1 pixels, wf6 bases.json): that is the mid tone the game's bar() draws on east and west faces; up white and north-south black follow from it as for every block. The pearl cloth (suit, hat, shoes, the guitar's pearl body) leans iridescent by the unit: each cell one of K tints, the film's colour at that cell (the thickness noise of pearl.glsl pinned to the cell centre / head radius, pearlNoise), at normal incidence, normalised so the K tints average to the measured median.",
+  "K": 8,
+  "tones": {
+   "wL": 0.28317,
+   "wM": 0.22367,
+   "wD": 0.25042,
+   "wd": 0.06325,
+   "relation": "the mean of rocket.js FAR_SLANT and FAR_ON over the six faces: how much of a closed facade is up-white (0.75 c + 0.25), east-west grey (c), north-south black (0.42 c) and the dark between (0.16 c); they sum to 0.82, so the game's white block shows 0.69 on screen"
+  },
+  "lift_relation": "each part's colour c is solved so that his cells, toned and closed as every block is, show on screen what the covers show (the part's median): c = (m - 0.25 wL) / (0.75 wL + wM + 0.42 wD + 0.16 wd); the pearl cloth asks for more than white (jacket 1.17), so it is the median's own hue at the game's white (its brightest channel 255): his suit is the whitest thing the world's tones allow",
+  "spread": 0.047,
+  "spread_relation": "the tints' rms OKLab ab-distance from the median = 0.047, the covers' own ab spread over the pearl (sd a 0.023-0.037, sd b 0.034-0.045 across the N.V bins of wf6/pearl mat/evalF3.0_s0.json; rms of the means 0.028, 0.038): the film's lean in its own direction, at the covers' size",
+  "groups": {
+   "jacket": {
+    "srgb": "#b7a8a0",
+    "film": true
+   },
+   "trousers": {
+    "srgb": "#c0b2b1",
+    "film": true
+   },
+   "hat": {
+    "srgb": "#b29d8a",
+    "film": true
+   },
+   "band": {
+    "srgb": "#b29d8a",
+    "film": true
+   },
+   "shoe": {
+    "srgb": "#b7a8a0",
+    "film": true,
+    "relation": "the jacket's: cover 2 shows hat, suit and shoes as one pearl cloth; cover 1's 883 shoe pixels (#9f9aab) are the flare's shadow on them"
+   },
+   "guitar": {
+    "srgb": "#a08c8a",
+    "film": true
+   },
+   "glove": {
+    "srgb": "#dbd2b7",
+    "film": false
+   },
+   "fretboard": {
+    "srgb": "#553c2e",
+    "film": false
+   },
+   "tuner": {
+    "srgb": "#c8b3a4",
+    "film": false
+   },
+   "strap": {
+    "srgb": "#503f35",
+    "film": false
+   },
+   "dark": {
+    "srgb": "#473d38",
+    "film": false
+   },
+   "rib": {
+    "srgb": "#daa06c",
+    "film": false,
+    "relation": "the guitar's gold sides: the median of the warm (hue 18-58 deg), saturated (S > 0.25) pixels of the lower bout's rim band on cover 1 (1112 of 4725 px, x 460-595, v 895-930)"
+   },
+   "bridge": {
+    "srgb": "#8b6443",
+    "film": false,
+    "relation": "the bridge's brass: median of its warm saturated pixels on cover 1 (539 px)"
+   },
+   "neck": {
+    "srgb": "#251713",
+    "film": false
+   }
+  },
+  "film": {
+   "d0_nm": 342.14,
+   "sig": 0.2092,
+   "nf": 1.1638,
+   "n3": 1.3539,
+   "freq": 3.0,
+   "env": [
+    8.195,
+    3.0518,
+    0.3089
+   ],
+   "ka": 0.2302,
+   "facet": 0.5445,
+   "relation": "pearl.glsl's fitted film (wf6/pearl): d0 342 nm, optical path 796 nm, Newton's 2nd order"
+  },
+  "pass": "the body is drawn with a palette of its own: the game swaps uPal for the body pass (ids 1..63) and back"
+ },
+ "head": {
+  "kind": "sphere",
+  "the_only_perfect_sphere": true,
+  "centre_form": [
+   0.0,
+   0.0,
+   1.37239
+  ],
+  "radius_m": 0.24565,
+  "relation": "the one perfect sphere: centre and radius from a robust circle fit of the head outline on cover 1 (98 edge points, rms 1.0 px); never built from units; eyes painted on it; the top of the sphere at phi m (1.618 m)",
+  "face_rest": "looks along the body's facing (game -z at yaw 0); in play it looks where the camera's yaw is",
+  "eyes": {
+   "shape": "black ovals in the plane tangent to the sphere at each eye centre: (x/hw)^2 + (y/hh)^2 <= 1, x the horizontal tangent, y the meridian, so they are VERTICAL ovals",
+   "half_width_R": 0.08,
+   "half_height_R": 0.22,
+   "separation_deg": 29.3,
+   "each_off_face_deg": 14.65,
+   "elevation_deg": 0.0,
+   "size_m": [
+    0.0393,
+    0.1081
+   ],
+   "spacing_m_chord": 0.1243,
+   "paint_srgb": "#281c16",
+   "glint_srgb": "#8b5029",
+   "relation": "both covers: on the equator (cover 1 +1.2 deg, cover 2 +0.2), 29.3 deg apart (c1 29.3-29.7, c2 28.7-29.4), half-width 0.080 R (c1 0.0775, c2 0.0821), half-height 0.220 R (c1 0.2201, c2 0.2194), measured from the nearer eye by moments of its dark pixels mapped onto the sphere"
+  },
+  "material": {
+   "glsl": "head.glsl (pearl() of wf6/pearl/pearl.glsl inlined)",
+   "base_linear": [
+    0.3426,
+    0.4473,
+    0.59
+   ],
+   "pattern": "pinned to the head's object-space normal, turning with the face (yaw)",
+   "lights": "key = the game's sun (uSun, radiance 1); ambient and the film's reflection of the world (PEARL_ENV) as fitted; then exposure and the sRGB curve to sit with the world's colours"
+  },
+  "draw": "a box of side 2R round the centre, drawn with its BACK faces (so it also works with the eye inside it); FS casts the eye ray at the sphere per pixel: exact silhouette at any distance, gl_FragDepth from the hit",
+  "seat": "on the body the centre sits at the form's 1.3724 m over the ground point under it (the neck's top at 1.1759 m is inside the sphere)"
+ },
+ "holographic_mode": {
+  "rule": "the head disengages and is the hologram; the headless body stays where it was, vulnerable; \"move the body there\" brings it back under the head (the origin, the ground point under the head's centre, is where it goes)",
+  "lift_shown_m": 0.4913,
+  "lift_relation": "one head diameter: the moment the head has cleared its seat",
+  "option_A": {
+   "name": "the hat rides with the head",
+   "moves": [
+    "head",
+    "hat_*"
+   ],
+   "stays": [
+    "everything else"
+   ],
+   "reads": "the hologram keeps his silhouette (sphere and hat); the body is left bare-necked",
+   "renders": [
+    "holo_A.png",
+    "render_holo_flat.png"
+   ]
+  },
+  "option_B": {
+   "name": "the hat stays on the body",
+   "moves": [
+    "head"
+   ],
+   "stays": [
+    "hat_* (falls onto the body: hat_settle.json)",
+    "everything else"
+   ],
+   "hat_drop": {
+    "drop_px": 212.0,
+    "drop_m": 0.432,
+    "rests_on": [
+     "neck"
+    ],
+    "relation": "with the head gone nothing holds the hat: it falls straight down, its axis kept, until it first touches the body; the crown and its band a 1 cm shell, hollow where the head sat (sampled, 49142 points)"
+   },
+   "reads": "the hologram is the pure sphere alone - nothing built rides with the one perfect form; with the head gone nothing holds the hat, so it falls straight down until its hollow crown rests on the bare neck, its brim over the shoulders: the body wears the hat where the head was",
+   "variant_held": "the hat held in the air exactly where it was (the run-2 render) is the other reading: it needs a rule that holds it, which nothing in the model gives",
+   "renders": [
+    "holo_B.png",
+    "render_holo_flat.png"
+   ]
+  }
+ },
+ "camera": {
+  "fov_deg": 70,
+  "third_person_distance_m": 3.635,
+  "third_person_relation": "far enough that his whole figure (to the hat top) is one third of the screen's height at the game's 70 deg vertical field of view: 2 D tan(35 deg) = 3 H",
+  "height_m": 2.697,
+  "height_relation": "above his head: the eye one block (1 m, the game's unit) over the hat top, looking at his middle (H / 2)",
+  "first_person_eye_m": 1.3724,
+  "first_person_relation": "the hologram sees from the sphere's centre (his eyes are painted on its equator, at the centre's height). NB the game's EYE = 1.62 m is his head TOP (phi m), not his eyes.",
+  "look_at_m": 0.848,
+  "pitch_down_deg": 30.57,
+  "horizontal_back_m": 3.13
+ },
+ "draw": {
+  "grids": "each part: an R8UI TEXTURE_2D_ARRAY (x along a row, z down the rows, a layer per y) of palette ids, exactly voxTexture()'s layout, and its exposed faces meshed in cell coordinates as meshBlocks() does",
+  "VS": "vP = (uM * vec4(aP, 1.0)).xyz + uOff  (uM identity for the world and the rocket; for a part: T(P) R_y(-yaw) M_form->game T(joint) R(swing) T(-joint) T(org) S(h))",
+  "FS": "three lines, none of them the lod or hole lines (wf9 fade.patch): uniform mat4 uInvM (inverse of uM); d = normalize(mat3(uInvM) * d) after d is first made; p0 = (uInvM * vec4(vP, 1.0)).xyz - uOrg. The walk is then in cells, the bars LO/HI and the tones by the grid's axes, the face normals N[vF] the grid's own.",
+  "lod": "uPx is set to (the world's uPx) / h for the body pass, so the facade closes where his bars (h / 10) are eight then four pixels wide, as the world's do; no edit of the lod line",
+  "depth": "faces keep their own depth, as the world's; the head writes gl_FragDepth",
+  "fade": "with wf9 fade.patch (uSteps, uVeil): his parts are drawn in the veil pass too, each by its own uM/uInvM and uPx / h, faces in veilOrder() of their own grid (a face is seen only from the side it looks to in the grid's frame, so the order holds when the part is turned). apply_body_shader.py makes the FS/VS edits by anchor on either rocket.js. Set uM and uInvM back to identity after his pass.",
+  "palette_skip": "his palette never takes id 6 (WATER: the FS reads it as open) or 26 (NOTE: paper): build(spec, {skip: [6, 26]}), the default",
+  "closing": "his bar is h/10 = 3.4 mm, so his facades close (lod 1) beyond 0.0275 h / uPx = 0.0275 h rows / (2 tan 35 deg): 0.49 m at 720 rows (desk), 1.14 m at 1688 rows (phone at quality 1; 0.86 m at the phone's 0.75), opening fully nearer than 0.22 / 0.52 m; from the third-person camera (3.6 m) and at 4 m he reads as solid tinted cells; his figures open only nearer than that (first person looking down at himself)"
+ }
+}
