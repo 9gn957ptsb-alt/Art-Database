@@ -9,6 +9,20 @@ gene families, downloaded images, texture analysis), so a re-run is cheap and th
 stopped and resumed at any point. Output goes to 5s/dist/, which is gitignored with data/: both hold
 Artsy-derived material and the repository is public.
 
+How the cards are chosen (greedy, seeded, so the same caches give the same deck):
+  - eligible: an image, three Artsy colours and a title; not Ephemera, Reproduction, Books and
+    Portfolios, Video/Film/Animation, Performance Art or Other (a missing category is inferred from
+    the medium when that is unambiguous, e.g. "oil on canvas" -> Painting).
+  - space first (scarcest): Architecture; Installations that name a room or a site or are made of
+    light; pictures whose artists carry place genes (landscapes, cityscapes, interiors, ...) and whose
+    titles name a place but not a figure. Then object (Design, Sculpture, Textiles, Jewelry, Fashion,
+    3-D Mixed Media), surface (the best texture window of the likeliest works), image (the other
+    pictures) and colour (any unused work, aimed at an even spread of chords and hues).
+  - at most 2 cards per artist across the deck and 1 per kind; every card a different work; each
+    pick weighs its quality against how under-represented its chord, hue, era and place still are.
+  - surfaces skip artists of words and faces (text, typography, portrait genes), crops with lines of
+    lettering, and a short list of works seen in review of the contact sheets.
+
 Usage:  python3 5s/build_deck.py [--fetch-only] [--no-logo]
 """
 import argparse
@@ -19,7 +33,6 @@ import math
 import random
 import re
 import sqlite3
-import sys
 import threading
 import time
 import urllib.error
@@ -29,7 +42,7 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -39,7 +52,6 @@ IMG_CACHE = DATA / "images"
 ARTISTS_JSON = DATA / "artist_genes.json"
 FAMILIES_JSON = DATA / "gene_families.json"
 TEXTURE_JSON = DATA / "texture_analysis.json"
-SIZES_JSON = DATA / "image_sizes.json"
 DIST = HERE / "dist"
 OUT_IMG = DIST / "img"
 LOGO_SRC = HERE / "logo-source.jpg"
@@ -262,26 +274,27 @@ PHOTO_RE = (r"gelatin[- ]silver|silver[- ]gelatin|albumen(?: silver)?|silver dye
             r"chromogenic|c-print|\bc print|type[- ]c\b|archival pigment|pigment print|pigmented inkjet|"
             r"ink-?jet|gicl[ée]e|digital (?:c-)?print|lambda|platinum|palladium|cyanotype|dye[- ]transfer|"
             r"dye[- ]sublimation|cibachrome|ilfochrome|polaroid|daguerreotype|tintype|photogravure|"
-            r"photograph\w*|\bphoto\b|salt(?:ed)? paper print|fujiflex|diasec")
+            r"photograph\w*|\bphoto\b|salt(?:ed)? paper print|fujiflex|diasec|carbon print")
 MATERIAL_TABLE = [
-    ("screenprint", r"screen ?-?print\w*|silk ?-?screen\w*|serigraph\w*"),
+    ("screenprint", r"screen ?-?print\w*|silk ?-?screen\w*|serigraph\w*|pochoir|stencil|kappazuri"),
     ("lithograph", r"lithograph\w*|\blitho\b|offset"),
     ("woodcut", r"woodcut|wood ?block|wood engraving|linocut|lino ?cut|linoleum cut|relief print"),
-    ("etching", r"etching|aquatint|drypoint|engraving|intaglio|mezzotint|soft[- ]ground"),
+    ("etching", r"etching(?! paper)|aquatint|drypoint|engraving|intaglio|mezzotint|soft[- ]ground|"
+                r"collagraph|carborundum"),
     ("plastic", r"acrylic (?:glass|sheet|box|case|cube|block|panel|mirror)|plexi\w*|perspex|lucite|"
                 r"plastic\w*|polycarbonate|polyurethane|polystyrene|polyethylene|polypropylene|vinyl|"
                 r"\bpvc\b|silicone|\babs\b|rubber|foam|nylon"),
-    ("pastel", r"pastel"),
+    ("pastel", r"pastel|(?<!black )chalk"),
     ("oil", r"\boils?\b|oil ?stick"),
-    ("acrylic", r"acrylic"),
+    ("acrylic", r"acrylic|dispersion|synthetic polymer"),
     ("watercolour", r"water ?colou?r"),
     ("gouache", r"gouache"),
     ("ink", r"\binks?\b|sumi|felt[- ]tip|marker"),
     ("graphite", r"graphite|pencil|silverpoint"),
-    ("charcoal", r"charcoal|conté|conte crayon"),
+    ("charcoal", r"charcoal|conté|conte crayon|black chalk"),
     ("tempera", r"tempera"),
     ("canvas", r"canvas"),
-    ("linen", r"linen"),
+    ("linen", r"linen|leinen"),
     ("panel", r"panel|masonite|hardboard|\bboard\b|\bmdf\b"),
     ("porcelain", r"porcelain|bone china"),
     ("ceramic", r"ceramic|stoneware|earthenware|terra ?-?cotta|\bclay\b|glazed?\b|raku|faience|majolica|"
@@ -311,8 +324,8 @@ MATERIAL_TABLE = [
     ("leather", r"leather|suede|\bhide\b"),
     ("textile", r"textile|fabric|cloth|tapestry|embroider\w*|weav\w*|woven|thread|yarn|\brugs?\b|carpet|"
                 r"quilt\w*|burlap|jute|hemp|denim|velvet|\blace\b|sisal|fib(?:er|re)s?\b|tuft\w*"),
-    ("neon", r"\bneon\b|fluorescent (?:light|tube)"),
-    ("video", r"\bvideo\b|\bfilm\b|animation"),
+    ("neon", r"\bneon\b|fluorescent|\bled\b|light ?bulbs?"),
+    ("video", r"\bvideo\b|\bfilm\b|animation|\btv\b|television"),
     ("found objects", r"found object\w*|readymade|ready-made|objects"),
     ("mixed media", r"mixed[- ]media|assemblage|collage|combine"),
     ("paper", r"paper|card ?board|cardstock|vellum|newsprint|newspaper|\bjapon\b|washi|rives|arches"),
@@ -337,9 +350,7 @@ def materials_of(medium):
     for _, fam in sorted(found):
         if fam not in out:
             out.append(fam)
-    # a printmaking process names its own paper; keep "paper" only when it is the support of a drawing
-    # or a collage; keep at most five families
-    return out[:5]
+    return out[:5]                            # in the order the medium names them; at most five
 
 
 def parse_year(d):
@@ -488,8 +499,7 @@ def chord_of(hexes):
         return "complementary" if spread >= 140 else "split"
     # three hues: complementary when two of them sit together and the third faces them
     pairs = sorted(((hue_dist(hues[i], hues[j]), i, j) for i in range(3) for j in range(i + 1, 3)))
-    close, i, j = pairs[0]
-    k = 3 - i - j
+    close = pairs[0][0]
     if close <= 30 and spread >= 140:
         return "complementary"
     return "split"
@@ -618,11 +628,84 @@ def analyse_texture(im, side_frac=0.25, cells=4):
             wf, bf = float(white[y, x]), float(black[y, x])
             score = weakest * (0.5 + 0.5 * evenness)
             score *= (1 - line_pen * 0.75) * (1 - flat) * (1 - min(1.0, max(0.0, wf - 0.08) * 2.5))
-            score *= (1 - min(1.0, max(0.0, bf - 0.15) * 2.0))
+            score = float(score * (1 - min(1.0, max(0.0, bf - 0.15) * 2.0)))
             if best is None or score > best["score"]:
                 best = {"score": score, "x": x / aw, "y": y / ah, "w": win / aw, "h": win / ah,
                         "density": float(edge[y, x]), "white": wf, "line": float(line),
                         "evenness": evenness}
+    return best
+
+
+def _components(mask):
+    """4-connected components of a boolean array: list of (x0, y0, x1, y1, area)."""
+    h, w = mask.shape
+    seen = np.zeros_like(mask, dtype=bool)
+    flat, seen_f = mask.ravel(), seen.ravel()
+    out = []
+    for start in np.flatnonzero(flat):
+        if seen_f[start]:
+            continue
+        seen_f[start] = True
+        stack = [start]
+        x0 = y0 = 10 ** 9
+        x1 = y1 = -1
+        area = 0
+        while stack:
+            i = stack.pop()
+            y, x = divmod(int(i), w)
+            area += 1
+            x0, x1, y0, y1 = min(x0, x), max(x1, x), min(y0, y), max(y1, y)
+            for j, ok in ((i - 1, x > 0), (i + 1, x < w - 1), (i - w, y > 0), (i + w, y < h - 1)):
+                if ok and flat[j] and not seen_f[j]:
+                    seen_f[j] = True
+                    stack.append(j)
+        out.append((x0, y0, x1 + 1, y1 + 1, area))
+    return out
+
+
+def text_rows(im):
+    """Rows of letter-like marks in an image: a cheap stand-in for OCR, to keep text off Surfaces.
+
+    Thresholds the image (Otsu), takes small components shaped like letters, groups them by shared
+    baseline and height, and counts rows holding a chain of four or more with letter-like spacing and
+    varied widths (a row of identical dots or stitches is not text).
+    """
+    g = np.asarray(im.convert("L").resize((256, 256), Image.LANCZOS), dtype=np.float32)
+    hist, edges = np.histogram(g, 64, (0, 256))
+    p = hist / max(1, hist.sum())
+    omega, mu = np.cumsum(p), np.cumsum(p * np.arange(64))
+    between = (mu[-1] * omega - mu) ** 2 / (omega * (1 - omega) + 1e-9)
+    t = edges[int(np.argmax(between)) + 1]
+    best = 0
+    for mask in (g < t, g > t):
+        share = mask.mean()
+        if share > 0.6 or share < 0.01:
+            continue
+        letters = []
+        for x0, y0, x1, y1, area in _components(mask):
+            cw, ch = x1 - x0, y1 - y0
+            if 7 <= ch <= 44 and 0.15 * ch <= cw <= 1.6 * ch and 0.12 <= area / (cw * ch) <= 0.8:
+                letters.append((x0, y1, x1, ch, cw, area / (cw * ch)))
+        rows = []
+        for c in sorted(letters, key=lambda c: c[1]):
+            for r in rows:
+                if abs(r["base"] - c[1]) <= 3 and 0.7 <= c[3] / r["h"] <= 1.45:
+                    r["items"].append(c)
+                    break
+            else:
+                rows.append({"base": c[1], "h": c[3], "items": [c]})
+        n = 0
+        for r in rows:
+            items = sorted(r["items"])
+            chain = longest = 1
+            for a, b in zip(items, items[1:]):
+                chain = chain + 1 if b[0] - a[2] <= 1.2 * r["h"] else 1
+                longest = max(longest, chain)
+            widths = np.array([c[4] for c in items], dtype=np.float32)
+            fills = np.array([c[5] for c in items], dtype=np.float32)
+            if longest >= 4 and widths.std() / widths.mean() > 0.18 and fills.mean() < 0.65:
+                n += 1
+        best = max(best, n)
     return best
 
 
@@ -636,64 +719,118 @@ def edge_density(im512):
 # kinds
 # ----------------------------------------------------------------------------------------------
 
-# Gene slugs (from the genes actually fetched) that mark an artist's work as places or buildings.
+# Gene slugs (from the genes actually fetched for these artists) that mark work as places or
+# buildings, weighted by how surely they do.
 PLACE_GENES = {
-    "architecture": 3, "architecture-1": 3, "architecture-in-art": 3, "interiors": 3, "interior": 3,
-    "cityscapes": 3, "urban-scenes": 2, "urban-landscape": 3, "built-environment": 3,
-    "landscapes": 2, "landscape": 2, "seascapes": 2, "light-and-space": 3, "land-art": 3,
-    "site-specific": 2, "site-specific-installation": 2, "installation": 1, "immersive": 2,
-    "rooms": 3, "buildings": 3, "skyscrapers": 3, "bridges": 3, "streets": 2, "street-scenes": 2,
-    "american-landscape-photography": 3, "new-topographics": 3, "architectural-photography": 3,
-    "architectural-forms": 2, "modernist-architecture": 3, "ruins": 2, "gardens": 2, "parks": 2,
-    "the-american-west": 1, "suburbia": 2, "industrial-landscapes": 3, "nature-landscapes": 2,
-    "hudson-river-school": 2, "plein-air-painting": 1, "impressionism": 1, "spatial-concerns": 2,
-    "space": 1, "light-art": 2, "environmental-art": 2, "monuments": 2, "cities": 3, "travel": 1,
-    "deserts": 2, "mountains": 2, "water": 1, "the-sea": 2, "coastal-scenes": 2, "beach-scenes": 2,
-    "rural-life": 1, "domestic-interiors": 3, "views-through-windows": 3, "windows": 2,
+    # buildings, rooms, cities
+    "representations-of-architecture": 3, "architecture-1": 3, "interiors": 3, "cityscapes": 3,
+    "city-scenes": 3, "the-city": 3, "urbanization": 2, "architectures-effects": 3, "suburbia": 3,
+    "bedrooms-and-bathrooms": 3, "the-domestic-and-domesticity": 1, "spaces-of-the-art-world": 2,
+    "the-artists-studio": 2, "vacant-and-vacated-spaces": 3, "emphasis-on-linear-perspective": 2,
+    "reduced-scale-architecture": 3, "design-slash-architecture-study": 3, "brutalism": 3,
+    "international-style": 3, "reinforced-concrete-construction": 3, "steel-slash-iron-frame-construction": 3,
+    "engineering-slash-construction-and-design": 2, "christian-art-and-architecture": 1,
+    # land, water, the view out
+    "landscapes": 3, "atmospheric-landscapes": 3, "abstract-landscape": 2, "waterscapes": 3,
+    "en-plein-air": 2, "rural-life": 2, "the-american-west": 2, "hudson-river-school": 3,
+    "barbizon-school": 2, "luminism": 2, "the-sublime": 2, "nautical": 2, "figures-in-nature": 1,
+    "aerial-view": 3, "panorama": 3, "topographic-photography": 3, "new-topographics": 3,
+    "dusseldorf-school-of-photography": 2, "new-american-color-photography": 2, "street-photography": 1,
+    "travel-slash-tourism": 1, "documentary-travel-photography": 2, "nature": 1, "water": 1,
+    # made spaces
+    "land-art": 3, "light-and-space-movement": 3, "site-specific-art": 3, "immersive": 3,
+    "installation": 1, "wall-sculpture-and-installation": 1, "murals-and-wall-drawings": 1,
+    "outdoor-art": 1,
 }
-PLACE_TITLE = (r"\b(interior|room|house|home|building|street|city|cityscape|landscape|view|garden|"
-               r"bridge|church|cathedral|chapel|tower|fa[cç]ade|window|harbou?r|port|beach|road|village|"
-               r"skyline|avenue|park|river|lake|mountain|valley|coast|sea|seascape|bay|hill|field|"
-               r"forest|woods|canyon|desert|plaza|square|courtyard|corridor|hall|staircase|stairs|"
-               r"pavilion|villa|temple|ruins?|palace|museum|gallery|studio|kitchen|bedroom|"
-               r"apartment|hotel|station|highway|boulevard|rue|via|calle|paris|venice|new york|"
-               r"los angeles|london|tokyo|rome|madrid|barcelona|kyoto|berlin|amsterdam|island|"
-               r"pool|cabin|barn|farm|town|downtown|suburb|lighthouse|dock|pier|alley|square)s?\b")
+# Gene slugs that promise a good Surface: paint handling, pattern, material.
+TEXTURE_GENES = {
+    "densely-textured-or-haptic-surface": 3, "impasto": 3, "sculptural-use-of-paint": 3,
+    "allover-composition": 2, "patterns": 2, "dense-composition": 2, "highly-detailed": 1,
+    "rough": 2, "cracked": 3, "creased-crinkled-wrinkled": 3, "woven-slash-perforated": 3,
+    "photographs-of-surfaces": 3, "natural-fibers": 2, "focus-on-materials": 2, "textile-arts": 2,
+    "large-brushstrokes-slash-loose-brushwork": 2, "gestural": 1, "splattered-slash-dripped": 2,
+    "stains-slash-washes": 1, "dotted": 2, "repetition": 1, "grid": 1, "striped": 1, "marbleized": 3,
+    "pulled-scraped-and-scratched": 3, "tangled-forms": 2, "fractal-like-slash-kaleidoscopic": 2,
+    "patinated-and-oxidized": 3, "mimicking-ruined-materials": 2, "pointillism": 2, "divisionist": 2,
+    "contemporary-gestural-abstraction": 1, "action-painting": 1, "art-informel": 2, "dansaekhwa": 1,
+    "embroidery": 3, "tapestry-and-wall-hanging": 3, "use-of-fabric": 2, "organic-material": 1,
+    "use-of-common-materials": 1, "collage": 1, "layered-images": 1, "scattered-composition": 1,
+}
+PLACE_TITLE = (r"\b(interiors?|rooms?|houses?|home|buildings?|streets?|city|cities|cityscapes?|landscapes?|"
+               r"views?|gardens?|bridges?|church|cathedral|chapel|towers?|fa[cç]ade|windows?|harbou?rs?|port|"
+               r"beach|road|village|skyline|avenue|park|river|lake|mountains?|valley|coast|sea|seascape|bay|"
+               r"hills?|fields?|forest|woods|canyon|desert|plaza|courtyard|corridor|staircase|stairs|"
+               r"pavilion|villa|temple|ruins?|palace|museum|studio|kitchen|bedroom|apartment|hotel|"
+               r"station|highway|boulevard|island|pool|cabin|barn|farm|town|downtown|suburbs?|"
+               r"lighthouse|dock|pier|alley|caf[eé]|salon|reading room|meadow|stream|waterfall|cliffs?|"
+               r"shore|lagoon|canal|piazza|skyscraper|architecture)\b")
+# Titles that name a figure or a thing first: not a place, whatever else they say.
+FIGURE_TITLE = (r"\b(nude|naked|torso|portrait|self-portrait|head|bust|woman|women|man|men|girl|boy|"
+                r"bathers?|christ|saint|madonna|venus|temptation|still life|flowers|vase|figure study|"
+                r"study of a|lovers?|mother|child|lightning)\b")
+# What makes an Installation a place you could stand in rather than a thing on a wall: a title that
+# names a room or a site, or a medium of light.
+INSTALL_TITLE = (r"\b(room|rooms|space|site|environment|immersive|walk-in|garden|pavilion|house|corridor|"
+                 r"chamber)\b")
+INSTALL_MEDIUM = r"\b(light|lights|fluorescent|neon|led|daylight|projection|projected|apertures?)\b"
+FLAT_PAINT = r"^\s*(oil|acrylic|tempera|watercolou?r|gouache|fresco|ink)\b.*\bon (canvas|panel|paper|linen|board|silk)\b"
 OBJECT_MEDIUM = (r"bronze|stoneware|earthenware|porcelain|ceramic|terracotta|marble|cast|carved|"
                  r"welded|steel|wood(?!cut)|glass|resin|plaster|found object|assemblage|clay|iron|"
                  r"aluminum|aluminium|brass|copper|fiberglass|vase|bowl|vessel|chair|lamp|table")
 FLAT_MEDIUM = r"\bon (?:canvas|paper|panel|board|linen|wood panel|masonite)\b|print|photograph"
 
 
-def space_score(w, genes):
-    cat = category_of(w)
-    title = (w.get("title") or "").lower()
-    gscore = sum(PLACE_GENES.get(g, 0) for g in genes)
-    tscore = 3 if re.search(PLACE_TITLE, title) else 0
-    if cat in SPACE_CATEGORIES:
-        return 10 + gscore + tscore
-    return gscore + tscore
+def place_marks(genes):
+    return sum(PLACE_GENES.get(g, 0) for g in genes)
 
 
-def kind_candidates(w, genes):
-    """The whole-card kinds a work could be: object, space, image (in that order of preference)."""
-    cat = category_of(w)
+def has_place_title(w):
+    return bool(re.search(PLACE_TITLE, (w.get("title") or "").lower()))
+
+
+def space_strength(w):
+    """0..1: how surely a work reads as a place."""
+    if w["_cat"] == "Architecture":
+        return 1.0
+    g = min(place_marks(w["_genes_all"]), 9) / 9
+    if w["_cat"] == "Installation":
+        return 0.7 + 0.3 * g
+    return min(1.0, 0.45 + 0.45 * g + (0.1 if has_place_title(w) else 0))
+
+
+def installation_is_space(w):
+    title, med = (w.get("title") or "").lower(), (w.get("medium") or "").lower()
+    if re.search(r"sculpture|wall piece|relief", f"{title} {med}"):
+        return False
+    return bool(re.search(INSTALL_TITLE, title) or re.search(INSTALL_MEDIUM, med) or has_place_title(w)
+                or place_marks(w["_genes_all"]) >= 3)
+
+
+def kind_candidates(w):
+    """The whole-card kinds a work could be. Object and space come first; image is the rest."""
+    cat = w["_cat"]
     med = (w.get("medium") or "").lower()
+    title = (w.get("title") or "").lower()
     kinds = []
-    if cat in OBJECT_CATEGORIES:
+    if cat in ("Design/Decorative Art", "Fashion Design and Wearable Art") and \
+            re.search(r"\b(caf[eé]|interior|salon|pavilion|apartment)\b|\broom\b(?! divider)", title) and \
+            not re.search(r"\b(chair|table|lamp|sofa|cabinet|desk|stool|bench|rug|carpet|wardrobe|divider|"
+                          r"shelf|shelving|screen)\b", title):
+        return ["space"]                      # a designed room, not a piece of furniture
+    if cat == "Textile Arts" and re.search(r"jacquard|tapestry", med):
+        return ["image"]                      # a picture woven flat: it reads as an image
+    if cat in OBJECT_CATEGORIES and not re.search(FLAT_PAINT, med):
         kinds.append("object")
     elif cat == "Mixed Media" and (w.get("depth_cm") or 0) >= 8 and re.search(OBJECT_MEDIUM, med) \
             and not re.search(FLAT_MEDIUM, med):
         kinds.append("object")
-    if cat in SPACE_CATEGORIES:
+    if cat == "Architecture" or (cat == "Installation" and installation_is_space(w)):
         kinds.append("space")
     elif cat in PICTURE_CATEGORIES and cat != "Posters":
-        sc = space_score(w, genes)
-        gmark = sum(PLACE_GENES.get(g, 0) for g in genes)
-        title = (w.get("title") or "").lower()
-        if gmark >= 2 and re.search(PLACE_TITLE, title):
+        if place_marks(w["_genes_all"]) >= 3 and has_place_title(w) and not re.search(FIGURE_TITLE, title):
             kinds.append("space")
-    if cat in PICTURE_CATEGORIES and "object" not in kinds:
+    if (cat in PICTURE_CATEGORIES or (cat in OBJECT_CATEGORIES and "object" not in kinds)) \
+            and "object" not in kinds:
         kinds.append("image")
     return kinds
 
@@ -727,7 +864,7 @@ class Picker:
             self.artist_kind[kind].add(a)
         self.cards[kind].append((w, extra or {}))
 
-    def pick(self, kind, pool, quality, n=PER_KIND, validate=None, weights=None, targets=None):
+    def pick(self, kind, pool, quality, n=PER_KIND, validate=None, weights=None, targets=None, qweight=1.6):
         """Pick n works of a kind from pool. quality(w) -> 0..1. validate(w) -> extra dict or None.
 
         Each step scores every allowed candidate by its quality plus how under-represented its
@@ -741,7 +878,7 @@ class Picker:
             for w in pool:
                 if w["id"] in tried or not self.allowed(w, kind):
                     continue
-                s = 1.6 * quality(w)
+                s = qweight * quality(w)
                 for attr, wt in weights.items():
                     v = w["_attr"][attr]
                     c = counts[attr].get(v, 0)
@@ -768,6 +905,331 @@ class Picker:
             if len(self.cards[kind]) % 10 == 0:
                 log(f"  {kind}: {len(self.cards[kind])}/{n}")
         return self.cards[kind]
+
+
+# ----------------------------------------------------------------------------------------------
+# build
+# ----------------------------------------------------------------------------------------------
+
+def annotate(works, artists, families):
+    for w in works:
+        genes = []
+        for a in artist_ids(w):
+            for g in (artists.get(a) or {}).get("genes") or []:
+                if g and g.get("slug") and g["slug"] not in genes:
+                    genes.append(g["slug"])
+        w["_genes_all"] = genes
+        w["_genes"] = [g for g in genes if (families.get(g) or {}).get("family") in KEPT_FAMILIES]
+        nat = next((a.get("nationality") for a in w["artists"] if (a.get("nationality") or "").strip()), None)
+        if not nat:
+            nat = next(((artists.get(a) or {}).get("nationality") for a in artist_ids(w)
+                        if ((artists.get(a) or {}).get("nationality") or "").strip()), None)
+        w["_place"] = place_of(nat)
+        w["_year"] = parse_year(w.get("date"))
+        w["_era"] = era_of(w["_year"])
+        w["_cat"] = category_of(w)
+        w["_materials"] = materials_of(w.get("medium"))
+        w["colours"] = w["colours"][:3]
+        w["_attr"] = {"chord": chord_of(w["colours"]), "hue": main_hue(w["colours"]),
+                      "era": w["_era"] or "unknown", "place": w["_place"] or "unknown",
+                      "cat": w["_cat"]}
+        w["_kinds"] = kind_candidates(w)
+
+
+def gene_quality(w):
+    """Cards whose artists carry aesthetic genes teach the taste model more."""
+    return min(len(w["_genes"]), 6) / 6
+
+
+def whole_ok(w):
+    """Download the work's 'larger' image (or 'large') and check it can be a whole card."""
+    p = best_source(w, ("larger", "large"))
+    if not p:
+        return None
+    try:
+        im = open_rgb(p)
+    except Exception:
+        return None
+    W, H = im.size
+    if max(W, H) < 480 or not (0.3 <= W / H <= 3.3):
+        return None
+    a = np.asarray(im.resize((64, 64)), dtype=np.float32) / 255
+    if a.std() < 0.05:                       # a near-blank image gives nothing to judge
+        return None
+    return {"src": str(p)}
+
+
+SURFACE_CAT_PRIOR = {"Painting": 1.0, "Textile Arts": 1.2, "Mixed Media": 0.9, "Sculpture": 0.6,
+                     "Design/Decorative Art": 0.6, "Drawing, Collage or other Work on Paper": 0.5,
+                     "Photography": 0.5, "Print": 0.35, "Installation": 0.3, "Architecture": 0.3,
+                     "Posters": 0.0}
+TACTILE = {"oil", "textile", "wool", "ceramic", "wood", "stone", "marble", "bronze", "felt", "cotton",
+           "silk", "plaster", "concrete", "linen", "leather", "porcelain", "glass", "resin", "copper",
+           "iron", "steel", "mixed media", "found objects", "paper", "pastel", "charcoal"}
+
+
+# Artists whose work is about words, signs or faces: a crop of theirs is likely to hold text or a
+# face, not a texture.
+SURFACE_SKIP_GENES = {
+    "text", "language", "typography", "written-word", "printed-matter", "graphic-design",
+    "advertising-and-brands", "personal-writing-systems", "graffiti-and-street-art", "comic-slash-cartoon",
+    "engagement-with-mass-media", "celebrity", "pop-art", "political-pop", "appropriation",
+    "infographics-and-diagrams", "maps-slash-networks", "photomontage", "digital-culture",
+    "individual-portrait", "portrait", "group-portrait", "self-portrait", "face", "bible-story", "nude",
+    "eye-contact", "classical-figure", "illustration", "narrative",
+}
+SURFACE_SKIP_MEDIUM = r"collage|d[ée]collage|poster|newspaper|magazine|stamps?\b|photomontage|book|letter|text"
+
+
+# Bodies and photographic realism: the best-textured window is likely a limb or a machine part.
+# Painters who also work abstractly or with heavy paint keep their place.
+SURFACE_FIGURE_GENES = {"human-figure", "the-body", "body-parts", "mutated-bodies", "attenuated-figure",
+                        "bathers", "erotic", "photorealistic", "hyperrealism"}
+ABSTRACT_GENES = {"abstract-art", "abstract-painting", "abstract-expressionism", "contemporary-gestural-abstraction",
+                  "gestural", "action-painting", "art-informel", "color-field-painting", "primary-abstraction",
+                  "allover-composition", "impasto", "large-brushstrokes-slash-loose-brushwork",
+                  "densely-textured-or-haptic-surface", "patterns", "post-impressionism", "impressionism",
+                  "abstract-landscape"}
+# Seen in review of the contact sheets: lettering too large or too sparse for text_rows() to catch
+# (Ceulers, Horndeski, Zelehoski), and crops that landed on a figure or a still life (Picasso, Dalí,
+# Nurmivaara).
+SURFACE_SKIP_WORKS = {
+    "michiel-ceulers-close-to-you-remembering-the-carpenter-slash-only-yesterday-the-carpenters-story",
+    "pablo-picasso-la-vie-life", "salvador-dali-invisible-lion-horse-sleeping-woman",
+    "gregory-horndeski-perception-no-2", "michael-zelehoski-black-and-blue-1", "emilia-nurmivaara-new-space",
+}
+
+
+def surface_ok(w):
+    genes = set(w["_genes_all"])
+    if w["id"] in SURFACE_SKIP_WORKS or SURFACE_SKIP_GENES & genes:
+        return False
+    if SURFACE_FIGURE_GENES & genes and not ABSTRACT_GENES & genes:
+        return False
+    text = f"{w.get('medium') or ''} {w.get('title') or ''}".lower()
+    return not re.search(SURFACE_SKIP_MEDIUM, text) and w["_cat"] != "Posters"
+
+
+def surface_prior(w):
+    g = sum(TEXTURE_GENES.get(x, 0) for x in w["_genes_all"])
+    m = 0.4 if TACTILE & set(w["_materials"]) else 0.0
+    return SURFACE_CAT_PRIOR.get(w["_cat"], 0.3) + 1.5 * min(g, 8) / 8 + m
+
+
+class TextureCache:
+    def __init__(self):
+        self.data = load_json(TEXTURE_JSON, {})
+        self.dirty = 0
+
+    def get(self, key, compute):
+        if key not in self.data:
+            self.data[key] = compute()
+            self.dirty += 1
+            if self.dirty % 25 == 0:
+                self.save()
+        return self.data[key]
+
+    def save(self):
+        save_json(TEXTURE_JSON, self.data)
+
+
+def prescreen_surfaces(pool, tex, n_candidates=720, rng=None):
+    """Analyse the 'large' images of the likeliest surface works; return {id: analysis}."""
+    ranked = sorted((w for w in pool if surface_ok(w)),
+                    key=lambda w: -(surface_prior(w) + 0.8 * rng.random()))[:n_candidates]
+    todo = [w for w in ranked if f"{w['id']}|large|0.25" not in tex.data]
+    log(f"surface: prescreening {len(ranked)} works ({len(todo)} new)")
+    with ThreadPoolExecutor(3) as ex:
+        for k, _ in enumerate(ex.map(lambda w: cached_image(w, "large"), todo)):
+            if (k + 1) % 50 == 0:
+                log(f"  downloaded {k + 1}/{len(todo)}")
+    out = {}
+    for w in ranked:
+        def compute(w=w):
+            p = cached_image(w, "large")
+            if not p:
+                return None
+            try:
+                return analyse_texture(open_rgb(p), 0.25)
+            except Exception as e:
+                log(f"  analysis failed for {w['id']}: {e}")
+                return None
+        res = tex.get(f"{w['id']}|large|0.25", compute)
+        if res:
+            out[w["id"]] = res
+    tex.save()
+    return out
+
+
+def surface_make(w, tex, min_score):
+    """Find the crop at native pixels on the 'normalized' image (or 'larger')."""
+    p = cached_image(w, "normalized") or cached_image(w, "larger")
+    if not p:
+        return None
+    im = open_rgb(p)
+    W, H = im.size
+    side = max(384, round(0.25 * min(W, H)))
+    if side > 0.8 * min(W, H):
+        return None
+    frac = side / min(W, H)
+    res = tex.get(f"{w['id']}|{p.name.split('.')[-2]}|{frac:.4f}", lambda: analyse_texture(im, frac))
+    if not res or res["score"] < min_score:
+        return None
+    x0 = min(W - side, max(0, round(res["x"] * W)))
+    y0 = min(H - side, max(0, round(res["y"] * H)))
+    crop = im.crop((x0, y0, x0 + side, y0 + side))
+    a = np.asarray(crop.resize((128, 128)), dtype=np.float32) / 255
+    L = a @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    white = float(((L > 0.92) & ((a.max(2) - a.min(2)) < 0.08)).mean())
+    if white > 0.10 or L.std() < 0.04:
+        return None
+    small = crop.resize((256, 256), Image.LANCZOS)
+    if max(text_rows(small), text_rows(small.transpose(Image.Transpose.ROTATE_90))) >= 2:
+        return None                           # lines of lettering, across or up the crop
+
+    return {"src": str(p), "box": (x0, y0, side), "size": (W, H), "score": res["score"]}
+
+
+def build(works, artists, families):
+    rng = random.Random(SEED)
+    annotate(works, artists, families)
+    by_id = {w["id"]: w for w in works}
+    pk = Picker(rng)
+    spread = {"chord": 1.0, "hue": 1.0, "era": 0.8, "place": 0.6, "cat": 0.6}
+
+    # 1. space: the scarcest kind goes first
+    pool = [w for w in works if "space" in w["_kinds"]]
+    log(f"space: {len(pool)} candidates "
+        f"({sum(1 for w in pool if w['_cat'] in SPACE_CATEGORIES)} architecture/installation)")
+    pk.pick("space", pool, lambda w: 0.75 * space_strength(w) + 0.25 * gene_quality(w),
+            validate=lambda w: whole_ok(w), weights=spread)
+
+    # 2. object
+    pool = [w for w in works if "object" in w["_kinds"]]
+    log(f"object: {len(pool)} candidates")
+    pk.pick("object", pool, lambda w: 0.5 + 0.5 * gene_quality(w), validate=lambda w: whole_ok(w),
+            weights=spread)
+
+    # 3. surface: any work not used whole, whose image gives a good texture crop
+    tex = TextureCache()
+    pool = [w for w in works if w["id"] not in pk.used_works and pk.allowed(w, "surface")]
+    screened = prescreen_surfaces(pool, tex, rng=random.Random(SEED + 1))
+    scores = sorted(r["score"] for r in screened.values())
+    ref = scores[int(0.9 * (len(scores) - 1))] if scores else 1.0
+    floor = scores[int(0.5 * (len(scores) - 1))] if scores else 0.0
+    log(f"surface: {len(screened)} analysed; score median {scores[len(scores) // 2]:.4f}, "
+        f"p90 {ref:.4f}; keeping those above {floor:.4f}")
+    spool = [by_id[i] for i, r in screened.items() if r["score"] >= floor]
+    pk.pick("surface", spool, lambda w: min(1.0, screened[w["id"]]["score"] / ref),
+            validate=lambda w: surface_make(w, tex, 0.6 * floor),
+            weights={"chord": 1.0, "hue": 2.0, "era": 0.5, "place": 0.4, "cat": 0.5}, qweight=2.2)
+    tex.save()
+
+    # 4. image: the other pictures
+    pool = [w for w in works if "image" in w["_kinds"]]
+    log(f"image: {len(pool)} candidates")
+    pk.pick("image", pool, lambda w: 0.5 + 0.5 * gene_quality(w), validate=lambda w: whole_ok(w),
+            weights=spread)
+
+    # 5. colour: any work not otherwise used, spread over every chord and round the wheel
+    pool = [w for w in works if colour_spread(w["colours"]) >= 0.12]
+    chords = ["monochrome", "neutral", "accent", "analogous", "complementary", "split"]
+    hues = HUE_NAMES + ["neutral"]
+    targets = {"chord": {c: math.ceil(PER_KIND / len(chords)) for c in chords},
+               "hue": {h: math.ceil(PER_KIND / len(hues)) for h in hues}}
+    log(f"colour: {len(pool)} candidates")
+    def colour_quality(w):
+        # three clearly different colours; a first colour (the wall in Set) that is not near-black/white
+        first = lum(w["colours"][0])
+        return min(1.0, colour_spread(w["colours"]) / 0.45) * (1.0 if 0.1 < first < 0.9 else 0.7)
+
+    pk.pick("colour", pool, colour_quality,
+            validate=lambda w: (lambda p: {"src": str(p)} if p else None)(best_source(w, ("large", "larger"))),
+            weights={"chord": 2.0, "hue": 1.6, "era": 0.4, "place": 0.3}, targets=targets)
+
+    write_deck(pk, families, artists)
+
+
+def write_deck(pk, families, artists):
+    for old in OUT_IMG.glob("*.webp"):
+        if re.fullmatch(r"[iosuc]\d{3}\.webp|atlas\.webp", old.name):
+            old.unlink()
+    cards, thumbs = [], []
+    for kind in KINDS:
+        for n, (w, extra) in enumerate(pk.cards[kind], 1):
+            cid = f"{LETTER[kind]}{n:03d}"
+            card = {
+                "id": cid, "kind": kind, "work": w["id"],
+                "url": w.get("artsy_url") or f"https://www.artsy.net/artwork/{w['id']}",
+                "title": w.get("title"), "artist": artist_display(w), "date": w.get("date"),
+                "year": w["_year"], "era": w["_era"], "category": w["_cat"], "medium": w.get("medium"),
+                "materials": w["_materials"], "place": w["_place"], "colours": w["colours"],
+                "genes": w["_genes"], "img": None, "w": None, "h": None, "thumb": len(cards),
+            }
+            if kind in ("image", "object", "space"):
+                im = open_rgb(extra["src"])
+                im.thumbnail((720, 720), Image.LANCZOS)
+                im.save(OUT_IMG / f"{cid}.webp", "WEBP", quality=68, method=6)
+                card.update(img=f"img/{cid}.webp", w=im.width, h=im.height)
+            elif kind == "surface":
+                im = open_rgb(extra["src"])
+                x0, y0, side = extra["box"]
+                W, H = extra["size"]
+                crop = im.crop((x0, y0, x0 + side, y0 + side)).resize((512, 512), Image.LANCZOS)
+                crop.save(OUT_IMG / f"{cid}.webp", "WEBP", quality=70, method=6)
+                card.update(img=f"img/{cid}.webp", w=512, h=512,
+                            crop=[round(x0 / W, 4), round(y0 / H, 4), round(side / W, 4), round(side / H, 4)],
+                            texture=edge_density(crop))
+            cards.append(card)
+            thumbs.append(w)
+    # texture: edge density of the crop, scaled so the deck's surfaces spread over 0..1
+    dens = sorted(c["texture"] for c in cards if c["kind"] == "surface")
+    if dens:
+        lo, hi = dens[0], dens[-1]
+        for c in cards:
+            if c["kind"] == "surface":
+                c["texture"] = round((c["texture"] - lo) / max(1e-6, hi - lo), 2)
+    # the atlas: every card's work as a 128 px square, 20 columns
+    cols, cell = 20, 128
+    rows = math.ceil(len(cards) / cols)
+    atlas = Image.new("RGB", (cols * cell, rows * cell), (238, 236, 242))
+    for k, w in enumerate(thumbs):
+        p = best_source(w, ("large", "larger", "normalized"))
+        im = open_rgb(p)
+        th = ImageOps.fit(im, (cell, cell), Image.LANCZOS)
+        atlas.paste(th, ((k % cols) * cell, (k // cols) * cell))
+    atlas.save(OUT_IMG / "atlas.webp", "WEBP", quality=72, method=6)
+    used = sorted({g for c in cards for g in c["genes"]})
+    genes = {}
+    for g in used:
+        name = (families.get(g) or {}).get("name")
+        if not name:
+            name = next((x["name"] for v in artists.values() for x in (v.get("genes") or [])
+                         if x and x.get("slug") == g), g)
+        genes[g] = {"name": name, "family": families[g]["family"]}
+    head = {"version": 1, "built": date.today().isoformat(), "source": "The art database: Artsy saves",
+            "atlas": {"src": "img/atlas.webp", "cell": cell, "cols": cols}, "genes": genes}
+    text = json.dumps(head, ensure_ascii=False, separators=(",", ":"))[:-1]
+    text += ',"cards":[\n' + ",\n".join(json.dumps(c, ensure_ascii=False, separators=(",", ":"))
+                                         for c in cards) + "\n]}\n"
+    (DIST / "deck.json").write_text(text)
+    report(cards)
+
+
+def report(cards):
+    from collections import Counter
+    log("\n== deck ==")
+    for kind in KINDS:
+        ks = [c for c in cards if c["kind"] == kind]
+        log(f"{kind:8s} {len(ks):3d}  chords {dict(Counter(chord_of(c['colours']) for c in ks))}")
+        log(f"{'':8s}      hues {dict(Counter(main_hue(c['colours']) for c in ks))}")
+        log(f"{'':8s}      eras {dict(Counter(c['era'] for c in ks))}")
+        log(f"{'':8s}      places {dict(Counter(c['place'] for c in ks).most_common(8))}")
+    log(f"chords overall {dict(Counter(chord_of(c['colours']) for c in cards))}")
+    log(f"eras overall {dict(Counter(c['era'] for c in cards))}")
+    files = [p for p in DIST.rglob("*") if p.is_file() and (p.parent == OUT_IMG or p.name in ("deck.json", "logo.webp"))]
+    log(f"files {len(files)}, {sum(p.stat().st_size for p in files) / 1e6:.1f} MB "
+        f"(deck.json {(DIST / 'deck.json').stat().st_size / 1e3:.0f} kB)")
 
 
 # ----------------------------------------------------------------------------------------------
