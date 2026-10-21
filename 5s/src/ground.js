@@ -581,19 +581,25 @@
   // traced at each distance with marching squares. Returns, per distance, a flat list of segments
   // [x0, y0, x1, y1, ...] in tile units on the sea's surface.
   const RES = 6;
+  // Only tiles within REACH of a grid point are searched. The rings sit at distances <= 1, and a
+  // neighbouring grid point is at most 1/RES further, so every distance that shapes a ring (< 2)
+  // is exact; farther points read as "far" (Infinity), which no ring crosses.
+  const REACH = 3;
   function waveRings(plan, up, levels) {
     const n = plan.n, G = n * RES, W = G + 1;
-    const land = [];
-    for (const k of plan.landIds) if (up[k]) land.push(k % n, Math.floor(k / n));
     const f = new Float64Array(W * W);
     for (let gy = 0; gy <= G; gy++) {
+      const y = gy / RES, j0 = Math.max(0, Math.floor(y) - REACH), j1 = Math.min(n - 1, Math.floor(y) + REACH);
       for (let gx = 0; gx <= G; gx++) {
-        const x = gx / RES, y = gy / RES;
+        const x = gx / RES, i0 = Math.max(0, Math.floor(x) - REACH), i1 = Math.min(n - 1, Math.floor(x) + REACH);
         let best = Infinity;
-        for (let q = 0; q < land.length; q += 2) {
-          const dx = Math.max(land[q] - x, 0, x - land[q] - 1), dy = Math.max(land[q + 1] - y, 0, y - land[q + 1] - 1);
-          const d = dx * dx + dy * dy;
-          if (d < best) best = d;
+        for (let j = j0; j <= j1; j++) {
+          for (let i = i0; i <= i1; i++) {
+            if (!up[j * n + i]) continue;
+            const dx = Math.max(i - x, 0, x - i - 1), dy = Math.max(j - y, 0, y - j - 1);
+            const d = dx * dx + dy * dy;
+            if (d < best) best = d;
+          }
         }
         f[gy * W + gx] = Math.sqrt(best);
       }
@@ -751,7 +757,10 @@
     ctx.fill('nonzero');
     // Calm ripples: wave lines around the coast, at two distances from the land.
     if (s >= 5) {
-      const rings = waveRings(plan, up, [0.5, 1.0]);
+      // The rings change only while land is still rising: kept between frames of a grow.
+      const key = up.join('');
+      if (mats.ringKey !== key) { mats.ringKey = key; mats.rings = waveRings(plan, up, [0.5, 1.0]); }
+      const rings = mats.rings;
       rings.forEach((segs, r) => {
         ctx.beginPath();
         for (let q = 0; q < segs.length; q += 4) {

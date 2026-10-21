@@ -313,15 +313,14 @@ test('surfaces: a data URL and a brought thing\'s crop; images that fail fall ba
 });
 test('tiny canvases and sizes', async () => {
   const { ctx, page, errors } = await newPage({ dpr: 2 });
-  for (const [w, aspect] of [[1, '1'], [12, '4 / 3'], [40, '4 / 3'], [120, '1'], [340, '3 / 1'], [200, '1 / 2']]) {
+  for (const [w, aspect] of [[1, '1'], [12, '4 / 3'], [40, '4 / 3'], [120, '1'], [320, '16 / 11'], [340, '3 / 1'], [200, '1 / 2']]) {
     await page.evaluate(([w, a]) => T.layout(w, a), [w, aspect]);
     const out = await page.evaluate((o) => T.run(o), base());
     checkWords(out.r, { house: true });
     assert.equal(out.stats.edge, 0, `nothing on the edge at ${w} px (${aspect})`);
     if (w >= 40) assert.ok(out.stats.painted > 0.1, `drawn at ${w} px`);
+    if (w === 120 || w === 320) await shot(page, w === 120 ? 'ground-120-square' : 'ground-320-dpr2-light-house');
   }
-  await page.evaluate(() => T.layout(120, '1'));
-  await shot(page, 'ground-120-square');
   // A canvas outside the document keeps its bitmap size; a zero-size one draws nothing and still answers.
   const detached = await page.evaluate(async (o) => {
     const c = document.createElement('canvas');

@@ -1070,13 +1070,16 @@
 
   const fmtSec = (ms) => (Math.round(ms / 100) / 10).toFixed(1);
 
+  // Process materials are things in themselves: "photographs", not "works in photograph".
+  const MAT_NOUN = { photograph: 'photographs', screenprint: 'screenprints', lithograph: 'lithographs', etching: 'etchings', woodcut: 'woodcuts' };
+
   // A feature as a plural noun phrase for sentences: "Geometric works", "blue colours", "works in wood".
   function prose(key, deck) {
     const [type, v] = splitKey(key);
     const label = featureLabel(key, deck);
     switch (type) {
       case 'gene': case 'cat': return label + ' works';
-      case 'mat': return 'works in ' + label.toLowerCase();
+      case 'mat': return MAT_NOUN[v] || 'works in ' + label.toLowerCase();
       case 'hue': case 'value': case 'chroma': return label.toLowerCase() + ' colours';
       case 'chord': return v + ' palettes';
       case 'texture': return v + ' textures';
@@ -1164,7 +1167,7 @@
 
     // Brought in and let go.
     const broughtLine = brought
-      ? "You've brought in " + plural(brought, 'thing') + ' of your own' + (letGo ? ' and let ' + letGo + ' go.' : ' and kept them all.')
+      ? "You've brought in " + plural(brought, 'thing') + ' of your own' + (letGo ? ' and let ' + letGo + ' go.' : brought === 1 ? ' and kept it.' : ' and kept them all.')
       : "Everything you've judged so far came from the artist's database; you haven't brought in anything of your own.";
 
     for (const l of [colourLine, keepLine, negLine, turnLine]) if (l) lines.push(l);

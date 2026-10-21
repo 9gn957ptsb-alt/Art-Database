@@ -844,3 +844,23 @@ test('philosophy: 4–6 plain second-person lines, true of the profile; one line
   assert.ok(mid.length >= 4 && mid.length <= 6, mid.join('\n'));
   assert.ok(mid.some((l) => l.includes("haven't gone against your own pattern")));
 });
+
+test('philosophy: process materials read as things, and one brought thing is "it"', () => {
+  // Real decks are full of photographs and prints: "works in photograph" read badly (integration fix).
+  const base = F.profile(judgeAll(F.newState(), warmCoolTwenty()).state, deck, NOW);
+  const P = Object.assign({}, base, {
+    negative: [
+      { key: 'mat:photograph', label: 'Photograph', kept: 0, n: 4, lift: -0.5 },
+      { key: 'mat:etching', label: 'Etching', kept: 1, n: 5, lift: -0.3 },
+    ],
+    brought: 1, letGo: 0, judged: base.judged + 1, kept: base.kept + 1,
+  });
+  const lines = F.philosophy(P, deck);
+  assert.ok(lines.some((l) => l === 'What you keep least: photographs (0 of 4), then etchings (1 of 5).'), lines.join('\n'));
+  assert.ok(lines.some((l) => l === "You've brought in 1 thing of your own and kept it."), lines.join('\n'));
+  const two = F.philosophy(Object.assign({}, P, { brought: 2, judged: base.judged + 2, kept: base.kept + 2 }), deck);
+  assert.ok(two.some((l) => l === "You've brought in 2 things of your own and kept them all."), two.join('\n'));
+  // other materials keep the "works in" form
+  const wood = F.philosophy(Object.assign({}, P, { negative: [{ key: 'mat:wood', label: 'Wood', kept: 0, n: 4, lift: -0.5 }] }), deck);
+  assert.ok(wood.some((l) => l === 'What you keep least: works in wood (0 of 4).'), wood.join('\n'));
+});
