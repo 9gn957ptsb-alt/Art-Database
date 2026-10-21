@@ -192,6 +192,31 @@ SPOTS = {
     # node 1297763053 "Museo de Arte Precolombino" via Nominatim (15 Oct 2026). A public museum.
     "renovation-pre-columbian-museum-by-smiljan-radic":
         {"lat": -33.43902, "lon": -70.65220, "precision": "exact"},
+    # BEEAH Group Headquarters (Zaha Hadid Architects, Sharjah): OpenStreetMap way 1077753326 "BEEAH Group
+    # Headquarters" via Nominatim (20 Oct 2026). A public corporate building.
+    "sustainable-innovation-the-headquarters-of-beeah-group-by-zaha-hadid-architect":
+        {"lat": 25.28533, "lon": 55.65271, "precision": "exact"},
+    # Anantara Mina Al Arab resort, Ras Al Khaimah: OpenStreetMap node 11601727670 "Anantara Mina Al Arab" (tourism=hotel)
+    # via Nominatim (20 Oct 2026). A public resort.
+    "beachfront-retreat-anantara-mina-al-arab-ras-al-khaimah-resort-by-anantara-hotels-and-resorts":
+        {"lat": 25.72184, "lon": 55.85107, "precision": "exact"},
+    # Medika 10 (6a Avenida, Zona 10, Guatemala City): OpenStreetMap building way 400891967 "Medika 10" via Nominatim
+    # (20 Oct 2026). A public medical and commercial building.
+    "light-and-connection-medika-10-by-paredes-aleman-arquitectos":
+        {"lat": 14.60934, "lon": -90.50960, "precision": "exact"},
+    # Pueblo Serena shopping centre, Monterrey: OpenStreetMap way 306773379 (landuse=retail) "Pueblo Serena" via
+    # Nominatim (20 Oct 2026). A public shopping centre.
+    "unconventional-center-pueblo-serena-by-carranza-y-ruiz-arquitectura":
+        {"lat": 25.57598, "lon": -100.24862, "precision": "exact"},
+    # Rue Jean-Bart: the article's location block gives no city, only the country, but its own heading says
+    # "Paris, France"; a block of homes, so Paris's middle only (OpenStreetMap relation 71525 via Nominatim,
+    # 20 Oct 2026) — never its street.
+    "parisian-elegance-rue-jean-bart-by-jean-christophe-quinton":
+        {"lat": 48.8535, "lon": 2.3484, "precision": "town"},
+    # The Le Cèdre Socio-Cultural Center: the article names only the department (Hauts-de-Seine) — OpenStreetMap
+    # relation 7449 via Nominatim, 20 Oct 2026; the department's middle, not the building.
+    "the-final-piece-the-le-cdre-socio-cultural-center-by-guillaume-ramillien":
+        {"lat": 48.8402, "lon": 2.1986, "precision": "region"},
 }
 
 
