@@ -95,7 +95,7 @@ def get(q, tries=5):
                 time.sleep(2 * (k + 1) ** 2)
                 continue
             raise
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionError):    # a dropped connection (RemoteDisconnected) is retried too
             if k < tries - 1:
                 time.sleep(2 * (k + 1) ** 2)
                 continue
