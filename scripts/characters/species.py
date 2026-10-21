@@ -11,8 +11,12 @@ Left out of the natives on purpose: the eight drawn by hand (`CAST`: the red
 fox, the American bison, the red squirrel, the bald eagle, the banana slug,
 the red deer, the starling murmuration, the ocellated lizard — each lives only in its artist's home
 town, characters.json's `native`; the slug is no place's). The ninth, Frankenthaler's Anna's
-hummingbird, is no place's native either and is deliberately NOT in `CAST`: Berkeley's and
-Santa Monica's own hummingbirds, after Mary Corse and Mark Bradford, stay the generated ones; the kinds that are not one animal (wind, blooms, ferns, mould,
+hummingbird, is native to no birthplace and is deliberately NOT in `CAST`: the generator still
+draws Berkeley's and Santa Monica's hummingbirds, after Mary Corse and Mark Bradford, so that no
+other place's choice shifts, and the artist's choice (characters.json's `chosen`, 21 Oct 2026:
+"Give Berkeley and Santa Monica the hummingbird") puts Frankenthaler's drawn one in those two
+places' files afterwards (natives.py `chosen_places`), the generated ones kept there as `own`;
+the kinds that are not one animal (wind, blooms, ferns, mould,
 leaf fall, fire, grass waves, dunes, dust, schools, sea life) and swarms of
 biting flies (mosquitoes, blackflies), termite mounds and bats at dusk. A
 species of the grammar not in this table is not yet drawn: the daily pass

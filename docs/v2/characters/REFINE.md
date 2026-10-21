@@ -77,10 +77,22 @@ same bytes every run, about a minute):
   Mixed Forests), Palearctic, understory.hunters: wolves". The drawn by hand
   are never generated: they are the natives of their artists' home
   towns (`native` in characters.json) and their places' files say `cast` —
-  all but the slug and the hummingbird, which are no place's (`belongs`). The
-  hummingbird's species is deliberately not in `CAST` (species.py): Berkeley's
-  and Santa Monica's own Anna's hummingbirds, after Mary Corse and Mark
-  Bradford, stay the generated ones.
+  all but the slug, which is no place's (`belongs`), and the hummingbird, which
+  is no birthplace's: **the artist chose it for two places** (21 Oct 2026,
+  "Give Berkeley and Santa Monica the hummingbird": `chosen` in characters.json,
+  each with its `by`, `why` and `source`; those places' files say `cast:
+  "hummingbird"` and `native.how` "chosen", Frankenthaler their native artist by
+  his choice, not by birthplace). The hummingbird's species is deliberately
+  not in `CAST` (species.py), and `choose_artists` and `choose_species` still run
+  as if no choice had been made (so no other place shifts: Mary Corse stays
+  "used" for her neighbours, the generated hummingbird still counts in their
+  spread); `natives.chosen_places` applies the choice after, and the record the
+  generator drew for the artist born there — Corse's at Berkeley, Bradford's at
+  Santa Monica — is kept in the place's file as `own`, asked for by artist
+  (`nativeFor(key, artist)` in characters.js: their life places, their follow
+  maps). Another place chosen for a drawn character is one more entry in its
+  `chosen` list; `build_character_index.py` (stale at the time for ~35 other
+  places) was not re-run whole: the two rows were set by hand.
 - **Its plants**: plants.json's set for the place, as before (its rows now
   carry each place's key).
 - **Its drawing** (`species.py` → `rigs.py` → `hands.py`): the species' body
@@ -304,16 +316,28 @@ soaked into raw canvas). `scripts/characters/hummingbird.py`:
   that flies backward; the first try, a head turned right round, lost the bill against the wing), `look` facing you,
   `sit` perched on a twig (eight frames: the head turns, the tail flicks, the eye shuts), and the ethogram's `act`
   (the display dive), `play` (feeding at a flower, the tongue out and in) and `ritual` (the chase).
-- **No place's native** (`belongs` in characters.json, as the slug): Anna's lives on the Pacific coast and Frankenthaler
+- **No birthplace's native** (`belongs` in characters.json, as the slug): Anna's lives on the Pacific coast and Frankenthaler
   was born in Manhattan, where the bison (de Kooning, Brooklyn) already is: a place has one native character. So it
-  comes out of no city's wave. It comes in Frankenthaler's own places (`CAST` in placethen.js and studios.js: a studio
+  comes out of no wave there. It comes in Frankenthaler's own places (`CAST` in placethen.js and studios.js: a studio
   or a place of her life, as the fox in Picasso's and the lizard in Dalí's), in her published walks (`hummingbird-route`,
   `hummingbird-travelled`: "Frankenthaler by hummingbird"), followed (`Characters.lead`; its line: "Anna's hummingbird ·
   after Helen Frankenthaler, of New York City, New York · sugar maple and eastern white pine from New York City among
   Paris's hazel, ancient oaks and European beech · …"; a press on a follower lets it go, so its line is read in
-  `Characters._state().line`) and in a chimera. **A choice for the artist**: Berkeley and Santa Monica, which have
-  generated hummingbirds after Mary Corse and Mark Bradford, are where the species lives; making Frankenthaler's
-  hand-drawn bird theirs (and the generated ones go) would be one entry in `native` and one in `species.CAST`.
+  `Characters._state().line`) and in a chimera. **The artist's choice** (21 Oct 2026, "Give Berkeley and Santa
+  Monica the hummingbird"): Berkeley and Santa Monica, where the species lives and which had generated hummingbirds
+  after Mary Corse and Mark Bradford, have Frankenthaler's drawn bird for their native (`chosen` in characters.json: the
+  range, "found along the western coast of North America, from southern Canada to northern Baja California … permanent
+  residents within their range … originally limited to the chaparral of California and Baja California", is English
+  Wikipedia's "Distribution and habitat", read from the article's page on 21 Oct 2026 while the action API answered
+  429; the description and the papers below are still to be checked). The wave, the dial's hand (neither city has a
+  skyline in `cityplaces.json`; the hand is `Characters.hand`, 64 by 48 px on the ring at 390 and at 1440 — a whole device
+  pixel a cell — and it flies the ring, checked on Los Angeles's skyline given Berkeley's file) and a journey's hometown meeting bring it; its line there: "Anna's hummingbird · after
+  Helen Frankenthaler, of New York City, New York · [dogwood and sugar maple from New York City] among Berkeley’s chamise
+  and coast live oak · 1 of the artist’s works has been here" (her home's plants rise among the place's, as for any animal
+  whose artist is from elsewhere), never "born in". Mary Corse's and Mark Bradford's own hummingbirds are kept in those
+  two place files as `own` and served by artist (their life places, their follow maps, "Follow"); the way the first try
+  would have gone (the species in `CAST`) drops them and shifts neighbouring choices. `scripts/check_chosen_native.js`
+  checks it all.
 - **Ethogram** (the papers are cited as recalled: Wikimedia answered 429 on 21 Oct 2026 and the Wikipedia article was
   not re-read; check each against its source): the display dive (instinct: Clark & Feo 2008, the tail's chirp; Clark
   2009, about 27 m/s), feeding at a flower (play: Rico-Guevara & Rubega 2011, the tongue a fluid trap), the territorial
