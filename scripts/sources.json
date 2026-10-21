@@ -1,6 +1,6 @@
 {
  "note": "Open sources of how things on the Earth look, for the Artist Website, and the hosts each needs (NETWORK.md; the artist, 10 Oct 2026). priority: 1 ask now, 2 ask once the first are in use, 3 noted. key_needed: the artist signs up first and the key is kept as an environment secret. state: candidate, allowed (every host it needs answers), held (every host answers, but one's robots.txt disallows the address: not read), used (used_by), dropped (why). Host role browser (a page for people), alt (an alternative not needed) and unconfirmed are never asked for. Each host's state is the probe's (scripts/probe_sources.py): open, refused, stalls, silent. A host's robots field is the probe's reading of its robots.txt for the probe address: ok, none, or disallows.",
- "probed": "2026-10-20 21:11 UTC",
+ "probed": "2026-10-21 14:07 UTC",
  "sources": [
   {
    "id": "globalbuildingatlas-lod1-tum-2025-geoparquet-on-source-coo",
@@ -21,8 +21,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/globalbuildingatlas-lod1/e000_n50_e005_n45.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -31,7 +31,7 @@
      "probe": "https://mediatum.ub.tum.de/1782307",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"mediatum.ub.tum.de\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "huggingface.co",
@@ -39,7 +39,7 @@
      "probe": "https://huggingface.co/datasets/zhu-xlab/GBA.LoD1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"huggingface.co\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "storage.googleapis.com",
@@ -47,8 +47,8 @@
      "probe": "https://storage.googleapis.com/open-buildings-temporal-data/v1/geotiffs/00824_2016_06_30/tile_3FYdP6L109o.tif",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -72,8 +72,8 @@
      "role": "tiles",
      "probe": "https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/15/29105/12904.png",
      "state": "open",
-     "said": "image/png in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -83,8 +83,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/smartmaps/japan-seamlessphoto/pmtiles/z18.pmtiles",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -109,8 +109,8 @@
      "role": "tiles",
      "probe": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX=17&TILEROW=45090&TILECOL=66387&FORMAT=image/jpeg",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -120,7 +120,7 @@
      "probe": "https://remonterletemps.ign.fr/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"remonterletemps.ign.fr\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "api.bdnb.io",
@@ -128,8 +128,8 @@
      "probe": "https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_ffo_bat?limit=2",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.7 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -154,8 +154,8 @@
      "role": "tiles",
      "probe": "https://www.ign.es/wmts/pnoa-ma?service=WMTS&request=GetTile&version=1.0.0&Format=image/jpeg&layer=OI.OrthoimageCoverage&style=default&tilematrixset=GoogleMapsCompatible&TileMatrix=15&TileRow=12355&TileCol=16047",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -164,8 +164,8 @@
      "role": "tiles",
      "probe": "https://tms-pnoa-ma.idee.es/1.0.0/pnoa-ma/15/16047/20412.jpeg",
      "state": "open",
-     "said": "image/jpeg in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -192,7 +192,7 @@
      "probe": "https://maps.nyc.gov/xyz/1.0.0/photo/1924/15/9650/12314.png8",
      "state": "open",
      "said": "image/png in 0.4 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 200
     },
     {
@@ -200,8 +200,8 @@
      "role": "files",
      "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
      "state": "open",
-     "said": "application/zip in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/zip in 0.4 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -212,7 +212,7 @@
      "state": "open",
      "code": 200,
      "said": "application/zip in 0.3 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -221,8 +221,8 @@
      "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.7 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 4.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -248,8 +248,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/2024/Q2/31UFU_0_0/B04.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -258,7 +258,7 @@
      "probe": "https://data.source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/2024/Q2/31UFU_0_0/B04.tif",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "sentinel-cogs.s3.us-west-2.amazonaws.com",
@@ -266,8 +266,8 @@
      "probe": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/18/T/WL/2024/7/S2A_18TWL_20240705_0_L2A/TCI.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/tiff in 1.0 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -276,7 +276,7 @@
      "probe": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-c1-l2a",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"earth-search.aws.element84.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -299,8 +299,8 @@
      "role": "tiles",
      "probe": "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage-product/default/1946/3857/15/17161/11474.png",
      "state": "open",
-     "said": "image/png in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -309,8 +309,8 @@
      "role": "files",
      "probe": "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissbuildings3d_3_0/items?limit=1",
      "state": "open",
-     "said": "application/json in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 1.0 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -319,8 +319,8 @@
      "role": "tiles",
      "probe": "https://wms.geo.admin.ch/?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
-     "said": "text/xml in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "text/xml in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -330,8 +330,8 @@
      "probe": "https://api3.geo.admin.ch/rest/services/api/MapServer/layersConfig?lang=en",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -355,21 +355,17 @@
      "host": "api.3dbag.nl",
      "role": "api",
      "probe": "https://api.3dbag.nl/collections/pand/items?bbox=4.884,52.359,4.886,52.361&limit=1",
-     "state": "open",
-     "said": "application/json in 0.5 s",
-     "seen": "2026-10-20",
-     "code": 200,
-     "robots": "none"
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-21"
     },
     {
      "host": "data.3dbag.nl",
      "role": "files",
      "probe": "https://data.3dbag.nl/",
-     "state": "open",
-     "said": "Not Found",
-     "seen": "2026-10-20",
-     "code": 404,
-     "robots": "none"
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-21"
     },
     {
      "host": "docs.3dbag.nl",
@@ -377,7 +373,7 @@
      "probe": "https://docs.3dbag.nl/en/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"docs.3dbag.nl\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "service.pdok.nl",
@@ -385,8 +381,8 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/2025_orthoHR/EPSG:3857/17/67314/43081.jpeg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.7 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -411,18 +407,20 @@
      "role": "api",
      "probe": "https://geodaten.bayern.de/opengeodata/OpenDataDetail.html?pn=lod2",
      "state": "open",
-     "said": "text/html in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "text/html in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
     {
      "host": "download1.bayernwolke.de",
      "role": "files",
-     "probe": "https://download1.bayernwolke.de/a/lod2/citygml/690_5334.gml",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"download1.bayernwolke.de\"",
-     "seen": "2026-10-20"
+     "probe": "https://download1.bayernwolke.de/a/lod2/citygml/792_5318.gml",
+     "state": "open",
+     "said": "application/octet-stream in 0.8 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "none"
     },
     {
      "host": "geoservices.bayern.de",
@@ -430,7 +428,7 @@
      "probe": "https://geoservices.bayern.de/od/wms/dop/v1/dop40?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
      "said": "application/vnd.ogc.wms_xml in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -439,8 +437,8 @@
      "role": "files",
      "probe": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/",
      "state": "open",
-     "said": "text/xml in 1.2 s",
-     "seen": "2026-10-20",
+     "said": "text/xml in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -449,8 +447,8 @@
      "role": "tiles",
      "probe": "https://www.wms.nrw.de/geobasis/wms_nw_dop?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
-     "said": "text/xml in 1.1 s",
-     "seen": "2026-10-20",
+     "said": "text/xml in 0.9 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -459,8 +457,8 @@
      "role": "tiles",
      "probe": "https://gdi.berlin.de/services/wms/truedop_2024?REQUEST=GetCapabilities&SERVICE=wms",
      "state": "open",
-     "said": "text/xml in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "text/xml in 0.6 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -470,11 +468,11 @@
      "probe": "https://download2.bayernwolke.de/a/lod2/citygml/792_5318.gml",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"download2.bayernwolke.de\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
-   "plan": "Sampled 20 Oct 2026. Bavaria: geodaten.bayern.de's LoD2 metalink (5.7 MB, published 2026-10-13) lists every 2 km tile with its sha-256 and two download URLs on download1.bayernwolke.de and download2.bayernwolke.de (e.g. 792_5318.gml, 369 kB), which are still refused; geoservices.bayern.de's DOP40 WMS answers GetMap (layer by_dop40c, EPSG:25832: a 64 x 64 px window by Munich's Brandhorst returned a real 40 cm orthophoto, mean RGB 96, 105, 93). NRW: www.opengeodata.nrw.de lists every LoD2 CityGML tile (LoD2_32_280_5657_1_NW.gml, 1.5 MB, dated 2026-05-26; the listing is 3 MB of XML) and www.wms.nrw.de's DOP WMS answers GetCapabilities (wms_nw_dop). Next: one GetMap per museum plot, the mean of the pixels inside each building's footprint into build_grounds.py's tint for Munich, Cologne and Dusseldorf; LoD2 itself needs download1.bayernwolke.de (asked for) and a CityGML reader for roof forms. Both proposed, not built."
+   "plan": "Sampled 20 Oct 2026. Bavaria: geodaten.bayern.de's LoD2 metalink (5.7 MB, published 2026-10-13) lists every 2 km tile with its sha-256 and two download URLs on download1.bayernwolke.de and download2.bayernwolke.de (e.g. 792_5318.gml, 369 kB), which are still refused; geoservices.bayern.de's DOP40 WMS answers GetMap (layer by_dop40c, EPSG:25832: a 64 x 64 px window by Munich's Brandhorst returned a real 40 cm orthophoto, mean RGB 96, 105, 93). NRW: www.opengeodata.nrw.de lists every LoD2 CityGML tile (LoD2_32_280_5657_1_NW.gml, 1.5 MB, dated 2026-05-26; the listing is 3 MB of XML) and www.wms.nrw.de's DOP WMS answers GetCapabilities (wms_nw_dop). Next: one GetMap per museum plot, the mean of the pixels inside each building's footprint into build_grounds.py's tint for Munich, Cologne and Dusseldorf; LoD2 itself needs download1.bayernwolke.de (asked for) and a CityGML reader for roof forms. Both proposed, not built. 21 Oct 2026: download1.bayernwolke.de is open. No robots.txt (404). Fetched Munich's centre tile, 690_5334.gml: 161.6 MB in 13 s (the rural 792_5318.gml is 369 kB, so city tiles are heavy: read the metalink's sizes first), 5,499 buildings, each with bldg:measuredHeight (the tallest 98.63 m, the Frauenkirche's south tower), bldg:roofType (1000 flat 2,402; 3100 gable 1,865; 2100 shed 631; 3200 hip 385; 9999 other 94), generic attributes per roof face (Dachorientierung, Dachneigung) and per building (NiedrigsteTraufeDesGebaeudes, Z_MIN, Z_MAX, Flaeche), and a gml:name on some (St. Salvator). Nothing built: it needs a CityGML 1.0 reader, so proposed. Next: stream-parse the tiles over each Munich museum's plot and the city's square, take each footprint's measuredHeight into build_grounds.py where Overture has none, and the roof type, pitch and eave into the models (Brandhorst, the Pinakotheken, Lenbachhaus). The probe now asks the small tile, not the big one."
   },
   {
    "id": "king-county-aerial-orthophotos-1936-and-1998-2025-seattle",
@@ -495,8 +493,8 @@
      "probe": "https://gismaps.kingcounty.gov/arcgis/rest/services/BaseMaps/KingCo_Aerial_1936/MapServer/export?bbox=-122.345,47.603,-122.330,47.612&bboxSR=4326&size=256,256&format=jpg&f=image",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 2.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -522,7 +520,7 @@
      "state": "open",
      "code": 200,
      "said": "binary/octet-stream in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -530,8 +528,8 @@
      "role": "api",
      "probe": "https://www.loc.gov/collections/sanborn-maps/?fo=json&c=1",
      "state": "open",
-     "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -540,8 +538,8 @@
      "role": "files",
      "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -551,8 +549,8 @@
      "probe": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_HISTORICAL/Sanborn_WebMercator/MapServer/export?bbox=-77.040,38.895,-77.030,38.902&bboxSR=4326&size=256,256&format=png&f=image",
      "state": "open",
      "code": 200,
-     "said": "image/png in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -561,8 +559,8 @@
      "probe": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Maps/HistoricalTopo/GeoTIFF/NY/NY_Central%20Park_122894_1947_24000_geo.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "image/tiff in 0.5 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -588,7 +586,7 @@
      "probe": "https://graph.mapillary.com/images?bbox=2.336,48.860,2.338,48.861&limit=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"graph.mapillary.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "tiles.mapillary.com",
@@ -596,7 +594,7 @@
      "probe": "https://tiles.mapillary.com/maps/vtp/mly1_public/2/14/8298/5636",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"tiles.mapillary.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "*.fbcdn.net",
@@ -604,7 +602,7 @@
      "probe": "https://scontent-iad3-1.xx.fbcdn.net/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"scontent-iad3-1.xx.fbcdn.net\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "api.openstreetcam.org",
@@ -612,7 +610,7 @@
      "probe": "https://api.openstreetcam.org/2.0/photo/?lat=48.8606&lng=2.3376&radius=150&itemsPerPage=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.openstreetcam.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "cdn.kartaview.org",
@@ -620,7 +618,7 @@
      "probe": "https://cdn.kartaview.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"cdn.kartaview.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.mapillary.com",
@@ -628,7 +626,7 @@
      "probe": "https://www.mapillary.com/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.mapillary.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -652,8 +650,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/tge-labs/meta-chm-v2/tiles.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -662,8 +660,8 @@
      "probe": "https://dataforgood-fb-data.s3.amazonaws.com/forests/v1/alsgedi_global_v6_float/chm/001311332.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -688,8 +686,8 @@
      "probe": "https://mapseries-tilesets.s3.amazonaws.com/london_1890s/16/32744/21788.png",
      "state": "open",
      "code": 200,
-     "said": "image/png in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.8 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -698,7 +696,7 @@
      "probe": "https://maps.nls.uk/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"maps.nls.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -722,15 +720,15 @@
      "probe": "https://maps.nypl.org/warper/layers.json?query=bromley&per_page=1",
      "state": "silent",
      "said": "Tunnel connection failed: 403 Forbidden",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "annotations.allmaps.org",
      "role": "api",
      "probe": "https://annotations.allmaps.org/maps?limit=1",
      "state": "open",
-     "said": "application/json in 1.2 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 2.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -739,8 +737,8 @@
      "role": "tiles",
      "probe": "https://allmaps.xyz/",
      "state": "open",
-     "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -768,7 +766,7 @@
      "state": "open",
      "code": 200,
      "said": "application/octet-stream in 0.4 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -792,8 +790,8 @@
      "role": "api",
      "probe": "https://api.panoramax.xyz/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
      "state": "open",
-     "said": "application/json in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -802,8 +800,8 @@
      "role": "api",
      "probe": "https://panoramax.openstreetmap.fr/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
      "state": "open",
-     "said": "application/geo+json in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "application/geo+json in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -812,8 +810,8 @@
      "role": "api",
      "probe": "https://panoramax.ign.fr/api/search?bbox=2.336,48.860,2.338,48.861&limit=1",
      "state": "open",
-     "said": "application/geo+json in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "application/geo+json in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -840,8 +838,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/pacificspatial/flateau/parquet/13102_chuo-ku_2023_building_lod0.parquet",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -849,8 +847,8 @@
      "role": "files",
      "probe": "https://www.geospatial.jp/ckan/api/3/action/package_search?q=plateau&rows=1",
      "state": "open",
-     "said": "application/json in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.8 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -859,8 +857,8 @@
      "role": "api",
      "probe": "https://api.plateauview.mlit.go.jp/datacatalog/plateau-datasets",
      "state": "open",
-     "said": "application/json in 1.5 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -870,7 +868,7 @@
      "probe": "https://assets.cms.plateau.reearth.io/",
      "state": "open",
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 403,
      "robots": "none"
     }
@@ -897,8 +895,8 @@
      "probe": "https://usgs-lidar-public.s3.us-west-2.amazonaws.com/NY_NewYorkCity/ept.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -907,8 +905,8 @@
      "probe": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/NY_NewYorkCity/ept.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.8 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -917,8 +915,8 @@
      "probe": "https://dc-lidar-2018.s3.amazonaws.com/",
      "state": "open",
      "code": 200,
-     "said": "application/xml in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/xml in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -943,7 +941,7 @@
      "probe": "https://planet.openhistoricalmap.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"planet.openhistoricalmap.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "vtiles.openhistoricalmap.org",
@@ -951,7 +949,7 @@
      "probe": "https://vtiles.openhistoricalmap.org/maps/osm/0/0/0.pbf",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"vtiles.openhistoricalmap.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.openhistoricalmap.org",
@@ -959,7 +957,7 @@
      "probe": "https://www.openhistoricalmap.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.openhistoricalmap.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "s3.amazonaws.com",
@@ -968,7 +966,7 @@
      "state": "open",
      "code": 200,
      "said": "application/zip in 0.3 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -992,9 +990,9 @@
      "role": "api",
      "probe": "https://www.oceancolour.org/thredds/catalog.html",
      "state": "open",
-     "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
-     "robots": "disallows"
+     "said": "text/html in 1.3 s",
+     "seen": "2026-10-21",
+     "code": 200
     },
     {
      "host": "data.cci.ceda.ac.uk",
@@ -1002,7 +1000,7 @@
      "probe": "https://data.cci.ceda.ac.uk/thredds/catalog/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/catalog.html",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -1011,7 +1009,7 @@
      "probe": "https://dap.ceda.ac.uk/neodc/esacci/ocean_colour/data/v6.0-release/climatology/netcdf/monthly/v6.0/",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -1020,7 +1018,7 @@
      "probe": "https://comet.nefsc.noaa.gov/erddap/info/occci_v6_monthly_1km/index.html",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"comet.nefsc.noaa.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -1047,7 +1045,7 @@
      "state": "open",
      "code": 200,
      "said": "binary/octet-stream in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1056,8 +1054,8 @@
      "probe": "https://esa-worldcover-s2.s3.eu-central-1.amazonaws.com/rgbnir/2021/N51/ESA_WorldCover_10m_2021_v200_N51E000_S2RGBNIR.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.6 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1066,8 +1064,8 @@
      "probe": "https://io-10m-annual-lulc.s3.us-west-2.amazonaws.com/31U_2024.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.8 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1092,8 +1090,8 @@
      "role": "tiles",
      "probe": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/VIIRS_Black_Marble/default/2016-01-01/500m/0/0/0.png",
      "state": "open",
-     "said": "image/png in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -1103,15 +1101,15 @@
      "probe": "https://gibs-a.earthdata.nasa.gov/wmts/epsg4326/best/VIIRS_Black_Marble/default/2016-01-01/500m/0/0/0.png",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"gibs-a.earthdata.nasa.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "wvs.earthdata.nasa.gov",
      "role": "api",
      "probe": "https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=2026-10-08&BBOX=-90,-180,90,180&CRS=EPSG:4326&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor&FORMAT=image/jpeg&WIDTH=512&HEIGHT=256",
      "state": "open",
-     "said": "image/jpeg in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     }
@@ -1138,8 +1136,8 @@
      "probe": "https://noaa-gmgsi-pds.s3.amazonaws.com/GMGSI_LW/2026/10/10/21/GLOBCOMPLIR_v3r0_blend_s202610102100000_e202610102109599_c202610102133488.nc",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1165,7 +1163,7 @@
      "state": "open",
      "code": 200,
      "said": "image/tiff in 0.6 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1191,7 +1189,7 @@
      "state": "open",
      "code": 200,
      "said": "image/tiff in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1216,8 +1214,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/earthgenome/earthindeximagery/31UDQ_2025-01-01_2026-01-01/TCI.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1226,7 +1224,7 @@
      "probe": "https://data.source.coop/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -1249,8 +1247,8 @@
      "role": "files",
      "probe": "https://data.earthenv.org/cloud/MODCF_monthlymean_01.tif",
      "state": "open",
-     "said": "image/tiff in 1.1 s",
-     "seen": "2026-10-20",
+     "said": "image/tiff in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -1260,7 +1258,7 @@
      "probe": "https://www.earthenv.org/cloud",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.earthenv.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -1285,8 +1283,8 @@
      "probe": "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/ausantarctic/gebco/GEBCO_2026.tif",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1295,7 +1293,7 @@
      "probe": "https://data.source.coop/ausantarctic/gebco/GEBCO_2026.tif",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"data.source.coop\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.gebco.net",
@@ -1303,7 +1301,7 @@
      "probe": "https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.gebco.net\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -1326,8 +1324,8 @@
      "role": "api",
      "probe": "https://planetarycomputer.microsoft.com/api/sas/v1/token/modis-09A1-061",
      "state": "open",
-     "said": "application/json in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -1337,7 +1335,7 @@
      "probe": "https://modiseuwest.blob.core.windows.net/modis-061/",
      "state": "open",
      "said": "Public access is not permitted on this storage account.",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 409,
      "robots": "none"
     },
@@ -1347,7 +1345,7 @@
      "probe": "https://ai4edataeuwest.blob.core.windows.net/esa-worldcover/v200/2021/map/ESA_WorldCover_10m_2021_v200_N51E000_Map.tif",
      "state": "open",
      "said": "Public access is not permitted on this storage account.",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 409,
      "robots": "none"
     }
@@ -1373,8 +1371,8 @@
      "role": "files",
      "probe": "https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73751/world.topo.bathy.200407.3x5400x2700.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -1383,8 +1381,8 @@
      "role": "files",
      "probe": "https://assets.science.nasa.gov/",
      "state": "open",
-     "said": "text/html in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "text/html in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -1394,7 +1392,7 @@
      "probe": "https://neo.gsfc.nasa.gov/archive/bluemarble/bmng/readme.pdf",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"neo.gsfc.nasa.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -1419,7 +1417,7 @@
      "probe": "https://noaadata.apps.nsidc.org/NOAA/G02156/GIS/4km/",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     }
    ],
@@ -1445,7 +1443,7 @@
      "probe": "https://noaadata.apps.nsidc.org/NOAA/G02135/",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -1454,8 +1452,8 @@
      "probe": "https://noaa-cdr-sea-ice-concentration-pds.s3.amazonaws.com/ncei_data/2015/seaice_conc_daily_nh_f17_20150101_v02r00.nc",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.6 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1480,7 +1478,7 @@
      "probe": "https://stac.dataspace.copernicus.eu/v1/collections/sentinel-2-global-mosaics",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"stac.dataspace.copernicus.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "identity.dataspace.copernicus.eu",
@@ -1488,7 +1486,7 @@
      "probe": "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/.well-known/openid-configuration",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"identity.dataspace.copernicus.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "eodata.dataspace.copernicus.eu",
@@ -1496,7 +1494,7 @@
      "probe": "https://eodata.dataspace.copernicus.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"eodata.dataspace.copernicus.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "sh.dataspace.copernicus.eu",
@@ -1504,7 +1502,7 @@
      "probe": "https://sh.dataspace.copernicus.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"sh.dataspace.copernicus.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "dataspace.copernicus.eu",
@@ -1512,7 +1510,7 @@
      "probe": "https://dataspace.copernicus.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"dataspace.copernicus.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "why": "needs an account; the same quarterly mosaics are mirrored on Source Cooperative (TGE) and answer now",
@@ -1537,8 +1535,8 @@
      "probe": "https://copernicus-dem-90m.s3.amazonaws.com/Copernicus_DSM_COG_30_N51_00_E000_00_DEM/Copernicus_DSM_COG_30_N51_00_E000_00_DEM.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/tiff in 0.6 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1547,8 +1545,8 @@
      "probe": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N51_00_E000_00_DEM/Copernicus_DSM_COG_10_N51_00_E000_00_DEM.tif",
      "state": "open",
      "code": 200,
-     "said": "image/tiff in 1.0 s",
-     "seen": "2026-10-20",
+     "said": "image/tiff in 0.5 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1573,7 +1571,7 @@
      "probe": "https://eogdata.mines.edu/nighttime_light/annual/v22/2024/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"eogdata.mines.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "eogauth.mines.edu",
@@ -1581,7 +1579,7 @@
      "probe": "https://eogauth.mines.edu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"eogauth.mines.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -1605,7 +1603,7 @@
      "probe": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/g/0/0/0.jpg",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"tiles.maps.eox.at\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "s2maps-tiles.eu",
@@ -1613,7 +1611,7 @@
      "probe": "https://s2maps-tiles.eu/wmts/1.0.0/s2cloudless-2023_3857/default/g/0/0/0.jpg",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"s2maps-tiles.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "s2maps.eu",
@@ -1621,7 +1619,7 @@
      "probe": "https://s2maps.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"s2maps.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "why": "2018-2024 editions CC BY-NC-SA; Earth Genome's CC BY mosaics do the same openly, and answer now",
@@ -1646,8 +1644,8 @@
      "probe": "https://storage.googleapis.com/weatherbench2/datasets/era5-hourly-climatology/1990-2019_6h_1440x721.zarr/total_cloud_cover/.zarray",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1672,7 +1670,7 @@
      "probe": "https://view.eumetsat.int/geoserver/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=mtg_fd:rgb_geocolour&CRS=EPSG:4326&BBOX=-80,-80,80,80&WIDTH=1024&HEIGHT=1024&FORMAT=image/jpeg",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"view.eumetsat.int\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -1696,8 +1694,8 @@
      "probe": "https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_0E_10Nv1_4_2021.tif",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1721,8 +1719,8 @@
      "role": "api",
      "probe": "https://api.gbif.org/v2/map/occurrence/density/0/0/0@1x.png?taxonKey=5219243",
      "state": "open",
-     "said": "image/png in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "image/png in 0.6 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -1732,8 +1730,8 @@
      "probe": "https://gbif-open-data-us-east-1.s3.amazonaws.com/occurrence/2026-10-01/citation.txt",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1742,7 +1740,7 @@
      "probe": "https://www.gbif.org/species/5219243",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.gbif.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -1766,7 +1764,7 @@
      "probe": "https://api.inaturalist.org/v1/observations?taxon_name=Vulpes%20vulpes&quality_grade=research&photos=true&per_page=1",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -1776,7 +1774,7 @@
      "state": "open",
      "code": 200,
      "said": "binary/octet-stream in 0.3 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1785,7 +1783,7 @@
      "probe": "https://static.inaturalist.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"static.inaturalist.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.inaturalist.org",
@@ -1793,7 +1791,7 @@
      "probe": "https://www.inaturalist.org/taxa/42069.json",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.inaturalist.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -1817,8 +1815,8 @@
      "role": "files",
      "probe": "https://sftp.kew.org/pub/data-repositories/WCVP/wcvp.zip",
      "state": "open",
-     "said": "application/zip in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "application/zip in 0.4 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -1828,7 +1826,7 @@
      "probe": "https://powo.science.kew.org/api/2/search?q=Fagus%20sylvatica",
      "state": "open",
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 403,
      "robots": "none"
     },
@@ -1838,8 +1836,8 @@
      "probe": "https://raw.githubusercontent.com/tdwg/wgsrpd/master/geojson/level3.geojson",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -1865,8 +1863,8 @@
      "probe": "https://bhl-open-data.s3.amazonaws.com/jpg/mobot31753003125132/mobot31753003125132_0002.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -1875,7 +1873,7 @@
      "probe": "https://www.biodiversitylibrary.org/api3?op=NameSearch&name=Vulpes%20vulpes&format=json&apikey=x",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.biodiversitylibrary.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "archive.org",
@@ -1884,7 +1882,7 @@
      "state": "open",
      "code": 200,
      "said": "application/json in 0.7 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -1892,8 +1890,8 @@
      "role": "alt",
      "probe": "https://ia600409.us.archive.org/31/items/mobot31753002152491/mobot31753002152491.pdf",
      "state": "open",
-     "said": "application/pdf in 1.3 s",
-     "seen": "2026-10-20",
+     "said": "application/pdf in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -1920,7 +1918,7 @@
      "probe": "https://st-download.ebird.org/v1/list-obj/2023",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"st-download.ebird.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "ebird.org",
@@ -1928,7 +1926,7 @@
      "probe": "https://ebird.org/science/status-and-trends",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"ebird.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -1952,7 +1950,7 @@
      "probe": "https://api.iucnredlist.org/api/v4/taxa/scientific_name?genus_name=Vulpes&species_name=vulpes",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.iucnredlist.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.iucnredlist.org",
@@ -1960,7 +1958,7 @@
      "probe": "https://www.iucnredlist.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.iucnredlist.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -1984,7 +1982,7 @@
      "probe": "https://phenocam.nau.edu/data/archive/harvard/ROI/harvard_DB_1000_1day.csv",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     }
    ],
@@ -2011,7 +2009,7 @@
      "probe": "https://figshare.com/articles/dataset/Quercus_ilex_chorology/5114062",
      "state": "open",
      "said": "text/html in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 202,
      "robots": "none"
     },
@@ -2021,7 +2019,7 @@
      "probe": "https://ndownloader.figshare.com/",
      "state": "open",
      "said": "Not Found",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 404,
      "robots": "none"
     },
@@ -2032,7 +2030,7 @@
      "state": "open",
      "code": 403,
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2041,8 +2039,8 @@
      "probe": "https://raw.githubusercontent.com/wpetry/USTreeAtlas/main/shp/acersacc/acersacc.shp",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -2068,8 +2066,8 @@
      "probe": "https://aloftdata.s3-eu-west-1.amazonaws.com/coverage.csv",
      "state": "open",
      "code": 200,
-     "said": "binary/octet-stream in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "binary/octet-stream in 0.8 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2078,7 +2076,7 @@
      "probe": "https://aloftdata.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"aloftdata.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -2102,8 +2100,8 @@
      "probe": "https://api.artic.edu/api/v1/artworks/27992?fields=id,title,image_id,color,dimensions_detail,gallery_id,is_on_view",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2113,7 +2111,7 @@
      "state": "open",
      "code": 403,
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2122,8 +2120,8 @@
      "probe": "https://artic-api-data.s3.amazonaws.com/artic-api-data.tar.bz2",
      "state": "open",
      "code": 200,
-     "said": "application/x-bzip2 in 0.7 s",
-     "seen": "2026-10-20",
+     "said": "application/x-bzip2 in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -2148,8 +2146,8 @@
      "probe": "https://raw.githubusercontent.com/NationalGalleryOfArt/opendata/main/data/published_images.csv",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2157,8 +2155,8 @@
      "role": "iiif",
      "probe": "https://api.nga.gov/iiif/00007f61-4922-417b-8f27-893ea328206c/full/!200,200/0/default.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.9 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -2169,7 +2167,7 @@
      "state": "open",
      "code": 403,
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -2195,7 +2193,7 @@
      "probe": "https://api.openverse.org/v1/images/?q=gallery%20interior&page_size=1",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -2204,7 +2202,7 @@
      "probe": "https://openverse.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"openverse.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -2229,8 +2227,8 @@
      "role": "api",
      "probe": "https://data.rijksmuseum.nl/search/collection?objectNumber=SK-C-5",
      "state": "open",
-     "said": "application/ld+json in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "application/ld+json in 0.6 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -2240,7 +2238,7 @@
      "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -2249,7 +2247,7 @@
      "probe": "https://www.rijksmuseum.nl/en",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.rijksmuseum.nl\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -2275,8 +2273,8 @@
      "probe": "https://collectionapi.metmuseum.org/public/collection/v1/objects/436535",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2284,8 +2282,8 @@
      "role": "files",
      "probe": "https://images.metmuseum.org/CRDImages/ep/web-large/DP-42549-001.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -2296,7 +2294,7 @@
      "state": "open",
      "code": 429,
      "said": "Too Many Requests",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2305,8 +2303,8 @@
      "probe": "https://storage.googleapis.com/storage/v1/b/gcs-public-data--met/o?maxResults=1",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -2332,7 +2330,7 @@
      "probe": "https://commons.wikimedia.org/w/thumb.php?f=Gallery_28,_National_Gallery_of_Art.jpg&w=500",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -2341,8 +2339,8 @@
      "probe": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/330px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2350,8 +2348,8 @@
      "role": "files",
      "probe": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/National_Gallery_of_Art_-_West_Building.JPG/250px-National_Gallery_of_Art_-_West_Building.JPG",
      "state": "open",
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.5 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -2361,7 +2359,7 @@
      "probe": "https://api.wikimedia.org/core/v1/commons/file/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg",
      "state": "open",
      "said": "Too Many Requests",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 429
     },
     {
@@ -2370,7 +2368,7 @@
      "probe": "https://commons-query.wikimedia.org/sparql?query=SELECT%20%3Fx%20WHERE%20%7B%7D%20LIMIT%201",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"commons-query.wikimedia.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -2395,8 +2393,8 @@
      "probe": "https://d32dm0rphc51dk.cloudfront.net/zFA7cwdkWxbIrmuAAd21VA/normalized.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.4 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2405,7 +2403,7 @@
      "probe": "https://d7hftxdivxxvm.cloudfront.net/?resize_to=fit&width=200&height=200&quality=80&src=https%3A%2F%2Fd32dm0rphc51dk.cloudfront.net%2FzFA7cwdkWxbIrmuAAd21VA%2Flarge.jpg",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"d7hftxdivxxvm.cloudfront.net\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "used_by": "the page, live; the tones and the histories",
@@ -2430,8 +2428,8 @@
      "probe": "https://openaccess-api.clevelandart.org/api/artworks/?q=water%20lilies&limit=1&has_image=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.2 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.5 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2439,8 +2437,8 @@
      "role": "files",
      "probe": "https://openaccess-cdn.clevelandart.org/1960.81/1960.81_web.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -2467,7 +2465,7 @@
      "probe": "https://api.flickr.com/services/rest/?method=flickr.test.echo&api_key=0&format=json&nojsoncallback=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.flickr.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "live.staticflickr.com",
@@ -2475,7 +2473,7 @@
      "probe": "https://live.staticflickr.com/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"live.staticflickr.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.flickr.com",
@@ -2483,7 +2481,7 @@
      "probe": "https://www.flickr.com/services/feeds/photos_public.gne?tags=louvre,interior&format=json&nojsoncallback=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.flickr.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -2507,8 +2505,8 @@
      "probe": "https://data.getty.edu/museum/collection/object/8dd03159-261d-4e43-b277-15792e04089f",
      "state": "open",
      "code": 200,
-     "said": "application/ld+json in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/ld+json in 0.5 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2517,7 +2515,7 @@
      "probe": "https://media.getty.edu/iiif/image/93be2690-832e-4567-9713-e86df011b473/full/!400,400/0/default.jpg",
      "state": "open",
      "said": "image/jpeg in 0.2 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 200
     }
    ],
@@ -2542,8 +2540,8 @@
      "role": "api",
      "probe": "https://www.loc.gov/collections/historic-american-buildings-landscapes-and-engineering-records/?fo=json&c=1",
      "state": "open",
-     "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -2552,8 +2550,8 @@
      "role": "files",
      "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -2578,21 +2576,17 @@
      "host": "api.3dbag.nl",
      "role": "api",
      "probe": "https://api.3dbag.nl/collections/pand/items?bbox=121000,486000,121100,486100&limit=1",
-     "state": "open",
-     "said": "application/json in 0.5 s",
-     "seen": "2026-10-20",
-     "code": 200,
-     "robots": "none"
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-21"
     },
     {
      "host": "data.3dbag.nl",
      "role": "files",
      "probe": "https://data.3dbag.nl/",
-     "state": "open",
-     "said": "Not Found",
-     "seen": "2026-10-20",
-     "code": 404,
-     "robots": "none"
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-21"
     },
     {
      "host": "data.cityofnewyork.us",
@@ -2600,8 +2594,8 @@
      "probe": "https://data.cityofnewyork.us/api/views/tnru-abg2.json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.7 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 4.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2609,8 +2603,8 @@
      "role": "files",
      "probe": "https://s-media.nyc.gov/agencies/oti/DA_WISE_GML.zip",
      "state": "open",
-     "said": "application/zip in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/zip in 0.4 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -2620,8 +2614,8 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/18/134629/86162.jpeg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.7 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -2647,7 +2641,7 @@
      "probe": "https://download.geofabrik.de/",
      "state": "stalls",
      "said": "[Errno 104] Connection reset by peer",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "overpass-api.de",
@@ -2655,7 +2649,7 @@
      "probe": "https://overpass-api.de/api/status",
      "state": "stalls",
      "said": "[Errno 104] Connection reset by peer",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -2680,8 +2674,8 @@
      "probe": "https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/chndm/00.txt",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.9 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.5 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -2690,7 +2684,7 @@
      "probe": "https://ids.si.edu/ids/deliveryService?id=CHSDM-27627_01-000001",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -2698,9 +2692,9 @@
      "role": "api",
      "probe": "https://api.si.edu/openaccess/api/v1.0/search?q=hopper&rows=1&api_key=DEMO_KEY",
      "state": "open",
-     "said": "Too Many Requests",
-     "seen": "2026-10-20",
-     "code": 429,
+     "said": "application/json in 0.9 s",
+     "seen": "2026-10-21",
+     "code": 200,
      "robots": "none"
     }
    ],
@@ -2726,8 +2720,8 @@
      "probe": "https://www.vangoghmuseum.nl/asset/download/s0031V1962",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 1.6 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2736,7 +2730,7 @@
      "probe": "https://iiif.micr.io/TZCqF/full/1200,/0/default.jpg",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     }
    ],
@@ -2762,7 +2756,7 @@
      "probe": "https://artsandculture.google.com/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"artsandculture.google.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "lh3.googleusercontent.com",
@@ -2770,7 +2764,7 @@
      "probe": "https://lh3.googleusercontent.com/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"lh3.googleusercontent.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "maps.googleapis.com",
@@ -2778,7 +2772,7 @@
      "probe": "https://maps.googleapis.com/",
      "state": "silent",
      "said": "Tunnel connection failed: 403 Forbidden",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "why": "Google's terms forbid automated access; Street View only through the billed Maps Platform",
@@ -2804,7 +2798,7 @@
      "state": "open",
      "code": 200,
      "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -2813,7 +2807,7 @@
      "probe": "https://manifests.collections.yale.edu/ycba/obj/34",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"manifests.collections.yale.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "images.collections.yale.edu",
@@ -2821,7 +2815,7 @@
      "probe": "https://images.collections.yale.edu/iiif/2/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"images.collections.yale.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false
@@ -2845,7 +2839,7 @@
      "probe": "https://gallica.bnf.fr/SRU?operation=searchRetrieve&version=1.2&query=gallica%20all%20%22Auvers-sur-Oise%22&maximumRecords=1",
      "state": "open",
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 403,
      "robots": "none"
     }
@@ -2871,8 +2865,8 @@
      "role": "api",
      "probe": "https://www.loc.gov/collections/photochrom-prints/?q=rouen&fo=json",
      "state": "open",
-     "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     },
@@ -2881,8 +2875,8 @@
      "role": "iiif",
      "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
-     "said": "image/jpeg in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     }
@@ -2908,8 +2902,8 @@
      "role": "api",
      "probe": "https://api.europeana.eu/record/v2/search.json?wskey=api2demo&query=mona%20lisa&rows=1",
      "state": "open",
-     "said": "application/json in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.7 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -2919,7 +2913,7 @@
      "probe": "https://iiif.europeana.eu/",
      "state": "silent",
      "said": "Tunnel connection failed: 403 Forbidden",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.europeana.eu",
@@ -2927,7 +2921,7 @@
      "probe": "https://www.europeana.eu/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.europeana.eu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -2952,7 +2946,7 @@
      "probe": "https://api.geograph.org.uk/syndicator.php?q=Abingdon&format=JSON",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.geograph.org.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.geograph.org.uk",
@@ -2960,7 +2954,7 @@
      "probe": "https://www.geograph.org.uk/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.geograph.org.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "s0.geograph.org.uk",
@@ -2968,7 +2962,7 @@
      "probe": "https://s0.geograph.org.uk/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"s0.geograph.org.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -2992,7 +2986,7 @@
      "probe": "https://apicollections.parismusees.paris.fr/graphql",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"apicollections.parismusees.paris.fr\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.parismuseescollections.paris.fr",
@@ -3000,7 +2994,7 @@
      "probe": "https://www.parismuseescollections.paris.fr/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.parismuseescollections.paris.fr\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": true
@@ -3024,8 +3018,8 @@
      "probe": "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?request=GetCapabilities&service=WMTS",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.7 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -3052,7 +3046,7 @@
      "state": "open",
      "code": 200,
      "said": "application/json in 1.1 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -3077,8 +3071,8 @@
      "role": "wcs",
      "probe": "https://environment.data.gov.uk/spatialdata/lidar-composite-digital-surface-model-last-return-dsm-1m/wcs?service=WCS&request=GetCapabilities",
      "state": "open",
-     "said": "application/xml in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/xml in 3.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "ok"
     }
@@ -3097,7 +3091,7 @@
    "format": "WMS/WMTS (JPEG), EPSG:25832/3857.",
    "priority": 2,
    "notes": "Host sgx.geodatenzentrum.de refused 13 Oct 2026. Bavaria and NRW hosts are already on the Later list (geoservices.bayern.de, www.wms.nrw.de).",
-   "state": "allowed",
+   "state": "dropped",
    "hosts": [
     {
      "host": "sgx.geodatenzentrum.de",
@@ -3105,21 +3099,24 @@
      "probe": "https://sgx.geodatenzentrum.de/wms_dop40?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
      "said": "",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 400,
      "robots": "ok"
     },
     {
      "host": "sg.geodatenzentrum.de",
-     "role": "wms",
-     "probe": "https://sg.geodatenzentrum.de/wms_dop40?REQUEST=GetCapabilities&SERVICE=WMS",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"sg.geodatenzentrum.de\"",
-     "seen": "2026-10-20"
+     "role": "alt",
+     "probe": "https://sg.geodatenzentrum.de/wms_sentinel2_de?REQUEST=GetCapabilities&SERVICE=WMS",
+     "state": "open",
+     "said": "text/xml in 1.2 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     }
    ],
    "key_needed": false,
-   "plan": "Checked 20 Oct 2026. sgx.geodatenzentrum.de lets the tunnel through but answers 400 ERROR_UNKNOWN_SERVICE (securityGate.Server) to every request, GetCapabilities included: it is the gated host. BKG's open WMS is on sg.geodatenzentrum.de (its catalogue record: connect point https://sg.geodatenzentrum.de/wms, title wms_dop, Datenlizenz Deutschland Zero 2.0, (c) GeoBasis-DE / BKG): ask for that host instead, then sample. Bavaria's own 40 cm WMS already answers (see the German states row)."
+   "plan": "Checked 21 Oct 2026, the host newly open: sg.geodatenzentrum.de answers wms_topplus_open (GetCapabilities, 42.6 kB), wms_sentinel2_de (237 kB), wms_dgm200 and wms_vg250, but not wms_dop40 (400 ERROR_UNKNOWN_SERVICE) or wms_dop (403 NOACCESS_SERVICE). robots.txt disallows only /gdz_geoviewserver/ and /gdz_geoviewserv/. See the Sentinel2-DE row.",
+   "why": "Not served openly (21 Oct 2026): on BKG's open WMS host, sg.geodatenzentrum.de, wms_dop40 answers ERROR_UNKNOWN_SERVICE and wms_dop answers NOACCESS_SERVICE (securityGate.Server), as sgx did. Germany's orthophotos come from the states (Bavaria's 40 cm, NRW's, Berlin's true orthophoto); BKG's Sentinel2-DE mosaic, open on the same host, is its own row."
   },
   {
    "id": "berlin-historic-aerial-photographs-1928",
@@ -3140,7 +3137,7 @@
      "probe": "https://fbinter.stadt-berlin.de/fb/wms/senstadt/luftbild1928?SERVICE=WMS&REQUEST=GetCapabilities",
      "state": "open",
      "said": "Not Found",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 404,
      "robots": "none"
     },
@@ -3150,9 +3147,9 @@
      "probe": "https://gdi.berlin.de/services/wms/luftbild_1928_04?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0",
      "state": "open",
      "code": 200,
-     "said": "text/xml in 0.8 s",
+     "said": "text/xml in 0.6 s",
      "robots": "none",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3177,8 +3174,8 @@
      "probe": "https://raw.githubusercontent.com/MuseumofModernArt/collection/main/README.md",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3187,8 +3184,8 @@
      "probe": "https://media.githubusercontent.com/media/MuseumofModernArt/collection/main/Artworks.csv",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "text/plain in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3197,8 +3194,8 @@
      "probe": "https://www.moma.org/media/W1siZiIsIjUyNzc3MCJdLFsicCIsImNvbnZlcnQiLCItcmVzaXplIDEwMjR4MTAyNFx1MDAzZSJdXQ.jpg?sha=712ac0fd74ea5bd5",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -3225,7 +3222,7 @@
      "state": "open",
      "code": 200,
      "said": "application/json in 0.8 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3234,7 +3231,7 @@
      "probe": "https://iip.smk.dk/iiif/jp2/9g54xm869_KMS1-cropped.tif.jp2/info.json",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"iip.smk.dk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "enrichment.api.smk.dk",
@@ -3242,7 +3239,7 @@
      "probe": "https://enrichment.api.smk.dk/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"enrichment.api.smk.dk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3267,8 +3264,8 @@
      "probe": "https://s-media.nyc.gov/agencies/lpc/lp/1775.pdf",
      "state": "open",
      "code": 200,
-     "said": "application/zip in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/zip in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3277,7 +3274,7 @@
      "probe": "https://npgallery.nps.gov/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"npgallery.nps.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "historicengland.org.uk",
@@ -3285,7 +3282,7 @@
      "probe": "https://historicengland.org.uk/listing/the-list/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"historicengland.org.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3310,7 +3307,7 @@
      "probe": "https://ambientcg.com/api/v2/full_json?type=Material&q=marble&limit=1",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"ambientcg.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "api.polyhaven.com",
@@ -3318,7 +3315,7 @@
      "probe": "https://api.polyhaven.com/assets?t=textures&c=marble",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"api.polyhaven.com\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3343,7 +3340,7 @@
      "probe": "https://collections.discovernewfields.org/art/artwork/56174",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"collections.discovernewfields.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "iiif.discovernewfields.org",
@@ -3351,7 +3348,7 @@
      "probe": "https://iiif.discovernewfields.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"iiif.discovernewfields.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.clarkart.edu",
@@ -3359,7 +3356,7 @@
      "probe": "https://www.clarkart.edu/Museum/FAQs",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.clarkart.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "artmuseum.princeton.edu",
@@ -3367,7 +3364,7 @@
      "probe": "https://artmuseum.princeton.edu/art/collections/objects/7011",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"artmuseum.princeton.edu\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3393,8 +3390,8 @@
      "probe": "https://www.phillipscollection.org/image-licensing",
      "state": "open",
      "code": 200,
-     "said": "text/html in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "text/html in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -3403,7 +3400,7 @@
      "probe": "https://www.seattleartmuseum.org/collections/image-rights",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.seattleartmuseum.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.famsf.org",
@@ -3411,7 +3408,7 @@
      "probe": "https://www.famsf.org/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.famsf.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "collections.louvre.fr",
@@ -3419,7 +3416,7 @@
      "probe": "https://collections.louvre.fr/en",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"collections.louvre.fr\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.tate.org.uk",
@@ -3427,7 +3424,7 @@
      "probe": "https://www.tate.org.uk/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.tate.org.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "www.npg.org.uk",
@@ -3436,7 +3433,7 @@
      "state": "open",
      "code": 403,
      "said": "Forbidden",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "ok"
     }
    ],
@@ -3461,8 +3458,8 @@
      "probe": "https://data.cityofnewyork.us/resource/hn5i-inap.json?$limit=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.7 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 4.3 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -3471,8 +3468,8 @@
      "probe": "https://data.sf.gov/resource/tkzw-k3nq.json?$limit=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 1.2 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 6.0 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -3481,7 +3478,7 @@
      "probe": "https://data.boston.gov/api/3/action/datastore_search?resource_id=995cd80f-2489-41bf-b16b-113dba4f2797&limit=1",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -3490,8 +3487,8 @@
      "probe": "https://services.arcgis.com/ZOyb2t4B0UYuYNYH/arcgis/rest/services/TreeCrowns_2021_Seattle/FeatureServer/0/query?where=1%3D1&returnCountOnly=true&f=json",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.5 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3500,7 +3497,7 @@
      "probe": "https://data.melbourne.vic.gov.au/api/explore/v2.1/catalog/datasets/trees-with-species-and-dimensions-urban-forest/records?limit=1",
      "state": "stalls",
      "said": "[Errno 104] Connection reset by peer",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "gdi.berlin.de",
@@ -3508,8 +3505,8 @@
      "probe": "https://gdi.berlin.de/services/wfs/baumbestand?service=WFS&version=2.0.0&request=GetFeature&typeNames=baumbestand:strassenbaeume&count=1&outputFormat=application/json",
      "state": "open",
      "code": 200,
-     "said": "text/xml in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "text/xml in 0.6 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -3527,24 +3524,23 @@
    "format": "Paris: Opendatasoft API v2.1 (JSON, GeoJSON, CSV). Amsterdam: api.data.amsterdam.nl/v1/bomen/ (JSON, paged) and GeoJSON from maps.amsterdam.nl's open_geodata. Sydney: the City's ArcGIS Hub (CSV, GeoJSON by its download API).",
    "priority": 2,
    "notes": "None of these hosts answers the session, so the endpoints come from the cities' published documentation and the open-data catalogues (data.gouv.fr, data.overheid.nl, data.nsw.gov.au) and were not sampled: ask, then sample. Sydney's host is the City's data hub as published; its dataset's own address has not been seen, so it is marked unconfirmed and stays out of the block to ask for until a pass confirms it. Its ArcGIS Online services sit on hosts the session cannot reach (services1, services3, services5 and services-ap1.arcgis.com are refused; services.arcgis.com and services2.arcgis.com answer). Washington's street trees are on opendata.dc.gov (refused). USDA Forest Service's Urban Tree Database (McPherson et al. 2016, public domain, on www.fs.usda.gov, refused) gives crown height and diameter from trunk diameter for 171 species, which would size New York's, San Francisco's and Boston's trees, whose registers carry no crown. 20 Oct 2026: opendata.paris.fr's robots.txt (an Opendatasoft default, read twice) disallows /api/ and /explore/download, so neither the API nor its exports are read there; the portal also stalls now and then. 'Les arbres' is also published on data.gouv.fr (static.data.gouv.fr serves the file): ask for that host instead, after checking its licence.",
-   "state": "held",
+   "state": "allowed",
    "hosts": [
     {
      "host": "opendata.paris.fr",
      "role": "api",
      "probe": "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/les-arbres/records?limit=1",
-     "state": "open",
-     "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
-     "robots": "disallows"
+     "state": "stalls",
+     "said": "[Errno 104] Connection reset by peer",
+     "seen": "2026-10-21"
     },
     {
      "host": "api.data.amsterdam.nl",
      "role": "api",
      "probe": "https://api.data.amsterdam.nl/v1/bomen/stamgegevens/?_pageSize=1&_format=json",
      "state": "open",
-     "said": "application/hal+json in 0.8 s",
-     "seen": "2026-10-20",
+     "said": "application/hal+json in 0.6 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -3554,12 +3550,11 @@
      "probe": "https://data.cityofsydney.nsw.gov.au/",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"data.cityofsydney.nsw.gov.au\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
-   "plan": "Sampled 20 Oct 2026. api.data.amsterdam.nl answers: /v1/bomen/stamgegevens/ gives one tree a record (soortnaam 'Tilia americana', boomhoogteklasseActueel '15 tot 18 m', jaarVanAanleg 1948, a point in Rijksdriehoek metres); a first 100 trees: Acer 17, Ulmus 16, Tilia 15, Platanus 7, Gleditsia 7, Quercus 5, Fraxinus 4, Betula 4 (a page of 1,000 timed out at 40 s: ask in pages of 100). opendata.paris.fr lets the tunnel through and stalls (nothing in 25 s). Sydney's host is still unconfirmed. Next: Amsterdam's genus counts within a skyline's cells go to the plants' look (a reader beside the municipal registers'): proposed.",
-   "held": "robots.txt disallows opendata.paris.fr"
+   "plan": "Sampled 20 Oct 2026. api.data.amsterdam.nl answers: /v1/bomen/stamgegevens/ gives one tree a record (soortnaam 'Tilia americana', boomhoogteklasseActueel '15 tot 18 m', jaarVanAanleg 1948, a point in Rijksdriehoek metres); a first 100 trees: Acer 17, Ulmus 16, Tilia 15, Platanus 7, Gleditsia 7, Quercus 5, Fraxinus 4, Betula 4 (a page of 1,000 timed out at 40 s: ask in pages of 100). opendata.paris.fr lets the tunnel through and stalls (nothing in 25 s). Sydney's host is still unconfirmed. Next: Amsterdam's genus counts within a skyline's cells go to the plants' look (a reader beside the municipal registers'): proposed."
   },
   {
    "id": "lila-bc-camera-trap-and-wildlife-photographs-open-google-c",
@@ -3580,8 +3575,8 @@
      "probe": "https://storage.googleapis.com/public-datasets-lila/README",
      "state": "open",
      "code": 200,
-     "said": "application/octet-stream in 0.2 s",
-     "seen": "2026-10-20",
+     "said": "application/octet-stream in 0.3 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3590,7 +3585,7 @@
      "probe": "https://lila.science/datasets",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"lila.science\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3615,7 +3610,7 @@
      "probe": "https://api.phylopic.org/",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -3623,8 +3618,8 @@
      "role": "files",
      "probe": "https://images.phylopic.org/",
      "state": "open",
-     "said": "application/xml in 1.2 s",
-     "seen": "2026-10-20",
+     "said": "application/xml in 0.3 s",
+     "seen": "2026-10-21",
      "code": 200,
      "robots": "none"
     },
@@ -3634,7 +3629,7 @@
      "probe": "https://www.phylopic.org/articles/image-usage",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"www.phylopic.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3660,7 +3655,7 @@
      "probe": "https://data.cci.ceda.ac.uk/thredds/dodsC/esacci/land_cover/data/pft/v2.0.81/ESACCI-LC-L4-PFT-Map-300m-P1Y-2020-v2.0.81.nc.dds",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -3669,7 +3664,7 @@
      "probe": "https://dap.ceda.ac.uk/neodc/esacci/land_cover/data/pft/v2.0.81/00README_catalogue_and_licence.txt",
      "state": "open",
      "said": "its robots.txt disallows this address: not asked",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "robots": "disallows"
     },
     {
@@ -3678,7 +3673,7 @@
      "probe": "https://artefacts.ceda.ac.uk/licences/specific_licences/esacci_landcover_terms_and_conditions.pdf",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"artefacts.ceda.ac.uk\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ],
    "key_needed": false,
@@ -3704,8 +3699,8 @@
      "probe": "https://www.loc.gov/photos/?q=muybridge+deer&fo=json&c=1",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "ok"
     },
     {
@@ -3714,8 +3709,8 @@
      "probe": "https://tile.loc.gov/storage-services/service/pnp/cph/3g10000/3g13000/3g13700/3g13786_150px.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.3 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3724,8 +3719,8 @@
      "probe": "https://collectionapi.metmuseum.org/public/collection/v1.1/search?q=Muybridge&hasImages=true",
      "state": "open",
      "code": 200,
-     "said": "application/json in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
      "robots": "none"
     },
     {
@@ -3734,8 +3729,8 @@
      "probe": "https://images.metmuseum.org/CRDImages/ph/web-large/DP275263.jpg",
      "state": "open",
      "code": 200,
-     "said": "image/jpeg in 0.6 s",
-     "seen": "2026-10-20",
+     "said": "image/jpeg in 0.2 s",
+     "seen": "2026-10-21",
      "robots": "none"
     }
    ],
@@ -3761,7 +3756,7 @@
      "probe": "https://figshare.com/articles/dataset/AVONET_morphological_ecological_and_geographical_data_for_all_birds_Tobias_et_al_2021_Ecology_Letters_/16586228",
      "state": "open",
      "said": "text/html in 0.5 s",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 202,
      "robots": "none"
     },
@@ -3771,7 +3766,7 @@
      "probe": "https://ndownloader.figshare.com/",
      "state": "open",
      "said": "Not Found",
-     "seen": "2026-10-20",
+     "seen": "2026-10-21",
      "code": 404,
      "robots": "none"
     }
@@ -3799,9 +3794,9 @@
      "probe": "https://download.geoservice.dlr.de/TREE_SPECIES_DE/files/treespecies_de_2022_readme.txt",
      "state": "open",
      "code": 200,
-     "said": "text/plain in 0.9 s",
+     "said": "text/plain in 1.1 s",
      "robots": "none",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     },
     {
      "host": "geoservice.dlr.de",
@@ -3809,7 +3804,7 @@
      "probe": "https://geoservice.dlr.de/web/maps/eoc:tcde:2022",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"geoservice.dlr.de\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ]
   },
@@ -3824,25 +3819,29 @@
    "format": "JSON (biocache-ws /ws/occurrences/search with q, fq, pageSize, facets for counts); image JPEGs at images.ala.org.au/store/<a>/<b>/<c>/<d>/<uuid>/original (a thumbnail and a large proxy size too).",
    "priority": 1,
    "notes": "Not sampled: every host is refused here, and the web search gave no API reference page; the biocache endpoint and the image path are from ALA's own occurrence and image pages and a third-party API reference, so ask, then sample. Coverage is thick for birds and plants near cities. Check each provider's licence in the record; one search showed 'Images are CC-BY 2.5, Data is CC-BY-NC 3.0' for a download, so data and images can differ. State-level records (NSW BioNet) come through the same atlas.",
-   "state": "candidate",
+   "state": "allowed",
    "hosts": [
     {
      "host": "biocache-ws.ala.org.au",
-     "role": "api",
+     "role": "alt",
      "probe": "https://biocache-ws.ala.org.au/ws/occurrences/search?q=taxon_name:%22Eucalyptus%20botryoides%22&pageSize=1&fq=multimedia:Image",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"biocache-ws.ala.org.au\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "its robots.txt disallows this address: not asked",
+     "seen": "2026-10-21",
+     "robots": "disallows"
     },
     {
      "host": "images.ala.org.au",
-     "role": "files",
+     "role": "api",
      "probe": "https://images.ala.org.au/",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"images.ala.org.au\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "text/html in 6.5 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     }
-   ]
+   ],
+   "plan": "Sampled 21 Oct 2026, both hosts newly open. biocache-ws.ala.org.au: robots.txt disallows /ws/ (the whole REST API), /occurrence and /occurrences for every agent, Crawl-delay 30: not read (its role is now alt), so Sydney's plants (the characters pass's gap) are to be counted from GBIF's occurrence API, already open, which carries ALA's records. images.ala.org.au: robots.txt disallows only /admin (Crawl-delay 30; ClaudeBot and other crawlers are disallowed by name, and the session does not present as them). One request to its own search, /ws/search?q=Eucalyptus%20botryoides&pageSize=1, answered 45 kB of JSON: totalImageCount 31,798, facets (recognisedLicence: CC BY 3.0 AU 10,546, CC BY 4.0 AU 5,509, CC BY 4.0 2,657, CC BY-NC-SA 4.0 1,511, ... and 11,018 unrecognised; creator; dataResourceUid) and per image its identifier, licence, rightsHolder, width and height. Free text matches loosely (a Muscari botryoides came first): filter by taxon. Until the artist says whether a named disallow binds this session, only single requests, 30 s apart; nothing built. Next: for a species, take only CC BY and CC0 images, read colours inside the animal, never copy the photograph, credit the rights holder."
   },
   {
    "id": "natural-history-museum-specimen-photographs-nhm-london-dat",
@@ -3855,33 +3854,40 @@
    "format": "JSON (CKAN action API: package_search, datastore_search by resource; NBA: specimen/query and multimedia/query with a JSON querySpec); JPEG media.",
    "priority": 2,
    "notes": "Not sampled (hosts refused). The NHM site's terms and 'no key needed' are from its own credits and API pages; the NBA endpoint is from its documentation index and the nbaR client, and was not confirmed by a request. GBIF's occurrence API (already open) also lists specimen media from both museums, with the museum's host in each URL: those hosts are what a script would need whichever route it takes. Coverage by species is uneven: birds and insects are strongest.",
-   "state": "candidate",
+   "state": "allowed",
    "hosts": [
     {
      "host": "data.nhm.ac.uk",
      "role": "api",
      "probe": "https://data.nhm.ac.uk/api/3/action/package_list",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"data.nhm.ac.uk\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "application/json in 0.6 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     },
     {
      "host": "api.biodiversitydata.nl",
      "role": "api",
-     "probe": "https://api.biodiversitydata.nl/v2/specimen/query?scientificName=Vulpes%20vulpes&size=1",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"api.biodiversitydata.nl\"",
-     "seen": "2026-10-20"
+     "probe": "https://api.biodiversitydata.nl/v2/",
+     "state": "open",
+     "said": "text/html in 0.5 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "none"
     },
     {
      "host": "medialib.naturalis.nl",
      "role": "files",
      "probe": "https://medialib.naturalis.nl/",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"medialib.naturalis.nl\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "text/html in 0.3 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     }
-   ]
+   ],
+   "plan": "Sampled 21 Oct 2026, all three hosts newly open. NHM: robots.txt allows * with 'Content-Signal: search=yes, ai-train=no, use=reference' (reference only; nothing here trains a model). Package collection-specimens is CC0-1.0 with one resource, Specimens (id 05ff2255-c38a-40c9-b657-4ccb55ab2feb, Darwin Core), that datastore_search answers with filters (class Aves: 190,433 records; Vulpes vulpes: 57, none with a photograph). 2,272,893 records carry one media item, 869,830 two, 68,504 of the birds one; each media has an identifier https://data.nhm.ac.uk/media/<uuid>, licence creativecommons.org/licenses/by/4.0/, rightsHolder 'The Trustees of the Natural History Museum, London', pixel size, and a category (Specimen, Label, Register: the first bird hit was a scan of a register page, so filter on Specimen). datastore_search_sql answers 403 from Cloudflare: not read; fields= with the array column answers 500. Naturalis: api.biodiversitydata.nl has no robots.txt (404); the parameter is _querySpec (JSON, not querySpec); multimedia/query for Haliaeetus albicilla gave 532 media, licence CC0 1.0, each https://medialib.naturalis.nl/file/id/<unitID>/format/large (a 1.9 MB, 1920 x 1282 JPEG, Nikon D600; medialib's robots.txt allows * with Crawl-delay 3 and names AI crawlers to refuse). Honest limits: the first fox hit was a mandible on a graph-paper board beside its label card, the first eagle hit a slide of feathers: join each media to its specimen (associatedSpecimenReference) and keep skins and mounts before measuring a colour. Nothing built: no script reads specimen photographs, so proposed."
   },
   {
    "id": "usda-forest-service-urban-tree-database-crown-height-and",
@@ -3894,15 +3900,17 @@
    "format": "CSV (field data, equation coefficients), a PDF report and an errata file (January 2020, which corrects the data and the report: apply it); delivered as one zip from the archive.",
    "priority": 2,
    "notes": "Not sampled: www.fs.usda.gov is refused. The probe address is the archive's product page, found by search; the data zip's address is not seen. A mirror on Ag Data Commons (agdatacommons.nal.usda.gov, article 27006565) is also refused here. The search results did not say whether crown shape is a field (do not assume it is): the equations give size, not form. The cities' registers' trunk diameter classes make the join: species first, then DBH.",
-   "state": "candidate",
+   "state": "allowed",
    "hosts": [
     {
      "host": "www.fs.usda.gov",
      "role": "files",
      "probe": "https://www.fs.usda.gov/rds/archive/Product/RDS-2016-0005",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"www.fs.usda.gov\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "text/html in 1.4 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     },
     {
      "host": "agdatacommons.nal.usda.gov",
@@ -3910,9 +3918,10 @@
      "probe": "https://agdatacommons.nal.usda.gov/articles/dataset/Urban_tree_database/27006565",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"agdatacommons.nal.usda.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
-   ]
+   ],
+   "plan": "Sampled 21 Oct 2026, www.fs.usda.gov newly open (robots.txt allows /rds/, disallows only catalogue-search URLs). The product page answers (29.8 kB): the abstract above, the data zip at /rds/archive/products/RDS-2016-0005/RDS-2016-0005.zip, the metadata at /rds/archive/products/RDS-2016-0005/_metadata_RDS-2016-0005.html, and the terms in its own words: 'data were collected using funding from the U.S. Government and can be used without additional permissions or fees'. The zip itself was not fetched. Nothing built. Next: fetch the zip once into data/ (outside the repository), read the equation coefficients for the species the New York, San Francisco and Boston registers list, and give the plants round a character and a skyline's green cells a crown height and width from trunk diameter; apply the January 2020 errata."
   },
   {
    "id": "usgs-spectral-library-version-7-measured-reflectance-of-l",
@@ -3924,16 +3933,18 @@
    "key": "none",
    "format": "SPECPR binary and generic ASCII text files (one file per spectrum and per instrument/wavelength set), metadata in text; downloaded as zips from the ScienceBase item.",
    "priority": 2,
-   "notes": "Not sampled: www.sciencebase.gov and pubs.usgs.gov are refused. The ScienceBase item is 5807a2a2e4b0841e59e3a18d (JSON at /catalog/item/<id>?format=json lists its files and sizes). A reflectance spectrum is under lit conditions of the laboratory, not a landscape's: leaf-level greens are saturated beside what a canopy shows from space, so use it to check hue and relative lightness, not to replace the canopy's colour. JPL's ECOSTRESS spectral library (speclib.jpl.nasa.gov; it includes USGS spectra) was considered and left out: its pages carry 'Copyright 2017 California Institute of Technology, all rights reserved' and ordering is by form (up to a week), with no licence found; the USGS library is the open part of it.",
-   "state": "candidate",
+   "notes": "Not sampled: www.sciencebase.gov and pubs.usgs.gov are refused. The ScienceBase item is 5807a2a2e4b0841e59e3a18d (JSON at /catalog/item/<id>?format=json lists its files and sizes). A reflectance spectrum is under lit conditions of the laboratory, not a landscape's: leaf-level greens are saturated beside what a canopy shows from space, so use it to check hue and relative lightness, not to replace the canopy's colour. JPL's ECOSTRESS spectral library (speclib.jpl.nasa.gov; it includes USGS spectra) was considered and left out: its pages carry 'Copyright 2017 California Institute of Technology, all rights reserved' and ordering is by form (up to a week), with no licence found; the USGS library is the open part of it. 21 Oct 2026: the whole-library zip (5.5 GB) is on sciencebase.usgs.gov, refused; its children are smaller and on www.sciencebase.gov itself.",
+   "state": "allowed",
    "hosts": [
     {
      "host": "www.sciencebase.gov",
      "role": "api",
      "probe": "https://www.sciencebase.gov/catalog/item/5807a2a2e4b0841e59e3a18d?format=json",
-     "state": "refused",
-     "said": "request blocked: no rule or allowlist entry allows host \"www.sciencebase.gov\"",
-     "seen": "2026-10-20"
+     "state": "open",
+     "said": "application/json in 0.4 s",
+     "seen": "2026-10-21",
+     "code": 200,
+     "robots": "ok"
     },
     {
      "host": "pubs.usgs.gov",
@@ -3941,9 +3952,10 @@
      "probe": "https://pubs.usgs.gov/publication/ds1035",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"pubs.usgs.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
-   ]
+   ],
+   "plan": "Sampled 21 Oct 2026, www.sciencebase.gov newly open (robots.txt allows *, 'Content-Signal: search=yes, ai-train=no, use=reference'). The item's JSON lists three files; its child items (/catalog/items?parentId=5807a2a2e4b0841e59e3a18d&format=json) carry the library in parts on the same host: ASCIIdata_splib07a.zip (21.8 MB, original resolution), splib07b (43.4 MB, resampled to sensors), GIF plots (343 and 77 MB), SPECPR (1.5 GB), HTML metadata with photographs (1.3 GB). Fetched splib07a (Range and whole file both answer): 286 vegetation, 209 soil and mixture, 290 artificial-material spectra (ASD, 0.35-2.5 um, 2,151 channels, one text file each). Run through CIE 1931 colour matching (Wyman et al.'s fit) with a 6504 K blackbody for D65 (approximate) to sRGB: dark red building brick #724b42, medium red building brick #8c594d, tan paving brick #785843, light grey road concrete #9d9082, dark grey asphalt shingle #5a5958, black tar roof #2d2c2d, aspen leaf, green top #4f5b40, golden dry grass #846e51; and among Chapter A's artists' pigments alizarin crimson #6a1127 and lead-tin yellow #d8ba6c. Metadata (FGDC XML): no access constraint, 'acknowledgment of the U.S. Geological Survey would be appreciated'. Nothing built: no script reads a spectrum. Next: a table of measured colours for build_material.py's materials and the models' brick, concrete, roofing and pigments, as checks and not replacements."
   },
   {
    "id": "global-mangrove-watch-v3-mangrove-extent-1996-2020-25-m",
@@ -3964,7 +3976,7 @@
      "probe": "https://zenodo.org/api/records/6894273",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"zenodo.org\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ]
   },
@@ -3988,9 +4000,342 @@
      "probe": "https://speclib.jpl.nasa.gov/download",
      "state": "refused",
      "said": "request blocked: no rule or allowlist entry allows host \"speclib.jpl.nasa.gov\"",
-     "seen": "2026-10-20"
+     "seen": "2026-10-21"
     }
    ]
+  },
+  {
+   "id": "vienna-franciscan-cadastre-c-1829-land-use-and-buildings-wf",
+   "name": "Vienna's Franciscan cadastre (c. 1829): every plot's land use and every building, Stadt Wien open data",
+   "facet": "past",
+   "what": "The city's own digitisation of the Franziszeischer Kataster, Vienna's first cadastral survey: 102,125 polygons with a land-use class, TYP (Acker 20,309; Stein 16,642; Obstgarten 10,422; Holz 10,410; WieseT 8,884; Wein 7,469; Gemuese 6,885; Ziergarten 6,081; Park 3,325; Laubwald, Boeschung, Weideland, Militaer, Bruecke, Bach, Kirche 210, Linienwall 96 ...), as a WFS (ogdwien:FRANZKATOGD, native EPSG:31256: ask srsName=EPSG:4326) and a WMS layer (FRANZKATOGD) at data.wien.gv.at/daten/geo, the endpoint the site already reads for Vienna's building periods. By polygon size on a sample, Stein (median 211 m2, 348 sampled) is masonry buildings, Holz (median 41 m2, 399 sampled) timber sheds and houses, Kirche 179 m2, Laubwald (9,313 m2) woods. The layer's date field (SE_ANNO_CAD_DATA) is empty: the survey's year is not in the data.",
+   "improves": "Vienna's dial begins with periods (before 1683, 1683-1740, 1741-1780 ...) and all unbuilt land one green. This is what the ground was before the city came out over it: the vineyards (Wein), fields (Acker), orchards and gardens round the Linienwall, the open Glacis round the old city and its bastions, the Danube's arms, each building of 1829 stone or timber. The skyline's earliest years can stand on that ground, its not-yet-built cells given their own colour, and the building periods checked against which footprints stood. A GetMap of the inner city (16.360-16.385 E, 48.205-48.215 N, 800x320) drew the walled city, the bastions and glacis, the Danube Canal and no Ringstrasse.",
+   "licence": "Creative Commons Attribution 3.0 Austria (the WMS's own Fees field, creativecommons.org/licenses/by/3.0/at), credit 'Stadt Wien - data.wien.gv.at'; terms at data.wien.gv.at/nutzungsbedingungen.",
+   "format": "WFS 1.1.0 (GeoJSON, GML) and WMS 1.1.1/1.3.0 (PNG) on one OGC endpoint, https://data.wien.gv.at/daten/geo?",
+   "priority": 1,
+   "notes": "The host is open already and answered all three requests (GetFeature of two polygons; GetFeature of every TYP with propertyName=TYP, 11 MB; GetMap, 245 kB). The WMS draws all classes in grey and black: take the polygons, not the picture. The same service lists 753 layers; none is a historical orthophoto (no LUFTBILD, no 1938 or 1956).",
+   "hosts": [
+    {
+     "host": "data.wien.gv.at",
+     "role": "api",
+     "probe": "https://data.wien.gv.at/daten/geo?service=WFS&request=GetFeature&version=1.1.0&typeName=ogdwien:FRANZKATOGD&maxFeatures=1&outputFormat=json&srsName=EPSG:4326",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 1.1 s",
+     "robots": "none",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Sampled 21 Oct 2026 (a host already open): the WFS and WMS answer; 102,125 features; Stein and Holz are buildings by their size. Nothing built: it changes how Vienna's ground is drawn, so proposed. Next: in build_built_years.py's vienna(), fetch the cadastre's building classes (Stein, Holz, Kirche, Oefftl, Militaer) as 'stood by 1830' footprints beside the building periods, and let build_grounds.py keep the land use (Wein, Acker, Obstgarten, Ziergarten, Park, Wald, water) of the cells not yet built, for the skyline to colour them before their year.",
+   "key": "none",
+   "state": "allowed",
+   "key_needed": false
+  },
+  {
+   "id": "usgs-historical-topographic-map-collection-htmc-geotiff-on",
+   "name": "USGS Historical Topographic Map Collection: scanned quads of 1884-2006 as GeoTIFF, on AWS",
+   "facet": "past",
+   "what": "The USGS's scans of its printed topographic quadrangles at 1:250,000 and larger, 1884 to 2006 (over 185,000 georeferenced files by the USGS's count), in the National Map's open bucket: StagedProducts/Maps/HistoricalTopo/GeoTIFF/<state>/<state>_<quad>_<id>_<year>_<scale>_geo.tif (and PDF/). Colour sheets: contours, water, woods, roads, the black marks of buildings and the built-up tint of each revision. Sampled 21 Oct 2026: New York's folder lists Brooklyn (1897 and 1900 at 1:62,500; 1947, 1956 and 1967 at 1:24,000; 7-17 MB each) and Central Park (1947, 1956, 1966; 14-15 MB); a GeoTIFF answers Range requests (little-endian TIFF header from a 4.3 MB file), so one window can be read without the sheet.",
+   "improves": "The US skylines (New York, Los Angeles, San Francisco, Washington, Boston, Chicago, Houston, Seattle, Dallas, Indianapolis) take their built years from assessors and satellites, never from a map of what stood. A quad of 1897 or 1947 shows the shore, streets, woods, marshes and built-up blocks as surveyed, so the dial's earlier years can stand on the real ground and the years be checked against it.",
+   "licence": "Made by the USGS, a US federal agency: free to use, credit the USGS. The USGS's terms page (www.usgs.gov) is refused from the session: read it before use.",
+   "format": "GeoTIFF (the sheet's own datum) and PDF; the folder listing is S3 ListObjectsV2 XML (1,000 keys a page, continuation token); a 23 MB legacy inventory, StagedProducts/Maps/Metadata/topomaps_all_legacy.zip.",
+   "priority": 2,
+   "notes": "The bucket's listing is the index; a sheet's year and scale are in its name. Scans are heavy: read a window by Range for a city's square. A printed map's colour is faded paper and mixed inks: use it for what stood where, not for exact colour. TopoView (ngmdb.usgs.gov) is the viewer, refused here and not needed.",
+   "hosts": [
+    {
+     "host": "prd-tnm.s3.amazonaws.com",
+     "role": "files",
+     "probe": "https://prd-tnm.s3.amazonaws.com/?list-type=2&prefix=StagedProducts/Maps/HistoricalTopo/GeoTIFF/NY/&max-keys=1",
+     "state": "open",
+     "code": 200,
+     "said": "image/tiff in 0.5 s",
+     "robots": "none",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "ngmdb.usgs.gov",
+     "role": "browser",
+     "probe": "https://ngmdb.usgs.gov/topoview/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"ngmdb.usgs.gov\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Sampled 21 Oct 2026 (a host already open), nothing built. Next: for a skyline city, list its state's folder, pick the quads over its square by name and year, read the window by Range, and turn the 1:24,000 sheets' building marks and urban tint into a 'stood by that year' mask beside build_built_years.py's satellite years, or show the sheet as the dial's 'then' ground. A new reader, so proposed.",
+   "key": "none",
+   "state": "allowed",
+   "key_needed": false
+  },
+  {
+   "id": "library-of-congress-fsa-owi-color-photographs-1939-1944",
+   "name": "Library of Congress FSA/OWI colour photographs: American places in colour, 1939-1944",
+   "facet": "past",
+   "what": "The Farm Security Administration and Office of War Information's colour transparencies of American towns, farms, factories, streets and rail yards, 1939-1944, scanned by the Library of Congress: JSON at www.loc.gov/collections/fsa-owi-color-photographs/?fo=json, each item with title, place, date, a rights advisory and images on tile.loc.gov. Sampled 21 Oct 2026: 24 items for 'New York' alone (e.g. 'Farmland in the Catskill country, in New York State', 1939, item 2017878577); the item reads 'No known restrictions on publication'.",
+   "improves": "The earliest colour record of American places at street scale: the colour of a clapboard house, a brick mill town, a painted barn, a wooden storefront, a freight yard, in the light of its day, with the place named. It checks the soil tints and the models' materials for the American places painters of the 1940s lived and worked in, and the US skylines' dial at 1940. A median colour of a roof, a wall or a field may be read and kept with the credit; the photograph is never copied.",
+   "licence": "'No known restrictions on publication' (the item's own rights advisory, read 21 Oct 2026); credit 'Library of Congress, Prints & Photographs Division, FSA/OWI Collection'.",
+   "format": "JSON (loc.gov collections and item APIs); JPEG, GIF and TIFF on tile.loc.gov",
+   "priority": 2,
+   "notes": "robots.txt (www.loc.gov) disallows /search and /pictures/search; /collections/ and /item/ are allowed with Crawl-Delay: 5 (the sample waited 6 s between requests). Places are named, not pointed (state and city). Kodachrome's colour shifts and eighty years' fading make it colour of a kind, not a measurement.",
+   "hosts": [
+    {
+     "host": "www.loc.gov",
+     "role": "api",
+     "probe": "https://www.loc.gov/collections/fsa-owi-color-photographs/?fo=json&c=1",
+     "state": "open",
+     "code": 200,
+     "said": "application/json in 0.2 s",
+     "robots": "ok",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "tile.loc.gov",
+     "role": "files",
+     "probe": "https://tile.loc.gov/storage-services/service/pnp/fsac/1a34000/1a34500/1a34567_150px.jpg",
+     "state": "open",
+     "code": 200,
+     "said": "image/jpeg in 0.2 s",
+     "robots": "none",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Sampled 21 Oct 2026 (hosts already open): the collection and an item answer JSON, 150 px thumbnails on tile.loc.gov. Nothing built. Next: for the 1939-44 places of the lives and the US skylines, take the items whose place matches, read a median colour per region of a photograph, and keep the colour and the credit only.",
+   "key": "none",
+   "state": "allowed",
+   "key_needed": false
+  },
+  {
+   "id": "nsw-spatial-services-sydney-1943-aerial-mosaic-sixmaps-til",
+   "name": "NSW Spatial Services: Sydney in 1943, the historical aerial mosaic (SIX Maps tile service)",
+   "facet": "past",
+   "what": "A greyscale ortho mosaic of inner Sydney and its highways, c. 1943, from NSW's historical aerial photography (a Historical Aerial Photo Enhancement mosaic, accuracy +/- 20 m for 95% of the 100k map sheet), served as an ArcGIS REST tile service: https://maps.six.nsw.gov.au/arcgis/rest/services/sixmaps/sydney1943/MapServer (Web Mercator, 22 levels, tile/{z}/{y}/{x}; one queryable layer, Sydney1943_Footprints, the photographs' footprints). Spatial Services' Historical Imagery Viewer reaches photographs back to the 1930s across NSW.",
+   "improves": "Sydney is the artist's own city. Its ground of 1943 (the harbour's shore before the Opera House and the expressways, the Rocks and Millers Point's blocks, the wharves) is what the dial's earlier years in Sydney could stand on, for the collages' Sydney and its museums' plots, and any work made on the harbour's shores can be set against what the place was.",
+   "licence": "Not settled. NSW Spatial Services material is described as CC BY 4.0 (OpenHistoricalMap's Sydney page, suggested credit '© State of New South Wales (Spatial Services, a business unit of the Department of Customer Service NSW)'), but the NSW open data portal's record for the 1943 tile service says 'License Not Specified' and the service's own metadata carries two different copyright notices (2018 and 2020). Read the custodian's terms before use. (Found by web search; data.nsw.gov.au and the wiki are refused from the session.)",
+   "format": "ArcGIS REST MapServer: tile (Web Mercator), export, query; metadata at .../MapServer?f=pjson",
+   "priority": 2,
+   "notes": "Greyscale and 20 m accurate: it shows what stood and where the water was, not colour. Pre-1943 photographs are said to be at another Spatial Services service (FSDF), not yet orthorectified: not read. maps4.six.nsw.gov.au appeared in a search result as a mirror: not needed.",
+   "hosts": [
+    {
+     "host": "maps.six.nsw.gov.au",
+     "role": "tiles",
+     "probe": "https://maps.six.nsw.gov.au/arcgis/rest/services/sixmaps/sydney1943/MapServer?f=pjson",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"maps.six.nsw.gov.au\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Not sampled: the host is refused. The service address and tile pattern are from web search results (the REST directory's own pages and OpenHistoricalMap's Sydney page). Ask, then sample one tile at the harbour and read the licence from the custodian.",
+   "key": "none",
+   "state": "candidate",
+   "key_needed": false
+  },
+  {
+   "id": "brusky-brussels-historical-orthophotos-1930-35-1953-1961-u",
+   "name": "Brusky: Brussels' historical orthophotos (1930-35, 1953, 1961), urban.brussels",
+   "facet": "past",
+   "what": "Black-and-white orthophoto mosaics of today's Brussels-Capital Region from old flights: 1930-1935 (part of the Region), 1953 (flights of 14 August and 1 September 1953) and 1961 (29 June and 18 September 1961), in the Region's Geobru catalogue (records 'Brusky - Ortho 1953', 'Brusky - Ortho 1961'). The Region's data is served from urban.brussels' GeoServer, the host scripts/fetch_city_records.py already reads on GitHub's runners (the heritage inventory; BruCiel's built-up-by-1930 extent).",
+   "improves": "Brussels' skyline takes its years from the heritage inventory and BruCiel's 1930 extent; everything the satellites show that is not inside it stands at one middle year, 1952. The flights of 1953 and 1961 show which blocks, courtyards and rail yards stood at those dates, so the dial between 1930 and 1975 can stand on what a flight saw.",
+   "licence": "The 1953 record lists CC BY (attribution); the 1961 record says public access is limited by existing intellectual rights (found by web search from the Geobru catalogue, which is refused here): read each record before use.",
+   "format": "WMS from the Region's GeoServer, or the catalogue's download as the record gives it (not read)",
+   "priority": 2,
+   "notes": "The layer names and endpoint are not read: gis.urban.brussels and the Geobru catalogue are both refused from the session. The Brussels heritage layers are read on the runners already, so the runners can print this GeoServer's capabilities.",
+   "hosts": [
+    {
+     "host": "gis.urban.brussels",
+     "role": "wms",
+     "probe": "https://gis.urban.brussels/geoserver/ows?service=WMS&request=GetCapabilities",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"gis.urban.brussels\"",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "geobru-geonetwork.irisnet.be",
+     "role": "browser",
+     "probe": "https://geobru-geonetwork.irisnet.be/geonetwork/srv/api/records/23c41223-d265-11ee-a0c7-40ec994184cf",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"geobru-geonetwork.irisnet.be\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Not sampled (hosts refused). Next: `fetch_city_records.py --probe` on the runners can print the WMS GetCapabilities and the orthophoto layer names; then one GetMap per museum plot and the mean colour of each roof and street, as for the Dutch and French aerials.",
+   "key": "none",
+   "state": "candidate",
+   "key_needed": false
+  },
+  {
+   "id": "alpage-vasserot-cadastre-of-paris-1810-1836-buildings-and-",
+   "name": "ALPAGE: the Vasserot cadastre of Paris (1810-1836), buildings and plots as shapefiles (ODbL)",
+   "facet": "past",
+   "what": "The research project ALPAGE vectorised the Vasserot atlas, the first plot-by-plot plan of Paris (1810-1836): a building-footprint polygon layer with built and unbuilt areas told apart, and a land-plot layer aligned to APUR's twentieth-century plots, released under the Open Database Licence and held in Stanford's geospatial repository (records stanford-kk239hv5615, 'Vasserot Buildings (1810-1860)', and stanford-bz020fp6123, mirrored by the Berkeley, UT Austin, NYU and MIT catalogues), each download a shapefile with ISO 19139 metadata and a licence file.",
+   "improves": "Paris's skyline stands on APUR's periods and the BDNB; everything before 1800 is 'old'. A plan of the city's own buildings in 1810-1836, with its courtyards, passages and gardens still open, a generation before Haussmann cut through it, gives each footprint a 'stood by 1836' with a real document behind it and the unbuilt land its own look.",
+   "licence": "ODbL 1.0 (the ALPAGE consortium's release, per the Stanford records found by web search); credit 'Arch. nat. F31 73-96 - Arch. Paris © ALPAGE, A. Bethe'; a derived database carries the share-alike, as OpenStreetMap's dates already do. Read the record's licence file.",
+   "format": "Shapefile zip in the native projection with ISO 19139 (French) metadata; a WGS84 display layer",
+   "priority": 2,
+   "notes": "The two Stanford records are the best match the search found; the current versions and the download path (usually stacks.stanford.edu/file/druid:<id>/data.zip) were not read, as Stanford's hosts are refused here. The records' dates run 1810-1860: take the survey year per sheet from its metadata. Verniquet's (1791) and Jacoubet's (1836) layers from the same project were not found: look in the same catalogue.",
+   "hosts": [
+    {
+     "host": "purl.stanford.edu",
+     "role": "api",
+     "probe": "https://purl.stanford.edu/kk239hv5615",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"purl.stanford.edu\"",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "stacks.stanford.edu",
+     "role": "files",
+     "probe": "https://stacks.stanford.edu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"stacks.stanford.edu\"",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "earthworks.stanford.edu",
+     "role": "browser",
+     "probe": "https://earthworks.stanford.edu/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"earthworks.stanford.edu\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Not sampled (hosts refused). Next, once asked: read the record's metadata, download the building layer, and date the grounds' cells by what stood in 1810-36 where APUR's period is coarse, giving the unbuilt land its own look.",
+   "key": "none",
+   "state": "candidate",
+   "key_needed": false
+  },
+  {
+   "id": "archives-de-la-planete-albert-kahn-autochromes-of-paris-19",
+   "name": "Archives de la Planète (Albert-Kahn museum): autochromes of Paris and the world, 1909-1931",
+   "facet": "past",
+   "what": "The Musée départemental Albert-Kahn's collection of about 72,000 autochromes (the first practical colour photographs), 4,000 stereoscopic images and a hundred hours of film, taken 1909-1931 across the world. Its Paris extract geolocates nearly 5,000 images (the operator's position when the photograph was taken) in four files, a CSV of about 3.4 MB and two JSON files, published by the Département des Hauts-de-Seine on data.gouv.fr (dataset 'Archives de la Planète - Paris', last updated 3 January 2021).",
+   "improves": "Colour photographs of Paris and its suburbs in the 1910s and 1920s with a point on each: the real colour of zinc roofs, Haussmann stone, shopfronts, the Seine and the markets, for the Paris skyline's materials and for the lives' Paris years (Picasso's 1913-1929 has no dated source yet; these show the streets of those years, not him). They come twenty to forty years after the Impressionists' Paris, so they check the city's hues rather than set the painted views.",
+   "licence": "Per image, by the museum's terms: funds are CC0, CC BY, non-distributable or rights-reserved, and only the first two are openly reusable (the others are not shown online); data.gouv.fr lists the dataset's licence as 'not specified' (web search, 21 Oct 2026). Filter on the licence field; credit 'Musée départemental Albert-Kahn / Département des Hauts-de-Seine'.",
+   "format": "CSV and JSON on data.gouv.fr; JPEG from the museum's collections site (the image host is in the CSV, unread)",
+   "priority": 2,
+   "notes": "The dataset's page lists its resources and two API entries on the full-collection dataset; none was read, as data.gouv.fr is refused from the session. The dataset lags the collection (2021).",
+   "hosts": [
+    {
+     "host": "www.data.gouv.fr",
+     "role": "api",
+     "probe": "https://www.data.gouv.fr/api/1/datasets/archives-de-la-planete-paris/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.data.gouv.fr\"",
+     "seen": "2026-10-21"
+    },
+    {
+     "host": "static.data.gouv.fr",
+     "role": "files",
+     "probe": "https://static.data.gouv.fr/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"static.data.gouv.fr\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Not sampled (hosts refused). Next, once asked: fetch the dataset's resource list, read the CSV's columns (licence, point, image address, date), count the CC0 and CC BY images within a kilometre of each Paris museum and painted site, and read colours only.",
+   "key": "none",
+   "state": "candidate",
+   "key_needed": false
+  },
+  {
+   "id": "bkg-sentinel2-de-annual-cloud-free-10-m-mosaics-of-germany",
+   "name": "BKG Sentinel2-DE: Germany's annual cloud-free 10 m Sentinel-2 mosaic, 2018-2024 (WMS)",
+   "facet": "earth",
+   "what": "The Federal Agency for Cartography and Geodesy's yearly Sentinel-2 composites of Germany, in RGB, NIR and NIR-RER layers (rgb_2018 ... rgb_2024; a TIME dimension of seven years), WMS at https://sg.geodatenzentrum.de/wms_sentinel2_de. Sampled 21 Oct 2026: a GetMap of Berlin (13.30-13.50 E, 52.46-52.57 N, layer rgb_2024, 800 x 440) came back as a 764 kB PNG showing the Tiergarten, the Spree, the Tempelhof field and the red and grey roofs of the blocks.",
+   "improves": "Gives each cell of the German skylines (Berlin, Munich, Cologne, Düsseldorf) ten metres of true colour, from one cloud-free year: the colour of the roofs, streets, parks, water and fields in a 14-40 m cell, where the grounds' tints now come from DIRT's soil and the class of the land. It also checks the globe's 39 km body over Germany at ten metres.",
+   "licence": "Free of charge with 'no access restrictions' (the service's own AccessConstraints, read 21 Oct 2026); credit 'Europäische Union, enthält Copernicus Sentinel-2 Daten [Jahr], verarbeitet durch das Bundesamt für Kartographie und Geodäsie (BKG)'.",
+   "format": "WMS 1.1.1/1.3.0 (PNG, JPEG); layers rgb_YYYY, nir_YYYY, nirrer_YYYY",
+   "priority": 2,
+   "notes": "sg.geodatenzentrum.de's robots.txt disallows only /gdz_geoviewserver/ and /gdz_geoviewserv/. On the same host BKG's DOP services are not served openly (see the BKG DOP40 row, dropped); wms_topplus_open, wms_dgm200 and wms_vg250 answer. The NIR layers give a vegetation index at 10 m.",
+   "hosts": [
+    {
+     "host": "sg.geodatenzentrum.de",
+     "role": "wms",
+     "probe": "https://sg.geodatenzentrum.de/wms_sentinel2_de?REQUEST=GetCapabilities&SERVICE=WMS",
+     "state": "open",
+     "code": 200,
+     "said": "text/xml in 1.2 s",
+     "robots": "ok",
+     "seen": "2026-10-21"
+    }
+   ],
+   "plan": "Sampled 21 Oct 2026, the host newly open: GetCapabilities (237 kB) and the Berlin GetMap above. Nothing built: no script reads aerial or satellite colour at a city's scale, so proposed. Next: one GetMap per German skyline square (build_city_places.py's), the mean of the pixels inside each building and green cell into build_grounds.py's tint.",
+   "key": "none",
+   "state": "allowed",
+   "key_needed": false
+  },
+  {
+   "id": "amsterdam-city-archives-image-bank-beeldbank-open-search-a",
+   "name": "Amsterdam City Archives' image bank (Beeldbank): historical photographs of Amsterdam",
+   "facet": "past",
+   "what": "An open search API over about 300,000 images of the Stadsarchief Amsterdam's Beeldbank (historical photographs, prints and drawings of the city), listed on data.overheid.nl.",
+   "improves": "Amsterdam as it was: streets, canals and buildings in photographs from the 1860s on.",
+   "licence": "data.overheid.nl lists it 'Geen open licentie' (no open licence), updated April 2022.",
+   "format": "Open search API (JSON/XML); images",
+   "priority": 3,
+   "notes": "Found by web search on 21 Oct 2026; archief.amsterdam is refused from the session. Older images may be public domain, item by item (the archive's metadata through Open Archieven is a separate OAI-PMH feed that points to public domain).",
+   "state": "dropped",
+   "why": "No open licence: the dataset's own listing says 'Geen open licentie'. Amsterdam's older views come through the Rijksmuseum, Europeana and the open tree and building registers instead.",
+   "hosts": [
+    {
+     "host": "archief.amsterdam",
+     "role": "browser",
+     "probe": "https://archief.amsterdam/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"archief.amsterdam\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "key": "none",
+   "key_needed": false
+  },
+  {
+   "id": "ferraris-cabinet-map-1771-78-and-vandermaelen-belgium-wms",
+   "name": "Ferraris' cabinet map of the Austrian Netherlands (1771-78) and Vandermaelen's map (1846-54), Belgian WMS",
+   "facet": "past",
+   "what": "The first detailed map of the Austrian Netherlands (Brussels, Antwerp and their country as of the 1770s) and the 1846-54 Vandermaelen map, served as WMS/WMTS by Flanders' Digitaal Vlaanderen and by Luxembourg's geoportal.",
+   "improves": "Brussels and Antwerp's ground and streets before the nineteenth century's growth.",
+   "licence": "Rights reserved: the Flemish metadata gives the Ferraris dataset's intellectual property to KBR (the Royal Library) with Digitaal Vlaanderen; Luxembourg's layer carries 'All rights reserved, Royal Library of Belgium' and sends copies to be ordered from IGN Belgium.",
+   "format": "WMS, WMTS",
+   "priority": 3,
+   "notes": "Found by web search on 21 Oct 2026 (metadata.vlaanderen.be and map.geoportail.lu, both refused here).",
+   "state": "dropped",
+   "why": "The sources found reserve the rights (KBR); nothing open for reuse. Brussels' older years: Brusky's flights (a candidate), the heritage inventory.",
+   "hosts": [
+    {
+     "host": "metadata.vlaanderen.be",
+     "role": "browser",
+     "probe": "https://metadata.vlaanderen.be/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"metadata.vlaanderen.be\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "key": "none",
+   "key_needed": false
+  },
+  {
+   "id": "david-rumsey-map-collection-georeferenced-historical-maps",
+   "name": "David Rumsey Map Collection: georeferenced historical maps",
+   "facet": "past",
+   "what": "Over 100,000 historical maps, many georeferenced, from the David Rumsey Map Center at Stanford (the maps beneath Allmaps' and others' georeferenced layers); Stanford's catalogue records carry the shapefile and image downloads.",
+   "improves": "Maps of any city as drawn in 1700-1900, aligned to today's ground.",
+   "licence": "Creative Commons, non-commercial: the catalogue records say images 'may be reproduced or transmitted, but not for commercial use'; commercial reproduction needs the Map Center's permission.",
+   "format": "JPEG/GeoTIFF, georeferenced layers",
+   "priority": 3,
+   "notes": "Found by web search on 21 Oct 2026 (Berkeley, UT Austin and NYU's mirrors of the Stanford records). Whether the artist's non-commercial website is a commercial use is not ours to say.",
+   "state": "dropped",
+   "why": "A non-commercial licence, as EOX's mosaics were dropped for. The NLS's Ordnance Survey tiles, the NYPL Map Warper and Allmaps' own annotations are the other routes to georeferenced old maps.",
+   "hosts": [
+    {
+     "host": "www.davidrumsey.com",
+     "role": "browser",
+     "probe": "https://www.davidrumsey.com/",
+     "state": "refused",
+     "said": "request blocked: no rule or allowlist entry allows host \"www.davidrumsey.com\"",
+     "seen": "2026-10-21"
+    }
+   ],
+   "key": "none",
+   "key_needed": false
   }
  ]
 }
