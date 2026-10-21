@@ -329,7 +329,8 @@
      four for an upright face, so it opens at a quarter of the distance, and thirty-two for a level one, a
      floor, a roof or a ceiling, a thirty-second; his distance is the nearer of the line up through him from
      his feet to the top of his hat (uAxA to uAxB) and his head's centre, on him or out as the hologram
-     (uHeadC). lod is the more closed of the two. On his own body uNear is nought: he closes by the camera
+     (uHeadC), and while the head is out the line from the camera to it (uHeadE to uHeadC), so a floor or a roof
+     the hologram is in or looks through stays open between. lod is the more closed of the two. On his own body uNear is nought: he closes by the camera
      alone, as before. Every pixel of a face is then
      (1 - lod) of the open face and lod of its mean, the holes too: a bar is mixed toward the mean where it
      is drawn, and a hole, where the faces behind are drawn, is veiled with the mean at lod over them (uVeil,
@@ -357,7 +358,7 @@
     "uniform usampler2DArray uVox; uniform vec3 uOrg; uniform ivec3 uDim; uniform int uFloor; uniform float uPx;",
     "uniform mat4 uInvM;",   // the world to a grid's own cells: the place's and the rocket's as they are, Mr Pearl's parts turned and scaled
     "uniform int uSteps; uniform int uVeil;",
-    "uniform vec3 uAxA; uniform vec3 uAxB; uniform vec3 uHeadC; uniform vec2 uNear;",   // Mr Pearl, whom the faces open round
+    "uniform vec3 uAxA; uniform vec3 uAxB; uniform vec3 uHeadC; uniform vec3 uHeadE; uniform vec2 uNear;",   // Mr Pearl, whom the faces open round
     "const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));",
     "const vec3 LO[6] = " + glslVecs(FIGURE, 0, 3) + ";",
     "const vec3 HI[6] = " + glslVecs(FIGURE, 3, 3) + ";",
@@ -381,14 +382,15 @@
     "  vec3 t = ax == 0 ? M : ax == 2 ? D : L * (s > 0.0 ? 1.0 : 0.8);",
     "  return st == 7 ? t * (1.0 + 0.35 * sin(uT * 3.0)) : t;",                            // the pieces breathe, to be seen from far off
     "}",
+    // How far p is from the segment a to b.
+    "float seg(vec3 p, vec3 a, vec3 b) { vec3 ab = b - a; return length(p - a - ab * clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0)); }",
     "vec3 dark(int id) { return uPal[int(uPal[id].a + 0.5) == 1 ? " + B.DIRT + " : id].rgb / 255.0 * 0.16; }",
     "void main() {",
     "  vec4 pe = uPal[vB]; int st = int(pe.a + 0.5);",
     "  vec3 n = N[vF], col; float dist = length(vP - uEye), th = 0.0;",
     "  float lod = smoothstep(0.0125, 0.0275, uPx * dist);",   // a bar eight pixels wide, then under four: the screen's limit
     // Round him: his distance (the line through him, feet to hat top, or his head) taken four times, or thirty-two for a level face.
-    "  vec3 axis = uAxB - uAxA;",
-    "  float him = min(length(vP - uAxA - axis * clamp(dot(vP - uAxA, axis) / max(dot(axis, axis), 1e-6), 0.0, 1.0)), length(vP - uHeadC));",
+    "  float him = min(seg(vP, uAxA, uAxB), seg(vP, uHeadE, uHeadC));",
     "  lod = max(lod, smoothstep(0.0125, 0.0275, uPx * him * (abs(n.y) > 0.5 ? uNear.y : uNear.x)));",
     // The veil (see frame) is only where a face is closing: not water, not a note, not its back.
     "  if (uVeil == 1 && (lod <= 0.0 || lod >= 1.0 || st == 6 || st == 10 || !gl_FrontFacing)) { discard; }",
@@ -1193,9 +1195,13 @@
   var FAR_END = null, E0 = 1.15486, Y_SH = 1.00155, ARMS_UP = 1.36101;
   var swing = null, swingNext = null, shards = [], shardProg = null, SHU = {};
   function smashFrom(body) {
-    var PB = window.PearlBody, J = body.joints, sR = J.shoulder_right.at, sL = J.shoulder_left.at;
-    var ax = norm([sR[0] - sL[0], sR[1] - sL[1], sR[2] - sL[2]]), half = body.cell * Math.sqrt(3) / 2;
     var part = function (n) { return body.parts.filter(function (p) { return p.name === n && !p.empty; })[0]; };
+    var J = body.joints || {};
+    // A form without a guitar or its shoulders has no swing: a tap breaks at once, as before (smash).
+    FAR_END = null;
+    if (!J.shoulder_right || !J.shoulder_left || !J.spine || !part("guitar") || !part("arm_right") || !part("arm_left")) { return; }
+    var PB = window.PearlBody, sR = J.shoulder_right.at, sL = J.shoulder_left.at;
+    var ax = norm([sR[0] - sL[0], sR[1] - sL[1], sR[2] - sL[2]]), half = body.cell * Math.sqrt(3) / 2;
     var g = part("guitar"), M0 = PB.pose(body, 0, 0), best = -1;
     // the far end, and how far below level it hangs: its offset square to the shoulder line, seen along that line
     g.blocks.forEach(function (b) {
@@ -1272,7 +1278,7 @@
     var s = swing, t = swingNext;
     swingNext = null;
     t.u = s.u - 1; t.side = -s.side; t.top = [ARMS_UP, s.hit[1] - s.side * COIL]; t.from = t.top;
-    P.want = t.yaw;
+    P.want = bearingTo(t);
     begin(t);
   }
   // The swing let go (the head leaves, he is put out): nothing struck, nothing kept; the arms to rest in half a beat.
@@ -1284,8 +1290,10 @@
   // What he turns to while a swing is on: what it will strike, until it has; then what is kept for the next.
   function swingYaw() {
     if (!swing || swing.ret) { return null; }
-    return swing.struck ? (swingNext ? swingNext.yaw : null) : swing.yaw;
+    return swing.struck ? (swingNext ? bearingTo(swingNext) : null) : bearingTo(swing);
   }
+  // His bearing to a block from where he stands now, so that walking during a swing he still turns to it.
+  function bearingTo(s) { return Math.atan2(s.x + 0.5 - P.x, -(s.z + 0.5 - P.z)); }
   // Each frame: the swing's clock (in beats; in water at SWIM / WALK, as his legs go there), the aim kept on the block
   // as he moves, the strike, the next kept one or the end.
   function swingStep(dt) {
@@ -1414,9 +1422,12 @@
     // corners of each part's grid at rest and at the stride's four quarters (what the veil's reach is measured to).
     var rad = 0, hi = 0;
     // And in the swing (the smash): its tops either side and its strikes low and high, turned as the aim turns them.
-    var acts = [null], tw0 = aimTwist(0, body), tw1 = aimTwist(ARMS_UP, body);
-    [[ARMS_UP, tw0], [ARMS_UP, tw1]].forEach(function (t) { acts.push({ arms: t[0], twist: t[1] + COIL }, { arms: t[0], twist: t[1] - COIL }); });
-    acts.push({ arms: 0, twist: tw0 }, { arms: ARMS_UP, twist: tw1 });
+    var acts = [null];
+    if (FAR_END) {
+      var tw0 = aimTwist(0, body), tw1 = aimTwist(ARMS_UP, body);
+      [[ARMS_UP, tw0], [ARMS_UP, tw1]].forEach(function (t) { acts.push({ arms: t[0], twist: t[1] + COIL }, { arms: t[0], twist: t[1] - COIL }); });
+      acts.push({ arms: 0, twist: tw0 }, { arms: ARMS_UP, twist: tw1 });
+    }
     [[0, 0], [0, 1], [Math.PI / 2, 1], [Math.PI, 1], [1.5 * Math.PI, 1]].forEach(function (q) {
       acts.forEach(function (a) {
       var M = PB.pose(body, q[0], q[1], a);
@@ -1639,6 +1650,10 @@
     // from his feet to the top of his hat, his head's centre (on him, or out as the hologram), and NEAR_F.
     var hc = Hd ? [Hd.x, Hd.y, Hd.z] : seat();
     gl.uniform3f(U.uAxA, P.x, P.y, P.z); gl.uniform3f(U.uAxB, P.x, P.y + PEARL.top, P.z); gl.uniform3f(U.uHeadC, hc[0], hc[1], hc[2]);
+    // the head out, the line from the camera to it too: a floor or roof it is in or passes is open between (the
+    // hologram sees through it), not shut by the level faces' thirty-second
+    var he = Hd ? eye : hc;
+    gl.uniform3f(U.uHeadE, he[0], he[1], he[2]);
     gl.uniform2f(U.uNear, NEAR_F[0], NEAR_F[1]);
     // Nearest first, so that what is hidden behind is turned away before the walk through its blocks.
     var pcx = eye[0] / CH - 0.5, pcz = eye[2] / CH - 0.5;
@@ -2185,12 +2200,18 @@
   // switch between holographic view and third person view while I'm moving Mr Pearl. Right now if I am using my left
   // finger to move him, then it won't let me click on the perspective change button with my right finger without
   // releasing my left finger"): a phone makes no click of a tap while another finger is down, so a touch acts as it
-  // presses, as the jump button does, and the click a lone tap still makes after it is not counted again (within the
-  // time a press is held, 800 ms). A mouse and the keys click as before.
+  // presses, as the jump button does, and the click a lone tap still makes after it is not counted again: the press
+  // marks it, and the click is a touch's (pointerType "touch" or "pen"; where a click has no pointerType, as on an
+  // iPhone, a tap's has a detail and the keys' none). A mouse and the keys click as before.
   function press(el, fn) {
-    var at = -1e9;
-    el.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse") { return; } e.preventDefault(); at = performance.now(); fn(e); });
-    el.addEventListener("click", function (e) { if (performance.now() - at < 800) { e.preventDefault(); e.stopPropagation(); return; } fn(e); });
+    var pressed = false;
+    el.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse") { return; } e.preventDefault(); pressed = true; fn(e); });
+    el.addEventListener("click", function (e) {
+      var made = pressed && (e.pointerType === "touch" || e.pointerType === "pen" || (e.pointerType === undefined && e.detail !== 0));
+      pressed = false;
+      if (made) { e.preventDefault(); e.stopPropagation(); return; }
+      fn(e);
+    });
   }
   function wire() {
     var stick = null, look = {};
@@ -2457,7 +2478,7 @@
     shardProg = compile(SHARD_VS, SHARD_FS);
     ["uVP", "uM", "uT", "uEye", "uHaze"].forEach(function (n) { SHU[n] = gl.getUniformLocation(shardProg, n); });
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx", "uSteps", "uVeil", "uM", "uInvM",
-     "uAxA", "uAxB", "uHeadC", "uNear"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+     "uAxA", "uAxB", "uHeadC", "uHeadE", "uNear"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
     ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); OU[n] = gl.getUniformLocation(homProg, n); });

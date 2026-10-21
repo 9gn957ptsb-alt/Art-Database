@@ -106,7 +106,7 @@ async function main() {
   take(/<\/head>\s*<body>\s*/i, "\n");
   take(/\s*<\/body>\s*<\/html>\s*$/i, "\n");
   take(/<title>Rocket<\/title>/, "<title>Holographic Mr Pearl</title>");
-  take(/<meta name="description" content="[^"]*">/, '<meta name="description" content="A game in blocks, seen over the head of Mr Pearl, through his eyes, or as his head flying free: you come to under a tree beside your crashed capsule, in a world built of the parts of the buildings the site has modelled, and find the four pieces of your rocket.">');
+  take(/<meta name="description" content="[^"]*">/, '<meta name="description" content="A game in blocks, seen over the head of Mr Pearl, or as his head flying free: you come to under a tree beside your crashed capsule, in a world built of the parts of the buildings the site has modelled, and find the four pieces of your rocket.">');
   take(/<link rel="stylesheet" href="rocket\.css">/, () => "<style>\n" + read(path.join(ROCKET, "rocket.css")) + "</style>");
   take(/<div class="veil" id="veil" hidden><\/div>/, '<div class="veil" id="veil"></div>');
   take(/<section class="start" id="start">/, '<section class="start" id="start" hidden>');
