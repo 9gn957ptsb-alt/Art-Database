@@ -184,11 +184,11 @@ material words (never the title or artist).
   7. Take your seed (Seed: saved or copied) 8. Five days in a row (Sort).
 - Finishing a milestone announces it once, politely ("Path: Pin a set. Done.") and never interrupts.
 
-### About ("Where 5s comes from", from the "i" in Sort's header)
-- One short paragraph: 5s is a short version of a month the artist Matthew Livingston spent organizing a
-  digital aesthetic: bringing 5,021 works saved on Artsy home into one database, splitting
-  them into colours, kinds and qualities, making new things from the parts, naming what each thing is
-  for, and growing a world from it. The cards you judge come from that database; what you bring in is
+### About (from the "i" in Sort's header)
+- No personal information about the artist: no name, no biography, no account details (the artist,
+  21 Oct 2026: "Don't worry about my info for About"). Just what 5s is, in a sentence or two: five
+  quick judgments a day build your own aesthetic database, which you split, set into rooms, see, and
+  grow into a world; the cards come from an artist's database of saved works, and what you bring in is
   yours. Then the how-to lines, the privacy line, and the "Five-second ring" switch.
 
 ### Example mode
