@@ -130,12 +130,19 @@
 
   // ---------------------------------------------------------------- persistence (SPEC "Persistence (app.js)")
 
-  const P = { ref: null, unsub: null, localOnly: false, written: null, timer: 0, pending: false, inflight: false, again: false, retried: false };
+  // ready: the store has answered once (a definitive snapshot). Nothing is written before that, so
+  // judgments made while it loads can't overwrite a state saved on another device.
+  const P = { ref: null, ready: false, unsub: null, localOnly: false, written: null, timer: 0, pending: false, inflight: false, again: false, retried: false };
+
+  // JSON with object keys sorted: the store may hand a document back with its keys in another order.
+  function canon(v) {
+    return JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+      ? Object.keys(x).sort().reduce((o, key) => { o[key] = x[key]; return o; }, {}) : x));
+  }
 
   function persist() {
-    const json = JSON.stringify(S);
-    lsSet(json);
-    if (P.ref && !P.localOnly && json !== P.written) {
+    lsSet(JSON.stringify(S));
+    if (P.ref && P.ready && !P.localOnly && canon(S) !== P.written) {
       clearTimeout(P.timer);
       P.pending = true;
       P.timer = setTimeout(() => { P.pending = false; flush(); }, 800);
@@ -143,14 +150,15 @@
   }
 
   async function flush() {
-    if (!P.ref || P.localOnly) return;
+    if (!P.ref || !P.ready || P.localOnly) return;
     if (P.inflight) { P.again = true; return; }
     const json = JSON.stringify(S);
-    if (json === P.written) return;
+    const key = canon(S);
+    if (key === P.written) return;
     P.inflight = true;
     try {
       await P.ref.set(JSON.parse(json));
-      P.written = json;
+      P.written = key;
       P.retried = false;
     } catch (e) {
       const code = e && e.code;
@@ -181,14 +189,17 @@
       P.unsub = ref.onSnapshot((snap) => {
         if (P.localOnly) return;
         if (first) {
+          // A first delivery from cache isn't the server's answer yet: "absent" there may not be.
+          if (!snap.exists && snap.metadata && snap.metadata.fromCache) return;
           first = false;
+          P.ready = true;
           if (!snap.exists) { if (hasContent(S)) flush(); return; }
           let remote = null;
           try { remote = F.migrate(JSON.parse(JSON.stringify(snap.data()))); } catch (e) { remote = null; }
           if (!remote) return;
           // Judgments made here before the store answered, on top of what it holds: keep them.
           const prefix = remote.j.length <= S.j.length && JSON.stringify(S.j.slice(0, remote.j.length)) === JSON.stringify(remote.j);
-          if (prefix && JSON.stringify(S) !== JSON.stringify(remote) && S.j.length > remote.j.length) { flush(); return; }
+          if (prefix && S.j.length > remote.j.length) { P.written = canon(remote); flush(); return; }
           adopt(remote);
           return;
         }
@@ -202,11 +213,11 @@
   }
 
   function adopt(remote) {
-    const json = JSON.stringify(remote);
-    if (json === JSON.stringify(S)) { P.written = json; return; }
+    const key = canon(remote);
+    if (key === canon(S)) { P.written = key; return; }
     S = remote;
-    P.written = json;
-    lsSet(json);
+    P.written = key;
+    lsSet(JSON.stringify(remote));
     ui.room = null;
     ui.topId = null;
     if (deck) { ensureFive(); checkPath(); renderView(); updateChrome(); }
@@ -378,10 +389,19 @@
     return s;
   }
 
+  // Dates arrive as written on Artsy: "Executed in 2002.", "(Date unknown)", "Undated". Say the date, or nothing.
+  function dateText(d) {
+    const t = String(d == null ? '' : d).replace(/\s+/g, ' ').trim();
+    if (/^\(?\s*(date\s+)?(unknown|undated|n\.\s?d\.|no date)(\s+date)?\s*\)?\.?$/i.test(t)) return '';
+    return t.replace(/^executed in\s+/i, '').replace(/(\d)\.$/, '$1');
+  }
+  // A medium worth showing has words in it (one real record's medium is just its year).
+  const mediumText = (m) => (/[a-z]{3,}/i.test(String(m || '')) ? String(m).trim() : '');
+
   function nameLine(c) {
     if (!c) return '';
     if (c.own) return (c.title || 'Untitled') + ', from ' + fromWords(c.source);
-    return [c.title, c.artist, c.date].map((x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim()).filter(Boolean).join(', ');
+    return [c.title, c.artist, dateText(c.date)].map((x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim()).filter(Boolean).join(', ');
   }
 
   // A source inside a sentence: "from your photos", "from Pinterest", "from the web".
@@ -1238,7 +1258,8 @@
     if (!n.ref) return { th: '', text: '' };
     if (n.ref.indexOf('set:') === 0) {
       const s = st.sets.find((x) => String(x.at) === n.ref.slice(4));
-      return { th: '', text: s ? 'Set: ' + (s.name || 'Untitled set') : 'A set' };
+      // The answer to "What is this set for?" is usually the set's name: don't say it twice.
+      return { th: '', text: s && s.name && s.name !== n.text ? 'Set: ' + s.name : s ? 'A set you pinned' : 'A set you removed' };
     }
     const c = cardOf(n.ref, st);
     if (!c) return { th: '', text: '' };
@@ -1377,7 +1398,8 @@
     } catch (e) {
       const code = e && e.code;
       if (e && typeof e.text === 'string' && e.text) cl.text = e.text;
-      if (code === 'not_granted') { cl.hidden = true; cl.text = ''; }
+      if (code === 'not_granted' || code === 'sampling_disabled') { cl.hidden = true; cl.text = ''; }
+      else if (code === 'refused') { cl.text = ''; cl.status = claudeCopy(code); }
       else if (code === 'cancelled') cl.status = 'Stopped.';
       else cl.status = claudeCopy(code);
       if (!cl.hidden) say(cl.status);
@@ -1730,7 +1752,7 @@
       if (c.let != null) facts.push(['Let go', fmtDate(c.let)]);
     } else {
       if (String(c.title || '').length > 60) facts.push(['Title', c.title]);
-      facts.push(['Artist', c.artist], ['Date', c.date], ['Medium', c.medium], ['Category', c.category], ['Place', c.place], ['Era', c.era], ['Card', KIND_LABEL[c.kind] + (c.kind === 'surface' ? ' (a detail)' : c.kind === 'colour' ? ' (its three colours)' : '')]);
+      facts.push(['Artist', c.artist], ['Date', dateText(c.date)], ['Medium', mediumText(c.medium)], ['Category', c.category], ['Place', c.place], ['Era', c.era], ['Card', KIND_LABEL[c.kind] + (c.kind === 'surface' ? ' (a detail)' : c.kind === 'colour' ? ' (its three colours)' : '')]);
     }
     const notes = st.notes.filter((n) => n.ref === id);
     let html = '<div class="detail-art' + (c.kind === 'surface' ? ' full' : '') + '" style="--cbg:' + esc((c.colours || [])[0] || '') + '" role="img" aria-label="' + esc(describeAfter(c)) + '">' + art + '</div>';
