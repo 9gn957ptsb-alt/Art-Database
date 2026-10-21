@@ -49,19 +49,35 @@ sends its column again; the rocket walks a little grid of its own, which rises w
 off, a face shows what its blocks average to (`scripts/rocket_far.py` runs the same walk over many
 rays, at a slant and from nearer straight on): it closes into that mean from where a bar is eight
 pixels wide to where it is under four, a quarter of the distance it once did (artist, 15 Oct 2026:
-"Have the distance in which the facades of objects disappear be 1/4 of what it is now"), so near
-you the facades open and you see in, and further off they close and the land reads solid. The
+"Have the distance in which the facades of objects disappear be 1/4 of what it is now"). The
 pixels are the screen's at the quality the view starts at (while you come to, the view's own
-coarse ones), so the distance holds on every screen and whatever the frames do. The closing is a
+coarse ones), so the distance holds on every screen and whatever the frames do. That closing,
+measured from the camera, is the screen's limit: past it no bar opens, too fine for the pixels.
+Short of it a face opens by **Mr Pearl's nearness** (artist, 21 Oct 2026: "The distance in which
+facades become transparent due to Mr Pearls proximity should be cut down to 1/4 what it is now and
+it should be 1/32 what it is now for horizontal surfaces exclusively that way the ground isn't
+constantly exposed, only when you are looking down"): the same closing over his distance taken
+four times for an upright face, so at a quarter of the distance, and thirty-two times for a level
+one (a floor, a roof, a ceiling), a thirty-second (`NEAR_F`); his distance is the nearer of the
+line up through him, from his feet to the top of his hat, and his head's centre, on him or out as
+the hologram. A face is the more closed of the two. On a computer's screen (1280 × 720) an upright
+face is open within 1.6 m of him and closed by 3.5 m, a level one open within 20 cm and closed by
+44 cm (the camera's limit: 6.4 and 14.1 m); on a phone (390 × 844, the view at the density and
+quality it starts at there) 2.8 and 6.2 m, 35 and 78 cm (11.3 and 24.9 m). So a wall he walks up
+to opens round him, a couple of metres off, and the ground stays shut but for a small ring round
+his shoes, which shows as you look down at him at a slant; from straight over him his hat's brim,
+40 cm out from him, hides the ground to about 60 cm, so on a phone only the ring's fading edge
+shows past it and on a computer none of it. Further off the land reads solid. The closing is a
 fade, holes and all: every pixel of a face is (1 - lod) of the open face and lod of its mean, lod
 going from 0 where a bar is eight pixels wide to 1 where it is four. A bar is mixed toward the mean
 where it is drawn; where a hole lets the faces behind show, a second pass over the same faces
 (blended, depth test LESS against what was drawn, no depth written: it passes only in the holes)
 paints the mean over them at lod, the furthest faces first. So nothing snaps shut: what you see
-through a hole dims as the bars around it do. If the frames come slowly, the view coarsens, and
-then the walk is shortened (eight blocks, then six, then four); neither moves the fade. Water and
-the notes are surfaces, not blocks: water its colour with the sky in it at a slant, a note paper
-that catches the eye.
+through a hole dims as the bars around it do; the second pass goes over only the chunks near him
+or his head, since nowhere else is a face short of closed. If the frames come slowly, the view
+coarsens, and then the walk is shortened (eight blocks, then six, then four); neither moves the
+fade. Water and the notes are surfaces, not blocks: water its colour with the sky in it at a slant,
+a note paper that catches the eye.
 
 The view is at the screen's own density, smooth, with no grain or dithering (and softens while you
 come to, under your tree); the works are their pictures from Artsy at a finer size, in frames of
@@ -111,15 +127,18 @@ Artifact it is built by `node scripts/build_figure_artifact.js <out.html>`, the 
 standing where you woke (`underTree()`): every line of sight of the drawing onto one ray from that
 eye, the nearer parts nearer, a hundred metres off and more. So it is the drawing as you sit up
 and turn to the wreck, and from anywhere else its beams come apart across the sky, long and
-tapering away from the tree; come back to the tree and you are told once that it has closed again.
+tapering away from the tree; walk off and come back to stand where you woke and the view is his own
+eyes, as on a stone of the homage, and you are told once that it has closed again.
 It is placed as near straight over the wreck and as low as the place leaves it clear from that
 eye, in the drawing's own grey, black and white under a lighter haze, and nothing to walk on. You
 watch the rocket go from the same place.
 
-## Mr Pearl, and the three views
+## Mr Pearl, and the two views
 
 You are Holographic Mr Pearl, and now you see him (artist, 16 Oct 2026: "Make it third person above Mr Pearls
-head so we can see him with an option to switch to first person or Holographic view").
+head so we can see him with an option to switch to first person or Holographic view"; then, 21 Oct 2026: "Get rid
+of first person view as an option, just have one button that toggles between holographic view and third person
+view").
 
 **Him.** His head is "the only perfect Sphere in the game, everything else will receive the consequential texture
 of the base unit" (the artist), so the two are drawn two ways. His body is the game's own block seven golden steps
@@ -131,9 +150,10 @@ with its gold edge. The cells are split into ten small grids, one to each part t
 each arm, the guitar and its strap, the hat, each thigh, each shin with its trouser and shoe), and each is walked
 by the blocks' own shader, exactly as the place's grid is, under a model transform that turns it and scales it to
 his unit, the pixel's width measured in his unit; so near to he is open bars, as a wall is, and further off he
-closes into his colours, fading shut as the facades do (his faces are in the veil's second pass with the
-place's): from the third-person camera he is always closed, and he opens only within about half a metre on a
-computer's screen, a metre on a phone's. His head is not
+closes into his colours, fading shut as the facades do but by the camera's distance alone (the facades' opening
+round him is not his; his faces are in the veil's second pass with the place's): from the third-person camera he
+is always closed, and he opens only within about half a metre on a computer's screen, a metre on a phone's. His
+head is not
 built at all: a program of its own solves a ray for each pixel against the sphere, so it is exactly round at any
 distance and any size on the screen, in the pearl's thin film, the two black oval eyes painted on it. He walks by
 the ground he covers, not by the clock, so his feet never slide: a stride every two leg lengths, each thigh
@@ -155,26 +175,56 @@ what it was: a work within nine blocks of him, a block or a note within six. As 
 still through his eyes, as the artist asked of the opening; then, as he sits up, the view rises out over his head
 to the nearest side where nothing stands between it and him. On a stone of the homage the view is his own
 eyes, as the stone is the one point its figure closes from (from over his head he would stand in front of it);
-stepping off, it rises out over his head again.
+so too where you woke, the one point the figure in the sky closes from, once you have walked off and come back to
+stand there (within 45 cm of it, at its height: not as you come to, nor as you come to again when the guards have
+put you out); stepping off, it rises out over his head again, in the time a switch of view takes. From his eyes
+you may look up and down as far as they go, as the third figure is looked up at.
 
-**First person** is his own eyes, as the game was. `V` or the switch goes between the two, and the game keeps
-your choice.
+**Breaking is a smash with his guitar** (artist, 21 Oct 2026: "He should be using his guitar to smash things when
+using the break function"). A tap or a click to break turns him to the block and starts a swing whose strike falls a
+beat later (the theme song's beat, 0.48 s). His hands hold the guitar, so both arms and it turn as one about the line
+through his shoulders, and his upper body turns about his spine as the walk turns it, made large: he coils a quarter
+turn to his right with the guitar raised as high as his head lets it (78°: no cell of his arms or the guitar ever
+enters the head's sphere), swings down at an even pull so that at the strike his shoulders turn at one turn a beat,
+and the tail of the guitar's body comes onto the line from his feet to the block, at the block's height as seen from
+his shoulders; then the swing carries on up to his left and back to rest, two beats in all. The block breaks at the
+strike, within his reach as before (six blocks from his eye: the guitar itself meets a block a step ahead at his
+waist or his head, and the blow breaks the ground ahead or a block further off at the same strike), and its six bars
+fly out of the face he struck at half the guitar's speed and fall, lying where they land, gone a beat after the
+strike. A tap during a swing is kept, the latest, and struck a beat after, swung back from his left: one block a
+beat. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If the block is
+gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram lets the swing
+go.
+
+**One button**, Holo (or `H`), between the two: it sends the head out as the hologram, and pressed again the body
+follows it and the view is third person again. It is pressed while the head is out, and the ring round it is the
+hologram's time. First person is no longer a choice: his own eyes are the films' (the wake-up, the launch), a stone's
+and where you woke; a first person the game kept from before comes back as third.
 
 **Holographic.** "Holographic mode disengages the head of Mr Pearl" (the artist): the head lifts off its seat by
 its own diameter, in the time a jump takes to rise, and is free, in three dimensions and through anything, but not
-below the world or out of the place. It flies at φ² times his walk out of doors, φ times in a room, slow enough to
-read the works. With the head gone nothing holds his hat: it falls straight down onto the bare neck, as the form
-has it, and the head coming home picks it up. The body stays where it was, headless, "completely vulnerable to
-getting destroyed"; nothing threatens it yet (`harmBody()` is where whatever does will call). The time is one play
-of the theme song, two and a half minutes, shown as a ring round the Holo switch; it fills again in the body at
-the rate it was spent. **Wherever the head has gone is where you land** (artist, 21 Oct 2026: "Wherever you move
-in the holographic view should be where you land when you switch back to any other view"): every way out — Third
-or First, Holo again, `H` or `V`, "Bring the body here" or `G`, the time running out — moves the body exactly
-under the head, or, if it does not fit there, to the nearest place it does, and it falls unhurt ("There is no fall
-damage"), no faster than a block a frame so it never passes through a roof; the head settles onto it in the time a
-switch of view takes. The button says where the body is and how far it will come ("Bring the body here · ↗ 34 m").
-Nothing flies the head home: to land where the body stands, fly the head back to it. A head still lifting has not
-moved, and settles back. As the hologram you can look and read, a work's label or a
+below the world or out of the place. It flies at twice φ² times his walk out of doors and twice φ in a room
+(artist, 21 Oct 2026: "The movement speed in holographic view should be double what it is now"), 22.5 and 13.9 m/s;
+its speed comes and goes over the time the head takes to lift, so let go it comes to rest within its speed times
+that time, 7.4 m out of doors and 4.6 m in a room, inside the nine metres a work is read from: it can still be
+stopped at a work to read it. With the head gone nothing holds his hat: it falls straight down onto the bare neck,
+as the form has it, and the head coming home picks it up. The body stays where it was, headless, "completely
+vulnerable to getting destroyed"; nothing threatens it yet (`harmBody()` is where whatever does will call). The
+time is one play of the theme song, two and a half minutes, shown as a ring round the Holo button; it fills again
+in the body at the rate it was spent. **The body follows the head** (artist, 21 Oct 2026: "Wherever you move in the
+holographic view should be where you land when you switch back to any other view", and then: "The body follows the
+head, not the other way around"): every way out — Holo again, `H`, the time running out — sends the body from where
+it stands to the spot under the head, fixed as it sets out (or, if he does not fit there, to the nearest place he
+does), in one bar of the theme song, 1.92 s, the time the head took to fly home before: the same motion with the
+roles turned round. It goes straight, eased in and out, through anything as the hologram goes, standing, facing
+the way the head faced as it set out ("Your body follows your head."; "The time is up: your body follows your
+head."; where he does not fit there, "…, to the nearest place it fits."). The head holds where it is and the view
+stays with it: you may look round, not move, and the time stands; a second press does nothing. Come, the body
+stops, and in the air it falls, unhurt ("There is no fall damage"), no faster than a block a frame so it never
+passes through a roof; the head settles onto it in the time a switch of view takes (where it came exactly under
+the head, without a visible move), and the view is third person. A head still lifting has not moved, and settles
+back. Put out by the guards while it is on its way, its way ends with the head back on him, and you come to
+under your tree. As the hologram you can look and read, a work's label or a
 note (the paper stays where it lies), but not take, build, launch, or break and place blocks: "you cannot complete
 the missions like going to space by merely going into holographic mode".
 
@@ -322,11 +372,16 @@ then to the wreck once all four are found; from outside, to the way in. Break a 
 it; switch to Place, or pick a block from the bar, to set one (a wall a work hangs on stays).
 
 On a phone: the stick on the left, drag to look, tap, the jump button (single steps are climbed by
-themselves), and over it the switch of the three views, Third, First and Holo. On a computer: W A S D,
-drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes, F
-looks behind the work whose label is open, V switches third and first person, H the holographic view,
-G brings the body to the head (as leaving the hologram any way does); as the hologram, space rises and Shift or C
-sinks.
+themselves), and over it the Holo button. The stick is a touch on water, not a tool (artist, 21 Oct 2026: "Revolutionize
+the way the joist stick shows up on the screen when using it, it's too distracting, have it be a lot more subtle
+and feel like a natural force of nature rather than an analog tool"): where the left thumb lands the surface
+answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the way he
+goes, its front running ahead of the thumb as far as the push is strong, and let go it smooths over in two beats of
+the theme song. It is a hairline of warm light with a blue-violet shade beside it, no disc and no knob, drawn into
+the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades. On a computer: W A S D, drag to look, click; space jumps, 1–5
+picks a block, E switches break and place, N opens the notes, F looks behind the work whose label is open, H
+sends the head out as the hologram and, again, brings the body after it (as the button does); as the hologram,
+space rises and Shift or C sinks.
 
 ## Files
 
@@ -355,7 +410,7 @@ sinks.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk
   (`pose`, `phaseStep`), his place in the world (`place`), and his head's own program (`HEAD_FS`, the
   true sphere). `rocket.js` draws them (`drawPearl`) and holds the views (`camera`, `thirdCam`,
-  `holoCam`, `holo`, `bringBody`).
+  `holoCam`, `toggleHolo`, `holo`, `bringBody`).
 - `pearl-body.json` — his form as data: the primitives of the form fitted to the album covers, his
   unit, his parts and joints, his walk and his palette, each with the relation that sets it.
 - `homage.js` — the homage where you wake, no DOM: the three planned in the place (`plan`), each
