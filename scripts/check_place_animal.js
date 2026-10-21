@@ -14,9 +14,11 @@
      at rest: the animal brought to stand on the clod (the town's point is on it) is drawn there, its button the
        topmost thing at its middle, wholly inside the clod's box, clear of the picture, the place's sentence and the
        dial, and shows over the panel (the canvas hidden and shown: its box differs); pressed, it stops and its line
-       shows over everything, whole in the window;
+       shows over everything, whole in the window; in Pittsburgh and Cody it is brought before the clod stands (as a
+       journey's arrival meets a hometown animal, the ground being read some seconds after): it must end seated on the clod;
      followed (the column's "Follow the …"): the animal waits on the clod by the place's tile, drawn, pressable, wholly
-       inside the clod's box; the life's next place is entered and it waits by that tile, the canvas in the new
+       inside the clod's box (a tile's offset moved only as far as that takes: the starling is 160 px across, a phone's
+       clod 230); the life's next place is entered and it waits by that tile, the canvas in the new
        panel; a press on it lets it go (as a followed animal is);
      the clod: a press on it away from the animal swings it a quarter turn; the canvas stands in the place's panel
        after the clod and under the tile, the lines in the art layer;
@@ -44,9 +46,9 @@ const PIC = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><r
 const PLACES = [
   { life: "salvador-dali", k: 4, next: 5, animal: "lizard", name: "Dalí in New York, 1966–1968", rest: true },
   { life: "andy-warhol", k: 2, next: 1, animal: "eagle", name: "Warhol at the Factory, 1964–1987", rest: false, up: true },
-  { life: "andy-warhol", k: 0, next: 1, animal: "eagle", name: "Warhol in Pittsburgh, 1928", rest: true },
+  { life: "andy-warhol", k: 0, next: 1, animal: "eagle", name: "Warhol in Pittsburgh, 1928", rest: true, late: true },
   { life: "cy-twombly", k: 4, next: 3, animal: "fox", name: "Twombly in Rome, 1961–1963", rest: true, up: true },
-  { life: "jackson-pollock", k: 0, next: 1, animal: "starling", name: "Pollock in Cody, 1912", rest: true }
+  { life: "jackson-pollock", k: 0, next: 1, animal: "starling", name: "Pollock in Cody, 1912", rest: true, late: true }
 ];
 
 let failed = 0;
@@ -170,14 +172,38 @@ function expectAnchor(a, f, tile, clod) {
 
       // At rest: the animal brought to the town's point, which is on the clod.
       if (pl.rest) {
+        // In the artist's home town the page may walk its animal in by itself (a journey arriving there meets it, a few seconds
+        // on, from the side: mode "home"). It stays a while and goes; let it finish before one is brought to rest.
+        for (let i = 0; i < 40; i++) {
+          const cr = (await P.evaluate(survey)).crowd;
+          if (i >= 14 && !cr.some((c) => c.state === "in" || c.state === "out")) { break; }
+          await P.waitForTimeout(500);
+        }
+        for (let i = 0; i < 100; i++) {
+          if (!(await P.evaluate(survey)).crowd.length) { break; }
+          await P.waitForTimeout(700);
+        }
         await P.evaluate(() => Characters._reset());
-        await P.evaluate((id) => Characters._come(id, "rest"), pl.animal);
+        if (pl.late) {
+          // Told of the place before its clod stands (a journey's arrival is met by its hometown animal at once, the ground is read
+          // some seconds after): at first the globe's point is all there is, then the clod's. It must end up on the clod.
+          await P.evaluate(async (id) => {
+            window.__pt = { at: PlaceThen.at, here: PlaceThen.here };
+            PlaceThen.at = () => null; PlaceThen.here = () => null;
+            await Characters._come(id, "rest");
+          }, pl.animal);
+          await P.waitForTimeout(1800);
+          await P.evaluate(() => { PlaceThen.at = window.__pt.at; PlaceThen.here = window.__pt.here; });
+        } else {
+          await P.evaluate((id) => Characters._come(id, "rest"), pl.animal);
+        }
+        const atRest = (c) => c.mode === "rest" && c.state === "wait";
         let s = null;
         for (let i = 0; i < 60; i++) {
           await P.waitForTimeout(400);
           s = await P.evaluate(survey);
           const a = s.animals.filter((x) => (x.label || "").indexOf(nm) === 0)[0];
-          if (a && s.crowd.some((c) => c.mode === "rest" && c.state === "wait")) { break; }
+          if (a && s.crowd.some(atRest)) { break; }
         }
         const a = s.animals.filter((x) => (x.label || "").indexOf(nm) === 0)[0];
         check(tag, !!a, "at rest: the animal is out", s.crowd);

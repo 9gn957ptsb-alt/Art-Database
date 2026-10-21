@@ -1119,12 +1119,12 @@
   /* ---- what stands on it ---------------------------------------------------- */
 
   // A point of the clod, in its own cells from the middle (east, south), on the screen as the clod is drawn now:
-  // { x, y, z: 1 } as Land.at gives a point, at the height of the ground in the middle, where the place's tile stands.
+  // { x, y, z: 1, clod: true } as Land.at gives a point (clod says it is on this ground, not the globe's or the skyline's), at the height of the ground in the middle, where the place's tile stands.
   function onClod(gx, gy) {
     var c = refs.canvas, r = c.getBoundingClientRect();
     if (!S.f || !r.width || !r.height) { return null; }
     var t = Models.project(S.f, gx, gy, S.centre);
-    return { x: r.left + t.x * r.width / c.width, y: r.top + t.y * r.height / c.height, z: 1 };
+    return { x: r.left + t.x * r.width / c.width, y: r.top + t.y * r.height / c.height, z: 1, clod: true };
   }
 
   // Where a point of the earth stands on the clod (land.js's Land.at asks, so an animal told to stand at a place stands on

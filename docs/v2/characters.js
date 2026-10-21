@@ -463,7 +463,7 @@
      place is gone everything is set back in the stage, the canvas after the pixel light. Asked at every frame; it moves only
      what is not where it belongs. The layer is cut to the clod's box, so where one stands is chosen to be wholly on the clod
      (onClod, below: a flock 160 px across on a phone's 230 px clod had its edge cut off). */
-  var layer = null, clodBox = null;
+  var layer = null, clodBox = null, clodAt = 0;
   function lift() {
     var tiles = document.getElementById("tiles"), art = document.getElementById("art");
     if (!canvas || !tiles) { return; }
@@ -490,13 +490,23 @@
     var cut = "inset(" + Math.max(0, Math.round(r.top)) + "px " + Math.max(0, Math.round(vw - r.right)) + "px " +
               Math.max(0, Math.round(vh - r.bottom)) + "px " + Math.max(0, Math.round(r.left)) + "px)";
     if (layer._cut !== cut) { layer._cut = cut; layer.style.clipPath = layer.style.webkitClipPath = cut; }
+    // Not before the clod is drawn: an animal told of the place at the end of a journey stands nowhere on it yet.
+    var shown = window.PlaceThen && PlaceThen.here && PlaceThen.here() ? "" : "hidden";
+    if (layer.style.visibility !== shown) { layer.style.visibility = shown; }
+  }
+
+  // The clod's box as it is now, if a life's place is up: read again at most every 30 ms (a seat or a guide can ask every frame).
+  function clodNow() {
+    var now = performance.now();
+    if (now - clodAt > 30) { clodAt = now; lift(); }
+    return clodBox;
   }
 
   // The nearest place to (x, y) where an animal of this character, at this scale, stands wholly on the clod while a life's place
   // is up (its box would otherwise be cut by the layer's edge); (x, y) itself anywhere else, or where its drawing is not known yet.
   // A box bigger than the clod is centred on it.
   function onClod(x, y, c, scale) {
-    var k = clodBox, s = c && sprites[c.id];
+    var k = clodNow(), s = c && sprites[c.id];
     if (!k || !s) { return { x: x, y: y }; }
     var u = cellPx(s, scale || 1) / dpr, w = s.w * u, h = s.h * u;
     var x0 = k.l + w / 2, x1 = k.r - w / 2, y0 = k.t + s.foot[1] * u, y1 = k.b - h + s.foot[1] * u;
@@ -896,6 +906,14 @@
     if (o.geo && window.Land && Land.at) {
       var p = Land.at(o.geo.lat, o.geo.lon);
       if (!p || p.z <= 0) { return null; }
+      // Seated by a point of the globe or the skyline, and then (a life's place, placethen.js, drawn some seconds after the
+      // journey that met it) by a point of the place's clod, and again once that is put away: seated anew by the point it has now,
+      // not carried by an offset from another (a hometown animal had been left a window's height below the clod).
+      if (!!p.clod !== !!o.geo.clod) {
+        o.geo.clod = !!p.clod;
+        var sp = seat(p.x + 56, p.y + 72, o, o.c) || onClod(p.x + 56, p.y + 72, o.c, o.scale);
+        o.geo.dx = sp.x - p.x; o.geo.dy = sp.y - p.y;
+      }
       return { x: p.x + o.geo.dx, y: p.y + o.geo.dy };
     }
     return o.tx !== undefined ? { x: o.tx, y: o.ty } : null;
@@ -1026,7 +1044,7 @@
     }
     var o = make(c, "home", slow ? spot.x : edge, spot.y, {
       dir: dir, here: here, city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
-      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, state: slow ? "out" : "in",
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y, clod: !!p.clod }, state: slow ? "out" : "in",
       alt: moves(c).lift, atHome: true
     });
     o.row = rowHere(o.map, o.city);
@@ -1045,7 +1063,7 @@
     var o = make(c, "rest", spot.x, spot.y, {
       dir: p.x + 56 > W / 2 ? -1 : 1, here: placeAt(t.lat, t.lon),
       city: { key: t.key, lat: t.lat, lon: t.lon, name: t.name },
-      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y }, atHome: true
+      geo: { lat: t.lat, lon: t.lon, dx: spot.x - p.x, dy: spot.y - p.y, clod: !!p.clod }, atHome: true
     });
     o.row = rowHere(o.map, o.city);
   }
@@ -1283,7 +1301,7 @@
     }
     if (o.state === "run") { o.state = "wait"; o.waitSince = now; }
     // Waiting in a life's place, it stands wholly on the clod, by its tile.
-    if (clodBox) {
+    if (clodNow()) {
       var on = onClod(p.x, p.y, o.c, o.scale);
       p = { x: on.x, y: on.y, key: p.key, lat: p.lat, lon: p.lon, name: p.name };
     }

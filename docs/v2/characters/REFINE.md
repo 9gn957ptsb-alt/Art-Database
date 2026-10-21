@@ -427,7 +427,9 @@ overwhelming and distracting."
   (`onClod`: the starling is 160 px across and a phone's clod 230, and its edge
   had been cut off by the box). `PlaceThen.at`
   puts a point of the earth on the clod as drawn (`Land.at` asks it, so a
-  hometown animal stands where its town is; off the square it is seated by the
+  hometown animal stands where its town is, and one a journey's arrival met
+  before the clod was drawn is seated again by that point, not carried by its
+  offset from the globe's; off the square it is seated by the
   keep-clear boxes, `.pt-work`, `.pt-head` and `.pt-more` among them) and
   `PlaceThen.here` is the place's tile, by which a followed animal waits, below
   it and to its left as by a museum's door (`guideFrame`). Pressed, a followed
