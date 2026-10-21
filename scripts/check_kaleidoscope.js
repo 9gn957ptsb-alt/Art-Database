@@ -22,6 +22,17 @@
 // and the most times any one tile lights in a second (WCAG 2.3.1: three at most; Land.rosette gives the tiles,
 // 8 s of hold at a frame a step). Exits 1 on a page error, a press that lands on something other than the stage (a column's
 // text takes it: no ring opens there), no rosette, or a tile that lights more than 3 times a second.
+//
+// --scope (20 Oct 2026, a telescope photograph the pointer drops in the far views lands through the telescope's two
+// mirrors): NASA's real search answer and thumbnails are fetched once with curl (headless Chromium does not use the
+// session's proxy) and served to the page in place of the live ones, so the page measures and keeps them as it does.
+// The world is brought far off (Land.globeAt) so the telescope is out, the clock is stopped and stepped a held frame
+// at a time, and Land.shot drops one photograph through the mirrors; the CSS fall and fade (a document animation, not
+// on the page's clock) is held to the same time. Writes <w>-scope-<n>-<ms>.png round the photograph at every held frame,
+// <w>-sky.png (the whole window with one landed), and scope.json: the photograph's size, how many different drawings the
+// held frames made (4 steps of mirrors and the photograph), and the shots that came by the real route (the pointer moved
+// across the sky at real speed: how many came through the mirrors and how many plain; one in phi^3 should be through).
+// Exits 1 on a page error, no photograph, too few drawings, or no kaleidoscopic or no plain shot by the real route.
 // docs/v2/KALEIDOSCOPE.md: a new kaleidoscope adds its own way of being seen here.
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -36,6 +47,7 @@ const WORK = arg("work", "4f9bcc20aa99be0001000727");          // Monet, The Jap
 const ARRIVAL = arg("arrival", "kaleidoscope");
 const POINTED = arg("pointed", "");   // --pointed kaleidoscope: see the fold a mouse-over makes (13 Oct 2026)
 const RING = process.argv.includes("--ring");
+const SCOPE = process.argv.includes("--scope");
 const CITY = arg("city", "florence-it");
 const HOLD = parseInt(arg("hold", "3000"), 10);
 const AFTER = parseInt(arg("after", "10"), 10);
@@ -159,11 +171,136 @@ async function ringFrames(browser, w, h, touch, dsf) {
   return { out, bad: errors.length > 0 || n === 0 || !(under && under.stage) || stats.lit.max < 10 || stats.maxLightingsPerSecond > 3 };
 }
 
+// NASA's real answer to a Hubble search and its first thumbnails, fetched with curl, for the page to be served.
+function nasaStandIns() {
+  const jsonFile = path.join(OUT, "nasa.json");
+  execFileSync("curl", ["-sS", "--max-time", "60", "-o", jsonFile, "https://images-api.nasa.gov/search?media_type=image&q=hubble%20galaxy"]);
+  const d = JSON.parse(fs.readFileSync(jsonFile, "utf8"));
+  const items = [], images = {};
+  for (const it of d.collection.items) {
+    if (items.length >= 14) { break; }
+    const link = (it.links || []).find(l => l.render === "image" || /thumb|small|medium/i.test(l.href || ""));
+    if (!link) { continue; }
+    const file = path.join(OUT, "nasa-" + items.length + ".jpg");
+    try { execFileSync("curl", ["-sS", "--max-time", "60", "-o", file, link.href]); } catch (e) { continue; }
+    if (fs.statSync(file).size < 2000) { continue; }
+    images[link.href.replace(/^http:/, "https:")] = fs.readFileSync(file);
+    items.push(it);
+  }
+  d.collection.items = items;
+  return { body: JSON.stringify(d), images };
+}
+
+// The telescope's photograph through its mirrors (--scope): held frame by held frame, and by the real route.
+async function scopeFrames(browser, w, h, touch, dsf, stand) {
+  const { ctx, page, errors } = await openWindow(browser, w, h, touch, dsf);
+  const cors = { "access-control-allow-origin": "*" };
+  await page.route(/images-api\.nasa\.gov\/search/, r => r.fulfill({ status: 200, contentType: "application/json", headers: cors, body: stand.body }));
+  await page.route(/images-assets\.nasa\.gov\//, r => {
+    const b = stand.images[r.request().url()];
+    if (b) { r.fulfill({ status: 200, contentType: "image/jpeg", headers: cors, body: b }); } else { r.abort(); }
+  });
+  await page.route(/metmuseum|artic\.edu|clevelandart|smk\.dk|wikidata|wikimedia|fonts\.(googleapis|gstatic)|cloudfront/, r => r.abort());
+  await page.addInitScript(() => {
+    window.__added = { canvas: 0, img: 0 };
+    window.__drawn = 0;
+    // The shot's own 2.4 s clean-up runs on the real clock; held, it would take the shot away mid-sequence.
+    const later = window.setTimeout.bind(window);
+    window.setTimeout = (fn, ms, ...a) => later(fn, ms === 2400 ? 600000 : ms, ...a);
+    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...a) {
+      if (this.canvas && this.canvas.classList && this.canvas.classList.contains("trail-shot")) { window.__drawn += 1; }
+      return clear.apply(this, a);
+    };
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+      if (n.classList && n.classList.contains("trail-shot")) { window.__added[n.tagName.toLowerCase()] += 1; }
+    }))).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto(`http://localhost:${PORT}/v2/`, { waitUntil: "load" });
+  await page.waitForFunction(() => document.getElementById("land").dataset.at === "globe", null, { timeout: 60000 });
+  await page.evaluate(() => Land.pace(false));
+  // The world far off, so the telescope is out; the photographs measured.
+  await page.evaluate(() => Land.globeAt(20, 10, 0.4));
+  await page.waitForFunction(() => { const x = Land.shot(5, 5, "plain"); return x.tokens > 0 && x.shown; }, null, { timeout: 60000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+  const info = await page.evaluate(() => { const d = Land.density(); return { R: d.R, cx: d.cx, cy: d.cy, W: d.W, H: d.H }; });
+  // A point in the sky, clear of the world (to the upper left, or wherever there is room).
+  const reach = info.R * 1.2 + 90;
+  let px = Math.max(110, Math.min(w - 110, info.cx - reach * 0.8)), py = Math.max(110, Math.min(h - 110, info.cy - reach * 0.6));
+  if (Math.hypot(px - info.cx, py - info.cy) < info.R * 1.08 + 10) { px = w - 110; py = h - 110; }
+  const half = 110;
+  const clip = { x: Math.max(0, px - half), y: Math.max(0, py - half), width: 2 * half, height: 2 * half };
+  const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await page.waitForFunction(() => document.querySelectorAll(".trail-shot").length === 0, null, { timeout: 8000 }).catch(() => {});
+
+  // 1. Held frame by held frame: the clock stopped, the photograph dropped through the mirrors.
+  await page.evaluate(() => window.__setSlow(0));
+  const dropped = await page.evaluate(([x, y]) => Land.shot(x, y, "through"), [px, py]);
+  await page.waitForSelector("canvas.trail-shot", { timeout: 8000 }).catch(() => {});
+  const t0 = await page.evaluate(() => performance.now());
+  const sizes = await page.evaluate(() => { const c = document.querySelector("canvas.trail-shot"); if (!c) { return null; } const b = c.getBoundingClientRect(); return { cssW: Math.round(b.width), cssH: Math.round(b.height), px: c.width + "x" + c.height }; });
+  let n = 0;
+  for (let ms = 0; ms <= 1050 && n < 40; ms += 42) {
+    if (ms) { await page.evaluate(() => window.__advance(42)); }
+    await settle();
+    const vms = Math.round(await page.evaluate(() => performance.now()) - t0);
+    await page.evaluate(m => document.querySelectorAll(".trail-shot").forEach(el => el.getAnimations().forEach(a => { a.pause(); a.currentTime = m; })), vms);
+    await page.screenshot({ path: path.join(OUT, `${w}-scope-${String(n).padStart(2, "0")}-${vms}.png`), clip });
+    n += 1;
+  }
+  await page.evaluate(() => window.__setSlow(1));
+  // The drawings the shot's canvas was given (each held step clears it once): four of the mirrors and the photograph.
+  const drawn = await page.evaluate(() => window.__drawn);
+
+  // 2. The real route: the pointer across the sky at real speed; how many shots come through the mirrors, how many plain.
+  await page.waitForFunction(() => document.querySelectorAll(".trail-shot").length === 0, null, { timeout: 8000 }).catch(() => {});
+  await page.evaluate(() => { window.__added.canvas = 0; window.__added.img = 0; });
+  const cdp = touch ? await ctx.newCDPSession(page) : null;
+  const finger = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts });
+  const sky = [];
+  for (let i = 0; i < 70; i += 1) {   // a zigzag along the top and bottom of the window, clear of the world
+    const x = 40 + (i * 131) % (w - 80), y = i % 2 ? Math.max(40, info.cy - info.R * 1.5) : Math.min(h - 40, info.cy + info.R * 1.5);
+    sky.push([Math.max(10, Math.min(w - 10, x)), Math.max(10, Math.min(h - 10, y))]);
+  }
+  if (touch) { await finger("touchStart", [{ x: sky[0][0], y: sky[0][1], id: 1, radiusX: 4, radiusY: 4, force: 1 }]); }
+  else { await page.mouse.move(sky[0][0], sky[0][1]); await page.mouse.down(); }
+  for (const [x, y] of sky) {
+    if (touch) { await finger("touchMove", [{ x, y, id: 1, radiusX: 4, radiusY: 4, force: 1 }]); } else { await page.mouse.move(x, y, { steps: 2 }); }
+    await page.waitForTimeout(90);
+  }
+  if (touch) { await finger("touchEnd", []); } else { await page.mouse.up(); }
+  await page.waitForTimeout(600);
+  const added = await page.evaluate(() => Object.assign({}, window.__added));
+  // The whole window with a photograph that has just landed, for the eye.
+  await page.evaluate(([x, y]) => { Land.shot(x, y, "through"); }, [px, py]);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(OUT, `${w}-sky.png`) });
+
+  const out = { window: [w, h], at: [Math.round(px), Math.round(py)], photograph: sizes, dropped, frames: n, drawings: drawn,
+                steps: "5, 3.1, 1.9, 1.2 images, then the photograph (wedges 72, 116, 188, 305 deg)", realRoute: added, errors: errors.slice(0, 3) };
+  console.log(w, JSON.stringify(out));
+  await ctx.close();
+  return { out, bad: errors.length > 0 || !sizes || n < 20 || drawn !== 5 || added.canvas < 1 || added.img < 1 };
+}
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const jpg = RING ? null : picture();
+  const jpg = (RING || SCOPE) ? null : picture();
   const browser = await chromium.launch({ executablePath: EXE, args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
   let bad = 0;
+  if (SCOPE) {
+    const stand = nasaStandIns();
+    const all = [];
+    for (const [w, h, touch, dsf] of WINDOWS) {
+      const r = await scopeFrames(browser, w, h, touch, dsf, stand);
+      all.push(r.out);
+      if (r.bad) { bad += 1; }
+    }
+    fs.writeFileSync(path.join(OUT, "scope.json"), JSON.stringify(all, null, 1));
+    await browser.close();
+    console.log("frames in", OUT);
+    process.exit(bad ? 1 : 0);
+  }
   if (RING) {
     const all = [];
     for (const [w, h, touch, dsf] of WINDOWS) {
