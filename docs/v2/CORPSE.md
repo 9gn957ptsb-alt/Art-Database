@@ -45,6 +45,11 @@ idea of ritual and using the animals to generate games".
     breeding season"): once its leg has begun, every stop is offered within
     400 km of the leg's first stop, the nearest to that first stop first; its
     ritual is the gape and the bite (`Characters.meet`).
+  - Anna's hummingbird — the display dive (Clark & Feo 2008; Clark 2009): a male
+    climbs high, then falls steeply. Once its leg has begun, the next stop is
+    the climb (offered 1,200 km or more from the last, the farthest first) and
+    the one after it the dive (offered within 400 km of the leg's first stop,
+    the nearest to it first); its ritual is the chase (`Characters.meet`).
   - red deer — the antler cycle by the real month: in rut (Sep–Nov) it goes
     where the crowds are; hard antlers (Dec–Mar) near ground; cast (Apr) a
     short leg; velvet (May–Aug) each stop a little further. Its picture in the
