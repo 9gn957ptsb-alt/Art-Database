@@ -19,7 +19,7 @@ It began on 10 October 2026 as *DIRT Poetry*, the pages on a plane of their own 
 (v80); renamed *DRIFT Poetry* on 14 October and made of DRIFT itself, the six pages laid on it whole, their buildings
 turning and some of DRIFT's lines written in the poems' letters; and on 15 October the pages came apart into DRIFT.
 
-Published as its own artifact (private to its owner), https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp. The poems,
+Published as its own artifact, https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp (who can open it is set by its owner, from its Share menu). The poems,
 the photographs and the creatures are not in this repository: they come from Picture Poetry's published files and
 `dirt/private/poetry/` (ignored), and are published only with the artifact.
 
