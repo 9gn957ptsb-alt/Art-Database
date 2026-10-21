@@ -57,3 +57,20 @@ To reuse rooms in a new model, take their entries from the project files (or pic
 `index.json`), place them in a new project file, and build it the same way.
 
 `build/` is generated and not committed.
+
+## Keeping up with new bookmarks
+
+`bookmarks.json` lists every Architectural Authority bookmark with AA's category for it, and
+which residential ones someone is already researching. A daily scheduled task brings in new ones:
+
+```bash
+git fetch origin claude/artist-website-dev-s92irf          # the hourly intake writes the bookmarks there
+python3 residential/tools/sync_bookmarks.py --claim "<who>" --max 4
+```
+
+prints the new residential bookmarks without a project file (one JSON line each) and claims
+them for three days. Those lines go to `workflows/research.js` as
+`{"repo": ..., "work": ..., "projects": [...]}` (research, independent verification, fixes),
+and the finished projects to `workflows/build.js` as `{"repo": ..., "work": ..., "slugs": [...]}`.
+Then `tools/index.py`, and commit the project files, `.skp` files, `index.json` and
+`bookmarks.json`.

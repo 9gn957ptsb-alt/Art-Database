@@ -9,7 +9,7 @@
    "rooms": 22,
    "solids": 195,
    "warnings": 0,
-   "skp": null
+   "skp": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp"
   }
  ],
  "rooms": [
@@ -34,7 +34,7 @@
    "group_path": "Casa BP/L0 Ground floor/Kitchen",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -57,7 +57,7 @@
    "group_path": "Casa BP/L0 Ground floor/Dining",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -80,7 +80,7 @@
    "group_path": "Casa BP/L0 Ground floor/Living room",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -103,7 +103,7 @@
    "group_path": "Casa BP/L0 Ground floor/Entry vestibule (open-air slot)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -126,7 +126,7 @@
    "group_path": "Casa BP/L0 Ground floor/Entry hall",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -149,7 +149,7 @@
    "group_path": "Casa BP/L0 Ground floor/Study / TV room",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -172,7 +172,7 @@
    "group_path": "Casa BP/L0 Ground floor/Bathroom (shower)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -195,7 +195,7 @@
    "group_path": "Casa BP/L0 Ground floor/WC",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -218,7 +218,7 @@
    "group_path": "Casa BP/L0 Ground floor/Bathroom (vanity)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -241,7 +241,7 @@
    "group_path": "Casa BP/L0 Ground floor/Corridor",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -264,7 +264,7 @@
    "group_path": "Casa BP/L0 Ground floor/Private hall",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -287,7 +287,7 @@
    "group_path": "Casa BP/L0 Ground floor/Master bedroom",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -310,7 +310,7 @@
    "group_path": "Casa BP/L0 Ground floor/Dressing room",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -333,7 +333,7 @@
    "group_path": "Casa BP/L0 Ground floor/Dressing vestibule",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -356,7 +356,7 @@
    "group_path": "Casa BP/L0 Ground floor/Laundry",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -379,7 +379,7 @@
    "group_path": "Casa BP/L0 Ground floor/Guest WC",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -402,7 +402,7 @@
    "group_path": "Casa BP/L0 Ground floor/Passage to pavilion",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -425,7 +425,7 @@
    "group_path": "Casa BP/L0 Ground floor/Barbecue unit (parrilla)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -448,7 +448,7 @@
    "group_path": "Casa BP/L0 Ground floor/Pavilion (studio)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -471,7 +471,7 @@
    "group_path": "Casa BP/L0 Ground floor/Gallery (galeria)",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "high",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -494,7 +494,7 @@
    "group_path": "Casa BP/L0 Ground floor/Light-well patio",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   },
   {
    "project": "Casa BP",
@@ -517,7 +517,7 @@
    "group_path": "Casa BP/L0 Ground floor/Carport",
    "file": "residential/skp/a-territorial-presence-casa-bp-by-santiago-bertotti.skp",
    "confidence": "medium",
-   "built": false
+   "built": true
   }
  ]
 }
