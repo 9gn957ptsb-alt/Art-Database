@@ -20,7 +20,9 @@ artifact alone and say which pages are new or changed.
 
 Each page's photograph is found from its data (or, where the data does not set it, as the largest patch of the page
 unlike its paper) and cut from the page image upright, at most 1024 pixels on its long side, for DRIFT's collage to
-take in. Each creature is cut from its page's overlay, a few pixels round its box, onto one sheet.
+take in. Each creature is cut from its page's overlay, a few pixels round its box, onto one sheet. And for the book
+each plot opens into (layer.js), each page's paper, ink and rule are read from its image, with where each line of its
+poem begins (typeset), and the book's notes on its buildings, creatures and photograph go in beside it.
 
 The page also asks DRIFT's engine, before it begins, for the letters (window.DRIFT_WORDS; WORDS in ground-gl.js),
 which layer.js draws the glyphs of and hands over.
@@ -70,6 +72,58 @@ def photo_rect(page, entry):
         raise SystemExit(f"page {entry['n']}: no photograph found")
     sl = ndimage.find_objects(lab)[int(np.argmax(ndimage.sum(small, lab, range(1, n + 1))))]
     return (sl[1].start * k, sl[0].start * k, min(W, sl[1].stop * k), min(H, sl[0].stop * k))
+
+
+def hexof(c):
+    return "#%02x%02x%02x" % tuple(int(round(v)) for v in c)
+
+
+def typeset(page, entry, rect, poem):
+    """How the page sets its poem, for the book a plot opens into (layer.js prints it so): its paper (the commonest
+    colour away from its photograph, buildings and creatures), its ink (the strong strokes of its type), the colour of
+    the rule under its title, and where each of its lines lies across the page (page pixels, from the leftmost), which
+    keeps a page's indents (page 4's cascade, page 2's wander). The lines are found as bands of rows holding ink, a
+    rule as a band a few pixels high; when the bands are not as many as the poem's title, lines and signature (or the
+    poem is prose, set as a block), the lines are set flush."""
+    a = np.asarray(page).astype(np.float32)
+    H, W, _ = a.shape
+    free = np.ones((H, W), bool)
+    x0, y0, x1, y1 = rect
+    free[max(0, y0 - 6):y1 + 6, max(0, x0 - 6):x1 + 6] = False
+    for o in entry["objects"]:
+        bx0, by0, bx1, by1 = o["box"]
+        free[max(0, by0 - 8):by1 + 8, max(0, bx0 - 8):bx1 + 8] = False
+    q = (a // 8).astype(np.int32)
+    key = (q[..., 0] << 10) | (q[..., 1] << 5) | q[..., 2]
+    vals, counts = np.unique(key[free], return_counts=True)
+    paper = a[(key == vals[np.argmax(counts)]) & free].mean(0)
+    dist = np.sqrt(((a - paper) ** 2).sum(-1))
+    ink = (dist > 48) & free
+    on = ink.sum(1) >= 1
+    bands, rules, y = [], [], 0
+    while y < H:
+        if on[y]:
+            s = y
+            while y < H and on[y]:
+                y += 1
+            cols = np.nonzero(ink[s:y].any(0))[0]
+            bx0, bx1 = int(cols[0]), int(cols[-1]) + 1
+            if y - s <= 4 and bx1 - bx0 > 60 and ink[s:y, bx0:bx1].mean() > 0.5:
+                rules.append((s, y, bx0, bx1))
+            elif y - s >= 4 and ink[s:y].sum() >= 12:
+                bands.append((bx0, bx1))
+        y += 1
+    strong = ink & (dist > 90)
+    inkc = a[strong].mean(0) if strong.any() else 255 - paper
+    rule = a[rules[0][0]:rules[0][1], rules[0][2]:rules[0][3]].reshape(-1, 3).mean(0) if rules else (paper + inkc) / 2
+    lines = [l for l in poem["lines"] if l.strip()]
+    title = 1 if poem.get("title") else 0
+    x = None
+    if not poem.get("prose") and len(bands) == title + len(lines) + (1 if poem.get("signature") else 0):
+        ls = bands[title:title + len(lines)]
+        left = min(b[0] for b in ls)
+        x = [[b[0] - left, b[1] - left] for b in ls]
+    return {"paper": hexof(paper), "ink": hexof(inkc), "rule": hexof(rule), "x": x, "found": len(bands)}
 
 
 def creatures(book, size_of):
@@ -123,8 +177,14 @@ def build(drift, out, sources):
             ph = ph.resize((round(ph.width * k), round(ph.height * k)), Image.LANCZOS)
         ph.save(out / "poetry" / f"photo-{n}.jpg", "JPEG", quality=86, optimize=True, progressive=True)
         name = name_of(p)
-        pages.append({"n": n, "name": name, "photo": f"poetry/photo-{n}.jpg"})
-        print(f"page {n} ({name}): photograph {rect}, {ph.width} by {ph.height}")
+        ts = typeset(page, e, rect, p)
+        # each page as its book prints it (layer.js): its poem whole (the empty lines between stanzas kept), its
+        # colours and its lines' places, and the note on its photograph
+        pages.append({"n": n, "name": name, "photo": f"poetry/photo-{n}.jpg", "title": p.get("title"),
+                      "signature": p.get("signature"), "prose": bool(p.get("prose")), "lines": p["lines"],
+                      "paper": ts["paper"], "ink": ts["ink"], "rule": ts["rule"], "x": ts["x"], "photoNote": e.get("photoNote")})
+        print(f"page {n} ({name}): photograph {rect}, {ph.width} by {ph.height}; paper {ts['paper']}, ink {ts['ink']}, "
+              + ("its lines' places read" if ts["x"] else f"set flush ({ts['found']} bands of type)"))
         body = html.escape(" ".join(p["lines"])) if p.get("prose") else "<br>".join(html.escape(line) for line in p["lines"])
         sign = "<br><br>" + html.escape(p["signature"]) if p.get("signature") else ""
         sr.append("<h2>%s</h2><p>%s%s</p>" % (html.escape(name), body, sign))
@@ -135,9 +195,14 @@ def build(drift, out, sources):
     # the buildings, drawn live and turned by a swipe (layer.js), by Picture Poetry's own model code: where each stands on
     # its page (page pixels), what it is made of, and the soil it is made of (capture_pages.js takes them from the book)
     bld = json.loads((PRIVATE / "buildings.json").read_text(encoding="utf-8"))
-    spec["buildings"] = [{"page": i, "slug": o["model"], "box": o["box"], "hit": o["hit"], "name": bld["notes"][o["note"]]["name"],
-                          "sub": bld["notes"][o["note"]]["sub"]}
+    spec["buildings"] = [{"page": i, "slug": o["model"], "box": o["box"], "hit": o["hit"], "note": o["note"],
+                          "name": bld["notes"][o["note"]]["name"], "sub": bld["notes"][o["note"]]["sub"]}
                          for i, e in enumerate(book) for o in e["objects"] if o["kind"] == "model"]
+    # the book's notes on its buildings, creatures and photographs, which the books print
+    used = {o["note"] for e in book for o in e["objects"]} | {e.get("photoNote") for e in book}
+    spec["notes"] = {k: v for k, v in bld["notes"].items() if k in used}
+    if any("body" not in v for v in spec["notes"].values()):
+        raise SystemExit("buildings.json has the notes' names only: run capture_pages.js again for the whole notes")
     spec["models"] = {s: bld["models"][s] for s in {b["slug"] for b in spec["buildings"]}}
     spec["dirt"] = bld["dirt"]
     # and the creatures that stood by them
@@ -163,9 +228,11 @@ def build(drift, out, sources):
     if "verse: () =>" not in page:
         raise SystemExit("DRIFT's engine has no swimmers' lines (GLG.verse, WORDS in ground-gl.js): publish DRIFT from this repository first")
     # the new title; before any of DRIFT's scripts, the letters asked of its engine (WORDS in ground-gl.js); and the
-    # capitals' type, Picture Poetry's own
+    # type: Picture Poetry's own (its capitals, and the light italic of its poems), and DRIFT's serif upright too, for
+    # the books' notes
     page = page.replace("<title>DRIFT</title>", "<title>DRIFT Poetry</title>\n<script>window.DRIFT_WORDS = true;</script>\n"
-                        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap">', 1)
+                        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400'
+                        '&family=Poppins:ital,wght@0,500;1,300&display=swap">', 1)
     if page.index("<script") != page.index("<script>window.DRIFT_WORDS"):
         raise SystemExit("one of DRIFT's scripts runs before its title, so before the letters are asked for: has DRIFT's page changed shape?")
     layer = (HERE / "layer.js").read_text(encoding="utf-8").replace("__POETRY__", json.dumps(spec, separators=(",", ":")))

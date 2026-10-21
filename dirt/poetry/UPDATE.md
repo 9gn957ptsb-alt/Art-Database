@@ -48,8 +48,10 @@ repository.
 
    It opens Picture Poetry in Chromium, photographs each page's creatures as that artifact draws them (its buildings
    hidden: DRIFT Poetry draws them live, to be turned), and copies the page images and photographs beside them, with
-   what its data says about each page (`pages.json`), its buildings (`buildings.json`) and the code that draws them
-   (`models.js`).
+   what its data says about each page (`pages.json`), its buildings and the book's notes on everything on its pages
+   (`buildings.json`, printed in the books the plots open into) and the code that draws the buildings (`models.js`).
+   The creatures walk while they are photographed: if the creatures' sheet the build makes looks wrong (a creature cut
+   in half), keep the last build's `overlays/` (copy `dirt/private/poetry/` to the scratchpad before capturing).
 
 6. **The poems.** The poems exist only in the page images. For a page that is new (it has no entry in `poems.json`;
    the build refuses to run without one), read its poem from its image (crop it at full size and look) and add an
@@ -72,7 +74,9 @@ repository.
 
    Each page's photograph is cut from its image (where Picture Poetry's data sets it, or else the largest patch of the
    page unlike its paper) and its creatures from its overlay: read the printed sizes and look at any photograph that
-   seems wrong. The build refuses a DRIFT whose engine has no swimmers' lines (`GLG.verse`): publish DRIFT from this
+   seems wrong. For each page it also prints the paper and ink it read and whether it read its lines' places (the
+   indents its book sets them at): a page whose bands of type do not match its poem's lines is set flush, which is
+   right only for a prose poem. The build refuses a DRIFT whose engine has no swimmers' lines (`GLG.verse`): publish DRIFT from this
    repository first.
 
 8. **Look at it.** Serve `<scratch>/drift-poetry` with DRIFT's private folders beside it (`quilts/`, `antiquity/`,
@@ -83,8 +87,11 @@ repository.
    and a frame must show them legible (a software GPU draws slowly, so the swimmers crawl and few letters show at
    once). The calm country's lines must open into the poems' letters and close again (README.md says which).
    `window.DRIFT_POETRY.buildings()` lists the buildings on the screen (their middles, in client pixels): drag one
-   sideways with the mouse and it must turn, and settle on a diagonal when let go. A photograph of Picture Poetry must
-   arrive torn out near where the visit begins, a few seconds after the ground is painted.
+   sideways with the mouse and it must turn, and settle on a diagonal when let go; click one and it must open like a
+   book (`window.DRIFT_POETRY.book()` gives `{ open, busy, wide, pos, pages }`), at a phone's size and a desktop's:
+   look at the cover, the first leaf, the poem (its indents as on its page, nothing cut off) and the last leaf, turn
+   every leaf, and close it (Escape): it must lie down where it was, and `open` be false. A photograph of Picture
+   Poetry must arrive torn out near where the visit begins, a few seconds after the ground is painted.
 
 9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
    `files` mapping every `poetry/...` file of the build to its path (`photo-N.jpg`, `creatures.png`, `poems.json`,

@@ -7,7 +7,8 @@
    stand) goes into pages.json beside the overlays. The buildings are drawn live in DRIFT Poetry, turned by a swipe as
    in the book (layer.js), so they are taken as Picture Poetry builds them: its model code (models.js, the script that
    makes window.Models) and buildings.json (each building's description, its place's latitude and longitude, its
-   name, its outline drawn at rest, and the soil it is made of).
+   outline drawn at rest, and the soil it is made of; and the book's note on every building, creature and photograph,
+   which DRIFT Poetry prints in the book a plot opens into).
 
      NODE_PATH=$(npm root -g) node dirt/poetry/capture_pages.js SRC OUT
 
@@ -67,7 +68,12 @@ const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
         // the buildings: what each is made of, and (box, the book's own function) its outline drawn at rest on a
         // 900 by 675 canvas, by which the book places it
         models: Object.fromEntries(Object.entries(D.models).map(([slug, m]) => [slug, { spec: m.spec, lat: m.lat, lon: m.lon, rest: box(slug) }])),
-        notes: Object.fromEntries(D.objects.filter((o) => o.kind === "model").map((o) => [o.note, { name: D.notes[o.note].name, sub: D.notes[o.note].sub }])),
+        // what the book says of each thing on its pages (its viewer's note: name, line under it, body, why it is
+        // there), which DRIFT Poetry's books print
+        notes: Object.fromEntries(D.objects.filter((o) => D.notes[o.note]).map((o) => {
+          const n = D.notes[o.note];
+          return [o.note, { name: n.name, sub: n.sub || "", body: n.body || "", why: n.why || "" }];
+        })),
         dirt: D.dirt,
         code: [...document.scripts].map((s) => s.textContent).find((t) => t.includes("window.Models =")) || null,
       }));
@@ -96,7 +102,7 @@ const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
     const k = p.imgW / p.w, box = (b) => b && [b[0] * k, b[1] * k, (b[0] + b[2]) * k, (b[1] + b[3]) * k].map(Math.round);
     const objs = book.objects.filter((o) => o.page === p.n);
     const photo = objs.find((o) => o.kind === "photo");
-    return { n: p.n, img: p.img, photo: p.photo, book: [p.w, p.h], photoRect: photo ? box(photo.hit) : null,
+    return { n: p.n, img: p.img, photo: p.photo, book: [p.w, p.h], photoRect: photo ? box(photo.hit) : null, photoNote: photo ? photo.note : null,
              objects: objs.filter((o) => o.kind !== "photo").map((o) => ({ kind: o.kind, note: o.note, box: box(o.draw || o.hit), ...(o.model ? { model: o.model, hit: box(o.hit) } : {}) })) };
   });
   fs.writeFileSync(path.join(OUT, "pages.json"), JSON.stringify({ pages }, null, 1) + "\n");

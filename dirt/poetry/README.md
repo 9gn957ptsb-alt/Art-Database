@@ -10,7 +10,8 @@ language the most animated aspect of DRIFT Poetry, just as long as it's aestheti
 
 So DRIFT Poetry is DRIFT's own page, exactly as published (its ground, its artists, its garden and creatures, its
 watercolour, its buttons), with Picture Poetry taken into it in pieces, as DRIFT takes in the paintings it is made of:
-the poems a line at a time into DRIFT's moving parts, the photographs into its collage, the buildings onto its ground.
+the poems a line at a time into DRIFT's moving parts, the photographs into its collage, the buildings onto its ground,
+each plot a book that opens.
 It is built from the two artifacts as they stand and built again whenever either is republished:
 [UPDATE.md](UPDATE.md) says how, and who does it. DRIFT stays a separate artifact, without any of it.
 
@@ -92,7 +93,32 @@ a lattice 1597 CSS pixels wide, dealt so that no two neighbours are alike, scatt
 visit begins beside one (`#pageN` beside page N's). Each is drawn live by Picture Poetry's own model code on its
 place's DIRT soil, as large as the book has it, with the creatures that stood by it on its page, each where it stood.
 Dragged sideways, a building turns as in the book (0.022 radians a pixel) and the plane holds still under it; let go,
-it settles on the nearest of its four diagonals over 700 ms, with the book's easing; a tap names it in the label. Each
+it settles on the nearest of its four diagonals over 700 ms, with the book's easing; a tap opens it (below). Each
 copy keeps its own turn. `capture_pages.js` takes the model code (`models.js`) and the buildings (`buildings.json`)
 from the book, and the creatures as it draws them (its overlays); `build_poetry.py` cuts the creatures onto one sheet.
 Stills and recordings made with DRIFT's buttons include the buildings.
+
+## The plots, opened like books
+
+Aries, 21 Oct 2026: "Plots should be able to open like a book when clicked on." A building's plot lies on the ground
+like a closed book, its soil the edge of its pages. Tapped, it lifts off the ground (610 ms) and becomes the drawing on a
+cover in its page's colours, under its poem's title; the cover swings open on its spine (987 ms); and the leaves are its
+page of Picture Poetry, a thing to a page, as the book's own viewer steps through a page's things:
+
+- the building, drawn large and turned by a swipe (0.009 radians a pixel, settling on a diagonal, as in the viewer),
+  with the book's note on it: its name, the line under it, what it is and why it is in the book;
+- the poem, as its page sets it: on its paper, in its ink, its title in Poppins capitals over a rule, its lines in
+  Poppins light italic, each where the page has it (page 4's cascade, page 2's wander; `build_poetry.py` reads the
+  places from the page image, as bands of rows holding ink), a prose poem justified, a long poem over two pages, broken
+  at a stanza's end;
+- the photograph, and the book's note on where it was taken;
+- the creatures that stood by the building, drawn large as pixel art is (square), with their notes; and any other
+  building on the page.
+
+A swipe across a page, the arrow keys or the names under the book turn a leaf (610 ms), the leaf darkening as it turns
+from the light and its shadow passing over the page beneath. A tap beside the book, Close or Escape closes it: the cover
+comes back over, and the book lies down again where it was, its building turned as it was left in the book. On a wide
+screen the book lies open on a spread (its title page and contents opposite the first leaf); on a narrow one it is a
+page wide, and a turned leaf goes over out of sight. While it lies open DRIFT's ground rests under it (its last frame
+kept, dimmed), so the leaves turn with the whole of the screen's drawing to themselves, and DRIFT's keys wait.
+`capture_pages.js` takes the book's notes (`buildings.json`); `layer.js` makes the books.
