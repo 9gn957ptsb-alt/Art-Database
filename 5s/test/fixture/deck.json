@@ -1,0 +1,1681 @@
+{
+ "version": 1,
+ "built": "fixture",
+ "source": "Synthetic fixture (not real works)",
+ "atlas": {
+  "src": "img/atlas.webp",
+  "cell": 128,
+  "cols": 10
+ },
+ "genes": {
+  "biomorphic": {
+   "name": "Biomorphic",
+   "family": "Visual Qualities"
+  },
+  "organic": {
+   "name": "Organic",
+   "family": "Visual Qualities"
+  },
+  "geometric": {
+   "name": "Geometric",
+   "family": "Visual Qualities"
+  },
+  "hard-edge": {
+   "name": "Hard-Edged",
+   "family": "Visual Qualities"
+  },
+  "minimalism": {
+   "name": "Minimalism",
+   "family": "Styles and Movements"
+  },
+  "arts-and-crafts": {
+   "name": "Arts and Crafts Movement",
+   "family": "Styles and Movements"
+  },
+  "interiors": {
+   "name": "Interiors",
+   "family": "Subject Matter"
+  },
+  "landscapes": {
+   "name": "Landscapes",
+   "family": "Subject Matter"
+  },
+  "handmade": {
+   "name": "Handcrafted Furniture and Design",
+   "family": "Design Concepts and Techniques"
+  }
+ },
+ "cards": [
+  {
+   "id": "i001",
+   "kind": "image",
+   "work": "fixture-i001",
+   "url": "https://www.artsy.net/artwork/fixture-i001",
+   "title": "Fixture image 1",
+   "artist": "Fixture Artist 1",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#c4622d",
+    "#e8b07a",
+    "#5a2e1a"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/i001.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 0
+  },
+  {
+   "id": "i002",
+   "kind": "image",
+   "work": "fixture-i002",
+   "url": "https://www.artsy.net/artwork/fixture-i002",
+   "title": "Fixture image 2",
+   "artist": "Fixture Artist 2",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "United States",
+   "colours": [
+    "#2f5d8a",
+    "#9cc3e4",
+    "#132a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/i002.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 1
+  },
+  {
+   "id": "i003",
+   "kind": "image",
+   "work": "fixture-i003",
+   "url": "https://www.artsy.net/artwork/fixture-i003",
+   "title": "Fixture image 3",
+   "artist": "Fixture Artist 3",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "France",
+   "colours": [
+    "#d9822b",
+    "#f2d0a4",
+    "#7a3b1d"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/i003.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 2
+  },
+  {
+   "id": "i004",
+   "kind": "image",
+   "work": "fixture-i004",
+   "url": "https://www.artsy.net/artwork/fixture-i004",
+   "title": "Fixture image 4",
+   "artist": "Fixture Artist 4",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#3b6fb6",
+    "#d7e6f5",
+    "#1b2f4f"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/i004.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 3
+  },
+  {
+   "id": "i005",
+   "kind": "image",
+   "work": "fixture-i005",
+   "url": "https://www.artsy.net/artwork/fixture-i005",
+   "title": "Fixture image 5",
+   "artist": "Fixture Artist 5",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Mexico",
+   "colours": [
+    "#b5452a",
+    "#e7c39b",
+    "#3b1f14"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/i005.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 4
+  },
+  {
+   "id": "i006",
+   "kind": "image",
+   "work": "fixture-i006",
+   "url": "https://www.artsy.net/artwork/fixture-i006",
+   "title": "Fixture image 6",
+   "artist": "Fixture Artist 6",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Nigeria",
+   "colours": [
+    "#4a8a9a",
+    "#c9e2e6",
+    "#1d3a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/i006.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 5
+  },
+  {
+   "id": "i007",
+   "kind": "image",
+   "work": "fixture-i007",
+   "url": "https://www.artsy.net/artwork/fixture-i007",
+   "title": "Fixture image 7",
+   "artist": "Fixture Artist 7",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#cf7a3c",
+    "#f6e3c4",
+    "#6b3a22"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/i007.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 6
+  },
+  {
+   "id": "i008",
+   "kind": "image",
+   "work": "fixture-i008",
+   "url": "https://www.artsy.net/artwork/fixture-i008",
+   "title": "Fixture image 8",
+   "artist": "Fixture Artist 8",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "United States",
+   "colours": [
+    "#5560a8",
+    "#c3c7ea",
+    "#20234a"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/i008.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 7
+  },
+  {
+   "id": "i009",
+   "kind": "image",
+   "work": "fixture-i009",
+   "url": "https://www.artsy.net/artwork/fixture-i009",
+   "title": "Fixture image 9",
+   "artist": "Fixture Artist 9",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "France",
+   "colours": [
+    "#e0a040",
+    "#8a4b20",
+    "#f3e1b8"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/i009.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 8
+  },
+  {
+   "id": "i010",
+   "kind": "image",
+   "work": "fixture-i010",
+   "url": "https://www.artsy.net/artwork/fixture-i010",
+   "title": "Fixture image 10",
+   "artist": "Fixture Artist 10",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Painting",
+   "medium": "oil, canvas",
+   "materials": [
+    "oil",
+    "canvas"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#e9e6df",
+    "#8c8a85",
+    "#3a3936"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/i010.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 9
+  },
+  {
+   "id": "o001",
+   "kind": "object",
+   "work": "fixture-o001",
+   "url": "https://www.artsy.net/artwork/fixture-o001",
+   "title": "Fixture object 1",
+   "artist": "Fixture Artist 11",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "wood"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#c4622d",
+    "#e8b07a",
+    "#5a2e1a"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/o001.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 10
+  },
+  {
+   "id": "o002",
+   "kind": "object",
+   "work": "fixture-o002",
+   "url": "https://www.artsy.net/artwork/fixture-o002",
+   "title": "Fixture object 2",
+   "artist": "Fixture Artist 12",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "steel"
+   ],
+   "place": "United States",
+   "colours": [
+    "#2f5d8a",
+    "#9cc3e4",
+    "#132a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/o002.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 11
+  },
+  {
+   "id": "o003",
+   "kind": "object",
+   "work": "fixture-o003",
+   "url": "https://www.artsy.net/artwork/fixture-o003",
+   "title": "Fixture object 3",
+   "artist": "Fixture Artist 13",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "wood"
+   ],
+   "place": "France",
+   "colours": [
+    "#d9822b",
+    "#f2d0a4",
+    "#7a3b1d"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/o003.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 12
+  },
+  {
+   "id": "o004",
+   "kind": "object",
+   "work": "fixture-o004",
+   "url": "https://www.artsy.net/artwork/fixture-o004",
+   "title": "Fixture object 4",
+   "artist": "Fixture Artist 14",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "steel"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#3b6fb6",
+    "#d7e6f5",
+    "#1b2f4f"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/o004.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 13
+  },
+  {
+   "id": "o005",
+   "kind": "object",
+   "work": "fixture-o005",
+   "url": "https://www.artsy.net/artwork/fixture-o005",
+   "title": "Fixture object 5",
+   "artist": "Fixture Artist 15",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "wood"
+   ],
+   "place": "Mexico",
+   "colours": [
+    "#b5452a",
+    "#e7c39b",
+    "#3b1f14"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/o005.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 14
+  },
+  {
+   "id": "o006",
+   "kind": "object",
+   "work": "fixture-o006",
+   "url": "https://www.artsy.net/artwork/fixture-o006",
+   "title": "Fixture object 6",
+   "artist": "Fixture Artist 16",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "steel"
+   ],
+   "place": "Nigeria",
+   "colours": [
+    "#4a8a9a",
+    "#c9e2e6",
+    "#1d3a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/o006.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 15
+  },
+  {
+   "id": "o007",
+   "kind": "object",
+   "work": "fixture-o007",
+   "url": "https://www.artsy.net/artwork/fixture-o007",
+   "title": "Fixture object 7",
+   "artist": "Fixture Artist 17",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "wood"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#cf7a3c",
+    "#f6e3c4",
+    "#6b3a22"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/o007.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 16
+  },
+  {
+   "id": "o008",
+   "kind": "object",
+   "work": "fixture-o008",
+   "url": "https://www.artsy.net/artwork/fixture-o008",
+   "title": "Fixture object 8",
+   "artist": "Fixture Artist 18",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "steel"
+   ],
+   "place": "United States",
+   "colours": [
+    "#5560a8",
+    "#c3c7ea",
+    "#20234a"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/o008.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 17
+  },
+  {
+   "id": "o009",
+   "kind": "object",
+   "work": "fixture-o009",
+   "url": "https://www.artsy.net/artwork/fixture-o009",
+   "title": "Fixture object 9",
+   "artist": "Fixture Artist 19",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "wood"
+   ],
+   "place": "France",
+   "colours": [
+    "#e0a040",
+    "#8a4b20",
+    "#f3e1b8"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/o009.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 18
+  },
+  {
+   "id": "o010",
+   "kind": "object",
+   "work": "fixture-o010",
+   "url": "https://www.artsy.net/artwork/fixture-o010",
+   "title": "Fixture object 10",
+   "artist": "Fixture Artist 20",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Design/Decorative Art",
+   "medium": "wood",
+   "materials": [
+    "steel"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#e9e6df",
+    "#8c8a85",
+    "#3a3936"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/o010.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 19
+  },
+  {
+   "id": "s001",
+   "kind": "space",
+   "work": "fixture-s001",
+   "url": "https://www.artsy.net/artwork/fixture-s001",
+   "title": "Fixture space 1",
+   "artist": "Fixture Artist 21",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#c4622d",
+    "#e8b07a",
+    "#5a2e1a"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "interiors"
+   ],
+   "img": "img/s001.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 20
+  },
+  {
+   "id": "s002",
+   "kind": "space",
+   "work": "fixture-s002",
+   "url": "https://www.artsy.net/artwork/fixture-s002",
+   "title": "Fixture space 2",
+   "artist": "Fixture Artist 22",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "United States",
+   "colours": [
+    "#2f5d8a",
+    "#9cc3e4",
+    "#132a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "interiors"
+   ],
+   "img": "img/s002.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 21
+  },
+  {
+   "id": "s003",
+   "kind": "space",
+   "work": "fixture-s003",
+   "url": "https://www.artsy.net/artwork/fixture-s003",
+   "title": "Fixture space 3",
+   "artist": "Fixture Artist 23",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "France",
+   "colours": [
+    "#d9822b",
+    "#f2d0a4",
+    "#7a3b1d"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "interiors"
+   ],
+   "img": "img/s003.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 22
+  },
+  {
+   "id": "s004",
+   "kind": "space",
+   "work": "fixture-s004",
+   "url": "https://www.artsy.net/artwork/fixture-s004",
+   "title": "Fixture space 4",
+   "artist": "Fixture Artist 24",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#3b6fb6",
+    "#d7e6f5",
+    "#1b2f4f"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "interiors"
+   ],
+   "img": "img/s004.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 23
+  },
+  {
+   "id": "s005",
+   "kind": "space",
+   "work": "fixture-s005",
+   "url": "https://www.artsy.net/artwork/fixture-s005",
+   "title": "Fixture space 5",
+   "artist": "Fixture Artist 25",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Mexico",
+   "colours": [
+    "#b5452a",
+    "#e7c39b",
+    "#3b1f14"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "interiors"
+   ],
+   "img": "img/s005.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 24
+  },
+  {
+   "id": "s006",
+   "kind": "space",
+   "work": "fixture-s006",
+   "url": "https://www.artsy.net/artwork/fixture-s006",
+   "title": "Fixture space 6",
+   "artist": "Fixture Artist 26",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Nigeria",
+   "colours": [
+    "#4a8a9a",
+    "#c9e2e6",
+    "#1d3a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "interiors"
+   ],
+   "img": "img/s006.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 25
+  },
+  {
+   "id": "s007",
+   "kind": "space",
+   "work": "fixture-s007",
+   "url": "https://www.artsy.net/artwork/fixture-s007",
+   "title": "Fixture space 7",
+   "artist": "Fixture Artist 27",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#cf7a3c",
+    "#f6e3c4",
+    "#6b3a22"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "interiors"
+   ],
+   "img": "img/s007.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 26
+  },
+  {
+   "id": "s008",
+   "kind": "space",
+   "work": "fixture-s008",
+   "url": "https://www.artsy.net/artwork/fixture-s008",
+   "title": "Fixture space 8",
+   "artist": "Fixture Artist 28",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "United States",
+   "colours": [
+    "#5560a8",
+    "#c3c7ea",
+    "#20234a"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "interiors"
+   ],
+   "img": "img/s008.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 27
+  },
+  {
+   "id": "s009",
+   "kind": "space",
+   "work": "fixture-s009",
+   "url": "https://www.artsy.net/artwork/fixture-s009",
+   "title": "Fixture space 9",
+   "artist": "Fixture Artist 29",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "France",
+   "colours": [
+    "#e0a040",
+    "#8a4b20",
+    "#f3e1b8"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "interiors"
+   ],
+   "img": "img/s009.webp",
+   "w": 600,
+   "h": 520,
+   "thumb": 28
+  },
+  {
+   "id": "s010",
+   "kind": "space",
+   "work": "fixture-s010",
+   "url": "https://www.artsy.net/artwork/fixture-s010",
+   "title": "Fixture space 10",
+   "artist": "Fixture Artist 30",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Architecture",
+   "medium": "concrete",
+   "materials": [
+    "concrete"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#e9e6df",
+    "#8c8a85",
+    "#3a3936"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "interiors"
+   ],
+   "img": "img/s010.webp",
+   "w": 600,
+   "h": 720,
+   "thumb": 29
+  },
+  {
+   "id": "u001",
+   "kind": "surface",
+   "work": "fixture-u001",
+   "url": "https://www.artsy.net/artwork/fixture-u001",
+   "title": "Fixture surface 1",
+   "artist": "Fixture Artist 31",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#c4622d",
+    "#e8b07a",
+    "#5a2e1a"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/u001.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 30,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.3
+  },
+  {
+   "id": "u002",
+   "kind": "surface",
+   "work": "fixture-u002",
+   "url": "https://www.artsy.net/artwork/fixture-u002",
+   "title": "Fixture surface 2",
+   "artist": "Fixture Artist 32",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "United States",
+   "colours": [
+    "#2f5d8a",
+    "#9cc3e4",
+    "#132a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/u002.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 31,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.36
+  },
+  {
+   "id": "u003",
+   "kind": "surface",
+   "work": "fixture-u003",
+   "url": "https://www.artsy.net/artwork/fixture-u003",
+   "title": "Fixture surface 3",
+   "artist": "Fixture Artist 33",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "France",
+   "colours": [
+    "#d9822b",
+    "#f2d0a4",
+    "#7a3b1d"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/u003.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 32,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.42
+  },
+  {
+   "id": "u004",
+   "kind": "surface",
+   "work": "fixture-u004",
+   "url": "https://www.artsy.net/artwork/fixture-u004",
+   "title": "Fixture surface 4",
+   "artist": "Fixture Artist 34",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#3b6fb6",
+    "#d7e6f5",
+    "#1b2f4f"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/u004.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 33,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.48
+  },
+  {
+   "id": "u005",
+   "kind": "surface",
+   "work": "fixture-u005",
+   "url": "https://www.artsy.net/artwork/fixture-u005",
+   "title": "Fixture surface 5",
+   "artist": "Fixture Artist 35",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Mexico",
+   "colours": [
+    "#b5452a",
+    "#e7c39b",
+    "#3b1f14"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/u005.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 34,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.54
+  },
+  {
+   "id": "u006",
+   "kind": "surface",
+   "work": "fixture-u006",
+   "url": "https://www.artsy.net/artwork/fixture-u006",
+   "title": "Fixture surface 6",
+   "artist": "Fixture Artist 36",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Nigeria",
+   "colours": [
+    "#4a8a9a",
+    "#c9e2e6",
+    "#1d3a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/u006.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 35,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.6
+  },
+  {
+   "id": "u007",
+   "kind": "surface",
+   "work": "fixture-u007",
+   "url": "https://www.artsy.net/artwork/fixture-u007",
+   "title": "Fixture surface 7",
+   "artist": "Fixture Artist 37",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#cf7a3c",
+    "#f6e3c4",
+    "#6b3a22"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": "img/u007.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 36,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.66
+  },
+  {
+   "id": "u008",
+   "kind": "surface",
+   "work": "fixture-u008",
+   "url": "https://www.artsy.net/artwork/fixture-u008",
+   "title": "Fixture surface 8",
+   "artist": "Fixture Artist 38",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "United States",
+   "colours": [
+    "#5560a8",
+    "#c3c7ea",
+    "#20234a"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": "img/u008.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 37,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.72
+  },
+  {
+   "id": "u009",
+   "kind": "surface",
+   "work": "fixture-u009",
+   "url": "https://www.artsy.net/artwork/fixture-u009",
+   "title": "Fixture surface 9",
+   "artist": "Fixture Artist 39",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "France",
+   "colours": [
+    "#e0a040",
+    "#8a4b20",
+    "#f3e1b8"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": "img/u009.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 38,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.78
+  },
+  {
+   "id": "u010",
+   "kind": "surface",
+   "work": "fixture-u010",
+   "url": "https://www.artsy.net/artwork/fixture-u010",
+   "title": "Fixture surface 10",
+   "artist": "Fixture Artist 40",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Painting",
+   "medium": "oil",
+   "materials": [
+    "oil"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#e9e6df",
+    "#8c8a85",
+    "#3a3936"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": "img/u010.webp",
+   "w": 512,
+   "h": 512,
+   "thumb": 39,
+   "crop": [
+    0.3,
+    0.3,
+    0.25,
+    0.25
+   ],
+   "texture": 0.84
+  },
+  {
+   "id": "c001",
+   "kind": "colour",
+   "work": "fixture-c001",
+   "url": "https://www.artsy.net/artwork/fixture-c001",
+   "title": "Fixture colour 1",
+   "artist": "Fixture Artist 41",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#c4622d",
+    "#e8b07a",
+    "#5a2e1a"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 40
+  },
+  {
+   "id": "c002",
+   "kind": "colour",
+   "work": "fixture-c002",
+   "url": "https://www.artsy.net/artwork/fixture-c002",
+   "title": "Fixture colour 2",
+   "artist": "Fixture Artist 42",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "United States",
+   "colours": [
+    "#2f5d8a",
+    "#9cc3e4",
+    "#132a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 41
+  },
+  {
+   "id": "c003",
+   "kind": "colour",
+   "work": "fixture-c003",
+   "url": "https://www.artsy.net/artwork/fixture-c003",
+   "title": "Fixture colour 3",
+   "artist": "Fixture Artist 43",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "France",
+   "colours": [
+    "#d9822b",
+    "#f2d0a4",
+    "#7a3b1d"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 42
+  },
+  {
+   "id": "c004",
+   "kind": "colour",
+   "work": "fixture-c004",
+   "url": "https://www.artsy.net/artwork/fixture-c004",
+   "title": "Fixture colour 4",
+   "artist": "Fixture Artist 44",
+   "date": "1985",
+   "year": 1985,
+   "era": "1970–99",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#3b6fb6",
+    "#d7e6f5",
+    "#1b2f4f"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 43
+  },
+  {
+   "id": "c005",
+   "kind": "colour",
+   "work": "fixture-c005",
+   "url": "https://www.artsy.net/artwork/fixture-c005",
+   "title": "Fixture colour 5",
+   "artist": "Fixture Artist 45",
+   "date": "2018",
+   "year": 2018,
+   "era": "2010s–now",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Mexico",
+   "colours": [
+    "#b5452a",
+    "#e7c39b",
+    "#3b1f14"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 44
+  },
+  {
+   "id": "c006",
+   "kind": "colour",
+   "work": "fixture-c006",
+   "url": "https://www.artsy.net/artwork/fixture-c006",
+   "title": "Fixture colour 6",
+   "artist": "Fixture Artist 46",
+   "date": "1890",
+   "year": 1890,
+   "era": "1800s",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Nigeria",
+   "colours": [
+    "#4a8a9a",
+    "#c9e2e6",
+    "#1d3a40"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 45
+  },
+  {
+   "id": "c007",
+   "kind": "colour",
+   "work": "fixture-c007",
+   "url": "https://www.artsy.net/artwork/fixture-c007",
+   "title": "Fixture colour 7",
+   "artist": "Fixture Artist 47",
+   "date": "1960",
+   "year": 1960,
+   "era": "1945–69",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Japan",
+   "colours": [
+    "#cf7a3c",
+    "#f6e3c4",
+    "#6b3a22"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic",
+    "landscapes"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 46
+  },
+  {
+   "id": "c008",
+   "kind": "colour",
+   "work": "fixture-c008",
+   "url": "https://www.artsy.net/artwork/fixture-c008",
+   "title": "Fixture colour 8",
+   "artist": "Fixture Artist 48",
+   "date": "2005",
+   "year": 2005,
+   "era": "2000s",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "United States",
+   "colours": [
+    "#5560a8",
+    "#c3c7ea",
+    "#20234a"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 47
+  },
+  {
+   "id": "c009",
+   "kind": "colour",
+   "work": "fixture-c009",
+   "url": "https://www.artsy.net/artwork/fixture-c009",
+   "title": "Fixture colour 9",
+   "artist": "Fixture Artist 49",
+   "date": "1650",
+   "year": 1650,
+   "era": "Before 1800",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "France",
+   "colours": [
+    "#e0a040",
+    "#8a4b20",
+    "#f3e1b8"
+   ],
+   "genes": [
+    "biomorphic",
+    "organic"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 48
+  },
+  {
+   "id": "c010",
+   "kind": "colour",
+   "work": "fixture-c010",
+   "url": "https://www.artsy.net/artwork/fixture-c010",
+   "title": "Fixture colour 10",
+   "artist": "Fixture Artist 50",
+   "date": "1925",
+   "year": 1925,
+   "era": "1900–45",
+   "category": "Print",
+   "medium": "screenprint",
+   "materials": [
+    "screenprint"
+   ],
+   "place": "Netherlands",
+   "colours": [
+    "#e9e6df",
+    "#8c8a85",
+    "#3a3936"
+   ],
+   "genes": [
+    "geometric",
+    "hard-edge",
+    "minimalism",
+    "landscapes"
+   ],
+   "img": null,
+   "w": null,
+   "h": null,
+   "thumb": 49
+  }
+ ]
+}
