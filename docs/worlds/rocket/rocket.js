@@ -2017,7 +2017,7 @@
       return '<button class="slot" data-slot="' + i + '" aria-pressed="' + (mode === "place" && slot === i) + '" aria-label="' + BLOCKS[b] + '"><i style="background-image:url(' + markOf("b" + b, 52, w.pal[b]) + ')"></i></button>';
     }).join("");
     document.querySelectorAll("[data-slot]").forEach(function (el) {
-      el.onclick = function (e) { e.stopPropagation(); if (Hd) { barred(); return; } slot = +el.dataset.slot; setMode("place"); };
+      press(el, function (e) { e.stopPropagation(); if (Hd) { barred(); return; } slot = +el.dataset.slot; setMode("place"); });
     });
   }
   function setMode(m) {
@@ -2181,6 +2181,17 @@
   /* ---- the hand ------------------------------------------------------------------------- */
 
   var touchy = false;
+  // A button pressed with one thumb while the other moves him or looks (the artist, 21 Oct 2026: "I want to be able to
+  // switch between holographic view and third person view while I'm moving Mr Pearl. Right now if I am using my left
+  // finger to move him, then it won't let me click on the perspective change button with my right finger without
+  // releasing my left finger"): a phone makes no click of a tap while another finger is down, so a touch acts as it
+  // presses, as the jump button does, and the click a lone tap still makes after it is not counted again (within the
+  // time a press is held, 800 ms). A mouse and the keys click as before.
+  function press(el, fn) {
+    var at = -1e9;
+    el.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse") { return; } e.preventDefault(); at = performance.now(); fn(e); });
+    el.addEventListener("click", function (e) { if (performance.now() - at < 800) { e.preventDefault(); e.stopPropagation(); return; } fn(e); });
+  }
   function wire() {
     var stick = null, look = {};
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
@@ -2228,13 +2239,14 @@
     var jb = $("jump");
     jb.addEventListener("pointerdown", function (e) { e.preventDefault(); input.jump = true; });
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { jb.addEventListener(ev, function () { input.jump = false; }); });
-    $("mode").onclick = function () { if (Hd) { barred(); return; } setMode(mode === "break" ? "place" : "break"); };
-    $("v-holo").onclick = function () { toggleHolo(); };
-    $("build").onclick = function () { buildRocket(false); };
-    $("launch").onclick = launch;
+    // The buttons of play take a touch as it presses, so the other thumb can stay on the stick (press, above).
+    press($("mode"), function () { if (Hd) { barred(); return; } setMode(mode === "break" ? "place" : "break"); });
+    press($("v-holo"), function () { toggleHolo(); });
+    press($("build"), function () { buildRocket(false); });
+    press($("launch"), function () { launch(); });
     $("behind").onclick = lookBehind;
     $("leave").onclick = closeLabel;
-    $("notes-btn").onclick = function () { var n = $("notes"); n.hidden = !n.hidden; if (!n.hidden && window.innerWidth < 900) { closeLabel(); } };
+    press($("notes-btn"), function () { var n = $("notes"); n.hidden = !n.hidden; if (!n.hidden && window.innerWidth < 900) { closeLabel(); } });
     $("again").onclick = function () { goTo({ kind: setting.kind, slug: setting.slug, seed: newSeed() }); };
     $("elsewhere").onclick = function (e) { if (CFG.play) { e.preventDefault(); goTo(randomChoice()); } };
     var keyOf = function (e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; };

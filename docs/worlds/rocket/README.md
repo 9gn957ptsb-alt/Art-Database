@@ -378,7 +378,11 @@ and feel like a natural force of nature rather than an analog tool"): where the 
 answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the way he
 goes, its front running ahead of the thumb as far as the push is strong, and let go it smooths over in two beats of
 the theme song. It is a hairline of warm light with a blue-violet shade beside it, no disc and no knob, drawn into
-the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades. On a computer: W A S D, drag to look, click; space jumps, 1–5
+the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades. The
+buttons of play (Holo, Break or Place, the blocks, Notes, Build, Launch) take a touch as it lands, as the jump
+button does, so one thumb can press them while the other is on the stick (artist, 21 Oct 2026: "I want to be able
+to switch between holographic view and third person view while I'm moving Mr Pearl"): a phone makes no click of a
+tap while another finger is down. On a computer: W A S D, drag to look, click; space jumps, 1–5
 picks a block, E switches break and place, N opens the notes, F looks behind the work whose label is open, H
 sends the head out as the hologram and, again, brings the body after it (as the button does); as the hologram,
 space rises and Shift or C sinks.
