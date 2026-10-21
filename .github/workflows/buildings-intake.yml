@@ -1,7 +1,7 @@
-name: Buildings intake (every 15 minutes)
+name: Buildings intake (hourly)
 
 # Brings the artist's new Architectural Authority bookmarks onto the Artist
-# Website's globe within minutes, with no Claude usage: fetch the bookmarks
+# Website's globe within the hour, with no Claude usage: fetch the bookmarks
 # (signing in with the AA_REFRESH_TOKEN repository secret), place new
 # buildings, cut their ground, publish. Their models are made by the daily
 # Claude run (docs/v2/models/REFINE.md); until then a building opens on its
@@ -10,7 +10,9 @@ name: Buildings intake (every 15 minutes)
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Hourly, at 17 past (the top of the hour is when GitHub's scheduler is busiest): every 15 minutes had used
+    # about 1,000 of the repository's Actions minutes a month (artist, 21 Oct 2026: "Run the intake hourly then").
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -60,7 +62,7 @@ jobs:
       - name: Place them and cut their ground
         if: steps.fetch.outputs.changed == 'yes'
         run: |
-          pip install -q pillow numpy shapely pyarrow tifffile imagecodecs pyproj
+          pip install -q pillow numpy shapely pyarrow tifffile imagecodecs pyproj pyshp
           python3 scripts/build_architecture.py
           python3 scripts/build_grounds.py
           python3 scripts/build_built_years.py
