@@ -445,6 +445,7 @@ def main():
     # source did not answer, are read again for those alone (a ground that has them is passed over at once).
     py("scripts/build_grounds.py", "--heights", timeout=args.years_timeout)
     py("scripts/build_grounds.py", "--bridges", timeout=args.years_timeout)
+    py("scripts/build_grounds.py", "--tunnels", timeout=args.years_timeout)
     changed, report, asked = [], [], set()
     for why, key, tier in todo:
         print(f"\n== {key} ({why}, tier {tier})", flush=True)
