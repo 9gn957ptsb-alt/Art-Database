@@ -27,7 +27,7 @@
 // mirrors): NASA's real search answer and thumbnails are fetched once with curl (headless Chromium does not use the
 // session's proxy) and served to the page in place of the live ones, so the page measures and keeps them as it does.
 // The world is brought far off (Land.globeAt) so the telescope is out, the clock is stopped and stepped a held frame
-// at a time, and Land.shot drops one photograph through the mirrors; the CSS fall and fade (a document animation, not
+// at a time, and Land.shot drops one photograph through the mirrors; the CSS fade (a document animation, not
 // on the page's clock) is held to the same time. Writes <w>-scope-<n>-<ms>.png round the photograph at every held frame,
 // <w>-sky.png (the whole window with one landed), and scope.json: the photograph's size, how many different drawings the
 // held frames made (4 steps of mirrors and the photograph), and the shots that came by the real route (the pointer moved
@@ -39,6 +39,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { execFileSync } = require("child_process");
+const { openWindow, nasaStandIns, routeNasa, skySpots } = require("./nasa_standins");
 
 const arg = (name, dflt) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : dflt; };
 const PORT = arg("port", "8863");
@@ -69,28 +70,6 @@ function picture() {
   const file = path.join(OUT, "work.jpg");
   execFileSync("curl", ["-sS", "--max-time", "60", "-o", file, "https://d32dm0rphc51dk.cloudfront.net/" + h.image + "/large.jpg"]);
   return fs.readFileSync(file);
-}
-
-// The page's clock, wrapped before it loads: slowed by __setSlow(k) (1 is real time), or stopped with
-// __setSlow(0) and moved on by __advance(ms), a held frame at a time.
-function clockScript() {
-  const realNow = performance.now.bind(performance);
-  let base = 0, realBase = 0, f = 1;
-  const virt = () => base + (realNow() - realBase) * f;
-  window.__setSlow = k => { base = virt(); realBase = realNow(); f = k; };
-  window.__advance = ms => { base += ms; };
-  performance.now = virt;
-  const raf = window.requestAnimationFrame.bind(window);
-  window.requestAnimationFrame = cb => raf(() => cb(virt()));
-}
-
-async function openWindow(browser, w, h, touch, dsf) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch, deviceScaleFactor: dsf });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on("pageerror", e => errors.push(e.message));
-  await page.addInitScript(clockScript);
-  return { ctx, page, errors };
 }
 
 // The held ring (--ring): press, hold, let go, one held frame at a time.
@@ -171,36 +150,10 @@ async function ringFrames(browser, w, h, touch, dsf) {
   return { out, bad: errors.length > 0 || n === 0 || !(under && under.stage) || stats.lit.max < 10 || stats.maxLightingsPerSecond > 3 };
 }
 
-// NASA's real answer to a Hubble search and its first thumbnails, fetched with curl, for the page to be served.
-function nasaStandIns() {
-  const jsonFile = path.join(OUT, "nasa.json");
-  execFileSync("curl", ["-sS", "--max-time", "60", "-o", jsonFile, "https://images-api.nasa.gov/search?media_type=image&q=hubble%20galaxy"]);
-  const d = JSON.parse(fs.readFileSync(jsonFile, "utf8"));
-  const items = [], images = {};
-  for (const it of d.collection.items) {
-    if (items.length >= 14) { break; }
-    const link = (it.links || []).find(l => l.render === "image" || /thumb|small|medium/i.test(l.href || ""));
-    if (!link) { continue; }
-    const file = path.join(OUT, "nasa-" + items.length + ".jpg");
-    try { execFileSync("curl", ["-sS", "--max-time", "60", "-o", file, link.href]); } catch (e) { continue; }
-    if (fs.statSync(file).size < 2000) { continue; }
-    images[link.href.replace(/^http:/, "https:")] = fs.readFileSync(file);
-    items.push(it);
-  }
-  d.collection.items = items;
-  return { body: JSON.stringify(d), images };
-}
-
 // The telescope's photograph through its mirrors (--scope): held frame by held frame, and by the real route.
 async function scopeFrames(browser, w, h, touch, dsf, stand) {
   const { ctx, page, errors } = await openWindow(browser, w, h, touch, dsf);
-  const cors = { "access-control-allow-origin": "*" };
-  await page.route(/images-api\.nasa\.gov\/search/, r => r.fulfill({ status: 200, contentType: "application/json", headers: cors, body: stand.body }));
-  await page.route(/images-assets\.nasa\.gov\//, r => {
-    const b = stand.images[r.request().url()];
-    if (b) { r.fulfill({ status: 200, contentType: "image/jpeg", headers: cors, body: b }); } else { r.abort(); }
-  });
-  await page.route(/metmuseum|artic\.edu|clevelandart|smk\.dk|wikidata|wikimedia|fonts\.(googleapis|gstatic)|cloudfront/, r => r.abort());
+  await routeNasa(page, stand);
   await page.addInitScript(() => {
     window.__added = { canvas: 0, img: 0 };
     window.__drawn = 0;
@@ -224,10 +177,10 @@ async function scopeFrames(browser, w, h, touch, dsf, stand) {
   await page.waitForFunction(() => { const x = Land.shot(5, 5, "plain"); return x.tokens > 0 && x.shown; }, null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1500);
   const info = await page.evaluate(() => { const d = Land.density(); return { R: d.R, cx: d.cx, cy: d.cy, W: d.W, H: d.H }; });
-  // A point in the sky, clear of the world (to the upper left, or wherever there is room).
-  const reach = info.R * 1.2 + 90;
-  let px = Math.max(110, Math.min(w - 110, info.cx - reach * 0.8)), py = Math.max(110, Math.min(h - 110, info.cy - reach * 0.6));
-  if (Math.hypot(px - info.cx, py - info.cy) < info.R * 1.08 + 10) { px = w - 110; py = h - 110; }
+  // A point in the sky where a photograph lies wholly on the black (land.js onTheBlack), its clip on the window.
+  const room = await skySpots(page, w, h);
+  const far = room.filter(p => p[0] >= 110 && p[0] <= w - 110 && p[1] >= 110 && p[1] <= h - 110);
+  const [px, py] = (far.length ? far : room).slice(-1)[0] || [110, 110];
   const half = 110;
   const clip = { x: Math.max(0, px - half), y: Math.max(0, py - half), width: 2 * half, height: 2 * half };
   const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -289,7 +242,7 @@ async function scopeFrames(browser, w, h, touch, dsf, stand) {
   const browser = await chromium.launch({ executablePath: EXE, args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
   let bad = 0;
   if (SCOPE) {
-    const stand = nasaStandIns();
+    const stand = nasaStandIns(OUT);
     const all = [];
     for (const [w, h, touch, dsf] of WINDOWS) {
       const r = await scopeFrames(browser, w, h, touch, dsf, stand);

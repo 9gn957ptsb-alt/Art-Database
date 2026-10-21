@@ -7,7 +7,8 @@ its file was made or repaired by (docs/v2/grounds/REFINE.md, "Where the grounds 
 
 Columns: n (cells a side), cell (metres), bcells (building cells), at2% (share at two storeys), dated%
 (share of building cells with a year), top (storeys of the tallest), then P parts (building_part read),
-T tunnels (left off the surface), H heights (Wikidata, EUBUCCO), B bridges, and the day it was read.
+T tunnels (left off the surface), C culverts (covered watercourses left off it), H heights (Wikidata,
+EUBUCCO), B bridges, and the day it was read.
 """
 
 import json
@@ -20,7 +21,7 @@ GROUNDS = ROOT / "docs" / "v2" / "grounds"
 
 def main():
     wanted = set(sys.argv[1:])
-    print(f"{'city':18s} {'n':>4s} {'cell':>5s} {'bcells':>7s} {'at2%':>5s} {'dated%':>6s} {'top':>4s} P T H B  read")
+    print(f"{'city':18s} {'n':>4s} {'cell':>5s} {'bcells':>7s} {'at2%':>5s} {'dated%':>6s} {'top':>4s} P T C H B  read")
     for path in sorted(GROUNDS.glob("city-*.json")):
         key = path.stem[len("city-"):]
         if wanted and key not in wanted:
@@ -34,7 +35,7 @@ def main():
         dated = sum(1 for y in built if y)
         top = max((t for k, t in zip(kind, tall) if k == "b"), default=0)
         flags = " ".join(("P" if g.get("parts") else "-", "T" if g.get("tunnels") else "-",
-                          "H" if g.get("heights") else "-", "B" if g.get("bridges") else "-"))
+                          "C" if g.get("culverts") else "-", "H" if g.get("heights") else "-", "B" if g.get("bridges") else "-"))
         print(f"{key:18s} {g['n']:4d} {g['side'] / g['n']:5.1f} {nb:7d} {100 * two / max(1, nb):5.0f} "
               f"{100 * dated / max(1, len(built)) if built else 0:6.0f} {top:4d} {flags}  {g.get('read')}")
 

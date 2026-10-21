@@ -181,6 +181,31 @@
   100% { opacity: 0; scale: 0.84; translate: 0 18px; }
 }
 
+/* The remains (artist, 21 Oct 2026: "as they fade away, they become a part of the background"; land.js,
+   "the remains"): the photograph lies on the black without a card, its own black the page's (lighten),
+   and fades where it is, so its light passes in place into #remains, the black under the world. */
+.trail[data-black="true"] .trail-shot {
+  mix-blend-mode: lighten;
+  box-shadow: none;
+  animation-name: shot-black;
+  /* Its edges let go into the black over the outer eighth (--feather, set from its size), as its remains' do. */
+  --feather: 8px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent),
+                      linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent),
+              linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
+  mask-composite: intersect;
+}
+@keyframes shot-black {
+  0%   { opacity: 0; scale: 0.6; }
+  14%  { opacity: 1; scale: 1; }
+  70%  { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+.world-remains { pointer-events: none; }
+.world-remains[hidden] { display: none; }      /* .world's display: block would win over [hidden] */
+
 .world-gloss {
   pointer-events: none;
   transition: opacity var(--beat-3) ease-out;
@@ -1470,7 +1495,7 @@ html[data-entering] .guide-tiles {
   .creature[data-struck="true"] svg,
   .creature .c-eye,
   .hubble .hb-blink { animation: none; }
-  .trail, .sweep, .datamatics, .dream, .primordial { display: none; }
+  .trail, .world-remains, .sweep, .datamatics, .dream, .primordial { display: none; }
   .deal-text[data-enter], .deal-block, .deal-go[data-pointed] { animation: none; }
   .graze, .token, .deck, .trace { animation: none; }
   .deal-plate, .deal-text, .deal-go img { transition-duration: 1ms; }
