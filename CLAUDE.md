@@ -232,8 +232,9 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   and dynamic way it can be incorporated into the functionality of the dial"). Every new kind of exploration
   (lives, movements, hunts, walks, voices, sites, corpses …) gets a place on the dial: what its years mean, what its
   marks are, what turning it does, and how it hands on to the others — designed with it, not added after.
-- **Kaleidoscopes after φ, one new way a day, until he says it is too much** (artist, 10 Oct 2026). The routine
-  "Artist Website — kaleidoscope (daily, here)" adds them; `docs/v2/KALEIDOSCOPE.md` is the ledger and its rules. When he says
+- **Kaleidoscopes after φ, one new way every other day, until he says it is too much** (artist, 10 Oct 2026: once a
+  day; 21 Oct 2026: "Make the kaleidoscope routine the same as the characters routine"). The routine
+  "Artist Website — kaleidoscope (every other day, here)", 16:07 UTC on odd days, adds them; `docs/v2/KALEIDOSCOPE.md` is the ledger and its rules. When he says
   it is too much — in any session, in any words — that session disables the routine (`update_trigger`, enabled false),
   writes **Stopped** with the date and his words at the head of KALEIDOSCOPE.md, and asks him once whether to take back
   the latest (their flags in `KALEIDOSCOPES` in `land.js`).
@@ -244,9 +245,9 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   artists he follows — and stopped before writing, its page would be ~105 MB against an artifact's 16; like the
   buildings pass's museums intake since 6 Oct, it waits on his decision), buildings 08:52, characters 09:47, cities 11:16, network research 13:41, kaleidoscope 16:07. **Every other day since 21 Oct
   2026** (artist, after six helpers in one evening spent a five-hour usage window in three and the week's in two days: "Run
-  the pass every other day then"): buildings and cities on even days of the month, characters and network research on odd
-  days, each "… (every other day, here)", so no day carries more than two heavy passes; the kaleidoscope stays daily (his
-  "once a day"; it is the lightest). A fire that lands a day after its pass last ran (a pass resumed late) is skipped.
+  the pass every other day then"): buildings and cities on even days of the month, characters, network research and the kaleidoscope
+  on odd days ("Make the kaleidoscope routine the same as the characters routine"), each "… (every other day, here)",
+  so no day carries more than two heavy passes. A fire that lands a day after its pass last ran (a pass resumed late) is skipped.
   None does its pass in the
   conversation: each hands it to one helper (the Agent tool: Sonnet, its own git worktree under `.claude/worktrees/`,
   in the background) with the brief written in the routine's prompt, relays its report in a few lines and removes the
