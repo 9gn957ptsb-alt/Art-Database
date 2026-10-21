@@ -35,6 +35,9 @@ FACE_WOOL = strokes("dKdR", angle=1.75, width=2.2, swing=0.5)      # the face: d
 MOP_WOOL = strokes("RdRr", angle=2.1, width=1.8, swing=1.0)        # the mop over the brow: the lighter wool
 
 
+FINE = False            # the whole animal's own body (poses() turns it on): a chimera's body keeps the drawing its folds agree with
+
+
 def hind_paint(x, y, light, i, j):
     """The summer coat of the hindquarters, darkening into the wool of the shoulders along a ragged diagonal
     behind the hump, not at a straight edge: a bison's cape fades back along its back."""
@@ -70,7 +73,7 @@ def legs(phases, dy=0.0, reach=2.4, lift=1.6):
     sh, hp = (SHOULDER[0], SHOULDER[1] + dy), (HIP[0], HIP[1] + dy)
     far = (leg((sh[0] - 1.6, sh[1]), foot_at(ff, sh[0] - 1.6, reach, lift, GROUND, 0.75), 3.6, 3.8, 1, 1.2, 0.7, FAR, 0) +
            leg((hp[0] - 1.4, hp[1]), foot_at(fh, hp[0] - 1.4, reach, lift, GROUND, 0.75), 3.6, 4.0, -1, 1.6, 0.75, FAR_COAT, 0))
-    near = (leg(hp, foot_at(nh, hp[0], reach, lift, GROUND, 0.75), 3.4, 4.0, -1, 2.0, 0.85, COAT, 7) +
+    near = (leg(hp, foot_at(nh, hp[0], reach, lift, GROUND, 0.75), 3.4, 4.0, -1, 1.65 if FINE else 2.0, 0.85, COAT, 7) +
             leg(sh, foot_at(nf, sh[0], reach, lift, GROUND, 0.75), 3.4, 3.8, 1, 1.6, 0.8, WOOL, 7, chaps=True))
     limb(far[:2], "body"), limb(far[2:], "hind"), limb(near[:2], "hind"), limb(near[2:], "body")
     return far, near
@@ -83,9 +86,13 @@ def body(dy=0.0, tail=0.0):
     parts.append(Part(ellipse(6.2, 18.2 + dy + tail, 0.9, 1.3), lambda *a: "k", 1))
     # the hindquarters: lower and slimmer than the shoulders, as a bison's are (the back slopes from the hump)
     hind = union(ellipse(12.0, 15.4 + dy, 4.8, 3.5), ellipse(18.0, 15.2 + dy, 6.2, 4.2))
-    parts.append(Part(hind, hind_paint, 3))
     # The wool: the hump, the shoulders and chest, down to the forelegs, its edge ragged.
     front = union(ellipse(24.2, 11.4 + dy, 6.2, 6.9, -0.25), ellipse(27.4, 15.8 + dy, 4.6, 5.0))
+    if FINE:
+        # a rounded hump over the forelegs, the back dipping behind it before the rump
+        front = union(ellipse(23.4, 11.4 + dy, 5.6, 6.3, -0.10), ellipse(27.8, 15.8 + dy, 4.6, 5.0))
+        hind = union(ellipse(11.6, 14.9 + dy, 4.4, 3.2), ellipse(17.4, 15.2 + dy, 5.8, 3.7))
+    parts.append(Part(hind, hind_paint, 3))
     parts.append(Part(shaggy(front, 0.42, 1.6, 3.0), WOOL, 3))
     return parts
 
@@ -94,21 +101,23 @@ def head_side(cx, cy, down=0.0, ear=0.0, blink=False):
     """The head side on, low, the beard under it; `down` lowers it to graze;
     `ear` flicks the ear up; `blink` closes the eye."""
     cy += down
-    skull = union(ellipse(cx, cy, 3.8, 3.9, 0.4), ellipse(cx + 2.6, cy + 2.8, 2.2, 1.9))
+    # a long, heavy head hung low: the broad forehead under the mop, the face falling to a blunt muzzle
+    skull = union(ellipse(cx, cy, 4.1, 4.2, 0.45), ellipse(cx + 3.0, cy + 3.0, 2.6, 2.3))
     # the beard hangs black and ragged; the mop over the brow is the lighter wool, a mound of it between the horns
-    beard = shaggy(triangle((cx - 1.8, cy + 2.0), (cx + 2.4, cy + 2.8), (cx - 0.6, cy + 6.8)), 0.35, 2.2, 0.4)
-    mop = shaggy(ellipse(cx + 0.4, cy - 2.8, 2.7, 1.7, -0.25), 0.38, 2.0, 2.0)
-    # the horn: short, black at the base, curving up and in, its tip pale
-    horn = path([(cx - 1.2, cy - 2.2), (cx - 2.0, cy - 4.2), (cx - 0.8, cy - 5.8), (cx + 1.2, cy - 6.0)], 0.85, 0.3)
+    beard = shaggy(triangle((cx - 2.0, cy + 2.4), (cx + 2.6, cy + 3.2), (cx - 0.4, cy + 6.8)), 0.35, 2.2, 0.4)
+    mop = shaggy(ellipse(cx + 0.2, cy - 3.0, 3.0, 1.9, -0.25), 0.4, 2.0, 2.0)
+    # the horn: short and black, curving up and in from the mop (its lit edge the chalk line)
+    horn = path([(cx - 0.6, cy - 2.6), (cx - 1.8, cy - 4.4), (cx - 0.9, cy - 5.9)], 1.0, 0.45)
 
     def paint(x, y, light, i, j):
-        if math.hypot(x - (cx + 4.0), y - (cy + 2.6)) < 1.05:
-            return "W"                       # the muzzle, pale
+        d = math.hypot(x - (cx + 4.7), y - (cy + 3.5))
+        if d < 1.5:
+            return "w" if d < 1.0 else "W"   # the muzzle, pale, its edge a step down
         return FACE_WOOL(x, y, light, i, j)
     parts = [Part(beard, FAR, 4), Part(skull, paint, 5), Part(mop, MOP_WOOL, 6),
-             Part(horn, lambda x, y, l, i, j: "w" if math.hypot(x - (cx + 1.2), y - (cy - 6.0)) < 1.6 else "K", 7)]
-    if ear:
-        parts.append(Part(ellipse(cx - 2.4, cy - 1.4 - ear, 1.0, 0.6, -0.5), WOOL, 6))
+             Part(horn, lambda x, y, l, i, j: "K" if l < 0.8 else "k", 7)]
+    # the ear: a small tuft behind the horn, always there, flicked up now and then
+    parts.append(Part(ellipse(cx - 2.6, cy - 1.0 - ear, 1.0, 0.6, -0.5), WOOL, 6))
     # the eye: one cell, on a cell's middle so it is whole
     ex, ey = math.floor(cx + 1.2) + 0.5, math.floor(cy + 0.3) + 0.5
     parts.append(Part(ellipse(ex, ey, 0.62, 0.6 if not blink else 0.25), (lambda *a: "y") if not blink else (lambda *a: "k"), 8))
@@ -121,10 +130,13 @@ def head_front(cx, cy):
     mop = shaggy(ellipse(cx, cy - 2.6, 3.4, 1.9), 0.4, 2.0, 2.0)
     horns = union(path([(cx - 3.0, cy - 1.8), (cx - 4.8, cy - 2.6), (cx - 4.6, cy - 5.0)], 0.8, 0.3),
                   path([(cx + 3.0, cy - 1.8), (cx + 4.8, cy - 2.6), (cx + 4.6, cy - 5.0)], 0.8, 0.3))
-    eyes = union(ellipse(cx - 1.6, cy - 0.2, 0.5, 0.45), ellipse(cx + 1.6, cy - 0.2, 0.5, 0.45))
+    # each eye on a whole cell's middle, so it is drawn (a half-cell eye falls between the cells' centres)
+    ey = math.floor(cy - 0.2) + 0.5
+    eyes = union(ellipse(math.floor(cx - 1.6) + 0.5, ey, 0.6, 0.6), ellipse(math.floor(cx + 1.6) + 0.5, ey, 0.6, 0.6))
     muzzle = ellipse(cx, cy + 2.6, 1.6, 1.15)
-    return [Part(horns, lambda x, y, l, i, j: "w" if (y < cy - 3.6 or l > 0.8) else "K", 4), Part(beard, FAR, 4),
-            Part(skull, FACE_WOOL, 5), Part(mop, MOP_WOOL, 6), Part(muzzle, lambda *a: "W", 6), Part(eyes, lambda *a: "y", 7)]
+    return [Part(horns, lambda x, y, l, i, j: "K" if l < 0.8 else "k", 4), Part(beard, FAR, 4),
+            Part(skull, FACE_WOOL, 5), Part(mop, MOP_WOOL, 6), Part(muzzle, lambda x, y, l, i, j: "w" if l > 0.5 else "W", 6),
+            Part(eyes, lambda *a: "y", 7)]
 
 
 def walk_parts(p, up=None, nod=0.0):
@@ -174,17 +186,22 @@ def lie():
 
 
 def poses():
-    return {
-        "trot": [walk(p) for p in (0.0, 0.25, 0.5, 0.75)],
-        "stand": [stand("side")],
-        "back": [stand("graze")],
-        "look": [stand("front")],
-        "sit": [lie()],
-        # The ethogram (characters.json): its instinct, its play, its ritual.
-        "act": [raster(wind_parts(k), W, H) for k in range(4)],
-        "play": [raster(wallow_parts(k), W, H) for k in range(2)],
-        "ritual": [raster(rut_parts(k), W, H) for k in range(2)],
-    }
+    global FINE
+    FINE = True
+    try:
+        return {
+            "trot": [walk(p) for p in (0.0, 0.25, 0.5, 0.75)],
+            "stand": [stand("side")],
+            "back": [stand("graze")],
+            "look": [stand("front")],
+            "sit": [lie()],
+            # The ethogram (characters.json): its instinct, its play, its ritual.
+            "act": [raster(wind_parts(k), W, H) for k in range(4)],
+            "play": [raster(wallow_parts(k), W, H) for k in range(2)],
+            "ritual": [raster(rut_parts(k), W, H) for k in range(2)],
+        }
+    finally:
+        FINE = False
 
 
 # ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------

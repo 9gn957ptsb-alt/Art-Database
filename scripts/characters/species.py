@@ -10,7 +10,9 @@ the hand and the inks come from the native artist (hands.py).
 Left out of the natives on purpose: the eight drawn by hand (`CAST`: the red
 fox, the American bison, the red squirrel, the bald eagle, the banana slug,
 the red deer, the starling murmuration, the ocellated lizard — each lives only in its artist's home
-town, characters.json's `native`); the kinds that are not one animal (wind, blooms, ferns, mould,
+town, characters.json's `native`; the slug is no place's). The ninth, Frankenthaler's Anna's
+hummingbird, is no place's native either and is deliberately NOT in `CAST`: Berkeley's and
+Santa Monica's own hummingbirds, after Mary Corse and Mark Bradford, stay the generated ones; the kinds that are not one animal (wind, blooms, ferns, mould,
 leaf fall, fire, grass waves, dunes, dust, schools, sea life) and swarms of
 biting flies (mosquitoes, blackflies), termite mounds and bats at dusk. A
 species of the grammar not in this table is not yet drawn: the daily pass
