@@ -30,6 +30,9 @@
      lizard    a male holds a territory and fights for it (Wikipedia,
                Ocellated lizard): its leg keeps to its ground, every stop
                within 400 km of where the leg began
+     hummingbird  the display dive (Clark & Feo 2008, Clark 2009): a climb,
+               then a fall — the leg's second stop is far from its first,
+               the third drops back to within 400 km of it
      deer      the antler cycle, by the real month: its part changes with
                the month; it freezes when the pointer comes near
 
@@ -193,6 +196,7 @@
       case "bison": return "the bison faces into the storm: back in time";
       case "starling": return "the starlings follow their nearest: the next stops are the cities next door";
       case "lizard": return "the lizard holds its ground: its stops keep within 400 km of where it began";
+      case "hummingbird": return "the hummingbird climbs, then dives: a far stop, then a fall back to where it began";
       case "deer":
         return { rut: "the stag is in rut: it goes where the crowds are",
                  cast: "the stag has cast its antlers: a short leg",
@@ -408,6 +412,18 @@
         if (seat) {
           keep(function (x) { return km(seat, ll(x.to)) <= 400; });
           cand.forEach(function (x) { x.score = km(seat, ll(x.to)) / 200 + x.score * 0.3; });
+        }
+      } else if (a === "hummingbird" && e.w) {
+        // The display dive (Clark & Feo 2008): a male climbs high, then falls steeply. Once its leg has begun, the next
+        // stop is the climb (offered 1,200 km or more from the last, the farthest first) and the one after it the
+        // dive (offered within 400 km of the leg's first stop, the nearest to it first).
+        var perch = leg.stops.length ? ll(leg.stops[0].k) : null;
+        if (perch && leg.stops.length % 2 === 1) {
+          keep(function (x) { return x.km >= 1200; });
+          cand.forEach(function (x) { x.score = -x.km / 4000 + x.score * 0.5; });
+        } else if (perch) {
+          keep(function (x) { return km(perch, ll(x.to)) <= 400; });
+          cand.forEach(function (x) { x.score = km(perch, ll(x.to)) / 200 + x.score * 0.3; });
         }
       } else if (a === "deer" && e.w) {
         cand.forEach(function (x) {

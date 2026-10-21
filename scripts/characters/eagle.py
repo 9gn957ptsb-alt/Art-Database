@@ -42,8 +42,11 @@ def head(cx, cy, facing=1):
                  ellipse(cx + f * 4.3, cy + 1.4, 0.8, 1.0))
     brow = capsule((cx + f * 0.0, cy - 1.55), (cx + f * 2.0, cy - 1.1), 0.36, 0.3)
     ex, ey = math.floor(cx + f * 0.9) + 0.5, math.floor(cy - 0.5) + 0.5
-    eye = ellipse(ex, ey, 0.55, 0.55)
-    return [Part(skull, WHITE, 5), Part(bill, YELLOW, 6), Part(brow, lambda *a: "d", 7), Part(eye, lambda *a: "k", 8)]
+    # the pale yellow iris and, a cell on toward the bill, the pupil: a bald eagle's stare
+    iris = ellipse(ex, ey, 0.55, 0.55)
+    pupil = ellipse(ex + f, ey, 0.55, 0.55)
+    return [Part(skull, WHITE, 5), Part(bill, YELLOW, 6), Part(brow, lambda *a: "d", 7), Part(iris, lambda *a: "y", 8),
+            Part(pupil, lambda *a: "k", 8)]
 
 
 def head_front(cx, cy):
@@ -51,9 +54,9 @@ def head_front(cx, cy):
     bill = union(ellipse(cx, cy + 1.0, 1.0, 1.4), triangle((cx - 0.8, cy + 1.6), (cx + 0.8, cy + 1.6), (cx, cy + 3.2)))
     # the eyes, each on a cell's middle so each is whole, under a dark brow
     ly, lx_, rx_ = math.floor(cy - 0.5) + 0.5, math.floor(cx - 1.4) + 0.5, math.floor(cx + 1.4) + 0.5
-    eyes = union(ellipse(lx_, ly, 0.55, 0.55), ellipse(rx_, ly, 0.55, 0.55))
+    eyes = union(ellipse(lx_, ly, 0.6, 0.6), ellipse(rx_, ly, 0.6, 0.6))
     brows = union(capsule((cx - 2.6, ly - 1.0), (cx - 0.6, ly - 0.7), 0.34, 0.3), capsule((cx + 2.6, ly - 1.0), (cx + 0.6, ly - 0.7), 0.34, 0.3))
-    return [Part(skull, WHITE, 5), Part(bill, YELLOW, 6), Part(brows, lambda *a: "d", 7), Part(eyes, lambda *a: "k", 8)]
+    return [Part(skull, WHITE, 5), Part(bill, YELLOW, 6), Part(brows, lambda *a: "d", 7), Part(eyes, lambda *a: "y", 8)]
 
 
 WING_TIP = {0: (14.2, 1.0), 4: (6.2, 5.2), 2: (14.4, 25.0), 3: (6.2, 21.2), 1: (4.4, 10.2)}
@@ -71,19 +74,18 @@ def wing(stroke):
     nx, ny = -vy / L, vx / L
     if nx > 0:
         nx, ny = -nx, -ny                          # the trailing side: toward the tail
-    ch = 5.0 if stroke != 1 else 3.8
+    ch = 6.6 if stroke != 1 else 4.4
     pts = [sh, wrist, tip,
            (tip[0] - vx * 0.16 + nx * 2.8, tip[1] - vy * 0.16 + ny * 2.8),
            (sh[0] + vx * 0.52 + nx * ch, sh[1] + vy * 0.52 + ny * ch),
            (sh[0] + vx * 0.18 + nx * ch * 0.9, sh[1] + vy * 0.18 + ny * ch * 0.9),
            (sh[0] + nx * 2.4 - 1.6, sh[1] + ny * 2.4)]
     fingers = []
-    for k in range(4):
-        # the flight feathers' ends: four slim fingers fanned beyond the tip
-        t = 0.0 + 0.28 * k
-        bx, by = tip[0] - vx * 0.12 + nx * (0.4 + 0.75 * k), tip[1] - vy * 0.12 + ny * (0.4 + 0.75 * k)
-        fa = (vx / L + nx * 0.16 * (k - 1.2), vy / L + ny * 0.16 * (k - 1.2))
-        fl = 2.3 - 0.25 * k
+    for k in range(5):
+        # the flight feathers' ends: five slim fingers fanned beyond the tip, the outermost longest
+        bx, by = tip[0] - vx * 0.14 + nx * (0.2 + 0.85 * k), tip[1] - vy * 0.14 + ny * (0.2 + 0.85 * k)
+        fa = (vx / L + nx * 0.17 * (k - 1.4), vy / L + ny * 0.17 * (k - 1.4))
+        fl = 2.9 - 0.3 * k
         fingers.append(capsule((bx, by), (bx + fa[0] * fl, by + fa[1] * fl), 0.5, 0.3))
     shape = union(poly(pts), *fingers)
 
@@ -120,11 +122,13 @@ def perched(head_kind="side", fluff=0.0):
     # the tail hangs below and behind, white, and the wing tips cross over its top: a perched eagle's long line
     tail = triangle((17.2, 19.0), (11.2, GROUND - 0.2), (15.0, GROUND))
     tips = poly([(19.4, 17.4), (13.8, 23.0), (16.8, 22.8), (20.8, 19.6)])
-    legs = union(capsule((20.0, 20.4), (20.2, GROUND - 0.6), 0.6, 0.45), capsule((21.6, 20.2), (21.8, GROUND - 0.6), 0.6, 0.45))
-    toes = union(ellipse(20.8, GROUND - 0.3, 0.9, 0.45), ellipse(22.4, GROUND - 0.3, 0.9, 0.45))
-    trousers = ellipse(21.0, 20.6, 2.4, 1.8)
-    parts = [Part(tail, WHITE, 1), Part(legs, YELLOW, 2), Part(toes, YELLOW, 2), Part(body, BROWN, 3),
-             Part(trousers, DARK, 3), Part(wing_, DARK, 4), Part(tips, DARK, 4.5)]
+    # two bare yellow legs, apart, each ending in toes spread forward and black talons; the feathered trousers above
+    legs = union(capsule((19.4, 20.8), (19.6, GROUND - 0.9), 0.55, 0.45), capsule((22.6, 20.6), (22.8, GROUND - 0.9), 0.55, 0.45))
+    toes = union(ellipse(20.5, GROUND - 0.4, 1.3, 0.45), ellipse(23.7, GROUND - 0.4, 1.3, 0.45))
+    talons = union(ellipse(21.9, GROUND - 0.3, 0.5, 0.42), ellipse(25.1, GROUND - 0.3, 0.5, 0.42))
+    trousers = ellipse(21.0, 20.4, 3.3, 2.0)
+    parts = [Part(tail, WHITE, 1), Part(legs, YELLOW, 2), Part(toes, YELLOW, 2), Part(talons, lambda *a: "k", 2), Part(body, BROWN, 3),
+             Part(trousers, DARK, 3), Part(wing_, feathers((19.4, 10.6), 1.5), 4), Part(tips, DARK, 4.5)]
     if head_kind == "side":
         parts += head(22.8, 7.8 + fluff)
     elif head_kind == "back":

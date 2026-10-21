@@ -85,6 +85,8 @@ def body(dy=0.0):
     torso = union(ellipse(16.9, 12.6 + dy, 9.2, 3.95), ellipse(24.8, 12.8 + dy, 3.4, 4.0))
 
     def paint(x, y, light, i, j):
+        if FINE and x < 11.3 + 0.5 * math.sin(y * 1.3) and 9.4 + dy < y < 14.2 + dy:
+            return "W" if light < 0.62 else "w"          # the rump patch, larger: it runs down the thighs
         if x < 10.8 + 0.5 * math.sin(y * 1.3) and 9.6 + dy < y < 13.8 + dy:
             return "W" if light < 0.62 else "w"          # the rump patch, cream, ragged at its edge
         return COAT(x, y, light, i, j)
@@ -93,6 +95,7 @@ def body(dy=0.0):
 
 
 SEASON = "hard"                # the antlers: "hard" (Sep-Mar), "cast" (Mar-Apr), "velvet" (May-Aug)
+FINE = False                   # the whole animal's own drawing (poses() turns it on): a chimera's parts keep the drawing their folds agree with
 
 
 def antlers(cx, cy, f=1):
@@ -108,10 +111,12 @@ def antlers(cx, cy, f=1):
                      capsule((cx - f * 1.0, cy - 2.2), (cx + f * 0.4, cy - 2.8), 0.5, 0.45))
     # the beam sweeps up and back from the skull; the brow tine springs forward from its foot, the bez above it,
     # the trez higher, and at the top the crown's points fan up; every tine one cell, with a cell of air between
-    S = 0.7                                      # the whole set drawn to fit the picture's top
+    S = 0.62 if FINE else 0.7                    # the whole set drawn to fit the picture's top
+
+    Sx = S
 
     def P(dx, dy):
-        return (cx - f * dx * S, cy - dy * S)
+        return (cx - f * dx * Sx, cy - dy * S)
     beam = path([P(0, 0), P(1.6, 2.4), P(3.0, 4.6), P(3.4, 6.8), P(2.6, 8.8)], 0.6, 0.5)
     tines = union(capsule(P(0.3, 0.7), P(-2.8, 1.5), 0.5, 0.4),
                   capsule(P(1.3, 2.7), P(-2.2, 4.0), 0.48, 0.38),
@@ -146,6 +151,9 @@ def head_side(cx, cy, f=1, dy=0.0):
             return "k"
         return BASE(x, y, light, i, j)
     ear = triangle((cx - f * 1.2 * K, cy - 0.6 * K), (cx - f * 0.2 * K, cy - 1.2 * K), (cx - f * 2.8 * K, cy - 2.6 * K))
+    if FINE:
+        # a red deer's ears are big, half the head's length, leaf-shaped, held out and up
+        ear = triangle((cx - f * 1.2 * K, cy - 0.1 * K), (cx - f * 0.3 * K, cy - 1.2 * K), (cx - f * 4.2 * K, cy - 1.2 * K))
     eye = [Part(ellipse(cx + f * 0.8 * K, cy - 0.3 * K, 0.45 * K, 0.4 * K), lambda *a: "y", 6)]
     if K > 1:
         # the eye given its dark, and the stag's pale muzzle and throat patch
@@ -178,6 +186,9 @@ def trot_parts(p, phases=None, up=None):
     up = (p in (0.25, 0.75)) if up is None else up
     dy = -0.5 if up else 0.0
     far, near = legs(phases or (p + 0.5, p, p, p + 0.5), dy)
+    if FINE:
+        # the neck long, the head carried high on it, as a stag trots
+        return far + body(dy) + [neck((25.6, 11.6), (29.0, 7.0), dy)] + head_side(30.2, 6.2, dy=dy) + near
     return far + body(dy) + [neck((25.6, 11.6), (28.8, 8.6), dy)] + head_side(30.0, 7.8, dy=dy) + near
 
 
@@ -188,7 +199,9 @@ def trot(p):
 def stand_parts(head="side"):
     far, near = legs((0.1, 0.6, 0.6, 0.1), 0.0, reach=1.0)
     parts = far + body()
-    if head == "side":
+    if head == "side" and FINE:
+        parts += [neck((25.6, 11.6), (28.6, 7.2))] + head_side(29.8, 6.4)
+    elif head == "side":
         parts += [neck((25.6, 11.6), (28.4, 8.2))] + head_side(29.6, 7.4)
     elif head == "up":
         parts += [neck((25.6, 11.6), (28.8, 7.0))] + head_side(30.2, 5.8)
@@ -220,16 +233,21 @@ def lie():
 
 
 def poses():
-    return {
-        "trot": [trot(p) for p in (0.0, 0.25, 0.5, 0.75)],
-        "stand": [stand("side")],
-        "back": [stand("back")],
-        "look": [stand("front")],
-        "sit": [lie()],
-        # The ethogram (characters.json): its instinct (the freeze) and its ritual.
-        "act": [raster(freeze_parts(k), W, H) for k in range(4)],
-        "ritual": [raster(roar_parts(k), W, H) for k in range(2)],
-    }
+    global FINE
+    FINE = True
+    try:
+        return {
+            "trot": [trot(p) for p in (0.0, 0.25, 0.5, 0.75)],
+            "stand": [stand("side")],
+            "back": [stand("back")],
+            "look": [stand("front")],
+            "sit": [lie()],
+            # The ethogram (characters.json): its instinct (the freeze) and its ritual.
+            "act": [raster(freeze_parts(k), W, H) for k in range(4)],
+            "ritual": [raster(roar_parts(k), W, H) for k in range(2)],
+        }
+    finally:
+        FINE = False
 
 
 def seasons():
