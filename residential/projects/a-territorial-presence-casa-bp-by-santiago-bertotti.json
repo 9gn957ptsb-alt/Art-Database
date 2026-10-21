@@ -71,7 +71,7 @@
  "accuracy": {
   "level": "B",
   "basis": "Single-storey plan with a scale bar (35.75 px/m, ~2.8 cm per px); heights from four sections scaled against the plan (A-A/B-B by 7 matching walls, C-C/D-D by the 6.4 m depth of the main volume)",
-  "notes": "Plan has no room labels: names inferred from furniture and photos. Wall lines are 6-12 px thick, so positions are good to ~5 cm. Clear height 3.79 m and parapet ~4.95 m (A-A, B-B, D-D agree within 10 cm); the main roof is a mono-pitch hidden behind level parapets, so it is modelled as a flat 1.16 m roof package. Window/door heads 3.0 m from sections; kitchen south window sill/head from the south elevation. Light-well patio level, pool depth (D-D is schematic) and the carport fascia position are estimates. The south screen wall's perforations and the pavilion's louvres are not modelled."
+  "notes": "Plan has no room labels: names inferred from furniture and photos. Wall lines are 6-12 px thick, so positions are good to ~5 cm. Clear height 3.79 m and parapet ~4.95 m (A-A, B-B, D-D agree within 10 cm); the main roof is a mono-pitch hidden behind level parapets, so it is modelled as a flat 1.16 m roof package. Window/door heads 3.0 m from sections; kitchen south window sill/head from the south elevation. Kitchen, laundry and bathrooms take their ceilings from sections C-C and A-A (3.79, 2.98 and 3.0 m). Pool coping 0.60 m below the house floor from the 3 risers in D-D (D-D is shifted horizontally there). Light-well patio level, pool depth and the carport fascia position are estimates. The south screen wall's perforations and the pavilion's louvres are not modelled."
  },
  "north_deg": 0,
  "defaults": {
@@ -155,7 +155,7 @@
        "type": "door",
        "at": 2.154,
        "w": 0.783,
-       "h": 2.6,
+       "h": 2.97,
        "name": "Laundry door"
       }
      ]
@@ -182,8 +182,6 @@
      ]
     }
    ],
-   "height": 3.7,
-   "roof_t": 1.25,
    "floor": "stone",
    "fixtures": [
     {
@@ -219,7 +217,7 @@
     "S4"
    ],
    "confidence": "high",
-   "notes": "Unlabelled on plan; kitchen identified by counter (sink, hob) along the west glazing and island. Ceiling 3.70 m from section C-C (slightly lower than living). West glazing above the counter in two groups of four panels (west elevation, section C-C): sill ~1.1 m, head ~3.6 m (C-C 3.55, elevation 3.74)."
+   "notes": "Unlabelled on plan; kitchen identified by counter (sink, hob) along the west glazing and island. Ceiling 3.79 m like the rest of the main volume (section C-C: ceiling line 510 px above the floor line at 135 px/m = 3.78 m). The laundry doorway rises to the laundry ceiling (C-C lintel 2.98 m). West glazing above the counter in two groups of four panels (west elevation, section C-C): sill ~1.1 m, head ~3.6 m (C-C 3.55, elevation 3.74)."
   },
   {
    "id": "L0-dining",
@@ -360,7 +358,7 @@
      "mat": "concrete"
     }
    ],
-   "notes": "Zone of the open living-dining-kitchen space; fireplace against the entry-slot wall (photos, sections A-A and D-D)."
+   "notes": "Zone of the open living-dining-kitchen space; fireplace against the entry-slot wall (photos, sections A-A and D-D). Firebox on plan at y 1.55-3.23; the chimney stack above the roof is 1.44 m wide (D-D, y 1.54-2.98) and 0.34 m deep (A-A cut), top 5.73 m (A-A and D-D)."
   },
   {
    "id": "L0-vestibule",
@@ -407,6 +405,7 @@
     },
     null
    ],
+   "ffl_offset": -0.16,
    "floor": "stone",
    "sources": [
     "S1",
@@ -414,7 +413,7 @@
     "S2"
    ],
    "confidence": "high",
-   "notes": "Open to the sky (section A-A shows no roof between the slot walls); lattice gate at the south facade (photo, elevation)."
+   "notes": "Open to the sky (section A-A shows no roof between the slot walls); lattice gate at the south facade (photo, elevation). Floor 0.16 m below the house floor (A-A: slot floor line py 791.5 vs house floor 783.5 at 50.6 px/m), so one step up at the entrance door."
   },
   {
    "id": "L0-hall",
@@ -616,7 +615,7 @@
        "type": "door",
        "at": 0.13,
        "w": 0.709,
-       "h": 3.0
+       "h": 2.95
       }
      ]
     },
@@ -632,14 +631,14 @@
        "type": "glass_door",
        "at": 0.13,
        "w": 1.894,
-       "h": 3.0,
+       "h": 2.95,
        "name": "Glazing to light-well patio"
       }
      ]
     }
    ],
-   "height": 3.2,
-   "roof_t": 1.75,
+   "height": 3.0,
+   "roof_t": 1.95,
    "floor": "tile",
    "finish": "plaster",
    "sources": [
@@ -647,7 +646,7 @@
     "S3"
    ],
    "confidence": "medium",
-   "notes": "Shower area drawn by the south glazing; ceiling ~3.2 m under the V-shaped skylit ceiling of section A-A."
+   "notes": "Shower area drawn by the south glazing. Ceiling 3.0 m: section A-A cuts a solid slab over the bathroom block with a V-shaped top (3.23-3.49 m) and a flat underside at 2.98 m, which is also the door-head height. Above the slab A-A shows an open trough with two skylight hoods behind the parapets; it is modelled as solid roof up to the 4.95 m parapet, as seen from outside."
   },
   {
    "id": "L0-wc",
@@ -657,6 +656,10 @@
    "outline": [
     [
      21.944,
+     4.266
+    ],
+    [
+     22.14,
      4.266
     ],
     [
@@ -674,28 +677,29 @@
    ],
    "walls": [
     null,
+    null,
     {
      "openings": [
       {
        "type": "door",
        "at": 0.937,
        "w": 0.751,
-       "h": 3.0
+       "h": 2.95
       }
      ]
     },
     null,
     null
    ],
-   "height": 3.2,
-   "roof_t": 1.75,
+   "height": 3.0,
+   "roof_t": 1.95,
    "floor": "tile",
    "sources": [
     "S1",
     "S3"
    ],
    "confidence": "high",
-   "notes": "Toilet and bidet drawn; door opens from the vanity bathroom to the east."
+   "notes": "Toilet and bidet drawn; door opens from the vanity bathroom to the east. Not cut by A-A, but it lies inside the same bathroom block under the skylight slab, so it takes the same 3.0 m ceiling."
   },
   {
    "id": "L0-bath-e",
@@ -739,7 +743,7 @@
        "type": "door",
        "at": 0.14,
        "w": 0.755,
-       "h": 3.0
+       "h": 2.95
       }
      ]
     },
@@ -751,7 +755,7 @@
        "type": "glass_door",
        "at": 0.13,
        "w": 1.894,
-       "h": 3.0,
+       "h": 2.95,
        "name": "Glazing to light-well patio"
       }
      ]
@@ -761,8 +765,8 @@
     null,
     null
    ],
-   "height": 3.2,
-   "roof_t": 1.75,
+   "height": 3.0,
+   "roof_t": 1.95,
    "floor": "tile",
    "sources": [
     "S1",
@@ -784,7 +788,7 @@
      "mat": "stone"
     }
    ],
-   "notes": "Two basins on the east wall; bath or shower zone along the south glazing (line at 1.4 m from the wall)."
+   "notes": "Two basins on the east wall; bath or shower zone along the south glazing (line at 1.4 m from the wall). Ceiling 3.0 m: section A-A cuts a solid slab over the bathroom block with a V-shaped top (3.23-3.49 m) and a flat underside at 2.98 m, which is also the door-head height. Above the slab A-A shows an open trough with two skylight hoods behind the parapets; it is modelled as solid roof up to the 4.95 m parapet, as seen from outside."
   },
   {
    "id": "L0-corridor",
@@ -805,15 +809,11 @@
      4.266
     ],
     [
-     23.357,
+     22.14,
      4.266
     ],
     [
-     25.203,
-     4.266
-    ],
-    [
-     25.203,
+     22.14,
      6.266
     ],
     [
@@ -825,9 +825,18 @@
     null,
     null,
     null,
-    null,
     {
-     "kind": "open"
+     "kind": "int",
+     "openings": [
+      {
+       "type": "door",
+       "at": 0.11,
+       "w": 1.246,
+       "h": 3.0,
+       "name": "Corridor door"
+      }
+     ],
+     "t": 0.1
     },
     {
      "kind": "ext",
@@ -843,7 +852,53 @@
     "S3"
    ],
    "confidence": "high",
-   "notes": "Linear corridor buffering the private wing; blind wall to the gallery (plan)."
+   "notes": "Linear corridor buffering the private wing; blind wall to the gallery (plan). Serves the study and the shower bathroom; closed to the east by the corridor door (plan: 0.48 m stub from the north wall and a 1.26 m leaf hinged at the WC block's north-west corner)."
+  },
+  {
+   "id": "L0-private-hall",
+   "name": "Private hall",
+   "type": "hall",
+   "level": "L0",
+   "outline": [
+    [
+     22.14,
+     4.266
+    ],
+    [
+     23.357,
+     4.266
+    ],
+    [
+     25.203,
+     4.266
+    ],
+    [
+     25.203,
+     6.266
+    ],
+    [
+     22.14,
+     6.266
+    ]
+   ],
+   "walls": [
+    null,
+    null,
+    {
+     "kind": "open"
+    },
+    {
+     "kind": "ext",
+     "t": 0.35
+    },
+    null
+   ],
+   "floor": "wood_floor",
+   "sources": [
+    "S1"
+   ],
+   "confidence": "high",
+   "notes": "East end of the corridor behind the corridor door: serves the WC, the vanity bathroom and the master bedroom (open to it)."
   },
   {
    "id": "L0-bedroom",
@@ -1108,8 +1163,8 @@
        "type": "window",
        "at": 0.13,
        "w": 0.387,
-       "sill": 1.9,
-       "h": 1.0
+       "sill": 1.1,
+       "h": 1.85
       }
      ]
     }
@@ -1135,7 +1190,7 @@
      "mat": "white"
     }
    ],
-   "notes": "Unlabelled; sink and washing machine drawn, door from the kitchen. The double line on its east side is read as a tall cupboard/duct. Ceiling 2.98 m (section C-C).",
+   "notes": "Unlabelled; sink and washing machine drawn, door from the kitchen. The double line on its east side is read as a tall cupboard/duct. Ceiling 2.98 m (section C-C). West window: sill 1.1 m, head 2.95 m (C-C frame py 1275-1527 against the floor at 1673; west elevation sill ~1.06 m).",
    "height": 2.98,
    "roof_t": 0.45
   },
@@ -1182,8 +1237,8 @@
        "type": "window",
        "at": 0.741,
        "w": 0.472,
-       "sill": 1.9,
-       "h": 1.0
+       "sill": 1.1,
+       "h": 1.85
       }
      ]
     }
@@ -1194,7 +1249,7 @@
     "S4"
    ],
    "confidence": "medium",
-   "notes": "Two WCs and a basin counter drawn; serves the gallery and pavilion; door from the passage.",
+   "notes": "Two WCs and a basin counter drawn; serves the gallery and pavilion; door from the passage. West window: sill 1.1 m, head 2.95 m (section C-C).",
    "height": 2.98,
    "roof_t": 0.45
   },
@@ -1297,12 +1352,13 @@
      "kind": "ext",
      "openings": [
       {
-       "type": "window",
-       "at": 0.384,
-       "w": 2.797,
-       "sill": 0.5,
-       "h": 1.8,
-       "name": "Grill / oven front"
+       "type": "opening",
+       "at": 0.782,
+       "w": 2.05,
+       "sill": 1.33,
+       "h": 0.45,
+       "glass": false,
+       "name": "Grill slot"
       }
      ],
      "t": 0.17
@@ -1320,7 +1376,7 @@
     "S5"
    ],
    "confidence": "medium",
-   "notes": "Built-in grill/oven block closing the west end of the gallery: stainless front seen in photos, flue above. North face set ~10 cm south of the drawn position to meet the pavilion glazing cleanly.",
+   "notes": "Built-in grill/oven block closing the west end of the gallery: solid stainless front with one centred horizontal grill slot (photo 060: about 2.05 m wide and 0.45 m high with its sill at about 1.33 m, scaled from the 3.6 m face width and the 3.1 m pergola soffit), flue above. North face set ~10 cm south of the drawn position to meet the pavilion glazing cleanly.",
    "height": 2.98,
    "roof_t": 0.45
   },
@@ -1469,6 +1525,10 @@
      -2.487
     ],
     [
+     32.699,
+     -1.773
+    ],
+    [
      16.559,
      -1.208
     ]
@@ -1477,17 +1537,22 @@
     null,
     {
      "kind": "low",
-     "h": 3.35,
+     "h": 3.24,
      "t": 0.16
     },
     {
      "kind": "low",
-     "h": 3.35,
+     "h": 3.24,
      "t": 0.17
     },
     {
      "kind": "low",
-     "h": 3.35,
+     "h": 3.24,
+     "t": 0.17
+    },
+    {
+     "kind": "low",
+     "h": 3.24,
      "t": 0.17
     }
    ],
@@ -1502,7 +1567,7 @@
     "S5"
    ],
    "confidence": "medium",
-   "notes": "Narrow gravel patio between the bedroom-wing glazing and a perforated screen wall ~3.0 m above floor level (light double line on plan; lower plane in the south elevation; photos). Screen perforations not modelled; ground level of the patio estimated."
+   "notes": "Narrow gravel patio between the bedroom-wing glazing and a perforated screen wall 2.89 m above the house floor (south elevation: top 73.5 px below the parapet). Its plan line (light double line) bends at plan px (2040, 1417), x 32.70; photos. Screen perforations not modelled; ground level of the patio estimated."
   },
   {
    "id": "L0-carport",
@@ -1565,7 +1630,7 @@
     "S5"
    ],
    "confidence": "medium",
-   "notes": "Covered parking under the cantilevered east end of the volume, 0.72 m below the house (4 risers, section A-A). Open to the east under a deep fascia; roof modelled as an element."
+   "notes": "Covered parking under the cantilevered east end of the volume, 0.72 m below the house (4 risers, section A-A). Open to the east under a deep fascia; roof modelled as an element. Section A-A shows the carport covered by a thin roof sloping down to the east (top about 4.75 m at the west wall to 4.36 m at the fascia, above the house floor) inside the 4.95 m parapets, so the real carport ceiling is higher than the solid 3.79-4.95 m package modelled."
   }
  ],
  "elements": [
@@ -1898,10 +1963,11 @@
     14.459999999999999,
     -0.06
    ],
+   "z": -0.16,
    "size": [
     1.9890000000000014,
     0.05,
-    3.6
+    4.3
    ],
    "mat": "metal_dark"
   },
@@ -1948,7 +2014,7 @@
      ]
     ]
    ],
-   "z": -0.36,
+   "z": -0.6,
    "t": 0.2,
    "mat": "terracotta"
   },
@@ -1975,7 +2041,7 @@
      17.958
     ]
    ],
-   "z": -0.36,
+   "z": -0.6,
    "depth": 1.4
   },
   {
@@ -2012,13 +2078,13 @@
    "level": "L0",
    "name": "Fireplace chimney",
    "at": [
-    13.64,
-    3.357
+    13.9,
+    1.54
    ],
    "size": [
-    0.6,
-    0.7,
-    0.85
+    0.34,
+    1.44,
+    0.78
    ],
    "z": 4.95,
    "mat": "red_render"
